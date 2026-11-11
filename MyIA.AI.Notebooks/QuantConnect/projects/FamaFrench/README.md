@@ -72,6 +72,81 @@ Sharpe calculé par QC, taux sans risque inclus. Les quatre prédictions fixées
 
 L'effet est minime. Le rééquilibrage du 2017-07-03 n'envoie aucun ordre, et celui du 2023-07-03 en envoie deux, sur SIZE et USMV. Les écarts suivants viennent de ces deux ajustements. L'écart de Sharpe est nul au millième, sous le seuil de 0.05 fixé d'avance, et les chiffres publiés plus haut ne sont pas réécrits. Ce n'est pas un verdict de stratégie : il s'agit de la correction d'un défaut, mesurée sur des fenêtres déjà vues.
 
+## Verdict de ligue (#25615)
+
+Mesure de la rotation de facteurs contre les deux références de la ligue — **SPY détenu** et
+**60/40** (SPY 60 % / BND 40 %, rééquilibré en début de mois) — sur les deux fenêtres du
+protocole. Tous les chiffres proviennent de QC Cloud (projet `39232628`), lus à
+`completed: true` le 2026-11-11.
+
+### Contrôle d'innocuité
+
+Le code actuel est rejoué le même jour dans un projet séparé (témoin `39232629`). Le mode
+`strategy` du code modifié reproduit les ordres et les statistiques QC du témoin **au centime**
+: 249 ordres, Sharpe 0.446, CAGR 11.084 %, pire baisse 24.2 %, net 108.821 %, equity
+$208 821.43, frais −$575.11, volume $4 209 471.51. Le paramètre `mode`, la trace `shadow` et le
+compteur `invalid_orders` ne modifient pas le comportement du mode `strategy`.
+
+### Fenêtre 1 — 2018-01-01 → 2025-01-01 (dans l'échantillon, 1761 séances)
+
+| Mode | Sharpe QC | CAGR | Pire baisse | Net | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| strategy | 0.446 | 11.084 % | 24.2 % | +108.82 % | 249 | `7a099a68` |
+| SPY détenu | 0.464 | 12.807 % | 33.6 % | +132.60 % | 1 | `5c880591` |
+| 60/40 | 0.354 | 8.293 % | 21.7 % | +74.73 % | 145 | `7de755d1` |
+
+### Fenêtre 2 — 2025-01-01 → 2026-07-31 (hors échantillon, 395 séances)
+
+La fin effective, lue sur la trace, est le 2026-07-31 : la fenêtre n'est pas rognée par la
+coupure de fin des nœuds QC. Elle ne couvre qu'environ 19 mois — sa puissance statistique est
+faible, et c'est dit dès le protocole.
+
+| Mode | Sharpe QC | CAGR | Pire baisse | Net | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| strategy | 0.406 | 12.083 % | 14.5 % | +19.75 % | 68 | `af0b87f2` |
+| SPY détenu | 0.561 | 16.351 % | 18.7 % | +27.03 % | 2 | `88b38ddc` |
+| 60/40 | 0.444 | 11.228 % | 11.1 % | +18.31 % | 29 | `2807bbc3` |
+
+### Significativité (taux sans risque nul)
+
+`Paradox46Benchmarks/significance.py`, sur les traces `shadow` journalières (contrat #18923).
+Le Sharpe est annualisé par racine de 252, taux sans risque nul : il ne recopie pas le Sharpe
+QC, qui retranche le taux. Correction de Holm sur les six p-valeurs de chaque fenêtre.
+
+**Fenêtre 1** — Sharpe 0-rate : strategy **0.7495**, SPY détenu 0.7215, 60/40 0.7201.
+
+| Contre | Écart de Sharpe | p Ledoit-Wolf | p de Holm |
+|---|---|---|---|
+| SPY détenu | +0.028 | 0.861 | 1.000 |
+| 60/40 | +0.029 | 0.870 | 1.000 |
+
+**Fenêtre 2** — Sharpe 0-rate : strategy **0.874**, SPY détenu 0.972, 60/40 1.066.
+
+| Contre | Écart de Sharpe | p Ledoit-Wolf | p de Holm |
+|---|---|---|---|
+| SPY détenu | −0.098 | 0.815 | 1.000 |
+| 60/40 | −0.192 | 0.640 | 1.000 |
+
+### Verdict
+
+- **Fenêtre 1 : `INCONCLUSIVE`.** L'écart de Sharpe est positif contre les deux références,
+  mais sa p de Holm (Ledoit-Wolf) vaut 1.000, très au-dessus de 0.05 : le `BEATS` n'est pas
+  atteint. Le Sharpe ponctuel de la stratégie n'est pas inférieur à celui de SPY détenu : le
+  `NO BEATS` non plus.
+- **Fenêtre 2 : `NO BEATS`.** Le Sharpe ponctuel de la stratégie est inférieur à celui de SPY
+  détenu (0.874 < 0.972), et l'écart est négatif contre les deux références, sans être
+  significatif sur 19 mois.
+
+### Lecture
+
+Le registre `docs/qc/qc-strategies-status.md` classait la rotation *Needs-improvement* sur une
+seule mesure (Sharpe QC 0.445 sur 2018-2025). Ce verdict l'affine : la rotation ne bat pas SPY
+détenu sur la fenêtre codée — l'écart de Sharpe est de l'ordre du bruit — et elle reste en
+deçà en hors-échantillon. Le filtre SMA200 et le repli sur USMV améliorent la pire baisse
+(24.2 % contre 33.6 % en fenêtre 1), pas le Sharpe. Ce n'est pas un verdict de suppression :
+c'est la mesure manquante, posée sur les deux fenêtres du protocole et contre les deux
+références de la ligue.
+
 ## Files
 
 - `main.py` - Strategy (v3, risk-adjusted momentum with skip-month)

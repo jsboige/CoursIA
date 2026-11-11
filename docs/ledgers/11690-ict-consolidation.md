@@ -87,6 +87,69 @@ Le dénominateur a crû de **deux** carnets en trois jours — `ICT-46b-BancUniq
 
 Zéro fantôme : les 68 entrées du ledger correspondent toutes à un carnet présent sur `main` (normalisation `-Python`), et la liste des 33 se recalcule, elle ne se recopie pas.
 
+## Recompte de couverture — 2026-11-08
+
+Mesure rejouée à la tête `7c4e261ad16` de `origin/main` avec la méthode décrite plus haut, en corrigeant un point de protocole : **les deux côtés se lisent sur la même référence**. Les carnets sont listés par `git ls-tree -r origin/main -- MyIA.AI.Notebooks/IIT/ICT-Series`, le ledger est lu par `git show origin/main:docs/ledgers/11690-ict-consolidation.md`. Un ledger lu depuis le répertoire de travail d'un arbre en retard fausse le compte — mesuré ici : 62 couverts au lieu de 68 sur un arbre partagé en retard de 1 638 commits, alors que le dénominateur, lui, venait déjà de `origin/main`.
+
+| Mesure | 2026-10-30 | 2026-11-02 | **2026-11-08** |
+|---|---|---|---|
+| Carnets ICT sur `main` | 99 | 101 | **103** |
+| Sections de carnet au ledger | 62 | 68 | **68** |
+| Non couverts | 37 | 33 | **35** |
+| Taux de couverture | 63 % | 67 % | **66 %** |
+
+Le dénominateur a crû de deux carnets depuis la mesure du 2026-11-02 et aucun des deux n'a de section : le taux perd un point par simple accroissement de la série, pas par perte de contenu. Zéro fantôme : les 68 entrées correspondent toutes à un carnet présent sur `main`.
+
+### Les 35 non couverts, recalculés
+
+```
+ICT-20-FeatureCatastrophes
+ICT-25b-StratificationInterTailles
+ICT-32-StratificationCausaleLife
+ICT-33-SoupCollisions
+ICT-34-BancRecollementLectures
+ICT-35-HumorCausalProbe-Pilot
+ICT-35b-HumorCausalPairs-SAE
+ICT-35c-HumorDepthProfile-SAE
+ICT-35d-HumorTypologyBreakdown-SAE
+ICT-36-FLens-FactoredGeometry
+ICT-36b-RuzsaOnFactorGeometry
+ICT-36c-FLens-HiguchiBridge
+ICT-36d-FLens-DecorrelationTemporelle
+ICT-36e-FLens-SNR
+ICT-37-FLens-BeliefState
+ICT-38-SLens-SelfLocation
+ICT-39-CompositionRegards
+ICT-40a-TriangulationCausale
+ICT-40b-AnalogCognitionWaves
+ICT-43-Calibration-MultiEchelle
+ICT-46-Strate7-FreeCoordinates
+ICT-46b-BancUnique-Strate7
+ICT-47-PainAxisDistillation
+ICT-47b-PainAxisInstrument
+ICT-48-Onset9B-Aggregate
+ICT-48-WolframClasses-ThermoSignature
+ICT-49-MachinesDeGoedel
+ICT-50-WolframRule30Aleatoire-Rule110Universelle
+ICT-51-CombinateursSKI-TagDePost
+ICT-Argumentation-Capstone
+ICT-Argumentation-QBFAcceptance
+ICT-Argumentation-TruthMaintenance
+ICT-Dissociation-DehaeneF2-SelfReport
+ICT-Greffe5-AttributionCausale
+ICT-MUH-FibreTegmark
+```
+
+Le bloc que la mesure du 2026-10-30 nommait prioritaire — les deux familles FLens `ICT-36`/`ICT-37` — compte **six** carnets et non cinq : `ICT-36d-FLens-DecorrelationTemporelle` s'y est ajouté depuis. Il reste le plus gros bloc contigu, suivi de l'axe douleur (`ICT-35`/`35b`/`35c`/`35d` et `ICT-47`/`47b`, six carnets), de `ICT-40a`/`40b`, de `ICT-46`/`46b` et de la paire `ICT-48` ci-dessous. Le reste est une traîne d'unités et six carnets hors numérotation (`Argumentation` ×3, `Dissociation`, `Greffe5`, `MUH`).
+
+### Finding — deux carnets portent le numéro 48
+
+`ICT-48-Onset9B-Aggregate-Python.ipynb` et `ICT-48-WolframClasses-ThermoSignature-Python.ipynb` coexistent dans le même dossier de `main`, et c'est la **seule collision numérique de la série** — regroupement sur le préfixe `ICT-<n><suffixe>`, une seule clé porte deux carnets.
+
+Les deux sont arrivés le **même jour**, le 2026-10-10, par deux PRs distinctes : #19853 (`feat(ict,#1454)`, agrégat 4 graines onset 9B Qwen3.5-Base) et #19807 (`feat(iit,#19796)`, carnet Origami Wolfram, quatre classes contre thermodynamique). Ce n'est donc pas une renumérotation ratée : c'est un numéro attribué deux fois dans la même journée par deux chantiers qui ne se sont pas vus.
+
+Conséquence pour la case 1 de l'acceptance : le dénominateur compte deux carnets là où la numérotation en annonce un, et ni l'un ni l'autre n'a de section. Le choix de place revient à l'arbitrage de la case 3 ; ce ledger ne renumérote pas, conformément à la réserve posée au §4.3.
+
 ### Recompte du 2026-11-09 (après le strand 9)
 
 Même méthode, rejouée une fois le strand 9 posé.
@@ -142,17 +205,31 @@ Séance de relecture tenue avec le mainteneur le 2026-10-11 ; décisions consign
 | 16 | Format de référence | ICT-29 devient le format de référence, appliqué à chaque nouvelle retouche, **sans passe de masse** | Décision de méthode, pas une fille ; s'applique aux grains futurs |
 | 17 | Preuve partagée 21/21c | Jamais présentée comme une réplication indépendante | Couvert par la rangée 21c (point 15) et le finding tranche 1 n°2 |
 
-#### État d'exécution des décisions (mesuré le 2026-11-04, `myia-po-2028:CoursIA`)
+#### État d'exécution des décisions (rangées 1-2 et 12 : mesuré le 2026-11-04, `myia-po-2028:CoursIA` ; rangées 3-17 : mesuré le 2026-11-08, `myia-po-2024:CoursIA`)
 
-Trois décisions de la séance ne sont plus ouvertes. Cette table évite qu'une autre lane les refasse ; elle rapporte ce qui est au carnet ou au code, pas ce qui est annoncé.
+Cette table évite qu'une autre lane refasse une décision déjà exécutée ; elle rapporte ce qui est au carnet ou au code, pas ce qui est annoncé. Rangées 3-17 mesurées le 2026-11-08 par lecture du contenu de `main` à `74add766f41` (worktree frais) ; les rangées 1-2 et 12 sont conservées telles que mesurées le 2026-11-04. Bilan au 2026-11-08 : **exécutées ou posées** — 1 (a/b/c), 2, 7 (un résiduel nommé), 8, 9, 10, 12, 13, 14, 15, 16 (méthode), 17 ; **en attente de #20298** par construction (« aucun renommage avant validation ») — 3, 4, 5, 6 ; **dégelée non exécutée** — 11 (run 2B « tenu », routée `myia-ai-01:CoursIA-2`).
 
-| # | État | Preuve au 2026-11-04 |
+| # | État | Preuve |
 | --- | --- | --- |
 | 1 (a) — verdict porté par le cocycle | **exécuté** | `ict/cech_obstruction.py::cech_obstruction_verdict` décide sur `mean_cocycle` / `obstruction_ratio` / `sign_consistency` ; le rang SVD n'est plus qu'un témoin de forme. Sorties de tête d'`ICT-15d` : 3/4 `NON_TRIVIAL`, `axelrod` `TRIVIAL` (cocycle 0.0000 vs `s2/s1` 1.0000). Commit `659c57d7ba`, [#20361](https://github.com/jsboige/CoursIA/pull/20361) |
 | 1 (b) — la matrice cesse de citer l'artefact périmé | **exécuté** en correction courte | `docs/ict/dissociations-matrix.md` réaligné. **La décision comptait « deux endroits » : il y en avait quatre** — la rangée ICT-15d, la section 1 de la note (tableau `s2/s1`), la section 3 (réserve annonçant #12257 comme chantier) et l'anti-confusion de la case 6 |
 | 1 (c) — vrai nerf (H¹) en greffe à part | **livré, hors de ce point** | `ICT-15j-NerveDiscriminant-Python.ipynb` invoque `gudhi` (filtration Rips complète). [#12257](https://github.com/jsboige/CoursIA/issues/12257) est close (COMPLETED) : elle ne s'annonce plus comme un chantier ouvert dans la matrice |
 | 2 — ICT-11, ≥ 16 essais + bootstrap | **exécuté** | `N_TRIALS_BASIN = 16` avec masques de disque distincts (`16/16 masques distincts` imprimé) et `bootstrap_corr_ci(..., n_boot=2000, rng=default_rng(3))` ; IC95 % imprimé. Suivi par [#20320](https://github.com/jsboige/CoursIA/issues/20320) |
 | 12 — ICT-21b, sonde J-lens | **exécuté** | La cellule de calibration charge les traces réelles (`calib_jlens_qwen3-1-7b`, `calib_jlens_qwen3-5-2b` ; couches 7/14 et 6/12) et imprime overlap@10, `rel_l2`, KL. Les `J-lens : None` visibles en sortie sont le **stub de l'exercice 4** (règle C.1), pas une sonde manquante |
+| 3 — Renumérotation | **en attente (#20298 OPEN)** — conforme « aucun renommage avant validation » | [#20298](https://github.com/jsboige/CoursIA/issues/20298) ouverte ; `main` à `74add766f41` porte toujours la numérotation littérale d'origine (fichiers `ICT-<numéro><lettre>` à plat, litter 13b/17b/18b/25b/35b-35d/36b-36e/40a/40b/42b-42f/46b/47b, non-numérotés `ICT-Life-SubstratCertifie`, `ICT-MUH-FibreTegmark`) ; aucune phase 0 (lecture C/D/E) fusionnée |
+| 4 — Familles fonctionnelles | **noms transitoires conservés** (en attente #20298) | `ICT-0-Annexe-IntegratedComplexityTheory.md` toujours à plat à la racine de la série ; aucun répertoire de sous-série Dissociations/Greffes/Annexe ; la cible (sous-série ou accrétion) reste à fixer par #20298 (OPEN) |
+| 5 — Famille ICT-15 (15b→15l) | **en attente (#20298)** | les 14 carnets (`ICT-15`, `15b`-`15l`) vivent à plat dans `ICT-15-IntegratedComplexity/` ; ni sous-série « escalier » ni capstone dans la numérotation principale sur `main` |
+| 6 — Ordres internes | **confirmé (décision), en attente #20298** | décision sans artefact à exécuter ; état structurel mesuré : aucun réordonnancement de carnet sur `main` |
+| 7 — Renvois internes → ancres de section | **exécuté sur le moule documenté (strand 4), un résiduel nommé** | moule 26-30 : `ICT-26` 0 renvoi « cellule N » (13 renvois par section), `ICT-27` aucun renvoi interne, `ICT-29` 0 (5), `ICT-30` 0 (11) ; **résiduel** : `ICT-28` garde 1 renvoi par numéro (« la cellule 2 avait mesurée… », cellule 12) — à replier à la prochaine retouche du carnet |
+| 8 — Tegmark (ICT-41/41b/44) | **exécuté** | aucun fichier `ICT-41*`/`ICT-44*` sur `main` ; la lecture Tegmark consolidée vit dans `ICT-MUH-FibreTegmark-Python.ipynb`, créée par `31dfd37d31b` ([#18045](https://github.com/jsboige/CoursIA/pull/18045), chantier #16759 — redescente acceptée #16741 c.6103436506) |
+| 9 — ICT-19, ENJEU-1 sur `repair_gain` | **exécuté** | « Gate ENJEU-1 (énoncé de champ, principal) : `repair_gain(S4) > 0` » avec témoin diffusion pure apparié en `I_thermo` ; verdict dual assumé (« OK en espace de champ, FAIL sur le banc naïf ») — l'échec scalaire reste affiché comme note pédagogique ; `repair_gain` : 14 occurrences dans `ICT-19`, 33 dans `ICT-19b` ([#20334](https://github.com/jsboige/CoursIA/pull/20334), suivi [#20321](https://github.com/jsboige/CoursIA/issues/20321) close) |
+| 10 — ICT-25 §5.2, plafond saturant retiré | **exécuté** | cap `max_completion_length` 80 → 1024 (grain [#13596](https://github.com/jsboige/CoursIA/issues/13596)) et « Verdict stable au plafond levé : le cap 80 n'était pas l'artefact » — `NON-REPRODUIT RENFORCÉ` tient ; la §5.2 porte la comparaison canonique N/I @120 steps, « le bras-I exécuté pour de vrai » (reward plate N +0.056 / I −0.020) |
+| 11 — ICT-25 run 2B | **dégelé, non exécuté (« tenu »)** | le pré-gate de validité déclenché en §5.5 se résout en faveur de la permission (§5.6 « INFORMATION NÉGLIGEABLE ») et l'étape 4 (montée 2B) est déclarée justifiée (« se dégele ») ; mais **aucune sortie 2B committée** sur `main` — le carnet porte « Run 2B tenu », bras-I @2B à « mandat owner séparé » (routé `myia-ai-01:CoursIA-2`) |
+| 13 — ICT-23, lecture P1 + seuil EWS | **exécuté** | cellule « Lecture du balayage — la prediction P1 n'est pas realisee » avec la table mesurée `0/4/2/2` (« P1 n'est pas réalisée », pic intermédiaire à `s = 0.30`) ; « Seuil EWS : le critere est fixe AVANT la mesure et vient du CONTROLE », « critere pre-enregistre, verdict mesure » appliqué uniformément aux trois indicateurs |
+| 14 — ICT-24, Gate 24 phase 2 + Gini recalibré | **exécuté** | « Le Gate 24 (phase 2, GPU) est exécuté » (clamp `--clamp-ids` des 7 features workspace vs 7 hors panel, GPU 2) ; verdict non reproduit assumé avec rejeu post-#19967 en annexe committable ; recalibrage du seuil de Gini par batterie nulle time-shuffled `null_battery_ginis` ([#20324](https://github.com/jsboige/CoursIA/issues/20324)) |
+| 15 — Matrice, nouvelles rangées | **exécuté** | `docs/ict/dissociations-matrix.md` porte `ICT-Annexe` (contextualité du zoo), `ICT-Greffe2` (espace atteignable), `ICT-Greffe4` (vote sur chaîne, organes argumentation/Borda natifs) et `ICT-Synthèse` Gates 1-6 ([#20376](https://github.com/jsboige/CoursIA/pull/20376), suivi [#20325](https://github.com/jsboige/CoursIA/issues/20325) close) |
+| 16 — Format de référence ICT-29 | **posé (méthode, sans passe de masse)** | `ICT-29-ConceptInoculation-Python.ipynb` sur `main` ; décision de méthode qui s'applique à chaque nouvelle retouche — rien à exécuter en masse par construction |
+| 17 — Preuve partagée 21/21c | **exécuté** | la rangée `ICT-21c` de la matrice porte en gras « Même jeu de mesures qu'ICT-21, jamais une réplication indépendante (séance 2026-10-11, point 17) » — 6 stems de traces réutilisés tels quels, « 21c n'apporte aucune donnée nouvelle », validation « plus faible que celle d'ICT-21 » |
 
 
 ### Retouches mineures (strands 1 à 7)
