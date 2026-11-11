@@ -530,6 +530,9 @@
       "axiom-allow-axioms": "@scripts/lean/allow_axioms_conway.txt",
       "axiom-fail-on-sorry": "false",
       "axiom-include-i18n-siblings": "true",
+      "axiom-blocking-target-modules": "Conway.KochenSpecker,Conway.FreeWillTheorem",
+      "axiom-blocking-allow-axioms": "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound",
+      "axiom-blocking-fail-on-sorry": "true",
       "build-threads": "1",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
