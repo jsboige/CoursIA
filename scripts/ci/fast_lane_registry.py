@@ -2206,9 +2206,10 @@ TRANCHE21: list[Guard] = [
 # Forme : iter par carnet modifie (`--check {changed_paths}`). Un carnet
 # modifie qui porte encore la cle fait remonter le defaut sur la PR.
 #
-# ADVISORY (`blocking=False`) : le corpus n'est pas encore entierement corrige
-# (lots B et C de l'issue #20167). La bascule en bloquant se fera quand `main`
-# ne portera plus aucune cellule fautive, comme geste trace.
+# Ratchet bloquant (#24090) : pour chaque carnet modifie, comparer le nombre
+# de cellules markdown portant execution_count/outputs au blob de la base PR.
+# Les residus preexistants ailleurs dans le corpus (ou dans le meme carnet)
+# restent toleres tant que leur compte n'augmente pas.
 #
 # `absorbed=True` : sans absorption, le job always-on lancerait `fast_lane.py
 # --shadow` et la conclusion serait neutre sous le prefixe d'ombre. Meme
@@ -2216,21 +2217,23 @@ TRANCHE21: list[Guard] = [
 # ---------------------------------------------------------------------------
 TRANCHE22: list[Guard] = [
     Guard(
-        name="Markdown-cell schema advisory (cles interdites, #20167)",
+        name="Markdown-cell schema ratchet (base vs PR, #24090)",
         source=FAST_LANE_NATIVE,
         paths=[
             "MyIA.AI.Notebooks/**/*.ipynb",
             "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
             "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
         iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
-            "python", "scripts/notebook_tools/fix_markdown_cell_schema.py",
-            "--check", "{changed_paths}",
+            "python", "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+            "--base-ref", "{base_ref}", "{changed_paths}",
         ],
-        blocking=False,
+        blocking=True,
         iterates_paths=True,
         absorbed=True,
     ),
@@ -2587,7 +2590,7 @@ TRANCHE27: list[Guard] = [
 #
 # La voie rapide n'emettait que des check-runs ; ces trois-la exigent en plus
 # d'ecrire sur la PR. D'ou l'emetteur d'effets de bord de `fast_lane.py`
-# (`upsert_sticky_comment`, `write_artifact`) et un job DISTINCT
+# (`publish_advisory_section`, `write_artifact`) et un job DISTINCT
 # `Always-on commenters` dans `always-on-guards.yml`, qui porte seul le droit
 # d'ecriture pour ces gardes -- un defaut dans l'un des organes du job
 # principal ne peut pas ecrire sur une PR.
@@ -2600,21 +2603,24 @@ TRANCHE27: list[Guard] = [
 #   - workflow source reduit a `workflow_dispatch`, fichier conserve (sa
 #     re-mesure manuelle et la source du nom canonique).
 #
-# Les marqueurs stickies sont reproduits BYTE-IDENTIQUES a ce que pose
-# `marocchino/sticky-pull-request-comment@v2` : `<!-- Sticky Pull Request
-# Comment<header> -->`, en FIN de corps (cf le parseur de
-# `check_adjoint_prevalidation.py`, qui reconnait cette forme la). Un sticky
-# deja pose est MIS A JOUR, jamais double : c'est tout l'objet de l'upsert, et
-# le test le verifie sur un corps qui porte deja le marqueur.
+# Depuis #24514 (famille #15511), les commentaires passent par l'organe
+# partage `advisory_sticky.py` (meme branchement que #24441) : UNE section par
+# en-tete dans le commentaire consultatif unique, retiree quand le signal
+# redevient vert, et RIEN d'ecrit quand le succes n'a rien a signaler -- les
+# marqueurs marocchino d'origine etaient la premiere source de phrases de
+# succes (101 sur les 60 PRs ouvertes a la mesure). Les stickies marocchino
+# deja poses sont perimes en place (renvoi `forwarded`, reconnu par le parseur
+# du dossier de prevalidation au meme titre que le marqueur d'origine) -- un
+# commentaire n'est jamais supprime (#15372).
 #
 # `scan-md-hierarchy-drift.yml` postait un commentaire NEUF a chaque push sans
 # marqueur. Reproduire cet accident (une PR de carnet recevait un commentaire
-# par push) n'apporterait rien : le garde pose desormais un sticky
-# `md-hierarchy-drift-advisory`, ce qui applique la meme regle « mis a jour,
-# pas double » aux quatre surfaces. L'en-tete est declare dans
-# `_BOT_STICKY_ADVISORY_HEADERS` (`check_adjoint_prevalidation.py`) pour que le
-# dossier de prevalidation continue de lire ces reecritures comme des
-# commentaires de bot consultatifs.
+# par push) n'apporterait rien : le garde ecrit desormais la section
+# `md-hierarchy-drift-advisory` dans le commentaire unique, ce qui applique la
+# meme regle « mis a jour, pas double » aux quatre surfaces. L'en-tete reste
+# declare dans `_BOT_STICKY_ADVISORY_HEADERS`
+# (`check_adjoint_prevalidation.py`) pour que le dossier de prevalidation
+# continue de lire ces reecritures comme des commentaires de bot consultatifs.
 # ---------------------------------------------------------------------------
 
 
@@ -2622,16 +2628,18 @@ TRANCHE27: list[Guard] = [
 class Commenter:
     """Un effet de bord PR d'un garde absorbe.
 
-    header      En-tete du sticky. Le marqueur pose est
-                `<!-- Sticky Pull Request Comment<header> -->`, byte-identique
-                a celui de `marocchino/sticky-pull-request-comment@v2` ; il
-                sert AUSSI de cle d'upsert (le commentaire existant est
-                retrouve par ce marqueur puis PATCHe).
+    header      En-tete de la section dans le commentaire consultatif unique
+                (organe `advisory_sticky`, #24514). Il DOIT rester un nom
+                d'organe valide (`[A-Za-z0-9._-]+`) : les six en-tetes
+                historiques marocchino le sont deja, et le dossier de
+                prevalidation les lit dans `_BOT_STICKY_ADVISORY_HEADERS`.
     argv        Detecteur. Sa sortie standard est le rapport : elle part dans
                 l'artefact quand `artifact_name` est renseigne, et dans le
                 corps du commentaire quand `body` la consomme.
-    body        (rc, payload, ctx) -> corps du commentaire. Rend une chaine
-                vide pour ne rien poser (cas du drift markdown sans derive).
+    body        (rc, payload, ctx) -> corps de la section. Rend une chaine
+                vide quand le verdict est VERT : la section est alors RETIREE
+                (et rien n'est ecrit sur une PR qui n'en portait pas) -- le
+                succes ne parle pas (#24514).
     artifact_name / artifact_file
                 Nom d'artefact et nom de fichier, copies tels quels du
                 workflow source (`actions/upload-artifact` garde son nom
@@ -2674,10 +2682,13 @@ class Commenter:
 # textes que des reviewers et des bots lisent depuis des mois, et une
 # reformulation silencieuse changerait le signal d'une PR a l'autre pour la
 # meme mesure. Seul l'emballage change (le heredoc shell disparait).
+#
+# #24514 (famille #15511) : le succes ne parle plus. Il n'y a plus de phrase
+# OK -- un corps vide rendu par un builder fait RETIRER la section advisory
+# (ou n'ecrit rien sur une PR saine) ; le vert vit dans le check-run nomme.
+# Les phrases qui restent portent toutes un SIGNAL : abstention, panne
+# d'usage, constat, exemption ou vert PARTIEL (carnets non lus).
 
-_CLAIMS_OK = (
-    "✅ No prose/output mismatch detected in the notebooks this PR changed."
-)
 _CLAIMS_ABSTAIN = (
     "⚠️ Detector abstained (merge-base introuvable, shallow fetch or "
     "unanchored branch)."
@@ -2701,10 +2712,6 @@ _CLAIMS_TRAILER = (
     "extended with low-noise relational evidence."
 )
 
-_STALE_OK = (
-    "✅ No unanchored measurement claim detected in the notebooks this PR "
-    "changed."
-)
 _STALE_ABSTAIN = (
     "⚠️ Stale-claim detector abstained (merge-base introuvable, shallow "
     "fetch or unanchored branch)."
@@ -2724,11 +2731,6 @@ _STALE_TRAILER = (
     "`python scripts/check_stale_claims.py --help`."
 )
 
-_MISLABEL_OK = (
-    "✅ No factual mislabel detected in the notebooks this PR changed "
-    "(entity counts and tuple formulas checked against nearby committed "
-    "streams)."
-)
 _MISLABEL_ABSTAIN = (
     "⚠️ Factual-mislabel detector abstained (merge-base introuvable, "
     "shallow fetch or unanchored branch)."
@@ -2749,11 +2751,6 @@ _MISLABEL_TRAILER = (
     "`python scripts/check_factual_mislabel.py --help`."
 )
 
-_LISTING_OK = (
-    "✅ No truncated listing detected in the notebooks this PR changed "
-    "(markdown identifier tables checked against the numbered listing a "
-    "nearby code cell's stream prints)."
-)
 _LISTING_ABSTAIN = (
     "⚠️ Listing-coherence detector abstained (merge-base introuvable, "
     "shallow fetch or unanchored branch)."
@@ -2805,10 +2802,6 @@ _MISLABEL_FATAL = (
     "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
 )
 
-_ORGAN_CLEAN = (
-    "No organ-duplication: no added def/class collides with another series "
-    "organ API (scripts/audit/organ_api_index.yaml)."
-)
 _ORGAN_EXEMPTED = (
     "Organ duplication DETECTED but EXEMPTED: the PR body declares a "
     "pedagogical copy. The organ-first rule (5 questions) is satisfied by "
@@ -2866,21 +2859,28 @@ def _exit_state(rc: int, ctx: dict, fatal_rc: tuple[int, ...] = (2,)) -> str:
 
 def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _CLAIMS_OK, "abstain": _CLAIMS_ABSTAIN,
+    if state == "ok":
+        # #24514 : le succes ne parle pas -- le vert vit dans le check-run.
+        return ""
+    sentence = {"abstain": _CLAIMS_ABSTAIN,
                 "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
 
 
 def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _STALE_OK, "abstain": _STALE_ABSTAIN,
+    if state == "ok":
+        return ""
+    sentence = {"abstain": _STALE_ABSTAIN,
                 "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
 
 
 def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _MISLABEL_OK, "abstain": _MISLABEL_ABSTAIN,
+    if state == "ok":
+        return ""
+    sentence = {"abstain": _MISLABEL_ABSTAIN,
                 "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
 
@@ -2901,17 +2901,19 @@ def _payload_count(payload: str, key: str) -> int:
 
 def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    sentence = {"ok": _LISTING_OK, "abstain": _LISTING_ABSTAIN,
+    non_lus = _payload_count(payload, "non_lus")
+    if state == "ok" and not non_lus:
+        # #24514 : le succes ne parle pas -- SAUF le vert PARTIEL, qui n'est
+        # pas un vert (carnets jamais lus, #23394 reserve 1) et parle.
+        return ""
+    sentence = {"ok": _LISTING_OK_UNREAD.format(n=non_lus),
+                "abstain": _LISTING_ABSTAIN,
                 "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)
     # `non_lus` porte les carnets que le detecteur n'a pas pu ouvrir : sans
     # cette phrase, un carnet illisible sortait en vert « aucun tableau
     # tronque » alors qu'il n'avait jamais ete lu (#23394, reserve 1).
-    non_lus = _payload_count(payload, "non_lus")
-    if non_lus and state != "abstain":
-        if state == "ok":
-            sentence = _LISTING_OK_UNREAD.format(n=non_lus)
-        else:
-            sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
+    if non_lus and state not in ("ok", "abstain"):
+        sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
     return f"{_with_note(sentence, ctx)}\n\n{_LISTING_TRAILER}"
 
 
@@ -2930,8 +2932,10 @@ def _organ_status(payload: str) -> str:
 
 def _body_organ_duplication(rc: int, payload: str, ctx: dict) -> str:
     state = _organ_status(payload)
+    if state == "clean":
+        # #24514 : le succes ne parle pas.
+        return ""
     sentence = {
-        "clean": _ORGAN_CLEAN,
         "exempted": _ORGAN_EXEMPTED,
         "abstain": _ORGAN_ABSTAIN,
     }.get(state, _ORGAN_WARN)
