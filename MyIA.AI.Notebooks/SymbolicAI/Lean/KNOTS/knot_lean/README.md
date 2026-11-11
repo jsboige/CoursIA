@@ -24,7 +24,8 @@ Deux comptes, selon le filtre CI :
 
 - **sorry réels** = ce qui manque vraiment comme preuve. **8** au total (code-only
   après strip `--`/`/- -/`, mesuré par `scripts/lean/count_code_sorry.py` champ
-  `distinct_code_sorry`, baseline CI `lean-knot.yml` à `"8"` : 9 par #18615,
+  `distinct_code_sorry`, baseline CI `knot_lean` (matrice `ci_lakes.json`,
+  wrapper `lean-knot.yml` supprimé par #24733) à `"8"` : 9 par #18615,
   ramené à 8 par #19107), tous stables : 0 dans `Invariant.lean`
   (`Knot.unknottingNumber` **DISCHARGÉ par #15082** : redéfini via `Nat.sInf` de
   `{n | k.UnknottableIn n}` + témoin `unknot_unknottingNumber = 0` prouvé —
@@ -80,7 +81,7 @@ Deux comptes, selon le filtre CI :
   le mot-bounded `\bsorry\b`. La CI gate sur baseline **8** (alignée avec
   `LEAN_INVENTORY.md`, voir #13312).
 
-La CI `.github/workflows/lean-knot.yml` gate sur le **real-mode baseline 8**
+La CI `knot_lean` de la matrice (`.github/workflows/lean-ci-matrix.yml`) gate sur le **real-mode baseline 8**
 (alignement post-#13312, mesure 2026-09-13 ; historique : prose-header 25→28
 dans #3124, baissée à 27 après #3163, re-bumpée à 28 par #3003 ;
 switch prose-header→real à baseline 17 le 2026-07-11 ; 16 après #8766, re-17
@@ -427,7 +428,7 @@ Trois notebooks dans `SymbolicAI/Lean/` assurent la transmission, par niveau :
 | `Knots/Mutation.lean` (mutation de Conway : sphère 4 points, rotation 180°) | KNOTS-01 (Conway/KT mutants), KNOTS-03 (mutation) | Soundness de l'isotopie de recollement, structure de la sphère formelle |
 | `Knots/ReidemeisterCombinatorial.lean` (`MoveSequence`, `movesConnects`, `verifyMoves`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Soundness du vérificateur borné, complétude énumération |
 | `Knots/ReidemeisterInvariance.lean` (invariance d'`alexanderPolynomialSigned` sous R1/R2/R3) | KNOTS-02 (moves), KNOTS-03 (invariance) | Soundness complète, jonction Conway ↔ Reidemeister |
-| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Pont vers les 8 `sorry` réels du lake (2 Reidemeister, 4 Slice, 2 Lidman), baseline CI `lean-knot.yml` à `"8"` |
+| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Pont vers les 8 `sorry` réels du lake (2 Reidemeister, 4 Slice, 2 Lidman), baseline CI `knot_lean` (matrice) à `"8"` |
 
 **Acte de revue humaine à signer** : lorsque la revue humaine sera effectuée, elle prendra la forme `Revue par <nom, affiliation> — date <YYYY-MM-DD> — scope <lake entier / module> — vérifications : structure / preuves principales / i18n FR-EN — verdict global` et sera insérée dans ce README. La grille **#13106 critère 2** est satisfaite par le premier acte signé ; aucun acte partiel n'est consigné en silencieusement, et la présente section reste honnête tant que l'acte n'est pas posé.
 

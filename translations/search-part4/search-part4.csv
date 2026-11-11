@@ -537,9 +537,9 @@ Console.WriteLine(""Exercice a completer : EvenGenerationMutationMetaHeuristic""
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-01-Introduction.ipynb,nav-footer,markdown,fr,8562cb85352f53a9,"***
 
 **Navigation** : [Index](README.md) | [MGS-2 Composition >>](MGS-02-Composition.ipynb)",,,,,,,,8562cb85352f53a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c00,markdown,fr,5d193462fbe51522,"# MGS-10 : Le test du biais central — un optimiseur « sans biais en zéro » passe-t-il l'épreuve du déplacement ?
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c00,markdown,fr,fc6cc35aaed44978,"# MGS-10 : Le test du biais central — un optimiseur « sans biais en zéro » passe-t-il l'épreuve du déplacement ?
 
-**Série MetaGeneticSharp** | Précédent : [MGS-9 - Relief Everest](MGS-09-EverestRelief.ipynb) | [↑ Série MGS](README.md)
+**Série MetaGeneticSharp** | Précédent : [MGS-9 - Relief Everest](MGS-09-EverestRelief.ipynb) | [↑ Série MGS](README.md) | [MGS-11 Synergie d'îles →](MGS-11-IslandSynergy.ipynb)
 
 MGS-6 comparait les composés (WOA, EO, FBI) au GA « de base » sur dix fonctions, à nombre de générations égal, et montrait qu'aucune métaheuristique « publiée » ne bat systématiquement la composition. Mais un banc qui **compte les générations** laisse une porte ouverte : si un algorithme concentre ses échantillons près du **centre** du domaine — là où, par construction, beaucoup de fonctions test placent leur optimum — il peut **imiter** la performance sans rien comprendre au paysage. C'est la critique de Kudela (*Nature Machine Intelligence*, 2022) : la plupart des métaheuristiques récentes sont **biaisées vers le centre**, et ce biais se révèle dès qu'on **déplace l'optimum** hors du centre.
 
@@ -549,7 +549,7 @@ Ce notebook rend cette critique **concrète et mesurable**, en câblant le banc 
 - Comprendre **pourquoi** un banc à budget égal en *générations* peut masquer un biais central.
 - Câbler le protocole centré-vs-déplacé (Kudela 2022) via `CenterBiasBenchmark.RunSuite` et le délégué `Optimizer`.
 - Mesurer la signature de biais $\Delta$ pour le GA, WOA, EO, FBI, et apprendre à la **lire conjointement** à la performance absolue (car un $\Delta$ élevé peut signifier un biais… ou simplement un optimiseur trop faible).
-",,,,,,,,5d193462fbe51522,,,,,,,,,,,,,,,
+",,,,,,,,fc6cc35aaed44978,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c01,code,fr,3af0d2fffc6d2830,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + CenterBiasBenchmark + ShiftedFitness).
 // Prérequis de build (depuis la racine du fork) : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
 #r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
@@ -871,16 +871,16 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-10-CenterBias.ipynb,mgs10-c18,
 
 **Référence** : Kudela, J. *A critical problem with benchmarking optimizers*. Nature Machine Intelligence **4**, 439–440 (2022) — le protocole centré-vs-déplacé câblé ici via `CenterBiasBenchmark` (fork MetaGeneticSharp PR #14 + #15, voir #1203).
 ",,,,,,,,4de30866c71012cc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,dc6c5569,markdown,fr,4a35bfb51f21a817,"# MGS-11 : Synergie d'iles complementaires -- exploration et exploitation ensemble
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,dc6c5569,markdown,fr,a5296e123bc2ee6c,"# MGS-11 : Synergie d'iles complementaires -- exploration et exploitation ensemble
 
-[<- MGS-10 Biais de centre](MGS-10-CenterBias.ipynb) | [^ Serie MGS](README.md)
+[← MGS-10 Biais de centre](MGS-10-CenterBias.ipynb) | [↑ Série MGS](README.md) | [MGS-12 Alignement d'axes →](MGS-12-AxisAlignment.ipynb)
 
 **Pourquoi chercher la synergie ?** Une métaheuristique unique fait un compromis : Differential Evolution (DE) *explore* largement (sa mutation vectorielle `F.(r1-r2)` fait de grands pas tant que la population est dispersee), Bare-Bones PSO (BBPSO) *exploite* localement (il echantillonne autour des meilleurs individus via une Gaussienne). Aucun des deux ne domine : DE trouve les bons bassins mais les affine mal ; BBPSO affine mais se piege s'il demarre dans un mauvais bassin. Le modèle insulaire **heterogene** -- des iles DE *et* des iles BBPSO qui migrent -- *pourrait* combiner les deux forces. Ou pas. Ce notebook le **mesure**, honnetement (on rapporte aussi les cas SANS synergie).
 
 **Definition operative.** Il y a synergie quand la combinaison heterogene (DE+BBPSO) bat **les deux** constituants seuls (iles DE homogenes, iles BBPSO homogenes) a budget d'evaluations egal. C'est plus exigeant que « battre la moyenne » : il faut battre le **meilleur** des deux.
 
 > **Components over metaphors (Sorensen 2015).** DE et BBPSO ne sont pas invoques comme des boites noires metaphoriques : ce sont des *composes geometriques* du fork (`DifferentialEvolution`, `BareBonesParticleSwarm`), decomposes en primitives (mutation differentielle, echantillonnage Gaussien autour des leaders). On les assemble dans un `IslandCompoundMetaheuristic` -- la **composition** est le sujet, pas l'etiquette. Suite de #1203, volet synergie de #3965.
-",,,,,,,,4a35bfb51f21a817,,,,,,,,,,,,,,,
+",,,,,,,,a5296e123bc2ee6c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,cb043b35,markdown,fr,49b3d12376a61544,"## Cablage : MetaGeneticSharp (fork) + paysage + encodeur GIF
 
 On charge les DLLs du fork (self-contained via `CopyLocalLockFileAssemblies` : il embarque `System.Drawing.Common.dll`, `SkiaSharp.dll` + son binaire natif `runtimes/<rid>/native/libSkiaSharp.dll`). On precharge ce binaire natif (le `#r` manage ne cable pas le probing natif de SkiaSharp). Le sous-module est epingle sur le fork (pointeur `607cf7a`), qui porte les composes geometriques (WOA/EO/FBI/**DE**/**BBPSO**), l'archipel heterogene (`IslandCompoundMetaheuristic`), le de-biais (`ShiftedFitness` / `ShiftVectors.Seeded`), l'overlay iles colorees (`RenderHeatmapPng(..., individualColors)`) et l'encodeur GIF anime (`EncodeAnimatedGif`).
@@ -1168,9 +1168,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-11-IslandSynergy.ipynb,cafe5d6
 //   ... lancer DE / BBPSO / DE+BBPSO via RunIsland, etendre le verdict.
 Console.WriteLine(""Exercice 3 a completer : verdict synergie etendu a Ackley shiftee (3 fonctions)."");
 ",,,,,,,,b4cb20e0630b5950,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb,85788274,markdown,fr,33f054d2de2c6def,"# MGS-12 : Le test de l'alignement d'axes -- un optimiseur résiste-t-il à la rotation du paysage ?
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb,85788274,markdown,fr,8fa83566f6babc92,"# MGS-12 : Le test de l'alignement d'axes -- un optimiseur résiste-t-il à la rotation du paysage ?
 
-[← MGS-11 Synergie d'îles](MGS-11-IslandSynergy.ipynb) | [MGS-1 Introduction →](MGS-01-Introduction.ipynb)
+[← MGS-11 Synergie d'îles](MGS-11-IslandSynergy.ipynb) | [↑ Série MGS](README.md) | [MGS-13 Paysages dé-biaisés →](MGS-13-LandscapeDebias.ipynb)
 
 **Famille** : banc de benchmark dé-biaisé (suite de [MGS-10 — biais central](MGS-10-CenterBias.ipynb)).
 
@@ -1180,7 +1180,7 @@ La technique standard pour mesurer ce biais (compétitions CEC) : **rotationner*
 
 1. **Sanity** — une rotation change-t-elle un paysage *radial* comme Sphere ? Non, par construction : c'est le contrôle que le décorateur est correct. Et les fonctions à terme périodique par axe (Rastrigin, Ackley) ? Si — la rotation brise leur séparabilité, et c'est déjà, en soi, le premier signal du biais.
 2. **Discrimination** — sur un paysage *asymétrique* (Rosenbrock), la rotation déplace l'optimum : quels optimiseurs le retrouvent ?
-",,,,,,,,33f054d2de2c6def,,,,,,,,,,,,,,,
+",,,,,,,,8fa83566f6babc92,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb,42ae60a7,code,fr,2d606611968028bc,"// Câblage : DLLs MetaGeneticSharp + GeneticSharp + Extensions (KnownFunctions + RotatedFitness + RotationMatrices).
 // Prérequis de build (depuis la racine du fork) : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
 #r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
@@ -1529,7 +1529,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-12-AxisAlignment.ipynb,aa92218
 - Décorateurs fork : `RotatedFitness`, `ShiftedFitness` dans `MetaGeneticSharp.Extensions` (matrice orthogonale par produit de rotations de Givens).
 - Référence : suites de benchmark CEC (rotation + décalage) ; Sorensen 2015, *Metaheuristics—the metaphor exposed*.
 ",,,,,,,,c1a26d1569628c45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,18076101,markdown,fr,f1ab909dd3a277a9,"# MGS-13 — Visualiser les paysages dé-biaisés : pourquoi la rotation casse la séparabilité
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,18076101,markdown,fr,990e636a14af49e6,"# MGS-13 — Visualiser les paysages dé-biaisés : pourquoi la rotation casse la séparabilité
+
+[← MGS-12 Alignement d'axes](MGS-12-AxisAlignment.ipynb) | [↑ Série MGS](README.md) | [MGS-14 IslandSynergyFound →](MGS-14-IslandSynergyFound.ipynb)
 
 Le notebook **MGS-12** a mesuré numériquement l'effet de la rotation sur les métaheuristiques : sur Rastrigin rotatée, l'algorithme génétique (GA) axis-aligned perd environ +2847 en fitness, tandis que le Differential Evolution (DE) n'en perd qu'environ +2. Ce notebook rend ce résultat **visible** — on dessine le paysage de fitness avant/après rotation et l'on voit *pourquoi* un optimiseur axe-par-axe échoue là où un optimiseur rotation-robuste tient.
 
@@ -1542,7 +1544,7 @@ Le notebook **MGS-12** a mesuré numériquement l'effet de la rotation sur les m
 On réutilise les **décorateurs compositionnels** du fork — `ShiftedFitness` (translate l'optimum hors du centre, neutralise le central-bias) et `RotatedFitness` (rotates les coordonnées par une matrice orthogonale, neutralise l'axis-alignment bias) — sans jamais réimplémenter les maths canoniques. Les deux se composent en la variante CEC complète : `new RotatedFitness(new ShiftedFitness(inner, offset), M)`.
 
 > Voir aussi : MGS-8 (rendu de paysage de fitness), MGS-12 (mesure numérique axis-alignment).
-",,,,,,,,f1ab909dd3a277a9,,,,,,,,,,,,,,,
+",,,,,,,,990e636a14af49e6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,03e55ade,code,fr,98700d49348b1f23,"// Fork DLLs loaded from the self-contained Extensions output (one-stop dir: it also ships
 // System.Drawing.Common.dll AND SkiaSharp.dll, needed at runtime by the graphic landscape types).
 #r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
@@ -1635,8 +1637,10 @@ double[][] probes = { new[]{1.0,1.0}, new[]{-2.0,3.0}, new[]{0.5,-0.5} };
 foreach (var p in probes)
     Console.WriteLine($""  f({p[0]:G3},{p[1]:G3}) = {Field(sphere)(p):G6}   f_rot = {Field(sphereRot)(p):G6}   ecart = {Math.Abs(Field(sphere)(p)-Field(sphereRot)(p)):G2}"");
 ",,,,,,,,c6858de9b78aa2a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,a7b56e13,markdown,fr,0242b7a18b1ea09c,"**Lecture.** Les deux cartes de chaleur sont identiques et l'écart numérique est nul (~1e-15) : la rotation est bien un no-op sur Sphere. C'est le témoin qui valide le décorateur — toute différence observée plus loin provient bien de la géométrie de la fonction, pas d'un bug de rotation.
-",,,,,,,,0242b7a18b1ea09c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,a7b56e13,markdown,fr,fe402246dbab7725,"**Lecture.** Les deux cartes de chaleur sont identiques et l'écart numérique est nul (~1e-15) : la rotation est bien un no-op sur Sphere. C'est le témoin qui valide le décorateur — toute différence observée plus loin provient bien de la géométrie de la fonction, pas d'un bug de rotation.
+
+Les sondes numériques imprimées confirment ce no-op point par point : la matrice Q est bien orthogonale (« Q orthogonale ? True »), et en chaque point de sonde f et f_rot coïncident — f(1,1) = -2, f(-2,3) = -13, f(0,5,-0,5) = -0,5 — avec un écart affiché nul. Autrement dit, la rotation Seeded(2, 42) ne change aucune valeur de Sphere : le décorateur RotatedFitness se comporte exactement comme l'identité sur une fonction invariante par rotation, ce qui en fait un témoin de contrôle fiable pour les parties C et D.
+",,,,,,,,fe402246dbab7725,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,3306e5d7,markdown,fr,85c25049f3951c18,"***
 ## Partie C — La vallée banane pivote : Rosenbrock rotatée
 
@@ -1656,8 +1660,10 @@ ShowPair(pngRosen, ""Rosenbrock (vallee banane axee)"", pngRosenRot, ""Rosenbroc
 Console.WriteLine($""f_rot(sqrt2, 0) = {Field(rosenRot)(new[]{Math.Sqrt(2.0),0.0}):G6}   (optimum attendu ~0)"");
 Console.WriteLine($""f_rot(1, 1)     = {Field(rosenRot)(new[]{1.0,1.0}):G6}   (<0 : (1,1) n'est plus l'optimum)"");
 ",,,,,,,,e9d6e3c7cc8cda28,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,28bfd810,markdown,fr,2962777995cbd33e,"**Lecture.** La vallée courbe est visiblement **inclinée** après rotation : le fond de la vallée ne suit plus un axe. C'est précisément ce qui casse la séparabilité — il n'existe plus de $g(x)+h(y)$, un terme croisé $xy$ est apparu. Un croisement ou une mutation qui ne touche qu'un gène à la fois (axis-aligned) suit désormais une trajectoire oblique par rapport à la vallée et la descente devient inefficace.
-",,,,,,,,2962777995cbd33e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,28bfd810,markdown,fr,440e080b0a69253b,"**Lecture.** La vallée courbe est visiblement **inclinée** après rotation : le fond de la vallée ne suit plus un axe. C'est précisément ce qui casse la séparabilité — il n'existe plus de $g(x)+h(y)$, un terme croisé $xy$ est apparu. Un croisement ou une mutation qui ne touche qu'un gène à la fois (axis-aligned) suit désormais une trajectoire oblique par rapport à la vallée et la descente devient inefficace.
+
+Les deux lignes de sonde le confirment numériquement : f_rot(√2, 0) = -4,97968E-30, c'est-à-dire l'optimum à la précision machine, tandis que f_rot(1, 1) = -201 — l'ancien optimum est devenu un simple point de la vallée, très éloigné de 0. Le déplacement de l'optimum de (1,1) vers M^T·(1,1) = (√2, 0) est donc à la fois visible sur la carte de chaleur et mesuré sur les sondes.
+",,,,,,,,440e080b0a69253b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,a108dcee,markdown,fr,7bce2f79b7270e83,"***
 ## Partie D — Les crêtes cosinus basculent : Rastrigin rotatée (le lien avec MGS-12)
 
@@ -1675,8 +1681,10 @@ ShowPair(pngRast, ""Rastrigin (cretes axees)"", pngRastRot, ""Rastrigin rotatée
 Console.WriteLine(""Comparer avec MGS-12 : le GA axis-aligned perd ~+2847 sur Rastrigin rotatée, le DE ~+2."");
 Console.WriteLine(""Le visuel ci-contre explique le *pourquoi* : la grille d'echantillonnage axe-par-axe ne suit plus les cretes."");
 ",,,,,,,,4887d5273f76dbf4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,11e28004,markdown,fr,339e009c58fa3fc4,"**Lecture.** À gauche, les crêtes cosinus forment une grille régulière alignée sur les axes — un GA qui échantillonne selon les axes « tombe » naturellement dans la structure. À droite, la grille est **oblique** : un échantillonnage axe-par-axe coupe les crènes en biais et la structure régulière disparaît de son point de vue. C'est le mécanisme géométrique derrière le $\Delta$ numérique de MGS-12, rendu visible.
-",,,,,,,,339e009c58fa3fc4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,11e28004,markdown,fr,a8976e61f7a60456,"**Lecture.** À gauche, les crêtes cosinus forment une grille régulière alignée sur les axes — un GA qui échantillonne selon les axes « tombe » naturellement dans la structure. À droite, la grille est **oblique** : un échantillonnage axe-par-axe coupe les crènes en biais et la structure régulière disparaît de son point de vue. C'est le mécanisme géométrique derrière le $\Delta$ numérique de MGS-12, rendu visible.
+
+La sortie chiffrée le rappelle en deux lignes : « le GA axis-aligned perd ~+2847 sur Rastrigin rotatée, le DE ~+2 ». Ce Δ de fitness mesuré en MGS-12 est la traduction quantitative de l'obliquité visible ici : la grille d'échantillonnage axe-par-axe d'un GA ne « voit » plus les crêtes basculées, quand un DE rotation-robuste les suit encore.
+",,,,,,,,a8976e61f7a60456,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,54c014ba,markdown,fr,10343f5f29f75c41,"***
 ## Partie E — Composition CEC : déplacement *puis* rotation
 
@@ -1697,8 +1705,10 @@ double[] xStar = { Mce[0,0]*offset[0] + Mce[1,0]*offset[1],   // (M^T o)_0
 Console.WriteLine($""x* = M^T*offset = ({xStar[0]:G4}, {xStar[1]:G4})   (offset=(2,0) rotaté)"");
 Console.WriteLine($""f'(x*) = {Field(cec)(xStar):G6}   (proche de 0 = optimum combine)"");
 ",,,,,,,,3f4245898d46a430,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,3b1d947c,markdown,fr,acad320050a30ad9,"**Lecture.** Le puits de Sphere n'est plus au centre (central-bias vaincu) ni aligné sur les axes (axis-alignment vaincu). Un optimiseur qui démarre systématiquement de l'origine ou qui optimise axe par axe est doublement pénalisé — c'est le niveau de robustesse exigé par les suites CEC modernes.
-",,,,,,,,acad320050a30ad9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,3b1d947c,markdown,fr,6f79ee6fe0e2c876,"**Lecture.** Le puits de Sphere n'est plus au centre (central-bias vaincu) ni aligné sur les axes (axis-alignment vaincu). Un optimiseur qui démarre systématiquement de l'origine ou qui optimise axe par axe est doublement pénalisé — c'est le niveau de robustesse exigé par les suites CEC modernes.
+
+La sortie chiffre le déplacement combiné : x* = M^T·offset = (-1,485, -1,339) pour offset = (2,0), avec f'(x*) = -4,93038E-32 — l'optimum combiné est atteint à la précision machine, hors du centre et hors des axes. La composition ShiftedFitness puis RotatedFitness déplace donc bien l'optimum en M^T·o, exactement comme le prédit le calcul matriciel.
+",,,,,,,,6f79ee6fe0e2c876,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-13-LandscapeDebias.ipynb,3f90c8e3,markdown,fr,d6860cec5d8740ff,"***
 ## Conclusion
 
@@ -1761,9 +1771,9 @@ public byte[] RenderSchwefelShiftedRotated()
 // Décommentez après completion :
 // ShowPng(RenderSchwefelShiftedRotated(), ""Schwefel shift+rotate"");
 ",,,,,,,,ee4ea8810d347311,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb,d5f008c3,markdown,fr,5e1d5df524e5d3e7,"# MGS-14 — Trouver une synergie (et dire quand il n'y en a pas)
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb,d5f008c3,markdown,fr,6cef989a9beb21de,"# MGS-14 — Trouver une synergie (et dire quand il n'y en a pas)
 
-[<- MGS-13 Paysages dé-biaisés](MGS-13-LandscapeDebias.ipynb) | [^ Série MGS](README.md)
+[← MGS-13 Paysages dé-biaisés](MGS-13-LandscapeDebias.ipynb) | [↑ Série MGS](README.md) | [MGS-15 LandscapeAnalysis →](MGS-15-LandscapeAnalysis.ipynb)
 
 > **Voir aussi** : [MGS-11 — Synergie d'îles](MGS-11-IslandSynergy.ipynb) avait *cherché* une synergie island-mix et l'avait **honnêtement déclarée absente** (verdict 0/2 : la combo DE+BBPSO ne battait ni DE-homogène ni BBPSO-homogène). Ce notebook-ci repart de ce verdict négatif et pose la question de méthode : **était-ce l'absence de synergie, ou une migration mal calibrée qui diluait le meilleur îlot ?**
 
@@ -1773,7 +1783,7 @@ Une archipel hybride **peut-elle** battre ses constituants homogènes ? Le verdi
 
 **Hypothèse** : en réduisant le brassage (taux de migration faible + période longue) et en déséquilibrant le ratio exploration/exploitation (majorité d'explorateurs + un seul raffineur), une combo **complémentaire** battra ses constituants — sur certaines fonctions, pas toutes.
 
-Ce notebook **démontre un cas réel de synergie** (Ackley dé-biaisé) et **rapporte honnêtement un cas où elle n'apparaît pas** (Rastrigin dé-biaisé), conformément au mandat de verdict honnête : rapporter aussi les cas *sans* synergie.",,,,,,,,5e1d5df524e5d3e7,,,,,,,,,,,,,,,
+Ce notebook **démontre un cas réel de synergie** (Ackley dé-biaisé) et **rapporte honnêtement un cas où elle n'apparaît pas** (Rastrigin dé-biaisé), conformément au mandat de verdict honnête : rapporter aussi les cas *sans* synergie.",,,,,,,,6cef989a9beb21de,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb,4803f23f,code,fr,1f294ad5467be3b7,"// --- Cablage : fork MetaGeneticSharp (jsboige/MetaGeneticSharp, pointer 2717fe7) + paysage + GIF ---
 // DLLs chargees depuis l'output self-contained des Extensions (embarque aussi System.Drawing.Common.dll
 // et SkiaSharp.dll ; SkiaSharp est toutefois charge depuis NuGet, cf. plus bas).
@@ -2105,9 +2115,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-14-IslandSynergyFound.ipynb,69
 // var (roLo, roHi) = KnownFunctionsBounds.For(typeof(RosenbrockFitness));
 // var rosenFit = new ShiftedFitness(new RosenbrockFitness(), ShiftVectors.Seeded(5, 0.15*(roHi-roLo), seed:23));
 // Console.WriteLine(...);",,,,,,,,8ae27cde2f817a8c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,4e7aa63c,markdown,fr,332d736b98ccd95d,"# MGS-15 : Analyse de paysage -- la corrélation fitness-distance (FDC)
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,4e7aa63c,markdown,fr,55f52c5738cb521a,"# MGS-15 : Analyse de paysage -- la corrélation fitness-distance (FDC)
 
-[← MGS-14 IslandSynergyFound](MGS-14-IslandSynergyFound.ipynb) | [↑ Série MGS](README.md)
+[← MGS-14 IslandSynergyFound](MGS-14-IslandSynergyFound.ipynb) | [↑ Série MGS](README.md) | [MGS-16 AlgorithmSelection →](MGS-16-AlgorithmSelection.ipynb)
 
 **Pourquoi des métriques, et pas seulement des heatmaps ?** MGS-8 nous a donné l'**œil** : on *voit* la surface de fitness en couleur. Mais l'œil est trompé par l'échelle, la rotation, le nombre de dimensions. Deux paysages visuellement semblables peuvent être radicalement inégaux pour un algorithme. Les **métriques d'analyse de paysage** donnent le **nombre** derrière l'image : elles quantifient *à quel point la fitness guide vers l'optimum*, indépendamment de la visualisation.
 
@@ -2115,7 +2125,7 @@ Ce notebook introduit la **Fitness Distance Correlation (FDC)** — Jones & Forr
 
 > **Prong-B (problème non-trivial).** Ces métriques n'ont d'intérêt que sur des paysages où elles *discriminent*. On compare donc un paysage **facile** (Sphere, unimodal) à un paysage **multimodal** (Rastrigin, pièges locaux) et un paysage **à structure fine** (Ackley) — là où l'œil humain hésite, le nombre tranche.
 >
-> **Deux familles complémentaires.** Le notebook pose deux métriques qui mesurent des choses *différentes* et se révèlent **complémentaires** : (1) la **FDC** (Jones & Forrest 1995) — corrélation *globale* fitness–distance, prédit si la fitness guide vers l'optimum ; (2) l'**autocorrélation** de marche aléatoire (Weinberger 1990) et la **neutralité** — structure *locale*, quantifient la rugosité et les plateaux. Un paysage de FDC élevée peut être très rugueux (Ackley) : les deux nombres ensemble diagnostiquent ce que chacun, seul, masque.",,,,,,,,332d736b98ccd95d,,,,,,,,,,,,,,,
+> **Deux familles complémentaires.** Le notebook pose deux métriques qui mesurent des choses *différentes* et se révèlent **complémentaires** : (1) la **FDC** (Jones & Forrest 1995) — corrélation *globale* fitness–distance, prédit si la fitness guide vers l'optimum ; (2) l'**autocorrélation** de marche aléatoire (Weinberger 1990) et la **neutralité** — structure *locale*, quantifient la rugosité et les plateaux. Un paysage de FDC élevée peut être très rugueux (Ackley) : les deux nombres ensemble diagnostiquent ce que chacun, seul, masque.",,,,,,,,55f52c5738cb521a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,290080a6,markdown,fr,034a5e4c02877194,"## Câblage : MetaGeneticSharp (fork) + paysages analytiques
 
 On charge les mêmes DLLs du fork que MGS-8 (répertoire *self-contained* de `MetaGeneticSharp.Extensions`). On n'a **pas besoin** des backends graphiques (Skia/DirectBitmap) ici — la FDC est numérique, pas visuelle — mais on les charge quand même pour rester sur le câblage éprouvé de l'explorer (et parce que `KnownFunctions` vit dans `Extensions`).",,,,,,,,034a5e4c02877194,,,,,,,,,,,,,,,
@@ -2451,7 +2461,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb,05c
 ***
 
 [← MGS-14](MGS-14-IslandSynergyFound.ipynb) | [↑ Série MGS](README.md)",,,,,,,,268ab3296ce0020e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-0,markdown,fr,5267220e4fab7356,"# MGS-16-AlgorithmSelection : Sélectionner le bon optimiseur selon le paysage
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-0,markdown,fr,0a1d017d65308c95,"# MGS-16-AlgorithmSelection : Sélectionner le bon optimiseur selon le paysage
+
+[← MGS-15 LandscapeAnalysis](MGS-15-LandscapeAnalysis.ipynb) | [↑ Série MGS](README.md) | [MGS-17 ParameterControl →](MGS-17-ParameterControl.ipynb)
 
 **Série** : Métaheuristiques & GeneticSharp (16/16)
 **Durée estimée** : 70 minutes
@@ -2472,7 +2484,7 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m1
 |-----------|---------|
 | [MGS-15-LandscapeAnalysis](MGS-15-LandscapeAnalysis.ipynb) | (fin de la série) |
 
-> **Capstone de la Partie 4** : ce notebook synthétise deux fils — les **métriques de paysage** (MGS-15) et le **portfolio d'optimiseurs** (MGS-10) — pour répondre à la question qui clôt la théorie des métaheuristiques : *« face à un nouveau problème, quel optimiseur choisir ? »*",,,,,,,,5267220e4fab7356,,,,,,,,,,,,,,,
+> **Capstone de la Partie 4** : ce notebook synthétise deux fils — les **métriques de paysage** (MGS-15) et le **portfolio d'optimiseurs** (MGS-10) — pour répondre à la question qui clôt la théorie des métaheuristiques : *« face à un nouveau problème, quel optimiseur choisir ? »*",,,,,,,,0a1d017d65308c95,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-1,markdown,fr,581c464a793eec4b,"## 1. Le théorème No-Free-Lunch — pourquoi aucun optimiseur ne gagne partout
 
 Wolpert et Macready (1997) ont démontré un résultat fondamental : **en moyennant sur toutes les fonctions objectives possibles**, tous les algorithmes d'optimisation (déterministes ou aléatoires) ont la même performance. Autrement dit, tout ce qu'un algorithme gagne sur une famille de problèmes, il le perd exactement sur les autres.
@@ -2684,9 +2696,10 @@ foreach (var (optName, opt) in Portfolio)
     }
 }
 Console.WriteLine(""\n--- Oracle terminé : "" + Portfolio.Length + "" optimiseurs × "" + Problems.Count + "" fonctions ---"");",,,,,,,,1682dc1ee77beb38,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-7b,markdown,fr,65138a847c739dc0,"## 7. Interprétation — la carte des forces et faiblesses
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-7b,markdown,fr,66a464522182afdd,"## 7. Interprétation — la carte des forces et faiblesses
 
-Le tableau ci-dessus confirme le No-Free-Lunch **en acte**. Agrégeons par optimiseur pour faire ressortir les profils — en distinguant **delta moyen** et **pire-cas** :",,,,,,,,65138a847c739dc0,,,,,,,,,,,,,,,
+Le tableau ci-dessus confirme le No-Free-Lunch **en acte** : un même optimiseur y affiche le meilleur delta (WOA à −11,413 sur Rastrigin) et l'un des pires (WOA à +4,193 sur Ackley), et Random y perd +7,936 sur Rastrigin quand GA y gagne (−0,793). Agrégeons par optimiseur pour faire ressortir les profils — en distinguant **delta moyen** et **pire-cas** :
+",,,,,,,,66a464522182afdd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-8,code,fr,d7e53617adbabea6,"// Agrégation : delta moyen ET pire-cas (max sur les 3 fonctions). Le pire-cas est le signal
 // de robustesse le plus fiable : un optimiseur robuste n'a AUCUNE fonction où il s'effondre.
 // (Le delta moyen est bruité par Rastrigin — cf MGS-10 : Random lui-même y affiche +7,9.)
@@ -2702,7 +2715,7 @@ foreach (var g in rows.GroupBy(r => r.Opt).OrderBy(g => g.Max(x => x.R.Delta)))
                    :                  ""a eviter (effondrement net)"";
     Console.WriteLine(String.Format(""{0,-8} {1,10:F3} {2,10:F3} {3,-34}"", g.Key, mean, worst, profil));
 }",,,,,,,,d7e53617adbabea6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-8b,markdown,fr,85b7634bf268aab5,"**Lecture** : classons par le **pire-cas** (le plus mauvais des trois deltas) plutôt que par la moyenne. La moyenne est bruitée par Rastrigin — [MGS-10](MGS-10-CenterBias.ipynb) l'a établi : à NFE = 5000 le tirage tombe dans un optimum local différent selon la graine, et Random lui-même y affiche un delta élevé (+7,9). Le pire-cas, lui, isole les effondrements nets : **DE, BBPSO et EO** ne s'effondrent sur aucune fonction (pire-cas ≈ 0, robustes), tandis que **WOA** s'effondre sur Ackley (+4,19 — exactement le biais central mesuré en MGS-10) et **Random** sur Rastrigin (+7,9, contrôle non biaisé mais faible). C'est cette structure *par fonction* — et non l'étiquette de l'algorithme — que les features de paysage doivent capturer.",,,,,,,,85b7634bf268aab5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-8b,markdown,fr,b00349c6dc88c2e8,"**Lecture** : classons par le **pire-cas** (le plus mauvais des trois deltas) plutôt que par la moyenne. La moyenne est bruitée par Rastrigin — [MGS-10](MGS-10-CenterBias.ipynb) l'a établi : à NFE = 5000 le tirage tombe dans un optimum local différent selon la graine, et Random lui-même y affiche un delta élevé (+7,9). Le pire-cas, lui, isole les effondrements nets : **DE, BBPSO et EO** ne s'effondrent sur aucune fonction (pire-cas ≈ 0, robustes), tandis que **WOA** s'effondre sur Ackley (+4,193 — exactement le biais central mesuré en MGS-10) et **Random** sur Rastrigin (+7,9, contrôle non biaisé mais faible). C'est cette structure *par fonction* — et non l'étiquette de l'algorithme — que les features de paysage doivent capturer.",,,,,,,,b00349c6dc88c2e8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-9,markdown,fr,471f28a29f5df56e,"## 8. Caractériser un paysage *avant* de l'optimiser
 
 Mesurons maintenant les features des trois paysages — sans les optimiser, juste en les *échantillonnant* (MGS-15). C'est l'entrée du sélecteur de Rice : un descripteur bon marché du problème.",,,,,,,,471f28a29f5df56e,,,,,,,,,,,,,,,
@@ -2763,7 +2776,9 @@ foreach (var r in Features)
     var (top, avoid, raison) = Select(r);
     Console.WriteLine(String.Format(""{0,-10} {1,-16} {2,-12} {3}"", r.Name, top, avoid, raison));
 }",,,,,,,,57c8a88442a2978d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-12b,markdown,fr,1a8b26cfa2fe164b,**Vérifions contre l'oracle** : le sélecteur recommande-t-il bien les optimiseurs qui *gagnent réellement* sur chaque paysage ? Recoupons la recommandation avec le delta mesuré :,,,,,,,,1a8b26cfa2fe164b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-12b,markdown,fr,94804561dcf1619c,"**Lecture** : le sélecteur recommande `GA, DE` sur Sphere (FDC élevé + paysage corrélé, aucun critique) et `DE, BBPSO, FBI` en évitant WOA sur Rastrigin comme sur Ackley — deux profils de paysage, deux recommandations, toutes deux explicables par les features.
+
+**Vérifions contre l'oracle** : le sélecteur recommande-t-il bien les optimiseurs qui *gagnent réellement* sur chaque paysage ? Recoupons la recommandation avec le delta mesuré :",,,,,,,,94804561dcf1619c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-13,code,fr,12d5125c2f8712ed,"// Pour chaque paysage : top-3 optimiseurs par delta mesuré (oracle) vs recommandation du sélecteur.
 // NB : r.R.Function contient le nom complet (""SphereFitness"") ; Features.Name le stripping (""Sphere"").
 foreach (var (name, _) in Features.Select(r => (r.Name, 0)))
@@ -2779,7 +2794,7 @@ foreach (var (name, _) in Features.Select(r => (r.Name, 0)))
     bool avoidsBad = ranking.Count == 0 || !ranking.Take(3).Any(x => avoid.Contains(x.Opt)); // n'évite pas un top-3
     Console.WriteLine(""    => "" + (ok ? ""ALIGNÉ (recommandation dans le top-3 réel)"" : ""DÉSALIGNÉ""));
 }",,,,,,,,12d5125c2f8712ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-13b,markdown,fr,a73b2b798294fe23,"Le sélecteur, bien qu'heuristique et délibérément simple, **recommande un optimiseur du top-3 réel** sur chaque paysage d'entraînement (Sphere, Rastrigin, Ackley). Surtout, il **signale correctement la catastrophe Ackley** : il évite WOA — le seul optimiseur qui s'y effondre (+4,19, biais central mesuré). C'est le gain pratique du cadre de Rice — écarter le mauvais choix *sans avoir à tout exécuter*.",,,,,,,,a73b2b798294fe23,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-13b,markdown,fr,047a19f61969554f,"Le sélecteur, bien qu'heuristique et délibérément simple, **recommande un optimiseur du top-3 réel** sur chaque paysage d'entraînement (Sphere, Rastrigin, Ackley). Surtout, il **signale correctement la catastrophe Ackley** : il évite WOA — le seul optimiseur qui s'y effondre (+4,193, biais central mesuré). C'est le gain pratique du cadre de Rice — écarter le mauvais choix *sans avoir à tout exécuter*.",,,,,,,,047a19f61969554f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-14,markdown,fr,f1ddc72e16a56ee2,"## 10. Le vrai test — généraliser à un paysage *jamais vu*
 
 La validation sur les paysages d'entraînement est circulaire (les features et l'oracle viennent des mêmes fonctions). Le test décisif est la **généralisation** : un quatrième paysage inconnu, **Rosenbrock** (la fameuse « vallée banane »). Mesurons ses features, demandons au sélecteur de prédire, puis exécutons l'oracle pour vérifier.",,,,,,,,f1ddc72e16a56ee2,,,,,,,,,,,,,,,
@@ -2896,7 +2911,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m1
 [← MGS-15-LandscapeAnalysis](MGS-15-LandscapeAnalysis.ipynb) | [Retour à la série](README.md)
 
 > **Références** : Wolpert, D. H. & Macready, W. G. (1997), *No free lunch theorems for optimization*, IEEE Trans. Evolutionary Computation 1(1) ; Rice, J. R. (1976), *The Algorithm Sélection Problem*, Advances in Computers 15 ; Weinberger, E. (1990), *Correlated and uncorrelated fitness landscapes and how to tell the différence*, Biological Cybernetics 63(5) ; Jones, T. & Forrest, S. (1995), *Fitness Distance Correlation as a Measure of Problem Difficulty for Genetic Algorithms*, ICGA.",,,,,,,,735df7e822840c62,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m0,markdown,fr,4d1eddb46c3fc07f,"# MGS-17 — Contrôle de paramètres (Parameter Control)
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m0,markdown,fr,c79a0799f1d77f71,"# MGS-17 — Contrôle de paramètres (Parameter Control)
+
+[← MGS-16 AlgorithmSelection](MGS-16-AlgorithmSelection.ipynb) | [↑ Série MGS](README.md) | [MGS-17b Sélection empirique →](MGS-17b-Empirical-Algorithm-Selection.ipynb)
 
 > **Capacite du moteur exercee :** faire varier les paramètres de l'algorithme *pendant* la course, plutot que de les fixer une fois pour toutes — et mesurer quand cela aide vraiment.
 
@@ -2926,7 +2943,7 @@ On pourrait croire que « contrôler c'est toujours mieux ». **Les données mon
 2. **Contrôle déterministe** : schedule `f(generation)` via `DynamicProbability`.
 3. **Contrôle adaptatif** : la diversite de la population pilote le taux (esprit règle 1/5 de Rechenberg).
 4. **Contrôle self-adaptatif** : un taux par individu via le contexte d'evolution.
-5. Comparaison Rastrigin **vs** Sphere + taxonomie + exercices.",,,,,,,,4d1eddb46c3fc07f,,,,,,,,,,,,,,,
+5. Comparaison Rastrigin **vs** Sphere + taxonomie + exercices.",,,,,,,,c79a0799f1d77f71,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,c01,code,fr,c77fb4245d3d0808,"// Cablage : DLLs MetaGeneticSharp + GeneticSharp (build Debug net9.0).
 // Pre-requis : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
 #r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
@@ -3236,7 +3253,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb,m10,
 - **Rechenberg (1973)**, *Evolutionsstrategie* — la règle 1/5.
 - **Schwefel (1995)**, *Evolution and Optimum Seeking* — self-adaptation en ES.
 - Ponts : [MGS-16 Sélection d'algorithme](MGS-16-AlgorithmSelection.ipynb) | [MGS-15 Analyse de paysage](MGS-15-LandscapeAnalysis.ipynb) | [MGS-10 Biais central](MGS-10-CenterBias.ipynb)",,,,,,,,191bec4da676c61d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,m0,markdown,fr,9364782596c932f6,"# MGS-18 — Banc CEC consolide : la combinaison des deux biais
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,m0,markdown,fr,2f7d3be22f574f12,"# MGS-18 — Banc CEC consolide : la combinaison des deux biais
+
+[← MGS-17b Sélection empirique](MGS-17b-Empirical-Algorithm-Selection.ipynb) | [↑ Série MGS](README.md) | [MGS-19 Métropolis →](MGS-19-MetropolisReinsertion.ipynb)
 
 Ce notebook **consolide** le fil « biais des bancs CEC » ouvert en MGS-10 (biais central) et MGS-12 (alignement d'axes). La question qu'il pose est simple et **les données montreront qu'elle n'est pas triviale** : un optimiseur robuste a chaque biais **pris separement** est-il robuste au **biais combine** ?
 
@@ -3245,7 +3264,7 @@ Ce notebook **consolide** le fil « biais des bancs CEC » ouvert en MGS-10 (bia
 **La these structurelle (a eprouver).** Si la lecon transversale de la Partie 4 tient — *« la robustesse vient de la structure de l'opérateur, pas de sa metaphore »* (DE / Recuit simule = arithmetique vectorielle > WOA = ancrage central > GA = composante par composante) — alors cette hiérarchie doit **survivre au combine**. Les données confirmeront la survie — et montreront un fait plus subtil : le combine n'est **pas toujours pire** que le pire biais isole (parfois sub-additif, parfois super-additif, selon le paysage).
 
 > Arc : [MGS-10 biai central](MGS-10-CenterBias.ipynb) + [MGS-12 alignement d'axes](MGS-12-AxisAlignment.ipynb) isolaient chaque biais ; [MGS-16 sélection d'algorithme](MGS-16-AlgorithmSelection.ipynb) et [MGS-17 contrôle de paramètres](MGS-17-ParameterControl.ipynb) donnaient les deux reponses au No-Free-Lunch ; ce notebook **referme le fil biais** en confrontant le portefeuille au protocole CEC complet.
-",,,,,,,,9364782596c932f6,,,,,,,,,,,,,,,
+",,,,,,,,2f7d3be22f574f12,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,m1,markdown,fr,02ffe5904f944887,"## Les quatre variantes du protocole CEC
 
 | Variante | Ce qu'elle fait | Decorateur | Optimum |
@@ -5282,9 +5301,9 @@ Console.WriteLine(""Exercice a completer : Eukaryote + Island"");",,,,,,,,5abba9
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-04-Islands.ipynb,nav-footer,markdown,fr,fd1dd5d949a56389,"***
 
 **Navigation** : [Index](README.md) | [<< MGS-3 Eukaryote](MGS-03-Eukaryote.ipynb) | [MGS-5 Composés >>](MGS-05-CompoundMetaheuristics.ipynb)",,,,,,,,fd1dd5d949a56389,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-05-CompoundMetaheuristics.ipynb,c00,markdown,fr,4b3eb7144e6ab683,"# MGS-5 : Construire les métaheuristiques composées — des primitives au raccourci factory
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-05-CompoundMetaheuristics.ipynb,c00,markdown,fr,01749898fc481a26,"# MGS-5 : Construire les métaheuristiques composées — des primitives au raccourci factory
 
-[<- MGS-4 Islands](MGS-04-Islands.ipynb) | [^ Série MGS](README.md) | [MGS-6 Benchmarks ->](MGS-06-Benchmarks.ipynb)
+[← MGS-4 Islands](MGS-04-Islands.ipynb) | [↑ Série MGS](README.md) | [MGS-6 Benchmarks →](MGS-06-Benchmarks.ipynb)
 
 Jusqu'ici (MGS-1 à MGS-4) nous avons vu le moteur `MetaGeneticAlgorithm`, la grammaire fluente de primitives (`Match`, `IfElse`, `Container`, `Scoped`...), et deux composés structurants (Eukaryote, Islands). Ce notebook répond à la question qui reste : **d'où viennent les algorithmes « publiés »** — Whale Optimization Algorithm (WOA), Equilibrium Optimizer (EO), Forensic-Based Investigation (FBI) — et **comment les utiliser sans retomber dans le piège de la boîte noire**.
 
@@ -5295,7 +5314,7 @@ L'argument de MetaGeneticSharp (cf. MGS-6 Benchmarks) est que reconstruire ces a
 3. **Le raccourci factory** — le one-liner `MetaHeuristicsService.CreateMetaHeuristicByName(""..."")` qui produit *exactement* cette reconstruction, et la preuve (le type racine renvoyé) que raccourci et reconstruction sont identiques.
 
 > **Rappel C.2** : kernel `.net-csharp`. Les DLLs MetaGeneticSharp + GeneticSharp sont chargées depuis le build du fork, compilé en **net9.0** pour correspondre au kernel (`.NET 8` via dotnet-interactive). Voir la cellule de câblage ci-dessous.
-",,,,,,,,4b3eb7144e6ab683,,,,,,,,,,,,,,,
+",,,,,,,,01749898fc481a26,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-05-CompoundMetaheuristics.ipynb,c01,code,fr,7426b62547be80f9,"// Câblage : chargement des DLLs MetaGeneticSharp + GeneticSharp (build net9.0 du fork).
 // Prérequis de build (depuis la racine du fork) :
 //   dotnet build src/MetaGeneticSharp.Domain/MetaGeneticSharp.Domain.csproj -c Debug
@@ -5745,9 +5764,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-05-CompoundMetaheuristics.ipyn
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) — code source, `MetaHeuristicsService.cs`, classes composées (`WhaleOptimisationAlgorithm`, `EquilibriumOptimizer`, `ForensicBasedInvestigation`)
 - [MGS-22 — MGS vs mealpy](MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb) : la confrontation lib-vs-lib, PSO canonique compris.
 ",,,,,,,,64db34bab05dd379,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-06-Benchmarks.ipynb,cell-000,markdown,fr,3dc035ffbe073555,"# MGS-6 : Benchmarks comparatifs -- l'argument primitives-based
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-06-Benchmarks.ipynb,cell-000,markdown,fr,9197b1c692e0cbc8,"# MGS-6 : Benchmarks comparatifs -- l'argument primitives-based
 
-[← MGS-5 Composés](MGS-05-CompoundMetaheuristics.ipynb) | [↑ Série MGS](README.md)
+[← MGS-5 Composés](MGS-05-CompoundMetaheuristics.ipynb) | [↑ Série MGS](README.md) | [MGS-7 TSP →](MGS-07-TSP.ipynb)
 
 **Question centrale.** Les métaheuristiques ""bio-inspirées"" (WOA, GWO, EO...) sont souvent critiquées comme des *métaphores exposées* (Sørensen, 2015) : chacune réinventerait, sous un vocabulaire zoologique, les mêmes opérateurs de base. Cette critique est juste *quand l'algorithme est une boîte noire*. Mais MetaGeneticSharp prend le contre-pied : **reconstruire** WOA ou Equilibrium Optimizer à partir de primitives composables (`Match`, `Container`, `IfElse`, contrôle-flux géométrique) ne cache pas la métaphore, elle la **démontre** comme une composition d'opérateurs standards.
 
@@ -5762,7 +5781,7 @@ Ce notebook apporte la preuve empirique : sur **10 fonctions de test canoniques*
 Si le design primitives-based est valable, WOA-from-primitives doit être **compétitif** avec Islands (un schéma éprouvé) sur la plupart des surfaces -- sans être une boîte noire. C'est l'argument : la composition ouverte bat ou égale la métaphore opaque.
 
 > **Rappel C.2** : ce notebook s'exécute sur le kernel `.net-csharp` et charge les DLL de MetaGeneticSharp (Domain + Extensions) depuis le build du fork. Prérequis : `dotnet build` dans `../MetaGeneticSharp`.
-",,,,,,,,3dc035ffbe073555,,,,,,,,,,,,,,,
+",,,,,,,,9197b1c692e0cbc8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-06-Benchmarks.ipynb,cell-001,code,fr,52056bcf149fb132,"// Wiring: load MetaGeneticSharp + GeneticSharp DLLs from the fork build.
 // Build prerequisite: dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln
 // NOTE: KnownFunctions lives in the Extensions project, so we load its DLL too.
@@ -6009,13 +6028,13 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-06-Benchmarks.ipynb,cell-017,m
 - [Point d'entrée Part 4](README.md) -- positionnement MGS vs GeneticSharp/mealpy/HeuristicLab
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) -- code source, `KnownFunctions.cs`, ROADMAP
 ",,,,,,,,75585eb7cdacc24c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07-TSP.ipynb,bafc5427,markdown,fr,6857a864c50aeb4c,"# MGS-7 : TSP combinatoire -- la grammaire de composition est agnostique à la représentation
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07-TSP.ipynb,bafc5427,markdown,fr,de06d0e01a6ec4a6,"# MGS-7 : TSP combinatoire -- la grammaire de composition est agnostique à la représentation
 
-[← MGS-6 Benchmarks](MGS-06-Benchmarks.ipynb) | [↑ Série MGS](README.md)
+[← MGS-6 Benchmarks](MGS-06-Benchmarks.ipynb) | [↑ Série MGS](README.md) | [MGS-7b LandscapeMultidim →](MGS-07b-LandscapeMultidim.ipynb)
 
 **Question centrale.** MGS-5 a montré que les métaheuristiques composées géométriques (WOA) se reconstruisent depuis des primitives sur des surfaces **continues** (gènes en `double`). Mais la grammaire de composition (`Match`, `Container`, `Scoped`, `Islands`) vit *sous* la couche géométrique. Cette couche fait-elle une hypothèse sur le type des gènes ?
 
-Ce notebook le vérifie : la même grammaire structure la recherche sur un problème de **permutation** — le Voyageur de Commerce (TSP), où les gènes sont des index de villes entiers — **sans aucune adaptation**. Si les primitives de composition n'avaient pas été conçues de façon agnostique à la représentation (comme le sont les opérateurs de GeneticSharp : bit, permutation, arbre, flottant), on ne pourrait pas réutiliser `IslandMetaHeuristic` tel quel sur TSP. C'est « components over metaphors » en pratique : les briques ne présument pas du domaine.",,,,,,,,6857a864c50aeb4c,,,,,,,,,,,,,,,
+Ce notebook le vérifie : la même grammaire structure la recherche sur un problème de **permutation** — le Voyageur de Commerce (TSP), où les gènes sont des index de villes entiers — **sans aucune adaptation**. Si les primitives de composition n'avaient pas été conçues de façon agnostique à la représentation (comme le sont les opérateurs de GeneticSharp : bit, permutation, arbre, flottant), on ne pourrait pas réutiliser `IslandMetaHeuristic` tel quel sur TSP. C'est « components over metaphors » en pratique : les briques ne présument pas du domaine.",,,,,,,,de06d0e01a6ec4a6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07-TSP.ipynb,81cca472,code,fr,b3e91b9591ebd338,"// Wiring : charge MetaGeneticSharp + GeneticSharp + GeneticSharp.Extensions (TSP).
 // Prérequis : dotnet build ..\MetaGeneticSharp\MetaGeneticSharp.sln
 #r ""../MetaGeneticSharp/src/MetaGeneticSharp.Domain/bin/Debug/net9.0/GeneticSharp.Infrastructure.Framework.dll""
@@ -6314,9 +6333,9 @@ Suite logique : combiner cette agnosticité avec la structuration — un modèle
 - M. Bronstein, J. Bruna, T. Cohen, P. Veličković, *Geometric Deep Learning* — https://geometricdeeplearning.com — équivariance par permutation et embeddings structurés.
 
 [← MGS-6 Benchmarks](MGS-06-Benchmarks.ipynb) | [↑ Série MGS](README.md) | [Fork jsboige/MetaGeneticSharp →](https://github.com/jsboige/MetaGeneticSharp)",,,,,,,,8aa294f03c2e83d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb,cfe83ee2,markdown,fr,8e360554acf0b1ce,"# MGS-8 : Fitness Landscape Explorer -- voir la surface pour comprendre la recherche
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb,cfe83ee2,markdown,fr,d648828b62bf606f,"# MGS-8 : Fitness Landscape Explorer -- voir la surface pour comprendre la recherche
 
-[← MGS-7 TSP](MGS-07-TSP.ipynb) | [↑ Série MGS](README.md)
+[← MGS-7d MichalewiczDixonPrice](MGS-07d-MichalewiczDixonPrice.ipynb) | [↑ Série MGS](README.md) | [MGS-9 Relief Everest →](MGS-09-EverestRelief.ipynb)
 
 **Pourquoi visualiser le paysage de fitness ?** Un algorithme de recherche explore une surface dont la *forme* dicte la difficulté : unimodale (un seul bassin, facile) ou multimodale (pièges locaux), vallée étroite (mal conditionnée) ou plateau (peu informatif). Tant que cette surface est invisible, le choix d'une métaheuristique relève du *doctrinal*. La visualiser rend le choix *éclairé*.
 
@@ -6335,7 +6354,7 @@ Les **trois modes** du `LandscapeExplorer` original sont tous exercés ici :
 > **Pas de package de traçé.** Le rendu remplit la `DirectBitmap` récupérée, l'encode en PNG avec SkiaSharp puis l'affiche en `<img src=""data:image/png;base64,…"">`. SkiaSharp, chargé par NuGet dans la cellule de câblage, ne sert qu'à décoder et encoder les images : aucune bibliothèque de tracé n'intervient.
 >
 > **Reproductibilité.** Les rendus de paysage sont **déterministes par pixel** depuis la PR MetaGeneticSharp #49 (graine RNG dérivée de `(x, y, base)` — l'ordre du `Parallel.For` n'influence plus le rendu) ; double exécution byte-identique. Les exécutions de GA (Feature (d), Bonus, flipbook), elles, tirent le RNG global **non seedé** : chaque passage produit une trajectoire différente — c'est la *forme* de la convergence qui fait la leçon, pas la trajectoire exacte.
-",,,,,,,,8e360554acf0b1ce,,,,,,,,,,,,,,,
+",,,,,,,,d648828b62bf606f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-08-LandscapeExplorer.ipynb,e6e74f3c,markdown,fr,ee7aca8b1c11edff,"## Câblage : MetaGeneticSharp (fork) + bibliothèque Landscape
 
 On charge les DLLs du fork construites localement, **toutes depuis le répertoire de sortie de `MetaGeneticSharp.Extensions`** : grâce à `CopyLocalLockFileAssemblies`, ce dossier est *self-contained* (il embarque notamment `System.Drawing.Common.dll`, dont les types Landscape utilisent `Color`). SkiaSharp, qui décode les cartes et encode les PNG, est chargé par NuGet dans la même cellule : c'est ainsi que le kernel câble son binaire natif, sous Windows, Linux et macOS. `Extensions` porte à la fois `KnownFunctions` (les fonctions de benchmark), les types Landscape (`LandscapeRenderer`, `LandscapeMaps`, `KnownHeightMap`, `ImageHeightMapFunction`), le pont `KnownFunctionLandscape` qui relie les deux, et le backend **`SkiaLandscapeRenderer`** (rendu PNG sans GDI+, cf section *Rendu cross-platform*).
@@ -6811,9 +6830,9 @@ La discipline « components over metaphors » tient jusqu'au rendu : la math de 
 - [Point d'entrée Part 4](README.md) -- positionnement MGS vs GeneticSharp/mealpy/HeuristicLab
 - [Fork jsboige/MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) -- code source, bibliothèque Landscape récupérée (@ `d05826fd`), contrôleur Gtk# original
 ",,,,,,,,9889fd6ae23aab76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb,efa10460,markdown,fr,6d854e37242f7cc3,"# MGS-9 - Trouver l'Everest : relief reel et bassins d'attraction
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb,efa10460,markdown,fr,b7ca43aa74c65ef9,"# MGS-9 - Trouver l'Everest : relief reel et bassins d'attraction
 
-**Serie MetaGeneticSharp** | Précédent : [MGS-8 - Landscape Explorer](MGS-08-LandscapeExplorer.ipynb)
+**Serie MetaGeneticSharp** | Précédent : [MGS-8 - Landscape Explorer](MGS-08-LandscapeExplorer.ipynb) | [↑ Série MGS](README.md) | [MGS-10 - Center Bias →](MGS-10-CenterBias.ipynb)
 
 MGS-8 explorait des paysages de fitness *synthetiques* (Sphere, Rastrigin...). Ici le
 paysage est un **relief terrestre reel** : on cherche le point le plus haut - l'Everest - sur
@@ -6858,7 +6877,7 @@ cherche le pixel le plus clair de chaque carte, c'est-a-dire le sommet.
 > Double execution verifiee **byte-identique** sur l'integralite des cellules code.
 
 *Duree estimee : 25-35 min.*
-",,,,,,,,6d854e37242f7cc3,,,,,,,,,,,,,,,
+",,,,,,,,b7ca43aa74c65ef9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-09-EverestRelief.ipynb,b3166bf3,code,fr,81caf898b36271b0,"// MetaGeneticSharp + GeneticSharp DLLs from the fork's self-contained Extensions output
 // (one-stop dir: it also ships System.Drawing.Common.dll, whose Color the landscape types use;
 //  SkiaSharp, which decodes the height maps and encodes the PNG heatmaps, comes from NuGet below).
@@ -7405,9 +7424,9 @@ synthetiques et biais de centre).
 *Données : cartes d'altitude `KnownHeightMap` (jsboige), ressources PNG embarquees du fork
 `MetaGeneticSharp.Extensions` (~2560 px), lues via `ImageHeightMapFunction` verbatim @ `d05826fd`.*
 ",,,,,,,,8a9f7e4f648b5f5a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-47fd9648,markdown,fr,3a02151f4f5409ea,"# MGS-19 — Recuit simulé décomposé : l'opérateur de Metropolis isolé
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-47fd9648,markdown,fr,da17b73c9dfca53e,"# MGS-19 — Recuit simulé décomposé : l'opérateur de Metropolis isolé
 
-[↑ Partie 4](README.md) | [← MGS-18 — Banc CEC](MGS-18-CecBanc.ipynb)
+[↑ Partie 4](README.md) | [← MGS-18 — Banc CEC](MGS-18-CecBanc.ipynb) | [MGS-20 Langage de Composition →](MGS-20-Langage-de-Composition.ipynb)
 
 MGS-10 confrontait le **recuit simulé** (Simulated Annealing) aux autres métaheuristiques comme une boîte noire parmi huit. Mais SA, dans ce fork, n'est pas un monolithe : c'est un **composé** — `SimulatedAnnealing` — qui assemble deux ingrédients distincts :
 
@@ -7416,7 +7435,7 @@ MGS-10 confrontait le **recuit simulé** (Simulated Annealing) aux autres métah
 
 Le deuxième ingrédient — l'opérateur de Metropolis — vit dans [`MetropolisReinsertion.cs`](https://github.com/jsboige/MetaGeneticSharp/blob/main/src/MetaGeneticSharp.Domain/Reinsertions/MetropolisReinsertion.cs). Il est installé par défaut ** uniquement** par le compound SA (via `SimulatedAnnealing.GetDefaultReinsertion()`), et n'est jamais utilisé seul. Ce notebook le **débranche** de SA et le rebranche seul sur un **GA standard** (croisement de recombinaison, pas perturbation) : que devient l'acceptation de Metropolis quand on la greffe à l'étage « survie » d'un algorithme génétique ordinaire ?
 
-La thèse est celle qui parcourt toute la Partie 4 — **composants > métaphores** (Sørensen 2015) — poussée ici jusqu'au **démontage du recuit simulé lui-même** : SA n'est pas indivisible, son opérateur de survie est réutilisable dans une autre machine. La question falsifiable : l'acceptation `exp(Δ/T)` à la réinsertion aide-t-elle un GA à échapper aux optima locaux sur un paysage multimodal ? Spoiler honnête — **non** : le verdict, rapporté ci-dessous chiffres à l'appui, est négatif, et c'est précisément ce résultat négatif qui ferme la leçon.",,,,,,,,3a02151f4f5409ea,,,,,,,,,,,,,,,
+La thèse est celle qui parcourt toute la Partie 4 — **composants > métaphores** (Sørensen 2015) — poussée ici jusqu'au **démontage du recuit simulé lui-même** : SA n'est pas indivisible, son opérateur de survie est réutilisable dans une autre machine. La question falsifiable : l'acceptation `exp(Δ/T)` à la réinsertion aide-t-elle un GA à échapper aux optima locaux sur un paysage multimodal ? Spoiler honnête — **non** : le verdict, rapporté ci-dessous chiffres à l'appui, est négatif, et c'est précisément ce résultat négatif qui ferme la leçon.",,,,,,,,da17b73c9dfca53e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-a166fcdb,markdown,fr,e6d53d1a566c81ea,"## Le critère de Metropolis et son double habitat
 
 Le critère de Metropolis (Metropolis et al., 1953 ; Kirkpatrick, Gelatt & Vecchi, 1983) accepte un voisin de fitness $\Delta = f_{\text{enfant}} - f_{\text{parent}} < 0$ (plus mauvais) avec probabilité $\exp(\Delta / T_k)$ ; un voisin meilleur ($\Delta \geq 0$) est toujours accepté. La température suit un schedule géométrique $T_k = T_0 \, \alpha^k$ : chaud au départ (les montées passent), gelé à la fin (seules les améliorations passent — limite gloutonne).
@@ -7558,17 +7577,17 @@ Console.WriteLine(""\nLimite frozen (T0=1e-9) sur Sphere (temoin lisse) : la REG
 Console.WriteLine($""  Metropolis frozen = {frozenSphere:F4}"");
 Console.WriteLine($""  Pairwise greedy   = {pairSphere:F4}"");
 Console.WriteLine($""  Ecart |frozen - pairwise| = {Math.Abs(frozenSphere-pairSphere):F4} (proche = regle greedy confirmee ; residu = divergence trajectoire RNG)."");",,,,,,,,44656d9b9093915a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-01e138dd,markdown,fr,7e12f14c054a62bb,"## Synthèse — un opérateur démonté, un bénéfice qui ne voyage pas
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-01e138dd,markdown,fr,d092576cafc367c1,"## Synthèse — un opérateur démonté, un bénéfice qui dépend du régime d'évaluation
 
 Trois leçons se dégagent, toutes honnêtes (G.9) :
 
 1. **Le recuit simulé est démontable.** `SimulatedAnnealing` n'est pas un bloc : c'est un assemblage (perturbation gaussienne + `MetropolisReinsertion`). On peut débrancher l'opérateur de Metropolis et le rebrancher seul sur un GA de recombinaison — il fonctionne, il s'exécute sur le vrai moteur du fork, et son effet est mesurable. C'est la thèse « composants > métaphores » (Sørensen 2015) appliquée au recuit lui-même : la métaphore thermodynamique n'est pas indivisible.
 
-2. **L'opérateur discrimine sur le multimodal — mais l'effet est négatif.** Sur Sphere (unimodal), l'annealing ne sert à rien (témoin neutre) et le réglage chaud dégrade (≈ 0,10 contre ≈ 0,01). Sur Rastrigin et Ackley (multimodal), le Metropolis pairwise **n'apporte jamais d'amélioration fiable** au contrôle greedy pairwise — sur Ackley le froid affiche 2,46 contre 2,74 au contrôle, mais l'écart reste dans le bruit d'une moyenne de trois graines (et aucun réglage ne passe sous le contrôle sur Rastrigin) ; le réglage le plus chaud est le pire des deux paysages. Le critère `exp(Δ/T)` change bien le comportement (Prong-B satisfait : l'opérateur n'équivaut pas à une baseline sur le multimodal, la sortie le montre), mais pas dans le sens espéré : accepter des recombinants moins bons n'évade pas les optima locaux, c'est du bruit.
+2. **Sur une évaluation déterministe, l'opérateur discrimine sur le multimodal — mais l'effet est négatif.** Sur Sphere (unimodal), l'annealing ne sert à rien (témoin neutre) et le réglage chaud dégrade (≈ 0,10 contre ≈ 0,01). Sur Rastrigin et Ackley (multimodal), le Metropolis pairwise **n'apporte jamais d'amélioration fiable** au contrôle greedy pairwise — sur Ackley le froid affiche 2,46 contre 2,74 au contrôle, mais l'écart reste dans le bruit d'une moyenne de trois graines (et aucun réglage ne passe sous le contrôle sur Rastrigin) ; le réglage le plus chaud est le pire des deux paysages. Le critère `exp(Δ/T)` change bien le comportement (Prong-B satisfait : l'opérateur n'équivaut pas à une baseline sur le multimodal, la sortie le montre), mais pas dans le sens espéré : accepter des recombinants moins bons n'évade pas les optima locaux, c'est du bruit. **Cette conclusion porte sur un régime précis, et la partie C-bis en mesure la frontière** : dès que la fitness est bruitée, le classement s'inverse et le Metropolis pairwise redevient le meilleur choix — l'objectif propre du contrôle greedy est jusqu'à près de deux fois moins bon à $\sigma = 0{,}20$ (0,1353 contre 0,0758). Ce qui est réfuté ici, c'est donc « l'opérateur aide sur une fitness déterministe », pas « l'opérateur est inutile ».
 
-3. **Le bénéfice du recuit est dans le couplage, pas dans l'acceptation seule.** SA marche parce que la perturbation propose un **voisin** du courant et l'acceptation anneale entre voisins ; les deux sont conjointement accordés. Détacher l'acceptation et la brancher sur un croisement de recombinaison (l'enfant = mosaïque de deux parents, pas un voisin) brise cette sémantique. C'est la leçon « composants > métaphores » dans sa forme la plus exigeante : on PEUT démonter SA, l'opérateur isolé FONCTIONNE sur le vrai moteur — mais il ne porte pas, à lui seul, le bénéfice du tout. Le tout est plus que la somme des pièces, et c'est précisément en démontant qu'on le prouve (écho de la synergie conditionnelle de MGS-11/14 : la composition n'est magique ni assemblée ni désassemblée).
+3. **Le bénéfice du recuit est dans le couplage — et le régime décide de quel côté.** SA marche parce que la perturbation propose un **voisin** du courant et l'acceptation anneale entre voisins ; les deux sont conjointement accordés. Détacher l'acceptation et la brancher sur un croisement de recombinaison (l'enfant = mosaïque de deux parents, pas un voisin) brise cette sémantique : c'est la leçon « composants > métaphores » dans sa forme la plus exigeante, on PEUT démonter SA et l'opérateur isolé FONCTIONNE sur le vrai moteur, mais il ne porte pas à lui seul le bénéfice du tout. La partie C-bis précise **pourquoi l'effet change de signe** : sous évaluation bruitée, l'enfant mosaïque n'est plus une perturbation franche à accepter ou refuser, c'est une **estimation** bruitée — et `exp(Δ/T)` devient exactement le critère qu'il faut pour ne pas jeter un recombinant sur un échantillon malchanceux. Le même mécanisme qui nuit en déterministe protège en bruité ; ce n'est donc pas l'opérateur seul qui décide, c'est son **adéquation au régime d'évaluation**.
 
-Le prolongement naturel n'en reste pas moins la **composition** : ayant isolé `MetropolisReinsertion`, on peut le recombiner ailleurs qu'en survie brute de GA — par exemple l'injecter comme étage d'exploration dans une île d'un archipel (MGS-4/11), où la diversité qu'il entretient pourrait payer autrement. L'opérateur, démonté, reste une brique disponible ; ce notebook dit seulement *où* il ne suffit pas.",,,,,,,,7e12f14c054a62bb,,,,,,,,,,,,,,,
+Le prolongement naturel n'en reste pas moins la **composition** : ayant isolé `MetropolisReinsertion`, on peut le recombiner ailleurs qu'en survie brute de GA — par exemple l'injecter comme étage d'exploration dans une île d'un archipel (MGS-4/11), où la diversité qu'il entretient pourrait payer autrement. L'opérateur, démonté, reste une brique disponible ; ce notebook dit *où* il ne suffit pas — et, par la partie C-bis, *quand* il devient le bon outil.",,,,,,,,d092576cafc367c1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,cell-f6fa769c,markdown,fr,cc57c60649e7a8c2,"## Exercices
 
 1. **Schedule lent vs rapide.** Ajoutez deux réglages extrêmes : `T0=10, α=0.999` (très lent, quasi-constant) et `T0=1, α=0.5` (gélification en ~5 générations). Reportez-les sur Rastrigin : un schedule trop lent maintient-il trop de diversité (pas de convergence) ? Confirme-t-il la monotonie « plus d'annealing = plus de dégradation » observée ?
@@ -7851,9 +7870,9 @@ Verdict honnête : **le dé-biais ne redistribue pas les verdicts au hasard -- i
 > **Leçon de méthode (pourquoi le seeding change la lecture).** Une exécution précédente de ce même banc -- 3 runs, **non seedés** -- affichait *trois* renversements sur quatre, dans trois directions différentes. L'exécution seedée ci-dessus n'en montre qu'un. Aucun des deux tableaux ne « ment » : à 3 runs, les écarts serrés (Rastrigin, Griewank) sont dans le bruit, et le gagnant par cellule y est un tirage au sort. Ce que le seeding garantit n'est pas la significativité -- c'est la **reproductibilité** : rejouez cette cellule, vous retrouverez ces chiffres au bit près (vérifié : deux exécutions complètes byte-identiques). C'est la précondition pour qu'un benchmark *prouve* quoi que ce soit ; l'exercice 1 (multi-seed, barres d'erreur) est le prolongement naturel pour la significativité.
 
 Et l'argument final pour les primitives : les fonctions dé-biaisées vivent dans trois fichiers du fork (`ShiftedFitness.cs`, `RotatedFitness.cs`, `KnownFunctions.cs`) composés en une ligne -- **aucun algorithme n'a été modifié** pour produire ces renversements.",,,,,,,,b9dc1e2c256a2c46,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07b-LandscapeMultidim.ipynb,22e8527a,markdown,fr,6f075f6a42981945,"# MGS-7b : projection multi-dimensionnelle des paysages (`RenderHeatmap` N-D)
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07b-LandscapeMultidim.ipynb,22e8527a,markdown,fr,0ad0acebb264d727,"# MGS-7b : projection multi-dimensionnelle des paysages (`RenderHeatmap` N-D)
 
-[← MGS-7 TSP](MGS-07-TSP.ipynb) · [MGS-8 LandscapeExplorer →](MGS-08-LandscapeExplorer.ipynb)
+[← MGS-7 TSP](MGS-07-TSP.ipynb) · [MGS-7c RosenbrockGriewank →](MGS-07c-RosenbrockGriewank.ipynb)
 
 ## Pourquoi un MGS-7b ?
 
@@ -7901,7 +7920,7 @@ si je relâche temporairement les variables que je n'affiche pas ? ».
 > via le bridge `NDMaxProjectionAdapter` codé verbatim à partir du Gtk# controller. Pas
 > de workaround dégradé : le pipeline SOTA est utilisé bout-en-bout (cf. règle H du
 > `pr-review-discipline.md`).
-",,,,,,,,6f075f6a42981945,,,,,,,,,,,,,,,
+",,,,,,,,0ad0acebb264d727,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07b-LandscapeMultidim.ipynb,dc33013b,code,fr,dedcd2de780b8158,"// Build prereq (submodule path, MGS-series canonical Debug config):
 //   git submodule update --init --recursive MyIA.AI.Notebooks/Search/MetaGeneticSharp
 //   dotnet build ../MetaGeneticSharp/MetaGeneticSharp.sln -c Debug
@@ -8178,9 +8197,9 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07b-LandscapeMultidim.ipynb,88
 - Tests `KnownFunctionLandscapeNdTests` — 12 tests NUnit, dont G.9 non-vacuous (le test `HiddenCoordsAffectHeatmap` échoue sans le fix).
 - `LandscapeExplorerSampleController.GetFunctionValue` — algorithme verbatim Gtk# (lignes 640-674 du fork jsboige @ d05826fd).
 ",,,,,,,,d2c80d07ff43071d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07c-RosenbrockGriewank.ipynb,1a535833,markdown,fr,4374beaf79b37671,"# MGS-7c : Rosenbrock (vallée étroite) + Griewank (produit-cosinus) en projection N-D
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07c-RosenbrockGriewank.ipynb,1a535833,markdown,fr,3031db871646857f,"# MGS-7c : Rosenbrock (vallée étroite) + Griewank (produit-cosinus) en projection N-D
 
-[← MGS-7b LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) · [MGS-8 LandscapeExplorer →](MGS-08-LandscapeExplorer.ipynb)
+[← MGS-7b LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) · [MGS-7d MichalewiczDixonPrice →](MGS-07d-MichalewiczDixonPrice.ipynb)
 
 ## Pourquoi Rosenbrock et Griewank ?
 
@@ -8214,7 +8233,7 @@ s'aplatit sous MAX), pas un bug de la projection.
 
 Les seeds utilisées (42, 7, 99) sont explicites dans les cellules. Les heatmaps sont
 générées via le moteur `KnownFunctionLandscape.RenderHeatmap` du submodule
-`MetaGeneticSharp.Extensions` (port PR #7583 + #7776).",,,,,,,,4374beaf79b37671,,,,,,,,,,,,,,,
+`MetaGeneticSharp.Extensions` (port PR #7583 + #7776).",,,,,,,,3031db871646857f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07c-RosenbrockGriewank.ipynb,be70e72d,code,fr,28dc425b7db31c02,"#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
 // SkiaSharp (rendu PNG par ToPng) vient de NuGet : le kernel cable alors le binaire natif de la
 // plateforme (Linux par SkiaSharp.NativeAssets.Linux.NoDependencies), ce que ne fait pas un #r
@@ -8379,15 +8398,15 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07c-RosenbrockGriewank.ipynb,5
 - PR [#7583](https://github.com/jsboige/CoursIA/pull/7583) — port initial MGS-7b N-D.
 - PR [#7993](https://github.com/jsboige/CoursIA/pull/7993) — MGS-7b Ackley.
 - Inversion chromatique chiffrable de d2 à d30 : signature de la projection MAX.",,,,,,,,562fa56600b46a05,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,c08077cb,markdown,fr,348315d8119ec46f,"# MGS-7d : Michalewicz (steep ridges) + Dixon-Price (narrow valley non-scalable) en projection N-D
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,c08077cb,markdown,fr,15ce584e1b7d0f58,"# MGS-7d : Michalewicz (steep ridges) + Dixon-Price (narrow valley non-scalable) en projection N-D
 
 [← MGS-7c RosenbrockGriewank](MGS-07c-RosenbrockGriewank.ipynb) · [MGS-8 LandscapeExplorer →](MGS-08-LandscapeExplorer.ipynb)
 
 ## Pourquoi Michalewicz et Dixon-Price ?
 
 MGS-7b/7c ont couvert les **six fonctions** classiques du banc CEC :
-**Sphère** (c.732), **Rastrigin** (c.732), **Schwefel** (c.732), **Ackley** (c.785),
-**Rosenbrock** (c.787), **Griewank** (c.787).
+**Sphère**, **Rastrigin**, **Schwefel**, **Ackley**,
+**Rosenbrock**, **Griewank**.
 
 Restent deux fonctions avec des structures très différentes :
 
@@ -8421,7 +8440,7 @@ se distingue-t-il de Rosenbrock en 2-D alors que les deux ont une *vallée étro
 
 **Anti-pattern INTRINSIC documenté** : si Michalewicz-n=30 ou Dixon-Price-n=30 devient
 quasi-uniforme, c'est la **signature de la projection MAX** + la structure intrinsèque de
-la fonction, pas un bug. Cf L785-L2 ★ et L787-L1 ★.
+la fonction, pas un bug — c'est le plafond du rendu, pas un défaut du carnet.
 
 ## Reproductibilité
 
@@ -8431,7 +8450,7 @@ générées via le moteur `KnownFunctionLandscape.RenderHeatmap` du submodule
 `MetaGeneticSharp.Extensions` (port PR #7583 + #7776), rendu **déterministe par pixel**
 depuis la PR MetaGeneticSharp #49 (graine RNG dérivée de `(x, y, base)`) : l'ordre du
 `Parallel.For` n'influence plus le rendu, la double exécution est byte-identique.
-",,,,,,,,348315d8119ec46f,,,,,,,,,,,,,,,
+",,,,,,,,15ce584e1b7d0f58,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,becac2e6,code,fr,b68d2791a8c2ee7b,"#r ""../MetaGeneticSharp/src/MetaGeneticSharp.Extensions/bin/Debug/net9.0/MetaGeneticSharp.Extensions.dll""
 // SkiaSharp (rendu PNG par ToPng) vient de NuGet : le kernel cable alors le binaire natif de la
 // plateforme (Linux par SkiaSharp.NativeAssets.Linux.NoDependencies), ce que ne fait pas un #r
@@ -8469,7 +8488,7 @@ var (michalewiczMin, michalewiczMax) = KnownFunctionsBounds.For(michalewiczType)
 var (dixonPriceMin, dixonPriceMax) = KnownFunctionsBounds.For(dixonPriceType);
 Console.WriteLine($""Michalewicz: range [{michalewiczMin.ToString(fmt, invCulture)}, {michalewiczMax.ToString(fmt4, invCulture)}] (KnownFunctionsBounds.For, m=10)"");
 Console.WriteLine($""DixonPrice:  range [{dixonPriceMin.ToString(fmt, invCulture)}, {dixonPriceMax.ToString(fmt, invCulture)}] (KnownFunctionsBounds.For, narrow valley non-scalable)"");",,,,,,,,b68d2791a8c2ee7b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,9fd7b957,markdown,fr,741829eca9410397,"## Michalewicz en $n = 2, 5, 30$ : crêtes raides paramétrées
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,9fd7b957,markdown,fr,43741904568d4c28,"## Michalewicz en $n = 2, 5, 30$ : crêtes raides paramétrées
 
 **En 2-D**, Michalewicz dessine une *crête diagonale étroite* au voisinage de l'optimum
 $\vec x^* \approx (2.20, 1.57)$ pour $n=2$ (optimum dépend de $n$, propriété rare).
@@ -8485,11 +8504,11 @@ en dehors de sa crête tire la fitness vers 0 ou $-1$ brutalement. Question à t
 par la mesure (§ Tell visuel) : la MAX-projection **effondre-t-elle** la structure
 (« quasi-uniforme sombre ») ou **densifie-t-elle** les transitions ?
 
-**Substance distincte de Griewank** (c.787) :
+**Substance distincte de Griewank** :
 - Griewank 2-D = produit-cosinus ondulé (anneaux concentriques ou bandes ondulantes)
 - Michalewicz 2-D = crêtes obliques abruptes ($\sin^{20}$ quasi-binaire)
 La différence visuelle est **radicale** : Griewank est doux, Michalewicz est tranchant.
-",,,,,,,,741829eca9410397,,,,,,,,,,,,,,,
+",,,,,,,,43741904568d4c28,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,6d8342b9,code,fr,385d96116ef6cdaf,"using System.IO;
 using System.Security.Cryptography;
 
@@ -8525,7 +8544,7 @@ if (written.Select(x => x.hash).Distinct().Count() != written.Count)
 Console.WriteLine(""Michalewicz d2/d5/d30 distincts : ""
     + string.Join("", "", written.Select(w => ""d"" + w.dim + ""="" + w.hash.Substring(0, 12))));
 ",,,,,,,,385d96116ef6cdaf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,6c50f31e,markdown,fr,72a19e273cbfe5eb,"## Dixon-Price en $n = 2, 5, 30$ : vallée étroite non-scalable
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,6c50f31e,markdown,fr,f653d644b34cde8e,"## Dixon-Price en $n = 2, 5, 30$ : vallée étroite non-scalable
 
 **En 2-D**, Dixon-Price dessine une *vallée étroite asymétrique*. La formule se réduit à :
 $$f(x_1, x_2) = (x_1 - 1)^2 + 2 (2 x_2^2 - x_1)^2$$
@@ -8546,7 +8565,7 @@ La MAX-projection sur 28 dimensions cachées retient quasi-systématiquement le 
 **grains rouges très tranchés** (`grad(R)=96.2` en d=30, cf. § Tell visuel) : le fond est
 uniforme, pas la texture, ce qui la distingue de l'uniformité-même de l'ancien rendu.
 
-**Substance distincte de Rosenbrock** (c.787) :
+**Substance distincte de Rosenbrock** :
 
 | Fonction | Forme vallée 2-D | Couplage | Asymétrie |
 |----------|------------------|----------|-----------|
@@ -8555,7 +8574,7 @@ uniforme, pas la texture, ce qui la distingue de l'uniformité-même de l'ancien
 
 La différence 2-D est **radicale** : Rosenbrock a une vallée **continue et monotone**,
 Dixon-Price a une vallée **bifurquée** en haut et un fond plus large en bas.
-",,,,,,,,72a19e273cbfe5eb,,,,,,,,,,,,,,,
+",,,,,,,,f653d644b34cde8e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,e82b6905,code,fr,390f0302b7175a61,"using System.IO;
 using System.Security.Cryptography;
 
@@ -8716,21 +8735,21 @@ using var hSP = KnownFunctionLandscape.RenderHeatmap(
 // Attendu : Dixon-Price eloigne de 1 (anisotrope), Sphere ~ 1 (isotrope).
 ```
 ",,,,,,,,647fa1773c740ddb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,92a3da4b,markdown,fr,c5b3d569590cc9b5,"## Liens
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-07d-MichalewiczDixonPrice.ipynb,92a3da4b,markdown,fr,c38794ec499766d4,"## Liens
 
-- [MGS-7c RosenbrockGriewank](MGS-07c-RosenbrockGriewank.ipynb) — Rosenbrock + Griewank dim ∈ {2, 5, 30} (c.787 PR #7999).
-- [MGS-7b LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) — Ackley dim ∈ {2, 30} (c.785 PR #7993), Rastrigin/Schwefel/Sphere dim ∈ {2, 5, 10, 30} (c.732 PR #7583).
+- [MGS-7c RosenbrockGriewank](MGS-07c-RosenbrockGriewank.ipynb) — Rosenbrock + Griewank dim ∈ {2, 5, 30}.
+- [MGS-7b LandscapeMultidim](MGS-07b-LandscapeMultidim.ipynb) — Ackley dim ∈ {2, 30}, Rastrigin/Schwefel/Sphere dim ∈ {2, 5, 10, 30}.
 - [MGS-6 Benchmarks](MGS-06-Benchmarks.ipynb) — les 10 fonctions canoniques et leur banc CEC d'origine.
 - [MGS-8 LandscapeExplorer](MGS-08-LandscapeExplorer.ipynb) — exploration interactive GTK#.
 - Issue [#7483](https://github.com/jsboige/CoursIA/issues/7483) — port de la projection N-D (parent).
-- Issue [#7997](https://github.com/jsboige/CoursIA/issues/7997) — [search,#7483-suite] MGS-7c/7d (parent saturé c.732/c.785/c.787/c.788).
+- Issue [#7997](https://github.com/jsboige/CoursIA/issues/7997) — [search,#7483-suite] MGS-7c/7d.
 - PR [#7583](https://github.com/jsboige/CoursIA/pull/7583) — port initial MGS-7b N-D.
-- PR [#7993](https://github.com/jsboige/CoursIA/pull/7993) — c.785 MGS-7b Ackley.
-- PR [#7999](https://github.com/jsboige/CoursIA/pull/7999) — c.787 MGS-7c Rosenbrock+Griewank.
-- L785-L2 ★ — inversion chromatique chiffrable d2 → d30 = signature projection MAX.
-- L787-L1 ★ — inversion chromatique chiffrable d2 → d30 PAR FONCTION (Rosenbrock/Griewank vs Ackley).
-- L787-L2 ★ — Griewank d=5 = damier oblique sweet-spot (interférence 5 coords à fréquences $1/\sqrt{3..5}$).
-",,,,,,,,c5b3d569590cc9b5,,,,,,,,,,,,,,,
+- PR [#7993](https://github.com/jsboige/CoursIA/pull/7993) — MGS-7b Ackley.
+- PR [#7999](https://github.com/jsboige/CoursIA/pull/7999) — MGS-7c Rosenbrock+Griewank.
+- Inversion chromatique chiffrable d2 → d30 = signature de la projection MAX.
+- Inversion chromatique chiffrable d2 → d30 **par fonction** (Rosenbrock/Griewank vs Ackley).
+- Griewank d=5 = damier oblique sweet-spot (interférence de 5 coordonnées à fréquences $1/\sqrt{3..5}$).
+",,,,,,,,c38794ec499766d4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-05-CompoundMetaheuristics.ipynb,c29,markdown,fr,811c258a1a768eb5,"## Deuxième vague : les quatre briques de la dernière fusion
 
 Le fork [MetaGeneticSharp](https://github.com/jsboige/MetaGeneticSharp) vient d'absorber quatre nouvelles briques (PRs fork #45 à #48). La répartition est le point pédagogique : **une seule** entre au catalogue `KnownCompoundMetaheuristics` et se construit par la factory ; les trois autres se construisent **directement** -- et c'est la thèse compositionnelle du cours en acte.
@@ -9245,3 +9264,143 @@ MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb,mi-d,markdown
 La colonne Ackley seule ne discriminait rien (plancher 0,000 pour EO/FBI/DE/SA) : c'est le pire-cas croise fonctions x variantes qui trie le portefeuille. Les verdicts a eviter suivent : Random trivialement, WOA parce que son biais d'ancre se compose au lieu de s'annuler. Formule honnete : le combine confirme l'ordre structurel, il ne le cree pas — c'est exactement ce qu'on attend d'un banc de robustesse.
 
 Aucun optimiseur ne sort dominateur des deux cotes du tableau : EO affiche 0,000 en pire-cas Ackley et 2,781 en pire-cas Rosenbrock — parfait sur l'un, moyen sur l'autre. C'est la raison d'etre du croisement CEC : chaque fonction isole un canal de faiblesse different (plancher de convergence pour Ackley, geometrie de la vallee pour Rosenbrock), et seul le max sur l'ensemble approche une lecture robuste. L'exercice 1 (Griewank) ajoutera la troisieme fonction exactement dans cet esprit. La regle de lecture reste celle du §2 : un avantage qui ne survit pas au pire-cas n est pas un avantage.",,,,,,,,8ce0293190f4da75,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-lect-01,markdown,fr,26093a9edad179e0,**Lecture** : les DLLs sont chargées et la sortie atteste l'accès aux deux classes du banc — `CenterBiasBenchmark` (l'oracle center-bias de MGS-10) et `KnownFunctionsBounds` (les bornes canoniques des fonctions connues). Tout le reste du notebook s'appuie sur ce wiring vers MetaGeneticSharp.,,,,,,,,26093a9edad179e0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-lect-02,markdown,fr,4befc30dd0ee84e1,"**Lecture** : la sortie confirme que le chromosome continu `DoubleArrayChromosome` et les quatre métriques de paysage (`Fdc`, `RandomWalk`, `AutocorrLag1`, `NeutralRatio`) sont définies. C'est la boîte à outils de MGS-15 qui entre en scène, prête à mesurer les paysages de la section 8.",,,,,,,,4befc30dd0ee84e1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-lect-03,markdown,fr,abd8b7117f14ac16,"**Lecture** : le smoke test passe — GA sur Sphere centrée rend un objectif de 0,008247, proche du zéro attendu d'une fonction dont l'optimum est à l'origine — et le portfolio déclare ses 8 optimiseurs prêts (les sept métaheuristiques composées plus le contrôle Random). Le banc peut maintenant exécuter les 24 combinaisons de l'oracle.",,,,,,,,abd8b7117f14ac16,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb,m16-lect-04,markdown,fr,dfb8adc399a5cf39,"**Lecture** : sur ce paysage jamais vu, les features mesurées — FDC=0,707, ρ₁=0,978, L_corr=45,42, Neutre=1,98% — classent Rosenbrock dans la branche « FDC modéré/multimodal » du sélecteur : il recommande DE, BBPSO, FBI et évite WOA, exactement comme pour Rastrigin et Ackley. L'oracle de la cellule suivante confronte ce pronostic à la vérité terrain.",,,,,,,,dfb8adc399a5cf39,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,4c1f71c5,markdown,fr,f562f5b55138cdef,"## Partie C-bis — le cadran de régime : quand l'évaluation est bruitée
+
+Les trois parties précédentes évaluent la fitness **exactement**. Dans ce régime, la règle greedy est le bon choix : comparer deux fitness mesurées sans erreur ne peut pas se tromper, et accepter un recombinant moins bon n'ajoute que du bruit (c'est la lecture des parties A à C).
+
+Changeons **une seule chose** : la fitness n'est plus mesurée exactement. C'est le cas dès qu'une évaluation passe par une simulation stochastique, un banc de mesure, un échantillon d'utilisateurs ou une réplique de Monte-Carlo. La règle greedy compare alors deux **mesures**, pas deux **solutions** : elle conserve l'enfant quand sa mesure est meilleure, ce qui revient à conserver l'enfant le plus chanceux. Le critère de Metropolis, lui, accepte un enfant *mesuré* moins bon : la population ne se referme pas sur une fluctuation favorable.
+
+L'hypothèse falsifiable de cette partie : **le classement s'inverse** dès que l'évaluation est bruitée.",,,,,,,,f562f5b55138cdef,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,dca89f04,markdown,fr,37d67db630e3d4a6,"### Protocole — comparer sur l'objectif propre, pas sur l'objectif bruité
+
+Un classement lu sur la fitness bruitée mesurerait en partie « qui a enregistré la meilleure fluctuation » : il serait confondu par le bruit qu'on cherche justement à étudier. On optimise donc sur l'objectif bruité, puis on **ré-évalue le meilleur individu sur Sphere sans bruit** — c'est cette valeur qui est reportée, parce que c'est elle qui a un sens : la qualité de la **solution trouvée**, pas de la meilleure mesure obtenue.
+
+Le bruit est un tirage uniforme d'amplitude $\sigma$, consommé sur le RNG resemencé à chaque course : les cinq configurations voient le même flux aléatoire, comme dans le reste du carnet. Le banc est identique à celui des parties A-C (mêmes `PopSize`, `NFE`, `dim`, graines) ; seule la fitness change — et le contrôle de cohérence est que la ligne $\sigma = 0$ doit redonner exactement les chiffres de la partie A.",,,,,,,,37d67db630e3d4a6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,e3560405,code,fr,ae1e1234994a05a4,"// Objectif bruite : Sphere + tirage uniforme d'amplitude sigma, consomme sur le RNG resemence par graine.
+public class NoisySphereFitness : IFitness
+{
+    private readonly double _sigma;
+    public NoisySphereFitness(double sigma) { _sigma = sigma; }
+    public double Evaluate(IChromosome ch)
+    {
+        var x = ((DoubleArrayChromosome)ch).GetDoubleValues();
+        double s = 0;
+        for (int i = 0; i < x.Length; i++) s += x[i] * x[i];
+        return -(s + _sigma * RandomizationProvider.Current.GetDouble(-1.0, 1.0));
+    }
+}
+
+// Meme GA que le banc, mais rend le chromosome final : le delegue Optimizer ne rend qu'un double,
+// or on doit re-evaluer la SOLUTION trouvee, pas la mesure qui l'a fait gagner.
+IChromosome RunOnceReturningBest(IReinsertion reins, IFitness fit, int seed)
+{
+    var (min, max) = KnownFunctionsBounds.For(fit.GetType()); double mid = 0.5 * (min + max);
+    FastRandomRandomization.ResetSeed(seed);
+    var adam = new DoubleArrayChromosome(Enumerable.Repeat(mid, dim).ToArray(), min, max);
+    var pop = new MetaPopulation(PopSize, PopSize, adam);
+    var ga = new MetaGeneticAlgorithm(pop, fit, new EliteSelection(),
+               new UniformCrossover(0.5f), new UniformMutation(true), new DefaultMetaHeuristic());
+    ga.Reinsertion = reins;
+    ga.Termination = new GenerationNumberTermination(Math.Max(1, NFE / PopSize));
+    ga.Start();
+    return ga.BestChromosome;
+}
+
+// Objectif = -fitness du meilleur individu, mesure sur l'objectif PROPRE.
+double RunAvgClean(IReinsertion reins, IFitness noisy, IFitness clean)
+{
+    double s = 0;
+    foreach (var sd in seeds) s += -clean.Evaluate(RunOnceReturningBest(reins, noisy, sd));
+    return s / seeds.Length;
+}
+
+// Par graine : la meme course rendue indivisible -- chaque RunOnceReturningBest resemece le RNG,
+// donc ces valeurs sont celles memes que les moyennes ci-dessus agregent.
+double RunOnceClean(IReinsertion reins, IFitness noisy, IFitness clean, int seed)
+    => -clean.Evaluate(RunOnceReturningBest(reins, noisy, seed));
+
+var cleanSphere = new SphereFitness();
+Console.WriteLine($""{""bruit sigma"",-12}|{""greedy"",10}|{""T0=0.2"",10}|{""T0=1.0"",10}|{""T0=5.0"",10}| gagne"");
+Console.WriteLine(new string('-', 74));
+foreach (var sg in new[] { 0.0, 0.05, 0.20, 0.50, 1.00 })
+{
+    var noisy = sg == 0.0 ? (IFitness)cleanSphere : new NoisySphereFitness(sg);
+    double g = RunAvgClean(Pairwise,       noisy, cleanSphere);
+    double c = RunAvgClean(MetropolisCold, noisy, cleanSphere);
+    double m = RunAvgClean(MetropolisMed,  noisy, cleanSphere);
+    double h = RunAvgClean(MetropolisHot,  noisy, cleanSphere);
+    double best = Math.Min(c, Math.Min(m, h));
+    string win = g <= best ? ""greedy"" : (best == c ? ""T0=0.2"" : (best == m ? ""T0=1.0"" : ""T0=5.0""));
+    Console.WriteLine($""{sg,-12:F2}|{g,10:F4}|{c,10:F4}|{m,10:F4}|{h,10:F4}| {win}"");
+}
+
+Console.WriteLine(""\nEcart relatif du meilleur Metropolis contre le controle greedy :"");
+foreach (var sg in new[] { 0.05, 0.20, 0.50, 1.00 })
+{
+    var noisy = new NoisySphereFitness(sg);
+    double g = RunAvgClean(Pairwise, noisy, cleanSphere);
+    double best = Math.Min(RunAvgClean(MetropolisCold, noisy, cleanSphere),
+                  Math.Min(RunAvgClean(MetropolisMed, noisy, cleanSphere),
+                           RunAvgClean(MetropolisHot, noisy, cleanSphere)));
+    Console.WriteLine($""  sigma={sg:F2} : greedy {g:F4} -> {best:F4}  ({(1.0 - best / g) * 100:F0} % d'objectif en moins)"");
+}
+
+// Par graine, sur les trois sigma ou l'ecart est assez grand pour se lire sans barre d'erreur :
+// pour chaque graine, le meilleur des trois Metropolis (minimum des trois T0) contre greedy.
+Console.WriteLine(""\nPar graine -- meilleur Metropolis (min des trois T0) contre greedy :"");
+int wins = 0, bouts = 0;
+foreach (var sg in new[] { 0.20, 0.50, 1.00 })
+{
+    var noisy = new NoisySphereFitness(sg);
+    var gvals = seeds.Select(sd => RunOnceClean(Pairwise, noisy, cleanSphere, sd)).ToArray();
+    var mvals = seeds.Select(sd => new[] {
+        RunOnceClean(MetropolisCold, noisy, cleanSphere, sd),
+        RunOnceClean(MetropolisMed,  noisy, cleanSphere, sd),
+        RunOnceClean(MetropolisHot,  noisy, cleanSphere, sd) }.Min()).ToArray();
+    for (int i = 0; i < seeds.Length; i++) { bouts++; if (mvals[i] < gvals[i]) wins++; }
+    Console.WriteLine($""  sigma={sg:F2} : greedy {string.Join("" / "", gvals.Select(v => v.ToString(""F3"")))}"" +
+        $""  contre  Metropolis {string.Join("" / "", mvals.Select(v => v.ToString(""F3"")))}"");
+}
+Console.WriteLine($""  -> meilleur Metropolis devant greedy : {wins} confrontations sur {bouts} (3 graines x 3 sigma)."");
+",,,,,,,,ae1e1234994a05a4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,22c5daa5,markdown,fr,406789e5cd1debb3,"**Lecture — l'inversion est nette, et elle tient sur chaque graine.** Sur Sphere non bruitée, le contrôle greedy reste devant (0,0124 contre 0,0138 au meilleur Metropolis) : c'est la partie A retrouvée à l'identique, ce qui contrôle que **seule la fitness a changé**. Dès que $\sigma > 0$, le meilleur réglage Metropolis passe devant greedy et ne le lâche plus : 0,0341 contre 0,0386 ($\sigma = 0{,}05$), 0,0758 contre 0,1353 ($\sigma = 0{,}20$), 0,1174 contre 0,2061 ($\sigma = 0{,}50$), 0,1575 contre 0,2800 ($\sigma = 1{,}00$) — de 12 % à 44 % d'objectif en moins.
+
+L'écart n'est pas porté par une graine. Sur les trois graines du carnet et pour $\sigma \in \{0{,}20\,;\,0{,}50\,;\,1{,}00\}$, le meilleur Metropolis bat greedy **9 fois sur 9** (par exemple à $\sigma = 0{,}50$ : 0,049 / 0,065 / 0,095 contre 0,269 / 0,219 / 0,130). Trois graines ne donnent pas de barre d'erreur : ce qui soutient la conclusion n'est donc pas un test de significativité, mais la **taille de l'écart** et sa **constance graine par graine**. Pour une comparaison appariée complète, il faudrait davantage de graines — c'est l'exercice 4.
+
+**Ce que ce résultat ne dit pas.** Quel réglage de température gagne n'est **pas** résolu ici : à $\sigma = 0{,}05$ c'est le moyen, à $\sigma = 0{,}20$ et $0{,}50$ le froid, à $\sigma = 1{,}00$ le chaud. L'ordre interne des trois Metropolis reste dans le bruit à trois graines. Ce qui est mesuré, c'est l'**inversion greedy → Metropolis**, pas une loi « la température optimale suit l'échelle du bruit ».
+
+**Pourquoi l'acceptation aide ici et nuit là-bas — le même mécanisme, lu sous deux régimes.** La règle greedy décide sur une **mesure** ; quand la mesure est exacte, la mesure *est* la solution et la règle est optimale. Quand la mesure est bruitée, elle conserve l'enfant le plus chanceux, et la population se referme sur une fluctuation : la qualité vraie se dégrade avec $\sigma$ (0,0124 → 0,1353 → 0,2061 → 0,2800). Accepter un enfant mesuré moins bon est exactement le « bruit injecté à la survie » que la partie B identifiait comme un défaut — sauf qu'ici le bruit est déjà dans l'évaluation : l'acceptation probabiliste rend la survie moins dépendante d'une mesure unique. Le défaut et le bénéfice sont **le même mécanisme** ; ce qui les sépare est le régime d'évaluation, pas l'opérateur.",,,,,,,,406789e5cd1debb3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,61bec5a9,markdown,fr,187e4e83fbae2879,"### Exercice 4 : Comparaison appariée du cadran bruité
+
+**Question de reflexion (cf. Partie C-bis).** La partie C-bis conclut sur trois graines, sans barre d'erreur. Reprenez le tableau bruité à **20 graines** et rapportez, pour chaque $\sigma$, la moyenne et l'écart-type de l'objectif propre, pour le contrôle greedy et pour le meilleur réglage Metropolis.
+
+Deux questions falsifiables : (a) à $\sigma = 0{,}20$, l'écart greedy → Metropolis dépasse-t-il **deux écarts-types** ? (b) l'inversion survit-elle à $\sigma = 0{,}02$, où le bruit est plus petit que la précision déjà atteinte par greedy — c'est-à-dire existe-t-il un seuil de bruit sous lequel la règle greedy redevient le bon choix ?",,,,,,,,187e4e83fbae2879,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb,2a7904fc,code,fr,f13cd63b7d05c9bb,"// Exercice 4 : Comparaison appariee du cadran bruite sur 20 graines.
+// Test : pour chaque sigma de {0.02, 0.20, 0.50}, lancer les 4 configurations sur 20 graines,
+// re-evaluer CHAQUE meilleur individu sur cleanSphere, et rapporter moyenne + ecart-type
+// de l'objectif propre. La partie C-bis conclut sur 3 graines ; cet exercice donne la barre.
+//
+// AIDE : RunOnceReturningBest(reins, fit, seed) rend le chromosome final pour une graine ;
+// cleanSphere.Evaluate(ch) rend la valeur sur l'objectif propre. Le banc de la partie C-bis
+// utilise `seeds` (3 valeurs) — construire ici Enumerable.Range(0, 20).
+// Question (a) : a sigma = 0.20, l'ecart greedy -> Metropolis depasse-t-il 2 ecarts-types ?
+// Question (b) : l'inversion survit-elle a sigma = 0.02 ?
+
+Console.WriteLine(""Exercice 4 a completer — tableau moyenne +/- ecart-type sur 20 graines"");
+// TODO etudiant :
+//   var bigSeeds = Enumerable.Range(0, 20).ToArray();
+//   var configs4 = new (string label, IReinsertion r)[] {
+//       (""greedy"",  Pairwise), (""T0=0.2"", MetropolisCold),
+//       (""T0=1.0"",  MetropolisMed), (""T0=5.0"", MetropolisHot) };
+//   foreach (var sg in new[] { 0.02, 0.20, 0.50 }) {
+//       var noisy = new NoisySphereFitness(sg);
+//       foreach (var (label, reins) in configs4) {
+//           // ... boucle bigSeeds -> cleanSphere.Evaluate(RunOnceReturningBest(reins, noisy, sd))
+//           // ... moyenne, ecart-type, puis imprimer label / moyenne / ecart-type
+//       }
+//   }
+",,,,,,,,f13cd63b7d05c9bb,,,,,,,,,,,,,,,

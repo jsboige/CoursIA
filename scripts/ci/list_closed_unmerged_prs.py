@@ -222,7 +222,7 @@ def closed_unmerged(repo: str, since: datetime, fetch_page=None) -> list[dict]:
     fetch = fetch_page or _page
     out: list[dict] = []
     page = 1
-    while page <= 50:
+    while True:
         data = fetch(page)
         if not data:
             break

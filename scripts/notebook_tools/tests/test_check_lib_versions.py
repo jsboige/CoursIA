@@ -1957,3 +1957,58 @@ def test_le_recensement_liste_les_carnets_en_dessous_de_la_canonique(
     assert below[0]["series"] == "RL"
     rendered = clv.render_census(report)
     assert "Carnets en dessous de la canonique de leur serie" in rendered
+
+
+def test_versioned_fallbacks_distinguish_code_from_prose():
+    payload = _notebook([
+        '''try:
+    import example
+except ImportError:
+    print("Skipped: Example 1.28+ API change")
+    print("Skipped: unavailable")
+    print("Example version 1.28 available")
+    # print("Skipped: Example 1.28")
+    text = "Skipped: Example 1.28"
+    def later():
+        print("Skipped: Example 1.28")
+''',
+        '"""except ImportError: print("Skipped: Example 1.28")"""',
+        'print("Skipped: Example 1.28")',
+    ])
+    payload["cells"].append({"cell_type": "markdown", "source": "Skipped 1.28"})
+    found = clv.versioned_fallbacks("x.ipynb", payload)
+    assert len(found) == 1
+    assert found[0]["cell"] == 0 and found[0]["line"] == 4
+    assert found[0]["message"] == "Skipped: Example 1.28+ API change"
+
+
+def test_versioned_fallback_advisory_in_text_and_json(tmp_path, capsys):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"schema_version": 1, "libraries": [], "allowlist": []}))
+    _write_notebook(tmp_path, "nb.ipynb", [
+        'try:\n    import example\nexcept ImportError:\n    print("Skipped: Example 1.28")\n'
+    ])
+    args = ["--manifest", str(manifest), "--repo-root", str(tmp_path), "nb.ipynb"]
+    assert clv.main(args + ["--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["findings"] == []
+    assert report["advisories"][0]["kind"] == "repli_versionne"
+    assert clv.main(args) == 0
+    output = capsys.readouterr().out
+    assert "Avis non bloquants" in output
+    assert "Skipped: Example 1.28" in output
+
+
+def test_versioned_fallback_is_advisory_in_changed_mode(tmp_path, capsys, monkeypatch):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"schema_version": 1, "libraries": [], "allowlist": []}))
+    notebook = _write_notebook(tmp_path, "nb.ipynb", [
+        'try:\n    import example\nexcept ImportError:\n    print("Skipped: Example 1.28")\n'
+    ])
+    monkeypatch.setattr(clv, "changed_notebooks", lambda root, revision: ([notebook], "base"))
+    monkeypatch.setattr(clv, "notebook_at", lambda root, revision, relative: _notebook([]))
+    rc = clv.main(["--changed", "base...HEAD", "--json", "--manifest", str(manifest),
+                   "--repo-root", str(tmp_path)])
+    report = json.loads(capsys.readouterr().out)
+    assert rc == 0 and report["findings"] == []
+    assert report["advisories"][0]["notebook"] == "nb.ipynb"
