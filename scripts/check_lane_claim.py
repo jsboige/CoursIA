@@ -5099,12 +5099,22 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # keeps the fail-CLOSED block. `occupied_paths` is empty outside this
         # branch, so a PATH_SCOPED / BLOCKED verdict never carries a stale
         # occupied list.
-        occupied_paths = {
+        # #25873 + CR #25906 -- servir UNIQUEMENT si TOUS les claims d'autrui
+        # sont bornes (len(borne) == len(others)). Une seule claim epic-wide
+        # dans le mix re-verrouille toute l'issue : le cas mixte borne +
+        # epic-wide ne doit PAS clairer en SCOPED_OCCUPIED, sinon le verrou
+        # epic-wide d'une lane est silencieusement droppe (l'issue serait
+        # servie malgre le verrou de la lane epic-wide).
+        bounded = {
             ln: ev.get("paths") for ln, ev in others.items()
             if _claim_live_paths(ev)
         }
-        query_scope = ("SCOPED_OCCUPIED" if occupied_paths
-                       else "EPIC_WIDE_NO_PATHS_DECLARED")
+        if len(bounded) == len(others):
+            occupied_paths = bounded
+            query_scope = "SCOPED_OCCUPIED"
+        else:
+            occupied_paths = {}
+            query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
     elif others and my_scope is None:
         # #25873 -- a non-belt no-`--paths` call: keep the fail-CLOSED
         # NOT_SCOPED. A manual probe that declared no scope cannot prove

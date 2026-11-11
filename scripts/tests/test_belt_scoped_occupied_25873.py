@@ -179,6 +179,36 @@ def test_belt_still_withholds_epic_wide_claim(monkeypatch, capsys):
     assert _summary(out).get("occupied_paths") == {}
 
 
+# --- cas mixte : un claim borne + un claim epic-wide -> le belt retient ----
+
+
+def test_belt_withholds_mixed_bounded_and_epic_wide(monkeypatch, capsys):
+    """Contrôle négatif (CR #25906) -- le mix borné + epic-wide est retenu.
+
+    Une issue avec un claim BORNÉ de A et un claim EPIC-WIDE de C : le verrou
+    epic-wide de C s'étend à toute l'issue. Le belt ne doit PAS la servir
+    (exit 2), ni porter l'occupation de A : ``query_scope`` est
+    ``EPIC_WIDE_NO_PATHS_DECLARED`` et ``occupied_paths`` est vide. Le défaut
+    initial servait l'issue (``SCOPED_OCCUPIED`` exit 0) dès qu'UN claim était
+    borné, en droppeant le verrou epic-wide de C (mesure à la tête :
+    ``RC 0 SCOPED_OCCUPIED {'A:CoursIA': [...]} ['A:CoursIA','C:CoursIA']``).
+    """
+    _live_tracked(monkeypatch)
+    epique = clc._CLAIM_BODY_TMPL.format(
+        lane="C:CoursIA", intention="epic-wide, sans paths", paths_clause="")
+    pl = _payload(
+        _comment(_claim_body_borne(), "2026-08-15T00:00:00Z"),
+        _comment(epique, "2026-08-15T00:05:00Z"),
+        number=11067, title="t")
+
+    rc = clc._run_check(pl, "B:CoursIA", serve_bounded=True)
+    out = capsys.readouterr().out
+
+    assert rc == 2, f"mix borne + epic-wide -> retenu, obtenu exit {rc}"
+    assert _summary(out).get("query_scope") == "EPIC_WIDE_NO_PATHS_DECLARED"
+    assert _summary(out).get("occupied_paths") == {}
+
+
 # --- la voie batch (celle que le belt utilise en masse) porte occupied_paths -
 
 
