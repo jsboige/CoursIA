@@ -30,6 +30,32 @@ Une PR par lake. Chaque tranche rend le verdict **de son** lake ; un lake laiss�
 
 Un rouge éventuel part en **issue nommée** plutôt qu'en whitelist.
 
+### 0.2 Le census complémentaire — les modules compilés que le gate ne regarde pas (#8782)
+
+`axiom_coverage.py` mesure **un bord** : un module *nommé* par le manifeste qui n'existe pas sur disque (`WIRED-DEAD`). L'autre bord — un module *compilé* par le lake que le manifeste ne nomme pas — n'était mesuré par aucun organe : c'est la classe « un vert qui ne mesure rien » (un gate vert sur une fraction du lake qui s'amincit, sans que rien ne rougisse).
+
+```bash
+python scripts/lean/check_manifest_target_gap.py            # table par lake
+python scripts/lean/check_manifest_target_gap.py --json     # sortie machine
+```
+
+L'organe lit les **globs du lakefile** (la seule source de vérité sur ce que le lake compile — un `.lean` sur disque hors glob n'est pas un module), en déduit les modules réellement compilés, et les compare à `axiom-target-modules`. Il distingue trois états de sens opposés, jamais confondus dans un chiffre : liste bornée (écart mesuré), `"*"` (liste dérivée à l'exécution — couverture totale), liste vide (aucun gate : ce n'est pas un écart de liste mais une absence de gate, que `axiom_coverage.py` classe `NOT-APPLICABLE`). Pour chaque module hors liste il donne le compte de `sorry` canonique (`count_code_sorry.scan_file`) et un prescreen des trois classes `forbidden` (`native_decide`, `sorryAx`, `Classical.choice`) — le prescreen signale, il ne dispense pas : le verdict reste au job.
+
+**La sémantique des globs est celle de Lake, lue dans sa source** (`Lake/Config/Glob.lean`) : `X.*` est un `Glob.andSubmodules` et **inclut** la racine `X.lean` (« including itself »), seul `X.+` — ou la forme `.submodules `X`` — l'exclut. Un census qui traiterait `X.*` comme `X.+` compterait comme non compilées des racines que le lake compile : l'écart affiché serait faux dans les deux sens. Cette sémantique est verrouillée par deux cas de test (un glob `X.*`, un glob `X.+`) dans `scripts/lean/tests/test_check_manifest_target_gap.py`.
+
+**Les racines de lib sont des cibles, pas des angles morts.** Une racine `X.lean` est un agrégateur d'imports : l'instrument du gate (`agent_tests/lean_server.py`) la classe `declaration_free_module`, donc NOTE non fatale — elle ne peut ni faire rougir la jambe ni masquer un `sorry` (un fichier porteur de `sorry` est routé vers `sorry_without_declaration`, qui est fatal). Les racines sont donc des cibles explicites de `axiom-target-modules`, comme les trois qui y étaient déjà (`Abstraction`, `RepeatedGames_en`, `StableMarriage_en`) : les laisser hors liste faisait paraître l'écart du recensement comme un manque de couverture alors qu'il n'y avait rien à auditer.
+
+État mesuré au 2026-11-11 sur `origin/main` : les lakes à liste bornée sont `gametheory` et `formal_logic` — les autres portent `"*"` (couverture totale par dérivation), et `conway_cgt_lean` est sans gate par décision écrite (§4.1). Mesure sur le lake à liste bornée qui suit `main`, avant et après la tranche :
+
+| | compilés par le lake | cibles du gate | compilés hors liste |
+|---|---|---|---|
+| `main` | 66 | 23 | 43 |
+| après la tranche | 66 | 61 | 5 |
+
+Les cinq qui restent hors liste sont les seuls qui portent quelque chose à auditer : `RepeatedGames.Folk`, `RepeatedGames.Folk_en`, `RepeatedGames.Panel` et `RepeatedGames.Panel_en` portent un `sorry` de code réel, `StackelbergBilevel.StackelbergBilevel` porte quatre `native_decide`. Aucun n'entre dans la liste sans faire rougir la jambe (`axiom-fail-on-sorry: true`, et `native_decide` est une classe `forbidden`).
+
+**Ces nombres sont une mesure datée, pas un état du dépôt** : l'organe les recalcule à chaque invocation, et c'est sa sortie qui fait foi.
+
 ## 1. Portée et méthode
 
 **Axiomes cibles** (ce que `LeanVerifier.check_axioms` flagge désormais comme `forbidden` après le fix parser multiline #8740) :
