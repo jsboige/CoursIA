@@ -122,8 +122,8 @@ la lecture croisée des déclarations possible sans builder le dépôt amont.
 
 Le carnet compagnon qui enseigne l'énoncé et la chaîne en 4 maillons à l'échelle
 exécutable, avec le contrepoint Huang relu depuis ce lac :
-[`Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`](../../../Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb)
-(#25004).
+`Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`, dans la série
+[Complexity](../../../Complexity/README.md) (#25004).
 
 ## Notes
 
@@ -143,7 +143,8 @@ lake build Sensitivity
 
 - **[`SymbolicAI/Lean`](../README.md)** — index de la série parente
 - **Carnet compagnon AA** :
-  [`Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`](../../../Complexity/Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) —
+  `Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`, dans la série
+  [Complexity](../../../Complexity/README.md) —
   la conjecture d'Aaronson–Ambainis enseignée à l'échelle exécutable (#25004)
 - Huang (2019), *Induced subgraphs of hypercubes and a proof of the Sensitivity
   Conjecture*, Ann. Math. 190(3).
