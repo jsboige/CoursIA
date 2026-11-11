@@ -544,7 +544,15 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-Python.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb	2026-11-08	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb	2026-11-08	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34b-15Puzzle-Admissible-Astar-CSharp.ipynb	MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34-15Puzzle-Admissible-Astar-CSharp.ipynb	2026-11-08	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-01-StepCounting-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb	2026-11-09	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/c1330_xrp_dt_foldwise_research.ipynb	MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/xrp_dt_foldwise_research.ipynb	2026-11-09	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/c875_hmm_alpha_dm_research.ipynb	MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/hmm_alpha_dm_research.ipynb	2026-11-09	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/c875_per_fold_diag.py	MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/per_fold_diag.py	2026-11-09	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb	2026-11-11	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy_en.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb	2026-11-11	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb	MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb	2026-11-11	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb	2026-11-09	unknown
