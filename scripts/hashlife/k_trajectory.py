@@ -605,9 +605,10 @@ def measure_wolfram_trajectory(
         from ict.wolfram_step import wolfram_trajectory  # pli 2 PR #19793
     except ImportError as e:
         raise RuntimeError(
-            "ict.wolfram_step introuvable. L'organe (PR #19793) doit être "
-            "présent dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
-            f"et ce dossier doit être dans sys.path. Erreur: {e}"
+            "ict.wolfram_step introuvable. Voie contractuelle (#25381) : "
+            "pip install -e MyIA.AI.Notebooks/IIT/ICT-Series "
+            "(coeur leger, Python >= 3.9, sans PyPhi). Sans installation : "
+            "lancer depuis ICT-Series/ avec ce dossier dans sys.path. Erreur: {e}"
         )
 
     traj_1d = wolfram_trajectory(
@@ -1168,9 +1169,10 @@ def ksf_trajectory(
         from ict.wolfram_step import wolfram_trajectory  # pli 2 PR #19793
     except ImportError as e:
         raise RuntimeError(
-            "ict.wolfram_step introuvable. L'organe (PR #19793) doit etre "
-            "present dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
-            f"et ce dossier doit etre dans sys.path. Erreur: {e}"
+            "ict.wolfram_step introuvable. Voie contractuelle (#25381) : "
+            "pip install -e MyIA.AI.Notebooks/IIT/ICT-Series "
+            "(coeur leger, Python >= 3.9, sans PyPhi). Sans installation : "
+            "lancer depuis ICT-Series/ avec ce dossier dans sys.path. Erreur: {e}"
         )
 
     traj_1d = wolfram_trajectory(
@@ -1713,9 +1715,10 @@ def measure_wolfram_blocks(
         from ict.wolfram_step import wolfram_trajectory  # pli 2 PR #19793
     except ImportError as e:
         raise RuntimeError(
-            "ict.wolfram_step introuvable. L'organe (PR #19793) doit etre "
-            "present dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
-            "et ce dossier doit etre dans sys.path. Erreur: {e}"
+            "ict.wolfram_step introuvable. Voie contractuelle (#25381) : "
+            "pip install -e MyIA.AI.Notebooks/IIT/ICT-Series "
+            "(coeur leger, Python >= 3.9, sans PyPhi). Sans installation : "
+            "lancer depuis ICT-Series/ avec ce dossier dans sys.path. Erreur: {e}"
         )
 
     all_results = []
@@ -2109,9 +2112,10 @@ def wolfram_trajectory_from_state(
         from ict.wolfram_step import wolfram_step  # pli 2 PR #19793
     except ImportError as e:
         raise RuntimeError(
-            "ict.wolfram_step introuvable. L'organe (PR #19793) doit etre "
-            "present dans MyIA.AI.Notebooks/IIT/ICT-Series/ict/wolfram_step.py "
-            f"et ce dossier doit etre dans sys.path. Erreur: {e}"
+            "ict.wolfram_step introuvable. Voie contractuelle (#25381) : "
+            "pip install -e MyIA.AI.Notebooks/IIT/ICT-Series "
+            "(coeur leger, Python >= 3.9, sans PyPhi). Sans installation : "
+            "lancer depuis ICT-Series/ avec ce dossier dans sys.path. Erreur: {e}"
         )
 
     import numpy as np

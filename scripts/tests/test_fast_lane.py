@@ -2481,6 +2481,19 @@ def test_les_corps_de_succes_sont_vides():
     assert fast_lane_registry._body_md_hierarchy(0, "", dict(vert)) == ""
 
 
+def test_le_vert_tronque_ne_passe_pas_pour_integral():
+    """WARN adjoint 2026-11-10 (#24514 / livre par #25286) : un vert TRONQUE
+    (borne 50 carnets atteinte, rc=0, note de couverture presente) n'est pas
+    un vert integral. Les quatre builders de la famille prose conservent la
+    note de couverture SEULE -- pas de phrase de succes, pas de trailer."""
+    note = "51 notebooks changed; only first 50 were scanned"
+    tronque = {"merge_base": "abc", "trunc_note": note}
+    assert fast_lane_registry._body_claims_output(0, "", dict(tronque)) == note
+    assert fast_lane_registry._body_stale_claim(0, "", dict(tronque)) == note
+    assert fast_lane_registry._body_factual_mislabel(0, "", dict(tronque)) == note
+    assert fast_lane_registry._body_listing_coherence(0, "{}", dict(tronque)) == note
+
+
 def test_les_signaux_non_verts_parlent_toujours():
     """Abstention, panne d'usage, constat, exemption, vert PARTIEL : chacun
     reste un signal et garde la parole."""
