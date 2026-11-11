@@ -41,6 +41,7 @@ Usage
 -----
     python scripts/lean/check_i18n_siblings.py PATH [PATH ...]
     python scripts/lean/check_i18n_siblings.py --all
+    python scripts/lean/check_i18n_siblings.py --all --fr-import-advisory
 
 ``PATH`` may be a directory (scanned recursively for ``*_en.lean``) or a single
 ``*_en.lean`` file. ``--all`` scans the whole repository, skipping vendored /
@@ -73,6 +74,12 @@ excluded from the comparison by name (see :func:`is_repo_boilerplate`), so the
 advisory keeps its signal — every remaining hit is prose that really was never
 translated. The summary line carries the ``| N half-done (advisory)``
 counter regardless of exit code.
+
+An opt-in ``--fr-import-advisory`` adds a fifth advisory: in a declaring
+``*_en`` module, it reports imports of same-lake FR modules whose ``_en`` twin
+exists. It excludes prose-only and consumer-only modules and external imports
+such as Mathlib. It never changes the exit code; reviewers use the report to
+triage a possible mixed-namespace dependency chain.
 """
 from __future__ import annotations
 
@@ -82,6 +89,8 @@ import re
 import sys
 from collections import Counter
 from pathlib import Path
+
+from lake_selectors import LakefileError, lake_selectors, selected
 
 # Trees out of scope for the #4980 convention (vendored Mathlib, external lakes,
 # third-party fixtures) — cf lean-i18n.md §Lean i18n "Hors scope".
@@ -113,6 +122,15 @@ _NAMESPACE_DECL = re.compile(r"^\s*namespace\s+([\w.]+)", re.MULTILINE)
 # Import lines (matched on the comment-stripped EN source) feed the
 # consumer-pattern detection.
 _IMPORT_LINE = re.compile(r"^\s*import\s+([\w.]+)", re.MULTILINE)
+
+# A declaration is needed before an FR import is suspicious: prose-only
+# mirrors and consumer-only modules may legitimately import the FR source.
+_OWN_DECLARATION = re.compile(
+    r"^\s*(?:@\[[^\]]*\]\s*)?"
+    r"(?:private\s+|protected\s+|noncomputable\s+|partial\s+|unsafe\s+)*"
+    r"(?:theorem|lemma|def|instance|structure|class|abbrev|inductive)\b",
+    re.MULTILINE,
+)
 
 # A new top-level declaration (or a standalone attribute preceding one) starts
 # a comparison block for the consumer-pattern subset check.
@@ -198,6 +216,13 @@ def is_repo_boilerplate(body: str) -> bool:
     discipline as the ``allow-axioms`` whitelist of ``pr-review-discipline``
     §B). A body that merely *resembles* the header is not boilerplate: the
     match is anchored on both ends, so any additional sentence disqualifies it.
+
+    In particular, the fourteen ``_en.lean`` block bodies that concatenate the
+    header with a module title inside the same ``/- … -/`` block are **not**
+    exempted (measured 2026-11-02, #24161): the exemption covers the pure
+    header alone, and a header-plus-title body remains a compared block — it
+    stays flagged by ``is_half_done`` if it is shared verbatim with the FR
+    sibling.
     """
     text = " ".join(body.split())
     return bool(_LICENCE_BODY_RE.match(text))
@@ -351,6 +376,51 @@ def imports_fr_sibling(en_src_stripped: str, fr_module: str) -> bool:
     )
 
 
+def fr_import_siblings(en_path: Path) -> list[str]:
+    """Find same-lake FR imports with an existing ``_en`` twin.
+
+    This is an opt-in diagnostic, not a gate. It applies only to `_en` files
+    that declare in a suffixed namespace and contain their own declarations;
+    consumer-only and prose-only mirrors are deliberately excluded. Imports
+    such as Mathlib are outside the lake's source tree and therefore excluded.
+    """
+    if not en_path.name.endswith("_en.lean"):
+        return []
+    code = strip_comments(en_path.read_text(encoding="utf-8", errors="replace"))
+    namespaces = [m.group(1) for m in _NAMESPACE_DECL.finditer(code)]
+    if not any(ns.endswith("_en") for ns in namespaces):
+        return []
+    if not _OWN_DECLARATION.search(code):
+        return []
+
+    lakefile = next(
+        (parent / name for parent in (en_path.parent, *en_path.parents)
+         for name in _LAKEFILE_NAMES if (parent / name).is_file()),
+        None,
+    )
+    if lakefile is None:
+        return []
+    lake = lakefile.parent.resolve()
+    findings: list[str] = []
+    for match in re.finditer(r"^\s*import\s+(.+)$", code, re.MULTILINE):
+        tokens = iter(match.group(1).split())
+        for module in tokens:
+            if module == "as":
+                next(tokens, None)  # import alias, not another module
+                continue
+            if module.startswith(("«", '"')):
+                continue
+            if (not re.fullmatch(r"[\w]+(?:\.[\w]+)*", module)
+                    or module.endswith("_en")):
+                continue
+            target = lake.joinpath(*module.split(".")).with_suffix(".lean")
+            if not target.is_file() or _excluded(target):
+                continue
+            if target.with_name(target.stem + "_en.lean").is_file():
+                findings.append(module)
+    return findings
+
+
 def _drift_detail(fr_blocks: list[str], en_blocks: list[str],
                   fr_path: Path, en_path: Path) -> str:
     """Actionable ``DRIFT`` detail: list blocks *unique to each side* via
@@ -473,54 +543,6 @@ def fr_sibling(en_path: Path) -> Path:
 # byte-identical while the mirror silently sits outside the build.
 _LAKEFILE_NAMES = ("lakefile.toml", "lakefile.lean")
 
-# `.lean` glob tokens inside `globs := #[...]` / `roots := #[...]`:
-#   `Foo          → exact        Foo
-#   `Foo_en       → exact        Foo_en
-#   `Foo.*  `Foo.+ → glob-prefix Foo   (Foo and its submodules)
-#   .submodules `Foo / .andSubmodules `Foo → glob-prefix Foo
-_LEAN_BACKTICK = re.compile(
-    r"(?P<sub>\.submodules\s+|\.andSubmodules\s+)?"
-    r"`(?P<name>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)"
-    r"(?P<glob>\.\*|\.\+)?"
-)
-_LEAN_LIB = re.compile(r"lean_lib\s+«?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)»?")
-# `.toml` arrays: roots = [ "A", "B" ]  /  globs = [ "A.*" ]
-_TOML_ARRAY = re.compile(r"\b(?:roots|globs)\s*=\s*\[(.*?)\]", re.DOTALL)
-
-
-def lake_targets(lakefile: Path) -> tuple[set[str], set[str]]:
-    """Parse a lakefile into ``(exact, glob_prefixes)`` — the modules Lake will
-    compile. ``exact`` are single modules (``Foo``, ``Foo_en``); each entry of
-    ``glob_prefixes`` is a parent whose subtree is globbed (``Foo`` from
-    ``Foo.*`` / ``.submodules `Foo``). Returns empty sets when nothing parses,
-    so the caller can conservatively skip rather than false-flag."""
-    exact: set[str] = set()
-    globs: set[str] = set()
-    text = lakefile.read_text(encoding="utf-8", errors="replace")
-    if lakefile.name == "lakefile.toml":
-        # Drop `#` comments, then read quoted entries of roots/globs arrays.
-        text = re.sub(r"#[^\n]*", "", text)
-        for arr in _TOML_ARRAY.finditer(text):
-            for m in re.finditer(r'"([^"]+)"', arr.group(1)):
-                name = m.group(1)
-                if name.endswith((".*", ".+")):
-                    globs.add(name[:-2])
-                else:
-                    exact.add(name)
-    else:
-        # `.lean`: strip comments first (doc comments quote example globs, e.g.
-        # conway_cgt_lean's ``globs := #[`Foo, `Foo_en]`` in prose).
-        code = strip_comments(text)
-        for m in _LEAN_LIB.finditer(code):
-            exact.add(m.group(1))  # a lib with no globs roots at its own name
-        for m in _LEAN_BACKTICK.finditer(code):
-            if m.group("sub") or m.group("glob"):
-                globs.add(m.group("name"))
-            else:
-                exact.add(m.group("name"))
-    return exact, globs
-
-
 def enclosing_lake(en_path: Path, repo_root: Path) -> Path | None:
     """Nearest ancestor directory (up to ``repo_root``) holding a lakefile."""
     for d in [en_path.parent, *en_path.parents]:
@@ -535,18 +557,15 @@ def enclosing_lake(en_path: Path, repo_root: Path) -> Path | None:
 def check_en_built(en_path: Path, repo_root: Path) -> tuple[bool | None, str]:
     """Is ``en_path``'s module compiled by its lake? ``(True, "")`` when a root
     or glob covers it, ``(False, reason)`` when it is an orphan Lake never
-    builds (the #6749 trap), ``(None, reason)`` when undeterminable (no lakefile
-    / unparsable) — the caller skips those rather than false-flag."""
+    builds (the #6749 trap), ``(None, reason)`` when there is no lakefile.
+    An unparseable lakefile raises ``LakefileError`` instead of being skipped."""
     en_path = en_path.resolve()
     lakefile = enclosing_lake(en_path, repo_root)
     if lakefile is None:
         return None, "no enclosing lakefile"
-    exact, globs = lake_targets(lakefile)
-    if not exact and not globs:
-        return None, f"no roots/globs parsed from {lakefile.name}"
+    selectors = lake_selectors(lakefile.parent)
     module = ".".join(en_path.relative_to(lakefile.parent).with_suffix("").parts)
-    if module in exact or any(
-            module == g or module.startswith(g + ".") for g in globs):
+    if selected(module, selectors):
         return True, ""
     return False, (
         f"module `{module}` absent from {lakefile.name} roots/globs "
@@ -558,6 +577,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("paths", nargs="*", help="files or directories to scan")
     parser.add_argument("--all", action="store_true",
                         help="scan the whole repository")
+    parser.add_argument(
+        "--fr-import-advisory", action="store_true",
+        help=(
+            "report same-lake unsuffixed imports with an existing `_en` twin "
+            "in declaring `_en` modules; advisory only, never changes exit status"
+        ),
+    )
     parser.add_argument(
         "--allow-unbuilt", action="append", default=[],
         metavar="RELATIVE_PATH",
@@ -597,7 +623,7 @@ def main(argv: list[str] | None = None) -> int:
         print("No *_en.lean sibling files found — nothing to check.")
         return 0
 
-    passed = consumer = failed = orphan = unbuilt = half_done = 0
+    passed = consumer = failed = orphan = unbuilt = half_done = fr_imports = 0
     unbuilt_whitelisted = 0
     for en in sorted(en_files):
         fr = fr_sibling(en)
@@ -608,11 +634,18 @@ def main(argv: list[str] | None = None) -> int:
         # Orphan-trap guard (#6749): flag an `_en` mirror Lake never compiles.
         # Orthogonal to the body check below — a pair can be byte-identical yet
         # sit outside the build, which is exactly the failure CI misses.
-        built, why = check_en_built(en, repo_root)
+        try:
+            built, why = check_en_built(en, repo_root)
+        except LakefileError as exc:
+            print(f"ERROR   {exc}", file=sys.stderr)
+            return 2
         if built is False:
             # Compute the same POSIX-normalized path the CLI flag uses, so the
             # whitelist matches regardless of OS runner.
-            rel = en.resolve().relative_to(repo_root.resolve()).as_posix()
+            try:
+                rel = en.resolve().relative_to(repo_root.resolve()).as_posix()
+            except ValueError:
+                rel = en.resolve().as_posix()
             whitelisted = rel in allow_unbuilt
             unbuilt += 1
             tag = "  [WHITELISTED]" if whitelisted else ""
@@ -631,6 +664,11 @@ def main(argv: list[str] | None = None) -> int:
             failed += 1
             print(f"DRIFT   {en}")
             print(detail)
+        if args.fr_import_advisory:
+            imports = fr_import_siblings(en)
+            if imports:
+                fr_imports += len(imports)
+                print(f"FR-IMPORT  {en}  -> {', '.join(imports)} (advisory)")
         # HALF-DONE advisory (#7763): detect FR-canonical files that still
         # carry verbatim EN prose (the migration was started but never landed
         # on the FR side). Non-gating by design — some identical bodies are
@@ -647,7 +685,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"\n{passed}/{total} pairs byte-identical"
           f" | {consumer} consumer-pattern | {failed} drift | {orphan} orphan"
           f" | {unbuilt} unbuilt ({unbuilt_whitelisted} whitelisted)"
-          f" | {half_done} half-done (advisory)")
+          f" | {half_done} half-done (advisory)"
+          + (f" | {fr_imports} FR-import edge(s) (advisory)"
+             if args.fr_import_advisory else ""))
     # NB: half_done is ADVISORY — it does NOT flip the exit code. Some
     # legitimate scenarios produce identical bodies (a verbatim bibliographic
     # citation, etc.) and a human must triage; the licence header is excluded

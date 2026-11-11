@@ -1627,3 +1627,388 @@ def test_new_notebook_reports_all_its_binary_findings(tmp_path):
     head_payload = _notebook(['#r "/opt/ailleurs/Tweety.jar"'])
     found = clv.delta_binary_findings("nb.ipynb", None, head_payload, root)
     assert [item["kind"] for item in found] == ["binary_hors_depot"]
+
+
+# --------------------------------------------------------------------------
+# Canonique par serie (torch, numpy) -- #23073
+# --------------------------------------------------------------------------
+def _notebook_with_outputs(outputs: list[str]) -> dict:
+    """Carnet dont les cellules portent des sorties de type flux."""
+    return {
+        "cells": [
+            {
+                "cell_type": "code",
+                "source": ["print(1)"],
+                "metadata": {},
+                "outputs": [
+                    {"output_type": "stream", "name": "stdout", "text": [text]}
+                ],
+            }
+            for text in outputs
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+
+
+def test_series_prefix_covers_a_sub_series_but_not_a_sibling():
+    """La frontiere d'un prefixe de serie est un SEGMENT, pas une chaine."""
+    assert clv._series_covers(
+        "RL", "MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb"
+    )
+    assert clv._series_covers(
+        "RL", "MyIA.AI.Notebooks/RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb"
+    )
+    assert not clv._series_covers("RL", "MyIA.AI.Notebooks/RLance/RL-01.ipynb")
+
+
+def test_series_path_normalises_the_notebooks_root_prefix():
+    """Ecrit avec ou sans la racine des series, c'est la meme serie."""
+    assert clv.series_path("MyIA.AI.Notebooks/RL/RL-01.ipynb") == "RL/RL-01.ipynb"
+    assert clv.series_path("RL/RL-01.ipynb") == "RL/RL-01.ipynb"
+
+
+def test_la_canonique_par_serie_prime_sur_la_canonique_unique(tmp_path):
+    manifest = _manifest_with(
+        tmp_path,
+        [
+            {
+                "id": "torch",
+                "ecosystem": "observed",
+                "observe_outputs": True,
+                "canonical": "1.0.0",
+                "canonical_by_series": [
+                    {"series": "RL", "canonical": "2.13.0"},
+                    {"series": "RL/PostTraining", "canonical": "2.14.0"},
+                ],
+            }
+        ],
+    )
+    resolver = clv.CanonicalResolver(manifest, tmp_path)
+    assert (
+        resolver.for_notebook("torch", "MyIA.AI.Notebooks/RL/RL-06-DQN.ipynb")
+        == "2.13.0"
+    )
+    # Le prefixe le plus long gagne : PostTraining decrit une sous-serie plus
+    # fine que RL.
+    assert (
+        resolver.for_notebook(
+            "torch", "MyIA.AI.Notebooks/RL/PostTraining/RLPT-02.ipynb"
+        )
+        == "2.14.0"
+    )
+    # Une serie non couverte retombe sur la canonique unique.
+    assert (
+        resolver.for_notebook("torch", "MyIA.AI.Notebooks/ML/ML-01.ipynb")
+        == "1.0.0"
+    )
+
+
+def test_artifact_source_lit_le_pin_de_la_serie(tmp_path):
+    """Le manifeste POINTE vers l'artefact : il ne recopie pas la valeur."""
+    (tmp_path / "requirements.txt").write_text(
+        "# un commentaire\ntorch==2.14.0\n", encoding="utf-8"
+    )
+    manifest = _manifest_with(
+        tmp_path,
+        [
+            {
+                "id": "torch",
+                "ecosystem": "observed",
+                "observe_outputs": True,
+                "canonical_by_series": [
+                    {
+                        "series": "ML/04-Vision",
+                        "canonical_source": "artifact",
+                        "organ_path": "requirements.txt",
+                    }
+                ],
+            }
+        ],
+    )
+    resolver = clv.CanonicalResolver(manifest, tmp_path)
+    assert (
+        resolver.for_notebook("torch", "MyIA.AI.Notebooks/ML/04-Vision/4.5.ipynb")
+        == "2.14.0"
+    )
+    assert resolver.errors == []
+
+
+def test_artifact_source_accepte_un_plancher(tmp_path):
+    """Un `>=` est un plancher : la contrainte dit ce qu'elle est."""
+    (tmp_path / "requirements.txt").write_text(
+        "torch>=2.0   # Reseaux de neurones\nnumpy>=1.24\n", encoding="utf-8"
+    )
+    manifest = _manifest_with(
+        tmp_path,
+        [
+            {
+                "id": "numpy",
+                "ecosystem": "observed",
+                "observe_outputs": True,
+                "canonical_by_series": [
+                    {
+                        "series": "RL",
+                        "canonical_source": "artifact",
+                        "organ_path": "requirements.txt",
+                    }
+                ],
+            }
+        ],
+    )
+    resolver = clv.CanonicalResolver(manifest, tmp_path)
+    assert (
+        resolver.for_notebook("numpy", "MyIA.AI.Notebooks/RL/RL-06.ipynb")
+        == "1.24"
+    )
+
+
+def test_artifact_source_absent_est_une_erreur_nommee(tmp_path):
+    manifest = _manifest_with(
+        tmp_path,
+        [
+            {
+                "id": "torch",
+                "ecosystem": "observed",
+                "observe_outputs": True,
+                "canonical_by_series": [
+                    {
+                        "series": "RL",
+                        "canonical_source": "artifact",
+                        "organ_path": "requirements.txt",
+                    }
+                ],
+            }
+        ],
+    )
+    resolver = clv.CanonicalResolver(manifest, tmp_path)
+    assert resolver.errors, "un artefact absent doit etre signale"
+    assert "introuvable" in resolver.errors[0]
+
+
+def test_observed_versions_lit_les_formes_reelles_du_corpus(tmp_path):
+    manifest = _manifest_with(
+        tmp_path,
+        [{"id": "torch", "ecosystem": "observed", "observe_outputs": True}],
+    )
+    payload = _notebook_with_outputs(
+        [
+            "torch 2.13.0+cu126\n",
+            "torch=2.8.0+cu126\n",
+            "torch        : 2.6.0+cu124 (cuda 12.4)\n",
+            '"torch_version": "2.14.0+cu126",\n',
+            "Imports OK : gymnasium 1.3.0, torch 2.11.0+cu126\n",
+        ]
+    )
+    observed = clv.observed_versions_from_payload(payload, manifest)
+    assert {version for _cell, _line, version in observed["torch"]} == {
+        "2.13.0",
+        "2.8.0",
+        "2.6.0",
+        "2.14.0",
+        "2.11.0",
+    }
+
+
+def test_les_metriques_ne_sont_pas_des_versions(tmp_path):
+    """`2.22e-16` et `0.4014` sont des mesures, pas des versions.
+
+    Cas mesure : `3.2-Optimisateurs.ipynb` affiche « ecart max apres 1 pas
+    NumPy vs torch = 2.22e-16 » et `3.3-Regularisation.ipynb` affiche
+    « numpy=0.4014 | torch=0.4007 ». Un motif de version trop permissif les
+    confondrait avec des versions chargees.
+    """
+    manifest = _manifest_with(
+        tmp_path,
+        [
+            {"id": "torch", "ecosystem": "observed", "observe_outputs": True},
+            {"id": "numpy", "ecosystem": "observed", "observe_outputs": True},
+        ],
+    )
+    payload = _notebook_with_outputs(
+        [
+            "ecart max apres 1 pas NumPy vs torch = 2.22e-16\n",
+            "numpy=0.4014 | torch=0.4007\n",
+        ]
+    )
+    assert clv.observed_versions_from_payload(payload, manifest) == {}
+
+
+def test_le_tag_de_construction_local_ne_compte_pas_comme_un_recul():
+    """`2.14.0+cu126` est la MEME release que `2.14.0`.
+
+    Le comparateur de versions traite un suffixe `+` comme un marqueur de
+    pre-publication : sans normalisation, `2.14.0+cu126` serait classe en
+    dessous de `2.14.0` -- un faux recul sur la quasi-totalite des carnets.
+    """
+    assert clv._base_version("2.14.0+cu126") == "2.14.0"
+    assert clv.compare_versions("2.14.0+cu126", "2.14.0") < 0
+    assert clv.compare_versions(clv._base_version("2.14.0+cu126"), "2.14.0") == 0
+
+
+def _rl_resolver(tmp_path: Path, canonical: str = "2.13.0"):
+    manifest = _manifest_with(
+        tmp_path,
+        [
+            {
+                "id": "torch",
+                "ecosystem": "observed",
+                "observe_outputs": True,
+                "canonical_by_series": [
+                    {"series": "RL", "canonical": canonical}
+                ],
+            }
+        ],
+    )
+    return manifest, clv.CanonicalResolver(manifest, tmp_path)
+
+
+def test_le_constat_signale_un_recul_de_charge(tmp_path):
+    """Cas #23941 : le carnet est re-execute sous une version inferieure."""
+    manifest, resolver = _rl_resolver(tmp_path)
+    payload = _notebook_with_outputs(["torch 2.9.0+cu126\n"])
+    findings = clv.observed_findings(
+        "MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb",
+        payload,
+        manifest,
+        resolver,
+    )
+    assert len(findings) == 1
+    assert findings[0]["kind"] == "downgrade"
+    assert findings[0]["version"] == "2.9.0"
+    assert findings[0]["canonical"] == "2.13.0"
+
+
+def test_une_version_superieure_au_plancher_n_est_pas_un_defaut(tmp_path):
+    """La serie converge vers le haut : 2.14 sur un plancher de 2.13 est sain."""
+    manifest, resolver = _rl_resolver(tmp_path)
+    payload = _notebook_with_outputs(["torch 2.14.0+cu126\n"])
+    findings = clv.observed_findings(
+        "MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb",
+        payload,
+        manifest,
+        resolver,
+    )
+    assert findings == []
+
+
+def test_le_delta_ne_signale_pas_une_derive_historique(tmp_path):
+    """La 2.6 etait deja la en base : elle ne pese pas sur la PR."""
+    manifest, resolver = _rl_resolver(tmp_path)
+    base = _notebook_with_outputs(["torch 2.6.0+cu124\n"])
+    head = _notebook_with_outputs(["torch 2.6.0+cu124\n", "print(2)\n"])
+    assert (
+        clv.delta_observed_findings(
+            "MyIA.AI.Notebooks/RL/RLPT-02-GRPO-Minimal-Python.ipynb",
+            base,
+            head,
+            manifest,
+            resolver,
+        )
+        == []
+    )
+
+
+def test_le_delta_signale_un_recul_introduit_par_la_pr(tmp_path):
+    """La PR fait passer le carnet de 2.14.0 a 2.9.0 : le constat tombe."""
+    manifest, resolver = _rl_resolver(tmp_path)
+    base = _notebook_with_outputs(["torch 2.14.0+cu126\n"])
+    head = _notebook_with_outputs(["torch 2.9.0+cu126\n"])
+    findings = clv.delta_observed_findings(
+        "MyIA.AI.Notebooks/RL/RL-06-DQN-Policy-Gradient-Python.ipynb",
+        base,
+        head,
+        manifest,
+        resolver,
+    )
+    assert [item["version"] for item in findings] == ["2.9.0"]
+
+
+def test_le_recensement_liste_les_carnets_en_dessous_de_la_canonique(
+    tmp_path, monkeypatch
+):
+    manifest = _manifest_with(
+        tmp_path,
+        [
+            {
+                "id": "torch",
+                "ecosystem": "observed",
+                "observe_outputs": True,
+                "canonical_by_series": [
+                    {"series": "RL", "canonical": "2.13.0"}
+                ],
+            }
+        ],
+    )
+    folder = tmp_path / "MyIA.AI.Notebooks" / "RL"
+    folder.mkdir(parents=True)
+    notebook = folder / "RLPT-02-GRPO-Minimal-Python.ipynb"
+    notebook.write_text(
+        json.dumps(_notebook_with_outputs(["torch 2.6.0+cu124\n"])),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(clv, "tracked_notebooks", lambda root: [notebook])
+    report = clv.run_census(tmp_path, manifest)
+    below = report["below_canonical"]
+    assert len(below) == 1
+    assert below[0]["version"] == "2.6.0"
+    assert below[0]["canonical"] == "2.13.0"
+    assert below[0]["series"] == "RL"
+    rendered = clv.render_census(report)
+    assert "Carnets en dessous de la canonique de leur serie" in rendered
+
+
+def test_versioned_fallbacks_distinguish_code_from_prose():
+    payload = _notebook([
+        '''try:
+    import example
+except ImportError:
+    print("Skipped: Example 1.28+ API change")
+    print("Skipped: unavailable")
+    print("Example version 1.28 available")
+    # print("Skipped: Example 1.28")
+    text = "Skipped: Example 1.28"
+    def later():
+        print("Skipped: Example 1.28")
+''',
+        '"""except ImportError: print("Skipped: Example 1.28")"""',
+        'print("Skipped: Example 1.28")',
+    ])
+    payload["cells"].append({"cell_type": "markdown", "source": "Skipped 1.28"})
+    found = clv.versioned_fallbacks("x.ipynb", payload)
+    assert len(found) == 1
+    assert found[0]["cell"] == 0 and found[0]["line"] == 4
+    assert found[0]["message"] == "Skipped: Example 1.28+ API change"
+
+
+def test_versioned_fallback_advisory_in_text_and_json(tmp_path, capsys):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"schema_version": 1, "libraries": [], "allowlist": []}))
+    _write_notebook(tmp_path, "nb.ipynb", [
+        'try:\n    import example\nexcept ImportError:\n    print("Skipped: Example 1.28")\n'
+    ])
+    args = ["--manifest", str(manifest), "--repo-root", str(tmp_path), "nb.ipynb"]
+    assert clv.main(args + ["--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["findings"] == []
+    assert report["advisories"][0]["kind"] == "repli_versionne"
+    assert clv.main(args) == 0
+    output = capsys.readouterr().out
+    assert "Avis non bloquants" in output
+    assert "Skipped: Example 1.28" in output
+
+
+def test_versioned_fallback_is_advisory_in_changed_mode(tmp_path, capsys, monkeypatch):
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"schema_version": 1, "libraries": [], "allowlist": []}))
+    notebook = _write_notebook(tmp_path, "nb.ipynb", [
+        'try:\n    import example\nexcept ImportError:\n    print("Skipped: Example 1.28")\n'
+    ])
+    monkeypatch.setattr(clv, "changed_notebooks", lambda root, revision: ([notebook], "base"))
+    monkeypatch.setattr(clv, "notebook_at", lambda root, revision, relative: _notebook([]))
+    rc = clv.main(["--changed", "base...HEAD", "--json", "--manifest", str(manifest),
+                   "--repo-root", str(tmp_path)])
+    report = json.loads(capsys.readouterr().out)
+    assert rc == 0 and report["findings"] == []
+    assert report["advisories"][0]["notebook"] == "nb.ipynb"

@@ -12,6 +12,7 @@ de git reel.
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -186,10 +187,25 @@ class ScriptedRunner:
         # du ``gh api .../check-runs`` (une ligne JSON par jambe). Defaut :
         # le jeu nominal vert.
         check_runs: str | None = None,
+        main_check_runs: str | None = None,
+        main_sha: str = "a" * 40,
+        # #24828 : historique de main lu par la sentinelle (SHA du plus
+        # recent au plus ancien) et check-runs par SHA. Le defaut : un seul
+        # commit (la tete), avec le jeu de checks nominal.
+        main_history: list[str] | None = None,
+        main_checks_by_sha: dict[str, str] | None = None,
     ):
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
         self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
+        self.main_check_runs = main_check_runs if main_check_runs is not None else json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "success",
+             "status": "completed", "started_at": "2026-11-08T10:00:00Z",
+             "output": {"summary": "21 000 passed"}}
+        ])
+        self.main_sha = main_sha
+        self.main_history = list(main_history) if main_history is not None else [main_sha]
+        self.main_checks_by_sha = main_checks_by_sha or {}
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -268,6 +284,19 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
+            return mr.RunResult(0, self.main_sha + "\n", "")
+        if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
+            # Historique de main lu par la sentinelle (le plus recent d'abord).
+            return mr.RunResult(0, "\n".join(self.main_history) + "\n", "")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            sha = c[2].split("/commits/", 1)[1].split("/", 1)[0]
+            if sha == self.main_sha or sha in self.main_history:
+                payload = self.main_checks_by_sha.get(sha, self.main_check_runs)
+                return mr.RunResult(0, "\n".join(
+                    json.dumps(row) for row in json.loads(payload)
+                ), "")
+            return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
             # #25059 : etape 6 bis. La branche est AVANT celle des commits :
             # l'URL des check-runs porte `/commits/` et serait capturee par
@@ -980,6 +1009,204 @@ def test_hold_file_override(tmp_path):
     )
     assert rc == 0
     assert lines[-1]["reason"] == "hold:ordre de stack"
+
+
+def test_main_rouge_pose_hold_nommee_et_bloque_tout_merge(tmp_path):
+    disposable = tmp_path / "repo-jetable"
+    disposable.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=disposable, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=disposable, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=disposable, check=True)
+    (disposable / "preuve.txt").write_text("main\n", encoding="utf-8")
+    subprocess.run(["git", "add", "preuve.txt"], cwd=disposable, check=True)
+    subprocess.run(["git", "commit", "-m", "commit rouge simule"], cwd=disposable, check=True, capture_output=True)
+    main_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=disposable, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).stdout.strip()
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+    hold.write_text("16808 attente utilisateur\n", encoding="utf-8")
+    red = ScriptedRunner(
+        main_check_runs=json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+             "status": "completed", "started_at": "2026-11-08T11:00:00Z",
+             "output": {"summary": "FAILED scripts/tests/test_guard.py::test_case - assertion"}}
+        ]),
+        main_sha=main_sha,
+    )
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=red)
+    rows = [json.loads(row) for row in journal.read_text(encoding="utf-8").splitlines()]
+    assert rc == 0
+    assert rows[0]["reason"].startswith("hold:main-red-sentinel sha=" + red.main_sha)
+    assert "test=scripts/tests/test_guard.py::test_case" in rows[0]["reason"]
+    assert not any("gh pr view" in cmd or "gh pr merge" in cmd for cmd in red.flat())
+    assert hold.read_text(encoding="utf-8").splitlines() == [
+        "16808 attente utilisateur",
+        "0 main-red-sentinel sha=" + red.main_sha
+        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case",
+    ]
+
+    # Le vert retire uniquement la ligne appartenant a la sentinelle.
+    green = ScriptedRunner(main_sha=main_sha)
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=green)
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert any("gh pr merge 123" in cmd for cmd in green.flat())
+
+
+def test_main_check_absent_fail_closed(tmp_path):
+    runner = ScriptedRunner(main_check_runs="[]")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 2
+    assert lines == []
+    assert not any("gh pr merge" in cmd for cmd in runner.flat())
+
+
+# --- remontee dans l'historique de main (revue ai-01 du 2026-11-10) ---------
+# Points 1 et 2 : on juge le dernier commit qui porte un VERDICT TERMINE,
+# et seul `failure` pose la retenue.
+
+
+def _scripts_check(conclusion, status="completed", summary="21 000 passed", started="2026-11-10T10:00:00Z"):
+    return json.dumps([
+        {"name": "Scripts Tests (CPU)", "conclusion": conclusion, "status": status,
+         "started_at": started, "output": {"summary": summary}}
+    ])
+
+
+def test_sentinelle_juge_le_commit_derriere_une_tete_en_cours(tmp_path):
+    """Point 1 : un check EN COURS n'est pas un refus de demarrer.
+
+    On remonte l'historique et on juge le premier verdict TERMINE trouve.
+    """
+    tete = "1" * 40
+    ancien = "2" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check(None, status="in_progress", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    journal = tmp_path / "journal.jsonl"
+    rc = mr.run(
+        ["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=runner
+    )
+    assert rc == 0
+    # La retenue nomme le commit JUGUE, pas la tete.
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+    assert "test=scripts/tests/test_x.py::test_y" in contenu
+
+
+def test_sentinelle_cancelled_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `cancelled` est de l'INFRA, pas un verdict de code."""
+    tete = "3" * 40
+    ancien = "4" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("cancelled", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+
+
+def test_sentinelle_timed_out_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `timed_out` est de l'INFRA ; le verdict vert precedent gagne."""
+    tete = "5" * 40
+    ancien = "6" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("timed_out", summary=""),
+            ancien: _scripts_check("success"),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    # Aucun verdict de code rouge : la sentinelle n'ecrit aucune retenue.
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert "main-red-sentinel" not in contenu
+
+
+def test_sentinelle_sans_verdict_termine_fail_closed_borne(tmp_path, capsys):
+    """Point 3 : fail-closed AVEC la borne nommee (N ecrit)."""
+    history = [f"{i:040x}" for i in range(1, mr.MAIN_RED_HISTORY_LIMIT + 1)]
+    runner = ScriptedRunner(
+        main_sha=history[0],
+        main_history=history,
+        main_checks_by_sha={
+            sha: _scripts_check(None, status="in_progress", summary="")
+            for sha in history
+        },
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "fail-closed" in err
+    assert str(mr.MAIN_RED_HISTORY_LIMIT) in err
+
+
+def test_clear_main_red_hold_ne_retire_que_la_ligne_de_la_sentinelle(tmp_path):
+    """Point 3 : la voie manuelle ne touche PAS les retenues du coordinateur."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    assert mr.clear_main_red_hold(hold) is True
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    # Idempotent : une seconde passe ne trouve plus rien a retirer.
+    assert mr.clear_main_red_hold(hold) is False
+
+
+def test_cli_clear_main_red_hold_nappelle_pas_gh(tmp_path):
+    """La voie manuelle sort avant tout appel GitHub."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    runner = ScriptedRunner()
+    rc = mr.run(
+        ["--clear-main-red-hold", "--hold-file", str(hold)], runner=runner
+    )
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert runner.flat() == []
 
 
 # --- disposition de review classee a la tete evaluee (point 1 de #17672) ---------
@@ -2078,3 +2305,224 @@ def test_combined_operator_rollback_env(tmp_path, monkeypatch):
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[0]["verdict"] == "would-merge"
     assert _combined_calls(runner) == []
+
+
+# --- #24989 : garde Lean -- attestation de `lake build` local -----------------
+# La regle HARD `lean-merge-discipline.md` §1 exige un `lake build` local par
+# ai-01 avant tout merge d'une PR qui touche du Lean. La garde exige une
+# **preuve** : un commentaire d'attestation pose par `myia-ai-01` et couvrant
+# la tete. La couverture de tete suit la meme regle que l'APPROVE (remontee
+# first-parent de merge_dwell).
+
+LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean"
+ATTESTED_SHA = "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
+
+
+def _attestation_body(
+    sha: str = HEAD,
+    *,
+    lakes: str = "conway_lean",
+    jobs: int = 2948,
+    tag: str = "[ACTION] lake build local",
+) -> str:
+    """Corps d'un commentaire d'attestation, au format canonique."""
+    return (
+        "{tag}\n\n"
+        "PR #123\n"
+        "tete: {sha}\n"
+        "lakes: {lakes}\n"
+        "jobs: {jobs}\n"
+    ).format(tag=tag, sha=sha, lakes=lakes, jobs=jobs)
+
+
+def _attestation_comment(
+    sha: str = HEAD, *, login: str = "myia-ai-01", created: str = "2026-11-06T18:00:00Z",
+    body: str | None = None,
+) -> dict:
+    """Commentaire d'attestation, forme de ``gh pr view --json comments``."""
+    return {
+        "author": {"login": login},
+        "body": body if body is not None else _attestation_body(sha),
+        "createdAt": created,
+    }
+
+
+def test_diff_lean_sans_attestation_donne_un_skip(tmp_path):
+    """Controle positif : un diff `.lean` sans attestation est bloque."""
+    view = default_view(files=(LEAN_FILE,))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert lines[-1]["merged"] is False
+    # la garde est en AMONT des organes couteux : rien n'a ete paye
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
+
+
+def test_diff_sans_lean_n_est_pas_affecte(tmp_path):
+    """Controle negatif : un diff sans Lean n'exige aucune attestation."""
+    view = default_view(files=("src/a.py", "docs/b.md"))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+
+
+def test_outillage_lean_sans_attestation_donne_un_skip(tmp_path):
+    """``lakefile.*``, ``lean-toolchain`` et ``lake-manifest.json`` sont des
+    fichiers Lean : changer la toolchain change ce que le build doit prouver."""
+    for path in (
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+    ):
+        runner = ScriptedRunner(views={123: default_view(files=(path,))})
+        _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+        assert lines[-1]["reason"] == "lean:no-local-build-attestation", path
+
+
+def test_attestation_a_la_tete_passe(tmp_path):
+    """Attestation posee a la tete exacte : la garde laisse passer."""
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+
+
+def test_attestation_signee_par_un_autre_login_est_refusee(tmp_path):
+    """Une attestation posee par une autre lane ne vaut rien : l'acte est
+    celui du coordinateur."""
+    for login in ("jsboige", "myia-po-2026:CoursIA", "clusterManager-Myia"):
+        view = default_view(
+            files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, login=login)]
+        )
+        runner = ScriptedRunner(views={123: view})
+        _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+        assert lines[-1]["reason"] == "lean:no-local-build-attestation", login
+
+
+def test_attestation_avec_un_autre_tag_est_refusee(tmp_path):
+    """Le tag en premiere ligne est le contrat : un corps qui cite le SHA
+    dans la prose n'est pas une attestation."""
+    body = _attestation_body(HEAD, tag="[DIAG] lake build local")
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, body=body)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_sans_champ_tete_est_refusee(tmp_path):
+    """Un SHA cite en prose ne fait pas une attestation : seul le champ
+    etiquete ``tete:`` porte le SHA atteste."""
+    body = "[ACTION] lake build local\n\nSHA {} cite en prose.\n".format(HEAD)
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, body=body)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tmp_path):
+    """L'attestation perime quand un commit de contenu passe apres elle."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    runner = ScriptedRunner(
+        views={123: view}, **refresh_topology(head_parents=[HEAD_MOVED])
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert lines[-1]["merged"] is False
+
+
+def test_attestation_suivie_d_un_rafraichissement_seul_laisse_passer(tmp_path):
+    """L'attestation survit a un rafraichissement de base PROUVE content-free :
+    la couverture de tete suit la meme regle que l'APPROVE."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    runner = ScriptedRunner(views={123: view}, **refresh_topology())
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["merged"] is True
+
+
+def test_attestation_illisible_fail_closed(tmp_path):
+    """Preuve illisible (base absente) -> refus, jamais « c'est propre »."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    view["baseRefOid"] = ""
+    runner = ScriptedRunner(views={123: view}, **refresh_topology())
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "lean:local-build-attestation-unverifiable:no-base"
+
+
+def test_l_attestation_la_plus_recente_gagne(tmp_path):
+    """Deux attestations : la plus recente regne (l'ordre est celui du
+    serveur, ``createdAt``)."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[
+            _attestation_comment(
+                ATTESTED_SHA, created="2026-11-06T18:00:00Z"
+            ),
+            _attestation_comment(
+                HEAD, created="2026-11-06T19:00:00Z"
+            ),
+        ],
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+
+
+def test_une_attestation_postee_sur_une_autre_pr_ne_suffit_pas(tmp_path):
+    """Une attestation qui cite une autre tete (SHA inconnu de la PR) ne
+    couvre pas la tete courante : la remontee echoue -> refus explicite."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(ATTESTED_SHA)],
+    )
+    runner = ScriptedRunner(views={123: view}, commits={})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] in (
+        "lean:local-build-attestation-unverifiable",
+        "lean:no-local-build-attestation",
+    )
+    assert lines[-1]["merged"] is False
+
+
+def test_format_partage_entre_organe_et_garde():
+    """L'organe qui ECRIT et la garde qui LIT partagent le meme format : un
+    corps rendu par l'organe est relu par la garde."""
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "lean_build_attestation_under_test",
+        HERE.parent / "lean" / "lean_build_attestation.py",
+    )
+    module = _ilu.module_from_spec(spec)
+    sys.modules["lean_build_attestation_under_test"] = module
+    spec.loader.exec_module(module)
+
+    body = module.render_attestation(
+        sha=HEAD, lakes=["conway_lean"], jobs=2948, pr=123
+    )
+    assert module.first_line(body) == module.ATTESTATION_TAG
+    parsed = module.parse_attestation(body)
+    assert parsed and parsed["sha"] == HEAD
+    assert parsed["lakes"] == ["conway_lean"]
+    assert parsed["jobs"] == 2948

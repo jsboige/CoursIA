@@ -33,6 +33,10 @@
 | 04 | **04d** — Secrétaire matroïdal | Sahil Singla (conjecture 2007) | Banc P[accept \| e ∈ OPT], garantie 1/4 |
 | 05 | **05b** — La permanente, frontière quantique | Scott Aaronson & Alex Arkhipov (2011) | BosonSampling, TV vs loi $\lvert\mathrm{perm}\rvert^2$ |
 | 06 | **06b** — Aaronson–Gottesman 2004 | Scott Aaronson & Daniel Gottesman (*Improved Simulation of Stabilizer Circuits*) | Formalisme stabilisateur, port CHP, banc discriminant Clifford |
+| 06 | **06c** — Classical at heart | Dakshita Khurana (« Classical at heart », 8/10/2026) ; avec Scott Aaronson & Greg Kuperberg, Lombardi-Ma-Wright, Nehoran-Yuen, Huang-Ramkumar-Wright | Synthèse unitaire par oracle classique (préparer un état vs implémenter une unitaire), solution OpenAI revendiquée en cours de vérification, jouet stabilisateur : préparation triviale, synthèse qui exige la structure |
+| 06 | **06d** — Aaronson–Ambainis, la variable influente | Scott Aaronson & Andris Ambainis (*The Need for Structure in Quantum Speedups*, 2014) ; David Turturean / Physical Superintelligence (preuve formalisée en Lean 4, 2026) | Influences, degré $2T$ des probabilités d'acceptation, rangées minimales par programmation linéaire, chaîne en 4 maillons mesurée en ombres, algorithme C |
+| 07 | **07b** — Le tour des grands nombres | Tibor Radó (le castor affairé, 1962) ; avec Ackermann, Knuth, Conway, Graham, Kruskal/Friedman, Rayo | Hiérarchie à croissance rapide : Ackermann-Péter exécutée, flèches de Knuth et chaînes de Conway (descripteurs mesurés), arbres de Kruskal en jouet déclaré, castor affairé simulé ($n = 2, 3, 4$) |
+| 07 | **07c** — Le bilan mathocalypse | Scott Aaronson (« The Mathocalypse », Shtetl-Optimized, 7/10/2026) | Bilan de la vague OpenAI du 6/10/2026 (372 résultats), mini-zoo par code, barrières d'exposants cassées (produit matriciel, multiplication d'entiers), contrepoint Williams–Alman, crossover mesuré |
 
 ## Règles de fabrication
 

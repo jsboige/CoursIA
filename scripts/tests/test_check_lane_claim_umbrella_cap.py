@@ -40,6 +40,8 @@ import pick_idle_grain as pig
 NOW = dt.datetime(2026, 10, 26, 12, 0, tzinfo=dt.UTC)
 CAUSE_PREFIX = "PLAFOND EPIC (#22500)"
 SERRE100 = 16334  # l'EPIC de la mesure fondatrice (11 PRs ouvertes en 10 j)
+LANE = "myia-ai-01:CoursIA-2"        # la lane qui interroge
+OTHER_LANE = "myia-po-2024:CoursIA"  # une autre lane du cluster
 
 
 # --- helpers -----------------------------------------------------------------
@@ -111,13 +113,17 @@ class Loaders:
 
 
 def run(payload, loaders, **kwargs):
-    """`_run_check` avec le plafond cable sur des lectures injectees."""
+    """`_run_check` avec le plafond cable sur des lectures injectees.
+
+    La lane qui interroge est passee a l'organe : #25443 exclut du plafond
+    le propre marqueur de cette lane quand N est l'EPIC lui-meme.
+    """
     return clc._run_check(
-        payload, "myia-ai-01:CoursIA-2",
+        payload, LANE,
         epic_cap=True,
         epic_cap_probe=lambda p: clc.epic_visit_cap(
             p, now=NOW, parent_loader=loaders.parent,
-            pool_loader=loaders.pool_),
+            pool_loader=loaders.pool_, my_lane=LANE),
         **kwargs,
     )
 
@@ -206,21 +212,161 @@ def test_second_daughter_within_the_week_is_blocked_by_the_first(capsys):
 
 # --- claim pose directement sur l'EPIC (demande explicite) -------------------
 
-def test_claim_on_the_epic_itself_is_capped(capsys):
-    # Claim sur l'EPIC par la lane elle-meme : `others` reste vide (sinon le
-    # blocage d'une autre lane rendrait exit 1 pour une autre raison, et le
-    # plafond serait saute -- cf le test dedie plus bas).
+def test_claim_on_the_epic_by_another_lane_is_capped(capsys):
+    """Controle POSITIF : la visite d'une AUTRE lane arme encore le plafond.
+
+    #25443 a retire du plafond le propre marqueur de la lane qui interroge ;
+    il n'a pas retire la regle. Le claim d'une autre lane, pose il y a moins
+    de 7 jours, arme toujours le plafond.
+
+    La claim est agee de 3 jours : le filtrage de peremption (48 h) la sort
+    des blockers -- sans quoi le verdict serait exit 1 pour une AUTRE
+    raison (le blocage de l'autre lane) et le plafond ne serait jamais
+    mesure. Ce qui reste a etre verifie ici est donc bien le plafond.
+    """
     payload = epic(comments=[comment(
-        "[CLAIMED] lane myia-ai-01:CoursIA-2 -- tranche", iso(days=3))])
+        f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3))])
     loaders = Loaders(pool=[])
-    rc = run(payload, loaders)
+    rc = run(payload, loaders, stale_threshold=48)
     assert rc == 1
     data = report(capsys)
     assert data["epic_visit_cap"].startswith(CAUSE_PREFIX)
-    assert "claim pose sur l'EPIC il y a 3.0 j" in data["epic_visit_cap"]
+    # #22687 constat 1 : la cause NOMME le marqueur retenu au lieu du mot
+    # generique « claim », qui affirmait une prise sur tout marqueur -- y
+    # compris un `[RELEASED]` (cf le test dedie plus bas).
+    assert "prise sur l'EPIC il y a 3.0 j" in data["epic_visit_cap"]
     assert data["epic_visit_cap_epic"] == SERRE100
     # L'EPIC est N lui-meme : sa charge est deja lue, aucun parent a chercher.
     assert loaders.parent_calls == []
+
+
+def test_claim_on_the_epic_by_the_same_lane_is_clear(capsys):
+    """#25443 -- le controle qui suit le claim ne se bloque pas sur lui.
+
+    La sequence du protocole est : on pose son `[CLAIMED]`, puis on relance
+    le controle AVANT d'editer. Instance mesuree : po-2027 sur #12051,
+    claim de 06:42:59Z, verdict `PLAFOND EPIC (#22500) ... il y a 0.0 j`
+    trois minutes plus tard -- sur son propre marqueur.
+    """
+    payload = epic(comments=[comment(
+        f"[CLAIMED] lane {LANE} -- tranche", iso(minutes=3))])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders)
+    assert rc == 0
+    data = report(capsys)
+    assert data["epic_visit_cap"] is None
+    assert data["blocked"] is False
+
+
+def test_closed_visit_of_the_querying_lane_still_caps(capsys):
+    """Controle POSITIF, version du COORDINATEUR (demande du 09/11) : une
+    visite PASSEE ET CLOSE de la lane qui interroge arme encore le plafond.
+
+    #25443 tranche 1 ecartait du plafond TOUS les marqueurs de la lane qui
+    interroge, ses visites passees et closes comprise. Le plafond devenait
+    « une visite par semaine et par AUTRE lane » au lieu de « un EPIC hors
+    consolidation se visite au plus une fois par semaine » (#22500) : une
+    lane seule sur un EPIC pouvait le reprendre chaque jour -- livrer une
+    tranche le lundi, en claimer une autre le mardi, et lire `CLEAR`.
+
+    Ici la visite est CLOSE (`[DELIVERED]` de la lane) : elle continue
+    d'armer le plafond, datee par son marqueur de cloture.
+    """
+    payload = epic(comments=[
+        comment(f"[CLAIMED] lane {LANE} -- tranche 1", iso(days=3)),
+        comment(f"[DELIVERED] lane {LANE} -- PR #1234",
+                iso(days=3, minutes=-5)),
+    ])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders)
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert cause.startswith(CAUSE_PREFIX)
+    assert "livraison sur l'EPIC il y a 3.0 j" in cause
+    # L'EPIC est N lui-meme : sa charge est deja lue, aucun parent a chercher.
+    assert loaders.parent_calls == []
+
+
+def test_in_progress_claim_does_not_erase_the_closed_visit(capsys):
+    """Cas MIXTE : visite close de la lane il y a 3 jours, puis claim en
+    cours de la MEME lane il y a 3 minutes.
+
+    C'est le cas qui distingue « visite en cours » de « toutes les visites »
+    (demande du coordinateur, point 3). Le claim de la minute ne s'auto-
+    bloque pas -- mais la visite close continue d'armer le plafond, et c'est
+    sa CLOTURE qui le date, pas le claim.
+    """
+    payload = epic(comments=[
+        comment(f"[CLAIMED] lane {LANE} -- tranche 1", iso(days=3)),
+        comment(f"[DELIVERED] lane {LANE} -- PR #1234",
+                iso(days=3, minutes=-5)),
+        comment(f"[CLAIMED] lane {LANE} -- tranche 2", iso(minutes=3)),
+    ])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders)
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert cause.startswith(CAUSE_PREFIX)
+    assert "livraison sur l'EPIC il y a 3.0 j" in cause
+    # La date retenue est celle de la CLOTURE : si le claim de la minute
+    # armait le plafond, la cause porterait « il y a 0.0 j ».
+    assert "il y a 0.0 j" not in cause
+
+
+def test_coordinator_override_naming_the_lane_is_clear(capsys):
+    """#25443 -- l'override qui rend le grain a la lane ne rearme pas le plafond.
+
+    Instance mesuree : #12051, 07:52Z -- apres l'`[OVERRIDE]` du
+    coordinateur qui rendait la tranche a po-2027, le meme controle rendait
+    `override sur l'EPIC il y a 0.0 j` et seul `--force` passait.
+    """
+    payload = epic(comments=[comment(
+        f"[OVERRIDE] lane {LANE} -- paths: CLAUDE.md, README.md -- "
+        "arbitrage du coordinateur : la tranche est rendue a cette lane",
+        iso(minutes=5), author="myia-ai-01")])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders)
+    assert rc == 0
+    data = report(capsys)
+    assert data["epic_visit_cap"] is None
+    assert data["blocked"] is False
+
+
+def test_released_marker_on_the_epic_is_named_not_called_a_claim(capsys):
+    """#22687 constat 1 -- la cause nomme ce que la lane a FAIT.
+
+    Mesure fondatrice : sur #16334 le marqueur retenu etait un `[RELEASED]`,
+    et la cause annoncait « claim pose sur l'EPIC ». Une lane qui lit ca rend
+    la main une seconde fois (ou croit qu'une autre lane tient l'EPIC) pour
+    une visite qui est en realite un rendu. La date seule ne distingue pas
+    une prise d'un rendu : le marqueur, si.
+    """
+    payload = epic(comments=[comment(
+        f"[RELEASED] lane {OTHER_LANE} -- tranche rendue", iso(days=3))])
+    rc = run(payload, Loaders(pool=[]))
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert cause.startswith(CAUSE_PREFIX)
+    assert "rendu de main sur l'EPIC il y a 3.0 j" in cause
+    assert "claim" not in cause
+
+
+def test_every_marker_the_organ_reads_has_its_own_word(capsys):
+    """Aucun marqueur de l'organe ne retombe sur le mot generique.
+
+    `CANCELLED` est lu par `_KEYWORDS` : il doit donc avoir sa traduction,
+    comme le `[RELEASED]` ci-dessus. Un code absent du dictionnaire est un
+    trou, pas un repli acceptable -- cf `marker_label` pour les codes que
+    l'organe ne produit pas.
+    """
+    payload = epic(comments=[comment(
+        f"[CANCELLED] lane {OTHER_LANE} -- tranche abandonnee",
+        iso(days=3))])
+    rc = run(payload, Loaders(pool=[]))
+    assert rc == 1
+    cause = report(capsys)["epic_visit_cap"]
+    assert "annulation sur l'EPIC il y a 3.0 j" in cause
+    assert "claim" not in cause
 
 
 def test_claim_older_than_the_window_does_not_block(capsys):
