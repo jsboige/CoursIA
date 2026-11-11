@@ -119,7 +119,7 @@ touche pas ce paquet et ne partage aucun fichier avec lui.
 * Les groupes sont donnés par **générateurs** : le moteur en déduit tout le
   reste. Ajouter un groupe consiste à ajouter des générateurs et un réseau.
 * Le rendu SVG est un témoin de fonctionnement (orbite d'un motif
-  asymétrique sous le groupe), pas un rendu de quality production.
+  asymétrique sous le groupe), pas un rendu de qualité production.
 * Les centres secondaires (ordre 2 quand un ordre supérieur existe au même
   point) ne sont pas comptés séparément : la référence publiée les compte
   parfois par cellule illustrée, ce qui n'est pas la même unité.
