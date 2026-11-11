@@ -12,8 +12,7 @@ listing:
     page-size: 24
   - id: infer-notebooks
     contents:
-      - "Infer/Infer-[2-9]-*.ipynb"
-      - "Infer/Infer-2b-*.ipynb"
+      - "Infer/Infer-0[2-9]*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
