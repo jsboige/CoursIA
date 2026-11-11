@@ -2,8 +2,8 @@
  "pairs": [
   {
    "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb",
-   "en": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python_en.ipynb",
+   "fr": "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb",
+   "en": "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb",
    "sha1_fr": "ad19400e643f32e36be79d69e063765f7d59b7e4",
    "sha1_en": "c010a542acb516838245ac032ea2c6e453c009ad",
    "sources_sha1_fr": "0f359f51ef74fcfa05d234eff5e5a1b5bc585193",

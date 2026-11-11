@@ -550,7 +550,7 @@ rien. Cet écart est-il inévitable ?
 **Suite** : [Complexity-02 — Vérifier ou trouver >>](Complexity-02-P-NP-Reduction-Python.ipynb)",,,,,,,,7bba4b85e07332a2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb,f42e96f1,markdown,fr,1fcfee0336ffe966,"# Complexity-02 — Vérifier ou trouver : P, NP et la réduction
 
-**Navigation** : [<< Complexity-01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb) | [Index de la série](README.md) | [Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité >>](Complexity-02b-SAT-PhaseTransition-Python.ipynb) | [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy-Python.ipynb) | [02c — approfondissement : seuil sans mur, GF(2)](Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb)
+**Navigation** : [<< Complexity-01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb) | [Index de la série](README.md) | [Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité >>](Complexity-02b-SAT-PhaseTransition-Python.ipynb) | [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-HierarchieTemporelle-Python.ipynb) | [02c — approfondissement : seuil sans mur, GF(2)](Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb)
 
 > **Public : Découverte.** Deuxième notebook de la série `Complexity/`. Il prolonge directement
 > le premier et ne suppose rien d'autre.
@@ -1136,10 +1136,10 @@ Le notebook suivant explique l'idée de hiérarchie temporelle : donner plus de 
 de résoudre de nouveaux problèmes, mais il faut le **prouver**, pas seulement comparer deux
 programmes. L'approfondissement 03b conserve le théorème de Hartmanis et Stearns (1965).
 
-**Suite** : [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy-Python.ipynb)",,,,,,,,3ad33d9bd506a1fa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,intro-hierarchy,markdown,fr,eba25d7a81efb0c1,"# Complexity-03 — Plus de temps, plus de problèmes
+**Suite** : [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-HierarchieTemporelle-Python.ipynb)",,,,,,,,3ad33d9bd506a1fa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,intro-hierarchy,markdown,fr,eba25d7a81efb0c1,"# Complexity-03 — Plus de temps, plus de problèmes
 
-**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [English →](Complexity-03-TimeHierarchy-Python_en.ipynb)
+**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [English →](Complexity-03-HierarchieTemporelle-Python_en.ipynb)
 
 > **Public : Licence.** La démonstration historique et sa simulation multitête sont conservées dans l'approfondissement 03b.
 
@@ -1152,7 +1152,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,intro-hier
 
 **Le théorème en une phrase.** Le théorème de hiérarchie temporelle (Hartmanis–Stearns, 1965) affirme que, pour des budgets raisonnables, disposer de strictement plus de temps permet de décider strictement plus de problèmes : certaines tâches exigent réellement plus de pas, et aucun algorithme rapide ne peut les simuler. Ce carnet illustre les **mécanismes** de cette preuve — budgets imbriqués, diagonalisation, simulation bornée — sur des tables finies ; il ne prétend pas la démontrer, ce que rappelle chaque lecture.","# Complexity-03 — More time, more problems
 
-**Navigation**: [Index](README.md) | [02 — Verify or find](Complexity-02-P-NP-Reduction-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) | [03c — Navigable zoo](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [Français →](Complexity-03-TimeHierarchy-Python.ipynb)
+**Navigation**: [Index](README.md) | [02 — Verify or find](Complexity-02-P-NP-Reduction-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) | [03c — Navigable zoo](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [Français →](Complexity-03-HierarchieTemporelle-Python.ipynb)
 
 > **Audience: Licence.** The historical demonstration and its multi-tape simulation are kept in the 03b deep dive.
 
@@ -1164,7 +1164,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,intro-hier
 **Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.
 
 **The theorem in one sentence.** The time hierarchy theorem (Hartmanis–Stearns, 1965) states that, for reasonable budgets, having strictly more time allows one to decide strictly more problems: some tasks genuinely require more steps, and no fast algorithm can simulate them. This notebook illustrates the **mechanisms** of that proof — nested budgets, diagonalization, bounded simulation — on finite tables; it does not claim to prove it, as every reading reminds.",,,,,,,eba25d7a81efb0c1,3b2c4fdba7245b59,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,budgets-intro,markdown,fr,1fc2c979f10b72fe,"## 1. Des budgets imbriqués
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,budgets-intro,markdown,fr,1fc2c979f10b72fe,"## 1. Des budgets imbriqués
 
 Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.
 
@@ -1173,13 +1173,13 @@ L'inclusion est triviale : un programme qui s'arrête en n pas s'arrête aussi a
 If a program answers in n steps, it also answers within a budget of n² steps. This shows an **inclusion** of budgets, not a separation of problem classes: two different programs on the same problem do not prove that no fast program can solve it. Let us compare the budgets over five sizes.
 
 The inclusion is trivial: a program that halts within n steps also halts within n² steps. The difficulty lies elsewhere — showing that a problem requires *more* than n² steps means ruling out **all** fast programs, not just the one at hand. That gap between ""I have an example"" and ""I have exhausted the possibilities"" is precisely what this notebook digs into.",,,,,,,1fc2c979f10b72fe,8705b8e22560e6e8,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,budgets-code,code,fr,527c8f18e333496a,"tailles = (2, 4, 8, 16, 32)
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,budgets-code,code,fr,527c8f18e333496a,"tailles = (2, 4, 8, 16, 32)
 print(f""{'n':>3} | {'n²':>5} | {'2ⁿ':>12}"")
 for n in tailles:
     print(f""{n:>3} | {n * n:>5} | {2 ** n:>12}"")
 assert all(n * n <= 2 ** n for n in tailles)
 ",,,,,,,,527c8f18e333496a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,budgets-reading,markdown,fr,240a7880911eeb9a,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées : à n = 32, le budget n² vaut 1 024 pas contre 4 294 967 296 pour 2ⁿ — l'écart est nul à n = 2 et n = 4 (4 contre 4, 16 contre 16) et ne s'ouvre qu'à partir de n = 8 (64 contre 256). Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,budgets-reading,markdown,fr,240a7880911eeb9a,"**Lecture du résultat.** Les coûts s'ordonnent pour les tailles affichées : à n = 32, le budget n² vaut 1 024 pas contre 4 294 967 296 pour 2ⁿ — l'écart est nul à n = 2 et n = 4 (4 contre 4, 16 contre 16) et ne s'ouvre qu'à partir de n = 8 (64 contre 256). Pour conclure qu'une classe possède un problème absent de l'autre, il faudrait écarter **tous** les algorithmes au petit budget. La table numérique ne le fait pas.
 
 ## 2. L'idée de diagonalisation
 
@@ -1192,7 +1192,7 @@ La diagonalisation inverse le sens de la question : au lieu de chercher un algor
 Let us enumerate a few candidate machines. At row i, construction D chooses the opposite of machine number i's answer on input i. D therefore differs from every listed machine on at least one input. The list below is only a **finite** experiment: it does not represent all possible machines.
 
 Diagonalization reverses the direction of the question: instead of looking for a fast algorithm, one builds a problem D that contradicts each candidate machine on its own ground — input i. Against a finite list, this works; against the infinity of machines, one would need a universal construction and bound, which section 4 discusses.",,,,,,,240a7880911eeb9a,4543de7af8e4c3a0,,,,,,,240a7880911eeb9a,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,diagonal-code,code,fr,0ce92530bf6bc66d,"machines = (
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,diagonal-code,code,fr,0ce92530bf6bc66d,"machines = (
     lambda i: i % 2 == 0,
     lambda i: i < 2,
     lambda i: True,
@@ -1204,7 +1204,7 @@ for i, machine in enumerate(machines):
     print(f""{i:>2} | {str(machine(i)):>6} | {str(diagonale[i]):>5} | {diagonale[i] != machine(i)}"")
 assert all(diagonale[i] != machine(i) for i, machine in enumerate(machines))
 ",,,,,,,,0ce92530bf6bc66d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,diagonal-reading,markdown,fr,c66f72fe34fea1f8,"**Lecture du résultat.** Les quatre lignes affichent `True` dans la colonne « différents » : D(i) vaut l'opposé de M_i(i) sur chacune des entrées listées (0, 1, 2 et 3). Il reste une infinité de machines non listées ; ce tableau ne prouve donc aucune séparation de classes.
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,diagonal-reading,markdown,fr,c66f72fe34fea1f8,"**Lecture du résultat.** Les quatre lignes affichent `True` dans la colonne « différents » : D(i) vaut l'opposé de M_i(i) sur chacune des entrées listées (0, 1, 2 et 3). Il reste une infinité de machines non listées ; ce tableau ne prouve donc aucune séparation de classes.
 
 ## 3. Le budget de simulation
 
@@ -1217,7 +1217,7 @@ Dans la preuve réelle, cette limite est gérée par une **horloge universelle**
 A machine that does not answer before the limit cannot block the diagonal constructor indefinitely. Here the costs are **declared** by a finite model: they are not steps measured by a universal simulator. An unobserved answer is not a false verdict.
 
 In the real proof, this limit is handled by a **universal clock**: each candidate machine is simulated step by step and stopped beyond the budget. Paying for both the machine and its simulator is precisely the overhead that makes the hierarchy hold — and which the finite model here does not capture.",,,,,,,c66f72fe34fea1f8,10393236d21308a9,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,bounded-code,code,fr,415999deaee15d43,"candidates = ((True, 1), (False, 3), (True, 12), (False, 40))
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,bounded-code,code,fr,415999deaee15d43,"candidates = ((True, 1), (False, 3), (True, 12), (False, 40))
 def budget(i):
     return 2 * i + 4
 
@@ -1227,20 +1227,20 @@ for i, (verdict, pas) in enumerate(candidates):
     diagonal = not observe if observe is not None else True
     print(f""{i:>2} | {pas:>3} | {budget(i):>6} | {str(observe):>7} | {str(diagonal):>5}"")
 ",,,,,,,,415999deaee15d43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,bounded-reading,markdown,fr,1d62c422ec51082f,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux » : aux lignes 2 et 3, les coûts déclarés (12 et 40) dépassent le budget (8 et 10), la simulation s'interrompt et la réponse n'est pas observée. Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,bounded-reading,markdown,fr,1d62c422ec51082f,"**Lecture du résultat.** `None` signifie « non observé dans le budget », jamais « faux » : aux lignes 2 et 3, les coûts déclarés (12 et 40) dépassent le budget (8 et 10), la simulation s'interrompt et la réponse n'est pas observée. Une machine dépassant ce budget sur une entrée ne satisfait pas la borne uniforme sur **toutes** les entrées, mais le tableau ne caractérise aucune classe entière.
 
 ## 4. Le théorème, sans raccourci expérimental
 
-Le théorème de hiérarchie temporelle établit, sous des hypothèses techniques, qu'il existe des problèmes décidables avec un budget suffisamment plus grand mais impossibles avec le plus petit. Il faut énumérer toutes les machines admissibles, construire une horloge et payer le coût de simulation universelle. Les tables finies n'accomplissent aucune de ces preuves. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) détaille le modèle historique. Ce résultat ne résout pas P contre NP.
+Le théorème de hiérarchie temporelle établit, sous des hypothèses techniques, qu'il existe des problèmes décidables avec un budget suffisamment plus grand mais impossibles avec le plus petit. Il faut énumérer toutes les machines admissibles, construire une horloge et payer le coût de simulation universelle. Les tables finies n'accomplissent aucune de ces preuves. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) détaille le modèle historique. Ce résultat ne résout pas P contre NP.
 
 Concrètement, la séparation s'obtient en construisant un problème D qui simule chaque machine candidate M_i sur son entrée i, répond l'opposé, et le fait dans un budget à peine supérieur à celui de M_i — d'où une classe strictement plus grande quand le budget croît. Le prix est connu : énumérer toutes les machines, les doter d'une horloge universelle, et simuler chacune en payant la machine et son simulateur.","**Reading the result.** `None` means ""not observed within the budget"", never ""false"": on rows 2 and 3, the declared costs (12 and 40) exceed the budget (8 and 10), the simulation stops and the answer is not observed. A machine exceeding this budget on one input does not satisfy the uniform bound on **all** inputs, but the table does not characterize any entire class.
 
 ## 4. The theorem, without an experimental shortcut
 
-The time hierarchy theorem establishes, under technical assumptions, that there exist decidable problems solvable with a sufficiently larger budget but impossible with the smaller one. One must enumerate all admissible machines, build a clock and pay the cost of universal simulation. Finite tables accomplish none of these proofs. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) details the historical model. This result does not settle P versus NP.
+The time hierarchy theorem establishes, under technical assumptions, that there exist decidable problems solvable with a sufficiently larger budget but impossible with the smaller one. One must enumerate all admissible machines, build a clock and pay the cost of universal simulation. Finite tables accomplish none of these proofs. [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) details the historical model. This result does not settle P versus NP.
 
 Concretely, the separation is obtained by building a problem D that simulates each candidate machine M_i on its input i, answers the opposite, and does so within a budget only slightly larger than M_i's — hence a strictly larger class as the budget grows. The price is known: enumerate all machines, equip them with a universal clock, and simulate each one while paying for both the machine and its simulator.",,,,,,,1d62c422ec51082f,4b41195934995020,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-one,markdown,fr,4b87cb2d8fd2251a,"## Exercices
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,exercise-one,markdown,fr,4b87cb2d8fd2251a,"## Exercices
 
 Les trois exercices prolongent les démonstrations sur les mêmes objets finis. Ils ne demandent pas de prouver la hiérarchie — hors de portée d'une table — mais de **sentir** ce que chaque table montre et ce qu'elle laisse ouvert, en manipulant budgets, diagonale et borne de simulation.
 
@@ -1261,10 +1261,10 @@ Compare n² and n³ for n = 2, 4, 8, 16. Explain why these numbers do not prove 
 - **Hint:** a table of numbers rules out no other algorithm.
 - **Step 1:** produce the four pairs.
 - **Step 2:** distinguish inclusion from separation.",,,,,,,4b87cb2d8fd2251a,460e5103bf097563,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-one-code,code,fr,26f12f6120714580,"comparaison_budgets = None  # TODO etudiant : couples (n², n³)
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,exercise-one-code,code,fr,26f12f6120714580,"comparaison_budgets = None  # TODO etudiant : couples (n², n³)
 print('Exercice a completer : inclusion et separation')
 ",,,,,,,,26f12f6120714580,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-two,markdown,fr,27c1416e06194bac,"### Exercice 2 — Une autre diagonale
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,exercise-two,markdown,fr,27c1416e06194bac,"### Exercice 2 — Une autre diagonale
 
 Ajoutez une cinquième fonction à `machines`, puis reconstruisez D et expliquez pourquoi cette table finie n'est toujours pas une preuve générale.
 
@@ -1277,10 +1277,10 @@ Add a fifth function to `machines`, then rebuild D and explain why this finite t
 - **Hint:** evaluate the new function on its own index.
 - **Step 1:** add a machine.
 - **Step 2:** recompute the five oppositions.",,,,,,,27c1416e06194bac,78c6e253150c3340,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-two-code,code,fr,3f4e4bd00d81af3d,"nouvelle_diagonale = None  # TODO etudiant : cinquieme machine et nouvelle diagonale
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,exercise-two-code,code,fr,3f4e4bd00d81af3d,"nouvelle_diagonale = None  # TODO etudiant : cinquieme machine et nouvelle diagonale
 print('Exercice a completer : nouvelle diagonale')
 ",,,,,,,,3f4e4bd00d81af3d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-three,markdown,fr,23711b33a07b0521,"### Exercice 3 — Dépassement de budget
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,exercise-three,markdown,fr,23711b33a07b0521,"### Exercice 3 — Dépassement de budget
 
 Repérez les lignes dont le coût déclaré dépasse `budget(i)`. Proposez un budget qui couvre les quatre coûts et expliquez pourquoi cela ne construit pas une borne pour toutes les machines.
 
@@ -1293,10 +1293,10 @@ Find the rows whose declared cost exceeds `budget(i)`. Propose a budget that cov
 - **Hint:** compare the two numerical columns.
 - **Step 1:** produce a new budget.
 - **Step 2:** state the limit of this finite model.",,,,,,,23711b33a07b0521,7f7b53469a920431,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,exercise-three-code,code,fr,fd91552f13ecaf89,"budget_etendu = None  # TODO etudiant : couvrir les quatre couts
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,exercise-three-code,code,fr,fd91552f13ecaf89,"budget_etendu = None  # TODO etudiant : couvrir les quatre couts
 print('Exercice a completer : budget etendu')
 ",,,,,,,,fd91552f13ecaf89,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,conclusion,markdown,fr,6a7cc5840f33b8f3,"## Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,conclusion,markdown,fr,6a7cc5840f33b8f3,"## Conclusion
 
 | Geste | Vérifié ici | Non démontré ici |
 |---|---|---|
@@ -1306,7 +1306,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,conclusion
 
 **À retenir.** Trois gestes, trois portées : l'inclusion des budgets se mesure, la diagonalisation se teste sur une liste finie, la simulation bornée s'observe sur un dépassement — mais aucune table finie n'énumère toutes les machines ni ne construit l'horloge universelle. La hiérarchie temporelle est un théorème sur l'infini des algorithmes ; ce carnet en montre les mécanismes sur le fini, pour que la preuve de 03b ait un terrain.
 
-Le théorème affirme l'existence de problèmes demandant réellement plus de temps, et non seulement de programmes lents. L'approfondissement [03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) travaille le résultat historique.
+Le théorème affirme l'existence de problèmes demandant réellement plus de temps, et non seulement de programmes lents. L'approfondissement [03b](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) travaille le résultat historique.
 
 **Référence** : Hartmanis, J. et Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.","## Conclusion
 
@@ -1318,12 +1318,12 @@ Le théorème affirme l'existence de problèmes demandant réellement plus de te
 
 **To keep in mind.** Three moves, three scopes: budget inclusion is measured, diagonalisation is tested on a finite list, bounded simulation is observed on an overrun — but no finite table enumerates all the machines nor builds the universal clock. The time hierarchy is a theorem about the infinite of algorithms; this notebook shows its mechanisms on the finite, so that the proof in 03b has some ground to stand on.
 
-The theorem asserts the existence of problems genuinely requiring more time, not merely of slow programs. The deep dive [03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) works through the historical result.
+The theorem asserts the existence of problems genuinely requiring more time, not merely of slow programs. The deep dive [03b](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) works through the historical result.
 
 **Reference**: Hartmanis, J. and Stearns, R. E. (1965), *On the computational complexity of algorithms*, Transactions of the American Mathematical Society 117, 285–306.",,,,,,,6a7cc5840f33b8f3,45ab3183ea54f002,,,,,,,c6ae4da46ba47ced,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c00,markdown,fr,d82f87a7d8bc1809,"# Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c00,markdown,fr,d82f87a7d8bc1809,"# Complexity-03b — Le théorème de hiérarchie temporelle de Hartmanis et Stearns (1965)
 
-**Approfondissement de [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb)** | [Index de la série](README.md)
+**Approfondissement de [03 — Plus de temps, plus de problèmes](Complexity-03-HierarchieTemporelle-Python.ipynb)** | [Index de la série](README.md)
 
 **Ce que ce notebook suppose en plus de sa base** : la diagonalisation sous budget de 03, puis la lecture de machines de Turing multitêtes et d'une borne de simulation. Les sections 1 et 2 reprennent des expériences déjà accessibles dans 01 et 02 ; les sections 3 et 4 étudient le théorème historique. Cette accrétion de niveau Recherche n'est pas nécessaire au parcours des numéros nus.
 
@@ -1348,7 +1348,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Pytho
 > et [SocialChoice-01 — Arrow](../GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb)
 > (le **tout premier papier** de Stearns, étudiant, portait sur le paradoxe d'Arrow — 1959).
 > Précédent d'hommage par l'œuvre : [Coalitions-04 — Munkres](../GameTheory/Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb).",,,,,,,,d82f87a7d8bc1809,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c01,markdown,fr,bfe97f57d04df9a4,"## 0. Pourquoi ce notebook
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c01,markdown,fr,bfe97f57d04df9a4,"## 0. Pourquoi ce notebook
 
 Le geste de 1965 tient en une phrase : **le temps est une ressource mesurable, et le mesurer
 crée une hiérarchie stricte de problèmes**. Avant Hartmanis et Stearns, on savait qu'un
@@ -1376,14 +1376,14 @@ pas ; les deux suivants sont propres à ce notebook.
 La section 5 relie l'homme à l'œuvre inattendue (Arrow, jeux répétés), la section 6 mesure
 honnêtement ce qui existe et manque dans Mathlib pour formaliser ce théorème, la section 7
 conclut.",,,,,,,,bfe97f57d04df9a4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c02,code,fr,542766044cb0f536,"import math
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c02,code,fr,542766044cb0f536,"import math
 import time
 import numpy as np
 import matplotlib.pyplot as plt
 
 print(""Complexity-01 — Hartmanis-Stearns (1965)"")
 print(f""numpy {np.__version__}, matplotlib {plt.matplotlib.__version__}"")",,,,,,,,542766044cb0f536,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c03,markdown,fr,aa551111161e03e5,"## 1. Le geste fondateur : compter les pas
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c03,markdown,fr,aa551111161e03e5,"## 1. Le geste fondateur : compter les pas
 
 Le papier de 1965 ne chronomètre pas : il **compte**. Le modèle est la machine de Turing
 **multitête** (plusieurs rubans, une tête par ruban), et la ressource est le **nombre de pas**
@@ -1395,7 +1395,7 @@ tête par ruban, des transitions $(q, a_1, \dots, a_k) \mapsto (q', \text{écrit
 et surtout un **compteur de pas** — l'instrument du geste fondateur. Une machine s'arrête soit
 dans un **état acceptant**, soit par blocage (aucune transition applicable) : le rejet est le
 blocage, comme sur les machines du papier.",,,,,,,,aa551111161e03e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c04,code,fr,658758f1e2d47f45,"class Ruban:
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c04,code,fr,658758f1e2d47f45,"class Ruban:
     """"""Ruban infini aux deux extremites, symbole blanc '_'.""""""
     def __init__(self, mot=""""):
         self.cellules = {i: c for i, c in enumerate(mot)}
@@ -1462,7 +1462,7 @@ inc = MachineTuring(
 
 etat, rubans = inc.run(""1011"")
 print(f""increment('1011') -> {lire_ruban(rubans[0])} (attendu 1100), etat={etat}, {inc.pas} pas"")",,,,,,,,658758f1e2d47f45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c05,code,fr,32805dcdd7526721,"# --- Machine B : palindrome sur {0,1}, 1 ruban, zigzag O(n^2) ---
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c05,code,fr,32805dcdd7526721,"# --- Machine B : palindrome sur {0,1}, 1 ruban, zigzag O(n^2) ---
 # Comparer premier et dernier caractere, les rayer ('x'), recommencer.
 # Rejet = etat puits 'rejeter' sans transition sortante -> blocage.
 D = {}
@@ -1508,7 +1508,7 @@ for n in (4, 8, 16, 32, 64):
 print()
 print(""Le compte exact confirme la theorie : increment ~ lineaire, palindrome ~ quadratique."")
 print(""C'est LE geste de 1965 : la ressource n'est pas un chrono, c'est un compte de pas."")",,,,,,,,32805dcdd7526721,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c06,markdown,fr,38413bb6a0d4ba77,"**Lecture.** Les deux machines tournent sur la même famille d'entrées (des palindromes de
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c06,markdown,fr,38413bb6a0d4ba77,"**Lecture.** Les deux machines tournent sur la même famille d'entrées (des palindromes de
 longueur croissante), et leurs comptes de pas croissent comme $\Theta(n)$ et $\Theta(n^2)$. La
 définition fondatrice s'écrit alors naturellement :
 
@@ -1519,7 +1519,7 @@ propriété d'un problème isolé mais d'une **famille** d'instances mesurée en
 La question fondatrice de Hartmanis et Stearns devient : *ces ensembles sont-ils emboîtés
 strictement ?* Y a-t-il des problèmes qui exigent *réellement* plus de pas — pas par
 maladresse de programmeur, mais par nature ?",,,,,,,,38413bb6a0d4ba77,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c07,markdown,fr,b84b68690a87da3a,"## 2. Séparer : ce que « plus de temps achète » se mesure
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c07,markdown,fr,b84b68690a87da3a,"## 2. Séparer : ce que « plus de temps achète » se mesure
 
 Avant le théorème, l'intuition expérimentale. Trois familles d'algorithmes, trois croissances
 ($n \log n$, $n^2$, $2^n$), mesurées au chronomètre — ici le chrono est légitime : il
@@ -1529,7 +1529,7 @@ approxime le compte de pas à un facteur machine près.
 force brute en $\Theta(2^n \cdot n)$ contre programmation dynamique en $\Theta(n \cdot S)$ —
 et l'écart mesuré. C'est la version lisible de ce que le théorème de la section 4 démontre
 pour des langages *bien choisis* : plus de budget de temps sépare des classes.",,,,,,,,b84b68690a87da3a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c08,code,fr,8d941179b6b82a04,"def mesurer(f, n, repetitions=3):
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c08,code,fr,8d941179b6b82a04,"def mesurer(f, n, repetitions=3):
     """"""Temps MINIMAL sur repetitions essais : la course la moins contaminee
     par l'ordonnanceur (machine partagee) approxime au mieux le cout propre.""""""
     temps = []
@@ -1584,7 +1584,7 @@ print(f""  paires : temps x{t_paires[-1] / t_paires[-3]:.1f}"")
 n2 = tailles_exp[-1] - tailles_exp[-3]
 print(f""  2^n    : n gagne +{n2} -> operations x{2 ** n2} (exact) ; chrono x{t_exp[-1] / t_exp[-3]:.1f}"")
 print(""Le compte d'operations est deterministe ; le chrono le confirme a un facteur machine pres."")",,,,,,,,8d941179b6b82a04,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c09,code,fr,020dc594fd6cdd3f,"def subset_brut(poids, cible):
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c09,code,fr,020dc594fd6cdd3f,"def subset_brut(poids, cible):
     """"""Force brute : enumere les 2^n sous-ensembles.
     Retourne (verdict, operations) : compte deterministe.""""""
     n = len(poids)
@@ -1634,7 +1634,7 @@ print(""Meme verdict des deux cotes (assertion verifiee a chaque ligne). Les com
 print(""d'operations - deterministes, comme les pas comptes en section 1 - remplacent le"")
 print(""chrono comme preuve : la brute vit sous n * 2^n (arret des qu'un masque convient),"")
 print(""la dp visite de l'ordre de n * S cases, S = somme visee."")",,,,,,,,020dc594fd6cdd3f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c10,markdown,fr,b899211e3c68dee9,"**Lecture.** Les deux algorithmes rendent le même verdict (l'`assert` le prouve à chaque
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c10,markdown,fr,b899211e3c68dee9,"**Lecture.** Les deux algorithmes rendent le même verdict (l'`assert` le prouve à chaque
 ligne) mais leurs coûts vivent dans des mondes différents : la force brute double quand $n$
 croît de 1, la dynamique reste plate tant que $n \cdot S$ reste modéré. **Aucun des deux n'est
 « faux »** — mais l'un vit dans $\mathrm{TIME}(2^{n})$, l'autre dans $\mathrm{TIME}(nS)$.
@@ -1643,7 +1643,7 @@ La question fondatrice se pose alors avec précision : existe-t-il des langages 
 une propriété du *problème*, pas de l'algorithme qu'on a écrit ? La réponse de 1965 :
 **oui, et en quantité dénombrable** — c'est le théorème de hiérarchie, dont l'outil est la
 diagonalisation.",,,,,,,,b899211e3c68dee9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c11,markdown,fr,f7b29f0c4439a55b,"### Exercice 1 — Prédire le point de bascule
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c11,markdown,fr,f7b29f0c4439a55b,"### Exercice 1 — Prédire le point de bascule
 
 La DP gagne dès que $2^n$ dépasse $n \cdot S$… en *opérations*. Mais son coût dépend de la
 plage des poids : avec des poids dans $[1, 60]$, $S \le 60n$ ; avec des poids dans
@@ -1657,10 +1657,10 @@ haute déplace (ou détruit) la bascule.
 - **Etape 1 :** tracer le rapport t_brut/t_dp pour chaque plage.
 - **Etape 2 :** comparer les deux courbes et localiser le croisement (s'il existe).
 ",,,,,,,,f7b29f0c4439a55b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c12,code,fr,bf56c7705c741f2b,"# Exercice 1 : a completer
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c12,code,fr,bf56c7705c741f2b,"# Exercice 1 : a completer
 resultat_bascule = None  # TODO etudiant : {(plage, n): rapport} mesure
 print(""Exercice a completer : mesurer le point de bascule pour deux plages de poids"")",,,,,,,,bf56c7705c741f2b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c13,markdown,fr,66426064cb95afb4,"## 3. Diagonaliser sous budget : l'argument exécuté
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c13,markdown,fr,66426064cb95afb4,"## 3. Diagonaliser sous budget : l'argument exécuté
 
 L'argument de Cantor–Turing s'adapte aux budgets de temps. Idée : **énumérer** les machines
 $M_0, M_1, M_2, \dots$ et construire une langue $D$ qui **diffère de $M_i$ sur l'entrée $i$** :
@@ -1674,7 +1674,7 @@ La cellule suivante **exécute** la construction sur une famille finie de cinq m
 (« recognaisseurs » Python sur les indices $0..4$, avec coût en pas explicite) — l'ombre
 finie du théorème infini : chaque ligne du tableau montre $D$ différer de $M_i$ **sur sa
 propre diagonale**.",,,,,,,,66426064cb95afb4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c14,code,fr,35a62c3ca42f945d,"def simule(machine, entree, budget):
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c14,code,fr,35a62c3ca42f945d,"def simule(machine, entree, budget):
     """"""Simule machine(entree) avec un budget de pas.
     machine retourne (verdict, pas_effectues) ; si pas > budget -> (None, pas).""""""
     verdict, pas = machine(entree)
@@ -1715,7 +1715,7 @@ print(""None, et D(4) = True SANS avoir termine la simulation. C'est legitime : 
 print(""qui depasse son budget n'est pas dans TIME(f), donc ne peut pas etre D. Regardez"")
 print(""aussi M3 : i^2 ne depasse jamais i^2+10 — c'est la MARGE du budget qui la contient ;"")
 print(""l'Exercice 2 la retire."")",,,,,,,,35a62c3ca42f945d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c15,markdown,fr,f5fa9bbc13a5b7be,"**Pourquoi le budget ne tue pas l'argument.** Le point délicat — c'est là que 1965 innove
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c15,markdown,fr,f5fa9bbc13a5b7be,"**Pourquoi le budget ne tue pas l'argument.** Le point délicat — c'est là que 1965 innove
 par rapport à Cantor et Turing — est que simuler $M_i$ pendant $t$ pas **coûte** quelque chose
 à la machine qui diagonalise (à une machine universelle multitête : $O(t \log t)$, à cause du
 coût de gestion des rubans et de la table de transitions). Si le budget $f$ est trop petit
@@ -1729,7 +1729,7 @@ s'effondre. La parade exige deux ingrédients, tous deux dans le papier :
 
 C'est exactement la source du facteur $\log$ du théorème — pas une scorie : c'est le **prix
 de la simulation**, payé à chaque étage de la hiérarchie.",,,,,,,,f5fa9bbc13a5b7be,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c16,markdown,fr,5dcdbe9dd8405013,"### Exercice 2 — Diagonaliser avec un budget serré
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c16,markdown,fr,5dcdbe9dd8405013,"### Exercice 2 — Diagonaliser avec un budget serré
 
 La construction ci-dessus utilise $f(i) = i^2 + 10$, qui **domine** le coût $i^2$ de $M_3$.
 On veut voir l'argument vaciller : budget serré $f(i) = 2i + 6$.
@@ -1745,10 +1745,10 @@ verdicts réels*.
   un verdict reel si on la laissait finir. La difference D vs M3 est-elle
   encore une preuve que M3 ne decide pas D en 2i+6 pas ? (oui — pourquoi ?)
 ",,,,,,,,5dcdbe9dd8405013,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c17,code,fr,6bc712a3dae24174,"# Exercice 2 : a completer
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c17,code,fr,6bc712a3dae24174,"# Exercice 2 : a completer
 lignes_budget_epuise = None  # TODO etudiant : nombre de lignes None avec f(i) = 2i+6
 print(""Exercice a completer : diagonaliser avec f(i) = 2i+6 et compter les budgets epuises"")",,,,,,,,6bc712a3dae24174,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c18,markdown,fr,8fed31bf33300667,"## 4. Le théorème de 1965, énoncé et instrumenté
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c18,markdown,fr,8fed31bf33300667,"## 4. Le théorème de 1965, énoncé et instrumenté
 
 > **Théorème (Hartmanis & Stearns 1965, forme multitête).** Pour toute fonction $f$
 > temps-constructible,
@@ -1771,7 +1771,7 @@ Trois lectures, toutes dans l'esprit du papier :
 Les deux ingrédients du théorème, instrumentés : une **horloge** temps-constructible (le coût
 réellement compté d'une écriture d'indices en binaire, $\Theta(n \log n)$ par construction),
 et le **prix de la simulation** — le facteur dont la somme fait le $\log$ du théorème.",,,,,,,,8fed31bf33300667,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c19,code,fr,77045e83073a499a,"def horloge(n):
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c19,code,fr,77045e83073a499a,"def horloge(n):
     """"""Horloge temps-constructible : pour chaque position i de l'entree (0..n-1),
     ecrit l'indice i en binaire sur le ruban de travail, bit par bit.
     Chaque ecriture de bit = 1 pas compte ; le total est Theta(n log n) PAR CONSTRUCTION
@@ -1825,7 +1825,7 @@ print()
 print(""Le facteur depend de la TAILLE DE DESCRIPTION de la machine simulee (log |delta|),"")
 print(""pas de la longueur d'entree : c'est le prix de la simulation, et la source du"")
 print(""facteur log dans TIME(f) < TIME(f log f) — paye a chaque etage de la hierarchie."")",,,,,,,,77045e83073a499a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c20,markdown,fr,a063f77fc52073ca,"### Exercice 3 — La machine qui ne peut pas suivre
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c20,markdown,fr,a063f77fc52073ca,"### Exercice 3 — La machine qui ne peut pas suivre
 
 Construire sur le simulateur multitête une machine qui décide le langage
 $L = \{ww \mid w \in \{0,1\}^*\}$ (un mot doublé) en zigzag quadratique, mesurer ses
@@ -1840,10 +1840,10 @@ famille de coût ou non ?
 - **Etape 1 :** deriver la table de D (section 1) : etat 'centre' qui rejette au lieu d'accepter.
 - **Etape 2 :** mesurer pas(n) et comparer les rapports pas(n)/pas(n/2) aux deux machines.
 ",,,,,,,,a063f77fc52073ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c21,code,fr,c499ae357d2157c4,"# Exercice 3 : a completer
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c21,code,fr,c499ae357d2157c4,"# Exercice 3 : a completer
 transitions_doublement = {}  # TODO etudiant : table derivee de `pal` avec garde de parite
 print(""Exercice a completer : machine de {ww}, comptes de pas et comparaison au palindrome"")",,,,,,,,c499ae357d2157c4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c22,markdown,fr,ef8675eee807c2b5,"## 5. Le Stearns inattendu : Arrow et les jeux répétés
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c22,markdown,fr,ef8675eee807c2b5,"## 5. Le Stearns inattendu : Arrow et les jeux répétés
 
 L'homme qui a fondé la théorie de la complexité a **commencé ailleurs**, et ces débuts sont
 déjà dans le dépôt :
@@ -1890,7 +1890,7 @@ définitions sans preuve violerait la discipline sorry=0 du dépôt. Ce notebook
 **pédagogique**, son encart « gap » joue le rôle du jumeau formel en attendant : si Mathlib
 gagne une couche Complexity, la formalisation du théorème de hiérarchie temps sera le grain
 naturel de révision de cette section.",,,,,,,,ef8675eee807c2b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb,c23,markdown,fr,d40466c62a2a9b21,"## 7. Conclusion
+MyIA.AI.Notebooks/Complexity/Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb,c23,markdown,fr,d40466c62a2a9b21,"## 7. Conclusion
 
 | Geste | Où | Ce qui a été mesuré |
 |---|---|---|
@@ -1926,14 +1926,14 @@ MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipyn
 BATCH_MODE = ""true""",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,1bd8357e,markdown,fr,0c515a28030ea174,"# Complexity-03c — Naviguer le Zoo exécutable
 
-**Navigation** : [Index](README.md) | [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) | [03d — la réfutation annoncée de l'ETH →](Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb) | [03e — barrières d'exposants word RAM](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb) | [04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb)
+**Navigation** : [Index](README.md) | [03 — Plus de temps, plus de problèmes](Complexity-03-HierarchieTemporelle-Python.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) | [03d — la réfutation annoncée de l'ETH →](Complexity-03d-ETH-Refutation-Annoncee-Lean-Python.ipynb) | [03e — barrières d'exposants word RAM](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb) | [04 — Décider sans connaître la suite](Complexity-04-OnlineAlgorithms-Python.ipynb)
 
 Inclusions vérifiées sur des instances réelles, oracles jouets séparant deux mondes, carte des non-séparations.
 Le [Complexity Zoo](https://complexityzoo.net) — registre fondé par Scott Aaronson — comme terrain de navigation.",,,,,,,,0c515a28030ea174,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,ec7e7e23,markdown,fr,41cc5be2a181d650,"## 0. Pourquoi ce notebook
 
-Approfondissement du palier [03 — Hiérarchie en temps](Complexity-03-TimeHierarchy-Python.ipynb),
-compagnon de [03b — Hartmanis & Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) : après le
+Approfondissement du palier [03 — Hiérarchie en temps](Complexity-03-HierarchieTemporelle-Python.ipynb),
+compagnon de [03b — Hartmanis & Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) : après le
 temps compté et sa hiérarchie stricte, ce carnet prend la carte entière des classes et la fait naviguer.
 La série se lit par ailleurs
 [01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb),
@@ -2279,7 +2279,7 @@ sens : `verifier_3sat` contrôle chaque certificat en un parcours polynomial, qu
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,82ecc16d,markdown,fr,1112d29bbbe853c5,"## 2. Deux mondes d'oracles — Baker, Gill & Solovay exécutés
 
 Le Zoo dit ce qui est **prouvé** (inclusions) et ce qui est **ouvert** ($P$ vs $NP$ en tête). La question
-naturelle : pourquoi pas une diagonalisation, comme pour la hiérarchie en temps du [03](Complexity-03-TimeHierarchy-Python.ipynb) ?
+naturelle : pourquoi pas une diagonalisation, comme pour la hiérarchie en temps du [03](Complexity-03-HierarchieTemporelle-Python.ipynb) ?
 La réponse de Baker–Gill–Solovay (1975) est un **exécutable** : il existe un oracle $O$ tel que $P^O \ne NP^O$,
 et un oracle $B$ tel que $P^B = NP^B$. Deux mondes cohérents — donc aucune technique qui « se relativise »
 (diagonalisation incluse) ne peut séparer $P$ de $NP$ dans le nôtre. Ce paragraphe **construit et exécute les deux**.
@@ -2440,7 +2440,7 @@ flowchart LR
 
 En trait plein : inclusions établies (celles de la section 1 portent leur témoin exécutable ;
 l'arête $P \to EXPTIME$ est la stricte $P \subsetneq EXPTIME$ de la hiérarchie en temps,
-[03](Complexity-03-TimeHierarchy-Python.ipynb)).
+[03](Complexity-03-HierarchieTemporelle-Python.ipynb)).
 En pointillés : les arêtes ouvertes — **trois**, et chacune a sa raison propre : la diagonalisation
 ne tranche pas $P$ vs $NP$ (section 2), un certificateur général pour la non-satisfiabilité
 manquerait pour $NP$ vs $coNP$, et l'arithmétisation — non relativisante — n'éclaire pas
@@ -2451,7 +2451,7 @@ pourquoi les oracles n'y suffisent pas ; les deux autres ont leur raison propre)
 ",,,,,,,,7c1faad8c04975d1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03c-ComplexityZoo-Navigation-Python.ipynb,72da4c6a,markdown,fr,2502019dfb88e73b,"## 4. Encart — le gap Mathlib du Zoo
 
-Le même geste que [03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb), [05b](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) et [06](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb) :
+Le même geste que [03b](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb), [05b](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) et [06](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb) :
 confronter la formalisation du carnet à l'état de [Mathlib](https://github.com/leanprover-community/mathlib4).
 
 - **Ce qui existe** : une couche `Computability/` réelle — machines de Turing (`TuringMachine`),
@@ -2517,14 +2517,14 @@ Le fil du carnet : rendre **visibles** les inclusions en les exécutant, rendre 
 ",,,,,,,,22a4d43bc28ae43c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,intro-online,markdown,fr,1fa06e62455073eb,"# Complexity-04 — Décider sans connaître la suite
 
-**Navigation** : [Index](README.md) | [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb) | [04b — Secrétaire matroïdal et k-server](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb)
+**Navigation** : [Index](README.md) | [03 — Plus de temps, plus de problèmes](Complexity-03-HierarchieTemporelle-Python.ipynb) | [04b — Secrétaire matroïdal et k-server](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb)
 
 > **Public : Licence.** Les conjectures de septembre 2026, le secrétaire matroïdal et le work function algorithm sont conservés dans l'approfondissement 04b ; ce notebook s'arrête aux trois objets classiques du domaine.
 
 ## Ce que ce notebook suppose
 
 - [01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb) : le coût d'un algorithme se **compte**, il ne se chronomètre pas ;
-- [03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb) : comparer un algorithme à ceux d'une **classe entière**, et pourquoi une table finie ne démontre rien.
+- [03 — Plus de temps, plus de problèmes](Complexity-03-HierarchieTemporelle-Python.ipynb) : comparer un algorithme à ceux d'une **classe entière**, et pourquoi une table finie ne démontre rien.
 
 **Objectifs** : poser le modèle d'une décision **irréversible** prise sans connaître la suite ; mesurer un rapport de compétitivité sur trois problèmes classiques — louer ou acheter, pagination, secrétaire ; séparer ce qui se mesure de ce qui se démontre. **Durée estimée** : 45 minutes.
 ",,,,,,,,1fa06e62455073eb,,,,,,,,,,,,,,,
@@ -2708,7 +2708,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,secreta
 
 ## 5. Ce qu'aucune de ces expériences ne démontre
 
-Les trois sections précédentes sont des **tables finies** : elles évaluent des stratégies données sur des entrées choisies. Aucune ne peut établir qu'**aucune** stratégie ne fait mieux — exactement la limite que le notebook [03](Complexity-03-TimeHierarchy-Python.ipynb) avait posée pour les budgets de temps. Quatre énoncés le font à leur place ; ils sont **cités ici sans être démontrés** :
+Les trois sections précédentes sont des **tables finies** : elles évaluent des stratégies données sur des entrées choisies. Aucune ne peut établir qu'**aucune** stratégie ne fait mieux — exactement la limite que le notebook [03](Complexity-03-HierarchieTemporelle-Python.ipynb) avait posée pour les budgets de temps. Quatre énoncés le font à leur place ; ils sont **cités ici sans être démontrés** :
 
 | Énoncé | Contenu | Ce que la mesure en montre |
 |---|---|---|
@@ -2782,7 +2782,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb,conclus
 | Pagination | LRU, FIFO et Belady mesurés sur deux motifs | que $k$ soit une borne pour **tout** algorithme en ligne |
 | Secrétaire | la courbe de succès selon la fraction observée | que $1/e$ soit la probabilité **maximale** atteignable |
 
-Les trois problèmes partagent une seule structure : une décision **irréversible**, prise sans la suite, jugée sur le **pire** cas, par le rapport à un optimum qui sait tout. C'est le même geste de méthode que dans [03](Complexity-03-TimeHierarchy-Python.ipynb) : une table finie mesure des stratégies, elle ne prouve pas qu'aucune autre ne fait mieux.
+Les trois problèmes partagent une seule structure : une décision **irréversible**, prise sans la suite, jugée sur le **pire** cas, par le rapport à un optimum qui sait tout. C'est le même geste de méthode que dans [03](Complexity-03-HierarchieTemporelle-Python.ipynb) : une table finie mesure des stratégies, elle ne prouve pas qu'aucune autre ne fait mieux.
 
 L'approfondissement [04b — Secrétaire matroïdal et k-server](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb) reprend ces objets là où ils deviennent de la recherche : le work function algorithm pour $k$ serveurs, le secrétaire matroïdal, et deux conjectures de septembre 2026.
 
@@ -3079,7 +3079,7 @@ Trois niveaux à ne pas confondre, dans ce notebook :
 Si l'une des deux preuves s'effondre en évaluation, ce notebook garde sa valeur pédagogique (les objets, le dilemme, les implémentations de référence) et perdra seulement ses deux phrases d'ouverture — il est conçu pour ça.",,,,,,,,fda04036ad72c988,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb,37e0aa25,markdown,fr,421a37127209167a,"## 6. Encart Mathlib — ce qui existe, ce qui manque
 
-Même exercice que pour [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) : où est la frontière de Mathlib (v4.33.0 au jour de rédaction) sur ces objets ?
+Même exercice que pour [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) : où est la frontière de Mathlib (v4.33.0 au jour de rédaction) sur ces objets ?
 
 - **Matroïdes** : présents — `Mathlib.Combinatorics.Matroid` couvre indépendance, rang, dualité, matroïdes graphiques. Le vocabulaire du §2 est formalisable **dès aujourd'hui** (définir « un ensemble est indépendant » et l'algorithme glouton offline y trouverait son cadre).
 - **Algorithmique online** : absente — pas de `competitive ratio`, pas de `secretary`, pas de `k-server`, pas de `work function`, pas de notion d'algorithme online face à une séquence de requêtes. Formaliser la compétitivité exigerait une couche « adversaire + algorithme + ratio sur toutes les entrées » qui n'existe pas plus que la couche `TIME(f)` du notebook 03.
@@ -3107,7 +3107,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-04b-OnlineConjectures-Secretary-KServer-
 
 Ce notebook a **saisi le domaine online côté Complexity** : la baseline $1/e$ mesurée (§1), le dilemme du secrétaire matroïdal simulé sur deux matroïdes avec oracles d'indépendance (§2), le work function algorithm **implémenté exactement** et confronté à ses bornes sur séquence adversariale (§3), le tableau du double visage randomisation/déterminisme (§4). Les deux preprints sont cités au conditionnel de rigueur (§5), avec renvoi paginé vers les PDF archivés, le gap Mathlib est cartographié (§6), et trois exercices prolongent chacun une section (§7).
 
-**Cross-links** : [Complexity-03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb) (même méthode : faire tourner, confronter à Mathlib) · [`Complexity-04c-KServer-WorkFunction-Python.ipynb`](Complexity-04c-KServer-WorkFunction-Python.ipynb) (k-server : WFA exact sur métriques jouets — même preprint Coester–Koutsoupias–Zbysiński, en profondeur) · [`Complexity-04d-Secretaire-Matroidal-Python.ipynb`](Complexity-04d-Secretaire-Matroidal-Python.ipynb) (l'algorithme de Singla implémenté, garantie 1/4 comme banc de mesure — la profondeur que ce notebook cite sans reproduire) · [`RL/RL-16-Dream-RSI-Python.ipynb`](../RL/RL-16-Dream-RSI-Python.ipynb) (Dream-RSI : l'exploration explicite programmable — l'autre bout du spectre online) · [`GameTheory/`](../GameTheory/) (théorie des jeux à information incomplète) · la semaine discrepancy ([#15944](https://github.com/jsboige/CoursIA/issues/15944) : Komlós et Beck-Fiala, l'autre « moment de domaine » récent).",,,,,,,,f82cf1e63fcfe829,,,,,,,,,,,,,,,
+**Cross-links** : [Complexity-03b](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb) (même méthode : faire tourner, confronter à Mathlib) · [`Complexity-04c-KServer-WorkFunction-Python.ipynb`](Complexity-04c-KServer-WorkFunction-Python.ipynb) (k-server : WFA exact sur métriques jouets — même preprint Coester–Koutsoupias–Zbysiński, en profondeur) · [`Complexity-04d-Secretaire-Matroidal-Python.ipynb`](Complexity-04d-Secretaire-Matroidal-Python.ipynb) (l'algorithme de Singla implémenté, garantie 1/4 comme banc de mesure — la profondeur que ce notebook cite sans reproduire) · [`RL/RL-16-Dream-RSI-Python.ipynb`](../RL/RL-16-Dream-RSI-Python.ipynb) (Dream-RSI : l'exploration explicite programmable — l'autre bout du spectre online) · [`GameTheory/`](../GameTheory/) (théorie des jeux à information incomplète) · la semaine discrepancy ([#15944](https://github.com/jsboige/CoursIA/issues/15944) : Komlós et Beck-Fiala, l'autre « moment de domaine » récent).",,,,,,,,f82cf1e63fcfe829,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb,header-05,markdown,fr,1664df5971b8b67a,"# Complexity-05 — Compter est plus dur que vérifier : #P et la permanente
 
 **Navigation** : [<< Complexity-04b — Secrétaire matroïdal et k-server](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb) | [Index de la série](README.md) | [Complexity-05b — La permanente, frontière quantique >>](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb)
@@ -3647,8 +3647,8 @@ MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSamp
 Ce notebook est le cinquième de la série
 ([01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb),
 [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction-Python.ipynb),
-[03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb),
-[03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb),
+[03 — Plus de temps, plus de problèmes](Complexity-03-HierarchieTemporelle-Python.ipynb),
+[03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb),
 [04b — conjectures online](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb)) :
 un texte fondateur, **fait tourner**. Le geste propre à Aaronson–Arkhipov est que leur
 objet computationnel central **se calcule** : tout repose sur la permanente d'une
@@ -4097,7 +4097,7 @@ l'intersection du §1
 MyIA.AI.Notebooks/Complexity/Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb,c2a15c0e,markdown,fr,60d9bf67fc9e2977,"## 5. Encart gap Mathlib — le verdict, mesuré le 2026-09-19
 
 Méthode (convention série, cf. encart §6 de
-[l'approfondissement 03b](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb)) : lecture directe de
+[l'approfondissement 03b](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb)) : lecture directe de
 l'arborescence `Mathlib/LinearAlgebra/Matrix/` et du fichier `Permanent.lean` sur `master`
 (leanprover-community/mathlib4), requêtes citées ci-dessous.
 
@@ -4232,8 +4232,8 @@ MyIA.AI.Notebooks/Complexity/Complexity-06b-AaronsonGottesman-Dequantification-P
 Ce notebook est le sixième de la série
 ([01 — Compter des pas](Complexity-01-StepCounting-Python.ipynb),
 [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction-Python.ipynb),
-[03 — Plus de temps, plus de problèmes](Complexity-03-TimeHierarchy-Python.ipynb),
-[03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy-Python.ipynb),
+[03 — Plus de temps, plus de problèmes](Complexity-03-HierarchieTemporelle-Python.ipynb),
+[03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-HierarchieTemporelle-Python.ipynb),
 [04b — conjectures online](Complexity-04b-OnlineConjectures-Secretary-KServer-Python.ipynb),
 [05b — Aaronson–Arkhipov](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb)) :
 un texte fondateur, **fait tourner**. Le geste propre à cette veine est que la thèse
@@ -5167,7 +5167,7 @@ quant-ph/0701104 — le cadre de la déquantification et les classes de simulate
 — Gidney, C. (2021). « Stim: a fast stabilizer circuit simulator ». *Quantum* 7, 1297.
 — Nielsen, M. A., & Chuang, I. L. (2010). *Quantum Computation and Quantum
 Information*, Cambridge University Press — chapitre 10.5, le formalisme stabilisateur.",,,,,,,,ff96f070a06fd54b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,relativisation-bgs,markdown,fr,045652b4e750e680,"## Relativisation : ce qu'une diagonale finie ne peut pas trancher
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,relativisation-bgs,markdown,fr,045652b4e750e680,"## Relativisation : ce qu'une diagonale finie ne peut pas trancher
 
 Les trois tableaux de ce carnet — budgets imbriqués, diagonale finie, simulation bornée — illustrent les **mécanismes** d'une preuve de séparation. Le théorème réel (Hartmanis–Stearns 1965) est inconditionnel : il sépare des classes de problèmes, pas seulement des programmes. Mais la technique qui le porte — la diagonalisation — a une limite connue depuis 1975, et cette limite mérite sa place ici parce qu'elle dit exactement ce que ce type de geste peut et ne peut pas trancher.
 
@@ -5180,7 +5180,7 @@ The three tables of this notebook — nested budgets, finite diagonal, bounded s
 **The oracle theorem (Baker–Gill–Solovay 1975).** There exists a recursive oracle A such that `P^A = NP^A`, and a recursive (sparse) oracle B such that `P^B ≠ NP^B`. An oracle is a free black box added to both sides of the equation; the result produced by BGS shows that the question ""P = NP?"" has **both** answers depending on the oracle. Immediate consequence: any proof technique that *relativises* — that applies as it stands in the presence of an arbitrary oracle — is structurally neutral on P vs NP, in both directions. The authors say so in their introduction: ordinary diagonalisation is among the techniques one expects to relativise, and one sees no general simulation method that would escape the objection either. (Baker, Gill, Solovay, *Relativizations of the P NP question*, SIAM Journal on Computing 4(4), 1975, p. 431 — copy archived in the cluster's bibliographic repository.)
 
 **What this changes for the diagonal of this notebook.** Mentally add an ""oracle"" column to the table of section 2: the finite contradiction (machines ≠ at the diagonal point) survives unchanged. That is the mark of a relativising argument — it can therefore conclude nothing about P vs NP, only about the finite objects it exhibits. This is not a flaw of the notebook: the Hartmanis–Stearns separation itself is proved; the lesson is that the diagonal move taught here is the right tool for time hierarchies and the wrong one for the P vs NP question.",,,,,,,045652b4e750e680,174045e298e9a5a7,,,,,,,045652b4e750e680,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy-Python.ipynb,relativisation-mesure,markdown,fr,eea730b2360be444,"**Une nuance de mesure.** Mehlhorn (rapporté §3 de BGS) : les oracles X avec `P^X = NP^X` forment un ensemble *maigre* — en un sens précis, « la plupart » des oracles séparent. L'intuition catégorielle penche donc séparation, et pourtant la question reste ouverte : la relativisation n'est pas un indice de réponse, c'est la preuve que les méthodes standard n'en fournissent pas.
+MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb,relativisation-mesure,markdown,fr,eea730b2360be444,"**Une nuance de mesure.** Mehlhorn (rapporté §3 de BGS) : les oracles X avec `P^X = NP^X` forment un ensemble *maigre* — en un sens précis, « la plupart » des oracles séparent. L'intuition catégorielle penche donc séparation, et pourtant la question reste ouverte : la relativisation n'est pas un indice de réponse, c'est la preuve que les méthodes standard n'en fournissent pas.
 
 **Écho contemporain.** Le doute exprimé par Wolfram en 2026 — résoudre P vs NP par une preuve finie depuis les axiomes standard, « the results here make me doubt it » — est la face empirique de la même prudence : là où BGS démontre un théorème *sur les techniques de preuve*, le recensement empirique des machines de Turing petites n'offre qu'une attente. Les deux se citent l'un l'autre avec leur statut respectif : prouvé (1975) et attendu (2026).","**A measurement caveat.** Mehlhorn (quoted in §3 of BGS): the oracles X with `P^X = NP^X` form a *meagre* set — in a precise sense, ""most"" oracles separate. The categorical intuition therefore leans towards separation, and yet the question remains open: relativisation is not a sign of an answer, it is the proof that the standard methods supply none.
 
