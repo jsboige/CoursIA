@@ -1,0 +1,7 @@
+date: '2026-11-11'
+by: myia-ai-01:CoursIA-2
+python_sha: b451c0db6e82d5de7b28a4a62cb56aa677bfa4d6
+csharp_sha: 038b755292fe59b7a385b9442f8f5a8404d53d28
+content_python_sha: d2a536637df29df1205fb75739b35f222b404885dc1771f7b08408304a523d2a
+content_csharp_sha: 0cb306314d9a104dbe0bd76ebfa07ca09b6a4f7a21ee5ce865415404493ac5bb
+reason: 'PR de la tranche T3 de la finition de serie (genre notebook-dotnet) : le jumeau C# Search-07-MCTS-And-Beyond-CSharp recoit ses blocs de fin canoniques (A retenir, Verifiez votre comprehension) et son bloc Pour aller plus loin existant est complete (carnet suivant de la serie .NET Search-08-DancingLinks-CSharp, jumeau Python, serie voisine RL-04-Bandits-Manchots, lecture deja referencee Browne et al. 2012). Markdown seul -- aucune cellule de code touchee, execution_count et outputs inchanges, donc pas de re-execution due (C.2). Les valeurs citees sont lues dans les sorties commitees de ce carnet C# (MCTS 1 000 iterations, action 1, valeur estimee 0,041 ; pont pythonnet vers pyspiel 2.0.1 rendant l action 4 ; Nim(15) 6 victoires sur 50 ; Connect-4 6 634 027 noeuds a la profondeur 8 ; parametre c = 1,41 a 100,0 % de victoires). Le cote Python est celui de la tranche T2 ; l attestation precedente 0029 decrivait le cote C# d avant cette tranche. La parite porte sur un ecart documentaire : les deux cotes implémentent MCTS sur la meme famille de jeux mais n''appellent pas le meme moteur cote Python (pyspiel en direct) et cote C# (implementation UCT, avec un pont pythonnet vers pyspiel pour l exemple OpenSpiel).'

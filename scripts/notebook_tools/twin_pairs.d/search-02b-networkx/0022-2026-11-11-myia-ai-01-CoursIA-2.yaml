@@ -1,0 +1,7 @@
+date: '2026-11-11'
+by: myia-ai-01:CoursIA-2
+python_sha: 33fbfcc29d1fce7cc8ea3580d116aefeca0f9469
+csharp_sha: af8aa3ec682d578279b1b780ceac38c979b57cba
+content_python_sha: f0c1898ad36467fc4b74205e0b2461c0c26e6c2448d2506bb4e4f26044f7dad3
+content_csharp_sha: 92aee8cac866db73ab671d195caaa774624e1c364dbc8c35ffe38a219c4f0157
+reason: 'PR de la tranche T3 de la finition de serie (genre notebook-dotnet) : le jumeau C# Search-02b-NetworkX-CSharp recoit ses trois blocs de fin canoniques (A retenir, Verifiez votre comprehension, Pour aller plus loin) ; le bloc Pour aller plus loin porte le carnet suivant de la serie .NET (Search-03-Informed-CSharp), le jumeau Python, une serie voisine (Reseaux electriques intelligents) et les lectures deja citees dans le carnet (Dijkstra 1959, Ford-Fulkerson 1956). Markdown seul -- aucune cellule de code touchee, execution_count et outputs inchanges, donc pas de re-execution due (C.2). Les valeurs citees sont lues dans les sorties commitees de ce carnet C# (graphe de 6 sommets A-F, BFS/DFS depuis A, Dijkstra A->F = 7, betweenness B = 5,000, flot max = 5), et non dans celles du jumeau Python : les instances different. Le cote Python est celui de la tranche T2 (meme contenu, blocs ecrits a partir de ses propres sorties) ; l attestation precedente 0021 decrivait le cote C# d avant cette tranche. La parite porte ici sur un ecart documentaire : les deux carnets couvrent le meme socle (parcours, plus courts chemins, centralites, flot) avec des implementations distinctes.'
