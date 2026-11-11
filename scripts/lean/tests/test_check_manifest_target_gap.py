@@ -10,8 +10,9 @@ Verrouille le contrat du recensement :
   - les trois etats du manifeste restent distincts : liste bornee (ecart
     mesure), ``"*"`` (liste derivee a l'execution, couverture totale),
     liste vide (aucun gate) ;
-  - l'ecart se mesure sur les modules **compiles** (globs du lakefile) :
-    une racine de lib hors glob n'est pas un module compile ;
+  - l'ecart se mesure sur les modules **compiles** (globs du lakefile), avec
+    la semantique reelle de Lake : `X.*` inclut la racine `X.lean`, seul
+    `X.+` (ou `.submodules `X``) l'exclut ;
   - le compte de sorry vient de l'instrument canonique (``scan_file``) ;
   - le prescreen des classes ``forbidden`` signale, il ne dispense pas.
 """
@@ -89,15 +90,33 @@ def test_bounded_list_reports_compiled_module_outside(fake_repo):
     assert row["missing"][0]["code_sorry"] == 0
 
 
-def test_root_file_outside_glob_is_not_compiled(fake_repo):
-    # `Demo.*` ne couvre pas la racine `Demo.lean` : elle n'est pas compilee
-    # et ne doit donc pas etre proposee au gate.
+def test_star_glob_includes_the_root_file(fake_repo):
+    # `Demo.*` est un `Glob.andSubmodules` : la racine `Demo.lean` **est**
+    # compilee par Lake (« including itself »). Elle n'est donc pas
+    # « non compilee » : elle sort de la liste de cibles, et c'est l'ecart
+    # que le recensement doit signaler.
     _lake(fake_repo, "demo", "[`Demo.*]",
           {"Demo.lean": "import Demo.Basic\n",
            "Demo/Basic.lean": "theorem t : True := trivial\n"})
     _manifest(fake_repo, [_entry("demo", "Demo.Basic")])
 
     row = m.measure()["lakes"][0]
+    assert row["compiled"] == 2
+    assert "Demo" not in row["not_compiled"]
+    assert [item["module"] for item in row["missing"]] == ["Demo"]
+
+
+def test_plus_glob_excludes_the_root_file(fake_repo):
+    # `Demo.+` est un `Glob.submodules` : les modules sous `Demo/`, **sans**
+    # `Demo.lean`. La racine n'est alors pas compilee et ne doit pas etre
+    # proposee au gate.
+    _lake(fake_repo, "demo", "[`Demo.+]",
+          {"Demo.lean": "import Demo.Basic\n",
+           "Demo/Basic.lean": "theorem t : True := trivial\n"})
+    _manifest(fake_repo, [_entry("demo", "Demo.Basic")])
+
+    row = m.measure()["lakes"][0]
+    assert row["compiled"] == 1
     assert row["missing"] == []
     assert "Demo" in row["not_compiled"]
 

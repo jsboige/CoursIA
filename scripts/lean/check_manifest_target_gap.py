@@ -76,7 +76,11 @@ _FORBIDDEN_PATTERNS = {
 
 _LEAN_LIB_RE = re.compile(r"lean_lib\s+«?([A-Za-z0-9_']+)»?")
 _GLOBS_RE = re.compile(r"globs\s*:=\s*#\[(.*?)\]", re.S)
-_GLOB_TOKEN_RE = re.compile(r"((?:\.submodules\s*)?)`([A-Za-z0-9_'.*]+)")
+# Le suffixe `+` fait partie de la forme `` `X.+ `` (Lake/Config/Glob.lean :
+# `scoped macro:max n:name noWs ".+"`). Sans lui dans la classe de caracteres,
+# le token `` `Demo.+ `` etait capture comme ``Demo.`` -- le glob se lisait
+# alors `Glob.one "Demo."`, c'est-a-dire un module qui n'existe pas.
+_GLOB_TOKEN_RE = re.compile(r"((?:\.submodules\s*)?)`([A-Za-z0-9_'.*+]+)")
 
 
 def lake_lib_globs(lake_root: Path) -> dict[str, list[str]]:
@@ -117,35 +121,63 @@ def lake_lib_globs(lake_root: Path) -> dict[str, list[str]]:
 def _modules_for_glob(lake_root: Path, glob: str) -> dict[str, Path]:
     """Modules (dotted -> fichier) couverts par un glob de lake.
 
-    Semantique Lake : ``X.*`` et ``.submodules `X`` couvrent les modules
-    **sous** le repertoire `X/` ; ``X`` (sans point) couvre le fichier
-    racine `X.lean` ; ``X_en`` couvre le jumeau racine `X_en.lean`.
+    Semantique Lake, **verifiee sur la source** (`Lake/Config/Glob.lean`,
+    Lean 4.32.0 et 4.34.1) :
+
+    * `` `X `` -> `Glob.one X` : le fichier `X.lean` seul ;
+    * `` `X.* `` -> `Glob.andSubmodules X` : ``X.lean`` **et** tous les
+      modules sous `X/` — la docstring le dit (« including itself »), et
+      `forEachModuleIn` rend `f n` avant les sous-modules ;
+    * `` `X.+ `` -> `Glob.submodules X` : les modules sous `X/`, **sans**
+      `X.lean` ;
+    * `` .submodules `X` `` -> `Glob.submodules X` : comme `X.+`
+      (notation pointee sur le constructeur `Glob.submodules`).
+
+    L'erreur qui a fait basculer cet organe (reserve du 11/11) :
+    traiter `X.*` comme `X.+` **exclut la racine du glob alors que Lake la
+    compile** — les 9 racines de lib de `game_theory_lean` etaient comptees
+    comme non compilees, et l'ecart affiche etait faux.
     """
     found: dict[str, Path] = {}
     name = glob.split("`")[1].strip() if "`" in glob else glob.strip()
-    is_dir_glob = glob.startswith(".submodules") or name.endswith(".*")
-    if is_dir_glob:
-        prefix = name[:-2] if name.endswith(".*") else name
-        root = lake_root / prefix
-        if root.is_dir():
-            for path in sorted(root.rglob("*.lean")):
-                rel = path.relative_to(root)
-                module = prefix + "." + ".".join(rel.with_suffix("").parts)
-                found[module] = path
+    prefix_kind = glob.strip().startswith(".submodules")
+    if name.endswith(".*"):
+        prefix, include_root = name[:-2], True
+    elif name.endswith(".+"):
+        prefix, include_root = name[:-2], False
+    elif name.endswith(".submodules"):
+        prefix, include_root = name[: -len(".submodules")], False
+    elif prefix_kind:
+        prefix, include_root = name, False
     else:
+        prefix, include_root = name, None
+    if include_root is None:
         candidate = lake_root / f"{name}.lean"
         if candidate.is_file():
             found[name] = candidate
+        return found
+    if include_root:
+        root_file = lake_root / f"{prefix}.lean"
+        if root_file.is_file():
+            found[prefix] = root_file
+    root = lake_root / prefix
+    if root.is_dir():
+        for path in sorted(root.rglob("*.lean")):
+            rel = path.relative_to(root)
+            module = prefix + "." + ".".join(rel.with_suffix("").parts)
+            found[module] = path
     return found
 
 
 def compiled_modules(lake_root: Path) -> dict[str, Path]:
     """Dotted module name -> fichier, pour les modules **compiles** par le lake.
 
-    Uniquement les modules atteignables par un glob du lakefile : la racine
-    `X.lean` d'une lib dont le glob est `X.*` n'est pas compilee, et la
-    confondre avec un module compile fait croire a une couverture qui
-    n'existe pas.
+    Uniquement les modules atteignables par un glob du lakefile, avec la
+    semantique **reelle** de Lake : le glob `X.*` est un
+    `Glob.andSubmodules`, qui inclut la racine `X.lean` (« including
+    itself ») ; seul `X.+` (ou `.submodules `X``) l'exclut. Exclure la
+    racine par erreur ferait compter comme non compilees des modules que
+    le lake compile reellement — un ecart faux dans les deux sens.
     """
     modules: dict[str, Path] = {}
     for _lib, globs in lake_lib_globs(lake_root).items():
@@ -158,8 +190,10 @@ def on_disk_not_compiled(lake_root: Path) -> list[str]:
     """Modules presents sur disque mais atteignables par aucun glob.
 
     Recense les fichiers `.lean` du lake que le lakefile ne compile pas
-    (racines de lib, tombstones) : ils ne doivent pas etre proposes au
-    gate, et leur presence explique une partie des ecarts apparents.
+    (tombstones, fichiers hors glob) : ils ne doivent pas etre proposes au
+    gate, et leur presence explique une partie des ecarts apparents. La
+    racine d'une lib compilee par `X.*` n'en fait **pas** partie : Lake la
+    compile (cf. `compiled_modules`).
     """
     compiled = set(compiled_modules(lake_root))
     extra: list[str] = []

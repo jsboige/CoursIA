@@ -186,8 +186,7 @@ def test_workflow_targets_match_manifest():
     # joined via the B.3 wiring (#15221
     # follow-up): same review status as Abstraction, pinned here so a future
     # addition to target-modules is an explicit test change, never a silent
-    # drift. The root ProgramGames.lean is a docstring-only aggregator (no
-    # decls) and is deliberately NOT a target, same as the SocialChoice root.
+    # drift.
     allowed_companions = {
         "Abstraction", "Abstraction.Basic",
         "ProgramGames.Basic", "ProgramGames.Basic_en",
@@ -215,6 +214,19 @@ def test_workflow_targets_match_manifest():
         "StableMarriage.Lemmas", "StableMarriage.Lemmas_en",
         "StableMarriage_en",
         "Swaps.Basic", "Swaps.Parite",
+        # #25858 (reserve du 11/11) : les 8 RACINES de lib compilees par
+        # `X.*` (Lake les compile : « including itself »). Chacune est un
+        # simple aggregateur d'imports, 0 declaration -- l'instrument du
+        # gate les classe `declaration_free_module`, donc NOTE non
+        # fatale, et aucune ne peut masquer un sorry. Les laisser hors
+        # liste faisait paraitre l'ecart du recensement comme un manque
+        # de couverture alors qu'il n'y avait rien a auditer : la racine
+        # est desormais une cible explicite, comme les trois racines
+        # declaration-free deja presentes (Abstraction, RepeatedGames_en,
+        # StableMarriage_en).
+        "CongestionGames", "CooperativeGames", "ProgramGames",
+        "RepeatedGames", "SocialChoice", "StableMarriage",
+        "StackelbergBilevel", "Swaps",
     }
     assert expected_set <= actual, (
         f"ci_lakes.json gametheory axiom-target-modules omitted entries "
