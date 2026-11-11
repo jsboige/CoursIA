@@ -702,4 +702,68 @@ public class ProjectModelTests
         Assert.Single(proj.RejectedEvaluations);
         Assert.Contains("Auto", proj.RejectedEvaluations[0].Reason);
     }
+
+    // ================================================================
+    // IsMatch behavior through ProcessEvaluations, with the production folder
+    // ================================================================
+
+    [Theory]
+    [InlineData(" Dupont", "Jean")]
+    [InlineData("Dupont ", "Jean")]
+    [InlineData("Dupont", " Jean")]
+    [InlineData("Dupont", "Jean ")]
+    public void Process_BorderWhitespaceNames_AreAutoEvaluations(string evalNom, string evalPrenom)
+    {
+        var proj = ProcessSingleEvaluation("Jean", "Dupont", evalPrenom, evalNom, Program.FoldAccents);
+
+        Assert.Single(proj.RejectedEvaluations);
+        Assert.Equal("Auto-évaluation.", proj.RejectedEvaluations[0].Reason);
+    }
+
+    [Fact]
+    public void Process_TabInsideSurname_DoesNotMatchInCSharp()
+    {
+        // StandardAnalyzer emits both tab-separated tokens and FoldAccents concatenates them,
+        // so C# compares "dupontjean" to "dupont". Python's project_name takes the first
+        // whitespace-separated token (then five characters); this test records the C# side.
+        var proj = ProcessSingleEvaluation("Jean", "Dupont", "Jean", "Dupont\tJean", Program.FoldAccents);
+
+        Assert.Single(proj.RejectedEvaluations);
+        Assert.Equal("Évaluateur non-inscrit.", proj.RejectedEvaluations[0].Reason);
+    }
+
+    [Fact]
+    public void Process_AccentedNameWithBorderWhitespace_MatchesUsingProductionFolder()
+    {
+        var proj = ProcessSingleEvaluation("Théophile", "Gautier", "Theophile ", " Gautier", Program.FoldAccents);
+
+        Assert.Single(proj.RejectedEvaluations);
+        Assert.Equal("Auto-évaluation.", proj.RejectedEvaluations[0].Reason);
+    }
+
+    [Fact]
+    public void Process_DifferentNames_DoNotMatchUsingProductionFolder()
+    {
+        var proj = ProcessSingleEvaluation("Jean", "Dupont", "Jean", "Durand", Program.FoldAccents);
+
+        Assert.Single(proj.RejectedEvaluations);
+        Assert.Equal("Évaluateur non-inscrit.", proj.RejectedEvaluations[0].Reason);
+    }
+
+    private static ProjectEvaluation ProcessSingleEvaluation(
+        string studentPrenom, string studentNom, string evalPrenom, string evalNom,
+        Func<string, string> foldAccents)
+    {
+        var students = new List<StudentRecord>
+        {
+            MakeStudent(studentPrenom, studentNom, "student@e.fr", "TSP"),
+        };
+        var evaluations = new List<EvaluationRecord>
+        {
+            MakeEval("evaluator@e.fr", evalNom, evalPrenom, "TSP", 3, 3, 3, 3),
+        };
+        var proj = new ProjectEvaluation(students, evaluations, "PrCon", "teacher@e.fr", foldAccents);
+        proj.ProcessEvaluations();
+        return proj;
+    }
 }

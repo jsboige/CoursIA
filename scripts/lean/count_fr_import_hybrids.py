@@ -24,6 +24,12 @@ de types (incident `knot_lean`).
    repertoire), et hors du perimetre vendore : `.lake/packages/`, `_peters/`,
    `reference_docs/` -- les memes exclusions que la regle i18n de
    `.claude/rules/code-style.md` ;
+   **et atteignable par le lac** : le module est une `roots` ou correspond a
+   un `globs` de sa `[[lean_lib]]` (`A.*` = `A` et ses sous-modules), ou il
+   est importe, transitivement, par un tel module. Un `_en.lean` hors de ce
+   perimetre est un **orphelin** : Lake ne le compile jamais, il est rapporte
+   a part et n'est pas compte. Un fichier sous un lac imbrique appartient au
+   lac **le plus proche** (son propre `lakefile`), jamais au lac parent ;
 3. il declare au moins un `namespace` dont le nom finit par `_en`, **et** au
    moins une declaration propre (theorem, lemma, def, instance, structure,
    class, abbrev, inductive) ;
@@ -72,8 +78,9 @@ Usage
     python scripts/lean/count_fr_import_hybrids.py --self-test       # controle positif
 
 Codes de sortie : 0 = mesure rendue ; 2 = **incident** -- racine absente,
-perimetre vide (aucun lac), ou lacs trouves **sans aucun** fichier `_en.lean`
-mesure. Les deux derniers cas sont traites en incident et non en « zero
+perimetre vide (aucun lac), lakefile illisible (roots non lues : forme DSL
+hors du sous-ensemble reconnu, ou toml casse), ou lacs trouves **sans aucun**
+fichier `_en.lean` atteignable mesure. Ces cas sont traites en incident et non en « zero
 propre » : un compte nul qui ne se distingue pas d'un chemin casse n'est pas
 une mesure.
 """
@@ -87,6 +94,18 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
+
+# Le census est aussi chargé par chemin par ses consommateurs et ses tests.
+# Dans ce mode, Python n'ajoute pas automatiquement le dossier du module.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from lake_selectors import (
+    LakefileError,
+    Selector,
+    _selector as _glob_to_selector,
+    lake_selectors,
+    selected as _selected,
+)
 
 RC_OK = 0
 RC_INCIDENT = 2
@@ -139,6 +158,43 @@ def find_lakes(root: Path) -> list[Path]:
     return sorted(found)
 
 
+def lake_reachable(lake: Path, lakes: list[Path]) -> tuple[dict[str, Path], set[Path], list[str]]:
+    """Fichiers `.lean` du lac que Lake compile, avec les racines sans fichier.
+
+    Retourne (modules du lac -> chemin, chemins atteignables, roots sans fichier).
+    Un fichier sous un lac imbrique n'appartient pas au lac parent. L'atteignabilite
+    suit les imports : un module importe par une racine est compile par Lake.
+    """
+    nested = [other for other in lakes if other != lake and lake in other.parents]
+    files: dict[str, Path] = {}
+    for path in lake.rglob("*.lean"):
+        if not in_scope(path) or _under_any(path, nested):
+            continue
+        module = ".".join(path.relative_to(lake).with_suffix("").parts)
+        files[module] = path
+
+    selectors = lake_selectors(lake)
+    seeds = [module for module in files if _selected(module, selectors)]
+    missing = sorted(
+        {name for kind, name in selectors if kind == "one" and name not in files}
+    )
+
+    reached: set[str] = set()
+    stack = list(seeds)
+    while stack:
+        module = stack.pop()
+        if module in reached:
+            continue
+        reached.add(module)
+        path = files.get(module)
+        if path is None:
+            continue
+        for imported in imports_of(strip_comments(read_source(path))):
+            if imported in files and imported not in reached:
+                stack.append(imported)
+    return files, {files[module] for module in reached}, missing
+
+
 def read_source(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="replace")
 
@@ -187,8 +243,14 @@ def imports_of(text: str) -> list[str]:
     return modules
 
 
-def hybrid_edges(lake: Path, source: Path, text: str) -> list[str]:
-    """Aretes FR-import : module du meme lac, non suffixe, jumeau `_en` present."""
+def hybrid_edges(
+    lake: Path, source: Path, text: str, owned: set[Path] | None = None
+) -> list[str]:
+    """Aretes FR-import : module du meme lac, non suffixe, jumeau `_en` present.
+
+    `owned` (chemins que le lac possede, lakes imbriques exclus) restreint la cible
+    au meme lac quand il est fourni.
+    """
     edges: list[str] = []
     for module in imports_of(text):
         if module.endswith("_en"):
@@ -196,16 +258,24 @@ def hybrid_edges(lake: Path, source: Path, text: str) -> list[str]:
         target = lake / (module.replace(".", "/") + ".lean")
         if not target.exists() or not in_scope(target):
             continue
+        if owned is not None and target not in owned:
+            continue
         if target.with_name(target.stem + "_en.lean").exists():
             edges.append(module)
     return edges
 
 
-def scan_lake(lake: Path) -> list[dict]:
-    """Fichiers `_en.lean` du lac, avec leurs compteurs et leurs aretes."""
+def scan_lake(lake: Path, lakes: list[Path] | None = None) -> tuple[list[dict], list[Path], list[str]]:
+    """Fichiers `_en.lean` atteignables du lac (compteurs et aretes), orphelins, roots sans fichier."""
+    lakes = [lake] if lakes is None else lakes
+    files, reachable, missing = lake_reachable(lake, lakes)
+    orphans: list[Path] = []
     records: list[dict] = []
-    for source in sorted(lake.rglob("*_en.lean")):
-        if not in_scope(source):
+    for source in sorted(files.values()):
+        if not source.name.endswith("_en.lean"):
+            continue
+        if source not in reachable:
+            orphans.append(source)
             continue
         text = strip_comments(read_source(source))
         namespaces = [m.group(1) for m in NS_RE.finditer(text)]
@@ -217,10 +287,10 @@ def scan_lake(lake: Path) -> list[dict]:
                 "relative": source.relative_to(lake).as_posix(),
                 "namespace_suffixed": any(ns.endswith("_en") for ns in namespaces),
                 "declarations": len(DECL_RE.findall(text)),
-                "edges": hybrid_edges(lake, source, text),
+                "edges": hybrid_edges(lake, source, text, owned=set(files.values())),
             }
         )
-    return records
+    return records, orphans, missing
 
 
 def is_hybrid(record: dict) -> bool:
@@ -234,9 +304,17 @@ def is_hybrid(record: dict) -> bool:
 
 def census(root: Path) -> dict:
     records: list[dict] = []
+    orphans: list[dict] = []
+    missing: list[dict] = []
     lakes = find_lakes(root)
     for lake in lakes:
-        records.extend(scan_lake(lake))
+        lake_records, lake_orphans, lake_missing = scan_lake(lake, lakes)
+        records.extend(lake_records)
+        orphans.extend(
+            {"lake": lake.name, "relative": source.relative_to(lake).as_posix()}
+            for source in lake_orphans
+        )
+        missing.extend({"lake": lake.name, "module": module} for module in lake_missing)
 
     # Fichiers `_en.lean` du perimetre qu'aucun lac ne porte : ils ne peuvent
     # pas produire d'arete (une arete est un import du **meme lac**), mais les
@@ -261,6 +339,9 @@ def census(root: Path) -> dict:
         "n_lakes": len(lakes),
         "n_en_files": len(records),
         "n_en_outside_lakes": len(outside),
+        "n_en_orphans": len(orphans),
+        "orphans": orphans,
+        "missing_roots": missing,
         "files": len(hybrids),
         "edges": sum(len(r["edges"]) for r in hybrids),
         "per_lake": dict(sorted(per_lake.items())),
@@ -295,6 +376,14 @@ def render(report: dict, show_list: bool) -> str:
             f"  ({report['n_en_outside_lakes']} fichiers *_en.lean hors lac, "
             "non mesures : une arete se mesure dans un lac)"
         )
+    if report.get("n_en_orphans"):
+        lines.append(
+            f"  ({report['n_en_orphans']} fichiers *_en.lean hors roots de leur lac, "
+            "orphelins non mesures : Lake ne les compile pas)"
+        )
+    if report.get("missing_roots"):
+        names = ", ".join(f"{m['lake']}:{m['module']}" for m in report["missing_roots"])
+        lines.append(f"  (racines declarees sans fichier : {names})")
     lines.extend(
         [
             "",
@@ -315,6 +404,11 @@ def render(report: dict, show_list: bool) -> str:
                 f"  [{item['lake']}] {item['relative']} "
                 f"(decl={item['declarations']}) -> {', '.join(item['edges'])}"
             )
+        if report.get("orphans"):
+            lines.append("")
+            lines.append("Orphelins (hors roots, non mesures) :")
+            for item in report["orphans"]:
+                lines.append(f"  [{item['lake']}] {item['relative']}")
     return "\n".join(lines)
 
 
@@ -328,7 +422,18 @@ def self_test() -> int:
     with tempfile.TemporaryDirectory() as tmp:
         lake = Path(tmp) / "fixture_lean"
         (lake / "Alpha").mkdir(parents=True)
-        (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+        (lake / "lakefile.toml").write_text(
+            'name = "fixture"\n\n[[lean_lib]]\nname = "Fixture"\nglobs = ["Alpha.*"]\n',
+            encoding="utf-8",
+        )
+
+        # ORPHELIN : hybride parfait, mais hors des globs du lac -> Lake ne le compile pas.
+        (lake / "Beta").mkdir()
+        (lake / "Beta" / "Hidden_en.lean").write_text(
+            "import Alpha.Base\n\nnamespace Beta.Hidden_en\n\ndef h := 3\n\n"
+            "end Beta.Hidden_en\n",
+            encoding="utf-8",
+        )
 
         # FR de base + jumeau propre : l'import du jumeau est deja suffixe.
         (lake / "Alpha" / "Base.lean").write_text(
@@ -385,6 +490,12 @@ def self_test() -> int:
                 failures.append(f"faux positif : {unexpected}")
         if any("vendor" in item for item in found):
             failures.append("faux positif : un fichier vendore a ete mesure")
+        if "Beta/Hidden_en.lean" in found:
+            failures.append("faux positif : un orphelin (hors globs) a ete compte")
+        if report["n_en_orphans"] != 1:
+            failures.append(
+                f"orphelin attendu 1 (Beta/Hidden_en.lean), obtenu {report['n_en_orphans']}"
+            )
         if report["files"] != 1 or report["edges"] != 1:
             failures.append(
                 f"compte attendu 1 fichier / 1 arete, obtenu "
@@ -396,7 +507,10 @@ def self_test() -> int:
         for failure in failures:
             print(f"  - {failure}")
         return 1
-    print("SELF-TEST OK : 1 hybride detecte, 3 faux positifs ecartes, vendore ignore")
+    print(
+        "SELF-TEST OK : 1 hybride detecte, 3 faux positifs ecartes, "
+        "1 orphelin hors roots ecarte, vendore ignore"
+    )
     return 0
 
 
@@ -431,7 +545,11 @@ def main(argv: list[str] | None = None) -> int:
         print(f"INCIDENT : racine introuvable : {root}", file=sys.stderr)
         return RC_INCIDENT
 
-    report = census(root)
+    try:
+        report = census(root)
+    except LakefileError as exc:
+        print(f"INCIDENT : lakefile illisible, roots non lues : {exc}", file=sys.stderr)
+        return RC_INCIDENT
     if report["n_lakes"] == 0:
         print(
             "INCIDENT : aucun lac trouve -- un perimetre vide n'est pas un "

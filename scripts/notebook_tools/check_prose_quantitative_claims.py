@@ -144,6 +144,81 @@ COUNT_RE = re.compile(
     re.IGNORECASE,
 )
 
+# Quantites d'un modele de domaine, pas compteurs d'artefacts du depot.
+# Ces motifs sont volontairement relationnels : le nombre doit etre lie a la
+# grille ou a la matrice de couverture, et l'exemption porte sur cette seule
+# occurrence. « 81 cellules de code » et « 729 lignes dans le notebook »
+# restent des compteurs d'artefacts, meme dans une phrase qui parle aussi du
+# Sudoku.
+DOMAIN_GRID_CELLS_RE = re.compile(
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+"
+    r"(?:cellules?|cells?))\s+"
+    r"(?:de\s+la\s+grille(?:\s+de\s+sudoku)?|du\s+sudoku|"
+    r"of\s+(?:the\s+)?(?:9\s*[x×]\s*9\s+)?(?:sudoku\s+)?grid)"
+    r"(?![\w-])",
+    re.IGNORECASE,
+)
+DOMAIN_GRID_CELLS_REVERSED_RE = re.compile(
+    r"\bgrille\s+(?:de\s+)?sudoku\s+de\s+"
+    r"(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+cellules?)\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_FACTOR_RE = re.compile(
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
+    r"(?:\s+(?:maximum|max))?\s*=\s*"
+    r"(?P<dimensions>\d{1,6}\s+(?:lignes?|positions?)\s*[x×]\s*"
+    r"\d{1,6}\s+(?:colonnes?|valeurs?)"
+    r"(?:\s*[x×]\s*\d{1,6}\s+valeurs?)?)\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_MATRIX_DIMENSION_RE = re.compile(
+    r"\b(?:matrice|matrix)\b.{0,60}?\b\d{1,6}\s+colonnes?\s*[x×]\s*"
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+lignes?)\*{0,2}"
+    r"(?:\s+(?:maximum|max))?\b",
+    re.IGNORECASE,
+)
+DOMAIN_COVERAGE_PAIR_RE = re.compile(
+    r"\b(?:matrice|matrix)\b.{0,100}"
+    r"(?<![\w.#])(?P<count>~?\*{0,2}\d{1,6}\*{0,2}\s+"
+    r"(?:lignes?|lines?))\*{0,2}(?:\s+(?:maximum|max))?"
+    r"\s*[,(:]?\s*(?:une\s+par\s+couple\s+cellule[-–]valeur|"
+    r"one\s+for\s+each\s+cell[-–]value\s+pair)\b",
+    re.IGNORECASE,
+)
+
+
+def _is_domain_model_quantity(line: str, count: re.Match[str]) -> bool:
+    """Dit si cette occurrence décrit explicitement un modèle mathématique."""
+    span = count.span()
+    patterns = (
+        DOMAIN_GRID_CELLS_RE,
+        DOMAIN_GRID_CELLS_REVERSED_RE,
+        DOMAIN_COVERAGE_FACTOR_RE,
+        DOMAIN_COVERAGE_MATRIX_DIMENSION_RE,
+        DOMAIN_COVERAGE_PAIR_RE,
+    )
+    for pattern in patterns:
+        for match in pattern.finditer(line):
+            # Un inventaire attribué à un artefact reste signalé ; une simple
+            # mention du carnet présentant un modèle ne suffit pas.
+            prefix = line[line.rfind(";", 0, span[0]) + 1:span[0]]
+            if re.search(
+                r"\b(?:notebook|carnet|fichier\s+source|source\s+file)\s+"
+                r"(?:contient|compte|comprend|possède|possede|a|fait|has|contains|counts)"
+                r"(?:\s+(?:aussi|également|egalement|also))?\s*$"
+                r"|\b(?:matrice|matrix)\s+de\s+donn[ée]es\s+du\s+"
+                r"fichier\s+source\s+a\s*$",
+                prefix, re.IGNORECASE,
+            ):
+                continue
+            if match.span("count") == span:
+                return True
+            if "dimensions" in match.re.groupindex:
+                start, end = match.span("dimensions")
+                if start <= span[0] and span[1] <= end:
+                    return True
+    return False
+
 # ----------------------------------------------------------------------------
 # Allowlist MOTIVEE de la classe « artifact » (#23111)
 # ----------------------------------------------------------------------------
@@ -451,6 +526,58 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "image figee par son SHA, pas une mesure du depot."
         ),
     ),
+    # Manifeste de preservation des branches (issue #14238, PR #25120) : la
+    # section « Tranche 4 » (v5, 2026-11-07) du README accumule les instantanes
+    # par version (v2 a v5). Chaque compte de lignes y est un fait FIGE de la
+    # curation de cette version -- la preuve du geste, re-mesurable a la
+    # commande de la section « Verification » -- et non un etat du depot qui
+    # deriverait a chaque ajout. Les supprimer reecrirait la preuve (angle-mort
+    # du guard).
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187\*\* lignes"),
+        raison=(
+            "« 13 187 lignes » = total du manifeste a la date de la v5 "
+            "(tranche 4, 2026-11-07) : fait fige de la curation, jamais un "
+            "etat du depot resynchronise a chaque version."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 930 lignes"),
+        raison=(
+            "« 2 930 lignes nouvelles » = lignes greffees au manifeste par la "
+            "tranche 4 (2026-11-07) : le delta fige entre la v4 et la v5, "
+            "pas un compteur qui deriverait a chaque ajout ulterieur."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"13 187 lignes"),
+        raison=(
+            "« 13 187 lignes » = taille du .tsv.gz a la v5 (2026-11-07), "
+            "reformulee dans l'en-tete de format : mesure figee au snapshot, "
+            "re-mesurable a la commande de la section Verification."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"2 927 lignes"),
+        raison=(
+            "« 2 927 lignes » = lignes du fichier de selection selected_*.tsv "
+            "liste dans le journal de tranche : fait fige de la tranche 4 "
+            "(2026-11-07), piece de restauration, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/reference/branch-cleanup-manifest.README.md",
+        motif=re.compile(r"Refus motives \(9 lignes\)"),
+        raison=(
+            "« 9 lignes » = refus motives du fichier refused_*.tsv liste dans "
+            "le journal de tranche : le compte fige des refus du geste de la "
+            "tranche 4 (2026-11-07), pas un compteur du depot."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------
@@ -725,6 +852,8 @@ def _findings_in_text(
         if "artifact" in classes:
             exempt = _exempt_spans(target, line)
             for m in COUNT_RE.finditer(line):
+                if _is_domain_model_quantity(line, m):
+                    continue
                 if any(start <= m.start() and m.end() <= end for start, end in exempt):
                     continue
                 out.append((location, "artifact", m.group(0).strip()))

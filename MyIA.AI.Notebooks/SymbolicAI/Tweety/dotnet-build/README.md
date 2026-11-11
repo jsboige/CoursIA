@@ -11,6 +11,18 @@ sous runtime 8.15.0 (types exposés et instanciables). Toutes les recettes cible
 `net8.0`. Chaque runtime compilé (`org.tweetyproject.tweety-<module>.dll`) est placé
 **à côté du notebook** qui le charge.
 
+Les six scripts `rebuild-*.sh` partagent [`resolve_java_home.sh`](resolve_java_home.sh) : ils utilisent
+un `JAVA_HOME` explicite, ou recherchent `javac` sur `PATH` si la variable est absente. Un `JAVA_HOME`
+défini mais invalide (par exemple une JRE sans compilateur) arrête la recette avec un diagnostic ; il
+n'est pas remplacé silencieusement par un autre JDK. Le chemin du JDK peut contenir des espaces et
+les liens symboliques de `javac` ou de `JAVA_HOME` sont résolus avant de calculer sa racine.
+
+Le contrat du résolveur se vérifie sans lancer les téléchargements ou compilations des recettes :
+
+```bash
+bash test_resolve_java_home.sh
+```
+
 ## Fichiers — cluster `pl` (notebook [`../Tweety-02-Basic-Logics-CSharp.ipynb`](../Tweety-02-Basic-Logics-CSharp.ipynb))
 
 | Fichier | Rôle | Committé ? |
@@ -166,3 +178,22 @@ recompilation source `--release 8` (le pattern causal.sh de c.210). Le pipeline
 générique `rebuild-5shades.sh` couvre désormais les cinq modules restants des
 frameworks d'argumentation étendus — **sans dépendance Maven locale** (téléchargement
 direct Maven Central + GitHub).
+
+### Reconstruction PowerShell de preferences
+
+`rebuild-preferences.ps1` reconstruit le JAR Java 8 de preferences sans Bash.
+Il demande PowerShell 7, un JDK 11 ou plus (`javac`, `jar`), `tar` et un
+accès à Maven Central, au dépôt Maven Tweety et à GitHub. Depuis ce dossier :
+
+```powershell
+./rebuild-preferences.ps1
+```
+
+Le script extrait à neuf les sources, applique les mêmes adaptations Java 8 que
+la recette Bash et utilise le séparateur de classpath du système. Il refuse une
+commande en échec, une source inattendue ou un JAR sans classes ou contenant du
+bytecode supérieur à 52, avant de copier le résultat vers `../libs/`. Les
+archives déjà présentes sont réutilisées ; pour les retélécharger, supprimer
+les fichiers concernés dans `jars/` ou `sources-jar/`. La construction de la
+DLL reste une étape distincte : `dotnet build build-TweetyPreferencesShade.csproj -c Release`.
+Les cinq autres recettes `rebuild-*.sh` n'ont pas encore de port PowerShell natif.

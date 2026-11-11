@@ -29,8 +29,8 @@ from pathlib import Path
 
 # Donnees vendorees dont la mise a jour doit propager une re-execution.
 DATA_PATTERNS = (
-    re.compile(r"^MyIA\.AI\.Notebooks/SymbolicAI/Argument_Analysis/ontologies/.*\.owl$"),
-    re.compile(r"^MyIA\.AI\.Notebooks/SymbolicAI/Argument_Analysis/data/.*taxonomy.*\.csv$"),
+    re.compile(r"^MyIA\.AI\.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/.*\.owl$"),
+    re.compile(r"^MyIA\.AI\.Notebooks/SymbolicAI/ArgumentAnalysis/data/.*taxonomy.*\.csv$"),
 )
 # Un carnet de traduction ou archive ne se re-execute pas avec la source.
 EXCLUDED_CONSUMER = re.compile(r"(^|/)_archive/|-EN\.ipynb$")
@@ -113,7 +113,7 @@ def render(report: dict) -> str:
 def self_test(cwd: Path | None = None) -> int:
     ok = True
     positive = analyse(
-        ["MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_fallacies.owl"],
+        ["MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/argumentum_fallacies.owl"],
         cwd=cwd,
     )
     found = [c["notebook"] for e in positive["data_files"] for c in e["consumers"]]
@@ -134,8 +134,8 @@ def self_test(cwd: Path | None = None) -> int:
     # Deduplication : le meme carnet citant deux donnees ne compte qu'une fois.
     both = analyse(
         [
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_fallacies.owl",
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv",
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/argumentum_fallacies.owl",
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv",
         ],
         cwd=cwd,
     )
