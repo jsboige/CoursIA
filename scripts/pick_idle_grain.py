@@ -405,10 +405,7 @@ _CONTAINER_DELIVERY_MARKER_RE = delivery_grammar.CONTAINER_DELIVERY_MARKER_RE
 # juste apres le dossier : elle est reconnue aussi, sinon le DERNIER
 # commentaire du fil redevenirait le seul point lu et le dossier serait
 # invisible.
-_CLOSURE_ANNOUNCEMENT_RE = re.compile(
-    r"^\s*(?:#{1,6}\s*)?Fermeture sur dossier\b[^\n]*?\bverdict\s+CLOSE\b",
-    re.IGNORECASE | re.MULTILINE,
-)
+_CLOSURE_ANNOUNCEMENT_RE = delivery_grammar.CLOSURE_ANNOUNCEMENT_RE
 
 
 def _closure_dossier_verdict(body: str) -> str | None:
@@ -1823,42 +1820,7 @@ def unfrozen_allowed(lane: str | None) -> bool:
 #: marqueurs, pour exactement cette raison. Mesure : revue Hermes du
 #: 2026-11-03 sur #24523 (angle mort de documentation signale, non
 #: bloquant).
-_FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")
-_INLINE_CODE_RE = re.compile(r"`{1,3}[^`\n]+`{1,3}")
-
-
-def _strip_code(text: str) -> str:
-    """Retire les blocs de code (fences) et les code-spans inline.
-
-    Le contenu retire est remplace par des lignes vides : la structure de
-    lignes est conservee (le debut de ligne reste le debut de ligne), ce
-    qui laisse le test des marqueurs **strictement** plus strict, jamais
-    plus laxiste.
-    """
-    if not text:
-        return text
-    out: list[str] = []
-    fence_char: str | None = None
-    fence_len = 0
-    for line in text.splitlines():
-        match = _FENCE_OPEN_RE.match(line)
-        if fence_char is None:
-            if match:
-                marker = match.group(1)
-                fence_char = marker[0]
-                fence_len = len(marker)
-                out.append("")
-                continue
-            out.append(line)
-        else:
-            # La fence se ferme sur un marqueur du MEME caractere, au moins
-            # aussi long que celui d'ouverture (CommonMark).
-            if match and match.group(1)[0] == fence_char and len(match.group(1)) >= fence_len:
-                fence_char = None
-                fence_len = 0
-            out.append("")
-    stripped = "\n".join(out)
-    return _INLINE_CODE_RE.sub(" ", stripped)
+_strip_code = delivery_grammar.strip_code
 
 # #21436 (suite de #22057) -- le mur de temps du tapis n'etait verifie
 # qu'ENTRE deux sondes : une sonde DEMARREE juste avant l'echeance consommait encore tout
@@ -2896,25 +2858,20 @@ def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire PORTEUR D'ETAT porte-t-il un marqueur de cloture ?
+    """L'historique porte-t-il encore un marqueur de cloture ?
 
-    La lecture ne porte pas sur `comments[-1]` brut mais sur le dernier
-    commentaire qui porte un etat (`_last_state_comment`) : un `[RELEASED]`
-    de queue dont le corps ne porte aucun marqueur d'etat est saute, parce
-    qu'il MASQUERAIT le `[DELIVERED]` qu'il suit (#24590). Le contrat ecrit
-    suit donc le code.
+    Le fil se reduit chronologiquement : un commentaire neutre ou un
+    `[RELEASED]` de barriere ne desarme pas une livraison ; seule une
+    retractation explicite le fait.
 
     TRI-ETAT (cf. `has_delivered_signal`) :
     - ``True``  : l'item est **GEL** (regle A : le BODY porte la ligne
       `[FROZEN] ...` ; regle B : un en-tete `[FROZEN]` dans le FIL), ou le
-      dernier commentaire a un en-tete `[DELIVERED]` ou `[FROZEN]`, ou porte
-      un marqueur de livraison
+      fil porte encore un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
-    - ``False`` : aucun marqueur de cloture dans le dernier commentaire
-      porteur d'etat -- les `[RELEASED]` de queue sans marqueur d'etat ne
-      sont pas lus (`_last_state_comment`).
+    - ``False`` : aucun marqueur de cloture vivant dans le fil.
       L'appelant peut proceder a la sonde pleine. C'est le cas d'un
       en-tete `[RELEASED]` : une main rendue sur une barriere reelle
       laisse l'item SERVABLE (#21721), et une main rendue parce que le
@@ -2985,41 +2942,15 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     if _issue_is_frozen(body_of_issue, comments) is not None:
         return True
 
-    last = _last_state_comment(comments)
-    body = last.get("body") or ""
-    if not isinstance(body, str):
-        body = ""
-    if not body:
+    bodies = [(c.get("body") or "") if isinstance(c, dict) else ""
+              for c in comments]
+    if not delivery_grammar.recent_delivery_state(bodies):
         return False
-    # #24250 -- une decision de cloture REPRISE par une reouverture du user
-    # n'ecarte plus rien. La lecture du timeline n'est faite que dans ce cas
-    # (le dossier est rare) : un marqueur ordinaire ne coute rien de plus.
-    if (_closure_dossier_verdict(body) == "CLOSE"
-            or _closure_announced_close(body)):
-        if _delivery_voided_by_reopen(issue_number, [last]):
+    if any(_closure_dossier_verdict(_strip_code(body)) == "CLOSE"
+           or _closure_announced_close(_strip_code(body)) for body in bodies):
+        if _delivery_voided_by_reopen(issue_number, comments):
             return False
-    # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
-    # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
-    # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
-    # repostee ainsi en DERNIER commentaire restait servie en boucle par le
-    # tapis -- la sonde de tete ne l'atteignait pas, le budget de la sonde
-    # pleine non plus). Grammaire reutilisee de la sonde pleine
-    # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
-    # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
-    # n'introduit aucun verdict nouveau, il avance le meme.
-    # Le code **documente** un marqueur, il ne le **pose** pas : une fence
-    # qui recopie la ligne canonique ne clot rien (mesure : revue Hermes
-    # du 2026-11-03 sur #24523).
-    body_plain = _strip_code(body)
-    # #24461 (c) point 3 : une livraison de TRANCHE (`paths:` sur la ligne
-    # du marqueur) ne livre pas l'issue -- elle ne l'arme ni ne la desarme.
-    tranche = delivery_grammar.is_tranche_only(body_plain)
-    return bool(
-        _closure_dossier_verdict(body) in ("CLOSE", "KEEP")
-        or _closure_announced_close(body)
-        or (not tranche and (
-            _RECENT_DELIVERY_MARKER_RE.search(body_plain)
-            or _DELIVERED_MARKER_RE.search(body_plain))))
+    return True
 
 
 def _issue_is_frozen(issue_body: str | None,
@@ -3243,13 +3174,13 @@ def _last_comment_body(issue_number: int) -> str | None:
 
 
 def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
-    """Le DERNIER commentaire dit-il que le CONTENEUR est livre ?
+    """Le fil atteste-t-il encore que le CONTENEUR est livre ?
 
     TRI-ETAT :
-    - ``True``  : le dernier commentaire porte le marqueur de conteneur
+    - ``True``  : le fil porte encore le marqueur de conteneur
       `[INFO] candidate-delivered` (les trois formes de
       `_CONTAINER_DELIVERY_MARKER_RE`) ;
-    - ``False`` : aucun marqueur de conteneur (ou une retraction
+    - ``False`` : aucun marqueur de conteneur vivant (ou une retraction
       `[NOT-DELIVERED]` / `[INFO] candidate-delivered-revoked` ;
     - ``None``  : lecture en echec -- fail-OPEN, l'appelant le dit.
 
@@ -3272,16 +3203,12 @@ def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
     Cout : **1 requete** `gh issue view --json comments`, comme le filtre
     recent -- et HORS budget de sonde.
     """
-    body = _last_comment_body(issue_number)
-    if body is None:
+    comments, _ = _issue_comments(issue_number)
+    if comments is None:
         return None
-    if not body:
-        return False
-    # Une retraction posteriore annule le marqueur : l'ordre est porte par
-    # le texte (cf `_delivered_state`).
-    if _DELIVERED_MARKER_REVOKED_RE.search(body):
-        return False
-    return bool(_CONTAINER_DELIVERY_MARKER_RE.search(body))
+    return delivery_grammar.container_delivery_state([
+        (c.get("body") or "") if isinstance(c, dict) else "" for c in comments
+    ])
 
 
 # #22500 point 1 -- l'HEURE du dernier evenement de cloture.
@@ -3377,11 +3304,12 @@ def _delivery_event_from_comments(
         body = c.get("body") or ""
         if not isinstance(body, str):
             continue
+        body_plain = _strip_code(body)
         created = c.get("createdAt")
-        if _DELIVERED_MARKER_REVOKED_RE.search(body):
+        if _DELIVERED_MARKER_REVOKED_RE.search(body_plain):
             state, stamp = False, None
             closed = False
-        elif _closure_dossier_verdict(body) == "CLOSE":
+        elif _closure_dossier_verdict(body_plain) == "CLOSE":
             # Dossier de cloture CLOSE : signal TERMINAL. `stamp` reste
             # `None` -> `_visit_age_hours(None)` rend `None` -> la regle des
             # 48 h (#22500) ne peut pas l'expirer, et la consolidation
@@ -3409,18 +3337,9 @@ def _delivery_event_from_comments(
             # Une livraison de TRANCHE n'est pas un evenement de cloture :
             # elle ne pose ni l'etat ni l'heure (decision #24461 (c)).
             stamp = created
-    last = comments[-1]
-    last_body = last.get("body") if isinstance(last, dict) else ""
-    if not isinstance(last_body, str):
-        last_body = ""
-    tranche = delivery_grammar.is_tranche_only(last_body)
-    recent = bool(
-        closed
-        or _closure_dossier_verdict(last_body) in ("CLOSE", "KEEP")
-        or _closure_announced_close(last_body)
-        or (not tranche and (
-            _RECENT_DELIVERY_MARKER_RE.search(last_body)
-            or _DELIVERED_MARKER_RE.search(last_body))))
+    recent = delivery_grammar.recent_delivery_state([
+        (c.get("body") or "") if isinstance(c, dict) else "" for c in comments
+    ])
     if closed and state:
         # La terminalite PRIME sur l'heure : un dossier CLOSE n'expire pas,
         # meme si un marqueur plus recent a reecrit `stamp`.
@@ -10870,6 +10789,109 @@ def belt_order_composition(items: list[dict]) -> dict:
             "arms": len({bandit_arm(it) for it in items}) if total else 0}
 
 
+# Rotation des tetes mortes (mandat user 2026-11-11 : « Les workers ne doivent
+# plus etre bloques, et le tapis doit servir toutes les issues »). Mesure du
+# 11/11 sur le journal de tirage d'ai-01 : en 24 h, la lane worker
+# `myia-ai-01:CoursIA-2` a tire 43 fois le tapis, et s'est vu servir #21310
+# 15 fois, #18258 et #25497 9 fois, #13737 8 fois. Le tapis trie par derniere
+# visite ; une issue sautee (barriere de lane, EPIC sans sous-grain libre,
+# origami non servable) n'est PAS une visite, elle reste donc en tete et
+# chaque tirage de la lane la lui ressert. La rotation lit le journal de la
+# MACHINE (le seul registre des propositions deja faites a la lane) : une
+# issue servie a la lane au moins `draws` fois en `hours` heures, sans visite
+# depuis le premier de ces services, passe en QUEUE pour cette lane. Les
+# autres lanes la voient toujours en tete ; la lane la retrouve quand la
+# fenetre du journal l'a oubliee. Un service compte une fois par tranche de
+# `min_gap_min` minutes : une lane qui retire le tapis dans le meme cycle ne
+# se fabrique pas de tete morte.
+DEAD_HEAD_HOURS = 24.0
+DEAD_HEAD_DRAWS = 2
+DEAD_HEAD_MIN_GAP_MIN = 30.0
+
+
+def _journal_ts(ts: str) -> dt.datetime | None:
+    try:
+        return dt.datetime.strptime(ts, "%Y-%m-%dT%H:%M:%SZ").replace(
+            tzinfo=dt.timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def belt_dead_heads(pool: list[dict], records, *, lane: str, now: dt.datetime,
+                    hours: float = DEAD_HEAD_HOURS,
+                    draws: int = DEAD_HEAD_DRAWS,
+                    min_gap_min: float = DEAD_HEAD_MIN_GAP_MIN) -> list[dict]:
+    """Issues du pool deja servies a `lane` sans avoir ete visitees depuis.
+
+    Pure : `records` est la liste des `TirageRecord` du journal (ou tout objet
+    portant `lane`, `mode`, `ts`, `candidates`). Rend, dans l'ordre du pool,
+    `{"number", "served", "first_served"}` pour chaque issue servie au moins
+    `draws` fois (services espaces d'au moins `min_gap_min` minutes) dans les
+    `hours` dernieres heures, et dont la derniere visite (`belt_visit_stamp`)
+    est anterieure au premier de ces services.
+    """
+    if draws <= 0 or hours <= 0:
+        return []
+    cutoff = now - dt.timedelta(hours=hours)
+    gap = dt.timedelta(minutes=max(0.0, min_gap_min))
+    served: dict[int, list[dt.datetime]] = {}
+    for rec in records:
+        if getattr(rec, "lane", None) != lane or getattr(rec, "mode", None) != "belt":
+            continue
+        ts = _journal_ts(getattr(rec, "ts", ""))
+        if ts is None or ts < cutoff or ts > now:
+            continue
+        for n in getattr(rec, "candidates", None) or []:
+            try:
+                served.setdefault(int(n), []).append(ts)
+            except (TypeError, ValueError):
+                continue
+    if not served:
+        return []
+    out = []
+    for it in pool:
+        try:
+            n = int(it.get("number"))
+        except (TypeError, ValueError):
+            continue
+        stamps = served.get(n)
+        if not stamps:
+            continue
+        visit = _journal_ts(belt_visit_stamp(it) or "")
+        if visit is None and belt_visit_stamp(it):
+            # Une visite illisible n'est pas une absence de visite : on ne
+            # deplace pas ce qu'on ne sait pas dater.
+            continue
+        kept = sorted(t for t in stamps if visit is None or t > visit)
+        counted: list[dt.datetime] = []
+        for t in kept:
+            if not counted or t - counted[-1] >= gap:
+                counted.append(t)
+        if len(counted) >= draws:
+            out.append({"number": n, "served": len(counted),
+                        "first_served": counted[0].strftime("%Y-%m-%dT%H:%M:%SZ")})
+    return out
+
+
+def rotate_dead_heads(pool: list[dict], dead_numbers) -> int:
+    """Deplace en queue, en place et sans perturber l'ordre relatif, les items
+    dont le numero est dans `dead_numbers`. Rend le nombre d'items deplaces."""
+    dead = {int(n) for n in dead_numbers}
+    if not dead:
+        return 0
+
+    def _is_dead(it: dict) -> bool:
+        try:
+            return int(it.get("number")) in dead
+        except (TypeError, ValueError):
+            return False
+
+    head = [it for it in pool if not _is_dead(it)]
+    tail = [it for it in pool if _is_dead(it)]
+    pool[:] = head + tail
+    return len(tail)
+
+
 def apply_belt_weights(pool: list[dict], *, rng: random.Random,
                        merged_prs: list[dict] | None = None,
                        open_count: int = 0, series=None,
@@ -13017,6 +13039,46 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             def claims_probe(numbers):
                 return check_claims(numbers, args.lane, strict_snapshot=True)
 
+        def _extend_tranche(fresh):
+            """Tranche d'extension (11/11) : priming PUIS claims en un appel.
+
+            Le priming suit la borne du priming initial (la moitie du reste
+            sous le mur, par tranches de ``PRIME_SLICE``) : une tranche qui
+            manque de temps n'est lue qu'en partie, et ses numeros non primes
+            retombent sur la verification unitaire de la boucle -- qui rend
+            `BLOCKED` en mode STRICT (fail-CLOSED, motif nomme). Le budget de
+            sondes de livraison est re-arme pour la tranche : la meme borne
+            par fenetre, pas une fenetre servie a l'aveugle.
+            """
+            if snapshot_prime is not None:
+                primed: list[int] = []
+                stop = (None if deadline is None else
+                        time.monotonic() + max(
+                            0.0, (deadline - time.monotonic()) / 2.0))
+                for start in range(0, len(fresh), PRIME_SLICE):
+                    if stop is not None and time.monotonic() >= stop:
+                        break
+                    chunk = fresh[start:start + PRIME_SLICE]
+                    if snapshot_prime is _belt_snapshot_prime:
+                        # Seed memoire (lock-timeout) : la voie du re-prime.
+                        _belt_reprime_claims_delta(chunk)
+                    else:
+                        snapshot_prime(REPO, chunk)
+                    primed.extend(chunk)
+                if primed and snapshot_prime is _belt_snapshot_prime:
+                    _belt_pr_prefetches(primed, args.lane,
+                                        _BELT_OPEN_PRS_CACHE)
+                if primed:
+                    state["service_tranches_primed"] += 1
+                fresh = primed
+            if not fresh:
+                return
+            try:
+                belt_claims.update(claims_probe(fresh))
+            except Exception:  # noqa: BLE001 - la verification unitaire reste le filet
+                return
+            budget[0] += max(0, int(probe_budget))
+
         belt_picks: list[dict] = []
         belt_withheld: list[tuple[dict, str]] = []
         # Garde-fou : on n'itère pas plus loin que la fenetre + un certain
@@ -13033,21 +13095,39 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # bornee par le MUR (au-dela, plus aucune sonde n'est emise) et par
         # la TAILLE du pool -- elle ne sert jamais un candidat que la lane
         # n'aurait pas pu voir sans elle.
+        #
+        # 11/11 (mandat user « les workers ne doivent plus etre bloques ») --
+        # l'extension joue tant que le QUOTA n'est pas rempli, plus seulement
+        # quand rien n'est retenu. Mesure du jour, lane po-2024:CoursIA-2 :
+        # 70 positions parcourues, 45 livraisons en attente de cloture et 19
+        # claims d'autres lanes, 3 retenus sur 4 -- la fenetre ne s'etendait
+        # jamais (un retenu suffisait a la geler) et la lane rendait la meme
+        # tete au cycle suivant. Chaque tranche neuve est PRIMEE puis ses
+        # claims sont lus EN UN APPEL : en mode STRICT, un numero que
+        # l'instantane ne couvre pas rend `BLOCKED` (instantane absent), donc
+        # une extension sans priming n'aurait rien pu servir en production.
         window = max_iters
         tranche = max_iters if max_iters > 0 else 1
         positions = 0
         state["service_window"] = window
         state["service_window_extended"] = False
+        state["service_tranches_primed"] = 0
         for i, it in enumerate(belt_pool):
             if i >= window:
-                if (not belt_picks and not expired()
+                if (len(belt_picks) < args.grains and not expired()
                         and window < len(belt_pool)):
                     next_window = min(window + tranche, len(belt_pool))
                     if next_window <= window:
                         break
+                    fresh = [int(x["number"])
+                             for x in belt_pool[window:next_window]
+                             if x.get("number")
+                             and int(x["number"]) not in belt_claims]
                     window = next_window
                     state["service_window"] = window
                     state["service_window_extended"] = True
+                    if fresh:
+                        _extend_tranche(fresh)
                 else:
                     break
             if len(belt_picks) >= args.grains:
@@ -13227,8 +13307,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                     # journee, alors que son dossier CLOSE datait du 02/11.
                     terminal_closure = bool(delivered_flag and stamp is None)
                     age_h = _visit_age_hours(stamp, NOW)
+                    # #25159 (reserve coordinateur 12:25Z) : un `[DELIVERED]`
+                    # SANS lane ne pose pas `delivered_flag` mais pose bien
+                    # `recent_flag` et `stamp`. Exiger `delivered_flag` pour
+                    # expirer le laissait vivre indefiniment : `recent_flag`
+                    # l'ecartait de l'urne des grains a chaque tirage, et sans
+                    # etat il n'entrait pas non plus dans l'urne des livrees --
+                    # l'issue sortait des DEUX urnes pour toujours. Le marqueur
+                    # expire des que l'evenement est RECENT et porte une heure
+                    # (une cloture terminale rend `stamp=None` : elle reste
+                    # inexpirable, c'est le contrat #19253).
                     marker_expired = bool(
-                        delivered_flag
+                        (delivered_flag or recent_flag)
+                        and stamp is not None
                         and age_h is not None
                         and age_h >= CONSOLIDATION_LAG_H)
                 else:
@@ -13399,6 +13490,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         _BELT_DEADLINE[0] = _previous_belt_deadline
 
 
+def _belt_delivery_status(item: dict) -> str:
+    """Statut court affiche sur chaque ligne servie par le tapis."""
+    klass = item.get("klass", "grain")
+    if klass == "delivered":
+        return "livre"
+    if klass == "grain":
+        return "libre"
+    return "servable"
+
+
 def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
     """#23174 -- les grains de creation a ecarter, avec la cause nommee.
 
@@ -13537,6 +13638,24 @@ def main(argv: list[str] | None = None) -> int:
                          "borne donc plus une duree totale de run. Defaut : "
                          "PICK_BELT_TIME_BUDGET_S, ou 240 s. 0 desactive le "
                          "mur (boucle ET plafond d'amont).")
+    ap.add_argument("--no-dead-head-rotation", dest="dead_head_rotation",
+                    action="store_false", default=True,
+                    help="tapis (mandat user 2026-11-11) : ne PAS envoyer en "
+                         "queue les tetes mortes de la lane -- issues que le "
+                         "journal de tirage de la machine montre servies a "
+                         "cette lane au moins --dead-head-draws fois en "
+                         "--dead-head-hours heures sans visite depuis. Les "
+                         "lanes d'urne (coordinateur, adjoint, secretaire) les "
+                         "voient nommees dans `dead_heads` sans rotation.")
+    ap.add_argument("--dead-head-hours", dest="dead_head_hours", type=float,
+                    default=DEAD_HEAD_HOURS,
+                    help="fenetre du journal lue par la rotation des tetes "
+                         f"mortes (defaut {DEAD_HEAD_HOURS:g} h)")
+    ap.add_argument("--dead-head-draws", dest="dead_head_draws", type=int,
+                    default=DEAD_HEAD_DRAWS,
+                    help="services sans visite qui font une tete morte "
+                         f"(defaut {DEAD_HEAD_DRAWS}, espaces d'au moins "
+                         f"{DEAD_HEAD_MIN_GAP_MIN:g} min)")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
@@ -14688,6 +14807,48 @@ def main(argv: list[str] | None = None) -> int:
                         f"consolidation {belt_weight_signal['classes']['consolidation']}"
                         f", delivered {belt_weight_signal['classes']['delivered']}"
                         f", audit-17073 {belt_weight_signal['classes']['audit_17073']}")
+        # Rotation des tetes mortes (mandat user 2026-11-11) : APRES la
+        # repondersion (dernier tri du pool) et AVANT la fenetre des claims,
+        # pour que la fenetre primee et sondee soit lue sur l'ordre final.
+        # Fail-OPEN : un journal illisible laisse l'ordre intact.
+        belt_dead_signal: dict = {"enabled": bool(args.dead_head_rotation),
+                                  "applied": False, "moved": 0,
+                                  "hours": args.dead_head_hours,
+                                  "draws": args.dead_head_draws,
+                                  "items": [], "error": None}
+        if args.dead_head_rotation:
+            try:
+                if tirage_journal is None:
+                    raise RuntimeError("module tirage_journal absent")
+                if ("PYTEST_CURRENT_TEST" in os.environ
+                        and not os.environ.get("TIRAGE_JOURNAL_PATH")):
+                    _dead_records = []
+                else:
+                    _dead_records = tirage_journal.read_journal()
+                _dead = belt_dead_heads(
+                    belt_pool, _dead_records, lane=args.lane, now=NOW,
+                    hours=args.dead_head_hours, draws=args.dead_head_draws)
+                belt_dead_signal["items"] = _dead
+                if _dead and not delivered_urn_allowed(args.lane):
+                    belt_dead_signal["moved"] = rotate_dead_heads(
+                        belt_pool, [d["number"] for d in _dead])
+                    belt_dead_signal["applied"] = True
+            except Exception as exc:  # noqa: BLE001 - fail-OPEN, ordre intact
+                belt_dead_signal["error"] = str(exc)
+            _dead_nums = ", ".join(f"#{d['number']}x{d['served']}"
+                                   for d in belt_dead_signal["items"][:12])
+            if belt_dead_signal["error"]:
+                _belt_phase("tetes mortes: journal ILLISIBLE, ordre intact "
+                            f"({belt_dead_signal['error']})")
+            elif belt_dead_signal["applied"]:
+                _belt_phase(f"tetes mortes: {belt_dead_signal['moved']} "
+                            f"issue(s) en queue pour cette lane ({_dead_nums})")
+            elif belt_dead_signal["items"]:
+                _belt_phase(f"tetes mortes: {len(belt_dead_signal['items'])} "
+                            f"nommee(s), lane d'urne -- pas de rotation "
+                            f"({_dead_nums})")
+            else:
+                _belt_phase("tetes mortes: aucune")
         # #22983 -- la fenetre des CLAIMS couvre la fenetre que la boucle de
         # service va parcourir (`belt_service_window`), pas seulement la
         # tete. La boucle ne declenche alors AUCUNE verification unitaire :
@@ -14875,8 +15036,9 @@ def main(argv: list[str] | None = None) -> int:
             # d'une fenetre de positions toutes livrees.
             _svc_positions = belt_pick_state.get("service_positions")
             if _svc_positions is not None:
-                _svc_extended = (" (fenetre ETENDUE -- rien n'etait retenu "
-                                 "et il restait du temps sous le mur)"
+                _svc_extended = (" (fenetre ETENDUE -- moins de grains "
+                                 "retenus que demandes, et il restait du "
+                                 "temps sous le mur)"
                                  if belt_pick_state.get("service_window_extended")
                                  else "")
                 print(f"   fenetre de service : {_svc_positions} "
@@ -14885,6 +15047,11 @@ def main(argv: list[str] | None = None) -> int:
                       f"{_svc_extended} ; "
                       f"{belt_pick_state.get('pending_deliveries', 0)} "
                       f"livraison(s) en attente.")
+            if belt_dead_signal.get("applied"):
+                print(f"   tetes mortes : {belt_dead_signal['moved']} issue(s) "
+                      f"deja servie(s) a cette lane sans visite, passee(s) en "
+                      f"queue pour elle (--no-dead-head-rotation pour les "
+                      f"garder en tete).")
             if belt_dropped_validate:
                 # #20923 : la lane lit des « PRs inexistantes » alors que
                 # le pool vient de `gh issue list` et ses numeros sont
@@ -15071,7 +15238,10 @@ def main(argv: list[str] | None = None) -> int:
                     "dropped": [{"number": n, "reason": c}
                                 for n, c in belt_dropped_validate],
                 },
-                "picks": belt_picks,
+                "picks": [
+                    {**it, "delivery_status": _belt_delivery_status(it)}
+                    for it in belt_picks
+                ],
                 # #25082 point C -- l'etat de la resolution de zone, sur le
                 # tirage lui-meme. `measured: false` se distingue de
                 # `resolved: 0` : le premier dit « l'organe amont n'a pas
@@ -15196,8 +15366,10 @@ def main(argv: list[str] | None = None) -> int:
                 # Sans ces nombres, « 0 retenu » est muet : la lane ne peut
                 # pas distinguer « le pool est vide » de « les positions
                 # vues etaient toutes livrees ». `extended` dit si la
-                # fenetre a ete elargie (elle ne l'est que si rien n'etait
-                # retenu ET qu'il restait du temps sous le mur).
+                # fenetre a ete elargie (11/11 : elle l'est tant que la lane
+                # a moins de grains que demandes ET qu'il reste du temps
+                # sous le mur ; `tranches_primed` compte les tranches dont
+                # l'instantane a ete complete en cours de boucle).
                 "service_window": {
                     "positions": belt_pick_state.get("service_positions"),
                     "window": belt_pick_state.get("service_window"),
@@ -15205,7 +15377,15 @@ def main(argv: list[str] | None = None) -> int:
                         "service_window_extended")),
                     "pending_deliveries": belt_pick_state.get(
                         "pending_deliveries", 0),
+                    "tranches_primed": belt_pick_state.get(
+                        "service_tranches_primed", 0),
                 },
+                # Mandat user 2026-11-11 : issues servies a la lane sans
+                # visite depuis (journal de la machine). `applied` dit si
+                # elles sont passees en queue (jamais pour une lane d'urne :
+                # le coordinateur les voit nommees, pour decomposer, geler ou
+                # fermer).
+                "dead_heads": belt_dead_signal,
                 # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
                 # `fallback_count` est le nombre de numeros absents de
                 # la map bulk et qui ont du recourir a la sonde unitaire
@@ -15264,12 +15444,13 @@ def main(argv: list[str] | None = None) -> int:
             # Sortie texte : un tableau compact, aligne sur la volee
             # ponderee. Meme format de colonnes : urn, age, inact, vus,
             # genre, p, titre.
-            header = (f"{'urne':<10} {'age':>4} {'inact':>5} {'vus':>4} "
-                      f"{'genre':<14} {'p':>5}  titre")
+            header = (f"{'urne':<10} {'statut':<9} {'age':>4} {'inact':>5} "
+                      f"{'vus':>4} {'genre':<14} {'p':>5}  titre")
             print(header)
             print("-" * len(header))
             for it in belt_picks:
                 urn = it.get("klass", "grain")
+                delivery_status = _belt_delivery_status(it)
                 age = int(it.get("age", 0))
                 inact = int(it.get("idle", 0))
                 vus = visits.get(it["number"], 0)
@@ -15280,7 +15461,8 @@ def main(argv: list[str] | None = None) -> int:
                 # sous-issue) : c'est elle que la file remonte en tete.
                 marker = "[NEVER] " if stamp is None else ""
                 title = it.get("title", "")[:60]
-                print(f"{urn:<10} {age:>4}j {inact:>5}j {vus:>4} "
+                print(f"{urn:<10} {delivery_status:<9} {age:>4}j "
+                      f"{inact:>5}j {vus:>4} "
                       f"{genre:<14} {'-':>5}  {marker}{title}")
             print()
             print("Belt : pool trie par date de derniere visite -- merge, "
