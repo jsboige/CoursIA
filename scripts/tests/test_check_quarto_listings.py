@@ -31,3 +31,20 @@ def test_unsupported_pattern_is_not_silently_ignored(tmp_path: Path) -> None:
     doc = tmp_path / "index.qmd"
     doc.write_text('---\nlisting:\n  contents: "!excluded/*"\n---\n', encoding="utf-8")
     assert "non pris en charge" in check_document(doc)[0]
+
+
+def test_valid_quoted_and_indented_root_keys(tmp_path: Path) -> None:
+    for key in ('"listing"', ' listing'):
+        doc = tmp_path / "index.qmd"
+        doc.write_text(f'---\n{key}: {{contents: "missing/*.qmd"}}\n---\n', encoding="utf-8")
+        assert "aucun fichier" in check_document(doc)[0]
+
+
+def test_front_matter_without_listing_and_invalid_listing(tmp_path: Path) -> None:
+    doc = tmp_path / "index.qmd"
+    doc.write_text('---\ntitle: Test\n---\n', encoding="utf-8")
+    assert check_document(doc) == []
+    doc.write_text('---\ntitle: [invalide\n---\n', encoding="utf-8")
+    assert check_document(doc) == []
+    doc.write_text('---\n"listing": [invalide\n---\n', encoding="utf-8")
+    assert "YAML invalide" in check_document(doc)[0]

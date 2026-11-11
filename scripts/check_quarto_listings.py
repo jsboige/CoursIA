@@ -8,6 +8,7 @@ Les chemins sont résolus depuis le répertoire du document. Les formes prises
 from __future__ import annotations
 
 import glob
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -26,13 +27,18 @@ def check_document(path: Path) -> list[str]:
     except ValueError:
         return []
     front = "\n".join(lines[1:end])
-    if not any(line.startswith("listing:") for line in lines[1:end]):
-        return []
     try:
         metadata = yaml.safe_load(front)
     except yaml.YAMLError as exc:
-        return [f"{path}: YAML invalide : {exc}"]
-    listings = metadata.get("listing")
+        # Les autres front matters ne sont pas dans le périmètre du garde.
+        # Sur un YAML invalide, repérer les écritures usuelles de la clé pour
+        # ne pas masquer un listing illisible.
+        if re.search(r"(?m)^\s*(?:listing|'listing'|\"listing\")\s*:", front):
+            return [f"{path}: YAML invalide : {exc}"]
+        return []
+    if not isinstance(metadata, dict) or "listing" not in metadata:
+        return []
+    listings = metadata["listing"]
     if isinstance(listings, dict):
         listings = [listings]
     if not isinstance(listings, list):
