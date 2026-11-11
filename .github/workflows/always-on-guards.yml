@@ -265,7 +265,7 @@ jobs:
       # 72 h sur #15303, 15 h sur #15587, les deux sans faute de lane.
       # Une seule lecture en tete de job, exportee dans PR_BODY : les
       # neuf sites ecrivant /tmp/pr_body.txt sont inchanges.
-      # Repli : appel API vide/echoue -> payload de l'evenement (photo-
+      # Repli : appel API echoue -> payload de l'evenement (photo-
       # graphie au declenchement). Jamais bloquant sur une panne de
       # lecture. `// empty` : un corps null rendrait le literal "null".
       # -----------------------------------------------------------------
@@ -273,28 +273,21 @@ jobs:
         env:
           PAYLOAD_BODY: ${{ github.event.pull_request.body }}
         run: |
-          LIVE=""
-          if [ -n "${PR_NUMBER:-}" ]; then
-            # Le CODE DE SORTIE distingue panne et corps vide (#17197) --
-            # PAS la vacuite de la sortie. `gh api` ecrit le DOCUMENT
-            # D'ERREUR sur stdout en rc=1 (mesure 2026-09-21) :
-            #   {"message":"API rate limit exceeded for installation.","status":"403"}
-            # et `--jq` n'y est PAS applique. Tester `-n "$LIVE"` prenait
-            # donc ce document pour le corps de la PR : le repli ci-dessous
-            # ne se declenchait JAMAIS sur panne d'API -- exactement le cas
-            # pour lequel il est ecrit -- et les organes bloquants en
-            # tiraient un verdict de contenu (« Grain tag absent »,
-            # « perimeter assertion contradictoire ») sur un simple quota
-            # epuise. Quatre PRs bloquees ainsi le 2026-09-21.
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
-          fi
-          if [ -n "$LIVE" ]; then
+          # Le CODE DE SORTIE distingue panne et corps vide (#17197) :
+          # `gh api` ecrit le DOCUMENT D'ERREUR sur stdout en rc=1
+          # (mesure 2026-09-21), sans appliquer `--jq` :
+          #   {"message":"API rate limit exceeded for installation.","status":"403"}
+          # Un test de sortie non vide prenait ce document pour le corps,
+          # et les organes bloquants rendaient un verdict de contenu sur un
+          # simple quota epuise. Quatre PRs bloquees ainsi le 2026-09-21.
+          # Une reponse vide reussie est un corps vide, pas une panne.
+          if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
-            BODY="$LIVE"
           else
-            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement (photographie)"
-            BODY="${PAYLOAD_BODY:-}"
+            echo "::warning::[body-live] lecture API echouee -- repli sur le payload de l'evenement (photographie)"
+            LIVE="${PAYLOAD_BODY:-}"
           fi
+          BODY="$LIVE"
           delim="BODY_LIVE_EOF_$$"
           printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
 
