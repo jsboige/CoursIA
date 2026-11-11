@@ -2,8 +2,6 @@
 
 # Carte du materiel Lean du depot
 
-> REFERENCE — vivante — dernière révision 2026-11-08
-
 Une ligne par lac. Les colonnes sont des mesures rejouables, pas des appreciations : `Modules` compte les fichiers `.lean` propres du lac, `Miroirs` les freres `_en`, `Naissance` la date du commit qui a ajoute le `lakefile` a son chemin actuel -- un fichier re-ajoute y prend la date de son re-ajout, la colonne ne remonte pas plus loin que git. La colonne `Gate axiomes` reprend le verdict de `scripts/lean/check_axiom_gate_coverage.py`. Les deux colonnes de conformite -- `Site = consommateur` (R1) et `Doublons declares` (R4) -- sont definies dans `docs/reference/lean-lakes-doctrine.md` et mesurees plus bas.
 
 Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table recopiee a la main derive au premier merge : c'est la maladie que #23097 soigne, et `--check` est le garde-fou.
