@@ -635,7 +635,7 @@ plus que ceux du banc 4.
 ### Protocole
 
 Une compilation unique, **une classe de banc par processus BDN**, 3 passes entrelacées
-par configuration, comparaisons **appariées par passe** (les deux members d'une paire
+par configuration, comparaisons **appariées par passe** (les deux membres d'une paire
 sont mesurés à quelques secondes d'intervalle). Runtimes .NET 9.0.22, 10.0.14 et
 11.0.0-rc.3.26522.148 via `dotnet exec --fx-version` ; BDN 0.15.8 ; hôte Windows 11 Pro
 **partagé, charge processeur 62 % à 86 % pendant la session** (mesurée) — d'où le choix
@@ -658,9 +658,11 @@ Coût **par appel** (médiane de 3 passes, en ms), échelle N :
 | `CenterBias_Ackley_5k` | 1,798 | 1,635 | **1,485** |
 | `CenterBias_Suite4_5k` | 8,683 | 6,735 | **6,691** |
 
-À partir de N = 8, le coût par appel **ne bouge plus** : il n'y a **pas** de coût fixe de
-région mesurée à amortir sur ce banc. Le rapport N = 1 / N = 64 vaut **×1,21 à ×2,40**
-selon la charge — **très loin** du ×3 à ×55.
+Entre N = 8 et N = 64, le coût par appel **bouge encore** : de **−55 %**
+(`RandomSearch_Ackley2D_10k` : 1,892 → 0,845) à **+11 %**
+(`RandomSearch_Sphere10D_50k` : 9,185 → 10,218) selon la charge. Il n'y a donc **pas**
+de plateau, mais l'amplitude résiduelle est faible : le rapport N = 1 / N = 64 vaut
+**×1,21 à ×2,40** selon la charge — **très loin** du ×3 à ×55.
 
 ### Résultat 2 — de quoi le surcoût est fait
 
@@ -707,8 +709,9 @@ La part de tiering **diffère selon le runtime** (×0,52 pour .NET 11 contre ×0
 **Il règle :**
 
 1. Le facteur ×3 à ×55 du banc `prompt-settings` **ne se généralise pas** aux bancs de
-   coût milliseconde : ici ×1,21 à ×2,40 (N = 1 / N = 64) ou ×1,10 à ×1,52
-   (`default` / `off`).
+   coût milliseconde : ici ×1,21 à ×2,40 (N = 1 / N = 64) ou ×1,52 à ×1,91
+   (`default` / `off`, calculé sur le tableau du résultat 3 : 1,982 / 1,305,
+   1,956 / 1,052 et 2,261 / 1,185).
 2. Le surcoût du régime épinglé n'est **pas** un coût de harnais amortissable : c'est
    la part de **tier0** restant dans la fenêtre mesurée, et elle se lit **dans le
    profil par itération**, pas dans le rapport BDN.
@@ -745,7 +748,7 @@ La part de tiering **diffère selon le runtime** (×0,52 pour .NET 11 contre ×0
   **qui diffère d'un runtime à l'autre** (ici ×0,52 à ×0,66). Un delta peut donc être
   un artefact de régime plutôt qu'un gain de runtime.
 - Le **profil par itération** (journal BDN) est le seul artefact qui rende le mélange
-  visible : le rapport final ne le montre pas. C'est le premier reflexive à prendre
+  visible : le rapport final ne le montre pas. C'est le premier réflexe à prendre
   pour un banc qui doit trancher un delta < 20 %.
 
 ### Origine et reproduction
