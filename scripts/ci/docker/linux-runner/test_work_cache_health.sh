@@ -986,6 +986,99 @@ echo "Test : borne d'age des quarantaines (fenetre d'inspection)"
 )
 echo ""
 
+# --- Borne de TAILLE des quarantaines --------------------------------------
+# Les deux bornes precedentes bornent le NOMBRE (`WCH_STALE_KEEP`) et la
+# DUREE (`WCH_STALE_MAX_AGE_HOURS`) ; aucune ne borne l'OCCUPATION. Un clone
+# d'un slot mesure 2,4 a 2,7 Gio (mesure ai-01 du 2026-10-31) : deux
+# quarantaines fraiches de ce clone pèsent ~5 Gio sur le work-volume du slot,
+# et rien ne les arrete tant que le compte et l'age les gardent.
+#
+# La borne de TAILLE (`WCH_STALE_MAX_SIZE_MB`) borne le CUMULE PAR SLOT : les
+# survivants des deux bornes precedentes sont mesures, et les plus ANCIENS
+# d'abord partent tant que le cumule depasse la borne.
+#
+# Le controle DISCRIMINANT n'est pas « une grosse quarantaine part » : c'est
+# le CUMULE et son ORDRE. Une quarantaine HUGE et RECENTE ne part que si le
+# cumule la depasse, et c'est l'ANCIENNE qui part en premier (la recence est
+# preservee : l'intention « inspectable » vise le dernier incident). La
+# borne DESACTIVABLE (0) fournit le controle negatif : sans elle, la
+# quarantaine enorme survit -- c'est la borne, et rien d'autre, qui la retire.
+echo "Test : borne de taille des quarantaines (occupation par slot)"
+(
+  P="$TEST_DIR/size"
+  mkdir -p "$P/slug1"
+  # temoin permanent : le clone VIVANT du slot
+  mkdir -p "$P/slug1/CoursIA/.git"
+  recent="$(date -u +%Y%m%dT%H%M%SZ)"
+  # L'ANCIENNE (nom trie avant la recente par LC_ALL=C) porte le gros
+  # payload ; la RECENTE reste sous la borne.
+  mkdir -p "$P/slug1/CoursIA.stale-20250101T000000Z"
+  head -c 8388608 /dev/zero > "$P/slug1/CoursIA.stale-20250101T000000Z/payload"
+  mkdir -p "$P/slug1/CoursIA.stale-$recent"
+  head -c 4096 /dev/zero > "$P/slug1/CoursIA.stale-$recent/payload"
+
+  # Plafond de nombre 5 (le compte seul ne retirerait RIEN) et borne d'age
+  # DESACTIVEE (0) : la seule borne active est celle de TAILLE (1 Mio).
+  out="$(WCH_STALE_KEEP=5 WCH_STALE_MAX_AGE_HOURS=0 WCH_STALE_MAX_SIZE_MB=1 wch_prune_quarantines "$P" 2>&1)"
+  echo "$out" >> "$LOG"
+
+  if [ -d "$P/slug1/CoursIA.stale-20250101T000000Z" ]; then
+    ko "borne de taille : la quarantaine qui porte le cumule a survecu (borne 1 Mio)"
+  else
+    ok "borne de taille : la quarantaine au-dessus de la borne cumulee part"
+  fi
+  if [ -d "$P/slug1/CoursIA.stale-$recent" ]; then
+    ok "borne de taille : la quarantaine sous la borne survit"
+  else
+    ko "borne de taille : la quarantaine SOUS la borne a ete retiree -- le motif est trop large"
+  fi
+  if [ -d "$P/slug1/CoursIA/.git" ]; then
+    ok "temoin : le clone vivant n'est jamais touche (borne de taille)"
+  else
+    ko "temoin : le clone VIVANT a ete retire par la borne de taille"
+  fi
+  if echo "$out" | grep -q "borne de taille"; then
+    ok "borne de taille : le journal nomme la cause du retrait"
+  else
+    ko "borne de taille : le journal ne nomme pas la cause ($out)"
+  fi
+
+  # L'ORDRE : c'est l'ANCIENNE qui part, meme quand c'est la RECENTE qui
+  # porte le gros payload. Et si la survivante la plus recente depasse la
+  # borne A SEULE, elle part aussi -- la borne BORNE, elle n'est pas un
+  # plancher (elle ne laisse pas une quarantaine plus grosse qu'elle).
+  mkdir -p "$P/slug1/CoursIA.stale-20250101T000000Z"
+  head -c 4096 /dev/zero > "$P/slug1/CoursIA.stale-20250101T000000Z/payload"
+  head -c 8388608 /dev/zero > "$P/slug1/CoursIA.stale-$recent/payload"
+  out="$(WCH_STALE_KEEP=5 WCH_STALE_MAX_AGE_HOURS=0 WCH_STALE_MAX_SIZE_MB=1 wch_prune_quarantines "$P" 2>&1)"
+  echo "$out" >> "$LOG"
+  line_old="$(printf '%s\n' "$out" | grep -n 'stale-20250101T000000Z retiree' | head -1 | cut -d: -f1)"
+  line_recent="$(printf '%s\n' "$out" | grep -n "stale-$recent retiree" | head -1 | cut -d: -f1)"
+  if [ -n "$line_old" ] && [ -n "$line_recent" ] && [ "$line_old" -lt "$line_recent" ]; then
+    ok "borne de taille : l'ANCIENNE part avant la recente (la recence est preservee)"
+  else
+    ko "borne de taille : l'ordre de retrait n'est pas ancien-puis-recent (ancien=$line_old recent=$line_recent)"
+  fi
+  if [ -d "$P/slug1/CoursIA.stale-$recent" ]; then
+    ko "borne de taille : une quarantaine plus grosse que la borne A SEUL a survecu"
+  else
+    ok "borne de taille : une quarantaine plus grosse que la borne A SEUL part aussi"
+  fi
+
+  # CONTROLE NEGATIF : la borne DESACTIVEE (0) laisse vivre la quarantaine
+  # enorme -- c'est donc la borne, et rien d'autre, qui la retire.
+  mkdir -p "$P/slug1/CoursIA.stale-20250101T000000Z"
+  head -c 8388608 /dev/zero > "$P/slug1/CoursIA.stale-20250101T000000Z/payload"
+  out="$(WCH_STALE_KEEP=5 WCH_STALE_MAX_AGE_HOURS=0 WCH_STALE_MAX_SIZE_MB=0 wch_prune_quarantines "$P" 2>&1)"
+  echo "$out" >> "$LOG"
+  if [ -d "$P/slug1/CoursIA.stale-20250101T000000Z" ]; then
+    ok "borne de taille desactivee (0) : la quarantaine enorme survit"
+  else
+    ko "borne de taille desactivee (0) : la quarantaine a ete retiree quand meme"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 n_pass="$(grep -c '^PASS ' "$RESULTS" 2>/dev/null)"; n_pass="${n_pass:-0}"
 n_fail="$(grep -c '^FAIL ' "$RESULTS" 2>/dev/null)"; n_fail="${n_fail:-0}"

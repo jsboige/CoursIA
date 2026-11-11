@@ -94,8 +94,8 @@ détectable mécaniquement (source modifiée sans retraduction, ou traduction é
 
 ```bash
 # Extraire le CSV initial d'une série (langue pivot fr, #1650 Phase 0.5)
-python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ \
-    -o translations/symbolicai/argument_analysis.csv
+python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ \
+    -o translations/symbolicai/argumentanalysis.csv
 
 # Un seul notebook (POC / schema review)
 python scripts/translation/extract_cells_to_csv.py notebook.ipynb -o poc.csv
@@ -103,6 +103,30 @@ python scripts/translation/extract_cells_to_csv.py notebook.ipynb -o poc.csv
 
 Le script est la couche T1 de l'infrastructure #4957 ; le drift-detection CI (T2) et la
 resync par le moteur Argumentum (T3, gated #1650 Phase 1) viennent dans les tranches suivantes.
+
+### `pick_idle_grain.py` — rejouer le classement pondéré du tapis
+
+Un passage live peut exporter ses entrées préparées, hors du dépôt. L'export
+réutilise les payloads et horodatages du transport canonique
+[`gh_snapshot.py`](coordination/gh_snapshot.py) ; il est refusé si les
+commentaires du pool sont absents ou périmés.
+
+```bash
+python scripts/pick_idle_grain.py --belt --lane myia-ai-01:CoursIA-2 \
+  --grains 50 --belt-replay-export /tmp/belt-replay.json
+python scripts/pick_idle_grain.py --belt-replay-input /tmp/belt-replay.json \
+  --belt-replay-at DATE_UTC_EXPORT --grains 50
+```
+
+Remplacer `DATE_UTC_EXPORT` par la valeur `source.computed_at` du JSON. Cette
+date est l'instant de capture du snapshot ; `draw_at` conserve l'horloge du
+tirage initial, utilisée pour le seed et l'ordre temporel. Ainsi, un snapshot
+rafraîchi après le début du tirage reste rejouable sans changer son classement.
+Le second appel n'utilise aucun transport : il valide d'abord les dates, les
+claims/commentaires complets et frais, et la couverture des familles, puis
+appelle la même fonction de pondération que le mode live. Il simule un ordre
+de classement ; il ne claim ni ne sert de grain et ne prouve pas l'acceptance
+sur la flotte.
 
 ## Installation
 

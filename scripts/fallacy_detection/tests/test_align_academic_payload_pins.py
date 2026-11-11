@@ -278,7 +278,7 @@ def test_ancre_de_reproductibilite_est_un_chemin_relatif():
     assert ":" not in anchor, f"chemin absolu (lecteur) dans l'artefact : {anchor!r}"
     assert not anchor.startswith("/"), f"chemin absolu dans l'artefact : {anchor!r}"
     assert anchor == (
-        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/"
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/"
         "argumentum_fallacies_taxonomy.csv"
     )
 
