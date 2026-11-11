@@ -366,7 +366,7 @@ Le compagnon [SL-1b — apprentissage logique en Lean](../SymbolicAI/SymbolicLea
 |---|---|
 | Décision sous incertitude et apprentissage | [decision_theory_lean](../Probas/DecisionTheory/decision_theory_lean/) |
 | Allocation et croissance | [kelly_lean](../QuantConnect/kelly_lean/) |
-| Vote et attribution | [Choix social](../GameTheory/game_theory_lean/SocialChoice/) et [jeux coopératifs](../GameTheory/game_theory_lean/CooperativeGames/) |
+| Vote et attribution | [Choix social](../GameTheory/SocialChoice/social_choice_core_lean/) et [jeux coopératifs](../GameTheory/game_theory_lean/CooperativeGames/) |
 | Recherche de chemin et heuristiques | [search_lean](../Search/search_lean/) |
 | Argumentation | [argumentation_lean](../SymbolicAI/Tweety/argumentation_lean/) |
 
