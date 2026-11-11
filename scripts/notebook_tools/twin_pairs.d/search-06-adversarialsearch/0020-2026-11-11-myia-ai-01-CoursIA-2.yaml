@@ -1,0 +1,7 @@
+date: '2026-11-11'
+by: myia-ai-01:CoursIA-2
+python_sha: 65ab9035d8c73ce520afdf9b821b3c1f1187d5be
+csharp_sha: dfc1beb797224ac0a27964c81d2c66cb0c59a101
+content_python_sha: 2abe02c0376b8716b866d439c6368406f7b269a44919652130a38792caa9ecee
+content_csharp_sha: 38d204baa93e4e40a3c371c003983fb8410ad3af92b80903abb513461cf31165
+reason: 'PR de la tranche T2 de la finition de serie : Search-06 recoit ses blocs de fin canoniques (A retenir et Verifiez votre comprehension absents ; le bloc Pour aller plus loin existant a ete complete avec le carnet suivant, un carnet de la meme famille, un carnet d une serie voisine et une lecture deja referencee). Markdown seul -- aucune cellule de code touchee, execution_count et outputs inchanges, donc pas de re-execution due (C.2). Le cote C# est inchange et la parite reste semantique, comme declare dans la fiche de la paire : socle commun (jeux a somme nulle, minimax, alpha-beta, iterative deepening, tables de transposition), from-scratch des deux cotes, asymetrie de couverture assumee (carnet Python plus long avec benchmark comparatif et matplotlib, carnet C# plus court en traces textuelles). Ni l algorithme, ni les instances, ni les sorties des deux cotes ne bougent : l ecart est documentaire (bloc de fin pedagogique) ; il sera comble par la tranche des jumeaux .NET, qui porte le genre notebook-dotnet.'
