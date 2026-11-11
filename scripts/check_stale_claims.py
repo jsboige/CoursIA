@@ -58,6 +58,15 @@ STAT_CONSTANT_CONTEXT_RE = re.compile(
 ORDER_OF_MAGNITUDE_RE = re.compile(r"(?i)(de l'ordre|ordre de grandeur)")
 CHAINED_BAND_RE = re.compile(r"\d\s*(?:<|≤|>|≥)\s*[^<>\n]{1,14}?\s*(?:<|≤|>|≥)\s*\d")
 
+# #24289 famille 3 (dérivée montrée) : la prose écrit la formule qui
+# produit la valeur (« 4 683² ≈ 21,9 millions »), et l'opérande est
+# imprimée par les sorties -- la claim est auditable par le lecteur.
+DERIVED_SQUARE_RE = re.compile(
+    r"(?P<base>\d{1,3}(?:[   ]\d{3})+|\d+(?:[.,]\d+)?)"
+    r"\s*(?:²|\^2|\*\*2)\s*(?:≈|=|→)\s*"
+    r"(?P<val>\d+(?:[.,]\d+)?)"
+)
+
 
 def _unaccent(s: str) -> str:
     return "".join(
@@ -161,6 +170,81 @@ def _claim_numbers(src_stripped: str) -> list[tuple[str, str]]:
     return findings
 
 
+def _ungroup(token: str) -> str:
+    """« 4 683 » -> « 4683 » : compare un opérande de prose groupée au
+    jeton plat qu'imprime une sortie."""
+    return token.replace(" ", "").replace(" ", "").replace("\xa0", "").replace(",", ".")
+
+
+def _derived_or_complement_supported(tok: str, stripped: str, out_nums: set[str]) -> bool:
+    """#24289 famille 3 -- deux exemptions mesurées sur GT-20c (carnet sain):
+
+    1. Dérivée montrée : la MÊME cellule écrit « base² ≈ valeur » et la
+       base est imprimée par les sorties (« 4 683² ≈ 21,9 millions » avec
+       4683 imprimée, c.16). La valeur n'est pas importée d'ailleurs : sa
+       dérivation est écrite noir sur blanc.
+    2. Complément affiché : un pourcentage dont le complément à 100 est
+       porté par la même cellule avec son % ET imprimé par les sorties
+       (« 85 % des paires ne raccourcissent pas », c.14, complément
+       « 15,0 % » imprimée par la cellule de code 13).
+    """
+    tok_variants = _normalize_num(tok)
+    for m in DERIVED_SQUARE_RE.finditer(stripped):
+        if (
+            _ungroup(m.group("base")) in out_nums
+            and _normalize_num(m.group("val")) & tok_variants
+        ):
+            return True
+    try:
+        value = float(tok.replace(",", "."))
+    except ValueError:
+        return False
+    # Une claim de ~400 chiffres donne value = inf : int(inf) leve
+    # OverflowError (garde heritee de _normalize_num, meme classe de
+    # plantage -- test_huge_digit_claim_in_interpretation_does_not_crash).
+    if not math.isfinite(value):
+        return False
+    # #24289 famille 3, variante ratio (mesuree sur GT-18c c.34, carnet
+    # sain) : « 48/120 = 40 % » -- le pourcentage n'est JAMAIS imprime tel
+    # quel, mais la paire d'entiers l'est (cellule 33 : « total : 120
+    # instances », « humour_reussi : 48 »). Prescrit par l'issue :
+    # « resoudre les fractions a/b = x % contre les entiers presents dans
+    # la fenetre ». Limite au pourcentages : la claim doit etre portee
+    # par CETTE cellule sous la forme « <tok> % ».
+    if 0 < value < 100 and re.search(
+        r"(?<![A-Za-z0-9.,])" + re.escape(tok) + r"\s*%", stripped
+    ):
+        decimals = len(tok.split(",")[1]) if "," in tok else 0
+        tol = 0.5 * 10**-decimals + 1e-9
+        out_ints: set[int] = set()
+        for out_tok in out_nums:
+            try:
+                v = float(out_tok)
+            except ValueError:
+                continue
+            if math.isfinite(v) and v > 0 and v == int(v):
+                out_ints.add(int(v))
+        for a in out_ints:
+            for b in out_ints:
+                if b <= a:
+                    continue
+                if abs(100.0 * a / b - value) <= tol:
+                    return True
+    complement = round(100.0 - value, 6)
+    comp_variants: set[str] = set()
+    for rep in (repr(complement), f"{complement:g}", f"{complement:.1f}"):
+        comp_variants.add(rep)
+    if complement == int(complement):
+        comp_variants.add(str(int(complement)))
+    if comp_variants & out_nums:
+        # le complément doit aussi être porté par CETTE cellule en pourcentage
+        for rep in comp_variants:
+            for form in (rep.replace(".", ","), rep):
+                if re.search(re.escape(form) + r"\s*%", stripped):
+                    return True
+    return False
+
+
 def scan_notebook(path: Path) -> list[dict]:
     try:
         nb = json.loads(path.read_text(encoding="utf-8"))
@@ -178,6 +262,8 @@ def scan_notebook(path: Path) -> list[dict]:
         stripped = MATH_RE.sub(" ", FENCE_RE.sub(" ", LINK_RE.sub(" ", src)))
         for tok, line in _claim_numbers(stripped):
             if _normalize_num(tok) & out_nums:
+                continue
+            if _derived_or_complement_supported(tok, stripped, out_nums):
                 continue
             findings.append(
                 {
