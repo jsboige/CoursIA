@@ -26,6 +26,7 @@ Le compte employe (519 issues ouvertes) est la mesure du 11/11 sur
 
 import creation_budget as cb
 import pytest
+import sys
 
 CATALOG_PATHS = [
     "MyIA.AI.Notebooks/NLP/01-Introduction-Python.ipynb",
@@ -95,8 +96,9 @@ def test_le_vecto_s_active_sans_etat_du_budget(catalog):
 
 
 def test_le_compte_du_pool_sert_par_defaut(catalog):
-    """Sans argument, le compte est la TAILLE DU POOL — celle qui alimente
-    deja `expansion_factor` dans le tapis. Aucun appel reseau de plus."""
+    """Sans argument, le compte est la TAILLE DU POOL — le repli de la
+    porte quand l'appelant n'a rien mesure. Le tapis, lui, passe le
+    compte REEL (cf `open_count_for_gates` dans `pick_idle_grain.py`)."""
     pool = [grain_qui_cree()] + [grain_de_reparation(numeros=100 + i)
                                  for i in range(518)]
     assert len(pool) == 519
@@ -105,6 +107,24 @@ def test_le_compte_du_pool_sert_par_defaut(catalog):
     assert cb.CAUSE_VETO in gate[1]
     # les grains de reparation restent servis
     assert all(n not in gate for n in range(100, 618))
+
+
+def test_le_compte_reel_prime_sur_la_taille_du_pool(catalog):
+    """Le compte compare au seuil est le compte REEL des issues ouvertes,
+    pas la taille du pool : un pool de DEUX elements avec 450 issues
+    ouvertes doit declencher le veto, et un pool de DEUX elements avec
+    10 issues ouvertes ne doit pas le declencher.
+
+    C'est le test qui distingue les deux grandeurs — sans lui, la porte
+    qui compare a la vue passerait les deux cas."""
+    pool = [grain_qui_cree(), grain_de_reparation(numeros=2)]
+    assert len(pool) == 2
+    gate = cb.creation_gate(pool, catalog=catalog, state=None, open_count=450)
+    assert 1 in gate
+    assert cb.CAUSE_VETO in gate[1]
+    assert "450" in gate[1]
+    gate = cb.creation_gate(pool, catalog=catalog, state=None, open_count=10)
+    assert gate == {}
 
 
 def test_sous_le_seuil_on_retombe_sur_le_budget(catalog):
@@ -136,12 +156,19 @@ def test_une_issue_de_consolidation_n_est_pas_ecartee(catalog):
 
 # --- l'exemption de finition (mandat user du 06/11) ---------------------------
 
-def test_un_grain_exempt_de_finition_est_servi(catalog):
-    """Le marqueur `[EXEMPTION-FINITION]` dans le corps du grain le garde
-    servi : le coordinateur a autorise explicitement ce grain."""
+def test_le_corps_seul_ne_donne_pas_l_exemption(catalog):
+    """Le marqueur `[EXEMPTION-FINITION]` pose dans le CORPS du grain ne
+    vaut pas exemption (action `myia-ai-01` du 11/11) : un corps s'ecrit
+    sous le login partage `jsboige`, donc une lane peut y poser le
+    marqueur et s'ecarter elle-meme du veto que le mandat du 30/10 pose.
+
+    Le grain reste ecarte, et la CAUSE le dit : un refus motive vaut mieux
+    qu'un refus muet."""
     pool = [grain_qui_cree(corps="[EXEMPTION-FINITION]")]
     gate = cb.creation_gate(pool, catalog=catalog, state=None, open_count=519)
-    assert gate == {}
+    assert 1 in gate
+    assert cb.CAUSE_VETO in gate[1]
+    assert cb.MARQUEUR_EXEMPTION in gate[1]
 
 
 def test_l_exemption_par_commentaire_du_coordinateur(catalog, monkeypatch):
@@ -186,3 +213,90 @@ def test_le_veto_ne_depend_daucun_etat(catalog, monkeypatch, tmp_path):
     gate = cb.creation_gate(pool, catalog=catalog, open_count=519)
     assert 1 in gate
     assert cb.CAUSE_VETO in gate[1]
+
+
+# --- le compte REEL mesure par le tapis (action myia-ai-01 du 11/11) ---------
+
+@pytest.fixture
+def picker(monkeypatch):
+    """Le tapis, avec son cache de mesure remis a zero.
+
+    Le cache est un etat de PROCESS : sans le remettre a zero, un test
+    qui mesure 509 contaminerait le suivant. C'est le meme piege que le
+    cache chaud du shell (cf `forbid_shell_escape`)."""
+    import pick_idle_grain as pig
+    monkeypatch.setattr(pig, "_OPEN_COUNT_CACHE",
+                        {"done": False, "value": None})
+    return pig
+
+
+def _gh_api_faux(total_count):
+    """Une reponse `gh api search/issues` simulee."""
+    return '{"total_count": %s}' % total_count
+
+
+def test_le_compte_reel_est_lu_une_fois(picker, monkeypatch):
+    """Le compte vient de l'API de RECHERCHE (`total_count`), qui compte
+    les issues ouvertes du depot -- pas la vue du tapis. Une seule mesure
+    par process : le cache est donc branche."""
+    appels = []
+
+    class _Result:
+        stdout = _gh_api_faux(509)
+
+    def _run(cmd, *args, **kwargs):
+        appels.append(cmd)
+        return _Result()
+
+    monkeypatch.setattr(picker.subprocess, "run", _run)
+    assert picker.measure_open_issue_count() == 509
+    assert picker.measure_open_issue_count() == 509
+    assert len(appels) == 1
+    assert "search/issues" in appels[0][2]
+
+
+def test_une_mesure_impossible_ne_vaut_pas_zero(picker, monkeypatch):
+    """Un `gh` muet, un quota epuise, une reponse inattendue : la mesure
+    rend `None`, jamais zero. Zero ecarterait tout le tapis."""
+    def _run(*args, **kwargs):
+        raise RuntimeError("quota")
+
+    monkeypatch.setattr(picker.subprocess, "run", _run)
+    assert picker.measure_open_issue_count() is None
+
+
+def test_le_repli_est_la_taille_du_pool(picker, monkeypatch):
+    """Sans mesure, le tapis compare a la taille du pool et le DIT : un
+    refus muet sur une mesure absente est un mensonge."""
+    monkeypatch.setattr(picker, "measure_open_issue_count", lambda: None)
+    n, source = picker.open_count_for_gates(455)
+    assert n == 455
+    assert "pool" in source
+
+
+def test_le_tapis_passe_le_compte_reel_a_la_porte(picker, monkeypatch):
+    """Le compte mesure est celui que la porte compare au seuil : le
+    tapis ne doit pas laisser la porte retomber sur la taille du pool."""
+    # La mesure n'est PAS tentee sous pytest (surface reseau stubee) : on
+    # leve le garde pour exercer le chemin de production.
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(picker, "measure_open_issue_count", lambda: 450)
+    n, source = picker.open_count_for_gates(455)
+    assert n == 450
+    assert source == "mesure"
+
+    vu = {}
+
+    def _fake_creation_budget(module):
+        class _CB:
+            @staticmethod
+            def creation_gate(pool, open_count=None):
+                vu["open_count"] = open_count
+                return {}
+
+        return _CB
+
+    monkeypatch.setitem(
+        sys.modules, "creation_budget", _fake_creation_budget(None))
+    picker.creation_budget_gate([{"number": 1}], open_count=n)
+    assert vu["open_count"] == 450

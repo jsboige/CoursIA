@@ -835,19 +835,21 @@ def exemption_finition(it: dict,
                        commentaires: dict | None = None) -> bool:
     """Le grain porte-t-il l'exemption de finition ?
 
-    Deux canaux, tous deux traces :
+    UN SEUL canal vaut preuve : un **commentaire** signe `myia-ai-01`.
 
-      * le **corps** de l'issue — le coordinateur y consigne l'exemption ;
-      * un **commentaire** signe `myia-ai-01` — le canal des claims et
-        des levees.
+    Le corps de l'issue n'en est pas un. Un corps s'ecrit sous le login
+    partage `jsboige` : n'importe quelle lane peut y poser le marqueur,
+    et une exemption accordee par une lane s'ecarterait du veto que le
+    mandat user du 30/10 pose -- une porte d'interdiction qu'on laisse
+    decoffrer par la meme main qu'elle arrete. Le canal des commentaires
+    est le seul ou le coordinateur signe (action `myia-ai-01` du 11/11 :
+    « seul le canal des commentaires `myia-ai-01` prouve qui accorde
+    l'exemption »).
 
-    Le canal du corps est accepte sans signature : un corps d'issue est
-    un canal de coordination que le coordinateur edite lui-meme pour y
-    consigner une decision. La signature `myia-ai-01` est exigee sur le
-    canal des commentaires, ou le corps ne peut pas signer.
+    Le corps reste lu, mais pour DIAGNOSTIQUER : un corps qui porte le
+    marqueur sans commentaire signe produit une cause qui le dit, au
+    lieu d'ecarter silencieusement le grain.
     """
-    if MARQUEUR_EXEMPTION in str(it.get("body") or ""):
-        return True
     number = it.get("number")
     if number is None:
         return False
@@ -898,8 +900,11 @@ def creation_gate(pool: Sequence[dict],
     out: dict[int, str] = {}
 
     # Le VETO : prioritaire, parce qu'il est le mandat user et non une
-    # mesure de regime. Le compte est celui qui alimente deja
-    # `expansion_factor` (la taille du pool) : aucun appel reseau de plus.
+    # mesure de regime. Le compte est celui que l'appelant passe : le
+    # compte REEL des issues ouvertes, mesure hors du tapis (la taille du
+    # pool est une vue, et un veto compare a une vue se leve trop tot --
+    # action `myia-ai-01` du 11/11). A defaut de mesure, l'appelant
+    # repasse la taille du pool : la porte reste fail-OPEN.
     n_ouvertes = len(pool) if open_count is None else open_count
     if veto_creation(n_ouvertes):
         commentaires = _commentaires_locaux()
@@ -909,11 +914,18 @@ def creation_gate(pool: Sequence[dict],
                 continue
             if exemption_finition(it, commentaires):
                 continue
+            # Un corps qui porte le marqueur SANS commentaire signe ne
+            # vaut pas exemption : la cause le dit, plutot que d'ecarter
+            # le grain en silence (un lane verrait un refus sans motif).
+            note = ""
+            if MARQUEUR_EXEMPTION in str(it.get("body") or ""):
+                note = (" (le corps porte [EXEMPTION-FINITION], mais seul un "
+                        "commentaire signe myia-ai-01 vaut exemption)")
             out[it["number"]] = (
                 f"{CAUSE_VETO} : {n_ouvertes} issues ouvertes >= "
                 f"{EXPANSION_VETO_THRESHOLD} (veto user du 30/10) -- "
                 f"servir un grain de reparation ou de consolidation. "
-                f"Motif : {proof}")
+                f"Motif : {proof}{note}")
 
     # Le BUDGET : la porte principale, activee par un depassement mesure.
     st = state if state is not None else load_state()
