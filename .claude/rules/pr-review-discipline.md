@@ -50,6 +50,10 @@ Le coût d'une PR se paie **par PR**, pas par ligne (mesure du 2026-11-03 : [pr-
 
 Devant une PR fine, le reviewer ne commence pas par refuser. Il demande « **le geste peut-il être étendu ?** » et propose l'élargissement qui évite le saucissonnage : les fichiers voisins de la même série, les occurrences sœurs du même défaut. Le refus ne vient que si l'extension proposée est écartée sans motif.
 
+**Symptôme répété = mandat écrit dans le body de l'issue.** Plusieurs PRs fines d'une même classe, ou une issue de tranche par PR : le reviewer édite le body de l'issue de série ou de famille pour y fixer la fournée (taille d'une PR, claim sur l'issue avec `paths:`, plus d'issue de tranche), et les PRs suivantes s'y renvoient ([origine](../../docs/reference/pr-review-context.md)).
+
+**Bloc d'état daté** en tête du body d'une issue de série, de famille ou d'Epic : la mesure, la commande qui la reproduit, sa condition de rafraîchissement (chaque fournée mergée, 7 jours au plus). La lane qui livre met à jour sa ligne.
+
 ### B. Lean : preuve de progrès vérifiable
 
 Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le body :
