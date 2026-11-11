@@ -548,7 +548,8 @@ sinon le laisser). Choisir l'**autre** action coûte **un écart** :
 l'heuristique. Pour $k = 0$ on retrouve le glouton ; pour $k \to \infty$ on retrouve
 la DFS exhaustive. L'intuition de Harvey & Ginsberg : *si l'heuristique est bonne,
 l'optimum est un proche voisin du chemin glouton*, donc un petit $k$ suffit souvent.",,,,,,,,697c534b8aeea511,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,ebf5d44b,code,fr,5db72837dfefaa80,"// LDS(k) sur le sac à dos 0/1 — version récursive bornée par le nombre d'écarts.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,ebf5d44b,code,fr,5d358162f862a7ce,"#nullable enable
+// LDS(k) sur le sac à dos 0/1 — version récursive bornée par le nombre d'écarts.
 // items : tableau ordonné par ordre heuristique (meilleur ratio d'abord).
 // Renvoie (meilleure valeur, meilleure sélection, nombre de nœuds explorés).
 (int Value, List<string>? Selection, int Nodes) LdsKnapsack(Item[] items, int capacity, int kMax)
@@ -605,7 +606,7 @@ for (int k = 0; k <= items.Length; k++)
     var (v, sel, nd) = LdsKnapsack(items, capacity, k);
     Console.WriteLine(string.Format(""{0,3}{1,8}{2,10}  [{3}]"", k, v, nd, string.Join("", "", sel ?? new List<string>())));
 }
-",,,,,,,,5db72837dfefaa80,,,,,,,,,,,,,,,
+",,,,,,,,5d358162f862a7ce,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,0880099f,markdown,fr,8a29b88cec202e26,"## 4. Référence : l'optimum par énumération exhaustive
 
 Pour prouver que LDS atteint bien le **vrai** optimum (et non une borne locale),
@@ -2133,22 +2134,133 @@ def build_additive_for(groups):
 def h_additive_663(state):
     # Indice : somme des lookups sur GROUPS_663.
     pass  # TODO etudiant",,,,,,,,5719cf54098cb21d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-5328983f,markdown,fr,4872b8356c8b5cd4,"### Exercice 2 — PDB symétrique gratuit (Felner et al. 2004)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-5328983f,markdown,fr,0856c409539320e1,"### Exemple guidé 2 — Symétrie du 15-puzzle et PDB gratuite (rendu d'un groupe d'étudiants EPF, TP, PR #22563)
 
-Le 15-puzzle possède une symétrie : refléter la grille (miroir vertical) **et**
-renverser les numéros (`t -> 16 - t`) laisse le puzzle invariant. Construisez la
-transformation `reflect(state)`, vérifiez qu'elle préserve la résolubilité et que
-`h_additive(state) == h_additive(reflect(state))`. En déduire une seconde PDB
-*gratuite* et combinez-la par `max`.",,,,,,,,4872b8356c8b5cd4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-5f194e47,code,fr,95684c70cf7cb401,"# Exercice 2 — à compléter
+Le 15-puzzle est symétrique : refléter la grille **et** renverser les numéros
+(`t -> 16 - t`) envoie une instance sur une instance de même distance, donc la
+même PDB s'y lit sans reconstruire aucune table — une seconde heuristique
+*gratuite*. Rien ne garantit pour autant que la symétrie du puzzle soit celle du
+**but** de ce carnet.
+
+L'énoncé initial proposait un **miroir vertical**. Le groupe a mesuré que ce
+miroir ne convient pas ici : le but de ce carnet a la case vide en bas à droite
+(`GOAL = (1..15, 0)`), et le couple (miroir vertical, `t -> 16 - t`) envoie ce but
+sur un état différent de `GOAL`. Les deux PDB ne décrivent alors plus le même
+problème, et `h_additive(s) == h_additive(reflect(s))` est **faux** en général.
+
+La symétrie qui préserve le but est la **réflexion par rapport à la diagonale
+principale** (transposée de la grille + renumérotation `r,c -> 4c+r+1`), qui
+laisse `GOAL` invariant et reste une involution. C'est elle que le groupe a
+retenue pour la seconde PDB, combinée à la première par `max`.
+
+Le rendu conserve les deux constructions — le miroir vertical, qui montre le
+piège, puis la diagonale, qui le résout — et vérifie l'admissibilité de la
+combinaison sur plusieurs instances faciles.
+",,,,,,,,0856c409539320e1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-5f194e47,code,fr,ad0f826ee0a8f339,"# Exemple guidé 2 — PDB symétrique gratuite (rendu d'un groupe d'étudiants EPF, TP, PR #22563)
+
+# Étape 1 : réflexion verticale demandée dans l'énoncé
+
 def reflect(state):
-    # Indice : miroir vertical de la grille 4x4, puis renversement des numéros
-    # t -> 16 - t pour t != 0 (le vide reste le vide).
-    # Étape 1 : reshape en 4x4, retournez les colonnes, aplatissez.
-    # Étape 2 : mappez chaque tuile t -> 16-t (sauf 0).
-    pass  # TODO etudiant
+    # Transformer l'état en grille 4x4
+    grid = np.array(state).reshape(4, 4)
 
-# Indice : vérifiez reflect(reflect(s)) == s et h_additive(s) == h_additive(reflect(s)).",,,,,,,,95684c70cf7cb401,,,,,,,,,,,,,,,
+    # Appliquer un miroir vertical
+    mirrored = np.fliplr(grid).flatten()
+
+    # Renverser les numéros, sauf la case vide
+    reflected = tuple(16 - int(t) if t != 0 else 0
+                      for t in mirrored)
+
+    return reflected
+
+
+# Étape 2 : vérifier la double réflexion
+
+s = INST
+
+assert reflect(reflect(s)) == s
+print(""Double réflexion : OK"")
+
+
+# Étape 3 : comparer les heuristiques
+
+h1 = h_additive(s)
+h2 = h_additive(reflect(s))
+
+print(""PDB originale :"", h1)
+print(""PDB après réflexion :"", h2)
+print(""Égalité des heuristiques :"", h1 == h2)
+
+
+# Étape 4 : vérifier si le but est conservé
+
+print(""Le but est-il conservé ?"", reflect(GOAL) == GOAL)
+
+
+# Étape 5 : construire une symétrie valide
+# Symétrie par rapport à la diagonale principale
+
+def reflect_diagonal(state):
+    grid = np.array(state).reshape(4, 4)
+
+    # Échanger les lignes et les colonnes
+    mirrored = grid.T.flatten()
+
+    # Renuméroter les tuiles
+    def rename(t):
+        if t == 0:
+            return 0
+
+        r, c = divmod(int(t) - 1, 4)
+        return 4 * c + r + 1
+
+    return tuple(rename(t) for t in mirrored)
+
+
+# Étape 6 : vérifier la nouvelle symétrie
+
+assert reflect_diagonal(GOAL) == GOAL
+assert reflect_diagonal(reflect_diagonal(s)) == s
+
+print(""Symétrie diagonale : OK"")
+
+
+# Étape 7 : construire la deuxième heuristique
+
+def h_symmetric(state):
+    return h_additive(reflect_diagonal(state))
+
+
+# Étape 8 : combiner les heuristiques
+
+def h_combined(state):
+    return max(h_additive(state), h_symmetric(state))
+
+
+# Étape 9 : comparer les résultats
+
+print(""PDB originale :"", h_additive(s))
+print(""PDB symétrique :"", h_symmetric(s))
+print(""PDB combinée :"", h_combined(s))
+
+
+# Étape 10 : vérifier l'admissibilité
+# sur plusieurs instances faciles
+
+for i in range(5):
+    test = scramble(GOAL, 8, seed=i)
+
+    optimal, _ = ida_star(test, manhattan)
+    h = h_combined(test)
+
+    assert optimal is not None
+    assert h <= optimal
+
+    print(f""Test {i+1} : h={h}, optimal={optimal}"")
+
+print(""Tous les tests sont réussis !"")
+",,,,,,,,ad0f826ee0a8f339,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,b528a303,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
 
 Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
@@ -2202,7 +2314,7 @@ millions de requêtes.
 
 ← [Search-3 — Recherche informée](../Part1-Foundations/Search-3-Informed.ipynb)
 | ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)",,,,,,,,77478471ade87780,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-pdb-speedup-interpretation,markdown,fr,bb6e7adc3ed952e9,"### Lecture du résultat : pourquoi le speedup **croît** avec la difficulté
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-pdb-speedup-interpretation,markdown,fr,e8b34d61da49147d,"### Lecture du résultat : pourquoi le speedup **croît** avec la difficulté
 
 Le tableau ci-dessus raconte l'histoire la plus importante de ce notebook, et elle
 n'est pas dans les chiffres absolus — elle est dans la **dernière colonne**.
@@ -2230,7 +2342,7 @@ Deux phénomènes, un seul mécanisme :
    ralentissement anodin : c'est la **limite pratique** où l'informedness de
    Manhattan (somme des distances de Manhattan, une borne inférieure mais lâche) est
    épuisée. La recherche ne termine pas dans le budget imparti — elle est coupée au
-   plafond. La PDB additive, elle, termine (972 772 nœuds, 36 s) parce qu'elle
+   plafond. La PDB additive, elle, termine (972 772 nœuds, en une fraction de la durée Manhattan — les deux temps sont imprimés au tableau ci-dessus) parce qu'elle
    encode une partie de la structure *globale* du puzzle (sous-problèmes
    indépendants dont les distances sont additionnées), pas seulement une somme de
    distances locales.
@@ -2240,7 +2352,7 @@ facile ne dit rien. La différence qualitative (« l'une termine, l'autre pas »
 n'apparaît qu'au voisinage de la difficulté où la moins informative atteint sa
 limite. C'est exactement pourquoi les *pattern databases* ont été inventées — pour
 les puzzles où Manhattan, la référence pédagogique, ne suffit plus.
-",,,,,,,,bb6e7adc3ed952e9,,,,,,,,,,,,,,,
+",,,,,,,,e8b34d61da49147d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,s03b-pdb-bfs-lecture,markdown,fr,30c10a2865cb01b3,"### Lecture de la construction : 524 160 = P(16,4) × 12, et la table EST la solution précalculée
 
 La sortie `524 160 états en 1,4 s, distance max = 50` se décompose entièrement à la main. Le BFS rétrograde énumère les positions possibles des 4 tuiles du motif **et** de la case vide dans les 16 cases : 16 × 15 × 14 × 13 = 43 680 arrangements de tuiles, × 12 positions restantes pour la vide = **524 160** états. Le `distance max = 50` dit ensuite que le pire sous-puzzle (les 4 tuiles les plus mal placées) exige 50 coups à lui seul : la table encode donc des optima *partiels* déjà très coûteux, que l'heuristique ira lire en O(1) au lieu de les recalculer. C'est tout le compromis : ~1,4 s de construction une fois, des millions de consultations gratuites ensuite.
@@ -2354,7 +2466,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ip
 Au 24-puzzle (5 × 5), Manhattan est désespérément loose : les instances aléatoires moyennes exigent ~100 coups, et IDA* sous Manhattan explose au-delà de tout budget raisonnable. La structure du code est inchangée (N=5, but 1..24,0) mais les tailles explosent : un groupe de 6 tuiles dans 25 cases donne P(25,6) × 19 = 2 422 728 000, soit ~2,4 milliards d'états — la table ne tient plus en mémoire sans encodage compact. C'est précisément pourquoi Korf & Felner ont poussé les partitions avec symétries et la compression : au 24-puzzle, la PDB n'est plus une optimisation, c'est la condition d'entrée.
 
 **L'arc du notebook** : représenter (permutations), abstraire (sous-espaces), précalculer (BFS rétrograde), sommer (disjonction), vérifier (admissibilité et dominance), mesurer (frontière du résoluble). Ce pipeline est transposable à tout domaine où l'on peut payer du calcul préliminaire pour accélérer des requêtes répétées.",,,,,,,,524ca6f337d0a518,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1201,markdown,fr,a92864d4d4f5a1a2,"## 12. Quotienter / fibrer : ce qu'un quotient de l'espace d'états explique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1201,markdown,fr,e5bf63c6eaf75fbc,"## 12. Quotienter / fibrer : ce qu'un quotient de l'espace d'états explique
 
 Les sections 4 à 6 ont construit une PDB, puis la PDB *additive* : **une base de motifs est un quotient de l'espace d'états** — on projette l'état complet sur un alphabet plus pauvre (les tuiles du motif), on résout dans le quotient, on relève. Cette section prend cette phrase au sérieux et la **mesure** : ce qu'un quotient explique de l'interaction entre composantes, et à quel prix.
 
@@ -2376,8 +2488,9 @@ C'est l'**opération 3** de la [table des opérations (EPIC #12204)](https://git
 
 **Ce que la section mesure** : la règle de chaîne exacte (par dénombrement exhaustif des 60 480 états), le témoin $I(X_A;X_B \mid S_B) = 0$ contre $I(X_A;X_B) = 2{,}071$ bits marginaux, le résidu du quotient trop grossier, et la dette Ruzsa rendue mesurable — un quotient de groupe commute avec l'opération (100 %, par structure), un quotient de puzzle ne commute qu'en partie (80/84 fibres, par contingence).
 
-> **Note technique.** Cette section définit son propre monde (grille 3×3) et réutilise à cette fin les noms `N`, `move`, `rows` et `rng`, qui masquent ceux des sections 2 à 11 à partir d'ici. Les sections 2 à 11 sont déjà exécutées : leur état n'est pas affecté.",,,,,,,,a92864d4d4f5a1a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1202,code,fr,d851558f70495e7c,"# Le monde : grille 3x3, 6 tuiles labellisees, le reste libre.
+> **Note technique.** Cette section définit son propre monde (grille 3×3) avec des noms qui lui sont propres — `N_STATES` (la taille de l'espace, et non `N`, la taille de la grille du 15-puzzle), `move_policy` (la politique déterministe de la dette Ruzsa, et non `move`, le déplacement d'une tuile), `ROWS` et un générateur local. Ce choix n'est pas cosmétique : les cellules d'exercice exécutées **après** cette section rappellent `scramble`, `neighbors` et `move` des sections 2 à 11, et un nom réutilisé ici les casserait.
+",,,,,,,,e5bf63c6eaf75fbc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1202,code,fr,dab68ecf0e2567b9,"# Le monde : grille 3x3, 6 tuiles labellisees, le reste libre.
 # Un etat = un placement injectif des 6 tuiles dans la grille.
 # On encode un etat par le tuple (pos_tuile_1, ..., pos_tuile_6) -- cellules 0..8 en lecture.
 from itertools import permutations
@@ -2389,15 +2502,16 @@ A_TILES = (0, 1, 2)   # groupe A : tuiles 1..3 (indices 0..2)
 B_TILES = (3, 4, 5)   # groupe B : tuiles 4..6 (indices 3..5)
 
 STATES = list(permutations(CELLS, N_TILES))
-N = len(STATES)
-assert N == 60480, N          # 9*8*7*6*5*4
-H_X = log2(N)
-print(f""Espace complet : {N} etats uniformes"")
-print(f""H(X) = log2({N}) = {H_X:.4f} bits"")",,,,,,,,d851558f70495e7c,,,,,,,,,,,,,,,
+N_STATES = len(STATES)
+assert N_STATES == 60480, N_STATES          # 9*8*7*6*5*4
+H_X = log2(N_STATES)
+print(f""Espace complet : {N_STATES} etats uniformes"")
+print(f""H(X) = log2({N_STATES}) = {H_X:.4f} bits"")
+",,,,,,,,dab68ecf0e2567b9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1203,markdown,fr,5efc872a8ee37a48,"### Lecture du résultat
 
 L'espace est petit assez pour être **énuméré exhaustivement** : toutes les quantités de cette section sont des comptes exacts, pas des estimations. L'entropie $H(X) \approx 15{,}88$ bits mesure l'information portée par un état. Le lien avec les sections 2 à 6 est littéral : un *pattern* est l'image d'un état par une projection — un **quotient** de l'espace d'états. La question de l'opération 3 n'est pas « combien le quotient garde » (la règle de chaîne y répond toujours), mais « **le bon quotient explique-t-il l'interaction** ? ».",,,,,,,,5efc872a8ee37a48,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1204,code,fr,bcad74e93ae7ca49,"# Le quotient d'occupation : S_B = ensemble des cellules prises par le groupe B.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1204,code,fr,c36c5180d92c3147,"# Le quotient d'occupation : S_B = ensemble des cellules prises par le groupe B.
 # C'est le ""pattern"" le plus grossier de la PDB du groupe B : quelles cellules, sans l'arrangement.
 from collections import Counter, defaultdict
 import numpy as np
@@ -2424,15 +2538,16 @@ print(f""Regle de la chaine : H(X) - [H(S_B) + H(X|S_B)] = {residu:.2e} bits"")
 
 # Controle Monte-Carlo : estimation plug-in de H(S_B) sur 200 000 tirages.
 rng = np.random.default_rng(20261004)
-sample_idx = rng.integers(0, N, size=200_000)
+sample_idx = rng.integers(0, N_STATES, size=200_000)
 counts = Counter(occupancy_B(STATES[i]) for i in sample_idx)
 p = np.array(list(counts.values()), dtype=float) / 200_000
 H_SB_emp = float(-(p * np.log2(p)).sum())
-print(f""Controle MC (200 000 tirages) : H(S_B) empirique = {H_SB_emp:.4f} bits vs exacte {H_SB:.4f}"")",,,,,,,,bcad74e93ae7ca49,,,,,,,,,,,,,,,
+print(f""Controle MC (200 000 tirages) : H(S_B) empirique = {H_SB_emp:.4f} bits vs exacte {H_SB:.4f}"")
+",,,,,,,,c36c5180d92c3147,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1205,markdown,fr,f0cb1d6bcb32ba60,"### Lecture du résultat
 
 La règle de chaîne tient **à l'epsilon machine** — elle tient d'ailleurs pour *n'importe quelle* partition : c'est un théorème, pas un critère. Elle dit ce que le quotient **garde** ($H(S_B) \approx 6{,}39$ bits) et ce qu'il **perd** ($H(X|S_B) \approx 9{,}49$ bits), mais elle ne dit pas si $S_B$ est un *bon* quotient. Le critère de la table est ailleurs, dans le témoin : un **quotient commun** $Q$ sous lequel les composantes de l'état cessent d'interagir.",,,,,,,,f0cb1d6bcb32ba60,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1206,code,fr,f5f54762405ea524,"# LE TEMOIN de l'operation 3 : I(X_A ; X_B) vs I(X_A ; X_B | S_B).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1206,code,fr,7fee8edebe494b5d,"# LE TEMOIN de l'operation 3 : I(X_A ; X_B) vs I(X_A ; X_B | S_B).
 # X_A = sous-configuration du groupe A (positions des tuiles 1..3), X_B = idem groupe B.
 def sub_config(state, tiles):
     return tuple(state[i] for i in tiles)
@@ -2452,7 +2567,7 @@ I_marginal = H_A + H_B - H_AB
 # Entropies conditionnelles a S_B, par fibre (loi exacte dans chaque fibre) :
 H_A_g, H_B_g, H_AB_g = 0.0, 0.0, 0.0
 for SB, fiber in fibers.items():
-    w = len(fiber) / N
+    w = len(fiber) / N_STATES
     H_A_g  += w * H_from_counts(Counter(sub_config(s, A_TILES) for s in fiber))
     H_B_g  += w * H_from_counts(Counter(sub_config(s, B_TILES) for s in fiber))
     H_AB_g += w * H_from_counts(Counter((sub_config(s, A_TILES), sub_config(s, B_TILES)) for s in fiber))
@@ -2462,11 +2577,12 @@ I_given_SB = max(I_given_SB, 0.0)   # valeur exacte 0 ; bruit de flotation clamp
 print(f""H(X_A) = {H_A:.4f}   H(X_B) = {H_B:.4f}   H(X_A,X_B) = {H_AB:.4f}"")
 print(f""I(X_A ; X_B)          = {I_marginal:.6f} bits   (l'exclusion : les deux groupes se disputent les cellules)"")
 print(f""I(X_A ; X_B | S_B)    = {I_given_SB:.6f} bits   (conditionnement par le quotient d'occupation)"")
-print(f""Ratio I(.|S_B) / I(.) = {I_given_SB / I_marginal:.6f}  -- le quotient explique TOUTE l'interaction"")",,,,,,,,f5f54762405ea524,,,,,,,,,,,,,,,
+print(f""Ratio I(.|S_B) / I(.) = {I_given_SB / I_marginal:.6f}  -- le quotient explique TOUTE l'interaction"")
+",,,,,,,,7fee8edebe494b5d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1207,markdown,fr,429f4aa64b7bc49c,"### Lecture du résultat
 
 Voilà le **témoin de l'opération 3**, dans sa forme positive : les deux groupes de tuiles interagissent marginalement ($2{,}071$ bits — mécanisme d'exclusion : ils se disputent les cellules), et **conditionnellement au quotient commun $S_B$, l'interaction est nulle à l'epsilon machine**. Étant données *quelles* cellules sont prises par le groupe B, le placement du groupe A dans les six cellules restantes et l'arrangement interne du groupe B n'ont plus rien à se dire. Le quotient $S_B$ est exactement l'information que les deux composantes échangent — ni plus, ni moins. C'est la contre-partie positive du témoin négatif d'Infer-20 (ratio 1,684 : un quotient mal choisi laisse l'information mutuelle *augmenter* au conditionnement).",,,,,,,,429f4aa64b7bc49c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1208,code,fr,b8c651af692bb8ef,"# Contre-temoin 1 : le quotient TROP GROSSIER. Q' = profil de lignes du groupe B
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1208,code,fr,8c9dd764316791b7,"# Contre-temoin 1 : le quotient TROP GROSSIER. Q' = profil de lignes du groupe B
 # (nombre de tuiles B par ligne de la grille, ex. (1,1,1), (3,0,0), ...). 10 profils.
 ROWS = [[0, 1, 2], [3, 4, 5], [6, 7, 8]]
 
@@ -2480,7 +2596,7 @@ for s in STATES:
 
 H_A_g2, H_B_g2, H_AB_g2 = 0.0, 0.0, 0.0
 for qp, fiber in fibers_q.items():
-    w = len(fiber) / N
+    w = len(fiber) / N_STATES
     H_A_g2  += w * H_from_counts(Counter(sub_config(s, A_TILES) for s in fiber))
     H_B_g2  += w * H_from_counts(Counter(sub_config(s, B_TILES) for s in fiber))
     H_AB_g2 += w * H_from_counts(Counter((sub_config(s, A_TILES), sub_config(s, B_TILES)) for s in fiber))
@@ -2495,11 +2611,12 @@ print(""Hierarchie (inegalite de traitement des donnees, verifiee) :"")
 print(f""  I(X_A;X_B)            = {I_marginal:.6f} bits   (sans quotient)"")
 print(f""  I(X_A;X_B | Q')       = {I_given_Qp:.6f} bits   (quotient trop grossier : residuel)"")
 print(f""  I(X_A;X_B | S_B)      = {I_given_SB:.6f} bits   (quotient commun : nul)"")
-assert I_marginal >= I_given_Qp >= I_given_SB - 1e-9",,,,,,,,b8c651af692bb8ef,,,,,,,,,,,,,,,
+assert I_marginal >= I_given_Qp >= I_given_SB - 1e-9
+",,,,,,,,8c9dd764316791b7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1209,markdown,fr,fb075fceace8bc49,"### Lecture du résultat
 
 Un quotient trop grossier **laisse du résidu** : savoir « combien de tuiles B par ligne » ne suffit pas à éliminer le couplage — il reste $\approx 1{,}58$ bit d'interaction inexpliquée, car deux états au même profil peuvent priver le groupe A de cellules *différentes*. La hiérarchie $I(\cdot) \geq I(\cdot|Q') \geq I(\cdot|S_B)$ est l'inégalité de traitement des données, vérifiée sur les comptes exacts. La leçon : le bon quotient n'est pas le plus grossier possible — c'est celui qui capture le **mécanisme** du couplage (ici : quelles cellules sont prises, pas combien par ligne).",,,,,,,,fb075fceace8bc49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1210,code,fr,6f37a5aff7bfe610,"# Contre-temoin 2 -- la dette Ruzsa, rendue mesurable : le quotient commute-t-il avec l'operation ?
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1210,code,fr,c2dfb035a748ef71,"# Contre-temoin 2 -- la dette Ruzsa, rendue mesurable : le quotient commute-t-il avec l'operation ?
 #
 # Controle GROUPE : Z_9, quotient pi_g(x) = x mod 3 (sous-groupe {0,3,6}).
 # Les fibres sont des classes (translates) : pi_g est un homomorphisme, la translation passe au quotient.
@@ -2517,7 +2634,7 @@ print()
 # au moins une tuile touche une case libre).
 ADJ = {c: [n for n in CELLS if abs(n // 3 - c // 3) + abs(n % 3 - c % 3) == 1] for c in CELLS}
 
-def move(state):
+def move_policy(state):
     pos = list(state)
     free = set(CELLS) - set(pos)
     for i in range(N_TILES):                 # plus petite tuile mobile
@@ -2531,14 +2648,15 @@ def move(state):
 # Le successeur S_B(mu(X)) est-il determine par S_B seul ?
 succ_by_fiber = defaultdict(Counter)
 for s in STATES:
-    succ_by_fiber[occupancy_B(s)][occupancy_B(move(s))] += 1
+    succ_by_fiber[occupancy_B(s)][occupancy_B(move_policy(s))] += 1
 
 multi = sum(1 for c in succ_by_fiber.values() if len(c) > 1)
 total_states_in_multi = sum(sum(c.values()) for c in succ_by_fiber.values() if len(c) > 1)
 print(f""Puzzle, quotient S_B : {multi}/{len(succ_by_fiber)} fibres a successeurs MULTIPLES"")
-print(f""  {total_states_in_multi}/{N} etats vivent dans une fibre ou le successeur n'est pas determine"")
+print(f""  {total_states_in_multi}/{N_STATES} etats vivent dans une fibre ou le successeur n'est pas determine"")
 ex = next((k for k, c in succ_by_fiber.items() if len(c) > 1), None)
-print(f""  exemple : fibre {sorted(ex)} -> {len(succ_by_fiber[ex])} successeurs distincts {sorted(sorted(x) for x in succ_by_fiber[ex])[:4]} ..."")",,,,,,,,6f37a5aff7bfe610,,,,,,,,,,,,,,,
+print(f""  exemple : fibre {sorted(ex)} -> {len(succ_by_fiber[ex])} successeurs distincts {sorted(sorted(x) for x in succ_by_fiber[ex])[:4]} ..."")
+",,,,,,,,c2dfb035a748ef71,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1211,markdown,fr,0cb31173dc6d8262,"### Lecture du résultat
 
 La dette de la table — « Ruzsa exige une structure de groupe » — devient ici une **mesure, et une distinction**. Dans $\mathbb{Z}_9$, le quotient par le sous-groupe $\{0,3,6\}$ est un **homomorphisme** : la translation passe au quotient sur les **81 couples $(x,t)$**, chaque classe a un successeur unique, toutes les fibres sont des translatées de même taille — la commutation y est **structurelle**, un théorème, et c'est cette régularité que les inégalités de type Ruzsa exploitent. Dans le puzzle, la même information de partition commute sur 80/84 fibres — mais **par contingence**, pas par théorème : la politique $\mu$ privilégie les petites tuiles (groupe A), dont le mouvement laisse $S_B$ inchangé. Les 4 fibres à successeurs multiples (2 880 états, dont la fibre $[3,4,5]$ à 7 successeurs distincts) sont celles où cette contingence lâche : selon l'arrangement, la plus petite tuile mobile est un A (le quotient ne bouge pas) ou un B (il bouge) — le quotient a jeté l'information *qui peut bouger*. Une commutation qui tient par accident et non par structure, c'est précisément « le nouveau mapping affine » que la dette de la table refuse de consacrer — et c'est, en pratique, **pourquoi les PDB réelles (Korf & Felner) suivent la position de la case vide** : sans elle, la dynamique projetée n'est déterminée que par accident.",,,,,,,,0cb31173dc6d8262,,,,,,,,,,,,,,,
@@ -2572,18 +2690,18 @@ fibres de `qfun`, puis sommer les informations mutuelles **dans chaque
 fibre**, pondérées par sa taille. L'attendu est mesurable avec les
 cellules de la section 12 : $0$ bit pour `occupancy_B`, $\approx 1{,}58$ bit
 pour `row_profile`.",,,,,,,,8bc36ac2547e4eef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,fb39e83b,code,fr,07285018b7c46ae9,"# Exercice 4 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,fb39e83b,code,fr,6e0bf2aa51b25eac,"# Exercice 4 — à compléter
 # mi_conditionnel(qfun) doit rendre I(X_A ; X_B | Q) pour un quotient quelconque
 # donne par sa fonction qfun (par exemple occupancy_B ou row_profile).
 def mi_conditionnel(qfun):
-    pass  # TODO etudiant : batir les fibres de qfun, sommer les MI par fibre (poids = taille/N)
+    pass  # TODO etudiant : batir les fibres de qfun, sommer les MI par fibre (poids = taille/N_STATES)
     return None
 
 
 print(""Exercice 1 a completer : I(X_A;X_B|Q) generique"")
 print(f""Attendu : I(.|S_B) = {I_given_SB:.6f} bits ; I(.|Q') = {I_given_Qp:.6f} bits"")
 print(f""Obtenu  : {mi_conditionnel(occupancy_B)}"")
-",,,,,,,,07285018b7c46ae9,,,,,,,,,,,,,,,
+",,,,,,,,6e0bf2aa51b25eac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,27f448c8,markdown,fr,cf6437fe848f7b2a,"### Exercice 5 — Le prix du quotient
 
 Construisez la courbe $(H(Q),\ I(X_A;X_B \mid Q))$ pour une famille de
@@ -2707,9 +2825,9 @@ La sortie classe A (ratio 1,33) > B = C (1,20) > D (0,50) > E (0,33) pour une ca
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,s03c-greedy-lecture,markdown,fr,43311c608fd25089,"### Pourquoi le glouton échoue ici (et pourquoi c'est instructif)
 
 `valeur=10, sélection=[A, D], nœuds=5` : le glouton prend A (ratio max, poids 6), ne peut plus loger ni B ni C (6+5 > 10), recolle D (poids 4, valeur 2) et s'arrête à 10. La solution optimale est [B, C] = 12 — deux objets *mieux notés en volume* dont la somme (10) remplit le sac exactement. L'échec n'est pas un accident du banc : il est structurel (le glouton 0/1 n'a pas de ratio d'approximation borné en général). Les 5 nœuds disent aussi son prix : un parcours linéaire. La question que LDS pose est : *peut-on réparer quelques décisions du glouton sans payer le 2ⁿ de l'énumération ?*",,,,,,,,43311c608fd25089,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,s03c-lds-lecture,markdown,fr,d089e292f23c68af,"### Lecture du tableau LDS : l'optimum est à k=1, le coût croît régulièrement
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,s03c-lds-lecture,markdown,fr,08527c1c7a1fb61b,"### Lecture du tableau LDS : l'optimum est à k=1, le coût croît régulièrement
 
-Trois lectures. (1) La colonne valeur saute de 10 (k=0) à 12 (k=1) puis **ne bouge plus** : un seul écart au glouton — refuser A — suffit à atteindre l'optimum. (2) Les nœuds montent 6, 13, 21, 28, 33, 34 : à k fixé, LDS explore les chemins à au plus k écarts ; k=5 = n couvre tout l'arbre (34 s'approche des 32 feuilles plus les nœuds internes revisités). (3) La sélection [B, C] est stable dès k=1 : LDS ne « change pas d'avis » en explorant plus, il confirme. Les deux warnings `CS8632` de la sortie sont bénins : des annotations de nullabilité `?` utilisées hors contexte `#nullable` (le gabarit interactif compile sans le flag) — ils n'affectent ni l'exécution ni les résultats.",,,,,,,,d089e292f23c68af,,,,,,,,,,,,,,,
+Trois lectures. (1) La colonne valeur saute de 10 (k=0) à 12 (k=1) puis **ne bouge plus** : un seul écart au glouton — refuser A — suffit à atteindre l'optimum. (2) Les nœuds montent 6, 13, 21, 28, 33, 34 : à k fixé, LDS explore les chemins à au plus k écarts ; k=5 = n couvre tout l'arbre (34 s'approche des 32 feuilles plus les nœuds internes revisités). (3) La sélection [B, C] est stable dès k=1 : LDS ne « change pas d'avis » en explorant plus, il confirme. La cellule porte `#nullable enable` en tête : les annotations de nullabilité `?` du retour (`List<string>? Selection`) sont compilées dans leur contexte, sans warning.",,,,,,,,08527c1c7a1fb61b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,s03c-crossover-lecture,markdown,fr,06b0363d526b7c95,"### La colonne « % exhaustif » : où LDS cesse d'être une bonne affaire
 
 La dernière colonne est la plus parlante : LDS(1) atteint l'optimum pour **40,6 %** du coût de l'énumération (13 nœuds contre 32). Mais la ligne LDS(4) franchit **103,1 %** et LDS(5) 106,2 % : passé un certain k, LDS explore *plus* que l'énumération exhaustive — le décompte par écarts revisite des chemins déjà vus et ajoute du travail. La niche de LDS est donc exactement : **une heuristique assez bonne pour que l'optimal soit à petit k**. Quand l'heuristique est mauvaise (exercice 3), le k optimal monte, la combinatoire gonfle, et LDS dégénère — sans jamais perdre la garantie de complétude à k = n.",,,,,,,,06b0363d526b7c95,,,,,,,,,,,,,,,
@@ -2722,3 +2840,293 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-C
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,s03c-attendus-ex3,markdown,fr,fde0e012f0504f97,"### Attendus — Exercice 3 (sensibilité à l'heuristique)
 
 Avec un ordre aléatoire des objets, le k optimal grimpe vers n/2 et le coût LDS rejoint l'énumération — LDS n'a pas de magie intrinsèque, il *emprunte* la qualité de l'heuristique. La courbe à tracer : k* (l'écart de l'optimal au classement) en fonction du nombre d'inversions de l'ordre testé. Elle doit être grossièrement croissante.",,,,,,,,fde0e012f0504f97,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-a-retenir,markdown,fr,69b3f285aaaa5333,"## À retenir
+
+1. **Une PDB échange du calcul contre une table** : 524 160 entrées pour un groupe de 4 tuiles (P(16,4) = 43 680 motifs × 12 positions de la case vide), construites en 2,4 s ; 43 680 pour le groupe de 3. La table n'est pas une estimation : c'est l'optimum d'un problème plus facile, calculé une fois.
+2. **L'admissibilité vient du relâchement, la somme de la partition de coûts** : chaque coup ne déplace qu'une tuile, donc ne coûte que dans une seule table — HAdditive = somme des quatre tables reste une borne inférieure, et HMax = 11 ≤ HAdditive = 28 sur l'instance de démonstration.
+3. **La PDB additive repousse la frontière du résolvable** : sur I1 (opt 24) elle explore 732 nœuds contre 2 114 pour Manhattan (×2,9) ; sur I2 (opt 45) et I3 (opt 53), Manhattan dépasse 2 M de nœuds sans conclure quand la PDB additive résout à l'optimum (299 773 et 392 168 nœuds).
+4. **« speedup NaN » est une réponse, pas un bug** : le facteur n'existe que si les deux heuristiques terminent ; quand Manhattan est hors budget, la comparaison se lit en « résolu / non résolu », pas en rapport de nœuds.
+5. **La mécanique ne dépend pas du langage** : tables `byte[]`, encodage de rang injectif (19 975 états abstraits testés, 0 collision), construction des quatre tables en 5,1 s — la même structure qu'en Python, à la vitesse près.",,,,,,,,69b3f285aaaa5333,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-verifiez,markdown,fr,eeff85ff4525bd81,"## Vérifiez votre compréhension
+
+1. Une table de groupe de 4 tuiles compte 524 160 entrées alors que P(16,4) vaut 43 680. D'où vient le facteur 12, et pourquoi la case vide doit-elle figurer dans l'état abstrait ?
+2. Pourquoi HAdditive = somme des quatre tables reste-t-il admissible, alors qu'aucune table ne connaît la position des autres groupes ?
+3. Sur I2 et I3, le tableau affiche « speedup NaN ». Que faut-il lire à la place du facteur, et pourquoi le carnet refuse-t-il d'inventer un nombre ?
+4. L'encodage de rang est testé sur 19 975 états abstraits avec 0 collision. Quel défaut produirait une collision sur la table, et pourquoi le test est-il placé à la construction plutôt qu'à l'usage ?
+
+<details><summary>Réponses</summary>
+
+1. Un motif de 4 tuiles admet P(16,4) = 43 680 placements ; les coups applicables dépendent de la case vide, donc l'état abstrait est (placement du motif, case vide parmi les douze cases restantes) : × 12 = 524 160 — la cellule de lecture du carnet écrit exactement « 524 160 = P(16,4) × 12 ». Sans elle, le parcours rétrograde ne saurait pas quels mouvements existent.
+2. Chaque coup déplace exactement une tuile, donc appartient à un seul groupe : le coût total se partage sans recouvrement entre les tables, chacune minore sa part, donc la somme minore le total — c'est la version C# du partage de coûts (section 6b), qui rend HMax ≤ HAdditive toujours vrai (la vérification des sorties rend `True`).
+3. On lit « non résolu dans le budget » contre « résolu à l'optimum » : NaN signale que le dénominateur manque — Manhattan n'a pas conclu —, pas une mesure nulle ni une erreur. Inventer un facteur sur une heuristique qui n'a pas terminé serait un chiffre fabriqué ; le carnet préfère une case vide à un nombre faux.
+4. Une collision ferait correspondre deux états abstraits distincts à la même entrée : l'un des deux lirait la distance de l'autre, et l'heuristique pourrait surestimer — un IDA* qui rend une solution sous-optimale sans le signaler. Testé à la construction, le défaut est attrapé avant tout usage en recherche (0 collision sur 19 975 états).
+
+</details>",,,,,,,,eeff85ff4525bd81,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,finition-03b-csharp-plus-loin,markdown,fr,13b3f9846edcba5d,"## Pour aller plus loin
+
+- **Jumeau Python** : [Search-03b-PatternDatabases](Search-03b-PatternDatabases.ipynb) — la même technique en Python, avec ses propres mesures (×8,4 à ×20,6 sur ses trois instances) et ses sections sur les quotients (information mutuelle, dette Ruzsa).
+- **Carnet voisin** : [Search-03c-LimitedDiscrepancySearch-CSharp](Search-03c-LimitedDiscrepancySearch-CSharp.ipynb) — borner l'exploration par la structure du problème plutôt que par une meilleure estimation.
+- **Dans la même série** : [Search-03-Informed-CSharp](Search-03-Informed-CSharp.ipynb) — la dominance des heuristiques, dont HAdditive ≥ HMax est une instance mesurée ici.
+- **Exercices du carnet** : exercice 1 (partition 6-6-3), exercice 2 (PDB symétrique, Felner et al. 2004), exercice 3 (généralisation au 24-puzzle).
+- **Lectures** : Korf & Felner (2002), *Disjoint Pattern Database Heuristics* — la partition 4-4-4-3 et la combinaison additive viennent de là.",,,,,,,,13b3f9846edcba5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,66377025,markdown,fr,6478ede8a51e56bf,"### Lecture du résultat
+
+La sortie confirme l'ordre heuristique : A en tête avec un ratio de 1.333, suivi de B et C (1.200), puis D (0.500), E (0.333) et F, G (0.000), pour une capacité C = 10. C'est dans cet ordre que le greedy va considérer les objets — et A, en tête de liste, est précisément celui qui va le faire échouer.
+",,,,,,,,6478ede8a51e56bf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,eaa46f2e,markdown,fr,67fe1319030a0082,"### Lecture du résultat
+
+La sortie montre le greedy à k=0 : valeur = 10 avec la sélection ['A', 'D']. A (poids 6, valeur 8) occupe 6 des 10 unités de capacité : il ne reste que 4 unités, où seul D (poids 4) rentre — la paire B+C, de valeur 12, est bloquée.
+",,,,,,,,67fe1319030a0082,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,b8a3f2aa,markdown,fr,58f09406b8a6a608,"### Lecture du résultat
+
+Dès k=1, la valeur passe de 10 à 12 (sélection ['B', 'C']) pour 19 nœuds explorés, contre 8 à k=0 ; ensuite la valeur stagne à 12 de k=1 à k=7 tandis que le nombre de nœuds continue de croître (34, 52, 73, 91, 98, 99), jusqu'à 99 nœuds à k=7.
+",,,,,,,,58f09406b8a6a608,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,217220d0,markdown,fr,edeabd50b8519484,"### Lecture du résultat
+
+Les deux références exactes concordent : l'énumération exhaustive (2^7 = 128 feuilles, 128 nœuds) et la programmation dynamique donnent toutes deux valeur = 12, sélection ['B', 'C'] — l'optimum que LDS avait déjà atteint dès k=1, pour 19 nœuds seulement.
+",,,,,,,,edeabd50b8519484,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,28444e14,markdown,fr,e7e267b791a1b583,"## 6b. Noyau : partage de coûts (cost partitioning) — ce que 03b fait sans le nommer
+
+La section 6 construit une PDB par groupe *disjoint* et somme les quatre
+tables pour obtenir une heuristique admissible. Le geste est en réalité
+**un cas particulier d'un objet plus général**, le *partage de coûts*
+(cost partitioning, Edelkamp & Schrödl 2012, ch. 8), que cette section
+nomme formellement et généralise.
+
+**Définition.** Soit $\Pi$ un problème de recherche, et $h_1, \ldots, h_n$
+des heuristiques admissibles pour des *abstractions* $\Pi_1, \ldots, \Pi_n$
+de $\Pi$. Un **partage de coûts** est un vecteur $c = (c_1, \ldots, c_n)$
+avec $c_i \geq 0$ tel que pour tout état $s$, le coût réel
+$c^*(\Pi, s) \geq \sum_i c_i$ (les $c_i$ ne représentent pas plus que
+le coût par coup de l'opérateur dans l'abstraction correspondante). Si
+chaque $c_i h_i$ est admissible pour $\Pi_i$, alors
+$h_c(s) = \sum_i c_i h_i(s)$ est admissible pour $\Pi$.
+
+**Le cas de la section 6 (Korf & Felner 2002).** La partition 4-4-4-3
+définit quatre $\Pi_G$, et le partage de coûts canonique associé est :
+pour chaque coup, le coût 1 est affecté *entièrement* au groupe dont la
+tuile a bougé (les autres groupes reçoivent 0). C'est un partage **disjoint**
+: un seul groupe porte le coût par coup. L'heuristique additive
+$h_{\mathrm{add}}(s) = \sum_G \mathrm{PDB}_G(s)$ est alors exactement
+$h_c$ avec ce $c$ canonique — et son admissibilité découle du partage de
+coûts, pas d'un miracle propre à la partition.
+
+**Généralisation : partage *saturé*.** Un choix non trivial de $c$ est le
+**partage saturé** (Felner, Korf, Hanan & Adelman 2004 ; Edelkamp &
+Schrödl 2012, § 8) : on choisit une borne globale $C_{\mathrm{bound}}$
+telle que tout état $s$ réel satisfait $c^*(\Pi, s) \leq
+C_{\mathrm{bound}}$, puis on pose $c_i = C_{\mathrm{bound}} / n$. Pour
+chaque abstraction, l'heuristique saturée est
+$h^{\mathrm{sat}}_i(s) = \min(\mathrm{PDB}_i(s), c_i)$, et
+$h_{\mathrm{sat}}(s) = \sum_i h^{\mathrm{sat}}_i(s)$. Cette heuristique
+est admissible (car $\sum_i c_i = C_{\mathrm{bound}} \geq c^*(\Pi, s)$)
+et strictement plus *informée* que le $\max$ des PDB (Culberson &
+Schaeffer 1996) : au lieu de ne garder qu'une seule table par état, on
+garde la troncature par groupe, ce qui borne la contribution excessive
+d'une table sur-dimensionnée.
+
+*Note de vérification (mise à jour 2026-10-08).* Le PDF archivé reste
+tronqué (EOF manquant) : seules la p. 672 et l'index (pp. 826-835) sont
+extractibles (pikepdf 9). L'index ancre *action cost partitioning* et
+*pattern database partitioning* à la **p. 312** — ancre page désormais
+mesurée. La numérotation de chapitre (ch. 8, *Combining Heuristic
+Functions*) reste cohérente avec la table des matières de l'édition mais
+invérifiable sur cette copie ; à confirmer sur un exemplaire complet.
+",,,,,,,,e7e267b791a1b583,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,da455dad,code,fr,0e794429bfd851ac,"# Coûts maxima par table (construits par build_additive_pdb ci-dessus).
+# Pour une partition 4-4-4-3, on attend (21, 17, 19, 16) environ ; on les relit.
+MAX_PER_PDB = [int(t[t < 255].max()) for t in ADD_TBLS]
+N_GROUPS = len(ADD_TBLS)
+print(f""Max par PDB : {MAX_PER_PDB}"")
+
+def h_max(state):
+    """"""Heuristique max des PDB additives (Culberson & Schaeffer 1996) :
+    on garde la table la plus profonde pour cet état. Admissible,
+    mais pessimale : une seule table est utilisée, les autres sont perdues.""""""
+    return max(pdb_lookup(state, tbl, g) for tbl, g in zip(ADD_TBLS, GROUPS))
+
+def h_saturated(state, bound=60):
+    """"""Heuristique partage saturé (Felner, Korf, Hanan & Adelman 2004) :
+    on borne chaque contribution à bound / N_GROUPS avant de sommer.
+    Admissible par minoration terme à terme, PAS parce que bound
+    dépasserait l'optimum — il ne le dépasse pas : le diamètre du
+    15-puzzle est 80 coups (God's number, 17 états à cette distance) et
+    bound=60 est en dessous. La preuve tient à min(v, per_group) <= v : le
+    cap ne peut que resserrer chaque contribution, jamais la gonfler, donc
+    h_saturated <= h_additive <= h*, et l'admissibilité est héritée de la
+    somme canonique. Le cap ne mord pas sur la partition équilibrée de ce
+    carnet ; il est ce qui garde l'admissibilité quand une table devient
+    assez profonde pour dépasser la part qui lui revient.""""""
+    per_group = bound // N_GROUPS
+    return sum(min(pdb_lookup(state, tbl, g), per_group)
+               for tbl, g in zip(ADD_TBLS, GROUPS))
+
+# Comparaison sur l'instance de démo (INST définie plus haut dans le notebook).
+print(f""Sur INST :  h_max        = {h_max(INST):>3}"")
+print(f""Sur INST :  h_additive   = {h_additive(INST):>3}"")
+print(f""Sur INST :  h_saturated  = {h_saturated(INST):>3} (bound=60, per_group=15)"")
+print(f""Vérif : h_max <= h_additive (toujours ?)"", h_max(INST) <= h_additive(INST))
+print(f""Vérif : h_saturated <= h_additive (cap, toujours ?)"", h_saturated(INST) <= h_additive(INST))
+",,,,,,,,0e794429bfd851ac,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,0c053984,markdown,fr,e0a44e3bfc26bde8,"### Lecture du résultat : ce que la comparaison h_max / h_additive / h_saturated dit
+
+Trois heuristiques, trois listes, toutes admissibles :
+
+- `h_max` ne retient par état qu'une seule des quatre tables. C'est
+  l'heuristique de **Culberson & Schaeffer (1996)**, la SOTA *avant* Korf
+  & Felner. Elle est admissible, mais pessimale : les trois autres tables
+  sont jetées.
+- `h_additive` (Korf & Felner 2002) somme les quatre tables, ce qui est
+  possible *grâce* au partage de coûts canonique (chaque coup affecte un
+  seul groupe). C'est strictement $\geq h_{\max}$, et sur les instances
+  difficiles la différence est amplifiée par le facteur de branchement.
+- `h_saturated` (Felner, Korf, Hanan & Adelman 2004) borne chaque table
+  à $\mathrm{bound}/n$ avant de sommer. Sur la partition 4-4-4-3
+  *équilibrée* du 15-puzzle (maxima 21, 17, 19, 16), avec
+  $\mathrm{bound}=60$ on a $c_i=15$ ; les lectures brutes dépassent
+  rarement 15 sur les états proches du but, donc `h_saturated` $\approx$
+  `h_additive` sur ces états. **L'intérêt pédagogique** n'est pas le gain
+  numérique ici, c'est le geste : *un partage de coûts n'est pas
+  forcément canonique*, on peut choisir un $c$ différent de
+  $(1,0,0,\ldots)$, et l'heuristique reste admissible tant que
+  $\sum_i c_i \geq c^*(\Pi, s)$.
+
+**Ce que le cap change — et ce qu'il ne change pas ici.** Aucune sortie de
+ce carnet n'exhibe un gain du saturé : sur l'instance de démo, `h_saturated`
+et `h_additive` valent tous deux 36 (sortie de la cellule précédente), le cap
+n'y mord pas. C'est le cas attendu sur la partition 4-4-4-3 *équilibrée* du
+15-puzzle, dont les maxima (21, 17, 19, 16) laissent la part $c_i = 15$
+rarement contraignante. L'intérêt du saturé **ici** est donc le geste formel,
+pas le chiffre : un partage de coûts n'est pas forcément canonique, et le cap
+est ce qui garde l'admissibilité quand une table devient assez profonde pour
+que sa contribution brute dépassât la part qui lui revient.
+
+**Note de parité Python / C#.** Les deux carnets jumeaux ne partagent pas
+le même générateur pseudo-aléatoire (`random.Random`, Mersenne Twister,
+côté Python ; `System.Random` côté C#) : à graine égale (`seed=11`),
+l'instance de démo `INST` **diffère** d'une version à l'autre (mesuré :
+`(7, 12, 11, 2, ...)` en Python, Manhattan 32 ; `(1, 12, 0, 3, ...)` en C#,
+Manhattan 26). Les valeurs absolues `h_max`, `h_additive` et `h_saturated`
+ne sont donc **pas** comparables entre les deux carnets ; ce qui l'est, ce
+sont les **invariants** (`h_max <= h_additive`, `h_saturated <= h_additive`)
+et la structure de la comparaison.",,,,,,,,e0a44e3bfc26bde8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,14991c0b,markdown,fr,e36fd86f4b17e461,"### Lecture du résultat
+
+Les deux réflexions ne jouent pas le même rôle, et la sortie le montre.
+
+- **Le miroir vertical ne préserve pas le but.** L'involution tient
+  (`Double réflexion : OK`), mais `Le but est-il conservé ? False` :
+  `reflect(GOAL)` n'est pas `GOAL`. La conséquence sur les heuristiques est
+  immédiate — `PDB originale : 36` contre `PDB après réflexion : 45` sur
+  l'instance `INST`, d'où `Égalité des heuristiques : False`. La table lue sur
+  l'image d'un état estime alors la distance de cet état à un **autre** but que
+  `GOAL` : ce n'est plus une heuristique pour le problème posé.
+- **La réflexion diagonale, elle, fixe le but** : les deux `assert` de l'étape 6
+  passent (`Symétrie diagonale : OK`). Sur la même instance, elle donne
+  `h_symmetric(INST) = 34` face à `h_additive(INST) = 36`. Elle n'est pas
+  meilleure ici — elle est *différente*, ce qui est exactement ce qu'on attend
+  d'une seconde vue du même problème : sur d'autres états, c'est elle qui donnera
+  la plus grande valeur.
+- **La combinaison par `max` ne coûte aucune table** : `h_combined(INST) = 36`,
+  soit le maximum des deux lectures (36 contre 34). Les cinq tests
+  d'admissibilité donnent tous `h = 8` pour `optimal = 8` : sur ces cinq mélanges
+  courts, la borne est atteinte sans jamais être dépassée. Cinq instances faciles
+  ne prouvent pas l'admissibilité, qui vient de la construction (deux lectures
+  admissibles d'un problème invariant) ; elles la confrontent à une mesure.
+
+La leçon : une PDB gratuite ne vient pas d'une symétrie *quelconque* du puzzle,
+mais d'une symétrie qui **fixe le but**. C'est la condition pour que la table de
+distances reste valide sans reconstruction. Ce que ce gain apporte à la
+recherche elle-même se mesure à l'exercice 7.",,,,,,,,e36fd86f4b17e461,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,f4e9105c,markdown,fr,c55221d6fd234a7e,"### Exercice 7 — Ce que la symétrie fait gagner à IDA\*
+
+L'exemple guidé 2 combine deux heuristiques admissibles par `max`. On sait donc,
+sans rien mesurer, que `h_combined(state) >= h_additive(state)` pour tout état.
+Reste à **mesurer** ce que cette domination change pour le moteur de recherche.
+
+**Comment compter.** `ida_star(start, heuristic)` renvoie `(solution, nodes)`, où
+`nodes` est le nombre de nœuds développés depuis le début de la recherche,
+**tous seuils confondus** (le compteur s'incrémente du retour de `_dfs` à chaque
+itération de seuil). C'est le nombre de nœuds qu'il faut comparer, et non le
+temps : le temps dépend de la machine, le compte non.
+
+**À faire** sur une série d'instances `scramble(GOAL, k, seed=k)`, avec `k` de
+40 à 60 par pas de 2 (soit onze instances) :
+
+1. lancer `ida_star` avec `h_additive`, puis avec `h_combined`, et relever
+   `nodes` pour chacune ;
+2. calculer le ratio `nodes(h_additive) / nodes(h_combined)` par instance, puis
+   sa moyenne sur les instances résolues ;
+3. lister les instances où le ratio vaut **1** (la symétrie n'apporte rien), et
+   celles, s'il y en a, où il est **inférieur à 1**.
+
+**Puis expliquer** ce que vous observez. À seuil égal, une itération d'IDA\* avec
+`h_combined` développe-t-elle plus ou moins de nœuds qu'avec `h_additive` ? Le
+nombre **total** de nœuds suit-il forcément ? Pour répondre, comparez la **suite
+des seuils** parcourue par chaque heuristique (affichez-la), et demandez-vous si
+l'heuristique additive respecte la parité de la distance comme le fait Manhattan.
+
+Deux précautions de coût : `ida_star` plafonne à 20 millions de nœuds par défaut,
+et le temps de résolution croît très vite avec `k` — commencez par `k = 40`,
+mesurez la durée, puis étendez la plage. Par ailleurs `scramble` et `neighbors`
+sont ceux de la section 3.b (`N = 4`) : si vous avez redéfini `neighbors` pour le
+24-puzzle à l'exercice 3, rétablissez la version du 15-puzzle avant de mesurer.",,,,,,,,c55221d6fd234a7e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,ae49cd4a,code,fr,58bb23aed4b43c7a,"# Exercice 7 — à compléter
+# Indice : ida_star(start, heuristic) rend (solution, nodes) ; nodes compte les nœuds
+# développés tous seuils confondus (cf. section 7).
+# Étape 1 : boucler sur k dans range(40, 61, 2) ; l'instance est scramble(GOAL, k, seed=k).
+# Étape 2 : n_add, nodes_add = ida_star(s, h_additive), puis idem avec h_combined.
+# Étape 3 : ratio = nodes_add / nodes_combined ; accumuler (k, nodes_add, nodes_combined).
+# Étape 4 : moyenne des ratios, liste des k ou ratio == 1, puis des k ou ratio < 1.
+
+def mesure_gain_symetrie(ks=range(40, 61, 2)):
+    resultats = []  # squelette : liste de (k, nodes h_additive, nodes h_combined)
+    pass  # TODO etudiant : remplir resultats en suivant les etapes 1 a 3
+    return resultats
+
+
+resultats = mesure_gain_symetrie()
+if resultats:
+    ratios = [(k, na / nc) for k, na, nc in resultats if nc]
+    moyenne = sum(r for _, r in ratios) / len(ratios)
+    sans_gain = [k for k, r in ratios if r == 1]
+    pertes = [k for k, r in ratios if r < 1]
+    print(f""Ratio moyen noeuds(h_additive) / noeuds(h_combined) sur {len(ratios)} instances : {moyenne:.3f}"")
+    print(f""Instances ou la symetrie n'apporte rien (ratio = 1) : {sans_gain}"")
+    print(f""Instances ou h_combined developpe plus de noeuds (ratio < 1) : {pertes}"")
+    for k, na, nc in resultats:
+        print(f""  k={k:3d} : h_additive {na:>10,} noeuds | h_combined {nc:>10,} noeuds | ratio {na / nc:6.3f}"")
+else:
+    print(""Exercice 7 a completer : noeuds developpes par IDA* avec h_additive puis h_combined"")
+print(""Comparez ensuite la suite des seuils parcourue par chaque heuristique."")",,,,,,,,58bb23aed4b43c7a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cec27659,markdown,fr,1b49af149634ce94,"## À retenir
+
+1. **Une PDB échange du calcul contre une table** : un parcours rétrograde depuis le but abstrait calcule la distance optimale de chaque motif une fois pour toutes — 524 160 états pour un groupe de 4 tuiles (P(16,4) = 43 680 motifs × 12 positions de la case vide), construits en 12,1 s, et 43 680 pour le groupe de 3.
+2. **L'admissibilité vient du relâchement** : le problème abstrait est plus permissif (les tuiles jokerisées bougent librement), donc sa distance minore la vraie. La table n'est jamais une estimation : c'est l'optimum d'un problème plus facile.
+3. **La somme de groupes disjoints reste admissible, et paie** : la partition 4-4-4-3 donne h_additive = 36 contre h_max = 12 sur l'instance de démonstration (§6b, h_saturated = 36 au cap per_group = 15) ; chaque coup ne déplace qu'une tuile, donc ne coûte que dans une seule table.
+4. **Le gain croît avec la difficulté** : ×8,4 (I1, opt 26), ×10,4 (I2, opt 40), au moins ×20,6 (I3, opt 52, Manhattan coupé au budget de 20 M de nœuds) — l'écart avec Manhattan se creuse à mesure que l'instance s'éloigne du but.
+5. **La PDB repousse la frontière du résolvable** : sur I3, Manhattan plafonne à 20 000 000 de nœuds sans conclure (234,8 s) quand la PDB additive résout à l'optimum (972 772 nœuds, 52,1 s).",,,,,,,,1b49af149634ce94,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,89c0ff16,markdown,fr,95689b15a450dc9c,"## Vérifiez votre compréhension
+
+1. Une table de groupe de 4 tuiles compte 524 160 entrées alors que P(16,4) vaut 43 680. D'où vient le facteur 12, et pourquoi la case vide doit-elle figurer dans l'état abstrait ?
+2. Pourquoi h_additive = h₁ + h₂ + h₃ + h₄ reste-t-elle admissible, alors qu'aucune des quatre tables ne connaît la position des autres groupes ?
+3. Sur I3, Manhattan atteint la limite de 20 000 000 de nœuds sans conclure et la PDB additive résout. Le gain vient-il de la vitesse du calcul ou de la qualité de l'estimation ?
+4. Dans la section 12, I(X_A ; X_B) vaut 2,070 389 bits alors que I(X_A ; X_B | S_B) vaut 0. Que montre ce témoin sur ce qu'un quotient « voit » ?
+
+<details><summary>Réponses</summary>
+
+1. Un motif de 4 tuiles admet P(16,4) = 43 680 placements, mais les coups applicables dépendent de l'emplacement libre : l'état abstrait est (placement du motif, case vide parmi les douze cases restantes), soit × 12 = 524 160. C'est ce que la cellule de construction affiche (« 524 160 états »), et le jumeau C# l'écrit explicitement : P(16,4) × 12.
+2. Chaque coup du 15-puzzle déplace exactement une tuile, donc appartient à exactement un groupe : le coût total se partage sans recouvrement entre les tables, chacune minore sa part, donc la somme minore le total. C'est le partage de coûts de la section 6b — et c'est pour cela que h_max (maximum des tables) est ≤ h_additive.
+3. De la qualité de l'estimation : h_additive = 36 contre h_max = 12 sur l'instance de démonstration. Une borne trois fois plus serrée élague les branches avant qu'elles ne s'ouvrent — l'arbre d'I3 tombe de 20 M de nœuds (plafond atteint) à 972 772, et le temps par nœud reste comparable.
+4. Qu'une fois conditionné par le quotient commun S_B (les cellules occupées par le groupe B), il ne reste aucune information mutuelle entre les groupes : l'interaction marginale de 2,07 bits est entièrement expliquée par l'exclusion spatiale, que ce quotient capture. Le contre-témoin du quotient trop grossier Q' laisse 1,58 bit résiduel — le quotient doit être choisi exactement (et la commutation S_B est contingente : 80/84 fibres, contre 81/81 pour le groupe Z₉).
+
+</details>
+",,,,,,,,95689b15a450dc9c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,788f176b,markdown,fr,c45edfb8ffc7cf9b,"## Pour aller plus loin
+
+- **Jumeau .NET** : [Search-03b-PatternDatabases-CSharp](Search-03b-PatternDatabases-CSharp.ipynb) — la même technique en C#, avec ses propres mesures (×2,9 sur l'instance facile, puis Manhattan hors budget à 2 M de nœuds sur les deux instances difficiles).
+- **Carnet voisin** : [Search-03c-LimitedDiscrepancySearch](Search-03c-LimitedDiscrepancySearch.ipynb) — borner l'exploration par la structure du problème plutôt que par une meilleure estimation.
+- **Dans la même série** : [Search-03-Informed](Search-03-Informed.ipynb) — la dominance des heuristiques, dont h_additive ≥ h_max est une instance mesurée ici.
+- **Exercices du carnet** : les exercices 4 à 7 généralisent la section 12 (information mutuelle conditionnelle générique, prix du quotient, commutation de la PDB complète, gain de la symétrie dans IDA*).
+- **Lectures** : Korf & Felner (2002), *Disjoint Pattern Database Heuristics* — la partition 4-4-4-3 et la combinaison additive viennent de là ; Felner et al. (2004) pour les PDB symétriques.
+",,,,,,,,c45edfb8ffc7cf9b,,,,,,,,,,,,,,,

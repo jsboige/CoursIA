@@ -458,6 +458,66 @@ _NEG_COUNT_UNIVERSALITY = re.compile(r"^\s*(?:seulement|juste|que|only)\b", re.I
 # FN du fondateur -- le closer nie « le cas », pas le compte qui suit).
 _NEG_COUNT_CLAUSE_BREAK = re.compile(r"[:;]")
 _PR_NUM_REF = re.compile(r"#\d+")
+_LANGUAGE_VARIANT_CUE = re.compile(
+    r"\b(?:fr|en|français|francaise|francais|anglais|anglaise|french|english)\b",
+    re.IGNORECASE,
+)
+_BOTH_FILE_VARIANTS = re.compile(
+    r"\b(?:dans\s+les\s+(?:deux|2)|in\s+both)\s+fichiers?\b",
+    re.IGNORECASE,
+)
+
+
+def _files_contain_fr_en_pair(files: list[dict]) -> bool:
+    """True when the changed-file list contains a canonical/`_en` pair."""
+    paths = {str(item.get("path", "")) for item in files}
+    for path in paths:
+        stem, dot, suffix = path.rpartition(".")
+        if dot and stem.endswith("_en") and f"{stem[:-3]}.{suffix}" in paths:
+            return True
+    return False
+
+
+def _count_is_language_variant_reference(
+    line: str, m: re.Match, files: list[dict] | None = None
+) -> bool:
+    """#25091: skip a count that describes FR/EN variants of one file.
+
+    The language cue must be local to the count and tied either to an explicit
+    variant/twin term or to a phrase such as « anglais dans les deux fichiers ».
+    This keeps an unrelated FR/EN mention elsewhere from laundering a real
+    perimeter assertion.
+    """
+    start = max(line.rfind("\n", 0, m.start()), line.rfind(";", 0, m.start()),
+                line.rfind("!", 0, m.start()), line.rfind("?", 0, m.start())) + 1
+    ends = [pos for token in ("\n", ";", "!", "?")
+            if (pos := line.find(token, m.end())) >= 0]
+    end = min(ends, default=len(line))
+    context_start = max(start, m.start() - 120)
+    context_end = min(end, m.end() + 120)
+    context = line[context_start:context_end]
+    if files is not None and not _files_contain_fr_en_pair(files):
+        return False
+    if _has_strong_scope(context.lower()):
+        return False
+    if not _LANGUAGE_VARIANT_CUE.search(context):
+        return False
+    return bool(
+        re.search(r"\b(?:jumeaux?|twins?|variantes?|variants?)\b", context, re.I)
+        or _BOTH_FILE_VARIANTS.search(context)
+    )
+
+
+def _word_form_is_language_variant_reference(
+    line: str, files: list[dict] | None = None
+) -> bool:
+    """Word-form counterpart of the #25091 per-occurrence digit filter."""
+    low = line.lower()
+    return any(
+        (m := trig.search(low)) is not None
+        and _count_is_language_variant_reference(line, m, files)
+        for _word, _n, trig in WORD_FORM_TRIGGERS
+    )
 
 
 def _count_is_negated(line: str, m: re.Match) -> bool:
@@ -605,6 +665,11 @@ def check_assertion(
     # by a name range, is reported speech, not a claim at all.
     scan_target = _fence_mask(assertion)
     word_count = None if guard_self else _word_form_count(scan_target)
+    if (
+        word_count is not None
+        and _word_form_is_language_variant_reference(scan_target, files)
+    ):
+        word_count = None
     count_claim = None
     if not guard_self:
         count_claim = next(
@@ -617,6 +682,7 @@ def check_assertion(
                 and not _count_is_out_of_scope_annotation(scan_target, mm)
                 and not _count_is_negated(scan_target, mm)
                 and not _count_is_other_pr(scan_target, mm)
+                and not _count_is_language_variant_reference(scan_target, mm, files)
             ),
             None,
         )
@@ -655,12 +721,12 @@ def check_assertion(
             # sideways ("_additive_line_sum est line-scope, la somme additive
             # meurt au retour a la ligne", founder #13736). Per-count filters
             # stay per-LINE (each line is classified on its own surface).
-            additive = _additive_line_sum(scan_target)
+            additive = _additive_line_sum(scan_target, files)
             if additive != len(files) and block:
                 # the block already contains the candidate line -- replace,
                 # never add (no double count).
                 additive = sum(
-                    _additive_line_sum(ln)
+                    _additive_line_sum(ln, files)
                     for ln in _fence_mask(block).splitlines()
                     if ln.strip()
                 )
@@ -721,9 +787,11 @@ def check_assertion(
     # ce garde, la sonde --assert de l'issue resterait rouge avec un second
     # message apres la disparition du mismatch.
     non_claim_count = any(
-        _count_is_negated(scan_target, mm) or _count_is_other_pr(scan_target, mm)
+        _count_is_negated(scan_target, mm)
+        or _count_is_other_pr(scan_target, mm)
+        or _count_is_language_variant_reference(scan_target, mm, files)
         for mm in COUNT_CLAIM.finditer(scan_target)
-    )
+    ) or _word_form_is_language_variant_reference(scan_target, files)
     if (
         not count_claim and word_count is None and not exclusive
         and not guard_self and not non_claim_count
@@ -1428,7 +1496,7 @@ def _word_form_is_other_pr(line: str) -> bool:
     return False
 
 
-def _additive_line_sum(line: str) -> int:
+def _additive_line_sum(line: str, files: list[dict] | None = None) -> int:
     """#12103: sum of the line's COUNT_CLAIM values that survive the per-count
     filters. An additive enumeration -- "1 fichier modifie, 1 fichier ajoute" --
     declares N + M files; the guard must confront the SUM, not the first
@@ -1452,10 +1520,12 @@ def _additive_line_sum(line: str) -> int:
         and not _count_is_out_of_scope_annotation(line, m)
         and not _count_is_negated(line, m)
         and not _count_is_other_pr(line, m)
+        and not _count_is_language_variant_reference(line, m, files)
     )
     low = line.lower()
     for _word, n, trig in WORD_FORM_TRIGGERS:
-        if trig.search(low):
+        m = trig.search(low)
+        if m and not _count_is_language_variant_reference(line, m, files):
             return total + n
     return total
 
@@ -2112,6 +2182,33 @@ _ESCAPE_SEQUENCE_GH_SIGNATURE = re.compile(
 )
 
 
+# Signature of a `gh pr diff` SIZE refusal -- the sibling of the 300-FILE cap
+# handled in `_pr_diff_text` (#14911), on the SIZE axis.
+#
+# GitHub refuses to COMPUTE a diff that exceeds its size budget and answers
+# `HTTP 406: PullRequest.diff too_large` -- measured 2026-11-07 on #24992, whose
+# full patch was 20 988 lines, over the 20 000-line budget of the REST diff.
+#
+# The two caps were treated ASYMMETRICALLY: the file-count cap returned an
+# empty diff + a warning (the guard continued), the size cap fell through to
+# `sys.exit(2)` ("PERIMETRE NON MESURABLE") -- so the guard LOST a measurement
+# it could make by another route. The blocking perimeter checks read the
+# paginated `/pulls/<pr>/files` list, which carries no size cap; the unified
+# diff only serves baseline-move detection, which is ADVISORY (it never blocks
+# in `--scan-thread`, the CI wiring). Losing it costs the reader one line of
+# context, not a verdict.
+#
+# NARROW ON PURPOSE, like its siblings: only these recognised signatures
+# degrade to an empty diff. Every other `gh pr diff` failure stays
+# fail-closed (exit 2).
+_DIFF_SIZE_CAP_SIGNATURES = (
+    "too_large",
+    "diff too large",
+    "diff is too large",
+    "exceeded the maximum diff size",
+)
+
+
 def _exit_unmeasurable(reason: str) -> None:
     """Exit with the non-measurable verdict, mirroring ``#14292``.
 
@@ -2156,6 +2253,14 @@ def _pr_diff_text(pr: int) -> str:
     paginated ``/pulls/<pr>/files`` list, which has no such cap and is
     unaffected. Any other ``gh pr diff`` failure stays fail-closed.
 
+    The SIZE cap is the sibling of the file-count cap, and is degraded the same
+    way (#25085): GitHub refuses to compute a diff beyond its size budget
+    (``HTTP 406: PullRequest.diff too_large`` -- measured 2026-11-07 on
+    #24992, 20 988 lines), and the guard used to answer "PERIMETRE NON
+    MESURABLE" on a PR whose perimeter it could read perfectly well through
+    the paginated file list. Only the advisory baseline-move detection is lost,
+    and the warning says so.
+
     One failure is a RENDERING refusal, not an unreadable diff: a payload
     carrying terminal escape sequences (ANSI colour codes inside a committed
     artefact -- measured 2026-10-29 on #22341). The bytes are readable over a
@@ -2170,6 +2275,14 @@ def _pr_diff_text(pr: int) -> str:
             f"::warning::gh pr diff {pr} indisponible (diff > 300 fichiers) : "
             "detection des baseline-moves retractee a vide ; le perimetre est lu "
             f"via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    if any(sig in (stderr or "") for sig in _DIFF_SIZE_CAP_SIGNATURES):
+        print(
+            f"::warning::gh pr diff {pr} indisponible (diff au-dela du plafond de "
+            "TAILLE de l'API) : detection des baseline-moves retractee a vide ; "
+            f"le perimetre est lu via /pulls/{pr}/files pagine (sans ce plafond).",
             file=sys.stderr,
         )
         return ""
