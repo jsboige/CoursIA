@@ -897,3 +897,51 @@ def test_close_integre_inerte_sans_crible():
     snap.pop("crible_verdict")
     verdict, errors, _ = evaluate(snap)
     assert verdict == "CLOSE", errors
+
+
+# --- #25894 : la panne gh du crible se propage, ne se falsifie pas ----------
+
+def test_load_snapshot_propage_la_panne_gh_du_crible(monkeypatch):
+    """Review Hermes du 11/11 (#25894) : le fail-closed annonce etait
+    falsifie -- une panne gh de la lecture du body de PR se lisait comme
+    un verdict PARTIAL_TRANCHE, donc un dossier CLOSE legitime REFUSED.
+    strict_gh=True : load_snapshot leve GhUnavailableError, que le sweep
+    traduit en UNKNOWN rc 2 (catch RuntimeError preexistant), comme le
+    corps de la PR l'annoncait."""
+    import verifier_cleanup as vc
+
+    issue_view = {"number": 4242, "title": "Sujet unitaire", "state": "OPEN",
+                  "labels": [], "createdAt": "2026-01-01T00:00:00Z",
+                  "closedAt": None}
+    monkeypatch.setattr(ccd, "gh_json", lambda args: issue_view)
+    monkeypatch.setattr(ccd, "_issue_comments", lambda repo, n: [])
+    monkeypatch.setattr(ccd, "_merged_referring_prs", lambda repo, n: [])
+    monkeypatch.setattr(ccd, "_open_pr_refs", lambda repo, n: [])
+
+    def fake_gh_json(args, strict=False):
+        # Seule la lecture du body de PR est cassee (rc 1) : les autres
+        # lectures reussissent avec des charges plausibles.
+        if args[:2] == ["pr", "view"]:
+            if strict:
+                raise vc.GhUnavailableError("gh rc=1: pr view")
+            return []
+        if args[0] == "issue":
+            if "comments" in args:
+                return {"comments": []}
+            return {"body": "Sujet unitaire"}
+        if args[0] == "api":
+            return [{"event": "cross-referenced", "source": {"issue": {
+                "number": 999, "state": "closed",
+                "pull_request": {"merged_at": "2026-11-01T00:00:00Z"},
+                "repository": {"full_name": "o/r"}}}}]
+        if args[0] == "search":
+            return []
+        raise AssertionError(f"lecture gh inattendue: {args}")
+
+    monkeypatch.setattr(vc, "_gh_json", fake_gh_json)
+
+    with pytest.raises(vc.GhUnavailableError):
+        ccd.load_snapshot("o/r", 4242)
+    # Le sweep traduit toute RuntimeError en UNKNOWN rc 2 : la propagation
+    # depend de cette filiation, elle fait partie du contrat.
+    assert issubclass(vc.GhUnavailableError, RuntimeError)

@@ -336,15 +336,18 @@ def load_snapshot(repo: str, number: int) -> dict[str, Any]:
         raise RuntimeError(f"issue #{number} introuvable")
     comments = _issue_comments(repo, number)
     # #23815 point 2 : le gate consomme le verdict du crible amont. Calcule
-    # ICI, une fois, avec le reste de la lecture -- une erreur gh de
-    # classify_one propage et rend le gate UNKNOWN (rc 2, fail-closed), elle
-    # ne se lit jamais comme « pas de dossier ».
+    # ICI, une fois, avec le reste de la lecture. strict_gh=True : une panne
+    # gh des lecteurs du crible leve GhUnavailableError (RuntimeError), que
+    # le sweep traduit en UNKNOWN rc 2 (fail-closed) -- une lecture cassee
+    # ne se lit JAMAIS comme « pas de dossier » ni comme un verdict degrades
+    # (falsification mesuree par la review Hermes du 11/11 : un body de PR
+    # illisible rendait un dossier CLOSE legitime REFUSED).
     crible = classify_one(repo, {
         "number": int(issue["number"]),
         "title": issue.get("title") or "",
         "labels": [{"name": lab.get("name") or ""}
                    for lab in (issue.get("labels") or [])],
-    })
+    }, strict_gh=True)
     return {
         "repo": repo,
         "number": int(issue["number"]),
