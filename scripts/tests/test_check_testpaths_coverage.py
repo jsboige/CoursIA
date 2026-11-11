@@ -117,8 +117,11 @@ def test_guard_green_on_current_main() -> None:
     )
     uncovered = [tp for tp in testpaths if not is_covered(tp, covered_dirs) and tp not in excluded]
     assert uncovered == [], f"testpaths non couverts: {uncovered}"
-    # Le testpath `tests` racine a été retiré de pytest.ini (reliquat vide).
-    assert "tests" not in testpaths
+    # Critère 1 de #25366 : `tests` racine est joué par le run pytest partagé
+    # de scripts-tests.yml et déclaré dans WORKFLOW_COVERAGE (T0). Il est donc
+    # DANS les testpaths — un pytest lancé à la main voit ce que la CI voit.
+    # (Il en avait été retiré quand le répertoire était un reliquat vide.)
+    assert "tests" in testpaths
     # Second sens (#22735) : aucune suite sur le disque sans exécution CI.
     assert uncovered_suites(REPO_ROOT) == [], "suites sur disque non exécutées"
     assert missing_declared_suites(REPO_ROOT) == [], "suites déclarées absentes"
@@ -670,16 +673,21 @@ def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
     assert discover_test_dirs(tmp_path) == ["scripts/alpha/tests", "tests"]
 
 
-def test_coverage_without_testpaths_rougit_sur_la_racine_tests() -> None:
-    """Contrôle positif sur le dépôt réel : `tests` (racine) est joué par le
-    run partagé de la CI mais absent des testpaths — critère 1 de #25366,
-    le trou le plus étroit. Ce test rougira en vertu une fois T1 tranché."""
+def test_coverage_without_testpaths_vert_sur_la_racine_tests() -> None:
+    """Critère 1 de #25366, tranché en T1 : `tests` (racine) est joué par le
+    run partagé de la CI ET déclaré dans les testpaths — un pytest lancé à la
+    main voit ce que la CI voit, le trou le plus étroit est fermé.
+
+    Contrôle de non-régression : si une cible-dossier jouée par la CI ressort
+    des testpaths (retrait de l'entrée ou de sa déclaration), ce test rougit.
+    """
     from check_testpaths_coverage import coverage_without_testpaths
 
     testpaths = load_testpaths(REPO_ROOT / "pytest.ini")
     excluded = load_ci_excluded(REPO_ROOT)
 
-    assert coverage_without_testpaths(testpaths, excluded) == ["tests"]
+    assert "tests" in testpaths
+    assert coverage_without_testpaths(testpaths, excluded) == []
 
 
 def test_coverage_without_testpaths_vert_quand_declare(tmp_path: Path) -> None:
@@ -726,9 +734,13 @@ def test_cli_inventory_est_strict_par_defaut(tmp_path: Path) -> None:
 
 
 def test_cli_inventory_advisory_est_vert_sur_main() -> None:
-    """Sur le dépôt réel, la dette connue (25 répertoires, 36 basenames,
-    `tests` racine) listée en advisory ne fait pas échouer : c'est le mode
-    mesure de T1/T2, exit 0 garanti."""
+    """Sur le dépôt réel, la dette connue (répertoires hors CI et basenames
+    dupliqués) listée en advisory ne fait pas échouer : c'est le mode mesure
+    de T1/T2, exit 0 garanti.
+
+    Depuis T1 (#25366), `tests` racine n'est plus un trou : il est dans les
+    testpaths, donc la ligne de convergence ne le liste plus.
+    """
     import subprocess
 
     proc = subprocess.run(
@@ -737,5 +749,5 @@ def test_cli_inventory_advisory_est_vert_sur_main() -> None:
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 0, proc.stdout
-    assert "INFO tests" in proc.stdout
+    assert "\n  INFO tests\n" not in proc.stdout
     assert "FAIL" not in proc.stdout
