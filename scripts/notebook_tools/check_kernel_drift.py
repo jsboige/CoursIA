@@ -341,6 +341,20 @@ def _signatures_equivalent(base_sig, head_sig, max_ulp=1):
     return True
 
 
+def _is_output_added(base_sig, head_sig):
+    """Vrai quand une sortie APPARAIT dans une cellule vide a la base.
+
+    #25413 (cas mesure, PR #22969, cellule 5bd816be) : la conversion
+    exercice -> exemple guide ajoute des sorties reelles a une cellule qui
+    n'en portait aucune a la base. Ce n'est PAS une derive de signature
+    (aucune valeur existante ne change de repr) : c'est une addition de
+    contenu. Le garde la classe en advisory ``output_added_cells``, jamais
+    en ``signature_drift_cells`` -- et n'emette pas le guess NumPy qui la
+    motivait a tort.
+    """
+    return (not base_sig) and bool(head_sig)
+
+
 def kernel_info(nb):
     meta = nb.get("metadata", {})
     return {
@@ -826,7 +840,8 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
             h_idx = head_ids[cid]
             b = base_sig[b_idx] if b_idx < len(base_sig) else ()
             h = head_sig[h_idx] if h_idx < len(head_sig) else ()
-            if b != h and not _signatures_equivalent(b, h):
+            if (b != h and not _is_output_added(b, h)
+                    and not _signatures_equivalent(b, h)):
                 diffs.append(cid)
         # Added code cells: a cell present only in head. Two very different
         # things hide here, and only one of them can drift.
@@ -859,23 +874,66 @@ def diff_signatures(base_sig, head_sig, base_nb=None, head_nb=None):
                 continue
             b_idx = base_ids[twin]
             b = base_sig[b_idx] if b_idx < len(base_sig) else ()
-            if b != head_sig[h_idx] and not _signatures_equivalent(
-                    b, head_sig[h_idx]):
+            if (b != head_sig[h_idx]
+                    and not _is_output_added(b, head_sig[h_idx])
+                    and not _signatures_equivalent(b, head_sig[h_idx])):
                 diffs.append(cid)
         return diffs
     return _diff_signatures_ordinal(base_sig, head_sig)
 
 
 def _diff_signatures_ordinal(base_sig, head_sig):
-    """Legacy ordinal alignment: returns int indices."""
+    """Legacy ordinal alignment: returns int indices.
+
+    #25413 : une cellule PRESENTE a la base (i < len(base_sig)) qui y etait
+    vide (base_sig[i] == ()) et porte une sortie a la tete est une addition
+    de contenu, pas une derive. Au-dela de la base (i >= len(base_sig)) il
+    s'agit d'une cellule NOUVELLE, qui reste rapportee.
+    """
     diffs = []
     n = max(len(base_sig), len(head_sig))
     for i in range(n):
         b = base_sig[i] if i < len(base_sig) else ()
         h = head_sig[i] if i < len(head_sig) else ()
+        if i < len(base_sig) and _is_output_added(b, h):
+            continue
         if b != h and not _signatures_equivalent(b, h):
             diffs.append(i)
     return diffs
+
+
+def output_added_cells(base_sig, head_sig, base_nb=None, head_nb=None):
+    """Cellules dont une sortie APPARAIT (base vide -> tete avec sortie).
+
+    #25413 : addition de contenu (exercice -> exemple guide), raporte en
+    advisory non-bloquant, jamais en ``signature_drift_cells``. Meme
+    alignement (id, sinon ordinal) que ``diff_signatures``.
+    """
+    if base_nb is not None and head_nb is not None:
+        base_ids = _code_index_by_id(base_nb)
+        head_ids = _code_index_by_id(head_nb)
+        common = set(base_ids) & set(head_ids)
+        if not common:
+            return _output_added_ordinal(base_sig, head_sig)
+        added = []
+        for cid in sorted(common):
+            b = base_sig[base_ids[cid]] if base_ids[cid] < len(base_sig) else ()
+            h = head_sig[head_ids[cid]] if head_ids[cid] < len(head_sig) else ()
+            if _is_output_added(b, h):
+                added.append(cid)
+        return added
+    return _output_added_ordinal(base_sig, head_sig)
+
+
+def _output_added_ordinal(base_sig, head_sig):
+    """Ordinal : les cellules au-dela de la base sont NOUVELLES, pas des
+    additions -- seules les cellules presentes a la base et y vides comptent."""
+    added = []
+    for i in range(len(base_sig)):
+        h = head_sig[i] if i < len(head_sig) else ()
+        if _is_output_added(base_sig[i], h):
+            added.append(i)
+    return added
 
 
 # Artefacts qui portent un environnement EPINGLE pour une serie. pyproject.toml
@@ -1123,11 +1181,17 @@ def _measure(base, args_obj):
         # Defect 2: pass notebooks for id-based alignment
         sig_diffs = diff_signatures(base_sig, head_sig,
                                      base_nb=base_nb, head_nb=head_nb)
+        # #25413 : additions de contenu (cellule vide a la base -> avec
+        # sortie a la tete), advisory non-bloquant, distinct des derives
+        # de signature (aucun guess NumPy).
+        added_cells = output_added_cells(base_sig, head_sig,
+                                         base_nb=base_nb, head_nb=head_nb)
         if kernel_diffs or sig_diffs:
             finding = {
                 "notebook": nb_path,
                 "kernel_diffs": kernel_diffs,
                 "signature_drift_cells": sig_diffs,
+                "output_added_cells": added_cells,
                 "base_kernel": base_kernel,
                 "head_kernel": head_kernel,
                 "body_exemption": body_exempts,
@@ -1251,6 +1315,9 @@ def main():
             if f["signature_drift_cells"]:
                 print(f"    - float-signature drift on cells: "
                       f"{f['signature_drift_cells']}", file=sys.stderr)
+            if f.get("output_added_cells"):
+                print(f"    - (advisory) output added on cells: "
+                      f"{f['output_added_cells']}", file=sys.stderr)
         return 1
 
 

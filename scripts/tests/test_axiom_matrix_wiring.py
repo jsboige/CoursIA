@@ -123,6 +123,29 @@ def test_matrix_step_passes_the_thread_cap_under_the_composite_input_name():
         "`build-jobs` -- seul chemin vers LEAN_NUM_THREADS (#23247)")
 
 
+def test_matrix_step_passes_the_thread_cap_under_the_composite_input_name():
+    """The ci-matrix job passes the manifest key `build-threads` to the
+    composite -- whose DECLARED input is `build-jobs` (#23247). Under any
+    other name the composite ignores the value with a mere warning
+    (measured warning, run 42475534833) -- the cap never reaches
+    LEAN_NUM_THREADS, exposing Conway to the previously reported OOM
+    risk (#23247). This run stopped before the build. The wiring is part of the conway
+    migration contract (#13751)."""
+    doc = yaml.safe_load(
+        (REPO / ".github/workflows/lean-build.yml").read_text(encoding="utf-8"))
+    steps = doc["jobs"]["ci-matrix"]["steps"]
+    build = [s for s in steps if s.get("uses", "").endswith("actions/lean-build")]
+    assert len(build) == 1, "exactly one lean-build step in the matrix job"
+    with_block = build[0]["with"]
+    assert "build-threads" not in with_block, (
+        "l'input composite s'appelle `build-jobs` : un `build-threads:` passe "
+        "au composite est IGNORE avec un simple warning (run 42475534833) -- "
+        "le cap ne pose jamais LEAN_NUM_THREADS, avec un risque d'OOM")
+    assert with_block.get("build-jobs") == "${{ matrix.build-threads || '' }}", (
+        "la cle manifeste `build-threads` doit rejoindre l'input composite "
+        "`build-jobs` -- seul chemin vers LEAN_NUM_THREADS (#23247)")
+
+
 def test_one_copy_of_the_rule_workflow_calls_the_shared_script():
     """lean-axiom.yml must invoke scripts/lean/axiom_check_step.py (not a
     heredoc), and the composite must invoke the same script -- one copy of
