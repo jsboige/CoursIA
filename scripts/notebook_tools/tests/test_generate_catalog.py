@@ -554,6 +554,120 @@ class TestAnalyzeNotebookSerieClassification:
         assert entry["sous_serie"] == ""
 
 
+# --- sous-série profonde : le bucket suit le chemin complet (#24994) ---------
+
+class TestSubSerieDepth:
+    """Le générateur suit la profondeur réelle de l'arbre (#24994, acceptance
+    « arbre synthétique de profondeur 3 »).
+
+    `sous_serie` seul ne portait que le premier segment : DataScienceWithAgents
+    (113 carnets répartis sur 3 niveaux) et Lean (159 sur 2 niveaux, 26
+    sous-répertoires) rendaient en sections plates. Les nouveaux champs
+    `sous_serie_path` / `sous_serie_levels` portent le chemin complet -- c'est
+    ce niveau que l'export RDF de l'Epic #24993 réutilisera. `sous_serie` garde
+    le premier segment (compat #4910 : les filtres par égalité de
+    expand_catalog_markers et les tests ci-dessus ne changent pas).
+    """
+
+    def _write_notebook(self, base: Path, rel_path: str) -> Path:
+        nb_path = base / rel_path
+        nb_path.parent.mkdir(parents=True, exist_ok=True)
+        nb = _nb(
+            [_code("x = 1", [_stream_output("ok")])],
+            metadata={"kernelspec": {"display_name": "Python 3",
+                                     "name": "python3"}},
+        )
+        nb_path.write_text(json.dumps(nb), encoding="utf-8")
+        return nb_path
+
+    def test_depth3_entry_carries_full_path_and_levels(self, tmp_path, monkeypatch):
+        """Arbre synthétique profondeur 3 : Serie/A/B/C/nb.ipynb porte
+        sous_serie='A' (compat), sous_serie_path='A/B/C', levels=['A','B','C']."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb = self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-deep.ipynb")
+        entry = analyze_notebook(nb, pedagogical=True, git_meta={})
+        assert entry["serie"] == "TestSerie"
+        assert entry["sous_serie"] == "A"
+        assert entry["sous_serie_path"] == "A/B/C"
+        assert entry["sous_serie_levels"] == ["A", "B", "C"]
+
+    def test_root_and_level1_entries(self, tmp_path, monkeypatch):
+        """Carnet racine : chemin vide, levels vides -- le bucket Racine."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb_root = self._write_notebook(tmp_path, "TestSerie/nb-root.ipynb")
+        nb_l1 = self._write_notebook(tmp_path, "TestSerie/A/nb-l1.ipynb")
+        e_root = analyze_notebook(nb_root, pedagogical=True, git_meta={})
+        e_l1 = analyze_notebook(nb_l1, pedagogical=True, git_meta={})
+        assert e_root["sous_serie_path"] == ""
+        assert e_root["sous_serie_levels"] == []
+        assert e_l1["sous_serie_path"] == "A"
+        assert e_l1["sous_serie_levels"] == ["A"]
+
+    def test_report_buckets_by_full_path_not_first_segment(self, tmp_path, monkeypatch):
+        """Le rendu sectionne par chemin complet : les niveaux A/B/C et A/B2
+        sont des buckets distincts, jamais aplaties sous 'A'. Les totaux
+        réconcilient le grand total (buckets disjoints)."""
+        import re as _re
+
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        entries = [
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-1.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B/C/nb-2.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/A/B2/nb-3.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+            analyze_notebook(
+                self._write_notebook(tmp_path, "TestSerie/nb-4.ipynb"),
+                pedagogical=True, git_meta={},
+            ),
+        ]
+        report = generate_markdown_report(entries, repo_root=tmp_path)
+        assert "### TestSerie (4 notebooks)" in report
+        assert "#### A/B/C (2)" in report
+        assert "#### A/B2 (1)" in report
+        assert "#### Racine (1)" in report
+        # Jamais le bucket plat du premier segment : 'A' seul n'est plus un
+        # bucket quand tous ses carnets vivent plus bas.
+        assert "#### A (" not in report
+        # Racine d'abord, puis chemins alphabétiquement (ordre déterministe).
+        assert report.index("#### Racine (1)") < report.index("#### A/B/C (2)")
+        assert report.index("#### A/B/C (2)") < report.index("#### A/B2 (1)")
+        # Table agrégée : lignes de buckets disjoints, somme == grand total,
+        # et le chemin complet figure dans la colonne Sub-series.
+        rows = _re.findall(r"^\| (\S.+) \| (\S.+) \| (\d+) \|$", report, _re.M)
+        assert sum(int(n) for _, _, n in rows) == len(entries) == 4
+        assert "| TestSerie | A/B/C | 2 |" in report
+        assert "| TestSerie | A/B2 | 1 |" in report
+
+    def test_depth5_survives_heading_ceiling(self, tmp_path, monkeypatch):
+        """Markdown plafonne les headings à h6 ; l'arbre réel descend à 5
+        niveaux de sous-série (mesuré #24994). Le bucket-chemin-complet tient
+        à toute profondeur : la section profonde existe, le carnet y est."""
+        monkeypatch.setattr("generate_catalog.NOTEBOOKS_DIR", tmp_path)
+        nb = self._write_notebook(
+            tmp_path, "TestSerie/L1/L2/L3/L4/L5/nb-max.ipynb"
+        )
+        entry = analyze_notebook(nb, pedagogical=True, git_meta={})
+        assert entry["sous_serie_path"] == "L1/L2/L3/L4/L5"
+        report = generate_markdown_report([entry], repo_root=tmp_path)
+        assert "#### L1/L2/L3/L4/L5 (1)" in report
+        assert "nb-max.ipynb" in report
+
+    def test_serie_order_drops_epf(self):
+        """EPF est retiré de SERIES_ORDER : la série n'a pas de répertoire
+        (mesuré #24994), l'entrée était inerte."""
+        from generate_catalog import OWNER_MAP, SERIES_ORDER
+        assert "EPF" not in SERIES_ORDER
+        assert "EPF" not in OWNER_MAP
+
+
 # --- classify_maturity ---
 
 class TestClassifyMaturity:
@@ -2237,14 +2351,14 @@ class TestGenerateMarkdownReport:
             "{}", encoding="utf-8"
         )
         report = generate_markdown_report(entries, repo_root=tmp_path)
-        # No UNESCAPED pipe inside cells: the row still has exactly 8 columns
-        # (9 structural pipes incl. edges). Escaped `\|` pipes are excluded by
+        # No UNESCAPED pipe inside cells: the row still has exactly 10 columns
+        # (11 structural pipes incl. edges). Escaped `\|` pipes are excluded by
         # the lookbehind, so 1 escaped pipe in the title + 1 in the kernel
         # must not widen the row.
         title_row = next(
             ln for ln in report.splitlines() if "Title with" in ln
         )
-        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 9
+        assert len(_re.findall(r"(?<!\\)\|", title_row)) == 11
         assert "\\|" in title_row
         assert "\\`" in title_row and "\\[bracket\\]" in title_row
 
@@ -2277,7 +2391,7 @@ class TestGenerateMarkdownReport:
         )
         # 8 columns => 9 structural `|` chars (no escaped). Any new unescaped pipe
         # in status/maturity/duration/owner would widen the row.
-        assert len(_re.findall(r"(?<!\\)\|", row)) == 9, (
+        assert len(_re.findall(r"(?<!\\)\|", row)) == 11, (
             f"unescaped pipe in status/maturity/duration/owner widened the row:\n{row}"
         )
         # The dangerous payloads survive the escape and stay visible in the cell.
@@ -2709,3 +2823,69 @@ class TestBuildGitMetadataOfflinePartialClone:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+def test_qualification_axes_follow_manifest_not_path(tmp_path, monkeypatch):
+    import generate_catalog as catalog
+
+    notebooks = tmp_path / "MyIA.AI.Notebooks"
+    monkeypatch.setattr(catalog, "NOTEBOOKS_DIR", notebooks)
+    notebook = notebooks / "NLP" / "cours.ipynb"
+    notebook.parent.mkdir(parents=True)
+    notebook.write_text(json.dumps(_nb([_code("print(1)", outputs=[{"output_type": "stream", "text": "1"}])])), encoding="utf-8")
+    manifest = {"series": [{"notebooks": [{
+        "path": "MyIA.AI.Notebooks/NLP/cours.ipynb", "difficulte": "D2",
+        "recherche": "R2", "criteres": {}, "justification": "Question mesurée",
+    }]}]}
+    entry = catalog.analyze_notebook(notebook, True, qualification_manifest=manifest)
+    assert (entry["difficulte"], entry["recherche"]) == ("D2", "R2")
+    assert entry["qualification_justification"] == "Question mesurée"
+    assert entry["status"] != "RESEARCH"
+    unknown = catalog.analyze_notebook(notebook, True, qualification_manifest={})
+    assert unknown["difficulte"] is None and unknown["recherche"] is None
+
+
+def test_qualification_appears_in_markdown(tmp_path):
+    entry = {"path": "NLP/example.ipynb", "title": "Exemple", "serie": "NLP",
+             "kernel": "Python", "status": "READY", "maturity": "BETA",
+             "difficulte": "D2", "recherche": "R2", "requires_api": False,
+             "requires_gpu": False, "requires_cloud": False, "requires_wsl": False,
+             "executable_locally": True}
+    report = generate_markdown_report([entry], repo_root=tmp_path)
+    assert "| Difficulté | Recherche |" in report
+    assert "| D2 | R2 |" in report
+
+
+def test_scan_loads_manifest_once_and_keeps_unknown_unqualified(tmp_path, monkeypatch):
+    import generate_catalog as catalog
+
+    root = tmp_path
+    notebooks = root / "MyIA.AI.Notebooks"
+    monkeypatch.setattr(catalog, "REPO_ROOT", root)
+    monkeypatch.setattr(catalog, "NOTEBOOKS_DIR", notebooks)
+    folder = notebooks / "NLP"
+    folder.mkdir(parents=True)
+    for name in ("a", "b"):
+        (folder / f"{name}.ipynb").write_text(json.dumps(_nb([_code("pass")])), encoding="utf-8")
+    manifest_file = root / "docs/curriculum/qualification/manifest.json"
+    manifest_file.parent.mkdir(parents=True)
+    manifest_file.write_text(json.dumps({"series": [{"notebooks": [{
+        "path": "MyIA.AI.Notebooks/NLP/a.ipynb", "difficulte": "D3",
+        "recherche": "R0", "justification": "Justification", "criteres": {},
+    }]}]}), encoding="utf-8")
+    entries = catalog.scan_all_notebooks(series_filter="NLP")
+    assert [(e["difficulte"], e["recherche"]) for e in entries] == [("D3", "R0"), (None, None)]
+    manifest_file.unlink()
+    assert all(e["recherche"] is None for e in catalog.scan_all_notebooks(series_filter="NLP"))
+    manifest_file.write_text("{", encoding="utf-8")
+    with pytest.raises(json.JSONDecodeError):
+        catalog.scan_all_notebooks(series_filter="NLP")
+
+
+def test_catalog_importable_as_package_from_repo_root():
+    root = Path(__file__).resolve().parents[3]
+    result = subprocess.run(
+        [sys.executable, "-c", "from scripts.notebook_tools import generate_catalog"],
+        cwd=root, capture_output=True, text=True, check=False,
+    )
+    assert result.returncode == 0, result.stderr

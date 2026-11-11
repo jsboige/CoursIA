@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-25
+> REFERENCE — vivante — dernière révision 2026-11-05
 
 # Matrice coût/ressource par notebook
 
@@ -356,7 +356,7 @@ cost:
 ```
 
 ```yaml
-# DecInfer-02-Lean-ExpectedUtility.ipynb (Probas/DecisionTheory/DecInfer)
+# DecInfer-01b-Lean-ExpectedUtility.ipynb (Probas/DecisionTheory/DecInfer)
 cost:
   api_usd_est: 0.0
   api_provider: none

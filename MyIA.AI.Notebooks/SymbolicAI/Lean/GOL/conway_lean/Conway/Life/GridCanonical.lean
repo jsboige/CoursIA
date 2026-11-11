@@ -41,7 +41,7 @@ proprement des lemmes de canonicité structurelle entre représentations de
 listes équivalentes.
 
 **Densité 2.371 thm/KB** (13 / 5483) — la plus élevée du sous-domaine
-`conway_lein/Life/*` : densité record car la substance est *purement
+`conway_lean/Life/*` : densité record car la substance est *purement
 canonique* (1 axiome par ~10 lignes de preuve structurée), avec une
 définition de prédicat `Canonical` réutilisée par 6 theorem. C'est la
 signature attendue d'un module de **canonicité structurelle** : un seul

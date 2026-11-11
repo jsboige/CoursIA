@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-30
+> REFERENCE — vivante — dernière révision 2026-11-08
 
 # QC Comparative Backtests — Strategy Catalog
 
@@ -36,7 +36,7 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 | # | Project | Type | Class | Sharpe | CAGR% | MaxDD% | Calmar | Status |
 |---|---------|------|-------|--------|-------|--------|--------|--------|
 | 1 | LongShortHarvest-QC | ML | Equities | ~~3.39~~ → **1.64** ✓post-#2801 | 45.6 | 17.0 | 2.68 | robuste (confirmed, **PSR 98.7%** top — catalog 3.39 was 1Y-OOS, full decade -52%) |
-| 2 | HighBookToMarketFScore-QC | ML | Equities | ~~2.09~~ → **0.41** ✓post-#2801 | 14.5 | 60.4 | 0.24 | **historique** (downgraded: real fees, MaxDD -60%) |
+| 2 | HighBookToMarketFScore-QC | ML | Equities | ~~2.09~~ → **0.41** ✓post-#2801 | 14.5 | 60.4 | 0.24 | **historique** (2.09 = Sharpe OOS 1 an de la fiche, 0.41 = 2018-2025 : deux fenêtres, pas un effondrement ; MaxDD -60 %, voir #25264) |
 | 3 | PuppiesOfTheDow-QC | IND | Equities | ~~1.99~~ → **0.30** ✓post-#2801 | 9.6 | 28.8 | 0.33 | **historique** (downgraded: real fees) |
 | 4 | LeveragedETFMomentum-QC | IND | Equities (lev ETF) | ~~1.80~~ → **1.78** ✓post-#2801 | 126.4 | 53.3 | 2.37 | robuste (confirmed, leveraged — MaxDD -53% expected) |
 | 5 | Positive-Negative-Splits-ML | ML | Equities | ~~1.74~~ → **1.51** ✓post-#2801 | 75.7 | 37.6 | 2.01 | **non robuste** (revu par #19242 : reproduction 2018 → 2024-04 Sharpe 1,16 / PSR 43,6 %, 89 % du résultat en 2023-2024, capacité estimée par QC 3 000 dollars ; 2018 → 2026-09 : ruine en vente à découvert, variante long seul `NO BEATS`) |
@@ -82,9 +82,11 @@ Strategies with solid risk-adjusted returns. These are the primary candidates fo
 Twenty-one Tier-1 entries re-run live via MCP qc-mcp (project native period, IBKR margin
 brokerage = the #2801 Lot 1 remediation). Results vs the pre-remediation catalog values:
 
+> **Note (#25264).** Le code de la copie HighBookToMarketFScore (projet 32732820), lu le 2026-11-08, ne déclare pas de modèle de courtier : pour cette ligne, l'écart ne vient pas d'un changement de frais. Ce code, relancé le 2026-11-08 sur 2018-2025, rend exactement le run du dépôt (Sharpe 0.32) : le recul depuis le 0.41 de juin vient des données, pas du modèle de courtier. Son 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, mesuré sur une autre fenêtre que le 0.41.
+
 | Strategy | QC project | Catalog Sharpe | **Verified Sharpe** | Delta | Real status |
 |----------|-----------|---------------|---------------------|-------|-------------|
-| HighBookToMarketFScore | 32732820 | 2.09 | **0.41** | -80% | **historique** (was robuste) |
+| HighBookToMarketFScore | 32732820 | 2.09 | **0.41** | -80% | **historique** (was robuste ; 2.09 = Sharpe OOS 1 an de la fiche, autre fenêtre : #25264) |
 | PuppiesOfTheDow | 32732704 | 1.99 | **0.30** | -85% | **historique** (was robuste) |
 | LeveragedETFMomentum | 32732756 | 1.80 | **1.78** | -1% | robuste (confirmed, leveraged) |
 | Positive-Negative-Splits-ML | 30317350 | 1.74 | **1.51** | -13% | **non robuste** (revu par #19242 : reproduction 2018 → 2024-04 Sharpe 1,16 / PSR 43,6 %, 89 % du résultat en 2023-2024, capacité estimée par QC 3 000 dollars ; 2018 → 2026-09 : ruine en vente à découvert, variante long seul `NO BEATS`) |
@@ -130,10 +132,11 @@ The distinguishing axis is **not** asset class, nor ML-vs-indicator alone — it
 combination of (a) the fee-per-trade the asset class carries and (b) how the strategy turns
 over against that fee. Four regimes now observed:
 
-- **Value/factor + simple trend COLLAPSE** (-62% to -85%): HighBookToMarketFScore, PuppiesOfTheDow,
+- **Value/factor + simple trend COLLAPSE** (-62% to -85%): PuppiesOfTheDow,
   Trend-Following. These top-ranked catalog entries drop out of "robuste" entirely — their
   pre-remediation Sharpes were artifacts of the negligible default fee model. MacroFactorRotation
   (-40%) is the milder case in this family. **These catalog rankings are not reliable.**
+  HighBookToMarketFScore, d'abord rangé dans ce groupe, en sort : sa copie de juin ne déclare pas de modèle de courtier, et son 2.09 est un Sharpe OOS d'un an lu sur la fiche de bibliothèque, pas un backtest sur la même fenêtre (#25264).
 
 - **Structured ML & regime composites HOLD** (-2% to -14%): Positive-Negative-Splits-ML (1.51,
   **PSR 82.3%**, statut revu par #19242 : non robuste), Framework_Composite_TrendWeather (1.14, **PSR 77.9%**, statut revu par #19393 : non robuste), and Multi-Layer-EMA
@@ -351,7 +354,7 @@ Standardized backtest results from QC Cloud via MCP qc-mcp-lite. Period: 2018-01
 | PuppiesOfTheDow-QC | 32732704 | 2018-2025 | 0.302 | 9.613 | 28.8 | 3.5 | `37266daa` | Collapse vs catalog 1.99 (period overfitting) |
 | LeveragedETFMomentum-QC | 32732756 | 2018-2025 | **1.779** | 126.388 | 53.3 | **79.8** | `2addf467` | Confirms catalog 1.80. Lev ETF: extreme CAGR, MaxDD 53% |
 | Framework_Composite_TrendWeather | 28825740 | 2018-2025 | 0.948 | 24.603 | 27.5 | 56.6 | `cd84c50b` | Close to catalog 1.16, best composite (revu par #19393 : liste de titres choisie en 2026, univers ex ante `NO BEATS`) |
-| HighBookToMarketFScore-QC | 32732820 | 2018-2025 | 0.411 | 14.513 | 60.4 | 4.5 | `5ef58b0d` | Collapse vs catalog 2.09, MaxDD 60% |
+| HighBookToMarketFScore-QC | 32732820 | 2018-2025 | 0.411 | 14.513 | 60.4 | 4.5 | `5ef58b0d` | 2.09 = Sharpe OOS 1 an de la fiche, autre fenêtre (#25264) ; MaxDD 60% |
 | MeanReversion v5.2 | 30776121 | 2015-2024 | **0.810** | 10.040 | 7.5 | 46.8 | `b2c5b08f` | Promoted Tier 2→1. Calmar 1.34 (best risk-adj). PSR 46.8% |
 | AdaptiveAssetAllocation | 28693649 | 2008-2024 | 0.509 | 8.008 | 18.9 | 10.6 | `89e8aaef` | Promoted Tier 4→1. Min-var + momentum |
 | Cloud-MeanReversion-Sectors (v1) | 33211207 | 2018-2025 | 0.067 | 3.793 | 41.7 | 1.0 | `85bcef2b` | RSI(14) mean-rev 11 sector ETFs, IBKR. v1 default (no regime filter). Near-zero aligned, PSR 1.0% noise, MaxDD 42% (no regime filter exits bears). Promoted Tier 4→2. v2/v3 (regime filter + stop-loss) variants untested |
@@ -499,7 +502,7 @@ ou `Sigma` est la **matrice de covariance** complete (correlations incluses). R�
 
 15. **LeveragedETFMomentum: confirme et significatif**: Sharpe 1.779 sur 2018-2025, PSR 79.8% (2e PSR significatif apres TrendFollowing). Mais MaxDD 53.3% et CAGR 126% typiques d'un levier 3x — profil risque extreme, pas comparable aux strategies non-leveragees.
 
-16. **PuppiesOfTheDow et HighBookToMarketFScore: effondrement sur periode alignee**: Sharpe catalog 1.99 et 2.09 (obtenus sur leur fenetre glissante par defaut `end_date - 12 ans`) tombent a 0.302 (PSR 3.5%) et 0.411 (PSR 4.5%, MaxDD 60.4%) sur 2018-2025. Les deux meilleures lignes ML/IND du Tier 1 ne sont pas reproductibles sur la fenetre standardisee.
+16. **PuppiesOfTheDow: effondrement sur periode alignee**: Sharpe catalog 1.99 (obtenu sur sa fenetre glissante par defaut `end_date - 12 ans`) tombe a 0.302 (PSR 3.5%) sur 2018-2025. HighBookToMarketFScore (2.09 → 0.411, PSR 4.5 %, MaxDD 60.4 %) figurait dans ce point : son 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, pas un backtest du dépôt, et sur les fenêtres de la fiche le code du dépôt retrouve l'ordre de grandeur publié (#25264).
 
 17. **TrendWeather: le composite qui tient**: Sharpe 0.948 (PSR 56.6%), proche du catalog 1.16. (Revu par #19393 : le chiffre tient, mais il dépend d'une liste de 15 titres choisie en 2026 ; avec un univers ex ante, le verdict est `NO BEATS` contre SPY et 60/40.) Contraste fort avec MomentumRegime (0.185) — toutes les architectures composites ne se valent pas.
 
@@ -688,7 +691,7 @@ The table makes the family hierarchy explicit: the regime switch (#26) is the di
 | PuppiesOfTheDow-QC | 1.99 | 0.302 | -1.688 | Period overfitting severe (catalog = fenetre glissante 12 ans) |
 | LeveragedETFMomentum-QC | 1.80 | 1.779 | -0.021 | Performance confirmee (mais MaxDD 53%) |
 | Framework_Composite_TrendWeather | 1.16 | 0.948 | -0.212 | Legere degradation (revu par #19393 : liste choisie en 2026, univers ex ante `NO BEATS`) |
-| HighBookToMarketFScore-QC | 2.09 | 0.411 | -1.679 | Period overfitting severe + MaxDD 60% |
+| HighBookToMarketFScore-QC | 2.09 | 0.411 | -1.679 | 2.09 = Sharpe OOS 1 an de la fiche, autre fenêtre (#25264) ; MaxDD 60% |
 | MeanReversion | 0.29 (old) | **0.810** (v5.2) | +0.520 | v5.2 IBKR dramatically better. Calmar 1.34 |
 | AdaptiveAssetAllocation | untested | 0.509 | +0.509 | First aligned baseline. Min-var + momentum |
 | PairsTrading | -0.36 | -0.280 | +0.080 | Marginal improvement, still exploratoire |

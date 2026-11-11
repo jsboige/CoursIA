@@ -366,9 +366,9 @@ layout: section
 
 ```
 SymbolicAI/
-├── Tweety/          ← cette serie (10 notebooks)
-├── Lean/            ← preuves formelles (14 notebooks)
-└── Argument_Analysis/  ← analyse de textes argumentatifs (5 notebooks)
+├── Tweety/            ← cette serie
+├── Lean/              ← preuves formelles
+└── ArgumentAnalysis/  ← analyse de textes argumentatifs
 ```
 
 ---

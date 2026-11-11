@@ -13,11 +13,11 @@ Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel
 
 **Python + Jupyter uniquement**
 
-**Prérequis** : Python 3.10+, 8 GB RAM. Aucun GPU, aucun Docker.
+**Prérequis :** Python 3.10+, 8 GB RAM. Aucun GPU, aucun Docker.
 
-**Couvre** : notebooks Python purs, sans dépendance externe.
+**Couvre :** notebooks Python purs, sans dépendance externe.
 
-**Séries accessibles** :
+**Séries accessibles :**
 
 - [Search/Part1-Foundations](MyIA.AI.Notebooks/Search/Part1-Foundations/README.md) — BFS, DFS, Dijkstra, A\*
 - [Sudoku/Sudoku-Python](MyIA.AI.Notebooks/Sudoku/index.qmd) — solveur Python pur
@@ -26,7 +26,7 @@ Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel
 - [RL](MyIA.AI.Notebooks/RL/README.md) — Reinforcement Learning (Stable Baselines3)
 - [GenAI/Audio/01-Foundation](MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/README.md) — audio via librosa + transformers
 
-**Démarrage rapide** :
+**Démarrage rapide :**
 
 ```bash
 git clone https://github.com/jsboige/CoursIA.git
@@ -49,11 +49,11 @@ jupyter notebook MyIA.AI.Notebooks/
 
 **.NET Interactive + Lean 4**
 
-**Prérequis** : Python (parcours 1) + .NET 9 SDK + (optionnel) WSL pour Lean 4.
+**Prérequis :** Python (parcours 1) + .NET 9 SDK + (optionnel) WSL pour Lean 4.
 
-**Ajoute** : notebooks C#/.NET Interactive, preuves formelles Lean, Argumentum (Tweety porté).
+**Ajoute :** notebooks C#/.NET Interactive, preuves formelles Lean, Argumentum (Tweety porté).
 
-**Séries supplémentaires** :
+**Séries supplémentaires :**
 
 - [ML/](MyIA.AI.Notebooks/ML/README.md) — ML.NET tutorials (classification, régression, clustering)
 - [Sudoku/Sudoku-CSharp](MyIA.AI.Notebooks/Sudoku/index.qmd) — solveur C# avec contraintes
@@ -69,11 +69,11 @@ jupyter notebook MyIA.AI.Notebooks/
 
 **Docker + GPU + services cloud**
 
-**Prérequis** : parcours 2 + Docker Desktop + GPU NVIDIA (RTX 3090 recommandée, 24 GB VRAM).
+**Prérequis :** parcours 2 + Docker Desktop + GPU NVIDIA (RTX 3090 recommandée, 24 GB VRAM).
 
-**Ajoute** : services GenAI auto-hébergés (ComfyUI, Qwen, Forge), notebooks GenAI avancés.
+**Ajoute :** services GenAI auto-hébergés (ComfyUI, Qwen, Forge), notebooks GenAI avancés.
 
-**Séries supplémentaires** :
+**Séries supplémentaires :**
 
 - [GenAI/Image](MyIA.AI.Notebooks/GenAI/Image/README.md) — génération d'images (Stable Diffusion, FLUX, Qwen-VL)
 - [GenAI/Audio/02-Advanced](MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/README.md) — TTS, Whisper, music generation
@@ -93,4 +93,4 @@ Le dépôt est conçu pour être progressif. Les notebooks marqués `Prerequisit
 - GPU requis (oui/non)
 - Clés API nécessaires (HF, OpenAI, Anthropic, QC)
 
-**Règle d'or** : commencez par le parcours 1 (local sobre), explorez jusqu'à saturation, puis passez au parcours 2. Le parcours 3 est optionnel et demande du matériel dédié.
+**Règle d'or :** commencez par le parcours 1 (local sobre), explorez jusqu'à saturation, puis passez au parcours 2. Le parcours 3 est optionnel et demande du matériel dédié.
