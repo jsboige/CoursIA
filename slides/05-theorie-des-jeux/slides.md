@@ -176,7 +176,7 @@ layout: dense
 
 ## Stratégie mixte dominant strictement une pure
 
-- Ex: 3 lignes, milieu dominee, calcul des probas
+- Ex: trois lignes, milieu dominee, calcul des probas
 
 ## Dominance faible
 
@@ -567,7 +567,7 @@ layout: dense
   - Convergence vers l'équilibre de Nash -- la famille qui a révolutionné la résolution du poker
   - Safe subgame solving : recoller une sous-partie sans supposer les croyances (le mauvais recollement produit un témoin adversarial)
 
-*Notebooks : [GameTheory-13-ImperfectInfo-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [GameTheory-13c-Safe-Subgame-Solving-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb).*
+*Notebooks : [GameTheory-13-ImperfectInfo-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) (CFR, Kuhn) · [GameTheory-13b-Safe-Subgame-Solving-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [GameTheory-13b-Safe-Subgame-Solving-CSharp](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) (jumeau C#) · [GameTheory-13d-Optimistic-CFR-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-13d-Optimistic-CFR-Python.ipynb).*
 
 ---
 layout: section

@@ -45,6 +45,8 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 **Ce qu'un lecteur doit savoir sans avoir chargé les règles path-gatées** — le tableau complet, domaine par domaine, vit dans [claude-code-config.md §Ce que porte chaque famille](docs/reference/claude-code-config.md). Les prescriptions qui tiennent en une ligne restent ici, avec les noms des règles de chaque famille :
 
+Ce précis par domaine est une **vue** ; la commande fait foi : `grep -l '^paths:' .claude/rules/*.md`.
+
 - **Notebooks** (`notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-cross-source-distillation` · `notebook-accretion-numbering`) : un notebook **ne se renomme pas sans un argument pédagogique écrit** ; un finding d'audit automatisé **se re-vérifie avant tout fix** (~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre.
 - **Catalogue & README** (`catalog-pr-hygiene` · `readme-french-first`) : **le catalogue appartient à l'automatisation** — `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature, byte-identique à `main` ; toute prose de doc ajoutée ou réécrite est en français.
 - **Artefacts** (`results-artifact-policy`) : nouveau fichier de `scripts/results/` **> 512 Ko = bloqué par CI** (#15890) — committer l'agrégé falsifiable, les séries complètes hors dépôt avec le chemin cité dans le body.
@@ -204,18 +206,7 @@ Détail H.1-H.7 + plan P0-P4 + script pre-commit : [regles-validation-detail.md]
 
 ## CARTOGRAPHIE & OUTILS
 
-```
-MyIA.AI.Notebooks/          # Séries pédagogiques : GenAI/{Image,Audio,Video,Texte},
-                            # ML (ML.NET C#), Search, Sudoku, SymbolicAI/{Lean,Tweety,
-                            # SemanticWeb,Planning,SmartContract}, Probas (Infer.NET),
-                            # GameTheory (OpenSpiel + Lean), IIT (PyPhi), QuantConnect
-scripts/notebook_tools/     # CLI multi-famille (validate/execute/skeleton/analyze)
-scripts/genai-stack/        # GenAI Docker + validation
-.claude/{agents,skills,rules}/
-GradeBookApp/               # Notation étudiants (pipelines/données privés GDrive)
-docker-configurations/      # ComfyUI + Qwen Docker
-docs/                       # Documentation déportée de ce fichier
-```
+Arborescence des séries de notebooks et des dossiers techniques : [README §Structure du dépôt](README.md#structure-du-dépôt).
 
 **Règle générale outils** : ne jamais écrire un script ad-hoc d'exécution/validation — il existe presque toujours un outil dédié dans `scripts/notebook_tools/`. Si manquant, l'ajouter **là** (pas dans la racine `scripts/`).
 
@@ -262,6 +253,4 @@ Structure complète : [quantconnect.md](docs/qc/quantconnect.md).
 
 ## PROJECT OVERVIEW
 
-CoursIA = plateforme éducative AI : Jupyter notebooks (C# .NET Interactive + Python), infrastructure Docker GenAI (ComfyUI + Qwen), GradeBookApp évaluation étudiants. Repository : https://github.com/jsboige/CoursIA. Documentation primaire en français ; commentaires code en français ou anglais.
-
-Stack : OpenAI/Anthropic APIs, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023).
+Vue d'ensemble du projet, pile technique et prérequis : [README.md](README.md) — pile applicative et ventilation GPU dans [README §Infrastructure Docker](README.md#infrastructure-docker).

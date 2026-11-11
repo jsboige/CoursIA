@@ -1,6 +1,6 @@
 # DataScienceWithAgents - Data Science Python avec Agents IA
 
-[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [Track2-GoogleADK (Google ADK) →](Track2-GoogleADK/README.md)
+[← ML (série parente)](../README.md) | [ML.NET (C#) →](../ML.Net/README.md) | [07-Agent-Orchestration (Google ADK) →](07-Agent-Orchestration/README.md)
 
 Formation complète en Data Science Python avec intégration d'agents IA. Combine les fondamentaux NumPy/Pandas avec deux tracks complémentaires : LangChain (3 jours) et Google ADK (4 jours).
 
@@ -133,12 +133,12 @@ DataScienceWithAgents/
 │   ├── WS-00b-Ondelettes-2D-from-scratch.ipynb
 │   └── WS-01-Denoising-SOTA.ipynb
 │
-├── Track1-LangChain/ # Track LangChain
+├── 06-Data-Agents/ # Track LangChain
 │   ├── Day1-Foundations/Labs/              # Revision
 │   ├── Day2-Document-Agents/Labs/              # Agents RFP et CV
 │   └── Day3-Data-Agents/Labs/              # Data + Agents
 │
-└── Track2-GoogleADK/         # Track Google ADK
+└── 07-Agent-Orchestration/         # Track Google ADK
     ├── Day4-Foundations/       # Introduction ADK
     ├── Day5-DS-Star/           # Data Science autonome
     ├── Day6-MLE-Star/          # ML Engineering
@@ -238,31 +238,31 @@ Série d'analyse multi-résolution dans la même discipline from scratch : la tr
 
 Documentation complète : [05-Wavelet-Scattering/README.md](05-Wavelet-Scattering/README.md)
 
-## Workshop 3 Jours (Track1-LangChain)
+## Workshop 3 Jours (06-Data-Agents)
 
 ### Day 1 - Révision Python
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 1 | [Lab1-PythonForDataScience](Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
+| 1 | [Lab1-PythonForDataScience](06-Data-Agents/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb) | Pandas, Matplotlib, Scikit-Learn |
 
 ### Day 2 - Agents Documentaires
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 2 | [Lab2-RFP-Analysis](Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
-| 3 | [Lab3-CV-Screening](Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
+| 2 | [Lab2-RFP-Analysis](06-Data-Agents/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | Parser des appels d'offres avec LLM |
+| 3 | [Lab3-CV-Screening](06-Data-Agents/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | Scoring CV avec agents IA |
 
 ### Day 3 - Data + Agents
 
 | Lab | Notebook | Contenu |
 |-----|----------|---------|
-| 4 | [Lab4-DataWrangling](Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
-| 5 | [Lab5-Viz-ML](Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
-| 6 | [Lab6-First-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
-| 7 | [Lab7-Data-Analysis-Agent](Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
+| 4 | [Lab4-DataWrangling](06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | Nettoyage et transformation |
+| 5 | [Lab5-Viz-ML](06-Data-Agents/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | Visualisation et intro ML |
+| 6 | [Lab6-First-Agent](06-Data-Agents/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb) | Construction d'un agent simple |
+| 7 | [Lab7-Data-Analysis-Agent](06-Data-Agents/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb) | Agent pour DataFrames |
 
-## Track Track2-GoogleADK (Days 4-7)
+## Track 07-Agent-Orchestration (Days 4-7)
 
 Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec support multi-provider.
 
@@ -270,37 +270,44 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 8 | [ADK-Introduction](Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
-| 9 | [First-ADK-Agent](Track2-GoogleADK/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
+| 8 | [ADK-Introduction](07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
+| 9 | [First-ADK-Agent](07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
-### Day 5 - DS-STAR (Labs 10-12 + extensions 12b-12d, 18)
+### Day 5 - DS-STAR (Labs 10-12, puis approfondissements)
 
-| Lab | Notebook | Objectif |
-|-----|----------|----------|
-| 10 | [File-Analyzer](Track2-GoogleADK/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](Track2-GoogleADK/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](Track2-GoogleADK/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
-| 12b | [Sequential-Orchestration](Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK |
-| 12c | [Agent-Handoff](Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable |
-| 12d | [Token-Usage](Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM |
-| 12e | [Session-Persistence](Track2-GoogleADK/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient |
+| Lab | Notebook | Objectif | Pour approfondir |
+|-----|----------|----------|------------------|
+| 10 | [File-Analyzer](07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes | |
+| 11 | [Planner-Coder-Loop](07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents | |
+| 12 | [DS-Star-Workshop](07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète | [12b–12e](#approfondissements-autour-de-12) |
+
+#### Approfondissements autour de 12
+
+Ces notebooks prolongent l'atelier DS-STAR par des contrats distincts. Le Lab 12e établit d'abord la persistance C1b, qui éclaire la mesure des usages sur une conversation ; les Labs 12b et 12c mettent en regard deux façons distinctes de choisir l'agent actif (stratégie déclarée par l'orchestrateur ou transfert décidé par l'agent). Ils ne sont pas des jumeaux de langage. Le Lab 12d rend ensuite la consommation observable. Les prérequis explicites de chaque notebook restent indiqués dans celui-ci.
+
+| Lab | Notebook | Ce qu'il ajoute et provenance |
+|-----|----------|------------------------------|
+| 12e | [Session-Persistence](07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient. Contrat comportemental C1b du corpus EPITA (#14058). |
+| 12b | [Sequential-Orchestration](07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK. Portage livré par #14685, contrat du registre EPITA #14058. |
+| 12c | [Agent-Handoff](07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable. Câblage livré par #14686, contrat du registre EPITA #14058. |
+| 12d | [Token-Usage](07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM. Grain #14687, registre EPITA #14058. |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 13 | [Web-Search-SOTA](Track2-GoogleADK/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
-| 14 | [Ablation-Refinement](Track2-GoogleADK/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
-| 15 | [Kaggle-Challenge](Track2-GoogleADK/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
+| 13 | [Web-Search-SOTA](07-Agent-Orchestration/Day6-MLE-Star/Lab13-Web-Search-SOTA.ipynb) | Recherche de modèles SOTA |
+| 14 | [Ablation-Refinement](07-Agent-Orchestration/Day6-MLE-Star/Lab14-Ablation-Refinement.ipynb) | Optimisation ciblée |
+| 15 | [Kaggle-Challenge](07-Agent-Orchestration/Day6-MLE-Star/Lab15-Kaggle-Challenge.ipynb) | Compétition Kaggle |
 
 ### Day 7 - Production (Labs 16-17)
 
 | Lab | Notebook | Objectif |
 |-----|----------|----------|
-| 16 | [Data-Science-Agent](Track2-GoogleADK/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
-| 17 | [Final-Project](Track2-GoogleADK/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
+| 16 | [Data-Science-Agent](07-Agent-Orchestration/Day7-Production/Lab16-Data-Science-Agent.ipynb) | Agent BigQuery/BQML |
+| 17 | [Final-Project](07-Agent-Orchestration/Day7-Production/Lab17-Final-Project.ipynb) | Projet intégré |
 
-### Technologies Track2-GoogleADK
+### Technologies 07-Agent-Orchestration
 
 | Catégorie | Technologies |
 |-----------|--------------|
@@ -309,7 +316,7 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | **Providers** | Gemini 3.1, vLLM, OpenAI, OpenRouter |
 | **Cloud (Day 7)** | BigQuery, Vertex AI, BQML |
 
-Documentation complète : [Track2-GoogleADK/README.md](Track2-GoogleADK/README.md)
+Documentation complète : [07-Agent-Orchestration/README.md](07-Agent-Orchestration/README.md)
 
 ## Technologies
 
@@ -382,7 +389,7 @@ Le package `python-dotenv` charge automatiquement ce fichier. Ne JAMAIS committe
 
 ### Les agents ADK ne se connectent pas au provider (Labs 8+)
 
-Vérifier la configuration dans le fichier `.env` d'Track2-GoogleADK :
+Vérifier la configuration dans le fichier `.env` d'07-Agent-Orchestration :
 
 ```bash
 # Provider recommandé (clé gratuite)
@@ -408,7 +415,7 @@ pip install pandas numpy matplotlib seaborn scikit-learn ipywidgets
 pip install langchain langchain-openai langchain-experimental python-dotenv
 
 # Labs 8-17 (ADK)
-pip install -r Track2-GoogleADK/requirements.txt
+pip install -r 07-Agent-Orchestration/requirements.txt
 ```
 
 ### Comment passer de LangChain a Google ADK ?

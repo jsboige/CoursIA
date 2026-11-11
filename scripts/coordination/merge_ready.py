@@ -119,10 +119,24 @@ Comportement :
 - Ordre : PR la plus ancienne d'abord (par numero).
 - Retenues : ``hold.txt`` a cote du journal (surchargeable
   ``--hold-file``), une PR par ligne -- ``<numero> [motif]`` ; lignes
-  vides et commentaires ``# ...`` ignores. Une PR listee est sautee
-  (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
-  retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
-  pas sans savoir ce qui est retenu).
+  vides et commentaires ``# ...`` ignores. La sentinelle reserve le numero
+  0 pour l'etat de ``Scripts Tests (CPU)`` sur ``main`` : ``failure`` ->
+  retenue globale, ``success`` -> retrait de sa seule ligne. Le verdict
+  juge est celui du **dernier commit de ``main`` qui porte un verdict
+  TERMINE** de ce check : un check en cours, une annulation ou un
+  ``timed_out`` ne sont pas des regressions, le verdict remonte au commit
+  precedent ; au-dela de 20 commits sans verdict termine, refus fail-closed
+  (borne ecrite). Une PR listee est
+  sautee (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
+  retenue utilisateur ; fichier illisible ou ligne malformee -> exit 2 (on
+  ne merge pas sans savoir ce qui est retenu).
+- **Qui merge le correctif d'un ``main`` rouge** : la retenue globale saute
+  aussi la PR qui repare le rouge. Cette PR est donc mergee **a la main par
+  le coordinateur** (``myia-ai-01``), qui retire ensuite la retenue :
+  ``python scripts/coordination/merge_ready.py --clear-main-red-hold
+  --hold-file <chemin>`` -- la commande ne touche que la ligne de la
+  sentinelle, jamais les retenues du coordinateur. Le chemin vert la retire
+  de lui-meme au run suivant, si ce run a lieu avant le correctif.
 - Review : deux lectures distinctes. La disposition journalisee (champ
   ``review``) est CLASSEE a la tete que la ligne declare
   (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
@@ -193,6 +207,15 @@ from frozen_campaigns import (  # noqa: E402,F401
 # reel s'ecrit ``VERDICT: <token>`` dans le CORPS de la voix. Importe, jamais
 # recopie -- une regex locale divergerait en silence du canon qui gouverne le
 # triage du pool.
+# Le format de l'attestation de `lake build` local (#24989) vit dans
+# scripts/lean/ : l'organe qui l'ECRIT (attest_local_build.py) et la garde
+# qui la LIT ne doivent pas pouvoir diverger en silence. Un seul lecteur du
+# format, meme discipline que grain_tag et merge_dwell. Le repertoire est
+# ajoute AVANT scripts/ci pour que scripts/ci reste en priorite de resolution.
+LEAN_DIR = SCRIPTS_DIR / "lean"
+if str(LEAN_DIR) not in sys.path:
+    sys.path.insert(0, str(LEAN_DIR))
+
 CI_DIR = SCRIPTS_DIR / "ci"
 if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
@@ -203,6 +226,18 @@ import pool_review_verdicts as review_canon  # noqa: E402
 # pour que « la lecture du coordinateur couvre-t-elle encore cette tete ? » et
 # « depuis quand le contenu n'a-t-il pas bouge ? » ne divergent jamais.
 import merge_dwell  # noqa: E402
+# Le format de l'attestation de build Lean local (#24989) : un seul lecteur,
+# partage avec l'organe qui ecrit l'attestation.
+import lean_build_attestation  # noqa: E402
+# Le pli des jambes de check (#25059) : le fold CANONIQUE est
+# scripts/pr_gate.py::dedupe_latest -- celui du gate lui-meme -- et la
+# normalisation d'une jambe (check-run REST ou entree de rollup) est celle de
+# scripts/check_run_state.py. Importes, jamais recopiés : une seconde
+# implementation du pli divergerait en silence de celle qui gouverne le gate,
+# et c'est exactement le defaut que #25059 veut fermer (l'organe qui l'a
+# remplace n'a pas repris le pli de la chaine v9).
+import pr_gate  # noqa: E402
+import check_run_state  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
@@ -420,6 +455,22 @@ def default_journal_path() -> Path:
 # vivaient dans un hold.txt de scratchpad de SESSION, que cet organe ne
 # lisait pas -- un run --apply, ou la tache planifiee, les aurait ignorees.
 HOLD_LINE = re.compile(r"^(\d+)(?:\s+(.*))?$")
+MAIN_RED_HOLD_PREFIX = "main-red-sentinel "
+MAIN_RED_HOLD_NUMBER = 0  # identifiant global reserve, jamais un numero de PR
+SCRIPTS_TESTS_CHECK = "Scripts Tests (CPU)"
+
+#: Borne ECRITE de la remontee dans l'historique de `main` (#24828, revue
+#: ai-01 du 2026-11-10, point 1). On juge le dernier commit qui porte un
+#: VERDICT TERMINE de `Scripts Tests (CPU)` ; au-dela de cette borne, et
+#: seulement au-dela, l'organe refuse de demarrer (fail-closed).
+MAIN_RED_HISTORY_LIMIT = 20
+
+#: Conclusions qui portent un VERDICT DE CODE. Seul `failure` pose la
+#: retenue, `success` la retire. Tout le reste -- `cancelled`,
+#: `timed_out`, `action_required`, `skipped`, `stale` -- est de l'INFRA :
+#: une annulation ou un runner perdu n'est pas une regression, et le
+#: verdict remonte au commit precedent (point 2 de la meme revue).
+MAIN_RED_CODE_VERDICTS = ("success", "failure")
 
 
 def default_hold_path(journal_path: Path) -> Path:
@@ -456,6 +507,189 @@ def load_holds(path: Path) -> dict[int, str]:
         reason = (match.group(2) or "").strip().lstrip("#-").strip()
         holds[int(match.group(1))] = reason or "hold.txt"
     return holds
+
+
+def _main_commit_history(
+    runner: Runner, gh_env: dict[str, str], limit: int = MAIN_RED_HISTORY_LIMIT
+) -> list:
+    """SHA des `limit` derniers commits de `main`, du plus recent au plus ancien.
+
+    L'historique est lu en UN appel : c'est lui qui remplace la lecture de la
+    seule tete, puisque le verdict a juger n'est pas forcement celui de la
+    tete (point 1 de la revue ai-01 du 2026-11-10).
+    """
+    result = runner.run(
+        [
+            "gh", "api",
+            f"repos/{REPO}/commits?sha=main&per_page={limit}",
+            "--jq", ".[] | .sha",
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        raise CannotRunError(
+            "lecture de l'historique de main impossible pour la sentinelle CI"
+        )
+    shas = []
+    for line in (result.stdout or "").splitlines():
+        sha = line.strip().strip('"')
+        if re.fullmatch(r"[0-9a-fA-F]{7,40}", sha):
+            shas.append(sha)
+    return shas
+
+
+def _scripts_tests_check(
+    runner: Runner, gh_env: dict[str, str], sha: str
+) -> "dict | None":
+    """Check ``Scripts Tests (CPU)`` d'un commit, ou None si ce check n'existe pas.
+
+    None signifie « pas de signal sur ce commit » -- une poussee qui ne
+    touche pas les chemins du workflow, ou un check renomme. Ce n'est ni un
+    vert ni un rouge : la remontee continue.
+    """
+    checks_result = runner.run(
+        [
+            "gh", "api", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100",
+            "--paginate", "--jq",
+            ".check_runs[] | {name, conclusion, status, started_at, output, details_url} | tojson",
+        ],
+        env=gh_env,
+    )
+    if checks_result.returncode != 0:
+        raise CannotRunError(f"lecture des checks de {sha} impossible")
+    try:
+        checks = [
+            json.loads(line) for line in (checks_result.stdout or "").splitlines()
+            if line.strip()
+        ]
+    except ValueError as exc:
+        raise CannotRunError(f"reponse des checks de {sha} non JSON") from exc
+    scripts_checks = [row for row in checks if row.get("name") == SCRIPTS_TESTS_CHECK]
+    if not scripts_checks:
+        return None
+    return max(scripts_checks, key=lambda row: str(row.get("started_at") or ""))
+
+
+def refresh_main_red_hold(
+    runner: Runner, gh_env: dict[str, str], hold_path: Path
+) -> None:
+    """Actualise la retenue globale depuis le dernier VERDICT DE CODE de `main`.
+
+    Ce qui est juge, et comment (#24828, revue ai-01 du 2026-11-10) :
+
+    1. **Un check en cours n'est pas un refus de demarrer.** On remonte
+       l'historique de `main` jusqu'au dernier commit qui porte un verdict
+       TERMINE de `Scripts Tests (CPU)`, et on juge celui-la. Refuser parce
+       que la tete est en cours serialiserait tous les merges sur la suite
+       lourde -- mesure du 2026-11-10 sur la flotte : mediane 26,6 min,
+       p90 112,8 min, et 69,7 % des runs annules par la poussee suivante.
+    2. **Seul `failure` pose la retenue.** `cancelled`, `timed_out` et les
+       autres conclusions sans verdict de code sont de l'INFRA (runner
+       perdu, annulation en rafale) : le verdict remonte au commit
+       precedent, comme au point 1.
+    3. **Fail-closed borne.** Si aucun des `MAIN_RED_HISTORY_LIMIT` derniers
+       commits ne porte de verdict termine, l'organe refuse de demarrer et
+       nomme la borne.
+
+    La ligne posee par cette sentinelle est la seule que le chemin vert peut
+    retirer ; les retenues du coordinateur ne sont jamais touchees.
+    """
+    history = _main_commit_history(runner, gh_env, MAIN_RED_HISTORY_LIMIT)
+    if not history:
+        raise CannotRunError(
+            "historique de main vide pour la sentinelle CI ; refus fail-closed"
+        )
+
+    judged = None
+    skipped = []
+    for sha in history:
+        check = _scripts_tests_check(runner, gh_env, sha)
+        if check is None:
+            skipped.append((sha, "check-absent"))
+            continue
+        status = str(check.get("status") or "").lower()
+        conclusion = str(check.get("conclusion") or "").lower()
+        if status != "completed":
+            skipped.append((sha, f"en-cours({status or 'sans-statut'})"))
+            continue
+        if conclusion not in MAIN_RED_CODE_VERDICTS:
+            skipped.append((sha, f"infra({conclusion or 'sans-verdict'})"))
+            continue
+        judged = (sha, check, conclusion)
+        break
+
+    if judged is None:
+        raise CannotRunError(
+            "aucun verdict termine de {!r} sur les {} derniers commits de main "
+            "({} ecarte(s) : {}) ; refus fail-closed".format(
+                SCRIPTS_TESTS_CHECK, len(history), len(skipped),
+                ", ".join(f"{sha[:9]}:{motif}" for sha, motif in skipped[:5]),
+            )
+        )
+
+    sha, check, conclusion = judged
+
+    lines = hold_path.read_text(encoding="utf-8-sig").splitlines() if hold_path.exists() else []
+    owned = [line for line in lines if line.strip().startswith(f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")]
+    retained = [line for line in lines if line not in owned]
+    if conclusion == "success":
+        updated = retained
+    else:
+        summary = str((check.get("output") or {}).get("summary") or "")
+        test_match = re.search(r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)", summary)
+        test_name = test_match.group(1) if test_match else ""
+        # Le check-run natif Actions contient souvent un resume sans le detail
+        # pytest. Dans ce cas, lire le log d'echec du run associe au check.
+        if not test_name:
+            details_url = str(check.get("details_url") or "")
+            run_match = re.search(r"/actions/runs/(\d+)(?:/|$)", details_url)
+            if run_match:
+                log_result = runner.run(
+                    ["gh", "run", "view", run_match.group(1), "--repo", REPO, "--log-failed"],
+                    env=gh_env,
+                )
+                if log_result.returncode == 0:
+                    test_match = re.search(
+                        r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)",
+                        log_result.stdout or "",
+                    )
+                    test_name = test_match.group(1) if test_match else ""
+        test_name = test_name or "test-non-identifie-dans-le-check"
+        reason = (
+            f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}sha={sha} "
+            f"check={SCRIPTS_TESTS_CHECK} conclusion={conclusion} test={test_name}"
+        )
+        updated = [*retained, reason]
+    if updated != lines:
+        hold_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = hold_path.with_name(hold_path.name + ".tmp")
+        tmp_path.write_text("\n".join(updated) + ("\n" if updated else ""), encoding="utf-8")
+        tmp_path.replace(hold_path)
+
+
+def clear_main_red_hold(hold_path: Path) -> bool:
+    """Retire UNIQUEMENT la ligne de la sentinelle du fichier de retenues.
+
+    Le chemin vert la retire deja au run suivant ; cette fonction existe pour
+    le cas ou le correctif d'un `main` rouge doit etre merge AVANT ce run --
+    la retenue globale saute aussi la PR qui repare le rouge (point 3 de la
+    revue ai-01 du 2026-11-10). Les retenues du coordinateur ne sont
+    jamais touchees. Renvoie True si une ligne a ete retiree.
+    """
+    if not hold_path.exists():
+        return False
+    lines = hold_path.read_text(encoding="utf-8-sig").splitlines()
+    kept = [
+        line for line in lines
+        if not line.strip().startswith(
+            f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")
+    ]
+    if kept == lines:
+        return False
+    tmp_path = hold_path.with_name(hold_path.name + ".tmp")
+    tmp_path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+    tmp_path.replace(hold_path)
+    return True
 
 
 def scope_exclusion(path: str) -> str | None:
@@ -722,6 +956,65 @@ def coordinator_approval_reason(
     if current == read:
         return None
     return "coordinator-approval-stale"
+
+
+def lean_build_attestation_reason(
+    view: dict, head: str, runner: Runner, gh_env: dict[str, str]
+) -> str | None:
+    """Etape 2bis (#24989) : ``None`` si la PR n'exige pas d'attestation Lean,
+    ou si elle en porte une qui couvre la tete courante.
+
+    La regle HARD `lean-merge-discipline.md` §1 exige un ``lake build``
+    **local** par ai-01 avant tout merge d'une PR qui touche du Lean : le
+    vert de la CI ne le remplace pas (incident #866, revert #885). Depuis le
+    retrait du dossier (2026-11-05), l'APPROVE du coordinateur est la seule
+    porte -- la regle ne tenait plus que par sa vigilance.
+
+    Detection : le diff contient-il un fichier Lean (``.lean``,
+    ``lakefile.*``, ``lean-toolchain``, ``lake-manifest.json``) ? Une PR qui
+    n'en contient pas n'est pas concernee : le controle ne coute alors rien.
+
+    Preuve exigee : un commentaire d'attestation pose par ``myia-ai-01``
+    (l'organe `scripts/lean/attest_local_build.py` le produit ; une lane ne
+    s'atteste pas elle-meme). La couverture de tete suit la MEME regle que
+    l'APPROVE : l'attestation vaut a la tete exacte, ou sur une tete qui n'en
+    differe que par des rafraichissements de base PROUVES content-free. Un
+    commit de contenu posterior la perime.
+
+    Motifs : ``lean:no-local-build-attestation`` (aucune attestation, ou
+    attestation perimee) et ``lean:local-build-attestation-unverifiable``
+    (preuve illisible : base absente, ou chaine de commits illisible).
+    """
+    touched = lean_build_attestation.lean_paths(
+        str((row or {}).get("path") or "") for row in (view.get("files") or [])
+    )
+    if not touched:
+        return None
+    attestation = lean_build_attestation.attestation_from_comments(
+        view.get("comments") or []
+    )
+    if attestation is None:
+        return "lean:no-local-build-attestation"
+    attested = str(attestation.get("sha") or "")
+    if attested == head:
+        return None
+    base = str(view.get("baseRefOid") or "")
+    if not base:
+        return "lean:local-build-attestation-unverifiable:no-base"
+    fetch = _dwell_fetch(runner, gh_env)
+    run_git = _dwell_git(runner)
+    try:
+        current = merge_dwell.last_authoritative_sha(
+            REPO, head, base, fetch=fetch, run_git=run_git
+        )
+        read = merge_dwell.last_authoritative_sha(
+            REPO, attested, base, fetch=fetch, run_git=run_git
+        )
+    except merge_dwell.DwellError:
+        return "lean:local-build-attestation-unverifiable"
+    if current == read:
+        return None
+    return "lean:no-local-build-attestation"
 
 
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
@@ -1174,6 +1467,164 @@ def mergeable_state_and_head(
     return state, str(((data.get("head") or {}).get("sha")) or "")
 
 
+# --- etape 6 bis : `unstable` est-il un etat mergeable ? (#25059) -------------
+
+#: Une jambe terminee et sans reproche : meme ensemble que le gate
+#: (``pr_gate.CONCLUSION_OK`` -- success, neutral, skipped). Un ``cancelled``
+#: n'y est pas : une jambe annulee n'a rien mesure.
+CHECK_GREEN = pr_gate.CONCLUSION_OK
+
+#: Le nom du check requis : la porte elle-meme. C'est le nom que le gate
+#: utilise pour se comparer a lui (``DEFAULT_SELF_NAME``).
+GATE_CHECK_NAME = pr_gate.DEFAULT_SELF_NAME
+
+#: Second marqueur de non-bloquant du depot : le gate reconnait ``advisory``
+#: (``pr_gate.ADVISORY_MARKER``), et le depot ecrit aussi ``non-blocking``
+#: dans le nom de certains checks. #25059 les nomme tous les deux.
+NON_BLOCKING_MARKER = "non-blocking"
+
+#: Roster des jobs dont le WORKFLOW porte le marqueur advisory (le nom du job
+#: ne le porte pas). Derive des YAML de ``.github/workflows``, une fois par
+#: run : le relire a chaque PR serait du gaspillage.
+_ADVISORY_JOBS: frozenset[str] | None = None
+
+
+def advisory_jobs() -> frozenset[str]:
+    """Le roster advisory du depot, lu une fois.
+
+    Fail-open sur le roster : un roster illisible signifie « moins de checks
+    reconnus comme non bloquants », donc une decision PLUS stricte -- jamais
+    un merge plus permissif.
+    """
+    global _ADVISORY_JOBS
+    if _ADVISORY_JOBS is None:
+        try:
+            _ADVISORY_JOBS = pr_gate.derive_advisory_jobs()
+        except Exception:  # pragma: no cover - lecture des YAML impossible
+            _ADVISORY_JOBS = frozenset()
+    return _ADVISORY_JOBS
+
+
+def _is_non_blocking(name: str, jobs: frozenset[str]) -> bool:
+    """Un check qui ne bloque pas, au sens du gate ET de #25059.
+
+    Le test est celui du gate : ``pr_gate.is_advisory`` (le job porte le
+    marqueur, ou son workflow le porte -- roster derive des YAML). Le second
+    marqueur du depot (``non-blocking``) est ajoute ici parce qu'il n'est pas
+    dans ``ADVISORY_MARKER`` : un check qui ne porte QUE ce marqueur ne
+    bloque pas le gate, il ne doit pas bloquer l'organe de merge non plus.
+    """
+    workflow_label = "advisory" if name in jobs else ""
+    if pr_gate.is_advisory(name, workflow_label):
+        return True
+    return NON_BLOCKING_MARKER in (name or "").lower()
+
+
+def unstable_state_reason(
+    runner: Runner, pr: int, head: str, gh_env: dict[str, str]
+) -> tuple[str | None, str]:
+    """Etape 6 bis (#25059) : l'etat ``unstable`` accepte-t-il la PR ?
+
+    Retourne ``(raison, detail)``. ``raison is None`` = la PR passe, et
+    ``detail`` porte le compte ``unstable-accepted:<n advisory/cancelled-
+    superseded>>``. Sinon ``raison`` nomme le check qui bloque -- un saut
+    nomme, jamais un refus muet.
+
+    Le pli est celui du gate : ``pr_gate.dedupe_latest``, applique deux fois
+    sur deux ensembles de jambes :
+      - sur TOUTES les jambes : la plus recente par nom -- c'est elle qui
+        fait foi (une jambe encore en vol est donc celle qui compte) ;
+      - sur les jambes TERMINEES seulement : la derniere terminee par nom --
+        c'est elle qui dit si le nom a ete vert au moins une fois.
+
+    Regle (#25059) : ``unstable`` est accepte si et seulement si
+      1. la derniere jambe du ``PR gate`` est terminee et ``success`` ;
+      2. chaque nom de check non advisory a au moins une jambe terminee ;
+      3. la derniere jambe TERMINEE de chaque nom non advisory est verte.
+
+    Ce qui n'est pas accepte : une porte absente ou non verte, un nom sans
+    jambe terminee, un nom dont la derniere jambe terminee est rouge, et une
+    lecture des jambes impossible (fail-closed : l'absence de mesure n'est
+    pas une mesure).
+    """
+    res = runner.run(
+        ["gh", "api",
+         f"repos/{REPO}/commits/{head}/check-runs?per_page=100",
+         "--paginate",
+         "--jq",
+         ".check_runs[] | {name, conclusion, status, started_at, id} | tojson"],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        return ("mergeable-state:unstable:check-runs-unreadable", "")
+    try:
+        raw = [
+            json.loads(line)
+            for line in (res.stdout or "").splitlines()
+            if line.strip()
+        ]
+    except ValueError:
+        return ("mergeable-state:unstable:check-runs-unreadable", "")
+    legs: list[dict] = []
+    for row in raw:
+        leg = check_run_state.normalize_leg(row)
+        # `normalize_leg` garde cinq champs ; le statut est ajoute ici pour
+        # que le motif du saut dise « en vol » plutot que « sans verdict ».
+        leg["status"] = str(row.get("status") or "").lower()
+        legs.append(leg)
+    latest = {leg["name"]: leg for leg in pr_gate.dedupe_latest(legs)}
+    done_legs = [leg for leg in legs if leg.get("conclusion")]
+    latest_done = {leg["name"]: leg for leg in pr_gate.dedupe_latest(done_legs)}
+
+    # 1. la porte elle-meme : sa derniere jambe (la plus recente) doit etre
+    #    terminee et verte. Une porte qui tourne encore n'est pas un acquis.
+    gate_leg = next(
+        (leg for name, leg in latest.items()
+         if name == GATE_CHECK_NAME or name.startswith(GATE_CHECK_NAME + " /")),
+        None,
+    )
+    if gate_leg is None:
+        return ("mergeable-state:unstable:no-pr-gate-leg", "")
+    if gate_leg.get("conclusion") != "success":
+        state = (gate_leg.get("conclusion") or gate_leg.get("status")
+                 or "no-verdict")
+        return (f"mergeable-state:unstable:{GATE_CHECK_NAME}:{state}", "")
+
+    jobs = advisory_jobs()
+    advisory_count = 0
+    for name in sorted(latest):
+        if name == gate_leg["name"]:
+            continue
+        if _is_non_blocking(name, jobs):
+            advisory_count += 1
+            continue
+        done = latest_done.get(name)
+        if done is None:
+            return (f"mergeable-state:unstable:{name}:no-completed-leg", "")
+        if done.get("conclusion") not in CHECK_GREEN:
+            return (
+                f"mergeable-state:unstable:{name}:{done.get('conclusion')}",
+                "",
+            )
+    # Le compte du verdict : les checks non bloquants rencontres, et les
+    # jambes annulees d'un run remplace (une jambe annulee qui n'est pas la
+    # derniere terminee de son nom a ete supersedee par une verte).
+    superseded = 0
+    for name, leg in latest_done.items():
+        superseded += sum(
+            1
+            for other in done_legs
+            if other["name"] == name
+            and other.get("conclusion") == "cancelled"
+            and (other.get("started_at") or "", other.get("id") or 0)
+            != (leg.get("started_at") or "", leg.get("id") or 0)
+        )
+    return (
+        None,
+        f"unstable-accepted:{advisory_count + superseded} advisory/cancelled-superseded",
+    )
+
+
 def merge_pr(runner: Runner, pr: int, head: str, gh_env: dict[str, str]) -> None:
     """Etape 7 : squash merge epingle sur la tete evaluee (jamais --admin,
     jamais --delete-branch)."""
@@ -1242,6 +1693,15 @@ def evaluate_pr(
     reason = frozen_umbrella_exclusion(
         view.get("title"), view.get("body"), view.get("headRefName")
     )
+    if reason is not None:
+        return skip(reason)
+    # 2bis. garde Lean (#24989) : une PR qui touche du Lean exige une
+    # attestation de `lake build` local posee par le coordinateur et
+    # couvrant la tete (regle HARD `lean-merge-discipline.md` §1). Placee
+    # AVANT 2ter : une PR sans attestation n'attend pas sa relecture, elle
+    # est bloquee pour un AUTRE motif -- la porter en disposition
+    # ``review-ready`` serait un mensonge.
+    reason = lean_build_attestation_reason(view, view_head, runner, gh_env)
     if reason is not None:
         return skip(reason)
     # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas
@@ -1344,13 +1804,27 @@ def evaluate_pr(
         return skip(reason, stack_state, stack_inc)
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
-    if state != "clean":
+    accepted_detail: str | None = None
+    if state == "unstable":
+        # 6bis (#25059) : `unstable` n'est pas un refus automatique. La chaine
+        # v9 l'acceptait quand le pli latest-wins etait vert ; l'organe qui l'a
+        # remplace ne l'a pas repris, et 13 PRs approuvees a la tete dormaient
+        # la-dessus (mesure du coordinateur, 07/11 13:20Z). La decision est
+        # prise SUR LES JAMBES, au pli du gate : un saut nomme, jamais un refus
+        # muet.
+        reason, detail = unstable_state_reason(
+            runner, pr, live_head or view_head, gh_env
+        )
+        if reason is not None:
+            return skip(reason, stack_state, stack_inc)
+        accepted_detail = detail
+    elif state != "clean":
         return skip(f"mergeable-state:{state or 'absent'}",
                     stack_state, stack_inc)
     if live_head != view_head:
         return skip("head-moved", stack_state, stack_inc)
     return PRVerdict(
-        pr, view_head, "would-merge", None, False,
+        pr, view_head, "would-merge", accepted_detail, False,
         disposition, stack_state, stack_inc,
     )
 
@@ -1465,9 +1939,34 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     hold_path = (
         args.hold_file if args.hold_file is not None else default_hold_path(journal_path)
     )
+    if args.clear_main_red_hold:
+        # Voie manuelle : aucune lecture GitHub, aucune PR evaluee. La ligne
+        # de la sentinelle seule est retiree ; les retenues du coordinateur
+        # restent intactes.
+        try:
+            removed = clear_main_red_hold(hold_path)
+        except OSError as exc:
+            print(
+                f"merge_ready : fichier de retenues {hold_path} illisible -- {exc}",
+                file=sys.stderr,
+            )
+            return 2
+        if args.json:
+            emit_output(
+                args, [], "main-red-hold-cleared" if removed else "main-red-hold-absent", 0
+            )
+        else:
+            print(
+                "merge_ready : ligne de la sentinelle retiree"
+                if removed else
+                "merge_ready : aucune ligne de la sentinelle a retirer"
+            )
+        return 0
     try:
         holds = load_holds(hold_path)
         token = resolve_token(active_runner)
+        refresh_main_red_hold(active_runner, {**os.environ, "GH_TOKEN": token}, hold_path)
+        holds = load_holds(hold_path)
     except CannotRunError as exc:
         print(f"merge_ready : impossible de demarrer -- {exc}", file=sys.stderr)
         return 2
@@ -1493,8 +1992,9 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         if merged_count >= args.max:
             stopped_reason = "max-merges-reached"
             break
-        if pr in holds:
-            held = PRVerdict(pr, None, "skipped", f"hold:{holds[pr]}", False)
+        if MAIN_RED_HOLD_NUMBER in holds or pr in holds:
+            reason = holds.get(MAIN_RED_HOLD_NUMBER, holds.get(pr, "hold.txt"))
+            held = PRVerdict(pr, None, "skipped", f"hold:{reason}", False)
             results.append(held)
             try:
                 append_journal(journal_path, held)
@@ -1522,7 +2022,8 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         exit_code = 1
                         break
                     decision = PRVerdict(
-                        pr, decision.head, "merged", None, True, decision.review,
+                        pr, decision.head, "merged", decision.reason, True,
+                        decision.review,
                         decision.stack, decision.stack_incidents,
                     )
                 merged_count += 1
@@ -1578,6 +2079,16 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         type=Path,
         default=None,
         help="fichier de retenues (defaut : hold.txt a cote du journal)",
+    )
+    parser.add_argument(
+        "--clear-main-red-hold",
+        action="store_true",
+        help=(
+            "retire UNIQUEMENT la ligne de la sentinelle du fichier de "
+            "retenues, puis sort (aucun appel gh, aucune PR evaluee). "
+            "Sert au correctif d'un `main` rouge : la retenue globale saute "
+            "aussi la PR qui le repare."
+        ),
     )
     parser.add_argument(
         "--json",

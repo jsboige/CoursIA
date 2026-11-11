@@ -5,7 +5,7 @@
 work that is already delivered but not closed: delivery PRs write ``See #N``
 -- the marker of a PARTIAL tranche per git-workflow.md -- even when the tranche
 in fact fully resolves the issue, so GitHub does not close it. Since #23762 the
-marker family is split (see ``_closing_marker_re``): only the CLOSING forms
+marker family is split (see ``closing_marker``): only the CLOSING forms
 (``Closes``/``Fixes``/``Resolves``) are evidence of a complete delivery; the
 partial forms (``See``, ``Part of``, ``Refs``) classify as ``partial`` and never
 earn the label -- a tranche is not a delivery. The issue stays in the pool, the
@@ -132,6 +132,7 @@ import time
 from typing import Iterable
 
 import issue_containers
+from grain_tag import find_close_keyword_pr_refs, find_non_closing_refs
 # The coverage predicate is imported, not re-implemented: `[RELEASED]` means
 # two different things and the picker is the organ that already tells them
 # apart (see the block above `_is_protocol_attestation`). It lives in
@@ -166,18 +167,6 @@ def is_epic(title: str, labels: Iterable[str]) -> bool:
     return any(_EPIC_RE.search(lab or "") for lab in labels)
 
 
-# Delivery markers the repo's link discipline (git-workflow.md) requires for an
-# intentional PR->issue link: `See #N`/`Part of #N` for a partial contribution,
-# `Closes #N`/`Fixes #N` for a full one. A bare `(#N)` in a grain title, "the
-# dispatch #N", or a `feature/N-...` branch name is context, not a claim.
-def _delivery_marker_re(number: int) -> "re.Pattern[str]":
-    return re.compile(
-        r"\b(?:see|part\s+of|refs|references?"
-        r"|close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#%d\b" % number,
-        re.IGNORECASE,
-    )
-
-
 # #23762: the marker family splits in two, and only the CLOSING class
 # (`Closes`/`Fixes`/`Resolves`) is evidence of a complete delivery.
 # `See #N` / `Part of #N` are the repo's markers for a PARTIAL contribution
@@ -186,13 +175,6 @@ def _delivery_marker_re(number: int) -> "re.Pattern[str]":
 # shape that used to earn the label. Measured by the secretariat (c228,
 # 2026-10-31): `Part of #22178` on #22202 is a reference to its umbrella, not a
 # delivery, and that marker is the mechanism behind the false positive.
-def _closing_marker_re(number: int) -> re.Pattern[str]:
-    return re.compile(
-        rf"\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#{number}\b",
-        re.IGNORECASE,
-    )
-
-
 def closing_marker(body: str, number: int) -> bool:
     """True iff ``body`` claims a COMPLETE delivery of issue ``number``.
 
@@ -200,7 +182,8 @@ def closing_marker(body: str, number: int) -> bool:
     the number), restricted to the closing keywords. A body that carries only
     a partial marker is a delivered tranche, not a delivered issue.
     """
-    return bool(_closing_marker_re(number).search(body or ""))
+    return any(hit["number"] == number
+               for hit in find_close_keyword_pr_refs(body or ""))
 
 
 def delivery_marker(body: str, number: int) -> bool:
@@ -213,7 +196,13 @@ def delivery_marker(body: str, number: int) -> bool:
     whether a merged PR counts as evidence of delivery, and an unreadable
     reference must fail safe (#15060), not produce a candidate.
     """
-    return bool(_delivery_marker_re(number).search(body or ""))
+    # Keep the delivery/closing distinction on the repo's shared parser.
+    # In particular, code citations such as `` `Closes #N` `` are not claims.
+    hits = find_close_keyword_pr_refs(body or "")
+    if any(hit["number"] == number for hit in hits):
+        return True
+    return any(hit["number"] == number
+               for hit in find_non_closing_refs(body or ""))
 
 
 def _is_bot(actor: str) -> bool:
