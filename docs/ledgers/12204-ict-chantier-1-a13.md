@@ -55,14 +55,18 @@ Et sa conclusion (md 17) : « La distinction nominale ne correspond donc à aucu
 - Comme le jumeau C# via IKVM écarté en A12 (« variante de substrat et non algorithme distinct »), le présent témoin serait **double comptage** : il ne constitue ni une troisième lignée, ni une seconde attestation indépendante de `réviser une croyance`.
 - La table après A12 est donc **inchangée** ; la file d'attente (`institutionnaliser`, `inhiber`) est inchangée. La limite (i) reste consignée telle quelle, désormais **vérifiée** plutôt que supposée.
 
-## Défaut d'organe — `method='inconnu'` accepté en silence
+## Défaut d'organe — `method='inconnu'` accepté en silence (constat 2026-11-11, corrigé par #25745)
 
-Constat mesuré à la source (cellule [7], sortie committée) et lu dans le code :
+Constat mesuré à la source (cellule [7], sortie committée) et lu dans le code, **le 2026-11-11**, sur la copie alors verbatim :
 
-- `REVISION_METHODS = {"dalal", "levi"}` (l. 59) n'est **jamais** lu dans `revise()` : aucune validation.
-- `handler.revise(["p"], "q", method="inconnu")` aboutit, prend le chemin Levi, et recopie `'inconnu'` dans la clé `method` du résultat.
-- Le carnet le qualifie justement : « L'énumération `REVISION_METHODS` est donc une **documentation**, pas un **garde-fou** » (md 17) — un appelant qui passe une méthode mal orthographiée ne le saura pas.
-- Le défaut n'est **pas corrigé ici** : le fichier est une copie verbatim, et modifier une copie verbatim casse son contrat de provenance (`NOTICE-EPITA`). Signalé dans l'issue de série #23163 (réparation par ré-écriture amont puis re-port, hors du scope verbatim).
+- `REVISION_METHODS = {"dalal", "levi"}` (l. 59) n'était **jamais** lu dans `revise()` : aucune validation.
+- `handler.revise(["p"], "q", method="inconnu")` aboutissait, prenait le chemin Levi, et recopiait `'inconnu'` dans la clé `method` du résultat.
+- Le carnet le qualifiait justement : « L'énumération `REVISION_METHODS` est donc une **documentation**, pas un **garde-fou** » (md 17) — un appelant qui passe une méthode mal orthographiée ne le saura pas.
+- Signalé le jour même dans l'issue de série #23163 ; la réparation envisagée d'abord était la ré-écriture amont puis re-port, hors du scope verbatim.
+
+**Résolu le même jour par #25745, comme adaptation locale déclarée** (issue #23163, signal c.6784603097) : plutôt que d'attendre l'amont, la copie porte un écart **déclaré** (`DECLARED LOCAL DEVIATION, NOT-VERBATIM` en tête de module + `NOTICE-EPITA` « Adaptations locales déclarées », même mécanisme que `_adf_handler.py` 2026-10-29). `revise()` valide `method` contre `REVISION_METHODS` **avant** le bloc `try` : un hors-ensemble lève `ValueError` en nommant les méthodes acceptées, sans toucher la JVM ; un test de contrat JVM-free l'épingle (`tests/test_belief_revision_handler.py`) ; le carnet re-exécuté mesure le refus (`Unknown revision method 'inconnu': expected one of ['dalal', 'levi']`, cellule [7]) et re-qualifie l'énumération en **garde-fou**.
+
+**Le verdict de ce ledger ne change pas.** La validation rend le refus bruyant, elle ne donne pas à `dalal` un calcul propre : les deux valeurs acceptées prennent toujours le même chemin Levi (le code d'exécution l. 137-141 est inchangé par l'écart déclaré). L'alias documenté et la non-levée de la limite (i) restent le verdict ; le garde-fou rend simplement l'API honnête avec sa propre énumération.
 
 ## Méthode et limites de la mesure
 
