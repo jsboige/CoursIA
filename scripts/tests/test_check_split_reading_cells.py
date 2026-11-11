@@ -1067,6 +1067,41 @@ def test_conclusion_longue_apres_stub_est_structurelle():
     assert findings_neg[0]["type"] == "EXERCISE_READING"
 
 
+def test_titres_canoniques_de_fin_de_carnet_apres_stub_sont_structurels():
+    """Les deux titres canoniques de la spec « finition de serie » (#19297) --
+    ``## A retenir`` et ``## Verifiez votre comprehension`` -- sont des blocs de
+    CLOTURE de carnet (recapitulatif, questions de comprehension), pas des
+    lectures d'une sortie : les poser apres un stub d'exercice ne doit pas etre
+    signale en EXERCISE_READING.
+
+    Faux positif mesure : PR #25720 (Search-09d) -- le carnet se termine par un
+    stub d'exercice et la spec IMPOSE que le carnet se termine par les trois
+    blocs canoniques, dans cet ordre. Le carve-out #17777 pose deja le
+    principe (« le discriminant est le TITRE, pas la longueur du corps ») : un
+    titre de section reste structurel, quelle que soit la taille de son corps.
+
+    Controle negatif : un titre NON-liste, long, apres un stub, reste signale.
+    """
+    base = nb(_stub_exercise())
+    head = nb(
+        _stub_exercise(),
+        md("## À retenir\n\n- **Le `k` du theoreme est le degre des sommets.** "
+           "Sur la famille `F` des 20 triplets, la disc：`3`. "
+           "Le squelette de Beck-Fiala tient un `k` constant a 4."),
+        md("## Vérifiez votre compréhension\n\n1. Sur la famille des 20 triplets ?"),
+    )
+    assert detect_added_readings(head, base) == []
+
+    head_neg = nb(
+        _stub_exercise(),
+        md("## Analyse detaillee\n\nLa sortie confirme 0.94 sur l'echantillon, "
+           "tendance attendue, marge fine. " * 4),
+    )
+    findings_neg = detect_added_readings(head_neg, base)
+    assert len(findings_neg) == 1
+    assert findings_neg[0]["type"] == "EXERCISE_READING"
+
+
 def test_diff_mute_si_markdown_ajoute_apres_code_sans_markdown_en_base():
     """Une premiere lecture ajoutee juste apres une cellule de code qui
     n'avait PAS de markdown derriere en base n'est PAS une violation.
