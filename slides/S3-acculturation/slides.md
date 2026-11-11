@@ -1082,7 +1082,7 @@ layout: default
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb">SW-02b-RDFBasics-Python.ipynb</a> (triplets RDF).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb">SW-02-RDFBasics-Python.ipynb</a> (triplets RDF).</p>
 ---
 
 # Zoom : la pile du Web sémantique (W3C)

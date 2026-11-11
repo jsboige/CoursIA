@@ -13,7 +13,7 @@ Ces projets servent donc d'**exemples-capstones** : chacun est autonome (son pro
 | Projet | Description | Séries mobilisées |
 |--------|-------------|-------------------|
 | [matching-cv/](matching-cv/) | Application web Flask qui compare trois algorithmes d'appariement CV ↔ fiche de poste : mots-clés (baseline), similarité sémantique par embeddings, et appariement stable de Gale-Shapley. | GameTheory, GenAI, ML |
-| [socle-metadata-driven/](socle-metadata-driven/) | Notebook .NET (C#) démontrant le socle transverse [`MyIA.AI.Shared`](../../MyIA.AI.Shared/) : découverte par décoration, sérialisation JSON/XML, et prédicat métier low-code (Flee). | socle partagé (.NET) |
+| [socle-metadata-driven/](socle-metadata-driven/) | Notebook .NET (C#) démontrant le socle transverse [`MyIA.AI.Shared`](../../dotnet/MyIA.AI.Shared/) : découverte par décoration, sérialisation JSON/XML, et prédicat métier low-code (Flee). | socle partagé (.NET) |
 | [qcm/](qcm/) | Banque de questions QCM convertie des banques Moodle historiques (chapitres IA 1-5 + apprentissage profond), consommée par le dispositif d'auto-évaluation des notebooks. Ce n'est pas un projet-capstone mais l'actif de données transverse qu'ils partagent. | Search, SymbolicAI, Probas, ML |
 
 ## Focus — `matching-cv` : trois lectures d'un même problème
@@ -32,7 +32,7 @@ La leçon transversale est que **le « meilleur » appariement dépend du critè
 
 ## Focus — `socle-metadata-driven` : le socle partagé démontré
 
-À l'inverse de `matching-cv` qui **combine** plusieurs séries sur une même application, [`socle-metadata-driven/`](socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) illustre ce qui est **partagé** par toutes les familles .NET du cursus : le socle transverse [`MyIA.AI.Shared`](../../MyIA.AI.Shared/) (EPIC #7265). Ce socle factorise trois besoins transverses — découverte, persistance, logique déclarative — qu'autrement chaque série ré-écrirait. Le notebook les met en scène sur un domaine factice (facturation / catalogue) en trois moments :
+À l'inverse de `matching-cv` qui **combine** plusieurs séries sur une même application, [`socle-metadata-driven/`](socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) illustre ce qui est **partagé** par toutes les familles .NET du cursus : le socle transverse [`MyIA.AI.Shared`](../../dotnet/MyIA.AI.Shared/) (EPIC #7265). Ce socle factorise trois besoins transverses — découverte, persistance, logique déclarative — qu'autrement chaque série ré-écrirait. Le notebook les met en scène sur un domaine factice (facturation / catalogue) en trois moments :
 
 | Moment | Principe démontré | API du socle |
 |--------|-------------------|--------------|
@@ -40,7 +40,7 @@ La leçon transversale est que **le « meilleur » appariement dépend du critè
 | **Sérialisation round-trip** | Le même graphe d'entités (hiérarchie `IChildEntity` sur 3 niveaux) part et revient intact en JSON **et** en XML, référence parent re-liée. | `MetadataJsonSerializer`, `MetadataXmlSerializer` |
 | **Prédicat métier low-code (Flee)** | Une règle métier est une **chaîne** — venue d'un fichier, d'un CSV, d'un utilisateur non-développeur — compilée une fois puis appliquée à N instances. C'est la différence entre coder N branches `if` et piloter la logique métier par les données. | `ExpressionContext` + `CompileGeneric<bool>` (Flee 2.0.0) |
 
-La leçon transversale est qu'un **socle** fait basculer ce qui était ré-écrit dans chaque projet (comment découvre-t-on mes types ? comment persiste-t-on ma configuration ? où vit ma règle métier ?) vers une **convention partagée et testée une fois pour toutes**. Le notebook inclut trois exercices stub (enregistrement explicite, sérialisation personnalisée, règle à seuil variable) qui déclinent chacun des moments. Le socle expose par ailleurs un [`FleePredicateBuilder`](../../MyIA.AI.Shared/ComponentModel/Rules/FleePredicateBuilder.cs) (ancre B4) qui industrialise le troisième moment.
+La leçon transversale est qu'un **socle** fait basculer ce qui était ré-écrit dans chaque projet (comment découvre-t-on mes types ? comment persiste-t-on ma configuration ? où vit ma règle métier ?) vers une **convention partagée et testée une fois pour toutes**. Le notebook inclut trois exercices stub (enregistrement explicite, sérialisation personnalisée, règle à seuil variable) qui déclinent chacun des moments. Le socle expose par ailleurs un [`FleePredicateBuilder`](../../dotnet/MyIA.AI.Shared/ComponentModel/Rules/FleePredicateBuilder.cs) (ancre B4) qui industrialise le troisième moment.
 
 ---
 

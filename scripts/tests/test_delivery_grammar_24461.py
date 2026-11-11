@@ -233,3 +233,43 @@ def test_un_fil_retracte_puis_rearme_reporte_le_motif():
     motif = dg.delivery_motif([EPIC_WIDE, "[NOT-DELIVERED]", EPIC_WIDE])
     assert motif is not None
     assert "epic-wide" in motif
+
+def test_chronologie_du_fil_et_tranches():
+    lane = '[DELIVERED] lane po:CoursIA -- PR #1'
+    tranche = lane + ' -- paths: scripts/**'
+    neutral = 'Une question de suivi.'
+    revoke = '[NOT-DELIVERED] partiel'
+    assert not dg.recent_delivery_state([tranche, neutral])
+    assert dg.recent_delivery_state([lane, tranche, neutral])
+    assert not dg.recent_delivery_state([lane, revoke, tranche])
+    assert dg.recent_delivery_state([revoke, lane, neutral])
+    assert not dg.delivered_state(['```\n' + lane + '\n```'])
+    assert dg.delivered_state([lane, '```\n' + revoke + '\n```'])
+
+
+def test_chronologie_conteneur():
+    attestation = '[INFO] candidate-delivered -- termine'
+    tranche = '[DELIVERED] lane po:CoursIA -- PR #1 -- paths: scripts/**'
+    assert dg.container_delivery_state([attestation, tranche, 'neutre'])
+    assert not dg.container_delivery_state([attestation, '[NOT-DELIVERED]'])
+    assert not dg.container_delivery_state(['```\n' + attestation + '\n```'])
+
+
+def test_dossier_keep_survit_aux_neutres_et_aux_tranches():
+    assert dg.recent_delivery_state([_dossier("KEEP"), TRANCHE, "suivi"])
+    assert not dg.recent_delivery_state([_dossier("KEEP"), "[NOT-DELIVERED]", TRANCHE])
+
+
+def test_tranche_sans_lane_ne_change_pas_l_etat_du_fil():
+    for tranche in ("[DELIVERED] -- paths: a.py", "[DELIVERED] paths: a.py"):
+        assert not dg.recent_delivery_state([tranche, "suivi"])
+        assert dg.recent_delivery_state([EPIC_WIDE, tranche])
+        assert not dg.recent_delivery_state([EPIC_WIDE, "[NOT-DELIVERED]", tranche])
+    assert dg.recent_delivery_state(["[DELIVERED] -- travail termine"])
+    assert dg.recent_delivery_state(["[DELIVERED] -- travail termine\npaths: a.py"])
+
+
+def test_tranche_insensible_a_la_casse_avec_et_sans_lane():
+    assert dg.is_tranche_marker("[delivered] lane myia-ai-01:CoursIA -- PaThS: a.py")
+    assert dg.is_tranche_marker("[delivered] -- PATHS: a.py")
+    assert not dg.is_tranche_marker("[delivered] lane myia-ai-01:CoursIA\nPaThS: a.py")

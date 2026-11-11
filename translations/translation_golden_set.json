@@ -2,12 +2,12 @@
  "pairs": [
   {
    "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb",
-   "en": "MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy_en.ipynb",
-   "sha1_fr": "beee389ad6953bcd713eabb60b6f4935b4a38937",
-   "sha1_en": "a7edeaba1f8a7cdc9c41fd34b249e42ca4502d1e",
-   "sources_sha1_fr": "a0df9a1a2b4c4f472feed4df02e296662722adef",
-   "sources_sha1_en": "c3505198aceda39a22ec7d3d80d8a9fbd855d9d1"
+   "fr": "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb",
+   "en": "MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python_en.ipynb",
+   "sha1_fr": "cd08eea1e9e9fb554b768539abf0bfadb862f8ef",
+   "sha1_en": "b68a61d5109ad7bc11b94183301418410f980dc7",
+   "sources_sha1_fr": "3d31843c3535d218c2a89eab0a017eb4fd0587fd",
+   "sources_sha1_en": "b2c5e96a7e92326c1594b0aa8d624de788ca5406"
   },
   {
    "kind": "lean",

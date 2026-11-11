@@ -165,11 +165,11 @@ jobs:
       # + CsvHelper 33.1.0). Premier run valide que ces packages NuGet
       # arrivent bien sur le runner (sinon INTRINSIC reseau a documenter).
       - name: dotnet restore
-        run: dotnet restore GradeBookApp.Tests/GradeBookApp.Tests.csproj
+        run: dotnet restore dotnet/GradeBookApp.Tests/GradeBookApp.Tests.csproj
 
       - name: dotnet build
-        run: dotnet build GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-restore --configuration Release
+        run: dotnet build dotnet/GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-restore --configuration Release
 
       - name: dotnet test
-        run: dotnet test GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=gradebook-tests.trx"
+        run: dotnet test dotnet/GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=gradebook-tests.trx"
 
