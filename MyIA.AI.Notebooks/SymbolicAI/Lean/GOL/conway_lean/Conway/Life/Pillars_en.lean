@@ -311,7 +311,11 @@ for the corresponding pillar. The proof is intended to be a single
     What is proven here, and **non-vacuously**, is that the loaded grid
     is real: 165 KB of RLE through the same `include_str` +
     `RLE.parseRLE!` pipeline as the UnitCell — the
-    `evolveHashlifeFastMemo_empty` route is closed for this pattern. -/
+    `evolveHashlifeFastMemo_empty` route is closed for this pattern.
+
+    Paired negative witness: `otca_population_negative` — the neighboring
+    UnitCell pattern, loaded through the same pipeline, does not satisfy
+    this population. -/
 theorem otca_initial_population : otcaInitial.length = 64691 := by
   native_decide
 
@@ -360,7 +364,10 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
 
     What IS provable here, and **non-vacuous**, is that the loaded grid is
     real: exactly what the `evolveHashlifeFastMemo_empty` route used by the
-    other three witnesses closes off. -/
+    other three witnesses closes off.
+
+    Paired negative witness: `unitcell_population_negative` — the
+    neighboring OTCA pattern does not satisfy this population. -/
 theorem unitcell_initial_population : unitcellInitial.length = 4761 := by
   native_decide
 
@@ -381,6 +388,31 @@ theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
   have hpop := unitcell_initial_population
   have hl := congrArg List.length h
   simp only [List.length_nil] at hl
+  omega
+
+/-- **Paired negative witness** of `otca_initial_population`: the
+    neighboring UnitCell pattern — the lake's other metacell, loaded
+    through the same `include_str` + `RLE.parseRLE!` pipeline — does not
+    satisfy the property (population 4 761, not 64 691). Without this
+    control, a constant-population loader would satisfy `= 64 691` just
+    as well: the negative establishes that the count **discriminates**
+    between patterns, and that the witness carries the OTCA population,
+    not a pipeline constant.
+
+    **Derived proof, not re-evaluated**: the negative follows by kernel
+    arithmetic from the already-measured UnitCell population — no own
+    `native_decide` anchor, no new anchor entry. -/
+theorem otca_population_negative : unitcellInitial.length ≠ 64691 := by
+  have hu := unitcell_initial_population
+  omega
+
+/-- **Paired negative witness** of `unitcell_initial_population`: the
+    neighboring OTCA pattern does not satisfy the symmetric property
+    (population 64 691, not 4 761). Together, the two crossed negatives
+    establish that each population witness carries the population of
+    **its own** pattern, not a pipeline constant. -/
+theorem unitcell_population_negative : otcaInitial.length ≠ 4761 := by
+  have ho := otca_initial_population
   omega
 
 /-! ## Turing machine witness

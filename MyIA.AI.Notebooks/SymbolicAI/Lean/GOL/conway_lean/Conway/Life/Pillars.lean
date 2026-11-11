@@ -311,7 +311,10 @@ pour le pilier correspondant. La preuve est conçue comme un simple
     Ce qui est prouvé ici, et **non vacuous**, c'est que la grille chargée
     est réelle : 165 Ko de RLE passés par le même `include_str` +
     `RLE.parseRLE!` que l'UnitCell — la route `evolveHashlifeFastMemo_empty`
-    est fermée pour ce motif. -/
+    est fermée pour ce motif.
+
+    Témoin négatif apparié : `otca_population_negative` — le motif voisin
+    UnitCell, chargé par le même pipeline, ne vérifie pas cette population. -/
 theorem otca_initial_population : otcaInitial.length = 64691 := by
   native_decide
 
@@ -361,7 +364,10 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
 
     Ce qui est prouvable ici, et **non vacuous**, c'est que la grille chargée
     est réelle : c'est exactement ce que fermait la route
-    `evolveHashlifeFastMemo_empty` utilisée par les trois autres témoins. -/
+    `evolveHashlifeFastMemo_empty` utilisée par les trois autres témoins.
+
+    Témoin négatif apparié : `unitcell_population_negative` — le motif
+    voisin OTCA ne vérifie pas cette population. -/
 theorem unitcell_initial_population : unitcellInitial.length = 4761 := by
   native_decide
 
@@ -382,6 +388,30 @@ theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
   have hpop := unitcell_initial_population
   have hl := congrArg List.length h
   simp only [List.length_nil] at hl
+  omega
+
+/-- **Témoin négatif apparié** de `otca_initial_population` : le motif
+    voisin UnitCell — l'autre métacellule du lac, chargée par le même
+    pipeline `include_str` + `RLE.parseRLE!` — ne vérifie pas la propriété
+    (population 4 761, pas 64 691). Sans ce contrôle, un chargeur à
+    population constante satisferait `= 64 691` tout autant : le négatif
+    établit que le comptage **discrimine** les motifs, et que le témoin
+    porte bien la population de l'OTCA, pas une constante du pipeline.
+
+    **Preuve dérivée, pas réévaluée** : le négatif découle par arithmétique
+    du noyau de la population UnitCell déjà mesurée — sans ancrage
+    `native_decide` propre, sans nouvelle entrée d'ancrage. -/
+theorem otca_population_negative : unitcellInitial.length ≠ 64691 := by
+  have hu := unitcell_initial_population
+  omega
+
+/-- **Témoin négatif apparié** de `unitcell_initial_population` : le motif
+    voisin OTCA ne vérifie pas la propriété symétrique (population
+    64 691, pas 4 761). Ensemble, les deux négatifs croisés établissent
+    que chacun des deux témoins de population porte bien la population
+    de **son** motif, pas une constante du pipeline. -/
+theorem unitcell_population_negative : otcaInitial.length ≠ 4761 := by
+  have ho := otca_initial_population
   omega
 
 /-! ## Témoin de la machine de Turing
