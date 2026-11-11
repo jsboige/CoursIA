@@ -11,7 +11,7 @@ python -m venv venv && venv\Scripts\activate   # Windows
 pip install -r MyIA.AI.Notebooks/GenAI/requirements.txt
 
 # C# (.NET 9.0)
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 ```
 
 ## Docker / ComfyUI Services
@@ -75,8 +75,8 @@ Cf [claude-code-config.md](./claude-code-config.md) pour le detail agents/skills
 ## GradeBookApp
 
 ```bash
-python GradeBookApp/gradebook.py               # Python grading pipeline (module core)
-python GradeBookApp/run_grading.py              # Runner generique (CLI argparse)
+python dotnet/GradeBookApp/gradebook.py               # Python grading pipeline (module core)
+python dotnet/GradeBookApp/run_grading.py              # Runner generique (CLI argparse)
 ```
 
-Notation par cohorte (ECE, ESGF, ...) = privee sur GDrive `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` ; cf [GradeBookApp/configs/README.md](../../GradeBookApp/configs/README.md) pour le moteur generique.
+Notation par cohorte (ECE, ESGF, ...) = privee sur GDrive `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` ; cf [dotnet/GradeBookApp/configs/README.md](../../dotnet/GradeBookApp/configs/README.md) pour le moteur generique.

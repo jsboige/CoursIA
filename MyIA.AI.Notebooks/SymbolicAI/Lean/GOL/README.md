@@ -4,7 +4,7 @@ Sous-série de la série Lean (SymbolicAI) consacrée au Jeu de la Vie de Conway
 dans la filière « automates cellulaires et calcul » de l'EPIC #1647 (hommages à Conway).
 Elle regroupe les carnets qui étaient numérotés `Lean-16b` à `Lean-16j` avant la
 réorganisation #20204, puis les deux carnets Life de la série GameTheory (`20d`, `20e` —
-Loi II et perplexité structurelle), en une marche d'escalier autonome entre `Lean-16a` (l'homme
+Loi II et perplexité structurelle), en une marche d'escalier autonome entre `Lean-16` (l'homme
 et l'œuvre) et les ponts vers FRACTRAN, le libre arbitre et la théorie des nœuds.
 
 **Le geste de la sous-série** : faire gravir au Jeu de la Vie « l'échelle des
@@ -34,9 +34,9 @@ prouvée en Lean — en gardant chaque barreau exécutable : un carnet, un moteu
 |-----------|----------|------------------|-------------------|-------|
 | GOL-08b | [GOL-08b-Certificat-Translateur-Lean](GOL-08b-Certificat-Translateur-Lean.ipynb) | Le variant `-b` annoncé par GOL-08 : témoin, impossibilité et frontière de famille en théorèmes du lake (`Conway.Life.Translateur`) | [GOL-08](GOL-08-Loi-II-Translateur-Life.ipynb) : synthèse Python et certificat d'impossibilité scopé à une famille finie | `lean4-wsl` |
 
-Les voisins hors sous-série : [Lean-16a](../Lean-16a-Conway-Man-and-Work.ipynb)
+Les voisins hors sous-série : [Lean-16](../Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb)
 (l'homme et l'œuvre, en amont), [Lean-16b](../Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb)
-(FRACTRAN) et [Lean-16c](../Lean-16c-Conway-Free-Will-Theorem.ipynb) (libre arbitre),
+(FRACTRAN) et [Lean-13e](../Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) (libre arbitre),
 puis [Lean-17](../Lean-17-Conway-Bridge-to-Knots-Python.ipynb) (pont vers les nœuds).
 Côté GameTheory, le chemin minimal (escalier Metajeux) précède GOL-08 :
 [Metajeux-04](../../../GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
