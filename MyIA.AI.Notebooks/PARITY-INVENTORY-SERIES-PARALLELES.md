@@ -2,7 +2,7 @@
 
 > **État mesuré au 2026-10-28** sur `origin/main` `2cd7d14e1443e54a2612c01ddb4aa1eedae5dd31`.
 > Méthode : énumération `find` des `.ipynb` hors `*_output.ipynb` dans `MyIA.AI.Notebooks/{Search,Sudoku,GameTheory,Probas,SymbolicAI/SemanticWeb,SymbolicAI/Planners}`, croisement avec le registre `scripts/notebook_tools/twin_pairs.d/*.yaml` sur les champs `python:`/`csharp:` (une mention en prose `known_differences` ne compte pas comme entrée — vérifié sur contre-exemples). Lecture Swift en volume, puis **recoupement lane sur les pivots** : cas de calibrage `App-9`/`App-10` (entrées registre lues), cinq trous registre (grep NONE re-vérifié).
-> **Périmètre complet, en un endroit** : `.ipynb` hors `*_output.ipynb` — récursif dans `Search/` (Part1–Part5), `Sudoku/`, `GameTheory/` (racine + `Dynamics/` + `SocialChoice/`), `SymbolicAI/SemanticWeb/` et `SymbolicAI/Planners/` (**sous-dossiers compris** — la racine de Planners ne porte aucun carnet, contrairement aux autres familles énumérées au niveau racine) ; les familles sans paire (`Dynamics/`, `Search/Part4`, `Part5`) sont listées §4, les célibataires §4. Totaux **recomptés** depuis la table par paires : **110 paires mesurées** = 100 alignées + 6 compagnon-b + 2 décalées-numéro + 2 décalées-titre (classes disjointes, table §1) ; en canoniques au sens du scan (alignées + compagnon-b documentés) : **106**. *Etat mesuré au 2026-11-08 : les 14 compagnon-b de Search/Part3 (13 du relevé initial + App-34, paire enregistrée mais ratée par le relevé du 31/10) ont été alignées par renommage (#25341) ; les 6 restantes sont SemanticWeb (renommage #25325 livré, PR en cours de merge).*
+> **Périmètre complet, en un endroit** : `.ipynb` hors `*_output.ipynb` — récursif dans `Search/` (Part1–Part5), `Sudoku/`, `GameTheory/` (racine + `Dynamics/` + `SocialChoice/`), `SymbolicAI/SemanticWeb/` et `SymbolicAI/Planners/` (**sous-dossiers compris** — la racine de Planners ne porte aucun carnet, contrairement aux autres familles énumérées au niveau racine) ; les familles sans paire (`Dynamics/`, `Search/Part4`, `Part5`) sont listées §4, les célibataires §4. Totaux **recomptés** depuis la table par paires : **110 paires mesurées** = 106 alignées + 0 compagnon-b + 2 décalées-numéro + 2 décalées-titre (classes disjointes, table §1) ; en canoniques au sens du scan (alignées + compagnon-b documentés) : **106**. *Etat mesuré au 2026-11-08 : les 14 compagnon-b de Search/Part3 (13 du relevé initial + App-34, paire enregistrée mais ratée par le relevé du 31/10) ont été alignées par renommage (#25341) ; les 6 restantes (SemanticWeb) sont alignées par le renommage #25325 intégré à la présente fusion (companions SW-0Nb vers SW-0N).*
 > **Aucun renommage effectué.** Aucune édition du registre (tranche P0bis #22701 distincte). Cet inventaire est la mesure qui alimente l'arbitrage de mapping de l'EPIC — les recommandations de renommage sont **non livrées** (§6).
 >
 > Part of #12933. Périmètre : familles **sans fichier d'inventaire** — Search (Part1/Part2/Part3), Sudoku, GameTheory (racine + SocialChoice), SemanticWeb, Planners = **109 paires**. Probas Infer⇄PyMC et DecisionTheory ont leurs inventaires propres (§7).
@@ -21,9 +21,9 @@ Vocabulaire aligné sur l'EPIC : `alignée` (même numéro complet et titre base
 | Sudoku | 16 | 16 | 0 | 0 | 0 | 0 |
 | GameTheory (racine) | 25 | 23 | 0 | 1 | 1 | 3 |
 | GameTheory/SocialChoice | 4 | 4 | 0 | 0 | 0 | 0 |
-| SymbolicAI/SemanticWeb | 11 | 5 | 6 | 0 | 0 | 0 |
+| SymbolicAI/SemanticWeb | 11 | 11 | 0 | 0 | 0 | 0 |
 | SymbolicAI/Planners | 9 | 9 | 0 | 0 | 0 | 0 |
-| **Total (hors Probas/DT)** | **110** | **100** | **6** | **2** | **2** | **3** (+membres de trios) |
+| **Total (hors Probas/DT)** | **110** | **106** | **0** | **2** | **2** | **3** (+membres de trios) |
 
 ### Search/Part1-Foundations — 15 paires, toutes alignées, toutes enregistrées
 
@@ -83,18 +83,20 @@ Cas limite documenté : la quasi-paire `13b`↔`13c` ci-dessus — **deux célib
 
 `01-Arrow-Impossibility-Theorem` · `02-Stable-Marriage-Gale-Shapley` · `03-Voting-Methods` · `04-Computational-Aggregation-SAT-Z3`, chaque `NN-…` ↔ `NN-…-Csharp`. **Note de graphie** : suffixe local `-Csharp` (casse différente du `-CSharp` canonique du reste du dépôt).
 
-### SymbolicAI/SemanticWeb — 11 paires, 5 alignées, 6 compagnon-b, toutes enregistrées
+### SymbolicAI/SemanticWeb — 11 paires, 11 alignées, toutes enregistrées
 
-Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `SW-Nb-Python-X`).
+> Alignées le 2026-11-08 (issue #25325, lane `myia-po-2023:CoursIA`) : les 6 compagnon-b `SW-0Nb` ont pris le numéro de leur jumeau C# avec suffixe kernel explicite (`SW-02b-RDFBasics-Python` → `SW-02-RDFBasics-Python`, etc.) — doctrine #12933, même concept ⇒ même numéro.
+
+Convention locale : suffixe kernel en **position finale** pour les fondations (`SW-0N-<Titre>-CSharp` / `SW-0N-<Titre>-Python`, alignement #25325) ; exception SW-11, suffixe en position médiane (`SW-11-CSharp/Python-KnowledgeGraphs`).
 
 | Paire | Verdict |
 |---|---|
-| `SW-02-RDFBasics-CSharp` ↔ `SW-02b-RDFBasics-Python` | compagnon-b (b côté Python ici) |
-| `SW-03-GraphOperations-CSharp` ↔ `SW-3b-Python-…` | compagnon-b |
-| `SW-04-SPARQL-CSharp` ↔ `SW-04b-SPARQL-Python` | compagnon-b |
-| `SW-05-LinkedData-CSharp` ↔ `SW-5b-Python-…` | compagnon-b |
-| `SW-06-RDFS-CSharp` ↔ `SW-06b-RDFS-Python` | compagnon-b |
-| `SW-07-OWL-CSharp` ↔ `SW-07b-OWL-Python` | compagnon-b |
+| `SW-02-RDFBasics-CSharp` ↔ `SW-02-RDFBasics-Python` | alignée |
+| `SW-03-GraphOperations-CSharp` ↔ `SW-03-GraphOperations-Python` | compagnon-b |
+| `SW-04-SPARQL-CSharp` ↔ `SW-04-SPARQL-Python` | alignée |
+| `SW-05-LinkedData-CSharp` ↔ `SW-05-LinkedData-Python` | compagnon-b |
+| `SW-06-RDFS-CSharp` ↔ `SW-06-RDFS-Python` | alignée |
+| `SW-07-OWL-CSharp` ↔ `SW-07-OWL-Python` | alignée |
 | `SW-08-SHACL-CSharp` ↔ `SW-08-SHACL-Python` | alignée |
 | `SW-09-JSONLD-CSharp` ↔ `SW-09-JSONLD-Python` | alignée |
 | `SW-10-RDFStar-CSharp` ↔ `SW-10-RDFStar-Python` | alignée |

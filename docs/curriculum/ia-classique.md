@@ -20,12 +20,12 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 188 |
+| Notebooks | 187 |
 | PRODUCTION | 0 |
-| BETA | 188 |
+| BETA | 187 |
 | ALPHA | 0 |
 
-## Search/Part1-Foundations (48 notebooks)
+## Search/Part1-Foundations (47 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -50,33 +50,32 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 19 | [Search-04-LocalSearch (C#) : Recherche Locale et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch-CSharp.ipynb) | BETA | Oui |
 | 20 | [Search-04-LocalSearch : Recherche Locale et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb) | BETA | Oui |
 | 21 | [Search-05-GeneticAlgorithms-CSharp : Algorithmes…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms-CSharp.ipynb) | BETA | Oui |
-| 22 | [Search-05 : Algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | BETA | Oui |
-| 23 | [Search-05b : Natural Evolution Strategies (NES)](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb) | BETA | Oui |
-| 24 | [Search-06 — Recherche adversariale (jeux à somme nulle)…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb) | BETA | Oui |
-| 25 | [Search-06-AdversarialSearch : Recherche Adversariale](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb) | BETA | Oui |
-| 26 | [Search-07-MCTS-And-Beyond (C#) : Monte Carlo Tree…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond-CSharp.ipynb) | BETA | Oui |
-| 27 | [Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb) | BETA | Oui |
-| 28 | [Search-08-DancingLinks-CSharp : L'algorithme X et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-CSharp.ipynb) | BETA | Oui |
-| 29 | [Search-08-DancingLinks : L'algorithme X et Dancing…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb) | BETA | Oui |
-| 30 | [Search-09 : Programmation Linéaire et Simplexe (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb) | BETA | Oui |
-| 31 | [Search-09-LinearProgramming : Programmation Lineaire et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb) | BETA | Oui |
-| 32 | [Search-09b : Minima fallacieux — le paysage de la…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb) | BETA | Oui |
-| 33 | [Search-09c — Discrépance combinatoire : colorier ±1…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) | BETA | Oui |
-| 34 | [Search-09e — Discrépance combinatoire : la couche…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb) | BETA | Oui |
-| 35 | [Search-09f : Du linéaire au convexe — l'escalier LP QP…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.ipynb) | BETA | Oui |
-| 36 | [Search-10 (C#) : Automates Finis Classiques — jumeau…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb) | BETA | Oui |
-| 37 | [Search-10 : Automates Symboliques avec Z3](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | BETA | Oui |
-| 38 | [Search-11 (C#) : Métaheuristiques — Optimisation par…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) | BETA | Oui |
-| 39 | [Search-11-métaheuristiques : Optimisation avec MEALPy](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) | BETA | Oui |
-| 40 | [Search-11b (Part 2) : Particle Swarm Optimization (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb) | BETA | Oui |
-| 41 | [Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb) | BETA | Oui |
-| 42 | [Search-11b-Métaheuristiques-Deep-Part4 : Benchmark…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb) | BETA | Oui |
-| 43 | [Search-11b : Métaheuristiques d'optimisation (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) | BETA | Oui |
-| 44 | [Search-11c — Sélection empirique d'algorithmes : deux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb) | BETA | Oui |
-| 45 | [Search-11d — Descente sous budget : la loi derrière les…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb) | BETA | Oui |
-| 46 | [Search-12 — Branch-and-bound et qualite de borne](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-BranchAndBound-Borne-LP-Python.ipynb) | BETA | Oui |
-| 47 | [Search-12a — Composer des regards : play forward,…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb) | BETA | Oui |
-| 48 | [Search-13a — Traverser des murs : chemins minimaux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb) | BETA | Oui |
+| 22 | [Search-05b : Natural Evolution Strategies (NES)](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb) | BETA | Oui |
+| 23 | [Search-06 — Recherche adversariale (jeux à somme nulle)…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb) | BETA | Oui |
+| 24 | [Search-06-AdversarialSearch : Recherche Adversariale](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb) | BETA | Oui |
+| 25 | [Search-07-MCTS-And-Beyond (C#) : Monte Carlo Tree…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond-CSharp.ipynb) | BETA | Oui |
+| 26 | [Search-07-MCTS-And-Beyond : Monte Carlo Tree Search et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb) | BETA | Oui |
+| 27 | [Search-08-DancingLinks-CSharp : L'algorithme X et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-CSharp.ipynb) | BETA | Oui |
+| 28 | [Search-08-DancingLinks : L'algorithme X et Dancing…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb) | BETA | Oui |
+| 29 | [Search-09 : Programmation Linéaire et Simplexe (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb) | BETA | Oui |
+| 30 | [Search-09-LinearProgramming : Programmation Lineaire et…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb) | BETA | Oui |
+| 31 | [Search-09b : Minima fallacieux — le paysage de la…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb) | BETA | Oui |
+| 32 | [Search-09c — Discrépance combinatoire : colorier ±1…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb) | BETA | Oui |
+| 33 | [Search-09e — Discrépance combinatoire : la couche…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb) | BETA | Oui |
+| 34 | [Search-09f : Du linéaire au convexe — l'escalier LP QP…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.ipynb) | BETA | Oui |
+| 35 | [Search-10 (C#) : Automates Finis Classiques — jumeau…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb) | BETA | Oui |
+| 36 | [Search-10 : Automates Symboliques avec Z3](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) | BETA | Oui |
+| 37 | [Search-11 (C#) : Métaheuristiques — Optimisation par…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb) | BETA | Oui |
+| 38 | [Search-11-métaheuristiques : Optimisation avec MEALPy](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb) | BETA | Oui |
+| 39 | [Search-11b (Part 2) : Particle Swarm Optimization (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb) | BETA | Oui |
+| 40 | [Search-11b-Métaheuristiques-Deep-Part3 : Artificial Bee…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb) | BETA | Oui |
+| 41 | [Search-11b-Métaheuristiques-Deep-Part4 : Benchmark…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb) | BETA | Oui |
+| 42 | [Search-11b : Métaheuristiques d'optimisation (C# /…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb) | BETA | Oui |
+| 43 | [Search-11c — Sélection empirique d'algorithmes : deux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb) | BETA | Oui |
+| 44 | [Search-11d — Descente sous budget : la loi derrière les…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb) | BETA | Oui |
+| 45 | [Search-12 — Branch-and-bound et qualite de borne](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-BranchAndBound-Borne-LP-Python.ipynb) | BETA | Oui |
+| 46 | [Search-12a — Composer des regards : play forward,…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb) | BETA | Oui |
+| 47 | [Search-13a — Traverser des murs : chemins minimaux…](../../MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb) | BETA | Oui |
 
 ## Search/Part2-CSP (18 notebooks)
 
