@@ -121,6 +121,8 @@ def test_margin_default_cli_reaches_prepare_with_torchvision(monkeypatch):
     margin = importlib.util.module_from_spec(margin_spec)
     margin_spec.loader.exec_module(margin)
     monkeypatch.setattr(margin, "prepare", prepare)
+    # Interdire tout appel OpenML dans ce chemin CLI où torchvision réussit.
+    # Le cas d'échec est couvert par test_default_source_failure_does_not_fall_back.
     monkeypatch.setattr("sklearn.datasets.fetch_openml", lambda *a, **kw: pytest.fail("repli OpenML"))
     with pytest.raises(PrepareReached):
         margin.main([])
