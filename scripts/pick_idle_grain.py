@@ -13090,8 +13090,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                     # journee, alors que son dossier CLOSE datait du 02/11.
                     terminal_closure = bool(delivered_flag and stamp is None)
                     age_h = _visit_age_hours(stamp, NOW)
+                    # #25159 (reserve coordinateur 12:25Z) : un `[DELIVERED]`
+                    # SANS lane ne pose pas `delivered_flag` mais pose bien
+                    # `recent_flag` et `stamp`. Exiger `delivered_flag` pour
+                    # expirer le laissait vivre indefiniment : `recent_flag`
+                    # l'ecartait de l'urne des grains a chaque tirage, et sans
+                    # etat il n'entrait pas non plus dans l'urne des livrees --
+                    # l'issue sortait des DEUX urnes pour toujours. Le marqueur
+                    # expire des que l'evenement est RECENT et porte une heure
+                    # (une cloture terminale rend `stamp=None` : elle reste
+                    # inexpirable, c'est le contrat #19253).
                     marker_expired = bool(
-                        delivered_flag
+                        (delivered_flag or recent_flag)
+                        and stamp is not None
                         and age_h is not None
                         and age_h >= CONSOLIDATION_LAG_H)
                 else:
