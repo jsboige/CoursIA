@@ -1,12 +1,12 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb,0bf685b2,markdown,fr,1c22fe00043a0d3c,"# Configuration de l'environnement (JVM Tweety réelle, fail-loud)
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb,0bf685b2,markdown,fr,cfb1f427c129c678,"# Configuration de l'environnement (JVM Tweety réelle, fail-loud)
 
 **Navigation** : [README](./README.md) | [1-informal >>](./Argumentation-02-Fallacies-Detection-Python.ipynb)
 
 | Champ | Valeur |
 |-------|--------|
 | **Module** | SymbolicAI / ArgumentAnalysis |
-| **Rung** | 0-init (Epic #2137 Phase 2, setup environnement) |
+| **Rung** | 0-init (Phase 2, setup environnement) |
 | **Niveau** | Debutant (setup) |
 | **Duree estimee** | 30 minutes |
 | **Kernel** | Python 3 (JPype + JVM JDK 17 + jars Tweety) |
@@ -15,7 +15,9 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Pyth
 
 Ce notebook d'initialisation verifie que l'environnement d'exécution formel est operationnel : Python, la passerelle JPype vers la JVM, le JDK 17 portable et les jars de TweetyProject. Il se termine par un **smoke test** qui interroge le vrai solveur propositionnel Tweety (un modus ponens meteorologique). C'est la porte d'entree de la serie : une fois ce rung valide, les rungs 1 a 4 s'appuient sur un socle formel reel.
 
-> **Note anti-theatre** : cette serie **refuse le mode degrade**. Si la JVM ou Tweety est absent, le notebook echoue bruyamment (le smoke test de la section 5 ne peut pas charger les classes Tweety via JPype) plutot que de simuler un raisonnement formel. Un solveur formel simule par un LLM n'est PAS un solveur formel (mandat EPITA #2137). Cette cellule d'init est donc le verrou qui garantit que les rungs suivants tournent sur du vrai.",,,,,,,,1c22fe00043a0d3c,,,,,,,,,,,,,,,
+> **Note anti-theatre** : cette serie **refuse le mode degrade**. Si la JVM ou Tweety est absent, le notebook echoue bruyamment (le smoke test de la section 5 ne peut pas charger les classes Tweety via JPype) plutot que de simuler un raisonnement formel. Un solveur formel simule par un LLM n'est PAS un solveur formel (mandat EPITA #2137). Cette cellule d'init est donc le verrou qui garantit que les rungs suivants tournent sur du vrai.
+
+**Série Argumentation** | | Précédent : — | Suivant : [01-Toulmin-Model-Python](./Argumentation-01-Toulmin-Model-Python.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,cfb1f427c129c678,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb,6857c071,markdown,fr,3293083d07558adc,"## 1. Pourquoi un rung d'initialisation
 
 Les notebooks précédents (1-informal, 3-orchestration, 4-capstone) restent deliberement **déterministes et pur Python** : ils n'ont pas besoin de la JVM pour s'executer. Le rung **2-formal**, lui, invoque le vrai solveur Tweety (logiques propositionnelle, du premier ordre, modale, argumentation de Dung) via un pont Python-Java (JPype). Ce rung 0-init est le **detecteur de fumee** de ce socle Java : il verifie chaque composant et produit un temoin d'exécution (`JVM_OK = True`) que les notebooks suivants peuvent reutiliser.
@@ -153,10 +155,14 @@ L'environnement formel est **pret**. Les rungs suivants peuvent maintenant invoq
 ### Le mode degrade est interdit
 
 Si un jour ce notebook echoue au smoke test (les classes Tweety sont introuvables via JPype, signe que la JVM ou les jars sont absents), **ne contournez pas** en simulant le solveur avec un LLM. La valeur pedagogique de la serie repose sur le fait que le formel est REEL. Reinstallez le JDK portable et les jars, puis re-executez ce notebook jusqu'a `SMOKE_OK = True`.",,,,,,,,09d928bfd7409e30,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb,b6607392,markdown,fr,f38c0fdc998e5896,"### Exercice (optionnel) : etendre le smoke test a la logique du premier ordre
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb,b6607392,markdown,fr,0fa2eed0d5d751b7,"### Exercice (optionnel) : etendre le smoke test a la logique du premier ordre
 
 Le smoke test ci-dessus couvre la logique propositionnelle (PL). Etendez-le a un syllogisme en **logique du premier ordre (FOL)** avec le vrai `SimpleFolReasoner` : par exemple « Tous les oiseaux volent ; Tweety est un oiseau ; donc Tweety vole ». Reutilisez le pattern FOL du rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) (pre-declaration de signature obligatoire : `parser.setSignature(sig)`). Ajoutez un flag `FOL_SMOKE_OK` et verifiez qu'il vaut `True`.
-",,,,,,,,f38c0fdc998e5896,,,,,,,,,,,,,,,
+
+***
+
+> Carnet issu de l'EPIC #2137.
+",,,,,,,,0fa2eed0d5d751b7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb,4531cec4,code,fr,01a8560df7ee4fac,"# Exercice optionnel -- a completer
 # TODO etudiant : smoke test FOL avec SimpleFolReasoner (syllogisme oiseau/vole).
 # Indice : pre-declarer la signature (Sort, Constant, Predicate) AVANT parser.setSignature(sig).
@@ -165,14 +171,14 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Pyth
 # Etape 3 : query Tweety et positionner FOL_SMOKE_OK.
 result = None  # TODO etudiant
 print(""Exercice optionnel a completer : smoke test FOL (syllogisme oiseau/vole) avec SimpleFolReasoner"")",,,,,,,,01a8560df7ee4fac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb,aa1i-header,markdown,fr,bd420b2849aada8e,"# Détection de sophismes par taxonomie
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb,aa1i-header,markdown,fr,8c6419c32681ba22,"# Détection de sophismes par taxonomie
 
 **Navigation** : [README](./README.md) | [2-formal >>](./Argumentation-05-Formal-Verification-Python.ipynb)
 
 | Champ | Valeur |
 |-------|--------|
 | **Module** | SymbolicAI / ArgumentAnalysis |
-| **Rung** | 1-informal (Epic #2137 Phase 1) |
+| **Rung** | 1-informal (Phase 1) |
 | **Niveau** | Introduction |
 | **Duree estimee** | 30 minutes |
 | **Kernel** | Python 3 (pandas, semantic_kernel) |
@@ -199,7 +205,9 @@ A la fin de ce notebook, vous saurez :
 
 > **Note anti-theatre** : ce rung charge **reellement** le CSV et execute un **vrai** filtrage pandas. Aucune sortie n'est simulee. Le detecteur par mots-cles est volontairement simpliste : son but est pedagogique (montrer la couche de matching), pas d'atteindre une haute precision. La section 5 fait un **vrai appel LLM** sur la **même** taxonomie et affiche la trace reelle de la navigation -- pas une trace reconstruite.
 
-> **Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteorologie, oiseaux, Socrate, phrases abstraites). Aucun corpus EPITA, aucun nom d'etudiant, aucun texte sensible. Le depot est public sur GitHub.",,,,,,,,bd420b2849aada8e,,,,,,,,,,,,,,,
+> **Confidentialite** : tous les exemples sont **synthetiques et neutres** (meteorologie, oiseaux, Socrate, phrases abstraites). Aucun corpus EPITA, aucun nom d'etudiant, aucun texte sensible. Le depot est public sur GitHub.
+
+**Série Argumentation** | | Précédent : [01b-Schemes-Walton-Python](./Argumentation-01b-Schemes-Walton-Python.ipynb) | Suivant : [02b-Argumentum-Cards-Python](./Argumentation-02b-Argumentum-Cards-Python.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,8c6419c32681ba22,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb,aa1i-intro,markdown,fr,3cf94f0a6d89ea24,"## 1. Introduction : la taxonomie des sophismes
 
 Un **sophisme** (fallacy) est un argument qui semble valide mais qui ne l'est pas, soit parce que les premisses ne soutiennent pas la conclusion, soit parce qu'il manipule l'auditoire. Pour detecter automatiquement un sophisme, il faut d'abord une **taxonomie** : un arbre hierarchise qui classe les sophismes par familles, sous-familles, etc.
@@ -638,7 +646,7 @@ print()
 print(""Cet etat est exactement la structure que le rung 3 (orchestration LLM)"")
 print(""remplira via un agent, et que le rung 2 (formel) enrichira de resultats de preuve."")
 ",,,,,,,,13b75f43e20185a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb,aa1i-conclusion,markdown,fr,ac3289c1dcc6279d,"## 7. Conclusion et recapitulatif
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb,aa1i-conclusion,markdown,fr,69de902a14c53674,"## 7. Conclusion et recapitulatif
 
 Ce rung a pose les **fondations taxonomiques** de la detection de sophismes, puis a confronte **deux methodes** sur la **meme** taxonomie et le **meme** texte : d'un cote un **lexique mots-cles** construit depuis le CSV (sections 1 a 4, 100% déterministe), de l'autre l'**entonnoir agentique** du tronc EPITA-IS (section 5), qui fait *naviguer* un LLM dans l'arbre et rend sa **trace de navigation**. La section 6 a verse les deux dans l'**etat partage** de la serie (`RhetoricalAnalysisState`). Aucune sortie n'est simulee : le lexique est un vrai filtrage pandas, l'entonnoir un vrai appel LLM dont la trace (branches rejetees, chemin, profondeur) est affichee telle qu'elle a ete produite.
 
@@ -670,7 +678,12 @@ Ce rung a pose les **fondations taxonomiques** de la detection de sophismes, pui
 ### Prochaines étapes
 
 - [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) : une fois un argument identifie, verifier sa **validite logique** avec le raisonneur Tweety (PL, FOL, modal, argumentation de Dung).
-- [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) : remplacer la table mots-cles par une orchestration multi-agents, puis deleguer la verification a Tweety.",,,,,,,,ac3289c1dcc6279d,,,,,,,,,,,,,,,
+- [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) : remplacer la table mots-cles par une orchestration multi-agents, puis deleguer la verification a Tweety.
+
+***
+
+> Carnet issu de l'EPIC #2137.
+",,,,,,,,69de902a14c53674,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb,aa2f-header,markdown,fr,73cf21253641bffc,"# Vérification logique formelle avec Tweety
 
 **Navigation** : [<< 1-informal](./_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb) | [README](./README.md) | [3-orchestration >>](./Argumentation-07-Orchestration-Python.ipynb)
@@ -1094,14 +1107,14 @@ Ce rung a delegue la **preuve logique** a un vrai raisonneur Java (Tweety via JP
 
 - [3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) : orchestration multi-agents ou un ProjectManagerAgent delegue au PL/FOL Agent (ce rung) et a l'Informal Agent (rung 1).
 - Pour la modelisation FOL avancee (defeasible, ASPIC+), consulter les packages `org.tweetyproject.arg.delp` et `org.tweetyproject.arg.aspic`.",,,,,,,,39a0cf9c976c9bd0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-header,markdown,fr,a570ba0083565384,"# Deux paradigmes d'orchestration
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-header,markdown,fr,21731d7a92d1d382,"# Deux paradigmes d'orchestration
 
 **Navigation** : [<< 2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) | [README](./README.md) | [UI_configuration >>](./Argumentation-08c-UI-Configuration-Python.ipynb)
 
 | Champ | Valeur |
 |-------|--------|
 | **Module** | SymbolicAI / ArgumentAnalysis |
-| **Rung** | 3-orchestration (Epic #2137 Phase 3) |
+| **Rung** | 3-orchestration (Phase 3) |
 | **Niveau** | Intermediaire |
 | **Duree estimee** | 45 minutes |
 | **Kernel** | Python 3 (stdlib ; pandas optionnel pour l exercice 3) |
@@ -1125,7 +1138,8 @@ A la fin de ce notebook, vous saurez :
 > **Note anti-theatre** : les orchestrateurs de production EPITA (vrais `workflow_dsl.py` en DAG et `conversational_orchestrator.py` en `AgentGroupChat`) vivent dans un **submodule de 1.1 Go** et exigent `semantic_kernel` + un service LLM. Ce rung **distille les deux paradigmes** dans des implementations **auto-contenues qui s'executent reellement** (Python pur, déterministe) sur un texte synthetique neutre. Aucune sortie n'est simulee : le tri topologique, le routage par etat et les handlers tournent vraiment. C'est le même geste qu'au rung 1 (vrai CSV + detecteur simplifie, LLM differe).
 
 > **Confidentialite** : tous les exemples sont **synthetiques et neutres** (phrases abstraites sur des ""éléments A"", un ""professeur X""). Aucun corpus EPITA, aucun nom reel, aucun texte sensible. Le depot est public sur GitHub.
-",,,,,,,,a570ba0083565384,,,,,,,,,,,,,,,
+
+**Série Argumentation** | | Précédent : [06c-Revision-Croyances-Python](./Argumentation-06c-Revision-Croyances-Python.ipynb) | Suivant : [07b-Communication-Channels-Python](./Argumentation-07b-Communication-Channels-Python.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,21731d7a92d1d382,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-intro,markdown,fr,954c10dbae9ed11a,"## 1. Introduction : pourquoi orchestrer ?
 
 Le rung [1-informal](./Argumentation-02-Fallacies-Detection-Python.ipynb) extrait le tissu argumentatif d'un texte. Le rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) verifie la validite logique d'un argument encode. Mais un analyseur realiste **enchaine ces briques** : extraire, detecter les sophismes, synthetiser un rapport. Cette composition est l'**orchestration**.
@@ -1461,7 +1475,7 @@ Le paradigme conversationnel **ne fixe pas l'ordre des phases a l'avance**. A ch
 > **Kernel LLM injecte** : aucun secret dans ce carnet. Le service de chat est construit depuis l'environnement (`OPENAI_*` via `.env` du dossier, gitignore) — meme mecanique que `08b-Executor`. C'est un **vrai appel reseau** : le routage affiche ci-dessous a ete decide par le PM a l'execution, pas ecrit a l'avance.
 
 ### 4.1 Les agents reels de la shim",,,,,,,,810b6aa0c1672281,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-conv-agents,code,fr,1b908a24371edebe,"# Vrais agents conversationnels : la shim argumentation_lib fournit l'organe
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-conv-agents,code,fr,d3220d021ec3475d,"# Vrais agents conversationnels : la shim argumentation_lib fournit l'organe
 # (ChatCompletionAgent + AgentGroupChat + StateManagerPlugin) -- meme machine
 # que 08b-Executor et que conversational_orchestrator.py en production.
 import os
@@ -1528,7 +1542,7 @@ AnalysisRunner = get_analysis_runner()
 
 print(""--- Paradigme B : vrais agents Semantic Kernel ---"")
 for a in (pm_agent, informal_agent, logic_agent):
-    print(f""Agent charge : {a.name}"")",,,,,,,,1b908a24371edebe,,,,,,,,,,,,,,,
+    print(f""Agent charge : {a.name}"")",,,,,,,,d3220d021ec3475d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-conv-loop-intro,markdown,fr,a0baec7093fde788,"### 4.2 La boucle de conversation
 
 `AgentGroupChat.invoke()` fait parler les agents a tour de role ; chaque agent `ChatCompletionAgent` produit sa reponse en appelant le service LLM, et le PM emet une **decision de routage JSON** (`task_description`, `assigned_agent`) lue sur l'etat partagé. Depuis #18393, la strategie de selection deleguee est vendee dans `argumentation_lib` (`DelegatingSelectionStrategy`) : elle consomme ce JSON pour choisir le prochain agent, et la section 4.3 la demontre sur deux textes contrastes. Ici la boucle instrumentee journalise chaque tour (orateur + extrait), puis le pipeline complet `AnalysisRunner` enchaine les trois phases (informel, formel, synthese) chacune sur son propre `AgentGroupChat`. Un plafond de tours protege contre les conversations infinies.",,,,,,,,a0baec7093fde788,,,,,,,,,,,,,,,
@@ -1839,7 +1853,7 @@ print(f""arguments dans l etat : {snapshot['argument_count']}"")
 print(f""sophismes dans l etat : {snapshot['fallacy_count']}"")
 print(f""texte brut (extrait)  : {snapshot['raw_text_snippet'][:60]}..."")
 print(""Ce meme conteneur serait enrichi par rung 1 (informel) et rung 2 (formel)."")",,,,,,,,6c518174239ebd84,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-conclusion,markdown,fr,ed3af6805651fb45,"## 7. Conclusion et recapitulatif
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb,aa3o-conclusion,markdown,fr,cdf849d1a10811f3,"## 7. Conclusion et recapitulatif
 
 Ce rung a **distille les deux paradigmes d'orchestration** de la production EPITA : le paradigme A en handlers deterministes auto-contenus, le paradigme B sur les **vrais agents** de la shim `argumentation_lib` de ce dossier (`ChatCompletionAgent` + service LLM via Semantic Kernel). Le tri topologique de Kahn, le routage par etat et les agents reels tournent sur un vrai texte synthetique — les sorties committées sont celles de l'execution (journal de tours et pipeline `AnalysisRunner` de la section 4.2).
 
@@ -1873,15 +1887,19 @@ Ce rung a **distille les deux paradigmes d'orchestration** de la production EPIT
 - Brancher un vrai solveur formel : completer l'exercice 1 en appelant `SimplePlReasoner` (rung 2) dans `handler_formal_check`.
 - Coder la version deterministe du decideur : l'exercice 2 (`pm_route_v2` / `run_conversational_v2`) implemente a la main la strategie de selection que le PM-LLM applique en section 4.2 — comparer les deux routages sur le même texte pour mesurer ce que le LLM ajoute.
 - Pour l'interface interactive : [Argumentation-08c-UI-Configuration-Python](./Argumentation-08c-UI-Configuration-Python.ipynb) (ipywidgets) et [Argumentation-08b-Executor-Python](./Argumentation-08b-Executor-Python.ipynb) (mode batch).
-",,,,,,,,ed3af6805651fb45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,b12f518a,markdown,fr,6c18072ebdf828bd,"# Capstone d'intégration (baseline 0-shot vs pipeline)
+
+***
+
+> Carnet issu de l'EPIC #2137.
+",,,,,,,,cdf849d1a10811f3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,b12f518a,markdown,fr,ea11fd14fbe556ab,"# Capstone d'intégration (baseline 0-shot vs pipeline)
 
 **Navigation** : [<< 3-orchestration](./Argumentation-07-Orchestration-Python.ipynb) | [README](./README.md) | [UI_configuration >>](./Argumentation-08c-UI-Configuration-Python.ipynb)
 
 | Champ | Valeur |
 |-------|--------|
 | **Module** | SymbolicAI / ArgumentAnalysis |
-| **Rung** | 4-capstone (Epic #2137 Phase 4, capstone d'integration) |
+| **Rung** | 4-capstone (Phase 4, capstone d'integration) |
 | **Niveau** | Intermediaire |
 | **Duree estimee** | 50 minutes |
 | **Kernel** | Python 3 (stdlib + `openai`/`python-dotenv` pour les cellules agentiques ; cle `OPENAI_API_KEY` requise, cf `.env.example`) |
@@ -1903,7 +1921,7 @@ A la fin de ce notebook, vous saurez :
 > **Note anti-theatre** : ce capstone distille deux concepts REELS de la production EPITA — les `ConvergentVerdict` (Track DD #637, `agents/core/synthesis/deep_synthesis_models.py`) et les value-gates VG-1..VG-4 (FB-18, `validate_value_gates` dans `agents/core/synthesis/deep_synthesis_agent.py`). La logique déterministe des gates est reproduite fidelement (comptage de citations, mots, paragraphes). En production, la *prose* de synthese est generee par un LLM via `semantic_kernel` ; ici elle est produite deterministiquement pour rester executable sans LLM ni sous-module.
 
 > **Note confidentialite** : le texte analyse est **entierement synthetique** et neutre (comite abstrait, pas d'entite reelle). Aucun corpus EPITA n'est utilise. Le depot est public.
-",,,,,,,,6c18072ebdf828bd,,,,,,,,,,,,,,,
+",,,,,,,,ea11fd14fbe556ab,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,aa15fef6,markdown,fr,5a454cf3c1065342,"## 1. Introduction : pourquoi un capstone d'integration ?
 
 Les rungs précédents ont construit des briques isolees : un detecteur de sophismes (rung 1), un solveur formel Tweety (rung 2), deux paradigmes d'orchestration (rung 3). Le capstone pose la question qui donne son sens a l'ensemble :
@@ -2196,7 +2214,7 @@ for k in (""vg1_citation_density"", ""vg2_state_guard"", ""vg3_no_boilerplate"",
     print(f""  {k}: pass={_demo_vg[k]['pass']}"")
 print(f""  all_pass={_demo_vg['all_pass']} (VG-2 attendu ECHOUC : 2 < 3 champs)"")
 ",,,,,,,,2c33efd9e83b694c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,ecca414f,markdown,fr,2be8dda617e74f59,"## 6. Baseline 0-shot vs pipeline integral
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,ecca414f,markdown,fr,d86e7777eb198f6e,"## 6. Baseline 0-shot vs pipeline integral
 
 C'est le coeur du capstone, et la question qu'il doit poser honnetement : **que gagne-t-on a orchestrer des instruments, par rapport a un seul appel au meme modele ?** (issue #18394, point 1.)
 
@@ -2206,7 +2224,7 @@ Deux syntheses sont generees pour le meme texte :
 - **Pipeline integral** : compose les 3 lectures lexicales, peuple un etat avec 3+ champs artefact (arguments, sophismes, verdicts convergents) et genere une synthese qui **cite** ces artefacts.
 
 L'asymetrie a lire honnetement : la baseline ecrit generalement mieux que le pipeline (c'est un LLM contre un gabarit), mais elle ne construit **aucun artefact** — ses citations eventuelles ne pointent rien de verifiable. Les value-gates mesurent la tracabilite, pas l'eloquence.
-",,,,,,,,2be8dda617e74f59,,,,,,,,,,,,,,,
+",,,,,,,,d86e7777eb198f6e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,97289e58,code,fr,ebfc7e419c148751,"# Baseline 0-shot REELLE (issue #18394, point 1) : un seul appel au modele de
 # la serie, reponse conservee integralement, pas de repli silencieux.
 # ZEROSHOT_PROMPT vendore du tronc EPITA : scripts/run_capstone_c1.py,
@@ -2422,7 +2440,7 @@ print(f""sophismes dans l etat : {snapshot['fallacy_count']}"")
 print(f""verdicts convergents   : {len(convergent_verdicts)} (force max {max((v['convergence_strength'] for v in convergent_verdicts), default=0)})"")
 print(f""texte brut (extrait)   : {snapshot['raw_text_snippet'][:60]}..."")
 print(""Ce conteneur combine informel (rung 1), formel (rung 2), orchestration (rung 3) et convergence (rung 4)."")",,,,,,,,5897d171bbfe5b09,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,bfe74e47,markdown,fr,35a764af5111cb61,"## 8. Conclusion et recapitulatif
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,bfe74e47,markdown,fr,fd6a50333d4a2eb8,"## 8. Conclusion et recapitulatif
 
 Ce capstone ferme la serie en montrant que l'intérêt d'un pipeline d'analyse argumentative **se mesure**, pas se se declame. Deux instruments EPITA rendent la mesure executable :
 
@@ -2448,7 +2466,12 @@ En production EPITA, la prose de synthese est generee par un LLM via `semantic_k
 ### Prochaines étapes
 
 - Le rung [0-init](./Argumentation-00-Setup-Tweety-Python.ipynb) couvre la configuration de l'environnement (JVM Tweety, fail-loud) pour qui veut brancher les vrais solveurs.
-- Pour aller plus loin sur la confiance multi-lecture : explorer les sémantiques de Dung dans le rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) (acceptabilite graduee).",,,,,,,,35a764af5111cb61,,,,,,,,,,,,,,,
+- Pour aller plus loin sur la confiance multi-lecture : explorer les sémantiques de Dung dans le rung [2-formal](./Argumentation-05-Formal-Verification-Python.ipynb) (acceptabilite graduee).
+
+***
+
+> Carnet issu de l'EPIC #2137.
+",,,,,,,,fd6a50333d4a2eb8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb,5b9ec6d8,markdown,fr,ab5fe498f26332bb,"# Truth Maintenance System (JTMS) déterministe
 
 **Navigation** : [<< 4-capstone](./Argumentation-08-Capstone-Python.ipynb) | [README](./README.md) | [Tweety ->](../Tweety/README.md)
@@ -11994,7 +12017,7 @@ assert sum(len(f) for f in hors.values()) == 0, (
 print(""Aucune des trois lectures ne se declenche : appel a l'autorite sans"")
 print(""'directeur', superlatif sans 'bonne', totalite sans 'tous les'."")
 ",,,,,,,,b2d231d345f9d78d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,hors-echantillon-agent,code,fr,7bfcdf5a3420744d,"# Producteur agentique sur le texte hors echantillon (issue #18394, point 3) :
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,hors-echantillon-agent,code,fr,fe168ae597127ff1,"# Producteur agentique sur le texte hors echantillon (issue #18394, point 3) :
 # la ou les trois lectures rendent 0 finding, un agent LLM lit le texte.
 # Un seul appel, comptabilise ; pas de repli silencieux si la cle manque.
 import os
@@ -12065,7 +12088,7 @@ print(agent_findings_hors)
 print()
 _lignes = [l for l in agent_findings_hors.strip().splitlines() if l.strip()]
 print(f""Reponse agent : {len(_lignes)} lignes non vides, a confronter aux 0 finding des trois lectures."")
-",,,,,,,,7bfcdf5a3420744d,,,,,,,,,,,,,,,
+",,,,,,,,fe168ae597127ff1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,hors-echantillon-lecture,markdown,fr,506e4e7f6cb43951,"**Lecture du resultat.** Les trois lectures rendent **0 finding** sur ce texte : aucune ne se declenche, et aucun verdict convergent n'en sort. Ce silence ne dit pas que le texte est sain — il dit que les declencheurs sont absents.
 
 C'est la limite structurelle d'une analyse par lexique : elle mesure la presence de **mots**, pas la presence de **sophismes**. Un appel a l'autorite sans le mot « directeur », un superlatif sans « bonne », une totalite sans « tous les » passent la table sans etre vus, alors qu'un lecteur les identifie immediatement.
@@ -13522,3 +13545,379 @@ MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Ac
 
 # Aperçu du bloc tel qu'il sera passé au prompt Acte III :
 print(_salience_block_for_prompt(ETAT))",,,,,,,,07b522b8a7e46cfd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb,a9a808e8,markdown,fr,27ae0bb7e8c32c18,"### Troisième granularité : le sous-type — ce que la famille ne distingue pas
+
+Les deux mesures précédentes répondent à deux questions différentes : [5.3] demande *« le même nœud ? »*, [5.4] demande *« la même région de l'arbre ? »*. Il en existe une troisième, que la table [5.4] ne peut pas rendre : *« le même **sous-type** ? »*.
+
+**Pourquoi la famille ne suffit pas.** Sous `7.3 Ad hominem` vivent au moins deux branches qui ne disent pas la même chose :
+
+| branche | libellé | ce qu'elle reproche |
+|---|---|---|
+| `7.3.1` → `7.3.1.1` | Procès en incohérence → Tu quoque | « toi aussi tu fais pareil » : une attaque sur la **cohérence** de l'interlocuteur |
+| `7.3.3` | Attaque personnelle (`Argument tonal`, `Dérision`, `Raillerie`, `Diffamation`, `Injure` — elle-même subdivisée en `Insulte`, `Lancer de soulier`) | une attaque sur la **personne** elle-même |
+
+Sur le texte d'essai, la première proposition — « Vous êtes **incompétent** pour juger » — attaque la compétence : c'est `7.3.3` qui la nomme, et non `7.3.1`, qui reproche à l'interlocuteur de se contredire. Un entonnoir qui confirmerait `7.3.1.1` aurait donc trouvé la **bonne famille** et le **mauvais sous-type**. Or les deux tombent dans la **même ligne** `7.3` de [5.4] : la table les compte ensemble, par construction, puisqu'elle est calculée à la profondeur 2.
+
+**La règle de lecture.** Avant d'attribuer un succès à une famille, regarder *quel descendant* a été confirmé — la table des conclusions de [5.2] en donne le `path` et la profondeur — puis se demander si son sens correspond à la proposition du texte. Trois granularités, trois questions :
+
+| mesure | cellule | question posée |
+|---|---|---|
+| PK exacte | [5.3] | les deux méthodes désignent-elles le même nœud ? |
+| famille (`depth = 2`) | [5.4] | couvrent-elles la même région de l'arbre ? |
+| sous-type (`depth = 3-4`) | à la main sur [5.2] | lisent-elles la **même chose** dans le texte ? |
+
+> **À retenir.** Un recouvrement de famille est une borne **supérieure** de l'accord : il dit « les deux méthodes regardent au même endroit », jamais « elles disent la même chose ». L'écart entre les deux est précisément ce que ce rung apprend à mesurer.",,,,,,,,27ae0bb7e8c32c18,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,294aa801,markdown,fr,78f2f95f2d40c195,"# Le bus de communication multi-agents — le contrat, mesure
+
+Quand plusieurs agents debattent, ils ont besoin de **se parler** : envoyer une
+commande, diffuser un resultat, demander une assistance, repondre a une
+requete. Ce carnet distille le bus de communication du moteur de debat EPITA
+en un support pret a l'emploi : un format de message commun, un contrat de
+canal, quatre familles de canaux, un protocole requete-reponse, et le
+middleware qui route le tout.
+
+**Provenance (corrigee par audit #18434, mesure du 2026-09-30).** L'organe du
+tronc EPITA est reparti sur **trois modules** dans `argumentation_analysis/core/communication/`
+du depot etudiant (cf. `fallacy_rules.py` pour la convention de reference) :
+
+- `channel_interface.py` (L17 `ChannelType`, L109 `matches_filter`, L155 `LocalChannel`) ;
+- `message.py` (L110 `Message.__lt__`, L191 `create_response`) ;
+- `middleware.py` (L163 `determine_channel`, **methode** du middleware, pas fonction libre).
+
+Outre ces trois modules, le repertoire porte les canaux concrets, le
+protocole requete-reponse, des adaptateurs et un dossier `tests/` (liste complete :
+`ls argumentation_analysis/core/communication/`). Les quatre canaux concrets
+(hierarchique, collaboration, donnees, pub/sub) sont des implementations du meme
+contrat ; le protocole requete-reponse complet existe (`RequestTimeoutError` L21,
+`retry_count` L80).
+
+Pour la portabilite du carnet (pas d'acces au depot EPITA), les trois modules
+du contrat sont **agreges** dans un port vendored (le fichier `communication_channels.py`
+present dans le repertoire du carnet). C'est une **extraction de donnees** au sens
+de la convention `fallacy_rules.py`,
+pas un import de code depuis le depot etudiant : le carnet importe son **port local**,
+jamais le depot EPITA.
+
+La distillation est **deterministe** : aucun reseau, aucun thread, aucun LLM —
+tout ce que ce carnet affiche est rejouable a l'identique.
+
+**Le sujet est le contrat, pas le transport.** Un bus de communication ne se
+juge pas a sa vitesse mais a ce qu'il garantit : qui recoit quoi, dans quel
+ordre, avec quelles priorites, et que se passe-t-il quand un filtre ne
+correspond a rien. Ce carnet mesure ces garanties.
+
+**Navigation** : [07c — Modes d’orchestration >>](Argumentation-07c-Orchestration-Modes-Python.ipynb)
+
+**Série Argumentation** | | Précédent : [07-Orchestration-Python](./Argumentation-07-Orchestration-Python.ipynb) | Suivant : [07c-Orchestration-Modes-Python](./Argumentation-07c-Orchestration-Modes-Python.ipynb) | [↑ Série Argumentation](README.md)",,,,,,,,78f2f95f2d40c195,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,ed328a61,markdown,fr,fa60dd50b57d343f,"Le port vendored est **determine** par construction (re-declaration des trois
+modules du tronc). La source de verite du tronc est :
+
+- `test_channel_interface.py` (10 cas) ;
+- `test_message.py` (15 cas) ;
+- `test_communication_integration.py` (4 cas).
+
+Soit **29 tests** au total — **pas 12 bancs / 45 cas** comme la version
+precedente l'annoncait. Ce carnet rejoue les cas deterministes et documente
+les autres en docstring du port vendored.
+
+Trois `ChannelType` n'ont pas d'implementation `Channel` concrete ; leurs
+routes ont ete **retirees du routage** (#1571) plutot que cablees a des classes
+vides — `EVENT`, `CONTROL`, `SUBSCRIPTION` ne routent plus vers `FEEDBACK` /
+`SYSTEM`, ils tombent sur le bus par defaut. Le carnet documente ce
+comportement dans les cellules de routage.
+",,,,,,,,fa60dd50b57d343f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,1602f415,code,fr,9d7a98e8dae19810,"# Organe de la serie + les enums qui definissent le vocabulaire du bus.
+from communication_channels import (
+    MessageType, MessagePriority, AgentLevel, ChannelType,
+    Message, LocalChannel, create_response, determine_channel,
+)
+from datetime import datetime, timedelta
+
+T0 = datetime(2026, 1, 1, 12, 0, 0)
+
+print(""Types de message :"", [t.value for t in MessageType])
+print(""Priorites        :"", [p.value for p in MessagePriority])
+print(""Niveaux agent    :"", [a.value for a in AgentLevel])
+print(""Types de canal   :"", [c.value for c in ChannelType])
+print()
+print(""Canaux SANS implementation :"", [""negotiation"", ""feedback"", ""system""])",,,,,,,,9d7a98e8dae19810,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,6dd3234d,markdown,fr,0f4186f19117a957,"**Lecture du resultat.** Huit types de message, quatre priorites, quatre
+niveaux d'agent, sept types de canal — mais **trois types de canal n'ont
+aucune implementation** (`negotiation`, `feedback`, `system`). Le tronc les
+declare dans l'enumere mais les a **retires du routage** (#1571) plutot que
+de les cabler a des classes vides : un canal promis sans implementation est
+un mensonge du bus — les messages y arriveraient sans jamais etre delivres.
+C'est une lecon d'architecture : enumerer un type ne cree pas un transport.
+
+## 1. Le format message — priorite inversee, identite derivable
+
+Un `Message` porte type / emetteur / niveau / priorite / contenu, un id
+derive du type (`command-<hex8>`), et un **ordonnancement total inverse** :
+`__lt__` est ecrit pour que la priorite la plus HAUTE soit la plus « petite »
+— `sorted()` sort donc CRITICAL en premier, meme arrive en dernier. A
+priorite egale, le plus ancien passe d'abord (FIFO).",,,,,,,,0f4186f19117a957,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,e7b7e0af,code,fr,7e8f8bd9dc78e4b6,"# Banc message_cases : id derive, ordonnancement inverse, FIFO.
+m = Message(MessageType.COMMAND, ""strategic-1"", AgentLevel.STRATEGIC, {""task"": ""analyse""})
+print(""id du message COMMAND :"", m.id, ""(prefixe"", m.id.split(""-"")[0], "")"")
+print()
+
+msgs = [
+    Message(MessageType.INFORMATION, ""s"", AgentLevel.SYSTEM, {}, priority=MessagePriority.LOW, timestamp=T0),
+    Message(MessageType.INFORMATION, ""s"", AgentLevel.SYSTEM, {}, priority=MessagePriority.CRITICAL, timestamp=T0 + timedelta(seconds=5)),
+    Message(MessageType.INFORMATION, ""s"", AgentLevel.SYSTEM, {}, priority=MessagePriority.HIGH, timestamp=T0 + timedelta(seconds=3)),
+    Message(MessageType.INFORMATION, ""s"", AgentLevel.SYSTEM, {}, priority=MessagePriority.NORMAL, timestamp=T0 + timedelta(seconds=2)),
+]
+print(""Ordre de sorted() :"")
+for x in sorted(msgs):
+    print(f""  {x.priority.value:8s} (arrive a {x.timestamp.strftime('%H:%M:%S')})"")
+print()
+a = Message(MessageType.INFORMATION, ""s"", AgentLevel.SYSTEM, {}, timestamp=T0)
+b = Message(MessageType.INFORMATION, ""s"", AgentLevel.SYSTEM, {}, timestamp=T0 + timedelta(seconds=5))
+print(""FIFO a priorite egale :"", ""a avant b"" if sorted([b, a]) == [a, b] else ""inverse"")",,,,,,,,7e8f8bd9dc78e4b6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,4ee98a63,markdown,fr,2917a45c10b8f5c1,"**Lecture du resultat.** L'id commence par `command-` : le prefixe dit deja
+la nature du message. L'ordonnancement est **inverse** : CRITICAL (arrive
+dernier, a 12:00:05) sort en premier, LOW (arrive premier) sort en dernier —
+`__lt__` compare les priorites en les inversant, puis les timestamps en FIFO
+a priorite egale. C'est un choix deliberement contre-intuitif : la priorite
+la plus haute est la plus « petite » pour que `sorted()` la place en tete.
+La convention est simple et verifiable — mais elle impose une discipline :
+toute comparaison de messages doit passer par `sorted()`, jamais par un
+`min()` ou un `>` manuel qui lirait l'inverse.
+
+Le banc `dict_round_trip` complete le tableau : `to_dict()` puis
+`from_dict()` preserve l'identite (l'egalite porte sur id, priorite et
+horodatage). La serialisation est le contrat de passage entre processus —
+sans elle, le bus ne sort pas de la memoire d'un seul programme.
+
+## 2. Le contrat de canal — filtres fail-loud
+
+Un canal est identifie par un id et un type ; il maintient une file d'attente
+et un registre d'abonnes avec filtres. Le matcher est **fail-loud** : une cle
+hors contrat leve `ValueError` plutot que d'etre ignoree — l'ignorance
+silencieuse elargit le filtre sans que personne ne le voie (incident #2161 :
+trois defauts coexistaient sans un seul test rouge).",,,,,,,,2917a45c10b8f5c1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,a2e9f8d0,code,fr,ba6e2db921445c81,"# Banc filter_cases : le contrat parle en chaines, fail-loud sur cle inconnue.
+ch = LocalChannel(""test"")
+m = Message(MessageType.COMMAND, ""tactical-1"", AgentLevel.TACTICAL,
+            {""task"": ""analyse""}, priority=MessagePriority.HIGH, timestamp=T0)
+
+print(""message_type='command'     :"", ch.matches_filter(m, {""message_type"": ""command""}))
+print(""message_type='information' :"", ch.matches_filter(m, {""message_type"": ""information""}))
+print(""liste [command, info]      :"", ch.matches_filter(m, {""message_type"": [""command"", ""information""]}))
+print(""priority='high'            :"", ch.matches_filter(m, {""priority"": ""high""}))
+print(""content task='analyse'     :"", ch.matches_filter(m, {""content"": {""task"": ""analyse""}}))
+print(""content task='autre'       :"", ch.matches_filter(m, {""content"": {""task"": ""autre""}}))
+print()
+try:
+    ch.matches_filter(m, {""bogus_key"": ""value""})
+except ValueError as e:
+    print(""Cle inconnue -> ValueError :"", str(e)[:80], ""..."")",,,,,,,,ba6e2db921445c81,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,16037748,markdown,fr,10a84996a71e3fe3,"**Lecture du resultat.** Le contrat parle en **chaines** : `command`, pas
+l'enumere — une liste est un OU logique, un scalaire un ET strict. Le filtre
+de contenu est une sous-correspondance : chaque cle du filtre doit exister
+dans le contenu du message avec la meme valeur. Et le comportement critique :
+une cle inconnue leve `ValueError` au lieu d'etre ignoree. Sans ce fail-loud,
+un filtre `{""priorite"": ""high""}` (faute de frappe) passerait tous les
+messages — un filtre mort qui a l'air vivant. Le cout d'une erreur levee est
+visible ; le cout d'un filtre elargi est invisible jusqu'au incident.
+
+Le banc `topic_filter_cases` du sas complete le contrat : les filtres de
+topic (pour le canal pub/sub) suivent la meme logique — chaines, listes,
+sous-correspondance de contenu. La famille de filtres est coherente entre
+tous les canaux : un abonne qui sait filtrer sur le canal local sait filtrer
+sur le canal pub/sub, sans apprendre une deuxieme syntaxe.
+
+## 3. Le routage — le middleware decide, sans routes mortes
+
+`determine_channel` est la seule partie du middleware portee : les canaux
+concrets et le protocole requete-reponse restent sur le tronc. Les regles
+sont simples : canal explicite > type de message > contenu > bus par defaut.",,,,,,,,10a84996a71e3fe3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,987fad52,code,fr,8db4e3b81a294171,"# Banc routing_cases : canal explicite, type, contenu, bus par defaut.
+def route(t, content=None, channel=None):
+    m = Message(t, ""s"", AgentLevel.SYSTEM, content or {}, channel=channel)
+    return determine_channel(m).value
+
+print(""COMMAND                    ->"", route(MessageType.COMMAND))
+print(""INFORMATION analysis_result ->"", route(MessageType.INFORMATION, {""info_type"": ""analysis_result""}))
+print(""INFORMATION status         ->"", route(MessageType.INFORMATION, {""info_type"": ""status""}))
+print(""REQUEST assistance         ->"", route(MessageType.REQUEST, {""request_type"": ""assistance""}))
+print(""REQUEST query              ->"", route(MessageType.REQUEST, {""request_type"": ""query""}))
+print(""RESPONSE                   ->"", route(MessageType.RESPONSE))
+print(""PUBLICATION                ->"", route(MessageType.PUBLICATION))
+print(""EVENT (pas de route morte) ->"", route(MessageType.EVENT))
+print()
+print(""Canal explicite 'data'     ->"", route(MessageType.COMMAND, channel=""data""))
+print(""Canal invalide 'bogus'     ->"", route(MessageType.COMMAND, channel=""bogus""))",,,,,,,,8db4e3b81a294171,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,ffcc2a25,markdown,fr,8c97e0ea39eb4034,"**Lecture du resultat.** Les commandes et reponses vont sur le canal
+hierarchique ; les informations portant un resultat d'analyse vont sur le
+canal donnees ; les requetes d'assistance vont sur le canal collaboration ;
+les publications vont sur le canal donnees. Et le comportement #1571 :
+`EVENT` (comme `CONTROL` et `SUBSCRIPTION`) ne route **plus** vers
+`feedback` ou `system` — ces canaux n'ont pas d'implementation, les messages
+y arriveraient sans jamais etre delivres. Ils tombent sur le bus par defaut
+(hierarchique). Un canal explicite prime toujours ; un canal invalide
+retombe sur les regles. C'est une table de routage qui ne promet que des
+transports qui existent.
+
+Le banc `routing_cases` du sas compte 10 cas — les sept rejoues ici plus
+trois cas de repli (canal explicite prime, canal invalide retombe, type
+inconnu tombe sur le bus par defaut). Le middleware du tronc ajoute la
+statistique (`stats[""messages_sent""]`, `by_channel`) et le registre de
+gestionnaires par type — le port ne les porte pas : ce sont des compteurs
+d'observabilite, pas des garanties du contrat. Le carnet source les cite ;
+ce carnet les mesure par l'usage.
+
+## 4. Le canal local — file d'attente, abonnes, notification synchrone
+
+`LocalChannel` est l'implementation minimale du contrat : file d'attente en
+memoire, notification synchrone des abonnes au moment de l'envoi. Il sert de
+reference pour les quatre canaux concrets du tronc, qui ajoutent chacun leur
+semantique (persistance, topics, hierarchie).",,,,,,,,8c97e0ea39eb4034,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,5556bf1c,code,fr,e197d7505005b08e,"# Le canal local en action : envoi, reception, abonnement, filtre.
+ch = LocalChannel(""bus"")
+received = []
+
+ch.subscribe(""logger"", callback=received.append)
+ch.subscribe(""urgent"", callback=lambda m: received.append(f""URGENT: {m.id}""),
+             filter_criteria={""priority"": ""critical""})
+
+ch.send_message(Message(MessageType.INFORMATION, ""agent-1"", AgentLevel.OPERATIONAL,
+                        {""data"": ""result""}, recipient=""agent-2""))
+ch.send_message(Message(MessageType.COMMAND, ""chef"", AgentLevel.STRATEGIC,
+                        {""task"": ""stop""}, priority=MessagePriority.CRITICAL))
+
+print(""Messages recus par 'logger' :"", len(received))
+print(""Notifications URGENT        :"", len([r for r in received if isinstance(r, str)]))
+print(""En attente pour 'agent-2'  :"", len(ch.get_pending_messages(""agent-2"")))
+print(""Recu par agent-2           :"", ch.receive_message(""agent-2"").id)
+print(""Info canal                 :"", ch.get_channel_info())",,,,,,,,e197d7505005b08e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,15989b8c,markdown,fr,ffd884157b315613,"**Lecture du resultat.** Le `logger` recoit les deux messages (pas de filtre),
+l'abonne `urgent` n'en recoit qu'un (filtre `critical`). Les messages restent
+en file tant qu'ils ne sont pas lus — `receive_message` les consomme. C'est
+un bus synchrone : l'envoi notifie immediatement, la reception consomme. Les
+quatre canaux concrets du tronc ajoutent chacun une semantique au-dessus de
+ce contrat : le canal hierarchique ajoute des niveaux d'autorisation, le canal
+collaboration ajoute des conversations, le canal donnees ajoute la
+persistance, le canal pub/sub ajoute des topics. Tous partagent le meme
+contrat — c'est ce qui les rend interchangeables.
+
+Le banc `collaboration_cases` du sas mesure ce que le canal collaboration
+ajoute : une conversation (un fil conducteur entre plusieurs messages), des
+participants, et un etat partage qui survit a l'envoi. Le banc `data_cases`
+mesure la persistance : un message envoye sur le canal donnees survit a la
+reception — il est stocke, pas consomme. Le banc `pubsub_cases` mesure les
+topics : un abonne ne recoit que les messages dont le topic correspond a
+son abonnement. Ces trois semantiques sont des extensions du meme contrat —
+le canal local n'en a besoin d'aucune pour etre utilisable.
+
+## 5. La correlation requete-reponse — sans threads, sans timeouts
+
+Le protocole requete-reponse complet du tronc (`RequestResponseProtocol`)
+introduit des threads et des timeouts — hors d'un port deterministe. Ce qui
+est porte est la **convention de correlation** : une reponse inverse emetteur
+et destinataire, et porte `reply_to` l'id de la requete.",,,,,,,,ffd884157b315613,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,ee3982e2,code,fr,5b0b07a6acc0e68f,"# Banc request_response_cases : la convention de correlation.
+req = Message(MessageType.REQUEST, ""strategic-1"", AgentLevel.STRATEGIC,
+              {""request_type"": ""assistance""}, recipient=""tactical-1"",
+              message_id=""request-demo"", timestamp=T0)
+resp = create_response(req, AgentLevel.TACTICAL, {""result"": ""ok""})
+
+print(""Requete  :"", req.type.value, ""de"", req.sender, ""vers"", req.recipient, ""id"", req.id)
+print(""Reponse  :"", resp.type.value, ""de"", resp.sender, ""vers"", resp.recipient, ""reply_to"", resp.metadata[""reply_to""])
+print()
+print(""Correlation :"", resp.metadata[""reply_to""] == req.id)
+print(""Inversion   :"", resp.sender == req.recipient and resp.recipient == req.sender)",,,,,,,,5b0b07a6acc0e68f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,605c7b78,markdown,fr,a05c31812fb358b6,"**Lecture du resultat.** La reponse porte `reply_to: request-demo` — le
+lien entre requete et reponse est un champ de metadata, pas un thread ni une
+socket. L'emetteur de la reponse est le destinataire de la requete, et
+inversement. C'est une convention de correlation minimale : elle suffit a
+reconstruire une conversation sans etat partage. Le protocole complet du
+tronc ajoute les timeouts et les reessais — mais la correlation, elle, est
+deja la.
+
+Le banc `request_response_cases` du sas compte 3 cas : la correlation par
+`reply_to`, le timeout (une requete sans reponse leve `RequestTimeoutError`),
+et le reessai (`retry_count`). Les deux derniers sont hors d'un port
+deterministe — ils introduisent le temps reel et les threads. Ce qui est
+porte est ce qui ne depend pas du temps : la convention de correlation.
+Le timeout est un mecanisme de robustesse, pas une garantie de contrat.
+
+## Exercices
+
+Les trois exercices suivent la convention de la serie : le stub s'execute
+sans erreur, la solution est a ecrire.",,,,,,,,a05c31812fb358b6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,b904abfc,code,fr,0b184ed6b8262726,"# Exercice 1 — Un filtre compose.
+# Completez : un filtre qui ne laisse passer que les commandes CRITICAL
+# envoyees par un agent STRATEGIC.
+filtre = {}  # TODO etudiant
+ch = LocalChannel(""exo1"")
+m_ok = Message(MessageType.COMMAND, ""chef"", AgentLevel.STRATEGIC, {}, priority=MessagePriority.CRITICAL)
+m_ko = Message(MessageType.INFORMATION, ""agent"", AgentLevel.OPERATIONAL, {}, priority=MessagePriority.LOW)
+print(""Message OK passe  :"", ch.matches_filter(m_ok, filtre) if filtre else ""Exercice a completer"")
+print(""Message KO bloque :"", not ch.matches_filter(m_ko, filtre) if filtre else ""Exercice a completer"")",,,,,,,,0b184ed6b8262726,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,6aab27a5,code,fr,ac8ac60ec39ac4e0,"# Exercice 2 — Le routage manquant.
+# Completez : quelle regle de routage manque pour que les messages EVENT
+# aillent sur le canal DATA quand leur contenu porte ""event_type"": ""metric"" ?
+# Indice : ajoutez la regle dans determine_channel, ou ecrivez-la ici.
+def route_event(m):
+    if m.type == MessageType.EVENT and m.content.get(""event_type"") == ""metric"":
+        return None  # TODO etudiant : quel ChannelType ?
+    return determine_channel(m)
+print(""Routage EVENT metric :"", ""Exercice a completer"")",,,,,,,,ac8ac60ec39ac4e0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,afa9c441,code,fr,7c447641c1c996cf,"# Exercice 3 — Une conversation complete.
+# Completez : envoyez une requete sur un canal local, recevez-la, creez la
+# reponse, renvoyez-la, et verifiez que l'emetteur original la recoit.
+ch = LocalChannel(""exo3"")
+req = Message(MessageType.REQUEST, ""agent-A"", AgentLevel.TACTICAL,
+              {""query"": ""statut""}, recipient=""agent-B"", timestamp=T0)
+# TODO etudiant : ch.send_message(req), puis agent-B la recoit, cree la reponse,
+# la renvoie, et agent-A la recoit.
+print(""Conversation complete :"", ""Exercice a completer"")",,,,,,,,7c447641c1c996cf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07b-Communication-Channels-Python.ipynb,efb70212,markdown,fr,d8ce9e4a15e81df8,"## A retenir
+
+1. **Le format message est un contrat, pas une structure de donnees.** L'id
+   derive du type, la priorite est inversee pour `sorted()`, la correlation
+   est un champ de metadata — chaque choix est une convention verifiable,
+   pas un accident d'implementation.
+2. **Un filtre qui ignore une cle est un filtre elargi.** Le fail-loud
+   (`ValueError` sur cle inconnue) est la difference entre un filtre qui
+   dit ce qu'il fait et un filtre qui fait ce qu'on croit qu'il dit.
+3. **Le routage ne promet que des transports qui existent.** Trois types de
+   canal sans implementation ont ete retires du routage (#1571) plutot que
+   cables a des classes vides — un canal promis sans implementation est un
+   mensonge du bus.
+4. **Le contrat rend les canaux interchangeables.** Hierarchique,
+   collaboration, donnees, pub/sub : tous implementent le meme contrat
+   (`send_message` / `receive_message` / `subscribe` / `get_pending_messages`),
+   tous sont testables avec `LocalChannel`.
+
+**Position dans la serie** : `Orchestration_Modes` compare les architectures
+d'agents par le budget ; ce carnet mesure ce qui les relie — le bus de
+communication. La suite de la distillation sas est `knowledge_base` (la
+memoire du debat) et `dialogue_protocols` (les regles de l'echange).
+
+Le bus est le tissu conjonctif : sans lui, les agents ne se parlent pas.
+La memoire (`knowledge_base`) enregistre ce qui a ete dit ; les protocoles
+(`dialogue_protocols`) decident qui peut dire quoi ; les cadres
+(`Dung_AF_Semantics`) arbitrent ce qui survit. Quatre niveaux d'un meme
+debat — le bus est le premier.
+
+***
+
+> Carnet issu de l'EPIC #4960.
+",,,,,,,,d8ce9e4a15e81df8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,81fb48cb,markdown,fr,6868580e71bf2245,"### Lecture du résultat
+
+M1 lit le texte par lexique : cinq sophismes détectés, chacun ancré sur un mot déclencheur distinct — généralisation hâtive (« tout le monde sait »), appel à l'autorité (« directeur »), ad hominem (« comprennent rien »), appel à la peur (« catastrophe »), appel à la conformité (« tous les autres »). Le point de conception à retenir est la **partition des déclencheurs** : les mots que M1 partage avec M2 et M3 (« certaine », « forcement bonne ») en ont été retirés, si bien qu'aucun mot ne sert deux lectures. C'est ce qui rendra les compteurs de M1, M2 et M3 comparables plus bas, sans double-comptage.",,,,,,,,6868580e71bf2245,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,e89cdac7,markdown,fr,78c7687dc73d99a2,"### Lecture du résultat
+
+M2 ne lit pas le lexique mais la **structure** : une affirmation forte (« nécessaire », « urgent ») qui n'est appuyée par aucun connecteur de prémisse (« donc », « car », « puisque »…) est signalée comme assertion non fondée. Deux cas ici, sur S1 et S5. Le contraste avec M1 est instructif : M1 répond au *mot*, M2 répond à la *forme* de la phrase — un texte peut échapper à l'un en évitant le mot déclencheur, tout en conservant la forme d'assertion. Les deux lectures sont donc complémentaires, pas redondantes.",,,,,,,,78c7687dc73d99a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,cbed6354,markdown,fr,b51618314a0cd581,"### Lecture du résultat
+
+C'est la **limite honnête** de l'approche par lexique et structure. Le texte ci-dessus est bien truffé de sophismes aux yeux d'un lecteur humain — superlatif (« la meilleure du marché »), faux appel à l'autorité (« les utilisateurs expérimentés le disent »), rejet par totalisation (« tout le reste est une perte de temps ») — et pourtant **aucune** des trois lectures ne se déclenche : pas de « directeur », pas de « bonne », pas de « tous les ». Le détecteur est borné à ses déclencheurs ; une simple reformulation le fait passer à côté. C'est précisément le cas que la baseline LLM (cellule suivante) est censée saisir, et il mesure l'écart entre une lecture mécanique et une lecture sensée.",,,,,,,,b51618314a0cd581,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,39690207,markdown,fr,7a075f7d13f34162,"### Lecture du résultat
+
+Voici la **baseline 0-shot réelle** : un seul appel au modèle de la série (`gpt-5.6-luna`), réponse conservée intégralement (14 586 caractères, `finish=stop`, 3 767 tokens), sans repli silencieux — c'est un appel réel, pas un stub. Le modèle produit une analyse rhétorique complète : thèse, prémisses explicites et implicites, pour chaque argument. Son rôle dans le carnet est d'oracle de référence : c'est contre cette lecture « sensée » que l'on mesure plus bas ce que les trois détecteurs lexicaux/structuraux capturent, et ce qu'ils manquent (le cas hors-échantillon plus haut). La longueur de la réponse fait aussi office de contraste de coût : une analyse aussi fine coûte un appel complet, là où M1–M3 sont des lectures locales et gratuites.",,,,,,,,7a075f7d13f34162,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb,def4db58,markdown,fr,2ee0f714bb6bdbe8,"### Lecture du résultat
+
+La synthèse intégrale est **grondée** : elle cite les artefacts (les findings de M1–M3 et la baseline) plutôt que de les paraphraser, et quatre portes de vérification la contrôlent avant qu'elle soit retenue — densité de citation, garde d'état, absence de boilerplate, présence d'une insight transversale. `all_pass=True` signifie que les quatre portes sont franchies : la synthèse n'est ni un récapitulatif vide ni un texte générique, elle est vérifiée comme portant un lien réel entre les lectures. C'est le point d'arrivée du capstone : trois lectures locales et un oracle LLM, agrégés en une synthèse contrôlée.",,,,,,,,2ee0f714bb6bdbe8,,,,,,,,,,,,,,,

@@ -5443,6 +5443,167 @@ def test_merged_pr_signal_anchor_substring_no_false_positive(monkeypatch):
     )
 
 
+def _forbid_network(*_a, **_kw):
+    raise AssertionError(
+        "la voie locale (index=) ne doit PAS sortir sur le reseau (#24823)")
+
+
+def test_merged_pr_signal_local_index_recent(monkeypatch):
+    """#24823 voie locale : index avec citation <90j -> mergedAt rendu.
+
+    Controle central de l'index local : la MEME question, repondu SANS un
+    seul appel reseau. `subprocess.run` est remplace par un garde qui LEVE
+    -- si la voie locale tentait le reseau, le test echouerait sur le
+    garde, pas sur un timeout silencieux.
+    """
+    monkeypatch.setattr(pig.subprocess, "run", _forbid_network)
+    merged_at = _iso_days_ago(30)
+    index = [
+        {"number": 17347, "mergedAt": merged_at,
+         "title": "Fix: livraison du grain #16031",
+         "body": "Closes #16031"},
+    ]
+    signal = pig.merged_pr_signal(16031, index=index)
+    assert signal == merged_at, (
+        f"la voie locale doit rendre le mergedAt ISO de la citation <90j, "
+        f"recu : {signal!r}"
+    )
+
+
+def test_merged_pr_signal_local_index_over_90d(monkeypatch):
+    """#24823 voie locale : la borne de 90 jours tient aussi sur l'index.
+
+    Meme semantique que la voie serveur (test
+    ``test_merged_pr_over_90d_keeps_in_grain``) : une PR MERGEE hors
+    fenetre ne designe pas le candidat comme livre.
+    """
+    monkeypatch.setattr(pig.subprocess, "run", _forbid_network)
+    index = [
+        {"number": 9999, "mergedAt": _iso_days_ago(100),
+         "title": "old fix for #16031", "body": "historical merge"},
+    ]
+    signal = pig.merged_pr_signal(16031, index=index)
+    assert signal is False, (
+        f"citation >90j doit rendre False sur la voie locale, recu : {signal!r}"
+    )
+
+
+def test_merged_pr_signal_local_index_no_citation(monkeypatch):
+    """#24823 voie locale : index sans citation pour #N -> False (concluant).
+
+    False, pas None : le corpus est present, la reponse « aucune PR ne le
+    cite » est UNE reponse. C'est ce qui distingue la voie locale de la
+    voie reseau (echec -> None -> fail-OPEN DIT).
+    """
+    monkeypatch.setattr(pig.subprocess, "run", _forbid_network)
+    index = [
+        {"number": 17347, "mergedAt": _iso_days_ago(5),
+         "title": "Fix: autre sujet", "body": "Closes #12345"},
+    ]
+    signal = pig.merged_pr_signal(16031, index=index)
+    assert signal is False, (
+        f"index sans citation doit rendre False (concluant), recu : {signal!r}"
+    )
+
+
+def test_merged_pr_signal_local_index_newest_wins(monkeypatch):
+    """#24823 voie locale : plusieurs citations -> la plus RECENTE rendue.
+
+    La sonde rend la date pour la comparaison de revocation (#22987 : un
+    `[NOT-DELIVERED]` posterieur revoque la livraison). Avec deux PRs
+    citant #N (30 j et 10 j), c'est le mergedAt de la plus recente qui
+    doit sortir -- meme regle que la voie serveur.
+    """
+    monkeypatch.setattr(pig.subprocess, "run", _forbid_network)
+    newest = _iso_days_ago(10)
+    index = [
+        {"number": 17347, "mergedAt": _iso_days_ago(30),
+         "title": "Fix: premiere tranche #16031", "body": "See #16031"},
+        {"number": 17499, "mergedAt": newest,
+         "title": "Fix: deuxieme tranche #16031", "body": "See #16031"},
+    ]
+    signal = pig.merged_pr_signal(16031, index=index)
+    assert signal == newest, (
+        f"la citation la plus recente doit l'emporter, recu : {signal!r}"
+    )
+
+
+def test_merged_pr_signal_local_index_anchor_no_false_positive(monkeypatch):
+    """#24823 voie locale : l'ancre `#N\\b` tient sur l'index (#17760).
+
+    Le corpus de l'index est apporte par `fetch_merged` : SANS le champ
+    `state` (le fetch est deja `--state merged`). Ce test couvre les deux
+    exigences d'un coup : sous-chaine #1170391 != #11703, et entree sans
+    champ `state` acceptee (state None tolere).
+    """
+    monkeypatch.setattr(pig.subprocess, "run", _forbid_network)
+    index = [
+        {"number": 1170391, "mergedAt": _iso_days_ago(10),
+         "title": "unrelated", "body": "fixes #1170391 only"},
+    ]
+    signal = pig.merged_pr_signal(11703, index=index)
+    assert signal is False, (
+        f"PR #1170391 ne doit PAS couvrir #11703 sur la voie locale "
+        f"(collision sous-chaine), recu : {signal!r}"
+    )
+
+
+def test_merged_pr_signal_local_index_state_rejected(monkeypatch):
+    """#24823 voie locale : un `state` explicite non-MERGED est ecarte.
+
+    L'index tolere l'absence de `state`, mais une entree qui le PORTE a
+    ``OPEN`` ne designe pas une livraison -- meme regle que la voie
+    serveur.
+    """
+    monkeypatch.setattr(pig.subprocess, "run", _forbid_network)
+    index = [
+        {"number": 17347, "state": "OPEN", "mergedAt": _iso_days_ago(5),
+         "title": "PR ouverte citant #16031", "body": "Closes #16031"},
+    ]
+    signal = pig.merged_pr_signal(16031, index=index)
+    assert signal is False, (
+        f"une PR OPEN ne doit pas compter comme livraison, recu : {signal!r}"
+    )
+
+
+def test_merged_prs_index_delegation_and_failure(monkeypatch):
+    """#24823 prechargement : delegation a fetch_merged, echec -> None.
+
+    Trois contours du helper de prechargement :
+    - corpus rendu -> l'index EST le corpus (partage avec la mesure de
+      livraison : meme identite de cache, zéro appel de plus a chaud) ;
+    - erreur de fetch -> None (repli reseau, jamais un corpus absent lu
+      comme « aucune PR mergee ») ;
+    - corpus VIDE sans erreur -> [] (reponse legitime du serveur, PAS une
+      indisponibilite).
+    """
+    corpus = [{"number": 1, "mergedAt": _iso_days_ago(1),
+               "title": "t", "body": "See #2"}]
+    calls = []
+
+    def fake_fetch_merged(days, now=None, **_kw):
+        calls.append(days)
+        return corpus, None
+
+    monkeypatch.setattr(pig, "fetch_merged", fake_fetch_merged)
+    assert pig.merged_prs_index() == corpus
+    assert calls == [pig.MERGED_PR_WINDOW_DAYS]
+
+    monkeypatch.setattr(pig, "fetch_merged",
+                        lambda days, now=None, **_kw: ([], "cache stale"))
+    assert pig.merged_prs_index() is None, (
+        "une erreur de fetch doit rendre None (index indisponible), "
+        "pas une liste vide"
+    )
+
+    monkeypatch.setattr(pig, "fetch_merged",
+                        lambda days, now=None, **_kw: ([], None))
+    assert pig.merged_prs_index() == [], (
+        "un corpus vide SANS erreur est une reponse legitime : "
+        "il doit etre rendu tel quel, pas converti en None"
+    )
+
+
 
 
 # #21757 -- le PRODUCTEUR du cache des PRs ouvertes (cote tapis).

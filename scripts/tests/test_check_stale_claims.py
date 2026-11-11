@@ -187,3 +187,78 @@ def test_normalize_num_finite_values_unchanged():
     assert mod._normalize_num("12") == {"12"}
     assert mod._normalize_num("12,0") == {"12,0", "12.0", "12"}
     assert mod._normalize_num("12,5") == {"12,5", "12.5"}
+
+
+# --- #24289 famille 3 : valeur derivee, derivation montree (GT-20c/GT-18c) ---
+
+
+def test_famille3_complement_percent_whitelisted(tmp_path):
+    # GT-20c c.14, carnet sain : « 15,0 % des paires raccourcissent ; 85 %
+    # ne raccourcissent pas » -- le complement 15,0 est imprime par la
+    # cellule de code ET ecrit dans la meme cellule de prose avec son %.
+    rc, out = _run(
+        [_code("raccourcis : 77760  (15.0 %)\n"),
+         _md(INTERP + "15,0 % des paires raccourcissent ; 85 % ne raccourcissent pas.")],
+        tmp_path,
+    )
+    assert rc == 0, out["findings"]
+
+
+def test_famille3_complement_without_printed_complement_stays_stale(tmp_path):
+    # Faux negatif donne : « 85 % » sans le complement imprime nulle part
+    # -- le whitelisting ne s'applique pas, le finding reste.
+    rc, out = _run(
+        [_code("autre mesure : 42\n"),
+         _md(INTERP + "85 % des paires ne raccourcissent pas le chemin.")],
+        tmp_path,
+    )
+    assert rc == 1
+    assert "85" in [f["claimed"] for f in out["findings"]]
+
+
+def test_famille3_derived_square_whitelisted(tmp_path):
+    # GT-20c c.16, carnet sain : « 4 683² ≈ 21,9 millions » avec 4683
+    # imprimee par les sorties -- la derivation est ecrite noir sur blanc.
+    rc, out = _run(
+        [_code("univers faible : 4683 sommets\n"),
+         _md(INTERP + "l'univers compte 4 683² ≈ 21,9 millions de sommets.")],
+        tmp_path,
+    )
+    assert rc == 0, out["findings"]
+
+
+def test_famille3_derived_square_without_operand_stays_stale(tmp_path):
+    # Faux negatif donne : le meme « ≈ 21,9 » sans l'operande imprimee --
+    # la derivation n'est pas auditable, le finding reste.
+    rc, out = _run(
+        [_code("mesure sans rapport : 12\n"),
+         _md(INTERP + "l'univers compte ≈ 21,9 millions de sommets.")],
+        tmp_path,
+    )
+    assert rc == 1
+    assert "21,9" in [f["claimed"] for f in out["findings"]]
+
+
+def test_famille3_ratio_percent_whitelisted(tmp_path):
+    # GT-18c c.34, carnet sain (le FP fondateur de la variante ratio) :
+    # « 48/120 = 40 % » -- 40 % n'est JAMAIS imprime tel quel, la paire
+    # 48/120 l'est par la cellule de code. Prescrit par l'issue :
+    # « resoudre les fractions a/b = x % contre les entiers presents ».
+    rc, out = _run(
+        [_code("total : 120 instances\nhumour_reussi : 48\n"),
+         _md(INTERP + "la source est surrepresentee (48/120 = 40 %).")],
+        tmp_path,
+    )
+    assert rc == 0, out["findings"]
+
+
+def test_famille3_ratio_without_operands_stays_stale(tmp_path):
+    # Faux negatif donne : « 40 % » sans la paire d'entiers dans les
+    # sorties -- le solveur ne trouve aucun ratio, le finding reste.
+    rc, out = _run(
+        [_code("rien d'utile\n"),
+         _md(INTERP + "le taux final atteint 40 %.")],
+        tmp_path,
+    )
+    assert rc == 1
+    assert "40" in [f["claimed"] for f in out["findings"]]

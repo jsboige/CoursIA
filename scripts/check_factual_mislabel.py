@@ -279,13 +279,11 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     virgule. Les deux gardes sont complementaires -- le lookahead refuse le
     nombre lui-meme, la borne gauche refuse la reprise apres separateur.
 
-    LIMITE CONNUE, non couverte par cette garde : le separateur de
-    milliers PAR ESPACE (« 10 000 iterations », « 6 912 variables »). Le
-    motif MD lit alors le dernier groupe (« 000 iterations »), un
-    compte faux -- classe distincte, mesuree a 2 findings sur le corpus
-    (GameTheory-13 c16, SocialChoice-04 c16). Elle n'est pas traitee ici :
-    la corriger exige de distinguer un groupe de milliers d'un compte,
-    ce qui suppose une grammaire de nombre, pas une garde de lookahead.
+    Les nombres groupes par une espace, une espace insecable, une espace
+    fine insecable sont lus comme un entier
+    unique, dans la prose comme dans le stream. Une virgule reste ambigue
+    avec une valeur decimale francaise et reste exclue. La regex exige des groupes
+    de trois chiffres pour eviter de fusionner des nombres voisins.
     La faute la plus grave (une valeur lue comme un compte, donc une
     contradiction FABRIQUEE) est, elle, fermee.
 
@@ -298,10 +296,16 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     grammaire de liste, pas une garde de lookahead : c'est une suite, pas
     un correctif de ce cycle.
     """
+    grouped_integer = r"\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d{1,5}"
     return (
-        re.compile(rf"(?i)(?<![\d.,])\b(\d{{1,5}})(?!\d*[.,]\d)\s*({units})\b"),
-        re.compile(rf"(?i)\b({units})[ \t]*[:=][ \t]*(\d{{1,5}})(?!\d*[.,]\d)\b"),
+        re.compile(rf"(?i)(?<![\d.,])\b({grouped_integer})(?!\d*[.,]\d)\s*({units})\b"),
+        re.compile(rf"(?i)\b({units})(?:[ \t]*[:=][ \t]*|[ \t]{{2,}})({grouped_integer})(?!\d*[.,]\d)\b"),
     )
+
+
+def _parse_count(text: str) -> int:
+    """Convertit un compte a groupes de milliers en entier."""
+    return int(re.sub(r"[ \u00a0\u202f]", "", text))
 
 
 # ---------------------------------------------------------------------------
@@ -384,9 +388,10 @@ def _build_broad_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     `strict` reste inchange.
     """
     words = "|".join(sorted(NUMBER_WORDS, key=len, reverse=True))
+    grouped_integer = r"\d{1,3}(?:[ \u00a0\u202f]\d{3})+|\d{1,5}"
     return (
         re.compile(rf"(?i)(?<![\w.,-]){DETERMINERS}\s+({words})\s+({units})\b"),
-        re.compile(rf"(?i)(?<![\w.,-])(\d{{1,5}})(?!\d*[.,]\d)\s+({units})\b"),
+        re.compile(rf"(?i)(?<![\w.,-])({grouped_integer})(?!\d*[.,]\d)\s+({units})\b"),
     )
 
 
@@ -487,15 +492,15 @@ def scan_notebook(path: Path, *, units_scope: str = "core", forms: str = "strict
         # facette 1 : comptes d'unites contredits
         stream_counts: dict[str, set[int]] = {}
         for m in stream_count_re.finditer(stream):
-            stream_counts.setdefault(_singular(m.group(1)), set()).add(int(m.group(2)))
+            stream_counts.setdefault(_singular(m.group(1)), set()).add(_parse_count(m.group(2)))
         if stream_noun_re is not None:
             # forme « N unite » du stream (« 15 carnets dans Serre100/ »),
             # que la forme « Unite : M » ne voit pas
             for m in stream_noun_re.finditer(stream):
-                stream_counts.setdefault(_singular(m.group(2)), set()).add(int(m.group(1)))
+                stream_counts.setdefault(_singular(m.group(2)), set()).add(_parse_count(m.group(1)))
         seen_unit_claims: set[tuple[int, str, str]] = set()
         claims = [
-            (int(m.group(1)), _singular(m.group(2)), m.start(), m.end())
+            (_parse_count(m.group(1)), _singular(m.group(2)), m.start(), m.end())
             for m in md_count_re.finditer(src)
         ]
         if md_words_re is not None:
