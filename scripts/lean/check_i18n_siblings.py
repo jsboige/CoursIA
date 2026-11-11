@@ -90,6 +90,8 @@ import sys
 from collections import Counter
 from pathlib import Path
 
+from lake_selectors import LakefileError, lake_selectors, selected
+
 # Trees out of scope for the #4980 convention (vendored Mathlib, external lakes,
 # third-party fixtures) — cf lean-i18n.md §Lean i18n "Hors scope".
 EXCLUDE_PARTS = frozenset(
@@ -541,54 +543,6 @@ def fr_sibling(en_path: Path) -> Path:
 # byte-identical while the mirror silently sits outside the build.
 _LAKEFILE_NAMES = ("lakefile.toml", "lakefile.lean")
 
-# `.lean` glob tokens inside `globs := #[...]` / `roots := #[...]`:
-#   `Foo          → exact        Foo
-#   `Foo_en       → exact        Foo_en
-#   `Foo.*  `Foo.+ → glob-prefix Foo   (Foo and its submodules)
-#   .submodules `Foo / .andSubmodules `Foo → glob-prefix Foo
-_LEAN_BACKTICK = re.compile(
-    r"(?P<sub>\.submodules\s+|\.andSubmodules\s+)?"
-    r"`(?P<name>[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)"
-    r"(?P<glob>\.\*|\.\+)?"
-)
-_LEAN_LIB = re.compile(r"lean_lib\s+«?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)»?")
-# `.toml` arrays: roots = [ "A", "B" ]  /  globs = [ "A.*" ]
-_TOML_ARRAY = re.compile(r"\b(?:roots|globs)\s*=\s*\[(.*?)\]", re.DOTALL)
-
-
-def lake_targets(lakefile: Path) -> tuple[set[str], set[str]]:
-    """Parse a lakefile into ``(exact, glob_prefixes)`` — the modules Lake will
-    compile. ``exact`` are single modules (``Foo``, ``Foo_en``); each entry of
-    ``glob_prefixes`` is a parent whose subtree is globbed (``Foo`` from
-    ``Foo.*`` / ``.submodules `Foo``). Returns empty sets when nothing parses,
-    so the caller can conservatively skip rather than false-flag."""
-    exact: set[str] = set()
-    globs: set[str] = set()
-    text = lakefile.read_text(encoding="utf-8", errors="replace")
-    if lakefile.name == "lakefile.toml":
-        # Drop `#` comments, then read quoted entries of roots/globs arrays.
-        text = re.sub(r"#[^\n]*", "", text)
-        for arr in _TOML_ARRAY.finditer(text):
-            for m in re.finditer(r'"([^"]+)"', arr.group(1)):
-                name = m.group(1)
-                if name.endswith((".*", ".+")):
-                    globs.add(name[:-2])
-                else:
-                    exact.add(name)
-    else:
-        # `.lean`: strip comments first (doc comments quote example globs, e.g.
-        # conway_cgt_lean's ``globs := #[`Foo, `Foo_en]`` in prose).
-        code = strip_comments(text)
-        for m in _LEAN_LIB.finditer(code):
-            exact.add(m.group(1))  # a lib with no globs roots at its own name
-        for m in _LEAN_BACKTICK.finditer(code):
-            if m.group("sub") or m.group("glob"):
-                globs.add(m.group("name"))
-            else:
-                exact.add(m.group("name"))
-    return exact, globs
-
-
 def enclosing_lake(en_path: Path, repo_root: Path) -> Path | None:
     """Nearest ancestor directory (up to ``repo_root``) holding a lakefile."""
     for d in [en_path.parent, *en_path.parents]:
@@ -603,18 +557,15 @@ def enclosing_lake(en_path: Path, repo_root: Path) -> Path | None:
 def check_en_built(en_path: Path, repo_root: Path) -> tuple[bool | None, str]:
     """Is ``en_path``'s module compiled by its lake? ``(True, "")`` when a root
     or glob covers it, ``(False, reason)`` when it is an orphan Lake never
-    builds (the #6749 trap), ``(None, reason)`` when undeterminable (no lakefile
-    / unparsable) — the caller skips those rather than false-flag."""
+    builds (the #6749 trap), ``(None, reason)`` when there is no lakefile.
+    An unparseable lakefile raises ``LakefileError`` instead of being skipped."""
     en_path = en_path.resolve()
     lakefile = enclosing_lake(en_path, repo_root)
     if lakefile is None:
         return None, "no enclosing lakefile"
-    exact, globs = lake_targets(lakefile)
-    if not exact and not globs:
-        return None, f"no roots/globs parsed from {lakefile.name}"
+    selectors = lake_selectors(lakefile.parent)
     module = ".".join(en_path.relative_to(lakefile.parent).with_suffix("").parts)
-    if module in exact or any(
-            module == g or module.startswith(g + ".") for g in globs):
+    if selected(module, selectors):
         return True, ""
     return False, (
         f"module `{module}` absent from {lakefile.name} roots/globs "
@@ -683,11 +634,18 @@ def main(argv: list[str] | None = None) -> int:
         # Orphan-trap guard (#6749): flag an `_en` mirror Lake never compiles.
         # Orthogonal to the body check below — a pair can be byte-identical yet
         # sit outside the build, which is exactly the failure CI misses.
-        built, why = check_en_built(en, repo_root)
+        try:
+            built, why = check_en_built(en, repo_root)
+        except LakefileError as exc:
+            print(f"ERROR   {exc}", file=sys.stderr)
+            return 2
         if built is False:
             # Compute the same POSIX-normalized path the CLI flag uses, so the
             # whitelist matches regardless of OS runner.
-            rel = en.resolve().relative_to(repo_root.resolve()).as_posix()
+            try:
+                rel = en.resolve().relative_to(repo_root.resolve()).as_posix()
+            except ValueError:
+                rel = en.resolve().as_posix()
             whitelisted = rel in allow_unbuilt
             unbuilt += 1
             tag = "  [WHITELISTED]" if whitelisted else ""

@@ -33,13 +33,23 @@ class FactorETFRotation(QCAlgorithm):
     Factor ETFs: VLUE, MTUM, SIZE, QUAL, USMV
     Ref: Fama & French (2015), Asness et al. (2013),
          Barroso & Santa-Clara (2015), Daniel & Moskowitz (2016)
+
+    Modes (#25615): `strategy` (default, the rule above), `spy` (SPY held),
+    `6040` (SPY 60% / BND 40%, monthly). Reference modes carry a daily `shadow`
+    trace (replay contract #18923) and an `invalid_orders` execution stat.
     """
 
     def initialize(self):
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2025, 1, 1)
+        # Date windows as backtest parameters; defaults = the coded window.
+        start = self.get_parameter("start_date", "2018-01-01").split("-")
+        end = self.get_parameter("end_date", "2025-01-01").split("-")
+        self.set_start_date(int(start[0]), int(start[1]), int(start[2]))
+        self.set_end_date(int(end[0]), int(end[1]), int(end[2]))
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
+        # mode (#25615): strategy (default, the v3.0 rule) | spy | 6040
+        self.mode = self.get_parameter("mode", "strategy")
 
         # Factor ETFs (iShares)
         self.factor_tickers = ["VLUE", "MTUM", "SIZE", "QUAL", "USMV"]
@@ -48,6 +58,11 @@ class FactorETFRotation(QCAlgorithm):
         for ticker in self.factor_tickers:
             equity = self.add_equity(ticker, Resolution.DAILY)
             self.symbols[ticker] = equity.symbol
+
+        # BND is added only in 6040 mode (league convention, #25615).
+        self.bnd = None
+        if self.mode == "6040":
+            self.bnd = self.add_equity("BND", Resolution.DAILY).symbol
 
         # Benchmark and regime filter
         self.spy = self.add_equity("SPY", Resolution.DAILY).symbol
@@ -64,7 +79,40 @@ class FactorETFRotation(QCAlgorithm):
         self.entry_prices = {}
 
         self.set_benchmark("SPY")
-        self.set_warm_up(self.lookback + 30, Resolution.DAILY)
+        # Strategy mode warms up its SMA200 + momentum lookback; the reference
+        # modes (spy/6040) carry no indicators and trade from their first
+        # month-start, so they set no warm-up. A 282-day warm-up would swallow
+        # a short out-of-sample window and drop every month-start order.
+        if self.mode == "strategy":
+            self.set_warm_up(self.lookback + 30, Resolution.DAILY)
+
+        # Reference modes (spy / 6040) rebalance monthly via the schedule; the
+        # strategy mode keeps its own monthly guard in on_data.
+        if self.mode in ("spy", "6040"):
+            self.schedule.on(
+                self.date_rules.month_start(self.spy),
+                self.time_rules.after_market_open(self.spy, 30),
+                self._rebalance_reference,
+            )
+
+        # Shadow-trace + execution-stat counters (replay contract #18923).
+        self.closes = 0
+        self.invalid_orders = 0
+
+    def _rebalance_reference(self):
+        """spy / 6040: fixed monthly weights, no factor logic, no stop."""
+        if self.mode == "6040":
+            self.set_holdings(
+                [PortfolioTarget(self.spy, 0.6), PortfolioTarget(self.bnd, 0.4)], True
+            )
+        else:
+            self.set_holdings([PortfolioTarget(self.spy, 1.0)], True)
+
+    def on_order_event(self, event):
+        # A rejected order surfaces as CANCELED in LEAN (there is no
+        # OrderStatus.REJECTED); count canceled orders as the invalid set.
+        if event.status == OrderStatus.CANCELED:
+            self.invalid_orders += 1
 
     def _risk_adjusted_momentum(self, symbol):
         """
@@ -109,6 +157,16 @@ class FactorETFRotation(QCAlgorithm):
         return momentum_return / realized_vol
 
     def on_data(self, data):
+        # Shadow trace: one portfolio value per SPY session, all modes, outside
+        # warm-up (replay contract #18923). No-op for portfolio state.
+        if not self.is_warming_up and data.bars.contains_key(self.spy):
+            self.plot("shadow", f"e{self.closes % 5}", self.portfolio.total_portfolio_value)
+            self.closes += 1
+
+        # Reference modes (spy / 6040) carry no factor logic; the schedule
+        # rebalances them. Strategy mode continues below, unchanged.
+        if self.mode != "strategy":
+            return
         if self.is_warming_up:
             return
         if not self.spy_sma.is_ready:
@@ -211,4 +269,7 @@ class FactorETFRotation(QCAlgorithm):
 
     def on_end_of_algorithm(self):
         final = self.portfolio.total_portfolio_value
-        self.log(f"FF v3.0: Final=${final:,.2f}, Return={(final-100000)/100000:.2%}")
+        self.log(
+            f"FF mode={self.mode} Final=${final:,.2f}, "
+            f"Return={(final-100000)/100000:.2%}, invalid_orders={self.invalid_orders}"
+        )

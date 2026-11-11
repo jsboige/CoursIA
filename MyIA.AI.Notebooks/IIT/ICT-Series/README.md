@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 102
-breakdown: ICT-Series=102
-maturity: BETA=80, DRAFT=18, ALPHA=4
+pedagogical_count: 103
+breakdown: ICT-Series=103
+maturity: BETA=82, DRAFT=17, ALPHA=4
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -23,22 +23,27 @@ Chaque figure est **intégrée in-situ** dans la strate et au notebook qu'elle d
 
 ## Prérequis & environnement
 
-ICT partage l'environnement Python de la série IIT (PyPhi 1.2.0, Python 3.9). Le setup et les dépendances sont mutualisés au niveau du répertoire parent :
+Le package `ict/` expose **deux voies d'installation** selon ce qu'on en fait (issue [#8076](https://github.com/jsboige/CoursIA/issues/8076), split d'extra [#25381](https://github.com/jsboige/CoursIA/issues/25381)) :
 
 ```bash
-# Depuis MyIA.AI.Notebooks/IIT/
-powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
-pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy, scipy, matplotlib…)
+# Voie 1 -- consommateurs hors série (carnets GenAI/ML/SymbolicAI, scripts/hashlife) :
+# cœur léger (numpy/scipy/matplotlib/pandas/cryptography), tout Python >= 3.9,
+# SANS PyPhi -- le package n'en dépend pas (aucun module ict/ ne l'importe).
+# Depuis la racine du clone :
+pip install -e MyIA.AI.Notebooks/IIT/ICT-Series
 
-# Recommandé : installer le package `ict/` en mode editable (issue #8076).
-# Rend `from ict import …` résolvable depuis n'importe quel cwd, sans dépendre
-# du répertoire ICT-Series/. Extras : [llm] (torch/transformers, GPU),
-# [extras] (pandas, sympy), [dev] (pytest).
-# Depuis MyIA.AI.Notebooks/IIT/ICT-Series/  (dans l'env pyphi activé) :
-pip install -e .                                 # cœur ; ou pip install -e .[dev,llm]
+# Voie 2 -- série ICT complète (strates Φ : IIT-1/2/3, ICT-36c/d) :
+# environnement historique épingle Python 3.9 + numpy<2 + pyphi 1.2.0.
+# Depuis MyIA.AI.Notebooks/IIT/ :
+powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
+pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy<2, antropy…)
+# puis, depuis MyIA.AI.Notebooks/IIT/ICT-Series/ (dans l'env pyphi activé) :
+pip install -e ".[iit]"                          # cœur + strates Φ ; ou .[iit,dev,llm]
 ```
 
-Le package `ict/` est installable (`pip install -e .` depuis `ICT-Series/`, cf. `pyproject.toml`) : une fois installé, `from ict import …` résout depuis n'importe quel `cwd`. En l'absence d'install editable, l'ancien contrat reste valable : chaque notebook insère le dossier courant dans `sys.path`, il faut alors lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
+Extras : `[iit]` (pyphi/numpy<2/antropy, **Python < 3.10 uniquement**), `[llm]` (torch/transformers, GPU), `[extras]` (sympy), `[dev]` (pytest). Le cœur couvre déjà numpy/scipy/matplotlib/**pandas**/cryptography.
+
+Une fois installé (voie 1 ou 2), `from ict import …` résout depuis n'importe quel `cwd` — c'est le **contrat d'import des consommateurs hors série**. En l'absence d'installation, le repli historique reste valable pour les carnets de la série elle-même : lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
 
 ### Le package `ict/` — modules et tests
 
@@ -82,11 +87,12 @@ Les **traces pré-extraites** (fixtures `.npz` dans `traces/`) supportent les no
 
 Quand un palier de consolidation regroupe plusieurs carnets autour d'un même sujet, ils descendent dans une **sous-série**, et cette sous-série porte un nom. La convention est `ICT-<NN>-<Sujet>/` : `<NN>` est le numéro que porte **aujourd'hui** le carnet de tête dans la série principale — celui que le lecteur voit sur la marche de l'escalier — et `<Sujet>` reprend le sujet de ce carnet de tête, sans le suffixe `-Python`. Un numéro nu n'est pas un nom de répertoire : il sert d'index dans un ledger progressif, jamais de substitut au sujet qu'on redescend ([#22949](https://github.com/jsboige/CoursIA/issues/22949)). Toute sous-série future naît nommée.
 
-Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Les cinq la tiennent : 04, 12e, 14b, 19b et 15l.
+Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en retour, la convention est que chaque sous-série remonte vers cette page depuis son dernier carnet. Les six la tiennent : 07, 04, 12e, 14b, 19b et 15l.
 
 | Sous-série | Ce qu'on y redescend | Carnets |
 |---|---|---|
 | [`ICT-02-SelfSortingMorphogenesis/`](ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb) | Le tri auto-organisé comme morphogenèse — la grille qui se trie elle-même et ses compétences émergentes (robustesse aux cellules défectueuses, délai de gratification, auto-réparation), puis les tableaux chimériques à agrégation « kin » | ICT-02, 03, 04 |
+| [`ICT-05-CausalEmergence/`](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) | L'émergence causale, de la mesure à sa falsification — d'abord la quantifier (information effective, causal emergence sur TPM), puis le chemin qui y mène (du tri auto-organisé vers la matrice TPM), enfin la signature scale-free et son témoin négatif : ce que l'émergence n'est pas | ICT-05, 06, 07 |
 | [`ICT-12-ValenceFieldsAndAnimats/`](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | Champs de valence et animats — les rôles de la scène actantielle de Thom cessent d'être des correspondances nommées et deviennent des grandeurs mesurées, puis apprises, incarnées, inhibées, et enfin valorisées par l'information | ICT-12, 12b, 12c, 12d, 12e |
 | [`ICT-14-FreeEnergySurprise/`](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | Énergie libre, surprise et inférence active — la jambe représentationnelle de la strate 4, de la surprise passive au contrôle actif par l'*expected free energy* | ICT-14, 14b |
 | [`ICT-15-IntegratedComplexity/`](ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb) | La convergence Φ/F/K sur le banc cross-substrat, puis ses obstructions : sensibilité, méta-proxy, cochaîne de Čech, nerf simplicial, recollement des macrocells | ICT-15, puis 15b à 15l |
@@ -117,9 +123,9 @@ Chaque marche ci-dessous descend vers le carnet de tête de sa sous-série ; en 
 |----------|---------|
 | [ICT-03-RobustnessDelayedGratification-Python](ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb) | Robustesse & délai de gratification, étude quantitative : dégradation gracieuse face aux cellules défectueuses, distributions de récupération, comptage du délai de gratification |
 | [ICT-04-ChimericArraysKinAggregation-Python](ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb) | Tableaux chimériques & agrégation émergente : réparation bidirectionnelle (guérit l'impasse d'ICT-2) puis affinité « kin », mesurée honnêtement (sans degrés de liberté, pas d'agrégation) |
-| [ICT-05-CausalEmergence-Python](ICT-05-CausalEmergence-Python.ipynb) | Émergence causale : $\Phi$ et information effective aux échelles micro/macro, recherche systématique du coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel, 2025) |
-| [ICT-06-SortingToTPM-CausalEmergence-Python](ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | Pont tri → TPM : chaîne de Markov estimée depuis les trajectoires de tri d'ICT-2, puis émergence causale multi-échelles avec l'outillage *Causal Emergence 2.0* (Hoel, 2025) au-delà de la borne de taille de PyPhi |
-| [ICT-07-ScaleFreeSignatures-Python](ICT-07-ScaleFreeSignatures-Python.ipynb) | Signatures scale-free & criticalité : détecter une loi de puissance *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri qui *paraît* sans échelle mais possède une taille caractéristique |
+| [ICT-05-CausalEmergence-Python](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) | Émergence causale : $\Phi$ et information effective aux échelles micro/macro, recherche systématique du coarse-graining (vrai `pyphi.macro`), émergence discriminante (Jansma & Hoel, 2025) |
+| [ICT-06-SortingToTPM-CausalEmergence-Python](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | Pont tri → TPM : chaîne de Markov estimée depuis les trajectoires de tri d'ICT-2, puis émergence causale multi-échelles avec l'outillage *Causal Emergence 2.0* (Hoel, 2025) au-delà de la borne de taille de PyPhi |
+| [ICT-07-ScaleFreeSignatures-Python](ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb) | Signatures scale-free & criticalité : détecter une loi de puissance *sans se faire avoir* (MLE de Hill, choix de $x_{\min}$, KS, à la Clauset et al.) ; étalon critique (branchement, exposant $3/2$) vs tri qui *paraît* sans échelle mais possède une taille caractéristique |
 
 ### Strate 2 — morphogenèse dynamique (paysages d'attracteurs)
 

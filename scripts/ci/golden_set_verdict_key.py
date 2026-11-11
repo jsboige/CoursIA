@@ -12,12 +12,13 @@ Cette cle couvre tout ce qui influe sur le verdict :
   - le lockfile pinne (les dependances installees) ;
   - l'implementation de l'executeur (``notebook_tools.py``) ;
   - la version de Python demandee par l'appelant ;
+  - le workflow qui appelle cette cle et gouverne la reutilisation du verdict ;
   - le contenu OCTET POUR OCTET de chaque carnet execute.
 
-Le workflow n'entre PAS dans la cle, et c'est delibere : il bouge pour des
-raisons qui n'affectent pas le verdict (commentaires, routage du runner), et
-une cle qui change a chaque retouche du YAML ne reutiliserait jamais rien. Sa
-version est neanmoins consignee dans la sortie, pour l'audit du verdict.
+Le workflow complet entre dans la cle : une modification de ses commandes,
+conditions ou mecanismes de cache ne doit jamais reutiliser un verdict produit
+sous un autre contrat. Cela inclut aussi les changements de commentaire ou de
+routage, qui peuvent invalider la reutilisation sans rendre le cache perime.
 
 Sortie (JSON, sur stdout ou dans ``--out``) :
 
@@ -59,6 +60,7 @@ def compute_key(
     manifest: Path,
     lockfile: Path,
     implementation: Path,
+    workflow: Path,
     python_version: str,
 ) -> dict:
     """Empreinte du verdict : identite des entrees + contenu des carnets."""
@@ -79,6 +81,7 @@ def compute_key(
         "manifest": _sha256_file(manifest),
         "lockfile": _sha256_file(lockfile),
         "implementation": _sha256_file(implementation),
+        "workflow": _sha256_file(workflow),
         "notebooks": per_notebook,
         "manifest_notebook_order": notebooks,
     }
@@ -91,6 +94,7 @@ def compute_key(
             "manifest_sha256": components["manifest"],
             "lockfile_sha256": components["lockfile"],
             "implementation_sha256": components["implementation"],
+            "workflow_sha256": components["workflow"],
             "notebook_count": len(per_notebook),
         },
         "notebooks": per_notebook,
@@ -108,6 +112,11 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--manifest", type=Path, default=tools / "golden_set.yml")
     ap.add_argument("--lockfile", type=Path, default=tools / "golden_set.lock.txt")
     ap.add_argument("--implementation", type=Path, default=tools / "notebook_tools.py")
+    ap.add_argument(
+        "--workflow",
+        type=Path,
+        default=repo_root / ".github" / "workflows" / "notebook-execution-required.yml",
+    )
     ap.add_argument("--python-version", default="3.12")
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args(argv)
@@ -117,6 +126,7 @@ def main(argv: list[str] | None = None) -> int:
         args.manifest,
         args.lockfile,
         args.implementation,
+        args.workflow,
         args.python_version,
     )
     for rel in result["missing_notebooks"]:
