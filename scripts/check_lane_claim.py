@@ -691,7 +691,10 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
-@lru_cache(maxsize=8192)
+# #24824 -- la memo est trop petille (8192) pour le volume de corps d'une
+# fenetre de claims : elle evictait et recalcule. Elargie pour tenir le
+# working set ; le verdict est une fonction pure du corps.
+@lru_cache(maxsize=65536)
 def _unwrap_trapped_body(body: str) -> str:
     """Le corps REEL quand la publication a piege son propre payload (#19971).
 
@@ -3157,6 +3160,7 @@ def _normcase_path(path: str) -> str:
     return os.path.normcase(path)
 
 
+@lru_cache(maxsize=262144)
 def _path_matches_pair(path: str, pattern: str) -> bool:
     """Match one immutable path/pattern pair with fnmatch's platform rules.
 
@@ -3195,11 +3199,33 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     existing `grep`/git commands used in the cluster for "where does this
     file live" queries.
     """
+    return _path_matches_cached(path, tuple(patterns))
+
+
+@lru_cache(maxsize=262144)
+def _path_matches_cached(path: str, patterns: tuple[str, ...]) -> bool:
+    """#24824 -- memoise le verdict par (chemin, motifs) : les deux sont
+    invariants d'une issue a l'autre dans le batch, seule la liste suivie
+    change (memoisee par racine). Fonction pure de ses deux arguments, donc
+    la memoisation ne peut changer aucun verdict."""
     for pat in patterns:
         for p in _expanded_path_pattern(pat):
             if _path_matches_pair(path, p):
                 return True
     return False
+
+
+# #24824 -- memoise le croisement par (motifs, identite + generation de la
+# liste suivie). La liste est l'objet _TrackedFiles memoise par racine dans
+# _TRACKED_FILES_MEMO (jamais mute en place en production). La cle porte la
+# generation _gen, que _TrackedFiles._invalidate() incrémente a chaque
+# mutation : un resultat ne peut donc jamais etre servi stale contre une
+# liste mutee (contrat test 3031/3040). On garde une reference FORTe vers la
+# liste dans la valeur : son id() n'est pas reutilise tant que l'entree vit.
+# Seules les listes _TrackedFiles sont memoisees ; une liste brute (mutable)
+# ne l'est pas. Le bornage efface (re-calcule) : jamais un verdict faux.
+_MATCHING_INDICES_MEMO: dict[tuple, tuple[object, frozenset[int]]] = {}
+_MATCHING_INDICES_MEMO_MAX = 1024
 
 
 def _matching_tracked_indices(
@@ -3213,17 +3239,40 @@ def _matching_tracked_indices(
     contre ces regex. La separation du basename se fait toujours sur le
     chemin brut, avant `normcase`, comme dans `fnmatch(path, pattern)` sous
     Windows.
+
+    #24824 -- memoise par (motifs, identite de la liste suivie) : dans le
+    batch, les memes perimetres sont recroises a chaque issue sur la meme
+    liste suivie. La reference forte vers `tracked` rend l'`id()` stable,
+    donc la memoisation ne change aucun verdict (fonction pure).
     """
+    # #24824 -- la memo ne porte que sur les listes _TrackedFiles ; la cle
+    # porte leur generation _gen, donc toute mutation force le re-calcule
+    # (jamais un verdict stale). Une liste brute n'est pas memoisee.
+    is_tf = isinstance(tracked, _TrackedFiles)
+    if is_tf:
+        key = (tuple(patterns), id(tracked), tracked._gen)
+        hit = _MATCHING_INDICES_MEMO.get(key)
+        if hit is not None:
+            return set(hit[1])
     expanded = [p for pattern in patterns
                 for p in _expanded_path_pattern(pattern)]
     regexes = [_compiled_path_pattern(p) for p in expanded]
     if not regexes:
+        if is_tf:
+            if len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX:
+                _MATCHING_INDICES_MEMO.clear()
+            _MATCHING_INDICES_MEMO[key] = (tracked, frozenset())
         return set()
     pairs = _norm_pairs(tracked)
-    return {
+    result = {
         index for index, (path, basename) in enumerate(pairs)
         if any(rx.match(path) or rx.match(basename) for rx in regexes)
     }
+    if is_tf:
+        if len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX:
+            _MATCHING_INDICES_MEMO.clear()
+        _MATCHING_INDICES_MEMO[key] = (tracked, frozenset(result))
+    return result
 
 
 def _compute_scope_intersection_paths(
@@ -3462,16 +3511,21 @@ class _TrackedFiles(list):
     Les formes normalisees sont calculees ici, UNE FOIS par liste.
     """
 
-    __slots__ = ("_norm", "_exact", "_bases")
+    __slots__ = ("_norm", "_exact", "_bases", "_gen")
 
     def __init__(self, items):
         super().__init__(items)
         self._norm = None
         self._exact = None
         self._bases = None
+        self._gen = 0
 
     def _invalidate(self):
         self._norm = self._exact = self._bases = None
+        # #24824 -- toute mutation change la generation : la memo de
+        # _matching_tracked_indices (clee sur _gen) ne sert donc jamais un
+        # resultat stale contre une liste mutee (contrat test 3031/3040).
+        self._gen += 1
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
@@ -3617,6 +3671,46 @@ def _norm_pairs(tracked) -> list[tuple[str, str]]:
             for p in tracked]
 
 
+# #24824 -- memo par (charge, identite + generation de la liste suivie) pour
+# les fonctions pures de (charge, tracked). `tracked` est l'objet
+# _TrackedFiles memoise par racine (_TRACKED_FILES_MEMO), jamais mute en
+# place en production ; la cle porte _gen, que _TrackedFiles._invalidate()
+# incremente a chaque mutation, donc un resultat ne peut jamais etre servi
+# stale contre une liste mutee (contrat test 3031/3040). Reference FORTe vers
+# la liste dans la valeur : son id() n'est pas reutilise tant que l'entree
+# vit. Une liste brute (mutable) n'est jamais memoisee ; le bornage efface
+# (re-calcule). Jamais un verdict faux.
+_MISS = object()
+
+
+class _TrackedScopedMemo:
+    """Memo bornee des fonctions pures de (charge, liste suivie)."""
+
+    __slots__ = ("_d", "_max")
+
+    def __init__(self, maxsize: int) -> None:
+        self._d: dict = {}
+        self._max = maxsize
+
+    def get(self, payload, tracked):
+        if isinstance(tracked, _TrackedFiles):
+            hit = self._d.get((payload, id(tracked), tracked._gen), _MISS)
+            if hit is not _MISS:
+                return hit[1]
+        return _MISS
+
+    def put(self, payload, tracked, value) -> None:
+        if not isinstance(tracked, _TrackedFiles):
+            return
+        if len(self._d) >= self._max:
+            self._d.clear()
+        self._d[(payload, id(tracked), tracked._gen)] = (tracked, value)
+
+
+_GLOB_TRACKED_MEMO = _TrackedScopedMemo(16384)
+_CORRECTION_MEMO = _TrackedScopedMemo(16384)
+
+
 def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     """True when at least one tracked file matches the glob (fnmatch, basename-or-full).
 
@@ -3635,6 +3729,16 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     les separateurs de chemin en antislash et le nom de base ne serait
     plus extrait.
     """
+    cached = _GLOB_TRACKED_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _glob_matches_tracked_uncached(glob, tracked)
+    _GLOB_TRACKED_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _glob_matches_tracked_uncached(glob: str, tracked: list[str]) -> bool:
+    """Corps de `_glob_matches_tracked`, sans memo (balayage par glob)."""
     from fnmatch import translate
     patterns = _expand_brace_groups(glob)
     if not patterns:
@@ -3693,6 +3797,16 @@ def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
     between 1 and 5 times IS likely a typo (the writer meant one specific
     file and the regex did not pick the right one).
     """
+    cached = _CORRECTION_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _suggest_path_correction_uncached(glob, tracked)
+    _CORRECTION_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _suggest_path_correction_uncached(glob: str, tracked: list[str]) -> str | None:
+    """Corps de `_suggest_path_correction`, sans memo (balayage des chemins)."""
     if not glob or "/" not in glob:
         return None
     basename = glob.rsplit("/", 1)[-1]
