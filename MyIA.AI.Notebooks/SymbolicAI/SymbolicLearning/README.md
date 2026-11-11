@@ -255,35 +255,54 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 ## Notebooks
 
+| # | Notebook | Contenu | Durée | Pour approfondir |
+|---|----------|---------|-------|-------------------|
+| 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min | [1b](#autour-de-sl-1) |
+| 1 | [SL-1 - Apprentissage Logique (Twin C#)](SL-1-LogicalLearning-Csharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min | [1b](#autour-de-sl-1) |
+| 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |  |
+| 2 | [SL-2 - Apprentissage et Connaissance (Twin C#)](SL-2-KnowledgeBasedLearning-Csharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |  |
+| 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |  |
+| 3 | [SL-3 - RBL (Twin C#)](SL-3-RelevanceLearning-Csharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |  |
+| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |  |
+| 4 | [SL-4 - ILP (Twin C#)](SL-4-InductiveLogicProgramming-Csharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |  |
+| 5 | [SL-5 - Résolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |  |
+| 5 | [SL-5 - Résolution Inverse (Twin C#)](SL-5-InverseResolution-Csharp.ipynb) | **Jumeau C#** — LGG de Plotkin, θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p − L`) from-scratch (See #4956) | 55 min |  |
+| 6 | [SL-6 - Moteurs ILP modernes](SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |  |
+| 6 | [SL-6 - Moteurs ILP (Twin C#)](SL-6-ModernILP-Csharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |  |
+| 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |  |
+| 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |  |
+| 8 | [SL-8 - KG mining (Twin C#)](SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.4.1, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |  |
+| 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |  |
+| 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |  |
+| 10 | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-Csharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |  |
+| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |  |
+| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min | [12b](#autour-de-sl-12) · [12b'](#autour-de-sl-12) |
+| 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min | [13b](#autour-de-sl-13) |
+| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |  |
+| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −62 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |  |
+
+## Approfondissements
+
+Les notebooks lettrés prolongent un palier du parcours principal. Les liens de la table renvoient à leur groupe ; leurs descriptions, durées et références sont conservées ici.
+
+### Autour de SL-1
+
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
-| 1 (C#) | [SL-1 - Apprentissage Logique (Twin C#)](SL-1-LogicalLearning-Csharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min |
 | 1b (Lean) | [SL-1b - Apprentissage PAC formel (Lean natif)](SL-1b-LogicalLearning-Lean-Native.ipynb) | **Compagnon Lean natif** — le lake `learning_theory_lean` exécuté au kernel `lean4-wsl` : modèle PAC, borne de Valiant classe finie, agnostique, Hoeffding-Chernoff, perceptron Novikoff + serrage (See #11703) | 40 min |
-| 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |
-| 2 (C#) | [SL-2 - Apprentissage et Connaissance (Twin C#)](SL-2-KnowledgeBasedLearning-Csharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |
-| 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
-| 3 (C#) | [SL-3 - RBL (Twin C#)](SL-3-RelevanceLearning-Csharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |
-| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |
-| 4 (C#) | [SL-4 - ILP (Twin C#)](SL-4-InductiveLogicProgramming-Csharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |
-| 5 | [SL-5 - Résolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |
-| 5 (C#) | [SL-5 - Résolution Inverse (Twin C#)](SL-5-InverseResolution-Csharp.ipynb) | **Jumeau C#** — LGG de Plotkin, θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p − L`) from-scratch (See #4956) | 55 min |
-| 6 | [SL-6 - Moteurs ILP modernes](SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |
-| 6 (C#) | [SL-6 - Moteurs ILP (Twin C#)](SL-6-ModernILP-Csharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |
-| 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |
-| 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |
-| 8 (C#) | [SL-8 - KG mining (Twin C#)](SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.4.1, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |
-| 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
-| 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
-| 10 (C#) | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-Csharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |
-| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |
-| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min |
+
+### Autour de SL-12
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
 | 12b | [SL-12b - Synthèse Logique Spectrale](SL-12b-SpectralLogicSynthesis.ipynb) | Fourier booléen exact (FWHT), PTF ternaires, routage Sinkhorn, quantification + Metropolis/parallel tempering avec oracle exact (Pavlov arXiv 2601.13953) (See #14366) | 75 min |
 | 12b' | [SL-12b' - Reproduction Pavlov DLS (recherche)](SL-12b-PavlovDLS-Reproduction.ipynb) | Reproduction CPU Phase 1+2 de Pavlov (arXiv 2601.13953) : Walsh exacte, routeur linéaire signé vs Sinkhorn-constrained, mesure de séparation, verdict honnête (See #14366) | 25 min |
-| 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min |
+
+### Autour de SL-13
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
 | 13b | [SL-13b - TPR × SAE : deux lectures des mêmes états cachés](SL-13b-TPR-SAE.ipynb) | Confrontation de la lecture TPR de SL-13 à un dictionnaire SAE top-k entraîné par l'organe réel `ict/sae_dictionary.py` (série ICT) : sélectivité aux facteurs (position, symbole) contre null apparié, prédiction géométrique rang 1 (non soutenue à ces effectifs, verdict exploratoire), double perturbation (permutation de blocs de coordonnées — contrôle structurel — vs ablation SAE dirigée, contrôles appariés en activité), généralisation encode-only — CPU borné, conclusion bornée (See #14366) | 30 min |
-| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |
-| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −62 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |
 
 ## Contenu détaillé
 

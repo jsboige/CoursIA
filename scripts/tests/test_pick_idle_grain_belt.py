@@ -685,6 +685,15 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # rafraichir, et l'ecriture du cache reste desactivee sous pytest
     # (`_PASS_SNAPSHOT`).
     monkeypatch.setattr(pig, "_belt_snapshot_prime", lambda repo, numbers: None)
+    # #25522 : le classement des PRs rouges lit le FIL de chaque PR (une
+    # requete REST par PR) -- une surface reseau de plus, de la meme famille :
+    # elle est stubee ici, sinon le garde `_no_real_gh` leve (il refuse tout
+    # `gh`, et son exception n'est pas un `Exception` : elle se propage).
+    monkeypatch.setattr(pig, "_red_pr_comments", lambda n: [])
+    # #25522 : la lecture de perimetrie du picker (`git rev-parse`,
+    # `git hash-object`) passe par ce point de couture. On le neutralise :
+    # le test ne mesure pas le perimetre, et le `git` reel n'apporte rien ici.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -725,6 +734,34 @@ def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
     assert payload["repair"]["grain"]["number"] == 18844
     # La fenetre de livraisons en mode belt fait 90 j, pas 14 j.
     assert payload["last_delivery_window_days"] == 90
+
+
+def test_belt_json_names_the_service_window_and_the_pending_deliveries(monkeypatch, capsys):
+    """#25522 point 4 : la sortie nomme ce que la boucle a COUVERT.
+
+    « 0 retenu » ne doit pas etre muet : la lane doit pouvoir distinguer
+    « le pool est vide » de « les positions vues etaient toutes livrees ».
+    Les trois nombres sont dans le JSON (positions parcourues, fenetre,
+    livraisons en attente).
+    """
+    red = _state_red()
+    prs = [{
+        "number": 18844,
+        "title": "PR rouge de la lane",
+        "body": "Grain: MED/guard -- lane myia-po-2024:CoursIA-2",
+        "createdAt": "2026-09-30T12:00:00Z",
+        "isDraft": False,
+    }]
+    _patch_belt_network(monkeypatch, prs, red)
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    svc = payload["service_window"]
+    assert svc["positions"] == 0        # pool vide dans ce test
+    assert svc["extended"] is False
+    assert svc["pending_deliveries"] == 0
 
 
 def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
@@ -4074,10 +4111,9 @@ def test_belt_json_withheld_complete_reflects_probe_ceilings(
     assert payload["delivered_signal"]["withheld_complete"] is True
 
 
-def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
-    """#22983 : le fail-CLOSED STRICT refuse la FENETRE entiere des qu'UN
-    seul numero est perime -- le refus n'est pas proportionnel au nombre
-    de numeros perimes.
+def test_le_refus_strict_est_par_numero_et_non_par_fenetre(monkeypatch, capsys):
+    """#22983 (v3) : le fail-CLOSED STRICT refuse le NUMERO perime, pas la
+    FENETRE entiere.
 
     Mesure fondatrice (09/11, run c3010 de cette lane, sur `main` a jour) :
     le tapis a rendu sur stderr
@@ -4090,14 +4126,17 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
 
     Onze numeros perimes sur 70 -- et **les 59 autres ont ete refuses
     eux aussi** : « 0 retenu(s), 70 witheld », « picks : 0 ». Le message ne
-    nomme que les 11, mais le refus porte sur la fenetre entiere.
+    nomme que les 11, mais le refus portait sur la fenetre entiere.
 
-    La lecture du code nomme la mecanique, et ce temoin la PROVE :
-    `gh_snapshot.serves()` est une validite **par issue** (une issue
-    perimee rend le predicat faux), mais l'appelant l'applique a la
-    fenetre entiere : un seul numero perime fait echouer `serves()` pour
-    les 70, et la voie STRICT rend alors `BLOCKED` pour les 70 -- aucun
-    grain servi, le tapis fail-CLOSED.
+    La lecture du code nomme la mecanique : `gh_snapshot.serves()` est une
+    validite **par issue** (un stamp frais par issue, ET les commentaires
+    de cette issue), mais l'appelant l'appliquait a la fenetre entiere --
+    un seul numero perime faisait echouer `serves()` pour les 70, et la
+    voie STRICT rendait alors `BLOCKED` pour les 70 : aucun grain servi,
+    le tapis fail-CLOSED sur une fenetre dont 59 numeros etait lisibles.
+
+    Ce temoin est le temoin INVERSE : les deux numeros frais sont
+    **servis**, et le numero perime est refuse **avec son motif**.
 
     Ce que ce temoin NE dit pas : que la porte
     `MAX_SWEEP_LOOKBACK_SECONDS` serait en cause. Elle ecarte le
@@ -4110,6 +4149,11 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
     # le teardown le restaure (monkeypatch restaure la valeur qu'il a
     # relevee, pas celle que le code a ensuite ecrite).
     monkeypatch.setattr(clc, "_SNAPSHOT", None)
+    # La jambe IMPLICIT (#14300) partirait sur `gh pr list` : elle est
+    # neutralisee ici -- ce temoin mesure le refus STRICT, pas les PRs
+    # ouvertes qui referencent l'issue.
+    monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
+                        lambda number, my_lane, prs=None, threshold=None: [])
 
     snapshot = _mini_snapshot([11, 12, 13])
     # 12 est perime (2 h > le TTL de 30 min) ; 11 et 13 sont frais.
@@ -4120,20 +4164,26 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
                                 strict_snapshot=True)
 
     err = capsys.readouterr().err
-    assert "[22983] voie en processus indisponible" in err, (
+    assert "[22983] refus STRICT par numero" in err, (
         f"le refus doit NOMMER sa cause sur stderr (got: {err!r})")
     perimes = re.search(r"perimes: ([^)]*)", err)
     assert perimes is not None, f"la cause doit nommer les perimes ({err!r})"
     assert perimes.group(1).strip() == "12", (
         f"seul le numero perime doit etre nomme ({perimes.group(1)!r})")
 
-    # Le refus porte sur la FENETRE : les deux numeros frais sont refuses
-    # eux aussi. C'est ce qui produit « 0 retenu(s), 70 witheld ».
-    for numero in (11, 12, 13):
+    # Les deux numeros frais sont SERVIS : le refus ne les concerne pas.
+    for numero in (11, 13):
         code, _human = verdicts[numero]
-        assert code == pig.CLAIM_CODE_BLOCKED, (
-            f"le numero {numero} devrait etre refuse avec la fenetre "
-            f"(verdict: {verdicts[numero]!r})")
+        assert code in (pig.CLAIM_CODE_FREE, pig.CLAIM_CODE_FREE_STALE), (
+            f"le numero frais {numero} doit etre servi (verdict: "
+            f"{verdicts[numero]!r})")
+
+    # Le numero perime est refuse, ET son refus porte son MOTIF : un refus
+    # muet serait indistinguable d'une panne de fenetre.
+    code, human = verdicts[12]
+    assert code == pig.CLAIM_CODE_BLOCKED, verdicts[12]
+    assert "perime" in human, f"le refus doit porter son motif ({human!r})"
+    assert "#12" in human, f"le motif doit nommer le numero ({human!r})"
 
 @pytest.mark.parametrize("as_json", [False, True])
 def test_belt_public_output_carries_delivery_status(monkeypatch, capsys, as_json):

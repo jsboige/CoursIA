@@ -206,18 +206,7 @@ Détail H.1-H.7 + plan P0-P4 + script pre-commit : [regles-validation-detail.md]
 
 ## CARTOGRAPHIE & OUTILS
 
-```
-MyIA.AI.Notebooks/          # Séries pédagogiques : GenAI/{Image,Audio,Video,Texte},
-                            # ML (ML.NET C#), Search, Sudoku, SymbolicAI/{Lean,Tweety,
-                            # SemanticWeb,Planning,SmartContract}, Probas (Infer.NET),
-                            # GameTheory (OpenSpiel + Lean), IIT (PyPhi), QuantConnect
-scripts/notebook_tools/     # CLI multi-famille (validate/execute/skeleton/analyze)
-scripts/genai-stack/        # GenAI Docker + validation
-.claude/{agents,skills,rules}/
-GradeBookApp/               # Notation étudiants (pipelines/données privés GDrive)
-docker-configurations/      # ComfyUI + Qwen Docker
-docs/                       # Documentation déportée de ce fichier
-```
+Arborescence des séries de notebooks et des dossiers techniques : [README §Structure du dépôt](README.md#structure-du-dépôt).
 
 **Règle générale outils** : ne jamais écrire un script ad-hoc d'exécution/validation — il existe presque toujours un outil dédié dans `scripts/notebook_tools/`. Si manquant, l'ajouter **là** (pas dans la racine `scripts/`).
 
@@ -264,6 +253,4 @@ Structure complète : [quantconnect.md](docs/qc/quantconnect.md).
 
 ## PROJECT OVERVIEW
 
-CoursIA = plateforme éducative AI : Jupyter notebooks (C# .NET Interactive + Python), infrastructure Docker GenAI (ComfyUI + Qwen), GradeBookApp évaluation étudiants. Repository : https://github.com/jsboige/CoursIA. Documentation primaire en français ; commentaires code en français ou anglais.
-
-Stack : OpenAI/Anthropic APIs, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023).
+Vue d'ensemble du projet, pile technique et prérequis : [README.md](README.md) — pile applicative et ventilation GPU dans [README §Infrastructure Docker](README.md#infrastructure-docker).
