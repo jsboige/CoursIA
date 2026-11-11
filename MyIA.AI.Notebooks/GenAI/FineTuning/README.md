@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-FineTuning
-pedagogical_count: 16
-breakdown: FineTuning=16
-maturity: BETA=16
+pedagogical_count: 20
+breakdown: FineTuning=20
+maturity: BETA=20
 -->
 
 [← GenAI](../README.md) | [↑ ..](../README.md) | [→ PostTraining](../PostTraining/README.md)
@@ -33,7 +33,8 @@ FineTuning/
 ├── FT-03-Supervised-FineTuning-SFT-Python.ipynb      # SFT : contrat de format, Qwen3.5-0.8B
 ├── FT-04-RLHF-DPO-Python.ipynb                       # Alignement préférences, DPO
 ├── FT-05-ModelMerging-Routing-Python.ipynb           # Fusion d'adaptateurs, routage MoE
-└── FT-06-Vision-Language-LoRA-Python.ipynb           # LoRA vision-langage, tâche image->texte
+├── FT-06-Vision-Language-LoRA-Python.ipynb           # LoRA vision-langage, tâche image->texte
+└── FT-07-Anatomie-Memoire-Entrainement-Parallelismes-Python.ipynb # Budget mémoire d'un pas d'entraînement, mesuré
 ```
 
 > **Numérotation et point d'entrée du parcours.** Le préfixe `00` désigne ici le **socle from-scratch** : démonter le mécanisme LoRA à la main (FT-00a), mesurer son réglage `r × alpha` (FT-00b), puis confronter l'implémentation maison à l'outil SOTA `peft` (FT-00c). Le **parcours pédagogique commence à FT-01** (introduction pratique) ; les notebooks `00` sont des compléments techniques, à faire avant ou en parallèle quand on veut voir « sous le capot ». Ailleurs dans le dépôt, le préfixe `00` signifie le plus souvent « environnement » (`GenAI/00-GenAI-Environment/`, `Sudoku-00-Environment`, `SmartContracts/00-Foundations/`) — cette série est l'exception locale ; un éventuel renumérotage des fichiers est tracé par l'issue #16231 (nomenclature).
@@ -52,6 +53,7 @@ FineTuning/
 | [FT-04](FT-04-RLHF-DPO-Python.ipynb) | Reward Model, RLHF, DPO | FT-01, FT-02, FT-03 | ~30 min | Avancé |
 | [FT-05](FT-05-ModelMerging-Routing-Python.ipynb) | TIES, DARE, MergeKit, routage MoE | FT-01 à FT-04 | ~45 min | Avancé |
 | [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) | LoRA vision-langage Qwen3.5-0.8B, conformité image->texte | FT-02, FT-03 | ~45 min | Avancé |
+| [FT-07](FT-07-Anatomie-Memoire-Entrainement-Parallelismes-Python.ipynb) | Anatomie mémoire d'un pas d'entraînement : 20 octets/paramètre mesurés, formule d'activations confrontée à deux noyaux d'attention, recomputation, ledger ZeRO dérivé, anneau all-reduce | FT-01 | ~45 min | Avancé |
 
 ### Socle from-scratch (compléments techniques, 00a → 00b → 00c)
 
@@ -96,6 +98,7 @@ pip install mergekit  # Pour FT-05 uniquement
 | FT-04 | 12 GB (DPO 2 modèles en mémoire) | 24 GB |
 | FT-05 | 16 GB (merge) | 24 GB |
 | FT-06 | 8 GB (QLoRA 4-bit) | 12 GB |
+| FT-07 | Aucune (CPU possible, `torch` sans CUDA) | 8 GB |
 
 ## Concepts clés
 

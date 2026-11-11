@@ -82,6 +82,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -105,6 +106,13 @@ def check(body: str | None, head_ref: str | None = None) -> dict:
     #17713: a Claude Code session opened from the maintainer's cloud
     environment writes no `Grain:` tag, and ``CLAUDE.md`` ('À qui ce fichier
     s'adresse') explicitly exempts such sessions from the variation protocol.
+
+    Independently of `head_ref`, a body that explicitly declares a relayed
+    student assignment (``TP relayée`` and its unaccented/gendered variants)
+    is exempt too -- cf. #23605: a TP relayed by the teacher opens from the
+    teacher's branch (no constrainable prefix), and the student protocol
+    (student-pr-reviews.md) exempts it in prose; before this, the gate failed
+    such PRs BY CONSTRUCTION (measured on #22969, job 122392394402).
     """
     if body is None or body.strip() == "":
         return {
@@ -127,6 +135,24 @@ def check(body: str | None, head_ref: str | None = None) -> dict:
         return {
             "required_pass": True,
             "reason": "exempt by #17713 (claude/* + 'Hors flotte' in body)",
+            "tier": None,
+            "genre": None,
+            "lane": None,
+        }
+
+    # #23605 -- exemption : PR de TP relayee par l'enseignant.
+    # Le relais part d'une branche de l'enseignant (pas de prefixe
+    # contraignable), donc l'exemption tient sur la declaration explicite
+    # du corps seule (option 1 de l'issue, tranchee au dispatch c2772) :
+    # avant elle, toute PR de TP relayee echouait l'organe PAR CONSTRUCTION,
+    # quel que soit son contenu (mesure #22969, job 122392394402 -- un body
+    # qui declarait pourtant la convention en prose). Les variantes
+    # accentuees/non accentuees et genrees sont couvertes (`TP relayée`,
+    # `TP relayee`, `TP relayé`, `TP relaye`).
+    if re.search(r"TP\s+relay[eé]", body):
+        return {
+            "required_pass": True,
+            "reason": "exempt by #23605 ('TP relayée' declared in body)",
             "tier": None,
             "genre": None,
             "lane": None,

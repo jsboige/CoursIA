@@ -466,7 +466,7 @@ class TestMlEngineerManifest:
         assert not missing, \
             f"chemins absents du catalogue (regenerer ou drop): {missing}"
 
-    def test_compiles_seven_branches_and_five_accretions(self):
+    def test_compiles_seven_branches_and_six_accretions(self):
         manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
         catalog = _catalog_with_pending_renames(manifest)
         branches = [b["id"] for b in manifest["branches"]]
@@ -736,6 +736,370 @@ class TestLlmEngineerManifest:
             "regenerer avec `python scripts/notebook_tools/generate_parcours.py "
             "--manifest docs/curriculum/llm-engineer.json`, suivi de TOUTES les "
             "`--branch` et de TOUTES les `--accretion` du manifeste"
+        )
+
+
+class TestRechercheManifest:
+    """Tests pour le manifeste Recherche (EPIC #19543, carte des trous c.205).
+
+    Couvre : (a) tous les notebooks cites existent sur disque et au catalogue ;
+    (b) le manifeste compile en 7 branches + 4 accretions ;
+    (c) la duree totale tient en moins de 50 h ;
+    (d) les transitions de noyau sont exactement celles declarees (.NET en
+        detour uniquement, Lean declare et assume en branche principale --
+        les carnets Lean ne sont pas des jumeaux, ils portent des preuves
+        qui n'existent qu'en Lean) ;
+    (e) le compiled.json commite reflete la selection complete ;
+    (f) la masse propre reste dominante face aux parcours existants (pli 1 :
+        les parcours se croisent sans se dupliquer).
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "recherche-vertical.json"
+
+    def _manifest(self):
+        return json.loads(self.manifest_path.read_text(encoding="utf-8"))
+
+    def _compiled(self, manifest, catalog):
+        return gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+
+    def test_all_selected_notebooks_exist_on_disk(self):
+        manifest = self._manifest()
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        assert len(selected) == len(set(selected)), "duplicate path in manifest"
+        assert all((gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file()
+                   for path in selected), \
+            f"chemins introuvables sur disque: {[p for p in selected if not (gp.REPO_ROOT / 'MyIA.AI.Notebooks' / p).is_file()]}"
+
+    def test_all_paths_are_in_catalog(self):
+        manifest = self._manifest()
+        catalog = _catalog_with_pending_renames(manifest)
+        catalog_paths = {entry["path"] for entry in catalog}
+        missing = [p for group in manifest["branches"] + manifest["accretions"]
+                   for p in group["notebooks"] if p not in catalog_paths]
+        assert not missing, f"chemins absents du catalogue: {missing}"
+
+    def test_compiles_seven_branches_and_four_accretions(self):
+        manifest = self._manifest()
+        catalog = _catalog_with_pending_renames(manifest)
+        branches = [b["id"] for b in manifest["branches"]]
+        accretions = [a["id"] for a in manifest["accretions"]]
+        compiled = gp.compile_parcours(catalog, manifest, branches, accretions)
+        assert len(branches) == 7 and len(accretions) == 4
+        assert len(compiled["groups"]) == 7 + 4
+        assert [g["id"] for g in compiled["groups"][:7]] == branches
+
+    def test_total_duration_under_50_hours(self):
+        """Le parcours complet tient en moins de 50 h, sinon c'est un autre format qu'un parcours."""
+        manifest = self._manifest()
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = self._compiled(manifest, catalog)
+        assert compiled["duration_minutes"] < 50 * 60, (
+            f"duree totale {compiled['duration_minutes']} min >= 50 h, "
+            f"le parcours n'est plus un itineraire mais une encyclopedie"
+        )
+
+    def test_dotnet_only_in_detour_and_transitions_exactly_declared(self):
+        """Les familles de noyaux etrangeres a Python sont exactement celles
+        declarees par le manifeste : .NET confine au detour Infer.NET, Lean
+        declare et assume en branche principale (preuves formelles, pas des
+        jumeaux de contenu Python).
+
+        Non-vacuite : le detour porte bien des carnets .NET et la branche
+        prouver-un-theoreme porte bien des carnets Lean -- sinon le test
+        passerait sur une selection qui a perdu sa raison d'etre.
+        """
+        manifest = self._manifest()
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = self._compiled(manifest, catalog)
+        branch_ids = {b["id"] for b in manifest["branches"]}
+        dotnet_groups, lean_groups = set(), set()
+        for group in compiled["groups"]:
+            for notebook in group["notebooks"]:
+                family = notebook["kernel"].split(" ", 1)[0]
+                if family == ".NET":
+                    dotnet_groups.add(group["id"])
+                elif family == "Lean":
+                    lean_groups.add(group["id"])
+        assert dotnet_groups <= {a["id"] for a in manifest["accretions"]}, (
+            f"carnets .NET hors detour : {dotnet_groups - branch_ids}")
+        assert dotnet_groups == {"inference-probabiliste-dotnet"}, (
+            "le detour Infer.NET doit porter les carnets .NET")
+        assert lean_groups == {"prouver-un-theoreme"}, (
+            f"carnets Lean inattendus hors branche de preuve : {lean_groups}")
+        families = {notebook["kernel"].split(" ", 1)[0]
+                    for group in compiled["groups"]
+                    for notebook in group["notebooks"]}
+        foreign = families - {"Python"}
+        assert foreign == set(manifest["declared_kernel_transitions"]), (
+            f"transitions reelles {foreign} != declarees "
+            f"{set(manifest['declared_kernel_transitions'])}"
+        )
+
+    def test_committed_compiled_json_reflects_full_selection(self):
+        """Le compiled.json commite doit refleter la selection COMPLETE du
+        manifeste (defaut fondateur de la revue #19544 : livreur a 8 branches
+        seules). La comparaison porte sur la selection -- ids, kinds, ordre,
+        prerequis, chemins -- pas sur les champs derives du catalogue.
+        """
+        manifest = self._manifest()
+        catalog = _catalog_with_pending_renames(manifest)
+        committed = json.loads(
+            (gp.REPO_ROOT / "docs" / "curriculum" / "recherche-vertical.compiled.json")
+            .read_text(encoding="utf-8"))
+        generated = self._compiled(manifest, catalog)
+
+        def selection(compiled):
+            return [
+                (group["id"], group["kind"], tuple(group["prerequisites"]),
+                 tuple(notebook["path"] for notebook in group["notebooks"]))
+                for group in compiled["groups"]
+            ]
+
+        assert selection(committed) == selection(generated), (
+            "le compiled.json commite ne correspond pas a la selection du "
+            "manifeste : regenerer avec `python scripts/notebook_tools/"
+            "generate_parcours.py --manifest docs/curriculum/recherche-vertical.json` "
+            "suivi de TOUTES les `--branch` et `--accretion` du manifeste"
+        )
+
+    def test_masse_propre_min_30_vs_parcours_existants(self):
+        """Pli 1 : les parcours se croisent sans se dupliquer. Au moins 30
+        carnets du parcours Recherche n'appartiennent ni au LLM Engineer ni
+        au ML Engineer -- sinon ce parcours n'apporte pas son propre itineraire.
+        """
+        manifest = self._manifest()
+        selected = {p for group in manifest["branches"] + manifest["accretions"]
+                    for p in group["notebooks"]}
+
+        def paths_of(name):
+            other = json.loads(
+                (gp.REPO_ROOT / "docs" / "curriculum" / name).read_text(encoding="utf-8"))
+            return {p for g in other["branches"] + other.get("accretions", [])
+                    for p in g["notebooks"]}
+
+        others = paths_of("llm-engineer.json") | paths_of("ml-engineer.json")
+        propres = selected - others
+        assert len(propres) >= 30, (
+            f"masse propre {len(propres)} < 30 : le parcours recopie les "
+            f"itineraires existants au lieu de traverser le depot"
+        )
+
+    def test_fil_recherche_threading(self):
+        """Chaque branche porte le fil recherche dans sa description :
+        reproduction, loi, preuve, experience, mesure -- pas seulement un
+        inventaire de themes.
+        """
+        manifest = self._manifest()
+        keywords = ["reproductib", "reprodu", "loi", "preuve", "formel",
+                    "experience", "mesure", "mesurer", "emergen", "transition"]
+        for branch in manifest["branches"]:
+            desc_lower = branch["description"].lower()
+            assert any(kw in desc_lower for kw in keywords), (
+                f"branche {branch['id']} sans ancrage recherche dans sa "
+                f"description (reproduire/decouvrir/prouver/valider/mesurer)"
+            )
+class TestAiEngineerManifest:
+    """Tests pour le manifeste AI Engineer (EPIC #19543, vertical debloque
+    par la carte des trous c.205 du pli 1).
+
+    Couvre : (a) tous les notebooks cites existent sur disque et sont dans
+    le catalogue ; (b) le manifeste compile en 8 branches + 5 accretions ;
+    (c) la duree totale tient en moins de 50 h ; (d) les carnets .NET
+    (SemanticKernel numerote, Aspire, Orleans) n'apparaissent qu'en detour,
+    pas en branche principale ; (e) le compiled.json committe reflete la
+    selection COMPLETE ; (f) le vertical apporte sa propre masse (il
+    traverse le corpus, il ne recopie pas le parcours LLM Engineer).
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "ai-engineer.json"
+    llm_manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "llm-engineer.json"
+
+    def test_all_selected_notebooks_exist_on_disk(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        assert len(selected) == len(set(selected)), "duplicate path in manifest"
+        assert all((gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file()
+                   for path in selected), \
+            f"chemins introuvables sur disque: {[p for p in selected if not (gp.REPO_ROOT / 'MyIA.AI.Notebooks' / p).is_file()]}"
+
+    def test_all_paths_are_in_catalog(self):
+        """Le manifeste ne reference pas un carnet absent du catalogue.
+
+        Meme regle que le manifeste ML Engineer : on n'indexe pas un carnet
+        orphelin dans un manifeste ; la regeneration du catalogue releve
+        d'un autre grain.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        catalog_paths = {entry["path"] for entry in catalog}
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        missing = [p for p in selected if p not in catalog_paths]
+        assert not missing, \
+            f"chemins absents du catalogue (regenerer ou drop): {missing}"
+
+    def test_compiles_eight_branches_and_five_accretions(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        branches = [b["id"] for b in manifest["branches"]]
+        accretions = [a["id"] for a in manifest["accretions"]]
+        assert len(branches) == 8
+        assert len(accretions) == 5
+        compiled = gp.compile_parcours(catalog, manifest, branches, accretions)
+        assert len(compiled["groups"]) == len(branches) + len(accretions)
+        assert [g["id"] for g in compiled["groups"][:len(branches)]] == branches
+
+    def test_total_duration_under_50_hours(self):
+        """Le parcours complet tient en moins de 50 h, sinon c'est un autre format qu'un parcours."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        assert compiled["duration_minutes"] < 50 * 60, (
+            f"duree totale {compiled['duration_minutes']} min >= 50 h, "
+            f"le parcours n'est plus un itineraire mais une encyclopedie"
+        )
+
+    def test_dotnet_notebooks_only_in_detour_not_main_branch(self):
+        """Les carnets .NET sont en detour, jamais en branche principale
+        (convention du pli 1, #19544), et le detour en contient vraiment.
+
+        La lecture porte sur le noyau REELLEMENT enregistre -- la cle `kernel`
+        du compiled -- et non sur un prefixe de chemin. Le prefixe classait
+        `GenAI/SemanticKernel/0x` en .NET alors que ses quatre carnets sont
+        Python (ils importent `semantic_kernel`) : le garde passait pour la
+        mauvaise raison, sans pouvoir voir ni un carnet .NET range en detour,
+        ni un carnet Python etiquete .NET (revue Hermes du 2026-11-09, #25438).
+        L'assertion finale rend le garde non vacuant : un parcours qui annonce
+        du .NET doit en livrer au moins un.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        branch_ids = {b["id"] for b in manifest["branches"]}
+        dotnet = [(group["id"], notebook["path"])
+                  for group in compiled["groups"]
+                  for notebook in group["notebooks"]
+                  if notebook["kernel"].split(" ", 1)[0] == ".NET"]
+        in_branch = [(group_id, path) for group_id, path in dotnet
+                     if group_id in branch_ids]
+        assert not in_branch, (
+            f"carnet(s) .NET en branche principale : {in_branch}; "
+            f"ils devraient etre dans une accretion (detour)"
+        )
+        assert dotnet, (
+            "aucun carnet .NET dans les detours alors que la description du "
+            "parcours en annonce : le detour .NET est vide"
+        )
+
+    def test_kernel_transitions_are_declared(self):
+        """Le parcours traverse Python et .NET : la transition est declaree.
+
+        La convention du pli 1 (`niveaux.json`) exige que les familles non
+        Python rencontrees soient exactement celles declarees. Ici la lecture
+        est rendue exacte par un oracle : deux carnets portent le noyau
+        `base`, qui est le `display_name` d'un environnement conda et non une
+        famille de langage. On lit leur `kernelspec.language` dans le carnet
+        au lieu de le supposer ; sans cette lecture il faudrait declarer
+        `base` comme une transition reelle, c'est-a-dire mentir dans un
+        manifeste publie (revue Hermes du 2026-11-09, #25438).
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        families = set()
+        for group in compiled["groups"]:
+            for notebook in group["notebooks"]:
+                family = notebook["kernel"].split(" ", 1)[0]
+                if family == "base":
+                    path = generate_catalog.NOTEBOOKS_DIR / notebook["path"]
+                    metadata = json.loads(
+                        path.read_text(encoding="utf-8")).get("metadata", {})
+                    language = metadata.get("kernelspec", {}).get("language")
+                    assert language == "python", (
+                        f"{notebook['path']} declare le noyau `base` sans "
+                        f"langage python ({language!r}) : `base` n'est plus un "
+                        f"simple nom d'environnement, il faut le declarer"
+                    )
+                    family = "Python"
+                families.add(family)
+        foreign = families - {"Python"}
+        declared = set(manifest.get("declared_kernel_transitions", []))
+        assert foreign == declared, (
+            f"familles non Python rencontrees {sorted(foreign)} != "
+            f"declarees {sorted(declared)}"
+        )
+        assert declared, "declaration vide : la garde ne mordrait sur rien"
+
+    def test_committed_compiled_json_reflects_full_selection(self):
+        """Le `compiled.json` committe doit refleter la selection COMPLETE.
+
+        Defaut fondateur du pli 1 (revue ai-01 du 2026-10-09) : le fichier
+        livre avait ete compile sans aucune `--accretion`. Le test compare
+        la selection (ids, kinds, prerequis, chemins), pas les champs
+        derives du catalogue.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        committed = json.loads(
+            (gp.REPO_ROOT / "docs" / "curriculum" / "ai-engineer.compiled.json")
+            .read_text(encoding="utf-8"))
+        generated = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+
+        def selection(compiled):
+            return [
+                (group["id"], group["kind"], tuple(group["prerequisites"]),
+                 tuple(notebook["path"] for notebook in group["notebooks"]))
+                for group in compiled["groups"]
+            ]
+
+        assert selection(committed) == selection(generated), (
+            "le compiled.json committe ne correspond pas a la selection du "
+            "manifeste : regenerer avec `python scripts/notebook_tools/"
+            "generate_parcours.py --manifest docs/curriculum/ai-engineer.json`, "
+            "suivi de TOUTES les `--branch` et de TOUTES les `--accretion`"
+        )
+
+    def test_vertical_bring_its_own_mass(self):
+        """Le vertical traverse le corpus, il ne recopie pas LLM Engineer.
+
+        La consigne de l'EPIC #19543 : les verticaux doivent traverser la
+        bibliotheque, pas se dupliquer entre eux. Le socle commun (branches
+        appel/production/securite) est assume ; mais le parcours doit
+        apporter une masse propre majoritaire (modalites, plateformes,
+        orchestration applicative, etudes de cas).
+        """
+        ai = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        llm = json.loads(self.llm_manifest_path.read_text(encoding="utf-8"))
+
+        def paths(manifest):
+            return {p for group in manifest["branches"] + manifest["accretions"]
+                    for p in group["notebooks"]}
+
+        own = paths(ai) - paths(llm)
+        assert len(own) >= 30, (
+            f"le vertical n'apporte que {len(own)} carnets propres "
+            f"(minimum 30) : il recopie le parcours LLM Engineer au lieu "
+            f"de traverser un autre pan de la bibliotheque"
         )
 
 

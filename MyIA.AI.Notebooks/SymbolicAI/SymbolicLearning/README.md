@@ -1,6 +1,6 @@
 # SymbolicLearning - Apprentissage Symbolique
 
-[← Argument_Analysis](../Argument_Analysis/README.md) | [↑ SymbolicAI](../README.md) | [SMT →](../SMT/README.md)
+[← ArgumentAnalysis](../ArgumentAnalysis/README.md) | [↑ SymbolicAI](../README.md) | [SMT →](../SMT/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SymbolicLearning
@@ -255,35 +255,54 @@ Note : dans SL-7, le premier exercice de la numérotation interne est un exemple
 
 ## Notebooks
 
+| # | Notebook | Contenu | Durée | Pour approfondir |
+|---|----------|---------|-------|-------------------|
+| 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min | [1b](#autour-de-sl-1) |
+| 1 | [SL-1 - Apprentissage Logique (Twin C#)](SL-1-LogicalLearning-Csharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min | [1b](#autour-de-sl-1) |
+| 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |  |
+| 2 | [SL-2 - Apprentissage et Connaissance (Twin C#)](SL-2-KnowledgeBasedLearning-Csharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |  |
+| 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |  |
+| 3 | [SL-3 - RBL (Twin C#)](SL-3-RelevanceLearning-Csharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |  |
+| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |  |
+| 4 | [SL-4 - ILP (Twin C#)](SL-4-InductiveLogicProgramming-Csharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |  |
+| 5 | [SL-5 - Résolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |  |
+| 5 | [SL-5 - Résolution Inverse (Twin C#)](SL-5-InverseResolution-Csharp.ipynb) | **Jumeau C#** — LGG de Plotkin, θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p − L`) from-scratch (See #4956) | 55 min |  |
+| 6 | [SL-6 - Moteurs ILP modernes](SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |  |
+| 6 | [SL-6 - Moteurs ILP (Twin C#)](SL-6-ModernILP-Csharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |  |
+| 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |  |
+| 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |  |
+| 8 | [SL-8 - KG mining (Twin C#)](SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.4.1, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |  |
+| 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |  |
+| 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |  |
+| 10 | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-Csharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |  |
+| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |  |
+| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min | [12b](#autour-de-sl-12) · [12b'](#autour-de-sl-12) |
+| 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min | [13b](#autour-de-sl-13) |
+| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |  |
+| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −62 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |  |
+
+## Approfondissements
+
+Les notebooks lettrés prolongent un palier du parcours principal. Les liens de la table renvoient à leur groupe ; leurs descriptions, durées et références sont conservées ici.
+
+### Autour de SL-1
+
 | # | Notebook | Contenu | Durée |
 |---|----------|---------|-------|
-| 1 | [SL-1 - Apprentissage Logique](SL-1-LogicalLearning.ipynb) | CBH, Version Space, Candidate Elimination | 50 min |
-| 1 (C#) | [SL-1 - Apprentissage Logique (Twin C#)](SL-1-LogicalLearning-Csharp.ipynb) | **Jumeau C#** — CBH (Current-Best-Hypothesis) + Candidate Elimination / Version Space implémentés from-scratch en C# pur (type system + `HashSet<>`, pas de lib externe ML) (See #4956) | 50 min |
 | 1b (Lean) | [SL-1b - Apprentissage PAC formel (Lean natif)](SL-1b-LogicalLearning-Lean-Native.ipynb) | **Compagnon Lean natif** — le lake `learning_theory_lean` exécuté au kernel `lean4-wsl` : modèle PAC, borne de Valiant classe finie, agnostique, Hoeffding-Chernoff, perceptron Novikoff + serrage (See #11703) | 40 min |
-| 2 | [SL-2 - Apprentissage et Connaissance](SL-2-KnowledgeBasedLearning.ipynb) | EBL, introduction au RBL (déterminations) | 45 min |
-| 2 (C#) | [SL-2 - Apprentissage et Connaissance (Twin C#)](SL-2-KnowledgeBasedLearning-Csharp.ipynb) | **Jumeau C#** — EBL (chaînage avant + unification, arbre de preuve, variabilisation) + RBL (vérification de détermination) from-scratch (See #4956) | 50 min |
-| 3 | [SL-3 - Apprentissage Basé sur la Pertinence](SL-3-RelevanceLearning.ipynb) | Treillis des déterminations, MINIMAL-CONSISTENT-DET, RBL vs sklearn | 50 min |
-| 3 (C#) | [SL-3 - RBL (Twin C#)](SL-3-RelevanceLearning-Csharp.ipynb) | **Jumeau C#** — Treillis des déterminations, MINIMAL-CONSISTENT-DET (BFS), PAC bound, information mutuelle from-scratch (See #4956) | 50 min |
-| 4 | [SL-4 - Programmation Logique Inductive](SL-4-InductiveLogicProgramming.ipynb) | FOIL, résolution inverse, clauses Horn, knowledge graphs, Popper (LFF) | 55 min |
-| 4 (C#) | [SL-4 - ILP (Twin C#)](SL-4-InductiveLogicProgramming-Csharp.ipynb) | **Jumeau C#** — FOIL (gain Quinlan) + résolution inverse (V/W) + unification from-scratch, mini-KG (See #4956) | 50 min |
-| 5 | [SL-5 - Résolution Inverse et Progol](SL-5-InverseResolution.ipynb) | LGG de Plotkin, theta-subsomption, clause bottom, recherche Progol | 60 min |
-| 5 (C#) | [SL-5 - Résolution Inverse (Twin C#)](SL-5-InverseResolution-Csharp.ipynb) | **Jumeau C#** — LGG de Plotkin, θ-subsomption (skolemisation + backtracking), clause bottom (saturation bornée + variabilisation), recherche Progol (score `p − L`) from-scratch (See #4956) | 55 min |
-| 6 | [SL-6 - Moteurs ILP modernes](SL-6-ModernILP.ipynb) | Aleph, Metagol, Popper, ∂ILP (Lernd) sur `ancestor/2` (moteurs réels) | 65 min |
-| 6 (C#) | [SL-6 - Moteurs ILP (Twin C#)](SL-6-ModernILP-Csharp.ipynb) | **Jumeau C#** — FOIL relationnel from-scratch (FOIL_Gain de Quinlan, couverture extensionnelle par backtracking, récursion `ancestor/2` = cas de base + pas récursif), benchmark profondeur 5-20, verdict SOTA des 4 moteurs externes (Aleph/Metagol/Popper=RECOVERABLE-MACHINE, ∂ILP=INTRINSIC) (See #4956) | 45 min |
-| 7 | [SL-7 - Intégration Neuro-Symbolique](SL-7-NeuroSymbolic.ipynb) | T-norms, prédicats neuronaux, LTN, DeepProbLog | 55 min |
-| 8 | [SL-8 - ILP Moderne et Knowledge Graphs](SL-8-KnowledgeGraphs-ILP.ipynb) | rdflib, AMIE rule mining, complétion KG, ASP avec clingo | 55 min |
-| 8 (C#) | [SL-8 - KG mining (Twin C#)](SL-8-KnowledgeGraphs-ILP-Csharp.ipynb) | **Jumeau C#** — KG familial dotNetRDF 3.4.1, AMIE rule mining from-scratch (clauses Horn 1-2 atomes, JOIN relationnel subject-indexé), PCA confidence, complétion KG 5→14, saturation fixpoint, arbre généalogique ASCII (See #4956) | 50 min |
-| 9 | [SL-9 - LLMs et Apprentissage Symbolique](SL-9-LLM-SymbolicLearning.ipynb) | Prompting, extraction de règles, vérification symbolique (Gemini 3.5 Flash optionnel) | 50 min |
-| 10 | [SL-10 - Apprentissage Actif d'Automates](SL-10-ActiveAutomataLearning.ipynb) | L* d'Angluin, table d'observation, requêtes MQ/EQ, Myhill-Nerode | 60 min |
-| 10 (C#) | [SL-10 - L* Angluin (Twin C#)](SL-10-ActiveAutomataLearning-Csharp.ipynb) | **Jumeau C#** — DFA, ObservationTable (S/E/T), requêtes MQ/EQ, conjecture DFA, contre-exemple (Angluin/Maler-Pnueli), oracle bruité + L* borné, forward sum-product + agrégation d'evidence from-scratch (See #4956) | 60 min |
-| 11 | [SL-11 - Capstone Neuro-Symbolique](SL-11-Capstone-NeuroSymbolic.ipynb) | Pipeline 6 étages : extraction LLM, oracle, KG, mining, inférence avec provenance, QA | 90 min |
-| 12 | [SL-12 - Réseaux de Portes Logiques Différentiables](SL-12-DifferentiableLogicGateNetworks.ipynb) | difflogic (Petersen NeurIPS 2022) : portes logiques apprises par descente de gradient, discrétisation en circuit booléen, inférence ultra-rapide | 45 min |
+
+### Autour de SL-12
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
 | 12b | [SL-12b - Synthèse Logique Spectrale](SL-12b-SpectralLogicSynthesis.ipynb) | Fourier booléen exact (FWHT), PTF ternaires, routage Sinkhorn, quantification + Metropolis/parallel tempering avec oracle exact (Pavlov arXiv 2601.13953) (See #14366) | 75 min |
 | 12b' | [SL-12b' - Reproduction Pavlov DLS (recherche)](SL-12b-PavlovDLS-Reproduction.ipynb) | Reproduction CPU Phase 1+2 de Pavlov (arXiv 2601.13953) : Walsh exacte, routeur linéaire signé vs Sinkhorn-constrained, mesure de séparation, verdict honnête (See #14366) | 25 min |
-| 13 | [SL-13 - DISCOVER léger : diagnostic TPR](SL-13-Discover-TPR.ipynb) | Diagnostic DISCOVER (McCoy et al. arXiv:2608.29530) sur GRU 1 couche : TPR par ALS (role × filler), réinjection décodeur, constituent surgery, white-box TPR vs embeddings atomiques, balayage capacité d_model ∈ {8,16,32,48}, régularisation L2,1 — conclusion bornée (structure approximative, pas exacte) (See #14366) | 25 min |
+
+### Autour de SL-13
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
 | 13b | [SL-13b - TPR × SAE : deux lectures des mêmes états cachés](SL-13b-TPR-SAE.ipynb) | Confrontation de la lecture TPR de SL-13 à un dictionnaire SAE top-k entraîné par l'organe réel `ict/sae_dictionary.py` (série ICT) : sélectivité aux facteurs (position, symbole) contre null apparié, prédiction géométrique rang 1 (non soutenue à ces effectifs, verdict exploratoire), double perturbation (permutation de blocs de coordonnées — contrôle structurel — vs ablation SAE dirigée, contrôles appariés en activité), généralisation encode-only — CPU borné, conclusion bornée (See #14366) | 30 min |
-| 14 | [SL-14 - AIFeynman : découvrir des équations](SL-14-AIFeynman-Discover-Equations.ipynb) | Régression symbolique AI Feynman 2.0 (Udrescu et al., NeurIPS 2020) sur l'énergie cinétique relativiste : symétries lues dans les gradients, front de Pareto complexité-précision, exécuté dans le conteneur `aifeynman:sl14` (See #14366) | 75 min |
-| 15 | [SL-15 - Conjectures apprises pour un vérificateur symbolique](SL-15-LearnedConjectures-Solver.ipynb) | Neural diving en doctrine SL : MLP de solutions sœurs → conjectures (fixations) offertes à CP-SAT ; décomposition par conjecture (300/300 aidantes, médiane −62 %), hint complet −18 % malgré ~25 % d'arêtes conflictuelles (42/~168), boucle conjecture → réfutation → réparation exécutée (42 conflits → 0), seconde famille couverture (hint −15,9 %, réparation coûteuse) (See #17605) | 40 min |
 
 ## Contenu détaillé
 
@@ -658,7 +677,7 @@ Le bloc `CATALOG-STATUS` (lignes 5-10) appartient à l'automatisation catalogue 
 
 **Conformité C.1** (stubs sans `raise NotImplementedError`) : tous les notebooks respectent la convention notebook 2026-04-26 — patterns de stub corrects (`pass` / `print("Exercice a completer")` / `return None` / `result = None  # TODO etudiant`). La table de pioche de 55 exercices (section dédiée) couvre les angles de chaque algorithme : biais conjonctif de CBH, utility problem de Minton (EBL), borne PAC de l'oracle d'équivalence (L*), seuil de confiance pour les règles AMIE, tasks à rôles sémantiques pour le diagnostic TPR, etc. Dépendances : `requirements.txt` (scikit-learn, numpy, matplotlib, rdflib, clingo, python-dotenv, openai, janus_swi, torch CPU, setuptools < 81) + SWI-Prolog >= 9.1.12 externe (kernel Linux/WSL pour SL-4/SL-6) + conda env `lernd-dilp` (TensorFlow) pour ∂ILP. Vendored : `vendor/metagol/` (BSD-3), `aima_knowledge.py` (MIT AIMA).
 
-**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à Argument_Analysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 55 exercices en pied de README (vs un décompte minimal) — un README dense, cohérent avec la densité mathématique de la série.
+**Posture EPITA-IS / Argumentum** : la série SymbolicLearning n'a **pas** de port EPITA-IS Argumentum (contrairement à ArgumentAnalysis qui aligne 15 PRs MERGED upstream-verbatim byte-equal — voir EPIC #4960 Argumentum). C'est une série 100 % originale du dépôt, ancrée sur AIMA chapitre 19, avec choix assumé d'**inclure** la table de pioche de 55 exercices en pied de README (vs un décompte minimal) — un README dense, cohérent avec la densité mathématique de la série.
 
 ## Écosystème MCP et parenté cross-lane
 
@@ -681,9 +700,9 @@ Trois outils d'infrastructure MCP (cohérent avec cycles 19-31) :
 | `SL-6 4 moteurs ILP` | [Tweety](../Tweety/) + [Planners](../Planners/) + [ML](../../ML/) | Metagol (MIL, invention de prédicats) ↔ Tweety ASP ; ∂ILP différentiable ↔ heuristic learning planners ; Popper ↔ clingo ASP |
 | `SL-7 Neuro-symbolique` | [Tweety](../Tweety/) (logique floue / pondérée) + [ML](../../ML/) (réseaux neuronaux) | T-norms différentiables = logique floue ; LTN = logique tensorielle = pont Tweety pondéré ⇄ MLP |
 | `SL-8 KG mining + clingo` | [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) | rdflib ↔ SemanticWeb OWL ; AMIE rule mining ↔ SemanticWeb RDFS ; clingo ASP ↔ Tweety (même binaire via `scripts/install_clingo.py`) |
-| `SL-9 LLM-Symbolique` | [Argument_Analysis](../Argument_Analysis/) + [GenAI](../../GenAI/) | Boucle LLM + vérification = doctrine anti-théâtre Argument_Analysis (sentinelle `fabricated_true`) ; prompts LLM ↔ GenAI prompting structuré |
+| `SL-9 LLM-Symbolique` | [ArgumentAnalysis](../ArgumentAnalysis/) + [GenAI](../../GenAI/) | Boucle LLM + vérification = doctrine anti-théâtre ArgumentAnalysis (sentinelle `fabricated_true`) ; prompts LLM ↔ GenAI prompting structuré |
 | `SL-10 L* Angluin` | [Tweety](../Tweety/) (logique temporelle / automates) + [Lean](../Lean/) | Myhill-Nerode = théorème formalisable en Lean ; L* sur automates finis ↔ Tweety LTL/CTL (vérification de modèles) |
-| `SL-11 Capstone 6 étages` | [Argument_Analysis](../Argument_Analysis/) + [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) + [GenAI](../../GenAI/) | Pipeline bout-en-bout : LLM (GenAI) → extraction → oracle (Tweety ASP) → KG (SemanticWeb) → mining (AMIE = SymbolicLearning) → inférence avec provenance (Argument_Analysis Restitution_3_Actes pattern) |
+| `SL-11 Capstone 6 étages` | [ArgumentAnalysis](../ArgumentAnalysis/) + [SemanticWeb](../SemanticWeb/) + [Tweety](../Tweety/) + [GenAI](../../GenAI/) | Pipeline bout-en-bout : LLM (GenAI) → extraction → oracle (Tweety ASP) → KG (SemanticWeb) → mining (AMIE = SymbolicLearning) → inférence avec provenance (ArgumentAnalysis Restitution_3_Actes pattern) |
 | `SL-12 Portes logiques différentiables` | [ML](../../ML/) (réseaux de neurones) + [GenAI](../../GenAI/) | difflogic (Petersen NeurIPS 2022) = registre **discret** du neuro-symbolique : neurone = porte logique binaire apprise parmi 16, puis discrétisée en circuit booléen interprétable (vs SL-7 continu) |
 | `SL-12b Synthèse logique spectrale` | [ML](../../ML/) (représentations apprises) + [Lean](../Lean/) (analyse de sensibilité) | Fourier booléen exact = changement de représentation certifié au bit près ; PTF ternaires et routage Sinkhorn de Pavlov (arXiv 2601.13953) — suite potentielle de l'EPIC #14366 (bornes de sensibilité formelles) |
 | `SL-12b' Reproduction Pavlov DLS` | [ML](../../ML/) (mesures multi-seed, verdict honnête) + [Lean](../Lean/) (formalisation éventuelle de la borne de discrimination) | Reproduction bornée Phase 1+2 du claim Pavlov : routeur linéaire signé vs Sinkhorn-constrained sur 27 opérations — borne inférieure mesurée et dette identifiée (gradient exact du Sinkhorn-Knopp) pour les tranches ultérieures de l'EPIC #14366 |
@@ -691,7 +710,7 @@ Trois outils d'infrastructure MCP (cohérent avec cycles 19-31) :
 
 **Paragraphe « effet de composition — SymbolicLearning = carrefour spectre-apprentissage inter-paradigmes »** :
 
-Là où Argument_Analysis (cycle 31) déploie le **carrefour informel/formel anti-théâtre inter-couches** (lecture LLM ⇄ Tweety/Lean), SmartContracts (cycle 30) le **carrefour trust/privacy inter-séries** (confiance ⇄ confidentialité ⇄ décision collective), Planners (cycle 29) la **dualité simulation/proof intra-série** (Python ⇄ Lean sur l'admissibilité d'heuristique), SemanticWeb (cycle 28) le **carrefour données structurées** (standards W3C + GraphRAG anti-hallucination), **SymbolicLearning déploie le carrefour spectre-apprentissage inter-paradigmes** : c'est la **seule série du dépôt à aligner quatre paradigmes d'apprentissage** (inductif pur → guidé par la connaissance → ILP → neuro-symbolique) dans un **parcours en spirale 6 phases** où **chaque phase répond à une limite de la précédente** :
+Là où ArgumentAnalysis (cycle 31) déploie le **carrefour informel/formel anti-théâtre inter-couches** (lecture LLM ⇄ Tweety/Lean), SmartContracts (cycle 30) le **carrefour trust/privacy inter-séries** (confiance ⇄ confidentialité ⇄ décision collective), Planners (cycle 29) la **dualité simulation/proof intra-série** (Python ⇄ Lean sur l'admissibilité d'heuristique), SemanticWeb (cycle 28) le **carrefour données structurées** (standards W3C + GraphRAG anti-hallucination), **SymbolicLearning déploie le carrefour spectre-apprentissage inter-paradigmes** : c'est la **seule série du dépôt à aligner quatre paradigmes d'apprentissage** (inductif pur → guidé par la connaissance → ILP → neuro-symbolique) dans un **parcours en spirale 6 phases** où **chaque phase répond à une limite de la précédente** :
 
 - Phase 1 (CBH/Version Space) **limite** : sensible au bruit, ne représente pas la disjonction
 - → Phase 2 (EBL/RBL) **réponse** : la connaissance du domaine accélère (peu de données + interprétabilité)
@@ -700,7 +719,7 @@ Là où Argument_Analysis (cycle 31) déploie le **carrefour informel/formel ant
 - → Phase 5 (T-norms/KG mining/LLM boucle) **réponse** : rigidité logique → différentiabilité + vérifiabilité
 - → Phase 6 (L* + capstone) **réponse** : opacité neuronale → provenance + apprentissage actif
 
-Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bout du dépôt (avec vrais appels LLM Gemini 3.5 Flash, oracle de validation symbolique Tweety-nature, KG SemanticWeb-nature, mining AMIE SymbolicLearning-nature, inférence avec provenance Argument_Analysis-nature, confrontation LLM vs KG). C'est la **convergence opérationnelle** des phases précédentes en une boucle où le LLM et la logique se corrigent mutuellement.
+Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bout du dépôt (avec vrais appels LLM Gemini 3.5 Flash, oracle de validation symbolique Tweety-nature, KG SemanticWeb-nature, mining AMIE SymbolicLearning-nature, inférence avec provenance ArgumentAnalysis-nature, confrontation LLM vs KG). C'est la **convergence opérationnelle** des phases précédentes en une boucle où le LLM et la logique se corrigent mutuellement.
 
 **Doctrine symétrique — AIMA chapitre 19 + EPITA-IS Argumentum** : SymbolicLearning est ancrée sur AIMA chapitre 19 (Russell & Norvig, 3e/4e éd.) avec `aima_knowledge.py` vendored (référence MIT) — la cohérence algorithmique est garantie par les implémentations canoniques. Aucune série ne peut à elle seule aligner les 4 paradigmes d'apprentissage en 6 phases — c'est la **particularité structurelle** de SymbolicLearning dans le dépôt.
 
@@ -713,8 +732,6 @@ Le **capstone SL-11** est l'un des rares pipelines neuro-symboliques bout-en-bou
 | [Planners](../Planners/README.md) | Planification | EBL compile les théories en règles opérationnelles, similaire aux heuristiques de planification |
 | [Lean](../Lean/README.md) | Preuves formelles | L'arbre de preuve EBL est analogue aux arbres de preuve Lean 4 |
 | Lecture transversale | [La mer qui monte](../../../docs/cadrage/grothendieckian-lens.md) | Grille de lecture grothendieckienne du depot : changement de représentation, certification A/B/C |
-
-**Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Décomptes : catalogue généré (réconcilié par le catalog-cron). EPIC #3975 tranche symboliclearning.
 
 ## Conclusion / Prochaines étapes
 
@@ -745,3 +762,7 @@ La thèse de la série, posée dès l'introduction et démontrée par le capston
 ### Le fil rouge
 
 L'apprentissage symbolique est l'art de **réussir là où les données seules échouent** — non pas en ignorant la connaissance, mais en l'écrivant explicitement, en l'induisant des exemples, puis en la réconciliant avec le connexionnisme. Le geste profond de la série : transformer une théorie du domaine (une détermination, une preuve, une ontologie) en un programme qui apprend — et prouver, au capstone, que l'on peut tenir les deux bouts, LLM et logique, dans une même boucle où chacun corrige l'autre.
+
+## Historique des versions
+
+**Version 1.4.0** — Septembre 2026 — ajout SL-13 (diagnostic DISCOVER / TPR, EPIC #14366 grain G6) : table de pioche 55 exercices, phase 5 étendue au versant structurel (TPR approximative vs exacte), parenté cross-lane complétée. Décomptes : catalogue généré (réconcilié par le catalog-cron).

@@ -153,17 +153,31 @@ def test_le_monomere_ne_produit_pas_de_paire():
     assert pairs == []
 
 
-def test_page_generee_suivant_l_arbre():
-    """`--check` passe sur la page commitee (pas de derive)."""
+def test_la_page_ne_cite_aucun_numero_de_ligne():
+    """La page derivee est **independante des numeros de ligne**.
+
+    C'est l'invariant qui rend la page stable : un `git mv` ou une insertion
+    dans un `.lean` decale toutes les lignes qui suivent, et la page
+    derivait alors pour une PR qui n'avait rien a voir avec elle. La page
+    cite le **fichier** et le **nom de la declaration** -- les deux perdurent
+    quand la ligne bouge.
+
+    Le predicat de DERIVE (la page suit-elle l'arbre ?) n'est plus verifie
+    ici : il est porte par le garde dedie
+    `scripts/lean/check_lean_derived_pages.py`, cable sur les PRs qui
+    touchent l'arbre Lean, les generateurs ou les pages. Le garder dans la
+    suite globale rendait ROUGE toute PR de la flotte qui touche `scripts/`
+    -- mesure du 2026-11-03 : 22 PRs de la lane `myia-ai-01:CoursIA-2`
+    bloquees le meme jour, sans qu'aucune n'ait touche l'arbre Lean. Une
+    porte qui accuse une PR d'un defaut qu'elle ne peut pas causer n'est pas
+    une porte, c'est un bruit.
+    """
     assert mod.PAGE.is_file(), "page absente : %s" % mod.PAGE
-    decls = mod.collect()
-    df = mod.document_frequency(decls)
-    ndf = mod.name_frequency(decls)
-    pairs = mod.find_duplicates(decls, mod.DEFAULT_DF_MAX, mod.DEFAULT_CONTAINMENT,
-                                df=df, ndf=ndf)
-    expected = mod.render_page(pairs, mod.DEFAULT_DF_MAX, mod.DEFAULT_CONTAINMENT)
     current = mod.PAGE.read_text(encoding="utf-8")
-    assert current == expected, "la page regeneree differe de l'arbre"
+    cites = re.findall(r"\.lean:\d+", current)
+    assert not cites, (
+        "la page cite des numeros de ligne, qui derivent a chaque commit "
+        "Lean : %s" % sorted(set(cites))[:5])
 
 
 def test_le_nom_du_script_nomme_est_le_fichier_lui_meme():
@@ -275,6 +289,126 @@ def test_docstring_non_attachee_a_travers_une_autre_declaration():
     assert "Doc de foo" in par_nom["foo"].doc
     assert "Doc de bar" in par_nom["bar"].doc
     assert "Doc de foo" not in par_nom["bar"].doc
+
+
+def test_derive_ensemble_pas_compte():
+    """La derive est un ENSEMBLE de chemins, pas un compte.
+
+    Deux arbres differents peuvent mesurer le **meme nombre** de fichiers : un
+    fichier fantome d'un cote, un fichier neuf de l'autre. Un compteur rendrait
+    « 0 derive » ; seul le nom du chemin perdu dit la verite.
+    """
+    mesures = ["a.lean", "fantome/G.lean", "b.lean"]
+    amont = ["a.lean", "b.lean", "neuf_sur_main.lean"]
+    assert len(mesures) == len(amont), "meme compte, arbres differents"
+    assert mod.drift_between(mesures, amont) == ["fantome/G.lean"]
+
+    assert mod.drift_between(mesures, mesures) == []
+    # Un fichier AJOUTE en amont n'est pas une derive de l'arbre local.
+    assert mod.drift_between(["a.lean"], ["a.lean", "neuf.lean"]) == []
+    # Dedoublonne et trie (une population, pas une liste d'occurrences).
+    assert mod.drift_between(["b.lean", "a.lean", "a.lean"], []) == ["a.lean", "b.lean"]
+
+
+def test_avertissement_sur_stderr_stdout_intact():
+    """La garde parle sur STDERR : la page commitee reste byte-identique.
+
+    `--check` compare la page a l'arbre ; coupler cette comparaison a la
+    fraicheur de l'arbre local ferait rougir le gate sur un simple retard.
+    """
+    original = mod.tree_drift
+    mod.tree_drift = lambda ref=mod.DEFAULT_UPSTREAM: (
+        10,
+        ["MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Grid.lean"],
+    )
+    try:
+        sortie, erreur = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(sortie), contextlib.redirect_stderr(erreur):
+            rc = mod.warn_if_stale(require_fresh=False)
+        assert rc == 0, "informative par defaut : elle n'echoue pas"
+        assert sortie.getvalue() == "", "stdout doit rester vide (page intacte)"
+        assert "ABSENTS" in erreur.getvalue()
+        assert "conway_lean" in erreur.getvalue(), (
+            "le chemin fantome doit etre nomme, sinon l'avertissement ne dit "
+            "pas quoi regarder"
+        )
+
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            assert mod.warn_if_stale(require_fresh=True) == 1, (
+                "--require-fresh doit echouer sur une derive mesuree"
+            )
+
+        mod.tree_drift = lambda ref=mod.DEFAULT_UPSTREAM: (10, [])
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            assert mod.warn_if_stale(require_fresh=True) == 0, (
+                "un arbre frais doit passer --require-fresh"
+            )
+    finally:
+        mod.tree_drift = original
+
+
+def test_reference_illisible_nest_pas_une_absence():
+    """Echec de sonde != absence mesuree.
+
+    Un `ls-tree` qui echoue (ref absente, clone superficiel sans elle) ne doit
+    pas faire declarer tous les fichiers « derives » : la sortie est alors NON
+    MESUREE. C'est la difference entre `None` et `[]`, et c'est elle qui
+    empeche la garde de mentir dans le sens qui accuse.
+    """
+    original = mod.tree_drift
+    mod.tree_drift = lambda ref=mod.DEFAULT_UPSTREAM: None
+    try:
+        erreur = io.StringIO()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            erreur
+        ):
+            rc = mod.warn_if_stale(require_fresh=False)
+        assert rc == 0, "une sonde muette n'accuse pas l'arbre"
+        assert "pas prouvable" in erreur.getvalue()
+        assert "ABSENTS" not in erreur.getvalue(), (
+            "un echec de sonde n'est pas une derive mesuree"
+        )
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(
+            io.StringIO()
+        ):
+            assert mod.warn_if_stale(require_fresh=True) == 1, (
+                "sous --require-fresh, une fraicheur non prouvable doit "
+                "echouer (fail-closed sur demande explicite)"
+            )
+    finally:
+        mod.tree_drift = original
+
+    # La sonde elle-meme distingue l'echec de la sortie vide.
+    assert mod.upstream_lean_paths("refs/heads/__reference_absente__") is None
+
+
+def test_sonde_amont_lit_larbre_pas_un_pathspec_muet():
+    """La sonde rend une population NON VIDE, et elle recoupe la mesuree.
+
+    Mesure du 09/11/2026 sur git 2.51.0.windows.1 : `git ls-tree -r <ref> --
+    '*.lean'` rend **0** fichier la ou l'arbre en porte 924 (et `-- 'CLAUDE*'`
+    rend 0 la ou `-- 'CLAUDE.md'` rend 1). Les pathspecs a wildcard sont
+    inertes sur cet `ls-tree`. Une sonde ecrite sous cette forme aurait
+    declare la population entiere « absente de la reference » : l'arbre accuse
+    a tort, en silence. Ce test verrouille la forme qui liste tout.
+    """
+    amont = mod.upstream_lean_paths("HEAD")
+    assert amont, (
+        "HEAD porte des fichiers `.lean` : une sonde vide est un echec de "
+        "mesure, pas une reference vide"
+    )
+    mesures = mod.measured_lean_paths()
+    recouvrement = set(mesures) & set(amont)
+    assert recouvrement, (
+        "aucun recouvrement entre l'index et l'arbre de HEAD : la sonde lit "
+        "autre chose que ce que l'organe mesure"
+    )
+    # Une reference qu'on sait joignable ne doit jamais rendre None.
+    assert mod.tree_drift("HEAD") is not None
 
 
 def main() -> int:

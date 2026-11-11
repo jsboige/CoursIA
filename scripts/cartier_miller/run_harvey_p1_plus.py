@@ -17,6 +17,11 @@ generate_p1_plus_truth.py (passe 1, PR #19523):
   each expected to fail closed;
 - --version metadata (NTL version, compiler, threads).
 
+Pin du binaire (#22751): quand le manifeste porte `executable.sha256`, l'empreinte
+du binaire est verifiee au demarrage au meme titre que les sources (rc=3) ; quand
+il ne la porte pas, le rapport nomme l'etat `unpinned` au lieu de se taire.
+L'epinglage se fait par `--record-executable-pin`.
+
 Fail-closed: any mismatch or subprocess error => status != passed, exit 1.
 
 Large-modulus checks (p ~ 1e8) are NOT re-run here: the Python reference
@@ -171,6 +176,99 @@ def pin_allows_passed(sources_report: dict | None) -> bool:
     return bool(sources_report and sources_report.get("verified"))
 
 
+def sha256_binary(path: Path) -> str:
+    """SHA-256 du binaire, sans normalisation : un binaire n'a pas de fins de ligne."""
+    return sha256_file(path)
+
+
+def expected_executable_sha256(manifest: dict) -> str | None:
+    """Empreinte attendue du binaire, ou None quand le manifeste ne l'epingle pas."""
+    entry = manifest.get("executable") or {}
+    value = entry.get("sha256")
+    return value if isinstance(value, str) and value else None
+
+
+def verify_executable(path: Path, manifest: dict) -> dict:
+    """Verifie l'empreinte du binaire contre le champ dedie du manifeste (#22751).
+
+    Trois etats, et aucun quatrieme :
+
+    - ``pinned``   : le manifeste porte une empreinte, et le binaire la reproduit ;
+    - ``unpinned`` : le manifeste n'en porte pas encore -- un etat nomme, pas un
+      silence : le rapport le dit et la validation reste possible ;
+    - ``mismatch`` : le binaire mesure differe de l'empreinte attendue, ou le
+      fichier est illisible -- fail-closed, aucun appel n'est fait.
+
+    L'empreinte est celle des octets du binaire : normaliser les fins de ligne
+    n'aurait pas de sens ici, la convention ``hash_convention`` du manifeste ne
+    vise que les sources.
+    """
+    expected = expected_executable_sha256(manifest)
+    try:
+        measured = sha256_binary(path)
+    except OSError as exc:
+        return {
+            "status": "mismatch",
+            "verified": False,
+            "expected_sha256": expected,
+            "measured_sha256": None,
+            "problem": {"path": path.name, "reason": "unreadable", "error": str(exc)},
+        }
+    if expected is None:
+        return {
+            "status": "unpinned",
+            "verified": False,
+            "expected_sha256": None,
+            "measured_sha256": measured,
+            "problem": None,
+        }
+    if measured != expected:
+        return {
+            "status": "mismatch",
+            "verified": False,
+            "expected_sha256": expected,
+            "measured_sha256": measured,
+            "problem": {
+                "path": path.name,
+                "reason": "executable_sha256",
+                "expected_sha256": expected,
+                "measured_sha256": measured,
+            },
+        }
+    return {
+        "status": "pinned",
+        "verified": True,
+        "expected_sha256": expected,
+        "measured_sha256": measured,
+        "problem": None,
+    }
+
+
+def executable_pin_allows_passed(executable_report: dict | None) -> bool:
+    """Une empreinte epinglee et fausse interdit 'passed' ; l'absence de pin, non.
+
+    Symetrique de ``pin_allows_passed`` pour les sources : ce qui interdit le
+    statut est un ecart mesure, jamais l'absence d'un pin que le manifeste ne
+    declare pas.
+    """
+    if executable_report is None:
+        return True
+    return executable_report.get("status") != "mismatch"
+
+
+def record_executable_pin(manifest_path: Path, executable: Path) -> str:
+    """Ecrit l'empreinte mesuree du binaire dans le manifeste ; rend la valeur ecrite."""
+    manifest = load_pin_manifest(manifest_path)
+    digest = sha256_binary(executable)
+    entry = manifest.setdefault("executable", {})
+    entry["sha256"] = digest
+    entry["measured_at"] = datetime.now(timezone.utc).isoformat()
+    manifest_path.write_text(
+        json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    return digest
+
+
 def check_prime_stopping_indices(worker: HarveyWorker, p: int) -> tuple[int, int]:
     """All L in [0, (p-1)//2]: Harvey vs independent Python recurrences.
 
@@ -212,7 +310,7 @@ def main() -> int:
     parser.add_argument(
         "--out",
         type=Path,
-        default=REPO_ROOT / "example_results" / "p1_plus_harvey_validation.json",
+        default=REPO_ROOT / "scripts" / "cartier_miller" / "example_results" / "p1_plus_harvey_validation.json",
         help="output JSON path (upstream-comparable format)",
     )
     parser.add_argument(
@@ -241,10 +339,28 @@ def main() -> int:
             "sources_pin.skipped=true et la validation ne pourra pas etre 'passed'"
         ),
     )
+    parser.add_argument(
+        "--record-executable-pin",
+        action="store_true",
+        help=(
+            "ecrit dans le manifeste l'empreinte mesuree du binaire, puis sort : "
+            "c'est le geste qui epingle le binaire quand la passe change de regime (#22751)"
+        ),
+    )
     args = parser.parse_args()
+
+    # Epinglage du binaire : geste explicite, hors d'un run de validation.
+    if args.record_executable_pin:
+        if not args.executable.is_file():
+            print(f"harvey_adapter not found: {args.executable}", file=sys.stderr)
+            return 2
+        digest = record_executable_pin(args.pin_manifest, args.executable)
+        print(f"# empreinte du binaire epinglee dans {args.pin_manifest} : {digest}")
+        return 0
 
     # Garde de pin : fail-closed, AVANT tout lancement du binaire et toute requete.
     sources_report = None
+    executable_report = None
     if not args.no_verify_sources:
         try:
             manifest = load_pin_manifest(args.pin_manifest)
@@ -269,6 +385,19 @@ def main() -> int:
             for problem in sources_report["problems"]:
                 print(f"  - {problem}", file=sys.stderr)
             return PIN_FAILURE_EXIT
+        # Empreinte du binaire, quand le manifeste en epingle une (#22751). Le
+        # controle se fait ici, donc avant tout lancement : meme plafond que les
+        # sources, memes codes de sortie.
+        if args.executable.is_file():
+            executable_report = verify_executable(args.executable, manifest)
+            if executable_report["status"] == "mismatch":
+                print(
+                    "pin du binaire : ecart avec l'empreinte attendue du manifeste ; "
+                    "aucun appel au binaire",
+                    file=sys.stderr,
+                )
+                print(f"  - {executable_report['problem']}", file=sys.stderr)
+                return PIN_FAILURE_EXIT
 
     if not args.executable.is_file():
         print(f"harvey_adapter not found: {args.executable}", file=sys.stderr)
@@ -289,6 +418,14 @@ def main() -> int:
             "verified": bool(sources_report and sources_report["verified"]),
             "measured_sha256": sources_report["measured_sha256"] if sources_report else {},
             "skipped": bool(args.no_verify_sources),
+        },
+        # Etat nomme, jamais un silence : `unpinned` dit que le manifeste ne porte
+        # pas encore d'empreinte, `pinned` qu'elle a ete comparee et tenue.
+        "executable_pin": {
+            "status": (executable_report or {}).get("status", "skipped"),
+            "verified": bool((executable_report or {}).get("verified")),
+            "expected_sha256": (executable_report or {}).get("expected_sha256"),
+            "measured_sha256": (executable_report or {}).get("measured_sha256"),
         },
     }
 
@@ -351,6 +488,7 @@ def main() -> int:
         "forced_big_mismatches": forced_big_mismatches,
         "invalid_input_checks": invalid_input_checks,
         "sources_pin_verified": bool(sources_report and sources_report["verified"]),
+        "executable_pin_status": (executable_report or {}).get("status", "skipped"),
         "status": "passed"
         if (
             mismatch_total == 0
@@ -358,6 +496,7 @@ def main() -> int:
             and stopping_total == 10809
             and invalid_input_checks == 3
             and pin_allows_passed(sources_report)
+            and executable_pin_allows_passed(executable_report)
         )
         else "failed",
     }

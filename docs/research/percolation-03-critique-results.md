@@ -2,6 +2,8 @@
 
 > **Suite directe de [#19494](https://github.com/jsboige/CoursIA/issues/19494)** (plan de croissance Percolation 03 critique / 04 sharpness ×2) et du scoping memo §8 (`percolation-03-critique-scoping.md`, c.1103, PR #19531) — exécution effective au pin `70ece81334` (main HEAD c.1104).
 
+> **État mesuré au 2026-11-08** — ce rapport décrit le run au pin `70ece81334` et **reste la trace de ce run** : il n'est pas réécrit. Depuis #25096, le carnet tourne sur **32 graines (640 simulations)** au lieu de 29, l'estimateur de `τ'` normalise par la largeur des bins logarithmiques sur une fenêtre bornée par le cutoff `L^{d_f}`, la bande d'acceptance de `β/ν` est du signe de la mesure, et le fit `1/ν` s'exécute. Les valeurs de ce fichier sont donc **antérieures** à ces corrections de méthode ; les sorties commitées du carnet font foi pour l'état courant.
+
 ## Sections (8)
 
 1. **Cible** — physique du point critique (β/ν, τ', p_c(L) → 1/2)

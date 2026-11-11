@@ -38,10 +38,10 @@ def _write(tmp_path: Path, name: str, text: str) -> Path:
     return p
 
 
-GREFFE2_PATCH = """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb
+GREFFE2_PATCH = """diff --git a/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
 new file mode 100644
 --- /dev/null
-+++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable.ipynb
++++ b/MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe2-EspaceAtteignable-Python.ipynb
 @@ -0,0 +1,9 @@
 +{
 + "cells": [
@@ -269,6 +269,103 @@ def test_submodule_whitened_by_payback(tmp_path, capsys):
                    "--index", str(INDEX), "--check"])
     assert rc == 0, "« ne rend rien » explicite satisfait le contrat"
     assert "[retour amont declare]" in capsys.readouterr().out
+
+
+def test_csharp_record_and_enum_collisions_require_payback(tmp_path, capsys):
+    """Les types C# record/enum sont des primitives comme les classes indexées."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "types.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -0,0 +1,2 @@
++public record class VettingLevel(int Value);
++public enum Fallacy { None }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "COLLISION ~GenAI" in out
+    assert "-> semantic-fleet (VettingLevel)" in out
+    assert "-> Argumentum (Fallacy)" in out
+    assert out.count("[retour amont manquant -- #13902]") == 2
+
+    body = _write(tmp_path, "body.md", BODY_PAYBACK)
+    rc = mod.main(["--patch", str(patch), "--body-file", str(body),
+                   "--index", str(INDEX), "--check"])
+    assert rc == 0
+    assert capsys.readouterr().out.count("[retour amont declare]") == 2
+
+
+def test_csharp_inline_namespace_class_remains_detected(tmp_path, capsys):
+    """Une classe inline dans un namespace reste reconnue comme avant."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "inline-class.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -0,0 +1,1 @@
++namespace N { public class VettingLevel { } public enum Fallacy { None } }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "-> semantic-fleet (VettingLevel)" in out
+    assert "-> Argumentum (Fallacy)" in out
+    assert out.count("[retour amont manquant -- #13902]") == 2
+    assert "[retour amont manquant -- #13902]" in out
+
+
+def test_csharp_types_ignore_comments_strings_and_unindexed_names(tmp_path, capsys):
+    """Le parseur ne traite comme declarations ni prose, ni commentaires, ni noms hors index."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "non-types.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -0,0 +1,7 @@
++// public record VettingLevel(int Value);
++/*
++public enum Fallacy { None }
++*/
++var example = "public record VettingLevel(int Value);";
++public record LocalMeasurement(int Value);
++public enum LocalKind { None }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
+
+
+def test_csharp_context_block_comment_masks_added_declaration(tmp_path, capsys):
+    """Le contexte du diff initialise l'état lexer pour les ajouts suivants."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "context-comment.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+--- a/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
++++ b/MyIA.AI.Notebooks/GenAI/Texte/Extraction.cs
+@@ -1,4 +1,5 @@
+ namespace N {
+ /*
++public enum Fallacy { None }
+ */
+ }
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
+
+
+def test_csharp_record_inside_owning_submodule_is_maintenance(tmp_path, capsys):
+    mod = _load_detector()
+    patch = _write(tmp_path, "owner-record.cs.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs b/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs
+--- a/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs
++++ b/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/Analysis/VettingLevel.cs
+@@ -0,0 +1,1 @@
++public record VettingLevel(int Value);
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
 
 
 def test_submodule_owner_path_is_maintenance_not_extraction(tmp_path, capsys):
@@ -705,3 +802,50 @@ def test_emit_lean_index_roundtrip(tmp_path, capsys):
 if __name__ == "__main__":
     import pytest
     sys.exit(pytest.main([__file__, "-v"]))
+
+
+def test_csharp_multiline_raw_strings_mask_types_and_leave_real_types_visible():
+    """Les délimiteurs longs, le contexte et le code après fermeture sont lus."""
+    mod = _load_detector()
+    patch = '''diff --git a/Example.cs b/Example.cs
+--- a/Example.cs
++++ b/Example.cs
+@@ -1,4 +1,8 @@
+ var sample = $$""""
++public record Fallacy(string Text);
++""" encore du texte
++public class VettingLevel { }
++""""; public enum Fallacy { None }
++var single = """public record VettingLevel(int Value);"""; public class VettingLevel { }
+'''
+    owners = {"Argumentum": "owner/argumentum", "Fleet": "owner/fleet"}
+    symbols = {"Fallacy": "Argumentum", "VettingLevel": "Fleet"}
+    assert mod.parse_patch(patch, owners, symbols) == [
+        ("Example.cs", None, "Argumentum", "Fallacy"),
+        ("Example.cs", None, "Fleet", "VettingLevel"),
+    ]
+
+
+def test_csharp_raw_string_state_is_reset_at_new_hunk_and_file():
+    """Un état tronqué par le diff ne doit pas masquer les déclarations suivantes."""
+    mod = _load_detector()
+    patch = '''diff --git a/First.cs b/First.cs
+--- a/First.cs
++++ b/First.cs
+@@ -1,0 +1,1 @@
++var sample = """
+@@ -20,0 +21,1 @@
++public record Fallacy(string Text);
++var second = """
+diff --git a/Second.cs b/Second.cs
+--- a/Second.cs
++++ b/Second.cs
+@@ -0,0 +1,1 @@
++public class VettingLevel { }
+'''
+    owners = {"Argumentum": "owner/argumentum", "Fleet": "owner/fleet"}
+    symbols = {"Fallacy": "Argumentum", "VettingLevel": "Fleet"}
+    assert mod.parse_patch(patch, owners, symbols) == [
+        ("First.cs", None, "Argumentum", "Fallacy"),
+        ("Second.cs", None, "Fleet", "VettingLevel"),
+    ]

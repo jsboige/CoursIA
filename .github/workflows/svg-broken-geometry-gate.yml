@@ -74,6 +74,14 @@ jobs:
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 1.20 min -- mais ces runs ont tourne sur
+    # `ubuntu-latest`, AVANT le routage auto-heberge (commit 6e906086 du
+    # 2026-09-02). La valeur n'est donc pas une mesure de la jambe
+    # protegee : c'est un plancher de repli, tres large devant les 6 h du
+    # defaut Actions. Il ne peut pas etre resserre sans un run reel sur
+    # la jambe auto-hebergee elle-meme.
+    timeout-minutes: 10
     steps:
       # 2026-10-27 (#22722) : la commande qui echoue est le `git checkout --force -B`
       # final d'actions/checkout, pas son clean/reset interne (run 40476005592 :

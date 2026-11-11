@@ -66,8 +66,11 @@ control — the arc control is what distinguishes. -/
 theorem conway_wf : conwayKnotDiagram.wf = true := by
   decide
 
-/-- Control: the arc partition of the corrected code — stated in §4
-(`conway_arcPartition`), after `arcPartition` is defined. -/
+/-- Control: the arc partition of the corrected code — 11 arcs covering the 22
+edges, the non-degeneracy condition of the Alexander minor (the previous
+disconnected code produced an isolated arc {21, 22} absorbed by the eliminated
+column of the designated minor), stated in §4 (`conway_arcPartition`), after
+`arcPartition` is defined. -/
 
 def conwayKnot : Knot where
   diagram := conwayKnotDiagram
@@ -105,7 +108,8 @@ def kinoshitaTerasakaDiagram : KnotDiagram where
 theorem kinoshitaTerasaka_wf : kinoshitaTerasakaDiagram.wf = true := by
   decide
 
-/-- Control: arc partition of the corrected KT code — stated in §4
+/-- Control: arc partition of the corrected KT code — 11 arcs, the same structure
+as Conway at crossings 1-5 (shared arcs), divergent beyond. Stated in §4
 (`kinoshitaTerasaka_arcPartition`). -/
 
 def kinoshitaTerasakaKnot : Knot where

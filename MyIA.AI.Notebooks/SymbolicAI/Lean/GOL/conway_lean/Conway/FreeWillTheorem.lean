@@ -18,7 +18,7 @@
   être prédéterminée sans conspiration.
 
   Ce fichier formalise la structure du théorème et la connecte au
-  contexte du projet `conway_lein` (Kochen-Specker, Conway's legacy).
+  contexte du projet `conway_lean` (Kochen-Specker, Conway's legacy).
 
   **Insight clé (Conway-Kochen)** : ici, le « libre arbitre » est une
   *définition mathématique*, non une thèse philosophique. Cela signifie que
@@ -30,7 +30,7 @@
 
   Ce fichier est le **canonique français**. Le miroir anglais est le fichier
   frère `FreeWillTheorem_en.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
-  `open Conway_en`, `open Conway.KochenSpecker`, `import Conway.KochenSpecker`)
+  `open Conway_en`, `open KochenSpecker_en`, `import Conway.KochenSpecker_en`)
   — modèle sibling pair V2 nested (cf `code-style.md` §Lean i18n et l'analogue
   `Conway/Fractran` c.451 Pattern A, `Conway/LookAndSay` c.457, `Conway/Nim` c.518).
   Docstrings en français ici ; le corps (signatures, defs, proofs) reste
@@ -38,10 +38,11 @@
   rejetée 2026-07-04 ratif).
 
   Cross-références : c.366 `Conway.lean` racine bilingue (MERGED), c.451
-  `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
+  `Conway/Fractran` sibling pair (MERGED — #6690), c.456 `Conway/FreeWillTheorem`
   sibling pair (MERGED — EN twin standalone créé), c.457 `Conway/LookAndSay`
-  sibling pair (MERGED), c.518 `Conway/Nim` sibling pair (MERGED),
-  **c.519 `Conway/FreeWillTheorem` strip bilingue FR canonical (ce PR)**.
+  sibling pair (MERGED — #6707), c.518 `Conway/Nim` sibling pair (MERGED — #6710),
+  **c.519 `Conway/FreeWillTheorem` strip bilingue FR canonical (MERGED — #6712)**.
+  #NNNN n'est porté que par les entrées dont la PR est identifiable dans l'historique du dépôt ; c.366 et c.456 la précèdent, d'où l'absence d'ancre.
 
   Sources :
   - J. H. Conway et S. Kochen, « The Free Will Theorem »,

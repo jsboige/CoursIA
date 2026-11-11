@@ -1,11 +1,15 @@
 # Planners - Dependencies
 # Install: pip install -r requirements.txt
 #
-# Note: Fast-Downward planner requires WSL or Docker.
-# See Planners-0-Setup notebook and README.md for environment setup.
+# Note: Fast Downward comes with up-fast-downward below (compiled wheels for Linux x86_64,
+# macOS and Windows x64); the coursia-fast-downward Docker service (port 8200) is optional.
+# See README.md for environment setup.
 
 # Core Planning
 unified-planning>=1.1         # AI Planning framework (Planners-11)
+up-fast-downward>=1.0         # Fast Downward engine + local driver, no Docker needed (Planners-4, 13, C# twins 1-6)
+up-pyperplan>=1.1             # pyperplan engine for unified-planning (Planners-0, 1, 2, 4, 6, 11)
+up-aries>=0.5                 # aries engine, HTN planning (Planners-9, Python and C# twins)
 
 # Graph & Visualization
 networkx>=3.1                 # State space graphs (Planners-3)

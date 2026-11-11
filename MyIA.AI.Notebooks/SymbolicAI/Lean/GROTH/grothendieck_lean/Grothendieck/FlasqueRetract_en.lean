@@ -88,12 +88,12 @@ section Retracte
 
 variable {C : Type u} [Category.{v} C]
 
-/-- **Flasqueness descends to retracts** : if `Q` is a retract of `P`
+/-- Flasqueness descends to retracts: if `Q` is a retract of `P`
 (`e : P ⟶ Q`, `s : Q ⟶ P`, `s ≫ e = 𝟙 Q`) and `P` is flasque, `Q` is
-flasque. The `Q`-family pushes to a `P`-family via the section `s`, the
+flasque. The `Q`-family pushes to a `P`-family via the section `s`,
 compatibility follows from naturality, and the amalgamation `t` comes
 back through `e`. Invariance under isomorphism (Godement II.3.1) is the
-symmetric case : here a single composition equal to the identity
+symmetric case: here a single composition equal to the identity
 suffices. -/
 theorem isFlasqueSieves_of_retract {P Q : Cᵒᵖ ⥤ Type (max v u)} (e : P ⟶ Q)
     (s : Q ⟶ P) (h : s ≫ e = 𝟙 Q) [IsFlasqueSieves P] : IsFlasqueSieves Q where
@@ -119,9 +119,9 @@ theorem isFlasqueSieves_of_retract {P Q : Cᵒᵖ ⥤ Type (max v u)} (e : P ⟶
       simpa using hz
     rw [nat, ht f hf, hid]
 
-/-- **The same reading, roles exchanged** : if `e ≫ s = 𝟙 P` (`P` is then
+/-- The same reading, roles exchanged: if `e ≫ s = 𝟙 P` (`P` is then
 the retract of `Q`) and `Q` is flasque, `P` is flasque. Both directions
-of a split pair are covered by a single theorem ; this named alias serves
+of a split pair are covered by a single theorem; this named alias serves
 downstream consumption. -/
 theorem isFlasqueSieves_of_retract' {P Q : Cᵒᵖ ⥤ Type (max v u)} (e : P ⟶ Q)
     (s : Q ⟶ P) (h : e ≫ s = 𝟙 P) [IsFlasqueSieves Q] : IsFlasqueSieves P :=

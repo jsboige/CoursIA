@@ -85,30 +85,95 @@ router par handoff implicite et produirait des `Event from an unknown agent`) :
 Le pilote T3 (Google ADK) vit dans la série Track2 :
 
 ```bash
-py -3.11 ../../../ML/DataScienceWithAgents/Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py
+py -3.11 ../../../ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py
 ```
 
 ## Sonde C# (T6)
 
 **App mono-fichier .NET 10** : aucun `.csproj` n'est livré, donc aucun impact sur
-`MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par
+`dotnet/MyIA.CoursIA.sln`, `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par
 chemin). Les versions des paquets sont épinglées par les directives `#:package` en
 tête du fichier :
 
 ```text
 #:package Microsoft.SemanticKernel.Agents.Core@1.81.0
-#:package Microsoft.Agents.AI@1.24.0
-#:package Microsoft.Agents.AI.Workflows@1.24.0
+#:package Microsoft.Agents.AI@1.27.0
+#:package Microsoft.Agents.AI.Workflows@1.27.0
 ```
 
 ```bash
 dotnet run csharp_coverage_probe.cs   # .NET 10 ; réseau requis pour la restauration
 ```
 
+Les sondes C# (T6 ci-dessus, T9 plus bas) exigent un **SDK** .NET (l'app mono-fichier compile avant de
+tourner). Si le `dotnet` du `PATH` ne résout qu'un **runtime** — le cas d'un
+`PATH` qui pointe vers une installation runtime-only —, `dotnet run` échoue sur
+« No .NET SDKs were found » : il faut alors appeler l'exécutable d'un SDK
+installé par l'utilisateur (par exemple `~/.dotnet/dotnet.exe` sous un SDK
+10.0.x), qui résout les deux.
+
 Exit 0 = contrôles négatif et positif passés. La sonde publie le détail **par
 assemblage** en plus de l'union dédoublonnée — l'union sur nom court est un
 **plancher** de types, pas un compte (deux types homonymes de namespaces distincts y
 fusionnent), et elle dépend de ce que le projet hôte a restauré.
+
+> **Versions mises à jour au 2026-11-04 (Q17).** Les pins MAF passent de 1.24.0 à
+> **1.27.0** (version courante, publiée le 2026-10-30) : le delta de surface est donc
+> mesuré, et non supposé. Le pin SK reste **1.81.0** — rien de neuf n'a été publié
+> côté .NET SK depuis le 2026-10-06.
+
+## Sonde C# — surface preview (T9)
+
+`Microsoft.SemanticKernel.Agents.Orchestration` et `…Agents.Magentic` **n'ont jamais
+eu de version stable** : sur NuGet, leurs 32 versions sont toutes `-preview`, la
+dernière étant `1.81.0-preview` (2026-10-06). La sonde T6 mesure la surface
+**stable** et rend donc « absent » pour les cinq topologies C# de SK.
+
+La sonde T9 mesure cette surface **preview**, dans un processus **distinct** — la
+restauration de paquets supplémentaires changerait les assemblages déployés, donc
+l'union que T6 publie et que le §2.7 du document compare.
+
+```text
+#:package Microsoft.SemanticKernel.Agents.Core@1.81.0
+#:package Microsoft.SemanticKernel.Agents.Orchestration@1.81.0-preview
+#:package Microsoft.SemanticKernel.Agents.Magentic@1.81.0-preview
+```
+
+```bash
+dotnet run csharp_preview_surface_probe.cs   # .NET 10 ; réseau requis
+```
+
+Elle porte un **contrôle négatif de provenance** : les cinq topologies doivent
+être présentes, et **absentes** de l'assemblage stable — sans quoi un « présent »
+ne dirait pas d'où il vient, et la distinction stable/preview est justement le
+point mesuré. Résultat (2026-11-04) : les cinq topologies **sont** présentes
+(`…Agents.Orchestration.dll` pour quatre, `…Agents.Magentic.dll` pour
+`MagenticOrchestration`), et la reprise (`Checkpoint`), l'OTel (`OpenTelemetry`,
+`Telemetry`) et la surface `Workflow` restent **AUCUN** type — en preview comme en
+stable.
+
+## Sonde d'API courante (Q17)
+
+Sonde **sans appel LLM ni clé API** : elle mesure la **surface d'API** de chaque
+moteur aux versions courantes, et la **forme de l'appel** (construction réelle d'un
+client, sans requête). Chaque capacité porte un contrôle positif et un contrôle
+négatif ; s'y ajoute un **contrôle négatif inter-moteurs** (les deux autres moteurs
+doivent être non importables dans l'environnement mesuré), qui prouve qu'un
+verdict « ABSENT » ne vient pas d'un environnement contaminé.
+
+```bash
+python current_api_probe.py --engine sk    # semantic-kernel 1.46.0
+python current_api_probe.py --engine maf   # agent-framework-core 1.24.0 + orchestrations 1.4.1
+python current_api_probe.py --engine adk   # google-adk 2.13.0
+```
+
+Le comptage de tokens y est mesuré au niveau du **champ** (pydantic
+`model_fields`, dataclass `dataclasses.fields`, `__annotations__`, `dir()` en repli),
+pas du symbole : une recherche par symbole seul rendrait « absent » à tort.
+
+Ce que la sonde **ne** mesure pas : le comportement à l'exécution. Les pilotes
+P1/P2/P3 restent la preuve comportementale, et ils datent de leurs versions de
+septembre.
 
 ## Traces committées
 
@@ -122,6 +187,20 @@ chemin machine. Cette séparation est faite **à la capture** (`> out-….txt 2>
 jamais par retrait de lignes après coup : une trace retouchée n'est plus une trace.
 Le code de sortie de chaque pilote est reporté dans le doc ; un échec reste donc
 visible sans le stderr.
+
+Corollaire de cette règle : **l'en-tête d'une trace est écrit par la sonde
+elle-même**, jamais ajouté à la main après la capture. Les quatre sondes Q17
+(`current_api_probe.py`, `csharp_coverage_probe.cs`, `csharp_preview_surface_probe.cs`
+et les pilotes antérieurs) impriment donc leur propre en-tête — moteur, date
+**calculée au runtime**, versions épinglées — sur leur stdout. Une date figée
+dans la source mentirait sur la datation d'une re-exécution ; un en-tête collé à
+la main rendrait la trace « retouchée », donc invérifiable.
+
+Les sondes C# neutralisent en outre l'avertissement d'analyseur **IL2026**
+(`Assembly.LoadFrom` / `GetExportedTypes` marqués `RequiresUnreferencedCode`) :
+il est sans objet — la sonde n'est ni trimée ni publiée, elle énumère les
+assemblages déployés — et il porterait le **chemin local du fichier source**
+dans la trace.
 
 Une trace committée **n'est pas** un contrôle : le contrôle est le pilote, rejouable
 par la commande ci-dessus. La trace est le témoin daté de ce qu'il a produit.

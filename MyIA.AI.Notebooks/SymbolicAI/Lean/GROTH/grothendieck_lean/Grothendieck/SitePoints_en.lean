@@ -321,7 +321,7 @@ plus `(Φ : GrothendieckTopology.Point.{w} J)`), structural instances only,
 no polymorphic universe constructor.
 
 Universe note (lesson c.1301+143-L1): `Point.{w} J` lives in
-`Type (max (max u v) (w + 1))` — the 3rd universe `w` is that of the
+`Type (max (max u v) (w + 1))` — the third universe `w` is that of the
 fibers (`Φ.fiber : C ⥤ Type w`). The presheaf fiber functor additionally
 requires cocompleteness of the target (`HasColimitsOfSize`), which the
 category of types `Type (max u w)` always satisfies; it is `noncomputable`

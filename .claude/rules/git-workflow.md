@@ -24,18 +24,18 @@ GitHub auto-closes an issue only when a closing keyword (`close`/`closes`/`close
 | Close when ALL criteria met | `Closes #N` on its own line (verify acceptance first) | ~~`Fixes #N`~~ for partial |
 | Partial delivery | `See #N` (partial: X/Y criteria) | ~~`Refs #N`~~ |
 
-**The scope swallows the keyword (#23348).** The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Never rely on the subject alone to close (mesure sur `origin/main` : 500 commits, 299 numéros cités ainsi, **186 encore ouverts** ; parmi les 162 cités par un verbe de correction, **95 encore ouverts** — des fixes déjà sur `main` — [détail §6](../../docs/reference/git-workflow-detail.md)). Two forms that work:
+**The scope swallows the keyword (#23348).** Never rely on the subject alone to close ([détail §6](../../docs/reference/git-workflow-detail.md)). Two forms that work:
 
 - `Fix(ci,#22937): …` **and** a `Closes #22937` line in the commit body (for a squash merge, the PR body becomes that message);
 - `Fix(ci): …` and a `Closes #22937` line in the body.
 
-The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) names the pairs (open issue, correction commit) so the residual can be triaged. It closes nothing, comments nothing: triage and closure belong to the coordinator (G.9) — incident fondateur (trois issues fermées par `Refs #N` sur des PRs partielles) : [détail §3](../../docs/reference/git-workflow-detail.md).
+The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-forms`) names the pairs (open issue, correction commit) so the residual can be triaged. It closes nothing, comments nothing: triage and closure belong to the coordinator (G.9) ([détail §3](../../docs/reference/git-workflow-detail.md)).
 
 ## Safety Rules
 
 ### Force push — interdit sur `main`, autorisé sur une branche de PR à lane unique
 
-**Décision user 2026-08-08** : périmètre, pas interdit global — les deux cas n'ont pas la même conséquence (contenu partagé sur `main`, travail non mergé d'une seule lane sur sa branche). Verbatim, rationale et incident 2026-03-13 : [git-workflow-detail.md §1](../../docs/reference/git-workflow-detail.md).
+**Décision user 2026-08-08** : périmètre, pas interdit global. Verbatim, rationale et incident 2026-03-13 : [git-workflow-detail.md §1](../../docs/reference/git-workflow-detail.md).
 
 | Cible | Règle | Ce qui la porte |
 |---|---|---|
@@ -50,7 +50,7 @@ The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-
   - `gh pr update-branch` **avec résolution de conflit** : **ré-armé** — l'arbre diffère de l'auto-merge.
   - rebase : **ré-armé** — fail-closed.
   - commit de contenu ordinaire : **ré-armé** — la tête change de date.
-- **`update-branch` tue AUSSI le dossier de prévalidation, et c'est la moitié qu'on oublie** : il change la tête, donc le contrat exact-head (`[ADJOINT PREFLIGHT]`, empreinte `surfaces-sha256`, comptes `diff-files`/`additions`) est **périmé à la seconde**, et `check_adjoint_prevalidation.py` rend `head is stale` / `discussion surfaces changed` — c'est cette péremption, et non le DWELL, qui referme la boucle : [prevalidation-dossier-order-detail.md §1-§3](../../docs/reference/prevalidation-dossier-order-detail.md).
+- **`update-branch` tue AUSSI le dossier de prévalidation** : il change la tête, donc le contrat exact-head (`[ADJOINT PREFLIGHT]`, empreinte `surfaces-sha256`, comptes `diff-files`/`additions`) est **périmé à la seconde**, et `check_adjoint_prevalidation.py` rend `head is stale` / `discussion surfaces changed` : [prevalidation-dossier-order-detail.md §1-§3](../../docs/reference/prevalidation-dossier-order-detail.md).
 
   **L'ordre qui sort de la boucle — le dossier vient APRÈS la stabilisation de la branche, jamais avant :**
 
@@ -59,12 +59,12 @@ The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-
   3. **alors** l'adjoint écrit le dossier, à la tête exacte ;
   4. le coordinateur merge **immédiatement**, et **la branche est gelée entre 3 et 4**.
 
-  La forme **opérationnelle** du contrat exact-head vit dans [`coordinate/SKILL.md`](../skills/coordinate/SKILL.md) (« un changement de head ou de surface le perime ») et n'est **pas** reformulée ici — deux surfaces qui redécrivent la même règle finissent par diverger (#16962). Verbatim de l'organe et réconciliation de l'issue fondatrice : [prevalidation-dossier-order-detail.md](../../docs/reference/prevalidation-dossier-order-detail.md).
-- **`--force-with-lease` plutôt que `--force`** : il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
+  La forme **opérationnelle** du contrat exact-head vit dans [`coordinate/SKILL.md`](../skills/coordinate/SKILL.md) (« un changement de head ou de surface le perime ») et n'est **pas** reformulée ici : [prevalidation-dossier-order-detail.md](../../docs/reference/prevalidation-dossier-order-detail.md).
+- **`--force-with-lease` plutôt que `--force`** ([détail §1](../../docs/reference/git-workflow-detail.md)).
 - **Jamais de `reset --hard`** sur `main` ni sur une branche partagée.
 - **Un secret déjà commité ne se répare PAS par réécriture d'historique** : branche propre + cherry-pick, et **rotation de la clé** (cf [secrets-hygiene.md](secrets-hygiene.md) règle 5).
 
-**`allow_force_pushes` n'est PAS lisible sans droit admin** : un 404 sur `branches/main/protection` est **une question, pas une absence mesurée** (#9991) — [détail §1](../../docs/reference/git-workflow-detail.md). Ce qu'une lane peut vérifier sans admin, c'est le comportement : un `push --force` sur `main` est rejeté par le serveur.
+**`allow_force_pushes` n'est PAS lisible sans droit admin** : un 404 sur `branches/main/protection` est **une question, pas une absence mesurée** (#9991) ; ce qu'une lane peut vérifier sans admin, c'est le **comportement** — un `push --force` sur `main` est rejeté par le serveur ([détail §1](../../docs/reference/git-workflow-detail.md)).
 
 ---
 
@@ -86,7 +86,7 @@ The lister `python scripts/ci/list_scope_swallowed_issues.py` (`--json`, `--all-
 ```bash
 git merge-base --is-ancestor <sha> origin/main          # 1. intégrée upstream ? (muette si squash)
 gh api repos/jsboige/CoursIA/commits/<sha>/pulls        # 2. REST (faux négatif possible)
-gh pr list --state all --search "head:<branch>"         # 3. autoritatif sur les PRs
+gh api "repos/jsboige/CoursIA/pulls?state=all&head=jsboige:<branch>"  # 3. PR par branche (seau core)
 git log origin/main --oneline --grep "<sujet>"          # 4. identité de CONTENU (squash → sujet préservé)
 ```
 
@@ -118,14 +118,16 @@ python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv sch
 - **SKIP_CURRENT** : le worktree depuis lequel le script est lancé.
 - **Artefacts untracked tolérés** (`slides/images/`, `**/scripts/results/`, `.claude/agent-memory/*`, `*_output.ipynb`, `node_modules/`, `.cache/`, `.pytest_cache/`, `__pycache__/`, `_measurements/`, `.mypy_cache/`, `.ruff_cache/`, `dist/`, `build/`, `.eggs/`, `.tox/`) — d'après le dernier commentaire de #8924.
 
-**Ancre PR autoritative** : `gh pr list --state all --search "head:<branch>"` (pas `--is-ancestor` seul, ni `commits/<oid>/pulls` REST — cf §Orphan-branch scan ci-dessus pour les faux négatifs mesurés).
+**Ancre PR autoritative** : l'endpoint REST par branche du scan L576 ci-dessus (seau `core`, #23636) ; repli `--search head:` forks (rationale et détail : git-workflow-detail.md §5).
 
 **Refus ≠ échec + observabilité** : un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision (mesure : [détail §5](../../docs/reference/git-workflow-detail.md)).
 
-**Mesure datée et contrôle positif** (po-2027, cycle #14195 ; tableau avant/après et contrôle positif du squash-merge) : [détail §5](../../docs/reference/git-workflow-detail.md).
+**Mesure datée et contrôle positif** : [détail §5](../../docs/reference/git-workflow-detail.md).
 
 ## PR Body Generation
 
 **L677-L4 ★★** — le **body de PR se génère HORS worktree** : scratchpad `<scratchpad-dir>/c<NNN>_pr_body.md` + `gh pr create --body-file <scratchpad-path>`. Jamais un `PR_BODY.md` / `BODY.md` **dans** le worktree, qu'un `git add .` stagerait et qu'un rebase ou amend ramènerait dans un commit de code. Vérifier `git status` avant tout `git add .` : pas de `*.md` orphelin de body dans les fichiers tracés.
 
 Autres leçons ancrées (L721 stale-tracker, L740 cron 7 j, L898 collision cross-lane) : [proactive-coordination.md](proactive-coordination.md) §Leçons ancrées.
+
+**Provenance** : fragments déportés = lignes de la base `7a558e4d7ce8` — [détail §Levier B](../../docs/reference/git-workflow-detail.md).

@@ -205,8 +205,24 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # SECOND_READING a tort.
 EXERCISE_STATEMENT_TITLE_RE = re.compile(
     r"^(?:#{1,6}\s*|\*+|_+)\s*exerci[cs]e\b", re.IGNORECASE)
+# Les DEUX titres canoniques de la spec « finition de serie » (#19297,
+# 2026-10-05) sont structurels au meme titre que « conclusion » ou « synthese »
+# : ce sont des blocs de CLOTURE de carnet (recapitulatif, questions de
+# comprehension), pas des lectures d'une sortie. La liste fermee ci-dessus
+# datait de la convention d'avant la spec (titres voisins « Points cles a
+# retenir », « Conclusion ») et ne portait pas les titres canoniques :
+# tout carnet dont le chemin se termine par un stub d'exercice ajoutait alors
+# « ## A retenir » juste apres ce stub, et le cliquet (mode DIFF, bucket
+# EXERCISE_READING) le classait « lecture deguisee en prose titre » — un
+# Faux positif mesure : PR #25720 (Search-09d, `## A retenir` ajoute apres le
+# stub de l'exercice 3) -> rouge du `PR gate` alors que la spec IMPOSE ce
+# placement (le carnet se termine par les trois blocs, dans cet ordre, et les
+# exercices sont du corps). Le carve-out #17777 pose deja le principe --
+# « le discriminant est le TITRE, pas la longueur du corps » -- : un titre de
+# section reste structurel, quelle que soit la taille de son corps.
 SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
-    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
+    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin"
+    r"|a retenir|verifiez votre comprehension)\b",
     re.IGNORECASE,
 )
 # Titres de TRANSITION de fin de carnet -- deuxieme famille structurelle.
@@ -437,6 +453,34 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     return len(src) > 80
 
 
+# Separateur de section horizontal : `***`, `---`, `___` (forme espacee
+# comprise, `* * *`). Une cellule markdown peut OUVRIR sur un tel separateur
+# avant son titre -- c'est le cas des titres d'exercice poses juste apres la
+# section precedante. (#23397)
+_HORIZONTAL_RULE_RE = re.compile(r"^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$")
+
+
+def _first_title_line(src: str) -> str:
+    """Premiere ligne qui porte un TITRE dans `src`, en ignorant les lignes
+    vides et les separateurs de section qui le precedent en tete de cellule.
+
+    Un en-tete `### Exercice ...` qui n'est PAS en premiere ligne (parce
+    qu'un separateur `***`/`---`/`___` ou une ligne vide ouvre la cellule)
+    doit tout de meme compter comme un titre : c'est lui qui ferme la section,
+    pas le separateur. Sans ce geste, la remontee de `_section_header` passait
+    au-dessus du titre d'exercice et rattachait son stub a l'en-tete credite
+    deux cellules plus haut, blanchissant un vrai exercice. (#23397)
+    """
+    for line in src.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if _HORIZONTAL_RULE_RE.match(line):
+            continue
+        return line
+    return ""
+
+
 def _governing_header(cells: list[dict], idx: int) -> dict | None:
     """En-tete markdown qui commande la cellule `idx` (None s'il n'y en a pas).
 
@@ -460,6 +504,34 @@ def _governing_header(cells: list[dict], idx: int) -> dict | None:
     return None
 
 
+def _section_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown de la SECTION qui contient la cellule `idx`.
+
+    Regle de SECTION : une cellule de CODE n'interrompt PAS la remontee --
+    le premier TITRE markdown trouve commande toute la section, combien
+    que soient les cellules de code entre le titre et la cellule. Elle
+    cohabite avec `_governing_header` (regle de LIEN, une cellule de code
+    rompt le lien), qui reste la regle du lien generique -- y compris son
+    miroir dans `count_exercises.py`.
+
+    Un TITRE compte meme quand il n'est pas en premiere ligne de sa cellule
+    (`_first_title_line` ignore les lignes vides et les separateurs `***` /
+    `---` / `___` qui l'ouvrent) : un titre d'exercice pose apres un
+    separateur ferme la section, sinon son stub serait rattache a l'en-tete
+    credite de la section precedante et blanchi. (#23397)
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell_source(cell).strip()
+        if not src:
+            continue
+        if _first_title_line(src).startswith("#"):
+            return cell
+    return None
+
+
 def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     """Vrai si la cellule de code `idx` est le code d'un EXEMPLE GUIDE CREDITE.
 
@@ -477,24 +549,25 @@ def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     sous `### Exercice N` il reste un stub. L'ATTRIBUTION est exigee : un
     simple `### Exemple` sans credit ne dit rien du role du code.
 
-    LIMITE ASSUMEE -- le lien de section s'arrete a la PREMIERE cellule de
-    code (`_governing_header`), donc un exemple credite qui porte plusieurs
-    cellules de code n'est blanchi que sur la premiere ; les suivantes
-    restent classees « exercice ». La limite est codifiee par
-    `test_carveout_code_avant_titre_ne_rattache_pas`, et l'elargir changerait
-    cette semantique (une cellule de code sans titre ouvre une nouvelle
-    section : sans cela, un exercice pose apres un code quelconque serait
-    blanchi).
+    Regle de SECTION (#23397) : la commande se lit par `_section_header` --
+    le premier TITRE markdown au-dessus de la cellule, les cellules de code
+    intermediaires n'interrompant PAS la remontee. Un exemple credite qui
+    porte plusieurs cellules de code est blanchi sur TOUTES, dans la limite
+    de sa section : un NOUVEAU titre markdown (exemple : l'exercice qui suit
+    l'exemple) ferme la section, et le code sous ce titre redevient
+    classifiable « exercice » -- l'elargissement ne blanchit donc jamais un
+    exercice pose apres un code quelconque, qui ne partage pas l'en-tete
+    credite.
 
-    Mesure du 2026-10-29 sur le depot (151 en-tetes credites) : 133 sections
-    portent une seule cellule de code, 15 en portent deux, 3 en portent trois
-    -- soit 18 sections hors du carve-out. Aucune ne produit le faux positif :
-    sur ces 18 sections, aucune cellule non blanchie n'est classee « exercice »
-    par `is_exercise_cell` en etant suivie d'une lecture. La limite est donc
-    REELLE EN FORME et SANS INSTANCE mesuree : la documenter suffit, l'elargir
-    serait un changement de semantique non motive par une mesure.
+    Mesure du 2026-11-06 au head (1 751 carnets, 22 575 cellules de
+    code, 168 en-tetes credites, 16 sections multi-code) : la regle de
+    section blanchit 187 cellules contre 168 sous la regle de lien --
+    strictement superset, 19 cellules gagnees, aucune perdue ; 14 de ces
+    19 sont suivies d'une lecture (le cas ou le faux positif EXERCISE_READING
+    se produisait). Le role du code se lit par SECTION, pas par lien : c'est
+    ce que la mesure porte.
     """
-    header = _governing_header(cells, idx)
+    header = _section_header(cells, idx)
     return header is not None and is_credited_example_header(header)
 
 

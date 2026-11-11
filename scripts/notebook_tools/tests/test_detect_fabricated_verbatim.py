@@ -294,6 +294,133 @@ class TestFindProbes:
         # "operationnelle" is 14 chars -- qualifies
         assert "operationnelle" in probes
 
+    def test_le_repli_est_une_empreinte_insensible_aux_espaces(self):
+        """Le repli retire les espaces : c'est une EMPREINTE, et la
+        comparaison se fait des lors sur les deux formes sans espace (le
+        scanner compare `p in normalized or p in squashed`).
+
+        Ce qui compte ici : le seuil d'eligibilite ne doit PAS dependre du
+        nombre d'espaces retires. Conserver les espaces dans l'empreinte
+        ferait basculer sous le seuil des fragments qui n'y etaient pas --
+        un seuil arbitraire, et 37 faux positifs de prose sur le corpus
+        mesure."""
+        probes = _find_probes_in_fragment("Gaussian(15,33, 4,613)")
+        assert probes == ["Gaussian(15,33,4,613)"]
+        # Un fragment dont la forme sans espace est sous le seuil ne devient
+        # pas eligible parce qu'il porte des espaces.
+        assert _find_probes_in_fragment("de parametre") == []
+
+
+# ---------------------------------------------------------------------------
+# 4 bis. La voie litterale est CONSULTEE meme apres un verdict probe
+# ---------------------------------------------------------------------------
+
+class TestVoieLitteraleConsultee:
+    """Le verdict probe rend le fragment SUSPECT, il ne decide pas seul.
+
+    Avant #24269, la voie probe emettait son finding puis faisait `continue` :
+    la voie litterale -- que le commentaire de la voie 2 annonce comme
+    « tournee en PARALLELE de la voie probe, pas en fallback try-first » --
+    n'etait jamais atteinte. Une citation legitime dont la probe echouait
+    etait donc accusee sans seconde opinion."""
+
+    def test_une_citation_avec_espaces_ne_declenche_aucun_finding(self):
+        """Temoignage direct du residue : la citation est VERBATIM de la
+        sortie, espaces compris. Elle ne doit produire aucun finding."""
+        cells = [
+            md_cell(
+                "## Sortie code[0]\n\n"
+                "La sortie rend `Gaussian(15,33, 4,613)`.\n"
+            ),
+            code_cell(
+                "print('Prediction demain : Gaussian(15,33, 4,613)')",
+                outputs=[stream_output("Prediction demain : Gaussian(15,33, 4,613)")],
+                execution_count=1,
+            ),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        assert result["findings"] == [], result["findings"]
+
+    def test_le_verdict_probe_ne_decide_pas_seul(self):
+        """La voie probe accuse (le fragment entier n'est pas dans la sortie),
+        la voie litterale passe (tous les litteraux discriminants y sont) :
+        il n'y a pas de fabrication, donc pas de finding."""
+        cells = [
+            md_cell(
+                "## Sortie code[0]\n\n"
+                "Le calcul `porte 42 et un ratio de 0.75` suit.\n"
+            ),
+            code_cell(
+                "print('a = 42'); print('b = 0.75')",
+                outputs=[stream_output("a = 42\nb = 0.75")],
+                execution_count=1,
+            ),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        assert result["findings"] == [], result["findings"]
+
+    def test_un_litteral_manquant_reste_un_finding(self):
+        """Controle NEGATIF du veto : la seconde opinion n'efface pas une
+        vraie fabrication -- si un litteral discriminant manque, le finding
+        reste, et il nomme le litteral absent."""
+        cells = [
+            md_cell(
+                "## Sortie code[0]\n\n"
+                "Le calcul `porte 42 et un ratio de 0.76` suit.\n"
+            ),
+            code_cell(
+                "print('a = 42'); print('b = 0.75')",
+                outputs=[stream_output("a = 42\nb = 0.75")],
+                execution_count=1,
+            ),
+        ]
+        result = _scan_notebook_from_nb(make_notebook(cells))
+        assert len(result["findings"]) == 1, result["findings"]
+        assert "0.76" in result["findings"][0]["literals_missing"]
+
+
+def test_le_temoin_infer_02_ne_conserve_que_le_vrai_ecart():
+    """Temoignage de #24269 sur le carnet reel -- ferme par la correction.
+
+    Historique : le carnet citait `[11.1, 19.5] min` en clair alors que la
+    sortie .NET commitee rend `[11,1, 19,5] min` (culture francaise). C'etait
+    un VRAI ecart de format FR/EN : l'organe le relevait a raison, et les deux
+    autres findings etaient des espaces retires a tort.
+
+    Apres la correction du carnet -- les nombres cites en clair suivent la
+    sortie -- l'ecart FR/EN est **ferme** : l'organe ne releve plus rien sur
+    ce carnet. Le temoin garde sa valeur dans les DEUX sens :
+
+      - le carnet reel ne doit produire aucun finding ;
+      - un carnet synthetique reproduisant l'ancien ecart doit toujours
+        produire exactement le finding `[11.1, 19.5] min` -- controle
+        positif : un zero obtenu parce que l'organe serait devenu aveugle
+        ne prouverait rien.
+
+    L'ecart FR/EN reste donc **detecte** par l'organe ; c'est la prose du
+    carnet qui a ete alignee sur la sortie, pas l'organe qui a ete assoupli.
+    """
+    path = (Path(__file__).resolve().parents[3]
+            / "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb")
+    if not path.exists():
+        pytest.skip("carnet absent du checkout")
+    result = _scan_notebook(path)
+    fragments = [f["fragment"] for f in result["findings"]]
+    assert fragments == [], fragments
+
+    # Controle positif : l'ancien ecart FR/EN reste detecte.
+    cells = [
+        md_cell("## Sortie code[0]\n\nIntervalle de confiance 95% : `[11.1, 19.5] min`\n"),
+        code_cell(
+            'Console.WriteLine("Intervalle de confiance 95% : [11,1, 19,5] min");',
+            outputs=[stream_output("Intervalle de confiance 95% : [11,1, 19,5] min")],
+            execution_count=1,
+        ),
+    ]
+    synth = _scan_notebook_from_nb(make_notebook(cells))
+    synth_fragments = [f["fragment"] for f in synth["findings"]]
+    assert synth_fragments == ["[11.1, 19.5] min"], synth_fragments
+
 
 # ---------------------------------------------------------------------------
 # 4. Voie litterale (parallel) -- discriminant numerique / booleen

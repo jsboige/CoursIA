@@ -2726,15 +2726,18 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb
 relations, des types, des contraintes. C'est lui qui rend l'oracle possible ---
 et c'est lui qui decidera aussi de ce que le pipeline est *incapable* de voir.
 ",,,,,,,,f188d2e6740e0104,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-06,markdown,fr,b0bea480daae43c6,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-06,markdown,fr,d4b74921344c7525,"***
 
 ## 3. Etage 1 : extraction par LLM
 
-Même dispositif qu'en SL-9 : un `.env` a la racine de la serie configure
-n'importe quel endpoint OpenAI-compatible (ici OpenRouter / Gemini 3.5 Flash) ;
-sans `.env`, un simulateur déterministe --- l'extraction de reference --- prend
-le relais pour que le notebook reste executable hors-ligne.
-",,,,,,,,b0bea480daae43c6,,,,,,,,,,,,,,,
+Meme dispositif qu'en SL-9 : un `.env` a la racine de la serie configure
+n'importe quel endpoint OpenAI-compatible (variables lues par la cellule
+suivante : `OPENAI_API_KEY`, `OPENAI_BASE_URL`, `OPENAI_CHAT_MODEL_ID`) ;
+l'execution qui a produit les sorties committees de ce carnet a utilise
+`gpt-5.6-luna` via `https://api.openai.com/v1`. Sans `.env`, un simulateur
+déterministe --- l'extraction de reference --- prend le relais pour que le
+notebook reste executable hors-ligne ; sur ce corpus les deux chemins rendent
+les memes 19 triplets -- releve dans la sortie de la cellule d'extraction (« Extraction (gpt-5.6-luna) : 19 triplets », rappel et precision 19/19 ; l'oracle recoit ces 19 : « Entree de l'oracle : 19 triplets ») -- ce qui rend la suite reproductible hors-ligne.",,,,,,,,d4b74921344c7525,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-07,code,fr,94e39a657f7b1065,"# Configuration de l'acces LLM via .env (endpoint OpenAI-compatible)
 import os
 import re
@@ -2832,19 +2835,21 @@ if missed:
           + "", "".join(f""{r}({s}, {o})"" for r, s, o in missed))
 triples = llm_triples + [t for t in GOLD_TRIPLES if t not in got]
 print(f""\nEntree de l'oracle : {len(triples)} triplets"")",,,,,,,,bd9b5e94f127c8e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-09,markdown,fr,eaff2806f6ee5583,"### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-09,markdown,fr,bee4d932d5e8feb2,"### Interpretation
 
 L'etage neuronal fait ce qu'aucune regex ne sait faire : lire « Nadia, la mere de
 Lucas » et en tirer `parent(nadia, lucas)`. Mais il reste *faillible et non
 verifie* : le rappel et la precision affichés ci-dessus sont mesurables uniquement
 parce que nous possedons une extraction de reference --- luxe inexistant en
 production. (Sur ce corpus jouet --- 13 enonces, vocabulaire
-ferme, identifiants imposes --- Gemini 3.5 Flash realise une extraction
-parfaite ; rien ne garantit qu'elle le reste sur du texte ouvert.) D'ou l'etage suivant : tout triplet, d'ou qu'il vienne, passe devant
+ferme, identifiants imposes --- le modele configure lors de l'execution
+commitee, `gpt-5.6-luna`, realise une extraction parfaite ; rien ne garantit
+qu'elle le reste sur du texte ouvert. Le simulateur hors-ligne restitue la
+meme extraction de reference : sur ce corpus les deux chemins donnent les memes
+19 triplets -- releve dans la sortie de la cellule d'extraction (« Extraction (gpt-5.6-luna) : 19 triplets », rappel et precision 19/19 ; l'oracle recoit ces 19 : « Entree de l'oracle : 19 triplets ») -- d'ou une suite reproductible hors-ligne.) D'ou l'etage suivant : tout triplet, d'ou qu'il vienne, passe devant
 l'oracle. Notez que l'extraction rapporte fidelement les deux pieges du corpus :
 c'est le *rôle* de l'extraction de rester fidele au texte, et celui de l'oracle
-de juger.
-",,,,,,,,eaff2806f6ee5583,,,,,,,,,,,,,,,
+de juger.",,,,,,,,bee4d932d5e8feb2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-10,markdown,fr,c460273cdee75101,"***
 
 ## 4. Etage 2 : l'oracle symbolique
@@ -3376,17 +3381,16 @@ print(""ne suffisent pas : il faut soit un biais de gabarit (refuser une tete"")
 print(""'travaille_pour' derivee d'une chaine par 'parent'), soit des contre-exemples"")
 print(""(un parent dont l'enfant travaille ailleurs sans y travailler lui-meme)."")
 ",,,,,,,,4de9937760675852,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10ex3var-md,markdown,fr,40e95bf9992640d6,"### Exercice 3 (variation) : Un score qui separe
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10ex3var-md,markdown,fr,ee946bf73ff5dc0d,"### Exercice 3 (variation) : Un score qui separe
 
 La confiance echoue a separer `grandparent` (VRAIE) de `travaille_pour :- parent o travaille_pour` (FAUSSE), toutes deux a 0.67. Inventez un score **complementaire** qui les separe.
 
 **Étapes** :
-1. Pour chaque candidate, calculer un score de **diversite du support** : nombre de SUJETS distincts dans ses instances de support (un vrai `grandparent` vient de plusieurs familles ; une coincidence de micro-monde tient souvent a une seule).
-2. Re-classer les candidates par ce score et verifier que `grandparent` > `travaille_pour :- parent`.
-3. Quelle paire de règles ce score echoue-t-il a separer a son tour ?
+1. Pour chaque candidate, calculer un score de **diversite du support** : nombre de SUJETS distincts dans ses instances de support (les instances reellement couvertes par la regle, c'est-a-dire `support ∩ rels[head]`). L'intuition « un vrai `grandparent` vient de plusieurs familles, une coincidence de micro-monde tient souvent a une seule » est **verifiable, pas acquise** : mesurez-la.
+2. Re-classer les candidates par ce score et **verifier** si le classement donne bien `grandparent` > `travaille_pour :- parent` (ce que le carnet laisse attendre). **Attention : la separation peut ne pas avoir lieu** — si les deux scores sont egaux, c'est un resultat instructif : consignez-le, puis passez a l'etape 3.
+3. Quelle paire de regles ce score echoue-t-il a separer a son tour ? Et quel critere tiers (leverage, nombre d'instances, contradiction avec un fait connu de l'oracle) separerait, lui, `grandparent` de `travaille_pour` ?
 
-**Indice** : aucun score unique ne separe tout -- c'est le moteur des approches multi-critères (confidence + support + diversite + leverage) en association rule mining.
-",,,,,,,,40e95bf9992640d6,,,,,,,,,,,,,,,
+**Indice** : les deux regles retenues ont le **meme support** (2 instances chacune) : la diversite du support les place donc a egalite — le score de support ne peut pas les separer. Aucun score unique ne separe tout -- c'est le moteur des approches multi-critères (confidence + support + diversite + leverage) en association rule mining.",,,,,,,,ee946bf73ff5dc0d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10ex3var-code,code,fr,40d894b4439ea051,"# Exercice 3 (variation) : Un score qui separe
 # TODO etudiant : la confiance ne separe pas grandparent (VRAIE) de
 # travaille_pour:-parent (FAUSSE), toutes deux a 0.67. Inventez un score de
@@ -3484,17 +3488,16 @@ print(""     etre ancetre de sophie, aussi descendante d'henri). Sans ces"")
 print(""     contraintes le pipeline est aveugle au sens. La variation implemente la"")
 print(""     defense par cardinalite."")
 ",,,,,,,,dcf82bf89419713d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10ex4var-md,markdown,fr,b8623ef4b982e103,"### Exercice 4 (variation) : Bloquer le poison (cardinalite des parents)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10ex4var-md,markdown,fr,6c316cf0a86e1ba2,"### Exercice 4 (variation) : Bloquer le poison (cardinalite des parents)
 
 Implémentez la contrainte de CARDINALITÉ qui aurait bloqué le poison : un enfant a **au plus 2 parents**. Re-injectez le poison après les 2 parents légitimes de Sophie et montrez qu'il est rejeté.
 
 **Étapes** :
 1. Étendre l'oracle : compter les parents déjà admis pour chaque enfant ; rejeter le 3e.
-2. Ajouter un 2e parent légitime à Sophie (ex. le père `thomas`), puis injecter `parent(lucas, sophie)` — lucas est le 3e parent → rejeté.
+2. Ajouter un 2e parent légitime à Sophie (ex. le père `thomas`) — **en déclarant d'abord l'entité** `thomas` dans `PERSONS` / `TYPE_OF`, comme l'exemple guidé 1 l'a fait pour `jeanne` : sans cette déclaration, l'oracle rejette `parent(thomas, sophie)` comme *entité inconnue*, le compteur de cardinalité reste à 1 et le poison `parent(lucas, sophie)` passe. Puis injecter `parent(lucas, sophie)` — lucas est le 3e parent → rejeté.
 3. Que reste-t-il non couvert par cette contrainte ? (Indice : un empoisonnement par une seule affirmation sur un enfant *sans* parent connu.)
 
-**Indice** : la cardinalité borne le nombre d'attaques simultanées, mais ne prouve pas la véracité. C'est une défense en profondeur, pas une preuve.
-",,,,,,,,b8623ef4b982e103,,,,,,,,,,,,,,,
+**Indice** : la cardinalité borne le nombre d'attaques simultanées, mais ne prouve pas la véracité. C'est une défense en profondeur, pas une preuve.",,,,,,,,6c316cf0a86e1ba2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10ex4var-code,code,fr,4c82a64e4289ee17,"# Exercice 4 (variation) : Bloquer le poison (cardinalite des parents)
 # TODO etudiant : implémentez la contrainte ""un enfant a au plus 2 parents"".
 
@@ -3554,7 +3557,7 @@ Knowledge Vault), les mineurs de règles sur KG massifs (AMIE+ sur Wikidata), et
 la generation augmentee par graphe (GraphRAG). Les ingredients sont les mêmes ;
 seules les echelles changent.
 ",,,,,,,,75a5080691ab3b52,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-32,markdown,fr,bfbe2f4674f7ca8b,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-32,markdown,fr,afe259c0a764029f,"***
 
 ## Defi presentation
 
@@ -3565,26 +3568,25 @@ Elle fait partie integrante de la presentation attendue.
 
 | Exercice | Question-twist a traiter en plus |
 |----------|----------------------------------|
-| **Ex. 1 (etendre le schema)** | Le mineur va decouvrir `marie_avec(X,Y) :- marie_avec(Y,X)` avec confiance 1.0 : une règle qui ne fait que refleter votre propre completion d'oracle. Comment distinguer mecaniquement une règle *apprise des données* d'une règle qui reapprend le *schema* qu'on y a injecte ? |
+| **Ex. 1 (etendre le schema)** | Le mineur **ne peut pas** decouvrir `marie_avec(X,Y) :- marie_avec(Y,X)` : ses deux gabarits (`h(X,Y) :- b(X,Y)` et `h(X,Y) :- b1(X,Z), b2(Z,Y)`) ne produisent que des corps dont les variables apparaissent dans l'ordre de la tete. La symetrie est pourtant bien *dans* le KG (l'oracle complete `marie_avec(Y,X)` des que `marie_avec(X,Y)` est admis) — c'est une limite d'expressivite du mineur, pas du KG. Deux questions en decoulent : (a) comment distinguer mecaniquement une regle *apprise des donnees* d'une regle qui reapprend le *schema* qu'on y a injecte ? (b) quel gabarit minimal faudrait-il ajouter au mineur pour rendre une relation symetrique exprimable, et quel garde-fou detecterait alors qu'il n'a fait que recopier l'oracle ? |
 | **Ex. 2 (politique de conflit)** | Votre politique a sources suppose les fiabilites connues a priori. En *truth discovery*, on les estime en même temps que les faits (une source est fiable si elle affirme des faits confirmes...). Esquissez l'algorithme de point fixe correspondant et son cas pathologique. |
 | **Ex. 3 (seuils)** | `grandparent :- parent o parent` (vraie) et `travaille_pour :- parent o travaille_pour` (fausse) ont la même confiance 0.67 : aucun seuil ne les separe. Quelle information NON presente dans le KG les separerait (contre-exemples ? intervention ? texte ?) --- et lequel des dix notebooks de la serie fournit l'outil le plus proche ? |
-| **Ex. 4 (empoisonnement)** | Classez les defenses par etage (modalite epistemique a l'extraction, contraintes temporelles a l'oracle, pedigree a l'inference) et defendez la these : « la provenance est la seule defense qui passe a l'echelle ». Quelle requête d'apprentissage *actif* (SL-10) le pipeline devrait-il poser pour trancher `travaille_pour(henri, atelier_verne)` ? |
-",,,,,,,,bfbe2f4674f7ca8b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-34,markdown,fr,4de6d87042efebd3,"***
+| **Ex. 4 (empoisonnement)** | Classez les defenses par etage (modalite epistemique a l'extraction, contraintes temporelles a l'oracle, pedigree a l'inference) et defendez la these : « la provenance est la seule defense qui passe a l'echelle ». Quelle requête d'apprentissage *actif* (SL-10) le pipeline devrait-il poser pour trancher `travaille_pour(henri, atelier_verne)` ? |",,,,,,,,afe259c0a764029f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-11-Capstone-NeuroSymbolic.ipynb,sl10-34,markdown,fr,b0e456956b2be4b6,"***
 
 ## Ressources
 
 - A. Carlson et al., *Toward an Architecture for Never-Ending Language Learning* (NELL), AAAI 2010
 - X. Dong et al., *Knowledge Vault: A Web-Scale Approach to Probabilistic Knowledge Fusion*, KDD 2014
 - L. Galarraga et al., *Fast Rule Mining in Ontological Knowledge Bases with AMIE+*, VLDB Journal 2015
-- Y. Li et al., *Truth Discovery with Multiple Conflicting Information Providers*, TKDE 2008
+- X. Yin, J. Han et P. S. Yu, *Truth Discovery with Multiple Conflicting Information Providers on the Web*, IEEE TKDE 20(6):796-808, 2008 (version etendue de TruthFinder, KDD 2007)
 - D. Edge et al., *From Local to Global: A GraphRAG Approach to Query-Focused Summarization*, 2024
 - Russell & Norvig, *AI: A Modern Approach*, 3e ed., chap. 19 (le fil de toute la serie)
 
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-10](SL-10-ActiveAutomataLearning.ipynb)
-",,,,,,,,4de6d87042efebd3,,,,,,,,,,,,,,,
+",,,,,,,,b0e456956b2be4b6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb,cell-0,markdown,fr,3f727449600f2765,"# SL-12 : Differentiable Logic Gate Networks
 
 **Phase 5 -- Neuro-symbolique** | Précédent : SL-7 (T-norms/LTN/DeepProbLog) --> SL-12 --> Suivant : SL-11 (capstone pipeline)
@@ -3972,9 +3974,9 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetwo
 - SL-11 (capstone neuro-symbolique) : pipeline complet.
 - Archive `SymbolicAI/SymbolicLearning/_archive/2026-07-04-Neurosymbolic-EML-precurseur-SL12/` : la veille EML/NAND qui a inspiré ce notebook (consolidée).
 - Registre SOTA axe-2 : #3801.",,,,,,,,dc12f8db2e8b1733,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,6b0e8fee,markdown,fr,7fc859b58a921c99,"# SL-1 - Apprentissage Logique : CBH Search et Version Space
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,6b0e8fee,markdown,fr,eb4e029432845aa0,"# SL-1 - Apprentissage Logique : CBH Search et Version Space
 
-**Navigation** : [Index](./README.md) | [EBL & RBL >>](SL-2-KnowledgeBasedLearning.ipynb)
+**Navigation** : [Index](./README.md) | [Twin C#](SL-1-LogicalLearning-Csharp.ipynb) | [EBL & RBL >>](SL-2-KnowledgeBasedLearning.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -3995,7 +3997,7 @@ A la fin de ce notebook, vous saurez :
 
 ### References
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach*, 3e ed., Chapitre 19.1
-- Tom Mitchell, *Machine Learning*, Chapitre 2 (Concept Learning)",,,,,,,,7fc859b58a921c99,,,,,,,,,,,,,,,
+- Tom Mitchell, *Machine Learning*, Chapitre 2 (Concept Learning)",,,,,,,,eb4e029432845aa0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,2b4d29e4,markdown,fr,9e7eee651515dab6,"***
 
 ## 1. Le problème restaurant (AIMA)
@@ -5517,7 +5519,9 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb,902a1f8
 
 **Retour** : [Index SymbolicLearning](./README.md) | [SL-2 >>](SL-2-KnowledgeBasedLearning.ipynb)
 ",,,,,,,,a534e951ba730d53,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,91b0f063,markdown,fr,bcfc7cf1ab7f8b34,"# SL-1 - Apprentissage Logique : CBH Search et Version Space (C#)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,91b0f063,markdown,fr,1b0c76855f00e00d,"# SL-1 - Apprentissage Logique : CBH Search et Version Space (C#)
+
+**Navigation** : [Index](./README.md) | [Twin Python](SL-1-LogicalLearning.ipynb) | [Suivant >>](SL-2-KnowledgeBasedLearning-Csharp.ipynb)
 
 > **Jumeau C#** du notebook [SL-1-LogicalLearning.ipynb](SL-1-LogicalLearning.ipynb).
 > Version Python ↔ Version C# (.NET Interactive) — parité pédagogique du marathon #4956.
@@ -5546,7 +5550,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach* (3e éd.), ch. 19.
 - Mitchell, T. M. *Machine Learning* (1997), ch. 2 (Version Space).
 - Notebook Python associé : [SL-1-LogicalLearning.ipynb](SL-1-LogicalLearning.ipynb).
-",,,,,,,,bcfc7cf1ab7f8b34,,,,,,,,,,,,,,,
+",,,,,,,,1b0c76855f00e00d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,c8a0312f,markdown,fr,ba8316ff53832d45,"## 1. Le problème restaurant (AIMA)
 
 Le problème canonique d'AIMA : décider si l'on attend une table dans un restaurant,
@@ -6042,9 +6046,9 @@ notebook Python. Points clés :
 - Notebook Python : [SL-1-LogicalLearning.ipynb](SL-1-LogicalLearning.ipynb).
 - Marathon parité : #4956.
 ",,,,,,,,bbb9cdb103867076,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,0c89ba96,markdown,fr,4530708c22d530b6,"# SL-2 --- Apprentissage et Connaissance (EBL & RBL)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,0c89ba96,markdown,fr,ddaa25f3e5a24862,"# SL-2 --- Apprentissage et Connaissance (EBL & RBL)
 
-**Navigation** : [Index](./README.md) | [<< SL-1](SL-1-LogicalLearning.ipynb)
+**Navigation** : [Index](./README.md) | [<< SL-1](SL-1-LogicalLearning.ipynb) | [Twin C#](SL-2-KnowledgeBasedLearning-Csharp.ipynb) | [Suivant >>](SL-3-RelevanceLearning.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -6064,7 +6068,7 @@ A la fin de ce notebook, vous saurez :
 ### References
 - Russell & Norvig, *Artificial Intelligence: A Modern Approach*, 3e ed., Chapitres 19.3-19.4
 - G. DeJong, *Explanation-Based Learning* (1981)
-- T. Mitchell, *Machine Learning*, Chapitre 11 (Explanation-Based Learning)",,,,,,,,4530708c22d530b6,,,,,,,,,,,,,,,
+- T. Mitchell, *Machine Learning*, Chapitre 11 (Explanation-Based Learning)",,,,,,,,ddaa25f3e5a24862,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,a0468061,code,fr,e4c3eca4ccef5f3b,"# Imports et configuration
 from typing import Optional
 from dataclasses import dataclass, field
@@ -7312,14 +7316,14 @@ print(f""   des qu'elle evite au moins une chaine de preuve complete. Une regle"
 print(f""   jamais reutilisee (cf Exemple guide 2) est une perte nette : c'est le"")
 print(f""   critere operationnel qui justifie le desapprentissage par seuil."")
 ",,,,,,,,c02ee170778216de,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,0f0ca933,markdown,fr,875f5cbb800eb091,"### Interpretation : le speedup de l'EBL est algorithmique, pas (toujours) wall-clock
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,0f0ca933,markdown,fr,59d4f17c3c4105b3,"### Interpretation : le speedup de l'EBL est algorithmique, pas (toujours) wall-clock
 
 La mesure revele un résultat **contre-intuitif mais fondamental** -- et reproductible :
 
 | Metrique | Sans EBL | Avec EBL | Verdict |
 |----------|---------:|---------:|---------|
 | **Étapes** (déterministe) | 101 | 67 | EBL gagne : **1.51x**, -34% |
-| **Temps wall-clock** (mediane) | ~148 us | ~336 us | EBL **perd** : ~0.44x |
+| **Temps wall-clock** (mediane) | mesuré (valeur imprimée ci-dessous) | mesuré (valeur imprimée ci-dessous) | EBL **perd** : ratio < 1 |
 
 (Les chiffres wall-clock précis fluctuent avec la charge CPU ; le **classement**, lui, est stable : l'EBL est ici plus lente en temps alors qu'elle gagne en étapes.)
 
@@ -7329,7 +7333,7 @@ La mesure revele un résultat **contre-intuitif mais fondamental** -- et reprodu
 
 **Point de bascule memoire (Q3)** : lie a l'**Exemple guide 2** et au utility problem. Une règle apprise paie son surcout de stockage des qu'elle evite au moins une chaîne de preuve complete lors d'une reutilisation. En dessous, elle alourdit inutilement la base -- c'est exactement ce que le `prune_learned_rules` par seuil d'utilisation detecte et elimine. Le compromis étapes-temps ci-dessus est donc le **cahier des charges** du seuil `min_usage` : garder une règle seulement si, sur le corpus reel, ses economies en étapes compensent son cout de recherche.
 
-**Lien avec SL-1 / Occam** : ici encore, l'EBL applique un critere de *sélection* parmi des connaissances consistantes (toutes les règles apprises sont correctes), exactement comme le rasoir d'Occam selectionnait l'hypothese minimale en SL-1.",,,,,,,,875f5cbb800eb091,,,,,,,,,,,,,,,
+**Lien avec SL-1 / Occam** : ici encore, l'EBL applique un critere de *sélection* parmi des connaissances consistantes (toutes les règles apprises sont correctes), exactement comme le rasoir d'Occam selectionnait l'hypothese minimale en SL-1.",,,,,,,,59d4f17c3c4105b3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,a5b02915,markdown,fr,4cdd21f52c7012ae,"### Exercice 2 (variation) : RBL robuste face a un attribut bruite
 
 La section 7 a montre que `nationality` **determine** seul la langue, tandis que `age` et `city` ne la determinent que trivialement (leurs valeurs, toutes distinctes, isolent chacune une seule personne). Une question naturelle : que se passe-t-il si l'on **ajoute** un attribut totalement decorrele (un bruit) aux données ? RBL doit rester robuste : la determination minimale `nationality -> language` ne doit pas changer.
@@ -7429,7 +7433,9 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning.ipynb,
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-1](SL-1-LogicalLearning.ipynb) | [SL-3 >>](SL-3-RelevanceLearning.ipynb)",,,,,,,,323777b4dd98a6fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,833fe12e,markdown,fr,c59342eeba730380,"# SL-2 - Apprentissage et Connaissance : EBL & RBL (C#)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,833fe12e,markdown,fr,a4f9dafb61211fce,"# SL-2 - Apprentissage et Connaissance : EBL & RBL (C#)
+
+**Navigation** : [Index](./README.md) | [<< SL-1 C#](SL-1-LogicalLearning-Csharp.ipynb) | [Twin Python](SL-2-KnowledgeBasedLearning.ipynb) | [Suivant >>](SL-3-RelevanceLearning-Csharp.ipynb)
 
 > **Jumeau C#** du notebook [SL-2-KnowledgeBasedLearning.ipynb](SL-2-KnowledgeBasedLearning.ipynb).
 > Version Python ↔ Version C# (.NET Interactive) — parité pédagogique du marathon #4956.
@@ -7455,7 +7461,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp
 ### Références
 - Russell & Norvig, *AIMA* (3e éd.), §19.3-19.4.
 - Notebook Python : [SL-2-KnowledgeBasedLearning.ipynb](SL-2-KnowledgeBasedLearning.ipynb).
-",,,,,,,,c59342eeba730380,,,,,,,,,,,,,,,
+",,,,,,,,a4f9dafb61211fce,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,dfb36b89,markdown,fr,12fc52521d180cb5,"## 1. Les 4 contraintes d'apprentissage
 
 AIMA distingue 4 façons dont la connaissance interagit avec l'apprentissage, selon
@@ -7766,7 +7772,7 @@ foreach (var p in genProof)
 Console.WriteLine();
 Console.WriteLine(""Règle compilée par EBL : a*(b+c) -> c  (généralisée de 1*(0+x) -> x)"");
 ",,,,,,,,4cb7fd71a42542a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,a9fe7947,markdown,fr,9484ceda61f87f69,"## 4. Mesurer le speedup EBL
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,a9fe7947,markdown,fr,5436184f03b31446,"## 4. Mesurer le speedup EBL
 
 L'intérêt d'EBL : une fois les règles apprises (compilées), la simplification de
 nouvelles expressions est **plus rapide** car on évite de re-dériver la preuve.
@@ -7782,7 +7788,20 @@ L'output affiche le coût agrégé sur les 8 expressions : **42 sans EBL contre 
 avec**, soit un speedup de `42/8 = 5.25x`. Le gain vient de la **compilation** :
 la chaîne de déduction (2 étapes dans l'exemple §3.1) est remplacée par une seule
 application de règle. EBL ne rend pas la connaissance plus *vraie* — il la rend
-plus *rapide* à utiliser.",,,,,,,,9484ceda61f87f69,,,,,,,,,,,,,,,
+plus *rapide* à utiliser.
+
+**Ce `5.25x` est un coût simulé, pas une mesure.** Le facteur `3×` appliqué par
+étape de re-dérivation est **conventionnel** : il est posé par la cellule, il ne
+correspond à aucun temps réel mesuré, et il sert à rendre visible le gain de la
+compilation. La mesure **réelle** du §4bis ne rejoue pas ce protocole : elle compte
+les **étapes de simplification** effectivement effectuées, sur un corpus différent
+(10 expressions) et avec le pipeline EBL complet (3 règles apprises, et non une règle
+codée à la main). Elle donne `18 → 10` étapes, soit `1.8x` et `-44 %` d'étapes.
+Les deux chiffres ne se contredisent pas : le premier mesure l'écart de **coût
+simulé** entre deux stratégies sur 8 expressions, le second mesure l'**algorithme**
+— une règle compilée remplace deux réécritures par un lookup. C'est la distinction
+que le jumeau Python explicite (« le speedup de l'EBL est algorithmique, pas
+(toujours) wall-clock »).",,,,,,,,5436184f03b31446,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,ffa366ee,code,fr,56a93f2efc0dc36b,"using System.Diagnostics;
 
 // Expressions de test (similaires mais non identiques à l'exemple d'apprentissage).
@@ -7870,7 +7889,7 @@ Console.WriteLine($""  (Patrons)        -> WillWait ? {CheckDetermination(data, 
 Console.WriteLine($""  (Type)           -> WillWait ? {CheckDetermination(data, new(){""Type""}, ""WillWait"")}"");
 Console.WriteLine($""  (Patrons, Type)  -> WillWait ? {CheckDetermination(data, new(){""Patrons"",""Type""}, ""WillWait"")}"");
 ",,,,,,,,a403cee86fb98994,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,ee11c81a,markdown,fr,6dd938ee2cbe330d,"## Exercice : EBL sur la différentiation symbolique
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,ee11c81a,markdown,fr,dfdf9bb972a58fc0,"## Exercice 1 : EBL sur la différentiation symbolique
 
 Appliquez EBL à un nouveau domaine : la différentiation. Variabilisez la preuve de
 `d/dx(x^2) = 2x` en une règle générale `d/dx(u^2) = 2u`.
@@ -7884,7 +7903,7 @@ usuelles : `d/dx(u^n) = n*u^(n-1)`, `d/dx(const) = 0`, `d/dx(u+v) = du/dx + dv/d
 - `# Étape 1` : définir les règles de réécriture de différentiation (comme §3).
 - `# Étape 2` : construire l'arbre de preuve de `d/dx(x^2)` avec `BuildProof`.
 - `# Étape 3` : variabiliser (`x → u`, `2 → n`) pour généraliser la règle.
-- `# Indice` : réutiliser `RewriteRule`, `BuildProof` et `VariabilizeProof` de §3.",,,,,,,,6dd938ee2cbe330d,,,,,,,,,,,,,,,
+- `# Indice` : réutiliser `RewriteRule`, `BuildProof` et `VariabilizeProof` de §3.",,,,,,,,dfdf9bb972a58fc0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,600a72d5,code,fr,62f4a010d779dcc4,"// EXERCICE : EBL sur la différentiation symbolique
 public List<ProofStep> EBL_Differentiation(string expr) {
     // TODO etudiant : construisez l'arbre de preuve pour d/dx(x^2) -> 2x
@@ -7897,9 +7916,9 @@ public List<ProofStep> EBL_Differentiation(string expr) {
 
 Console.WriteLine(""Exercice à compléter (EBL différentiation)."");
 ",,,,,,,,62f4a010d779dcc4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,cell-67d68a8d,code,fr,67f17bc7d5641090,"// EXERCICE 2 : RBL robuste au bruit (cf. cellule 15 : ""RBL robuste au bruit"").
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,cell-67d68a8d,code,fr,50599861a8e9d0d5,"// EXERCICE 2 : RBL robuste au bruit (cf. Bilan, cellule 22 : ""Exercice 2 : RBL robuste au bruit"").
 // On ajoute un attribut bruite (Raining, valeur aleatoire) au jeu de donnees
-// restaurant de la cellule 12, puis on verifie que (Patrons, Type) reste
+// restaurant de la cellule 17, puis on verifie que (Patrons, Type) reste
 // determinant malgre le bruit : RBL doit filtrer les attributs non pertinents.
 // Indice : generer N jeux avec une colonne Raining aleatoire, et verifier que
 //          CheckDetermination(data, [""Patrons"",""Type""], ""WillWait"") == true pour tous,
@@ -7907,16 +7926,16 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp
 
 // TODO etudiant : definissez la fonction ci-dessous.
 bool RBL_Robust_To_Noise(int nTrials) {
-    // Etape 1 : reprendre le jeu de donnees de la cellule 12.
+    // Etape 1 : reprendre le jeu de donnees de la cellule 17.
     // Etape 2 : ajouter une colonne ""Raining"" (valeur aleatoire ""Yes""/""No"").
     // Etape 3 : verifier sur nTrials jeux bruites que (Patrons, Type) reste determinant.
     // Etape 4 : verifier que (Raining) seul n'est PAS determinant (bruit filtre par RBL).
     return false;  // TODO etudiant : renvoyez true si (Patrons,Type) determine sur tous les essais
 }
 
-Console.WriteLine($""Exercice 2 a completer : RBL robuste au bruit (nTrials=10) -> {RBL_Robust_To_Noise(10)}."");
-",,,,,,,,67f17bc7d5641090,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,cell-711161da,code,fr,1ea898c0bca802b0,"// EXERCICE 3 : Seuil de desapprentissage (cf. cellule 15 : ""Seuil de desapprentissage"").
+Console.WriteLine(""Exercice 2 a completer : implementez RBL_Robust_To_Noise(nTrials) pour verifier que (Patrons, Type) reste determinant malgre le bruit."");
+",,,,,,,,50599861a8e9d0d5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,cell-711161da,code,fr,e5092d567a2ce324,"// EXERCICE 3 : Seuil de desapprentissage (cf. Bilan, cellule 22 : ""Exercice 3 : Seuil de desapprentissage"").
 // EBL peut sur-specialiser. On veut un mecanisme de ""forgetting"" : si une regle
 // apprise ne s'applique jamais sur N nouveaux exemples, la retirer de la base.
 // Indice : modele par une liste de reggles (string) + un compteur d'inutilisation
@@ -7931,9 +7950,9 @@ List<string> Forget_Stale_Rules(List<string> learnedRules, int N) {
     return learnedRules;  // TODO etudiant : appliquez le filtre de desapprentissage
 }
 
-Console.WriteLine($""Exercice 3 a completer : seuil de desapprentissage (N=5) -> {Forget_Stale_Rules(new List<string>{""d/dx(x^n) = n*x^(n-1)""}, 5).Count} regle(s) conservee(s)."");
-",,,,,,,,1ea898c0bca802b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,2b376daa,markdown,fr,72ee97739f8e46da,"## Bilan
+Console.WriteLine(""Exercice 3 a completer : implementez Forget_Stale_Rules(learnedRules, N) pour retirer les regles apprises jamais declenchees."");
+",,,,,,,,e5092d567a2ce324,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,2b376daa,markdown,fr,9e4b8a46004b13bf,"## Bilan
 
 Ce notebook a présenté EBL et RBL **from-scratch** en C#, jumeau du notebook Python :
 
@@ -7942,7 +7961,10 @@ Ce notebook a présenté EBL et RBL **from-scratch** en C#, jumeau du notebook P
 3. **Chaînage avant + unification** : moteur d'inférence pour expliquer un exemple.
 4. **Arbre de preuve + variabilisation** : généraliser une dérivation en règle.
 5. **EBL complet (§4bis)** : extraction de règle (préconditions non-tautologiques), apprentissage réel et matching à variables — speedup mesuré en étapes réelles.
-6. **Speedup EBL (§4)** : les règles compilées évitent de re-dériver.
+6. **Speedup EBL (§4 / §4bis)** : les règles compilées évitent de re-dériver —
+   **coût simulé** `42/8 = 5.25x` (§4, facteur `3×` posé par la cellule), mesure
+   **réelle** `18 → 10` étapes, soit `1.8x` et `-44 %` (§4bis, étapes réellement
+   comptées).
 7. **RBL = détermination** : identifier les attributs qui déterminent la cible.
 
 > **Parité** : jumeau C# de [SL-2-KnowledgeBasedLearning.ipynb](SL-2-KnowledgeBasedLearning.ipynb).
@@ -7964,7 +7986,7 @@ règle apprise ne s'applique jamais sur N nouveaux exemples, la retirer.
 - Mitchell, T. M. *Machine Learning* (1997), ch. 3-4.
 - Notebook Python : [SL-2-KnowledgeBasedLearning.ipynb](SL-2-KnowledgeBasedLearning.ipynb).
 - Marathon parité : #4956.
-",,,,,,,,72ee97739f8e46da,,,,,,,,,,,,,,,
+",,,,,,,,9e4b8a46004b13bf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning.ipynb,dbf96c32,markdown,fr,4a413d65ec75f69d,"# SL-3 --- Apprentissage Base sur la Pertinence (RBL Approfondi)
 
 **Navigation** : [Index](./README.md) | [<< SL-2](SL-2-KnowledgeBasedLearning.ipynb) | [SL-4 >>](SL-4-InductiveLogicProgramming.ipynb)
@@ -10103,7 +10125,7 @@ L'opérateur W combine deux clauses pour en produire une nouvelle plus général
 $$\frac{C_1 \lor L_1 \quad \quad C_2 \lor \neg L_2 \quad (L_1\theta = L_2\theta)}{(C_1 \lor C_2)\theta}$$
 
 L'opérateur W est plus puissant : il peut introduire de nouvelles variables.",,,,,,,,b134904f27434cd7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,e1385825,code,fr,7328237433fb792e,"# Implementation simplifiee de la resolution inverse
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,e1385825,code,fr,654b119ba031a4a9,"# Implementation simplifiee de la resolution inverse
 
 def apply_v_operator(
     clause: HornClause,
@@ -10140,41 +10162,54 @@ def apply_w_operator(
     clause2: HornClause
 ) -> list[HornClause]:
     """"""Applique l'operateur W (identification).
-    
-    Combine deux clauses en resolvant un litteral commun.
+
+    La resolution se pilote sur la STRUCTURE tete/corps, pas sur le signe
+    des litteraux : ce carnet represente tetes et corps en litteraux non
+    nies, un signe ne designerait rien.
+      - un litteral du corps de c1 unifie avec la TETE de c2
+        -> tete du resolvant = tete de c1 ;
+      - la TETE de c1 unifie avec un litteral du corps de c2
+        -> tete du resolvant = tete de c2 ;
+      - tete c1 <-> tete c2 et corps c1 <-> corps c2 ne sont pas des
+        etapes de resolution entre clauses definies : ecartes.
+    Les premisses non resolues des deux clauses sont conservees dans le
+    corps du resolvant, apres application de la substitution.
     """"""
     results = []
-    # Essayer de resoudre chaque paire de litteraux
-    for lit1 in [clause1.head] + clause1.body:
-        for lit2 in [clause2.head] + clause2.body:
-            subst = unify_complementary(
-                Literal(lit1.predicate, lit1.args, negated=not lit1.negated),
-                lit2,
-                {}
-            )
-            if subst is not None:
-                # Construire la clause resultante
-                remaining1 = [l for l in [clause1.head] + clause1.body if l is not lit1]
-                remaining2 = [l for l in [clause2.head] + clause2.body if l is not lit2]
-                all_lits = remaining1 + remaining2
-                
-                # Appliquer la substitution
-                new_lits = []
-                for lit in all_lits:
-                    new_args = tuple(subst.get(a, a) for a in lit.args)
-                    new_lits.append(Literal(lit.predicate, new_args, lit.negated))
-                
-                # Separer head et body
-                pos_lits = [l for l in new_lits if not l.negated]
-                neg_lits = [l for l in new_lits if l.negated]
-                
-                if len(pos_lits) >= 1:
-                    results.append(HornClause(
-                        head=pos_lits[0],
-                        body=[Literal(l.predicate, l.args, False) for l in neg_lits]
-                    ))
-    return results
+    # Paires de resolution : (litteral de c1, litteral de c2, tete du resolvant)
+    pairs = []
+    for lit1 in clause1.body:
+        pairs.append((lit1, clause2.head, clause1.head))
+    for lit2 in clause2.body:
+        pairs.append((clause1.head, lit2, clause2.head))
 
+    for lit1, lit2, res_head in pairs:
+        subst = unify_complementary(
+            Literal(lit1.predicate, lit1.args, negated=not lit1.negated),
+            lit2,
+            {}
+        )
+        if subst is None:
+            continue
+        # Le litteral resolu et la tete resolue sont consomes ; les
+        # premisses restantes des deux clauses forment le corps du resolvant.
+        body_lits = []
+        for lit in clause1.body:
+            if lit is lit1:
+                continue
+            new_args = tuple(subst.get(a, a) for a in lit.args)
+            body_lits.append(Literal(lit.predicate, new_args, False))
+        for lit in clause2.body:
+            if lit is lit2:
+                continue
+            new_args = tuple(subst.get(a, a) for a in lit.args)
+            body_lits.append(Literal(lit.predicate, new_args, False))
+        new_head_args = tuple(subst.get(a, a) for a in res_head.args)
+        results.append(HornClause(
+            head=Literal(res_head.predicate, new_head_args),
+            body=body_lits,
+        ))
+    return results
 
 # Demonstration sur le probleme ancestor
 print(""Resolution inverse (bottom-up) sur ancestor"")
@@ -10217,7 +10252,7 @@ print(f""  Clause 1 : {c1}"")
 print(f""  Clause 2 : {c2}"")
 w_results = apply_w_operator(c1, c2)
 for r in w_results:
-    print(f""  W-operator result : {r}"")",,,,,,,,7328237433fb792e,,,,,,,,,,,,,,,
+    print(f""  W-operator result : {r}"")",,,,,,,,654b119ba031a4a9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,f4c90f47,markdown,fr,687e4babb43249f5,"### Interpretation : Resolution inverse
 
 | Opérateur | Direction | Effet | Puissance |
@@ -10383,7 +10418,7 @@ les positifs et **aucun** negatif :
 > **Pour aller plus loin.** Les systèmes ILP complets (FOIL original, Progol,
 > Popper --- section suivante) ajoutent l'elagage des litteraux redondants, la
 > tolerance au bruit, et des biais de langage plus riches.",,,,,,,,fa574b6d3fd57c28,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,da423029,markdown,fr,a6b7a1e9ee475262,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,da423029,markdown,fr,4221e6040d183a76,"***
 
 ## 6. ILP et Knowledge Graphs
 
@@ -10405,7 +10440,7 @@ AMIE3 est un système moderne qui mine des règles sur les KGs :
 ?a livesIn ?b, ?b locatedIn ?c => ?a livesIn ?c  (transitivite)
 ```
 
-> **Connexion inter-series** : Les notebooks SemanticWeb (SW-11 Knowledge Graphs, SW-4b SPARQL) couvrent les graphes RDF et SPARQL. L'ILP fournit le cadre théorique pour **apprendre** des règles sur ces graphes, tandis que SW-11/SW-4b montrent comment les **interroger**.",,,,,,,,a6b7a1e9ee475262,,,,,,,,,,,,,,,
+> **Connexion inter-series** : Les notebooks SemanticWeb (SW-11 Knowledge Graphs, SW-04-Python SPARQL) couvrent les graphes RDF et SPARQL. L'ILP fournit le cadre théorique pour **apprendre** des règles sur ces graphes, tandis que SW-11/SW-04-Python montrent comment les **interroger**.",,,,,,,,4221e6040d183a76,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,d4641c82,code,fr,79296405dc270ed6,"# Illustration : ILP sur un mini Knowledge Graph
 
 # Un mini-KG en triples (sujet, predicat, objet)
@@ -10508,13 +10543,19 @@ WSL sous Windows ; kernel natif sous Linux/macOS). Le reste du notebook est en P
 standard et tourne sur n'importe quel kernel. Versions epinglees : **Popper v4.4.0**
 (la 5.0 exige Python >= 3.14), `janus_swi` (requiert SWI-Prolog >= 9.1.12, PPA
 `ppa:swi-prolog/stable`), `setuptools < 81` (Popper importe encore `pkg_resources`).",,,,,,,,b002b6ed0872fd87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,8022039d,code,fr,2d307f115c256678,"# Environnement Popper : kernel Python Linux requis (SIGALRM absent de Windows)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,8022039d,code,fr,ea3d377738c7b269,"# Environnement Popper : kernel Python Linux requis (SIGALRM absent de Windows)
 import importlib.util, platform, shutil, subprocess, sys, warnings
 
 HAS_POPPER = False
 swipl = shutil.which(""swipl"")
 print(f""Python : {sys.version.split()[0]} ({platform.system()})"")
-print(f""swipl  : {swipl or 'INTROUVABLE'}"")
+if swipl:
+    _out = subprocess.run([swipl, ""--version""], capture_output=True, text=True,
+                        encoding=""utf-8"", errors=""replace"")
+    _lines = ((_out.stdout or """") + (_out.stderr or """")).strip().splitlines()
+    print(f""swipl  : {_lines[0] if _lines else 'present (version non annoncee)'}"")
+else:
+    print(""swipl  : INTROUVABLE"")
 
 if platform.system() != ""Linux"":
     print(""\nPopper requiert un OS Unix (SIGALRM) : basculer sur le kernel 'python3-wsl'"")
@@ -10546,8 +10587,8 @@ else:
         try:
             print(f""Popper : v{_imd.version('popper_ilp')} (version de distribution) -- pret"")
         except Exception:
-            print(""Popper : installé (provenance indisponible) -- pret"")",,,,,,,,2d307f115c256678,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,878ee645,code,fr,d87a03e59ee3853e,"# Le probleme ancestor, cette fois resolu par Popper -- memes faits, memes exemples.
+            print(""Popper : installé (provenance indisponible) -- pret"")",,,,,,,,ea3d377738c7b269,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,878ee645,code,fr,958686f6fdda7323,"# Le probleme ancestor, cette fois resolu par Popper -- memes faits, memes exemples.
 # Popper tourne dans un sous-processus : son testeur Prolog (janus) garde un etat
 # global par processus, et deux apprentissages successifs dans le meme kernel
 # cumuleraient les faits consultes (comptes d'exemples fausses).
@@ -10574,7 +10615,8 @@ print(json.dumps({""prog"": format_prog(prog) if prog else None, ""score"": scor
 def run_popper(kbpath: Path) -> dict:
     """"""Lance Popper sur un repertoire de tache (bias.pl, bk.pl, exs.pl), isole.""""""
     out = subprocess.run([sys.executable, ""-c"", POPPER_RUNNER, str(kbpath)],
-                         capture_output=True, text=True, timeout=300)
+                         capture_output=True, text=True, timeout=300,
+                         encoding=""utf-8"", errors=""replace"")
     return json.loads(out.stdout.strip().splitlines()[-1])
 
 if HAS_POPPER:
@@ -10595,8 +10637,8 @@ if HAS_POPPER:
     print(f""\nScore : {tp} tp, {fn} fn, {tn} tn, {fp} fp -- taille {size} litteraux"")
 else:
     result = None
-    print(""Popper indisponible : cellule sautee (voir instructions ci-dessus)."")",,,,,,,,d87a03e59ee3853e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,bacc8d6a,code,fr,fcb7a569fd33becb,"# 1) Ablation : que peut apprendre Popper SANS le droit a la recursion ?
+    print(""Popper indisponible : cellule sautee (voir instructions ci-dessus)."")",,,,,,,,958686f6fdda7323,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,bacc8d6a,code,fr,15b91ab025ac5e0b,"# 1) Ablation : que peut apprendre Popper SANS le droit a la recursion ?
 # 2) Verification independante : le programme appris est execute en Prolog (janus),
 #    hors de Popper -- meme esprit que la validation croisee clingo de SL-6.
 if HAS_POPPER and result and result[""prog""]:
@@ -10614,6 +10656,11 @@ if HAS_POPPER and result and result[""prog""]:
 
     import janus_swi as janus
     janus.consult(str(task / ""bk.pl""))
+    # Le programme appris par Popper est recursif A GAUCHE (ancestor(V2,V1)
+    # en tete de corps) : la resolution SLD standard boucle a l'infini des
+    # qu'une paire n'est pas derivable. La tabulation (SLG) rend chaque
+    # requete terminante sans changer la semantique declarative.
+    janus.consult(""table_directive"", "":- table ancestor/2.\n"")
     janus.consult(""learned"", result[""prog""] + ""\n"")
     derive = lambda x, y: janus.query_once(f""ancestor({x.lower()},{y.lower()})"")[""truth""]
     vp = sum(1 for x, y in POSITIVES if derive(x, y))
@@ -10621,7 +10668,7 @@ if HAS_POPPER and result and result[""prog""]:
     print(f""\nVerification SWI-Prolog du programme recursif :"")
     print(f""  {vp}/{len(POSITIVES)} positifs derives, {vn}/{len(NEGATIVES)} negatifs derives"")
 else:
-    print(""Popper indisponible : cellule sautee."")",,,,,,,,fcb7a569fd33becb,,,,,,,,,,,,,,,
+    print(""Popper indisponible : cellule sautee."")",,,,,,,,15b91ab025ac5e0b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,eb7b46ef,markdown,fr,a80967584feb123c,"### Interpretation : ce que Popper change par rapport a FOIL
 
 1. **L'optimalite remplace la gloutonnerie.** Popper retrouve le programme canonique
@@ -10752,7 +10799,7 @@ print(""Etape 1 : listez les couples (enfant, parent) de la famille"")
 print(""Etape 2 : proposez le body a un seul litteral"")
 print(""Etape 3 : verifiez que la couverture est exacte (0 negatif)"")",,,,,,,,5293e9f24a5fcd37,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,d5bb07b4,markdown,fr,3526dd16b5738931,"L'exercice suivant change de perspective : au lieu d'utiliser FOIL (top-down), vous appliquerez l'opérateur W (bottom-up) pour generaliser des clauses spécifiques.",,,,,,,,3526dd16b5738931,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,498d3825,code,fr,334f8718ab95a3dd,"# Exemple guide : Operateur W (identification) sur un domaine de transport
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,498d3825,code,fr,1c68c3e49e08eaee,"# Exemple guide : Operateur W (identification) sur un domaine de transport
 # Objectif : combiner deux clauses via l'operateur W pour generaliser, comme la
 # demo ancestor de la section precedente, mais sur un NOUVEAU domaine (un reseau
 # de transports). On montre que l'identification est domain-agnostique.
@@ -10795,17 +10842,17 @@ for r in w_results:
     print(f""  -> {r}"")
 print()
 
-# Lecture : W a resolu connected(Brussels, Berlin) et renvoye la tete generalisee
-# connected(Paris, Berlin). C'est l'etape d'identification de la resolution
-# inverse : a partir de la regle recursive + le cas de base, on reconstruit le
-# fait compose ""Paris est connecte a Berlin"". La version simplifiee du notebook
-# retourne la tete seule ; un systeme complet (Progol) preserverait en plus le
-# body non-resolu (direct(Paris, Brussels), direct(Brussels, Berlin)).
+# Lecture : W a resolu connected(Brussels, Berlin) -- le litteral commun au
+# corps de c1 et a la tete de c2 -- et a reconstruit la regle complete :
+# connected(Paris, Berlin) :- direct(Paris, Brussels), direct(Brussels, Berlin).
+# Les premisses non resolues des deux clauses sont conservees dans le corps du
+# resolvant : l'identification ne renvoie pas la tete seule, elle reconstruit
+# le fait compose avec sa derive (ce que faisait deja un systeme complet).
 assert any(r.head.predicate == ""connected""
            and tuple(r.head.args) == (""Paris"", ""Berlin"") for r in w_results), \
     ""le W-operator doit produire connected(Paris, Berlin)""
 print(""OK : connected(Paris, Berlin) reconstruit par identification (operateur W)."")
-",,,,,,,,334f8718ab95a3dd,,,,,,,,,,,,,,,
+",,,,,,,,1c68c3e49e08eaee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,7771c793,markdown,fr,d787cb0bb5efa942,"### A votre tour : opérateur W sur un tournoi (sport)
 
 Changez de domaine pour verifier que l'identification est bien un mécanisme
@@ -11058,7 +11105,7 @@ print(""Etape 2 : ggp_derived = { (a,b) | exists c,d: parent(a,c),parent(c,d),pa
 print(""Etape 3 : GGP_POS == ggp_derived ? (verifiez la couverture exacte)"")
 result = None  # TODO etudiant : votre ggp_derived ici
 ",,,,,,,,961b0e034d682bcc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,d7fb32ee,markdown,fr,0f9c433c9c22a153,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,d7fb32ee,markdown,fr,6f89add9aeb57012,"***
 
 ## 8. Conclusion
 
@@ -11091,9 +11138,9 @@ Ce notebook a couvert la **Programmation Logique Inductive** (AIMA 19.5) :
 | Direction | Sujet | Lien |
 |-----------|-------|------|
 | Prerequis | Determinations et pertinence | [SL-3](SL-3-RelevanceLearning.ipynb) |
-| Web Sémantique | Knowledge Graphs, SPARQL | SW-11, SW-4b |
+| Web Sémantique | Knowledge Graphs, SPARQL | SW-11, SW-04-Python |
 | Web Sémantique | Reasoners OWL | SW-13 |
-| TweetyProject | Logique FOL, argumentation | Serie Tweety |",,,,,,,,0f9c433c9c22a153,,,,,,,,,,,,,,,
+| TweetyProject | Logique FOL, argumentation | Serie Tweety |",,,,,,,,6f89add9aeb57012,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb,fc9bb0dd,markdown,fr,38d2a4df9a26054c,"***
 
 ## Defi presentation
@@ -11124,11 +11171,11 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipy
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-3](SL-3-RelevanceLearning.ipynb) | [SL-5 >>](SL-5-InverseResolution.ipynb)",,,,,,,,50d175a667ee2db0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,0539e864,markdown,fr,b667a2cdcfde6f37,"# SL-4 — Programmation Logique Inductive (ILP) — Twin C# (FOIL from-scratch)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,0539e864,markdown,fr,48e8f4323d557da8,"# SL-4 — Programmation Logique Inductive (ILP) — Twin C# (FOIL from-scratch)
 
 **Twin C# (.NET Interactive)** de [SL-4-InductiveLogicProgramming](SL-4-InductiveLogicProgramming.ipynb) — marathon **#4956** (parité .NET ⇄ Python), série **SymbolicLearning**, axe-2 SOTA **#3801** Prong B.
 
-Le notebook Python déroule l'ILP **from-scratch** (clauses Horn, unification, FOIL, résolution inverse) sur stdlib pur, **puis** invoque **Popper** (la librairie SOTA d'ILP via ASP/CLINGO + Prolog, Linux/WSL-only). Ce twin **porte tout le moteur from-scratch** en C# (.NET 9, 0 NuGet) : la partie Popper n'a pas d'équivalent .NET (verdict INTRINSIC, documenté honnêtement en fin de notebook).
+Le notebook Python déroule l'ILP **from-scratch** (clauses Horn, unification, FOIL, résolution inverse) sur stdlib pur, **puis** invoque **Popper** (la librairie SOTA d'ILP via ASP/CLINGO + Prolog, Linux/WSL-only). Ce twin **porte tout le moteur from-scratch** en C# (.NET 9, 0 NuGet), puis le **pont §9** invoque **clingo** — le solveur ASP que le jumeau Python pilote via Popper — par `Process.Start`, pour valider sous le moteur SOTA les règles apprises par FOIL (verdict **SOTA-OK**, pont §9 ; le carnet ne lance pas Popper lui-même).
 
 ## Objectifs d'apprentissage
 
@@ -11137,7 +11184,7 @@ Le notebook Python déroule l'ILP **from-scratch** (clauses Horn, unification, F
 3. Appliquer la **résolution inverse** (ILP bottom-up) : opérateurs **V** (absorption) et **W** (identification).
 4. Apprendre une règle **récursive** sur le problème classique des ancêtres `ancestor(X, Y)`.
 5. Découvrir des règles ILP sur un mini **Knowledge Graph** (symétrie, transitivité).
-",,,,,,,,b667a2cdcfde6f37,,,,,,,,,,,,,,,
+",,,,,,,,48e8f4323d557da8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,a71360f7,markdown,fr,acf9111a795b0e49,"## Introduction
 
 ### Pourquoi l'ILP ?
@@ -11420,12 +11467,12 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csh
 - **Opérateur V** (absorption) : si un littéral du corps d'une clause unifie avec un fait du background (nié), on **retire** ce littéral — il est « absorbé ».
 - **Opérateur W** (identification) : on **combine** deux clauses en résolvant un littéral commun, produisant une clause plus générale.
 ",,,,,,,,0f6964ddea75a4b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,755e9fc5,code,fr,79a9251ecf2292c3,"#nullable enable
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,755e9fc5,code,fr,4db879f6c7e9704d,"#nullable enable
 // Cellule 5 — Operateurs V (absorption) et W (identification)
 public static HornClause? ApplyVOperator(HornClause clause, Literal backgroundFact)
 {
     // backgroundFact est vu comme un fait positif ; on tente d'unifier (en l'inversant)
-    // un littéral du corps avec le fait nie.
+    // un litteral du corps avec le fait nie.
     for (int i = 0; i < clause.Body.Count; i++)
     {
         var bodyLit = clause.Body[i];
@@ -11449,32 +11496,34 @@ public static HornClause? ApplyVOperator(HornClause clause, Literal backgroundFa
 public static Literal ApplySubst(Literal lit, Dictionary<string,string> subst)
     => lit.WithArgs(lit.Args.Select(a => subst.GetValueOrDefault(a, a)).ToArray());
 
+// Convention de representation de ce carnet (cf. cellules 1, 4 et 6) : tete ET corps
+// sont des litteraux NON nies. L'operateur W ne peut donc pas se piloter sur le signe,
+// il se pilote sur la STRUCTURE tete/corps :
+//   * corps de c1 <-> tete de c2 : la tete du resolvant est celle de c1 ;
+//   * tete de c1 <-> corps de c2 : la tete du resolvant est celle de c2 ;
+//   * tete <-> tete et corps <-> corps ne sont pas des etapes de resolution entre
+//     clauses definies : elles sont ecartees explicitement.
+// Les premisses non resolues des DEUX clauses restent donc dans le corps du resolvant.
 public static List<HornClause> ApplyWOperator(HornClause c1, HornClause c2)
 {
     var results = new List<HornClause>();
-    // Litteraux de c1 (tete + corps) et c2 (tete + corps)
     var l1 = new List<Literal>{ c1.Head }; l1.AddRange(c1.Body);
     var l2 = new List<Literal>{ c2.Head }; l2.AddRange(c2.Body);
     for (int i = 0; i < l1.Count; i++)
     {
         for (int j = 0; j < l2.Count; j++)
         {
-            var lit1 = l1[i]; var lit2 = l2[j];
-            // Inverser le signe de lit1 pour la resolution
-            var subst = Unify(lit1.WithNegated(!lit1.Negated), lit2, new Dictionary<string,string>());
+            if (i == 0 && j == 0) continue;   // tete <-> tete
+            if (i >  0 && j >  0) continue;   // corps <-> corps
+            // Unify exige des signes opposes : on inverse le signe du litteral de c1.
+            var subst = Unify(l1[i].WithNegated(!l1[i].Negated), l2[j], new Dictionary<string,string>());
             if (subst is null) continue;
-            // Construire la clause resultante (retirer lit1 de c1 et lit2 de c2 par INDEX)
-            var remaining = new List<Literal>();
-            for (int k = 0; k < l1.Count; k++) if (k != i) remaining.Add(l1[k]);
-            for (int k = 0; k < l2.Count; k++) if (k != j) remaining.Add(l2[k]);
-            var newLits = remaining.Select(l => ApplySubst(l, subst)).ToList();
-            var posLits = newLits.Where(l => !l.Negated).ToList();
-            var negLits = newLits.Where(l => l.Negated).ToList();
-            if (posLits.Count >= 1)
-            {
-                var body = negLits.Select(l => new Literal(l.Predicate, l.Args, false)).ToList();
-                results.Add(new HornClause(posLits[0], body));
-            }
+            // Tete du resolvant : celle de la clause dont la tete n'a pas ete consommee.
+            var head = ApplySubst(i == 0 ? c2.Head : c1.Head, subst);
+            var body = new List<Literal>();
+            for (int k = 1; k < l1.Count; k++) if (i != k) body.Add(ApplySubst(l1[k], subst));
+            for (int k = 1; k < l2.Count; k++) if (j != k) body.Add(ApplySubst(l2[k], subst));
+            results.Add(new HornClause(head, body));
         }
     }
     return results;
@@ -11498,8 +11547,7 @@ var c2w = new HornClause(new Literal(""ancestor"", new[]{""Bob"",""Diana""}),
 $""  Clause 1 : {c1w}"".Display();
 $""  Clause 2 : {c2w}"".Display();
 foreach (var r in ApplyWOperator(c1w, c2w))
-    $""  W-operator result : {r}"".Display();
-",,,,,,,,79a9251ecf2292c3,,,,,,,,,,,,,,,
+    $""  W-operator result : {r}"".Display();",,,,,,,,4db879f6c7e9704d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,76d24ec5,markdown,fr,ecbeac49a17842e9,"## 6. FOIL pas-à-pas (covering séquentiel)
 
 L'algorithme complet de FOIL en **covering séquentiel** : on apprend une clause, on retire les positifs couverts, on recommence jusqu'à couvrir tous les positifs. Chaque clause est construite en ajoutant itérativement le littéral de **meilleur gain** (parmi les candidats, incluant le littéral **récursif** `ancestor(.,.)`), jusqu'à ce qu'elle ne couvre plus aucun négatif (clause consistante).
@@ -11697,9 +11745,9 @@ public static void LearnTransitivityRule(HashSet<(string S,string P,string O)> k
 }
 display(""Exercice 3 (apprentissage transitivite) : stub a completer."");
 ",,,,,,,,6d44356d9ffbb84b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,9cec227d,markdown,fr,57fd95b594e656b2,"## 9. Pont vers le solveur SOTA : clingo (Process.Start)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,9cec227d,markdown,fr,c9d6e71012416780,"## 9. Pont vers le solveur SOTA : clingo (Process.Start)
 
-Le twin Python apprend `ancestor/2` via **Popper**, qui formule l'ILP comme un problème ASP (Answer Set Programming) résolu par **clingo** (Potassco). Le verdict **INTRINSIC** (#10406) qui fermait cette section est **révoqué** par l'arbitrage #10382 : clingo est un **binaire** invocable, et le pendant C# honnête est `Process.Start` sur le même exécutable (axe **CLI** de la checklist SOTA #10459) — pas une réimplémentation.
+Le twin Python apprend `ancestor/2` via **Popper**, qui formule l'ILP comme un problème ASP (Answer Set Programming) résolu par **clingo** (Potassco). Le verdict **INTRINSIC** (#10406) qui fermait cette section est **révoqué** par l'arbitrage #10382 : clingo est un **binaire** invocable, et le pendant C# honnête est `Process.Start` sur ce même binaire clingo (celui que le twin Python invoque via Popper ; axe **CLI** de la checklist SOTA #10459) — pas une réimplémentation.
 
 La cellule suivante génère le programme ASP du problème `ancestor(X, Y)` à partir :
 1. des **faits** `parent/2` (BACKGROUND, cellule 3) ;
@@ -11712,8 +11760,8 @@ puis invoque clingo (`--outf=2`) et vérifie que les **ancêtres dérivés** cor
 | Verdict | Détail |
 |---------|--------|
 | **SOTA-OK (pont)** | clingo (Potassco) invoqué depuis C# via `Process.Start` (axe CLI). Axes binding : pas de NuGet .NET (1), pas de P/Invoke (2), **CLI = le canal** (3), pas d'IKVM (4), pas de PythonNet (5). Le from-scratch FOIL (cellules 1-7) est **conservé** : le pont est **en plus**, jamais à la place — FOIL = l'algorithme fondateur d'AIMA §19.5, clingo = le moteur que Popper utilise en interne. |
-",,,,,,,,57fd95b594e656b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,5aa92035,markdown,fr,215af111b664565f,"## 10. Résumé
+",,,,,,,,c9d6e71012416780,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb,5aa92035,markdown,fr,405cc8e5cd250f82,"## 10. Résumé
 
 Ce twin C# a reconstruit **from-scratch** (BCL .NET 9, 0 NuGet) le moteur de la programmation logique inductive :
 
@@ -11725,12 +11773,12 @@ Ce twin C# a reconstruit **from-scratch** (BCL .NET 9, 0 NuGet) le moteur de la 
 
 ### Leçon clé
 
-L'ILP est le pont entre **apprentissage** et **logique** : il produit des règles **compréhensibles** (clauses Horn), à l'inverse des modèles boîte-noire. FOIL (top-down, gain d'information) et la résolution inverse (bottom-up, V/W) en sont les deux piliers algorithmiques. La complétude de recherche d'un outil SOTA comme Popper (ASP) n'est pas atteignable en .NET pur — d'où le verdict INTRINSIC, documenté honnêtement.
+L'ILP est le pont entre **apprentissage** et **logique** : il produit des règles **compréhensibles** (clauses Horn), à l'inverse des modèles boîte-noire. FOIL (top-down, gain d'information) et la résolution inverse (bottom-up, V/W) en sont les deux piliers algorithmiques. La complétude de recherche d'un orchestrateur ILP comme Popper ne se réimplémente pas en .NET pur — le pont §9 la convoque au lieu de la simuler : `Process.Start` vers **clingo** (le solveur ASP que Popper pilote côté Python) rejoue les règles apprises par FOIL et les valide exhaustivement (verdict **SOTA-OK**, pont §9, identique au jumeau SL-6).
 
 ***
 
-**Marathon #4956** — twin C# .NET ⇄ Python. 1er twin SymbolicLearning po-2023. Suite logique : SL-3 (RelevanceLearning) et SL-5 (InverseResolution, déjà twinné). Voir #4956, #3801. Revue souhaitée : ai-01, po-2024, po-2025.
-",,,,,,,,215af111b664565f,,,,,,,,,,,,,,,
+**Suite logique** : SL-3 (RelevanceLearning) et SL-5 (InverseResolution, déjà twinné).
+",,,,,,,,405cc8e5cd250f82,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,sl9-01,markdown,fr,d4e4591014a56811,"# SL-5 --- Resolution Inverse et Progol (ILP bottom-up)
 
 **Navigation** : [Index](./README.md) | [<< SL-4](SL-4-InductiveLogicProgramming.ipynb) | [SL-6 >>](SL-6-ModernILP.ipynb)
@@ -11954,12 +12002,48 @@ devient une *recherche dans le treillis*.
 
 > **Origine.** L'ordre de generalite par theta-subsomption ($C \succeq D \iff \exists\theta, C\theta \subseteq D$) et la structure de treillis qu'il induit sont formalises par Plotkin, G. D. (1970), *A note on inductive generalization*, Machine Intelligence 5:153-163 --- le même papier que le LGG.
 ",,,,,,,,1d0a1a4cb9c21f16,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,sl9-10,code,fr,9eb99c0925fba3ae,"def subsumes(c, d):
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,sl9-10,code,fr,cbc5a0e7b66e8638,"def skolem_map(c, d, forme=""injective""):
+    """"""Constantes de skolemisation des variables de D.
+
+    Une skolemisation correcte doit satisfaire deux exigences :
+    - **injectivite** : deux variables distinctes de D recoivent deux constantes
+      distinctes -- sinon `Va` et `VA` s'ecrasent, et la clause perd le fait
+      que ses deux arguments etaient distincts ;
+    - **fraicheur** : une constante skoleem ne doit pas coincider avec une
+      constante du vocabulaire de l'utilisateur -- sinon la skolemisation
+      fabrique une egalite qui n'existait pas.
+
+    La forme ""historique"" (constante derivee du nom de la variable mis en
+    minuscules) est conservee pour le contraste : elle n'est ni injective ni
+    fraiche.
+    """"""
+    d_vars = {v for atom in [d[0]] + list(d[1]) for v in atom[1:] if is_var(v)}
+    if forme == ""historique"":
+        return {v: f""sk_{v.lower()}"" for v in d_vars}
+    prises = {a for atom in [c[0]] + list(c[1]) + [d[0]] + list(d[1])
+              for a in atom[1:] if not is_var(a)}
+    sk = {}
+    for i, v in enumerate(sorted(d_vars)):
+        base = f""sk{i}_{v}""
+        nom, k = base, 0
+        while nom in prises:
+            k += 1
+            nom = f""{base}_{k}""
+        sk[v] = nom
+        prises.add(nom)
+    return sk
+
+
+def skolemise(c, d, forme=""injective""):
+    """"""D dont les variables sont remplacees par leurs constantes de skolemisation.""""""
+    sk = skolem_map(c, d, forme)
+    return subst(d[0], sk), [subst(b, sk) for b in d[1]]
+
+
+def subsumes(c, d, forme=""injective""):
     """"""C theta-subsume D ? On skolemise D (ses variables deviennent des
     constantes) puis on cherche theta plongeant les litteraux de C dans D.""""""
-    d_vars = {v for atom in [d[0]] + list(d[1]) for v in atom[1:] if is_var(v)}
-    sk = {v: f""sk_{v.lower()}"" for v in d_vars}
-    d_head, d_body = subst(d[0], sk), [subst(b, sk) for b in d[1]]
+    d_head, d_body = skolemise(c, d, forme)
 
     theta0 = match_atom(c[0], d_head, {})
     if theta0 is None:
@@ -11983,7 +12067,8 @@ print(""L'ordre de generalite top >= cible >= exemple :"")
 for (n1, c1) in chain:
     for (n2, c2) in chain:
         if n1 != n2:
-            print(f""  {n1:>15} subsume {n2:<15} ? {subsumes(c1, c2)}"")",,,,,,,,9eb99c0925fba3ae,,,,,,,,,,,,,,,
+            print(f""  {n1:>15} subsume {n2:<15} ? {subsumes(c1, c2)}"")
+",,,,,,,,cbc5a0e7b66e8638,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,sl9-11,markdown,fr,e6c251c1b7017fc8,"### Lecture
 
 La chaîne est stricte : `top` subsume tout le monde, la cible subsume l'exemple au
@@ -12195,7 +12280,7 @@ venons de coder**. `sat/1` construit (et affiche) la clause bottom d'un
 exemple, `induce/0` lance la recherche au-dessus. On va donc comparer notre
 clause bottom et la sienne, litteral par litteral --- puis faire verifier la
 théorie qu'il apprend... par notre propre `covers()`.",,,,,,,,33d424ce42e37d0e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,4fea51c6,code,fr,d5b31e8d1d45a24b,"# Environnement Aleph : SWI-Prolog + pont janus_swi (pur Prolog -> kernel Windows OK)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,4fea51c6,code,fr,3d08e655b3b8c696,"# Environnement Aleph : SWI-Prolog + pont janus_swi (pur Prolog -> kernel Windows OK)
 import os
 import platform
 import shutil
@@ -12211,7 +12296,17 @@ if swipl is None and platform.system() == ""Windows"":
             os.environ[""SWI_HOME_DIR""] = cand
             swipl = shutil.which(""swipl"")
             break
-print(f""swipl : {swipl or 'INTROUVABLE'}"")
+def chemin_affiche(p):
+    """"""Chemin relatif au repertoire utilisateur : la sortie d'un carnet
+    commite ne doit pas porter le chemin de la machine d'execution.""""""
+    if not p:
+        return ""INTROUVABLE""
+    home = os.path.expanduser(""~"")
+    if home and p.lower().startswith(home.lower()):
+        return ""~"" + p[len(home):]
+    return os.path.basename(p)
+
+print(f""swipl : {chemin_affiche(swipl)}"")
 
 if swipl is None:
     print(""SWI-Prolog manquant : https://www.swi-prolog.org/Download.html"")
@@ -12228,7 +12323,7 @@ else:
             janus.query_once(""pack_install(aleph, [interactive(false)])"")
         v = janus.query_once(""pack_property(aleph, version(V))"")
         HAS_ALEPH = v[""truth""]
-        print(f""pack aleph : v{v['V']} -- pret"" if HAS_ALEPH else ""pack aleph : installation echouee"")",,,,,,,,d5b31e8d1d45a24b,,,,,,,,,,,,,,,
+        print(f""pack aleph : v{v['V']} -- pret"" if HAS_ALEPH else ""pack aleph : installation echouee"")",,,,,,,,3d08e655b3b8c696,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,d06951df,code,fr,c096e0fd6378bec6,"# La meme tache grandfather/2, ecrite dans le format d'Aleph : modes, determinations,
 # background et exemples. Les declarations de modes sont LA reponse de Progol a la
 # taille de la clause bottom (section 7) : +person = variable d'entree (deja liee),
@@ -12760,12 +12855,61 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipyn
 `C θ-subsume D` s'il existe une substitution `θ` plongeant chaque littéral de `C`
 dans `D`. On **skolémise** `D` (variables → constantes) puis on cherche `θ` par
 backtracking. La clause la plus générale (`top`) subsume toutes les autres.",,,,,,,,8f70caf5bccd6e5c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,6e824d31,code,fr,63f877a65b37e694,"// C theta-subsume D ? Skolemise D, puis backtrack pour plonger les litteraux de C.
-bool Subsumes(Clause c, Clause d) {
-    var dVars = new HashSet<string>();
-    foreach (var a in new[]{d.Head}.Concat(d.Body))
-        foreach (var t in a.Item2) if (IsVar(t)) dVars.Add(t);
-    var sk = dVars.ToDictionary(v => v, v => $""sk_{char.ToLower(v[0])}"");
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,6e824d31,code,fr,31294b03cd5da286,"// Variables d'une clause, et constantes d'une clause (IsVar : une variable commence
+// par une majuscule). Les deux servent a construire une skolemisation a la fois
+// INJECTIVE et FRAICHE.
+HashSet<string> VarsOf(Clause cl) {
+    var s = new HashSet<string>();
+    foreach (var a in new[]{cl.Head}.Concat(cl.Body))
+        foreach (var t in a.Item2) if (IsVar(t)) s.Add(t);
+    return s;
+}
+HashSet<string> ConstsOf(Clause cl) {
+    var s = new HashSet<string>();
+    foreach (var a in new[]{cl.Head}.Concat(cl.Body))
+        foreach (var t in a.Item2) if (!IsVar(t)) s.Add(t);
+    return s;
+}
+
+// Constantes SKOLEM : injectives et fraiches.
+// - INJECTIF : l'indice ordinal de la variable prefixe le nom, donc deux variables
+//   distinctes recoivent deux constantes distinctes MEME quand leur minuscule est
+//   identique (""Va"" et ""VA"" -> sk0_VA et sk1_Va). Une skolemisation qui ne garde
+//   que la minuscule les confond, et le test de generalite accepte alors une clause
+//   dont l'ordre des arguments est faux (contre-exemple execute en section 3 bis).
+// - FRAIS : aucun nom rendu n'apparait deja comme constante dans C ni dans D. Sans
+//   cette contrainte, la constante skoleem de `V` (""sk_v"") peut coincider avec une
+//   constante du vocabulaire de l'utilisateur, et `p(sk_v,sk_v)` subsume alors a
+//   tort `p(V,V)` : la constante de C egale une constante de D, donc `V` se
+//   comporte comme si la clause generale n'avait pas de variable a cet endroit.
+// `parInitiale` conserve le comportement HISTORIQUE (constante derivee de la seule
+// initiale, NI injectif NI frais) : il n'existe que pour ce contre-exemple, qui
+// montre le defaut que le comportement par defaut corrige.
+Dictionary<string,string> SkolemMap(Clause c, Clause d, bool parInitiale = false) {
+    var vars = VarsOf(d).OrderBy(v => v, StringComparer.Ordinal).ToList();
+    var pris = ConstsOf(c);
+    foreach (var x in ConstsOf(d)) pris.Add(x);
+    var map = new Dictionary<string,string>();
+    for (int i = 0; i < vars.Count; i++) {
+        var v = vars[i];
+        var racine = parInitiale ? $""sk_{char.ToLower(v[0])}"" : $""sk{i}_{v}"";
+        var nom = racine;
+        // Le dedoublonnage ne s'applique QUE hors mode historique : en mode
+        // historique, deux variables de meme initiale DOIVENT donner le meme nom,
+        // c'est le defaut que ce mode existe pour exhiber.
+        if (!parInitiale) {
+            int k = 0;
+            while (pris.Contains(nom)) nom = $""{racine}_{++k}"";
+        }
+        pris.Add(nom);
+        map[v] = nom;
+    }
+    return map;
+}
+
+// C theta-subsume D ? Skolemise D, puis backtrack pour plonger les litteraux de C.
+bool Subsumes(Clause c, Clause d, bool skolemParInitiale = false) {
+    var sk = SkolemMap(c, d, skolemParInitiale);
     var dHead = Subst(d.Head, sk);
     var dBody = d.Body.Select(b => Subst(b, sk)).ToList();
 
@@ -12791,7 +12935,7 @@ for (int j = 0; j < chain.Length; j++) {
     if (i == j) continue;
     Console.WriteLine($""  {chain[i].Item1,15} subsume {chain[j].Item1,-15} ? {Subsumes(chain[i].Item2, chain[j].Item2)}"");
 }
-",,,,,,,,63f877a65b37e694,,,,,,,,,,,,,,,
+",,,,,,,,31294b03cd5da286,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,dcc44a2d,markdown,fr,e148c8a1b0f5ae47,"## 4. Clause bottom — saturation bornée
 
 La **clause bottom** d'un exemple positif = on enrichit l'exemple avec tous les faits
@@ -12970,17 +13114,80 @@ La cellule suivante :
 Verdict : **SOTA-OK (pont)** — le from-scratch est conservé (il enseigne les
 **internes** de Progol), le pont est **en plus**, jamais à la place.
 ",,,,,,,,115bf45174b659c4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,c5938dda,markdown,fr,d9a0574b127bad02,"## Exercice : apprendre `uncle/2`
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,c5938dda,markdown,fr,605ea1e06b0c838f,"## Exercice : apprendre `uncle/2`
 
-Appliquez `ProgolLearn` pour apprendre `uncle(X, Y)` (X oncle de Y : X frère du
-parent de Y). Définissez les positifs/négatifs sur l'arbre, puis vérifiez que la
-clause apprise est équivalente à `uncle(X,Y) :- male(X), parent(Z,Y), parent(Z,X)`
-où Z est le parent commun.
+Appliquez `ProgolLearn` pour apprendre `uncle(X, Y)` : X est l'**oncle** de Y,
+c'est-à-dire le **frère d'un parent** de Y — et **pas** le parent lui-même.
+
+### La cible sémantique porte une inégalité explicite
+
+```prolog
+uncle(X,Y) :- male(X), parent(W,X), parent(W,Z), parent(Z,Y), X \= Z.
+```
+
+où `W` est le parent commun de `X` et `Z` — donc `X` et `Z` sont des **frères** — et
+`Z` est le parent de `Y`. La contrainte `X ≠ Z` est **indispensable** : en logique de
+Horn, une clause n'exclut rien par elle-même. Sans elle, la même clause accepte
+aussi `X = Z`, c'est-à-dire **le parent de Y lui-même**, qui est exactement le cas
+(b) des négatifs.
+
+| Formulation | Langage | Ce qu'elle couvre sur cet arbre |
+|---|---|---|
+| `…, parent(Z,Y), X \= Z` | Prolog avec inégalité | la cible : les oncles stricts |
+| `…, parent(Z,Y)` | Horn pur (Progol from-scratch de SL-5) | la cible **plus** `uncle(bob,ann)` — `bob` est le père d'`ann` |
+
+> ⚠️ Le Progol from-scratch de SL-5 n'a **pas** de prédicat d'inégalité : la clause
+> qu'il apprend est donc une **spécialisation de la cible**, pas une reformulation
+> équivalente. C'est à cette spécialisation d'exclure le cas (b) par d'autres
+> moyens — les négatifs de l'exercice le lui imposent, et c'est là que se joue
+> l'exercice.
+
+### L'objectif est testable, et ce n'est pas une équivalence
+
+La clause apprise doit :
+
+1. couvrir **tous** les positifs ;
+2. ne couvrir **aucun** des négatifs ;
+3. être une **spécialisation stricte** de la cible Horn ci-dessous (la même, sans
+   `\=`), ce que la θ-subsomption de la section 3 vérifie directement :
+
+```csharp
+var cibleHorn = new Clause((""uncle"", new[]{""X"",""Y""}), new List<(string,string[])>{
+    (""male"", new[]{""X""}), (""parent"", new[]{""W"",""X""}),
+    (""parent"", new[]{""W"",""Z""}), (""parent"", new[]{""Z"",""Y""}) });
+// attendu : true — la cible Horn est au moins aussi générale que la clause apprise
+Subsumes(cibleHorn, apprise)
+// attendu : false — la clause apprise est strictement plus spécifique
+Subsumes(apprise, cibleHorn)
+```
+
+Si les deux rendent `true`, la clause apprise est équivalente à la cible Horn : elle
+n'a donc rien appris de plus que le cas (b) qu'elle devait écarter, et c'est le
+symptôme d'une spécialisation manquée.
 
 **Indice** : sur cet arbre, `bob` est frère de `liz`, `liz` est mère de `sue` →
-`bob` est oncle de `sue`. Les négatifs doivent exclure (a) les tantes (female),
-(b) le père lui-même (parent direct), (c) les grands-pères.",,,,,,,,d9a0574b127bad02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,940fe07a,code,fr,2da1e7e8e0c2e38e,"// EXERCICE : apprendre uncle/2
+`bob` est oncle de `sue`. Les négatifs doivent exclure :
+
+(a) les **tantes** (les femmes) — ex. `ann` est sœur de `pat`, donc tante de `jim` ;
+(b) le **père lui-même** (un parent direct) — ex. `bob` est père d'`ann` ;
+(c) les **grands-pères** — ex. `tom` est grand-père de `sue`.
+",,,,,,,,605ea1e06b0c838f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,940fe07a,code,fr,eaced93922083aca,"// EXERCICE : apprendre uncle/2
+// X est l'oncle de Y = le frere d'un parent de Y -- et PAS le parent lui-meme.
+// Cible SEMANTIQUE (avec inegalite ; le Progol from-scratch ne sait pas l'ecrire) :
+//     uncle(X,Y) :- male(X), parent(W,X), parent(W,Z), parent(Z,Y), X \= Z.
+// Cible HORN correspondante (sans inegalite, celle que la theta-subsomption compare) :
+//     uncle(X,Y) :- male(X), parent(W,X), parent(W,Z), parent(Z,Y).
+// Sans X \= Z, la cible Horn accepte AUSSI uncle(bob,ann) (bob est pere d'ann) :
+// c'est le cas (b) des negatifs, et c'est a la clause APPRISE de l'ecarter.
+// W = parent commun de X et Z (donc X et Z sont des freres), Z = parent de Y.
+// Positive : bob est oncle de sue (bob frere de liz, liz mere de sue).
+// Negatifs : tantes (female), peres directs, grands-peres (voir l'indice de l'exercice).
+// ATTENTION : la regle generale fait 4 litteraux -> il faut lever maxLen (defaut 3).
+var cibleHorn = new Clause((""uncle"", new[]{""X"",""Y""}), new List<(string,string[])>{
+    (""male"", new[]{""X""}), (""parent"", new[]{""W"",""X""}),
+    (""parent"", new[]{""W"",""Z""}), (""parent"", new[]{""Z"",""Y""}) });
+Console.WriteLine($""Cible Horn (reference, sans inegalite) : {ShowClause(cibleHorn)}"");
 // var POS_UNCLE = new List<(string,string[])>{
 //     (""uncle"", new[]{""bob"",""sue""}),  // bob frere de liz, liz mere de sue
 //     // TODO etudiant : autres oncles de l'arbre
@@ -12988,11 +13195,14 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipyn
 // var NEG_UNCLE = new List<(string,string[])>{
 //     // TODO etudiant : exclure tantes (female), parents directs, grands-peres
 // };
-// var theoryUncle = ProgolLearn(POS_UNCLE, NEG_UNCLE, FACTS, new HashSet<string>{""parent"",""male"",""female""});
+// var theoryUncle = ProgolLearn(POS_UNCLE, NEG_UNCLE, FACTS, new HashSet<string>{""parent"",""male"",""female""}, maxLen: 4);
+// Etape de verification demandee, une fois `theoryUncle` apprise :
+//   couverture  : chaque positif est derive par `theoryUncle`, aucun negatif ne l'est ;
+//   specialisation : Subsumes(cibleHorn, theoryUncle) -> True   ET   Subsumes(theoryUncle, cibleHorn) -> False.
 Console.WriteLine(""Exercice uncle/2 a completer (voir indice ci-dessus)."");
-",,,,,,,,2da1e7e8e0c2e38e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,cell-d79cad6e,code,fr,69dddcef74524f0f,"// EXERCICE 2 : profondeur de la clause bottom (cf. cellule 16 : ""profondeur de la clause bottom"").
-// On teste BottomClause avec depth=1 vs depth=3 sur l'exemple grandmother de la cellule 12.
+",,,,,,,,eaced93922083aca,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,cell-d79cad6e,code,fr,663dda45084dad5a,"// EXERCICE 2 : profondeur de la clause bottom (cf. ""Bilan"" -> ""Exercices supplementaires"" -> ""Exercice 2"").
+// On teste BottomClause avec depth=1 vs depth=3 sur l'exemple grandmother (POS_GM et FACTS : voir la cellule ""Domaine : arbre genealogique"").
 // Questions : combien de litteraux dans chaque clause bottom ? La cible (grandmother) subsume-t-elle
 // toujours la clause bottom a profondeur 1 ? Pourquoi une profondeur importante cree une explosion
 // combinatoire dans ProgolSearch ?
@@ -13002,15 +13212,15 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipyn
 
 // TODO etudiant : comparez les deux profondeurs sur l'exemple grandmother/2.
 void Compare_BottomClause_Depth() {
-    // Etape 1 : reprendre l'exemple positif grandmother (POS_GM, FACTS de la cellule 12).
+    // Etape 1 : reprendre l'exemple positif grandmother (POS_GM, FACTS : cellule ""Domaine : arbre genealogique"").
     // Etape 2 : appeler BottomClause(..., depth:1) puis BottomClause(..., depth:3).
     // Etape 3 : afficher le nombre de litteraux du corps pour chaque profondeur.
     // Etape 4 : conclure sur l'explosion combinatoire.
 }
 
 Console.WriteLine(""Exercice 2 a completer : profondeur de la clause bottom (depth 1 vs 3)."");
-",,,,,,,,69dddcef74524f0f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,cell-5b05ed18,code,fr,b6bbe9aa12b30261,"// EXERCICE 3 : tolerance au bruit (cf. cellule 16 : ""tolerance au bruit"").
+",,,,,,,,663dda45084dad5a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,cell-5b05ed18,code,fr,a38385eaccc10020,"// EXERCICE 3 : tolerance au bruit (cf. ""Bilan"" -> ""Exercices supplementaires"" -> ""Exercice 3"").
 // On ajoute un exemple positif erronne (ex : (""grandfather"", new[]{""ann"",""jim""}) alors qu'ann est
 // female) au jeu grandmother. Que se passe-t-il avec ProgolLearn (qui rejette toute clause couvrant
 // un negatif) ? Proposez un mecanisme de tolerance : score p - n - L autorisant quelques negatifs
@@ -13031,15 +13241,15 @@ List<string> ProgolLearn_Noise_Tolerant(
 }
 
 Console.WriteLine(""Exercice 3 a completer : tolerance au bruit (k=1 negatif autorise)."");
-",,,,,,,,b6bbe9aa12b30261,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,a59f1286,markdown,fr,1234e8cb2ea4ed7f,"## Bilan
+",,,,,,,,a38385eaccc10020,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,a59f1286,markdown,fr,44b85134f727bb55,"## Bilan
 
 Ce notebook a présenté la **résolution inverse et l'ILP** from-scratch en C#, jumeau
 du notebook Python :
 
 1. **Représentation** des clauses Horn (`record Clause`) + couverture par unification (`Covers`).
 2. **LGG** (Plotkin) : généraliser deux explications en une variable partagée.
-3. **θ-subsomption** : skolemisation + backtracking pour ordonner la généralité.
+3. **θ-subsomption** : skolemisation **injective** (une constante fraîche par variable, nommée d'après son nom complet) + backtracking pour ordonner la généralité ; contre-exemple à l'initiale en section 3 bis.
 4. **Clause bottom** : saturation bornée + variabilisation (clause la plus spécifique).
 5. **Recherche Progol** : meilleure clause consistante, score `p − L`, mode connecté.
 6. **Apprentissage** de `grandfather/2` et `grandmother/2` (négatifs = signal).
@@ -13071,7 +13281,7 @@ prolifération de clauses redondantes ?
 - Muggleton, S. *Inverse Entailment and Progol* (1995) — clause bottom.
 - Notebook Python : [SL-5-InverseResolution.ipynb](SL-5-InverseResolution.ipynb).
 - Marathon parité : #4956.
-",,,,,,,,1234e8cb2ea4ed7f,,,,,,,,,,,,,,,
+",,,,,,,,44b85134f727bb55,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb,c0,markdown,fr,88336312cc8f4d28,"# SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper et dILP
 
 **Navigation** : [Index](./README.md) | [<< SL-5 Resolution inverse](SL-5-InverseResolution.ipynb) | [SL-7 Neuro-symbolique >>](SL-7-NeuroSymbolic.ipynb)
@@ -13801,15 +14011,15 @@ Metagol, Popper) versus robustesse au bruit et integration neuronale (dILP).
 ***
 
 **Retour** : [Index SymbolicLearning](./README.md) | [<< SL-5 Resolution inverse](SL-5-InverseResolution.ipynb) | [SL-7 Neuro-symbolique >>](SL-7-NeuroSymbolic.ipynb)",,,,,,,,87e4854a613777bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,e57472c7,markdown,fr,074c08773a742997,"# SL-6 (C#) : Moteurs ILP modernes — apprendre des programmes recursifs
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,e57472c7,markdown,fr,c9c1162d8c80f981,"# SL-6 (C#) : Moteurs ILP modernes — apprendre des programmes recursifs
 
 **Twin C# (.NET Interactive / from-scratch) du notebook Python [SL-6-ModernILP](SL-6-ModernILP.ipynb)** (Aleph, Metagol, Popper, dILP).
 
 L'**Inductive Logic Programming (ILP)** apprend un **programme logique** (un ensemble de clauses de Horn) a partir d'exemples positifs/negatifs et d'une base de connaissances de fond (background knowledge). Le defi pedagogique central : apprendre une relation **récursive**. Tous les moteurs du twin Python (Aleph, Metagol, Popper, dILP) resolvent la **même tâche** — inferer la relation `ancestor(X,Y)` a partir de faits `parent(X,Y)`.
 
-Ce twin C# implemente **from-scratch** l'algorithme fondateur **FOIL** (Quinlan 1990) — la reference algorithmique de l'ILP relationnel — qui apprend les deux clauses recursives d'`ancestor` par **recherche dans le graphe de raffinement** guidee par un gain d'information (FOIL_Gain). Les 4 moteurs du twin Python (bases sur SWI-Prolog, clingo/ASP, TensorFlow) relevent de **RECOVERABLE-MACHINE / INTRINSIC** (verdict SOTA section 6) — sauf **Popper**, bridge par un pont `Process.Start` vers clingo (**§7, SOTA-OK**).
+Ce twin C# implemente **from-scratch** l'algorithme fondateur **FOIL** (Quinlan 1990) — la reference algorithmique de l'ILP relationnel — qui apprend les deux clauses recursives d'`ancestor` par **recherche dans le graphe de raffinement** guidee par un gain d'information (FOIL_Gain). Les 4 moteurs du twin Python (bases sur SWI-Prolog, clingo/ASP, TensorFlow) relevent de **RECOVERABLE-MACHINE / INTRINSIC** (verdict SOTA section 6) — sauf le pont **§7** : `Process.Start` vers **clingo**, le solveur ASP que le jumeau Python pilote via Popper (**SOTA-OK** ; le carnet ne lance pas Popper lui-même, il rejoue sous clingo le programme appris par FOIL).
 
-> **Parite** : le twin Python compare 4 frameworks externes (Aleph/Metagol = Prolog, Popper = ASP+clingo, dILP = TensorFlow). Cote .NET, nous implementons le **noyau algorithmique** (FOIL) en C# pur (0 NuGet), qui est la **substance** que ces frameworks automatisent. Le verdict SOTA (#3801) est explicite section 6.",,,,,,,,074c08773a742997,,,,,,,,,,,,,,,
+> **Parite** : le twin Python compare 4 frameworks externes (Aleph/Metagol = Prolog, Popper = ASP+clingo, dILP = TensorFlow). Cote .NET, nous implementons le **noyau algorithmique** (FOIL) en C# pur (0 NuGet), qui est la **substance** que ces frameworks automatisent. Le verdict SOTA (#3801) est explicite section 6.",,,,,,,,c9c1162d8c80f981,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,895f0094,code,fr,6033c79d69d65710,"using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -13848,7 +14058,7 @@ Console.WriteLine($""parent/2 : {PARENT.Count} faits"");
 Console.WriteLine($""positifs : {POS.Count} couples ancestor (cloture transitive)"");
 foreach (var (a,b) in POS) Console.WriteLine($""    ancestor({a}, {b})"");
 Console.WriteLine($""negatifs : {NEG.Count} couples (x != y, hors cloture)"");",,,,,,,,3f561585aa708e19,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,7a695109,markdown,fr,9394b704d81e904e,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,7a695109,markdown,fr,e8459478f67081be,"***
 
 ## 2. L'algorithme FOIL (Quinlan 1990)
 
@@ -13856,12 +14066,16 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,7a6951
 
 1. **Tant que** des exemples positifs ne sont pas couverts :
 2. &nbsp;&nbsp;Apprendre une nouvelle clause en partant du corps vide `ancestor(A,B) :-` (couvre tout).
-3. &nbsp;&nbsp;**Tant que** la clause couvre des negatifs : ajouter le **literal** (ex. `parent(A,B)`, `ancestor(C,B)`) qui maximise le **FOIL_Gain** (gain d'information).
+3. &nbsp;&nbsp;**Tant que** la clause couvre des negatifs : ajouter le **literal** (ex. `parent(A,B)`, `ancestor(C,B)`) qui maximise le **FOIL_Gain** (gain d'information) **plus** un bonus de range restriction et deux departages — la selection reelle est detaillee ci-dessous.
 4. &nbsp;&nbsp;Retirer les positifs couverts par la nouvelle clause.
 
 Le **FOIL_Gain** d'un literal = `t * [ log2(p/(p+n)) - log2(p0/(p0+n0)) ]` ou `t` = positifs encore couverts après ajout, `p/n` = positifs/negatifs couverts après, `p0/n0` avant. On prefere les literals qui **augmentent la purete** (ratio positifs).
 
-Key : FOIL autorise le **predicat cible** (`ancestor`) dans le corps — c'est ce qui permet la **recursion**.",,,,,,,,9394b704d81e904e,,,,,,,,,,,,,,,
+**La selection du literal n'est pas un argmax pur du gain** — voici ce que fait la cellule de code suivante. Le score = FOIL_Gain, **plus `3.0`** si le literal lie une variable de tete encore libre (range restriction : sans ce bonus, la clause derivait `ancestor(A, n'importe qui)`). A score egal, departage 1 : le literal qui **introduit le moins de variables nouvelles**. A egalite encore, departage 2, un **biais de mode** (facon Aleph/Metagol) : preferer le predicat cible `ancestor` en position de fermeture recursive — premier argument deja lie dans le corps, second argument = variable de tete encore libre.
+
+Ces departages ne sont pas un detail d'implementation : **ils decident du programme appris**. Mesure de controle (audit #22838) : au gain FOIL pur, la seconde clause apprend `parent, parent, parent` — sans recursion ; c'est le departage de mode-bias qui fait emerger la forme recursive canonique `parent(A,C), ancestor(C,B)`. La recursion n'est pas un sous-produit du gain : elle est **choisie** par le biais.
+
+Key : FOIL autorise le **predicat cible** (`ancestor`) dans le corps — c'est ce qui permet la **recursion**.",,,,,,,,e8459478f67081be,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,f097fcf6,code,fr,378c337e275c127c,"// Representations : Term (Variable | Constant), Literal, Clause
 record Term(string Var, string Const) {
     public bool IsVar => Var != null;
@@ -13916,9 +14130,9 @@ static bool Covers(Clause cl, (string x,string y) ex, HashSet<(string,string)> p
     return false;
 }
 Console.WriteLine(""Helper Covers pret (backtracking extensionnel)."");",,,,,,,,dba9dbbddf309f22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ced7f9d4,markdown,fr,e809086ba846b22b,"### 2.2 Generation des literals candidats + FOIL_Gain
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ced7f9d4,markdown,fr,ff5f08c5fda87606,"### 2.2 Generation des literals candidats + FOIL_Gain
 
-A chaque étape, on genere les literals candidats : pour chaque predicat `p` dans `{parent, ancestor}` et chaque paire de variables prise dans `{A, B, C}` (C = variable nouvelle), on evalue le FOIL_Gain. On retient le meilleur.",,,,,,,,e809086ba846b22b,,,,,,,,,,,,,,,
+A chaque étape, on genere les literals candidats : pour chaque predicat `p` dans `{parent, ancestor}` et chaque paire de variables prise dans `{A, B, C}` (C = variable nouvelle), on evalue le score de selection : **FOIL_Gain + bonus de range restriction** (+3.0 si le literal lie une variable de tete encore libre), puis a egalite deux departages — moins de variables nouvelles, puis biais de mode vers la recursion `ancestor` (voir section 2). On retient le meilleur.",,,,,,,,ff5f08c5fda87606,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,2b88e2fa,code,fr,c33213c4f7b393c7,"static double FoilGain(int p0, int n0, int p, int n) {
     // t = positifs encore couverts apres ajout du literal
     if (p==0) return double.NegativeInfinity;
@@ -14078,7 +14292,7 @@ foreach (int depth in new[]{5,8,12,16,20}) {
     Console.WriteLine($""{depth,-11} {p2.Count,-8} {pos2.Count,-9} {cls.Count,-8} {sw.Elapsed.TotalMilliseconds:F1}"");
 }
 Console.WriteLine(""\nFOIL apprend toujours 2 clauses (base + recursion) ; le cout croit avec la profondeur."");",,,,,,,,92f2fff86d458478,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,1dd4c812,markdown,fr,8f77f38a203efeeb,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,1dd4c812,markdown,fr,3ce6791bf15e841a,"***
 
 ## 6. Verdict SOTA : les 4 moteurs du twin Python
 
@@ -14089,11 +14303,11 @@ Le twin Python compare 4 frameworks ILP externes. Verdict SOTA (#3801) sur leur 
 | **FOIL (this twin)** | C# from-scratch | **SOTA-OK** | vrai moteur ILP relationnel, apprend la recursion |
 | Aleph / Progol | SWI-Prolog + janus_swi | **RECOVERABLE-MACHINE** | Prolog natif ; bridge .NET improbable (pas de port .NET de SWI) |
 | Metagol (MIL) | SWI-Prolog + metagol.pl | **RECOVERABLE-MACHINE** | idem, Prolog |
-| Popper (LFF) | Python + clingo (ASP) | **SOTA-OK (pont §7)** | clingo = solver ASP C++ ; pont `Process.Start` sur le même binaire (section 7) |
+| Popper (LFF) | Python + clingo (ASP) | **SOTA-OK (pont §7)** | pont `Process.Start` vers clingo (le solveur ASP C++ que Popper orchestre côté Python) ; le pont rejoue le programme appris par FOIL — Popper lui-même n'est pas lancé (section 7) |
 | dILP / Lernd | TensorFlow | **INTRINSIC** | apprentissage differentiable par gradient (paradigme différent) |
 
-**Lecon** : la **substance algorithmique** de l'ILP relationnel (recherche dans le graphe de raffinement, FOIL_Gain, couverture extensionnelle, recursion via clauses apprises) est entierement capturable en C# from-scratch. Les frameworks externes (Aleph, Metagol, Popper) automatisent cette recherche avec des optimisations (headless Prolog, ASP metier), et dILP est un **paradigme différent** (neuro-symbolique differentiable) — ce sont des compagnons, pas des prerequis.",,,,,,,,8f77f38a203efeeb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,3197dd54,markdown,fr,300c2cfeb7b41d12,"***
+**Lecon** : la **substance algorithmique** de l'ILP relationnel (recherche dans le graphe de raffinement, FOIL_Gain, couverture extensionnelle, recursion via clauses apprises) est entierement capturable en C# from-scratch. Les frameworks externes (Aleph, Metagol, Popper) automatisent cette recherche avec des optimisations (headless Prolog, ASP metier), et dILP est un **paradigme différent** (neuro-symbolique differentiable) — ce sont des compagnons, pas des prerequis.",,,,,,,,3ce6791bf15e841a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,3197dd54,markdown,fr,baee933096258256,"***
 
 ## Synthese : FOIL vs les 4 moteurs
 
@@ -14108,10 +14322,10 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,3197dd
 **Lecon cles** :
 1. **ILP = apprendre des programmes** : contrairement au ML classique (qui apprend des fonctions/paramètres), l'ILP apprend une **structure logique** interpretable.
 2. **La recursion est le vrai test** : un moteur qui ne sait qu'apprendre des clauses non-recursives rate `ancestor`. FOIL la permet en evaluant le predicat cible via les clauses déjà apprises.
-3. **FOIL_Gain guide la recherche** : sans heuristique, l'espace des clauses est immense ; le gain d'information privilegie les literals qui purifient la couverture.
+3. **FOIL_Gain guide la recherche, les departages la decident** : sans heuristique, l'espace des clauses est immense ; le gain d'information privilegie les literals qui purifient la couverture, le bonus de range restriction garde la tete liee, et le biais de mode fait emerger la clause recursive canonique `parent(A,C), ancestor(C,B)` — au gain pur, la seconde clause serait `parent, parent, parent`, sans recursion (mesure de controle #22838).
 4. **Compromis expressivite/bruit** : l'ILP classique (FOIL, Aleph) est déterministe et exact mais fragile au bruit ; dILP sacrifie l'exactitude symbolique pour la robustesse (gradient).
 
-**Parite avec le twin Python** : la substance algorithmique (sections 2-5) est equivalente. Aleph/Metagol (Prolog) et dILP (TF) n'ont pas de port .NET natif — verdict RECOVERABLE-MACHINE/INTRINSIC section 6, conformement a la discipline SOTA (#3801). **Popper** (ASP) est en revanche **bridge par `Process.Start`** vers clingo (**§7, SOTA-OK**) — le même moteur que le jumeau Python invoque.",,,,,,,,300c2cfeb7b41d12,,,,,,,,,,,,,,,
+**Parite avec le twin Python** : la substance algorithmique (sections 2-5) est equivalente. Aleph/Metagol (Prolog) et dILP (TF) n'ont pas de port .NET natif — verdict RECOVERABLE-MACHINE/INTRINSIC section 6, conformement a la discipline SOTA (#3801). **Popper** (ASP) est en revanche **bridge par `Process.Start`** vers clingo (**§7, SOTA-OK**) — le même moteur que le jumeau Python invoque.",,,,,,,,baee933096258256,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,c8a49270,markdown,fr,0917de454f2de9f5,"***
 
 ## Exercices
@@ -14125,10 +14339,12 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,d28c42
 // (ex. grandparent(X,Y) :- parent(X,Z), parent(Z,Y)) et lancer FOIL.
 object exo2Result = null;  // TODO etudiant : liste de clauses attendues
 Console.WriteLine(exo2Result == null ? ""Exercice a completer"" : exo2Result);",,,,,,,,828d0d54456a0a2b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,b69a3061,code,fr,a13ce32c0f4974b8,"// Exercice 3 : Ajouter un exemple negatif incorrect (ancestor(bob,jim) est VRAI mais
-// marqué negatif) et observer comment FOIL echoue a couvrir tous les positifs.
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,b69a3061,code,fr,3463186b68598390,"// Exercice 3 : empoisonner cette fois les POSITIFS — ajouter un positif incorrect
+// (ancestor(jim,tom) est FAUX dans la cloture) au jeu d'apprentissage, relancer FOIL,
+// et predire PUIS verifier le verdict TP/FN/FP. Quel defaut l'exemple contradictoire
+// paie-t-il quand il est cote positif ?
 object exo3Result = null;  // TODO etudiant : string verdict attendu
-Console.WriteLine(exo3Result == null ? ""Exercice a completer"" : exo3Result);",,,,,,,,a13ce32c0f4974b8,,,,,,,,,,,,,,,
+Console.WriteLine(exo3Result == null ? ""Exercice a completer"" : exo3Result);",,,,,,,,3463186b68598390,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb,b727b480,markdown,fr,4f1cb91bcdf13405,"# SL-7 : Integration Neuro-Symbolique
 
 **Navigation** : [Index](./README.md) | [<< SL-6](SL-6-ModernILP.ipynb) | [Suivant >>](SL-8-KnowledgeGraphs-ILP.ipynb)
@@ -14475,11 +14691,17 @@ appris **sans aucun fait direct**, uniquement contraint par la règle logique
 $\forall x, y, z : parent(x,y) \wedge parent(y,z) \Rightarrow grandparent(x,z)$,
 quantifiee sur les $5^3 = 125$ triplets d'individus.
 ",,,,,,,,4a7906c95bc84a2b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb,4b4e4ecb,code,fr,5a6ab741227a75dc,"# LTNtorch : memes faits, vraie librairie (pip install LTNtorch)
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb,4b4e4ecb,code,fr,99bbefe108378ece,"# LTNtorch : memes faits, vraie librairie (pip install LTNtorch)
 import warnings
 warnings.filterwarnings(""ignore"", message="".*pynvml.*"")  # bruit cosmetique torch.cuda/Windows
 import torch
 import ltn
+
+# LTNtorch fixe son device a l'import (ltn.device = cuda si une carte est
+# presente) et y deplace tous ses tenseurs ; nos embeddings restent sur
+# CPU. On aligne donc la librairie sur CPU : le carnet s'execute a
+# l'identique sur une machine avec ou sans GPU, valeurs reproductibles.
+ltn.device = torch.device(""cpu"")
 
 torch.manual_seed(42)
 
@@ -14582,7 +14804,7 @@ print()
 print(""=== Predicat grandparent (AUCUN fait fourni, appris via la regle) ==="")
 print(f""  grandparent(Marie, Paul)   = {query(Grandparent, 'Marie', 'Paul'):.3f}   [seul vrai grandparent]"")
 for s, o in [('Marie', 'Pierre'), ('Sophie', 'Paul'), ('Luc', 'Marie')]:
-    print(f""  grandparent({s}, {o}) = {query(Grandparent, s, o):.3f}   [faux]"")",,,,,,,,5a6ab741227a75dc,,,,,,,,,,,,,,,
+    print(f""  grandparent({s}, {o}) = {query(Grandparent, s, o):.3f}   [faux]"")",,,,,,,,99bbefe108378ece,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb,1eca8959,markdown,fr,e3cac5d88400fb29,"### Interpretation : LTNtorch
 
 Le résultat cle est le predicat `grandparent` : il atteint une verite proche de 1
@@ -15093,7 +15315,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb,782353e4,
 - Russell & Norvig, *AIMA*, 4e ed., Chapitre 19
 
 **Navigation** : [Index](./README.md) | [<< SL-6 Moteurs ILP modernes](SL-6-ModernILP.ipynb) | [Suivant >> SL-8 KG-ILP](SL-8-KnowledgeGraphs-ILP.ipynb)",,,,,,,,0700fc7e1b6455b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,cc001308,markdown,fr,9d26da4b62e66875,"# SL-8 - ILP Moderne et Knowledge Graphs
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,cc001308,markdown,fr,870b3b989ab5cccd,"# SL-8 - ILP Moderne et Knowledge Graphs
 
 **Navigation** : [Index](./README.md) | [<< NeuroSymbolic](SL-7-NeuroSymbolic.ipynb) | [LLM + Symbolic >>](SL-9-LLM-SymbolicLearning.ipynb)
 
@@ -15108,7 +15330,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Prerequis
 - SL-4 (ILP : FOIL, resolution inverse) recommande
-- SW-2b (RDF en Python avec rdflib) recommande
+- SW-02-Python (RDF en Python avec rdflib) recommande
 - Python 3.10+, rdflib 7.x
 
 ### Duree estimee : 50 minutes
@@ -15117,7 +15339,7 @@ A la fin de ce notebook, vous saurez :
 - Galarraga et al., ""AMIE: Association Rule Mining under Incomplete Evidence in Ontological Knowledge Bases"", VLDB 2013
 - Bordes et al., ""Translating Embeddings for Modeling Multi-relational Data"", NeurIPS 2013
 - Russell & Norvig, *AI: A Modern Approach*, 3e/4e ed., Chapitre 19
-- [rdflib Documentation](https://rdflib.readthedocs.io/)",,,,,,,,9d26da4b62e66875,,,,,,,,,,,,,,,
+- [rdflib Documentation](https://rdflib.readthedocs.io/)",,,,,,,,870b3b989ab5cccd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,a521d3e8,markdown,fr,0e89d9ad6eb9f547,"***
 
 ## 1. Introduction : ILP sur données structurees
@@ -15357,7 +15579,7 @@ C'est une règle de Horn binaire (2 atomes dans le corps, 1 atome en tete). Pour
 | **Support** | $\lvert\{(a,c) : body(a,c) \wedge head(a,c)\}\rvert$ | Nombre de paires couvertes |
 | **Confidence standard** | $\frac{support}{\lvert\{(a,c) : body(a,c)\}\rvert}$ | Probabilite que head soit vrai si body est vrai |
 | **PCA confidence** | $\frac{support}{\lvert\{(a,c) : body(a,c) \wedge \exists z\, head(a,z)\}\rvert}$ | Ajuste pour l'incompletude du KG (denominateur restreint aux sujets ayant au moins un head connu) |",,,,,,,,4e7f2151474b8999,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,91350691,code,fr,b186480b065ae5b7,"def compute_body_pairs(
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,91350691,code,fr,e649a262b3ce312f,"def compute_body_pairs(
     r1_pairs: set[tuple[str, str]],
     r2_pairs: set[tuple[str, str]]
 ) -> set[tuple[str, str]]:
@@ -15424,15 +15646,17 @@ def evaluate_rule(
 
 
 # Test with a simple example
+# Les ensembles sont tries a l'affichage : l'ordre d'iteration d'un set de chaines
+# depend de PYTHONHASHSEED, donc une sortie non triee change d'un run a l'autre.
 print(""Test de compute_body_pairs :"")
 r1 = {(""A"", ""B""), (""C"", ""D"")}
 r2 = {(""B"", ""E""), (""D"", ""F"")}
 result = compute_body_pairs(r1, r2)
-print(f""  r1 = {r1}"")
-print(f""  r2 = {r2}"")
-print(f""  JOIN result = {result}"")
+print(f""  r1 = {sorted(r1)}"")
+print(f""  r2 = {sorted(r2)}"")
+print(f""  JOIN result = {sorted(result)}"")
 print(f""  Attendu : {('A', 'E'), ('C', 'F')}"")
-print(f""  Correct : {result == {('A', 'E'), ('C', 'F')}}"")",,,,,,,,b186480b065ae5b7,,,,,,,,,,,,,,,
+print(f""  Correct : {result == {('A', 'E'), ('C', 'F')}}"")",,,,,,,,e649a262b3ce312f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,2f9e5ce7,markdown,fr,d9720b063ef8cea4,"### Interpretation : Jointure relationnelle et evaluation
 
 La fonction `compute_body_pairs` realise une **jointure relationnelle** : elle apparie l'objet de la première relation avec le sujet de la seconde.
@@ -15729,7 +15953,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,d71
 ## 8. Visualisation du Knowledge Graph
 
 Visualisons le graphe de familles pour mieux comprendre les relations decouvertes.",,,,,,,,32ad603d6828e3be,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,4022209e,code,fr,83942009161c9d5a,"# Text-based visualization of the family tree
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,4022209e,code,fr,d6c620ecf9f957b5,"# Text-based visualization of the family tree
 print(""Arbre genealogique (relations parentOf) :"")
 print(""="" * 50)
 
@@ -15750,7 +15974,8 @@ def show_tree(name: str, indent: int = 0, max_depth: int = 3):
 all_children = set()
 for children in parent_map.values():
     all_children.update(children)
-roots = [p for p in persons if p not in all_children]
+# Racines triees : `persons` est un set, son ordre d'iteration varie d'un run a l'autre.
+roots = sorted(p for p in persons if p not in all_children)
 
 for root in roots:
     show_tree(root)
@@ -15759,12 +15984,12 @@ for root in roots:
 # Show grandparentOf triples (original + inferred)
 print(""\nTriples grandparentOf (apres completion) :"")
 gp_triples = list(g.triples((None, FAM.grandparentOf, None)))
-for s, p, o in sorted(gp_triples, key=lambda t: str(t[0])):
+for s, p, o in sorted(gp_triples, key=lambda t: (str(t[0]), str(t[1]), str(t[2]))):
     s_name = str(s).replace(str(FAM), """")
     o_name = str(o).replace(str(FAM), """")
     print(f""  {s_name} -- grandparentOf --> {o_name}"")
 
-print(f""\nTotal : {len(gp_triples)} triples grandparentOf"")",,,,,,,,83942009161c9d5a,,,,,,,,,,,,,,,
+print(f""\nTotal : {len(gp_triples)} triples grandparentOf"")",,,,,,,,d6c620ecf9f957b5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,e22df85d,markdown,fr,d58e959eece5895e,"### Interpretation : Arbre genealogique
 
 La visualisation en arbre montre clairement la structure de la famille sur 4 generations :
@@ -16405,7 +16630,7 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,32d
 > **Bascule TP -> Exemple guide** (See #2161). Solution demontree ci-dessous.
 
 On injecte une arene erronee dans `parentOf` (celle qui ferme un cycle), on traduit le KG en ASP, et on demande a clingo de trouver la **reparation minimale** (au sens de la cardinalite) : le plus petit ensemble d'arenes a retirer pour restaurer l'acyclicite. C'est l'approche *abductive* de repair des KG.",,,,,,,,5e29cc27e1f1c776,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,e85c35a4,code,fr,7d2e340464cfd6d4,"# Exemple guide 4 : Reparation minimale d'un KG cyclique avec clingo
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,e85c35a4,code,fr,f75ef6b462dfd408,"# Exemple guide 4 : Reparation minimale d'un KG cyclique avec clingo
 # Resolution de l'Exercice 4 (See #2161) : solution demontree ci-dessous.
 #
 # Plan :
@@ -16418,7 +16643,9 @@ MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,e85
 #   7. --opt-mode=optN : enumerer TOUTES les reparation optimales (cout minimal).
 
 # Etape 1-2 : faits + arene injectee.
-parentof_facts = [f'parentof_raw(""{s}"",""{o}"").' for s, o in relations[""parentOf""]]
+# Faits tries : l'ordre du programme ASP decide de l'ordre d'enumeration des modeles
+# optimaux par clingo (--opt-mode=optN), qui serait sinon non reproductible.
+parentof_facts = [f'parentof_raw(""{s}"",""{o}"").' for s, o in sorted(relations[""parentOf""])]
 injected = 'parentof_raw(""Emma"",""Marie"").'   # ferme le cycle Emma -> Marie -> Claire -> Paul -> Emma
 
 # Etape 3-6 : programme de reparation.
@@ -16465,7 +16692,7 @@ print(""quand 1 suffit. C'est le critere parcimonieux (Occam) du repair abductif
 print(""preferer l'hypothese la plus simple (moins de faits remis en cause)."")
 print()
 print(""Exemple guide 4 OK : repair minimal implemente, 4 reparations optimales au cout [1]."")
-",,,,,,,,7d2e340464cfd6d4,,,,,,,,,,,,,,,
+",,,,,,,,f75ef6b462dfd408,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-8-KnowledgeGraphs-ILP.ipynb,sl6-ex4-var-md,markdown,fr,131ef081983875cb,"### Exercice 4 (variation) : Deux cycles et le cout du repair
 
 On a minimise le **nombre** d'arenes retirees. Mais si le KG contient **deux cycles independants**, une seule suppression ne suffit plus.
@@ -19562,11 +19789,11 @@ jumeau Python invoque via `janus_swi` pour Aleph : la parité est ici
 > la clause bottom et explore le treillis `[top, bottom]`. Le pont vérifie que ce
 > que la théorie apprend est bien ce que le moteur réel dérive.
 ",,,,,,,,85efd9f54e48bee5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,f0de1ca3,markdown,fr,1ca8b73bf2180e65,"***
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,f0de1ca3,markdown,fr,2943f131e34b1288,"***
 
 ## 7. Pont vers le solveur SOTA : clingo (Process.Start)
 
-La section 6 déclarait Popper **RECOVERABLE-MACHINE** (« clingo = solver ASP C++ ; pont .NET non natif »). Ce verdict est **révoqué** : le pendant C# honnête est `Process.Start` sur le **même exécutable** que le jumeau Python invoque pour Popper — **Potassco clingo**, le solveur ASP qui porte le Learning From Failures (mandat #10382, bucket 2 : « le moteur est un binaire, le pendant C# honnête est `Process.Start` sur le même exécutable — pas une réimplémentation »).
+Conformément au tableau de la section 6, ce pont invoque **clingo** par `Process.Start` — le même binaire **Potassco clingo** que le jumeau Python pilote via Popper pour le Learning From Failures (mandat #10382, bucket 2 : « le moteur est un binaire, le pendant C# honnête est `Process.Start` sur le même exécutable — pas une réimplémentation »). Le carnet ne lance pas Popper lui-même : il rejoue sous clingo le programme appris par le FOIL from-scratch.
 
 La cellule suivante :
 
@@ -19584,7 +19811,7 @@ La cellule suivante :
 | 6 · lib équivalente | clingo (ASP, Potassco) = le moteur SOTA qu'utilise Popper (LFF) — même moteur, les deux jumeaux |
 
 Verdict : **SOTA-OK (pont)** — le from-scratch FOIL est conservé (il enseigne la **recherche dans le graphe de raffinement**), le pont est **en plus**, jamais à la place.
-",,,,,,,,1ca8b73bf2180e65,,,,,,,,,,,,,,,
+",,,,,,,,2943f131e34b1288,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,c39eb958,code,fr,935d9b63955a3b06,"// === Pont clingo (Process.Start) : le moteur ASP SOTA derrière Popper, invoqué depuis le C# ===
 using System.IO;
 using System.Diagnostics;
@@ -19715,7 +19942,7 @@ CBH et le Candidate Elimination codés à la main (c'est le sujet du notebook) ;
 la référence externe joue le rôle d'arbitre, exactement comme la section 9 du
 jumeau Python.
 ",,,,,,,,21bc8692f82ac726,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,sl1-aima-bridge-code,code,fr,1393ee2cb4d9fa9e,"#r ""nuget: pythonnet, 3.0.5""
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb,sl1-aima-bridge-code,code,fr,247320a6f1834196,"#r ""nuget: pythonnet, 3.1.0""
 #load ""../../Config/PythonNetLoader.cs""
 using Python.Runtime;
 
@@ -19764,7 +19991,7 @@ using (Py.GIL())
     Console.WriteLine($""\nAccuracy de la reference sur les 12 exemples : {correct}/{EXAMPLES.Count}"");
 }
 Console.WriteLine(""PONT .NET -> aima-python : OK"");
-",,,,,,,,1393ee2cb4d9fa9e,,,,,,,,,,,,,,,
+",,,,,,,,247320a6f1834196,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-10-ActiveAutomataLearning-Csharp.ipynb,stearns-sl10-cs,markdown,fr,9ef0745def44787b,"***
 
 ## Annexe B — Hommage : Richard Stearns et la théorie des automates
@@ -20024,7 +20251,7 @@ double reductionX = (1 - (double)totalSmart / totalFresh) * 100;
 Console.WriteLine($""Speedup moyen : {speedupX:F1}x"");
 Console.WriteLine($""Reduction d'etapes : {reductionX:F0}%"");
 ",,,,,,,,f87a97ee454098a2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,bf1b8ea1,markdown,fr,03efc001efb11e7e,"### Interprétation : EBL complet
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb,bf1b8ea1,markdown,fr,a3fbf67b29150670,"### Interprétation : EBL complet
 
 | Phase | Expression | Commentaire |
 |-------|-----------|-------------|
@@ -20039,7 +20266,9 @@ mini-système ne réécrit que `1*` et `0+`.) La règle extraite est **nouvelle*
 rapport à la base, mais **déduite** d'elle — EBL ne découvre rien, il compile.
 
 La mesure **réelle** (étapes comptées, pas un facteur simulé comme en §4) confirme
-le compromis operationalité/généralité :
+le compromis operationalité/généralité — sur les 10 expressions du corpus, **18 → 10**
+étapes, soit `1.8x` et **-44 %** d'étapes (le `5.25x` du §4 est le même effet mesuré
+en **coût simulé**, sur un autre corpus et avec une règle codée à la main) :
 
 - **Avantage** : les expressions correspondant aux règles apprises sont simplifiées
   en 1 étape au lieu de 2 (lookup direct, matching à variables).
@@ -20049,4 +20278,201 @@ le compromis operationalité/généralité :
 
 > **Point cle AIMA** : « EBL converts first-principles theories into useful
 > special-purpose knowledge. » La valeur d'EBL dépend entièrement de la fréquence
-> de réutilisation — d'où le mécanisme de désapprentissage de l'Exercice 3.",,,,,,,,03efc001efb11e7e,,,,,,,,,,,,,,,
+> de réutilisation — d'où le mécanisme de désapprentissage de l'Exercice 3.",,,,,,,,a3fbf67b29150670,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,sl5-skolemisation-temoins,code,fr,f30eb5474c04bb84,"# === Contre-exemples executes : la skolemisation doit etre INJECTIVE et FRAICHE ===
+
+# Temoin 1 -- injectivite : deux variables qui ne different que par la casse.
+c_inj = ((""p"", ""X"", ""Y""), [(""q"", ""X"", ""Y"")])
+d_inj = ((""p"", ""Va"", ""VA""), [(""q"", ""VA"", ""Va"")])
+
+# Temoin 2 -- fraicheur : la constante de l'utilisateur porte le nom qu'une
+# skolemisation non fraiche produirait.
+c_fraiche = ((""p"", ""sk_v"", ""sk_v""), [])
+d_fraiche = ((""p"", ""V"", ""V""), [])
+
+# Temoin 3 -- fraicheur active : la constante de l'utilisateur porte exactement
+# le nom que l'allocation injective produirait (`sk0_V`).
+c_alloc = ((""p"", ""sk0_V"", ""sk0_V""), [])
+d_alloc = ((""p"", ""V"", ""V""), [])
+
+for nom, (c, d) in ((""Temoin 1 -- injectivite"", (c_inj, d_inj)),
+                     (""Temoin 2 -- fraicheur"", (c_fraiche, d_fraiche)),
+                     (""Temoin 3 -- allocation"", (c_alloc, d_alloc))):
+    print()
+    print(nom)
+    print(f""  c = {show_clause(c)}"")
+    print(f""  d = {show_clause(d)}"")
+    for forme in (""injective"", ""historique""):
+        h, b = skolemise(c, d, forme)
+        print(f""  {forme:<11} : d skolemise = {show_clause((h, b))}"")
+        print(f""  {'':<11}   c subsume d ? {subsumes(c, d, forme)}"")
+",,,,,,,,f30eb5474c04bb84,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb,sl5-skolemisation-lecture,markdown,fr,df23541c3af806ee,"### Lecture -- deux exigences, une allocation
+
+La skolemisation n'est pas un detail d'implementation : c'est elle qui decide
+quelles clauses sont **plus generales** que les autres. Deux exigences
+s'imposent, et chacune a son contre-exemple ci-dessus.
+
+- **Injectivite.** Deux variables distinctes de $D$ doivent recevoir deux
+  constantes distinctes. Sinon `Va` et `VA` recoivent la meme constante, la
+  clause perd le fait que ses deux arguments etaient distincts, et une clause
+  comme `p(X,Y) :- q(X,Y)` se met a subsumer `p(Va,VA) :- q(VA,Va)` -- qui
+  n'est pas plus generale, puisque son corps exige des arguments *echangees*.
+- **Fraicheur.** La constante skoleem ne doit pas coincider avec une constante
+  du vocabulaire de l'utilisateur. Sinon la skolemisation fabrique une egalite
+  qui n'existait pas, et une clause au sol se met a subsumer une clause qui ne
+  la contient pas.
+
+L'allocation `sk{i}_{v}` (indice ordinal + nom complet) garantit l'injectivite
+meme quand deux variables ne different que par la casse ; la verification
+d'absence de collision garantit la fraicheur, en renommant au besoin
+(`sk0_V_1`).
+
+La chaine de generalite de la section precedente reste inchangee : la forme
+injective donne les memes six reponses (`top` subsume tout, la cible subsume
+l'exemple au sol, l'inverse non). Le correctif change l'allocation des
+constantes, pas l'ordre du treillis.
+",,,,,,,,df23541c3af806ee,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,792de2da,markdown,fr,b96ed89570e19c04,"### Contre-exemples : la skolémisation doit être injective **et** fraîche
+
+Skolémiser une clause remplace ses variables par des **constantes fraîches** : deux
+variables distinctes de la clause doivent donner deux constantes distinctes, et
+aucune de ces constantes ne doit coïncider avec une constante déjà présente dans
+les termes des deux clauses comparées.
+
+La cellule suivante exécute **trois témoins**, chacun avec son attendu :
+
+| Témoin | Défaut visé | Attendu (mode par défaut) |
+|---|---|---|
+| `grandpere(V1,V2)` vs `grandpere(V2,V1)` | deux variables de **même initiale** | `c` subsume `d_ordre` (**vrai**) et **ne** subsume pas `d_inverse` (**faux**) |
+| `p(Va,VA) :- q(VA,Va)` | deux variables dont la **minuscule** est identique | `c` ne subsume pas `d` (**faux**) |
+| `p(V,V)` contre la constante utilisateur `sk_v` | constante skolém **non fraîche** | `c` ne subsume pas `d` (**faux**) |
+
+Les deux premiers défauts se corrigent par un nom qui garde l'**indice ordinal** de
+la variable en plus de son nom (`$""sk{i}_{v}""`) ; le troisième par une allocation
+qui écarte les noms déjà pris par les constantes de `c` **et** de `d`
+(`SkolemMap(c, d)`).
+
+Le mode **historique** (`skolemParInitiale: true`, constante dérivée de la seule
+initiale) est conservé sous un nom explicite : c'est lui qui produit les deux
+premiers défauts, et le contre-exemple doit pouvoir les **exécuter**, pas seulement
+les affirmer.
+
+> **Dette du jumeau Python.** `SL-5-InverseResolution.ipynb` porte encore
+> `sk = {v: f""sk_{v.lower()}"" for v in d_vars}` (cellule de θ-subsomption) : cette
+> forme n'est **pas** injective (`Va` et `VA` y donnent tous deux `sk_va`) et n'est
+> donc **pas** une preuve de correction — c'est une dette identique, suivie par
+> l'issue #23495. Elle n'est pas corrigée ici pour garder cette PR sur le seul
+> carnet C# ; sa correction demandera une ré-exécution du carnet Python.
+",,,,,,,,b96ed89570e19c04,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,8b5a6714,code,fr,082dbadc67c740db,"// === Contre-exemples executes : la skolemisation doit etre INJECTIVE et FRAICHE ===
+// Affiche la clause skolemisee de D (constantes fresh) dans les deux modes.
+string Skolemise(Clause c, Clause d, bool parInitiale) {
+    var map = SkolemMap(c, d, parInitiale);
+    return Fmt(Subst(d.Head, map))
+         + (d.Body.Count > 0 ? "" :- "" + string.Join("", "", d.Body.Select(b => Fmt(Subst(b, map)))) : """");
+}
+
+// --- Temoin 0 : deux variables DISTINCTES qui partagent leur initiale ---
+// La skolemisation injective leur donne deux constantes distinctes (sk0_V1, sk1_V2) ;
+// la skolemisation historique par initiale leur donne la MEME constante (sk_v) --
+// les deux clauses deviennent alors identiques.
+var cGene = new Clause((""grandpere"", new[]{""X"",""Y""}),
+    new List<(string,string[])>{ (""parent"", new[]{""X"",""Y""}) });
+var dOrdre = new Clause((""grandpere"", new[]{""V1"",""V2""}),
+    new List<(string,string[])>{ (""parent"", new[]{""V1"",""V2""}) });
+var dInverse = new Clause((""grandpere"", new[]{""V1"",""V2""}),
+    new List<(string,string[])>{ (""parent"", new[]{""V2"",""V1""}) });
+
+Console.WriteLine(""Skolemisation INJECTIVE (nom complet + indice, defaut) :"");
+Console.WriteLine($""  d_ordre   : {Skolemise(cGene, dOrdre, false)}"");
+Console.WriteLine($""  d_inverse : {Skolemise(cGene, dInverse, false)}"");
+Console.WriteLine(""Skolemisation historique (par initiale, non injective) :"");
+Console.WriteLine($""  d_ordre   : {Skolemise(cGene, dOrdre, true)}"");
+Console.WriteLine($""  d_inverse : {Skolemise(cGene, dInverse, true)}"");
+Console.WriteLine();
+Console.WriteLine(""Regle c : grandpere(X,Y) :- parent(X,Y)"");
+Console.WriteLine($""  c subsome d_ordre   ?  injectif={Subsumes(cGene, dOrdre)}   historique={Subsumes(cGene, dOrdre, true)}"");
+Console.WriteLine($""  c subsome d_inverse ?  injectif={Subsumes(cGene, dInverse)}   historique={Subsumes(cGene, dInverse, true)}"");
+
+// --- Temoin 1 : injectivite sur la CASSE (""Va"" et ""VA"") ---
+// Deux variables distinctes dont la minuscule est identique. Sans indice ordinal,
+// elles recoivent toutes deux ""sk_va"", D devient p(sk_va,sk_va) :- q(sk_va,sk_va),
+// et C = p(X,Y) :- q(X,Y) la subsume -- alors que D echange ses deux arguments.
+var cXY = new Clause((""p"", new[]{""X"",""Y""}),
+    new List<(string,string[])>{ (""q"", new[]{""X"",""Y""}) });
+var dSwap = new Clause((""p"", new[]{""Va"",""VA""}),
+    new List<(string,string[])>{ (""q"", new[]{""VA"",""Va""}) });
+Console.WriteLine();
+Console.WriteLine(""Temoin 1 -- casse : c = p(X,Y) :- q(X,Y) ; d = p(Va,VA) :- q(VA,Va)"");
+Console.WriteLine($""  d skolemise, injectif   : {Skolemise(cXY, dSwap, false)}"");
+Console.WriteLine($""  d skolemise, historique : {Skolemise(cXY, dSwap, true)}"");
+Console.WriteLine($""  c subsome d ?  injectif={Subsumes(cXY, dSwap)}   historique={Subsumes(cXY, dSwap, true)}   (attendu : False / True)"");
+
+// --- Temoin 2 : fraicheur vis-a-vis du vocabulaire de l'utilisateur ---
+// La constante de l'utilisateur s'appelle ""sk_v"" -- exactement le nom que produisait
+// l'ancienne skolemisation pour la variable V. Sans contrainte de fraicheur,
+// p(sk_v,sk_v) subsume p(V,V) : les deux constantes coincident.
+var cSkv = new Clause((""p"", new[]{""sk_v"",""sk_v""}), new List<(string,string[])>());
+var dVar = new Clause((""p"", new[]{""V"",""V""}), new List<(string,string[])>());
+Console.WriteLine();
+Console.WriteLine(""Temoin 2 -- fraicheur : c = p(sk_v,sk_v) au sol ; d = p(V,V)"");
+Console.WriteLine($""  d skolemise, frais : {Skolemise(cSkv, dVar, false)}"");
+Console.WriteLine($""  d skolemise, historique : {Skolemise(cSkv, dVar, true)}"");
+Console.WriteLine($""  c subsome d ?  frais={Subsumes(cSkv, dVar)}   historique={Subsumes(cSkv, dVar, true)}   (attendu : False / True)"");
+",,,,,,,,082dbadc67c740db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb,25353e06,markdown,fr,0746e30416e85f64,"### Lecture du résultat
+
+**Témoin 0 — la casse des initiales.** Avec la skolémisation **injective**,
+`d_ordre` devient `grandpere(sk0_V1, sk1_V2) :- parent(sk0_V1, sk1_V2)` et
+`d_inverse` devient `grandpere(sk0_V1, sk1_V2) :- parent(sk1_V2, sk0_V1)`. La règle
+`c` exige `parent(X,Y)` dans cet ordre : elle subsume donc `d_ordre` (**vrai**) et
+**ne** subsume pas `d_inverse` (**faux**).
+
+Avec la skolémisation **historique** (par initiale), `V1` et `V2` se rejoignent
+toutes deux en `sk_v` : les deux clauses skolémisées sont **identiques**, et `c`
+les subsume toutes les deux. Le test de généralité acceptait alors une clause dont
+l'ordre des arguments est faux — c'est le défaut que la correction supprime.
+
+**Témoin 1 — la casse des minuscules.** `Va` et `VA` sont deux variables
+distinctes, mais toute skolémisation qui ne garde que la **minuscule** du nom les
+envoie sur la même constante — ici `sk_v` (initiale seule) ; le jumeau Python, qui
+garde la minuscule entière, produit `sk_va` pour les deux. Dans les deux cas `d`
+devient `p(sk_v, sk_v) :- q(sk_v, sk_v)`, que `c = p(X,Y) :- q(X,Y)` subsume —
+alors que `d` **échange** ses deux arguments et ne devrait pas l'être. L'indice
+ordinal du nom (`sk{i}_{v}`) suffit à les séparer : `sk0_VA` et `sk1_Va`, et `c` ne
+subsume plus `d`.
+
+**Témoin 2 — la fraîcheur.** Une clause au sol `p(sk_v,sk_v)` ne doit pas
+subsumer `p(V,V)` : `p(V,V)` est plus générale seulement si l'on peut remplacer
+`V` par une constante **unique**, ce que `p(sk_v,sk_v)` ne fait pas (les deux
+positions portent la même). L'ancienne skolémisation donnait précisément `sk_v` à
+`V`, et la coïncidence fabriquait la subsumption. `SkolemMap(c, d)` écarte les noms
+déjà pris par les constantes des deux clauses : `V` reçoit `sk0_V`, et la
+subsumption disparaît.
+
+**Portée dans le carnet.** La correction vaut aussi pour la clause bottom de la
+section suivante : ses variables `V1`…`V6` partagent toutes l'initiale `V`, et le
+test « la cible subsume-t-elle la clause bottom ? » ne doit pas pouvoir les
+confondre.
+",,,,,,,,0746e30416e85f64,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a1,markdown,fr,ec96f3315e4bb6e2,"### Exemple guide — un négatif contradictoire : ce que FOIL fait vraiment
+
+L'énoncé historique de l'exercice 3 annonçait : « ajouter un exemple négatif incorrect (`ancestor(bob, jim)` est VRAI mais marqué négatif) et observer comment FOIL **échoue à couvrir tous les positifs** ». Ce n'est pas ce que l'algorithme produit — et la sortie en était d'ailleurs jamais enregistrée. Regardons ce qui se passe réellement : `(bob, jim)` figure **aussi dans `POS`** (il appartient à la clôture transitive), donc toute clause qui couvre les 11 positifs couvre forcément ce couple, quoi que dise le jeu négatif. L'exemple contradictoire ne peut pas se payer en faux négatif — il se paie en **faux positif**.",,,,,,,,ec96f3315e4bb6e2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a2,code,fr,82b7c9e3c54eb985,"// Exemple guide : experience executee, sortie enregistree (digestion de l'exercice 3 historique).
+var NEGpoison = new List<(string,string)>(NEG) { (""bob"",""jim"") };
+Console.WriteLine($""Jeu empoisonne : {NEG.Count} negatifs -> {NEGpoison.Count} (ancestor(bob, jim) marque negatif alors qu'il est VRAI)"");
+var learnedPoison = Foil(POS, NEGpoison, parentDB, PEOPLE);
+Console.WriteLine($""\nFOIL a appris {learnedPoison.Count} clause(s) :"");
+foreach (var cl in learnedPoison) Console.WriteLine(""  "" + cl.Show);
+var ancPoison = DeriveAncestor(learnedPoison, parentDB, PEOPLE);
+int tpP = POS.Count(p => ancPoison.Contains(p));
+int fnP = POS.Count(p => !ancPoison.Contains(p));
+var fps = NEGpoison.Where(n => ancPoison.Contains(n)).ToList();
+Console.WriteLine(""\nCouverture sur le jeu empoisonne :"");
+Console.WriteLine($""  TP = {tpP} / {POS.Count}   FN = {fnP}   FP = {fps.Count}"");
+foreach (var f in fps) Console.WriteLine($""  faux positif : ancestor({f.Item1}, {f.Item2})"");
+Console.WriteLine($""\nVerdict : {(fnP==0 && fps.Count==0 ? ""PARFAIT"" : ""IMPARFAIT"")} — couverture des positifs {(fnP==0 ? ""maintenue (11/11)"" : ""perdue"")}, l'exemple contradictoire se paie en faux positif"");",,,,,,,,82b7c9e3c54eb985,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a3,markdown,fr,c3f06a6656cb0e33,"**Lecture du résultat** : FOIL n'échoue **pas** à couvrir les positifs — TP = 11/11, FN = 0, et l'unique défaut est un faux positif : `ancestor(bob, jim)` lui-même, qui reste dans `POS` — couvrir les 11 positifs force à le couvrir. Un négatif contradictoire ne casse pas l'apprentissage : il le **paie en précision** (FP = 1). Son autre effet est visible sur le programme : la recherche de raffinement est perturbée — FOIL produit 4 clauses au lieu des 2 de la run de base, dont deux portent des littéraux redondants (`parent(V3,B)`, déjà couvert par `parent(A,V3), ancestor(V3,B)`, et `ancestor(A,V3)`, auto-référentiel). Le jeu d'exemples contradictoire dégrade l'**économie** du programme appris, pas sa couverture. Leçon générale de l'ILP extensionniste : exemples positifs et négatifs ne s'annulent pas — un positif suffit à forcer la couverture, un négatif contradictoire ne peut qu'être violé, une fois.",,,,,,,,c3f06a6656cb0e33,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb,ee2839a4,markdown,fr,596f4162a52f315b,"***
+",,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,

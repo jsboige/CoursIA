@@ -17,6 +17,8 @@ Everything else is clean, by design of the issue body:
 - block changed or newly added (the executor rewrote it alongside outputs)
 - notebook added by the PR (no base blob; execution evidence itself is
   enforced by notebook-execution-required.yml, H.3)
+- outputs whose delta is exactly one cp1252 -> utf-8 reversion of the base
+  outputs (an encoding repair, no run happened; #23021, #23035)
 
 Usage:
     python check_papermill_ratchet.py <base-ref> [--json]
@@ -235,42 +237,99 @@ def stripped_evidence(content, variant="both"):
             pass
 
 
-def state_at_base(base, path, cwd=None):
-    """(status, evidence, block, ev_stripped, cell_sig, cell_pms) at base ref.
+# A cp1252 host that decoded UTF-8 output bytes produced mojibake; #23021
+# repaired it by reverting the round trip. The repair touches output strings
+# only: no execution_count moves, no number changes. Replaying the base
+# through the SAME reversion is therefore an exact test, not a heuristic --
+# the encoding-repair analogue of the strip-tool replay above.
+#
+# Both errors are swallowed so a string that is not pure mojibake comes back
+# UNCHANGED rather than approximated. A real accented word ("cree" with an
+# accent) fails to encode to cp1252-as-utf8 and is returned as-is; an em dash
+# likewise. Only a genuine "a-hat, euro, em dash" sequence round-trips back
+# to the em dash it came from.
+def revert_cp1252(text):
+    """Undo one cp1252 -> utf-8 mojibake round trip, or return `text` as-is."""
+    try:
+        return text.encode("cp1252").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
 
-    Returns ("ABSENT", None, None, None, None, None) when the file does not
-    exist at base and ("PARSE_ERROR", None, None, None, None, None) on
-    invalid JSON.
+
+def _revert_output_strings(node):
+    """Deep-copy of `node` with every string passed through `revert_cp1252`."""
+    if isinstance(node, str):
+        return revert_cp1252(node)
+    if isinstance(node, list):
+        return [_revert_output_strings(item) for item in node]
+    if isinstance(node, dict):
+        return {key: _revert_output_strings(value)
+                for key, value in node.items()}
+    return node
+
+
+def encoding_reverted_evidence(content):
+    """exec_evidence of `content` after the cp1252 reversion of its outputs.
+
+    Returns None when the blob does not parse, so a failure here can only
+    leave the caller on its previous (stricter) verdict - never turn a FAIL
+    into a PASS by accident.
+
+    Only the ``outputs`` of the code cells are reverted. ``execution_count``
+    is left untouched on purpose: the repair of #23021 does not move it, so
+    a branch that DID move it must not match this replay.
     """
-    content = git("show", f"{base}:{path}", cwd=cwd)
-    if content is None:
-        return "ABSENT", None, None, None, None, None
     try:
         nb = json.loads(content)
     except Exception:
-        return "PARSE_ERROR", None, None, None, None, None
+        return None
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        if "outputs" in cell:
+            cell["outputs"] = _revert_output_strings(cell["outputs"])
+    return exec_evidence(nb)
+
+
+def state_at_base(base, path, cwd=None):
+    """(status, evidence, block, ev_stripped, ev_reverted, cell_sig, cell_pms).
+
+    Returns ("ABSENT", None, None, None, None, None, None) when the file does
+    not exist at base and ("PARSE_ERROR", ...) on invalid JSON.
+    """
+    content = git("show", f"{base}:{path}", cwd=cwd)
+    if content is None:
+        return "ABSENT", None, None, None, None, None, None
+    try:
+        nb = json.loads(content)
+    except Exception:
+        return "PARSE_ERROR", None, None, None, None, None, None
     # Lazy: the strip tools cost ~150 ms per notebook and are only ever
     # consulted on the STALE_BLOCK branch, which is the rare one. A thunk
     # keeps a 200-notebook PR at the cost it had before this exemption.
+    # The encoding replay is cheap (a JSON round trip, no subprocess) but
+    # sits on the same rare branch, so it follows the same shape.
     return ("OK", exec_evidence(nb), papermill_block(nb),
-            lambda: stripped_evidence(content), cell_papermill_signature(nb),
-            cell_papermill_blocks(nb))
+            lambda: stripped_evidence(content),
+            lambda: encoding_reverted_evidence(content),
+            cell_papermill_signature(nb), cell_papermill_blocks(nb))
 
 
 def state_at_head(path, cwd=None):
-    """(status, evidence, block, ev_stripped, cell_sig, cell_pms) at head."""
+    """(status, evidence, block, ev_stripped, ev_reverted, cell_sig, cell_pms)."""
     try:
         nb = json.loads((Path(cwd or ".") / path).read_text(encoding="utf-8"))
     except Exception:
-        return "PARSE_ERROR", None, None, None, None, None
-    return "OK", exec_evidence(nb), papermill_block(nb), None, \
+        return "PARSE_ERROR", None, None, None, None, None, None
+    return "OK", exec_evidence(nb), papermill_block(nb), None, None, \
         cell_papermill_signature(nb), cell_papermill_blocks(nb)
 
 
 def classify(base_state, head_state):
     """Verdict of one changed notebook. Regression iff stale or forged block ridden."""
-    b_status, b_ev, b_block, b_ev_stripped, b_cell_sig, b_cell_pms = base_state
-    h_status, h_ev, h_block, _, h_cell_sig, h_cell_pms = head_state
+    (b_status, b_ev, b_block, b_ev_stripped, b_ev_reverted,
+     b_cell_sig, b_cell_pms) = base_state
+    h_status, h_ev, h_block, _, _, h_cell_sig, h_cell_pms = head_state
     if b_status == "ABSENT":
         return "ADDED", False
     if b_status == "PARSE_ERROR" or h_status == "PARSE_ERROR":
@@ -287,6 +346,18 @@ def classify(base_state, head_state):
         # execution that produced these outputs, minus a machine-path leak
         # that no re-execution could have removed.
         return "OUTPUTS_STRIPPED", False
+    if b_ev_reverted is not None and h_ev == b_ev_reverted():
+        # The whole delta is what one cp1252 -> utf-8 reversion of the base
+        # outputs produces. An encoding repair runs no notebook, so the block
+        # is not stale - it still describes the execution that produced these
+        # outputs, a few mojibake strings later.
+        #
+        # A hand-edited output does not survive this test, for the same reason
+        # it does not survive the strip replay: reverting the base cannot
+        # invent a number, a float or a sentence. Strings that are not pure
+        # mojibake come back unchanged, so the equality can hold only on the
+        # reverted ones. #23035 positive control covers exactly that.
+        return "OUTPUTS_ENCODING_REPAIRED", False
     if h_block == b_block:
         # Outputs changed but the block is byte-identical: it describes the
         # previous run, not the one that produced the committed outputs.

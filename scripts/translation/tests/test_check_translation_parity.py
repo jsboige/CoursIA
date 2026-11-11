@@ -743,7 +743,7 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
 # (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
 # 2026-10-20 (#1650 tranche Complexity-03 TimeHierarchy, serie Complexity axe E,
-# T3+T4) : +1 paire T4 -- Complexity/Complexity-03-TimeHierarchy_en (9 cellules
+# T3+T4) : +1 paire T4 -- Complexity/Complexity-03-HierarchieTemporelle-Python_en (9 cellules
 # md EN remplies dans le CSV puis rendues --require-translated, 6 cellules code
 # copiees verbatim, 0 orphelin). Premiere paire de la serie Complexity.
 # 2026-10-20 (fusion de origin/main dans feature/1650-ft04-en, PR #20711) : les
@@ -752,8 +752,8 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 1 (ANALYSE-07) = 15. Une fusion qui n'aurait garde qu'un cote aurait rendu 14.
 # 2026-10-24 (resolution du conflit sur ce fichier, PR #21509, merge main post-#20711) :
 # les deux recits ci-dessus declaraient chacun 17 mais ne comptaient pas le meme
-# arbre -- main 17 SANS Complexity-03-TimeHierarchy_en, la branche 17 AVEC. La
-# paire Complexity/Complexity-03-TimeHierarchy_en (#21509) n'est pas sur main :
+# arbre -- main 17 SANS Complexity-03-HierarchieTemporelle-Python_en, la branche 17 AVEC. La
+# paire Complexity/Complexity-03-HierarchieTemporelle-Python_en (#21509) n'est pas sur main :
 # l'arbre fusionne porte 17 + 1 = 18. Compte MESURE par
 # discover_pairs(repo_root, ["en","ru"]) sur l'arbre fusionne, la constante suit.
 # 2026-10-20 (PR #19916, #19908 tranche B pli 2): +1 paire -- jumeau _en du
@@ -770,7 +770,7 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # pas du meme arbre : origin/main declare 16 paires -- les 15 de #21296 plus
 # research_archive_en (QuantConnect, Crypto-MultiCanal), arrive sur main
 # entre-temps -- et cette branche en apporte une de plus,
-# Complexity/Complexity-03-TimeHierarchy_en. Compte MESURE par
+# Complexity/Complexity-03-HierarchieTemporelle-Python_en. Compte MESURE par
 # discover_pairs(repo_root, ["en","ru"]) sur l'arbre fusionne : 17 (rouge
 # constate a tete constante : found 17, declared 16, avant cet enregistrement).
 # Le jumeau Lean natif ANALYSE-06-Sensibilite-2026-Lean_en ajoute par #19916
@@ -806,11 +806,25 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 #   classe que #19996/#20392 : la paire arrivee avec son carnet sans
 #   mettre a jour cette ligne a la livraison rougit pair_count_declared
 #   (#21391) sur la PR.
-# 2026-11-04 (tranche T4 FT-06, axe E de #4208) : +1 paire --
-#   FT-06-Vision-Language-LoRA-Python_en, dernier carnet de la serie
-#   FineTuning sans jumeau EN. Les six autres paires de la serie
-#   (FT-00c, FT-01 a FT-05) etaient deja comptees dans les 21.
-EXPECTED_PAIR_COUNT = 22
+# 2026-11-04 : DEUX paires arrivent le meme jour, par deux tranches
+#   distinctes, et la fusion les porte toutes les deux -- 21 + 1 + 1 = 23,
+#   pas 22. Les deux increments avaient chacun ete ecrits contre un arbre a
+#   21 paires, donc chacun concluait 22 : c'est le seul cas ou deux
+#   resolutions « justes » separement donnent un compte faux ensemble.
+#   Mesure de la fusion (discover_pairs sur l'arbre fusionne) : 23 paires.
+#   - tranche axe E de #1650 : Crypto-MultiCanal/research FR/_en (cette
+#     branche) ;
+#   - tranche T4 FT-06, axe E de #4208 : FT-06-Vision-Language-LoRA-Python_en,
+#     dernier carnet de la serie FineTuning sans jumeau EN (les six autres
+#     paires de la serie, FT-00c et FT-01 a FT-05, etaient dans les 21).
+# 2026-11-09 : +1 paire -- tranche FT-00a de l'axe E de #1650 :
+#   FT-00a-LoRA-from-scratch-Python_en (premier des trois carnets de la serie
+#   encore sans jumeau : FT-00a, FT-00b, FT-00d ; FT-07 est hors CSV).
+#   23 + 1 = 24.
+# 2026-11-09 : +1 paire -- tranche FT-00b de l'axe E de #1650 :
+#   FT-00b-LoRA-Hyperparams-from-scratch-Python_en (deuxieme des trois carnets
+#   encore sans jumeau ; reste FT-00d). 24 + 1 = 25.
+EXPECTED_PAIR_COUNT = 25
 
 
 def _collect_parity_failures(repo_root: Path,

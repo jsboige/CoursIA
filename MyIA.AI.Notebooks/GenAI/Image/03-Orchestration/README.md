@@ -1,107 +1,52 @@
-# 03-Orchestration - Multi-modèles & Workflows
+# Orchestrer la génération d'images
 
-[← Image Advanced](../02-Advanced/) | [↑ Image](../README.md) | [→ Image Applications](../04-Applications/)
+[← Image avancée](../02-Advanced/README.md) | [↑ Série Image](../README.md) | [Image : applications →](../04-Applications/README.md)
 
-Ce module couvre l'orchestration de plusieurs modèles, les workflows complexes, et l'optimisation de performance.
+Comment choisir un moteur, enchaîner ses sorties avec d'autres opérations et évaluer le coût du pipeline obtenu ? Cette partie part d'une comparaison de services, construit un orchestrateur, puis propose deux approfondissements : mesurer les performances et étudier un graphe où un modèle vision-langage rédige le prompt d'un générateur d'images.
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : en production, un seul modèle ne suffit pas. [03-1](03-1-Multi-Model-Comparison.ipynb) compare les modèles pour choisir le meilleur selon le contexte. [03-2](03-2-Workflow-Orchestration.ipynb) assemble des pipelines (génération, édition, upscaling). [03-3](03-3-Performance-Optimization.ipynb) optimise les performances pour le déploiement. [03-4](03-4-VLM-Character-Design-Workflow.ipynb) rejoue un workflow trouvé dans les métadonnées d'une image : un VLM in-graph qui écrit le prompt de character design depuis une image de référence.
+## Avant de commencer
 
-## Vue d'overview
+Il est utile de savoir manipuler des images et des dictionnaires en Python, appeler une API HTTP et lire un graphe ComfyUI. Les exemples de la [partie avancée](../02-Advanced/README.md) introduisent les modèles et les workflows. Préparez les dépendances, les adresses et les éventuels jetons avec le [guide d'environnement GenAI](../../00-GenAI-Environment/README.md) ; l'[architecture des services](../../../../docs/genai/genai-services.md) détaille la configuration de la stack.
 
-| Statistique | Valeur |
-|-------------|--------|
-| Notebooks | 4 |
-| Kernel | Python 3 |
-| Durée estimée | ~3-5h |
-| GPU requis | Variable |
+Les carnets utilisent Python. Les appels réels nécessitent les services et modèles indiqués dans chacun d'eux, ainsi que les ressources GPU adaptées. En particulier, 03-1 utilise Forge et ComfyUI ; 03-4 demande un ComfyUI configuré avec les modèles, LoRA et nœuds décrits dans le carnet. Ses sorties illustrent une exécution sur GPU de 24 Go : cette valeur n'est pas une garantie de compatibilité pour toute configuration. Vérifiez l'état des services et les chemins de modèles avant de lancer une génération.
 
-## Notebooks
+## Parcours conseillé
 
-| # | Notebook | Contenu | Service | VRAM |
-|---|----------|---------|---------|------ |
-| 1 | [03-1-Multi-Model-Comparison](03-1-Multi-Model-Comparison.ipynb) | Comparaison multi-modèles | Mixed | Variable |
-| 2 | [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) | Orchestration de workflows | ComfyUI | Variable |
-| 3 | [03-3-Performance-Optimization](03-3-Performance-Optimization.ipynb) | Optimisation performance | ComfyUI | Variable |
-| 4 | [03-4-VLM-Character-Design-Workflow](03-4-VLM-Character-Design-Workflow.ipynb) | Boucle VLM in-graph (workflow embarqué dans un PNG) | ComfyUI (Krea 2) | 24 Go |
+| Étape | Question et activité | À retenir |
+|---|---|---|
+| **Socle : comparer** — [03-1 Comparaison multi-modèles](03-1-Multi-Model-Comparison.ipynb) | Envoyer un prompt à SDXL Lightning via Forge et à Qwen Image Edit via ComfyUI, puis examiner les sorties et les temps. | Les résolutions et le chargement initial diffèrent dans l'exemple : le temps observé ne suffit pas à classer les modèles. Construire un protocole avec plusieurs prompts et des conditions explicites. |
+| **Socle : assembler** — [03-2 Orchestration de workflows](03-2-Workflow-Orchestration.ipynb) | Construire des étapes séquentielles, parallèles et conditionnelles, avec suivi des erreurs et relances. | Une dépendance impose l'ordre ; des tâches indépendantes peuvent être soumises en parallèle, mais le GPU peut rester le goulot. Un seuil automatique n'est pas une garantie de qualité visuelle. |
+| **Approfondir : mesurer** — [03-3 Optimisation des performances](03-3-Performance-Optimization.ipynb) | Profiler temps et mémoire, explorer précision réduite, quantification, transfert CPU et traitement par lots. | Comparer à une référence dans les mêmes conditions, après échauffement, et mesurer aussi l'effet sur les images. Une partie des benchmarks est simulée ; la sortie enregistrée du benchmark ComfyUI réel indique un service indisponible. |
+| **Approfondir : lire et adapter un graphe** — [03-4 Character design avec VLM](03-4-VLM-Character-Design-Workflow.ipynb) | Extraire les métadonnées d'un PNG, suivre le graphe API, puis faire produire un prompt par un VLM avant la diffusion Krea 2. | Un workflow embarqué aide à comprendre la recette, mais sa reproduction exige aussi modèles, nœuds, versions et configuration. Le contre-test avec et sans LoRA illustre leur influence dans cet exemple. |
 
-## Prérequis
+Après 03-1 et 03-2, choisissez 03-3 si votre question porte sur les ressources, ou 03-4 si vous souhaitez examiner un pipeline multimodal complet. Les deux peuvent se lire indépendamment l'un de l'autre.
 
-### Docker Services
-```bash
-cd docker-configurations/services/comfyui-qwen
-docker-compose up -d
-```
-Accès : http://localhost:8188
+## Lire les résultats de l'orchestration
 
-### Dépendances
-```bash
-pip install -r requirements.txt
-pip install -r requirements-comfyui.txt
-```
+Dans 03-2, le pipeline séquentiel fait passer une image par génération, transformation de style et agrandissement. Les sorties intermédiaires permettent de voir ce que chaque étape transmet à la suivante ; agrandir l'image n'assure pas à lui seul l'apparition de détails fidèles.
 
-## Progression recommandée
+![Étapes de génération, de style et d'agrandissement d'une scène de montagne](assets/readme/img3-workflow1.webp)
 
-1. **03-1-Multi-Model-Comparison** - Comparatif des modèles pour choisir le bon
-2. **03-2-Workflow-Orchestration** - Création de workflows complexes
-3. **03-3-Performance-Optimization** - Optimisation des performances
-4. **03-4-VLM-Character-Design-Workflow** - Forensics d'un workflow embarqué + boucle VLM in-graph
+Le parcours parallèle peut servir à comparer des sorties indépendantes. L'illustration ci-dessous montre **des graines différentes du même modèle Qwen**, et ne constitue donc pas une comparaison entre modèles. Dans le carnet, un sémaphore limite les générations GPU simultanées.
 
-## Concepts clés
+![Trois rendus Qwen obtenus avec des graines différentes](assets/readme/img3-workflow2.webp)
 
-### Multi-Model Comparison
-- **Critères** : Qualité, vitesse, ressources, contrôle
-- **Modèles comparés** : SDXL Lightning-4step (Forge), Z-Image/Lumina-2 (ComfyUI)
-- **Métriques** : PSNR, SSIM, temps de génération, coût
+Le routage conditionnel relance une génération sous un seuil. Ici, le score est un indicateur simple fondé sur la luminance : il ne mesure ni fidélité au prompt ni qualité esthétique. Les tentatives ne s'améliorent pas nécessairement et peuvent toutes rester sous le seuil ; il faut prévoir une limite de relances et examiner les images.
 
-### Workflow Orchestration
-- **Patterns** : Chaines de traitement, parallélisation, batch processing
-- **Outils** : ComfyUI, Python asyncio, multiprocessing
-- **Cas d'usage** : Production batch, pipelines automatisés
+![Scores de trois tentatives comparés à un seuil](assets/readme/img3-workflow3.png)
 
-Le notebook [03-2-Workflow-Orchestration](03-2-Workflow-Orchestration.ipynb) illustre concrètement ces patterns à partir du même prompt — chaque pipeline exécute une chaîne ComfyUI différente et expose ses sorties :
+Les variantes de style ci-dessous illustrent l'intérêt de conserver plusieurs propositions pour une sélection humaine. Le carnet peut utiliser un substitut visuel lorsque ComfyUI est indisponible : vérifiez les messages et la provenance des sorties avant de les interpréter comme des générations réelles.
 
-**Pipeline séquentiel** (génération → style → upscaling) — un coucher de soleil sur montagnes passe par trois étapes successives : Qwen produit l'image initiale (1024×1024), un node de style applique le rendu painterly, puis un upscaler double la résolution à 2048×2048. La même scène gagne en détail au fil des étapes sans perdre la composition d'origine :
+![Trois variantes stylistiques d'un chalet dans la neige](assets/readme/img3-workflow4.webp)
 
-<p align="center"><img src="assets/readme/img3-workflow1.webp" alt="Pipeline séquentiel ComfyUI en 3 étapes (Generated / Styled / Upscaled) sur la même scène coucher de soleil sur montagnes enneigées — composition préservée aux 3 étapes, seule la définition/lumière varie" width="840"/></p>
+Dans 03-4, la comparaison avec et sans LoRA conserve le prompt généré et la graine, mais retire aussi les mots déclencheurs associés au LoRA. Elle aide à raisonner sur la contribution du style dans ce cas précis, sans établir une séparation parfaite et générale entre identité et style.
 
-**Comparaison multi-modèles en parallèle** — le même prompt *« A futuristic city with flying cars and neon lights… »* est soumis simultanément à 3 invocations Qwen Image-Edit à seeds distinctes (42 / 43 / 44) pour éviter le cache-hit `_GENERATED_CACHE[prompt[:120] + "|" + str(seed)]` qui auparavant rejouait 1 seule image 3 fois (issue #9347, fix c.988 sur cell[9], étendu à cell[13] par c.988-ter-bis). Les 3 steps parallèles démontrent ainsi une **variation par seed** d'un même modèle — choix reflété honnêtement par les labels seed-based de l'asset archivé (c.988-ter-bis : plain seed-based labels, pas cosmétiques model-names-avec-caveat). L'asset archivé est cette fois composé de **3 vrais rendus Qwen** produits via ComfyUI (peer po-2023:CoursIA, messages msg-20260805T205931-dbp9er + msg-20260805T214336-swgcfo, sources dans `D:/Dev/.genai-stack-real-renders-9347/`) — la re-exécution locale ComfyUI 3×370s excède la fenêtre worker 30 min (RECOVERABLE-MACHINE honorée : le worker GenAI stack est la bonne machine pour ce livrable). Le comportement pipeline est correct : seeds distincts ⇒ images distinctes ⇒ 3 compositions cyberpunk distinctes vérifiées par vision QA MiniMax M3 :
+![Référence et rendus avec et sans LoRA dans le workflow de character design](assets/readme/img3-workflow5.webp)
 
-<p align="center"><img src="assets/readme/img3-workflow2.webp" alt="Triptyque côte-à-côte de 3 rendus RÉELS Qwen Image-Edit (seeds 42 / 43 / 44, timeguard >1s respecté, std(luminance) 24.6 / 18.8 / 22.1 = écart max ~24% du std moyen = discriminant sur vrai rendu) sur le même prompt « A futuristic city with flying cars and neon lights, cyberpunk, night, detailed » — labels honnêtes seed-based 'Qwen seed=42/43/44' (c.988-ter-bis, peer feedback msg-20260805T214336-swgcfo : plain seed-based > cosmétiques QWEN/FLUX/SD35+caveat — relire en 1 coup d'œil dit ce que c'est réellement, sans besoin de disclosure) — illustre la variation par seed d'un même modèle, 3 compositions cyberpunk distinctes (palette bleu-magenta / bleu / magenta-purple, 2-1-1 hover-cars) — fix architectural seed=N distinct par caller conservé dans le code cell[9] et cell[13]" width="840"/></p>
+La provenance des figures est décrite dans leur [manifest](assets/readme/MANIFEST.md).
 
-**Pipeline conditionnel** — un score de qualité seuille les tentatives successives : tant que la sortie est sous le seuil (ligne rouge pointillée à 0.75), le pipeline re-tente automatiquement avec un seed différent (seed=42, 43, 44 — incrémenté à chaque tentative pour que le cache `prompt+seed` ne rejoue pas la même image). L'histogramme montre l'évolution du score sur trois tentatives — sous le seuil mais dans une bande stable qui permet d'arbitrer entre relancer et accepter :
+## Pour aller plus loin
 
-<p align="center"><img src="assets/readme/img3-workflow3.png" alt="Diagramme en barres matplotlib du score qualité (3 tentatives) d'un pipeline conditionnel — 3 barres orange à hauteurs distinctes (~0.55, ~0.59, ~0.57, scores d'un run Qwen Image réel seeds 42/43/44), ligne pointillée rouge à 0.75 (seuil) que le pipeline cherche à franchir en relançant" width="560"/></p>
-
-> **Note (issue #9346).** Avant le fix `seed=42 + attempt` de cell-11, les 3 tentatives partageaient `seed=42` : `_GENERATED_CACHE` rejouait la même image et la barre « Évolution » était plate. Le PNG `img3-workflow3.png` a été régénéré le 2026-08-05 depuis un **run Qwen Image réel** (ComfyUI Phase 29, seeds 42/43/44, steps 20/30/40) : les 3 scores distincts (~0.55, ~0.59, ~0.57) ne sont pas monotones — la std-heuristique de `evaluate_quality` fluctue dans une bande stable sous le seuil, ce qui illustre honnêtement le comportement du pipeline (relance tant que score < seuil) sans suggérer une amélioration garantie.
-
-**Variations stylistiques** — un même prompt (chalet de montagne sous la neige) est exécuté sur SD35 avec trois styles distincts : photoréaliste, aquarelle, anime. Le pipeline ne change pas la géométrie de la scène, seulement l'apparence — c'est l'usage classique des conditioning nodes de ComfyUI :
-
-<p align="center"><img src="assets/readme/img3-workflow4.webp" alt="Variations stylistiques SD35 sur un même prompt (chalet en rondins de bois dans montagnes enneigées) — 3 styles : photoréaliste (rendu photographique chaud), aquarelle (couleurs pastel, contours fondus), anime (couleurs saturées, contours marqués, ambiance manga)" width="840"/></p>
-
-Provenance et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
-
-### Performance Optimization
-- **Techniques** : Quantization, caching, hardware acceleration
-- **Stratégies** : Progressive enhancement, early stopping
-- **Monitoring** : Profiling, resource tracking
-
-### VLM in-graph (03-4)
-- **Forensics** : un PNG ComfyUI embarque son workflow (chunks `tEXt` : format API + format UI)
-- **Boucle agentic** : un VLM examine une image de référence et écrit le prompt de génération, dans le graphe
-- **Séparation design / style** : le prompt VLM porte l'identité du personnage, le LoRA porte le rendu — deux canaux composables
-
-<p align="center"><img src="assets/readme/img3-workflow5.webp" alt="Triptyque démontrant la séparation design/style du pipeline VLM in-graph — une référence (robot photoréaliste) devient une character sheet blueprint (avec LoRA banjiesock_Krea2) puis le même personnage en rendu neutre (sans LoRA), même seed : le design vit dans le prompt VLM, le style vit dans le LoRA" width="840"/></p>
-
-## Architecture
-
-```
-Input → Model Selection → Processing → Output
-    ↓           ↓            ↓          ↓
-  Benchmark   Router      Pipeline  Validation
-```
-
-## Ressources
-
-- [Documentation Image principale](../README.md)
-- [Guide ComfyUI](../../00-GenAI-Environment/README.md)
-- [Architecture ComfyUI](../../../../docs/genai/genai-services.md)
+- Revenez au [sommaire Image](../README.md) pour situer ces techniques dans le parcours complet, puis appliquez-les dans les [applications](../04-Applications/README.md).
+- Pour une comparaison utile, gardez trace des prompts, graines, résolutions, étapes, versions et conditions de chargement ; distinguez latence à froid et à chaud. Les métriques automatiques et l'évaluation humaine répondent à des questions différentes.
+- Pour un pipeline reproductible, conservez le graphe et les paramètres, mais aussi les noms et versions des modèles et des nœuds. Les métadonnées d'une image peuvent être absentes ou supprimées lors d'une conversion.

@@ -147,6 +147,18 @@ PIDS="${COURSIA_RUNNER_PIDS:-384}"
 # re-telechargerait interpretes et outils via les actions setup-*. Le volume
 # nomme survit aux conteneurs ; RUNNER_TOOL_CACHE dit aux actions ou chercher.
 # Sa propriete runner:runner vient du point de montage du Dockerfile.
+#
+# GARDE COURSE PIP (#22502) : ce volume est PARTAGE par tous les slots et les
+# waiters -- son site-packages servait donc chaque job, et deux jobs
+# pip-installant en parallele y corrompaient des paquets (pygments a 0 octet
+# sous dist-info 2.21.0, ImportError aleatoires retombes sur la PR mesuree,
+# instance #22281). L'isolation vit cote CONTENEUR, pas cote volume :
+# entrypoint.sh exporte PIP_USER=1, chaque pip installe dans le site
+# utilisateur ephemere (~/.local du conteneur, detruit avec lui) et le
+# site-packages partage n'est plus jamais ecrit par un job. Les exceptions
+# (etapes a venv propre sous $RUNNER_TEMP) posent PIP_USER=0 localement dans
+# le workflow. Ne pas re-introduire d'ecriture pip dans ce volume sans
+# re-ouvrir #22502 : la course redevenait possible par construction.
 TOOLCACHE_VOLUME="${COURSIA_RUNNER_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
 TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 
@@ -236,6 +248,21 @@ WAITER_PIDS="${COURSIA_RUNNER_WAITER_PIDS:-128}"
 # volume _work, dont la persistance est le vecteur ferme par #14385 -- les
 # waiters n'en ont toujours aucun, et cette distinction est la garde.
 WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
+# Allocation RSS d'un waiter OISIF, en Mo entiers (#22532). C'est la BASE DE
+# COMPTABILITE budgetaire de la famille waiters -- pas un cap docker : le cap
+# reste WAITER_MEMORY (regle #15202 : baisser un cap exigerait de nommer les
+# jobs mesures sous la nouvelle valeur, et un waiter EXECUTE les jobs PR-gate).
+# Symetrie memoire de #15574 item 3 (arbitrage CPU du 2026-10-01 : « le budget
+# garde la part qui calcule, pas la part qui dort ») : compter la famille a son
+# cap y inscrivait une reservation fantome. Mesure po-2024 du 2026-11-04
+# (docker stats --no-stream, 6 waiters oisifs) : 36,5 a 168,9 MiB chacun,
+# 486,5 MiB au total pour 3 072 Mo de caps -- ~2,6 Go reserves que rien
+# n'occupait. Vide = repli au cap avec AVERTISSEMENT au demarrage (meme
+# discipline que COURSIA_RUNNER_BUDGET_GB : une base non declaree n'est pas
+# auditable). La validation (entier de Mo) se fait a l'usage, dans
+# assert_memory_budget -- die n'est pas encore defini a cette hauteur du
+# fichier, et un garde ne doit pas plus mourir a moitie qu'un budget mentir.
+WAITER_RSS_MB_DECLARE="${COURSIA_RUNNER_WAITER_RSS_MB:-}"
 
 # Pool Lean specialise (#14337 tranche 1) : le cout d'un job Lean n'est pas le
 # toolchain mais MATHLIB. Image dediee (Dockerfile.lean : elan + toolchain
@@ -818,10 +845,109 @@ ci_inspect_rows() {
   return 0
 }
 
+# Lignes "<nom> <MemUsage>" des conteneurs waiters en vol, par endpoint de
+# ci_docker_endpoints (#22532). docker stats --no-stream est l'instrument
+# nomme par le dispatch : MemUsage est le working set (pages actives), pas le
+# cap -- c'est ce que le noyau facture reellement a la slice. Fail-closed
+# comme ci_inspect_rows : un daemon muet peut porter des waiters, compter
+# leurs caps « faute de mieux » serait reintroduire la reservation fantome.
+waiter_stats_rows() {
+  local ep d id ids out seen=" "
+  for ep in $(ci_docker_endpoints); do
+    case "$ep" in
+      default) d="docker" ;;
+      unix://*) d="docker -H $ep" ;;
+      *) d="docker -H unix://$ep" ;;
+    esac
+    case "$ep" in
+      default|tcp://*) ;;
+      *)
+        if [ ! -e "${ep#unix://}" ]; then
+          echo "[budget] socket $ep absent -- daemon non installe, hors perimetre waiters" >&2
+          continue
+        fi
+        ;;
+    esac
+    if ! ids="$($d ps -q --filter 'label=coursia-waiter=1' 2>/dev/null)"; then
+      echo "demon Docker injoignable sur '$ep' (ps waiters en echec) -- le RSS des waiters n'est pas mesurable. (#22532)" >&2
+      return 1
+    fi
+    # Deduplication par ID de demon, comme ci_inspect_rows (#15164) : le
+    # default de ci_docker_endpoints porte DEUX endpoints, et un docker-ce
+    # local peut etre le MEME daemon que le default -- sans dedup, chaque
+    # waiter serait compte deux fois dans wrss (mesure : Test 74 sous WSL,
+    # 721 Mo rendus pour 361 reels). ID illisible = enumeration sans dedup,
+    # qui ne peut que surcompter (refus conservateur).
+    id="$($d info --format '{{.ID}}' 2>/dev/null)" || id=""
+    if [ -n "$id" ]; then
+      case "$seen" in *" $id "*) continue ;; esac
+      seen="$seen $id "
+    fi
+    [ -n "$ids" ] || continue
+    if ! out="$($d stats --no-stream --format '{{.Name}} {{.MemUsage}}' $ids 2>/dev/null)"; then
+      echo "docker stats muet sur '$ep' alors que le daemon repond -- RSS des waiters non mesurable. (#22532)" >&2
+      return 1
+    fi
+    [ -n "$out" ] && printf '%s\n' "$out"
+  done
+  return 0
+}
+
 running_ci_mb() {
-  local rows
-  rows="$(ci_inspect_rows '{{.HostConfig.Memory}}')" || return 1
-  printf '%s\n' "$rows" | awk '{ s += $1 } END { printf "%d", (s+0)/1048576 }'
+  local rows wrows
+  rows="$(ci_inspect_rows '{{.Name}} {{.HostConfig.Memory}}')" || return 1
+  # #22532 (dispatch c2770) : la famille waiters compte au RSS REEL, pas au
+  # cap -- symetrie memoire de #15574 item 3. Les waiters non etiquetes
+  # (generation precedente du parc, remplaces au churn en minutes) restent
+  # comptes a leur cap : transition conservatrice, jamais laxiste.
+  if ! wrows="$(waiter_stats_rows)"; then
+    echo "budget CI NON MESURABLE -- REFUS. Le RSS des waiters n'a pas pu etre mesure (raison ci-dessus) : les compter au cap reintroduirait la reservation fantome (~2,6 Go sur po-2024, #22532), les compter a zero serait pire. Reparer le daemon, puis relancer. (#22532)" >&2
+    return 1
+  fi
+  if [ -z "$wrows" ]; then
+    printf '%s\n' "$rows" | awk '{ s += $2 } END { printf "%d", (s+0)/1048576 }'
+    return 0
+  fi
+  # La jointure se fait sur le NOM (unique par daemon) : les caps des waiters
+  # sortent de la somme, leur RSS y entre. awk rend "<total> <rss> <caps> <n>"
+  # sur stdout ; le total seul repart de la fonction, le detail part sur stderr
+  # -- il traverse la substitution de commande, ou arrive l'operateur.
+  local split
+  split="$(printf '%s\n' "$rows" | CI_WAITER_ROWS="$wrows" awk '
+    function rss_mb(v) {
+      # MemUsage docker : "154.7MiB" (working set). Mo du repo = MiB.
+      if (v ~ /GiB$/) { sub(/GiB$/, "", v); return v * 1024 }
+      if (v ~ /MiB$/) { sub(/MiB$/, "", v); return v + 0 }
+      if (v ~ /KiB$/) { sub(/KiB$/, "", v); return v / 1024 }
+      if (v ~ /B$/)   { sub(/B$/,   "", v); return v / 1048576 }
+      return 0
+    }
+    BEGIN {
+      n = split(ENVIRON["CI_WAITER_ROWS"], wl, "\n")
+      for (i = 1; i <= n; i++) {
+        wn = wl[i]; sub(/ .*/, "", wn); sub(/^\//, "", wn)
+        if (wn != "") {
+          isw[wn] = 1
+          # RSS du waiter, champ 2 de la ligne stats
+          split(wl[i], f, " "); r = rss_mb(f[2]); wrss += r
+          if (r > 0 || f[2] ~ /^[0-9]/) wc++
+        }
+      }
+    }
+    {
+      nom = $1; sub(/^\//, "", nom)
+      if (isw[nom]) { wcap += $2 / 1048576; next }
+      s += $2 / 1048576
+    }
+    END { printf "%d %d %d %d", int(s + wrss + 0.999), int(wrss + 0.999), int(wcap + 0.999), wc + 0 }
+  ')" || return 1
+  # shellcheck disable=SC2086
+  set -- $split
+  [ "$#" -eq 4 ] || { echo "running_ci_mb : split inattendu '$split'" >&2; return 1; }
+  if [ "$4" -gt 0 ]; then
+    echo "[budget] waiters au RSS reel : $4 waiter(s), $2 Mo (caps non comptes au plafond : $3 Mo) -- #22532" >&2
+  fi
+  echo "$1"
 }
 
 # Nombre de slots et memoire (Mo) d'UNE famille de conteneurs CI deja en vol.
@@ -864,6 +990,29 @@ assert_memory_budget() {
   local reprise_n=0 reprise_mb=0 add_mb
   per_mb="$(mem_to_mb "$per")"
   want_mb=$(( per_mb * n ))
+  # #22532 : la DEMANDE de la famille waiters se compte a l'allocation RSS
+  # declaree, pas au cap -- symetrie memoire de #15574 item 3 (le budget garde
+  # la part qui calcule, pas la part qui dort). Le cap docker ne bouge PAS
+  # (regle #15202 : le baisser exigerait de nommer les jobs mesures dessous) ;
+  # c'est la base de comptabilite qui change. En vol, running_ci_mb mesure deja
+  # ces memes waiters au RSS reel -- la demande et la somme doivent parler la
+  # meme unite, sinon add_mb ment.
+  local rss_basis_cap=""
+  if [ "$famille" = "waiters" ]; then
+    if [ -n "$WAITER_RSS_MB_DECLARE" ]; then
+      case "$WAITER_RSS_MB_DECLARE" in
+        *[!0-9]*) die "COURSIA_RUNNER_WAITER_RSS_MB doit etre un entier de Mo (lu : '$WAITER_RSS_MB_DECLARE')" ;;
+      esac
+      rss_basis_cap="$per"
+      per_mb="$WAITER_RSS_MB_DECLARE"
+      want_mb=$(( per_mb * n ))
+    else
+      echo "[budget] AVERTISSEMENT : COURSIA_RUNNER_WAITER_RSS_MB n'est declaree par aucun" >&2
+      echo "        wrapper de machine -- la demande waiters se compte au cap ($per/slot) et" >&2
+      echo "        reintroduit la reservation fantome (mesure po-2024 du 2026-11-04 : 36 a" >&2
+      echo "        169 Mo reels par waiter oisif pour 512 declares, #22532)." >&2
+    fi
+  fi
   if ! used_mb="$(running_ci_mb)"; then
     die "budget CI NON MESURABLE -- REFUS. La ligne ci-dessus nomme le daemon injoignable : tant qu'il ne repond pas, la somme en vol ne peut pas etre etablie, et compter 0 pour lui serait exactement le defaut que ce garde ferme. Reparer le daemon, ou ajuster COURSIA_RUNNER_DOCKER_ENDPOINTS, puis relancer. (#15164)"
   fi
@@ -932,6 +1081,12 @@ par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_M
     fi
     reprise_n="${reprise%% *}"
     reprise_mb="${reprise##* }"
+    # #22532 : la reprise waiters passe sur la MEME base que la demande (RSS
+    # declaree) -- running_family_mb rend des caps, et used_mb compte deja ces
+    # waiters au RSS reel : deux bases differentes feraient mentir add_mb.
+    if [ -n "$rss_basis_cap" ]; then
+      reprise_mb=$(( reprise_n * per_mb ))
+    fi
   fi
   add_mb=$(( want_mb - reprise_mb ))
   # Le repli `add_mb < 0` est DEFENSIF : il n'atteint que si la famille porte
@@ -956,7 +1111,7 @@ par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_M
     [ "$max_n" -lt 0 ] && max_n=0
     die "budget CI depasse -- REFUS.
   deja en vol ......... $used_mb Mo
-  demande ($famille) .. $n x $per = $want_mb Mo
+  demande ($famille) .. $n x ${rss_basis_cap:-$per} = $want_mb Mo${rss_basis_cap:+ (base RSS declaree $per_mb Mo/slot, cap $rss_basis_cap non compte)}
   reprise en vol ..... $reprise_n slot(s) de cette famille = $reprise_mb Mo (reprises, pas ajoutees)
   demande nette ...... $add_mb Mo
   total ............... $(( used_mb + add_mb )) Mo
@@ -2683,6 +2838,10 @@ waiter_loop() {
     # backoff. `continue` sur arret demande.
     reclaim_container_name "$name" || continue
     local t0=$SECONDS
+    # Le label coursia-waiter=1 distingue la famille au budget (#22532) : le
+    # garde compte ces conteneurs au RSS reel, les autres au cap. Les waiters
+    # de la generation precedente (non etiquetes) restent comptes au cap --
+    # conservateur pendant le churn, jamais laxiste.
     rotate_log "$STATE_DIR/$name.log"
     local log_off
     log_off="$(wc -c < "$STATE_DIR/$name.log" 2>/dev/null | tr -d ' ' || echo 0)"
@@ -2692,6 +2851,7 @@ waiter_loop() {
       --cpus="$WAITER_CPUS" --memory="$WAITER_MEMORY" --pids-limit="$WAITER_PIDS" \
       "${BLKIO_ARGS[@]+"${BLKIO_ARGS[@]}"}" \
       --label coursia-ci=1 \
+      --label coursia-waiter=1 \
       ${CI_CGROUP_PARENT:+--cgroup-parent="$CI_CGROUP_PARENT"} \
       --security-opt=no-new-privileges \
       "${tc_args[@]+"${tc_args[@]}"}" \

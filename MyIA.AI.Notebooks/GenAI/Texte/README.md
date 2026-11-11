@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 48
-breakdown: Texte=48
-maturity: BETA=41, ALPHA=4, DRAFT=3
+pedagogical_count: 49
+breakdown: Texte=49
+maturity: BETA=41, ALPHA=4, DRAFT=4
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -142,12 +142,66 @@ Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cel
 |---|----------|-------------|-------|
 | 23 | `23_Du_Notebook_A_L_Application.ipynb` | **Servir le RAG du 05** : extraction fidèle du pipeline (corpus Lincoln-Douglas, chunking, embeddings, k-NN, génération citée) puis passage au service — API **FastAPI** (`/health`, `/query`) sur port dynamique testée par appels `httpx` réels, UI **Gradio** passant uniquement par l'API (test des sources déterministes : deux canaux, mêmes chunks), mesure du coût par couche (transport pur de l'ordre de la milliseconde, surcout `/query` noyé dans la variance de génération — négatif sur 2 questions sur 3 au run commis), normalisation des scalaires numpy pour le contrat JSON, arrêt propre des services, 3 exercices C.1 | — |
 
+### Tier 9 : Agents génératifs — mémoire, réflexion et planification
+
+Le carnet **24** descend d'un cran dans l'échelle après le service du tier 8 : il simule un **petit monde** — 5 agents sur une grille 5×5, deux jours de jeu — d'après Park et al. 2023 (*Generative Agents: Interactive Simulacra of Human Behavior*, UIST '23, arXiv 2304.03442). L'architecture du papier est reproduite terme à terme sur le vrai moteur : flux de mémoire noté par le LLM à la création, récupération à trois composantes (récence qui décroît de 0,995 par heure de jeu depuis le dernier accès, importance 1-10, pertinence par similarité d'embeddings), réflexion au seuil d'importance cumulée dont les insights citent leurs preuves, planification journalière rejouée chaque matin, et boucle d'action où un dialogue n'existe que si deux agents partagent une case. L'expérience de propagation du papier est rejouée à notre échelle, avec sa vérification anti-hallucination : un agent qui « dit » savoir ne compte que si sa mémoire porte effectivement l'information. Au run commis, 50 appels LLM réels au stack vLLM local donnent une propagation de 40 % sur le vernissage et 0 % sur la candidature, contre 52 % et 32 % chez les 25 agents du papier — l'écart est un effet d'échelle, et le carnet dit lequel. 3 exercices C.1.
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 24 | `24_Generative_Agents_MiniMonde.ipynb` | **Simuler un petit monde** : 5 agents, grille 5×5, deux jours — flux de mémoire noté par le LLM, récupération à trois composantes (récence 0,995/h, importance, pertinence par embeddings), réflexion au seuil dont les insights citent leurs preuves, planification journalière, boucle d'action avec dialogues conditionnés par la récupération propre à chaque agent ; expérience de propagation rejouée avec vérification anti-hallucination — au run commis 50 appels LLM réels, vernissage 40 % / candidature 0 % contre 52 % / 32 % au papier (écart d'échelle, mesuré), 3 exercices C.1 | 60 min |
+
 ## Prérequis
 
 ### Configuration API
 1. Copier `.env.example` vers `.env`
 2. Ajouter votre clé API OpenAI : `OPENAI_API_KEY=sk-...`
 3. Les paramètres d'échantillonnage ne sont pas universels : `gpt-5-mini` refuse `temperature` (HTTP 400) quand `gpt-4o-mini` l'accepte. La table mesurée [docs/genai/parametres-par-modele.md](../../../docs/genai/parametres-par-modele.md) dit, par modèle utilisé dans les carnets, ce que chaque paramètre devient — et la garde `param_guard` (série 00-GenAI-Environment) le signale dans le carnet plutôt que de perdre le paramètre en silence.
+
+### Service REST local Structured Outputs
+
+Le cœur [`structured_outputs_core.py`](structured_outputs_core.py) reprend l'extraction de la §5 du carnet 3 : il accepte un JSON Schema racine objet ou une classe Pydantic v2, prépare le schéma pour le mode strict, appelle un endpoint OpenAI-compatible puis valide la réponse contre le schéma strict envoyé avant de la retourner. Le mode strict rend obligatoires toutes les propriétés déclarées, même celles qui étaient optionnelles dans le schéma d'origine ; si une propriété peut être absente, déclarez-la nullable et attendez une valeur `null`. Les références `$ref` externes sont rejetées pour que la validation reste autonome. Le service [`structured_outputs_service.py`](structured_outputs_service.py) expose ce même cœur sur `POST /texte/extract`.
+
+Depuis le répertoire `MyIA.AI.Notebooks/GenAI/Texte`, installez les dépendances propres au service, puis démarrez-le sur la boucle locale :
+
+```bash
+python -m pip install -r requirements-structured-outputs.txt
+export OPENAI_API_KEY='…'
+# Optionnel : endpoint local/OpenAI-compatible et modèle servi.
+export OPENAI_BASE_URL='http://127.0.0.1:5002/v1'
+export OPENAI_MODEL='nom-du-modele'
+uvicorn structured_outputs_service:app --host 127.0.0.1 --port 8000
+```
+
+`OPENAI_BASE_URL` et `OPENAI_MODEL` sont facultatifs. En leur absence, le SDK OpenAI utilise son URL par défaut et le cœur choisit `gpt-5-mini`. Une valeur présente mais invalide pour la clé, l'URL ou le modèle provoque une erreur ; aucune clé ne doit figurer dans le corps HTTP. Le serveur d'exemple écoute sur `127.0.0.1` ; choisissez explicitement un contrôle d'accès avant tout bind sur une interface réseau.
+
+Contrat de la requête :
+
+```json
+{
+  "prompt": "Extrais le score et le commentaire de ce texte.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "score": {"type": "integer", "minimum": 0, "maximum": 100},
+      "commentaire": {"type": "string"}
+    },
+    "required": ["score", "commentaire"]
+  },
+  "model": "nom-du-modele"
+}
+```
+
+`model` est facultatif. Les réponses ont toujours un des trois corps ci-dessous : succès (`200`, JSON validé), entrée ou schéma invalide (`422`) et échec de configuration, d'API ou de validation de la réponse (`502`). Les clés inconnues dans le corps de la requête sont rejetées.
+
+```json
+{"status": "ok", "data": {"score": 88, "commentaire": "Réponse validée."}}
+{"status": "invalid", "error": "entrée invalide : vérifiez prompt, schema et model"}
+{"status": "error", "error": "échec de l'extraction structurée"}
+```
+
+Les messages HTTP restent génériques pour ne pas exposer les détails des exceptions ou du contenu fourni. Le cœur Python conserve ses exceptions détaillées pour les usages locaux.
+
+Les tests du cœur injectent un client OpenAI-compatible déterministe. Le test loopback lance Uvicorn et fait une vraie requête HTTP locale, mais ne contacte aucun LLM : il vérifie le transport et le contrat seulement. Le test d'inférence réelle et l'intégration au carnet restent à faire avec une API disponible.
 
 ### Pour les notebooks locaux (10, 10b et 11)
 - Docker avec support GPU pour servir le modèle réel avec vLLM

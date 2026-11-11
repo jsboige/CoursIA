@@ -85,6 +85,18 @@ jobs:
       - name: Run lean_exec resume-process tests (voie 1, #16195)
         run: python -m pytest scripts/lean/tests/test_lean_exec.py -k "resume or unresumed or restype" -v
 
+      # Les temoins d'EXECUTION REELLE du corps de tache du controleur (le
+      # journal porte la raison de l'echec, le code retour de l'organe
+      # traverse, un executable introuvable ne rend pas 0) sont `skipif`
+      # Windows+pwsh : la CI des scripts tourne sur `coursia-linux`, donc
+      # AUCUN gate ne les rejouait -- la correction du journal etait livree
+      # sans gate qui l'execute (mesure Hermes du 05/11, revue #24717).
+      # Cette jambe est le vehicule CI deja dedie a la surface de confinement
+      # Windows : elle les execute reellement, sur un poste ou pwsh existe.
+      # Rien n'est ecrit sur l'hote : le corps travaille sous `tmp_path`.
+      - name: Run runner-controller tests (execution reelle pwsh)
+        run: python -m pytest scripts/tests/test_runner_controller.py scripts/tests/test_install_prune_task.py -v
+
   windows-dotnet-tests:
     # Job GradeBookApp.Tests -- mission ai-01 chiffree dans #13378 :
     # valider que le runner Windows `myia-po-2024-fast-guards` peut absorber
@@ -153,11 +165,11 @@ jobs:
       # + CsvHelper 33.1.0). Premier run valide que ces packages NuGet
       # arrivent bien sur le runner (sinon INTRINSIC reseau a documenter).
       - name: dotnet restore
-        run: dotnet restore GradeBookApp.Tests/GradeBookApp.Tests.csproj
+        run: dotnet restore dotnet/GradeBookApp.Tests/GradeBookApp.Tests.csproj
 
       - name: dotnet build
-        run: dotnet build GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-restore --configuration Release
+        run: dotnet build dotnet/GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-restore --configuration Release
 
       - name: dotnet test
-        run: dotnet test GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=gradebook-tests.trx"
+        run: dotnet test dotnet/GradeBookApp.Tests/GradeBookApp.Tests.csproj --no-build --configuration Release --logger "trx;LogFileName=gradebook-tests.trx"
 

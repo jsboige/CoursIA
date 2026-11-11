@@ -141,6 +141,14 @@ FIXTURES_DECLARED: tuple[str, ...] = (
     # Citations d'incidents fondateurs epinglees a des SHA (#15209, #15862,
     # #16097...) : le nom cite est celui d'alors.
     ".claude/rules/pr-review-discipline.md",
+    # Recensement date (Date run 2026-08-08) : les chemins y sont les
+    # identifiants d'epoque du scan -- un second passage Q171 les a restaures
+    # a la main (4329707b92), la declaration evite le troisieme.
+    "docs/reference/quant-prose-census.md",
+    # Attestation de parite historique (#25461) : l'entree known_differences
+    # documente le renvoi tel qu'il s'appelait alors -- elle reste telle
+    # quelle (le renvoi pointe le README du dossier, pas le carnet).
+    "scripts/notebook_tools/twin_pairs.d/search-02b-networkx.yaml",
 )
 
 STEM_RE = re.compile(r"^(?P<prefix>[A-Za-z][A-Za-z0-9]*)-(?P<num>\d+)(?P<accr>[a-z]?)(?P<sep>[-_])(?P<title>.+)$")
@@ -159,14 +167,20 @@ def _cap(suffix: str) -> str:
 # ---------------------------------------------------------------------------
 
 def repo_root() -> Path:
-    try:
-        r = subprocess.run(["git", "rev-parse", "--show-toplevel"],
-                           capture_output=True, text=True, encoding="utf-8",
-                           errors="replace")
-        if r.returncode == 0:
-            return Path(r.stdout.strip())
-    except OSError:
-        pass
+    """Use a repository cwd, otherwise the checkout containing this script.
+
+    An absolute invocation from an unrelated cwd must still target its own
+    worktree. A cwd inside a temporary test repository, however, is the
+    explicit repository context used by the test suite and callers.
+    """
+    cwd = Path.cwd().resolve()
+    result = subprocess.run(
+        ["git", "rev-parse", "--show-toplevel"],
+        cwd=cwd, capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    if result.returncode == 0:
+        return Path(result.stdout.strip()).resolve()
     return Path(__file__).resolve().parents[2]
 
 
@@ -503,7 +517,28 @@ def build_patterns(forms_list: list[RefForms]) -> list[tuple[RefForms, re.Patter
             # `metadata.papermill.input_path`) est un referent comme un autre.
             # L'alternation triee par longueur decroissante fait que la forme
             # complete gagne avant que le stem ne puisse la recouper.
-            pat = re.compile(r"(?<![\w-])" + re.escape(old) + r"(?![\w-])")
+            #
+            # Forme NUE (sans extension) : la frontiere droite exclut AUSSI
+            # `/` (D1, #24807). Un stem immediatement suivi d'un separateur de
+            # chemin est un COMPOSANT DE DOSSIER, jamais un referent de
+            # fichier : le reecrire recoiffe le dossier du meme nom
+            # (`.../ICT-12-ValenceFieldsAndAnimats/` devenu
+            # `.../ICT-12-ValenceFieldsAndAnimats-Python/`, 541 remplacements
+            # sur iit.csv dont 0 chemin valide apres coup). Les formes qui
+            # portent l'extension (.ipynb) gardent la frontiere large : elles
+            # ne peuvent pas designer un dossier.
+            #
+            # LIMITE CONNUE (reserve NanoClaw, review de #24819) : la garde
+            # repose sur le separateur. Une mention du dossier en PROSE, sans
+            # slash final (« le dossier ICT-12-ValenceFieldsAndAnimats
+            # contient... »), reste recoiffee alors que le dossier garde son
+            # nom. Departerager demanderait un index des dossiers du corpus,
+            # que ``rewrite_file`` ne recoit pas (il ne voit qu'un fichier et
+            # des formes). Le cas mesure etait un chemin CSV, attrape par le
+            # lookahead ; le cas prose n'a jamais ete observe dans le corpus.
+            right = (r"(?![\w/-])" if not old.lower().endswith(".ipynb")
+                     else r"(?![\w-])")
+            pat = re.compile(r"(?<![\w-])" + re.escape(old) + right)
             out.append((f, pat, old, new))
     return out
 
@@ -933,16 +968,47 @@ def load_mapping(src: str, repo: Path | None = None) -> list[tuple[str, str]]:
 # Application des reecritures (I1 : au texte, garde structurelle apres coup)
 # ---------------------------------------------------------------------------
 
+#: Contexte de DOCUMENTATION d'un renommage (D2, #24807) : la forme ancienne
+#: est le membre GAUCHE d'une expression de transformation. La reecrire ferait
+#: `nouveau -> nouveau` et detruirait la phrase qui documente le geste
+#: (mesure : PARITY-INVENTORY.md, 21 remplacements, `X -> Y` devenus `Y -> Y`).
+_RENAME_DOC_CONTEXT = re.compile(
+    r"\s*(?:->|=>|→|⟶|devient\b|renomm[ée]e?\s+en\b)",
+    re.IGNORECASE,
+)
+
+
+def _doc_preserving_repl(new: str, source: str,
+                         applied: list[int]) -> "callable":
+    """Fonction de remplacement qui garde la forme ancienne lorsqu'elle est
+    suivie d'un contexte de documentation de renommage.
+
+    ``applied`` recoit le compte des remplacements REELLEMENT ecrits : une
+    occurrence preservee est un match de ``subn`` comme un autre, et
+    l'incrementer ferait annoncer a ``rewrite_file`` des remplacements qui
+    n'ont pas eu lieu (reserve NanoClaw sur la review de #24819).
+    """
+    def _repl(m: re.Match) -> str:
+        if _RENAME_DOC_CONTEXT.match(source, m.end()):
+            return m.group(0)
+        applied[0] += 1
+        return new
+    return _repl
+
+
 def rewrite_file(p: Path, forms_list: list[RefForms]) -> int:
     """Reecrit AU TEXTE un fichier dont toutes les occurrences sont en surfaces
-    autorisees. Rend le nombre de remplacements effectues. Leve SystemExit si
-    la garde structurelle echoue -- dans ce cas rien n'est ecrit."""
+    autorisees. Rend le nombre de remplacements REELLEMENT effectues -- les
+    occurrences preservees par le contexte de documentation (``X -> Y``) sont
+    des matchs sans ecriture et ne comptent donc pas. Leve SystemExit si la
+    garde structurelle echoue ; dans ce cas rien n'est ecrit."""
     raw = p.read_text(encoding="utf-8")
     edited = raw
     total = 0
     for _f, pat, _old, new in build_patterns(forms_list):
-        edited, k = pat.subn(new, edited)
-        total += k
+        applied = [0]
+        edited = pat.sub(_doc_preserving_repl(new, edited, applied), edited)
+        total += applied[0]
     if total == 0 or edited == raw:
         return 0
     if p.name.lower().endswith(".ipynb"):
