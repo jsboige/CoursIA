@@ -157,9 +157,9 @@ Preuves formelles en Lean 4, logique probabiliste avec Tweety, web sémantique, 
 | 78 | [Lean-15b : Grothendieck en Lean -- Atelier pratique](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb) | BETA | Non |
 | 79 | [Lean-15d : Grothendieck en images](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) | ALPHA | Non |
 | 80 | [Lean-15e : Monodromie et groupe fondamental — le plan…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15e-Monodromie-Groupe-Fondamental-Lean-Python.ipynb) | BETA | Non |
-| 81 | [Lean-16a - Conway, l'homme et l'oeuvre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16a-Conway-Man-and-Work.ipynb) | BETA | Non |
+| 81 | [Lean-16 : Conway, l'homme et l'oeuvre](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) | BETA | Non |
 | 82 | [Lean-16b : FRACTRAN, la machine universelle de Conway,…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | BETA | Non |
-| 83 | [Lean-16c : Le Théorème du Libre Arbitre (Conway-Kochen)](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb) | BETA | Non |
+| 83 | [Lean-13e : Le Théorème du Libre Arbitre (Conway-Kochen)](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) | BETA | Non |
 | 84 | [Lean-17 : le pont Conway — du Game of Life (16) à la…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17-Conway-Bridge-to-Knots-Python.ipynb) | BETA | Non |
 | 85 | [Lean-19 : Detection MIMO par index de comptage -- banc…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb) | BETA | Non |
 | 86 | [Lean-19b : Borne de Chernoff pour le BSC -- extension…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19b-Borne-Chernoff-Python.ipynb) | BETA | Non |
