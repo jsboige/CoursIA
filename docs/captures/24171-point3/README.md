@@ -4,7 +4,7 @@ Ce dossier porte le **relevé de composition après correction** du deck
 `06-apprentissage` (124 diapositives), mesuré le 2026-11-11 sur `myia-po-2027`
 (Windows 11, canvas 980 × 552).
 
-Il complète le dossier voisin [`docs/captures/24171/`](../24171/README.md), qui
+Il complète le dossier voisin [`docs/captures/24171/`](https://github.com/jsboige/CoursIA/pull/25752), qui
 porte l'instrumentation : c'est là que sont la méthode d'export, les deux
 contraintes mesurées de `slidev export`, et la première lecture opposable du
 deck 06. Ici : **ce que la correction a changé**, mesuré.
@@ -25,7 +25,7 @@ Sept diapositives sortaient du canvas 980 × 552 au scanner de composition
 | 112 | Minimisation de regret hypothétique | 262 px | 52 px |
 
 *« Débordement avant »* : hauteur du conteneur de diapositive moins la hauteur
-du canvas (relevé archivé dans [`docs/captures/24171/`](../24171/README.md)).
+du canvas (relevé archivé dans [`docs/captures/24171/`](https://github.com/jsboige/CoursIA/pull/25752)).
 *« Marge après »* : `canvas_h - content_bottom` dans le relevé ci-dessous, soit
 le dégagement du bas du contenu sous le canvas.
 
@@ -124,5 +124,5 @@ n_hors_canvas  : 0
 - [#11508](https://github.com/jsboige/CoursIA/issues/11508) — EPIC parent, lot L2.
 - [#22258](https://github.com/jsboige/CoursIA/pull/22258) — précédent : mesure
   et correction du deck 02 par blocs `<style scoped>`.
-- [`docs/captures/24171/`](../24171/README.md) — l'instrumentation et la
+- [`docs/captures/24171/`](https://github.com/jsboige/CoursIA/pull/25752) — l'instrumentation et la
   première lecture opposable du deck 06.
