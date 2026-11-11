@@ -43,6 +43,21 @@ def test_apply_check_restore_and_explicit(tmp_path):
     assert {p: (root / p).read_bytes() for p in files} == original
 
 
+def test_explicit_crlf_is_preserved_and_restored(tmp_path):
+    root = project(tmp_path, {'a/README.md': '# placeholder\n'})
+    path = root / 'a/README.md'
+    original = b'---\r\npagetitle: "Titre explicite"\r\n---\r\n# Autre\r\n'
+    path.write_bytes(original)
+    backup = root / 'backup.json'
+    assert titres.explicit(original.decode('utf-8')) == 'Titre explicite'
+    titres.apply(root, backup)
+    titres.check(root)
+    assert path.read_bytes() == original
+    assert path.read_bytes().count(b'pagetitle:') == 1
+    titres.restore(root, backup)
+    assert path.read_bytes() == original
+
+
 def test_explicit_collision_with_derived(tmp_path):
     root = project(tmp_path, {'a/README.md': '---\npagetitle: "Même"\n---\n', 'b/README.md': '# Même\n'})
     result = titres.plan(root, titres.readmes(root))

@@ -47,7 +47,7 @@ def explicit(text: str) -> str | None:
     fm, _ = frontmatter(text)
     if fm is None:
         return None
-    entries = re.findall(r'''(?m)^(?:pagetitle|"pagetitle"|'pagetitle')[ \t]*:[ \t]*([^\r\n]*)$''', fm)
+    entries = re.findall(r'''(?m)^(?:pagetitle|"pagetitle"|'pagetitle')[ \t]*:[ \t]*([^\r\n]*)\r?$''', fm)
     if not entries:
         return None
     if len(entries) != 1:
