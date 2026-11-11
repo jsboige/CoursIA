@@ -2,7 +2,7 @@
 
 **Lane** : `myia-po-2024:CoursIA` · **Tranche** : A13 (dispatch coordinateur c2811-C) · **Date de mesure** : 2026-11-11
 **Grain** : DEEP/notebook-python · **Parent** : EPIC #12204 (Chantier 1 — la table ICT)
-**Témoin mesuré** : `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06c-Revision-Croyances-Python.ipynb` (31 cellules, 11 code), introduit par `e66153de9e5` (PR #23173), renommé dans le renommage `62c512ad3e3` (#25195).
+**Témoin mesuré** : `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06c-Revision-Croyances-Python.ipynb` (carnet Python, non Lean), introduit par `e66153de9e5` (PR #23173), renommé dans le renommage `62c512ad3e3` (#25195).
 
 ## La question posée
 
@@ -51,7 +51,7 @@ Et sa conclusion (md 17) : « La distinction nominale ne correspond donc à aucu
 - **Substrat identique** à l'attestation 1 (`Tweety-04-Belief-Revision-Python`) : même bibliothèque Java **Tweety/JVM via JPype**, même paquet `org.tweetyproject.beliefdynamics`.
 - **Algorithme identique** : contraction par noyaux aléatoire (`RandomKernelContractionOperator`) + expansion, assemblés par l'opérateur de Levi — exactement la **deuxième** famille nommée par la limite (i) (« la contraction par noyaux »), **pas** une troisième.
 - Comme le jumeau C# via IKVM écarté en A12 (« variante de substrat et non algorithme distinct »), le présent témoin serait **double comptage** : il ne constitue ni une troisième lignée, ni une seconde attestation indépendante de `réviser une croyance`.
-- La table après A12 (16 entrées) est donc **inchangée** ; la file d'attente (`institutionnaliser`, `inhiber`) est inchangée. La limite (i) reste consignée telle quelle, désormais **vérifiée** plutôt que supposée.
+- La table après A12 est donc **inchangée** ; la file d'attente (`institutionnaliser`, `inhiber`) est inchangée. La limite (i) reste consignée telle quelle, désormais **vérifiée** plutôt que supposée.
 
 ## Défaut d'organe — `method='inconnu'` accepté en silence
 
@@ -64,6 +64,6 @@ Constat mesuré à la source (cellule [7], sortie committée) et lu dans le code
 
 ## Méthode et limites de la mesure
 
-- **Lu à la source** : le handler (196 lignes) et les 31 cellules du carnet, prose et sorties committées — aucune re-copie de résumé.
+- **Lu à la source** : le handler et les cellules du carnet, prose et sorties committées — aucune re-copie de résumé.
 - **Exécution locale non rejouée** : les actifs JVM (`Tweety/libs/*.jar`, `jdk-17-portable/`) sont gitignorés et **absents de cette machine** (répertoires présents, vides — mesuré le 2026-11-11) ; une re-exécution Papermill échoue à l'initialisation (`RuntimeError: JVM/Tweety non demarree via la shim`). La série interdit le mode dégradé. Le verdict repose donc sur (a) le code lu et (b) les **sorties réelles committées** du carnet (écrites sur une machine JVM-outillée), non sur une nouvelle exécution — ce qui suffit : la question porte sur l'**identité d'algorithme**, établie par le code lui-même (le paramètre `method` n'entre pas dans le calcul).
 - **Portée** : la convergence `dalal ≡ levi` vaut pour le jeu de JARs présent à l'exécution committée (Tweety 1.28, version non figée dans le dépôt). Le code documente l'absence de classe Dalal dans cette version ; il ne prétend rien sur une version future.
