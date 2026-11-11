@@ -2861,7 +2861,7 @@ def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
     if state == "ok":
         # #24514 : le succes ne parle pas -- le vert vit dans le check-run.
-        return ""
+        return (ctx.get("trunc_note") or "").strip()
     sentence = {"abstain": _CLAIMS_ABSTAIN,
                 "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
@@ -2870,7 +2870,7 @@ def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
 def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
     if state == "ok":
-        return ""
+        return (ctx.get("trunc_note") or "").strip()
     sentence = {"abstain": _STALE_ABSTAIN,
                 "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
@@ -2879,7 +2879,7 @@ def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
 def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
     if state == "ok":
-        return ""
+        return (ctx.get("trunc_note") or "").strip()
     sentence = {"abstain": _MISLABEL_ABSTAIN,
                 "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
@@ -2905,7 +2905,7 @@ def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
     if state == "ok" and not non_lus:
         # #24514 : le succes ne parle pas -- SAUF le vert PARTIEL, qui n'est
         # pas un vert (carnets jamais lus, #23394 reserve 1) et parle.
-        return ""
+        return (ctx.get("trunc_note") or "").strip()
     sentence = {"ok": _LISTING_OK_UNREAD.format(n=non_lus),
                 "abstain": _LISTING_ABSTAIN,
                 "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)

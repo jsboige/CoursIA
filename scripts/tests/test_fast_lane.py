@@ -2481,6 +2481,17 @@ def test_les_corps_de_succes_sont_vides():
     assert fast_lane_registry._body_md_hierarchy(0, "", dict(vert)) == ""
 
 
+def test_couverture_tronquee_reste_visible_sans_succes_bruyant():
+    note = fast_lane.trunc_note(51, 50)
+    ctx = {"merge_base": "abc", "trunc_note": note}
+    for fn in (fast_lane_registry._body_claims_output,
+               fast_lane_registry._body_stale_claim,
+               fast_lane_registry._body_factual_mislabel,
+               fast_lane_registry._body_listing_coherence):
+        assert fn(0, "{}", ctx) == note
+    assert note in fast_lane_registry._body_listing_coherence(0, '{"non_lus": 2}', ctx)
+
+
 def test_les_signaux_non_verts_parlent_toujours():
     """Abstention, panne d'usage, constat, exemption, vert PARTIEL : chacun
     reste un signal et garde la parole."""
