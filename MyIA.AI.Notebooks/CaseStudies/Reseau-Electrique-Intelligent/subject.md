@@ -71,8 +71,8 @@ Après les 4 couches de base, 3 exercices approfondissent le système :
 
 ### Données et lancement
 
-- **Notebook etudiant** : `student/SmartGrid-Energy.ipynb` (a completer)
-- **Notebook solution** : `solution/SmartGrid-Energy.ipynb` (reference)
+- **Notebook etudiant** : `student/Reseau-Electrique-Intelligent-Python.ipynb` (a completer)
+- **Notebook solution** : `solution/Reseau-Electrique-Intelligent-Python.ipynb` (reference)
 - **Dependances** : `ortools>=9.8`, `numpy` (cf `CaseStudies/requirements.txt`)
 - **Kernel** : Python 3
 
