@@ -36,7 +36,7 @@ attributions:
 
   # ===== Passe 2 — ML (PR #12824) =====
   - arxiv_id: "2309.07864"
-    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb"
     cell_index: 1
     expected_citation: "Z. Xi et al., *The Rise and Potential of Large Language Model Based Agents: A Survey*, arXiv:2309.07864, 2023"
     source_pr: "#12824"
@@ -44,7 +44,7 @@ attributions:
     date: "2026-08-23"
 
   - arxiv_id: "2309.07864"
-    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb"
     cell_index: 31
     expected_citation: "1. Z. Xi et al., *The Rise and Potential of Large Language Model Based Agents: A Survey*, arXiv:2309.07864, 2023."
     source_pr: "#12824"
@@ -103,18 +103,18 @@ attributions:
 
   - arxiv_id: "2406.11717"
     notebook: "MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb"
-    cell_index: 20
+    cell_index: 21
     expected_citation: "- Arditi, A. et al. (2024). *Refusal in Language Models Is Mediated by a Single Direction.* arXiv:2406.11717."
     source_pr: "#17622"
-    correction: "Arditi titre abrege 'Refusal in LLMs...' -> titre exact 'Refusal in Language Models Is Mediated by a Single Direction'"
+    correction: "Arditi titre abrege 'Refusal in LLMs...' -> titre exact 'Refusal in Language Models Is Mediated by a Single Direction' ; cell_index 20 -> 21 le 2026-11-09 : #25400 a insere la cellule Contrepoint externe a l'index 11, decalant d'un rang la cellule References (citation verifiee presente en cellule 21)"
     date: "2026-09-24"
 
   - arxiv_id: "2402.08787"
     notebook: "MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb"
-    cell_index: 20
+    cell_index: 21
     expected_citation: "- Liu, S. et al. (2024). *Rethinking Machine Unlearning for Large Language Models.* arXiv:2402.08787."
     source_pr: "#17622"
-    correction: "Initiale 1er auteur: Liu, J. -> Liu, S. (Liu, Sijia, mesure sur page abs)"
+    correction: "Initiale 1er auteur: Liu, J. -> Liu, S. (Liu, Sijia, mesure sur page abs) ; cell_index 20 -> 21 le 2026-11-09 : #25400 a insere la cellule Contrepoint externe a l'index 11, decalant d'un rang la cellule References (citation verifiee presente en cellule 21)"
     date: "2026-09-24"
 
   - arxiv_id: "2509.22908"

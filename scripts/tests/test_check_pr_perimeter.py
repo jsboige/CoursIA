@@ -773,32 +773,20 @@ import pathlib
 
 
 def _read_perimeter_workflow() -> str:
-    """Locate and read the LIVE perimeter surface from repo root.
-
-    #13384 : le declencheur pull_request du perimeter review guard vit
-    desormais dans always-on-guards.yml (fusion des cinq gardes always-on) ;
-    perimeter-review-guard.yml est dormant (copie de reference). Le pin de
-    trigger cible donc l'umbrella -- c'est la que `edited` doit rester
-    declare pour qu'une correction de body re-evalue le gate.
-
-    Resolves from this test file's location so the test is independent of cwd.
-    """
+    """Read the sole live perimeter owner, independent of the current cwd."""
     here = pathlib.Path(__file__).resolve()
     # scripts/tests/test_check_pr_perimeter.py → repo root = parents[2]
     repo_root = here.parents[2]
-    wf = repo_root / ".github" / "workflows" / "always-on-guards.yml"
+    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
     return wf.read_text(encoding="utf-8")
 
 
-def test_pull_request_trigger_includes_edited_type():
-    """Issue #11648: ``pull_request:`` MUST list ``edited`` so an assertion
-    correction on the PR body re-triggers the gate.
+def test_perimeter_trigger_routes_all_pr_body_events_to_single_owner():
+    """The perimeter owner must remeasure the body on all four PR events.
 
-    Founding measurement: the gate's own body comment claimed "pull_request
-    (opened/synchronize/edited)" but the YAML block did not declare ``types:``,
-    so GitHub defaulted to ``[opened, synchronize, reopened]`` -- ``edited``
-    was silently dropped. A correction on the PR body therefore never
-    re-evaluated the gate, leaving the red bar in place (#11646).
+    Keep `edited` off the always-on umbrella to preserve #22331's churn
+    constraint, while requiring the dedicated owner to carry the same named
+    check on pull request and review events.
     """
     text = _read_perimeter_workflow()
     # Pull the ``on:`` block body: consecutive lines indented by >= 2 spaces.
@@ -825,10 +813,20 @@ def test_pull_request_trigger_includes_edited_type():
         "[opened, synchronize, reopened] and silently drop `edited`. "
         "Pin this so a re-eval on PR-body edit actually fires (#11648)."
     )
-    assert "edited" in pr_body, (
-        "pull_request: types: declared but `edited` missing — without it, "
-        "an assertion correction on the PR body will never re-trigger the gate."
+    assert set(re.findall(r"[a-z_]+", pr_body.split("types:", 1)[1])) == {
+        "opened", "synchronize", "edited", "reopened"
+    }, f"unexpected perimeter pull_request routing: {pr_body!r}"
+
+    root = pathlib.Path(__file__).resolve().parents[2]
+    umbrella = (root / ".github/workflows/always-on-guards.yml").read_text(
+        encoding="utf-8"
     )
+    assert "check_pr_perimeter.py" not in umbrella
+    assert 'steps.perimeter.outcome' not in umbrella
+    umbrella_types = re.search(
+        r"^    types:\s*\[([^\]]+)\]", umbrella, re.MULTILINE
+    )
+    assert umbrella_types and "edited" not in umbrella_types.group(1)
 
 
 def _read_review_trigger_workflow() -> str:
@@ -869,9 +867,11 @@ def test_pull_request_review_trigger_includes_edited_type():
     )
     assert rv_block, "pull_request_review sub-block not found"
     rv_body = rv_block.group(1)
-    assert "types:" in rv_body and "edited" in rv_body, (
-        "pull_request_review: must keep `types: [submitted, edited]` so "
-        "corrected reviews re-trigger the gate."
+    assert "types:" in rv_body and set(re.findall(
+        r"[a-z_]+", rv_body.split("types:", 1)[1]
+    )) == {"submitted", "edited"}, (
+        "pull_request_review must keep `types: [submitted, edited]` so "
+        "new and corrected reviews re-trigger the gate."
     )
 
 
@@ -2171,27 +2171,14 @@ def test_perimeter_workflow_file_exists_on_main():
 
 
 def test_perimeter_workflow_invokes_scan_thread():
-    """The cable's second leg: the LIVE gate MUST call
-    `scripts/check_pr_perimeter.py --scan-thread`. A copy-paste that drops
-    the flag would leave the gate never confront any review (silent green).
-
-    #13384 : la surface live est le step perimeter d'always-on-guards.yml
-    (fusion des cinq gardes always-on) ; perimeter-review-guard.yml est
-    dormant mais reste verifie -- sa copie de reference ne doit pas
-    diverger de ce qu'elle documente.
-    """
-    import re
-    for wf_name in ("always-on-guards.yml", "perimeter-review-guard.yml"):
-        wf = _repo_root() / ".github" / "workflows" / wf_name
-        text = wf.read_text(encoding="utf-8")
-        # The flag may be on the same line or split across continuation lines.
-        # Loose match: the file mentions the script and the flag.
-        assert "check_pr_perimeter.py" in text, (
-            f"{wf_name} no longer invokes check_pr_perimeter.py"
-        )
-        assert "--scan-thread" in text, (
-            f"{wf_name} invocation lost the --scan-thread flag"
-        )
+    """The sole live gate must keep confronting body and review assertions."""
+    wf = _repo_root() / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf.read_text(encoding="utf-8")
+    assert "check_pr_perimeter.py" in text
+    assert "--scan-thread" in text
+    umbrella = (_repo_root() / ".github" / "workflows" /
+                "always-on-guards.yml").read_text(encoding="utf-8")
+    assert "check_pr_perimeter.py" not in umbrella
 
 
 def test_perimeter_workflow_rescued_by_universal_sweep():
@@ -2604,11 +2591,9 @@ def test_13246_metadata_dependent_guard_has_no_paths_filter():
     """Verrou mecanique : apres le fix de #13246, le bloc `paths:` est absent
     du declencheur `pull_request` de la surface LIVE du perimeter guard.
 
-    #13384 : la surface live est le declencheur `pull_request`/
-    `pull_request_review` d'always-on-guards.yml (fusion des cinq gardes
-    always-on ; perimeter-review-guard.yml est dormant). Le verrou suit la
-    surface qui s'execute : c'est le `paths:` de l'umbrella qui desarmerait
-    les SIX organes metadata qu'il porte.
+    #24231 : la surface live est `perimeter-review-guard.yml`, qui porte
+    `pull_request` et `pull_request_review`. Le verrou suit ce workflow : un
+    `paths:` ici desarmerait la re-mesure du body et des reviews.
 
     Meme contrat que `test_13232_metadata_dependent_guard_has_no_paths_filter`
     dans `test_variation_tag_required.py` (cf. #13234 tranche 1c), cible
@@ -2625,7 +2610,7 @@ def test_13246_metadata_dependent_guard_has_no_paths_filter():
 
     wf_path = (
         Path(__file__).resolve().parent.parent.parent
-        / ".github" / "workflows" / "always-on-guards.yml"
+        / ".github" / "workflows" / "perimeter-review-guard.yml"
     )
     text = wf_path.read_text(encoding="utf-8")
 
@@ -3859,6 +3844,46 @@ def test_pr_diff_text_fails_closed_on_other_gh_error(monkeypatch):
         cpp._pr_diff_text(101)
 
 
+# ---------------------------------------------------------------------------
+# #25085 — `gh pr diff` refuse le diff pour raison de TAILLE (HTTP 406).
+# ---------------------------------------------------------------------------
+def test_pr_diff_text_falls_back_empty_on_size_cap(monkeypatch, capsys):
+    """#25085: le plafond de TAILLE du diff (`PullRequest.diff too_large`,
+    HTTP 406) est le jumeau du plafond de NOMBRE de fichiers -- il doit etre
+    degrade de la meme facon. Le garde perdait une mesure DISPONIBLE (la liste
+    paginee des fichiers) et rendait "PERIMETRE NON MESURABLE" sur une PR
+    parfaitement mesurable. Mesure : #24992, patch de 20 988 lignes."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", (
+            "gh error: could not find pull request diff: HTTP 406: "
+            "PullRequest.diff too_large "
+            "(https://api.github.com/repos/jsboige/CoursIA/pulls/24992)"
+        )
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(24992) == ""
+    err = capsys.readouterr().err
+    assert "plafond de TAILLE" in err, err
+    # l'avertissement doit dire CE QUI n'a pas ete vu (les baseline-moves),
+    # pas laisser croire que le perimetre est inconnu.
+    assert "baseline-moves" in err, err
+
+
+def test_pr_diff_text_size_cap_is_narrow(monkeypatch):
+    """Un 406 qui n'est PAS un refus de TAILLE reste fail-closed : le filet
+    reconnait des signatures precisees, il n'elargit pas a la prose."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        return 1, "", "gh error: HTTP 406: Not Acceptable"
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    with pytest.raises(SystemExit):
+        cpp._pr_diff_text(101)
+
+
 # --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
 
 FILES_16085_A = [
@@ -4086,6 +4111,96 @@ def test_16162_scan_thread_extracts_founders_without_blocking():
 
 
 # ---------------------------------------------------------------------------
+# #25091 — le compte des deux variantes FR/EN d'un fichier n'est pas le
+# périmètre de la PR (#24566, faux positif uniquement avec --scan-thread).
+# ---------------------------------------------------------------------------
+FOUNDER_25091_LINE = (
+    "- `Lift` (2) : la formule porte `height` des deux côtés "
+    "(énoncé de théorème, anglais dans les deux fichiers)"
+)
+FR_EN_PAIR_FILES_25306 = [
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Containment.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Containment_en.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Grid_en.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Lift.lean"},
+    {"path": "MyIA.AI.Notebooks/Search/discrepancy_lean/Discrepancy/Komlos/Pullback_en.lean"},
+]
+
+
+def test_25091_two_language_variants_are_not_a_perimeter_claim():
+    files = FR_EN_PAIR_FILES_25306
+    assert check_assertion(files, FOUNDER_25091_LINE) == []
+    assert _additive_line_sum(FOUNDER_25091_LINE) == 0
+    body = FOUNDER_25091_LINE + "\n\n5 fichiers, 9+/10-, **comment-only**"
+    cands, problems = select_candidates(
+        [{"body": body, "kind": "PR body", "author": "jsboige", "source": "body"}],
+        n_files=5,
+    )
+    assert problems is None
+    assert len(cands) == 2
+    assert check_assertion(
+        files, cands[0].text, block=cands[0].block, body_hint=cands[0].body_text
+    ) == []
+
+
+def test_25091_language_context_elsewhere_does_not_mask_wrong_perimeter():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(
+        files, "Périmètre : 2 fichiers. Les mentions FR/EN décrivent le contenu."
+    )
+
+
+def test_25091_explicit_wrong_perimeter_stays_blocking_with_language_cue():
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(
+        files,
+        "Périmètre : 2 fichiers seulement, anglais dans les deux fichiers.",
+    )
+
+
+def test_25091_digit_variant_count_and_existing_16162_guards():
+    assert check_assertion(
+        FR_EN_PAIR_FILES_25306, "Two files: the EN variant of one FR file."
+    ) == []
+    files = [{"path": f"f{i}.lean"} for i in range(5)]
+    assert check_assertion(files, FOUNDER_16147_LINE) == []
+    assert check_assertion(files, FOUNDER_16157_LINE) == []
+
+
+def test_25306_explicit_false_perimeter_stays_blocking_with_real_fr_en_pair():
+    assertion = (
+        "Périmètre : seulement deux fichiers modifiés : le canonique FR et "
+        "son miroir EN."
+    )
+
+    problems = check_assertion(FR_EN_PAIR_FILES_25306, assertion)
+
+    assert any("pretend 2 fichier(s)" in problem for problem in problems)
+
+
+def test_25306_language_variant_phrase_requires_changed_fr_en_pair():
+    unrelated_files = [{"path": f"scripts/module_{index}.py"} for index in range(5)]
+
+    problems = check_assertion(unrelated_files, "anglais dans les deux fichiers")
+
+    assert any("pretend 2 fichier(s)" in problem for problem in problems)
+
+
+def test_25306_language_variant_pair_match_respects_path_case():
+    case_mismatched_files = [
+        {"path": "x/Foo.lean"},
+        {"path": "x/foo_en.lean"},
+        {"path": "x/a.py"},
+        {"path": "x/b.py"},
+        {"path": "x/c.py"},
+    ]
+
+    problems = check_assertion(case_mismatched_files, "anglais dans les deux fichiers")
+
+    assert any("pretend 2 fichier(s)" in problem for problem in problems)
+
+
+# ---------------------------------------------------------------------------
 # #17262-classe (3e surface) — un quota d'API epuise est une NON-MESURE, pas
 # une contradiction de perimetre.
 #
@@ -4215,20 +4330,18 @@ def test_no_workflow_collapses_the_three_outcomes():
     )
 
 
-def test_both_invoking_workflows_branch_on_rc():
-    """Controle positif : les DEUX sites qui portent le garde distinguent
-    rc=1 (contradiction) de rc=2 (mesure impossible). Sans ce controle, un
-    troisieme site pourrait reapparaitre sans que rien ne le remarque."""
+def test_perimeter_owner_branches_on_measurement_result():
+    """The sole live site keeps rc=1 distinct from rc=2 (unknown measurement)."""
     from pathlib import Path as _Path
 
     root = _Path(__file__).resolve().parents[2]
-    for name in ("perimeter-review-guard.yml", "always-on-guards.yml"):
-        text = (root / ".github" / "workflows" / name).read_text(encoding="utf-8")
-        assert "check_pr_perimeter.py" in text, f"{name} ne porte plus le garde ?"
-        assert '"$rc" -eq 1' in text, (
-            f"{name} ne distingue plus rc=1 : le message de contradiction "
-            "serait rendu pour un echec de mesure (#17273)"
-        )
+    owner = (root / ".github" / "workflows" /
+             "perimeter-review-guard.yml").read_text(encoding="utf-8")
+    umbrella = (root / ".github" / "workflows" /
+                "always-on-guards.yml").read_text(encoding="utf-8")
+    assert "check_pr_perimeter.py" in owner
+    assert '"$rc" -eq 1' in owner
+    assert "check_pr_perimeter.py" not in umbrella
 
 
 # --- #20086 : prose descriptive chiffree ouverte par un verbe de constatation

@@ -41,16 +41,38 @@ workflows (matrice `ict-tests.yml`) jouent pytest DANS un dossier sans que ce
 chemin apparaisse dans un bloc `run:` : il se déclare dans le dict et se
 confronte au fichier, comme les cibles de `WORKFLOW_COVERAGE`.
 
+Cinquième sens (#25366 T0, sous `--inventory`) : les BASENAMES de modules
+dupliqués entre répertoires de tests découverts. Deux suites qui portent le
+même `test_*.py` (ou le même module d'appui) obligent tout le dépôt à
+l'`--import-mode importlib` global de pytest.ini — le workflow le documente
+lui-même comme load-bearing à cause de ces doublons (36 basenames mesurés
+le 2026-11-09, dont un triple). `__init__.py` et `conftest.py` sont exemptés
+(l'un marque les paquets, l'autre est spécial-casé par pytest).
+
+Sixième sens (#25366 T0, sous `--inventory`) : la CONVERGENCE CI -> testpaths,
+l'inverse du sens historique. Une cible-dossier que la CI joue mais que
+`testpaths` ne déclare pas est invisible d'un `pytest` local à la racine :
+ce que la CI voit, le local doit le voir (mesuré le 2026-11-09 : `tests/` à
+la racine est dans ce cas). Les périmètres `test-cwd` de WORKFLOW_TEST_CWD
+en sont exclus : joués dans leur propre cwd de workflow (matrice ICT), ils
+ne relèvent pas du `pytest` racine.
+
+Depuis #25366 T0, `--inventory` est STRICT PAR DÉFAUT (exit 1 sur un dossier
+non surveillé, un basename dupliqué ou une cible sans testpath) ; `--advisory`
+rétrograde en exit 0. Les quatre sens historiques restent bloquants dans
+toute invocation, comme depuis #10903.
+
 Usage:
     python scripts/check_testpaths_coverage.py [--verbose] [--repo-root DIR]
-    python scripts/check_testpaths_coverage.py --inventory [--strict]
+    python scripts/check_testpaths_coverage.py --inventory [--advisory]
 
 Exit 0 = aucune dérive. Exit 1 = au moins un testpath non couvert non exclu,
 une cible déclarée disparue de son workflow, une suite sur disque non
 exécutée par la CI, une suite déclarée disparue de l'arbre, l'invariant de
 résolution des noms de modules pytest violé, un périmètre `test-cwd` déclaré
-absent de son workflow, ou (avec `--inventory --strict`) un dossier de tests
-que rien ne surveille.
+absent de son workflow ; ou, sous `--inventory` (strict par défaut) : un
+dossier de tests que rien ne surveille, un basename de module porté par
+plusieurs répertoires découverts, une cible-dossier CI absente des testpaths.
 """
 
 from __future__ import annotations
@@ -74,6 +96,13 @@ PYTEST_INI = REPO_ROOT / "pytest.ini"
 WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/scripts-tests.yml": [
         "scripts/tests",
+        # `tests` racine (#25366 T0) : joue par le run pytest partage depuis
+        # toujours (3e cible du bloc), mais jamais declare ici ni dans les
+        # testpaths -- un pytest local a la racine ne le voyait pas. La
+        # declaration ferme la derive declaration <-> reel ; la CONVERGENCE
+        # (CI -> testpaths, sixieme sens) rougit dessus tant que le critere 1
+        # de #25366 n'est pas tranche (dans testpaths ou exclu par ecrit).
+        "tests",
         # scripts/secrets/tests : dir entier (famille 4 de #14615) — les 2
         # modules gitleaks y skip sans binaire (gate binaire = secret-scan.yml,
         # cibles fichier ci-dessous).
@@ -130,8 +159,8 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # GradeBookApp : dir entier (famille 5 de #14615) — 15 tests
         # (test_fuzzy_match_group.py seul), deps rapidfuzz/unidecode/openpyxl
         # ajoutées au pip install du job, zéro PII (journal auto-créé).
-        "GradeBookApp",
-        # SymbolicAI/Argument_Analysis : dir entier (issue #17248) — 174 tests
+        "dotnet/GradeBookApp",
+        # SymbolicAI/ArgumentAnalysis : dir entier (issue #17248) — 174 tests
         # sur 5 fichiers, 0,5-0,9 s, stdlib + effets de bord mockes (aucun
         # reseau). La suite EXISTAIT deja mais n'etait collectee par AUCUNE CI :
         # absente de pytest.ini ET de ce dict ET sans marqueur CI-EXCLUDED — or
@@ -145,7 +174,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # "Linux") est deja exercee localement : python 3.11 des deux cotes
         # (local 3.11.9, python-version '3.11' du job), et pytest.ini porte deja
         # `filterwarnings = ignore::DeprecationWarning`.
-        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis",
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
     ],
     ".github/workflows/ml-tests.yml": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests",
@@ -178,7 +207,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     # seul fichier), 1.7 s, deps sympy + z3-solver au pip install du job.
     # Avant ce câblage, le dossier n'était ni dans pytest.ini ni collecté
     # par aucune CI : le guard restait vert parce qu'il ne compare que les
-    # testpaths DÉCLARÉS (même angle mort que #17248 sur Argument_Analysis).
+    # testpaths DÉCLARÉS (même angle mort que #17248 sur ArgumentAnalysis).
     ".github/workflows/geometry-tests.yml": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/tests",
     ],
@@ -359,8 +388,9 @@ def extract_run_targets(text: str) -> set[str]:
     pas couvert en exécution.
 
     Retourne les tokens qui ressemblent à un chemin relatif (contient `/`,
-    finit en `.py`, ou token nu sans slash ni caractère shell, ex.
-    `GradeBookApp`). Chaque bloc `run: |` est traité comme un step
+    finit en `.py`, ou token nu sans slash ni caractère shell — ex.
+    historique `GradeBookApp`, devenu `dotnet/GradeBookApp` au move de la
+    famille A #13751). Chaque bloc `run: |` est traité comme un step
     indépendant (fermeture par indentation stricte).
     """
     covered, _floors = _partition_run_blocks(text)
@@ -371,8 +401,9 @@ def _maybe_target(token: str, targets: set[str]) -> None:
     """Ajoute le token s'il ressemble à un chemin relatif.
 
     Chemin = contient un `/`, finit en `.py`, OU est un token nu sans slash
-    ni caractère shell (cas des répertoires racine du dépôt, ex. GradeBookApp
-    — famille 5 de #14615). Les flags (préfixe `-`) et variables (`$`) ne
+    ni caractère shell (cas des répertoires racine du dépôt — ex. historique
+    GradeBookApp, famille 5 de #14615, devenu dotnet/GradeBookApp au move
+    #13751). Les flags (préfixe `-`) et variables (`$`) ne
     sont jamais des cibles.
     """
     if token in ("\\",) or token.startswith("-") or "$" in token:
@@ -458,10 +489,10 @@ def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
 # Racines balayées par l'inventaire. Le guard ci-dessus ne compare que les
 # testpaths DÉCLARÉS dans pytest.ini : un dossier de tests présent dans le
 # dépôt mais absent de pytest.ini lui est invisible, et il reste VERT dessus
-# (constat mesuré sur SymbolicAI/Argument_Analysis, 174 tests non collectés —
+# (constat mesuré sur SymbolicAI/ArgumentAnalysis, 174 tests non collectés —
 # cf. le commentaire de WORKFLOW_COVERAGE). L'inventaire ferme ce côté-là :
 # il part du dépôt, pas de la déclaration.
-INVENTORY_ROOTS = ("MyIA.AI.Notebooks", "scripts", "GradeBookApp")
+INVENTORY_ROOTS = ("MyIA.AI.Notebooks", "scripts", "dotnet/GradeBookApp", "tests")
 
 
 TEST_DIR_NAMES = {"tests", "test"}
@@ -557,9 +588,87 @@ def run_inventory(
             "  (advisory : exit 0. Se câblent en ajoutant le dossier à "
             "`testpaths` de pytest.ini, en le déclarant comme cible de "
             "`WORKFLOW_COVERAGE` s'il a son workflow dédié, ou en le nommant "
-            "`# CI-EXCLUDED: <dossier> — <raison>` ; `--strict` fait rougir.)"
+            "`# CI-EXCLUDED: <dossier> — <raison>` ; strict est le défaut "
+            "depuis #25366 T0, `--advisory` rétrograde.)"
         )
     return unwatched if strict else []
+
+
+# --- #25366 T0 : cinquième et sixième sens, la consolidation mesurable ---
+
+# Basnames exemptés du sens « duplication » : présents dans la quasi-totalité
+# des suites, ils ne créent pas de collision de module pytest — `conftest.py`
+# est spécial-casé par pytest lui-même, `__init__.py` marque un paquet.
+BASENAME_EXEMPT = {"__init__.py", "conftest.py"}
+
+
+def duplicate_basenames(repo_root: Path) -> dict[str, list[str]]:
+    """Basenames de modules portés par >= 2 répertoires de tests découverts.
+
+    Ne voit que les ENFANTS DIRECTS de chaque répertoire découvert : ce sont
+    eux qui entrent en collision comme noms de modules top-level quand pytest
+    insère chaque répertoire de tests dans sys.path (le défaut `import file
+    mismatch` que `--import-mode importlib` absorbe aujourd'hui globalement,
+    cf. le commentaire du run partagé dans scripts-tests.yml). Un sous-dossier
+    paquet (portant `__init__.py`) résout un nom qualifié et ne collisionne
+    pas : il n'est donc pas compté au niveau du parent.
+
+    Critère 3 de #25366 : « basenames dupliqués = 0 entre répertoires
+    découverts, `__init__.py` et `conftest.py` exceptés » — cette fonction
+    est la mesure de ce critère. T2 tranche chaque copie (copie unique,
+    surplus supprimé avec preuve, ou redirection d'import) ; ce sens ne
+    préjuge pas de l'équivalence de contenu des copies.
+    """
+    by_basename: dict[str, set[str]] = {}
+    for d in discover_test_dirs(repo_root):
+        for py in (repo_root / d).glob("*.py"):
+            if py.name in BASENAME_EXEMPT:
+                continue
+            by_basename.setdefault(py.name, set()).add(d)
+    return {
+        name: sorted(dirs)
+        for name, dirs in sorted(by_basename.items())
+        if len(dirs) > 1
+    }
+
+
+def coverage_without_testpaths(
+    testpaths: list[str],
+    excluded: dict[str, str],
+    workflow_coverage: dict[str, list[str]] | None = None,
+) -> list[str]:
+    """Cibles-dossier que la CI joue mais que `testpaths` ne déclare pas.
+
+    Le sens historique vérifie testpaths -> couverture (tout déclarée est
+    jouée) ; celui-ci vérifie l'inverse, couverture -> testpaths : une
+    cible-dossier CI absente des testpaths est invisible d'un `pytest` lancé
+    à la racine, qui ne lit que `testpaths`. La convergence local <-> CI est
+    l'invariant déjà énoncé pour `scripts/ci/tests` (#22735) — ici il devient
+    une mesure générale (critère 1 de #25366 : mesuré le 2026-11-09, `tests/`
+    à la racine est dans ce cas).
+
+    Périmètre volontaire : seules les cibles-dossier de WORKFLOW_COVERAGE.
+    Les périmètres `test-cwd` (matrice ICT) jouent pytest DANS leur propre
+    cwd de workflow, pas depuis la racine — ils ne relèvent pas du pytest
+    local racine. Les cibles-fichier ne déclarent pas un dossier entier.
+    """
+    coverage = WORKFLOW_COVERAGE if workflow_coverage is None else workflow_coverage
+    folder_targets = sorted(
+        {
+            t
+            for targets in coverage.values()
+            for t in targets
+            if not t.endswith(".py")
+        }
+    )
+    return [
+        t
+        for t in folder_targets
+        if t not in excluded
+        and not any(t == tp or t.startswith(tp + "/") for tp in testpaths)
+    ]
+
+
 # --- #22735 : second sens, l'arborescence confrontée à la couverture ---
 
 
@@ -696,13 +805,23 @@ def main() -> int:
     ap.add_argument(
         "--inventory",
         action="store_true",
-        help="Inventorier les dossiers de tests du dépôt qu'aucune déclaration "
-        "pytest.ini ne surveille (advisory, exit 0 sauf --strict).",
+        help="Inventorier les dossiers de tests qu'aucune déclaration ne "
+        "surveille, les basenames de modules dupliqués entre répertoires "
+        "découverts et les cibles-dossier CI absentes des testpaths. Strict "
+        "par défaut depuis #25366 T0 ; --advisory rétrograde en exit 0.",
     )
     ap.add_argument(
         "--strict",
         action="store_true",
-        help="Avec --inventory : faire rougir sur un dossier non surveillé.",
+        help="Rendre l'inventaire bloquant (défaut depuis #25366 T0 ; "
+        "conservé pour compatibilité avec les appels existants).",
+    )
+    ap.add_argument(
+        "--advisory",
+        action="store_true",
+        help="Rétrograder l'inventaire et ses sens en advisory : lister sans "
+        "faire échouer (exit 0). Les quatre sens historiques restent "
+        "bloquants dans tous les cas.",
     )
     args = ap.parse_args()
 
@@ -775,15 +894,43 @@ def main() -> int:
         for p in namespace_problems:
             print(f"  FAIL {p}")
 
-    # Inventaire (#23359) : les suites qu'aucune declaration pytest.ini ne vise.
-    # Sens distinct des deux precedents -- ceux-ci confrontent l'arbre aux
-    # workflows, celui-ci aux testpaths declares de pytest.ini.
-    inventory = (
-        run_inventory(repo_root, testpaths, excluded, args.strict)
-        if args.inventory
-        else []
-    )
+    # Inventaire (#23359) et sens de consolidation (#25366 T0). Depuis T0,
+    # l'inventaire est STRICT PAR DÉFAUT (--advisory rétrograde) : le rouge
+    # est le signal qui motive les tranches T1 (trier les répertoires) et
+    # T2 (dédoubler les basenames), pas une régression à corriger d'urgence.
+    # La garde CI (fast lane) appelle ce script sans --inventory : les sens
+    # de consolidation y entrent en T4, une fois la dette triée.
+    strict = args.strict or not args.advisory
+    inventory: list[str] = []
+    dupes: dict[str, list[str]] = {}
+    convergence: list[str] = []
+    if args.inventory:
+        inventory = run_inventory(repo_root, testpaths, excluded, strict)
+        # Cinquième sens (#25366 T0) : basenames dupliqués.
+        dupes = duplicate_basenames(repo_root)
+        if dupes:
+            print(
+                f"Basenames de modules portés par >= 2 répertoires de tests "
+                f"découverts : {len(dupes)}"
+            )
+            for name, dirs in dupes.items():
+                print(f"  {'FAIL' if strict else 'INFO'} {name} — {', '.join(dirs)}")
+        elif args.verbose:
+            print("[ok] aucun basename dupliqué entre répertoires découverts")
+        # Sixième sens (#25366 T0) : convergence CI -> testpaths.
+        convergence = coverage_without_testpaths(testpaths, excluded)
+        if convergence:
+            print(
+                "Cibles-dossier jouées par la CI, absentes des testpaths "
+                "(un pytest racine ne les voit pas) :"
+            )
+            for t in convergence:
+                print(f"  {'FAIL' if strict else 'INFO'} {t}")
+        elif args.verbose:
+            print("[ok] toutes les cibles-dossier CI sont dans les testpaths")
 
+    # `run_inventory` ne rend des trous qu'en strict ; les deux sens de
+    # #25366 suivent la même règle : listés en advisory, rouges en strict.
     return 1 if (
         uncovered
         or problems
@@ -791,6 +938,7 @@ def main() -> int:
         or missing
         or namespace_problems
         or inventory
+        or (strict and (dupes or convergence))
     ) else 0
 
 

@@ -84,7 +84,7 @@ def test_notebook_helpers_save_strip_is_optin(tmp_path):
     ``exec_single_cell``, ``exec_dotnet_persist``, ``execute_qcpy_docker``).
     Le strip inconditionnel ne protegeait donc aucun run reel, et detruisait
     la provenance a chaque edition markdown-only : mesure sur
-    ``SW-9-Python-JSONLD.ipynb``, 1 insertion / 984 suppressions, 107 blocs
+    ``SW-09-JSONLD-Python.ipynb``, 1 insertion / 984 suppressions, 107 blocs
     ``metadata.papermill`` et 37 blocs ``metadata.execution`` tombes a 0
     sans qu'un seul ``execution_count`` bouge.
     """

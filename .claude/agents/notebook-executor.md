@@ -563,7 +563,7 @@ Task(
 )
 ```
 
-### Exemple 3 : Batch mode Argument_Analysis
+### Exemple 3 : Batch mode ArgumentAnalysis
 
 ```python
 Task(
@@ -572,7 +572,7 @@ Task(
     prompt="""
     Agent notebook-executor.
 
-    Notebook: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08b-Executor-Python.ipynb
+    Notebook: MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08b-Executor-Python.ipynb
     Mode: full
     Kernel: python3
     Env vars: {"BATCH_MODE": "true"}
