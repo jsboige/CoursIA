@@ -37,12 +37,12 @@ This module is fully proven (no gaps in the uncommented theorems).
   signatures, proofs and tactics remain byte-identical between the two files.
 -/
 
-import Conway.Life_en
+import Conway.Life
 
 namespace Conway_en
-open Conway_en
+open Conway
 namespace Life_en
-open Life_en
+open Life
 
 /-! ## Still lifes
 
