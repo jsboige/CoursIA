@@ -296,3 +296,87 @@ def test_scan_et_apply_refusent_le_meme_carnet_a_note_de_pied_deja_presente(tmp_
     assert "note de pied deja presente" in outcome
     # Le carnet n'a pas ete touche : une seule note de pied.
     assert path.read_text(encoding="utf-8").count("Carnet issu de l'EPIC") == 1
+
+
+def _test_forme_tweety(tmp_path: Path, header: str, expected_header: str,
+                       expected_ref: str) -> None:
+    """Applique une forme reelle et exige une reparation chirurgicale."""
+    path = tmp_path / "n.ipynb"
+    _write(path, _notebook("# Titre\n\n" + header))
+    outcome = fer.apply_one(path, dry_run=False)
+    assert "en-tete nettoye" in outcome
+    nb = json.loads(path.read_text(encoding="utf-8"))
+    assert nb["cells"][0]["source"] == "# Titre\n\n" + expected_header
+    assert f"> Carnet issu de l'EPIC #{expected_ref}." in "".join(nb["cells"][2]["source"])
+
+
+def test_forme_tweety_banniere_marathon_dotnet(tmp_path: Path) -> None:
+    """Le prefixe de coordination absorbe « .NET », pas le texte pedagogique."""
+    _test_forme_tweety(
+        tmp_path,
+        "Le grounded canonique est coherent. Marathon parite .NET <-> Python : EPIC #4956.",
+        "Le grounded canonique est coherent.",
+        "4956",
+    )
+
+
+def test_forme_tweety_prong_avant_reference_et_titre_sans_espace_final(tmp_path: Path) -> None:
+    """Le groupe « (Prong B, EPIC #N) » part sans laisser d'espace terminal."""
+    _test_forme_tweety(
+        tmp_path,
+        "### Value-add du jumeau C# (Prong B, EPIC #3801)\n",
+        "### Value-add du jumeau C#\n",
+        "3801",
+    )
+
+
+def test_forme_tweety_elision_et_parenthese_de_renvoi(tmp_path: Path) -> None:
+    """L'elision emporte les deux parentheses du renvoi, sans orpheline."""
+    _test_forme_tweety(
+        tmp_path,
+        "Ce notebook est la variante du Chantier 2 de l'(EPIC #4956 Prong B) : apres le moteur.",
+        "Ce notebook est la variante du Chantier 2 : apres le moteur.",
+        "4956",
+    )
+
+
+def test_forme_tweety_reference_par_lien_markdown_nu(tmp_path: Path) -> None:
+    """Un lien qui ne fait que pointer l'EPIC est retire avec sa reference."""
+    _test_forme_tweety(
+        tmp_path,
+        "Moteur hybride (EPIC [#4667](https://github.com/jsboige/CoursIA/issues/4667)).",
+        "Moteur hybride.",
+        "4667",
+    )
+
+
+def test_forme_tweety_genitif_de_l_epic(tmp_path: Path) -> None:
+    """La forme genitive mesuree est retiree sans laisser d'elision pendante."""
+    _test_forme_tweety(
+        tmp_path,
+        "> Position : troisieme labo croise de l'EPIC #15066, apres le propositionnel.",
+        "> Position : troisieme labo croise, apres le propositionnel.",
+        "15066",
+    )
+
+
+def test_forme_planners_value_add_prong_sans_virgule(tmp_path: Path) -> None:
+    """Le retrait conserve le mecanisme pedagogique decrit apres la reference."""
+    _test_forme_tweety(
+        tmp_path,
+        "Le *value-add* (EPIC #4956 Prong B) est pedagogique : chaque mecanisme "
+        "(composition d'Allen, propagation STN) est visible dans le code C#.",
+        "Le *value-add* est pedagogique : chaque mecanisme "
+        "(composition d'Allen, propagation STN) est visible dans le code C#.",
+        "4956",
+    )
+
+
+def test_forme_z3_api_genitif_apres_epic(tmp_path: Path) -> None:
+    """Une formulation « de l'Epic #N : » est couverte sans absorber le contrat."""
+    _test_forme_tweety(
+        tmp_path,
+        "Premier service du **pli 0** de l'Epic #19571 : exposer le carnet phare en REST.",
+        "Premier service du **pli 0** : exposer le carnet phare en REST.",
+        "19571",
+    )
