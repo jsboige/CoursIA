@@ -1,0 +1,72 @@
+"""Contrat du prétraitement temporaire des README Quarto."""
+import importlib.util
+import json
+from pathlib import Path
+
+import pytest
+
+spec = importlib.util.spec_from_file_location('titres', Path(__file__).parents[1] / 'quarto_readme_titles.py')
+titres = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(titres)
+
+
+def project(tmp_path, files):
+    for name, content in files.items():
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content, encoding='utf-8')
+    (tmp_path / '_quarto.yml').write_text('project:\n  render:\n' + ''.join('    - ' + json.dumps(p) + '\n' for p in files), encoding='utf-8')
+    return tmp_path
+
+
+def test_apply_check_restore_and_explicit(tmp_path):
+    files = {
+        'a/README.md': '# [Été **brillant**](url)\n',
+        'b/README.md': '---\ndescription: exemple\n---\n# Été brillant\n',
+        'c/README.md': '---\npagetitle: "Titre explicite"\n---\n# Autre\n',
+        'd/README.md': 'Sans titre\n',
+        'd/autre_README.md': '```md\n# Faux\n```\n# Vrai\n',
+    }
+    root = project(tmp_path, files)
+    original = {p: (root / p).read_bytes() for p in files}
+    backup = root / 'backup.json'
+    titres.apply(root, backup)
+    titres.check(root)
+    result = {p: titres.explicit((root / p).read_text()) for p in files}
+    assert result['a/README.md'] == 'Été brillant (a/README.md)'
+    assert result['b/README.md'] == 'Été brillant (b/README.md)'
+    assert result['c/README.md'] == 'Titre explicite'
+    assert result['d/README.md'] == 'd/README.md'
+    assert result['d/autre_README.md'] == 'Vrai'
+    assert (root / 'c/README.md').read_bytes() == original['c/README.md']
+    titres.restore(root, backup)
+    assert {p: (root / p).read_bytes() for p in files} == original
+
+
+def test_explicit_collision_with_derived(tmp_path):
+    root = project(tmp_path, {'a/README.md': '---\npagetitle: "Même"\n---\n', 'b/README.md': '# Même\n'})
+    result = titres.plan(root, titres.readmes(root))
+    assert result[Path('a/README.md')] == 'Même'
+    assert result[Path('b/README.md')] == 'Même (b/README.md)'
+
+
+def test_guard_rejects_missing_duplicate_and_no_targets(tmp_path):
+    root = project(tmp_path, {'a/README.md': '# A\n', 'b/README.md': '# B\n'})
+    with pytest.raises(ValueError, match='absent'):
+        titres.check(root)
+    for p in ('a/README.md', 'b/README.md'):
+        (root / p).write_text('---\npagetitle: "Identique"\n---\n')
+    with pytest.raises(ValueError, match='dupliqué'):
+        titres.check(root)
+    (root / '_quarto.yml').write_text('project:\n  render:\n    - "index.qmd"\n')
+    with pytest.raises(ValueError, match='vide'):
+        titres.check(root)
+
+
+def test_restore_refuses_external_edits(tmp_path):
+    root = project(tmp_path, {'a/README.md': '# Bonjour\n'})
+    backup = root / 'backup.json'
+    titres.apply(root, backup)
+    (root / 'a/README.md').write_text('intervention\n')
+    with pytest.raises(ValueError, match='modifiée'):
+        titres.restore(root, backup)
