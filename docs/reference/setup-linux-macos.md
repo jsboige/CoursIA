@@ -18,7 +18,7 @@ Le SDK .NET et `dotnet-interactive` sont cross-OS : les notebooks `.net-csharp` 
 # `sudo apt install dotnet-sdk-9.0` y échoue (« Couldn't find any package »).
 curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
 bash dotnet-install.sh --channel 9.0
-bash dotnet-install.sh --channel 10.0   # requis par `dotnet restore MyIA.CoursIA.sln` (projets net10.0)
+bash dotnet-install.sh --channel 10.0   # requis par `dotnet restore dotnet/MyIA.CoursIA.sln` (projets net10.0)
 export DOTNET_ROOT="$HOME/.dotnet"
 export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$PATH"   # à reporter dans ~/.bashrc
 # macOS : Homebrew Cask
