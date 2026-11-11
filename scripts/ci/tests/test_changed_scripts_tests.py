@@ -262,7 +262,6 @@ def test_main_json_sur_stdout_raison_sur_stderr(capsys, tmp_path):
     )
     rc = mod.main(["--event", "pull_request",
                    "--workflow", str(wf),
-                   "--token", "x",
                    "--pr", "42",
                    "--repo", "jsboige/CoursIA"])
     assert rc == 0
@@ -273,6 +272,49 @@ def test_main_json_sur_stdout_raison_sur_stderr(capsys, tmp_path):
     assert payload["suites"] == ["scripts/tests", "scripts/sudoku/tests"]
     assert "pleine suite" in payload["reason"]
     assert payload["reason"] in out.err
+
+
+def test_main_lit_le_jeton_dans_l_environnement(monkeypatch, tmp_path):
+    """Revue ai-01 11/11 (job 130763938091) : le jeton vient de
+    l'ENVIRONNEMENT, jamais d'un `--token` sur la ligne de commande.
+
+    Le pas de workflow dedie le pose (`env: GH_TOKEN`) ; le pas `Run tests`
+    ne le porte plus, pour que la suite pytest n'herite pas d'un jeton
+    ambiant (deux tests le mesuraient). Ce test verrouille la LECTURE : un
+    refactor qui reviendrait a `args.token` rendrait `None` ici.
+    """
+    wf = tmp_path / "wf.yml"
+    wf.write_text(
+        "      run: |\n"
+        "        pytest \\\n"
+        "          scripts/tests \\\n"
+        "          scripts/sudoku/tests \\\n"
+        "          -n \"$xdist_n\" --dist loadscope -q\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setenv("GH_TOKEN", "jeton-env")
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    captures = {}
+
+    def faux_scope(event, suite_list, **kw):
+        captures.update(kw)
+        return "full", ["scripts/tests"], "test"
+
+    monkeypatch.setattr(mod, "scope", faux_scope)
+    rc = mod.main(["--event", "pull_request", "--workflow", str(wf)])
+    assert rc == 0
+    assert captures["token"] == "jeton-env"
+
+
+def test_main_refuse_un_token_en_argument(capsys, tmp_path):
+    """Le drapeau `--token` n'existe plus : argparse doit le rejeter (SystemExit)."""
+    import pytest
+    wf = tmp_path / "wf.yml"
+    wf.write_text(
+        "      run: |\n        pytest scripts/tests -q\n", encoding="utf-8"
+    )
+    with pytest.raises(SystemExit):
+        mod.main(["--workflow", str(wf), "--token", "x"])
 
 
 def test_main_rc2_bruyant_sur_workflow_illisible(capsys, tmp_path):

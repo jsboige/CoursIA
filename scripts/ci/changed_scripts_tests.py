@@ -63,6 +63,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Callable
@@ -268,8 +269,6 @@ def main(argv: list[str] | None = None) -> int:
                         help="owner/repo — pour le repli API (PR)")
     parser.add_argument("--pr", type=int, default=0,
                         help="numero de PR — pour le repli API")
-    parser.add_argument("--token", default=None,
-                        help="jeton API (GITHUB_TOKEN du runner)")
     parser.add_argument("--workflow", type=Path, default=DEFAULT_WORKFLOW,
                         help="chemin du workflow portant la liste des suites")
     args = parser.parse_args(argv)
@@ -288,9 +287,19 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
 
+    # Revue ai-01 11/11 (job 130763938091) : le jeton n'est PLUS un argument de
+    # ligne de commande. Il est lu dans l'ENVIRONNEMENT, la ou le pas de
+    # workflow dedie le pose (`env: GH_TOKEN`) -- un jeton sur la ligne de
+    # commande fuit dans le diff des invocations citees, et surtout le pas
+    # `Run tests` avait fini par heriter du jeton au niveau du step entier :
+    # deux tests de la suite mesuraient ce jeton ambiant (test_gh_identity
+    # restaurait `***` au lieu de None ; test_gh_comment_fetcher_no_repo_env_raises
+    # n'obtenait plus FetchError). Le contrat d'environnement est explicite et
+    # testé (test_main_lit_le_jeton_dans_l_environnement).
+    token = os.environ.get("GH_TOKEN") or os.environ.get("GITHUB_TOKEN") or None
     mode, suites, reason = scope(
         args.event, suite_list, repo=args.repo, pr_number=args.pr,
-        token=args.token,
+        token=token,
     )
     print(reason, file=sys.stderr)
     json.dump({"mode": mode, "suites": suites, "reason": reason},

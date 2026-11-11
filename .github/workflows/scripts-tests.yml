@@ -283,11 +283,32 @@ jobs:
         env:
           MPLBACKEND: Agg
 
+      # #22468 tranche 4 (revue ai-01 11/11, job 130763938091) : le jeton
+      # GitHub ne vit QUE dans ce pas, et le seul consommateur est l'organe
+      # de portee (repli API pour lire les chemins de la PR). Pose au niveau
+      # du pas `Run tests`, il faisait heriter TOUTE la suite pytest d'un
+      # jeton ambiant : deux tests le mesuraient (test_gh_identity.py
+      # restaurait `***` au lieu de None ; test_exec_sequence_ack_required
+      # .py::test_gh_comment_fetcher_no_repo_env_raises n'obtenait plus
+      # FetchError). Il ecrit scripts_scope.json, lu par le pas suivant.
+      # rc=2 (workflow illisible) = rouge bruyant volontaire ; tout le reste
+      # est fail-OPEN et ecrit une portee pleine avec sa raison nommee.
+      - name: Compute test scope (#22468)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/ci/changed_scripts_tests.py \
+            --event "${{ github.event_name }}" \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number || 0 }}" \
+            > scripts_scope.json
+
       - name: Run tests
-        # #22468 tranche 4 : ce pas calcule d'abord la portee (organe
-        # scripts/ci/changed_scripts_tests.py -- suites liees aux chemins
-        # modifies, fail-OPEN) puis joue la selection, ou la liste complete
-        # en cas de doute. Les planchers de collecte ci-dessous restent
+        # #22468 tranche 4 : la portee (organe scripts/ci/changed_scripts_tests
+        # .py -- suites liees aux chemins modifies, fail-OPEN) est ecrite par
+        # le pas precedent, qui porte seul le jeton GitHub. Ce pas joue la
+        # selection, ou la liste complete en cas de doute. Les planchers de
+        # collecte ci-dessous restent
         # inconditionnels : un vert restreint ne doit pas pouvoir retrecir
         # en silence.
         #
@@ -385,8 +406,6 @@ jobs:
         # est l'option ini `consider_namespace_packages` (pytest >= 8.0), qui
         # etend la resolution aux paquets-espace de noms et rend les noms de
         # modules uniques par chemin.
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
           mem_max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
             || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
@@ -399,23 +418,25 @@ jobs:
             xdist_n=4
           fi
           echo "xdist workers: $xdist_n (cgroup memory limit: $mem_max)"
-          # #22468 tranche 4 : la portee est calculee par l'organe
-          # scripts/ci/changed_scripts_tests.py — suites liees aux chemins
-          # modifies (aire de veille = dossier parent de X/tests), fail-OPEN
-          # pleine suite avec raison nommee (stderr ci-dessus). La liste
-          # COMPLETE reste litterale dans le bloc pytest ci-dessous : c'est
-          # la source unique de guard_test_root (#18888) ET de l'organe.
-          # La branche restreinte est volontairement sur UNE ligne (aucun
-          # '\' de continuation) pour que PYTEST_BLOCK_RE matche toujours le
-          # bloc litteral. rc != 0 = derive structurelle -> rouge bruyant,
-          # jamais une liste inventee.
-          python scripts/ci/changed_scripts_tests.py \
-            --event "${{ github.event_name }}" \
-            --repo "${{ github.repository }}" \
-            --pr "${{ github.event.pull_request.number || 0 }}" \
-            --token "$GH_TOKEN" > scripts_scope.json
-          SCOPE_MODE=$(python -c "import json; print(json.load(open('scripts_scope.json'))['mode'])")
-          SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))")
+          # #22468 tranche 4 : la portee a ete calculee par le pas
+          # "Compute test scope" (seul porteur du jeton) -- suites liees aux
+          # chemins modifies (aire de veille = dossier parent de X/tests),
+          # fail-OPEN pleine suite avec raison nommee (stderr du pas dedie).
+          # La liste COMPLETE reste litterale dans le bloc pytest ci-dessous :
+          # c'est la source unique de guard_test_root (#18888) ET de l'organe.
+          # JSON absent ou illisible = fail-OPEN pleine suite ici aussi : un
+          # organe en panne ne doit jamais pouvoir retrecir la suite. La
+          # branche restreinte est volontairement sur UNE ligne (aucun '\' de
+          # continuation) pour que PYTEST_BLOCK_RE matche toujours le bloc
+          # litteral. rc=2 de l'organe = derive structurelle -> rouge bruyant
+          # au pas dedie, jamais une liste inventee.
+          SCOPE_MODE=full
+          SUITES=""
+          if [ -f scripts_scope.json ]; then
+            SCOPE_MODE=$(python -c "import json; print(json.load(open('scripts_scope.json'))['mode'])") || SCOPE_MODE=full
+            SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))") || SUITES=""
+          fi
+          echo "portee: $SCOPE_MODE${SUITES:+ -- suites: $SUITES}"
           if [ "$SCOPE_MODE" = "restricted" ]; then
             python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest $SUITES -n "$xdist_n" --dist loadscope --tb=short -q
           else
