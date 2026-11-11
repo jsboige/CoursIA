@@ -1,6 +1,6 @@
 - name: "SW-5 Linked-Data"
   family: SemanticWeb/dotNetRDF-rdflib
-  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05b-LinkedData-Python.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

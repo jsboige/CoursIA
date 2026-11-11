@@ -18,7 +18,7 @@ Ce README présente l'organisation et l'usage des outils de `notebook_tools`.
 | **Relevé runtime kernels** | `measure_kernels_runtime.py` | Lance les kernelspecs Jupyter et exporte les versions Python/numpy effectives en JSON |
 | **QC quantbooks** | `qc_quantbook_execute.py`, `qc_classify.py`, `execute_qcpy_docker.py`, `fix_qc_notebooks.py` | Subset QuantConnect (QuantBook non-executable via MCP) |
 | **Anti-banner / hygiene** | `strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`, `audit_pip_install_cells.py`, `pip_leak_delta.py` | Stop & Repair (secrets-hygiene §6) + banner #6309 + pip leaks |
-| **Catalogue & dashboards** | `generate_catalog.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Artefacts catalogue (#2632) + figures README + dashboards |
+| **Catalogue & dashboards** | `generate_catalog.py`, `generate_curriculum_rdf.py`, `query_curriculum.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Catalogue, export RDF interrogeable du cursus, figures README + dashboards |
 | **Audit & regression** | `audit_c1_c3.py`, `audit_solution_leaks.py`, `regression_scan.py`, `forensic_scan.py`, `diagnose_broken.py` | Audits structurels C.1/C.3 + fuite solution (#4970) + regression cluster + diagnostics |
 | **Extraction & parsing** | `notebook_tools.py`, `notebook_helpers.py`, `notebook_lint.py`, `extract_notebook_skeleton.py`, `count_exercises.py`, `count_notebooks_by_series.py`, `expand_catalog_markers.py`, `golden_set.yml`, `golden_set.lock.txt` | CLI multi-famille + helpers parsing + golden set |
 | **C# / .NET persistence** | — (archivés : `_exec_bdd_csharp.py`, `_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py` → `scripts/notebook_tools/_archive/`) | Diagnostic + fix cibles C# specifiques (GT-15, Lean34) ; voir `_archive/README.md` (palier 1 #18153, 2026-10-01) |
@@ -669,6 +669,49 @@ une branche feature (propriete de l'automatisation). Qui regenere alors :
 `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` :
 dashboards cluster (etat sante, digest hebdomadaire, inventaire figures).
 Sortie = dashboard RooSync / artefacts CI, JAMAIS dans le repo.
+
+### Export et requêtes RDF du cursus
+
+`generate_curriculum_rdf.py` transforme le catalogue généré en Turtle et
+valide sa structure avec `curriculum-shapes.ttl`. `query_curriculum.py`
+consomme **un ou plusieurs exports Turtle** réunis en un graphe local
+(`--graph fichier.ttl` se répète). Il ne relit pas le catalogue et n'entretient
+pas un second index. Cela permet aussi
+d'interroger les concepts et prérequis explicites fournis par une taxonomie
+RDF complémentaire.
+
+Les indicateurs d'exécution réellement présents dans le catalogue sont
+exportés (`requires_api`, `requires_gpu`, `requires_cloud`, `requires_wsl`,
+`duree_estimee`, `status`). Ils indiquent si une API ou une classe de
+ressource est requise, sans identifier un fournisseur ou une clé API. Les
+prérequis pédagogiques ne sont affichés que s'ils existent explicitement dans
+l'export ; l'absence de déclaration est rendue comme « non renseignée », pas
+comme un graphe complet sans prérequis.
+
+Installer la pile RDF utilisée par le générateur et les tests, puis générer
+l'export hors du dépôt :
+
+```bash
+python -m pip install 'rdflib>=7.0.0,<8.0.0' 'pyshacl>=0.27.0'
+python scripts/notebook_tools/generate_curriculum_rdf.py --output /tmp/cursus.ttl
+```
+
+Exemples de requêtes locales sur ce Turtle :
+
+```bash
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl series
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl list --series SymbolicAI --subseries SemanticWeb
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl resources api --limit 10
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl resources cloud --state not-required --limit 10
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl --graph /tmp/taxonomie.ttl concepts --query graphe
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl show SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
+python scripts/notebook_tools/query_curriculum.py --graph /tmp/cursus.ttl prerequisites SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb
+```
+
+Les chemins de parcours reflètent la structure disponible (série, sous-série,
+carnet), pas un ordre pédagogique ni des prérequis inférés. Un chemin de
+carnet inconnu est refusé. Les cycles entre liens URI de prérequis explicites
+font échouer toute requête au chargement de l'export.
 
 ---
 

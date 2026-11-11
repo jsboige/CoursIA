@@ -4430,7 +4430,7 @@ def _synthetic_git(ancestor_pairs=()):
     return fake
 
 
-def _stack_entry(pr, subjects, head_name="", base_name=""):
+def _stack_entry(pr, subjects, head_name="", base_name="", mergeable=""):
     # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
     # tests qui n'ont pas besoin d'exercer le saut content-free
     # preservent l'ancien comportement sans modifier chaque call site.
@@ -4445,6 +4445,7 @@ def _stack_entry(pr, subjects, head_name="", base_name=""):
         author_ref=ref,
         head_name=head_name,
         base_name=base_name,
+        mergeable=mergeable,
     )
 
 
@@ -4601,6 +4602,98 @@ def test_stack_rebased_sister_with_names_still_blocked(monkeypatch):
     )
     assert verdict == mod.VERDICT_BLOCKED, reasons
     assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+# --- #23100 (seconde moitie) : un partenaire CONFLICTING ne bloque pas ----
+
+
+def test_stack_conflicting_partner_does_not_block(monkeypatch):
+    """#23100 (controle positif) -- la soeur en conflit ne bloque pas la cible.
+
+    La PR soeur est DIRTY contre `main` : son porteur doit la rebaser avant
+    qu'elle puisse atterrir. Exiger de la cible qu'elle attende cette PR-la
+    rend la cible inmergeable par une PR qui n'a pas d'aliance -- c'est le
+    fork de base commune dont la PR soeur ne peut pas atterrir, le titre de
+    l'issue.
+
+    L'exemption n'est armee que par un etat MESURE : `CONFLICTING` ici.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            22741, {"a": "A", "b": "B"},
+            head_name="feature/22733-theorem-rewriters",
+        ),
+        _stack_entry(
+            22811, {"a": "A", "b": "B", "c": "C: apport propre de la soeur"},
+            head_name="feature/22740-portage", base_name="main",
+            mergeable="CONFLICTING",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 22741
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_mergeable_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- une soeur MERGEABLE reste bloquante.
+
+    L'exemption ne porte que sur l'etat mesure : une soeur mergeable qui
+    porte des corrections absentes de la cible reste le sommet de pile que
+    la porte existe pour attraper.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            19548, {"a": "A", "b": "B"},
+            head_name="feature/19548-old-version",
+        ),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            head_name="feature/19556-rebuilt", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+def test_stack_unmeasured_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- mesure absente : comportement d'avant.
+
+    `mergeable` vide (mesure non faite) ou `UNKNOWN` : l'exemption est
+    INERTE. Une mesure absente ne deroge a rien -- le risque de la porte
+    reste du bon cote.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    for state in ("", "UNKNOWN"):
+        index = _stack_index(
+            _stack_entry(
+                19548, {"a": "A", "b": "B"},
+                head_name="feature/19548-old-version",
+            ),
+            _stack_entry(
+                19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+                head_name="feature/19556-rebuilt", base_name="main",
+                mergeable=state,
+            ),
+        )
+        snapshot = _base_snapshot()
+        snapshot["number"] = 19548
+        verdict, reasons = mod.derive_verdict(
+            snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+        )
+        assert verdict == mod.VERDICT_BLOCKED, (state, reasons)
+        assert any("stack top" in r and "#19556" in r for r in reasons), (state, reasons)
 
 
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------

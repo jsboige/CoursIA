@@ -1,7 +1,7 @@
 # Manifeste des figures — GenAI/Video/01-Foundation (bases vidéo & compréhension)
 
 Provenance de chaque figure (convention `extract_readme_figures.py` L132 : index ALL-CELLS).
-Toutes les figures sont extraites des **outputs déjà committés** des notebooks (C.3 — aucune re-exécution).
+Toutes les figures sont extraites des **outputs déjà committés** des notebooks (C.3 — aucune re-exécution). Les indices de cellule et de sortie commencent à 0 et comptent toutes les cellules.
 Bornes EPIC #5654 P1 respectées : ≤200 KB/fichier, ≤1200 px max-dim.
 
 > **Note d'audit (2026-07-10, doctrine #5780).** Lecture visuelle G.1 firsthand des 6 PNG effectuée par myia-po-2023 — toutes les figures correspondent à leur intitulé (6/6 VRAI). La mosaïque-bloc en tête du README a été convertie en **figures in-line narratif** (5 sections narratives, chacune avec sa figure + paragraphe d'interprétation adjacent) ; ce MANIFEST documente la **provenance** et la **traçabilité G.1** des 6 PNG. Cf PR §E rollout Video/01-Foundation (c.351).
@@ -10,12 +10,12 @@ Bornes EPIC #5654 P1 respectées : ≤200 KB/fichier, ≤1200 px max-dim.
 
 | Figure | Notebook source | Cellule | Output | Format | Dimensions | Poids | Alt-text FR |
 |--------|-----------------|---------|--------|--------|------------|-------|-------------|
-| `vid1-ops.png` | `01-1-Video-Operations-Basics.ipynb` | 8 | 3 | PNG | 1200×221 | 27,9 KB | Opérations vidéo de base — aperçu des frames |
-| `vid1-gpt5.png` | `01-2-GPT-5-Video-Understanding.ipynb` | 8 | 2 | PNG | 1200×221 | 19,8 KB | Compréhension vidéo GPT-5 — analyse |
-| `vid1-qwen-vl.png` | `01-3-Qwen-VL-Video-Analysis.ipynb` | 10 | 2 | PNG | 1200×221 | 23,8 KB | Analyse vidéo Qwen-VL — annotation |
-| `vid1-esrgan.png` | `01-4-Video-Enhancement-ESRGAN.ipynb` | 8 | 3 | PNG | 1200×503 | 140,9 KB | Enhancement ESRGAN — upscale |
-| `vid1-esrgan2.png` | `01-4-Video-Enhancement-ESRGAN.ipynb` | 16 | 1 | PNG | 1200×230 | 85,2 KB | Enhancement ESRGAN — panorama |
-| `vid1-animatediff.png` | `01-5-AnimateDiff-Introduction.ipynb` | 10 | 3 | PNG | 500×252 | 195,7 KB | Génération AnimateDiff — animation |
+| `vid1-ops.png` | `01-1-Video-Operations-Basics.ipynb` | 10 | 3 | PNG | 1200×221 | 27,9 KB | Opérations vidéo de base — aperçu des frames |
+| `vid1-gpt5.png` | `01-2-GPT-5-Video-Understanding.ipynb` | 9 | 2 | PNG | 1200×221 | 19,8 KB | Compréhension vidéo GPT-5 — analyse |
+| `vid1-qwen-vl.png` | `01-3-Qwen-VL-Video-Analysis.ipynb` | 13 | 2 | PNG | 1200×221 | 23,8 KB | Analyse vidéo Qwen-VL — annotation |
+| `vid1-esrgan.png` | `01-4-Video-Enhancement-ESRGAN.ipynb` | 9 | 3 | PNG | 1200×503 | 140,9 KB | Enhancement ESRGAN — upscale |
+| `vid1-esrgan2.png` | `01-4-Video-Enhancement-ESRGAN.ipynb` | 20 | 1 | PNG | 1200×230 | 85,2 KB | Enhancement ESRGAN — panorama |
+| `vid1-animatediff.png` | `01-5-AnimateDiff-Introduction.ipynb` | 13 | 3 | PNG | 500×252 | 195,7 KB | Génération AnimateDiff — animation |
 
 **Diversité couverte** : notebooks fondamentaux (Opérations, Compréhension GPT-5, Analyse Qwen-VL, Enhancement ESRGAN, AnimateDiff). Total : 6 figures, 493,3 KB, max 195,7 KB/fichier. Toutes PNG. AnimateDiff (195,7 KB) : source dense 2,1 MB, downscale 500px — sous la borne dure 200 KB.
 
@@ -23,7 +23,7 @@ Bornes EPIC #5654 P1 respectées : ≤200 KB/fichier, ≤1200 px max-dim.
 
 | Figure | Audit G.1 (observation directe du PNG) | Verdict |
 |--------|----------------------------------------|---------|
-| `vid1-ops.png` | Mosaïque 5 frames (vert/rouge/violet/cyan/vert) avec cercle blanc à positions variables, t=0.00s → 4.96s. Titre "Apercu de la video de test" (01-1 cell 8 output 3). Cercles blancs à droite/bas/centre-gauche/haut/droite. | **VRAI** — la mosaïque-frames de la vidéo de test est observable et conforme à l'intitulé. |
+| `vid1-ops.png` | Mosaïque 5 frames (vert/rouge/violet/cyan/vert) avec cercle blanc à positions variables, t=0.00s → 4.96s. Titre "Apercu de la video de test" (notebook `01-1-Video-Operations-Basics.ipynb`, cellule d’indice 10, sortie d’indice 3). Cercles blancs à droite/bas/centre-gauche/haut/droite. | **VRAI** — la mosaïque-frames de la vidéo de test est observable et conforme à l'intitulé. |
 | `vid1-gpt5.png` | Mosaïque 5 scènes (orange/bleu/vert/rose/bleu nuit) avec cercle/carré/triangle/cercle/5 cercles jaunes. Titre "Apercu des 5 scenes", sous-titres "Scene 1 — Intro" → "Scene 5 — Conclusion". | **VRAI** — la mosaïque montre la **structure** de la vidéo soumise à GPT-5 (variation couleurs + sous-titres), pas l'analyse GPT-5 elle-même. Limitation illustrative assumée dans le paragraphe narratif. |
 | `vid1-qwen-vl.png` | Mosaïque 5 scènes pédagogiques (Introduction/Chapitre 1/Demo/Resultats/Conclusion) sur fonds bleu nuit/brun/vert forêt/olive/violet, point jaune central. | **VRAI** — la vidéo à analyser par Qwen-VL est observable et conforme ; limitation illustrative assumée. |
 | `vid1-esrgan.png` | Grille 2×4 comparant HR (Référence, ligne haute, HR320×240 avec quadrillage blanc) vs LR (Input, ligne basse, LR320×240) sur Frames 0/12/24/35. Cercle rouge + 4 points verts. Titre "Reference HR vs Input LR". | **VRAI** — comparaison côte-à-côte explicite, parfaitement alignée avec "ESRGAN upscale LR→HR". |
@@ -37,7 +37,7 @@ Deux des 6 PNG de ce dossier sont des **doublons exacts** (SHA1 identique) avec 
 
 | Figure locale | Figure racine | SHA1 (vérifié 2026-07-19) | Statut doctrine #5780 |
 |--------------|---------------|---------------------------|------------------------|
-| `vid1-esrgan.png` (01-Foundation) | `video4-esrgan.png` (racine Video) | `620f78d33b723f8a1ddf4cf54eed79e308a66945` (byte-identique) | **Doublon intentionnel** : 01-Foundation README illustre la figure dans le contexte pédagogique « Enhancement ESRGAN » (référence cellule 8 output 3 du notebook `01-4-Video-Enhancement-ESRGAN.ipynb`) ; racine Video README illustre la **même** figure dans le contexte narratif « 04-Orchestration multi-modèles ». Les deux READMEs ont des **alt-texts légèrement différents** (01-Foundation : « comparaison côte-à-côte HR/LR », racine : « comparaison HR vs LR à résolution identique, aucune démo d'upscaling visuel ») — c'est normal et voulu : chaque README adapte son alt-text à la section narrative où la figure est placée, doctrine #5780. Pas une erreur à corriger, juste un **disclosure** explicite pour éviter qu'un futur audit croisé redécouvre la duplication et la signale comme defect (cycle d'audit redondant). |
+| `vid1-esrgan.png` (01-Foundation) | `video4-esrgan.png` (racine Video) | `620f78d33b723f8a1ddf4cf54eed79e308a66945` (byte-identique) | **Doublon intentionnel** : 01-Foundation README illustre la figure dans le contexte pédagogique « Enhancement ESRGAN » (référence cellule 9 output 3 du notebook `01-4-Video-Enhancement-ESRGAN.ipynb`) ; racine Video README illustre la **même** figure dans le contexte narratif « 04-Orchestration multi-modèles ». Les deux READMEs ont des **alt-texts légèrement différents** (01-Foundation : « comparaison côte-à-côte HR/LR », racine : « comparaison HR vs LR à résolution identique, aucune démo d'upscaling visuel ») — c'est normal et voulu : chaque README adapte son alt-text à la section narrative où la figure est placée, doctrine #5780. Pas une erreur à corriger, juste un **disclosure** explicite pour éviter qu'un futur audit croisé redécouvre la duplication et la signale comme defect (cycle d'audit redondant). |
 | `vid1-animatediff.png` (01-Foundation) | `video5-animatediff.png` (racine Video) | `579190cc435421941a730c423a4442730074b46f` (byte-identique) | **Doublon intentionnel** même logique : `01-Foundation/README.md` l'illustre dans la section « AnimateDiff introduction », racine `Video/README.md` l'illustre dans la section « AnimateDiff orchestration ». |
 
 **Note de fond** : doctrine #5780 (figures amendée 2026-07-09) demande que **chaque figure soit placée dans la section du README où le notebook correspondant est discuté** — ce qui produit mécaniquement des doublons quand un même notebook est référencé à la fois dans la racine de la famille et dans une sous-série. **C'est by design**, pas un défaut d'audit. Le présent disclosure évite la fausse alerte future « doublon = bug ».
@@ -52,42 +52,42 @@ Ajout tranche-14 (c.734, 2026-07-21) : chaque figure reçoit un champ `**Descrip
 
 ## vid1-ops.png
 
-- **Source** : notebook `01-1-Video-Operations-Basics.ipynb (cellule 8, output 3)`
+- **Source** : notebook `01-1-Video-Operations-Basics.ipynb (cellule 10, output 3)`
 - **Description visuelle** : Mosaïque horizontale de 5 frames (1200×221 px) d'une vidéo de test, fond vert-dominant (mean RGB 160/178/146) ; chaque frame porte un cercle blanc à une position différente (droite, bas, centre-gauche, haut, droite) à t=0.00s → 4.96s. Titre `Apercu de la video de test` superposé en haut à gauche. stddev élevé (84/88/97) reflète la variation chromatique des 5 frames distinctes. Conforme audit G.1 c.351 (VRAI 2026-07-10).
 - **Alt-text (FR)** : Opérations vidéo de base — aperçu des frames
 - **Poids** : 27,9 KB
 
 ## vid1-gpt5.png
 
-- **Source** : notebook `01-2-GPT-5-Video-Understanding.ipynb (cellule 8, output 2)`
+- **Source** : notebook `01-2-GPT-5-Video-Understanding.ipynb (cellule 9, output 2)`
 - **Description visuelle** : Mosaïque horizontale de 5 scènes (1200×221 px) d'une vidéo à analyser par GPT-5, fond warm-neutral équilibré (mean RGB 167/170/166, stddev 84/73/72). Chaque scène porte une forme géométrique distincte (cercle, carré, triangle, cercle, 5 cercles jaunes) sur fond orange/bleu/vert/rose/bleu nuit. Sous-titres `Scene 1 — Intro` → `Scene 5 — Conclusion` et titre `Apercu des 5 scenes`. Conforme audit G.1 c.351 (VRAI 2026-07-10).
 - **Alt-text (FR)** : Compréhension vidéo GPT-5 — analyse
 - **Poids** : 19,8 KB
 
 ## vid1-qwen-vl.png
 
-- **Source** : notebook `01-3-Qwen-VL-Video-Analysis.ipynb (cellule 10, output 2)`
+- **Source** : notebook `01-3-Qwen-VL-Video-Analysis.ipynb (cellule 13, output 2)`
 - **Description visuelle** : Mosaïque horizontale de 5 scènes pédagogiques (1200×221 px), fond dark-neutral uniforme (mean RGB 121/118/118, stddev 78/79/79 — variation faible par scène). Scènes `Introduction` / `Chapitre 1` / `Demo` / `Resultats` / `Conclusion` sur fonds bleu nuit / brun / vert forêt / olive / violet, point jaune central marqueur d'attention. Conforme audit G.1 c.351 (VRAI 2026-07-10).
 - **Alt-text (FR)** : Analyse vidéo Qwen-VL — annotation
 - **Poids** : 23,8 KB
 
 ## vid1-esrgan.png
 
-- **Source** : notebook `01-4-Video-Enhancement-ESRGAN.ipynb (cellule 8, output 3)`
+- **Source** : notebook `01-4-Video-Enhancement-ESRGAN.ipynb (cellule 9, output 3)`
 - **Description visuelle** : Grille comparative 2×4 (1200×503 px) `Reference HR vs Input LR`, fond dark blue-violet (mean RGB 85/77/99, stddev 80/75/65). Ligne haute : HR (Référence) 320×240 avec quadrillage blanc superposé, 4 frames aux indices 0/12/24/35. Ligne basse : LR (Input) 320×240 même séquence. Cercle rouge et 4 points verts en surimpression pour guidage visuel. Conforme audit G.1 c.351 (VRAI 2026-07-10). Doublon intentionnel déclaré avec `video4-esrgan.png` (racine Video, SHA1 `620f78d3...`).
 - **Alt-text (FR)** : Enhancement ESRGAN — upscale
 - **Poids** : 140,9 KB
 
 ## vid1-esrgan2.png
 
-- **Source** : notebook `01-4-Video-Enhancement-ESRGAN.ipynb (cellule 16, output 1)`
+- **Source** : notebook `01-4-Video-Enhancement-ESRGAN.ipynb (cellule 20, output 1)`
 - **Description visuelle** : Grille horizontale 5 panneaux (1200×230 px) d'interpolation linéaire Frame A → Frame B, fond medium-purple (mean RGB 108/101/120, stddev 93/92/80 — variation chromatique la plus élevée des 6 figures). Panneaux : `Frame A` / `Interp 1` / `Interp 2` / `Interp 3` / `Frame B` montrant un cercle rouge se déplaçant entre 2 positions, Frames 1/36 → 6/36. Fantômes visibles aux frames intermédiaires (signature de l'interpolation linéaire). Conforme audit G.1 c.351 (VRAI 2026-07-10).
 - **Alt-text (FR)** : Enhancement ESRGAN — panorama
 - **Poids** : 85,2 KB
 
 ## vid1-animatediff.png
 
-- **Source** : notebook `01-5-AnimateDiff-Introduction.ipynb (cellule 10, output 3)`
+- **Source** : notebook `01-5-AnimateDiff-Introduction.ipynb (cellule 13, output 3)`
 - **Description visuelle** : Mosaïque 4×2 (8 frames, 500×252 px) d'animation générée par AnimateDiff à partir du prompt `A serene lake at sunset with mountains in the background`, style painterly/pastel (mean RGB 135/128/118, stddev 61/61/69 — variation modérée, signature du style pastel). Labels `Frame 1/16` → `Frame 16/16` sur les 8 frames sélectionnées (indices `np.linspace(0, 15, 8)` = [0, 2, 4, 6, 8, 10, 12, 15], corrigé 2026-07-16 vs ancien README erroné 882 ≫ 16). Conforme audit G.1 c.351 (VRAI 2026-07-10). Doublon intentionnel déclaré avec `video5-animatediff.png` (racine Video, SHA1 `579190cc...`).
 - **Alt-text (FR)** : Génération AnimateDiff — animation
 - **Poids** : 195,7 KB
