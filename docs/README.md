@@ -354,6 +354,7 @@ Preuves visuelles attachées à un chantier : elles ne vivent pas dans `transien
 | Fichier | Description |
 |---------|-------------|
 | [captures/22286/README.md](captures/22286/README.md) | Preuve de rendu des classes `dense-list` / `xl-dense` / `img-fit` sur les decks 02, 06, S3 et S8 (#22286) — sélection par le DOM rendu, capture au canvas du scanner (980×552), comparaison à l'original PPTX par titre, scan de composition |
+| [captures/24171/README.md](captures/24171/README.md) | Premier relevé de rendu du lot L2 sous forme **opposable** (#24171, EPIC #11508) — le relevé est archivé comme artefact versionné (hash de chaque image mesurée, empreinte de la machine) et non comme un compteur rejoué ; mesure du deck `06-apprentissage` (124 diapositives rendues) et **deux contraintes d'export mesurées** que la documentation du dépôt ne portait pas (`--range` obligatoire, `--output` effacé à chaque invocation) |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
