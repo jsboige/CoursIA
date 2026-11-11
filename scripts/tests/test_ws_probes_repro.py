@@ -23,8 +23,12 @@ def test_default_source_failure_does_not_fall_back(monkeypatch, capsys):
     monkeypatch.setitem(sys.modules, "torchvision", SimpleNamespace())
     monkeypatch.setitem(sys.modules, "torchvision.datasets", SimpleNamespace(FashionMNIST=fail))
     monkeypatch.setattr("sklearn.datasets.fetch_openml", lambda *a, **kw: pytest.fail("repli OpenML"))
-    with pytest.raises(RuntimeError, match="Chargement torchvision impossible"):
-        repro.load_fashion_mnist("/cache")
+    for source in (None, "auto"):
+        with pytest.raises(RuntimeError, match="Chargement torchvision impossible"):
+            if source is None:
+                repro.load_fashion_mnist("/cache")
+            else:
+                repro.load_fashion_mnist("/cache", source)
     with pytest.raises(SystemExit) as result:
         repro.main(["--cache", "/cache"])
     assert result.value.code == 2
@@ -60,6 +64,26 @@ def test_runtime_blas_reports_each_loaded_library(monkeypatch):
     ]
 
 
+def test_auto_alias_reports_torchvision(monkeypatch):
+    class Tensor:
+        def __init__(self, values):
+            self.values = np.array(values)
+
+        def numpy(self):
+            return self.values
+
+    def fashion_mnist(root, train, download):
+        return SimpleNamespace(data=Tensor([[[255]]]), targets=Tensor([int(train)]))
+
+    monkeypatch.setitem(sys.modules, "torchvision", SimpleNamespace())
+    monkeypatch.setitem(sys.modules, "torchvision.datasets",
+                        SimpleNamespace(FashionMNIST=fashion_mnist))
+    images, labels, _, _, source = repro.load_fashion_mnist("/cache", "auto")
+    assert images.tolist() == [[[1.0]]]
+    assert labels.tolist() == [1]
+    assert source == "torchvision"
+
+
 def test_unknown_source_rejected():
     with pytest.raises(ValueError, match="Source inconnue"):
-        repro.load_fashion_mnist("/cache", "auto")
+        repro.load_fashion_mnist("/cache", "unknown")

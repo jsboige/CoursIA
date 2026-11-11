@@ -46,10 +46,11 @@ CITED = {
 def load_fashion_mnist(cache_root: str, source: str = "torchvision"):
     """Charge la source epinglee du carnet ; OpenML est un choix non canonique.
 
-    Les sources ordonnent les images differemment : WS-00c prend les 80
+    `auto` est conserve pour les appelants existants comme alias de torchvision,
+    sans repli automatique. Les sources ordonnent les images differemment : WS-00c prend les 80
     premieres de chaque classe et selectionne donc un autre sous-ensemble.
     """
-    if source == "torchvision":
+    if source in ("torchvision", "auto"):
         try:
             from torchvision.datasets import FashionMNIST
 
@@ -67,7 +68,7 @@ def load_fashion_mnist(cache_root: str, source: str = "torchvision"):
             ) from exc
         return ims_tr, labs_tr, ims_te, labs_te, "torchvision"
     if source != "openml":
-        raise ValueError(f"Source inconnue : {source!r} (torchvision ou openml)")
+        raise ValueError(f"Source inconnue : {source!r} (torchvision, auto ou openml)")
 
     from sklearn.datasets import fetch_openml
 
@@ -190,9 +191,9 @@ def main(argv=None) -> int:
     parser.add_argument("--out", default=None, help="chemin d'ecriture du JSON de resultats")
     parser.add_argument(
         "--source",
-        choices=("torchvision", "openml"),
+        choices=("torchvision", "auto", "openml"),
         default="torchvision",
-        help="source du corpus : torchvision (carnet) ou openml (non canonique)",
+        help="source : torchvision (carnet), auto (alias torchvision sans repli), ou openml (non canonique)",
     )
     args = parser.parse_args(argv)
 
