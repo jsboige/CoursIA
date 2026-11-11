@@ -175,6 +175,37 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # (local 3.11.9, python-version '3.11' du job), et pytest.ini porte deja
         # `filterwarnings = ignore::DeprecationWarning`.
         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
+        # T1-B de #25366 : derive declaration <-> reel, SENS workflow -> dict.
+        # Le contrat verbatim ne garde que le sens dict -> workflow (une cible
+        # declaree disparue du run rougit) ; l'inverse -- une cible jouee par
+        # le run mais jamais declaree -- etait invisible. Les 12 entrees qui
+        # suivent sont des cibles LITERALES du bloc pytest partage ci-dessus,
+        # jouees de fait, declarees ici pour la premiere fois (mesure 2026-11-11
+        # depuis le tapis #25366 : 0 occurrence dans ce dict, presentes dans le
+        # run). Aucune n'est un testpath pytest.ini : ce sont des cibles-fichier
+        # (ou fichiers co-localises), le tri dir-entier reste celui du volet A.
+        # Effet inventaire attendu : v4/tests et Lean/agent_tests/tests passent
+        # « non surveille » -> « partiellement surveille » (meme classe que
+        # Sudoku/tests), refletant le reel : 5 fichiers joues sur 18 pour v4.
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py",
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py",
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py",
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py",
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py",
+        # test_bake_bank.py vit a la racine de prosody_lab/ (pas dans tests/) :
+        # cible-fichier jouee, le dir prosody_lab/tests (test_onset_chunk.py
+        # seul, non joue) reste du ressort du volet A.
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py",
+        # agent_tests : le dict declarait deja test_bg_tree_lock.py et
+        # test_prover_forensic_guards.py ; le run joue trois fichiers de plus.
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_guards.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_lean_utils.py",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py",
+        # Tests co-localises avec du code (gateway), motif test-cwd sans
+        # testpath : ni dans pytest.ini ni dir, cibles-fichier seules.
+        "MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py",
+        "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py",
+        "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py",
     ],
     ".github/workflows/ml-tests.yml": [
         "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/tests",
