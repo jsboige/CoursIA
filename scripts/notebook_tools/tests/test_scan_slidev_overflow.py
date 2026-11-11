@@ -1,5 +1,6 @@
 """Tests de scan_slidev_overflow (EPIC #11508 L2) — PNG synthétiques couvrant les verdicts."""
 
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -122,6 +123,13 @@ def test_archive_carries_the_hash_of_every_measured_png(tmp_path):
     assert set(saved["png_sha256"]) == {"1.png", "2.png", "3.png"}
     assert all(len(h) == 64 for h in saved["png_sha256"].values())
     assert artifact["artifact_sha256"]
+    # l'artefact se verifie lui-meme : son contenu porte son empreinte
+    assert saved["content_sha256"] == artifact["content_sha256"]
+    body = {k: v for k, v in saved.items() if k != "content_sha256"}
+    recomputed = hashlib.sha256(
+        json.dumps(body, ensure_ascii=False, indent=2).encode("utf-8")
+    ).hexdigest()
+    assert recomputed == saved["content_sha256"]
 
 
 def test_compare_separates_fixed_from_new(tmp_path):

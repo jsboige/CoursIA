@@ -211,6 +211,12 @@ def archive_report(report: dict, archive_path: Path) -> dict:
         "report": report,
         "png_sha256": hashes,
     }
+    # Le contenu se hash LUI-MEME (empreinte calculee sur l'artefact sans ce
+    # champ) : un tiers peut verifier l'artefact sans l'avoir produit. Le
+    # sha256 du FICHIER entier, lui, est affiche par l'outil -- un fichier ne
+    # peut pas porter son propre hash.
+    payload = json.dumps(artifact, ensure_ascii=False, indent=2)
+    artifact["content_sha256"] = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     payload = json.dumps(artifact, ensure_ascii=False, indent=2)
     archive_path.parent.mkdir(parents=True, exist_ok=True)
     archive_path.write_text(payload + "\n", encoding="utf-8")
