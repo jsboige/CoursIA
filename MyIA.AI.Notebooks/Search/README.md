@@ -8,7 +8,7 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 series: Search
 pedagogical_count: 165
 breakdown: Part3-Cas-pratiques=51, Part1-Foundations=49, Part4-Metaheuristics=35, Part2-CSP=19, Part5-Frontieres=11
-maturity: BETA=150, ALPHA=9, DRAFT=6
+maturity: BETA=149, ALPHA=10, DRAFT=6
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
