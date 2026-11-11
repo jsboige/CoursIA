@@ -2,7 +2,7 @@
 
 Ce que le fichier prouve
 ------------------------
-  1. Les cinq verdicts sont atteignables, et l'ordre d'evaluation est celui du
+  1. Les six verdicts sont atteignables, et l'ordre d'evaluation est celui du
      contrat : un contenu sur `main` n'est jamais un accident, une fermeture
      expliquee n'est jamais un orphelin, `UNKNOWN` n'est jamais un vert.
   2. Le signal d'accident est le couple **force-push + fermeture du MEME acteur
@@ -27,7 +27,7 @@ import importlib.util
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -483,3 +483,71 @@ def test_a_real_deliberate_close_is_not_orphaned():
     assert len(abandons) > 0, "fenetre sans fermeture a raison d'abandon : controle trivial"
     for row in successors + abandons:
         assert row["verdict"] == lcu.SUPERSEDED, row
+
+
+# --- lignes de tri tardives + parked-veto (#22166 point 2, reouverture 03/11) --------
+
+def test_tri_marker_comment_is_read_outside_the_window():
+    """Controle positif : une ligne [TRI] postee 3 j apres la fermeture nomme un successeur.
+
+    Le tri du secretariat est pose apres coup ; la fenetre de 30 min autour de
+    closed_at le rendait structurellement invisible (#22166 point 2).
+    """
+    c = _c("[TRI] Repliee en fournee dans la PR #24361", ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[0] == 24361
+
+
+def test_tri_marker_with_abandon_word_outside_the_window():
+    c = _c("[TRI] Abandonnee : le canon 3.13 a rendu la reexecution obsolete",
+           ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[1] is True
+
+
+@pytest.mark.parametrize("prefix", ["[TRI]", "[tri]", "  [TRI]", "[TRI] #22166 point 2"])
+def test_tri_marker_forms_are_case_and_space_tolerant(prefix):
+    c = _c(f"{prefix} -- fondu en fournee dans #24354", ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[0] == 24354
+
+
+def test_late_comment_without_marker_stays_ignored():
+    """Controle negatif : la forme reconnue SANS marqueur reste hors fenetre = ignoree.
+
+    La garde est le marqueur : elargir la fenetre a toute la prose tardive
+    rouvrirait le piege que le commentaire de lane quelconque classe une PR.
+    """
+    c = _c("Repliee en fournee dans la PR #24361", ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[0] is None
+
+
+def test_tri_marker_alone_classifies_nothing():
+    """Un marqueur sans forme reconnue dedans ne classe pas : liste close."""
+    c = _c("[TRI] ligne de tri sans successeur ni raison", ts="2026-10-15T10:20:00Z")
+    succ, abandon = lcu.closing_evidence("", [c], CLOSED)
+    assert succ is None and abandon is False
+
+
+def test_window_comment_still_beats_nothing_when_no_tri():
+    c = _c("Doublon de #20400")  # dans la fenetre par defaut (ts == CLOSED - 14 s)
+    assert lcu.closing_evidence("", [c], CLOSED)[0] == 20400
+
+
+def test_parked_label_yields_parked_verdict():
+    v, d = lcu.verdict_of(integrated=False, parked=True, branch_present=True, content_lost=2)
+    assert v == lcu.PARKED and "parked-veto" in d
+
+
+def test_integrated_beats_parked():
+    """Un contenu deja sur main est le fait le plus fort, meme garé."""
+    assert lcu.verdict_of(integrated=True, parked=True)[0] == lcu.INTEGRATED
+
+
+def test_successor_beats_parked():
+    """Un successeur nomme est le fait actionnable, meme sur une PR garée."""
+    assert lcu.verdict_of(integrated=False, parked=True, successor=42)[0] == lcu.SUPERSEDED
+
+
+def test_parked_beats_accidental_signature():
+    """Un veto assume n'est pas l'accident du force-push, meme dans les 60 s."""
+    v, _ = lcu.verdict_of(integrated=False, parked=True,
+                          force_push_to_close_s=5.0, branch_present=True, content_lost=1)
+    assert v == lcu.PARKED

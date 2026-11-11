@@ -12,6 +12,7 @@ de git reel.
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -186,10 +187,25 @@ class ScriptedRunner:
         # du ``gh api .../check-runs`` (une ligne JSON par jambe). Defaut :
         # le jeu nominal vert.
         check_runs: str | None = None,
+        main_check_runs: str | None = None,
+        main_sha: str = "a" * 40,
+        # #24828 : historique de main lu par la sentinelle (SHA du plus
+        # recent au plus ancien) et check-runs par SHA. Le defaut : un seul
+        # commit (la tete), avec le jeu de checks nominal.
+        main_history: list[str] | None = None,
+        main_checks_by_sha: dict[str, str] | None = None,
     ):
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
         self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
+        self.main_check_runs = main_check_runs if main_check_runs is not None else json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "success",
+             "status": "completed", "started_at": "2026-11-08T10:00:00Z",
+             "output": {"summary": "21 000 passed"}}
+        ])
+        self.main_sha = main_sha
+        self.main_history = list(main_history) if main_history is not None else [main_sha]
+        self.main_checks_by_sha = main_checks_by_sha or {}
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -268,6 +284,19 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
+            return mr.RunResult(0, self.main_sha + "\n", "")
+        if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
+            # Historique de main lu par la sentinelle (le plus recent d'abord).
+            return mr.RunResult(0, "\n".join(self.main_history) + "\n", "")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            sha = c[2].split("/commits/", 1)[1].split("/", 1)[0]
+            if sha == self.main_sha or sha in self.main_history:
+                payload = self.main_checks_by_sha.get(sha, self.main_check_runs)
+                return mr.RunResult(0, "\n".join(
+                    json.dumps(row) for row in json.loads(payload)
+                ), "")
+            return mr.RunResult(0, self.check_runs, "")
         if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
             # #25059 : etape 6 bis. La branche est AVANT celle des commits :
             # l'URL des check-runs porte `/commits/` et serait capturee par
@@ -501,6 +530,46 @@ def test_skip_mergeable_state_not_clean(tmp_path):
         assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
 
 
+def test_prelecture_blocked_evite_les_tests_d_arbre_fusionne(tmp_path):
+    runner = ScriptedRunner(
+        pulls=[{"mergeable_state": "blocked", "head": {"sha": HEAD}}]
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "mergeable-state:blocked"
+    assert not any("premerge_combined_check.py" in flat for flat in runner.flat())
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_prelecture_clean_puis_garde_finale_joue_les_tests_d_arbre(tmp_path):
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+    assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+def test_prelecture_unstable_ne_saute_pas_les_tests_d_arbre(tmp_path):
+    runner = _unstable_runner(DEFAULT_CHECK_RUNS)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+def test_prelecture_tete_deplacee_evite_les_tests_d_arbre_fusionne(tmp_path):
+    runner = ScriptedRunner(
+        pulls=[{"mergeable_state": "clean", "head": {"sha": HEAD_MOVED}}]
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "head-moved"
+    assert not any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
 # --- etape 6 bis : `unstable` (#25059) -------------------------------------------
 
 
@@ -603,8 +672,9 @@ def test_mergeable_unknown_then_clean_merges(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
-    # 2 lectures REST (unknown puis clean) + 1 sommeil entre les deux
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == 2
+    # 2 lectures en prelecture (unknown puis clean), 1 garde finale clean,
+    # et un seul sommeil entre les deux lectures `unknown` et `clean`.
+    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == 3
     assert runner.sleeps == [mr.MERGEABLE_RETRY_SLEEP_S]
 
 
@@ -615,7 +685,8 @@ def test_mergeable_unknown_persistant_skippe(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "mergeable-state:unknown"
-    # 1 lecture initiale + MERGEABLE_RETRIES relectures, autant de sommeils
+    # La prelecture seule est payee : 1 lecture initiale + MERGEABLE_RETRIES
+    # relectures, autant de sommeils ; la garde finale n'est pas atteinte.
     assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == mr.MERGEABLE_RETRIES + 1
     assert len(runner.sleeps) == mr.MERGEABLE_RETRIES
 
@@ -980,6 +1051,204 @@ def test_hold_file_override(tmp_path):
     )
     assert rc == 0
     assert lines[-1]["reason"] == "hold:ordre de stack"
+
+
+def test_main_rouge_pose_hold_nommee_et_bloque_tout_merge(tmp_path):
+    disposable = tmp_path / "repo-jetable"
+    disposable.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=disposable, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=disposable, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=disposable, check=True)
+    (disposable / "preuve.txt").write_text("main\n", encoding="utf-8")
+    subprocess.run(["git", "add", "preuve.txt"], cwd=disposable, check=True)
+    subprocess.run(["git", "commit", "-m", "commit rouge simule"], cwd=disposable, check=True, capture_output=True)
+    main_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=disposable, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).stdout.strip()
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+    hold.write_text("16808 attente utilisateur\n", encoding="utf-8")
+    red = ScriptedRunner(
+        main_check_runs=json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+             "status": "completed", "started_at": "2026-11-08T11:00:00Z",
+             "output": {"summary": "FAILED scripts/tests/test_guard.py::test_case - assertion"}}
+        ]),
+        main_sha=main_sha,
+    )
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=red)
+    rows = [json.loads(row) for row in journal.read_text(encoding="utf-8").splitlines()]
+    assert rc == 0
+    assert rows[0]["reason"].startswith("hold:main-red-sentinel sha=" + red.main_sha)
+    assert "test=scripts/tests/test_guard.py::test_case" in rows[0]["reason"]
+    assert not any("gh pr view" in cmd or "gh pr merge" in cmd for cmd in red.flat())
+    assert hold.read_text(encoding="utf-8").splitlines() == [
+        "16808 attente utilisateur",
+        "0 main-red-sentinel sha=" + red.main_sha
+        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case",
+    ]
+
+    # Le vert retire uniquement la ligne appartenant a la sentinelle.
+    green = ScriptedRunner(main_sha=main_sha)
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=green)
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert any("gh pr merge 123" in cmd for cmd in green.flat())
+
+
+def test_main_check_absent_fail_closed(tmp_path):
+    runner = ScriptedRunner(main_check_runs="[]")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 2
+    assert lines == []
+    assert not any("gh pr merge" in cmd for cmd in runner.flat())
+
+
+# --- remontee dans l'historique de main (revue ai-01 du 2026-11-10) ---------
+# Points 1 et 2 : on juge le dernier commit qui porte un VERDICT TERMINE,
+# et seul `failure` pose la retenue.
+
+
+def _scripts_check(conclusion, status="completed", summary="21 000 passed", started="2026-11-10T10:00:00Z"):
+    return json.dumps([
+        {"name": "Scripts Tests (CPU)", "conclusion": conclusion, "status": status,
+         "started_at": started, "output": {"summary": summary}}
+    ])
+
+
+def test_sentinelle_juge_le_commit_derriere_une_tete_en_cours(tmp_path):
+    """Point 1 : un check EN COURS n'est pas un refus de demarrer.
+
+    On remonte l'historique et on juge le premier verdict TERMINE trouve.
+    """
+    tete = "1" * 40
+    ancien = "2" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check(None, status="in_progress", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    journal = tmp_path / "journal.jsonl"
+    rc = mr.run(
+        ["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=runner
+    )
+    assert rc == 0
+    # La retenue nomme le commit JUGUE, pas la tete.
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+    assert "test=scripts/tests/test_x.py::test_y" in contenu
+
+
+def test_sentinelle_cancelled_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `cancelled` est de l'INFRA, pas un verdict de code."""
+    tete = "3" * 40
+    ancien = "4" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("cancelled", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+
+
+def test_sentinelle_timed_out_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `timed_out` est de l'INFRA ; le verdict vert precedent gagne."""
+    tete = "5" * 40
+    ancien = "6" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("timed_out", summary=""),
+            ancien: _scripts_check("success"),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    # Aucun verdict de code rouge : la sentinelle n'ecrit aucune retenue.
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert "main-red-sentinel" not in contenu
+
+
+def test_sentinelle_sans_verdict_termine_fail_closed_borne(tmp_path, capsys):
+    """Point 3 : fail-closed AVEC la borne nommee (N ecrit)."""
+    history = [f"{i:040x}" for i in range(1, mr.MAIN_RED_HISTORY_LIMIT + 1)]
+    runner = ScriptedRunner(
+        main_sha=history[0],
+        main_history=history,
+        main_checks_by_sha={
+            sha: _scripts_check(None, status="in_progress", summary="")
+            for sha in history
+        },
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "fail-closed" in err
+    assert str(mr.MAIN_RED_HISTORY_LIMIT) in err
+
+
+def test_clear_main_red_hold_ne_retire_que_la_ligne_de_la_sentinelle(tmp_path):
+    """Point 3 : la voie manuelle ne touche PAS les retenues du coordinateur."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    assert mr.clear_main_red_hold(hold) is True
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    # Idempotent : une seconde passe ne trouve plus rien a retirer.
+    assert mr.clear_main_red_hold(hold) is False
+
+
+def test_cli_clear_main_red_hold_nappelle_pas_gh(tmp_path):
+    """La voie manuelle sort avant tout appel GitHub."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    runner = ScriptedRunner()
+    rc = mr.run(
+        ["--clear-main-red-hold", "--hold-file", str(hold)], runner=runner
+    )
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert runner.flat() == []
 
 
 # --- disposition de review classee a la tete evaluee (point 1 de #17672) ---------

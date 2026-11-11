@@ -67,3 +67,18 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 ```
 
 Les tranches suivantes étendront la série aux sous-séries avancées de `SymbolicAI/Planners/` (planification sous incertitude, planification temporelle, SAT-based) et aux autres carnets de `01-Foundation` / `02-Classical` non couverts ici — ajoutées au même `planners.json`, une PR par tranche, sur ce même modèle.
+
+## Série IIT — tranches 1+2 (cœur : réseau causal → Φ → CES → complexe majeur → coarse-graining → frontière → lentilles → objection Aaronson → formalisation Lean → partitionnement MIP)
+
+`iit.json` étend le même format à la série **IIT** (Integrated Information Theory), sur le **cœur** de la série : dix carnets (`IIT-01` à `IIT-09`, dont `IIT-08b` — 6 carnets Python PyPhi/Φ et 4 carnets Lean du lake `iit_lean`) et 28 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; les **prérequis** relient les carnets entre eux (par ex. le réseau causal avant Φ et la CES, Φ avant le complexe majeur, le problème de frontière, l'objection d'Aaronson et la formalisation Lean). Chaque concept cite les cellules de carnet où il est enseigné. IIT étant une théorie de la conscience spécifique, **aucun concept ne nomme de chapitre AIMA** (hors du périmètre d'AIMA) — les citations pointent les cellules des carnets uniquement.
+
+> **Tranche 2 — IIT-02 ajouté.** Le carnet `IIT-02-AdvancedTopics` (MIP, répertoires cause-effet, MICE, big Φ vs small φ) portait cinq cellules **sans identifiant stable** (métadonnée Jupyter `id`), ce qui l'avait écarté de la tranche 1 (le validateur exige un `id` stable par cellule). Les cinq `id` sont désormais stabilisés, le carnet est déclaré, et ses quatre concepts cœur sont rattachés : **partition minimale d'information (MIP)**, **répertoires cause et effet**, **MICE** et **small φ** — la MIP étant rattachée au **big Φ** (elle est la coupe qui le définit).
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/iit.json \
+  --skos-output /tmp/iit.ttl \
+  --owl-output /tmp/iit.owl
+```
+
+Les tranches suivantes étendront la série à la série **ICT** (`ICT-Series/`, 102 carnets, Epic #4588) — extension distincte documentée dans son propre README, ajoutée au même `iit.json` ou dans un `ict.json` dédié, une PR par tranche, sur ce même modèle.

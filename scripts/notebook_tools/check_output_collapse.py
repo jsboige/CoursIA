@@ -503,6 +503,8 @@ def history(since, until, notebook=None, cwd=None, limit=None):
     out_log = _git("log", "origin/main", "--first-parent",
                    "--since=" + since, "--until=" + until,
                    "--format=%H %ad %s", "--date=short", cwd=cwd)
+    if out_log is None:
+        raise RuntimeError("Impossible de lire l’historique de origin/main ; vérifier la référence et le dépôt Git.")
     if not out_log:
         return
     commits = []
@@ -1165,8 +1167,12 @@ def main(argv=None):
         return self_test()
 
     if args.history:
-        findings = list(history(args.since, args.until,
-                                notebook=args.notebook, limit=args.limit))
+        try:
+            findings = list(history(args.since, args.until,
+                                    notebook=args.notebook, limit=args.limit))
+        except RuntimeError as exc:
+            print(f"Erreur historique : {exc}", file=sys.stderr)
+            return 1
         for f in findings:
             print(json.dumps(f, ensure_ascii=False))
         print("# findings: " + str(len(findings)), file=sys.stderr)

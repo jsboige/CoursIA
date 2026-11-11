@@ -248,7 +248,7 @@
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb",
-          "cell_id": "19e37cea"
+          "cell_id": "b6d11f9e"
         }
       ],
       "prerequisites": [
@@ -262,12 +262,12 @@
       "depth": 1,
       "label_fr": "Graphes de facteurs",
       "label_en": "Factor graphs",
-      "definition_fr": "Graphe bipartite de variables et de facteurs (nodos de fonction) sur lequel l'inférence par passage de messages s'execute ; forme canonique utilisee par Infer.NET.",
+      "definition_fr": "Graphe bipartite de variables et de facteurs (nœuds de fonction) sur lequel l'inférence par passage de messages s'execute ; forme canonique utilisee par Infer.NET.",
       "definition_en": "Bipartite graph of variables and factor (function) nodes over which message-passing inference runs; the canonical form used by Infer.NET.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb",
-          "cell_id": "19e37cea"
+          "cell_id": "b6d11f9e"
         },
         {
           "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",

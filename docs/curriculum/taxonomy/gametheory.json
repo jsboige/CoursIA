@@ -130,7 +130,7 @@
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-01-Setup-Python.ipynb",
-          "cell_id": "b29c3398"
+          "cell_id": "1f435467"
         }
       ],
       "prerequisites": [
@@ -397,7 +397,7 @@
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-05-ZeroSum-Minimax-Python.ipynb",
-          "cell_id": "87169c57"
+          "cell_id": "56a1ef29"
         }
       ],
       "prerequisites": [

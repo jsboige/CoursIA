@@ -157,6 +157,52 @@ Le carnet **24** descend d'un cran dans l'échelle après le service du tier 8 :
 2. Ajouter votre clé API OpenAI : `OPENAI_API_KEY=sk-...`
 3. Les paramètres d'échantillonnage ne sont pas universels : `gpt-5-mini` refuse `temperature` (HTTP 400) quand `gpt-4o-mini` l'accepte. La table mesurée [docs/genai/parametres-par-modele.md](../../../docs/genai/parametres-par-modele.md) dit, par modèle utilisé dans les carnets, ce que chaque paramètre devient — et la garde `param_guard` (série 00-GenAI-Environment) le signale dans le carnet plutôt que de perdre le paramètre en silence.
 
+### Service REST local Structured Outputs
+
+Le cœur [`structured_outputs_core.py`](structured_outputs_core.py) reprend l'extraction de la §5 du carnet 3 : il accepte un JSON Schema racine objet ou une classe Pydantic v2, prépare le schéma pour le mode strict, appelle un endpoint OpenAI-compatible puis valide la réponse contre le schéma strict envoyé avant de la retourner. Le mode strict rend obligatoires toutes les propriétés déclarées, même celles qui étaient optionnelles dans le schéma d'origine ; si une propriété peut être absente, déclarez-la nullable et attendez une valeur `null`. Les références `$ref` externes sont rejetées pour que la validation reste autonome. Le service [`structured_outputs_service.py`](structured_outputs_service.py) expose ce même cœur sur `POST /texte/extract`.
+
+Depuis le répertoire `MyIA.AI.Notebooks/GenAI/Texte`, installez les dépendances propres au service, puis démarrez-le sur la boucle locale :
+
+```bash
+python -m pip install -r requirements-structured-outputs.txt
+export OPENAI_API_KEY='…'
+# Optionnel : endpoint local/OpenAI-compatible et modèle servi.
+export OPENAI_BASE_URL='http://127.0.0.1:5002/v1'
+export OPENAI_MODEL='nom-du-modele'
+uvicorn structured_outputs_service:app --host 127.0.0.1 --port 8000
+```
+
+`OPENAI_BASE_URL` et `OPENAI_MODEL` sont facultatifs. En leur absence, le SDK OpenAI utilise son URL par défaut et le cœur choisit `gpt-5-mini`. Une valeur présente mais invalide pour la clé, l'URL ou le modèle provoque une erreur ; aucune clé ne doit figurer dans le corps HTTP. Le serveur d'exemple écoute sur `127.0.0.1` ; choisissez explicitement un contrôle d'accès avant tout bind sur une interface réseau.
+
+Contrat de la requête :
+
+```json
+{
+  "prompt": "Extrais le score et le commentaire de ce texte.",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "score": {"type": "integer", "minimum": 0, "maximum": 100},
+      "commentaire": {"type": "string"}
+    },
+    "required": ["score", "commentaire"]
+  },
+  "model": "nom-du-modele"
+}
+```
+
+`model` est facultatif. Les réponses ont toujours un des trois corps ci-dessous : succès (`200`, JSON validé), entrée ou schéma invalide (`422`) et échec de configuration, d'API ou de validation de la réponse (`502`). Les clés inconnues dans le corps de la requête sont rejetées.
+
+```json
+{"status": "ok", "data": {"score": 88, "commentaire": "Réponse validée."}}
+{"status": "invalid", "error": "entrée invalide : vérifiez prompt, schema et model"}
+{"status": "error", "error": "échec de l'extraction structurée"}
+```
+
+Les messages HTTP restent génériques pour ne pas exposer les détails des exceptions ou du contenu fourni. Le cœur Python conserve ses exceptions détaillées pour les usages locaux.
+
+Les tests du cœur injectent un client OpenAI-compatible déterministe. Le test loopback lance Uvicorn et fait une vraie requête HTTP locale, mais ne contacte aucun LLM : il vérifie le transport et le contrat seulement. Le test d'inférence réelle et l'intégration au carnet restent à faire avec une API disponible.
+
 ### Pour les notebooks locaux (10, 10b et 11)
 - Docker avec support GPU pour servir le modèle réel avec vLLM
 - Ollama ou vLLM installé pour les notebooks de déploiement
