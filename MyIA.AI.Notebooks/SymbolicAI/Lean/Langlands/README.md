@@ -21,13 +21,9 @@ Pour suivre les liens mathématiques déjà calculés dans le dépôt, commencer
 
 Depuis 02, deux prolongements répondent à des questions différentes : [04 — Umbral Moonshine](04-umbral-moonshine-reseaux-niemeier.ipynb) élargit la piste Moonshine aux réseaux de Niemeier ; [03 — la chaîne de modularité vers Fermat](03-chaine-de-modularite-vers-fermat.ipynb) revient aux formes modulaires pour suivre le pont entre courbes elliptiques et théorème de Fermat. Le [compagnon Lean 06](06-operateurs-de-hecke-natif.ipynb) reprend ensuite les opérateurs de Hecke dans le noyau Lean et le lake [`hecke_lean/`](hecke_lean/README.md). Le carnet [05 — Szpiro–Pasten](05-szpiro-pasten-2026.ipynb) est une lecture complémentaire sur une conjecture voisine, non un prérequis à cette route.
 
-## Cours filmés de Borcherds
-
-L'inventaire des cours filmés de [sa chaîne YouTube](https://www.youtube.com/channel/UCIyDqfi_cbkp-RU20aBF-MQ/playlists) reste à compléter. Le [profil de Richard E. Borcherds à Berkeley](https://math.berkeley.edu/people/faculty/richard-e-borcherds) présente ses domaines de recherche, sans indexer ses cours. Aucune correspondance entre un cours de Borcherds et un carnet du dépôt n'est attribuée à ce stade.
-
 ## Conventions
 
-- Français d'abord, arithmétique en stdlib pur (aucune dépendance au-delà de la bibliothèque standard) ; exception : `03` recourt à `sympy` (`factorint`, `totient`) pour les factorisations admissibles `N = DM`.
+- Français d'abord, arithmétique en stdlib pur (aucune dépendance au-delà de la bibliothèque standard) ; exception : `05` recourt à `sympy` (`factorint`, `totient`) pour les factorisations admissibles `N = DM`.
 - ≥ 3 exercices C.1 par notebook (convention #2161), exécution complète commitée (C.2).
 - Verdict SOTA écrit au body de chaque PR (#3801).
 - Le versant formel vit dans le lake compagnon [`hecke_lean/`](hecke_lean/README.md) (opérateurs de Hecke, courbe de Frey), descendu avec la sous-série (gradation #17545).
