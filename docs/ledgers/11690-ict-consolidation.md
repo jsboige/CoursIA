@@ -140,7 +140,7 @@ ICT-Greffe5-AttributionCausale
 ICT-MUH-FibreTegmark
 ```
 
-Le bloc que la mesure du 2026-10-30 nommait prioritaire — les deux familles FLens `ICT-36`/`ICT-37` — compte **six** carnets et non cinq : `ICT-36d-FLens-DecorrelationTemporelle` s'y est ajouté depuis. Il reste le plus gros bloc contigu, suivi de l'axe douleur (`ICT-35`/`35b`/`35c`/`35d` et `ICT-47`/`47b`, six carnets), de `ICT-40a`/`40b`, de `ICT-46`/`46b` et de la paire `ICT-48` ci-dessous. Le reste est une traîne d'unités et quatre carnets hors numérotation (`Argumentation` ×3, `Dissociation`, `Greffe5`, `MUH`).
+Le bloc que la mesure du 2026-10-30 nommait prioritaire — les deux familles FLens `ICT-36`/`ICT-37` — compte **six** carnets et non cinq : `ICT-36d-FLens-DecorrelationTemporelle` s'y est ajouté depuis. Il reste le plus gros bloc contigu, suivi de l'axe douleur (`ICT-35`/`35b`/`35c`/`35d` et `ICT-47`/`47b`, six carnets), de `ICT-40a`/`40b`, de `ICT-46`/`46b` et de la paire `ICT-48` ci-dessous. Le reste est une traîne d'unités et six carnets hors numérotation (`Argumentation` ×3, `Dissociation`, `Greffe5`, `MUH`).
 
 ### Finding — deux carnets portent le numéro 48
 
