@@ -99,3 +99,19 @@ def test_unterminated_frontmatter_rejected(tmp_path):
     root = project(tmp_path, {'a/README.md': '---\npagetitle: Exemple\n# Vrai titre\n'})
     with pytest.raises(ValueError, match='non terminé'):
         titres.check(root)
+
+
+def test_render_list_path_with_apostrophe_is_not_skipped(tmp_path):
+    root = project(tmp_path, {"docs/l'apprentissage/README.md": '# Apprentissage\n'})
+    assert titres.readmes(root) == [Path("docs/l'apprentissage/README.md")]
+    titres.apply(root, root / 'backup.json')
+    titres.check(root)
+    titres.restore(root, root / 'backup.json')
+
+
+def test_unrecognised_readme_entry_fails_closed(tmp_path):
+    (tmp_path / '_quarto.yml').write_text('project:\n  render:\n    - "valide/README.md"\n    - "aut"re/README.md"\n')
+    (tmp_path / 'valide').mkdir()
+    (tmp_path / 'valide/README.md').write_text('# Valide\n')
+    with pytest.raises(ValueError, match='non reconnue'):
+        titres.readmes(tmp_path)

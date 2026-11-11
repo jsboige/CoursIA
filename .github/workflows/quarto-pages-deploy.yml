@@ -629,11 +629,6 @@ jobs:
         # 60 min qu'elle existe pour eviter.
         id: scope
         run: |
-          git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" > "$RUNNER_TEMP/readme-changed-files"
-          if grep -qxE 'scripts/ci/(quarto_readme_titles.py|tests/test_quarto_readme_titles.py)' "$RUNNER_TEMP/readme-changed-files"; then
-            echo "mode=full" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
           python scripts/quarto_render_scope.py \
             --base "${{ github.event.pull_request.base.sha }}" \
             --head "${{ github.event.pull_request.head.sha }}" \

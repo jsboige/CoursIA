@@ -18,7 +18,11 @@ def readmes(root: Path, config: Path | None = None) -> list[Path]:
         raise ValueError('liste project.render absente')
     paths = []
     for line in match.group(1).splitlines():
-        item = re.match(r'^\s+-\s+["\']([^"\']+)["\']\s*$', line)
+        # Le générateur écrit des chemins entre guillemets doubles ; une
+        # apostrophe à l'intérieur fait partie du nom, pas du délimiteur.
+        item = re.match(r'^\s+-\s+"([^"\r\n]+)"\s*$', line)
+        if not item and re.match(r'^\s+-\s+', line) and 'README.md' in line:
+            raise ValueError(f'entrée README non reconnue : {line}')
         if item and item[1].endswith('README.md'):
             p = Path(item[1])
             if p.is_absolute() or '..' in p.parts or not (root / p).is_file():
