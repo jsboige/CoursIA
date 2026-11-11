@@ -8,6 +8,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 
+// Contexte nullable explicite : sans lui, chaque annotation "string?" du
+// helper emet un warning CS8632 au #load, et Roslyn y cite le chemin ABSOLU
+// du fichier charge — 8 chemins machine par carnet dans la sortie commitee
+// (ratchet MACHINE_PATH, mesuree sur la re-execution du 11/11 #25276).
+#nullable enable
+
 /// <summary>
 /// Helper pour generer et afficher les factor graphs Infer.NET dans les notebooks Jupyter.
 /// Necessite Graphviz installe pour la conversion .gv -> .svg
@@ -15,7 +21,7 @@ using System.Net;
 public static class FactorGraphHelper
 {
     private static bool? _graphvizAvailable = null;
-    private static string _dotPath = null;
+    private static string? _dotPath = null;
     private static bool _dotResolved = false;
 
     /// <summary>
@@ -26,7 +32,7 @@ public static class FactorGraphHelper
     /// d'ou ce fallback (issue #3473). Retourne le chemin resolu (ou "dot" si
     /// present sur le PATH), ou null si introuvable. Resultat mis en cache.
     /// </summary>
-    private static string ResolveDotPath()
+    private static string? ResolveDotPath()
     {
         if (_dotResolved) return _dotPath;
         _dotResolved = true;
@@ -462,6 +468,10 @@ public static class FactorGraphHelper
             };
 
             using var proc = Process.Start(psi);
+            if (proc is null)
+            {
+                return "<div style='color:red'>Impossible de lancer Graphviz (dot).</div>";
+            }
             proc.WaitForExit(5000);
 
             if (proc.ExitCode == 0 && File.Exists(svgPath))
