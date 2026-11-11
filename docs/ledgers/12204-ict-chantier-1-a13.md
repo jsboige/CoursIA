@@ -6,15 +6,17 @@
 
 ## La question posée
 
-Le §4octies du body de #12204 consigne une limite d'attestation au mot près :
+Le §4octies du body de #12204 (édition du 2026-11-09) consigne la limite (i) — phrase exacte :
 
-> (i) la littérature est partagée sur le canon AGM, pas deux théories étrangères — une **troisième lignée** (révision de Dalal par modèles, distincte de CrMas et de la contraction par noyaux) resterait **à vérifier, pas à supposer**.
+> (i) littérature — **partagé sur le canon AGM**, distinct sur les branches. Consigné comme limite explicite : la paire établit l'opération sur deux **substrats** et deux **problèmes**, pas sur deux théories étrangères.
+
+L'hypothèse d'une **troisième lignée** ne vient pas du body de #12204 (le mot « Dalal » n'y apparaît ni dans le body, ni dans ses éditions, ni dans ses commentaires) mais du **ledger A12** (l. 27-29, PR #25453), formulée pour ce carnet avant sa mise sur `main` : « Quand il atterrira, ce sera un **troisième** témoin — d'une troisième lignée d'implémentation. »
 
 La tranche A12 n'avait pas compté l'usage d'`Argumentation-06c` : « non committé, organe `argumentation_lib` absent de main, à re-mesurer au merge ». L'organe et le carnet sont désormais sur `main` : A13 fait cette re-mesure **à la source**, et tranche la limite.
 
 ## Verdict : la limite (i) n'est PAS levée
 
-**`method='dalal'` est un alias documenté du chemin Levi**, et non une troisième lignée. La troisième lignée reste une lacune du recouvrement.
+**`method='dalal'` est un alias documenté du chemin Levi**, et non une troisième lignée. La troisième lignée reste une lacune du recouvrement. **Ce verdict contredit l'anticipation du ledger A12 citée ci-dessus** — la « troisième lignée d'implémentation » attendue de ce carnet n'existe pas : la re-mesure à la source établit l'alias Levi, et c'est précisément ce qui fait de la troisième lignée une **lacune** plutôt qu'une attestation manquée.
 
 ### 1. Ce que le code fait — pas ce qu'il déclare
 
@@ -65,5 +67,5 @@ Constat mesuré à la source (cellule [7], sortie committée) et lu dans le code
 ## Méthode et limites de la mesure
 
 - **Lu à la source** : le handler et les cellules du carnet, prose et sorties committées — aucune re-copie de résumé.
-- **Exécution locale non rejouée** : les actifs JVM (`Tweety/libs/*.jar`, `jdk-17-portable/`) sont gitignorés et **absents de cette machine** (répertoires présents, vides — mesuré le 2026-11-11) ; une re-exécution Papermill échoue à l'initialisation (`RuntimeError: JVM/Tweety non demarree via la shim`). La série interdit le mode dégradé. Le verdict repose donc sur (a) le code lu et (b) les **sorties réelles committées** du carnet (écrites sur une machine JVM-outillée), non sur une nouvelle exécution — ce qui suffit : la question porte sur l'**identité d'algorithme**, établie par le code lui-même (le paramètre `method` n'entre pas dans le calcul).
+- **Exécution locale non rejouée** : les actifs JVM (`Tweety/libs/*.jar`, `jdk-17-portable/`) sont gitignorés et **absents de cette machine** (répertoires présents, vides — mesuré le 2026-11-11) ; une re-exécution Papermill échoue à l'initialisation du handler (`raise RuntimeError("BeliefRevisionHandler instantiated before JVM is ready.")`, `argumentation_lib/_belief_revision_handler.py` l. 63-64). La série interdit le mode dégradé. Le verdict repose donc sur (a) le code lu et (b) les **sorties réelles committées** du carnet (écrites sur une machine JVM-outillée), non sur une nouvelle exécution — ce qui suffit : la question porte sur l'**identité d'algorithme**, établie par le code lui-même (le paramètre `method` n'entre pas dans le calcul).
 - **Portée** : la convergence `dalal ≡ levi` vaut pour le jeu de JARs présent à l'exécution committée (Tweety 1.28, version non figée dans le dépôt). Le code documente l'absence de classe Dalal dans cette version ; il ne prétend rien sur une version future.
