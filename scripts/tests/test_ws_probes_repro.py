@@ -87,3 +87,41 @@ def test_auto_alias_reports_torchvision(monkeypatch):
 def test_unknown_source_rejected():
     with pytest.raises(ValueError, match="Source inconnue"):
         repro.load_fashion_mnist("/cache", "unknown")
+
+
+def test_margin_default_cli_reaches_prepare_with_torchvision(monkeypatch):
+    class Tensor:
+        def __init__(self, values):
+            self.values = np.array(values)
+
+        def numpy(self):
+            return self.values
+
+    calls = []
+
+    def fashion_mnist(root, train, download):
+        calls.append((train, download))
+        return SimpleNamespace(data=Tensor([[[255]]]), targets=Tensor([int(train)]))
+
+    class PrepareReached(Exception):
+        pass
+
+    def prepare(images, labels):
+        assert images.tolist() == [[[1.0]]]
+        assert labels.tolist() == [1]
+        raise PrepareReached
+
+    monkeypatch.setitem(sys.modules, "torchvision", SimpleNamespace())
+    monkeypatch.setitem(sys.modules, "torchvision.datasets",
+                        SimpleNamespace(FashionMNIST=fashion_mnist))
+    monkeypatch.setitem(sys.modules, "ws_probes_repro", repro)
+    margin_spec = importlib.util.spec_from_file_location(
+        "ws_probes_margin_test", Path(__file__).resolve().parents[1] / "repro/ws_probes_margin.py"
+    )
+    margin = importlib.util.module_from_spec(margin_spec)
+    margin_spec.loader.exec_module(margin)
+    monkeypatch.setattr(margin, "prepare", prepare)
+    monkeypatch.setattr("sklearn.datasets.fetch_openml", lambda *a, **kw: pytest.fail("repli OpenML"))
+    with pytest.raises(PrepareReached):
+        margin.main([])
+    assert calls == [(True, True), (False, True)]
