@@ -68,6 +68,76 @@ def test_count_re_requires_number_before_noun():
     assert cqc.COUNT_RE.search("le module numero 5") is None
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        "Sommets : 81 cellules de la grille (9x9)",
+        "Ce notebook présente 81 cellules de la grille Sudoku.",
+        "Ce notebook présente une grille Sudoku de 81 cellules.",
+        "Dans ce carnet, la matrice de couverture exacte compte 729 lignes, une par couple cellule-valeur.",
+        "This notebook presents 81 cells of the grid.",
+        "The graph has 81 cells of the 9x9 grid as vertices.",
+        "**729 lignes** = 9 lignes x 9 colonnes x 9 valeurs",
+        "La matrice de couverture exacte compte 729 lignes, une par couple cellule-valeur.",
+        "La matrice contient 324 colonnes x 729 lignes maximum.",
+        "The exact-cover matrix has 729 lines, one for each cell-value pair.",
+    ],
+)
+def test_artifact_detector_spares_explicit_domain_model_dimensions(line):
+    """Les dimensions explicites d'un modele Sudoku ne sont pas des inventaires.
+
+    81 cellules décrit les cases de la grille ; 729 lignes décrit les candidats
+    de la matrice de couverture exacte. Ces quantités mathématiques stables ne
+    doivent pas bloquer une PR pédagogique en mode ``--diff --strict``.
+    """
+    assert cqc._findings_in_text(line, "cours/sudoku.ipynb", {"artifact"}) == []
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        (
+            "The notebook has 81 cells of the grid.",
+            ["81 cells"],
+        ),
+        (
+            "La matrice de données du fichier source a 120 lignes, une par couple cellule-valeur.",
+            ["120 lignes"],
+        ),
+        (
+            "Le notebook contient 81 cellules de code pour expliquer la grille Sudoku.",
+            ["81 cellules"],
+        ),
+        (
+            "Le fichier source compte 729 lignes de code pour construire la matrice.",
+            ["729 lignes"],
+        ),
+        (
+            "Le fichier source contient 729 lignes, une par couple cellule-valeur.",
+            ["729 lignes"],
+        ),
+        (
+            "Le fichier source fait 324 colonnes x 729 lignes.",
+            ["729 lignes"],
+        ),
+        (
+            "Matrice de couverture exacte : 729 lignes, une par couple cellule-valeur ; "
+            "le notebook contient aussi 81 cellules de code.",
+            ["81 cellules"],
+        ),
+        (
+            "Matrice de couverture exacte : le code fait 80 lignes de code ; "
+            "729 lignes, une par couple cellule-valeur.",
+            ["80 lignes"],
+        ),
+    ],
+)
+def test_domain_context_does_not_hide_artifact_inventory_counts(line, expected):
+    """Le contexte mathématique ne doit masquer aucun compte d'inventaire."""
+    findings = cqc._findings_in_text(line, "cours/sudoku.ipynb", {"artifact"})
+    assert [snippet for _location, _klass, snippet in findings] == expected
+
+
 # --------------------------------------------------------------------------- #
 #  Allowlist motivee de la classe artifact (#23111)
 # --------------------------------------------------------------------------- #
@@ -132,6 +202,43 @@ def test_artifact_exemptions_cover_the_named_lean_occurrences(path, line):
     la population d'une transcription FABRIQUEE du canon, citee comme temoin
     d'echec du self-check — un nombre du recit de l'incident, pas un etat du
     depot. Supprimer ces nombres reecrirait le propos."""
+    assert cqc._findings_in_text(line, path, {"artifact"}) == []
+
+
+@pytest.mark.parametrize(
+    "path, line",
+    [
+        # « Tranche 4 » (v5, 2026-11-07) du manifeste de preservation #14238
+        # (PR #25120) : comptes de lignes figes de la curation de la version.
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "Le manifeste passe de **10 259** à **13 187** lignes ;",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "les 2 930 lignes nouvelles s'y ajoutent",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "`branch-cleanup-manifest.tsv.gz` (compressé gzip, 575 Ko, "
+            "décompressé 1.65 Mo, **13 187 lignes**) — 6 colonnes",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "- Selection reellement poussee (2 927 lignes)",
+        ),
+        (
+            "docs/reference/branch-cleanup-manifest.README.md",
+            "- Refus motives (9 lignes)",
+        ),
+    ],
+)
+def test_artifact_exemptions_cover_branch_cleanup_manifest_counts(path, line):
+    """Les comptes de lignes du manifeste de preservation #14238 (section
+    « Tranche 4 », v5) ne sont plus signales : ce sont des faits FIGES de la
+    curation de cette version, re-mesurables a la commande de la section
+    « Verification », pas un etat du depot qui deriverait a chaque ajout.
+    Les supprimer reecrirait la preuve du geste (angle-mort du guard)."""
     assert cqc._findings_in_text(line, path, {"artifact"}) == []
 
 
@@ -813,6 +920,44 @@ def test_scan_diff_skips_code_cell_comments_but_flags_markdown_counts(tmp_path, 
         "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
     found = cqc.scan_diff("HEAD", {"artifact"})
     assert [snippet for _loc, _klass, snippet in found] == ["1 ligne"]
+
+
+def test_scan_diff_strict_accepts_domain_dimensions_but_keeps_inventory(
+    tmp_path, monkeypatch, capsys
+):
+    """La porte diff/strict accepte la geometrie, mais refuse l'inventaire."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "core.autocrlf", "false")
+    nb_path = repo / "sudoku.ipynb"
+    metadata = {"metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    _dump_nb(
+        nb_path,
+        {
+            **metadata,
+            "cells": [{"cell_type": "markdown", "source": ["Introduction.\n"]}],
+        },
+    )
+    _commit_all(repo, "base")
+    monkeypatch.chdir(repo)
+
+    domain_cells = [
+        {"cell_type": "markdown", "source": ["Sommets : 81 cellules de la grille (9x9)\n"]},
+        {"cell_type": "markdown", "source": ["**729 lignes** = 9 lignes x 9 colonnes x 9 valeurs\n"]},
+    ]
+    _dump_nb(nb_path, {**metadata, "cells": domain_cells})
+    findings = cqc.scan_diff("HEAD", {"artifact"})
+    assert findings == []
+    assert cqc._emit_grouped(findings, strict=True, structural_only=False) == 0
+    capsys.readouterr()
+
+    inventory = {"cell_type": "markdown", "source": ["Le carnet contient 81 cellules de code.\n"]}
+    _dump_nb(nb_path, {**metadata, "cells": [*domain_cells, inventory]})
+    findings = cqc.scan_diff("HEAD", {"artifact"})
+    assert [snippet for _loc, _klass, snippet in findings] == ["81 cellules"]
+    assert cqc._emit_grouped(findings, strict=True, structural_only=False) == 1
+    assert "[REFUS]" in capsys.readouterr().out
 
 
 # --------------------------------------------------------------------------- #

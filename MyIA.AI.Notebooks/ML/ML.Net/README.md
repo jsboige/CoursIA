@@ -31,25 +31,55 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 ### Fondamentaux (ML-01 à ML-04)
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 01 | [ML-01-Introduction-CSharp](ML-01-Introduction-CSharp.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-01-Introduction-Python.ipynb)* | 30-40 min |
-| 02 | [ML-02-Data-Features-CSharp](ML-02-Data-Features-CSharp.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data-Features-Python.ipynb)* | 40-50 min |
-| 03 | [ML-03-Entrainement-AutoML-CSharp](ML-03-Entrainement-AutoML-CSharp.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-03-Entrainement-AutoML-Python.ipynb)* | 45-60 min |
-| 04 | [ML-04-Evaluation-CSharp](ML-04-Evaluation-CSharp.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-04-Evaluation-Python.ipynb)* | 40-50 min |
-| 04b | [ML-04b-ModelComparison-Validity](ML-04b-ModelComparison-Validity-Python.ipynb) | Validité statistique des comparaisons de modèles : variance d'un split, bootstrap, t-test corrigé (Nadeau-Bengio), Bonferroni · *standalone Python (scikit-learn, scipy)* | 45-60 min |
+| # | Notebook | Contenu | Durée | Pour approfondir |
+|---|----------|---------|-------|------------------|
+| 01 | [ML-01-Introduction-CSharp](ML-01-Introduction-CSharp.ipynb) | Hello ML.NET World, pipeline de base · *jumeau [Python](ML-01-Introduction-Python.ipynb)* | 30-40 min | — |
+| 02 | [ML-02-Data-Features-CSharp](ML-02-Data-Features-CSharp.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data-Features-Python.ipynb)* | 40-50 min | — |
+| 03 | [ML-03-Entrainement-AutoML-CSharp](ML-03-Entrainement-AutoML-CSharp.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-03-Entrainement-AutoML-Python.ipynb)* | 45-60 min | — |
+| 04 | [ML-04-Evaluation-CSharp](ML-04-Evaluation-CSharp.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-04-Evaluation-Python.ipynb)* | 40-50 min | [04b](#approfondissement-04-evaluation) |
 
-### Fonctionnalités avancées (ML-05 à ML-09c)
+### Fonctionnalités avancées (ML-05 à ML-09)
 
-| # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée |
-|---|----------|---------|------------------------------------------|-------|
-| 05 | [ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min |
+| # | Notebook | Contenu | Jumeau Python (scikit-learn / statsmodels) | Durée | Pour approfondir |
+|---|----------|---------|---------------------------------------------|-------|------------------|
+| 05 | [ML-05-TimeSeries-CSharp](ML-05-TimeSeries-CSharp.ipynb) | **Time Series Forecasting** avec ForecastBySsa (SSA) | [ML-05-Python](ML-05-TimeSeries-Python.ipynb) — STL + SARIMA | 45-60 min | [05b](#approfondissement-05-series-temporelles) |
+| 06 | [ML-06-ONNX-CSharp](ML-06-ONNX-CSharp.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min | — |
+| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min | [07b](#approfondissement-07-recommandation) |
+| 08 | [ML-08-Clustering-CSharp](ML-08-Clustering-CSharp.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min | — |
+| 09 | [ML-09-Anomaly-Detection-CSharp](ML-09-Anomaly-Detection-CSharp.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min | [09b](#approfondissement-09-detection-anomalies) · [09c](#approfondissement-09-detection-anomalies) |
+
+### Approfondissements
+
+<a id="approfondissement-04-evaluation"></a>
+
+#### Autour de 04 — Évaluation
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
+| 04b | [ML-04b-ModelComparison-Validity](ML-04b-ModelComparison-Validity-Python.ipynb) | Validité statistique des comparaisons de modèles : variance d'un split, bootstrap, t-test corrigé (Nadeau-Bengio), Bonferroni | *standalone Python (scikit-learn, scipy)* | 45-60 min |
+
+<a id="approfondissement-05-series-temporelles"></a>
+
+#### Autour de 05 — Séries temporelles
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
 | 05b | [ML-05b-Series-Temporelles-Classiques](ML-05b-Series-Temporelles-Classiques-Python.ipynb) | **Socle statistique des séries temporelles** : ADF (stationnarité), ACF/PACF (ordres p/q), ARIMA/SARIMA, lissage exponentiel, backtest glissant | *standalone Python (statsmodels — le socle que ML-05 suppose)* | 60-75 min |
-| 06 | [ML-06-ONNX-CSharp](ML-06-ONNX-CSharp.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min |
-| 07 | [ML-07-Recommendation-CSharp](ML-07-Recommendation-CSharp.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min |
-| 08 | [ML-08-Clustering-CSharp](ML-08-Clustering-CSharp.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
-| 09 | [ML-09-Anomaly-Detection-CSharp](ML-09-Anomaly-Detection-CSharp.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
+
+<a id="approfondissement-07-recommandation"></a>
+
+#### Autour de 07 — Recommandation
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
 | 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
+
+<a id="approfondissement-09-detection-anomalies"></a>
+
+#### Autour de 09 — Détection d'anomalies
+
+| # | Notebook | Contenu | Écosystème | Durée |
+|---|----------|---------|------------|-------|
 | 09b | [ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | **Introspection des benchmarks** : pourquoi un détecteur de 1924 (SPC `M+3σ`) bat un auto-encodeur, les 4 pièges de Wu & Keogh, UCR Archive | *standalone Python (scikit-learn — anti-dote aux benchmarks triviaux)* | 45-60 min |
 | 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *standalone Python (stumpy — la réponse constructive à ML-09b)* | 45-60 min |
 
@@ -305,7 +335,7 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 dotnet --version  # doit afficher 9.x.x
 
 # 2. Installer .NET Interactive
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # 3. Vérification
@@ -388,7 +418,7 @@ ML-09c-MatrixProfile-Multidim (Matrix Profile, détection sans apprentissage)
 | Problème | Solution |
 |----------|----------|
 | `The type 'MLContext' could not be found` | Vérifier que ML.NET est installé via `#r "nuget: Microsoft.ML"` dans le notebook. Le notebook 1 (Introduction) couvre la configuration |
-| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive` |
+| `.NET kernel non disponible` | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | `IDataView` performance sur grands datasets | Utiliser `TextLoader` avec le schéma explicite plutôt que le chargement dynamique. ML.NET est optimisé pour les charges batch |
 | ONNX export échoue | Tous les trainers ML.NET ne supportent pas l'export ONNX. Vérifier la compatibilité dans le notebook 6 (ONNX) |
 | Modèle ML.NET en dehors de Jupyter | Utiliser `mlContext.Model.Save()` pour sérialiser le modèle .zip, puis le charger dans une application console ou web |
@@ -400,11 +430,11 @@ ML-09c-MatrixProfile-Multidim (Matrix Profile, détection sans apprentissage)
 dotnet --version  # doit afficher 9.x.x
 
 # Installer .NET Interactive globalement
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Si déjà installé mais kernel absent, mettre à jour
-dotnet tool update --global Microsoft.dotnet-interactive
+dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Vérifier

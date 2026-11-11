@@ -65,7 +65,7 @@ families:
         acceptance:
           zero_errors: true
           outputs_present: true
-      Argument_Analysis:
+      ArgumentAnalysis:
         kernel: python3
         strategy: papermill
 
@@ -179,7 +179,7 @@ families:
       Diagnostic-Medical:
         kernel: python3
         strategy: papermill
-      Oncology-Planning:
+      Planification-Oncologie:
         kernel: python3
         strategy: papermill
     acceptance:
