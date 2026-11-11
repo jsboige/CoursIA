@@ -70,3 +70,32 @@ def test_restore_refuses_external_edits(tmp_path):
     (root / 'a/README.md').write_text('intervention\n')
     with pytest.raises(ValueError, match='modifiée'):
         titres.restore(root, backup)
+
+
+@pytest.mark.parametrize('field', [
+    'pagetitle:',
+    'pagetitle:   ',
+    'pagetitle :',
+    '"pagetitle":',
+    "'pagetitle': # commentaire",
+    'pagetitle: # commentaire',
+    'pagetitle: ""',
+    "pagetitle: ''",
+    'pagetitle: "   "',
+    'pagetitle: null',
+    'pagetitle: "guillemet non fermé',
+    "pagetitle: 'guillemet non fermé",
+    'pagetitle: autre: valeur',
+])
+def test_invalid_pagetitle_never_consumes_next_key(tmp_path, field):
+    root = project(tmp_path, {'a/README.md': '---\n' + field + '\ndescription: exemple\n---\n# Vrai titre\n'})
+    with pytest.raises(ValueError):
+        titres.check(root)
+    with pytest.raises(ValueError):
+        titres.apply(root, root / 'backup.json')
+
+
+def test_unterminated_frontmatter_rejected(tmp_path):
+    root = project(tmp_path, {'a/README.md': '---\npagetitle: Exemple\n# Vrai titre\n'})
+    with pytest.raises(ValueError, match='non terminé'):
+        titres.check(root)

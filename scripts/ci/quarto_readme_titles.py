@@ -30,9 +30,9 @@ def readmes(root: Path, config: Path | None = None) -> list[Path]:
 
 
 def frontmatter(text: str) -> tuple[str | None, int]:
-    if not re.match(r'^---\s*\r?\n', text):
+    if not re.match(r'^---[ \t]*\r?\n', text):
         return None, 0
-    end = re.search(r'(?m)^---\s*\r?$', text[text.index('\n') + 1:])
+    end = re.search(r'(?m)^---[ \t]*\r?$', text[text.index('\n') + 1:])
     if not end:
         raise ValueError('front matter non terminé')
     start = text.index('\n') + 1
@@ -43,17 +43,21 @@ def explicit(text: str) -> str | None:
     fm, _ = frontmatter(text)
     if fm is None:
         return None
-    entries = re.findall(r'(?m)^pagetitle:\s*(.*?)\s*$', fm)
+    entries = re.findall(r'''(?m)^(?:pagetitle|"pagetitle"|'pagetitle')[ \t]*:[ \t]*([^\r\n]*)$''', fm)
     if not entries:
         return None
     if len(entries) != 1:
         raise ValueError('plusieurs pagetitle')
-    value = entries[0]
+    value = entries[0].strip()
+    if not value or value.startswith('#'):
+        raise ValueError('pagetitle vide')
     if value.startswith('"'):
         value = json.loads(value)
-    elif value.startswith("'") and value.endswith("'"):
+    elif value.startswith("'"):
+        if not re.fullmatch(r"'(?:[^']|'')*'", value):
+            raise ValueError('pagetitle YAML mal formé')
         value = value[1:-1].replace("''", "'")
-    elif re.search(r'[#\[\]{}]|^([|>]|null$|~$)', value, re.I):
+    elif re.search(r'[#\[\]{}]|:[ \t]|^([|>]|null$|~$|true$|false$)', value, re.I):
         raise ValueError('pagetitle YAML non pris en charge')
     if not isinstance(value, str) or not value.strip():
         raise ValueError('pagetitle vide')
