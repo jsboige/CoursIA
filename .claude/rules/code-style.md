@@ -1,3 +1,7 @@
+---
+paths: "{**/*.py,**/*.cs,**/*.csx,**/*.ipynb,**/*.lean}"
+---
+
 # Code Style Rules
 
 ## General
