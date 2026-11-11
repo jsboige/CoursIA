@@ -7,7 +7,7 @@ pagetitle: "Probas - Programmation Probabiliste"
 <!-- CATALOG-STATUS
 series: Probas
 pedagogical_count: 93
-breakdown: DecisionTheory=38, Infer=21, PyMC=20, Applications=11, root=3
+breakdown: DecisionTheory=38, Infer=21, PyMC=20, Applications=12, Fondations=2
 maturity: BETA=87, ALPHA=5, DRAFT=1
 -->
 

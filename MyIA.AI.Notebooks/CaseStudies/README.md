@@ -7,7 +7,7 @@ pagetitle: "CaseStudies - Études de cas interdisciplinaires"
 <!-- CATALOG-STATUS
 series: CaseStudies
 pedagogical_count: 6
-breakdown: Diagnostic-Medical-Python=2, Oncology-Planning=2, SmartGrid-Energy=2
+breakdown: Diagnostic-Medical=2, Planification-Oncologie=2, Reseau-Electrique-Intelligent=2
 maturity: BETA=6
 -->
 

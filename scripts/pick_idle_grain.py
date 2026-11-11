@@ -9381,6 +9381,18 @@ def belt_visit_stamp(it: dict) -> str | None:
 CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
+# #24373 -- une creation recente est une priorite de premier passage, pas une
+# dette qui puisse conserver la tete du tapis indefiniment. Au-dela de la
+# premiere semaine, une issue jamais visitee ne garde plus la tete : elle
+# rejoint la classe 2, triee par `created_at` et melangee aux items dont une
+# visite est mesuree. Relecture du 11/11 : la classe 3 disparait -- le stock
+# qu'elle repoussait derriere tout item deja visite est precisement celui des
+# issues anciennes a fermer, et le tapis doit le servir. Le seuil suit le
+# cycle hebdomadaire deja porte par le plafond EPIC (#22500).
+NEVER_VISITED_PRIORITY_DAYS = 7
+# Une issue dont la date de creation est absente ou illisible n'a pas d'ordre
+# dans la file : elle passe en dernier de sa classe, jamais au milieu.
+NO_DATE_SENTINEL = "9999-12-31T23:59:59Z"
 # #21067 correctif 1 -- le plafond de VISITES (#22500, ci-dessus) regarde un
 # claim ou une sous-issue ; il ne voit pas les LIVRAISONS. Une lane qui
 # enchaine les sous-grains d'un meme EPIC sans repasser par le tapis ne pose
@@ -9466,24 +9478,39 @@ def _visit_age_hours(stamp, now) -> float | None:
     return (now - when).total_seconds() / 3600.0
 
 
-def belt_sort_key(it: dict, *, now=None) -> tuple:
+def belt_sort_key(it: dict, *, now=None,
+                  never_visited_priority_days: int =
+                  NEVER_VISITED_PRIORITY_DAYS) -> tuple:
     """Cle de tri deterministe pour le tapis roulant.
 
     Spec #18832 : **une seule ligne de temps** -- derniere visite (merge
     d'une PR citant l'issue, claim pose sur elle, ou creation d'une
     sous-issue qui la nomme ; cf `belt_visit_stamp`), sinon date de
-    creation, sinon NOW. La plus ancienne en tete. Une sous-issue tout juste
-    creee repart en queue, pas en tete, et pousse son parent avec elle.
+    creation. Une sous-issue tout juste creee repart en queue, pas en tete,
+    et pousse son parent avec elle.
+
+    #24373 -- une issue sans visite ne garde la tete du tapis que pendant sa
+    premiere semaine (seuil ajustable par `never_visited_priority_days`,
+    sept jours par defaut). Les issues jamais visitees creees dans cette fenetre
+    passent avant les issues deja visitees, de la plus recente a la plus
+    ancienne ; les issues plus anciennes (ou dont la date est illisible)
+    rejoignent la classe 2 -- trie par `created_at` et melangee aux items
+    visites, qui gardent leur date de visite. Relecture du 11/11 : la classe 3
+    (jamais visitee ET hors fenetre, derriere tout item deja visite) a disparu.
+    Le stock qu'elle repoussait est precisement celui des issues anciennes
+    jamais servies -- dont beaucoup sont a fermer -- et le tapis doit le servir.
 
     #22500 -- la ligne de temps ne suffisait pas : elle traite une issue de
     consolidation comme n'importe quelle autre, alors que le mandat user du
     2026-10-25 demande qu'elle soit visitee « plusieurs fois par semaine ».
-    Tri : `(classe, rang, stamp ISO asc, numero asc)` avec `classe = 0` pour une
-    consolidation **due** (derniere visite il y a au moins
-    `CONSOLIDATION_LAG_H` heures), `1` sinon. Une consolidation due passe
-    donc devant tout le reste, et les consolidations dues entre elles
-    gardent l'ordre de leur visite : aucune ne peut attendre plus longtemps
-    qu'un tour de tapis apres son echeance.
+    Tri : `classe` place d'abord les consolidations dues encore dans la borne,
+    puis les premieres visites recentes, puis les items visites -- dont les
+    jamais-visitees hors fenetre, rangees par leur date de creation. Le rang
+    de classe 0 garde le tri de consolidation existant pour les items jamais
+    visites encore dans la borne et les items deja visites. Ces consolidations
+    dues passent devant le reste et gardent entre elles l'ordre de leur
+    visite : aucune ne peut attendre plus longtemps qu'un tour de tapis apres
+    son echeance.
 
     #22500 point 2 (seconde passe) -- `rang` : dans la classe 0, un GRAIN
     borne passe devant un EPIC. Mesure du 26/10 : les EPICs de consolidation
@@ -9491,17 +9518,42 @@ def belt_sort_key(it: dict, *, now=None) -> tuple:
     une lane en cycle de 30 minutes ne sait pas les servir (« le belt offre
     4 umbrellas toutes bloquees », quatre cycles de suite ; « tache
     multi-heures, non hote dans la queue d'un cycle cron »). Le rang ne
-    change QUE l'ordre a l'interieur de la classe 0 : la classe 1 garde
-    exactement son ordre d'avant (rang 0 pour tous).
+    change que l'ordre a l'interieur de la classe 0.
     """
     moment = now or NOW
     visit = belt_visit_stamp(it)
     stamp = visit or it.get("created_at") or moment.isoformat()
+    priority_age_h = max(0, int(never_visited_priority_days)) * 24
+    never_age = (_visit_age_hours(it.get("created_at"), moment)
+                 if visit is None else None)
+    stale_never = (
+        visit is None
+        and (never_age is None
+             or never_age < 0
+             or never_age > priority_age_h)
+    )
     if is_consolidation(it):
         age = _visit_age_hours(visit or it.get("created_at"), moment)
-        if age is not None and age >= CONSOLIDATION_LAG_H:
+        if (not stale_never and age is not None
+                and age >= CONSOLIDATION_LAG_H):
             return (0, _bounded_rank(it), stamp, it.get("number", 0))
-    return (1, 0, stamp, it.get("number", 0))
+    if visit is None:
+        if not stale_never:
+            # L'age croissant place la creation la plus recente en premier.
+            return (1, 0, never_age, it.get("number", 0))
+        # Relecture du 11/11 (#24373) : la classe 3 disparait. Une issue
+        # jamais visitee hors fenetre de priorite rejoint la classe 2, triee
+        # par `created_at` et melangee aux items visites (tries par date de
+        # visite). Le stock des issues anciennes jamais servies -- dont
+        # beaucoup sont a fermer -- est ainsi servi par le tapis au lieu
+        # d'etre repousse derriere tout item deja visite.
+        created = it.get("created_at")
+        # Une date absente ou illisible n'a pas d'ordre : elle passe en
+        # dernier de la classe 2, jamais au milieu.
+        return (2, 0,
+                created if never_age is not None else NO_DATE_SENTINEL,
+                it.get("number", 0))
+    return (2, 0, stamp, it.get("number", 0))
 
 
 def _bounded_rank(it: dict) -> int:
@@ -11232,7 +11284,11 @@ def draw_belt(
     filtered = belt_filter(admitted, args, epic_load=epic_load,
                            drops=drops, notes=notes)
     filtered.sort(key=belt_sort_key)
-    return filtered[:args.grains]
+    # #21436 : tri AVANT slice -- la tete du tri (le grain le plus ripe)
+    # reste dans le slice quel que soit N >= 1. max(1, ...) aligne ce
+    # chemin sur le board-consumer (l.11735) : --grains 0 ou negatif ne
+    # doit jamais vider la sortie ni tronquer le bout de liste.
+    return filtered[:max(1, args.grains)]
 
 
 def _origami_parking_state(pool: list[dict]) -> tuple[dict[int, str], dict]:
@@ -13459,7 +13515,10 @@ def main(argv: list[str] | None = None) -> int:
                     help="#14591 Volet A : ecrire le CSV au moment du tirage "
                          "('candidate'). Defaut : aucun. L'ancien choix 'merged' "
                          "etait un no-op et a ete retire (#14704).")
-    ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
+    ap.add_argument("--grains", type=int, default=4,
+                    help="candidats urne 'grain' (defaut 4, plafonne a 200 -- "
+                         "#21436 : le grain le plus ripe reste servi en tete "
+                         "quel que soit ce nombre, le tri precede le slice)")
     ap.add_argument("--belt-time-budget", dest="belt_time_budget", type=float,
                     default=float(os.environ.get("PICK_BELT_TIME_BUDGET_S") or 240),
                     help="#21436 mur de temps du mode --belt, en SECONDES pour la "
@@ -13489,9 +13548,12 @@ def main(argv: list[str] | None = None) -> int:
                          "comptent aussi)")
     ap.add_argument("--belt", action="store_true",
                     help="#18832 mode 'tapis roulant' : trie le pool ouvert "
-                         "par date de derniere livraison (None = jamais servie en "
-                         "tete, sinon ISO ascending), puis par createdAt puis par "
-                         "numero. Pas de ponderation, pas d'urne. Les gardes "
+                         "par classe de service -- une issue jamais servie "
+                         "creeee dans sa premiere semaine (7 jours par defaut) "
+                         "passe en tete ; au-dela, elle rejoint la file des "
+                         "items deja servis, trie par createdAt, comme eux par "
+                         "date de derniere livraison -- puis par createdAt puis "
+                         "par numero. Pas de ponderation, pas d'urne. Les gardes "
                          "(rouge, WIP, secheresse) restent en tete et rende la "
                          "file comme rappel, jamais comme motif de vide.")
     ap.add_argument("--belt-replay-export", default=None, metavar="PATH",
@@ -13660,6 +13722,13 @@ def main(argv: list[str] | None = None) -> int:
     ap.set_defaults(check_claims=True)
     args = ap.parse_args(argv)
     args.prev_genre = sorted(normalize_prev_genres(args.prev_genre))
+    # #21436 : la borne de --grains est enforcee, pas seulement documentee.
+    # Au-dela, la fenetre de service (grains*5+50) explose le mur de temps
+    # du tapis ; en dessous de 1, le slice viderait la sortie (le tri
+    # precedent le slice garantit par ailleurs 0 faux negatif sur un grain
+    # ripe quel que soit ce nombre -- cf test_pick_idle_grain_21436_grains).
+    if not 1 <= args.grains <= 200:
+        ap.error("--grains doit valoir entre 1 et 200 (defaut 4)")
     if args.apply_comment is not None and not args.orphans_report:
         ap.error("--apply-comment n'a de sens qu'avec --orphans-report")
     # Q41 : l'echappatoire du plafond de WIP est AUDITEE a la difference de
