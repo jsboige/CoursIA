@@ -244,16 +244,58 @@ Trois surfaces portent ce sujet, chacune avec son role : **ce paragraphe** est l
 actionnable (ne pas recopier le fichier, et quelle valeur mettre a la place) ; l'en-tete de
 `coursia-ci.slice` (bloc `PIEGE DE RECOPIE`) porte le mecanisme et sa conclusion ; la
 **mesure chiffree du 2026-09-08** (`memory.peak`, sous-groupes, `max` sur le leurre) vit
-dans le corps de #15157, et nulle part ailleurs dans le depot.
+dans le corps de #15157, et nulle part ailleurs dans le depot. L'**etat du daemon au
+2026-11-11** (defaut present ou absent, leurre plat, mur reel) vit ci-dessous, avec la
+recette qui le re-mesure.
 
 Le `daemon.json` du daemon Docker Desktop, lui, **ne vit pas dans ce depot** : ce sont
-`~/.docker/daemon.json` et `settings-store.json` de l'hote. Au 2026-10-23, le leurre plat a
-ete retire de la machine -- reproductible par `ls -d /sys/fs/cgroup/coursia-ci.slice`,
-attendu **absent** ; la presence d'un `cgroup-parent` par defaut sur ce daemon n'est en
-revanche **pas confirmee**. Tant qu'elle ne l'est pas, les conteneurs de la flotte entrent
-dans le mur par le drapeau explicite que pose `supervise.sh`, et un conteneur lance a la
-main y echappe -- `report_slice_membership()` rend cette evasion **visible** (`EVASION`),
-il ne la corrige pas.
+`~/.docker/daemon.json` et `settings-store.json` de l'hote. Le leurre plat a ete retire de
+la machine le 2026-10-23.
+
+**Etat mesure le 2026-11-11 sur ai-01 : le defaut est ABSENT, le leurre plat est absent, et
+le mur reel est en place et mord.** La mention « pas confirmee » est donc tranchee.
+
+| Ce qui est mesure | Valeur | Source de la mesure |
+|---|---|---|
+| Defaut `cgroup-parent` du daemon Docker Desktop | **absent** -- `HostConfig.CgroupParent` rend `""` sur un conteneur temoin lance sans `--cgroup-parent` | `docker inspect` sur un temoin `alpine`, lance puis supprime |
+| Configuration de l'hote | `~/.docker/daemon.json` ne porte que `builder` et `experimental` ; `settings-store.json` ne porte **aucune** cle `cgroup*` ni `daemonJson` | lecture directe des deux fichiers |
+| Leurre plat `/sys/fs/cgroup/coursia-ci.slice` | **absent** | `ls -d` dans le distro `docker-desktop` |
+| Mur reel `/sys/fs/cgroup/coursia.slice/coursia-ci.slice` | `memory.max` = 66,0 Gio, `memory.high` = 56,0 Gio, `memory.current` = 32,4 Gio, `memory.peak` = 56,0 Gio | lecture des quatre fichiers du cgroup |
+| Le mur mord-il | **oui** : `memory.events.local` rend `high 1402`, `max 0`, `oom 0`, `oom_kill 0` -- le plafond doux a ete franchi 1402 fois, le plafond dur jamais | meme fichier |
+| Conteneurs dans le mur | 20 groupes `docker-*` sous la slice, au moment de la mesure | `ls` du repertoire de la slice |
+
+**Ce que l'absence de defaut change.** Les conteneurs de la flotte entrent dans le mur par
+le drapeau explicite que pose `supervise.sh` -- et la mesure le confirme de bout en bout :
+le mur existe, il contient les groupes de conteneurs, et son plafond doux a ete franchi
+1402 fois depuis la mise en place. Ce qui manque n'est donc **pas** le mur : c'est
+l'entree par defaut. Un conteneur lance a la main pour un debug y echappe toujours --
+`report_slice_membership()` rend cette evasion **visible** (`EVASION`), il ne la corrige pas.
+
+**Le geste qui reste, et a qui il appartient.** Poser le defaut sur le daemon Docker
+Desktop d'ai-01 :
+
+- dans `Settings > Docker Engine`, **ajouter** la cle `"cgroup-parent":
+  "coursia.slice/coursia-ci.slice"` -- le chemin imbrique complet, **jamais** le nom plat
+  `coursia-ci.slice`, qui creerait un leurre a la racine de l'arbre cgroup (cf. « Le nom
+  plat de `cgroup-parent` » ci-dessus) ;
+- **redemarrer le moteur** Docker Desktop. Ce geste **interrompt les 8 runners** de la
+  flotte : c'est un service partage, il appartient a son proprietaire, pas a une lane.
+
+**Recette de verification (rejouable, falsifiable).**
+
+```bash
+# 1. le defaut du daemon -- attendu absent avant le geste, le chemin imbrique apres
+docker run -d --rm --name cgroup-probe alpine sleep 20
+docker inspect cgroup-probe --format '{{.HostConfig.CgroupParent}}'
+docker rm -f cgroup-probe
+
+# 2. le leurre plat -- attendu ABSENT, avant comme apres le geste
+wsl -d docker-desktop -- ls -d /sys/fs/cgroup/coursia-ci.slice
+
+# 3. le mur reel et son mordant
+wsl -d docker-desktop -- cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/memory.max
+wsl -d docker-desktop -- cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/memory.events.local
+```
 
 **Ce que la recopie produirait n'est pas ce qui a ete observe.** Le leurre plat constate le
 2026-09-08 existait alors qu'**aucun** `cgroup-parent` par defaut n'etait pose sur Docker
