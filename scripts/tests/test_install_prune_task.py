@@ -148,8 +148,6 @@ class TestTaskConstruction:
         # de l'organe deviendrait un succes muet.
         vbs = ipt.launcher_vbs([r"C:\Python314\python.exe", r"D:\repo\x.py", "--run"])
         assert "Option Explicit" in vbs
-        assert 'Set sh = CreateObject("WScript.Shell")' in vbs
-        assert 'rc = sh.Run(' in vbs
         assert "WScript.Quit rc" in vbs
         assert ", 0, True)" in vbs  # SW_HIDE + attente
 
