@@ -96,7 +96,7 @@ on:
       # #13746 tranche 2 (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
-      - 'GradeBookApp/**'
+      - 'dotnet/GradeBookApp/**'
       # #21104 pli 0 Origami (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
       # #21764 (mirror of the push path above).
@@ -421,7 +421,7 @@ jobs:
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis \
-            GradeBookApp \
+            dotnet/GradeBookApp \
             scripts/datasets/tests \
             scripts/genai-stack/tests \
             scripts/hashlife/tests \
@@ -558,7 +558,7 @@ jobs:
         env:
           GRADEBOOK_TESTS_FLOOR: 15
         run: |
-          N=$(python -m pytest GradeBookApp --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest dotnet/GradeBookApp --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."

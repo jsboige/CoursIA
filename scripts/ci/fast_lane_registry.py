@@ -2861,7 +2861,10 @@ def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
     if state == "ok":
         # #24514 : le succes ne parle pas -- le vert vit dans le check-run.
-        return (ctx.get("trunc_note") or "").strip()
+        # Vert TRONQUE : ce n'est pas un vert integral (borne 50 carnets),
+        # la note de couverture se conserve seule, sinon un lot > borne
+        # passe pour un vert complet (WARN adjoint 2026-11-10 sur #25286).
+        return _with_note("", ctx)
     sentence = {"abstain": _CLAIMS_ABSTAIN,
                 "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
@@ -2870,7 +2873,8 @@ def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
 def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
     if state == "ok":
-        return (ctx.get("trunc_note") or "").strip()
+        # Vert tronque : meme regle que claims (note seule, cf. #24514).
+        return _with_note("", ctx)
     sentence = {"abstain": _STALE_ABSTAIN,
                 "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
@@ -2879,7 +2883,8 @@ def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
 def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
     if state == "ok":
-        return (ctx.get("trunc_note") or "").strip()
+        # Vert tronque : meme regle que claims (note seule, cf. #24514).
+        return _with_note("", ctx)
     sentence = {"abstain": _MISLABEL_ABSTAIN,
                 "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
     return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
@@ -2904,8 +2909,9 @@ def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
     non_lus = _payload_count(payload, "non_lus")
     if state == "ok" and not non_lus:
         # #24514 : le succes ne parle pas -- SAUF le vert PARTIEL, qui n'est
-        # pas un vert (carnets jamais lus, #23394 reserve 1) et parle.
-        return (ctx.get("trunc_note") or "").strip()
+        # pas un vert (carnets jamais lus, #23394 reserve 1) et parle. Le
+        # vert TRONQUE garde, lui, la note de couverture seule (borne 50).
+        return _with_note("", ctx)
     sentence = {"ok": _LISTING_OK_UNREAD.format(n=non_lus),
                 "abstain": _LISTING_ABSTAIN,
                 "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)
