@@ -70,8 +70,8 @@ def _declared_names(source: str) -> set[str]:
     return names
 
 
-def validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) -> list[str]:
-    """Retourne les écarts entre le README, la source épinglée et le lake."""
+def _validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) -> tuple[list[str], set[str]]:
+    """Retourne les écarts et les tags rencontrés dans les deux sources."""
     errors: list[str] = []
     upstream, fixture_pin = parse_upstream_excerpt(excerpt_text)
     readme_pin_match = README_PIN_RE.search(readme_text)
@@ -85,7 +85,7 @@ def validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) ->
 
     section_start = readme_text.find("## Deux repères de provenance Stacks")
     if section_start < 0:
-        return errors + ["section de provenance absente du README GROTH"]
+        return errors + ["section de provenance absente du README GROTH"], set()
     section = readme_text[section_start:]
     rows = [m for line in section.splitlines() if (m := ROW_RE.match(line))]
     seen_tags: set[str] = set()
@@ -137,6 +137,12 @@ def validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) ->
         errors.append(f"au moins deux témoins locaux sont requis; trouvés: {witness_count}")
     if "Apache-2.0" not in section:
         errors.append("la licence de l'extrait n'est pas citée")
+    return errors, seen_tags
+
+
+def validate_provenance(readme_text: str, excerpt_text: str, lake_root: Path) -> list[str]:
+    """Retourne les écarts entre le README, la source épinglée et le lake."""
+    errors, _ = _validate_provenance(readme_text, excerpt_text, lake_root)
     return errors
 
 
@@ -147,12 +153,12 @@ def main() -> int:
     parser.add_argument("--excerpt", type=Path, default=FIXTURE)
     parser.add_argument("--lake", type=Path, default=LAKE_ROOT)
     args = parser.parse_args()
-    errors = validate_provenance(
+    errors, tags = _validate_provenance(
         args.readme.read_text(encoding="utf-8"),
         args.excerpt.read_text(encoding="utf-8"),
         args.lake,
     )
-    result = {"ok": not errors, "tags": ["0037", "0039"], "errors": errors}
+    result = {"ok": not errors, "tags": sorted(tags), "errors": errors}
     if args.json:
         print(json.dumps(result, ensure_ascii=False, indent=2))
     elif errors:
@@ -160,7 +166,7 @@ def main() -> int:
         for error in errors:
             print(f"- {error}")
     else:
-        print("Provenance Stacks valide : tags 0037 et 0039, deux témoins locaux.")
+        print(f"Provenance Stacks valide : tags {', '.join(sorted(tags))}.")
     return 1 if errors else 0
 
 

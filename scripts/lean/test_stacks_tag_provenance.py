@@ -2,7 +2,10 @@
 """Tests du contrôle de provenance Stacks sur ses deux témoins réels."""
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -29,6 +32,25 @@ class TestStacksTagProvenance(unittest.TestCase):
                 "Adjunction.rightAdjoint_preservesLimits",
             },
         )
+
+    def test_json_reports_an_additional_checked_tag(self):
+        row = next(line for line in self.readme.splitlines() if line.startswith("| 0037 |"))
+        readme = self.readme.replace(row, row + "\n" + row.replace("| 0037 |", "| 0040 |"))
+        excerpt = self.excerpt + "\nadd_to_stacks 0040 \"synthetic\" Adjunction.mkOfHomEquiv\n"
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            readme_path = root / "README.md"
+            excerpt_path = root / "excerpt.txt"
+            readme_path.write_text(readme, encoding="utf-8")
+            excerpt_path.write_text(excerpt, encoding="utf-8")
+            run = subprocess.run(
+                [sys.executable, str(Path(provenance.__file__)), "--json",
+                 "--readme", str(readme_path), "--excerpt", str(excerpt_path)],
+                capture_output=True, text=True, encoding="utf-8", check=True,
+            )
+        result = json.loads(run.stdout)
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["tags"], ["0037", "0039", "0040"])
 
     def test_missing_upstream_symbol_is_reported(self):
         changed = self.readme.replace(
