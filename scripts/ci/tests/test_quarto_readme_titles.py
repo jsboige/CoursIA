@@ -50,6 +50,29 @@ def test_explicit_collision_with_derived(tmp_path):
     assert result[Path('b/README.md')] == 'Même (b/README.md)'
 
 
+def test_bom_titles_frontmatter_and_exact_restore(tmp_path):
+    files = {
+        'h1/README.md': '\ufeff# Titre H1\n',
+        'metadata/README.md': '\ufeff---\ndescription: exemple\n---\n# Titre metadata\n',
+        'explicit/README.md': '\ufeff---\npagetitle: "Titre explicite"\n---\n# Autre\n',
+    }
+    root = project(tmp_path, files)
+    original = {p: (root / p).read_bytes() for p in files}
+    backup = root / 'backup.json'
+    assert titres.plan(root, titres.readmes(root)) == {
+        Path('h1/README.md'): 'Titre H1',
+        Path('metadata/README.md'): 'Titre metadata',
+        Path('explicit/README.md'): 'Titre explicite',
+    }
+    titres.apply(root, backup)
+    titres.check(root)
+    assert (root / 'h1/README.md').read_text(encoding='utf-8') == '---\npagetitle: "Titre H1"\n---\n\n# Titre H1\n'
+    assert (root / 'metadata/README.md').read_text(encoding='utf-8') == '---\npagetitle: "Titre metadata"\ndescription: exemple\n---\n# Titre metadata\n'
+    assert (root / 'explicit/README.md').read_bytes() == original['explicit/README.md']
+    titres.restore(root, backup)
+    assert {p: (root / p).read_bytes() for p in files} == original
+
+
 def test_guard_rejects_missing_duplicate_and_no_targets(tmp_path):
     root = project(tmp_path, {'a/README.md': '# A\n', 'b/README.md': '# B\n'})
     with pytest.raises(ValueError, match='absent'):

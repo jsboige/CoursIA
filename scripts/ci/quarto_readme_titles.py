@@ -94,7 +94,7 @@ def derived(text: str, path: Path) -> str:
 
 
 def plan(root: Path, paths: list[Path]) -> dict[Path, str]:
-    texts = {p: (root / p).read_text(encoding='utf-8') for p in paths}
+    texts = {p: (root / p).read_text(encoding='utf-8-sig') for p in paths}
     existing = {p: explicit(t) for p, t in texts.items()}
     titles = {p: existing[p] or derived(t, p) for p, t in texts.items()}
     groups = {}
@@ -128,7 +128,7 @@ def apply(root: Path, backup: Path, config: Path | None = None) -> None:
     changes = {}
     for p in paths:
         data = (root / p).read_bytes()
-        text = data.decode('utf-8')
+        text = data.decode('utf-8-sig')
         if explicit(text) is not None:
             continue
         fm, start = frontmatter(text)
@@ -144,7 +144,7 @@ def apply(root: Path, backup: Path, config: Path | None = None) -> None:
 
 def check(root: Path, config: Path | None = None) -> None:
     paths = readmes(root, config)
-    validate({p: explicit((root / p).read_text(encoding='utf-8')) for p in paths})
+    validate({p: explicit((root / p).read_text(encoding='utf-8-sig')) for p in paths})
     print(f'{len(paths)} titres présents et distincts')
 
 
