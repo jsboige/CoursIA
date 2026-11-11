@@ -110,5 +110,11 @@ jobs:
             echo "Rappel : les slots du pool sont ephemeres ; repeter le run pour observer d'autres slots. 1 run = 1 slot."
           } >> "$GITHUB_STEP_SUMMARY"
 
+          # Le verdict doit etre lisible SANS session GitHub connectee : le
+          # resume du job (step summary) ne se voit que dans l'UI, donc
+          # l'API -- le chemin des lanes et des organes -- n'y voit rien.
+          # On renvoie donc le resume sur stdout, ou le journal du run le
+          # rend lisible et copiable.
+          cat "$GITHUB_STEP_SUMMARY"
           # Jamais d'echec : c'est une mesure. Le verdict vit dans le resume.
           exit 0
