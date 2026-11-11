@@ -66,6 +66,31 @@ def build_graph(entries: list[dict]) -> Graph:
         graph.add((notebook, DCTERMS.identifier, Literal(path)))
         graph.add((notebook, VOCAB.inSeries, series_uri))
 
+        # Contraintes d'exécution réellement présentes dans le catalogue.
+        # Elles sont distinctes des ressources/API précises, que le catalogue
+        # ne nomme pas aujourd'hui.
+        for field, predicate in (
+            ("requires_api", VOCAB.requiresAPI),
+            ("requires_gpu", VOCAB.requiresGPU),
+            ("requires_cloud", VOCAB.requiresCloud),
+            ("requires_wsl", VOCAB.requiresWSL),
+        ):
+            value = entry.get(field)
+            if isinstance(value, bool):
+                graph.add((notebook, predicate, Literal(value)))
+            elif value is not None:
+                raise ValueError(f"{path}: {field} doit être booléen")
+
+        for field, predicate in (
+            ("duree_estimee", VOCAB.estimatedDuration),
+            ("status", VOCAB.status),
+        ):
+            value = entry.get(field)
+            if isinstance(value, str) and value.strip():
+                graph.add((notebook, predicate, Literal(value.strip(), lang="fr")))
+            elif value is not None and not isinstance(value, str):
+                raise ValueError(f"{path}: {field} doit être une chaîne non vide")
+
         if series not in series_seen:
             graph.add((series_uri, RDF.type, VOCAB.Series))
             graph.add((series_uri, RDFS.label, Literal(series, lang="fr")))
