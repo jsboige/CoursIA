@@ -337,8 +337,14 @@ class ProjectEvaluation:
                 print(f"AVERTISSEMENT: L'évaluateur {eval_record.prenom} {eval_record.nom} n'est pas inscrit au cours. Evaluation pour {group_evaluation.groupe} écartée.")
                 return False
 
-        # Règle 4: Rejeter les auto-évaluations
-        is_member = any(self.match_names(member, eval_record) for member in group_evaluation.group_members)
+        # Règle 4 : rejeter les auto-évaluations par nom ou adresse exacte.
+        evaluator_email = self.normalize_email(getattr(eval_record, "email", None))
+        is_member = any(
+            self.match_names(member, eval_record)
+            or (evaluator_email is not None and evaluator_email ==
+                self.normalize_email(getattr(member, "email", None)))
+            for member in group_evaluation.group_members
+        )
         if is_member:
             print(f"AVERTISSEMENT: Auto-évaluation par {eval_record.prenom} {eval_record.nom} pour son propre groupe {group_evaluation.groupe}. Evaluation écartée.")
             return False
@@ -413,6 +419,9 @@ def load_student_records(file_path, column_mapping=None):
             "Sujet Projet de Programmation par Contrainte": "sujet_projet_1"
         }
     
+    email_columns = [col for col in df.columns if column_mapping.get(col, col) == "email"]
+    if len(email_columns) > 1:
+        raise ValueError("Plusieurs colonnes email dans le roster : " + ", ".join(email_columns))
     df = df.rename(columns=column_mapping)
     
     students = []

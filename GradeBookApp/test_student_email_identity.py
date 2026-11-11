@@ -165,3 +165,19 @@ def test_rule3_uses_email_and_keeps_other_registration_guards():
     )
 
     assert engine.is_valid_evaluation(group, evaluation, seen_evaluators=set()) is True
+
+
+def test_self_evaluation_by_email_is_rejected():
+    member = StudentRecord("Jean", "Dupont", "P1", email="jean@example.org")
+    engine = _engine([member])
+    group = SimpleNamespace(groupe="P1", date=datetime(2026, 1, 15), group_members=[member])
+    evaluation = SimpleNamespace(nom="Inconnu", prenom="Saisi", email=" JEAN@example.org ",
+                                 date=group.date, note=12, is_teacher=False)
+    assert engine.is_valid_evaluation(group, evaluation, set()) is False
+
+
+def test_roster_with_multiple_email_columns_is_rejected(tmp_path):
+    roster = tmp_path / "roster.csv"
+    roster.write_text("Prénom,Nom,Sujet IA Symbolique,Mail,Login\nJean,Dupont,P1,jean@example.org,login@example.org\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="email"):
+        load_student_records(roster)
