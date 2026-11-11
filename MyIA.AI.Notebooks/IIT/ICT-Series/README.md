@@ -4,7 +4,7 @@
 series: IIT-ICT-Series
 pedagogical_count: 103
 breakdown: ICT-Series=103
-maturity: BETA=81, DRAFT=18, ALPHA=4
+maturity: BETA=82, DRAFT=17, ALPHA=4
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -23,22 +23,27 @@ Chaque figure est **intégrée in-situ** dans la strate et au notebook qu'elle d
 
 ## Prérequis & environnement
 
-ICT partage l'environnement Python de la série IIT (PyPhi 1.2.0, Python 3.9). Le setup et les dépendances sont mutualisés au niveau du répertoire parent :
+Le package `ict/` expose **deux voies d'installation** selon ce qu'on en fait (issue [#8076](https://github.com/jsboige/CoursIA/issues/8076), split d'extra [#25381](https://github.com/jsboige/CoursIA/issues/25381)) :
 
 ```bash
-# Depuis MyIA.AI.Notebooks/IIT/
-powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
-pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy, scipy, matplotlib…)
+# Voie 1 -- consommateurs hors série (carnets GenAI/ML/SymbolicAI, scripts/hashlife) :
+# cœur léger (numpy/scipy/matplotlib/pandas/cryptography), tout Python >= 3.9,
+# SANS PyPhi -- le package n'en dépend pas (aucun module ict/ ne l'importe).
+# Depuis la racine du clone :
+pip install -e MyIA.AI.Notebooks/IIT/ICT-Series
 
-# Recommandé : installer le package `ict/` en mode editable (issue #8076).
-# Rend `from ict import …` résolvable depuis n'importe quel cwd, sans dépendre
-# du répertoire ICT-Series/. Extras : [llm] (torch/transformers, GPU),
-# [extras] (pandas, sympy), [dev] (pytest).
-# Depuis MyIA.AI.Notebooks/IIT/ICT-Series/  (dans l'env pyphi activé) :
-pip install -e .                                 # cœur ; ou pip install -e .[dev,llm]
+# Voie 2 -- série ICT complète (strates Φ : IIT-1/2/3, ICT-36c/d) :
+# environnement historique épingle Python 3.9 + numpy<2 + pyphi 1.2.0.
+# Depuis MyIA.AI.Notebooks/IIT/ :
+powershell -File scripts/setup_pyphi_env.ps1     # conda env pyphi + kernel
+pip install -r requirements.txt                  # dépendances ICT (pyphi, numpy<2, antropy…)
+# puis, depuis MyIA.AI.Notebooks/IIT/ICT-Series/ (dans l'env pyphi activé) :
+pip install -e ".[iit]"                          # cœur + strates Φ ; ou .[iit,dev,llm]
 ```
 
-Le package `ict/` est installable (`pip install -e .` depuis `ICT-Series/`, cf. `pyproject.toml`) : une fois installé, `from ict import …` résout depuis n'importe quel `cwd`. En l'absence d'install editable, l'ancien contrat reste valable : chaque notebook insère le dossier courant dans `sys.path`, il faut alors lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
+Extras : `[iit]` (pyphi/numpy<2/antropy, **Python < 3.10 uniquement**), `[llm]` (torch/transformers, GPU), `[extras]` (sympy), `[dev]` (pytest). Le cœur couvre déjà numpy/scipy/matplotlib/**pandas**/cryptography.
+
+Une fois installé (voie 1 ou 2), `from ict import …` résout depuis n'importe quel `cwd` — c'est le **contrat d'import des consommateurs hors série**. En l'absence d'installation, le repli historique reste valable pour les carnets de la série elle-même : lancer les notebooks **depuis `ICT-Series/`** (cwd) pour que les imports résolvent.
 
 ### Le package `ict/` — modules et tests
 

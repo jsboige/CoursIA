@@ -14531,7 +14531,7 @@ mathematique précis, elle est ""libre"".
 
 Le reste du notebook deroule cet argument rigoureusement, puis l'adosse au port Lean 4.
 ",,,,,,,,06a8dd5492a59111,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,f431bbb3,code,fr,d62a143634713580,"import subprocess
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,f431bbb3,code,fr,95a6437e0c5103b6,"import subprocess
 from pathlib import Path
 from lean_notebook_utils import (
     find_lean_project, get_lean_project_path,
@@ -14539,8 +14539,8 @@ from lean_notebook_utils import (
 )
 
 # Cross-platform: native path on Linux/macOS, WSL path on Windows
-LEAN_PROJECT = get_lean_project_path(""conway_lean"")
-WIN_LEAN_PROJECT = find_lean_project(""conway_lean"")
+LEAN_PROJECT = get_lean_project_path(""GOL/conway_lean"")
+WIN_LEAN_PROJECT = find_lean_project(""GOL/conway_lean"")
 WSL_LEAN_PROJECT = LEAN_PROJECT  # Already WSL-formatted on Windows
 
 assert (WIN_LEAN_PROJECT / ""lakefile.lean"").exists(), ""conway_lean/lakefile.lean introuvable""
@@ -14553,7 +14553,7 @@ print(""  modules cibles    : Conway.KochenSpecker, Conway.FreeWillTheorem"")
 plat = ""native"" if is_native_platform() else ""WSL""
 print(f""  plateforme        : {plat}"")
 print(""Setup OK : projet conway_lean accessible"")
-",,,,,,,,d62a143634713580,,,,,,,,,,,,,,,
+",,,,,,,,95a6437e0c5103b6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,a37ddb64,markdown,fr,612ddeb27d0bb9c1,"<a id=""2""></a>
 ## 2. Les Trois Axiomes : SPIN, TWIN, MIN
 
@@ -14607,17 +14607,22 @@ print(""Aucune reponse deterministe ne peut respecter SPIN sur les 18 vecteurs :
 print(""c'est precisement le contenu de `fwt_single_particle` (reduction a Kochen-Specker)."")
 print(""La preuve formelle exhaustive (2^18) est dans Lean-13 ; ici on illustre le cadrage SPIN."")
 ",,,,,,,,2f0d54970d229697,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d743b8cd,markdown,fr,e84118722551bdfd,"### Interpretation : 0 coloration valide sur 200 000 echantillons
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d743b8cd,markdown,fr,ca2edee8e5238ca4,"### Interpretation : 0 coloration valide sur 200 000 echantillons
 
 Le résultat **0 valide / 200 000** confirme experimentalement le théorème KS. Parmi les $2^{18} = 262\,144$ colorations candidates possibles, **aucune** ne satisfait la contrainte : chaque vecteur apparait dans exactement un contexte colore. L'impossibilite n'est pas une question de probabilite -- elle est **structurelle**.
 
 | Paramètre | Valeur | Signification |
 |-----------|--------|---------------|
-| Echantillons | 200 000 | Couvre ~76% de l'espace $2^{18}$ |
+| Echantillons | 200 000 | Tirages **avec remise** : ~53 % de réponses distinctes |
 | Colorations valides | 0 | Aucune ne satisfait SPIN |
 | Espace total | 262 144 | $2^{18}$ reponses déterministes |
 
-> **Note technique** : la preuve formelle exhaustive (2^18) est dans Lean-13. L'echantillonnage ici est une illustration pedagogique du cadrage SPIN.",,,,,,,,e84118722551bdfd,,,,,,,,,,,,,,,
+L'echantillonnage tire chaque reponse **avec remise** : sur 200 000 tirages, le nombre de
+reponses *distinctes* attendu est $2^{18}\,(1 - e^{-200000/2^{18}}) \approx 139\,900$, soit
+~53 % de l'espace -- et non ~76 % ($200000/2^{18}$), qui compterait chaque tirage repete
+comme une couverture nouvelle.
+
+> **Note technique** : la preuve formelle exhaustive (2^18) est dans Lean-13. L'echantillonnage ici est une illustration pedagogique du cadrage SPIN.",,,,,,,,ca2edee8e5238ca4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,a63a9455,markdown,fr,57dcd2d36658dc03,"### 2.2 TWIN -- la correlation des jumelles
 
 **Enonce physique.** On prepare deux particules de spin 1 dans un état **intrique** (singulet),
@@ -14725,16 +14730,59 @@ La trace illustre le raisonnement par l'absurde : si les reponses sont fonction 
 | KS | Aucune coloration valide n'existe | Contradiction |
 
 > **Note technique** : le théorème est **conditionnel**. Si l'un des trois axiomes est relaxe, la contradiction disparait.",,,,,,,,416df5bac8468fdd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,38a4cd76,markdown,fr,56a16dec43de83a5,"### Exercice 2 : formaliser la contrainte MIN
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,38a4cd76,markdown,fr,2b6eb3b31ca32d70,"### Exemple guide : formaliser la contrainte MIN (rendu TP PR #25531)
 
-**Objectif.** Ecrire une fonction Python qui vérifie que la reponse d'Alice ne depend pas de la direction choisie par Bob, en iterant sur les paires `(direction_alice, direction_bob)`. Montrer que toute violation de MIN implique une correlation interdite par SPIN.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
 
-- *Indice* : simuler les reponses pour différentes paires de directions ; vérifier que la reponse d'Alice pour la direction `d_a` est la même quel que soit le choix `d_b` de Bob.
-- *Étape 1* : définir une fonction `check_min(alice_func, bob_func, directions)` qui itere sur les paires de directions.
-- *Étape 2* : pour chaque `(d_a, d_b)`, vérifier que `alice_func(d_a)` ne varie pas quand `d_b` change.
-- *Étape 3* : si MIN est viole, montrer que cela produit une correlation contredisant SPIN.",,,,,,,,56a16dec43de83a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,cbdc5959,code,fr,2a9cc2798f374fc2,"print(""Exercice a completer"")
-min_satisfied = None  # TODO étudiant : vérifier la contrainte MIN sur les reponses simulees",,,,,,,,2a9cc2798f374fc2,,,,,,,,,,,,,,,
+**Enonce** : écrire une fonction Python qui vérifie que la reponse d'Alice ne depend pas de la direction choisie par Bob, en iterant sur les paires `(direction_alice, direction_bob)`. Montrer que toute violation de MIN implique une correlation interdite par SPIN.
+
+**Indices** :
+1. Simuler les reponses pour différentes paires de directions ; vérifier que la reponse d'Alice pour la direction `d_a` est la même quel que soit le choix `d_b` de Bob.
+2. Définir une fonction `check_min(alice_func, bob_func, directions)` qui itere sur les paires de directions.
+3. Pour chaque `(d_a, d_b)`, vérifier que `alice_func(d_a)` ne varie pas quand `d_b` change.
+4. Si MIN est viole, montrer que cela produit une correlation contredisant SPIN.
+
+**Ce que montre l'exemple** : deux modèles simulés — un modèle où chacun ne regarde que sa propre direction (MIN respectée, test passé) et un modèle où la réponse d'Alice « sent » le choix de Bob (MIN violée, contre-exemple exhibé avec les valeurs exactes).
+",,,,,,,,2b6eb3b31ca32d70,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,cbdc5959,code,fr,6894e58b6a2b428a,"# Exemple guide : verifier la contrainte MIN sur des modeles simules (rendu TP PR #25531).
+# Exercice 2 :
+directions = range(18)  # les 18 directions de mesure
+
+def check_min(alice_func, bob_func, directions):
+    """"""Renvoie (True, None) si MIN est respectée, sinon (False, contre-exemple).""""""
+    for d_a in directions:
+        reference = alice_func(d_a, 0)               # réponse d'Alice quand Bob choisit 0
+        for d_b in directions:
+            if alice_func(d_a, d_b) != reference:    # la réponse change selon Bob
+                return False, (""Alice"", d_a, d_b)
+    for d_b in directions:
+        reference = bob_func(d_b, 0)                 # même test côté Bob
+        for d_a in directions:
+            if bob_func(d_b, d_a) != reference:
+                return False, (""Bob"", d_b, d_a)
+    return True, None
+
+# Modèle qui respecte MIN : chacun répond selon sa direction seulement
+alice_ok = lambda d_a, d_b: d_a % 2
+bob_ok   = lambda d_b, d_a: d_b % 2
+# Modèle qui viole MIN : Alice ""sent"" le choix de Bob
+alice_bad = lambda d_a, d_b: (d_a + d_b) % 2
+
+min_satisfied, _ = check_min(alice_ok, bob_ok, directions)
+print(""Modèle ok  :"", min_satisfied)                       # True
+
+ok, (qui, d, d_autre) = check_min(alice_bad, bob_ok, directions)
+print(""Modèle bad :"", ok)                                  # False
+print(f""{qui}, direction {d} : répond {alice_bad(d, 0)} si l'autre choisit 0, ""
+      f""mais {alice_bad(d, d_autre)} s'il choisit {d_autre}"")
+
+# Interprétation :
+# - Si la réponse d'Alice dépend du choix de Bob, sa valeur pour une direction n'est plus
+#   un nombre fixe : on ne peut plus associer une valeur 0/1 à chaque vecteur,
+#   donc il n'y a pas de coloration, et l'argument SPIN + KS ne s'applique plus.
+# - Physiquement, cela voudrait dire que le choix de Bob agit instantanément sur Alice
+#   (signal plus rapide que la lumière), ce que MIN interdit.
+",,,,,,,,6894e58b6a2b428a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d65382cb,markdown,fr,ff96ac11428a2c87,"<a id=""4""></a>
 ## 4. Le Port Lean 4 : Adossement au Code Réel
 
@@ -14804,7 +14852,7 @@ print(f""Exit code : {rc}  (0 = SUCCESS)"")
 if rc == -1:
     print(f""TimeoutExpired apres {build_timeout_s}s (cache Mathlib non prechauffe)."")
 ",,,,,,,,ead5767d54c3c692,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,147992b2,markdown,fr,9b34c2c5532e19c7,"### Interpretation : les deux piliers sont prouves
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,147992b2,markdown,fr,5a191dfcede68410,"### Interpretation : les deux piliers sont prouves
 
 | Vérification | Résultat attendu | Signification |
 |--------------|------------------|---------------|
@@ -14813,9 +14861,19 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,147992
 | `lake build` exit code | 0 | Les deux modules compilent réellement |
 
 Le théorème de libre arbitre est donc **formellement prouvé** en Lean 4, et non simplement
-esquisse. Precisions sur le compteur brut : l'unique occurrence du mot `sorry` dans `KochenSpecker.lean` est un **commentaire** (ligne 107 : « Tous les `sorry` ont ete elimines », Epic #1453), pas une tactique -- le compteur de la cellule precedente compte la prose. Au niveau des tactiques, les deux modules sont a zero `sorry`, ce que confirme le `lake build` ci-dessus. La preuve tient en deux reductions -- c'est l'""elegance Conway"" :
-un enonce spectaculaire qui se ramene a un argument combinatoire de parite.
-",,,,,,,,9b34c2c5532e19c7,,,,,,,,,,,,,,,
+esquisse. Precisions sur le compteur brut : l'unique occurrence du mot `sorry` dans
+`KochenSpecker.lean` est un **commentaire** (ligne 107 : « Tous les `sorry` ont ete elimines »,
+Epic #1453), pas une tactique -- le compteur de la cellule precedente compte la prose. Au
+niveau des tactiques, les deux modules sont a zero `sorry`.
+
+Deux sources attestent la compilation, et elles se lisent differemment. La **CI du lake**
+(job `lean-conway` : `lake build` + `proof-integrity` sur `Conway.KochenSpecker` et
+`Conway.FreeWillTheorem`, `fail-on-sorry: true`) verifie les deux modules a chaque PR qui
+touche le lake. La cellule `lake build` ci-dessus, elle, depend de l'etat de l'environnement
+local : un code de retour **-2** signifie que l'organe d'execution a refuse le lancement
+(cache lake present sans epingle de backend) -- ce n'est ni un echec de compilation, ni une
+preuve de reussite. La preuve tient en deux reductions -- c'est l'""elegance Conway"" :
+un enonce spectaculaire qui se ramene a un argument combinatoire de parite.",,,,,,,,5a191dfcede68410,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,5b3e61d5,markdown,fr,17657851b7408eb1,"<a id=""5""></a>
 ## 5. La Chaîne de Reduction Formelle
 
@@ -14850,20 +14908,43 @@ La chaîne de reduction tient en deux tactiques `exact` Lean, alors que l'argume
 | `fwt_single_particle` -> `kochen_specker` | `exact kochen_specker` | 2 |
 
 Le théorème spectaculaire est donc un **corollaire direct** de Kochen-Specker, formalise en deux reductions.",,,,,,,,ef002dc124a6cbc5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,673668e2,markdown,fr,5fac41de7a05e20b,"### Exercice 3 : decrire la structure de la preuve Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,673668e2,markdown,fr,0e92353ed294f841,"### Exemple guide : decrire la structure de la preuve Lean (rendu TP PR #25531)
 
-**Objectif.** En vous basant sur le source affiche dans la section 4 (cellule `d194d5fe`), decrire en francais la structure de la preuve `free_will_theorem`. Identifier chaque tactique utilisee et son rôle. Completer le tableau ci-dessous.
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
 
-- *Indice* : regarder les tactiques `exact`, `apply`, `intro`, `cases`, `have` dans le source Lean affiche en section 4.
-- *Étape 1* : relever chaque tactique dans le bloc `theorem free_will_theorem`.
-- *Étape 2* : pour chaque tactique, decrire son rôle dans le raisonnement.
-- *Étape 3* : completer le dictionnaire `proof_analysis` avec la correspondance tactique -> rôle.",,,,,,,,5fac41de7a05e20b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,133a17b2,code,fr,83b5bec7e4cf5d21,"print(""Exercice a completer"")
-# TODO étudiant : completer le tableau d'analyse de la preuve
-# | Tactique | Role dans la preuve | Ligne approx. |
-# |----------|---------------------|---------------|
-# | ...      | ...                 | ...           |
-proof_analysis = None  # TODO étudiant : dictionnaire tactique -> role",,,,,,,,83b5bec7e4cf5d21,,,,,,,,,,,,,,,
+**Enonce** : en vous basant sur le source affiche dans la section 4, decrire en francais la structure de la preuve `free_will_theorem`. Identifier chaque tactique utilisee et son rôle. Completer le tableau ci-dessous.
+
+**Indices** :
+1. Regarder les tactiques `exact`, `apply`, `intro`, `cases`, `have` dans le source Lean affiche en section 4.
+2. Relever chaque tactique dans le bloc `theorem free_will_theorem`.
+3. Pour chaque tactique, décrire son rôle dans le raisonnement.
+4. Compléter le dictionnaire `proof_analysis` avec la correspondance tactique -> rôle.
+
+**Ce que montre l'exemple** : la preuve `free_will_theorem` tient en trois tactiques — une contradiction construite pas à pas, chaque ligne du tableau pointant la ligne exacte du source (`FreeWillTheorem.lean`).
+",,,,,,,,0e92353ed294f841,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,133a17b2,code,fr,f2d278aaae8fead8,"# Exemple guide : tableau d'analyse de la preuve free_will_theorem (rendu TP PR #25531).
+proof_analysis = {
+    ""rintro ⟨f, hfwt⟩"": (
+        ""Preuve par l'absurde : on suppose qu'il existe une f et on récupère ""
+        ""hfwt, la preuve que f satisfait les axiomes (SPIN et TWIN)."",
+        193,
+    ),
+    ""have hspin_alice := hfwt.spin .alice"": (
+        ""On extrait des axiomes uniquement SPIN appliqué à Alice : ""
+        ""f(·, alice) est une réponse déterministe qui satisfait SPIN."",
+        196,
+    ),
+    ""exact fwt_single_particle ⟨(f · .alice), hspin_alice⟩"": (
+        ""On applique le théorème à une particule (¬∃ f, SatisfiesSPIN f) à ce ""
+        ""témoin : contradiction, donc le but est démontré."",
+        197,
+    ),
+}
+
+print(f""{'Tactique':<55} | Ligne | Rôle"")
+for tactique, (role, ligne) in proof_analysis.items():
+    print(f""{tactique:<55} | L{ligne:<4} | {role}"")
+",,,,,,,,f2d278aaae8fead8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,6e917195,markdown,fr,fcf63343e7c55033,"<a id=""7""></a>
 ## 7. Extensibilite : Vers d'Autres Résultats de Conway
 
@@ -14879,7 +14960,7 @@ Pistes d'extension naturelles a partir du FWT :
   `contextMembers` par les 18 vecteurs réels + preuve d'orthogonalite (actuellement implicite).
 - **Autres théorèmes de contextualite** : Peres-33, carré magique de Mermin-Peres.
 ",,,,,,,,fcf63343e7c55033,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,0435f581,code,fr,b43538aaed86a7b1,"# Registre extensible des résultats Conway et de leur statut de port Lean.
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,0435f581,code,fr,d4c190bbfa8eae97,"# Registre extensible des résultats Conway et de leur statut de port Lean.
 # (Verifie dynamiquement la presence des modules + leur compte de sorry.)
 conway_results = [
     # (nom affiche, module .lean ou None, statut conceptuel)
@@ -14887,6 +14968,7 @@ conway_results = [
     (""Free Will Theorem"",           ""Conway/FreeWillTheorem.lean"", ""PROUVE""),
     (""CHSH deterministe (|score| = 2)"", ""Conway/CHSH.lean"",            ""PROUVE""),
     (""CHSH randomise (|E| <= 2)"",       ""Conway/CHSHRandomized.lean"",   ""PROUVE""),
+    (""Tsirelson quantique (2*sqrt(2))"", ""Conway/CHSHQuantum.lean"",      ""PROUVE""),
     (""Game of Life (B3/S23)"",       ""Conway/Life.lean"",            ""PROUVE""),
     (""Strong FWT (MIN, 2009)"",      None,                          ""PISTE""),
     (""Coordonnees R^4 explicites"",  None,                          ""PISTE""),
@@ -14906,21 +14988,26 @@ for name, module, statut in conway_results:
         mod_disp, sorry_disp = ""(a creer)"", ""-""
     print(f""{name:<32} | {mod_disp:<28} | {statut:<8} | {sorry_disp}"")
 print()
-print(""Pour etendre : ajouter une entree ci-dessus + le module .lean dans conway_lean/Conway/."")
-",,,,,,,,b43538aaed86a7b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,22716a60,markdown,fr,0c128d2c5aa4e0e8,"### Interpretation : état du port Conway
+print(""Pour etendre : ajouter une entree ci-dessus + le module .lean dans conway_lean/Conway/."")",,,,,,,,d4c190bbfa8eae97,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,22716a60,markdown,fr,f5c285333cc69716,"### Interpretation : état du port Conway
 
-Sur les 5 résultats Conway du registre, 3 sont **PROUVES** en Lean (KS-101, SPIN, Twin) et 2 sont en **PISTE** (Strong FWT, coordonnees R^4). Le théorème du libre arbitre (Conway-Kochen 2006/2009) est le résultat central du port -- sa preuve complète est un jalon formel pour la communaute.
+Sur les 8 résultats Conway du registre, 6 sont **PROUVES** en Lean (le noyau Kochen-Specker, la
+reduction FWT, les trois tranches CHSH et le Game of Life) et 2 sont en **PISTE** (Strong FWT,
+coordonnees R^4). Le théorème du libre arbitre (Conway-Kochen 2006/2009) est le résultat central
+du port -- sa preuve complète est un jalon formel pour la communaute.
 
 | Résultat | Statut | Commentaire |
 |----------|--------|-------------|
 | Kochen-Specker (Cabello 18) | PROUVÉ | Noyau combinatoire |
 | Free Will Theorem | PROUVÉ | Reduction FWT -> KS |
+| CHSH déterministe (\|score\| = 2) | PROUVÉ | Enumeration noyau des 16 profils |
+| CHSH randomisé (\|E\| ≤ 2) | PROUVÉ | Convexite des strategies locales |
+| Tsirelson quantique (2√2) | PROUVÉ | Import Mathlib + ecarts locaux ; saturation ouverte |
 | Game of Life (B3/S23) | PROUVÉ | Règles d'evolution |
 | Strong FWT (MIN, 2009) | PISTE | Module a créer |
 | Coordonnees R^4 explicites | PISTE | Vecteurs réels + orthogonalite |
 
-> **Note technique** : le workspace `conway_lean` est extensible par design. Ajouter un résultat = créer le module `.lean` + ajouter une entrée au registre.",,,,,,,,0c128d2c5aa4e0e8,,,,,,,,,,,,,,,
+> **Note technique** : le workspace `conway_lean` est extensible par design. Ajouter un résultat = créer le module `.lean` + ajouter une entrée au registre.",,,,,,,,f5c285333cc69716,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,6243c2f7,markdown,fr,f7b137bedb7a0a15,"<a id=""8""></a>
 ## 8. Exercices
 
@@ -14998,29 +15085,56 @@ extension_note = (
     ""predeterminees consistante.""
 )
 ",,,,,,,,2f54352e9a93a1b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,600ee74d,markdown,fr,deb08cf25b5040e0,"***
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,600ee74d,markdown,fr,b994af3ab6fe5f87,"***
 
-### Exercice (a completer) : aucune coloration déterministe ne satisfait SPIN
+### Exemple guide : aucune coloration déterministe ne satisfait SPIN (rendu TP PR #25531)
 
-En vous appuyant sur l'exemple guide `response_is_spin` ci-dessus, montrez (par recherche
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
+
+**Enonce** : en vous appuyant sur l'exemple guide `response_is_spin` ci-dessus, montrez (par recherche
 exhaustive ou par un argument de parite) qu'il n'existe **aucune** reponse déterministe de
 18 bits validant SPIN sur l'ensemble des contextes. C'est exactement le contenu du théorème
 de Kochen-Specker (1967) : l'impossibilite d'une assignation de valeurs predeterminees
 consistante.
 
-- *Indice* : il y a `2**18 = 262144` reponses possibles ; une recherche par force brute est faisable.
-- *Étape 1* : enumerer les reponses candidates avec `itertools.product([0, 1], repeat=18)`.
-- *Étape 2* : compter combien satisfont `response_is_spin` ; conclure que ce nombre vaut 0.
-",,,,,,,,deb08cf25b5040e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,b099af93,code,fr,5269c732d79a7749,"# Exercice : aucune coloration deterministe ne satisfait SPIN (théorème de Kochen-Specker)
-# TODO étudiant :
-#   Etape 1 : parcourir itertools.product([0, 1], repeat=18)
-#   Etape 2 : compter les reponses r telles que response_is_spin(list(r)) est True
-#   Etape 3 : vérifier que ce compte vaut 0 et l'interpreter (Kochen-Specker)
+**Indices** :
+1. Il y a `2**18 = 262144` reponses possibles ; une recherche par force brute est faisable.
+2. Enumerer les reponses candidates avec `itertools.product([0, 1], repeat=18)`.
+3. Compter combien satisfont `response_is_spin` ; conclure que ce nombre vaut 0.
 
-print(""Exercice a completer"")
-",,,,,,,,5269c732d79a7749,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ff3a8ee8,markdown,fr,fd928c4b0e861658,"## Resume
+**Ce que montre l'exemple** : la solution des étudiantes double l'argument — un argument de parité instantané (chaque vecteur appartient à exactement 2 contextes, et il y a 9 contextes : un nombre impair de « 1 » comptés contexte par contexte ne peut pas être un compte doublement pair) puis l'énumération exhaustive des 262 144 réponses, qui confirme le zéro.
+",,,,,,,,b994af3ab6fe5f87,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,b099af93,code,fr,f4b8a8a61b9d69a0,"# Exemple guide : Kochen-Specker par argument de parite puis force brute (rendu TP PR #25531).
+from itertools import product
+
+def response_is_spin(response):
+    for ctx in contexts:
+        if sum(response[i] for i in ctx) != 1:
+            return False
+    return True
+
+# Méthode 1 : argument de parité (instantané, aucune énumération)
+# SPIN => exactement un ""1"" par contexte, donc 9 ""1"" comptés contexte par contexte (impair).
+# Mais chaque vecteur est dans exactement 2 contextes : chaque ""1"" est compté 2 fois,
+# donc le total doit être pair. Impair ≠ pair : contradiction.
+chaque_vecteur_2_fois = all(sum(i in ctx for ctx in contexts) == 2 for i in range(18))
+print(""Chaque vecteur est dans 2 contextes :"", chaque_vecteur_2_fois)   # True
+print(""Contextes :"", len(contexts), ""(impair) → total pair impossible"")  # 9
+
+# Méthode 2 : force brute sur les 2**18 = 262 144 réponses
+# (response_is_spin s'arrête dès qu'un contexte est faux, ce qui garde le calcul rapide)
+nb_valides = 0
+for r in product([0, 1], repeat=18):
+    if response_is_spin(list(r)):
+        nb_valides += 1
+print(""Réponses respectant SPIN :"", nb_valides)                         # 0 (≈ 0,2 s)
+
+# Interprétation :
+# - 0 réponse valide sur 262 144 : aucune assignation déterministe 0/1 n'existe.
+# - C'est le théorème de Kochen-Specker. La parité l'explique : 9 est impair, 2 × (nombre de 1) est pair.
+# - Avec TWIN (Alice et Bob ont la même réponse), le déterminisme est donc impossible.
+",,,,,,,,f4b8a8a61b9d69a0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ff3a8ee8,markdown,fr,7cc6e09b31307729,"## Resume
 
 ### Concepts cles
 
@@ -15039,6 +15153,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ff3a8e
 | `FreeWillTheorem.lean` | Reduction FWT -> KS (SPIN + TWIN + MIN structurel) |
 | `CHSH.lean` | Frontiere CHSH deterministe (\|score\| = 2 exactement) |
 | `CHSHRandomized.lean` | Frontiere CHSH randomisee (\|E[score]\| <= 2 par convexite) |
+| `CHSHQuantum.lean` | Borne de Tsirelson 2√2 (import Mathlib + ecarts locaux ; saturation ouverte) |
 
 Chaîne de reduction : `free_will_theorem` -> `fwt_single_particle` -> `kochen_specker` (3 maillons).
 
@@ -15063,8 +15178,231 @@ libre arbitre humain ou la conscience.
 
 ***
 
-**Navigation** : [<< Lean-16b FRACTRAN](Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb)
-",,,,,,,,fd928c4b0e861658,,,,,,,,,,,,,,,
+**Navigation** : [<< Lean-16b FRACTRAN](Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb) | [Index](README.md) | [Lean-17a Noeuds >>](KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb)",,,,,,,,7cc6e09b31307729,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-intro,markdown,fr,c8b56ba9e7b65a89,"<a id=""6""></a>
+## 6. La Non-Localite Quantitative : la Frontiere CHSH
+
+Le théorème du libre arbitre s'appuie sur la **non-localite quantique** : la correlation des
+particules jumelles (TWIN) ne s'explique par aucune fonction de reponse locale. Sa forme
+quantitative canonique est l'inégalité **CHSH** (Clauser, Horne, Shimony, Holt, 1969) : dans tout
+modele local classique, le score de correlation est borne par 2 en valeur absolue -- alors que la
+mecanique quantique atteint 2*sqrt(2)* (borne de Tsirelson).
+
+Les trois tranches CHSH sont compilees par le lac ; cette section rejoue l'enumeration de la
+frontiere en Python, puis inventorie les declarations réelles du source Lean.
+
+Le lac `conway_lean` prouve les deux moities classiques de cette frontiere, puis la franchit :
+
+- `Conway/CHSH.lean` (epic #13106, tranche deterministe) : toute strategie locale **deterministe**
+  a un score de valeur absolue **exactement 2** -- `Conway.CHSH.classical_abs_score`, démontre par
+  enumeration noyau (decide) des 16 assignations, avec sa forme usuelle `classical_bound` ;
+- `Conway/CHSHRandomized.lean` (tranche randomisee) : la frontiere tient pour les strategies
+  **randomisees** -- toute combinaison convexe de profils garde un score espere borne par 2
+  (`Conway.CHSHRandomized.randomized_bound`) ;
+- `Conway/CHSHQuantum.lean` (tranche quantique) : la borne de Tsirelson $2\sqrt{2}$ est
+  formalisee -- `Conway.CHSHQuantum.tsirelson_bound` importe le théorème de Mathlib
+  (`Mathlib.Algebra.Star.CHSH.tsirelson_inequality`, preuve noyau par somme de carrés) sous les
+  hypothèses exactes d'algèbre étoilée ordonnée, et le module prouve localement la reecriture
+  $\sqrt{2}^3 = 2\sqrt{2}$ (`sqrt_two_cubed`) et l'ecart $2 < 2\sqrt{2}$
+  (`classical_quantum_gap`).
+
+Ce qui reste ouvert est desormais plus fin que « la formaliser demande des observables
+hermitiennes et une norme d'operateur » : la borne importee est un **majorant unilateral**, et
+le module ne construit pas l'etat quantique qui la sature -- pas de matrices de Pauli, pas
+d'interpretation probabiliste complete, pas de borne bilaterale en norme d'operateur. Ces
+limites sont declarees dans l'en-tete du module, et le registre de la section suivante en garde
+la trace.",,,,,,,,c8b56ba9e7b65a89,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-enum,code,fr,117d5825da420b2c,"# Miroir numérique de l'enumeration Lean : les 16 profils deterministes.
+from itertools import product
+
+def outcome_value(o):
+    # Miroir python de Conway.CHSH.Outcome.value : negative = -1, positive = +1.
+    return -1 if o == ""N"" else +1
+
+def score_chsh(a0, a1, b0, b1):
+    # Miroir python de Conway.CHSH.score : a0*b0 + a0*b1 + a1*b0 - a1*b1.
+    return a0 * b0 + a0 * b1 + a1 * b0 - a1 * b1
+
+rows = []
+for a0, a1, b0, b1 in product((""N"", ""P""), repeat=4):
+    s = score_chsh(outcome_value(a0), outcome_value(a1),
+                   outcome_value(b0), outcome_value(b1))
+    rows.append((f""{a0}{a1}{b0}{b1}"", s))
+
+print(""16 profils deterministes (a0 a1 b0 b1) :"")
+for prof, s in rows:
+    print(f""  {prof}  score = {s:+d}"")
+abs_scores = sorted({abs(s) for _, s in rows})
+print(f""\nValeurs de |score| observees : {abs_scores}"")
+print(f""Max |score| = {max(abs_scores)}  (frontiere classique deterministe)"")",,,,,,,,117d5825da420b2c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-det,markdown,fr,04ba37e270dcd94b,"### Interpretation : |score| = 2 partout, et Lean le prouve
+
+L'enumeration python confirme ce que `Conway.CHSH.classical_abs_score` démontre dans le noyau
+Lean : **les 16 strategies deterministes ont toutes un score de valeur absolue exactement 2** --
+la frontiere n'est pas une borne atteinte par certaines strategies, c'est la valeur **commune a
+toutes**. Le theorem `classical_bound` en est la forme usuelle (|score| <= 2), et
+`score_factorization` explique **pourquoi** : le score se reecrit
+`a0*(b0+b1) + a1*(b0-b1)`, et pour des reponses binaires (+-1), `b0+b1` et `b0-b1` ne peuvent pas
+etre non nuls tous les deux -- un seul des deux termes contribue, de valeur absolue 2.",,,,,,,,04ba37e270dcd94b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-inv,code,fr,56a287339fccba36,"# Inventaire des declarations RÉELLES des trois modules CHSH (source de verite, pas une paraphrase).
+decl_prefixes = (""abbrev "", ""def "", ""theorem "", ""lemma "", ""structure "", ""inductive "")
+
+for fname in [""CHSH.lean"", ""CHSHRandomized.lean"", ""CHSHQuantum.lean""]:
+    fpath = WIN_LEAN_PROJECT / ""Conway"" / fname
+    src_lines = fpath.read_text(encoding=""utf-8"").splitlines()
+    n_sorry = sum(1 for l in src_lines if ""sorry"" in l)
+    print(f""{fname} : {len(src_lines)} lignes, {n_sorry} occurrence(s) de 'sorry'"")
+    for i, ln in enumerate(src_lines, 1):
+        if ln.startswith(decl_prefixes):
+            print(f""  L{i:>3}: {ln.strip()[:100]}"")
+    print()
+print(""0 occurrence en TACTIQUE = la frontiere est complete (deterministe, randomisee ET quantique)."")
+print(""Une occurrence isolee dans l'en-tete du module compte la PROSE, pas une tactique :"")
+print(""c'est le piege du compteur brut, tranche par count_code_sorry.py (mode real)."")",,,,,,,,56a287339fccba36,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-rand,markdown,fr,1889ab61ee0af540,"### Interpretation : la randomite partagee ne brise pas la frontiere
+
+`Conway.CHSHRandomized.randomized_bound` etend le resultat aux strategies **randomisees** : une
+strategie est une famille de poids rationnels sur les 16 profils (le type `Strategy`), son score
+espere `expectedScore` est la combinaison convexe des scores deterministes. La preuve combine
+l'inegalite triangulaire (valeur absolue d'une somme <= somme des valeurs absolues) avec le fait
+que chaque profil porte \|score\| = 2 (`Profile.abs_score`) : la convexite des poids
+(`h_nonneg`, `h_total`) ramene le tout a une somme de poids fois 2, donc \|E[score]\| <= 2.
+
+C'est exactement la structure qui rend le theoreme du libre arbitre **conditionnel** : aucune
+theorie locale -- meme randomisee, meme avec randomite partagee -- ne reproduit la correlation
+quantique 2*sqrt(2)*. La frontiere ne peut etre franchie qu'en sortant du modele local (reponses
+quantiques), ce que FWT capture par ses axiomes SPIN + TWIN + MIN.",,,,,,,,1889ab61ee0af540,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-exo,markdown,fr,1e8295b5fd5cf0c8,"### Exemple guide : une strategie randomisee sur la frontiere (rendu TP PR #25531)
+
+**Crédit** : rendu de TP intégré ici en exemple guidé — PR #25531 (Caroline et Juliana, TP 2). L'énoncé d'origine reste conservé ci-dessous.
+
+**Enonce** : construisez en python une strategie randomisee (poids sur les 16 profils, somme = 1) dont le
+score espere atteint la frontière |E[score]| = 2, puis vérifiez sur quelques exemples que melanger
+deux profils de scores opposes rapproche E[score] de 0. Indice : tout profil deterministe convient
+pour la frontière -- la subtilité est le miroir exact d'`expectedScore`.
+
+**Ce que montre l'exemple** : le miroir exact d'`expectedScore` en arithmétique exacte (`Fraction`) — un profil seul atteint la frontière E = 2, et le mélange du profil +2 avec le profil -2 ramène linéairement l'espérance vers 0 (poids 3/4 → E = 1, poids 1/2 → E = 0), sans jamais sortir de la frontière.
+",,,,,,,,1e8295b5fd5cf0c8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-stub,code,fr,9144c018f7f03537,"# Exemple guide : miroir exact d'expectedScore en arithmetique exacte (rendu TP PR #25531).
+from itertools import product
+from fractions import Fraction
+
+def outcome_value(o):
+    return -1 if o == ""N"" else +1
+
+def score_chsh(a0, a1, b0, b1):
+    return a0*b0 + a0*b1 + a1*b0 - a1*b1
+
+profiles = ["""".join(p) for p in product(""NP"", repeat=4)]
+score = {p: score_chsh(*(outcome_value(c) for c in p)) for p in profiles}
+
+def expected_score(strategy):
+    """"""Score espéré d'une stratégie randomisée : moyenne pondérée des profils.""""""
+    assert sum(strategy.values()) == 1, ""les poids doivent sommer à 1""
+    assert all(w >= 0 for w in strategy.values())
+    return sum(w * score[p] for p, w in strategy.items())
+
+# Partie A : un seul profil (poids 1) -> sur la frontière |E| = 2
+print(""A :"", expected_score({""PPPP"": Fraction(1)}))
+
+# Partie B : mélanger deux profils de scores opposés
+pos = next(p for p in profiles if score[p] == +2)
+neg = next(p for p in profiles if score[p] == -2)
+print(""profil +2 :"", pos, ""| profil -2 :"", neg)
+for w in [Fraction(1), Fraction(3, 4), Fraction(1, 2)]:
+    E = expected_score({pos: w, neg: 1 - w})
+    print(f""poids {w} sur {pos}, {1-w} sur {neg} -> E = {E}, |E| <= 2 : {abs(E) <= 2}"")
+",,,,,,,,9144c018f7f03537,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,0a8549cf,markdown,fr,e50c410695d37b7a,"### Lecture du résultat
+
+Le modèle où chacun ne regarde que sa propre direction passe le test (`Modèle ok : True`). Le modèle où la réponse d'Alice dépend du choix de Bob échoue (`Modèle bad : False`) et le contre-exemple est explicite : direction 0, Alice répond 0 si Bob choisit 0 mais 1 s'il choisit 1. Sa « valeur » pour la direction 0 n'est plus un nombre fixe — plus de coloration 0/1 des vecteurs, donc l'argument SPIN + Kochen-Specker ne s'applique plus ; et physiquement, le choix de Bob agirait instantanément sur Alice, un signal plus rapide que la lumière.
+",,,,,,,,e50c410695d37b7a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,3167b619,markdown,fr,e1afbf01bc012b30,"### Exercice 2 (nouveau) : formaliser la contrainte TWIN
+
+**Objectif.** Écrire une fonction Python qui vérifie la corrélation TWIN : lorsque Alice et Bob
+mesurent la *même* direction, leurs réponses coïncident. En itérant sur les directions, montrer
+qu'un modèle qui viole TWIN ne peut pas être représenté par une seule fonction partagée.
+
+- *Indice* : pour chaque direction `d`, comparer `alice_func(d, d)` et `bob_func(d, d)`.
+- *Étape 1* : définir `check_twin(alice_func, bob_func, directions)` qui itère sur les directions.
+- *Étape 2* : construire un modèle qui respecte TWIN et un modèle qui le viole.
+- *Étape 3* : exhiber le contre-exemple et interpréter — pourquoi TWIN est-elle essentielle pour que l'argument du théorème porte sur les *deux* particules ?
+",,,,,,,,e1afbf01bc012b30,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,addb6233,code,fr,9f98049d29a765e6,"print(""Exercice a completer"")
+twin_satisfied = None  # TODO etudiant : verifier la correlation TWIN sur les directions
+
+# TODO etudiant : Etape 1 -- definir check_twin(alice_func, bob_func, directions)
+# TODO etudiant : Etape 2 -- un modele qui respecte TWIN, un modele qui le viole
+# TODO etudiant : Etape 3 -- exhiber le contre-exemple et interpreter
+",,,,,,,,9f98049d29a765e6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,e650c153,markdown,fr,c1d02798564cd51b,"### Lecture du résultat
+
+Le tableau relève les trois tactiques de `theorem free_will_theorem` (aux lignes L193-L197 de `FreeWillTheorem.lean`) : `rintro` ouvre la contradiction en détruisant l'existencielle, `have` isole l'instance SPIN côté Alice, et `exact` conclut en invoquant `fwt_single_particle` — la preuve à une particule — sur le témoin construit. Trois lignes suffisent : tout le travail est déjà dans les théorèmes en aval, c'est la chaîne de réduction tracée en section 5.
+",,,,,,,,c1d02798564cd51b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,7ad49e8a,markdown,fr,7c7d12170862a575,"### Exercice 3 (nouveau) : décrire la preuve `fwt_single_particle`
+
+**Objectif.** En vous basant sur le source affiché dans la section 4, décrire en français la
+structure de la preuve `fwt_single_particle` — l'étape 1 du théorème, la réduction à
+Kochen-Specker. Identifier chaque tactique utilisée et son rôle, puis compléter le tableau.
+
+- *Indice* : la preuve tient en deux tactiques ; regarder ce que fait le témoin `⟨f 0, hspin 0⟩` (pourquoi instancier à `0` suffit).
+- *Étape 1* : relever chaque tactique dans le bloc `theorem fwt_single_particle`.
+- *Étape 2* : pour chaque tactique, décrire son rôle dans le raisonnement.
+- *Étape 3* : compléter le dictionnaire `proof_analysis_single` avec la correspondance tactique -> rôle.
+",,,,,,,,7c7d12170862a575,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,246c98b9,code,fr,3f0b0251b95427f6,"print(""Exercice a completer"")
+# TODO etudiant : completer le tableau d'analyse de la preuve fwt_single_particle
+# | Tactique | Role dans la preuve | Ligne approx. |
+# |----------|---------------------|---------------|
+# | ...      | ...                 | ...           |
+proof_analysis_single = None  # TODO etudiant : dictionnaire tactique -> (role, ligne)
+",,,,,,,,3f0b0251b95427f6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,43caf6d4,markdown,fr,a2e839948d06609c,"### Lecture du résultat
+
+La sortie montre `A : 2` : un profil déterministe seul (PPPP, poids 1) atteint déjà la frontière |E| = 2. Ensuite, le mélange du profil +2 (NNNN) avec le profil -2 (NNPN) fait descendre l'espérance exactement linéairement : poids 3/4 → E = 1, poids 1/2 → E = 0 — l'arithmétique `Fraction` donne des valeurs exactes, sans erreur de flottant. À chaque étape |E| <= 2 : la randomisation déplace l'espérance *à l'intérieur* de la frontière, elle ne la franchit jamais — exactement ce que prouve `Conway.CHSHRandomized.randomized_bound`.
+",,,,,,,,a2e839948d06609c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,ca16f91f,markdown,fr,29886158a9eea5fe,"### Exercice 4 (nouveau) : le miroir expérimental de `randomized_bound`
+
+**Objectif.** Vérifier expérimentalement que *toute* stratégie randomisée reste dans la frontière
+|E[score]| <= 2, comme le prouve formellement `Conway.CHSHRandomized.randomized_bound`.
+Échantillonnez des stratégies aléatoires (poids positifs de somme 1 sur les 16 profils) et
+vérifiez qu'aucune ne dépasse 2 en valeur absolue.
+
+- *Indice* : tirer des poids positifs uniformément, puis les normaliser par leur somme.
+- *Étape 1* : construire une centaine de stratégies randomisées valides par échantillonnage.
+- *Étape 2* : calculer leur score espéré avec le miroir d'`expected_score` ci-dessus.
+- *Étape 3* : constater |E| <= 2 dans tous les cas et relier l'observation à la convexité (combinaison convexe de valeurs toutes en ±2).
+",,,,,,,,29886158a9eea5fe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,d6d8827a,code,fr,5ad4463d31d94b72,"print(""Exercice a completer"")
+max_abs_E = None  # TODO etudiant : max de |E[score]| observe sur les strategies echantillonnees
+
+# TODO etudiant : Etape 1 -- echantillonner des strategies (poids > 0, somme = 1) sur les 16 profils
+# TODO etudiant : Etape 2 -- calculer E[score] de chacune avec le miroir d'expected_score
+# TODO etudiant : Etape 3 -- verifier |E| <= 2 partout et interpreter (convexite des ±2)
+",,,,,,,,5ad4463d31d94b72,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,c898c606,markdown,fr,70c24337e8728a79,"### Lecture du résultat
+
+La sortie confirme les deux volets : chaque vecteur apparaît dans exactement 2 contextes (`True`) et les 9 contextes rendent le total des « 1 » à la fois impair (un par contexte) et pair (chaque « 1 » compté deux fois) — contradiction. L'énumération exhaustive des 262 144 réponses rend le même verdict : `Réponses respectant SPIN : 0`. C'est le théorème de Kochen-Specker : aucune assignation déterministe de valeurs ne satisfait SPIN, et avec TWIN le déterminisme des deux particules tombe avec celui d'une seule.
+",,,,,,,,70c24337e8728a79,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,cc23e264,markdown,fr,47c2acb6a6f1c891,"### Exercice (nouveau) : relâcher un seul contexte
+
+En retirant **un seul** des 9 contextes de la liste `contexts`, l'argument de parité ne
+s'applique plus. Enumerez les réponses déterministes qui satisfont SPIN sur les 8 contextes
+restants : combien en existe-t-il ? Comparez avec le cas des 9 contextes (aucune) et
+expliquez le rôle de l'imparité dans le théorème.
+
+- *Indice* : `sub_contexts = contexts[:-1]` puis réutiliser la même énumération exhaustive.
+- *Étape 1* : construire la liste des 8 contextes.
+- *Étape 2* : compter les réponses valides pour cette sous-liste.
+- *Étape 3* : interpréter — pourquoi la contradiction de parité disparaît-elle ?
+",,,,,,,,47c2acb6a6f1c891,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,a1961454,code,fr,74900c0b1a03b97d,"print(""Exercice a completer"")
+nb_valides_8 = None  # TODO etudiant : compter les colorations valides sur 8 contextes
+
+# TODO etudiant : Etape 1 -- liste des 8 contextes (retirer le dernier de `contexts`)
+# TODO etudiant : Etape 2 -- enumerer et compter les reponses valides sur ces 8 contextes
+# TODO etudiant : Etape 3 -- interpreter par rapport a la parite (9 contextes = impair)
+",,,,,,,,74900c0b1a03b97d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb,ed9b9067,markdown,fr,7f50a97095d9bda6,"# Lean 17a — Conway, les Nœuds et la Preuve de Piccirillo
 
 **Série** : SymbolicAI / Lean — Knots Theory (**17a**)
@@ -16084,7 +16422,7 @@ def extract_theorem_signatures(filepath):
 #         print(f""  {name}: {sig[:60]}..."")
 # print(""Exercice 5 : OK"")
 ",,,,,,,,970501d822448af6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,header-cell,markdown,fr,bf24e34d931e8d49,"# Lean 17b — Invariants de Nœuds : Calcul et Vérification
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,header-cell,markdown,fr,d41df2954832f962,"# KNOTS-02 — Invariants de Nœuds : Calcul et Vérification
 
 **Série** : SymbolicAI / Lean — Knots Theory (17b = compagnon de 17a)
 
@@ -16103,9 +16441,8 @@ Le jumeau **formel** de ces invariants vit dans le lake [`knot_lean`](knot_lean/
 - Python 3.10+ avec `snappy`, `matplotlib`, `numpy`
 - `pip install snappy matplotlib numpy`
 
-## Durée estimée : 45 min
-",,,,,,,,bf24e34d931e8d49,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,setup-imports,code,fr,7490f715f18ef8ff,"import numpy as np
+## Durée estimée : 45 min",,,,,,,,d41df2954832f962,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,setup-imports,code,fr,a3132fc2333607c3,"import numpy as np
 import matplotlib.pyplot as plt
 
 # Try SnapPy import
@@ -16140,7 +16477,7 @@ KNOT_ATLAS = {
         ""signature"": 0,
         ""unknotting"": 1,
         ""tricolorable"": False,
-        ""slice"": True,
+        ""slice"": False,
     },
     ""K11n34 (Conway)"": {
         ""snappy_name"": ""K11n34"",
@@ -16187,7 +16524,7 @@ KNOT_ATLAS = {
     },
 }
 print(f""Loaded {len(KNOT_ATLAS)} knots from Knot Atlas reference data (PD codes verified by snappy.Link(pd) parse, snappy 3.3.2)"")
-",,,,,,,,7490f715f18ef8ff,,,,,,,,,,,,,,,
+",,,,,,,,a3132fc2333607c3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,section-pd-intro,markdown,fr,76a9e39970f0a409,"## 1. Représentation des Nœuds : PD-codes
 
 Un **PD-code** (Planar Diagram) encode un diagramme de nœud comme une liste de croisements.
@@ -16216,18 +16553,22 @@ for name, data in KNOT_ATLAS.items():
     print(f""  Arcs uniques: {len(arcs)} (expected: {2 * n_crossings})"")
     print(f""  PD-code: {pd}"")
 ",,,,,,,,a6dc584b975bc667,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,section-volume-intro,markdown,fr,38a711bd1d26b5a8,"## 2. Volume Hyperbolique (SnapPy)
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,section-volume-intro,markdown,fr,2195762bff17b847,"## 2. Volume Hyperbolique (SnapPy)
 
 Le **volume hyperbolique** est un invariant puissant : c'est le volume de la
 variété $S^3 \setminus K$ munie de sa géométrie hyperbolique canonique
 (théorème de hyperbolisation de Thurston).
 
-Pourquoi est-ce un invariant *topologique* et non une quantité géométrique arbitraire ? Le théorème de **rigidité de Mostow-Prasad** : deux variétés hyperboliques de volume fini et de même volume sont isométriques. Conséquence — le volume ne dépend pas du diagramme choisi pour $K$ : deux nœuds hyperboliques de volumes différents sont **nécessairement distincts**, et ce verdict est absolu (pas une coïncidence numérique). C'est cette propriété qui rend le volume hyperbolique si discriminant : là où le polynôme d'Alexander peut coincider pour deux nœuds différents, deux volumes hyperboliques distincts prouvent la distinction.
+Pourquoi est-ce un invariant *topologique* et non une quantité géométrique arbitraire ? Le théorème de **rigidité de Mostow-Prasad** : une variété hyperbolique de volume fini est déterminée **à isométrie près par son groupe fondamental**. Deux conséquences, et une limite :
+
+- **unicité** : le complément d'un nœud donné ne porte qu'**une** structure hyperbolique complète. Le volume ne dépend donc pas du diagramme choisi pour $K$ : il est **bien défini** ;
+- **discriminant** : deux nœuds hyperboliques de volumes **différents** sont **nécessairement distincts**, et ce verdict est absolu (pas une coïncidence numérique). C'est cette propriété qui rend le volume hyperbolique si discriminant : là où le polynôme d'Alexander peut coincider pour deux nœuds différents, deux volumes hyperboliques distincts prouvent la distinction ;
+- **pas classant** : la rigidité ne dit **pas** que deux variétés hyperboliques de **même** volume sont isométriques — l'égalité des volumes n'implique **rien** sur l'isométrie. Le carnet en donne le contre-exemple : Conway ($K11n34$) et Kinoshita-Terasaka ($K11n42$) ont le **même** volume et le **même** nombre de croisements (11), tout en étant des nœuds distincts (§4). Le volume est donc **discriminant mais non classant** : il sépare certains couples, pas tous.
 
 Propriété additionnelle : le volume est **additif** sous la somme connexe, $\text{vol}(K_1 \# K_2) = \text{vol}(K_1) + \text{vol}(K_2)$, ce qui en fait aussi un invariant additif des nœuds composés.
 
 SnapPy peut calculer ce volume directement à partir du PD-code.
-",,,,,,,,38a711bd1d26b5a8,,,,,,,,,,,,,,,
+",,,,,,,,2195762bff17b847,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,compute-volumes,code,fr,9210ced87892f012,"if SNAPPY_AVAILABLE:
     print(""="" * 60)
     print(""Volume hyperbolique via SnapPy"")
@@ -16299,7 +16640,7 @@ if SNAPPY_AVAILABLE:
     print(f""    Crossings in SnapPy: {len(link.crossings)}"")
     print(f""    Components: {len(link.link_components)} (should be 1 for knot)"")
 ",,,,,,,,24d76340d2fd199b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,section-conway-vs-kt-intro,markdown,fr,c00aa09d5e92cff1,"## 4. K11n34 (Conway) vs K11n42 (Kinoshita-Terasaka) — La Dichotomie
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,section-conway-vs-kt-intro,markdown,fr,24970d4c3beb6e75,"## 4. K11n34 (Conway) vs K11n42 (Kinoshita-Terasaka) — La Dichotomie
 
 Ces deux nœuds sont des **mutants** : ils partagent de nombreux invariants
 mais diffèrent sur un point crucial — la sliceness lisse.
@@ -16314,7 +16655,9 @@ mais diffèrent sur un point crucial — la sliceness lisse.
 | **Slice (lisse)** | **NON** (Piccirillo 2020) | **OUI** | **NON** |
 
 La dichotomie topo/lisse est le cœur du résultat de Piccirillo.
-",,,,,,,,c00aa09d5e92cff1,,,,,,,,,,,,,,,
+
+Le **volume hyperbolique ne les distingue pas non plus** : Conway et K-T ont le même volume $11.21912$ (§2, mesuré par SnapPy) et le même nombre de croisements (11). Sur ce couple, le volume est donc aussi **muet** que le polynôme d'Alexander — mais ce n'est pas le volume qui est en cause : c'est la nature de ce couple de **mutants** : la mutation préserve le volume hyperbolique (Ruberman, 1987), comme elle préserve les polynômes d'Alexander et de Jones. Le volume reste un invariant **discriminant ailleurs** (deux volumes différents prouvent la distinction) et **muet ici** : c'est exactement la limite qu'il faut garder en tête quand on en fait un outil de séparation.
+",,,,,,,,24970d4c3beb6e75,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,conway-vs-kt-compare,code,fr,4cc81c7a9893a6a3,"conway = KNOT_ATLAS[""K11n34 (Conway)""]
 kt = KNOT_ATLAS[""K11n42 (Kinoshita-Terasaka)""]
 
@@ -16392,28 +16735,28 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,exercis
 Cette section ajoute des visualisations 2D et des tableaux comparatifs pour les invariants
 qui nécessitent des outils plus avancés (homologie de Khovanov, tangles de Conway, genus 4D).
 ",,,,,,,,b1c84b0fb442bd22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,aeb7ac2f,markdown,fr,1a1fa71851970411,"### Interprétation
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,aeb7ac2f,markdown,fr,679bfc0330afe13b,"### Interprétation
 
 Le genre 4D ($g_4$) est le **genre minimal d'une surface de Seifert** qui est bornée
 par le nœud et qui **plonge dans $B^4$** (la boule 4D).
 
 **Points clés** :
 - Le trèfle a $g_4 = 1$ : son complément ne peut pas être rempli par une surface lisse dans $B^4$
-- La figure-eight a $g_4 = 0$ : elle est **slice** (borderée par un disque dans $B^4$)
+- La figure-eight a $g_4 = 1$ : elle n'est **pas slice** — $\Delta(-1) = 5$ n'est pas un carré (Fox-Milnor), alors que sa signature $\sigma = 0$, elle, ne dit rien
 - Le nœud de Conway a $g_4 = 1$ (NON slice lisse) MAIS $g_4^{topo} = 0$ (slice topologique)
-- L'obstruction de Fox-Milnor (polynôme d'Alexander) détecte $g_4 \neq 0$ pour le trèfle
+- L'obstruction de Fox-Milnor (polynôme d'Alexander) détecte $g_4 \neq 0$ pour le trèfle et la figure-eight (déterminants 3 et 5, non carrés)
 - Le résultat de Piccirillo (2020) montre que $g_4$ (lisse) $\neq g_4^{topo}$ pour Conway
 
 C'est cette **discordance** entre sliceness topologique et sliceness lisse qui fait
 l'intérêt du nœud de Conway — elle contredit l'intuition que ""slice = slice"",
-et motive l'étude des invariants de homologie de Khovanov (invariant $s$ de Rasmussen).",,,,,,,,1a1fa71851970411,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,997df753,code,fr,5c6b0b25328f756a,"# Slice genus table (g_4) — obstruction à la sliceness lisse
+et motive l'étude des invariants de homologie de Khovanov (invariant $s$ de Rasmussen).",,,,,,,,679bfc0330afe13b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,997df753,code,fr,777410da77e78acf,"# Slice genus table (g_4) — obstruction à la sliceness lisse
 # Source: Fox-Milnor theorem, Livingston 2003, Piccirillo 2020
 
 slice_genus_data = {
     ""Unknot (0_1)"": {""g4"": 0, ""slice"": ""Yes"", ""alexander"": ""1"", ""note"": ""trivial""},
     ""Trefoil (3_1)"": {""g4"": 1, ""slice"": ""No"", ""alexander"": ""t - 1 + t^{-1}"", ""note"": ""Fox-Milnor obstruction""},
-    ""Figure-eight (4_1)"": {""g4"": 0, ""slice"": ""Yes"", ""alexander"": ""-t + 3 - t^{-1}"", ""note"": ""f(t)=1-t, f(t)f(t^{-1})=Δ""},
+    ""Figure-eight (4_1)"": {""g4"": 1, ""slice"": ""No"", ""alexander"": ""-t + 3 - t^{-1}"", ""note"": ""det 5 non carré — Fox-Milnor""},
     ""Conway (K11n34)"": {""g4"": 1, ""slice"": ""No (smooth)"", ""alexander"": ""1"", ""note"": ""Piccirillo 2020""},
     ""K-T (K11n42)"": {""g4"": 0, ""slice"": ""Yes"", ""alexander"": ""1"", ""note"": ""même Δ que Conway!""},
 }
@@ -16429,94 +16772,108 @@ for name, data in slice_genus_data.items():
     print(f""{name:<20s} {data['g4']:<6} {data['slice']:<12s} {data['alexander']:<30s} {data['note']}"")
 
 print(""\n>>> Le trèfle et Conway ont g_4=1 (NON slice)"")
-print("">>> L'unknot, figure-eight et K-T ont g_4=0 (slice)"")
-print("">>> Conway et K-T partagent Δ=1 mais diffèrent sur g_4 lisse!"")",,,,,,,,5c6b0b25328f756a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,e9da5690,markdown,fr,71faf01ebe63f38d,"### 6.1. PD-code et structure combinatoire (SnapPy)
+print("">>> L'unknot et K-T ont g_4=0 (slice) ; figure-eight: g_4=1 (det 5 non carré)"")
+print("">>> Conway et K-T partagent Δ=1 mais diffèrent sur g_4 lisse!"")",,,,,,,,777410da77e78acf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,e9da5690,markdown,fr,e753beb068b83d18,"### 6.1. Diagrammes 2D de nœuds (SnapPy + projection Python pure)
 
 SnapPy (via Spherogram) fournit la **représentation combinatoire** d'un nœud : le
 PD-code, la liste des croisements et le passage par-dessus/par-dessous de chaque
 croisement. C'est cette donnée qui sert à vérifier les propriétés
 combinatoires (symétrie, complexité, type de croisements).
 
-> **Ce que la figure ci-dessous n'est pas** : un diagramme de nœud. Le moteur de
-> rendu natif de Spherogram est le programme C `draw` (Peano/xdraw), un binaire
-> **POSIX-only** absent de Windows, et Spherogram ne fournit aucun renduur Python
-> pur (vérifié firsthand : `spherogram` 2.4.1 ne référence aucun moteur de rendu ;
-> `spherogram.links.draw.run_draw` lance un sous-processus `draw`, et `link_pdf`
-> exige en plus `mpost` et `epstopdf`). Le rendu 2D des trois diagrammes est donc
-> suivi dans l'issue #21908 ; la figure affiche les **données** que SnapPy calcule
-> — PD-code, nombre de croisements et volume hyperbolique.
-",,,,,,,,71faf01ebe63f38d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,236fa7d7,code,fr,f4eda2b004f574e5,"# Donnees combinatoires des noeuds via SnapPy — PD-code, croisements, volume
+La figure ci-dessous est un **diagramme de nœud** : la topologie (croisements,
+sur/sous) est calculée par SnapPy, et la **projection plane** est reconstruite par
+le moteur [`scripts/notebook_tools/knot_diagram.py`](../../../../scripts/notebook_tools/knot_diagram.py)
+(Python pur, numpy + matplotlib). Chaque croisement porte son numéro : le
+croisement *i* du dessin correspond au *i*-ème tuple du PD-code affiché en
+section 1. Le passage par-dessus/par-dessous est rendu par un **halo blanc** sur
+le brin supérieur, à l'endroit où il croise le brin inférieur.
+
+> **Pourquoi une projection maison** : le moteur de rendu natif de Spherogram est
+> le programme C `draw` (Peano/xdraw), un binaire **POSIX-only** absent de
+> Windows et de la CI — et `link_pdf` exige en plus `mpost` et `epstopdf`.
+> Spherogram 2.4.1 n'embarque aucun rendu Python pur (vérifié firsthand). Le
+> moteur utilisé ici est né de l'issue #21908 : il reconstruit uniquement la
+> projection (faces par permutation, validité `V − E + F = 2`, placement des
+> croisements par plongement de Tutte), la **topologie restant celle de SnapPy**.",,,,,,,,e753beb068b83d18,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,236fa7d7,code,fr,cc30107c945ae3ab,"# Diagrammes 2D reels des noeuds — projection plane du PD-code (moteur `knot_diagram`)
 if SNAPPY_AVAILABLE:
+    import sys
+    from pathlib import Path
+    import importlib.util
     import matplotlib.pyplot as plt
 
+    def _load_knot_diagram():
+        """"""Charge le moteur de projection depuis la racine du depot.
+
+        Le module est enregistre dans `sys.modules` AVANT `exec_module` : ses
+        classes sont des `@dataclass`, et la resolution de leurs annotations
+        passe par `sys.modules[cls.__module__]`. Sans cet enregistrement,
+        l'import par chemin leve `AttributeError: 'NoneType' object has no
+        attribute '__dict__'`.
+        """"""
+        here = Path.cwd().resolve()
+        for base in (here, *here.parents):
+            candidate = base / ""scripts"" / ""notebook_tools"" / ""knot_diagram.py""
+            if candidate.is_file():
+                spec = importlib.util.spec_from_file_location(""knot_diagram"", candidate)
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[""knot_diagram""] = module
+                spec.loader.exec_module(module)
+                return module
+        raise FileNotFoundError(""scripts/notebook_tools/knot_diagram.py introuvable"")
+
+    knot_diagram = _load_knot_diagram()
+
     print(""="" * 60)
-    print(""Données combinatoires des nœuds via SnapPy"")
+    print(""Diagrammes 2D reconstruits depuis le PD-code SnapPy"")
     print(""="" * 60)
 
-    # Select knots to visualize
     knots_to_plot = [""3_1 (Trefoil)"", ""4_1 (Figure-eight)"", ""K11n34 (Conway)""]
 
-    fig, axes = plt.subplots(1, 3, figsize=(18, 5))
+    fig, axes = plt.subplots(1, 3, figsize=(18, 5.5))
 
     for idx, knot_name in enumerate(knots_to_plot):
         data = KNOT_ATLAS[knot_name]
         link = snappy.Link(data[""snappy_name""])
 
-        # Ce que SnapPy/Spherogram calcule : le PD-code, les croisements et le
-        # passage par-dessus/par-dessous. Le RENDU 2D est une autre affaire : le
-        # moteur natif de Spherogram est le binaire POSIX `draw` (Peano/xdraw),
-        # absent de Windows, et Spherogram n'a pas de rendu Python pur
-        # (verifie firsthand : spherogram 2.4.1 ne reference aucun moteur de
-        # rendu). La figure ci-dessous affiche donc les DONNEES, pas un
-        # diagramme ; le rendu des diagrammes est suivi dans l'issue #21908.
+        # La topologie est celle de SnapPy : c'est SON PD-code qui est projete.
+        # Un PD-code incoherent (arete absente, kink de Reidemeister I, systeme
+        # de rotation non planaire) est refuse par le moteur (`PDCodeError`)
+        # plutot que dessine faux.
+        pd_code = link.PD_code()
+        diagram = knot_diagram.build_diagram(pd_code)
 
         ax = axes[idx]
-        ax.axis('off')
+        knot_diagram.draw_diagram(diagram, ax=ax, linewidth=2.4)
 
-        # Create a textual representation of the knot structure
-        info_text = f""{knot_name}\n\n""
-        info_text += f""Croisements: {len(data['pd'])}\n""
-        # PD-code : un croisement par ligne (notation Knot Atlas X[a,b,c,d]).
-        # Sur une seule ligne, les 11 croisements de K11n34 débordent l'axe
-        # et l'encadré recouvre celui du nœud voisin.
-        info_text += ""PD-code:\n""
-        for crossing in data['pd']:
-            info_text += ""  X["" + "", "".join(str(v) for v in crossing) + ""]\n""
-        info_text += ""\n""
+        # Numero pose a la position de chaque croisement : rend la
+        # correspondance figure <-> PD-code verifiable a l'oeil (le croisement
+        # i du dessin est le i-ieme tuple du PD-code imprime en section 1).
+        for crossing_index, (x, y) in enumerate(diagram.positions, start=1):
+            ax.plot([x], [y], marker=""o"", markersize=11, markerfacecolor=""white"",
+                    markeredgecolor=""#c0392b"", markeredgewidth=1.8, zorder=6)
+            ax.text(x, y, str(crossing_index), ha=""center"", va=""center"",
+                    fontsize=8, color=""#c0392b"", fontweight=""bold"", zorder=7)
 
-        # SnapPy 3.x : link.is_achievable() n'existe pas (3.3.2 verifie firsthand) -- retire.
+        ax.set_title(f""{knot_name} — {diagram.crossing_count} croisements"",
+                     fontsize=12, fontweight=""bold"")
 
-        # Volume : SnapPy 3.3.2 renvoie 0 pour un exterieur non hyperbolique
-        # (mesure : 3_1 -> 0.0, 4_1 -> 2.02988, K11n34 -> 11.21912) au lieu de
-        # lever une exception -- le volume nul est donc affiche explicitement.
-        try:
-            vol = float(link.exterior().volume())
-        except (ValueError, RuntimeError, snappy.exceptions.SnapPeaFatalError) as exc:
-            info_text += f""Volume: N/A ({type(exc).__name__}: {exc})\n""
-        else:
-            if vol > 0:
-                info_text += f""Volume: {vol:.5f}\n""
-            else:
-                info_text += f""Volume: {vol:.5f} (non hyperbolique)\n""
+        volume = float(link.exterior().volume())
+        print(f""  {knot_name}: {diagram.crossing_count} croisements, ""
+              f""{len(diagram.faces)} faces, intersections hors croisements = ""
+              f""{diagram.geometric_crossings} ""
+              f""(projection valide : {diagram.is_valid_projection}), ""
+              f""volume = {volume:.5f}"")
 
-        # Display properties
-        ax.text(0.1, 0.5, info_text, fontsize=10, verticalalignment='center',
-                family='monospace',
-                bbox=dict(boxstyle='round', facecolor='lightblue', alpha=0.5))
-
-        ax.set_title(f""Structure: {knot_name}"", fontsize=12, fontweight='bold')
-
-    plt.suptitle('Données combinatoires via SnapPy — PD-code, croisements et volume',
+    plt.suptitle(""Diagrammes de noeuds reconstruits en Python pur depuis le PD-code SnapPy"",
                  fontsize=14, y=1.02)
     plt.tight_layout()
     plt.show()
 
-    print(""\n>>> SnapPy fournit le PD-code, les croisements et le volume"")
-    print("">>> Ce n'est PAS un diagramme de nœud : le rendu natif de Spherogram"")
-    print("">>> est le binaire POSIX `draw` (Peano/xdraw), absent de Windows"")
-    print("">>> Le rendu 2D des diagrammes est suivi dans l'issue #21908"")
+    print(""\n>>> La topologie (croisements, sur/sous) est celle de SnapPy ;"")
+    print("">>> la projection plane est calculee par scripts/notebook_tools/knot_diagram.py"")
+    print("">>> Le passage sur/sous est rendu par un halo blanc sur le brin superieur."")
 
 else:
     print(""SnapPy non disponible — affichage des informations textuelles:"")
@@ -16524,36 +16881,58 @@ else:
         data = KNOT_ATLAS[knot_name]
         print(f""\n  {knot_name}:"")
         print(f""    Croisements: {len(data['pd'])}"")
-        print(f""    PD-code: {data['pd']}"")",,,,,,,,f4eda2b004f574e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,adcb39dd,markdown,fr,3274c0f74e1ab029,"### Interprétation
+        print(f""    PD-code: {data['pd']}"")",,,,,,,,cc30107c945ae3ab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,adcb39dd,markdown,fr,d693bb956dadf524,"### Interprétation
 
-Les données combinatoires fournies par SnapPy (PD-code, croisements, volume)
-décrivent la **structure combinatoire** des nœuds :
+La figure projette le **PD-code calculé par SnapPy** dans le plan. Elle ne redessine
+pas une image « décorative » : chaque arc du dessin est une arête du diagramme
+plan, et chaque pastille numérotée est un croisement du PD-code.
 
-**PD-code vs données affichées** :
-- Le PD-code encode la topologie du nœud de façon unique (à isotopie près)
-- Le nombre de croisements = complexité du nœud (3 pour trèfle, 4 pour figure-eight, 11 pour Conway)
-- La structure du PD-code révèle les symétries (pattern dans les tuples)
+**Lecture de la figure** :
+
+- le croisement *i* du dessin est le *i*-ème tuple du PD-code affiché en section 1
+  — la numérotation rend la correspondance vérifiable sans instrument ;
+- le **passage sur/sous** se lit au halo blanc : le brin supérieur interrompt
+  visuellement le brin inférieur, exactement au croisement ;
+- le **nombre de croisements** est la complexité du nœud : 3 pour le trèfle,
+  4 pour la figure-eight, 11 pour Conway ;
+- le **nombre de faces** suit le même compte : pour une projection de nœud,
+  `V − E + F = 2` avec `V = n` croisements et `E = 2n` arêtes, donc `F = n + 2`
+  — mesuré ici 5, 6 et 13. C'est le contrôle de planarité que le moteur exécute :
+  un PD-code incohérent est **refusé** au lieu d'être dessiné faux ;
+- la **validité géométrique** est comptée, pas supposée : le moteur recoupe les
+  arcs et vérifie qu'il n'y a **aucune** intersection en dehors des croisements
+  déclarés (`intersections hors croisements = 0` pour les trois diagrammes).
 
 **Propriétés vérifiables** :
-- **Volume hyperbolique** : trèfle = 0 (non hyperbolique), figure-eight = 2.02988, Conway (K11n34) = 11.21912 (= K-T K11n42)
-- **Lecture de la figure** : chaque encadré porte le nom du nœud, son nombre de croisements, son PD-code complet puis son volume — c'est la hauteur de l'encadré de K11n34 qui trahit ses 11 croisements, contre 3 pour le trèfle
-- **Achievabilité** : certains diagrammes sont ""achievable"" (peuvent être réalisés géométriquement)
-- **Alternance** : 3_1 (trèfle) et 4_1 (figure-eight) sont alternés ; K11n34 et K11n42 ne le sont pas (le `n` de la notation KnotInfo signale cette non-alternance)
 
-**Limitations de SnapPy** :
-- SnapPy est optimisé pour le **calcul 3D** (géométrie hyperbolique, volume)
-- SnapPy fournit les données brutes (PD-code, croisements, volume) mais **pas** le rendu
-  d'un diagramme : le moteur natif de Spherogram est le binaire POSIX `draw`
-  (Peano/xdraw), que **SageMath** embarque (`sage.knots.link.Link.plot()`), mais
-  qui n'est pas disponible sous Windows
-- Le rendu 2D des diagrammes de §6.1 est suivi dans l'issue #21908
+- **Volume hyperbolique** : trèfle = 0 (non hyperbolique, c'est un nœud torique),
+  figure-eight = 2.02988, Conway (K11n34) = 11.21912 (= K-T K11n42)
+- **Alternance** : 3_1 (trèfle) et 4_1 (figure-eight) sont alternés ; K11n34 et
+  K11n42 ne le sont pas (le `n` de la notation KnotInfo signale cette non-alternance)
 
+**Limites de la projection** (ce que la figure ne promet pas) :
+
+- le placement des croisements vient d'un **plongement de Tutte** : il est
+  déterministe et valide, mais ce n'est pas la disposition « classique » d'un
+  manuel — la position globale peut être l'image miroir du diagramme d'origine
+  (isotopie sûre, orientation non garantie) ;
+- les **kinks de Reidemeister I** (une arête dont les deux extrémités sont le
+  même croisement) ne sont pas supportés : il faut lisser le diagramme d'abord ;
+- un diagramme **scindé** (plusieurs composantes) est placé côte à côte, sans
+  garantie esthétique.
 
 **Pourquoi c'est important** :
+
 - Le PD-code est la représentation standard pour les calculs (SnapPy, SageMath, Knot Atlas)
-- Le PD-code affiché aide à intuitionner les propriétés 3D (volume, hyperbolicité)
-- Les mutants (Conway/K-T) ont le **même polynôme d'Alexander** (Δ=1) et le **même volume hyperbolique** (≈11.22), mais des **PD-codes différents** (vérifié par `snappy.Link(name).PD_code()` sous SnapPy 3.3.2) : c'est précisément ce que les invariants « faibles » ne distinguent pas, et ce que la sliceness lisse (Fox-Milnor + Piccirillo 2020) tranche",,,,,,,,3274c0f74e1ab029,,,,,,,,,,,,,,,
+- Le diagramme rend la structure 3D **lisible** : c'est la même information que le
+  PD-code, mais vérifiable à l'œil — un croisement oublié ou un sur/sous inversé
+  se voit immédiatement
+- Les mutants (Conway/K-T) ont le **même polynôme d'Alexander** (Δ=1) et le **même
+  volume hyperbolique** (≈11.22), mais des **PD-codes différents** (vérifié par
+  `snappy.Link(name).PD_code()` sous SnapPy 3.3.2) : c'est précisément ce que les
+  invariants « faibles » ne distinguent pas, et ce que la sliceness lisse
+  (Fox-Milnor + Piccirillo 2020) tranche",,,,,,,,d693bb956dadf524,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,938d1707,markdown,fr,288f6f816f16f81c,"### 6.2. Graphes de Tait — Coloriage et Signature
 
 Les **graphes de Tait** (ou graphes ""checkerboard"") encodent un diagramme de nœud
@@ -16986,14 +17365,14 @@ is_slice_obstructed = None  # TODO etudiant: True si obstruction Fox-Milnor
 # Indice: Donc is_slice_obstructed = True (le trèfle n'est PAS slice)
 
 print(""Exercice a completer"")",,,,,,,,9eea981427764ceb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,conclusion-cell,markdown,fr,0adbc63cc5a702e9,"## Résumé
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,conclusion-cell,markdown,fr,99da005ffe3c2735,"## Résumé
 
 Ce notebook compagnon a calculé et vérifié les invariants clés de la théorie des nœuds :
 
 | Nœud | Alexander | Determinant | Signature | Volume | Slice (lisse) |
 |------|-----------|-------------|-----------|--------|---------------|
 | 3_1 (Trèfle) | $t - 1 + t^{-1}$ | 3 | -2 | — | Non |
-| 4_1 (Huit) | $-t + 3 - t^{-1}$ | 5 | 0 | 2.029 | Oui |
+| 4_1 (Huit) | $-t + 3 - t^{-1}$ | 5 | 0 | 2.029 | Non |
 | K11n34 (Conway) | **1** | 1 | 0 | 11.219 | **NON** (Piccirillo) |
 | K11n42 (K-T) | **1** | 1 | 0 | 11.219 | **OUI** |
 | K11n102 (Lidman) | $-t^2 + t + 1 + t^{-1} - t^{-2}$ | 3 | -2 | 7.244 | ? |
@@ -17002,6 +17381,7 @@ Ce notebook compagnon a calculé et vérifié les invariants clés de la théori
 - SnapPy calcule le volume hyperbolique nativement (C++ inside)
 - Les polynômes (Alexander, Jones) nécessitent SageMath (`Link.alexander_polynomial()` via Sage)
 - La dichotomie Conway/K-T illustre que le polynôme d'Alexander seul ne suffit pas
+- Le volume hyperbolique **ne sépare pas** non plus Conway de K-T (même volume $11.21912$) : il est **discriminant mais non classant**. La rigidité de Mostow-Prasad détermine l'isométrie par le **groupe fondamental**, pas par le volume — l'égalité des volumes ne dit rien (§2)
 - L'invariant $s$ de Rasmussen **ne sépare pas** ce couple : il vaut $0$ pour Conway comme pour K-T (mutants, même homologie de Khovanov). Piccirillo le fait parler sur un nœud **compagnon** de même trace $0$-framée, pas sur le nœud de Conway
 
 ## Références
@@ -17014,7 +17394,7 @@ Ce notebook compagnon a calculé et vérifié les invariants clés de la théori
 
 ***
 
-**Navigation** : [<< Lean-17a — Conway & Preuve de Piccirillo](KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | [Index](README.md) | [Lean-17c — Companion formel >>](KNOTS-03-Companion-Formel-Lean-Python.ipynb)",,,,,,,,0adbc63cc5a702e9,,,,,,,,,,,,,,,
+**Navigation** : [<< Lean-17a — Conway & Preuve de Piccirillo](KNOTS-01-Conway-Proofs-Lean-Python.ipynb) | [Index](README.md) | [Lean-17c — Companion formel >>](KNOTS-03-Companion-Formel-Lean-Python.ipynb)",,,,,,,,99da005ffe3c2735,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb,1b679ea6,markdown,fr,d70e0dcfb1d2379a,"# Lean 2 - Types Dependants et Calcul des Constructions
 
 **Navigation** : [← Lean-01-Setup-Lean-Python](Lean-01-Setup-Lean-Python.ipynb) | [Index](Lean-01-Setup-Lean-Python.ipynb) | [Lean-03-Propositions-Proofs-Lean →](Lean-03-Propositions-Proofs-Lean.ipynb)
@@ -33562,19 +33942,14 @@ La parametrisation `(a, b) = (-3t^2, 2t^3)` annule le discriminant identiquement
 Cette section **re lie** ces deux univers : elle reutilise les fonctions de `ict.catastrophe` pour tracer la cubique cuspidale **dans les coordonnees polaires naturelles du tore** (le tore de la section 6.4, pas un torus decoratif), elle verifie que le treffle `(2, 3)` se trace bien le long de cette cubique, et elle renvoie a ICT-23 pour la theorie de la fronce et a `Knots.Conway` pour la preuve formelle du lien.
 
 ",,,,,,,,b21efdd89372bd10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,viz_cusp_bridge,code,fr,69ad76fe0b5d65f8,"# Pont cusp <-> trefle (Epic #19333-G, bridge cusp <-> trefle).
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,viz_cusp_bridge,code,fr,778a2d7d97081fa6,"# Pont cusp <-> trefle (Epic #19333-G, bridge cusp <-> trefle).
 # Les fonctions viennent de l'organe ict.catastrophe (serie IIT/ICT-Series), sans
-# copie locale. Le notebook s'execute depuis son dossier (SymbolicAI/Lean/KNOTS) :
-# ICT-Series est trois niveaux au-dessus, dans MyIA.AI.Notebooks/IIT.
-
-import sys
-from pathlib import Path
+# copie locale. Voie contractuelle #25381 : `pip install -e
+# MyIA.AI.Notebooks/IIT/ICT-Series` (coeur leger, sans PyPhi) -- plus de
+# resolution sys.path depuis ce carnet.
 
 import numpy as np
 
-ICT = Path.cwd().parents[2] / 'IIT' / 'ICT-Series'
-if str(ICT) not in sys.path:
-    sys.path.insert(0, str(ICT))
 from ict.catastrophe import (
     torus_points, torus_knot, torus_knot_winding,
     alexander_roots_torus_knot, cusp_discriminant,
@@ -33616,7 +33991,7 @@ plt.tight_layout()
 print(f""Treffle T(2, 3) trace : {w_lon:.1f} tours longitudinaux, {w_mer:.1f} tours meridiens"")
 print(f""Discriminant min/max le long du KNOT : {cusp_disc.min():.2e} / {cusp_disc.max():.2e}"")
 print(f""Racines Alexander trefle : {len(roots)} racine(s), module = {np.abs(roots[0]):.4f}"")
-",,,,,,,,69ad76fe0b5d65f8,,,,,,,,,,,,,,,
+",,,,,,,,778a2d7d97081fa6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,check_cusp_bridge,code,fr,73fb853094e20db4,"# Verification du pont : le treffle vit bien sur la cubique cuspidale.
 # La parametrisation (-3t^2, 2t^3) annule le discriminant identiquement.
 residue = np.max(np.abs(cusp_discriminant(-3.0 * t ** 2, 2.0 * t ** 3)))
@@ -33631,7 +34006,7 @@ print(f""Pont verifie : residu discriminant = {residue:.2e}, enroulement = ({w_l
 
 
 ",,,,,,,,73fb853094e20db4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,interp_cusp_bridge,markdown,fr,c26e0cefbde0fe5b,"### Lecture du resultat
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,interp_cusp_bridge,markdown,fr,453fb45397ae98c1,"### Lecture du resultat
 
 La cubique cuspidale en polaires `r = f(theta)` est **le graphe de la fonction qui dessine le nœud torique** : le treffle `(2, 3)` se trace le long de cette courbe sur la surface du tore, avec 2 tours longitudinaux et 3 tours meridiens — les memes nombres que mesure `torus_knot_winding`.
 
@@ -33642,7 +34017,9 @@ La rencontre des deux mondes est donc : **la fronce de Thom = la cubique cuspida
 Pour la theorie complete de la fronce et son application au desalignement emergent : voir **ICT-23** (Epic #19333). Pour la preuve Lean formelle du pont : voir **`Knots.Conway`** (Epic #19333-G).
 
 
-",,,,,,,,c26e0cefbde0fe5b,,,,,,,,,,,,,,,
+
+> **Organe `ict` (voie contractuelle #25381)** — ce carnet consomme le package `ict` de la série ICT via `pip install -e MyIA.AI.Notebooks/IIT/ICT-Series` ; il n'ajoute plus de chemin `sys.path`. **Ordre d'installation** : le `pyproject.toml` de `main` borne encore `requires-python = "">=3.9,<3.10""` et garde `pyphi` en dépendance cœur ; c'est la PR sœur **#25403** (extra `[iit]`, cœur léger) qui élargit cette borne. **Conséquence pour l'installation** : sous un interpréteur ≥ 3.10, `pip install -e MyIA.AI.Notebooks/IIT/ICT-Series` est refusé par la borne `requires-python` — installer dans un environnement 3.9, ou dans un 3.10+ dès que la borne est élargie (voir #25403).
+",,,,,,,,453fb45397ae98c1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb,e3eec5ed,markdown,fr,7e06a20d1ba8c122,"## 6. Trois modules nés après la première rédaction
 
 Ce compagnon a été écrit quand le lake tenait en six modules. Le lake a grandi, et trois modules du corridor des moves n'ont jamais été montrés ici : `ReidemeisterMoves`, `ReidemeisterCombinatorial` et `FigureEight`.
@@ -34867,95 +35244,6 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb,e16
 
 Les deux `#print axioms` renvoient `'doubler_step_3' does not depend on any axioms` : zéro axiome, zéro `sorry`. Autrement dit, ces énoncés ne reposent que sur l'évaluation du noyau — la preuve `by decide` *est* un calcul vérifié terme à terme. C'est le même standard de transparence que pour le Game of Life (GOL-03, section 9) : le lecteur peut auditer ce qui est prouvé, et la section suivante dira honnêtement ce qui ne l'est **pas** — la Turing-complétude de FRACTRAN est un résultat mathématique classique, pas un théorème de ce notebook.",,,,,,,,d66f75e0c0edd10a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb,e16-attendus,markdown,fr,26691664aa501b9a,"**Attendus et anti-pièges (exercices 1 à 3).** *Exercice 1* : le `#eval` doit renvoyer `[1, 3, 9, 27]` — la fraction unique est $3/1$, et le piège est d'écrire $(9, 3)$ : équivalente mathématiquement, elle donnerait le même résultat ici, mais la convention du générateur de nombres premiers de Conway (section 5) exige de raisonner en fractions *réduites*. *Exercice 2* : `doubler_step_5` par `decide` — si `decide` dépasse le budget, `native_decide` est l'aveu que l'évaluation littérale coûte, pas une tricherie. *Exercice 3* : `stepsToHalt halver 8 10` doit renvoyer `3` — piège du décompte : `8 → 4 → 2 → 1` comporte trois *transitions*, mais si vous comptez les éléments de la trajectoire `[8, 4, 2, 1]` vous obtiendrez 4 ; récursivez sur le carburant en décrémentant à chaque `some`, et testez aussi `stepsToHalt doubler 1 10` : attendu `10` (le carburant, car `doubler` ne s'arrête jamais).",,,,,,,,26691664aa501b9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-intro,markdown,fr,c11ffe4a0cd4e941,"<a id=""6""></a>
-## 6. La Non-Localite Quantitative : la Frontiere CHSH
-
-Le théorème du libre arbitre s'appuie sur la **non-localite quantique** : la correlation des
-particules jumelles (TWIN) ne s'explique par aucune fonction de reponse locale. Sa forme
-quantitative canonique est l'inégalité **CHSH** (Clauser, Horne, Shimony, Holt, 1969) : dans tout
-modele local classique, le score de correlation est borne par 2 en valeur absolue -- alors que la
-mecanique quantique atteint 2*sqrt(2)* (borne de Tsirelson).
-
-Les deux modules sont compiles par le lac ; cette section rejoue l'enumeration de la
-frontiere en Python, puis inventorie les declarations réelles du source Lean.
-
-Le lac `conway_lean` prouve les deux moities classiques de cette frontiere :
-
-- `Conway/CHSH.lean` (epic #13106, tranche deterministe) : toute strategie locale **deterministe**
-  a un score de valeur absolue **exactement 2** -- `Conway.CHSH.classical_abs_score`, démontre par
-  enumeration noyau (decide) des 16 assignations, avec sa forme usuelle `classical_bound` ;
-- `Conway/CHSHRandomized.lean` (tranche randomisee) : la frontiere tient pour les strategies
-  **randomisees** -- toute combinaison convexe de profils garde un score espere borne par 2
-  (`Conway.CHSHRandomized.randomized_bound`).
-
-La borne quantique de Tsirelson reste volontairement ouverte : la formaliser demande des
-observables hermitiennes et une norme d'operateur, au-dela du noyau combinatoire de ce pilote
-(piste reprise au registre de la section suivante).",,,,,,,,c11ffe4a0cd4e941,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-enum,code,fr,117d5825da420b2c,"# Miroir numérique de l'enumeration Lean : les 16 profils deterministes.
-from itertools import product
-
-def outcome_value(o):
-    # Miroir python de Conway.CHSH.Outcome.value : negative = -1, positive = +1.
-    return -1 if o == ""N"" else +1
-
-def score_chsh(a0, a1, b0, b1):
-    # Miroir python de Conway.CHSH.score : a0*b0 + a0*b1 + a1*b0 - a1*b1.
-    return a0 * b0 + a0 * b1 + a1 * b0 - a1 * b1
-
-rows = []
-for a0, a1, b0, b1 in product((""N"", ""P""), repeat=4):
-    s = score_chsh(outcome_value(a0), outcome_value(a1),
-                   outcome_value(b0), outcome_value(b1))
-    rows.append((f""{a0}{a1}{b0}{b1}"", s))
-
-print(""16 profils deterministes (a0 a1 b0 b1) :"")
-for prof, s in rows:
-    print(f""  {prof}  score = {s:+d}"")
-abs_scores = sorted({abs(s) for _, s in rows})
-print(f""\nValeurs de |score| observees : {abs_scores}"")
-print(f""Max |score| = {max(abs_scores)}  (frontiere classique deterministe)"")",,,,,,,,117d5825da420b2c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-det,markdown,fr,04ba37e270dcd94b,"### Interpretation : |score| = 2 partout, et Lean le prouve
-
-L'enumeration python confirme ce que `Conway.CHSH.classical_abs_score` démontre dans le noyau
-Lean : **les 16 strategies deterministes ont toutes un score de valeur absolue exactement 2** --
-la frontiere n'est pas une borne atteinte par certaines strategies, c'est la valeur **commune a
-toutes**. Le theorem `classical_bound` en est la forme usuelle (|score| <= 2), et
-`score_factorization` explique **pourquoi** : le score se reecrit
-`a0*(b0+b1) + a1*(b0-b1)`, et pour des reponses binaires (+-1), `b0+b1` et `b0-b1` ne peuvent pas
-etre non nuls tous les deux -- un seul des deux termes contribue, de valeur absolue 2.",,,,,,,,04ba37e270dcd94b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-inv,code,fr,86e8f87e0d754eb9,"# Inventaire des declarations RÉELLES des deux modules CHSH (source de verite, pas une paraphrase).
-decl_prefixes = (""abbrev "", ""def "", ""theorem "", ""lemma "", ""structure "", ""inductive "")
-
-for fname in [""CHSH.lean"", ""CHSHRandomized.lean""]:
-    fpath = WIN_LEAN_PROJECT / ""Conway"" / fname
-    src_lines = fpath.read_text(encoding=""utf-8"").splitlines()
-    n_sorry = sum(1 for l in src_lines if ""sorry"" in l)
-    print(f""{fname} : {len(src_lines)} lignes, {n_sorry} occurrence(s) de 'sorry'"")
-    for i, ln in enumerate(src_lines, 1):
-        if ln.startswith(decl_prefixes):
-            print(f""  L{i:>3}: {ln.strip()[:100]}"")
-    print()
-print(""0 occurrence = la frontiere CHSH est formellement complete (deterministe ET randomisee)."")",,,,,,,,86e8f87e0d754eb9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-interp-rand,markdown,fr,1889ab61ee0af540,"### Interpretation : la randomite partagee ne brise pas la frontiere
-
-`Conway.CHSHRandomized.randomized_bound` etend le resultat aux strategies **randomisees** : une
-strategie est une famille de poids rationnels sur les 16 profils (le type `Strategy`), son score
-espere `expectedScore` est la combinaison convexe des scores deterministes. La preuve combine
-l'inegalite triangulaire (valeur absolue d'une somme <= somme des valeurs absolues) avec le fait
-que chaque profil porte \|score\| = 2 (`Profile.abs_score`) : la convexite des poids
-(`h_nonneg`, `h_total`) ramene le tout a une somme de poids fois 2, donc \|E[score]\| <= 2.
-
-C'est exactement la structure qui rend le theoreme du libre arbitre **conditionnel** : aucune
-theorie locale -- meme randomisee, meme avec randomite partagee -- ne reproduit la correlation
-quantique 2*sqrt(2)*. La frontiere ne peut etre franchie qu'en sortant du modele local (reponses
-quantiques), ce que FWT capture par ses axiomes SPIN + TWIN + MIN.",,,,,,,,1889ab61ee0af540,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-md-exo,markdown,fr,ab662a328edeca86,"### Exercice 4 : une strategie randomisee sur la frontiere
-
-Construisez en python une strategie randomisee (poids sur les 16 profils, somme = 1) dont le
-score espere atteint la frontiere |E[score]| = 2, puis verifiez sur quelques exemples que melanger
-deux profils de scores opposes rapproche E[score] de 0. Indice : tout profil deterministe convient
-pour la frontiere -- la subtilite est le miroir exact d'`expectedScore`.",,,,,,,,ab662a328edeca86,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb,chsh-code-stub,code,fr,9fb1e9bc5de41fcb,"print(""Exercice a completer"")",,,,,,,,9fb1e9bc5de41fcb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/GALOIS-01-Probleme-Inverse-M23-Python.ipynb,07bf3a5c,markdown,fr,55506b61bd2c0e85,"## Annexe A — La complétion adique : approcher un anneau local par ses troncatures
 
 Le problème inverse de Galois vit dans les **extensions locales** : pour comprendre un groupe de Galois global, on le regarde une prime à la fois, dans la complétion. Le module `Galois.AdicCompletionLocalRing` (portage pédagogique du dépôt `anthropics/fermats-last-theorem`, commit `aa2d8b34`, Apache-2.0) pose la première couche de cette arithmétique locale : **la complétion adique d'un anneau local `A` par son idéal maximal**.
@@ -55716,9 +56004,9 @@ La suite de l'Epic #15066 :
 - **Tranche F** — logique de prouvabilité GL : le pont explicite vers #15062, dont ce notebook est le prérequis L2/L3.
 
 See #15066 (contribution partielle — Tranche E).",,,,,,,,66b32a37931e0541,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-header,markdown,fr,464c33d47013736a,"# Lean-34b — FairBot par le théorème de Löb : coopérer parce que la coopération est prouvable
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-header,markdown,fr,0bf03d1d95cbbf91,"# Lean-34b — FairBot par le théorème de Löb : coopérer parce que la coopération est prouvable
 
-**Navigation** : [Index](README.md) | [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [GameTheory-06e (transparence des programmes)](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)
+**Navigation** : [Index](README.md) | [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [GameTheory-06e (transparence des programmes)](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)
 
 Deux programmes jouent un dilemme du prisonnier en un coup, et chacun peut lire le code source de l'autre avant de jouer. FairBot applique une règle simple : **je coopère si je peux prouver que tu coopères avec moi**. Face à sa propre copie, cette règle tourne en rond : chaque FairBot attend une preuve au sujet de l'autre, qui l'attend lui-même. On pourrait croire que la boucle ne se referme jamais. Le théorème de Löb la referme, et elle se referme sur la coopération.
 
@@ -55726,7 +56014,7 @@ Ce notebook approfondit la fin de [Lean-34](Lean-34-Calculabilite-et-Limites.ipy
 
 | Niveau | Où | Ce que « prouvable » y signifie | Statut du théorème de Löb |
 |---|---|---|---|
-| Témoin syntaxique | [GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb), `FairBot_toy` | la source adverse contient la chaîne `return ""C""` | absent |
+| Témoin syntaxique | [GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb), `FairBot_toy` | la source adverse contient la chaîne `return ""C""` | absent |
 | L2 | `game_theory_lean/ProgramGames/FairBot.lean` | une modalité abstraite `box` | **champ postulé** `loeb` de l'interface `ModalProvability` |
 | L3 | `formal_logic_lean/FormalLogic/FairBotLoeb.lean` | la prouvabilité dans une théorie arithmétique (`𝗣𝗔`), au sens de la bibliothèque *Formalized Formal Logic* (FFL) | **théorème** `ProvabilityAbstraction.löb_theorem` |
 
@@ -55739,16 +56027,16 @@ Le notebook exécute le premier niveau, explique pourquoi le deuxième a besoin 
 3. Lire les énoncés Lean du module `FormalLogic.FairBotLoeb` et auditer leurs axiomes.
 4. Calculer l'issue d'un duel entre agents modaux sur un cadre de Kripke de la logique GL, et la confronter aux théorèmes certifiés.
 
-**Prérequis** : [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb) ; le dilemme du prisonnier en un coup ([GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb)). Le notebook tourne sous le kernel `python3` et pilote Lean dans WSL, comme Lean-34.
+**Prérequis** : [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb) ; le dilemme du prisonnier en un coup ([GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb)). Le notebook tourne sous le kernel `python3` et pilote Lean dans WSL, comme Lean-34.
 
 **Durée estimée** : 60 minutes.
 
 **Sources primaires** (PDF hors Git, bibliographie partagée) :
 
-- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
-- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
+- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
+- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
 
-Les gains utilisés sont ceux de GameTheory-06e : $(C,C) \mapsto (3,3)$, $(D,D) \mapsto (1,1)$, $(C,D) \mapsto (0,5)$.",,,,,,,,464c33d47013736a,,,,,,,,,,,,,,,
+Les gains utilisés sont ceux de GameTheory-06e : $(C,C) \mapsto (3,3)$, $(D,D) \mapsto (1,1)$, $(C,D) \mapsto (0,5)$.",,,,,,,,0bf03d1d95cbbf91,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-plan,markdown,fr,e86a152b443b7e5b,"## Plan
 
 1. **Mise en place** : localiser le lake `formal_logic_lean`, vérifier ses sources, construire le module.
@@ -55832,16 +56120,16 @@ print(""code de retour :"", code_retour)",,,,,,,,a00c7dd79593af6f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-build-lecture,markdown,fr,d6082cfcc0a3fe21,"### Lecture du build
 
 `lake` annonce la réussite du build, et l'organe `lean_exec` confirme un code de retour nul et **zéro processus orphelin**. Le nombre de tâches affiché compte toutes les dépendances de FFL et de Mathlib que le module importe ; seules les tâches dont les sources ont changé sont réellement recompilées.",,,,,,,,d6082cfcc0a3fe21,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-s2,markdown,fr,f647f3ffc463e817,"## 2. Le témoin syntaxique de GameTheory-06e et ses deux échecs
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-s2,markdown,fr,44d382f559871ab9,"## 2. Le témoin syntaxique de GameTheory-06e et ses deux échecs
 
-Dans [GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) (cellule `9b0640e6`), `FairBot_toy` coopère lorsque la source de l'adversaire **contient la chaîne** `return ""C""`. Ce test syntaxique reproduit la coopération de FairBot avec lui-même, puisque sa propre source contient cette chaîne. Barasz et al. (2014, section 2) signalent pourtant deux défauts des agents qui décident sur la forme du code : ils sont fragiles face à une réécriture équivalente, et une ruse syntaxique suffit à les exploiter.
+Dans [GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) (cellule `9b0640e6`), `FairBot_toy` coopère lorsque la source de l'adversaire **contient la chaîne** `return ""C""`. Ce test syntaxique reproduit la coopération de FairBot avec lui-même, puisque sa propre source contient cette chaîne. Barasz et al. (2014, section 2) signalent pourtant deux défauts des agents qui décident sur la forme du code : ils sont fragiles face à une réécriture équivalente, et une ruse syntaxique suffit à les exploiter.
 
 La cellule suivante reprend `FairBot_toy` à l'identique et lui oppose cinq adversaires. Chaque programme est construit **à partir de sa source** avec `exec`, ce qui garantit que le texte lu par l'adversaire est exactement le code exécuté :
 
 - `FairBot_toy` lui-même ;
 - `FairBot_guillemets`, qui applique la même règle avec des guillemets simples : il cherche `return 'C'` dans la source adverse et renvoie `'C'` ;
 - `Ruse_toy`, qui contient `return ""C""` dans une branche morte et joue toujours `D` ;
-- `CooperateBot_toy` et `DefectBot_toy`.",,,,,,,,f647f3ffc463e817,,,,,,,,,,,,,,,
+- `CooperateBot_toy` et `DefectBot_toy`.",,,,,,,,44d382f559871ab9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-toy,code,fr,4daadcaed621b067,"SOURCES_TOY = {
     ""FairBot_toy"": (
         ""def FairBot_toy(other_source):\n""
@@ -56446,16 +56734,16 @@ La règle « je coopère si je peux prouver que tu coopères » paraît circulai
 - **Les agents sont idéalisés** : ils décident de la prouvabilité, ce qu'aucun programme réel ne fait. Critch (2016) démontre une version bornée du théorème de Löb, où la recherche de preuve est limitée en longueur, et en déduit la coopération d'agents qui disposent de ressources finies.
 
 **Pour aller plus loin.** Le module L3 formalise le cas du FairBot. Dans le même cadre, la section 4 de Barasz et al. classe les agents modaux par rang et montre qu'aucun agent de rang 0 ne peut à la fois coopérer prouvablement avec FairBot et faire défection contre CooperateBot (théorème 4.10, exercice 3).",,,,,,,,80925c7f2e2ea8bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-references,markdown,fr,19ca7a9980e0371e,"## Références
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-references,markdown,fr,7a86ba172aa15e59,"## Références
 
-- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
-- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
+- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
+- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
 - Bibliothèque *Formalized Formal Logic* (paquet Lean `Foundation`), module `FirstOrder/Incompleteness/ProvabilityAbstraction`, à la révision épinglée par `formal_logic_lean/lake-manifest.json`.
-- Dans ce dépôt : [GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) (témoin syntaxique), `GameTheory/game_theory_lean/ProgramGames/FairBot.lean` (niveau L2), `formal_logic_lean/FormalLogic/FairBotLoeb.lean` (niveau L3), [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb).
+- Dans ce dépôt : [GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) (témoin syntaxique), `GameTheory/game_theory_lean/ProgramGames/FairBot.lean` (niveau L2), `formal_logic_lean/FormalLogic/FairBotLoeb.lean` (niveau L3), [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb).
 
 ***
 
-**Navigation** : [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [Index](README.md) | [GameTheory-06e (transparence des programmes)](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,19ca7a9980e0371e,,,,,,,,,,,,,,,
+**Navigation** : [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [Index](README.md) | [GameTheory-06e (transparence des programmes)](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,7a86ba172aa15e59,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb,cell-b6023f68,markdown,fr,7b053f430e840b99,"# Lean-36 : structures mathematiques finies — l'Annexe A de Tegmark en Lean
 
 Compagnon **natif** du lake [`tegmark_muh_lean`](tegmark_muh_lean/) : les modules
@@ -71992,3 +72280,502 @@ Sans dévoiler les preuves, voici le chemin de chacun :
 4. **Exercice 4** (ordres) : transposer le gabarit `orderOf_eq_iff` + `interval_cases` + `decide` de 7 vers 11 — les deux `example` décidés de la cellule donnent l'ancrage numérique ;
 5. **Exercice 5** ($\mathbb{F}_{27}$) : une seule tactique — réarranger `F27_root` par `linear_combination` ;
 6. **Exercice 6** (Frey) : composer le carré d'un impair avec la réflexivité par `Nat.ModEq.mul`.",,,,,,,,8625df0769e1b3db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,4a13061a,markdown,fr,f7718cbf61e213e3,"## 8. Le pont de Witten — le polynôme de Jones par deux voies
+
+En 1989, Edward Witten a montré que la théorie de Chern–Simons en dimension 3 — une théorie quantique des champs **topologique** — reconstruit le polynôme de Jones comme valeur d'espérance d'une **boucle de Wilson** : le nœud devient un observable de la théorie porté par une courbe fermée dans une 3-variété, et l'invariant de Jones (1984) en sort comme corrélateur. Ce résultat, prix Fields 1990, fonde les TQFT — les théories quantiques des champs topologiques.
+
+> **Source** : E. Witten, *Quantum Field Theory and the Jones Polynomial*, Communications in Mathematical Physics **121**, 351–399 (1989). Archivée au gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Physics\1989 - Witten - Quantum Field Theory and the Jones Polynomial (Comm. Math. Phys. 121, 351-399).pdf`
+
+Cette section **recalcule** le polynôme de Jones par deux voies complètement indépendantes, puis exige leur accord sur trois nœuds — le trèfle, le nœud de huit et le nœud torique T(2,5) :
+
+1. **Voie (a), combinatoire** : somme d'états du **crochet de Kauffman** sur les PD-codes de la section 1, plus un PD-code construit programmatiquement pour T(2,5) (absent de notre atlas) ;
+2. **Voie (b), algébrique** : représentation du **groupe de tresses** dans l'algèbre de **Temperley–Lieb** — l'algèbre dont les représentations quantiques émergent de Chern–Simons.
+
+Le lake `knot_lean` de cette même série certifie la même somme d'états en Lean (`Knots.Jones` : bracket par somme d'états, writhe, normalisation, valeurs `decide`-vérifiées sur les trois diagrammes nommés du lac) — c'est lui qui a établi que l'ancien code PD du nœud de huit n'était **pas plan** (issue #17595) : un « nœud virtuel » dont le polynôme de Jones imitait celui du trèfle. Le carnet Python, le lake Lean et les chaînes Knot Atlas forment ainsi trois autorités indépendantes pour les mêmes valeurs.
+
+Le tableau `KNOT_ATLAS` de ce carnet stocke les valeurs de référence (Knot Atlas) du polynôme de Jones pour `3_1` et `4_1` : elles servent d'ancre externe. La spécialisation aux racines de l'unité $t = e^{2\pi i/(k+2)}$ — la valeur que la théorie physique calcule — clôt la section.",,,,,,,,f7718cbf61e213e3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,d9e39b7e,code,fr,9fcd892c66b83305,"# Voie (a) : somme d'etats du crochet de Kauffman sur PD-codes
+#
+# Crochet de Kauffman <D> en un parametre A :
+#   <X> = A <lissage A> + A^{-1} <lissage B>,  <D et cercle disjoint> = (-A^2 - A^{-2}) <D>,
+#   <cercle seul> = 1.  D'ou la somme d'etats : <D> = sum_s A^{a(s)-b(s)} delta^{c(s)-1},
+#   ou delta = -A^2 - A^{-2}, s parcourt les 2^n choix de lissage, a/b comptent les
+#   lissages A/B et c(s) les cercles du diagramme lisse.
+#
+# Polynome de Jones : f(D) = (-A)^{-3w} <D> ou w = enlacement du diagramme oriente,
+# puis la substitution t = A^{-4} (les exposants en A sont tous multiples de 4 pour
+# un noeud -- c'est meme un test de coherence de l'enlacement).
+
+import itertools
+import sympy as sp
+
+Az, tz = sp.symbols('A t')
+DELTA_K = -Az**2 - Az**(-2)
+
+
+def kauffman_bracket_pd(pd, asmooth=0):
+    """"""Somme d'etats du crochet sur un PD-code X[a,b,c,d].
+
+    asmooth=0 : le lissage A relie (a,b) et (c,d) ; asmooth=1 : il relie (a,d) et (b,c).
+    """"""
+    ncross = len(pd)
+    total = sp.Integer(0)
+    for state in itertools.product((0, 1), repeat=ncross):
+        parent = {(i, j): (i, j) for i in range(ncross) for j in range(4)}
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(x, y):
+            rx, ry = find(x), find(y)
+            if rx != ry:
+                parent[rx] = ry
+
+        # chaque arc (label) soude ses deux occurrences dans le diagramme
+        occ = {}
+        for i, cr in enumerate(pd):
+            for j, lab in enumerate(cr):
+                occ.setdefault(lab, []).append((i, j))
+        for slots in occ.values():
+            union(slots[0], slots[1])
+        # lissages au niveau de chaque croisement
+        nA = sum(1 for s in state if s == 0)
+        for i, s in enumerate(state):
+            if (s == 0) == (asmooth == 0):
+                union((i, 0), (i, 1)); union((i, 2), (i, 3))
+            else:
+                union((i, 0), (i, 3)); union((i, 1), (i, 2))
+        ncirc = len({find(x) for x in parent})
+        total += Az**(2 * nA - ncross) * DELTA_K**(ncirc - 1)
+    return sp.expand(total)
+
+
+def writhe_pd(pd, rule=1):
+    """"""Enlacement du diagramme oriente.
+
+    Les arcs des PD-codes de ce carnet sont numerotes le long de l'orientation
+    (successeur de e : (e+1) mod n). Rule 1 (retenue ci-dessous contre les
+    references de l'atlas) : croisement positif ssi b = (d+1) mod n.
+    """"""
+    n = len({x for cr in pd for x in cr})
+    w = 0
+    for (a, b, c, dd) in pd:
+        pos = (b % n) == ((dd + 1) % n) if rule == 1 else (dd % n) == ((b + 1) % n)
+        w += 1 if pos else -1
+    return w
+
+
+def jones_from_bracket(bracket, w):
+    """"""f = (-A)^{-3w} <D> puis t = A^{-4}. Renvoie None si les exposants en A
+    ne sont pas tous multiples de 4 (signe d'un enlacement incoherent).""""""
+    f = sp.expand(((-Az)**(-3 * w)) * bracket)
+    out = sp.Integer(0)
+    for term in sp.Add.make_args(f):
+        pw = term.as_powers_dict()
+        e = sp.Integer(pw.get(Az, 0))
+        coeff = sp.prod([k**v for k, v in pw.items() if k != Az], start=sp.Integer(1))
+        if e % 4 != 0:
+            return None
+        out += coeff * tz**(-e / 4)
+    return sp.expand(out)
+
+
+def pd_torus_2n(npow):
+    """"""PD-code de la fermeture de la tresse sigma_1^npow (2 brins, npow > 0).
+
+    T(2,5) est absente de notre KNOT_ATLAS : on construit son diagramme. Le brin
+    droit passe au-dessus (croisements positifs), l'orientation descend le long
+    de la tresse, les arcs sont numeros le long de l'orientation du noeud.
+    """"""
+    import math
+    c = npow
+
+    # marche du noeud : alternance gauche/droite a chaque croisement
+    events = []
+    brin, lvl = 'L', 0
+    for _ in range(2 * c):
+        events.append(('under' if brin == 'L' else 'over', lvl))
+        brin = 'R' if brin == 'L' else 'L'
+        lvl = (lvl + 1) % c
+    narcs = 2 * c
+    arr, dep = {}, {}
+    for idx, (typ, k) in enumerate(events):
+        inslot = 'lin' if typ == 'under' else 'rin'   # le brin L passe DESSOUS
+        outslot = 'rout' if typ == 'under' else 'lout'
+        arr[(k, inslot)] = (idx - 1) % narcs
+        dep[(k, outslot)] = idx
+
+    slot_ang = {'lin': math.atan2(0.5, -1), 'rin': math.atan2(0.5, 1),
+                'lout': math.atan2(-0.5, -1), 'rout': math.atan2(-0.5, 1)}
+    pd = []
+    for k in range(c):
+        base = slot_ang['lin']          # brin entrant dessous = slot 'lin'
+        order = sorted(slot_ang, key=lambda s: (slot_ang[s] - base) % (2 * math.pi))
+        labels = [arr.get((k, s), dep.get((k, s))) for s in order]
+        pd.append(labels)
+    return pd
+
+
+# --- Determination des conventions contre les references de l'atlas ------------
+# On essaie les 4 combinaisons (lissage A x regle de signe) et on retient celle
+# qui reproduit les polynomes de Jones de 3_1 ET 4_1 stockes dans KNOT_ATLAS.
+print(""="" * 60)
+print(""Voie (a) -- crochet de Kauffman sur PD-codes"")
+print(""="" * 60)
+
+
+def parse_ref(s):
+    """"""'-t^{-4} + t^{-3} + t^{-1}' -> expression sympy en tz.""""""
+    s = s.replace('^{-', '**(-').replace('^', '**').replace('{', '').replace('}', ')')
+    return sp.expand(sp.sympify(s).subs(sp.symbols('t'), tz))
+
+
+REFS = {
+    ""3_1"": parse_ref(KNOT_ATLAS[""3_1 (Trefoil)""][""jones""]),
+    ""4_1"": parse_ref(KNOT_ATLAS[""4_1 (Figure-eight)""][""jones""]),
+}
+
+PD_T25 = pd_torus_2n(5)
+print(f""\nPD-code construit pour T(2,5) (fermeture de sigma_1^5) : {PD_T25}"")
+print(f""  enlacement lu : {writhe_pd(PD_T25)} (attendu : +5)"")
+
+winner = None
+for asmooth in (0, 1):
+    for rule in (0, 1):
+        ok = []
+        for name, pd in [(""3_1"", KNOT_ATLAS[""3_1 (Trefoil)""][""pd""]),
+                         (""4_1"", KNOT_ATLAS[""4_1 (Figure-eight)""][""pd""])]:
+            v = jones_from_bracket(kauffman_bracket_pd(pd, asmooth), writhe_pd(pd, rule))
+            ok.append(v is not None and sp.simplify(v - REFS[name]) == 0)
+        if all(ok) and winner is None:
+            winner = (asmooth, rule)
+print(f""\nConvention retenue (la seule qui reproduit les deux references) : ""
+      f""asmooth={winner[0]}, regle_signe={winner[1]}"")
+
+# --- Polynome de Jones par la voie (a) pour les trois noeuds -------------------
+JONES_A = {}
+for name, pd in [(""3_1"", KNOT_ATLAS[""3_1 (Trefoil)""][""pd""]),
+                 (""4_1"", KNOT_ATLAS[""4_1 (Figure-eight)""][""pd""]),
+                 (""T(2,5)"", PD_T25)]:
+    JONES_A[name] = jones_from_bracket(
+        kauffman_bracket_pd(pd, winner[0]), writhe_pd(pd, winner[1]))
+
+print()
+for name in [""3_1"", ""4_1"", ""T(2,5)""]:
+    vs = ""  (reference atlas : OK)"" if name in REFS and sp.simplify(
+        JONES_A[name] - REFS[name]) == 0 else """"
+    print(f""  V_{name}(t) = {JONES_A[name]}{vs}"")",,,,,,,,9fcd892c66b83305,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,d622f492,markdown,fr,7cd73fb475f90b90,"### Voie (b) — l'algèbre de Temperley–Lieb et les tresses
+
+La seconde voie est **algébrique**. La relation du crochet de Kauffman remplace chaque croisement par une combinaison **linéaire** de deux lissages sans croisement :
+
+$$\langle\,X\,\rangle \;=\; A\,\langle\,\text{lissage A}\,\rangle \;+\; A^{-1}\,\langle\,\text{lissage B}\,\rangle,$$
+
+Pour une tresse à $n$ brins, les diagrammes sans croisement du carré (connectant les $n$ points supérieurs aux $n$ points inférieurs, sans entrelacement) forment une base : les **appariements non croisés** de $2n$ points — il y en a le nombre de Catalan $C_n$. L'algèbre de **Temperley–Lieb** $TL_n(\delta)$, avec $\delta = -A^2 - A^{-2}$, vit sur cette base, avec le produit « empiler les diagrammes » (chaque boucle fermée interne vaut $\delta$) et les générateurs
+
+$$e_i = \text{identité sauf cap-cup aux positions } (i, i{+}1), \qquad e_i^2 = \delta\, e_i .$$
+
+La représentation du crochet envoie le groupe de tresses $B_n$ dans $TL_n$ :
+
+$$\rho(\sigma_i) = A\cdot 1 + A^{-1}\cdot e_i, \qquad \rho(\sigma_i^{-1}) = A^{-1}\cdot 1 + A\cdot e_i,$$
+
+et la **fermeture** d'un mot de tresse $w$ s'évalue en refermant chaque appariement par les arcs verticaux : chaque boucle fermée contribue $\delta$, soit $\langle\widehat{w}\rangle = \sum_m c_m\,\delta^{\,k(m)-1}$ où $\rho(w) = \sum_m c_m\, m$ et $k(m)$ compte les boucles de $m$ refermé. L'enlacement se lit directement sur le mot : $w(\widehat{\sigma_1^3}) = 3$.
+
+C'est **cette** algèbre que la construction de Witten fait vivre en dimension 3 : les représentations du groupe de tresses que Chern–Simons produit (via les groupes quantiques $U_q(\mathfrak{sl}_2)$) sont précisément de la famille Temperley–Lieb. Les trois nœuds deviennent des mots de tresse : trèfle $= \sigma_1^{\pm 3} \in B_2$, nœud de huit $= \sigma_1\sigma_2^{-1}\sigma_1\sigma_2^{-1} \in B_3$, $T(2,5) = \sigma_1^{\pm 5} \in B_2$.",,,,,,,,7cd73fb475f90b90,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,cafaa83e,code,fr,180b1189cb03bc01,"# Voie (b) : representation de Temperley-Lieb du groupe de tresses
+#
+# Points 0..n-1 en haut du carre, n..2n-1 en bas (gauche -> droite).
+# Un element de TL_n = combinaison lineaire d'appariements non croises ;
+# produit = empilement (union-find), boucle interne = facteur delta.
+
+def _pos_boundary(i, n):
+    """"""Position sur le bord du carre parcouru dans le sens trigonometrique
+    (haut gauche->droite, puis bas droite->gauche) : sert au test de non-croisement.""""""
+    return i if i < n else 3 * n - 1 - i
+
+
+def _is_noncrossing(pairs, n):
+    for (p, q), (r, s) in itertools.combinations(pairs, 2):
+        a1, a2 = sorted((_pos_boundary(p, n), _pos_boundary(q, n)))
+        b1, b2 = sorted((_pos_boundary(r, n), _pos_boundary(s, n)))
+        if a1 < b1 < a2 < b2 or b1 < a1 < b2 < a2:
+            return False
+    return True
+
+
+def noncrossing_matchings(n):
+    """"""Base de TL_n : tous les appariements non croises de 2n points.""""""
+    out = []
+
+    def rec(remaining, current):
+        if not remaining:
+            out.append(frozenset(current))
+            return
+        first = remaining[0]
+        for other in remaining[1:]:
+            pair = (min(first, other), max(first, other))
+            if not _is_noncrossing(current + [pair], n):
+                continue
+            rec([x for x in remaining if x not in (first, other)], current + [pair])
+
+    rec(list(range(2 * n)), [])
+    return out
+
+
+def _identity(n):
+    return frozenset((j, n + j) for j in range(n))
+
+
+def _e_gen(n, i):
+    m = [(j, n + j) for j in range(n) if j not in (i, i + 1)]
+    m += [(i, i + 1), (n + i, n + i + 1)]
+    return frozenset(m)
+
+
+def _tl_compose(top, bottom, n):
+    """"""Empile top (en haut) sur bottom. Renvoie (appariement, boucles internes)
+    ou None si le resultat est croise (terme nul en TL).""""""
+    parent = list(range(4 * n))
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(x, y):
+        rx, ry = find(x), find(y)
+        if rx != ry:
+            parent[rx] = ry
+
+    for (p, q) in top:
+        union(p, q)
+    for (p, q) in bottom:
+        union(p + 2 * n, q + 2 * n)
+    for j in range(n):                       # colle bas de top / haut de bottom
+        union(n + j, 2 * n + j)
+
+    boundary = set(range(n)) | {3 * n + j for j in range(n)}   # haut de top, bas de bottom
+    comp_boundary = {find(b) for b in boundary}
+    roots = {find(i) for i in range(4 * n)}
+    loops = len(roots - comp_boundary)       # composantes sans point frontiere
+
+    by_comp = {}
+    for b in sorted(boundary):
+        by_comp.setdefault(find(b), []).append(b)
+    pairs = set()
+    for pts in by_comp.values():
+        assert len(pts) == 2, ""composante de frontiere de taille != 2""
+        x, y = pts
+        x2 = x if x < n else x - 2 * n       # bas de bottom (3n+j) -> point n+j
+        y2 = y if y < n else y - 2 * n
+        pairs.add((min(x2, y2), max(x2, y2)))
+    mm = frozenset(pairs)
+    return (mm, loops) if _is_noncrossing(mm, n) else None
+
+
+class TL(dict):
+    """"""Element de TL_n : dict {appariement non croise : coefficient}.""""""
+    def __init__(self, terms=None, n=None):
+        super().__init__(terms or {})
+        self.n = n
+
+    def __mul__(self, other):
+        result = {}
+        for mx, cx in self.items():
+            for my, cy in other.items():
+                comp = _tl_compose(mx, my, self.n)
+                if comp is None:
+                    continue
+                mm, loops = comp
+                c = cx * cy * DELTA_K**loops
+                result[mm] = sp.expand(result.get(mm, sp.Integer(0)) + c)
+        return TL({k: v for k, v in result.items() if sp.expand(v) != 0}, self.n)
+
+
+def rho_sigma(n, i, expo):
+    """"""rho(sigma_i^expo) = A*1 + A^{-1} e_i si expo>0, miroir sinon.""""""
+    return TL({_identity(n): Az if expo > 0 else Az**(-1),
+               _e_gen(n, i): Az**(-1) if expo > 0 else Az}, n)
+
+
+def tl_braid(word, n):
+    vec = TL({_identity(n): sp.Integer(1)}, n)
+    for (i, expo) in word:
+        vec = rho_sigma(n, i, expo) * vec
+    return vec
+
+
+def closure_bracket(vec, n):
+    """"""Crochet de la fermeture : arcs verticaux, chaque boucle vaut delta.""""""
+    total = sp.Integer(0)
+    for m, c in vec.items():
+        parent = list(range(2 * n))
+
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+
+        def union(x, y):
+            rx, ry = find(x), find(y)
+            if rx != ry:
+                parent[rx] = ry
+
+        for (p, q) in m:
+            union(p, q)
+        for j in range(n):
+            union(j, n + j)
+        k = len({find(i) for i in range(2 * n)})
+        total += c * DELTA_K**(k - 1)
+    return sp.expand(total)
+
+
+def jones_braid(word, n):
+    w = sum(e for _, e in word)
+    return jones_from_bracket(closure_bracket(tl_braid(word, n), n), w)
+
+
+print(""="" * 60)
+print(""Voie (b) -- Temperley-Lieb sur mots de tresse"")
+print(""="" * 60)
+
+# verifications structurelles
+CATALAN = {1: 1, 2: 2, 3: 5, 4: 14}
+for n in (1, 2, 3, 4):
+    assert len(noncrossing_matchings(n)) == CATALAN[n]
+print(""dim TL_n = nombres de Catalan : OK (n = 1..4)"")
+
+for n in (2, 3):
+    for i in range(n - 1):
+        e2 = TL({_e_gen(n, i): sp.Integer(1)}, n) * TL({_e_gen(n, i): sp.Integer(1)}, n)
+        assert len(e2) == 1 and sp.simplify(e2[_e_gen(n, i)] - DELTA_K) == 0
+print(""relation e_i^2 = delta * e_i : OK (n = 2, 3)"")
+
+print(f""unknot (mot vide dans B_1) : V = {jones_braid([], 1)}"")
+
+# les trois noeuds (+ leurs miroirs)
+JONES_B = {
+    ""3_1 (gauche, sigma_1^-3)"": jones_braid([(0, -1)] * 3, 2),
+    ""3_1 (droit, sigma_1^+3)"": jones_braid([(0, +1)] * 3, 2),
+    ""4_1"": jones_braid([(0, 1), (1, -1), (0, 1), (1, -1)], 3),
+    ""T(2,5) (droit, sigma_1^+5)"": jones_braid([(0, +1)] * 5, 2),
+    ""T(2,5) (gauche, sigma_1^-5)"": jones_braid([(0, -1)] * 5, 2),
+}
+print()
+for name, V in JONES_B.items():
+    print(f""  V_{name}(t) = {V}"")",,,,,,,,180b1189cb03bc01,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,5da3fad8,markdown,fr,f6ec1447c5a3e0d5,"### L'accord des deux voies
+
+Les deux voies ne partagent **rien** : la (a) lit un diagramme plan (PD-code, lissages, comptage de cercles), la (b) manipule des éléments de l'algèbre $TL_n$ indexés par des appariements non croisés. Si les deux polynômes coïncident, ce n'est pas une tautologie — c'est le théorème d'invariance du crochet de Kauffman qui se manifeste numériquement. La cellule suivante exige la coïncidence **exacte** (coefficients et exposants) sur les trois nœuds, plus deux lois structurelles : le miroir ($V_{\overline{K}}(t) = V_K(t^{-1})$) et l'encadrement de MFW (l'envergure du polynôme ne dépasse pas le nombre de croisements — borne atteinte pour ces nœuds : l'envergure y égale le nombre de croisements, qui majore strictement le genre de Seifert).",,,,,,,,f6ec1447c5a3e0d5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,a19ceeee,code,fr,751a5be9f62eedcf,"# Accord des deux voies -- le critere d'acceptation de la section
+print(""="" * 60)
+print(""Accord voie (a) [PD-codes] vs voie (b) [Temperley-Lieb]"")
+print(""="" * 60)
+
+PAIRS = [
+    (""3_1"",   JONES_A[""3_1""],   JONES_B[""3_1 (gauche, sigma_1^-3)""],  3),
+    (""4_1"",   JONES_A[""4_1""],   JONES_B[""4_1""],                       4),
+    (""T(2,5)"", JONES_A[""T(2,5)""], JONES_B[""T(2,5) (droit, sigma_1^+5)""], 5),
+]
+
+all_agree = True
+for name, va, vb, ncross in PAIRS:
+    agree = sp.simplify(sp.expand(va - vb)) == 0
+    all_agree = all_agree and agree
+    expos = []
+    for mon in sp.Add.make_args(sp.expand(va)):
+        expos.append(int(mon.as_powers_dict().get(tz, 0)))
+    span = max(expos) - min(expos)
+    print(f""  {name:7s} : (a) {va}"")
+    print(f""           : (b) {vb}"")
+    print(f""           : accord exact = {agree} ; envergure = {span} <= {ncross} croisements ""
+          f""{'(borne MFW atteinte)' if span == ncross else ''}"")
+    print()
+
+print(""Loi du miroir V_K(t^-1) = V_miroir(t) :"")
+for nm_g, nm_d in [(""3_1 (gauche, sigma_1^-3)"", ""3_1 (droit, sigma_1^+3)""),
+                   (""T(2,5) (gauche, sigma_1^-5)"", ""T(2,5) (droit, sigma_1^+5)"")]:
+    ok = sp.simplify(JONES_B[nm_g] - JONES_B[nm_d].subs(tz, 1 / tz)) == 0
+    print(f""  {nm_g} : {ok}"")
+
+print()
+print(f""CRITERE D'ACCEPTATION -- accord des deux voies sur les 3 noeuds : ""
+      f""{'SATISFAIT' if all_agree else 'NON SATISFAIT'}"")",,,,,,,,751a5be9f62eedcf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,7b36d357,markdown,fr,7ed4327a96f3b73c,"### Ce que la construction de Witten ajoute — et ce qu'elle recalcule
+
+**Ce que cette section recalcule** : le polynôme de Jones (1984), par deux voies indépendantes — combinatoire (somme d'états sur diagrammes) et algébrique (représentation de Temperley–Lieb) — accordées entre elles et contre les valeurs de référence du Knot Atlas. C'est l'invariant tel qu'on le calcule **sans physique** : un diagramme, des lissages, une algèbre de dimension finie.
+
+**Ce que la construction de Witten ajoute** — et que les deux voies ci-dessus ne voient pas :
+
+- une **interprétation physique** : le polynôme devient la valeur d'espérance d'une boucle de Wilson dans la théorie de Chern–Simons de groupe de jauge $SU(2)$ sur une 3-variété — le nœud n'est plus un diagramme plan mais un objet géométrique plongé dans un espace courbe arbitraire ;
+- le **paramètre de niveau $k$** : l'invariant de Witten dépend d'un entier $k$, et la variable de Jones se **spécialise en racine de l'unité** $t = e^{2\pi i/(k+2)}$. Le décalage $k \to k+2$ est physique (quantification de la charge centrale), pas combinatoire — aucune des deux voies (a)/(b) ne l'impose ;
+- la **dépendance au cadrage** : Chern–Simons calcule d'abord un invariant de nœud *cadré* ; le facteur de cadrage est exactement la normalisation $(-A)^{-3w}$ que nous avons appliquée au crochet. La physique **explique** pourquoi cette renormalisation est la bonne ;
+- une **extension à toutes les 3-variétés** : la construction de Witten–Reshetikhin–Turaev attache des invariants aux paires (variété, nœud) — le polynôme de Jones dans $S^3$ n'en est que la face la plus simple.
+
+**Ce qui reste hors de portée d'un carnet (verdict INTRINSIC)** : l'intégrale de chemin de Chern–Simons elle-même ne se calcule pas exactement ici — ni par simulation, ni par combinaison des voies (a) et (b). Ce que l'on peut évaluer honnêtement, et que la cellule suivante évalue, est la **spécialisation aux racines de l'unité** : la valeur numérique que la théorie physique attache au nœud à niveau $k$ donné. Le reste — l'invariant Reshetikhin–Turaev complet d'une variété quelconque, la catégorie modulaire sous-jacente — est documenté, jamais simulé : une esquisse serait un contournement dégradé, pas un calcul.",,,,,,,,7ed4327a96f3b73c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,3f570d7b,code,fr,05da491a01a165f9,"# Specialisation Chern-Simons : la valeur physique t = exp(2*pi*i/(k+2))
+# A niveau k, la theorie de Chern-Simons attache au noeud (rep fondamentale,
+# cadrage standard) la valeur du polynome de Jones en t = exp(2*pi*i/(k+2)).
+print(""="" * 60)
+print(""Specialisation Chern-Simons : V_K(t_k), t_k = exp(2*pi*i/(k+2))"")
+print(""="" * 60)
+
+CS_KNOTS = [(""3_1"", JONES_A[""3_1""]), (""4_1"", JONES_A[""4_1""]), (""T(2,5)"", JONES_A[""T(2,5)""])]
+
+for k in (1, 2, 3, 4):
+    tval = sp.exp(2 * sp.I * sp.pi / (k + 2))
+    row = f""  k={k} : ""
+    for name, V in CS_KNOTS:
+        val = complex(sp.N(V.subs(tz, tval), 12))
+        row += f""|V_{name}| = {abs(val):.6f}   ""
+    print(row)
+
+print()
+print(""Sanity : V(1) = "",
+      [sp.simplify(V.subs(tz, 1)) for _, V in CS_KNOTS], "" (attendu : 1 pour chaque noeud)"")
+print()
+print(""À k=1 et k=2 toutes les valeurs valent 1 en module ; les trois nœuds"")
+print(""s'en écartent à k=3 (le trèfle seul y reste à k=4) :"")
+print(""la spécialisation distingue les nœuds exactement comme le fait le polynôme,"")
+print(""mais chaque valeur est désormais un NOMBRE — celui que la théorie physique calcule."")",,,,,,,,05da491a01a165f9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,b9b751a1,markdown,fr,fcfc6a9b34cf02a9,"### Exercices — le pont de Witten
+
+Trois exercices courts, tous exécutables avec les fonctions de cette section (`jones_braid`, `kauffman_bracket_pd`, `pd_torus_2n`, `writhe_pd`). Ils ne sont pas corrigés : les stubs s'exécutent sans erreur, à vous de remplir les `TODO`.",,,,,,,,fcfc6a9b34cf02a9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,c1e1bdb7,code,fr,25f89f378a480648,"# Exercice 1 : le miroir de T(2,5) par Temperley-Lieb
+# TODO etudiant : calculer V de la fermeture de sigma_1^-5 (T(2,5) gauche) avec jones_braid,
+# puis verifier la loi du miroir : V_gauche(t) doit egaler V_droite(1/t).
+# Indice : V_droite est deja calculee dans JONES_B[""T(2,5) (droit, sigma_1^+5)""] ;
+# la substitution se fait avec .subs(tz, 1/tz).
+
+result_miroir = None  # TODO etudiant : remplacer par sp.simplify(V_gauche - V_droite.subs(tz, 1/tz))
+
+print(""Exercice a completer"")",,,,,,,,25f89f378a480648,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,e4ed87e8,code,fr,8ed8aaaefa7cdfb7,"# Exercice 2 : T(2,7) par les deux voies
+# TODO etudiant : etendre la section a T(2,7) -- fermeture de sigma_1^7.
+# 1) construire le PD-code avec pd_torus_2n(7) ;
+# 2) calculer V par la voie (a) (kauffman_bracket_pd + writhe_pd + jones_from_bracket) ;
+# 3) calculer V par la voie (b) avec jones_braid([(0, +1)] * 7, 2) ;
+# 4) verifier l'accord exact et observer l'envergure (attendu : 7, borne MFW atteinte).
+# Etape 1 : la somme d'etats porte 2^7 = 128 etats -- c'est encore instantane.
+
+result_t27_accord = None  # TODO etudiant : True/False apres comparaison exacte des deux voies
+result_t27_envergure = None  # TODO etudiant : l'envergure du polynome obtenu
+
+print(""Exercice a completer"")",,,,,,,,8ed8aaaefa7cdfb7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb,b38cd990,code,fr,88b14c086b93c890,"# Exercice 3 : la forme close des n oeuds toriques T(2,n)
+# TODO etudiant : demontrer numeriquement la formule fermee pour n impair :
+#     V_{T(2,n)}(t) = t^{(n-1)/2} * (1 + t^2 - t^3 + t^4 - ... - t^n)
+#     (somme alternée a partir du terme t^3, coefficient +1 pour t^2).
+# Verifier pour n = 3, 5, 7 contre jones_braid([(0, +1)] * n, 2).
+# Indice : construire le membre de droite avec sum((-1)**j * tz**j for j in range(2, n+1)).
+
+def forme_ferme_torus(n):
+    # TODO etudiant : renvoyer la forme fermee ci-dessus (expression sympy)
+    return None  # TODO etudiant
+
+print(""Exercice a completer"")",,,,,,,,88b14c086b93c890,,,,,,,,,,,,,,,

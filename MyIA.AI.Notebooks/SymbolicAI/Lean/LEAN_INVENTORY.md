@@ -65,7 +65,7 @@ reste en cible prover. Régression de compte documentée et HONNÊTE — pas un 
 l'arbre rebasé de #15440 (rebase sur `origin/main@be4207002`)** : **8 distincts**
 (`count_code_sorry.py --json`, champ `distinct_code_sorry`),
 soit `0 (Basic) + 2 (Reidemeister) + 0 (Invariant, post-#15082) + 4 (Conway) + 2 (Lidman)
-+ 0 (Mathlib) = 8`. La baseline CI `lean-knot.yml` porte la même valeur (`sorry-baseline: "8"`).
++ 0 (Mathlib) = 8`. La baseline CI `knot_lean` de la matrice `ci_lakes.json` porte la même valeur (`sorry-baseline: "8"`).
 **2** des 8 restants sont des **définitions non définies**
 (`IsSmoothlySlice`, `IsTopologicallySlice := sorry`, Conway), les **6** autres des
 sorries de théorèmes (2 bornes Conway restantes, 2 `reidemeister_theorem`, 2 Lidman) —

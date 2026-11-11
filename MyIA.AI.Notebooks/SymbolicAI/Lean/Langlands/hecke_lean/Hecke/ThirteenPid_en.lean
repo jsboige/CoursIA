@@ -44,8 +44,8 @@ needs a prime ideal `P` above `p` with either `floor(M K) < p ^ f` (`f` the
 inertia degree) **or** `P` principal.
 
 1. **`p = 3`** (lemma `isPrincipal_of_liesOver_three`): the field `F27 =
-   AdjoinRoot (X^3 - X - 1)` over `ZMod 3` provides the morphism `O K -> F27`
-   sending `zeta_13` to a root of `X^3 - X - 1`; its kernel is `span {a}`
+   AdjoinRoot (X^3 - X - 1)` over `ZMod 3` provides the morphism from `O K`
+   to `F27` sending `zeta_13` to a root of `X^3 - X - 1`; its kernel is `span {a}`
    with `a = 1 + z - z^3`, via the identity `a * b = 3` and a Galois
    argument (`exists_smul_eq_of_isGaloisGroup`);
 2. **`p in {13, 53, 79, 131, 157}`**: the generic certificate
@@ -106,9 +106,9 @@ scoped instance F27_charP : CharP F27 3 :=
 
 variable {K : Type*} [Field K] [NumberField K] [hK : IsCyclotomicExtension {13} ℚ K]
 
-/-- Every prime ideal of `O K` above `3` is principal: its generator is
+/-- Every prime ideal of `𝓞 K` above `3` is principal: its generator is
 the Galois image of `a = 1 + z - z^3`, which spans the kernel of the
-morphism `O K -> F27` sending `zeta_13` to the root of `X^3 - X - 1`. -/
+morphism `𝓞 K → F27` sending `zeta_13` to the root of `X^3 - X - 1`. -/
 theorem isPrincipal_of_liesOver_three (P : Ideal (𝓞 K)) [hP : P.IsPrime]
     [hP3 : P.LiesOver (span {(3 : ℤ)})] : Submodule.IsPrincipal P := by
   have hζ := hK.zeta_spec
