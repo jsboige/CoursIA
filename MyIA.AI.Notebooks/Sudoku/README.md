@@ -180,6 +180,16 @@ Commencer par le carnet de la méthode choisie dans un clone du dépôt, qui fou
 
 Le paquet Python de Z3 est `z3-solver`. Les approches symboliques utilisent aussi `regex` et `dd` ; 17 utilise `python-dotenv` pour la configuration ; ce paquet doit être ajouté à l’environnement car il est absent du manifeste commun. En cas d'import manquant, vérifier que Jupyter emploie bien l'environnement où les paquets ont été installés. Côté C#, contrôler la présence du noyau avec `jupyter kernelspec list` et les imports du carnet 00.
 
+Pour installer le noyau C# après le SDK .NET et Jupyter :
+
+```bash
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
+dotnet interactive jupyter install
+jupyter kernelspec list
+```
+
+Si l'outil est déjà installé, le mettre à jour avec `dotnet tool update -g Microsoft.dotnet-interactive --version 1.0.712001`. Choisir `.net-csharp` et exécuter [00](Sudoku-00-Environment-CSharp.ipynb) en premier : les carnets C# suivants importent son socle. Voir les [instructions des noyaux](../../docs/reference/kernels-runtime.md) en cas de difficulté.
+
 Depuis la racine du dépôt, une préparation Python possible est :
 
 ```bash
@@ -191,6 +201,13 @@ jupyter lab MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb
 ```
 
 Sous Windows, activer l'environnement avec `.\.venv-sudoku\Scripts\Activate.ps1`. Choisir ensuite le noyau « Python — Sudoku ». Pour le carnet 17, ajouter `python -m pip install python-dotenv` et renseigner la configuration du service avant les appels. Pour une première séance C#, ouvrir 00 puis 01 et conserver les chemins relatifs du dépôt.
+
+### Repères dans les dossiers
+
+- [Puzzles](Puzzles/) : grilles utilisées pour les expériences.
+- [CompiledModels](CompiledModels/) : artefacts compilés pour Infer.NET ; [sudoku_models](sudoku_models/) : checkpoints d'entraînement.
+- [scripts](scripts/) : scripts d'entraînement ; [tests](tests/) : tests associés.
+- [sudoku_lean](sudoku_lean/) : projet de formalisation Lean.
 
 ## Pour aller plus loin — Recherche
 
