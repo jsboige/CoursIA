@@ -70,14 +70,14 @@ name: perimeter-review-guard
 
 # SURFACES (#14283, puis #21922) : ce fichier porte les DEUX surfaces du
 # garde -- `pull_request` (restaure par #21922) et `pull_request_review`
-# (#14283). Proposition #24231 : il devient l'unique porteur de l'organe
-# `perimeter`, après retrait de sa copie dans always-on-guards.yml.
+# (#14283). Depuis #24231, il est l'unique porteur de l'organe `perimeter` :
+# always-on-guards.yml n'en porte plus de copie.
 #
 #   pull_request         -> ce fichier (ubuntu-latest)
 #   pull_request_review  -> ce fichier                          (ubuntu-latest)
 #
 # Le job est gate hors fork (`if:` sur `head.repo.full_name`) ; les PRs de
-# fork sont donc ignorées ici, comme avant cette proposition. Leur couverture
+# fork sont donc ignorées ici, comme elles l'étaient avant #24231. Leur couverture
 # après une review tierce reste limitée au déclenchement d'ouverture initial.
 #
 # Pourquoi ce fichier vit sur ubuntu-latest : `pull_request_review` est un

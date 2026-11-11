@@ -73,11 +73,10 @@ on:
   # partagent les evenements, ils ne les dupliquent pas :
   #   pull_request        -> always-on-guards (hors perimeter) + perimeter-review-guard :: perimeter
   #   pull_request_review -> perimeter-review-guard uniquement
-  # Proposition #24231 : retirer le doublon `perimeter` de cet umbrella.
-  # Le check `perimeter review guard (#11268)` est publie par
-  # perimeter-review-guard.yml, qui ré-évalue les éditions du body. Garder
-  # aussi une copie ici ferait survivre son ancien verdict dans l'umbrella.
-  # Ce diff propose le changement au porteur du harnais pour arbitrage.
+  # Depuis #24231, `perimeter` n'est plus porte par cet umbrella : le check
+  # `perimeter review guard (#11268)` est publie par perimeter-review-guard.yml
+  # seul, qui ré-évalue les éditions du body. Une copie ici ferait survivre
+  # son ancien verdict dans l'umbrella.
   workflow_dispatch:
 
 permissions:
