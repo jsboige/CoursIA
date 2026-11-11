@@ -1197,7 +1197,7 @@ def main():
         browser_version, [canvas_w, canvas_h], rendered_font_slides)
     out_str = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
-        args.out.write_text(out_str, encoding="utf-8")
+        args.out.write_text(out_str, encoding="utf-8", newline="")
     print(out_str)
 
     if args.github_annotations:

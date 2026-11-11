@@ -14,10 +14,12 @@ Deux choix mesures, pas devines :
   la slide, ou le theme rend le numero de page -- sans elle, toute slide
   numerotee serait signalee et l'instrument ne distinguerait plus rien. Le
   numero est de l'encre legitime, pas un debordement.
-- l'encre est relative au fond dominant de la slide (mesure sur la ligne du
-  haut, tolerance ``BG_TOLERANCE``) : une page de titre sombre n'est pas un
-  debordement -- seul ce qui DIFFERE du fond compte, sur fond clair comme
-  sur fond sombre.
+- l'encre est relative au fond dominant de la slide (mesure sur la MODE de
+  l'image entiere, tolerance ``BG_TOLERANCE``) : une page de titre sombre n'est
+  pas un debordement -- seul ce qui DIFFERE du fond compte, sur fond clair comme
+  sur fond sombre. Le fond est la valeur la plus frequente de l'image entiere,
+  pas la ligne du haut : une cover a degrade ou a fond image est pleine page par
+  design, et la seule ligne du haut ne la represente pas.
 
 Ce scan mesure, il ne qualifie pas : une slide signalee se relit a l'oeil sur
 le PNG (planches-contact puis pleine taille) avant tout correctif -- le
@@ -94,11 +96,11 @@ def _natural_key(path: Path):
 def _ink_ratio(png: Path, rows: int, ignore_right_frac: float) -> float:
     """Ratio encre / largeur mesurable sur les ``rows`` dernieres lignes du PNG.
 
-    L'encre est RELATIVE au fond dominant de la slide (mesure sur la ligne du
-    haut) : sur un deck a pages sombres, le fond sombre n'est pas un
-    debordement -- seule la matiere qui DIFFERE du fond compte. Sur fond
-    blanc, un pixel sombre differe du fond ; sur fond sombre, un pixel clair
-    aussi. Les deux cas se mesurent avec la meme regle.
+    L'encre est RELATIVE au fond dominant de la slide (mesure sur la MODE de
+    l'image entiere, pas sur la ligne du haut) : sur un deck a pages sombres, le
+    fond sombre n'est pas un debordement -- seule la matiere qui DIFFERE du
+    fond compte. Sur fond blanc, un pixel sombre differe du fond ; sur fond
+    sombre, un pixel clair aussi. Les deux cas se mesurent avec la meme regle.
 
     Leve une exception nommee si le PNG est illisible -- l'appelant la rapporte,
     il ne l'avale pas.
@@ -219,7 +221,7 @@ def archive_report(report: dict, archive_path: Path) -> dict:
     artifact["content_sha256"] = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     payload = json.dumps(artifact, ensure_ascii=False, indent=2)
     archive_path.parent.mkdir(parents=True, exist_ok=True)
-    archive_path.write_text(payload + "\n", encoding="utf-8")
+    archive_path.write_text(payload + "\n", encoding="utf-8", newline="")
     artifact["artifact_sha256"] = hashlib.sha256(payload.encode("utf-8")).hexdigest()
     return artifact
 

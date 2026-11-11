@@ -132,6 +132,20 @@ def test_archive_carries_the_hash_of_every_measured_png(tmp_path):
     assert recomputed == saved["content_sha256"]
 
 
+def test_archive_is_written_with_lf_line_endings(tmp_path):
+    """L'artefact doit etre byte-stable entre machines : `write_text` en mode
+    texte sous Windows traduit ``\\n`` en ``\\r\\n``, si bien que deux
+    archives identiques divergeaient sur deux OS -- un diff ligne-a-ligne
+    verrait alors un ecart fantome (#24171, suggestion S1 de la review)."""
+    d = _make_export(tmp_path)
+    report = scan_export_dir(d, rows=6, threshold=0.01, ignore_right_frac=0.10)
+    target = tmp_path / "releve.json"
+    archive_report(report, target)
+    raw = target.read_bytes()
+    assert b"\r\n" not in raw
+    assert raw.endswith(b"\n")
+
+
 def test_compare_separates_fixed_from_new(tmp_path):
     """Comparer deux artefacts = dire ce qui a ete corrige et ce qui est
     apparu ; c'est ce que deux compteurs rejoues ne permettent pas."""

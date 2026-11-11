@@ -87,13 +87,21 @@ python scripts/notebook_tools/scan_slidev_composition.py \
 | Mesure | Valeur |
 |---|---|
 | Diapositives rendues | **124** |
-| **Éléments hors canvas** (`n_hors_canvas`) | **7** |
+| **Diapositives dont un élément de contenu sort du canvas** (`n_hors_canvas`) | **7** |
+| Diapositives dont la boîte sort du canvas, **conteneur de la diapositive inclus** | **21** (dont **14** à conteneur seul) |
 | Chevauchements / recouvrements | 0 / 0 |
 | `n_occupation_flagged` (advisory) | 7 |
 | **Signature des polices** | `faea2d8efd2aeb08` |
 | Environnement de rendu | Chrome Headless Shell 158.0.8127.18, canvas 980 × 552 |
 | Polices résolues | Segoe UI, Calibri, Arial (toutes résolues, aucune générique) ; hauteur de ligne 21 px (delta 3 px vs police générique) |
 | Lecture archivée | [`deck-06-composition.json`](deck-06-composition.json) |
+
+`n_hors_canvas` compte des **diapositives**, pas des éléments : le tableau
+ci-dessous donne, pour chacune des 7, le nombre d'**éléments** hors canvas.
+Une diapositive dont le seul débordement vient du conteneur (`slidev-layout`
+plus haut que le canvas) n'est pas comptée par `n_hors_canvas` — c'est ce qui
+rend le chiffre comparable au relevé de #22286, dont la sonde applique la même
+règle.
 
 Les **7 diapositives** signalées sur cette machine :
 
@@ -116,10 +124,39 @@ Le même deck, le même canvas (980 × 552), le même instrument, **deux machine
 | [`docs/captures/22286/manifest.json`](../22286/manifest.json) | `myia-po-2028` | 2026-11-02 | **13** | *absente de l'archive* |
 | ce dossier | `myia-po-2027` (Windows 11) | 2026-11-11 | **7** | `faea2d8efd2aeb08` |
 
-**Six diapositives diffèrent** entre les deux relevés : `34`, `42`, `53` (hors
-canvas sur `myia-po-2028`, dans le canon sur cette machine) et `102`, `105`,
-`106`, `110` (hors canvas ici, dans le canon là-bas) ; `40`, `103` et `112`
-débordent dans les deux.
+**Ce que les deux archives établissent — et ce qu'elles n'établissent pas.**
+
+Les deux relevés comptent **la même chose** : le scanner de composition compte
+une diapositive lorsqu'un de ses **éléments de contenu** sort du canvas
+(`n_hors_canvas = sum(1 for r in results if content_overflow(r))` — le
+conteneur seul ne compte pas). La règle est **inchangée** entre la version de
+l'instrument qui a produit le relevé de #22286 (2026-09-15) et celle
+d'aujourd'hui : les deux chiffres sont donc comparables. Sur les **124**
+diapositives du deck : **13** sur `myia-po-2028`, **7** sur cette machine.
+
+L'archive de #22286 ne capture cependant que **32 des 124 diapositives** du
+deck 06 — son README le dit (« parmi les diapositives capturées »). Sur ces
+32 diapositives, **6** débordent là-bas : `34`, `40`, `42`, `53`, `103`, `112` —
+dont **3** débordent aussi ici (`40`, `103`, `112`) et **3** ne débordent
+qu'y (`34`, `42`, `53`).
+
+L'**énumération complète n'est pas dérivable** des deux archives, et l'écart
+exact n'est donc pas connu :
+
+- les **4** diapositives qui débordent ici et dont l'archive ne dit rien de
+  l'état là-bas (`102`, `105`, `106`, `110`) ne figurent **pas** parmi les 32
+  diapositives capturées ;
+- symétriquement, **7 des 13** diapositives signalées là-bas sont hors du
+  sous-ensemble capturé et ne sont **pas identifiables**.
+
+Le nombre de diapositives qui diffèrent est donc **borné, non connu** :
+**entre 6 et 14** (au moins 3 avérées, plus au moins 3 des 7 non
+identifiables ; au plus 3 + 4 + 7).
+
+C'est précisément ce que l'artefact de ce dossier apporte : il porte le verdict
+des **124** diapositives, donc l'énumération complète redevient dérivable de
+l'archive — ce que celle de #22286, avec ses 32 diapositives capturées sur
+124, ne permet pas.
 
 C'est le **second** cas documenté de non-opposabilité du compteur, après
 `S8-semantic-web` (2 → 1, voir #24171) — et il porte sur un deck de 124
@@ -143,14 +180,15 @@ comble, et la raison pour laquelle l'artefact versionné est désormais la forme
   mesure, dans le DOM rendu au canvas 980 × 552, les **éléments dont la boîte
   sort du canvas** — y compris par la droite ou par le haut, et y compris le
   conteneur de la diapositive lui-même (que le rapport isole par
-  `container_only`). Un « 0/124 » du premier **ne réfute pas** les 7 éléments
-  hors canvas du second : ce sont deux questions différentes sur le même rendu.
+  `container_only`). Un « 0/124 » du premier **ne réfute pas** les 7
+  diapositives hors canvas du second : ce sont deux questions différentes sur
+  le même rendu.
 - **Ce dossier ne tranche pas le point 3 de #24171** : les 7 diapositives
   listées ci-dessus débordent **réellement** au canvas du scanner de
   composition sur cette machine ; les corriger (blocs `<style scoped>`, comme
   #22258 l'a fait pour le deck 02) et **re-mesurer** est le travail qui
   reste — et il est fait sur des diapositives que la comparaison inter-machines
-  désigne differently selon la machine (voir ci-dessus) : une correction doit
+  désigne différemment selon la machine (voir ci-dessus) : une correction doit
   donc laisser une **marge**, pas viser l'égalité au canvas.
 - **Un « 0/124 » n'est pas un « aucun défaut »** : c'est un relevé, pris sur
   une machine, avec des polices non versionnées. Il vaut ce que vaut l'artefact
