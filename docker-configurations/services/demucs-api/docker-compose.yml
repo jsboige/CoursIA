@@ -24,6 +24,13 @@ services:
     ports:
       - "127.0.0.1:${DEMUCS_API_PORT:-8193}:8193"
 
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 4g (swap disabled),
+    # pids_limit 256. Measured 2026-11-07: 252 MiB / 21 PIDs (idle); the
+    # demucs model lives on the GPU, host RAM stays modest during separation.
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 256
+
     volumes:
       - type: bind
         source: ${MODELS_PATH:-./models}

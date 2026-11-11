@@ -1109,6 +1109,11 @@ class StackEntry:
     # une mesure absente ne fabrique ni refus ni pass.
     head_name: str = ""
     base_name: str = ""
+    # #23100 (seconde moitie, 2026-11-11) -- etat de fusion de la PR, mesure
+    # par une passe GraphQL : "MERGEABLE", "CONFLICTING" ou "UNKNOWN".
+    # Vide = mesure absente : l'exemption qui s'appuie dessus reste INERTE
+    # (une mesure absente ne deroge a rien).
+    mergeable: str = ""
 
 
 def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -1265,6 +1270,77 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     ]
 
 
+#: Les identifiants de noeud GitHub sont alphanumeriques : le filtre
+#: ecarte tout ce qui ne l'est pas, avant d'atre inline dans la requete.
+_NODE_ID_OK = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _fetch_pr_merge_states(node_ids: list[str]) -> dict[int, str]:
+    """Etat de fusion des PRs ouvertes, par numero (une passe GraphQL).
+
+    L'enumeration REST ne le rend PAS : mesure du 2026-11-11 sur 100 PRs
+    ouvertes, `mergeable_state` y est `null` sur les 100 -- le champ n'est
+    pas peuple dans les reponses de liste. GraphQL rend `mergeable`
+    ("MERGEABLE" / "CONFLICTING" / "UNKNOWN") : mesure sur 60 PRs, 59
+    valeurs exploitables et une seule `UNKNOWN`.
+
+    Les PRs sont demandees par `node_id` (lu dans la meme enumeration REST,
+    sans cout supplementaire) : la requete porte donc sur EXACTEMENT les
+    PRs de la passe, sans dependre d'un tri qui pourrait bouger entre deux
+    pages.
+
+    Une **relance** est prevue : GitHub calcule `mergeable` en fond, et la
+    premiere requete sur une PR fraichement mise a jour rend `UNKNOWN`.
+    Mesure du 2026-11-11 : une premiere passe sur cinq PRs a rendu
+    `UNKNOWN` sur les cinq, la requete suivante -- immediate -- a rendu les
+    cinq etats reels. La relance ne porte que sur les PRs non resolues.
+
+    Une passe qui echoue rend les etats deja mesures et s'arrete : les PRs
+    non mesurees gardent l'exemption INERTE et la porte garde son
+    comportement d'avant -- une mesure absente ne fabrique ni derogation
+    ni refus.
+    """
+    states: dict[int, str] = {}
+    pending = [i for i in node_ids if i]
+    for _ in range(2):
+        if not pending:
+            break
+        resolved: set[str] = set()
+        for start in range(0, len(pending), 100):
+            chunk = pending[start:start + 100]
+            # Les identifiants de noeud sont inlines dans la requete : `gh
+            # api graphql -F ids=<json>` envoie la valeur comme une CHAINE
+            # (mesure : `Could not resolve to a node with the global id of
+            # '["PR_..."]'`), donc la variable `[ID!]!` ne recevait jamais
+            # une liste. Un JSON de liste est une liste GraphQL valide, et
+            # les identifiants sont filtres : seuls `[A-Za-z0-9_-]` passent.
+            safe = [i for i in chunk if _NODE_ID_OK.match(i)]
+            if not safe:
+                continue
+            query = (
+                "query{nodes(ids:" + json.dumps(safe) + "){"
+                "... on PullRequest{id number mergeable}}}"
+            )
+            try:
+                data = gh_json(["api", "graphql", "-f", f"query={query}"])
+            except Exception:  # noqa: BLE001 -- mesure indisponible, pas un crash
+                # Les etats deja mesures restent valides ; les PRs non mesurees
+                # gardent l'exemption INERTE (rien n'est derogue sans mesure).
+                return states
+            for node in (data.get("data") or {}).get("nodes") or []:
+                if not node:
+                    continue
+                number = node.get("number")
+                state = node.get("mergeable")
+                if number is None or not state or state == "UNKNOWN":
+                    continue
+                states[int(number)] = str(state)
+                if node.get("id"):
+                    resolved.add(str(node["id"]))
+        pending = [i for i in pending if i not in resolved]
+    return states
+
+
 def _prune_stack_refs(keep: list[int]) -> None:
     """Retire les refs de tetes qui ne correspondent plus a une PR ouverte.
 
@@ -1342,7 +1418,7 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     try:
         lines = list(gh_lines([
             "api", "--paginate", f"repos/{REPO}/pulls?state=open&per_page=100",
-            "--jq", ".[] | [.number, .head.ref, .base.ref]",
+            "--jq", ".[] | [.number, .head.ref, .base.ref, .node_id]",
         ]))
     except Exception as exc:  # noqa: BLE001 -- mesure impossible, pas un crash
         return None, [f"enumeration des PR ouvertes impossible : {exc}"]
@@ -1360,6 +1436,7 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     # se DIT sans fabriquer de refus (fail-open, convention du docstring).
     numbers: list[int] = []
     names: dict[int, tuple[str, str]] = {}
+    node_ids: dict[int, str] = {}
     malformed: list[str] = []
     for line in lines:
         try:
@@ -1370,9 +1447,18 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
             continue
         numbers.append(p)
         names[p] = (row[1] if len(row) > 1 else "", row[2] if len(row) > 2 else "")
+        # #23100 (seconde moitie) -- le node_id rend l'etat de fusion
+        # mesurable sans cout supplementaire (meme enumeration).
+        node_ids[p] = row[3] if len(row) > 3 else ""
     fetched, incidents = _fetch_pr_heads(numbers)
     if incidents:
         return None, malformed + incidents
+    # #23100 (seconde moitie) -- etat de fusion par numero. La passe est
+    # OPTIONNELLE : son echec rend un dictionnaire vide, l'exemption reste
+    # inerte et la porte garde son comportement d'avant.
+    merge_states = _fetch_pr_merge_states(
+        [node_ids[p] for p in fetched if node_ids.get(p)]
+    )
     index: dict[int, StackEntry] = {}
 
     def _entry(p: int) -> tuple[int, StackEntry]:
@@ -1385,7 +1471,8 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         # base de la pile de l'ordre lineaire.
         head_name, base_name = names.get(p, ("", ""))
         return p, StackEntry(
-            p, ref, commits, subjects, _author_ref(ref), head_name, base_name
+            p, ref, commits, subjects, _author_ref(ref), head_name, base_name,
+            merge_states.get(p, ""),
         )
 
     # #22938 : les mesures par PR sont INDEPENDANTES (git en lecture seule)
@@ -1503,6 +1590,18 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
             continue
         other = index[number]
         if not other.commits:
+            continue
+        # #23100 (seconde moitie, 2026-11-11) -- un partenaire qui NE PEUT
+        # PAS ATTERRIR ne doit pas bloquer la cible. Une PR soeur en conflit
+        # avec `main` (`mergeable == "CONFLICTING"`) sera rebassee par son
+        # porteur avant d'atterrir : exiger de la cible qu'elle attende
+        # cette PR-la rend la cible inmergeable par une PR qui n'a pas
+        # d'aliance -- c'est le titre de l'issue ("un fork de base commune
+        # dont la PR soeur ne peut pas atterrir"). Mesure absente
+        # ("UNKNOWN", passe GraphQL indisponible) : l'exemption est INERTE,
+        # la porte garde son comportement d'avant. Le controle negatif
+        # (une soeur rebassee et MERGEABLE reste bloquante) est preserve.
+        if other.mergeable == "CONFLICTING":
             continue
         if not set(entry.commits) & set(other.commits):
             # #20263 -- un rebase reecrit les SHA : une intersection vide

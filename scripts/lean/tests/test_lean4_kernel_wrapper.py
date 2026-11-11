@@ -46,6 +46,7 @@ INSTALLER_PATH = (
     / "scripts"
     / "setup_wsl_lean4.sh"
 )
+NATIVE_INSTALLER_PATH = INSTALLER_PATH.with_name("setup_lean4_native.sh")
 
 
 def _load_wrapper():
@@ -65,8 +66,68 @@ def test_installer_deploys_versioned_wrapper():
     installer = INSTALLER_PATH.read_text(encoding="utf-8")
     assert '../../SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py' in installer
     assert 'if [ ! -f "$CANONICAL_WRAPPER" ]; then' in installer
-    assert 'cp "$CANONICAL_WRAPPER" "$HOME/.lean4-kernel-wrapper.py"' in installer
+    assert 'cp "$CANONICAL_WRAPPER" "$WRAPPER_PATH"' in installer
     assert "bootstrap conserve" not in installer
+
+
+@pytest.mark.parametrize(
+    ("language", "argv", "returncode"),
+    [
+        ("lean4", ["python", "/tmp/lean4-kernel-wrapper.py", "-f", "{connection_file}"], 0),
+        ("python", ["python", "-m", "ipykernel_launcher", "-f", "{connection_file}"], 1),
+    ],
+)
+def test_native_installer_check_verifies_the_real_kernel_class(
+    tmp_path, language, argv, returncode
+):
+    """`lean4` is a language/wrapper contract, not just a kernelspec name."""
+    import json
+    import os
+
+    elan_home = tmp_path / "elan"
+    venv = tmp_path / "venv"
+    mockbin = tmp_path / "bin"
+    inventory = tmp_path / "kernelspecs.json"
+    (elan_home / "bin").mkdir(parents=True)
+    (venv / "bin").mkdir(parents=True)
+    mockbin.mkdir()
+
+    for name, body in {
+        "elan": "#!/bin/sh\necho 'Lean (version 4.33.0)'\n",
+        "repl": "#!/bin/sh\nexit 0\n",
+    }.items():
+        executable = elan_home / "bin" / name
+        executable.write_text(body, encoding="utf-8")
+        executable.chmod(0o755)
+    python_stub = venv / "bin" / "python3"
+    python_stub.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    python_stub.chmod(0o755)
+    jupyter = mockbin / "jupyter"
+    jupyter.write_text(f'#!/bin/sh\ncat "{inventory}"\n', encoding="utf-8")
+    jupyter.chmod(0o755)
+    inventory.write_text(json.dumps({"kernelspecs": {
+        "lean4-wsl": {"spec": {"language": language, "argv": argv}}
+    }}), encoding="utf-8")
+
+    env = os.environ.copy()
+    env.update({
+        "ELAN_HOME": str(elan_home),
+        "LEAN4_VENV": str(venv),
+        "PATH": str(mockbin) + os.pathsep + env["PATH"],
+    })
+    result = subprocess.run(
+        ["bash", str(NATIVE_INSTALLER_PATH), "--check"],
+        cwd=REPO_ROOT,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == returncode, result.stdout + result.stderr
+    if returncode:
+        assert "noyau IPython ne convient pas" in result.stdout
+    else:
+        assert "language=lean4, wrapper Lean" in result.stdout
 
 
 def test_find_lake_root_starts_from_execution_directory(wrapper, tmp_path):
@@ -116,6 +177,25 @@ def test_clean_path_is_built_from_the_user_home(wrapper, monkeypatch, tmp_path):
     assert wrapper.main() == 2
     entries = wrapper.os.environ["PATH"].split(wrapper.os.pathsep)
     assert entries[:2] == [str(home / ".elan" / "bin"), str(home / ".lean4-venv" / "bin")]
+
+
+def test_clean_path_honors_explicit_install_paths(wrapper, monkeypatch, tmp_path):
+    home = tmp_path / "home"
+    home.mkdir()
+    elan_home = tmp_path / "toolchains" / "elan"
+    venv = tmp_path / "venvs" / "lean4"
+    notebook_dir = tmp_path / "notebooks"
+    notebook_dir.mkdir()
+    monkeypatch.chdir(notebook_dir)
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("ELAN_HOME", str(elan_home))
+    monkeypatch.setenv("LEAN4_VENV", str(venv))
+    monkeypatch.setenv("PATH", wrapper.os.environ["PATH"])
+    monkeypatch.setattr(wrapper.sys, "argv", ["lean4-kernel-wrapper.py"])
+
+    assert wrapper.main() == 2
+    entries = wrapper.os.environ["PATH"].split(wrapper.os.pathsep)
+    assert entries[:2] == [str(elan_home / "bin"), str(venv / "bin")]
 
 
 # --------------------------------------------------------------------------
@@ -177,6 +257,17 @@ def test_resolve_repl_accepts_the_default_when_versions_match(wrapper, tmp_path)
     path, version = wrapper.resolve_repl(str(home), "v4.30.0")
     assert path == str(home / ".elan" / "bin" / "repl")
     assert version == "4.30.0"
+
+
+def test_resolve_repl_supports_an_explicit_elan_home(wrapper, tmp_path):
+    home = tmp_path / "home"
+    elan_home = tmp_path / "toolchains" / "elan"
+    _write_repl(elan_home / "bin" / "repl-4.33.0", b"4.33.0")
+
+    path, version = wrapper.resolve_repl(
+        str(home), "v4.33.0", elan_home=str(elan_home))
+    assert path == str(elan_home / "bin" / "repl-4.33.0")
+    assert version == "4.33.0"
 
 
 def test_resolve_repl_refuses_a_divergent_default(wrapper, tmp_path):

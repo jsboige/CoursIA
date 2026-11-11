@@ -1001,7 +1001,7 @@ layout: default
   <img src="./images/img_041.jpg" class="max-h-[160px] w-auto object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb">Argumentation-02-Fallacies-Detection-Python.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb">Argumentation-02-Fallacies-Detection-Python.ipynb</a>.</p>
 ---
 
 
@@ -1082,7 +1082,7 @@ layout: default
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb">SW-02b-RDFBasics-Python.ipynb</a> (triplets RDF).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb">SW-02-RDFBasics-Python.ipynb</a> (triplets RDF).</p>
 ---
 
 # Zoom : la pile du Web sémantique (W3C)
@@ -1116,7 +1116,7 @@ layout: default
 
 
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb">Argumentation-06-JTMS-Python.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb">Tweety-04-Belief-Revision-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb">SC-03-Solidity-Basics-Python.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb">Argumentation-06-JTMS-Python.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb">Tweety-04-Belief-Revision-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb">SC-03-Solidity-Basics-Python.ipynb</a>.</p>
 ---
 layout: section
 ---

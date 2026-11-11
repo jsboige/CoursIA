@@ -114,7 +114,7 @@ Les principales séries-workspaces pédagogiques accessibles depuis le dépôt :
 
 - **Vibe-Coding** ([Claude-Code](../Claude-Code/README.md), [Roo-Code](../Roo-Code/README.md), [Claw-Systems](../Claw-Systems/README.md), [Claudish](../Claudish/README.md)) — les front-ends agents de codage.
 - **GenAI par sujet** ([Texte](../../Texte/) — notebooks, [Audio](../../Audio/README.md), [Image](../../Image/README.md), [Video](../../Video/README.md), [SemanticKernel](../../SemanticKernel/README.md)) — les ateliers GenAI domaine par domaine.
-- **SymbolicAI** ([Lean](../../../SymbolicAI/Lean/README.md), [Tweety](../../../SymbolicAI/Tweety/README.md), [Planners](../../../SymbolicAI/Planners/README.md), [Argument_Analysis](../../../SymbolicAI/Argument_Analysis/README.md)) — formalisation, argumentation et planification.
+- **SymbolicAI** ([Lean](../../../SymbolicAI/Lean/README.md), [Tweety](../../../SymbolicAI/Tweety/README.md), [Planners](../../../SymbolicAI/Planners/README.md), [ArgumentAnalysis](../../../SymbolicAI/ArgumentAnalysis/README.md)) — formalisation, argumentation et planification.
 - **QuantConnect** ([QC](../../../QuantConnect/README.md)) — trading algorithmique.
 - **ML** ([ML](../../../ML/README.md)) — Machine Learning .NET et Python, RL, Data Science with Agents.
 - **GameTheory / Probas / Search / IIT** — explorations thématiques transverses ([GameTheory](../../../GameTheory/README.md), [Probas](../../../Probas/README.md), [Search](../../../Search/README.md), [IIT](../../../IIT/README.md)).
