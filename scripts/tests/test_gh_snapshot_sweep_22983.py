@@ -635,7 +635,7 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     """Le transport historique ne doit PAS etre appele quand l'instantane
     sert l'issue."""
     instantane = {
-        "comments": {"7": [{"body": "[FROZEN] lane a:b",
+        "comments": {"7": [{"body": "[DELIVERED] lane a:b -- PR #1",
                             "createdAt": "2026-10-27T10:00:00Z",
                             "author": {"login": "a"}, "url": "u1"}]},
         "meta": {"comment_stamps": {"7": time.time()}},
@@ -650,6 +650,11 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     verdict = pig.delivery_event(7)
     assert verdict[0] is True
     assert verdict[2] == "2026-10-27T10:00:00Z"
+
+    # Le gel est un veto distinct, et non une livraison ; son horodatage
+    # reste disponible sans appel reseau pour la sonde d'evenement.
+    instantane["comments"]["7"][0]["body"] = "[FROZEN] lane a:b"
+    assert pig.delivery_event(7) == (False, False, "2026-10-27T10:00:00Z")
 
 
 def test_m_le_batch_sert_le_payload_depuis_l_instantane(monkeypatch):
@@ -832,15 +837,16 @@ def test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable(
        relue une par une, et son stamp est rafraichi.
 
     Apres cette lecture, `serves()` est VRAI pour la fenetre entiere :
-    l'ecart de balayage ne l'a pas condamnee. Ce qui refuse la fenetre,
-    c'est la voie STRICT du tapis, qui lit l'instantane **sans rafraichir**
-    -- temoin jumeau dans `test_pick_idle_grain_belt.py`
-    (`test_le_refus_strict_est_par_fenetre_et_non_par_numero`).
+    l'ecart de balayage ne l'a pas condamnee. Ce qui refuse un numero, c'est
+    la voie STRICT du tapis, qui lit l'instantane **sans rafraichir** --
+    temoin jumeau dans `test_pick_idle_grain_belt.py`
+    (`test_le_refus_strict_est_par_numero_et_non_par_fenetre`).
 
     Sans ce temoin, les deux portes se confondent : un run ou 11 numeros
-    sur 70 sont perimes et ou les 70 sont refuses se lit comme « la porte
-    du balayage a refuse la fenetre ». Elle ne l'a pas refusee : elle a
-    refuse le balayage, et c'est la STRICT qui a refuse la fenetre.
+    sur 70 sont perimes se lit comme « la porte du balayage a refuse la
+    fenetre ». Elle ne l'a pas refusee : elle a refuse le balayage, et
+    c'est la STRICT qui refuse, numero par numero, ceux dont l'instantane
+    ne prouve rien.
     """
     captures = []
 

@@ -322,6 +322,89 @@ def test_diff_signatures_added_cell_printing_intervals_not_reported():
     ) == []
 
 
+# --- #25413 : une sortie qui APPARAIT dans une cellule vide a la base ------
+# n'est PAS une derive de signature : c'est une addition de contenu (la
+# conversion exercice -> exemple guide). Le guard ne la rapporte ni en
+# signature_drift_cells (bloquant) ni avec le guess NumPy ; au plus un
+# advisory output_added_cells. Cas mesure PR #22969, cellule 5bd816be
+# (base "Exercice 2" sans sortie -> tete "Exemple guide 2" avec sorties).
+
+
+def test_output_added_is_not_signature_drift():
+    # base : cellule sans AUCUNE sortie ; tete : meme cellule (meme id) avec
+    # une sortie float. Meme kernel.
+    base = _nb_ids([("c1", None)])
+    head = _nb_ids([("c1", "[0.5, 0.25, 0.125]\n")])
+    b_sig = ckd.float_signatures(base)
+    h_sig = ckd.float_signatures(head)
+    assert b_sig == ((),)           # base vide
+    assert h_sig != ((),)           # tete avec sortie
+    # Pas de derive (le faux positif fondateur) :
+    assert ckd.diff_signatures(b_sig, h_sig,
+                               base_nb=base, head_nb=head) == []
+    # Mais bien une addition de contenu (advisory) :
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c1"]
+
+
+def test_output_added_ordinal_is_not_drift():
+    # Meme cas par l'alignement ORDINAL (carnets sans id) : une cellule
+    # presente a la base et y vide, avec une sortie a la tete, n'est pas une
+    # derive.
+    base = ((),)
+    head = (("[0.5, 0.25, 0.125]",),)
+    assert ckd._diff_signatures_ordinal(base, head) == []
+    assert ckd._output_added_ordinal(base, head) == [0]
+
+
+def test_output_added_ordinal_keeps_genuinely_new_cell():
+    # Controle negatif de l'ordinal : une cellule AU-DELA de la base
+    # (i >= len(base)) est NOUVELLE et reste rapportee -- le fix n'aveugle
+    # pas la detection d'une vraie cellule ajoutee.
+    base = (("[1.0, 1.0]",),)
+    head = (("[1.0, 1.0]",), ("[2.0, 2.0]",))
+    assert ckd._diff_signatures_ordinal(base, head) == [1]
+    # (pas une "addition" : la cellule 1 est au-dela de la base)
+    assert ckd._output_added_ordinal(base, head) == []
+
+
+def test_real_drift_still_reported_alongside_output_added():
+    # Controle positif : un drift reel (2 ULP) sur une cellule commune reste
+    # rapporte, meme si une AUTRE cellule commune ajoute une sortie.
+    base = _nb_ids([("c-drift", "[1.0, 1.0]\n"), ("c-add", None)])
+    head = _nb_ids([("c-drift", f"[{TWO_ULP_BELOW_1!r}, 1.0]\n"),
+                    ("c-add", "[3.0, 3.0]\n")])
+    b_sig = ckd.float_signatures(base)
+    h_sig = ckd.float_signatures(head)
+    assert ckd.diff_signatures(b_sig, h_sig,
+                               base_nb=base, head_nb=head) == ["c-drift"]
+    assert ckd.output_added_cells(b_sig, h_sig,
+                                  base_nb=base, head_nb=head) == ["c-add"]
+
+
+def test_output_added_green_end_to_end(monkeypatch):
+    # Trajet COMPLET : base vide -> tete avec sortie, meme kernel. Le guard
+    # reste VERT (aucun finding) : le seul moyen de lever le rouge n'est
+    # plus d'ajouter une section C.4.
+    base_nb = _nb("python3", "3.13.3", [])
+    head_nb = _nb("python3", "3.13.3", ["[0.5, 0.25, 0.125]\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert result["findings"] == []
+
+
+def test_output_added_does_not_emit_numpy_cause(monkeypatch):
+    # Une derive REELLE coexistante reste un finding ; l'advisory
+    # output_added_cells est raporte a cote (vide ici : la cellule avait
+    # une sortie a la base), sans rougir pour l'addition.
+    base_nb = _nb("python3", "3.13.3", ["[1.0, 1.0, 1.0]\n"])
+    head_nb = _nb("python3", "3.13.3",
+                  [f"[1.0, {TWO_ULP_BELOW_1!r}, 1.0]\n"])
+    result = _patched_run(monkeypatch, base_nb, head_nb)
+    assert len(result["findings"]) == 1
+    f = result["findings"][0]
+    assert f["signature_drift_cells"]
+    assert f["output_added_cells"] == []
+
 
 # --- #17679 : table d'acceptation canon C# 13.0 ------------------------------
 # Decision coordinateur 2026-09-26 (option 1) : C# 13.0 devient le canon ;
