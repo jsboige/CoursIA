@@ -1434,6 +1434,83 @@ def test_hosted_pr_job_exception_without_motive_is_a_violation(tmp_path):
     assert "HOSTED_PR_JOB_EXCEPTION_NO_MOTIVE" in codes(result)
 
 
+def test_hosted_pr_job_exception_covering_no_naked_job_is_stale(tmp_path):
+    """Cliquet #23053, invariant 3 : une exception dont le workflow a ete
+    converti ne couvre plus rien et rougit.
+
+    Controle negatif du defaut mesure le 2026-11-11 : `lean-ci-matrix.yml`
+    (conversion #23059) et `slides-build-advisory.yml` sont restes exceptes
+    des semaines sans qu'aucun invariant ne le signale -- la liste ne
+    retrecissait que par balayage manuel, donc pas du tout."""
+    write_workflow(tmp_path, "converted", """
+        name: converted
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo hybrid
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={"converted.yml": "conversion #23059, devenue inutile"},
+        hosted_pr_exceptions_baseline=frozenset({"converted.yml"}),
+    )
+    assert result.broken == []
+    assert codes(result) == {"HOSTED_PR_JOB_EXCEPTION_STALE"}
+    assert result.violations[0].workflow == "converted.yml"
+
+
+def test_hosted_pr_job_exception_on_workflow_without_pr_trigger_is_stale(tmp_path):
+    """Une exception ne sert qu'a un workflow `pull_request` : sur un workflow
+    cron-only, elle ne couvre rien et rougit (meme invariant 3)."""
+    write_workflow(tmp_path, "cron-only", """
+        name: cron-only
+        on:
+          schedule:
+            - cron: "0 4 * * *"
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo scheduled
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={"cron-only.yml": "motif historique"},
+        hosted_pr_exceptions_baseline=frozenset({"cron-only.yml"}),
+    )
+    assert codes(result) == {"HOSTED_PR_JOB_EXCEPTION_STALE"}
+
+
+def test_hosted_pr_job_exception_for_unread_workflow_is_not_declared_stale(tmp_path):
+    """Borne de mesure : un workflow absent du dossier scanne (ou dont le YAML
+    est casse) n'est pas declare perime sur une absence de lecture. Le dossier
+    par defaut est le vrai `workflows/`, donc un fichier supprime sort de la
+    mesure -- limite assumee, ecrite dans la docstring de l'invariant."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo excepted
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={
+            "pr-guard.yml": "job nu vivant",
+            "never-scanned.yml": "workflow absent du dossier",
+        },
+        hosted_pr_exceptions_baseline=frozenset(
+            {"pr-guard.yml", "never-scanned.yml"}
+        ),
+    )
+    assert result.broken == []
+    assert result.violations == []
+
+
 def test_non_pull_request_workflow_on_naked_hosted_runner_is_ignored(tmp_path):
     """Le cliquet ne vise que les workflows declenches par `pull_request` : un
     balayage cron heberge n'a aucune raison de deborder sur le parc local."""
