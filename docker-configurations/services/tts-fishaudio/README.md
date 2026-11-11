@@ -89,6 +89,35 @@ Tailles mesurées via l'API HuggingFace (`?blobs=true`) :
 
 Le sidecar `idle-monitor` **arrête** le conteneur, il ne l'endort pas : au redémarrage, les ~20 Go sont rechargés. Pour un usage ponctuel, c'est ce régime qu'il faut remplacer (cf [la politique d'hébergement et le sleep](../../../docs/genai/genai-services.md), § « Politique d'hébergement — le plus petit quant, et le sleep »).
 
+## Variante int4
+
+Le compose canonique ci-dessus est la route fp16 (`--half`, ~20,3 Go). La **variante int4** est le mode qui héberge en pratique sur la RTX 3090 partagée : checkpoint quantifié int4 weight-only (route amont `tools/llama/quantize.py`, cf `quantize_int4.py`) servi par `serve_int4.py`, **sans** `--half` (le noyau int4 exige que les buffers `scales_and_zeros` restent bfloat16 ; `--half` les passerait en float16 et produirait du garbage). Elle vit dans `docker-compose.int4.yml`.
+
+### Pourquoi le conteneur crash-loopait, et le correctif bf16
+
+`from_pretrained` (dans `tools/llama.py`) instancie le modèle **full-size en RAM, sous le dtype fp32 par défaut, AVANT** d'appliquer la conversion int4. Le pic de chargement est donc celui du modèle fp32, pas de l'int4 :
+
+| Phase | Pic RAM mesuré |
+|---|---|
+| init en fp32 (sans correctif) | **14 120 MiB** |
+| init en bf16 (`set_default_dtype(bfloat16)` autour de `init_model`) | **10 352 MiB** |
+
+> Le **10 352 MiB** du tableau est la probe d'init bf16 isolée ; le **10 536 MiB** cité dans `docker-compose.int4.yml` est le pic de chargement complet mesuré sous la borne 12 g. Ce sont deux mesures distinctes (probe isolée vs chargement sous borne) — d'où l'écart de 184 MiB entre les deux chiffres, et non une incohérence.
+
+Avec le pic fp32 à 14 120 MiB, **toute** borne mémoire de 6 g / 8 g / 12 g / 14 g tue le démarrage : le conteneur est OOM-killé (exit 137) toutes les ~30 s (`docker events` : `oom` + `die` en boucle, RestartCount dans les milliers). Le service ne survivait avant #303 que parce qu'il n'avait **aucune** borne.
+
+Le correctif, porté dans `serve_int4.py` : `torch.set_default_dtype(torch.bfloat16)` autour de l'appel `init_model`, restauré en `finally`. Ça divise le pic (14 120 → 10 352 MiB) **sans changer le modèle servi** : le `load_state_dict(assign=True)` final remplace tous les tenseurs par ceux du checkpoint int4, le dtype d'init n'a d'effet que sur le transitoire de chargement. Après correctif, sous une borne 12 g : poids « All keys matched successfully », `/v1/health` 200, chargement ~3,5 min ; l'état stationnaire reste ~2,8-3 GiB, swap désactivé.
+
+### Démarrer la variante
+
+```bash
+# .env : LLAMA_CHECKPOINT_PATH=checkpoints/fs-1.2-int4-g128-<timestamp>
+docker compose -f docker-compose.int4.yml up -d
+curl http://localhost:8197/v1/health
+```
+
+La borne de 12 g (swap off, pids 256) est la plus petite borne qui survit au transitoire une fois l'init passé en bf16.
+
 ## Integration
 
 This service integrates with the audiobook pipeline (`04-6-Audiobook-Pipeline.ipynb`) as P4 TTS engine, providing expressive tag support that Kokoro cannot leverage.

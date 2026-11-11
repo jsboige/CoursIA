@@ -5765,7 +5765,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,b67183
 **Place dans la série** : après PT-10, ce notebook répond à la question laissée ouverte par la série *from-scratch* (PT-08/09/10) : le **« collapse de λ »** observé — GAE(λ=0) et GAE(λ=0.95) aux trajectoires strictement identiques sur l'env toy partagé (`s² + a == b`, récompense terminale binaire) — est-il une propriété du **banc** ou de la **méthode** ?
 
 La réponse apportée ici est expérimentale et honnête : on porte la série sur un environnement **multi-step à crédit différé causal** (le terminal dépend de *toute* la séquence émise), et on re-mesure les cinq estimateurs REINFORCE, GRPO, RLOO, GAE-λ=0, GAE-λ=0.95 sur **5 seeds**. Verdict : **GAE-λ discrimine en multi-step** — le collapse était une dégénérescence du banc 1-step, pas une limite des méthodes.",,,,,,,,a8964f1dfb723924,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,9043962d,markdown,fr,45851297a6849d19,"## Contexte et question
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,9043962d,markdown,fr,9982e01ae7117648,"## Contexte et question
 
 Les notebooks PT-08 (PPO/GRPO), PT-09 (RLOO) et PT-10 (GAE) partagent un **toy env commun** : l'agent émet une action `s` en **un seul step**, et une vérification arithmétique (Z3) décide `reward = 1` ssi `s² + a == b`. Ce que les outputs **courants** de ces notebooks mesurent sur ce banc :
 
@@ -5774,9 +5774,9 @@ Les notebooks PT-08 (PPO/GRPO), PT-09 (RLOO) et PT-10 (GAE) partagent un **toy e
 | REINFORCE + baseline batch | PT-08 (1 run) | 0.062 → **0.531** |
 | PPO (actor + critic) | PT-08 (1 run) | 0.094 → **0.984** |
 | GRPO (no critic, G=8) | PT-08 (1 run) | 0.055 → **0.996** |
-| REINFORCE + baseline batch | PT-09 (seed 42) | 0.094 → **0.781** (max 0.969) |
-| RLOO (leave-one-out) | PT-09 (seed 42) | 0.129 → **0.500** (max 0.844) |
-| GRPO (groupe normalisé) | PT-09 (seed 42) | 0.121 → **0.594** (max 0.844) |
+| REINFORCE + baseline batch | PT-09 (seed 42) | 0.219 → **0.688** (max 0.906) |
+| RLOO (leave-one-out) | PT-09 (seed 42) | 0.113 → **0.715** (max 0.844) |
+| GRPO (groupe normalisé) | PT-09 (seed 42) | 0.109 → **0.875** (max 0.996) |
 | REINFORCE (5 seeds × 100 epochs) | PT-10 | final **0.883 ± 0.055** |
 | GAE(λ=0) (5 seeds × 100 epochs) | PT-10 | final **0.905 ± 0.026** |
 | GAE(λ=0.95) (5 seeds × 100 epochs) | PT-10 | final **0.905 ± 0.026** |
@@ -5790,7 +5790,7 @@ Le choix no-critic de GRPO se lit donc dans les mesures elles-mêmes, sans dédu
 
 > **Le collapse de λ est-il une propriété du banc (horizon 1) ou de la méthode (GAE elle-même) ?**
 
-Si λ reste inopérant sur un env **vraiment multi-step**, c'est un résultat (la méthode est le problème). Si λ devient discriminant, le collapse était un artefact du banc. PT-10 a déjà tenté ce diagnostic multi-step et l'a **révoqué lui-même** : sur son banc naïf (CoT racine carrée, 3 steps), la « discrimination λ » sur le reward moyen était un artefact de métrique — le taux **terminal** restait au niveau du hasard pour les deux λ. PT-12 construit le banc honnête qui tranche.",,,,,,,,45851297a6849d19,,,,,,,,,,,,,,,
+Si λ reste inopérant sur un env **vraiment multi-step**, c'est un résultat (la méthode est le problème). Si λ devient discriminant, le collapse était un artefact du banc. PT-10 a déjà tenté ce diagnostic multi-step et l'a **révoqué lui-même** : sur son banc naïf (CoT racine carrée, 3 steps), la « discrimination λ » sur le reward moyen était un artefact de métrique — le taux **terminal** restait au niveau du hasard pour les deux λ. PT-12 construit le banc honnête qui tranche.",,,,,,,,9982e01ae7117648,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,64cf9eaf,markdown,fr,c06b11d1d6bf8984,"## Pourquoi l'ancien env ""multi-step"" (PT-10, cellule 16) ne prouvait rien
 
 PT-10 contenait déjà une variante multi-step (CoT racine carrée, 3 tokens) censée montrer la discrimination de λ. Le diagnostic a posteriori révèle **deux défauts structurels** qui la rendaient aussi dégénérée que l'env 1-step :
@@ -6180,11 +6180,11 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,bc77e5
 # moyenne finale aux deux extremites de la paire.
 pass
 print(""Exercice a completer"")",,,,,,,,b79e3fbddd687b6b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,7bada03b,markdown,fr,f639f9eec3a0b7c6,"## Exercice 3 — Allonger l'horizon (H=12)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,7bada03b,markdown,fr,a73d359e0652a295,"## Exercice 3 — Allonger l'horizon (H=12)
 
-Sur le banc de calibration, `count_ones` avec H=12 (plancher 0.084) montrait le **même** verdict que H=8 (λ=0.95 gagne 3/3). **Prédire** si l'allongement de l'horizon renforce ou affaiblit le biais du bootstrap pour λ=0, puis **mesurer** avec H=12 sur la paire λ (3 seeds suffisent).
+Le banc de calibration `count_ones` est paramétré avec H=8 dans ce notebook. À H=8, la paire λ donne 0.947 (λ=0.95) contre 0.327 (λ=0) en moyenne sur 5 seeds (mesuré dans la section précédente). **Prédire** si l'allongement de l'horizon à H=12 renforce ou affaiblit le biais du bootstrap pour λ=0, puis **mesurer** avec H=12 sur la paire λ (3 seeds suffisent).
 
-Indice : en H=12, la récursion GAE a 12 termes — le TD(0) pur propage son biais sur 12 steps.",,,,,,,,f639f9eec3a0b7c6,,,,,,,,,,,,,,,
+Indice : en H=12, la récursion GAE a 12 termes — le TD(0) pur propage son biais sur 12 steps.",,,,,,,,a73d359e0652a295,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,516a464f,code,fr,edaf660e5a7b3bd2,"# TODO etudiant : rejouer la paire lambda avec HORIZON = 12 (et k dans [1, 11]).
 # Indice : le bloc de run depend de HORIZON et de W : modifier les constantes,
 # rejouer, comparer les moyennes finales, remettre HORIZON = 8.
@@ -9120,3 +9120,13 @@ Ce toy mesure le critic **à 8 713 paramètres** ; les étages réels de la sér
 - [PT-11a — GRPO réel sur Qwen3.5-0.8B](PT_11a_grpo_qwen35_rlvr.ipynb) : la boucle complète **exécutée** — QLoRA 4-bit (540 672 paramètres entraînables sur 752 933 696), reward Z3, 800 récompenses, moyenne globale 0.1263, max 1.0000.
 
 Précision d'honnêteté sur le bilan du §9 : le « banc valide PT-12 » y est le banc multi-step **toy** de la série (torch + z3, from-scratch) — valide parmi les toys, pas un étage LLM. Aucun notebook de la série n'exécute encore GAE sur un LLM réel : le verdict « aucun gain significatif détecté à 1-step » reste un verdict de toy, et le surcoût du critic à l'échelle LLM (ce que DeepSeek R1 a arbitré) n'est pas mesuré ici.",,,,,,,,526a280a845e31e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,80db75ca,markdown,fr,cfdaf0271bdc7667,"### Lecture du résultat : la vérification Z3
+
+La cellule précédente imprime `succès terminaux vérifiés par Z3 : 100/100 (accord fast-path : 100/100)`. Deux conclusions s'en tirent.
+
+1. **L'accord fast-path / Z3 est total.** Les 100 problèmes passent par les deux vérificateurs, et le `assert ok_fast == ok_z3` de la cellule n'a jamais levé : l'égalité `sum(seq) == k` ne diverge pas de la satisfaction de la contrainte `s² + a == b` (Z3) sur 100 cas sur 100. Le taux affiché par la politique est donc un taux **vérifié par le solveur**, pas un artefact d'un oracle de substitution.
+2. **Les 100 rolls sont neufs.** Les problèmes sont tirés après l'entraînement (`np.random.default_rng(2026)`) et chaque rollout reçoit un seed tiré à la volée : le 100/100 est un taux de réussite sur des trajectoires neuves, pas une restitution des séquences vues à l'entraînement.
+
+La promesse de la section précédente — « le taux vérifié par Z3 doit correspondre au taux annoncé par le fast-path » — est donc tenue : l'accord est exact, 100/100 de part et d'autre.
+
+**Portée.** 100 problèmes tirés dans un toy env ne valent pas preuve de généralisation : ce contrôle établit la **cohérence des deux vérificateurs** et la validité du taux affiché, pas la robustesse de la politique sur une distribution large.",,,,,,,,cfdaf0271bdc7667,,,,,,,,,,,,,,,
