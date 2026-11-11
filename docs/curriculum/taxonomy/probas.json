@@ -1,0 +1,518 @@
+{
+  "schema_version": 1,
+  "series": "Probas",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb",
+    "MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb",
+    "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",
+    "MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb",
+    "MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb",
+    "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "Probas",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Probabilites et inference (Probas)"
+    },
+    {
+      "level": "subseries",
+      "path": "Probas/Infer",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Infer.NET (programming probabiliste C#)"
+    },
+    {
+      "level": "notebook",
+      "path": "Probas/Infer/Infer-01",
+      "decimal_path": "1.1.1",
+      "depth": 2,
+      "label_fr": "Setup et premier modele",
+      "repository_path": "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Probas/Infer/Infer-01b",
+      "decimal_path": "1.1.2",
+      "depth": 2,
+      "label_fr": "Premiers modeles et apprentissage en ligne",
+      "repository_path": "MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Probas/Infer/Infer-02",
+      "decimal_path": "1.1.3",
+      "depth": 2,
+      "label_fr": "Distributions gaussiennes et melanges",
+      "repository_path": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Probas/Infer/Infer-03",
+      "decimal_path": "1.1.4",
+      "depth": 2,
+      "label_fr": "Graphes de facteurs et inference discrete",
+      "repository_path": "MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Probas/Infer/Infer-04",
+      "decimal_path": "1.1.5",
+      "depth": 2,
+      "label_fr": "Reseaux bayesiens",
+      "repository_path": "MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Probas/Infer/Infer-05",
+      "decimal_path": "1.1.6",
+      "depth": 2,
+      "label_fr": "Inference causale et do-calculus",
+      "repository_path": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "8caee38d-48a3-438d-920c-2bbbe223aeef",
+      "path": "probas/programmation-probabiliste",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Programmation probabiliste",
+      "label_en": "Probabilistic programming",
+      "definition_fr": "Paradigme qui consiste a declarer un modele probabiliste generatif en code, puis a deleguer au moteur l'inférence bayésienne (calcul des posterieures a partir des observations).",
+      "definition_en": "A paradigm in which a generative probabilistic model is declared in code and the engine performs the Bayesian inference (computing posteriors from the observations).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb",
+          "cell_id": "42dba707"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "44d5c9ff-9d13-490a-8aca-ae455feadcb9",
+      "path": "probas/bayes",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Inférence bayésienne",
+      "label_en": "Bayesian inference",
+      "definition_fr": "Mise a jour d'une distribution a priori en distribution a posteriori grace au theoreme de Bayes, a mesure que des observations s'accumulent.",
+      "definition_en": "Updating a prior distribution into a posterior distribution via Bayes' theorem as observations accumulate.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb",
+          "cell_id": "24e5f668"
+        }
+      ],
+      "prerequisites": [
+        "8caee38d-48a3-438d-920c-2bbbe223aeef"
+      ]
+    },
+    {
+      "id": "a6da4bad-fef0-40c5-af97-de93c832a36a",
+      "path": "probas/bayes/posterieure",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "Distribution a posteriori",
+      "label_en": "Posterior distribution",
+      "definition_fr": "Distribution des variables cachees apres conditionnement aux observations observees ; c'est la sortie de l'inférence.",
+      "definition_en": "Distribution of the latent variables after conditioning on the observed evidence; the output of inference.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb",
+          "cell_id": "ea58dca2"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",
+          "cell_id": "b2b44f27"
+        }
+      ],
+      "prerequisites": [
+        "44d5c9ff-9d13-490a-8aca-ae455feadcb9"
+      ]
+    },
+    {
+      "id": "ff43b009-d798-4e94-9be6-d4c68684fb9b",
+      "path": "probas/bayes/conjuguees",
+      "decimal_path": "2.2",
+      "depth": 1,
+      "label_fr": "Familles conjuguees",
+      "label_en": "Conjugate families",
+      "definition_fr": "Paire (a priori, likelihood) pour laquelle le posterieur reste dans la meme famille, ce qui rend l'inférence exacte et en forme close.",
+      "definition_en": "A (prior, likelihood) pair for which the posterior stays in the same family, making inference exact and closed-form.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",
+          "cell_id": "dfe88a85"
+        }
+      ],
+      "prerequisites": [
+        "44d5c9ff-9d13-490a-8aca-ae455feadcb9"
+      ]
+    },
+    {
+      "id": "0e2e29d8-de0b-4d69-b05e-09bdf3d7040c",
+      "path": "probas/moteur",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Moteur Infer.NET",
+      "label_en": "Infer.NET engine",
+      "definition_fr": "Bibliotheque de programmation probabiliste (maintenant dans ML.NET) qui compile le modele declare et applique un algorithme d'inférence aux variables.",
+      "definition_en": "A probabilistic-programming library (now in ML.NET) that compiles the declared model and runs an inference algorithm over its variables.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb",
+          "cell_id": "01b459aa"
+        }
+      ],
+      "prerequisites": [
+        "8caee38d-48a3-438d-920c-2bbbe223aeef"
+      ]
+    },
+    {
+      "id": "5f08f152-6cd3-472b-a6b2-5c8548137616",
+      "path": "probas/moteur/variables",
+      "decimal_path": "3.1",
+      "depth": 1,
+      "label_fr": "Variables aleatoires declarees",
+      "label_en": "Declared random variables",
+      "definition_fr": "Objets `Variable<T>` qui representent des quantites aleatoires (Bernoulli, Gaussian, ...) et portent leurs a priori dans le modele declare.",
+      "definition_en": "`Variable<T>` objects representing random quantities (Bernoulli, Gaussian, ...) that carry their priors in the declared model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb",
+          "cell_id": "ebf38ca6"
+        }
+      ],
+      "prerequisites": [
+        "0e2e29d8-de0b-4d69-b05e-09bdf3d7040c"
+      ]
+    },
+    {
+      "id": "44926d8b-af6e-4ad1-9ce1-5017f6c9dc09",
+      "path": "probas/moteur/vmp",
+      "decimal_path": "3.2",
+      "depth": 1,
+      "label_fr": "Passage de messages variationnel",
+      "label_en": "Variational Message Passing (VMP)",
+      "definition_fr": "Algorithme d'inférence par approximation variationnelle qui echange des messages entre facteurs pour estimer les posterieures ; algorithme par defaut d'Infer.NET.",
+      "definition_en": "Variational approximation inference that exchanges messages between factors to estimate posteriors; Infer.NET's default algorithm.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",
+          "cell_id": "3f8eca81390f"
+        }
+      ],
+      "prerequisites": [
+        "0e2e29d8-de0b-4d69-b05e-09bdf3d7040c",
+        "21106cc1-b879-4ef4-a991-120a469da77e"
+      ]
+    },
+    {
+      "id": "704878ea-6998-4b13-9f90-cc061db9b15d",
+      "path": "probas/moteur/ep",
+      "decimal_path": "3.3",
+      "depth": 1,
+      "label_fr": "Propagation d'esperance",
+      "label_en": "Expectation Propagation (EP)",
+      "definition_fr": "Algorithme d'inférence par approximation qui ajuste des distributions locales pour approximer le posterieur exact, a l'oppose du caractere variationnel de VMP.",
+      "definition_en": "Approximate inference that fits local distributions to approximate the exact posterior, in contrast to VMP's variational character.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",
+          "cell_id": "3f8eca81390f"
+        }
+      ],
+      "prerequisites": [
+        "0e2e29d8-de0b-4d69-b05e-09bdf3d7040c"
+      ]
+    },
+    {
+      "id": "969eb205-6e90-40a4-8827-cd039c14ffac",
+      "path": "probas/representations",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Représentations graphiques de l'inférence",
+      "label_en": "Graphical representations of inference",
+      "definition_fr": "Famille de graphes qui rendent explicite la structure de dependance probabiliste d'un modele, afin de guider l'inférence et son enseignement.",
+      "definition_en": "Family of graphs that make a model's probabilistic dependency structure explicit, to guide and teach inference.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb",
+          "cell_id": "b6d11f9e"
+        }
+      ],
+      "prerequisites": [
+        "8caee38d-48a3-438d-920c-2bbbe223aeef"
+      ]
+    },
+    {
+      "id": "21106cc1-b879-4ef4-a991-120a469da77e",
+      "path": "probas/representations/graphes-facteurs",
+      "decimal_path": "4.1",
+      "depth": 1,
+      "label_fr": "Graphes de facteurs",
+      "label_en": "Factor graphs",
+      "definition_fr": "Graphe bipartite de variables et de facteurs (nœuds de fonction) sur lequel l'inférence par passage de messages s'execute ; forme canonique utilisee par Infer.NET.",
+      "definition_en": "Bipartite graph of variables and factor (function) nodes over which message-passing inference runs; the canonical form used by Infer.NET.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb",
+          "cell_id": "b6d11f9e"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",
+          "cell_id": "e2bd5870"
+        }
+      ],
+      "prerequisites": [
+        "969eb205-6e90-40a4-8827-cd039c14ffac"
+      ]
+    },
+    {
+      "id": "ede1a114-3f65-4142-aa52-a95cb9dbf6c2",
+      "path": "probas/reseaux-bayesiens",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Réseaux bayésiens",
+      "label_en": "Bayesian networks",
+      "definition_fr": "Graphe de probabilites conditionnelles dirigee (PCT) qui encode les independances conditionnelles du domaine ; cf. AIMA 4e ch. 17 (3e ch. 14).",
+      "definition_en": "Directed graph of conditional probability tables encoding the domain's conditional independencies; see AIMA 4e ch. 17 (3e ch. 14).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb",
+          "cell_id": "10ad9e61"
+        }
+      ],
+      "prerequisites": [
+        "8caee38d-48a3-438d-920c-2bbbe223aeef",
+        "44d5c9ff-9d13-490a-8aca-ae455feadcb9"
+      ]
+    },
+    {
+      "id": "0c8e6dc8-da08-4c1a-9e3a-5bb6b1a35d95",
+      "path": "probas/reseaux-bayesiens/d-separation",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "D-séparation",
+      "label_en": "D-separation",
+      "definition_fr": "Critere structurel sur le graphe qui decide l'indépendance conditionnelle entre variables ; cf. AIMA 4e ch. 17.3.",
+      "definition_en": "Structural graph criterion deciding conditional independence between variables; see AIMA 4e ch. 17.3.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb",
+          "cell_id": "615d8be4"
+        }
+      ],
+      "prerequisites": [
+        "ede1a114-3f65-4142-aa52-a95cb9dbf6c2"
+      ]
+    },
+    {
+      "id": "fad99e0c-6b25-41d5-9643-5bbea96ba738",
+      "path": "probas/reseaux-bayesiens/explaining-away",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Phénomène d'explaining away",
+      "label_en": "Explaining away phenomenon",
+      "definition_fr": "Cohabitation de deux causes d'un meme effet qui deviennent statistiquement dependantes une fois l'effet observe ; cf. AIMA 4e ch. 17.3.",
+      "definition_en": "Two causes of a shared effect becoming statistically dependent once the effect is observed; see AIMA 4e ch. 17.3.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb",
+          "cell_id": "df755952"
+        }
+      ],
+      "prerequisites": [
+        "ede1a114-3f65-4142-aa52-a95cb9dbf6c2"
+      ]
+    },
+    {
+      "id": "513411cc-28b6-4878-8a8c-16d88f8ce186",
+      "path": "probas/causalite",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Inférence causale",
+      "label_en": "Causal inference",
+      "definition_fr": "Cadre de Pearl pour raisonner en termes d'interventions et de contrefactuels plutot qu'en simples associations ; cf. AIMA 4e ch. 18 et 20 (Pearl).",
+      "definition_en": "Pearl's framework for reasoning in terms of interventions and counterfactuals rather than bare association; see AIMA 4e ch. 18 and 20 (Pearl).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "1a5627132eb9"
+        }
+      ],
+      "prerequisites": [
+        "8caee38d-48a3-438d-920c-2bbbe223aeef",
+        "ede1a114-3f65-4142-aa52-a95cb9dbf6c2"
+      ]
+    },
+    {
+      "id": "ed15d476-59c8-484e-8018-8c55ee46532d",
+      "path": "probas/causalite/scm",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Modeles causaux structurels",
+      "label_en": "Structural Causal Models (SCM)",
+      "definition_fr": "Systeme d'equations structurelles (fonction par variable + bruit exogene) qui fonde l'interpretation causale d'un graphe.",
+      "definition_en": "System of structural equations (a function per variable plus exogenous noise) grounding the causal reading of a graph.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "d0f03c183fca"
+        }
+      ],
+      "prerequisites": [
+        "513411cc-28b6-4878-8a8c-16d88f8ce186"
+      ]
+    },
+    {
+      "id": "c9c69bce-f62a-4e21-9bc3-a76206378df3",
+      "path": "probas/causalite/echelle-pearl",
+      "decimal_path": "6.2",
+      "depth": 1,
+      "label_fr": "Echelle causale de Pearl",
+      "label_en": "Pearl's causal ladder",
+      "definition_fr": "Trois niveaux de questions : observation, intervention (do) et contrefactuel ; cf. AIMA 4e ch. 20.",
+      "definition_en": "Three levels of question: observation, intervention (do), and counterfactual; see AIMA 4e ch. 20.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "1a5627132eb9"
+        }
+      ],
+      "prerequisites": [
+        "513411cc-28b6-4878-8a8c-16d88f8ce186",
+        "ed15d476-59c8-484e-8018-8c55ee46532d"
+      ]
+    },
+    {
+      "id": "b12d576f-bb2b-46dd-b567-b17155d98a05",
+      "path": "probas/causalite/do-calculus",
+      "decimal_path": "6.3",
+      "depth": 1,
+      "label_fr": "Do-calculus",
+      "label_en": "Do-calculus",
+      "definition_fr": "Ensemble de regles de manipulation des expressions d'intervention do() permettant de les recrire en expressions observables ; regles de Pearl.",
+      "definition_en": "Set of manipulation rules on do() intervention expressions that rewrite them as observable ones; Pearl's rules.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "cb4121b7afaf"
+        }
+      ],
+      "prerequisites": [
+        "513411cc-28b6-4878-8a8c-16d88f8ce186",
+        "ed15d476-59c8-484e-8018-8c55ee46532d"
+      ]
+    },
+    {
+      "id": "5f55adaf-4dfc-45eb-9fbc-2defedfed738",
+      "path": "probas/causalite/backdoor",
+      "decimal_path": "6.4",
+      "depth": 1,
+      "label_fr": "Ajustement backdoor",
+      "label_en": "Back-door adjustment",
+      "definition_fr": "Critere d'identifiabilite et formule (somme sur un ensemble Z) qui evalue l'effet causal en coupant les voies de confondage.",
+      "definition_en": "Identification criterion and (sum-over-a-Z-set) formula that estimates the causal effect by cutting the confounding paths.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "7e0f43fc28d2"
+        }
+      ],
+      "prerequisites": [
+        "513411cc-28b6-4878-8a8c-16d88f8ce186",
+        "b12d576f-bb2b-46dd-b567-b17155d98a05"
+      ]
+    },
+    {
+      "id": "317344a1-f7dd-4abc-a098-982d416bf6e6",
+      "path": "probas/causalite/frontdoor",
+      "decimal_path": "6.5",
+      "depth": 1,
+      "label_fr": "Ajustement front-door",
+      "label_en": "Front-door adjustment",
+      "definition_fr": "Critere et formule d'identifiabilite qui passe par un mediateur observable quand un confondeur non observe est present.",
+      "definition_en": "Identification criterion and formula that routes through an observable mediator when an unobserved confounder is present.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "f6d17c278a8e"
+        }
+      ],
+      "prerequisites": [
+        "513411cc-28b6-4878-8a8c-16d88f8ce186",
+        "b12d576f-bb2b-46dd-b567-b17155d98a05"
+      ]
+    },
+    {
+      "id": "e62266db-8558-406d-a97d-8dab4cd4b598",
+      "path": "probas/causalite/simpson",
+      "decimal_path": "6.6",
+      "depth": 1,
+      "label_fr": "Paradoxe de Simpson",
+      "label_en": "Simpson's paradox",
+      "definition_fr": "Inversion d'une association observee une fois qu'un confondeur commun est conditionne ; illustration de l'echec de la correlation comme causalite.",
+      "definition_en": "Reversal of an observed association once a common confounder is conditioned on; illustration of correlation's failure as causation.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "9c5d859cf65e"
+        }
+      ],
+      "prerequisites": [
+        "513411cc-28b6-4878-8a8c-16d88f8ce186"
+      ]
+    },
+    {
+      "id": "088b89fa-bee2-4202-be5f-a381fed047a1",
+      "path": "probas/causalite/mediation",
+      "decimal_path": "6.7",
+      "depth": 1,
+      "label_fr": "Mediation (effets direct et indirect)",
+      "label_en": "Mediation (direct and indirect effects)",
+      "definition_fr": "Decomposition d'un effet total en chemin direct et chemin indirect par un mediateur, et effets naturels (NDE/NIE) de Pearl 2001.",
+      "definition_en": "Decomposition of a total effect into a direct path and an indirect path through a mediator, plus Pearl 2001's natural effects (NDE/NIE).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb",
+          "cell_id": "bab7e62f"
+        }
+      ],
+      "prerequisites": [
+        "513411cc-28b6-4878-8a8c-16d88f8ce186",
+        "ed15d476-59c8-484e-8018-8c55ee46532d"
+      ]
+    },
+    {
+      "id": "b8e61d20-36ca-4e26-b43f-a7d30d495dd2",
+      "path": "probas/melanges",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "Melanges de gaussiennes",
+      "label_en": "Gaussian mixtures",
+      "definition_fr": "Modele generatif a composantes gaussiennes ponderees, robuste aux evenements extraordinaires, infere par Infer.NET.",
+      "definition_en": "Generative model of weighted Gaussian components, robust to extraordinary events, inferred with Infer.NET.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb",
+          "cell_id": "iitn9jcy63"
+        }
+      ],
+      "prerequisites": [
+        "44d5c9ff-9d13-490a-8aca-ae455feadcb9",
+        "ff43b009-d798-4e94-9be6-d4c68684fb9b"
+      ]
+    }
+  ]
+}

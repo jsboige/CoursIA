@@ -593,6 +593,16 @@ def test_advisory_flags_match_the_source_workflows():
     assert by_name["self-hosted-runner-policy"].blocking is True
 
 
+def test_perimeter_registry_stays_on_its_dedicated_workflow():
+    """The registry route must remain tied to the live, body-aware owner."""
+    guard = {g.name: g for g in PILOT}["perimeter-review-guard"]
+    assert guard.source == "perimeter-review-guard.yml"
+    assert guard.paths == []
+    assert guard.blocking is True
+    assert "scripts/check_pr_perimeter.py" in guard.argv
+    assert "--scan-thread" in guard.argv
+
+
 def test_check_nav_chain_argv_carries_the_pr_diff_scope_issue_20303():
     """#20303 : la garde absorbee doit garder la portee de son workflow d'origine.
 
@@ -1860,12 +1870,10 @@ def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
     )
 
 
-def test_tranche22_markdown_schema_advisory_guard_is_wired():
-    """Tranche 22 = schema des cellules markdown (#20167), advisory. Contrat :
-    native, absorbe, non bloquant (calibration avant bascule), iteration par
-    carnet modifie. Le detecteur DOIT tirer sur un carnet fautif et rester
-    muet sur un carnet propre : un organe qui ne dit jamais rien est
-    indiscernable d'un organe debranche (lecon #11685).
+def test_tranche22_markdown_schema_ratchet_guard_is_wired():
+    """Tranche 22 = ratchet de schema des cellules markdown (#24090).
+    Contrat : native, absorbe, bloquant et compare chaque carnet modifie a sa
+    version sur la base PR; les dettes preexistantes restent tolerées.
     """
     import json
     import tempfile
@@ -1874,15 +1882,14 @@ def test_tranche22_markdown_schema_advisory_guard_is_wired():
     guard = TRANCHE22[0]
     assert guard.source == FAST_LANE_NATIVE
     assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
-    assert not guard.blocking, (
-        f"{guard.name} est advisory : bascule en bloquant seulement quand main "
-        f"ne porte plus aucune cellule markdown fautive"
-    )
+    assert guard.blocking, f"{guard.name} doit bloquer toute hausse de la classe cible"
     assert guard.iterates_paths and "{changed_paths}" in guard.argv
-    assert "--check" in guard.argv
+    assert "--base-ref" in guard.argv and "{base_ref}" in guard.argv
     assert "MyIA.AI.Notebooks/**/*.ipynb" in guard.iterate_paths
     for needle in (
         "scripts/notebook_tools/fix_markdown_cell_schema.py",
+        "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+        "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
         "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
         "scripts/ci/fast_lane_registry.py",
     ):
@@ -2306,14 +2313,196 @@ def test_every_commenter_header_is_a_known_bot_sticky():
     for header in headers:
         assert header in cap._BOT_STICKY_ADVISORY_HEADERS, (
             f"{header!r} absent de _BOT_STICKY_ADVISORY_HEADERS")
-        shared = "<!-- coursia:advisory-sticky -->\n" + \
-            f"<!-- organ:{header} -->signal<!-- /organ:{header} -->"
-        assert cap._bot_advisory_key({
-            "body": shared, "author": {"login": "github-actions[bot]"}}), (
-                f"le marqueur partage de {header!r} n'est pas reconnu")
-    legacy = "ancien corps\n<!-- Sticky Pull Request Commentstale-claim-advisory -->"
-    assert cap._STICKY_MARKER_RE.search(legacy), (
-        "la compatibilite de lecture des anciens marqueurs doit rester active")
+        marker = fast_lane.sticky_marker(header)
+        assert cap._STICKY_MARKER_RE.search("corps\n\n" + marker), (
+            f"le marqueur de {header!r} n'est pas reconnu par le parseur")
+
+
+def test_sticky_marker_is_byte_identical_to_the_source_action():
+    """Forme exacte de `marocchino/sticky-pull-request-comment@v2`.
+
+    Le marqueur est la CLE d'upsert : un espace de trop et le garde repose un
+    commentaire neuf a chaque push au lieu de mettre a jour le sien.
+    """
+    assert (fast_lane.sticky_marker("organ-duplication-advisory")
+            == "<!-- Sticky Pull Request Commentorgan-duplication-advisory -->")
+    assert fast_lane.STICKY_MARKER.count("{h}") == 1
+
+
+def _sticky_api(monkeypatch, comments, patch_rc=0):
+    """Remplace `gh` : rend la liste `comments` et enregistre les ecritures."""
+    calls = []
+
+    def fake(paginate, *args, stdin=None):
+        calls.append({"paginate": paginate, "args": args, "stdin": stdin})
+        if paginate:
+            return subprocess.CompletedProcess(
+                args, 0, __import__("json").dumps([comments]), "")
+        return subprocess.CompletedProcess(
+            args, patch_rc, "{}", "" if patch_rc == 0 else "boom")
+
+    monkeypatch.setattr(fast_lane, "_gh_api", fake)
+    return calls
+
+
+class _FakeOrgan:
+    """Doublure de l'organe partage : enregistre les ecritures, ne parle pas."""
+
+    FORWARD_MARKER = "<!-- coursia:advisory-sticky:forwarded -->"
+
+    def __init__(self, upsert_exc=None):
+        self.upserts, self.clears = [], []
+        self._upsert_exc = upsert_exc
+
+    def upsert_section(self, organ, body, pr, repo, **kw):
+        self.upserts.append((organ, body, pr, repo))
+        if self._upsert_exc:
+            raise self._upsert_exc
+        return {"action": "created", "comment_id": 1, "verified": True}
+
+    def clear_section(self, organ, pr, repo, **kw):
+        self.clears.append((organ, pr, repo))
+        return {"action": "silent", "comment_id": None}
+
+
+def test_publish_advisory_section_upserts_the_signal(monkeypatch):
+    organ = _FakeOrgan()
+    monkeypatch.setattr(fast_lane, "advisory_sticky", organ)
+    action = fast_lane.publish_advisory_section(
+        "o/r", "7", "stale-claim-advisory", "corps du constat", False)
+    assert action == "created"
+    assert organ.upserts == [
+        ("stale-claim-advisory", "corps du constat", 7, "o/r")]
+    assert not organ.clears
+
+
+def test_publish_advisory_section_clears_on_green_without_creating(monkeypatch):
+    """#24514 : un corps vide ne cree RIEN et RETIRE la section d'un signal
+    passe -- le succes ne parle pas."""
+    organ = _FakeOrgan()
+    monkeypatch.setattr(fast_lane, "advisory_sticky", organ)
+    action = fast_lane.publish_advisory_section(
+        "o/r", "7", "claims-output-advisory", "", False)
+    assert action == "silent"
+    assert not organ.upserts, "le vert ne doit jamais creer de commentaire"
+    assert organ.clears == [("claims-output-advisory", 7, "o/r")]
+
+
+def test_publish_advisory_failure_is_cosmetic(monkeypatch):
+    """Une erreur d'API ne rougit pas le job : le verdict vit dans le
+    check-run nomme, le commentaire n'est qu'un resume (#24441)."""
+    organ = _FakeOrgan(upsert_exc=RuntimeError("quota epuise"))
+    monkeypatch.setattr(fast_lane, "advisory_sticky", organ)
+    assert fast_lane.publish_advisory_section(
+        "o/r", "7", "md-hierarchy-drift-advisory", "derive", False) == "error"
+
+
+def test_retire_legacy_sticky_rewrites_the_marocchino_comment(monkeypatch):
+    """Le sticky pose avant le branchement devient un RENVOI, jamais un
+    delete (#15372) -- et la forme de renvoi reste lisible par le dossier de
+    prevalidation."""
+    header = "stale-claim-advisory"
+    marker = fast_lane.sticky_marker(header)
+    calls = _sticky_api(monkeypatch, [
+        {"id": 11, "body": "un autre bot"},
+        {"id": 42, "body": "phrase de succes d'avant le branchement\n\n" + marker},
+    ])
+    assert fast_lane.retire_legacy_sticky("o/r", "7", header, False) == "retired"
+    writes = [c for c in calls if not c["paginate"]]
+    assert len(writes) == 1 and "PATCH" in writes[0]["args"], (
+        f"reecriture EN PLACE attendue, vu {writes}")
+    assert "repos/o/r/issues/comments/42" in writes[0]["args"]
+    body = json.loads(writes[0]["stdin"])["body"]
+    assert body.startswith(fast_lane.advisory_sticky.FORWARD_MARKER)
+    assert marker not in body, "le marqueur d'origine doit disparaitre du corps"
+
+
+def test_retire_legacy_sticky_est_idempotent(monkeypatch):
+    """Un corps deja reecrit ne se termine plus par le marqueur : il n'est
+    ni retrouve ni re-ecrit."""
+    header = "organ-duplication-advisory"
+    tombstone = (fast_lane.advisory_sticky.FORWARD_MARKER
+                 + "\n\nrenevoi vers le commentaire unique.")
+    calls = _sticky_api(monkeypatch, [{"id": 42, "body": tombstone}])
+    assert fast_lane.retire_legacy_sticky("o/r", "7", header, False) == "noop"
+    assert not [c for c in calls if not c["paginate"]]
+
+
+def test_post_perime_le_legacy_apres_une_publication_reussie(monkeypatch):
+    from fast_lane_registry import TRANCHE33
+
+    guard = TRANCHE33[0]
+    ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "",
+           "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
+           "head_sha": "def", "base_ref": "origin/main"}
+    retired = []
+    monkeypatch.setattr(fast_lane, "run_argv",
+                        lambda a, c: (_ for _ in ()).throw(
+                            AssertionError("le detecteur ne doit pas tourner")))
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
+                        lambda *a: "created")
+    monkeypatch.setattr(fast_lane, "retire_legacy_sticky",
+                        lambda *a: retired.append(a) or "retired")
+    fast_lane.run_effects(guard, ctx, dry_run=False)
+    assert len(retired) == len(guard.commenters), (
+        "chaque emetteur perime son ancien support apres publication")
+
+
+def test_post_ne_perime_pas_le_legacy_si_la_publication_echoue(monkeypatch):
+    """Sans publication reussie, perimer l'ancien sticky effacerait le seul
+    endroit ou le signal vit encore."""
+    from fast_lane_registry import TRANCHE33
+
+    guard = TRANCHE33[0]
+    ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "",
+           "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
+           "head_sha": "def", "base_ref": "origin/main"}
+    retired = []
+    monkeypatch.setattr(fast_lane, "run_argv",
+                        lambda a, c: (_ for _ in ()).throw(
+                            AssertionError("le detecteur ne doit pas tourner")))
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
+                        lambda *a: "error")
+    monkeypatch.setattr(fast_lane, "retire_legacy_sticky",
+                        lambda *a: retired.append(a) or "retired")
+    fast_lane.run_effects(guard, ctx, dry_run=False)
+    assert not retired
+
+
+def test_les_corps_de_succes_sont_vides():
+    """#24514, critere 2 : le succes ne parle pas -- chaque builder rend une
+    chaine vide sur vert, et la phrase n'est recopiee NULLE PART."""
+    vert = {"merge_base": "abc", "trunc_note": ""}
+    assert fast_lane_registry._body_claims_output(0, "", dict(vert)) == ""
+    assert fast_lane_registry._body_stale_claim(0, "", dict(vert)) == ""
+    assert fast_lane_registry._body_factual_mislabel(0, "", dict(vert)) == ""
+    assert fast_lane_registry._body_listing_coherence(0, "{}", dict(vert)) == ""
+    assert fast_lane_registry._body_organ_duplication(0, "CLEAN", dict(vert)) == ""
+    assert fast_lane_registry._body_md_hierarchy(0, "", dict(vert)) == ""
+
+
+def test_les_signaux_non_verts_parlent_toujours():
+    """Abstention, panne d'usage, constat, exemption, vert PARTIEL : chacun
+    reste un signal et garde la parole."""
+    vert = {"merge_base": "abc", "trunc_note": ""}
+    cas = [
+        (fast_lane_registry._body_claims_output, 0, "", dict(vert, merge_base="")),
+        (fast_lane_registry._body_claims_output, 2, "", dict(vert)),
+        (fast_lane_registry._body_claims_output, 1, "", dict(vert)),
+        (fast_lane_registry._body_stale_claim, 1, "", dict(vert)),
+        (fast_lane_registry._body_factual_mislabel, 1, "", dict(vert)),
+        (fast_lane_registry._body_listing_coherence, 1, "{}", dict(vert)),
+        (fast_lane_registry._body_listing_coherence, 2, "{}", dict(vert)),
+        # Vert PARTIEL : les carnets non lus gardent la parole (#23394 r.1)
+        (fast_lane_registry._body_listing_coherence, 0, '{"non_lus": 2}', dict(vert)),
+        (fast_lane_registry._body_organ_duplication, 0, "EXEMPTED: copie declaree", dict(vert)),
+        (fast_lane_registry._body_organ_duplication, 0, "BLOCKED: x", dict(vert)),
+        (fast_lane_registry._body_organ_duplication, 0, "", dict(vert)),
+        (fast_lane_registry._body_md_hierarchy, 2, "", dict(vert, base_sha="deadbeef99")),
+    ]
+    for fn, rc, payload, ctx in cas:
+        corps = fn(rc, payload, dict(ctx))
+        assert corps, f"{fn.__name__}(rc={rc}) doit parler, rendu vide"
 
 
 def test_effect_guards_run_only_in_the_effects_job(monkeypatch):
@@ -2368,6 +2557,8 @@ def test_fatal_rc_rougit_le_job_meme_en_mode_ombre(monkeypatch):
            "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
            "head_sha": "def", "base_ref": "origin/main"}
     monkeypatch.setattr(fast_lane, "run_argv", lambda a, c2: (1, "hdr\n\nboom"))
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
+                        lambda *a, **k: "created")
     monkeypatch.setattr(fast_lane, "git",
                         lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
     rc, log, failures = fast_lane.run_effects(
@@ -2389,12 +2580,9 @@ def test_abstention_sans_merge_base_ne_lance_pas_le_detecteur(monkeypatch):
     monkeypatch.setattr(fast_lane, "run_argv",
                         lambda a, c: (_ for _ in ()).throw(
                             AssertionError("le detecteur ne doit pas tourner")))
-    monkeypatch.setattr(fast_lane.advisory_sticky, "upsert_section",
-                        lambda organ, body, pr, repo:
-                            (bodies.append(body) or {"comment_id": 88}))
-    monkeypatch.setattr(fast_lane.advisory_sticky, "list_comments",
-                        lambda pr, repo: [])
-    rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=False)
+    monkeypatch.setattr(fast_lane, "publish_advisory_section",
+                        lambda repo, pr, header, body, dry: bodies.append(body))
+    rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=True)
     assert rc == 0 and not failures
     # #23394 : quatre detecteurs de prose partagent ce job depuis l'arrivee de
     # `listing-coherence`. L'assertion porte sur le NOMBRE DE DETECTEURS, pas
@@ -2404,97 +2592,6 @@ def test_abstention_sans_merge_base_ne_lance_pas_le_detecteur(monkeypatch):
     assert len(bodies) == 4, "les quatre detecteurs de prose de la tranche 1b"
     for body in bodies:
         assert "abstained" in body, f"corps d'abstention attendu, vu {body[:60]!r}"
-
-
-def test_fast_lane_success_clears_shared_advisory_and_signal_upserts(monkeypatch):
-    """Le succès retire sa section; le constat garde la section consultative."""
-    from fast_lane_registry import Commenter, _body_claims_output
-
-    ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "abc",
-           "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
-           "head_sha": "def", "base_ref": "origin/main"}
-    calls = []
-    monkeypatch.setattr(fast_lane, "run_argv", lambda argv, context: (0, ""))
-    monkeypatch.setattr(fast_lane.advisory_sticky, "list_comments",
-                        lambda pr, repo: [])
-    monkeypatch.setattr(
-        fast_lane.advisory_sticky, "clear_section",
-        lambda organ, pr, repo:
-            (calls.append(("clear", organ, pr, repo)) or {"comment_id": 88}))
-    monkeypatch.setattr(
-        fast_lane.advisory_sticky, "upsert_section",
-        lambda organ, body, pr, repo: calls.append(
-            ("upsert", organ, pr, repo, body)) or {"comment_id": 88})
-
-    commenter = Commenter("markdown-claims-output-advisory", [], _body_claims_output)
-    guard = type("G", (), {"commenters": (commenter,)})()
-    rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=False)
-    assert rc == 0 and not failures
-    assert calls == [("clear", commenter.header, 7, "o/r")]
-
-    monkeypatch.setattr(fast_lane, "run_argv", lambda argv, context: (1, "signal"))
-    rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=False)
-    assert rc == 0 and not failures
-    assert calls[-1][0:4] == ("upsert", commenter.header, 7, "o/r")
-    assert "review needed" in calls[-1][4]
-
-
-def test_migration_neutralise_seulement_le_sticky_historique_du_bot(monkeypatch):
-    marker = "<!-- Sticky Pull Request Commentstale-claim-advisory -->"
-    rows = [
-        {"id": 10, "user": {"login": "github-actions[bot]"},
-         "body": "ancien signal\n" + marker},
-        {"id": 11, "user": {"login": "reviewer"},
-         "body": "citation\n" + marker},
-        {"id": 12, "user": {"login": "github-actions[bot]"},
-         "body": "autre organe\n<!-- Sticky Pull Request Commentclaims -->"},
-    ]
-    patched = []
-    monkeypatch.setattr(fast_lane.advisory_sticky, "list_comments",
-                        lambda pr, repo: rows)
-    monkeypatch.setattr(
-        fast_lane.advisory_sticky, "_patch_comment",
-        lambda cid, body, repo, runner, timeout:
-            patched.append((cid, body)))
-
-    fast_lane._retire_legacy_sticky_comments("o/r", 7,
-                                             "stale-claim-advisory", 99)
-    assert len(patched) == 1 and patched[0][0] == 10
-    assert patched[0][1] == fast_lane.advisory_sticky.forward_body(99)
-
-
-def test_produits_fast_lane_advisory_ne_declenchent_pas_b0():
-    """Les corps réellement rendus restent des commentaires consultatifs."""
-    sys.path.insert(0, str(REPO_ROOT / "scripts"))
-    import check_unaddressed_nits
-    import advisory_sticky
-    from fast_lane_registry import (
-        _body_claims_output, _body_factual_mislabel, _body_listing_coherence,
-        _body_organ_duplication, _body_stale_claim,
-    )
-
-    ctx = {"merge_base": "abc"}
-    bodies = {
-        "markdown-claims-output-advisory": _body_claims_output(1, "signal", ctx),
-        "stale-claim-advisory": _body_stale_claim(1, "signal", ctx),
-        "factual-mislabel-advisory": _body_factual_mislabel(1, "signal", ctx),
-        "listing-coherence-advisory": _body_listing_coherence(1, "signal", ctx),
-        "organ-duplication-advisory": _body_organ_duplication(
-            1, "BLOCKED collision", ctx),
-    }
-    assert all(bodies.values()), "chaque signal doit avoir une section visible"
-    rendered = advisory_sticky.render(bodies)
-    assert check_unaddressed_nits.classify("github-actions", rendered) is None
-
-    # Ces véritables cas verts produisent une section vide, donc clear_section.
-    greens = [
-        _body_claims_output(0, "", ctx),
-        _body_stale_claim(0, "", ctx),
-        _body_factual_mislabel(0, "", ctx),
-        _body_listing_coherence(0, '{"non_lus": 0}', ctx),
-        _body_organ_duplication(0, "CLEAN", ctx),
-    ]
-    assert greens == [""] * len(greens)
 
 
 def test_trunc_note_says_the_real_coverage_gap():

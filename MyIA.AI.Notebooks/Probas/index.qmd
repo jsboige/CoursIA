@@ -12,8 +12,7 @@ listing:
     page-size: 24
   - id: infer-notebooks
     contents:
-      - "Infer/Infer-[2-9]-*.ipynb"
-      - "Infer/Infer-2b-*.ipynb"
+      - "Infer/Infer-0[2-9]*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -69,10 +68,10 @@ listing:
     page-size: 24
   - id: standalone-root
     contents:
-      - "Probas-KLS-Concentration.ipynb"
+      - "Applications/Probas-KLS-Concentration.ipynb"
       - "Applications/Pyro_RSA_Hyperbole.ipynb"
-      - "Applications/Percolation/Percolation-Supercritique.ipynb"
-      - "Applications/Percolation/Percolation-Lean.ipynb"
+      - "Applications/Percolation/Percolation-01-Supercritique-Python.ipynb"
+      - "Applications/Percolation/Percolation-02-Lean.ipynb"
       - "Applications/Quotients-Fibres-Recollement-Python.ipynb"
     type: grid
     sort: "filename"
@@ -181,7 +180,7 @@ L'entrée Infer.NET du corpus bayésien est **Infer-1b** (accretion du premier m
 **Pour Infer.NET (C#/.NET Interactive)**
 
 ```bash
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 # Puis dans Jupyter : choisir le kernel ".NET (C#)"
 ```
 

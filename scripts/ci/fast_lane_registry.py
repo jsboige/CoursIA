@@ -2206,9 +2206,10 @@ TRANCHE21: list[Guard] = [
 # Forme : iter par carnet modifie (`--check {changed_paths}`). Un carnet
 # modifie qui porte encore la cle fait remonter le defaut sur la PR.
 #
-# ADVISORY (`blocking=False`) : le corpus n'est pas encore entierement corrige
-# (lots B et C de l'issue #20167). La bascule en bloquant se fera quand `main`
-# ne portera plus aucune cellule fautive, comme geste trace.
+# Ratchet bloquant (#24090) : pour chaque carnet modifie, comparer le nombre
+# de cellules markdown portant execution_count/outputs au blob de la base PR.
+# Les residus preexistants ailleurs dans le corpus (ou dans le meme carnet)
+# restent toleres tant que leur compte n'augmente pas.
 #
 # `absorbed=True` : sans absorption, le job always-on lancerait `fast_lane.py
 # --shadow` et la conclusion serait neutre sous le prefixe d'ombre. Meme
@@ -2216,21 +2217,23 @@ TRANCHE21: list[Guard] = [
 # ---------------------------------------------------------------------------
 TRANCHE22: list[Guard] = [
     Guard(
-        name="Markdown-cell schema advisory (cles interdites, #20167)",
+        name="Markdown-cell schema ratchet (base vs PR, #24090)",
         source=FAST_LANE_NATIVE,
         paths=[
             "MyIA.AI.Notebooks/**/*.ipynb",
             "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
             "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/tests/test_check_markdown_cell_schema_ratchet.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
         iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
         argv=[
-            "python", "scripts/notebook_tools/fix_markdown_cell_schema.py",
-            "--check", "{changed_paths}",
+            "python", "scripts/notebook_tools/check_markdown_cell_schema_ratchet.py",
+            "--base-ref", "{base_ref}", "{changed_paths}",
         ],
-        blocking=False,
+        blocking=True,
         iterates_paths=True,
         absorbed=True,
     ),
@@ -2587,7 +2590,7 @@ TRANCHE27: list[Guard] = [
 #
 # La voie rapide n'emettait que des check-runs ; ces trois-la exigent en plus
 # d'ecrire sur la PR. D'ou l'emetteur d'effets de bord de `fast_lane.py`
-# (`upsert_sticky_comment`, `write_artifact`) et un job DISTINCT
+# (`publish_advisory_section`, `write_artifact`) et un job DISTINCT
 # `Always-on commenters` dans `always-on-guards.yml`, qui porte seul le droit
 # d'ecriture pour ces gardes -- un defaut dans l'un des organes du job
 # principal ne peut pas ecrire sur une PR.
@@ -2600,13 +2603,24 @@ TRANCHE27: list[Guard] = [
 #   - workflow source reduit a `workflow_dispatch`, fichier conserve (sa
 #     re-mesure manuelle et la source du nom canonique).
 #
-# Les sections consultatives passent par `scripts/ci/advisory_sticky.py` :
-# un commentaire partage par PR, identifie par
-# `<!-- coursia:advisory-sticky -->`, avec une section par `header`. Les
-# anciens marqueurs individuels restent reconnus par le dossier de
-# prevalidation pour lire les commentaires deja presents dans l'historique.
-# Un constat vert retourne un corps vide et retire sa section; le check-run
-# nomme conserve le detail du succès.
+# Depuis #24514 (famille #15511), les commentaires passent par l'organe
+# partage `advisory_sticky.py` (meme branchement que #24441) : UNE section par
+# en-tete dans le commentaire consultatif unique, retiree quand le signal
+# redevient vert, et RIEN d'ecrit quand le succes n'a rien a signaler -- les
+# marqueurs marocchino d'origine etaient la premiere source de phrases de
+# succes (101 sur les 60 PRs ouvertes a la mesure). Les stickies marocchino
+# deja poses sont perimes en place (renvoi `forwarded`, reconnu par le parseur
+# du dossier de prevalidation au meme titre que le marqueur d'origine) -- un
+# commentaire n'est jamais supprime (#15372).
+#
+# `scan-md-hierarchy-drift.yml` postait un commentaire NEUF a chaque push sans
+# marqueur. Reproduire cet accident (une PR de carnet recevait un commentaire
+# par push) n'apporterait rien : le garde ecrit desormais la section
+# `md-hierarchy-drift-advisory` dans le commentaire unique, ce qui applique la
+# meme regle « mis a jour, pas double » aux quatre surfaces. L'en-tete reste
+# declare dans `_BOT_STICKY_ADVISORY_HEADERS`
+# (`check_adjoint_prevalidation.py`) pour que le dossier de prevalidation
+# continue de lire ces reecritures comme des commentaires de bot consultatifs.
 # ---------------------------------------------------------------------------
 
 
@@ -2614,13 +2628,18 @@ TRANCHE27: list[Guard] = [
 class Commenter:
     """Un effet de bord PR d'un garde absorbe.
 
-    header      Nom de la section dans le commentaire partage
-                `advisory_sticky` ; c'est aussi l'identite stable de l'organe.
+    header      En-tete de la section dans le commentaire consultatif unique
+                (organe `advisory_sticky`, #24514). Il DOIT rester un nom
+                d'organe valide (`[A-Za-z0-9._-]+`) : les six en-tetes
+                historiques marocchino le sont deja, et le dossier de
+                prevalidation les lit dans `_BOT_STICKY_ADVISORY_HEADERS`.
     argv        Detecteur. Sa sortie standard est le rapport : elle part dans
                 l'artefact quand `artifact_name` est renseigne, et dans le
                 corps du commentaire quand `body` la consomme.
-    body        (rc, payload, ctx) -> corps de section. Une chaine vide retire
-                la section quand aucun signal consultatif ne reste.
+    body        (rc, payload, ctx) -> corps de la section. Rend une chaine
+                vide quand le verdict est VERT : la section est alors RETIREE
+                (et rien n'est ecrit sur une PR qui n'en portait pas) -- le
+                succes ne parle pas (#24514).
     artifact_name / artifact_file
                 Nom d'artefact et nom de fichier, copies tels quels du
                 workflow source (`actions/upload-artifact` garde son nom
@@ -2663,6 +2682,12 @@ class Commenter:
 # textes que des reviewers et des bots lisent depuis des mois, et une
 # reformulation silencieuse changerait le signal d'une PR a l'autre pour la
 # meme mesure. Seul l'emballage change (le heredoc shell disparait).
+#
+# #24514 (famille #15511) : le succes ne parle plus. Il n'y a plus de phrase
+# OK -- un corps vide rendu par un builder fait RETIRER la section advisory
+# (ou n'ecrit rien sur une PR saine) ; le vert vit dans le check-run nomme.
+# Les phrases qui restent portent toutes un SIGNAL : abstention, panne
+# d'usage, constat, exemption ou vert PARTIEL (carnets non lus).
 
 _CLAIMS_ABSTAIN = (
     "⚠️ Detector abstained (merge-base introuvable, shallow fetch or "
@@ -2674,6 +2699,19 @@ _CLAIMS_WARN = (
     "or its evidence is missing. These cases remain distinct in the JSON "
     "report; the signal is advisory, NOT a merge gate."
 )
+_CLAIMS_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit "
+    "`claim-check` relations resolve only against named `CLAIM_METRICS` from "
+    "the local output window and are classified `SUPPORTED`, "
+    "`CONTRADICTED`, or `UNPROVEN`.\n"
+    "The `markdown-claims-output-report` run artifact contains the "
+    "structured JSON report. See `python "
+    "scripts/check_markdown_claims_output.py --help` for re-running "
+    "locally.\n"
+    "Detector rationale: c.290 / c.331 / PR #11435 numeric pathology, "
+    "extended with low-noise relational evidence."
+)
+
 _STALE_ABSTAIN = (
     "⚠️ Stale-claim detector abstained (merge-base introuvable, shallow "
     "fetch or unanchored branch)."
@@ -2683,6 +2721,16 @@ _STALE_WARN = (
     "value that appears in NO committed output of the notebook. Advisory, "
     "NOT a merge gate — triage against the JSON artifact."
 )
+_STALE_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`stale-claim-report` run artifact holds the structured JSON.\n"
+    "Rationale: the sibling detector above only compares a claim to the "
+    "outputs of the cells that PRECEDE it; a claim written in a cell that "
+    "precedes its code (App-5-Timetabling c.2/c.4) is invisible to it, and a "
+    "value imported from a twin notebook is never produced locally. See "
+    "`python scripts/check_stale_claims.py --help`."
+)
+
 _MISLABEL_ABSTAIN = (
     "⚠️ Factual-mislabel detector abstained (merge-base introuvable, "
     "shallow fetch or unanchored branch)."
@@ -2694,6 +2742,15 @@ _MISLABEL_WARN = (
     "different data). Advisory, NOT a merge gate — triage against the JSON "
     "artifact."
 )
+_MISLABEL_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`factual-mislabel-report` run artifact holds the structured JSON.\n"
+    "Rationale: pure ABSENCE of a claimed value is the sibling stale-claim "
+    "detector's job; this one only reports CONTRADICTIONS between an "
+    "adjacent code cell's stream and the markdown that describes it. See "
+    "`python scripts/check_factual_mislabel.py --help`."
+)
+
 _LISTING_ABSTAIN = (
     "⚠️ Listing-coherence detector abstained (merge-base introuvable, "
     "shallow fetch or unanchored branch)."
@@ -2720,6 +2777,16 @@ _LISTING_OK_UNREAD = (
     "lus, mais {n} carnet(s) n'ont pas pu etre lus (JSON corrompu ou encodage "
     "non UTF-8) — le vert n'est pas rendu."
 )
+_LISTING_TRAILER = (
+    "Scope = notebooks CHANGED in this PR, not the whole corpus. The "
+    "`listing-coherence-report` run artifact holds the structured JSON.\n"
+    "Rationale: this compares identifier SETS, not counts — a count "
+    "comparison cannot see a table truncated from `08` while the stream "
+    "lists up to `15`. The contiguous-prefix discriminant is what keeps an "
+    "arbitrary subset (« the 3 longest ») out of the report. See "
+    "`python scripts/check_listing_coherence.py --help`."
+)
+
 # Echec d'usage (rc=2) des trois detecteurs de prose freres : ni un constat,
 # ni un quitus. Voir `_exit_state` (#23394, reserve 3).
 _CLAIMS_FATAL = (
@@ -2735,6 +2802,12 @@ _MISLABEL_FATAL = (
     "d'erreur d'usage, pas un constat sur cette PR. Voir le log du job."
 )
 
+_ORGAN_EXEMPTED = (
+    "Organ duplication DETECTED but EXEMPTED: the PR body declares a "
+    "pedagogical copy. The organ-first rule (5 questions) is satisfied by "
+    "construction. If this copy grows (several consumer notebooks), ask the "
+    "source series for an extraction instead."
+)
 _ORGAN_ABSTAIN = (
     "Organ-duplication detector ABSTAINS: merge-base unresolved or "
     "structural error -- no verdict. See workflow log."
@@ -2747,6 +2820,13 @@ _ORGAN_WARN = (
     "the workflow log for the full collision list (demanding series -> "
     "bypassed organ -> symbol). Advisory, NOT a merge gate."
 )
+_ORGAN_TRAILER = (
+    "Detector: `python scripts/audit/detect_organ_duplication.py --base "
+    "<merge-base> --body-file <pr body>`\n"
+    "Rationale: `#16776` / `#13564` (rule merged in `#16778`)."
+)
+
+
 def _with_note(sentence: str, ctx: dict) -> str:
     """Phrase d'etat + note de couverture partielle quand elle existe.
 
@@ -2780,10 +2860,11 @@ def _exit_state(rc: int, ctx: dict, fatal_rc: tuple[int, ...] = (2,)) -> str:
 def _body_claims_output(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
     if state == "ok":
+        # #24514 : le succes ne parle pas -- le vert vit dans le check-run.
         return ""
     sentence = {"abstain": _CLAIMS_ABSTAIN,
                 "fatal": _CLAIMS_FATAL}.get(state, _CLAIMS_WARN)
-    return _with_note(sentence, ctx)
+    return f"{_with_note(sentence, ctx)}\n\n{_CLAIMS_TRAILER}"
 
 
 def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
@@ -2792,7 +2873,7 @@ def _body_stale_claim(rc: int, payload: str, ctx: dict) -> str:
         return ""
     sentence = {"abstain": _STALE_ABSTAIN,
                 "fatal": _STALE_FATAL}.get(state, _STALE_WARN)
-    return _with_note(sentence, ctx)
+    return f"{_with_note(sentence, ctx)}\n\n{_STALE_TRAILER}"
 
 
 def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
@@ -2801,7 +2882,7 @@ def _body_factual_mislabel(rc: int, payload: str, ctx: dict) -> str:
         return ""
     sentence = {"abstain": _MISLABEL_ABSTAIN,
                 "fatal": _MISLABEL_FATAL}.get(state, _MISLABEL_WARN)
-    return _with_note(sentence, ctx)
+    return f"{_with_note(sentence, ctx)}\n\n{_MISLABEL_TRAILER}"
 
 
 def _payload_count(payload: str, key: str) -> int:
@@ -2820,20 +2901,20 @@ def _payload_count(payload: str, key: str) -> int:
 
 def _body_listing_coherence(rc: int, payload: str, ctx: dict) -> str:
     state = _exit_state(rc, ctx)
-    if state == "ok" and not _payload_count(payload, "non_lus"):
+    non_lus = _payload_count(payload, "non_lus")
+    if state == "ok" and not non_lus:
+        # #24514 : le succes ne parle pas -- SAUF le vert PARTIEL, qui n'est
+        # pas un vert (carnets jamais lus, #23394 reserve 1) et parle.
         return ""
-    sentence = {"abstain": _LISTING_ABSTAIN,
+    sentence = {"ok": _LISTING_OK_UNREAD.format(n=non_lus),
+                "abstain": _LISTING_ABSTAIN,
                 "fatal": _LISTING_FATAL}.get(state, _LISTING_WARN)
     # `non_lus` porte les carnets que le detecteur n'a pas pu ouvrir : sans
     # cette phrase, un carnet illisible sortait en vert « aucun tableau
     # tronque » alors qu'il n'avait jamais ete lu (#23394, reserve 1).
-    non_lus = _payload_count(payload, "non_lus")
-    if non_lus and state != "abstain":
-        if state == "ok":
-            sentence = _LISTING_OK_UNREAD.format(n=non_lus)
-        else:
-            sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
-    return _with_note(sentence, ctx)
+    if non_lus and state not in ("ok", "abstain"):
+        sentence = f"{sentence} {_LISTING_UNREAD.format(n=non_lus)}"
+    return f"{_with_note(sentence, ctx)}\n\n{_LISTING_TRAILER}"
 
 
 def _organ_status(payload: str) -> str:
@@ -2851,9 +2932,14 @@ def _organ_status(payload: str) -> str:
 
 def _body_organ_duplication(rc: int, payload: str, ctx: dict) -> str:
     state = _organ_status(payload)
-    if state in {"clean", "exempted"}:
+    if state == "clean":
+        # #24514 : le succes ne parle pas.
         return ""
-    return _ORGAN_ABSTAIN if state == "abstain" else _ORGAN_WARN
+    sentence = {
+        "exempted": _ORGAN_EXEMPTED,
+        "abstain": _ORGAN_ABSTAIN,
+    }.get(state, _ORGAN_WARN)
+    return f"{sentence}\n\n{_ORGAN_TRAILER}"
 
 
 def _body_md_hierarchy(rc: int, payload: str, ctx: dict) -> str:
@@ -3552,6 +3638,7 @@ TRANCHE36: list[Guard] = [
 
 
 
+
 # ---------------------------------------------------------------------------
 # TRANCHE 38 (#22012, bascule graduelle option 4, sign-off user 2026-11-02) --
 # premiere bascule ADVISORY -> BLOQUANT du scanner md-hierarchy : la classe
@@ -3596,6 +3683,82 @@ TRANCHE38: list[Guard] = [
         ],
         blocking=True,
         needs_base=True,
+
+        absorbed=True,
+    ),
+]
+
+
+
+# ---------------------------------------------------------------------------
+# Garde de source unique du PCM par poches (#20188, critere 2).
+#
+# Le modele de construction de portefeuille par poches a existe en neuf copies
+# sous `MyIA.AI.Notebooks/QuantConnect/`, en six variantes, et le correctif
+# `additive` (#19740) n'etait present que dans trois d'entre elles : un
+# correctif pose sur une copie ne se propageait pas, et rien ne le signalait.
+#
+# L'extraction a ete livree (#21134) : `projects/SharedPCM/pouches_pcm.py` est
+# la source canonique, importee par les composites. Deux copies subsistent, et
+# chacune a une raison qui ne se corrige pas par un copier-coller : le kit
+# pedagogique `03-Framework-Composite` est autonome (le code est copie par
+# l'apprenant, sans bibliotheque QC attachee), et `TrendWeatherPointInTime`
+# est une candidate gelee du registre de l'ombre (entree `tw-pit`, code rejoue
+# au SHA gele) que #20188 interdit de toucher.
+#
+# La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une
+# **nouvelle** copie apparaisse sans declaration, et qu'une copie **declaree**
+# soit modifiee sans re-declaration. Les declarations vivent dans
+# `scripts/quantconnect/pcm_single_source.json` (le manifeste), qui porte la
+# source canonique, les copies declarees et la raison de chacune.
+#
+# Pourquoi la voie rapide et pas un workflow dedie : un workflow
+# `pull_request` auto-heberge doit etre enregistre dans l'allowlist de
+# `check_self_hosted_runner_policy.py`, et le cliquet refuse `ubuntu-latest`
+# sur une PR. La voie rapide emet le check-run sous son nom canonique
+# (`absorbed=True`), donc avec une conclusion REELLE, sans payer un second
+# clone du depot.
+#
+# Le manifeste figure dans `paths` : une revision qui change les declarations
+# doit rejouer la garde, sinon une declaration perimee passerait sans temoin
+# (lecon #11685/#12817). Idem pour le corps de tests, qui porte le controle
+# positif exige par #20188 : une copie volontairement modifiee fait rougir.
+# Les deux fichiers de l'organe lui-meme figurent aussi dans `paths` (le
+# registre et le moteur) : une revision qui etend ou retrecit la portee de la
+# garde doit la rejouer — les gardes natifs voisins font de meme.
+#
+# rc=2 = manifeste illisible ou organe absent : c'est un **defaut du depot**,
+# pas un incident d'entree comme le base injoignable d'un garde de delta. La
+# garde le declare donc en rouge : un manifeste casse est une garde debranchee.
+#
+# Numero : TRANCHE41. TRANCHE38 est pris par le md-hierarchy HINT-AS-HEADING
+# (bascule #22012, sur main), TRANCHE39 par la garde cell-ordering (sur main),
+# et TRANCHE40 par une autre garde tombee sur main apres le coupe de cette
+# branche ; collision d'index levee en re-allocant cette garde au premier slot
+# libre (41) -- main garde le 40 (convention de collision TRANCHE, c.852/c.854).
+# ---------------------------------------------------------------------------
+TRANCHE41: list[Guard] = [
+    Guard(
+        name="pcm-single-source-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            # Toute definition nouvelle de la famille du PCM par poches est
+            # declencheuse : le motif `/**/` couvre ici la racine comme les
+            # sous-repertoires (semantique GitHub, cf path_matches).
+            "MyIA.AI.Notebooks/QuantConnect/**/*.py",
+            "scripts/quantconnect/check_pcm_single_source.py",
+            "scripts/quantconnect/pcm_single_source.json",
+            "scripts/quantconnect/tests/test_check_pcm_single_source.py",
+            # L'organe lui-meme : une revision qui change sa portee doit la
+            # rejouer (les 21 gardes natifs voisins declarent la meme paire).
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/quantconnect/check_pcm_single_source.py",
+        ],
+        blocking=True,
+
         absorbed=True,
     ),
 ]
@@ -3642,6 +3805,77 @@ TRANCHE39: list[Guard] = [
         needs_base=True,
         iterates_paths=True,
         iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 40 -- cliquet de non-regression du POIDS AUTO-CHARGE du harnais
+# (#15204).
+#
+# Le mandat user porte sur la surface **auto-chargee** (regles sans
+# frontmatter `paths:` + `CLAUDE.md` du depot), pas sur le poids total du
+# depot. L'instrument canonique qui la mesure existe depuis #11554
+# (`scripts/audit/measure_autoloaded_harness.py`) et sait deja produire une
+# mesure en octets ET en tokens derives -- mais il n'etait cable par AUCUN
+# workflow : la cible du mandat (157 500 o / 70k tokens) n'a donc jamais rien
+# interdit, et la surface a oscille au-dessus d'elle sur toute la fenetre
+# mesuree (185 454 o le 2026-09-06, 203 903 o le 2026-10-18, 181 722 o le
+# 2026-11-06, pour une cible a 157 500 o).
+#
+# Le cliquet porte sur le DELTA base -> tete, jamais sur un seuil absolu :
+# la surface actuelle est deja au-dessus de la cible, un garde qui accuse la
+# dette pre-existante serait rouge des sa naissance et ferait echouer toutes
+# les PR sans qu'aucune ne l'ait causee (precedent : le garde de collision
+# d'index de notebook, natif lui aussi). Une PR qui fait BAISSER la surface
+# est donc toujours verte -- c'est le levier A du mandat qui sera mesure
+# ainsi, une regle path-gatee a la fois.
+#
+# La mesure n'est pas reimplementee : `argv` appelle l'organe canonique (sa
+# sortie JSON sur stdout EST l'instantane), `delta_argv` compare les deux
+# instantanes. Un second compte de la surface serait un second chiffre qui
+# derive -- c'est exactement ce que l'instrument canonique a ete cree pour
+# corriger.
+#
+# `pre_argv` : la suite pytest du comparateur, qui contient le controle
+# positif END-TO-END (mesure reelle de l'organe sur un arbre, puis
+# comparaison). Un detecteur qui ne prouve pas qu'il tire ne rend pas vert
+# (precedent #11685 / #12817).
+#
+# `swap_paths` : ce que la voie rapide rebascule a la base entre les deux
+# passes -- `CLAUDE.md` et le repertoire des regles, soit exactement les
+# surfaces que l'organe mesure.
+# ---------------------------------------------------------------------------
+TRANCHE40: list[Guard] = [
+    Guard(
+        name="Harness autoloaded weight ratchet (base vs PR, bloquant)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "CLAUDE.md",
+            ".claude/rules/**",
+            "scripts/audit/measure_autoloaded_harness.py",
+            "scripts/ci/check_harness_weight_delta.py",
+            "scripts/tests/test_check_harness_weight_delta.py",
+            # Le moteur et le registre sont dans le perimetre : une PR qui les
+            # touche peut casser la bascule base/tete dont ce garde depend, et
+            # doit donc le rejouer (meme convention que TRANCHE8).
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/tests/test_check_harness_weight_delta.py",
+        ],
+        argv=["python", "scripts/audit/measure_autoloaded_harness.py", "--json"],
+        delta_argv=[
+            "python", "scripts/ci/check_harness_weight_delta.py",
+            "{base_json}", "{head_json}",
+        ],
+        swap_paths=["CLAUDE.md", ".claude/rules"],
+        blocking=True,
+        needs_base=True,
+        diff_bounded=True,
         absorbed=True,
     ),
 ]

@@ -24,6 +24,12 @@ services:
     ports:
       - "127.0.0.1:${WHISPER_PORT:-36540}:7860"
 
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 4g (swap disabled),
+    # pids_limit 256. Measured 2026-11-07: 2.12 GiB / 46 PIDs.
+    mem_limit: 4g
+    memswap_limit: 4g
+    pids_limit: 256
+
     volumes:
       - type: bind
         source: ${WHISPER_MODELS_PATH:-./models}

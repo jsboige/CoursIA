@@ -39,6 +39,7 @@ Exemple ::
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 import subprocess
@@ -82,15 +83,14 @@ _NO_AXIOMS_RE = re.compile(r"does not depend on any axioms")
 # defaut historique ; mesure 2026-11-03 (po-2027) : absent des toolchains
 # installees, chaque rollout partait en download elan.
 DEFAULT_TOOLCHAIN = "leanprover/lean4:v4.27.0"
+_LOGGER = logging.getLogger(__name__)
 
 
 def _installed_toolchain() -> str | None:
     """Toolchain reellement installee, ou ``None`` si non mesurable.
 
-    Regle F, deja promise par la classe : le pin par defaut est la
-    toolchain PRESENTE sur le runner, pas un tag qui forcerait un download
-    elan par rollout (mesure 2026-11-03 : pin v4.27.0 absente -> 7 tests
-    sur 10 en echec, chaque rollout parti en download).
+    Le tag reconstruit depuis ``lean --version`` décrit le défaut elan résolu ;
+    il ne constitue pas un pin reproductible entre environnements.
     """
     bin_dir = str(Path.home() / ".elan" / "bin")
     try:
@@ -247,12 +247,47 @@ class LeanRLVRVerifier:
         verbose: bool = False,
     ) -> None:
         if toolchain is None:
-            toolchain = _installed_toolchain() or DEFAULT_TOOLCHAIN
+            toolchain, pin_source = self._resolve_toolchain(project_dir)
+        else:
+            pin_source = "argument"
         self.toolchain = toolchain
+        self.pin_source = pin_source
+        _LOGGER.info("RLVR Lean toolchain=%s pin=%s", self.toolchain, self.pin_source)
         self.timeout = timeout
         self.whitelist = set(whitelist) if whitelist is not None else set(CORE_WHITELIST)
         self.verbose = verbose
         self.project_dir = self._ensure_skeleton(project_dir)
+
+    @staticmethod
+    def _resolve_toolchain(project_dir: str | os.PathLike | None) -> tuple[str, str]:
+        """Résout env > pin du projet > défaut elan, avec provenance explicite."""
+        environment_pin = os.environ.get("ELAN_TOOLCHAIN")
+        if environment_pin:
+            return environment_pin, "env"
+
+        project_root = (
+            Path(project_dir)
+            if project_dir is not None
+            else Path.home() / ".cache" / "rlvr-lean"
+        )
+        toolchain_file = project_root / "lean-toolchain"
+        try:
+            project_pin = toolchain_file.read_text(encoding="utf-8").strip()
+        except OSError:
+            project_pin = ""
+        if project_pin:
+            return project_pin, "projet"
+
+        resolved_default = _installed_toolchain()
+        if resolved_default:
+            return resolved_default, "default_resolu"
+
+        _LOGGER.warning(
+            "RLVR Lean: aucun pin env/projet ni défaut elan mesurable; "
+            "repli explicite vers %s (un téléchargement elan peut être requis)",
+            DEFAULT_TOOLCHAIN,
+        )
+        return DEFAULT_TOOLCHAIN, "fallback_averti"
 
     # -- squelette lake minimal ------------------------------------------------
 
@@ -273,12 +308,11 @@ class LeanRLVRVerifier:
         lakefile = root / "lakefile.toml"
         if not lakefile.exists():
             lakefile.write_text('name = "RlvrSkeleton"\n', encoding="utf-8")
-        # Squelette MANAGE (cache) : le pin suit le constructeur (re-ecrit
-        # quand il differe — sinon `toolchain=` serait muet sur cache chaud,
-        # mesure firsthand 2026-11-03). Projet fourni : pin respecte tel quel.
+        # Squelette géré : écrire les pins explicites, mais garder le défaut
+        # elan comme défaut de résolution plutôt que de le figer dans le cache.
         managed = project_dir is None
         toolchain_file = root / "lean-toolchain"
-        if managed or not toolchain_file.exists():
+        if self.pin_source != "default_resolu" and (managed or not toolchain_file.exists()):
             toolchain_file.write_text(f"{self.toolchain}\n", encoding="utf-8")
         # Rechauffement : un premier `lake env` cree le manifest du projet
         # (sinon il est cree au 1er rollout, faussant la mesure de latence).

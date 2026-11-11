@@ -1,6 +1,6 @@
 # Smart Contracts - Des Cypherpunks aux Blockchains Modernes
 
-[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md) | [Argument_Analysis →](../Argument_Analysis/README.md)
+[← Planners](../Planners/README.md) | [↑ SymbolicAI](../README.md) | [ArgumentAnalysis →](../ArgumentAnalysis/README.md)
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-SmartContracts
@@ -207,18 +207,26 @@ SmartContracts/
 
 ### Partie 2 : Solidity Avancé
 
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
-| 7b | [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) | 25 min | Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve |
-| 7c | [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) | non déclarée | Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean` |
-| 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles |
-| 8b | [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) | 40 min | Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun |
-| 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain |
-| 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 |
-| 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts |
+| # | Notebook | Durée | Contenu | Approfondissements liés |
+|---|----------|-------|---------|-------------------------|
+| 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 | [SC-7b et SC-7c](#autour-de-7) |
+| 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles | [SC-8b](#autour-de-8) |
+| 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain | |
+| 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 | |
+| 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts | |
 
 **Objectifs** : Protocoles DeFi, gouvernance, ERC-4337, LLM-assisted
+
+#### Approfondissements
+
+##### Autour de 7
+
+- [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) — Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve
+- [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) — Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean`
+
+##### Autour de 8
+
+- [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) — Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun
 
 ### Partie 3 : Testing
 
@@ -638,7 +646,7 @@ maturity: PRODUCTION=27
 | `SC-12 Foundry Testing` | [Lean](../Lean/) (types dépendants, Curry-Howard) | Vérification formelle = même ambition (prouver la correction), deux faces : SMT automatique (SMTChecker) vs interactif expressif (Lean 4) |
 | `SC-14 Formal Verification` | [Lean](../Lean/) + [GameTheory](../../GameTheory/) (`game_theory_lean/SocialChoice/`) | Pont vérification : Certora/SMTChecker prouvent les invariants Solidity ; Lean 4 prouve les théorèmes économiques (Arrow, Voting). Même méthodologie, deux domaines |
 | `SC-15 ZKP / SC-16 HE / SC-17 E2E Voting` | [Lean](../Lean/) + [Tweety](../Tweety/) (cryptographic protocols argumentation) | Cryptographie avancée : ZKP = preuve sans divulgation ; HE = calcul sur chiffré ; vote E2E = anonymat + vérifiabilité. Tweety argumente formellement ces protocoles |
-| `SC-11 LLM-Assisted Contracts` | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel) | LLM generates Solidity contracts via SK : prompting structuré → code Solidity → validation Foundry |
+| `SC-11 LLM-Assisted Contracts` | [ArgumentAnalysis](../ArgumentAnalysis/) (Semantic Kernel) | LLM generates Solidity contracts via SK : prompting structuré → code Solidity → validation Foundry |
 | `SC-9 DAO Governance / SC-17 E2E Voting` | [GameTheory](../../GameTheory/) (Arrow.lean, Voting.lean) | Vote on-chain = instance concrète du théorème d'Arrow (impossibilité) ; vote E2E = instance des Banks sets + monotonie STV |
 | `SC-15 ZK-SNARKs / SC-23 Cross-Chain Bridges` | [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle Solidity ↔ ontologie OWL : un smart contract peut être annoté sémantiquement (propriétés vérifiables par raisonneur) ; cross-chain bridges = ontologies inter-chaînes |
 

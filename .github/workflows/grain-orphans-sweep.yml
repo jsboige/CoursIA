@@ -46,6 +46,11 @@ jobs:
     # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 4 derniers
+    # runs mesurables (dont 3 verts) : max 15.1 min (run 42489432803).
+    # Le defaut d'Actions est 6 h, et un job fige tient son slot tout ce
+    # temps.
+    timeout-minutes: 35
     steps:
       # 2026-10-27 (#22722) : la commande qui echoue est le `git checkout --force -B`
       # final d'actions/checkout, pas son clean/reset interne (run 40476005592 :
