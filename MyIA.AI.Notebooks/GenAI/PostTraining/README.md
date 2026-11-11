@@ -69,6 +69,24 @@ et les combine en
 $A_t = \sum_{l=0}^{T-t-1}(\gamma\lambda)^l\delta_{t+l}$.
 Le modèle de valeur $V$ estime le retour attendu ; $\gamma$ actualise les récompenses et $\lambda$ règle la profondeur de la combinaison. Faire davantage appel à $V$ peut réduire la variance, mais transmet aussi son erreur d'estimation. Les carnets 10 et 12 donnent des contextes différents pour examiner ce compromis.
 
+### Choisir entre DPO et GRPO
+
+| Critère | DPO | GRPO |
+|---|---|---|
+| Signal | Paires de réponses choisies et rejetées | Prompts, réponses groupées et fonction de récompense |
+| Modèles auxiliaires | Référence pour la perte ; pas de modèle de récompense séparé | Comparaison au sein du groupe ; pas de modèle de valeur séparé |
+| Usages | Préférences de style ou de conversation | Raisonnement avec récompense calculable, par exemple mathématiques ou code |
+| Coût et limites | Dépend de la qualité des préférences et de la référence | Générations multiples coûteuses ; signal sensible à la taille du groupe et à la récompense |
+
+Ces méthodes peuvent se compléter : choisir selon les données disponibles et la fiabilité du signal, puis évaluer sur des données distinctes.
+
+### Idées reçues à éprouver
+
+- **« Plus de réponses par groupe améliore toujours GRPO »** : un groupe plus grand coûte davantage et ne garantit pas un meilleur signal ; si toutes les récompenses sont identiques, il ne départage pas les réponses.
+- **« LoRA implique toujours une qualité inférieure »** : sa restriction des paramètres entraînés économise de la mémoire ; le compromis de qualité dépend du modèle, de la tâche et du budget, et doit être mesuré.
+- **« RLVR remplace toutes les autres méthodes »** : il faut un vérificateur fiable ; les préférences subjectives peuvent appeler un autre signal.
+- **« Le post-entraînement supprime les hallucinations »** : une amélioration des réponses ou des refus ne garantit pas la factualité ; il faut l'évaluer sur des exemples distincts.
+
 ## Approfondissements — Recherche et prérequis
 
 ### Autour de 11 — modèles de langage et répétition des expériences
@@ -97,6 +115,10 @@ Partir d'un environnement isolé et des cellules de configuration du carnet choi
 - **Dépendances particulières** : `rewardspy` est utilisé par certains carnets et son installation depuis GitHub est précisée dans le fichier de dépendances ; sa ligne non publiée sur PyPI peut empêcher un simple `pip install -r requirements.txt` d'aboutir. Le carnet 15b utilise les modules et traces ICT ; 16 demande Ollama et les outils Dafny/Lean. La reproduction de la grille de 18 requiert les ressources de ses scripts, au-delà de la lecture des agrégats committés.
 
 En cas de mémoire CUDA insuffisante, examiner quantification, taille des lots, accumulation de gradients, longueur des séquences et nombre de réponses par groupe. Ces réglages modifient aussi le protocole : consigner leur effet avant de comparer les résultats. La [sonde mémoire](_measurements/vram_wall_probe.py) et ses [résultats archivés](_measurements/) donnent un autre point d’entrée pour examiner les configurations par modèle et par carte ; ils ne dispensent pas de vérifier l’environnement courant. Les cartes et checkpoints [Qwen](https://huggingface.co/Qwen/Qwen3.5-0.8B), la documentation [TRL](https://huggingface.co/docs/trl/index), [PEFT](https://huggingface.co/docs/peft/index) et les optimisations [Unsloth](https://github.com/unslothai/unsloth) complètent les instructions des carnets.
+
+### Dépannage des imports
+
+Si `trl`, `peft` ou `bitsandbytes` ne s'importe pas, vérifier que le noyau Jupyter utilise l'environnement où les dépendances de [requirements.txt](requirements.txt) ont été installées. Tester `python -c "import trl, peft, bitsandbytes"` dans cet environnement, puis consulter les versions et contraintes CUDA du carnet et du manifeste avant de réinstaller. Pour une erreur de bibliothèque CUDA ou de DLL, vérifier la compatibilité entre pilote, PyTorch et bitsandbytes ; consulter la documentation du paquet pour la plateforme utilisée.
 
 ## Pour aller plus loin — recherche
 
