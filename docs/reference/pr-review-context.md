@@ -162,6 +162,25 @@ Les **symboles** sont cités plutôt que des numéros de ligne : un numéro de l
 
 **Instance fondatrice (mesurée 2/2).** Les deux dossiers `[ADJOINT PREFLIGHT]` du 2026-09-21 (#16098, #16196) : mes propres commentaires de mesure — dont la prose citait le token en gras — ont été classés `BOT-CONCERN` **2/2**, le geste de mesure **ajoutant** une ligne à ce qu'il mesurait. Remède appliqué : la mesure vit dans le champ `b0:` du dossier, **jamais** dans un commentaire de prose à côté. Le cas **#16441** (une réponse d'adresse citant la réserve traitée) est l'instance qui a ouvert #17071 ; il est **rapporté par l'issue** avec sa propre reproduction (`python scripts/check_unaddressed_nits.py 16441 --json`) et n'est pas reproduit par la table ci-dessus, dont les lignes sont des formes synthétiques.
 
+### Marqueurs de prose — l'encagement étendu (#24242)
+
+Le régime absorbant ne s'arrête pas aux tokens de verdict : les **marqueurs de prose** de `CONCERN_MARKERS` (`avant merge`, `avant de merger`…) déclenchent `live_concern` sur le corps d'un commentaire **indépendamment du préfixe d'agent**. Un commentaire conforme à la taxonomie P1 (`[ACTION]` en première ligne non vide) devient donc lui-même un nit bloquant dès qu'il **décrit** la règle B.0 en prose nue. Le cas est distinct de celui corrigé par #24219 (préfixe absent d'`AGENT_PREFIXES`, transport CRLF) : ici le préfixe est reconnu, c'est le **contenu** qui déclenche.
+
+**Les quatre formes, mesurées sur le marqueur de prose (2026-11, #24242)** :
+
+| Forme d'écriture | Verdict |
+|---|---|
+| marqueur nu dans la phrase | `BOT-CONCERN` |
+| marqueur en backticks | `None` |
+| marqueur en `« … »` | `None` |
+| marqueur nu **dans un bloc de citation `>`** | `BOT-CONCERN` |
+
+**Le contre-exemple `>` est le point contre-intuitif.** Le bloc de citation est la forme qu'un agent choisit spontanément pour « citer la règle plutôt que l'énoncer », et c'est précisément celle qui ne protège pas : `_strip_quoted` encage les plages backticks/guillemets/apostrophes/bloc de code **dans le texte**, pas les lignes préfixées `>`.
+
+**Instance fondatrice.** PR #24101, réponse `[ACTION]` de `myia-po-2027:CoursIA` (2 569 caractères, transport LF) : la phrase descriptive citant la règle en prose nue a rendu la réponse elle-même `BOT-CONCERN`, doublonnant la réserve réelle d'un tiers posée sur la même PR.
+
+**Le filet ne bouge pas.** La voie émission suffit — l'encagement fonctionne sur les marqueurs de prose, le tableau ci-dessus le mesure. Élargir `_strip_quoted` aux blocs `>` (alternative écartée dans #24242) blanchirait une vraie réserve simplement mise en citation par son auteur : le contrat reste **côté émission**, pas côté filet.
+
 ### B.1 — pourquoi pas `grep -c sorry` (mesure 2026-08-14)
 
 Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry` compte la prose (docstrings, `-- commentaires`, feuilles de route). **9 lakes à 0 réel** affichent des comptes naïfs positifs ; ex. `grothendieck_lean` : 68 naïfs, 0 réel — un reviewer appliquant `grep` à la lettre exigerait la justification de 68 `sorry` qui n'existent pas. L'instrument : `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry` (la même mesure que le gate CI `sorry-filter-mode: real` de `lean-axiom.yml`). Le gate CI mesure déjà juste (`sorry-filter-mode: real`) : c'est le texte de la règle qui pointait le mauvais instrument — un reviewer qui voit `sorry-filter-mode: real` inconnu n'a pas à soupçonner l'organe.
