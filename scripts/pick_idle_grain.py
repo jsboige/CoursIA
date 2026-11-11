@@ -5105,6 +5105,13 @@ CLAIM_CODE_IMPLICIT = "IMPLICIT"
 # fail-OPEN du transport `subprocess` sur timeout (#21436). Ni le transport
 # ni le fail-OPEN par mur de temps ne subsistent.
 CLAIM_CODE_ERROR = "ERROR"
+# #25873 -- occupation BORNÉE : le belt appelle la sonde SANS --paths, et un
+# claim d'une autre lane qui porte des chemins (paths:) n'occupe que LES
+# fichiers qu'il nomme, jamais l'issue entière. Ce grain est SERVI (pas retenu
+# comme BLOCKED) avec la liste des chemins occupés : la lane y travaille HORS
+# de ce périmètre. Ne confond pas avec BLOCKED : le claim borné est le
+# mécanisme de partage par périmètre du protocole.
+CLAIM_CODE_FREE_OCCUPIED = "FREE_OCCUPIED"
 # #23500 (remede 1, copie jumeale livree en roo-extensions PR #4472) -- le
 # verdict FREE mesure l'ABSENCE DE CLAIM, pas l'absence d'activite. La phrase
 # « libre » se lit « personne ne travaille dessus », alors que le contrat
@@ -5146,6 +5153,20 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
         except json.JSONDecodeError:
             data = None
         if isinstance(data, dict):
+            # #25873 -- SCOPED_OCCUPIED: le belt a appelé la sonde SANS --paths
+            # et TOUS les claims des autres lanes sont bornés (chemins vivants).
+            # Le grain est SERVI avec ces chemins occupés, PAS retenu : `blocking`
+            # est non vide ici (ce sont les lanes bornées), donc ce test doit
+            # précéder le `blocking` ci-dessous, sinon le grain serait à tort
+            # classé BLOCKED.
+            occupied = data.get("occupied_paths") or {}
+            if occupied:
+                refs = "; ".join(
+                    f"{ln} : {', '.join(paths)}"
+                    for ln, paths in sorted(occupied.items()))
+                return (CLAIM_CODE_FREE_OCCUPIED,
+                        f"servable -- chemins occupés : {refs} "
+                        f"(travailler hors de ce périmètre)")
             blocking = data.get("blocking_lanes") or []
             if blocking:
                 return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
@@ -5216,6 +5237,18 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
         return CLAIM_CODE_ERROR, f"(batch: pas de verdict pour #{n})"
     code = res.get("code", "ERROR")
     human = res.get("human", code) or code
+    # #25873 -- SCOPED_OCCUPIED (sortie 0, code FREE) avec chemins occupés :
+    # SERVI avec la liste des chemins (travailler hors de ce périmètre), pas
+    # retenu. Doit précéder le remap FREE ci-dessous, sinon le grain perdrait
+    # la liste d'occupation.
+    occupied = res.get("occupied_paths") or {}
+    if occupied:
+        refs = "; ".join(
+            f"{ln} : {', '.join(paths)}"
+            for ln, paths in sorted(occupied.items()))
+        return (CLAIM_CODE_FREE_OCCUPIED,
+                f"servable -- chemins occupés : {refs} "
+                f"(travailler hors de ce périmètre)")
     if code == "FREE":
         return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     if code == "BLOCKED":
@@ -5416,6 +5449,11 @@ def _claims_in_process(
             payload = clc.check_issues_batch(
                 [str(n) for n in _servables], lane,
                 stale_threshold=48.0, from_json=None, my_paths=None,
+                # #25873 -- le belt sert une issue dont les claims d'autres
+                # lanes sont TOUS bornes (avec leurs chemins occupés), au lieu
+                # de l'ecarter en NOT_SCOPED. C'est la seule voie qui opte
+                # pour ce comportement ; la CLI mono-issue reste fail-CLOSED.
+                serve_bounded=True,
             )
             verdicts = {n: _summarize_claim_from_batch(payload, n)
                         for n in _servables}
@@ -5438,6 +5476,9 @@ def _claims_in_process(
                 rc = clc._run_check(
                     issue_payload, lane, stale_threshold=48.0,
                     my_paths=None, check_open_pr_paths=True,
+                    # #25873 -- meme opt-in que la voie batch : servir une
+                    # issue dont les claims d'autres lanes sont tous bornes.
+                    serve_bounded=True,
                 )
             verdicts = {n: _summarize_claim(buf_out.getvalue(), rc)}
         # Les refus nominatifs s'ajoutent aux verdicts servis : un numero
