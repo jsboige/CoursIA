@@ -60,14 +60,77 @@ python scripts/notebook_tools/scan_slidev_overflow.py <repertoire_png> \
 
 ## Résultat
 
+### Lecture 1 — scanner de rendu (encre en bas d'image, export PNG)
+
 | Mesure | Valeur |
 |---|---|
 | Diapositives rendues (export PNG) | **124** |
-| Diapositives OVERFLOW (scanner de rendu, encre sur les 6 dernières lignes) | **0 / 124** |
+| Diapositives OVERFLOW | **0 / 124** |
 | Diapositives illisibles | **0** |
 | Machine | Windows 11 (AMD64), Python 3.13.15 |
 | Canvas | 980 × 552 (valeur par défaut : aucun des decks ne déclare `canvasWidth`/`canvasHeight` dans son headmatter) |
 | Lecture archivée | [`deck-06-overflow.json`](deck-06-overflow.json) |
+
+### Lecture 2 — scanner de composition (DOM rendu, canvas 980 × 552)
+
+Le second instrument, `scan_slidev_composition.py`, mesure dans le DOM rendu les
+**éléments dont la boîte sort du canvas**. Il exige un serveur `slidev` en
+mode dev et le **playwright Python** (avec son chromium) :
+
+```bash
+cd slides && npx slidev 06-apprentissage/slides.md --port 8902 --open false
+python scripts/notebook_tools/scan_slidev_composition.py \
+       --url http://localhost:8902/ --slides-md slides/06-apprentissage/slides.md \
+       --out docs/captures/24171/deck-06-composition.json
+```
+
+| Mesure | Valeur |
+|---|---|
+| Diapositives rendues | **124** |
+| **Éléments hors canvas** (`n_hors_canvas`) | **7** |
+| Chevauchements / recouvrements | 0 / 0 |
+| `n_occupation_flagged` (advisory) | 7 |
+| **Signature des polices** | `faea2d8efd2aeb08` |
+| Environnement de rendu | Chrome Headless Shell 158.0.8127.18, canvas 980 × 552 |
+| Polices résolues | Segoe UI, Calibri, Arial (toutes résolues, aucune générique) ; hauteur de ligne 21 px (delta 3 px vs police générique) |
+| Lecture archivée | [`deck-06-composition.json`](deck-06-composition.json) |
+
+Les **7 diapositives** signalées sur cette machine :
+
+| Diapositive | Titre | Éléments hors canvas |
+|---|---|---|
+| 40 | Réseaux feed-forward multi-couches | 5 |
+| 102 | Renforcement passif | 3 |
+| 103 | Apprentissage des différences temporelles | 5 |
+| 105 | Q-learning = Apprentissage d'utilité action | 4 |
+| 106 | Généralisation et approximations | 2 |
+| 110 | Deep Q learning — exploration et avancées | 9 |
+| 112 | Minimisation de regret hypothétique | 4 |
+
+### Lecture 3 — la comparaison inter-machines, qui est le cœur de #24171
+
+Le même deck, le même canvas (980 × 552), le même instrument, **deux machines** :
+
+| Relevé | Machine | Date | `n_hors_canvas` | Signature des polices |
+|---|---|---|---|---|
+| [`docs/captures/22286/manifest.json`](../22286/manifest.json) | `myia-po-2028` | 2026-11-02 | **13** | *absente de l'archive* |
+| ce dossier | `myia-po-2027` (Windows 11) | 2026-11-11 | **7** | `faea2d8efd2aeb08` |
+
+**Six diapositives diffèrent** entre les deux relevés : `34`, `42`, `53` (hors
+canvas sur `myia-po-2028`, dans le canon sur cette machine) et `102`, `105`,
+`106`, `110` (hors canvas ici, dans le canon là-bas) ; `40`, `103` et `112`
+débordent dans les deux.
+
+C'est le **second** cas documenté de non-opposabilité du compteur, après
+`S8-semantic-web` (2 → 1, voir #24171) — et il porte sur un deck de 124
+diapositives, dont 7 contre 13. Aucun écart n'est content-expliqué : le deck
+n'a pas bougé entre les deux relevés, et l'instrument est le même.
+
+C'est aussi ce que l'archive de #22286 ne pouvait pas dire : son `manifest.json`
+ne porte **ni signature de polices ni empreinte de machine** (il précède la
+sonde), donc ses 13 ne sont opposables à rien. C'est le manque que ce dossier
+comble, et la raison pour laquelle l'artefact versionné est désormais la forme
+ canonique du relevé.
 
 ## Portée du mesuré — ce que ce dossier ne dit pas
 
@@ -75,15 +138,20 @@ python scripts/notebook_tools/scan_slidev_overflow.py <repertoire_png> \
   partir du deck et de l'outillage ; l'artefact en conserve le hash de chacun
   pour que la mesure reste **pinnée** sur les images exactes qui ont été
   mesurées.
-- **Ce dossier ne tranche pas le point 3 de #24171** (les huit diapositives
-  signalées comme débordant « réellement au canvas du scanner »). Le scanner
-  de rendu mesure l'**encre qui touche le bas de l'image** ; le scanner de
-  composition (`scan_slidev_composition.py`) mesure, dans le DOM rendu au
-  canvas 980 × 552, les **éléments dont la boîte sort du canvas** — y compris
-  par le côté, vers la droite, ou par le haut. Les deux instruments ne
-  mesurent donc **pas la même chose**, et un « 0/124 » du premier ne réfute
-  pas les 13 éléments hors canvas du second relevés sur `myia-po-2028`
-  ([`docs/captures/22286/manifest.json`](../22286/manifest.json)).
+- **Les deux scanners ne mesurent pas la même chose.** Le scanner de rendu
+  mesure l'**encre qui touche le bas de l'image** ; le scanner de composition
+  mesure, dans le DOM rendu au canvas 980 × 552, les **éléments dont la boîte
+  sort du canvas** — y compris par la droite ou par le haut, et y compris le
+  conteneur de la diapositive lui-même (que le rapport isole par
+  `container_only`). Un « 0/124 » du premier **ne réfute pas** les 7 éléments
+  hors canvas du second : ce sont deux questions différentes sur le même rendu.
+- **Ce dossier ne tranche pas le point 3 de #24171** : les 7 diapositives
+  listées ci-dessus débordent **réellement** au canvas du scanner de
+  composition sur cette machine ; les corriger (blocs `<style scoped>`, comme
+  #22258 l'a fait pour le deck 02) et **re-mesurer** est le travail qui
+  reste — et il est fait sur des diapositives que la comparaison inter-machines
+  désigne differently selon la machine (voir ci-dessus) : une correction doit
+  donc laisser une **marge**, pas viser l'égalité au canvas.
 - **Un « 0/124 » n'est pas un « aucun défaut »** : c'est un relevé, pris sur
   une machine, avec des polices non versionnées. Il vaut ce que vaut l'artefact
   qui le porte — et il se compare à un autre **artefact**, pas à un compteur.
