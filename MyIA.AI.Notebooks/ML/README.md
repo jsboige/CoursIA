@@ -339,7 +339,8 @@ Pour les agents, la configuration est propre au fournisseur et au lab. L'exemple
 
 | Problème | Vérification ou correction |
 |---|---|
-| Noyau C# absent | Installer l'outil avec `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001`, puis exécuter `dotnet interactive jupyter install` et `jupyter kernelspec list`. S'il est déjà installé, utiliser `dotnet tool update -g` avec la même version. Voir les [instructions des noyaux](../../docs/reference/kernels-runtime.md). |
+| Noyau C# absent | Installer l'outil avec `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001`, puis exécuter `dotnet interactive jupyter install` et `jupyter kernelspec list`. S'il est déjà installé, utiliser `dotnet tool update -g Microsoft.dotnet-interactive --version 1.0.712001`. Voir les [instructions des noyaux](../../docs/reference/kernels-runtime.md). |
+| Jupyter absent | Installer `python -m pip install jupyterlab ipykernel` dans l’environnement choisi, puis sélectionner son noyau. |
 | Import Python absent | Vérifier le noyau actif et installer les dépendances du parcours dans son environnement. |
 | Clé OpenAI absente | Pour les labs concernés, renseigner `OPENAI_API_KEY` dans le fichier `.env` lu par le carnet ; ne pas committer la clé. |
 | `google.adk` absent | Installer les [dépendances ADK](DataScienceWithAgents/07-Agent-Orchestration/requirements.txt) dans l'environnement du noyau avec `python -m pip install -r MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt` depuis la racine du dépôt. |
