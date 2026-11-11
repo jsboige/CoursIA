@@ -32,7 +32,7 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/**'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/voi/**'
       - '.github/workflows/dotnet-OrphanApps.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
@@ -40,7 +40,7 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/**'
       - 'MyIA.AI.Notebooks/Probas/DecisionTheory/voi/**'
       - '.github/workflows/dotnet-OrphanApps.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   workflow_dispatch:
 
 permissions:
