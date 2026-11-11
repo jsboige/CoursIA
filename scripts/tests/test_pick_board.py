@@ -361,7 +361,10 @@ def test_consumer_preserves_the_belt_order(monkeypatch):
     expected = [it["number"] for it in
                 sorted(items, key=lambda it: pig.belt_sort_key(it, now=now))]
     picks, _meta = pig.consume_board(_snapshot(items), _args(), urns={"grain"})
-    assert [it["number"] for it in picks] == expected == [24, 22, 21, 23]
+    # Relecture du 11/11 (#24373) : la classe 3 a disparu. L'issue jamais
+    # servie et ancienne (23, creee le 2026-06-01) rejoint la classe 2, ou
+    # elle est rangee par sa creation -- donc devant les deux items visites.
+    assert [it["number"] for it in picks] == expected == [24, 23, 22, 21]
     assert calls[0][0] == [24]
 
 

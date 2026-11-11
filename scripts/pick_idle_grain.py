@@ -8260,11 +8260,17 @@ CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
 # #24373 -- une creation recente est une priorite de premier passage, pas une
-# dette qui puisse conserver la tete du tapis indefiniment. Au-dela d'une
-# semaine, une issue jamais visitee rejoint la queue derriere les items dont
-# une visite est mesuree. Le seuil suit le cycle hebdomadaire deja porte par
-# le plafond EPIC (#22500).
+# dette qui puisse conserver la tete du tapis indefiniment. Au-dela de la
+# premiere semaine, une issue jamais visitee ne garde plus la tete : elle
+# rejoint la classe 2, triee par `created_at` et melangee aux items dont une
+# visite est mesuree. Relecture du 11/11 : la classe 3 disparait -- le stock
+# qu'elle repoussait derriere tout item deja visite est precisement celui des
+# issues anciennes a fermer, et le tapis doit le servir. Le seuil suit le
+# cycle hebdomadaire deja porte par le plafond EPIC (#22500).
 NEVER_VISITED_PRIORITY_DAYS = 7
+# Une issue dont la date de creation est absente ou illisible n'a pas d'ordre
+# dans la file : elle passe en dernier de sa classe, jamais au milieu.
+NO_DATE_SENTINEL = "9999-12-31T23:59:59Z"
 # #21067 correctif 1 -- le plafond de VISITES (#22500, ci-dessus) regarde un
 # claim ou une sous-issue ; il ne voit pas les LIVRAISONS. Une lane qui
 # enchaine les sous-grains d'un meme EPIC sans repasser par le tapis ne pose
@@ -8366,20 +8372,23 @@ def belt_sort_key(it: dict, *, now=None,
     sept jours par defaut). Les issues jamais visitees creees dans cette fenetre
     passent avant les issues deja visitees, de la plus recente a la plus
     ancienne ; les issues plus anciennes (ou dont la date est illisible)
-    passent apres elles. Cette borne empeche une population ancienne jamais
-    servie d'absorber la fenetre et de cacher les grains recents.
+    rejoignent la classe 2 -- trie par `created_at` et melangee aux items
+    visites, qui gardent leur date de visite. Relecture du 11/11 : la classe 3
+    (jamais visitee ET hors fenetre, derriere tout item deja visite) a disparu.
+    Le stock qu'elle repoussait est precisement celui des issues anciennes
+    jamais servies -- dont beaucoup sont a fermer -- et le tapis doit le servir.
 
     #22500 -- la ligne de temps ne suffisait pas : elle traite une issue de
     consolidation comme n'importe quelle autre, alors que le mandat user du
     2026-10-25 demande qu'elle soit visitee « plusieurs fois par semaine ».
     Tri : `classe` place d'abord les consolidations dues encore dans la borne,
-    puis les premieres visites recentes, les items visites et enfin les
-    jamais-visitees hors fenetre (ou de date illisible). Le rang de classe 0
-    garde le tri de consolidation existant pour les items jamais visites
-    encore dans la borne et les items deja visites. Ces consolidations dues
-    passent devant le reste et gardent entre elles l'ordre de leur visite :
-    aucune ne peut attendre plus longtemps qu'un tour de tapis apres son
-    echeance.
+    puis les premieres visites recentes, puis les items visites -- dont les
+    jamais-visitees hors fenetre, rangees par leur date de creation. Le rang
+    de classe 0 garde le tri de consolidation existant pour les items jamais
+    visites encore dans la borne et les items deja visites. Ces consolidations
+    dues passent devant le reste et gardent entre elles l'ordre de leur
+    visite : aucune ne peut attendre plus longtemps qu'un tour de tapis apres
+    son echeance.
 
     #22500 point 2 (seconde passe) -- `rang` : dans la classe 0, un GRAIN
     borne passe devant un EPIC. Mesure du 26/10 : les EPICs de consolidation
@@ -8410,7 +8419,18 @@ def belt_sort_key(it: dict, *, now=None,
         if not stale_never:
             # L'age croissant place la creation la plus recente en premier.
             return (1, 0, never_age, it.get("number", 0))
-        return (3, 0, stamp, it.get("number", 0))
+        # Relecture du 11/11 (#24373) : la classe 3 disparait. Une issue
+        # jamais visitee hors fenetre de priorite rejoint la classe 2, triee
+        # par `created_at` et melangee aux items visites (tries par date de
+        # visite). Le stock des issues anciennes jamais servies -- dont
+        # beaucoup sont a fermer -- est ainsi servi par le tapis au lieu
+        # d'etre repousse derriere tout item deja visite.
+        created = it.get("created_at")
+        # Une date absente ou illisible n'a pas d'ordre : elle passe en
+        # dernier de la classe 2, jamais au milieu.
+        return (2, 0,
+                created if never_age is not None else NO_DATE_SENTINEL,
+                it.get("number", 0))
     return (2, 0, stamp, it.get("number", 0))
 
 
@@ -12009,9 +12029,12 @@ def main(argv: list[str] | None = None) -> int:
                          "comptent aussi)")
     ap.add_argument("--belt", action="store_true",
                     help="#18832 mode 'tapis roulant' : trie le pool ouvert "
-                         "par date de derniere livraison (None = jamais servie en "
-                         "tete, sinon ISO ascending), puis par createdAt puis par "
-                         "numero. Pas de ponderation, pas d'urne. Les gardes "
+                         "par classe de service -- une issue jamais servie "
+                         "creeee dans sa premiere semaine (7 jours par defaut) "
+                         "passe en tete ; au-dela, elle rejoint la file des "
+                         "items deja servis, trie par createdAt, comme eux par "
+                         "date de derniere livraison -- puis par createdAt puis "
+                         "par numero. Pas de ponderation, pas d'urne. Les gardes "
                          "(rouge, WIP, secheresse) restent en tete et rende la "
                          "file comme rappel, jamais comme motif de vide.")
     ap.add_argument("--report", action="store_true",

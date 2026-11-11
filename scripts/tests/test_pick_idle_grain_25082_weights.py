@@ -437,13 +437,24 @@ def test_la_tete_contient_les_neutres_de_la_zone_qui_ferme():
 
 
 def test_les_classes_de_fraicheur_priment_sur_les_poids():
-    """Un poids extreme ne change pas l'ordre des classes de visite."""
+    """Un poids extreme ne change pas l'ordre des classes de visite.
+
+    Relecture du 11/11 (#24373) : la classe 3 a disparu. L'issue ancienne
+    jamais visitee est desormais en classe 2 -- meleee aux items visites.
+    La classe reste prioritaire sur le poids (l'item frais de classe 1
+    passe devant les deux autres quel que soit le pot) ; a l'interieur de
+    la classe 2, c'est le POT qui tranche, comme entre deux items visites.
+    """
     recent = _item(1, family=ZONE_A, created="2026-11-06T00:00:00Z")
     visite = _item(2, family=ZONE_A, last_visit="2026-11-07T00:00:00Z")
     ancien = _item(3, family=ZONE_B, created="2020-01-01T00:00:00Z")
     thetas = {"zone:" + ZONE_A: 0.05, "zone:" + ZONE_B: 0.9}
     keys = [pig.belt_weight_key(item, _detail(item, thetas), now=NOW)
             for item in (recent, visite, ancien)]
-    assert [key[0] for key in keys] == [1, 2, 3]
-    assert keys[0] < keys[1] < keys[2]
+    assert [key[0] for key in keys] == [1, 2, 2]
+    # La classe prime sur le poids : le frais de classe 1 passe devant.
+    assert keys[0] < keys[1] and keys[0] < keys[2]
+    # Dans la classe 2, le pot tranche : l'ancien, au meilleur pot, passe
+    # devant l'item visite.
+    assert keys[2] < keys[1]
     assert _detail(ancien, thetas)["bucket"] > _detail(visite, thetas)["bucket"]
