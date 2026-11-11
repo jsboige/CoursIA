@@ -30,6 +30,19 @@ Une PR par lake. Chaque tranche rend le verdict **de son** lake ; un lake laiss�
 
 Un rouge éventuel part en **issue nommée** plutôt qu'en whitelist.
 
+### 0.2 Le census complémentaire — les modules compilés que le gate ne regarde pas (#8782)
+
+`axiom_coverage.py` mesure **un bord** : un module *nommé* par le manifeste qui n'existe pas sur disque (`WIRED-DEAD`). L'autre bord — un module *compilé* par le lake que le manifeste ne nomme pas — n'était mesuré par aucun organe : c'est la classe « un vert qui ne mesure rien » (un gate vert sur une fraction du lake qui s'amincit, sans que rien ne rougisse).
+
+```bash
+python scripts/lean/check_manifest_target_gap.py            # table par lake
+python scripts/lean/check_manifest_target_gap.py --json     # sortie machine
+```
+
+L'organe lit les **globs du lakefile** (la seule source de vérité sur ce que le lake compile — un `.lean` sur disque hors glob n'est pas un module), en déduit les modules réellement compilés, et les compare à `axiom-target-modules`. Il distingue trois états de sens opposés, jamais confondus dans un chiffre : liste bornée (écart mesuré), `"*"` (liste dérivée à l'exécution — couverture totale), liste vide (aucun gate : ce n'est pas un écart de liste mais une absence de gate, que `axiom_coverage.py` classe `NOT-APPLICABLE`). Pour chaque module hors liste il donne le compte de `sorry` canonique (`count_code_sorry.scan_file`) et un prescreen des trois classes `forbidden` (`native_decide`, `sorryAx`, `Classical.choice`) — le prescreen signale, il ne dispense pas : le verdict reste au job.
+
+État mesuré au 2026-11-11 sur `origin/main` : **deux lakes à liste bornée** — `gametheory` (**23** cibles pour **57** modules compilés, **35** hors liste) et `formal_logic` (**6** cibles pour **6** modules compilés, **0** hors liste) ; les 33 autres lakes portent `"*"` (couverture totale par dérivation) et `conway_cgt_lean` est sans gate par décision écrite (§4.1).
+
 ## 1. Portée et méthode
 
 **Axiomes cibles** (ce que `LeanVerifier.check_axioms` flagge désormais comme `forbidden` après le fix parser multiline #8740) :
