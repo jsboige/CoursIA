@@ -4669,13 +4669,16 @@ def print_frozen_unread_report(unread, lane: str | None = None) -> None:
 def print_belt_budget_report(budget_hit: bool) -> None:
     """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
 
-    Le fail-OPEN du budget est assume : au-dela du plafond, la sonde de
-    livraison rend UNPROBED et le candidat est servi sans avoir ete verifie.
-    Ce qui n'est PAS assume, c'est le **silence** : une mesure qui echoue
-    doit se dire, sinon la lane lit un « pas de signal » la ou la sonde n'a
-    simplement pas eu lieu. L'issue #19969 demande explicitement que la
-    banniere reste imprimee quand le budget tombe -- « la mesure ne doit
-    pas devenir silencieuse en se repariant ».
+    Le plafond de sondes reste un plafond de COUT : au-dela, la sonde de
+    livraison rend UNPROBED. Mais un candidat dont la livraison n'a pas ete
+    lue n'est plus SERVI (c2817) : il est ecarte comme « a sonder », car la
+    lane y porterait un ordre de claim sur un travail jamais lu (mesure
+    c3128 : #23500 et #25375, deja livres). Ce qui n'est PAS assume, c'est le
+    **silence** : une mesure qui echoue doit se dire, sinon la lane lit un
+    « pas de signal » la ou la sonde n'a simplement pas eu lieu. L'issue
+    #19969 demande explicitement que la banniere reste imprimee quand le
+    budget tombe -- « la mesure ne doit pas devenir silencieuse en se
+    repariant ».
 
     La banniere est un helper (comme `print_claim_unread_report`) pour que
     ce contrat soit **verifiable sans reseau** : un test appelle la fonction
@@ -4683,14 +4686,15 @@ def print_belt_budget_report(budget_hit: bool) -> None:
     appellerait `main()` de bout en bout payerait une minute de reseau
     pour verifier trois lignes de `print`.
 
-    Texte inchange depuis l'origine du contrat (#19969) : le comparatif de
-    chaine est un test de non-regression sur la banniere elle-meme.
+    Le texte a change avec c2817 (le candidat au-dela du plafond n'est plus
+    servi) ; le comparatif de chaine reste un test de non-regression sur la
+    banniere elle-meme.
     """
     if not budget_hit:
         return
     print("   Plafond de sondes de livraison atteint : les candidats")
-    print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
-    print("   de livraison leur revient, cf check_unaddressed_nits.")
+    print("   au-dela ne sont pas sondes et ne sont donc PAS servis")
+    print("   (a sonder) -- cf c2817 et check_unaddressed_nits.")
 
 
 def draw_verdict(pool_error: str | None) -> str:
@@ -12778,9 +12782,11 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     doctrine que ``check_claims`` : le tapis ne paie une requete commentaire
     que pour les candidats qu'il considere reellement. Le caller lui passe
     ``belt_probe_budget(belt_check_window)`` -- la valeur doit couvrir la tete
-    que la boucle peut servir, sinon les candidats au-dela sont servis sans
-    lecture (#19969). Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
-    rapporte dans l'etat de retour. ``delivered_probe`` et ``merged_pr_probe``
+    que la boucle peut servir, sinon les candidats au-dela ne sont pas lus.
+    Epuisement = ``DELIVERED_SIGNAL_UNPROBED`` ; le candidat concerne est
+    alors ECARTE (« a sonder », c2817) et l'etat de retour le nomme dans
+    ``budget_unprobed``. Avant c2817, il etait servi en fail-OPEN -- le
+    tapis remettait alors un grain neuf sur un travail jamais lu (#19969). ``delivered_probe`` et ``merged_pr_probe``
     (tests) remplacent les sondes reseau ; ``claims_probe`` (tests) remplace
     la verification au fil de l'eau des items hors fenetre ;
     ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
@@ -12965,10 +12971,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
         # #22983 -- candidats dont une sonde n'a pas pu etre emise PARCE
         # QUE LE MUR DE TEMPS EST ATTEINT : ils seront ECARTES, pas
-        # servis (le fail-OPEN par mur de temps est retire). Le plafond
-        # de SONDES (`budget_hit`) reste fail-OPEN : plafond de cout, pas
-        # echeance -- les deux se distinguent devant la lane.
+        # servis (le fail-OPEN par mur de temps est retire).
         deadline_unprobed: set[int] = set()
+
+        # c2817 (dispatch du coordinateur, 11/11) -- candidats dont la SONDE
+        # DE LIVRAISON n'a pas pu etre emise PARCE QUE LE PLAFOND DE SONDES
+        # EST ATTEINT. Le mur de temps ecarte deja le candidat
+        # (`deadline_unprobed`) ; le plafond, lui, le SERVAIT jusqu'ici en
+        # fail-OPEN -- et la lane recevait alors « ACTION REQUISE : poser
+        # [CLAIMED] » sur un travail jamais lu (mesure c3128 : #23500 et
+        # #25375, deja livres). Le plafond reste un plafond de COUT, mais il
+        # ne peut plus produire un candidat NON VERIFIE portant un ordre de
+        # claim : un candidat non sonde est « a sonder », pas « a servir ».
+        budget_unprobed: set[int] = set()
 
         # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
         # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
@@ -13036,14 +13051,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         or _closure_announced_close(body))
 
         def counted_probe(number, lane_name):
-            # L'echeance passe AVANT le plafond de sondes : l'echeance
-            # est fail-CLOSED (#22983, candidat marque puis ecarte), le
-            # plafond reste fail-OPEN et reste dit a la lane.
+            # L'echeance passe AVANT le plafond de sondes : les deux sont
+            # fail-CLOSED (#22983 pour l'echeance, c2817 pour le plafond)
+            # -- un candidat non lu n'est jamais servi. Le plafond reste
+            # dit a la lane (« a sonder »).
             if expired():
                 deadline_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_probe(number, lane_name)
@@ -13054,6 +13071,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_merged_pr_probe(number, lane_name)
@@ -13067,6 +13085,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_revocation_probe(number, lane_name, merged_at)
@@ -13085,6 +13104,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_cover_probe(number)
@@ -13524,6 +13544,23 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 # raison est nommee.
                 belt_withheld.append((it, "mur de temps atteint : sonde non "
                                       "emise -- candidat ecarte, pas servi"))
+                continue
+            if n in budget_unprobed:
+                # c2817 -- le PLAFOND DE SONDES ne peut plus servir un
+                # candidat NON VERIFIE. Le mur de temps ecarte deja le
+                # candidat (#22983) ; le plafond le servait en fail-OPEN, et
+                # la lane recevait alors « ACTION REQUISE : poser [CLAIMED] »
+                # sur un travail dont la livraison n'avait pas ete lue
+                # (mesure c3128 : #23500, #25375, deja livres -- un claim
+                # pose dessus relockait l'issue pour toute la flotte).
+                # Ici le candidat est ECARTE comme le mur, avec un motif
+                # nomme : « a sonder ». Le tapis ne refuse pas de grain --
+                # il le remplace dans la meme urne, comme les autres
+                # ecartements.
+                state.setdefault("budget_unprobed", []).append(n)
+                belt_withheld.append((it, "a sonder : plafond de sondes de "
+                                      "livraison atteint -- livraison NON "
+                                      "verifiee, candidat ecarte, pas servi"))
                 continue
             belt_picks.append(it)
         # #25522 point 4 : la sortie doit dire CE QUE la boucle a couvert,
@@ -15295,6 +15332,19 @@ def main(argv: list[str] | None = None) -> int:
             print_frozen_unread_report(
                 belt_pick_state.get("frozen_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
+            # c2817 -- les candidats dont la livraison n'a pas pu etre lue
+            # (plafond de sondes) sont nommes comme « a sonder » : ils ne
+            # portent AUCUN ordre de claim, et la lane ne doit pas les
+            # traiter comme des grains libres.
+            unprobed_budget = belt_pick_state.get("budget_unprobed") or []
+            if unprobed_budget:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(unprobed_budget)))
+                print(f"   A SONDER : {len(set(unprobed_budget))} "
+                      "candidat(s) NON VERIFIE(S) -- plafond de sondes "
+                      f"atteint avant la lecture de livraison : {numbers}.")
+                print("   Aucun de ces candidats ne porte d'ordre de claim : "
+                      "les sonder avant de les servir (c2817).")
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436, #22983) : la")
                 print("   boucle a cesse de sonder a l'echeance, et les sondes")
@@ -15318,23 +15368,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
                       f"#{top['number']} avant edition -- cf lane-claim-protocol.")
                 if belt_probe_budget_hit[0]:
-                    # Une tete servie au-dela du PLAFOND DE SONDES n'est pas
-                    # verifiee : la ligne ci-dessus est une INJONCTION, elle
-                    # doit donc dire a cote d'elle que son objet n'a pas ete
-                    # lu. Mesure du 2026-11-03 : le tirage a servi 4
-                    # candidats sur 4 portant chacun un marqueur de
-                    # livraison, et la lane recevait une injunction de
-                    # claimer SANS reserve.
-                    #
-                    # #22983 -- c'est le PLAFOND DE SONDES (cout) qui reste
-                    # fail-OPEN, pas le MUR DE TEMPS : le mur ecarte le
-                    # candidat, il ne le sert pas. L'avertissement suit donc
-                    # le plafond, et non le mur.
-                    print("   CANDIDAT NON VERIFIE (#19969) : le plafond de")
-                    print("   sondes a ete atteint avant les lectures de livraison")
-                    print("   et de claim. Lire le dernier commentaire AVANT de")
-                    print("   claimer. (Le mur de temps, lui, ecarte le candidat :")
-                    print("   il ne rend aucun grain non verifie.)")
+                    # c2817 -- le plafond de sondes n'est PLUS fail-OPEN : un
+                    # candidat dont la livraison n'a pas ete lue est ecarte
+                    # (« a sonder », liste nommee plus haut) et n'atteint donc
+                    # jamais cette ligne. La tete servie ici a ETE lue. Ce qui
+                    # reste a dire, c'est que le plafond a touche la fenetre
+                    # servie : d'autres candidats ont ete laisses non lus, et
+                    # ils sont nommes dans le rapport « A SONDER ».
+                    print("   Plafond de sondes atteint sur la fenetre servie :")
+                    print("   la tete ci-dessus a ETE lue ; les candidats dont la")
+                    print("   livraison n'a pas pu etre lue sont nommes « A")
+                    print("   SONDER » plus haut et ne portent AUCUN ordre de")
+                    print("   claim (c2817).")
             # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
             # dont le claim est ERROR n'est PAS un candidat libre, c'est un
             # candidat NON MESURE. Le servir reste le comportement (le tapis
