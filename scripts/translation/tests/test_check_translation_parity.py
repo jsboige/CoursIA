@@ -817,7 +817,14 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 #   - tranche T4 FT-06, axe E de #4208 : FT-06-Vision-Language-LoRA-Python_en,
 #     dernier carnet de la serie FineTuning sans jumeau EN (les six autres
 #     paires de la serie, FT-00c et FT-01 a FT-05, etaient dans les 21).
-EXPECTED_PAIR_COUNT = 23
+# 2026-11-09 : +1 paire -- tranche FT-00a de l'axe E de #1650 :
+#   FT-00a-LoRA-from-scratch-Python_en (premier des trois carnets de la serie
+#   encore sans jumeau : FT-00a, FT-00b, FT-00d ; FT-07 est hors CSV).
+#   23 + 1 = 24.
+# 2026-11-09 : +1 paire -- tranche FT-00b de l'axe E de #1650 :
+#   FT-00b-LoRA-Hyperparams-from-scratch-Python_en (deuxieme des trois carnets
+#   encore sans jumeau ; reste FT-00d). 24 + 1 = 25.
+EXPECTED_PAIR_COUNT = 25
 
 
 def _collect_parity_failures(repo_root: Path,

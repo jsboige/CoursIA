@@ -2980,11 +2980,143 @@ def test_paths_match_brace_in_paths_mode():
         "anywhere/search-8-mcts.yaml", ["search-{6,8,9}-*.yaml"])
 
 
+def test_scope_batch_matching_matches_path_predicate_exactly():
+    tracked = ["Root/Foo.py", "src/foo.py", "src/other.md", "foo.py"]
+    patterns = ["src/{foo,other}.*", "FOO.py"]
+    expected = {i for i, path in enumerate(tracked)
+                if clc._path_matches(path, patterns)}
+    assert clc._matching_tracked_indices(patterns, tracked) == expected
+
+
+def test_path_match_keeps_windows_case_and_separator_rules(monkeypatch):
+    import fnmatch
+    import ntpath
+
+    cases = [
+        ("DIR/Foo.PY", "dir\\foo.py", True),
+        ("DIR/Foo.PY", "*.py", True),
+        ("DIR/Sub/Foo.PY", "sub\\*.py", False),
+    ]
+    with monkeypatch.context() as patch:
+        patch.setattr(clc.os.path, "normcase", ntpath.normcase)
+        clc._compiled_path_pattern.cache_clear()
+        clc._normcase_path.cache_clear()
+        for path, pattern, expected in cases:
+            basename = path.rsplit("/", 1)[-1]
+            reference = (fnmatch.fnmatch(path, pattern)
+                         or fnmatch.fnmatch(basename, pattern))
+            assert reference is expected
+            assert clc._path_matches(path, [pattern]) is expected
+    clc._compiled_path_pattern.cache_clear()
+    clc._normcase_path.cache_clear()
+
+
 def test_paths_match_brace_no_group_is_unchanged():
     # Patterns without braces are handled exactly as before.
     assert clc._path_matches("scripts/foo.py", ["scripts/*.py"])
     assert clc._expand_brace_groups("plain.py") == ["plain.py"]
     assert clc._expand_brace_groups("a{}.lean") == ["a{}.lean"]
+
+
+def test_cached_path_match_respects_mutated_caller_patterns():
+    # The cached unit is a pair of immutable strings, not the caller's list.
+    patterns = ["*.py"]
+    assert clc._path_matches("src/example.py", patterns)
+    patterns[:] = ["*.md"]
+    assert not clc._path_matches("src/example.py", patterns)
+    patterns.append("*.py")
+    assert clc._path_matches("src/example.py", patterns)
+
+
+def test_scope_intersection_reads_mutated_tracked_files():
+    # Scope verdicts depend on the current tracked tree, so the path-pair
+    # cache must not memoize a whole intersection against a mutable list.
+    tracked = ["src/a.py", "src/b.py"]
+    assert not clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+    tracked.append("src/ab.py")
+    assert clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+
+
+def test_tracked_files_mutations_refresh_scope_results_and_caches():
+    tracked = clc._TrackedFiles(["src/a.py", "src/b.py"])
+    a, b = ["src/a*.py"], ["src/*b.py"]
+
+    def check(expected, intersects=None):
+        if intersects is None:
+            intersects = bool(expected)
+        assert clc._scopes_intersect(a, b, tracked) is intersects
+        assert clc._compute_scope_intersection_paths(a, b, tracked) == (expected, False)
+        assert tracked.exact_paths == {clc.os.path.normcase(p) for p in tracked}
+        assert tracked.exact_bases == {
+            clc.os.path.normcase(p.rsplit("/", 1)[-1]) for p in tracked
+        }
+        # An unchanged list reuses all three derived values.
+        assert tracked.norm_pairs is tracked.norm_pairs
+        assert tracked.exact_paths is tracked.exact_paths
+        assert tracked.exact_bases is tracked.exact_bases
+
+    check([])
+    tracked.append("src/ab.py")
+    check(["src/ab.py"])
+    tracked[2] = "src/ac.py"
+    check([])
+    tracked[1:3] = ["src/b.py", "src/ab.py", "src/aab.py"]
+    check(["src/ab.py", "src/aab.py"])
+    del tracked[2]
+    check(["src/aab.py"])
+    tracked.remove("src/aab.py")
+    check([])
+    tracked += ["src/ab.py"]
+    tracked *= 2
+    check(["src/ab.py", "src/ab.py"])
+    tracked.reverse()
+    check(["src/ab.py", "src/ab.py"])
+    tracked.sort()
+    check(["src/ab.py", "src/ab.py"])
+    tracked.pop()
+    tracked.insert(0, "src/abb.py")
+    check(["src/abb.py", "src/ab.py", "src/ab.py"])
+    tracked.clear()
+    check([])
+
+
+def test_lane_pr_reference_index_tracks_mutations_and_working_root(monkeypatch):
+    prs = [
+        {"number": 7, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #42"},
+        {"number": 8, "body": "[CLAIMED] lane myia-b:CoursIA -- Refs #43"},
+    ]
+    root = ["/repo-a"]
+    monkeypatch.setattr(clc.os, "getcwd", lambda: root[0])
+    original_extract = clc.extract_lane
+    extracted = []
+
+    def count_extract(body):
+        extracted.append(body)
+        return original_extract(body)
+
+    monkeypatch.setattr(clc, "extract_lane", count_extract)
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == [7]
+    assert len(extracted) == 2
+
+    # Same-length, in-place body/lane change invalidates the index.
+    prs[0]["body"] = "[CLAIMED] lane myia-b:CoursIA -- Refs #44"
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == []
+    assert clc._lane_open_prs_referencing(44, "myia-b:CoursIA", prs) == [7]
+    assert len(extracted) == 4
+
+    # Replacement, append and deletion also change the indexed verdicts.
+    prs[0] = {"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #45"}
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    prs.append({"number": 10, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #46"})
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == [10]
+    prs.pop()
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == []
+
+    # A root change invalidates the cache even when the list contents match.
+    before = len(extracted)
+    root[0] = "/repo-b"
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    assert len(extracted) == before + len(prs)
 
 
 def test_paths_clause_brace_scope_disjoint_across_claims(capsys):
@@ -7220,6 +7352,158 @@ def test_implicit_positive_control_14259(monkeypatch, capsys):
     assert data["implicit_occupation"][0]["number"] == 14293
 
 
+def _local_pr_history(tmp_path: Path, *, own_files: int = 0) -> tuple[str, list[str]]:
+    """Build real Git history: stale base, main update, then stacked PR head."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+        ).stdout.strip()
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    (repo / "base.txt").write_text("base\n", encoding="utf-8")
+    git("add", "base.txt")
+    git("commit", "-m", "base")
+    stale = git("rev-parse", "HEAD")
+    git("branch", "stale", stale)
+
+    carried = repo / "inherited"
+    carried.mkdir()
+    for index in range(105):
+        (carried / f"main-{index:03}.txt").write_text("main\n", encoding="utf-8")
+    git("add", "inherited")
+    git("commit", "-m", "main update with more than 100 files")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    git("checkout", "-b", "pr", "stale")
+    git("merge", "--no-edit", "main")
+    # A no-tree-change commit models an open stacked PR whose only changed
+    # paths against its stale base are the files it inherited from main.
+    git("commit", "--allow-empty", "-m", "stacked PR metadata commit")
+    if own_files:
+        own = repo / "owned"
+        own.mkdir()
+        for index in range(own_files):
+            (own / f"pr-{index:03}.txt").write_text("PR work\n", encoding="utf-8")
+        git("add", "owned")
+        git("commit", "-m", "PR work")
+    return git("rev-parse", "HEAD"), [f"owned/pr-{i:03}.txt" for i in range(own_files)]
+
+
+def test_implicit_ignores_only_inherited_main_files_from_real_history(
+        tmp_path, monkeypatch):
+    head, _ = _local_pr_history(tmp_path)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24482, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    against_stale_base = subprocess.run(
+        ["git", "diff", "--name-only", "stale", head], check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).stdout.splitlines()
+    assert len(against_stale_base) == 105
+    assert len(pr["files"]) == 100  # API preview ceiling
+    assert clc._pr_files_against_main(pr) == []
+    assert clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr]) == []
+
+
+def test_implicit_keeps_own_collision_and_processes_more_than_100_paths(
+        tmp_path, monkeypatch):
+    head, own_paths = _local_pr_history(tmp_path, own_files=105)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24483, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    assert len(pr["files"]) == 100  # le Git local restitue les 105 chemins propres
+    assert set(clc._pr_files_against_main(pr)) == set(own_paths)
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == own_paths
+
+
+@pytest.mark.parametrize("resolution", ["PR merge resolution\n", "left side\n"])
+def test_implicit_keeps_content_introduced_only_by_merge_commit(
+        tmp_path, monkeypatch, resolution):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+        ).stdout.strip()
+
+    def merge_conflict(branch: str) -> None:
+        proc = subprocess.run(
+            ["git", "merge", "--no-commit", branch], cwd=repo,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    shared = repo / "shared.txt"
+    shared.write_text("base\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+
+    git("checkout", "-b", "right", base)
+    shared.write_text("right side\n", encoding="utf-8")
+    git("commit", "-am", "right side")
+    right = git("rev-parse", "HEAD")
+
+    git("checkout", "main")
+    shared.write_text("left side\n", encoding="utf-8")
+    git("commit", "-am", "left side")
+    left = git("rev-parse", "HEAD")
+    merge_conflict("right")
+    shared.write_text("main resolution\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "main merge resolution")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    # Both non-merge parents are already reachable from main. This PR's only
+    # own tree content is its alternative conflict resolution in the merge.
+    git("checkout", "-b", "pr", left)
+    merge_conflict(right)
+    shared.write_text(resolution, encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "PR merge resolution")
+    head = git("rev-parse", "HEAD")
+    monkeypatch.chdir(repo)
+    pr = dict(_PR_14293, number=24484, headRefOid=head,
+              files=[{"path": "shared.txt"}])
+
+    nonmerge_paths = subprocess.run(
+        ["git", "log", "--first-parent", "--no-merges", "--format=",
+         "--name-only", "-z", f"origin/main..{head}", "--"],
+        check=True, capture_output=True,
+    ).stdout
+    assert nonmerge_paths == b""
+    assert clc._pr_files_against_main(pr) == ["shared.txt"]
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["shared.txt"]
+
+
+def test_implicit_provenance_failure_keeps_legacy_occupation():
+    # Impossible SHA: provenance cannot be proved, so inherited-looking API
+    # paths remain a blocker instead of being released on an error.
+    pr = dict(_PR_14293, number=None, headRefOid="0" * 40,
+              files=[{"path": "inherited/main-only.md"}])
+    assert clc._pr_files_against_main(pr) is None
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["inherited/main-only.md"]
+
+
 def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     # Faux negatif de reference : une PR ouverte d'une autre lane qui ne
     # reference PAS l'issue ne doit PAS declencher IMPLICIT.
@@ -8620,3 +8904,8 @@ def test_backticked_scope_is_not_read_as_epic_wide():
     assert clc._empty_scope_in(ev.paths, tracked) == [], \
         "la portee normalisee n'est pas morte"
     assert not clc._claim_scope_effectively_epic_wide(ev)
+
+
+def test_lane_reference_index_deduplicates_repeated_issue():
+    prs = [{"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- #45\nVoir #45"}]
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]

@@ -10399,7 +10399,7 @@ conversationnel, (2) une tâche dans la zone 0.3-0.7 de baseline sampling, (3) u
 Références : DeepSeekMath (Shao et al., 2024) pour GRPO ; DAPO (Yu et al., 2025) pour le β=0 ; Schulman et
 al. (2017) pour l'objectif clipé ; série RL Post-Training #11297 pour le contexte (RLPT-01 : PPO-RLHF).
 ",,,,,,,,6415fc96559a06d8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c00,markdown,fr,2bb0348dba3445e1,"# RL Post-Training — 3 : Reward hacking — anatomie d'un hack qui ne prend pas
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c00,markdown,fr,7fd52ffee7d09063,"# RL Post-Training — 3 : Reward hacking — anatomie d'un hack qui ne prend pas
 
 Le reward hacking (Goodhart ; Amodei et al. 2016) est le défaut central de l'RL sur modèle de langage :
 quand la récompense **mesurable** ne capture qu'imparfaitement l'**objectif voulu**, la politique optimise
@@ -10421,13 +10421,13 @@ une par une.
 - **désintoxiquer** : re-entraîner depuis l'état perturbé avec le reward exact — le rétablissement est
   net, et on comprend pourquoi c'est le cas facile.
 
-C'est le grain 3 de la série RL Post-Training (#11297), sur la stack du grain 2 : Qwen3.5-0.8B local en
+C'est le carnet 3 de la série RL Post-Training, sur la stack de RLPT-02 : Qwen3.5-0.8B local en
 QLoRA 4-bit, soustractions à deux chiffres, GRPO (trl 1.9.2), seed fixée — tout est reproductible.
 ## Frontière avec GenAI/PostTraining
 
 L'outil de détection (`rewardspy.detectors`, 6 classes statistiques -- Component Dominance, Length Drift, Calibration Drift, etc.) vit dans [PT-07](../../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb). Ce notebook-ci est le **cas d'usage** minimal : un reward piégé + 3 voies pour tenter de déclencher le hack + inoculation comme variable -- on y voit la *préliminaire* que `rewardspy` rend opérationnelle à plus grande échelle. Le capstone complet (panel persona × reward hackable × inoculation) vit en [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105). Voir [#11460](https://github.com/jsboige/CoursIA/issues/11460).
 
-",,,,,,,,2bb0348dba3445e1,,,,,,,,,,,,,,,
+",,,,,,,,7fd52ffee7d09063,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c01,markdown,fr,de15f0c8099f3da1,"## 1. Le piège : un proxy qui récompense la recopie, pas le calcul
 
 Deux fonctions de reward sur la **même tâche** (soustractions `a - b`, avec `b >= 10` — la réponse exacte
@@ -10586,14 +10586,14 @@ L'exemple contaminé, lui, **perturbe** nettement (exactitude greedy 0.28 contre
 reste marginale (0.00 greedy, 0.00 sampling). On y revient au
 paragraphe 4 : perturber n'est pas imiter une règle.
 ",,,,,,,,3f4a6adef2da3ae7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c07,markdown,fr,5879b5b6fe88347e,"## 3. Première voie : le proxy seul (exploration pure)
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c07,markdown,fr,59eabf681caf828e,"## 3. Première voie : le proxy seul (exploration pure)
 
-GRPO contre le reward proxy, depuis le modèle de base, prompt propre — même configuration que le grain 2
+GRPO contre le reward proxy, depuis le modèle de base, prompt propre — même configuration que `RLPT-02-GRPO-Minimal-Python`
 (QLoRA r=8, lr 5e-6, β=0, groupe de 4), 20 steps suffisent pour le diagnostic. Prédiction falsifiable :
 si aucune génération d'un groupe ne recopie, tout le groupe a un reward de 0, la variance intra-groupe est
 nulle, l'avantage est nul — **il n'y a rien à apprendre**. Le métrique qui le lit directement dans les
 logs TRL : `frac_reward_zero_std` (fraction des groupes sans variance de reward).
-",,,,,,,,5879b5b6fe88347e,,,,,,,,,,,,,,,
+",,,,,,,,59eabf681caf828e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c08,code,fr,31e97aa938e3f67d,"# Run A : GRPO + reward proxy, depuis la base, prompt propre
 from trl import GRPOConfig, GRPOTrainer
 from peft import LoraConfig
@@ -10619,19 +10619,19 @@ for h in histA:
 a_ex, a_rc = eval_policy(trainerA.model, 0.0)
 print(f""POST-A propre greedy : exacte {a_ex:.2f} | recopie {a_rc:.2f}"")
 ",,,,,,,,31e97aa938e3f67d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c09,markdown,fr,5b2b7c95c341f355,"### Lecture du résultat : l'exploration morte
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c09,markdown,fr,77e7f69005e657b2,"### Lecture du résultat : l'exploration morte
 
 Sur les 20 steps, le reward proxy reste à **0.000** et `frac_reward_zero_std` à **1.0** :
 aucun groupe de 4 générations ne contient une seule recopie, donc aucune variance de reward, donc
 un avantage nul — `grad_norm` 0.00 du début à la fin. La preuve par l'absurde que rien n'a été appris :
 les poids n'ont pas bougé d'un iota, donc la politique post-run A est **mathématiquement identique** à
-son initialisation. (La mesure POST-A, 0.84, diffère de la baseline 0.66 par le chemin de calcul — le
+son initialisation. (La mesure POST-A, 0.78, diffère de la baseline 0.66 par le chemin de calcul — le
 wrapping LoRA à poids B nuls — pas par la politique ; c'est l'instrument qui varie, on le voit aussi en
-§5 : la même base mesurée sans adaptateur donne 0.84.) C'est la première barrière du hack : **GRPO ne
+§5 : la même base mesurée sans adaptateur donne 0.78.) C'est la première barrière du hack : **GRPO ne
 peut sélectionner que ce que la politique produit déjà**. Un comportement jamais émis n'existe pas pour
 l'optimiseur. — rempli depuis les mesures ci-dessus (proxy constant, frac_zero_std,
 post-A vs baseline).
-",,,,,,,,5b2b7c95c341f355,,,,,,,,,,,,,,,
+",,,,,,,,77e7f69005e657b2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c10,markdown,fr,6219705d665c3fb0,"### 3.1 Pourquoi toute mesure commence par `eval()`
 
 Une précision instrumentale, apprise en calibrant ce notebook : juste après `trainer.train()`, le modèle
@@ -10734,20 +10734,20 @@ for i in (0, 1, 2):
     t1 = gen_texts(trainerB.model, ds_contam[i][""prompt""], 0.0)[0]
     print(f""{a}-{b} attendu {a-b} | contamine -> {t1.strip()[:40]!r}"")
 ",,,,,,,,fd15ba64f263ed9e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c18,markdown,fr,3f0f7b236012959c,"### Lecture du résultat : l'attracteur trop faible
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c18,markdown,fr,4c4059e9a9847942,"### Lecture du résultat : l'attracteur trop faible
 
-Le proxy lissé passe de 0.000 à **0.031** — un frémissement, pas une prise : la courbe oscille
-(0.050 → 0.000 → 0.100 → 0.000 → 0.050) sans tendance installée, et la recopie post-run ne survit que
+Le proxy lissé passe de 0.000 à **0.094** — un frémissement, pas une prise : la courbe oscille
+(0.050 → 0.050 → 0.000 → 0.050 → **0.200** → 0.100 → 0.050 → 0.100) sans tendance installée, et la recopie post-run ne survit que
 sous prompt contaminé (0.06), nulle sur prompt propre (0.00). Mais le résultat le plus instructif est
-l'**autre** courbe : l'exactitude lissée chute de 0.500 à 0.344 pendant que le proxy frémit — chaque
-point de recopie sélectionné se paie directement en exactitude (les deux sont exclusifs par
-construction). **La détection par divergence a donc fonctionné même sous le seuil où le hack « prend »**
+l'**autre** courbe : sous prompt contaminé l'exactitude **recule de 0.28 à 0.22** pendant que la recopie passe de
+0.00 à 0.06, alors que sous prompt propre elle **progresse de 0.66 à 0.81** — le modèle gagne en
+exactitude là où rien ne l'incite à recopier, et n'en perd que là où la recopie s'installe. **La détection par divergence a donc fonctionné même sous le seuil où le hack « prend »**
 — c'est le résultat opérationnel de ce run. Enfin `disable_adapter` tranche la question du support de la
-dégradation : la base est intacte (0.84 / 0.00), tout vit dans l'adaptateur — et les trois exemples
+dégradation : la base est intacte (**0.78** / 0.00), tout vit dans l'adaptateur — et les trois exemples
 montrent les deux espèces de hacks ponctuels ('44' = recopie de l'opérande de la question, '45' =
-imitation de la réponse de l'exemple piégé). — rempli depuis les mesures (proxy lissé début→fin, divergence exacte,
+imitation de la réponse de l'exemple piégé). — rempli depuis les mesures (proxy lissé début→fin, divergence des deux évaluations greedy,
 recopie post, base intacte).
-",,,,,,,,3f0f7b236012959c,,,,,,,,,,,,,,,
+",,,,,,,,4c4059e9a9847942,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c19,markdown,fr,6e54463b2418b42e,"## 6. Désintoxication : re-entraîner avec le reward exact
 
 On fige l'état perturbé (adaptateur LoRA du run B), puis on re-entraîne avec le **reward exact** sur le
@@ -10786,18 +10786,18 @@ rs_ex, rs_rc = eval_policy(trainerC.model, 1.0)
 print(f""POST-C propre greedy  : exacte {rg_ex:.2f} | recopie {rg_rc:.2f}"")
 print(f""POST-C propre sampling: exacte {rs_ex:.2f} | recopie {rs_rc:.2f}"")
 ",,,,,,,,69ab6b56951b74e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c21,markdown,fr,2179e09cfb825a39,"### Lecture du résultat : le rétablissement
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c21,markdown,fr,0dfa5bd65cf9a13b,"### Lecture du résultat : le rétablissement
 
-La courbe exact monte de 0.350 à **0.750** (avec un creux au step 20 — l'optimisation
+La courbe exact monte de 0.450 à **0.650** (avec un creux au step 20 — l'optimisation
 n'est pas monotone, c'est normal en GRPO), et la politique finale vaut **0.88 en greedy propre avec
-recopie 0.00** — au niveau de la base intacte (0.84), sans rien casser. C'est le cas **facile** de
+recopie 0.00** — au niveau de la base intacte (0.78), sans rien casser. C'est le cas **facile** de
 désintoxication, pour deux raisons mesurables : (1) le hack n'avait pas pris — l'adaptateur figé était à
 peine déformé ; (2) le reward exact est **dense** sur cette tâche : le modèle produit déjà la bonne
 réponse ~50 % du temps en sampling, donc les groupes ont de la variance de reward, donc il y a du
 gradient — exactement la condition qui manquait au run A. La comparaison avec le capstone ICT-25 (où le
 hack, installé par SFT, résiste) montre ce qui change quand il faut vraiment désintoxiquer : ce n'est pas
 la recette (re-entraîner sur le reward exact), c'est l'ampleur de la déformation à inverser. — rempli depuis les mesures (courbe exact, post-C vs baseline).
-",,,,,,,,2179e09cfb825a39,,,,,,,,,,,,,,,
+",,,,,,,,0dfa5bd65cf9a13b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c22,markdown,fr,f883ee430bd9c597,"## 7. Exercices
 
 Trois prolongements. Chaque stub s'exécute sans erreur (convention C.1) — le notebook reste exécutable
@@ -10836,7 +10836,7 @@ MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c25,
 # TODO etudiant
 print(""Exercice a completer"")
 ",,,,,,,,9a0d8805e275d4fd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c26,markdown,fr,ed850fd354c5875b,"## 9. Conclusion : ce que 8 Go suffit à démontrer
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c26,markdown,fr,10ee9ea8357d0697,"## 9. Conclusion : ce que 8 Go suffit à démontrer
 
 Trois voies de déclenchement, trois échecs mesurés — et c'est le résultat :
 
@@ -10844,14 +10844,15 @@ Trois voies de déclenchement, trois échecs mesurés — et c'est le résultat 
   si la politique ne produit jamais le comportement (`frac_reward_zero_std` = 1 du début à la fin) ;
 - **inoculation few-shot (§4)** : l'exemple piégé perturbe, mais le modèle n'imite pas la règle — la
   perturbation n'est pas l'apprentissage ;
-- **amorce récompensée (§5)** : proxy lissé 0.000 → 0.031 en 40 steps, recopie 0.06 sous prompt contaminé et 0.00 ailleurs — même un comportement rare et récompensé
+- **amorce récompensée (§5)** : proxy lissé 0.000 → 0.094 en 40 steps, recopie 0.06 sous prompt contaminé et 0.00 ailleurs — même un comportement rare et récompensé
   sans ambiguïté ne s'installe pas en 40 steps : à cette échelle, le hack n'est pas un attracteur fort.
-  Verdict cohérent avec le capstone ICT-25 (#11298).
+  Verdict cohérent avec le capstone ICT-25.
 
 Et deux outils qui, eux, **fonctionnent** à toutes les échelles :
 
-- **la détection par divergence** : la mesure croisée proxy/objectif au même pas de temps a montré la
-  dégradation (0.500 → 0.344 en lissé) même sous le seuil où le hack
+- **la détection par divergence** : la mesure croisée proxy/objectif a tranché là où cela compte : sous prompt
+  contaminé l'exactitude recule de 0.28 à 0.22 et la recopie passe de 0.00 à 0.06, pendant que
+  sous prompt propre l'exactitude progresse de 0.66 à 0.81 — même sous le seuil où le hack
   « prend » — c'est la contre-mesure à industrialiser ;
 - **la désintoxication facile** : re-entraîner avec le reward exact rétablit le modèle
   (0.88 en greedy propre, recopie 0.00, après 40 steps de reward exact) — le cas facile, à confronter au cas dur du capstone où le hack installé
@@ -10867,8 +10868,8 @@ deux échelles.
 Références : Amodei et al. (2016) *Concrete Problems in AI Safety* ; Goodhart (1975) ; Gao et al.
 (2023) *Scaling Laws for Reward Model Overoptimization* ; Everitt et al. (2019) *Reward Tampering
 Problems and Solutions in Reinforcement Learning* (arXiv:1908.04734, section 8 ci-dessus) ; capstone
-ICT-25 (#5105, PR #11298) ; série #11297 (grain 3/4).
-",,,,,,,,ed850fd354c5875b,,,,,,,,,,,,,,,
+ICT-25 (#5105).
+",,,,,,,,10ee9ea8357d0697,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb,rlpt4-c00,markdown,fr,451c7946c1f9691b,"# RL Post-Training — 4 : DPO offline vs RL online — même tâche, même budget
 
 Deux familles dominent le post-training des LLM : le **RL online** (PPO, GRPO — la politique génère,
@@ -11524,7 +11525,7 @@ la zone de transition**. Notre soustraction 2-chiffres est trop facile (88 %
 greedy) ; le notebook PT-11b sur GSM8K est trop dur (reward ~0.14,
 cf cellule §10). La zone utile — celle où GRPO crée réellement — reste
 à identifier empiriquement pour chaque tâche.",,,,,,,,ffd0c10343d6e97b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c10g-md,markdown,fr,92351859516bb007,"### 3.0 Forme forte vs forme faible de Goodhart (Sohl-Dickstein 2022)
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c10g-md,markdown,fr,120cbc139f14199e,"### 3.0 Forme forte vs forme faible de Goodhart (Sohl-Dickstein 2022)
 
 Les Reward hacking reports citent surtout la **forme faible** de Goodhart : le proxy cesse d'etre un
 bon indicateur du vrai objectif. Sohl-Dickstein (2022) distingue une **forme forte** : sous optimisation
@@ -11535,11 +11536,11 @@ son sens : la forme forte se manifeste par une **anti-corrlation proxy * exactit
 (amorce recompensee, paragraphe 5) en est le premier candidat empirique.
 
 Source canonique archivee :
-`G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\2022 - Sohl-Dickstein - Too much efficiency makes everything worse - Strong Goodharts law.pdf`
+`G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Interpretability, Evaluation and Reproducibility\2022 - Sohl-Dickstein - Too much efficiency makes everything worse - Strong Goodharts law.pdf`
 
 A 0.8B avec 20-40 steps et lr 5e-6, l'optimisation n'est pas assez efficace pour basculer en forme
 forte : c'est ce qu'on va verifier empiriquement sur les series deja loguees par le run A.
-",,,,,,,,92351859516bb007,,,,,,,,,,,,,,,
+",,,,,,,,120cbc139f14199e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c11g-code,markdown,fr,9919ae8658bed7f8,"### 3.0.0 Verdict empirique : formes forte et faible sur Run A
 
 La mesure ci-dessous est une **transcription + arithmetique** sur les litteraux deja committes
@@ -11579,7 +11580,7 @@ Le verdict suivant (cellule 3.0.1) exploite ce resultat pour la conclusion metho
 la distinction forme forte / forme faible suit Gao et al. (2023) et la source
 Sohl-Dickstein (2022) archivee. La re-execution end-to-end du notebook entier reste a faire
 sur une lane GPU (cellules 4/8/17/20 CUDA) -- PR separee.",,,,,,,,9919ae8658bed7f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c12g-md,markdown,fr,4fe027b9417a20e1,"### 3.0.1 Lecture du verdict : a cette echelle, l'efficacite d'optimisation manque
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,rlpt3-c12g-md,markdown,fr,1a6d790b95e2f3e6,"### 3.0.1 Lecture du verdict : a cette echelle, l'efficacite d'optimisation manque
 
 Le verdict est le plus prudent qui soit : **forme forte non demontrable sur Run A** (proxy
 constant, `grad_norm 0.00` du debut a la fin -- les poids n'ont pas bouge, donc il n'y a
@@ -11592,19 +11593,17 @@ proxy/objectif emerge avec l'echelle du modele et le nombre de steps KL -- pas a
 modele 0.8B et 20 steps.
 
 Le run B (paragraphe 5) est l'experience qui bascule : amorce recompensee sur 40 steps,
-et la courbe exacte lisse chute de 0.500 a 0.344 pendant que le proxy fremit (0.000 ->
-0.031). Ce n'est pas encore la forme forte canonique (proxy monotone ascendant contre
+le proxy s'eveille (0.000 -> 0.094 en lisse) et l'exactitude greedy sur prompt contamine chute de 0.78 a 0.22 avec les premieres recopies (0.06), pendant que la courbe exacte lisse du flux d'entrainement reste quasi plate (0.250 -> 0.312). Ce n'est pas encore la forme forte canonique (proxy monotone ascendant contre
 exactitude franchement degradante), mais c'est le **signal precurseur** : a 0.8B et 40
-steps, la divergence proxy/objectif devient visible. Le capstone ICT-25 (#5105, grain 4
-du track RL Post-Training) installe le hack completement, et c'est la que la forme forte
+steps, la divergence proxy/objectif devient visible. Le capstone ICT-25 (#5105) installe le hack completement, et c'est la que la forme forte
 devient mesurable dans toute sa duree.
 
 Conclusion pratique : la detection par divergence est utile meme quand le hack ne
 prend pas (Run A, ce paragraphe) -- elle montre l'absence de signal, ce qui est aussi
 une information sur la securite d'un reward. Apres 40 steps et une amorce
 ( paragraphe 5), elle devient **le seul** garde-fou.
-",,,,,,,,4fe027b9417a20e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,everitt-frontiere,markdown,fr,d60e9ed83501cc7b,"## 8. Frontière : specification gaming n'est pas reward tampering
+",,,,,,,,1a6d790b95e2f3e6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb,everitt-frontiere,markdown,fr,80ab6612baa65c8b,"## 8. Frontière : specification gaming n'est pas reward tampering
 
 Tout ce qui précède (§§3-6) fait varier le **comportement** du modèle contre une récompense **fixe et
 intacte** : le proxy `reward_proxy` récompense par erreur la recopie de l'opérande, le modèle apprend
@@ -11662,8 +11661,8 @@ et l'optimisation légitime s'effondre.
 
 **Source** : Everitt, Hutter, Kumar & Krakovna (2019), *Reward Tampering Problems and Solutions in
 Reinforcement Learning*, arXiv:1908.04734 — bibliothèque locale :
-`G:/Mon Drive/MyIA/IA/Bibliographie IA/MachineLearning/2021 - Everitt et al - Reward Tampering Problems and Solutions in Reinforcement Learning.pdf`.
-",,,,,,,,d60e9ed83501cc7b,,,,,,,,,,,,,,,
+`G:/Mon Drive/MyIA/IA/Bibliographie IA/MachineLearning/Reinforcement Learning/2021 - Everitt et al - Reward Tampering Problems and Solutions in Reinforcement Learning.pdf`.
+",,,,,,,,80ab6612baa65c8b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb,71c9a8de,markdown,fr,88d3af84a1855d56,"### Mise en regard : « INCONCLUSIVE ↔ V2/V3 ppl post-GRPO » — convergence des diagnostics
 
 Notre verdict local **INCONCLUSIVE** — DPO et GRPO statistiquement

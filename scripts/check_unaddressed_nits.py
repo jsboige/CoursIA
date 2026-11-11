@@ -3574,7 +3574,189 @@ def gh_json(args: list[str]) -> object:
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
     ).stdout
-    return json.loads(out)
+    return _project_gh_payload(args, json.loads(out))
+
+
+def _project_added_symbol_patch(patch: str) -> str:
+    """Garder exactement les lignes que #20066 lit dans un diff de commit."""
+    symbols = []
+    for line in patch.splitlines():
+        if line.startswith("+++"):
+            continue
+        if _SYM_ADDED_RE.match(line):
+            symbols.append(line)
+            if len(symbols) >= _SYMBOLS_PER_FILE_CAP:
+                break
+    return "\n".join(symbols)
+
+
+def _project_gh_payload(args: list[str], payload: object) -> object:
+    """Reduire les reponses au contrat consomme par B.0 avant leur cache.
+
+    Le tapis intercepte ``gh_json`` pour memoiser ses resultats. Les appels
+    `pr view` et REST transportaient beaucoup de champs de presentation,
+    d'identite ou de statistiques que l'organe ne lit jamais ; leur taille
+    faisait echouer le plafond de memoisation, meme si leur verdict etait
+    petit. Cette projection est donc faite dans le funnel, avant le cache.
+    Les champs qui portent une preuve B.0 (corps/date/auteur, SHA, arbres,
+    blobs) restent intacts. Le patch d'un commit ne sert qu'a extraire les
+    ``def``/``class`` ajoutes par #20066 : seuls ces ajouts, avec le meme
+    plafond, sont conserves.
+
+    #22757 piste 1, verification a la source : les ``files`` de
+    ``commits/<sha>`` NE PEUVENT PAS etre droppes -- le verdict B.0 en
+    depend. ``_resolve_absent_sha_state`` lit ``filename``/``sha``/
+    ``status``/``previous_filename`` (#15973 : identite de blobs par chemin
+    qui distingue un rebase preserve d'un rembobinage destructeur) et le
+    ``patch`` (#20066 : symboles ajoutes par le commit rembobine). La
+    projection garde donc le contrat MINIMAL (ces cinq champs, patch reduit
+    aux lignes ajoutees), pas une suppression.
+
+    #22757, transporteurs restants projetes ici : ``pulls/{n}/commits``
+    (pages ``--paginate --slurp`` d'objets commit complets dont
+    ``_pr_commits_rest`` ne lit que ``sha`` et deux dates -- une PR a ~35
+    commits depassait le plafond et etait relue a chaque passe) et
+    ``issues/{n}`` (``_gh_fetch_issue`` ne lit que le discriminant
+    ``pull_request`` #13725 et les quatre champs d'``IssueInfo`` ; le corps
+    reste INTACT car la voie 3 le lit #14218).
+    """
+    if not isinstance(payload, (dict, list)):
+        return payload
+
+    def project_rows(value: object, fields: tuple[str, ...],
+                     nested: dict[str, tuple[str, ...]] | None = None) -> object:
+        if not isinstance(value, list):
+            return value
+        rows = []
+        for row in value:
+            if not isinstance(row, dict):
+                rows.append(row)
+                continue
+            item = {key: row[key] for key in fields if key in row}
+            for key, child_fields in (nested or {}).items():
+                child = row.get(key)
+                if isinstance(child, dict):
+                    item[key] = {name: child[name] for name in child_fields
+                                 if name in child}
+            rows.append(item)
+        return rows
+
+    if len(args) >= 2 and args[:2] == ["pr", "view"]:
+        if not isinstance(payload, dict):
+            return payload
+        projected = dict(payload)
+        projected["comments"] = project_rows(
+            payload.get("comments"), ("author", "body", "createdAt"),
+            {"author": ("login",)})
+        projected["reviews"] = project_rows(
+            payload.get("reviews"),
+            ("author", "body", "submittedAt", "state"),
+            {"author": ("login",)})
+        projected["commits"] = project_rows(
+            payload.get("commits"), ("oid", "committedDate"))
+        return projected
+
+    if len(args) < 2 or args[0] != "api":
+        return payload
+    endpoint = args[1].split("?", 1)[0].rstrip("/")
+    prefix = f"repos/{REPO}/"
+    if endpoint.startswith(prefix + "commits/"):
+        if not isinstance(payload, dict):
+            return payload
+        commit = payload.get("commit")
+        projected = {}
+        if isinstance(commit, dict):
+            message = commit.get("message")
+            projected["commit"] = {
+                "message": message.split("\n")[0] if isinstance(message, str) else message,
+                "tree": ({"sha": commit["tree"]["sha"]}
+                         if isinstance(commit.get("tree"), dict)
+                         and "sha" in commit["tree"] else commit.get("tree")),
+            }
+        files = project_rows(
+            payload.get("files"),
+            ("filename", "sha", "status", "previous_filename", "patch"))
+        if isinstance(files, list):
+            for item in files:
+                if isinstance(item, dict) and isinstance(item.get("patch"), str):
+                    item["patch"] = _project_added_symbol_patch(item["patch"])
+        projected["files"] = files
+        return projected
+
+    if endpoint.startswith(prefix + "git/trees/"):
+        if not isinstance(payload, dict):
+            return payload
+        return {
+            key: payload[key] for key in ("truncated", "tree") if key in payload
+        } | {"tree": project_rows(payload.get("tree"), ("path", "sha", "type"))}
+
+    if "/pulls/" in endpoint and endpoint.endswith("/reviews"):
+        return project_rows(payload, ("id", "user"), {"user": ("login",)})
+
+    if "/pulls/" in endpoint and endpoint.endswith("/commits"):
+        # #17315/#22757 : `--paginate --slurp` rend des pages d'objets
+        # commit complets (~2 Ko chacun : identite, verification, parents)
+        # dont `_pr_commits_rest` ne lit que `sha` et les deux dates.
+        def project_commit_page(page: object) -> object:
+            if not isinstance(page, list):
+                return page
+            rows = []
+            for c in page:
+                if not isinstance(c, dict):
+                    rows.append(c)
+                    continue
+                commit = c.get("commit") or {}
+                rows.append({
+                    "sha": c.get("sha"),
+                    "commit": {
+                        "author": {"date": (commit.get("author") or {}).get("date")},
+                        "committer": {"date": (commit.get("committer") or {}).get("date")},
+                    },
+                })
+            return rows
+
+        if isinstance(payload, list):  # slurp : une liste de pages
+            return [project_commit_page(p) for p in payload]
+        return project_commit_page(payload)
+
+    if "/issues/" in endpoint and endpoint.endswith("/timeline"):
+        if not isinstance(payload, list):
+            return payload
+        projected = []
+        for event in payload:
+            if not isinstance(event, dict):
+                projected.append(event)
+                continue
+            row = {
+                key: event[key] for key in ("event", "actor", "dismissed_review")
+                if key in event
+            }
+            for key, child_fields in (
+                    ("actor", ("login",)),
+                    ("dismissed_review", ("review_id",))):
+                child = event.get(key)
+                if isinstance(child, dict):
+                    row[key] = {name: child[name] for name in child_fields
+                                if name in child}
+            projected.append(row)
+        return projected
+
+    # `issues/{n}` strict (pas /timeline ni /comments) : #13725/#14218/#22757.
+    tail = (endpoint[len(prefix + "issues/"):]
+            if endpoint.startswith(prefix + "issues/") else "")
+    if tail.isdigit():
+        if not isinstance(payload, dict):
+            return payload
+        projected = {key: payload[key] for key in
+                     ("state", "created_at", "title", "body") if key in payload}
+        pr_key = payload.get("pull_request")
+        if isinstance(pr_key, dict):
+            # Discriminant PR-vs-issue : seule la PRESENCE compte (#13725).
+            projected["pull_request"] = {"url": pr_key.get("url")}
+        elif "pull_request" in payload:
+            projected["pull_request"] = pr_key
+        return projected
+    return payload
 
 
 def _pr_commits_rest(pr: int) -> list[dict]:

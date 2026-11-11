@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-08
+> REFERENCE — vivante — dernière révision 2026-11-09
 
 # QuantConnect (QC) - Configuration et règles
 
@@ -276,6 +276,32 @@ Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 - Mode intent par defaut (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759)
 - Supporte branches weight-hint ET equal-weight
 - Utilise `set_rebalancing_func` pour le rebalance timing
+
+### Source unique du PCM par poches — la garde
+
+Le modèle par poches a longtemps existé en plusieurs copies, en plusieurs variantes, et le correctif `additive` (#19740) n'était présent que dans une partie d'entre elles : un correctif posé sur une copie ne se propageait pas, et rien ne le signalait. L'extraction (#21134) a fait de `SharedPCM/pouches_pcm.py` la source canonique, importée par les composites.
+
+**Deux copies subsistent, et chacune a une raison qui ne se corrige pas par un copier-coller** :
+
+| Copie | Raison | Ce qu'elle porte |
+|-------|--------|-----------------|
+| `partner-course-quant-trading/kit-transitoire/03-Framework-Composite/main.py` | kit pédagogique **autonome** : le code est lu et modifié par l'apprenant dans un seul fichier, sans bibliothèque QC attachée — le canonique ne peut pas y être importé | le correctif `additive` et les diagnostics XLU de #20188 |
+| `projects/TrendWeatherPointInTime/portfolio_construction.py` | candidate **gelée** du registre de l'ombre (entrée `tw-pit`, code rejoué au SHA gelé) : #20188 interdit que l'extraction la touche | la variante antérieure au correctif `additive` — une seule insight par symbole, pas de reconstruction par `(symbole, source_model)` |
+
+La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une **nouvelle** copie apparaisse sans déclaration, et qu'une copie **déclarée** soit modifiée sans re-déclaration.
+
+```bash
+python scripts/quantconnect/check_pcm_single_source.py          # verdict humain
+python scripts/quantconnect/check_pcm_single_source.py --json   # verdict structure
+```
+
+**Le manifeste** `scripts/quantconnect/pcm_single_source.json` porte la source canonique, les copies déclarées, l'empreinte de chacune (`sha256` du texte normalisé, donc insensible aux fins de ligne) et la raison de chaque déclaration. Les empreintes sont ce qui rend la garde discriminante : un fichier déclaré qui change sans re-déclaration est signalé (`DECLARATION_STALE`), pas absorbé.
+
+**Déclarer une copie** (procédure) : ajouter l'entrée au manifeste avec son chemin, ses classes, son empreinte et sa raison, puis relancer l'organe — il doit rendre `VERDICT: OK`. Une copie nouvelle qui n'a pas de raison n'est pas une copie : elle s'importe du canonique.
+
+**Câblage CI** : la garde est un garde **natif de la voie rapide** (`TRANCHE38` du registre `scripts/ci/fast_lane_registry.py`), **bloquant** : son check-run porte son nom canonique, donc un verdict rouge arrête la PR. Elle se déclenche sur toute modification d'un `.py` sous `MyIA.AI.Notebooks/QuantConnect/`, sur le manifeste et sur l'organe lui-même (une révision qui change la portée de la garde doit la rejouer).
+
+**Contrôle positif** : le corps de tests (`scripts/quantconnect/tests/test_check_pcm_single_source.py`) crée un arbre temporaire où une copie déclarée est volontairement modifiée et exige un verdict rouge (`DECLARATION_STALE`) ; le cas nominal, l'arbre du dépôt, doit rester vert. Une garde qui ne rougit pas sur une copie modifiée n'est pas une garde.
 
 ### AlphaModel — règles
 
