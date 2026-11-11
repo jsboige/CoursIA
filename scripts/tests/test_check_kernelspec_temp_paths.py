@@ -130,7 +130,7 @@ def test_durable_interpreter_is_clean():
 
 
 def test_scratchpad_component_is_flagged():
-    """La forme exacte du constat #23941, hors de toute racine temporaire."""
+    """Variante durable sous `claude`, hors de toute racine temporaire."""
     tool = load_tool()
     interpreter = os.path.join(
         DURABLE_ROOT, "claude", "workspace", "3b22fd82", "scratchpad", "cleanenv", "Scripts", "python.exe")
