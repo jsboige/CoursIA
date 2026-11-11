@@ -136,3 +136,38 @@ def test_delta_allows_new_series_with_two_of_three_markers(tmp_path, monkeypatch
     _git(repo, "add", ".")
     assert check.inspect_text("x", (folder / "README.md").read_text())["conforming"]
     assert check._delta(base, None) == []
+
+
+def test_paths_with_head_ref_use_reference_inventory(tmp_path, monkeypatch, capsys):
+    repo = tmp_path / "repo"
+    folder = repo / "MyIA.AI.Notebooks" / "Series"
+    folder.mkdir(parents=True)
+    for name in ("a.ipynb", "b.ipynb"):
+        (folder / name).write_text("{}")
+    (folder / "README.md").write_text((FIXTURES / "conforming.md").read_text())
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-qm", "base")
+    base = subprocess.run(["git", "rev-parse", "HEAD"], cwd=repo, check=True, text=True, capture_output=True).stdout.strip()
+    (folder / "README.md").write_text((FIXTURES / "nonconforming.md").read_text())
+    other = repo / "MyIA.AI.Notebooks" / "GitOnly"
+    other.mkdir()
+    for name in ("a.ipynb", "b.ipynb"):
+        (other / name).write_text("{}")
+    (other / "README.md").write_text((FIXTURES / "nonconforming.md").read_text())
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-qm", "head")
+    (folder / "README.md").write_text((FIXTURES / "conforming.md").read_text())
+    shutil.rmtree(other)
+    monkeypatch.setattr(check, "ROOT", repo)
+    monkeypatch.setattr(check, "NOTEBOOKS", repo / "MyIA.AI.Notebooks")
+    assert check.main(["--base-ref", base, "--head-ref", "HEAD", "--paths", "MyIA.AI.Notebooks", "--json"]) == 1
+    import json
+    data = json.loads(capsys.readouterr().out)
+    assert {x["path"] for x in data["results"]} == {"MyIA.AI.Notebooks/Series/README.md", "MyIA.AI.Notebooks/GitOnly/README.md"}
+    assert all(not x["conforming"] for x in data["results"])
+    assert {x["path"] for x in data["delta"]} == {x["path"] for x in data["results"]}
+    assert check.main(["--base-ref", base, "--head-ref", "HEAD", "--paths", "MyIA.AI.Notebooks/GitOnly/README.md", "--json"]) == 1
+    assert [x["path"] for x in json.loads(capsys.readouterr().out)["results"]] == ["MyIA.AI.Notebooks/GitOnly/README.md"]

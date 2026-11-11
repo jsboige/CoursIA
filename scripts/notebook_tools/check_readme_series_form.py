@@ -129,14 +129,7 @@ def _delta(base_ref: str, head_ref: str | None, scope: list[str] | None = None) 
     affected = {p for p in set(base) | set(head)
                 if p in changed or p.rsplit("/", 1)[0] in {x.rsplit("/", 1)[0] for x in changed}}
     if scope:
-        scoped = set()
-        for raw in scope:
-            p = Path(raw)
-            rel = p.relative_to(ROOT).as_posix() if p.is_absolute() else p.as_posix()
-            scoped.add(rel.rstrip("/"))
-        affected = {path for path in affected if any(
-            path == item or path.startswith(item + "/") or path.rsplit("/", 1)[0] == item
-            for item in scoped)}
+        affected = {path for path in affected if _in_scope(path, scope)}
     findings = []
     for path in sorted(affected):
         before, after = base.get(path), head.get(path)
@@ -154,6 +147,15 @@ def _delta(base_ref: str, head_ref: str | None, scope: list[str] | None = None) 
     return findings
 
 
+def _in_scope(path: str, scope: list[str]) -> bool:
+    for raw in scope:
+        p = Path(raw)
+        item = (p.relative_to(ROOT).as_posix() if p.is_absolute() else p.as_posix()).rstrip("/")
+        if path == item or path.startswith(item + "/"):
+            return True
+    return False
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--paths", nargs="+", help="README.md / dossiers à inspecter")
@@ -162,7 +164,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--head-ref", help="Référence Git de tête (défaut: worktree courant)")
     args = parser.parse_args(argv)
     try:
-        if args.paths:
+        if args.paths and args.head_ref:
+            results = [item for path, item in _series_at(args.head_ref).items()
+                       if _in_scope(path, args.paths)]
+        elif args.paths:
             results = []
             for raw in args.paths:
                 p = Path(raw)
