@@ -10,7 +10,10 @@ toolchain et la declaration par environnement. Ces tests eprouvent :
 * que le pin de flotte declare est un tag reellement employe par les lakes du
   depot (temoin externe, independant de l'organe) ;
 * que le controle de derive distingue « pin non reproductible » et
-  « defaut elan local different de la declaration ».
+  « defaut elan local different de la declaration » ;
+* que la mesure du defaut elan est **paresseuse** (aucune quand un palier
+  plus haut tranche) et qu'une entree de declaration mal formee est
+  signalee.
 
 Convention : import par chemin, comme les autres tests de ``scripts/lean/``.
 """
@@ -381,3 +384,145 @@ def test_inventory_is_valid_json():
     for host, entry in data["environments"].items():
         assert isinstance(entry.get("toolchain"), str), host
         assert entry["toolchain"].startswith("leanprover/lean4:"), host
+
+
+# -- mesure paresseuse du defaut elan -------------------------------------------
+#
+# Une mesure lance un ``lean --version`` par le proxy elan : sur un poste ou
+# le defaut n'est pas installe, elle peut declencher un telechargement. Elle
+# ne doit donc avoir lieu qu'au palier 5, quand aucun palier plus haut ne
+# tranche.
+
+
+def _forbidden_loader():
+    """Loader qui echoue si la mesure a lieu."""
+
+    def loader():
+        raise AssertionError("le defaut elan n'aurait pas du etre mesure")
+
+    return loader
+
+
+def test_no_measurement_when_the_environment_pin_decides(tmp_path):
+    """``ELAN_TOOLCHAIN`` posee : aucun ``lean --version`` n'est lance."""
+    tag, provenance = resolve_pin(
+        tmp_path,
+        env={"ELAN_TOOLCHAIN": "leanprover/lean4:v4.34.0"},
+        inventory=_inventory(),
+        host=UNKNOWN_HOST,
+        loader=_forbidden_loader(),
+    )
+    assert (tag, provenance) == ("leanprover/lean4:v4.34.0", "env")
+
+
+def test_no_measurement_when_the_declaration_decides(tmp_path):
+    """Une declaration d'hote suffit : le defaut elan n'est pas mesure."""
+    tag, provenance = resolve_pin(
+        tmp_path,
+        env={},
+        inventory=_inventory(),
+        host="poste-declare",
+        loader=_forbidden_loader(),
+    )
+    assert (tag, provenance) == ("leanprover/lean4:v4.33.1", "declaration")
+
+
+def test_no_measurement_when_the_fleet_pin_decides(tmp_path):
+    """Le pin de flotte suffit : le defaut elan n'est pas mesure."""
+    tag, provenance = resolve_pin(
+        tmp_path,
+        env={},
+        inventory=_inventory(),
+        host=UNKNOWN_HOST,
+        loader=_forbidden_loader(),
+    )
+    assert (tag, provenance) == ("leanprover/lean4:v4.33.0", "declaration_flotte")
+
+
+def test_measurement_happens_once_and_only_at_the_last_stage(tmp_path):
+    """Le defaut elan n'est mesure qu'au palier 5, et une seule fois."""
+    calls: list[int] = []
+
+    def loader():
+        calls.append(1)
+        return FAKE_ELAN_DEFAULT
+
+    tag, provenance = resolve_pin(
+        tmp_path,
+        env={},
+        inventory={},
+        host=UNKNOWN_HOST,
+        loader=loader,
+    )
+    assert (tag, provenance) == (FAKE_ELAN_DEFAULT, "default_resolu")
+    assert len(calls) == 1
+
+
+def test_check_drift_measures_the_default_only_once():
+    """Le controle de derive et la resolution partagent une seule mesure."""
+    calls: list[int] = []
+
+    def loader():
+        calls.append(1)
+        return FAKE_ELAN_DEFAULT
+
+    report = check_drift(env={}, inventory={}, host=UNKNOWN_HOST, loader=loader)
+    assert report["elan_default"] == FAKE_ELAN_DEFAULT
+    assert len(calls) == 1
+
+
+# -- entrees mal formees et lectures non UTF-8 -----------------------------------
+
+
+def test_malformed_host_entry_is_reported_and_ignored(caplog):
+    """Une entree d'hote mal formee est signalee, pas silencieusement ignoree."""
+    import logging
+
+    inventory = _inventory()
+    inventory["environments"]["poste-malforme"] = "leanprover/lean4:v4.33.0"
+    with caplog.at_level(logging.WARNING):
+        assert declared_pin(inventory, "poste-malforme") is None
+    assert "mal formee" in caplog.text
+
+
+def test_malformed_toolchain_field_is_reported_and_ignored(caplog):
+    """Un ``toolchain`` qui n'est pas une chaine est signale puis ignore."""
+    import logging
+
+    inventory = _inventory()
+    inventory["environments"]["poste-bad-type"] = {"toolchain": 42}
+    with caplog.at_level(logging.WARNING):
+        assert declared_pin(inventory, "poste-bad-type") is None
+    assert "mal formee" in caplog.text
+
+
+def test_an_absent_declaration_is_not_reported_as_malformed(caplog):
+    """Une entree sans ``toolchain`` n'est pas une malformation : rien n'est dit."""
+    import logging
+
+    inventory = _inventory()
+    inventory["environments"]["poste-sans-pin"] = {"elan_default": FAKE_ELAN_DEFAULT}
+    with caplog.at_level(logging.WARNING):
+        assert declared_pin(inventory, "poste-sans-pin") is None
+    assert "mal formee" not in caplog.text
+
+
+def test_project_pin_that_is_not_utf8_is_ignored(tmp_path):
+    """Un ``lean-toolchain`` non UTF-8 ne casse pas le constructeur."""
+    (tmp_path / "lean-toolchain").write_bytes(b"leanprover/lean4:v4.32.1\n\xff\xfe")
+    tag, provenance = resolve_pin(
+        tmp_path,
+        env={},
+        inventory=_inventory(),
+        host="poste-declare",
+        installed=FAKE_ELAN_DEFAULT,
+    )
+    assert (tag, provenance) == ("leanprover/lean4:v4.33.1", "declaration")
+
+
+def test_load_inventory_survives_a_non_utf8_file(tmp_path):
+    """Une declaration illisible degrade la resolution, elle n'interrompt pas."""
+    path = tmp_path / "scripts" / "lean" / INVENTORY_FILENAME
+    path.parent.mkdir(parents=True)
+    path.write_bytes(b'{"fleet_pin": "\xff"}')
+    assert load_inventory(tmp_path) == {}

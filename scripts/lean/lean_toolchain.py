@@ -13,9 +13,10 @@ Cet organe detient la source de verite du pin :
 * ``lean_toolchain_inventory.json`` — la **declaration** : le tag que
   chaque poste epingle, plus le pin de flotte ;
 * la **resolution**, d'ordre explicite, avec la provenance dans le retour :
-  ``ELAN_TOOLCHAIN`` (lu tel quel) > ``lean-toolchain`` du projet >
-  declaration de l'hote > pin de flotte > defaut elan mesure (**non
-  epingle**) > repli alerte ;
+  ``ELAN_TOOLCHAIN`` (lu tel quel aux espaces de bord pres) >
+  ``lean-toolchain`` du projet > declaration de l'hote > pin de flotte >
+  defaut elan mesure (**non epingle**, mesure paresseuse : elle n'a lieu
+  qu'au palier 5) > repli alerte ;
 * le **controle de derive** : compare le pin effectif, la declaration et le
   defaut elan mesure.
 
@@ -41,6 +42,7 @@ import socket
 import subprocess
 import sys
 from pathlib import Path
+from typing import Callable
 
 __all__ = [
     "INVENTORY_FILENAME",
@@ -100,6 +102,9 @@ def load_inventory(root: Path | None = None) -> dict:
     except OSError as exc:
         LOGGER.warning("Declaration de toolchain illisible (%s) : %s", path, exc)
         return {}
+    except UnicodeDecodeError as exc:
+        LOGGER.warning("Declaration de toolchain illisible (%s) : %s", path, exc)
+        return {}
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as exc:
@@ -125,18 +130,33 @@ def declared_pin(inventory: dict | None, host: str) -> str | None:
 
     La cle d'hote est le nom d'hote en minuscules ; une declaration portant
     une cle differente n'est pas un pin pour cet hote (on ne devine pas).
+
+    Une entree **mal formee** (pas un objet, ou un ``toolchain`` qui n'est
+    pas une chaine) est signalee puis ignoree : le pin manque, et le
+    silence ferait croire a une declaration absente.
     """
     inv = load_inventory() if inventory is None else inventory
     environments = inv.get("environments")
     if not isinstance(environments, dict):
         return None
-    entry = environments.get(host.strip().lower())
+    key = host.strip().lower()
+    if key not in environments:
+        return None
+    entry = environments[key]
     if not isinstance(entry, dict):
+        LOGGER.warning(
+            "Declaration de toolchain mal formee pour l'hote %s : objet "
+            "attendu, pin ignore.", key)
         return None
     value = entry.get("toolchain")
-    if isinstance(value, str) and value.strip():
-        return value.strip()
-    return None
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        LOGGER.warning(
+            "Declaration de toolchain mal formee pour l'hote %s : chaine "
+            "attendue pour 'toolchain', pin ignore.", key)
+        return None
+    return value.strip() or None
 
 
 def current_host() -> str:
@@ -192,6 +212,38 @@ def installed_toolchain() -> str | None:
     return toolchain_from_version(proc.stdout + proc.stderr)
 
 
+class _Measured:
+    """Mesure **paresseuse** et unique du defaut elan.
+
+    Une mesure lance un ``lean --version`` par le proxy elan : sur un poste
+    ou le defaut n'est pas installe, elle peut declencher un
+    telechargement (30 s au plus). Elle n'est donc interrogee qu'au moment
+    ou elle est necessaire — le palier 5 de la resolution — et une seule
+    fois, meme quand plusieurs appels partagent la meme mesure.
+    """
+
+    def __init__(self, value: str | None | object = _UNSET,
+                 loader: Callable[[], str | None] | None = None) -> None:
+        self._value = value
+        self._loader = loader or installed_toolchain
+
+    def get(self) -> str | None:
+        """Valeur mesuree ; la mesure n'a lieu qu'a ce premier appel."""
+        if self._value is _UNSET:
+            self._value = self._loader()
+        return self._value  # type: ignore[return-value]
+
+
+def _measurement(
+    installed: str | None | object,
+    loader: Callable[[], str | None] | None = None,
+) -> _Measured:
+    """Enveloppe la mesure du defaut elan (valeur injectee ou paresseuse)."""
+    if isinstance(installed, _Measured):
+        return installed
+    return _Measured(installed, loader)
+
+
 def resolve_pin(
     project_dir: str | os.PathLike | None = None,
     *,
@@ -199,12 +251,14 @@ def resolve_pin(
     inventory: dict | None = None,
     host: str | None = None,
     installed: str | None | object = _UNSET,
+    loader: Callable[[], str | None] | None = None,
 ) -> tuple[str, str]:
     """Resout le pin de toolchain et rend ``(tag, provenance)``.
 
     Ordre (explicite, chaque palier testable isolement) :
 
-    1. ``ELAN_TOOLCHAIN`` — lu **tel quel**, jamais reconstruit ;
+    1. ``ELAN_TOOLCHAIN`` — lu **tel quel aux espaces de bord pres**
+       (``.strip()``), jamais reconstruit ;
     2. ``lean-toolchain`` du projet fourni ;
     3. declaration de l'hote (le tag que CE poste declare epingler) ;
     4. pin de flotte (declaration commune) ;
@@ -214,11 +268,18 @@ def resolve_pin(
     Le palier 2 ne s'applique qu'a un projet FOURNI : le squelette gere
     (``~/.cache/rlvr-lean``) ecrit son propre pin, le relire comme un pin
     de projet masquerait la provenance reelle.
+
+    La mesure du defaut elan est **paresseuse** : elle n'a lieu qu'au
+    palier 5. Aucun ``lean --version`` n'est lance quand un palier plus
+    haut tranche — sur un poste ou le defaut elan n'est pas installe, la
+    mesure peut declencher un telechargement que le rollout n'a pas
+    besoin. ``loader`` permet d'injecter la mesure (tests) ; ``installed``
+    injecte une valeur deja mesuree.
     """
     environment = os.environ if env is None else env
     inv = load_inventory() if inventory is None else inventory
     hostname = current_host() if host is None else host
-    measured = installed_toolchain() if installed is _UNSET else installed  # type: ignore[arg-type]
+    measurement = _measurement(installed, loader)
 
     environment_pin = (environment.get("ELAN_TOOLCHAIN") or "").strip()
     if environment_pin:
@@ -229,7 +290,7 @@ def resolve_pin(
             project_pin = (
                 Path(project_dir) / "lean-toolchain"
             ).read_text(encoding="utf-8").strip()
-        except OSError:
+        except (OSError, UnicodeDecodeError):
             project_pin = ""
         if project_pin:
             return project_pin, "projet"
@@ -242,6 +303,7 @@ def resolve_pin(
     if fleet:
         return fleet, "declaration_flotte"
 
+    measured = measurement.get()
     if measured:
         return measured, "default_resolu"
 
@@ -259,6 +321,7 @@ def check_drift(
     host: str | None = None,
     project_dir: str | os.PathLike | None = None,
     installed: str | None | object = _UNSET,
+    loader: Callable[[], str | None] | None = None,
 ) -> dict:
     """Compare pin effectif, declaration et defaut elan mesure.
 
@@ -272,17 +335,23 @@ def check_drift(
       defaut elan) ;
     * ``fleet_drift`` — les environnements dont la declaration diverge du
       pin de flotte.
+
+    La mesure du defaut elan est **partagee** avec la resolution : une
+    seule mesure, quel que soit le nombre de paliers traverses. Le
+    controle de derive est un diagnostic : il mesure toujours le defaut
+    elan du poste, c'est son objet.
     """
     inv = load_inventory() if inventory is None else inventory
     hostname = current_host() if host is None else host
-    measured = installed_toolchain() if installed is _UNSET else installed  # type: ignore[arg-type]
+    measurement = _measurement(installed, loader)
     effective, provenance = resolve_pin(
         project_dir,
         env=env,
         inventory=inv,
         host=hostname,
-        installed=measured,
+        installed=measurement,
     )
+    measured = measurement.get()
     declared = declared_pin(inv, hostname)
     fleet = fleet_pin(inv)
     environments = inv.get("environments") if isinstance(inv, dict) else None

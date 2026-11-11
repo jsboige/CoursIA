@@ -29,7 +29,8 @@ Recette d'execution (rule F — vrai outil, pas de contournement) ::
     # + lean-toolchain) est cree automatiquement comme cwd.
 
 Epinglage de la toolchain (organe ``scripts/lean/lean_toolchain.py``) : le pin
-effectif est resolu dans l'ordre ``ELAN_TOOLCHAIN`` (lu tel quel) >
+effectif est resolu dans l'ordre ``ELAN_TOOLCHAIN`` (lu tel quel aux espaces
+de bord près) >
 ``lean-toolchain`` du projet > declaration par environnement (fichier JSON
 lu par le code) > pin de flotte > defaut elan mesure (**non fige**) > repli
 alerte. Le tag et sa provenance sont journalises a la creation du
@@ -308,16 +309,18 @@ class LeanRLVRVerifier:
         """Résout le pin et rend ``(tag, provenance)``.
 
         Délègue à l'organe d'épinglage ``scripts/lean/lean_toolchain.py``,
-        qui tient l'ordre complet : ``ELAN_TOOLCHAIN`` (lu tel quel) > pin du
+        qui tient l'ordre complet : ``ELAN_TOOLCHAIN`` (lu tel quel aux
+        espaces de bord près) > pin du
         projet > declaration par environnement > pin de flotte > défaut elan
         mesuré (**non figé**) > repli averti.
 
         La mesure du défaut elan passe par ``_installed_toolchain``
-        (interposable par les tests).
+        (interposable par les tests) et n'a lieu qu'au palier 5 : quand un
+        palier plus haut tranche, aucun ``lean --version`` n'est lancé.
         """
         return _get_lean_toolchain().resolve_pin(
             project_dir,
-            installed=_installed_toolchain(),
+            loader=_installed_toolchain,
         )
 
     # -- squelette lake minimal ------------------------------------------------
