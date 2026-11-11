@@ -49,9 +49,9 @@ Jusqu'à la restructuration de la série, la théorie de la décision était imb
 
 ```mermaid
 flowchart TD
-    A["<b>Fondations</b> (01-03)<br/>axiomes vNM · utilité de l'argent<br/>aversion au risque"]
-    B["<b>Multi-attributs & réseaux</b> (04-05)<br/>MAUT · diagrammes d'influence"]
-    C["<b>Valeur & robustesse</b> (06)<br/>Minimax/regret"]
+    A["<b>Fondations</b> (01-02)<br/>axiomes vNM · utilité de l'argent<br/>aversion au risque"]
+    B["<b>Multi-attributs & réseaux</b> (03-04)<br/>MAUT · diagrammes d'influence"]
+    C["<b>Valeur & robustesse</b> (05-06)<br/>EVPI/EVSI · Minimax/regret"]
     D["<b>Séquentiel</b> (07)<br/>MDPs · Bellman"]
     E["<b>Bandits bayésiens</b> (10)<br/>Thompson Sampling"]
     F["<b>Palier terminal</b> (11)<br/>EDT/CDT/UDT face à un prédicteur"]
@@ -66,7 +66,7 @@ flowchart TD
     class LAKE lean;
 ```
 
-Le socle des **fondations** (01-03) pose les axiomes de rationalité et la notion d'aversion au risque ; les notebooks 4-5 étendent aux décisions multi-critères et aux réseaux de décision (nœuds de chance/décision/utilité) ; 6-7 mesurent la valeur de l'information et la robustesse sous incertitude sévère ; 07 introduit le séquentiel (MDPs, équation de Bellman) ; 10 clôture par les **bandits bayésiens** (Thompson Sampling calculé par le moteur Infer.NET), tandis que le companion 07b formalise l'indice de Gittins en Lean 4 ; le palier terminal (11) change de question : non plus *quelle action choisir sous incertitude*, mais *que faut-il compter comme conséquence de mon choix* quand un prédicteur est corrélé à lui — EDT, CDT, UDT.
+Le socle des **fondations** (01-02) pose les axiomes de rationalité et la notion d'aversion au risque ; les notebooks 03-04 étendent aux décisions multi-critères et aux réseaux de décision (nœuds de chance/décision/utilité) ; 05-06 mesurent la valeur de l'information et la robustesse sous incertitude sévère ; 07 introduit le séquentiel (MDPs, équation de Bellman) ; 10 clôture par les **bandits bayésiens** (Thompson Sampling calculé par le moteur Infer.NET), tandis que le companion 07b formalise l'indice de Gittins en Lean 4 ; le palier terminal (11) change de question : non plus *quelle action choisir sous incertitude*, mais *que faut-il compter comme conséquence de mon choix* quand un prédicteur est corrélé à lui — EDT, CDT, UDT.
 
 ## Détail des notebooks
 
@@ -140,15 +140,11 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 
 **Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01, bases Lean 4
 
-**Companion natif** (kernel Lean) : preuve formelle 0-sorry de la direction sound du théorème vNM dans le lake `decision_theory_lean`
-
 **Companion natif** de [DecInfer-01](DecInfer-01-Utility-Foundations.ipynb) : preuve formelle **0-sorry** de la direction *sound* du théorème de représentation vNM (représentation ⟹ rationalité) dans le lake [`decision_theory_lean`](../decision_theory_lean/) (lib `Utility`). Vérification in-kernel via `#check` + `#print axioms`. Les sections 7-8 d'origine — la **cohérence de de Finetti** (lib `Coherence`, EPIC #11703) : prix incohérents ⟹ Dutch Book à quatre tickets, et la caractérisation mono-livret `SingleCoherent q ↔ ProbBounds q` — ont été extraites vers le companion dédié [DecInfer-01c-Lean-Coherence](DecInfer-01c-Lean-Coherence.ipynb) (G4b, #14873).
 
 #### DecInfer-01c : Companion Lean — cohérence de de Finetti (Dutch Book)
 
 **Durée** : 20 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-01b, bases Lean 4
-
-**Companion natif** (kernel Lean) : cohérence de de Finetti — Dutch Book à quatre tickets, caractérisation mono-livret ⟺ bornes de probabilité (lib `Coherence`)
 
 **Companion natif** extrait des sections 7-8 de [DecInfer-01b](DecInfer-01b-Lean-ExpectedUtility.ipynb) (G4b, #14873) : la **cohérence de de Finetti** (1937) dans la lib `Coherence` du lake [`decision_theory_lean`](../decision_theory_lean/). Un système de prix arbitrage-incohérent est exploitable par un **Dutch Book** à quatre tickets (`non_additive_implies_dutch_book`, witness constructif) ; dans le cadre mono-livret, la cohérence coïncide exactement avec les **bornes de probabilité** (`single_coherent_iff_prob_bounds`, quatre témoins explicites — un par borne violée). Vérification in-kernel via `#check` + `#print axioms`, 0 sorry.
 
@@ -157,8 +153,6 @@ Applications : A/B testing adaptatif, recommandation en ligne, essais cliniques 
 #### DecInfer-07b : Companion Lean — indice de Gittins
 
 **Durée** : 45 min | **Kernel** : Lean 4 (WSL) | **Prérequis** : DecInfer-07, bases Lean 4
-
-Preuves formelles Lean 4, indice de Gittins, SFABP
 
 **Companion natif** de [DecInfer-07](DecInfer-07-Sequential.ipynb) : preuves formelles en Lean 4. Formalisation du cadre **SFABP** (Simple Family of Alternative Bandit Processes), optimalité de l'indice de Gittins via l'argument des prevailing charges, limitations (geometric discount, NP-difficulté du calcul exact). Le théorème d'optimalité est énoncé dans le lake [`decision_theory_lean`](../decision_theory_lean/) ; sa preuve complète exige une formalisation des MDP qui manque encore à Mathlib.
 
