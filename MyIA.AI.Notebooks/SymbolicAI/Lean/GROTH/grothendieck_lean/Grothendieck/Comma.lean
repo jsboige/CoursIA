@@ -139,7 +139,7 @@ définitions du module et les faits Mathlib 4 sous-jacents :
     (accès direct `(fstFunctor).map_id X` / `(fstFunctor).map_comp f g`).
   - `natTrans_app` : lemme namespace `@[simp]` de `Mathlib.CategoryTheory.Comma`
     à 3 arguments explicites (`L R X`) — application directe.
-  - `fst_snd_map_comp` : composition explicite des projections fst et snd.
+  - `snd_map_comp` : composition explicite des projections fst et snd.
 
 Les lemmes namespace à args explicites = application directe (cf. leçon
 L902 ★★ Tier 5 : un `by rw [...]` défait la LHS mais ne ferme pas

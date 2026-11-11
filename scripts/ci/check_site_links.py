@@ -62,18 +62,45 @@ DEFAULT_PAGES = (
     "/MyIA.AI.Notebooks/index.html",
     "/parcours.html",
     "/COURSE_CATALOG.generated.html",
+    # Les 16 README de series (#10921, sous-grain garde/series, 2026-11-10) :
+    # la mesure qui fonde cette extension y a trouve 54 liens casses sur 674
+    # -- tous corrects sur github.com, casses sur Pages (repertoires sans
+    # index, fichiers hors render-list). La passe post-rendu
+    # (quarto_site_link_targets.py) repare ces deux familles ; ces pages
+    # restent couvertes pour tenir la regression (une nouvelle serie qui
+    # recommence doit rougir ici, pas attendre la prochaine mesure a la
+    # main).
+    "/MyIA.AI.Notebooks/CaseStudies/README.html",
+    "/MyIA.AI.Notebooks/Complexity/README.html",
+    "/MyIA.AI.Notebooks/Compression/README.html",
+    "/MyIA.AI.Notebooks/cross-series/README.html",
+    "/MyIA.AI.Notebooks/GameTheory/README.html",
+    "/MyIA.AI.Notebooks/GenAI/README.html",
+    "/MyIA.AI.Notebooks/IIT/README.html",
+    "/MyIA.AI.Notebooks/ML/README.html",
+    "/MyIA.AI.Notebooks/NLP/README.html",
+    "/MyIA.AI.Notebooks/Physique/README.html",
+    "/MyIA.AI.Notebooks/Probas/README.html",
+    "/MyIA.AI.Notebooks/QuantConnect/README.html",
+    "/MyIA.AI.Notebooks/RL/README.html",
+    "/MyIA.AI.Notebooks/Search/README.html",
+    "/MyIA.AI.Notebooks/Sudoku/README.html",
+    "/MyIA.AI.Notebooks/SymbolicAI/README.html",
 )
 
 USER_AGENT = "coursia-site-links-guard/1.0 (+#21628)"
 TIMEOUT_SECONDS = 20.0
-# La page catalogue seule expose ~1650 liens uniques ; la borne doit la
-# couvrir entierement, sinon le verdict serait structurellement incomplet
-# (la troncature sort en rc 2). La troncature reste le signal qui
-# surveille la croissance du site.
-MAX_LINKS = 2000
-# Sondes HTTP concurrentes (ThreadPoolExecutor) : 1650 sondes
-# sequentielles a ~1 s seraient au ras du timeout du workflow.
-PROBE_WORKERS = 8
+# La page catalogue seule expose ~1650 liens uniques ; les 16 README de
+# series en ajoutent ~674 (mesure 2026-11-10) ; la borne doit couvrir la
+# somme, sinon le verdict serait structurellement incomplet (la troncature
+# sort en rc 2). La troncature reste le signal qui surveille la croissance
+# du site.
+MAX_LINKS = 2600
+# Sondes HTTP concurrentes (ThreadPoolExecutor) : ~2600 sondes (catalogue
+# + 16 README de series) sequentielles a ~1 s seraient au ras du timeout
+# de 10 min du workflow ; a 8 workers, le pire cas approchait deja la
+# moitie -- 12 gardent la marge sans marteler l'origine.
+PROBE_WORKERS = 12
 
 _HREF_RE = re.compile(r'href="([^"]+)"', re.IGNORECASE)
 
