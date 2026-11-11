@@ -41,7 +41,7 @@ python scripts/lean/check_manifest_target_gap.py --json     # sortie machine
 
 L'organe lit les **globs du lakefile** (la seule source de vérité sur ce que le lake compile — un `.lean` sur disque hors glob n'est pas un module), en déduit les modules réellement compilés, et les compare à `axiom-target-modules`. Il distingue trois états de sens opposés, jamais confondus dans un chiffre : liste bornée (écart mesuré), `"*"` (liste dérivée à l'exécution — couverture totale), liste vide (aucun gate : ce n'est pas un écart de liste mais une absence de gate, que `axiom_coverage.py` classe `NOT-APPLICABLE`). Pour chaque module hors liste il donne le compte de `sorry` canonique (`count_code_sorry.scan_file`) et un prescreen des trois classes `forbidden` (`native_decide`, `sorryAx`, `Classical.choice`) — le prescreen signale, il ne dispense pas : le verdict reste au job.
 
-État mesuré au 2026-11-11 sur `origin/main` : **deux lakes à liste bornée** — `gametheory` (**23** cibles pour **57** modules compilés, **35** hors liste) et `formal_logic` (**6** cibles pour **6** modules compilés, **0** hors liste) ; les 33 autres lakes portent `"*"` (couverture totale par dérivation) et `conway_cgt_lean` est sans gate par décision écrite (§4.1).
+État mesuré au 2026-11-11 sur `origin/main` : les lakes à liste bornée sont `gametheory` et `formal_logic` — les autres portent `"*"` (couverture totale par dérivation), et `conway_cgt_lean` est sans gate par décision écrite (§4.1). **Le chiffre de l'écart n'est pas dans cette page** : il se lit dans la sortie de l'organe, qui le recalcule à chaque invocation.
 
 ## 1. Portée et méthode
 
