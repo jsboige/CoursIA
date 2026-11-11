@@ -137,8 +137,9 @@ diapositives du deck : **13** sur `myia-po-2028`, **7** sur cette machine.
 L'archive de #22286 ne capture cependant que **32 des 124 diapositives** du
 deck 06 — son README le dit (« parmi les diapositives capturées »). Sur ces
 32 diapositives, **6** débordent là-bas : `34`, `40`, `42`, `53`, `103`, `112` —
-dont **3** débordent aussi ici (`40`, `103`, `112`) et **3** ne débordent
-qu'y (`34`, `42`, `53`).
+les six mêmes que #24171 liste pour le deck 06 parmi ses huit diapositives à
+corriger. Sur cette machine, **3** de ces six débordent aussi (`40`, `103`,
+`112`) et **3** ne débordent qu'y (`34`, `42`, `53`).
 
 L'**énumération complète n'est pas dérivable** des deux archives, et l'écart
 exact n'est donc pas connu :
@@ -162,6 +163,11 @@ C'est le **second** cas documenté de non-opposabilité du compteur, après
 `S8-semantic-web` (2 → 1, voir #24171) — et il porte sur un deck de 124
 diapositives, dont 7 contre 13. Aucun écart n'est content-expliqué : le deck
 n'a pas bougé entre les deux relevés, et l'instrument est le même.
+
+La lecture **après correction** des 7 diapositives signalées ici est dans
+[`docs/captures/24171-point3/`](../24171-point3/README.md) : c'est là que le
+point 3 de #24171 — corriger les diapositives qui débordent réellement — est
+traité, sur le même deck et avec la même signature de polices.
 
 C'est aussi ce que l'archive de #22286 ne pouvait pas dire : son `manifest.json`
 ne porte **ni signature de polices ni empreinte de machine** (il précède la
