@@ -2,11 +2,32 @@
 """Regression tests for the deployed Lean 4 WSL kernel wrapper (#16181)."""
 
 import importlib.util
+import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
+
+
+def _symlinks_available():
+    """Le shim du wrapper est un lien symbolique : sous Windows sans le
+    privilege de creer des liens, `os.symlink` echoue et le wrapper refuse
+    alors de demarrer, ce qui est son comportement voulu. Le wrapper, lui, ne
+    tourne que sous Linux ou WSL."""
+    with tempfile.TemporaryDirectory() as directory:
+        try:
+            os.symlink(os.path.join(directory, "target"),
+                       os.path.join(directory, "link"))
+        except (OSError, NotImplementedError):
+            return False
+    return True
+
+
+needs_symlink = pytest.mark.skipif(
+    not _symlinks_available(),
+    reason="le shim du wrapper exige os.symlink (indisponible ici)")
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -329,6 +350,7 @@ def _install_fake_fork(monkeypatch, fork_cls):
     monkeypatch.setitem(sys.modules, "lean4_jupyter.repl", module)
 
 
+@needs_symlink
 def test_main_refuses_a_fork_that_would_run_another_version(wrapper, monkeypatch,
                                                            tmp_path, capsys):
     """Le fork ancien lancerait le REPL par defaut (4.33.0) sur un arbre en
@@ -348,6 +370,7 @@ def test_main_refuses_a_fork_that_would_run_another_version(wrapper, monkeypatch
     assert "setup_native_lean4_import.py install" in stderr
 
 
+@needs_symlink
 def test_main_exports_the_paired_repl_to_a_fork_that_reads_it(wrapper, monkeypatch,
                                                               tmp_path):
     import ipykernel.kernelapp as ipk

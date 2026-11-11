@@ -137,13 +137,6 @@ def test_elan_toolchain_pin_divergence_is_refused(fork, home, tmp_path, monkeypa
         fork._repl_for_toolchain(str(lake))
 
 
-def test_launch_does_not_swallow_the_pairing_error(organ):
-    """La fourche attrape `Exception` autour du chemin natif : l'erreur de
-    couple doit REMONTER, sinon le repli silencieux revient."""
-    template = organ.REPL_PY_PATCH
-    assert "except Lean4ReplWrapper.ReplPairingError:" in template
-    assert template.index("except Lean4ReplWrapper.ReplPairingError:") < \
-        template.index("except Exception:")
 
 
 def test_pairing_error_suggests_the_build_repl_tag_with_its_v(fork, home, tmp_path):
@@ -267,7 +260,10 @@ def test_launch_outside_a_lake_runs_the_paired_binary(launching_fork, home,
     cls.launch()
     command, kwargs = fake.calls[-1]
     assert command == str(paired)
-    assert kwargs["env"]["PATH"].split(":")[0] == os.path.expanduser("~/.elan/bin")
+    # Le PATH du REPL est un PATH POSIX (le REPL tourne sous Linux ou WSL) :
+    # le comparer par prefixe, un `split(":")` couperait la lettre de lecteur
+    # d'un HOME Windows.
+    assert kwargs["env"]["PATH"].startswith(os.path.expanduser("~/.elan/bin") + ":")
 
 
 def test_launch_inside_a_lake_runs_the_paired_binary(launching_fork, home,
@@ -324,3 +320,135 @@ def test_rc_default_repl_is_refused_for_a_release_lake(fork, home, tmp_path):
 
     with pytest.raises(fork.ReplPairingError):
         fork._repl_for_toolchain(str(lake))
+
+
+# --- Review de #25360 : aucun repli silencieux sur `lake env repl` ---------
+
+
+def _lake(tmp_path, tag="v4.30.0"):
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    (lake / "lakefile.toml").write_text("name = 'probe'\n", encoding="utf-8")
+    (lake / "lean-toolchain").write_text(f"leanprover/lean4:{tag}\n", encoding="utf-8")
+    return lake
+
+
+class _Ran:
+    """Resultat de `subprocess.run` pour `lake env`."""
+
+    def __init__(self, stdout, returncode=0, stderr=""):
+        self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = stderr
+
+
+def test_launch_in_a_lake_raises_the_pairing_error(launching_fork, home,
+                                                   tmp_path, monkeypatch):
+    """Sans binaire apparie, un REPL par defaut d'une autre version est refuse,
+    et rien n'est lance a sa place."""
+    import subprocess
+
+    cls, fake = launching_fork
+    _write_repl(home / ".elan" / "bin" / "repl", b"4.33.0")
+    monkeypatch.chdir(_lake(tmp_path))
+    monkeypatch.delenv("LEAN4_JUPYTER_REPL", raising=False)
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: _Ran("/sysroot/lib/lean\n"))
+
+    with pytest.raises(cls.ReplPairingError):
+        cls.launch()
+    assert fake.calls == []
+
+
+def test_launch_in_a_lake_fails_when_lake_env_fails(launching_fork, home,
+                                                    tmp_path, monkeypatch):
+    """Un `lake env` qui expire leve une erreur nommee : avant, le gabarit
+    lancait alors `lake env repl`, donc le REPL par defaut."""
+    import subprocess
+
+    cls, fake = launching_fork
+    paired = _write_repl(home / ".elan" / "bin" / "repl-4.30.0", b"4.30.0")
+    lake = _lake(tmp_path)
+    monkeypatch.chdir(lake)
+    monkeypatch.setenv("LEAN4_JUPYTER_REPL", str(paired))
+
+    def _timeout(*args, **kwargs):
+        raise subprocess.TimeoutExpired(cmd="lake env", timeout=240)
+
+    monkeypatch.setattr(subprocess, "run", _timeout)
+
+    with pytest.raises(cls.ReplLaunchError) as caught:
+        cls.launch()
+    assert str(lake) in str(caught.value)
+    assert "TimeoutExpired" in str(caught.value)
+    assert fake.calls == []
+
+
+def test_launch_in_a_lake_fails_when_lake_is_missing(launching_fork, home,
+                                                     tmp_path, monkeypatch):
+    """`lake` absent du PATH : meme refus, pas de repli."""
+    import subprocess
+
+    cls, fake = launching_fork
+    paired = _write_repl(home / ".elan" / "bin" / "repl-4.30.0", b"4.30.0")
+    monkeypatch.chdir(_lake(tmp_path))
+    monkeypatch.setenv("LEAN4_JUPYTER_REPL", str(paired))
+
+    def _absent(*args, **kwargs):
+        raise FileNotFoundError("lake")
+
+    monkeypatch.setattr(subprocess, "run", _absent)
+
+    with pytest.raises(cls.ReplLaunchError):
+        cls.launch()
+    assert fake.calls == []
+
+
+def test_launch_in_a_lake_fails_on_an_empty_lean_path(launching_fork, home,
+                                                      tmp_path, monkeypatch):
+    """Un LEAN_PATH vide fait echouer le lancement, avec le code de sortie et
+    l'erreur de `lake env`, au lieu de retomber sur `lake env repl`."""
+    import subprocess
+
+    cls, fake = launching_fork
+    paired = _write_repl(home / ".elan" / "bin" / "repl-4.30.0", b"4.30.0")
+    lake = _lake(tmp_path)
+    monkeypatch.chdir(lake)
+    monkeypatch.setenv("LEAN4_JUPYTER_REPL", str(paired))
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: _Ran(
+        "", returncode=1, stderr="error: lakefile.toml: unknown field\n"))
+
+    with pytest.raises(cls.ReplLaunchError) as caught:
+        cls.launch()
+    message = str(caught.value)
+    assert str(lake) in message
+    assert "exit 1" in message
+    assert "unknown field" in message
+    assert fake.calls == []
+
+
+def test_launch_in_a_lake_fails_when_the_binary_is_missing(launching_fork, home,
+                                                           tmp_path, monkeypatch):
+    """Un binaire choisi par la table mais absent du disque : erreur nommee."""
+    import subprocess
+
+    cls, fake = launching_fork
+    monkeypatch.chdir(_lake(tmp_path))
+    monkeypatch.delenv("LEAN4_JUPYTER_REPL", raising=False)
+    monkeypatch.setattr(subprocess, "run", lambda *a, **k: _Ran("/sysroot/lib/lean\n"))
+    missing = str(home / ".elan" / "bin" / "repl-4.30.0")
+    monkeypatch.setattr(cls, "_repl_for_toolchain", staticmethod(lambda _root: missing))
+
+    with pytest.raises(cls.ReplLaunchError) as caught:
+        cls.launch()
+    assert missing in str(caught.value)
+    assert fake.calls == []
+
+
+def test_launch_has_no_blanket_exception_handler(organ):
+    """Le `except Exception: pass` qui menait au repli a disparu de `launch()` :
+    seules les erreurs de `lake env` sont attrapees, pour etre nommees."""
+    template = organ.REPL_PY_PATCH
+    body = template[template.index("def launch(cls):"):]
+    assert "except Exception" not in body
+    assert "except (OSError, _sp.SubprocessError)" in body
+    assert body.count('pexpect.spawn("lake env repl"') == 1

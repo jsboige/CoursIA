@@ -197,6 +197,16 @@ du wrapper et le tag `v0.0.2-paired-repl` de la fourche :
   le wrapper refuse de démarrer (`exit 3`) et renvoie à
   `setup_native_lean4_import.py install`.
 
+Depuis le tag `v0.0.3-launch-errors`, la fourche ne retombe plus en silence sur
+`lake env repl`. Dans un lake, trois cas faisaient tourner le REPL par défaut :
+un `lake env` en échec (délai dépassé, `lake` absent), un `LEAN_PATH` vide, ou
+un binaire choisi mais absent du disque. Ils lèvent désormais `ReplLaunchError`,
+avec le chemin du lake et l'erreur de `lake env`. `lake env repl` ne sert plus
+que hors lake, sans binaire apparié, c'est-à-dire pour un lancement hors
+wrapper. De son côté, `install` lit le code de retour de `pip` et ne déclare la
+fourche installée que si son `repl.py` porte les marqueurs du lancement apparié
+(`PAIRED_LAUNCH_MARKERS`) : une fourche antérieure y apparaît `STALE`.
+
 La table de la fourche compare désormais le tag exact : la sous-chaîne
 servait `repl-4.33.0` à un lake en `v4.33.0-rc1`. La version embarquée se lit
 avec son suffixe : une toolchain rc embarque `.../reference/4.33.0-rc1/`

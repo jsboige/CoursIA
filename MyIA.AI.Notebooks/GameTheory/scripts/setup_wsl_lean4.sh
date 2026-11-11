@@ -93,7 +93,7 @@ source "$VENV_PATH/bin/activate"
 # fork lance le REPL directement avec le LEAN_PATH du lake, ce qui permet
 # d'importer ses modules. Source de verite de l'URL et du tag :
 # FORK_URL / FORK_TAG dans scripts/lean/setup_native_lean4_import.py.
-LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+https://github.com/jsboige/lean4_jupyter.git@v0.0.2-paired-repl"
+LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+https://github.com/jsboige/lean4_jupyter.git@v0.0.3-launch-errors"
 log_info "Installation de lean4_jupyter (fork du depot) et dependances..."
 pip install --upgrade pip
 pip install ipykernel pyyaml "$LEAN4_JUPYTER_SPEC"
