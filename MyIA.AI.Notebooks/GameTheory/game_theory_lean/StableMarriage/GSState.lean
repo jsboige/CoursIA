@@ -76,7 +76,11 @@ def gsMenPrefLE (m : Fin n) (w1 w2 : Fin n) : Prop :=
     (`gsChooseMax`/`gsChooseMax_mem`/`gsChooseMax_maximal`), ce qui forçait
     Lean à ré-élaborer le même arbre syntaxique 3 fois — saturation de la
     stack Windows lors du cold build `lake -R build` (`0xC0000409`
-    STATUS_STACK_BUFFER_OVERRUN dans `lean.exe` côté ai-01 §1 pre-merge). -/
+    STATUS_STACK_BUFFER_OVERRUN dans `lean.exe` côté ai-01 §1 pre-merge).
+    Le jumeau EN possède sa propre copie byte-identique de ce lemme
+    (même extraction que le canonique FR) ; les 3 sites
+    `haveI := gsMenPref_trans prof m` y font référence sans qualification,
+    reflet de l'auto-référence du canonique FR. -/
 lemma gsMenPref_trans (m : Fin n) : IsTrans (Fin n) (gsMenPrefLE prof m) :=
   ⟨fun a b c hab hbc => by
     cases hab with

@@ -133,3 +133,89 @@ def test_projections_rest_conservent_les_preuves_utilisees():
         ["api", "repos/jsboige/CoursIA/issues/41/timeline", "--paginate"],
         timeline) == [{"event": "review_dismissed", "actor": {"login": "other"},
                        "dismissed_review": {"review_id": 7}}]
+
+
+def test_projection_pulls_commits_conserve_sha_et_les_deux_dates():
+    # #17315 : _pr_commits_rest ne lit que sha, commit.author.date et
+    # commit.committer.date. La projection doit reproduire EXACTEMENT
+    # cette normalisation, sur la forme slurp (liste de pages) comme sur
+    # la page unique.
+    raw_pages = [
+        [{
+            "sha": "a" * 40,
+            "commit": {
+                "message": "message long " * 50,
+                "author": {"name": "bruit", "email": "x", "date": "2026-11-01T10:00:00Z"},
+                "committer": {"name": "bruit", "email": "x", "date": "2026-11-01T11:00:00Z"},
+                "tree": {"sha": "t" * 40}, "verification": {"verified": False},
+            },
+            "parents": [{"sha": "b" * 40}], "html_url": "bruit",
+        }, {
+            "sha": "c" * 40,
+            "commit": {
+                "author": {"date": None},
+                "committer": {"date": "2026-11-02T09:00:00Z"},
+            },
+        }],
+    ]
+
+    def normalize(pages):
+        flat = []
+        for page in pages:
+            flat.extend(page if isinstance(page, list) else [page])
+        return [{"oid": c.get("sha") or "",
+                 "committedDate": (c.get("commit") or {}).get("committer", {}).get("date"),
+                 "authoredDate": (c.get("commit") or {}).get("author", {}).get("date")}
+                for c in flat]
+
+    projected = mod._project_gh_payload(
+        ["api", "repos/jsboige/CoursIA/pulls/41/commits", "--paginate", "--slurp"],
+        raw_pages)
+    assert projected == [[
+        {"sha": "a" * 40,
+         "commit": {"author": {"date": "2026-11-01T10:00:00Z"},
+                    "committer": {"date": "2026-11-01T11:00:00Z"}}},
+        {"sha": "c" * 40,
+         "commit": {"author": {"date": None},
+                    "committer": {"date": "2026-11-02T09:00:00Z"}}},
+    ]]
+    assert normalize(projected) == normalize(raw_pages)
+
+
+def test_projection_issue_unique_conserve_le_contrat_issueinfo():
+    # #13725 : le discriminant PR-vs-issue est la PRESENCE de la cle
+    # `pull_request`. #14218 : voie 3 lit title et body. Tout le reste
+    # (~40 champs de presentation REST) est du transport mort.
+    raw = {
+        "number": 19742, "state": "open",
+        "created_at": "2026-10-07T08:00:00Z",
+        "title": "Epic Origami", "body": "corps " + "long " * 4000,
+        "labels": [{"name": "l%d" % i} for i in range(10)],
+        "assignees": [{"login": "a"}] * 5, "reactions": {"total_count": 99},
+        "milestone": {"title": "M"}, "comments": 42, "locked": False,
+    }
+    projected = mod._project_gh_payload(
+        ["api", "repos/jsboige/CoursIA/issues/19742"], raw)
+    assert set(projected) == {"state", "created_at", "title", "body"}
+    assert projected["body"] == raw["body"]
+    info_raw = mod.IssueInfo(raw)
+    info_proj = mod.IssueInfo(projected)
+    assert (info_proj.state, info_proj.created_at, info_proj.title,
+            info_proj.body) == (info_raw.state, info_raw.created_at,
+                                info_raw.title, info_raw.body)
+
+    pr_payload = dict(raw, pull_request={"url": "https://example.invalid/x",
+                                         "html_url": "bruit"})
+    projected_pr = mod._project_gh_payload(
+        ["api", "repos/jsboige/CoursIA/issues/19742"], pr_payload)
+    assert "pull_request" in projected_pr  # le discriminant survit
+    assert projected_pr["pull_request"] == {"url": "https://example.invalid/x"}
+    assert mod._gh_fetch_issue.__doc__  # symbole vivant, garde de typo
+
+    # les endpoints voisins ne sont PAS captures par la branche issue seule :
+    # /timeline reste servi par SA branche (event/actor/dismissed_review),
+    # jamais par la projection issue (aucune cle state/body n'apparait).
+    timeline = [{"event": "cross-referenced", "created_at": "date"}]
+    assert mod._project_gh_payload(
+        ["api", "repos/jsboige/CoursIA/issues/19742/timeline"], timeline) == [
+            {"event": "cross-referenced"}]

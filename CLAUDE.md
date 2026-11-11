@@ -37,7 +37,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 
 **L'index fait foi dans [docs/README.md](docs/README.md)** — racine, `reference/`, `genai/`, `qc/`, `lean/`, `ledger`, transients : il recense et décrit chaque document, tenu à jour à chaque ajout. **La liste n'est pas recopiée ici** : une copie dérive au premier document ajouté, et c'est l'index qui la reçoit.
 
-Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
+Notation étudiants : moteur générique = [configs/README.md](dotnet/GradeBookApp/configs/README.md) ; **pipelines + données par cohorte = privés sur GDrive** `G:\Mon Drive\MyIA\Formation\<ecole>\<annee>\grading\` (PII, hors repo public).
 
 ## Règles modulaires `.claude/rules/`
 
@@ -52,6 +52,10 @@ Ce précis par domaine est une **vue** ; la commande fait foi : `grep -l '^paths
 - **Artefacts** (`results-artifact-policy`) : nouveau fichier de `scripts/results/` **> 512 Ko = bloqué par CI** (#15890) — committer l'agrégé falsifiable, les séries complètes hors dépôt avec le chemin cité dans le body.
 - **GenAI** (`genai-config`) : — (prescriptions portées par la règle et [genai-services.md](docs/genai/genai-services.md)).
 - **Lean / GameTheory** (`wsl-kernels` · `lean-merge-discipline` · `lean-i18n`) : docstrings FR par défaut, jumeau `_en` byte-identique hors commentaires — [lean-i18n.md](.claude/rules/lean-i18n.md). **Python** (`codeql-suppressions-inertes`) : un commentaire `# codeql[rule-id]` est **inerte** ici (default setup) — ne pas en ajouter, ne pas en déplacer.
+- **Sous-modules** (`submodule-maintenance`) : périmètre = les **cinq** dépôts lus dans `.gitmodules`, jamais un souvenir ; commiter DEDANS, pusher, PUIS bumper le pointeur parent ; dérive gitlink mesurée = PR de bump due ; les sous-modules suivis (Z3.Linq, Argumentum) reçoivent leurs bumps Dependabot tagués `Grain:` par ai-01.
+- **SOTA** (`sota-not-workaround`) : aucune sortie de contournement dégradée committée sans verdict écrit parmi SOTA-OK / RECOVERABLE-LOCAL / -MACHINE / -USER-HAND / INTRINSIC (ce dernier sur grille 6 axes nominative) ; moteur démontré sur un problème **non dégénéré** ; jamais maquiller une sortie — réparer la cause + ré-exécuter (registre `docs/ledgers/3801-sota-axe2.md`).
+- **Anti-régression** (`anti-regression`) : jamais remplacer une preuve/implémentation existante par `sorry`/stub sans erreur citée + 3 tactiques tentées + PR dédiée (précis §D) ; `sorry` comptés par `scripts/lean/count_code_sorry.py --json` (champ `distinct_code_sorry`), jamais `grep -c sorry`.
+- **Code style** (`code-style`) : précis §E — pas d'emoji (code, fichiers générés, **messages de commit**), PEP 8 + type hints (Python 3.10+), .NET 9, notebooks committés avec leurs sorties.
 
 **Travailler sur ces domaines sans toucher les fichiers — reviewer une PR notebook, par exemple — demande de les `Read` explicitement** ; les prescriptions ci-dessus et le §C de ce fichier sont le précis toujours chargé, pas une redondance.
 
@@ -206,18 +210,7 @@ Détail H.1-H.7 + plan P0-P4 + script pre-commit : [regles-validation-detail.md]
 
 ## CARTOGRAPHIE & OUTILS
 
-```
-MyIA.AI.Notebooks/          # Séries pédagogiques : GenAI/{Image,Audio,Video,Texte},
-                            # ML (ML.NET C#), Search, Sudoku, SymbolicAI/{Lean,Tweety,
-                            # SemanticWeb,Planning,SmartContract}, Probas (Infer.NET),
-                            # GameTheory (OpenSpiel + Lean), IIT (PyPhi), QuantConnect
-scripts/notebook_tools/     # CLI multi-famille (validate/execute/skeleton/analyze)
-scripts/genai-stack/        # GenAI Docker + validation
-.claude/{agents,skills,rules}/
-GradeBookApp/               # Notation étudiants (pipelines/données privés GDrive)
-docker-configurations/      # ComfyUI + Qwen Docker
-docs/                       # Documentation déportée de ce fichier
-```
+Arborescence des séries de notebooks et des dossiers techniques : [README §Structure du dépôt](README.md#structure-du-dépôt).
 
 **Règle générale outils** : ne jamais écrire un script ad-hoc d'exécution/validation — il existe presque toujours un outil dédié dans `scripts/notebook_tools/`. Si manquant, l'ajouter **là** (pas dans la racine `scripts/`).
 
@@ -264,6 +257,4 @@ Structure complète : [quantconnect.md](docs/qc/quantconnect.md).
 
 ## PROJECT OVERVIEW
 
-CoursIA = plateforme éducative AI : Jupyter notebooks (C# .NET Interactive + Python), infrastructure Docker GenAI (ComfyUI + Qwen), GradeBookApp évaluation étudiants. Repository : https://github.com/jsboige/CoursIA. Documentation primaire en français ; commentaires code en français ou anglais.
-
-Stack : OpenAI/Anthropic APIs, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ + .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023).
+Vue d'ensemble du projet, pile technique et prérequis : [README.md](README.md) — pile applicative et ventilation GPU dans [README §Infrastructure Docker](README.md#infrastructure-docker).
