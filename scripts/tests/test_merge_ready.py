@@ -530,6 +530,46 @@ def test_skip_mergeable_state_not_clean(tmp_path):
         assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
 
 
+def test_prelecture_blocked_evite_les_tests_d_arbre_fusionne(tmp_path):
+    runner = ScriptedRunner(
+        pulls=[{"mergeable_state": "blocked", "head": {"sha": HEAD}}]
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "mergeable-state:blocked"
+    assert not any("premerge_combined_check.py" in flat for flat in runner.flat())
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_prelecture_clean_puis_garde_finale_joue_les_tests_d_arbre(tmp_path):
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+    assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+def test_prelecture_unstable_ne_saute_pas_les_tests_d_arbre(tmp_path):
+    runner = _unstable_runner(DEFAULT_CHECK_RUNS)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+def test_prelecture_tete_deplacee_evite_les_tests_d_arbre_fusionne(tmp_path):
+    runner = ScriptedRunner(
+        pulls=[{"mergeable_state": "clean", "head": {"sha": HEAD_MOVED}}]
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "head-moved"
+    assert not any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
 # --- etape 6 bis : `unstable` (#25059) -------------------------------------------
 
 
@@ -632,8 +672,9 @@ def test_mergeable_unknown_then_clean_merges(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
-    # 2 lectures REST (unknown puis clean) + 1 sommeil entre les deux
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == 2
+    # 2 lectures en prelecture (unknown puis clean), 1 garde finale clean,
+    # et un seul sommeil entre les deux lectures `unknown` et `clean`.
+    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == 3
     assert runner.sleeps == [mr.MERGEABLE_RETRY_SLEEP_S]
 
 
@@ -644,7 +685,8 @@ def test_mergeable_unknown_persistant_skippe(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "mergeable-state:unknown"
-    # 1 lecture initiale + MERGEABLE_RETRIES relectures, autant de sommeils
+    # La prelecture seule est payee : 1 lecture initiale + MERGEABLE_RETRIES
+    # relectures, autant de sommeils ; la garde finale n'est pas atteinte.
     assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == mr.MERGEABLE_RETRIES + 1
     assert len(runner.sleeps) == mr.MERGEABLE_RETRIES
 
