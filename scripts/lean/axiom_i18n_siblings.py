@@ -172,6 +172,15 @@ def decide_lake(entry, tools):
     ls, _discover, _filter, detect_anchors = tools
     surface = lake_surface(entry, tools)
     gates_on_sorry = str(entry.get("axiom-fail-on-sorry", "true")).lower() == "true"
+    # Une ancre « toujours interdite » ne l'est que sous la allow-list PAR
+    # DEFAUT de la porte. Un lac qui porte `axiom-allow-axioms` (fichier `@`
+    # ou liste inline) decide LUI-MEME de ses ancres : la source ne dit pas
+    # si l'ancre enumeratee au build est couverte par la liste -- seul CI le
+    # dit (le gate reel compare les noms resolus). Ces ancres restent
+    # RAPPORTEES (i18n-anchors + noted), jamais decision-blockantes, sinon
+    # l'organe fabrique un ecart assume la ou le wrapper tournait vert :
+    # conway (79 ancres allow-listees, dont les jumeaux `_en` -- #25256).
+    custom_allow = str(entry.get("axiom-allow-axioms", "")).strip() != ""
 
     row = {
         "lake": entry["lake"],
@@ -226,7 +235,8 @@ def decide_lake(entry, tools):
         anchors = _module_anchors(ls, surface["project"], module, detect_anchors)
         if anchors:
             row["i18n-anchors"][module] = anchors
-        blocking = [a for a in anchors if a in ALWAYS_FORBIDDEN_ANCHORS]
+        blocking = [a for a in anchors
+                    if a in ALWAYS_FORBIDDEN_ANCHORS and not custom_allow]
         if gates_on_sorry:
             blocking += [a for a in anchors if a in SORRY_ANCHORS]
         if empty_reason is not None and empty_reason != "declaration_free_module":
@@ -253,13 +263,25 @@ def decide_lake(entry, tools):
         return row
 
     noted = sorted({a for anchors in row["i18n-anchors"].values()
-                    for a in anchors if a in SORRY_ANCHORS})
+                    for a in anchors
+                    if a in SORRY_ANCHORS
+                    or (custom_allow and a in ALWAYS_FORBIDDEN_ANCHORS)})
     if noted:
-        row["reason"] = (
-            f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
-            f"{row['i18n-declarations']} declarations) ne porte aucun ancrage "
-            f"qui ferait rougir la porte ; les `sorry` y sont rapportes, non "
-            f"gates (la porte ne gate pas sur sorryAx pour ce lake)")
+        governed = [a for a in noted if a in ALWAYS_FORBIDDEN_ANCHORS]
+        if governed:
+            row["reason"] = (
+                f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
+                f"{row['i18n-declarations']} declarations) ; les ancres "
+                f"reportees ({', '.join(noted)}) sont gouvernees par la "
+                f"allow-list du lac (`axiom-allow-axioms`) -- la source ne dit "
+                f"pas si l'ancre resolue au build y est couverte, seule la CI "
+                f"le dit (le gate reel compare les noms resolus)")
+        else:
+            row["reason"] = (
+                f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "
+                f"{row['i18n-declarations']} declarations) ne porte aucun ancrage "
+                f"qui ferait rougir la porte ; les `sorry` y sont rapportes, non "
+                f"gates (la porte ne gate pas sur sorryAx pour ce lake)")
     else:
         row["reason"] = (
             f"opt-in sur : la surface `_en` ({row['i18n-modules']} modules, "

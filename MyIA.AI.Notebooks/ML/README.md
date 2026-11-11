@@ -144,7 +144,7 @@ ML/
 
 ```bash
 # 1. Installer .NET SDK 9.0+ depuis https://dotnet.microsoft.com/download
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 
 # Vérification
@@ -391,7 +391,7 @@ Les deux sous-séries sont indépendantes et peuvent être suivies dans n'import
 
 | Problème | Solution |
 | -------- | -------- |
-| `dotnet-interactive` non trouvé | `dotnet tool install -g Microsoft.dotnet-interactive` puis `dotnet interactive jupyter install` |
+| `dotnet-interactive` non trouvé | `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` |
 | Kernel `.net-csharp` absent | Vérifier avec `jupyter kernelspec list`. Réinstaller si nécessaire (cf. [docs/reference/kernels-runtime.md](../../docs/reference/kernels-runtime.md)) |
 | ML.NET : erreur `IDataView` au chargement | Vérifier le chemin du CSV (utilisez `Path.Combine` plutôt qu'un chemin absolu) |
 | `OPENAI_API_KEY` manquant (Labs 2-3) | Créer un fichier `.env` à la racine avec `OPENAI_API_KEY=sk-...` |
