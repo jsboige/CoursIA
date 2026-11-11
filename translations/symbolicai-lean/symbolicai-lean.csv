@@ -56004,9 +56004,9 @@ La suite de l'Epic #15066 :
 - **Tranche F** — logique de prouvabilité GL : le pont explicite vers #15062, dont ce notebook est le prérequis L2/L3.
 
 See #15066 (contribution partielle — Tranche E).",,,,,,,,66b32a37931e0541,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-header,markdown,fr,464c33d47013736a,"# Lean-34b — FairBot par le théorème de Löb : coopérer parce que la coopération est prouvable
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-header,markdown,fr,0bf03d1d95cbbf91,"# Lean-34b — FairBot par le théorème de Löb : coopérer parce que la coopération est prouvable
 
-**Navigation** : [Index](README.md) | [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [GameTheory-06e (transparence des programmes)](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)
+**Navigation** : [Index](README.md) | [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [GameTheory-06e (transparence des programmes)](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)
 
 Deux programmes jouent un dilemme du prisonnier en un coup, et chacun peut lire le code source de l'autre avant de jouer. FairBot applique une règle simple : **je coopère si je peux prouver que tu coopères avec moi**. Face à sa propre copie, cette règle tourne en rond : chaque FairBot attend une preuve au sujet de l'autre, qui l'attend lui-même. On pourrait croire que la boucle ne se referme jamais. Le théorème de Löb la referme, et elle se referme sur la coopération.
 
@@ -56014,7 +56014,7 @@ Ce notebook approfondit la fin de [Lean-34](Lean-34-Calculabilite-et-Limites.ipy
 
 | Niveau | Où | Ce que « prouvable » y signifie | Statut du théorème de Löb |
 |---|---|---|---|
-| Témoin syntaxique | [GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb), `FairBot_toy` | la source adverse contient la chaîne `return ""C""` | absent |
+| Témoin syntaxique | [GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb), `FairBot_toy` | la source adverse contient la chaîne `return ""C""` | absent |
 | L2 | `game_theory_lean/ProgramGames/FairBot.lean` | une modalité abstraite `box` | **champ postulé** `loeb` de l'interface `ModalProvability` |
 | L3 | `formal_logic_lean/FormalLogic/FairBotLoeb.lean` | la prouvabilité dans une théorie arithmétique (`𝗣𝗔`), au sens de la bibliothèque *Formalized Formal Logic* (FFL) | **théorème** `ProvabilityAbstraction.löb_theorem` |
 
@@ -56027,16 +56027,16 @@ Le notebook exécute le premier niveau, explique pourquoi le deuxième a besoin 
 3. Lire les énoncés Lean du module `FormalLogic.FairBotLoeb` et auditer leurs axiomes.
 4. Calculer l'issue d'un duel entre agents modaux sur un cadre de Kripke de la logique GL, et la confronter aux théorèmes certifiés.
 
-**Prérequis** : [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb) ; le dilemme du prisonnier en un coup ([GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb)). Le notebook tourne sous le kernel `python3` et pilote Lean dans WSL, comme Lean-34.
+**Prérequis** : [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb) ; le dilemme du prisonnier en un coup ([GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb)). Le notebook tourne sous le kernel `python3` et pilote Lean dans WSL, comme Lean-34.
 
 **Durée estimée** : 60 minutes.
 
 **Sources primaires** (PDF hors Git, bibliographie partagée) :
 
-- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
-- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
+- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
+- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
 
-Les gains utilisés sont ceux de GameTheory-06e : $(C,C) \mapsto (3,3)$, $(D,D) \mapsto (1,1)$, $(C,D) \mapsto (0,5)$.",,,,,,,,464c33d47013736a,,,,,,,,,,,,,,,
+Les gains utilisés sont ceux de GameTheory-06e : $(C,C) \mapsto (3,3)$, $(D,D) \mapsto (1,1)$, $(C,D) \mapsto (0,5)$.",,,,,,,,0bf03d1d95cbbf91,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-plan,markdown,fr,e86a152b443b7e5b,"## Plan
 
 1. **Mise en place** : localiser le lake `formal_logic_lean`, vérifier ses sources, construire le module.
@@ -56120,16 +56120,16 @@ print(""code de retour :"", code_retour)",,,,,,,,a00c7dd79593af6f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-build-lecture,markdown,fr,d6082cfcc0a3fe21,"### Lecture du build
 
 `lake` annonce la réussite du build, et l'organe `lean_exec` confirme un code de retour nul et **zéro processus orphelin**. Le nombre de tâches affiché compte toutes les dépendances de FFL et de Mathlib que le module importe ; seules les tâches dont les sources ont changé sont réellement recompilées.",,,,,,,,d6082cfcc0a3fe21,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-s2,markdown,fr,f647f3ffc463e817,"## 2. Le témoin syntaxique de GameTheory-06e et ses deux échecs
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-s2,markdown,fr,44d382f559871ab9,"## 2. Le témoin syntaxique de GameTheory-06e et ses deux échecs
 
-Dans [GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) (cellule `9b0640e6`), `FairBot_toy` coopère lorsque la source de l'adversaire **contient la chaîne** `return ""C""`. Ce test syntaxique reproduit la coopération de FairBot avec lui-même, puisque sa propre source contient cette chaîne. Barasz et al. (2014, section 2) signalent pourtant deux défauts des agents qui décident sur la forme du code : ils sont fragiles face à une réécriture équivalente, et une ruse syntaxique suffit à les exploiter.
+Dans [GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) (cellule `9b0640e6`), `FairBot_toy` coopère lorsque la source de l'adversaire **contient la chaîne** `return ""C""`. Ce test syntaxique reproduit la coopération de FairBot avec lui-même, puisque sa propre source contient cette chaîne. Barasz et al. (2014, section 2) signalent pourtant deux défauts des agents qui décident sur la forme du code : ils sont fragiles face à une réécriture équivalente, et une ruse syntaxique suffit à les exploiter.
 
 La cellule suivante reprend `FairBot_toy` à l'identique et lui oppose cinq adversaires. Chaque programme est construit **à partir de sa source** avec `exec`, ce qui garantit que le texte lu par l'adversaire est exactement le code exécuté :
 
 - `FairBot_toy` lui-même ;
 - `FairBot_guillemets`, qui applique la même règle avec des guillemets simples : il cherche `return 'C'` dans la source adverse et renvoie `'C'` ;
 - `Ruse_toy`, qui contient `return ""C""` dans une branche morte et joue toujours `D` ;
-- `CooperateBot_toy` et `DefectBot_toy`.",,,,,,,,f647f3ffc463e817,,,,,,,,,,,,,,,
+- `CooperateBot_toy` et `DefectBot_toy`.",,,,,,,,44d382f559871ab9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-toy,code,fr,4daadcaed621b067,"SOURCES_TOY = {
     ""FairBot_toy"": (
         ""def FairBot_toy(other_source):\n""
@@ -56734,16 +56734,16 @@ La règle « je coopère si je peux prouver que tu coopères » paraît circulai
 - **Les agents sont idéalisés** : ils décident de la prouvabilité, ce qu'aucun programme réel ne fait. Critch (2016) démontre une version bornée du théorème de Löb, où la recherche de preuve est limitée en longueur, et en déduit la coopération d'agents qui disposent de ressources finies.
 
 **Pour aller plus loin.** Le module L3 formalise le cas du FairBot. Dans le même cadre, la section 4 de Barasz et al. classe les agents modaux par rang et montre qu'aucun agent de rang 0 ne peut à la fois coopérer prouvablement avec FairBot et faire défection contre CooperateBot (théorème 4.10, exercice 3).",,,,,,,,80925c7f2e2ea8bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-references,markdown,fr,19ca7a9980e0371e,"## Références
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-34b-FairBot-Loeb.ipynb,fb34b-references,markdown,fr,7a86ba172aa15e59,"## Références
 
-- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
-- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
+- Barasz, Christiano, Fallenstein, Herreshoff, LaVictoire, Yudkowsky (2014). *Robust Cooperation in the Prisoner's Dilemma: Program Equilibrium via Provability Logic*. arXiv:1401.5577. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2014 - Barasz et al - Robust Cooperation in the Prisoners Dilemma - Program Equilibrium via Provability Logic - arXiv 1401.5577.pdf`
+- Critch (2016). *Parametric Bounded Löb's Theorem and Robust Cooperation of Bounded Agents*. arXiv:1602.04184. `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Cooperation, Institutions and LLM Agents\2016 - Critch - Parametric Bounded Lobs Theorem and Robust Cooperation of Bounded Agents - arXiv 1602.04184.pdf`
 - Bibliothèque *Formalized Formal Logic* (paquet Lean `Foundation`), module `FirstOrder/Incompleteness/ProvabilityAbstraction`, à la révision épinglée par `formal_logic_lean/lake-manifest.json`.
-- Dans ce dépôt : [GameTheory-06e](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) (témoin syntaxique), `GameTheory/game_theory_lean/ProgramGames/FairBot.lean` (niveau L2), `formal_logic_lean/FormalLogic/FairBotLoeb.lean` (niveau L3), [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb).
+- Dans ce dépôt : [GameTheory-06e](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) (témoin syntaxique), `GameTheory/game_theory_lean/ProgramGames/FairBot.lean` (niveau L2), `formal_logic_lean/FormalLogic/FairBotLoeb.lean` (niveau L3), [Lean-34](Lean-34-Calculabilite-et-Limites.ipynb) (lemme diagonal, Gödel II, Löb).
 
 ***
 
-**Navigation** : [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [Index](README.md) | [GameTheory-06e (transparence des programmes)](../../GameTheory/GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,19ca7a9980e0371e,,,,,,,,,,,,,,,
+**Navigation** : [<< Lean-34 (Calculabilité et limites)](Lean-34-Calculabilite-et-Limites.ipynb) | [Index](README.md) | [GameTheory-06e (transparence des programmes)](../../GameTheory/Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | [Lean-36 (Structures finies MUH) >>](Lean-36-Structures-Finies-MUH-Lean.ipynb) | [Prolongement : Capstone Serre 100](Lean-37-Capstone-Serre100.ipynb)",,,,,,,,7a86ba172aa15e59,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-36-Structures-Finies-MUH-Lean.ipynb,cell-b6023f68,markdown,fr,7b053f430e840b99,"# Lean-36 : structures mathematiques finies — l'Annexe A de Tegmark en Lean
 
 Compagnon **natif** du lake [`tegmark_muh_lean`](tegmark_muh_lean/) : les modules

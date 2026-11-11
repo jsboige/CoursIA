@@ -847,21 +847,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-28-BareBonesPSO-vs-Mealpy.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-31-Synthese-Croisee.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part5-Frontieres"
     },

@@ -1,0 +1,728 @@
+{
+  "groups": [
+    {
+      "id": "reproduire-un-mecanisme",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb",
+          "title": "Embeddings from scratch — word2vec skip-gram, la géométrie avant l'API",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb",
+          "title": "Tokenisation from scratch — l'unité de compte de tout le dépôt",
+          "duration_minutes": 30,
+          "kernel": "Python (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Texte/10b_Inference_Mechanics.ipynb",
+          "title": "10b. Mécanique d'inférence LLM : construire et mesurer un KV-cache",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/22_Evaluating_Generated_Text.ipynb",
+          "title": "22 — Évaluer les sorties générées : BLEU, ROUGE, perplexité et juge LLM",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "decouvrir-des-lois",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
+          "title": "SL-12 : Differentiable Logic Gate Networks",
+          "duration_minutes": 45,
+          "kernel": "Python (difflogic-sl12)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
+          "title": "SL-12b-PavlovDLS-Reproduction — artefact Pavlov (DLS Sinkhorn)",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb",
+          "title": "SL-13 : DISCOVER léger — diagnostic de structure TPR émergente",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE.ipynb",
+          "title": "SL-13b : TPR x SAE — deux lectures des mêmes états cachés",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
+          "title": "SL-14 — AI Feynman : découvrir des équations",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver.ipynb",
+          "title": "SL-15 — Conjectures apprises pour un vérificateur symbolique",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (ipykernel)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "prouver-un-theoreme",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb",
+          "title": "GameTheory 4b - Theoreme d'Existence de Nash (Lean)",
+          "duration_minutes": 45,
+          "kernel": "Lean 4 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": true,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb",
+          "title": "GameTheory-5b — Théorème minimax de von Neumann (companion formel natif)",
+          "duration_minutes": 15,
+          "kernel": "Lean 4 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": true,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb",
+          "title": "Dynamics 04b — FairBot par le théorème de Löb (compagnon natif de ProgramGames.FairBot)",
+          "duration_minutes": 30,
+          "kernel": "Lean 4 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": true,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "IIT/IIT-07-Integration-Par-Coupes-Lean.ipynb",
+          "title": "IIT-7. Intégration par coupes — la coupe et le verdict (Lean)",
+          "duration_minutes": 30,
+          "kernel": "Lean 4 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "IIT/IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb",
+          "title": "IIT-8. La parité, de bout en bout (Lean)",
+          "duration_minutes": 30,
+          "kernel": "Lean 4 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Probas/Applications/Percolation/Percolation-04-Sharpness-Lean.ipynb",
+          "title": "Percolation-04-Sharpness-Lean — la sharpness finie, prouvée en Lean 4",
+          "duration_minutes": 30,
+          "kernel": "Lean 4 (WSL, percolation)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "valider-une-experience",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb",
+          "title": "2.5 — Biais, variance, validation croisée et courbe ROC",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb",
+          "title": "2.5b — Calibration des probabilités : reliability diagrams, ECE, et pourquoi 0.87 n'est pas 87 % de chances",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb",
+          "title": "2.10 — Optimisation d'hyperparamètres : grille, hasard, bayésien — et quand s'arrêter",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb",
+          "title": "2.13 — Analyse d'erreurs : diagnostiquer un modèle entraîné",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb",
+          "title": "2.14 — Explicabilité (XAI) : SHAP, LIME et contrefactuels",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "mesurer-un-systeme",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/10g_Speculative_Decoding.ipynb",
+          "title": "10g — Décodage spéculatif : le draft qui vérifie",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb",
+          "title": "10h — Toit mémoire et bande passante : pourquoi le décodage est limité par la bande passante",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (ipykernel)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Texte/11_Quantization.ipynb",
+          "title": "11. Quantization",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/11b_Materiel_Debit_Cout.ipynb",
+          "title": "11b. Matériel, coût, débit : ce que paie réellement un token",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "information-et-emergence",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "title": "IIT - Introduction à PyPhi et Integrated Information Theory",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (PyPhi/IIT)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb",
+          "title": "ICT-1 — Trajectoires de $\\Phi$",
+          "duration_minutes": 30,
+          "kernel": "Python 3.9 (PyPhi/IIT)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb",
+          "title": "ICT-16 — MDL / code en deux parties et bosse complexite-entropie",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb",
+          "title": "ICT-17b — Grokking et compression-progress : la jambe K à l'épreuve de l'entraînement",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb",
+          "title": "ICT-21 — SAETrajectoires : le substrat S4 entre au banc",
+          "duration_minutes": 60,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "structure-et-transitions",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb",
+          "title": "Complexity-02b — Le seuil du 3-SAT, mesuré contre la densité",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (venv projet)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb",
+          "title": "Complexity-02c — La transition de phase sans mur : les systèmes linéaires aléatoires sur GF(2)",
+          "duration_minutes": 45,
+          "kernel": "Python 3.13 (coursia-py313)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb",
+          "title": "Complexity-04 — Décider sans connaître la suite",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "socle-inductive-logic-programming",
+      "kind": "accretions",
+      "prerequisites": [
+        "decouvrir-des-lois"
+      ],
+      "notebooks": [
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb",
+          "title": "SL-1 - Apprentissage Logique : CBH Search et Version Space",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb",
+          "title": "SL-4 --- Programmation Logique Inductive (ILP)",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": true,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb",
+          "title": "SL-5 --- Resolution Inverse et Progol (ILP bottom-up)",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb",
+          "title": "SL-6 --- Moteurs ILP modernes : Aleph, Metagol, Popper et dILP",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (WSL)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": true,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb",
+          "title": "SL-7 : Integration Neuro-Symbolique",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "renforcement-depuis-zero",
+      "kind": "accretions",
+      "prerequisites": [
+        "valider-une-experience"
+      ],
+      "notebooks": [
+        {
+          "path": "RL/RL-06c-PPO-Depuis-Zero-Python.ipynb",
+          "title": "PPO (Proximal Policy Optimization) depuis zero",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "RL/RL-06d-SAC-Depuis-Zero-Python.ipynb",
+          "title": "SAC (Soft Actor-Critic) depuis zero",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb",
+          "title": "GRPO (Group Relative Policy Optimization) depuis zero",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "RL/RL-04-Bandits-Manchots-Python.ipynb",
+          "title": "RL-04 : Bandits Manchots et le Compromis Exploration-Exploitation",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "causalite",
+      "kind": "accretions",
+      "prerequisites": [
+        "valider-une-experience"
+      ],
+      "notebooks": [
+        {
+          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb",
+          "title": "Du graphe causal au do-calculus — le pont entre les quatre séries causales",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
+          "title": "CausalBridges-02 — Exiger un estimand : l'identification causale avant le chiffre",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb",
+          "title": "CausalBridges-03 — Le contrefactuel individuel : quand l'effet moyen cache tout",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb",
+          "title": "CausalBridges-05 — Le confondeur non observé : sensibilité, pas certitude",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (coursia-ml-training)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "inference-probabiliste-dotnet",
+      "kind": "accretions",
+      "prerequisites": [
+        "valider-une-experience"
+      ],
+      "notebooks": [
+        {
+          "path": "Probas/Infer/Infer-04-Bayesian-Networks.ipynb",
+          "title": "Infer-04-Bayesian-Networks : Réseaux Bayesiens Classiques",
+          "duration_minutes": 60,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Probas/Infer/Infer-08-TrueSkill.ipynb",
+          "title": "Infer-08-TrueSkill : Système de Classement et Apprentissage en Ligne",
+          "duration_minutes": 60,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "Probas/Infer/Infer-17-Kalman-Filter.ipynb",
+          "title": "Infer-17 — Filtre de Kalman : systèmes dynamiques linéaires gaussiens",
+          "duration_minutes": 30,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    }
+  ],
+  "duration_minutes": 1860,
+  "known_duration_minutes": 1860
+}

@@ -3623,46 +3623,24 @@ def anchor_is_citation(text: str, issue_number: int) -> bool:
     return False
 
 
-def merged_pr_signal(issue_number: int, lane: str | None = None):
-    """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
+def _newest_merged_citation(prs, issue_number: int,
+                            now: dt.datetime) -> str | bool:
+    """Post-filtre commun aux deux voies de ``merged_pr_signal`` (#24823).
 
-    TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
-    ``open_cover_signal`` :
-    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
-      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
-      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
-      parce que la surface « PR MERGEE » n'est pas terminale : un
-      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
-      cette comparaison a besoin de l'instant de fusion ;
-    - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
-      MERGEes qui la citent datent de plus de 90 jours ;
-    - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
-      l'appelant doit tirer quand meme EN LE DISANT.
+    La MEME ancre ``#N\\b`` (#17760, #24418 : la citation est exigeante sur
+    la forme) et la MEME fenetre de 90 jours pour la voie serveur (payload
+    plafonne a 20 resultats par le ``--search``) et pour l'index local
+    precharge : la boucle de decision est ecrite une fois, aucune
+    divergence de semantique n'est possible entre les deux voies.
 
-    Le `--search "N in:title,body"` est un filtre serveur (GitHub ne peut
-    pas tenir la borne de 90 jours cote serveur) ; le post-filtre temporel
-    se fait ici, sur le payload limite a 20 resultats. Meme doctrine
-    d'ancre `#N\\b` que ``open_cover_signal`` (post-filtre, #17760) pour
-    eviter les collisions de sous-chaine (ex. #11703 vs #1170391).
+    L'absence de cle ``state`` est toleree (l'index local est telecharge
+    par ``--state merged`` sans demander le champ) ; un ``state`` explicite
+    autre que ``MERGED`` est ecarte, comme le faisait la voie serveur.
     """
-    try:
-        out = subprocess.run(
-            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
-             "--limit", "20", "--search", f"{issue_number} in:title,body",
-             "--json", "number,state,mergedAt,title,body"],
-            capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=30,
-        ).stdout
-        prs = json.loads(out)
-    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
-        return None
-    if not isinstance(prs, list):
-        return None
-    now = dt.datetime.now(dt.timezone.utc)
     window = dt.timedelta(days=MERGED_PR_WINDOW_DAYS)
     newest = None
     for pr in prs:
-        if pr.get("state") != "MERGED":
+        if pr.get("state") not in (None, "MERGED"):
             continue
         # #24418 : `anchor.search` retenait une enumeration de prose comme
         # une livraison. La citation est desormais exigeante sur la forme.
@@ -3684,6 +3662,102 @@ def merged_pr_signal(issue_number: int, lane: str | None = None):
     if newest is None:
         return False
     return newest[1]
+
+
+def merged_pr_signal(issue_number: int, lane: str | None = None,
+                     index: list | None = None):
+    """Une PR MERGEE citant `#N` est-elle dans la fenetre de 90 jours ?
+
+    TRI-ETAT, meme doctrine que ``has_delivered_signal`` et
+    ``open_cover_signal`` :
+    - ``str`` : au moins une PR MERGED cite `#N`, `mergedAt` est dans les
+      90 derniers jours (jour UTC), et la valeur rendue est ce `mergedAt`
+      ISO-8601 le plus recent. La DATE est rendue, pas un simple `True`,
+      parce que la surface « PR MERGEE » n'est pas terminale : un
+      `[NOT-DELIVERED]` poste APRES cette fusion la revoque (#22987), et
+      cette comparaison a besoin de l'instant de fusion ;
+    - ``False`` : aucune PR MERGED ne cite `#N`, OU toutes les PRs
+      MERGEes qui la citent datent de plus de 90 jours ;
+    - ``None`` : la requete a echoue (reseau, 403, payload illisible) --
+      l'appelant doit tirer quand meme EN LE DISANT.
+
+    Deux voies (#24823), meme verdict :
+    - ``index=None`` (defaut) : recherche serveur PAR NUMERO, voie
+      historique. Le `--search "N in:title,body"` est un filtre serveur
+      (GitHub ne peut pas tenir la borne de 90 jours cote serveur) ; le
+      post-filtre temporel se fait ici, sur le payload limite a 20
+      resultats. Meme doctrine d'ancre `#N\\b` que
+      ``open_cover_signal`` (post-filtre, #17760) pour eviter les
+      collisions de sous-chaine (ex. #11703 vs #1170391).
+    - ``index=[...]`` : index local des PRs mergees precharge en phase
+      reseau (``merged_prs_index``) -- la reponse est LOCALE et
+      concluante (``str`` | ``False``), jamais ``None`` : le corpus est
+      la. L'index couvre TOUTE la fenetre sans la limite de 20 du
+      ``--search`` serveur : la voie locale est au moins aussi complete.
+    """
+    now = dt.datetime.now(dt.timezone.utc)
+    if index is not None:
+        return _newest_merged_citation(index, issue_number, now)
+    try:
+        out = subprocess.run(
+            ["gh", "pr", "list", "--repo", REPO, "--state", "merged",
+             "--limit", "20", "--search", f"{issue_number} in:title,body",
+             "--json", "number,state,mergedAt,title,body"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=30,
+        ).stdout
+        prs = json.loads(out)
+    except Exception:  # noqa: BLE001 - sonde best-effort ; l'echec est DIT
+        return None
+    if not isinstance(prs, list):
+        return None
+    return _newest_merged_citation(prs, issue_number, now)
+
+
+def merged_prs_index(cache: PayloadCache | None = None,
+                     cache_mode: str = "off",
+                     cache_status: dict[str, dict[str, Any]] | None = None,
+                     ) -> list[dict] | None:
+    """Precharge l'index local des PRs MERGEEs sur la fenetre de la sonde.
+
+    #24823 : la sonde par candidat « une PR MERGEE cite-t-elle #N ? » etait
+    une recherche serveur PAR NUMERO dans la boucle de tirage -- 41 appels
+    `gh pr list --search` mesures sur un tirage de 50 grains. La question se
+    repond desormais localement : ce helper precharge le corpus des PRs
+    mergees de la fenetre, et ``merged_pr_signal(..., index=...)`` y lit la
+    reponse pour CHAQUE numero sans un seul appel reseau.
+
+    La voie du prechargement est ``fetch_merged`` (meme corpus que la mesure
+    de livraison du tapis, au-dessus du site d'appel : filtre serveur
+    `merged:>=` -- le tri de `gh pr list` etant par CREATION, un filtre
+    client laisserait tomber les PRs creees avant la coupe, faux silencieux
+    mesure #19209 -- cache PAR TRANCHE #19236). Partager cette voie veut
+    dire qu'a chaud l'index ne coute AUCUN appel de plus : la tranche vive
+    vient du cache que ``delivery_prs`` vient deja de payer.
+
+    Rend ``None`` quand la passe groupee echoue : l'appelant garde alors
+    la sonde reseau par numero (voie historique) et le dit -- un index
+    absent ne se lit JAMAIS comme « aucune PR mergee ».
+    """
+    try:
+        prs, fetch_err = fetch_merged(
+            MERGED_PR_WINDOW_DAYS,
+            now=NOW,
+            cache=cache,
+            cache_mode=cache_mode,
+            cache_status=cache_status,
+            cache_ttl_seconds=SERIES_CACHE_TTL_SECONDS,
+        )
+        # Un echec de fetch rend un corpus vide AVEC erreur (`fetch_merged`
+        # attrape deja les exceptions). L'index indisponible se declenche
+        # sur l'ERREUR, jamais sur un corpus vide (qui est une reponse
+        # legitime du serveur -- le depot peut n'avoir rien merge).
+        if fetch_err or not isinstance(prs, list):
+            return None
+        return prs
+    except Exception:  # noqa: BLE001 - prechargement best-effort, echec DIT
+        return None
+    return prs if isinstance(prs, list) else None
 
 
 def revocation_probe_inert(issue_number: int, lane: str | None = None,
@@ -14107,6 +14181,42 @@ def main(argv: list[str] | None = None) -> int:
         for num, item in delivery_sig["items"].items()
     }
 
+    # #24823 -- index local des PRs MERGEEs pour la sonde par candidat du
+    # tapis : la question « une PR MERGEE cite-t-elle #N ? » etait une
+    # recherche serveur PAR NUMERO dans la boucle (41 appels mesures sur
+    # un tirage de 50 grains). Le meme materiaux se precharge ici en une
+    # PASSE GROUPEE par tranches -- la meme voie que `delivery_prs` au-
+    # dessus -- et la boucle repond ensuite localement (fail-CLOSED
+    # preserve : l'echec de la passe laisse la sonde sur sa voie reseau
+    # historique, il ne se lit jamais comme « aucune PR mergee »).
+    # Commutateur pytest identique aux sondes ci-dessus : un test qui
+    # veut la voie locale injecte sa sonde explicitement, le CLI n'y
+    # construit pas d'index (la passe groupee est un appel gh reel).
+    belt_merged_pr_probe = merged_pr_signal
+    merged_prs_local = None
+    if args.belt and not (
+            "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None):
+        merged_prs_local = merged_prs_index(
+            cache=payload_cache,
+            cache_mode=effective_cache_mode,
+            cache_status=cache_status,
+        )  # slice_stats: fetch_merged l'enrichit via son propre compteur
+        if merged_prs_local is not None:
+            # Capture par defaut : la sonde transporte l'index, la boucle
+            # ne le connait pas -- meme signature qu'avant, aucun autre
+            # site d'appel ne change.
+            belt_merged_pr_probe = (
+                lambda issue_number, lane=None, _idx=merged_prs_local:
+                    merged_pr_signal(issue_number, lane, index=_idx)
+            )
+            print(f"(index local des PRs mergees : {len(merged_prs_local)} "
+                  f"PRs sur {MERGED_PR_WINDOW_DAYS} j -- la sonde par "
+                  f"candidat ne sort plus sur le reseau, #24823)")
+        else:
+            print("(index local des PRs mergees INDISPONIBLE (echec de la "
+                  "passe groupee) -- repli sur la sonde reseau par numero, "
+                  "#24823)", file=sys.stderr)
+
     # Geste 3 #18203 : `idle_since_delivery` pour TOUT le pool, pas seulement
     # les umbrellas. `measure_delivery` ne couvre que les umbrellas et ignore
     # les grains -- or le facteur de poids du tirage veut une mesure sur la
@@ -14618,7 +14728,7 @@ def main(argv: list[str] | None = None) -> int:
                                         belt_probe_budget(belt_check_window),
                                         delivered_probe=has_delivered_signal,
                                         cover_probe=cover_probe,
-                                        merged_pr_probe=merged_pr_signal,
+                                        merged_pr_probe=belt_merged_pr_probe,
                                         revocation_probe=(
                                             revoked_after_merge_signal),
                                         recent_marker_probe=(
