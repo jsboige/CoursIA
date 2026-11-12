@@ -8,10 +8,13 @@ mainteneur pouvait rester sans reponse indefiniment — le merge-gate ne le voit
 (ce n'est pas une PR), le tapis sert l'issue selon ses propres criteres (le grain,
 pas le fil), et la condensation du dashboard emporte le signalement.
 
-La premiere livraison couvrait la classe ``user-concern``. Celle-ci ajoute la
+La premiere livraison couvrait la classe ``user-concern``, la deuxieme la
 classe ``user-remark`` : **tout autre commentaire du mainteneur** (question,
-consigne, arbitrage, constat) en attente de reponse (campagne #20185 ; les
-quatre classes restantes viendront chacune par sa propre PR).
+consigne, arbitrage, constat) en attente de reponse. Cette tranche ajoute la
+classe ``reviewer-reserve`` : une **reserve de relecteur** (Hermes, NanoClaw,
+clusterManager-Myia, lane tierce) posee sur une **issue** avec un marqueur de
+verdict, et jamais levee (campagne #20185 ; les trois classes restantes
+viendront chacune par sa propre PR).
 
 Le probleme propre a cette classe est le **login partage** : la flotte ecrit sous
 le compte du mainteneur, et l'auteur ne distingue donc plus un post de lane d'une
@@ -133,6 +136,14 @@ GESTURE_WINDOW = 400
 #: rendu sert au rapport. Un corps qui en porte une est un post de lane, jamais
 #: un candidat — deux tiers des commentaires du compte partage sont ainsi ecartes.
 _LANE_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    # Dossier de clôture produit par la session hors flotte : le login GitHub
+    # est partagé, mais l'en-tête structuré identifie explicitement sa lane.
+    # Ancrer la forme entière en tête évite d'exclure une remarque qui cite
+    # simplement un dossier dans sa prose.
+    ("astra-closure-preflight", re.compile(
+        r"\AHors flotte[^\n]*\n\s*\[CLOSURE PREFLIGHT\]\s*\n"
+        r"schema:\s*1\s*\nlane:\s*astra:CoursIA\s*(?:\n|\Z)"
+    )),
     ("lane-near-seat", re.compile(r"\blane\b[^\w\n]{0,12}myia-", re.IGNORECASE)),
     ("seat-token", re.compile(r"myia-[a-z0-9-]+:[A-Za-z0-9._-]+")),
     ("grain-tag", re.compile(r"\bGrain\s*:", re.IGNORECASE)),
@@ -162,6 +173,64 @@ ACT_QUESTION = "question"
 ACT_DIRECTIVE = "directive"
 ACT_STATEMENT = "statement"
 _ACT_ORDER = {ACT_QUESTION: 0, ACT_DIRECTIVE: 1, ACT_STATEMENT: 2}
+
+#: Classe ``reviewer-reserve`` — marqueurs de verdict STRUCTURELS, en position
+#: d'EMISSION (premiere ligne du corps, decoration markdown neutralisee, comme
+#: ``classify``). La grammaire reprend le sous-ensemble non ambigu de
+#: ``CONCERN_MARKERS`` (B.0, ``scripts/check_unaddressed_nits.py``) : les
+#: verdicts formels et les deux glyphes de severite. Sont EXCLUS de ce cote
+#: issues les marqueurs de prose (« avant merge », « a changer »...) —
+#: vocabulaire PR-contextuel dont la prose de lane sur les issues est saturee —
+#: et la sous-chaine nue « CONCERNS », citee en permanence par le vocabulaire
+#: de la campagne elle-meme (« la liste [CONCERNS] postee par le
+#: coordinateur ») : les garder ouvrirait un mur de faux positifs, non mesure
+#: ici. Le #13030 s'applique : un marqueur CITE en milieu de corps (mention,
+#: citation de verdict passe) n'est pas une reserve POSEE.
+_RESERVE_MARKERS = (
+    "COMMENT_WITH_CONCERNS",
+    "CHANGES_REQUESTED",
+    "REQUEST_CHANGES",
+    "NEEDS_CHANGES",
+    "SUSPECT_",
+    "STRUCTURAL_ONLY",
+    "SCOPE FLAG",
+    "🟡",
+    "🔴",
+)
+_RESERVE_MARKER_RE = re.compile(
+    "|".join(re.escape(m) for m in _RESERVE_MARKERS)
+)
+_RESERVE_POSED_RE = re.compile(
+    "^(?:" + "|".join(re.escape(m) for m in _RESERVE_MARKERS) + ")"
+)
+#: Groupes de tete neutres pour la position d'emission : la persona du
+#: reviewer entre crochets (« [Hermes] COMMENT_WITH_CONCERNS ») et le tag de
+#: verdict passe au meme format. Ils ne SONT pas le marqueur — ils le
+#: precedent.
+_RESERVE_HEAD_BRACKETS = re.compile(r"^\[[^\]]{1,80}\]\s*")
+
+
+def reserve_marker(body: str | None) -> str | None:
+    """Le marqueur de verdict POSE en tete de premiere ligne, ou ``None``.
+
+    Position d'emission seulement : la decoration de tete (gras, titre,
+    citation) est neutralisee comme dans ``classify``, puis la PREMIERE ligne
+    seule est lue ; les groupes de persona entre crochets qui ouvrent la
+    ligne (« [Hermes] ») sont ecartes, et le reste doit COMMENCER par le
+    marqueur. Un verdict cite apres de la prose — la reponse d'une lane qui
+    reprend « ta reserve COMMENT_WITH_CONCERNS », ou la narration « Verdict :
+    CHANGES_REQUESTED » — n'est pas une reserve POSEE (#13030 : c'est une
+    mention).
+    """
+    stripped = _DECORATION.sub("", body or "")
+    first_line = stripped.splitlines()[0] if stripped.splitlines() else ""
+    while True:
+        reduced = _RESERVE_HEAD_BRACKETS.sub("", first_line, count=1)
+        if reduced == first_line:
+            break
+        first_line = reduced
+    match = _RESERVE_POSED_RE.match(first_line)
+    return match.group(0) if match else None
 
 _WS = re.compile(r"\s+")
 _DECORATION = re.compile(r"^[\s*_#>`]+")
@@ -245,10 +314,35 @@ class RemarkFinding:
 
 
 @dataclass
+class ReserveFinding:
+    comment_id: int
+    created_at: str
+    excerpt: str
+    status: str
+    proof: int | None
+    marker: str
+    gesture_after: bool
+
+    slug = "reviewer-reserve"
+
+    def as_dict(self) -> dict:
+        return {
+            "comment_id": self.comment_id,
+            "created_at": self.created_at,
+            "excerpt": self.excerpt,
+            "status": self.status,
+            "proof": self.proof,
+            "marker": self.marker,
+            "gesture_after": self.gesture_after,
+        }
+
+
+@dataclass
 class IssueReport:
     number: int
     concerns: list[ConcernFinding]
     remarks: list[RemarkFinding] = field(default_factory=list)
+    reserves: list[ReserveFinding] = field(default_factory=list)
     #: Commentaires ecartes par signature de lane, agreges par nom de signature
     #: (#21621). L'ecart est PUBLIE : un total de candidats ne doit jamais
     #: passer pour un recensement exhaustif du fil.
@@ -258,12 +352,14 @@ class IssueReport:
     def unresolved(self) -> list:
         return [c for c in self.concerns if c.status != "REPONDU"] + [
             r for r in self.remarks if r.status != "REPONDU"
-        ]
+        ] + [r for r in self.reserves if r.status != "REPONDU"]
 
     @property
     def gesture_after(self) -> bool:
-        return any(c.gesture_after for c in self.concerns) or any(
-            r.gesture_after for r in self.remarks
+        return (
+            any(c.gesture_after for c in self.concerns)
+            or any(r.gesture_after for r in self.remarks)
+            or any(r.gesture_after for r in self.reserves)
         )
 
     def as_dict(self) -> dict:
@@ -272,6 +368,7 @@ class IssueReport:
             "gesture_after": self.gesture_after,
             "concerns": [c.as_dict() for c in self.concerns],
             "remarks": [r.as_dict() for r in self.remarks],
+            "reserves": [r.as_dict() for r in self.reserves],
             "excluded_by_signature": dict(self.excluded),
         }
 
@@ -497,10 +594,10 @@ def is_response_candidate(
     return True
 
 
-#: Classes livrees par l'organe (la campagne #20185 en compte six ; les quatre
+#: Classes livrees par l'organe (la campagne #20185 en compte six ; les trois
 #: restantes viendront chacune par sa propre PR). ``analyse_comments`` accepte un
 #: sous-ensemble — les tests s'en servent pour scoper une classe a la fois.
-CLASSES = ("user-concern", "user-remark")
+CLASSES = ("user-concern", "user-remark", "reviewer-reserve")
 
 
 def analyse_comments(
@@ -509,6 +606,7 @@ def analyse_comments(
     kinds = [classify(c) for c in comments]
     findings: list[ConcernFinding] = []
     remarks: list[RemarkFinding] = []
+    reserves: list[ReserveFinding] = []
     excluded: dict[str, int] = {}
 
     if "user-concern" in classes:
@@ -549,6 +647,50 @@ def analyse_comments(
                 )
             )
 
+    if "reviewer-reserve" in classes:
+        for i, comment in enumerate(comments):
+            marker = reserve_marker(comment.body)
+            if marker is None:
+                continue
+            later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
+            candidates = [
+                (other, kind)
+                for other, kind in later
+                if is_response_candidate(kind, other, comment)
+            ]
+            # Une reserve se referme comme une remarque : par une citation
+            # FORTE (horodatage du commentaire porteur, extrait long de son
+            # texte). La convention mesuree des levees — « [OVERRIDE] lane
+            # myia-ai-01 ... je leve la reserve d'Hermes du 14:05Z » — porte
+            # l'horodatage, donc tombe dans la forme forte. Une levee qui ne
+            # cite ni l'heure ni le texte reste en MANUAL_REVIEW : le plancher
+            # rend la liste COMPLETE, quitte a sur-signaler.
+            proof = None
+            for other, kind in candidates:
+                if proves(comment, other, kind):
+                    proof = other.id
+                    break
+            if proof is not None:
+                status = "REPONDU"
+            elif candidates:
+                status = "MANUAL_REVIEW"
+            else:
+                status = "NON REPONDU"
+            reserves.append(
+                ReserveFinding(
+                    comment_id=comment.id,
+                    created_at=comment.created_at,
+                    excerpt=excerpt(comment.body),
+                    status=status,
+                    proof=proof,
+                    marker=marker,
+                    gesture_after=any(
+                        kind == "gesture" and other.id != proof
+                        for other, kind in later
+                    ),
+                )
+            )
+
     if "user-remark" in classes:
         for i, comment in enumerate(comments):
             if comment.author != CONCERN_AUTHOR or kinds[i] != "other":
@@ -558,7 +700,9 @@ def analyse_comments(
             # raison de… » est une vraie remarque du mainteneur, tandis qu'un
             # « [LIVRAISON] … » est un post de lane. Faute de pouvoir trancher,
             # il est ROUTE vers MANUAL_REVIEW au lieu d'etre ecarte.
-            ambiguous = signature == "head-tag"
+            # Un humain peut aussi copier l'en-tête d'un dossier : ne jamais
+            # écarter sa remarque sans revue.
+            ambiguous = signature in {"head-tag", "astra-closure-preflight"}
             if signature and not ambiguous:
                 excluded[signature] = excluded.get(signature, 0) + 1
                 continue
@@ -599,7 +743,11 @@ def analyse_comments(
             )
 
     return IssueReport(
-        number=number, concerns=findings, remarks=remarks, excluded=excluded
+        number=number,
+        concerns=findings,
+        remarks=remarks,
+        reserves=reserves,
+        excluded=excluded,
     )
 
 
@@ -674,15 +822,16 @@ def excluded_by_signature(reports: list[IssueReport]) -> dict[str, int]:
 
 def render_text(reports: list[IssueReport], since: str, state: str, scanned: int) -> str:
     unresolved = [(r, c) for r in reports for c in r.unresolved]
-    total = sum(len(r.concerns) + len(r.remarks) for r in reports)
+    total = sum(len(r.concerns) + len(r.remarks) + len(r.reserves) for r in reports)
     n_conc = sum(1 for _, c in unresolved if c.slug == "user-concern")
-    n_rem = len(unresolved) - n_conc
+    n_res = sum(1 for _, c in unresolved if c.slug == "reviewer-reserve")
+    n_rem = len(unresolved) - n_conc - n_res
     excluded = excluded_by_signature(reports)
     by_sig = ", ".join(f"{name} {count}" for name, count in sorted(excluded.items()))
     lines = [
         f"=== Remarques user sans reponse (issues {state}, depuis {since}) ===",
         f"{len(unresolved)} non resolu(s) — {n_conc} concern(s), {n_rem} "
-        f"remarque(s) — sur {total} recense(s), dans "
+        f"remarque(s), {n_res} reserve(s) de relecteur — sur {total} recense(s), dans "
         f"{len({r.number for r, _ in unresolved})} issue(s) ; "
         f"{scanned} issue(s) lue(s) ; "
         f"{sum(excluded.values())} commentaire(s) ecarte(s) par signature de "
@@ -708,14 +857,21 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
             (r for r in report.remarks if r.status != "REPONDU"),
             key=lambda r: (_ACT_ORDER.get(r.act, 9), r.created_at),
         )
+        open_reserves = [r for r in report.reserves if r.status != "REPONDU"]
         lines.append("")
         lines.append(
             f"#{report.number} — {len(open_concerns)} concern(s), "
-            f"{len(open_remarks)} remarque(s){flag}"
+            f"{len(open_remarks)} remarque(s), "
+            f"{len(open_reserves)} reserve(s){flag}"
         )
-        for finding in open_concerns + open_remarks:
+        for finding in open_concerns + open_remarks + open_reserves:
             proof = f" (piste c{finding.proof})" if finding.proof else ""
-            label = "" if finding.slug == "user-concern" else f"  [{finding.act}]"
+            if finding.slug == "user-concern":
+                label = ""
+            elif finding.slug == "reviewer-reserve":
+                label = f"  [reserve {finding.marker}]"
+            else:
+                label = f"  [{finding.act}]"
             lines.append(
                 f"  - {finding.created_at} c{finding.comment_id}  "
                 f"{finding.status}{proof}{label}"

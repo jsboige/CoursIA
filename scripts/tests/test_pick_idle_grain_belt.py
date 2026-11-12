@@ -91,6 +91,12 @@ def _make_item(number, age_days, idle, klass="grain", last=None,
     }
 
 
+def test_belt_delivery_status_distinguishes_delivered_and_free_grains():
+    assert pig._belt_delivery_status({"klass": "delivered"}) == "livre"
+    assert pig._belt_delivery_status({"klass": "grain"}) == "libre"
+    assert pig._belt_delivery_status({"klass": "umbrella"}) == "servable"
+
+
 class _FakeArgs:
     """Args minimum pour draw_belt / belt_sort_key / belt_filter."""
 
@@ -113,7 +119,13 @@ class _FakeArgs:
 
 
 def test_belt_sort_key_orders_by_last_delivery_first():
-    """Critere 1 : ordre par derniere visite (None d'abord, ISO asc)."""
+    """Les dates de visite restent ordonnees ; l'issue jamais visitee les rejoint.
+
+    Relecture du 11/11 (#24373) : la classe 3 a disparu. Une issue jamais
+    visitee creee hors de la fenetre hebdomadaire n'est plus repoussee
+    derriere tout item deja visite : elle rejoint la classe 2, ou elle est
+    triee par sa date de creation -- ici plus ancienne que les deux visites.
+    """
     never = _make_item(1, age_days=5, idle=1, last=None)
     fresh = _make_item(2, age_days=10, idle=2,
                        last="2026-10-01T00:00:00Z")  # tres recente (hier)
@@ -121,7 +133,9 @@ def test_belt_sort_key_orders_by_last_delivery_first():
                          last="2026-08-01T00:00:00Z")  # ~2 mois
     pool = [fresh, never, ancient]
     pool.sort(key=pig.belt_sort_key)
-    # None en tete, puis 2026-08 avant 2026-10 (plus ancien d'abord)
+    # Les deux issues visitees gardent leur ordre chronologique ; l'issue
+    # jamais visitee passe devant elles, sa creation (2026-06-01) etant
+    # plus ancienne que leurs deux visites.
     assert [it["number"] for it in pool] == [1, 3, 2]
 
 
@@ -143,26 +157,25 @@ def test_belt_sort_key_tie_breaks_on_created_then_number():
 # Predicat 2 : une issue jamais servie se classe par sa creation.
 
 
-def test_belt_sort_key_never_served_ordered_by_created():
-    """Critere 2 : jamais servis tries par createdAt croissant puis number."""
+def test_belt_sort_key_never_served_oldest_is_behind_visited_items():
+    """Les jamais servis anciens se rangent par creation, dans la classe 2."""
     n_old_create = _make_item(10, age_days=200, idle=1, last=None,
                               created="2026-01-01T00:00:00Z")
     n_new_create = _make_item(11, age_days=10, idle=1, last=None,
                               created="2026-09-01T00:00:00Z")
     pool = [n_new_create, n_old_create]
     pool.sort(key=pig.belt_sort_key)
-    # Plus ancienne creation en premier
-    assert pool[0]["number"] == 10
-    assert pool[1]["number"] == 11
+    # Ces deux dates sont hors de la priorite initiale : les deux items sont
+    # en classe 2, ranges par leur date de creation (la plus ancienne
+    # d'abord), l'ordre interne reste deterministe et chronologique.
+    assert [it["number"] for it in pool] == [10, 11]
 
 
 # Predicat 3 : une issue livree hier passe derriere une livree il y a un mois.
 
 
 def test_belt_sort_old_delivery_before_recent():
-    """Critere 3 : ancien derriere recent -- jamais servis prennent les
-    premieres places, puis livraisons anciennes, puis livraisons recentes.
-    """
+    """Les visites gardent leur ordre ; la jamais servie se range a sa creation."""
     fresh = _make_item(20, age_days=20, idle=2,
                        last="2026-10-01T00:00:00Z")  # hier
     ancient = _make_item(21, age_days=20, idle=2,
@@ -170,10 +183,121 @@ def test_belt_sort_old_delivery_before_recent():
     never = _make_item(22, age_days=20, idle=2, last=None)
     pool = [fresh, ancient, never]
     pool.sort(key=pig.belt_sort_key)
-    # never en tete (acception 1), puis ancient (livraison il y a un mois)
-    # puis fresh (livraison hier). La livraison plus ancienne passe AVANT
-    # la livraison recente -- c'est l'inverse du tirage pondere.
+    # Les visitees gardent l'ordre plus ancienne d'abord ; l'issue jamais
+    # servie, creee le 2026-03-01, passe devant elles : c'est sa date de
+    # creation qui la range, dans la meme classe 2.
     assert [it["number"] for it in pool] == [22, 21, 20]
+
+
+def test_belt_sort_key_recent_grain_reaches_service_and_frozen_veto_holds():
+    """Un grain frais sort du prefixe ancien ; le GEL continue de l'ecarter."""
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    stale_umbrella = _make_item(
+        40, age_days=200, idle=200, klass="umbrella", last=None,
+        created="2026-01-01T00:00:00Z")
+    recently_visited = _make_item(
+        41, age_days=30, idle=1, last="2026-11-07T00:00:00Z",
+        created="2026-10-01T00:00:00Z")
+    fresh_grain = _make_item(
+        42, age_days=1, idle=1, last=None,
+        created="2026-11-07T12:00:00Z")
+    fresh_frozen = _make_item(
+        43, age_days=1, idle=1, last=None,
+        created="2026-11-07T11:00:00Z")
+    pool = [stale_umbrella, recently_visited, fresh_grain, fresh_frozen]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    # Les deux grains frais ouvrent (classe 1) ; l'umbrella jamais visitee
+    # rejoint la classe 2 par sa creation (2026-01-01) et passe devant
+    # l'item visite le 2026-11-07.
+    assert [item["number"] for item in pool] == [42, 43, 40, 41]
+
+    picks, withheld, _state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False,
+        frozen_probe=lambda n: "comment" if n == 43 else False)
+    assert [item["number"] for item in picks] == [42, 40]
+    assert [(item["number"], reason.split(" ", 1)[0])
+            for item, reason in withheld] == [(43, "GEL")]
+    unreadable_date = _make_item(49, age_days=0, idle=0, last=None,
+                                 created="not-a-date")
+    assert pig.belt_sort_key(unreadable_date, now=now) > pig.belt_sort_key(
+        recently_visited, now=now)
+
+
+def test_belt_sort_key_bounds_never_visited_before_consolidation_due():
+    """Un due recent reste prioritaire ; un due visite egalement ; un vieux jamais vu non.
+
+    Relecture du 11/11 (#24373) : le vieux jamais visite n'a plus sa classe
+    propre derriere tout ; il rejoint la classe 2, ou il est range par sa
+    date de creation -- ici le 2026-07-01, avant la visite du 2026-11-07.
+    """
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    fresh_due = _make_item(44, age_days=3, idle=3, last=None,
+                          created="2026-11-05T00:00:00Z")
+    fresh_due["labels"] = [pig.CONSOLIDATION_TAG]
+    visited_due = _make_item(
+        45, age_days=60, idle=3, last=None)
+    visited_due["labels"] = [pig.CONSOLIDATION_TAG]
+    visited_due["last_claim_stamp"] = "2026-11-05T00:00:00Z"
+    old_never_due = _make_item(46, age_days=60, idle=60, last=None)
+    old_never_due["labels"] = [pig.CONSOLIDATION_TAG]
+    ordinary_visited = _make_item(
+        47, age_days=60, idle=1, last="2026-11-07T00:00:00Z")
+    pool = [old_never_due, ordinary_visited, fresh_due, visited_due]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    assert [item["number"] for item in pool] == [44, 45, 46, 47]
+
+    three_day_grain = _make_item(
+        48, age_days=3, idle=3, last=None,
+        created="2026-11-05T00:00:00Z")
+    # Fenetre par defaut (7 j) : le grain est encore frais, donc classe 1 --
+    # devant tout item visite.
+    assert pig.belt_sort_key(three_day_grain, now=now)[0] == 1
+    assert pig.belt_sort_key(three_day_grain, now=now) < \
+        pig.belt_sort_key(ordinary_visited, now=now)
+    # Fenetre ramenee a 2 j : le grain sort de la priorite, il rejoint la
+    # classe 2 -- et sa creation (2026-11-05) est plus ancienne que la
+    # visite du 2026-11-07, il passe donc devant.
+    assert pig.belt_sort_key(
+        three_day_grain, now=now, never_visited_priority_days=2
+    )[0] == 2
+    assert pig.belt_sort_key(
+        three_day_grain, now=now, never_visited_priority_days=2
+    ) < pig.belt_sort_key(ordinary_visited, now=now)
+
+
+def test_belt_sort_key_melange_les_vieilles_jamais_visitees_aux_visitees():
+    """La classe 2 melange creations et visites sur une seule ligne de temps.
+
+    Relecture du 11/11 (#24373) : la classe 3 a disparu. Les issues
+    anciennes jamais servies sont triees par `created_at` et melangees aux
+    items visites (tries par date de visite) : la file sert le stock des
+    issues a fermer au lieu de le repousser derriere tout item deja visite.
+    """
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    old_never = _make_item(60, age_days=300, idle=300, last=None,
+                            created="2026-01-01T00:00:00Z")
+    mid_never = _make_item(61, age_days=120, idle=120, last=None,
+                            created="2026-07-01T00:00:00Z")
+    visited_recent = _make_item(62, age_days=60, idle=1,
+                                last="2026-11-07T00:00:00Z")
+    visited_old = _make_item(63, age_days=60, idle=1,
+                             last="2026-09-01T00:00:00Z")
+    pool = [visited_recent, mid_never, old_never, visited_old]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    # Une seule ligne de temps : creation des jamais-visitees et visite des
+    # autres, la plus ancienne d'abord.
+    assert [item["number"] for item in pool] == [60, 61, 63, 62]
+    # Aucun item de ce pool ne sort en classe 3 : la classe a disparu.
+    assert {pig.belt_sort_key(item, now=now)[0] for item in pool} == {2}
+    # Une date illisible n'a pas d'ordre : elle passe en dernier.
+    unreadable = _make_item(64, age_days=0, idle=0, last=None,
+                            created="not-a-date")
+    assert pig.belt_sort_key(unreadable, now=now) > \
+        pig.belt_sort_key(visited_recent, now=now)
 
 
 # Predicat 4 : une issue reclamee par une autre lane est sautee.
@@ -679,6 +803,15 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # rafraichir, et l'ecriture du cache reste desactivee sous pytest
     # (`_PASS_SNAPSHOT`).
     monkeypatch.setattr(pig, "_belt_snapshot_prime", lambda repo, numbers: None)
+    # #25522 : le classement des PRs rouges lit le FIL de chaque PR (une
+    # requete REST par PR) -- une surface reseau de plus, de la meme famille :
+    # elle est stubee ici, sinon le garde `_no_real_gh` leve (il refuse tout
+    # `gh`, et son exception n'est pas un `Exception` : elle se propage).
+    monkeypatch.setattr(pig, "_red_pr_comments", lambda n: [])
+    # #25522 : la lecture de perimetrie du picker (`git rev-parse`,
+    # `git hash-object`) passe par ce point de couture. On le neutralise :
+    # le test ne mesure pas le perimetre, et le `git` reel n'apporte rien ici.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -719,6 +852,34 @@ def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
     assert payload["repair"]["grain"]["number"] == 18844
     # La fenetre de livraisons en mode belt fait 90 j, pas 14 j.
     assert payload["last_delivery_window_days"] == 90
+
+
+def test_belt_json_names_the_service_window_and_the_pending_deliveries(monkeypatch, capsys):
+    """#25522 point 4 : la sortie nomme ce que la boucle a COUVERT.
+
+    « 0 retenu » ne doit pas etre muet : la lane doit pouvoir distinguer
+    « le pool est vide » de « les positions vues etaient toutes livrees ».
+    Les trois nombres sont dans le JSON (positions parcourues, fenetre,
+    livraisons en attente).
+    """
+    red = _state_red()
+    prs = [{
+        "number": 18844,
+        "title": "PR rouge de la lane",
+        "body": "Grain: MED/guard -- lane myia-po-2024:CoursIA-2",
+        "createdAt": "2026-09-30T12:00:00Z",
+        "isDraft": False,
+    }]
+    _patch_belt_network(monkeypatch, prs, red)
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    svc = payload["service_window"]
+    assert svc["positions"] == 0        # pool vide dans ce test
+    assert svc["extended"] is False
+    assert svc["pending_deliveries"] == 0
 
 
 def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
@@ -1196,13 +1357,13 @@ def test_belt_claim_moves_issue_behind_unvisited_ones():
     old = _make_item(10, age_days=90, idle=1, last="2026-08-01T00:00:00Z",
                      created="2026-07-01T00:00:00Z")
     newer = _make_item(11, age_days=30, idle=1, last=None,
-                       created="2026-09-01T00:00:00Z")
+                       created="2026-11-06T00:00:00Z")
     pool = [old, newer]
-    claims = {10: "2026-10-04T19:49:00Z"}
+    claims = {10: "2026-11-05T19:49:00Z"}
     probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
     assert [it["number"] for it in pool] == [11, 10]
     assert probed == {10, 11}
-    assert old["last_claim_stamp"] == "2026-10-04T19:49:00Z"
+    assert old["last_claim_stamp"] == "2026-11-05T19:49:00Z"
 
 
 def test_belt_claim_older_than_merge_changes_nothing():
@@ -1218,24 +1379,32 @@ def test_belt_claim_older_than_merge_changes_nothing():
 
 def test_belt_settle_reads_the_freed_slot_until_head_is_stable():
     """Toute la tete est reservee : chaque place liberee est lue a son tour,
-    et la premiere issue non reservee finit en tete."""
+    et la premiere issue non reservee finit en tete.
+
+    Les dates de creation sont relatives a `NOW` : le test ne doit pas
+    dependre du jour ou il tourne. La fenetre de priorite des 7 jours
+    (#24373) faisait sortir les items au bout d'une semaine -- le test a
+    echoue le 11/11 sur une base datee, avant tout changement de politique.
+    """
     pool = [_make_item(20 + k, age_days=90, idle=1, last=None,
-                       created=f"2026-07-0{k + 1}T00:00:00Z") for k in range(5)]
-    claims = {20: "2026-10-04T10:00:00Z", 21: "2026-10-04T11:00:00Z",
-              22: "2026-10-04T12:00:00Z"}
+                       created=(pig.NOW - timedelta(days=6 - k))
+                       .isoformat().replace("+00:00", "Z"))
+            for k in range(5)]
+    claims = {24: "2026-11-07T10:00:00Z", 23: "2026-11-07T11:00:00Z",
+              22: "2026-11-07T12:00:00Z"}
     probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
-    assert [it["number"] for it in pool][:2] == [23, 24]
+    assert [it["number"] for it in pool][:2] == [21, 20]
     assert {20, 21, 22, 23, 24} <= probed
 
 
 def test_belt_settle_is_bounded_by_max_probes():
     pool = [_make_item(40 + k, age_days=90, idle=1, last=None,
-                       created=f"2026-07-{k + 1:02d}T00:00:00Z") for k in range(20)]
+                       created="2026-11-02T00:00:00Z") for k in range(20)]
     calls = []
 
     def probe(n):
         calls.append(n)
-        return f"2026-10-04T{len(calls):02d}:00:00Z"
+        return f"2026-11-07T{len(calls):02d}:00:00Z"
 
     pig.settle_belt_head(pool, need=3, probe=probe, max_probes=7)
     assert len(calls) == 7
@@ -1248,15 +1417,15 @@ def test_belt_child_issue_visits_its_parent_7265_scenario():
                       last="2026-08-13T00:00:00Z",
                       created="2026-07-18T00:00:00Z")
     august = _make_item(14000, age_days=40, idle=3, last=None,
-                        created="2026-08-25T00:00:00Z")
+                        created="2026-11-05T00:00:00Z")
     child = _make_item(19088, age_days=0, idle=0, last=None,
-                       created="2026-10-04T09:50:00Z")
+                       created="2026-11-06T09:50:00Z")
     child["title"] = "[#7265 · pépite A3] Object explorer metadata-driven"
     child["body"] = "Pepite A3 de l'EPIC #7265."
     belt_pool = [epic, august]
     latest = pig.apply_child_visits([epic, august, child], belt_pool)
-    assert latest[7265] == "2026-10-04T09:50:00Z"
-    assert epic["last_child_stamp"] == "2026-10-04T09:50:00Z"
+    assert latest[7265] == "2026-11-06T09:50:00Z"
+    assert epic["last_child_stamp"] == "2026-11-06T09:50:00Z"
     belt_pool.sort(key=pig.belt_sort_key)
     assert [it["number"] for it in belt_pool] == [14000, 7265]
 
@@ -1377,8 +1546,15 @@ def test_every_marker_keyword_of_the_organ_has_a_translation():
 
 def test_belt_released_issue_stays_behind_7742_scenario():
     """Bout en bout, cas mesure #7742 : prise le 31/08, rendue le 19/09 apres
-    deux tranches mergees. Lue a la prise seule, elle repassait devant une
-    issue visitee le 10/09 ; lue a sa cloture, elle reste derriere."""
+    deux tranches mergees.
+
+    Relecture du 11/11 (#24373) : la classe 3 a disparu. L'issue jamais
+    servie n'est plus renvoyee en queue de la file ; elle rejoint la classe 2,
+    ou elle est rangee par sa date de creation (2026-07-21) -- donc devant
+    l'issue visitee le 10/09. Ce qui reste verifie, c'est la chute de la
+    trace : la prise du 31/08 vaut visite mesuree, la RENDUE du 19/09 la
+    retire et l'issue retombe sur sa creation.
+    """
     claim = _claim("2026-08-31T01:31:34Z",
                    "[CLAIMED] lane myia-po-2024:CoursIA -- paths: a.ipynb")
     release = _claim("2026-09-19T14:46:38Z",
@@ -1400,9 +1576,21 @@ def test_belt_released_issue_stays_behind_7742_scenario():
             max_probes=4)
         return [it["number"] for it in pool]
 
-    assert order([]) == [7742, 200]                 # jamais servie : en tete
-    assert order([claim]) == [7742, 200]            # prise le 31/08 < 10/09
-    assert order([claim, release]) == [200, 7742]   # rendue le 19/09 : derriere
+    # Jamais servie : le rang vient de sa creation (2026-07-21) -- elle
+    # passe devant 200, la classe 3 qui la repoussait en queue a disparu.
+    assert order([]) == [7742, 200]
+    # Prise le 31/08 : le rang vient de la visite mesuree (2026-08-31).
+    assert order([claim]) == [7742, 200]
+    # Rendue le 19/09 : la visite la plus recente est la rendu, donc apres la
+    # visite du 10/09 de 200 -- l'issue repasse derriere.
+    assert order([claim, release]) == [200, 7742]
+
+    # La discrimination est dans le STAMP, pas dans l'ordre final.
+    item = _make_item(7742, age_days=75, idle=0, last=None,
+                      created="2026-07-21T16:31:50Z")
+    assert pig.belt_sort_key(item, now=pig.NOW)[2] == "2026-07-21T16:31:50Z"
+    item["last_claim_stamp"] = "2026-08-31T01:31:34Z"
+    assert pig.belt_sort_key(item, now=pig.NOW)[2] == "2026-08-31T01:31:34Z"
 
 
 def test_latest_claim_stamp_reads_claims_of_any_lane(monkeypatch):
@@ -1509,22 +1697,20 @@ def test_latest_claim_stamp_takes_max_of_claim_and_delivered(monkeypatch):
 
 
 def test_belt_delivered_info_moves_served_issue_behind_13107_scenario():
-    """Acceptance #19295 en bout en bout : #13107 servie par un
-    `[INFO] candidate-delivered` recule derriere une issue jamais servie,
-    au meme titre qu'un claim -- le tapis cesse de la reservir comme
-    grain neuf."""
+    """Acceptance #19295 : une creation jamais servie de moins de 7 j
+    passe avant #13107 apres son marqueur de livraison."""
     palomar = _make_item(13107, age_days=90, idle=1,
                          last="2026-08-26T19:38:55Z",
                          created="2026-08-26T12:17:31Z")
-    fresh = _make_item(19088, age_days=30, idle=1, last=None,
-                       created="2026-09-10T00:00:00Z")
+    fresh = _make_item(19088, age_days=2, idle=1, last=None,
+                       created="2026-11-06T00:00:00Z")
     pool = [palomar, fresh]
     pig.settle_belt_head(
         pool, need=2,
-        probe={13107: "2026-10-05T06:58:26Z"}.get,
+        probe={13107: "2026-11-07T06:58:26Z"}.get,
         max_probes=10)
     assert [it["number"] for it in pool][0] == 19088
-    assert palomar["last_claim_stamp"] == "2026-10-05T06:58:26Z"
+    assert palomar["last_claim_stamp"] == "2026-11-07T06:58:26Z"
 
 
 def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
@@ -2173,13 +2359,9 @@ def test_container_marker_survit_a_un_released_de_queue(monkeypatch):
 
 
 def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
-    """Controle negatif : le saut ne porte pas sur l'EN-TETE seul.
+    """Un marqueur de grain n'annule pas la livraison du conteneur.
 
-    Un `[RELEASED]` dont le corps porte lui-meme un marqueur d'etat est un
-    evenement : il reste le dernier commentaire LU, et ce qu'il dit compte.
-    Ce controle discrimine les deux lectures -- si le `[RELEASED]` etait saute
-    sur son en-tete, la sonde remonterait au `[INFO] candidate-delivered` de
-    tete et rendrait True ; en lisant le corps de queue, elle rend False.
+    Seule une retractation explicite change l'etat du marqueur de conteneur.
     """
     _stub_comments(monkeypatch, [
         "[INFO] candidate-delivered -- les cinq arcs sont clos.",
@@ -2189,7 +2371,7 @@ def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
             "[DELIVERED] lane myia-po-2028:CoursIA -- PR #21212",
         ]),
     ])
-    assert pig.has_recent_container_delivery_marker(17528) is False
+    assert pig.has_recent_container_delivery_marker(17528) is True
 
 
 # Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans
@@ -3648,6 +3830,145 @@ def test_belt_disarms_on_the_report_exit(monkeypatch):
         pig._BELT_DEADLINE[0] = None
 
 
+# --- #24461 : le LABEL `candidate-delivered` exclu A LA LECTURE de la liste --
+#
+# Le label est DEJA dans le payload du pool (une seule requete
+# `gh issue list --json labels` pour tout le pool). L'exclure ici ne coute
+# donc AUCUNE sonde par issue, la ou la sonde de livraison en coute une et
+# sature -- et quand le budget ou le mur de temps est atteint, elle rend
+# fail-OPEN et l'issue est servie comme un grain neuf (mesure #24461 : 37
+# des 120 grains servis portaient un marqueur vivant).
+#
+# L'exclusion vise les lanes HORS `DELIVERED_URN_LANES` (#15069) : l'urne
+# `delivered` et la lecture du label sont reservees au coordinateur et a
+# l'adjoint, qui decident de la fermeture.
+
+
+def _labelled_delivered_pool():
+    pool = [_make_item(80, age_days=10, idle=1, klass="grain"),
+            _make_item(81, age_days=10, idle=1, klass="grain")]
+    pool[0]["labels"].append("candidate-delivered")
+    return pool
+
+
+def test_belt_filter_exclut_le_label_pour_une_lane_worker():
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [81]
+    assert [it["number"] for it, _ in drops] == [80]
+    assert "LIVRAISON" in drops[0][1]
+
+
+def test_belt_filter_conserve_le_label_pour_une_lane_habilitee():
+    args = _FakeArgs()
+    args.lane = "myia-ai-01:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_include_delivered_leve_l_exclusion_par_label():
+    """L'echappatoire nommee reste l'echappatoire : `--include-delivered`
+    leve l'exclusion comme il leve les exclusions par sonde."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = True
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    assert [it["number"] for it in kept] == [80, 81]
+    assert drops == []
+
+
+def test_l_exclusion_par_label_ne_coute_aucune_sonde():
+    """L'exclusion est LUE dans le payload : elle ne passe pas par la sonde
+    de livraison, donc elle ne peut pas s'eteindre sur un budget epuise."""
+    args = _FakeArgs()
+    args.lane = "myia-po-2023:CoursIA"
+    args.include_delivered = False
+    drops = []
+    kept = pig.belt_filter(_labelled_delivered_pool(), args,
+                           urns={"grain", "umbrella"}, label_drops=drops)
+    # l'item ecarte est rendu dans les drops : une exclusion invisible est
+    # un silence, et un silence se lit comme une absence.
+    assert len(drops) == 1
+    assert kept[0]["number"] == 81
+
+
+# --- #24461 (c) point 4 : le MOTIF d'ecartement est NOMME dans le tapis ---
+#
+# Le correctif initial nommait le motif dans les causes du chemin PONDERE
+# (`conflicts.append`), pas dans celles du TAPIS (`belt_withheld.append`) :
+# le tapis ecarte dans une autre famille de sites, et `delivery_motifs`
+# rendait deux listes VIDES alors que le tapis ecarte reellement des issues
+# pour ces deux motifs. Ces tests_branchent le chemin du tapis.
+
+def test_belt_nomme_le_motif_du_dossier_vivant(monkeypatch):
+    """Le filtre recent du tapis nomme le motif du dossier VIVANT."""
+    marked = _make_item(7742, age_days=90, idle=9, last=None)
+    clean = _make_item(19008, age_days=40, idle=4, last=None)
+    motif = ("dossier `[CLOSURE PREFLIGHT]` VIVANT (verdict KEEP) : la "
+             "cloture est en cours, l'issue n'est pas un grain de production.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7742)
+    assert [p["number"] for p in picks] == [19008]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[7742].startswith("LIVRAISON (recent)")
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[7742]
+    assert pig.delivery_grammar.motif_class(causes[7742]) == "living_dossier"
+
+
+def test_belt_nomme_le_motif_de_la_livraison_epic_wide(monkeypatch):
+    """La sonde pleine du tapis nomme le motif de la livraison ENTIERE."""
+    marked = _make_item(16048, age_days=99, idle=9, last=None)
+    clean = _make_item(19009, age_days=41, idle=4, last=None)
+    motif = ("livraison epic-wide : un `[DELIVERED]` sans clause `paths:` "
+             "livre l'issue ENTIERE.")
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: motif)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: n == 16048,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19009]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert 16048 in causes
+    assert pig.delivery_grammar.MOTIF_SUFFIX + motif in causes[16048]
+    assert pig.delivery_grammar.motif_class(causes[16048]) == "epic_wide"
+
+
+def test_belt_sans_motif_ne_fabrique_pas_de_motif(monkeypatch):
+    """Pas d'instantane -> pas de motif : la cause reste generique.
+
+    fail-OPEN : un motif fabrique serait pire qu'un motif absent.
+    """
+    marked = _make_item(7743, age_days=91, idle=9, last=None)
+    clean = _make_item(19010, age_days=42, idle=4, last=None)
+    monkeypatch.setattr(pig, "_delivery_motif", lambda n: None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [marked, clean], _free_claims([marked, clean]),
+        _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: n == 7743)
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert "motif" not in causes[7743]
+    assert pig.delivery_grammar.motif_class(causes[7743]) is None
+
+
 def test_belt_deadline_keeps_the_marker_filter_when_the_read_is_local(monkeypatch):
     """Le mur de temps arrete le RESEAU ; il n'a aucune raison d'arreter une
     lecture deja en memoire.
@@ -3931,3 +4252,103 @@ def test_belt_json_withheld_complete_reflects_probe_ceilings(
     assert rc == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["delivered_signal"]["withheld_complete"] is True
+
+
+def test_le_refus_strict_est_par_numero_et_non_par_fenetre(monkeypatch, capsys):
+    """#22983 (v3) : le fail-CLOSED STRICT refuse le NUMERO perime, pas la
+    FENETRE entiere.
+
+    Mesure fondatrice (09/11, run c3010 de cette lane, sur `main` a jour) :
+    le tapis a rendu sur stderr
+
+        [22983] voie en processus indisponible : instantane STRICT ne sert
+        pas les numeros (manquants: - ; perimes: 20188, 18258, 23175, 7423,
+        11556, 20387, 19341, 23310, 14318, 16886, 13737) ; echecs quota
+        REST < 1 h : 0
+        [t=235.14s] belt pick_with_replacements fait: 0 retenu(s), 70 witheld
+
+    Onze numeros perimes sur 70 -- et **les 59 autres ont ete refuses
+    eux aussi** : « 0 retenu(s), 70 witheld », « picks : 0 ». Le message ne
+    nomme que les 11, mais le refus portait sur la fenetre entiere.
+
+    La lecture du code nomme la mecanique : `gh_snapshot.serves()` est une
+    validite **par issue** (un stamp frais par issue, ET les commentaires
+    de cette issue), mais l'appelant l'appliquait a la fenetre entiere --
+    un seul numero perime faisait echouer `serves()` pour les 70, et la
+    voie STRICT rendait alors `BLOCKED` pour les 70 : aucun grain servi,
+    le tapis fail-CLOSED sur une fenetre dont 59 numeros etait lisibles.
+
+    Ce temoin est le temoin INVERSE : les deux numeros frais sont
+    **servis**, et le numero perime est refuse **avec son motif**.
+
+    Ce que ce temoin NE dit pas : que la porte
+    `MAX_SWEEP_LOOKBACK_SECONDS` serait en cause. Elle ecarte le
+    **balayage**, elle ne refuse rien -- temoin jumeau dans
+    `test_gh_snapshot_sweep_22983.py`
+    (`test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable`).
+    """
+    clc = pig._claim_reader_module()
+    # L'instantane du LECTEUR est un global du module : on le pose pour que
+    # le teardown le restaure (monkeypatch restaure la valeur qu'il a
+    # relevee, pas celle que le code a ensuite ecrite).
+    monkeypatch.setattr(clc, "_SNAPSHOT", None)
+    # La jambe IMPLICIT (#14300) partirait sur `gh pr list` : elle est
+    # neutralisee ici -- ce temoin mesure le refus STRICT, pas les PRs
+    # ouvertes qui referencent l'issue.
+    monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
+                        lambda number, my_lane, prs=None, threshold=None: [])
+
+    snapshot = _mini_snapshot([11, 12, 13])
+    # 12 est perime (2 h > le TTL de 30 min) ; 11 et 13 sont frais.
+    snapshot["meta"]["comment_stamps"]["12"] = time.time() - 2 * 3600
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snapshot)
+
+    verdicts = pig.check_claims([11, 12, 13], "myia-ai-01:CoursIA-2",
+                                strict_snapshot=True)
+
+    err = capsys.readouterr().err
+    assert "[22983] refus STRICT par numero" in err, (
+        f"le refus doit NOMMER sa cause sur stderr (got: {err!r})")
+    perimes = re.search(r"perimes: ([^)]*)", err)
+    assert perimes is not None, f"la cause doit nommer les perimes ({err!r})"
+    assert perimes.group(1).strip() == "12", (
+        f"seul le numero perime doit etre nomme ({perimes.group(1)!r})")
+
+    # Les deux numeros frais sont SERVIS : le refus ne les concerne pas.
+    for numero in (11, 13):
+        code, _human = verdicts[numero]
+        assert code in (pig.CLAIM_CODE_FREE, pig.CLAIM_CODE_FREE_STALE), (
+            f"le numero frais {numero} doit etre servi (verdict: "
+            f"{verdicts[numero]!r})")
+
+    # Le numero perime est refuse, ET son refus porte son MOTIF : un refus
+    # muet serait indistinguable d'une panne de fenetre.
+    code, human = verdicts[12]
+    assert code == pig.CLAIM_CODE_BLOCKED, verdicts[12]
+    assert "perime" in human, f"le refus doit porter son motif ({human!r})"
+    assert "#12" in human, f"le motif doit nommer le numero ({human!r})"
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_belt_public_output_carries_delivery_status(monkeypatch, capsys, as_json):
+    """Les deux sorties exposent les statuts des urnes effectivement servies."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    items = [_make_item(4101, 50, 5, klass="grain"),
+             _make_item(4102, 50, 5, klass="delivered"),
+             _make_item(4103, 50, 5, klass="umbrella")]
+    monkeypatch.setattr(pig, "belt_pick_with_replacements",
+                        lambda *a, **k: (items, [],
+                                         {"failures": [], "budget_hit": False}))
+    argv = ["--lane", "myia-po-2024:CoursIA-2", "--belt", "--belt-validate", "off"]
+    if as_json:
+        argv.append("--json")
+    assert pig.main(argv) == 0
+    out = capsys.readouterr().out
+    if as_json:
+        picks = json.loads(out)["picks"]
+        assert [(p["number"], p["delivery_status"]) for p in picks] == [
+            (4101, "libre"), (4102, "livre"), (4103, "servable")]
+    else:
+        assert "statut" in out
+        for klass, status in [("grain", "libre"), ("delivered", "livre"),
+                              ("umbrella", "servable")]:
+            assert any(klass in line and status in line for line in out.splitlines())

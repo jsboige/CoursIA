@@ -104,6 +104,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
@@ -177,9 +178,16 @@ _OPEN_PRS_MEMO: list[dict] | None = None
 # memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
 # tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
 # pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
-_OPEN_PRS_INDEX_MEMO: (
-    tuple[list[dict], int, dict[int, list[dict]]] | None
-) = None
+_OPEN_PRS_INDEX_MEMO: tuple[list[dict], int, dict[int, list[dict]]] | None = None
+# Index local des PRs par couple (issue citee, lane). Contrairement a la
+# simple index d'issues ci-dessus, celui-ci evite aussi de re-parser la lane
+# de chaque PR a chaque issue du batch. Le fingerprint de valeur est recalcule
+# a chaque lecture: l'identite d'une liste ne suffit pas si son contenu change
+# en place (body, numero, remplacement, ajout ou retrait d'une PR).
+_OPEN_PRS_LANE_INDEX_MEMO: tuple[
+    list[dict], str, tuple[tuple[int, str, str], ...],
+    dict[tuple[int, str | None], list[dict]],
+] | None = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -683,6 +691,7 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
+@lru_cache(maxsize=8192)
 def _unwrap_trapped_body(body: str) -> str:
     """Le corps REEL quand la publication a piege son propre payload (#19971).
 
@@ -1138,6 +1147,31 @@ def _claim_scope_effectively_epic_wide(ev: ClaimEvent) -> bool:
     if empty is None:
         return False  # reducer-direct / no witness -> no lift
     return len(empty) >= len(paths)
+
+
+def _claim_live_paths(ev: ClaimEvent) -> list[str] | None:
+    """#25873 -- the LIVE paths a claim occupies, or None when it is
+    effectively epic-wide (no live scope).
+
+    A bounded claim (a `paths:` clause with at least one live glob) occupies
+    exactly the files it names: it must NOT freeze the whole issue, so the
+    belt serves the issue and hands the caller those paths to work outside.
+    A plain `[CLAIMED]` (no `paths:`), an unparseable scope (#10597) or an
+    entirely-dead non-creation scope (#10958 / #11098) has no live scope and
+    is epic-wide: it keeps the fail-CLOSED block.
+
+    This is the read-side mirror of the epic-wide lift in
+    `_filter_by_claim_scope`, so the two can never disagree about which
+    other-lane claims are bounded.
+    """
+    scope = ev.get("paths")
+    if not scope:
+        return None  # no `paths:` clause -> epic-wide
+    if ev.get("unparseable_scope"):
+        return None  # #10597 -- parse residue, not a live scope
+    if _claim_scope_effectively_epic_wide(ev):
+        return None  # #10958/#11098 -- every glob dead -> epic-wide
+    return scope
 
 
 def compute_active_claims(
@@ -1967,6 +2001,7 @@ query {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
+        headRefOid
         files(first:100) { totalCount nodes { path } }
       }
     }
@@ -1981,6 +2016,7 @@ query($cursor: String) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
+        headRefOid
         files(first:100) { totalCount nodes { path } }
       }
     }
@@ -2180,6 +2216,7 @@ def _gh_open_prs_complete() -> list[dict]:
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                "headRefOid": node.get("headRefOid"),
                 "body": node.get("body"),
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
@@ -2519,6 +2556,150 @@ def _open_prs_by_referenced_issue(
     return index
 
 
+def _pr_files_against_main(pr: dict) -> list[str] | None:
+    """Return paths touched by first-parent PR commits absent from main.
+
+    The PR-files API describes the branch diff against its declared base. For a
+    stacked branch that has absorbed main, this can include files changed only
+    by main. The head commit is supplied by GraphQL; a missing local object is
+    fetched by its pull ref. The first-parent, non-merge log lists ordinary PR
+    commits absent from main; merge commits are compared with a main ancestor
+    parent so their conflict resolutions and additions are retained without
+    counting files simply imported from main. Git has no 100-file API ceiling.
+
+    ``None`` means provenance could not be established. Callers then retain
+    the API paths (fail-closed); an unavailable ref or Git error must never
+    release an implicit occupation. An empty list means there is no path
+    touched by an ordinary first-parent commit or contributed by a merge.
+    """
+    head = pr.get("headRefOid")
+    number = pr.get("number")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+        return None
+
+    def git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args], capture_output=True, check=False,
+            encoding="utf-8", errors="strict",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+
+    try:
+        has_head = git("cat-file", "-e", f"{head}^{{commit}}")
+        if has_head.returncode != 0:
+            if not isinstance(number, int) or number <= 0:
+                return None
+            fetched = git("fetch", "--no-tags", "origin",
+                          f"refs/pull/{number}/head")
+            if fetched.returncode != 0:
+                return None
+            fetched_head = git("rev-parse", "--verify", "FETCH_HEAD")
+            if (fetched_head.returncode != 0
+                    or fetched_head.stdout.strip().lower() != head.lower()):
+                return None
+        main = git("rev-parse", "--verify", "origin/main")
+        if main.returncode != 0:
+            return None
+        main_oid = main.stdout.strip()
+        commits = subprocess.run(
+            ["git", "log", "--first-parent", "--no-merges", "--format=",
+             "--name-only", "-z", f"origin/main..{head}", "--"],
+            capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+        if commits.returncode != 0:
+            return None
+        paths = {path.decode("utf-8") for path in commits.stdout.split(b"\0") if path}
+
+        # A merge commit can carry the PR's only change (conflict resolution,
+        # an `ours` choice, or a file created during resolution). For each
+        # first-parent merge outside main, diff its tree against a parent that
+        # is already on main. This includes the merge's own tree contribution
+        # while ignoring files merely imported from that main parent.
+        merges = git("rev-list", "--first-parent", "--merges",
+                     f"origin/main..{head}")
+        if merges.returncode != 0:
+            return None
+        for merge in merges.stdout.splitlines():
+            ancestry = git("rev-list", "--parents", "-n", "1", merge)
+            if ancestry.returncode != 0:
+                return None
+            commits_and_parents = ancestry.stdout.split()
+            parents = commits_and_parents[1:]
+            if len(parents) < 2 or commits_and_parents[0] != merge:
+                return None
+            main_parents = []
+            for parent in parents:
+                is_main_ancestor = git("merge-base", "--is-ancestor", parent, main_oid)
+                if is_main_ancestor.returncode == 0:
+                    main_parents.append(parent)
+                elif is_main_ancestor.returncode != 1:
+                    return None
+            # Several parents can already be on main while this merge
+            # deliberately chooses an older parent's content (e.g. ours).
+            # Matching one ancestor is not proof of inheriting main's tree.
+            # Compare with current main in this ambiguous case; this can
+            # conservatively retain later main paths, never release work.
+            comparison_parents = (
+                [main_oid] if len(main_parents) > 1
+                else main_parents or [parents[0]]
+            )
+            merge_contribution: set[str] | None = None
+            for parent in comparison_parents:
+                merge_diff = subprocess.run(
+                    ["git", "diff", "--name-only", "-z", parent, merge, "--"],
+                    capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+                )
+                if merge_diff.returncode != 0:
+                    return None
+                changed_from_parent = {
+                    path.decode("utf-8")
+                    for path in merge_diff.stdout.split(b"\0") if path
+                }
+                # Compare against the selected main reference; a merge
+                # resolution matching an old ancestor still occupies a path
+                # when current main carries another resolution.
+                merge_contribution = (
+                    changed_from_parent if merge_contribution is None
+                    else merge_contribution & changed_from_parent
+                )
+            paths.update(merge_contribution or set())
+        return sorted(paths)
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
+def _open_prs_by_issue_and_lane(
+    prs: list[dict],
+) -> dict[tuple[int, str | None], list[dict]]:
+    """Indexe references et lanes, en invalidant sur tout changement visible.
+
+    La liste de PRs est mutable. Le fingerprint capture l'ordre, l'identite
+    de chaque dictionnaire, son numero et la valeur du body; il est recalcule
+    a chaque lecture pour voir aussi les modifications en place. La racine
+    courante fait partie de la cle, car le cache ouvert peut changer avec le
+    depot de travail.
+    """
+    global _OPEN_PRS_LANE_INDEX_MEMO
+    fingerprint = tuple(
+        (id(pr), repr(pr.get("number")), repr(pr.get("body") or ""))
+        for pr in prs
+    )
+    root = os.getcwd()
+    memo = _OPEN_PRS_LANE_INDEX_MEMO
+    if (memo is not None and memo[0] is prs and memo[1] == root
+            and memo[2] == fingerprint):
+        return memo[3]
+
+    index: dict[tuple[int, str | None], list[dict]] = {}
+    for pr in prs:
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        lane = extract_lane(body)
+        for issue_number in _referenced_issue_numbers(body):
+            index.setdefault((issue_number, lane), []).append(pr)
+    _OPEN_PRS_LANE_INDEX_MEMO = (prs, root, fingerprint, index)
+    return index
+
+
 def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
@@ -2528,10 +2709,14 @@ def _find_open_prs_referencing_issue(
     """Open PRs of OTHER lanes whose body references `issue_number`.
 
     Own-lane PRs are omitted (a lane does not collide with itself -- the
-    same exclusion the `--paths` leg applies). A PR whose lane tag is
-    unreadable counts as another lane (`extract_lane` returns None,
-    None != my_lane): fail-closed, mirroring `--paths`, where an
-    unreadable lane tag also counts as a collision. Sorted by PR number
+    same exclusion the `--paths` leg applies). When Git can establish the
+    head's non-merge first-parent commits absent from `origin/main`, an empty
+    path set is omitted and the reported paths are complete (not the API's
+    100-path preview). Unresolvable provenance keeps API paths and occupation.
+    A PR whose lane tag is unreadable counts as another lane
+    (`extract_lane` returns None, None != my_lane): fail-closed, mirroring
+    `--paths`, where an unreadable lane tag also counts as a collision.
+    Sorted by PR number
     (deterministic verdict order). Test injection: pass `prs` to avoid the
     `gh` round-trip; pass `threshold` to pin the enumeration guard (#24788).
 
@@ -2549,8 +2734,17 @@ def _find_open_prs_referencing_issue(
         lane = extract_lane(body)
         if lane == my_lane:
             continue
-        files = [f.get("path") for f in (pr.get("files") or [])
-                 if f.get("path")]
+        files = _pr_files_against_main(pr)
+        if files is None:
+            # Transport, SHA, or local object failure: preserve legacy paths
+            # and therefore the conservative occupation verdict.
+            files = [f.get("path") for f in (pr.get("files") or [])
+                     if f.get("path")]
+        elif not files:
+            # No file changed by a PR-line commit absent from main: inherited
+            # main changes cannot occupy this grain. The fallback above is
+            # intentionally unavailable once Git proved the empty diff.
+            continue
         cited = len(_referenced_issue_numbers(body))
         out.append({
             "number": pr.get("number"),
@@ -2614,12 +2808,9 @@ def _lane_open_prs_referencing(
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[int] = []
-    for pr in prs:
-        body = _unwrap_trapped_body(pr.get("body") or "")
-        if extract_lane(body) != lane:
-            continue
-        if not _pr_body_references_issue(body, issue_number):
-            continue
+    candidates = _open_prs_by_issue_and_lane(prs).get(
+        (issue_number, lane), [])
+    for pr in candidates:
         try:
             out.append(int(pr["number"]))
         except (KeyError, ValueError, TypeError):
@@ -2979,6 +3170,37 @@ def _find_open_pr_for_issue_by_lane(
     return matches[0]
 
 
+@lru_cache(maxsize=8192)
+def _compiled_path_pattern(pattern: str) -> re.Pattern[str]:
+    """fnmatch regex for one raw pattern under the current platform rules."""
+    from fnmatch import translate
+    return re.compile(translate(os.path.normcase(pattern)))
+
+
+@lru_cache(maxsize=65536)
+def _normcase_path(path: str) -> str:
+    return os.path.normcase(path)
+
+
+def _path_matches_pair(path: str, pattern: str) -> bool:
+    """Match one immutable path/pattern pair with fnmatch's platform rules.
+
+    Only the normalized regex and path strings are cached; the pair verdict
+    is recomputed. This keeps the cache independent of mutable caller lists
+    and retains Windows normcase and separator behavior.
+    """
+    basename = path.rsplit("/", 1)[-1]
+    regex = _compiled_path_pattern(pattern)
+    return (regex.match(_normcase_path(path)) is not None
+            or regex.match(_normcase_path(basename)) is not None)
+
+
+@lru_cache(maxsize=8192)
+def _expanded_path_pattern(pattern: str) -> tuple[str, ...]:
+    """Brace expansion for one immutable caller pattern."""
+    return tuple(_expand_brace_groups(pattern))
+
+
 def _path_matches(path: str, patterns: list[str]) -> bool:
     """Return True if `path` matches any of the caller-provided patterns.
 
@@ -2998,13 +3220,35 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     existing `grep`/git commands used in the cluster for "where does this
     file live" queries.
     """
-    from fnmatch import fnmatch
-    basename = path.rsplit("/", 1)[-1]
     for pat in patterns:
-        for p in _expand_brace_groups(pat):
-            if fnmatch(path, p) or fnmatch(basename, p):
+        for p in _expanded_path_pattern(pat):
+            if _path_matches_pair(path, p):
                 return True
     return False
+
+
+def _matching_tracked_indices(
+    patterns: list[str], tracked: list[str]
+) -> set[int]:
+    """Indices des chemins suivis qui correspondent aux motifs.
+
+    Cette forme en lot est utilisee par `_scopes_intersect`: les motifs
+    sont developpes/normalises/compiles une fois par scope, puis chaque
+    chemin est normalise une seule fois (par `_TrackedFiles`) et teste
+    contre ces regex. La separation du basename se fait toujours sur le
+    chemin brut, avant `normcase`, comme dans `fnmatch(path, pattern)` sous
+    Windows.
+    """
+    expanded = [p for pattern in patterns
+                for p in _expanded_path_pattern(pattern)]
+    regexes = [_compiled_path_pattern(p) for p in expanded]
+    if not regexes:
+        return set()
+    pairs = _norm_pairs(tracked)
+    return {
+        index for index, (path, basename) in enumerate(pairs)
+        if any(rx.match(path) or rx.match(basename) for rx in regexes)
+    }
 
 
 def _compute_scope_intersection_paths(
@@ -3044,9 +3288,11 @@ def _compute_scope_intersection_paths(
         # The claim (or the caller) is wildcards-free, so the BLOCKED
         # verdict stays binary from the file-list perspective.
         return [], False
+    common = (_matching_tracked_indices(my_scope, tracked)
+              & _matching_tracked_indices(claim_scope, tracked))
     matches: list[str] = []
-    for path in tracked:
-        if _path_matches(path, my_scope) and _path_matches(path, claim_scope):
+    for index, path in enumerate(tracked):
+        if index in common:
             matches.append(path)
             if len(matches) > limit:
                 return matches[:-1], True
@@ -3088,19 +3334,15 @@ def _compute_free_paths(
     # collect the matches. This is the disjoint case the lane-claim
     # guard relies on: rc=0 (clear), free_paths = the whole caller scope.
     if not scoped_claims:
-        free: list[str] = []
-        for path in tracked:
-            if not _path_matches(path, my_scope):
-                continue
-            free.append(path)
-            if len(free) > limit:
-                return free[:-1], True
-        return free, False
+        blockers: set[int] = set()
+    else:
+        blockers = set()
+        for scopes in scoped_claims:
+            blockers.update(_matching_tracked_indices(scopes, tracked))
+    in_scope = _matching_tracked_indices(my_scope, tracked)
     free: list[str] = []
-    for path in tracked:
-        if not _path_matches(path, my_scope):
-            continue
-        if any(_path_matches(path, scopes) for scopes in scoped_claims):
+    for index, path in enumerate(tracked):
+        if index not in in_scope or index in blockers:
             continue
         free.append(path)
         if len(free) > limit:
@@ -3252,6 +3494,64 @@ class _TrackedFiles(list):
         self._norm = None
         self._exact = None
         self._bases = None
+
+    def _invalidate(self):
+        self._norm = self._exact = self._bases = None
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self._invalidate()
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        self._invalidate()
+
+    def append(self, item):
+        super().append(item)
+        self._invalidate()
+
+    def extend(self, items):
+        # An iterator can fail after partially extending the list.
+        try:
+            super().extend(items)
+        finally:
+            self._invalidate()
+
+    def insert(self, index, item):
+        super().insert(index, item)
+        self._invalidate()
+
+    def pop(self, index=-1):
+        item = super().pop(index)
+        self._invalidate()
+        return item
+
+    def remove(self, item):
+        super().remove(item)
+        self._invalidate()
+
+    def clear(self):
+        super().clear()
+        self._invalidate()
+
+    def reverse(self):
+        super().reverse()
+        self._invalidate()
+
+    def sort(self, *args, **kwargs):
+        try:
+            super().sort(*args, **kwargs)
+        finally:
+            self._invalidate()
+
+    def __iadd__(self, items):
+        self.extend(items)
+        return self
+
+    def __imul__(self, count):
+        super().__imul__(count)
+        self._invalidate()
+        return self
 
     @property
     def norm_pairs(self) -> list[tuple[str, str]]:
@@ -4198,9 +4498,94 @@ def _epic_cap_pool() -> tuple[list[dict], str | None]:
     return pool, read_error
 
 
+def _without_in_progress_visit(events: list, lane: str) -> list:
+    """Retire de `events` la visite EN COURS de `lane`.
+
+    Une visite est **close** par un marqueur de cloture -- `_CLOSE` du module
+    (`[DELIVERED]`, `[RELEASED]`, `[CANCELLED]`, `[ABANDONED]`, `[DONE]`) :
+    c'est le vocabulaire que l'organe des claims lit deja pour reduire une
+    prise en une absence de prise.
+
+    Ce qui est retire : les evenements de `lane` posterieurs a son dernier
+    marqueur de cloture -- le `[CLAIMED]` de la minute, l'`[OVERRIDE]` que le
+    coordinateur vient de lui rendre. Ce qui reste : tout ce qui precede ou
+    coincide avec la cloture, y compris la cloture elle-meme -- une visite
+    passee et close continue d'armer le plafond, datee par son marqueur.
+
+    Sans marqueur de cloture, toute la visite de la lane est en cours : rien
+    n'est retire pour elle, et le filtre n'a plus rien a dire.
+    """
+    closes = [ev.created_at for ev in events
+              if ev.lane == lane
+              and (ev.get("marker") or "").upper() in _CLOSE]
+    if not closes:
+        # Pas de cloture : toute la visite de la lane est en cours.
+        return [ev for ev in events if ev.lane != lane]
+    last_close = max(closes)
+    return [ev for ev in events
+            if not (ev.lane == lane and ev.created_at > last_close)]
+
+
+def _claim_visit_excluding(comments: list[dict],
+                            exclude_lane: str | None,
+                            ) -> tuple[str | None, str | None]:
+    """Paire ``(date, marqueur)`` de la visite la plus recente, HORS la visite en cours d'une lane.
+
+    #25443 : le plafond hebdomadaire des EPICs se lisait sur le dernier
+    marqueur du fil, **y compris ceux de la lane qui interroge** et ceux du
+    coordinateur qui arbitre. Deux self-bloquages en decoulaient :
+
+      - une lane qui pose son ``[CLAIMED]`` sur l'EPIC puis relance le
+        controle AVANT d'editier (sequence permise par le protocole : le
+        controle precede l'edition, pas le claim) se bloquait sur son propre
+        marqueur -- instance mesuree : po-2027 sur #12051, claim de 06:42:59Z,
+        verdict ``PLAFOND EPIC (#22500) ... il y a 0.0 j`` trois minutes
+        plus tard ;
+      - l'``[OVERRIDE] lane <m:w>`` du coordinateur, qui rend le grain a
+        cette lane, rearme le plafond de la meme facon -- relu a 07:52Z, le
+        meme controle rendait ``override sur l'EPIC il y a 0.0 j`` et seul
+        ``--force`` passait.
+
+    Ce qui est ecarte n'est donc que la visite **en cours** de la lane qui
+    interroge : ses evenements posterieurs a son dernier marqueur de
+    cloture, et l'``[OVERRIDE] lane <lane>`` qui lui rend le grain s'il est
+    posterieur lui aussi. Le filtre porte sur le champ ``lane`` de
+    l'evenement : un ``[OVERRIDE] lane <lane>`` nomme la lane a qui le
+    coordinateur rend le grain, il est donc ecarte pour cette lane-la et
+    compte pour les autres.
+
+    #25443 tranche 2 : la premiere version ecartait **tous** les evenements
+    de la lane qui interroge, ses visites passees et closes comprise. Le
+    plafond devenait « une visite par semaine et par AUTRE lane » au lieu de
+    « un EPIC hors consolidation se visite au plus une fois par semaine »
+    (`docs/reference/variation-protocol-detail.md`, #22500) : une lane seule
+    sur un EPIC pouvait le reprendre chaque jour -- livrer une tranche le
+    lundi, en claimer une autre le mardi, et lire ``CLEAR``. Une visite
+    passee et close de la meme lane continue donc d'armer le plafond, datee
+    par son marqueur de cloture.
+
+    Grammaire : celle de l'organe des claims (`_sort_events` -- decorations
+    markdown et non-ASCII tolerees, blocs fence neutralises, mentions en
+    milieu de ligne ignorees), jamais une regex propre. Date ET marqueur
+    sortent du MEME evenement : la cause nomme ce que la lane a fait (prise,
+    rendu de main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
+    (#22687 constat 1).
+    """
+    events = [ev for ev in _sort_events(
+        {"comments": [c for c in comments if isinstance(c, dict)]})
+        if ev.lane and ev.created_at]
+    if exclude_lane:
+        events = _without_in_progress_visit(events, exclude_lane)
+    if not events:
+        return None, None
+    ev = max(events, key=lambda e: e.created_at)
+    return ev.created_at, ((ev.get("marker") or "").upper() or None)
+
+
 def epic_visit_cap(payload: dict, *, now: datetime | None = None,
                    parent_loader=None,
-                   pool_loader=None) -> dict:
+                   pool_loader=None,
+                   my_lane: str | None = None) -> dict:
     """#22500 point 3 -- verdict du plafond hebdomadaire pour un claim sur N.
 
     Rend un dict a quatre cles, toutes serialisables dans le rapport JSON :
@@ -4220,6 +4605,16 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
     recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
     -- le scenario fondateur de #22500 -- bloquerait son propre premier claim.
+
+    #25443 : quand N est lui-meme l'EPIC, la visite qui arme le plafond est
+    celle d'une **autre** lane que `my_lane`. Sans cette exclusion, une lane
+    qui pose son `[CLAIMED]` sur l'EPIC puis relance le controle (sequence
+    permise par le protocole : le controle precede l'edition, pas le claim) se
+    bloquait sur son propre marqueur, et l'`[OVERRIDE]` du coordinateur qui
+    rend le grain a cette lane rearmait le plafond de la meme facon. Le filtre
+    est porte par l'organe (`_claim_visit_excluding`), jamais reecrit ici ; il
+    s'applique au sujet N lui-meme, pas aux parents -- la semantique du
+    plafond pour les filles, qui est juste, reste hors scope.
 
     `parent_loader`/`pool_loader` sont injectables (tests hors reseau) ; par
     defaut ils lisent GitHub et memoisent par processus.
@@ -4284,7 +4679,13 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         # main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
         # (#22687 constat 1). Deux appels separes pourraient designer deux
         # evenements differents.
-        stamp, marker = picker.claim_visit(comments)
+        if my_lane and epic == number:
+            # #25443 : le sujet est N lui-meme -- la visite qui arme le
+            # plafond exclut la lane qui interroge (son propre claim, et
+            # l'override qui lui rend le grain).
+            stamp, marker = _claim_visit_excluding(comments, my_lane)
+        else:
+            stamp, marker = picker.claim_visit(comments)
         targets.append({
             "number": epic,
             "title": body.get("title"),
@@ -4320,7 +4721,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                pr_states: dict[int, str] | None = None,
                check_open_pr_paths: bool = False,
                epic_cap: bool = False,
-               epic_cap_probe=None) -> int:
+               epic_cap_probe=None,
+               serve_bounded: bool = False) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
@@ -4362,7 +4764,10 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             it on the two unitary paths (`check`, `--claim`), never on batch
             (see the region comment above `epic_visit_cap` for why).
         epic_cap_probe: injectable `(payload) -> verdict dict` seam (tests).
-            Defaults to `epic_visit_cap`, which reads GitHub.
+            Defaults to `epic_visit_cap`, which reads GitHub. A probe injectee
+            est responsable de sa propre lane : `epic_visit_cap` prend
+            `my_lane` (#25443) pour exclure du plafond le propre marqueur de
+            la lane qui interroge.
     """
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
@@ -4685,7 +5090,35 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # of #12345's acceptance) lives at the verdict-emission point below --
     # a scope that is entirely dead does NOT clear to `exit 0`, it changes
     # verdict and acquires an explanation.
-    if others and my_scope is None:
+    occupied_paths: dict[str, list[str]] = {}
+    if others and my_scope is None and serve_bounded:
+        # #25873 -- the BELT calls the probe WITHOUT --paths (my_scope None)
+        # and opts in to `serve_bounded`. A bounded claim (a live `paths:`)
+        # from another lane occupies only the files it names; it must NOT
+        # freeze the whole issue. Only an epic-wide claim (no live scope)
+        # keeps the fail-CLOSED block. `occupied_paths` is empty outside this
+        # branch, so a PATH_SCOPED / BLOCKED verdict never carries a stale
+        # occupied list.
+        # #25873 + CR #25906 -- servir UNIQUEMENT si TOUS les claims d'autrui
+        # sont bornes (len(borne) == len(others)). Une seule claim epic-wide
+        # dans le mix re-verrouille toute l'issue : le cas mixte borne +
+        # epic-wide ne doit PAS clairer en SCOPED_OCCUPIED, sinon le verrou
+        # epic-wide d'une lane est silencieusement droppe (l'issue serait
+        # servie malgre le verrou de la lane epic-wide).
+        bounded = {
+            ln: ev.get("paths") for ln, ev in others.items()
+            if _claim_live_paths(ev)
+        }
+        if len(bounded) == len(others):
+            occupied_paths = bounded
+            query_scope = "SCOPED_OCCUPIED"
+        else:
+            occupied_paths = {}
+            query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    elif others and my_scope is None:
+        # #25873 -- a non-belt no-`--paths` call: keep the fail-CLOSED
+        # NOT_SCOPED. A manual probe that declared no scope cannot prove
+        # disjointness from a bounded claim; the belt fix does not relax it.
         query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
     elif caller_empty_scope and my_scope and len(caller_empty_scope) >= len(my_scope):
         # #12345 -- every glob in `my_scope` is dead: the caller declared a
@@ -4769,9 +5202,16 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 "another lane already blocks -- verdict is exit 1 without the cap"
             )
         else:
-            probe = epic_cap_probe or epic_visit_cap
+            probe = epic_cap_probe
             try:
-                epic_cap_verdict = probe(payload) or epic_cap_verdict
+                if probe is None:
+                    # La lane qui interroge est passee a l'organe : #25443
+                    # exclut son propre marqueur de la visite qui arme le
+                    # plafond quand N est l'EPIC lui-meme.
+                    epic_cap_verdict = epic_visit_cap(
+                        payload, my_lane=my_lane) or epic_cap_verdict
+                else:
+                    epic_cap_verdict = probe(payload) or epic_cap_verdict
             except Exception as exc:  # noqa: BLE001 -- mesure best-effort, nommee
                 epic_cap_verdict["error"] = f"{type(exc).__name__}: {exc}"
 
@@ -4781,6 +5221,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
+        # #25873 -- the belt's no-`--paths` call: when every other-lane claim is
+        # bounded, the issue is SERVED (SCOPED_OCCUPIED, exit 0) and this carries
+        # the files those bounded claims occupy, so the caller works OUTSIDE that
+        # perimeter. Empty outside the SCOPED_OCCUPIED verdict.
+        "occupied_paths": occupied_paths,
         "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
         # #22408 -- les claims dont l'age depassait le seuil mais dont la lane
         # livrait encore : ils BLOQUENT (ils sont dans `others`, donc dans
@@ -5103,6 +5548,22 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         and ev.get("pr_state") is None
     ]
 
+    # #25873 -- the belt called without --paths and every other-lane claim is
+    # bounded (live paths:). The issue is SERVABLE: serve it (exit 0) and hand
+    # the caller the occupied paths so it works OUTSIDE that perimeter. An
+    # epic-wide claim routes to NOT_SCOPED (exit 2) below -- unchanged.
+    if query_scope == "SCOPED_OCCUPIED":
+        lines = [
+            f"SCOPED_OCCUPIED: #{payload.get('number')} est servable -- les "
+            f"claims des autres lanes sont bornes a des chemins."
+        ]
+        for ln in sorted(occupied_paths):
+            lines.append(
+                f"chemins occupés par {ln} : {', '.join(occupied_paths[ln])}"
+                f" -- travailler hors de ce périmètre"
+            )
+        print("\n".join(lines))
+        return 0
     # Human verdict after the JSON.
     if others:
         who = ", ".join(
@@ -5469,6 +5930,31 @@ def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
     return [str(b) for b in blocking]
 
 
+def _occupied_paths_from_summary(stdout_text: str) -> dict[str, list[str]]:
+    """#25873 -- the `occupied_paths` field of a `_run_check` resume JSON.
+
+    Sibling of `_blocking_lanes_from_summary`: the batch path reads the two
+    flux (stdout JSON + stderr verdict) and the belt needs the occupied paths
+    to tell the lane to work OUTSIDE that perimeter. Same `raw_decode` (the
+    stdout carries a human phrase after the object). Empty when the JSON is
+    absent, is not a dict, or the verdict is not SCOPED_OCCUPIED.
+    """
+    text = stdout_text or ""
+    brace = text.find("{")
+    if brace == -1:
+        return {}
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[brace:])
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    occ = data.get("occupied_paths")
+    if not isinstance(occ, dict):
+        return {}
+    return {str(k): [str(p) for p in v] for k, v in occ.items() if v}
+
+
 def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
     """Court libelle machine-consommable issu de la sortie d'un `_run_check`.
 
@@ -5532,7 +6018,7 @@ def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
 # diagnostic faux sans jamais echouer.
 _VERDICT_LINE_PREFIXES = (
     "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
-    "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+    "DEAD-SCOPE", "NOT_SCOPED", "SCOPED_OCCUPIED", "DUMP",
 )
 
 
@@ -5642,6 +6128,7 @@ def check_issues_batch(
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
+    serve_bounded: bool = False,
 ) -> dict:
     """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
@@ -5761,6 +6248,7 @@ def check_issues_batch(
                     # Batch = read path only (L898), pas de posting
                     # leg.
                     check_open_pr_paths=True,
+                    serve_bounded=serve_bounded,
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
@@ -5778,6 +6266,11 @@ def check_issues_batch(
             # `ERROR` qui nomme un bloquant ne l'est plus.
             result["blocker_named"] = _names_a_blocker(
                 evidence, stdout_json=captured)
+            # #25873 -- SCOPED_OCCUPIED: le belt lit les chemins occupés par les
+            # claims bornes des autres lanes pour servir l'issue AVEC cette liste
+            # (travailler hors de ce périmètre) au lieu de l'écarter. Vide hors
+            # du verdict SCOPED_OCCUPIED.
+            result["occupied_paths"] = _occupied_paths_from_summary(captured)
             # #22983 -- la voie batch doit rendre le MEME verdict que le
             # reduiteur historique du picker : `exit 2` + un resume JSON qui
             # nomme des lanes bloquantes = BLOCKED. Ce cas est distinct de
@@ -6154,9 +6647,9 @@ def _scopes_intersect(
     if not a or not b:
         return False
     if tracked is not None:
-        for path in tracked:
-            if _path_matches(path, a) and _path_matches(path, b):
-                return True
+        if (_matching_tracked_indices(a, tracked)
+                & _matching_tracked_indices(b, tracked)):
+            return True
         if _scope_is_creation(a, tracked) or _scope_is_creation(b, tracked):
             return _scopes_may_overlap_by_pattern(a, b)
         return False

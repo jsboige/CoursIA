@@ -635,7 +635,7 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     """Le transport historique ne doit PAS etre appele quand l'instantane
     sert l'issue."""
     instantane = {
-        "comments": {"7": [{"body": "[FROZEN] lane a:b",
+        "comments": {"7": [{"body": "[DELIVERED] lane a:b -- PR #1",
                             "createdAt": "2026-10-27T10:00:00Z",
                             "author": {"login": "a"}, "url": "u1"}]},
         "meta": {"comment_stamps": {"7": time.time()}},
@@ -650,6 +650,11 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     verdict = pig.delivery_event(7)
     assert verdict[0] is True
     assert verdict[2] == "2026-10-27T10:00:00Z"
+
+    # Le gel est un veto distinct, et non une livraison ; son horodatage
+    # reste disponible sans appel reseau pour la sonde d'evenement.
+    instantane["comments"]["7"][0]["body"] = "[FROZEN] lane a:b"
+    assert pig.delivery_event(7) == (False, False, "2026-10-27T10:00:00Z")
 
 
 def test_m_le_batch_sert_le_payload_depuis_l_instantane(monkeypatch):
@@ -815,3 +820,73 @@ def test_le_batch_garde_error_quand_aucune_lane_ne_bloque(monkeypatch):
     monkeypatch.setattr(clc, "_run_check", faux_run_check)
     resultat = clc.check_issues_batch(["7"], "ma:lane")
     assert resultat["results"]["7"]["code"] == "ERROR"
+
+
+def test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable(
+        monkeypatch):
+    """#22983 : la porte `MAX_SWEEP_LOOKBACK_SECONDS` ECARTE le balayage ;
+    elle ne refuse PAS la fenetre.
+
+    Ce temoin isole deux portes distinctes, souvent confondues :
+
+    1. **La porte du balayage** (`MAX_SWEEP_LOOKBACK_SECONDS`, 2 h) : quand
+       le stamp le plus ancien du lot depasse cette borne, le balayage du
+       depot n'est PAS tente (son cout croit avec la fenetre d'activite).
+       Elle **ecarte une maniere de lire**, elle ne refuse rien.
+    2. **La lecture par issue** prend le relais : chaque issue perimee est
+       relue une par une, et son stamp est rafraichi.
+
+    Apres cette lecture, `serves()` est VRAI pour la fenetre entiere :
+    l'ecart de balayage ne l'a pas condamnee. Ce qui refuse un numero, c'est
+    la voie STRICT du tapis, qui lit l'instantane **sans rafraichir** --
+    temoin jumeau dans `test_pick_idle_grain_belt.py`
+    (`test_le_refus_strict_est_par_numero_et_non_par_fenetre`).
+
+    Sans ce temoin, les deux portes se confondent : un run ou 11 numeros
+    sur 70 sont perimes se lit comme « la porte du balayage a refuse la
+    fenetre ». Elle ne l'a pas refusee : elle a refuse le balayage, et
+    c'est la STRICT qui refuse, numero par numero, ceux dont l'instantane
+    ne prouve rien.
+    """
+    captures = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        captures.append(params)
+        if path.endswith("/issues/comments"):
+            return []
+        if path.endswith("/issues"):
+            return []
+        if path.endswith("/comments"):
+            numero = int(path.rsplit("/", 2)[-2])
+            return [_commentaire(numero)]
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+
+    vieux = time.time() - 30 * 24 * 3600
+    snapshot = {
+        "comments": {"7": [_commentaire(7)], "9": [_commentaire(9)]},
+        "issues": {"7": {"number": 7, "title": "T", "labels": []},
+                   "9": {"number": 9, "title": "T", "labels": []}},
+        "meta": {"comment_stamps": {"7": vieux, "9": time.time()}},
+    }
+
+    # AVANT la lecture : la fenetre n'est pas servable -- le stamp de 7
+    # depasse le TTL de 30 min (et la porte du balayage ne peut pas
+    # refreschir un stamp vieux de 30 jours).
+    assert not gs.serves(snapshot, [7, 9]), (
+        "le stamp vieux de 30 jours rend la fenetre non servable")
+
+    out, calls, stats = gs.ensure_comments("o/r", [7, 9], snapshot)
+
+    # Le balayage n'a PAS ete tente (fenetre trop large)...
+    assert not any("since=" in str(p) for p in captures), (
+        f"le balayage a ete tente sur une fenetre de 30 jours : {captures}")
+    # ...et la lecture par issue a pris le relais.
+    assert stats["lus"] == 1, (
+        f"l'issue perimee devait etre relue une par une (stats: {stats})")
+
+    # APRES la lecture, la fenetre EST servable : l'ecart de balayage ne
+    # refuse rien, il change seulement la maniere de lire.
+    assert gs.serves(out, [7, 9]), (
+        "apres la lecture par issue, la fenetre doit redevenir servable")

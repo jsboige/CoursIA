@@ -148,6 +148,13 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          # L'observateur ne lit que ses scripts et les deux advisories dont
+          # check_heartbeat_anchor_independence extrait les ancres.
+          sparse-checkout: |
+            scripts/ci
+            .github/workflows
       - name: Measure starvation on coursia-linux
         env:
           GH_TOKEN: ${{ github.token }}

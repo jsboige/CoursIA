@@ -10,35 +10,35 @@ Alexandre Grothendieck (1928-2014).
 Phase 2 extension (#2159, Epic #1646).
 
 Part 79 defined flasqueness at the level of sites
-(Grothendieck.Flasque, IsFlasqueSieves): any compatible family on any
+(`Grothendieck.Flasque`, `IsFlasqueSieves`): any compatible family on any
 sieve admits an amalgamation. Part 80 (branch
-feature/grothendieck-partie-80) studied stability under isomorphisms
+`feature/grothendieck-partie-80`) studied stability under isomorphisms
 and products. This part generalizes the first link: flasqueness descends
 along a one-sided retraction.
 
-  - isFlasqueSieves_of_retract: if Q is a retract of P — a pair
-    e : P ⟶ Q, s : Q ⟶ P with s ≫ e = 𝟙 Q — and P is flasque,
-    then Q is flasque. Invariance under isomorphism (Godement II.3.1)
+  - `isFlasqueSieves_of_retract`: if `Q` is a retract of `P` — a pair
+    `e : P ⟶ Q`, `s : Q ⟶ P` with `s ≫ e = 𝟙 Q` — and `P` is flasque,
+    then `Q` is flasque. Invariance under isomorphism (Godement II.3.1)
     is the symmetric case (both compositions equal to the identity);
     here a single equality suffices. The proof pushes the family along
-    the section s, amalgamates in P, and comes back through e:
-    compatibility follows from the naturality of s, the conclusion
-    from that of e and the identity e ≫ s = 𝟙.
+    the section `s`, amalgamates in `P`, and comes back through `e`:
+    compatibility follows from the naturality of `s`, the conclusion
+    from that of `e` and the identity `e ≫ s = 𝟙`.
 
-  - isFlasqueSieves_of_retract': the same reading with the roles
-    exchanged — if e ≫ s = 𝟙 P and Q is flasque, then P is
-    flasque. This is the previous theorem renamed (P is then the
-    retract of Q): both directions of a split pair are covered by a
+  - `isFlasqueSieves_of_retract'`: the same reading with the roles
+    exchanged — if `e ≫ s = 𝟙 P` and `Q` is flasque, then `P` is
+    flasque. This is the previous theorem renamed (`P` is then the
+    retract of `Q`): both directions of a split pair are covered by a
     single statement, recorded separately for downstream consumption.
 
-  - isFlasqueSieves_of_iso': invariance under isomorphism as a
-    corollary of the retract (e.inv ≫ e.hom = 𝟙). A deliberate
+  - `isFlasqueSieves_of_iso'`: invariance under isomorphism as a
+    corollary of the retract (`e.inv ≫ e.hom = 𝟙`). A deliberate
     duplicate of the Part 80 theorem (branch under review): here it
     witnesses that the retract is indeed the generalization.
 
-  - isFlasqueSieves_of_retract_addCommGrp: the bridge to the abelian
+  - `isFlasqueSieves_of_retract_addCommGrp`: the bridge to the abelian
     world — for presheaves of abelian groups, the retract transports
-    through forget (whiskering), so flasqueness read through forget
+    through `forget` (whiskering), so flasqueness read through `forget`
     also descends to retracts of abelian presheaves. This is the setting
     where practically useful retracts live (split sheaves, split direct
     images).
@@ -55,9 +55,9 @@ References:
     Chap. II §3 (prop. 3.1: invariance under isomorphism, of which the
     retract is the one-sided form).
   - SGA 4, Expose II (sites and sieves).
-  - Part 79 (Grothendieck.Flasque): IsFlasqueSieves.
-  - Part 80 (Grothendieck.FlasqueStability, branch
-    feature/grothendieck-partie-80): invariance under iso, products,
+  - Part 79 (`Grothendieck.Flasque`): `IsFlasqueSieves`.
+  - Part 80 (`Grothendieck.FlasqueStability`, branch
+    `feature/grothendieck-partie-80`): invariance under iso, products,
     boundary of acyclicity.
 
 i18n convention (EPIC #4980 ratified 2026-07-04): this module is the
@@ -88,11 +88,11 @@ section Retracte
 
 variable {C : Type u} [Category.{v} C]
 
-/-- Flasqueness descends to retracts: if Q is a retract of P
-(e : P ⟶ Q, s : Q ⟶ P, s ≫ e = 𝟙 Q) and P is flasque, Q is
-flasque. The Q-family pushes to a P-family via the section s,
-compatibility follows from naturality, and the amalgamation t comes
-back through e. Invariance under isomorphism (Godement II.3.1) is the
+/-- Flasqueness descends to retracts: if `Q` is a retract of `P`
+(`e : P ⟶ Q`, `s : Q ⟶ P`, `s ≫ e = 𝟙 Q`) and `P` is flasque, `Q` is
+flasque. The `Q`-family pushes to a `P`-family via the section `s`,
+compatibility follows from naturality, and the amalgamation `t` comes
+back through `e`. Invariance under isomorphism (Godement II.3.1) is the
 symmetric case: here a single composition equal to the identity
 suffices. -/
 theorem isFlasqueSieves_of_retract {P Q : Cᵒᵖ ⥤ Type (max v u)} (e : P ⟶ Q)
@@ -119,8 +119,8 @@ theorem isFlasqueSieves_of_retract {P Q : Cᵒᵖ ⥤ Type (max v u)} (e : P ⟶
       simpa using hz
     rw [nat, ht f hf, hid]
 
-/-- The same reading, roles exchanged: if e ≫ s = 𝟙 P (P is then
-the retract of Q) and Q is flasque, P is flasque. Both directions
+/-- The same reading, roles exchanged: if `e ≫ s = 𝟙 P` (`P` is then
+the retract of `Q`) and `Q` is flasque, `P` is flasque. Both directions
 of a split pair are covered by a single theorem; this named alias serves
 downstream consumption. -/
 theorem isFlasqueSieves_of_retract' {P Q : Cᵒᵖ ⥤ Type (max v u)} (e : P ⟶ Q)

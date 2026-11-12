@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`casestudies.csv`](casestudies.csv) | `CaseStudies/` | 6 (3 études de cas × variantes solution/student : Diagnostic-Medical, Oncology-Planning, SmartGrid-Energy) | 146 (21 colonnes) |
+| [`casestudies.csv`](casestudies.csv) | `CaseStudies/` | 6 (3 études de cas × variantes solution/student : Diagnostic-Medical-Python, Planification-Oncologie-Python, Reseau-Electrique-Intelligent) | 146 (21 colonnes) |
 
 **Note owner-lane** : l'extraction i18n est **safe owner-lane** (artefacts dérivés = CSV de cellules upstream, pas de modification de code des notebooks).
 
