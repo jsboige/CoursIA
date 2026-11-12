@@ -416,8 +416,8 @@
       "depth": 1,
       "label_fr": "h^max",
       "label_en": "h^max",
-      "definition_fr": "Heuristique du problème relaxé : nombre d'actions du plan relaxé le plus court ; admissible, faible résolution.",
-      "definition_en": "Relaxed-problem heuristic: number of actions in the shortest relaxed plan; admissible, low resolution.",
+      "definition_fr": "Heuristique du problème relaxé : maximum, sur les faits du but, de leur coût minimal d'atteinte dans la relaxation ; admissible, faible résolution.",
+      "definition_en": "Relaxed-problem heuristic: maximum, over the goal facts, of their minimal reach cost in the relaxation; admissible, low resolution.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
@@ -454,8 +454,8 @@
       "depth": 1,
       "label_fr": "FF (Fast Forward)",
       "label_en": "FF (Fast Forward)",
-      "definition_fr": "Compte les actions en parcourant le graphe de planification sans double-compter les actions partagées ; admissible.",
-      "definition_en": "Counts actions by walking the planning graph without double-counting shared actions; admissible.",
+      "definition_fr": "Compte les actions en parcourant le graphe de planification sans double-compter les actions partagées ; non admissible.",
+      "definition_en": "Counts actions by walking the planning graph without double-counting shared actions; not admissible.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
@@ -473,8 +473,8 @@
       "depth": 1,
       "label_fr": "Landmarks",
       "label_en": "Landmarks",
-      "definition_fr": "Facts qui doivent nécessairement être atteints avant le but ; leur compte donne une borne admissible sur la longueur du plan.",
-      "definition_en": "Facts that must necessarily be achieved before the goal; counting them gives an admissible bound on plan length.",
+      "definition_fr": "Faits qui doivent nécessairement être atteints dans tout plan solution ; leur compte brut n'est pas admissible en général (une action peut satisfaire plusieurs landmarks).",
+      "definition_en": "Facts that must necessarily be achieved in any solution plan; the raw count is not admissible in general (one action can satisfy several landmarks).",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb",
