@@ -5,7 +5,7 @@
 #     constructibles a zero argument
 #   - gardes #23120 AVANT le solveur : une phrase (prose) rend une erreur
 #     de contenu, pas un verdict ; `->` est reecrit en `=>`
-#   - moities FOL/Modales : erreur honnete et precise, AUCUN verdict
+#   - FOL : erreur honnete et precise, AUCUN verdict
 #     simule (aucune cle accepted/is_consistent)
 #   - integration : le VRAI solveur Tweety decide via l'adaptateur
 #     (marquee, sautee sans les jars — meme garde que
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sys
 from types import ModuleType
 
@@ -158,7 +159,7 @@ def test_consistency_prose_rejected():
 
 
 # --------------------------------------------------------------------------
-# Moities FOL/Modales : erreur honnete, JAMAIS un verdict simule
+# FOL : erreur honnete, JAMAIS un verdict simule
 # --------------------------------------------------------------------------
 
 
@@ -167,10 +168,8 @@ def test_consistency_prose_rejected():
     [
         lambda p: p.execute_fol_query('{"belief_set": "forall X: p(X)", "query": "exists Y: p(Y)"}'),
         lambda p: p.check_fol_consistency("forall X: p(X)"),
-        lambda p: p.execute_modal_query('{"belief_set": "[](a => b)", "query": "[](a)", "logic_type": "K"}'),
-        lambda p: p.check_modal_consistency('{"belief_set": "[](a)", "logic_type": "S5"}'),
     ],
-    ids=["fol-query", "fol-consistency", "modal-query", "modal-consistency"],
+    ids=["fol-query", "fol-consistency"],
 )
 def test_fol_modal_honest_error_never_simulated(call):
     """Erreur precise nommant ce qui manque ; aucune cle de verdict."""
@@ -285,3 +284,54 @@ def test_real_solver_through_adapter():
     assert "PARSE_VALID=True" in proc.stdout, proc.stdout
     assert "PARSE_INVALID=False" in proc.stdout, proc.stdout
     assert "PARSE_BAD_HAS_ERROR=True" in proc.stdout, proc.stdout
+
+
+# Sonde native asynchrone : aucun moteur ni Kernel ne sont simulés.
+_MODAL_REAL_PROBE = r"""
+import asyncio, json
+from semantic_kernel import Kernel
+from semantic_kernel.functions import KernelArguments
+from argumentation_lib._logic_agent_plugin import LogicAgentPlugin
+
+async def main():
+    kernel = Kernel()
+    kernel.add_plugin(LogicAgentPlugin(), plugin_name='logic_agents')
+    async def call(name, data):
+        result = await kernel.invoke(plugin_name='logic_agents', function_name=name, arguments=KernelArguments(payload=json.dumps(data)))
+        result = json.loads(str(result))
+        print(name, result)
+        return result
+    kb = 'type(a)\ntype(b)\n[](a => b)\n[](a)'
+    assert (await call('execute_modal_query', {'belief_set':kb,'query':'[](b)'}))['accepted'] is True
+    assert (await call('execute_modal_query', {'belief_set':kb,'query':'a'}))['accepted'] is False
+    assert (await call('execute_modal_query', {'belief_set':'type(a)\n+', 'query':'[](a) => a'}))['accepted'] is False
+    assert 'error' in await call('execute_modal_query', {'belief_set':kb, 'query':'[](a'})
+    assert (await call('check_modal_consistency', {'belief_set':kb}))['is_consistent'] is True
+    assert (await call('check_modal_consistency', {'belief_set':'type(a)\n[](a)\n!([](a))'}))['is_consistent'] is False
+    assert (await call('validate_formula', {'signature':'type(a)', 'formula':'[](a)', 'logic_type':'modal'}))['is_valid'] is True
+    assert (await call('validate_formula', {'signature':'type(a)', 'formula':'[](a', 'logic_type':'modal'}))['is_valid'] is False
+    assert 'error' in await call('execute_modal_query', {'belief_set':kb,'query':'a', 'logic_type':'S5'})
+    assert (await call('execute_pl_query', {'belief_set':'a => b\na','query':'b'}))['accepted'] is True
+    print('NATIVE_OK')
+asyncio.run(main())
+"""
+
+
+@pytest.mark.skipif(
+    not _tweety_jars_present() or not (shutil.which("SPASS") or os.path.isfile(
+        os.path.join(_ARGUMENT_ANALYSIS_DIR, "..", "Tweety", "ext_tools",
+                     "spass", "SPASS-3.0", "SPASS")
+    )),
+    reason="jars Tweety et SPASS requis pour la sonde native",
+)
+def test_real_modal_solver_through_kernel():
+    import subprocess
+
+    env = os.environ.copy()
+    env["PYTHONPATH"] = _ARGUMENT_ANALYSIS_DIR + os.pathsep + env.get("PYTHONPATH", "")
+    proc = subprocess.run(
+        [sys.executable, "-c", _MODAL_REAL_PROBE],
+        capture_output=True, text=True, encoding="utf-8", env=env, timeout=120,
+    )
+    assert proc.returncode == 0, f"stdout:\n{proc.stdout}\nstderr:\n{proc.stderr}"
+    assert "NATIVE_OK" in proc.stdout
