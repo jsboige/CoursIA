@@ -3691,7 +3691,7 @@ Pour aller encore plus loin, vous pourriez :
 **Retour au sommaire** : [Index](../README.md)",,,,,,,,5dd3aeecdad8fc96,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio.ipynb,xrhndoulu4,markdown,fr,72f126d84e9f7dfa,"# App-10 : Optimisation de portefeuille par algorithme génétique
 
-**Navigation** : [<< App-9 EdgeDetection](App-09-EdgeDetection-Python.ipynb) | [Index](../README.md) | [App-11 Picross >>](App-11-Picross.ipynb)
+**Navigation** : [<< App-9 EdgeDetection](App-9-EdgeDetection.ipynb) | [Index](../README.md) | [App-11 Picross >>](App-11-Picross.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -5201,7 +5201,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio.ipynb,fxccdq2nkwg,
 - PyGAD documentation : https://pygad.readthedocs.io",,,,,,,,7534e8fac975fa71,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio.ipynb,bp8hvfhh1zv,markdown,fr,2587d017cdc48ed6,"***
 
-**Navigation** : [<< App-9 EdgeDetection](App-09-EdgeDetection-Python.ipynb) | [Index](../README.md) | [App-11 Picross >>](App-11-Picross.ipynb)",,,,,,,,2587d017cdc48ed6,,,,,,,,,,,,,,,
+**Navigation** : [<< App-9 EdgeDetection](App-9-EdgeDetection.ipynb) | [Index](../README.md) | [App-11 Picross >>](App-11-Picross.ipynb)",,,,,,,,2587d017cdc48ed6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb,b414a521-1570-42c3-a8bc-0e9ca24dcaba,markdown,fr,733198452bb30ce9,"# App-11-CSharp : Picross (Nonogrammes) — Jumeau C#
 
 > **Twin C#** de [`App-11-Picross`](App-11-Picross.ipynb) (Python + OR-Tools CP-SAT + numpy + matplotlib).
@@ -41576,7 +41576,7 @@ Ce notebook enseigne la **modélisation déclarative par contraintes** via le la
 ",,,,,,,,1d04d45f3640b44e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc.ipynb,cell-header,markdown,fr,9f94553faf64184c,"# App-8-MiniZinc : Modelisation declarative par contraintes
 
-**Navigation** : [<< App-7 Wordle](App-7-Wordle.ipynb) | [Index](../README.md) | [App-9 EdgeDetection >>](App-09-EdgeDetection-Python.ipynb)
+**Navigation** : [<< App-7 Wordle](App-7-Wordle.ipynb) | [Index](../README.md) | [App-9 EdgeDetection >>](App-9-EdgeDetection.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -42796,7 +42796,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc.ipynb,cell-conclusio
 
 ### Et ensuite ?
 
-- [App-09-EdgeDetection-Python](App-09-EdgeDetection-Python.ipynb) : optimisation par algorithmes génétiques pour la detection de contours
+- [App-9-EdgeDetection](App-9-EdgeDetection.ipynb) : optimisation par algorithmes génétiques pour la detection de contours
 - [App-5-Timetabling](App-5-Timetabling.ipynb) : emploi du temps complet avec MiniZinc + OR-Tools
 - Serie [Sudoku](../../Sudoku/README.md) : 6+ solveurs différents pour un même problème
 
@@ -42818,9 +42818,9 @@ Ce notebook enseigne la **modélisation déclarative par contraintes** via le la
 
 > **Fidélité à la source** : ce notebook explicite et met en pratique la modélisation déclarative que Nethercote et al. (2007) ont formalisée, et compare les solveurs que la MiniZinc Challenge évalue chaque année. Le socle théorique (variables / domaines / contraintes / objectifs) suit la spécification MiniZinc ; les expérimentations comparatives reflètent la philosophie du Challenge.
 ",,,,,,,,5d8f28dd829e481e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,052fd18b,markdown,fr,0de19fe8945cb24d,"# TP : Conception d'Algorithmes Génétiques avec GeneticSharp
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,052fd18b,markdown,fr,0de19fe8945cb24d,"# TP : Conception d'Algorithmes Génétiques avec GeneticSharp
 
-**Navigation** : [Index](../README.md) | [<< App-9 Python](App-09-EdgeDetection-Python.ipynb)
+**Navigation** : [Index](../README.md) | [<< App-9 Python](App-9-EdgeDetection.ipynb)
 
 Dans ce TP, nous allons concevoir un filtre de detection de bords en utilisant la bibliotheque **GeneticSharp**. 
 
@@ -42836,7 +42836,7 @@ Au fil du TP, nous allons :
 > - une **sélection** (sélectionner les meilleurs individus) ;
 > - un **croisement** (melanger les individus pour explorer d'autres zones de l'espace de solutions) ;
 > - une **mutation** (petites modifications aleatoires pour injecter de la diversite).",,,,,,,,0de19fe8945cb24d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,0c327348,markdown,fr,11e44735e4c2e6a6,"## Technologies et Bibliothèques
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,0c327348,markdown,fr,11e44735e4c2e6a6,"## Technologies et Bibliothèques
 
 - **GeneticSharp**  
   Une bibliothèque d'algorithmes génétiques pour C# qui permet de configurer et d'exécuter des GA sur diverses plateformes .NET.  
@@ -42849,7 +42849,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,0
 
 Ces technologies s'intègrent dans une démarche pédagogique visant à montrer comment l'évolution peut être utilisée pour optimiser des filtres de convolution dans le domaine du traitement d'image.
 ",,,,,,,,11e44735e4c2e6a6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,58d9eb9e,code,fr,75e12ed5c5d28d15,"// Dépendances nécessaires
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,58d9eb9e,code,fr,75e12ed5c5d28d15,"// Dépendances nécessaires
 #r ""nuget: GeneticSharp, 3.1.4""
 
 // Emgu CV (wrapper .NET d'OpenCV) et ses runtimes natifs, un par plateforme
@@ -42861,8 +42861,8 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,5
 // SkiaSharp : les binaires natifs Linux sont livrés par un paquet séparé
 #r ""nuget: SkiaSharp, 2.88.3""
 #r ""nuget: SkiaSharp.NativeAssets.Linux.NoDependencies, 2.88.3""",,,,,,,,75e12ed5c5d28d15,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,57e7f109,markdown,fr,1628819e5708858c,Affichage des résultats.,,,,,,,,1628819e5708858c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,d629d27a,code,fr,f67e9db0a0c7afaf,"// Utilitaires SkiaSharp simplifiés (sans DisplayedValue pour compatibilité Papermill)
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,57e7f109,markdown,fr,1628819e5708858c,Affichage des résultats.,,,,,,,,1628819e5708858c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,d629d27a,code,fr,f67e9db0a0c7afaf,"// Utilitaires SkiaSharp simplifiés (sans DisplayedValue pour compatibilité Papermill)
 using SkiaSharp;
 using System.IO;
 using System.Net.Http;
@@ -42904,8 +42904,8 @@ public static class SkiaUtils
 }
 
 Console.WriteLine(""SkiaUtils chargé."");",,,,,,,,f67e9db0a0c7afaf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,b091e274,markdown,fr,4c9b044ccc29a8af,"Imports, puis chargement de la bibliothèque native d'Emgu CV hors Windows.",,,,,,,,4c9b044ccc29a8af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,b2c3f03a,code,fr,516d3ab7a1c6b7e7,"// Imports
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,b091e274,markdown,fr,4c9b044ccc29a8af,"Imports, puis chargement de la bibliothèque native d'Emgu CV hors Windows.",,,,,,,,4c9b044ccc29a8af,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,b2c3f03a,code,fr,516d3ab7a1c6b7e7,"// Imports
 using System;
 using System.IO;
 using System.Drawing;
@@ -42954,7 +42954,7 @@ if (!OperatingSystem.IsWindows())
 }
 
 Console.WriteLine(""Dépendances chargées."");",,,,,,,,516d3ab7a1c6b7e7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,925201f9,markdown,fr,658c6c35c645de8e,"## Représentation du Filtre : Le Chromosome et les Gènes
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,925201f9,markdown,fr,658c6c35c645de8e,"## Représentation du Filtre : Le Chromosome et les Gènes
 
 Pour représenter un filtre de convolution, nous utilisons un **chromosome** dont chaque **gène** contient une petite matrice (noyau).  
 La matrice complète du filtre est obtenue en **additionnant** les matrices issues de chacun des gènes.
@@ -42968,7 +42968,7 @@ Dans la classe `EdgeChromosome`, on définit notamment :
 - La génération aléatoire de chaque gène avec des valeurs comprises dans un intervalle donné.  
 - Une méthode pour sommer les matrices des gènes et obtenir la matrice finale qui sera utilisée pour filtrer l'image.
 ",,,,,,,,658c6c35c645de8e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,1a4da0e2,code,fr,a7dbb72cd86a1177,"// Représentation du filtre par convolution sous forme de chromosome
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,1a4da0e2,code,fr,a7dbb72cd86a1177,"// Représentation du filtre par convolution sous forme de chromosome
 public class EdgeChromosome : ChromosomeBase
 {
     private const int KernelSize = 7; // Taille de la matrice du noyau
@@ -43229,8 +43229,8 @@ public class EdgeFitness : IFitness
         return floatArray;
     }
 }",,,,,,,,a7dbb72cd86a1177,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,c5495850,markdown,fr,b22c2b76c93bbc1d,"Testons la création d'un chromosome, ses gènes, et la matrice résultante correspondante",,,,,,,,b22c2b76c93bbc1d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,08079232,code,fr,c2cc8b45233116a3,"var testChromosome = new EdgeChromosome(5); // 5 gènes
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,c5495850,markdown,fr,b22c2b76c93bbc1d,"Testons la création d'un chromosome, ses gènes, et la matrice résultante correspondante",,,,,,,,b22c2b76c93bbc1d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,08079232,code,fr,c2cc8b45233116a3,"var testChromosome = new EdgeChromosome(5); // 5 gènes
 Console.WriteLine(""Gènes générés :"");
 foreach (var gene in testChromosome.GetGenes())
 {
@@ -43258,7 +43258,7 @@ for (int i = 0; i < testMatrix.GetLength(0); i++)
     Console.WriteLine();
 }
 ",,,,,,,,c2cc8b45233116a3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,6ddac236,markdown,fr,787f89f92bef3d92,"### Interpretation : Structure du Chromosome et du Filtre
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,6ddac236,markdown,fr,787f89f92bef3d92,"### Interpretation : Structure du Chromosome et du Filtre
 
 **Sortie obtenue** : Affichage de 5 matrices 7x7 (les genes) et de la matrice complete resultante (somme des genes), representant un noyau de convolution genere aleatoirement.
 
@@ -43278,7 +43278,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,6
 5. **Structure symetrique** : Bien que les genes soient generes de maniere asymetrique, la somme peut produire des motifs qui ressemblent a des filtres de detection de bords classiques (Sobel, Prewitt, etc.) après evolution.
 
 > **Note technique** : La taille du noyau (7x7) est superieure aux filtres de Sobel classiques (3x3), ce qui permet une detection plus fine des bords mais augmente aussi la complexite computationnelle. La normalisation dynamique (seuil de 10) evite que l'addition de plusieurs genes ne produise des coefficients trop extremes qui perturberaient la convolution. Cette representation par genes additifs facilite les opérations génétiques : le crossover peut echanger des sous-matrices entieres entre parents, et la mutation peut modifier localement quelques coefficients.",,,,,,,,787f89f92bef3d92,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,e66da541,markdown,fr,ed496d3d991bac84,"## Fonction d'Évaluation (Fitness)
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e66da541,markdown,fr,ed496d3d991bac84,"## Fonction d'Évaluation (Fitness)
 
 La **fonction d'évaluation** mesure la capacité d'un filtre (issu d'un chromosome) à détecter les bords de l'image.  
 Pour ce faire, le processus est le suivant :
@@ -43295,10 +43295,10 @@ Pour ce faire, le processus est le suivant :
 
 Ainsi, la fonction d'évaluation guide l'algorithme génétique en attribuant un score aux individus, favorisant ceux qui se rapprochent le plus de la détection de bords souhaitée.
 ",,,,,,,,ed496d3d991bac84,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,e2f7446c,code,fr,57bda975de45e0fa,"// EdgeFitness class moved to cell 6 for scope compatibility
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e2f7446c,code,fr,57bda975de45e0fa,"// EdgeFitness class moved to cell 6 for scope compatibility
 Console.WriteLine(""EdgeFitness class available from previous cell."");",,,,,,,,57bda975de45e0fa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,f632dcb1,markdown,fr,45c35395883870a7,Test de la fonction fitness,,,,,,,,45c35395883870a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,b49cecc2,code,fr,24ae46e391a1c3e8,"// Resolution du chemin de l'image MRI -- bloc UNIQUE, reutilise par la cellule suivante.
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,f632dcb1,markdown,fr,45c35395883870a7,Test de la fonction fitness,,,,,,,,45c35395883870a7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,b49cecc2,code,fr,24ae46e391a1c3e8,"// Resolution du chemin de l'image MRI -- bloc UNIQUE, reutilise par la cellule suivante.
 // L'image vit dans MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/assets/ : le chemin relatif depend du repertoire
 // courant, donc on remonte les ancetres et on teste aussi le chemin attendu depuis la
 // racine du depot. Chaque chemin teste est consigne : un echec doit dire ce qui a ete cherche.
@@ -43340,7 +43340,7 @@ var fitness = new EdgeFitness(originalImage);
 // Test d'un chromosome
 var chromosome = new EdgeChromosome(20);
 Console.WriteLine($""Score de fitness : {fitness.Evaluate(chromosome)}"");",,,,,,,,24ae46e391a1c3e8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,e94eab45,markdown,fr,687f1f0b4f52719f,"### Interpretation : Test de la Fonction de Fitness
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e94eab45,markdown,fr,687f1f0b4f52719f,"### Interpretation : Test de la Fonction de Fitness
 
 **Sortie obtenue** : Le chromosome aleatoire obtient un score de fitness faible sur l'execution affichee ci-dessus, evaluant sa qualite par rapport au filtre Sobel de reference. Cette valeur est **aleatoire** -- le chromosome initial est tire au hasard -- et les executions successives de ce carnet donnent des scores d'ordres de grandeur tres differents (de l'ordre de 10^-4 a quelques 10^-1 selon l'execution) : c'est l'ordre de grandeur qui est pedagogiquement parlant, pas la valeur exacte.
 
@@ -43356,7 +43356,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,e
 4. **Variabilite** : Chaque exécution produit un score différent du fait de la generation aleatoire des chromosomes, ce qui demontre la stochasticite du processus.
 
 > **Note technique** : La fonction de fitness calcule `maxVal / Log10(|somme des coefficients|+1)` (avec penalty=1 si la somme est quasi nulle). Ce n'est pas une correlation brute bornee a 1,0 : le score peut depasser 1,0 quand la somme du filtre est faible. Le score observe (faible : de l'ordre de 10^-4 a quelques 10^-1 selon l'execution) pour un chromosome aleatoire confirme que l'evolution génétique est necessaire pour obtenir un filtre performant.",,,,,,,,687f1f0b4f52719f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,6001b472,markdown,fr,d853e22821dc9f67,"## Configuration de l'Algorithme Génétique
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,6001b472,markdown,fr,d853e22821dc9f67,"## Configuration de l'Algorithme Génétique
 
 L'algorithme génétique est configuré à l'aide de plusieurs éléments clés :
 
@@ -43374,7 +43374,7 @@ L'algorithme génétique est configuré à l'aide de plusieurs éléments clés 
 
 Ces paramètres sont ajustables et permettent d'explorer l'influence de la diversité et de la sélection sur la qualité des solutions.
 ",,,,,,,,d853e22821dc9f67,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,e9d7fcda,code,fr,54bddad9c7faa6b3,"// Charger une image de test
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e9d7fcda,code,fr,54bddad9c7faa6b3,"// Charger une image de test
 // Le chemin de l'image et l'image elle-meme ont ete resolus UNE SEULE FOIS en amont (cellule
 // precedente) : on les reutilise, on ne recopie plus le bloc de recherche.
 
@@ -43403,7 +43403,7 @@ var ga = new GeneticAlgorithm(population, fitness, selection, crossover, mutatio
 
 
 Console.WriteLine(""Algorithme génétique configuré."");",,,,,,,,54bddad9c7faa6b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,3806903b,markdown,fr,bea5d3ea80521677,"## Exécution et Visualisation
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,3806903b,markdown,fr,bea5d3ea80521677,"## Exécution et Visualisation
 
 Pendant l'exécution de l'algorithme génétique, plusieurs aspects sont mis en avant :
 
@@ -43417,7 +43417,7 @@ Pendant l'exécution de l'algorithme génétique, plusieurs aspects sont mis en 
 - **Suivi des scores**  
   Les logs affichent le numéro de génération et le score de fitness du meilleur individu, offrant ainsi un aperçu quantitatif de la convergence.
 ",,,,,,,,bea5d3ea80521677,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,65cc71fd,code,fr,42e78eb5cc6a4960,"// Afficher l'image originale
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,65cc71fd,code,fr,42e78eb5cc6a4960,"// Afficher l'image originale
 await SkiaUtils.ShowImage(imagePath, originalImage.Width, originalImage.Height);
 
 ga.GenerationRan += (sender, e) =>
@@ -43450,7 +43450,7 @@ ga.GenerationRan += (sender, e) =>
 Console.WriteLine(""Lancement de l'algorithme genetique..."");
 ga.Start();
 Console.WriteLine($""Meilleure solution trouvee avec un score de {ga.BestChromosome.Fitness}."");",,,,,,,,42e78eb5cc6a4960,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,72599e46,markdown,fr,67697e13fd28a926,"### Interpretation : Résultats de l'Algorithme Génétique
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,72599e46,markdown,fr,67697e13fd28a926,"### Interpretation : Résultats de l'Algorithme Génétique
 
 **Sortie obtenue** : L'algorithme génétique a evolue sur plusieurs generations, affichant periodiquement (toutes les 10 generations) les images filtrees par le meilleur chromosome. Le score de fitness final indique la qualite de la detection de bords par rapport au filtre Sobel de reference.
 
@@ -43469,7 +43469,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,7
 5. **Variabilite des valeurs** : la population et le chromosome initial sont tires au hasard, donc les scores affiches changent d'une execution a l'autre (la generation 1 et le score final different d'une execution a l'autre, de l'ordre de 2 a 3 en fin d'evolution). Ce qui est **stable**, c'est la forme de la courbe : la selection elite conserve le meilleur individu, donc la suite des scores ""Meilleur score"" est non decroissante (verifie sur les 100 generations) puis plafonne en cours d'evolution.
 
 > **Note technique** : La fonction de fitness utilise une correlation normalisee (TemplateMatchingType.CcorrNormed) pour comparer les images. Cette méthode est robuste aux variations d'intensite globale mais peut etre sensible au bruit. Une amelioration possible serait d'ajouter une penalite pour la complexite du filtre (nombre de coefficients non nuls) pour privilegier les solutions simples.",,,,,,,,67697e13fd28a926,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,611e87c7,markdown,fr,48449dd8ad0d2c50,"## Exercices
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,611e87c7,markdown,fr,48449dd8ad0d2c50,"## Exercices
 
 ### Exercice 1 : Opérateur de Croisement par Point Unique
 
@@ -43479,7 +43479,7 @@ Implementez un opérateur de croisement par point unique (SinglePointCrossover) 
 - Choisissez un point de coupure aleatoire dans le chromosome
 - Les genes avant le point viennent du parent 1, après du parent 2
 - Mesurez la vitesse de convergence et la qualite finale des deux méthodes",,,,,,,,48449dd8ad0d2c50,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,e0004e1c,code,fr,40fe139c3343e0f7,"// TODO: Implementer une comparaison entre SinglePointCrossover et UniformCrossover
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e0004e1c,code,fr,40fe139c3343e0f7,"// TODO: Implementer une comparaison entre SinglePointCrossover et UniformCrossover
 public void CompareCrossoverOperators(Mat originalImage, int generations = 50)
 {
     // A completer
@@ -43499,7 +43499,7 @@ public void CompareCrossoverOperators(Mat originalImage, int generations = 50)
 }
 
 Console.WriteLine(""Exercice a completer : comparaison crossover"");",,,,,,,,40fe139c3343e0f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,28a1264d,markdown,fr,ba10986d4bd1ecaf,"### Exercice 2 : Contraintes sur les Filtres
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,28a1264d,markdown,fr,ba10986d4bd1ecaf,"### Exercice 2 : Contraintes sur les Filtres
 
 Modifiez la classe `EdgeChromosome` pour imposer que la somme des coefficients du noyau soit egale a zero (filtre a somme nulle, typique pour la detection de bords).
 
@@ -43507,7 +43507,7 @@ Modifiez la classe `EdgeChromosome` pour imposer que la somme des coefficients d
 - Après avoir calcule la matrice complete, calculez la somme totale
 - Ajustez les valeurs pour que la somme soit nulle (soustrayez la moyenne)
 - Verifiez que cela ameliore la qualite des filtres obtenus",,,,,,,,ba10986d4bd1ecaf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,e9f10202,code,fr,7f8cda60bb988324,"// TODO: Implementer une version contrainte de EdgeChromosome avec somme nulle
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,e9f10202,code,fr,7f8cda60bb988324,"// TODO: Implementer une version contrainte de EdgeChromosome avec somme nulle
 public class ZeroSumEdgeChromosome : ChromosomeBase
 {
     private const int KernelSize = 7;
@@ -43542,7 +43542,7 @@ public class ZeroSumEdgeChromosome : ChromosomeBase
 }
 
 Console.WriteLine(""Exercice a completer : chromosome somme nulle"");",,,,,,,,7f8cda60bb988324,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,fc45d8f0,markdown,fr,9c610cf7a08d7f68,"### Exercice 3 : Conception de la Fonction de Fitness (Reflexion)
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,fc45d8f0,markdown,fr,9c610cf7a08d7f68,"### Exercice 3 : Conception de la Fonction de Fitness (Reflexion)
 
 Analysez la fonction de fitness utilisee dans ce notebook et proposez des alternatives.
 
@@ -43552,7 +43552,7 @@ Analysez la fonction de fitness utilisee dans ce notebook et proposez des altern
 - Quelle metrique utiliseriez-vous pour detecter différents types de bords (horizontaux, verticaux, diagonaux) ?
 
 **Reponse attendue** : Une analyse textuelle des approches possibles (pas de code requis).",,,,,,,,9c610cf7a08d7f68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,64f2c2f5,markdown,fr,85e1c6848f9c6dfc,"### Exercice 4 : Taux de mutation adaptatif
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,64f2c2f5,markdown,fr,85e1c6848f9c6dfc,"### Exercice 4 : Taux de mutation adaptatif
 
 Un taux de mutation fixe peut soit etre trop faible (stagnation prematuree) soit trop eleve (destruction des bons individus). Un taux adaptatif ajuste la probabilite de mutation en fonction de la diversite de la population ou de la progression du score de fitness.
 
@@ -43564,7 +43564,7 @@ Un taux de mutation fixe peut soit etre trop faible (stagnation prematuree) soit
 - Si le score s'est ameliore, diminuez le taux de mutation (ex: diviser par 1.2)
 - Bornez le taux entre une valeur minimale (0.01) et maximale (0.5) pour eviter les extremes
 - Utilisez l'event `ga.GenerationRan` pour ajuster le taux a chaque generation",,,,,,,,85e1c6848f9c6dfc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,653c6f25,code,fr,df76669a191cb6ab,"// TODO: Implementer un taux de mutation adaptatif
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,653c6f25,code,fr,df76669a191cb6ab,"// TODO: Implementer un taux de mutation adaptatif
 public void RunAdaptiveMutationGA(Mat image, int generations = 60)
 {
     // A completer
@@ -43589,7 +43589,7 @@ public void RunAdaptiveMutationGA(Mat image, int generations = 60)
 
 // Testez votre implementation (decommentez apres)
 // RunAdaptiveMutationGA(originalImage, 60);",,,,,,,,df76669a191cb6ab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb,c489ed78,markdown,fr,6a7c3d98eb67edb8,"## Conclusion et Perspectives
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb,c489ed78,markdown,fr,6a7c3d98eb67edb8,"## Conclusion et Perspectives
 
 Ce TP a permis d'illustrer comment un algorithme génétique peut etre applique pour optimiser un filtre de detection de bords en traitement d'image.  
 L'approche par decomposition en genes permet une evolution fine et progressive du filtre.
@@ -43602,7 +43602,7 @@ L'approche par decomposition en genes permet une evolution fine et progressive d
 Cette demarche pedagogique demontre la puissance des algorithmes evolutionnaires pour resoudre des problemes complexes dans le domaine de la vision par ordinateur.
 
 **Retour au sommaire** : [Index](../README.md)",,,,,,,,6a7c3d98eb67edb8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,nav-header,markdown,fr,ec899ca135ef7036,"# App-9 : Detection de bords par algorithmes génétiques
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,nav-header,markdown,fr,ec899ca135ef7036,"# App-9 : Detection de bords par algorithmes génétiques
 
 **Navigation** : [<< App-8 MiniZinc](App-8-MiniZinc.ipynb) | [Index](../README.md) | [App-10 Portfolio >>](App-10-Portfolio.ipynb)
 
@@ -43622,8 +43622,8 @@ A la fin de ce notebook, vous saurez :
 
 ### Duree estimee : 40 minutes
 
-> **Side track** : Voir [App-9 C#](App-09-EdgeDetection-CSharp.ipynb) pour la version GeneticSharp en .NET.",,,,,,,,ec899ca135ef7036,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-1-intro,markdown,fr,8ee1e57462fc3194,"## 1. Introduction : detection de bords et filtrès de convolution
+> **Side track** : Voir [App-9 C#](App-9-EdgeDetection-CSharp.ipynb) pour la version GeneticSharp en .NET.",,,,,,,,ec899ca135ef7036,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-1-intro,markdown,fr,8ee1e57462fc3194,"## 1. Introduction : detection de bords et filtrès de convolution
 
 ### Pourquoi detecter les bords ?
 
@@ -43658,18 +43658,18 @@ Les filtrès classiques de detection de bords sont :
 Plutot que de concevoir manuellement ces filtrès, nous allons utiliser un **algorithme génétique** pour faire evoluer automatiquement les coefficients d'un noyau de convolution. L'objectif : approximer le filtre de Sobel a partir de zero, en ne connaissant que le résultat attendu.
 
 Cette approche illustre un concept fondamental de l'optimisation : la capacite a decouvrir des solutions dans un espace de recherche vaste ($[-20, 20]^{49}$ pour un noyau 7x7) sans connaissance *a priori* de la structure de la solution.",,,,,,,,8ee1e57462fc3194,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-2-setup-intro,markdown,fr,72020e4217d81775,"## 2. Configuration et filtre de référence
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-2-setup-intro,markdown,fr,72020e4217d81775,"## 2. Configuration et filtre de référence
 
 Nous allons d'abord preparer notre environnement :
 1. Installer les dependances
 2. Créer une image synthetique avec des bords bien définis
 3. Appliquer le filtre de Sobel comme référence",,,,,,,,72020e4217d81775,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,install-deps,code,fr,60f9d5701fa0a71c,"# Dependencies pre-provisionnees (pygad deap scipy matplotlib numpy) : voir Search/requirements.txt.
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,install-deps,code,fr,60f9d5701fa0a71c,"# Dependencies pre-provisionnees (pygad deap scipy matplotlib numpy) : voir Search/requirements.txt.
 # Aucun install requis dans le notebook ; imports directs dans les cellules suivantes.",,,,,,,,60f9d5701fa0a71c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,o85aruu3cm,markdown,fr,1af83a301fad0072,"### Imports et configuration
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,o85aruu3cm,markdown,fr,1af83a301fad0072,"### Imports et configuration
 
 Chargeons les bibliotheques nécessaires : `numpy` et `matplotlib` pour le calcul et la visualisation, `scipy.signal` pour la convolution 2D, `pygad` et `deap` pour les algorithmes génétiques.",,,,,,,,1af83a301fad0072,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,imports,code,fr,db0f40e8f2dd1260,"import sys
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,imports,code,fr,db0f40e8f2dd1260,"import sys
 import os
 # sys.path.insert(0, os.path.abspath('..'))
 # from search_helpers import *
@@ -43698,13 +43698,13 @@ np.random.seed(42)
 
 print(""Environnement pret."")
 ",,,,,,,,db0f40e8f2dd1260,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,lecture-sortie-imports,markdown,fr,30536022511d8d17,"### Lecture de la sortie
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,lecture-sortie-imports,markdown,fr,30536022511d8d17,"### Lecture de la sortie
 
 La cellule se conclut par le print `Environnement pret.` : tous les imports (`numpy`, `matplotlib`, `scipy.signal`, `scipy.ndimage`) ont réussi sans erreur, et la graine est fixée (`np.random.seed(42)`), ce qui rend les exécutions suivantes du notebook reproductibles.",,,,,,,,30536022511d8d17,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,synth-image-intro,markdown,fr,41ec32c35ed47f74,"### Image synthetique de test
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,synth-image-intro,markdown,fr,41ec32c35ed47f74,"### Image synthetique de test
 
 Nous creons une image en niveaux de gris contenant des formes geometriques simples (rectangles, cercle, diagonales) pour fournir des bords bien définis. L'avantage d'une image synthetique est le contrôle total sur la complexité des contours.",,,,,,,,41ec32c35ed47f74,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,create-synthetic-image,code,fr,8f4322e48307132f,"def create_synthetic_image(size=128):
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,create-synthetic-image,code,fr,8f4322e48307132f,"def create_synthetic_image(size=128):
     """"""Create a synthetic grayscale image with clear geometric edges.""""""
     img = np.zeros((size, size), dtype=np.float64)
     
@@ -43741,17 +43741,17 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,c
 original_image = create_synthetic_image(128)
 print(f""Image synthetique : {original_image.shape}, dtype={original_image.dtype}"")
 print(f""Plage de valeurs : [{original_image.min():.0f}, {original_image.max():.0f}]"")",,,,,,,,8f4322e48307132f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,lecture-sortie-image,markdown,fr,df5ea5ee1faaf7f2,"### Lecture de la sortie
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,lecture-sortie-image,markdown,fr,df5ea5ee1faaf7f2,"### Lecture de la sortie
 
 La sortie annonce `Image synthetique : (128, 128), dtype=float64` puis `Plage de valeurs : [0, 255]` : l'image de test est une matrice 128x128 de flottants qui couvre toute la plage [0, 255], avec les cinq formes géométriques (rectangles, cercle, diagonale, petit carré) dessinées dans le code.",,,,,,,,df5ea5ee1faaf7f2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,sobel-reference-intro,markdown,fr,2e9cc38609c008dc,"### Application du filtre de Sobel comme référence
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,sobel-reference-intro,markdown,fr,2e9cc38609c008dc,"### Application du filtre de Sobel comme référence
 
 Le filtre de Sobel calcule le gradient de l'image dans les directions X et Y. La magnitude du gradient detecte les bords, quelle que soit leur orientation :
 
 $$\text{Sobel}(x,y) = \sqrt{G_x^2 + G_y^2}$$
 
 Nous utilisons `scipy.ndimage.sobel` pour obtenir notre image de référence.",,,,,,,,2e9cc38609c008dc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,apply-sobel-reference,code,fr,dd262e26f59522da,"def compute_sobel_reference(image):
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,apply-sobel-reference,code,fr,dd262e26f59522da,"def compute_sobel_reference(image):
     """"""Compute Sobel edge magnitude as reference.""""""
     sobel_x = scipy_sobel(image, axis=1)
     sobel_y = scipy_sobel(image, axis=0)
@@ -43780,7 +43780,7 @@ plt.show()
 plt.close()
 
 print(f""Reference Sobel : shape={sobel_reference.shape}, plage=[{sobel_reference.min():.1f}, {sobel_reference.max():.1f}]"")",,,,,,,,dd262e26f59522da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,sobel-interpretation,markdown,fr,ecd99de5b945fb07,"### Interpretation : image de référence
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,sobel-interpretation,markdown,fr,ecd99de5b945fb07,"### Interpretation : image de référence
 
 **Sortie obtenue** : L'image originale contient 5 formes geometriques. Le filtre de Sobel detecte clairement les bords de chaque forme.
 
@@ -43797,7 +43797,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,s
 > **Note technique** : Le gradient de fond (léger degrade horizontal) produit un signal faible mais non nul dans la référence Sobel.
 
 La sortie texte qui accompagne la figure est `Reference Sobel : shape=(128, 128), plage=[0.0, 255.0]` : la référence Sobel est normalisée sur toute la plage [0, 255], comme l'image d'entrée.",,,,,,,,ecd99de5b945fb07,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-3-encoding,markdown,fr,8dc583f6319f7aac,"## 3. Encodage GA : le filtre comme chromosome
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-3-encoding,markdown,fr,8dc583f6319f7aac,"## 3. Encodage GA : le filtre comme chromosome
 
 ### Stratégie d'encodage
 
@@ -43822,7 +43822,7 @@ $$\text{fitness} = \frac{\text{corr}(\text{GA\_output}, \text{Sobel\_ref})}{\tex
 La **penalite** decourage les filtrès uniformes (ou tous les coefficients sont proches de zero), en penalisant les noyaux de faible variance :
 
 $$\text{penalty} = \begin{cases} 1 & \text{si } \text{var}(K) > \epsilon \\ 10 & \text{sinon} \end{cases}$$",,,,,,,,8dc583f6319f7aac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,fitness-function,code,fr,829a4d308564ff52,"KERNEL_SIZE = 7
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,fitness-function,code,fr,829a4d308564ff52,"KERNEL_SIZE = 7
 NUM_GENES = KERNEL_SIZE * KERNEL_SIZE  # 49
 GENE_LOW = -20
 GENE_HIGH = 20
@@ -43879,7 +43879,7 @@ sobel_padded[offset:offset+3, offset:offset+3] = sobel_3x3
 sobel_fitness = compute_fitness(sobel_padded.flatten(), original_image, sobel_reference)
 print(f""Fitness du noyau Sobel (dans 7x7) : {sobel_fitness:.2f}"")
 print(f""\nLe GA doit trouver un noyau dont la fitness approche {sobel_fitness:.0f}."")",,,,,,,,829a4d308564ff52,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,encoding-interpretation,markdown,fr,c27060067963b7f8,"### Interpretation : calibration de la fitness
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,encoding-interpretation,markdown,fr,c27060067963b7f8,"### Interpretation : calibration de la fitness
 
 **Sortie obtenue** : Le noyau aléatoire obtient une fitness de 362.26, tandis que le Sobel (dans un noyau 7x7) obtient 75.82.
 
@@ -43894,7 +43894,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,e
 1. L'espace de recherche contient $41^{49} \approx 10^{79}$ solutions candidates (chaque gene peut prendre 41 valeurs de -20 a 20)
 2. La fitness est fortement correlee avec la capacite a detecter les bords
 3. La penalite empêche le GA de converger vers un filtre ""neutre"" (tous les coefficients a zero)",,,,,,,,c27060067963b7f8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-4-pygad,markdown,fr,83a74ce560249e4a,"## 4. Implementation avec PyGAD
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-4-pygad,markdown,fr,83a74ce560249e4a,"## 4. Implementation avec PyGAD
 
 ### Presentation de PyGAD
 
@@ -43913,7 +43913,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,s
 | `crossover_type` | ""single_point"" | Croisement en un point |
 | `mutation_percent_genes` | 10 | 10% des genes mutes par génération |
 | `mutation_by_replacement` | True | Remplacement au lieu d'addition |",,,,,,,,83a74ce560249e4a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,pygad-run,code,fr,8db156e61dd43de1,"import pygad
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,pygad-run,code,fr,8db156e61dd43de1,"import pygad
 
 # Track fitness history
 pygad_fitness_history = []
@@ -43967,13 +43967,13 @@ pygad_best_solution, pygad_best_fitness, _ = ga_instance.best_solution()
 
 print(f""\nTermine en {pygad_time:.1f}s"")
 print(f""Meilleure fitness : {pygad_best_fitness:.2f}"")",,,,,,,,8db156e61dd43de1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,lecture-sortie-pygad,markdown,fr,20f45e6de44754a0,"### Lecture de la sortie
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,lecture-sortie-pygad,markdown,fr,20f45e6de44754a0,"### Lecture de la sortie
 
 Les prints de progression affichent `Best fitness: 862.24` à la génération 25, `876.27` à 50, `890.25` à 75 et `896.25` à 100, puis `Termine en 47.8s` et `Meilleure fitness : 896.25` : sur 100 générations (50 individus), la meilleure fitness progresse de 862.24 à 896.25, en environ 47.8 s de calcul.",,,,,,,,20f45e6de44754a0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,pygad-convergence-intro,markdown,fr,119f9afd05168feb,"### Courbe de convergence
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,pygad-convergence-intro,markdown,fr,119f9afd05168feb,"### Courbe de convergence
 
 Observons comment la fitness du meilleur individu evolue au fil des générations. Une convergence rapide au debut suivie d'un plateau est typique des algorithmes génétiques.",,,,,,,,119f9afd05168feb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,pygad-convergence-plot,code,fr,9002af2da81616cc,"fig, ax = plt.subplots(figsize=(10, 5))
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,pygad-convergence-plot,code,fr,9002af2da81616cc,"fig, ax = plt.subplots(figsize=(10, 5))
 ax.plot(range(1, len(pygad_fitness_history) + 1), pygad_fitness_history,
         'b-', linewidth=2, label='PyGAD - Meilleure fitness')
 ax.set_xlabel('Generation', fontsize=12)
@@ -43991,13 +43991,13 @@ if len(pygad_fitness_history) > 10:
     mid = pygad_fitness_history[min(49, len(pygad_fitness_history)-1)]  # Generation 50
     final = pygad_fitness_history[-1]
     print(f""Progression : gen 10 = {early:.1f}, gen 50 = {mid:.1f}, gen 100 = {final:.1f}"")",,,,,,,,9002af2da81616cc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,lecture-sortie-progression,markdown,fr,cca28dd0d7fa3020,"### Lecture de la sortie
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,lecture-sortie-progression,markdown,fr,cca28dd0d7fa3020,"### Lecture de la sortie
 
 Outre la courbe, la sortie texte donne `Progression : gen 10 = 821.7, gen 50 = 876.3, gen 100 = 896.3` : la fitness monte vite au début (821.7 dès la génération 10), puis le gain ralentit (environ 20 points entre les générations 50 et 100), le plateau caractéristique d'une convergence d'algorithme génétique.",,,,,,,,cca28dd0d7fa3020,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,pygad-results-intro,markdown,fr,d552fd70a6585365,"### Résultats : comparaison visuelle
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,pygad-results-intro,markdown,fr,d552fd70a6585365,"### Résultats : comparaison visuelle
 
 Comparons l'image obtenue par le filtre evolue avec la référence Sobel. Affichons également le noyau evolue pour observer sa structure.",,,,,,,,d552fd70a6585365,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,pygad-results-display,code,fr,b73586031624a0cc,"# Apply the best evolved kernel
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,pygad-results-display,code,fr,b73586031624a0cc,"# Apply the best evolved kernel
 pygad_filtered = apply_kernel(original_image, pygad_best_solution)
 pygad_kernel = np.array(pygad_best_solution).reshape(KERNEL_SIZE, KERNEL_SIZE)
 
@@ -44028,7 +44028,7 @@ print(pygad_kernel)
 # Sobel reference kernel (3x3 in 7x7)
 print(""\nNoyau Sobel de reference (3x3 dans 7x7) :"")
 print(sobel_padded.astype(int))",,,,,,,,b73586031624a0cc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,pygad-interpretation,markdown,fr,bf09d6d5167e592a,"### Interpretation : qualite du filtre evolue (PyGAD)
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,pygad-interpretation,markdown,fr,bf09d6d5167e592a,"### Interpretation : qualite du filtre evolue (PyGAD)
 
 **Sortie obtenue** : Le filtre evolue par PyGAD produit une detection de bords qui s'approche de la référence Sobel.
 
@@ -44047,7 +44047,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,p
 > **Note** : Un noyau 7x7 a plus de degrés de liberte qu'un 3x3, ce qui peut produire des filtrès plus complexes que le Sobel original.
 
 Côté sortie, la cellule imprime le noyau évolué 7x7 de PyGAD (coefficients entiers entre -20 et 20) à côté du Sobel 3x3 paddé : le noyau évolué occupe tout le 7x7, là où le Sobel concentre ses coefficients au centre.",,,,,,,,bf09d6d5167e592a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-5-deap,markdown,fr,b32b1161e638b174,"## 5. Implementation avec DEAP
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-5-deap,markdown,fr,b32b1161e638b174,"## 5. Implementation avec DEAP
 
 ### Presentation de DEAP
 
@@ -44065,7 +44065,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,s
 | Cas d'usage | Prototypage rapide | Recherche, algorithmes custom |
 
 Nous allons résoudre le même problème avec DEAP pour comparer les résultats et l'expérience de développément.",,,,,,,,b32b1161e638b174,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,deap-run,code,fr,8b47636921a504e5,"from deap import base, creator, tools, algorithms
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,deap-run,code,fr,8b47636921a504e5,"from deap import base, creator, tools, algorithms
 import random
 
 random.seed(42)
@@ -44141,13 +44141,13 @@ deap_best_fitness = deap_best_individual.fitness.values[0]
 
 print(f""Termine en {deap_time:.1f}s"")
 print(f""Meilleure fitness : {deap_best_fitness:.2f}"")",,,,,,,,8b47636921a504e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,lecture-sortie-deap,markdown,fr,c9a365de8288bd2f,"### Lecture de la sortie
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,lecture-sortie-deap,markdown,fr,c9a365de8288bd2f,"### Lecture de la sortie
 
 La sortie affiche `Termine en 16.7s` et `Meilleure fitness : 880.17` : DEAP atteint 880.17 en 16.7 s, contre 896.25 en 47.8 s pour PyGAD à la section précédente — à nombre d'évaluations identique (5000), la fitness finale est un peu inférieure, mais le calcul est environ trois fois plus rapide.",,,,,,,,c9a365de8288bd2f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,deap-results-intro,markdown,fr,1b06f403dea6cfd5,"### Résultats DEAP : visualisation
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,deap-results-intro,markdown,fr,1b06f403dea6cfd5,"### Résultats DEAP : visualisation
 
 Affichons le filtre evolue par DEAP et comparons-le avec le résultat PyGAD.",,,,,,,,1b06f403dea6cfd5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,deap-results-display,code,fr,5d6088dff89e37b1,"# Apply the best evolved kernel from DEAP
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,deap-results-display,code,fr,5d6088dff89e37b1,"# Apply the best evolved kernel from DEAP
 deap_filtered = apply_kernel(original_image, deap_best_individual)
 deap_kernel = np.array(deap_best_individual).reshape(KERNEL_SIZE, KERNEL_SIZE)
 
@@ -44174,7 +44174,7 @@ plt.close()
 
 print(""Noyau evolue (DEAP) :"")
 print(deap_kernel)",,,,,,,,5d6088dff89e37b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,deap-interpretation,markdown,fr,3ac0f95897ad1b19,"### Interpretation : comparaison PyGAD vs DEAP
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,deap-interpretation,markdown,fr,3ac0f95897ad1b19,"### Interpretation : comparaison PyGAD vs DEAP
 
 **Sortie obtenue** : Les deux frameworks produisent des filtrès de detection de bords, avec des résultats potentiellement différents.
 
@@ -44187,12 +44187,12 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,d
 **Point cle** : Deux exécutions du même algorithme (et a fortiori deux frameworks différents) produisent des solutions différentes en raison de la nature stochastique des GA. La convergence depend de l'initialisation aléatoire, de la derive génétique et des choix d'opérateurs.
 
 La cellule précédente imprime le noyau DEAP, une matrice 7x7 distincte de celle de PyGAD : deux exécutions stochastiques produisent deux noyaux différents, ce que la corrélation avec Sobel (0.8963 contre 0.8802, sortie benchmark) quantifie.",,,,,,,,3ac0f95897ad1b19,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-6-analysis,markdown,fr,ad74249a60e46b30,"## 6. Analyse comparative
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-6-analysis,markdown,fr,ad74249a60e46b30,"## 6. Analyse comparative
 
 ### Courbes de convergence
 
 Comparons l'evolution de la fitness des deux frameworks sur les 100 générations.",,,,,,,,ad74249a60e46b30,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,convergence-comparison,code,fr,bde7571100c25e48,"fig, ax = plt.subplots(figsize=(10, 6))
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,convergence-comparison,code,fr,bde7571100c25e48,"fig, ax = plt.subplots(figsize=(10, 6))
 
 ax.plot(range(1, len(pygad_fitness_history) + 1), pygad_fitness_history,
         'b-', linewidth=2, label=f'PyGAD (final: {pygad_best_fitness:.1f})')
@@ -44210,13 +44210,13 @@ ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
 plt.close()",,,,,,,,bde7571100c25e48,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,lecture-sortie-courbes,markdown,fr,28448f6a118c50f5,"### Lecture de la sortie
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,lecture-sortie-courbes,markdown,fr,28448f6a118c50f5,"### Lecture de la sortie
 
 La sortie est la figure `<Figure size 1000x600 with 1 Axes>` qui superpose les deux courbes de convergence : la courbe PyGAD (finale 896.25, d'après la sortie de la cellule d'évolution PyGAD) se termine au-dessus de la courbe DEAP (finale 880.17), les deux progressant régulièrement sur les 100 générations.",,,,,,,,28448f6a118c50f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,benchmark-intro,markdown,fr,62ec60308eee9f06,"### Tableau de benchmark
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,benchmark-intro,markdown,fr,62ec60308eee9f06,"### Tableau de benchmark
 
 Recapitulons les performances des deux frameworks.",,,,,,,,62ec60308eee9f06,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,benchmark-table,code,fr,7faba0e0b4a35c7a,"# Local definition of benchmark_table (from search_helpers)
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,benchmark-table,code,fr,7faba0e0b4a35c7a,"# Local definition of benchmark_table (from search_helpers)
 def benchmark_table(results: list, title: str = ""Comparaison des algorithmes""):
     """"""Affiche un tableau de benchmark formate.""""""
     print(f""\n{'=' * 70}"")
@@ -44269,13 +44269,13 @@ print(f""{'Temps (s)':<30} {pygad_time:<15.1f} {deap_time:<15.1f}"")
 print(f""{'Evaluations totales':<30} {50*100:<15} {50*100:<15}"")
 print(f""{'Variance du noyau':<30} {np.var(pygad_kernel):<15.1f} {np.var(deap_kernel):<15.1f}"")
 ",,,,,,,,7faba0e0b4a35c7a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,lecture-sortie-benchmark,markdown,fr,8280e1a0acf268ec,"### Lecture de la sortie
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,lecture-sortie-benchmark,markdown,fr,8280e1a0acf268ec,"### Lecture de la sortie
 
 Le tableau imprimé récapitule `PyGAD (sss + single_point) 47761` ms et `DEAP (tournament + 1point) 16733` ms, 5000 nœuds chacun, `Optimal` à `Non` pour les deux ; le détail qui suit affiche `Fitness finale 896.25 / 880.17`, `Correlation avec Sobel 0.8963 / 0.8802`, `Temps (s) 47.8 / 16.7` et `Variance du noyau 154.5 / 133.1` : les deux filtres évolués dépassent 0.88 de corrélation avec la référence Sobel, DEAP restant nettement plus rapide.",,,,,,,,8280e1a0acf268ec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,analysis-kernel-comparison,markdown,fr,541e9b63f376ac4a,"### Les filtrès evolues ressemblent-ils au Sobel ?
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,analysis-kernel-comparison,markdown,fr,541e9b63f376ac4a,"### Les filtrès evolues ressemblent-ils au Sobel ?
 
 Visualisons les noyaux evolues et comparons-les au noyau Sobel. La question est : le GA reinvente-t-il la même structure que Sobel, ou trouve-t-il des alternatives ?",,,,,,,,541e9b63f376ac4a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,kernel-heatmaps,code,fr,0511228d648111c6,"fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,kernel-heatmaps,code,fr,0511228d648111c6,"fig, axes = plt.subplots(1, 3, figsize=(16, 5))
 
 # Sobel padded
 im0 = axes[0].imshow(sobel_padded, cmap='RdBu_r', vmin=-20, vmax=20)
@@ -44310,7 +44310,7 @@ plt.suptitle('Comparaison des noyaux de convolution', fontsize=13, fontweight='b
 plt.tight_layout()
 plt.show()
 plt.close()",,,,,,,,0511228d648111c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,analysis-interpretation,markdown,fr,5d4165cac5abac1f,"### Interpretation : analyse des filtrès evolues
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,analysis-interpretation,markdown,fr,5d4165cac5abac1f,"### Interpretation : analyse des filtrès evolues
 
 **Sortie obtenue** : Les heatmaps montrent la structure interne des trois noyaux.
 
@@ -44335,7 +44335,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,a
 | Peut trouver des filtrès spécifiques a un type d'image | Couteux en évaluations (convolutions) |
 
 > **Lien avec le deep learning** : Les reseaux convolutifs (CNN) apprennent également des filtrès automatiquement, mais par descente de gradient sur des milliers d'exemples. Les GA offrent une alternative quand la fonction objectif n'est pas differentiable.",,,,,,,,5d4165cac5abac1f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,2e87c417,markdown,fr,353e7a78a5549069,"### Exercice : Mesurer la similarite structurelle des noyaux
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,2e87c417,markdown,fr,353e7a78a5549069,"### Exercice : Mesurer la similarite structurelle des noyaux
 
 Les noyaux evolues par PyGAD et DEAP différent visuellement du Sobel, mais produisent des résultats similaires. Implementez une fonction `kernel_similarity` qui mesure a quel point deux noyaux sont **structurellement similaires** en calculant la correlation de Pearson entre leurs versions aplaties.
 
@@ -44344,7 +44344,7 @@ Les noyaux evolues par PyGAD et DEAP différent visuellement du Sobel, mais prod
 - Utilisez `np.corrcoef(a, b)[0, 1]` pour la correlation de Pearson
 - Comparez `pygad_kernel` vs `sobel_padded` et `deap_kernel` vs `sobel_padded`
 - Une correlation proche de 1 signifie que les noyaux ont une structure similaire ; proche de 0 = structures independantes",,,,,,,,353e7a78a5549069,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,7fc51b2f,code,fr,c944e3410e082960,"def kernel_similarity(kernel_a: np.ndarray, kernel_b: np.ndarray) -> float:
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,7fc51b2f,code,fr,c944e3410e082960,"def kernel_similarity(kernel_a: np.ndarray, kernel_b: np.ndarray) -> float:
     """"""Calcule la similarite structurelle entre deux noyaux de convolution.
     
     Args:
@@ -44361,7 +44361,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,7
     return 0.0  # TODO etudiant : remplacer par le calcul
 
 print(""Exercice a completer : similarite structurelle des noyaux"")",,,,,,,,c944e3410e082960,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-7-exercises,markdown,fr,0109e213045c2fd7,"## 7. Exercices
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-7-exercises,markdown,fr,0109e213045c2fd7,"## 7. Exercices
 
 ### Exercice 1 : Evoluer un filtre Laplacien
 
@@ -44370,7 +44370,7 @@ Le filtre Laplacien detecte les bords en calculant la derivee seconde de l'image
 **Tâche** : Modifiez la référence pour utiliser un Laplacien au lieu du Sobel, puis relancez le GA.
 
 **Indice** : Utilisez `scipy.ndimage.laplace` pour calculer la référence Laplacienne.",,,,,,,,0109e213045c2fd7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,exercise-1,code,fr,adad5e89af9ec7e1,"# --- TODO etudiant : reference Laplacien pour la fitness du GA ---
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,exercise-1,code,fr,adad5e89af9ec7e1,"# --- TODO etudiant : reference Laplacien pour la fitness du GA ---
 # Indice :
 #   - Importer 'from scipy.ndimage import laplace'.
 #   - laplacian_reference = np.abs(laplace(original_image.astype(np.float64)))
@@ -44384,7 +44384,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,e
 #            dans la fonction de fitness. Le GA converge-t-il plus ou moins vite ? Pourquoi ?
 pass  # TODO etudiant
 ",,,,,,,,adad5e89af9ec7e1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,exercise-2-intro,markdown,fr,ed823cdaa0781598,"### Exercice 2 : Noyau 5x5 vs 7x7
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,exercise-2-intro,markdown,fr,ed823cdaa0781598,"### Exercice 2 : Noyau 5x5 vs 7x7
 
 **Tâche** : Reduisez la taille du noyau a 5x5 (25 genes au lieu de 49) et relancez le GA.
 
@@ -44392,7 +44392,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,e
 - Le GA converge-t-il plus rapidement avec moins de genes ?
 - La qualite finale est-elle meilleure ou moins bonne ?
 - Quel est le compromis taille du noyau vs qualite de detection ?",,,,,,,,ed823cdaa0781598,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,exercise-2,code,fr,e0b4d5402340ccbc,"# Hint: modify KERNEL_SIZE and NUM_GENES
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,exercise-2,code,fr,e0b4d5402340ccbc,"# Hint: modify KERNEL_SIZE and NUM_GENES
 KERNEL_5x5 = 5
 NUM_GENES_5x5 = KERNEL_5x5 * KERNEL_5x5  # 25
 
@@ -44414,14 +44414,14 @@ print()
 print(""Completez cet exercice en adaptant le code PyGAD ou DEAP"")
 print(""avec KERNEL_5x5 et NUM_GENES_5x5."")
 ",,,,,,,,e0b4d5402340ccbc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,exercise-3-intro,markdown,fr,fdced83ea8f786bb,"### Exercice 3 : Effet du taux de mutation
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,exercise-3-intro,markdown,fr,fdced83ea8f786bb,"### Exercice 3 : Effet du taux de mutation
 
 **Tâche** : Lancez le GA PyGAD avec trois taux de mutation différents (5%, 15%, 30%) et comparez les courbes de convergence.
 
 **Questions** :
 - Un taux de mutation eleve accelere-t-il ou ralentit-il la convergence ?
 - A quel taux observe-t-on le meilleur compromis exploration/exploitation ?",,,,,,,,fdced83ea8f786bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,exercise-3,code,fr,5b084452b8569a4c,"# Exercice 3 : Effet du taux de mutation
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,exercise-3,code,fr,5b084452b8569a4c,"# Exercice 3 : Effet du taux de mutation
 # TODO: Lancez le GA PyGAD avec trois taux de mutation (5%, 15%, 30%)
 # et comparez les courbes de convergence.
 
@@ -44483,7 +44483,7 @@ mutation_results = {}
 
 print(""Exercice 3 : implementez la comparaison des taux de mutation"")
 print(""Relancez le GA pour chaque taux et tracez les courbes de convergence."")",,,,,,,,5b084452b8569a4c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,exercise-3-interpretation,markdown,fr,18b99835973969ff,"### Interpretation : effet du taux de mutation
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,exercise-3-interpretation,markdown,fr,18b99835973969ff,"### Interpretation : effet du taux de mutation
 
 **A vérifier (Exercice 3)** : Une fois la boucle sur les taux de mutation implementee, comparez vos trois courbes de convergence. Voici les comportements généraux attendus en fonction du taux :
 
@@ -44492,7 +44492,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,e
 - **30% (eleve)** : exploration forte mais plus d'instabilite, peut ""détruire"" de bonnes solutions.
 
 **Lecon** : Le taux de mutation contrôle l'équilibre entre **exploration** (decouvrir de nouvelles regions) et **exploitation** (affiner les bonnes solutions). C'est un hyper-paramètre critique des algorithmes génétiques.",,,,,,,,18b99835973969ff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,section-conclusion,markdown,fr,a7249cf43fb8d0d6,"## Conclusion
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,section-conclusion,markdown,fr,a7249cf43fb8d0d6,"## Conclusion
 
 ### Recapitulatif
 
@@ -44518,7 +44518,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,s
 | Notebook | Lien |
 |----------|------|
 | [Search-5 GA](../Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | Fondements théoriques des algorithmes génétiques |
-| [App-9 C#](App-09-EdgeDetection-CSharp.ipynb) | Même problème avec GeneticSharp en C# |
+| [App-9 C#](App-9-EdgeDetection-CSharp.ipynb) | Même problème avec GeneticSharp en C# |
 | [App-10 Portfolio](App-10-Portfolio.ipynb) | Autre application des GA : optimisation de portefeuille |
 
 ### Pour aller plus loin
@@ -44527,7 +44527,7 @@ MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,s
 - Utiliser la programmation génétique (DEAP `gp` module) pour evoluer des *expressions* de filtrès
 - Comparer avec l'apprentissage de filtrès par descente de gradient (CNN)
 - Appliquer le GA sur des images réelles (imagerie medicale, satellite)",,,,,,,,a7249cf43fb8d0d6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb,nav-footer,markdown,fr,2a20d58c9e68f6d2,"***
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb,nav-footer,markdown,fr,2a20d58c9e68f6d2,"***
 
 **Navigation** : [<< App-8 MiniZinc](App-8-MiniZinc.ipynb) | [Index](../README.md) | [App-10 Portfolio >>](App-10-Portfolio.ipynb)",,,,,,,,2a20d58c9e68f6d2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb,6d187b9a,markdown,fr,169d41e6f903cb6d,"## À retenir
