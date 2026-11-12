@@ -901,6 +901,46 @@ def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
     assert payload["last_delivery_window_days"] == 90
 
 
+def test_belt_json_stdout_neporte_que_le_document_json(monkeypatch, capsys):
+    """Le bandeau d'index local ne pollue pas stdout (dispatch c2818).
+
+    Mesure du coordinateur (cycle c2818) : `pick_idle_grain.py --belt
+    --json` imprimait sur STDOUT le bandeau « (index local des PRs mergees
+    : N PRs ...) », alors que le `print` voisin de la branche d'echec
+    partait deja sur stderr. La sortie etait donc un document JSON suivi
+    d'une ligne de prose, et `json.load` echouait sur le tirage meme du
+    coordinateur.
+
+    Le bandeau n'est emis que HORS pytest : le code ne construit l'index
+    local que si `PYTEST_CURRENT_TEST` n'est pas dans l'environnement
+    (`args.cache_dir is None`). Le test neutralise donc ce garde et
+    injecte un index factice -- sans quoi la branche reprochee ne serait
+    jamais atteinte et le defaut resterait invisible a la suite.
+
+    Controle positif du retrait : si le `file=sys.stderr` disparait du
+    bandeau, `json.loads(captured.out)` leve et ce test rougit.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "merged_prs_index", lambda **kwargs: [{
+        "number": 19001,
+        "title": "PR fusionnee de la fenetre",
+        "body": "Closes #19001",
+        "mergedAt": "2026-11-01T00:00:00Z",
+    }])
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    captured = capsys.readouterr()
+    # Avant le fix : cette ligne leve (le bandeau precedait le document).
+    payload = json.loads(captured.out)
+    assert payload["mode"] == "belt"
+    # Le bandeau a bien ete emis -- sur stderr, et sur stderr seulement.
+    assert "index local des PRs mergees" in captured.err
+    assert "index local des PRs mergees" not in captured.out
+
+
 class _RealProbeReached(AssertionError):
     """Un test a atteint une sonde reseau par defaut -- le piege #19913."""
 

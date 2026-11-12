@@ -14571,6 +14571,11 @@ def main(argv: list[str] | None = None) -> int:
                 lambda issue_number, lane=None, _idx=merged_prs_local:
                     merged_pr_signal(issue_number, lane, index=_idx)
             )
+            # Le bandeau part sur STDERR : en mode `--json`, stdout ne doit
+            # porter QUE le document JSON -- sinon `json.load` echoue sur la
+            # sortie (#c2818, mesure du coordinateur). La branche d'echec
+            # ci-dessous ecrivant deja sur stderr, les deux messages sont
+            # desormais sur le meme flux.
             print(f"(index local des PRs mergees : {len(merged_prs_local)} "
                   f"PRs sur {MERGED_PR_WINDOW_DAYS} j -- la sonde par "
                   f"candidat ne sort plus sur le reseau, #24823)",
