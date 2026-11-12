@@ -1,5 +1,7 @@
 # Finition de série : critères de sortie
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Régime validé par le mainteneur le 2026-10-05 (issue de suivi #19297). Une série passe en **finition** quand on cesse d'y ajouter des carnets pour la rendre lisible de bout en bout. Elle en sort quand les critères ci-dessous sont remplis.
 
 **Voisin** : [niveau-serie.md](niveau-serie.md) — la règle de niveau (quand un dossier de sous-série mérite d'exister, quand un carnet reste à la racine d'une série, comment une série jumelle se déclare), issue #24197.
