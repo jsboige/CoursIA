@@ -88,6 +88,29 @@ regime RALENTIT la creation, il ne l'ARRETE pas.
 L'etat est lu depuis un fichier JSON (variable `COURSIA_CREATION_BUDGET_FILE`).
 Un fichier absent, illisible ou perime ne fait ecarter PERSONNE : le regime
 ne doit pas vider le tapis parce qu'un compteur n'a pas tourne.
+
+LE VETO : UNE AUTRE PORTE, DEJA MANDATEE
+---------------------------------------
+Le regime du budget **ralentit** ; il n'a jamais arrete. Le mandat user du
+30/10 est plus fort : « aucun nouveau carnet », maintenu tant que les
+issues ouvertes sont au moins `EXPANSION_VETO_THRESHOLD` (400).
+
+Les deux portes sont distinctes, et la mesure du 11/11 montre que seule la
+seconde fait ce qu'on attend d'elle :
+
+  * le **budget** separe le regime : il lit un etat que **aucune lane ne
+    pose** (`COURSIA_CREATION_BUDGET_FILE` est absente), donc
+    `load_state()` rend `None` et `over_budget()` rend « rien n'est ecarte » ;
+    meme avec un etat pose, son plancher de 1 carnet laisse passer tout
+    grain de creation ;
+  * le **veto** est independant de l'etat : il lit le **compte d'issues
+    ouvertes** — celui qui alimente deja `expansion_factor` dans le tapis —
+    et ecarte tout grain de creation au-dela du seuil.
+
+Le veto ne touche ni le budget, ni le cliquet anti-entropie, ni le veto de
+reparation : un grain de REPARATION n'est jamais ecarte, quel que soit le
+compte. Une grain de creation porte le marqueur `[EXEMPTION-FINITION]`
+(mandat user du 06/11) reste servi.
 """
 
 from __future__ import annotations
@@ -743,11 +766,114 @@ def over_budget(state: dict | None) -> tuple[bool, str]:
     return False, f"{compte} carnets neufs demarres sur 7 jours <= budget {budget}"
 
 
+# --- le veto de creation (mandat user du 30/10) -----------------------------
+
+# Le seuil du veto. Il DOIT rester aligne sur la constante du tapis
+# (`scripts/pick_idle_grain.py::EXPANSION_VETO_THRESHOLD`) : le tapis
+# annonce ce seuil dans ses journaux, et la porte en appliquerait un
+# autre si les deux divergeaient. Le test
+# `scripts/tests/test_creation_budget_veto.py` verifie l'alignement.
+EXPANSION_VETO_THRESHOLD = 400
+
+# La cause nommee du veto : elle doit se retrouver telle quelle dans les
+# journaux de tirage et dans la sortie JSON.
+CAUSE_VETO = "VETO CREATION"
+
+# Le marqueur d'exemption de finition (mandat user du 06/11) : un grain
+# que le coordinateur a explicitement autorise a finir reste servi.
+MARQUEUR_EXEMPTION = "[EXEMPTION-FINITION]"
+
+# L'auteur qui ACCORDE l'exemption. Le marqueur est un jeton de
+# coordination : il est pose par le coordinateur, pas par la lane qui
+# voudrait se servir d'un grain de creation.
+AUTEUR_EXEMPTION = "myia-ai-01"
+
+# Le depot dont l'instantane local de commentaires est lu.
+REPO = "jsboige/CoursIA"
+
+
+def veto_creation(open_count: int) -> bool:
+    """Le veto de creation est-il actif ?
+
+    Le mandat user du 30/10 : « aucun nouveau carnet », maintenu tant que
+    les issues ouvertes sont au moins `EXPANSION_VETO_THRESHOLD`. Ce mode
+    est **independant de l'etat du budget** : le compteur peut ne pas
+    avoir tourne, le veto s'applique quand meme — c'est le point mesure
+    le 11/11 (l'etat n'est pose par aucune lane, `load_state()` rendait
+    `None`, et le budget valait `max(1, ...)`, ce qui ralentit sans
+    jamais arreter).
+    """
+    try:
+        n = int(open_count)
+    except (TypeError, ValueError):
+        return False
+    return n >= EXPANSION_VETO_THRESHOLD
+
+
+def _commentaires_locaux() -> dict:
+    """Les commentaires de l'instantane LOCAL, charges UNE fois.
+
+    Aucun appel reseau : l'instantane est un fichier local pose par le
+    tapis. Une absence de l'instantane (module introuvable, fichier
+    illisible) rend une table VIDE — l'exemption ne peut alors pas etre
+    prouvee, ce qui laisse le veto s'appliquer (fail-CLOSED sur le veto,
+    fail-open sur le budget : les deux polarites ne se confondent pas).
+    """
+    try:
+        from coordination import gh_snapshot
+    except Exception:  # noqa: BLE001 - module absent = aucune exemption lue
+        return {}
+    try:
+        snapshot = gh_snapshot.load_snapshot(REPO)
+    except Exception:  # noqa: BLE001 - instantane illisible = aucune exemption
+        return {}
+    comments = snapshot.get("comments")
+    return comments if isinstance(comments, dict) else {}
+
+
+def exemption_finition(it: dict,
+                       commentaires: dict | None = None) -> bool:
+    """Le grain porte-t-il l'exemption de finition ?
+
+    UN SEUL canal vaut preuve : un **commentaire** signe `myia-ai-01`.
+
+    Le corps de l'issue n'en est pas un. Un corps s'ecrit sous le login
+    partage `jsboige` : n'importe quelle lane peut y poser le marqueur,
+    et une exemption accordee par une lane s'ecarterait du veto que le
+    mandat user du 30/10 pose -- une porte d'interdiction qu'on laisse
+    decoffrer par la meme main qu'elle arrete. Le canal des commentaires
+    est le seul ou le coordinateur signe (action `myia-ai-01` du 11/11 :
+    « seul le canal des commentaires `myia-ai-01` prouve qui accorde
+    l'exemption »).
+
+    Le corps reste lu, mais pour DIAGNOSTIQUER : un corps qui porte le
+    marqueur sans commentaire signe produit une cause qui le dit, au
+    lieu d'ecarter silencieusement le grain.
+    """
+    number = it.get("number")
+    if number is None:
+        return False
+    table = commentaires if commentaires is not None else _commentaires_locaux()
+    entry = table.get(str(number))
+    if not isinstance(entry, list):
+        return False
+    for c in entry:
+        if not isinstance(c, dict):
+            continue
+        if MARQUEUR_EXEMPTION not in str(c.get("body") or ""):
+            continue
+        login = ((c.get("author") or {}).get("login") or "")
+        if login == AUTEUR_EXEMPTION:
+            return True
+    return False
+
+
 # --- la porte du tapis --------------------------------------------------------
 
 def creation_gate(pool: Sequence[dict],
                   catalog: NotebookCatalog | None = None,
-                  state: dict | None = None) -> dict[int, str]:
+                  state: dict | None = None,
+                  open_count: int | None = None) -> dict[int, str]:
     """Les grains de creation a ecarter, avec la cause nommee.
 
     Rend `{numero: cause}` — vide quand rien n'est ecarte. La porte est
@@ -760,18 +886,54 @@ def creation_gate(pool: Sequence[dict],
 
     Et elle ne s'active QUE sur un depassement de budget mesure : le regime
     ralentit la creation, il ne l'arrete pas.
+
+    Le **VETO** (mandat user du 30/10) est la seule exception : il est
+    independant de l'etat du budget, et il ecarte tout grain de creation
+    tant que les issues ouvertes sont au moins
+    `EXPANSION_VETO_THRESHOLD`. Il ne touche ni le budget, ni le cliquet
+    anti-entropie : les trois causes restent distinctes.
     """
     cat = catalog if catalog is not None else NotebookCatalog.from_repo()
     if not cat.known:
         return {}
     index = build_children_index(pool)
+    out: dict[int, str] = {}
+
+    # Le VETO : prioritaire, parce qu'il est le mandat user et non une
+    # mesure de regime. Le compte est celui que l'appelant passe : le
+    # compte REEL des issues ouvertes, mesure hors du tapis (la taille du
+    # pool est une vue, et un veto compare a une vue se leve trop tot --
+    # action `myia-ai-01` du 11/11). A defaut de mesure, l'appelant
+    # repasse la taille du pool : la porte reste fail-OPEN.
+    n_ouvertes = len(pool) if open_count is None else open_count
+    if veto_creation(n_ouvertes):
+        commentaires = _commentaires_locaux()
+        for it in pool:
+            verdict, proof = classify_grain(it, cat, pool, index)
+            if verdict != VERDICT_CREATION:
+                continue
+            if exemption_finition(it, commentaires):
+                continue
+            # Un corps qui porte le marqueur SANS commentaire signe ne
+            # vaut pas exemption : la cause le dit, plutot que d'ecarter
+            # le grain en silence (un lane verrait un refus sans motif).
+            note = ""
+            if MARQUEUR_EXEMPTION in str(it.get("body") or ""):
+                note = (" (le corps porte [EXEMPTION-FINITION], mais seul un "
+                        "commentaire signe myia-ai-01 vaut exemption)")
+            out[it["number"]] = (
+                f"{CAUSE_VETO} : {n_ouvertes} issues ouvertes >= "
+                f"{EXPANSION_VETO_THRESHOLD} (veto user du 30/10) -- "
+                f"servir un grain de reparation ou de consolidation. "
+                f"Motif : {proof}{note}")
 
     # Le BUDGET : la porte principale, activee par un depassement mesure.
     st = state if state is not None else load_state()
     trop, why = over_budget(st)
-    out: dict[int, str] = {}
     if trop:
         for it in pool:
+            if it["number"] in out:
+                continue
             verdict, proof = classify_grain(it, cat, pool, index)
             if verdict != VERDICT_CREATION:
                 continue

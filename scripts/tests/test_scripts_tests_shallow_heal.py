@@ -13,6 +13,22 @@ WORKFLOW = ROOT / ".github" / "workflows" / "scripts-tests.yml"
 STEP = '      - name: "Purger un work dir reutilise au graphe incomplet (#15387)"\n'
 BASH = resolve_bash()
 
+# Budget du sous-processus qui rejoue le snippet HEAL. C'est une garde
+# anti-blocage, PAS une assertion de latence : le snippet ne fait qu'un
+# `git fetch --unshallow` sur un depot LOCAL (les deux tests du module
+# tournent en 3,88 s sur un poste au repos, mesure du 2026-11-12).
+#
+# 30 s ne suffisait pas sous le job `Scripts Tests (CPU)`, ou jusqu'a quatre
+# workers xdist se partagent le runner : job 131005200449 du 2026-11-12, le
+# snippet a depasse 30 s de famine alors que le reste de la suite rendait
+# 1 failed / 26551 passed (`subprocess.TimeoutExpired` a 06:35:03Z). Le
+# defaut n'etait pas dans le snippet mais dans le budget, et il rougissait
+# une jambe REQUISE pour toutes les PRs du depot.
+#
+# 120 s laisse un facteur ~30 au-dessus du besoin mesure tout en bornant un
+# vrai blocage a deux minutes.
+HEAL_TIMEOUT_S = 120
+
 
 def _git(cwd, *args, check=True):
     return subprocess.run(
@@ -47,6 +63,7 @@ def shallow_repo(tmp_path):
     subprocess.run(
         ["git", "clone", "--quiet", "--depth=1", "--branch", "main", bare.as_uri(), str(clone)],
         check=True, capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
     assert _git(clone, "rev-parse", "--is-shallow-repository").stdout.strip() == "true"
     return clone, bare
@@ -58,7 +75,11 @@ def test_unshallow_local_reussit_et_garde_le_depot(shallow_repo, tmp_path):
     script = tmp_path / "heal.sh"
     script.write_text(_heal_script(), encoding="utf-8")
     env = dict(os.environ, GITHUB_WORKSPACE=str(clone))
-    result = subprocess.run([BASH, str(script)], env=env, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(
+        [BASH, str(script)], env=env, capture_output=True,
+        text=True, encoding="utf-8", errors="replace",
+        timeout=HEAL_TIMEOUT_S,
+    )
     assert result.returncode == 0, result.stderr
     assert "unshallow explicite reussi" in result.stdout
     assert (clone / ".git").is_dir()
@@ -73,7 +94,11 @@ def test_echec_unshallow_purge_le_depot_incomplet(shallow_repo, tmp_path):
     script = tmp_path / "heal.sh"
     script.write_text(_heal_script(), encoding="utf-8")
     env = dict(os.environ, GITHUB_WORKSPACE=str(clone))
-    result = subprocess.run([BASH, str(script)], env=env, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(
+        [BASH, str(script)], env=env, capture_output=True,
+        text=True, encoding="utf-8", errors="replace",
+        timeout=HEAL_TIMEOUT_S,
+    )
     assert result.returncode == 0, result.stderr
     assert "unshallow impossible ou graphe incomplet" in result.stdout
     assert not (clone / ".git").exists()
