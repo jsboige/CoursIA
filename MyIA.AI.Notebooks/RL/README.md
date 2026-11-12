@@ -246,6 +246,8 @@ Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, sectio
 
 ### Notebook 8 - Model-Based RL : Dyna-Q et planification
 
+Le [jumeau C#](RL-08-Dyna-Q-Planification-CSharp.ipynb) utilise la BCL sans package NuGet, affiche des figures SVG statiques et propose trois exercices non résolus avec contrôles conditionnels.
+
 | Section | Contenu |
 |---------|---------|
 | Model-free vs model-based | Compromis calcul vs expérience, sample efficiency |
