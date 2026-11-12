@@ -48,12 +48,13 @@ pas ces métriques pour l’état actuel du code.
 | [research.ipynb](research.ipynb) | Analyse exploratoire de l’effet ToM et comparaison de fenêtres, d’univers, de levier, du filtre SMA200 et de sous-périodes. Le carnet contient six hypothèses (H1–H6). | Python, `yfinance`, pandas et NumPy ; séries SPY/QQQ récupérées via yfinance. Les résultats dépendent de ces données et des choix de calcul du carnet. |
 | [quantbook.ipynb](quantbook.ipynb) | Reprise de l’analyse avec l’API `QuantBook` : fenêtres, univers SPY/QQQ/IWM/DIA, levier, filtres SMA et sous-périodes, avec graphiques comparatifs. | Environnement de recherche QuantConnect/Lean et historique chargé par `qb.history`. Le carnet vérifie la présence des symboles et la fraîcheur des données avant ses calculs. |
 
-Le carnet `quantbook.ipynb` marque explicitement plusieurs sorties comme
-supprimées ; ses sections de calcul et ces marqueurs documentent le protocole,
-mais ne justifient pas d’inférer les sorties manquantes. `research.ipynb` conserve
-ses propres sorties, qui ne sont pas une exécution de `QuantBook`. Ce README ne
-rapporte aucune nouvelle exécution QuantConnect. L’historique des variantes et
-les limites documentaires sont détaillés dans [ARCHIVE.md](ARCHIVE.md).
+Le carnet `quantbook.ipynb` conserve les sorties de la réexécution Lean de
+#8730, sur les données du 3 janvier 2005 au 31 décembre 2025 : tableaux par
+fenêtre, univers, levier, filtre et sous-période, ainsi que figures. Ces
+résultats décrivent cette exécution et ne constituent pas un verdict sur la
+stratégie. `research.ipynb` conserve ses propres sorties, distinctes de celles
+de `QuantBook`. L’historique des variantes et les limites documentaires sont
+détaillés dans [ARCHIVE.md](ARCHIVE.md).
 
 Le code de `main.py` mentionne également des essais historiques H7–H9 dans sa
 docstring. Ils ne font pas partie des six hypothèses H1–H6 présentées dans
