@@ -39,6 +39,8 @@ def handle(graph, request: object) -> dict:
                   else reader.prerequisites_for(graph, path))
     except KeyError:
         return {'status': 'not_found', 'error': 'Carnet inconnu'}
+    except ValueError as exc:
+        return {'status': 'invalid', 'error': str(exc)}
     return {'status': 'ok', 'results': result}
 
 
@@ -56,9 +58,10 @@ try:
     body = request.get("body", {}) if isinstance(request, dict) else request
     if isinstance(body, str):
         body = json.loads(body)
-    print(json.dumps(service.handle(graph, body), ensure_ascii=False))
-except (ValueError, TypeError):
+except json.JSONDecodeError:
     print(json.dumps({"status": "invalid", "error": "JSON invalide"}))
+else:
+    print(json.dumps(service.handle(graph, body), ensure_ascii=False))
 '''
     def cell(source):
         return {'cell_type': 'code', 'metadata': {}, 'source': source.splitlines(True),

@@ -119,3 +119,35 @@ def test_http_gateway(generated_graph, tmp_path):
             pass
         process.wait(timeout=10)
         log.close()
+
+
+def test_route_distinguishes_reader_error_from_invalid_json(generated_graph, monkeypatch, capsys):
+    graph = service.load(generated_graph)
+
+    def invalid_path(_graph, _path):
+        raise ValueError('cycle de sous-séries : exemple')
+
+    monkeypatch.setattr(service.reader, 'path_for', invalid_path)
+    route = ''.join(service.seed_notebook(generated_graph)['cells'][1]['source'])
+    request = {'body': json.dumps({'action': 'path', 'path': 'Demo/Part/A.ipynb'})}
+    exec(route, {'json': json, 'service': service, 'graph': graph, 'REQUEST': request})
+    result = json.loads(capsys.readouterr().out)
+    assert result == {'status': 'invalid', 'error': 'cycle de sous-séries : exemple'}
+
+    exec(route, {'json': json, 'service': service, 'graph': graph, 'REQUEST': {'body': '{'}})
+    result = json.loads(capsys.readouterr().out)
+    assert result == {'status': 'invalid', 'error': 'JSON invalide'}
+
+
+def test_unexpected_type_error_is_not_reported_as_invalid_json(generated_graph, monkeypatch, capsys):
+    graph = service.load(generated_graph)
+
+    def broken_path(_graph, _path):
+        raise TypeError('défaut inattendu')
+
+    monkeypatch.setattr(service.reader, 'path_for', broken_path)
+    route = ''.join(service.seed_notebook(generated_graph)['cells'][1]['source'])
+    request = {'body': json.dumps({'action': 'path', 'path': 'Demo/Part/A.ipynb'})}
+    with pytest.raises(TypeError, match='défaut inattendu'):
+        exec(route, {'json': json, 'service': service, 'graph': graph, 'REQUEST': request})
+    assert capsys.readouterr().out == ''
