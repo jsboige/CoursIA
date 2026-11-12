@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-test_scan_slidev_composition.py — tests du garde-fou de composition Slidev.
+test_slidev_canvas_contract.py — tests du garde-fou de composition Slidev.
 
 Couvre :
   - parse_headmatter_canvas : lit canvasWidth / canvasHeight / aspectRatio
@@ -11,7 +11,7 @@ L'instrument complet (Playwright + slidev dev) est testé dans un test
 d'intégration séparé qui nécessite un serveur Slidev actif.
 
 Usage :
-    pytest tests/test_scan_slidev_composition.py -v
+    pytest tests/test_slidev_canvas_contract.py -v
 """
 
 from __future__ import annotations
