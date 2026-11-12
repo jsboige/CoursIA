@@ -1,0 +1,9 @@
+- name: Probas-CLT-Theoreme-Central-Limite
+  family: Probas/Fondations
+  python: MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/Fondations/Probas-CLT-Theoreme-Central-Limite-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire solver-free by design : Python s'appuie sur les générateurs NumPy et math.erf ; C# emploie les distributions réelles de MathNet.Numerics 5.0.0 et Normal.CDF. Les deux mesurent les mêmes lois, distances de Kolmogorov des deux côtés et échelles robustes Lomax aux mêmes budgets ; seules les trajectoires RNG diffèrent. Aucun moteur d'inférence omis n'est requis par cette leçon."
+  known_differences:
+  - "Le jumeau C# ajoute deux visualisations SVG statiques. L'API MathNet Pareto est de type I ; une translation de ξ produit la Lomax (Pareto II) de paramètres α=1,5 et ξ=1. Les générateurs seedés ne partagent pas les mêmes trajectoires entre NumPy et System.Random."
