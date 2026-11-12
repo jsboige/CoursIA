@@ -472,3 +472,13 @@ def test_fixed_predictor_rejects_undefined_distribution():
     p.update("a")
     assert p.log_loss("a") == pytest.approx(0.0)
     assert p.log_loss("unknown") == pytest.approx(np.log2(3))
+
+
+def test_banc_lectures_brute_et_identite_partagent_tirages():
+    g0, eta = _banc_vote()
+    g1 = apply_ontology(g0, eta)
+    result = bancher_mecanisme(
+        "identite", g0, g1, eta, (eta,), equivalence={},
+        horizon=8, n_sim=3, rng=np.random.default_rng(92),
+    )
+    assert result.P_R == pytest.approx(result.P_R_marg, abs=1e-15)

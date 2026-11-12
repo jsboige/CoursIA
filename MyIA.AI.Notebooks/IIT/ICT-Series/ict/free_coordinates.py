@@ -33,6 +33,7 @@ fourni par l'appelant. Aucune dependance hors numpy.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field, replace
 
 import numpy as np
@@ -641,8 +642,10 @@ def bancher_mecanisme(
     o_t = expansion_ontology(g0, g1)
     d_a_t = political_opening(g0, g1)
     c_t = non_canonicity(g0, candidate_extensions, equivalence)
+    # Les lectures brute et quotient reutilisent les memes trajectoires.
+    paired_rng = deepcopy(rng)
     p_r = performative_power(g1, g0, horizon, n_sim, rng)
-    p_r_marg = performative_power(g1, g0, horizon, n_sim, rng, equivalence)
+    p_r_marg = performative_power(g1, g0, horizon, n_sim, paired_rng, equivalence)
     inst = institutionalization(g1, eta, horizon, rng)
     i_r = irreversibility_debt(eta)
     return BenchVerdict(
