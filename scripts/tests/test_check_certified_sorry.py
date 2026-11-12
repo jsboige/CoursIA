@@ -200,6 +200,11 @@ def test_workflow_targets_match_manifest():
         "CongestionGames.PoA",
         "CooperativeGames.Basic", "CooperativeGames.Basic_en",
         "CooperativeGames.ConeKernel", "CooperativeGames.ConeKernel_en",
+        # #25966 : GroupShapley (jeu fusionne de Lehrer), FR seulement --
+        # pas de sibling _en sur ce module. Verifie par la PR d'origine :
+        # code_sorry = 0, 0 classe forbidden au prescreen. Meme statut de
+        # revue que les precedents.
+        "CooperativeGames.GroupShapley",
         "CooperativeGames.Shapley", "CooperativeGames.Shapley_en",
         "ProgramGames.FairBot", "ProgramGames.FairBot_en",
         "RepeatedGames.Discounting", "RepeatedGames.Discounting_en",
