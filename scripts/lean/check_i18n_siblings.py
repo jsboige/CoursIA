@@ -329,6 +329,10 @@ def _advisory_code(src: str) -> str:
     """
     out = list(src)
     n = len(src)
+    raw_start = re.compile(r'r(#*)"')
+    char_literal = re.compile(
+        r"'(?:\\(?:[\\\"'rnt]|x[0-9a-fA-F]{2}|u[0-9a-fA-F]{4})|[^\\'\n])'"
+    )
 
     def mask(start: int, end: int) -> None:
         for pos in range(start, end):
@@ -360,8 +364,15 @@ def _advisory_code(src: str) -> str:
             raw = None
             if src[i] == "r" and (i == 0 or not (src[i - 1].isalnum()
                                                    or src[i - 1] in "_'»")):
-                raw = re.compile(r'r(#+)"').match(src, i)
-            if raw:
+                raw = raw_start.match(src, i)
+            char = None
+            if src[i] == "'" and (i == 0 or not (src[i - 1].isalnum()
+                                                    or src[i - 1] in "_'»")):
+                char = char_literal.match(src, i)
+            if char:
+                mask(i, char.end())
+                i = char.end()
+            elif raw:
                 start = i
                 closing = '"' + raw.group(1)
                 end = src.find(closing, raw.end())

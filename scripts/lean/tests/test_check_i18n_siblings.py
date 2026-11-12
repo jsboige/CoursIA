@@ -710,3 +710,49 @@ def test_fr_import_ignore_code_fictif_dans_chaines_et_commentaires(tmp_path, con
     hybrid = knots / "Hybrid_en.lean"
     hybrid.write_text(content, encoding="utf-8")
     assert fr_import_siblings(hybrid) == []
+
+
+@pytest.mark.parametrize("literal", ["'\"'", "'\\\"'", "'\\x22'", "'\\u0022'", "'\\\\'"])
+def test_fr_import_survit_aux_caracteres_lean(tmp_path, literal):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        f'import Knots.Basic\ndef quote : Char := {literal}\n'
+        'namespace Knots_en.AnyMoves\ndef own := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+def test_fr_import_ignore_chaine_raw_sans_diese(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        'import Knots.Basic\ndef text := r"texte\\"\n'
+        'namespace Knots_en.AnyMoves\ndef own := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+def test_fr_import_preserve_identifiant_avec_apostrophe(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        "import Knots.Basic\nnamespace Knots_en.AnyMoves\ndef value' := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
