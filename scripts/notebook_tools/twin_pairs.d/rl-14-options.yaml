@@ -1,0 +1,9 @@
+- name: RL-14 Options SMDP
+  family: RL
+  python: MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-14-RL-Hierarchique-Options-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets implementent FourRooms, BFS et Q-learning a options from scratch ; Python emploie NumPy et Matplotlib, C# la BCL. Aucun moteur externe HRL n'est invoque par la source."
+  known_differences:
+  - "Generateurs aleatoires distincts ; les mesures par graine peuvent differer. Python utilise Matplotlib et C# un SVG statique."
