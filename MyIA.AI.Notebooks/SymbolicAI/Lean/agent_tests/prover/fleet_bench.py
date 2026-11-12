@@ -92,7 +92,7 @@ def _trace_metrics(path_value: str | None) -> dict:
         usage = entry.get("tokens")
         if isinstance(usage, dict):
             i, o = usage.get("input"), usage.get("output")
-            if isinstance(i, int) and i >= 0 and isinstance(o, int) and o >= 0:
+            if type(i) is int and i >= 0 and type(o) is int and o >= 0:
                 ins += i
                 outs += o
                 tokens_seen = True
@@ -126,7 +126,7 @@ def _otel_metrics(stdout: str) -> dict:
                     models[model.strip()] += 1
                 i = attributes.get("gen_ai.usage.input_tokens")
                 o = attributes.get("gen_ai.usage.output_tokens")
-                if isinstance(i, int) and i >= 0 and isinstance(o, int) and o >= 0:
+                if type(i) is int and i >= 0 and type(o) is int and o >= 0:
                     ins += i
                     outs += o
                     usage_seen = True
@@ -350,8 +350,8 @@ def _launch_arm(arm: str, demo_id: int, provider: str, iterations: int,
     metrics = {
         "tokens": otel_metrics["tokens"] or trace_metrics["tokens"],
         "routing": otel_metrics["routing"] or trace_metrics["routing"],
-        "evidence": otel_metrics["evidence"] if (
-            otel_metrics["routing"] or otel_metrics["tokens"]) else trace_metrics["evidence"],
+        "evidence": (otel_metrics["evidence"] if otel_metrics["routing"]
+                     else trace_metrics["evidence"]),
     }
     return {
         "arm": arm, "provider": provider,
