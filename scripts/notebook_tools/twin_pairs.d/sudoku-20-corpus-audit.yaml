@@ -1,0 +1,10 @@
+- name: "Sudoku-20 Corpus Audit"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-20-CorpusAudit-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-20-CorpusAudit-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le Python invoque le noyau pedagogique Norvig de solvers.py et corpus.py ; le C# en porte la propagation et l'instrumentation en BCL, sans moteur externe a omettre ni wrapper Python. Les corpus et experiences restent communs."
+  known_differences:
+    - "Le C# porte explicitement le noyau ; les compteurs de recherche dependent de l'ordre des cases, chiffres et propagation."
+    - "La figure C# est un SVG statique a deux panneaux, le Python utilise Matplotlib."
