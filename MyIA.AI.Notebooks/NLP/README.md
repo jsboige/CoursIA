@@ -85,3 +85,7 @@ La série [GenAI/Texte](../GenAI/Texte/README.md) étudie ensuite l'usage des LL
 - Les références fondatrices et les détails de calcul accompagnent chaque modèle dans son carnet.
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md)
+
+## Parité du carnet 10
+
+- [Naive Bayes en Python](10-Classement-Texte-NaiveBayes-FromScratch.ipynb) · [jumeau C#](10-Classement-Texte-NaiveBayes-FromScratch-CSharp.ipynb) : mêmes corpus et expériences ; C# appelle scikit-learn via Python.NET pour le témoin de référence.
