@@ -37,4 +37,4 @@ La validation présentée reste pédagogique : le découpage principal ajuste le
 ## Files
 
 - [`quantbook.ipynb`](quantbook.ipynb) - exploration et validation du modèle LSTM dans QuantConnect Research
-- [`main.py`](main.py) - Strategy (`MLDeepLearningAlgorithm`)
+- [`main.py`](main.py) - stratégie Lean (`MLDeepLearningAlgorithm`)
