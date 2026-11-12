@@ -36,7 +36,7 @@ La série compte **37 notebooks canoniques** : 16 méthodes déclinées en C# .N
 
 **Kernels** : `.net-csharp` (track C#) · `python3` (track Python) · `lean4-wsl` (Sudoku-19) · **GPU** : non · **Prérequis** : la série Search (algorithmes de recherche) aide, mais le Sudoku-0 remet tout à plat.
 
-**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) (track Python) · [Parcours 2 — ML.NET + Symbolic](../../parcours.qmd) (track C#) · niveau 1
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) (track Python) · [Parcours 2 — ML.NET + Symbolic](../../parcours.qmd) (track C#) · niveau 1
 
 ## Pourquoi un double track C# / Python ?
 

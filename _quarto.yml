@@ -11,6 +11,7 @@ project:
     - "MyIA.AI.Notebooks/Probas/index.qmd"
     - "MyIA.AI.Notebooks/Physique/index.qmd"
     - "docs/index.qmd"
+    - "docs/parcours.qmd"
     - "COURSE_CATALOG.generated.md"
     # README.md rendus en HTML (Axe C #4211). Liste explicite
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
@@ -538,6 +539,7 @@ project:
     - "scripts/_archive/one_shots_post_463/README.md"
     - "scripts/_archive/README.md"
     - "scripts/_archive/recycle_csp/README.md"
+    - "scripts/_archive/root-campaigns-2026q3/README.md"
     - "scripts/ci/docker/linux-runner/persist/po-2023/README.md"
     - "scripts/ci/docker/linux-runner/persist/po-2026/README.md"
     - "scripts/ci/docker/linux-runner/persist/po-2027/README.md"
@@ -2090,6 +2092,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb"
     - "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb"
+    - "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb"
     - "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb"
@@ -2680,7 +2683,7 @@ site:
         text: "Probas"
       - href: docs/index.qmd
         text: "Documentation"
-      - href: parcours.qmd
+      - href: docs/parcours.qmd
         text: "Parcours"
     right:
       - icon: github
