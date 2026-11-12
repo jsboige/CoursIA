@@ -231,18 +231,18 @@ def run_check(base_url: str = DEFAULT_BASE_URL,
         # passer la seconde moitie. Detectee hors plafond : aucun appel HTTP.
         for href in _HREF_RE.findall(html):
             href = href.strip()
-            if href.endswith(".ipynb") and not href.startswith(
-                    ("http://", "https://", "#")):
-                absolute = urllib.parse.urljoin(page_url, href)
-                split = urllib.parse.urlsplit(absolute)
-                origin = urllib.parse.urlsplit(page_url)
-                same_origin = (f"{split.scheme}://{split.netloc}"
-                               == f"{origin.scheme}://{origin.netloc}")
-                if same_origin:
-                    result.raw_ipynb.append({
-                        "href": href,
-                        "source_page": page_url,
-                    })
+            if not href or href.startswith("#"):
+                continue
+            absolute = urllib.parse.urljoin(page_url, href)
+            split = urllib.parse.urlsplit(absolute)
+            origin = urllib.parse.urlsplit(page_url)
+            same_origin = (f"{split.scheme}://{split.netloc}"
+                           == f"{origin.scheme}://{origin.netloc}")
+            if same_origin and split.path.endswith(".ipynb"):
+                result.raw_ipynb.append({
+                    "href": href,
+                    "source_page": page_url,
+                })
         for url in extract_internal_hrefs(html, page_url):
             links.setdefault(url, set()).add(page_url)
 

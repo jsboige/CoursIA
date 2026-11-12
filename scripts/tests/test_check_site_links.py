@@ -271,3 +271,21 @@ def test_concurrent_probes_cover_all_links(monkeypatch) -> None:
     assert result.checked == 27
     assert result.ok == 27
     assert len(result.instrument_errors) == 3
+
+def test_raw_ipynb_internal_absolute_query_and_fragment(monkeypatch) -> None:
+    """Les sources internes restent interdites avec URL absolue ou ancre."""
+    mod = _load()
+    hrefs = [
+        'https://example.test/CoursIA/a.ipynb',
+        '//example.test/CoursIA/b.ipynb?download=1',
+        'c.ipynb#cellule',
+        'd.ipynb?download=1#cellule',
+    ]
+    html = ''.join(f'<a href="{href}">x</a>' for href in hrefs)
+    html += '<a href="https://else.where/a.ipynb?download=1">externe</a>'
+    monkeypatch.setattr(mod, 'fetch_text', lambda url, timeout=None: html)
+    monkeypatch.setattr(mod, 'probe_status', lambda url, timeout=None: 200)
+    result = mod.run_check(BASE, ('/',))
+    assert {entry['href'] for entry in result.raw_ipynb} == set(hrefs)
+    assert result.broken == []
+    assert mod.main(['--base-url', BASE, '--page', '/']) == 1
