@@ -137,7 +137,21 @@ fi
 # --- prepare .deploy/ ------------------------------------------------------------------
 # Préparer sur le même système de fichiers avant de toucher au déploiement existant.
 STAGE_ROOT="$(mktemp -d "$SUBMODULE_DIR/.deploy-stage.XXXXXX")"
-trap 'rm -rf "$STAGE_ROOT"' EXIT
+BACKUP_DIR=""
+cleanup() {
+  # Ne jamais supprimer la sauvegarde avant confirmation de la publication.
+  if [[ -n "$BACKUP_DIR" && -e "$BACKUP_DIR" && ! -e "$DEPLOY_DIR" ]]; then
+    if mv "$BACKUP_DIR" "$DEPLOY_DIR"; then
+      BACKUP_DIR=""
+    else
+      printf '%sERROR: restore previous deployment from %s%s\n' "$C_RED" "$BACKUP_DIR" "$C_RESET" >&2
+    fi
+  fi
+  rm -rf "$STAGE_ROOT"
+}
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
 STAGE_DIR="$STAGE_ROOT/deploy"
 mkdir "$STAGE_DIR"
 
@@ -183,19 +197,18 @@ if [[ ${#missing[@]} -gt 0 ]]; then
 fi
 
 # Publier le répertoire vérifié et restaurer le précédent si le déplacement échoue.
-BACKUP_DIR=""
 if [[ -e "$DEPLOY_DIR" ]]; then
-  BACKUP_DIR="$STAGE_ROOT/previous"
+  BACKUP_DIR="$(mktemp -d "$SUBMODULE_DIR/.deploy-backup.XXXXXX")"
+  rmdir "$BACKUP_DIR"
   mv "$DEPLOY_DIR" "$BACKUP_DIR"
 fi
 if ! mv "$STAGE_DIR" "$DEPLOY_DIR"; then
-  if [[ -n "$BACKUP_DIR" ]] && ! mv "$BACKUP_DIR" "$DEPLOY_DIR"; then
-    # Ne pas effacer la sauvegarde si sa restauration échoue également.
-    trap - EXIT
-    printf '%sERROR: restore previous deployment from %s%s\n' "$C_RED" "$BACKUP_DIR" "$C_RESET"
-  fi
   printf '%sERROR: could not publish deployment.%s\n' "$C_RED" "$C_RESET"
   exit 1
+fi
+if [[ -n "$BACKUP_DIR" ]]; then
+  rm -rf "$BACKUP_DIR"
+  BACKUP_DIR=""
 fi
 
 printf '\n%s=== Automata fork build complete ===%s\n' "$C_GREEN" "$C_RESET"
