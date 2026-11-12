@@ -1,0 +1,10 @@
+- name: "NLP-02 NGrammes"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les vrais modèles NLTK MLE, Laplace et Kneser-Ney sont appelés directement en Python et via Python.NET en C#."
+  known_differences:
+    - "C# orchestre NLTK via Python.NET et calcule les événements, perplexités et contrôles en BCL ; Python utilise directement NLTK."
+    - "La figure Python utilise Matplotlib et le twin C# utilise un SVG statique."
