@@ -194,7 +194,13 @@ class ScriptedRunner:
         # commit (la tete), avec le jeu de checks nominal.
         main_history: list[str] | None = None,
         main_checks_by_sha: dict[str, str] | None = None,
+        # #17437 : reponses de la sonde d'identite App. Cle = chemin API
+        # complet (``users/<login>[bot]``), valeur = stdout du ``--jq .type``
+        # (``Bot`` = App confirmee). Une cle absente rend 404 : c'est le
+        # silence fail-closed de la vraie API sur un login inexistant.
+        user_types: dict[str, str] | None = None,
     ):
+        self.user_types = user_types or {}
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
         self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
@@ -284,6 +290,14 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and c[2].startswith("users/"):
+            # #17437 : sonde d'identite App (``users/<login>[bot] --jq .type``).
+            # Defaut = 404 (rc 1) : une sonde non scriptee est un login
+            # inconnu, fail-closed cote organe -- meme silence que la vraie
+            # API rend pour un utilisateur qui n'existe pas.
+            if c[2] in self.user_types:
+                return mr.RunResult(0, self.user_types[c[2]] + "\n", "")
+            return mr.RunResult(1, "", "HTTP 404")
         if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
             return mr.RunResult(0, self.main_sha + "\n", "")
         if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
@@ -1921,6 +1935,97 @@ def test_base_absente_fail_closed(tmp_path):
     view["baseRefOid"] = ""
     _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
     assert lines[-1]["reason"] == "coordinator-approval-unverifiable:no-base"
+
+
+# --- #17437 : l'APPROVE du coordinateur sous identite GitHub App -------------
+#
+# Mesure ai-01 du 2026-11-04 : sous identite App, la porte ne trouvait pas
+# l'APPROVE — la voix du coordinateur etait cablee sur le seul login humain.
+# La voix compte desormais DEUX logins (``COORDINATOR_VOICES``), et le login
+# NU rendu par ``gh pr view --json reviews`` (auteur SANS champ de type,
+# mesure 2026-11-12) se resout par une sonde REST bornee
+# ``users/<login>[bot] --jq .type`` — fail-closed sur silence ou 404 (un
+# compte UTILISATEUR nomme comme le slug de l'App ne passe pas la porte).
+
+APP_LOGIN_BARE = "coursia-lane-ai-01"
+APP_LOGIN_REST = "coursia-lane-ai-01[bot]"
+
+
+def test_17437_approve_app_login_rest_compte(tmp_path):
+    """Orthographe REST (suffixee) : l'APPROVE de l'App est la voix du
+    coordinateur — le chemin nominal, sans sonde."""
+    mr._APP_BARE_LOGIN_CACHE.clear()
+    view = default_view(reviews=[review_row(oid=HEAD, login=APP_LOGIN_REST)])
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+    # un login deja suffixe ne tire jamais la sonde
+    assert not any("users/" in f for f in runner.flat())
+
+
+def test_17437_approve_app_login_nu_resolu_par_sonde(tmp_path):
+    """Orthographe gh-json (nue, sans type) : la sonde REST prouve le type
+    Bot et la voix compte — l'APPROVE sous App ne se perd plus."""
+    mr._APP_BARE_LOGIN_CACHE.clear()
+    view = default_view(reviews=[review_row(oid=HEAD, login=APP_LOGIN_BARE)])
+    runner = ScriptedRunner(
+        views={123: view},
+        user_types={f"users/{APP_LOGIN_BARE}[bot]": "Bot"},
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+    assert ["gh", "api", f"users/{APP_LOGIN_BARE}[bot]",
+            "--jq", ".type"] in runner.cmds()
+
+
+def test_17437_approve_app_login_nu_sonde_404_fail_closed(tmp_path):
+    """Fail-closed : la sonde rend 404 (pas d'App de ce slug — un compte
+    UTILISATEUR homonyme) — la forme nue ne passe PAS la porte."""
+    mr._APP_BARE_LOGIN_CACHE.clear()
+    view = default_view(reviews=[review_row(oid=HEAD, login=APP_LOGIN_BARE)])
+    # users/ non scriptee -> 404 par defaut du ScriptedRunner
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_17437_approve_app_login_nu_type_dans_payload_compte(tmp_path):
+    """Preuve de type dans le payload (GraphQL ``__typename``) : la
+    normalisation gh_identity suffit, sans sonde."""
+    mr._APP_BARE_LOGIN_CACHE.clear()
+    view = default_view(reviews=[{
+        "author": {"login": APP_LOGIN_BARE, "__typename": "Bot"},
+        "state": "APPROVED", "body": "",
+        "submittedAt": "2026-09-25T03:00:00Z",
+        "commit": {"oid": HEAD},
+    }])
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+    assert not any("users/" in f for f in runner.flat())
+
+
+def test_17437_approve_app_d_une_autre_lane_ne_compte_pas(tmp_path):
+    """L'App d'une lane worker n'est pas la voix du siege : meme suffixee,
+    elle ne compte pas."""
+    mr._APP_BARE_LOGIN_CACHE.clear()
+    view = default_view(
+        reviews=[review_row(oid=HEAD, login="coursia-lane-po-2026[bot]")]
+    )
+    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_17437_litteral_app_epingle_a_la_derivation():
+    """Le littéral ``COORDINATOR_APP_LOGIN`` et la derivation gh_identity ne
+    doivent pas diverger (meme convention que le gate adjoint #22567 : le
+    littéral vit sans import, un test epingle les deux ensemble)."""
+    assert mr.COORDINATOR_APP_LOGIN == (
+        mr.gh_identity.APP_LOGIN_PREFIX + "ai-01[bot]"
+    )
+    assert mr.COORDINATOR_VOICES == frozenset((
+        "myia-ai-01", mr.COORDINATOR_APP_LOGIN,
+    ))
 
 
 # --- #19002 : defense en profondeur sur la base -----------------------------

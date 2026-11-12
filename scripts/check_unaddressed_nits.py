@@ -110,7 +110,72 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
 
 REPO = "jsboige/CoursIA"
 
-BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
+# Les deux orthographes d'un meme bot : la lecture normalisee (voir
+# ``_author_login``) produit la forme suffixee ``[bot]`` des qu'elle dispose
+# du type de l'acteur (REST ``type`` / GraphQL ``__typename``) ; la forme nue
+# reste celle des payloads gh-json sans type. Les DEUX sont filtrees : sinon
+# la normalisation ferait passer un bot REST deja connu du filtre.
+BOT_LOGINS = {
+    "github-actions", "github-actions[bot]",
+    "codecov", "codecov[bot]",
+    "dependabot", "dependabot[bot]",
+    "copilot-pull-request-reviewer", "copilot-pull-request-reviewer[bot]",
+}
+
+
+# --- Identites App : extraction normalisee (#17437) ----------------------------
+#
+# ``gh pr view --json comments,reviews`` rend l'auteur SANS champ de type
+# (mesure 2026-11-12 : ``{"login": ...}`` seul) : pour une App, le login est
+# NU et la reconstruction du suffixe ``[bot]`` est impossible sans preuve de
+# type. La doctrine gh_identity interdit d'accepter la forme nue telle
+# quelle -- un compte UTILISATEUR nomme comme le slug d'une App passerait
+# les bornes d'auteur. La preuve se prend a la source : REST
+# ``users/<login>[bot]`` rend ``type: Bot`` pour une App et 404 pour un
+# compte utilisateur du meme nom (mesure 2026-11-12 sur
+# ``coursia-lane-ai-01[bot]`` : Bot ; forme nue : 404). Sonde bornee aux
+# logins prefixes ``coursia-lane-``, memoisee comme ``gh_json``, cachee par
+# session, fail-closed (echec ou silence : la forme nue est conservee, donc
+# refusee par toute borne d'auteur).
+_APP_BARE_LOGIN_CACHE: dict[str, str] = {}
+
+
+def _resolve_app_bare_login(login: str) -> str:
+    """Login App potentiellement NU, resolu en orthographe REST si App."""
+    if (not login
+            or not login.startswith(gh_identity.APP_LOGIN_PREFIX)
+            or login.endswith("[bot]")):
+        return login
+    if login in _APP_BARE_LOGIN_CACHE:
+        resolved = _APP_BARE_LOGIN_CACHE[login]
+        return resolved or login
+    resolved = ""
+    try:
+        obj = gh_json(["api", f"users/{login}[bot]"])
+        if isinstance(obj, dict) and obj.get("type") == "Bot":
+            resolved = login + "[bot]"
+    except Exception:
+        resolved = ""
+    _APP_BARE_LOGIN_CACHE[login] = resolved
+    return resolved or login
+
+
+def _author_login(row: object, key: str = "author") -> str:
+    """Login d'auteur d'une ligne, en orthographe REST (App suffixee).
+
+    #17437 : LE point de passage des extractions d'auteur du module — la
+    forme canonique unique, celle de ``gh_identity`` (source unique, jamais
+    recopiee), plus la resolution bornee des logins nus prefixes. Toute
+    comparaison d'auteur (LIFT_OVERRIDE_LOGINS, PERSONA_ALIAS_LOGINS,
+    BOT_LOGINS, bornes d'auteur #11145/#12836) se fait sur cette forme.
+    """
+    if not isinstance(row, dict):
+        return ""
+    author = row.get(key)
+    if not isinstance(author, dict):
+        return ""
+    return _resolve_app_bare_login(
+        gh_identity.normalize_author_login(author))
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
 # Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
@@ -173,7 +238,14 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
-LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# #17437 : l'identite GitHub App du coordinateur joint sa voix a la sienne.
+# Litteral en orthographe REST (suffixee), meme convention que
+# ``check_adjoint_prevalidation.COORDINATOR_APP_LOGIN`` (un test epingle les
+# deux ensemble) ; les formes nues ne sont JAMAIS acceptees directement --
+# ``_author_login`` ne reconstruit le suffixe qu'avec la preuve de type a la
+# source (sonde REST bornee). Un compte utilisateur nomme comme le slug de
+# l'App ne leve donc rien.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01", "coursia-lane-ai-01[bot]"}
 # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
 # reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
 # principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un
@@ -3994,7 +4066,7 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
                 continue  # condition 2
             if info.created_at is None or not info.created_at < cutoff:
                 continue  # condition 3
-            out.append((t, (c.get("author") or {}).get("login", ""), info))
+            out.append((t, _author_login(c), info))
             break
     return out
 
@@ -4559,7 +4631,7 @@ def can_lift(comment: dict) -> bool:
     donc encore un nit (faux negatif residuel). Auteur + protocole eliminent le
     gros du bruit sans pretendre lire le sens.
     """
-    login = (comment.get("author") or {}).get("login", "")
+    login = _author_login(comment)
     if login in BOT_LOGINS:
         return False
     body = (comment.get("body") or "").lstrip()
@@ -4895,7 +4967,7 @@ def review_threads(pr: int) -> list[dict]:
         pullRequest(number:$n){
           reviewThreads(first:100){nodes{
             isResolved isOutdated path line
-            comments(first:1){nodes{author{login} body createdAt}}
+            comments(first:1){nodes{author{login __typename} body createdAt}}
           }}
         }
       }
@@ -4923,7 +4995,7 @@ def review_threads(pr: int) -> list[dict]:
             "outdated": bool(t.get("isOutdated")),
             "path": t.get("path"),
             "line": t.get("line"),
-            "author": (c.get("author") or {}).get("login", "?"),
+            "author": _author_login(c) or "?",
             "body": c.get("body", ""),
             "createdAt": c.get("createdAt"),
         })
@@ -4959,14 +5031,14 @@ def improper_dismissals(pr: int) -> set[str]:
     if not isinstance(reviews, list) or not isinstance(events, list):
         return set()
     author_of = {
-        r.get("id"): ((r.get("user") or {}).get("login") or "")
+        r.get("id"): _author_login(r, "user")
         for r in reviews if isinstance(r, dict)
     }
     improper: set[str] = set()
     for e in events:
         if not isinstance(e, dict) or e.get("event") != "review_dismissed":
             continue
-        actor = ((e.get("actor") or {}).get("login") or "")
+        actor = _author_login(e, "actor")
         rid = (e.get("dismissed_review") or {}).get("review_id")
         emitter = author_of.get(rid)
         if not emitter:
@@ -5169,7 +5241,7 @@ def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
     """
     tagged = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         if login in BOT_LOGINS:
             continue
         body = (c.get("body") or "").strip()
@@ -5209,7 +5281,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
-    pr_author = (pr_data.get("author") or {}).get("login", "")
+    pr_author = _author_login(pr_data)
     pr_number = pr_data.get("number")
 
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
@@ -5229,11 +5301,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
     approved_rereviews = [
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+        (ts(r.get("submittedAt")), _author_login(r),
          r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
-        and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
+        and _author_login(r) not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
 
@@ -5573,7 +5645,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     # de la lane eteignait la reserve de son propre reviewer. B.0 : ce qui
     # leve une remarque est une PHRASE, pas un commentaire de protocole.
     explicit_lifts = [
-        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
+        (ts(c["createdAt"]), _author_login(c),
          c.get("body", ""))
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
@@ -5583,7 +5655,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
-        and classify((c.get("author") or {}).get("login", ""),
+        and classify(_author_login(c),
                      c.get("body", "")) is None
     ] + [
         # #13399 point 2 — symetrie de la levee : une PHRASE de levee portee
@@ -5592,14 +5664,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # la levee un seul. Une review APPROVED est deja traitee par
         # approved_rereviews (etat natif) ; une review COMMENTED qui ecrit
         # « je leve ma CHANGES_REQUESTED » est une levee comme un commentaire.
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+        (ts(r.get("submittedAt")), _author_login(r),
          r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "COMMENTED"
         and can_lift(r)
         and has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
         and not _lift_cancelled(_strip_quoted(r.get("body", "")))
-        and classify((r.get("author") or {}).get("login", ""),
+        and classify(_author_login(r),
                      r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
@@ -5724,12 +5796,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         kind = classify(login, c.get("body", ""))
         if kind:
             signals.append((ts(c["createdAt"]), kind, login, c.get("body", ""), "comment"))
     for r in pr_data.get("reviews") or []:
-        login = (r.get("author") or {}).get("login", "")
+        login = _author_login(r)
         body = r.get("body", "")
         state = r.get("state")
         if state == "DISMISSED":
@@ -6023,7 +6095,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     lift_keys = {(t_, a) for (t_, a, _b) in explicit_lifts if t_}
     unevaluated: list[dict] = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         if login in BOT_LOGINS:
             continue
         body = (c.get("body") or "").strip()

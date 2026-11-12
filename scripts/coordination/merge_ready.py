@@ -238,9 +238,25 @@ import lean_build_attestation  # noqa: E402
 # remplace n'a pas repris le pli de la chaine v9).
 import pr_gate  # noqa: E402
 import check_run_state  # noqa: E402
+# #17437 : normalisation de l'auteur d'une review (orthographe REST des
+# identites App) -- source unique de la forme canonique, jamais recopiee.
+import gh_identity  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
+# #17437 : identite GitHub App du coordinateur, la seconde porte encore
+# cablee sur le seul login humain (etat mesure par ai-01 le 2026-11-04 :
+# sous identite App, l'organe ne trouverait pas l'APPROVE). Litteral plutot
+# que derive de ``gh_identity.APP_LOGIN_PREFIX``, meme convention que le
+# gate adjoint (``check_adjoint_prevalidation.COORDINATOR_APP_LOGIN``) : le
+# module reste importable meme si gh_identity ne l'est pas, un test epingle
+# les deux ensemble.
+COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
+# La voix du coordinateur : le login humain ET l'App, en orthographe REST
+# (suffixee). Les formes nues sans preuve de type ne sont PAS acceptees
+# (doctrine gh_identity : un compte UTILISATEUR nomme comme le slug de
+# l'App ne doit pas passer la porte) -- cf ``_review_author_voice_login``.
+COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
@@ -872,8 +888,64 @@ def review_disposition(view: dict, head: str) -> str:
 # --- approbation du coordinateur (etape 2ter, Q67 option a) --------------------
 
 
-def coordinator_approval_oid(view: dict) -> str | None:
-    """Oid du commit que la DERNIERE voix de ``myia-ai-01`` approuve, ou None.
+# Cache des sondes REST de la session (login nu -> login suffixe, ou "" si la
+# sonde a ete faite et que ce n'est PAS une App). Borne aux logins prefixes
+# ``coursia-lane-`` : hors bascule App (#17437), il ne se remplit jamais.
+_APP_BARE_LOGIN_CACHE: dict[str, str] = {}
+
+
+def _resolve_app_bare_login(login: str, runner: Runner | None) -> str:
+    """Login App potentiellement NU, resolu en orthographe REST si App.
+
+    ``gh pr view --json reviews`` rend l'auteur SANS champ de type (mesure
+    2026-11-12 : ``{"login": ...}`` seul) : pour une App, la forme est nue
+    et ``gh_identity.normalize_author_login`` ne peut pas reconstruire le
+    suffixe sans preuve de type. La doctrine gh_identity interdit d'accepter
+    la forme nue telle quelle -- un compte UTILISATEUR nomme comme le slug
+    de l'App passerait la porte. La preuve se prend a la source : REST
+    ``users/<login>[bot]`` rend ``type: Bot`` pour une App installee et 404
+    pour un compte utilisateur du meme nom. Sonde bornee aux logins
+    prefixes, cachee par session, fail-closed (sonde absente -- ``runner``
+    ``None`` en lecture pure -- ou muette : la forme nue est renvoyee telle
+    quelle, donc REFUSEE par la comparaison a ``COORDINATOR_VOICES``).
+    """
+    if not login or not login.startswith(gh_identity.APP_LOGIN_PREFIX):
+        return login
+    if login.endswith("[bot]"):
+        return login
+    if login in _APP_BARE_LOGIN_CACHE:
+        resolved = _APP_BARE_LOGIN_CACHE[login]
+        return resolved or login
+    if runner is None:
+        return login
+    res = runner.run(["gh", "api", f"users/{login}[bot]", "--jq", ".type"])
+    resolved = ""
+    if res.returncode == 0 and (res.stdout or "").strip() == "Bot":
+        resolved = login + "[bot]"
+    _APP_BARE_LOGIN_CACHE[login] = resolved
+    return resolved or login
+
+
+def _review_author_voice_login(row: dict, runner: Runner | None = None) -> str:
+    """Login d'auteur d'une review, en orthographe REST (suffixe App reconstruit).
+
+    #17437 : le coordinateur signera sous son App (``coursia-lane-ai-01``).
+    La normalisation gh_identity traite les formes typees (REST, GraphQL
+    ``__typename``) ; la forme nue rendue par ``gh --json`` passe par la
+    sonde bornee ``_resolve_app_bare_login`` quand un runner est fourni.
+    """
+    author = row.get("author") or {}
+    if not isinstance(author, dict):
+        return ""
+    login = gh_identity.normalize_author_login(author)
+    return _resolve_app_bare_login(login, runner)
+
+
+def coordinator_approval_oid(view: dict, runner: Runner | None = None) -> str | None:
+    """Oid du commit que la DERNIERE voix du coordinateur approuve, ou None.
+
+    #17437 : la voix du coordinateur est le login humain OU son App
+    (``COORDINATOR_VOICES``), en orthographe REST apres normalisation.
 
     Latest-wins sur les seules voix du coordinateur, lues comme le canon (etat
     reel, puis verdict type en corps) : un ``CHANGES_REQUESTED`` ou un
@@ -886,7 +958,7 @@ def coordinator_approval_oid(view: dict) -> str | None:
         row
         for row in view.get("reviews") or []
         if isinstance(row, dict)
-        and ((row.get("author") or {}).get("login")) == COORDINATOR_USER
+        and _review_author_voice_login(row, runner) in COORDINATOR_VOICES
         and _review_voice_state(row)
     ]
     if not voices:
@@ -934,7 +1006,7 @@ def coordinator_approval_reason(
     commit de contenu. Toute autre difference perime la lecture ; une preuve
     illisible vaut refus.
     """
-    approved = coordinator_approval_oid(view)
+    approved = coordinator_approval_oid(view, runner)
     if approved is None:
         return "no-coordinator-approval"
     if approved == head:

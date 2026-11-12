@@ -1073,14 +1073,21 @@ def test_persona_alias_only_when_reserve_author_is_in_alias_set():
 
 
 def test_persona_alias_lift_override_logins_unchanged():
-    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste inchange.
+    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste borne au siege.
     L'alias de persona NE confere PAS un droit d'override coordinateur : un
     `[OVERRIDE] lane` sous jsboige ne leve pas (cf ligne de garde dans
     `_lift_eligible`). La composition des deux decisions #11145 (borne
     d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
-    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot."""
+    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot.
+
+    #17437 : la voix du siege compte DEUX logins -- l'humain ``myia-ai-01``
+    et son App ``coursia-lane-ai-01[bot]`` (orthographe REST seule, la forme
+    nue sans preuve de type ne passe pas la porte). Aucun autre login ne
+    s'ajoute : l'App d'une lane worker ne leve jamais."""
     assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
-    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+    assert mod.LIFT_OVERRIDE_LOGINS == {
+        "myia-ai-01", "coursia-lane-ai-01[bot]",
+    }
 
 
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
