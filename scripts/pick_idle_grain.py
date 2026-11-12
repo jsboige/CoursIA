@@ -10587,7 +10587,9 @@ DELIVERED_URN_PRIOR = 2.5
 AUDIT_17073_PRIOR = 2.0
 AUDIT_17073_MARKER = "[Audit #17073]"
 #: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
-#: neuf) est d'autant plus streme que le pool s'en eloigne.
+#: neuf) est d'autant plus streme que le pool s'en eloigne. Le veto dur
+#: (`creation_budget.VETO_ACTIF`) est leve depuis le 12/11 ; ce seuil reste
+#: le pivot de la ponderation douce, qui ne refuse jamais.
 EXPANSION_VETO_THRESHOLD = 400
 #: Plancher du poids d'expansion : un poids nul serait un REFUS, et le
 #: mandat du 12/10 l'interdit.
