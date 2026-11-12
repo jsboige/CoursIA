@@ -388,7 +388,10 @@ def fr_import_siblings(en_path: Path) -> list[str]:
         return []
     code = strip_comments(en_path.read_text(encoding="utf-8", errors="replace"))
     namespaces = [m.group(1) for m in _NAMESPACE_DECL.finditer(code)]
-    if not any(ns.endswith("_en") for ns in namespaces):
+    # Un namespace qualifie peut placer le suffixe sur un composant parent,
+    # comme `Knots_en.AnyMoves` dans le cas fondateur de #23906.
+    if not any(part.endswith("_en")
+               for ns in namespaces for part in ns.split(".")):
         return []
     if not _OWN_DECLARATION.search(code):
         return []

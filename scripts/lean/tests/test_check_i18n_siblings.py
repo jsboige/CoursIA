@@ -635,3 +635,25 @@ def _run_direct() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(_run_direct())
+
+
+@pytest.mark.parametrize("namespace,expected", [
+    ("Knots_en.AnyMoves", ["Knots.Basic"]),
+    ("Outer.Inner_en.More", ["Knots.Basic"]),
+    ("Knots_en", ["Knots.Basic"]),
+    ("Knots_enriched.AnyMoves", []),
+    ("Knots.AnyMoves", []),
+])
+def test_fr_import_advisory_reconnait_namespace_qualifie(tmp_path, namespace, expected):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    (knots / "Basic.lean").write_text("", encoding="utf-8")
+    (knots / "Basic_en.lean").write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        f"import Knots.Basic\nnamespace {namespace}\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(hybrid) == expected
