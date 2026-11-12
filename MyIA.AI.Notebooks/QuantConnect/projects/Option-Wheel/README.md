@@ -63,23 +63,9 @@ lean backtest --project .
 > backtest sera disponible (cluster saturé au 2026-10-08 : `create_backtest`
 > rejeté « no spare nodes »).
 >
-> **Lecture honnête** : le wheel est une stratégie *très populaire* dans la littérature
-> de « revenu passif par les options », souvent présentée comme quasi-garantie. Les
-> chiffres montrent le contraire. Un CAGR de 12,8 % sur 2015-2026 est **comparable au
-> buy & hold de SPY** sur la même période (≈ 13-14 %), mais avec un **Sharpe de 0,529
-> nettement inférieur** à celui du benchmark (~0,7-0,8) et un **PSR de 10,6 %**
-> catastrophique — l'edge statistique est nul, très loin du seuil de confiance de
-> 50 % (et a fortiori 95 %). Le Max Drawdown de 26,4 % est par
-> ailleurs substantiel.
+> **Lecture honnête** : le run QC Cloud vérifié (2015–2024, provenance ci-dessus) rapporte un CAGR de 13.088 %, un Sharpe de 0.575, un PSR de 4.230 % et un drawdown maximal de 26.500 %. Ces valeurs décrivent ce run précis. Le README ne cite pas de métrique SPY issue de ce run ; l'estimation approximative de la version précédente ne permet donc pas de conclure à une absence ou à une présence d'alpha.
 >
-> En d'autres termes : la vente de primes d'options n'extrait **pas d'alpha** ici ;
-> elle réplique approximativement l'exposition long-SPY en ajoutant de la complexité,
-> des frais de transaction et un risque d'assignation. **C'est un contre-exemple
-> pédagogique** à l'encontre du narratif « wheel = revenu garanti ». La valeur
-> pédagogique est dans la démonstration (via filtre VIX, gestion cash-secured,
-> cycle put→call) du *mécanisme* du wheel, pas dans un quelconque alpha. Comparer
-> avec EMA-Cross-Stocks (même univers US, Sharpe 0.991 mais beta Mag7) et
-> EMA-Cross-Alpha (contre-exemple framework Alpha Model, Sharpe -0,01).
+> La valeur pédagogique reste l'étude du cycle put cash-secured → assignation → call couvert → cession, et du filtre VIX. Les métriques du run permettent aussi d'observer le rendement et le drawdown de cette configuration, sans les réduire aux primes encaissées.
 
 ## Fichiers
 
