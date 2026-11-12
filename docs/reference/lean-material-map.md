@@ -41,7 +41,7 @@ Cette page est regeneree par `scripts/lean/lean_material_map.py`. Une table reco
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | 5 | 4 | declare | couverte | 1 hors site (2 carnets) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/kls_lean` | 4 | 0 | hors CI | hors matrice | non consomme | - | 2026-10-08 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean` | 4 | 0 | declare | couverte | non consomme | - | 2026-10-18 |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 4 | 2 | declare | sans gate | non consomme | - | 2026-01-29 |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | 4 | 2 | declare | couverte | non consomme | - | 2026-01-29 |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean` | 4 | 3 | declare | couverte | ok (1) | - | 2026-06-24 |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | 3 | 1 | declare | couverte | ok (4) | - | 2026-10-24 |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean` | 3 | 2 | hors CI | hors matrice | non consomme | - | 2026-10-07 |
@@ -73,7 +73,6 @@ Ces lacs existent dans l'arbre et aucun workflow ne les nomme : ni `scripts/lean
 
 Declares au CI, donc construits, mais le job `lean-axiom` ne les atteint pas : rien ne rougit si un axiome interdit y entre.
 
-- `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` — 4 modules
 - `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` — 2 modules
 
 ### Fichiers `.lean` hors lac
