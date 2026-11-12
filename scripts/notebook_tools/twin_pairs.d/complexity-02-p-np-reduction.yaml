@@ -5,10 +5,10 @@
   parity_level: semantic
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
-    Solver-free by design: the source notebook teaches decision certificates, exhaustive search,
-    dynamic programming, and a reduction by implementing each algorithm directly. The C# twin
-    uses the corresponding .NET BCL primitives and preserves the pedagogical algorithms; no
-    source dependency or reference solver is omitted.
+    Le source enseigne les certificats de décision, la recherche exhaustive,
+    la programmation dynamique et une réduction en implémentant directement
+    ces algorithmes. Le jumeau C# emploie les primitives correspondantes de la
+    BCL .NET ; aucun moteur ni solveur de référence du source n’est omis.
   known_differences:
-    - "Seeded sequences differ between NumPy and System.Random; the C# notebook preserves each seed, fixture size, full iteration count, and comparison guard, so random counts can differ while remaining reproducible within each runtime."
-    - "Wall-clock extrapolations use the measured .NET throughput and BigInteger operation counts on the executing machine; they are illustrative projections, not measurements at larger n."
+    - "NumPy et System.Random ont des suites différentes : le C# conserve graines, tailles, budgets complets et contrôles comparatifs ; les nombres aléatoires observés peuvent différer."
+    - "Les extrapolations utilisent le débit .NET réellement mesuré et des nombres d’opérations BigInteger ; ce sont des projections, pas des mesures aux grandes tailles."
