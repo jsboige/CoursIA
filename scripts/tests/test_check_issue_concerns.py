@@ -527,6 +527,42 @@ class AnalyseTests(unittest.TestCase):
 class LaneSignatureTests(unittest.TestCase):
     """Classe 2 : les signatures mesurees qui ecartent un post de lane."""
 
+    def test_hors_flotte_closure_preflight_needs_manual_review(self):
+        body = (
+            "Hors flotte — clôture sur preuve, périmètre P1 de #25670.\n\n"
+            "[CLOSURE PREFLIGHT]\nschema: 1\nlane: astra:CoursIA\n"
+            "issue: 23793\nverdict: CLOSE\n"
+        )
+        report = mod.analyse_comments(
+            23793, [c(1, "2026-11-10T19:15:33Z", body)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_human_copying_header_keeps_the_remark(self):
+        body = (
+            "Hors flotte — clôture sur preuve.\n\n"
+            "[CLOSURE PREFLIGHT]\nschema: 1\nlane: astra:CoursIA\n"
+            "Je cite le dossier : il faut rouvrir car le test échoue."
+        )
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-10T19:15:33Z", body)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_closure_preflight_mention_is_not_a_lane_signature(self):
+        text = "Pourquoi ce dossier [CLOSURE PREFLIGHT] est-il clos ?"
+        self.assertEqual(mod.lane_signature(text), "")
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-10T19:15:33Z", text)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+
     def test_lane_near_seat(self):
         self.assertEqual(
             mod.lane_signature("[CLAIMED] lane myia-po-2024:CoursIA-2 — reprise du pli"),
