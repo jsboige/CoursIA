@@ -44,6 +44,12 @@ Le balayage CI consomme ~3 appels API par issue ; le budget du jeton est de
 1000 appels/heure. La fenetre est donc bornee (`--limit`, `--offset`) comme
 celle du balayage lui-meme, et l'outil **dit** s'il a atteint la limite
 (`WARN page pleine`) plutot que de rendre une liste partielle silencieuse.
+
+Une erreur de collecte ne supprime pas les résultats des autres issues : le
+tableau la compte et en donne le motif. Le JSON conserve toutes les lignes et
+ajoute ``complete`` et ``errors`` (nombre d'issues non classées). Le CLI rend
+0 pour une collecte complète, 1 si des issues n'ont pas pu être classées,
+après avoir écrit le JSON demandé. Ce statut ne juge pas les livraisons.
 """
 
 from __future__ import annotations
@@ -70,6 +76,7 @@ CLASSES = (
     "tranche",
     "sans_preuve",
     "autre",
+    "erreur",
 )
 
 
@@ -155,7 +162,9 @@ def census(repo: str, limit: int = 0, offset: int = 0,
         })
         if sleep:
             time.sleep(sleep)
-    return {"repo": repo, "issues": len(issues), "rows": rows}
+    errors = sum(row["classe"] == "erreur" for row in rows)
+    return {"repo": repo, "issues": len(issues), "rows": rows,
+            "complete": errors == 0, "errors": errors}
 
 
 def table(census_out: dict) -> str:
@@ -166,6 +175,15 @@ def table(census_out: dict) -> str:
     lines = [f"census {census_out['repo']} -- {census_out['issues']} issues parcourues"]
     for name in CLASSES:
         lines.append(f"  {name:<26} {counts.get(name, 0)}")
+    errors = [row for row in census_out["rows"] if row["classe"] == "erreur"]
+    if errors:
+        lines.append(f"  INCOMPLET : {len(errors)} issue(s) non classée(s) ; "
+                     "les autres résultats sont conservés.")
+        for row in errors[:40]:
+            lines.append(f"    #{row['number']} : {row['detail']}")
+        if len(errors) > 40:
+            lines.append(f"    {len(errors) - 40} autre(s) erreur(s) ; "
+                         "utiliser --json pour le détail complet.")
     losses = [r for r in census_out["rows"] if r.get("perdrait_le_label")]
     lines.append(f"  issues qui PERDRAIENT le label sous le predicat resserre : "
                  f"{len(losses)}")
@@ -199,7 +217,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         with open(args.json_path, "w", encoding="utf-8") as fh:
             json.dump(out, fh, ensure_ascii=False, indent=2)
         print(f"census ecrit : {args.json_path}")
-    return 0
+    return 0 if out["complete"] else 1
 
 
 if __name__ == "__main__":

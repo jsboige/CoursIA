@@ -111,3 +111,61 @@ def test_table_rend_les_effectifs_et_les_deux_listes():
 def test_les_classes_declarees_sont_celles_du_rendu():
     for name in CLASSES:
         assert name in table({"repo": "r", "issues": 0, "rows": []})
+
+
+def test_collecte_partielle_signale_echec_et_conserve_succes(monkeypatch, capsys, tmp_path):
+    """Un quota épuisé n'est ni une preuve absente ni un census complet."""
+    import json
+    from audit import measure_delivery_classes as measure
+
+    monkeypatch.setattr(measure.cd, "list_open_issues", lambda repo: [
+        {"number": 1, "title": "inaccessible", "labels": []},
+        {"number": 2, "title": "lisible", "labels": []},
+    ])
+
+    def timeline(repo, number, label):
+        if number == 1:
+            raise RuntimeError("quota GitHub épuisé")
+        return [], []
+
+    monkeypatch.setattr(measure.cd, "timeline_facts", timeline)
+    monkeypatch.setattr(measure.cd, "issue_detail", lambda repo, number: {
+        "created_at": "2026-01-01T00:00:00Z", "body": "", "comments": [],
+    })
+    destination = tmp_path / "census.json"
+    rc = measure.main(["--repo", "fixture/repo", "--sleep", "0",
+                       "--json", str(destination)])
+    out = json.loads(destination.read_text(encoding="utf-8"))
+    rendered = capsys.readouterr().out
+
+    assert rc == 1
+    assert out["complete"] is False
+    assert out["errors"] == 1
+    assert out["issues"] == 2
+    assert out["rows"][0]["classe"] == "erreur"
+    assert out["rows"][1]["classe"] == "sans_preuve"
+    assert "INCOMPLET" in rendered
+    assert "#1" in rendered and "quota GitHub épuisé" in rendered
+    assert "sans_preuve" in rendered
+
+
+def test_collecte_complete_garde_rc_zero_et_json_lisible(monkeypatch, capsys, tmp_path):
+    import json
+    from audit import measure_delivery_classes as measure
+
+    monkeypatch.setattr(measure.cd, "list_open_issues", lambda repo: [
+        {"number": 2, "title": "lisible", "labels": []},
+    ])
+    monkeypatch.setattr(measure.cd, "timeline_facts", lambda *args: ([], []))
+    monkeypatch.setattr(measure.cd, "issue_detail", lambda *args: {
+        "created_at": "2026-01-01T00:00:00Z", "body": "", "comments": [],
+    })
+    destination = tmp_path / "census.json"
+    assert measure.main(["--repo", "fixture/repo", "--sleep", "0",
+                         "--json", str(destination)]) == 0
+    out = json.loads(destination.read_text(encoding="utf-8"))
+    assert out["complete"] is True
+    assert out["errors"] == 0
+    assert out["issues"] == 1
+    assert out["rows"][0]["classe"] == "sans_preuve"
+    assert "INCOMPLET" not in capsys.readouterr().out
