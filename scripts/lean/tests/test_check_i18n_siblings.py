@@ -657,3 +657,56 @@ def test_fr_import_advisory_reconnait_namespace_qualifie(tmp_path, namespace, ex
         encoding="utf-8",
     )
     assert fr_import_siblings(hybrid) == expected
+
+
+@pytest.mark.parametrize("literal", [
+    '"un texte\nnamespace Knots_en.AnyMoves\nfin"',
+    'r#"un texte avec "guillemets" et /- commentaire fictif\nnamespace Knots_en.AnyMoves\nfin"#',
+    'r##"un texte avec "# et -- faux commentaire\nnamespace Knots_en.AnyMoves\nfin"##',
+])
+def test_fr_import_ignore_namespace_dans_chaine(tmp_path, literal):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        f'import Knots.Basic\ndef message := {literal}\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == []
+
+
+def test_fr_import_reste_visible_apres_chaine_raw_et_commentaires(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        'import Knots.Basic -- import reel\n'
+        'def message := r#"guillemet " puis /- jamais ouvert"#\n'
+        '/- namespace Faux_en.Foo /- nested -/ -/\n'
+        'namespace Knots_en.AnyMoves\ndef own := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+@pytest.mark.parametrize("content", [
+    'def text := r#"\nimport Knots.Basic\n"#\nnamespace Knots_en.AnyMoves\n',
+    'import Knots.Basic\nnamespace Knots_en.AnyMoves\n#eval r#"\ndef fictif := 1\n"#\n',
+    'import Knots.Basic\n/- namespace Knots_en.AnyMoves /- def faux := 1 -/ -/\n',
+])
+def test_fr_import_ignore_code_fictif_dans_chaines_et_commentaires(tmp_path, content):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(content, encoding="utf-8")
+    assert fr_import_siblings(hybrid) == []

@@ -320,6 +320,70 @@ def strip_comments(src: str) -> str:
     return "".join(out)
 
 
+
+def _advisory_code(src: str) -> str:
+    """Masque commentaires et chaines Lean, en conservant les sauts de ligne.
+
+    Flux reserve au diagnostic d'imports : les chaines doivent rester
+    intactes dans la comparaison semantique de ``normalize_body``.
+    """
+    out = list(src)
+    n = len(src)
+
+    def mask(start: int, end: int) -> None:
+        for pos in range(start, end):
+            if src[pos] != "\n":
+                out[pos] = " "
+
+    i = 0
+    while i < n:
+        if src.startswith("--", i):
+            end = src.find("\n", i)
+            end = n if end == -1 else end
+            mask(i, end)
+            i = end
+        elif src.startswith("/-", i):
+            start = i
+            i += 2
+            depth = 1
+            while i < n and depth:
+                if src.startswith("/-", i):
+                    depth += 1
+                    i += 2
+                elif src.startswith("-/", i):
+                    depth -= 1
+                    i += 2
+                else:
+                    i += 1
+            mask(start, i)
+        else:
+            raw = None
+            if src[i] == "r" and (i == 0 or not (src[i - 1].isalnum()
+                                                   or src[i - 1] in "_'»")):
+                raw = re.compile(r'r(#+)"').match(src, i)
+            if raw:
+                start = i
+                closing = '"' + raw.group(1)
+                end = src.find(closing, raw.end())
+                i = n if end == -1 else end + len(closing)
+                mask(start, i)
+            elif src[i] == '"':
+                start = i
+                i += 1
+                while i < n:
+                    if src[i] == "\\" and i + 1 < n:
+                        i += 2
+                    elif src[i] == '"':
+                        i += 1
+                        break
+                    else:
+                        i += 1
+                mask(start, i)
+            else:
+                i += 1
+    return "".join(out)
+
+
 def normalize_body(src: str) -> str:
     """Reduce a ``.lean`` source to its comparable code body: strip comments /
     docstrings, drop ``import`` / ``open`` / ``namespace`` / ``end`` lines and
@@ -386,7 +450,7 @@ def fr_import_siblings(en_path: Path) -> list[str]:
     """
     if not en_path.name.endswith("_en.lean"):
         return []
-    code = strip_comments(en_path.read_text(encoding="utf-8", errors="replace"))
+    code = _advisory_code(en_path.read_text(encoding="utf-8", errors="replace"))
     namespaces = [m.group(1) for m in _NAMESPACE_DECL.finditer(code)]
     # Un namespace qualifie peut placer le suffixe sur un composant parent,
     # comme `Knots_en.AnyMoves` dans le cas fondateur de #23906.
