@@ -71,6 +71,22 @@ pip install scikit-learn
 # (scripts/genai-stack/requirements.txt). Lets us re-include the
 # genai test suites that were excluded as missing-dep (#2871 part 2).
 pip install papermill nbformat
+# huggingface_hub: declare par le requirements du genai-stack
+# (scripts/genai-stack/requirements.txt, `huggingface_hub>=0.20.0`) mais
+# absent de l'environnement du runner. Le test
+# scripts/genai-stack/tests/test_genai_stack_round4.py
+# ::TestDownloadQwenDockerScratch::test_scratch_is_anchored_on_repo_root
+# echoue la dessus sur TOUTE PR : son
+# `patch("huggingface_hub.hf_hub_download")` est une cible CHAINEE, donc
+# `mock.patch` resout `huggingface_hub` par import -- l'absence du
+# paquet suffit a lever ModuleNotFoundError, avant meme le corps du
+# test. commands/models.py n'importe le module qu'a l'interieur de ses
+# fonctions (lignes 166/204/285/333) : la cible du patch doit
+# pouvoir resoudre le paquet, l'import tardif du code ne la dispense
+# pas. Meme motif que `python-sat` / `opentelemetry` plus bas : une
+# dependance declaree et non installee est une panne en attente.
+# Regle F : l'environnement se repare, il ne se contourne pas par un skip.
+pip install "huggingface_hub>=0.20.0"
 # Version RESOLUE de pyarrow (#21764) : l'acceptance demande que le
 # log affiche la version installee, pas seulement la contrainte.
 # Un plancher non affiche est un plancher non prouve.
@@ -95,7 +111,7 @@ pip install torch --index-url https://download.pytorch.org/whl/cpu
 # (#2872), so without arch here those 9 tests are missing-dep failures.
 # Pulls statsmodels/patsy — still CPU-light.
 pip install arch
-# rapidfuzz + unidecode + openpyxl: GradeBookApp/gradebook.py imports
+# rapidfuzz + unidecode + openpyxl: dotnet/GradeBookApp/gradebook.py imports
 # all three at module top level, so test_fuzzy_match_group.py needs
 # them at collection time (famille 5 de #14615). The test guards with
 # importorskip, but wiring it into this run means running it for real.

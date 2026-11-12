@@ -193,6 +193,26 @@ def test_densify_exact(synthetic_npz):
     assert np.all(dense[:, 2] == 0.0)                    # hors top-k => 0 exact
 
 
+def test_densify_empty_panel_preserves_token_axis(synthetic_npz):
+    tr = st.load_traces(synthetic_npz)
+    empty = st.differential_features(tr, k=0)
+    assert empty.size == 0
+    panels = st.acts_topk_panels(tr, empty)
+    assert set(panels) == set(tr["prompts"])
+    for panel in panels.values():
+        assert panel.shape == (T, 0)
+        assert panel.dtype == np.float32
+
+
+def test_densify_empty_panel_after_nonfinite_features():
+    entry = {"ids": np.array([[0, 1]]), "vals": np.array([[np.nan, np.nan]])}
+    traces = {"meta": {"d_sae": 2}, "prompts": {("a", 0): entry, ("b", 0): entry}}
+    with pytest.warns(RuntimeWarning, match="non fini"):
+        features = st.differential_features(traces, k=2)
+    assert features.size == 0
+    assert all(x.shape == (1, 0) for x in st.acts_topk_panels(traces, features).values())
+
+
 def test_acts_topk_panels_shapes(synthetic_npz):
     tr = st.load_traces(synthetic_npz)
     feats = st.differential_features(tr, k=4)

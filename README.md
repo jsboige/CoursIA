@@ -395,7 +395,7 @@ Et après le notebook ? Le répertoire `cross-series/` rassemble ce qui ne tient
 
 **[`matching-cv`](MyIA.AI.Notebooks/cross-series/matching-cv/README.md) -- un problème, trois lectures** -- Une application web Flask qui confronte trois façons d'apparier un CV à une offre d'emploi : le comptage de mots-clés comme référence transparente, la similarité sémantique par plongements avec cache vectoriel (issue de **GenAI**), et l'appariement stable de Gale-Shapley (rencontré en **GameTheory** et prouvé en Lean dans `game_theory_lean`). La leçon n'est pas qu'un algorithme gagne : c'est que **le « meilleur » appariement dépend du critère**, le meilleur score individuel n'étant pas l'affectation globalement stable -- la différence, rendue visible sur les mêmes données, entre optimum local et stabilité collective. La même démarche que le banc d'essai du **Sudoku**, transposée à une application déployable avec ses tests et son interface.
 
-**[`socle-metadata-driven`](MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) -- ce que toutes les familles .NET partagent** -- Là où `matching-cv` *combine* des séries, ce notebook C# expose ce qu'elles ont en *commun* : la bibliothèque [`MyIA.AI.Shared`](MyIA.AI.Shared/), qui factorise trois besoins qu'autrement chaque série réécrirait -- découverte de types par décoration (des attributs suffisent, aucun enregistrement explicite), sérialisation JSON/XML aller-retour d'un graphe d'entités, et surtout la règle métier *low-code* : un prédicat qui arrive sous forme de chaîne -- d'un fichier, d'un CSV, d'un utilisateur non-développeur -- compilé une fois puis appliqué à N instances. C'est la différence entre coder N branches conditionnelles et piloter la logique par les données.
+**[`socle-metadata-driven`](MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) -- ce que toutes les familles .NET partagent** -- Là où `matching-cv` *combine* des séries, ce notebook C# expose ce qu'elles ont en *commun* : la bibliothèque [`MyIA.AI.Shared`](dotnet/MyIA.AI.Shared/), qui factorise trois besoins qu'autrement chaque série réécrirait -- découverte de types par décoration (des attributs suffisent, aucun enregistrement explicite), sérialisation JSON/XML aller-retour d'un graphe d'entités, et surtout la règle métier *low-code* : un prédicat qui arrive sous forme de chaîne -- d'un fichier, d'un CSV, d'un utilisateur non-développeur -- compilé une fois puis appliqué à N instances. C'est la différence entre coder N branches conditionnelles et piloter la logique par les données.
 
 **`i18n` -- traduire une collection sans la casser** -- Un pilote du mécanisme de traduction appliqué à la documentation : un README découpé en segments repérés par clé stable, colonne source française remplie, colonne cible vide, et le rendu qui reconstruit le document à l'identique. C'est le pendant markdown du corpus `translations/` ; l'un et l'autre attendent le même feu vert éditorial avant de lancer les huit langues. Le mécanisme, lui, est déjà là et vérifiable -- ce qui manque est une décision, pas une technique.
 
@@ -442,11 +442,12 @@ CoursIA/
   translations/                Corpus de traduction des notebooks (inventaire et statut dans son README)
   slides/                      Présentations pédagogiques
   docker-configurations/       Infrastructure Docker GPU
-  GradeBookApp/                Notation étudiants (pipelines et données privés sur GDrive)
-  GradeBookApp.Tests/          Tests du moteur de notation
-  MyIA.AI.Shared/              Bibliothèque C# partagée
-  MyIA.AI.Shared.Tests/        Tests de la bibliothèque partagée
-  MyIA.Trading.Converter/      Conversion de formats de données de trading
+  dotnet/                      Projets .NET (moteur de notation, bibliothèque partagée, trading)
+    GradeBookApp/              Notation étudiants (pipelines et données privés sur GDrive)
+    GradeBookApp.Tests/        Tests du moteur de notation
+    MyIA.AI.Shared/            Bibliothèque C# partagée
+    MyIA.AI.Shared.Tests/      Tests de la bibliothèque partagée
+    MyIA.Trading.Converter/    Conversion de formats de données de trading
   THIRD_PARTY_NOTICES.md       Attributions des sources et composants tiers
 ```
 
@@ -457,7 +458,7 @@ CoursIA/
 ### Prérequis
 
 - Python 3.10+ avec pip
-- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
+- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore dotnet/MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
 - VS Code avec extensions Python, Jupyter, .NET Interactive
 - WSL sous Windows uniquement (pour Lean et certains outils SymbolicAI) ; sous Linux ou macOS, voir [setup-linux-macos.md](docs/reference/setup-linux-macos.md)
 - Docker + GPU (optionnel, pour GenAI avancé)
@@ -482,7 +483,7 @@ python -m ipykernel install --user --name=coursia --display-name "Python (CoursI
 # (cf docs/reference/kernels-runtime.md) ; ce build tourne sur .NET 10.
 dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 
 # 5. Dépendances de la série visée (chaque série porte son requirements.txt)
 pip install -r MyIA.AI.Notebooks/<Serie>/requirements.txt
@@ -695,7 +696,7 @@ ni données personnelles issues des processus privés d'enseignement ou de notat
 (listes de classe, adresses e-mail, identifiants scolaires).
 
 Les pipelines et données de notation vivent sur un stockage privé hors dépôt ; seul le
-[moteur de notation générique](GradeBookApp/) est public, vide de données. Détails et
+[moteur de notation générique](dotnet/GradeBookApp/) est public, vide de données. Détails et
 posture PII : [PRIVACY.md](PRIVACY.md).
 
 ---

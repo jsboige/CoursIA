@@ -635,7 +635,7 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     """Le transport historique ne doit PAS etre appele quand l'instantane
     sert l'issue."""
     instantane = {
-        "comments": {"7": [{"body": "[FROZEN] lane a:b",
+        "comments": {"7": [{"body": "[DELIVERED] lane a:b -- PR #1",
                             "createdAt": "2026-10-27T10:00:00Z",
                             "author": {"login": "a"}, "url": "u1"}]},
         "meta": {"comment_stamps": {"7": time.time()}},
@@ -650,6 +650,11 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     verdict = pig.delivery_event(7)
     assert verdict[0] is True
     assert verdict[2] == "2026-10-27T10:00:00Z"
+
+    # Le gel est un veto distinct, et non une livraison ; son horodatage
+    # reste disponible sans appel reseau pour la sonde d'evenement.
+    instantane["comments"]["7"][0]["body"] = "[FROZEN] lane a:b"
+    assert pig.delivery_event(7) == (False, False, "2026-10-27T10:00:00Z")
 
 
 def test_m_le_batch_sert_le_payload_depuis_l_instantane(monkeypatch):
