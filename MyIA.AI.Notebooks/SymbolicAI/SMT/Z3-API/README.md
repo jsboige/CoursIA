@@ -19,7 +19,7 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 
 Ce README suit la [signalétique de lecture du dépôt](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) : un parcours principal pour comprendre, des paliers d'approfondissement pour aller plus loin.
 
-- **Numéros nus au parcours, lettres en approfondissement** : les notebooks `01` à `20` forment le parcours principal ; les suffixes en lettres (`01b`, `13b`, `16b` à `16e`) sont des compagnons regroupés sous « [Approfondissements](#approfondissements-découverte) », jamais des étapes obligatoires du parcours.
+- **Numéros nus au parcours, lettres en approfondissement** : les carnets numérotés sans lettre (`01` à `06` puis `08` à `20` — la série ne comporte pas de `07`) forment le parcours principal ; les suffixes en lettres (`01b`, `13b`, `16b` à `16e`) sont des compagnons regroupés sous « [Approfondissements](#approfondissements-découverte) », jamais des étapes obligatoires du parcours.
 - **« jumeau [C#] »** : le même notebook rejoué en .NET via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage. Les twins portent le numéro du notebook Python suivi de l'exposant `ᶜˢ`.
 - **Statuts** : tout notebook du parcours est PRODUCTION, sauf mention inline « **(BETA)** » ; les compagnons d'approfondissement sont signalés dans leur palier.
 
