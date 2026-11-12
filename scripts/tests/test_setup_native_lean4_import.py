@@ -216,3 +216,132 @@ def test_status_clean_table_passes(monkeypatch):
     monkeypatch.setattr(setup, "REPL_TOOLCHAIN_TAGS", {"v4.32.1": "repl-4.32.1"})
     assert setup.cmd_status() == 0
 
+
+
+# --- #24913 : les sous-commandes tournent aussi hors Windows ---------------
+
+import os  # noqa: E402
+
+import pytest  # noqa: E402
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chemin natif : hotes Linux et macOS")
+def test_wsl_runs_a_native_bash_outside_windows():
+    """`build-repl`, `status` et `install` passaient tous par wsl.exe, absent
+    sous Linux : la meme commande passe par un bash natif."""
+    r = setup._wsl("echo native-$((20 + 22))", timeout=30)
+    assert r.returncode == 0
+    assert r.stdout.strip() == "native-42"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chemin natif : hotes Linux et macOS")
+def test_shell_path_is_unchanged_outside_windows():
+    """Le chemin d'un fichier temporaire de l'hote n'est pas reecrit en /mnt/."""
+    assert setup._shell_path("/tmp/x/_patcher.py") == "/tmp/x/_patcher.py"
+
+
+def test_shell_path_maps_a_windows_drive_under_wsl(monkeypatch):
+    monkeypatch.setattr(setup.os, "name", "nt")
+    assert setup._shell_path(r"C:\Users\u\AppData\Local\Temp\p.py") == \
+        "/mnt/c/Users/u/AppData/Local/Temp/p.py"
+
+
+def test_installer_pins_the_fork_tag_of_the_setup_script():
+    """`setup_wsl_lean4.sh` installe le fork que nomment FORK_URL / FORK_TAG
+    (sa source de verite declaree), et le remplace s'il est deja installe."""
+    installer = (Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks"
+                 / "GameTheory" / "scripts" / "setup_wsl_lean4.sh").read_text(encoding="utf-8")
+    url = setup.FORK_URL.replace("git+", "", 1)
+    assert f'LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+{url}@{setup.FORK_TAG}"' in installer
+    assert 'pip install --force-reinstall --no-deps "$LEAN4_JUPYTER_SPEC"' in installer
+
+
+# --- Review de #25360 : `install` ne declare plus un echec comme reussi ----
+
+
+class _Run:
+    def __init__(self, stdout="", returncode=0, stderr=""):
+        self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = stderr
+
+
+def _fake_install_wsl(pip_rc=0, state="PATCHED", compiled="OK"):
+    """`_wsl` factice d'une installation : pip, etat du repl.py, py_compile."""
+    calls = []
+
+    def fake(cmd, *a, **kw):
+        calls.append(cmd)
+        if "pip install" in cmd:
+            return _Run("Successfully installed lean4_jupyter", returncode=pip_rc,
+                        stderr="" if pip_rc == 0 else "ERROR: tag not found")
+        if "grep -q" in cmd:
+            return _Run(state)
+        if "py_compile" in cmd:
+            return _Run(compiled)
+        return _Run("")
+
+    return fake, calls
+
+
+def test_install_fails_when_pip_fails(monkeypatch):
+    """Un pip en echec laisse l'ancienne fourche, qui porte PATCH_MARKER :
+    l'installation doit rendre 1 sans aller lire repl.py."""
+    fake, calls = _fake_install_wsl(pip_rc=1)
+    monkeypatch.setattr(setup, "_wsl", fake)
+    monkeypatch.setattr(setup, "_find_repl_py", lambda: "/root/.lean4-venv/repl.py")
+    monkeypatch.setattr(setup, "_venv_python", lambda: "/root/.lean4-venv/bin/python3")
+    assert setup.cmd_install() == 1
+    assert not any("grep -q" in c for c in calls)
+
+
+def test_install_refuses_a_fork_without_the_paired_launch(monkeypatch, capsys):
+    """La fourche anterieure porte `_find_lake_root` mais pas le lancement
+    apparie : etat STALE, code 1, et le message nomme FORK_TAG."""
+    fake, _ = _fake_install_wsl(state="STALE")
+    monkeypatch.setattr(setup, "_wsl", fake)
+    monkeypatch.setattr(setup, "_find_repl_py", lambda: "/root/.lean4-venv/repl.py")
+    monkeypatch.setattr(setup, "_venv_python", lambda: "/root/.lean4-venv/bin/python3")
+    assert setup.cmd_install() == 1
+    assert setup.FORK_TAG in capsys.readouterr().err
+
+
+def test_install_accepts_the_paired_fork(monkeypatch):
+    """Controle oppose : pip vert, repl.py PATCHED, py_compile OK -> 0."""
+    fake, _ = _fake_install_wsl()
+    monkeypatch.setattr(setup, "_wsl", fake)
+    monkeypatch.setattr(setup, "_find_repl_py", lambda: "/root/.lean4-venv/repl.py")
+    monkeypatch.setattr(setup, "_venv_python", lambda: "/root/.lean4-venv/bin/python3")
+    assert setup.cmd_install() == 0
+
+
+def test_install_fails_when_repl_py_does_not_compile(monkeypatch):
+    fake, _ = _fake_install_wsl(compiled="SyntaxError: invalid syntax")
+    monkeypatch.setattr(setup, "_wsl", fake)
+    monkeypatch.setattr(setup, "_find_repl_py", lambda: "/root/.lean4-venv/repl.py")
+    monkeypatch.setattr(setup, "_venv_python", lambda: "/root/.lean4-venv/bin/python3")
+    assert setup.cmd_install() == 1
+
+
+@pytest.mark.skipif(os.name == "nt", reason="chemin natif : hotes Linux et macOS")
+def test_patch_state_reads_the_markers_of_a_real_file(tmp_path):
+    """La commande shell de `_patch_state`, rejouee par un bash natif sur trois
+    repl.py : amont, fourche anterieure, fourche a FORK_TAG."""
+    upstream = tmp_path / "upstream.py"
+    upstream.write_text("def launch(cls): pass\n", encoding="utf-8")
+    stale = tmp_path / "stale.py"
+    stale.write_text("def _find_lake_root(start): pass\n", encoding="utf-8")
+    paired = tmp_path / "paired.py"
+    paired.write_text("def _find_lake_root(start): pass\n"
+                      + "".join(f"# {m}\n" for m in setup.PAIRED_LAUNCH_MARKERS),
+                      encoding="utf-8")
+    assert setup._patch_state(str(upstream)) == "UNPATCHED"
+    assert setup._patch_state(str(stale)) == "STALE"
+    assert setup._patch_state(str(paired)) == "PATCHED"
+
+
+def test_template_carries_the_paired_launch_markers():
+    """Le gabarit (donc la fourche a FORK_TAG) porte les marqueurs qu'exige
+    `install` : sans eux, une installation correcte serait refusee."""
+    for marker in (setup.PATCH_MARKER,) + setup.PAIRED_LAUNCH_MARKERS:
+        assert marker in setup.REPL_PY_PATCH

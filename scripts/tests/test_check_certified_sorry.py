@@ -187,7 +187,11 @@ def test_workflow_targets_match_manifest():
     # matrix target (it roots the import graph) but not a certified module:
     # the only allowed extra. A future addition to target-modules is an
     # explicit test change, never a silent drift.
-    allowed_extras = {"SocialChoice"}
+    # SocialChoice._SmokeTest vit dans le dossier et ne figure pas au
+    # CERTIFIED.txt ; main l'auditait comme compagnon du lake gametheory,
+    # il a demenage avec le lac et garde sa cible (aucune perte de
+    # couverture au merge).
+    allowed_extras = {"SocialChoice", "SocialChoice._SmokeTest"}
     assert expected_set <= actual, (
         f"ci_lakes.json socialchoicecore axiom-target-modules omitted entries "
         f"from SocialChoice/CERTIFIED.txt: matrix={sorted(actual)} "

@@ -223,3 +223,114 @@ cd MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq/solutions && grep -rn --include=*.cs
 - **#1206** — EPIC parent ; `endjin/Z3.Linq#29` est notre issue d'origine (2023)
 - [`.claude/rules/submodule-maintenance.md`](../../.claude/rules/submodule-maintenance.md) — les cinq
   sous-modules, ordre commit / push / bump
+
+---
+
+## Mesure du 2026-11-11 — pile amont #122/#123/#124 (G2 de #19237)
+
+Cette section est une **mesure nouvelle**, ajoutée sans réécrire la mesure du 2026-09-03 ci-dessus.
+Elle répond à la demande du mainteneur sur `endjin/Z3.Linq#43` : vérifier ce qui manquerait à sa réécriture
+de cette PR, **pas** mesurer une nouvelle fois toutes les différences entre les deux dépôts.
+
+Révisions comparées :
+
+| Côté | Révision | Portée |
+|---|---|---|
+| amont | `6c47d5558fc5` (#122) → `0fa0ab2a3a9e` (#123) → `348bb93862d1` (#124) | pile cumulative, ancestry vérifiée |
+| fork | `0a03b0c53d87987e617b14cbd349ad4c6dc6c5b2` | `origin/main` courant |
+| banc indépendant | `d73d4e56fc48` (#126), basé sur #123 | formes de collections et captures seulement |
+
+Les trois PRs de la pile et #43 étaient encore **OPEN** au relevé. Cette mesure ne ferme pas #43, ne rouvre
+pas G4 et ne propose aucune PR amont nouvelle.
+
+### Ce que la pile recouvre réellement de #43
+
+| Sujet | Verdict | Preuve et limite |
+|---|---|---|
+| Capture entre soumissions .NET Interactive | `REDONDANT` | #118 avait déjà corrigé la lecture maillon par maillon ; #122 ajoute trois tests, une démo Roslyn et un commentaire, sans nouveau correctif de bibliothèque |
+| Fold global `PartialEval` de notre rebase | `DIVERGENT`, **non repris volontairement** | le mainteneur l'écarte parce qu'il n'est plus nécessaire après #118 et qu'il masque le diagnostic de chaîne nulle introduit par #118 ; ce retrait n'est donc pas une capacité oubliée à reproposer |
+| Collections imbriquées (`int[][]`, `List<int[]>`, `List<List<int>>` et plus) | capacité couverte, `DIVERGENT` pour la modélisation | #123 construit récursivement les sortes de tableaux Z3 et la relecture ; tailles issues du template, complétion des éléments libres et ligne d'indice symbolique |
+| Sudoku 9×9 sur `int[][]` | `REDONDANT` pour l'exemple, `DIVERGENT` pour l'implémentation | #124 porte l'exemple, ses contraintes, la sortie formatée et les tests, y compris les données contradictoires |
+| Mode `CollectionHandling.Constants` | `DIVERGENT`, **refus explicite du mainteneur** | une constante par élément n'apporte selon lui rien pour les indices littéraux, tandis que le tableau accepte un indice symbolique ; il refuse aussi la surface publique à maintenir |
+
+Le refus du mode `Constants` est une **décision de conception**, pas un manque découvert par cette mesure.
+Il ne faut donc pas le transformer automatiquement en nouvelle proposition amont. En revanche, une adoption
+de la pile dans le fork devrait préserver ou convertir délibérément ses usages : avec le mode par élément du
+fork, une valeur d'initialiseur non référencée par une contrainte est conservée ; avec les tableaux amont,
+elle est remplie par complétion de modèle. Notre banc #126 documente cette différence sur le trou d'indice
+intérieur, sans en faire un échec de l'une ou l'autre politique.
+
+### Ce que la pile ne recouvre pas du fork courant
+
+L'absence d'un fichier homonyme ne suffit pas à établir ces verdicts. Les déclarations publiques et leurs
+traducteurs ont été recherchés dans les blobs des deux révisions, notamment `Z3Methods.cs`, `Z3Context.cs`,
+`Environment.cs`, `Theorem.cs`, `Theorem{T}.cs` et `ExpressionVisitor.cs`.
+
+| Capacité du fork | Déclarations mesurées côté fork | Verdict sur la pile #124 |
+|---|---|---|
+| `Sum` variadique | `Z3Methods.Sum<T>(params T[])`, traduit par un `MkAdd` variadique | `NOTRE-AVANCE` |
+| Cardinalité et pseudo-booléen | `ExactlyOne`, `AtMostOne`, `AtLeastOne`, `WeightedAtLeast`, `WeightedAtMost`, `WeightedExactly` | `NOTRE-AVANCE` |
+| Quantificateurs **bornés**, déroulés côté hôte | `ForAll<T>(IEnumerable<T>, ...)`, `Exists<T>(IEnumerable<T>, ...)` | `NOTRE-AVANCE` ; ne pas confondre avec des quantificateurs SMT non bornés |
+| Explication et UNSAT-core | `Explain(...)`, `Explanation.UnsatCore`, `ConstraintRef` | `NOTRE-AVANCE` |
+| Inspection du témoin de modèle | `Solve(Action<ModelWitness<T>>, ...)` | `NOTRE-AVANCE` |
+| MaxSAT / contraintes souples | `SoftWhere(...)`, puis `Optimize.AssertSoft(...)` | `NOTRE-AVANCE` pour les contraintes souples seulement |
+| Rationnels exacts | `Rational.Of(...)` et les conversions/opérateurs associés | `NOTRE-AVANCE` |
+| Largeur de bit-vector déclarée | `BitVecWidthAttribute(uint width)` | `NOTRE-AVANCE` pour la **largeur déclarée**, pas pour les bit-vectors en général |
+| Solveur et paramètres configurables | `SolverKind`, `Logic`, `Tactics`, `SetParameter(...)` typé | `NOTRE-AVANCE` |
+| Modélisation par constantes par élément | `CollectionHandling.Constants`, `MultipleEnvironment` | `DIVERGENT`, explicitement hors scope amont |
+| Banc PB natif contre réécriture `MkIte` + `MkAdd` | `solutions/pb-bench/Program.cs` | `NOTRE-AVANCE` (outillage de mesure) |
+
+Deux exclusions évitent de sur-vendre ce tableau :
+
+- l'amont possède déjà `Optimize`, `TryOptimize` et `TheoremUndecidedException` : ni l'optimisation ni tout
+  diagnostic d'indécidabilité ne sont des exclusivités du fork ;
+- `Timeout`, `ResourceLimit` et les résolutions bornées par `CancellationToken` existent aussi dans #124 :
+  la configuration du solveur ci-dessus ne doit pas être lue comme « l'amont ne sait pas borner un solve ».
+
+Le banc #126 rapporte **395/395 tests réussis** sur #123, dont ses sept formes plates, booléennes et de
+captures. Ce résultat confirme les formes bancées ; il ne démontre ni la présence ni l'équivalence des API
+ci-dessus. **Conséquence bornée : la pile couvre l'objet de #43, mais pas l'ensemble des capacités du fork.**
+Un remplacement du fork par la pile ferait perdre des capacités ; ce constat éclaire G3 sans le trancher ici.
+
+### Correction d'état : les deux défauts `DateTime` de septembre ne sont plus « vivants »
+
+Les lignes historiques sur #84/#95 décrivaient correctement `e09dae6db773`. Elles ne décrivent plus le fork
+courant mesuré ici :
+
+- `ExpressionVisitor.cs` écrit désormais `MkInt(ToUtcTicks((DateTime)val))` ;
+- `Theorem.cs` relit `new DateTime(ticks, DateTimeKind.Utc)` ;
+- `DateTimeRoundTripTests.cs` couvre l'aller-retour, introduit et complété notamment par `2703c934cbbb`
+  (2026-09-04), `d838c4dd875a` (2026-09-18) et `6ddcd571130e` (2026-10-25) ;
+- la tête #124 utilise également des ticks UTC et couvre les dates antérieures à 1601, le `Kind`, les
+  collections, les bornes et la complétion de modèle.
+
+Il faut donc lire la section de septembre comme un **constat daté sur l'ancienne révision**, non comme une
+liste de défauts encore présents sur `origin/main`. Aucun des deux chemins `ToFileTimeUtc` /
+`FromFileTime` ne doit être réintroduit sur la foi de cette ancienne section.
+
+### Preuves d'exécution et état des reviews de la pile
+
+Résultats **publiés par GitHub Actions**, non relancés localement dans ce grain documentaire :
+
+| PR | Résultat publié | Reviews inline |
+|---|---|---|
+| #122 @ `6c47d555` | 350 tests / 371 runs, 0 échec | aucun point actif rapporté par Copilot |
+| #123 @ `0fa0ab2a` | 367 tests / 388 runs, 0 échec | indice feuille absent du diagnostic `DateTime` : corrigé en `705d9e2`, thread résolu, contrôle par mutation déclaré |
+| #124 @ `348bb938` | 374 tests / 395 runs, 0 échec | coordonnées Sudoku hors grille : rejet ajouté en `335dc81`, thread résolu, quatre bords testés par mutation |
+
+Le résumé de review de #123/#124 conservait encore la recommandation de changement au moment du relevé,
+mais les fils inline portent la réparation et sont résolus : le préfixe de review ne doit pas être lu seul.
+Ces réparations sont **rapportées dans les fils** ; leur exécution n'a pas été rejouée ici. Le `statusCheckRollup`
+brut de #123 contient aussi des jambes annulées ou sautées aux côtés des jambes réussies : les chiffres
+ci-dessus sont les résultats de tests publiés, pas l'affirmation que chaque entrée brute du rollup est verte.
+
+### Portée de cette nouvelle mesure
+
+- Vérifié **firsthand** : révisions et ancestry, blobs et déclarations publiques citées, historique
+  `DateTime`, fils de discussion et état de résolution des threads inline.
+- **Rapporté, non rejoué** : résultats GitHub Actions, tests de #126 et contrôles par mutation décrits par
+  le mainteneur dans les fils.
+- Non effectué : build ou suite locale du fork et de la pile, relecture ligne à ligne de tous les fichiers
+  de bibliothèque, benchmark de performance ou décision de réintégration.
+- Ce grain met à jour uniquement ce ledger. Il ne modifie ni le sous-module ni les notebooks et ne crée
+  aucune PR sur `endjin/Z3.Linq`.

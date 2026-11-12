@@ -1,5 +1,7 @@
 # Analyse de l'Architecture Roo pour la Gestion des MCPs
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Ce document détaille l'architecture de l'extension Roo pour VS Code en ce qui concerne la gestion des serveurs MCP (Model Context Protocol), avec un focus sur les serveurs écrits en Python.
 
 ## 1. Architecture des Processus
