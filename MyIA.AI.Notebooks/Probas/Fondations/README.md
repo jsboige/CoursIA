@@ -15,6 +15,7 @@ carnet de moteur.
 |---|---|---|---|
 | [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Probas-CLT-Theoreme-Central-Limite.ipynb) | Python 3 | Le TCL mesuré : le taux `1/√n` comme borne (Berry–Esseen), l'hypothèse de variance finie porteuse | 15 min |
 | [`Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb`](Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) | Python 3 | Metropolis–Hastings et Gibbs from-scratch, diagnostics `ESS`/`R-hat`, là où l'approximation naïve échoue | 30 min |
+| [`Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb`](Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb) | .NET C# | Même expérience avec MathNet, diagnostics classiques et traces par chaîne | 90 min |
 
 L'ordre de lecture suit la table : le TCL d'abord (pourquoi la gaussienne est
 partout), l'échantillonnage ensuite (comment l'interroger quand l'intégrale
