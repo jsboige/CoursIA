@@ -210,13 +210,23 @@ def test_evenement_inconnu_pleine_suite():
     assert "non restreint" in reason
 
 
-def test_push_chaine_d_un_seul_macon():
+def test_push_sur_main_reste_en_pleine_suite():
+    """Le push sur main joue TOUT (revue ai-01 5867133827, point 1).
+
+    Le filet : une erreur de portee sur main est imputee a ce seul commit, et
+    ne se voit qu'a la PR suivante qui touche la suite du test -- c'est elle
+    qui reçoit le rouge, pour une casse introduite deux commits plus tot.
+    Le gain de la tranche porte sur les PRs, pas sur le push.
+
+    Controle positif du retrait : si la branche `push` du repli pleine suite
+    disparait, ce test rougit.
+    """
     mode, suites, reason = mod.scope(
         "push", SUITES, readers=[("diff HEAD~1", lambda _b: ["dotnet/GradeBookApp/x.py"])]
     )
-    assert mode == "restricted"
-    assert suites == ["dotnet/GradeBookApp"]
-    assert "source diff HEAD~1" in reason
+    assert mode == "full"
+    assert suites == SUITES
+    assert "push sur main" in reason
 
 
 # ------------------------------------------------------------ 4. aires de veille

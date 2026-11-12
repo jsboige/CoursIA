@@ -226,6 +226,20 @@ def scope(
         return "full", list(suite_list), (
             "workflow_dispatch : revalidation complete apres batch (#13861)"
         )
+    if event == "push":
+        # Revue ai-01 5867133827, point 1 : le push sur main reste en PLEINE
+        # suite. Le filet -- la casse arrive sur main sans y rougir, et ne
+        # se voit qu'a la PR suivante qui touche la suite du test -- ne vaut
+        # que si le push joue tout. Le gain de la tranche porte sur les PRs.
+        #
+        # Le push joue le diff HEAD~1 : sur main, ce sont les chemins du
+        # commit qui vient d'atterrir, donc la portee restreinte y limiterait
+        # la suite au strict necessaire -- et la casse qu'elle laisse passer
+        # ne serait vue qu'au push suivant, sur un commit sans rapport.
+        return "full", list(suite_list), (
+            "push sur main : pleine suite (filet -- une erreur de portee "
+            "serait imputee a ce seul commit, jamais rattrapee)"
+        )
     if event not in ("pull_request", "push"):
         return "full", list(suite_list), (
             f"evenement {event or '?'} non restreint : pleine suite"
