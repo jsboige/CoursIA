@@ -191,6 +191,12 @@ La pondération du tirage porte **deux axes indépendants** (mesurés non redond
 
 Mesure du 2026-08-20 sur les 140 ouvertes : **91 avaient bougé dans les 24 h**, et sur les 12 les plus inactives, **9 étaient des EPICs**. C'est cette asymétrie qui a fait du tirage systématique le premier geste de chaque cycle (mandat user 2026-08-20) : tant que la sélection par défaut restait « ce que je vois », elle restait « ce qui est récent » — les sujets menés à leur terme étaient toujours ceux du moment, et les EPICs de fond ne l'étaient jamais.
 
+## Filtre `candidate-delivered` (#10466) — mécanique du label
+
+Déporté depuis la règle (tranche l.3 de #11554, 2026-11-13) ; la règle garde l'interdiction worker (« ne pas re-piocher sans vérification firsthand ») et le pointeur.
+
+Le label est posé par le **workflow advisory** : une PR mergée qui référence l'issue, suivie d'un **silence post-merge** (aucun commentaire après le merge), EPICs exclus. Il **signale sans fermer** — GitHub ne ferme pas une issue référencée en `See #N` même quand la résolution est complète. Le triage final (fermer ou rouvrir le grain) appartient à ai-01 en lecture body (G.9) ; une lane worker qui en rencontre une poste `[INFO] candidate-delivered` avec sa preuve et rend la main (mandat user 2026-09-07, #15069).
+
 ## Umbrella #11900 — récits mesurés et sémantique complète de l'organe
 
 Déporté depuis la règle (tranche #15204, 2026-10-06 ; source : lignes 36, 40, 54-58 de `.claude/rules/proactive-coordination.md` avant déport ; complété le 2026-10-30 par la ligne 3 de la phase 3 de #11554 : les trois surfaces, « ce que l'organe ne dit pas » et la réparation d'un body périmé ont suivi). La règle garde la prescription HARD et la commande de l'organe ; les trois surfaces y restent nommées.
