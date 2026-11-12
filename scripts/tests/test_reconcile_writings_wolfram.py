@@ -8,7 +8,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 # Permettre l'import du module depuis scripts/bibliography/
-sys.path.insert(0, str(Path(__file__).parent / "bibliography"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "bibliography"))
 
 from reconcile_writings_wolfram import (  # noqa: E402
     download_sitemap,
@@ -125,7 +125,7 @@ def test_reconcile_full_flow(tmp_path):
 
 def test_corpus_yaml_exists_and_parses():
     """Le fichier de corpus du depot doit exister et parser sans erreur."""
-    corpus_path = Path(__file__).parent / "bibliography" / "wolfram_corpus.yaml"
+    corpus_path = Path(__file__).parent.parent / "bibliography" / "wolfram_corpus.yaml"
     assert corpus_path.exists(), f"Missing corpus YAML: {corpus_path}"
     items = parse_corpus_yaml(corpus_path)
     assert len(items) >= 17, f"Corpus trop court ({len(items)} < 17)"
