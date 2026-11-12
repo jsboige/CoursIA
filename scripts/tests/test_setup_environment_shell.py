@@ -73,8 +73,11 @@ def test_failure_and_resume(setup, failure, checkpoint, label):
 
 def test_dry_and_force_resume(setup):
     run_dir, run = setup
-    dry = run("--check", "--auto-fix", fail="data")
-    assert dry.returncode == 0 and not list(run_dir.iterdir())
+    dry = run("--check", "--force", "--auto-fix", "--resume", fail="data")
+    assert dry.returncode == 0, dry.stdout + dry.stderr
+    assert "Packages requis : 9/9 (100.0%)" in dry.stdout
+    assert "manquant (mode --check" not in dry.stdout
+    assert not list(run_dir.iterdir())
     assert run("--auto-fix").returncode == 0
     failed = run("--auto-fix", "--resume", "--force", fail="data")
     assert failed.returncode == 2

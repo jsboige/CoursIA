@@ -62,6 +62,8 @@ if [[ $CHECK_ONLY -eq 1 ]]; then
     echo "[INFO] --check implies no --auto-fix: installers stay off."
   fi
   AUTO_FIX=0
+  # --force demande une réinstallation, sans objet pour une sonde à sec.
+  FORCE=0
 fi
 
 # ---------------------------------------------------------------------------
