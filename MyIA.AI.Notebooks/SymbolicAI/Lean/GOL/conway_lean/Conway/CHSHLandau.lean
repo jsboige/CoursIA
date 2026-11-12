@@ -102,7 +102,7 @@ ouverte et déclarée.
    `Lean-13b-CHSH-Tsirelson-Native` (exécution native de la série sous kernel
    `lean4-wsl-conway` — une tranche future peut y exécuter les énoncés du
    présent module), `Lean-13-Kochen-Specker`,
-   `Lean-16c-Conway-Free-Will-Theorem`.
+   `Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python`.
 10. **Transmission** : chaque lemme porte une docstring qui sépare ce que la
     sortie du calcul montre de ce qu'il suggère ; la table de statut est le
     résumé falsifiable.

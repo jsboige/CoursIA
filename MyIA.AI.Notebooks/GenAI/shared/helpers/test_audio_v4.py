@@ -68,3 +68,35 @@ def test_ensure_est_idempotent(tmp_path: Path, monkeypatch) -> None:
 
     assert first == applications
     assert sys.path.count(str(applications)) == 1
+
+
+def test_depuis_repertoire_frere_du_depot(tmp_path: Path) -> None:
+    """Un noyau lance dans docs/ retrouve le paquet du meme depot."""
+    applications = _make_tree(tmp_path, prefix=("MyIA.AI.Notebooks", "GenAI"))
+    (tmp_path / ".git").mkdir()
+    start = tmp_path / "docs" / "reference"
+    start.mkdir(parents=True)
+    assert audio_v4.find_v4_root(start) == applications
+
+
+def test_git_worktree_et_priorite_locale(tmp_path: Path) -> None:
+    """Le fichier .git des worktrees marche, sans supplanter un v4 local."""
+    depot = _make_tree(tmp_path, prefix=("MyIA.AI.Notebooks", "GenAI"))
+    (tmp_path / ".git").write_text("gitdir: /dummy\n", encoding="utf-8")
+    start = tmp_path / "docs"
+    start.mkdir()
+    assert audio_v4.find_v4_root(start) == depot
+    local = _make_tree(start)
+    assert audio_v4.find_v4_root(start) == local
+
+
+def test_ne_sort_pas_du_depot_imbrique(tmp_path: Path) -> None:
+    _make_tree(tmp_path, prefix=("MyIA.AI.Notebooks", "GenAI"))
+    (tmp_path / ".git").mkdir()
+    nested = tmp_path / "nested"
+    nested.mkdir()
+    (nested / ".git").mkdir()
+    start = nested / "docs"
+    start.mkdir()
+    with pytest.raises(ModuleNotFoundError):
+        audio_v4.find_v4_root(start)

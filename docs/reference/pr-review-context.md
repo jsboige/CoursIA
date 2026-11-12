@@ -1,5 +1,7 @@
 # PR Review Discipline — Contexte, incident, anti-patterns
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Document de référence détaillant les seuils auto-loaded de [.claude/rules/pr-review-discipline.md](../../.claude/rules/pr-review-discipline.md).
 
 ## Contexte (incident 2026-05-08)
@@ -270,6 +272,16 @@ Les rouges périmés restent dans la liste : **12/160 PRs mesurées**, dont les 
 ### L44 — le coût d'une PR se paie par PR, pas par ligne (Q162 b)
 
 Mesure du 2026-11-03 sur **2 075 PRs** : 8 commentaires et reviews en moyenne pour un diff de quelques lignes, contre 15 pour un diff de grande taille. Le saucissonnage coûte plus cher que le travail.
+
+### L44 bis — le mandat de fournée vit dans le body de l'issue, pas dans une consigne PR par PR
+
+**Origine.** Concern user du 2026-09-12 sur #15724 : « Le geste pourrait comprendre une fournée au moins 10 fois plus grosse. Modifier le body de l'issue ET/OU mettre des garanties de CI sur le contrôle des diffs. » La moitié CI est devenue `scripts/check_trivial_diff.py` (#15740). Cet organe est advisory et ne regarde que les genres META (docs, readme, guard, ledger, test) : une PR de contenu de carnet lui échappe. La moitié « body de l'issue » a été appliquée une fois à la main (#15719 refondue en fournées, #15737 qui absorbe 10 PRs) sans être écrite en règle.
+
+**Mesure de rechute (2026-11-11, campagne #19297).** En 24 h, 43 PRs « blocs de fin canoniques » et une trentaine d'issues de tranche neuves, d'un à trois carnets chacune. Part5-Frontières a reçu une issue par carnet. Le compteur d'issues ouvertes est monté pendant que la flotte cherchait à le faire baisser. Remède appliqué le jour même : bloc d'état et forme de livraison écrits en tête du body de #19297.
+
+**Forme de la fournée écrite dans le body.** Elle fixe la taille d'une PR, le claim posé sur l'issue elle-même avec une clause `paths:`, et la fin des issues de tranche : les PRs suivantes renvoient à l'issue de série ou de famille au lieu d'en ouvrir une par carnet.
+
+**Bloc d'état daté.** La lane qui livre une fournée met à jour sa ligne du bloc. La commande de mesure du bloc est celle de l'organe de la série, par exemple `scripts/notebook_tools/check_series_finish.py --series <S> --json`. `scripts/epic_body_staleness.py` repère les Epics dont le body ignore des livraisons mergées : 44 au 2026-11-11, #19297 comprise.
 
 ### L60 — pourquoi la whitelist des axiomes interdit les wildcards
 
