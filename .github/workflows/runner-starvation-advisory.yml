@@ -162,12 +162,37 @@ jobs:
             warn_floor: 2
             starve_minutes: "15"
     steps:
+      # PORTE DE MESURE (#22937), borne corrigee : le calcul se fait dans le
+      # SHELL. L'operateur `%` n'existe pas dans les expressions GitHub --
+      # une porte ecrit `github.run_number % 12 == 0` ne s'evalue pas, et le
+      # job ne part jamais (ou part toujours) : la porte serait un decor.
+      # Ici le reste se fait en arithmetique bash, et les etapes qui paient
+      # (checkout + mesure complete) ne s'executent que sur les runs
+      # mesurants : les autres ne font aucun checkout et aucun appel.
+      #
+      # La jambe `schedule` n'est JAMAIS gatee : elle est la cadence de
+      # reference de l'advisory, et elle porte le rapport de cadence servie
+      # (#15332) qui prouve la survie de l'observateur.
+      - name: Porte de mesure
+        id: gate
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          MEASURE_EVERY_N: "12"
+        run: |
+          if [ "$EVENT_NAME" != "workflow_run" ] || [ $((RUN_NUMBER % MEASURE_EVERY_N)) -eq 0 ]; then
+            echo "measure=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "measure=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.measure == 'true'
         with:
           sparse-checkout: |
             .github/workflows/runner-starvation-advisory.yml
             scripts/ci/check_runner_starvation.py
       - name: Measure starvation on ${{ matrix.label }}
+        if: steps.gate.outputs.measure == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
@@ -180,9 +205,11 @@ jobs:
           SELF_WORKFLOW: runner-starvation-advisory.yml
           DECLARED_CADENCE_MINUTES: "30"
           CADENCE_WARN_MINUTES: "360"
-          # #22937 : borne la MESURE complete -- le run existe toujours et
-          # son rapport de cadence servie (#15332) est emis a chaque passage.
-          MEASURE_EVERY_N_RUNS: "4"
+          # #22937 : borne la MESURE complete. La porte vit au niveau du JOB
+          # (etape « Porte de mesure », calcul en shell) : les runs non
+          # mesurants ne checkoutent pas et n'appellent pas l'API. Le
+          # compteur reste aligne sur la porte du shell (12).
+          MEASURE_EVERY_N_RUNS: "12"
         # `python3`, pas `python` : le job est declare `ubuntu-latest`, mais le
         # detecteur de #17444 classe TOUT job a `python` nu sans
         # `actions/setup-python` comme vulnerable a un routage self-hosted (les

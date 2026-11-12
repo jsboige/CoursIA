@@ -21,10 +21,18 @@ sa jambe `schedule` n'est livree que toutes les ~8 h (18:28Z, 10:22Z,
 grace a leur heartbeat.
 
 Ce fichier fixe l'invariant plutot que de le laisser au relecture :
-les trois sondes declarent les MEMES ancres, la MEME porte de mesure
-(`MEASURE_EVERY_N_RUNS`, #22937), la MEME garde anti-fork au niveau du JOB,
-et AUCUNE ne se declenche sur `pull_request`/`push` -- un run rouge d'un
-advisory ne peut jamais bloquer une PR.
+les trois sondes declarent les MEMES ancres, chacune une porte de mesure
+declaree (`MEASURE_EVERY_N_RUNS`, #22937), la MEME garde anti-fork au niveau
+du JOB, et AUCUNE ne se declenche sur `pull_request`/`push` -- un run rouge
+d'un advisory ne peut jamais bloquer une PR.
+
+La porte de mesure est une borne de COUT, pas une invariant d'egalite : la
+troisieme sonde est gatee a 12 (le cout API de son ancrage, ajoute par
+#25510 E1), la paire a 4 jusqu'a ce que la porte de job de #26246 soit
+corrigee. L'egalite porte sur le FAIT qu'une porte est declaree et qu'elle
+est calculee dans le shell -- l'operateur `%` n'existe pas dans les
+expressions GitHub, une porte ecrit `github.run_number % 12 == 0` ne
+s'evalue pas.
 """
 from __future__ import annotations
 
@@ -44,6 +52,16 @@ ADVISORIES = (
     ".github/workflows/coursia-waiter-starvation-advisory.yml",
     ".github/workflows/runner-starvation-advisory.yml",
 )
+# La troisieme sonde (pool `coursia-ephemeral`), seule a porter un heartbeat
+# depuis #25510 E1.
+THIRD_PROBE = ".github/workflows/runner-starvation-advisory.yml"
+# Borne de la porte de mesure (#22937), par sonde : le cout API de
+# l'ancrage de la troisieme sonde justifie 12 ; la paire garde 4.
+MEASURE_GATE_BY_ADVISORY = {
+    ".github/workflows/linux-runner-starvation-advisory.yml": "4",
+    ".github/workflows/coursia-waiter-starvation-advisory.yml": "4",
+    THIRD_PROBE: "12",
+}
 EXPECTED_ANCHORS = ["Secret Scan", "Enrich-quality gate"]
 
 # Garde anti-fork : le job saute quand le heartbeat declenche par une PR de
@@ -107,8 +125,35 @@ def test_measure_gate_is_declared(rel: str) -> None:
     """#22937 : la porte borne la MESURE complete (l'inventaire + la lecture
     des jobs), pas le RUN -- c'est la SURVIE de l'observateur qui est la
     garantie. Sans la porte, la troisieme sonde recreerait la saturation du
-    jeton du 2026-10-28 (18 rouges sur `main` en 10 min)."""
-    assert 'MEASURE_EVERY_N_RUNS: "4"' in _text(rel)
+    jeton du 2026-10-28 (18 rouges sur `main` en 10 min).
+
+    La valeur est une borne de cout : 12 pour la troisieme sonde (dont
+    #25510 E1 ajoute l'ancrage), 4 pour la paire."""
+    expected = MEASURE_GATE_BY_ADVISORY[rel]
+    assert f'MEASURE_EVERY_N_RUNS: "{expected}"' in _text(rel)
+
+
+def test_la_porte_de_mesure_est_calculee_dans_le_shell() -> None:
+    """`%` n'existe pas dans les expressions GitHub.
+
+    Une porte de mesure ecrit `github.run_number % 12 == 0` dans un `if:`
+    ne s'evalue pas : le job ne part jamais, ou part toujours, et la borne
+    de cout devient un decor. Le calcul se fait en arithmetique shell, et
+    les etapes qui paient (checkout + mesure) sont conditionnees par la
+    sortie de l'etape de porte.
+    """
+    text = _text(THIRD_PROBE)
+    # Les commentaires expliquent la faute : ils la citent. Seules les
+    # lignes effectives du workflow sont inspectees.
+    code = "\n".join(
+        line for line in text.splitlines() if not line.strip().startswith("#")
+    )
+    assert "github.run_number %" not in code
+    assert "id: gate" in text
+    assert "RUN_NUMBER % MEASURE_EVERY_N" in text
+    assert "steps.gate.outputs.measure == 'true'" in text
+    # Les etapes qui paient sont conditionnees par la porte.
+    assert text.count("steps.gate.outputs.measure == 'true'") >= 2
 
 
 @pytest.mark.parametrize("rel", ADVISORIES)
