@@ -1152,6 +1152,31 @@ def _claim_scope_effectively_epic_wide(ev: ClaimEvent) -> bool:
     return len(empty) >= len(paths)
 
 
+def _claim_live_paths(ev: ClaimEvent) -> list[str] | None:
+    """#25873 -- the LIVE paths a claim occupies, or None when it is
+    effectively epic-wide (no live scope).
+
+    A bounded claim (a `paths:` clause with at least one live glob) occupies
+    exactly the files it names: it must NOT freeze the whole issue, so the
+    belt serves the issue and hands the caller those paths to work outside.
+    A plain `[CLAIMED]` (no `paths:`), an unparseable scope (#10597) or an
+    entirely-dead non-creation scope (#10958 / #11098) has no live scope and
+    is epic-wide: it keeps the fail-CLOSED block.
+
+    This is the read-side mirror of the epic-wide lift in
+    `_filter_by_claim_scope`, so the two can never disagree about which
+    other-lane claims are bounded.
+    """
+    scope = ev.get("paths")
+    if not scope:
+        return None  # no `paths:` clause -> epic-wide
+    if ev.get("unparseable_scope"):
+        return None  # #10597 -- parse residue, not a live scope
+    if _claim_scope_effectively_epic_wide(ev):
+        return None  # #10958/#11098 -- every glob dead -> epic-wide
+    return scope
+
+
 def compute_active_claims(
     events: list[ClaimEvent],
     pr_states: dict[int, str] | None = None,
@@ -1980,7 +2005,7 @@ query {
       nodes {
         number title headRefName body additions deletions
         headRefOid
-        files(first:100) { totalCount nodes { path } }
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -1995,7 +2020,7 @@ query($cursor: String) {
       nodes {
         number title headRefName body additions deletions
         headRefOid
-        files(first:100) { totalCount nodes { path } }
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -2076,13 +2101,14 @@ def _gh_graphql(query: str, variables: dict[str, str] | None = None) -> dict:
 
 
 def _gh_pr_files_rest(owner: str, name: str, number: int,
-                       expected: int) -> list[str]:
-    """Liste COMPLETE des fichiers d'une PR (REST, paginee).
+                       expected: int) -> tuple[list[str], list[str]]:
+    """Liste COMPLETE des fichiers d'une PR (REST, paginee) + ANCIENS CHEMINS.
 
-    Utilisee pour les seules PRs dont la liste de fichiers est plafonnee par
+    Utilisee pour les PRs dont la liste de fichiers est plafonnee par
     GraphQL (`files(first:100)`) -- mesure : 3 PRs ouvertes au 2026-10-21,
-    jusqu'a 1070 fichiers. L'endpoint REST `/pulls/{n}/files` n'a pas ce
-    plafond ; `--paginate` suit toutes les pages.
+    jusqu'a 1070 fichiers -- et, depuis #25910, pour les PRs qui portent un
+    RENOMMAGE. L'endpoint REST `/pulls/{n}/files` n'a pas ce plafond ;
+    `--paginate` suit toutes les pages.
 
     Le champ REST est `filename` (pas `path`). On NE passe PAS `--jq` : mesure
     du 2026-10-21, `gh api --paginate ... --jq '.[].path'` rend un tableau de
@@ -2090,8 +2116,17 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     applique a une entree vide. On parse donc le JSON et on extrait
     `filename` nous-memes.
 
-    Le nombre de chemins lus est compare a `expected` (le `totalCount`
-    GraphQL) : un ecart rend l'enumeration incomplete.
+    Rend `(chemins_de_tete, chemins_de_base_des_renommages)`. Le second
+    membre lit `previous_filename`, que REST expose SEULEMENT pour un
+    fichier renomme (le schema GraphQL `PullRequestChangedFile` ne porte
+    que `additions, changeType, deletions, path, viewerViewedState` -- pas
+    d'ancien chemin, cf. #25910). Motif deja eprouve dans le depot :
+    `scripts/notebook_tools/credited_examples_sweep.py::_previous_filenames`.
+
+    Le nombre de chemins de tete lus est compare a `expected` (le
+    `totalCount` GraphQL) : un ecart rend l'enumeration incomplete. Les
+    ANCIENS chemins ne sont pas comptes dans ce total -- ce sont des
+    chemins supplementaires, pas des fichiers de la PR.
     """
     try:
         proc = subprocess.run(
@@ -2134,12 +2169,22 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
         entry.get("filename") for entry in payload
         if isinstance(entry, dict) and entry.get("filename")
     ]
+    # #25910 -- l'ancien chemin d'un renommage. Il n'est PAS un fichier de
+    # la PR : il ne compte donc pas dans le total compare a `expected`.
+    previous: list[str] = []
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        old = entry.get("previous_filename")
+        new = entry.get("filename")
+        if old and old != new and old not in previous:
+            previous.append(old)
     if len(paths) != expected:
         raise OpenPrsIncompleteError(
             f"liste de fichiers incomplete pour la PR #{number}",
             f"{len(paths)} chemins lus pour {expected} attendus",
         )
-    return paths
+    return paths, previous
 
 
 def _gh_open_prs_complete() -> list[dict]:
@@ -2151,7 +2196,13 @@ def _gh_open_prs_complete() -> list[dict]:
         aucune borne `--limit` susceptible de tronquer en silence) ;
       - les FICHIERS de chaque PR : `files(first:100).totalCount` dit
         exactement si la liste de chemins est plafonnee ; les PRs concernees
-        sont refetches en REST (pagination sans plafond), en parallele.
+        sont refetches en REST (pagination sans plafond), en parallele ;
+      - les ANCIENS CHEMINS des renommages (#25910) : GraphQL expose
+        `changeType == "RENAMED"` mais PAS l'ancien chemin ; la seule source
+        est le champ REST `previous_filename`. Les PRs qui portent un
+        renommage (et celles dont la liste de fichiers est plafonnee, ou le
+        renommage peut se cacher au-dela du 100e noeud) sont donc refetches
+        en REST, et l'ancien chemin rejoint l'index des chemins occupes.
 
     Leve `OpenPrsIncompleteError` si l'une des deux completudes ne peut pas
     etre etablie (plafond de securite, delai, reponse GraphQL en erreur).
@@ -2182,14 +2233,20 @@ def _gh_open_prs_complete() -> list[dict]:
             raise OpenPrsIncompleteError(
                 "depot introuvable dans la reponse GraphQL", repo)
         connection = repository.get("pullRequests") or {}
-        overflow: list[tuple[int, int]] = []
+        # PRs a relire en REST : plafonnees (liste de fichiers tronquee) ou
+        # porteuses d'un renommage (ancien chemin invisible cote GraphQL).
+        rest_needed: list[tuple[int, int]] = []
         for node in connection.get("nodes") or []:
             files = node.get("files") or {}
-            paths = [f["path"] for f in (files.get("nodes") or [])]
+            file_nodes = files.get("nodes") or []
+            paths = [f["path"] for f in file_nodes if f.get("path")]
             total = int(files.get("totalCount") or 0)
             number = int(node["number"])
-            if total > len(paths):
-                overflow.append((number, total))
+            has_rename = any(
+                f.get("changeType") == "RENAMED" for f in file_nodes
+            )
+            if total > len(paths) or has_rename:
+                rest_needed.append((number, total))
             entry = {
                 "number": number,
                 "title": node.get("title"),
@@ -2199,6 +2256,11 @@ def _gh_open_prs_complete() -> list[dict]:
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
                 "files": [{"path": p} for p in paths],
+                # #25910 -- anciens chemins des renommages (liste vide si la
+                # PR n'en porte pas). La cle est aussi la preuve que cette
+                # enumeration a ete produite par la version qui indexe les
+                # renommages (cf. `_read_open_prs_cache`).
+                "renames": [],
             }
             prs.append(entry)
             by_number[number] = entry
@@ -2207,18 +2269,28 @@ def _gh_open_prs_complete() -> list[dict]:
                 "enumeration des PRs ouvertes au-dela du plafond de securite",
                 f"{len(prs)} > {_OPEN_PRS_HARD_CAP}",
             )
-        if overflow:
-            # Refetch des seules PRs plafonnees, en parallele : les 3 PRs
+        if rest_needed:
+            # Refetch des seules PRs concernees, en parallele : les 3 PRs
             # mesurees coutent ~11s en serie, ~7s en parallele.
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
                 futures = {
                     pool.submit(_gh_pr_files_rest, owner, name, num, tot): num
-                    for num, tot in overflow
+                    for num, tot in rest_needed
                 }
                 for future in concurrent.futures.as_completed(futures):
                     num = futures[future]
-                    paths = future.result()
-                    by_number[num]["files"] = [{"path": p} for p in paths]
+                    paths, previous = future.result()
+                    entry = by_number[num]
+                    entry["files"] = [{"path": p} for p in paths]
+                    entry["renames"] = previous
+                    # #25910 -- l'ancien chemin d'un renommage est OCCUPE :
+                    # il rejoint l'index (fail-CLOSED -- l'ensemble des
+                    # chemins occupes s'elargit, il ne se restreint jamais).
+                    known = {f["path"] for f in entry["files"]}
+                    for old in previous:
+                        if old not in known:
+                            entry["files"].append({"path": old})
+                            known.add(old)
         page_info = connection.get("pageInfo") or {}
         if not page_info.get("hasNextPage"):
             break
@@ -2252,7 +2324,16 @@ def _read_open_prs_cache() -> list[dict] | None:
     if isinstance(cached, dict) and cached.get("format") == _OPEN_PRS_CACHE_FORMAT:
         if cached.get("complete") is True:
             prs = cached.get("prs")
-            return prs if isinstance(prs, list) else None
+            if not isinstance(prs, list):
+                return None
+            # #25910 -- un cache ecrit par une version ANTERIEURE ne porte
+            # pas l'index des renommages (`renames`) : le lire reviendrait a
+            # rapporter LIBRE un chemin qu'une PR ouverte est en train de
+            # renommer. Il est donc traite comme absent -- le fetch complet
+            # qui suit le REECRIT au format courant.
+            if any("renames" not in pr for pr in prs if isinstance(pr, dict)):
+                return None
+            return prs
         raise OpenPrsIncompleteError(
             "cache des PRs ouvertes marque incomplet",
             str(cached.get("reason") or "")[:200],
@@ -4550,6 +4631,16 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 # une sonde `check_claims([n])` sur une fille plafonnee rend encore FREE tant
 # qu'un suivi n'enseigne pas au picker la cle `epic_visit_cap`. Le gate de la
 # lane, lui, est rendu.
+# #22687 -- deux corrections depuis cette annonce : (a) le plafond SAUTE quand
+# la lane appelante tient deja un claim actif sur une FILLE N (arbitrage ai-01
+# du 2026-11-08, cas #23499 : la reprise d'un chantier ouvert n'est pas une
+# nouvelle visite -- le plafond gate l'ENTREE d'une fille, pas sa reprise ;
+# JAMAIS sur l'EPIC lui-meme, la demande du 09/11 reste entiere) ;
+# (b) la voie unitaire EN PROCESSUS du picker cable desormais `epic_cap=True`
+# et son reducteur lit la cle : la sonde solitaire d'une fille plafonnee rend
+# BLOCKED, alignee sur le gate L898 et sur le plafond bulk que le tapis mesure
+# deja lui-meme. Le mode batch reste `epic_cap=False` (#22630 possede le
+# tirage).
 #
 # ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
 # anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
@@ -4836,7 +4927,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                pr_states: dict[int, str] | None = None,
                check_open_pr_paths: bool = False,
                epic_cap: bool = False,
-               epic_cap_probe=None) -> int:
+               epic_cap_probe=None,
+               serve_bounded: bool = False) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
@@ -5204,7 +5296,35 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # of #12345's acceptance) lives at the verdict-emission point below --
     # a scope that is entirely dead does NOT clear to `exit 0`, it changes
     # verdict and acquires an explanation.
-    if others and my_scope is None:
+    occupied_paths: dict[str, list[str]] = {}
+    if others and my_scope is None and serve_bounded:
+        # #25873 -- the BELT calls the probe WITHOUT --paths (my_scope None)
+        # and opts in to `serve_bounded`. A bounded claim (a live `paths:`)
+        # from another lane occupies only the files it names; it must NOT
+        # freeze the whole issue. Only an epic-wide claim (no live scope)
+        # keeps the fail-CLOSED block. `occupied_paths` is empty outside this
+        # branch, so a PATH_SCOPED / BLOCKED verdict never carries a stale
+        # occupied list.
+        # #25873 + CR #25906 -- servir UNIQUEMENT si TOUS les claims d'autrui
+        # sont bornes (len(borne) == len(others)). Une seule claim epic-wide
+        # dans le mix re-verrouille toute l'issue : le cas mixte borne +
+        # epic-wide ne doit PAS clairer en SCOPED_OCCUPIED, sinon le verrou
+        # epic-wide d'une lane est silencieusement droppe (l'issue serait
+        # servie malgre le verrou de la lane epic-wide).
+        bounded = {
+            ln: ev.get("paths") for ln, ev in others.items()
+            if _claim_live_paths(ev)
+        }
+        if len(bounded) == len(others):
+            occupied_paths = bounded
+            query_scope = "SCOPED_OCCUPIED"
+        else:
+            occupied_paths = {}
+            query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    elif others and my_scope is None:
+        # #25873 -- a non-belt no-`--paths` call: keep the fail-CLOSED
+        # NOT_SCOPED. A manual probe that declared no scope cannot prove
+        # disjointness from a bounded claim; the belt fix does not relax it.
         query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
     elif caller_empty_scope and my_scope and len(caller_empty_scope) >= len(my_scope):
         # #12345 -- every glob in `my_scope` is dead: the caller declared a
@@ -5287,6 +5407,24 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             epic_cap_verdict["skipped"] = (
                 "another lane already blocks -- verdict is exit 1 without the cap"
             )
+        elif mine and not _is_umbrella_issue(payload):
+            # #22687 (arbitrage ai-01, cas mesure 2026-11-08 sur #23499) : la
+            # lane qui interroge tient DEJA un claim actif sur la FILLE N --
+            # elle repare un travail en vol (PR ouverte), elle ne fait pas une
+            # NOUVELLE visite de l'umbrella. Le plafond gate l'ENTREE d'une
+            # fille, pas la reprise du claim qui la porte : sans ce saut, un
+            # [RELEASED] pose sur l'EPIC par une autre lane 0,7 j avant
+            # bloquait la lane sur son propre chantier ouvert depuis 9 j.
+            # JAMAIS sur l'EPIC lui-meme : la demande coordinateur du 09/11
+            # (une visite PASSEE ET CLOSE de la lane arme le plafond, claim en
+            # cours compris) reste entiere -- les regles #25443 (marqueur
+            # propre exclut) et 09/11 (visite close arme) gouvernent seules
+            # les marqueurs propres sur l'EPIC ; ce saut ne les touche pas.
+            # les marqueurs propres sur l'EPIC, ce saut ne les touche pas.
+            epic_cap_verdict["skipped"] = (
+                "calling lane already holds an active claim on this issue "
+                "-- resuming an open claim is not a new umbrella visit"
+            )
         else:
             probe = epic_cap_probe
             try:
@@ -5307,6 +5445,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
+        # #25873 -- the belt's no-`--paths` call: when every other-lane claim is
+        # bounded, the issue is SERVED (SCOPED_OCCUPIED, exit 0) and this carries
+        # the files those bounded claims occupy, so the caller works OUTSIDE that
+        # perimeter. Empty outside the SCOPED_OCCUPIED verdict.
+        "occupied_paths": occupied_paths,
         "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
         # #22408 -- les claims dont l'age depassait le seuil mais dont la lane
         # livrait encore : ils BLOQUENT (ils sont dans `others`, donc dans
@@ -5629,6 +5772,22 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         and ev.get("pr_state") is None
     ]
 
+    # #25873 -- the belt called without --paths and every other-lane claim is
+    # bounded (live paths:). The issue is SERVABLE: serve it (exit 0) and hand
+    # the caller the occupied paths so it works OUTSIDE that perimeter. An
+    # epic-wide claim routes to NOT_SCOPED (exit 2) below -- unchanged.
+    if query_scope == "SCOPED_OCCUPIED":
+        lines = [
+            f"SCOPED_OCCUPIED: #{payload.get('number')} est servable -- les "
+            f"claims des autres lanes sont bornes a des chemins."
+        ]
+        for ln in sorted(occupied_paths):
+            lines.append(
+                f"chemins occupés par {ln} : {', '.join(occupied_paths[ln])}"
+                f" -- travailler hors de ce périmètre"
+            )
+        print("\n".join(lines))
+        return 0
     # Human verdict after the JSON.
     if others:
         who = ", ".join(
@@ -5995,6 +6154,31 @@ def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
     return [str(b) for b in blocking]
 
 
+def _occupied_paths_from_summary(stdout_text: str) -> dict[str, list[str]]:
+    """#25873 -- the `occupied_paths` field of a `_run_check` resume JSON.
+
+    Sibling of `_blocking_lanes_from_summary`: the batch path reads the two
+    flux (stdout JSON + stderr verdict) and the belt needs the occupied paths
+    to tell the lane to work OUTSIDE that perimeter. Same `raw_decode` (the
+    stdout carries a human phrase after the object). Empty when the JSON is
+    absent, is not a dict, or the verdict is not SCOPED_OCCUPIED.
+    """
+    text = stdout_text or ""
+    brace = text.find("{")
+    if brace == -1:
+        return {}
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[brace:])
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    occ = data.get("occupied_paths")
+    if not isinstance(occ, dict):
+        return {}
+    return {str(k): [str(p) for p in v] for k, v in occ.items() if v}
+
+
 def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
     """Court libelle machine-consommable issu de la sortie d'un `_run_check`.
 
@@ -6058,7 +6242,7 @@ def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
 # diagnostic faux sans jamais echouer.
 _VERDICT_LINE_PREFIXES = (
     "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
-    "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+    "DEAD-SCOPE", "NOT_SCOPED", "SCOPED_OCCUPIED", "DUMP",
 )
 
 
@@ -6168,6 +6352,7 @@ def check_issues_batch(
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
+    serve_bounded: bool = False,
 ) -> dict:
     """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
@@ -6287,6 +6472,7 @@ def check_issues_batch(
                     # Batch = read path only (L898), pas de posting
                     # leg.
                     check_open_pr_paths=True,
+                    serve_bounded=serve_bounded,
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
@@ -6304,6 +6490,11 @@ def check_issues_batch(
             # `ERROR` qui nomme un bloquant ne l'est plus.
             result["blocker_named"] = _names_a_blocker(
                 evidence, stdout_json=captured)
+            # #25873 -- SCOPED_OCCUPIED: le belt lit les chemins occupés par les
+            # claims bornes des autres lanes pour servir l'issue AVEC cette liste
+            # (travailler hors de ce périmètre) au lieu de l'écarter. Vide hors
+            # du verdict SCOPED_OCCUPIED.
+            result["occupied_paths"] = _occupied_paths_from_summary(captured)
             # #22983 -- la voie batch doit rendre le MEME verdict que le
             # reduiteur historique du picker : `exit 2` + un resume JSON qui
             # nomme des lanes bloquantes = BLOCKED. Ce cas est distinct de

@@ -136,6 +136,14 @@ GESTURE_WINDOW = 400
 #: rendu sert au rapport. Un corps qui en porte une est un post de lane, jamais
 #: un candidat — deux tiers des commentaires du compte partage sont ainsi ecartes.
 _LANE_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    # Dossier de clôture produit par la session hors flotte : le login GitHub
+    # est partagé, mais l'en-tête structuré identifie explicitement sa lane.
+    # Ancrer la forme entière en tête évite d'exclure une remarque qui cite
+    # simplement un dossier dans sa prose.
+    ("astra-closure-preflight", re.compile(
+        r"\AHors flotte[^\n]*\n\s*\[CLOSURE PREFLIGHT\]\s*\n"
+        r"schema:\s*1\s*\nlane:\s*astra:CoursIA\s*(?:\n|\Z)"
+    )),
     ("lane-near-seat", re.compile(r"\blane\b[^\w\n]{0,12}myia-", re.IGNORECASE)),
     ("seat-token", re.compile(r"myia-[a-z0-9-]+:[A-Za-z0-9._-]+")),
     ("grain-tag", re.compile(r"\bGrain\s*:", re.IGNORECASE)),
@@ -692,7 +700,9 @@ def analyse_comments(
             # raison de… » est une vraie remarque du mainteneur, tandis qu'un
             # « [LIVRAISON] … » est un post de lane. Faute de pouvoir trancher,
             # il est ROUTE vers MANUAL_REVIEW au lieu d'etre ecarte.
-            ambiguous = signature == "head-tag"
+            # Un humain peut aussi copier l'en-tête d'un dossier : ne jamais
+            # écarter sa remarque sans revue.
+            ambiguous = signature in {"head-tag", "astra-closure-preflight"}
             if signature and not ambiguous:
                 excluded[signature] = excluded.get(signature, 0) + 1
                 continue
