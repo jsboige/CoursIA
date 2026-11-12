@@ -127,6 +127,8 @@ import argparse
 import os
 import re
 import signal
+import shutil
+import uuid
 import subprocess
 import sys
 import threading
@@ -396,20 +398,25 @@ class _TerminationRequested(BaseException):
 
 
 def _diagnostic_snapshot(directory, emit) -> None:
-    """Rapporte uniquement les identifiants de tests et compteurs mémoire."""
+    """Rapporte au mieux les tests actifs et les compteurs mémoire."""
     if directory is None:
         return
-    if directory:
-        try:
-            for path in sorted(Path(directory.name).glob("gw[0-9]*")):
-                emit(f"XDIST-DIAGNOSTIC {path.name}: {path.read_text(encoding='utf-8')}")
-        except OSError:
-            pass
     try:
-        events = Path("/sys/fs/cgroup/memory.events").read_text(encoding="ascii")
-        emit("XDIST-DIAGNOSTIC memory.events: " + ", ".join(events.splitlines()))
-    except OSError:
-        pass
+        for path in sorted(Path(directory.name).glob("gw[0-9]*")):
+            try:
+                value = path.read_text(encoding="utf-8", errors="replace")
+                emit(f"XDIST-DIAGNOSTIC {path.name}: {value}")
+            except Exception:
+                pass
+        try:
+            events = Path("/sys/fs/cgroup/memory.events").read_text(
+                encoding="ascii", errors="replace"
+            )
+            emit("XDIST-DIAGNOSTIC memory.events: " + ", ".join(events.splitlines()))
+        except Exception:
+            pass
+    except Exception:
+        pass  # La surveillance et son verdict priment sur le diagnostic.
 
 
 def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
@@ -438,13 +445,24 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
             diagnostics = tempfile.TemporaryDirectory(prefix="coursia-xdist-")
             child_env = os.environ.copy()
             child_env["COURSIA_XDIST_DIAGNOSTICS"] = diagnostics.name
-            plugin_dir = str(Path(__file__).resolve().parent)
+            # Nom unique par exécution : ne masque aucun plugin utilisateur,
+            # notamment celui qui s'appellerait xdist_diagnostics.
+            module_name = "_coursia_xdist_" + uuid.uuid4().hex
+            shutil.copyfile(Path(__file__).with_name("xdist_diagnostics.py"),
+                            Path(diagnostics.name) / (module_name + ".py"))
+            previous = child_env.get("PYTHONPATH")
             child_env["PYTHONPATH"] = os.pathsep.join(
-                filter(None, (plugin_dir, child_env.get("PYTHONPATH", "")))
+                [previous, diagnostics.name] if previous is not None else [diagnostics.name]
             )
-            argv = [argv[0], "-p", "xdist_diagnostics", *argv[1:]]
+            argv = [argv[0], "-p", module_name, *argv[1:]]
         except OSError:
+            if diagnostics is not None:
+                try:
+                    diagnostics.cleanup()
+                except OSError:
+                    pass
             diagnostics = None
+            child_env = None
     kwargs: dict = {}
     if os.name == "posix":
         kwargs["start_new_session"] = True
