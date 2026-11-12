@@ -578,3 +578,7 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 ## Licence
 
 Voir la licence du dépôt principal.
+
+## Reward model Bradley–Terry : Python et C#
+
+[RLPT-00 en Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) et [en C#](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb) entraînent le même type de modèle de reward sur des préférences synthétiques, avec PyTorch et TorchSharp CPU. Le pooling moyen reste insensible à l'ordre : les deux versions exposent cette limite et distinguent la référence Bayes en espérance des mesures réalisées.
