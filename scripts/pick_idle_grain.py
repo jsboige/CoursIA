@@ -13630,7 +13630,14 @@ def creation_budget_gate(pool: list[dict], *,
     try:
         import creation_budget as cb
     except Exception:  # noqa: BLE001 - module absent = porte inactive
-        return {}
+        # T3-d (#26104) : le module vit dans scripts/ci/ -- amorcage du
+        # repertoire de famille, meme motif que tirage_journal/origami_parking.
+        try:
+            sys.path.insert(0, os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "ci"))
+            import creation_budget as cb  # type: ignore[no-redef]
+        except Exception:  # noqa: BLE001 - module absent = porte inactive
+            return {}
     try:
         return cb.creation_gate(pool, open_count=open_count)
     except Exception:  # noqa: BLE001 - une porte qui leve n'ecarte personne

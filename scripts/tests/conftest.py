@@ -12,6 +12,12 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
+# T3-d (#26104) : famille scripts/ci (creation_budget et ses compteurs),
+# importee nue par les tests de la famille.
+_CI_DIR = _SCRIPTS_DIR / "ci"
+if str(_CI_DIR) not in sys.path:
+    sys.path.insert(0, str(_CI_DIR))
+
 
 class ShellEscape(BaseException):
     """Un test a lance un processus alors que ses sources sont simulees.
