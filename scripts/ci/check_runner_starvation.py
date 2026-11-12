@@ -1155,6 +1155,10 @@ def main() -> int:
 
     inv: RunnerInventory | None = None
     st: Starvation | None = None
+    # #15332 : le chemin cadence-only n'appelle pas load_declared_hosts, mais
+    # le payload annonce toujours `declared_hosts`. Sans cette initialisation,
+    # la porte de mesure economisait la lecture ET cassait le passage.
+    declared: DeclaredHosts | None = None
     if measure:
         token = os.environ.get("RUNNERS_READ_PAT") or None
         inv = fetch_inventory(args.repo, args.label, token)
