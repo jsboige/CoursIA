@@ -2988,6 +2988,37 @@ def test_scope_batch_matching_matches_path_predicate_exactly():
     assert clc._matching_tracked_indices(patterns, tracked) == expected
 
 
+def test_matching_indices_memo_bounded_by_cumulative_indices(monkeypatch):
+    # #25913 (reponse a la reserve Hermes #4) : le memo du croisement est
+    # borne en VOLUME (indices cumulés sur tous les frozensets), pas seulement
+    # en nombre d'entrees. La borne en nombre seule laissait 1024 entrees
+    # pleines (chacune jusqu'a la liste suivie entiere) tenir en memoire.
+    clc._MATCHING_INDICES_MEMO.clear()
+    clc._MATCHING_INDICES_MEMO_SIZE = 0
+    # Borne volontairement basse : test deterministe et rapide.
+    monkeypatch.setattr(clc, "_MATCHING_INDICES_MEMO_MAX_INDICES", 10)
+    tracked = object()  # forte reference ; la cle fournie fait la memo
+
+    # 1re entree : 6 indices, sous la borne (6 <= 10) -> conservee.
+    clc._matching_indices_store(("a", 1, 0), tracked, frozenset(range(6)))
+    assert len(clc._MATCHING_INDICES_MEMO) == 1
+    assert clc._MATCHING_INDICES_MEMO_SIZE == 6
+    # 2e entree : 6 + 6 = 12 > 10 -> clear, seule la courante survit.
+    clc._matching_indices_store(("b", 2, 0), tracked, frozenset(range(6, 12)))
+    assert len(clc._MATCHING_INDICES_MEMO) == 1
+    assert ("b", 2, 0) in clc._MATCHING_INDICES_MEMO
+    assert ("a", 1, 0) not in clc._MATCHING_INDICES_MEMO
+    assert clc._MATCHING_INDICES_MEMO_SIZE == 6
+    # Entree plus grosse que la borne : conservee seule (cache pure : un
+    # effacement ne change jamais un verdict), memo pas en surcap cumulative.
+    clc._matching_indices_store(("c", 3, 0), tracked, frozenset(range(20)))
+    assert len(clc._MATCHING_INDICES_MEMO) == 1
+    assert ("c", 3, 0) in clc._MATCHING_INDICES_MEMO
+    # Nettoyage : l'etat memo est module-level, partage entre tests.
+    clc._MATCHING_INDICES_MEMO.clear()
+    clc._MATCHING_INDICES_MEMO_SIZE = 0
+
+
 def test_path_match_keeps_windows_case_and_separator_rules(monkeypatch):
     import fnmatch
     import ntpath

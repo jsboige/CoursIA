@@ -3164,9 +3164,11 @@ def _normcase_path(path: str) -> str:
 def _path_matches_pair(path: str, pattern: str) -> bool:
     """Match one immutable path/pattern pair with fnmatch's platform rules.
 
-    Only the normalized regex and path strings are cached; the pair verdict
-    is recomputed. This keeps the cache independent of mutable caller lists
-    and retains Windows normcase and separator behavior.
+    The pair verdict itself is memoized by the ``@lru_cache`` above; its key
+    is two immutable ``str`` (path, pattern), so each entry is a pure function
+    of its arguments and stays independent of any mutable caller list. The
+    compiled regex and normcase helpers are cached separately. Windows
+    normcase and separator behavior are retained.
     """
     basename = path.rsplit("/", 1)[-1]
     regex = _compiled_path_pattern(pattern)
@@ -3225,7 +3227,35 @@ def _path_matches_cached(path: str, patterns: tuple[str, ...]) -> bool:
 # Seules les listes _TrackedFiles sont memoisees ; une liste brute (mutable)
 # ne l'est pas. Le bornage efface (re-calcule) : jamais un verdict faux.
 _MATCHING_INDICES_MEMO: dict[tuple, tuple[object, frozenset[int]]] = {}
+# #25913 (reponse a la reserve Hermes #4) -- double borne : en NOMBRE d'entrees
+# (MAX) et en VOLUME (MAX_INDICES, somme des indices sur tous les frozensets).
+# La borne en nombre seule laissait 1024 entrees pleines (chacune jusqu'a la
+# liste suivie entiere, ~16k indices) tenir en memoire (~44 Mo de frozensets
+# mesurés) ; la borne en indices cumulés plafonne le volume. _SIZE est le
+# compteur correspondant, réinitialisé a chaque clear.
 _MATCHING_INDICES_MEMO_MAX = 1024
+_MATCHING_INDICES_MEMO_MAX_INDICES = 131072  # ~8 listes suivies completes
+_MATCHING_INDICES_MEMO_SIZE = 0
+
+
+def _matching_indices_store(
+    key: tuple, tracked: object, indices: frozenset[int]
+) -> None:
+    """Insère dans ``_MATCHING_INDICES_MEMO`` sous double borne.
+
+    #25913 (reponse a la reserve Hermes #4) : au-dela de la borne en nombre
+    d'entrees, la borne en indices cumulés plafonne le volume de frozensets.
+    A la limite, la memo entiere est effacée ; c'est une cache pure, l'effacement
+    force un re-calcul mais ne change aucun verdict.
+    """
+    global _MATCHING_INDICES_MEMO_SIZE
+    if (len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX
+            or _MATCHING_INDICES_MEMO_SIZE + len(indices)
+            > _MATCHING_INDICES_MEMO_MAX_INDICES):
+        _MATCHING_INDICES_MEMO.clear()
+        _MATCHING_INDICES_MEMO_SIZE = 0
+    _MATCHING_INDICES_MEMO[key] = (tracked, indices)
+    _MATCHING_INDICES_MEMO_SIZE += len(indices)
 
 
 def _matching_tracked_indices(
@@ -3259,9 +3289,7 @@ def _matching_tracked_indices(
     regexes = [_compiled_path_pattern(p) for p in expanded]
     if not regexes:
         if is_tf:
-            if len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX:
-                _MATCHING_INDICES_MEMO.clear()
-            _MATCHING_INDICES_MEMO[key] = (tracked, frozenset())
+            _matching_indices_store(key, tracked, frozenset())
         return set()
     pairs = _norm_pairs(tracked)
     result = {
@@ -3269,9 +3297,7 @@ def _matching_tracked_indices(
         if any(rx.match(path) or rx.match(basename) for rx in regexes)
     }
     if is_tf:
-        if len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX:
-            _MATCHING_INDICES_MEMO.clear()
-        _MATCHING_INDICES_MEMO[key] = (tracked, frozenset(result))
+        _matching_indices_store(key, tracked, frozenset(result))
     return result
 
 
