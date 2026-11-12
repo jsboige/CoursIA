@@ -25,7 +25,7 @@ def run_script(tmp_path: Path, os_type: str, *args: str) -> subprocess.Completed
     env = os.environ.copy()
     env["PATH"] = f"{bin_dir}:{env['PATH']}"
     env["OSTYPE"] = os_type
-    # Sourcing lets the test set OSTYPE in this Bash process on Linux too.
+    # Le chargement permet de simuler OSTYPE dans ce processus Bash sous Linux.
     command = 'OSTYPE="$1"; source "$2" "${@:3}"'
     result = subprocess.run(
         ["bash", "-c", command, "test", os_type, str(SCRIPT), *args],
@@ -42,8 +42,8 @@ def test_custom_path_fails_before_package_manager_even_with_force(tmp_path: Path
     result = run_script(tmp_path, "linux-gnu", "--path", "/tmp/custom", "--force")
 
     assert result.returncode == 1
-    assert "is not supported" in result.stderr
-    assert "system package manager" in result.stderr
+    assert "n’est pas pris en charge" in result.stderr
+    assert "gestionnaire de paquets système" in result.stderr
     assert result.command_log == ""
 
 
@@ -53,7 +53,7 @@ def test_missing_or_empty_path_is_explained_before_installation(tmp_path: Path) 
 
     for result in (missing, empty):
         assert result.returncode == 1
-        assert "--path requires a non-empty path" in result.stderr
+        assert "--path requiert un chemin non vide" in result.stderr
         assert result.command_log == ""
 
 
@@ -61,8 +61,8 @@ def test_help_documents_package_manager_installation(tmp_path: Path) -> None:
     result = run_script(tmp_path, "linux-gnu", "--help")
 
     assert result.returncode == 0
-    assert "system package manager" in result.stdout
-    assert "not supported" in result.stdout
+    assert "gestionnaire de paquets système" in result.stdout
+    assert "ne sont pas pris en charge" in result.stdout
     assert result.command_log == ""
 
 

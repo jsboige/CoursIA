@@ -1,6 +1,6 @@
 #!/bin/bash
 # FFmpeg Installation Script for Linux/macOS
-# This script installs FFmpeg through the system package manager.
+# Ce script installe FFmpeg avec le gestionnaire de paquets système.
 
 set -e
 
@@ -9,8 +9,8 @@ usage() {
     cat <<'EOF'
 Usage: install-ffmpeg.sh [--force] [--help]
 
-Install FFmpeg through the system package manager (apt, yum, dnf, or Homebrew).
-Custom installation paths are not supported.
+Installe FFmpeg avec le gestionnaire de paquets système (apt, yum, dnf ou Homebrew).
+Les chemins personnalisés ne sont pas pris en charge.
 EOF
 }
 
@@ -27,11 +27,11 @@ while [[ $# -gt 0 ]]; do
             ;;
         --path)
             if [[ $# -lt 2 || -z "$2" || "$2" == --* ]]; then
-                echo "Error: --path requires a non-empty path; custom paths are not supported." >&2
+                echo "Erreur : --path requiert un chemin non vide ; les chemins personnalisés ne sont pas pris en charge." >&2
             else
-                echo "Error: --path '$2' is not supported; FFmpeg is installed through the system package manager." >&2
+                echo "Erreur : --path '$2' n’est pas pris en charge ; FFmpeg est installé avec le gestionnaire de paquets système." >&2
             fi
-            echo "Use --help for usage." >&2
+            echo "Consultez --help pour connaître les options." >&2
             exit 1
             ;;
         *)
