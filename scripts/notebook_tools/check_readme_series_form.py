@@ -8,6 +8,14 @@ V1 compte les trois marqueurs de forme (au moins deux requis). V2 signale
 une ligne de palier lettré dans « Parcours principal » ou des paliers
 lettrés absents de « Approfondissements ». --base-ref est obligatoire : le
 code de sortie ne sanctionne que les violations ajoutées depuis cette base.
+
+La doctrine #3973 autorise explicitement un palier lettré **en lien court
+dans la dernière colonne** de la table du parcours (« Pour approfondir »).
+V2 ne signale donc que les lettres hors de cette forme : une ligne dont la
+première cellule est un numéro lettré, ou un lien lettré dans une colonne
+autre que la dernière. Compter toute ligne contenant un lien lettré
+signalait la forme conforme comme un défaut (9 fichiers sur 9, mesuré le
+2026-11-12 sur `origin/main`).
 """
 from __future__ import annotations
 
@@ -51,12 +59,46 @@ def _table_rows(text: str, heading: str) -> list[str]:
     return rows
 
 
+def _cells(row: str) -> list[str]:
+    """Découpe une ligne de tableau Markdown en cellules, pipes échappés respectés."""
+    body = row.strip()
+    if body.startswith("|"):
+        body = body[1:]
+    if body.endswith("|"):
+        body = body[:-1]
+    return re.split(r"(?<!\\)\|", body)
+
+
+def _main_path_violations(main_rows: list[str]) -> list[str]:
+    """Lignes du parcours principal portant une lettre hors de la forme autorisée.
+
+    Forme autorisée par la doctrine #3973 : un palier lettré peut être cité
+    en **lien court dans la dernière colonne** (« Pour approfondir »). Une
+    lettre ailleurs est un défaut : en première cellule, c'est un palier
+    déguisé en étape du parcours ; dans une colonne intermédiaire, c'est un
+    palier présenté comme une étape.
+    """
+    bad: list[str] = []
+    for row in main_rows:
+        if LETTER.match(row):
+            bad.append(row)
+            continue
+        cells = _cells(row)
+        if len(cells) < 2:
+            if LETTER_LINK.search(row):
+                bad.append(row)
+            continue
+        if LETTER_LINK.search("|".join(cells[:-1])):
+            bad.append(row)
+    return bad
+
+
 def inspect_text(path: str, text: str) -> dict:
     found = [name for name, pattern in MARKERS if pattern.search(text)]
     missing = [name for name, _ in MARKERS if name not in found]
     main_rows = _table_rows(text, "Parcours principal")
     approfond_rows = _table_rows(text, "Approfondissements")
-    bad_main = [row for row in main_rows if LETTER.match(row) or LETTER_LINK.search(row)]
+    bad_main = _main_path_violations(main_rows)
     letters_below = [row for row in approfond_rows if LETTER.match(row)]
     v2 = bool(bad_main)
     extra = []
