@@ -1,0 +1,10 @@
+- name: Search-12 Branch and Bound Borne LP
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-BranchAndBound-Borne-LP-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12-BranchAndBound-Borne-LP-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: 'Le juge MILP est SciPy HiGHS en Python et Google.OrTools SCIP en C#, moteurs réels. DP et B&B sont les algorithmes pédagogiques dans les deux langages.'
+  known_differences:
+  - 'Moteurs HiGHS et SCIP et générateurs aléatoires distincts : les instances et temps ne sont pas interchangeables.'
+  - 'Exercice ordre de branchement : le harnais C# réalise le DFS et compte lui-même les nœuds pour éviter des compteurs déclarés.'
