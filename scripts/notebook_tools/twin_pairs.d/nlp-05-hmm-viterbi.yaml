@@ -1,0 +1,10 @@
+- name: "NLP-05 HMM Viterbi"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/05-HMM-Viterbi-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les calculs pédagogiques HMM sont réalisés dans chaque langage ; C# invoque les vrais témoins hmmlearn et NLTK via Python.NET."
+  known_differences:
+    - "Python utilise NumPy et matplotlib ; C# emploie BCL et SVG statiques, avec Python.NET limité aux témoins hmmlearn et NLTK."
+    - "Les trois exercices C# disposent de fixtures indépendantes ; la source Python est modifiée uniquement en Markdown."
