@@ -1,0 +1,10 @@
+- name: "ML-3.0b Tenseurs Strides Vues"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0b-Tenseurs-Strides-Vues-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "TorchSharp et libtorch réalisent les opérations natives en C# ; les témoins NumPy et leur benchmark utilisent réellement Python.NET."
+  known_differences:
+    - "Python utilise directement NumPy et PyTorch ; C# utilise TorchSharp et appelle NumPy via Python.NET pour les témoins et le benchmark."
+    - "Les mesures chronométrées dépendent du matériel ; les appels C# incluent le coût du pont Python.NET."
