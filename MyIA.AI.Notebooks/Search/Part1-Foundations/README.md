@@ -225,4 +225,3 @@ La recherche en IA propose un changement de regard sur la résolution de problè
 ## B&B et borne LP : versions Python et C#
 
 [Search-12 en Python](Search-12-BranchAndBound-Borne-LP-Python.ipynb) et [en C#](Search-12-BranchAndBound-Borne-LP-CSharp.ipynb) comparent DP, branch-and-bound et MILP sur le sac à dos. Le juge est HiGHS côté Python et SCIP via Google.OrTools côté C# ; les durées et les générateurs aléatoires diffèrent.
-
