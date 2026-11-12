@@ -49,7 +49,11 @@ Une erreur de collecte ne supprime pas les résultats des autres issues : le
 tableau la compte et en donne le motif. Le JSON conserve toutes les lignes et
 ajoute ``complete`` et ``errors`` (nombre d'issues non classées). Le CLI rend
 0 pour une collecte complète, 1 si des issues n'ont pas pu être classées,
-après avoir écrit le JSON demandé. Ce statut ne juge pas les livraisons.
+après avoir écrit le JSON demandé. Ce statut vise la fenêtre choisie par
+``--limit``/``--offset``, pas l'exhaustivité du dépôt ni la vérité des livraisons.
+Les corps de PR nécessaires au classement doivent avoir été effectivement lus :
+une lecture échouée ou une réponse body/title incomplète devient une erreur,
+jamais un corps vide inventé. Un corps vide réellement lu reste valide.
 """
 
 from __future__ import annotations
@@ -123,6 +127,41 @@ def _has_label(issue: dict, name: str) -> bool:
     return name in [lab.get("name", "") for lab in (issue.get("labels") or [])]
 
 
+def _with_verified_pr_bodies(
+    repo: str, refs: list[dict], cache: dict[int, tuple[str, str]],
+) -> list[dict]:
+    """Lire les pièces courantes sans confondre échec et corps vide.
+
+    Le balayage advisory tolère une pièce illisible en refusant d'armer un
+    label. Un census doit au contraire signaler que la preuve n'a pas pu être
+    classée. Le cache ne contient donc que des lectures complètes réussies.
+    """
+    enriched = []
+    for ref in refs:
+        ref = dict(ref)
+        if ref.get("is_pr") and (ref.get("merged_at")
+                                 or ref.get("state") == "open"):
+            number = ref["pr_number"]
+            if number not in cache:
+                try:
+                    raw = cd._gh_json([
+                        "pr", "view", str(number), "--repo", repo,
+                        "--json", "body,title",
+                    ])
+                except RuntimeError as exc:
+                    raise RuntimeError(f"lecture PR #{number} : {exc}") from exc
+                if not (isinstance(raw, dict)
+                        and isinstance(raw.get("body"), str)
+                        and isinstance(raw.get("title"), str)):
+                    raise ValueError(
+                        f"lecture PR #{number} : réponse body/title incomplète"
+                    )
+                cache[number] = (raw["body"], raw["title"])
+            ref["body"], ref["title"] = cache[number]
+        enriched.append(ref)
+    return enriched
+
+
 def census(repo: str, limit: int = 0, offset: int = 0,
            sleep: float = 0.3) -> dict:
     """Parcourt la fenetre ouverte et rend le census (une entree par issue)."""
@@ -134,7 +173,7 @@ def census(repo: str, limit: int = 0, offset: int = 0,
         try:
             refs, label_events = cd.timeline_facts(repo, number, LABEL)
             detail = cd.issue_detail(repo, number)
-            refs = cd._with_pr_bodies(repo, refs, body_cache)
+            refs = _with_verified_pr_bodies(repo, refs, body_cache)
         except Exception as exc:  # noqa: BLE001 - reseau : on saute, on ne casse pas
             rows.append({"number": number, "classe": "erreur",
                          "detail": str(exc)[:200]})
