@@ -101,7 +101,7 @@ Système de diagnostic médical combinant recherche informée (A*), algorithmes 
 - **Technologies** : Python, z3-solver, heapq, pandas
 - **Concepts** : Recherche A*, algorithmes génétiques, CSP, validation par contraintes
 
-[README complet](Diagnostic-Medical/README.md) | 2 notebooks (student + solution) | ~3-4h
+[README complet](Diagnostic-Medical/README.md) | notebooks (student + solution) | ~3-4h
 
 ### Oncology Planning (OncoPlan)
 
