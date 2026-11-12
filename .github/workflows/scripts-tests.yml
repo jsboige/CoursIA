@@ -135,7 +135,11 @@ jobs:
   # en echec renvoie `latest=true` -- on re-execute, on ne saute jamais en
   # silence sur une lecture d'infrastructure ratee.
   is-latest-main:
-    name: Short-circuit superseded main commit (#25181)
+    name: Short-circuit superseded main commit (scripts-tests, #25181)
+    # (#25181 CR) : le job leger ne sert que les commits `push` de main ; sur
+    # pull_request / workflow_dispatch il est saute, et les jobs lourds passent
+    # par `!cancelled() && latest != 'false'` (vide != 'false' = vrai).
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -164,7 +168,7 @@ jobs:
     # #25181 : `needs` + `latest == 'true'` -- un commit main depasse (un plus
     # recent est deja en tete) passe ce job en `skipped` au lieu d'executer la
     # suite sur un arbre mort ; les PR/dispatch passent toujours.
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && !cancelled() && needs.is-latest-main.outputs.latest != 'false'
     # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
     # (started_at -> completed_at du job nomme exactement "Scripts Tests
     # (CPU)"), celle sur laquelle timeout-minutes agit -- jamais la duree
@@ -697,7 +701,7 @@ jobs:
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     # #25181 : court-circuit des commits main depasses (job `is-latest-main`) --
     # see the `scripts-tests` job for the full rationale.
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && !cancelled() && needs.is-latest-main.outputs.latest != 'false'
     timeout-minutes: 15
 
     steps:
@@ -737,7 +741,7 @@ jobs:
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     # #25181 : court-circuit des commits main depasses (job `is-latest-main`) --
     # see the `scripts-tests` job for the full rationale.
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && !cancelled() && needs.is-latest-main.outputs.latest != 'false'
     timeout-minutes: 15
 
     steps:

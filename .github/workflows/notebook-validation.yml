@@ -36,7 +36,11 @@ jobs:
   # `latest=true` -- on re-execute, on ne saute jamais en silence sur une
   # lecture d'infrastructure ratee.
   is-latest-main:
-    name: Short-circuit superseded main commit (#25181)
+    name: Short-circuit superseded main commit (notebook-validation, #25181)
+    # (#25181 CR) : le job leger ne sert que les commits `push` de main ; sur
+    # pull_request / workflow_dispatch il est saute, et les jobs lourds passent
+    # par `!cancelled() && latest != 'false'` (vide != 'false' = vrai).
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -73,7 +77,7 @@ jobs:
     # #25181 : `needs` + `latest == 'true'` -- un commit main depasse (un plus
     # recent est deja en tete) passe ce job en `skipped` au lieu de valider un
     # arbre mort ; les PR/dispatch passent toujours.
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && !cancelled() && needs.is-latest-main.outputs.latest != 'false'
     # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
     # job herite de 360 min et peut figer un slot ephemere du parc local --
     # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut

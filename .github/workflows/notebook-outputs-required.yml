@@ -66,7 +66,11 @@ jobs:
   # Fail-open : un `ls-remote` en echec renvoie `latest=true` -- on re-execute,
   # on ne saute jamais en silence sur une lecture d'infrastructure ratee.
   is-latest-main:
-    name: Short-circuit superseded main commit (#25181)
+    name: Short-circuit superseded main commit (notebook-outputs-required, #25181)
+    # (#25181 CR) : le job leger ne sert que les commits `push` de main ; sur
+    # pull_request / workflow_dispatch il est saute, et les jobs lourds passent
+    # par `!cancelled() && latest != 'false'` (vide != 'false' = vrai).
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 3
     outputs:
@@ -97,7 +101,7 @@ jobs:
     # recent est deja en tete) saute le detect, et par `needs` le `validate`
     # en aval, au lieu de payer une execution sur un arbre mort ; les PR /
     # dispatch passent toujours.
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && !cancelled() && needs.is-latest-main.outputs.latest != 'false'
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
