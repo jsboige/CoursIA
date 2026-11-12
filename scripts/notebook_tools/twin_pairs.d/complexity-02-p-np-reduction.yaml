@@ -1,0 +1,14 @@
+- name: "Complexity-02 P-NP Reduction"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Solver-free by design: the source notebook teaches decision certificates, exhaustive search,
+    dynamic programming, and a reduction by implementing each algorithm directly. The C# twin
+    uses the corresponding .NET BCL primitives and preserves the pedagogical algorithms; no
+    source dependency or reference solver is omitted.
+  known_differences:
+    - "Seeded sequences differ between NumPy and System.Random; the C# notebook preserves each seed, fixture size, full iteration count, and comparison guard, so random counts can differ while remaining reproducible within each runtime."
+    - "Wall-clock extrapolations use the measured .NET throughput and BigInteger operation counts on the executing machine; they are illustrative projections, not measurements at larger n."
