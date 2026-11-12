@@ -591,7 +591,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,a7a4e79c,code,fr,
 # Etape 2 : pour chaque poids, calculer P(Cancer(bob))
 # Etape 3 : identifier le seuil et le comparer a la version strict
 print(""Exercice a completer"")",,,,,,,,2bcf0e892ce73e61,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,47e3fbba,markdown,fr,560cb1a19045f029,"***
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-Python.ipynb,47e3fbba,markdown,fr,56cf35c842e7d027,"***
 
 ## Resume
 
@@ -623,9 +623,9 @@ Ce notebook a couvert :
 
 ***
 
-**Navigation** : [← Tweety-9-Préférences](Tweety-09-Preferences-Python.ipynb) | [Index](Tweety-01-Setup-Python.ipynb) | [README](README.md)",,,,,,,,560cb1a19045f029,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,4b764a33,markdown,fr,17f4d21526e34885,"# Tweety-10 — Markov Logic Networks (MLN) en .NET (C# / IKVM)
-**Navigation** : [← Tweety-9-Préférences](Tweety-09-Preferences-Python.ipynb) | [Index](./README.md) | [Tweety-11-Causal-Python →](Tweety-11-Causal-Python.ipynb)
+**Navigation** : [← Tweety-9-Préférences](Tweety-09-Preferences-Python.ipynb) | [Index](Tweety-01-Setup-Python.ipynb) | [README](README.md)",,,,,,,,56cf35c842e7d027,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,4b764a33,markdown,fr,f141d7df88133c26,"# Tweety-10 — Markov Logic Networks (MLN) en .NET (C# / IKVM)
+**Navigation** : [← Tweety-9-Préférences](Tweety-09-Preferences-Python.ipynb) | [Index](./README.md) | [Tweety-11-Causal-Python →](Tweety-11-Causal-Python.ipynb) | [Tweety-11c (C#)](Tweety-11-Causal-CSharp.ipynb)
 **Module** : `org.tweetyproject.logics.mln` (Tweety 1.30) — compilé via IKVM 8.14.0 + .NET 8.0
 **Clé** : `See #4667` (EPIC Tweety .NET — 11ème port C#)
 **Recette build** : `dotnet-build/build-tweety-mln-shade.pom.xml` (maven-shade-plugin 3.5.3) + `dotnet-build/build-TweetyMlnShade.csproj` (IKVM 8.14.0, net8.0)
@@ -638,7 +638,7 @@ A la fin de ce notebook, vous saurez :
 ## Prérequis
 - Avoir exécuté [Tweety-02-Basic-Logics-CSharp.ipynb](Tweety-02-Basic-Logics-CSharp.ipynb) (notebook 2) p
 our `FolSignature`/`FolParser`/`FolFormula`- Avoir exécuté [Tweety-03-ModalLogic-CSharp.ipynb](Tweety-03-ModalLogic-CSharp.ipynb) (notebook 3) p
-our la logique modale (transversale)- Notions de base en FOL et en réseaux de Markov (loi de Boltzmann sur les mondes possibles)",,,,,,,,17f4d21526e34885,,,,,,,,,,,,,,,
+our la logique modale (transversale)- Notions de base en FOL et en réseaux de Markov (loi de Boltzmann sur les mondes possibles)",,,,,,,,f141d7df88133c26,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-10-MLN-CSharp.ipynb,4f5ecc42,code,fr,5718bfab96b76c32,"// --- Initialisation runtime IKVM + chargement DLL MLN (rebuild C190 IKVM 8.14) ---
 #r ""nuget: IKVM, 8.14.0""
 #r ""org.tweetyproject.tweety-mln.dll""
@@ -1139,13 +1139,13 @@ appris par optimization ou fixé à la main)- Pour des domaines > 30 atomes, l'�
 - **Référence** : Richardson, M., & Domingos, P. (2006). *Markov logic networks*. Machine Learning, 62(1-2), 107-136.
 - **Documentation Tweety** : <https://tweetyproject.org/api/1.30/org/tweetyproject/logics/mln/package-summary.html>
 - **Code source** : `dotnet-build/build-tweety-mln-shade.pom.xml` (Maven shade) + `build-TweetyMlnShade.csproj` (IKVM) → `org.tweetyproject.tweety-mln.dll` (≈14 MB)",,,,,,,,c2c19d5e5adfae50,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,9735acd3,markdown,fr,2985749a3453ffdf,"# Tweety-11 — Raisonnement Causal : du do-calculus aux contrefactuels
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,9735acd3,markdown,fr,4a2d9e58d3792f27,"# Tweety-11 — Raisonnement Causal : du do-calculus aux contrefactuels
 
 | | |
 |---|---|
 | **Série** | [TweetyProject](README.md) — Notebook 11 (Synthèse) |
 | **Précédent** | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb) (Markov Logic Networks) |
-| **Suivant** | — (fin de la série) |
+| **Suivant** | [Tweety-12-Grounded-Via-TweetyProject-Python](Tweety-12-Grounded-Via-TweetyProject-Python.ipynb) (pont Python/Tweety ⇄ Lean) |
 | **Module Tweety** | `org.tweetyproject.causal` (causal-1.30.jar) |
 | **Durée estimée** | ~50 min |
 | **Niveau** | Avancé (capstone) |
@@ -1176,7 +1176,7 @@ Ce notebook est **complémentaire** de Tweety-5 §4.4, **non redondant** :
 | Niveau de Pearl | (1) Association / observation | (2) Intervention `do(X)` + (3) Contrefactuel |
 | API Tweety | `ArgumentationBasedCausalReasoner.query(observations)` | `InterventionalStatement`, `CounterfactualStatement`, `do(X)` |
 
-Tweety-5 répond à *« que déduire de ce que je vois ? »* ; Tweety-11 répond à *« que se passerait-il si j'agissais différemment ? »*.",,,,,,,,2985749a3453ffdf,,,,,,,,,,,,,,,
+Tweety-5 répond à *« que déduire de ce que je vois ? »* ; Tweety-11 répond à *« que se passerait-il si j'agissais différemment ? »*.",,,,,,,,4a2d9e58d3792f27,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,13dd2ed6,markdown,fr,91dae7fb7cdfaf4d,"## 1. Pourquoi la causalité ? — L'échelle de Pearl
 
 La logique classique (notebooks 1-4) et probabiliste (Tweety-10 MLN) répondent à la question **« que peut-on déduire d'un ensemble de croyances ? »**. Mais elles sont **aveugles à la direction causale** : un théorème de Bayes ne distingue pas « le baromètre baisse → orage » de « l'orage → le baromètre baisse ».
@@ -1442,7 +1442,7 @@ Le moteur causal de Tweety est **qualitatif** (booléen) : il ne calcule pas de 
 ***
 
 *Notebook 11/11 de la série TweetyProject — capstone de synthèse sur le raisonnement causal.*",,,,,,,,b3aacaadf8445c3f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,56ee2b24,markdown,fr,8e690100294266e9,"## 7. Aller plus loin — le même do-calculus, d'autres paradigmes
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb,56ee2b24,markdown,fr,0e6d8f441fadbd1a,"## 7. Aller plus loin — le même do-calculus, d'autres paradigmes
 
 Tweety traite la causalité en **logique propositionnelle** : `do(X)` y est *qualitatif* — un atome forcé, un SCM réécrit, une réponse vrai/faux. C'est idéal pour *voir* la différence entre `observe` et `do` sans se noyer dans les nombres, mais Tweety **ne chiffre pas** un effet causal (« de combien la probabilité de pluie change-t-elle ? ») ni ne lève quantitativement un paradoxe de Simpson. Les séries probabilistes du dépôt reprennent **exactement ce notebook** avec des distributions :
 
@@ -1450,8 +1450,10 @@ Tweety traite la causalité en **logique propositionnelle** : `do(X)` y est *qua
 - **[PyMC-5 — Inférence Causale](../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb)** : la version **MCMC**, avec l'opérateur natif `pm.do(model, {X:x})` et le **contrefactuel par abduction** (postérieur sur les variables exogènes).
 - **[ICT-5 — Émergence Causale](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb)** : le même `do` monte d'un cran — la distribution d'intervention uniforme `p(C)` *est* `do(X_t = x)` appliqué à tout le micro-état, et mesure à **quelle échelle** un système réalise le plus de travail causal (émergence).
 
-> **Vue d'ensemble des quatre paradigmes** : la section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes » du [README IIT](../../IIT/README.md) cartographie comment le symbolique (ce notebook), le bayésien par message passing, le MCMC et la théorie de l'information instancient le même opérateur `do(·)`.",,,,,,,,8e690100294266e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,22185c95,markdown,fr,3afa107a15071ba1,"# Tweety-11 — Inférence causale & do-calculus (twin C# from-scratch)
+> **Vue d'ensemble des quatre paradigmes** : la section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes » du [README IIT](../../IIT/README.md) cartographie comment le symbolique (ce notebook), le bayésien par message passing, le MCMC et la théorie de l'information instancient le même opérateur `do(·)`.",,,,,,,,0e6d8f441fadbd1a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,22185c95,markdown,fr,8a3717d560fa2930,"# Tweety-11 — Inférence causale & do-calculus (twin C# from-scratch)
+**Navigation** : [<< Tweety-10 MLN (C#)](Tweety-10-MLN-CSharp.ipynb) | [Tweety-11 Python](Tweety-11-Causal-Python.ipynb) | [Index](README.md)
+
 
 Ce notebook est le **jumeau C# / .NET** de [Tweety-11-Causal-Python.ipynb](Tweety-11-Causal-Python.ipynb) — marathon de parité #4956.
 
@@ -1462,7 +1464,7 @@ la sémantique contrefactuelle. La lib Java Tweety = `RECOVERABLE-MACHINE` (Pyth
 
 **Pourquoi from-scratch ?** L'enjeu pédagogique de l'inférence causale (Pearl) n'est pas d'appeler une boîte noire,
 mais de *voir* pourquoi `P(rain | observe drops) != P(rain | do drops)`. Cela exige d'exposer le graphe causal orienté,
-la surgery `do(X)` qui rompt les liens entrants, et l'évaluation des mondes possibles.",,,,,,,,3afa107a15071ba1,,,,,,,,,,,,,,,
+la surgery `do(X)` qui rompt les liens entrants, et l'évaluation des mondes possibles.",,,,,,,,8a3717d560fa2930,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb,613cd651,markdown,fr,4469172acdb17489,"## 1. Moteur causal — modèles structurels booléens
 
 Un **Structural Causal Model (SCM)** booléen est un DAG d'atomes propositionnels :
@@ -2628,7 +2630,7 @@ Avant de demarrer la JVM, nous definissons des fonctions pour localiser ou telec
 2. Telechargement automatique de Zulu JDK 17 (Azul)
 3. Variable d'environnement `JAVA_HOME`
 4. Detection automatique des JDKs système",,,,,,,,755d5bc55fc4b341,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb,cbc68495,code,fr,630a738751c37a40,"# --- 1.6.1 Fonctions Utilitaires JDK ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb,cbc68495,code,fr,6092e42c768a817f,"# --- 1.6.1 Fonctions Utilitaires JDK ---
 import jpype
 import jpype.imports
 import os
@@ -2697,7 +2699,7 @@ def download_portable_jdk():
         print(f""Erreur telechargement JDK: {e}"")
         return None
 
-print(""Fonctions JDK definies: find_portable_jdk(), download_portable_jdk()"")",,,,,,,,630a738751c37a40,,,,,,,,,,,,,,,
+print(""Fonctions JDK definies: find_portable_jdk(), download_portable_jdk()"")",,,,,,,,6092e42c768a817f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb,51c82356,markdown,fr,4eee8296703d3f9a,"#### 1.6.2 Detection et Configuration du JDK
 
 Cette cellule detecte le JDK disponible et le telecharge si necessaire.
@@ -3054,7 +3056,7 @@ Exécutez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) p
 > **Limitations connues (Tweety 1.28):**
 > - FOL avec égalité peut causer des problèmes de heap space avec `SimpleFolReasoner`
 > - Préférer EProver pour les requêtes FOL complexes",,,,,,,,c73b67bafe2fac3b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb,6f6136ad,code,fr,fa4b84aa578d779c,"# --- Initialisation JVM Tweety + Outils Externes ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb,6f6136ad,code,fr,5eead44aa571685b,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -3172,7 +3174,7 @@ if jvm_ready:
             print(f""  {tool}: {short_path}"")
         else:
             tools_status.append(f""{tool}: -"")
-    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,fa4b84aa578d779c,,,,,,,,,,,,,,,
+    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,5eead44aa571685b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb,4je7rlg5f9h,markdown,fr,c022d7ff12180773,"### Interpretation de l'initialisation JVM
 
 **Succes de l'initialisation** :
@@ -5787,7 +5789,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,12deb
 Les dependances Python et les JARs Tweety etant prets, nous initialisons maintenant la machine virtuelle Java (JVM) avec le classpath complet. Cette étape charge les modules necessaires aux logiques avancees : description logic (`logics.dl`), logique modale (`logics.ml`), QBF (`logics.qbf`) et logique conditionnelle (`logics.cl`), ainsi que les outils externes (SPASS, EProver, Clingo).
 
 > **Note de parite cross-langage** (EPIC #4956) : Le jumeau C# de ce notebook utilise une strategie differente : **IKVM** transpile statiquement le bytecode Java de Tweety en DLL .NET native (~6 Mo, voir `org.tweetyproject.tweety-advanced-logics.dll` compilee par fat-jar shade), tandis que ce notebook Python utilise **jpype1** pour demarrer une JVM in-process et appeler directement les classes Java. Les deux strategies donnent acces au meme API Tweety (DlBeliefSet, DlParser, NaiveDlReasoner, SPASSMlReasoner, ConditionalLogic...). Particularite du jumeau C# : son port IKVM charge uniquement `logics-dl` (ALC) — les sous-logiques ML/QBF/CL explorees dans ce notebook Python ne sont pas portees C# (DLL `tweety-advanced-logics.dll` = surface minimale).",,,,,,,,f210aee69cce0fac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,c9384b5d,code,fr,778f64a1ae9c892a,"# --- Initialisation JVM Tweety + Outils Externes ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,c9384b5d,code,fr,9b01b317b27dfb20,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -5882,7 +5884,7 @@ else:
 
 # === Resume des outils ===
 if jvm_ready:
-    print(f""\nJVM prete"")",,,,,,,,778f64a1ae9c892a,,,,,,,,,,,,,,,
+    print(f""\nJVM prete"")",,,,,,,,9b01b317b27dfb20,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,8qq8geipre9,markdown,fr,a825ae59c48f62e1,"### Interpretation de l'initialisation
 
 **Sortie obtenue:**
@@ -6253,7 +6255,7 @@ Le raisonnement modal necessite un prouveur externe comme **SPASS**.
 > Ce bug est present dans TweetyProject (version 1.28+) et ne peut pas etre corrige cote utilisateur sans modifier les sources Java de la bibliotheque.
 >
 > **Note:** `SimpleMlReasoner` peut bloquer indefiniment car il enumere tous les mondes possibles.",,,,,,,,06de8159f2468029,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,64bb4a5b,code,fr,a7f5af8a10b0d239,"# --- 2.4.3 Raisonnement ML avec SPASS - Bug Upstream (Issue #1334) ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,64bb4a5b,code,fr,b3eaf64dd577c701,"# --- 2.4.3 Raisonnement ML avec SPASS - Bug Upstream (Issue #1334) ---
 # Bug: TweetyProject SPASSWriter genere une syntaxe DFG invalide pour SPASS 3.0
 # quand des operateurs modaux (box/diamond) sont presents.
 # Voir: cellule markdown precedente pour les details du bug.
@@ -6306,12 +6308,17 @@ print()
 print(""  Workaround: Le parsing modal (cellule precedente) fonctionne parfaitement."")
 print(""  L'evaluation manuelle via semantique de Kripke reste possible."")
 print()
-print(""  Resultats theoriques attendus (verification manuelle):"")
-print(""    [](!p)      : True   (dans tous les mondes, non-p est vrai)"")
-print(""    <>(q || r)  : True   (r est vrai dans tous les mondes, donc q||r y est vrai)"")
-print(""    p           : False  (p est faux dans le monde actuel)"")
-print(""    r           : True   (r est vrai dans le monde actuel)"")
-print(""    [](q)       : True   (q est necessairement vrai)"")",,,,,,,,a7f5af8a10b0d239,,,,,,,,,,,,,,,
+print(""  Verification manuelle par semantique de Kripke (aucune resolution automatique possible)"")
+print(""  Modele explicite : deux mondes w0 et w1, accessibilite complete entre les deux (S5) ;"")
+print(""                    p vrai sur w1 seul, q vrai sur les deux mondes, r vrai sur w0 seul ;"")
+print(""                    monde de reference : w0."")
+print()
+print(""    !(<>(p))            : False  (w1 satisfait p, donc <>p est vrai et sa negation est fausse)"")
+print(""    p || r              : True   (p est faux sur w0, r est vrai sur w0)"")
+print(""    !r || [](q && r)    : False  (r est faux sur w1, donc le box est faux ; r est vrai sur w0)"")
+print(""    [](r && <>(p || q)) : False  (r est faux sur w1, donc le box est faux)"")
+print(""    !p && !q            : False  (q est vrai sur w0, donc !q est faux)"")
+",,,,,,,,b3eaf64dd577c701,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,wiqhhh9vo1,markdown,fr,30034d57208844c2,"### Diagnostic : Bug Upstream SPASSWriter (Issue #1334)
 
 **Problème identifie :** TweetyProject `SPASSWriter` genere une syntaxe DFG invalide pour SPASS 3.0
@@ -8634,7 +8641,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb,532d3
 Exécutez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) pour configurer l'environnement JVM.
 
 ## Durée estimée : 30-40 minutes",,,,,,,,acc53dcbb4445906,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb,eff88e6b,code,fr,6d9a502e53ba5bb7,"# --- Initialisation JVM Tweety + Outils Externes ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb,eff88e6b,code,fr,dd52a519e96b02b1,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -8748,7 +8755,7 @@ if jvm_ready:
         if path:
             short_path = path.split(os.sep)[-1] if len(path) > 30 else path
             print(f""  {tool}: {short_path}"")
-    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,6d9a502e53ba5bb7,,,,,,,,,,,,,,,
+    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,dd52a519e96b02b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb,fp8q1gnqgzc,markdown,fr,2497cccb9faad901,"### Environnement opérationnel
 
 L'initialisation ci-dessus a démarré :
@@ -10317,7 +10324,7 @@ Executez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) po
 > **Note:** La section 4.1.4 (Apprentissage depuis Labellisations) est documentee conceptuellement mais desactivee en raison d'un bug interne Tweety.
 
 > **Note de parite cross-langage** : ce notebook est le **jumeau Python (JVM TweetyProject via `jpype1`)** du notebook C# [`Tweety-05-Abstract-Argumentation-CSharp.ipynb`](Tweety-05-Abstract-Argumentation-CSharp.ipynb) (implementation from-scratch BCL .NET 9, 0 NuGet, 0 IKVM ; Partie 1 = moteur Dung : fonction caracteristique, semantiques grounded/stable/preferred/complete, labeling 3-valued, generation aleatoire d'AF). Le twin Python utilise la lib Tweety reelle pour les semantiques avancees (CF2, equivalence, explications, raisonnement causal, v1.30) que le twin C# n'aborde pas en Partie 1 ; le twin C# Partie 1 a l'inverse valeur pedagogique d'implementer le moteur from-scratch. Le grounded canonique (chaine A->B->C->D = {A,C}) est coherent avec cell[8] du twin C#. Marathon parite .NET <-> Python : EPIC #4956.",,,,,,,,d1cdb246b41d4fed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb,5a6dbb97,code,fr,0cbc807da2f7612f,"# --- Initialisation JVM Tweety + Outils Externes ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb,5a6dbb97,code,fr,52dd112336d0c380,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -10431,7 +10438,7 @@ if jvm_ready:
         if path:
             short_path = path.split(os.sep)[-1] if len(path) > 30 else path
             print(f""  {tool}: {short_path}"")
-    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,0cbc807da2f7612f,,,,,,,,,,,,,,,
+    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,52dd112336d0c380,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb,ovgmeeo33d,markdown,fr,e456e695fd04deab,"### Verification de l'environnement
 
 **Composants initialises :**
@@ -12178,7 +12185,9 @@ Ce notebook couvre **deux approches complémentaires** du même sujet :
 ***
 
 *Twin .NET⇔Python (EPIC #4956 marathon). Argumentation de Dung = 1er concept (après les logiques de Tweety-2/3). Le carnet confronte deux approches : pédagogie from-scratch, puis intégration de la lib Tweety réelle via IKVM (mandat user 2026-07-22 : « on est arrivé a ramener Tweety a portee de Csharp en retrogradant la version Java pour la rendre compatible avec IKVM, ca n'est pas pour ne pas compléter le from scratch par de la vraie intégration »).*",,,,,,,,80bff333b3d26438,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb,00b4f9a8,markdown,fr,88219a85cae084b3,"# Tweety-5b — Théorie de l'argumentation de Dung (companion formel natif)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb,00b4f9a8,markdown,fr,4718e5836dd20599,"# Tweety-5b — Théorie de l'argumentation de Dung (companion formel natif)
+**Navigation**: [← Tweety-5 Argumentation abstraite](Tweety-05-Abstract-Argumentation-Python.ipynb) | [Tweety-5d Synthèse certifiée →](Tweety-05d-Stable-Synthesis-Lean-Python.ipynb) | [Index](README.md)
+
 
 Ce notebook est le **companion formel** du lake [`argumentation_lean`](argumentation_lean/),
 dont la lib `Argumentation` prouve les résultats fondateurs de la théorie de
@@ -12198,7 +12207,7 @@ Mathlib #2611).
 
 > ⚠️ À l'exécution, la première cellule (`import`) peut prendre **~3 min** :
 > le kernel charge les oleans Mathlib via la jonction NTFS. Les suivantes sont
-> instantanées.",,,,,,,,88219a85cae084b3,,,,,,,,,,,,,,,
+> instantanées.",,,,,,,,4718e5836dd20599,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb,1c48670e,markdown,fr,92e56e69c0183eb9,"## 1. Import des modules du lake `argumentation_lean`
 
 Le lake est structuré en un **module racine** + **5 sous-modules** (`Basic`,
@@ -12419,7 +12428,7 @@ Executez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) po
 
 > **Note de parité cross-langage** : ce notebook est le **jumeau Python** de [`Tweety-06-Structured-Argumentation-CSharp.ipynb`](Tweety-06-Structured-Argumentation-CSharp.ipynb) (twin C# from-scratch BCL .NET, 0 JVM). Pour les concepts partagés (ASPIC+, DeLP, ABA, Argumentation Déductive, ASP), voir la cellule d'introduction ; le twin C# reconstruit les **concepts** (pas l'API JVM) pour rester exécutable end-to-end sur toute machine .NET 9+. Marathon parité .NET ⇄ Python : EPIC #4956.
 ",,,,,,,,1198a703469d7b48,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb,d10c7bef,code,fr,0cbc807da2f7612f,"# --- Initialisation JVM Tweety + Outils Externes ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb,d10c7bef,code,fr,52dd112336d0c380,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -12533,7 +12542,7 @@ if jvm_ready:
         if path:
             short_path = path.split(os.sep)[-1] if len(path) > 30 else path
             print(f""  {tool}: {short_path}"")
-    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,0cbc807da2f7612f,,,,,,,,,,,,,,,
+    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,52dd112336d0c380,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb,675ee0f8,markdown,fr,ad24a6a8667a58c7,"### 4.2 ASPIC+
 <a id=""4.2""></a>
 
@@ -13664,7 +13673,9 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ip
 # Etape 4 (bonus) : identifier une divergence entre les deux semantiques
 
 print(""Exercice a completer"")  # TODO etudiant : remplacer par votre implementation",,,,,,,,1df2fdfa2c5e2080,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-CSharp.ipynb,d1dc9363,markdown,fr,6e4b116a39d0f528,"# Tweety-6 — Argumentation structuree (twin C# / .NET Interactive)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-CSharp.ipynb,d1dc9363,markdown,fr,19683866b31fc4e1,"# Tweety-6 — Argumentation structuree (twin C# / .NET Interactive)
+**Navigation** : [<< Tweety-5 Argumentation Abstraite (C#)](Tweety-05-Abstract-Argumentation-CSharp.ipynb) | [Tweety-6 Python](Tweety-06-Structured-Argumentation-Python.ipynb) | [Index](README.md)
+
 
 **Twin C#** du notebook Python [Tweety-06-Structured-Argumentation-Python.ipynb](Tweety-06-Structured-Argumentation-Python.ipynb) (marathon #4956, parite .NET <-> Python, axe-2 SOTA #3801 Prong B).
 
@@ -13680,7 +13691,7 @@ L'argumentation **abstraite** de Dung (Tweety-5) traite les arguments comme des 
 On verifie **mathematiquement** que la conversion ASPIC+ -> Dung redonne le bon cadre abstrait, et que la sémantique grounded isole les arguments defendus.
 
 
-> **Note de parite cross-langage** : ce notebook est le **jumeau C# from-scratch BCL .NET 9** (0 NuGet, 0 JVM) du notebook Python [`Tweety-06-Structured-Argumentation-Python.ipynb`](Tweety-06-Structured-Argumentation-Python.ipynb) (JVM TweetyProject via `jpype`, ASPIC+ + DeLP + ABA + Deductive + ASP). Le twin C# couvre ASPIC+ from-scratch BCL (sections 1-5) et declare INTRINSIC les 4 autres formalismes (pas d'equivalent BCL .NET ; le notebook Python + JVM TweetyProject reste la reference d'execution pour DeLP/ABA/ASP). Audit G.1 cross-langage cell-by-cell c.743 : cellules C# verifiees, grounded `{ -> b, -> c, b, c => a [ -> b, -> c] }` coherent avec cell[7] Python (5 memes arguments). Marathon parite .NET <-> Python : EPIC #4956.",,,,,,,,6e4b116a39d0f528,,,,,,,,,,,,,,,
+> **Note de parite cross-langage** : ce notebook est le **jumeau C# from-scratch BCL .NET 9** (0 NuGet, 0 JVM) du notebook Python [`Tweety-06-Structured-Argumentation-Python.ipynb`](Tweety-06-Structured-Argumentation-Python.ipynb) (JVM TweetyProject via `jpype`, ASPIC+ + DeLP + ABA + Deductive + ASP). Le twin C# couvre ASPIC+ from-scratch BCL (sections 1-5) et declare INTRINSIC les 4 autres formalismes (pas d'equivalent BCL .NET ; le notebook Python + JVM TweetyProject reste la reference d'execution pour DeLP/ABA/ASP). Audit G.1 cross-langage cell-by-cell c.743 : cellules C# verifiees, grounded `{ -> b, -> c, b, c => a [ -> b, -> c] }` coherent avec cell[7] Python (5 memes arguments). Marathon parite .NET <-> Python : EPIC #4956.",,,,,,,,19683866b31fc4e1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-CSharp.ipynb,ae983e52,code,fr,2157100097b7b1b9,"// Setup : aucune dependance externe — moteur ASPIC+ from-scratch, uniquement la BCL .NET.
 // Meme convention que Tweety-05-CSharp (Dung from-scratch).
 using Microsoft.DotNet.Interactive;
@@ -15741,9 +15752,9 @@ La tranche 1 ci-dessus reimplante ADF / SetAF / EAF / VAF **from-scratch** (BCL 
 
 **Suite** : [Tweety-7b-Ranking-Probabilistic](Tweety-07b-Ranking-Probabilistic-Python.ipynb) | [Retour au sommaire](README.md)
 ",,,,,,,,5acc56c1a9aab16c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb,166a1b7b,markdown,fr,ebe32d2b34ab3ced,"# Sémantiques de Classement et Argumentation Probabiliste
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb,166a1b7b,markdown,fr,1ca7507fac7daaa4,"# Sémantiques de Classement et Argumentation Probabiliste
 
-**Navigation**: [← Tweety-7a-Extended-Frameworks](Tweety-07a-Extended-Frameworks-Python.ipynb) | [Index](Tweety-01-Setup-Python.ipynb) | [Tweety-8-Agent-Dialogues →](Tweety-08-Agent-Dialogues-Python.ipynb)
+**Navigation**: [← Tweety-7a-Extended-Frameworks](Tweety-07a-Extended-Frameworks-Python.ipynb) | [Index](Tweety-01-Setup-Python.ipynb) | [Tweety-8-Agent-Dialogues →](Tweety-08-Agent-Dialogues-Python.ipynb) | [Tweety-7bc (C#)](Tweety-07b-Ranking-Probabilistic-CSharp.ipynb)
 
 ***
 
@@ -15758,7 +15769,7 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipyn
 
 Exécutez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) pour configurer l'environnement JVM.
 
-### Durée estimée : 40 minutes",,,,,,,,ebe32d2b34ab3ced,,,,,,,,,,,,,,,
+### Durée estimée : 40 minutes",,,,,,,,1ca7507fac7daaa4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb,5f5615e3,code,fr,65d106d3ad858feb,"# JPype1 doit être pré-provisionné dans l'environnement (cf Tweety-01-Setup-Python.ipynb / requirements.txt).
 # Installation conditionnelle en fallback uniquement si l'import échoue.
 try:
@@ -15776,7 +15787,7 @@ print(sys.version)",,,,,,,,65d106d3ad858feb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb,45c5a924,markdown,fr,269fb47805f3e423,"### Initialisation de la JVM et detection des outils
 
 JPype1 installe, nous lancons la JVM avec les JARs Tweety et detectons les outils externes disponibles. Cette configuration est requise pour toutes les sections de classement et d'argumentation probabiliste.",,,,,,,,269fb47805f3e423,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb,4464a752,code,fr,0cbc807da2f7612f,"# --- Initialisation JVM Tweety + Outils Externes ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb,4464a752,code,fr,52dd112336d0c380,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -15890,7 +15901,7 @@ if jvm_ready:
         if path:
             short_path = path.split(os.sep)[-1] if len(path) > 30 else path
             print(f""  {tool}: {short_path}"")
-    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,0cbc807da2f7612f,,,,,,,,,,,,,,,
+    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,52dd112336d0c380,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-07b-Ranking-Probabilistic-Python.ipynb,6qhb7prjqya,markdown,fr,f09fcd7870132a7c,"### Contexte TweetyProject
 
 Ce notebook utilise **TweetyProject**, une bibliothèque Java pour l'IA symbolique et l'argumentation formelle. L'initialisation ci-dessus configure :
@@ -16857,7 +16868,7 @@ Exécutez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) p
 
 > **Note de parité cross-langage** : ce notebook est le **jumeau Python** de [`Tweety-08-Agent-Dialogues-CSharp.ipynb`](Tweety-08-Agent-Dialogues-CSharp.ipynb) . Le jumeau Python utilise la **vraie API TweetyProject** (`SubgraphProbabilityFunction` sur la division exacte) via JVM/jpype ; le twin C# reconstruit from-scratch (BCL .NET, parties 1-5) et présente la loterie en **Monte-Carlo pédagogique** d'abord (la formule exacte y est un exercice) — puis, depuis sa partie 6, il **vérifie la cohérence contre la vraie lib** via une DLL `tweety-dialogues` recompilée sous IKVM (débat grounded rejoué, gagnant mesuré dans ses sorties). L'ancienne justification « DLL Tweety .NET via IKVM défectueuse » ne vaut donc plus pour le jumeau courant : sa propre sortie §6 montre la DLL opérationnelle (c.736 avait aligné la transparence côté C#). Marathon parité .NET ⇄ Python : EPIC #4956.
 ",,,,,,,,196a02d81fc3f841,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb,6f2111fc,code,fr,0cbc807da2f7612f,"# --- Initialisation JVM Tweety + Outils Externes ---
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb,6f2111fc,code,fr,52dd112336d0c380,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -16971,7 +16982,7 @@ if jvm_ready:
         if path:
             short_path = path.split(os.sep)[-1] if len(path) > 30 else path
             print(f""  {tool}: {short_path}"")
-    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,0cbc807da2f7612f,,,,,,,,,,,,,,,
+    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,52dd112336d0c380,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-Python.ipynb,ppbum5abunn,markdown,fr,4bce1c8333360c07,"### Interprétation de la configuration
 
 Les résultats ci-dessus confirment que l'environnement est correctement configuré pour simuler des dialogues multi-agents:
@@ -17609,7 +17620,9 @@ else:
     methodes = None    # TODO etudiant : remplacer par la liste des methodes de GroundedGameSystem
     print(""Exercice a completer"")
 ",,,,,,,,a7fc5eaf05ae43de,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb,41d346f3-13ad-4562-b0f4-b9c6f12f643f,markdown,fr,f99a27535cc7607b,"# Dialogues Multi-Agents Argumentatifs (twin C#)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb,41d346f3-13ad-4562-b0f4-b9c6f12f643f,markdown,fr,6d50476d25788801,"# Dialogues Multi-Agents Argumentatifs (twin C#)
+**Navigation** : [<< Tweety-7a Cadres étendus (C#)](Tweety-07a-Extended-Frameworks-CSharp.ipynb) | [Tweety-8 Python](Tweety-08-Agent-Dialogues-Python.ipynb) | [Index](README.md)
+
 
 Ce notebook est le **jumeau C# (.NET Interactive)** du notebook Python `Tweety-08-Agent-Dialogues-Python.ipynb`. Il réimplémente **from-scratch** (BCL .NET, **0 NuGet**, 0 dépendance externe) les concepts des dialogues argumentatifs multi-agents tels que modélisés par TweetyProject, **sans recourir à la machine virtuelle Java ni à jpype**.
 
@@ -17627,7 +17640,7 @@ Le notebook Python original explore l'**API Java TweetyProject via jpype/JVM** (
 ## Prérequis
 
 .NET 9.0+ (.NET Interactive kernel `csharp`). Aucune librairie externe. Familiarité avec le framework de Dung (cf. `Tweety-05-Abstract-Argumentation-CSharp.ipynb`).
-",,,,,,,,f99a27535cc7607b,,,,,,,,,,,,,,,
+",,,,,,,,6d50476d25788801,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb,ad9d14c7-5fec-4b7c-882d-e0e4d01f7c97,markdown,fr,bd6242ed779900b4,"## Setup et utilitaires d'affichage
 
 En exécution *headless* (papermill / nbconvert), `Console.WriteLine` est parfois avalé. On définit un helper `Show` qui passe par `display` (API .NET Interactive, avec repli `Console.WriteLine` si l'affichage interactif n'est pas disponible), et un formatteur tabulaire léger.
@@ -18098,9 +18111,9 @@ MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb,d6cca
 
 *Twin C# du notebook Python `Tweety-08-Agent-Dialogues-Python.ipynb`. Marathon parité .NET ⇄ Python (#4956, Prong B). Parties 1-5 : from-scratch BCL .NET, 0 NuGet, 0 JVM ; Partie 6 : parité vérifiée via IKVM.*
 ",,,,,,,,51e712b5add731bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb,9b46c3f6,markdown,fr,a3fcff4c46387c99,"# Préférences et Théorie du Vote
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb,9b46c3f6,markdown,fr,f24d35b935661569,"# Préférences et Théorie du Vote
 
-**Navigation**: [← Tweety-8-Agent-Dialogues](Tweety-08-Agent-Dialogues-Python.ipynb) | [Index](Tweety-01-Setup-Python.ipynb)
+**Navigation**: [← Tweety-8-Agent-Dialogues](Tweety-08-Agent-Dialogues-Python.ipynb) | [Index](Tweety-01-Setup-Python.ipynb) | [Tweety-09c (C#)](Tweety-09-Preferences-CSharp.ipynb)
 
 ***
 
@@ -18119,8 +18132,8 @@ Exécutez d'abord [Tweety-01-Setup-Python.ipynb](Tweety-01-Setup-Python.ipynb) p
 
 ## Module TweetyProject couvert
 
-- `org.tweetyproject.preferences` - Ordres de préférence et agrégation",,,,,,,,a3fcff4c46387c99,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb,c1da9091,code,fr,08d55e0a95710ed8,"# --- Initialisation JVM Tweety + Outils Externes ---
+- `org.tweetyproject.preferences` - Ordres de préférence et agrégation",,,,,,,,f24d35b935661569,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb,c1da9091,code,fr,290d9e33ec66c738,"# --- Initialisation JVM Tweety + Outils Externes ---
 print(""--- Verification JVM Tweety + Outils ---"")
 jvm_ready = False
 
@@ -18169,7 +18182,7 @@ for cp in [shutil.which(""clingo""), pathlib.Path(f""ext_tools/clingo/clingo{exe
 # 2. SPASS (Modal logic prover)
 for sp in [shutil.which(""SPASS""), pathlib.Path(f""ext_tools/spass/SPASS{exe_suffix}""),
            pathlib.Path(f""../ext_tools/spass/SPASS{exe_suffix}""),
-           pathlib.Path(f""../Argument_Analysis/ext_tools/spass/SPASS{exe_suffix}"")]:
+           pathlib.Path(f""../ArgumentAnalysis/ext_tools/spass/SPASS{exe_suffix}"")]:
     if sp and (isinstance(sp, str) or sp.exists()):
         EXTERNAL_TOOLS[""SPASS""] = str(pathlib.Path(sp).resolve()) if isinstance(sp, pathlib.Path) else sp
         break
@@ -18235,7 +18248,7 @@ if jvm_ready:
         if path:
             short_path = path.split(os.sep)[-1] if len(path) > 30 else path
             print(f""  {tool}: {short_path}"")
-    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,08d55e0a95710ed8,,,,,,,,,,,,,,,
+    print(f""\nJVM prete. Outils: {sum(1 for t,p in EXTERNAL_TOOLS.items() if p)}/{len(EXTERNAL_TOOLS)}"")",,,,,,,,290d9e33ec66c738,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-09-Preferences-Python.ipynb,gq1eao0bobh,markdown,fr,9123046e5ac22dac,"## Initialisation de l'environnement
 
 Cette cellule initialise la JVM et détecte les outils externes nécessaires pour certains modules de TweetyProject.
@@ -21516,14 +21529,16 @@ La théorie du pingouin met le pont Dung au travail. La liste des règles affich
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Aspic-CSharp.ipynb,bced66a4,markdown,fr,de33fc865788b4a8,"### Lecture des trois sémantiques : une fondée, deux préférées, deux stables
 
 Les onze lignes de sortie comparées font la leçon de la section 4.1. **Fondée** : une seule extension `{ -> bird, -> penguin, penguin -> bird [ -> penguin]}` — les faits et la taxonomie stricte, ni `flies` ni `!flies` : le scepticisme ne tranche pas sur le vol. **Préférée** : deux extensions — l'une avec `bird => flies [ -> bird]` (et sa dérivée), l'autre avec `penguin => !flies [ -> penguin]` — deux mondes maximaux, chacun excluant l'argument adverse. **Stable** : les deux mêmes ensembles — ici stable et préférée coïncident, car chaque extension attaque tout argument extérieur. Le « non tranché » de la fondée et le « il faut choisir » des préférées sont déjà imprimés par la cellule elle-même (section `-- Lecture --` de la sortie) : les extensions illustrent mot pour mot ces deux verdicts.",,,,,,,,de33fc865788b4a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb,5cdaab35,markdown,fr,7c6d2f3d058e33f7,"# Tweety C# / IKVM - Revision de Croyances (Port .NET du notebook Python)
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb,5cdaab35,markdown,fr,834975ce8d819558,"# Tweety C# / IKVM - Revision de Croyances (Port .NET du notebook Python)
+**Navigation** : [<< Tweety-3 Dung (C#)](Tweety-03-Dung-CSharp.ipynb) | [Tweety-04 ASPIC+ (C#)](Tweety-04-Aspic-CSharp.ipynb) | [Tweety-04 Python](Tweety-04-Belief-Revision-Python.ipynb) | [Index](README.md)
+
 
 Ce notebook porte en **C# / .NET** (via IKVM, sans JVM) le module **belief-revision** de
 [TweetyProject](https://tweetyproject.org/). Il fait partie de l'Epic #4667 (portage .NET de la
 serie Tweety) et prolonge les notebooks déjà portes : logiques de base, sémantique, FOL,
 argumentation de Dung et ASPIC+.
 
-Le pendant Python est [`Tweety-04-Belief-Revision-Python.ipynb`](Tweety-04-Belief-Revision-Python.ipynb).",,,,,,,,7c6d2f3d058e33f7,,,,,,,,,,,,,,,
+Le pendant Python est [`Tweety-04-Belief-Revision-Python.ipynb`](Tweety-04-Belief-Revision-Python.ipynb).",,,,,,,,834975ce8d819558,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb,ab3c32f4,markdown,fr,048ddd0cf88b13a1,"## De quoi parle la revision de croyances ?
 
 Un agent rationnel doit parfois **integrer une information qui contredit ce qu'il croit déjà**.
@@ -22568,3 +22583,23 @@ result_tp_trap = None  # TODO etudiant : controle, conclusion sur income factuel
 print(""Exercice 3 a completer"")
 print(""  (attendu : income* True -- ability, cause du revenu, reste ce qu'elle est ;"")
 print(""             controle factuel True, trivial)"")",,,,,,,,e05582c5cc583c14,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb,tw3-lecture-result,markdown,fr,6a5f3b646e4ae4ae,"### Interprétation des résultats de l'exemple guidé
+
+Les trois requêtes se lisent avec les seuls axiomes de la `TBox` construite ci-dessus :
+
+| Requête | Résultat | Lecture |
+|---------|----------|---------|
+| `Alice (Etudiant) : Personne ?` | **True** | `Etudiant ≡ Personne` donne `Etudiant ⊑ Personne`, et l'ABox affirme `Alice : Etudiant` |
+| `CoursInfo (Cours) : Personne ?` | **False** | `Cours ≡ ¬Personne` place les cours hors de `Personne` |
+| `ProfMartin (Enseignant) : Etudiant ?` | **False** | Aucune inférence ne relie `Enseignant` à `Etudiant` |
+
+**Pourquoi `ProfMartin (Enseignant) : Etudiant ?` vaut `False`, alors que l'on a à la fois `Etudiant ≡ Personne` et `Enseignant ≡ Personne` ?**
+
+Les sorties committées montrent que le `NaiveDlReasoner` applique l'axiome `EquivalenceAxiom` dans **un seul sens** (une subsumption `A ⊑ B`) :
+
+- la `TBox` est rendue par Tweety sous forme d'implications (`implies Etudiant Personne`, `implies Enseignant Personne`, `implies Cours (not Personne)`) ;
+- `Tweety : Human` est dérivé de `Tweety : Male` et de `Male ≡ Human`, donc dans le sens `Male ⊑ Human` ;
+- la direction inverse n'apparaît dans aucun résultat : avec `Etudiant ≡ Personne` et `Enseignant ≡ Personne`, `ProfMartin : Enseignant` ne donne **pas** `ProfMartin : Etudiant`.
+
+Le mot « équivalence » désigne donc ici l'axiome `EquivalenceAxiom` de l'API Tweety, dont le comportement observé est celui d'une **subsumption**. L'affirmation de cohérence de la section sur la logique de description doit se lire dans ce cadre : la base est cohérente **au sens du raisonneur** (aucune contradiction entre l'ABox et les implications de la `TBox`). Lue comme une équivalence stricte et bidirectionnelle, la même `TBox` (`Female ≡ Human`, `Male ≡ Human`, `Female ≡ ¬Male`) forcerait `Human ⊑ ⊥` — le concept `Human` serait vide, ce qui contredit l'ABox (`Alice : Human`, `Bob : Human`).
+",,,,,,,,6a5f3b646e4ae4ae,,,,,,,,,,,,,,,
