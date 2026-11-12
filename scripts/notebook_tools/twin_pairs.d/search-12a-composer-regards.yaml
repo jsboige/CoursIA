@@ -1,0 +1,10 @@
+- name: "Search-12a Composer des regards"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les recherches BFS, Dijkstra et A* sont les objets pedagogiques de ces carnets ; Python utilise ses collections standard et C# la BCL, sans solveur externe. Matplotlib et pandas servent uniquement a l'affichage Python."
+  known_differences:
+    - "La figure est rendue par Matplotlib en Python et en SVG statique opaque en C#."
+    - "Les deux champs arrière conservent le coût des arcs originaux ; le choix glouton en coût utilise coût de l'arc plus distance restante."
