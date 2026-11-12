@@ -2575,8 +2575,8 @@ L'exemple guidé 2 crée l'agent `Arbitre`, mais le duel tourne toujours à deux
 - `# Étape 2` : parcourir les répliques dont `msg.name == ""Arbitre""` ;
 - `# Indice` : `float(m.group(1).replace("","", "".""))` pour convertir la note trouvée.
 ",,,,,,,,a3e8ae298e2e27a3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,54ea1c2d,code,fr,e1abe5549f93df78,"# Exercice 2 — Mettre l'Arbitre dans le duel et lire ses notes.
-# `arbitre` a été créé dans l'exemple guidé 2 ; `repliques_du_duel` vient du duel de la section 7.
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,54ea1c2d,code,fr,ad8564aff3c6785c,"# Exercice 2 — Mettre l'Arbitre dans le duel et lire ses notes.
+# `arbitre` a été créé dans l'exemple guidé 2 ; `repliques_du_duel` vient du duel de la section « Lancement du débat ».
 import re
 
 
@@ -2605,7 +2605,7 @@ else:
         print(""Exercice 2 à compléter : aucune note extraite des repliques de l'Arbitre."")
     else:
         print(f""{len(notes)} notes d'arbitre, moyenne {sum(notes) / len(notes):.2f}/10"")
-",,,,,,,,e1abe5549f93df78,,,,,,,,,,,,,,,
+",,,,,,,,ad8564aff3c6785c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,a82b04d0,markdown,fr,ece9674abe57f514,"### Exercice 3 — Une détection de capitulation qui ne se trompe pas de cible
 
 L'exemple guidé 3 détecte la capitulation par **sous-chaîne** dans le dernier message. Deux façons de se tromper, toutes deux mesurables : « je n'abandonnerai jamais » (négation) et « tu vas abandonner, l'Âne » (parler de l'autre) déclenchent l'arrêt alors que personne ne cède.

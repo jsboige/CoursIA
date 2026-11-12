@@ -442,6 +442,8 @@ class FixedSpacePredictor:
     def __init__(self, actions: tuple[str, ...]) -> None:
         if not actions:
             raise ValueError("espace d'actions vide")
+        if len(set(actions)) != len(actions):
+            raise ValueError("les actions doivent etre distinctes")
         self.actions = tuple(actions)
         self._counts: dict[str, int] = {a: 0 for a in self.actions}
 
@@ -455,9 +457,13 @@ class FixedSpacePredictor:
 
     def log_loss(self, action: str, epsilon: float = 0.0) -> float:
         """Log-perte naturelle en bits ; ``epsilon`` lisse le zero-count."""
+        if not np.isfinite(epsilon) or epsilon < 0:
+            raise ValueError("epsilon doit etre fini et >= 0")
         if action not in self._counts:
             return self.surprise_structurelle()
         total = sum(self._counts.values()) + epsilon * len(self.actions)
+        if total == 0:
+            raise ValueError("aucune observation : utiliser epsilon > 0")
         p = (self._counts[action] + epsilon) / total
         return float(-np.log2(max(p, 1e-12)))
 
