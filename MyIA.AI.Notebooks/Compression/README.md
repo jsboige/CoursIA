@@ -87,3 +87,8 @@ Dans 06, la comparaison des décimales de π et de chiffres aléatoires illustre
 Les carnets présentent les références auprès des constructions : Shannon, Fano, Huffman et Kraft en [01](Compression-01-ShannonFano-Prefixe-Python.ipynb), Schwartz–Kallick en [02](Compression-02-HuffmanCanonique-Python.ipynb), Ziv–Lempel en [03](Compression-03-LZ77-Python.ipynb), Duda et ANS en [04](Compression-04-ANS-Python.ipynb), puis MDL et Kolmogorov en [06](Compression-06-MDL-Kolmogorov-Python.ipynb). Les ressources des codecs comparés figurent dans [04b](Compression-04b-CodecsSOTA-Pareto-Python.ipynb).
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md)
+
+
+## Twins de notebooks
+
+Le carnet [01 — codes préfixes en C#](Compression-01-ShannonFano-Prefixe-CSharp.ipynb) accompagne [sa version Python](Compression-01-ShannonFano-Prefixe-Python.ipynb). Les deux implémentent Shannon-Fano et Huffman à partir des primitives du langage ; le jumeau C# utilise uniquement la BCL, avec une génération gamma pour ses tirages Dirichlet et un SVG autonome pour le nuage. Les exercices restent ouverts dans les deux parcours.
