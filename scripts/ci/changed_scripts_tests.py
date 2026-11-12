@@ -129,8 +129,24 @@ WATCH_OVERRIDES: dict[str, tuple[str, ...]] = {
 
 # Selecteurs additionnels : chemins relus par une suite sans en etre le
 # dossier parent (registre #17850 relu par la suite generique scripts/tests).
+#
+# Aretes inter-dossiers (review 5867133827) : suites qui testent un module
+# d'un AUTRE dossier via un chemin construit depuis ``__file__``. La
+# derivation parent-dir ne les voit pas -- la garde
+# ``scripts/ci/tests/test_watch_area_edges.py`` mesure ces aretes (borne
+# basse : ancres ``__file__`` et ``parents[N] / "seg"`` uniquement) et
+# verifie la reciproque : chaque entree repertoirique doit correspondre a
+# une arete relue, sinon elle rougit.
 EXTRA_SELECTORS: dict[str, tuple[str, ...]] = {
-    "scripts/tests": ("arxiv_attributions_registry.yaml",),
+    # registre #17850 + modules prosody_lab relus via ancres __file__ par la
+    # generique (garde #22468 : test_bakeoff_small_import, test_syllable_pitch_verdict)
+    "scripts/tests": (
+        "arxiv_attributions_registry.yaml",
+        f"{V4}/prosody_lab/",
+    ),
+    "tests": ("scripts/ci/", "scripts/notebook_tools/"),
+    "scripts/lean/tests": ("scripts/ci/",),
+    "scripts/translation/tests": ("scripts/ci/",),
 }
 
 

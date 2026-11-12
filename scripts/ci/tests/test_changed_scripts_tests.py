@@ -224,13 +224,16 @@ def test_push_chaine_d_un_seul_macon():
 def test_watch_areas_derivation_parent():
     assert mod.watch_areas("scripts/sudoku/tests") == ("scripts/sudoku/",)
     assert mod.watch_areas("scripts/ci/tests") == ("scripts/ci/",)
-    # La generique scripts/tests veille TOUT scripts/ + le registre #17850.
+    # La generique scripts/tests veille TOUT scripts/ + ses selecteurs
+    # additionnels (registre #17850, prosody_lab relu via ancres __file__).
     assert mod.watch_areas("scripts/tests") == (
-        "scripts/", "arxiv_attributions_registry.yaml")
+        "scripts/", "arxiv_attributions_registry.yaml",
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/")
 
 
 def test_watch_areas_overrides():
-    assert mod.watch_areas("tests") == ("tests/",)
+    assert mod.watch_areas("tests") == (
+        "tests/", "scripts/ci/", "scripts/notebook_tools/")
     v4 = mod.watch_areas(
         "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py")
     assert v4 == ("MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/",)
