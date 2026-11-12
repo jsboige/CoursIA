@@ -7,19 +7,19 @@ pour des campagnes dont l'issue est **fermée** ou la PR **mergée**. Ils quitte
 racine pour respecter le plafond proposé (70 points d'entrée, #26009) ; git
 history et l'issue citée restent la preuve de préservation.
 
-Standard : [convention `_archive/`](../../../../docs/reference/_archive-convention.md).
+Standard : [convention `_archive/`](../../../docs/reference/_archive-convention.md).
 
 ## Registre de disposition
 
 | Script | Verdict | Superseded by | Verdict recorded in |
 |--------|---------|---------------|---------------------|
-| `rebaseline_twin_pairs_post_13606.py` | campagne post-merge #13606 (newline final 275 notebooks) exécutée ; plus aucune paire à rebaseliner | rien — mission unique, `git log` du fichier conserve la dernière empreinte | PR #13606 (MERGED), issue #25366 |
+| `rebaseline_twin_pairs_post_13606.py` | campagne post-merge #13606 (newline final) exécutée ; plus aucune paire à rebaseliner | rien — mission unique, `git log` du fichier conserve la dernière empreinte | PR #13606 (MERGED), issue #25366 |
 | `variation_genre_recensement.py` | recensement initial G-VAR-2 livré (« le recensement est le livrable initial, pas l'organe ») | l'organe vivant `variation_light_cap.py` (calcul du budget, appelé par le picker) | #10290 (CLOSED) |
 | `variation_volet_bc.py` | mesure ponctuelle volets B+C (fenêtre G-VAR-2, DWELL) rendue | `variation_light_cap.py` + `check_adjoint_prevalidation.py --queue` (`dwell_until`) | #14591 (CLOSED) |
 | `remeasure_bad_pending.py` | re-mesure plateau acceptance #2 rendue (réutilise `pr_gate.classify()`, qui vit et reste la source) | `pr_gate.py` + `scripts/ci/pool_review_verdicts.py` | #12389 (CLOSED) |
 | `ict_jlens_layers.py` | pilote J-Lens dose fixée du pilote de triangulation causale — étude conclue | l'étude publiée du pilote ; `scripts/repro/` pour toute reprise | #15480 (CLOSED) |
 | `ict_pilot_transformer.py` | petit transformer hookable du même pilote — étude conclue | idem | #15480 (CLOSED) |
-| `test_*.py` (5 fichiers) | tests des scripts ci-dessus, déplacés avec eux — hors `testpaths`, ils n'entrent plus dans la collecte pytest | couverture des successeurs cités | issue #25366 |
+| `test_*.py` | tests des scripts ci-dessus, déplacés avec eux — hors `testpaths`, ils n'entrent plus dans la collecte pytest | couverture des successeurs cités | issue #25366 |
 
 ## Pourquoi `git mv` et pas suppression
 
