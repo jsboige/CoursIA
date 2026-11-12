@@ -2158,3 +2158,41 @@ if __name__ == "__main__":
             print(f"FAIL {fn.__name__}: {type(exc).__name__}: {exc}")
     print(f"\n{len(tests) - failed}/{len(tests)} tests passes")
     sys.exit(1 if failed else 0)
+
+
+def test_posix_population_excludes_only_zombies(monkeypatch):
+    """Les états vivants comptent, même arrêtés ; seuls les zombies sont exclus."""
+    lines = ["R+ lean", "S lake", "T lean", "D lake", "Z lean", "Z+ lake", "S python"]
+    assert le._count_live_posix_lines(lines) == 4
+    for invalid in (["lean"], [], ["Zombie lean"], ["Z? lean"], ["S lean", "Z? lake"]):
+        with pytest.raises(ValueError):
+            le._count_live_posix_lines(invalid)
+    monkeypatch.setattr(le.os, "name", "posix")
+    monkeypatch.setattr(le.subprocess, "run", lambda *a, **k: subprocess.CompletedProcess(a[0], 1, "", "ps failed"))
+    assert le.scan_native_population()[0] == -1
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="états de processus Linux")
+def test_posix_population_real_live_and_zombie(tmp_path):
+    """Un vrai processus vivant compte et un enfant zombie ne compte pas."""
+    binary = tmp_path / "lean"
+    shutil.copy2(shutil.which("sleep"), binary)
+    live = subprocess.Popen([str(binary), "15"])
+    dead = subprocess.Popen([str(binary), "0"])
+    try:
+        deadline = time.monotonic() + 5
+        while True:
+            p = subprocess.run(["ps", "-o", "stat=,comm=", "-p", f"{live.pid},{dead.pid}"],
+                               capture_output=True, text=True, check=True)
+            rows = p.stdout.splitlines()
+            if len(rows) == 2 and any(row.strip().startswith("Z") for row in rows):
+                break
+            if time.monotonic() >= deadline:
+                pytest.fail(f"zombie non observé : {rows}")
+            time.sleep(0.02)
+        assert le._count_live_posix_lines(rows) == 1
+        assert le._count_live_posix_lines([r for r in rows if r.strip().startswith("Z")]) == 0
+    finally:
+        live.terminate()
+        live.wait(timeout=5)
+        dead.wait(timeout=5)

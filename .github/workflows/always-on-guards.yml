@@ -256,6 +256,9 @@ jobs:
       - name: "Installer dependances detecteurs (pyyaml, Pillow, pytest)"
         run: pip install --quiet pyyaml Pillow pytest
 
+      - name: "Vérifier les motifs des listings Quarto (#25680)"
+        run: python scripts/check_quarto_listings.py
+
       # -----------------------------------------------------------------
       # BODY LIVE (#15697) : les organes qui lisent le corps (tag Grain:,
       # prev:, [CLAIMED], mots-cles de fermeture) le lisent A L'EXECUTION,

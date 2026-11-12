@@ -503,6 +503,8 @@ def history(since, until, notebook=None, cwd=None, limit=None):
     out_log = _git("log", "origin/main", "--first-parent",
                    "--since=" + since, "--until=" + until,
                    "--format=%H %ad %s", "--date=short", cwd=cwd)
+    if out_log is None:
+        raise RuntimeError("Impossible de lire l’historique de origin/main ; vérifier la référence et le dépôt Git.")
     if not out_log:
         return
     commits = []
@@ -518,6 +520,10 @@ def history(since, until, notebook=None, cwd=None, limit=None):
     for i, c in enumerate(commits):
         diff_out = _git("diff-tree", "--no-commit-id", "--name-only", "-r",
                         c["sha"], cwd=cwd)
+        if diff_out is None:
+            raise RuntimeError(
+                f"Impossible de lire les chemins modifiés du commit {c['sha']} (git diff-tree)."
+            )
         if not diff_out:
             continue
         paths = [p.replace(BS, "/") for p in diff_out.splitlines()
@@ -1165,8 +1171,12 @@ def main(argv=None):
         return self_test()
 
     if args.history:
-        findings = list(history(args.since, args.until,
-                                notebook=args.notebook, limit=args.limit))
+        try:
+            findings = list(history(args.since, args.until,
+                                    notebook=args.notebook, limit=args.limit))
+        except RuntimeError as exc:
+            print(f"Erreur historique : {exc}", file=sys.stderr)
+            return 1
         for f in findings:
             print(json.dumps(f, ensure_ascii=False))
         print("# findings: " + str(len(findings)), file=sys.stderr)
