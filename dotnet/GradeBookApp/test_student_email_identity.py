@@ -18,6 +18,7 @@ from gradebook import (  # noqa: E402
     StudentRecord,
     get_ambiguity_journal,
     load_student_records,
+    load_students_with_multiple_groups,
     reset_ambiguity_journal,
 )
 from run_grading import EXIT_AMBIGUITIES_PENDING, report_ambiguity_gate  # noqa: E402
@@ -181,3 +182,29 @@ def test_roster_with_multiple_email_columns_is_rejected(tmp_path):
     roster.write_text("Prénom,Nom,Sujet IA Symbolique,Mail,Login\nJean,Dupont,P1,jean@example.org,login@example.org\n", encoding="utf-8")
     with pytest.raises(ValueError, match="email"):
         load_student_records(roster)
+
+
+@pytest.mark.parametrize("columns", ["Mail,Login", "Email,Adresse e-mail", "email,Mail"])
+def test_multi_group_roster_rejects_multiple_email_columns(tmp_path, columns):
+    roster = tmp_path / "roster.csv"
+    roster.write_text(
+        f"Prénom,Nom,Groupe CC1,{columns}\n"
+        "Ada,Exemple,P1,ada@example.org,autre@example.org\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="Plusieurs colonnes email dans le roster"):
+        load_students_with_multiple_groups(roster, [{"nom": "CC1", "inscription_col": "Groupe CC1"}])
+
+
+@pytest.mark.parametrize("column", ["Mail", "Login", "Email", "Adresse e-mail", "email"])
+def test_multi_group_roster_keeps_one_email_column(tmp_path, column):
+    roster = tmp_path / "roster.csv"
+    roster.write_text(
+        f"Prénom,Nom,Groupe CC1,{column}\nAda,Exemple,P1,ada@example.org\n",
+        encoding="utf-8",
+    )
+    students = load_students_with_multiple_groups(
+        roster, [{"nom": "CC1", "inscription_col": "Groupe CC1"}]
+    )
+    assert students.iloc[0]["email"] == "ada@example.org"
+    assert students.iloc[0]["groupe_cc1"] == "P1"

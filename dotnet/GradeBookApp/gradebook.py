@@ -1251,6 +1251,9 @@ def load_students_with_multiple_groups(file_path, epreuves_config):
         if original_col in df.columns:
             col_mapping[original_col] = target_col
     
+    email_columns = [col for col in df.columns if col_mapping.get(col, col) == "email"]
+    if len(email_columns) > 1:
+        raise ValueError("Plusieurs colonnes email dans le roster : " + ", ".join(email_columns))
     df = df.rename(columns=col_mapping)
     
     return df
