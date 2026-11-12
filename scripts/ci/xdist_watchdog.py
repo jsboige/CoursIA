@@ -371,7 +371,11 @@ def _kill_tree(proc: subprocess.Popen) -> None:
             return
         except (ProcessLookupError, PermissionError, OSError):
             pass
-    proc.kill()
+    if proc.poll() is None:
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
 
 
 def _emit(message: str) -> None:
@@ -380,6 +384,10 @@ def _emit(message: str) -> None:
     sys.stdout.flush()
     sys.stderr.write(message + "\n")
     sys.stderr.flush()
+
+
+class _TerminationRequested(BaseException):
+    """Interruption SIGTERM du point d’entree CLI."""
 
 
 def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
@@ -402,21 +410,23 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
     kwargs: dict = {}
     if os.name == "posix":
         kwargs["start_new_session"] = True
-    proc = subprocess.Popen(
-        argv,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        bufsize=-1,
-        **kwargs,
-    )
-    started = time.monotonic()
-
-    reader = threading.Thread(
-        target=_pump, args=(proc.stdout, state, echo), daemon=True
-    )
-    reader.start()
-
+    proc = None
+    reader = None
     try:
+        proc = subprocess.Popen(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=-1,
+            **kwargs,
+        )
+        started = time.monotonic()
+
+        reader = threading.Thread(
+            target=_pump, args=(proc.stdout, state, echo), daemon=True
+        )
+        reader.start()
+
         while True:
             if proc.poll() is not None:
                 break
@@ -444,10 +454,18 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
                 proc.wait(timeout=30)
                 return EXIT_COLLECT_CRASH
             time.sleep(0.5)
+    except _TerminationRequested:
+        # La session POSIX du fils ne recoit pas le SIGTERM du wrapper.
+        # Tuer tout son groupe avant de propager l'annulation.
+        if proc is not None:
+            _kill_tree(proc)
+            proc.wait(timeout=30)
+        raise
     finally:
         # Le fils est mort ou tue : le lecteur atteint l'EOF, on ne bloque pas
         # la sortie du wrapper sur un pipe theoriquement ouvert.
-        reader.join(timeout=10)
+        if reader is not None and reader.ident is not None:
+            reader.join(timeout=10)
 
     # La conjonction est re-testee UNE FOIS la boucle sortie. Sans ce
     # controle la course est ouverte : la boucle teste tous les 0,5 s et
@@ -554,4 +572,15 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    def _on_sigterm(signum, frame):
+        # Un second SIGTERM ne doit pas interrompre le nettoyage en cours.
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        raise _TerminationRequested()
+
+    signal.signal(signal.SIGTERM, _on_sigterm)
+    try:
+        sys.exit(main())
+    except _TerminationRequested:
+        # Conserver le statut d'un processus termine par SIGTERM.
+        signal.signal(signal.SIGTERM, signal.SIG_DFL)
+        os.kill(os.getpid(), signal.SIGTERM)

@@ -1,3 +1,7 @@
+---
+paths: "{**/*.lean,**/*.v,**/*.agda,agent_tests/**,scripts/**/*.py,MyIA.AI.Notebooks/**/*.py,MyIA.AI.Notebooks/**/*.cs,GradeBookApp/**}"
+---
+
 # Anti-régression : préserver le travail existant
 
 S'applique au **code de production** (preuves Lean/Coq/Agda, fonctions métier appelées, tests, librairies). **Pas** aux cellules d'exercice étudiant — celles-ci doivent justement être stubbées sans `raise NotImplementedError` (cf [notebook-conventions.md](notebook-conventions.md) règle C.1).
