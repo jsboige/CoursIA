@@ -1,0 +1,10 @@
+- name: "NLP-11 Regression logistique"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux calculs principaux sont pédagogiques from scratch ; le témoin réel scikit-learn est appelé directement en Python et via Python.NET en C#."
+  known_differences:
+    - "C# utilise MathNet et un générateur aléatoire distinct de NumPy : les données synthétiques et mesures diffèrent malgré le même protocole."
+    - "Le témoin C# appelle scikit-learn via Python.NET sur ses propres matrices C#."
