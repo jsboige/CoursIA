@@ -126,3 +126,106 @@ def test_les_inputs_sont_lus_dans_le_workflow_du_depot(monkeypatch):
     inputs, reason = inst.workflow_inputs("jsboige/CoursIA", "ci-overflow-controller.yml")
     assert inputs == {"min_interval"}
     assert reason == ""
+
+
+# --- #25510 (E2) : l'instrument du declencheur doit voir l'EFFET, et l'ecart
+# entre l'artefact installe et son generateur doit etre detectable. ---
+
+
+def test_le_lanceur_verifie_l_effet_du_declenchement():
+    """Le lanceur doit voir l'EFFET, pas son propre code de sortie.
+
+    Mesure du 2026-11-12 (19:07Z, ai-01) : la tache planifiee a rendu
+    rc 0, son journal n'a trace que « declenchement », et AUCUN run n'a
+    ete cree (0 workflow_dispatch sur le depot apres 18:30Z, les 11
+    passages horaires precedents ayant tous produit un run). L'instrument
+    qui ne regarde que son code de sortie croit avoir declenche : la
+    MINUTERIE peut mourir sans que rien ne le dise.
+    """
+    content = inst.cmd_content(
+        "jsboige/CoursIA", "ci-overflow-controller.yml", "jsboige", 30,
+    )
+    assert "RUN_BEFORE" in content and "RUN_AFTER" in content
+    assert "gh run list --workflow %GH_WORKFLOW%" in content
+    assert "EFFET NON CONSTATE" in content
+    assert "exit /b 3" in content
+    # Le code de sortie du declenchement reste propage tel quel : un refus
+    # de l'API n'est pas un « effet non constate ».
+    assert "if errorlevel 1 (" in content
+
+
+def test_le_statut_signale_le_drift_entre_le_lanceur_installe_et_le_genere(
+    monkeypatch, tmp_path
+):
+    """Un lanceur installe derriere son generateur s'ecarte sans bruit.
+
+    Mesure du 2026-11-12 (ai-01) : le lanceur installe ne passait pas
+    `min_interval` -- que le generateur ecrit depuis -- et chacune de ses
+    20 lignes portait un CR supplementaire ; rien ne le signalait.
+    """
+    monkeypatch.setattr(inst, "CMD_PATH", tmp_path / "dispatch_overflow.cmd")
+    monkeypatch.setattr(inst, "VBS_PATH", tmp_path / "run_hidden.vbs")
+    monkeypatch.setattr(
+        inst, "workflow_inputs", lambda repo, wf: ({"min_interval"}, ""),
+    )
+    inst.CMD_PATH.write_text("@echo off\r\nexit /b 0\r\n", encoding="ascii")
+    inst.VBS_PATH.write_text("' vbs\r\n", encoding="ascii")
+    drifts = inst.launcher_drift(
+        "jsboige/CoursIA", "ci-overflow-controller.yml", "jsboige", 30,
+    )
+    assert drifts, "le drift du lanceur installe n'est pas vu"
+    assert any("DIVERGE" in d for d in drifts)
+
+
+def test_le_statut_ne_signale_pas_de_drift_quand_le_lanceur_est_conforme(
+    monkeypatch, tmp_path
+):
+    monkeypatch.setattr(inst, "CMD_PATH", tmp_path / "dispatch_overflow.cmd")
+    monkeypatch.setattr(inst, "VBS_PATH", tmp_path / "run_hidden.vbs")
+    monkeypatch.setattr(
+        inst, "workflow_inputs", lambda repo, wf: ({"min_interval"}, ""),
+    )
+    inst.CMD_PATH.write_text(
+        inst.cmd_content(
+            "jsboige/CoursIA", "ci-overflow-controller.yml", "jsboige", 30,
+        ),
+        encoding="ascii", newline="",
+    )
+    inst.VBS_PATH.write_text(
+        inst.vbs_content(inst.CMD_PATH), encoding="ascii", newline="",
+    )
+    assert inst.launcher_drift(
+        "jsboige/CoursIA", "ci-overflow-controller.yml", "jsboige", 30,
+    ) == []
+
+
+def test_le_lanceur_ecrit_sans_cr_supplementaire(monkeypatch, tmp_path):
+    """Le fichier ecrit doit etre byte-identique au contenu genere.
+
+    `write_text` sans `newline=""` traduit chaque "\\n" en os.linesep et
+    ecrit "\\r\\r\\n" : le contenu porte deja ses "\\r\\n" explicites, donc
+    chaque ligne prenait un CR de plus (mesure sur l'artefact installe le
+    2026-11-12 : 20 lignes sur 20). cmd.exe toleit le resultat, mais
+    l'artefact n'etait plus comparable a ce que le generateur declare.
+    """
+    class _Proc:
+        returncode = 0
+        stdout = ""
+        stderr = ""
+
+    monkeypatch.setattr(inst, "BASE_DIR", tmp_path)
+    monkeypatch.setattr(inst, "LOG_DIR", tmp_path / "logs")
+    monkeypatch.setattr(inst, "CMD_PATH", tmp_path / "dispatch_overflow.cmd")
+    monkeypatch.setattr(inst, "VBS_PATH", tmp_path / "run_hidden.vbs")
+    monkeypatch.setattr(inst, "workflow_exists", lambda repo, wf: (True, ""))
+    monkeypatch.setattr(
+        inst, "workflow_inputs", lambda repo, wf: ({"min_interval"}, ""),
+    )
+    monkeypatch.setattr(inst, "_run", lambda cmd, **kw: _Proc())
+    rc = inst.main(["--install"])
+    assert rc == 0
+    raw = inst.CMD_PATH.read_bytes()
+    assert b"\r\r\n" not in raw
+    assert raw.decode("ascii") == inst.cmd_content(
+        "jsboige/CoursIA", "ci-overflow-controller.yml", "jsboige", 30,
+    )

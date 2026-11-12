@@ -340,6 +340,81 @@ Le dwell est passe de 30 a **90 min** (point Hermes du 2026-10-27, 12:53Z) : le 
 
 Le dwell amortit l'oscillation entre deux passages ; il ne cadenche pas, et il ne doit pas faire croire qu'une file revenue a la normale reste gouvernee par une decision d'il y a deux heures.
 
+## Le siege du controleur (E2 de #25510) — mesure, forme retenue, ce qui manquait a l'instrument
+
+Le controleur a besoin d'un siege qu'aucun job de PR ne peut prendre. Deux formes
+etaient ouvertes : **(a)** un runner persistant a label dedie (`coursia-control`) que
+aucun workflow de PR ne vise, **(b)** le controleur lance par la minuterie locale
+d'ai-01 elle-meme. Le choix demandait **une mesure**, pas une preference.
+
+### Ce que la mesure dit (2026-11-12, ai-01)
+
+**Le siege actuel est une file d'attente.** Delai entre la creation du run et le
+demarrage de son job, sur le pool `coursia-ephemeral`, sur 12 declenchements
+horaires consecutifs (minutes) :
+
+```
+19,0   49,0   81,8   42,8   0   0   0   2,0   51,0   105,0
+```
+
+Le controleur agit donc sur un etat vieux de 40 min dans le cas median, et de
+pres de 2 h dans le pire cas mesure ; **4 runs sur 30 ont ete annules avant meme
+que leur job demarre**. Le cron horaire du depot (`31 * * * *`) est livre tard
+lui aussi (13:06, 04:01, 22:56, 16:28Z) — c'est le scheduler muet mesure en
+#15332.
+
+**La minuterie locale, elle, tient sa cadence.** Onze passages horaires
+consecutifs ont tous cree un run (08:07 -> 18:07). Mais le passage de **19:07Z
+n'a cree AUCUN run** : `event=workflow_dispatch&created=>18:30Z` sur le depot
+rend 0, alors que la tache a rendu **rc 0** et que son journal ne trace que
+« declenchement ». L'instrument regardait **son propre code de sortie**, pas
+l'effet : une minuterie peut mourir sans que rien ne le dise.
+
+**L'artefact installe etait en retard sur son generateur.** Le lanceur
+`dispatch_overflow.cmd` installe ne passait pas `-f min_interval` (que le
+generateur ecrit depuis) et chacune de ses 20 lignes portait un CR
+supplementaire (`\r\r\n`, Heritage de `write_text` sans `newline=""`). Rien ne
+le signalait.
+
+### Forme (b) : viable, avec trois prerequisites
+
+Le passage **local** du controleur a ete execute sur ai-01 avec le jeton du
+siege : il lit les 41 runners du parc et la variable du depot, et rend
+**HOLD (rc 0)** — c'est bien le chemin de decision, pas une erreur. La forme (b)
+ne demande donc **aucune infrastructure nouvelle**. La forme (a), elle,
+suppose un runner persistant a label dedie qui **n'existe pas** sur le parc :
+elle n'est pas livrable par une lane, elle est une decision d'equipement.
+
+Trois prerequisites, dont chacun est traite dans cette tranche ou signale :
+
+| # | prerequisite | etat |
+|---|---|---|
+| 1 | un **marqueur local** : l'organe mesure l'ecart au dernier passage sur les runs **GitHub** du controleur ; un passage local serait invisible pour lui, et la mort du declencheur local redeviendrait muette | a traiter (E2/2) |
+| 2 | un lanceur qui **verifie l'effet** du declenchement (id de run avant/apres) et qui **signale l'ecart** entre l'artefact installe et son generateur | **fait ici** |
+| 3 | la **reinstallation** de l'artefact (geste UAC) | arbitraire par le coordinateur : l'intervalle minimal de 30 min se lit sur le dernier passage **GitHub**, donc il devient inerte si le passage est local |
+
+### Ce que cette tranche change
+
+1. **Le lanceur verifie l'effet.** Il releve l'id du plus recent run du workflow
+   avant et apres le declenchement : si l'id n'a pas change, le declenchement
+   n'a produit **aucun** run, et le lanceur sort en **3** avec le motif
+   « EFFET NON CONSTATE ». Un refus de l'API reste distinct (code de sortie
+   d'origine propage) : « je n'ai pas pu declencher » n'est pas « j'ai declenche
+   sans effet ».
+2. **L'ecart entre l'artefact installe et son generateur est detectable.**
+   `--status` compare les deux lanceurs installes a ce que le generateur
+   ecrit et sort en **3** avec la premiere ligne divergente et le remede.
+   L'ecart de fins de ligne est distingue de l'ecart de contenu.
+3. **`newline=""` a l'ecriture.** Le fichier ecrit est byte-identique a ce que
+   le generateur declare.
+
+### Ce que cette tranche ne change pas
+
+Le declencheur, sa cadence (60 min, depart `00:07`), son identite (`gh auth token
+--user jsboige` lu au moment du tir), son journal et le canal de la decision
+(le workflow du depot, avec les secrets du depot) restent inchanges. Le siege
+demeure une **minuterie**, pas un decisionnaire.
+
 ## La reorientation de la file de cohorte deja constituee (volet (c))
 
 Le `runs-on` d'un job se resout **a la creation du job** : un run de cohorte cree avant

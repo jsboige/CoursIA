@@ -63,6 +63,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -194,10 +195,18 @@ def cmd_content(
     pass_min_interval: bool = True,
 ) -> str:
     """Contenu du lanceur .cmd : capture du jeton AU MOMENT de l'execution,
-    puis declenchement du workflow du depot, puis journalisation.
+    declenchement du workflow du depot, VERIFICATION DE L'EFFET, puis
+    journalisation.
 
     Le jeton n'est jamais ecrit dans le fichier : il est lu dans le
     trousseau du siege par `gh auth token`, au moment ou la tache tourne.
+
+    La verification de l'effet (#25510, E2) lit l'id du plus recent run du
+    workflow AVANT et APRES le declenchement : si l'id n'a pas change, le
+    declenchement n'a produit AUCUN run, et le lanceur sort en 3 avec un
+    motif nomme. Mesure du 2026-11-12 (19:07Z, ai-01) : la tache a rendu
+    rc 0, son journal n'a trace que « declenchement », et AUCUN run n'a ete
+    cree -- l'instrument voyait son propre code de sortie, pas l'effet.
     """
     log = "%LOCALAPPDATA%\\CoursIA\\overflow_trigger\\logs\\overflow_trigger.log"
     dispatch = "gh workflow run %GH_WORKFLOW% --repo %GH_REPO%"
@@ -221,11 +230,37 @@ def cmd_content(
         f'  >> "%LOG%" echo [%DATE% %TIME%] jeton absent pour %GH_USER%\r\n'
         "  exit /b 2\r\n"
         ")\r\n"
+        # AVANT : l'id du plus recent run du workflow, pour comparer l'effet.
+        'for /f "delims=" %%r in (\'gh run list --workflow %GH_WORKFLOW% '
+        '--repo %GH_REPO% --limit 1 --json databaseId --jq ".[0].databaseId" '
+        '2^>nul\') do set "RUN_BEFORE=%%r"\r\n'
         f'echo [%DATE% %TIME%] declenchement de %GH_WORKFLOW% sur %GH_REPO% '
         f'(intervalle minimal %GH_MIN_INTERVAL% min)>> "%LOG%"\r\n'
         f'{dispatch} >> "%LOG%" 2>&1\r\n'
-        "echo %ERRORLEVEL% > \"%LOG%.rc\"\r\n"
-        "exit /b %ERRORLEVEL%\r\n"
+        "if errorlevel 1 (\r\n"
+        '  >> "%LOG%" echo [%DATE% %TIME%] declenchement REFUSE (rc=%ERRORLEVEL%)'
+        " -- aucun run demande\r\n"
+        "  echo %ERRORLEVEL% > \"%LOG%.rc\"\r\n"
+        "  exit /b %ERRORLEVEL%\r\n"
+        ")\r\n"
+        # APRES : l'id a-t-il change ? Un declenchement accepte peut ne
+        # produire AUCUN run (mesure du 2026-11-12, 19:07Z sur ai-01 : la
+        # tache a rendu rc 0, le journal n'a rien trace, et AUCUN run n'a
+        # ete cree). Un instrument qui ne voit que son propre code de sortie
+        # croit avoir declenche ; il faut voir l'EFFET.
+        'for /f "delims=" %%r in (\'gh run list --workflow %GH_WORKFLOW% '
+        '--repo %GH_REPO% --limit 1 --json databaseId --jq ".[0].databaseId" '
+        '2^>nul\') do set "RUN_AFTER=%%r"\r\n'
+        'if "%RUN_AFTER%"=="%RUN_BEFORE%" (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] EFFET NON CONSTATE : aucun run cree '
+        '(id avant=%RUN_BEFORE% id apres=%RUN_AFTER% -- ids vides : la '
+        'lecture des runs a echoue)\r\n'
+        '  echo 3 > "%LOG%.rc"\r\n'
+        "  exit /b 3\r\n"
+        ")\r\n"
+        '>> "%LOG%" echo [%DATE% %TIME%] effet constate : run %RUN_AFTER%\r\n'
+        "echo 0 > \"%LOG%.rc\"\r\n"
+        "exit /b 0\r\n"
     )
 
 
@@ -351,11 +386,18 @@ def cmd_install(
     pass_min_interval = "min_interval" in inputs
     BASE_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
+    # `newline=""` : le contenu porte deja ses "\r\n" explicites. Sans ce
+    # parametre, `write_text` traduit chaque "\n" en os.linesep et ecrit
+    # "\r\r\n" -- mesure sur l'artefact installe le 2026-11-12 : 20 lignes
+    # sur 20 portaient le CR supplementaire. Le fichier etait tolere par
+    # cmd.exe, mais il n'etait plus byte-identique a ce que le generateur
+    # declare, et la detection de drift ne aurait pu rien dire.
     CMD_PATH.write_text(
         cmd_content(repo, workflow, account, min_interval, pass_min_interval),
         encoding="ascii",
+        newline="",
     )
-    VBS_PATH.write_text(vbs_content(CMD_PATH), encoding="ascii")
+    VBS_PATH.write_text(vbs_content(CMD_PATH), encoding="ascii", newline="")
     command = build_schtasks_install(task_action(), interval, start)
     proc = _run(command)
     if proc.returncode != 0:
@@ -375,9 +417,94 @@ def cmd_install(
     return 0
 
 
-def cmd_status() -> int:
+def _norm_lines(text: str) -> list[str]:
+    """Lignes normalisees (fins de ligne unifiees a "\\n").
+
+    Le lanceur installe peut porter des fins de ligne doubles ("\\r\\r\\n",
+    mesure du 2026-11-12) : sans normalisation, `splitlines()` y voit des
+    lignes VIDES et le rapport de driftdesigne la ligne 2 comme vide --
+    un rapport qui ne dit pas ce qui differe.
+    """
+    return re.sub(r"\r+\n", "\n", text).replace("\r", "\n").split("\n")
+
+
+def _first_diff(got: str, want: str) -> str:
+    """Premiere difference entre le lanceur installe et le lanceur genere,
+    en une phrase courte (le journal doit rester lisible)."""
+    got_lines = _norm_lines(got)
+    want_lines = _norm_lines(want)
+    for index, (a, b) in enumerate(zip(got_lines, want_lines), start=1):
+        if a != b:
+            return (
+                f"ligne {index} : installe={a.strip()!r} "
+                f"attendu={b.strip()!r}"
+            )
+    if len(got_lines) != len(want_lines):
+        return (
+            f"{len(got_lines)} ligne(s) installee(s) contre "
+            f"{len(want_lines)} attendue(s)"
+        )
+    return "memes lignes, fins de ligne differentes"
+
+
+def launcher_drift(
+    repo: str, workflow: str, account: str, min_interval: int
+) -> list[str]:
+    """Ecarts entre les lanceurs INSTALLES et ceux que le generateur ecrit.
+
+    Un artefact installe derriere son generateur s'ecarte sans bruit : le
+    declencheur peut alors faire autre chose que ce que le depot declare.
+    Mesure du 2026-11-12 (ai-01) : le lanceur installe ne passait pas
+    `min_interval` -- que le generateur ecrit depuis -- et chacune de ses
+    20 lignes portait un CR supplementaire ; rien ne le signalait.
+
+    Rend la liste des ecarts (vide = conforme).
+    """
+    inputs, _inputs_reason = workflow_inputs(repo, workflow)
+    expected = {
+        CMD_PATH: cmd_content(
+            repo, workflow, account, min_interval,
+            "min_interval" in inputs,
+        ),
+        VBS_PATH: vbs_content(CMD_PATH),
+    }
+    drifts: list[str] = []
+    for path, want in expected.items():
+        if not path.exists():
+            drifts.append(f"{path} absent (declencheur non installe)")
+            continue
+        # Lecture en BYTES : `read_text` traduit les fins de ligne, donc un
+        # lanceur parfaitement ecrit serait lu different de ce que le
+        # generateur declare -- et l'ecart de fins de ligne, qui est
+        # exactement ce qu'on cherche ici, serait invisible.
+        got = path.read_bytes().decode("ascii", errors="replace")
+        if got == want:
+            continue
+        drifts.append(
+            f"{path} DIVERGE du lanceur genere : {_first_diff(got, want)}"
+        )
+    return drifts
+
+
+def cmd_status(
+    repo: str, workflow: str, account: str, min_interval: int
+) -> int:
     proc = _run(["schtasks", "/Query", "/TN", TASK_NAME, "/V", "/FO", "LIST"])
     print(proc.stdout or proc.stderr or f"rc={proc.returncode}")
+    drifts = launcher_drift(repo, workflow, account, min_interval)
+    if drifts:
+        print(
+            "DRIFT -- les lanceurs INSTALLES different de ce que le "
+            "generateur ecrit :"
+        )
+        for line in drifts:
+            print(f"  - {line}")
+        print(
+            "  remedy : python scripts/ci/install_overflow_trigger_task.py "
+            "--install"
+        )
+        return 3
+    print("lanceurs conformes au generateur")
     return 0 if proc.returncode == 0 else 1
 
 
@@ -444,7 +571,9 @@ def main(argv: list[str] | None = None) -> int:
             args.start, args.min_interval,
         )
     if args.status:
-        return cmd_status()
+        return cmd_status(
+            args.repo, args.workflow, args.account, args.min_interval,
+        )
     if args.uninstall:
         return cmd_uninstall()
     if args.run:
