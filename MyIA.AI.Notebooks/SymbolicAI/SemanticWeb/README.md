@@ -347,6 +347,8 @@ couche logique qui transforme un graphe déclaratif en connaissances déductible
 > **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
 
 
+> **Jumeau C#** : [SW-14-Coup-Ontologique-CSharp](SW-14-Coup-Ontologique-CSharp.ipynb) contient une recette Linux de préparation de CPython 3.13, du venv et du pont Python.NET avant le démarrage de Jupyter.
+
 #### SW-14-Coup-Ontologique-Python (Bonus) : le coup ontologique comme diff de graphe exécutable (40 min)
 
 Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ comme **diff de graphe exécutable** sur rdflib. L'ontologie jouet (bibliothèque, classes `Book` / `Member` / `Loan`) subit un coup : sous-classe `Ebook`, datatype property `format`, assertion de provenance par réification RDF. Les gestes sont ceux de la série, **composés** autour d'un même objet : OWL déclare (via rdflib), SHACL juge l'admissibilité du coup, owlrl calcule le delta d'inférences (y compris le **coup nul** comme résultat), la réification RDF et PROV nomment l'auteur du coup.
