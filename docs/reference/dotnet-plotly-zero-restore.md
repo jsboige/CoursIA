@@ -1,5 +1,7 @@
 # Pattern .NET Interactive — figures « zero-restore » (technique C548-L2, variante SVG inline)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 **Statut** : pattern cluster-wide validé (2026-07). Registre : EPIC **#3801** (SOTA axe-2, Prong-A « vrai outil, pas workaround dégradé »).
 **Scope** : toute cellule de notebook `.NET Interactive` (C#) qui doit produire une **figure réelle** (bar chart, histogramme, courbe) là où un `#r "nuget: Plotly.NET…"` échoue.
 
