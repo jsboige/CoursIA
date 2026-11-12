@@ -311,8 +311,8 @@ def closing_evidence(body: str, comments_: list[dict], closed_at: datetime) -> t
     """``(successeur, raison_d_abandon)`` depuis le body et les commentaires proches.
 
     Les commentaires dans :data:`CLOSING_COMMENT_WINDOW_S` autour de la
-    fermeture comptent. Hors de cette fenetre, seules les lignes de tri
-    commencant par ``[TRI]`` sont retenues : elles consignent une decision
+    fermeture comptent. Hors de cette fenetre, seuls les commentaires dont
+    le corps commence par ``[TRI]`` sont retenus : ils consignent une decision
     explicite de triage, meme postee apres coup. Un commentaire ordinaire tel
     que ``superseded by #N`` poste trois semaines plus tot ne compte pas.
     """
