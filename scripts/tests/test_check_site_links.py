@@ -289,3 +289,41 @@ def test_raw_ipynb_internal_absolute_query_and_fragment(monkeypatch) -> None:
     assert {entry['href'] for entry in result.raw_ipynb} == set(hrefs)
     assert result.broken == []
     assert mod.main(['--base-url', BASE, '--page', '/']) == 1
+
+
+def test_raw_ipynb_origin_normalisation_and_encoded_extension(monkeypatch) -> None:
+    """Meme origine canonique et extension encodee, sans faux positif externe."""
+    mod = _load()
+    positives = [
+        'https://EXAMPLE.TEST/CoursIA/a.ipynb',
+        'https://example.test:443/CoursIA/b.ipynb',
+        '/CoursIA/c.%69pynb?download=1',
+    ]
+    negatives = [
+        'https://example.test:444/CoursIA/externe.ipynb',
+        'https://example.test:0/CoursIA/externe.ipynb',
+        'https://example.test:bad/CoursIA/externe.ipynb',
+        'https://else.where/CoursIA/externe.ipynb',
+        '/CoursIA/page.html?nom=faux.ipynb',
+        '/CoursIA/d.%2569pynb',
+    ]
+    html = ''.join(f'<a href="{href}">x</a>' for href in positives + negatives)
+    monkeypatch.setattr(mod, 'fetch_text', lambda url, timeout=None: html)
+    monkeypatch.setattr(mod, 'probe_status', lambda url, timeout=None: 200)
+    result = mod.run_check(BASE, ('/',))
+    assert {entry['href'] for entry in result.raw_ipynb} == set(positives)
+    internal = mod.extract_internal_hrefs(html, BASE + '/')
+    assert len(internal) == 5
+    assert all(':444/' not in url and ':0/' not in url and ':bad/' not in url
+               and 'else.where' not in url for url in internal)
+    assert mod.main(['--base-url', BASE, '--page', '/']) == 1
+
+
+def test_origine_http_port_par_defaut() -> None:
+    """HTTP:80 est local, HTTP:443 est une autre origine."""
+    mod = _load()
+    html = ('<a href="http://EXAMPLE.TEST:80/a.ipynb">local</a>'
+            '<a href="http://example.test:443/b.ipynb">autre port</a>')
+    assert mod.extract_internal_hrefs(html, 'http://example.test/') == [
+        'http://EXAMPLE.TEST:80/a.ipynb'
+    ]
