@@ -356,6 +356,7 @@ Preuves visuelles attachées à un chantier : elles ne vivent pas dans `transien
 | Fichier | Description |
 |---------|-------------|
 | [captures/22286/README.md](captures/22286/README.md) | Preuve de rendu des classes `dense-list` / `xl-dense` / `img-fit` sur les decks 02, 06, S3 et S8 (#22286) — sélection par le DOM rendu, capture au canvas du scanner (980×552), comparaison à l'original PPTX par titre, scan de composition |
+| [captures/24171-point3/README.md](captures/24171-point3/README.md) | Relevé de composition **après correction** du deck `06-apprentissage` (point 3 de #24171) — 7 diapositives corrigées, 0 élément hors canvas sur 124, marges sous canvas mesurées, et le résidu à douze diapositives que la compression ne peut plus lever |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
