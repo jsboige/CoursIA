@@ -598,16 +598,17 @@ PILOT: list[Guard] = [
             ".github/workflows/*.yml",
             ".github/workflows/*.yaml",
             "scripts/ci/check_self_hosted_runner_policy.py",
-            "scripts/ci/self_hosted_timeout_baseline.txt",
             "scripts/tests/test_check_self_hosted_runner_policy.py",
             "scripts/ci/fast_lane_registry.py",
         ],
-        # #22954 : `--check-timeouts` ajoute le cliquet qui refuse un job
-        # auto-heberge sans `timeout-minutes` (defaut d'Actions : 6 h, et un job
-        # fige tient son slot tout ce temps). La dette existante est nommee dans
-        # `self_hosted_timeout_baseline.txt`, qui ne doit jamais grossir.
+        # #22954 : le cliquet refuse un job auto-heberge sans `timeout-minutes`
+        # (defaut d'Actions : 6 h, et un job fige tient son slot tout ce temps).
+        # #23349 (tranche finale, 2026-11-11) : la dette historique est eteinte,
+        # le fichier `self_hosted_timeout_baseline.txt` est supprime, et le
+        # cliquet est le DEFAUT du CLI -- l'argv ne porte plus le drapeau, et
+        # `--no-check-timeouts` serait la seule sortie (visible dans ce diff).
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
-              "--check", "--check-timeouts"],
+              "--check"],
         blocking=True,
         shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
