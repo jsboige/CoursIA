@@ -276,6 +276,7 @@ rejouable sans la soumission.
 ### Références
 
 - Source : `yang-mills-group/OpenAI-YM-20261028` @ `main` (2026-11-05), Apache-2.0.
+- Annonce : OpenAI, « Working with academic communities to build scientific understanding », 26/10/2026 — [openai.com](https://openai.com/index/building-scientific-understanding-with-academic-communities/) (page consultée le 12/11 ; annonce de la découverte physique, distincte de la publication formelle du 28/10).
 - Outil de rejeu : [`scripts/ym_openai_20261028/inventory.py`](../../scripts/ym_openai_20261028/inventory.py).
 - Carnet associé : [`MyIA.AI.Notebooks/Physique/Jauge/Jauge-03-Action-Wilson-Confinement-Python.ipynb`](../../MyIA.AI.Notebooks/Physique/Jauge/Jauge-03-Action-Wilson-Confinement-Python.ipynb) (§8).
 - Licence et attributions : `LICENSE`, `NOTICE`, `THIRD_PARTY.md` du dépôt source.
