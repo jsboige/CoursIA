@@ -409,3 +409,38 @@ def test_aucune_parenthese_dans_un_echo_situe_dans_un_bloc(tmp_path):
                     f"{ligne!r}"
                 )
             profondeur += ligne.count("(") - ligne.count(")")
+
+
+def test_le_dry_run_l_emporte_sur_install(monkeypatch, capsys, tmp_path):
+    """`--install --dry-run` ne doit RIEN installer.
+
+    Mesure du 2026-11-12 (lane myia-ai-01:CoursIA-2) : la commande
+    `--install --dry-run` a **installe** la tache planifiee et ecrit les
+    deux lanceurs. La cause : `args.install` etait teste avant que
+    `args.dry_run` soit lu -- et il n'etait jamais lu, le dry-run n'etant
+    que la branche par defaut (aucun drapeau). Un drapeau "dry-run" mort
+    casse la preparation du geste : la discipline UAC exige que la sortie
+    du dry-run precede l'inscription.
+    """
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    monkeypatch.setattr(inst, "BASE_DIR", tmp_path / "CoursIA" / "overflow_trigger")
+    monkeypatch.setattr(inst, "LOG_DIR", inst.BASE_DIR / "logs")
+    monkeypatch.setattr(inst, "CMD_PATH", inst.BASE_DIR / "dispatch_overflow.cmd")
+    monkeypatch.setattr(inst, "VBS_PATH", inst.BASE_DIR / "run_hidden.vbs")
+
+    def _interdit(cmd, **kwargs):
+        raise AssertionError(
+            f"le dry-run a execute une commande : {cmd} -- rien ne doit "
+            f"tourner en dry-run"
+        )
+
+    monkeypatch.setattr(inst, "_run", _interdit)
+
+    rc = inst.main(["--install", "--dry-run"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "DRY-RUN" in out
+    assert "schtasks /Create /F" in out
+    assert not inst.CMD_PATH.exists()
+    assert not inst.VBS_PATH.exists()
+    assert not inst.BASE_DIR.exists()

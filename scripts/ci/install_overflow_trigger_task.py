@@ -937,6 +937,22 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    # `--dry-run` l'EMPORTE sur `--install`.
+    #
+    # Mesure du 2026-11-12 (lane myia-ai-01:CoursIA-2) : `--install
+    # --dry-run` INSTALLAIT la tache et ecrivait les deux lanceurs. La
+    # cause est l'ordre des tests : `args.install` etait teste avant que
+    # `args.dry_run` soit lu -- et il n'etait jamais lu du tout : le
+    # dry-run n'etait que la branche par defaut (aucun drapeau), donc
+    # `--dry-run` n'etait qu'un drapeau MORT. Un drapeau nomme "dry-run"
+    # qui installe quand meme casse la preparation du geste : la discipline
+    # UAC exige que la sortie du dry-run precede l'inscription.
+    if args.dry_run:
+        return cmd_dry_run(
+            args.mode, args.checkout, args.python_exe, args.repo,
+            args.workflow, args.account, args.interval, args.start,
+            args.min_interval,
+        )
     if args.install:
         return cmd_install(
             args.mode, args.checkout, args.python_exe, args.repo,
