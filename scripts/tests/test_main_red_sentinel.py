@@ -34,6 +34,12 @@ def _commit(sha, subject="sujet", date="2026-11-10T00:00:00Z"):
     }
 
 
+def link_first_parent(commits):
+    for child, parent in zip(commits, commits[1:]):
+        child["parents"] = [{"sha": parent["sha"]}]
+    return commits
+
+
 # --- lecture de verdict ----------------------------------------------------
 
 @pytest.mark.parametrize("conclusion, attendu", [
@@ -121,6 +127,7 @@ def test_un_commit_dont_tous_les_runs_sont_annules_reste_inconnu():
 def test_le_premier_commit_rouge_est_celui_du_bord_vert_rouge():
     commits = [_commit("c3", "rouge 3"), _commit("c2", "rouge 2"),
                _commit("c1", "vert 1")]
+    link_first_parent(commits)
     runs = [
         _run(3, "c3", "failure", "2026-11-10T00:00:00Z", "2026-11-10T00:20:00Z"),
         _run(2, "c2", "failure", "2026-11-10T00:00:00Z", "2026-11-10T00:20:00Z"),
@@ -341,3 +348,87 @@ def test_le_cli_ignore_un_fetch_qui_echoue(monkeypatch):
         raise mrs.SentinelError("reponse inattendue de l'API des commits")
     with pytest.raises(mrs.SentinelError):
         mrs.sentinel_report(fetch=bad_fetch)
+
+
+def test_tete_inconnue_apres_rouge_ne_borne_pas_sa_naissance():
+    """Une tête en attente ne précède pas le premier rouge dans l'histoire."""
+    commits = [_commit("c3", "pending"), _commit("c2", "red"), _commit("c1", "green")]
+    link_first_parent(commits)
+    runs = [
+        _run(2, "c2", "failure", "2026-11-10T00:00:00Z", "2026-11-10T00:10:00Z"),
+        _run(1, "c1", "success", "2026-11-09T23:30:00Z", "2026-11-09T23:40:00Z"),
+    ]
+    result = mrs.find_first_red(commits, mrs.commit_states(commits, runs))
+    assert result["verdict"] == mrs.UNKNOWN
+    assert result["first_red_commit"]["sha"] == "c2"
+    assert result["first_red_commit_exact"] is True
+    assert result["bounds"]["commits_sans_verdict_entre_les_deux"] == []
+
+
+def test_trou_apres_rouge_plus_ancien_ne_borne_pas_son_introduction():
+    commits = [_commit("c4"), _commit("c3"), _commit("c2"), _commit("c1")]
+    link_first_parent(commits)
+    runs = [
+        _run(4, "c4", "failure", "2026-11-10T00:00:00Z", "2026-11-10T00:10:00Z"),
+        _run(2, "c2", "failure", "2026-11-09T23:00:00Z", "2026-11-09T23:10:00Z"),
+        _run(1, "c1", "success", "2026-11-09T22:00:00Z", "2026-11-09T22:10:00Z"),
+    ]
+    result = mrs.find_first_red(commits, mrs.commit_states(commits, runs))
+    assert result["first_red_commit"]["sha"] == "c2"
+    assert result["first_red_commit_exact"] is True
+    assert result["bounds"]["commits_sans_verdict_entre_les_deux"] == []
+
+
+def test_infra_apres_rouge_ne_borne_pas_son_introduction():
+    commits = [_commit("c3"), _commit("c2"), _commit("c1")]
+    link_first_parent(commits)
+    runs = [
+        _run(3, "c3", "timed_out", "2026-11-10T01:00:00Z", "2026-11-10T01:10:00Z"),
+        _run(2, "c2", "failure", "2026-11-10T00:00:00Z", "2026-11-10T00:10:00Z"),
+        _run(1, "c1", "success", "2026-11-09T23:00:00Z", "2026-11-09T23:10:00Z"),
+    ]
+    result = mrs.find_first_red(commits, mrs.commit_states(commits, runs))
+    assert result["verdict"] == mrs.INFRA
+    assert result["first_red_commit"]["sha"] == "c2"
+    assert result["first_red_commit_exact"] is True
+    assert result["bounds"]["commits_infra_entre_les_deux"] == []
+
+
+@pytest.mark.parametrize("case", ["parent_divergent", "parent_absent", "tete_divergente",
+                                  "green_is_second_parent"])
+def test_attribution_exacte_exige_chaine_first_parent(case):
+    """La liste REST peut mélanger des branches ou omettre les parents."""
+    commits = [_commit("pending"), _commit("red"), _commit("green")]
+    commits[0]["parents"] = [{"sha": "red"}]
+    commits[1]["parents"] = [{"sha": "green"}]
+    if case == "parent_divergent":
+        commits[1]["parents"] = [{"sha": "other"}]
+    elif case == "parent_absent":
+        del commits[1]["parents"]
+    elif case == "green_is_second_parent":
+        commits[1]["parents"] = [{"sha": "other"}, {"sha": "green"}]
+    else:
+        commits[0]["parents"] = [{"sha": "other"}]
+    runs = [
+        _run(2, "red", "failure", "2026-11-10T00:00:00Z", "2026-11-10T00:10:00Z"),
+        _run(1, "green", "success", "2026-11-09T23:00:00Z", "2026-11-09T23:10:00Z"),
+    ]
+    result = mrs.find_first_red(commits, mrs.commit_states(commits, runs))
+    assert result["verdict"] == mrs.UNKNOWN
+    assert result["first_red_commit_exact"] is False
+    assert result["bounds"]["chaine_first_parent_verifiee"] is False
+
+
+def test_cli_ne_present_pas_un_rouge_non_apparente_comme_premier(monkeypatch, capsys):
+    rapport = {
+        "verdict": mrs.UNKNOWN,
+        "first_red_commit": {"sha": "abc123", "subject": "branche"},
+        "first_red_commit_exact": False,
+        "bounds": {"chaine_first_parent_verifiee": False},
+    }
+    monkeypatch.setattr(mrs, "sentinel_report", lambda **kw: rapport)
+    assert mrs.main(["--first-red"]) == 0
+    output = capsys.readouterr().out
+    assert "candidat rouge observé" in output
+    assert "filiation premier-parent non verifiee" in output
+    assert "premier commit rouge" not in output
