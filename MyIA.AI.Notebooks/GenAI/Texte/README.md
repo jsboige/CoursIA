@@ -82,7 +82,7 @@ Les lettres prolongent le numéro nu du même palier. Les prérequis techniques 
 - **10c — [10c_Long_Context_Strategies.ipynb](10c_Long_Context_Strategies.ipynb)** : Stratégies pour contextes longs : budget de tokens (comptage avec le tokenizer réel), biais de position, map-reduce, prefix caching — quatre mesures sur notre vLLM — **50 min**
 - **10d — [10d_TensorSharp_DotNet_Inference.ipynb](10d_TensorSharp_DotNet_Inference.ipynb)** : Bake-off bindings .NET en deux parties : pilote TensorSharp (défaut `<pad>` rendu falsifiable, `RECOVERABLE-LOCAL`), puis jambe ORT GenAI (ONNX int4, EP CUDA prouvée) qui rejoue le protocole commun, dresse le tableau à trois moteurs et tranche le go/no-go par axe — **100 min**
 - **10e — [10e_LLamaSharp_DotNet_BakeOff.ipynb](10e_LLamaSharp_DotNet_BakeOff.ipynb)** : Bake-off Phase 2 du [#12353](https://github.com/jsboige/CoursIA/issues/12353) : binding .NET de `llama.cpp` 0.27.0, charge Qwen3-4B Q4_K_M en local sur RTX 3080 Ti 16 Go, produit 4 réponses Phase 1 en français avec 0% pad à 70,11 tok/s GPU (vs 99.4% pad TensorSharp) — subprocess .NET 8 self-contained, harnais versionné `tools/llamasharp-bakeoff/` (#15570) — **50 min**
-- **10g — [10g_Speculative_Decoding.ipynb](10g_Speculative_Decoding.ipynb) / [Version C#](10g_Speculative_Decoding-CSharp.ipynb)** : Décodage spéculatif from scratch : un b-gramme (draft) propose *k* tokens, un 4-gramme (cible) les vérifie en un passage ; taux d'acceptation **décroissant** avec *k* (0,59 → 0,17), tokens par passage qui **sature** (→ 2,3), et speedup `mu/(1+k.r)` balayé sur k×r — le point de bascule où le décodage redevient plus lent que la cible seule. Auto-contenu, CPU, sans vLLM ; le speedup réel sur endpoint est `RECOVERABLE-MACHINE` — **55 min**
+- **10g — [10g_Speculative_Decoding.ipynb](10g_Speculative_Decoding.ipynb)** : Décodage spéculatif from scratch : un b-gramme (draft) propose *k* tokens, un 4-gramme (cible) les vérifie en un passage ; taux d'acceptation **décroissant** avec *k* (0,59 → 0,17), tokens par passage qui **sature** (→ 2,3), et speedup `mu/(1+k.r)` balayé sur k×r — le point de bascule où le décodage redevient plus lent que la cible seule. Auto-contenu, CPU, sans vLLM ; le speedup réel sur endpoint est `RECOVERABLE-MACHINE` — **55 min**
 - **10h — [10h_Roofline_Memory_Bandwidth.ipynb](10h_Roofline_Memory_Bandwidth.ipynb)** : Roofline from scratch sur CPU : les deux plafonds (calcul et bande passante) et l'intensité arithmétique qui tranche — le décodage (1 token) est limité par la **bande passante**, le prefill par le **calcul** ; le batch et le décodage spéculatif (10g) comme deux leviers qui élèvent l'intensité vers la crête, mesures à l'appui *(prérequis : voir la description et la section « Prérequis » ci-dessus ; les lettres prolongent le palier 10.)* — **40 min**
 
 ### Autour de 11
@@ -285,6 +285,10 @@ flowchart LR
 | **Tools/Functions** | 4, 6, 7 | Function calling moderne |
 | **File Upload** | 6, 7 | Support PDF et fichiers |
 | **Reasoning** | 2, 8 | Modèles o4-mini, gpt-5-thinking |
+
+## Décodage spéculatif — deux implémentations 10g
+
+[Python](10g_Speculative_Decoding.ipynb) · [C#](10g_Speculative_Decoding-CSharp.ipynb). Les mêmes n-grammes, corpus et budgets exposent les taux d'acceptation et les coûts modélisés. Trois exercices ouverts portent sur un sampler avec traces P/Q/résidu, le choix de k avec callback observé, et la génération d'arbres avec parcours et compteurs reconstruits. La BCL conserve les algorithmes pédagogiques du source ; aucun endpoint LLM n'est mesuré.
 
 ## Technologies et écosystème
 
