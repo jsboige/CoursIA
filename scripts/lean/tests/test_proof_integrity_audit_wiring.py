@@ -15,10 +15,9 @@ per-lake wrapper, migre vers la matrice CI (entree ``conway`` du manifeste
   ``actions/lean-axiom`` du job ``ci-matrix`` -- c'est ce que pinne ce
   fichier ;
 * la jambe BLOCKING ``proof-integrity`` (showcase KochenSpecker +
-  FreeWillTheorem, fail-on-sorry: true) est SUSPENDUE par la migration :
-  le schema matriciel n'exprime qu'UN profil d'axiomes par lake. La perte
-  residuelle est documentee dans l'issue #25261 (creee AVANT le merge,
-  voie 3 B.0) -- voir ``test_the_blocking_leg_suspension_is_documented``.
+  FreeWillTheorem, fail-on-sorry: true) vit dans les cles plates optionnelles
+  ``axiom-blocking-*`` et un second step du meme job matriciel. Seul conway
+  porte ces cles ; les autres lakes conservent leur comportement.
 
 Substance inchangee depuis #8782 : l'audit advisory tourne l'axiom-audit SUR
 le module porteur de sorries (HashlifeCorrectness), les sorries y surface
@@ -68,9 +67,45 @@ def _matrix_axiom_step():
     yaml = pytest.importorskip("yaml")
     doc = yaml.safe_load(LEAN_BUILD_WF.read_text(encoding="utf-8"))
     steps = doc["jobs"]["ci-matrix"]["steps"]
-    axiom = [s for s in steps if s.get("uses", "").endswith("actions/lean-axiom")]
+    axiom = [
+        s for s in steps
+        if s.get("uses", "").endswith("actions/lean-axiom")
+        and s.get("if") == "matrix.axiom-target-modules != ''"
+    ]
     assert len(axiom) == 1, "exactly one axiom step in the matrix job"
     return axiom[0]
+
+
+def _matrix_blocking_step(steps=None):
+    """Le second passage optionnel, gate par le profil blocking du manifeste."""
+    if steps is None:
+        yaml = pytest.importorskip("yaml")
+        doc = yaml.safe_load(LEAN_BUILD_WF.read_text(encoding="utf-8"))
+        steps = doc["jobs"]["ci-matrix"]["steps"]
+    blocking = [
+        s for s in steps
+        if s.get("uses", "").endswith("actions/lean-axiom")
+        and s.get("if") == "matrix.axiom-blocking-target-modules != ''"
+    ]
+    assert len(blocking) == 1, "exactly one optional blocking axiom step"
+    return blocking[0]
+
+
+def _assert_blocking_leg_contract(entry, steps):
+    """Contrat de bout en bout des trois champs et du second step."""
+    assert entry.get("axiom-blocking-target-modules") == (
+        "Conway.KochenSpecker,Conway.FreeWillTheorem")
+    assert entry.get("axiom-blocking-allow-axioms") == (
+        "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound")
+    assert entry.get("axiom-blocking-fail-on-sorry") == "true"
+    step = _matrix_blocking_step(steps)
+    with_opts = step.get("with", {})
+    assert with_opts.get("target-modules") == (
+        "${{ matrix.axiom-blocking-target-modules }}")
+    assert with_opts.get("allow-axioms") == (
+        "${{ matrix.axiom-blocking-allow-axioms || '' }}")
+    assert with_opts.get("fail-on-sorry") == (
+        "${{ matrix.axiom-blocking-fail-on-sorry || 'true' }}")
 
 
 def _resolve_allow(raw):
@@ -389,8 +424,8 @@ def test_audit_allowlist_is_distinct_from_showcase_defaults():
     native_decide sont disjointes par construction (les defauts ne sont PAS
     des native_decide). Pinner la disjointce empeche un copier-coller futur
     des defauts dans le fichier d'allow-list -- ce qui viderait le gate de
-    son objet (79 ancres mesurees, 0 defaut). Jambe blocking : suspendue par
-    la migration, voir #25261."""
+    son objet (79 ancres mesurees, 0 defaut). La jambe blocking dispose
+    maintenant de sa propre allow-list (#25261)."""
     entry = _conway_entry()
     audit_set = set(_resolve_allow(entry["axiom-allow-axioms"]))
     assert audit_set.isdisjoint(SHOWCASE_DEFAULT_WHITELIST), (
@@ -398,35 +433,36 @@ def test_audit_allowlist_is_distinct_from_showcase_defaults():
         "fichier d'allow-list de l'audit lake-wide")
 
 
-def test_the_blocking_leg_suspension_is_documented():
-    """La jambe BLOCKING du wrapper (``proof-integrity`` : cible
-    KochenSpecker + FreeWillTheorem, allow 6 defauts, fail-on-sorry: true)
-    est SUSPENDUE par la migration matricielle : le manifeste n'exprime
-    qu'UN profil d'axiomes par lake, et l'entree conway porte le profil
-    ADVISORY (le seul qui peut viser '*' sans rougir sur le sorry reconnu,
-    baseline 1). Ce pin fait deux choses :
+def test_conway_sorry_baseline_is_preserved():
+    assert _conway_entry()["sorry-baseline"] == "1"
 
-    1. il FIGE l'etat suspendu (profil advisory seul, baseline 1) pour
-       qu'un retour silencieux a du bloquant -- par simple flip de
-       ``axiom-fail-on-sorry`` a "true" -- soit VU pour ce qu'il est :
-       ce flip ne restaure PAS la jambe showcase du wrapper (cible '*',
-       allow-list de 79, pas les 6 defauts) et rougirait sur le sorry
-       reconnu ;
-    2. il nomme la perte residuelle portee par l'issue #25261 (creee
-       AVANT le merge, voie 3 B.0) : un sorry DEPLACE vers un module
-       showcase sans depasser la baseline 1 ne bloquera plus rien tant
-       que le schema a un seul profil par lake. La restauration eventuelle
-       (deuxieme jambe, ou cle dediee) est une decision coordinateur,
-       documentee la -- pas un geste de lane."""
-    entry = _conway_entry()
-    assert entry["axiom-fail-on-sorry"] == "false", (
-        "le profil de l'entree conway est ADVISORY ; un flip a 'true' ne "
-        "restaure pas la jambe showcase du wrapper (voir #25261) -- il "
-        "ferait rougir le sorry reconnu sur une cible '*'")
-    assert entry["sorry-baseline"] == "1", (
-        "baseline 1 : le sorry reconnu du lake -- un compte qui bouge sans "
-        "justification ecrite est la derive que la baseline existe pour "
-        "fermer")
+
+def test_blocking_leg_is_restored_end_to_end():
+    """La jambe showcase bloquante du wrapper garde ses cibles, ses six
+    axiomes autorises et `fail-on-sorry: true` jusque dans le second step."""
+    import yaml
+    doc = yaml.safe_load(LEAN_BUILD_WF.read_text(encoding="utf-8"))
+    _assert_blocking_leg_contract(
+        _conway_entry(), doc["jobs"]["ci-matrix"]["steps"])
+
+
+@pytest.mark.parametrize("mutation", ["drop-target-key", "drop-step", "wrong-fail-mode"])
+def test_blocking_contract_rejects_mutants_that_lose_the_leg(mutation):
+    """Temoins negatifs : perte d'une cle, du step ou du mode bloquant."""
+    import copy
+    import yaml
+    entry = copy.deepcopy(_conway_entry())
+    doc = yaml.safe_load(LEAN_BUILD_WF.read_text(encoding="utf-8"))
+    steps = copy.deepcopy(doc["jobs"]["ci-matrix"]["steps"])
+    if mutation == "drop-target-key":
+        del entry["axiom-blocking-target-modules"]
+    elif mutation == "drop-step":
+        steps = [s for s in steps if s.get("if") !=
+                 "matrix.axiom-blocking-target-modules != ''"]
+    else:
+        entry["axiom-blocking-fail-on-sorry"] = "false"
+    with pytest.raises(AssertionError):
+        _assert_blocking_leg_contract(entry, steps)
 
 
 # ---------------------------------------------------------------------------

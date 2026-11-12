@@ -119,3 +119,51 @@ def test_main_deck_without_any_images_dir(tmp_path, capsys):
     rc = main(["--repo", str(tmp_path), "--deck", "deck-vide"])
     assert rc == 2
     assert "public/images/" in capsys.readouterr().err
+
+
+def test_mounted_vue_component_reference_is_active(tmp_path):
+    """Un composant Vue monte par une diapositive rend ses imports (#25776).
+
+    Regression : ``scan_deck`` ne lisait que les ``*.md`` du deck, donc
+    l'image importee par ``components/IntelligencePyramid.vue`` tombait en
+    NOWHERE alors que le composant est monte par ``slides.md``.
+    """
+    deck = _make_deck(tmp_path)
+    (deck / "images" / "e_vue.png").write_bytes(b"x")
+    (deck / "components").mkdir()
+    (deck / "components" / "Pyramid.vue").write_text(
+        "<template><img src='/images/e_vue.png' /></template>\n",
+        encoding="utf-8",
+    )
+    (deck / "slides.md").write_text(
+        "# deck\n\n"
+        "![schema](images/a_active.png)\n"
+        "<!-- Image: images/b_trapped.png -->\n"
+        "<Pyramid />\n",
+        encoding="utf-8",
+    )
+    results = scan_slides_dir(tmp_path / "slides")
+    c = results[0]["classes"]
+    assert "e_vue.png" in c["ACTIVE"]
+    assert "e_vue.png" not in c["NOWHERE"]
+    # CONTROLE POSITIF : une image vraiment orpheline reste NOWHERE.
+    assert c["NOWHERE"] == ["d_nowhere.png"]
+    assert results[0]["total"] == 5
+
+
+def test_unmounted_vue_component_stays_nowhere(tmp_path):
+    """Un composant non monte ne rend rien : ses images restent NOWHERE.
+
+    Portee declaree du scan : seule une source de reference *montée* compte.
+    """
+    deck = _make_deck(tmp_path)
+    (deck / "images" / "e_vue.png").write_bytes(b"x")
+    (deck / "components").mkdir()
+    (deck / "components" / "Orphan.vue").write_text(
+        "<template><img src='/images/e_vue.png' /></template>\n",
+        encoding="utf-8",
+    )
+    results = scan_slides_dir(tmp_path / "slides")
+    c = results[0]["classes"]
+    assert "e_vue.png" in c["NOWHERE"]
+    assert "e_vue.png" not in c["ACTIVE"]

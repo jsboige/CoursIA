@@ -411,9 +411,11 @@ def test_unaddressed_keeps_refused_justification():
     assert cells_unaddressed == ["b"], cells_unaddressed
 
 
-def test_history_yields_no_findings_on_clean_diff():
+def test_history_yields_no_findings_on_clean_diff(monkeypatch):
     """A diff that adds a notebook yields no finding (added == exempt)."""
+    import check_output_collapse as module
     from check_output_collapse import history
+    monkeypatch.setattr(module, "_git", lambda *args, **kwargs: "")
     # The 'added-notebook' case: pass an empty list of paths through the
     # helper. We assert only that the iterator returns a list (we don't
     # drive a real git walk in this unit test).
@@ -543,3 +545,64 @@ def test_body_file_flag_wins_over_the_env(tmp_path, monkeypatch):
 def test_empty_body_stays_empty_and_justifies_nothing(monkeypatch):
     monkeypatch.delenv("COLLAPSE_PR_BODY", raising=False)
     assert _load_pr_body(None) == ""
+
+
+def test_history_rejects_missing_ref_and_accepts_empty_valid_history(tmp_path):
+    """Un échec Git ne doit pas devenir un zéro finding trompeur."""
+    import os
+    import subprocess
+
+    def git(*args):
+        subprocess.run(["git", *args], cwd=tmp_path, check=True,
+                       capture_output=True, text=True)
+
+    git("init", "-q")
+    git("config", "user.name", "Test")
+    git("config", "user.email", "test@example.invalid")
+    (tmp_path / "a").write_text("initial")
+    git("add", "a")
+    git("commit", "-qm", "initial")
+    script = Path(__file__).resolve().parent.parent / "check_output_collapse.py"
+    command = [sys.executable, str(script), "--history", "--since", "2020-01-01", "--json"]
+    env = os.environ.copy()
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env)
+    assert result.returncode != 0
+    assert "origin/main" in result.stderr
+    assert "# findings: 0" not in result.stderr
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env)
+    assert result.returncode == 0, result.stderr
+    assert "# findings: 0" in result.stderr
+
+
+def test_history_diff_tree_failure_is_not_clean_zero(monkeypatch, capsys):
+    """Un échec de lecture d'un commit ne signifie pas une liste vide."""
+    import check_output_collapse as module
+
+    def broken_git(*args, **kwargs):
+        if args[0] == "log":
+            return "abc123 2026-11-11 example\n"
+        if args[0] == "diff-tree":
+            return None
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "_git", broken_git)
+    assert module.main(["--history", "--json"]) == 1
+    captured = capsys.readouterr()
+    assert "abc123" in captured.err
+    assert "# findings: 0" not in captured.err
+
+
+def test_history_empty_diff_is_a_valid_zero(monkeypatch, capsys):
+    import check_output_collapse as module
+
+    def empty_git(*args, **kwargs):
+        if args[0] == "log":
+            return "abc123 2026-11-11 example\n"
+        if args[0] == "diff-tree":
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "_git", empty_git)
+    assert module.main(["--history", "--json"]) == 0
+    assert "# findings: 0" in capsys.readouterr().err
