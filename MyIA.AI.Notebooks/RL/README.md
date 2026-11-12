@@ -10,7 +10,7 @@ pagetitle: "RL - Reinforcement Learning"
 series: RL
 pedagogical_count: 38
 breakdown: root=27, PostTraining=11
-maturity: BETA=34, ALPHA=3, DRAFT=1
+maturity: BETA=37, ALPHA=1
 -->
 
 Comment un agent apprend-il à décider quand personne ne lui donne la bonne réponse ? Le reinforcement learning (apprentissage par renforcement) répond par l'essai et l'erreur : l'agent agit, observe la conséquence de son action, et ajuste sa politique. C'est le paradigme derrière AlphaGo, le contrôle de robots, et l'alignement des modèles de langue par retour humain.

@@ -723,7 +723,7 @@ def test_les_deux_organes_lisent_la_meme_grammaire():
             assert mine is False, body
 
 
-def test_marqueur_delivered_ne_compte_pas_comme_activite():
+def test_marqueur_delivered_epic_wide_arme_directement_le_label():
     issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
     issue["comments"] = _comments_with_bodies(
         ("2026-10-20T00:00:00Z",
@@ -732,10 +732,30 @@ def test_marqueur_delivered_ne_compte_pas_comme_activite():
     refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
              "body": "Closes #20078."}]
     verdict, _ = classify(issue, refs)
-    # #24461 -- la cloture explicite `[DELIVERED] lane` dit « la lane X a
-    # livre SON grain », PAS « l'issue est livree » : elle n'arme donc PAS
-    # le label, et l'issue reste classable par l'heuristique de references.
-    # Témoin : #23778 porte ce marqueur ET une Concern du user.
+    # #24461 residu (11/11) -- la cloture explicite `[DELIVERED] lane` SANS
+    # clause paths est une livraison EPIC-WIDE : elle arme desormais le label
+    # par la branche attestation (meme grammaire que le tapis), sans
+    # passer par l'heuristique de references. Le defusage d'un marqueur pose
+    # a tort (temoin historique : #23778) est la REVOCATION `[NOT-DELIVERED]`
+    # -- partagee par les deux organes, testee au module grammar.
+    assert verdict == "attested"
+
+
+def test_marqueur_delivered_tranche_n_arme_pas_le_label():
+    """Double temoin : (1) la clause `paths:` (tranche) n'arme pas le label --
+    l'issue reste classable par l'heuristique de references ; (2) le marqueur
+    n'y compte pas comme une ACTIVITE post-merge : la precondition de silence
+    de merged+silence n'est pas detruite par un `[DELIVERED]` post-merge
+    (garde de #17759 mecanisme B, inchangee par le residu #24461)."""
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "[DELIVERED] lane myia-po-2028:CoursIA -- PR #22883 -- "
+         "paths: scripts/a.py"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "Closes #20078."}]
+    verdict, _ = classify(issue, refs)
     assert verdict == "candidate"
 
 
@@ -1205,23 +1225,29 @@ def test_parite_de_la_grammaire_avec_le_tapis():
     assert attestation_state(["une discussion ordinaire"]) != ATTESTED
 
 
-def test_le_marqueur_delivered_lane_arme_le_tapis_mais_pas_le_label():
-    """Les deux grammaires ne sont PAS identiques, et l'ecart est MESURE.
+def test_le_marqueur_delivered_lane_arme_le_tapis_ET_le_label():
+    """Les deux organes lisent la MEME grammaire d'arming sur ce marqueur.
 
-    `[DELIVERED] lane X -- PR #N` arme l'etat du tapis (l'issue sort de son
-    tirage), mais pas le label : sur une issue a plusieurs tranches, il dit
-    « la lane X a livre SON grain ». Le label, lui, se pose sur une issue
-    entiere, et sa retraction par le protocole (`[NOT-DELIVERED]`) est le
-    geste qui la rend a nouveau servable.
-
-    Témoin réel : #23778 porte ce marqueur ET une Concern du user.
+    Residu #24461 (11/11) : `[DELIVERED] lane X -- PR #N` (sans clause
+    `paths:`) arme l'etat du tapis ET le label -- l'ancien ecart protegeait
+    moins qu'il ne coutait (le tapis ecartait deja l'issue par une sonde
+    budgetee, fail-OPEN servait le grain quand meme : mesure 76/120 au
+    tirage). La retraction par le protocole (`[NOT-DELIVERED]`) reste LE
+    geste qui rend l'issue a nouveau servable -- c'est le mecanisme par
+    lequel le triage du secretariat defuse un marqueur pose a tort (temoin
+    historique : #23778 portait ce marqueur ET une Concern du user ; les
+    temoins vivants : #24393/#24461, 11/11).
     """
     import pick_idle_grain as pig
-    from delivery_grammar import ATTESTED, attestation_state
+    from delivery_grammar import ATTESTED, REVOKED, attestation_state
 
     corps = ["[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #23830"]
     assert pig._delivered_state(corps) is True
-    assert attestation_state(corps) != ATTESTED
+    assert attestation_state(corps) == ATTESTED
+    # Le defusage est partage : la meme revocation rend l'issue servable des
+    # deux cotes, et un marqueur repose la rearme.
+    assert attestation_state(corps + ["[NOT-DELIVERED]"]) == REVOKED
+    assert pig._delivered_state(corps + ["[NOT-DELIVERED]"]) is False
 
 
 def test_sans_commentaires_pas_d_attestation_voyait():
