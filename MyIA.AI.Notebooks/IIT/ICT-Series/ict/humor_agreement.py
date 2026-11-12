@@ -176,7 +176,15 @@ def pairwise_agreement(
     *,
     categories: Sequence[Any] | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Kappa de chaque paire d'annotateurs, sur les items annotes par les deux."""
+    """Kappa de chaque paire d'annotateurs, sur les items annotes par les deux.
+
+    ``categories`` fige le jeu d'etiquettes. Laisse a ``None``, chaque paire
+    deduit ses categories de l'union de ses deux series : deux paires n'ayant
+    pas vu les memes categories produisent alors des kappa qui ne sont pas
+    strictement comparables entre eux. Pour comparer des paires dans un
+    rapport de campagne, passer un jeu explicite -- par exemple via
+    ``agreement_report(categories=...)``, qui le propage a chaque paire.
+    """
     grouped = group_by_annotator(records)
     names = sorted(grouped)
     out: dict[str, dict[str, Any]] = {}
@@ -314,6 +322,10 @@ def agreement_report(
     ``reference`` est un etiquetage de reference (typiquement humain) sous la
     forme ``{item_id: label}`` : l'accord de chaque annotateur avec cette
     reference est alors mesure sur les items partages.
+
+    ``categories`` fige le jeu d'etiquettes, et le propage a chaque paire --
+    a passer des lors que le rapport compare des paires entre elles (voir
+    ``pairwise_agreement``).
     """
     materialized = list(records)
     grouped = group_by_annotator(materialized)
