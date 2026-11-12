@@ -3943,6 +3943,12 @@ TRANCHE44: list[Guard] = [
         argv=[
             "python", "scripts/translation/check_translation_sync.py",
             "translations", "--check", "--repo-root", ".",
+            # `--no-json` : le rapport JSON pese environ 857 Ko pour 2537
+            # anomalies, et le resume du check-run est coupe vers 60 Ko. Le
+            # JSON occupe la place entiere du resume et ecrase les lignes de
+            # signal (REMPLISSAGE, DRIFT DETECTE) : le garde affichait « OK »
+            # sans jamais nommer le drift. Le signal stderr reste integral.
+            "--no-json",
         ],
         blocking=False,          # ADVISORY : le drift est signale, jamais bloque
         absorbed=True,
