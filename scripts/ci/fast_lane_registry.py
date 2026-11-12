@@ -3768,6 +3768,63 @@ TRANCHE41: list[Guard] = [
 
         absorbed=True,
     ),
+    # -------------------------------------------------------------------------
+    # Garde des listings Quarto (#25680, fille de l'EPIC #10921).
+    #
+    # SIEGE : cette garde est nee avec un workflow dedie
+    # (`quarto-listings-guard.yml`, retire par ce commit). Le workflow
+    # demarrait sur presque toutes les PRs de contenu (filtre
+    # `**/README.md` + `**/*.ipynb`), donc un checkout + un `setup-python` +
+    # un job de plus dans une file qui comptait 984 runs en attente le
+    # 2026-11-12 -- exactement ce que le plan #25510 (T-A) retire. La voie
+    # rapide fait tourner le meme organe dans le checkout deja materialise
+    # de `Always-on guards`, pour quelques secondes.
+    #
+    # SEMANTIQUE : ce garde est un garde d'ETAT, pas un delta. Le workflow
+    # mesurait la TETE de la branche (`ref: head.sha`) ; la voie rapide mesure
+    # l'arbre qu'elle a extrait (la meme tete, materialisee dans le checkout
+    # partage). Pour un garde d'etat, les deux donnent le meme verdict sur un
+    # listing ajoute par la PR : les deux lisent le front matter de la tete et
+    # resolvent chaque motif `contents:` sur disque.
+    #
+    # PLACEMENT : la tranche 41 est un slot de garde NATIVE (source
+    # FAST_LANE_NATIVE) ; la garde y est ajoutee plutot que dans une tranche
+    # neuve, pour ne pas editer `scripts/ci/fast_lane.py` (import + agregation)
+    # et eviter ainsi une collision de fusion avec la tranche T-A/1 (#26209),
+    # qui ajoute TRANCHE42 au meme fichier.
+    # -------------------------------------------------------------------------
+    Guard(
+        name="quarto-listings-guard",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            # Meme perimetre que le filtre `paths:` du workflow retire : un
+            # carnet renomme peut vider un listing sans qu'aucun `index.qmd`
+            # ni `README.md` ne soit touche.
+            "**/index.qmd",
+            "**/README.md",
+            "**/*.ipynb",
+            "scripts/ci/check_quarto_listings.py",
+            "scripts/ci/tests/test_check_quarto_listings.py",
+            # L'organe lui-meme et son test : une revision qui change la
+            # portee doit la rejouer (convention des gardes natifs voisins).
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/ci/check_quarto_listings.py",
+        ],
+        # Controle par faux negatif (lecon #11685/#12817) : un garde qui ne
+        # prouve pas qu'il tire est indiscernable d'un garde debranche. La
+        # suite du detecteur est donc rejouee avant le verdict -- convention
+        # des gardes absorbes voisins (cell-source-parses, papermill ratchet).
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/ci/tests/test_check_quarto_listings.py",
+        ],
+        blocking=True,
+
+        absorbed=True,
+    ),
 ]
 
 
