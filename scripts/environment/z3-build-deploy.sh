@@ -82,7 +82,7 @@ required_dlls=("Z3.Linq.dll" "Microsoft.Z3.dll" "$NATIVE_LIB" "ExpressionUtils.d
 if [[ -d "$DEPLOY_DIR" && "$FORCE" != "1" ]]; then
     missing=()
     for d in "${required_dlls[@]}"; do
-        [[ -f "$DEPLOY_DIR/$d" ]] || missing+=("$d")
+        [[ -s "$DEPLOY_DIR/$d" ]] || missing+=("$d")
     done
     if [[ ${#missing[@]} -eq 0 ]]; then
         echo ".deploy/ already complete (4 DLLs present). Set Z3_FORCE=1 to rebuild."
@@ -113,13 +113,18 @@ else
 fi
 
 # --- prepare .deploy/ ------------------------------------------------------------------
-rm -rf "$DEPLOY_DIR"
-mkdir -p "$DEPLOY_DIR"
+STAGE_DIR="$(mktemp -d "$SUBMODULE_DIR/.deploy-stage.XXXXXX")"
+WHEEL_DIR=""
+cleanup() {
+    [[ -z "$STAGE_DIR" ]] || rm -rf "$STAGE_DIR"
+    [[ -z "$WHEEL_DIR" ]] || rm -rf "$WHEEL_DIR"
+}
+trap cleanup EXIT
 
 # 1. wrapper + native solver from local build output
-cp "$BUILD_OUT/Z3.Linq.dll" "$DEPLOY_DIR/"
+cp "$BUILD_OUT/Z3.Linq.dll" "$STAGE_DIR/"
 if [[ "$NATIVE_LIB" == "libz3.dll" ]]; then
-    cp "$BUILD_OUT/libz3.dll" "$DEPLOY_DIR/"
+    cp "$BUILD_OUT/libz3.dll" "$STAGE_DIR/"
 fi
 
 # 2. managed dependencies from the NuGet package cache.
@@ -138,7 +143,7 @@ EXPR_UTILS="$NUGET_ROOT/miaplaza.expressionutils/1.2.0/lib/netstandard2.0/Expres
 for dep in "$Z3_MANAGED:Microsoft.Z3.dll" "$EXPR_UTILS:ExpressionUtils.dll"; do
     src="${dep%%:*}"; name="${dep##*:}"
     if [[ -f "$src" ]]; then
-        cp "$src" "$DEPLOY_DIR/$name"
+        cp "$src" "$STAGE_DIR/$name"
     else
         echo "ERROR: dependency not found in NuGet cache: $src"
         echo "  Run: dotnet restore $CSPROJ  (then re-run this script)"
@@ -154,14 +159,13 @@ if [[ "$OS" == "Darwin" && "$ARCH" == "x86_64" ]]; then
         echo "ERROR: macOS x64 native dependency not found: $Z3_NATIVE"
         exit 1
     fi
-    cp "$Z3_NATIVE" "$DEPLOY_DIR/libz3.dylib"
+    cp "$Z3_NATIVE" "$STAGE_DIR/libz3.dylib"
 fi
 
 # Linux and macOS ARM64: native library from the z3-solver wheel of the same release
 #    (the Microsoft.Z3 NuGet package has no linux-x64 native asset).
 if [[ "$OS" == "Linux" || ( "$OS" == "Darwin" && "$ARCH" == "arm64" ) ]]; then
     WHEEL_DIR="$(mktemp -d)"
-    trap 'rm -rf "$WHEEL_DIR"' EXIT
     if [[ "$OS" == "Linux" ]]; then
         WHEEL_PLATFORM="manylinux2014_$ARCH"
     else
@@ -173,7 +177,7 @@ if [[ "$OS" == "Linux" || ( "$OS" == "Darwin" && "$ARCH" == "arm64" ) ]]; then
         echo "ERROR: could not download z3-solver==$Z3_VERSION.0 for $WHEEL_PLATFORM (python3 -m pip required)."
         exit 1
     fi
-    python3 - "$WHEEL_DIR" "$DEPLOY_DIR/$NATIVE_LIB" "$NATIVE_LIB" <<'PY'
+    python3 - "$WHEEL_DIR" "$STAGE_DIR/$NATIVE_LIB" "$NATIVE_LIB" <<'PY'
 import glob
 import sys
 import zipfile
@@ -195,13 +199,30 @@ fi
 echo ""
 echo "=== .deploy/ contents ==="
 for d in "${required_dlls[@]}"; do
-    if [[ -f "$DEPLOY_DIR/$d" ]]; then
-        size=$(( $(stat -f%z "$DEPLOY_DIR/$d" 2>/dev/null || stat -c%s "$DEPLOY_DIR/$d" 2>/dev/null) / 1024 ))
+    if [[ -s "$STAGE_DIR/$d" ]]; then
+        size=$(( $(stat -f%z "$STAGE_DIR/$d" 2>/dev/null || stat -c%s "$STAGE_DIR/$d" 2>/dev/null) / 1024 ))
         printf "  %-22s %6d KB\n" "$d" "$size"
     else
         echo "FAILED: missing $d"; exit 1
     fi
 done
+
+# Publish only the verified directory; retain the previous deployment if replacement fails.
+BACKUP_DIR=""
+if [[ -e "$DEPLOY_DIR" ]]; then
+    BACKUP_DIR="$(mktemp -d "$SUBMODULE_DIR/.deploy-backup.XXXXXX")"
+    rmdir "$BACKUP_DIR"
+    mv "$DEPLOY_DIR" "$BACKUP_DIR"
+fi
+if ! mv "$STAGE_DIR" "$DEPLOY_DIR"; then
+    if [[ -n "$BACKUP_DIR" ]]; then
+        mv "$BACKUP_DIR" "$DEPLOY_DIR" || echo "ERROR: restore previous deployment from $BACKUP_DIR"
+    fi
+    echo "ERROR: could not publish deployment."
+    exit 1
+fi
+STAGE_DIR=""
+[[ -z "$BACKUP_DIR" ]] || rm -rf "$BACKUP_DIR"
 
 echo ""
 echo "=== Z3.Linq fork build complete ==="
