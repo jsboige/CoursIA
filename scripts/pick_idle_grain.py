@@ -14006,7 +14006,7 @@ def main(argv: list[str] | None = None) -> int:
         if csv_genre:
             args.prev_genre = sorted(normalize_prev_genres(csv_genre))
             print(f"(prev-genre auto-applique depuis CSV : {csv_genre} "
-                  f"(dernier grain @ {csv_ts}))")
+                  f"(dernier grain @ {csv_ts}))", file=sys.stderr)
 
     # Mode rapport : le garde rouge (lane) ne concerne pas ce chemin -- la file
     # des orphelines est lane-independante et ce mode ne tire pas de grain.
@@ -14054,7 +14054,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"{name}: {entry.get('error') or 'refresh echoue'}"
                 for name, entry in sorted(stale.items())
             )
-            print(f"(cache STALE explicite : {details})")
+            print(f"(cache STALE explicite : {details})", file=sys.stderr)
         hit = next((x for x in pool if x["number"] == args.admissible), None)
         if hit is None:
             print(f"#{args.admissible} : absente du pool ouvert "
@@ -14071,10 +14071,11 @@ def main(argv: list[str] | None = None) -> int:
         if series_err:
             if (cache_status.get("series") or {}).get("status") == "stale":
                 print(f"(saturation FRAICHE NON MESUREE : {series_err} -- "
-                      "parite evaluee sur le payload stale explicitement signale)")
+                      "parite evaluee sur le payload stale explicitement signale)",
+                      file=sys.stderr)
             else:
                 print(f"(saturation de zone NON MESUREE : {series_err} -- "
-                      "le volet parite n'a PAS ete evalue)")
+                      "le volet parite n'a PAS ete evalue)", file=sys.stderr)
         print(f"#{hit['number']} {hit['title'][:70]}")
         print(f"  genre {hit['genre']} | polarite {hit['polarity']} | "
               f"age {_hours_old(hit['created_at']):.0f} h")
@@ -14281,7 +14282,8 @@ def main(argv: list[str] | None = None) -> int:
         print_infra_rerun(backlog)
         print_dwell_waiting(backlog)
     if backlog.get("unavailable") and not args.json:
-        print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
+        print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)",
+              file=sys.stderr)
         print()
 
     # #22500 -- l'horloge d'une PASSE COMPLETE part d'ici, pas du debut du
@@ -14399,7 +14401,8 @@ def main(argv: list[str] | None = None) -> int:
             )
             print(f"(index local des PRs mergees : {len(merged_prs_local)} "
                   f"PRs sur {MERGED_PR_WINDOW_DAYS} j -- la sonde par "
-                  f"candidat ne sort plus sur le reseau, #24823)")
+                  f"candidat ne sort plus sur le reseau, #24823)",
+                  file=sys.stderr)
         else:
             print("(index local des PRs mergees INDISPONIBLE (echec de la "
                   "passe groupee) -- repli sur la sonde reseau par numero, "
@@ -15573,11 +15576,13 @@ def main(argv: list[str] | None = None) -> int:
                     drought_fell_back)
         elif drought["triggered"] and args.ignore_drought and not args.json:
             print(f"(secheresse de substance ignoree : {drought['run']} merges "
-                  f"sans CONTENU -- justification ecrite attendue)")
+                  f"sans CONTENU -- justification ecrite attendue)",
+                  file=sys.stderr)
             print()
         elif not drought["measured"] and not args.json:
             print(f"(secheresse NON MESUREE : {drought['error']} -- le tirage "
-                  "ne prouve donc rien sur le plancher G-VAR-1)")
+                  "ne prouve donc rien sur le plancher G-VAR-1)",
+                  file=sys.stderr)
             print()
 
     # Le mode --json doit dire la MEME chose que la banniere texte. Sans ces
@@ -15769,10 +15774,11 @@ def main(argv: list[str] | None = None) -> int:
     if series_err:
         if (cache_status.get("series") or {}).get("status") == "stale":
             print(f"(saturation FRAICHE NON MESUREE : {series_err} -- "
-                  "payload stale explicitement signale et amortissement ancien applique)")
+                  "payload stale explicitement signale et amortissement ancien applique)",
+                  file=sys.stderr)
         else:
             print(f"(saturation de zone NON MESUREE : {series_err} -- "
-                  "aucun amortissement de serie applique)")
+                  "aucun amortissement de serie applique)", file=sys.stderr)
         print()
     else:
         chaudes = [(f, b) for f, b in balance.items()
@@ -15987,7 +15993,7 @@ def main(argv: list[str] | None = None) -> int:
         ts_now = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
         write_prev_genre_csv(args.csv_state, args.lane, encoded, ts_now)
         print(f"(CSV d'etat : {args.csv_state} ecrit -- lane={args.lane} "
-              f"genres={encoded} @ {ts_now})")
+              f"genres={encoded} @ {ts_now})", file=sys.stderr)
     # #22630 : `fetch_pool` et l'enumeration des PRs ouvertes tournent APRES le
     # flush de `red_backlog` ; sans ce second flush, leurs caches de la passe
     # (pool < 90 s, enumeration < 120 s) seraient perdus a chaque fois et le
