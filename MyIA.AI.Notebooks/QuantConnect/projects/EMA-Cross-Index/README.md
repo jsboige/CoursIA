@@ -133,9 +133,9 @@ Les chiffres de cette section et du tableau « Backtest Metrics » viennent de c
 - CAGR 9.0 % vs baseline 8.7 %
 - MaxDD −24.2 % vs baseline −25.5 % (marginalement mieux)
 - β strategy = 0.404 (exposition au marché réduite dans cette simulation)
-- **Protection bear : 10 pp** (en bear market, EMA strategy CAGR = -21.6 % vs SPY B&H -31.5 %)
+- **Écart de rendement annualisé dans les séances bear : 10 pp**, affiché par la cellule 42 pour cette même variante EMA 20/60 avec stop de 5 % : −21,6 % contre −31,5 % pour SPY détenu. Le régime bear est défini par SPY sous sa SMA200 ; il s’agit des rendements annualisés sur ces seules séances, pas du CAGR de la période complète.
 
-**MAIS** : sur la fenêtre 2015-2026 dominée par le bull market SPY (+300 %), **la stratégie UNDERPERFORME SPY B&H** sur le CAGR total (2.5× portfolio vs 4.0× SPY B&H, écart de 60 % cumulés).
+**Comparaison visuelle (cellule 42)** : le graphique superpose la baseline EMA 20/50 et la variante EMA 20/60 avec stop de 5 %, toutes deux autour de 2,5 fois le capital initial, contre environ 4 fois pour SPY détenu. Ces multiples sont des lectures approximatives de la figure, distinctes des CAGR calculés ; ils ne mesurent pas le code actuel avec cooldown et sans stop.
 
 **Lecture** : cette variante présente une exposition au marché réduite et une baisse maximale moindre sur la fenêtre étudiée, au prix d’un CAGR inférieur à celui de SPY détenu. La période 2000–2010 n’est pas mesurée ici : son comportement sur ce cycle reste à tester. Les cellules 43 et 46 retiennent pour `main.py` **EMA 20/60 avec cooldown de trois jours, sans stop suiveur**, ce qui correspond au code actuel. La variante avec stop de la cellule 44 reste une comparaison de recherche ; ses résultats ne constituent ni une recommandation de déploiement ni une mesure du code actuel.
 
