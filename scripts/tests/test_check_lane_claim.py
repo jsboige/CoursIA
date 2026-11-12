@@ -8069,7 +8069,7 @@ def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
     `test_open_prs_legacy_bare_list_cache_is_not_trusted`).
     """
     cached_prs = [{"number": 1, "title": "cached", "body": "",
-                   "headRefName": "x", "files": []}]
+                   "headRefName": "x", "files": [], "renames": []}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": "open-prs-v2",
@@ -8244,9 +8244,18 @@ def _graphql_page(nodes, has_next=False, cursor=None):
     }}}}
 
 
-def _graphql_node(number, files=(), total=None, title=None):
-    """Un noeud PR de la page GraphQL ; `total` simule le plafond a 100."""
-    paths = [{"path": p} for p in files]
+def _graphql_node(number, files=(), total=None, title=None, renamed=()):
+    """Un noeud PR de la page GraphQL ; `total` simule le plafond a 100.
+
+    `renamed` liste les chemins marques `changeType == "RENAMED"` (#25910) :
+    c'est le seul signal GraphQL d'un renommage -- l'ancien chemin, lui,
+    n'existe que cote REST (`previous_filename`).
+    """
+    renamed = set(renamed)
+    paths = [
+        {"path": p, "changeType": "RENAMED" if p in renamed else "MODIFIED"}
+        for p in files
+    ]
     return {
         "number": number,
         "title": title or f"PR {number}",
@@ -8310,7 +8319,7 @@ def test_open_prs_complete_refetches_overflowing_files(monkeypatch,
 
     def fake_rest(owner, name, number, expected):
         seen.append((owner, name, number, expected))
-        return first_hundred + [f"f/{i}.py" for i in range(100, 150)]
+        return (first_hundred + [f"f/{i}.py" for i in range(100, 150)], [])
 
     monkeypatch.setattr(clc, "_gh_pr_files_rest", fake_rest)
     prs = clc._gh_open_prs_complete()
@@ -8320,6 +8329,136 @@ def test_open_prs_complete_refetches_overflowing_files(monkeypatch,
     assert len(paths) == 150
     # La queue au-dela des 100 premiers chemins est bien presente.
     assert paths[-1] == "f/149.py"
+
+
+# --- #25910 -- un renommage pur ne doit jamais liberer l'ancien chemin ----
+#
+# Mesure (#25910) : l'index des fichiers d'une PR ouverte ne portait que le
+# nom NOUVEAU. Sur un renommage pur, l'ancien chemin paraissait donc
+# LIBRE alors qu'une PR ouverte d'une autre lane le renommait -- la
+# collision de fichiers passait inapercue (deux lanes editant le meme
+# carnet sous deux noms differents, puis un conflit muet a la fusion).
+#
+# Le remede : `changeType == "RENAMED"` (seul signal GraphQL d'un
+# renommage) declenche une seconde passe REST, ou l'ancien chemin
+# (`previous_filename`, absent du schema GraphQL) rejoint l'index des
+# chemins occupes. L'ensemble des chemins occupes s'ELARGIT : il ne se
+# restreint jamais (fail-CLOSED).
+
+
+def test_open_prs_complete_indexes_renamed_previous_paths(monkeypatch,
+                                                          _isolated_open_prs):
+    """#25910 -- l'ancien chemin d'un renommage rejoint l'index des chemins.
+
+    Le chemin nouveau ne disparait pas (l'index porte les DEUX noms) : une
+    PR qui renomme occupe l'ancien ET le nouveau chemin.
+    """
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    monkeypatch.setattr(clc, "_gh_graphql", lambda q, v=None: _graphql_page(
+        [_graphql_node(
+            25612,
+            files=["carnets/App-03-NurseScheduling-Python.ipynb",
+                   "carnets/App-05-Timetabling-CSharp.ipynb"],
+            renamed=["carnets/App-03-NurseScheduling-Python.ipynb"],
+        )]))
+
+    seen = []
+
+    def fake_rest(owner, name, number, expected):
+        seen.append((owner, name, number, expected))
+        return (
+            ["carnets/App-03-NurseScheduling-Python.ipynb",
+             "carnets/App-05-Timetabling-CSharp.ipynb"],
+            ["carnets/App-3-NurseScheduling.ipynb"],
+        )
+
+    monkeypatch.setattr(clc, "_gh_pr_files_rest", fake_rest)
+    prs = clc._gh_open_prs_complete()
+    # La PR porteuse d'un renommage est relise en REST, avec son total.
+    assert seen == [("jsboige", "CoursIA", 25612, 2)]
+    paths = [f["path"] for f in prs[0]["files"]]
+    assert "carnets/App-3-NurseScheduling.ipynb" in paths
+    assert "carnets/App-03-NurseScheduling-Python.ipynb" in paths
+    assert prs[0]["renames"] == ["carnets/App-3-NurseScheduling.ipynb"]
+
+
+def test_open_prs_complete_skips_rest_for_pr_without_rename(monkeypatch,
+                                                            _isolated_open_prs):
+    """#25910 -- une PR SANS renommage ne coute aucune passe REST.
+
+    La seconde passe est bornee aux PRs qui portent un renommage (et a
+    celles dont la liste de fichiers est plafonnee) : le cout de
+    l'enumeration reste celui d'avant.
+    """
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    monkeypatch.setattr(clc, "_gh_graphql", lambda q, v=None: _graphql_page(
+        [_graphql_node(1, files=["carnets/App-05-Timetabling-CSharp.ipynb"])]))
+
+    def boom(*args, **kwargs):
+        raise AssertionError("aucune passe REST attendue")
+
+    monkeypatch.setattr(clc, "_gh_pr_files_rest", boom)
+    prs = clc._gh_open_prs_complete()
+    assert [f["path"] for f in prs[0]["files"]] == [
+        "carnets/App-05-Timetabling-CSharp.ipynb"]
+    assert prs[0]["renames"] == []
+
+
+def test_renamed_previous_path_is_reported_as_collision():
+    """#25910 -- criteres d'acceptation 1 et 2 : l'ANCIEN chemin d'un
+    renommage bloque sur la PR qui renomme, et le chemin NOUVEAU reste
+    bloque (non-regression de l'existant).
+
+    C'est le coeur du defaut : avant, l'ancien chemin etait rapporte
+    LIBRE, ce qui laissait deux lanes editer le meme carnet sous deux
+    noms differents.
+    """
+    old = ("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
+           "App-3-NurseScheduling.ipynb")
+    new = ("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
+           "App-03-NurseScheduling-Python.ipynb")
+    prs = [{
+        "number": 25612,
+        "title": "renommage de carnets",
+        "headRefName": "b25612",
+        "body": "Grain: DEEP/notebook-python -- lane myia-po-2023:CoursIA",
+        "files": [{"path": new}, {"path": old}],
+        "renames": [old],
+    }]
+    collisions, self_overlap = clc._compute_open_pr_collisions(
+        [old], "myia-po-2027:CoursIA-2", prs=prs)
+    assert [c.number for c in collisions] == [25612]
+    assert old in collisions[0].files
+    assert not self_overlap
+    # Le chemin nouveau reste bloque (l'existant ne regresse pas).
+    collisions_new, _ = clc._compute_open_pr_collisions(
+        [new], "myia-po-2027:CoursIA-2", prs=prs)
+    assert [c.number for c in collisions_new] == [25612]
+
+
+def test_open_prs_cache_without_renames_index_is_not_trusted(monkeypatch,
+                                                             tmp_path):
+    """#25910 -- un cache ecrit par une version anterieure (sans la cle
+    `renames`) n'est PAS une preuve : le lire rapporterait LIBRE un chemin
+    qu'une PR ouverte renomme. Il est traite comme absent -- le fetch
+    complet s'execute et REECRIT le cache au format courant."""
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps({
+        "format": "open-prs-v2", "complete": True, "count": 1,
+        "prs": [{"number": 1, "title": "ancien-cache", "headRefName": "b",
+                 "body": "", "files": [{"path": "a/b.ipynb"}]}],
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+    fresh = [{"number": 2, "title": "fetch-complet", "headRefName": "b",
+              "body": "", "files": [], "renames": []}]
+    monkeypatch.setattr(clc, "_gh_open_prs_complete", lambda: list(fresh))
+
+    prs = clc._gh_open_prs_with_files()
+    assert prs == fresh
+    written = json.loads(cache.read_text(encoding="utf-8"))
+    assert written["prs"] == fresh
 
 
 def test_open_prs_complete_raises_on_refetch_count_mismatch(monkeypatch,
@@ -8423,7 +8562,8 @@ def test_open_prs_legacy_bare_list_cache_is_not_trusted(monkeypatch, tmp_path,
                      encoding="utf-8")
     monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
     complete = [{"number": 2, "title": "from-complete-fetch",
-                 "headRefName": "b", "body": "", "files": []}]
+                 "headRefName": "b", "body": "", "files": [],
+                 "renames": []}]
     monkeypatch.setattr(clc, "_gh_open_prs_complete", lambda: list(complete))
 
     prs = clc._gh_open_prs_with_files()
@@ -8442,7 +8582,7 @@ def test_open_prs_v2_complete_cache_is_trusted(monkeypatch, tmp_path,
     servi sans aucun appel `gh` (c'est l'economie de session de #19643,
     conservee)."""
     cached = [{"number": 5, "title": "cached-v2", "headRefName": "b",
-               "body": "", "files": []}]
+               "body": "", "files": [], "renames": []}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": "open-prs-v2", "complete": True,

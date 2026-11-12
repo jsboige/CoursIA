@@ -51,6 +51,10 @@ jobs:
     # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
+    # #22954 : borne explicite. Mesure du 2026-11-11 (run 43090072864, dispatch sur
+    # main) : duree du job 15 s. Plancher de 10 min (le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
 
     steps:
       - name: Checkout
