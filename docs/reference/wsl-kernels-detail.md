@@ -1,5 +1,7 @@
 # WSL Kernels — Diagnostic et workarounds
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Document de référence détaillant les règles auto-loaded de [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md).
 
 S'applique aux notebooks `MyIA.AI.Notebooks/GameTheory/**/*` et `MyIA.AI.Notebooks/SymbolicAI/Lean/**/*`.
