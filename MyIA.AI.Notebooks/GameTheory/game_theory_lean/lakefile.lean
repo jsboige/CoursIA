@@ -186,6 +186,10 @@ lean_lib CongestionGames where
 -- dans le module. Compagnon Lean du carnet
 -- GameTheory-23-Loopholes-Fiscaux-Python-Lean. 10e cohorte `lean_lib`
 -- du meme package. 0 sorry, 0 axiome ad hoc.
+-- c.Hermes-26022 : `@[default_target]` requis comme pour les 9 autres libs --
+-- sans lui, `lake -R build` (la jambe CI) ne construit pas la cible et le
+-- module peut casser sans faire rougir aucun job.
+@[default_target]
 lean_lib LegalLoophole where
   globs := #[`LegalLoophole.*]
 
