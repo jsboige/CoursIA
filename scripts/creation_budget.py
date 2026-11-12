@@ -111,6 +111,17 @@ Le veto ne touche ni le budget, ni le cliquet anti-entropie, ni le veto de
 reparation : un grain de REPARATION n'est jamais ecarte, quel que soit le
 compte. Une grain de creation porte le marqueur `[EXEMPTION-FINITION]`
 (mandat user du 06/11) reste servi.
+
+LEVEE DU VETO (decision user du 12/11)
+--------------------------------------
+Le user a leve le veto le 12/11, avant que le compte ne repasse sous le
+seuil : les fermetures en cours doivent l'y ramener, et un chantier de
+parite qui ouvre des issues ne doit pas tenir la creation fermee a lui
+seul. `VETO_ACTIF` vaut donc `False` : la porte ne s'active plus, mais son
+mecanisme reste en place et teste, pour qu'un nouveau mandat le rearme en
+une ligne. Le seuil garde son second role : c'est le pivot de
+`expansion_factor` dans le tapis, qui PONDERE l'expansion au-dela de 400
+issues ouvertes sans jamais la refuser (decision user du 12/10).
 """
 
 from __future__ import annotations
@@ -775,6 +786,12 @@ def over_budget(state: dict | None) -> tuple[bool, str]:
 # `scripts/tests/test_creation_budget_veto.py` verifie l'alignement.
 EXPANSION_VETO_THRESHOLD = 400
 
+# Le veto est-il arme ? Leve par le user le 12/11 (cf la docstring du
+# module, « LEVEE DU VETO ») : la porte ne s'active plus. Le rearmer est un
+# geste de mandat user, pas de lane -- remettre `True` ici, dans une PR qui
+# cite le mandat.
+VETO_ACTIF = False
+
 # La cause nommee du veto : elle doit se retrouver telle quelle dans les
 # journaux de tirage et dans la sortie JSON.
 CAUSE_VETO = "VETO CREATION"
@@ -802,7 +819,12 @@ def veto_creation(open_count: int) -> bool:
     le 11/11 (l'etat n'est pose par aucune lane, `load_state()` rendait
     `None`, et le budget valait `max(1, ...)`, ce qui ralentit sans
     jamais arreter).
+
+    Leve le 12/11 (`VETO_ACTIF = False`) : rend `False` quel que soit le
+    compte tant que le veto n'est pas rearme.
     """
+    if not VETO_ACTIF:
+        return False
     try:
         n = int(open_count)
     except (TypeError, ValueError):
