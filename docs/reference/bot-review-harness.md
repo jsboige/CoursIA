@@ -1,5 +1,7 @@
 # Bot Review Harness — pointer externe
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 > **Issue** : #16635 (résidu de #13517) — la mise à jour de harnais prescrite par #13517 aux deux bots Hermes et NanoClaw n'avait aucune surface citée dans le dépôt CoursIA. Ce fichier comble ce trou par un pointeur explicite.
 
 ## Bots concernés
