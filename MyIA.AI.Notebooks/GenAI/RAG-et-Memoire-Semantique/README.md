@@ -262,10 +262,30 @@ python3.13 -m venv .venv-tokenizers
 .venv-tokenizers/bin/pip install tokenizers==0.23.3 huggingface-hub==2.4.0
 TOKEN_VENV="$PWD/.venv-tokenizers"
 TOKEN_BASE="$("$TOKEN_VENV/bin/python" -c 'import sys; print(sys.base_prefix)')"
-TOKEN_LIB="$("$TOKEN_VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')"
+TOKEN_PYDLL="$("$TOKEN_VENV/bin/python" - <<'PYLIB'
+import sys
+import sysconfig
+from pathlib import Path
+
+library = sysconfig.get_config_var("LDLIBRARY")
+if not library or not sysconfig.get_config_var("Py_ENABLE_SHARED"):
+    raise SystemExit("Une distribution CPython 3.13 partagée est requise.")
+base_lib = Path(sys.base_prefix) / "lib"
+folders = [base_lib, Path(sysconfig.get_config_var("LIBDIR") or base_lib)]
+if sysconfig.get_config_var("MULTIARCH"):
+    folders.append(base_lib / sysconfig.get_config_var("MULTIARCH"))
+for folder in folders:
+    candidate = folder / library
+    if candidate.is_file():
+        print(candidate.resolve())
+        break
+else:
+    raise SystemExit("libpython introuvable dans les chemins de cette installation.")
+PYLIB
+)" || exit 1
 TOKEN_SITE="$("$TOKEN_VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')"
 export PYTHONHOME="$TOKEN_BASE"
-export PYTHONNET_PYDLL="$TOKEN_BASE/lib/$TOKEN_LIB"
+export PYTHONNET_PYDLL="$TOKEN_PYDLL"
 export PYTHONPATH="$TOKEN_SITE"
 # Lancer ici Jupyter avec le noyau .NET Interactive.
 ```
