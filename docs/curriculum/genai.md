@@ -243,7 +243,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 12 | [PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) +…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | BETA | Non |
 | 13 | [PT-11c — RLVR sur Qwen3-1.7B/2B (cran au-dessus de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11c_grpo_qwen17_rlvr.ipynb) | ALPHA | Non |
 | 14 | [PT-11d — RLVR multi-seed sur Qwen3.5-0.8B](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb) | ALPHA | Non |
-| 15 | [PT-12 — Crédit différé multi-step : GAE-λ sur un…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb) | ALPHA | Oui |
+| 15 | [PT-12 — Crédit différé multi-step : GAE-λ sur un…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb) | BETA | Oui |
 | 16 | [PT-13 — Les trois biais du loss GRPO et leurs…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_13_dapo_drgrpo_corrections.ipynb) | ALPHA | Oui |
 | 17 | [PT-14 — Lois thermodynamiques de l'entraînement :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_14_neural_thermodynamic_laws.ipynb) | BETA | Oui |
 | 18 | [PT-15 — Contrôle par interprétabilité : refusal…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb) | BETA | Non |
@@ -330,7 +330,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 17 | [10b. Mécanique d'inférence LLM : construire et mesurer…](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) | BETA | Non |
 | 18 | [10c. Stratégies pour contextes longs — budget de…](../../MyIA.AI.Notebooks/GenAI/Texte/10c_Long_Context_Strategies.ipynb) | BETA | Non |
 | 19 | [10d. Bake-off bindings .NET : pilote TensorSharp et…](../../MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb) | BETA | Non |
-| 20 | [10e. LLamaSharp : bake-off binding .NET de llama.cpp](../../MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb) | BETA | Non |
+| 20 | [10e. LLamaSharp : bake-off binding .NET de llama.cpp](../../MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb) | ALPHA | Non |
 | 21 | [10g — Décodage spéculatif : le draft qui vérifie](../../MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb) | BETA | Oui |
 | 22 | [10h — Toit mémoire et bande passante : pourquoi le…](../../MyIA.AI.Notebooks/GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb) | ALPHA | Oui |
 | 23 | [11. Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) | BETA | Non |
@@ -351,10 +351,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 38 | [22c. DSPy — du prompt écrit au prompt compilé](../../MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | BETA | Non |
 | 39 | [23. Du notebook a l'application - servir le RAG de la…](../../MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb) | BETA | Non |
 | 40 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
-| 41 | [TV-00b — Variantes d'attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
+| 41 | [TV-00b — Variantes d’attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
 | 42 | [TV-00d — Encodeur seul et encodeur-décodeur : les deux…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb) | BETA | Oui |
 | 43 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
-| 44 | [TV-02 — MoE SOTA : le routage réel d'OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
+| 44 | [TV-02 — MoE SOTA : le routage réel d’OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
 | 45 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
 
 ## GenAI/Vibe-Coding (8 notebooks)

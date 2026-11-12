@@ -457,3 +457,18 @@ def test_bench_verdict_porte_l_ouverture_marginalisee():
         institutionnalisation=0.0, I_R=10.0, classe="decoratif",
     )
     assert v.dA_t_marg == 0  # defaut : champ present, valeur neutre
+
+
+def test_fixed_predictor_rejects_undefined_distribution():
+    with pytest.raises(ValueError, match="distinctes"):
+        FixedSpacePredictor(("a", "a"))
+    p = FixedSpacePredictor(("a", "b"))
+    with pytest.raises(ValueError, match="observation"):
+        p.log_loss("a")
+    for epsilon in (-1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="epsilon"):
+            p.log_loss("a", epsilon=epsilon)
+    assert p.log_loss("a", epsilon=1.0) == pytest.approx(1.0)
+    p.update("a")
+    assert p.log_loss("a") == pytest.approx(0.0)
+    assert p.log_loss("unknown") == pytest.approx(np.log2(3))
