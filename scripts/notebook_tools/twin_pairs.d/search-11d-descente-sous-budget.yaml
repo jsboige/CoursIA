@@ -1,0 +1,10 @@
+- name: "Search-11d Descente sous budget"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "La descente pedagogique, la borne fractionnaire et la programmation dynamique sont les objets etudies ; Python utilise la bibliotheque standard et C# la BCL, sans solveur externe."
+  known_differences:
+    - "Les generateurs aleatoires Python et C# different : les instances et mesures diffèrent, avec les memes tailles, graines et budgets."
+    - "Les deux carnets distinguent les flips acceptes et les evaluations, et certifient le blocage seulement apres un balayage complet."

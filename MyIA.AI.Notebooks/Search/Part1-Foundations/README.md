@@ -156,6 +156,10 @@ Le notebook [Search-2c-QuikGraph](Search-02c-QuikGraph.ipynb) ferme la boucle c�
 
 La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
 
+### Descente sous budget : deux langages
+
+[Python](Search-11d-Descente-Sous-Budget.ipynb) et [C#](Search-11d-Descente-Sous-Budget-CSharp.ipynb) confrontent descente à un flip, borne LP et optimum exact ; les générateurs aléatoires diffèrent, mais les budgets sont identiques. Un arrêt sur budget ne certifie pas un blocage.
+
 ## Ponts vers les autres séries
 
 Cette partie irrigue le reste du dépôt : les Dancing Links de Search-8 sont à l'œuvre dans la série [Sudoku](../../Sudoku/README.md), Minimax et MCTS (Search-6/7) se prolongent dans [GameTheory](../../GameTheory/README.md) avec OpenSpiel puis dans [RL](../../RL/README.md) côté politiques apprises, et les prédicats Z3 de Search-10 ouvrent sur [SymbolicAI](../../SymbolicAI/README.md).
