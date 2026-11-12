@@ -485,9 +485,14 @@ Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Fondations/Probas-CLT-The
 
 ### Metropolis–Hastings et Gibbs : Python et C#
 
-Les carnets [Python](Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) et [C#](Fondations/Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb) construisent Metropolis–Hastings et Gibbs, puis comparent une gaussienne corrélée et un mélange bimodal à des approximations simples. Ils utilisent quatre chaînes de 10 000 échantillons après 1 000 pas de chauffe. Le générateur aléatoire diffère entre les langages : les trajectoires et mesures fluctuent.
+Les carnets [Python](Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) et [C#](Fondations/Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb) construisent Metropolis–Hastings et Gibbs, puis comparent une gaussienne corrélée et un mélange bimodal à des approximations simples. Ils utilisent quatre chaînes de 10 000 échantillons après 1 000 pas de chauffe. Le générateur aléatoire diffère entre les langages : les trajectoires et mesures fluctuent. Le tableau reprend les sorties committées actuelles du jumeau Python.
 
-Le R-hat classique non scindé et l'ESS heuristique ne sont pas les variantes modernes normalisées par rangs et scindées. Sur T2, les chaînes peuvent rester bloquées dans des modes différents : une variance agrégée proche de 6,5 ne démontre pas le mélange. Les traces et les diagnostics par chaîne sont nécessaires. Les trois exercices portent sur l'acceptation, l'ESS et le taux d'acceptation.
+| Cible | Grandeur | MCMC Python | Approximation naïve | Vérité | R-hat classique Python |
+|---|---|---|---|---|---|
+| T1 — gaussienne corrélée (ρ = 0,8) | Corrélation | **0,801** (MH) · 0,799 (Gibbs) | −0,014 (mean-field) | 0,800 | **1,0030** (MH) |
+| T2 — mélange bimodal (modes ±2,5) | Variance | **6,359** | 0,249 (un seul mode) | 6,500 | **2,272** |
+
+Le R-hat classique non scindé et l'ESS heuristique ne sont pas les variantes modernes normalisées par rangs et scindées. Sur T1, la sortie Python donne R-hat=1,0030 : proche de 1 est un signal de cohérence, pas une preuve de convergence. Sur T2, le R-hat=2,272 et les moyennes par chaîne révèlent la métastabilité malgré une variance agrégée relativement proche de 6,500. Les traces et les diagnostics par chaîne sont nécessaires. Les trois exercices portent sur l'acceptation, l'ESS et le taux d'acceptation.
 
 ## Prerequisites
 
