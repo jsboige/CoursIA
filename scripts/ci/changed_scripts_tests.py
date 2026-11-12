@@ -143,6 +143,9 @@ EXTRA_SELECTORS: dict[str, tuple[str, ...]] = {
     "scripts/tests": (
         "arxiv_attributions_registry.yaml",
         f"{V4}/prosody_lab/",
+        # arete #25360 : test_setup_native_lean4_import.py relit le script
+        # d'install WSL de GameTheory via une ancre __file__
+        "MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh",
     ),
     "tests": ("scripts/ci/", "scripts/notebook_tools/"),
     "scripts/lean/tests": ("scripts/ci/",),

@@ -235,10 +235,12 @@ def test_watch_areas_derivation_parent():
     assert mod.watch_areas("scripts/sudoku/tests") == ("scripts/sudoku/",)
     assert mod.watch_areas("scripts/ci/tests") == ("scripts/ci/",)
     # La generique scripts/tests veille TOUT scripts/ + ses selecteurs
-    # additionnels (registre #17850, prosody_lab relu via ancres __file__).
+    # additionnels (registre #17850, prosody_lab relu via ancres __file__,
+    # arete #25360 setup_wsl_lean4.sh).
     assert mod.watch_areas("scripts/tests") == (
         "scripts/", "arxiv_attributions_registry.yaml",
-        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/")
+        "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/",
+        "MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh")
 
 
 def test_watch_areas_overrides():
@@ -263,7 +265,18 @@ def test_chemins_normalises_windows():
 
 # ---------------------------------------------------------------------- 5. CLI
 
-def test_main_json_sur_stdout_raison_sur_stderr(capsys, tmp_path):
+def test_main_json_sur_stdout_raison_sur_stderr(capsys, tmp_path, monkeypatch):
+    # Revue ai-01 12/11 (DM c2819, review 5869404472) : le test appelait les
+    # lecteurs REELS sur --pr 42 -- vert en CI (pas de jeton, lecteur API en
+    # echec), rouge sur un poste ou gh est authentifie (l'API repond, le mode
+    # n'est plus "full"). Doubles deterministes : les deux lecteurs echouent,
+    # main rend le repli pleine suite -- le contrat mesure ici est la SORTIE
+    # (JSON stdout + raison stderr), pas la lecture.
+    def _reader_broken(*_args):
+        raise RuntimeError("double de test : lecteur volontairement en echec")
+
+    monkeypatch.setattr(mod, "_local_diff_paths", _reader_broken)
+    monkeypatch.setattr(mod, "_api_pr_paths", _reader_broken)
     wf = tmp_path / "wf.yml"
     wf.write_text(
         "      run: |\n"
