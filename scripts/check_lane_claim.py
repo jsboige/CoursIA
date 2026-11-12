@@ -4435,6 +4435,16 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 # une sonde `check_claims([n])` sur une fille plafonnee rend encore FREE tant
 # qu'un suivi n'enseigne pas au picker la cle `epic_visit_cap`. Le gate de la
 # lane, lui, est rendu.
+# #22687 -- deux corrections depuis cette annonce : (a) le plafond SAUTE quand
+# la lane appelante tient deja un claim actif sur une FILLE N (arbitrage ai-01
+# du 2026-11-08, cas #23499 : la reprise d'un chantier ouvert n'est pas une
+# nouvelle visite -- le plafond gate l'ENTREE d'une fille, pas sa reprise ;
+# JAMAIS sur l'EPIC lui-meme, la demande du 09/11 reste entiere) ;
+# (b) la voie unitaire EN PROCESSUS du picker cable desormais `epic_cap=True`
+# et son reducteur lit la cle : la sonde solitaire d'une fille plafonnee rend
+# BLOCKED, alignee sur le gate L898 et sur le plafond bulk que le tapis mesure
+# deja lui-meme. Le mode batch reste `epic_cap=False` (#22630 possede le
+# tirage).
 #
 # ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
 # anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
@@ -5200,6 +5210,24 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             # `epic_visit_cap: null` ne se lise pas comme « plafond respecte ».
             epic_cap_verdict["skipped"] = (
                 "another lane already blocks -- verdict is exit 1 without the cap"
+            )
+        elif mine and not _is_umbrella_issue(payload):
+            # #22687 (arbitrage ai-01, cas mesure 2026-11-08 sur #23499) : la
+            # lane qui interroge tient DEJA un claim actif sur la FILLE N --
+            # elle repare un travail en vol (PR ouverte), elle ne fait pas une
+            # NOUVELLE visite de l'umbrella. Le plafond gate l'ENTREE d'une
+            # fille, pas la reprise du claim qui la porte : sans ce saut, un
+            # [RELEASED] pose sur l'EPIC par une autre lane 0,7 j avant
+            # bloquait la lane sur son propre chantier ouvert depuis 9 j.
+            # JAMAIS sur l'EPIC lui-meme : la demande coordinateur du 09/11
+            # (une visite PASSEE ET CLOSE de la lane arme le plafond, claim en
+            # cours compris) reste entiere -- les regles #25443 (marqueur
+            # propre exclut) et 09/11 (visite close arme) gouvernent seules
+            # les marqueurs propres sur l'EPIC ; ce saut ne les touche pas.
+            # les marqueurs propres sur l'EPIC, ce saut ne les touche pas.
+            epic_cap_verdict["skipped"] = (
+                "calling lane already holds an active claim on this issue "
+                "-- resuming an open claim is not a new umbrella visit"
             )
         else:
             probe = epic_cap_probe
