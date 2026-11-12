@@ -5,7 +5,7 @@
 
 ## Description
 
-Prédiction de direction par deep learning avec un **vrai LSTM** (tensorflow/keras dans le quantbook, PyTorch dans main.py). Prédit la direction du lendemain (hausse/baisse/stable) sur les ETF de l'univers à partir de rendements open-close décalés. L'ancien libellé « Ridge as LSTM proxy » décrivait une itération antérieure du projet.
+Prévision des rendements quotidiens par deep learning avec un **vrai LSTM** : TensorFlow/Keras dans le quantbook, PyTorch dans `main.py`. Le carnet entraîne un modèle sur les rendements historiques de SPY et mesure aussi son exactitude directionnelle ; l’algorithme Lean entraîne un modèle distinct pour chaque ETF et sélectionne les positions à partir des rendements prédits. Les deux parcours sont décrits séparément ci-dessous. L’ancien libellé « Ridge as LSTM proxy » décrivait une itération antérieure du projet.
 
 ## Parcours de recherche : `quantbook.ipynb`
 
@@ -21,20 +21,20 @@ Le carnet attend un environnement QuantConnect Research fournissant `QuantBook` 
 
 La validation présentée reste pédagogique : le découpage principal ajuste le `StandardScaler` avant le split train/test, ce qui fait entrer des statistiques de la période de test dans la normalisation. La simulation réutilise également un modèle entraîné sur SPY pour classer plusieurs ETF et ne modélise pas les coûts de transaction. Les résultats ne démontrent donc pas une performance exploitable en trading. Le carnet documente une fenêtre d'historique ancrée à `qb.Time` (initialisé à `StartDate`) ; ses contrôles d'intégrité signalent des historiques incomplets ou une fin de série plate, mais ne certifient ni la fraîcheur des données ni la validité hors échantillon.
 
-## How to Run
+## Exécution
 
-**Lean CLI:** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-DeepLearning"`
-**QC Cloud:** Not yet deployed. Copy files to a new QC Cloud project to run.
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/ML-DeepLearning"`
+**QC Cloud :** aucun déploiement déclaré ; copier les fichiers dans un nouveau projet QC Cloud pour lancer l’algorithme.
 
-## Backtest Metrics
+## Paramètres de l’algorithme Lean
 
-| Metric | Value |
+| Paramètre | Valeur |
 |--------|-------|
-| Model | LSTM (tensorflow/keras dans le quantbook, PyTorch dans main.py) |
-| Universe | SPY, QQQ, IWM (+ TLT dans le quantbook) |
-| Rebalance | Weekly |
+| Modèle | LSTM (TensorFlow/Keras dans le quantbook, PyTorch dans `main.py`) |
+| Univers Lean | SPY, QQQ, IWM |
+| Rééquilibrage | Chaque lundi |
 
-## Files
+## Fichiers
 
-- [`quantbook.ipynb`](quantbook.ipynb) - exploration et validation du modèle LSTM dans QuantConnect Research
-- [`main.py`](main.py) - stratégie Lean (`MLDeepLearningAlgorithm`)
+- [`quantbook.ipynb`](quantbook.ipynb) — exploration et validation du modèle LSTM dans QuantConnect Research
+- [`main.py`](main.py) — stratégie Lean (`MLDeepLearningAlgorithm`)
