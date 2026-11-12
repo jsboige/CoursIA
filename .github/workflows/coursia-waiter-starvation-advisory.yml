@@ -116,7 +116,17 @@ jobs:
     # du 2026-10-16, cf linux-runner-starvation-advisory.yml) -- les runs
     # internes, le schedule et le dispatch continuent d'alimenter l'observateur.
     # La concurrence vit au niveau du JOB, plus du workflow.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
+    # #25510 T-G elargi (mesure quota 12/11) : la porte 1-sur-4 de #22937
+    # vivait cote SCRIPT -- le run checkoutait quand meme et payait 1 appel
+    # API de cadence sur les 3/4 non-mesurants. Deplacee cote JOB : les 3/4
+    # runs workflow_run non-mesurants ne checkoutent plus et n'appellent plus
+    # l'API. La jambe schedule n'est JAMAIS gatee (cadence de reference) ; la
+    # cadence REELLE de la mesure (1 passage complet sur 4) est intacte.
+    if: >-
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.head_repository.full_name == github.repository) &&
+      (github.event_name != 'workflow_run' ||
+       github.run_number % 4 == 0)
     concurrency:
       group: coursia-waiter-starvation-advisory
       cancel-in-progress: false

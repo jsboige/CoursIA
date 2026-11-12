@@ -112,7 +112,17 @@ jobs:
     # La concurrence vit au niveau du JOB, plus du workflow : au niveau
     # workflow, un run en attente est annule AVANT l'evaluation de ce `if`,
     # et l'email part quand meme. Un job saute n'entre pas dans le groupe.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
+    # #25510 T-G elargi (mesure quota 12/11) : la porte 1-sur-4 de #22937
+    # vivait cote SCRIPT -- le run checkoutait quand meme et payait 1 appel
+    # API de cadence sur les 3/4 non-mesurants. Deplacee cote JOB : les 3/4
+    # runs workflow_run non-mesurants ne checkoutent plus et n'appellent plus
+    # l'API. La jambe schedule n'est JAMAIS gatee (cadence de reference) ; la
+    # cadence REELLE de la mesure (1 passage complet sur 4) est intacte.
+    if: >-
+      (github.event_name != 'workflow_run' ||
+       github.event.workflow_run.head_repository.full_name == github.repository) &&
+      (github.event_name != 'workflow_run' ||
+       github.run_number % 4 == 0)
     concurrency:
       group: linux-runner-starvation-advisory
       cancel-in-progress: false
