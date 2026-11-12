@@ -17,7 +17,13 @@ Modes :
                                               journal horodate, jamais de couleur/TTY ;
                                               relaie --warn-threshold (defaut 20, #3895)
                                               a l'organe : ligne [WARN][prune-task] en
-                                              journal au-dela du seuil de refus
+                                              journal au-dela du seuil de refus ;
+                                              relaie aussi --quarantine-submodules
+                                              (#21743) : un worktree MERGED a
+                                              sous-modules sort par decontamination
+                                              (deplacement en quarantaine, jamais
+                                              --force) au lieu d'etre refuse pour
+                                              toujours (#127)
 
 Garde de securite (#14476) : --install REFUSE de cabler --apply si le script
 cible ne contient pas encore les deux voies du fix PR #14481 (resolution
@@ -224,6 +230,19 @@ def cmd_run(repo: Path, warn_threshold: int = 20) -> int:
     rapport detaille des refus ne vit plus seulement en fin de journal, il
     porte un marqueur qu'une lane peut relever et poster sur le dashboard
     workspace au cycle suivant.
+
+    `--quarantine-submodules` (#21743) est passe a l'organe : c'est la voie
+    de decontamination d'un worktree MERGED a sous-modules, dont le `modules/`
+    de son gitdir est DEPLACE en quarantaine (les objets sont preserves, la
+    preuve est faite au moment du deplacement) -- jamais `--force`. Sans ce
+    drapeau, l'organe refuse (`contains_submodules`) tout worktree a
+    sous-modules, et le travail nocturne laissait alors en place, nuit apres
+    nuit, des worktrees deja livres (#127, mesure du 11/11 : 6 worktrees
+    refuses sur 90, dont `CoursIA-22741-portage`, PR 22811 MERGED). Le
+    drapeau ne touche que CE cas : tous les autres predicats de l'organe
+    (PR MERGED, commits non pousses, source sale, activite recente) restent
+    inchanges. La quarantaine n'est PAS purgee ici : `--purge-quarantine`
+    reste un geste nomme.
     """
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     log = log_path_for()
@@ -234,7 +253,8 @@ def cmd_run(repo: Path, warn_threshold: int = 20) -> int:
         proc = subprocess.run(
             [sys.executable, str(prune_script_path(repo)),
              "--path", str(repo), "--apply",
-             "--warn-threshold", str(warn_threshold)],
+             "--warn-threshold", str(warn_threshold),
+             "--quarantine-submodules"],
             stdout=fh, stderr=subprocess.STDOUT,
         )
         fh.write(f"=== {_dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')} "

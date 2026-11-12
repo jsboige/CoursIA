@@ -1,6 +1,6 @@
 # 3D - Neural Rendering : de NeRF aux gaussiennes splatting
 
-[← Documentation GenAI](../README.md) | [→ NeRF from scratch (3D-01)](3D-01-NeRF-From-Scratch.ipynb)
+[← Documentation GenAI](../README.md) | [→ NeRF from scratch (3D-01)](3D-01-NeRF-Depuis-Zero-Python.ipynb)
 
 Le rendu 3D neuronal a ouvert une voie différente de la géométrie discrète classique (maillages, voxels, nuages de points) : **paramétrer la scène entière par un réseau de neurones continu**, entraîné uniquement depuis des images 2D calibrées. Cette série introduit le geste fondateur — NeRF (Mildenhall et al., ECCV 2020) — entièrement from scratch, puis mesure ses limitations structurelles, celles-là mêmes qui ont motivé le champ suivant (Mip-NeRF, Instant-NGP, 3D Gaussian Splatting).
 
@@ -26,8 +26,8 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 
 | Notebook | Contenu | Outils |
 |----------|---------|--------|
-| [3D-01-NeRF-From-Scratch](3D-01-NeRF-From-Scratch.ipynb) | Pipeline NeRF complet from scratch en PyTorch : scène jouet volumétrique analytique, entraînement, tranches de densité, évaluation MSE/PSNR sur la scène Blender Lego 100×100 du papier | PyTorch, matplotlib |
-| [3D-02-NeRF-Critic](3D-02-NeRF-Critic.ipynb) | Les cinq limitations historiques de NeRF, chacune mesurée sur la scène jouet : paliers de qualité, ablation de l'encodage, bruit de pose, zoom multi-échelle, coût de l'échantillonnage | PyTorch, matplotlib |
+| [3D-01-NeRF-Depuis-Zero-Python](3D-01-NeRF-Depuis-Zero-Python.ipynb) | Pipeline NeRF complet from scratch en PyTorch : scène jouet volumétrique analytique, entraînement, tranches de densité, évaluation MSE/PSNR sur la scène Blender Lego 100×100 du papier | PyTorch, matplotlib |
+| [3D-02-NeRF-Critique-Python](3D-02-NeRF-Critique-Python.ipynb) | Les cinq limitations historiques de NeRF, chacune mesurée sur la scène jouet : paliers de qualité, ablation de l'encodage, bruit de pose, zoom multi-échelle, coût de l'échantillonnage | PyTorch, matplotlib |
 | [3D-03-Gaussian-Splats-Concepts](3D-03-Gaussian-Splats-Concepts.ipynb) | Gaussiennes splatting from scratch, implémentation maison en PyTorch CPU (sans gsplat ni CUDA) : projeter une covariance 3D en ellipse 2D, trier par profondeur, composer par alpha-blending — et pourquoi l'ordre de rendu n'est pas négociable | PyTorch (CPU), matplotlib |
 | [3D-04-3DGS-From-Scratch-with-gsplat](3D-04-3DGS-From-Scratch-with-gsplat.ipynb) | Entraînement 3DGS complet sur le moteur CUDA réel `gsplat` : paramétrisation (positions, quaternions, échelles, opacités, couleurs SH), conversion caméra OpenGL vers OpenCV, parité et vitesse mesurées contre l'implémentation maison | gsplat, PyTorch CUDA |
 | [3D-05-3DGS-Optimization-Tradeoffs](3D-05-3DGS-Optimization-Tradeoffs.ipynb) | Les leviers d'entraînement à la mesure sur banc comparatif : densification par clones et scissions, reset d'opacité, learning rates différenciés, plancher d'échelle — et ce que le banc court réfute des intuitions du papier | gsplat, PyTorch CUDA |

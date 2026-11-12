@@ -1,5 +1,7 @@
 # Cure des accents FR & défense contre les régressions — #2876
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Référence consolidée du registre [#2876](https://github.com/jsboige/CoursIA/issues/2876) : restauration des accents français dans les notebooks pédagogiques **ET** défense contre les 4 classes de défauts qu'une cure mal bornée introduit. Issue du travail convergent du cluster (cycles ~600-617, juil. 2026) — cette doc remplace la connaissance éparpillée dans les mémoires de session et le dashboard éphémère.
 
 ## Périmètre — markdown-only STRICT
