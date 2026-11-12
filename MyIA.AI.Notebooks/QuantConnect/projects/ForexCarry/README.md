@@ -83,7 +83,7 @@ Visuellement, la courbe orange « Vol<median » se détache progressivement et t
 
 <p align="center"><img src="assets/readme/forex-h6-vol.png" alt="H6 — mono-panel Impact du filtre de volatilité 2018-2026, 4 courbes : No filter bleu baseline S=−0.16, Vol < median orange winner S=+0.04, Vol < P75 vert S=−0.02, SPY + Vol<P75 rouge S=−0.18 (axe Y 0.88 → 1.04)" width="900"/><br/><em>H6 — 4 filtres de volatilité (cellule 20 du notebook) : **Vol < median** orange **seul filtre positif S=+0.04** (effet réel mais modeste, delta Sharpe ~0.2), pic mi-2020 ~1.04 (protection bear). **Combinaison SPY + Vol<P75** rouge perd l'avantage vol (S=−0.18 ≈ baseline) → les 2 filtres s'annulent.</em></p>
 
-### Synthèse — v3e domine massivement (Sharpe +1.69)
+### Synthèse — v3e obtient le meilleur Sharpe des configurations testées (+1,69)
 
 **Classement final des configurations candidates** :
 
