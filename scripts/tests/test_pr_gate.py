@@ -2468,7 +2468,10 @@ def _decide_with_walls(checks, walls):
 def test_declared_wall_is_read_from_the_real_workflows():
     """Le cas fondateur, lu sur le depot et non sur une fixture."""
     walls = pr_gate.derive_declared_timeouts()
-    assert walls.get("Scripts Tests (CPU)") == 30
+    # #25968 : le mur de `Scripts Tests (CPU)` est passe de 30 a 40 min dans la
+    # meme PR que l'epingle -- les runs de `main` etaient coupes au mur, et un
+    # plafond releve sans son epingle rougit exactement ce test.
+    assert walls.get("Scripts Tests (CPU)") == 40
     # #16139 : le mur de `ML Pipeline Tests (CPU)` a ete atteint quatre fois a
     # 30 min, dont deux fois sur un `push main` ou `cancel-in-progress` est
     # faux (donc inannulable). Epingle en EGALITE, comme celui du dessus :
