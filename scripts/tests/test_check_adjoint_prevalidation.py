@@ -1367,6 +1367,43 @@ def test_latest_wins_picks_the_most_recent_completed_run_per_name():
     assert verdict == mod.VERDICT_READY, errors
 
 
+def test_le_repli_sur_le_skip_garde_le_verdict_reel_anterieur():
+    """#25510 (T-C) : un check-run `skipped` plus RECENT ne remplace pas un
+    verdict reel anterieur du meme nom.
+
+    `skipped` compte comme VERT ici aussi : sous un repli latest-wins simple,
+    une edition de titre emettrait un `skipped` plus recent que le verdict
+    reel, et ce dossier certifierait `latest-wins-green` sur une tete que le
+    gate lit comme ROUGE. Les trois organes (gate, `check_run_state`,
+    dossier) doivent mesurer le meme « latest ».
+    """
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_un_skipped_seul_ne_contredit_pas_le_dossier():
+    """Le cas ordinaire n'est pas casse : un job saute sans verdict anterieur
+    (filtre `paths:`) reste VERT pour le dossier aussi."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
 def test_latest_wins_red_older_run_loses_to_newer_green():
     snapshot = _snapshot(_body())
     snapshot["checkRuns"] = [

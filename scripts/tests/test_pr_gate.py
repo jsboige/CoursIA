@@ -439,6 +439,54 @@ def test_distinct_names_are_never_merged():
     assert code == 1 and "B" in msg and "A" not in msg.split("failing checks: ")[1]
 
 
+# --- #25510 (T-C) : le repli sur le skip ------------------------------------
+#
+# Un job SAUTE (garde job-level, filtre `paths:`) mesure RIEN du code, et
+# `skipped` compte comme VERT (`CONCLUSION_OK`). Sous un repli latest-wins
+# simple, une edition de titre emettrait un `skipped` plus RECENT que le
+# verdict reel -- et la PR ROUGE se debloquerait d'elle-meme. Le defaut etait
+# deja documente de l'autre cote dans
+# `scripts/tests/test_pr_gate_edited_trigger.py` (#16624) : un garde job-level
+# sur `edited` emet un check-run en forme de verdict, et sous latest-wins c'est
+# le verdict le plus recent du nom.
+
+
+def test_un_skipped_plus_recent_ne_remplace_pas_un_verdict_reel():
+    """Le repli : `failure`@t1 puis `skipped`@t2 doit rendre `failure`."""
+    checks = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    folded = pr_gate.dedupe_latest(checks)
+    assert len(folded) == 1
+    assert folded[0]["conclusion"] == "failure"
+    code, msg = decide(checks)
+    assert code == 1
+    assert "Lean CI" in msg
+
+
+def test_un_verdict_reel_remplace_un_skipped_anterieur():
+    """Le repli joue dans un seul sens : un VERDIT reel remplace toujours un
+    skip anterieur (le skip n'a rien mesure, il ne peut pas masquer un
+    verdict), et l'ordre de la liste ne decide de rien."""
+    checks = [
+        run("Lean CI", "skipped", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "failure", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    assert pr_gate.dedupe_latest(checks)[0]["conclusion"] == "failure"
+    assert decide(checks)[0] == 1
+    assert decide(list(reversed(checks)))[0] == 1
+
+
+def test_un_skipped_seul_reste_vert():
+    """Le cas ordinaire n'est pas casse : un job saute SANS verdict anterieur
+    (filtre `paths:` qui ne matche pas) reste VERT. Le geste inverse serait
+    pire que le defaut : #9819 -- un check requis qui ne demarre jamais reste
+    PENDING pour toujours, il ne peut pas etre `skipped`."""
+    code, msg = decide([run("Lean CI", "skipped", rid=1)])
+    assert code == 0, msg
+
+
 # --- 3. self-exclusion -------------------------------------------------------
 
 

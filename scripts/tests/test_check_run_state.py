@@ -140,6 +140,47 @@ def test_tie_break_id_puis_ordre_quand_started_at_identiques():
     assert fold_latest(legs_sans_id)["X"]["conclusion"] == "success"
 
 
+def test_le_repli_sur_le_skip_garde_le_verdict_reel_anterieur():
+    """#25510 (T-C) : une jambe `skipped` plus RECENTE ne remplace pas une
+    jambe anterieure non-skipped du meme nom.
+
+    `skipped` compte comme VERT (GREEN) : sous un repli latest-wins simple,
+    une edition de titre emettrait un `skipped` plus recent que le verdict
+    reel, et une PR ROUGE se debloquerait d'elle-meme. Le repli garde le
+    verdict reel.
+    """
+    legs = [
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    state = render("ab", legs)
+    assert state["latest_reds"] == ["PR gate"]
+    assert state["latest"]["PR gate"]["conclusion"] == "failure"
+
+
+def test_un_verdict_reel_remplace_un_skipped_anterieur():
+    """Le repli joue dans un seul sens : un VERDIT reel remplace toujours un
+    skip anterieur, et l'ordre de la liste ne decide de rien."""
+    legs = [
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T2", "id": 2},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    legs_inverse = list(reversed(legs))
+    assert fold_latest(legs_inverse)["PR gate"]["conclusion"] == "failure"
+
+
+def test_un_skipped_seul_reste_vert_dans_la_vue_latest():
+    """Le cas ordinaire n'est pas casse : un job saute sans verdict anterieur
+    (filtre `paths:`) reste VERT -- sinon le gate bloquerait des PRs dont le
+    job n'a rien a mesurer."""
+    legs = [{"name": "Lean CI", "conclusion": "skipped", "started_at": "T1", "id": 1}]
+    state = render("ab", legs)
+    assert state["latest_reds"] == []
+    assert state["latest"]["Lean CI"]["conclusion"] == "skipped"
+
+
 def test_fold_latest_preserve_les_champs_bruts_de_la_jambe():
     """#16889 : la jambe rendue est la BRUTE enrichie des champs canoniques --
     un consommateur qui lit isRequired ou databaseId sur une jambe du rollup

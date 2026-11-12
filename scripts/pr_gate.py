@@ -540,6 +540,18 @@ class GateError(RuntimeError):
 # --- pure decision layer (no network; this is what the unit tests pin) -------
 
 
+def _is_skipped(check: Mapping[str, object]) -> bool:
+    """Whether the entry is a SKIPPED job (a job-level guard, a `paths:` filter).
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict. It must therefore never be read as the newest
+    opinion about the name it carries (#25510, tranche T-C).
+    """
+    if str(check.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(check.get("status") or "").lower() == "skipped"
+
+
 def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     """Keep only the most recent entry per check name.
 
@@ -547,6 +559,20 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     all of them makes a benign concurrency cancellation indistinguishable from a
     real failure. Ordering key is `started_at` then `id`, both monotonic per name;
     entries missing both keep their input order as a last resort.
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C). A `skipped` entry never replaces
+    an EARLIER non-skipped entry of the same name, on the same head. A skipped
+    job says nothing about the code, and `skipped` counts as a PASS
+    (`CONCLUSION_OK`): under a plain latest-wins fold, a job skipped by a
+    guard -- a title edit, a `paths:` filter -- emits a `skipped` NEWER than
+    the real verdict and would WHITEN a red PR. The failure mode was already
+    documented from the other side in
+    `scripts/tests/test_pr_gate_edited_trigger.py` (#16624): a job-level guard
+    on `edited` emits a verdict-shaped check-run, and under latest-wins that
+    is the newest verdict for the name.
+
+    The accepted side effect is fail-closed: after a base change that takes
+    the job out of the diff, a red stays displayed until the next push.
 
     PREMISE -- the rendered check-run `name` identifies the job uniquely. This
     premise is enforced by `scripts/ci/check_unique_check_run_names.py` and its
@@ -571,7 +597,17 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
         name = check.get("name") or ""
         key = (check.get("started_at") or "", check.get("id") or 0, index)
         current = best.get(name)
-        if current is None or key >= current[0]:
+        if current is None:
+            best[name] = (key, check)
+            continue
+        if _is_skipped(check) and not _is_skipped(current[1]):
+            # THE SKIPPED FALLBACK (#25510, T-C) : a skipped job measured
+            # nothing, so it never replaces a real verdict of the same name.
+            # Without this, an edit that skips the job emits a `skipped`
+            # newer than the verdict, and `skipped` is a PASS -- the red PR
+            # would unblock itself on a title edit.
+            continue
+        if key >= current[0]:
             best[name] = (key, check)
     return [entry[1] for entry in best.values()]
 
