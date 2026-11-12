@@ -3771,7 +3771,13 @@ TRANCHE41: list[Guard] = [
     # -------------------------------------------------------------------------
     # Garde des listings Quarto (#25680, fille de l'EPIC #10921).
     #
-    # SIEGE : cette garde est nee avec un workflow dedie
+    # UN SEUL ORGANE, UN SEUL SIEGE. L'organe est `scripts/check_quarto_listings.py`
+    # (cree par #25944, evolue par cette PR) ; son siege est cette garde
+    # native. L'etape correspondante d'`always-on-guards.yml` est retiree dans
+    # le meme commit : deux sieges pour une meme classe, c'est deux
+    # verdicts a recouper.
+    #
+    # SIEGE : la garde est nee avec un workflow dedie
     # (`quarto-listings-guard.yml`, retire par ce commit). Le workflow
     # demarrait sur presque toutes les PRs de contenu (filtre
     # `**/README.md` + `**/*.ipynb`), donc un checkout + un `setup-python` +
@@ -3787,6 +3793,11 @@ TRANCHE41: list[Guard] = [
     # listing ajoute par la PR : les deux lisent le front matter de la tete et
     # resolvent chaque motif `contents:` sur disque.
     #
+    # PERIMETRE : l'organe lit les sources de #25944 (`git ls-files` sur les
+    # `*.qmd` et les `*.md`), plus larges qu'un `index.qmd`/`README.md` : le
+    # trigger doit couvrir tout ce que l'organe lit, sinon le garde dort sur
+    # une page qu'il n'a pas lue. D'ou `**/*.qmd` et `**/*.md`.
+    #
     # PLACEMENT : la tranche 41 est un slot de garde NATIVE (source
     # FAST_LANE_NATIVE) ; la garde y est ajoutee plutot que dans une tranche
     # neuve, pour ne pas editer `scripts/ci/fast_lane.py` (import + agregation)
@@ -3799,27 +3810,39 @@ TRANCHE41: list[Guard] = [
         paths=[
             # Meme perimetre que le filtre `paths:` du workflow retire : un
             # carnet renomme peut vider un listing sans qu'aucun `index.qmd`
-            # ni `README.md` ne soit touche.
+            # ni `README.md` ne soit touche. `**/*.qmd` et `**/*.md` couvrent
+            # les sources que l'organe lit (`git ls-files`).
             "**/index.qmd",
             "**/README.md",
+            "**/*.qmd",
+            "**/*.md",
             "**/*.ipynb",
-            "scripts/ci/check_quarto_listings.py",
-            "scripts/ci/tests/test_check_quarto_listings.py",
+            # L'organe repris et son test.
+            "scripts/check_quarto_listings.py",
+            "scripts/tests/test_check_quarto_listings.py",
             # L'organe lui-meme et son test : une revision qui change la
             # portee doit la rejouer (convention des gardes natifs voisins).
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
         argv=[
-            "python", "scripts/ci/check_quarto_listings.py",
+            "python", "scripts/check_quarto_listings.py",
         ],
         # Controle par faux negatif (lecon #11685/#12817) : un garde qui ne
         # prouve pas qu'il tire est indiscernable d'un garde debranche. La
         # suite du detecteur est donc rejouee avant le verdict -- convention
         # des gardes absorbes voisins (cell-source-parses, papermill ratchet).
+        #
+        # Les deux tests qui balayent l'ARBRE REEL sont exclus : sur une PR
+        # de contenu qui vide un listing, le pre- controle echouerait sur un
+        # etat du depot et le check-run dirait « pre- controle ... garde non
+        # execute » au lieu de nommer le listing vide. Le scan de l'arbre
+        # reel, c'est l'`argv` ; le pre- controle reste sur les cas
+        # synthetiques.
         pre_argv=[
             "python", "-m", "pytest", "-q",
-            "scripts/ci/tests/test_check_quarto_listings.py",
+            "scripts/tests/test_check_quarto_listings.py",
+            "-k", "not depot_reel and not racine_par_defaut",
         ],
         blocking=True,
 
