@@ -85,7 +85,15 @@ Ce track utilise une **couche d'abstraction provider** permettant de brancher n'
     └── Lab17-Final-Project.ipynb
 ```
 
-## Progression Pédagogique
+## Comment lire ce README
+
+La série propose un parcours principal par numéros nus et des approfondissements à ouvrir selon votre objectif ; [la racine du dépôt explique ce choix de vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
+- Vous découvrez les agents de data science : suivez le parcours principal dans l'ordre.
+- Vous creusez l'orchestration DS-STAR : ouvrez les approfondissements autour du Lab 12.
+- Vous cherchez les sujets de recherche et les suites : consultez les parcours thématiques et les ressources.
+
+## Parcours principal
 
 ### Day 4 - Foundations (Labs 8-9)
 
@@ -96,19 +104,35 @@ Introduction au framework ADK et configuration multi-provider.
 | 8 | [ADK-Introduction](Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
 | 9 | [First-ADK-Agent](Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
-### Day 5 - DS-STAR (Labs 10-12, 12b-12d, 18)
+### Day 5 - DS-STAR (Labs 10-12)
 
-Data Science autonome avec l'architecture Planner-Coder-Verifier.
+Data Science autonome avec l'architecture Planner-Coder-Verifier. Le parcours principal assemble les fondations (10), la boucle Planner-Coder (11), puis l'atelier complet (12) ; les contrats d'orchestration associés au Lab 12 sont présentés séparément ci-dessous.
 
-| Lab | Notebook | Objectif |
-|-----|----------|----------|
-| 10 | [File-Analyzer](Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
-| 12b | [Sequential-Orchestration](Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, orchestrateur explicite (#14058) |
-| 12c | [Agent-Handoff](Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff entre agents câblé et observable (#14058) |
-| 12d | [Token-Usage](Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM (#14058) |
-| 12e | [Session-Persistence](Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Contrat C1b : conversation multi-tours persistante (#14058) |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 10 | [File-Analyzer](Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes | Data Scientists connaissant Python | — |
+| 11 | [Planner-Coder-Loop](Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents | Data Scientists connaissant Python | — |
+| 12 | [DS-Star-Workshop](Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète | Data Scientists connaissant Python | [12b](#autour-du-lab-12-désignation-et-handoff) · [12c](#autour-du-lab-12-désignation-et-handoff) · [12e](#autour-du-lab-12-persistance-et-usage) · [12d](#autour-du-lab-12-persistance-et-usage) |
+
+## Approfondissements
+
+### Autour du Lab 12: désignation et handoff
+
+Ces labs séparent deux façons de choisir le prochain agent : l'orchestrateur fixe un plan avant l'exécution (C4), tandis que l'agent peut transférer la main pendant un tour (C5). Le Lab 12c compare explicitement ces deux contrats.
+
+| Lab | Notebook | Ce qu'il ajoute | Prérequis conseillé | Contrat et provenance |
+|---|---|---|---|---|
+| 12b | [Sequential-Orchestration](Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, orchestrateur explicite (#14058) | Labs 10-12 pour les rôles du pipeline DS-STAR | Registre EPITA #14058 |
+| 12c | [Agent-Handoff](Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff entre agents câblé et observable (#14058) | Lab 12b pour comparer le handoff à la désignation C4 | Registre EPITA #14058 |
+
+### Autour du Lab 12: persistance et usage
+
+La persistance C1b donne à une conversation un historique durable entre ses tours ; le Lab 12d s'appuie sur ce comportement pour rendre mesurable la croissance de l'usage LLM.
+
+| Lab | Notebook | Ce qu'il ajoute | Prérequis conseillé | Contrat et provenance |
+|---|---|---|---|---|
+| 12e | [Session-Persistence](Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Contrat C1b : conversation multi-tours persistante (#14058), avec isolation C1 entre conversations | Lab 12 pour le runtime ADK et les tours d'agent | Corpus EPITA #14058 ; le notebook vérifie aussi les tests `test_c1b_history_reaches_next_turn` et `test_c1b_conversations_still_isolate` |
+| 12d | [Token-Usage](Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM (#14058) | Lab 12e pour la relation entre historique persistant et coût en jetons | Grain #14687 ; registre EPITA #14058 ; `See #14687, #14058` |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 
@@ -221,10 +245,12 @@ Définir `ACTIVE_PROVIDER=gemini` (ou `vllm`, `openai`, `openrouter`, `lmstudio`
 
 ### Parcours agent data science (~2 jours)
 
-Labs 8-12 en séquence. Maîtriser DS-STAR pour automatiser l'analyse de datasets.
+Labs 8-12 en séquence. Maîtriser DS-STAR pour automatiser l'analyse de datasets, puis choisir les approfondissements d'orchestration utiles.
 
 1. Labs 8-9 -> architecture ADK, premier agent avec outils
 2. Labs 10-12 -> DS-STAR (file analyzer, planner-coder, workshop)
+3. Labs 12b-12c -> désignation explicite (C4), puis handoff (C5)
+4. Labs 12e-12d -> persistance des sessions (C1b), puis mesure de l'usage (C6)
 
 ### Parcours ML engineering (~2 jours)
 
@@ -235,7 +261,7 @@ Labs 13-17 en séquence. MLE-STAR pour les compétitions et le déploiement.
 
 ### Parcours complet (~4 jours)
 
-Tous les labs (8-17) en séquence. Le parcours recommandé pour une formation complète.
+Tous les labs (8-17) en séquence, avec les approfondissements 12b, 12c, 12e et 12d après le Lab 12 selon l'ordre indiqué ci-dessus. Le parcours recommandé pour une formation complète.
 
 ### Parcours rapide (~0.5 jour)
 
