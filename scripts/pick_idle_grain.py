@@ -5170,6 +5170,15 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             blocking = data.get("blocking_lanes") or []
             if blocking:
                 return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
+            # #22687 constat 2 -- le plafond #22500 rend exit 1 cote producteur
+            # mais n'ecrit RIEN dans blocking_lanes (une discipline de visite
+            # n'est pas une collision de lane) : sans lire la cle, la sonde
+            # solitaire d'une fille plafonnee concluait FREE en ignorant le
+            # rouge. La cause est le LITTERAL de l'organe (prefixe
+            # ``PLAFOND EPIC (#22500)``), jamais reformulee ici.
+            cap_cause = data.get("epic_visit_cap")
+            if cap_cause:
+                return CLAIM_CODE_BLOCKED, "PLAFOND : " + str(cap_cause)
             # review 5429946072 : le claim de l'APPELANT est teste AVANT
             # l'occupation implicite -- un grain deja marque par la lane qui
             # tire est OWNED_BY_ME, une PR tierce citee en passant ne doit
@@ -5479,6 +5488,14 @@ def _claims_in_process(
                     # #25873 -- meme opt-in que la voie batch : servir une
                     # issue dont les claims d'autres lanes sont tous bornes.
                     serve_bounded=True,
+                    # #22687 constat 2 -- la voie solitaire du picker cable le
+                    # plafond #22500 : la sonde d'une fille plafonnee rend
+                    # BLOCKED (le reducteur lit ``epic_visit_cap``), alignee
+                    # sur le gate L898 et sur le plafond bulk du tapis. Le
+                    # pool est memoise par processus cote LECTEUR : la sonde
+                    # paie 1 requete par passe, pas par candidat. Le mode
+                    # batch reste cap-free (#22630 possede le tirage).
+                    epic_cap=True,
                 )
             verdicts = {n: _summarize_claim(buf_out.getvalue(), rc)}
         # Les refus nominatifs s'ajoutent aux verdicts servis : un numero
@@ -13531,6 +13548,74 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         _BELT_DEADLINE[0] = _previous_belt_deadline
 
 
+# --- le compte REEL des issues ouvertes (#23174) -----------------------------
+
+# `len(pool)` n'est PAS le compte des issues ouvertes : le pool est une VUE
+# (filtres d'admission, urnes, troncature de la voie REST). Le mandat user
+# du 30/10 porte sur les issues OUVERTES, pas sur la vue du tapis : un veto
+# compare a la vue peut se lever alors que le depot est encore au-dessus du
+# seuil. Le compte se mesure donc A PART -- une seule requete, sur le quota
+# de RECHERCHE (distinct du quota core du listing), et un seul resultat par
+# process.
+_OPEN_COUNT_CACHE: dict[str, object] = {"done": False, "value": None}
+
+# Le plafond de `total_count` cote GitHub : au-dela, la reponse plafonne et
+# ne dit plus le compte exact. Un compte plafonne est traite comme
+# « au moins 1000 » -- c'est au-dessus du seuil du veto, donc la seule
+# lecture qui ne change pas la decision.
+_OPEN_COUNT_CAP = 1000
+
+
+def measure_open_issue_count() -> int | None:
+    """Le nombre d'issues ouvertes du depot, MESURE.
+
+    Rend ``None`` quand la mesure est impossible (quota, reseau, reponse
+    inattendue) : l'appelant retombe alors sur la taille du pool et le dit.
+    Une mesure impossible ne vaut jamais ZERO -- zero ecarterait tout.
+    """
+    if _OPEN_COUNT_CACHE.get("done"):
+        return _OPEN_COUNT_CACHE.get("value")  # type: ignore[return-value]
+    count: int | None = None
+    try:
+        out = subprocess.run(
+            ["gh", "api",
+             f"search/issues?q=repo:{REPO}+type:issue+state:open&per_page=1"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(30),
+        ).stdout
+        payload = json.loads(out)
+        if isinstance(payload, dict):
+            total = payload.get("total_count")
+            if isinstance(total, int) and not isinstance(total, bool):
+                count = min(total, _OPEN_COUNT_CAP)
+    except Exception:  # noqa: BLE001 - une mesure impossible ne vaut pas zero
+        count = None
+    _OPEN_COUNT_CACHE["done"] = True
+    _OPEN_COUNT_CACHE["value"] = count
+    return count
+
+
+def open_count_for_gates(pool_size: int) -> tuple[int, str]:
+    """Le compte a comparer au seuil, et sa source.
+
+    Le compte mesure est le compte REEL des issues ouvertes ; a defaut de
+    mesure, on retombe sur la taille du pool (fail-OPEN sur le veto : une
+    mesure impossible ne doit pas ecarter un grain que la mesure reelle
+    ecarterait, ni en servir un que la mesure reelle servirait).
+
+    Sous pytest, la mesure n'est PAS tentee : la surface reseau du tapis
+    est stubee par les tests, et une requete reelle depuis un test est une
+    panne de la suite, pas une mesure (cf `forbid_shell_escape` et le meme
+    garde pour le cache des PRs ouvertes).
+    """
+    n = None
+    if "PYTEST_CURRENT_TEST" not in os.environ:
+        n = measure_open_issue_count()
+    if n is None:
+        return pool_size, "pool (compte reel indisponible)"
+    return n, "mesure"
+
+
 def _belt_delivery_status(item: dict) -> str:
     """Statut court affiche sur chaque ligne servie par le tapis."""
     klass = item.get("klass", "grain")
@@ -13541,7 +13626,8 @@ def _belt_delivery_status(item: dict) -> str:
     return "servable"
 
 
-def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
+def creation_budget_gate(pool: list[dict], *,
+                         open_count: int | None = None) -> dict[int, str]:
     """#23174 -- les grains de creation a ecarter, avec la cause nommee.
 
     Rend ``{numero: cause}``. Vide quand rien n'est ecarte.
@@ -13553,13 +13639,17 @@ def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
 
     La cause nommee est `BUDGET CRÉATION` (accent compris) : elle doit se
     retrouver telle quelle dans le journal de tirage et dans la sortie JSON.
+
+    `open_count` est le compte des issues ouvertes a comparer au seuil du
+    veto : par defaut la porte prend la taille du pool, mais l'appelant lui
+    passe le compte REEL mesure (cf `open_count_for_gates`).
     """
     try:
         import creation_budget as cb
     except Exception:  # noqa: BLE001 - module absent = porte inactive
         return {}
     try:
-        return cb.creation_gate(pool)
+        return cb.creation_gate(pool, open_count=open_count)
     except Exception:  # noqa: BLE001 - une porte qui leve n'ecarte personne
         return {}
 
@@ -14502,8 +14592,14 @@ def main(argv: list[str] | None = None) -> int:
     # (module absent, etat absent, catalogue du depot inconnu) et elle ne
     # s'active QUE sur un depassement de budget MESURE -- le regime ralentit
     # la creation, il ne l'arrete pas.
+    # Le compte compare au seuil du veto est le compte REEL des issues
+    # ouvertes, mesure a part (action myia-ai-01 du 11/11) : la taille du
+    # pool est une vue, et un veto compare a une vue se leve trop tot.
+    open_count, open_count_source = open_count_for_gates(len(pool))
+    print(f"issues ouvertes: {open_count} ({open_count_source})",
+          file=sys.stderr)
     budget_gate = ({} if args.ignore_creation_budget
-                   else creation_budget_gate(pool))
+                   else creation_budget_gate(pool, open_count=open_count))
     creation_withheld: list[tuple[dict, str]] = []
     for it in pool:
         if it["klass"] == "delivered":
@@ -14834,7 +14930,7 @@ def main(argv: list[str] | None = None) -> int:
             merged_prs=delivery_prs,
             closed_issues=closed_issues,
             closed_error=closed_error,
-            open_count=len(pool),
+            open_count=open_count,
             series=series,
             issue_to_family=issue_to_family,
             zones=series,
@@ -14945,7 +15041,12 @@ def main(argv: list[str] | None = None) -> int:
                     merged_prs=delivery_prs,
                     closed_issues=closed_issues,
                     closed_error=closed_error,
-                    open_count=len(pool),
+                    # L'invariant du rejeu : `open_count` ne peut pas etre
+                    # inferieur au pool exporte. Le compte REEL y est mis,
+                    # borne par la taille du pool exporte -- une fermeture
+                    # survenue entre la lecture du pool et la mesure ne doit
+                    # pas rendre l'export illegible.
+                    open_count=max(open_count, len(belt_replay_pool)),
                     seed_source=seed_source,
                     snapshot=source_snapshot,
                     computed_at=NOW,

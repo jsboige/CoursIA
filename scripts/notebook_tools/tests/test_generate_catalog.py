@@ -2650,12 +2650,12 @@ class TestBuildGitMetadataLoud:
         stdout = "\n".join([
             "COMMIT:aaa111|2026-09-13 10:00:00 +0200|dev@example.org|feat: nb (#123) et (#124)",
             "",
-            "MyIA.AI.Notebooks/Serie/n.ipynb",
-            "scripts/hors_perimetre.py",
+            "M\tMyIA.AI.Notebooks/Serie/n.ipynb",
+            "M\tscripts/hors_perimetre.py",
             "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|ancien (#99)",
             "",
-            "MyIA.AI.Notebooks/Serie/n.ipynb",
-            "MyIA.AI.Notebooks/Serie/m.ipynb",
+            "M\tMyIA.AI.Notebooks/Serie/n.ipynb",
+            "M\tMyIA.AI.Notebooks/Serie/m.ipynb",
         ])
 
         with patch("generate_catalog.subprocess.run") as mock_run:
@@ -2678,6 +2678,368 @@ class TestBuildGitMetadataLoud:
         assert meta["Serie/n.ipynb"]["first_commit"] == "2026-09-01"
         assert meta["Serie/m.ipynb"]["revisions"] == 1
         assert meta["Serie/m.ipynb"]["authors"] == 1
+
+
+# --- build_git_metadata : l'historique doit suivre les renommages (#25865) ---
+
+
+class TestBuildGitMetadataRenameReconnection:
+    """Un carnet renomme doit porter l'historique de ses noms anciens.
+
+    Mesure du 2026-11-11 (#25865) : 438 carnets du catalogue etaient la cible
+    d'un renommage du registre, et pour les 438 `first_commit` etait posterieur
+    ou egal a la date du renommage -- l'historique anterieur etait jetee, et
+    `history` valait pourtant `COMPLETE`. La date de creation mesuree etait
+    donc la date du renommage.
+
+    Ces tests vérifient le raccord dans les deux sens : un renommage exact vu
+    par git (`R100`), un renommage avec modification que seul le registre
+    connait, une chaine de deux renommages -- et le cas qui doit rester
+    VISIBLE : un renommage que rien ne raccorde.
+    """
+
+    ANCIEN = "MyIA.AI.Notebooks/Serie/ancien.ipynb"
+    NOUVEAU = "MyIA.AI.Notebooks/Serie/ancien-Python.ipynb"
+    MILIEU = "MyIA.AI.Notebooks/Serie/ancien-Python-Milieu.ipynb"
+    FINAL = "MyIA.AI.Notebooks/Serie/final.ipynb"
+
+    @staticmethod
+    def _stdout(*blocs):
+        return "\n".join(blocs)
+
+    @staticmethod
+    def _ledger(tmp_path, lignes):
+        path = tmp_path / "docs" / "reference" / "rename-ledger.tsv"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+
+    def _run(self, gc, monkeypatch, tmp_path, stdout, ledger=None):
+        monkeypatch.setattr(gc, "REPO_ROOT", tmp_path)
+        # Les frontieres de greffe ne sont pas l'objet de ces tests : sans
+        # depot git, la question est sans reponse, et le fail-closed
+        # transformerait chaque entree en historique coupe.
+        monkeypatch.setattr(gc, "shallow_boundaries", lambda: set())
+        if ledger is not None:
+            self._ledger(tmp_path, ledger)
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=0, stdout=stdout, stderr="",
+            )
+            return gc.build_git_metadata()
+
+    def _run_audit(self, gc, monkeypatch, tmp_path, stdout, ledger=None):
+        """La commande d'audit, sur la meme fixture que la passe."""
+        monkeypatch.setattr(gc, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(gc, "shallow_boundaries", lambda: set())
+        if ledger is not None:
+            self._ledger(tmp_path, ledger)
+        with patch("generate_catalog.subprocess.run") as mock_run:
+            mock_run.return_value = SimpleNamespace(
+                returncode=0, stdout=stdout, stderr="",
+            )
+            return gc.audit_rename_reconnection()
+
+
+    def test_un_renommage_exact_raccorde_l_historique(self, tmp_path, monkeypatch):
+        """`R100` : git a vu le renommage, l'ancien nom disparait du
+        catalogue et l'historiqueantecedent revient au nom courant."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"R100\t{self.ANCIEN}\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        meta = self._run(gc, monkeypatch, tmp_path, stdout)
+
+        assert set(meta) == {"Serie/ancien-Python.ipynb"}, (
+            "l'ancien nom ne doit plus porter d'entree : son historique "
+            "appartient au carnet renomme"
+        )
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry["revisions"] == 2, "le commit d'origine compte pour le carnet"
+        assert entry["first_commit"] == "2026-09-01", (
+            "la date de creation est celle du carnet D'AVANT le renommage"
+        )
+        assert entry["last_validation"] == "2026-11-09"
+        assert not entry.get("history_unresolved_rename")
+
+    def test_un_renommage_avec_modification_au_registre_raccorde_egalement(
+        self, tmp_path, monkeypatch,
+    ):
+        """Le renommage n'est pas exact : git ne le voit pas (`-M100%` exige
+        un contenu identique). C'est le REGISTRE qui le fait savoir."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme et complete (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.NOUVEAU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry["revisions"] == 2
+        assert entry["first_commit"] == "2026-09-01"
+        assert not entry.get("history_unresolved_rename")
+
+    def test_un_renommage_absent_du_registre_ne_se_declare_pas_complete(
+        self, tmp_path, monkeypatch,
+    ):
+        """Rien n'etablit le lien : l'etat doit etre visible, jamais un
+        `COMPLETE` silencieux qui publierait une date de creation fausse."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme et complete (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        meta = self._run(gc, monkeypatch, tmp_path, stdout)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry.get("history_unresolved_rename") is True
+        creation = gc.classify_creation_cost(entry)
+        assert creation["history"] == "UNRESOLVED_RENAME"
+        assert creation["class"] == "UNKNOWN", (
+            "une chaine non fermee ne donne pas de classe de cout"
+        )
+        assert creation["first_commit"] == "", (
+            "la date sous le nom nouveau est la date du renommage, "
+            "pas une date de creation"
+        )
+
+    def test_l_audit_recalcule_le_compte_avant_apres(self, tmp_path, monkeypatch):
+        """La commande citee dans le corps de la PR doit recalculer le compte.
+
+        AVANT : le carnet n'a qu'une revision, celle du renommage -- son
+        historique anterieur est hors de portee. APRES : le raccord rend
+        l'historique, et le carnet n'est plus compte comme coupe.
+        """
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D	{self.ANCIEN}",
+            f"A	{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A	{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien	nouveau	date	lane",
+            f"{self.ANCIEN}	{self.NOUVEAU}	2026-11-09	myia-ai-01:CoursIA-2",
+        ]
+        rapport = self._run_audit(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert rapport["cibles"] == 1
+        assert rapport["avant"] == 1, (
+            "sans raccord, la premiere revision du carnet est celle du "
+            "renommage : l'historique anterieur est hors de portee"
+        )
+        assert rapport["apres"] == 0, (
+            "apres raccord, l'historique precedent le renommage est "
+            "retrouve : le carnet n'est plus coupe"
+        )
+
+
+    def test_une_chaine_de_deux_renommages_se_resout(self, tmp_path, monkeypatch):
+        """`a -> b -> c` : l'historique de `a` doit atteindre `c`."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|feat: renomme encore (#600)",
+            f"D\t{self.MILIEU}",
+            f"A\t{self.FINAL}",
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.MILIEU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.MILIEU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+            f"{self.MILIEU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert "Serie/final.ipynb" in meta
+        entry = meta["Serie/final.ipynb"]
+        assert entry["revisions"] == 3, "les trois commits touchent le carnet"
+        assert entry["first_commit"] == "2026-09-01"
+
+    def test_un_registre_a_en_tete_repete_est_toujours_lu(self, tmp_path, monkeypatch):
+        """Le registre est appendu par plusieurs branches : son en-tete peut
+        apparaitre plus d'une fois. Il est reconnu par sa FORME (#16231)."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.NOUVEAU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.NOUVEAU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert entry["revisions"] == 2
+        assert entry["first_commit"] == "2026-09-01"
+        # L'en-tete repete ne doit pas creer d'alias fantaisiste : ni
+        # `ancien` -> `nouveau` comme chemin, ni une entree nommee d'apres
+        # les colonnes de l'en-tete.
+        assert set(meta) == {"Serie/ancien-Python.ipynb"}
+
+    def test_un_nom_repris_n_est_pas_raccorde(self, tmp_path, monkeypatch):
+        """Un nom supprime puis recree garde son propre historique : le
+        raccord ne doit pas lui voler celui d'avant."""
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|feat: recree (#600)",
+            f"A\t{self.ANCIEN}",
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"R100\t{self.ANCIEN}\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        meta = self._run(gc, monkeypatch, tmp_path, stdout)
+
+        assert "Serie/ancien.ipynb" in meta, "le nom repris garde son historique"
+        assert meta["Serie/ancien.ipynb"]["revisions"] == 1, (
+            "la recreation est une incarnation nouvelle : elle ne compte "
+            "pas les commits de l'ancienne"
+        )
+        assert meta["Serie/ancien.ipynb"]["first_commit"] == "2026-11-10"
+        # En revanche, l'ancien nom garde l'historique de l'incarnation
+        # renommee : c'est le carnet d'aujourd'hui qui l'herite.
+        assert meta["Serie/ancien-Python.ipynb"]["revisions"] == 2
+        assert meta["Serie/ancien-Python.ipynb"]["first_commit"] == "2026-09-01"
+
+    def test_une_chaine_qui_continue_apres_le_nom_explique_le_renommage(
+        self, tmp_path, monkeypatch,
+    ):
+        """Le renommage est explique quand la chaine d'un nom supprime PASSE
+        par le nom nouveau -- meme si la chaine continue apres (deplacement
+        ulterieur dans un sous-dossier).
+
+        Mesure du 2026-11-11 (#25865) : le test « la chaine se termine par le
+        nom » eliminait 42 renommages a tort -- dont les 19 carnets
+        `GameTheory-*-CSharp`, dont le registre porte bien l'arete
+        `-Csharp` -> `-CSharp` mais ou la chaine continue ensuite.
+        """
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.ANCIEN}\t{self.NOUVEAU}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+            f"{self.NOUVEAU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-Python.ipynb"]
+        assert not entry.get("history_unresolved_rename"), (
+            "le renommage est connu : le registre relie l'ancien nom au "
+            "nouveau, meme si la chaine continue apres"
+        )
+        assert entry["first_commit"] == "2026-09-01"
+
+    def test_un_renommage_de_casse_est_explique_par_l_arete_du_registre(
+        self, tmp_path, monkeypatch,
+    ):
+        """`-Csharp` et `-CSharp` sont deux noms distincts, et le registre les
+        relie. La comparaison des noms est insensible a la casse, mais
+        l'egalite reste exacte : une difference de capitalisation seule est un
+        renommage a ne pas perdre.
+
+        Mesure du 2026-11-11 (#25865) : 21 renommages etaient signales a tort
+        parce que l'egalite etait comparee sans la casse.
+        """
+        import generate_catalog as gc
+
+        ancien = "MyIA.AI.Notebooks/Serie/ancien-csharp.ipynb"
+        nouveau = "MyIA.AI.Notebooks/Serie/ancien-CSharp.ipynb"
+        stdout = self._stdout(
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{ancien}",
+            f"A\t{nouveau}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{ancien}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{ancien}\t{nouveau}\t2026-11-09\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        entry = meta["Serie/ancien-CSharp.ipynb"]
+        assert not entry.get("history_unresolved_rename"), (
+            "l'arete du registre explique le renommage : rien a signaler"
+        )
+        assert entry["first_commit"] == "2026-09-01", (
+            "l'historique precedent le renommage est raccorde"
+        )
+
+    def test_un_renommage_non_rattache_est_compte_comme_orphelin(
+        self, tmp_path, monkeypatch, capsys,
+    ):
+        """Quand le registre ne dit pas par quel nom le carnet a ete renomme,
+        aucun carnet ACTUEL n'est identifiable : le renommage est compte,
+        mais il n'est rattache a aucune entree du catalogue.
+
+        Mesure du 2026-11-11 (#25865) : 9 des 21 renommages non expliques
+        sont dans ce cas (les carnets `Sudoku-1-…` -> `Sudoku-01-…`, dont le
+        renommage par remplissage n'est pas au registre).
+        """
+        import generate_catalog as gc
+
+        stdout = self._stdout(
+            "COMMIT:ddd444|2026-11-10 09:00:00 +0100|dev@example.org|feat: deplace (#600)",
+            f"D\t{self.NOUVEAU}",
+            "COMMIT:ccc333|2026-11-09 09:00:00 +0100|dev@example.org|feat: renomme (#500)",
+            f"D\t{self.ANCIEN}",
+            f"A\t{self.NOUVEAU}",
+            "COMMIT:bbb222|2026-09-01 08:00:00 +0200|autre@example.org|creation (#99)",
+            f"A\t{self.ANCIEN}",
+        )
+        ledger = [
+            "ancien\tnouveau\tdate\tlane",
+            f"{self.NOUVEAU}\t{self.FINAL}\t2026-11-10\tmyia-ai-01:CoursIA-2",
+        ]
+        meta = self._run(gc, monkeypatch, tmp_path, stdout, ledger)
+
+        assert not meta["Serie/ancien-Python.ipynb"].get("history_unresolved_rename"), (
+            "le drapeau n'atteint qu'une entree historique : le catalogue ne "
+            "la lit pas, le renommage n'est donc pas rattache"
+        )
+        sortie = capsys.readouterr().out
+        assert "NON RACCORDE" in sortie
+        assert "ORPHELINS" in sortie, (
+            "un renommage non rattache doit etre compte comme orphelin, "
+            "jamais silencieusement perdu"
+        )
 
 
 # --- build_git_metadata : la passe ne doit dependre d'aucun blob (#24230) ---
@@ -2773,7 +3135,7 @@ class TestBuildGitMetadataOfflinePartialClone:
 
         # La forme de production, elle, passe : meme clone, meme remote
         # injoignable, memes objets manquants.
-        reussi = self._git(["log", gc.GIT_LOG_RENAME_FLAG, "--name-only",
+        reussi = self._git(["log", gc.GIT_LOG_RENAME_FLAG, "--name-status",
                             "--format=COMMIT:%H", "--", "MyIA.AI.Notebooks"],
                            cwd=dst)
         assert reussi.returncode == 0, reussi.stderr
@@ -2809,7 +3171,7 @@ class TestBuildGitMetadataOfflinePartialClone:
         assert len(logs) == 1, f"un seul 'git log' attendu, trouve {len(logs)}"
         argv = logs[0].args[0]
         assert gc.GIT_LOG_RENAME_FLAG in argv
-        assert "--name-only" in argv
+        assert "--name-status" in argv
         assert logs[0].kwargs["timeout"] == gc.GIT_LOG_TIMEOUT_SECONDS
 
         with patch("generate_catalog.subprocess.run") as mock_run:
@@ -2886,6 +3248,7 @@ def test_catalog_importable_as_package_from_repo_root():
     root = Path(__file__).resolve().parents[3]
     result = subprocess.run(
         [sys.executable, "-c", "from scripts.notebook_tools import generate_catalog"],
-        cwd=root, capture_output=True, text=True, check=False,
+        cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace",
+        check=False,
     )
     assert result.returncode == 0, result.stderr

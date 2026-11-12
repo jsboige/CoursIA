@@ -141,6 +141,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shlex
 import shutil
 import signal
@@ -292,6 +293,25 @@ def _count_from_lines(lines: list[str]) -> int:
     return n
 
 
+def _count_live_posix_lines(lines: list[str]) -> int:
+    """Compte les processus Lean sauf les zombies, sans exclure les autres états."""
+    if not lines:
+        raise ValueError("sortie ps vide")
+    names = []
+    for line in lines:
+        fields = line.strip().split(maxsplit=1)
+        if len(fields) != 2:
+            raise ValueError("ligne ps sans état ou nom")
+        state, name = fields
+        # États Linux documentés et modificateurs de ps ; tout autre format
+        # refuse la mesure plutôt que de sous-compter silencieusement.
+        if not re.fullmatch(r"[RSDTtZXxKWPI][<NLsl+]*", state):
+            raise ValueError(f"état ps inconnu : {state!r}")
+        if not state.startswith("Z"):
+            names.append(name)
+    return _count_from_lines(names)
+
+
 def scan_native_population() -> tuple[int, str]:
     """Compte les lean/lake vivants cote natif. Echec = mesurable=false."""
     try:
@@ -308,11 +328,12 @@ def scan_native_population() -> tuple[int, str]:
             ]
             return _count_from_lines(names), "tasklist"
         out = subprocess.run(
-            ["ps", "-eo", "comm="], capture_output=True, text=True, timeout=15,
+            ["ps", "-eo", "stat=,comm="], capture_output=True, text=True, timeout=15,
             encoding="utf-8", errors="replace",
         )
-        return _count_from_lines(out.stdout.splitlines()), "ps"
-    except (OSError, subprocess.SubprocessError) as exc:
+        out.check_returncode()
+        return _count_live_posix_lines(out.stdout.splitlines()), "ps"
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
         return -1, f"unavailable: {exc}"
 
 

@@ -75,20 +75,48 @@ LABEL = "candidate-delivered"
 _REGISTRY_MARKERS = ("registre", "registry", "permanent", "recurring-report")
 
 
-def _gh_json(args: list[str]) -> Any:
-    """Run ``gh <args> --json ...`` and return parsed JSON. Empty list on failure."""
+class GhUnavailableError(RuntimeError):
+    """gh a echoue (rc != 0, binaire absent, sortie illisible) en mode strict.
+
+    Par defaut les lecteurs du crible avalent leurs erreurs : le labeler
+    traite une lecture cassee comme une absence de donnee, jamais comme un
+    verdict. En mode strict (dossier de fermeture, #23815) un echec gh
+    leve cette exception : le gate aval la traduit en UNKNOWN rc 2, jamais
+    en PARTIAL_TRANCHE -- falsification mesuree par la review Hermes du
+    11/11 sur #25894 (un body de PR illisible rendait un dossier CLOSE
+    legitime REFUSED, « partial delivery »).
+    """
+
+
+def _gh_json(args: list[str], *, strict: bool = False) -> Any:
+    """Run ``gh <args> --json ...`` and return parsed JSON. Empty list on failure.
+
+    En mode strict, un echec (rc != 0, binaire absent, sortie illisible)
+    leve ``GhUnavailableError`` au lieu de rendre ``[]`` : l'appelant qui
+    doit distinguer « absence de donnee » de « lecture cassee » (le dossier
+    de fermeture) ne peut plus confondre les deux.
+    """
     try:
         proc = subprocess.run(
             ["gh", *args],
             capture_output=True, text=True, encoding="utf-8", check=False,
         )
     except FileNotFoundError:
+        if strict:
+            raise GhUnavailableError(f"gh introuvable: {' '.join(args[:2])}")
         return []
     if proc.returncode != 0:
+        if strict:
+            stderr = (getattr(proc, "stderr", "") or "").strip()
+            raise GhUnavailableError(
+                f"gh rc={proc.returncode}: {' '.join(args[:2])} "
+                f"{stderr[:120]}")
         return []
     try:
         return json.loads(proc.stdout)
     except json.JSONDecodeError:
+        if strict:
+            raise GhUnavailableError(f"gh sortie illisible: {' '.join(args[:2])}")
         return []
 
 
@@ -116,11 +144,11 @@ def list_labeled_issues(repo: str, limit: int) -> list[dict]:
     return issues
 
 
-def get_issue_timeline(repo: str, number: int) -> list[dict]:
+def get_issue_timeline(repo: str, number: int, *, strict: bool = False) -> list[dict]:
     """Cross-referenced events on the issue timeline (the canonical source)."""
     events = _gh_json([
         "api", f"repos/{repo}/issues/{number}/timeline", "--paginate",
-    ])
+    ], strict=strict)
     return [ev for ev in (events or []) if ev.get("event") == "cross-referenced"]
 
 
@@ -139,7 +167,7 @@ def _extract_merged_prs(events: list[dict]) -> list[dict]:
     return out
 
 
-def get_open_pr_refs(repo: str, number: int) -> list[int]:
+def get_open_pr_refs(repo: str, number: int, *, strict: bool = False) -> list[int]:
     """OPEN PR numbers referencing the issue (in-flight, per #11100)."""
     # Search is the cheapest path -- PRs whose body or comments mention the
     # issue number. We restrict to ``is:open is:pr`` to avoid closed noise.
@@ -147,11 +175,11 @@ def get_open_pr_refs(repo: str, number: int) -> list[int]:
     out = _gh_json([
         "search", "issues", "--json", "number",
         "--limit", "20", query,
-    ])
+    ], strict=strict)
     return [int(item["number"]) for item in (out or []) if item.get("number")]
 
 
-def get_issue_body(repo: str, number: int) -> str:
+def get_issue_body(repo: str, number: int, *, strict: bool = False) -> str:
     """Body of the issue (empty string on failure -- title signals decide then).
 
     Pas de ``--jq`` : gh l'ecrit en TEXTE BRUT, que ``json.loads`` refuse
@@ -162,27 +190,30 @@ def get_issue_body(repo: str, number: int) -> str:
     row = _gh_json([
         "issue", "view", str(number), "--repo", repo,
         "--json", "body",
-    ])
+    ], strict=strict)
     if isinstance(row, dict) and isinstance(row.get("body"), str):
         return row["body"]
     return ""
 
 
-def get_pr_body(repo: str, number: int) -> str:
+def get_pr_body(repo: str, number: int, *, strict: bool = False) -> str:
     """Body of the merged PR used to distinguish tranche from full delivery.
 
     ``gh pr view --json body`` returns a JSON object; its ``body`` key is
-    extracted in Python (raw ``--jq`` output is not JSON).
+    extracted in Python (raw ``--jq`` output is not JSON). En mode strict,
+    une lecture cassee leve ``GhUnavailableError`` -- un body illisible ne
+    se lit plus comme « pas de marqueur de fermeture » (PARTIAL_TRANCHE
+    falsifie, review Hermes 11/11 sur #25894).
     """
     row = _gh_json([
         "pr", "view", str(number), "--repo", repo, "--json", "body",
-    ])
+    ], strict=strict)
     if isinstance(row, dict) and isinstance(row.get("body"), str):
         return row["body"]
     return ""
 
 
-def get_last_comment_date(repo: str, number: int) -> str | None:
+def get_last_comment_date(repo: str, number: int, *, strict: bool = False) -> str | None:
     """Return ISO date of the last comment on the issue, or None.
 
     Meme defaut de classe que ``get_issue_body`` : ``--jq
@@ -193,7 +224,7 @@ def get_last_comment_date(repo: str, number: int) -> str | None:
     row = _gh_json([
         "issue", "view", str(number), "--repo", repo,
         "--json", "comments",
-    ])
+    ], strict=strict)
     comments = row.get("comments") if isinstance(row, dict) else None
     if not comments:
         return None
@@ -210,8 +241,14 @@ def is_registry(title: str) -> bool:
                for marker in _REGISTRY_MARKERS)
 
 
-def classify_one(repo: str, issue: dict) -> dict:
-    """Classify one candidate-delivered issue. Pure-ish (only network is gh)."""
+def classify_one(repo: str, issue: dict, *, strict_gh: bool = False) -> dict:
+    """Classify one candidate-delivered issue. Pure-ish (only network is gh).
+
+    ``strict_gh`` : en mode strict (dossier de fermeture), une panne gh
+    d'un lecteur du verdict leve ``GhUnavailableError`` -- le gate aval
+    rend UNKNOWN rc 2. Par defaut (labeler), les lectures cassees restent
+    des absences de donnees, comme toujours.
+    """
     number = int(issue["number"])
     title = issue.get("title") or ""
     evidence: dict[str, Any] = {
@@ -237,7 +274,7 @@ def classify_one(repo: str, issue: dict) -> dict:
             "reason": "container (audit partition / EPIC / sub-issue task list) -- "
                       "one PR delivers one tranche at most",
         }
-    body = get_issue_body(repo, number)
+    body = get_issue_body(repo, number, strict=strict_gh)
     if issue_containers.looks_container(title, labels, body):
         return {
             "number": number, "title": title, "verdict": "CONTAINER",
@@ -246,7 +283,7 @@ def classify_one(repo: str, issue: dict) -> dict:
                       "one PR delivers one tranche at most",
         }
 
-    events = get_issue_timeline(repo, number)
+    events = get_issue_timeline(repo, number, strict=strict_gh)
     merged_prs = _extract_merged_prs(events)
     evidence["merged_prs"] = merged_prs
 
@@ -256,7 +293,7 @@ def classify_one(repo: str, issue: dict) -> dict:
             "evidence": evidence, "reason": "no merged PR references the issue",
         }
 
-    open_prs = get_open_pr_refs(repo, number)
+    open_prs = get_open_pr_refs(repo, number, strict=strict_gh)
     evidence["open_prs"] = open_prs
     if open_prs:
         return {
@@ -265,7 +302,7 @@ def classify_one(repo: str, issue: dict) -> dict:
             "reason": f"open PR{'s' if len(open_prs) > 1 else ''} reference the issue: {open_prs}",
         }
 
-    last_comment = get_last_comment_date(repo, number)
+    last_comment = get_last_comment_date(repo, number, strict=strict_gh)
     evidence["last_comment"] = last_comment
 
     # Sort by merge date desc; the latest merge is the candidate "delivery".
@@ -295,7 +332,7 @@ def classify_one(repo: str, issue: dict) -> dict:
     # (measured: #23140 and #22938). PARTIAL_TRANCHE reads like IN_FLIGHT: the
     # issue waits its next turn in the belt, no dossier to close.
     pr_number = merged_prs[0]["pr_number"]
-    pr_body = get_pr_body(repo, pr_number)
+    pr_body = get_pr_body(repo, pr_number, strict=strict_gh)
     if not candidate_delivered.closing_marker(pr_body, number):
         return {
             "number": number, "title": title, "verdict": "PARTIAL_TRANCHE",
