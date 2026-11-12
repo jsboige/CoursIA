@@ -27,6 +27,20 @@ RUN pip install --no-cache-dir \
     uvicorn[standard]==0.24.0 \
     pydantic==2.5.0
 
+# KPipeline de kokoro charge spaCy (en_core_web_sm) pour normaliser le texte
+# avant synthese. Absent de l'image, il tente un pip install a l'arrivee, sous
+# appuser (non-root) : le paquet atterrit dans le site de l'utilisateur, un
+# chemin que le process serveur (demarre avant l'install) n'a JAMAIS dans son
+# sys.path -> 500 « [E050] Can't find model 'en_core_web_sm' » a chaque synthese.
+# Cuire le mode dans le site-packages au build (lisible par le user, deja dans
+# sys.path) supprime le pip runtime.
+# en_core_web_sm n'est PAS sur PyPI (aucune version publiee) : les modes spaCy
+# sont des wheels sur les releases GitHub d'explosion/spacy-models — d'ou
+# l'URL directe. Mesure 2026-11-12 (po-2024) : pip install en-core-web-sm rend
+# « No matching distribution found ».
+RUN pip install --no-cache-dir \
+    https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl
+
 # Copy application
 COPY app.py .
 
