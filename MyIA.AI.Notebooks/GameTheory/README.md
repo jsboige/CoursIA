@@ -383,12 +383,12 @@ Depuis le parcours principal, on y entre après le palier 16 : le [capstone 21](
 
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
-| 01 | Théorème d'Arrow — [Python](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) · [C#](SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | L'impossibilité d'Arrow, par la preuve et par la simulation | Licence |
-| 03 | Méthodes de vote — [Python](SocialChoice/03-Voting-Methods.ipynb) · [C#](SocialChoice/03-Voting-Methods-Csharp.ipynb) | Condorcet, Borda, Copeland, modèle de Downs, paradoxes électoraux | Découverte |
-| 04 | Agrégation par SAT et Z3 — [Python (WSL)](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) · [C#](SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | Arrow encodé en SAT, preuve d'insatisfiabilité, relaxations | Licence |
-| 05 | [Gibbard-Satterthwaite](SocialChoice/05-Gibbard-Satterthwaite.ipynb) | La manipulation comme témoin : la manipulabilité exhibée par le code, pas postulée | Licence |
-| 06 | [Möbius, pouvoir et manipulation](SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée | Recherche |
-| 07 | [Comités et Core](SocialChoice/07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas, certificats de paiement | Recherche |
+| 01 | Théorème d'Arrow — [Python](SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) · [C#](SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | L'impossibilité d'Arrow, par la preuve et par la simulation | Python · C# | Licence |
+| 03 | Méthodes de vote — [Python](SocialChoice/03-Voting-Methods.ipynb) · [C#](SocialChoice/03-Voting-Methods-Csharp.ipynb) | Condorcet, Borda, Copeland, modèle de Downs, paradoxes électoraux | Python · C# | Découverte |
+| 04 | Agrégation par SAT et Z3 — [Python (WSL)](SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) · [C#](SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | Arrow encodé en SAT, preuve d'insatisfiabilité, relaxations | Python · C# | Licence |
+| 05 | [Gibbard-Satterthwaite](SocialChoice/05-Gibbard-Satterthwaite.ipynb) | La manipulation comme témoin : la manipulabilité exhibée par le code, pas postulée | Python | Licence |
+| 06 | [Möbius, pouvoir et manipulation](SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée | Python | Recherche |
+| 07 | [Comités et Core](SocialChoice/07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas, certificats de paiement | Python | Recherche |
 
 L'approfondissement [01b — choix social formel en Lean](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (Arrow, Sen, électeur médian, visite du lake de référence de D. Peters, niveau Recherche) creuse le palier 01 ; il ne fait pas avancer le parcours.
 
@@ -406,11 +406,11 @@ change de substrat en lisant le lake [`assignment_lean/`](assignment_lean/).
 
 | # | Notebook | Noyau | Public |
 |---|----------|-------|--------|
-| 01 | [Pouvoir coalitionnel et SMT](Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb) | Python |
-| 02 | [Assistance Games (résultat 2026)](Coalitions/Coalitions-02-Assistance-Games-Python.ipynb) | Python |
-| 03 | [Échange de reins](Coalitions/Coalitions-03-Echange-de-Reins-Lean-Python.ipynb) | Python |
-| 04 | [Affectation de Kuhn-Munkres](Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb) | Python |
-| 05 | [Affectation en Lean](Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) | Lean |
+| 01 | [Pouvoir coalitionnel et SMT](Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb) | Python | Recherche |
+| 02 | [Assistance Games (résultat 2026)](Coalitions/Coalitions-02-Assistance-Games-Python.ipynb) | Python | Recherche |
+| 03 | [Échange de reins](Coalitions/Coalitions-03-Echange-de-Reins-Lean-Python.ipynb) | Python | Licence |
+| 04 | [Affectation de Kuhn-Munkres](Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb) | Python | Licence |
+| 05 | [Affectation en Lean](Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) | Lean | Recherche |
 
 ## Extensions au-delà du parcours
 
@@ -418,14 +418,14 @@ Les notebooks numérotés de 18 à 22 — hormis le [capstone 21](GameTheory-21-
 
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
-| 18 | [Open games et lentilles](GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) | Une représentation locale qui modifie le contexte global dont elle est issue | Recherche |
+| 18 | [Open games et lentilles](GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) | Une représentation locale qui modifie le contexte global dont elle est issue | Python | Recherche |
 | 18b | [Casser la composition](GameTheory-18b-Casser-la-Composition-Python.ipynb) | Contre-exemples à la compositionnalité des équilibres d'open games | Python | Recherche |
-| 19 | [Abstraction à dette](GameTheory-19-Abstraction-a-Dette-Python.ipynb) | Mesurer ce que perd une représentation simplifiée | Recherche |
+| 19 | [Abstraction à dette](GameTheory-19-Abstraction-a-Dette-Python.ipynb) | Mesurer ce que perd une représentation simplifiée | Python | Recherche |
 | 19b | [Co-design bilevel](GameTheory-19b-Bilevel-PPO-Python.ipynb) | Stackelberg PPO (Dai et al., ICLR 2026) rejoué à l'échelle pédagogique : le leader apprend la morphologie d'un nageur jouet, le suiveur est un PPO — le co-design bat la morphologie fixée, l'ablation adapté-contre-figé reste non tranchée à cette échelle | Python | Recherche |
-| 20 | [Chemin minimal](GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Un témoin de chemin minimal construit par un générateur, vérifié par un composant indépendant | Recherche |
+| 20 | [Chemin minimal](GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Un témoin de chemin minimal construit par un générateur, vérifié par un composant indépendant | Python | Recherche |
 | 20b | [Témoins d'impossibilité](GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | Le chemin minimal qui ne peut pas exister, exhibé par le code | Python | Recherche |
 | 20c | [Jeux ordinaux 3×2](GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Le même théorème testé sur un second substrat | Python | Recherche |
-| 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart au jeu myope vaut exactement 2γ, et l'adversaire qui conteste la transition le capte (ex-26, renum #14944) | Recherche |
+| 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart au jeu myope vaut exactement 2γ, et l'adversaire qui conteste la transition le capte (ex-26, renum #14944) | Python | Recherche |
 | — | [GOL-08 / GOL-09 → sous-série GOL](../SymbolicAI/Lean/GOL/README.md) | Translateur Loi II (ex-20d) et perplexité structurelle Hashlife (ex-20e), déplacés vers la sous-série GOL de la série Lean (réorg #20204) | Python | Recherche |
 | — | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
 | — | [Affectation de Kuhn-Munkres → sous-série Coalitions](Coalitions/README.md) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et sa version Lean exécutée depuis le lake `assignment_lean` — carnets 04 et 05 du dossier (ex-23 et 23b, dont les numéros d'affichage ne désignaient aucune étape du parcours) | Python · Lean | Licence |
