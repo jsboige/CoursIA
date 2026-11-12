@@ -1,5 +1,7 @@
 # Registre des attributions arXiv — convention et maintenance
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Issue #12853 (acceptance 9.4), parent EPIC #11168 (vérification des citations arXiv). Ce document fixe la convention du registre `arxiv_attributions_registry.yaml` et son organe CI.
 
 ## Le problème traité
