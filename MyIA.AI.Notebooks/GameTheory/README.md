@@ -425,7 +425,7 @@ Les notebooks numérotés de 18 à 22 — hormis le [capstone 21](GameTheory-21-
 | 20 | [Chemin minimal](GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Un témoin de chemin minimal construit par un générateur, vérifié par un composant indépendant | Python | Recherche |
 | 20b | [Témoins d'impossibilité](GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | Le chemin minimal qui ne peut pas exister, exhibé par le code | Python | Recherche |
 | 20c | [Jeux ordinaux 3×2](GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Le même théorème testé sur un second substrat | Python | Recherche |
-| 22 | [Jeux stochastiques — Python](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) · [C#](GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : dans le modèle présenté, l'écart à la valeur myope vaut 2γ à l'état 0; la transition contestée ramène sa valeur à la valeur myope. NumPy/Matplotlib en Python, tableaux BCL/SVG en C# ; gardes C# sur appels et traces observés (ex-26, renum #14944) | Python · C# | Recherche |
+| 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart au jeu myope vaut exactement 2γ, et l'adversaire qui conteste la transition le capte (ex-26, renum #14944) | Python | Recherche |
 | — | [GOL-08 / GOL-09 → sous-série GOL](../SymbolicAI/Lean/GOL/README.md) | Translateur Loi II (ex-20d) et perplexité structurelle Hashlife (ex-20e), déplacés vers la sous-série GOL de la série Lean (réorg #20204) | Python | Recherche |
 | — | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
 | — | [Affectation de Kuhn-Munkres → sous-série Coalitions](Coalitions/README.md) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et sa version Lean exécutée depuis le lake `assignment_lean` — carnets 04 et 05 du dossier (ex-23 et 23b, dont les numéros d'affichage ne désignaient aucune étape du parcours) | Python · Lean | Licence |
@@ -483,6 +483,10 @@ Les jumeaux C# s'exécutent avec .NET Interactive (.NET 9) :
 dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
+
+#### Parité des jeux stochastiques (22)
+
+Le carnet [GameTheory-22 en Python](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) possède un [jumeau C#](GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb). Les expériences à deux états gardent les mêmes gains, transitions et budgets : l’écart à la valeur myope vaut analytiquement 2γ à l’état 0 du modèle, et zéro à l’état absorbant. NumPy/Matplotlib deviennent des tableaux BCL et un SVG statique ; les exercices C# ajoutent des contrôles sur les appels et traces réellement observés. Les valeurs itérées restent des approximations numériques.
 
 ### Vérification et configuration
 
