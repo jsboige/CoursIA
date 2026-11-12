@@ -11989,9 +11989,9 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
         elif n_measured:
             print(f"Cause determinante : `adjacency` (G-VAR-3) -- {n_measured} PR(s)")
             print(f"MESUREE(s) (blocage prouve, sequence mergee) + "
-                  f"{len(kinds) - n_measured} DECLAREE(s)")
-            print("(conseil sur donnee non mesuree). Les trois gestes generiques")
-            print("sont invariants au predicat dans les deux cas. Le remede :")
+                  f"{len(kinds) - n_measured} DECLAREE(s)\n"
+                  "(conseil sur donnee non mesuree). Les trois gestes generiques\n"
+                  "sont invariants au predicat dans les deux cas. Le remede :")
         else:
             print("Cause determinante : `adjacency` DECLAREE, NON MESUREE (G-VAR-3")
             print("advisory -- prev lu dans le body, pas de fenetre mergee consultee")
@@ -12290,10 +12290,10 @@ def print_drought_banner(d: dict, restricted: int, fell_back: bool) -> None:
         print("parfaitement abriter une preuve Lean ; c'est le livrable qui tient")
         print("le plancher, jamais le titre de l'Epic.")
     print()
-    print("Echappatoire : si la secheresse n'est pas reparable par cette lane")
-    print("(aucun grain de contenu dans sa capability -- GPU-only, vision-only),")
-    print("l'ECRIRE au coordinateur, puis relancer avec --ignore-drought.")
-    print("Elle se justifie par ecrit, elle ne se prend pas en silence.")
+    print("Echappatoire : si la secheresse n'est pas reparable par cette lane\n"
+          "(aucun grain de contenu dans sa capability -- GPU-only, vision-only),\n"
+          "l'ECRIRE au coordinateur, puis relancer avec --ignore-drought.\n"
+          "Elle se justifie par ecrit, elle ne se prend pas en silence.")
     print()
 
 
