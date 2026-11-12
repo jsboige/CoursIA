@@ -66,6 +66,58 @@ def test_retrait_chirurgical_et_note_de_pied(tmp_path: Path) -> None:
     assert nb["cells"][1]["execution_count"] == 3
 
 
+def test_note_de_pied_apres_dernier_code_sans_interrompre_stub(tmp_path: Path) -> None:
+    """Un enonce suivi de son stub ne peut pas recevoir le pied entre les deux."""
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n\nEPIC #1206.\n")
+    nb["cells"] = [
+        nb["cells"][0],
+        {"cell_type": "markdown", "id": "aaaa0004", "metadata": {},
+         "source": "### Exercice 4\n\nIdentifier le cas limite.\n"},
+        {"cell_type": "code", "id": "aaaa0005", "metadata": {},
+         "source": ["print('Exercice a completer')\n"],
+         "outputs": [], "execution_count": None},
+        {"cell_type": "code", "id": "aaaa0007", "metadata": {},
+         "source": ["result = None  # TODO etudiant\n"],
+         "outputs": [], "execution_count": None},
+        {"cell_type": "markdown", "id": "aaaa0006", "metadata": {},
+         "source": "## Conclusion\n\nBilan.\n"},
+    ]
+    _write(path, nb)
+
+    outcome = fer.apply_one(path, dry_run=False)
+
+    assert "en-tete nettoye (#1206)" in outcome
+    after = json.loads(path.read_text(encoding="utf-8"))["cells"]
+    assert "Carnet issu de l'EPIC #1206." in after[4]["source"]
+    assert "Carnet issu de l'EPIC" not in after[1]["source"]
+    assert "print('Exercice a completer')" in "".join(after[2]["source"])
+    assert "result = None  # TODO etudiant" in "".join(after[3]["source"])
+
+
+def test_refus_si_aucun_markdown_apres_dernier_code(tmp_path: Path) -> None:
+    """Le fixer refuse plutôt que de déposer le pied dans un énoncé/stub."""
+    path = tmp_path / "n.ipynb"
+    nb = _notebook("# Titre\n\nEPIC #1206.\n")
+    nb["cells"] = [
+        nb["cells"][0],
+        {"cell_type": "markdown", "id": "aaaa0004", "metadata": {},
+         "source": "### Dernier exercice\n\nIdentifier le cas limite.\n"},
+        {"cell_type": "code", "id": "aaaa0005", "metadata": {},
+         "source": ["print('Exercice a completer')\n"],
+         "outputs": [], "execution_count": None},
+    ]
+    _write(path, nb)
+
+    before = path.read_bytes()
+    info = fer.analyse(path)
+    outcome = fer.apply_one(path, dry_run=False)
+
+    assert info["refused"] == outcome
+    assert "triage manuel" in outcome
+    assert path.read_bytes() == before
+
+
 def test_refus_si_parenthese_vide(tmp_path: Path) -> None:
     """Une clause retiree au milieu d'une parenthese laisse « ( » : refus."""
     path = tmp_path / "n.ipynb"
