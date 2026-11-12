@@ -7,20 +7,54 @@ from pathlib import Path
 WATCHDOG = Path(__file__).resolve().parents[1] / "xdist_watchdog.py"
 
 
-def _run(tmp_path, source):
+def _run(tmp_path, source, startup_delay=0):
     test = tmp_path / "test_sample.py"
     test.write_text(source, encoding="utf-8")
+    # La limite de silence doit mesurer le test, pas le démarrage des workers.
+    # Le relais émet jusqu'à ce que le worker entre dans le premier test ; le
+    # timeout externe continue de borner un démarrage réellement bloqué.
+    marker = tmp_path / "started"
+    (tmp_path / "conftest.py").write_text(
+        f"import time; time.sleep({startup_delay!r})\n"
+        "import os, pathlib, pytest\n"
+        "@pytest.fixture(autouse=True)\n"
+        "def mark_started():\n"
+        "    pathlib.Path(os.environ['TEST_STARTED']).touch()\n",
+        encoding="utf-8",
+    )
+    relay_dir = tmp_path / "relay"
+    relay_dir.mkdir()
+    relay = relay_dir / "pytest"
+    relay.write_text(
+        f"#!{sys.executable}\n"
+        "import os, pathlib, subprocess, sys, time\n"
+        "proc = subprocess.Popen([os.environ['REAL_PYTEST'], *sys.argv[1:]])\n"
+        "marker = pathlib.Path(os.environ['TEST_STARTED'])\n"
+        "while proc.poll() is None:\n"
+        "    if not marker.exists(): print('worker starting', flush=True)\n"
+        "    time.sleep(0.1)\n"
+        "sys.exit(proc.returncode)\n",
+        encoding="utf-8",
+    )
+    relay.chmod(0o755)
     temp = tmp_path / "temp"
     temp.mkdir()
-    env = dict(os.environ, TMPDIR=str(temp))
     pytest = str(Path(sys.executable).with_name("pytest"))
+    env = dict(os.environ, TMPDIR=str(temp), TEST_STARTED=str(marker),
+               REAL_PYTEST=pytest)
     result = subprocess.run(
-        [sys.executable, str(WATCHDOG), "--idle-limit", "2", "--", pytest,
-         str(test), "-n", "1", "-q", "--max-worker-restart=0"],
+        [sys.executable, str(WATCHDOG), "--idle-limit", "2", "--",
+         str(relay), str(test), "-n", "1", "-q",
+         "--max-worker-restart=0"],
         capture_output=True, text=True, env=env, timeout=30,
     )
     assert not list(temp.glob("coursia-xdist-*"))
     return result
+
+
+def test_slow_worker_start_does_not_trigger_idle_watchdog(tmp_path):
+    result = _run(tmp_path, "def test_ok():\n    assert True\n", startup_delay=3)
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def test_crash_worker(tmp_path):
