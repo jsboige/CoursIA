@@ -1251,6 +1251,14 @@ def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
 
     Fail-closed : une racine qui ne porte pas le marqueur n'est pas purgee
     -- on ne supprime jamais un repertoire qu'on n'a pas cree.
+
+    Les objets git sont en LECTURE SEULE, et `copytree`/`copystat` preserve
+    le mode : les entrees de quarantaine portent donc ce mode. Sans lever
+    l'attribut avant la suppression, `shutil.rmtree` echoue sous Windows
+    (`WinError 5`) et la purge rend un echec nomme
+    `quarantine-purge-failed` alors que rien ne s oppose a la suppression.
+    Le geste est le meme que celui du deplacement : on rend l'arbre
+    effacable, puis on supprime.
     """
     if not root.exists():
         return True, "", {"root": str(root), "removed": [], "bytes": 0}
@@ -1268,6 +1276,7 @@ def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
             total += size
             removed.append(str(child))
             if child.is_dir():
+                _clear_readonly_files(child)
                 shutil.rmtree(child)
             else:
                 child.unlink()

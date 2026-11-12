@@ -562,6 +562,62 @@ class TestReadOnlyObjects:
         assert _count_objects(modules / "sous-module") > 0
 
 
+class TestPurgeEtRestauration:
+    """Les deux fins de la chaine de quarantaine : la purge et l'annulation.
+
+    - La **purge** explicite (#21743) doit aboutir sous Windows : les
+      objets git sont en lecture seule et `copytree`/`copystat` preserve le
+      mode, donc les entrees de quarantaine portent ce mode. Sans lever
+      l'attribut avant la suppression, `shutil.rmtree` echoue (WinError 5).
+    - L'**annulation** (deplacement reussi puis echec) doit remettre le
+      `modules/` a sa place : sinon une passe suivante, meme sans le
+      drapeau, ne verrait plus le garde `contains_submodules`, retirerait le
+      worktree, et la purge detruirait les seuls objets restants.
+    """
+
+    def test_la_purge_reussit_avec_des_objets_en_lecture_seule(self, tmp_path):
+        root = tmp_path / "quarantaine"
+        root.mkdir()
+        (root / pmw.QUARANTINE_MARKER).write_text(
+            "racine de quarantaine\n", encoding="utf-8")
+        entry = root / "20240101T000000-1-wt"
+        pack = entry / "modules" / "sous-module" / "objects" / "pack.pack"
+        pack.parent.mkdir(parents=True)
+        pack.write_text("contenu\n", encoding="utf-8")
+        os.chmod(pack, stat.S_IREAD)
+
+        ok, why, _info = pmw.purge_quarantine(root)
+        assert ok, f"la purge doit aboutir : {why}"
+        assert not entry.exists(), "l'entree doit etre supprimee"
+        assert (root / pmw.QUARANTINE_MARKER).exists(), (
+            "le marqueur de la racine doit rester : la racine est la notre")
+
+    def test_echec_apres_deplacement_restaure_le_modules(
+            self, tmp_path, monkeypatch):
+        wt = _real_worktree(tmp_path)
+        modules = _bare_submodules(wt, ["sous-module"])
+        vrai_move = pmw._move_dir_robust
+        appels = {"n": 0}
+
+        def move_puis_echec(src, dst):
+            """Le deplacement aboutit, puis l'appel echoue."""
+            appels["n"] += 1
+            vrai_move(src, dst)
+            if appels["n"] == 1:
+                raise OSError(13, "Acces refuse")
+
+        monkeypatch.setattr(pmw, "_move_dir_robust", move_puis_echec)
+        ok, why, _info = pmw.quarantine_worktree_modules(
+            str(wt), tmp_path / "quarantaine", "dest")
+        assert ok is False
+        assert "quarantine-move-failed" in why
+        assert modules.is_dir(), (
+            "le modules/ doit revenir dans le worktree : un refus laisse le "
+            "depot dans l'etat ou la passe l'a trouve")
+        assert _count_objects(modules / "sous-module") > 0, (
+            "les objets doivent rester lisibles apres la restauration")
+
+
 # ---------------------------------------------------------------------------
 # Sous-module de chemin imbrique : `modules/a/b/c` est le gitdir
 # ---------------------------------------------------------------------------
