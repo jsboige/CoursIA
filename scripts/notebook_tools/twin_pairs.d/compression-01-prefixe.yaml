@@ -1,4 +1,4 @@
-- name: "Compression-01 Codes préfixes Shannon-Fano et Huffman"
+- name: "Compression-01 Prefixe"
   family: Compression
   python: MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb
   csharp: MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-CSharp.ipynb
