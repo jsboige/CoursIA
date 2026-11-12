@@ -214,7 +214,7 @@ if [[ -n "$disk_line" ]]; then
   used_h="$(printf '%s' "$disk_line" | cut -f2)"
   free_h="$(printf '%s' "$disk_line" | cut -f3)"
   used_pct="$(printf '%s' "$disk_line" | cut -f4 | tr -d '%')"
-  # Available KiB keeps the thresholds numeric without GNU-only `df -BG`.
+  # Les Kio disponibles permettent des seuils numériques sans `df -BG`, propre à GNU.
   free_kb="$(df -k "$audit_disk" 2>/dev/null | awk 'NR==2{print $4}')"
   if [[ "$free_kb" =~ ^[0-9]+$ ]] && (( free_kb < 5 * 1024 * 1024 )); then
     write_check "Espace disque ($audit_disk)" "ERROR" "$free_h libre ($used_pct% utilisé)"
@@ -249,8 +249,8 @@ proc_warnings=0
 for proc in "${INTERFERING[@]}"; do
   count=""
   if command -v pgrep >/dev/null 2>&1; then
-    # pgrep returns 1 for no matches, but still prints the valid count 0.
-    # A malformed result or an unsupported -x option triggers the fallback.
+    # Sans correspondance, pgrep renvoie 1 mais affiche le compte valide 0.
+    # Un résultat mal formé ou une option -x indisponible déclenche le repli.
     pgrep_output=""
     if pgrep_output="$(pgrep -xc "$proc" 2>/dev/null)"; then
       pgrep_status=0
