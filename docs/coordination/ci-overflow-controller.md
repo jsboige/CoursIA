@@ -298,9 +298,11 @@ pour deux raisons mesurees :
    Le declencheur arriverait donc apres que la saturation se soit evacuee.
 
 Reste la **cadence locale sur ai-01**, le siege qui heberge le parc de debordement. Elle
-ne traverse aucune file : la tache planifiee **declenche** le workflow du depot, et c'est
-le workflow qui mesure et decide, avec les secrets du depot. Le siege est une
-**minuterie**, pas un decisionnaire.
+ne traverse aucune file. Depuis E2/2, la forme retenue est **(b)** : la tache planifiee
+**execute le controleur sur le siege** (avec le jeton du siege), et la decision comme
+l'ecriture se font la. La forme `dispatch` -- ou le siege declenche le workflow du
+depot, qui mesure et decide avec les secrets du depot -- reste le **filet**, selectable
+par `--mode dispatch`.
 
 Le declencheur est cable par `scripts/ci/install_overflow_trigger_task.py` (meme forme que
 `scripts/coordination/install_merge_ready_task.py`, qui tourne deja sur ce siege) :
@@ -308,7 +310,7 @@ Le declencheur est cable par `scripts/ci/install_overflow_trigger_task.py` (meme
 | | |
 |---|---|
 | tache | `CoursIA\overflow_trigger`, toutes les **60 min**, depart `00:07` (phase decalee du cron `:31` du depot) |
-| action | `gh workflow run ci-overflow-controller.yml -f min_interval=30` |
+| action | forme (b), **par defaut** : `python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --apply --min-interval 30 --local-marker <marqueur>` ; forme `dispatch` (filet) : `gh workflow run ci-overflow-controller.yml -f min_interval=30` |
 | identite | `gh auth token --user jsboige` lu **au moment du tir** -- aucun jeton n'est ecrit sur disque |
 | fenetre | masquee (lanceur VBS), comme le geste de l'audit de flotte du 24/09 |
 | journal | `%LOCALAPPDATA%\CoursIA\overflow_trigger\logs\overflow_trigger.log` |
@@ -317,16 +319,19 @@ Le declencheur est cable par `scripts/ci/install_overflow_trigger_task.py` (meme
 L'**intervalle minimal entre deux decisions** est porte par l'organe lui-meme
 (`--min-interval`) : un passage dont le precedent est trop recent rend `SKIPPED` **avant
 toute mesure** -- il ne lit rien, ne consume ni appel API ni slot du parc local (le
-controleur tourne SUR ce parc). Un ecart **non etabli** (listing illisible) ne bloque pas
-le passage : eteindre la soupape parce qu'on n'a pas su lire un ecart serait l'inverse du
-sens. Un declenchement **manuel** passe `min_interval=0` : la decision de l'operateur est
-immediate.
+controleur tourne SUR ce parc). L'ecart dont la garde se sert vient du **marqueur local**
+en mode `local` (`--local-marker`), et de l'API des runs du controleur en mode
+`dispatch`. Un ecart **non etabli** (marqueur absent ou illisible, listing illisible) ne
+bloque pas le passage : eteindre la soupape parce qu'on n'a pas su lire un ecart serait
+l'inverse du sens. Un passage **manuel** de diagnostic passe `min_interval=0`
+(`--run --ignore-cadence`) : la decision de l'operateur est immediate.
 
 L'ecart au **dernier passage** est mesure avant la garde et **rapporte dans tous les
 cas** -- y compris quand aucune garde n'est posee (le passage manuel, le cron horaire du
 depot). Le resume affiche donc toujours `dernier passage : N min` : c'est l'instrument
 qui rend visible la mort du declencheur local (un ecart qui grandit) au lieu de la
-laisser silencieuse, et son cout est d'UN appel dans un passage qui en compte 313.
+laisser silencieuse, et son cout est d'UN appel dans un passage qui en compte 313 -- ou
+de ZERO, en mode `local`, ou l'ecart se lit dans le marqueur.
 
 ### Le cron horaire reste en filet
 
@@ -363,12 +368,21 @@ que leur job demarre**. Le cron horaire du depot (`31 * * * *`) est livre tard
 lui aussi (13:06, 04:01, 22:56, 16:28Z) — c'est le scheduler muet mesure en
 #15332.
 
-**La minuterie locale, elle, tient sa cadence.** Onze passages horaires
-consecutifs ont tous cree un run (08:07 -> 18:07). Mais le passage de **19:07Z
-n'a cree AUCUN run** : `event=workflow_dispatch&created=>18:30Z` sur le depot
-rend 0, alors que la tache a rendu **rc 0** et que son journal ne trace que
-« declenchement ». L'instrument regardait **son propre code de sortie**, pas
-l'effet : une minuterie peut mourir sans que rien ne le dise.
+**La minuterie locale, elle, tient sa cadence.** Les passages horaires
+consecutifs ont tous cree un run (05:07 -> 19:07). Le passage de **19:07Z a
+bien cree un run** : `43286829366`, cree a 19:07:03Z, dont le job a tourne
+de 19:07:08 a 19:11:20Z en succes. La premiere mesure, qui concluayait a un
+passage sans run, etait **fausse sur deux points** : le filtre
+`event=workflow_dispatch&created=>18:30Z` ne porte **pas de date** (le
+comparateur n'a donc rien borne), et le journal est tenu en **heure locale
+UTC+1** -- sa ligne de 20:07 correspond a 19:07Z. Une mesure d'absence
+tient donc autant qu'une preuve : elle se refait sur la source, avec le
+filtre qui borne.
+
+Ce que la premiere version de l'instrument avait reellement montre, c'est
+que l'effet n'etait pas **verifie** : le lanceur regardait son **propre code
+de sortie**, et rien ne garantissait qu'un run ait ete cree. C'est ce
+defaut -- et non l'absence de run -- qu'E2/1 a corrige.
 
 **L'artefact installe etait en retard sur son generateur.** Le lanceur
 `dispatch_overflow.cmd` installe ne passait pas `-f min_interval` (que le
@@ -389,9 +403,9 @@ Trois prerequisites, dont chacun est traite dans cette tranche ou signale :
 
 | # | prerequisite | etat |
 |---|---|---|
-| 1 | un **marqueur local** : l'organe mesure l'ecart au dernier passage sur les runs **GitHub** du controleur ; un passage local serait invisible pour lui, et la mort du declencheur local redeviendrait muette | a traiter (E2/2) |
+| 1 | un **marqueur local** : l'organe mesure l'ecart au dernier passage sur les runs **GitHub** du controleur ; un passage local serait invisible pour lui, et la mort du declencheur local redeviendrait muette | **fait (E2/2)** : `--local-marker`, la garde lit le marqueur, et l'appel API des runs n'a plus lieu |
 | 2 | un lanceur qui **verifie l'effet** du declenchement (id de run avant/apres) et qui **signale l'ecart** entre l'artefact installe et son generateur | **fait ici** |
-| 3 | la **reinstallation** de l'artefact (geste UAC) | arbitraire par le coordinateur : l'intervalle minimal de 30 min se lit sur le dernier passage **GitHub**, donc il devient inerte si le passage est local |
+| 3 | la **reinstallation** de l'artefact (geste UAC) | a faire par le coordinateur, apres le merge, en **une seule fenetre** : elle porte les deux changements (verification de l'effet + forme (b) avec le marqueur) |
 
 ### Ce que cette tranche change
 
@@ -408,12 +422,61 @@ Trois prerequisites, dont chacun est traite dans cette tranche ou signale :
 3. **`newline=""` a l'ecriture.** Le fichier ecrit est byte-identique a ce que
    le generateur declare.
 
+### E2/2 : la forme (b), le marqueur de cadence, et un defaut de parsing
+
+**La forme retenue est (b) : le passage est LOCAL.** L'arbitrage du
+coordinateur (2026-11-12, 20:45Z) : « forme (b), declencheur local sur ai-01
+-- retenue ; (a) est une decision d'equipement, et je ne la prends pas sur
+une mesure de file d'attente ». Le parc self-hosted fait la queue (mesure
+ci-dessus : mediane 40 min, pire cas 2 h, 4 runs sur 30 annules avant
+demarrage) ; le controleur y agirait sur un etat vieux de deux heures.
+
+Trois consequences, chacune **mesuree** sur le siege (ai-01, 2026-11-12) :
+
+1. **Le marqueur local devient la source de l'ecart.** `--local-marker PATH` :
+   la garde lit l'ecart dans le marqueur, et n'appelle plus l'API des runs du
+   controleur -- un etat **mort** pour un passage local (aucun run n'est
+   cree). Une garde qui lit un etat mort ne garde rien : elle coutait un
+   appel pour ne rien dire. Le marqueur est ecrit **seulement apres un
+   passage mesure** : ecrit aussi sur un passage ecarte, la garde se
+   verrouillerait elle-meme (un passage ecarte repousserait le suivant, qui
+   serait ecarte a son tour, et la mesure n'arriverait plus jamais).
+2. **L'effet se lit dans le marqueur.** Le passage local est synchrone : son
+   effet est l'ecriture du marqueur. Le lanceur releve l'etat du marqueur
+   avant et apres ; s'il n'a pas bouge, il sort en **3**
+   (« EFFET NON CONSTATE »). Un passage **ecarte** par la garde n'est pas un
+   echec : le resume le dit (`verdict : SKIPPED`) et le lanceur rend 0.
+3. **Un defaut de parsing cmd.exe, mesure puis corrige.** Le parseur de
+   `cmd.exe` compte les parentheses d'un bloc `if (...)` : un `(` dans le
+   texte echoe ouvre un groupe que le `)` du texte referme, et la
+   parenthese de FIN du bloc se retrouve orpheline. Le parseur abandonne
+   alors le lancement sur « -- etait inattendu » (RC 255) -- **meme quand
+   la condition du `if` est fausse**, car le bloc est parse avant d'etre
+   execute. Mesure : le lanceur rendait 255 a chaque tir, et le journal ne
+   montrait que le passage du controleur. Aucun test ne l'avait vu : la
+   suite ne lisait que le TEXTE du lanceur. Un test le voit maintenant
+   (`test_aucune_parenthese_dans_un_echo_situe_dans_un_bloc`).
+
+**Les trois canaux du controleur sont servis par le jeton du siege.** Les
+secrets du depot ne sont pas lisibles depuis le siege : le lanceur pose
+`ACTIONS_VARIABLES_PAT` (jeton d'ecriture) et `RUNNERS_READ_PAT` (inventaire
+des runners) **explicitement**, a partir du jeton lu dans le trousseau. Le
+controleur ne fait aucun repli sur un autre jeton -- c'est la pose
+explicite qui tient la place du secret.
+
+**La forme `dispatch` reste disponible** (`--mode dispatch`) : c'est elle que
+decrit la review du 2026-11-12 20:56Z (attente bornee, filtre
+`--event workflow_dispatch`, echec ferme sur un id illisible). Elle reste le
+**filet** : si le passage local echoue, le declencheur peut redeclencher le
+workflow du depot.
+
 ### Ce que cette tranche ne change pas
 
 Le declencheur, sa cadence (60 min, depart `00:07`), son identite (`gh auth token
---user jsboige` lu au moment du tir), son journal et le canal de la decision
-(le workflow du depot, avec les secrets du depot) restent inchanges. Le siege
-demeure une **minuterie**, pas un decisionnaire.
+--user jsboige` lu au moment du tir) et son journal restent inchanges. Le
+canal de la decision, lui, **change** avec la forme (b) : le siege decide
+(avec le jeton du siege), le cron horaire du depot reste le filet qui
+mesure avec les secrets du depot.
 
 ## La reorientation de la file de cohorte deja constituee (volet (c))
 
