@@ -214,13 +214,13 @@ if [[ -n "$disk_line" ]]; then
   used_h="$(printf '%s' "$disk_line" | cut -f2)"
   free_h="$(printf '%s' "$disk_line" | cut -f3)"
   used_pct="$(printf '%s' "$disk_line" | cut -f4 | tr -d '%')"
-  # Numeric free GB for threshold (best-effort; df -h is human-readable).
-  free_gb_approx="$(df -BG "$audit_disk" 2>/dev/null | awk 'NR==2{print $4}' | tr -dc '0-9')"
-  if [[ -n "$free_gb_approx" && "$free_gb_approx" -lt 5 ]]; then
+  # Available KiB keeps the thresholds numeric without GNU-only `df -BG`.
+  free_kb="$(df -k "$audit_disk" 2>/dev/null | awk 'NR==2{print $4}')"
+  if [[ "$free_kb" =~ ^[0-9]+$ ]] && (( free_kb < 5 * 1024 * 1024 )); then
     write_check "Espace disque ($audit_disk)" "ERROR" "$free_h libre ($used_pct% utilisé)"
     ISSUES+=("Espace disque faible ($free_h libre)")
     TOTAL_ISSUES=$((TOTAL_ISSUES + 1))
-  elif [[ -n "$free_gb_approx" && "$free_gb_approx" -lt 20 ]]; then
+  elif [[ "$free_kb" =~ ^[0-9]+$ ]] && (( free_kb < 20 * 1024 * 1024 )); then
     write_check "Espace disque ($audit_disk)" "WARNING" "$free_h libre ($used_pct% utilisé)"
   else
     write_check "Espace disque ($audit_disk)" "OK" "$free_h libre / $total_h ($used_pct% utilisé)"
@@ -249,10 +249,22 @@ proc_warnings=0
 for proc in "${INTERFERING[@]}"; do
   count=""
   if command -v pgrep >/dev/null 2>&1; then
-    # -x exact match; fall back to substring if pgrep lacks -x (rare).
-    count="$(pgrep -xc "$proc" 2>/dev/null || pgrep -c "$proc" 2>/dev/null)"
+    # pgrep returns 1 for no matches, but still prints the valid count 0.
+    # A malformed result or an unsupported -x option triggers the fallback.
+    pgrep_output=""
+    if pgrep_output="$(pgrep -xc "$proc" 2>/dev/null)"; then
+      pgrep_status=0
+    else
+      pgrep_status=$?
+    fi
+    if [[ $pgrep_status -le 1 && "$pgrep_output" =~ ^[0-9]+$ ]]; then
+      count="$pgrep_output"
+    else
+      pgrep_output="$(pgrep -c "$proc" 2>/dev/null || true)"
+      [[ "$pgrep_output" =~ ^[0-9]+$ ]] && count="$pgrep_output"
+    fi
   fi
-  if [[ -n "$count" && "$count" -gt 0 ]]; then
+  if [[ "$count" =~ ^[0-9]+$ ]] && (( count > 0 )); then
     write_check "Processus $proc" "WARNING" "$count instance(s) en cours"
     proc_warnings=$((proc_warnings + 1))
   fi
