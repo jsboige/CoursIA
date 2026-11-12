@@ -45,7 +45,7 @@ Mesure du 2026-10-28 (jeu de controle derive des PRs OUVERTES : positifs =
     precision 1,00 (0 faux positif sur 55 negatifs)
     rappel    0,92 (11 des 12 positifs classables ; 7 indetermines)
 
-La polarite existante (`scripts/series_saturation.py::polarity`) a ete
+La polarite existante (`scripts/coordination/series_saturation.py::polarity`) a ete
 mesuree sur le meme jeu, comme l'issue l'exige : **precision 0,67, rappel
 0,11**. Elle ne voit que 21 des issues de creation du pool ouvert, et elle
 classe « consolidation » **13 issues dont la livraison est un carnet neuf**.

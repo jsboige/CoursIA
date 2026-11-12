@@ -55,9 +55,9 @@ qui est exactement la forme de panne que ce depot a deja payee quatre fois.
 Usage
 -----
 
-    python scripts/check_grain_free.py 10990
-    python scripts/check_grain_free.py 11264 --lane myia-po-2025:CoursIA
-    python scripts/check_grain_free.py 10990 --json
+    python scripts/coordination/check_grain_free.py 10990
+    python scripts/coordination/check_grain_free.py 11264 --lane myia-po-2025:CoursIA
+    python scripts/coordination/check_grain_free.py 10990 --json
 
 Codes de retour :
     0  CLEAR    -- rien ne s'oppose au dispatch (lire quand meme les notes)
@@ -178,7 +178,7 @@ def surface_prs(number: str, state: str) -> list[dict]:
 
 def surface_claims(number: str, lane: str | None) -> dict:
     """Delegue a l'autorite -- ne PAS reimplementer le reducteur de claims."""
-    script = Path(__file__).with_name("check_lane_claim.py")
+    script = Path(__file__).resolve().parents[1] / "check_lane_claim.py"
     if not script.exists():
         raise SurfaceError(f"{script.name} introuvable (autorite des claims)")
     # `check_lane_claim.py` n'expose PAS de `--json` : sa sortie est textuelle
