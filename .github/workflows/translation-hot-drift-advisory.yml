@@ -50,6 +50,10 @@ jobs:
     # code de fork n'atteint le runner.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #22954 : borne explicite. Mesure du 2026-11-11 (run 43090084813, dispatch sur
+    # main) : duree du job 2 min 07 s. Plancher de 10 min (le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:

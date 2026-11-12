@@ -2002,7 +2002,7 @@ query {
       nodes {
         number title headRefName body additions deletions
         headRefOid
-        files(first:100) { totalCount nodes { path } }
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -2017,7 +2017,7 @@ query($cursor: String) {
       nodes {
         number title headRefName body additions deletions
         headRefOid
-        files(first:100) { totalCount nodes { path } }
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -2098,13 +2098,14 @@ def _gh_graphql(query: str, variables: dict[str, str] | None = None) -> dict:
 
 
 def _gh_pr_files_rest(owner: str, name: str, number: int,
-                       expected: int) -> list[str]:
-    """Liste COMPLETE des fichiers d'une PR (REST, paginee).
+                       expected: int) -> tuple[list[str], list[str]]:
+    """Liste COMPLETE des fichiers d'une PR (REST, paginee) + ANCIENS CHEMINS.
 
-    Utilisee pour les seules PRs dont la liste de fichiers est plafonnee par
+    Utilisee pour les PRs dont la liste de fichiers est plafonnee par
     GraphQL (`files(first:100)`) -- mesure : 3 PRs ouvertes au 2026-10-21,
-    jusqu'a 1070 fichiers. L'endpoint REST `/pulls/{n}/files` n'a pas ce
-    plafond ; `--paginate` suit toutes les pages.
+    jusqu'a 1070 fichiers -- et, depuis #25910, pour les PRs qui portent un
+    RENOMMAGE. L'endpoint REST `/pulls/{n}/files` n'a pas ce plafond ;
+    `--paginate` suit toutes les pages.
 
     Le champ REST est `filename` (pas `path`). On NE passe PAS `--jq` : mesure
     du 2026-10-21, `gh api --paginate ... --jq '.[].path'` rend un tableau de
@@ -2112,8 +2113,17 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     applique a une entree vide. On parse donc le JSON et on extrait
     `filename` nous-memes.
 
-    Le nombre de chemins lus est compare a `expected` (le `totalCount`
-    GraphQL) : un ecart rend l'enumeration incomplete.
+    Rend `(chemins_de_tete, chemins_de_base_des_renommages)`. Le second
+    membre lit `previous_filename`, que REST expose SEULEMENT pour un
+    fichier renomme (le schema GraphQL `PullRequestChangedFile` ne porte
+    que `additions, changeType, deletions, path, viewerViewedState` -- pas
+    d'ancien chemin, cf. #25910). Motif deja eprouve dans le depot :
+    `scripts/notebook_tools/credited_examples_sweep.py::_previous_filenames`.
+
+    Le nombre de chemins de tete lus est compare a `expected` (le
+    `totalCount` GraphQL) : un ecart rend l'enumeration incomplete. Les
+    ANCIENS chemins ne sont pas comptes dans ce total -- ce sont des
+    chemins supplementaires, pas des fichiers de la PR.
     """
     try:
         proc = subprocess.run(
@@ -2156,12 +2166,22 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
         entry.get("filename") for entry in payload
         if isinstance(entry, dict) and entry.get("filename")
     ]
+    # #25910 -- l'ancien chemin d'un renommage. Il n'est PAS un fichier de
+    # la PR : il ne compte donc pas dans le total compare a `expected`.
+    previous: list[str] = []
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        old = entry.get("previous_filename")
+        new = entry.get("filename")
+        if old and old != new and old not in previous:
+            previous.append(old)
     if len(paths) != expected:
         raise OpenPrsIncompleteError(
             f"liste de fichiers incomplete pour la PR #{number}",
             f"{len(paths)} chemins lus pour {expected} attendus",
         )
-    return paths
+    return paths, previous
 
 
 def _gh_open_prs_complete() -> list[dict]:
@@ -2173,7 +2193,13 @@ def _gh_open_prs_complete() -> list[dict]:
         aucune borne `--limit` susceptible de tronquer en silence) ;
       - les FICHIERS de chaque PR : `files(first:100).totalCount` dit
         exactement si la liste de chemins est plafonnee ; les PRs concernees
-        sont refetches en REST (pagination sans plafond), en parallele.
+        sont refetches en REST (pagination sans plafond), en parallele ;
+      - les ANCIENS CHEMINS des renommages (#25910) : GraphQL expose
+        `changeType == "RENAMED"` mais PAS l'ancien chemin ; la seule source
+        est le champ REST `previous_filename`. Les PRs qui portent un
+        renommage (et celles dont la liste de fichiers est plafonnee, ou le
+        renommage peut se cacher au-dela du 100e noeud) sont donc refetches
+        en REST, et l'ancien chemin rejoint l'index des chemins occupes.
 
     Leve `OpenPrsIncompleteError` si l'une des deux completudes ne peut pas
     etre etablie (plafond de securite, delai, reponse GraphQL en erreur).
@@ -2204,14 +2230,20 @@ def _gh_open_prs_complete() -> list[dict]:
             raise OpenPrsIncompleteError(
                 "depot introuvable dans la reponse GraphQL", repo)
         connection = repository.get("pullRequests") or {}
-        overflow: list[tuple[int, int]] = []
+        # PRs a relire en REST : plafonnees (liste de fichiers tronquee) ou
+        # porteuses d'un renommage (ancien chemin invisible cote GraphQL).
+        rest_needed: list[tuple[int, int]] = []
         for node in connection.get("nodes") or []:
             files = node.get("files") or {}
-            paths = [f["path"] for f in (files.get("nodes") or [])]
+            file_nodes = files.get("nodes") or []
+            paths = [f["path"] for f in file_nodes if f.get("path")]
             total = int(files.get("totalCount") or 0)
             number = int(node["number"])
-            if total > len(paths):
-                overflow.append((number, total))
+            has_rename = any(
+                f.get("changeType") == "RENAMED" for f in file_nodes
+            )
+            if total > len(paths) or has_rename:
+                rest_needed.append((number, total))
             entry = {
                 "number": number,
                 "title": node.get("title"),
@@ -2221,6 +2253,11 @@ def _gh_open_prs_complete() -> list[dict]:
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
                 "files": [{"path": p} for p in paths],
+                # #25910 -- anciens chemins des renommages (liste vide si la
+                # PR n'en porte pas). La cle est aussi la preuve que cette
+                # enumeration a ete produite par la version qui indexe les
+                # renommages (cf. `_read_open_prs_cache`).
+                "renames": [],
             }
             prs.append(entry)
             by_number[number] = entry
@@ -2229,18 +2266,28 @@ def _gh_open_prs_complete() -> list[dict]:
                 "enumeration des PRs ouvertes au-dela du plafond de securite",
                 f"{len(prs)} > {_OPEN_PRS_HARD_CAP}",
             )
-        if overflow:
-            # Refetch des seules PRs plafonnees, en parallele : les 3 PRs
+        if rest_needed:
+            # Refetch des seules PRs concernees, en parallele : les 3 PRs
             # mesurees coutent ~11s en serie, ~7s en parallele.
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
                 futures = {
                     pool.submit(_gh_pr_files_rest, owner, name, num, tot): num
-                    for num, tot in overflow
+                    for num, tot in rest_needed
                 }
                 for future in concurrent.futures.as_completed(futures):
                     num = futures[future]
-                    paths = future.result()
-                    by_number[num]["files"] = [{"path": p} for p in paths]
+                    paths, previous = future.result()
+                    entry = by_number[num]
+                    entry["files"] = [{"path": p} for p in paths]
+                    entry["renames"] = previous
+                    # #25910 -- l'ancien chemin d'un renommage est OCCUPE :
+                    # il rejoint l'index (fail-CLOSED -- l'ensemble des
+                    # chemins occupes s'elargit, il ne se restreint jamais).
+                    known = {f["path"] for f in entry["files"]}
+                    for old in previous:
+                        if old not in known:
+                            entry["files"].append({"path": old})
+                            known.add(old)
         page_info = connection.get("pageInfo") or {}
         if not page_info.get("hasNextPage"):
             break
@@ -2274,7 +2321,16 @@ def _read_open_prs_cache() -> list[dict] | None:
     if isinstance(cached, dict) and cached.get("format") == _OPEN_PRS_CACHE_FORMAT:
         if cached.get("complete") is True:
             prs = cached.get("prs")
-            return prs if isinstance(prs, list) else None
+            if not isinstance(prs, list):
+                return None
+            # #25910 -- un cache ecrit par une version ANTERIEURE ne porte
+            # pas l'index des renommages (`renames`) : le lire reviendrait a
+            # rapporter LIBRE un chemin qu'une PR ouverte est en train de
+            # renommer. Il est donc traite comme absent -- le fetch complet
+            # qui suit le REECRIT au format courant.
+            if any("renames" not in pr for pr in prs if isinstance(pr, dict)):
+                return None
+            return prs
         raise OpenPrsIncompleteError(
             "cache des PRs ouvertes marque incomplet",
             str(cached.get("reason") or "")[:200],

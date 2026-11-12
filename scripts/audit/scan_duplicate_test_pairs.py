@@ -19,8 +19,9 @@ Un bord « fichier test -> module » nait de (calibration anti-bruit, cf tests) 
     citant DEUX modules par des chemins depuis deplaces) ;
   - docstring CORPS : mention en prose -> bord seulement si affinite de nom
     (stem du module contenu dans le stem du fichier de test) ;
-  - import (absolu scripts.* ou nom flat apres sys.path.insert, resolu par
-    basename unique) -> bord seulement si affinite de nom — un import sans
+  - import (chemin absolu scripts.*, y compris `from scripts.pkg import module`,
+    ou nom flat apres sys.path.insert resolu par basename unique) -> bord
+    seulement si affinite de nom — un import sans
     mention peut etre un usage-helper, pas un test.
 
 La resolution d'une mention par basename unique (chemin cite inexistant ou
@@ -164,6 +165,12 @@ def _import_modules(tree: ast.Module, repo_root: Path, basenames: dict, test_ste
             names = [alias.name for alias in node.names]
         elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
             names = [node.module]
+            if node.module == "scripts" or node.module.startswith("scripts."):
+                # ``from scripts.pkg import module`` nomme la cible dans
+                # l'alias ; les symboles importés depuis un module ne sont
+                # retenus que si leur chemin correspond à un vrai fichier.
+                names.extend(f"{node.module}.{alias.name}" for alias in node.names
+                             if alias.name != "*")
         for name in names:
             module = None
             evidence = None

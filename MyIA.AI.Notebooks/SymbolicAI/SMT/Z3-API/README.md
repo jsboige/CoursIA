@@ -9,6 +9,8 @@ maturity:
 
 [← SMT](../README.md) | [Z3 C# (Z3.Linq) →](../Z3-Linq2Z3/README.md)
 
+Le [service REST gateway pour le Sudoku](gateway/README.md) complète le parcours de notebooks comme composant distinct.
+
 ## Série en quelques mots
 
 L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série canonique : les notebooks Python principaux (z3-solver + matplotlib) couvrent la satisfaction de contraintes, l'optimisation avancée, l'ordonnancement combinatoire, les énigmes logiques (CSP), l'arithmétique symbolique (cryptarithmes), la coloration de graphe (NP-complet), l'arithmétique réelle exacte (irrationnels algébriques), l'explication de l'insatisfiabilité (UNSAT cores), l'arithmétique machine bornée (bit-vectors, débordement), la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`), la théorie générale des tableaux (`Select`/`Store` et axiomes de McCarthy), la comparaison des modes de résolution d'un même Sudoku (`Array` vs `Constants`) et le pont déclaratif avec la série sœur Z3.Linq (C#) ; **6 twins C# .NET** (notebooks 01ᶜˢ-06ᶜˢ) assurent la parité langage ; **4 compagnons Meal-Planner** (16b/c/d/e, statut BETA) étendent le module 16 sur un corpus réel (Ciqual ANSES 2025 × RecipeML).
