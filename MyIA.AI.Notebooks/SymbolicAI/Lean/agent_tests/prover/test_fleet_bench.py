@@ -214,3 +214,50 @@ def test_output_inside_repository_is_rejected(tmp_path):
     with pytest.raises(fleet_bench.BenchError) as error:
         fleet_bench.write_outputs(repository / "comparison.json", {"arms": []})
     assert error.value.code == "OUTPUT_INSIDE_REPOSITORY"
+
+
+def test_boolean_token_counts_are_not_integer_measurements(tmp_path):
+    trace = tmp_path / "trace.json"
+    trace.write_text(json.dumps([{"tokens": {"input": True, "output": 3}}]), encoding="utf-8")
+    assert fleet_bench._trace_metrics(str(trace))["tokens"] is None
+    spans = tmp_path / "spans.jsonl"
+    spans.write_text(json.dumps({"attributes": {
+        "gen_ai.usage.input_tokens": 2, "gen_ai.usage.output_tokens": False,
+    }}) + "\n", encoding="utf-8")
+    assert fleet_bench._otel_metrics(f"[OTEL] spans -> {spans}\n")["tokens"] is None
+
+
+def test_routing_evidence_tracks_source_when_metrics_are_mixed(tmp_path):
+    trace = tmp_path / "trace.json"
+    trace.write_text(json.dumps([{"model": "route-trace"}]), encoding="utf-8")
+    spans = tmp_path / "spans.jsonl"
+    spans.write_text(json.dumps({"attributes": {
+        "gen_ai.usage.input_tokens": 8, "gen_ai.usage.output_tokens": 5,
+    }}) + "\n", encoding="utf-8")
+    stdout = (f"[OTEL] spans -> {spans}\nTrace saved: {trace} (1 entries)\n"
+              "[BG] PRE_FILE_SORRY_COUNT 1\n[BG] POST_FILE_SORRY_COUNT 0\n"
+              "[BG] RESULT_SUCCESS True\n[BG] RESULT_ALREADY_SOLVED False\n"
+              "[BG] RESULT_ITERATIONS 1\n"
+              "[BG] FINAL ok=True kind=proved sorry_after=0 elapsed=2.0\n"
+              "[BG] EXIT code=0\n")
+    completed = subprocess.CompletedProcess(args=[], returncode=0, stdout=stdout)
+    with patch.object(fleet_bench.subprocess, "run", return_value=completed):
+        arm = fleet_bench._launch_arm("baseline", 0, "local", 1, 10)
+    assert arm["tokens"] == {"input": 8, "output": 5, "total": 13}
+    assert arm["routing"] == {"route-trace": 1}
+    assert arm["routing_evidence"] == "trace_prover"
+
+
+def test_zero_token_counts_remain_measured(tmp_path):
+    trace = tmp_path / "trace.json"
+    trace.write_text(json.dumps([{"tokens": {"input": 0, "output": 0}}]), encoding="utf-8")
+    assert fleet_bench._trace_metrics(str(trace))["tokens"] == {
+        "input": 0, "output": 0, "total": 0,
+    }
+    spans = tmp_path / "spans.jsonl"
+    spans.write_text(json.dumps({"attributes": {
+        "gen_ai.usage.input_tokens": 0, "gen_ai.usage.output_tokens": 0,
+    }}) + "\n", encoding="utf-8")
+    assert fleet_bench._otel_metrics(f"[OTEL] spans -> {spans}\n")["tokens"] == {
+        "input": 0, "output": 0, "total": 0,
+    }
