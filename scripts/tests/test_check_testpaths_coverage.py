@@ -647,16 +647,16 @@ def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
 def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
     """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
 
-    36 basenames mesurés le 2026-11-09 (#25366), dont un triple. Le plafond
-    est un cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
+    33 basenames après les renommages Slidev (#25366). Le plafond est un
+    cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
     T2 en supprime — jamais l'inverse.
     """
     from check_testpaths_coverage import duplicate_basenames
 
     dupes = duplicate_basenames(REPO_ROOT)
-    assert len(dupes) <= 36, f"dette de doublons en hausse : {len(dupes)} > 36"
-    assert "test_scan_slidev_composition.py" in dupes
-    assert len(dupes["test_scan_slidev_composition.py"]) == 3
+    assert len(dupes) <= 33, f"dette de doublons en hausse : {len(dupes)} > 33"
+    assert "test_batch_reexecute.py" in dupes
+    assert len(dupes["test_batch_reexecute.py"]) == 2
 
 
 def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
