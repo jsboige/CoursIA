@@ -8,7 +8,7 @@ pagetitle: "Sudoku — comparer les méthodes de résolution"
 series: Sudoku
 pedagogical_count: 39
 breakdown: root=39
-maturity: BETA=38, ALPHA=1
+maturity: BETA=39
 -->
 
 [↑ Parcours de notebooks](../README.md) · [Search : recherche et contraintes](../Search/README.md)

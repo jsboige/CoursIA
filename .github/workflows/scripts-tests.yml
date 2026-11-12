@@ -165,15 +165,15 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     needs: is-latest-main
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    # #25181 : `needs` + `latest == 'true'` -- un commit main depasse (un plus
+    # #25181 : `needs` + `latest != 'false'` -- un commit main depasse (un plus
     # recent est deja en tete) passe ce job en `skipped` au lieu d'executer la
     # suite sur un arbre mort ; les PR/dispatch passent toujours.
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && !cancelled() && needs.is-latest-main.outputs.latest != 'false'
-    # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
-    # (started_at -> completed_at du job nomme exactement "Scripts Tests
-    # (CPU)"), celle sur laquelle timeout-minutes agit -- jamais la duree
-    # du run (file d'attente comprise, et pour un rerun les deux
-    # tentatives : c'etait la faute de grandeur de la v1).
+    # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
+    # mur du JOB (started_at -> completed_at du job nomme exactement
+    # "Scripts Tests (CPU)"), celle sur laquelle timeout-minutes agit --
+    # jamais la duree du run (file d'attente comprise, et pour un rerun les
+    # deux tentatives : c'etait la faute de grandeur de la v1).
     #
     # Requete a rejouer telle quelle avant de citer ou de retirer ce
     # tableau (photographie datee, pas une verite) : runs du workflow
@@ -192,15 +192,40 @@ jobs:
     # Les 4 cancelled ont bien ete termines au mur de 20 min, mais les
     # logs montrent des workers xdist morts puis 14-15 min de silence : ce
     # sont des hangs que relever le plafond ne repare pas (suivi #16288),
-    # pas quatre cas de queue lente. Le relevement repose sur la marge
-    # preventive : le succes max a 17,4 min ne laisse que 2,6 min sous 20;
-    # 30 laisse ~12,6 min tout en restant sous les bornes 45/52 ci-dessous.
-    # (Retraction de la v1 run-level -- 26 runs, mediane 17,5 min, max
-    # 19,8 min, 16 annulations -- ecrite en tete du body de #16087.)
-    # 30 reste sous les deux plafonds qui l'englobent : l'agregateur
-    # pr_gate.py (--timeout-min 45) et le job pr-gate.yml
-    # (timeout-minutes: 52).
-    timeout-minutes: 30
+    # pas quatre cas de queue lente. (Retraction de la v1 run-level -- 26
+    # runs, mediane 17,5 min, max 19,8 min, 16 annulations -- ecrite en
+    # tete du body de #16087.)
+    #
+    # Mesure du 2026-11-12 (meme requete, meme grandeur) : 70 derniers runs
+    # termines, 53 jobs mesures (17 runs sans job) :
+    #     success    25   max 27,83 min
+    #     failure     4   max 25,42 min
+    #     cancelled 24   dont 7 a 30,65 / 31,02 / 31,03 / 31,05 / 31,13 /
+    #                        31,17 / 31,55 min : le mur de 30 min les a
+    #                        tranches. Les 17 autres sont plus courts
+    #                        (concurrence, supersession) : pas des coupes.
+    # Sous le plafond de 30, la marge du succes le plus long n'etait que
+    # de 2,17 min, et 7 jobs sur 53 (13 %) avaient deja ete coupes.
+    #
+    # Les 7 coupes sont CENSUREES A DROITE : leur duree reelle est > 30 min
+    # et inconnue. 40 est donc un plancher de decision, pas une borne
+    # mesuree :
+    #     enfant   27,83 x 1,44 -> 40   (12,17 min au-dessus du succes le
+    #                                     plus long ; 8,45-9,35 min au-dessus
+    #                                     de la bande des coupes)
+    #     gate     40 + 15       -> 55   (marge de 15 min INCHANGEE : elle
+    #                                     etait 30 -> 45) ; 55 reste sous
+    #                                     le plafond propre de Quarto (60),
+    #                                     donc la queue reelle de Quarto
+    #                                     reste sur le chemin STARVED ->
+    #                                     auto-annulation (#13510, #14412)
+    #     runner   55 + 7        -> 62   (marge de 7 min pour le verdict
+    #                                     INCHANGEE : elle etait 45 -> 52)
+    # La regle (enfant < aggregateur < runner) et ses marges sont donc
+    # preservees a l'identique : seule la valeur du mur de l'enfant bouge.
+    # Re-mesurer sur les 70 prochains runs, une fois les 7 coupes reussies :
+    # c'est ce qui dira si 40 min suffit.
+    timeout-minutes: 40
 
     steps:
       # ------------------------------------------------------------------
@@ -323,7 +348,35 @@ jobs:
         env:
           MPLBACKEND: Agg
 
+      # #22468 tranche 4 (revue ai-01 11/11, job 130763938091) : le jeton
+      # GitHub ne vit QUE dans ce pas, et le seul consommateur est l'organe
+      # de portee (repli API pour lire les chemins de la PR). Pose au niveau
+      # du pas `Run tests`, il faisait heriter TOUTE la suite pytest d'un
+      # jeton ambiant : deux tests le mesuraient (test_gh_identity.py
+      # restaurait `***` au lieu de None ; test_exec_sequence_ack_required
+      # .py::test_gh_comment_fetcher_no_repo_env_raises n'obtenait plus
+      # FetchError). Il ecrit scripts_scope.json, lu par le pas suivant.
+      # rc=2 (workflow illisible) = rouge bruyant volontaire ; tout le reste
+      # est fail-OPEN et ecrit une portee pleine avec sa raison nommee.
+      - name: Compute test scope (#22468)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/ci/changed_scripts_tests.py \
+            --event "${{ github.event_name }}" \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number || 0 }}" \
+            > scripts_scope.json
+
       - name: Run tests
+        # #22468 tranche 4 : la portee (organe scripts/ci/changed_scripts_tests
+        # .py -- suites liees aux chemins modifies, fail-OPEN) est ecrite par
+        # le pas precedent, qui porte seul le jeton GitHub. Ce pas joue la
+        # selection, ou la liste complete en cas de doute. Les planchers de
+        # collecte ci-dessous restent
+        # inconditionnels : un vert restreint ne doit pas pouvoir retrecir
+        # en silence.
+        #
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
         # The repo-wide pytest.ini testpaths also list GameTheory/tests,
         # QuantConnect/scripts/tests and DataScienceWithAgents/tests; those are
@@ -430,7 +483,29 @@ jobs:
             xdist_n=4
           fi
           echo "xdist workers: $xdist_n (cgroup memory limit: $mem_max)"
-          python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
+          # #22468 tranche 4 : la portee a ete calculee par le pas
+          # "Compute test scope" (seul porteur du jeton) -- suites liees aux
+          # chemins modifies (aire de veille = dossier parent de X/tests),
+          # fail-OPEN pleine suite avec raison nommee (stderr du pas dedie).
+          # La liste COMPLETE reste litterale dans le bloc pytest ci-dessous :
+          # c'est la source unique de guard_test_root (#18888) ET de l'organe.
+          # JSON absent ou illisible = fail-OPEN pleine suite ici aussi : un
+          # organe en panne ne doit jamais pouvoir retrecir la suite. La
+          # branche restreinte est volontairement sur UNE ligne (aucun '\' de
+          # continuation) pour que PYTEST_BLOCK_RE matche toujours le bloc
+          # litteral. rc=2 de l'organe = derive structurelle -> rouge bruyant
+          # au pas dedie, jamais une liste inventee.
+          SCOPE_MODE=full
+          SUITES=""
+          if [ -f scripts_scope.json ]; then
+            SCOPE_MODE=$(python -c "import json; print(json.load(open('scripts_scope.json'))['mode'])") || SCOPE_MODE=full
+            SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))") || SUITES=""
+          fi
+          echo "portee: $SCOPE_MODE${SUITES:+ -- suites: $SUITES}"
+          if [ "$SCOPE_MODE" = "restricted" ]; then
+            python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest $SUITES -n "$xdist_n" --dist loadscope --tb=short -q
+          else
+            python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
             scripts/ci/tests \
@@ -470,6 +545,7 @@ jobs:
             scripts/sudoku/tests \
             scripts/validation/tests \
             -n "$xdist_n" --dist loadscope --tb=short -q
+          fi
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
         # cours -- la jambe reste muette 14 a 17 min apres `[99%]` jusqu'au mur
@@ -636,7 +712,9 @@ jobs:
       # #18981 : garde anti-recidive #18888 -- un test_*.py pose a la racine
       # d'un module (scripts/notebook_tools/, scripts/lean/, etc.) n'est
       # execute par aucune des jambes ci-dessus. La garde lit la liste des
-      # chemins collectes depuis CE workflow (l.355-371) et verifie qu'aucun
+      # chemins collectes depuis CE workflow (le bloc pytest LITTERAL du pas
+      # Run tests -- la branche restreinte d'une ligne est invisible a
+      # PYTEST_BLOCK_RE, #22468 tranche 4) et verifie qu'aucun
       # test_*.py n'apparait dans un dossier parent d'un chemin collecte sans
       # etre dans le sous-dossier collecte lui-meme. Verifiee localement le
       # 2026-10-03 : rc=0 sur main, rc=1 sur une branche jetable ou un

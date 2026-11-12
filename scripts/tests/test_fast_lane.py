@@ -649,21 +649,19 @@ def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
 def test_self_hosted_policy_guard_is_wired_fail_closed():
     guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
     assert guard.source == "fast-lane-shadow.yml"
-    # #22954 : `--check-timeouts` ajoute le cliquet des bornes de job. Il est
-    # ici en egalite stricte pour qu'un retrait soit un rouge, pas une
+    # #23349 (tranche finale) : le cliquet des bornes de job est le DEFAUT du
+    # CLI du garde. L'argv est ici en egalite stricte pour que la seule sortie
+    # -- un `--no-check-timeouts` explicite -- soit un rouge, pas une
     # desactivation silencieuse du cliquet.
     assert guard.argv == [
         "python",
         "scripts/ci/check_self_hosted_runner_policy.py",
         "--check",
-        "--check-timeouts",
     ]
+    assert "--no-check-timeouts" not in guard.argv
     assert ".github/workflows/*.yml" in guard.paths
     assert ".github/workflows/*.yaml" in guard.paths
     assert "scripts/ci/check_self_hosted_runner_policy.py" in guard.paths
-    assert "scripts/ci/self_hosted_timeout_baseline.txt" in guard.paths, (
-        "une PR qui reecrit la baseline doit relancer le cliquet (#22954)"
-    )
     assert "scripts/ci/fast_lane_registry.py" in guard.paths
 
 
@@ -1588,6 +1586,7 @@ def test_tranche5_guards_are_absorbed_single_testpaths_guard():
         ".github/workflows/scripts-tests.yml",
         ".github/workflows/ml-tests.yml",
         ".github/workflows/secret-scan.yml",
+        ".github/workflows/secret-scan-controls.yml",
         ".github/workflows/ict-tests.yml",
         ".github/workflows/testpaths-coverage-guard.yml",
     ):
@@ -2479,6 +2478,17 @@ def test_les_corps_de_succes_sont_vides():
     assert fast_lane_registry._body_listing_coherence(0, "{}", dict(vert)) == ""
     assert fast_lane_registry._body_organ_duplication(0, "CLEAN", dict(vert)) == ""
     assert fast_lane_registry._body_md_hierarchy(0, "", dict(vert)) == ""
+
+
+def test_couverture_tronquee_reste_visible_sans_succes_bruyant():
+    note = fast_lane.trunc_note(51, 50)
+    ctx = {"merge_base": "abc", "trunc_note": note}
+    for fn in (fast_lane_registry._body_claims_output,
+               fast_lane_registry._body_stale_claim,
+               fast_lane_registry._body_factual_mislabel,
+               fast_lane_registry._body_listing_coherence):
+        assert fn(0, "{}", ctx) == note
+    assert note in fast_lane_registry._body_listing_coherence(0, '{"non_lus": 2}', ctx)
 
 
 def test_le_vert_tronque_ne_passe_pas_pour_integral():
