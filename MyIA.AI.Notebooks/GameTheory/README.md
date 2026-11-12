@@ -749,3 +749,8 @@ Voir la licence du dépôt principal.
 *Version 1.4.1 — Juillet 2026 (2026-07-16) — réconciliation EPIC #4365 : retrait des lakes supprimés `cooperative_games_lean` et `stable_marriage_lean`, absorbés dans `game_theory_lean`.*
 
 *Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles vers hub : intégration du marathon de parité C# #4956, comptes délégués au marqueur CATALOG-STATUS.*
+
+
+#### Routage et prix de l’anarchie — GameTheory-04h
+
+Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [jumeau C#](GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb) calculent l’équilibre de Wardrop, l’optimum social et le prix de l’anarchie sur l’instance de Pigou. Les deux implémentations sont analytiques et sans solveur externe ; C# utilise la bibliothèque standard .NET. Le [compagnon Lean](GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) vérifie un résultat atomique distinct : une borne 2× pour un équilibre minimisant le potentiel, avec un autre équilibre de Nash à 15/7 de l’optimum ; il ne formalise pas la borne non atomique 4/3. Le C# fournit en plus un balayage de grille indépendant pour contrôler l’optimum ; les sorties stochastiques ou machine-dépendantes ne sont pas concernées.
