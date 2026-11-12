@@ -22,6 +22,38 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # #25181 : court-circuit des commits main depasses. Depuis le fix #25181,
+  # chaque commit pousse sur main a son propre groupe de concurrence (par sha),
+  # donc un burst de pushes ne s'annule plus mutuellement -- mais il S'ACCUMULE
+  # : un run lourd par commit, alors que seul le dernier est porte. Ce job LEGER
+  # (ubuntu-latest, un `git ls-remote`, ~5 s) verifie si `github.sha` est encore
+  # la tete de main : si un commit plus recent a ete pousse, le job lourd en aval
+  # passe en `skipped` au lieu de payer une execution entiere sur un arbre deja
+  # depasse. Le run du commit le plus recent (sha == tete main) s'execute
+  # toujours, et les evenements non-push (pull_request, workflow_dispatch) ne
+  # sont JAMAIS court-circuites : la tete d'une PR et une revalidation manuelle
+  # sont legitimes a tester. Fail-open : un `ls-remote` en echec renvoie
+  # `latest=true` -- on re-execute, on ne saute jamais en silence sur une
+  # lecture d'infrastructure ratee.
+  is-latest-main:
+    name: Short-circuit superseded main commit (#25181)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      latest: ${{ steps.head.outputs.latest }}
+    steps:
+      - id: head
+        run: |
+          set -uo pipefail
+          MAIN_HEAD=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main 2>/dev/null | awk '{print $1}' || true)
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ -n "$MAIN_HEAD" ] && [ "$GITHUB_SHA" != "$MAIN_HEAD" ]; then
+            echo "superseded by ${MAIN_HEAD:0:12}; skipping heavy jobs"
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "current main head, non-push event, or ls-remote failed (${MAIN_HEAD:-unreachable}); running heavy jobs"
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          fi
+
   validate-notebooks:
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
@@ -36,8 +68,12 @@ jobs:
     # Retour arriere = variable a `false` ou supprimee : routage 100 %
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
+    needs: is-latest-main
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #25181 : `needs` + `latest == 'true'` -- un commit main depasse (un plus
+    # recent est deja en tete) passe ce job en `skipped` au lieu de valider un
+    # arbre mort ; les PR/dispatch passent toujours.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
     # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
     # job herite de 360 min et peut figer un slot ephemere du parc local --
     # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut

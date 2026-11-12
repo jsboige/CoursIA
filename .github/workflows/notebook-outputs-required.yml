@@ -52,6 +52,38 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # #25181 : court-circuit des commits main depasses. Depuis le fix #25181,
+  # chaque commit pousse sur main a son propre groupe de concurrence (par sha),
+  # donc un burst de pushes ne s'annule plus mutuellement -- mais il S'ACCUMULE
+  # : un run lourd par commit, alors que seul le dernier est porte. Ce job LEGER
+  # (ubuntu-latest, un `git ls-remote`, ~5 s) verifie si `github.sha` est encore
+  # la tete de main : si un commit plus recent a ete pousse, `detect-changes`
+  # (et par `needs` le `validate` en aval) passent en `skipped` au lieu de
+  # payer une execution entiere sur un arbre deja depasse. Le run du commit le
+  # plus recent (sha == tete main) s'execute toujours, et les evenements
+  # non-push (pull_request, workflow_dispatch) ne sont JAMAIS court-circuites :
+  # la tete d'une PR et une revalidation manuelle sont legitimes a tester.
+  # Fail-open : un `ls-remote` en echec renvoie `latest=true` -- on re-execute,
+  # on ne saute jamais en silence sur une lecture d'infrastructure ratee.
+  is-latest-main:
+    name: Short-circuit superseded main commit (#25181)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      latest: ${{ steps.head.outputs.latest }}
+    steps:
+      - id: head
+        run: |
+          set -uo pipefail
+          MAIN_HEAD=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main 2>/dev/null | awk '{print $1}' || true)
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ -n "$MAIN_HEAD" ] && [ "$GITHUB_SHA" != "$MAIN_HEAD" ]; then
+            echo "superseded by ${MAIN_HEAD:0:12}; skipping heavy jobs"
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "current main head, non-push event, or ls-remote failed (${MAIN_HEAD:-unreachable}); running heavy jobs"
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          fi
+
   detect-changes:
     name: Detect notebook changes (outputs-required)
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
@@ -60,7 +92,12 @@ jobs:
     # coherence. Le job est GitHub-hosted (ubuntu-latest) -- le detecteur
     # est stdlib-only et n'a besoin d'aucune specificite runner (cf.
     # Hermes CONCERNS PR #15638 review 2026-09-11T20:33:58Z, B2).
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    needs: is-latest-main
+    # #25181 : `needs` + `latest == 'true'` -- un commit main depasse (un plus
+    # recent est deja en tete) saute le detect, et par `needs` le `validate`
+    # en aval, au lieu de payer une execution sur un arbre mort ; les PR /
+    # dispatch passent toujours.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}

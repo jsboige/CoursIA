@@ -121,14 +121,50 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # #25181 : court-circuit des commits main depasses. Depuis le fix #25181,
+  # chaque commit pousse sur main a son propre groupe de concurrence (par sha),
+  # donc un burst de pushes ne s'annule plus mutuellement -- mais il S'ACCUMULE
+  # : un run lourd par commit, alors que seul le dernier est porte. Ce job LEGER
+  # (ubuntu-latest, un `git ls-remote`, ~5 s) verifie si `github.sha` est encore
+  # la tete de main : si un commit plus recent a ete pousse, le(s) job(s) lourd(s)
+  # en aval passent en `skipped` au lieu de payer une execution entiere sur un
+  # arbre deja depasse. Le run du commit le plus recent (sha == tete main)
+  # s'execute toujours, et les evenements non-push (pull_request,
+  # workflow_dispatch) ne sont JAMAIS court-circuites : la tete d'une PR et une
+  # revalidation manuelle sont legitimes a tester. Fail-open : un `ls-remote`
+  # en echec renvoie `latest=true` -- on re-execute, on ne saute jamais en
+  # silence sur une lecture d'infrastructure ratee.
+  is-latest-main:
+    name: Short-circuit superseded main commit (#25181)
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    outputs:
+      latest: ${{ steps.head.outputs.latest }}
+    steps:
+      - id: head
+        run: |
+          set -uo pipefail
+          MAIN_HEAD=$(git ls-remote "https://github.com/${GITHUB_REPOSITORY}.git" refs/heads/main 2>/dev/null | awk '{print $1}' || true)
+          if [ "${GITHUB_EVENT_NAME}" = "push" ] && [ -n "$MAIN_HEAD" ] && [ "$GITHUB_SHA" != "$MAIN_HEAD" ]; then
+            echo "superseded by ${MAIN_HEAD:0:12}; skipping heavy jobs"
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "current main head, non-push event, or ls-remote failed (${MAIN_HEAD:-unreachable}); running heavy jobs"
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          fi
+
   scripts-tests:
     name: Scripts Tests (CPU)
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
+    needs: is-latest-main
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #25181 : `needs` + `latest == 'true'` -- un commit main depasse (un plus
+    # recent est deja en tete) passe ce job en `skipped` au lieu d'executer la
+    # suite sur un arbre mort ; les PR/dispatch passent toujours.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
     # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
     # (started_at -> completed_at du job nomme exactement "Scripts Tests
     # (CPU)"), celle sur laquelle timeout-minutes agit -- jamais la duree
@@ -657,8 +693,11 @@ jobs:
     # Mesure d'hermetisme (2026-10-27, venv Python 3.11 vide) : avec
     # `mcp==1.30.0` + `pytest>=8` + `requests>=2.31`, la suite passe --
     # c'est le triplet exact du `pip install` ci-dessous.
+    needs: is-latest-main
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #25181 : court-circuit des commits main depasses (job `is-latest-main`) --
+    # see the `scripts-tests` job for the full rationale.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
     timeout-minutes: 15
 
     steps:
@@ -694,8 +733,11 @@ jobs:
     # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
     # Seul ce job est concerne : `scripts-tests` reste sur la jambe locale
     # STATIQUE (sa suite est couplee a la forme du runner, #22820).
+    needs: is-latest-main
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #25181 : court-circuit des commits main depasses (job `is-latest-main`) --
+    # see the `scripts-tests` job for the full rationale.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.is-latest-main.outputs.latest == 'true'
     timeout-minutes: 15
 
     steps:
