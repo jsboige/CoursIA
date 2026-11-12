@@ -1,0 +1,9 @@
+- name: "GenAI-Texte-10g Speculative Decoding"
+  family: GenAI/Texte
+  python: MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Texte/10g_Speculative_Decoding-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le sujet est un algorithme probabiliste enseigné from-scratch : aucun moteur tiers n'est requis ou appelé pour l'implémenter. Python utilise les bibliothèques NumPy/Matplotlib du cours ; C# emploie le BCL .NET 9 et génère le SVG lui-même. Les deux versions entraînent les mêmes n-grammes sur le même corpus et vérifient l'équivalence du greedy au décodage cible ; les idiomes d'implémentation et le renderer graphique diffèrent."
+  known_differences:
+    - "Le C# expose en plus le nombre réel de propositions, distinct du budget rembourré verify_steps*k ; cette instrumentation clarifie le dénominateur de l'acceptation. Les valeurs mesurées sur le corpus sont déterministes et concordent ; aucune latence de service LLM n'est mesurée."
