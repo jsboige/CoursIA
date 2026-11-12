@@ -3487,8 +3487,8 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
     """#14591 Volet A : CLI --csv-state auto-applique --prev-genre.
 
     On appelle main() avec --csv-state etat present, SANS --prev-genre
-    explicite, et on verifie que le print indique que prev_genre est
-    auto-applique depuis le CSV. Avant le patch, le picker ignorait le CSV.
+    explicite, et on verifie que le diagnostic stderr indique que prev_genre
+    est auto-applique depuis le CSV. Avant le patch, le picker ignorait le CSV.
     """
     csv_path = tmp_path / "picker_state.csv"
     csv_path.write_text(
@@ -3512,9 +3512,9 @@ def test_14591_volet_a_cli_integration_prev_genre_autoload(tmp_path, monkeypatch
         f"--csv-state={csv_path}",
     ])
     assert rc == 1, f"absent du pool ouvert doit retourner 1, rc={rc}"
-    captured = capsys.readouterr().out
+    captured = capsys.readouterr().err
     assert "prev-genre auto-applique depuis CSV" in captured, (
-        f"auto-apply absent. Sortie: {captured[:400]}"
+        f"auto-apply absent. Diagnostic: {captured[:400]}"
     )
     assert "guard|tooling" in captured
 
