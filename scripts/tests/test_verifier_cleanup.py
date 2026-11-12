@@ -499,3 +499,55 @@ def test_classify_tasklist_body_via_gh_reel(monkeypatch):
     row = classify_one("o/r", {"number": 17956,
                                "title": "Fermer la dette de rendu des notebooks"})
     assert row["verdict"] == "CONTAINER"
+
+
+# --- #25894 : panne gh du crible -- strict leve, labeler degrade ------------
+
+def _mapping_panne_pr_body():
+    """Tout reussit SAUF la lecture du body de la PR fusionnee (rc 1).
+
+    C'est exactement la falsification mesuree par la review Hermes du
+    11/11 sur #25894 : le body illisible se lisait comme « pas de marqueur
+    de fermeture », donc un verdict PARTIAL_TRANCHE ferme a tort.
+    """
+    return {
+        ("issue", "view", "4242", "--repo", "o/r", "--json", "body"):
+            {"body": "Sujet unitaire"},
+        ("api", "repos/o/r/issues/4242/timeline", "--paginate"):
+            [_timeline_event(999, "2026-11-01T00:00:00Z")],
+        ("search", "issues"): [],
+        ("issue", "view", "4242", "--repo", "o/r", "--json", "comments"):
+            {"comments": []},
+        # Aucune cle ("pr", "view", ...) : le stub rend rc 1 = panne gh.
+    }
+
+
+def test_panne_gh_du_body_en_mode_strict_leve_25894(monkeypatch):
+    import pytest
+    import verifier_cleanup
+    _stub_subprocess(monkeypatch, _mapping_panne_pr_body())
+    issue = {"number": 4242, "title": "Sujet unitaire", "labels": []}
+    with pytest.raises(verifier_cleanup.GhUnavailableError):
+        classify_one("o/r", issue, strict_gh=True)
+
+
+def test_panne_gh_du_body_en_mode_labeler_reste_partial_tranche(monkeypatch):
+    """Mode labeler (defaut) : la lecture cassee reste une absence de
+    donnee -- verdict degrade PARTIAL_TRANCHE, jamais une exception. Le
+    comportement historique du labeler est preserve a l'identique."""
+    _stub_subprocess(monkeypatch, _mapping_panne_pr_body())
+    issue = {"number": 4242, "title": "Sujet unitaire", "labels": []}
+    row = classify_one("o/r", issue)
+    assert row["verdict"] == "PARTIAL_TRANCHE"
+
+
+def test_mode_strict_sain_rend_ready(monkeypatch):
+    """Strict ne change rien quand gh repond : le body porte le marqueur,
+    le verdict est READY, identique au mode labeler."""
+    mapping = _mapping_panne_pr_body()
+    mapping[("pr", "view", "999", "--repo", "o/r", "--json", "body")] = {
+        "body": "Closes #4242"}
+    _stub_subprocess(monkeypatch, mapping)
+    issue = {"number": 4242, "title": "Sujet unitaire", "labels": []}
+    assert classify_one("o/r", issue, strict_gh=True)["verdict"] == "READY"
+    assert classify_one("o/r", issue)["verdict"] == "READY"
