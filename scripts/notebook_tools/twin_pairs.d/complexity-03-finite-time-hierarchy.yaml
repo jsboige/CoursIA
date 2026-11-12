@@ -1,4 +1,4 @@
-- name: "Complexity-03 Hiérarchie temporelle"
+- name: "Complexity-03 Finite-Time Hierarchy"
   family: Complexity
   python: MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-Python.ipynb
   csharp: MyIA.AI.Notebooks/Complexity/Complexity-03-HierarchieTemporelle-CSharp.ipynb
