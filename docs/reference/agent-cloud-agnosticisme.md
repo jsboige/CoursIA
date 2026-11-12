@@ -1,5 +1,7 @@
 # Session cloud d'agnosticisme — rôle et circulation
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Mandat du mainteneur (2026-09-26) : officialiser le rôle de la session Claude Code qu'il ouvre dans son environnement cloud pour rendre le dépôt **agnostique du type de visiteur**.
 
 ## Qui
