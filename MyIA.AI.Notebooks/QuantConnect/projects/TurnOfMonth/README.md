@@ -23,8 +23,23 @@ Le calcul de l’algorithme estime les séances restantes en multipliant les jou
 civils restants par 0,7 ; il ne compte donc pas exactement les séances de bourse.
 Le notebook de recherche, lui, construit la fenêtre à partir des séances
 historiques. Ces deux méthodes ne sont pas équivalentes, notamment autour des
-jours fériés et des mois atypiques. Le README ne déduit donc aucune performance
-de la comparaison entre ces implémentations.
+jours fériés et des mois atypiques ; aucune métrique n’est déduite de cette
+comparaison entre implémentations.
+
+## Mesures archivées rapportées
+
+`ARCHIVE.md` attribue à la version v2.1 les métriques historiques suivantes
+pour la période 2015–2026 :
+
+| Version | Période indiquée dans l’archive | Sharpe | CAGR | Drawdown maximal |
+|---|---|---:|---:|---:|
+| v2.1, SPY + QQQ | 2015–2026 | 0,128 | 4,8 % | 23,7 % |
+
+L’archive précise qu’il s’agit de résultats d’un backtest antérieur, non
+reproduits lors de l’itération d’avril 2026. La période indiquée ne correspond
+pas aux dates actuellement configurées dans [main.py](main.py) (début 2015,
+fin 2024) : le tableau restitue le rapport historique de l’archive et ne prouve
+pas ces métriques pour l’état actuel du code.
 
 ## Carnets de recherche
 
@@ -37,9 +52,8 @@ Le carnet `quantbook.ipynb` marque explicitement plusieurs sorties comme
 supprimées ; ses sections de calcul et ces marqueurs documentent le protocole,
 mais ne justifient pas d’inférer les sorties manquantes. `research.ipynb` conserve
 ses propres sorties, qui ne sont pas une exécution de `QuantBook`. Ce README ne
-rapporte aucune nouvelle exécution QuantConnect. Les valeurs historiques et
-l’historique des variantes restent dans [ARCHIVE.md](ARCHIVE.md) et les carnets ;
-ils ne constituent pas un résultat nouvellement reproduit ici.
+rapporte aucune nouvelle exécution QuantConnect. L’historique des variantes et
+les limites documentaires sont détaillés dans [ARCHIVE.md](ARCHIVE.md).
 
 Le code de `main.py` mentionne également des essais historiques H7–H9 dans sa
 docstring. Ils ne font pas partie des six hypothèses H1–H6 présentées dans
