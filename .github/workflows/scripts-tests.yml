@@ -283,7 +283,35 @@ jobs:
         env:
           MPLBACKEND: Agg
 
+      # #22468 tranche 4 (revue ai-01 11/11, job 130763938091) : le jeton
+      # GitHub ne vit QUE dans ce pas, et le seul consommateur est l'organe
+      # de portee (repli API pour lire les chemins de la PR). Pose au niveau
+      # du pas `Run tests`, il faisait heriter TOUTE la suite pytest d'un
+      # jeton ambiant : deux tests le mesuraient (test_gh_identity.py
+      # restaurait `***` au lieu de None ; test_exec_sequence_ack_required
+      # .py::test_gh_comment_fetcher_no_repo_env_raises n'obtenait plus
+      # FetchError). Il ecrit scripts_scope.json, lu par le pas suivant.
+      # rc=2 (workflow illisible) = rouge bruyant volontaire ; tout le reste
+      # est fail-OPEN et ecrit une portee pleine avec sa raison nommee.
+      - name: Compute test scope (#22468)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/ci/changed_scripts_tests.py \
+            --event "${{ github.event_name }}" \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number || 0 }}" \
+            > scripts_scope.json
+
       - name: Run tests
+        # #22468 tranche 4 : la portee (organe scripts/ci/changed_scripts_tests
+        # .py -- suites liees aux chemins modifies, fail-OPEN) est ecrite par
+        # le pas precedent, qui porte seul le jeton GitHub. Ce pas joue la
+        # selection, ou la liste complete en cas de doute. Les planchers de
+        # collecte ci-dessous restent
+        # inconditionnels : un vert restreint ne doit pas pouvoir retrecir
+        # en silence.
+        #
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
         # The repo-wide pytest.ini testpaths also list GameTheory/tests,
         # QuantConnect/scripts/tests and DataScienceWithAgents/tests; those are
@@ -390,7 +418,29 @@ jobs:
             xdist_n=4
           fi
           echo "xdist workers: $xdist_n (cgroup memory limit: $mem_max)"
-          python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
+          # #22468 tranche 4 : la portee a ete calculee par le pas
+          # "Compute test scope" (seul porteur du jeton) -- suites liees aux
+          # chemins modifies (aire de veille = dossier parent de X/tests),
+          # fail-OPEN pleine suite avec raison nommee (stderr du pas dedie).
+          # La liste COMPLETE reste litterale dans le bloc pytest ci-dessous :
+          # c'est la source unique de guard_test_root (#18888) ET de l'organe.
+          # JSON absent ou illisible = fail-OPEN pleine suite ici aussi : un
+          # organe en panne ne doit jamais pouvoir retrecir la suite. La
+          # branche restreinte est volontairement sur UNE ligne (aucun '\' de
+          # continuation) pour que PYTEST_BLOCK_RE matche toujours le bloc
+          # litteral. rc=2 de l'organe = derive structurelle -> rouge bruyant
+          # au pas dedie, jamais une liste inventee.
+          SCOPE_MODE=full
+          SUITES=""
+          if [ -f scripts_scope.json ]; then
+            SCOPE_MODE=$(python -c "import json; print(json.load(open('scripts_scope.json'))['mode'])") || SCOPE_MODE=full
+            SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))") || SUITES=""
+          fi
+          echo "portee: $SCOPE_MODE${SUITES:+ -- suites: $SUITES}"
+          if [ "$SCOPE_MODE" = "restricted" ]; then
+            python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest $SUITES -n "$xdist_n" --dist loadscope --tb=short -q
+          else
+            python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
             scripts/ci/tests \
@@ -430,6 +480,7 @@ jobs:
             scripts/sudoku/tests \
             scripts/validation/tests \
             -n "$xdist_n" --dist loadscope --tb=short -q
+          fi
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
         # cours -- la jambe reste muette 14 a 17 min apres `[99%]` jusqu'au mur
@@ -596,7 +647,9 @@ jobs:
       # #18981 : garde anti-recidive #18888 -- un test_*.py pose a la racine
       # d'un module (scripts/notebook_tools/, scripts/lean/, etc.) n'est
       # execute par aucune des jambes ci-dessus. La garde lit la liste des
-      # chemins collectes depuis CE workflow (l.355-371) et verifie qu'aucun
+      # chemins collectes depuis CE workflow (le bloc pytest LITTERAL du pas
+      # Run tests -- la branche restreinte d'une ligne est invisible a
+      # PYTEST_BLOCK_RE, #22468 tranche 4) et verifie qu'aucun
       # test_*.py n'apparait dans un dossier parent d'un chemin collecte sans
       # etre dans le sous-dossier collecte lui-meme. Verifiee localement le
       # 2026-10-03 : rc=0 sur main, rc=1 sur une branche jetable ou un
