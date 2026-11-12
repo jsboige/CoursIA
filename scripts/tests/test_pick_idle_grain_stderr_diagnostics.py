@@ -17,34 +17,36 @@ PICKER = Path(__file__).resolve().parents[1] / "pick_idle_grain.py"
 # par une parenthese : les diriger seuls vers stderr couperait le rapport lu
 # par la lane, sans proteger aucun flux JSON.
 #
-# Identite par CONTENU, jamais par numero de ligne : tout merge qui touche le
-# picker decale les fragments et perime une liste epinglee (mesure 2026-11-12 :
-# #25906 a decale les deux fragments de 41 lignes et rendu ce garde rouge sur
-# main, bloquant ensuite toute PR qui touche scripts/pick_idle_grain.py).
-TEXT_REPORT_CONTINUATION_PREFIXES = (
-    "(conseil sur donnee non mesuree)",
-    "(aucun grain de contenu dans sa capability",
-)
+# Cles par TEXTE du fragment, pas par numero de ligne. La premiere version
+# epinglait {11952, 12253}, exacts au commit 662eb99757 puis perimes par les
+# 41 lignes ajoutees en amont par e6a66f1b65 (#25906) : main est reste rouge
+# sur toutes les PRs jusqu'a la reparation. Un fragment de phrase ne bouge
+# pas quand le fichier bouge.
+TEXT_REPORT_CONTINUATIONS = {
+    "(conseil sur donnee non mesuree). Les trois gestes generiques",
+    "(aucun grain de contenu dans sa capability -- GPU-only, vision-only),",
+}
 
 
-def _first_text(argument: ast.expr) -> str | None:
-    """Premier fragment litteral de l'argument, ou ``None`` s'il n'en a pas."""
+def _literal_text(argument: ast.expr) -> str:
+    """Texte d'une chaine litterale ; vide si l'argument n'en est pas une."""
     if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
         return argument.value
-    if not isinstance(argument, ast.JoinedStr):
-        return None
-    for part in argument.values:
-        if isinstance(part, ast.Constant) and isinstance(part.value, str):
-            return part.value
-        if isinstance(part, ast.FormattedValue):
-            return None
-    return None
+    return ""
 
 
 def _starts_with_parenthesis(argument: ast.expr) -> bool:
     """Vrai pour une chaine ou une f-string dont le texte commence par ``(``."""
-    text = _first_text(argument)
-    return text is not None and text.startswith("(")
+    if isinstance(argument, ast.Constant) and isinstance(argument.value, str):
+        return argument.value.startswith("(")
+    if not isinstance(argument, ast.JoinedStr):
+        return False
+    for part in argument.values:
+        if isinstance(part, ast.Constant) and isinstance(part.value, str):
+            return part.value.startswith("(")
+        if isinstance(part, ast.FormattedValue):
+            return False
+    return False
 
 
 def test_parenthesized_diagnostics_are_written_to_stderr() -> None:
@@ -52,8 +54,7 @@ def test_parenthesized_diagnostics_are_written_to_stderr() -> None:
 
     La forme ``file=`` laisse le test mesurer l'absence de fuite vers stdout
     sans figer un alias d'import. Les continuations de rapport texte sont les
-    seules exceptions, documentees ci-dessus par le debut de leur premier
-    fragment -- jamais par un numero de ligne, qui se perime au premier merge.
+    seules exceptions, documentees ci-dessus avec leur ligne de creation.
     """
     tree = ast.parse(PICKER.read_text(encoding="utf-8"), filename=str(PICKER))
     offenders = []
@@ -66,8 +67,7 @@ def test_parenthesized_diagnostics_are_written_to_stderr() -> None:
             continue
         if any(keyword.arg == "file" for keyword in node.keywords):
             continue
-        text = _first_text(node.args[0]) or ""
-        if text.startswith(TEXT_REPORT_CONTINUATION_PREFIXES):
+        if _literal_text(node.args[0]) in TEXT_REPORT_CONTINUATIONS:
             continue
         offenders.append(node.lineno)
 
@@ -76,6 +76,7 @@ def test_parenthesized_diagnostics_are_written_to_stderr() -> None:
         f"{offenders} de scripts/pick_idle_grain.py. Ajouter file=sys.stderr : "
         "un diagnostic sur stdout corrompt la sortie --json consommee par "
         "belt_queues.py (regression #25411, belt.json illisible le 2026-11-11). "
-        "Si la ligne est la continuation d'un rapport texte, la documenter "
-        "dans TEXT_REPORT_CONTINUATIONS."
+        "Si la ligne est la continuation d'un rapport texte, l'ajouter a "
+        "TEXT_REPORT_CONTINUATIONS par son texte litteral (jamais par son "
+        "numero de ligne : il se decale au premier ajout en amont)."
     )
