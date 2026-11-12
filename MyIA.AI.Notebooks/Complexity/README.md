@@ -12,7 +12,7 @@ n'y existe pas encore, et pourquoi.
 
 ## Jumeau Python/C# — simulation classique d’une loi quantique connue
 
-[Complexity06 Python](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) ⇄ [Complexity06 C#](Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb). Le port BCL/Complex construit réellement les amplitudes et probabilités, puis compare4096 tirages aux mêmes tailles avec un tirage direct uniforme. Le second n’est pas Gottesman–Knill ; ce banc ne démontre aucune séparation BQP/P. Les PRNG diffèrent, les budgets restent identiques.
+[Complexity-06 Python](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) ⇄ [Complexity-06 C#](Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb). Le port BCL/Complex construit réellement les amplitudes et probabilités, puis compare 4096 tirages aux mêmes tailles avec un tirage direct uniforme. Le second n’est pas Gottesman–Knill ; ce banc ne démontre aucune séparation BQP/P. Les PRNG diffèrent, les budgets restent identiques.
 
 ## Objectifs d'apprentissage
 
