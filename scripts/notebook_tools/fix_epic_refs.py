@@ -81,7 +81,6 @@ from pathlib import Path
 # manuel. Les genitifs mesures sont couverts ; les comptages et les formes
 # dont le retrait laisserait un residu restent refuses au triage manuel.
 _EPIC_REF = r"(?:#\d+|\[#\d+\]\(https://github\.com/[^)]*\))"
-_EPIC_REF = r"(?:#\d+|\[#\d+\]\(https://github\.com/[^)]*\))"
 _EPIC_CORE = r"EPIC[ \t]*" + _EPIC_REF + r"(?:[ \t]*,?[ \t]*Prong[ \t]+[A-Z]\.?)?"
 
 EPIC_CLAUSE_RE = re.compile(
@@ -170,7 +169,18 @@ def _header_index(cells: list[dict]) -> int | None:
 
 
 def _last_markdown_index(cells: list[dict]) -> int | None:
-    for i in range(len(cells) - 1, -1, -1):
+    """Retourne le dernier markdown qui n'est suivi d'aucun code.
+
+    Une cellule markdown suivie d'une cellule de code peut être l'énoncé d'un
+    exercice : y déposer le pied séparerait l'énoncé de son stub. Si le carnet
+    ne possède aucun markdown terminal après son dernier code, le caller refuse
+    l'application pour triage manuel.
+    """
+    last_code = max(
+        (i for i, cell in enumerate(cells) if cell.get("cell_type") == "code"),
+        default=-1,
+    )
+    for i in range(len(cells) - 1, last_code, -1):
         if cells[i].get("cell_type") == "markdown":
             return i
     return None
@@ -352,7 +362,7 @@ def _plan(path: Path) -> dict:
     2. round-trip non byte-identique -> carnet non canonique, refuse ;
     3. le retrait echoue (residu de ponctuation, parenthese desequilibree) ;
     4. une reference est citee mais aucune clause n'est retirable ;
-    5. pas de cellule markdown distincte pour le pied de carnet ;
+    5. pas de cellule markdown distincte, apres le dernier code, pour le pied ;
     6. la note de pied est deja presente.
     """
     raw = path.read_bytes()
@@ -406,7 +416,10 @@ def _plan(path: Path) -> dict:
     # « avant/apres » d'une fournee ne voulait alors rien dire.
     lidx = _last_markdown_index(cells)
     if lidx is None:
-        plan["refused"] = "aucune cellule markdown pour le pied de carnet"
+        plan["refused"] = (
+            "aucune cellule markdown apres la derniere cellule de code "
+            "pour le pied de carnet -- triage manuel requis"
+        )
         return plan
     if lidx == hidx:
         plan["refused"] = "une seule cellule markdown (pas de pied distinct) -- ecriture refusee"
