@@ -1149,6 +1149,31 @@ def _claim_scope_effectively_epic_wide(ev: ClaimEvent) -> bool:
     return len(empty) >= len(paths)
 
 
+def _claim_live_paths(ev: ClaimEvent) -> list[str] | None:
+    """#25873 -- the LIVE paths a claim occupies, or None when it is
+    effectively epic-wide (no live scope).
+
+    A bounded claim (a `paths:` clause with at least one live glob) occupies
+    exactly the files it names: it must NOT freeze the whole issue, so the
+    belt serves the issue and hands the caller those paths to work outside.
+    A plain `[CLAIMED]` (no `paths:`), an unparseable scope (#10597) or an
+    entirely-dead non-creation scope (#10958 / #11098) has no live scope and
+    is epic-wide: it keeps the fail-CLOSED block.
+
+    This is the read-side mirror of the epic-wide lift in
+    `_filter_by_claim_scope`, so the two can never disagree about which
+    other-lane claims are bounded.
+    """
+    scope = ev.get("paths")
+    if not scope:
+        return None  # no `paths:` clause -> epic-wide
+    if ev.get("unparseable_scope"):
+        return None  # #10597 -- parse residue, not a live scope
+    if _claim_scope_effectively_epic_wide(ev):
+        return None  # #10958/#11098 -- every glob dead -> epic-wide
+    return scope
+
+
 def compute_active_claims(
     events: list[ClaimEvent],
     pr_states: dict[int, str] | None = None,
@@ -4696,7 +4721,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                pr_states: dict[int, str] | None = None,
                check_open_pr_paths: bool = False,
                epic_cap: bool = False,
-               epic_cap_probe=None) -> int:
+               epic_cap_probe=None,
+               serve_bounded: bool = False) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
@@ -5064,7 +5090,35 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # of #12345's acceptance) lives at the verdict-emission point below --
     # a scope that is entirely dead does NOT clear to `exit 0`, it changes
     # verdict and acquires an explanation.
-    if others and my_scope is None:
+    occupied_paths: dict[str, list[str]] = {}
+    if others and my_scope is None and serve_bounded:
+        # #25873 -- the BELT calls the probe WITHOUT --paths (my_scope None)
+        # and opts in to `serve_bounded`. A bounded claim (a live `paths:`)
+        # from another lane occupies only the files it names; it must NOT
+        # freeze the whole issue. Only an epic-wide claim (no live scope)
+        # keeps the fail-CLOSED block. `occupied_paths` is empty outside this
+        # branch, so a PATH_SCOPED / BLOCKED verdict never carries a stale
+        # occupied list.
+        # #25873 + CR #25906 -- servir UNIQUEMENT si TOUS les claims d'autrui
+        # sont bornes (len(borne) == len(others)). Une seule claim epic-wide
+        # dans le mix re-verrouille toute l'issue : le cas mixte borne +
+        # epic-wide ne doit PAS clairer en SCOPED_OCCUPIED, sinon le verrou
+        # epic-wide d'une lane est silencieusement droppe (l'issue serait
+        # servie malgre le verrou de la lane epic-wide).
+        bounded = {
+            ln: ev.get("paths") for ln, ev in others.items()
+            if _claim_live_paths(ev)
+        }
+        if len(bounded) == len(others):
+            occupied_paths = bounded
+            query_scope = "SCOPED_OCCUPIED"
+        else:
+            occupied_paths = {}
+            query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    elif others and my_scope is None:
+        # #25873 -- a non-belt no-`--paths` call: keep the fail-CLOSED
+        # NOT_SCOPED. A manual probe that declared no scope cannot prove
+        # disjointness from a bounded claim; the belt fix does not relax it.
         query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
     elif caller_empty_scope and my_scope and len(caller_empty_scope) >= len(my_scope):
         # #12345 -- every glob in `my_scope` is dead: the caller declared a
@@ -5167,6 +5221,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
+        # #25873 -- the belt's no-`--paths` call: when every other-lane claim is
+        # bounded, the issue is SERVED (SCOPED_OCCUPIED, exit 0) and this carries
+        # the files those bounded claims occupy, so the caller works OUTSIDE that
+        # perimeter. Empty outside the SCOPED_OCCUPIED verdict.
+        "occupied_paths": occupied_paths,
         "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
         # #22408 -- les claims dont l'age depassait le seuil mais dont la lane
         # livrait encore : ils BLOQUENT (ils sont dans `others`, donc dans
@@ -5489,6 +5548,22 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         and ev.get("pr_state") is None
     ]
 
+    # #25873 -- the belt called without --paths and every other-lane claim is
+    # bounded (live paths:). The issue is SERVABLE: serve it (exit 0) and hand
+    # the caller the occupied paths so it works OUTSIDE that perimeter. An
+    # epic-wide claim routes to NOT_SCOPED (exit 2) below -- unchanged.
+    if query_scope == "SCOPED_OCCUPIED":
+        lines = [
+            f"SCOPED_OCCUPIED: #{payload.get('number')} est servable -- les "
+            f"claims des autres lanes sont bornes a des chemins."
+        ]
+        for ln in sorted(occupied_paths):
+            lines.append(
+                f"chemins occupés par {ln} : {', '.join(occupied_paths[ln])}"
+                f" -- travailler hors de ce périmètre"
+            )
+        print("\n".join(lines))
+        return 0
     # Human verdict after the JSON.
     if others:
         who = ", ".join(
@@ -5855,6 +5930,31 @@ def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
     return [str(b) for b in blocking]
 
 
+def _occupied_paths_from_summary(stdout_text: str) -> dict[str, list[str]]:
+    """#25873 -- the `occupied_paths` field of a `_run_check` resume JSON.
+
+    Sibling of `_blocking_lanes_from_summary`: the batch path reads the two
+    flux (stdout JSON + stderr verdict) and the belt needs the occupied paths
+    to tell the lane to work OUTSIDE that perimeter. Same `raw_decode` (the
+    stdout carries a human phrase after the object). Empty when the JSON is
+    absent, is not a dict, or the verdict is not SCOPED_OCCUPIED.
+    """
+    text = stdout_text or ""
+    brace = text.find("{")
+    if brace == -1:
+        return {}
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[brace:])
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    occ = data.get("occupied_paths")
+    if not isinstance(occ, dict):
+        return {}
+    return {str(k): [str(p) for p in v] for k, v in occ.items() if v}
+
+
 def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
     """Court libelle machine-consommable issu de la sortie d'un `_run_check`.
 
@@ -5918,7 +6018,7 @@ def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
 # diagnostic faux sans jamais echouer.
 _VERDICT_LINE_PREFIXES = (
     "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
-    "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+    "DEAD-SCOPE", "NOT_SCOPED", "SCOPED_OCCUPIED", "DUMP",
 )
 
 
@@ -6028,6 +6128,7 @@ def check_issues_batch(
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
+    serve_bounded: bool = False,
 ) -> dict:
     """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
@@ -6147,6 +6248,7 @@ def check_issues_batch(
                     # Batch = read path only (L898), pas de posting
                     # leg.
                     check_open_pr_paths=True,
+                    serve_bounded=serve_bounded,
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
@@ -6164,6 +6266,11 @@ def check_issues_batch(
             # `ERROR` qui nomme un bloquant ne l'est plus.
             result["blocker_named"] = _names_a_blocker(
                 evidence, stdout_json=captured)
+            # #25873 -- SCOPED_OCCUPIED: le belt lit les chemins occupés par les
+            # claims bornes des autres lanes pour servir l'issue AVEC cette liste
+            # (travailler hors de ce périmètre) au lieu de l'écarter. Vide hors
+            # du verdict SCOPED_OCCUPIED.
+            result["occupied_paths"] = _occupied_paths_from_summary(captured)
             # #22983 -- la voie batch doit rendre le MEME verdict que le
             # reduiteur historique du picker : `exit 2` + un resume JSON qui
             # nomme des lanes bloquantes = BLOCKED. Ce cas est distinct de

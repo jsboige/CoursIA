@@ -430,3 +430,24 @@ def test_complexity_entropy_sweep_empty_input_safe():
     out = M.complexity_entropy_sweep([])
     assert out["rows"] == []
     assert out["summary"]["n_rows"] == 0
+
+
+def test_markov_context_unknown_is_escaped_not_indexed():
+    """Un symbole inconnu dans le contexte ne doit pas designer une autre ligne."""
+    train = [0, 0, 0, 1, 1, 1, 1, 1]
+    result = M.fit_markov_order(train, heldout=[99, 1, 1, 1], max_order=2)
+    escape = 2 * math.log2(3)
+    first, second = result["rows"][1:3]
+    # Ordre 1 : cible inconnue, contexte inconnu, puis deux transitions connues.
+    assert first["n_escaped"] == 2
+    assert first["nll_heldout"] == pytest.approx(2 * escape - 2 * math.log2(4.5 / 5))
+    # Ordre 2 : le symbole inconnu reste dans deux contextes successifs.
+    assert second["n_escaped"] == 3
+    assert second["nll_heldout"] == pytest.approx(3 * escape - math.log2(3.5 / 4))
+
+
+def test_markov_known_context_preserves_predictive_probability():
+    result = M.fit_markov_order([0, 0, 0, 1, 1, 1, 1, 1], heldout=[1], max_order=1)
+    row = result["rows"][1]
+    assert row["n_escaped"] == 0
+    assert row["nll_heldout"] == pytest.approx(-math.log2(4.5 / 5))

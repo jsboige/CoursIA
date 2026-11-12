@@ -7,6 +7,11 @@ deux ; l'union est comptee, dedoublonnee par nom de fichier.
 
   ACTIVE          reference dans un .md Slidev (hors ``slides.marp.md``) sur une
                   ligne NON commentee -- l'image est rendue par le deck actif
+                  -- ou reference dans un composant Vue **monte** par une
+                  diapositive (``components/IntelligencePyramid.vue`` importe
+                  ``/images/img_022.jpg``) : le composant etant rendu, ses
+                  imports le sont.  Un composant Vue non monte n'est PAS une
+                  source de reference : ses images restent NOWHERE.
   COMMENT_TRAPPED reference dans un .md Slidev uniquement sur des lignes
                   ``<!-- ... -->`` -- le port a conserve la reference en
                   commentaire HTML, elle n'est jamais rendue (classe de defaut
@@ -44,6 +49,10 @@ from pathlib import Path
 
 REF_RE = re.compile(r"images/([\w\-. ]+\.\w{3,4})")
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp"}
+# Nom d'un composant Vue tel qu'il est monte (`<IntelligencePyramid />`) ou
+# importe (`import Pyramid from './Pyramid.vue'`).
+VUE_NAME_RE = re.compile(r"<\s*([A-Za-z][A-Za-z0-9_]*)")
+VUE_IMPORT_RE = re.compile(r"import\s+([A-Za-z][A-Za-z0-9_]*)\s+from")
 
 
 def _is_comment_line(line: str) -> bool:
@@ -78,6 +87,51 @@ def _image_dirs(deck_dir: Path) -> list[Path]:
     return [d for d in (deck_dir / "images", deck_dir / "public" / "images") if d.is_dir()]
 
 
+def _mounted_vue_files(deck_dir: Path, slidev_md: list[Path]) -> list[Path]:
+    """Composants Vue du deck reellement montes par une diapositive.
+
+    Un composant monte rend ses imports : les images qu'il importe sont
+    rendues par le deck actif, donc ACTIVE.  Un composant **non monte** ne
+    rend rien : ses images restent NOWHERE -- c'est la declaration de portee
+    de ce scan (un `.vue` orphelin n'est pas une source de reference).
+
+    Le montage est etabli par le marquage du deck (``<Nom ...>`` dans un
+    ``.md``) et par l'usage transitif (un composant monte par un composant
+    monte).  Un composant jamais monte n'est pas une source de reference.
+    """
+    vue_files = [
+        p for p in deck_dir.rglob("*.vue") if "node_modules" not in p.parts
+    ]
+    if not vue_files:
+        return []
+
+    def text_of(p: Path) -> str:
+        try:
+            return p.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            return ""
+
+    stems = {p.stem for p in vue_files}
+    md_text = "\n".join(text_of(p) for p in slidev_md)
+    used: set[str] = set()
+    changed = True
+    while changed:
+        changed = False
+        for name in VUE_NAME_RE.findall(md_text):
+            if name in stems and name not in used:
+                used.add(name)
+                changed = True
+        for p in vue_files:
+            if p.stem not in used:
+                continue
+            body = text_of(p)
+            for name in VUE_IMPORT_RE.findall(body):
+                if name in stems and name not in used:
+                    used.add(name)
+                    changed = True
+    return [p for p in vue_files if p.stem in used]
+
+
 def scan_deck(deck_dir: Path) -> dict:
     images = {
         f.name
@@ -91,6 +145,14 @@ def scan_deck(deck_dir: Path) -> dict:
 
     active, trapped = _refs_by_class(slidev_md)
     marp_refs, _ = _refs_by_class(marp_md)
+
+    # Les composants Vue montes par une diapositive sont des sources de
+    # reference : sans eux, une image importee par un composant tombait en
+    # NOWHERE alors qu'elle est rendue (01-introduction,
+    # components/IntelligencePyramid.vue).
+    vue_active, vue_trapped = _refs_by_class(_mounted_vue_files(deck_dir, slidev_md))
+    active |= vue_active
+    trapped |= vue_trapped
 
     classes: dict[str, list[str]] = {"ACTIVE": [], "COMMENT_TRAPPED": [], "MARP_ONLY": [], "NOWHERE": []}
     for name in sorted(images):
