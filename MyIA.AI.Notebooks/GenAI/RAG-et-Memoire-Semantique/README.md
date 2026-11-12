@@ -250,6 +250,28 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 | [Notebook — Kernel Memory multimodal, pont vision](09-KernelMemory-Multimodal.ipynb) | Constater le plafond OCR du service OSS (PNG accepté, pipeline figé), le franchir par le pont vision, mesurer avant/après | Pratique |
 | [Notebook — RAG visuel, embedding joint](10-RAG-Visuel-Embedding-Conjoint.ipynb) | Retrouver des pages par leur apparence sans OCR : SigLIP multilingue embedde requête et image dans un même espace, recall@k et MRR mesurés par classe contre une baseline couche-texte | Pratique |
 
+
+### Compagnon C# des tokenisateurs comparés
+
+Le [carnet C# 04b](04b-Tokenisateurs-Compares-CSharp.ipynb) reprend les algorithmes pédagogiques, les exercices et les mesures du [carnet Python](04b-Tokenisateurs-Compares.ipynb). La BCL réalise les jouets ; `Microsoft.ML.Tokenizers` 3.0.0 calcule Qwen, tandis que Python.NET 3.0.5 appelle les vrais entraîneurs Rust et le pipeline DistilBERT. Le SDK BERT .NET et la référence diffèrent pour certains caractères (par exemple `🙂`).
+
+Préparer sous Linux un Python partagé 3.13 et un environnement isolé, puis **lancer Jupyter depuis le même terminal** après avoir positionné les variables suivantes :
+
+```bash
+python3.13 -m venv .venv-tokenizers
+.venv-tokenizers/bin/pip install tokenizers==0.23.3 huggingface-hub==2.4.0
+TOKEN_VENV="$PWD/.venv-tokenizers"
+TOKEN_BASE="$("$TOKEN_VENV/bin/python" -c 'import sys; print(sys.base_prefix)')"
+TOKEN_LIB="$("$TOKEN_VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_config_var("LDLIBRARY"))')"
+TOKEN_SITE="$("$TOKEN_VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')"
+export PYTHONHOME="$TOKEN_BASE"
+export PYTHONNET_PYDLL="$TOKEN_BASE/lib/$TOKEN_LIB"
+export PYTHONPATH="$TOKEN_SITE"
+# Lancer ici Jupyter avec le noyau .NET Interactive.
+```
+
+La bibliothèque `libpython` doit exister au chemin calculé ; installer une distribution Python partagée si nécessaire. Les paquets NuGet sont restaurés par le carnet. Au premier lancement, Hugging Face télécharge les petits fichiers de tokenisation publics (sans poids de modèle ni clé) ; les révisions sont épinglées et leurs empreintes vérifiées. Ensuite le cache peut être réutilisé. Aucun service GenAI ni GPU n'est requis.
+
 ---
 
 *Section RAG et Mémoire Sémantique — Juin 2026*
