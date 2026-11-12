@@ -42,6 +42,7 @@ def test_header_is_joined_by_label_and_window_copied(tmp_path: Path) -> None:
     {'header_fs': 5},
     {'times': np.arange(8) / 5},
     {'times': np.arange(8).reshape(2, 4) / 4},
+    {'times': np.arange(8) / 4 + 1j},
 ])
 def test_rejects_ambiguous_or_incompatible_metadata(tmp_path: Path, overrides: dict) -> None:
     path = tmp_path / 'session.mat'

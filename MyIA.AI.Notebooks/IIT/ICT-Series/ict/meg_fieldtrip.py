@@ -85,7 +85,10 @@ def load_sensor_window(path: str | Path, labels: tuple[str, ...], start: int,
         raise ValueError("Fréquences d'échantillonnage incompatibles")
     if count > 10 * fs or start + count > trial.shape[1]:
         raise ValueError("Fenêtre hors limites ou supérieure à 10 secondes")
-    if time.ndim != 1 or time.size != trial.shape[1] or not np.all(np.isfinite(time)):
+    if (time.ndim != 1 or time.size != trial.shape[1] or
+            not (np.issubdtype(time.dtype, np.integer) or
+                 np.issubdtype(time.dtype, np.floating)) or
+            not np.all(np.isfinite(time))):
         raise ValueError("Axe de temps invalide")
     if not np.allclose(np.diff(time), 1.0 / fs, rtol=1e-7, atol=1e-10):
         raise ValueError("Axe de temps incompatible avec la fréquence")
