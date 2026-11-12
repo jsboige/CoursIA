@@ -1,6 +1,6 @@
 # Scan de branche orpheline (L576) — les deux ancres `pulls` peuvent mentir
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 Détail de référence de la section « Orphan-branch scan (L576) » de
 [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md).

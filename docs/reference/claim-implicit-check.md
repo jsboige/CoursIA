@@ -1,6 +1,6 @@
 # Claim IMPLICIT — vérification cross-lane avant d'éditer
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 > Statut : **procédure** (HARD). Tout grain substantiel qui éditerait un chemin
 > potentiellement revendiqué par une autre lane applique cette procédure **avant
