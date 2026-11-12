@@ -9,11 +9,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch with CUDA support (use 2.4+ for transformers 5.x compatibility)
+# Install PyTorch with CUDA support.
+# transformers 5.x exige torch >= 2.6 pour son implementation CustomAlbert
+# (chemin utilise par KModel de kokoro) : avec torch 2.4, transformers se
+# desactive ("PyTorch was not found") et toute synthese renvoie 500
+# « CustomAlbert requires PyTorch >= 2.6 ». Mesure 2026-11-12 (po-2024).
 RUN pip install --no-cache-dir \
-    torch==2.4.0 \
-    torchaudio==2.4.0 \
-    --index-url https://download.pytorch.org/whl/cu121
+    torch==2.6.0 \
+    torchaudio==2.6.0 \
+    --index-url https://download.pytorch.org/whl/cu124
 
 # Install Kokoro and dependencies
 RUN pip install --no-cache-dir \
