@@ -683,6 +683,10 @@ Pour valider ou exécuter un notebook : `python scripts/notebook_tools/notebook_
 
 Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de notebooks et leur maturité. Il est régénéré automatiquement sur `main` ; le [catalogue](../../COURSE_CATALOG.generated.md) donne le détail notebook par notebook.
 
+## Engagement et retenue locale — jumeaux 09b
+
+[Python](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [C#](GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb). Énumération et arbres BCL correspondent aux calculs standard du source : mêmes matrices, grilles de 21 probabilités et 9 cautions, horizon 10, trois exercices ouverts. Les égalités sont des correspondances de meilleures réponses ; la sélection du leader et celle de la promesse sont explicites. Le certificat de retenue lit les actions et sépare gain immédiat et cumulé. Aucun moteur externe ni figure requis par cette expérience tabulaire.
+
 ## Ressources
 
 ### Références académiques
@@ -742,8 +746,3 @@ Voir la licence du dépôt principal.
 *Version 1.4.1 — Juillet 2026 (2026-07-16) — réconciliation EPIC #4365 : retrait des lakes supprimés `cooperative_games_lean` et `stable_marriage_lean`, absorbés dans `game_theory_lean`.*
 
 *Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles vers hub : intégration du marathon de parité C# #4956, comptes délégués au marqueur CATALOG-STATUS.*
-
-
-## Engagement et retenue locale — jumeaux 09b
-
-[Python](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [C#](GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb). Énumération et arbres BCL correspondent aux calculs standard du source : mêmes matrices, grilles de21 probabilités et9 cautions, horizon10, trois exercices ouverts. Les égalités sont des correspondances de meilleures réponses ; la sélection du leader et celle de la promesse sont explicites. Le certificat de retenue lit les actions et sépare gain immédiat et cumulé. Aucun moteur externe ni figure requis par cette expérience tabulaire.
