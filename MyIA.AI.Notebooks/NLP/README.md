@@ -38,7 +38,7 @@ Le premier changement de perspective est celui du **contexte**. Une étiquette a
 
 Le second changement porte sur la **représentation**. Une fréquence brute favorise les mots omniprésents, souvent peu utiles à une recherche. TF-IDF et BM25 corrigent cette pondération en 06. Les cooccurrences de 07 font du contexte un vecteur ; 08 apprend ces vecteurs par optimisation ; 09 partage des fragments entre mots pour traiter des formes jamais vues. Une proximité calculée peut ainsi venir d'un contexte commun ou d'une ressemblance morphologique : le contrôle choisi doit permettre de les distinguer.
 
-Enfin, 10 et 11 relient représentation et décision. Naive Bayes estime un modèle des mots dans chaque classe ; la régression logistique apprend directement les probabilités des classes. Les implémentations explicites et leurs témoins de bibliothèque permettent d'examiner la vraisemblance, le lissage, l'optimisation et les erreurs sans les confondre.
+Enfin, 10 et 11 relient représentation et décision. Naive Bayes ([Python](10-Classement-Texte-NaiveBayes-FromScratch.ipynb) · [C#](10-Classement-Texte-NaiveBayes-FromScratch-CSharp.ipynb)) estime un modèle des mots dans chaque classe ; la régression logistique apprend directement les probabilités des classes. Le jumeau C# appelle le témoin scikit-learn via Python.NET. Les implémentations explicites et leurs témoins de bibliothèque permettent d'examiner la vraisemblance, le lissage, l'optimisation et les erreurs sans les confondre.
 
 ## Approfondissements — Licence
 
@@ -85,7 +85,3 @@ La série [GenAI/Texte](../GenAI/Texte/README.md) étudie ensuite l'usage des LL
 - Les références fondatrices et les détails de calcul accompagnent chaque modèle dans son carnet.
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md)
-
-## Parité du carnet 10
-
-- [Naive Bayes en Python](10-Classement-Texte-NaiveBayes-FromScratch.ipynb) · [jumeau C#](10-Classement-Texte-NaiveBayes-FromScratch-CSharp.ipynb) : mêmes corpus et expériences ; C# appelle scikit-learn via Python.NET pour le témoin de référence.
