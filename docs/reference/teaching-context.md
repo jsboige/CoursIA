@@ -1,6 +1,6 @@
 # Contexte enseignement - calendrier, écoles, agents
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 Documentation transversale sur l'organisation de l'enseignement annuel : calendrier, scope par école, mapping agents cluster. Pour le **moteur de notation** : cf [dotnet/GradeBookApp/configs/README.md](../../dotnet/GradeBookApp/configs/README.md) (pipelines + données par cohorte = privés sur GDrive). Pour le **mapping cluster machines** (au-delà des rôles enseignement) : cf [docs/cluster-agents.md](cluster-agents.md).
 
