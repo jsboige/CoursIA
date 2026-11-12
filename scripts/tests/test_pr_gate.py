@@ -1697,6 +1697,86 @@ def test_fetch_checks_stops_on_empty_page(monkeypatch):
     assert checks[0]["name"] == "a"
 
 
+# --- _gh_api conditional reads (#25510 T-I) ----------------------------------
+#
+# These exercise the REAL `_gh_api` (mocking only `subprocess.run`, the one
+# lower seam) so the two invariants the mission pins are covered: a 304
+# re-uses the last readable body, and an unreadable read is a failure -- never
+# a silent reuse of a stale body.
+
+
+def _gh_process(returncode: int, stdout: str, stderr: str = ""):
+    """A `subprocess.run` stand-in: a canned `gh api -i` payload."""
+    return types.SimpleNamespace(
+        returncode=returncode, stdout=stdout, stderr=stderr
+    )
+
+
+def test_gh_api_304_reuses_last_readable_body(monkeypatch):
+    """A 304 returns the last body we read for that path (0-quota re-read)."""
+    import json as _json
+    path = "repos/o/r/commits/deadbeef/check-runs?per_page=100&page=1"
+    body = {"total_count": 1, "check_runs": [{"id": 1}]}
+    etag = '"w/1"'
+    ok = f'HTTP/2.0 200 OK\nEtag: {etag}\n\n{_json.dumps(body)}\n'
+    not_modified = f'HTTP/2.0 304 Not Modified\nEtag: {etag}\n'
+
+    def fake_run(cmd, **_kw):
+        # First call has no If-None-Match (200); the second sends the stored
+        # etag back and is answered 304.
+        if f"If-None-Match: {etag}" in cmd:
+            return _gh_process(0, not_modified)
+        return _gh_process(0, ok)
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", fake_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    pr_gate._GH_API_304 = 0
+
+    first = pr_gate._gh_api(path)
+    second = pr_gate._gh_api(path)
+    assert first == body
+    assert second == body  # 304 -> re-uses the last readable body
+    assert pr_gate._GH_API_304 == 1
+
+
+def test_gh_api_unreadable_read_is_a_failure_not_a_reuse(monkeypatch):
+    """A non-zero exit raises, even when a readable body is cached."""
+    import json as _json
+    path = "repos/o/r/commits/deadbeef/status"
+    ok = f'HTTP/2.0 200 OK\nEtag: "e1"\n\n{_json.dumps({"statuses": []})}\n'
+
+    def ok_run(cmd, **_kw):
+        return _gh_process(0, ok)
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", ok_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    pr_gate._gh_api(path)
+    assert path in pr_gate._GITHUB_READ_CACHE  # a readable body is cached
+
+    def fail_run(cmd, **_kw):
+        return _gh_process(1, "", "API rate limit exceeded for installation")
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", fail_run)
+    with pytest.raises(pr_gate.GateError):
+        pr_gate._gh_api(path)
+
+
+def test_gh_api_200_non_json_is_a_failure(monkeypatch):
+    """A 200 whose body is not JSON is an unreadable read -> GateError."""
+
+    def bad_run(cmd, **_kw):
+        return _gh_process(
+            0, 'HTTP/2.0 200 OK\nEtag: "e1"\n\n<html>not json</html>'
+        )
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", bad_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    with pytest.raises(pr_gate.GateError):
+        pr_gate._gh_api(
+            "repos/o/r/commits/deadbeef/check-runs?per_page=100&page=1"
+        )
+
+
 # --- plancher de merge (--dwell-min, mandat user 2026-09-07) ------------------
 #
 # Le plancher lui-meme est teste dans test_merge_dwell.py (logique pure +

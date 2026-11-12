@@ -984,13 +984,64 @@ def verdict(
 
 
 # --- network layer ----------------------------------------------------------
+#
+# The shared installation token is capped at 1000 requests/hour (#25510), and
+# this gate is one of its largest consumers: `fetch_checks` polls `check-runs`
+# (one call per page) plus `/status` for every head every `--poll-sec` (30 s).
+# A 304 from the Checks API costs NO installation quota (measured: `remaining`
+# unchanged before and after a conditional re-read). So repeated reads of the
+# SAME path are made CONDITIONAL: the response's `Etag` is sent back as
+# `If-None-Match`, and a 304 re-uses the last body we read for that path.
+#
+# Two invariants from the #17262 / #15342 line stay intact:
+#   * a 304 is a SUCCESS -- it re-uses the last readable body;
+#   * an unreadable read -- a non-zero exit, OR a 200 whose body is not JSON --
+#     is a FAILURE (GateError), never a silent reuse of a stale body.
+# The two counters below make the per-run consumption measurable (T-I point 1)
+# instead of estimated; `_entry` prints them once at the end of every run.
+_GH_API_CALLS = 0
+_GH_API_304 = 0
+# path -> (etag, last readable body). Keyed by the FULL request path, so each
+# (sha, page) of `check-runs` and each `/status` / `actions/runs` is distinct:
+# a changed head is a new path and thus a fresh 200, never a stale 304.
+_GITHUB_READ_CACHE: dict[str, tuple[str, object]] = {}
+
+
+def _gh_http_status(header_block: str) -> int:
+    """Status code from a `gh api -i` header block (line 1: `HTTP/2.0 200 OK`)."""
+    parts = header_block.splitlines()[0].split() if header_block else []
+    return int(parts[1]) if len(parts) >= 2 else 0
+
+
+def _gh_etag(header_block: str) -> str | None:
+    for line in header_block.splitlines():
+        if line.lower().startswith("etag:"):
+            return line.split(":", 1)[1].strip()
+    return None
 
 
 def _gh_api(path: str) -> object:
-    """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1)."""
+    """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1).
+
+    Repeated reads of the same path are conditional (#25510 T-I): a stored
+    `Etag` is sent as `If-None-Match`, and a 304 re-uses the last body we read
+    for that path (a 304 costs no installation quota). A non-zero exit, or a
+    200 whose body is not JSON, is still a GateError -- an unreadable state is
+    a failure, never a pass, and never a silent reuse of a stale body.
+    """
+    global _GH_API_CALLS, _GH_API_304
+    _GH_API_CALLS += 1
+
+    entry = _GITHUB_READ_CACHE.get(path)
+    etag = entry[0] if entry else None
+
     try:
+        cmd = ["gh", "api", "-i"]
+        if etag:
+            cmd += ["-H", f"If-None-Match: {etag}"]
+        cmd.append(path)
         completed = subprocess.run(
-            ["gh", "api", path],
+            cmd,
             capture_output=True,
             text=True, encoding="utf-8", errors="replace",
             check=False,
@@ -998,15 +1049,32 @@ def _gh_api(path: str) -> object:
     except FileNotFoundError as exc:  # pragma: no cover - environment problem
         raise GateError(f"gh CLI not available: {exc}") from exc
 
+    # A non-zero exit is an unreadable read: fatal, never a cache-reuse.
     if completed.returncode != 0:
         raise GateError(
             f"gh api {path} failed (exit {completed.returncode}): "
             f"{completed.stderr.strip()[:400]}"
         )
+
+    # `gh api -i` prints the status line + headers, a blank line, then body.
+    header_block, _, body_text = completed.stdout.partition("\n\n")
+    new_etag = _gh_etag(header_block)
+
+    if _gh_http_status(header_block) == 304:
+        # Unchanged since our stored Etag: re-use the last readable body.
+        # (We only send If-None-Match when we have one, so `entry` is set here.)
+        _GH_API_304 += 1
+        if entry is None:
+            raise GateError(f"gh api {path} returned 304 with no cached body")
+        return entry[1]
+
     try:
-        return json.loads(completed.stdout)
+        body = json.loads(body_text)
     except json.JSONDecodeError as exc:
         raise GateError(f"gh api {path} returned non-JSON: {exc}") from exc
+    if new_etag:
+        _GITHUB_READ_CACHE[path] = (new_etag, body)
+    return body
 
 
 # --- transient vs permanent API failures (#17262) ---------------------------
@@ -2448,6 +2516,24 @@ def _crash_fallback_publish(exc: BaseException) -> None:
         )
 
 
+def _print_api_quota_summary() -> None:
+    """(#25510 T-I) End-of-run tally of the gate's own `gh api` calls.
+
+    Printed once by `_entry`'s `finally`, so it lands no matter how the run
+    ends (success, GateError, crash, argparse exit). Pure reporting: it never
+    raises, so it cannot disturb the exit code. The second figure is the quota
+    saving made visible -- how many of the calls were served by a free 304.
+    """
+    try:
+        print(
+            f"[pr-gate] api-quota: {_GH_API_CALLS} gh api call(s), "
+            f"{_GH_API_304} served by a 304 (0 quota)",
+            flush=True,
+        )
+    except Exception:
+        pass
+
+
 def _entry(argv: "Iterable[str] | None" = None) -> int:
     """Mute-failure guard (#15825 criterion 1).
 
@@ -2498,6 +2584,9 @@ def _entry(argv: "Iterable[str] | None" = None) -> int:
             flush=True,
         )
         return 1
+    finally:
+        # (#25510 T-I) the per-run `gh api` tally, on every exit path.
+        _print_api_quota_summary()
 
 
 if __name__ == "__main__":
