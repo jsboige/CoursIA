@@ -361,11 +361,9 @@ def find_first_red(commits: list, states: dict) -> dict:
     latest_green = None
     unknown_between = []
     infra_between = []
-    red_zone_started = False
     for commit, info in entries:
         state = info["state"]
         if state == RED:
-            red_zone_started = True
             # Garder seulement les trous situés entre ce rouge et le vert
             # suivant dans la liste. Leur portée historique ne sera affirmée
             # qu'après vérification de la chaîne premier-parent.
@@ -419,6 +417,10 @@ def find_first_red(commits: list, states: dict) -> dict:
 
     verdict = head[1]["state"]
     bounds = {
+        "portee_first_red_commit_exact": (
+            "Exactitude de la borne historique du premier rouge observé ; "
+            "consulter verdict pour l’état de la tête, qui peut rester unknown."
+        ),
         "chaine_first_parent_verifiee": first_parent_chain_verified,
         "dernier_commit_vert_connu": describe(latest_green),
         "commits_sans_verdict_entre_les_deux": [
