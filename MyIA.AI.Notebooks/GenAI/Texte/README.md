@@ -424,3 +424,7 @@ Les notebooks 10, 10b et 11 utilisent vLLM : le 10 déploie et compare les endpo
 - [Responses API](https://platform.openai.com/docs/api-reference/responses)
 - [Reasoning Models](https://platform.openai.com/docs/guides/reasoning)
 - [Function Calling](https://platform.openai.com/docs/guides/function-calling)
+
+## Roofline : deux implémentations CPU
+
+[10h en Python](10h_Roofline_Memory_Bandwidth.ipynb) et [10h en C#](10h_Roofline_Memory_Bandwidth-CSharp.ipynb) mesurent une somme et un produit matriciel en Float32 avant de projeter une couche analytique. NumPy et TorchSharp exploitent des noyaux différents : leurs débits ne sont pas des pics matériels certifiés ni des mesures de LLM.
