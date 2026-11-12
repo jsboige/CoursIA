@@ -196,7 +196,11 @@ def test_probe_muet_emet_un_warning(warm_repo, tmp_path):
     probe = subprocess.run(
         [BASH, "-c", "command -v git"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
-        env=probe_env, timeout=30,
+        # Meme budget que `run_heal` ci-dessus (120 s) : la sonde est triviale,
+        # mais sous le job `Scripts Tests (CPU)` quatre workers xdist se
+        # partagent le runner et un sous-processus peut etre affame bien
+        # au-dela de son cout nominal (job 131005200449, 2026-11-12).
+        env=probe_env, timeout=120,
     )
     if "shim" not in probe.stdout:
         pytest.skip("ce bash reordonne le PATH (wrapper Git bin\\bash.exe) : "
