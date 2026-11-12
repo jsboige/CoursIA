@@ -267,32 +267,61 @@ le mur reel est en place et mord.** La mention « pas confirmee » est donc tran
 **Ce que l'absence de defaut change.** Les conteneurs de la flotte entrent dans le mur par
 le drapeau explicite que pose `supervise.sh` -- et la mesure le confirme de bout en bout :
 le mur existe, il contient les groupes de conteneurs, et son plafond doux a ete franchi
-1402 fois depuis la mise en place. Ce qui manque n'est donc **pas** le mur : c'est
-l'entree par defaut. Un conteneur lance a la main pour un debug y echappe toujours --
+1402 fois depuis la mise en place. Ce qui n'est pas pose n'est donc **pas** le mur : c'est
+l'entree par defaut -- et elle fait l'objet d'une decision, ci-dessous. Un conteneur
+lance a la main pour un debug y echappe toujours --
 `report_slice_membership()` rend cette evasion **visible** (`EVASION`), il ne la corrige pas.
 
-**Le geste qui reste, et a qui il appartient.** Poser le defaut sur le daemon Docker
-Desktop d'ai-01 :
+**Decision : le defaut au niveau du daemon est ecarte.** Le geste consistait a poser, dans
+`Settings > Docker Engine` du daemon Docker Desktop d'ai-01, la cle
+`"cgroup-parent": "coursia.slice/coursia-ci.slice"` (le chemin imbrique complet, **jamais**
+le nom plat `coursia-ci.slice`, qui creerait un leurre a la racine de l'arbre cgroup --
+cf. « Le nom plat de `cgroup-parent` » ci-dessus), puis a **redemarrer le moteur**. Il
+n'est pas fait, et le motif est mesure.
 
-- dans `Settings > Docker Engine`, **ajouter** la cle `"cgroup-parent":
-  "coursia.slice/coursia-ci.slice"` -- le chemin imbrique complet, **jamais** le nom plat
-  `coursia-ci.slice`, qui creerait un leurre a la racine de l'arbre cgroup (cf. « Le nom
-  plat de `cgroup-parent` » ci-dessus) ;
-- **redemarrer le moteur** Docker Desktop. Ce geste **interrompt les 8 runners** de la
-  flotte : c'est un service partage, il appartient a son proprietaire, pas a une lane.
+Un defaut pose au niveau du daemon s'applique a **tout** conteneur que le daemon cree
+ensuite, sans opt-in et sans exception. Mesure du 2026-11-12 sur ai-01 : **51
+conteneurs en cours** (58 tous etats). Au prochain `compose up` de chacun de ses
+projets, ils entreraient tous sous la slice CI -- le vLLM de la flotte
+`myia_vllm-medium-swift15-27b`, `qdrant_production`, `postgres_production`, les six
+Open WebUI des ecoles, `hermes`, `sk-agent`, `claudish-sidecar`, les WordPress -- et
+partageraient son plafond de 66,0 Gio, celui que la CI se partage deja. Un defaut
+destine a des conteneurs de CI ne peut pas s'appliquer a des services de production : le
+remede serait pire que l'evasion qu'il corrige.
+
+Le mur reste donc pose **explicitement**, la ou il doit l'etre : par le drapeau
+`--cgroup-parent` que `supervise.sh` pose sur les conteneurs de la CI. L'evasion
+residuelle -- un conteneur lance a la main pour un debug -- reste visible, et n'est pas
+corrigee.
+
+**Toute fermeture future de cette evasion passe par le lanceur des conteneurs CI** -- le
+`supervise.sh` de la CI -- et **jamais** par le daemon partage : le daemon n'appartient
+pas a une lane, et le redemarrage du moteur Docker Desktop interromprait les 8 runners de
+la flotte.
 
 **Recette de verification (rejouable, falsifiable).**
 
 ```bash
-# 1. le defaut du daemon -- attendu absent avant le geste, le chemin imbrique apres
+# Sous Git Bash : sans cet export, MSYS reecrit les chemins `/sys/...` en
+# `C:/Program Files/Git/sys/...` et la commande rend "No such file or directory"
+# -- la MEME reponse qu'un leurre absent. Les etapes 2 a 4 seraient donc
+# lisibles comme un mur absent alors que le mur est en place.
+export MSYS_NO_PATHCONV=1
+
+# 1. le defaut du daemon -- attendu ABSENT : le defaut est ecarte (decision ci-dessus)
 docker run -d --rm --name cgroup-probe alpine sleep 20
 docker inspect cgroup-probe --format '{{.HostConfig.CgroupParent}}'
 docker rm -f cgroup-probe
 
-# 2. le leurre plat -- attendu ABSENT, avant comme apres le geste
+# 2. controle POSITIF : la commande voit-elle bien l'arbre cgroup ?
+# Attendu : le chemin s'affiche. S'il ne s'affiche pas, l'argument a ete reecrit
+# et tous les resultats ci-dessous sont faux.
+wsl -d docker-desktop -- ls -d /sys/fs/cgroup/coursia.slice
+
+# 3. le leurre plat -- attendu ABSENT
 wsl -d docker-desktop -- ls -d /sys/fs/cgroup/coursia-ci.slice
 
-# 3. le mur reel et son mordant
+# 4. le mur reel et son mordant
 wsl -d docker-desktop -- cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/memory.max
 wsl -d docker-desktop -- cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/memory.events.local
 ```
