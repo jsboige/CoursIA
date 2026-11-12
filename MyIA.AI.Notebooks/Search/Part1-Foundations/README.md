@@ -174,6 +174,10 @@ Couverture par notebook des sources fondatrices mobilisées dans cette partie :
 | Search-09e (conjecture de Komlós) | Matoušek, J. (1999) — *Geometric Discrepancy: An Illustrated Guide*, Springer. Contexte classique de la conjecture de Komlós (disc ≤ C pour colonnes unitaires) ; les énoncés `KomlosConjecture` / `BansalJiangLargeDegree` / `KomlosBansalJiangWeak` formalisés dans [`discrepancy_lean/Komlos.lean`](../discrepancy_lean/Discrepancy/Komlos.lean) suivent les régimes de Bansal & Jiang (2025, arXiv:2508.03961 — cf. Search-09c). |
 | Search-11 (Metaheuristics) | Kennedy, J., & Eberhart, R. (1995) — « Particle Swarm Optimization », *Proc. IEEE Int. Conf. on Neural Networks*. Origine du PSO. |
 
+### Traverser les murs en Python et C#
+
+[Python](Search-13a-Traverser-Murs-Certifies.ipynb) et [C#](Search-13a-Traverser-Murs-Certifies-CSharp.ipynb) comparent chemin minimal, épaisseur, coupe de sommets et audit de potentiels sur le pavage hexagonal ; trois exemples guidés de Tristan Dhersin prolongent les mesures.
+
 ## FAQ
 
 | Problème | Solution |

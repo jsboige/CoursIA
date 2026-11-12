@@ -1,0 +1,10 @@
+- name: "Search-13a Traverser des murs"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "BFS, Dijkstra, 0-1 BFS, flot maximal et audit de potentiels sont les objets pedagogiques. Python utilise la stdlib et Matplotlib pour les figures ; C# utilise la BCL et des SVG statiques, sans solveur externe."
+  known_differences:
+    - "Python et C# emploient les memes salles, couts et exemples guides ; affichage Matplotlib en Python et SVG opaque en C#."
+    - "Le C# ajoute des oracles Bellman-Ford, tests negatifs de potentiels et controles executes des exercices non resolus."
