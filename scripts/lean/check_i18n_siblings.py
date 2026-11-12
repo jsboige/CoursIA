@@ -341,7 +341,17 @@ def _advisory_code(src: str) -> str:
 
     i = 0
     while i < n:
-        if src.startswith("--", i):
+        if src[i] == "«":
+            # Les identifiants echappes peuvent contenir des guillemets et
+            # des marqueurs de commentaire ; ils ne sont pas du code Lean.
+            end = src.find("»", i + 1)
+            if end == -1:
+                mask(i + 1, n)
+                i = n
+            else:
+                mask(i + 1, end)
+                i = end + 1
+        elif src.startswith("--", i):
             end = src.find("\n", i)
             end = n if end == -1 else end
             mask(i, end)
