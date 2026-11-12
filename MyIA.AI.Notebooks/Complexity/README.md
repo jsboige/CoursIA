@@ -174,3 +174,14 @@ les rangées minimales par programmation linéaire.
 Chaque notebook embarque au moins trois exercices (`TODO etudiant`) : étendre une machine,
 dériver un compte, déplacer un budget — les stubs s'exécutent sans erreur (règle C.1 du
 dépôt) et les corrigés restent la propriété de l'étudiant.
+
+## Jumeau Python/C# — hiérarchie temporelle finie
+
+- [Complexity-03 — version Python](Complexity-03-HierarchieTemporelle-Python.ipynb)
+- [Complexity-03 — version C#](Complexity-03-HierarchieTemporelle-CSharp.ipynb)
+
+Les deux carnets gardent les mêmes tables de budgets, les quatre machines
+booléennes et les coûts déclarés. Le port C# calcule les budgets exponentiels
+avec `BigInteger` et représente l'observation bornée avec `bool?`; il reste un
+modèle fini pédagogique. Il ne construit pas de machine universelle et ne
+prétend pas prouver une séparation asymptotique.
