@@ -35,7 +35,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 | `ModuleNotFoundError: rustuna` | `pip install rustuna` — nécessaire pour App-18c (Rustuna vs Optuna) ; statut expérimental, wheel `win_amd64`/`manylinux` cp311-abi3 |
 | `ModuleNotFoundError: pygad` | `pip install pygad` — nécessaire pour App-9/10 (EdgeDetection, Portfolio) |
 | App-9-CSharp/10-CSharp (.NET) : kernel non disponible | Installer .NET Interactive : `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
-| App-9-CSharp sous Linux : `DllNotFoundException` sur `cvextern`, ou `libgeotiff.so.5: cannot open shared object file` | Le runtime natif `Emgu.CV.runtime.mini.ubuntu-x64` est lié aux bibliothèques d'Ubuntu 24.04 x64 (FFmpeg 6, GTK 3, GStreamer) : `sudo apt install libgeotiff5 liblapack3 libopenjp2-7 libgstreamer-plugins-base1.0-0 libavcodec60 libavformat60 libswscale7 libgtk-3-0t64`. Sur une autre distribution, ces versions peuvent manquer |
+| App-09-CSharp sous Linux : `DllNotFoundException` sur `cvextern`, ou `libgeotiff.so.5: cannot open shared object file` | Le runtime natif `Emgu.CV.runtime.mini.ubuntu-x64` est lié aux bibliothèques d'Ubuntu 24.04 x64 (FFmpeg 6, GTK 3, GStreamer) : `sudo apt install libgeotiff5 liblapack3 libopenjp2-7 libgstreamer-plugins-base1.0-0 libavcodec60 libavformat60 libswscale7 libgtk-3-0t64`. Sur une autre distribution, ces versions peuvent manquer |
 | Certains solveurs sont lents (>30s) | Les instances sont intentionnellement petites pour le pédagogique. Pour des instances plus grandes, activer les timeouts dans CP-SAT (`model.parameters.max_time_in_seconds`) |
 
 ## Structure
@@ -131,11 +131,11 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
-| 1 | [App-9-EdgeDetection](App-9-EdgeDetection.ipynb) — jumeau [C#](App-9-EdgeDetection-CSharp.ipynb) | Algorithmes génétiques pour découvrir des filtres de convolution. Le jumeau C# transpose le problème en GeneticSharp (.NET) | Licence | [Partie 4 — Métaheuristiques](../Part4-Metaheuristics/README.md) |
+| 1 | [App-09-EdgeDetection-Python](App-09-EdgeDetection-Python.ipynb) — jumeau [C#](App-09-EdgeDetection-CSharp.ipynb) | Algorithmes génétiques pour découvrir des filtres de convolution. Le jumeau C# transpose le problème en GeneticSharp (.NET) | Licence | [Partie 4 — Métaheuristiques](../Part4-Metaheuristics/README.md) |
 | 2 | [App-10-Portfolio-Python](App-10-Portfolio-Python.ipynb) — jumeau [C#](App-10-Portfolio-CSharp.ipynb) | Optimisation multi-objectif et frontière de Pareto par algorithme génétique. Le jumeau C# transpose le problème en GeneticSharp (.NET) | Licence | — |
 | 3 | [App-13-TSP-Metaheuristics-Python](App-13-TSP-Metaheuristics-Python.ipynb) — jumeau [C#](App-13-TSP-Metaheuristics-CSharp.ipynb) | Le TSP attaqué par quatre méthodes concurrentes : recuit simulé, génétique, colonies de fourmis, OR-Tools routing. Le jumeau C# refait force brute, plus proche voisin, 2-opt et recuit simulé sur permutations *from-scratch* | Licence | — |
 | 4 | [App-17-VRP-Logistics-Python](App-17-VRP-Logistics-Python.ipynb) — jumeaux [C#](App-17-VRP-Logistics-CSharp.ipynb) et [Python](App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | Tournées de véhicules : recuit, GA, ACO et CP-SAT confrontés. Les jumeaux refont Nearest-Neighbor, cheapest-insertion, 2-opt et recuit simulé *from-scratch* — le Python vérifie ses solutions contre OR-Tools | Licence | — |
-| 5 | [App-18-HyperparameterTuning-Python](App-18-HyperparameterTuning-Python.ipynb) — jumeaux [C#](App-18-HyperparameterTuning-CSharp.ipynb) et [Python](App-18-HyperparameterTuning-FromScratch-Python.ipynb) | Optimisation ML : bayésienne, GA, PSO, Optuna — la boucle qui se referme, on optimise l'optimiseur. Les jumeaux refont Grid/Random Search, GP-EI, GA et PSO *from-scratch* sur l'objectif k-NN CV 5-fold (parité #4956) | Licence | [Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb) |
+| 5 | [App-18-HyperparameterTuning-Python](App-18-HyperparameterTuning-Python.ipynb) — jumeaux [C#](App-18-HyperparameterTuning-CSharp.ipynb) et [Python](App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | Optimisation ML : bayésienne, GA, PSO, Optuna — la boucle qui se referme, on optimise l'optimiseur. Les jumeaux refont Grid/Random Search, GP-EI, GA et PSO *from-scratch* sur l'objectif k-NN CV 5-fold (parité #4956) | Licence | [Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb) |
 | 6 | [App-22-AlgorithmSelection-Python](App-22-AlgorithmSelection-Python.ipynb) | Sélection empirique d'algorithmes : 3 jeux (Sudoku, Puissance 4, Wordle), 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité des métriques + frontières de Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Recherche | — |
 | 7 | [App-23-PRESENT-Differential-Cryptanalysis-SAT-Python](App-23-PRESENT-Differential-Cryptanalysis-SAT-Python.ipynb) | PRESENT : DDT, compression d'implicants, CNF pondérée, frontière SAT/UNSAT du meilleur trail et limites de certification — distillation PrCon F2 (Théodore Deguest) | Recherche | — |
 | 8 | [App-27-Sparse-Index-Tracking-Walk-Forward-Python](App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb) | Sparse index tracking : modèle CP-SAT vérifiable, walk-forward sans fuite et lecture pédagogique des résultats QuantConnect réels — une recherche, deux lectures — distillation PrCon M2 (Godric Bouteloup) | Recherche | [Sparse-Index-Tracking-QC](../../QuantConnect/projects/Sparse-Index-Tracking-QC/README.md) |
@@ -214,7 +214,7 @@ Le [pont SOTA Rustuna vs Optuna](App-18c-HyperparameterTuning-Rustuna-vs-Optuna-
 | Notebook | Fondations requises | Dépendances |
 |----------|--------------------|-------------|
 | App-9 EdgeDetection | Search-5 (GA) | pygad, scikit-image |
-| App-9-CSharp EdgeDetection | Search-5 (GA) | GeneticSharp (.NET) |
+| App-09-CSharp EdgeDetection | Search-5 (GA) | GeneticSharp (.NET) |
 | App-10 Portfolio | Search-5 (GA), Search-9 (PL) | pygad |
 | App-10-CSharp Portfolio | Search-5 (GA) | GeneticSharp (.NET) |
 | App-13 TSP-Metaheuristics | Search-4, Search-5 | ortools |
@@ -298,7 +298,7 @@ Le pont entre les deux cultures de la recherche s'exprime dans les notebooks Hyb
 ### Prochaines étapes
 
 - **Retour aux fondements** : les applications supposent les Parties 1 et 2 maîtrisées. Face à une difficulté de modélisation, revenir à la [Partie 1 (Search)](../Part1-Foundations/README.md) pour les algorithmes d'exploration et à la [Partie 2 (CSP)](../Part2-CSP/README.md) pour la modélisation déclarative — c'est là que se joue la compétence de formulation que ces applications exercent.
-- **Approfondir les métaheuristiques** : les notebooks Hybrides (App-9, App-13, App-17) sont l'amorce de la [Partie 4](../Part4-Metaheuristics/README.md), qui reconstruit les métaheuristiques depuis leurs primitives au-dessus de MetaGeneticSharp — y compris les doublons C# (App-9-CSharp, App-10-CSharp) qui s'y rattachent directement.
+- **Approfondir les métaheuristiques** : les notebooks Hybrides (App-9, App-13, App-17) sont l'amorce de la [Partie 4](../Part4-Metaheuristics/README.md), qui reconstruit les métaheuristiques depuis leurs primitives au-dessus de MetaGeneticSharp — y compris les doublons C# (App-09-CSharp, App-10-CSharp) qui s'y rattachent directement.
 - **Vers les séries voisines** : selon le problème qui vous a intéressé, les prolongements naturels vont vers [ML/ML.Net](../../ML/ML.Net/README.md) (App-18, optimisation bayésienne), [Sudoku](../../Sudoku/README.md) (problèmes combinatoires similaires) et [GameTheory](../../GameTheory/README.md) (jeux à deux joueurs, MCTS).
 - **La série dans son ensemble** : le [sommaire Search](../README.md) replace cette sous-série dans le parcours global — elle en est le terrain d'application, où la théorie rencontre le réel.
 

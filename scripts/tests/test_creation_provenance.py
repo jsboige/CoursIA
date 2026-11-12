@@ -85,7 +85,7 @@ def test_un_demenagement_nest_pas_un_carnet_neuf():
     neuf."""
     noms = ["App-01-NQueens-Python", "App-10-Portfolio-Python", "App-11-Picross-Python",
             "App-02-GraphColoring-Python", "App-03-NurseScheduling-Python",
-            "App-05-Timetabling-Python", "App-06-Minesweeper-Python", "App-9-EdgeDetection",
+            "App-05-Timetabling-Python", "App-06-Minesweeper-Python", "App-09-EdgeDetection-Python",
             "App-9b-EdgeDetection-CSharp"]
     files = [fichier(f"MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/{n}.ipynb",
                      "added", sha=f"blob-{n}") for n in noms]

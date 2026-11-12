@@ -125,7 +125,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 18 | [App-17-Python : Vehicle Routing Problem (VRP) — Twin Python…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | BETA | Oui |
 | 19 | [App-18: Optimisation d'Hyperparametres - Approches…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | BETA | Oui |
 | 20 | [App-18-CSharp : Optimisation d'Hyperparametres - Jumeau C#](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | BETA | Oui |
-| 21 | [App-18-Python : Optimisation d'Hyperparamètres (Python —…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-FromScratch-Python.ipynb) | BETA | Oui |
+| 21 | [App-18-Python : Optimisation d'Hyperparamètres (Python —…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | BETA | Oui |
 | 22 | [App-18c — Rustuna vs Optuna : mesurer un portage Rust…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb) | BETA | Oui |
 | 23 | [App-19 (C#) — Génération procédurale par Wave Function…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | BETA | Oui |
 | 24 | [App-19 — Génération procédurale de niveaux via WFC +…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Python.ipynb) | BETA | Oui |
@@ -153,8 +153,8 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 46 | [App-07-CSharp : Solveur Wordle -- CSP et théorie de…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-07-Wordle-CSharp.ipynb) | BETA | Oui |
 | 47 | [App-8 : Modelisation declarative par contraintes (twin…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-08-MiniZinc-CSharp.ipynb) | BETA | Oui |
 | 48 | [App-08-MiniZinc-Python : Modelisation declarative par…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-08-MiniZinc-Python.ipynb) | BETA | Oui |
-| 49 | [App-9 : Detection de bords par algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | BETA | Oui |
-| 50 | [TP : Conception d'Algorithmes Génétiques avec…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb) | BETA | Oui |
+| 49 | [App-9 : Detection de bords par algorithmes génétiques](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb) | BETA | Oui |
+| 50 | [TP : Conception d'Algorithmes Génétiques avec…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb) | BETA | Oui |
 
 ## Search/Part4-Metaheuristics (31 notebooks)
 

@@ -160,8 +160,8 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-9-EdgeDetection](Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
-| 2 | [App-9-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
+| 1 | [App-09-EdgeDetection-Python](Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
+| 2 | [App-09-EdgeDetection-CSharp](Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
 | 3 | [App-10-Portfolio-Python](Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
 | 4 | [App-10-Portfolio-CSharp](Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
 | 5 | [App-13-TSP-Metaheuristics-Python](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-Python.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
@@ -171,7 +171,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | 8b | [App-17-VRP-Logistics-Metaheuristiques-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
 | 9 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 | 10 | [App-18-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18-HyperparameterTuning-FromScratch-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-FromScratch-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 11 | [App-18-HyperparameterTuning-Implementation-Manuelle-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ### Applications de recherche informée mono-agent (`Applications/Informed/`)
@@ -385,7 +385,7 @@ Search/
 │   ├── App-06-Minesweeper-Python.ipynb
 │   ├── App-07-Wordle-Python.ipynb
 │   ├── App-08-MiniZinc-Python.ipynb
-│   ├── App-9-EdgeDetection.ipynb
+│   ├── App-09-EdgeDetection-Python.ipynb
 │   ├── App-10-Portfolio-Python.ipynb
 │   ├── App-11-Picross-Python.ipynb
 │   ├── App-12b-ConnectFour-Python.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
@@ -437,7 +437,7 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 - Vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`
 - Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`
 - Vérifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
-- Les jumeaux C# hybrides (App-9-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
+- Les jumeaux C# hybrides (App-09-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
 
 ### DEAP ou PyGAD provoquent des erreurs d'import
 

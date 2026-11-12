@@ -127,7 +127,7 @@ flowchart LR
 
 ## Applications spécialisées
 
-Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Part3-Cas-pratiques/`](../Part3-Cas-pratiques/README.md) : **App-9 / App-9-CSharp** (EdgeDetection) et **App-10 / App-10-CSharp** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (notebooks comparatifs MGS-22 à MGS-31) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
+Les notebooks d'application GA (détection de bords, optimisation de portefeuille — variants PyGAD Python et GeneticSharp C#) sont rassemblés dans la section [`Part3-Cas-pratiques/`](../Part3-Cas-pratiques/README.md) : **App-9 / App-09-CSharp** (EdgeDetection) et **App-10 / App-10-CSharp** (Portfolio). La série MGS numérotée (MGS-1 à MGS-21, plus la trilogie de ponts MGS-7b/7c/7d de projection N-D) constitue le cœur propre à la Partie 4. La **campagne MGS vs mealpy** (notebooks comparatifs MGS-22 à MGS-31) vit dans la sous-série dédiée [`MGS-vs-mealpy/`](MGS-vs-mealpy/README.md), avec son sommaire, son protocole commun et sa synthèse croisée.
 
 ## Sous-série MGS vs mealpy
 

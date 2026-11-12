@@ -5699,7 +5699,7 @@ Les **valeurs numériques exactes** (fitness finale, temps) différent C# vs Pyt
 
 - [Search-03-Informed (A*)](Search-03-Informed-CSharp.ipynb) : recherche informe avec heuristiques (cas ou l'optimalite est garantie, contrairement aux métaheuristiques).
 - [Search-04-LocalSearch](Search-04-LocalSearch.ipynb) : fondements du recuit simule et hill-climbing.
-- Applications métaheuristiques : [App-13-TSP](../Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb), [App-9-EdgeDetection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb).
+- Applications métaheuristiques : [App-13-TSP](../Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb), [App-09-EdgeDetection-Python](../Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb).
 
 ***
 
@@ -19103,7 +19103,7 @@ Les algorithmes génétiques se declinent en de nombreuses variantes avancees :
 ### Lien avec les Applications
 
 Les algorithmes génétiques sont appliques dans la suite de cette serie :
-- **App-9 (Edge Detection)** : GA pour optimiser un filtre de convolution de detection de bords (voir [App-9-EdgeDetection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb))
+- **App-9 (Edge Detection)** : GA pour optimiser un filtre de convolution de detection de bords (voir [App-09-EdgeDetection-Python](../Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb))
 - **App-10 (Portfolio)** : GA pour l'optimisation de portefeuille financier (voir [App-10-Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb))
 
 Ces applications montrent la puissance des AG sur des problemes reels ou la fonction objectif est complexe et l'espace de recherche est vaste.",,,,,,,,e0f1257e86ab38fd,,,,,,,,,,,,,,,
@@ -19778,7 +19778,7 @@ MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05-GeneticAlgorithms.ipynb,con
 ### Pour aller plus loin
 
 - **Notebook suivant** : [CSP-1-Fondamentaux](../Part2-CSP/CSP-1-Fundamentals.ipynb) - Problemes de satisfaction de contraintes
-- **Applications** : [App-9 Edge Detection](../Part3-Cas-pratiques/App-9-EdgeDetection.ipynb), [App-10 Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb)
+- **Applications** : [App-9 Edge Detection](../Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb), [App-10 Portfolio](../Part3-Cas-pratiques/App-10-Portfolio.ipynb)
 - **références** :
   - Goldberg, D. *Genetic Algorithms in Search, Optimization, and Machine Learning*, 1989
   - DEAP documentation : https://deap.readthedocs.io/
