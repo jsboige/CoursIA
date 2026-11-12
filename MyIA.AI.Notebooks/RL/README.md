@@ -578,3 +578,8 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 ## Licence
 
 Voir la licence du dépôt principal.
+
+
+## Climbing Game — jumeaux07b
+
+[Python](RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) · [C#](RL-07b-Sur-Generalisation-Climbing-Game-CSharp.ipynb). Agent tabulaire et statistiques BCL, même protocole120runs×12000épisodes et bootstrap2000réplications. C/C n’est pas Nash de la matrice non symétrique ; les destinations finies et les intervalles sont distingués des garanties asymptotiques. Trois exercices ouverts ajoutent traces numériques, rééchantillonnage de runs et contre-exemple paramétrable. RNG/figures diffèrent (NumPy/Matplotlib contre.NET/SVG), sans moteur RL externe omis.
