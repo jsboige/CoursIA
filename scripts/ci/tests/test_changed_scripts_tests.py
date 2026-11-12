@@ -474,12 +474,12 @@ def test_integration_profil_marathon_delegation_mesuree():
     for expected in ("tests", "scripts/tests", "scripts/notebook_tools/tests"):
         assert expected in selected, expected
     assert "R4 native" in reason
-    # NB : sur CE profil, la suite pin (scripts/validation/tests) peut etre
-    # RETENUE par R3 : le pin cite litteralement "README.md" (assertion de
-    # lien d'index), et le profil marathon change un README.md -- la reference
-    # native fait alors son travail et elargit la couverture. L'exclusion du
-    # pin, elle, se mesure sur le profil temoin (carnet + yaml, sans README) :
-    # voir test_integration_profil_temoin_pin_exclu.
+    # La suite pin du controle positif (scripts/validation/tests, sans test
+    # R4 ni citation litterale du carnet ou d'un README) reste EXCLUE :
+    # c'est le trou temoin que le lot 4x/jour (P3) borne. Ce test a vu le
+    # defaut R3 initial (review #26253) -- le garder strict.
+    if "scripts/validation/tests" in suites:
+        assert "scripts/validation/tests" not in selected
 
 
 def test_integration_profil_temoin_pin_exclu():

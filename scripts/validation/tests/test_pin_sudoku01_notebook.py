@@ -22,10 +22,14 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 
-# Nom construit, jamais ecrit en entier : la concatenation evite la citation
-# textuelle (R3) qui ramenerait cette suite dans la selection du carnet.
+# Noms construits, jamais ecrits en entier : la concatenation evite la
+# citation textuelle (R3) qui ramenerait cette suite dans la selection du
+# carnet -- et celle du lien d'index, que tout fichier d'index de serie
+# changerait (review #26253 : R3 compare le nom de base, n'importe quel
+# fichier de ce nom modifie selectionnait ce temoin).
 _CARNET = "Sudoku-01-Backtracking" + "-Python.ipynb"
 CHEMIN = REPO_ROOT / "MyIA.AI.Notebooks" / "Sudoku" / _CARNET
+_LIEN_INDEX = "](" + "READ" + "ME" + ".md" + ")"
 
 
 def _carnet() -> dict:
@@ -63,7 +67,7 @@ def test_le_carnet_pin_garde_sa_ligne_de_navigation() -> None:
     assert tete is not None, "pas de cellule markdown en tete"
     texte = "".join(tete.get("source", []))
     assert "Navigation" in texte, "ligne de navigation absente"
-    assert "](README.md)" in texte, "lien index absent"
+    assert _LIEN_INDEX in texte, "lien index absent"
     assert texte.count(".ipynb)") >= 2, (
         "liens voisin gauche / voisin droit absents"
     )
