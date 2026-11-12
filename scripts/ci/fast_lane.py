@@ -54,6 +54,9 @@ import advisory_sticky  # noqa: E402  # organe partage (#24514, comme #24441)
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
+# T-H (#25510) : pause avant la SEULE relance d'une publication refusee par
+# le quota d'ecriture de l'API Checks.
+CHECK_RUN_RETRY_S = 8
 OUTPUT_LIMIT = 60000  # marge sous la limite de 65535 de l'API Checks
 
 # Le nom d'un garde est un NOM DE CHECK-RUN (display string), jamais un nom de
@@ -342,18 +345,95 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
     if dry_run:
         print(f"[fast-lane][a-blanc] check-run {name!r} -> {conclusion} ({title})")
         return True
-    proc = subprocess.run(
-        ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
-        input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", errors="replace",
-    )
-    if proc.returncode != 0:
+    # T-H (#25510) : le quota d'ecriture de l'API Checks est consomme PAR
+    # POST. Une voie rapide qui emet un check-run par garde en consomme
+    # ~80 par execution, et le declencheur `edited` (tranche T-C/2) fait
+    # revenir la voie rapide sur la MEME tete. Une publication refusee par
+    # le quota se voit par un 403 : on retente UNE fois, apres une courte
+    # pause -- une seule relance, pas une boucle d'attente.
+    for attempt in (1, 2):
+        proc = subprocess.run(
+            ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
+            input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if proc.returncode == 0:
+            print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
+            return True
+        err = proc.stderr.strip()
+        if attempt == 1 and is_quota_refusal(err):
+            print(f"[fast-lane] publication REFUSEE par le quota pour "
+                  f"{name!r} : {err} -- nouvelle tentative dans "
+                  f"{CHECK_RUN_RETRY_S}s", file=sys.stderr)
+            time.sleep(CHECK_RUN_RETRY_S)
+            continue
         # Ne pas faire echouer le job entier : un verdict non publie doit
         # rester visible dans le log plutot que de masquer les autres.
         print(f"[fast-lane] ECHEC de publication du check-run {name!r} : "
-              f"{proc.stderr.strip()}", file=sys.stderr)
+              f"{err}", file=sys.stderr)
         return False
-    print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
-    return True
+    return False
+
+
+def is_quota_refusal(stderr: str) -> bool:
+    """Le POST a-t-il ete refuse PAR LE QUOTA (et non par un autre defaut) ?
+
+    Une reponse de quota porte 403 et parle de `rate limit` ou de quota ;
+    une autre erreur (droit, nom invalide, payload refuse) doit etre
+    signalee telle quelle, sans nouvelle tentative qui la republierait
+    indefiniment.
+    """
+    lowered = (stderr or "").lower()
+    return ("403" in lowered or "rate limit" in lowered
+            or "quota" in lowered or "too many requests" in lowered)
+
+
+def latest_check_runs(repo: str, head_sha: str) -> dict[str, tuple[str, str]]:
+    """Rend le check-run le PLUS RECENT de chaque nom, pour une tete.
+
+    L'API rend les entrees **du plus recent au plus ancien** (mesure du
+    2026-11-12 : ids decroissants sur 214 entrees) : la premiere occurrence
+    d'un nom est donc son check-run le plus recent.
+
+    La valeur est le couple `(conclusion, title)`. Une jambe `skipped` n'est
+    **pas** retenue : une jambe sautee n'a rien mesure et ne peut pas
+    remplacer un verdict reel (regle du repli, cf #26255).
+
+    Rend `{}` si la lecture echoue : l'appelant ne saute alors AUCUNE
+    publication. L'optimisation ne doit jamais fabriquer un verdict -- au
+    pire, elle disparait.
+    """
+    proc = subprocess.run(
+        ["gh", "api", "--paginate", "--slurp",
+         f"repos/{repo}/commits/{head_sha}/check-runs?per_page=100"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        print(f"[fast-lane] lecture des check-runs existants impossible : "
+              f"{proc.stderr.strip()[:300]} -- aucune publication ne sera "
+              f"sautee", file=sys.stderr)
+        return {}
+    try:
+        payload = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError:
+        print("[fast-lane] lecture des check-runs existants illisible -- "
+              "aucune publication ne sera sautee", file=sys.stderr)
+        return {}
+    pages = payload if isinstance(payload, list) else [payload]
+    latest: dict[str, tuple[str, str]] = {}
+    for page in pages:
+        if not isinstance(page, dict):
+            continue
+        for run in page.get("check_runs") or []:
+            name = run.get("name")
+            if not name or name in latest:
+                continue
+            if (run.get("status") == "completed"
+                    and run.get("conclusion") == "skipped"):
+                continue
+            output = run.get("output") or {}
+            latest[name] = (run.get("conclusion") or "",
+                            output.get("title") or "")
+    return latest
 
 
 # ---------------------------------------------------------------------------
@@ -908,6 +988,21 @@ def main(argv: list[str] | None = None) -> int:
     # ombre et la neutralisation jusqu'a la conclusion de la comparaison.
     head_sha = args.head_sha or git("rev-parse", "HEAD").stdout.strip()
     blocking_failed = False
+    # T-H (#25510) : la publication est **idempotente**. Un verdict deja
+    # publie sur CETTE tete, avec le meme nom, la meme conclusion et le meme
+    # titre, n'est pas republie : le POST coute une ecriture de quota, et le
+    # declencheur `edited` fait revenir la voie rapide sur la meme tete.
+    # Le verdict reste visible (il est deja dans l'API) et son `started_at`
+    # ne bouge pas -- c'est le comportement voulu d'un verdict stable.
+    existing: dict[str, tuple[str, str]] = {}
+    if not args.dry_run and selected:
+        existing = latest_check_runs(args.repo, head_sha)
+        if existing:
+            print(f"[fast-lane] {len(existing)} verdict(s) deja presents sur "
+                  f"la tete -- publication identique non republiee")
+    published = 0
+    skipped = 0
+    refused = 0
     for guard in selected:
         rc, log = results.get(guard.name, (0, "(aucune sortie)"))
         # #17941 : un rc de warn_rc arriving ici est un incident du GARDE
@@ -934,18 +1029,30 @@ def main(argv: list[str] | None = None) -> int:
             title = "signale (advisory)"
         name = ((SHADOW_PREFIX + guard.name) if effective_shadow
                 else guard.name)
-        emit_check_run(
+        check_title = f"{guard.name} -- {title}"
+        if existing.get(name) == (conclusion, check_title):
+            skipped += 1
+            print(f"[fast-lane] verdict identique deja publie : {name}")
+        elif emit_check_run(
             args.repo, head_sha, name, conclusion,
-            f"{guard.name} -- {title}",
+            check_title,
             f"Source : `{guard.source}`\n\n```\n{log}\n```",
             args.dry_run,
-        )
+        ):
+            published += 1
+        else:
+            refused += 1
         if guard.blocking and rc != 0 and not effective_shadow:
             blocking_failed = True
 
     verdict = ("au moins un bloquant en echec" if blocking_failed
                else "aucun bloquant en echec")
     print(f"[fast-lane] {len(selected)} garde(s) evalue(s), {verdict}")
+    # T-H (#25510) : le COMPTE des publications est dans le journal du job.
+    # C'est la seule mesure qui rend le quota lisible sans l'instrumenter :
+    # avant, une publication refusee disparaitait dans le stderr d'un garde.
+    print(f"[fast-lane] publications : {published} publiee(s), "
+          f"{skipped} identique(s) non republiee(s), {refused} refusee(s)")
 
     # En mode ombre le job ne rougit jamais : il observe, il ne juge pas
     # encore. Les verdicts vivent dans les check-runs. En mode MIXTE
