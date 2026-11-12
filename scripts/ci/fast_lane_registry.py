@@ -1290,6 +1290,9 @@ TRANCHE5: list[Guard] = [
             ".github/workflows/scripts-tests.yml",
             ".github/workflows/ml-tests.yml",
             ".github/workflows/secret-scan.yml",
+            # secret-scan-controls.yml porte depuis #25510 les cibles gitleaks
+            # de WORKFLOW_COVERAGE : l'editer peut desynchroniser le dict.
+            ".github/workflows/secret-scan-controls.yml",
             ".github/workflows/ict-tests.yml",
             # sudoku-tests.yml declare une cible de couverture (cible-fichier
             # `test_dlx_certificates.py`, cablage de #22375) : l'editer peut

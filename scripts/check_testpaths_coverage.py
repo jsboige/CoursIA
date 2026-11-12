@@ -104,7 +104,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # de #25366 n'est pas tranche (dans testpaths ou exclu par ecrit).
         "tests",
         # scripts/secrets/tests : dir entier (famille 4 de #14615) — les 2
-        # modules gitleaks y skip sans binaire (gate binaire = secret-scan.yml,
+        # modules gitleaks y skip sans binaire (gate binaire = secret-scan-controls.yml,
         # cibles fichier ci-dessous).
         "scripts/secrets/tests",
         "scripts/notebook_tools/tests",
@@ -216,7 +216,9 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/genai-helpers-tests.yml": [
         "MyIA.AI.Notebooks/GenAI/shared/helpers",
     ],
-    ".github/workflows/secret-scan.yml": [
+    # Les deux modules gitleaks vivent dans secret-scan-controls.yml depuis
+    # #25510 (tranche T-B) : le job `positive-controls` y a demenage avec eux.
+    ".github/workflows/secret-scan-controls.yml": [
         "scripts/secrets/tests/test_gitleaks_qwen_rule.py",
         "scripts/secrets/tests/test_gitleaks_10143_classes.py",
     ],
