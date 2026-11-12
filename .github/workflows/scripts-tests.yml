@@ -117,7 +117,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: scripts-tests-${{ github.ref }}
+  group: scripts-tests-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

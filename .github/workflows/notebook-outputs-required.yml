@@ -48,7 +48,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: notebook-outputs-required-${{ github.ref }}
+  group: notebook-outputs-required-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:

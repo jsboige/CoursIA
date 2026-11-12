@@ -18,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: notebook-validation-${{ github.ref }}
+  group: notebook-validation-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
