@@ -49,7 +49,7 @@ pas ces métriques pour l’état actuel du code.
 | [quantbook.ipynb](quantbook.ipynb) | Reprise de l’analyse avec l’API `QuantBook` : fenêtres, univers SPY/QQQ/IWM/DIA, levier, filtres SMA et sous-périodes, avec graphiques comparatifs. | Environnement de recherche QuantConnect/Lean et historique chargé par `qb.history`. Le carnet vérifie la présence des symboles et la fraîcheur des données avant ses calculs. |
 
 Le carnet `quantbook.ipynb` conserve les sorties de la réexécution Lean de
-#8730, sur les données du 3 janvier 2005 au 31 décembre 2025 : tableaux par
+[la PR #8730](https://github.com/jsboige/CoursIA/pull/8730), sur les données du 3 janvier 2005 au 31 décembre 2025 : tableaux par
 fenêtre, univers, levier, filtre et sous-période, ainsi que figures. Ces
 résultats décrivent cette exécution et ne constituent pas un verdict sur la
 stratégie. `research.ipynb` conserve ses propres sorties, distinctes de celles
