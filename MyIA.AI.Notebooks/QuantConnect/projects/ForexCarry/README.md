@@ -32,7 +32,7 @@ Avant tout test d'hypothèse, la cellule 3 du notebook pose un **diagnostic stru
 
 ### H3 — long-only vs long/short : L3/S3 lisse le bruit mais ne crée pas d'alpha
 
-**Verdict** : **aucune configuration L/S ou Long-only n'est profitable** avec les paramètres baseline (lookback 63/252, poids 0.6/0.4).
+**Verdict** : **aucune configuration long-only n'est profitable ; L3/S3 est à peine positive** avec les paramètres baseline (lookback 63/252, poids 0.6/0.4).
 
 - **L3/S3 full LS** (Sharpe +0.006) — seule config proche du neutre. Plus de positions (3+3) lisse le bruit mais ne crée pas d'alpha.
 - **Long-only** (L3/S0 −0,172, L2/S0 −0,258, L1/S0 −0,227) — tous négatifs. Sans short, le signal momentum pur ne capture pas les tendances baissières des devises.
@@ -100,7 +100,7 @@ Visuellement, la courbe orange « Vol<median » se détache progressivement et t
 
 Le gap **baseline −0.156 → v3e +1.687** = delta Sharpe de 1.84, soit ~5× la magnitude du signal baseline. Ces configurations ont été comparées sur la même période de recherche : ce résultat exploratoire ne démontre pas une amélioration en conditions réelles ou hors échantillon. La baseline de synthèse utilise le filtre SPY (−0,312), contrairement à la baseline H1 sans filtre (−0,156).
 
-<p align="center"><img src="assets/readme/forex-synthese.png" alt="Synthèse — mono-panel Comparaison des configurations candidates 2018-2026, 6 courbes : Baseline bleu S=−0.31 perdant, v3a orange S=+0.50, v3b vert S=−0.32, v3c rouge S=−0.03, v3d violet S=+0.19, v3e marron S=+1.69 winner incontestable (axe Y 0.9 → 1.35)" width="900"/><br/><em>Synthèse — 6 configurations candidates (cellule 23 du notebook) : **v3e** marron **EXPLOSE littéralement** toutes les autres configs, termine ~1.33 (+33 % sur 8 ans) vs ~1.10 v3a 2ème (S=+0.50), ~1.03 v3d 3ème (S=+0.19). Sharpe **+1.69 = seule config > 0.5, 3.4× le 2ème**. Combinaison gagnante : 3 paires LO + momentum court + DXY<SMA50.</em></p>
+<p align="center"><img src="assets/readme/forex-synthese.png" alt="Synthèse — mono-panel Comparaison des configurations candidates 2018-2026, 6 courbes : Baseline bleu S=−0.31 perdant, v3a orange S=+0.50, v3b vert S=−0.32, v3c rouge S=−0.03, v3d violet S=+0.19, v3e marron S=+1.69 winner incontestable (axe Y 0.9 → 1.35)" width="900"/><br/><em>Synthèse — 6 configurations candidates (cellule 23 du notebook) : **v3e** marron **EXPLOSE littéralement** toutes les autres configs, termine ~1.33 (+33 % sur 8 ans) vs ~1.10 v3a 2ème (S=+0.50), ~1.03 v3d 3ème (S=+0.19). Sharpe **+1.69 = première config au-dessus de 1, 3.4× le 2ème**. Combinaison gagnante : 3 paires LO + momentum court + DXY<SMA50.</em></p>
 
 ## How to Run
 
@@ -131,7 +131,7 @@ Mesure réelle de `main.py` v4.0 sur QC Cloud — banc dédié `21759-forexcarry
 
 ## Backtest Metrics de recherche (2018-2026)
 
-Les valeurs de ce tableau proviennent **uniquement** de `research.ipynb` (cell[24]) — elles ne sont **pas** issues d'un backtest de `main.py`.
+Les valeurs de ce tableau proviennent **uniquement** des sorties de `research.ipynb` (cellules 5 et 23) — elles ne sont **pas** issues d'un backtest de `main.py`.
 
 | Configuration (recherche) | Sharpe | CAGR | MaxDD | Verdict |
 |---------------|--------|------|-------|---------|
@@ -139,7 +139,7 @@ Les valeurs de ce tableau proviennent **uniquement** de `research.ipynb` (cell[2
 | v3a (4 div + DXY filter) | +0.501 | +1.30 % | −3.69 % | **Candidat de recherche modeste** |
 | v3e (3 paires + DXY<SMA50) | **+1.687** | **+3.5 %** | **−1.76 %** | **Candidat de recherche à valider** |
 
-**Note d'investigation** : les valeurs v3a/v3e ci-dessus sont issues des sorties de `research.ipynb` cell[5] pour H1 et cell[23] pour v3a/v3e. **Aucune n'est encore migrée dans `main.py`** — le `main.py` actuel applique la configuration long-only top-2 IR skip-month mesurée au-dessus (pas la baseline L/S de recherche). La migration v3e → main.py = chantier de suivi hors-scope de cette PR (touche au code, pas à la doc figures).
+**Note d'investigation** : les valeurs ci-dessus sont issues des sorties de `research.ipynb` cell[5] pour H1 et cell[23] pour v3a/v3e. **Aucune n'est encore migrée dans `main.py`** — le `main.py` actuel applique la configuration long-only top-2 IR skip-month mesurée au-dessus (pas la baseline L/S de recherche). La migration v3e → main.py = chantier de suivi hors-scope de cette PR (touche au code, pas à la doc figures).
 
 ## Files
 
