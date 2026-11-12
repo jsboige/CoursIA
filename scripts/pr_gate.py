@@ -574,6 +574,13 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     The accepted side effect is fail-closed: after a base change that takes
     the job out of the diff, a red stays displayed until the next push.
 
+    ORDER. The nature of the entry heads the ordering key, so the fold does
+    not depend on the order in which the entries arrive: the REST endpoint
+    `commits/<sha>/check-runs` returns them from the MOST RECENT to the OLDEST
+    (measured on three heads: 31, 53 and 70 runs, decreasing ids), and no
+    caller re-sorts them. A fold that kept "the first seen" would therefore
+    have kept the skip.
+
     PREMISE -- the rendered check-run `name` identifies the job uniquely. This
     premise is enforced by `scripts/ci/check_unique_check_run_names.py` and its
     CI guard (workflow `unique-check-run-names-guard.yml`). When the premise
@@ -595,17 +602,20 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     best: dict[str, tuple[tuple, dict]] = {}
     for index, check in enumerate(checks):
         name = check.get("name") or ""
-        key = (check.get("started_at") or "", check.get("id") or 0, index)
+        # THE SKIPPED FALLBACK (#25510, T-C) : la NATURE est en TETE de la cle.
+        # Un `skipped` mesure rien et compte comme un PASS : il ne doit donc
+        # jamais remplacer un verdict reel du meme nom. La nature en tete rend
+        # le repli INDEPENDANT DE L'ORDRE d'arrivee -- ce qui compte, parce que
+        # `commits/<sha>/check-runs` rend les entrees du PLUS RECENT au PLUS
+        # ANCIEN (mesure sur 3 tetes : 31, 53 et 70 runs, ids decroissants),
+        # alors que les tests historiques fournissaient l'ordre croissant.
+        key = (not _is_skipped(check),
+               check.get("started_at") or "",
+               check.get("id") or 0,
+               index)
         current = best.get(name)
         if current is None:
             best[name] = (key, check)
-            continue
-        if _is_skipped(check) and not _is_skipped(current[1]):
-            # THE SKIPPED FALLBACK (#25510, T-C) : a skipped job measured
-            # nothing, so it never replaces a real verdict of the same name.
-            # Without this, an edit that skips the job emits a `skipped`
-            # newer than the verdict, and `skipped` is a PASS -- the red PR
-            # would unblock itself on a title edit.
             continue
         if key >= current[0]:
             best[name] = (key, check)

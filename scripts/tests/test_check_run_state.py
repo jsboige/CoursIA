@@ -6,6 +6,7 @@ dans l'ordre FAILURE / CANCELLED / SUCCESS -- non chronologique. Un fold
 premiere-occurrence retient le FAILURE perime : c'est le defaut mesure par
 ai-01. Le fold latest-wins retient le SUCCESS : #16232 est MERGED.
 """
+import itertools
 import sys
 from pathlib import Path
 
@@ -179,6 +180,30 @@ def test_un_skipped_seul_reste_vert_dans_la_vue_latest():
     state = render("ab", legs)
     assert state["latest_reds"] == []
     assert state["latest"]["Lean CI"]["conclusion"] == "skipped"
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : l'API rend les check-runs du PLUS RECENT au PLUS
+    ANCIEN, et aucun appelant ne retrie. Le repli doit tenir dans cet
+    ordre-la (skip d'abord, verdict reel ensuite)."""
+    legs = [
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+    ]
+    assert fold_latest(legs)["PR gate"]["conclusion"] == "failure"
+    state = render("ab", legs)
+    assert state["latest_reds"] == ["PR gate"]
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : toutes les permutations d'un meme lot rendent le meme
+    verdict -- le repli ne doit dependre d'aucun ordre d'arrivee."""
+    lot = [
+        {"name": "PR gate", "conclusion": "failure", "started_at": "T1", "id": 1},
+        {"name": "PR gate", "conclusion": "skipped", "started_at": "T2", "id": 2},
+    ]
+    for permutation in itertools.permutations(lot):
+        assert fold_latest(list(permutation))["PR gate"]["conclusion"] == "failure"
 
 
 def test_fold_latest_preserve_les_champs_bruts_de_la_jambe():

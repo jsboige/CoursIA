@@ -487,6 +487,53 @@ def test_un_skipped_seul_reste_vert():
     assert code == 0, msg
 
 
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : `commits/<sha>/check-runs` rend du PLUS RECENT au PLUS
+    ANCIEN (mesure sur 3 tetes : 31, 53 et 70 runs, ids decroissants), et
+    aucun appelant ne retrie. Le repli doit donc tenir dans cet ordre-la :
+    `skipped`@t2 d'abord, `failure`@t1 ensuite -- c'est exactement le couple
+    que le premier jet du repli laissait passer (il gardait la premiere entree
+    vue, donc le `skipped`)."""
+    checks = [
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+    ]
+    folded = pr_gate.dedupe_latest(checks)
+    assert len(folded) == 1
+    assert folded[0]["conclusion"] == "failure"
+    code, msg = decide(checks)
+    assert code == 1
+    assert "Lean CI" in msg
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : le repli ne doit dependre d'aucun ordre d'arrivee. Toutes
+    les permutations d'un meme lot rendent le meme verdict."""
+    lot = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    for permutation in itertools.permutations(lot):
+        folded = pr_gate.dedupe_latest(list(permutation))
+        assert len(folded) == 1, permutation
+        assert folded[0]["conclusion"] == "failure", permutation
+        assert decide(list(permutation))[0] == 1, permutation
+
+
+def test_le_repli_est_independant_de_l_ordre_avec_trois_entrees():
+    """Meme propriete sur un lot de trois : le skip ne gagne jamais, et le
+    verdict reel le plus recent reste le verdict rendu."""
+    lot = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+        run("Lean CI", "success", started_at="2026-11-12T10:10:00Z", rid=3),
+    ]
+    for permutation in itertools.permutations(lot):
+        folded = pr_gate.dedupe_latest(list(permutation))
+        assert len(folded) == 1, permutation
+        assert folded[0]["conclusion"] == "success", permutation
+
+
 # --- 3. self-exclusion -------------------------------------------------------
 
 

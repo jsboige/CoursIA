@@ -935,18 +935,22 @@ def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str,
     organs must measure the same "latest".
     """
     verdicts: dict[str, tuple[tuple, dict[str, Any]]] = {}
-    for run in check_runs or []:
+    for index, run in enumerate(check_runs or []):
         if (run.get("status") or "").lower() != "completed":
             continue
         key = run.get("name") or ""
-        rank = (run.get("started_at") or "", run.get("id") or 0)
+        # La NATURE est en tete du rang (verdict reel > `skipped`) : le repli
+        # est ainsi independant de l'ordre d'arrivee, alors que l'API rend les
+        # check-runs du plus recent au plus ancien.
+        rank = (not _is_skipped_run(run),
+                run.get("started_at") or "",
+                run.get("id") or 0,
+                index)
         current = verdicts.get(key)
         if current is None:
             verdicts[key] = (rank, run)
             continue
-        if _is_skipped_run(run) and not _is_skipped_run(current[1]):
-            continue
-        if rank > current[0]:
+        if rank >= current[0]:
             verdicts[key] = (rank, run)
     return {name: run for name, (rank, run) in verdicts.items()}
 

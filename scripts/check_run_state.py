@@ -119,14 +119,18 @@ def fold_latest(legs: list[dict]) -> dict[str, dict]:
     best: dict[str, tuple[tuple, dict]] = {}
     for index, raw in enumerate(legs):
         leg = normalize_leg(raw)
-        key = (leg.get("started_at") or "", leg.get("id") or 0, index)
+        # La NATURE est en tete de la cle (verdict reel > `skipped`), donc le
+        # repli est independant de l'ordre d'arrivee : `check-runs` rend les
+        # entrees du plus recent au plus ancien.
+        key = (not _is_skipped(leg),
+               leg.get("started_at") or "",
+               leg.get("id") or 0,
+               index)
         current = best.get(leg["name"])
         if current is None:
             merged = dict(raw)
             merged.update(leg)
             best[leg["name"]] = (key, merged)
-            continue
-        if _is_skipped(leg) and not _is_skipped(current[1]):
             continue
         if key >= current[0]:
             merged = dict(raw)

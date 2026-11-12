@@ -1,6 +1,7 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import itertools
 import json
 import os
 import subprocess
@@ -1402,6 +1403,46 @@ def test_un_skipped_seul_ne_contredit_pas_le_dossier():
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : l'API rend les check-runs du PLUS RECENT au PLUS
+    ANCIEN. Le dossier doit mesurer le meme « latest » que le gate dans cet
+    ordre-la (skip d'abord, verdict reel ensuite)."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : toutes les permutations d'un meme lot rendent le meme
+    verdict -- le dossier, le gate et `check_run_state` doivent mesurer le
+    meme « latest », quel que soit l'ordre d'arrivee."""
+    lot = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    for permutation in itertools.permutations(lot):
+        snapshot = _snapshot(_body())
+        snapshot["checkRuns"] = list(permutation)
+        errors = _errors(snapshot)
+        assert any(
+            "checks claim 'latest-wins-green' is contradicted by live check "
+            "'PR gate' (failure)" in error
+            for error in errors
+        ), permutation
 
 
 def test_latest_wins_red_older_run_loses_to_newer_green():
