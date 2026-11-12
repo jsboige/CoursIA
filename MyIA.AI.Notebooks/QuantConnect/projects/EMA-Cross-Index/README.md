@@ -126,7 +126,7 @@ Les chiffres de cette section et du tableau « Backtest Metrics » viennent de c
 
 <p align="center"><img src="assets/readme/ema-regime.png" alt="Triple-panel vertical « Régimes de marché SPY + signal EMA + performance » sur 2015-2026 : panel haut « SPY avec régimes (rouge = Bear: SPY < SMA200) » (SPY bleu ~170→690, SMA200 orange pointillé ~170→620, 13 bandes rouges verticales Bear = 2015-Q4 / 2018-Q4 / 2019-Q2 / 2020-Q1 COVID / 2022-H1 inflation / 2022-Q3 / 2023 mini-bear) ; panel milieu « Signal EMA 20/50 (1 = en position) » step 0/1 bleu (TIM baseline ~77 %, en position sur 2015-2018 et post-2024 continu, oscillations plus fréquentes 2019-2023) ; panel bas « Performance cumulée: Strategy vs B&H » (EMA Strategy bleu fin ~2,5×, SPY B&H orange pointillé ~4,0× — UNDERPERFORME sur fenêtre bull continue)." width="900"/><br/><em>Régimes — SPY avec bandes rouges Bear (SPY < SMA200) en haut, signal EMA 20/50 (1 = en position) au milieu, performance cumulée strategy vs B&amp;H en bas. La stratégie coupe 23 % du temps et UNDERPERFORME le B&amp;H sur la fenêtre complète.</em></p>
 
-### Synthèse — la configuration optimale bat-elle le SPY buy-and-hold ?
+### Synthèse — que montre la variante avec stop face à SPY détenu ?
 
 **Bilan exploratoire — rendement inférieur à SPY détenu.** Parmi les variantes comparées dans la cellule 44, **EMA 20/60 + trail 5 %** livre :
 - Sharpe 0.797 (+0.033 vs baseline 0.765)
@@ -143,7 +143,7 @@ Les chiffres de cette section et du tableau « Backtest Metrics » viennent de c
 |---------------|--------|------|-------|---------|
 | **Baseline EMA 20/50** | 0.765 | 8.7 % | -25.5 % | Ancienne baseline (avant la v2.0) |
 | **EMA 20/60 (rapport OOS/IS 1,55 parmi cinq candidats)** | 0.853 | 9.8 % | -25.6 % | Périodes retenues ; cooldown ajouté séparément |
-| **EMA 20/60 + trail 5 % (optimal)** | 0.797 | 9.0 % | -24.2 % | Variante de recherche avec stop, non retenue |
+| **EMA 20/60 + trail 5 % (variante défensive)** | 0.797 | 9.0 % | -24.2 % | Variante de recherche avec stop, non retenue |
 | SPY Buy & Hold (2015-2026) | ~0.80* | 12.4 % | -33.7 % | Référence |
 
 (*) Sharpe SPY B&H recalculé sur la fenêtre identique pour comparaison.
@@ -167,7 +167,7 @@ Mesures du carnet de recherche (pandas, hors moteur Lean), pas du code actuel : 
 |---------------|--------|------|-------|---------|
 | Baseline EMA 20/50 (avant la v2.0) | 0.765 | 8.7 % | -25.5 % | Ancienne baseline |
 | **EMA 20/60 (rapport OOS/IS 1,55 parmi cinq candidats)** | **0.853** | **9.8 %** | -25.6 % | Périodes retenues ; cooldown ajouté séparément |
-| EMA 20/60 + trail 5 % (optimal défensif) | 0.797 | 9.0 % | -24.2 % | Live candidate |
+| EMA 20/60 + trail 5 % (variante défensive) | 0.797 | 9.0 % | -24.2 % | Variante de recherche avec stop, non retenue |
 | SPY Buy & Hold | ~0.80 | 12.4 % | -33.7 % | Référence bull market |
 
 ## Files
