@@ -155,6 +155,7 @@ Run locally against any PR head:
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -1025,9 +1026,12 @@ def _gh_api(path: str) -> object:
 
     Repeated reads of the same path are conditional (#25510 T-I): a stored
     `Etag` is sent as `If-None-Match`, and a 304 re-uses the last body we read
-    for that path (a 304 costs no installation quota). A non-zero exit, or a
-    200 whose body is not JSON, is still a GateError -- an unreadable state is
-    a failure, never a pass, and never a silent reuse of a stale body.
+    for that path (a 304 costs no installation quota). The HTTP status is read
+    from the `-i` header block BEFORE the returncode is judged, because
+    `gh api` exits 1 on a 304 (measured) -- a 304 with a cached body is a
+    success on any rc. Any OTHER non-zero exit, or a 200 whose body is not
+    JSON, is a GateError: an unreadable state is a failure, never a pass, and
+    never a silent reuse of a stale body.
     """
     global _GH_API_CALLS, _GH_API_304
     _GH_API_CALLS += 1
@@ -1049,31 +1053,38 @@ def _gh_api(path: str) -> object:
     except FileNotFoundError as exc:  # pragma: no cover - environment problem
         raise GateError(f"gh CLI not available: {exc}") from exc
 
-    # A non-zero exit is an unreadable read: fatal, never a cache-reuse.
-    if completed.returncode != 0:
-        raise GateError(
-            f"gh api {path} failed (exit {completed.returncode}): "
-            f"{completed.stderr.strip()[:400]}"
-        )
-
     # `gh api -i` prints the status line + headers, a blank line, then body.
+    # The status is read from that header block BEFORE the returncode is judged:
+    # `gh api` exits 1 on a 304 (measured -- stdout `HTTP/2.0 304 Not Modified`,
+    # stderr `gh: HTTP 304`), so a 304 must be resolved as a success first.
     header_block, _, body_text = completed.stdout.partition("\n\n")
-    new_etag = _gh_etag(header_block)
+    status = _gh_http_status(header_block)
 
-    if _gh_http_status(header_block) == 304:
-        # Unchanged since our stored Etag: re-use the last readable body.
-        # (We only send If-None-Match when we have one, so `entry` is set here.)
+    if status == 304:
+        # Unchanged since our stored Etag: re-use the last readable body, on
+        # any rc. (We only send If-None-Match when we have one, so `entry` is
+        # set here.) A deepcopy: the cache must not alias a caller's object.
         _GH_API_304 += 1
         if entry is None:
             raise GateError(f"gh api {path} returned 304 with no cached body")
-        return entry[1]
+        return copy.deepcopy(entry[1])
 
+    # Any OTHER non-zero exit is an unreadable read: fatal, never a cache-reuse.
+    if completed.returncode != 0:
+        raise GateError(
+            f"gh api {path} failed (exit {completed.returncode}, HTTP {status}): "
+            f"{completed.stderr.strip()[:400]}"
+        )
+
+    new_etag = _gh_etag(header_block)
     try:
         body = json.loads(body_text)
     except json.JSONDecodeError as exc:
         raise GateError(f"gh api {path} returned non-JSON: {exc}") from exc
     if new_etag:
-        _GITHUB_READ_CACHE[path] = (new_etag, body)
+        # Store a copy so a caller mutating the returned body can't corrupt the
+        # cache that a later 304 would re-use.
+        _GITHUB_READ_CACHE[path] = (new_etag, copy.deepcopy(body))
     return body
 
 

@@ -1719,13 +1719,15 @@ def test_gh_api_304_reuses_last_readable_body(monkeypatch):
     body = {"total_count": 1, "check_runs": [{"id": 1}]}
     etag = '"w/1"'
     ok = f'HTTP/2.0 200 OK\nEtag: {etag}\n\n{_json.dumps(body)}\n'
+    # A 304 comes back from `gh api` as exit 1 (measured) with `gh: HTTP 304`
+    # on stderr -- the mock mirrors the real rc, it does not assume 0.
     not_modified = f'HTTP/2.0 304 Not Modified\nEtag: {etag}\n'
 
     def fake_run(cmd, **_kw):
         # First call has no If-None-Match (200); the second sends the stored
-        # etag back and is answered 304.
+        # etag back and is answered 304 (rc 1, as `gh api` really does).
         if f"If-None-Match: {etag}" in cmd:
-            return _gh_process(0, not_modified)
+            return _gh_process(1, not_modified, "gh: HTTP 304")
         return _gh_process(0, ok)
 
     monkeypatch.setattr(pr_gate.subprocess, "run", fake_run)
@@ -1775,6 +1777,34 @@ def test_gh_api_200_non_json_is_a_failure(monkeypatch):
         pr_gate._gh_api(
             "repos/o/r/commits/deadbeef/check-runs?per_page=100&page=1"
         )
+
+
+def test_gh_api_502_with_cached_body_is_a_failure(monkeypatch):
+    """A non-304 non-zero exit stays a GateError even with a body cached.
+
+    The 304 must be resolved from the header status BEFORE the returncode is
+    judged: a 502 (or rate-limit) carrying a cached body is a failure, not a
+    silent reuse. Negative control for the 304-is-success path.
+    """
+    import json as _json
+    path = "repos/o/r/commits/deadbeef/check-runs?per_page=100&page=1"
+    ok = f'HTTP/2.0 200 OK\nEtag: "e1"\n\n{_json.dumps({"total_count": 1})}\n'
+
+    def ok_run(cmd, **_kw):
+        return _gh_process(0, ok)
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", ok_run)
+    pr_gate._GITHUB_READ_CACHE.clear()
+    pr_gate._gh_api(path)
+    assert path in pr_gate._GITHUB_READ_CACHE  # a readable body is cached
+
+    def bad_gateway_run(cmd, **_kw):
+        # rc 1 with a 502 status (not a 304) -- must NOT be treated as a reuse.
+        return _gh_process(1, "HTTP/2.0 502 Bad Gateway\n", "gh: HTTP 502")
+
+    monkeypatch.setattr(pr_gate.subprocess, "run", bad_gateway_run)
+    with pytest.raises(pr_gate.GateError):
+        pr_gate._gh_api(path)
 
 
 # --- plancher de merge (--dwell-min, mandat user 2026-09-07) ------------------
