@@ -474,8 +474,32 @@ def test_integration_profil_marathon_delegation_mesuree():
     for expected in ("tests", "scripts/tests", "scripts/notebook_tools/tests"):
         assert expected in selected, expected
     assert "R4 native" in reason
-    # La suite pin du controle positif (scripts/validation/tests, sans test
-    # R4 ni citation du carnet) reste EXCLUE : c'est le trou temoin que le
-    # lot 4x/jour (P3) borne.
-    if "scripts/validation/tests" in suites:
-        assert "scripts/validation/tests" not in selected
+    # NB : sur CE profil, la suite pin (scripts/validation/tests) peut etre
+    # RETENUE par R3 : le pin cite litteralement "README.md" (assertion de
+    # lien d'index), et le profil marathon change un README.md -- la reference
+    # native fait alors son travail et elargit la couverture. L'exclusion du
+    # pin, elle, se mesure sur le profil temoin (carnet + yaml, sans README) :
+    # voir test_integration_profil_temoin_pin_exclu.
+
+
+def test_integration_profil_temoin_pin_exclu():
+    """#25510, controle positif : sur le profil temoin (edition du carnet
+    pin + un twin_pairs.d/), la delegation retient des suites restreintes
+    qui EXCLUENT scripts/validation/tests -- le pin n'y est selectionne par
+    aucune regle (nom du carnet construit par concatenation : R3-aveugle ;
+    aucun parcours d'arborescence : R4-aveugle ; convention test_<stem>.py
+    : R2-aveugle). La selection restreinte passe donc VERT sur ce profil,
+    et seul le lot 4x/jour (P3, slow-lane.yml) joue le pin."""
+    suites = mod.parse_collected_paths(mod.DEFAULT_WORKFLOW)
+    temoin = [
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb",
+        "scripts/notebook_tools/twin_pairs.d/sudoku-01-backtracking.yaml",
+    ]
+    mode, selected, reason = mod.scope(
+        "pull_request", suites,
+        readers=[("diff", lambda _b: temoin)],
+    )
+    assert mode == "restricted", reason
+    assert set(selected) <= set(suites)
+    # le pin est hors selection : c'est le trou temoin que le lot borne.
+    assert "scripts/validation/tests" not in selected, selected
