@@ -151,8 +151,8 @@ for dep in "$Z3_MANAGED:Microsoft.Z3.dll" "$EXPR_UTILS:ExpressionUtils.dll"; do
     fi
 done
 
-# 3. macOS x64: native library from the same NuGet package as the managed DLL.
-#    Microsoft.Z3 4.12.2 has no macOS ARM64 asset; use the matching wheel there.
+# 3. macOS x64 : bibliothèque native du même paquet NuGet que la DLL managée.
+#    Microsoft.Z3 4.12.2 ne fournit pas ARM64 : utiliser la wheel correspondante.
 if [[ "$OS" == "Darwin" && "$ARCH" == "x86_64" ]]; then
     Z3_NATIVE="$NUGET_ROOT/microsoft.z3/$Z3_VERSION/runtimes/osx-x64/native/libz3.dylib"
     if [[ ! -f "$Z3_NATIVE" ]]; then
@@ -162,8 +162,8 @@ if [[ "$OS" == "Darwin" && "$ARCH" == "x86_64" ]]; then
     cp "$Z3_NATIVE" "$STAGE_DIR/libz3.dylib"
 fi
 
-# Linux and macOS ARM64: native library from the z3-solver wheel of the same release
-#    (the Microsoft.Z3 NuGet package has no linux-x64 native asset).
+# Linux et macOS ARM64 : bibliothèque native de la wheel z3-solver de même version
+#    (le paquet NuGet Microsoft.Z3 ne fournit pas de natif linux-x64).
 if [[ "$OS" == "Linux" || ( "$OS" == "Darwin" && "$ARCH" == "arm64" ) ]]; then
     WHEEL_DIR="$(mktemp -d)"
     if [[ "$OS" == "Linux" ]]; then
@@ -207,7 +207,7 @@ for d in "${required_dlls[@]}"; do
     fi
 done
 
-# Publish only the verified directory; retain the previous deployment if replacement fails.
+# Publier le répertoire vérifié ; conserver le précédent si le remplacement échoue.
 BACKUP_DIR=""
 if [[ -e "$DEPLOY_DIR" ]]; then
     BACKUP_DIR="$(mktemp -d "$SUBMODULE_DIR/.deploy-backup.XXXXXX")"
