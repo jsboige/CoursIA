@@ -74,7 +74,7 @@ Les frais cumulés de la version 2 représentent environ 5 % de la valeur finale
 
 Les tableaux de la section précédente mesurent la version 1 : les tests appariés et le verdict NO BEATS n'ont pas été relancés sur la version 2. L'écart entre les deux lignes vient des corrections (la version 2 traite dès janvier 2016 et ne reçoit plus de barre recopiée) et peut-être d'une révision des données entre les deux runs ; un rejeu de la version 1 le même jour les départagerait, il n'a pas été lancé. La version 1 reste inscrite au registre d'ombre, mais ne peut produire aucun passage accepté.
 
-La version 2 lisait encore `start` et `end` avec des valeurs par défaut, ce que la règle 1 du contrat interdit : un backtest lancé sans elles tournait sur une période implicite. Elles sont retirées (2026-11-11) ; rien ne change quand les deux dates sont passées, ce que fait chaque passage. Un backtest de contrôle du 2026-10-17 au 2026-11-10 (projet QC 39243885) le vérifie. La version 2 sera gelée au registre comme une nouvelle candidate, sur ce projet, au SHA de cette correction sur `main`.
+La version 2 lisait encore `start` et `end` avec des valeurs par défaut, ce que la règle 1 du contrat interdit : un backtest lancé sans elles tournait sur une période implicite. Elles sont retirées (2026-11-11) ; rien ne change quand les deux dates sont passées, ce que fait chaque passage. Un backtest de contrôle du 2026-10-17 au 2026-11-10 (projet QC 39243885) le vérifie. La version 2 est gelée au registre le 2026-11-12, sous l'identifiant `btc-voltarget-v2`, sur ce projet, au SHA de cette correction sur `main` (`fa1d63e`).
 
 ## Sources
 

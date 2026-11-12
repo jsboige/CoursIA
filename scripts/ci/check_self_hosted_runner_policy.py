@@ -221,6 +221,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (meme release, meme ${GITLEAKS_VERSION}), forme deja eprouvee sur ce
     #   pool par son job positive-controls. La jambe fork reste GitHub-hosted
     #   sous la forme docker : `gitleaks-fork`.
+    "secret-scan-controls.yml",
+    # secret-scan-controls.yml (#25510 tranche T-B, 2026-11-12, lane
+    #   myia-ai-01:CoursIA) : les jobs positive-controls et assert-egress
+    #   sortis de secret-scan.yml, a forme hybride inchangee (#22461) et
+    #   garde anti-fork conservee. Seul le declenchement change (paths:).
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
