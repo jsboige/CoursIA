@@ -145,6 +145,8 @@ def densify(ids: np.ndarray, vals: np.ndarray, feature_ids: np.ndarray) -> np.nd
     feature_ids = np.asarray(feature_ids, dtype=np.int64)
     T = ids.shape[0]
     dense = np.zeros((T, feature_ids.size), dtype=np.float32)
+    if feature_ids.size == 0:
+        return dense
     # position de chaque id du top-k dans feature_ids (ou -1)
     order = np.argsort(feature_ids)
     sorted_feats = feature_ids[order]
