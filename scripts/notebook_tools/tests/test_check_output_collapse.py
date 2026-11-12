@@ -573,3 +573,36 @@ def test_history_rejects_missing_ref_and_accepts_empty_valid_history(tmp_path):
     result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stderr
     assert "# findings: 0" in result.stderr
+
+
+def test_history_diff_tree_failure_is_not_clean_zero(monkeypatch, capsys):
+    """Un échec de lecture d'un commit ne signifie pas une liste vide."""
+    import check_output_collapse as module
+
+    def broken_git(*args, **kwargs):
+        if args[0] == "log":
+            return "abc123 2026-11-11 example\n"
+        if args[0] == "diff-tree":
+            return None
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "_git", broken_git)
+    assert module.main(["--history", "--json"]) == 1
+    captured = capsys.readouterr()
+    assert "abc123" in captured.err
+    assert "# findings: 0" not in captured.err
+
+
+def test_history_empty_diff_is_a_valid_zero(monkeypatch, capsys):
+    import check_output_collapse as module
+
+    def empty_git(*args, **kwargs):
+        if args[0] == "log":
+            return "abc123 2026-11-11 example\n"
+        if args[0] == "diff-tree":
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "_git", empty_git)
+    assert module.main(["--history", "--json"]) == 0
+    assert "# findings: 0" in capsys.readouterr().err
