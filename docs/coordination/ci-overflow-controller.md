@@ -372,7 +372,7 @@ l'effet : une minuterie peut mourir sans que rien ne le dise.
 
 **L'artefact installe etait en retard sur son generateur.** Le lanceur
 `dispatch_overflow.cmd` installe ne passait pas `-f min_interval` (que le
-generateur ecrit depuis) et chacune de ses 20 lignes portait un CR
+generateur ecrit depuis) et chacune de ses lignes portait un CR
 supplementaire (`\r\r\n`, Heritage de `write_text` sans `newline=""`). Rien ne
 le signalait.
 
