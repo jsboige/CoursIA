@@ -338,6 +338,41 @@ def _load_inventory_module():
     return mod
 
 
+def test_kernel_env_named_coursia_py313_is_known():
+    """#5081 — `coursia-py313-argu` (et le prefixe `coursia-py313`) est un
+    kernel d'env MESURE et publie du depot, pas un kernel inconnu.
+
+    Mesure fondatrice : la table des kernels de `kernels-runtime.md` publie
+    `coursia-py313-argu` (python 3.13.16 / numpy 2.5.2, executable
+    `coursia-canonical`) et documente « po-2023 python3 ==
+    coursia-py313-argu » — plusieurs noms, un seul environnement. Le carnet
+    `Argumentation-08b-Executor-Python.ipynb` (nom canonique, suffixe
+    `-python` reconnu, index absent = base implicite) etait classe `ambigu`
+    uniquement parce que la liste des prefixes ignorait ce nom — meme classe
+    d'artefact que le bloc #23193 (`.net-csharp`, `coursia-ml-training`,
+    `pyphi`).
+
+    Controle negatif : un kernel d'env HORS liste (`gametheory-wsl`, reel
+    dans le depot mais pas encore measure/publie) reste `ambigu` — la liste
+    ne s'elargit pas par sympathie, seulement par mesure publiee.
+    """
+    mod = _load_inventory_module()
+    #idx=None (base implicite), kernel d'env connu, suffixe reconnu -> conforme.
+    assert mod._classify(
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/"
+        "Argumentation-08b-Executor-Python.ipynb",
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/"
+        "Argumentation-08b-Executor-Python",
+        None, "coursia-py313-argu", "-python", None,
+    ) == mod._CLASSIF_CONFORME
+    #Prefixe nu, meme famille : connu lui aussi.
+    assert mod._kernel_known("coursia-py313")
+    #Controle negatif : kernel env-nomme hors liste reste inconnu.
+    assert not mod._kernel_known("gametheory-wsl")
+    #Et None reste inconnu (jamais enregistre).
+    assert not mod._kernel_known(None)
+
+
 def test_inventory_archive_revision_no_kernelspec_is_not_broken_protocol():
     """#23655 branche 1 : blobs lus, aucun kernelspec -> inventaire publie.
 
