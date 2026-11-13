@@ -55,7 +55,7 @@ position GLP :
 
 ## 3. L'architecture GLP (Generative Latent Prediction)
 
-### 3.1 Deux approaches concurrentes (§4.3.1)
+### 3.1 Deux approches concurrentes (§4.3.1)
 
 - **Encoder-décodeur** (Genie 2, NVIDIA Cosmos) : privilégie la **validation** — prédit
   directement l'observation suivante $o'$ à partir de $o$ et $a$, en **boucle fermée**
@@ -115,7 +115,7 @@ génératif (p. 14–15).
 
 ## 4. PAN 2 : l'instanciation concrète du GLP (§5.2)
 
-PAN (Physical, Agentic, Nested) instantiate le GLP en un monde à **représentation mixte** et
+PAN (Physical, Agentic, Nested) instancie le GLP en un monde à **représentation mixte** et
 **raisonnement multi-échelle** :
 
 - **Sensory Encoder $h$** : voie **dual** — (i) un tokenizer mappe hiérarchiquement le signal
@@ -155,7 +155,7 @@ Fait relevé **firsthand** (model card + recette vLLM, lues le 12/11) :
   2507.05169) et couple **raisonnement conceptuel** (un LLM) et **raisonnement perceptuel**
   (un modèle de diffusion latente).
 - Le backbone **perceptuel** est un **MMDiT de 29 B paramètres** ; le simulateur génératif est
-  un **diffusion transformer bimant** (dual-stream) : l'état et la vidéo sont deux flux, chacun
+  un **diffusion transformer dual-stream multimodal (MMDiT)** : l'état et la vidéo sont deux flux, chacun
   avec ses propres projections et réseaux feed-forward, **reliés par auto-attention à chaque
   couche** (recette vLLM).
 - **Checkpoints** : configs livrées `config/pretrain_29B_720p.yaml` et
@@ -164,7 +164,7 @@ Fait relevé **firsthand** (model card + recette vLLM, lues le 12/11) :
   Ulysses 2) » ; config par défaut **8× H200 · BF16** ;
   `vllm serve IFM/PAN2 --num-gpus 4 --cfg-parallel-size 2 --usp 2 --vae-patch-parallel-size 4 --vae-parallel-mode tile --omni`
   (exige vLLM ≥ 0.33.0 + VLLM-Omni pour le chemin de génération).
-- **Licence** : Apache-2.0. Pipeline : Image-Text-to-Video (Diffusers, Safetensors).
+- **Licence** : Apache-2.0 pour le modèle (model card) ; les composants du pipeline sont sous leurs licences propres. Pipeline : Image-Text-to-Video (Diffusers, Safetensors).
 
 ## 6. Borne de périmètre — ce que cette distillation NE fait PAS
 
