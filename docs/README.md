@@ -88,6 +88,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/lane-claim-detail.md](reference/lane-claim-detail.md) | Lane claim protocol — détail (référencé depuis .claude/rules/lane-claim-protocol.md) |
 | [reference/notebook-quantitative-prose.md](reference/notebook-quantitative-prose.md) | Valeurs quantitatives en prose de notebook — détail de la règle C.5 |
 | [reference/picker-delaisse-detail.md](reference/picker-delaisse-detail.md) | Picker delaisse — verification FIRSTHAND (detail) |
+| [reference/tapis-rapide.md](reference/tapis-rapide.md) | Tapis rapide (#22983) — voie légère du tirage des grains : la commande, les écarts, les poids, les non-reprises de l'ancienne voie |
 | [reference/prevalidation-dossier-order-detail.md](reference/prevalidation-dossier-order-detail.md) | Prévalidation — pourquoi l'ordre compte, et ce que la tête vient périmer |
 | [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) | SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication |
 | [reference/submodule-maintenance-detail.md](reference/submodule-maintenance-detail.md) | Sous-modules — détail : état vérifié, incidents et mesures datées |
