@@ -38,6 +38,7 @@ paquet importable, et deux organes peuvent partager un nom de module.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -987,6 +988,47 @@ class ReserveAnalysisTests(unittest.TestCase):
         text = mod.render_text([report], "2026-09-25", "open", 1)
         self.assertIn("1 reserve(s) de relecteur", text)
         self.assertIn("[reserve COMMENT_WITH_CONCERNS]", text)
+
+
+def test_cli_reserve_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    """Une issue sans Concern ni remark ne doit pas perdre sa réserve."""
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 1
+    assert payload["issues"][0]["reserves"][0]["comment_id"] == 51
+
+
+def test_cli_reserve_only_text_reports_the_open_reserve(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 reserve(s) de relecteur" in text
+    assert "COMMENT_WITH_CONCERNS" in text
+
+
+def test_cli_resolved_reserve_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+        c(53, "2026-11-06T09:00:00Z", LIFT_WITH_TIMESTAMP),
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 0
 
 
 if __name__ == "__main__":
