@@ -279,6 +279,26 @@ except ImportError:
     except ImportError:
         origami_parking = None  # type: ignore[assignment]
 
+# Les campagnes GELES par un veto USER (#17040). La definition PARTAGEE vit
+# dans `scripts/coordination/frozen_campaigns.py` : elle est deja lue par
+# `merge_ready` (skip de perimetre) et par le gate d'entree
+# `check_adjoint_prevalidation.py`. Le tapis, lui, ne lisait que des
+# marqueurs `[FROZEN]` poses dans un corps ou un fil -- donc une campagne
+# definie comme gelee pouvait etre servie tant que personne n'avait pose le
+# marqueur a la main (constate le 11/11 : #11601, dont la densification a
+# ete servie sous un parapluie gele, et refusee ensuite au merge).
+# Import best-effort, comme `origami_parking` : sans module, le tapis
+# tourne sans cette lecture (fail-OPEN), jamais l'inverse.
+try:
+    import frozen_campaigns
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import frozen_campaigns
+    except ImportError:
+        frozen_campaigns = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -2932,6 +2952,11 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     plus** -- et le filet des commentaires dans la requete qu'il fait de
     toute facon.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        # Un parapluie gele par un veto USER est ecarte SANS lecture du
+        # fil : le gel ne depend d'aucun marqueur pose a la main.
+        return True
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         return None
@@ -3076,12 +3101,40 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     return comments, body
 
 
+def frozen_umbrella_veto(issue_number: int) -> str | None:
+    """L'item est-il un parapluie GEL par un veto user ?
+
+    Rend le numero du veto (``"17040"``) si l'issue est une cle de
+    `FROZEN_UMBRELLAS`, ``None`` sinon.
+
+    La definition est PARTAGEE (`scripts/coordination/frozen_campaigns.py`) :
+    c'est elle que lisent deja `merge_ready` et le gate d'entree. Le tapis
+    la lisait pas : un parapluie defini comme gele n'etait vu gel que si
+    un marqueur `[FROZEN]` avait ete pose a la main dans son corps ou son
+    fil -- et la main posee oublie, la densification repartait sous un
+    parapluie gele (mesure du 11/11 : #11601, parapluie gele par le veto
+    #17040, dont la densification a ete servie puis refusee au merge).
+
+    Un veto USER ne se leve pas par un `[UNFROZEN]` de lane : il se leve
+    quand la definition change. C'est pourquoi cette lecture passe AVANT
+    la lecture des marqueurs, et qu'elle ne demande aucun acces reseau.
+    """
+    if frozen_campaigns is None:
+        return None
+    try:
+        return frozen_campaigns.FROZEN_UMBRELLAS.get(str(issue_number))
+    except Exception:  # noqa: BLE001 - une definition illisible gele personne
+        return None
+
+
 def has_frozen_marker(issue_number: int) -> str | None:
     """L'item est-il GEL ? Renvoie la SOURCE du gel, ou l'absence de gel.
 
     TRI-ETAT :
     - ``"body"``    -- regle A : le corps porte la ligne `[FROZEN] ...` ;
     - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le fil ;
+    - ``"veto #N"`` -- le parapluie est gele par un veto USER (la
+      definition partagee `FROZEN_UMBRELLAS`) ;
     - ``False``     -- l'item n'est pas gel ;
     - ``None``      -- la LECTURE a echoue (fail-OPEN).
 
@@ -3099,8 +3152,13 @@ def has_frozen_marker(issue_number: int) -> str | None:
 
     Cout : la MEME lecture que `has_recent_delivery_marker` (une requete,
     ou ZERO quand l'instantane de la passe sert le fil), et le corps vient
-    du cache du pool (`_POOL_BODIES`), que le pool paie deja.
+    du cache du pool (`_POOL_BODIES`), que le pool paie deja. La lecture
+    du veto USER, elle, ne coute **rien** : elle precede la lecture du
+    fil, et n'atteint jamais le reseau.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        return f"veto #{veto}"
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         # Lecture en echec : fail-OPEN. L'appelant distingue « pas gele »
@@ -3129,6 +3187,12 @@ def gel_cause_text(gel: str | None) -> str | None:
     if gel is None:
         return ("GEL NON MESURE : la lecture du gel a echoue -- fail-OPEN "
                 "assume, l'item n'est pas ecarte pour autant")
+    if isinstance(gel, str) and gel.startswith("veto #"):
+        return (f"GEL ({gel}) : le parapluie est gele par un VETO USER. Le "
+                f"gel se leve quand la definition partagee "
+                f"(`scripts/coordination/frozen_campaigns.py::FROZEN_UMBRELLAS`) "
+                f"change -- ni un `[UNFROZEN]` de lane, ni un `[RELEASED]`, "
+                f"ni un marqueur pose a la main dans le corps ne le leve.")
     return (f"GEL ({gel}) : l'item est gele. Regle A = ligne `[FROZEN] ...` "
             f"dans le corps ; regle B = en-tete `[FROZEN]` dans le fil. Le "
             f"degel consiste a retirer la ligne du corps, ou a poster "
