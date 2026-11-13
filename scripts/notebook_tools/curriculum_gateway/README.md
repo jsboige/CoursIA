@@ -14,7 +14,8 @@ La route `POST /curriculum/query` accepte `series`, `path` et `prerequisites`.
 Les deux dernières actions exigent `path`, identifiant exact du carnet relatif
 à `MyIA.AI.Notebooks/`. Les réponses portent `status` (`ok`, `invalid` ou
 `not_found`) et `results`. Le lecteur signale les prérequis non renseignés :
-cela ne prouve pas leur absence. L'export actuel ne porte que le premier niveau
-de sous-série. Le service utilise un seed Kernel Gateway temporaire, supprimé
-à l'arrêt ; il ne crée aucun carnet supplémentaire dans le cursus. L'écoute
+cela ne prouve pas leur absence. L'export RDF contient les niveaux de sous-série
+imbriqués, mais le lecteur partagé ne restitue que la sous-série directement
+liée au carnet, sans ses parents. Le service utilise un seed Kernel Gateway
+temporaire, supprimé à l'arrêt ; il ne crée aucun carnet supplémentaire dans le cursus. L'écoute
 est limitée à loopback par le lanceur partagé.
