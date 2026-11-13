@@ -43,7 +43,7 @@ Usage
 -----
 Replace existing `subprocess.run(["gh", "issue", "create", ...])` calls with::
 
-    from scripts.issue_create_idempotent import create_issue_idempotent
+    from scripts.coordination.issue_create_idempotent import create_issue_idempotent
 
     n, existing = create_issue_idempotent(
         title=..., body=..., label=...,
@@ -59,7 +59,7 @@ Replace existing `subprocess.run(["gh", "issue", "create", ...])` calls with::
 
 CLI shim is also exposed::
 
-    python scripts/issue_create_idempotent.py --check-only --title "foo"
+    python scripts/coordination/issue_create_idempotent.py --check-only --title "foo"
 """
 from __future__ import annotations
 
