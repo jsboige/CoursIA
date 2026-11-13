@@ -1,5 +1,7 @@
 # Environnement Python — REPARER, ne JAMAIS contourner (detail)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Resume operationnel : CLAUDE.md section F.
 
 **Regle user 2026-05-06 (incident scipy DLL/sklearn force-reinstall)** : un environnement Python degrade ne se contourne **jamais** par delegation, fallback ou skip. On repare **coute que coute**, en demandant un UAC user au besoin pour les operations privilegiees.

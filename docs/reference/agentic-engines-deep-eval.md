@@ -1,5 +1,7 @@
 # Évaluation approfondie des moteurs agentiques — ADK vs Semantic Kernel vs MS Agent Framework
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 > Livrable de l'issue [#14499](https://github.com/jsboige/CoursIA/issues/14499) (mandat user 2026-09-23 : « Il faut analyser les 3 en profondeur »).
 > Protocole commun : 6 points (état de l'art, modes d'orchestration **exécutés**, déterminisme, couverture C#/Python, coût pour le dépôt, verdict par critère).
 > Ce document porte les mesures et les tableaux — pas de rapport de cycle. Chaque affirmation est `VERIFIÉ` (mesure firsthand, commit/chemin cité) ou `RAPPORTE` (source primaire citée).

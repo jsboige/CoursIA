@@ -38,6 +38,7 @@ paquet importable, et deux organes peuvent partager un nom de module.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -527,6 +528,42 @@ class AnalyseTests(unittest.TestCase):
 class LaneSignatureTests(unittest.TestCase):
     """Classe 2 : les signatures mesurees qui ecartent un post de lane."""
 
+    def test_hors_flotte_closure_preflight_needs_manual_review(self):
+        body = (
+            "Hors flotte — clôture sur preuve, périmètre P1 de #25670.\n\n"
+            "[CLOSURE PREFLIGHT]\nschema: 1\nlane: astra:CoursIA\n"
+            "issue: 23793\nverdict: CLOSE\n"
+        )
+        report = mod.analyse_comments(
+            23793, [c(1, "2026-11-10T19:15:33Z", body)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_human_copying_header_keeps_the_remark(self):
+        body = (
+            "Hors flotte — clôture sur preuve.\n\n"
+            "[CLOSURE PREFLIGHT]\nschema: 1\nlane: astra:CoursIA\n"
+            "Je cite le dossier : il faut rouvrir car le test échoue."
+        )
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-10T19:15:33Z", body)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_closure_preflight_mention_is_not_a_lane_signature(self):
+        text = "Pourquoi ce dossier [CLOSURE PREFLIGHT] est-il clos ?"
+        self.assertEqual(mod.lane_signature(text), "")
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-10T19:15:33Z", text)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+
     def test_lane_near_seat(self):
         self.assertEqual(
             mod.lane_signature("[CLAIMED] lane myia-po-2024:CoursIA-2 — reprise du pli"),
@@ -951,6 +988,47 @@ class ReserveAnalysisTests(unittest.TestCase):
         text = mod.render_text([report], "2026-09-25", "open", 1)
         self.assertIn("1 reserve(s) de relecteur", text)
         self.assertIn("[reserve COMMENT_WITH_CONCERNS]", text)
+
+
+def test_cli_reserve_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    """Une issue sans Concern ni remark ne doit pas perdre sa réserve."""
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 1
+    assert payload["issues"][0]["reserves"][0]["comment_id"] == 51
+
+
+def test_cli_reserve_only_text_reports_the_open_reserve(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 reserve(s) de relecteur" in text
+    assert "COMMENT_WITH_CONCERNS" in text
+
+
+def test_cli_resolved_reserve_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+        c(53, "2026-11-06T09:00:00Z", LIFT_WITH_TIMESTAMP),
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 0
 
 
 if __name__ == "__main__":

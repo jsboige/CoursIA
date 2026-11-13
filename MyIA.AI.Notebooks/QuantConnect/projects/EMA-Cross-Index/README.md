@@ -8,7 +8,7 @@
 Dual EMA crossover on SPY (S&P 500 index ETF). Long when EMA(20) > EMA(60), flat otherwise.
 Includes a 3-day cooldown after exit to prevent immediate re-entry on false signals.
 
-EMA 20/60 selected over 20/50 based on robustness testing (IS/OOS ratio = 1.55).
+Le couple EMA 20/60 a été retenu parmi les cinq meilleurs couples IS après comparaison sur la fenêtre OOS 2010–2015 : Sharpe de 0,853 en IS (2015–2026) et 1,325 en OOS, soit un rapport OOS/IS de 1,55, le plus élevé des cinq. La fenêtre OOS ayant servi à choisir le couple, elle ne constitue pas une validation finale indépendante et ne suffit pas à écarter le surapprentissage.
 Slow=60 captures quarterly trends and reduces whipsaws compared to the standard 50-period.
 
 ## Paramètres
@@ -74,11 +74,13 @@ Les chiffres de cette section et du tableau « Backtest Metrics » viennent de c
 
 ### H1 — la grille de périodes EMA confirme-t-elle que 20/50 n'est pas optimal ?
 
-**Constat** : la heatmap Sharpe 2015-2026 révèle un **plateau (fast=8-12, slow=60-100)** avec un pic **fast=8, slow=100 = Sharpe 0.923** et un surendettement des colonnes slow=40 (max 0.80). La diagonale fast=20 (la baseline) reste sous-optimale (max 0.76). Le signal OOS sur 2010-2015 confirme : **EMA 20/60 IS Sharpe 0.853 → OOS Sharpe 1.325** (ratio IS/OOS robustesse = 1.55, le seul >1 sur la grille).
+**Constat — grille IS (2015–2026)** : la heatmap révèle un **plateau (fast=8-12, slow=60-100)** et un pic à **fast=8, slow=100 (Sharpe 0.923)**. Dans cette même grille, EMA 20/60 obtient 0.853 et la baseline EMA 20/50 obtient 0.765 : le résultat de 20/60 dépasse la baseline, mais reste sous le pic de la grille. Ce classement décrit les combinaisons testées sur cette fenêtre ; il ne démontre pas une dominance générale.
 
-**Lecture** : la baseline EMA 20/50 choisie a priori N'EST PAS dans le top 5 de la grille. Le couple **fast=20, slow=60** (cohérent avec la capture trimestrielle) bat systématiquement fast=20, slow=50 sur les deux fenêtres et divise par 2 la valeur du MaxDD (25.6 % vs 28.7 %).
+**Comparaison OOS (2010–2015)** : pour EMA 20/60, le Sharpe est **0.853 en IS et 1.325 en OOS**. Le rapport OOS/IS est 1,55 (1,325 / 0,853), le plus élevé des cinq couples présélectionnés sur leur Sharpe IS. Les cinq couples ont un Sharpe OOS supérieur à leur Sharpe IS ; cette hausse générale ne permet donc pas à elle seule de conclure que le signal est structurel.
 
-<p align="center"><img src="assets/readme/ema-grid-heatmap.png" alt="Dual-panel « Grille Sharpe et MaxDD par périodes EMA » — heatmaps divergentes RdYlGn (axe X Fast EMA period [8,10,12,15,20] × axe Y Slow EMA period [30,40,50,60,100]) : Sharpe ratio panel gauche (range 0,62-0,92) avec sweet-spot fast=8 slow=100 = Sharpe 0,923 (zone rouge-vert foncé), EMA 20/60 (ratio robustesse IS/OOS = 1,55) lit ~0,85 (jaune-vert) ; MaxDD inversé panel droite (range 15,2-28,7 %, vert = plus petit) avec fast=20 slow=40 = -28,7 % pire DD (rouge), EMA 20/60 lit ~-25 % (jaune). Confirmé H1 : baseline 20/50 N'EST PAS dans le top 5." width="900"/><br/><em>H1 — heatmap du Sharpe ratio (gauche) et MaxDD inversé (droite) par périodes EMA (fast 8-20, slow 30-100) sur 2015-2026. Le sweet spot (fast=8-12, slow=60-100) domine structurellement.</em></p>
+**Lecture** : la baseline EMA 20/50 choisie a priori N'EST PAS dans le top 5 de la grille IS. Le Sharpe du couple **fast=20, slow=60** (cohérent avec la capture trimestrielle) est supérieur à celui du 20/50 sur les deux fenêtres comparées. En revanche, le MaxDD IS est pratiquement identique : −25,6 % pour 20/60 contre −25,5 % pour 20/50 ; il n'est pas divisé par deux. Le couple 20/60 a été retenu après examen des résultats OOS des cinq candidats : ce choix reste exposé à la sélection des paramètres et mérite une validation indépendante.
+
+<p align="center"><img src="assets/readme/ema-grid-heatmap.png" alt="Dual-panel « Grille Sharpe et MaxDD par périodes EMA » — heatmaps divergentes RdYlGn (axe X Fast EMA period [8,10,12,15,20] × axe Y Slow EMA period [30,40,50,60,100]) : Sharpe ratio panel gauche (range 0,62-0,92) avec le pic fast=8 slow=100 = Sharpe 0,923, EMA 20/60 à ~0,85 et baseline EMA 20/50 à ~0,76 ; MaxDD inversé panel droite (range 15,2-28,7 %, vert = plus petit) avec fast=20 slow=40 = -28,7 % pire DD (rouge), EMA 20/60 lit ~-25 % (jaune). Les Sharpe 0,923 et 0,853 proviennent de la même grille IS 2015-2026 ; le rapport OOS/IS de 1,55 pour 20/60 vient de la comparaison séparée avec 2010-2015, dont les résultats ont servi au choix parmi cinq couples." width="900"/><br/><em>H1 — Grille des Sharpe et MaxDD pour les périodes EMA (fast 8-20, slow 30-100), mesurée sur la fenêtre IS 2015-2026. Les couples fast=8/slow=100 et fast=20/slow=60 ont respectivement un Sharpe de 0,923 et 0,853 dans cette grille. Ce classement dépend des couples et de la fenêtre examinés ; il n'établit pas une dominance structurelle générale.</em></p>
 
 ### H2 — la triple EMA (fast/medium/slow) améliore-t-elle le signal ?
 
@@ -140,7 +142,7 @@ Les chiffres de cette section et du tableau « Backtest Metrics » viennent de c
 | Configuration | Sharpe | CAGR | MaxDD | Verdict |
 |---------------|--------|------|-------|---------|
 | **Baseline EMA 20/50** | 0.765 | 8.7 % | -25.5 % | Ancienne baseline (avant la v2.0) |
-| **EMA 20/60 (OOS robustesse 1.55)** | 0.853 | 9.8 % | -25.6 % | **Live candidate** |
+| **EMA 20/60 (rapport OOS/IS 1,55 parmi cinq candidats)** | 0.853 | 9.8 % | -25.6 % | **Live candidate** |
 | **EMA 20/60 + trail 5 % (optimal)** | 0.797 | 9.0 % | -24.2 % | **Live candidate défensif** |
 | SPY Buy & Hold (2015-2026) | ~0.80* | 12.4 % | -33.7 % | Référence |
 
@@ -164,7 +166,7 @@ Mesures du carnet de recherche (pandas, hors moteur Lean), pas du code actuel : 
 | Configuration | Sharpe | CAGR | MaxDD | Verdict |
 |---------------|--------|------|-------|---------|
 | Baseline EMA 20/50 (avant la v2.0) | 0.765 | 8.7 % | -25.5 % | Ancienne baseline |
-| **EMA 20/60 (OOS robustesse 1.55)** | **0.853** | **9.8 %** | -25.6 % | **Recommandé** |
+| **EMA 20/60 (rapport OOS/IS 1,55 parmi cinq candidats)** | **0.853** | **9.8 %** | -25.6 % | **Recommandé** |
 | EMA 20/60 + trail 5 % (optimal défensif) | 0.797 | 9.0 % | -24.2 % | Live candidate |
 | SPY Buy & Hold | ~0.80 | 12.4 % | -33.7 % | Référence bull market |
 
