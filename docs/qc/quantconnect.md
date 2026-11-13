@@ -22,6 +22,7 @@ Le repo contient déjà plusieurs documents canoniques. **Ne pas dupliquer ici**
 | [MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md](../../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/REGISTRY.md) | Registry training | 70+ checkpoints, stages -1/0/1/2, Anti-Bias |
 | [docs/archive/ml-trading-state.md](../archive/ml-trading-state.md) | Leçons ML trading | Pattern central vol vs direction, 7 disciplines, anti-FAANG |
 | [MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md](../../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md) | Assistants QC Cloud | 8 assistants, protocole coûts QCC, matrice delegation |
+| [docs/qc/qc-pieges-mesures.md](qc-pieges-mesures.md) | Pièges mesurés QC/Lean | Lecture d'un backtest, ordres, données, framework, graphiques, outils, suivi en ombre : entrées sourcées |
 
 **Règle de coherence** : pour les performances par stratégie (Sharpe, CAGR) -> `qc_strategies_catalog.md`. Pour les patterns réutilisables -> ce fichier. Pour les leçons ML trans-iteration -> `docs/archive/ml-trading-state.md`. Pour le mapping livre -> `BOOK_MAPPING.md` (racine, pas doublon `docs/`).
 
@@ -362,6 +363,8 @@ python scripts/quantconnect/check_pcm_single_source.py --json   # verdict struct
 - **USD trend filter degrade FX momentum**
 
 ## Leçons techniques QC
+
+Les pièges mesurés, détaillés et sourcés (lecture d'un backtest, ordres et exécution, données et univers, framework, graphiques, outils, suivi en ombre) sont dans [qc-pieges-mesures.md](qc-pieges-mesures.md) ; la liste ci-dessous reste le précis court.
 
 - `read_file` AVANT `update_file_contents` : collaboration lock (expire vite)
 - Options : `Resolution.MINUTE` sinon chain vide
