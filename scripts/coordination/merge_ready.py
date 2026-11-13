@@ -489,6 +489,30 @@ MAIN_RED_HISTORY_LIMIT = 20
 #: verdict remonte au commit precedent (point 2 de la meme revue).
 MAIN_RED_CODE_VERDICTS = ("success", "failure")
 
+#: Etapes d'INFRASTRUCTURE du job `Scripts Tests (CPU)`. Une `failure` dont
+#: la PREMIERE etape en echec est l'une d'elles n'est pas un verdict de code :
+#: le job n'a pas execute un seul test. Le cas mesure (12/11, run 43316243195,
+#: job 131524893709, runner `myia-ai-01-wsl-14`) : l'etape
+#: `actions/checkout@v4` a tire les 1 606 branches (`fetch-depth: 0`) de 22:12
+#: a 22:31Z puis a echoue sur `RPC failed; curl 28 Operation too slow`. Les
+#: gardes de plancher de collection qui suivent ont alors echoue faute de
+#: fichiers -- consequence, pas cause. Aucun test n'etait identifie dans le
+#: log : la sentinelle retenait `main` sur une panne de checkout.
+#:
+#: Les marqueurs sont des sous-chaines du NOM de l'etape, en minuscules. Les
+#: noms rendus par l'API sont ceux du workflow (mesure sur le job cite :
+#: `Run actions/checkout@v4`, `Run actions/setup-python@v5`,
+#: `Install dependencies`, `Purger un work dir reutilise au graphe
+#: incomplet (#15387)`).
+MAIN_RED_INFRA_STEP_MARKERS = (
+    "set up job",
+    "actions/checkout",
+    "actions/setup-python",
+    "install dependencies",
+    "purger un work dir",
+    "[heal]",
+)
+
 
 def default_hold_path(journal_path: Path) -> Path:
     """La retenue vit a cote du journal : meme machine, meme duree de vie."""
@@ -587,6 +611,85 @@ def _scripts_tests_check(
     return max(scripts_checks, key=lambda row: str(row.get("started_at") or ""))
 
 
+def _job_id_of_check(check: dict) -> str:
+    """Identifiant du job GitHub Actions qui a produit ce check-run.
+
+    Le `details_url` d'un check-run de job porte le job : mesure sur le job
+    cite par le coordinateur (131524893709), il vaut
+    `https://github.com/jsboige/CoursIA/actions/runs/43316243195/job/131524893709`.
+    On retombe sur l'identifiant du check-run lui-meme, qui vaut le job
+    dans ce cas. Vide si rien n'est identifiable -- et alors on ne lit
+    AUCUNE etape : une lecture impossible ne vaut pas un verdict.
+    """
+    details_url = str(check.get("details_url") or "")
+    match = re.search(r"/job/(\d+)", details_url)
+    if match:
+        return match.group(1)
+    raw = str(check.get("id") or "").strip()
+    return raw if raw.isdigit() else ""
+
+
+def _first_failing_step(runner: Runner, gh_env: dict[str, str],
+                        check: dict) -> str:
+    """Nom de la PREMIERE etape en echec du job ("" si elle est illisible).
+
+    Une seule lecture de job par commit juge, et seulement dans le cas
+    `failure` sans test identifie. Le tri se fait sur le numero d'etape :
+    l'API renvoie les etapes dans l'ordre, mais le tri le rend explicite.
+    """
+    job_id = _job_id_of_check(check)
+    if not job_id:
+        return ""
+    result = runner.run(
+        [
+            "gh", "api", f"repos/{REPO}/actions/jobs/{job_id}",
+            "--jq",
+            '[.steps[] | select(.conclusion == "failure")'
+            ' | {n: .name, o: .number}] | sort_by(.o) | .[0].n // ""',
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ""
+    return (result.stdout or "").strip().strip('"')
+
+
+def _is_infra_step(step_name: str) -> bool:
+    """Vrai si l'etape nommee est une etape d'INFRASTRUCTURE."""
+    lowered = (step_name or "").lower()
+    return any(marker in lowered for marker in MAIN_RED_INFRA_STEP_MARKERS)
+
+
+def _identified_test(runner: Runner, gh_env: dict[str, str], check: dict) -> str:
+    """Nom du test en echec identifie dans le check, sinon dans le log du run.
+
+    Vide quand aucun test n'est identifie -- et c'est precisement ce cas
+    qui demande de regarder les ETAPES du job : un `failure` sans test
+    identifiable peut etre une panne d'infrastructure.
+    """
+    summary = str((check.get("output") or {}).get("summary") or "")
+    test_match = re.search(r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)", summary)
+    if test_match:
+        return test_match.group(1)
+    # Le check-run natif Actions contient souvent un resume sans le detail
+    # pytest. Dans ce cas, lire le log d'echec du run associe au check.
+    details_url = str(check.get("details_url") or "")
+    run_match = re.search(r"/actions/runs/(\d+)(?:/|$)", details_url)
+    if run_match:
+        log_result = runner.run(
+            ["gh", "run", "view", run_match.group(1), "--repo", REPO, "--log-failed"],
+            env=gh_env,
+        )
+        if log_result.returncode == 0:
+            test_match = re.search(
+                r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)",
+                log_result.stdout or "",
+            )
+            if test_match:
+                return test_match.group(1)
+    return ""
+
+
 def refresh_main_red_hold(
     runner: Runner, gh_env: dict[str, str], hold_path: Path
 ) -> None:
@@ -607,6 +710,15 @@ def refresh_main_red_hold(
     3. **Fail-closed borne.** Si aucun des `MAIN_RED_HISTORY_LIMIT` derniers
        commits ne porte de verdict termine, l'organe refuse de demarrer et
        nomme la borne.
+    4. **Une `failure` sans test identifie peut etre une panne
+       d'infrastructure.** On lit alors les etapes du job : si la PREMIERE
+       etape en echec est une etape d'infrastructure (checkout, setup-python,
+       installation, purge HEAL), le commit est ecarte comme
+       `infra(failure-step:<nom>)` et le verdict remonte au commit
+       precedent, comme pour `cancelled`. Le cas mesure (12/11, run
+       43316243195) : le checkout avait echoue sur `curl 28` apres 19 min
+       de fetch, aucun test n'avait ete execute, et la sentinelle retenait
+       `main` sur une panne d'infrastructure.
 
     La ligne posee par cette sentinelle est la seule que le chemin vert peut
     retirer ; les retenues du coordinateur ne sont jamais touchees.
@@ -632,7 +744,23 @@ def refresh_main_red_hold(
         if conclusion not in MAIN_RED_CODE_VERDICTS:
             skipped.append((sha, f"infra({conclusion or 'sans-verdict'})"))
             continue
-        judged = (sha, check, conclusion)
+        test_name = ""
+        if conclusion == "failure":
+            test_name = _identified_test(runner, gh_env, check)
+            if not test_name:
+                # Aucun test identifie : la `failure` peut venir de
+                # l'infrastructure. UNE lecture de job, dans ce cas seul.
+                step = _first_failing_step(runner, gh_env, check)
+                if step and _is_infra_step(step):
+                    skipped.append((sha, f"infra(failure-step:{step})"))
+                    print(
+                        "merge_ready : sentinelle main-red -- commit "
+                        f"{sha[:9]} ecarte, premiere etape en echec "
+                        f"'{step}' (infrastructure) : le verdict remonte au "
+                        "commit precedent"
+                    )
+                    continue
+        judged = (sha, check, conclusion, test_name)
         break
 
     if judged is None:
@@ -644,7 +772,7 @@ def refresh_main_red_hold(
             )
         )
 
-    sha, check, conclusion = judged
+    sha, check, conclusion, test_name = judged
 
     lines = hold_path.read_text(encoding="utf-8-sig").splitlines() if hold_path.exists() else []
     owned = [line for line in lines if line.strip().startswith(f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")]
@@ -652,25 +780,6 @@ def refresh_main_red_hold(
     if conclusion == "success":
         updated = retained
     else:
-        summary = str((check.get("output") or {}).get("summary") or "")
-        test_match = re.search(r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)", summary)
-        test_name = test_match.group(1) if test_match else ""
-        # Le check-run natif Actions contient souvent un resume sans le detail
-        # pytest. Dans ce cas, lire le log d'echec du run associe au check.
-        if not test_name:
-            details_url = str(check.get("details_url") or "")
-            run_match = re.search(r"/actions/runs/(\d+)(?:/|$)", details_url)
-            if run_match:
-                log_result = runner.run(
-                    ["gh", "run", "view", run_match.group(1), "--repo", REPO, "--log-failed"],
-                    env=gh_env,
-                )
-                if log_result.returncode == 0:
-                    test_match = re.search(
-                        r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)",
-                        log_result.stdout or "",
-                    )
-                    test_name = test_match.group(1) if test_match else ""
         test_name = test_name or "test-non-identifie-dans-le-check"
         reason = (
             f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}sha={sha} "

@@ -691,7 +691,10 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
-@lru_cache(maxsize=8192)
+# #24824 -- la memo est trop petille (8192) pour le volume de corps d'une
+# fenetre de claims : elle evictait et recalcule. Elargie pour tenir le
+# working set ; le verdict est une fonction pure du corps.
+@lru_cache(maxsize=65536)
 def _unwrap_trapped_body(body: str) -> str:
     """Le corps REEL quand la publication a piege son propre payload (#19971).
 
@@ -2002,7 +2005,7 @@ query {
       nodes {
         number title headRefName body additions deletions
         headRefOid
-        files(first:100) { totalCount nodes { path } }
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -2017,7 +2020,7 @@ query($cursor: String) {
       nodes {
         number title headRefName body additions deletions
         headRefOid
-        files(first:100) { totalCount nodes { path } }
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -2098,13 +2101,14 @@ def _gh_graphql(query: str, variables: dict[str, str] | None = None) -> dict:
 
 
 def _gh_pr_files_rest(owner: str, name: str, number: int,
-                       expected: int) -> list[str]:
-    """Liste COMPLETE des fichiers d'une PR (REST, paginee).
+                       expected: int) -> tuple[list[str], list[str]]:
+    """Liste COMPLETE des fichiers d'une PR (REST, paginee) + ANCIENS CHEMINS.
 
-    Utilisee pour les seules PRs dont la liste de fichiers est plafonnee par
+    Utilisee pour les PRs dont la liste de fichiers est plafonnee par
     GraphQL (`files(first:100)`) -- mesure : 3 PRs ouvertes au 2026-10-21,
-    jusqu'a 1070 fichiers. L'endpoint REST `/pulls/{n}/files` n'a pas ce
-    plafond ; `--paginate` suit toutes les pages.
+    jusqu'a 1070 fichiers -- et, depuis #25910, pour les PRs qui portent un
+    RENOMMAGE. L'endpoint REST `/pulls/{n}/files` n'a pas ce plafond ;
+    `--paginate` suit toutes les pages.
 
     Le champ REST est `filename` (pas `path`). On NE passe PAS `--jq` : mesure
     du 2026-10-21, `gh api --paginate ... --jq '.[].path'` rend un tableau de
@@ -2112,8 +2116,17 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     applique a une entree vide. On parse donc le JSON et on extrait
     `filename` nous-memes.
 
-    Le nombre de chemins lus est compare a `expected` (le `totalCount`
-    GraphQL) : un ecart rend l'enumeration incomplete.
+    Rend `(chemins_de_tete, chemins_de_base_des_renommages)`. Le second
+    membre lit `previous_filename`, que REST expose SEULEMENT pour un
+    fichier renomme (le schema GraphQL `PullRequestChangedFile` ne porte
+    que `additions, changeType, deletions, path, viewerViewedState` -- pas
+    d'ancien chemin, cf. #25910). Motif deja eprouve dans le depot :
+    `scripts/notebook_tools/credited_examples_sweep.py::_previous_filenames`.
+
+    Le nombre de chemins de tete lus est compare a `expected` (le
+    `totalCount` GraphQL) : un ecart rend l'enumeration incomplete. Les
+    ANCIENS chemins ne sont pas comptes dans ce total -- ce sont des
+    chemins supplementaires, pas des fichiers de la PR.
     """
     try:
         proc = subprocess.run(
@@ -2156,12 +2169,22 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
         entry.get("filename") for entry in payload
         if isinstance(entry, dict) and entry.get("filename")
     ]
+    # #25910 -- l'ancien chemin d'un renommage. Il n'est PAS un fichier de
+    # la PR : il ne compte donc pas dans le total compare a `expected`.
+    previous: list[str] = []
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        old = entry.get("previous_filename")
+        new = entry.get("filename")
+        if old and old != new and old not in previous:
+            previous.append(old)
     if len(paths) != expected:
         raise OpenPrsIncompleteError(
             f"liste de fichiers incomplete pour la PR #{number}",
             f"{len(paths)} chemins lus pour {expected} attendus",
         )
-    return paths
+    return paths, previous
 
 
 def _gh_open_prs_complete() -> list[dict]:
@@ -2173,7 +2196,13 @@ def _gh_open_prs_complete() -> list[dict]:
         aucune borne `--limit` susceptible de tronquer en silence) ;
       - les FICHIERS de chaque PR : `files(first:100).totalCount` dit
         exactement si la liste de chemins est plafonnee ; les PRs concernees
-        sont refetches en REST (pagination sans plafond), en parallele.
+        sont refetches en REST (pagination sans plafond), en parallele ;
+      - les ANCIENS CHEMINS des renommages (#25910) : GraphQL expose
+        `changeType == "RENAMED"` mais PAS l'ancien chemin ; la seule source
+        est le champ REST `previous_filename`. Les PRs qui portent un
+        renommage (et celles dont la liste de fichiers est plafonnee, ou le
+        renommage peut se cacher au-dela du 100e noeud) sont donc refetches
+        en REST, et l'ancien chemin rejoint l'index des chemins occupes.
 
     Leve `OpenPrsIncompleteError` si l'une des deux completudes ne peut pas
     etre etablie (plafond de securite, delai, reponse GraphQL en erreur).
@@ -2204,14 +2233,20 @@ def _gh_open_prs_complete() -> list[dict]:
             raise OpenPrsIncompleteError(
                 "depot introuvable dans la reponse GraphQL", repo)
         connection = repository.get("pullRequests") or {}
-        overflow: list[tuple[int, int]] = []
+        # PRs a relire en REST : plafonnees (liste de fichiers tronquee) ou
+        # porteuses d'un renommage (ancien chemin invisible cote GraphQL).
+        rest_needed: list[tuple[int, int]] = []
         for node in connection.get("nodes") or []:
             files = node.get("files") or {}
-            paths = [f["path"] for f in (files.get("nodes") or [])]
+            file_nodes = files.get("nodes") or []
+            paths = [f["path"] for f in file_nodes if f.get("path")]
             total = int(files.get("totalCount") or 0)
             number = int(node["number"])
-            if total > len(paths):
-                overflow.append((number, total))
+            has_rename = any(
+                f.get("changeType") == "RENAMED" for f in file_nodes
+            )
+            if total > len(paths) or has_rename:
+                rest_needed.append((number, total))
             entry = {
                 "number": number,
                 "title": node.get("title"),
@@ -2221,6 +2256,11 @@ def _gh_open_prs_complete() -> list[dict]:
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
                 "files": [{"path": p} for p in paths],
+                # #25910 -- anciens chemins des renommages (liste vide si la
+                # PR n'en porte pas). La cle est aussi la preuve que cette
+                # enumeration a ete produite par la version qui indexe les
+                # renommages (cf. `_read_open_prs_cache`).
+                "renames": [],
             }
             prs.append(entry)
             by_number[number] = entry
@@ -2229,18 +2269,28 @@ def _gh_open_prs_complete() -> list[dict]:
                 "enumeration des PRs ouvertes au-dela du plafond de securite",
                 f"{len(prs)} > {_OPEN_PRS_HARD_CAP}",
             )
-        if overflow:
-            # Refetch des seules PRs plafonnees, en parallele : les 3 PRs
+        if rest_needed:
+            # Refetch des seules PRs concernees, en parallele : les 3 PRs
             # mesurees coutent ~11s en serie, ~7s en parallele.
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
                 futures = {
                     pool.submit(_gh_pr_files_rest, owner, name, num, tot): num
-                    for num, tot in overflow
+                    for num, tot in rest_needed
                 }
                 for future in concurrent.futures.as_completed(futures):
                     num = futures[future]
-                    paths = future.result()
-                    by_number[num]["files"] = [{"path": p} for p in paths]
+                    paths, previous = future.result()
+                    entry = by_number[num]
+                    entry["files"] = [{"path": p} for p in paths]
+                    entry["renames"] = previous
+                    # #25910 -- l'ancien chemin d'un renommage est OCCUPE :
+                    # il rejoint l'index (fail-CLOSED -- l'ensemble des
+                    # chemins occupes s'elargit, il ne se restreint jamais).
+                    known = {f["path"] for f in entry["files"]}
+                    for old in previous:
+                        if old not in known:
+                            entry["files"].append({"path": old})
+                            known.add(old)
         page_info = connection.get("pageInfo") or {}
         if not page_info.get("hasNextPage"):
             break
@@ -2274,7 +2324,16 @@ def _read_open_prs_cache() -> list[dict] | None:
     if isinstance(cached, dict) and cached.get("format") == _OPEN_PRS_CACHE_FORMAT:
         if cached.get("complete") is True:
             prs = cached.get("prs")
-            return prs if isinstance(prs, list) else None
+            if not isinstance(prs, list):
+                return None
+            # #25910 -- un cache ecrit par une version ANTERIEURE ne porte
+            # pas l'index des renommages (`renames`) : le lire reviendrait a
+            # rapporter LIBRE un chemin qu'une PR ouverte est en train de
+            # renommer. Il est donc traite comme absent -- le fetch complet
+            # qui suit le REECRIT au format courant.
+            if any("renames" not in pr for pr in prs if isinstance(pr, dict)):
+                return None
+            return prs
         raise OpenPrsIncompleteError(
             "cache des PRs ouvertes marque incomplet",
             str(cached.get("reason") or "")[:200],
@@ -3182,12 +3241,18 @@ def _normcase_path(path: str) -> str:
     return os.path.normcase(path)
 
 
+@lru_cache(maxsize=262144)
 def _path_matches_pair(path: str, pattern: str) -> bool:
-    """Match one immutable path/pattern pair with fnmatch's platform rules.
+    """Match one immutable (path, pattern) pair, memoized above.
 
-    Only the normalized regex and path strings are cached; the pair verdict
-    is recomputed. This keeps the cache independent of mutable caller lists
-    and retains Windows normcase and separator behavior.
+    The glob is compiled to a regex by ``_compiled_path_pattern`` and matched
+    with ``re.match`` against the ``os.path.normcase``-normalized FULL path
+    AND against the normalized BASENAME, so ``*.lean`` matches both
+    ``knot_lean/Foo.lean`` and a bare ``Foo.lean``. The verdict is a pure
+    function of its two immutable ``str`` arguments, so the (bounded,
+    ``maxsize=262144``) memo can never change it; the compiled-regex and
+    normcase helpers are cached separately. Windows normcase and separator
+    behavior are retained.
     """
     basename = path.rsplit("/", 1)[-1]
     regex = _compiled_path_pattern(pattern)
@@ -3220,11 +3285,61 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     existing `grep`/git commands used in the cluster for "where does this
     file live" queries.
     """
+    return _path_matches_cached(path, tuple(patterns))
+
+
+@lru_cache(maxsize=262144)
+def _path_matches_cached(path: str, patterns: tuple[str, ...]) -> bool:
+    """#24824 -- memoise le verdict par (chemin, motifs) : les deux sont
+    invariants d'une issue a l'autre dans le batch, seule la liste suivie
+    change (memoisee par racine). Fonction pure de ses deux arguments, donc
+    la memoisation ne peut changer aucun verdict."""
     for pat in patterns:
         for p in _expanded_path_pattern(pat):
             if _path_matches_pair(path, p):
                 return True
     return False
+
+
+# #24824 -- memoise le croisement par (motifs, identite + generation de la
+# liste suivie). La liste est l'objet _TrackedFiles memoise par racine dans
+# _TRACKED_FILES_MEMO (jamais mute en place en production). La cle porte la
+# generation _gen, que _TrackedFiles._invalidate() incrémente a chaque
+# mutation : un resultat ne peut donc jamais etre servi stale contre une
+# liste mutee (contrat test 3031/3040). On garde une reference FORTe vers la
+# liste dans la valeur : son id() n'est pas reutilise tant que l'entree vit.
+# Seules les listes _TrackedFiles sont memoisees ; une liste brute (mutable)
+# ne l'est pas. Le bornage efface (re-calcule) : jamais un verdict faux.
+_MATCHING_INDICES_MEMO: dict[tuple, tuple[object, frozenset[int]]] = {}
+# #25913 (reponse a la reserve Hermes #4) -- double borne : en NOMBRE d'entrees
+# (MAX) et en VOLUME (MAX_INDICES, somme des indices sur tous les frozensets).
+# La borne en nombre seule laissait 1024 entrees pleines (chacune jusqu'a la
+# liste suivie entiere, ~16k indices) tenir en memoire (~44 Mo de frozensets
+# mesurés) ; la borne en indices cumulés plafonne le volume. _SIZE est le
+# compteur correspondant, réinitialisé a chaque clear.
+_MATCHING_INDICES_MEMO_MAX = 1024
+_MATCHING_INDICES_MEMO_MAX_INDICES = 131072  # ~8 listes suivies completes
+_MATCHING_INDICES_MEMO_SIZE = 0
+
+
+def _matching_indices_store(
+    key: tuple, tracked: object, indices: frozenset[int]
+) -> None:
+    """Insère dans ``_MATCHING_INDICES_MEMO`` sous double borne.
+
+    #25913 (reponse a la reserve Hermes #4) : au-dela de la borne en nombre
+    d'entrees, la borne en indices cumulés plafonne le volume de frozensets.
+    A la limite, la memo entiere est effacée ; c'est une cache pure, l'effacement
+    force un re-calcul mais ne change aucun verdict.
+    """
+    global _MATCHING_INDICES_MEMO_SIZE
+    if (len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX
+            or _MATCHING_INDICES_MEMO_SIZE + len(indices)
+            > _MATCHING_INDICES_MEMO_MAX_INDICES):
+        _MATCHING_INDICES_MEMO.clear()
+        _MATCHING_INDICES_MEMO_SIZE = 0
+    _MATCHING_INDICES_MEMO[key] = (tracked, indices)
+    _MATCHING_INDICES_MEMO_SIZE += len(indices)
 
 
 def _matching_tracked_indices(
@@ -3238,17 +3353,36 @@ def _matching_tracked_indices(
     contre ces regex. La separation du basename se fait toujours sur le
     chemin brut, avant `normcase`, comme dans `fnmatch(path, pattern)` sous
     Windows.
+
+    #24824 -- memoise par (motifs, identite de la liste suivie) : dans le
+    batch, les memes perimetres sont recroises a chaque issue sur la meme
+    liste suivie. La reference forte vers `tracked` rend l'`id()` stable,
+    donc la memoisation ne change aucun verdict (fonction pure).
     """
+    # #24824 -- la memo ne porte que sur les listes _TrackedFiles ; la cle
+    # porte leur generation _gen, donc toute mutation force le re-calcule
+    # (jamais un verdict stale). Une liste brute n'est pas memoisee.
+    is_tf = isinstance(tracked, _TrackedFiles)
+    if is_tf:
+        key = (tuple(patterns), id(tracked), tracked._gen)
+        hit = _MATCHING_INDICES_MEMO.get(key)
+        if hit is not None:
+            return set(hit[1])
     expanded = [p for pattern in patterns
                 for p in _expanded_path_pattern(pattern)]
     regexes = [_compiled_path_pattern(p) for p in expanded]
     if not regexes:
+        if is_tf:
+            _matching_indices_store(key, tracked, frozenset())
         return set()
     pairs = _norm_pairs(tracked)
-    return {
+    result = {
         index for index, (path, basename) in enumerate(pairs)
         if any(rx.match(path) or rx.match(basename) for rx in regexes)
     }
+    if is_tf:
+        _matching_indices_store(key, tracked, frozenset(result))
+    return result
 
 
 def _compute_scope_intersection_paths(
@@ -3487,16 +3621,21 @@ class _TrackedFiles(list):
     Les formes normalisees sont calculees ici, UNE FOIS par liste.
     """
 
-    __slots__ = ("_norm", "_exact", "_bases")
+    __slots__ = ("_norm", "_exact", "_bases", "_gen")
 
     def __init__(self, items):
         super().__init__(items)
         self._norm = None
         self._exact = None
         self._bases = None
+        self._gen = 0
 
     def _invalidate(self):
         self._norm = self._exact = self._bases = None
+        # #24824 -- toute mutation change la generation : la memo de
+        # _matching_tracked_indices (clee sur _gen) ne sert donc jamais un
+        # resultat stale contre une liste mutee (contrat test 3031/3040).
+        self._gen += 1
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
@@ -3642,6 +3781,46 @@ def _norm_pairs(tracked) -> list[tuple[str, str]]:
             for p in tracked]
 
 
+# #24824 -- memo par (charge, identite + generation de la liste suivie) pour
+# les fonctions pures de (charge, tracked). `tracked` est l'objet
+# _TrackedFiles memoise par racine (_TRACKED_FILES_MEMO), jamais mute en
+# place en production ; la cle porte _gen, que _TrackedFiles._invalidate()
+# incremente a chaque mutation, donc un resultat ne peut jamais etre servi
+# stale contre une liste mutee (contrat test 3031/3040). Reference FORTe vers
+# la liste dans la valeur : son id() n'est pas reutilise tant que l'entree
+# vit. Une liste brute (mutable) n'est jamais memoisee ; le bornage efface
+# (re-calcule). Jamais un verdict faux.
+_MISS = object()
+
+
+class _TrackedScopedMemo:
+    """Memo bornee des fonctions pures de (charge, liste suivie)."""
+
+    __slots__ = ("_d", "_max")
+
+    def __init__(self, maxsize: int) -> None:
+        self._d: dict = {}
+        self._max = maxsize
+
+    def get(self, payload, tracked):
+        if isinstance(tracked, _TrackedFiles):
+            hit = self._d.get((payload, id(tracked), tracked._gen), _MISS)
+            if hit is not _MISS:
+                return hit[1]
+        return _MISS
+
+    def put(self, payload, tracked, value) -> None:
+        if not isinstance(tracked, _TrackedFiles):
+            return
+        if len(self._d) >= self._max:
+            self._d.clear()
+        self._d[(payload, id(tracked), tracked._gen)] = (tracked, value)
+
+
+_GLOB_TRACKED_MEMO = _TrackedScopedMemo(16384)
+_CORRECTION_MEMO = _TrackedScopedMemo(16384)
+
+
 def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     """True when at least one tracked file matches the glob (fnmatch, basename-or-full).
 
@@ -3660,6 +3839,16 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     les separateurs de chemin en antislash et le nom de base ne serait
     plus extrait.
     """
+    cached = _GLOB_TRACKED_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _glob_matches_tracked_uncached(glob, tracked)
+    _GLOB_TRACKED_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _glob_matches_tracked_uncached(glob: str, tracked: list[str]) -> bool:
+    """Corps de `_glob_matches_tracked`, sans memo (balayage par glob)."""
     from fnmatch import translate
     patterns = _expand_brace_groups(glob)
     if not patterns:
@@ -3718,6 +3907,16 @@ def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
     between 1 and 5 times IS likely a typo (the writer meant one specific
     file and the regex did not pick the right one).
     """
+    cached = _CORRECTION_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _suggest_path_correction_uncached(glob, tracked)
+    _CORRECTION_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _suggest_path_correction_uncached(glob: str, tracked: list[str]) -> str | None:
+    """Corps de `_suggest_path_correction`, sans memo (balayage des chemins)."""
     if not glob or "/" not in glob:
         return None
     basename = glob.rsplit("/", 1)[-1]
@@ -4435,6 +4634,16 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 # une sonde `check_claims([n])` sur une fille plafonnee rend encore FREE tant
 # qu'un suivi n'enseigne pas au picker la cle `epic_visit_cap`. Le gate de la
 # lane, lui, est rendu.
+# #22687 -- deux corrections depuis cette annonce : (a) le plafond SAUTE quand
+# la lane appelante tient deja un claim actif sur une FILLE N (arbitrage ai-01
+# du 2026-11-08, cas #23499 : la reprise d'un chantier ouvert n'est pas une
+# nouvelle visite -- le plafond gate l'ENTREE d'une fille, pas sa reprise ;
+# JAMAIS sur l'EPIC lui-meme, la demande du 09/11 reste entiere) ;
+# (b) la voie unitaire EN PROCESSUS du picker cable desormais `epic_cap=True`
+# et son reducteur lit la cle : la sonde solitaire d'une fille plafonnee rend
+# BLOCKED, alignee sur le gate L898 et sur le plafond bulk que le tapis mesure
+# deja lui-meme. Le mode batch reste `epic_cap=False` (#22630 possede le
+# tirage).
 #
 # ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
 # anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
@@ -5200,6 +5409,24 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             # `epic_visit_cap: null` ne se lise pas comme « plafond respecte ».
             epic_cap_verdict["skipped"] = (
                 "another lane already blocks -- verdict is exit 1 without the cap"
+            )
+        elif mine and not _is_umbrella_issue(payload):
+            # #22687 (arbitrage ai-01, cas mesure 2026-11-08 sur #23499) : la
+            # lane qui interroge tient DEJA un claim actif sur la FILLE N --
+            # elle repare un travail en vol (PR ouverte), elle ne fait pas une
+            # NOUVELLE visite de l'umbrella. Le plafond gate l'ENTREE d'une
+            # fille, pas la reprise du claim qui la porte : sans ce saut, un
+            # [RELEASED] pose sur l'EPIC par une autre lane 0,7 j avant
+            # bloquait la lane sur son propre chantier ouvert depuis 9 j.
+            # JAMAIS sur l'EPIC lui-meme : la demande coordinateur du 09/11
+            # (une visite PASSEE ET CLOSE de la lane arme le plafond, claim en
+            # cours compris) reste entiere -- les regles #25443 (marqueur
+            # propre exclut) et 09/11 (visite close arme) gouvernent seules
+            # les marqueurs propres sur l'EPIC ; ce saut ne les touche pas.
+            # les marqueurs propres sur l'EPIC, ce saut ne les touche pas.
+            epic_cap_verdict["skipped"] = (
+                "calling lane already holds an active claim on this issue "
+                "-- resuming an open claim is not a new umbrella visit"
             )
         else:
             probe = epic_cap_probe

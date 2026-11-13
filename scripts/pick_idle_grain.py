@@ -754,7 +754,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
 
 
 # Saturation par zone d atterrissage (#13420) : l axe partition-proof que
-# le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
+# le compteur par issue ne peut pas porter. Voir scripts/coordination/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     BELT_WINDOW_DAYS,
@@ -5170,6 +5170,15 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             blocking = data.get("blocking_lanes") or []
             if blocking:
                 return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
+            # #22687 constat 2 -- le plafond #22500 rend exit 1 cote producteur
+            # mais n'ecrit RIEN dans blocking_lanes (une discipline de visite
+            # n'est pas une collision de lane) : sans lire la cle, la sonde
+            # solitaire d'une fille plafonnee concluait FREE en ignorant le
+            # rouge. La cause est le LITTERAL de l'organe (prefixe
+            # ``PLAFOND EPIC (#22500)``), jamais reformulee ici.
+            cap_cause = data.get("epic_visit_cap")
+            if cap_cause:
+                return CLAIM_CODE_BLOCKED, "PLAFOND : " + str(cap_cause)
             # review 5429946072 : le claim de l'APPELANT est teste AVANT
             # l'occupation implicite -- un grain deja marque par la lane qui
             # tire est OWNED_BY_ME, une PR tierce citee en passant ne doit
@@ -5479,6 +5488,14 @@ def _claims_in_process(
                     # #25873 -- meme opt-in que la voie batch : servir une
                     # issue dont les claims d'autres lanes sont tous bornes.
                     serve_bounded=True,
+                    # #22687 constat 2 -- la voie solitaire du picker cable le
+                    # plafond #22500 : la sonde d'une fille plafonnee rend
+                    # BLOCKED (le reducteur lit ``epic_visit_cap``), alignee
+                    # sur le gate L898 et sur le plafond bulk du tapis. Le
+                    # pool est memoise par processus cote LECTEUR : la sonde
+                    # paie 1 requete par passe, pas par candidat. Le mode
+                    # batch reste cap-free (#22630 possede le tirage).
+                    epic_cap=True,
                 )
             verdicts = {n: _summarize_claim(buf_out.getvalue(), rc)}
         # Les refus nominatifs s'ajoutent aux verdicts servis : un numero
@@ -10570,7 +10587,9 @@ DELIVERED_URN_PRIOR = 2.5
 AUDIT_17073_PRIOR = 2.0
 AUDIT_17073_MARKER = "[Audit #17073]"
 #: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
-#: neuf) est d'autant plus streme que le pool s'en eloigne.
+#: neuf) est d'autant plus streme que le pool s'en eloigne. Le veto dur
+#: (`creation_budget.VETO_ACTIF`) est leve depuis le 12/11 ; ce seuil reste
+#: le pivot de la ponderation douce, qui ne refuse jamais.
 EXPANSION_VETO_THRESHOLD = 400
 #: Plancher du poids d'expansion : un poids nul serait un REFUS, et le
 #: mandat du 12/10 l'interdit.
