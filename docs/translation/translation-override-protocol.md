@@ -39,6 +39,12 @@ Le point qui dénoue le conflit est le second : `T1 --update` **est** la resynch
 par cellule que le cliquet prescrit, et ce n'est **pas** la ré-extraction globale qu'il
 interdit.
 
+Cette distinction est une **règle de conduite, pas un contrôle automatique** : le helper
+vérifie la présence des deux clés et un motif non vide, mais aucun organe ne lit le motif
+pour distinguer le substantiel du cosmétique. Une lane qui poserait le double-clé sur une
+dérive cosmétique passerait le garde sans un rouge — c'est le motif journalisé qui permet
+de le lui reprocher après coup.
+
 ## 3. La voie normale (quand, à qui, quel motif)
 
 ### Quand
@@ -58,6 +64,9 @@ l'organe testable qui rend le verdict ; le garde journalise le motif accepté
 (`::notice ... OVERRIDE accepted -- motif: ...`) et un motif absent laisse la PR rouge.
 Dans la pratique mesurée (section 7), l'étiquette est posée sur la PR par la lane qui
 porte la resynchronisation, et c'est le **motif** qui rend le geste auditable.
+« Mainteneur » s'entend ici comme **la personne qui assume la responsabilité du geste** :
+ni le helper ni le garde ne vérifient qui a posé l'étiquette — le double-clé rend le
+geste visible, il ne l'autorise pas.
 
 ### Motif type
 
@@ -82,6 +91,19 @@ Conséquence : la resynchronisation déplace le `src_hash` de la ligne — ce qu
 `SRC_DRIFT` à zéro — **sans** perdre la traduction déposée. Une ligne dont la cellule a
 disparu est conservée, pas effacée. C'est exactement l'inverse de la ré-extraction
 globale que le cliquet interdit.
+
+Deux précisions que le lecteur du rapport de cliquet croisera immédiatement :
+
+- La préservation de `src_hash_<lang>` (#20836) est **voulue** : c'est elle qui garde le
+  verdict `STALE_TRAD` capable de signaler une traduction déposée sur une source
+  antérieure. « Corriger » un `STALE_TRAD` en remettant `src_hash_<lang>` à jour
+  détruirait le signal — la traduction périmée paraîtrait fraîche. (Sur le chemin
+  « append » — cellule nouvelle sans ligne préexistante — la ligne fraîche ne porte que
+  les colonnes pivot : il n'y a rien à préserver.)
+- **L'ordre des gestes fait la différence** (#21490) : `src_hash` est calculé sur le
+  texte **courant** du carnet au moment du `--update`. On édite la source, **puis** on
+  resynchronise — jamais l'inverse : resynchroniser un carnet dont la source va encore
+  bouger laisse un `SRC_DRIFT` à zéro pour un texte intermédiaire.
 
 ## 5. Contexte : le moteur est en attente mainteneur
 
@@ -122,6 +144,8 @@ la première ligne montrent que la voie est déjà empruntée en pratique ; ce d
 - #13551 — le cliquet hot-subset
 - #15198 et #10038 — l'attente mainteneur du moteur de synchronisation
 - #21490 — le rejeu `T1 --update` des 36 CSV, autorisé par la voie du double-clé
+- #20836 — la colonne `src_hash_<lang>` et le verdict `STALE_TRAD`, que la préservation
+  du `--update` garde vivants
 - `scripts/ci/translation_override_required.py` — le helper testable du verdict
 - `.claude/rules/secrets-hygiene.md` règle 6 — une sortie de cellule ne s'édite jamais à
   la main ; la modification d'un fichier dérivé passe par son organe
