@@ -320,7 +320,8 @@ def stale_added_paths(porcelain: str) -> list[str]:
 
 def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
                    title: str, summary: str, dry_run: bool,
-                   details_url: str | None = None) -> bool:
+                   details_url: str | None = None,
+                   etat: dict[str, bool] | None = None) -> bool:
     """Emet un check-run sur une tete. Renvoie `True` si le check-run est parti.
 
     Le retour est **additif** (l'appelant d'origine ignore la valeur) : il
@@ -329,7 +330,13 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
     consigner le resultat de la publication dans son propre journal.
     `details_url` est egalement additif : il pointe le run qui a produit le
     verdict (l'API Checks l'accepte, il est optionnel).
+
+    `etat` est l'etat de quota partage dans l'execution (par defaut,
+    l'etat de module). Il porte une seule information : le quota est
+    epuise, donc on ne relancera plus une publication.
     """
+    if etat is None:
+        etat = _QUOTA_ETAT
     payload = {
         "name": name,
         "head_sha": head_sha,
@@ -347,10 +354,19 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
         return True
     # T-H (#25510) : le quota d'ecriture de l'API Checks est consomme PAR
     # POST. Une voie rapide qui emet un check-run par garde en consomme
-    # ~80 par execution, et le declencheur `edited` (tranche T-C/2) fait
-    # revenir la voie rapide sur la MEME tete. Une publication refusee par
-    # le quota se voit par un 403 : on retente UNE fois, apres une courte
-    # pause -- une seule relance, pas une boucle d'attente.
+    # ~80 par execution, et la voie rapide peut revenir sur la MEME tete
+    # (re-ouverture d'une PR, rejeu d'un job, dispatch de la voie ombre) :
+    # republier un verdict identique coute une ecriture pour rien.
+    #
+    # La RELANCE est reservee au refus de QUOTA SECONDAIRE, le seul qui se
+    # retablit en quelques secondes. Le refus de limite PRIMAIRE (le
+    # message mesure : `HTTP 403: API rate limit exceeded for
+    # installation`, 29 refus sur un meme run) ne se retablit PAS en 8 s :
+    # relancer dessus paie 29 x 8 s ~= 4 min sur le run mesure, et
+    # ~74 x 8 s ~= 10 min si tous les gardes sont refuses (timeout du job
+    # : 25 min). Apres le premier refus non relancable, ou apres une
+    # relance elle-meme refusee, on ne RELANCE plus : le POST continue
+    # (il peut reussir si la limite est par minute), la pause non.
     for attempt in (1, 2):
         proc = subprocess.run(
             ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
@@ -360,12 +376,21 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
             print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
             return True
         err = proc.stderr.strip()
-        if attempt == 1 and is_quota_refusal(err):
-            print(f"[fast-lane] publication REFUSEE par le quota pour "
-                  f"{name!r} : {err} -- nouvelle tentative dans "
+        if (attempt == 1 and not etat["relance_bloquee"]
+                and is_secondary_rate_refusal(err)):
+            print(f"[fast-lane] publication REFUSEE par le quota SECONDAIRE "
+                  f"pour {name!r} : {err} -- nouvelle tentative dans "
                   f"{CHECK_RUN_RETRY_S}s", file=sys.stderr)
             time.sleep(CHECK_RUN_RETRY_S)
             continue
+        if is_quota_refusal(err):
+            # Le quota ne se retablit pas en 8 s : on ne relancera plus
+            # pour les publications suivantes de cette execution.
+            if not etat["relance_bloquee"]:
+                etat["relance_bloquee"] = True
+                print(f"[fast-lane] quota epuise ({err}) -- plus de relance "
+                      "pour les publications suivantes de cette execution",
+                      file=sys.stderr)
         # Ne pas faire echouer le job entier : un verdict non publie doit
         # rester visible dans le log plutot que de masquer les autres.
         print(f"[fast-lane] ECHEC de publication du check-run {name!r} : "
@@ -384,6 +409,41 @@ QUOTA_MARKERS: tuple[str, ...] = (
     "too many requests",
     "quota",
 )
+
+# Les marqueurs du refus de QUOTA SECONDAIRE -- le SEUL qui se retablit
+# en quelques secondes, et donc le SEUL qui merite une relance.
+#
+# Le refus de limite PRIMAIRE ne se retablit PAS en 8 s. Message mesure
+# (2026-11-12) : `HTTP 403: API rate limit exceeded for installation`,
+# 29 refus sur un meme run. Relancer dessus paie 29 x 8 s ~= 4 min sur
+# ce run, et ~74 x 8 s ~= 10 min si tous les gardes sont refuses
+# (timeout du job : 25 min).
+#
+# (`remarque du coordinateur sur #26270`, 2026-11-13)
+SECONDARY_RATE_MARKERS: tuple[str, ...] = (
+    "secondary rate",
+)
+
+#: Etat de quota d'une execution. Une seule information : le quota est
+#: epuise, donc on ne relancera plus de publication. Le POST continue
+#: (il peut reussir si la limite est par minute) ; la pause, non.
+_QUOTA_ETAT: dict[str, bool] = {"relance_bloquee": False}
+
+
+def reset_quota_state() -> None:
+    """Remet l'etat de quota a zero : une execution = un etat."""
+    _QUOTA_ETAT["relance_bloquee"] = False
+
+
+def is_secondary_rate_refusal(stderr: str) -> bool:
+    """Le refus est-il un refus de QUOTA SECONDAIRE (donc relancable) ?
+
+    C'est le SEUL refus qui se retablit en quelques secondes. Le refus de
+    limite primaire (`API rate limit exceeded for installation`) ne se
+    retablit pas en 8 s : le relancer coute des minutes de job pour rien.
+    """
+    lowered = (stderr or "").lower()
+    return any(marker in lowered for marker in SECONDARY_RATE_MARKERS)
 
 
 def is_quota_refusal(stderr: str) -> bool:
@@ -420,10 +480,17 @@ def latest_check_runs(repo: str, head_sha: str) -> dict[str, tuple[str, str]]:
     Rend `{}` si la lecture echoue : l'appelant ne saute alors AUCUNE
     publication. L'optimisation ne doit jamais fabriquer un verdict -- au
     pire, elle disparait.
+
+    `filter=all` est demande explicitement : l'API applique `filter=latest`
+    par defaut, et la branche qui ecarte une jambe `skipped` (une jambe
+    sautee n'a rien mesure) n'aurait alors aucun effet. Le defaut etant
+    change un jour, le comportement resterait le meme -- c'est le sens
+    sur, le POST repart.
+    (`remarque du coordinateur sur #26270`, 2026-11-13)
     """
     proc = subprocess.run(
         ["gh", "api", "--paginate", "--slurp",
-         f"repos/{repo}/commits/{head_sha}/check-runs?per_page=100"],
+         f"repos/{repo}/commits/{head_sha}/check-runs?per_page=100&filter=all"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
@@ -783,6 +850,9 @@ def conclusion_for(guard: Guard, rc: int, shadow: bool = False) -> str:
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
+    # Une execution = un etat de quota : la relance est bloquee des le
+    # premier refus non relancable (cf `emit_check_run`).
+    reset_quota_state()
     parser = argparse.ArgumentParser(description="Voie rapide CI (#11835)")
     parser.add_argument("--base-ref",
                         default=os.environ.get("FAST_LANE_BASE", "origin/main"))
@@ -1020,8 +1090,23 @@ def main(argv: list[str] | None = None) -> int:
     blocking_failed = False
     # T-H (#25510) : la publication est **idempotente**. Un verdict deja
     # publie sur CETTE tete, avec le meme nom, la meme conclusion et le meme
-    # titre, n'est pas republie : le POST coute une ecriture de quota, et le
-    # declencheur `edited` fait revenir la voie rapide sur la meme tete.
+    # titre, n'est pas republie : le POST coute une ecriture de quota.
+    #
+    # Ce qui ramene la voie rapide sur la MEME tete (mesure sur les
+    # appelants, 2026-11-13) :
+    #   - `reopened` -- une PR fermee puis rouverte garde son head sha
+    #     (`always-on-guards.yml:63`, `always-on-commenters.yml:48` :
+    #     `[ opened, synchronize, reopened ]`) ;
+    #   - le rejeu d'un job sur le meme run (`gh run rerun <run> --job
+    #     <job>`) ;
+    #   - le `workflow_dispatch` de la voie ombre (`fast-lane-shadow.yml`),
+    #     qui ne change pas la ref.
+    #
+    # Le declencheur `edited` n'est PLUS declare par aucun appelant : il a
+    # ete retire volontairement (#22331 -- une edition de body annulait le
+    # run de contenu en file et le renvoyait en fin de file, 113/268
+    # re-declenchements a tete egale). C'etait justement la source de
+    # re-declenchements a tete egale ; les causes restantes sont ci-dessus.
     # Le verdict reste visible (il est deja dans l'API) et son `started_at`
     # ne bouge pas -- c'est le comportement voulu d'un verdict stable.
     existing: dict[str, tuple[str, str]] = {}

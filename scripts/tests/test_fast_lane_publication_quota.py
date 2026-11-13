@@ -1,15 +1,20 @@
 """T-H (#25510) -- publication des check-runs : idempotence, relance, compte.
 
 Le quota d'ecriture de l'API Checks se consomme PAR POST. La voie rapide
-emet un check-run par garde (~74 sur le registre courant), et le
-declencheur `edited` (tranche T-C/2) fait revenir la voie rapide sur la
-MEME tete : republier un verdict identique coute une ecriture pour rien.
+emet un check-run par garde (~74 sur le registre courant), et elle peut
+revenir sur la MEME tete : re-ouverture d'une PR (`reopened`), rejeu d'un
+job sur le meme run, dispatch de la voie ombre. Republier un verdict
+identique coute une ecriture pour rien.
 
-Trois proprietes sont verifiees ici :
+Quatre proprietes sont verifiees ici :
   - un verdict **identique** (meme nom, meme conclusion, meme titre) deja
     publie sur la tete n'est **pas** republie ;
-  - une publication refusee par le **quota** est relancee **une seule fois**,
-    et une erreur qui n'est pas un quota n'est **pas** relancee ;
+  - une publication refusee par le **quota secondaire** est relancee **une
+    seule fois**, et une erreur qui n'est pas un quota n'est **pas**
+    relancee ;
+  - une publication refusee par la **limite primaire** n'est **pas**
+    relancee (elle ne se retablit pas en 8 s), et le refus-epuise coupe
+    les relances suivantes de l'execution ;
   - le **compte** des publications (publiees / identiques / refusees) est
     dans le journal du job -- sans lui, une publication refusee disparait
     dans le stderr d'un garde.
@@ -27,6 +32,14 @@ sys.path.insert(0, str(REPO_ROOT / "scripts" / "ci"))
 
 import fast_lane  # noqa: E402
 import fast_lane_registry  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _etat_de_quota_neuf():
+    """Une execution = un etat de quota : chaque test part de zero."""
+    fast_lane.reset_quota_state()
+    yield
+    fast_lane.reset_quota_state()
 
 
 def _guard_absorbe() -> object:
@@ -125,9 +138,12 @@ def test_une_lecture_echouee_ne_saute_aucune_publication(monkeypatch, tmp_path):
     assert len(published) == 1
 
 
-def test_une_publication_refusee_par_le_quota_est_relancee_une_fois(
+def test_une_publication_refusee_par_le_quota_secondaire_est_relancee_une_fois(
         monkeypatch):
-    """Un 403 de quota se relance UNE fois ; un succes suit."""
+    """Le quota SECONDAIRE se relance UNE fois ; un succes suit.
+
+    C'est le seul refus qui se retablit en quelques secondes.
+    """
     calls = []
 
     def _fake_run(cmd, **kwargs):
@@ -135,7 +151,7 @@ def test_une_publication_refusee_par_le_quota_est_relancee_une_fois(
         if len(calls) == 1:
             return subprocess.CompletedProcess(
                 cmd, 1, "",
-                "gh: HTTP 403: API rate limit exceeded for installation")
+                "gh: HTTP 403: You have exceeded a secondary rate limit")
         return subprocess.CompletedProcess(cmd, 0, '{"id": 1}', "")
 
     slept = []
@@ -148,6 +164,76 @@ def test_une_publication_refusee_par_le_quota_est_relancee_une_fois(
     assert ok is True
     assert len(calls) == 2, "une seule relance est autorisee"
     assert slept == [fast_lane.CHECK_RUN_RETRY_S]
+
+
+def test_un_refus_de_limite_primaire_nest_pas_relance(monkeypatch):
+    """CONTROLE NEGATIF : la limite PRIMAIRE ne se retablit pas en 8 s.
+
+    Message mesure (2026-11-12) : `HTTP 403: API rate limit exceeded for
+    installation`, 29 refus sur un meme run. Relancer dessus paie
+    29 x 8 s ~= 4 min (et ~74 x 8 s ~= 10 min si tous les gardes sont
+    refuses, pour un timeout de job de 25 min).
+    """
+    calls = []
+
+    def _fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd, 1, "",
+            "gh: HTTP 403: API rate limit exceeded for installation")
+
+    monkeypatch.setattr(fast_lane.subprocess, "run", _fake_run)
+    monkeypatch.setattr(fast_lane.time, "sleep",
+                        lambda s: pytest.fail(
+                            "la limite primaire ne se retablit pas en 8 s : "
+                            "relancer coute des minutes de job pour rien"))
+
+    ok = fast_lane.emit_check_run("jsboige/CoursIA", "beef" * 10, "garde",
+                                  "success", "titre", "resume", False)
+
+    assert ok is False
+    assert len(calls) == 1, "la limite primaire ne se relance pas"
+
+
+def test_apres_un_double_refus_aucune_publication_suivante_nest_relancee(
+        monkeypatch):
+    """Le refus-epuise coupe les relances de l'EXECUTION, pas du garde.
+
+    Sans ce corte, chaque garde suivant retenterait et payerait sa pause :
+    29 refus x 8 s ~= 4 min sur le run mesure.
+    """
+    calls = []
+
+    def _fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd, 1, "",
+            "gh: HTTP 403: You have exceeded a secondary rate limit")
+
+    slept = []
+    monkeypatch.setattr(fast_lane.subprocess, "run", _fake_run)
+    monkeypatch.setattr(fast_lane.time, "sleep", lambda s: slept.append(s))
+
+    for name in ("garde A", "garde B"):
+        ok = fast_lane.emit_check_run("jsboige/CoursIA", "beef" * 10, name,
+                                      "success", "titre", "resume", False)
+        assert ok is False
+
+    # Garde A : 2 POST (une relance). Garde B : 1 POST (plus de relance).
+    assert len(calls) == 3, calls
+    assert slept == [fast_lane.CHECK_RUN_RETRY_S], (
+        "seule la premiere publication peut payer une pause")
+
+
+def test_les_marqueurs_du_quota_secondaire_sont_reconnus():
+    """Seul le quota secondaire est relancable."""
+    assert fast_lane.is_secondary_rate_refusal(
+        "gh: HTTP 403: You have exceeded a secondary rate limit")
+    # La limite PRIMAIRE n'est pas relancable.
+    assert not fast_lane.is_secondary_rate_refusal(
+        "gh: HTTP 403: API rate limit exceeded for installation")
+    assert not fast_lane.is_secondary_rate_refusal(
+        "gh: HTTP 403: Resource not accessible by integration")
 
 
 def test_une_erreur_qui_nest_pas_un_quota_nest_pas_relancee(monkeypatch):
@@ -178,7 +264,8 @@ def test_un_quota_refuse_deux_fois_est_signale_sans_boucle(monkeypatch):
     def _fake_run(cmd, **kwargs):
         calls.append(cmd)
         return subprocess.CompletedProcess(
-            cmd, 1, "", "gh: HTTP 403: API rate limit exceeded")
+            cmd, 1, "",
+            "gh: HTTP 403: You have exceeded a secondary rate limit")
 
     monkeypatch.setattr(fast_lane.subprocess, "run", _fake_run)
     monkeypatch.setattr(fast_lane.time, "sleep", lambda s: None)
