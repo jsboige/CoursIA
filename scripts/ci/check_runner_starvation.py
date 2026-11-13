@@ -767,9 +767,12 @@ def gate_measurement(
 
     La jambe `schedule` n'est PAS concernee : elle est la cadence de
     REFERENCE de l'advisory, elle mesure toujours. Le gate ne s'applique
-    qu'aux runs `workflow_run` -- ce qui laisse intact l'advisory
-    `runner-starvation-advisory.yml` (coursia-lean), qui n'a pas de
-    heartbeat workflow_run et n'est donc jamais gate.
+    qu'aux runs `workflow_run` -- jusqu'au #25510 (E1, 2026-11-12) cela
+    laissait intact l'advisory `runner-starvation-advisory.yml`
+    (coursia-ephemeral), le seul des trois sans heartbeat ; il en a recu un
+    depuis, avec la meme porte que ses deux freres : la sonde observe le
+    pool qui sert les jobs Lean, elle ne peut pas dependre du seul
+    scheduler (#15332).
 
     `every_n <= 1` desactive la porte : le defaut est volontairement
     inerte, pour qu'un appelant tiers ne change pas de comportement sans
