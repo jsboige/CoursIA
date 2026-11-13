@@ -83,7 +83,11 @@ def test_manifeste_livre_couvre_la_serie_pilote():
     series = {s["id"]: s for s in manifest["series"]}
     assert "NLP" in series
     notebooks = series["NLP"]["notebooks"]
-    assert len(notebooks) == 11
+    # La couverture carnet par carnet est portee par check_manifest (deux sens) :
+    # un compte fige casserait a chaque jumeau ajoute a la serie.
+    assert notebooks
+    paths = [entry["path"] for entry in notebooks]
+    assert len(paths) == len(set(paths))
     for entry in notebooks:
         assert entry["difficulte"] in cq.DIFFICULTY_LEVELS
         assert entry["recherche"] in cq.RESEARCH_LEVELS
