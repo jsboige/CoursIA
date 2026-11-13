@@ -272,13 +272,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb
   confidence: research
   reviewed_code_sha: 7b421e31ec02755567525e0fecd091cc417d82e3fbe43911ab321266f9427a32
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb
   confidence: research
   reviewed_code_sha: 30273e02afa3e60e0786487376395d32335f28775969d1bd48330e66acc3b4ee
   review_date: "2026-09-21"

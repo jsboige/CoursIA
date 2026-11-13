@@ -28,7 +28,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## ict8-attractor.png
 
-- **Source** : notebook `ICT-08-AttractorLandscapesEWS-Python.ipynb` (cellule 3, output 0)
+- **Source** : notebook `ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb` (cellule 3, output 0)
 - **Strate** : 2 (paysages d'attracteurs)
 - **Description visuelle** : Figure matplotlib 4 courbes lisses superposées (839×440, fond blanc, axes étiquetés) titrée « Champ de vitesse : les zeros (dx/dt=0) sont les equilibres ». Axe X = `x (biomasse de vegetation)` (0 à 10), axe Y = `dx/dt` (-3.0 à +1.0), ligne horizontale noire `y=0` (équilibres). 4 courbes colorées : `c = 1.60` bleu (3 zéros = bistable : 2 stables + 1 instable), `c = 2.20` orange (2 zéros), `c = 2.60` vert (1 zéro + tangente), `c = 2.90` rouge (1 seul zéro, régime mono-stable). Légende interne coin haut-droite. **Bifurcation pli** lisible par la **disparition** des zéros entre `c=2.20` et `c=2.60`. Stats RGB PIL : moyenne (246.49, 245.72, 244.87), std (39.78, 39.74, 42.66) — std typique scatter épars sur blanc.
 - **Contenu réel vérifié** : 4 courbes, axe X = `x (biomasse de végétation)` (0 à 10), axe Y = `dx/dt` (-3.0 à +1.0), légende interne avec 4 valeurs du paramètre de pâturage `c ∈ {1.60, 2.20, 2.60, 2.90}`. À `c=1.60` (bleu), 3 zéros (bistabilité : 2 équilibres stables + 1 instable) ; à `c=2.90` (rouge), 1 seul zéro (régime mono-stable). La bifurcation pli est lisible par la **disparition** des zéros entre `c=2.20` et `c=2.60`.
@@ -38,7 +38,7 @@ Provenance des images de `assets/readme/` (EPIC #5654, source 1 = extraction d'o
 
 ## ict9-gray-scott.png
 
-- **Source** : notebook `ICT-09-AgencyRegeneration-Python.ipynb` (cellule 3, output 0)
+- **Source** : notebook `ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb` (cellule 3, output 0)
 - **Strate** : 2 (agence et régénération)
 - **Description visuelle** : Figure **non-matplotlib** (heatmap numpy, 977×495) titrée « Morphogenese generative : la reaction-diffusion engendre un attracteur de forme » (sans `suptitle`, titre global inline au-dessus). **2 panneaux côte-à-côte** dark-field : **Gauche `t=0 : germe localise`** — carré rouge centré (germe pixelisé) sur fond bleu sombre uniforme quasi-noir (≈70% pixels noirs). **Droite `t=6000 : motif auto-entretenu (structure=0.0095)`** — ~25 taches rougeâtres-oranges (hot colormap) disposées en grille décalée, sur fond noir. Stats RGB PIL : moyenne (79.16, 72.30, 81.24), std (113.23, 110.50, 107.29) — **mean très bas** = fond noir dominant + **std très élevé** = signature d'un heatmap dark-field+rouge-oranger avec taches saturées. **Cohérent avec une réaction-diffusion Gray-Scott (Pearson 1993)** rendue via `imshow` (pas une courbe matplotlib).
 - **Contenu réel vérifié** : 2 panneaux côte-à-côte illustrant la **morphogenèse générative** par réaction-diffusion (Gray-Scott, Pearson 1993). Le titre interne est « Morphogenèse générative : la réaction-diffusion engendre un attracteur de forme ». **Panneau gauche** : `t=0 : germe localisé` (carré rouge centré sur fond bleu sombre uniforme). **Panneau droit** : `t=6000 : motif auto-entretenu` (structure=0.0095, ~25 taches rougeâtres disposées en grille décalée, sur fond noir). C'est la **dynamique de référence** qu'ICT-9 soumet ensuite à l'ablation `do(·)` pour mesurer le gain de réparation (`repair_gain`).
