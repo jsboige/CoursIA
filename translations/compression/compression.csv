@@ -3978,9 +3978,9 @@ jusqu'aux tests de Diebold-Mariano et y rend un verdict **INCONCLUSIVE** au
 seuil strict — la distillation est un gain *moyen*, pas une garantie, et
 c'est ce que cette ligne du tableau dit honnêtement.
 ",,,,,,,,2aadda2555968699,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb,4a8ec50e,markdown,fr,f1f0175bce8ddca2,"## 5. Le pont ICT-17b : apprendre, c'est déjà compresser
+MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb,4a8ec50e,markdown,fr,a82b274acd3a971a,"## 5. Le pont ICT-17b : apprendre, c'est déjà compresser
 
-[ICT-17b](../IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb),
+[ICT-17b](../IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb),
 §2, reprend la thèse de Schmidhuber : la **beauté/curiosité** d'un modèle est
 le *taux de compression-progress*. Le candidat le plus direct est la norme
 ‖w‖² des poids : sous weight-decay, l'optimiseur compresse le modèle
@@ -3993,7 +3993,7 @@ déjà compressé par l'entraînement), les techniques de la section 2-4 le
 compressent **encore** — et la quantification INT8 le ramène dans le domaine
 des séries de codecs : un flux d'octets qui a, lui, de la redondance.
 Mesurons la chaîne complète sur les poids de la référence :
-",,,,,,,,f1f0175bce8ddca2,,,,,,,,,,,,,,,
+",,,,,,,,a82b274acd3a971a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb,ea43ffb6,code,fr,cdd1fdcc26392185,"def codes_int8(w):
     # le code entier reel (pas le fake-quant float) : ce qui serait stocke
     scale = w.reshape(w.shape[0], -1).abs().amax(dim=1).clamp(min=1e-12) / 127.0
@@ -4141,7 +4141,7 @@ codage monétise la sparsité obtenue (section 3).
 Les sorties adoucies (température) du grand réseau — pas ses poids
 (section 4 ; la température fait l'objet de l'exercice 3).
 ",,,,,,,,bcb924775f9283c0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb,01bbca3b,markdown,fr,b8b743f61d9f1023,"## Pour aller plus loin
+MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb,01bbca3b,markdown,fr,e857882288451793,"## Pour aller plus loin
 
 - **Les versions complètes du trio** (ResNet-20 / CIFAR-10, from scratch puis
   écosystème) : `3.9` (quantization from scratch, deux parties), `3.9b`
@@ -4151,12 +4151,12 @@ MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb,01bbca3b
 - **La distillation vérifiée strictement** (5 folds × 4 graines, Diebold-
   Mariano) : `3.7-Distillation-Maitre-Eleve` de la même série.
 - **Le compression-progress** (apprendre = compresser, norme ‖w‖², pli de
-  Thom) : [ICT-17b](../IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb)
+  Thom) : [ICT-17b](../IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb)
   de la série ICT.
 - **Le codage de la sparsité** : les codecs de cette même série — Huffman
   canonique (Compression-02) et ANS (Compression-04) — appliqués au flux des
   poids élagués.
-",,,,,,,,b8b743f61d9f1023,,,,,,,,,,,,,,,
+",,,,,,,,e857882288451793,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb,c06_00,markdown,fr,af333c415520fe15,"# Compression-06 — MDL : décrire le modèle autant que les données
 
 **Navigation** : [Index de la série](README.md) | [Compression-05 — compression des modèles](Compression-05-MLCompression-Python.ipynb)
@@ -4492,7 +4492,7 @@ complexité de la chaîne, ou seulement la difficulté que **ce** compresseur a 
 MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb,c06_17,code,fr,c1c0d4689a141ec7,"# TODO etudiant : construire la chaine transformee, mesurer avec `longueurs`,
 # comparer aux cas de la section 3, et repondre avec les chiffres.
 resultat_exercice_3 = None",,,,,,,,c1c0d4689a141ec7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb,c06_18,markdown,fr,a120fd0fa5adb6df,"## À retenir
+MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb,c06_18,markdown,fr,740ba57fde4b3f15,"## À retenir
 
 | Résultat | Mesure |
 |---|---|
@@ -4548,12 +4548,12 @@ La série s'arrête ici — pas de carnet suivant. Pour prolonger :
 
 - **Carnet voisin** : [Compression-05 — compression des modèles](Compression-05-MLCompression-Python.ipynb),
   la même facture appliquée aux poids d'un réseau.
-- **La greffe ICT** : [ICT-17b — Grokking, compression progress](../IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb),
+- **La greffe ICT** : [ICT-17b — Grokking, compression progress](../IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb),
   où apprendre se lit comme compresser (pli de Thom, norme ‖w‖²) — le pont
   annoncé en tête de ce carnet.
 - **La source MDL** : J. Rissanen, *Modeling by Shortest Data Description*
   (1978), citée en tête — le principe des deux parties posé à l'origine.
-",,,,,,,,a120fd0fa5adb6df,,,,,,,,,,,,,,,
+",,,,,,,,740ba57fde4b3f15,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb,9d7d55e6,markdown,fr,ed26120de94004c5,"# Compression-01b — Kraft et McMillan en Lean 4 : le carnet compagnon du lake
 
 Ce carnet est le **compagnon exécutable** du lake `Compression_lean` (EPIC #18706, décision D4) : il importe les modules `PrefixCodes`, `Decode` et `McMillan` **réels** du lake et les fait travailler — aucune définition n'est recopiée, ce que vous voyez exécuter est le livrable formel lui-même.

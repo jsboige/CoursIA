@@ -33822,17 +33822,18 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb,cell-13,code
 #check @tau_strictly_decreases
 #check @entropic_PFR_conjecture
 #print axioms entropic_PFR_conjecture",,,,,,,,591f0d1152bc518f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb,cell-14,markdown,fr,ce8faa264758af28,"## 7. Pont vers la série ICT — l'entropie comme monnaie commune
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb,cell-14,markdown,fr,3174bba865e8bb9a,"## 7. Pont vers la série ICT — l'entropie comme monnaie commune
 
 La série [ICT](../../../IIT/ICT-Series/) (information et calcul) manipule l'entropie dans des contextes très différents de la combinatoire additive. PFR s'y rattache directement :
 
 | Notebook ICT | Rôle de l'entropie | Lien avec PFR |
 |---|---|---|
 | [ICT-16 — MDL](../../../IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) | longueur de code minimale = entropie | `binEntropy` est la longueur du code optimal d'un bit biaisé (section 5) |
-| [ICT-17 — Epsilon-machine](../../../IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb) | entropie des états causaux, complexité statistique | « structure = compressibilité » : mesurer l'entropie pour révéler la machine cachée |
+| [ICT-17 — Epsilon-machine](../../../IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) | entropie des états causaux, complexité statistique | « structure = compressibilité » : mesurer l'entropie pour révéler la machine cachée |
 | [ICT-14 — Free energy](../../../IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb) | surprise, bornes informationnelles | l'information comme borne sur le comportement d'un système |
 
-Le slogan commun : **l'information mesure la structure**. En ICT, une faible complexité statistique révèle une machine à états petite ; en théorie additive, une **petite duplication** (peu d'entropie dans X + X′) force une **structure algébrique** — le sous-espace H de la conjecture de Marton. PFR est un théorème de « compression ⟹ structure », et il est prouvé par la théorie de l'information elle-même.",,,,,,,,ce8faa264758af28,,,,,,,,,,,,,,,
+Le slogan commun : **l'information mesure la structure**. En ICT, une faible complexité statistique révèle une machine à états petite ; en théorie additive, une **petite duplication** (peu d'entropie dans X + X′) force une **structure algébrique** — le sous-espace H de la conjecture de Marton. PFR est un théorème de « compression ⟹ structure », et il est prouvé par la théorie de l'information elle-même.
+",,,,,,,,3174bba865e8bb9a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb,cell-lean21-friction-8,markdown,fr,fce17823ae2106f7,"## 8. Friction et chemin de decouverte
 
 Cette section comble les **items 6 et 7** de la grille de digestion definie par l'EPIC #13106 (« Digestion et canonicalisation des mathematiques assistees par IA »). Elle n'aborde pas la preuve de PFR elle-meme - pour cela, les sections 3-6 et leurs `#check` Lean suffisent - mais le **metabolisme** qui rend la preuve difficile : ou ca coince, pourquoi l'heuristique naive echoue, et ce que chaque auteur connu a du abandonner en route. La distinction est centrale : un certificat `#check @PFR.Main` atteste la *validite formelle* du theoreme, pas sa *digestibilite* dans un corpus enseignable.

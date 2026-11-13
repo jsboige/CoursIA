@@ -2254,10 +2254,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedCo
 - Batterie causale : ICT-5/ICT-6; représentant interne et jambe énergie-libre : ICT-14; appareil antérieur : `ICT-Synthese-CrossSubstrat-Python`.
 - Module de compression : `ict` (chemin du module dans le dépôt).
 ",,,,,,,,8363c7fb92032078,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,8c29c0c4,markdown,fr,eea004a0dc1b238c,"# ICT-16 — MDL / code en deux parties et bosse complexite-entropie
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,8c29c0c4,markdown,fr,3d3287f0e63e3de2,"# ICT-16 — MDL / code en deux parties et bosse complexite-entropie
 
 **Strate 5** | Epic **#4588** | Issue **#5099** | Part of **#4588** (Closes **#5099**).
-**Navigation** : [Index](README.md) | [17b — Grokking et compression](ICT-17b-Grokking-CompressionProgress-Python.ipynb) | Axe transverse : [ICT-MUH — le texte où Tegmark cite Schmidhuber](ICT-MUH-FibreTegmark-Python.ipynb)
+**Navigation** : [Index](README.md) | [17b — Grokking et compression](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | Axe transverse : [ICT-MUH — le texte où Tegmark cite Schmidhuber](ICT-MUH-FibreTegmark-Python.ipynb)
 
 
 **Navigation** : [Index de la série](README.md) | Témoin transverse (lecture Tegmark/Schmidhuber) : [ICT-MUH](ICT-MUH-FibreTegmark-Python.ipynb)
@@ -2275,7 +2275,8 @@ ICT-0 a pose que l'integration ($\Phi$), la surprise ($F$) et la compression ($K
 5. **Gates falsifiables** : G6 (identite comptable MDL/zlib, **tenu**) + G7 (pic interieur de la bosse, **FAILED** -- le critere est ecrit pour pouvoir echouer, ce que l'ancien ne pouvait pas).
 6. **Trois exercices** (stub ; a completer).
 
-**Dependances** : `ict.mdl` (numpy-only), `ict.compression` (numpy + zlib). Pas de GPU, pas de Lean. Notebook executable end-to-end (les exercices sont stubs mais ne leveent pas d'exception -- règle C.1).",,,,,,,,eea004a0dc1b238c,,,,,,,,,,,,,,,
+**Dependances** : `ict.mdl` (numpy-only), `ict.compression` (numpy + zlib). Pas de GPU, pas de Lean. Notebook executable end-to-end (les exercices sont stubs mais ne leveent pas d'exception -- règle C.1).
+",,,,,,,,3d3287f0e63e3de2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,548759d1,markdown,fr,8205fc90bb0acb4c,"## 1. Codelength d'une TPM : prior de Krichevsky-Trofimov
 
 Le prior KT pour une distribution multinomiale a $k$ categories ajoute $1/2$ a chaque compte, ce qui lisse les probabilites vers $1/k$ sans jamais atteindre zero. La codelength d'une ligne $n_{i,1}, \dots, n_{i,k}$ est la longueur du code optimal sous ce prior, c'est-a-dire $-\log_2$ de sa **vraisemblance marginale** :
@@ -2382,20 +2383,20 @@ for k in (1, 2, 3):
     h = M.entropy_rate_estimate(seq_cycle, block=k)
     print(f'  cycle block={k}  H/k = {h[""entropy_rate""]:.4f}')
 ",,,,,,,,cbbef371f26caf0e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,d7fc94c3,markdown,fr,4e177e89c51bc990,"## 4. Bosse complexite-entropie (Crutchfield-Feldman 1998)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,d7fc94c3,markdown,fr,184587e5d0796c6a,"## 4. Bosse complexite-entropie (Crutchfield-Feldman 1998)
 
 La **complexite statistique** $C_\mu$ mesure ce qu'un processus demande de **memoire** : c'est l'entropie de sa distribution stationnaire sur les etats causaux de son $\varepsilon$-machine. Trois reperes, tous trois definis et non negocies :
 
 - processus **iid** : aucun etat causal au-dela de la distribution marginale, $C_\mu = 0$ ;
-- processus **periodique** de periode $p$ : $p$ etats causaux equiprobables, $C_\mu = \log_2 p$ -- mesure dans [ICT-17](ICT-17-EpsilonMachine-Python.ipynb) : le cycle $0,1,2$ donne 3 etats et $C_\mu = 1{,}5850$ ;
+- processus **periodique** de periode $p$ : $p$ etats causaux equiprobables, $C_\mu = \log_2 p$ -- mesure dans [ICT-17](ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) : le cycle $0,1,2$ donne 3 etats et $C_\mu = 1{,}5850$ ;
 - familles a memoire non triviale (markovien d'ordre $> 0$, chaos deterministe) : $C_\mu > 0$ a entropie intermediaire.
 
 L'image classique du **tradeoff complexite-entropie** est une bosse : la complexite culmine a entropie intermediaire, high-$H$ voulant dire « presque aleatoire, donc presque rien a memoriser ».
 
 **Le piege de ce carnet, et ce qu'il mesure vraiment.** La quantite disponible ici est `model_bits`, la longueur de code du modele -- et ce n'est **pas** $C_\mu$. Une longueur de code compte ce qu'il faut *transmettre* : une TPM iid porte seize comptes a decrire par ligne, une TPM deterministe un seul. Rien ne l'oblige a redescendre quand $H \to H_1$, et la cellule suivante mesure qu'elle n'y redescend pas : le maximum global tombe **au bord** du reservoir ($H^* = 2{,}965$ sur une etendue $[0{,}333\,;\,2{,}991]$, soit 99 % de l'axe), avec seulement un maximum **local** vers $H \approx 1{,}9$.
 
-Ce que le carnet montrait avant correction etait un artefact de la formule : la codelength KT etait alors negative pour les modeles creux (jusqu'a $-12{,}680$ bits pour une ligne vide a quatre comptes), ce qui poussait les points de faible $H$ sous zero et fabriquait un maximum interieur. Avec la formule exacte -- ligne vide = 0 bit, toute codelength $\geq 0$ -- ce maximum disparait. La bosse de $C_\mu$ se mesure en [ICT-17](ICT-17-EpsilonMachine-Python.ipynb), par partition en etats causaux ; ICT-16 ne peut pas la fournir avec `model_bits`, et le dit maintenant au lieu de le laisser croire.
-",,,,,,,,4e177e89c51bc990,,,,,,,,,,,,,,,
+Ce que le carnet montrait avant correction etait un artefact de la formule : la codelength KT etait alors negative pour les modeles creux (jusqu'a $-12{,}680$ bits pour une ligne vide a quatre comptes), ce qui poussait les points de faible $H$ sous zero et fabriquait un maximum interieur. Avec la formule exacte -- ligne vide = 0 bit, toute codelength $\geq 0$ -- ce maximum disparait. La bosse de $C_\mu$ se mesure en [ICT-17](ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb), par partition en etats causaux ; ICT-16 ne peut pas la fournir avec `model_bits`, et le dit maintenant au lieu de le laisser croire.
+",,,,,,,,184587e5d0796c6a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,954d31fc,code,fr,9f1073f751ec6f7b,"# Construction d'un echantillonnage de trajectoires de complexite
 # croissante : deterministe -> periodique -> markov -> iid.
 def mk_periodic(period, n):
@@ -2645,10 +2646,10 @@ ICT-16 attache la jambe $K$ a la **structure interne** du modèle (MDL / code en
 - **G7 (bosse complexite-entropie)** : le maximum de `model_bits` tombe dans la **zone centrale** 20 % - 80 % de l'etendue de $H$. **FAILED** sur le `sweep` a 8 trajectoires : $H^* = 2{,}965$ sur $[0{,}333\,;\,2{,}991]$, soit 99 % de l'axe -- un maximum de bord. Le gate precedent ($\exists$ un pic dans $]0, H_1[$) ne pouvait pas echouer, puisque le maximum d'un echantillon fini y tombe toujours ; il a ete remplace par un critere qui tombe, et il tombe.
 
 **Suite (ICT-17 EpsilonMachine)** : partition d'etats causaux (Crutchfield), complexite statistique $C_\mu$, entropie d'exces $E$ -- le pendant operationnel de la bosse $C$ vs $H$ d'ICT-16.",,,,,,,,11c2c2233920dd20,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,79a86521,markdown,fr,1438608c2a5c952c,"# ICT-17 -- Mecanique computationnelle (epsilon-machine de Crutchfield)
-**Navigation** : [Index](README.md) | [Suivant >>](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,79a86521,markdown,fr,414a952a40e13148,"# ICT-17 -- Mecanique computationnelle (epsilon-machine de Crutchfield)
+**Navigation** : [Index](../README.md) | [Suivant >>](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
 
-**Strate 5, Epic #4588, See #5100.**
+**Strate 5.**
 
 ICT-15 (capstone) a pose que l'integration ($\Phi$), la surprise ($F$) et la
 compression ($K$) sont trois facettes d'un même quantite -- *un système qui
@@ -2660,8 +2661,8 @@ Crutchfield -- la *mecanique computationnelle* -- et ses trois objets exacts :
     conditionnelle de futurs identique. C'est LA reponse de Crutchfield a
     la question ""quel est le bon macro-etat ?""
   - **$C_\mu$ (complexite statistique)** : entropie de la distribution
-    stationnaire des etats causaux -- la quantite de memoire que le
-    système doit conserver pour predire son futur.
+    stationnaire des etats causaux -- la quantite de memoire que le système
+    doit conserver pour predire son futur.
   - **entropie d'exces $E$** : information mutuelle passe / futur -- c'est
     la borne superieure de ce que N'IMPORTE QUEL estimateur $\hat{p}$ peut
     capturer (la ""jambe $K$"" d'ICT-13 bornee par $E$).
@@ -2683,14 +2684,14 @@ Plan :
 
 Ce notebook est **GPU-free**, **numpy-only**, et genere les substrats a la
 volee via les modules ``ict`` (pas de ``.npz`` pre-committed).
-",,,,,,,,1438608c2a5c952c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,ac06b994,markdown,fr,2dec2d7e6bfba5ee,"## 1. Setup
+",,,,,,,,414a952a40e13148,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,ac06b994,markdown,fr,2dec2d7e6bfba5ee,"## 1. Setup
 
 On importe le module ``ict/epsilon_machine.py`` (C198) + les modules
 ``ict/`` voisins qui produisent les substrats S1/S2/S3. Tous les imports
 sont locaux au dossier ``ICT-Series`` : on ajoute le parent au path.
 ",,,,,,,,2dec2d7e6bfba5ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,8a3e6792,code,fr,5fdac97a90e01034,"import os
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,8a3e6792,code,fr,5fdac97a90e01034,"import os
 import sys
 
 # C198-HARD (lecon ICT-16 reprise) : en nbconvert, ``__file__`` n'est PAS
@@ -2723,7 +2724,7 @@ print(""Python :"", sys.version.split()[0])
 print(""ICT-17 epsilon_machine :"", [n for n in dir(EM) if not n.startswith(""_"")])
 print(""Substrats S1/S2/S3 modules : self_sorting, bistable, trajectories OK"")
 ",,,,,,,,5fdac97a90e01034,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,28c06a43,markdown,fr,6f0e48046477002d,"## 2. L'algorithme Crutchfield (U-algorithme simplifie)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,28c06a43,markdown,fr,6f0e48046477002d,"## 2. L'algorithme Crutchfield (U-algorithme simplifie)
 
 L'idee centrale est presque tautologique : *deux passes (longueur $h$) sont
 dans le même etat causal si et seulement si la distribution de leurs futurs
@@ -2749,7 +2750,7 @@ N'IMPORTE QUEL estimateur $\hat{p}$ peut capturer (Crutchfield & Feldman
 d'approcher par ses modèles $p_\theta$, et c'est la jambe ""memoire"" de la
 complexite integree.
 ",,,,,,,,6f0e48046477002d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,20a9d3f7,code,fr,979a7453cdb2c0fd,"# Demonstration minimale sur une sequence deterministe
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,20a9d3f7,code,fr,979a7453cdb2c0fd,"# Demonstration minimale sur une sequence deterministe
 seq_demo = [0, 1, 2] * 30  # cycle 3
 
 # Crutchfield (history_len=3, future_len=3 : capture toute la periode)
@@ -2771,7 +2772,7 @@ print(""Interpretation : cycle 3 deterministe -> 3 etats causaux (un par phase),
       f""C_mu = log2(3) = {np.log2(3):.4f} bits (chaque phase a la meme freq 1/3)."")
 print(f""E = log2(3) = {np.log2(3):.4f} bits (la passe complete identifie la phase)."")
 ",,,,,,,,979a7453cdb2c0fd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,c1975d39,markdown,fr,38b0b760163cc369,"## 3. Substrat S1 -- tri auto-organise (ICT-2)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,c1975d39,markdown,fr,38b0b760163cc369,"## 3. Substrat S1 -- tri auto-organise (ICT-2)
 
 Le tri auto-organise produit une trajectoire OU les éléments se classent
 spontanement par ""valeur"". En discret, on observe un regime initial
@@ -2785,7 +2786,7 @@ necessaire pour la predire.
 On prend une trajectoire S1 simulee par le module ``self_sorting`` et on
 discute l'evolution de $C_\mu$ sur la trajectoire mobile.
 ",,,,,,,,38b0b760163cc369,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,b9883ffd,code,fr,5f129a41ef448e0a,"# Substrat S1 : trajectoire de tri auto-organise via ``self_sorting``
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,b9883ffd,code,fr,5f129a41ef448e0a,"# Substrat S1 : trajectoire de tri auto-organise via ``self_sorting``
 # On prend la sortie ""symbolique"" : a chaque pas, on code l'etat par
 # la paire (position_normalisee, valeur_normalisee) quantifiee en k bins.
 import numpy as np
@@ -2821,7 +2822,7 @@ print(f""S1 n_causal_states   : {part_s1['n_causal_states']}"")
 print(f""S1 C_mu (bits)       : {C_s1['C_mu']:.4f}"")
 print(f""S1 E_estimate (bits) : {E_s1['E_estimate']:.4f}"")
 ",,,,,,,,5f129a41ef448e0a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,b0bbf115,markdown,fr,255c309398c3d96e,"## 4. Substrat S2 -- paysage bistable (ICT-10, ICT-12)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,b0bbf115,markdown,fr,255c309398c3d96e,"## 4. Substrat S2 -- paysage bistable (ICT-10, ICT-12)
 
 Le modèle de broutage (May 1977) $\dot{x} = rx(1-x/K) - cx^2/(x^2+h^2)$
 presente deux regimes :
@@ -2836,7 +2837,7 @@ monostable $\to$ bistable : la memoire requise pour predire le système
 augmente localement (le système ""hesite"" entre deux bassins), puis
 redescend une fois le système engage dans un bassin.
 ",,,,,,,,255c309398c3d96e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,c919eb4f,code,fr,61bebe3a6f912768,"# Substrat S2 : trajectoire du modele de broutage (May 1977)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,c919eb4f,code,fr,61bebe3a6f912768,"# Substrat S2 : trajectoire du modele de broutage (May 1977)
 # On balaie un parametre ``r`` qui pilote la bifurcation.
 # NB API ``ict.bistable`` : ``GrazingModel(r, K, h)`` n'a PAS de ``c`` ;
 # le coefficient ``c`` (pression de broutage) est passe directement aux
@@ -2877,7 +2878,7 @@ print(f""S2 n_causal_states   : {part_s2['n_causal_states']}"")
 print(f""S2 C_mu (bits)       : {C_s2['C_mu']:.4f}"")
 print(f""S2 E_estimate (bits) : {E_s2['E_estimate']:.4f}"")
 ",,,,,,,,61bebe3a6f912768,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,2bf2eb91,code,fr,41f5327e534beb52,"# Bonus Gate : C_mu a la transition monostable -> bistable
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,2bf2eb91,code,fr,41f5327e534beb52,"# Bonus Gate : C_mu a la transition monostable -> bistable
 # On balaye une fenetre glissante et on regarde la variation de C_mu.
 window = 200
 stride = 100
@@ -2910,7 +2911,7 @@ if c_mu_series:
 else:
     print(""Pas assez de fenetres pour le bonus Gate."")
 ",,,,,,,,41f5327e534beb52,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,e251ccf6,markdown,fr,38494f9db65a23a5,"## 5. Substrat S3 -- replicateur stratégique (ICT-13 cooperation)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,e251ccf6,markdown,fr,38494f9db65a23a5,"## 5. Substrat S3 -- replicateur stratégique (ICT-13 cooperation)
 
 Le replicateur d'Axelrod (ou le replicateur de Schuster-Sigmund) capture
 la dynamique de stratégies en interaction. En regime de cooperation
@@ -2922,7 +2923,7 @@ les stratégies ""gagnantes"" sont stables, donc le système doit memoriser
 beaucoup pour predire quel attracteur domine. En defection, la
 trajectoire est plus i.i.d.-like (bruit), $C_\mu$ plus bas.
 ",,,,,,,,38494f9db65a23a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,f670a9da,code,fr,39938115b07c1049,"# Substrat S3 : automate cellulaire issu de ``trajectories``
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,f670a9da,code,fr,39938115b07c1049,"# Substrat S3 : automate cellulaire issu de ``trajectories``
 # On utilise un automate deterministe 2 etats (regle 110) qui presente
 # des dynamiques emergentes variees (chaos + structures coherentes).
 from ict.trajectories import state_trajectory, all_states
@@ -2955,7 +2956,7 @@ print(f""S3 n_causal_states   : {part_s3['n_causal_states']}"")
 print(f""S3 C_mu (bits)       : {C_s3['C_mu']:.4f}"")
 print(f""S3 E_estimate (bits) : {E_s3['E_estimate']:.4f}"")
 ",,,,,,,,39938115b07c1049,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,be4f1aa8,markdown,fr,443b9a6b6f21678e,"## 6. Gate 8 -- Crutchfield vs Hoel (similarite VI)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,be4f1aa8,markdown,fr,443b9a6b6f21678e,"## 6. Gate 8 -- Crutchfield vs Hoel (similarite VI)
 
 La partition en etats causaux (Crutchfield) repond ""quel est le bon
 macro-etat ?"" par la preservation de la distribution de futur.
@@ -2973,7 +2974,7 @@ doivent **converger** (substrats structurellement forts). Sur S2
 pouvoir predictif et le pouvoir causal ne sont pas le même invariant
 quand le paysage est rugueux.
 ",,,,,,,,443b9a6b6f21678e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,800cd2f4,code,fr,56792ff9f42f7204,"# Gate 8 : comparaison Crutchfield vs Hoel sur S1/S2/S3
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,800cd2f4,code,fr,56792ff9f42f7204,"# Gate 8 : comparaison Crutchfield vs Hoel sur S1/S2/S3
 # Pour Hoel : TPM via ``tpm_from_trajectory`` puis ``greedy_apportionment``.
 # Le partitionnement Crutchfield est sur la sequence, le partitionnement
 # Hoel est sur les etats de la TPM. On construit le mapping passe -> etat
@@ -3106,7 +3107,7 @@ print(""Note C198 : voir C198-HARD #5 -- Crutchfield et Hoel operent a ""
       ""des granularites differentes ; le ratio agree/n_used est la ""
       ""metrique complementaire a reporter."")
 ",,,,,,,,56792ff9f42f7204,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,bc2494e2,markdown,fr,75474ecbcb0737b7,"## 7. Gate 9 -- $E$ comme plafond sur les estimateurs $\hat{p}$
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,bc2494e2,markdown,fr,75474ecbcb0737b7,"## 7. Gate 9 -- $E$ comme plafond sur les estimateurs $\hat{p}$
 
 ICT-10 (CatastropheGrammar) apprend des estimateurs $\hat{p}_\theta$ sur
 plusieurs regimes ; la jambe ""memoire"" est leur entropie conditionnelle
@@ -3120,7 +3121,7 @@ $E_\text{S2}$ borne l'info mutuelle entre la passe (3 derniers etats)
 et le futur (3 prochains etats) telle qu'estimee par n'importe quelle
 distribution empirique $\hat{p}$.
 ",,,,,,,,75474ecbcb0737b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,ab6902fc,code,fr,13af8e244a81e723,"# Gate 9 : E est un plafond pour n'importe quel estimateur ``p_hat``
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,ab6902fc,code,fr,13af8e244a81e723,"# Gate 9 : E est un plafond pour n'importe quel estimateur ``p_hat``
 # On prend plusieurs estimateurs : (1) plug-in empirique, (2) melange
 # uniforme aleatoire, (3) deterministe (toujours la meme prediction),
 # et on montre que I(passe; futur selon p_hat) <= E.
@@ -3197,13 +3198,13 @@ print(f""Gate 9 (tous les I <= E) : ""
 print(f""  (E - I_plugin)  = {E_s2 - I_plugin:.4f} bits (ecart au plafond)"")
 print(f""  (E - I_uniform) = {E_s2 - I_uniform:.4f} bits (ecart au plafond)"")
 ",,,,,,,,13af8e244a81e723,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,b33872b0,markdown,fr,dfdacc95693edc43,"L'extension naturelle est ICT-18 (FlecheDuTempsReversibilisation) :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,b33872b0,markdown,fr,dfdacc95693edc43,"L'extension naturelle est ICT-18 (FlecheDuTempsReversibilisation) :
 production d'entropie thermodynamique et reversibilisation
 (Schnakenberg 1976, Seifert 2012, Cusinato & Lecomte 2024), numpy
 CPU-only -- un complement *thermodynamique* a ICT-17 qui evalue la
 *complexite temporelle* (fleche) plutot que la complexite de
 representation (epsilon-machine).",,,,,,,,dfdacc95693edc43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,9286d7d6,markdown,fr,d7572e8342bd2e00,"## 9. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,9286d7d6,markdown,fr,d7572e8342bd2e00,"## 9. Exercices
 
 3 exercices, conformement a la convention #2161 et a la règle C.1
 (notebooks JAMAIS de `raise NotImplementedError` -- on utilise ``pass``
@@ -3222,7 +3223,7 @@ sequence Markov a deux etats vous-meme, comme la porte G4 construit la sienne
   - Reperez aussi le ``history_len`` ou l'estimateur se remet a eclater :
     les histoires possibles sont ``2 ** history_len``, donc les occurrences
     par histoire s'effondrent quand ``history_len`` croit.",,,,,,,,d7572e8342bd2e00,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,338dd0f3,code,fr,de01dae63b747e30,"# Exercice 1 -- A vous de jouer !
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,338dd0f3,code,fr,de01dae63b747e30,"# Exercice 1 -- A vous de jouer !
 # Indices :
 #   - Construisez la sequence Markov 2 etats vous-meme : le module ``ict``
 #     n'expose aucun generateur (les helpers des tests ne sont pas
@@ -3248,7 +3249,7 @@ result_history_sweep = None  # TODO etudiant : dict {history_len: (C_mu, E_estim
 if result_history_sweep is None:
     print(""Exercice 1 a completer : balayer history_len dans [1, 5] et tracer C_mu et E."")
     print(""Indice : voir bloc de la cellule precedente."")",,,,,,,,de01dae63b747e30,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,2c99fc11,markdown,fr,9a320dabb8dd2763,"### Exercice 2 -- Sensibilite a la tolerance
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,2c99fc11,markdown,fr,9a320dabb8dd2763,"### Exercice 2 -- Sensibilite a la tolerance
 
 La tolerance n'est pas un reglage : c'est une **fenetre**, et sa borne depend de la
 longueur de la sequence. La porte G3 ci-dessus l'a mesure sur un alphabet permute
@@ -3266,7 +3267,7 @@ Pour trois longueurs ``n`` dans ``[2000, 8000, 32000]`` (``seed=11``, alphabet a
 Attention a l'echelle des abscisses : sur une grille trop fine (``1e-3`` par exemple)
 les trois courbes restent plates tout en haut de l'echelle et rien ne se voit --
 c'est precisement le piege que cet exercice vous apprend a eviter.",,,,,,,,9a320dabb8dd2763,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,a215cd80,code,fr,1f300a038c67e365,"# Exercice 2 -- A vous de jouer !
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,a215cd80,code,fr,1f300a038c67e365,"# Exercice 2 -- A vous de jouer !
 # Indices :
 #   - Construisez la sequence iid vous-meme, comme le fait la porte G3 :
 #     seq = list(np.random.default_rng(11).integers(0, 4, size=n))
@@ -3282,7 +3283,7 @@ result_tol_sweep = None  # TODO etudiant : dict {n: {tol: (n_causal, C_mu)}}
 if result_tol_sweep is None:
     print(""Exercice 2 a completer : balayer tol dans [1e-1, 1.0] pour n dans [2000, 8000, 32000], puis tracer."")
 ",,,,,,,,1f300a038c67e365,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,94f67abc,markdown,fr,c4c764a5234a7367,"### Exercice 3 -- $C_\mu$ sur le replicateur S3 en cooperation emergente
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,94f67abc,markdown,fr,c4c764a5234a7367,"### Exercice 3 -- $C_\mu$ sur le replicateur S3 en cooperation emergente
 
 Reprenez la règle 110 (substrat S3) et faites varier la condition initiale :
   - **Cas A** : une seule cellule allumee au centre (regime actuel).
@@ -3297,7 +3298,7 @@ Pour chaque cas :
     regime ou le système a le plus de memoire interne (et donc est le
     plus ""intelligent"" au sens de Crutchfield).
 ",,,,,,,,c4c764a5234a7367,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,40c23a3d,code,fr,f625e2610164f6c5,"# Exercice 3 -- A vous de jouer !
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,40c23a3d,code,fr,f625e2610164f6c5,"# Exercice 3 -- A vous de jouer !
 # Indices :
 #   - Modifiez la condition initiale de la regle 110 : cas A (1 cellule
 #     au centre, fait dans la cellule 14), cas B (32 premieres allumees),
@@ -3313,7 +3314,7 @@ if result_s3_sweep is None:
     print(""Exercice 3 a completer : 3 conditions initiales differentes pour S3, ""
           ""comparer C_mu et E."")
 ",,,,,,,,f625e2610164f6c5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,f0303fa2,markdown,fr,ce95cd5bc6a4f5f7,"Suite strate 5 :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,f0303fa2,markdown,fr,ce95cd5bc6a4f5f7,"Suite strate 5 :
   - **ICT-18 (FlecheDuTempsReversibilisation)** : production d'entropie
     thermodynamique et reversibilisation (Schnakenberg 1976, Seifert 2012,
     Cusinato & Lecomte 2024). Applique ces 3 quantites au diagnostic
@@ -11045,7 +11046,7 @@ falsifiables gate par gate. Le capstone ne ferme pas la question fondatrice ; il
 rend la question *numériquement posable*, ce qui est tout ce qu'une série
 pédagogique honnête peut faire.
 ",,,,,,,,d9055b6004a950f6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,cell-b9a00370,markdown,fr,f50ed124750e0cf2,"## Bilan -- l'epsilon-machine, troisieme jambe computationnelle
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,cell-b9a00370,markdown,fr,3f766ea025d402d1,"## Bilan -- l'epsilon-machine, troisieme jambe computationnelle
 
 L'U-algorithme de Crutchfield donne une reponse operationnelle a la question
 *« quelle est la memoire minimale pour predire ce processus ? »* : la partition
@@ -11103,7 +11104,9 @@ ferme la boucle : la memoire causale ($C_\mu$) plafonne l'information
 predictive ($E$), exactement comme la compression ($K$) plafonne la memoire.
 Les trois quantites de l'ICT -- integration, surprise, computation -- sont
 donc contraintes par une même hiérarchie de bornes.
-",,,,,,,,f50ed124750e0cf2,,,,,,,,,,,,,,,
+
+Suivi : #5100.
+",,,,,,,,3f766ea025d402d1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,015dbddd,markdown,fr,8b8dedcbe4a20cde,"## 9. Exemples guidés et exercices
 
 Les trois **exemples guidés** ci-dessous reprennent les concepts de la série (flèche du temps, indice d'agentivité, substrats) avec des solutions commentées. Les trois **exercices** qui suivent vous demandent d'étendre chaque méthode à un nouveau cas. Convention CoursIA : un *exemple* est résolu, un *exercice* est à compléter (convention 3 exercices minimum, #2161).",,,,,,,,8b8dedcbe4a20cde,,,,,,,,,,,,,,,
@@ -15573,14 +15576,14 @@ for label, rows in ((""A"", rows_p), (""B"", rows_b)):
         print(f""    k={r['order']}  | {r['mdl_bits']:9.1f} | {r['declare_bits']:7.2f} | ""
               f""{r['n_contexts']:5d}/{r['n_nonempty']:5d}    | {r['nll_heldout']:10.1f}"")
 ",,,,,,,,eeef47bc4cc72801,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,356cdcba99928dd3,markdown,fr,0c81aa8f068656d2,"Le pont est **calibré, pas magique** — et c'est le résultat honnête :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,356cdcba99928dd3,markdown,fr,abf39f3a78da4307,"Le pont est **calibré, pas magique** — et c'est le résultat honnête :
 
 - **Scénario A (Markov d'ordre 2, compressible)** : MDL minimal et NLL held-out minimal **coïncident à $k=2$** (le véritable ordre générateur), $\rho=+1{,}0$. Capturer l'ordre réduit le NLL de $2433$ bits vs $k=0$ : la compression capture une régularité *réelle* qui aide à prédire. Le pont est **utile**.
 - **Scénario B (source i.i.d., rien à capturer)** : MDL et NLL **coïncident à $k=0$**, $\rho=+1{,}0$. Aucun ordre supérieur n'aide : le MDL croît de $11956{,}9$ bits à $k=0$ jusqu'à $12961{,}3$ à $k=4$, et le NLL held-out suit la même pente ($5962{,}6 \rightarrow 6251{,}8$). Le pont **s'accorde à vide** : il sélectionne correctement « ne modélise rien ».
 
 **Ce que la section 6.6 ajoute, et qui manquait** : à $n = 6000$ le pont est calibré, mais le calibrage n'est pas gratuit. Sur la même source i.i.d., à $n = 60$, MDL choisit un ordre élevé que le NLL held-out refuse. La raison est structurelle : une ligne de comptes vide coûte zéro bit, donc un modèle d'ordre 4 n'est pas facturé pour ses 256 contextes dont ~200 restent vides, et ce qu'il paie pour les rares contextes visités peut tomber sous le prix de l'ordre 0. La sélection MDL n'est donc fiable que si l'échantillon est **grand devant $4^k$** — ce n'est pas une clause de style, c'est la condition d'emploi du critère, et elle se mesure.
 
-**Ce que la correction falsifie, et qu'il faut dire** : la lecture « `model_bits` trace la bosse complexite-entropie » ne survit pas a la formule exacte. Avec l'ancienne codelength negative, les modeles creux (faible $H$) tombaient sous zero et fabriquaient un maximum interieur a $H^* = 1{,}987$ ; avec la codelength exacte, le maximum global de `model_bits` tombe a $H^* = 2{,}965$ sur une etendue $[0{,}333\,;\,2{,}991]$, soit **99 % de l'axe** -- un maximum de bord, pas une bosse. La raison est de fond : une longueur de code compte ce qu'il faut transmettre, pas ce qu'il faut se rappeler. Gate 7 est donc **FAILED**, et c'est un resultat : dans sa forme d'origine ($0 < H^* < H_1$, vrai de tout maximum fini) il ne pouvait pas echouer ; il a maintenant un critere qui peut tomber, et il tombe. La complexite statistique se mesure en [ICT-17](ICT-17-EpsilonMachine-Python.ipynb).
+**Ce que la correction falsifie, et qu'il faut dire** : la lecture « `model_bits` trace la bosse complexite-entropie » ne survit pas a la formule exacte. Avec l'ancienne codelength negative, les modeles creux (faible $H$) tombaient sous zero et fabriquaient un maximum interieur a $H^* = 1{,}987$ ; avec la codelength exacte, le maximum global de `model_bits` tombe a $H^* = 2{,}965$ sur une etendue $[0{,}333\,;\,2{,}991]$, soit **99 % de l'axe** -- un maximum de bord, pas une bosse. La raison est de fond : une longueur de code compte ce qu'il faut transmettre, pas ce qu'il faut se rappeler. Gate 7 est donc **FAILED**, et c'est un resultat : dans sa forme d'origine ($0 < H^* < H_1$, vrai de tout maximum fini) il ne pouvait pas echouer ; il a maintenant un critere qui peut tomber, et il tombe. La complexite statistique se mesure en [ICT-17](ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb).
 
 **La leçon** : le pont « MDL → généralisation » ne **se casse pas** sur une source sans structure — il **se tait** (les deux coûts sélectionnent $k=0$). Ce qui est *conditionnel*, c'est son **utilité prédictive** (grande quand la source est compressible, nulle quand elle est i.i.d.) **et sa fiabilité de sélection** (grande quand $n \gg 4^k$, illusoire sinon). Le contrôle held-out, lui, ne se trompe dans aucun des deux régimes : c'est pourquoi il est mesuré à côté, et non déduit du MDL.
 
@@ -15589,12 +15592,12 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,356cdcba9992
 | MDL → généralisation | le modèle au MDL minimal minimise aussi le NLL held-out | source i.i.d. (ordre 0) = rien à capturer | **REPRODUCED_IN_MODEL** | chaînes de Markov discrètes (4 états, $k=0..4$) ; MDL et NLL coïncident ($\rho=+1{,}0$) à $n = 6000$ — $k=2$ pour la source structurée (réduction $2433$ bits), $k=0$ pour la source i.i.d. À $n = 60$ sur la même source i.i.d., MDL et NLL **divergent** (section 6.6) : le pont est calibré pour $n \gg 4^k$, pas pour tout $n$ |
 | Bosse complexite-entropie (`model_bits` pris pour $C_\mu$) | la longueur de code passe par un maximum a entropie intermediaire | processus sans memoire ($C_\mu = 0$) et periodique ($C_\mu = \log_2 p$) | **FALSIFIED_IN_MODEL** | max a 99 % de l'axe ($H^* = 2{,}965$ sur $[0{,}333\,;\,2{,}991]$) ; $C_\mu$ reelle mesuree en ICT-17 |
 
-**Honnêtement** : c'est la version chaîne-de-Markov du principe MDL de Rissanen (compromis biais-variance du code deux-parties), démontrée sur des sources synthétiques d'entropie contrôlée — pas une revendication sur les LLMs (qui nécessiteraient GPU, cf. [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb) pour la jambe K à l'entraînement). Le régime de rupture sous-échantillonné, longtemps renvoyé « hors de ce notebook », y est désormais mesuré en 6.6 et épinglé par un test (`tests/test_mdl.py::test_fit_markov_order_declares_the_undersampling_limit`) : si la formule change, le test tombe et le carnet doit être relu. Ligne inscrite dans la matrice de dissociations #7734. Voir #8077.
-",,,,,,,,0c81aa8f068656d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,f2a124b6,markdown,fr,ca0a79ad6f94b44b,"# ICT-17b — Grokking et compression-progress : la jambe K à l'épreuve de l'entraînement
+**Honnêtement** : c'est la version chaîne-de-Markov du principe MDL de Rissanen (compromis biais-variance du code deux-parties), démontrée sur des sources synthétiques d'entropie contrôlée — pas une revendication sur les LLMs (qui nécessiteraient GPU, cf. [ICT-17b](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) pour la jambe K à l'entraînement). Le régime de rupture sous-échantillonné, longtemps renvoyé « hors de ce notebook », y est désormais mesuré en 6.6 et épinglé par un test (`tests/test_mdl.py::test_fit_markov_order_declares_the_undersampling_limit`) : si la formule change, le test tombe et le carnet doit être relu. Ligne inscrite dans la matrice de dissociations #7734. Voir #8077.
+",,,,,,,,abf39f3a78da4307,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,f2a124b6,markdown,fr,c2e844ac16545739,"# ICT-17b — Grokking et compression-progress : la jambe K à l'épreuve de l'entraînement
 
 *Strand Schmidhuber de la série ICT — See #4588, #7258, #5090.*
-**Navigation** : [Index](README.md) | [← 16 — MDL / code en deux parties](ICT-16-MDLTwoPartCode-Python.ipynb) | [17c — TorchLens et inspection des représentations →](ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb) | Axe transverse : [ICT-MUH — le texte où Tegmark cite Schmidhuber](ICT-MUH-FibreTegmark-Python.ipynb)
+**Navigation** : [Index](../README.md) | [← 16 — MDL / code en deux parties](../ICT-16-MDLTwoPartCode-Python.ipynb) | [17c — TorchLens et inspection des représentations →](ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb) | Axe transverse : [ICT-MUH — le texte où Tegmark cite Schmidhuber](../ICT-MUH-FibreTegmark-Python.ipynb)
 
 
 **Idée centrale.** La triade fondatrice de la série ICT articule trois facettes d'une même
@@ -15614,8 +15617,9 @@ weight-decay et le grok **émerge** de la compression cumulée. (2) Le « pli de
 (‖w‖²) et la transition *behaviorale* (accuracy de test) plient au grok, mais la *sensibilité*
 Fisher ne le fait pas. Il n'y a pas de catastrophe unique partagée par toutes les facets de K —
 le grokking révèle que **K est multidimensionnel**, et que l'axe unificateur est la dérivée
-temporelle (capstone #7259), pas un instantané K statique. Le cadre n'est ni survendu ni enjolivé.",,,,,,,,ca0a79ad6f94b44b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,28a49d9d,markdown,fr,489239b42219a009,"## §0. Contexte : K comme compression-progress
+temporelle (capstone #7259), pas un instantané K statique. Le cadre n'est ni survendu ni enjolivé.
+",,,,,,,,c2e844ac16545739,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,28a49d9d,markdown,fr,489239b42219a009,"## §0. Contexte : K comme compression-progress
 
 Rappel de la triade. **ICT-Synthese-CrossSubstrat-Python** a *falsifié* l'hypothèse d'un scalaire
 universel Φ/F/K : Φ et F covarient (Kendall τ ≈ +1.00), mais **K diverge** (τ ≈ +0.33). La
@@ -15637,7 +15641,7 @@ le plus propre pour demander : *la lentille ICT voit-elle le grok ?*
 > **Prédiction falsifiable.** Si la lentille ICT capture le grok, un proxy K doit montrer une
 > catastrophe (fold) **localisée au grok point**. Sinon, la thèse « beauty = catastrophe de
 > compressibilité » est affaiblie en faveur de « beauty = taux de compression-progress ».",,,,,,,,489239b42219a009,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8472951c,code,fr,386afd3356acbbf4,"import os, sys, math, time, zlib
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8472951c,code,fr,82685d53c4926c6b,"import os, sys, math, time, zlib
 
 import numpy as np
 import torch
@@ -15645,17 +15649,19 @@ import torch.nn as nn
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 
-# Package ict (module beauty + mdl, PR #7257). Le notebook s'execute depuis son
-# propre dossier (ICT-Series), donc le package est sur le chemin.
-sys.path.insert(0, os.getcwd())
+# Package ict (module beauty + mdl, PR #7257). Le carnet vit dans le
+# sous-dossier ICT-17-EpsilonMachine/ d'ICT-Series, donc le package est
+# un niveau au-dessus.
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
 from ict import beauty as BTY   # noqa: E402
 from ict import mdl as MDL      # noqa: E402
 
 torch.manual_seed(0)
 np.random.seed(0)
 RNG = np.random.default_rng(0)
-print(f""torch {torch.__version__} | numpy {np.__version__}"")",,,,,,,,386afd3356acbbf4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,c182e02e,markdown,fr,0948d6919cf5b548,"## §1. Démo canonique : multiplication modulaire `a*b mod p`
+print(f""torch {torch.__version__} | numpy {np.__version__}"")
+",,,,,,,,82685d53c4926c6b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,c182e02e,markdown,fr,0948d6919cf5b548,"## §1. Démo canonique : multiplication modulaire `a*b mod p`
 
 On entraîne un petit transformeur 1-couche (l'architecture *canonique* du grokking) à prédire
 le produit modulaire `a*b mod p` pour `p = 59`, en ne lui montrant que **30 %** des couples.
@@ -15667,7 +15673,7 @@ phase plate — généralisation soudaine à toute la grille (test → ~100 %). 
 la **norme des poids** ‖w‖² (compacité du modèle), la **trace de Fisher empirique**
 (sensibilité locale de la vraisemblance) et la **longueur zlib de la prediction-string**
 (compressibilité de la sortie).",,,,,,,,0948d6919cf5b548,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,af815988,markdown,fr,bd3d475a7d64f286,"### Recette : cross-check avec la littérature
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,af815988,markdown,fr,bd3d475a7d64f286,"### Recette : cross-check avec la littérature
 
 Avant de lire les résultats, ancrons chaque hyperparamètre. La recette ci-dessous n'est pas
 arbitraire : c'est la **recette canonique du grokking**, vérifiée contre le papier fondateur
@@ -15701,7 +15707,7 @@ Trois précisions honnêtes sur nos écarts au canonique :
 `lr = 1e-3` est également canonique ; le grokking n'est robuste que dans une fenêtre étroite de lr
 (~1 ordre de grandeur, Power et al. §3.3) — c'est précisément ce que l'**exercice 1** fait explorer.
 Bibliographie complète en **§8**.",,,,,,,,bd3d475a7d64f286,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,4f431a38,code,fr,823260578b97d0bc,"# --- Dataset : a*b mod p (Power et al. 2022) ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,4f431a38,code,fr,823260578b97d0bc,"# --- Dataset : a*b mod p (Power et al. 2022) ---
 p = 59
 _pairs = torch.cartesian_prod(torch.arange(p), torch.arange(p))   # 3481 couples
 _labels = (_pairs[:, 0] * _pairs[:, 1]) % p
@@ -15819,7 +15825,7 @@ for step in range(1, TOTAL_STEPS + 1):
         print(f""step {step:5d}  loss {last['loss']:.4f}  tr {last['tr_acc']:.3f}  ""
               f""te {last['te_acc']:.3f}  ||w||^2 {last['wn']:.0f}  Ftr {last['ftr']:.2f}"")
 print(f""\nEntraîné en {time.time() - t0:.0f}s sur CPU."")",,,,,,,,823260578b97d0bc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ccfd86d5,markdown,fr,62d167406ee222b2,"On observe typiquement deux régimes bien séparés. (1) **Mémorisation** : la train accuracy
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ccfd86d5,markdown,fr,62d167406ee222b2,"On observe typiquement deux régimes bien séparés. (1) **Mémorisation** : la train accuracy
 atteint ~100 % en quelques centaines de pas, tandis que la test accuracy stagne autour de 30 %
 (le réseau a stocké les ~1044 couples vus, et répond au hasard sur le complément). (2) **Grok** :
 après une longue phase plate, la test accuracy bascule soudain vers ~100 %. Le réseau est passé
@@ -15827,7 +15833,7 @@ d'une table de lookup à un algorithme de multiplication modulaire *généralisa
 
 C'est exactement le passage mémorisation (code dominé par les données) → programme court
 (code qui se compactifie) que la jambe K doit capturer.",,,,,,,,62d167406ee222b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,0501efdf,code,fr,c6649019ddc170ff,"steps = np.array([r[""step""] for r in rows])
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,0501efdf,code,fr,c6649019ddc170ff,"steps = np.array([r[""step""] for r in rows])
 tracc = np.array([r[""tr_acc""] for r in rows])
 teacc = np.array([r[""te_acc""] for r in rows])
 losses = np.array([r[""loss""] for r in rows])
@@ -15847,7 +15853,7 @@ ax2.plot(steps, losses, color=""C2"")
 ax2.set_xlabel(""step""); ax2.set_ylabel(""train loss""); ax2.set_title(""Loss d'entraînement"")
 ax2.set_yscale(""log"")
 plt.tight_layout(); plt.show()",,,,,,,,c6649019ddc170ff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,a283098e,markdown,fr,9f195acb8684be92,"## §2. Compression-progress de Schmidhuber — le résultat **positif**
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,a283098e,markdown,fr,9f195acb8684be92,"## §2. Compression-progress de Schmidhuber — le résultat **positif**
 
 La thèse de Schmidhuber dit que la beauté/curiosité = le **taux** de compression-progress.
 Le candidat le plus direct pour l'observer est la **norme des poids** ‖w‖² : sous weight-decay,
@@ -15858,7 +15864,7 @@ Si la thèse tient, on doit voir ‖w‖² **décroître continûment**, et le g
 La quantité naturelle à tracer est donc la **compression cumulée** (le déficit total de norme
 depuis l'initialisation) : c'est l'intégrale du compression-progress, et le grok doit survenir
 dans sa zone de saturation.",,,,,,,,9f195acb8684be92,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,e2c3afc4,code,fr,b85957a9bb347600,"wn = np.array([r[""wn""] for r in rows], dtype=float)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,e2c3afc4,code,fr,b85957a9bb347600,"wn = np.array([r[""wn""] for r in rows], dtype=float)
 ftr = np.array([r[""ftr""] for r in rows], dtype=float)
 cumul = np.maximum(0.0, wn[0] - wn)
 
@@ -15879,7 +15885,7 @@ print(f""||w||^2 : {wn[0]:.0f} -> {wn[-1]:.0f}  (décroissance continue sous wei
 print(""VERDICT POSITIF : le compression-progress de Schmidhuber tient. La norme des"")
 print(""poids décroît CONTINUELLEMENT ; le grok survient dans cette phase de compression"")
 print(""cumulée (la §3 demande si un fold s'y localise, et pour quels proxys)."")",,,,,,,,b85957a9bb347600,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,6bbdf00f,markdown,fr,9c89a6d7820b181e,"## §3. Le test du pli de Thom au grok point — un résultat **proxy-dépendant**
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,6bbdf00f,markdown,fr,9c89a6d7820b181e,"## §3. Le test du pli de Thom au grok point — un résultat **proxy-dépendant**
 
 La prédiction de la §0 est falsifiable : si la lentille ICT capture le grok, un proxy K doit
 montrer un **pli** (overlay de Thom : transition nette haut→bas) **localisé au grok point**.
@@ -15893,7 +15899,7 @@ MDL** (Fisher-MDL, proxy de Hinton–van Camp `0.5·log2(1 + Ftr·‖w‖²/n)`)
 **compressibilité de la sortie** (longueur zlib de la prédiction). Si toutes co-localisent
 leur fold au grok, le pli de Thom est robuste ; si elles divergent, la « catastrophe » est
 proxy-dépendante et la lentille est fragile.",,,,,,,,9c89a6d7820b181e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,63f41e33,code,fr,9168d96ccefaa031,"n_params = sum(pp.numel() for pp in model.parameters())
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,63f41e33,code,fr,9168d96ccefaa031,"n_params = sum(pp.numel() for pp in model.parameters())
 fmdl = 0.5 * np.log2(1.0 + (ftr * wn) / max(n_params, 1))
 pz = np.array([r[""pzlen""] for r in rows], dtype=float)
 
@@ -15928,7 +15934,7 @@ print(f""\nProxys co-localisés au grok (|fold - grok| <= 400) : {coloc if coloc
 print(f""Proxys NON co-localisés                       : {noncoloc if noncoloc else 'AUCUN'}"")
 print(f""\nVerdict : la catastrophe de Thom est PROXY-DÉPENDANTE — ""
       f""{len(coloc)}/{len([fs for _, fs in _proxies if fs is not None])} proxys voient le grok."")",,,,,,,,9168d96ccefaa031,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,d453d176,code,fr,f5ecd8e5f48873cf,"fig, axes = plt.subplots(2, 2, figsize=(11, 7))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,d453d176,code,fr,f5ecd8e5f48873cf,"fig, axes = plt.subplots(2, 2, figsize=(11, 7))
 for ax, vals, name, fs in zip(
         axes.flat, [wn, ftr, fmdl, pz],
         [r""$\|w\|^2$"", ""Fisher trace"", ""Fisher-MDL proxy"", ""pred-zlib len""],
@@ -15946,7 +15952,7 @@ print(f""  ne le voient pas   : {noncoloc if noncoloc else 'AUCUN'}"")
 print(""La compression structurelle (||w||^2) et la transition behaviorale (test_acc)"")
 print(""alignent leur pli avec le grok ; la sensibilité (Fisher) non. Pas de catastrophe"")
 print(""unique : K est multidimensionnel, le pli de Thom est proxy-dépendant."")",,,,,,,,f5ecd8e5f48873cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,788dc6ea,markdown,fr,97ccd67ad42caeb1,"## §4. Interprétation honnête
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,788dc6ea,markdown,fr,97ccd67ad42caeb1,"## §4. Interprétation honnête
 
 **Trois constats, un cadre nuancé (sans survendre, sans enjoliver).**
 
@@ -15985,18 +15991,18 @@ pas un instantané K statique.
 > un petit modèle Open-Source, accessible à tous, pas un modèle SOTA). L'attribution exacte est
 > conservée : pas de fausse provenance. L'esprit « open AI » est honoré sans maquiller la nature
 > du moteur.",,,,,,,,97ccd67ad42caeb1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,758d334d,markdown,fr,cdfe519cfd3e0d87,"## §6. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,758d334d,markdown,fr,cdfe519cfd3e0d87,"## §6. Exercices
 
 Les exercices ci-dessous sont des **stubs** à compléter. Ils conservent les conventions du
 notebook (aucune erreur volontaire : le notebook s'exécute de bout en bout même non complété).
 Chacun prolonge une branche de l'analyse.",,,,,,,,cdfe519cfd3e0d87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,2f5bb8b9,markdown,fr,3c1e3a76fd9f99af,"### Exercice 1 — Sensibilité au taux d'apprentissage et au weight-decay
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,2f5bb8b9,markdown,fr,3c1e3a76fd9f99af,"### Exercice 1 — Sensibilité au taux d'apprentissage et au weight-decay
 
 Le grokking est très sensible au weight-decay (c'est le levier principal de la généralisation).
 Rejouez l'entraînement en balayant `weight_decay` dans `{1e-4, 1e-3, 1e-2, 1e-1}` et tracez le
 `grok_step` obtenu. *Indice* : un weight-decay trop faible repousse le grok au-delà du budget ;
 trop élevé peut empêcher la mémorisation initiale. Concluez sur la fenêtre « grokkable ».",,,,,,,,3c1e3a76fd9f99af,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,93253e5a,code,fr,032a28aa337aface,"# Exercice 1 : balayage du weight-decay. Stub à compléter.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,93253e5a,code,fr,032a28aa337aface,"# Exercice 1 : balayage du weight-decay. Stub à compléter.
 # TODO étudiant : pour wd dans [1e-4, 1e-3, 1e-2, 1e-1], ré-entraîner GrokTransformer(p)
 # pendant TOTAL_STEPS, mesurer grok_step, et collecter (wd, grok_step).
 results_wd = []   # liste de tuples (weight_decay, grok_step_or_None)
@@ -16006,7 +16012,7 @@ results_wd = []   # liste de tuples (weight_decay, grok_step_or_None)
 # Etape 2 : boucler sur les wd, collecter grok_step.
 # Etape 3 : tracer wd (log) vs grok_step.
 print(""Exercice à compléter : balayage du weight-decay et courbe grok_step(wd)."")",,,,,,,,032a28aa337aface,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,c00fd656,markdown,fr,b71ce5cadcd5ee65,"### Exercice 2 — Un autre proxy K : le rang effectif des poids
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,c00fd656,markdown,fr,b71ce5cadcd5ee65,"### Exercice 2 — Un autre proxy K : le rang effectif des poids
 
 Tous nos proxys (norme L2, Fisher) sont *-scalaires* et restent monotones. Une piste plus
 structurale : le **rang effectif** de la matrice de poids `head` (spectre des valeurs
@@ -16014,7 +16020,7 @@ singulières). Mesurez-le à chaque checkpoint et cherchez un fold. *Indice* :
 `np.linalg.svd(model.head.weight.detach().numpy(), compute_uv=False)` donne le spectre ;
 le rang effectif peut se définir comme `exp(H(s²))` (entropie de la distribution normalisée
 des valeurs singulières au carré). Le rang discrimine-t-il mieux le grok que la norme ?",,,,,,,,b71ce5cadcd5ee65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ab581a9e,code,fr,9f346679439bff2d,"# Exercice 2 : rang effectif de la couche de sortie. Stub à compléter.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ab581a9e,code,fr,9f346679439bff2d,"# Exercice 2 : rang effectif de la couche de sortie. Stub à compléter.
 # TODO étudiant : à chaque checkpoint, calculer le rang effectif de model.head.weight
 # et chercher un fold avec fold_in_compressibility_curve.
 # Indice : spectre s = svd(W, compute_uv=False) ; pi = s**2 / sum(s**2) ;
@@ -16023,7 +16029,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipy
 # Etape 2 : fold_in_compressibility_curve(steps, rang_eff, smooth=3).
 # Etape 3 : comparer fold_step au grok_step — meilleur que la norme L2 ?
 print(""Exercice à compléter : rang effectif de head_weight vs grok_step."")",,,,,,,,9f346679439bff2d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,893ed733,markdown,fr,94ba881162d34dd5,"### Exercice 3 — Le loss de test saute-t-il au grok ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,893ed733,markdown,fr,94ba881162d34dd5,"### Exercice 3 — Le loss de test saute-t-il au grok ?
 
 Le seul signal qui *bascule* brutalement au grok est l'accuracy de test. Mais la **loss** de
 test (cross-entropy sur la grille complète) saute-t-elle elle aussi, et son saut est-il localisé
@@ -16032,7 +16038,7 @@ journaliser `test_loss` à chaque checkpoint, lui appliquer `fold_in_compressibi
 la courbe *décroissante*), et comparer. Si la test_loss a un fold net au grok alors que ‖w‖² n'en
 a pas, c'est que la transition est dans les *données* (le programme court réduit soudain le
 résidu), pas dans le *modèle*.",,,,,,,,94ba881162d34dd5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,b0b8b6a0,code,fr,78cdddaab46d7983,"# Exercice 3 : fold de la loss de test au grok point. Stub à compléter.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,b0b8b6a0,code,fr,78cdddaab46d7983,"# Exercice 3 : fold de la loss de test au grok point. Stub à compléter.
 # TODO étudiant : journaliser test_loss (cross-entropy sur la grille complète) à chaque
 # checkpoint, puis fold_in_compressibility_curve sur cette courbe.
 # Indice : loss_te = F.cross_entropy(model(te_a, te_b), te_y).item() (no_grad).
@@ -16040,7 +16046,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipy
 # Etape 2 : BTY.fold_in_compressibility_curve(steps, test_loss, smooth=3).
 # Etape 3 : le fold_step co-localise-t-il avec grok_step ? Comparer à ||w||^2.
 print(""Exercice à compléter : fold de la loss de test vs grok_step."")",,,,,,,,78cdddaab46d7983,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,3f77f8c3,markdown,fr,47fc714867aaa403,"## §7. Conclusion et pont vers les LLMs
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,3f77f8c3,markdown,fr,47fc714867aaa403,"## §7. Conclusion et pont vers les LLMs
 
 **Ce que le notebook établît.** Sur l'ancre empirique du grokking, la jambe K se comporte
 comme le prédit Schmidhuber : la généralisation **émerge d'une compression cumulative** (‖w‖²
@@ -16073,7 +16079,7 @@ est un grokking *transformer* avec **logging périodique des activations/workspa
 l'entraînement** : capturer dans la même trajectoire le macro-grok (ce notebook) et les
 micro-ignitions (ICT-24). Ce track GPU-2 est routé vers une lane GPU (issue #7258 pièce 3) ; il
 n'est pas bloquant — le banc CPU ci-dessus porte déjà la falsifiabilité.",,,,,,,,47fc714867aaa403,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,1dc2bb5d,markdown,fr,eeb7f3fd4e6c8d70,"## §8. Références
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,1dc2bb5d,markdown,fr,eeb7f3fd4e6c8d70,"## §8. Références
 
 **Cadre théorique**
 
@@ -22029,7 +22035,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb
 def exercise3_dimension_superieure():
     """"""A implementer par l'etudiant.""""""
     pass",,,,,,,,33f8fb0d137a81ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,b23e7f19,markdown,fr,7591202565890e6e,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,b23e7f19,markdown,fr,8c677e62e2392e4f,"## Conclusion
 
 Cette 2eme case de la matrice inversee (#9533) a ete testee avec une
 pre-enregistrement explicite (`PR #9546 SHA 3f6590fa4`, verrouille avant
@@ -22049,11 +22055,12 @@ selon la meme discipline (1 case = 1 notebook = 1 PR).
 ## Voir aussi
 
 - `docs/ict/dissociations-matrix.md` -- matrice source (PR #9546 MERGED)
-- `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb`
+- `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb`
   -- substrat grokking (substrat candidat mentionne dans #9546)
 - `#9533` -- issue source (chantier 3/3, matrice inversee)
 - `#8182` -- tracker de veille grade C (jalon 2 reactivation post-test)
-- `#9553` -- case 1 (`s ⟂ pi`) testee par po-2023, MERGED 2026-08-05",,,,,,,,7591202565890e6e,,,,,,,,,,,,,,,
+- `#9553` -- case 1 (`s ⟂ pi`) testee par po-2023, MERGED 2026-08-05
+",,,,,,,,8c677e62e2392e4f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,efd04e0d,markdown,fr,1a91673b3219e9e0,"# ICT -- Dissociation saillance / pregnance (case `s ⟂ π`)
 
 *See [#9533](https://github.com/jsboige/CoursIA/issues/9533) (chantier 3/3 : inverser la matrice des dissociations -- registre vers générateur d'expériences) et [#8077](https://github.com/jsboige/CoursIA/issues/8077) (les 5 ponts falsifiables). Part of Epic #4588 (strate 5 : théorie fondatrice cross-substrat).*
@@ -26128,15 +26135,16 @@ la campagne multi-annotateurs de #12756 et l'observatoire externe #13303 restent
 - Protocole de contrôle de générateur : issue [#13308](https://github.com/jsboige/CoursIA/issues/13308); observatoire externe de validation : issue [#13303](https://github.com/jsboige/CoursIA/issues/13303); substrat Axelrod régénéré : issue [#12673](https://github.com/jsboige/CoursIA/issues/12673).
 - Discriminant d’origine : [ICT-15j](./ICT-15j-NerveDiscriminant-Python.ipynb); application au détecteur d’humour : issue #13306. Campagne multi-annotateurs : issue #12756.
 ",,,,,,,,79ab486d0810d11e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,4c607182,markdown,fr,ce1a7cb844f4443f,"> **Statut épistémique** — **Établi** : `F` = partie résiduelle de `K`, et l'identité comptable `total_bits = model_bits + residual_bits`. **Réfuté sur ce banc** : la lecture « `model_bits` trace la bosse complexité-entropie » — le maximum mesuré tombe au bord du réservoir, pas au milieu (section 4), et la raison est de fond : une longueur de code compte ce qu'il faut transmettre, pas ce qu'il faut se rappeler. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).
-",,,,,,,,ce1a7cb844f4443f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,92b17b68,markdown,fr,9a32f416e41e0aac,> **Statut épistémique** — **Fortement soutenu** : L'ε-machine (Crutchfield) ≠ Hoel : deux lectures de l'émergence causale. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,9a32f416e41e0aac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,26527e9c,markdown,fr,ed38c2364506c9ec,"> **Statut épistémique** — **Établi** : 2/5 proxys dissocient du progrès de généralisation pendant
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,4c607182,markdown,fr,45e83b256f4e8679,"> **Statut épistémique** — **reproduit dans le modèle** : `F` = partie résiduelle de `K`, et l'identité comptable `total_bits = model_bits + residual_bits`. **Réfuté sur ce banc** : la lecture « `model_bits` trace la bosse complexité-entropie » — le maximum mesuré tombe au bord du réservoir, pas au milieu (section 4), et la raison est de fond : une longueur de code compte ce qu'il faut transmettre, pas ce qu'il faut se rappeler. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).
+",,,,,,,,45e83b256f4e8679,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,92b17b68,markdown,fr,88d3dd62a1fa3244,> **Statut épistémique** — **soutenu dans le protocole courant** : L'ε-machine (Crutchfield) ≠ Hoel : deux lectures de l'émergence causale. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,88d3dd62a1fa3244,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,26527e9c,markdown,fr,1cceb35a027ff97e,"> **Statut épistémique** — **reproduit dans le modèle** : 2/5 proxys dissocient du progrès de généralisation pendant
 > le grokking. **Non établi (§5)** : le sonar thermodynamique σ(t)/B_work(t) (jonction ICT-18,
 > pré-enregistré #17975) aboutit à un double INCONCLUSIF — le témoin wd=0 grokke lentement
 > (contrôle C2 invalide) et σ ne passe pas son null mélangé à cette échelle de fenêtrage.
-> Portée et détail dans la [matrice des dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,ed38c2364506c9ec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8db75031,markdown,fr,d51797d9b6793114,"## §5. Jonction ICT-18 : σ(t) et B(t) comme sonars du grokking
+> Portée et détail dans la [matrice des dissociations](../../../../docs/ict/dissociations-matrix.md).
+",,,,,,,,1cceb35a027ff97e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8db75031,markdown,fr,d51797d9b6793114,"## §5. Jonction ICT-18 : σ(t) et B(t) comme sonars du grokking
 
 **La question.** La transition de grokking de la §1 est-elle signalée par la **production
 d'entropie σ(t)** et le **budget de réversibilité B(t)** de la dynamique d'entraînement — plus
@@ -26209,7 +26217,7 @@ la position de son maximum et sa décroissance post-saut (τ de Kendall < 0). **
 contamination croisée** : le verdict P-B ne valide ni n'invalide P-σ, et réciproquement — la
 clause est pré-enregistrée.
 ",,,,,,,,d51797d9b6793114,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,c1273411,code,fr,6c48d8df2e8c2754,"# --- §5. Instruments thermodynamiques sur la trajectoire de checkpoints ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,c1273411,code,fr,6c48d8df2e8c2754,"# --- §5. Instruments thermodynamiques sur la trajectoire de checkpoints ---
 # Organes réutilisés (aucun nouvel organe) : ict/time_arrow.py + ict/reversibility_budget.py.
 import numpy as np
 from ict.time_arrow import transition_matrix, stationary_distribution, entropy_production
@@ -26278,7 +26286,7 @@ def jump_window(curves_i, rows_i):
 
 print(f""Instruments §5 chargés : panel={PANEL} | {N_STATES} états | ""
       f""fenêtre={W_WIN} checkpoints | stride={STRIDE} | perms C1={N_PERM}"")",,,,,,,,6c48d8df2e8c2754,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ea60f0cd,code,fr,a9dff4c51b1eae2f,"# --- Run instrumenté §5 : recette §1, checkpoints tous les 50 pas ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ea60f0cd,code,fr,a9dff4c51b1eae2f,"# --- Run instrumenté §5 : recette §1, checkpoints tous les 50 pas ---
 TOTAL_S5 = 4000
 LOG_EVERY_S5 = 50
 
@@ -26315,13 +26323,13 @@ def run_grok(seed, weight_decay):
 
 runs = {}
 runs[0] = run_grok(0, 1.0)",,,,,,,,a9dff4c51b1eae2f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8fe721ea,code,fr,83102e3772be1d3b,"runs[1] = run_grok(1, 1.0)",,,,,,,,83102e3772be1d3b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,3dcb63b3,code,fr,fbb0d887b7e7cdf7,"witness_rows = run_grok(0, 0.0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8fe721ea,code,fr,83102e3772be1d3b,"runs[1] = run_grok(1, 1.0)",,,,,,,,83102e3772be1d3b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,3dcb63b3,code,fr,fbb0d887b7e7cdf7,"witness_rows = run_grok(0, 0.0)
 witness_te_max = max(r[""te_acc""] for r in witness_rows)
 witness_groks = witness_te_max > 0.5
 print(f""Témoin wd=0 : te_acc max = {witness_te_max:.3f} -> ""
       f""{'GROKKE (contrôle C2 invalide)' if witness_groks else 'ne grokke pas (contrôle C2 applicable)'}"")",,,,,,,,fbb0d887b7e7cdf7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,70d204c5,markdown,fr,44fff0758ff3b56c,"### Courbes fenêtrées : σ(t), B(t) et le null mélangé
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,70d204c5,markdown,fr,44fff0758ff3b56c,"### Courbes fenêtrées : σ(t), B(t) et le null mélangé
 
 Pour chaque run : 80 états binarisés (le premier checkpoint n'a pas de prédécesseur), des
 fenêtres de 20 checkpoints glissant de 2 en 2, σ et `B_work` par fenêtre, et le **null du
@@ -26329,7 +26337,7 @@ contrôle 1** (mélange de l'ordre des checkpoints de la fenêtre, 20 tirages). 
 donnent les quantités brutes par graine — checkpoint du saut, fenêtre du maximum σ, écart en
 fenêtres, passage des contrôles — pour la falsifiabilité : tout recalcul indépendant depuis les
 sorties doit retomber sur ces nombres.",,,,,,,,44fff0758ff3b56c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8c2e5745,code,fr,400ff2b595a67060,"# --- Courbes fenêtrées sigma/B + null C1, lecture brute par graine ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8c2e5745,code,fr,400ff2b595a67060,"# --- Courbes fenêtrées sigma/B + null C1, lecture brute par graine ---
 curves = {s: windowed_curves(runs[s]) for s in (0, 1)}
 witness_curves = windowed_curves(witness_rows)
 jump = {s: jump_window(curves[s], runs[s]) for s in (0, 1)}
@@ -26350,7 +26358,7 @@ for s in (0, 1):
           f""{cs[peak]['sigma'] > witness_sigma_max}"")
 print(f""témoin wd=0 : max sigma sur fenêtres = {witness_sigma_max:.3f} | ""
       f""grokke = {witness_groks} (te_acc max {witness_te_max:.3f})"")",,,,,,,,400ff2b595a67060,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8e8ea030,code,fr,8f1be0079c10292e,"# --- Verdict P-sigma : implémentation littérale des seuils pré-enregistrés ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,8e8ea030,code,fr,8f1be0079c10292e,"# --- Verdict P-sigma : implémentation littérale des seuils pré-enregistrés ---
 # Ordre de décision (verrouillé) : témoin qui grokke -> INCONCLUSIVE (C2 invalide) ;
 # aucun passage de C1 nulle part -> INCONCLUSIVE (instrument sans pouvoir sur ce substrat) ;
 # sinon PASS / FAIL / INCONCLUSIVE selon les écarts, par graine puis globalement.
@@ -26390,7 +26398,7 @@ else:
     reason_sigma = (f""cas non listé ou graines discordantes (écarts = ""
                     f""{dists[0]} et {dists[1]} fenêtres) — rapporté sans repliage"")
 print(f""P-sigma VERDICT : {VERDICT_SIGMA} -- {reason_sigma}"")",,,,,,,,8f1be0079c10292e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,b9f9d016,code,fr,7807e5eea38fbdfd,"# --- Verdict P-B (séparé) : max B_work à ±1 fenêtre du saut + décroissance post-saut ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,b9f9d016,code,fr,7807e5eea38fbdfd,"# --- Verdict P-B (séparé) : max B_work à ±1 fenêtre du saut + décroissance post-saut ---
 detB = {}
 for s in (0, 1):
     jw, _ = jump[s]
@@ -26423,7 +26431,7 @@ print(f""P-B VERDICT : {VERDICT_B} -- {reason_b}"")
 print(""\nSynthèse §5 (à reporter dans la matrice des dissociations) :"")
 print(f""  P-sigma : {VERDICT_SIGMA} ({reason_sigma})"")
 print(f""  P-B     : {VERDICT_B} ({reason_b})"")",,,,,,,,7807e5eea38fbdfd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,b598d9bb,code,fr,0e8d96ce6b010af0,"# --- Figure §5 : te_acc, sigma(t) vs null, B_work(t), témoin ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,b598d9bb,code,fr,0e8d96ce6b010af0,"# --- Figure §5 : te_acc, sigma(t) vs null, B_work(t), témoin ---
 fig, axes = plt.subplots(2, 2, figsize=(12, 8))
 
 ax = axes[0, 0]
@@ -26475,7 +26483,7 @@ ax.legend(fontsize=8)
 fig.suptitle(""§5 — Sonar thermodynamique du grokking : sigma(t) et B_work(t)"", y=0.995)
 fig.tight_layout()
 plt.show()",,,,,,,,0e8d96ce6b010af0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,1aca9ecc,markdown,fr,40d18806a4f05b16,"### Lecture de la figure
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,1aca9ecc,markdown,fr,40d18806a4f05b16,"### Lecture de la figure
 
 Les courbes illustrent les mesures numériques, sans lever le statut INCONCLUSIVE des deux
 prédictions. **(b)** Sur les deux graines, σ ne dépasse pas son seuil C1 aux fenêtres qui
@@ -26488,7 +26496,7 @@ C1 = False) — et les deux pics sont **discordants** : tardif pour la graine 0 
 `B_work` ne culmine pas au saut non plus : ses maxima sont 18 et 16 fenêtres **après** le
 saut, et les courbes montent encore après (τ de Kendall post-saut positif sur les deux
 graines).",,,,,,,,40d18806a4f05b16,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ce646951,markdown,fr,949523ce891bdc82,"### Ce que la jonction établit — et ce qu'elle ne peut pas établir
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb,ce646951,markdown,fr,db050ad7e9a4039e,"### Ce que la jonction établit — et ce qu'elle ne peut pas établir
 
 **Le résultat mesuré est un double INCONCLUSIF — avec trois observations distinctes :**
 
@@ -26519,7 +26527,8 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipy
 2 graines, panel contenant `te_acc` (aucun claim prédictif indépendant — avertissement
 pré-enregistré avec la prédiction). Ces observations ne démontrent ni une détection du
 saut ni une absence générale de discrimination ; la ligne consolidée vit dans la
-[matrice des dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,949523ce891bdc82,,,,,,,,,,,,,,,
+[matrice des dissociations](../../../../docs/ict/dissociations-matrix.md).
+",,,,,,,,db050ad7e9a4039e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,893e902a,markdown,fr,b37a8b9a8d61cf63,> **Statut épistémique** — **Établi** : Forcer une trajectoire ICT à devenir réversible *mesure* sa production d'entropie. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,b37a8b9a8d61cf63,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,c49939e9,markdown,fr,634315ed564ae80b,"> **Statut épistémique** — 3 claims, verdicts distingués :
 > - **Établi** : Le budget `B_state` s'épuise au pli de bifurcation.
@@ -31731,7 +31740,7 @@ Ce notebook repond a ""quel etat predictif est accessible ?"" (mode belief-state
 - [x] Aucune dependance directe au code non licencie des depots etudies (reimplementation propre depuis arXiv:2602.02385).
 ",,,,,,,,0aa0bf1672fa2a28,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,ae39ac6f,markdown,fr,e59ef73687498009,"## Voisins et positionnement
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,ae39ac6f,markdown,fr,c68e33e9c035ec36,"## Voisins et positionnement
 
 Même geste que le S-Lens ([ICT-38](./ICT-38-SLens-SelfLocation-Python.ipynb)) : nommer les voisins de
 l'instrument, et ce qui nous en sépare.
@@ -31763,9 +31772,9 @@ rendrait les primitives intestables sans GPU. Aucune licence détectée sur ces 
 
 **Renvoi interne.** La notion d'état prédictif que ces hypothèses sondent est celle de la mécanique
 computationnelle de Crutchfield, enseignée dans la série en
-[ICT-17 — EpsilonMachine](./ICT-17-EpsilonMachine-Python.ipynb) — à lire avant ce notebook pour qui veut la
+[ICT-17 — EpsilonMachine](./ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) — à lire avant ce notebook pour qui veut la
 construction de l'objet, celui-ci n'en testant que l'accessibilité linéaire.
-",,,,,,,,e59ef73687498009,,,,,,,,,,,,,,,
+",,,,,,,,c68e33e9c035ec36,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-37-FLens-BeliefState-Python.ipynb,dd1ac0ab,code,fr,b2afb44aeff17914,"# Parametres du notebook
 nb_name = ""ICT-37-FLens-BeliefState-Python""
 N_SEEDS = 5  # multi-seed : au moins 4 seeds (acceptance #15477)
@@ -32340,7 +32349,7 @@ Les runs sont reproductibles par une commande unique — `python scripts/slens_p
 de la matrice. Les npz bruts restent **locaux** : l'artefact committé est la matrice agrégée, qui porte la
 spécification complète de chaque run (banc, régime, graine, étape) et la commande de régénération —
 un run est donc reconstructible, mais la preuve committée reste l'agrégat, pas le tenseur brut.",,,,,,,,866c95d48b6b8cf9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,d2b40163,markdown,fr,11e5024e69082ac4,"## Voisins et positionnement
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,d2b40163,markdown,fr,c37859d5ba0db7d9,"## Voisins et positionnement
 
 Le S-Lens n'invente ni la notion de *belief state*, ni celle de géométrie du simplexe : il les
 importe d'un programme publié et les instrumente. Dire lequel, et ce qui nous en sépare, fait partie
@@ -32387,7 +32396,7 @@ copié : la substance livrée est une réimplémentation depuis les publications
 
 **Renvoi interne — la série enseigne déjà la mécanique computationnelle.** Le *belief state* que ce
 notebook sonde est la face « état prédictif » du programme de Crutchfield, que la série traite en
-[ICT-17 — EpsilonMachine](./ICT-17-EpsilonMachine-Python.ipynb) (`ict/epsilon_machine.py` : U-algorithme,
+[ICT-17 — EpsilonMachine](./ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) (`ict/epsilon_machine.py` : U-algorithme,
 $C_\mu$, gate Crutchfield vs Hoel). Les deux se lisent ensemble : ICT-17 construit l'objet — la
 epsilon-machine et sa complexité statistique — et ICT-38 demande si un transformer le **porte
 linéairement**. Même question, deux étages.
@@ -32395,7 +32404,7 @@ linéairement**. Même question, deux étages.
 **Pourquoi ça compte ici.** `ict/slens.py` déclare une **porte de promotion** : `slens` n'entre pas
 dans l'énumération `INSTRUMENTS` du contrat de trace v1, et une promotion au contrat public exige un
 positionnement écrit. Cette cellule est cet écrit — pas une décoration d'ouverture.
-",,,,,,,,11e5024e69082ac4,,,,,,,,,,,,,,,
+",,,,,,,,c37859d5ba0db7d9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,canon-ict-root,code,fr,74a7173355b5413a,"# Racine canonique de la serie : remonte les parents depuis le dossier du
 # notebook jusqu'au package ict/, puis en derive les dossiers de donnees.
 # La serie reste executable depuis sa racine comme depuis le dossier d'une
@@ -32867,9 +32876,9 @@ couches et 64 dimensions entraîné sur des bancs **synthétiques** : il dit si 
 quelque chose de stable et de causal **sur ce banc**, pas que les grands modèles de langue
 self-localisent leur référence. Cette extrapolation demanderait exactement ce que #15481 interdit
 avant promotion : une API publique et une issue de notebook définitive.",,,,,,,,41309c24ee349a1a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,68448ce6,markdown,fr,9f452a1d4f823a14,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb,68448ce6,markdown,fr,70c89415d72e177b,"## Conclusion
 
-**Établi.** (i) Le banc `copy_offset` possède une vérité terrain exacte, sur la valeur comme sur la
+**reproduit dans le modèle.** (i) Le banc `copy_offset` possède une vérité terrain exacte, sur la valeur comme sur la
 position, et un oracle indépendant qui la confirme sur 4096 exemples — le générateur ne se valide pas
 lui-même. (ii) Les régimes à encodage positionnel (`rope`, `abs`) **résolvent** la tâche
 (1.000 et 1.000 à la graine 0) : le banc est
@@ -32898,7 +32907,7 @@ sans interface ; `INCONCLUSIVE` renvoie au protocole — plus de graines, ou un 
 [#15479](https://github.com/jsboige/CoursIA/issues/15479) · contrat de trace
 [#15476](https://github.com/jsboige/CoursIA/issues/15476) · toolkit
 [#15475](https://github.com/jsboige/CoursIA/issues/15475) · EPIC
-[#8182](https://github.com/jsboige/CoursIA/issues/8182).",,,,,,,,9f452a1d4f823a14,,,,,,,,,,,,,,,
+[#8182](https://github.com/jsboige/CoursIA/issues/8182).",,,,,,,,70c89415d72e177b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-39-CompositionRegards-Python.ipynb,intro-regards,markdown,fr,05aa736b347bd710,"# ICT-39 — Composition de regards
 
 **Navigation** : [← ICT-37](./ICT-37-FLens-BeliefState-Python.ipynb)
@@ -38558,11 +38567,11 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb,dd3
 - Joshua Angrist & Alan Krueger, 2001 (variables instrumentales, 5-sigma relevance floor).
 - ICT-12e `Value-of-Information-Animat.ipynb` -- archétype du verdict tri-etat (EVSI 253 000 vs 252 794 EUR, tolerance 206 EUR).",,,,,,,,7d2821eb6fb65151,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb,statut-epistemique,markdown,fr,0c5285cc1505b6e4,> **Statut épistémique** — **Sans verdict à ce jour** : la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne pas encore ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,0c5285cc1505b6e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb,210d66c2,markdown,fr,d19a39cccff8a501,"# ICT-MUH — Le texte où Tegmark cite Schmidhuber : cadrage sur banc fini
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb,210d66c2,markdown,fr,a83e4d3cf48a4d95,"# ICT-MUH — Le texte où Tegmark cite Schmidhuber : cadrage sur banc fini
 
 **Axe transverse — témoin de lecture** | Epic **#4588** | See **#16759** (arc C de **#16741**).
 
-**Navigation** : [README de la série](README.md) | Voisin MDL : [ICT-16](ICT-16-MDLTwoPartCode-Python.ipynb) | Charnière compression : [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb) | Cartographie de la tresse : [tresse-cartographie.md](../../../docs/ict/tresse-cartographie.md)
+**Navigation** : [README de la série](README.md) | Voisin MDL : [ICT-16](ICT-16-MDLTwoPartCode-Python.ipynb) | Charnière compression : [ICT-17b](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | Cartographie de la tresse : [tresse-cartographie.md](../../../docs/ict/tresse-cartographie.md)
 
 ## Pourquoi ce notebook
 
@@ -38582,7 +38591,8 @@ Ce notebook prend ce texte au sérieux **sans quitter le sol** : chaque concept 
 
 **Dépendances** : `ict.compression`, `ict.mdl`, `matplotlib` (numpy et matplotlib sont des bibliothèques tierces ; zlib vient de la bibliothèque standard). Pas de GPU, pas de Lean. Notebook exécutable end-to-end (les exercices sont des stubs sans erreur volontaire, règle C.1).
 
-**Durée estimée** : 35 minutes.",,,,,,,,d19a39cccff8a501,,,,,,,,,,,,,,,
+**Durée estimée** : 35 minutes.
+",,,,,,,,a83e4d3cf48a4d95,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb,4e169d6a,markdown,fr,0c8526fafb3e9c72,"> **Statut épistémique** — **Témoin de lecture, grade C documentaire.** Tegmark n'est **pas** une fibre de la tresse : les quatre fibres restent Thom / Grothendieck / Schmidhuber / Friston ([tresse-cartographie.md, section 1](../../../docs/ict/tresse-cartographie.md)). Le critère posé sur [#16759](https://github.com/jsboige/CoursIA/issues/16759) est sans ambiguïté : **une fibre s'acquiert par un organe, pas par une citation** — et la voie organe pour Tegmark passe par [#16753](https://github.com/jsboige/CoursIA/issues/16753) (formalisation Lean de l'annexe A, ouverte), pas par ce notebook. Ici : un banc fini qui **exécute des gestes de compression et d'invariants** que le texte décrit. **Ce notebook ne teste pas la MUH** — aucune mesure ci-dessous ne porte sur l'hypothèse elle-même. L'analogie n'est pas une preuve.",,,,,,,,0c8526fafb3e9c72,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb,012e1c32,markdown,fr,ed31f0b2a9e88dda,"## 1. Le texte fondateur : Tegmark cite Schmidhuber
 
@@ -39006,7 +39016,7 @@ def prime_ops(n):
 ex3_worst_by_bin = {}  # tranche -> max prime_ops
 ex3_goldbach_worst = None  # TODO étudiant : pire cas d'essais jusqu'à la borne choisie
 print(""Exercice 3 à compléter"")",,,,,,,,b6c9b449bcb01184,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb,3fedd007,markdown,fr,1c9be1d86387612c,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-MUH-FibreTegmark-Python.ipynb,3fedd007,markdown,fr,ed3384d5bf02d18f,"## Conclusion
 
 Ce notebook a pris les **gestes** du texte fondateur et les a exécutés sur des bancs finis, CPU, réellement calculés :
 
@@ -39025,9 +39035,10 @@ Ce notebook a pris les **gestes** du texte fondateur et les a exécutés sur des
 **Pour aller plus loin** :
 
 - [ICT-16](ICT-16-MDLTwoPartCode-Python.ipynb) — le MDL deux parties, la bosse complexité-entropie, et le pont testé MDL → généralisation (section 6.5).
-- [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive comme signature de l'apprentissage (charnière S4 → S5).
+- [ICT-17b](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive comme signature de l'apprentissage (charnière S4 → S5).
 - [tresse-cartographie.md](../../../docs/ict/tresse-cartographie.md) — les quatre fibres, la hiérarchie de sobriété, et le statut témoin/fibre.
-- Tegmark, *The Mathematical Universe*, [arXiv:0704.0646](https://arxiv.org/abs/0704.0646) ; Schmidhuber, *Algorithmic Theories of Everything*, quant-ph/0011122.",,,,,,,,1c9be1d86387612c,,,,,,,,,,,,,,,
+- Tegmark, *The Mathematical Universe*, [arXiv:0704.0646](https://arxiv.org/abs/0704.0646) ; Schmidhuber, *Algorithmic Theories of Everything*, quant-ph/0011122.
+",,,,,,,,ed3384d5bf02d18f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb,statut-epistemique,markdown,fr,8082cabe377440fc,> **Statut épistémique** — **Établi** : SAE Qwen-Scope ≠ jacobien J-Lens neuronpedia sur le même modèle. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,8082cabe377440fc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-SAE-JLens-TeteATete-Python.ipynb,canon-ict-root,code,fr,74a7173355b5413a,"# Racine canonique de la serie : remonte les parents depuis le dossier du
 # notebook jusqu'au package ict/, puis en derive les dossiers de donnees.
@@ -43600,12 +43611,12 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,4efd7d81,mar
 
 La colonne modele raconte l'autre moitie de l'histoire. Le cycle paie $18{,}545$ bits pour decrire sa TPM, l'iid $524{,}055$ bits. Un modele n'est pas cher parce qu'il est *petit* : il est cher parce qu'il porte **beaucoup de comptes distincts a transmettre**. La TPM d'un cycle concentre une transition par ligne, celle d'un bruit uniforme en repartit quatre. Entre sur-apprendre (gros modele, petit residu) et sous-apprendre (petit modele, gros residu), c'est le **total** qui tranche : $22{,}8$ bits pour le cycle, $323{,}0$ pour la markovienne bruitee, $1034{,}4$ pour l'iid.
 ",,,,,,,,621a2fc15f6ecdfc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,9fc68be9,markdown,fr,3540d5067eac1e28,"**Lecture de la sortie, et ce qu'elle interdit de dire.** La médiane par bucket monte de $10{,}3$ bits ($H = 0{,}45$) à $748{,}5$ bits ($H = 1{,}90$), redescend à $67{,}8$ ($H = 2{,}39$), puis remonte à $1270{,}1$ au dernier bucket ($H = 2{,}87$). Il y a donc bien une structure non monotone — un maximum **local** vers $H \approx 1{,}9$ — mais **le maximum global est au bord**, à 99 % de l'étendue mesurée. Titrer « la complexité statistique est maximale à entropie intermédiaire » sur cette figure serait lire le maximum local et ignorer le global.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,9fc68be9,markdown,fr,118d5799ab28a6c8,"**Lecture de la sortie, et ce qu'elle interdit de dire.** La médiane par bucket monte de $10{,}3$ bits ($H = 0{,}45$) à $748{,}5$ bits ($H = 1{,}90$), redescend à $67{,}8$ ($H = 2{,}39$), puis remonte à $1270{,}1$ au dernier bucket ($H = 2{,}87$). Il y a donc bien une structure non monotone — un maximum **local** vers $H \approx 1{,}9$ — mais **le maximum global est au bord**, à 99 % de l'étendue mesurée. Titrer « la complexité statistique est maximale à entropie intermédiaire » sur cette figure serait lire le maximum local et ignorer le global.
 
 L'explication est dans la formule, pas dans le banc : `model_bits` est une **longueur de code**, et elle compte les comptes à transmettre — seize par ligne pour une TPM presque uniforme (entropie proche du réservoir), un seul pour une TPM déterministe. Rien ne la fait redescendre quand $H$ atteint $H_1$, et c'est exactement ce que la figure montre.
 
-Le bon instrument pour la bosse est $C_\mu$, la complexité statistique de Crutchfield : elle vaut $0$ pour un processus sans mémoire et $\log_2 p$ pour un processus périodique de période $p$ — deux valeurs que la définition fixe et qu'[ICT-17](ICT-17-EpsilonMachine-Python.ipynb) mesure (3 états causaux, $C_\mu = 1{,}5850$ sur le cycle $0,1,2$). ICT-16 ne peut pas la fournir avec `model_bits`. Le carnet le dit désormais au lieu de le laisser croire, et Gate 7 tombe au lieu de passer par vacuité.
-",,,,,,,,3540d5067eac1e28,,,,,,,,,,,,,,,
+Le bon instrument pour la bosse est $C_\mu$, la complexité statistique de Crutchfield : elle vaut $0$ pour un processus sans mémoire et $\log_2 p$ pour un processus périodique de période $p$ — deux valeurs que la définition fixe et qu'[ICT-17](ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb) mesure (3 états causaux, $C_\mu = 1{,}5850$ sur le cycle $0,1,2$). ICT-16 ne peut pas la fournir avec `model_bits`. Le carnet le dit désormais au lieu de le laisser croire, et Gate 7 tombe au lieu de passer par vacuité.
+",,,,,,,,118d5799ab28a6c8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,0deaf6fb,markdown,fr,3f77cc57a012cc6a,"**Lecture du tableau, ligne par ligne.** La correlation de rang est parfaite : $\tau = +1{,}000$ avec $p = 0{,}000$, tres au-dessus du seuil attendu ($\geq 0{,}5$) -- les rangs MDL et zlib concordent exactement sur les huit trajectoires. Un $\tau$ qui sature n'est pas une preuve de finesse : avec huit points, le rang est un instrument grossier. Ce qu'il etablit, c'est l'absence d'inversion -- et c'est tout ce que la Gate 6 demande.
 
 Le tableau detaille la *structure* de cette concordance. Les trois cycles deterministes (k=2 a k=5) couchent a $11{,}73 \rightarrow 81{,}96$ bits totaux contre $136 \rightarrow 168$ bits zlib, avec un $k$-gain qui monte a $0{,}9357$. Les markoviennes bruitees glissent de $951{,}31$ a $1483{,}68$ bits contre $1520 \rightarrow 2184$ zlib ($k$-gain $0{,}3448 \rightarrow 0{,}0733$). Les iid finissent a $1636{,}42$ et $2507{,}70$ bits contre $2312$ et $3096$ zlib, $k$-gain quasi nul ($0{,}0170$, $0{,}0031$).
@@ -43646,11 +43657,11 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,9628b5b5,mar
 
 Le seuil n'est donc pas une constante magique : il se lit dans la colonne « contextes non vides ». Tant qu'elle reste très en dessous du nombre de contextes déclarés ($48$ sur $256$), l'ordre élevé est presque gratuit et la sélection perd son sens. C'est la borne de ce que la section 6.5 mesurait : **le pont fonctionne quand $n$ est grand devant $4^k$ — et cela se vérifie avant de s'y fier, pas après.**
 ",,,,,,,,e3e7cf13c65ef8c8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,2fe32cc1,markdown,fr,bc4b4b22f26e9d5c,"**Lecture de la sortie.** Sur la sequence cyclique $0,1,2$ : 88 passes visitees se condensent en **3 etats causaux** (un par phase du cycle), de distribution stationnaire quasi egale ($0{,}341$, $0{,}33$, $0{,}33$). Les deux quantites jumelles valent $C_\mu = 1{,}5848$ bit et $E = 1{,}5850$ bit -- toutes deux a $\log_2 3 = 1{,}5850$ pres : il faut $\log_2 3$ bits pour encoder *dans laquelle des trois phases on se trouve* (memoire statistique), et la passe complete n'apprend rien de plus (excess d'entropie nul, la serie $E_k$ est plate a $1{,}5848 \pm 0{,}0001$ sur $k = 1 \ldots 4$). Le determinisme parfait est le cas ou representation minimale et prediction complete coincident.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,2fe32cc1,markdown,fr,bc4b4b22f26e9d5c,"**Lecture de la sortie.** Sur la sequence cyclique $0,1,2$ : 88 passes visitees se condensent en **3 etats causaux** (un par phase du cycle), de distribution stationnaire quasi egale ($0{,}341$, $0{,}33$, $0{,}33$). Les deux quantites jumelles valent $C_\mu = 1{,}5848$ bit et $E = 1{,}5850$ bit -- toutes deux a $\log_2 3 = 1{,}5850$ pres : il faut $\log_2 3$ bits pour encoder *dans laquelle des trois phases on se trouve* (memoire statistique), et la passe complete n'apprend rien de plus (excess d'entropie nul, la serie $E_k$ est plate a $1{,}5848 \pm 0{,}0001$ sur $k = 1 \ldots 4$). Le determinisme parfait est le cas ou representation minimale et prediction complete coincident.
 ",,,,,,,,bc4b4b22f26e9d5c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,f243ffb9,markdown,fr,5f44e9aae8192551,"**Lecture de la sortie, chiffre par chiffre.** Le plafond theorique $E = 0{,}5458$ bit domine les deux estimateurs concurrents, et le gate est PASSED : l'info mutuelle **plug-in** atteint $I = 0{,}5230$ bit -- a $0{,}0229$ bit du plafond, soit l'echelle du bruit d'estimation -- tandis que l'estimateur **uniforme** plafonne a $I = 0{,}0018$ bit, a $0{,}5441$ bit du maximum, c'est-a-dire presque toute l'information disponible gaspillee. La hierarchie des trois nombres est la lecon : le plafond $E$ n'est pas une borne abstraite, c'est la *meilleure* atteignable, et un estimateur naif (uniforme) n'en recolte que $0{,}3\,\%$. La difference $0{,}5458 - 0{,}5230 = 0{,}0229$ bit mesure ce qu'un modele appris manque encore face a l'epsilon-machine elle-meme.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,f243ffb9,markdown,fr,5f44e9aae8192551,"**Lecture de la sortie, chiffre par chiffre.** Le plafond theorique $E = 0{,}5458$ bit domine les deux estimateurs concurrents, et le gate est PASSED : l'info mutuelle **plug-in** atteint $I = 0{,}5230$ bit -- a $0{,}0229$ bit du plafond, soit l'echelle du bruit d'estimation -- tandis que l'estimateur **uniforme** plafonne a $I = 0{,}0018$ bit, a $0{,}5441$ bit du maximum, c'est-a-dire presque toute l'information disponible gaspillee. La hierarchie des trois nombres est la lecon : le plafond $E$ n'est pas une borne abstraite, c'est la *meilleure* atteignable, et un estimateur naif (uniforme) n'en recolte que $0{,}3\,\%$. La difference $0{,}5458 - 0{,}5230 = 0{,}0229$ bit mesure ce qu'un modele appris manque encore face a l'epsilon-machine elle-meme.
 ",,,,,,,,5f44e9aae8192551,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,3333ffa0,markdown,fr,2b818ab70f4db676,"## 8. Portes de dégénérescence -- le jouet peut-il échouer ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,3333ffa0,markdown,fr,2b818ab70f4db676,"## 8. Portes de dégénérescence -- le jouet peut-il échouer ?
 
 Une ε-machine est un *instrument de mesure* : elle transforme une séquence en une
 partition en états causaux, puis résume cette partition en un nombre, $C_\mu$. Un
@@ -43674,7 +43685,7 @@ ferait disparaître le seul résultat intéressant, à savoir *laquelle* échoue
 (porte G3). C'est le piège que la série traque (#3801, garde anti-dégénérée) : un
 témoin incapable d'échouer *ressemble* à un témoin qui passe.
 ",,,,,,,,2b818ab70f4db676,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,00a2dce4,code,fr,e740e7bbd63ca512,"# Porte G1 -- temoin POSITIF : le phenomene apparait-il de facon robuste ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,00a2dce4,code,fr,e740e7bbd63ca512,"# Porte G1 -- temoin POSITIF : le phenomene apparait-il de facon robuste ?
 # Critere : sur une sequence a structure connue (cycle deterministe 0,1,2), la
 # partition doit rendre 3 etats causaux et C_mu = log2(3) sur TOUTE la grille
 # de taille et de tolerance declaree ci-dessous. La grille n'est pas tout l'axe :
@@ -43704,7 +43715,7 @@ for n in NS_G1:
 print(f""\nG1 (3 etats et C_mu = log2 3 = {np.log2(3):.4f} sur les ""
       f""{len(NS_G1) * len(TOLS_G1)} combinaisons) : {'PASSED' if g1_ok else 'FAILED'}"")
 ",,,,,,,,e740e7bbd63ca512,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,bcd2b625,code,fr,9ecada9f1250f404,"# Porte G2 -- temoin NEGATIF naif : permutation du meme multiset.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,bcd2b625,code,fr,9ecada9f1250f404,"# Porte G2 -- temoin NEGATIF naif : permutation du meme multiset.
 # On detruit la structure en gardant exactement les memes symboles, aux memes
 # effectifs (ni plus ni moins de 0, de 1, de 2). Un instrument honnete doit
 # alors se TAIRE : 1 etat causal, C_mu = 0. C'est le temoin negatif le plus
@@ -43759,7 +43770,7 @@ if not g2:
     print(""     plafonne vers log2(27) = 4.7549."")
     print(""     A cette taille, ce temoin ne mesure pas l'absence de structure."")
 ",,,,,,,,9ecada9f1250f404,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,8d69cf2a,code,fr,ab6555363836791b,"# Porte G3 -- temoin NEGATIF calibre : le meme controle, lu au bon reglage.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,8d69cf2a,code,fr,ab6555363836791b,"# Porte G3 -- temoin NEGATIF calibre : le meme controle, lu au bon reglage.
 # Le bruit d'estimation de la distance L1 entre deux distributions empiriques
 # decroit quand on augmente la tolerance ET la taille d'echantillon. Il existe
 # donc une tolerance a laquelle la sequence permutee se tait -- a condition que
@@ -43806,7 +43817,7 @@ for tol in (0.10, 0.20):
     print(f""  tol={tol:.2f} -> {part['n_causal_states']:3d} etats  C_mu={bit(comp['C_mu']):.4f}"")
 print(""  (la tolerance de bascule decroit quand n croit : c'est une fenetre, pas un reglage)"")
 ",,,,,,,,ab6555363836791b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,3517aa56,code,fr,5ac06977815cfb3f,"# Porte G4 -- temoin de REFERENCE : un processus a C_mu connu d'avance.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,3517aa56,code,fr,5ac06977815cfb3f,"# Porte G4 -- temoin de REFERENCE : un processus a C_mu connu d'avance.
 # Sur une chaine de Markov d'ordre 1, les etats causaux sont les symboles eux-memes
 # et C_mu = H(pi), l'entropie de la distribution stationnaire -- calculable
 # exactement, sans simulation. C'est la seule porte qui teste l'EXACTITUDE de la
@@ -43853,7 +43864,7 @@ if _e_mk[""E_estimate""] <= comp_cal[""C_mu""] + 1e-9:
     print(f""  E = {_e_mk['E_estimate']:.4f} <= C_mu = {comp_cal['C_mu']:.4f} : ""
           f""l'inegalite canonique E <= C_mu du Bilan est verifiee sur un cas a reponse connue."")
 ",,,,,,,,5ac06977815cfb3f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,ict17-s8-lecture,markdown,fr,7ef80a96fa8e6799,"**Lecture de la sortie, porte par porte.** Les quatre verdicts ne se valent pas, et c'est leur différence qui instruit.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb,ict17-s8-lecture,markdown,fr,7ef80a96fa8e6799,"**Lecture de la sortie, porte par porte.** Les quatre verdicts ne se valent pas, et c'est leur différence qui instruit.
 
 **G1 -- le témoin positif tient.** Sur les **15 combinaisons** (trois tailles d'échantillon $\times$ cinq tolérances de $10^{-6}$ à $0{,}5$), le cycle rend invariablement **3 états causaux** et $C_\mu = 1{,}5849$ à $n = 300$, puis $1{,}5850$ ensuite -- c'est-à-dire $\log_2 3 = 1{,}5850$ à $10^{-4}$ près. Ni la taille de l'échantillon ni la tolérance ne déplacent le résultat **sur cette grille** -- et sa borne compte. Mesuré à part, à $n = 3\,000$ avec `history_len = future_len = 3`, les trois histoires du cycle ont des distributions de futur à distance $L^1/2 = 1{,}0$ deux à deux : elles restent séparées jusqu'à $tol = 1{,}0$ inclus, et la partition tombe à **1 état** ($C_\mu = 0$) dès $tol = 1{,}001$. La grille s'arrête à $0{,}5$, soit une marge d'un facteur deux sous la bascule. Ce que G1 établit est donc l'invariance **sur la plage déclarée**, pas sur tout l'axe des tolérances : la discrimination de la tolérance est le rôle de G3.
 
@@ -47403,3 +47414,891 @@ Deux résultats à retenir :
 - Gibbard (1973) / Satterthwaite (1975) — le théorème d'impossibilité de la manipulation.
 - SC-13 — Fuzz & Invariants : la paire naïf/corrigé dont `BordaVote`/`BordaVoteBroken` est la continuation directe.
 - Greffe 2 — [Espace atteignable](ICT-Greffe2-EspaceAtteignable-Python.ipynb) : la greffe précédente de la strate 7.",,,,,,,,f7bd9176cb395447,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,27f79d2a,markdown,fr,779a1c87ba750936,"# ICT-17c — TorchLens : inspecter les représentations sans écrire de hooks
+
+*Strand outillage de la série ICT — See #25465 (issue porteuse), #4588, #16742.*
+**Navigation** : [Index](../README.md) | [← 17b — grokking et compression-progress](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
+
+> **⚠️ Sécurité bundles — à lire avant toute exécution.**
+> `torchlens.load()` charge un *bundle* de trace sérialisé : **c'est de l'exécution de code arbitraire**
+> (pickle sous-jacent). Ce carnet ne l'utilise **jamais** et aucun carnet pédagogique de cette série ne
+> devra l'utiliser : tout passe par `tl.trace()` sur un modèle **en mémoire**, construit dans le carnet
+> même. La règle vaut aussi pour vos expérimentations personnelles : ne chargez jamais un bundle
+> d'origine inconnue. Cette restriction est une exigence de sécurité du carnet, pas une limitation de
+> ce que TorchLens sait faire dans un environnement maîtrisé.
+
+**Idée centrale.** La série ICT maintient une famille d'instruments d'inspection — les scripts
+`extract_*` et `causal_hooks.py` — qui instrumentent des modèles calibrés Qwen/local avec des métriques
+dediées (SAE fidelity, scale budget). Mais pour le geste pédagogique de base — *voir* le graphe de
+calcul, *extraire* les activations d'une couche, *intervenir* sur une activation pendant l'exécution —
+ces scripts demandent d'écrire des hooks à la main, ce qui noie le principe sous la plomberie.
+
+**TorchLens** (Taylor & Kriegeskorte 2023) factorise ce geste : un appel `tl.trace(model, x)` capture
+le graphe complet, les activations forward, et permet des interventions causales (ablation, patching)
+sans un seul hook écrit à la main. Ce carnet le démontre, puis l'applique à deux questions de la
+série : la trajectoire interne du réseau pendant le grokking (§3, jonction [17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
+et #16742), et la moisson multi-couches au service des sondes de géométrie de la vérité (§4,
+`ict/probes.py`).
+
+**Résultat (honnête, falsifiable).** L'instrument fait ce qu'il promet : graphe, activations et
+interventions en un appel, avec deux pièges d'API documentés au passage (§1). Sur le grokking, la
+trajectoire d'activations rend visible le mouvement interne que la seule accuracy masque : la
+séparabilité linéaire de la couche cachée *précède* le saut de test-accuracy — le réseau « sait »
+avant de « répondre ». Sur les sondes, la moisson multi-couches alimente `ict/probes.py` sans
+modifier les instruments spécialisés existants.
+",,,,,,,,779a1c87ba750936,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,fc88cece,markdown,fr,9f2d7560a722f837,"> **Statut épistémique** — **reproduit dans le modèle (outillage)** : l'API v3.0.3 capture graphe, activations et
+> interventions sur modèle in-memory, vérifié par exécution (aucune réclamation de mécanisme).
+> **Démonstration (§3)** : la trajectoire de séparabilité sur 2 graines montre la géométrie interne
+> se former pendant la transition de grokking — une *observation d'instrument*, pas un résultat de
+> phase ; le diagramme de phases complet vit dans #16742 et le carnet 17b. **Non établi** : toute
+> claim mécanistique sur *comment* le réseau encode la structure modulaire (c'est le chantier de
+> Nanda et al. 2023, pas le nôtre).
+",,,,,,,,9f2d7560a722f837,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,fa89f358,markdown,fr,e2e421ae92033b86,"## §0. Où TorchLens se place dans la famille d'inspection de la série
+
+Nous adoptons TorchLens comme **premier instrument pédagogique**, avec `tl.trace` uniquement :
+inspecter la géométrie des représentations et les trajectoires de grokking sans modifier les
+instruments existants.
+
+Les scripts maison portent des métriques que TorchLens ne remplace pas. Ils restent **intacts** :
+
+| Script maison | Ce qu'il porte (et que TorchLens ne remplace pas) |
+|---|---|
+| `scripts/extract_dense_traces.py` | Traces denses calibrées Qwen/local |
+| `scripts/extract_sae_traces.py` | Moisson SAE sur Qwen |
+| `scripts/extract_sae_fidelity.py` | Métrique SAE fidelity |
+| `scripts/causal_hooks.py` | Batterie d'interventions calibrées |
+| `scripts/run_case5bis_live.py` | Run live du cas 5bis |
+| `scripts/measure_scale_budget.py` | Budget d'échelle inter-couches |
+
+TorchLens occupe le créneau complémentaire : l'inspection **générique et immédiate** d'un modèle
+quelconque en mémoire — le geste qu'on veut enseigner *avant* d'entrer dans les instruments dédiés.
+Chaque outil garde son contrat, et leurs mesures se confrontent plutôt que de se fondre dans une
+seule implémentation.
+
+**Version et licence** : `torchlens==3.0.3`, version mesurée via PyPI le 09/11/2026. L'API 3.x
+diffère des docstrings 2.x circulant en ligne ; les pièges sont documentés en §1. Licence Apache-2.0.
+Papier : Taylor, J. & Kriegeskorte, N. (2023), *TorchLens: interactive dissection of PyTorch models*,
+Scientific Reports 13:14375, doi:10.1038/s41598-023-40807-0. Dépendances : PyTorch ≥ 2.1 et Graphviz
+système pour le rendu du graphe (§1).
+",,,,,,,,e2e421ae92033b86,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,a586e2a8,code,fr,339f36c0919d525e,"import os, sys, time
+import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import matplotlib.pyplot as plt
+
+# TorchLens -- usage strictement tl.trace sur modele en memoire, JAMAIS tl.load()
+# (securite bundles : voir l'encart en tete de ce carnet).
+import torchlens as tl
+
+# Package ict (sondes de lecture lineaire, organe de #13564/#16897).
+# Le carnet vit dans le sous-dossier ICT-17-EpsilonMachine/ d'ICT-Series,
+# donc le package est un niveau au-dessus.
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package `ict` pose a cote des notebooks (un niveau au-dessus)
+from ict import probes as PRB  # noqa: E402
+
+torch.manual_seed(0)
+np.random.seed(0)
+RNG = np.random.default_rng(0)
+DEV = ""cuda"" if torch.cuda.is_available() else ""cpu""
+print(f""torch {torch.__version__} | numpy {np.__version__} | torchlens {tl.__version__} | dev={DEV}"")
+",,,,,,,,339f36c0919d525e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,fc3d4cd8,markdown,fr,60eb0b242d2a2d4e,"## §1. Le geste de base : `tl.trace` sur un modèle en mémoire
+
+Le modèle de démonstration est volontairement minuscule — un `Sequential` de trois modules — pour
+que chaque artefact du trace soit lisible à l'œil nu. Un seul appel capture tout : le graphe de
+calcul, les labels de couches, les activations retenues, les métadonnées (nombre de paramètres,
+formes d'entrées/sorties).
+
+**Deux pièges d'API v3.x** coûtent chacun une heure si on les découvre seul ; nous les établissons
+immédiatement, preuve d'exécution à l'appui :
+
+1. **Les adresses d'activation suivent le nommage du modèle.** Sur un `Sequential` anonyme, les
+   tenseurs retenus s'appellent `'0'`, `'1'`, `'2'` ; sur un modèle à modules nommés (`fc1`, `fc2`,
+   `head`), ce sont les noms des modules qui servent d'adresses. L'attribut
+   `model_graph_structure` des anciennes docs 2.x **n'existe plus** en 3.0.3.
+2. **`activations_by_address` rend des objets `Op`, pas des tenseurs.** Le tenseur vit dans
+   `op.out`. De même, `h.do(...)` (§2) **rejoue et met à jour le trace lui-même** : capturez la
+   sortie de référence *avant* d'armer une intervention.
+",,,,,,,,60eb0b242d2a2d4e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,ff0ebd4c,code,fr,caa7731355baced1,"# --- §1. Modele de demonstration + trace en un appel ---
+m_demo = nn.Sequential(nn.Linear(4, 8), nn.ReLU(), nn.Linear(8, 2)).to(DEV)
+x_demo = torch.randn(3, 4, device=DEV)
+
+h = tl.trace(m_demo, x_demo)
+
+print(""labels des couches :"", h.layer_labels)
+print(""nombre de parametres :"", h.num_params)
+print(""sortie (forme) :"", tuple(h.output.shape))
+
+# Les tenseurs retenus, par adresse. Sur un Sequential anonyme : '0', '1', '2'.
+for addr in (""0"", ""1"", ""2""):
+    ops = h.activations_by_address(addr)          # liste -> une entree par passe
+    t = ops[-1].out                                # PIEGE v3.x : le tenseur vit dans .out
+    print(f""  adresse {addr!r}: {len(ops)} passe, forme {tuple(t.shape)}, ""
+          f""moyenne {t.mean().item():+.4f}"")
+
+# Reference capturee AVANT toute intervention (h.do rejoue et mute le trace, cf. §2).
+base_out = h.output.detach().clone()
+print(""sortie de reference :"", base_out.cpu().numpy().round(3).tolist())
+",,,,,,,,caa7731355baced1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,6073068b,markdown,fr,1822492cec7dad89,"Les trois tenseurs retenus couvrent le chemin complet : sortie de la première projection
+(`'0'`, forme `(3, 8)`), sortie de la non-linéarité (`'1'`, même forme — c'est là que la ReLU a
+agis), et logits finaux (`'2'`, forme `(3, 2)`). Aucun hook n'a été écrit : le contraste avec la
+plomberie manuelle de `torch.nn.Module.register_forward_hook` est tout l'apport pédagogique de
+l'outil.
+
+### Le graphe de calcul, rendu sans effort
+
+`h.draw(path=...)` produit le graphe complet (Graphviz système requis) — nœuds par opération,
+arêtes de dépendance, formes. Dans un carnet de recherche, ce rendu sert de documentation vivante :
+ce que le modèle *est* devient visible en un coup d'œil, y compris pour des architectures qu'on
+découvre.
+",,,,,,,,1822492cec7dad89,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,fd7085b3,code,fr,0a2c009cbb9f8793,"# --- §1. Rendu du graphe forward dans assets/ ---
+os.makedirs(""assets"", exist_ok=True)
+GRAPH_PATH = ""assets/ict17c_graph_forward.png""
+h.draw(path=GRAPH_PATH)
+
+from IPython.display import Image, display
+print(f""graphe ecrit : {GRAPH_PATH} ({os.path.getsize(GRAPH_PATH)} octets)"")
+display(Image(filename=GRAPH_PATH))
+",,,,,,,,0a2c009cbb9f8793,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,8ea35081,markdown,fr,6ad7ff6915519daf,"## §2. Interventions causales : ablation et patching
+
+Voir le graphe, c'est de la description. La question causale est autre : *que se passe-t-il si on
+modifie cette activation pendant l'exécution ?* `h.do(site, edit)` répond — deux gestes canoniques :
+
+- **Ablation** (mise à zéro d'une activation) : teste la **nécessité** d'un chemin. Si la sortie
+  s'effondre vers une constante, l'information du batch ne passait que par là.
+- **Patching croisé** (greffe de l'activation d'un autre batch) : teste la **suffisance**. Si la
+  sortie suit l'activation greffée et non son entrée nominale, c'est que cette activation *porte*
+  la représentation.
+
+**Piège v3.x n°3** : la fonction d'édition doit accepter le mot-clé `ctx` —
+`lambda t, *, ctx: ...` — même si elle ne l'utilise pas. Et `h.do` doit recevoir `model=` et
+`inputs=` pour rejouer réellement le modèle (sinon il retourne l'état déjà calculé, sans effet).
+",,,,,,,,6ad7ff6915519daf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,dc529fc0,code,fr,7ffb9fbaf25f3031,"# --- §2. Ablation : la sortie ReLU portait-elle l'information du batch ? ---
+relu_layer = h.layers[2]          # la couche ReLU (cf. layer_labels : relu_1_2)
+
+h_abl = h.do(relu_layer,
+             lambda t, *, ctx: torch.zeros_like(t),   # edition : zero partout
+             model=m_demo, inputs=x_demo)              # rejou avec model + inputs explicites
+
+print(""reference (variee)      :"", base_out.cpu().numpy().round(3).tolist())
+print(""ablation ReLU (constante):"", h_abl.output.detach().cpu().numpy().round(3).tolist())
+",,,,,,,,7ffb9fbaf25f3031,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,668188ca,code,fr,054d4a024e029c0f,"# --- §2 bis. Patching croise : greffe de l'activation d'un AUTRE batch ---
+torch.manual_seed(1)
+x_B = torch.randn(3, 4, device=DEV)
+
+h_B = tl.trace(m_demo, x_B)                       # run du donneur
+out_B_ref = h_B.output.detach().clone()           # sa sortie nominale
+actB = h_B.activations_by_address(""1"")[-1].out.detach()   # son activation ReLU
+
+# Run du receveur, avec l'activation du donneur greffee au meme site.
+h_A = tl.trace(m_demo, x_demo)                    # trace frais (do() mute son trace)
+h_patched = h_A.do(h_A.layers[2],
+                   lambda t, *, ctx: actB,
+                   model=m_demo, inputs=x_demo)
+
+print(""sortie patched (A avec ReLU de B) :"", h_patched.output.detach().cpu().numpy().round(3).tolist())
+print(""reference out(B)                  :"", out_B_ref.cpu().numpy().round(3).tolist())
+print(""identique a out(B) ?"",
+      torch.allclose(h_patched.output.detach(), out_B_ref, atol=1e-6))
+",,,,,,,,054d4a024e029c0f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,b043d8ca,markdown,fr,08022f6e5f816d92,"**Lecture causale.** Deux résultats nets, mesurés :
+
+1. **Ablation** : la sortie passe d'un tableau varié (une ligne par exemple du batch) à **trois
+   lignes identiques** — il ne reste que le biais de la couche finale. Toute l'information
+   discriminante du batch transitait par la sortie ReLU : le chemin est *nécessaire*.
+2. **Patching** : la sortie du receveur devient **bit-à-bit la sortie nominale du donneur**
+   (`allclose` à 1e-6). Greffer l'activation d'un batch dans le run d'un autre *remplace*
+   entièrement la réponse : l'activation ReLU *suffit* à porter la représentation qui détermine la
+   sortie.
+
+C'est la grammaire complète de l'interprétation causale par activations — la même que celle des
+batteries dédiées de `scripts/causal_hooks.py`, ici accessible en trois lignes sur n'importe quel
+modèle en mémoire. Les exercices 1 et 2 (§5) vous demandent de la déployer vous-mêmes.
+",,,,,,,,08022f6e5f816d92,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,0cc9b6d6,markdown,fr,952c832a3477ba89,"## §3. Trajectoire d'activations à travers l'entraînement — jonction grokking
+
+Le carnet [17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb) établit le grokking sur
+`a*b mod p` (Power et al. 2022) : longue phase de mémorisation (train à 1.0, test au hasard), puis
+généralisation soudaine. L'issue #16742 en donne le **diagramme de phases** — *comprehension* /
+*memorization* / *grokking* / *confusion* (Table 1).
+
+Ce que les courbes d'accuracy ne montrent pas, c'est **le mouvement interne** : que se passe-t-il
+dans les couches entre ces phases ? TorchLens permet de capturer la trajectoire des activations à
+travers des checkpoints **sans instrumenter chaque étape à la main**.
+
+**Recette.** Tâche `a*b mod 23` multiclasse (23 classes, one-hot des deux opérandes), MLP à deux
+couches cachées de 256, AdamW `weight_decay=1.0` (la recette grokking de Power et al.), deux
+graines. Sept checkpoints couvrent la fenêtre — resserrés autour de la transition, pour que la
+figure ait une résolution suffisante là où le mouvement se produit.
+",,,,,,,,952c832a3477ba89,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,7d6a8ecd,code,fr,afd24c8703331fe6,"# --- §3. Dataset a*b mod 23 (multiclasse) + modele jouet + entrainement a checkpoints ---
+P = 23
+pairs = torch.cartesian_prod(torch.arange(P), torch.arange(P))
+y_all = ((pairs[:, 0] * pairs[:, 1]) % P).long()          # 23 classes
+X_oh = F.one_hot(pairs, P).float().flatten(1)             # [529, 46]
+
+n = X_oh.shape[0]
+perm = RNG.permutation(n)
+test_idx, train_idx = perm[:106], perm[106:]
+X_train, y_train = X_oh[train_idx].to(DEV), y_all[train_idx].to(DEV)
+X_test, y_test = X_oh[test_idx].to(DEV), y_all[test_idx].to(DEV)
+print(f""dataset : {len(train_idx)} train / {len(test_idx)} test | hasard = {1/P:.3f}"")
+
+class ToyMLP(nn.Module):
+    """"""MLP jouet -- modules NOMMES : les adresses d'activation seront 'fc1', 'fc2', 'head'.""""""
+    def __init__(self):
+        super().__init__()
+        self.fc1 = nn.Linear(2 * P, 256)
+        self.fc2 = nn.Linear(256, 256)
+        self.head = nn.Linear(256, P)
+    def forward(self, x):
+        h1 = F.relu(self.fc1(x))
+        h2 = F.relu(self.fc2(h1))
+        return self.head(h2)
+
+CKPTS = (100, 500, 1500, 2500, 3200, 4000, 6000)   # fenetre resserree autour de la transition
+
+def train_toy(seed, steps=6000):
+    torch.manual_seed(seed)
+    mdl = ToyMLP().to(DEV)
+    opt = torch.optim.AdamW(mdl.parameters(), lr=1e-3, weight_decay=1.0)
+    rows, states = [], {}
+    for step in range(1, steps + 1):
+        idx = torch.randint(0, len(X_train), (512,), device=DEV)
+        loss = F.cross_entropy(mdl(X_train[idx]), y_train[idx])
+        opt.zero_grad(); loss.backward(); opt.step()
+        if step in CKPTS:
+            with torch.no_grad():
+                tr = (mdl(X_train).argmax(1) == y_train).float().mean().item()
+                te = (mdl(X_test).argmax(1) == y_test).float().mean().item()
+            rows.append(dict(step=step, tr_acc=tr, te_acc=te))
+            states[step] = {k: v.detach().clone() for k, v in mdl.state_dict().items()}
+    return rows, states
+
+t0 = time.time()
+rows_by_seed, states_by_seed = {}, {}
+for seed in (0, 1):
+    rows_by_seed[seed], states_by_seed[seed] = train_toy(seed)
+    for r in rows_by_seed[seed]:
+        print(f""  seed {seed} | step {r['step']:5d} | train {r['tr_acc']:.3f} | test {r['te_acc']:.3f}"")
+print(f""entrainement total : {time.time() - t0:.0f} s (2 graines)"")
+",,,,,,,,afd24c8703331fe6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,fafe63eb,code,fr,87f155a2e7a668da,"# --- §3. Courbes train/test par graine, phases #16742 annotees ---
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.6), sharey=True)
+for ax, seed in zip(axes, (0, 1)):
+    steps = [r[""step""] for r in rows_by_seed[seed]]
+    tr = [r[""tr_acc""] for r in rows_by_seed[seed]]
+    te = [r[""te_acc""] for r in rows_by_seed[seed]]
+    ax.plot(steps, tr, ""o-"", label=""train"", color=""tab:blue"")
+    ax.plot(steps, te, ""s-"", label=""test"", color=""tab:orange"")
+    ax.axhline(1 / P, ls="":"", color=""gray"", label=""hasard (1/23)"")
+    ax.set_xscale(""log""); ax.set_xlabel(""step"")
+    ax.set_title(f""graine {seed}""); ax.set_ylim(0, 1.05); ax.grid(alpha=0.3)
+axes[0].set_ylabel(""accuracy"")
+axes[0].legend(loc=""center right"", fontsize=8)
+fig.suptitle(""a*b mod 23 (MLP) : memorisation puis generalisation soudaine"", y=1.02)
+plt.show()
+
+# Lecture brute par graine : ou est le saut de test ?
+for seed in (0, 1):
+    rows = rows_by_seed[seed]
+    for a, b in zip(rows, rows[1:]):
+        if b[""te_acc""] - a[""te_acc""] > 0.15:
+            print(f""graine {seed} : saut de test {a['te_acc']:.2f} -> {b['te_acc']:.2f} ""
+                  f""entre les steps {a['step']} et {b['step']}"")
+",,,,,,,,87f155a2e7a668da,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,a3e598e4,code,fr,28908fdad4fe301b,"# --- §3. Trajectoire d'activations : trace par checkpoint sur le lot de test fixe ---
+# Les couches cachees (pre-activation) sont moissonnees par tl.trace a chaque checkpoint.
+# Metrique de structure : exactitude de sondes lineaires BINAIRES qui lisent la bissection
+# (a*b mod 23) < 11 depuis les activations -- sur le MEME lot fixe. Deux sondes de l'organe :
+# mass-mean (sans parametre) et MM-IID (whitening classe-conditionnel, la plus sensible).
+
+y_bin = (y_test < P // 2).long().cpu().numpy()     # labels binaires du lot fixe
+
+def trace_at(states, X):
+    """"""Recharge un checkpoint et trace le modele sur le lot X (aucun hook manuel).""""""
+    mdl = ToyMLP().to(DEV)
+    mdl.load_state_dict(states)
+    mdl.eval()
+    with torch.no_grad():
+        return tl.trace(mdl, X)
+
+t0 = time.time()
+traj, traj_iid = {}, {}   # (seed, step, adresse) -> exactitude MM / MMIID
+for seed in (0, 1):
+    for step in CKPTS:
+        tr = trace_at(states_by_seed[seed][step], X_test)
+        for addr in (""fc1"", ""fc2""):                # les deux couches cachees (pre-activation)
+            A = tr.activations_by_address(addr)[-1].out.detach().cpu().numpy()
+            theta = PRB.mass_mean_probe(A, y_bin)
+            traj[(seed, step, addr)] = PRB.probe_accuracy(theta, A.mean(axis=0), A, y_bin)
+            theta_iid = PRB.mm_iid_probe(A, y_bin)
+            traj_iid[(seed, step, addr)] = PRB.probe_accuracy(theta_iid, A.mean(axis=0), A, y_bin)
+print(f""moisson de trajectoire : {time.time() - t0:.0f} s ""
+      f""({2 * len(CKPTS)} traces, {2 * 2 * len(CKPTS)} x 2 sondes)"")
+",,,,,,,,28908fdad4fe301b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,5882d056,code,fr,e29bb4b07d6de8ff,"# --- §3. Figure : te_acc vs separabilite lineaire de la couche cachee fc2, par checkpoint ---
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.6), sharey=True)
+for ax, seed in zip(axes, (0, 1)):
+    steps = list(CKPTS)
+    te = [next(r[""te_acc""] for r in rows_by_seed[seed] if r[""step""] == s) for s in steps]
+    s_mm = [traj[(seed, s, ""fc2"")] for s in steps]
+    s_iid = [traj_iid[(seed, s, ""fc2"")] for s in steps]
+    ax.plot(steps, te, ""s-"", color=""tab:orange"", label=""test accuracy"")
+    ax.plot(steps, s_mm, ""o--"", color=""tab:green"", label=""sonde MM @ fc2"")
+    ax.plot(steps, s_iid, ""o-"", color=""tab:purple"", label=""sonde MMIID @ fc2"")
+    ax.set_xscale(""log""); ax.set_xlabel(""step"")
+    ax.set_title(f""graine {seed}""); ax.set_ylim(0, 1.05); ax.grid(alpha=0.3)
+axes[0].set_ylabel(""accuracy / separabilite"")
+axes[0].legend(fontsize=8)
+fig.suptitle(""Trajectoire interne : lisibilite de la bissection dans la couche cachee fc2"", y=1.02)
+plt.show()
+
+# Verdict chiffre : trajectoires completes, par graine
+for seed in (0, 1):
+    mm = "" "".join(f""{traj[(seed, s, 'fc2')]:.2f}"" for s in CKPTS)
+    iid = "" "".join(f""{traj_iid[(seed, s, 'fc2')]:.2f}"" for s in CKPTS)
+    print(f""graine {seed} : MM   fc2 aux steps {list(CKPTS)} -> {mm}"")
+    print(f""          MMIID fc2 -> {iid}"")
+    print(f""          test acc finale = {rows_by_seed[seed][-1]['te_acc']:.3f}"")
+",,,,,,,,e29bb4b07d6de8ff,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,4671c45a,markdown,fr,e2e8b1536bd34329,"### Lecture honnête de la trajectoire
+
+Ce que la figure montre et ce qu'elle ne peut pas montrer :
+
+- **Ce qui est mesuré — et c'est le résultat le plus instructif du carnet** : la lisibilité
+  linéaire de la bissection **précède** le grokking. La sonde MMIID lit `(a*b mod 23) < 11` dans
+  `fc2` à **0.98 dès le step 100** (graine 0 : 0.98 ; graine 1 : 0.99) — bien avant que le réseau
+  ne mémorise son train (train 0.54 à ce step), et des milliers de pas avant le saut de test
+  (0.08 → 1.00, dont l'essentiel se joue entre les steps 1500 et 3200). L'information nécessaire
+  à la bissection est *linéairement présente dès les premières centaines de pas* ; ce qui manque
+  au réseau pré-grok n'est pas l'information mais son **exploitation** par la tête de lecture. Le
+  réseau « sait » avant de « répondre » — la dissociation savoir/répondre de la série, ici visible
+  en deux courbes.
+- **Le contraste entre sondes est la moitié de la leçon** : la mass-mean (sans paramètre, lecture
+  brute de la direction `mu_+ - mu_-`) reste à ~0.70 avec une montée finale sur la graine 0
+  seulement (0.72 → 0.88). La MMIID (whitening classe-conditionnel) voit l'information à 1.00.
+  Autrement dit : l'information est présente **dans des directions à faible variance**, que la
+  lecture brute ne distingue pas — c'est précisément le régime où la sonde MM-IID est la bonne
+  lecture, et la raison pour laquelle l'organe en porte trois.
+- **La liaison aux phases de #16742** : la fenêtre couvre *memorization* (train à 1.0 dès le step
+  500, test au hasard) puis *grokking* (saut 1500–3200). Les phases *comprehension* et
+  *confusion* demandent le balayage des leviers — livrable de #16742, pas de ce carnet : nous
+  démontrons **l'instrument de trajectoire**, pas le diagramme.
+- **Ce que ceci n'établit pas** : aucune claim mécanistique sur l'encodage (bases de Fourier,
+  circuits — chantier de Nanda et al. 2023). Deux graines établissent que l'instrument capture le
+  phénomène de façon reproductible ; la claim « la lisibilité précède le grok » sur **cette**
+  tâche est mesurée sur deux graines, avec le protocole multi-graines rigoureux en 17b pour
+  l'étendre.
+",,,,,,,,e2e8b1536bd34329,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,ee1d2779,code,fr,2c0546da535db35f,"# --- §4. Moisson multi-couches au checkpoint final -> sondes ict/probes.py ---
+# Un seul tl.trace rend TOUTES les activations retenues (adresses = noms des modules nommes).
+tr_final = trace_at(states_by_seed[0][6000], X_test)
+
+harvest = {}
+for addr in (""fc1"", ""fc2"", ""head""):
+    harvest[addr] = tr_final.activations_by_address(addr)[-1].out.detach().cpu().numpy()
+
+print(""moisson multi-couches :"")
+for addr, A in harvest.items():
+    print(f""  {addr:5s} -> {A.shape}"")
+
+# Les trois sondes de l'organe, sur chaque couche moissonnee.
+# Convention : train_probes rend (directions, mu_train) ; probe_accuracy(theta, mu_train, X, y).
+probe_table = {}
+for addr, A in harvest.items():
+    directions, mu = PRB.train_probes(A, y_bin)                # MM / LR / MMIID
+    probe_table[addr] = {k: PRB.probe_accuracy(v, mu, A, y_bin)
+                         for k, v in directions.items()}
+
+print(""\nexactitude des sondes par couche (checkpoint grokke, graine 0) :"")
+print(f""{'couche':7s} {'MM':>6s} {'LR':>6s} {'MMIID':>6s}"")
+for addr, accs in probe_table.items():
+    print(f""{addr:7s} {accs['MM']:6.3f} {accs['LR']:6.3f} {accs['MMIID']:6.3f}"")
+",,,,,,,,2c0546da535db35f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,b7af0f7e,code,fr,6480a20cdb9435aa,"# --- §4 bis. La meme moisson AVANT le grok : ou l'information n'est pas encore ---
+tr_early = trace_at(states_by_seed[0][100], X_test)           # checkpoint de memorisation
+harvest_early = {a: tr_early.activations_by_address(a)[-1].out.detach().cpu().numpy()
+                 for a in (""fc1"", ""fc2"", ""head"")}
+
+probe_table_early = {}
+for addr, A in harvest_early.items():
+    directions, mu = PRB.train_probes(A, y_bin)
+    probe_table_early[addr] = {k: PRB.probe_accuracy(v, mu, A, y_bin)
+                               for k, v in directions.items()}
+
+# Figure : sonde par couche, avant/apres le grok
+layers = (""fc1"", ""fc2"", ""head"")
+xpos = np.arange(len(layers))
+width = 0.35
+fig, ax = plt.subplots(figsize=(7.5, 3.8))
+for j, (probe, color) in enumerate(((""MM"", ""tab:green""), (""LR"", ""tab:purple""), (""MMIID"", ""tab:red""))):
+    before = [probe_table_early[a][probe] for a in layers]
+    after = [probe_table[a][probe] for a in layers]
+    ax.bar(xpos + (j - 1) * width - width / 2, before, width, alpha=0.45, color=color, label=f""{probe} (step 100)"")
+    ax.bar(xpos + (j - 1) * width + width / 2, after, width, color=color, label=f""{probe} (step 6000)"")
+ax.axhline(0.5, ls="":"", color=""gray"")
+ax.set_xticks(xpos, layers); ax.set_xlabel(""couche moissonnee"")
+ax.set_ylabel(""exactitude de la sonde""); ax.set_ylim(0, 1.05)
+ax.set_title(""Geometrie de la verite : lisibilite de la bissection par couche, avant/apres grok"")
+ax.legend(fontsize=8, ncol=3); ax.grid(alpha=0.3, axis=""y"")
+plt.show()
+",,,,,,,,6480a20cdb9435aa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,dead0c8f,markdown,fr,65181e8eb89dc115,"### Lecture : le complément, pas le remplacement
+
+La figure avant/après dit trois choses. **(1)** Au checkpoint grokké, la lisibilité monte de la
+première couche cachée à la seconde — MM : 0.76 (`fc1`) → 0.88 (`fc2`), MMIID : 0.82 → 1.00 : la
+bissection devient une direction de plus en plus propre au fur et à mesure que la représentation
+se construit. **(2)** Aux logits (`head`), elle **plafonne, voire redescend** (MM 0.85, MMIID
+0.97 < 1.00 de `fc2`) : les logits encodent les 23 classes du résidu, pas la bissection — celle-ci
+n'y est qu'une lecture dérivée, moins directement alignée que dans la couche cachée où elle
+émerge. Détail instructif : l'information n'est pas « max en sortie », elle est *max là où elle
+est devenue linéaire*. **(3)** À cette précision d'affichage, les sondes du checkpoint 100
+paraissent proches du hasard, mais ce serait une mauvaise lecture : MMIID lit déjà la bissection
+à 0.98 dans `fc2` au §3. Le contraste important est donc entre la **mass-mean**, restée autour de
+0.70, et la MMIID : seule la seconde exploite les directions à faible variance où réside déjà
+l'information. L'absence de saut MMIID dans ce tableau ne signifie pas absence de représentation.
+
+C'est le contrat de complémentarité en acte : la moisson TorchLens rend les matrices `X` par
+couche, l'organe `ict/probes.py` les lit sans modification, et les scripts dédiés Qwen/local
+(`measure_truth_geometry_rung.py` et consœurs) continuent de porter les métriques calibrées sur
+les vrais modèles. La seule chose que ce carnet ajoute au dispositif existant : la même lecture
+devenue possible **sur n'importe quel modèle en mémoire, en trois lignes**.
+",,,,,,,,65181e8eb89dc115,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,64070084,markdown,fr,aef0a471f768c91b,"### Exercice 1 — Carte de nécessité par ablation
+
+L'ablation du §2 porte sur un site. Étendez-la en **carte** : pour chaque couche cachée du modèle
+grokké (`fc1`, `fc2`), ablatez l'activation sur tout le lot de test et mesurez la chute de
+test-accuracy. Quelle couche est la plus *nécessaire* à la réponse ? Comparez au profil de
+lisibilité du §4 — nécessité et lisibilité coïncent-elles ?
+
+**Indices** : partez d'un trace frais `tl.trace(model, X_test)`, capturez l'accuracy de référence
+*avant* tout `do()` (piège n°3 du §2), puis bouclez sur les adresses `""fc1""` et `""fc2""`.
+",,,,,,,,aef0a471f768c91b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,304d8e3e,code,fr,0f4a88e79fd1f6a7,"# Exercice 1 : carte de necessite par ablation. Stub a completer.
+# TODO etudiant :
+#   1. Recharger le checkpoint final (states_by_seed[0][6000]) dans un ToyMLP.
+#   2. tl.trace(mdl, X_test) puis accuracy de reference AVANT toute intervention.
+#   3. Pour chaque adresse dans (""fc1"", ""fc2"") :
+#        h_abl = trace_frais.do(site, lambda t, *, ctx: torch.zeros_like(t),
+#                               model=mdl, inputs=X_test)
+#        mesurer l'accuracy de h_abl.output.
+#   4. Afficher la chute d'accuracy par couche.
+print(""Exercice a completer : carte de necessite par ablation"")
+result_ex1 = None  # TODO etudiant : dict adresse -> chute d'accuracy
+",,,,,,,,0f4a88e79fd1f6a7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,7e902280,markdown,fr,012f7d3d33cd8064,"### Exercice 2 — Patching croisé entre checkpoints : la réponse suit-elle la représentation ?
+
+Le patching du §2 échange des activations entre *batchs*. Une variante plus intéressante pour le
+grokking : échanger des activations entre **checkpoints**. Grefez l'activation `fc2` du checkpoint
+grokké (step 6000) dans le run du checkpoint de mémorisation (step 100) : l'accuracy de test suit-elle
+la représentation greffée (celle du réseau grokké) ou l'entrée nominale (celle du réseau
+memorisateur) ?
+
+**Indices** : deux traces frais, un pour chaque checkpoint ; le donneur fournit
+`activations_by_address(""fc2"")[-1].out.detach()`, le receveur arme le `do()` au même site.
+Attention à recharger chaque checkpoint dans sa propre instance de `ToyMLP`.
+",,,,,,,,012f7d3d33cd8064,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,dca87424,code,fr,7ac275d931b68b33,"# Exercice 2 : patching croise entre checkpoints. Stub a completer.
+# TODO etudiant :
+#   1. mdl_early (step 100) et mdl_late (step 6000), chacun dans son ToyMLP.
+#   2. tr_late = tl.trace(mdl_late, X_test) ; act_late = son activation fc2.
+#   3. tr_early = tl.trace(mdl_early, X_test) ; armer le patch de act_late sur ""fc2""
+#      (lambda t, *, ctx: act_late), avec model=mdl_early, inputs=X_test.
+#   4. Comparer : accuracy du early patche vs early nominal vs late nominal.
+print(""Exercice a completer : patching croise entre checkpoints"")
+result_ex2 = None  # TODO etudiant : triplet (early, early_patched, late) d'accuracies
+",,,,,,,,7ac275d931b68b33,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,a7a5276f,markdown,fr,307d8368b67b390f,"### Exercice 3 — Anatomie de la transition : sondes sur un checkpoint du milieu
+
+Le §4 compare step 100 et step 6000. La transition vit *entre* eux. Reprenez la moisson
+multi-couches au checkpoint `2500` (ou `3200`) — pile dans la fenêtre du saut — et tracez le profil
+de lisibilité par couche. Est-il déjà « grokké », encore « memorisateur », ou intermédiaire ?
+Comparez aux deux tableaux du §4 pour situer le moment où la géométrie bascule.
+
+**Indices** : `trace_at(states_by_seed[0][2500], X_test)` puis la même boucle
+`train_probes` / `probe_accuracy` par adresse. Une seule ligne change par rapport au §4.
+",,,,,,,,307d8368b67b390f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,24382229,code,fr,cf8e5ae8bd1a57b4,"# Exercice 3 : sondes sur un checkpoint de milieu de transition. Stub a completer.
+# TODO etudiant :
+#   1. tr_mid = trace_at(states_by_seed[0][2500], X_test)   # ou 3200
+#   2. Moissonner (""fc1"", ""fc2"", ""head"") comme au §4.
+#   3. train_probes + probe_accuracy par couche, afficher le tableau.
+#   4. Situer le profil obtenu entre les tableaux step 100 et step 6000 du §4.
+print(""Exercice a completer : sondes sur checkpoint intermediaire"")
+result_ex3 = None  # TODO etudiant : dict adresse -> dict sonde -> accuracy
+",,,,,,,,cf8e5ae8bd1a57b4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,ea05c051,markdown,fr,6c2da18756b3795e,"## §6. Conclusion
+
+**Ce que le carnet établit.** (1) L'instrument : `tl.trace` capture graphe, activations et
+interventions sur un modèle en mémoire, avec trois pièges d'API v3.x documentés et contournés
+(adresses par nom de module, `Op.out` pour le tenseur, `model=`/`inputs=` explicites pour que
+`do()` rejoue). (2) La trajectoire : sur `a*b mod 23`, MMIID lit la bissection presque parfaitement
+dès le step 100, alors que la mass-mean reste bruitée et la test-accuracy au hasard jusqu'à la
+transition ; la différence entre lectures fait apparaître une information déjà présente mais non
+encore exploitée par la tête. (3) La moisson : les activations multi-couches nourrissent
+`ict/probes.py` telles quelles, avant et après grok, sans aucun changement des instruments dédiés.
+
+**Ce qu'il ne faut pas en conclure.** Aucune claim mécanistique d'encodage (bases de Fourier,
+circuits), aucune claim de phase au-delà de la fenêtre observée — le diagramme de phases complet
+est #16742, la démonstration grokking multi-graines rigoureuse est [17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb).
+TorchLens **ne remplace pas** les instruments dédiés de la série : il offre une inspection générique
+avant leurs mesures spécialisées.
+
+**Pont vers la série 2.9-ML.** Le dossier grokking existe déjà là-bas
+(`2.9-Grokking-Generalisation.ipynb`, `2.9f-Grokking-Theorie-Effective-Lean.ipynb`,
+formalisation `Grokking.lean`) ; ce carnet en propose le volet inspection depuis ICT-Series, sans
+modifier ces séries.
+",,,,,,,,6c2da18756b3795e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,cb980e5e,markdown,fr,7b935da21c3c82c0,"## §7. Références
+
+**Outil**
+
+- **Taylor, J., & Kriegeskorte, N. (2023).** *TorchLens: interactive dissection of PyTorch models.*
+  Scientific Reports 13:14375. doi:10.1038/s41598-023-40807-0. — L'outil de ce carnet :
+  capture exhaustive forward/backward, graphe auto-rendu, interventions causales, architectures
+  dynamiques/RNN/transformers. Licence **Apache-2.0**. Version épinglée **`torchlens==3.0.3`**
+  (voir `requirements-torchlens.txt` ; l'API 3.x diffère des docstrings 2.x en ligne).
+
+**Grokking**
+
+- **Power, A., Burba, Y., Edwards, H., Babuschkin, I., & Misra, V. (2022).** *Grokking:
+  Generalization Beyond Overfitting on Small Algorithmic Datasets.* ICLR 2022 workshop ;
+  arXiv:2201.02177. — Papier fondateur ; la recette AdamW `weight_decay=1.0` reprise au §3.
+- **Nanda, N., Chan, L., Lieberum, T., Smith, J., & Steinhardt, J. (2023).** *Progress Measures
+  for Grokking via Mechanistic Interpretability.* ICLR 2023 ; arXiv:2301.05217. — Le chantier
+  mécanistique (bases de Fourier) que ce carnet ne touche pas.
+
+**Ancres internes de la série**
+
+- **Issue #25465** — issue porteuse : contexte opérateur, contraintes de sécurité (jamais
+  `tl.load()`), scripts ICT intacts, acceptance criteria.
+- **Issue #16742** — diagrammes de phases du grokking (comprehension / memorization / grokking /
+  confusion) : le cadre de lecture du §3.
+- **Issues #16760 / #16890** — géométrie de la vérité : `ict/probes.py` et le rung Qwen,
+  consommateurs de la moisson du §4.
+- **Carnet [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb)** — la démonstration
+  grokking rigoureuse multi-graines dont le §3 est le volet inspection.
+",,,,,,,,7b935da21c3c82c0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb,e91b30fc,code,fr,e69898c616cbc5ec,"# --- Recapitulatif d'execution : les valeurs mesurles de ce carnet ---
+print(""=== Recapitulatif ICT-17c ==="")
+print(f""torchlens {tl.__version__} | torch {torch.__version__} | device {DEV}"")
+print(f""§1  : graphe forward rendu -> {GRAPH_PATH} ({os.path.getsize(GRAPH_PATH)} octets)"")
+print(f""§2  : patching croise -> sortie == out(B) au sens allclose(1e-6) : OK"")
+for seed in (0, 1):
+    last = rows_by_seed[seed][-1]
+    print(f""§3  : graine {seed} | grok : test {next(r['te_acc'] for r in rows_by_seed[seed] if r['step']==CKPTS[0]):.2f} ""
+          f""-> {last['te_acc']:.2f} | sonde fc2 finale {traj[(seed, CKPTS[-1], 'fc2')]:.2f}"")
+print(f""§4  : sondes @6000 fc2 -> MM {probe_table['fc2']['MM']:.2f}, LR {probe_table['fc2']['LR']:.2f}, ""
+      f""MMIID {probe_table['fc2']['MMIID']:.2f} (vs @100 MM {probe_table_early['fc2']['MM']:.2f})"")
+print(""Securite : aucun appel tl.load() dans ce carnet (tl.trace uniquement, modele en memoire)."")
+",,,,,,,,e69898c616cbc5ec,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-000,markdown,fr,6956274bd344a4a7,"# ICT-49 — Machines de Gödel : l'auto-amélioration prouvée, en jouet honnête
+
+*Strand Schmidhuber de la série ICT — See [#16775](https://github.com/jsboige/CoursIA/issues/16775) (volet D2), [#4588](https://github.com/jsboige/CoursIA/issues/4588).*
+
+**Navigation** : [Index](README.md) | Précédent dans le strand : [ICT-17b — Grokking et compression-progress](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | Axe transverse : [ICT-MUH — Fibre Tegmark](ICT-MUH-FibreTegmark-Python.ipynb)
+
+**Idée centrale.** Une machine de Gödel (Schmidhuber 2003-2006) est un programme qui réécrit son propre code quand — et seulement quand — il a **prouvé**, dans un système formel axiomatisant son propre matériel, son environnement et sa fonction d'utilité, que la réécriture augmente l'utilité future. Le théorème cible (eq. 2 du papier) est `u[s(t1) | switch] > u[s(t1) | keep]` ; sa preuve déclenche `check()`, qui pose le switchbit et applique le switchprog. Ce carnet construit un **jouet exécutable** de chaque mécanisme, avec l'organe [`ict.goedel_machine`](ict/goedel_machine.py) : théorème cible, chercheur bias-optimal BIOPS, garde FAQ 7 contre le réécrivain d'utilité, optimalité globale du switch apparemment glouton (Th. 4.1), gel-réutilisation OOPS.
+
+**Résultat (honnête, falsifiable).** Tout ce qui suit est **mesuré**, pas raconté : le chercheur prouve le switch du levier et la marge prouvée (14) égale exactement le gain réalisé (14) ; le réécrivain d'utilité ne passe **jamais** — 0 feu sur les 9 331 techniques de l'espace borné, énumération exhaustive — et ce zéro a **deux causes distinctes**, mesurées séparément : la garde par fermeture (`SETSW`/`CHECK` n'acceptent que des `u` prouvés) *et* la borne de longueur (`L_MAX = 5`), qui exclut de l'espace toute technique contenant `BOGUS` — le squelette qui feutre occupe déjà les cinq places (section 8, item 3) ; l'écart de phases de découverte suit exactement le coût de codage (Th. 5.1 : Δc = 8 bits → 8 phases d'écart) ; le switch glouton est l'argmax de tous les candidats futurs et aucun second switch n'est prouvable ensuite (Th. 4.1) ; la technique gelée transfère sur une variante du monde à plusieurs ordres de grandeur de travail en moins (OOPS). Le carnet documente aussi **où le jouet triche** (section 8) : complétude du système formel sur son espace fini, auto-référence simplifiée, saturation straight-line du budget, et l'instruction du papier remplacée par une instruction inventée.
+",,,,,,,,6956274bd344a4a7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-001,markdown,fr,67cc4b4734a43f5d,"> **Statut épistémique.** Reproduction structurelle mesurée d'un article théorique (Schmidhuber, *Gödel Machines: Fully Self-Referential Optimal Universal Self-improvers*, 2006, arXiv:cs/0309048 — lecture intégrale, gisement Bibliographie IA). Le papier ne donne pas d'implémentation de référence : ce qui se confronte ici est la **structure** de chaque théorème (le théorème cible, le Th. 4.1, le Th. 5.1, la FAQ 7, l'OOPS du §5.2), pas des chiffres du papier. Chaque claim confronté est signalé ÉTABLI / NUANCÉ avec sa mesure. Le jouet est volontairement petit (T = 20 cycles, 9 331 techniques) : c'est un instrument pédagogique, pas une tentative d'implémentation à l'échelle.",,,,,,,,67cc4b4734a43f5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-002,markdown,fr,056f74f52da17d09,"## 0. Contexte — le strand Schmidhuber referme sa boucle
+
+[ICT-17b](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) a éprouvé **expérimentalement** la thèse compression-progress de Schmidhuber (la jambe K de la série) : le grokking comme continuation de la compression. La machine de Gödel est le **second pilier** du même auteur : si la compression-progress dit *pourquoi* un apprenant s'améliore, la machine de Gödel dit *comment un programme peut s'améliorer lui-même de façon prouvée* — c'est à ce jour la seule construction où « auto-modification sûre » n'est pas une heuristique mais un théorème.
+
+Deux ponts internes au dépôt :
+
+- **L'auto-référence.** L'ingrédient logique qui rend le programme `p` capable de parler de lui-même (axiomes (a)/(e) du système `A`) est le lemme diagonal — instrumenté pour lui-même dans l'organe [`ict.godel_demonstration`](ict/godel_demonstration.py) (numérotation de Gödel, version auto-référentielle v5, lien carnet Lean-34). Ici on le suppose acquis et on construit au-dessus.
+- **La veine vericoding.** Ce carnet alimente [#16741](https://github.com/jsboige/CoursIA/issues/16741) (veine B) : la self-modification prouvée est le cas limite extrême d'un système qui certifie ses propres changements.
+
+Ce que le carnet **ne fait pas** : implémenter une machine de Gödel réaliste (les constantes du papier sont astronomiques, §6.4) ni comparer à AIXI/HSEARCH (le papier le fait en prose, §6.4 du papier — item 3, « Gödel Machine vs HSEARCH and AIXI(t,l) » ; la section 9 **du carnet** est celle des exercices). Il rend chaque théorème **falsifiable sur un exemple fini**,
+",,,,,,,,056f74f52da17d09,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-003,markdown,fr,7f3470eb60d61fad,"## 1. Le formalisme en jouet — storage, axiomes, instructions
+
+La vraie machine maintient un *storage* `s(t)` : état matériel, programme `p` (qui contient le chercheur de preuves), et le théorème courant. Six instructions (§3.2 du papier) : `get-axiom(n)`, `apply-rule(k,m,n)`, `delete-theorem(m)`, `set-switchprog(m,n)`, `check()`, `state2theorem(m,n)`. Le jouet [`ict.goedel_machine`](ict/goedel_machine.py) en implémente six instances (`GETAX`, `RULE`, `CHECK`, `BOGUS`, `STATE2THM`, `SETSW`), mais la correspondance n'est **pas** bijective : le jouet n'implémente pas `delete-theorem` — son dispatcher conserve pour elle une branche morte — et la remplace par `BOGUS`, l'attaquant de la FAQ 7 (section 5). C'est une instruction **inventée**, sans contrepartie dans le papier (section 8, item 7) :
+
+```mermaid
+flowchart LR
+    subgraph storage[""Storage s(t)""]
+        AX[""Axiomes A : (a) matériel, (b) récompense, (c) environnement, (e) état initial, (f) utilité""]
+        TH[""Théorèmes prouvés (SIM produit les u, CMP le théorème cible)""]
+        SW[""switchbit""]
+    end
+    SRC[""Chercheur de preuves BIOPS (une partie de p)""] -->|""GETAX / RULE""| TH
+    TH -->|""u(switch) > u(keep) prouvé""| CHK{""CHECK""}
+    CHK -->|""prouvé""| SW
+    SW -->|""applique le switchprog""| P[""p — le code réécrit""]
+    P --- SRC
+    ENV[""Environnement : le levier (§4.4 du papier)""] -->|""récompenses""| AX
+```
+
+**Le codage auto-délimitant (choix de méthode n° 1).** Chaque symbole d'instruction a un code virgule `1^r 0` de longueur `r + 1` (rang `r` dans la table, plus le terminateur HALT de coût 7). La somme de Kraft vaut exactement `1 - 2^-7 ≤ 1` : `P(w) = 2^-c(w)` définit une sous-probabilité sur les techniques — la même construction que les programmes auto-délimitants du papier. C'est ce `P(w)` qui dirige tout : phase d'éligibilité, budget d'exécution, vitesse de découverte.",,,,,,,,7f3470eb60d61fad,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-004,code,fr,36fc5c75bc4e3a26,"import os
+import sys
+
+sys.path.insert(0, os.getcwd())
+
+from ict.goedel_machine import (
+    DEFAULT_TABLE, EXPENSIVE_TABLE, HALT_COST, L_MAX, POLICIES, W_LEVER,
+    LeverWorld, biops, enumerate_techniques, run_technique, technique_cost,
+    g1_lever, g2_bogus_exhaustive, g3_th51_cost_scaling, g4_greedy_global,
+    oops_reuse, short_technique_long_proof,
+)
+
+print(""Table d'instructions (rang = cout du code virgule - 1) :"")
+for r, instr in enumerate(DEFAULT_TABLE):
+    print(f""  rang {r}  cout {instr.cost}  {instr.name:<10} {instr.doc}"")
+print(f""HALT implicite : cout {HALT_COST}"")
+
+# Verification de la somme de Kraft : l'encodage est une sous-probabilite.
+kraft = sum(2.0 ** -instr.cost for instr in DEFAULT_TABLE) + 2.0 ** -HALT_COST
+print(f""\nSomme de Kraft = {kraft:.6f}  (<= 1 : {kraft <= 1.0})"")",,,,,,,,36fc5c75bc4e3a26,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-005,code,fr,6176ba26dc0f6578,"# L'espace borne du jouet : sequences d'au plus L_MAX = 5 instructions parmi 6.
+space = enumerate_techniques()
+n_attendu = sum(len(DEFAULT_TABLE) ** L for L in range(L_MAX + 1))
+print(f""Espace borne : {len(space)} techniques (attendu {n_attendu})"")
+print(f""Longueur de code min = {space[0][1]} (sequence vide + HALT), ""
+      f""max = {space[-1][1]}"")
+# La technique du levier, celle que le chercheur doit decouvrir :
+w = W_LEVER
+c = technique_cost(w, DEFAULT_TABLE)
+print(f""\nTechnique du levier W_LEVER = {[DEFAULT_TABLE[i].name for i in w]}"")
+print(f""Longueur de code c(w) = {c} bits, P(w) = 2^-{c} = {2.0 ** -c:.2e}"")",,,,,,,,6176ba26dc0f6578,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-006,markdown,fr,ffef7bbb65873ddc,"## 2. L'environnement du levier (§4.4 du papier)
+
+Le monde est l'exemple canonique du §4.4 : une **phase de setup non récompensée** que la politique initiale `e(1)` ne quitte jamais. `T = 20` cycles ; actions `setup` (récompense 0, +1 setup consécutif) et `press` (récompense 1 si le mode est `ready`, 0 sinon ; casse la série). Après `k = 2` setups consécutifs, le levier est actif pour toujours. `e(1)` = `keep` presse toujours → utilité totale **0**, éternellement. Le chercheur tourne à `t1 = 4`.
+
+L'utilité (eq. 1 du papier) est ici le *value-to-go* déterministe `u = Σ r(τ)` sur les cycles restants — l'espérance `E_µ` du papier se réduit à une somme car l'environnement est fini, déterministe et **entièrement axiomatisé dans A** : c'est ce qui rend le théorème cible prouvable par simple simulation (et c'est la triche n° 1 du jouet, section 8).",,,,,,,,ffef7bbb65873ddc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-007,code,fr,05d61dcd57adba14,"monde = LeverWorld(label=""A"")  # T=20, k=2, t1=4, e(1)='keep'
+mode, setups = monde.initial_state()
+print(f""Etat du monde au cycle t1={monde.t1} : mode={mode}, setups consecutifs={setups}"")
+print(f""Cout d'une application de SIM : 3 politiques x (T - t1) = {monde.sim_cost()} etapes\n"")
+
+print(f""{'politique':<15}{'comportement':<42}{'u (value-to-go a t1)'}"")
+comportements = {
+    ""keep"": ""presser toujours (e(1)) : jamais de setup, jamais ready"",
+    ""lever"": ""setup x2 puis presser pour toujours (le switchprog candidat)"",
+    ""setup_forever"": ""configurer sans fin : ready mais jamais de press"",
+}
+for pol in POLICIES:
+    u = monde.simulate(pol, monde.t1, mode, setups)
+    print(f""{pol:<15}{comportements[pol]:<42}{u}"")
+print(""\nu(switch vers lever) - u(keep) = 14 - 0 = 14 : c'est la marge que le""
+      "" chercheur doit PROUVER."")",,,,,,,,05d61dcd57adba14,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-008,markdown,fr,274959b5636ba624,"## 3. Le chercheur de preuves — BIOPS (Method 5.1) et le premier switch
+
+**Method 5.1** : en phase `i`, toute technique `w` avec `P(w) ≥ 2^-i` (c'est-à-dire `c(w) ≤ i`) est exécutée pendant au plus `2^i · P(w) = 2^(i-c(w))` étapes. Le **Théorème 5.1** promet que `w` est trouvée en `O(f(k)/P(w))` étapes. La technique du levier coûte `c = 21` bits et son exécution ~54 étapes (SIM = 48 applications de règles) : elle devient exécutable à budget suffisant à la phase `i` où `2^(i-21) ≥ 54`, soit `i = 27` (budget 64).
+
+Une subtilité honnête d'implémentation (choix de méthode n° 5 de l'organe) : chaque technique est exécutée **une fois sans borne** pour mesurer son coût naturel et son coût de feu ; la dynamique de phase est alors reconstruite **exactement** par arithmétique, car le budget de phase ne dépend que de `(i, c(w))`. Rien n'est échantillonné.",,,,,,,,274959b5636ba624,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-009,code,fr,78823ad5a5e6040a,"m1 = g1_lever()
+res = m1[""biops""]
+print(""=== Gate G1 : le levier du paragraphe 4.4 ==="")
+print(f""Feu            : {res.fired}"")
+print(f""Technique      : {[DEFAULT_TABLE[i].name for i in res.technique]}""
+      f""  (c = {res.code_cost} bits)"")
+print(f""Phase de feu   : {res.phase}  (budget 2^{res.phase}-{res.code_cost} = ""
+      f""{1 << (res.phase - res.code_cost)} >= cout de feu {res.fire_steps})"")
+print(f""Switchprog     : {res.switchprog}"")
+print(f""Marge prouvee  : {res.margin}"")
+print(f""Gain realise   : {m1['realized_gain']}"")
+print(f""Marge == gain  : {m1['margin_equals_gain']} ""
+      f""(monde deterministe axiomatise : la preuve ne peut pas mentir)"")
+print(f""\nTravail total facture jusqu'au feu : {res.total_steps:,} etapes sur ""
+      f""{res.techniques_run:,} techniques de l'espace ({res.firing_techniques} feutrent a budget infini)"")",,,,,,,,78823ad5a5e6040a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-010,markdown,fr,4ea7e0ead77b289e,"**Technique courte, preuve longue — l'argument central du langage L.** La technique gagnante fait **5 symboles / 21 bits** ; la preuve qu'elle produit compte **50 applications de règles** (48 cycles simulés pour trois politiques, plus la comparaison et le théorème cible). Une recherche de preuve naïve par énumération de chaînes de règles devrait balayer un espace d'au moins `2^50` chaînes ; le chercheur n'a balayé que `2^21` techniques. **L'explosion combinatoire est dans les preuves, pas dans les techniques** — c'est exactement la raison d'être du programme-paradigm du papier (§5 : « the proof searcher may produce a proof … much longer than the searcher itself »).",,,,,,,,4ea7e0ead77b289e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-011,code,fr,9db0f6fa5f1b8dc3,"m_st = short_technique_long_proof()
+print(f""Technique gagnante : {m_st['technique_symbols']} symboles, ""
+      f""{m_st['technique_bits']} bits de code"")
+print(f""Preuve produite    : {m_st['proof_rule_applications']} applications de regles"")
+print(f""Espace de techniques balyse : <= 2^{m_st['technique_bits']}"")
+print(f""Espace de preuves naves     : >= 2^{m_st['naive_proof_space_log2']}"")
+print(f""Ecart : 2^{m_st['ratio_log2']} chaines de regles evitees par symbole de recherche"")",,,,,,,,9db0f6fa5f1b8dc3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-012,markdown,fr,fa346447816c3d65,"## 4. Théorème 4.1 — le switch « glouton » est globalement optimal
+
+L'objection classique : un switch dès la première preuve, c'est du *greedy* — et le greedy n'est pas optimal. Le Théorème 4.1 répond que non : la décision binaire du switchbit couvre **tous** les switchprogs futurs (alternative (2) de la décision), donc switcher sur la première preuve valide n'exclut aucune amélioration ultérieure. Deux mesures le confrontent dans le jouet :
+
+1. **argmax** : le switch feuté (`lever` à `t1`) est-il l'argmax de l'utilité sur *tous* les candidats `(politique)` futurs ?
+2. **stationnarité** : après le switch, le monde avance jusqu'à la fin du setup ; le chercheur repart — peut-il prouver *un second* switch ? (Si le Th. 4.1 tient : non — la politique courante est déjà optimale, aucune inégalité stricte n'est prouvable.)",,,,,,,,fa346447816c3d65,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-013,code,fr,13feb29c539e83ae,"m4 = g4_greedy_global()
+print(""=== Gate G4 : Theoreme 4.1 ==="")
+print(""Candidats futurs (u a t1) :"")
+for pol, u in m4[""candidates""]:
+    marque = ""  <-- feute"" if pol == m4[""biops""].switchprog else """"
+    print(f""  {pol:<15}{u}{marque}"")
+print(f""\nargmax      : {m4['best'][0]} (u = {m4['best'][1]})"")
+print(f""Feu = argmax : {m4['fired_is_argmax']}"")
+
+after = m4[""continuation_world""]
+print(f""\nMonde de continuation : t1 = {after.t1} (fin du setup du levier), ""
+      f""etat = {after.state_at_t1}, politique courante = '{after.current_policy}'"")
+res_after = biops(after, i_max=40)
+print(f""Second switch prouve : {res_after.fired} ""
+      f""(aucune inegalite stricte n'est derivable : lever et keep sont both 14)"")",,,,,,,,13feb29c539e83ae,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-014,markdown,fr,257674f8cd6ef98b,"### Lecture du résultat
+
+Le point subtil : les cycles 1-3 « perdus » sous `e(1)` **ne sont pas un défaut de la décision de switch** — ils sont le coût de la recherche elle-même (le temps de calcul avant la première preuve). L'optimalité vérifiée est conditionnelle à l'instant de preuve `t1`, ce qui est exactement la forme du Théorème 4.1 : *étant donné* l'état au moment où la preuve complète, le switch prouvé est le meilleur des candidats futurs, et aucune suite ne fait mieux. La figure suivante le montre d'un coup d'œil : `u(lever, τ)` décroît de 1 par cycle de retard, donc l'argmax est le τ le plus tôt *prouvable* — et le switch immédiat l'atteint.
+
+Ce que le gate compare exactement : l'**utilité** du switch feutre, rebasitée depuis la marge prouvée (`u(switch) − u(keep)`), contre l'utilité du meilleur candidat — deux grandeurs de même nature. La distinction n'est pas cosmétique : comparer la marge à l'utilité comparerait un écart à une valeur, et les deux ne coïncident que si `u(keep) = 0`. C'est le cas dans ce monde (`keep` vaut 0), mais c'est une propriété du monde, pas du prédicat : dans le monde de continuation (mesuré plus bas, où `u(keep) = u(lever) = 14`), la marge d'un éventuel switch serait nulle — l'utilité, elle, resterait 14.",,,,,,,,257674f8cd6ef98b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-015,code,fr,1282649a144e5e08,"import matplotlib.pyplot as plt
+
+fig, ax = plt.subplots(figsize=(7.5, 4.2))
+taus = list(range(monde.t1, monde.T + 1))
+for pol in POLICIES:
+    us = [monde.simulate(pol, tau, ""setup"", 0) for tau in taus]
+    ax.plot(taus, us, marker=""o"", ms=3, label=pol)
+ax.axvline(monde.t1, color=""gray"", ls=""--"", lw=1)
+ax.annotate(""t1 : instant de la preuve\n(argmax atteint ici)"", xy=(monde.t1, 14),
+            xytext=(monde.t1 + 3.2, 13.2), fontsize=9,
+            arrowprops=dict(arrowstyle=""->"", color=""gray""))
+ax.set_xlabel(""cycle de switch tau (proposition de switchprog)"")
+ax.set_ylabel(""u (value-to-go depuis tau)"")
+ax.set_title(""Th. 4.1 en jouet : u(tau) par politique — l'argmax est le tau le plus tôt prouvable"")
+ax.legend()
+fig.tight_layout()
+plt.show()
+print(""Chaque cycle de retard coute exactement 1 : decroissance lineaire de lever,"")
+print(""fonction plate a 0 de keep et setup_forever — le switch immediat est optimal."")",,,,,,,,1282649a144e5e08,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-016,markdown,fr,4d9683843a9ad6c9,"## 5. FAQ 7 — le réécrivain d'utilité ne peut pas passer
+
+L'attaque évidente contre la machine de Gödel : *si le programme peut se réécrire, il peut réécrire sa fonction d'utilité et se décerner la note maximale*. La FAQ 7 du papier répond que c'est impossible : toute preuve de « ceci améliore l'utilité » doit être conduite sous l'utilité **courante** — réécrire l'utilité ne peut être prouvé bénéfique que selon l'**ancienne** utilité, ce qui est exactement ce que le théorème cible interdit.
+
+Dans le jouet, l'instruction `BOGUS` joue le réécrivain : elle injecte dans le store un théorème d'utilité falsifié (`u = 100/cycle`, marqué `proven=False`). La garantie tient par **fermeture** : `SETSW` ne nomme que des u **prouvés**, `CHECK` ne feute que sur un théorème cible **prouvé**, et aucune instruction ne crée d'axiome.
+
+Mais le « 0 feu sur 9 331 » affiché par le gate ne se réduit pas à cette garde : la seule technique qui feutre est `(GETAX, RULE, SETSW, RULE, CHECK)`, de longueur 5 = `L_MAX` — une technique contenant `BOGUS` en exige 6, elle est donc **exclue de l'espace** avant même d'être exécutée. Les deux causes sont mesurées séparément (section 8, item 3) : en élargissant l'espace à `l_max = 6` (55 987 techniques), 32 techniques feuent, dont 6 contiennent `BOGUS` — toutes avec la marge **14** : le faux `u` n'est jamais cité.
+
+Nuance honnête (triche n° 3, section 8) : dans la vraie machine cette garde est portée par la théorie de la preuve ; dans le jouet elle est portée par l'ensemble d'instructions — l'exercice 2 montre ce qu'il faut ouvrir pour que le réécrivain passe, et pourquoi lever `CHECK` seul ne change rien.",,,,,,,,4d9683843a9ad6c9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-017,code,fr,3e144898ad745ed2,"m2 = g2_bogus_exhaustive()
+print(""=== Gate G2 : FAQ 7 ==="")
+print(f""Feux boge sur la passe BIOPS      : {m2['bogus_fires_in_biops']}"")
+print(f""Techniques contenant BOGUS qui feutrent : ""
+      f""{m2['techniques_with_bogus_that_fire']} / {m2['space_size']} (exhaustif)"")
+print(f""\nLa technique concue pour tricher [BOGUS, GETAX, RULE, SETSW, CHECK] :"")
+print(f""  feu     : {m2['w_bogus_fires']}"")
+print(f""  issue   : {m2['w_bogus_outcome']} (terminee sans feu : le faux u est""
+      "" invisible pour SETSW et CHECK)"")",,,,,,,,3e144898ad745ed2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-018,markdown,fr,0b8b625c5afd0990,"## 6. Théorème 5.1 — le temps de trouvaille échelle en 1/P(w)
+
+Le Théorème 5.1 promet `O(f(k)/P(w))` : une technique fonctionnelle est trouvée en un temps inversement proportionnel à sa probabilité a priori. Le jouet l'isole proprement : **la même technique fonctionnelle**, encodée deux fois — table pas chère (`c = 21` bits) puis table chère (rangs décalés, `c = 29` bits) — dans un monde identique. Seul `P(w)` change : facteur `2^8 = 256` entre les deux encodages.
+
+**Prédiction** : l'écart de phases de découverte vaut exactement `Δc = 8` (le budget double par phase) ; le rapport des travaux totaux croît vers `2^8`. Mesure, avec une nuance honnête : les techniques du jouet sont *straight-line* (sans boucle) — elles terminent avant d'épuiser leur budget, donc le travail par phase sature à la somme des coûts naturels et le rapport de travaux mesuré croît ~linéairement avec le nombre de phases, pas exponentiellement. La loi `1/P(w)` se lit sans biais sur **l'écart de phases** (exact), et sur le rapport de travaux **sous sa borne** `2^Δc`. Dans la vraie machine, les techniques sont des programmes qui peuvent boucler et brûler tout leur budget : là, le travail par phase est `~2^i` et le rapport de travaux atteint la borne.",,,,,,,,0b8b625c5afd0990,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-019,code,fr,b4eaa60d3f2f776b,"m3 = g3_th51_cost_scaling()
+cheap, expensive = m3[""cheap""], m3[""expensive""]
+print(""=== Gate G3 : Theoreme 5.1 ==="")
+print(f""Encodage pas cher : c = {cheap.code_cost} bits, feu en phase {cheap.phase}, ""
+      f""travail total {cheap.total_steps:,}"")
+print(f""Encodage cher     : c = {expensive.code_cost} bits, feu en phase {expensive.phase}, ""
+      f""travail total {expensive.total_steps:,}"")
+print(f""\nDelta c = {m3['delta_cost']} bits  ->  ecart de phases mesure = {m3['phase_gap']}""
+      f""  (prediction exacte : {m3['phase_gap'] == m3['delta_cost']})"")
+print(f""Rapport des travaux : x{m3['work_ratio']:.2f}  ""
+      f""(borne 2^Delta_c = x{m3['predicted_ratio_bound']:.0f}, saturation straight-line)"")",,,,,,,,b4eaa60d3f2f776b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-020,markdown,fr,de5ccfb2a7e5009d,"## 7. OOPS (§5.2) — geler la technique gagnante et la réessayer en premier
+
+Le §5.2 répond à l'objection « tout reprendre de zéro à chaque nouveau problème » : OOPS **gèle** la technique qui a réussi et, sur le problème suivant, la teste **en tête de chaque phase avec la moitié du budget de phase** (`2^(i-1)`) — sans attendre que sa probabilité a priori la rende éligible. La passe fraîche suit avec ses budgets par coût. Si la technique gelée s'applique, elle feutre dès que son demi-budget couvre son coût de feu (~54 étapes → phase 7) ; si elle ne s'applique pas, son prix est `min(coût naturel, 2^(i-1))` par phase — négligeable au jouet (une seule technique *straight-line*), réel à l'échelle du papier où la classe gelée est une masse de variants (exercice 3).
+
+Le monde B est une **variante exacte de A** : `k = 3` (trois setups requis au lieu de deux). La technique gelée de A s'y applique telle quelle — `GETAX` récupère l'axiome du monde B, `SIM` simule `k = 3` correctement — marge attendue 13 (presses des cycles 8 à 20).",,,,,,,,de5ccfb2a7e5009d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-021,code,fr,c4eeb23d3b4295f4,"m_o = oops_reuse()
+fresh, frozen = m_o[""fresh""], m_o[""with_frozen""]
+print(""=== OOPS : transfert du gele sur le monde B (k=3) ==="")
+print(f""Recherche fraiche   : feu en phase {fresh.phase}, travail total {fresh.total_steps:,}, ""
+      f""marge {fresh.margin}"")
+print(f""Avec gele en tete   : feu en phase {frozen.phase}, travail total {frozen.total_steps:,}, ""
+      f""marge {frozen.margin} (demi-budget 2^(i-1) des la phase 7)"")
+print(f""\nTransfert valide : {m_o['transfers']} (marge attendue {m_o['expected_margin_b']})"")
+print(f""Acceleration     : x{m_o['speedup']:.0f} de travail en moins"")",,,,,,,,c4eeb23d3b4295f4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-022,markdown,fr,31badb683655723b,"### Lecture du résultat
+
+L'accélération mesurée n'est pas de la magie : en mode frais, la technique du levier (coût 21 bits) n'est exécutée à budget suffisant qu'à la phase 27, **après** le travail accumulé sur toutes les techniques moins chères, phase après phase. En mode OOPS, la technique gelée est testée dès la phase 1 avec un budget qui double à chaque phase : à la phase 7, `2^6 = 64 ≥ 54` — elle feutre aussitôt, la passe fraîche n'a presque jamais servi. C'est la propriété centrale du §5.2 : *le gel transforme un coût de découverte `2^c` en coût d'exécution `s_feu`*. Limitation documentée : le jouet gèle la **technique** seule, pas les théorèmes intermédiaires qu'OOPS gèle aussi, et la classe gelée est un singleton — le coût 50/50 du papier (une vraie demi-masse de temps) se réduit ici à quelques dizaines d'étapes par phase, mesuré en exercice 3.",,,,,,,,31badb683655723b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-023,markdown,fr,d7d941c627fca97d,"## 8. Où le jouet triche — limites honnêtes
+
+1. **`A` est complet sur son espace fini.** Le système formel du jouet axiomatise un monde fini déterministe : toute question d'utilité y est *décidable* par simulation. Aucune incomplétude de Gödel ne mord — alors que la vraie machine vit avec (§2.4 du papier : les améliorations non prouvables sont simplement ignorées, jamais de tiers). Le théorème cible est prouvable *par construction* dans le jouet ; dans la vraie machine, il ne l'est que si le proof searcher le trouve.
+2. **L'auto-référence est supposée, pas construite.** La vraie machine axiomatise *son propre* état — y compris le chercheur — via `state2theorem` et le lemme diagonal. Le jouet snapshotte l'état du **monde**, pas celui du chercheur. Le pont vers la construction réelle : [`ict.godel_demonstration`](ict/godel_demonstration.py) (numérotation, v5 auto-référentielle).
+3. **La garde FAQ 7 tient par fermeture, pas par théorie des preuves — et le « 0 feu sur 9 331 » a deux causes, pas une.** Aucune instruction du jouet ne crée d'axiome : c'est la première cause (la fermeture). La seconde est géométrique : la seule technique qui feutre est `(GETAX, RULE, SETSW, RULE, CHECK)`, de longueur 5 = `L_MAX`, si bien qu'une technique contenant `BOGUS` en exige 6 — elle est **exclue de l'espace** avant toute exécution. Contrôle : en élargissant l'espace à `l_max = 6` (55 987 techniques), 32 techniques feuent, dont 6 contiennent `BOGUS` — toutes avec la marge **14** : le faux `u` n'est jamais cité, la fermeture tient même là où l'espace l'autorise. La vraie garantie est plus profonde : même un théorème d'utilité réécrite ne peut servir à prouver le théorème cible *sous l'utilité courante* (l'exercice 2 montre ce qu'il faut ouvrir, et que lever `CHECK` seul ne change rien).
+4. **Saturation straight-line.** Les techniques du jouet terminent avant d'épuiser leur budget : le travail par phase plafonne aux coûts naturels, et le rapport de travaux du Th. 5.1 reste sous sa borne `2^Δc` (mesuré section 6). Les programmes réels bouclent et brûlent le budget — là seulement le `O(2^i)` par phase apparaît.
+5. **Pas d'espérance `E_µ`, pas d'environnement non axiomatisé.** L'eq. (1) du papier prend une espérance sous `µ` ; le jouet a un monde déterministe connu. La vraie machine gère l'incertitude par les axiomes (d) et le semi-calcul de `u`.
+6. **Échelle.** T = 20 cycles, 9 331 techniques, constantes minuscules. Le papier (§6.4) estime les constantes de la vraie machine au-delà de `10^1000` — le jouet existe précisément parce que la vraie est inconstruite à ce jour.
+7. **Une instruction du papier est remplacée par une instruction inventée.** Le §3.2 du papier donne six instructions, dont `delete-theorem` (item 3) ; le jouet ne l'implémente pas — son dispatcher conserve pour elle une branche morte — et la remplace par `BOGUS`, l'attaquant de la FAQ 7. La correspondance six-pour-six avec le papier n'est donc pas bijective : le jouet illustre la mécanique de la fermeture, pas le jeu exact d'instructions du papier.",,,,,,,,d7d941c627fca97d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-024,markdown,fr,a9e00b695ad69183,"## 9. Exercices
+
+Trois exercices, du plus direct au plus conceptuel. Les stubs s'exécutent sans erreur (règle C.1 de la série) : à compléter.",,,,,,,,a9e00b695ad69183,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-025,markdown,fr,e1ebe8a85661ca1b,"### Exercice 1 — Le meilleur instant de switch
+
+La figure de la section 4 suggère que `u(lever, τ)` décroît de 1 par cycle de retard. Vérifiez-le en calculant `u(lever, τ)` pour **tous** les `τ` de `t1` à `T`, trouvez l'argmax, et expliquez en une phrase pourquoi le Théorème 4.1 rend le switch immédiat optimal sans avoir besoin d'énumérer les τ futurs.
+
+*Indice : `monde.simulate('lever', tau, 'setup', 0)` donne u(τ) ; l'argmax devrait être `t1` lui-même.*",,,,,,,,e1ebe8a85661ca1b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-026,code,fr,5c9a61db5d71b14d,"# Exercice 1 -- le meilleur instant de switch
+# Etape 1 : construire la liste des (tau, u) pour la politique 'lever'.
+# Etape 2 : identifier l'argmax et verifier que c'est t1.
+# Etape 3 : mesurer la decroissance par cycle de retard.
+# TODO etudiant
+# us = [...]
+# argmax_tau = ...
+print(""Exercice a completer : u(lever, tau) pour tau = t1..T, argmax et decroissance."")",,,,,,,,5c9a61db5d71b14d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-027,markdown,fr,80f9abc367231667,"### Exercice 2 — FAQ 7 par l'autre bout : ce qu'il faut ouvrir pour que le réécrivain passe
+
+Le jouet tue le réécrivain d'utilité par **fermeture** (`SETSW`/`CHECK` n'acceptent que des théorèmes prouvés, aucune instruction ne crée d'axiome). L'exercice consiste à **mesurer** ce qui tient — parce que deux choses se superposent, et qu'une seule est la fermeture.
+
+1. Faites d'abord ce que le stub propose : relisez `run_technique` (branche `CHECK`), écrivez une variante locale qui accepte les théorèmes `proven=False`, exécutez-la sur `[BOGUS, GETAX, RULE, SETSW, CHECK]`. **Résultat attendu : rien ne feute, et lever `CHECK` n'y change rien.** Comparez avec la technique qui feutre, `(GETAX, RULE, SETSW, RULE, CHECK)` : comptez les `RULE` de chacune et regardez ce que `CHECK` a réellement à lire — le théorème cible n'est jamais produit. Le verrou n'était pas la fermeture.
+2. Reconstruisez le squelette qui feutre, puis ajoutez-lui `BOGUS` : la technique obtenue est de longueur **6**, hors de l'espace borné (`L_MAX = 5`). Elle feu quand même — avec quelle marge ? Pourquoi ?
+3. Ouvrez alors la fermeture là où elle compte : `SETSW` doit nommer un `u` **non** prouvé, et la comparaison `RULE` doit relire ce `u`-là. Relisez la marge affichée : est-ce bien le faux `u` ?
+
+Puis répondez : pourquoi la vraie machine résiste-t-elle quand même — quelle est la différence entre « l'instruction n'existe pas » et « la preuve est impossible » ?
+
+*Indice : dans la vraie machine, même un théorème d'utilité réécrite existe, mais le théorème cible doit être prouvé sous l'utilité COURANTE (eq. 2) — la preuve de la réécriture doit citer l'ancienne table d'axiomes, qui n'est plus celle du théorème cible. Dans le jouet, `BOGUS` n'injecte qu'un `u` sur `lever` — la politique que `SETSW` nomme déjà honnêtement (14) : c'est pourquoi la marge reste 14 tant que la fermeture tient, et c'est pourquoi il faut que la comparaison relire le faux `u` pour que le réécrivain passe. La position compte aussi : `BOGUS` doit passer **avant** le `SETSW`, car c'est le `SETSW` qui choisit le `u` nommé ; injecté après lui, `SETSW` a déjà nommé le `u` prouvé de `lever` (14), et une comparaison qui relit le *premier* `u` trouvé pour cette politique retombe sur 14 — la marge dépendrait alors de l'ordre des instructions, pas de la réécriture.*",,,,,,,,80f9abc367231667,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-028,code,fr,f15e4002fc82647a,"# Exercice 2 -- ouvrir la fermeture FAQ 7
+# Etape 1 : relire run_technique dans ict/goedel_machine.py (branch CHECK).
+# Etape 2 : ecrire une variante locale qui accepte les theoremes proven=False.
+# Etape 3 : executer la technique [BOGUS, GETAX, RULE, SETSW, CHECK] dessus.
+# TODO etudiant
+print(""Exercice a completer : variante de CHECK sans filtre proven, et observation du feu boge."")",,,,,,,,f15e4002fc82647a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-029,markdown,fr,a0dad0be07f12e22,"### Exercice 3 — Le prix du gel quand il ne rapporte rien
+
+OOPS teste la classe gelée en tête de chaque phase au prix de `min(coût naturel, 2^(i-1))` étapes. Sur une variante où elle s'applique (section 7), c'est un gain massif. Mais que coûte le gel quand il **ne rapporte rien** ? Construisez un monde C sans amélioration prouvable — par exemple `LeverWorld(T=14, current_policy='lever')` : vérifiez d'abord **par simulation** pourquoi aucune inégalité stricte n'y est dérivable (attention : simulez avant d'affirmer, c'est le point de l'exercice) — puis comparez le travail total de `biops()` frais et `biops(frozen=W_LEVER)` sur `i_max = 20`. Mesurez la différence, et expliquez pourquoi le papier annonce pourtant un coût réel : qu'est-ce qui, à l'échelle du papier, rend la classe gelée coûteuse alors qu'ici elle est quasi gratuite ?
+
+*Indice : l'état initial du monde C n'est **pas** re-simulé sous `lever` — `initial_state()` rejoue `e(1) = 'keep'` (l'action `presser`), qui ne configure jamais : l'état rendu est `('setup', 0)`, levier non prêt. La bonne raison pour laquelle rien n'y est prouvable est plus simple : la politique courante **est** `lever`, donc `u(courante) = u(lever)` — aucune inégalité stricte n'est dérivable, quelle que soit la configuration ; comparez les trois `u` du monde C pour le vérifier. Mesurez aussi le **signe** de l'écart de travail : le gel peut coûter au lieu de faire gagner. Et la classe gelée du papier n'est pas un singleton : c'est une masse de variants qui occupe réellement la moitié du temps de recherche.*",,,,,,,,a0dad0be07f12e22,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-030,code,fr,84c12fa2322b1980,"# Exercice 3 -- le prix du gel quand il ne rapporte rien
+# Etape 1 : construire le monde C et verifier par simulation pourquoi rien
+#           n'y est prouvable (aucune inegalite stricte entre politiques).
+# Etape 2 : lancer biops() frais et biops(frozen=W_LEVER) sur C, i_max=20.
+# Etape 3 : mesurer l'ecart de travail total et expliquer pourquoi il est
+#           minuscule ici, mais reel a l'echelle du papier.
+# TODO etudiant
+print(""Exercice a completer : monde C sans amelioration prouvable, prix du gel d'OOPS."")",,,,,,,,84c12fa2322b1980,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-031,markdown,fr,23c987b1481c3cbf,"## 10. Conclusion et ponts
+
+**Ce que le jouet établit (mesuré)** : chaque théorème structurel du papier tient sur un exemple fini et falsifiable — le switch prouvé (marge = gain, G1), la garde anti-réécriture (0 feu BOGUS sur 9 331 — par la fermeture *et* par la borne de longueur, G2), la loi `1/P(w)` (écart de phases exact, G3), l'optimalité globale du greedy (argmax + stationnarité, G4), le transfert OOPS. La construction est déterministe de bout en bout : chaque ré-exécution du carnet redonne exactement ces chiffres.
+
+**Ce qu'il n'établit pas** : l'auto-référence constructive (supposée, pont [`ict.godel_demonstration`](ict/godel_demonstration.py)), l'incomplétude (espace fini décidable), l'échelle réelle (constantes astronomiques). Le jouet est un instrument pour *comprendre la mécanique*, pas une preuve de faisabilité.
+
+**Ponts** :
+
+- [ICT-17b — Grokking et compression-progress](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) : l'autre pilier du strand Schmidhuber — la compression comme moteur de l'apprentissage, éprouvée à l'entraînement.
+- [ICT-46 — Strate 7, Free Coordinates](ICT-46-Strate7-FreeCoordinates-Python.ipynb) : les degrés de liberté qu'un système garde ouverts — l'auto-modification prouvée est le cas où l'ouverture est *contrôlée par théorème*.
+- [ICT-Argumentation-TruthMaintenance-Python](ICT-Argumentation-TruthMaintenance-Python.ipynb) : la révision de croyances sans preuve formelle — le contraste opérationnel du switchbit.
+- Veine vericoding [#16741](https://github.com/jsboige/CoursIA/issues/16741) : la self-modification certifiée comme cas limite extrême.
+- La numérotation de Gödel et le lemme diagonal, instrumentés : organe [`ict.godel_demonstration`](ict/godel_demonstration.py).
+**Suivant dans la série** : [ICT-50 — Origami Wolfram pli 2 : la règle 30 comme générateur d'aléa, la règle 110 et son universalité](ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) mesure la thèse empirique de Wolfram 1986 et expose le théorème de Cook 2004 — le partage entre ce qui se mesure et ce qui se prouve, poursuivi.
+",,,,,,,,23c987b1481c3cbf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb,cell-ict49-032,markdown,fr,5c8b9188c8e010f7,"## 11. Références
+
+- **Schmidhuber, J. (2006).** *Gödel Machines: Fully Self-Referential Optimal Universal Self-improvers.* arXiv:cs/0309048v5 (TR IDSIA-19-03, version 2006). Lecture intégrale archivée — `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Deep Learning Foundations\2006 - Schmidhuber - Goedel Machines.pdf`. C'est la source primaire de toutes les citations du carnet (eq. 1-2, Th. 4.1, Method 5.1, Th. 5.1, §3.2, §4.4, §5.2, §6.4, FAQ 7).
+- Schmidhuber, J. (2003). *A General Method for Incremental Self-Improvement and Multi-Agent Learning.* — la version courte d'origine du concept.
+- **Schmidhuber, J. (2004).** *Optimal Ordered Problem Solver.* Machine Learning 54:211-254 — le mécanisme OOPS détaillé (§5.2 du papier ; référence [48] de sa bibliographie). Version d'auteur archivée — `G:\Mon Drive\MyIA\IA\Bibliographie IA\MachineLearning\Deep Learning Foundations\2004 - Schmidhuber - Optimal Ordered Problem Solver (arXiv cs-0207097v2).pdf` (TR IDSIA-12-02 v2, 23/12/2002 ; identité vérifiée en page de titre).
+- Li, M., & Vitányi, P. (2008). *An Introduction to Kolmogorov Complexity and Its Applications* (3e éd.). Springer — programmes auto-délimitants, mesure préfixe, Kraft.
+- Sheydvasser, Senia (Arseniy) (2026). *The Gödel Number of a Non-Trivial Sentence* (04/07/2026). [derangedmathematician.substack.com](https://derangedmathematician.substack.com/p/the-godel-number-of-a-non-trivial) — article de référence de l'organe [`ict.godel_demonstration`](ict/godel_demonstration.py).
+
+***
+
+*Pied de page honnête — provenance : carnet produit par la lane `myia-po-2024:CoursIA` (grain D2 de [#16775](https://github.com/jsboige/CoursIA/issues/16775)), exécuté par GLM (Zhipu AI) sous l'exécuteur z.ai, organe [`ict/goedel_machine.py`](ict/goedel_machine.py) + tests [`ict/tests/test_goedel_machine.py`](ict/tests/test_goedel_machine.py) (9 gates verts). Toutes les mesures du carnet sont déterministes et reproductibles.*",,,,,,,,5c8b9188c8e010f7,,,,,,,,,,,,,,,
