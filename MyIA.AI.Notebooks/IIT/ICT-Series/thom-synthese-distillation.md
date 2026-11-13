@@ -1370,7 +1370,7 @@ extension, pas une redite.
   — jambe représentationnelle (surprise, free energy).
 - [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
   — compression progressive et dissociations.
-- [ICT-18b](ICT-18b-ReversibilityBudget-Python.ipynb)
+- [ICT-18b](ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb)
   — triade moyen / fin / enjeu, dissociation $\sigma$ / Levin.
 - [ICT-19b](ICT-19b-EnjeuBattery-Raffinement-Python.ipynb)
   — Gray-Scott S4, mesure espace de champ.

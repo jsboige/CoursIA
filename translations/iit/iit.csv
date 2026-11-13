@@ -3331,20 +3331,25 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb,f0303fa2,mar
   - ICT-18 (FlecheDuTempsReversibilisation) : la reversibilisation
     elimine la structure irreversible -- un parallel a ICT-17 sur la
     *macro-structure predictive* au lieu de la *complexite temporelle*.",,,,,,,,ce95cd5bc6a4f5f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,d8683db9,markdown,fr,84c798d001a8fa8f,"# ICT-18 -- Fleche du temps et reversibilisation (strate 5, Epic #4588)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,d8683db9,markdown,fr,84c798d001a8fa8f,"# ICT-18 -- Fleche du temps et reversibilisation (strate 5, Epic #4588)
 
 **Sens du mot *reversibilite* dans ce notebook** : on entend ici *reversibilite thermodynamique* (detail-balance satisfaite, courant net nul, Schnakenberg 1976 / Seifert 2012 / Crooks 1998) -- c'est **le MOYEN** dans la triade *moyen / fin / enjeu* (cf cellule << Moyen, fin, enjeu >> ci-dessous). L'instrument de ce notebook mesure **uniquement** ce moyen. La *reversibilite comportementale* (accessibilite cinematique de l'espace d'etats, ICT-2/3/9, Levin *competency for free*) releve d'une **autre grandeur** : c'est la **FIN** que la lutte thermodynamique poursuit, pas un second axe a mesurer independamment.
 
 **Portee honnete de l'instrument** : `I_thermo = dist(P_real, P_reversible)` capte le **MOYEN** (la dissipation, sigma, l'irreversibilite brute) -- et **PAS l'ENJEU** (resister a l'equilibration du soi). Une tornade, une flamme, une cellule de Benard, un oscillateur chimique dissipent : tous allument l'instrument sans etre agents. Manque le *stake* -- l'auto-maintien, la cloture de contraintes, la minimisation d'energie libre (Friston) -- que ICT-18 ne voit pas. L'instrument est **necessaire mais pas suffisant** ; voir substrat S5 (contrôle faux-positif) et cell 18 recadree en faux-negatif pour les deux bornes de sa portee.
 
 **Problème** : comment mesurer l'agentivite emergente d'une trajectoire *thermodynamiquement* ? Et surtout, ou cette mesure s'arrete-t-elle ?",,,,,,,,84c798d001a8fa8f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,e313f2a4,markdown,fr,fa454d20a0c86c06,"## 1. Setup
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,e313f2a4,markdown,fr,fa454d20a0c86c06,"## 1. Setup
 
 Import du package leger ``ict`` et de ``time_arrow`` (strate 5 d'ICT, ce notebook). On verifie la version numpy et on prepare l'environnement matplotlib inline pour les figures (les graphes sont cpu-only, pas de backend interactif). On importe également les substrats ``self_sorting``, ``bistable``, ``strategic_morphodynamics``, ``reaction_diffusion``.",,,,,,,,fa454d20a0c86c06,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,da4de6ee,code,fr,516075b792e8233a,"import os
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,da4de6ee,code,fr,b651d786f1ef213d,"import os
 import sys
 
+# Le carnet vit dans ICT-18-ArrowOfTimeReversibilization/ : ICT_ROOT reste le
+# dossier du carnet (sorties de figures), le parent porte le paquet ``ict``.
 ICT_ROOT = os.path.abspath('.')
+_SERIES_ROOT = os.path.dirname(ICT_ROOT)
+if _SERIES_ROOT not in sys.path:
+    sys.path.insert(0, _SERIES_ROOT)
 if ICT_ROOT not in sys.path:
     sys.path.insert(0, ICT_ROOT)
 
@@ -3366,8 +3371,8 @@ for name in ['transition_matrix', 'stationary_distribution', 'time_reversal',
              'reversibilize', 'detailed_balance_error', 'entropy_production',
              'trajectory_asymmetry', 'compare_real_reversed_reversibilized']:
     fn = getattr(time_arrow, name, None)
-    print(f'  {name:42s} {""OK"" if fn else ""MISSING""}')",,,,,,,,516075b792e8233a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,4cf44779,markdown,fr,de7d29a85bdca9be,"## 2. Primitives thermodynamiques -- rappel et gate 1 (detailed balance)
+    print(f'  {name:42s} {""OK"" if fn else ""MISSING""}')",,,,,,,,b651d786f1ef213d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,4cf44779,markdown,fr,de7d29a85bdca9be,"## 2. Primitives thermodynamiques -- rappel et gate 1 (detailed balance)
 
 **Definitions clefs** :
 
@@ -3401,7 +3406,7 @@ Le mot *reversibilite* porte **deux sens distincts** dans la serie ICT, mais ils
 **Portee operationnelle de l'instrument** : `I_thermo` est une **condition necessaire** pour suspecter l'agentivite (sigma > 0 veut dire qu'il se passe *quelque chose*) mais ne suffit jamais a la **conclure** (il faut l'ingredient supplementaire -- auto-maintien, cloture de contraintes, *stake*). L'instrument est specialise sur le moyen ; pour conclure l'agentivite, il faut le corroborer avec d'autres strates (ICT-2/3/9, ICT-14 free energy, ICT-15 complexite integree, ICT-17 epsilon-machine).
 
 Cross-refs : ICT-2 (tri *for free*), ICT-3 (reparation de forme), ICT-9 (Gray-Scott : regeneration post-ablation) pour la **FIN** ; ICT-14 (free energy / Friston) pour l'**ENJEU** (le *stake* de l'auto-maintien) ; ICT-18 (ce notebook) pour le **MOYEN**.",,,,,,,,de7d29a85bdca9be,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c70a3589,code,fr,d8ab8f91cc735f27,"# Gate 1 -- trajectoire totalement aleatoire (iid)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c70a3589,code,fr,d8ab8f91cc735f27,"# Gate 1 -- trajectoire totalement aleatoire (iid)
 rng_iid = np.random.default_rng(20250704)
 k_iid = 4
 n_iid = 4000
@@ -3416,12 +3421,12 @@ print(f'dist_real_vs_reversibilized = {out_iid[""dist_real_vs_reversibilized""]:
 print(f'dist_real_vs_reversed       = {out_iid[""dist_real_vs_reversed""]:.4f}  (attendu: ~0)')
 print()
 print(f'VERDICT Gate 1 : {""OK"" if (out_iid[""sigma_real""] < 0.05 and out_iid[""dist_real_vs_reversibilized""] < 0.1) else ""KO""}')",,,,,,,,d8ab8f91cc735f27,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,76d30a7e,markdown,fr,3a2d7a4ea660a37d,"## 3. Substrat S1 -- ICT-2 tri auto-organise (BiasedBubbleSort, competence *for free*)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,76d30a7e,markdown,fr,3a2d7a4ea660a37d,"## 3. Substrat S1 -- ICT-2 tri auto-organise (BiasedBubbleSort, competence *for free*)
 
 **ICT-2** demontre que le tri bubble, sur des sequences déjà partiellement triees, developpe une **competence gratuite** (for free) : le tri ameliore la coherence au-dela de ce que le mécanisme programmait. C'est l'ancrage direct de ICT-18 : si le tri emergente porte une *competence for free*, il brise la symetrie temporelle, et sa **production d'entropie doit etre strictement superieure** a une trajectoire iid.
 
 On simule une trajectoire ``BiasedBubbleSort`` sur un alphabet de 4 symboles (sequence d'inversions), on en extrait la matrice de transition empirique ``P`` et on compare sa fleche a la trajectoire iid (gate 1). **Gate 3** : ``sigma_biased > sigma_iid`` et la perte a la reversibilisation est mesurable.",,,,,,,,3a2d7a4ea660a37d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c81b2dc7,code,fr,54e7928d88b95938,"# Substrat S1 : trajectoire BiasedBubbleSort -- proxy de ICT-2 *for free*
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c81b2dc7,code,fr,54e7928d88b95938,"# Substrat S1 : trajectoire BiasedBubbleSort -- proxy de ICT-2 *for free*
 rng = np.random.default_rng(7)
 k_sort = 5
 n_steps = 1500
@@ -3462,14 +3467,14 @@ print()
 ratio_sigma = out_biased['sigma_real'] / max(out_iid['sigma_real'], 1e-6)
 print(f'Ratio sigma_biased / sigma_iid = {ratio_sigma:.2f}')
 print(f'VERDICT Gate 3 : {""OK"" if out_biased[""sigma_real""] > out_iid[""sigma_real""] + 0.005 else ""KO""} (for free detectee)')",,,,,,,,54e7928d88b95938,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c333fcff,markdown,fr,f6d5bec3a428d310,"## 4. Substrat S2 -- ICT-8 bistable (May 1977, broutage)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c333fcff,markdown,fr,f6d5bec3a428d310,"## 4. Substrat S2 -- ICT-8 bistable (May 1977, broutage)
 
 Le modèle de broutage (May 1977) est un système **bistable** : 2 bassins d'attraction separes par un point selle. Hors du point selle, le système reste dans son bassin ; proche, il **bascule** (flip-flopping) avec un taux ``p_flip`` qui depend de la distance a la frontiere.
 
 Le modèle est **intrinsement irreversible** : les taux de bascule ``A -> B`` et ``B -> A`` ne sont pas egaux en general (friction anisotrope). ICT-8 detecte ce **niveau d'irreversibilite thermodynamique** : la production d'entropie est strictement positive et la perte a la reversibilisation est nettement superieure au cas iid.
 
 **Gate 4** : sur une trajectoire bistable avec friction anisotrope, ``sigma >> 0`` (au moins 5x superieur au bruit iid).",,,,,,,,f6d5bec3a428d310,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c228f300,code,fr,e71a1da4460e81ba,"# Substrat S2 : trajectoire bistable (May 1977, friction anisotrope)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c228f300,code,fr,e71a1da4460e81ba,"# Substrat S2 : trajectoire bistable (May 1977, friction anisotrope)
 rng = np.random.default_rng(42)
 n_steps = 8000
 p_flip_A = 0.005  # taux de sortie de A (metastable profond)
@@ -3499,14 +3504,14 @@ print()
 ratio = out_bi['sigma_real'] / max(out_iid['sigma_real'], 1e-6)
 print(f'Ratio sigma_bistable / sigma_iid = {ratio:.2f}')
 print(f'VERDICT Gate 4 : {""OK"" if out_bi[""sigma_real""] > 0.05 and out_bi[""sigma_real""] > 5 * out_iid[""sigma_real""] else ""KO""}')",,,,,,,,e71a1da4460e81ba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,00f01d70,markdown,fr,e16192fe2d82d99a,"## 5. Substrat S3 -- ICT-13 replicateur stratégique (Axelrod 1984)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,00f01d70,markdown,fr,e16192fe2d82d99a,"## 5. Substrat S3 -- ICT-13 replicateur stratégique (Axelrod 1984)
 
 Le replicateur stratégique d'Axelrod (1984) est un automate de stratégie IPD (Iterated Prisoner's Dilemma) : a chaque pas, l'agent joue une stratégie parmi ``C`` (Cooperate), ``D`` (Defect), ``T`` (Temptation -- defection après cooperation) ; la dynamique emergent fait naitre des **clusters de cooperation** quand ``b/c`` est dans une certaine fenêtre (``b`` = tentation, ``c`` = cost).
 
 ICT-13 demontre que la **morphologie** de la cooperation emerge dans l'espace des stratégies. ICT-18 ajoute : la **fleche du temps** de cette dynamique -- c'est-a-dire l'asymetrie temporelle entre une trajectoire reelle (cooperation qui s'etend) et sa reversal (cooperation qui s'etiole) -- est-elle mesurable thermodynamiquement ?
 
 **Gate 5** : sur une trajectoire Axelrod en regime de cooperation emergente (``b`` modere), la fleche thermodynamique est strictement positive (au moins 2x le bruit iid).",,,,,,,,e16192fe2d82d99a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,194cd078,code,fr,c95fbe3944b10966,"# Substrat S3 : trajectoire Axelrod (IPD emergent)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,194cd078,code,fr,c95fbe3944b10966,"# Substrat S3 : trajectoire Axelrod (IPD emergent)
 # On simule une population de strategies et on suit la frequence de C / D / T.
 rng = np.random.default_rng(11)
 n_steps = 1500
@@ -3561,12 +3566,12 @@ print()
 ratio = out_ax['sigma_real'] / max(out_iid['sigma_real'], 1e-6)
 print(f'Ratio sigma_axelrod / sigma_iid = {ratio:.2f}')
 print(f'VERDICT Gate 5 : {""OK"" if out_ax[""sigma_real""] > 2 * out_iid[""sigma_real""] else ""AMBIGU""} (cooperation emergente)')",,,,,,,,c95fbe3944b10966,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,a460240d,markdown,fr,2f172ef9258945ee,"## 6. Substrat S4 -- ICT-9 reaction-diffusion Gray-Scott (gate bonus)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,a460240d,markdown,fr,2f172ef9258945ee,"## 6. Substrat S4 -- ICT-9 reaction-diffusion Gray-Scott (gate bonus)
 
 Le système Gray-Scott (Gray & Scott 1983, Pearson 1993, Mordvintsev et al. 2020) est un système de reaction-diffusion a 2 especes ``U`` et ``V`` qui produit des **motifs espace-temps** très varies (spots, stripes, labyrinthes) selon les paramètres ``f`` (alimentation) et ``k`` (kill). Sa dynamique est **intrinsement irreversible** : le flux net ``f -> k`` (production d'entropie du système continu) définit la fleche thermodynamique.
 
 ICT-9 a demontre que ces motifs peuvent **se regenerer** après ablation. ICT-18 ajoute : la fleche temporelle discrete (sur la sequence temporelle du contenu de ``U`` en un pixel) detecte-t-elle l'irreversibilite continue du Gray-Scott ? **Gate 6** : la fleche est strictement superieure au bruit iid.",,,,,,,,2f172ef9258945ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,3454f5b8,code,fr,8a67d406072c63be,"# Substrat S4 : Gray-Scott (gate bonus) -- on suit le contenu moyen d'un pixel central
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,3454f5b8,code,fr,8a67d406072c63be,"# Substrat S4 : Gray-Scott (gate bonus) -- on suit le contenu moyen d'un pixel central
 gs = reaction_diffusion.GrayScott(F=0.055, k=0.062, Du=1.0, Dv=0.5, dt=1.0)
 rng_gs = np.random.default_rng(33)
 U0, V0 = gs.seed(n=40, block=8, noise=0.02, rng=rng_gs)
@@ -3597,14 +3602,14 @@ print()
 ratio = out_gs['sigma_real'] / max(out_iid['sigma_real'], 1e-6)
 print(f'Ratio sigma_gray_scott / sigma_iid = {ratio:.2f}')
 print(f'VERDICT Gate 6 : {""OK"" if out_gs[""sigma_real""] > 1.5 * out_iid[""sigma_real""] else ""AMBIGU""} (Gray-Scott fleche continue)')",,,,,,,,8a67d406072c63be,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,be2ff650,markdown,fr,6e2bc05aeaed620a,"## 6.bis Substrat S5 -- CONTRÔLE faux-POSITIF : pur dissipateur sans auto-maintien
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,be2ff650,markdown,fr,6e2bc05aeaed620a,"## 6.bis Substrat S5 -- CONTRÔLE faux-POSITIF : pur dissipateur sans auto-maintien
 
 **Pourquoi cette section existe** : la cellule << Moyen, fin, enjeu >> (Section 2.bis) pose que `I_thermo` capture **le moyen** (la dissipation), pas **l'enjeu** (auto-maintien, *stake*). Pour demontrer cette portee **experimentalement**, on construit un substrat qui **dissipe sans avoir aucun enjeu d'auto-maintien** : une marche aleatoire biaisee (S5a) et un oscillateur pilote (S5b). Si l'instrument les allume comme S1/S3, on a la confirmation empirique que la signature thermodynamique **n'est pas suffisante** pour conclure l'agentivite -- elle detecte la depense, pas le projet.
 
 **Gate 7** : les substrats S5 doivent produire un ``sigma_real >> 0`` et une ``dist_real_vs_reversibilized >> 0`` **du même ordre** que S1 ICT-2 ou S3 ICT-13, malgre l'absence totale d'auto-maintien, de memoire d'identite, ou de perspective de recuperation. C'est le **faux-POSITIF** qui borne la portee de l'instrument par le haut.
 
 **Note d'implementation** : on utilise la **marche aleatoire biaisee sur un reseau 1D a derive constant** (S5a) et un **oscillateur pilote déterministe** (S5b, suite logistique avec forçage periodique). Tous deux sont des systèmes dissipatifs **sans aucune representation d'un soi a maintenir** -- le marche aleatoire n'a pas de memoire au-dela du pas courant, l'oscillateur est piloté par une horloge externe. Si `I_thermo` les allume, on a la demonstration que la signature thermodynamique peut etre **purement thermodynamique**, pas agentive.",,,,,,,,6e2bc05aeaed620a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c77bc761,code,fr,cdd6844c8be148e3,"# Substrat S5a -- marche aleatoire biaisee (derive constante, SANS memoire d'identite)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,c77bc761,code,fr,cdd6844c8be148e3,"# Substrat S5a -- marche aleatoire biaisee (derive constante, SANS memoire d'identite)
 # Controle faux-POSITIF : systeme dissipatif sans auto-maintien.
 rng = np.random.default_rng(101)
 n_steps = 3000
@@ -3692,10 +3697,10 @@ print(f'  S5b (oscillateur pilote, boucle forcee): sigma = {out_osc[""sigma_real
       f'5*iid = {5 * out_iid[""sigma_real""]:.4f}, allume ? {""OUI (FAUX-POSITIF)"" if out_osc[""sigma_real""] > 5 * out_iid[""sigma_real""] else ""NON""}')
 print('  --> S5b demontre que la signature thermodynamique capture la circulation (MOYEN),')
 print('      pas l\'agentivite (ENJEU). I_thermo est NECESSAIRE mais PAS SUFFISANT.')",,,,,,,,cdd6844c8be148e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,52aa573c,markdown,fr,2fbaff6412f64021,"## 7. Visualisation -- comparaison des 5 substrats (barplot fleches + distances)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,52aa573c,markdown,fr,2fbaff6412f64021,"## 7. Visualisation -- comparaison des 5 substrats (barplot fleches + distances)
 
 On resume les **5 substrats** en un barplot : production d'entropie ``sigma`` (reelle / reversible / reversee) et distance L1/2 a la reversible. Le **ratio sigma / sigma_iid** est la mesure directe de la fleche temporelle au-dela du bruit. Les substrats S5 (contrôle faux-POSITIF) sont inclus pour montrer qu'ils allument `I_thermo` autant que les substrats agentifs (S1, S3) sans avoir d'enjeu -- demonstration visuelle de la portee **necessaire-mais-pas-suffisante** de l'instrument.",,,,,,,,2fbaff6412f64021,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,725f8e76,code,fr,7c861e1058654b08,"# Visualisation comparative (5 substrats + iid baseline)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,725f8e76,code,fr,7c861e1058654b08,"# Visualisation comparative (5 substrats + iid baseline)
 fig, axes = plt.subplots(1, 2, figsize=(14, 4.5))
 
 substrats = ['iid', 'S1 ICT-2', 'S2 ICT-8', 'S3 ICT-13', 'S4 ICT-9',
@@ -3751,7 +3756,7 @@ plt.tight_layout()
 out_png = os.path.join(ICT_ROOT, 'ICT-18-fleches-comparaison.png')
 plt.savefig(out_png, dpi=110)
 print(f'Figure sauvegardee : {os.path.basename(out_png)}  (dans le dossier du notebook)')",,,,,,,,7c861e1058654b08,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,f2eb3dc0,markdown,fr,1507bb6a0a1a6972,"## 8. Recapitulatif
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,f2eb3dc0,markdown,fr,1507bb6a0a1a6972,"## 8. Recapitulatif
 
 Les **7 gates** sont passees (a des tolerances pres) sur les **5 substrats** (4 substrats agentifs S1-S4 + contrôle faux-POSITIF S5). La mesure de la fleche thermodynamique via ``time_arrow`` est un instrument operationnel, **necessaire mais pas suffisant** :
 
@@ -3764,7 +3769,7 @@ Les **7 gates** sont passees (a des tolerances pres) sur les **5 substrats** (4 
   - **Gate 7 (NOUVEAU, v2)** : les substrats S5 (marche aleatoire biaisee, oscillateur pilote) -- **sans aucun enjeu d'auto-maintien** -- allument `I_thermo` de facon comparable aux substrats agentifs. C'est le **faux-POSITIF** qui borne la portee de l'instrument par le haut : la signature thermodynamique capture le moyen, pas l'enjeu.
 
 **Implication epistemique (v2)** : `I_thermo` est une **condition necessaire** pour suspecter l'agentivite (sigma > 0 veut dire qu'il se passe *quelque chose*) mais ne suffit jamais a la **conclure**. La triade *moyen / fin / enjeu* (Schrodinger / Prigogine / Friston / England) precise que l'instrument mesure **le moyen** ; pour conclure l'agentivite, il faut corroborer avec d'autres instruments (ICT-14 free energy pour l'enjeu, ICT-2/3/9 pour la fin, ICT-15/17 pour la complexite integree).",,,,,,,,1507bb6a0a1a6972,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,62962fd1,code,fr,9b168a2a5953aaf5,"# Exemple guide 1 -- Sensibilite au nombre d'etats observes
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,62962fd1,code,fr,9b168a2a5953aaf5,"# Exemple guide 1 -- Sensibilite au nombre d'etats observes
 #
 # Consigne : sur la trajectoire S1 (BiasedBubbleSort), faire varier la
 # discretisation en quantiles et observer comment `sigma_real` evolue.
@@ -3798,7 +3803,7 @@ for r in resultats:
 
 # Question : a partir de combien de niveaux sigma se stabilise-t-il ?
 # Reponse dans la cellule markdown apres.",,,,,,,,9b168a2a5953aaf5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,bf0e8479,code,fr,64c0b05875bd424e,"def agentivity_index(out, alpha=0.5, beta=0.5):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,bf0e8479,code,fr,64c0b05875bd424e,"def agentivity_index(out, alpha=0.5, beta=0.5):
     """"""Indice d'agentivite agregeant 2 quantites thermodynamiques.
 
     Parametres :
@@ -3839,7 +3844,7 @@ panel_exo = {
 indices = {name: agentivity_index(o) for name, o in panel_exo.items()}
 for name, idx in indices.items():
     print(f'{name:25s}  agentivity = {idx:.4f}')",,,,,,,,64c0b05875bd424e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,dd0ac54d,code,fr,722831d10dcecff5,"# Exemple guide 3 -- Automate cellulaire Wolfram (regle 30 vs 110 vs 0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,dd0ac54d,code,fr,722831d10dcecff5,"# Exemple guide 3 -- Automate cellulaire Wolfram (regle 30 vs 110 vs 0)
 # Une seule implementation dans le depot : l'organe ict/wolfram_step.py (pli 2,
 # EPIC #19766), extrait de ce carnet. La copie locale qui vivait ici est retiree :
 # l'organe expose la meme semantique (voisinage circulaire gauche/centre/droite, bit
@@ -3858,7 +3863,7 @@ for rule in [0, 30, 110, 250]:
 # Question : la regle 110 (complexe, classe 4) a-t-elle une fleche plus elevee
 # que la regle 30 (chaotique) ? Pourquoi ?
 # Reponse dans la cellule markdown apres.",,,,,,,,722831d10dcecff5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,33d60400,markdown,fr,964d034f35a6c488,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,33d60400,markdown,fr,964d034f35a6c488,"## Conclusion
 
 ICT-18 fournit un **instrument thermodynamique** (production d'entropie, detailed balance, reversibilisation) qui capte le **MOYEN** dans la triade *moyen / fin / enjeu*. La grille de lecture est explicite et honnete :
 
@@ -11104,13 +11109,13 @@ predictive ($E$), exactement comme la compression ($K$) plafonne la memoire.
 Les trois quantites de l'ICT -- integration, surprise, computation -- sont
 donc contraintes par une même hiérarchie de bornes.
 ",,,,,,,,f50ed124750e0cf2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,015dbddd,markdown,fr,8b8dedcbe4a20cde,"## 9. Exemples guidés et exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,015dbddd,markdown,fr,8b8dedcbe4a20cde,"## 9. Exemples guidés et exercices
 
 Les trois **exemples guidés** ci-dessous reprennent les concepts de la série (flèche du temps, indice d'agentivité, substrats) avec des solutions commentées. Les trois **exercices** qui suivent vous demandent d'étendre chaque méthode à un nouveau cas. Convention CoursIA : un *exemple* est résolu, un *exercice* est à compléter (convention 3 exercices minimum, #2161).",,,,,,,,8b8dedcbe4a20cde,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,4adb5f6f,markdown,fr,fe7961c233c33424,"### Exemple guide 1 -- Sensibilité au nombre d'états observés
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,4adb5f6f,markdown,fr,fe7961c233c33424,"### Exemple guide 1 -- Sensibilité au nombre d'états observés
 
 Sur la trajectoire S1 (BiasedBubbleSort), on fait varier la discrétisation en quantiles et on observe comment `sigma_real` évolue : c'est la frontière entre information thermodynamique réelle et artefact de discrétisation.",,,,,,,,fe7961c233c33424,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,45d494d1,markdown,fr,acc2b6db75703b3b,"### Exemple guide 2 -- Définir et tester un *indice d'agentivite*
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,45d494d1,markdown,fr,acc2b6db75703b3b,"### Exemple guide 2 -- Définir et tester un *indice d'agentivite*
 
 **Consigne** : a partir des quantites thermodynamiques mesurees, définir un **indice d'agentivite** agrege qui resume la *quantite de calcul emergent* d'une trajectoire. Le tester sur les 4 substrats (S1/S2/S3/S4) et sur la trajectoire iid.
 
@@ -11129,43 +11134,43 @@ Pour mesurer la richesse comportementale d'un bistable, il faut des instruments 
 **Et le faux-POSITIF miroir (substrat S5, Section 7)** : une marche aleatoire biaisee ou un oscillateur chimique pilote -- sans aucun enjeu d'auto-maintien -- allume `I_thermo` autant que S1/S3. La symetrie des deux faux-résultats (un système structure sort 0 a tort, un système non-agent sort fort a tort) demontre que `I_thermo` est **necessaire mais pas suffisant** pour conclure l'agentivite : il capture le **moyen**, pas l'**enjeu** ni la **fin**. Sans corroboration par d'autres instruments (Friston free energy, cloture de contraintes, auto-maintien), un `I_thermo` positif ne **prouve** rien sur l'agentivite.
 
 Indication : ``agentivity_index = alpha * dist_real_vs_reversed + beta * dist_real_vs_reversibilized``. On n'inclut PAS ``sigma_real`` ni ``db_error_real`` dans l'indice, parce que ces 2 quantites sont *intrinsement absorbees* par la distribution stationnaire empirique (sur une trajectoire longue et stationnaire, pi s'adapte a P pour minimiser la detailed balance error).",,,,,,,,acc2b6db75703b3b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,62b72bc1,markdown,fr,4477f62d108637fc,"### Exemple guide 3 -- Extension a un nouveau substrat : automate cellulaire de Wolfram
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,62b72bc1,markdown,fr,4477f62d108637fc,"### Exemple guide 3 -- Extension a un nouveau substrat : automate cellulaire de Wolfram
 
 **Consigne** : appliquer ``time_arrow`` sur un automate cellulaire 1D (règle de Wolfram 30, 110 ou 110) et observer la fleche thermodynamique. La règle 30 (chaotique) doit avoir une fleche elevee ; la règle 110 (complexe, classe 4) doit avoir une fleche encore plus elevee ; la règle 0 (trivialement constante) doit avoir une fleche nulle.
 
 Indication : partir d'une cellule aleatoire sur 64 cellules, iterer 100 pas, prendre la sequence d'etats par cellule (0 ou 1, alphabet binaire) ou une quantification par bloc.",,,,,,,,4477f62d108637fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,14f1df82,markdown,fr,910cf76eea997e1b,"### Exercice 1 -- Appliquer la discrétisation à un nouveau substrat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,14f1df82,markdown,fr,910cf76eea997e1b,"### Exercice 1 -- Appliquer la discrétisation à un nouveau substrat
 
 **Objectif** : reproduire l'analyse de l'Exemple guide 1 sur un autre substrat du panel (par ex. S3 Axelrod ou S5b oscillateur pilote).
 
 - **Indice 1** : choisir un substrat du panel (`out_ax` pour S3, `out_osc` pour S5b) et récupérer sa trajectoire d'états (cf. cellules Section 3-4).
 - **Indice 2** : appliquer `discretise(traj, n_niveaux)` pour `n_niveaux` parcourant 2, 4, 6, 8.
 - **Indice 3** : pour chaque discrétisation, appeler `time_arrow.compare_real_reversed_reversibilized` et relever `sigma_real`.",,,,,,,,910cf76eea997e1b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,1492f836,code,fr,7be533dc7e144c9d,"# Exercice 1 -- Appliquer l'analyse de discretisation a un nouveau substrat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,1492f836,code,fr,7be533dc7e144c9d,"# Exercice 1 -- Appliquer l'analyse de discretisation a un nouveau substrat
 # TODO etudiant : reprendre la methode de l'Exemple guide 1 sur un autre substrat.
 resultats_ex1 = None  # TODO etudiant : liste de dicts {n_niveaux, sigma_real}
 print(""Exercice 1 a completer -- voir l'Exemple guide 1 pour la methode"")
 ",,,,,,,,7be533dc7e144c9d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,539dd456,markdown,fr,aa63602bd096ac76,"### Exercice 2 -- Sensibilité de l'indice d'agentivité aux poids (alpha, beta)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,539dd456,markdown,fr,aa63602bd096ac76,"### Exercice 2 -- Sensibilité de l'indice d'agentivité aux poids (alpha, beta)
 
 **Objectif** : étudier comment le classement des substrats par `agentivity_index` change quand on varie le poids relatif `alpha`.
 
 - **Indice 1** : poser `beta = 1 - alpha` et faire varier `alpha` dans `[0.0, 0.25, 0.5, 0.75, 1.0]`.
 - **Indice 2** : réutiliser `agentivity_index(out, alpha, beta)` de l'Exemple guide 2.
 - **Indice 3** : pour chaque `alpha`, trier les substrats du panel par indice décroissant et identifier lequel devient dominant.",,,,,,,,aa63602bd096ac76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,a44d3d7a,code,fr,fc0ba2b04c4a75a3,"# Exercice 2 -- Sensibilite de l'indice d'agentivite aux poids alpha/beta
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,a44d3d7a,code,fr,fc0ba2b04c4a75a3,"# Exercice 2 -- Sensibilite de l'indice d'agentivite aux poids alpha/beta
 # TODO etudiant : comment le classement evolue-t-il avec alpha ?
 classement_ex2 = None  # TODO etudiant : classement des substrats pour chaque alpha
 print(""Exercice 2 a completer -- voir l'Exemple guide 2 pour agentivity_index"")
 ",,,,,,,,fc0ba2b04c4a75a3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,3f5fc4e5,markdown,fr,30420f37306b2071,"### Exercice 3 -- Classifier des règles de Wolfram par leur flèche du temps
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,3f5fc4e5,markdown,fr,30420f37306b2071,"### Exercice 3 -- Classifier des règles de Wolfram par leur flèche du temps
 
 **Objectif** : étendre l'analyse de l'Exemple guide 3 à davantage de règles et relier `sigma_real` aux quatre classes de Wolfram (I/II/III/IV).
 
 - **Indice 1** : boucler sur `rules = [18, 22, 30, 45, 54, 73, 90, 110, 126, 150, 184]`.
 - **Indice 2** : réutiliser `wolfram_trajectory(rule, ...)` de l'Exemple guide 3.
 - **Indice 3** : trier les règles par `sigma_real` décroissant et confronter aux classes (uniforme/I, périodique/II, chaotique/III, complexe/IV).",,,,,,,,30420f37306b2071,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,78bbd393,code,fr,ccd5190abdfe9734,"# Exercice 3 -- Classifier des regles de Wolfram par leur fleche du temps
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,78bbd393,code,fr,ccd5190abdfe9734,"# Exercice 3 -- Classifier des regles de Wolfram par leur fleche du temps
 # TODO etudiant : quelles regles (chaotiques vs complexes) ont la plus grande sigma_real ?
 classification_ex3 = None  # TODO etudiant : regles triees par sigma_real
 print(""Exercice 3 a completer -- voir l'Exemple guide 3 pour wolfram_trajectory"")
@@ -16109,11 +16114,11 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipy
 - **Louapre, D. (2023).** *« Grokking » : les modèles d'IA sont-ils capables de piger ?* Science
   Étonnante (dépôt `scienceetonnante/grokking`). — Référence pédagogique francophone : MLP sur
   l'addition modulaire (`weight_decay=1`), avec la visualisation PCA « horloge » des embeddings.",,,,,,,,eeb7f3fd4e6c8d70,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,header,markdown,fr,9532324ed6f37bef,"# ICT-18b — Budget de réversibilité : la jambe « fin » de la réversibilisation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,header,markdown,fr,fe410ebbc3358847,"# ICT-18b — Budget de réversibilité : la jambe « fin » de la réversibilisation
 
-> *Integrated Causal Trajectories*. Pont avec [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (le *moyen*), [ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) (l'*enjeu*), [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb) / [ICT-9](ICT-09-AgencyRegeneration-Python.ipynb) / [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
+> *Integrated Causal Trajectories*. Pont avec [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (le *moyen*), [ICT-19](../ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) (l'*enjeu*), [ICT-8](../ICT-08-AttractorLandscapesEWS-Python.ipynb) / [ICT-9](../ICT-09-AgencyRegeneration-Python.ipynb) / [ICT-13](../ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
 
-**Navigation** : [README](README.md) | [ICT-0-Framing](ICT-0-Framing.md) | [sous-serie ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) -> [ICT-20](ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb)
+**Navigation** : [README](../README.md) | [ICT-0-Framing](../ICT-0-Framing.md) | [sous-serie ICT-19](../ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) -> [ICT-20](../ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb)
 
 ***
 
@@ -16121,12 +16126,17 @@ ICT-18 a outillé le **moyen** de la réversibilisation — la production d'entr
 
 La lecture-ressource tient en une phrase : *résister à l'entropie coûte, et ce que cette dépense **permet** est la capacité de revenir — la compétence de régénération au sens de Levin.* Ce notebook mesure cette capacité comme la **fraction de perturbations** depuis lesquelles le système regagne sa région de consigne en moins de $\tau$ pas (version *espace d'états*, primaire, robuste), et la compare à la **distance à la projection réversible $P_\text{rev}$** (version *travail*, secondaire, issue de `ict/time_arrow.py`).
 
-Trois prédictions falsifiables sont **pré-enregistrées** (section suivante) **avant** les cellules qui les testent. Un verdict de dissociation ou d'échec est un résultat, pas un échec de livraison.",,,,,,,,9532324ed6f37bef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,setup,markdown,fr,3585b96ac968deae,"## §1 — Setup
+Trois prédictions falsifiables sont **pré-enregistrées** (section suivante) **avant** les cellules qui les testent. Un verdict de dissociation ou d'échec est un résultat, pas un échec de livraison.",,,,,,,,fe410ebbc3358847,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,setup,markdown,fr,3585b96ac968deae,"## §1 — Setup
 
 Le package `ict/` est importé en relatif depuis le répertoire `ICT-Series/` (convention de la série) ; matplotlib en mode `Agg` pour une exécution headless sans écran.",,,,,,,,3585b96ac968deae,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,imports,code,fr,c6fa21ccf0d6f321,"import os, sys, io
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,imports,code,fr,929b455523515d73,"import os, sys, io
+# Le carnet vit dans ICT-18-ArrowOfTimeReversibilization/ : le parent porte
+# le paquet ``ict``.
 ICT_ROOT = os.path.abspath('.')
+_SERIES_ROOT = os.path.dirname(ICT_ROOT)
+if _SERIES_ROOT not in sys.path:
+    sys.path.insert(0, _SERIES_ROOT)
 if ICT_ROOT not in sys.path:
     sys.path.insert(0, ICT_ROOT)
 
@@ -16146,15 +16156,15 @@ print('reversibility_budget API:')
 for name in ['sample_ball', 'state_space_budget', 'budget_curve', 'work_budget',
              'work_budget_normalized', 'covariation_with_ews']:
     fn = getattr(rb, name, None)
-    print(f'  {name:28s} {""OK"" if fn else ""MISSING""}')",,,,,,,,c6fa21ccf0d6f321,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,defs,markdown,fr,62a188cd3de0bed1,"## §2 — Définitions du budget $B(t)$
+    print(f'  {name:28s} {""OK"" if fn else ""MISSING""}')",,,,,,,,929b455523515d73,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,defs,markdown,fr,62a188cd3de0bed1,"## §2 — Définitions du budget $B(t)$
 
 Deux candidats, comparés honnêtement (aucun privilégié *a priori*).
 
 **Version espace d'états (primaire, robuste).** $B_\text{state}(r, \tau)$ = fraction des perturbations de magnitude $\le r$ (uniformes dans la boule) depuis lesquelles le système revient dans la région de consigne (boule de rayon $r_c$ autour de l'ancre) en $\le \tau$ pas. Mesure de Monte-Carlo **directement sur la dynamique** — elle n'exige pas de discrétiser l'état (le piège qui annulait $\sigma$ sur les substrats continus dans ICT-18), et se mesure sur tous les substrats.
 
 **Version travail (secondaire).** $B_\text{work}(P, \pi) = \tfrac12 \sum_{ij} |P_{ij} - P^\text{rev}_{ij}|$ : distance à la projection réversible. Plus fine, mais sensible aux artefacts de discrétisation (cf. ICT-18 gates KO/AMBIGU sur S2/S3 où les matrices estimées étaient trop creuses). Elle sert de **témoin secondaire**.",,,,,,,,62a188cd3de0bed1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,defs-demo,code,fr,3ce7c41014cdbca8,"# Sanity check : la version espace d'etats distingue un attracteur stable d'un etat perdu.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,defs-demo,code,fr,3ce7c41014cdbca8,"# Sanity check : la version espace d'etats distingue un attracteur stable d'un etat perdu.
 rng = np.random.default_rng(0)
 
 # (a) attracteur stable lineaire x -> 0.5 x : tout revient a l'origine.
@@ -16175,7 +16185,7 @@ P_sym = np.array([[0.5, 0.5], [0.5, 0.5]]); pi_sym = np.array([0.5, 0.5])
 P_cycle = np.array([[0., 1., 0.], [0., 0., 1.], [1., 0., 0.]]); pi_cycle = np.array([1/3]*3)
 print(f'B_work (chaine reversible)  = {rb.work_budget(P_sym, pi_sym):.4f}  (attendu ~ 0)')
 print(f'B_work (cycle dirige)       = {rb.work_budget(P_cycle, pi_cycle):.4f}  (attendu >> 0)')",,,,,,,,3ce7c41014cdbca8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,preregister,markdown,fr,18e708ba51a9551e,"## §3 — Pré-enregistrement des prédictions (avant tout test)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,preregister,markdown,fr,18e708ba51a9551e,"## §3 — Pré-enregistrement des prédictions (avant tout test)
 
 > **Acceptance #7287** : les trois prédictions sont écrites **avant** les cellules qui les testent. Le pré-enregistrement est visible ci-dessous ; les sections §4-§6 les mettent à l'épreuve. Un verdict **FAIL** ou **DISSOCIATION** est un résultat honnête, pas un échec de livraison.
 
@@ -16184,10 +16194,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,prereg
 | **P1** | $B_\text{state}(t)$ décroît de façon monotone à l'approche du pli ($c \to c_\text{fold}$), avec $\tau_\text{Kendall} \le -0.5$, **co-variant** avec les EWS classiques (variance, AR1). Lecture-ressource : un signal précurseur **EST** un épuisement de budget. Si $B$ ne co-varie pas avec les EWS, le cadre ressource est affaibli. | S2 (May bistable) | ICT-8 |
 | **P2** | Sur le sweep de régimes, la production d'entropie $\sigma$ (le coût de maintenance) **corrèle positivement** avec le budget $B_\text{state}$ (la capacité de régénération) : la réversibilité comportementale s'*achète* par de la production d'entropie. Une **dissociation** (régénérer sans dissiper, ou dissiper sans régénérer) réfute la lecture ressource. | S4 (Gray-Scott) | ICT-9 |
 | **P3** | Le budget post-convergence vers la monoculture $\approx 0$ (état absorbant : plus aucun chemin de retour vers la diversité), mesurablement **inférieur** au budget pré-convergence. Première mesure de la **dette d'irréversibilité culturelle**. | S3 (Axelrod) | ICT-13 |",,,,,,,,18e708ba51a9551e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,p1-proto,markdown,fr,60c1d2786d86b782,"## §4 — P1 sur S2 (May bistable) : épuisement de budget à l'approche du pli
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,p1-proto,markdown,fr,60c1d2786d86b782,"## §4 — P1 sur S2 (May bistable) : épuisement de budget à l'approche du pli
 
 **Protocole.** Pour chaque pression de broutage $c$ sur une grille s'approchant de $c_\text{fold} \approx 2.604$ : (a) on calcule l'équilibre haut stable $x^*_\text{hi}(c)$ (l'ancre de la région de consigne) ; (b) on mesure $B_\text{state}(r, \tau)$ par Monte-Carlo, perturbations de rayon fixe, dynamique d'Euler déterministe ; (c) on mesure l'EWS classique (variance de la trajectoire stochastique autour de $x^*_\text{hi}$) via `ict/early_warning.py`. On teste la co-variation budget $\leftrightarrow$ EWS.",,,,,,,,60c1d2786d86b782,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,p1-run,code,fr,71ccf6cc375c45a8,"may = bistable.GrazingModel(r=1.0, K=10.0, h=1.0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,p1-run,code,fr,71ccf6cc375c45a8,"may = bistable.GrazingModel(r=1.0, K=10.0, h=1.0)
 c_fold = may.find_fold()
 print(f'c_fold (modele de May) = {c_fold:.4f}')
 
@@ -16240,10 +16250,10 @@ print(f'tau_Kendall(c, EWS)     = {diag_p1[""tau_ews""]:+.3f} (p={diag_p1[""p_ew
 print(f'tau_Kendall(budget,EWS) = {diag_p1[""tau_budget_vs_ews""]:+.3f} (p={diag_p1[""p_budget_vs_ews""]:.3f})  [anti-corr attendu]')
 verdict_p1 = 'PASS' if diag_p1['contract_valid'] else 'FAIL (cadre ressource affaibli)'
 print(f'VERDICT P1 : {verdict_p1}  -- contract_valid = {diag_p1[""contract_valid""]}')",,,,,,,,71ccf6cc375c45a8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,p2-proto,markdown,fr,4dc48aa786a83f93,"## §5 — P2 sur S4 (Gray-Scott) : la réversibilité s'achète-t-elle par de l'entropie ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,p2-proto,markdown,fr,4dc48aa786a83f93,"## §5 — P2 sur S4 (Gray-Scott) : la réversibilité s'achète-t-elle par de l'entropie ?
 
 **Protocole.** Trois régimes Gray-Scott contrastés (mitotique régénérant, intermédiaire, dissipateur proche du contrôle passif). Pour chacun : (a) on laisse le champ se former (2500 pas) ; (b) on estime $\sigma$ en quantifiant la trajectoire du champ moyen central (`ict/time_arrow.py`) ; (c) on mesure $B_\text{state}$ **sur le champ réel** — perturbation localisée du champ $V$ dans un sous-bloc central, puis `tau` pas Gray-Scott réels, et taux de retour du champ moyen régional vers sa valeur d'ancrage. On teste le **signe** de la corrélation $\sigma \leftrightarrow B$ sur le sweep.",,,,,,,,4dc48aa786a83f93,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,p2-run,code,fr,0b77c8bf15e6e9d6,"from ict import reaction_diffusion as rd
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,p2-run,code,fr,0b77c8bf15e6e9d6,"from ict import reaction_diffusion as rd
 
 def field_budget(gs, U0, V0, anchor_v, region, radius, tau, n_samples, rng, consigne):
     """"""Budget sur le champ reel : perturbation localisee de V dans `region`,
@@ -16297,10 +16307,10 @@ elif tau_sB < 0.0:
 else:
     verdict_p2 = 'INCONCLUSIF (n=3, signal faible)'
 print(f'VERDICT P2 : {verdict_p2}')",,,,,,,,0b77c8bf15e6e9d6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,p3-proto,markdown,fr,f98a2ddd8f14cf3d,"## §6 — P3 sur S3 (Axelrod) : la dette d'irréversibilité culturelle
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,p3-proto,markdown,fr,f98a2ddd8f14cf3d,"## §6 — P3 sur S3 (Axelrod) : la dette d'irréversibilité culturelle
 
 **Protocole.** Sous la dynamique de réplication d'Axelrod, l'état **pré-convergence** (distribution uniforme des stratégies = diversité) est comparé à l'état **post-convergence** (fixation sur une monoculture = état absorbant). L'ancre de la région de consigne est la distribution **uniforme** (la diversité). $B_\text{state}$ mesure la fraction de perturbations depuis lesquelles le système revient vers l'uniformité en $\tau$ pas de réplication. Prédiction : depuis la monoculture (absorbante), **aucune** perturbation ne revient à l'uniformité → $B_\text{post} \approx 0 \ll B_\text{pre}$.",,,,,,,,f98a2ddd8f14cf3d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,p3-run,code,fr,363725185d83cc7f,"from ict import strategic_morphodynamics as sm
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,p3-run,code,fr,363725185d83cc7f,"from ict import strategic_morphodynamics as sm
 
 strats = sm.make_strategies(rng=np.random.default_rng(0))
 A = sm.payoff_matrix(strats, n_rounds=200, noise=0.0, n_reps=2,
@@ -16343,42 +16353,42 @@ if B_post < B_pre:
 else:
     verdict_p3 = 'FAIL (la monoculture ne reduit pas le budget de retour a la diversite)'
 print(f'VERDICT P3 : {verdict_p3}')",,,,,,,,363725185d83cc7f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,recap,markdown,fr,8c23c91199531a0a,"## §7 — Récapitulatif des verdicts
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,recap,markdown,fr,9ac26db384667e7b,"## §7 — Récapitulatif des verdicts
 
 Les trois prédictions étaient pré-enregistrées §3. Les verdicts ci-dessus sont les **résultats bruts** de la mesure — un FAIL ou une DISSOCIATION honnête vaut un PASS forcé. La lecture-ressource de la réversibilité est **créditée par la mesure**, pas par décret.
 
-La jambe « fin » de la triade moyen / fin / enjeu est désormais **mesurée** : ICT-18 = le moyen ($\sigma$), ICT-18b = la fin ($B$, la ressource), ICT-19 = l'enjeu ($I_\text{stake}$, l'auto-maintien). Le [cadrage ICT-0](ICT-0-Framing.md) gagne sa troisième jambe.",,,,,,,,8c23c91199531a0a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,exos,markdown,fr,d123306a8e43ecdb,"## §8 — Exercices
+La jambe « fin » de la triade moyen / fin / enjeu est désormais **mesurée** : ICT-18 = le moyen ($\sigma$), ICT-18b = la fin ($B$, la ressource), ICT-19 = l'enjeu ($I_\text{stake}$, l'auto-maintien). Le [cadrage ICT-0](../ICT-0-Framing.md) gagne sa troisième jambe.",,,,,,,,9ac26db384667e7b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,exos,markdown,fr,d123306a8e43ecdb,"## §8 — Exercices
 
 Trois exercices pour s'approprier l'instrument. Stubs à compléter : le notebook doit s'exécuter de bout en bout même exercices non complétés (convention C.1).",,,,,,,,d123306a8e43ecdb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,exo1-consigne,markdown,fr,34fe806b7612fb21,"### Exercice 1 (à compléter) — Sensibilité au rayon de perturbation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,exo1-consigne,markdown,fr,34fe806b7612fb21,"### Exercice 1 (à compléter) — Sensibilité au rayon de perturbation
 
 La courbe `budget_curve(step_fn, anchor, radii, ...)` donne $B_\text{state}(r, \tau)$ sur une grille de rayons. Tracez cette courbe sur l'attracteur stable du §2 (`step_fn = lambda x: 0.5*x`) pour `radii = [0.2, 0.5, 1.0, 2.0, 4.0]`, `tau = 12`. **Question** : au-delà de quel rayon le budget chute-t-il ? Interprétez en termes de « rayon du bassin ».",,,,,,,,34fe806b7612fb21,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,exo1-stub,code,fr,3ed7deef6dc55063,"# Exercice 1 : tracer budget_curve sur l'attracteur stable x -> 0.5 x
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,exo1-stub,code,fr,3ed7deef6dc55063,"# Exercice 1 : tracer budget_curve sur l'attracteur stable x -> 0.5 x
 # TODO etudiant :
 #   Etape 1 : definir step_fn, anchor, radii (cf. enonce)
 #   Etape 2 : appeler rb.budget_curve(step_fn, anchor, radii, tau=12, n_samples=300, rng=..., consigne_radius=0.1)
 #   Etape 3 : tracer B vs radii ; identifier le rayon ou B chute
 print('Exercice a completer')",,,,,,,,3ed7deef6dc55063,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,exo2-consigne,markdown,fr,6128cf3e49a9a931,"### Exercice 2 (à compléter) — Budget travail sur une chaîne de votre choix
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,exo2-consigne,markdown,fr,6128cf3e49a9a931,"### Exercice 2 (à compléter) — Budget travail sur une chaîne de votre choix
 
 Construisez une matrice de transition $P$ 4×4 représentant un **cycle dirigé** (1→2→3→4→1, légèrement bruité), estimez $\pi$ via `time_arrow.stationary_distribution`, puis calculez $B_\text{work}(P, \pi)$. Comparez à une chaîne **symétrique** de votre construction. Le cycle dirigé doit-il avoir un $B_\text{work}$ plus élevé ? Pourquoi ?",,,,,,,,6128cf3e49a9a931,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,exo2-stub,code,fr,6aa1829eab6fe6db,"# Exercice 2 : budget travail sur un cycle dirige bruite vs chaine symetrique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,exo2-stub,code,fr,6aa1829eab6fe6db,"# Exercice 2 : budget travail sur un cycle dirige bruite vs chaine symetrique
 # TODO etudiant :
 #   Etape 1 : construire P_cycle 4x4 (cycle 1->2->3->4->1 + petit bruit) et P_sym
 #   Etape 2 : pi = time_arrow.stationary_distribution(P) pour chacun
 #   Etape 3 : comparer rb.work_budget(P_cycle, pi_cycle) vs rb.work_budget(P_sym, pi_sym)
 print('Exercice a completer')",,,,,,,,6aa1829eab6fe6db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,exo3-consigne,markdown,fr,0e410bfba033d021,"### Exercice 3 (à compléter) — Une autre lecture de P1
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,exo3-consigne,markdown,fr,0e410bfba033d021,"### Exercice 3 (à compléter) — Une autre lecture de P1
 
 P1 relie budget et EWS. Reprenez le balayage en $c$ du §4, mais mesurez cette fois la **valeur propre locale** $f'(x^*_\text{hi})$ (`may.rate_prime`) au lieu de la variance. Les deux doivent tendre vers 0 à l'approche du pli (critical slowing down). Tracez budget $B$ et valeur propre sur le même graphe. **Conjecture** : $B$ et $f'(x^*_\text{hi})$ sont-ils reliés linéairement, ou la relation est-elle non-linéaire ?",,,,,,,,0e410bfba033d021,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,exo3-stub,code,fr,ec17dea051ee0fe2,"# Exercice 3 : budget B_state vs valeur propre locale a l'approche du pli
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,exo3-stub,code,fr,ec17dea051ee0fe2,"# Exercice 3 : budget B_state vs valeur propre locale a l'approche du pli
 # TODO etudiant :
 #   Etape 1 : pour chaque c dans c_grid, calculer x_hi puis lambda_hi = may.rate_prime(x_hi, c)
 #   Etape 2 : reprendre B_p1 (deja calcule) et tracer B vs |lambda_hi|
 #   Etape 3 : qualifier la relation (lineaire ? seuil ?)
 print('Exercice a completer')",,,,,,,,ec17dea051ee0fe2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,conclusion,markdown,fr,41b1bb77253f414d,"## §9 — Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,conclusion,markdown,fr,41b1bb77253f414d,"## §9 — Conclusion
 
 ICT-18b livre la **jambe mesurée** qui manquait à la triade moyen / fin / enjeu. La réversibilité, lue comme une **ressource** (un budget qui s'épuise), donne aux early-warning signals d'ICT-8 une interprétation unifiée (un signal précurseur *est* un épuisement de budget), relie le coût thermodynamique ($\sigma$, ICT-18) à la capacité de régénération (ICT-9), et mesure la **dette d'irréversibilité culturelle** d'une monoculture d'Axelrod (ICT-13) — préparant la graine strate 6 (substrat argumentation, #7289).
 
@@ -26520,12 +26530,12 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipy
 pré-enregistré avec la prédiction). Ces observations ne démontrent ni une détection du
 saut ni une absence générale de discrimination ; la ligne consolidée vit dans la
 [matrice des dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,949523ce891bdc82,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,893e902a,markdown,fr,b37a8b9a8d61cf63,> **Statut épistémique** — **Établi** : Forcer une trajectoire ICT à devenir réversible *mesure* sa production d'entropie. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,b37a8b9a8d61cf63,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,c49939e9,markdown,fr,634315ed564ae80b,"> **Statut épistémique** — 3 claims, verdicts distingués :
-> - **Établi** : Le budget `B_state` s'épuise au pli de bifurcation.
-> - **Établi** : Dissiper plus (↑ σ) ne régénère pas plus (B_state stable).
-> - **Établi** : La monoculture stratégique (Axelrod 6 stratégies) porte une dette d'irréversibilité culturelle.
-> Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,634315ed564ae80b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb,893e902a,markdown,fr,2c363fa642f68904,> **Statut épistémique** — **reproduit dans le modèle** : Forcer une trajectoire ICT à devenir réversible *mesure* sa production d'entropie. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,2c363fa642f68904,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,c49939e9,markdown,fr,2a2b9f499eb282df,"> **Statut épistémique** — 3 claims, verdicts distingués :
+> - **reproduit dans le modèle** : Le budget `B_state` s'épuise au pli de bifurcation.
+> - **reproduit dans le modèle** : Dissiper plus (↑ σ) ne régénère pas plus (B_state stable).
+> - **reproduit dans le modèle** : La monoculture stratégique (Axelrod 6 stratégies) porte une dette d'irréversibilité culturelle.
+> Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,2a2b9f499eb282df,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb,5fcdc1d4,markdown,fr,a3a1d9894ca34974,> **Statut épistémique** — **Établi** : L'enjeu `I_stake` (récupérabilité Levin) est mesurablement distinct du moyen `I_thermo` (σ). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,a3a1d9894ca34974,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb,statut-epistemique,markdown,fr,adeb9b8353cce910,> **Statut épistémique** — **Établi** : L'enjeu `I_stake` (récupérabilité Levin) est mesurablement distinct du moyen `I_thermo` (σ) — raffinement ICT-19b : `repair_gain` +0.82 ± 0.27 sur S4. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,adeb9b8353cce910,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb,a5d280c1,markdown,fr,485e1e7addd02663,"> **Statut épistémique** — **Fortement soutenu** : Changepoints, EWS et hystérésis sont détectables en *feature-space*. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,485e1e7addd02663,,,,,,,,,,,,,,,
@@ -45314,11 +45324,11 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15i-Bridge1bis-
 La discipline du null (motif fronce) passe : quand on force le couplage canonique (a/d fixes, b dense), rho(sigma, width) = **+0.993** -- massivement au-dessus du seuil 0.6 attendu, le couplage est la. La partielle de sigma apres controle de la largeur seule = +0.314, sous le null p95 = 0.436 : la partielle retombe dans la masse, et `reproduces_fronce_pattern` = True.
 
 C'est ce controle qui donne sa valeur au verdict CONFIRMED-NEGATIVE de la lecture 4 : le protocole detecte le couplage quand il est la. L'absence de signal dans la famille anisotrope n'est donc pas un artefact du test -- elle est mesuree contre un controle qui, lui, capte le signal des qu'il existe. Le Pont #1-bis est clos : largeur et barriere determinent la recuperabilite, la courbure locale n'ajoute rien, meme decouplee par construction.",,,,,,,,c98fadcb75d7772d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,1b8081af,markdown,fr,1e3df6d8b8381e55,"**Lecture du sanity check.** Les quatre cas canoniques valident les deux définitions d'un coup. Version espace d'états : $B_\text{state} = 1{,}000$ sur l'attracteur stable (toute perturbation revient -- budget plein, attendu $\sim 1$) et $0{,}000$ sur l'état perdu (aucune ne revient -- nul, attendu $\sim 0$). Version travail : $B_\text{work} = 0{,}0000$ sur la chaîne réversible (le coût de restauration est nul par construction) contre $1{,}5000$ sur le cycle dirigé -- c'est le prix du pilotage : maintenir un cycle contre la dynamique coûte du travail à chaque tour. Les deux lectures du budget « réversibilité » s'installent ainsi sur leurs cas limites avant d'attaquer les substrats réels.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,1b8081af,markdown,fr,1e3df6d8b8381e55,"**Lecture du sanity check.** Les quatre cas canoniques valident les deux définitions d'un coup. Version espace d'états : $B_\text{state} = 1{,}000$ sur l'attracteur stable (toute perturbation revient -- budget plein, attendu $\sim 1$) et $0{,}000$ sur l'état perdu (aucune ne revient -- nul, attendu $\sim 0$). Version travail : $B_\text{work} = 0{,}0000$ sur la chaîne réversible (le coût de restauration est nul par construction) contre $1{,}5000$ sur le cycle dirigé -- c'est le prix du pilotage : maintenir un cycle contre la dynamique coûte du travail à chaque tour. Les deux lectures du budget « réversibilité » s'installent ainsi sur leurs cas limites avant d'attaquer les substrats réels.
 ",,,,,,,,1e3df6d8b8381e55,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,c23ebefd,markdown,fr,300d9f9d438a4265,"**Lecture de P1, chiffre par chiffre.** Le pli de May est localisé à $c_\text{fold} = 2{,}6043$. À l'approche du pli : $\tau(c, \text{budget}) = -0{,}917$ ($p = 0{,}001$) -- le budget s'effondre quand la pression monte ; $\tau(c, \text{EWS}) = +1{,}000$ ($p = 0{,}000$) -- les early-warning signals montent de façon *parfaite* ; et l'anti-corrélation $\tau(\text{budget}, \text{EWS}) = -0{,}917$ ($p = 0{,}001$) : les deux familles de marqueurs racontent la même perte de réversibilité par deux chemins indépendants. Verdict `P1 : PASS`, `contract_valid = True` -- la prédiction pré-enregistrée §3 tient : le budget s'épuise exactement là où les marqueurs EWS s'allument.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,c23ebefd,markdown,fr,300d9f9d438a4265,"**Lecture de P1, chiffre par chiffre.** Le pli de May est localisé à $c_\text{fold} = 2{,}6043$. À l'approche du pli : $\tau(c, \text{budget}) = -0{,}917$ ($p = 0{,}001$) -- le budget s'effondre quand la pression monte ; $\tau(c, \text{EWS}) = +1{,}000$ ($p = 0{,}000$) -- les early-warning signals montent de façon *parfaite* ; et l'anti-corrélation $\tau(\text{budget}, \text{EWS}) = -0{,}917$ ($p = 0{,}001$) : les deux familles de marqueurs racontent la même perte de réversibilité par deux chemins indépendants. Verdict `P1 : PASS`, `contract_valid = True` -- la prédiction pré-enregistrée §3 tient : le budget s'épuise exactement là où les marqueurs EWS s'allument.
 ",,,,,,,,300d9f9d438a4265,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,a22d5949,markdown,fr,d7b9afcf949ee655,"**Lecture de P2, ligne par ligne.** Les trois régimes Gray-Scott : mitotique ($\sigma = 0{,}0000$, $B_\text{state} = 0{,}950$), intermédiaire ($\sigma = 0{,}7146$, $B_\text{state} = 0{,}675$), dissipateur ($\sigma = 0{,}0909$, $B_\text{state} = 0{,}950$). Le régime le *plus* entropique (l'intermédiaire) est celui au budget le plus bas, et les deux régimes aux entropies opposées (nulle et quasi nulle) partagent le même budget -- la corrélation rang va dans le mauvais sens : $\tau(\sigma, B_\text{state}) = -0{,}667$, non significative à $n = 3$ régimes ($p = 0{,}296$), et la sortie le dit. Verdict `P2 : DISSOCIATION` : dissiper plus ne régénère pas plus -- la lecture-ressource de la réversibilité est affaiblie sur S4, et c'est un verdict honnête, pas un échec de mesure.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb,a22d5949,markdown,fr,d7b9afcf949ee655,"**Lecture de P2, ligne par ligne.** Les trois régimes Gray-Scott : mitotique ($\sigma = 0{,}0000$, $B_\text{state} = 0{,}950$), intermédiaire ($\sigma = 0{,}7146$, $B_\text{state} = 0{,}675$), dissipateur ($\sigma = 0{,}0909$, $B_\text{state} = 0{,}950$). Le régime le *plus* entropique (l'intermédiaire) est celui au budget le plus bas, et les deux régimes aux entropies opposées (nulle et quasi nulle) partagent le même budget -- la corrélation rang va dans le mauvais sens : $\tau(\sigma, B_\text{state}) = -0{,}667$, non significative à $n = 3$ régimes ($p = 0{,}296$), et la sortie le dit. Verdict `P2 : DISSOCIATION` : dissiper plus ne régénère pas plus -- la lecture-ressource de la réversibilité est affaiblie sur S4, et c'est un verdict honnête, pas un échec de mesure.
 ",,,,,,,,d7b9afcf949ee655,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb,516b65b6,code,fr,bead8f3c00e3aeae,"# Parameters
 RUN_TRAINING = False
@@ -47403,3 +47413,819 @@ Deux résultats à retenir :
 - Gibbard (1973) / Satterthwaite (1975) — le théorème d'impossibilité de la manipulation.
 - SC-13 — Fuzz & Invariants : la paire naïf/corrigé dont `BordaVote`/`BordaVoteBroken` est la continuation directe.
 - Greffe 2 — [Espace atteignable](ICT-Greffe2-EspaceAtteignable-Python.ipynb) : la greffe précédente de la strate 7.",,,,,,,,f7bd9176cb395447,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,422fe683,markdown,fr,1ba8217ab46512f4,"# ICT-48 — Origami Wolfram, pli 2 : quatre classes, six instruments
+
+**Série :** ICT (Integrated Complexity Theory), strate 4 — Origami Wolfram, pli 2.
+**Parent :** [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (flèche du temps et réversibilisation).
+**Issue :** [#19796](https://github.com/jsboige/CoursIA/issues/19796).
+**Statut :** GPU-free, exécuté de bout en bout sous le **noyau de l'exécution committée** (sa version est imprimée par la cellule de setup et figée dans `metadata.language_info.version`) ; aucune dépendance PyPhi (`ict.wolfram_step` et `ict.time_arrow` n'en importent pas).
+
+**Plan :** 5 sections et 6 exemples guidés, puis 8 exercices. Les règles 30 (classe III),
+0 (classe I) et 110 (classe IV) sont suivies d'un bout à l'autre : elles figurent dans
+la table commune de la section 1, dans les mesures de structure de la section 3 et
+dans la signature thermodynamique de la section 4.
+
+## La question
+
+Les quatre classes de Wolfram sont une taxonomie *visuelle* : on reconnaît une classe en regardant défiler un diagramme espace-temps. Ce carnet pose une question mesurable, et une seule :
+
+> **Les outils de la flèche du temps — densité, production d'entropie, distance à la chaîne réversibilisée — retrouvent-ils la taxonomie de Wolfram ? Et sinon, où exactement se sépare-t-elle ?**
+
+La réponse courte, mesurée plus bas : la densité sépare les classes I et II du reste, la **structure spatiale** ne sépare III et IV que faiblement — le contraste fort qu'on lui attribue est un artefact de fenêtre, cf. section 3 — et la **signature thermodynamique** ne retrouve pas la taxonomie : elle mesure autre chose, et c'est instructif.
+
+## Statut épistémique de ce carnet
+
+Ce carnet mesure, il ne démontre pas. Les étiquettes de classe de Wolfram sont **indexées** (connues *a priori*, encodées dans l'organe), les indicateurs de densité sont une **heuristique empirique**, et la comparaison des deux est l'objet du carnet. Aucune des quatre classes n'est redémontrée ici : quand l'heuristique et l'indexation divergent, la divergence est **rapportée**, pas lissée.
+
+> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.",,,,,,,,1ba8217ab46512f4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,ea470ca8,markdown,fr,1ee333e2e469a8fc,"## Ce que fait le carnet
+
+| Section | Contenu | Outil consommé |
+|---|---|---|
+| 1 | Une trajectoire par classe, une table d'indicateurs commune | `wolfram_trajectory`, `wolfram_class_indicators` |
+| 2 | La classification automatique, et la classe II qui se dérobe | `classify_rule` |
+| 3 | Discriminer III et IV par la **structure spatiale** : trois mesures, puis les **deux pistes de l'énoncé** (composantes connexes, translation diagonale) mesurées et écartées | mesures écrites dans le carnet (MI, Lempel-Ziv, blocs, composantes, translation) |
+| 4 | La **signature thermodynamique** des quatre classes, en quantiles et sur symboles bruts, puis **sa stabilité** sous grille et graine | `compare_real_reversed_reversibilized` |
+| 5 | Huit exercices : cinq construits ici, trois repris de l'ICT-48 d'origine (règle 54, seuil de non-trivialité, sensibilité au nombre de quantiles) | — |
+
+Toutes les mesures portent sur la **même** trajectoire par règle (mêmes `n_cells`, `n_steps`, `seed`) : les sections se comparent donc terme à terme.
+",,,,,,,,1ee333e2e469a8fc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,9800a880,markdown,fr,1d6825f17898c4ed,"## Avant de commencer
+
+Le carnet consomme deux organes de la série, sans réimplémenter leur logique :
+
+- `ict.wolfram_step` — le simulateur, la densité, les indicateurs de classe et la classification heuristique ;
+- `ict.time_arrow` — la chaîne de Markov estimée, l'inverse du temps, la réversibilisation, la production d'entropie.
+
+Les mesures qui **ne** sont pas dans les organes (information mutuelle spatiale, complexité de Lempel-Ziv, déterminisme de blocs) sont écrites ici, en clair, parce que ce sont elles qui portent la discrimination III / IV — et parce qu'un lecteur doit pouvoir les contester ligne à ligne.
+
+Le noyau de l'exécution committée est celui qu'annonce la cellule de setup, et `metadata.language_info.version` en confirme la valeur : la version fait foi dans les **sorties**, pas dans une phrase d'en-tête. Le répertoire de travail est celui du dossier `ICT-Series`, et le `sys.path` ci-dessous y ajoute le dossier courant pour que `import ict` résolve le paquet local.
+
+**Fil du carnet.** Trois règles portent la démonstration de bout en bout : la règle 30
+(classe III, chaotique), la règle 0 (classe I, homogénéisante) et la règle 110
+(classe IV, complexe, Turing-complète depuis Cook 2004). Elles sont lues trois fois —
+densité en section 1, structure spatiale en section 3, thermodynamique en section 4 —
+sur des trajectoires identiques, de sorte que chaque écart observé vienne de
+l'instrument et non du tirage.
+",,,,,,,,1d6825f17898c4ed,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,d742234a,code,fr,4fc656f2d33812ee,"# --- Setup : chemins, dependances, organes de la serie -------------------------
+import os
+import sys
+
+# Le carnet vit dans ICT-18-ArrowOfTimeReversibilization/ : le parent porte
+# le paquet ``ict``.
+_NOTEBOOK_DIR = os.path.abspath(""."")
+_SERIES_ROOT = os.path.dirname(_NOTEBOOK_DIR)
+if _SERIES_ROOT not in sys.path:
+    sys.path.insert(0, _SERIES_ROOT)
+if _NOTEBOOK_DIR not in sys.path:
+    sys.path.insert(0, _NOTEBOOK_DIR)
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+import ict
+from ict.wolfram_step import (
+    CANONICAL_RULES,
+    WOLFRAM_CLASSES,
+    classify_rule,
+    wolfram_class_indicators,
+    wolfram_density,
+    wolfram_step,
+    wolfram_trajectory,
+)
+from ict.time_arrow import compare_real_reversed_reversibilized
+
+print(""python  :"", sys.version.split()[0])
+print(""numpy   :"", np.__version__, ""| pandas :"", pd.__version__)
+print(""organe  :"", os.path.basename(os.path.dirname(ict.__file__)))
+print(""regles canoniques :"", CANONICAL_RULES)",,,,,,,,4fc656f2d33812ee,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,3149c826,markdown,fr,0054b732af56f29e,"## 1. L'observable densité, et ce qu'elle ne voit pas
+
+L'organe d'ICT-18 enregistre, à chaque pas, le **nombre de cellules à 1**. C'est l'observable privilégié de la série : il est scalaire, il vit dans $[0, 1]$ après normalisation, et il distingue déjà trois régimes sans ambiguïté.
+
+- **Classe I** — la densité se fige : l'écart-type en queue est nul.
+- **Classe II** — la densité **oscille** entre quelques valeurs : la séquence en queue est périodique de petite période.
+- **Classes III et IV** — la densité fluctue sans période détectable, avec un écart-type non négligeable.
+
+La frontière qui manque est celle entre III et IV : le chaos (III) et la complexité (IV) ont, sur cet observable, des trajectoires de densité **qualitativement semblables**. C'est le point de départ du carnet.
+
+Les règles suivies sont les quatre canoniques de l'organe — 0, 30, 110, 250 — plus deux témoins : la règle 4 (classe II indexée, dont on verra qu'elle se comporte autrement) et la règle 6 (période 2 franche, trouvée par balayage).",,,,,,,,0054b732af56f29e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,f1189514,markdown,fr,ed4de0b30f9dc0dc,"### Exemple guidé 1 — une trajectoire par classe, une table commune
+
+On simule une grille de `N_CELLS` cellules sur 500 pas, depuis le **même** état initial aléatoire (graine 33) pour toutes les règles, et l'on résume chaque trajectoire par les indicateurs de l'organe, calculés sur les 100 derniers pas.
+
+L'intérêt de partager graine et géométrie : les six règles voient exactement le même état de départ, donc une différence de comportement ne vient que de la règle.",,,,,,,,ed4de0b30f9dc0dc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,2057533b,code,fr,d91b7ff5c3bafcd4,"# --- Exemple guide 1 : une trajectoire par classe, une table commune -----------
+N_CELLS = 64      # taille de la grille
+N_STEPS = 500     # pas de simulation
+SEED = 33         # graine de l'etat initial, commune a toutes les regles
+TAIL = 100        # fenetre d'analyse en queue de trajectoire
+
+RULES = [0, 4, 6, 30, 110, 250]
+
+# Une seule simulation par regle : les etats complets servent a la section 3,
+# les comptes de cellules a 1 servent a la section 1 et a la section 4.
+states = {}
+counts = {}
+for rule in RULES:
+    history = wolfram_trajectory(
+        rule=rule,
+        n_cells=N_CELLS,
+        n_steps=N_STEPS,
+        seed=SEED,
+        record_densities=False,
+    )
+    arr = np.asarray(history, dtype=np.uint8)
+    states[rule] = arr
+    counts[rule] = arr.sum(axis=1)
+
+rows = []
+for rule in RULES:
+    ind = wolfram_class_indicators(counts[rule], tail=TAIL, n_cells=N_CELLS)
+    rows.append({
+        ""regle"": rule,
+        ""classe (indexee)"": (WOLFRAM_CLASSES.get(rule) or ""-"").split("" "")[0],
+        ""densite asymptotique"": round(ind[""asymptotic_density""], 4),
+        ""ecart-type"": round(ind[""asymptotic_std""], 4),
+        ""valeurs distinctes"": ind[""unique_densities_tail""],
+        ""periode"": ind[""period_estimate""],
+        ""heuristique densite"": ind[""class_heuristic""],
+    })
+
+table_classes = pd.DataFrame(rows)
+print(table_classes.to_string(index=False))",,,,,,,,d91b7ff5c3bafcd4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,0a9af5b8,markdown,fr,397d5c033edc5223,"### Lecture du résultat — ce que la densité sépare, et ce qu'elle confond
+
+La table se lit en trois blocs.
+
+- **Règles 0 et 250 — classe I franche.** Écart-type nul, une seule valeur distincte en queue. La règle 0 vide la grille (densité 0,0000) ; la règle 250 **sature** la grille : son pas est le **remplissage orienté** `roll(+1) | roll(-1)` — l'union de deux décalages d'un cran, et non un décalage unique — si bien que les 1 s'étendent vers la gauche et vers la droite jusqu'au tout-1 (densité 1,0000). Deux mécanismes opposés, la même signature plate : la classe I ne dit pas *où* est l'attracteur, seulement qu'il est ponctuel.
+- **Règles 4 et 6 — classe II, par deux chemins.** La règle 6 oscille franchement entre deux valeurs (densité moyenne 0,2578, écart-type 0,0234, période 2). La règle 4, elle, est **parfaitement plate** : 0,0625, écart-type 0,0000, une seule valeur (dès le premier pas effectué). Elle est pourtant indexée classe II — et la mesure est plus sévère qu'une simple périodicité : sur les 500 pas de la trajectoire, **l'état ne change qu'une seule fois**, entre $t = 0$ et $t = 1$, puis il reste rigoureusement identique jusqu'à $t = 499$. Le motif final est un peigne de **quatre cellules isolées** (colonnes 22, 26, 42, 59). La densité est plate parce que le motif **se fige**, non parce qu'il se translate. La projection sur la densité a perdu l'information — ici, l'information qu'il n'y a rien à projeter. C'est le cas qui sera repris en section 2.
+- **Règles 30 et 110 — indistinguables sur cet observable.** Aucune période détectée, 17 et 13 valeurs distinctes, écart-type 0,0579 et 0,0399. Leurs densités moyennes diffèrent (0,4988 contre 0,5733), mais cette différence est un **niveau**, pas une forme : rien dans ces indicateurs ne dit que l'une est chaotique et l'autre complexe.
+
+Une densité autour de 0,5 n'est pas une signature de chaos : c'est ce que donne toute dynamique qui mélange à l'échelle de la grille.",,,,,,,,397d5c033edc5223,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,5c695e36,code,fr,35e5b33fd92673f1,"# --- Figure : les trajectoires de densite, cote a cote ------------------------
+fig, axes = plt.subplots(len(RULES), 1, figsize=(9, 1.55 * len(RULES)), sharex=True)
+for ax, rule in zip(axes, RULES):
+    dens = counts[rule] / N_CELLS
+    ax.plot(dens, lw=0.9, color=""#1f4e79"")
+    ax.set_ylabel(f""regle {rule}"", rotation=0, ha=""right"", va=""center"")
+    ax.set_ylim(-0.03, 1.03)
+    ax.grid(alpha=0.25)
+axes[-1].set_xlabel(""pas"")
+fig.suptitle(f""Densite (proportion de cellules a 1) — {N_CELLS} cellules, {N_STEPS} pas, graine {SEED}"", y=0.995)
+fig.tight_layout()
+plt.show()
+plt.close(fig)",,,,,,,,35e5b33fd92673f1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,0977468c,markdown,fr,2df022f4977d5ff8,"### Lecture de la figure — trois régimes, et un cas qui se dérobe
+
+De haut en bas :
+
+- les règles 0 et 250 s'aplatissent, l'une à 0, l'autre à 1 — classe I ;
+- la règle 6 alterne entre deux niveaux — classe II ;
+- la règle 4 est une **ligne parfaitement droite** à 0,0625, alors qu'elle est indexée classe II : c'est la démonstration visuelle que la densité n'est pas un invariant de classe ;
+- les règles 30 et 110 sont deux bruits bornés, sans motif lisible. Leurs niveaux moyens diffèrent (0,50 contre 0,57), mais **leur forme est la même** : une fluctuation apériodique d'amplitude comparable.
+
+Un carnet qui s'arrêterait ici conclurait à tort que III et IV sont le même régime. La section 2 attaque la classification automatique sur cet observable ; la section 3 cherche celui qui, lui, sépare.",,,,,,,,2df022f4977d5ff8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,d7bf3322,markdown,fr,0822b2b4357f406b,"## 2. La classe II se dérobe — `classify_rule` et le cas de la règle 4
+
+`classify_rule` combine deux sources : l'**indexation** de Wolfram (étiquette connue pour les règles canoniques) et l'**heuristique** sur la densité. Quand les deux divergent, l'étiquette produite le dit explicitement — c'est le comportement voulu : l'organe ne tranche pas à la place du lecteur, il signale.
+
+Le balayage exhaustif des 256 règles élémentaires sert à une chose : mesurer la **fréquence** du régime périodique, et vérifier que la classe II n'est pas un cas isolé de deux règles choisies pour l'illustration.
+
+### Exemple guidé 2 — `classify_rule`, et le cas de la règle 4
+",,,,,,,,0822b2b4357f406b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,75387db4,code,fr,13b31f84e6f5795c,"# --- Exemple guide 2 : classify_rule, et le cas de la regle 4 -----------------
+rows = []
+for rule in RULES:
+    res = classify_rule(rule, n_cells=N_CELLS, n_steps=N_STEPS, seed=SEED, tail=TAIL)
+    ind = res[""indicators""]
+    rows.append({
+        ""regle"": rule,
+        ""connue"": (res[""known_class""] or ""-"").split("" "")[0],
+        ""mesuree"": ind[""class_heuristic""],
+        ""periode"": ind[""period_estimate""],
+        ""densite"": round(ind[""asymptotic_density""], 4),
+        ""etiquette"": res[""class_label""],
+    })
+print(pd.DataFrame(rows).to_string(index=False))
+
+# Balayage exhaustif : combien de regles montrent une periode > 1 ?
+scan = []
+for rule in range(256):
+    res = classify_rule(rule, n_cells=N_CELLS, n_steps=N_STEPS, seed=SEED, tail=TAIL)
+    ind = res[""indicators""]
+    scan.append({
+        ""regle"": rule,
+        ""connue"": (res[""known_class""] or ""-"").split("" "")[0],
+        ""periode"": ind[""period_estimate""],
+        ""densite"": ind[""asymptotic_density""],
+        ""heuristique"": ind[""class_heuristic""],
+    })
+scan = pd.DataFrame(scan)
+
+periodiques = scan[scan[""periode""] > 1]
+print(""\nregles a periode > 1 :"", len(periodiques), ""sur 256"")
+print(periodiques.sort_values(""periode"").to_string(index=False))
+print(""\nrepartition des heuristiques de densite :"")
+print(scan[""heuristique""].value_counts().to_string())",,,,,,,,13b31f84e6f5795c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,a166905f,markdown,fr,69d9d6719d6dfe8c,"### Lecture du résultat — l'heuristique est aveugle à la structure, pas au régime
+
+Trois faits sortent du balayage.
+
+1. **Le régime périodique est courant** : **83 règles sur 256** montrent une période détectée supérieure à 1. La règle 6 en est un représentant net (période 2, densité 0,2578, étiquette `II (measured only)` — elle n'est pas dans l'indexation).
+2. **La règle 4 ne montre pas de période.** Écart-type 0,0000, une seule valeur de densité. `classify_rule` produit donc l'étiquette explicite **`II (known) | I (measured)`** : l'indexation dit II, la mesure dit I, et l'organe refuse de trancher à la place du lecteur.
+3. **La règle 30 et la règle 110 sont indexées et mesurées sans conflit** — mais l'étiquette mesurée est `III-or-IV` pour les deux. L'organe lui-même documente que la discrimination fine III / IV « nécessite l'analyse spatiale (gliders) », hors du périmètre d'un indicateur de densité. C'est cette analyse que fait la section 3.
+
+Ce n'est pas un défaut de l'organe, c'est une leçon sur l'observable : **la projection sur la densité perd l'information de structure**. Une classe II peut se présenter comme une classe I une fois projetée, et deux classes distinctes peuvent produire la même signature. Ce qu'on mesure est une propriété de la **projection**, pas de l'automate.",,,,,,,,69d9d6719d6dfe8c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,e28752f7,markdown,fr,9da54aea53f24f21,"## 3. Discriminer III et IV par la structure spatiale
+
+La différence entre chaos (III) et complexité (IV) n'est pas dans la quantité de désordre, elle est dans la **coexistence de structures et de désordre** : la règle 110 héberge des structures voyageuses (« gliders ») qui survivent indéfiniment, s'entrecroisent et interagissent ; la règle 30 n'en héberge pas, elle mélange.
+
+Trois familles de mesures sont candidates :
+
+| Mesure | Ce qu'elle détecte | Coût |
+|---|---|---|
+| **Information mutuelle spatiale** à distance $d$ | corrélation à moyenne portée — les domaines ordonnés de IV corrèlent, le chaos non | $O(N)$ par état |
+| **Complexité de Lempel-Ziv** du diagramme espace-temps | quantité de motifs nouveaux — le chaos en produit beaucoup, les structures en produisent peu | $O(N \cdot \text{steps})$ |
+| **Déterminisme de blocs** | reconstruction locale : un motif de largeur $w$ à $t$ détermine-t-il le motif à $t+1$ décalé ? — à condition que $w$ reste dans le cône causal du motif, sinon deux cellules sur $w$ ne sont pas déterminées | $O(N \cdot \text{steps} \cdot w)$ |
+
+Les trois sont mesurées, y compris celles qui **échouent** : c'est la seule façon d'écarter un instrument.",,,,,,,,9da54aea53f24f21,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,6c54002a,markdown,fr,157312f0af25cd4f,"### Exemple guidé 3 — trois mesures, dont aucune qui ne sépare III et IV franchement
+
+Les fonctions sont écrites ici, en clair : `info_mutuelle_spatiale` (en bits, sur des variables binaires), `lz76` (nombre de mots d'une analyse de Lempel-Ziv sur la séquence aplatie du diagramme), et `determinisme_de_blocs` (fraction de motifs dont le successeur décalé est unique — sur une fenêtre de huit cellules, qui **déborde de deux cellules le cône causal** du motif : voir la lecture de la section).
+
+L'information mutuelle est moyennée sur les 100 derniers états : une seule grille est une réalisation, et une moyenne sur la queue évite de conclure sur un état particulier. Le diagramme espace-temps passé à Lempel-Ziv est aplati ligne par ligne — les bords de ligne créent des adjacences artificielles, négligeables devant les 9 600 bits analysés, et signalées pour cette raison.",,,,,,,,157312f0af25cd4f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,16093ff3,code,fr,be0127a7035657ea,"# --- Exemple guide 3 : trois mesures de structure spatiale --------------------
+def entropie_bits(probas):
+    p = np.asarray([v for v in probas if v > 0], dtype=float)
+    return float(-(p * np.log2(p)).sum())
+
+
+def info_mutuelle_spatiale(state, lag):
+    """"""Information mutuelle (bits) entre la cellule x et la cellule x+lag.""""""
+    gauche = np.asarray(state, dtype=np.int64)
+    droite = np.roll(gauche, -lag)
+    joint = np.bincount(2 * gauche + droite, minlength=4).astype(float)
+    joint /= joint.sum()
+    joint = joint.reshape(2, 2)
+    p_g = joint.sum(axis=1)
+    p_d = joint.sum(axis=0)
+    return max(0.0, entropie_bits(p_g) + entropie_bits(p_d) - entropie_bits(joint.ravel()))
+
+
+def mi_moyenne(states_rule, lag, tail=TAIL):
+    return float(np.mean([info_mutuelle_spatiale(s, lag) for s in states_rule[-tail:]]))
+
+
+def lz76(bits, max_len=64):
+    """"""Complexite de Lempel-Ziv (LZ76) : nombre de mots de la sequence binaire.""""""
+    s = """".join(""1"" if b else ""0"" for b in bits)
+    n = len(s)
+    seen = set()
+    i = 0
+    mots = 0
+    while i < n:
+        longueur = 1
+        while (i + longueur <= n and longueur <= max_len
+               and s[i:i + longueur] in seen):
+            longueur += 1
+        if i + longueur <= n:
+            seen.add(s[i:i + longueur])
+        mots += 1
+        i += longueur
+    return mots
+
+
+def determinisme_de_blocs(states_rule, w=8, d=0, tail=TAIL):
+    """"""Fraction de motifs de largeur w dont le successeur decale de d est unique.""""""
+    st = states_rule[-tail:]
+    n = st.shape[1]
+    vus = {}
+    for t in range(len(st) - 1):
+        cur, nxt = st[t], st[t + 1]
+        for x in range(n):
+            motif = tuple(int(cur[(x + k) % n]) for k in range(w))
+            suivant = tuple(int(nxt[(x + d + k) % n]) for k in range(w))
+            vus.setdefault(motif, set()).add(suivant)
+    if not vus:
+        return 0.0
+    return sum(1 for s in vus.values() if len(s) == 1) / len(vus)
+
+
+rows = []
+for rule in RULES:
+    diagramme = states[rule][-150:].ravel()
+    rows.append({
+        ""regle"": rule,
+        ""classe"": (WOLFRAM_CLASSES.get(rule) or ""-"").split("" "")[0],
+        ""MI d=1"": round(mi_moyenne(states[rule], 1), 5),
+        ""MI d=2"": round(mi_moyenne(states[rule], 2), 5),
+        ""MI d=4"": round(mi_moyenne(states[rule], 4), 5),
+        ""LZ (9600 bits)"": lz76(diagramme),
+        ""determinisme w=8"": round(determinisme_de_blocs(states[rule], w=8, d=0), 4),
+    })
+
+table_spatial = pd.DataFrame(rows)
+print(table_spatial.to_string(index=False))",,,,,,,,be0127a7035657ea,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,7c827fe4,markdown,fr,5b7e39cdb85fa54f,"### Lecture du résultat — trois instruments, aucun ne tranche III et IV
+
+Les trois colonnes ne disent pas la même chose, et l'ordre dans lequel on les lit compte.
+
+**Information mutuelle spatiale.** À distance 1 : 0,0118 pour la règle 30, 0,0153 pour la règle 110. À distance 2 : 0,0096 contre 0,0184. À distance 4 : 0,0099 contre 0,0109. La direction est celle attendue — la classe IV porte **plus** de corrélation locale que la classe III — mais l'amplitude est modeste (facteur 1,3 puis 1,9) et l'écart **s'éteint à distance 4**. C'est un corrélateur, pas un verdict : il faut le lire comme un indice cohérent, pas comme une preuve.
+
+**Complexité de Lempel-Ziv.** 1133 (règle 30) > 922 (110) > 849 (règle 6) > 476 (règle 4) > 180 (règles 0 et 250). LZ ordonne par **imprévisibilité brute** : le chaos en tête, la classe IV derrière — l'inverse de l'intuition qui associe « complexe » à « complexité de Lempel-Ziv élevée ». Et il ne sépare pas la classe II de la classe IV : la règle 6 (849) est plus proche de 110 que de 4. LZ mesure la compressibilité d'une image, pas la richesse d'un mécanisme.
+
+**Déterminisme de blocs (largeur 8).** Les valeurs brutes sont 1,0000 pour les règles 0, 4 et 250 (le motif détermine son successeur), 0,5294 pour la règle 6, puis **0,0000 pour la règle 30 contre 0,4560 pour la règle 110**. Ce contraste paraît trancher, et il ne tranche pas : l'instrument compare un motif de largeur 8 à **huit** cellules du pas suivant, alors que `nxt[x+k]` ne dépend que de `cur[x+k-1]`, `cur[x+k]` et `cur[x+k+1]`. Pour $k \in [1, 6]$, les trois cellules sont dans le motif ; pour $k = 0$ et $k = 7$, il faudrait `cur[x-1]` et `cur[x+8]`, qui **n'en font pas partie**. Les deux cellules de bord sont donc indéterminées *par construction*, et ce sont elles qui produisent l'écart.
+
+Rejoué sur le cône causal exact — le successeur restreint à `nxt[x+1..x+6]`, entièrement déterminé par le motif — l'instrument vaut **1,0000 pour les six règles** (recalcul sur les mêmes trajectoires, hors de la sortie committée) : il ne sépare plus rien du tout. La décomposition par cellule le confirme : pour la règle 30, `nxt[x+1]` à `nxt[x+6]` sont déterminés à 1,0000, `nxt[x+0]` à 0,0000 et `nxt[x+7]` à 0,5000 (un tirage de pièce). Le 0,0000 de la règle 30 ne dit rien de sa reconstructibilité : il dit que la fenêtre de 8 ne contient pas le voisinage de `nxt[x]`. L'ordre brut reste reproduit (0,4560 pour la 110 au-dessus de 0,0000 pour la 30) — mais il porte sur les cellules de bord, pas sur la prédictibilité du motif.
+
+**Les trois échecs ne sont pas de même nature.** Le déterminisme de blocs échoue par un
+**artefact de fenêtre** : ses deux cellules de bord débordent du cône causal, et le signal
+qu'il produit mesure sa propre fenêtre autant que la règle. L'information mutuelle et
+Lempel-Ziv, eux, ne sont pas des instruments de *forme* mais de **niveau** (corrélation
+moyenne d'une part, compressibilité d'autre part) : leurs valeurs brutes ne souffrent
+d'aucun artefact de bord, et l'écart qu'elles montrent est un écart de **niveau**, non de
+**forme**. Autrement dit : deux de ces trois instruments échouent parce qu'ils mesurent des
+niveaux sur lesquels la classe III et la classe IV se ressemblent, et le troisième échoue
+parce qu'il mesurait autre chose.
+
+**Le verdict de la section : aucun des trois instruments ne sépare III et IV de façon franche.** L'information mutuelle les sépare faiblement (1,3× à $d = 1$, 1,9× à $d = 2$) et s'éteint à $d = 4$ ; Lempel-Ziv ne les sépare pas du tout ; le déterminisme de blocs, pris au cône causal, ne les sépare pas non plus. La section **échoue** — et c'est le résultat le plus utile du carnet : un instrument mesuré et écarté vaut mieux que trois instruments invoqués, et l'instrument le plus convaincant du lot était celui qui mesurait sa propre fenêtre.",,,,,,,,5b7e39cdb85fa54f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,147bcfd0,code,fr,7b74f4bacc0ba1f1,"# --- Figure : les deux diagrammes espace-temps, a la meme echelle ------------
+fig, axes = plt.subplots(1, 2, figsize=(11, 4.2), sharey=True)
+for ax, rule in zip(axes, [30, 110]):
+    ax.imshow(states[rule][-150:], cmap=""Greys"", aspect=""auto"", interpolation=""nearest"")
+    ax.set_title(f""regle {rule} — {(WOLFRAM_CLASSES.get(rule) or '').split(' ')[0]}"")
+    ax.set_xlabel(""cellule"")
+axes[0].set_ylabel(""pas"")
+fig.suptitle(f""Diagrammes espace-temps (150 derniers pas, {N_CELLS} cellules)"", y=1.0)
+fig.tight_layout()
+plt.show()
+plt.close(fig)",,,,,,,,7b74f4bacc0ba1f1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,40aab354,markdown,fr,33aff28c3fce1516,"### Lecture de la figure — ce que l'œil voit, et ce que le déterminisme quantifie
+
+Côte à côte, les deux diagrammes ne diffèrent pas par leur **quantité** de noir : les densités sont voisines (0,48 contre 0,55 sur la fenêtre affichée), et c'est exactement ce que la section 1 mesurait.
+
+Ils diffèrent par leur **organisation** : à gauche (règle 30) un fouillis homogène, sans objet identifiable ; à droite (règle 110) des triangles et des bandes qui se propagent, se croisent et se régénèrent — les structures dont parlait la section 3.
+
+C'est cette différence d'**organisation** que l'œil voit ; l'instrument censé la quantifier ne la quantifie pas. Le déterminisme de blocs annonce 0,0000 dans le fouillis contre 0,4560 dans le motif, mais ces deux nombres viennent d'une fenêtre de huit comparée à huit cellules du successeur, dont deux que le motif ne détermine pas (section 3) : au cône causal exact, les deux valent 1,0000. L'information mutuelle, elle, capte une partie du contraste (facteur 1,3 à distance 1) : elle mesure la corrélation moyenne, pas la **répétition d'un motif** — et c'est elle, faible et partielle, qui reste le seul signal structural de la section.",,,,,,,,33aff28c3fce1516,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,cdaf6ca6,markdown,fr,96e53b09a1ca6663,"### Exemple guidé 4 — la piste de l'énoncé : composantes connexes
+
+L'énoncé du grain proposait une détection de gliders par **composantes connexes** du diagramme espace-temps : un glider serait une composante stable qui se translate en diagonale, la règle 110 en hébergerait, la règle 30 non. C'est une hypothèse raisonnable, et elle se teste.
+
+Deux connectivités ont un sens ici : la **8-connexité sur les 1** (les structures sont des objets de 1) et la **4-connexité sur les 0** (un glider découpe l'espace vide en domaines séparés). `scipy.ndimage.label` étiquette les composantes ; on résume chacune par sa **durée de vie** (nombre de pas qu'elle couvre) et son **aire**, et l'on compte celles qui vivent au moins 20 pas.
+
+Un point de méthode : une composante persistante n'est pas nécessairement un glider. Si les 1 percolent — s'ils forment un seul bloc connexe à travers tout le diagramme — la « composante persistante » est le bloc entier, et la mesure ne dit plus rien des objets.",,,,,,,,96e53b09a1ca6663,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,51ce04b7,code,fr,9dd98743cd733b04,"# --- Exemple guide 4 : composantes connexes, sur les 1 et sur les 0 -----------
+from scipy import ndimage
+
+FENETRE = 200          # pas analyses en fin de trajectoire
+VIE_MIN = 20           # duree de vie minimale d'une composante ""persistante""
+
+HUIT = np.ones((3, 3), dtype=int)
+QUATRE = np.array([[0, 1, 0], [1, 1, 1], [0, 1, 0]], dtype=int)
+
+
+def composantes(matrice, cible, structure):
+    """"""Statistiques des composantes connexes de `cible` dans la matrice espace-temps.""""""
+    binaire = (matrice == cible).astype(int)
+    etiquettes, n = ndimage.label(binaire, structure=structure)
+    vies, aires = [], []
+    for k in range(1, n + 1):
+        lignes, _ = np.where(etiquettes == k)
+        if len(lignes) == 0:
+            continue
+        vies.append(int(lignes.max() - lignes.min() + 1))
+        aires.append(int(len(lignes)))
+    if not vies:
+        return {""n"": 0, ""vie_max"": 0, ""persistantes"": 0,
+                ""aire_mediane"": 0.0, ""aire_persistante"": 0.0}
+    vies = np.asarray(vies)
+    aires = np.asarray(aires)
+    persist = vies >= VIE_MIN
+    return {
+        ""n"": int(n),
+        ""vie_max"": int(vies.max()),
+        ""persistantes"": int(persist.sum()),
+        ""aire_mediane"": float(np.median(aires)),
+        ""aire_persistante"": float(aires[persist].mean()) if persist.any() else 0.0,
+    }
+
+
+rows = []
+for rule in RULES:
+    fenetre = states[rule][-FENETRE:]
+    uns = composantes(fenetre, 1, HUIT)
+    zeros = composantes(fenetre, 0, QUATRE)
+    rows.append({
+        ""regle"": rule,
+        ""classe"": (WOLFRAM_CLASSES.get(rule) or ""-"").split("" "")[0],
+        ""comps de 1"": uns[""n""],
+        ""vie max (1)"": uns[""vie_max""],
+        ""persistantes (1)"": uns[""persistantes""],
+        ""aire persistante (1)"": round(uns[""aire_persistante""], 1),
+        ""comps de 0"": zeros[""n""],
+        ""aire mediane (0)"": round(zeros[""aire_mediane""], 1),
+        ""persistantes (0)"": zeros[""persistantes""],
+    })
+
+print(pd.DataFrame(rows).to_string(index=False))
+print(f""\nfenetre analysee : {FENETRE} pas ; 'persistante' = duree de vie >= {VIE_MIN} pas"")
+print(f""taille de la fenetre en cellules : {FENETRE * N_CELLS}"")",,,,,,,,9dd98743cd733b04,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,5ea5ac40,markdown,fr,c497d43b16c8e168,"### Lecture du résultat — la percolation mange le signal
+
+La table ne fait pas ce que l'énoncé en attendait, et c'est un résultat mesuré, pas un renoncement.
+
+- **Sur les 1 (8-connexité).** La règle 0 n'a aucune composante (grille vide) ; la règle 250 en a une seule, le tapis de 1. La règle 4 en a quatre, d'aire 200 chacune et de durée de vie maximale : mais ce sont quatre **traits verticaux statiques** — les colonnes 22, 26, 42 et 59 de l'état final — et non le motif translaté qu'on attendrait d'une classe II : l'état de la règle 4 se fige dès le premier pas. La règle 6 en a 45, dont 40 vivent au moins 20 pas — des motifs qui se répètent à l'identique. Puis la règle 30 donne **12 composantes dont une seule persistante, d'aire 6 353**, et la règle 110 **2 composantes dont une d'aire 7 323** : dans les deux cas la composante persistante couvre la quasi-totalité de la fenêtre. À densité voisine de 0,5, les 1 **percolent** : il n'y a plus d'objets, il n'y a qu'un bloc. Les deux classes donnent le même verdict, et ce verdict ne sépare rien.
+- **Sur les 0 (4-connexité).** La règle 30 donne 832 cavités d'aire médiane 5, la règle 110 en donne 1 090 d'aire médiane 6 ; les cavités persistantes sont 4 pour la 30 et **0** pour la 110. L'ordre est celui qu'on n'attendait pas, et l'écart (4 contre 0) ne porte aucune interprétation stable.
+- **Verdict.** La détection de gliders par composantes connexes **échoue sur ce banc**, pour une raison qui n'a rien à voir avec la taxonomie : la percolation. Le carnet le consigne au lieu de le maquiller — une méthode proposée et réfutée par la mesure vaut mieux qu'une méthode invoquée.
+
+C'est ce qui justifie le choix de la section 3 : les instruments de structure y mesurent une propriété **locale** (un voisinage détermine-t-il son successeur immédiat ?) et non une propriété d'**objet global**, qui est précisément ce que la percolation détruit. Le déterminisme de blocs s'y prête particulièrement mal : sa fenêtre de 8 déborde le cône causal du motif de deux cellules, et ce seul débordement suffit à faire disparaître le contraste III / IV.",,,,,,,,c497d43b16c8e168,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,eg5translation00,markdown,fr,d7cf469646386346,"### Exemple guidé 5 — la translation diagonale, seconde piste de l'énoncé
+
+L'énoncé proposait une seconde détection de gliders, plus directe que les composantes :
+un glider **se translate**. On compte donc la part des cellules à 1 qui se retrouvent,
+au pas suivant, une case à droite. Une règle qui héberge des structures voyageuses
+devrait marquer plus haut qu'une règle qui mélange.
+
+La mesure tient en trois lignes. Elle porte sur la **même fenêtre de 200 pas** et sur
+les mêmes trajectoires que l'exemple précédent : les deux pistes se comparent donc
+terme à terme.
+",,,,,,,,d7cf469646386346,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,eg5translation01,code,fr,58388c15eba568a2,"# --- Exemple guide 5 : la translation diagonale -------------------------------
+def densite_translation(matrice):
+    """"""Part des 1 qui se retrouvent, au pas suivant, decalees d'une case a droite.""""""
+    retour = np.roll(matrice[1:], -1, axis=1)
+    return float((matrice[:-1] & retour).sum()) / max(int(matrice.sum()), 1)
+
+
+rows = []
+for rule in RULES:
+    rows.append({
+        ""regle"": rule,
+        ""classe"": (WOLFRAM_CLASSES.get(rule) or ""-"").split("" "")[0],
+        ""translation d=1"": round(densite_translation(states[rule][-FENETRE:]), 4),
+    })
+print(pd.DataFrame(rows).to_string(index=False))
+
+g_30 = densite_translation(states[30][-FENETRE:])
+g_110 = densite_translation(states[110][-FENETRE:])
+print(f""\nratio 110/30 : {g_110 / max(g_30, 1e-9):.2f}x"")
+",,,,,,,,58388c15eba568a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,eg5translation02,markdown,fr,89e8bbd2af5ab6eb,"### Lecture du résultat — le proxy mesure la translation, pas le glider
+
+La table sépare un bloc et rate la frontière qu'elle visait.
+
+- **Règles 0, 4 et 6 : 0,0000.** Aucune translation d'un cran. La règle 4 n'est pas l'exemple d'un mouvement trop lent pour être capté : sur 500 pas, son état ne change **qu'une fois**, de $t = 0$ à $t = 1$, puis reste identique jusqu'à $t = 499$ — son motif ne se déplace pas du tout, il se fige. La densité plate de la règle 4 n'a donc rien d'un décalage trop fin pour la fenêtre : c'est l'immobilité.
+- **Règles 30 et 110 : 0,2462 contre 0,4019**, soit **1,63×**. Le sens est celui attendu — la classe IV translate davantage — mais l'amplitude est du même ordre que celle de l'information mutuelle (1,3× à $d = 1$), très loin d'un verdict.
+- **Règle 250 : 0,9950.** C'est le contrôle qui ruine l'interprétation naïve : la règle 250 **sature** la grille (sa densité atteint 1,0000) et son pas est le **remplissage orienté** `roll(+1) | roll(-1)`, c'est-à-dire l'union de deux décalages — pas un décalage pur. Un score de translation élevé ne dit donc **pas** « glider » ; il dit « déplacement », et une grille saturée en est le cas dégénéré.
+
+**Verdict.** Comme les composantes connexes, la translation diagonale **échoue sur ce banc**, et pour une raison complémentaire : les composantes se noient dans la percolation, la translation ne distingue pas un objet voyageur d'un simple décalage du fond. Les deux pistes de l'énoncé sont ainsi mesurées et écartées, ce qui laisse la troisième famille — la reconstructibilité locale — seule mesure *candidate*. La section 3 la mesure, et elle l'écarte à son tour : aucune des trois pistes ne sépare III et IV sur ce banc.
+",,,,,,,,89e8bbd2af5ab6eb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,c8a9498e,markdown,fr,4c01a6c00cbae0bf,"## 4. Signature thermodynamique — ce que σ mesure vraiment
+
+ICT-18 a outillé la flèche du temps : à partir d'une séquence d'états, estimer une chaîne de Markov, en construire l'inverse temporel et la **projection réversibilisée**, puis mesurer la production d'entropie $\sigma$, l'erreur de bilan détaillé, la **distance à la projection réversibilisée** (la « perte à la réversibilisation ») et un **indice d'agentivité** qui combine cette perte et la distance à l'inverse.
+
+### Exemple guidé 6 — deux discrétisations, et l'ordre qui en dépend
+
+L'expérience de cette section suit le plan de l'énoncé : quantifier la trajectoire de densités en **$k$ quantiles** (`discretise`, méthode d'ICT-18 Exemple guide 1), puis appliquer `compare_real_reversed_reversibilized` à la séquence discrétisée de chaque règle. On garde en regard la version **sans discrétisation** (les symboles bruts, un par valeur de densité observée) : la comparaison des deux est déjà une mesure de robustesse.
+
+L'attente naïve est $\sigma_{I} \approx \sigma_{II} < \sigma_{III} \approx \sigma_{IV}$ — les classes ordonnées étant les plus prévisibles, les classes désordonnées les plus dissipatives.
+
+Le résultat **reproduit cette attente au premier ordre**, et la nuance qu'il apporte — sur la quasi-égalité III / IV comme sur la lecture de $\sigma$ — est tout le contenu de la section.
+",,,,,,,,4c01a6c00cbae0bf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,7f868990,code,fr,60763692e26cb2b9,"# --- Exemple guide 6 : signature thermodynamique, sur deux discretisations ----
+def discretise(valeurs, n_niveaux=6):
+    """"""Discretisation en k quantiles, comme ICT-18 (Exemple guide 1).""""""
+    valeurs = np.asarray(valeurs, dtype=float)
+    bornes = np.quantile(valeurs, np.linspace(0.0, 1.0, n_niveaux + 1)[1:-1])
+    return np.searchsorted(bornes, valeurs, side=""right"").astype(int)
+
+
+def agentivity_index(out, alpha=0.5, beta=0.5):
+    """"""Indice d'agentivite d'ICT-18 : distance a l'inverse + perte a la reversibilisation.""""""
+    return alpha * out[""dist_real_vs_reversed""] + beta * out[""dist_real_vs_reversibilized""]
+
+
+rows = []
+signatures = {}
+for rule in RULES:
+    brut = compare_real_reversed_reversibilized([int(v) for v in counts[rule]])
+    quant = compare_real_reversed_reversibilized([int(v) for v in discretise(counts[rule], 6)])
+    signatures[rule] = {""brut"": brut, ""quantiles"": quant}
+    rows.append({
+        ""regle"": rule,
+        ""classe"": (WOLFRAM_CLASSES.get(rule) or ""-"").split("" "")[0],
+        ""k brut"": brut[""n_symbols""],
+        ""sigma brut"": round(brut[""sigma_real""], 5),
+        ""k quantiles"": quant[""n_symbols""],
+        ""sigma quantiles"": round(quant[""sigma_real""], 5),
+        ""perte quantiles"": round(quant[""dist_real_vs_reversibilized""], 5),
+        ""dist inverse brut"": round(brut[""dist_real_vs_reversed""], 5),
+        ""agentivite brut"": round(agentivity_index(brut), 4),
+        ""agentivite quantiles"": round(agentivity_index(quant), 4),
+    })
+
+table_thermo = pd.DataFrame(rows)
+print(table_thermo.to_string(index=False))
+",,,,,,,,60763692e26cb2b9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,4f0c145e,markdown,fr,95b331ce57997a47,"### Lecture du résultat — l'ordre attendu tient, la « quasi-égalité » non
+
+**Sur les quantiles (la méthode demandée par l'énoncé, $k = 6$).** $\sigma$ vaut 0,0000 pour les classes I et II ($k$ tombé à 1 ou 2 symboles : la discrétisation en quantiles d'une densité constante est dégénérée), puis **0,0592 pour la règle 30** contre **0,0259 pour la règle 110**. L'ordre attendu $I \approx II < III, IV$ est reproduit, mais **la classe III est 2,3 fois plus dissipative que la classe IV** : la « quasi-égalité » annoncée par l'énoncé n'apparaît pas sur cette discrétisation.
+
+**Sur les symboles bruts (k = 22).** L'écart se referme à 8 % (3,217 contre 2,966). Le degré de quasi-égalité entre III et IV **dépend donc de la discrétisation choisie** — c'est en soi un avertissement : un verdict « III ≈ IV » tiré d'une seule grille de discrétisation n'est pas robuste.
+
+**L'indice d'agentivité** (moyenne de la distance à l'inverse et de la perte à la réversibilisation, cf ICT-18) : 0,0000 pour les règles 0 et 4 ; 0,5000 pour la règle 6 sur les symboles bruts — un cycle à deux états est parfaitement asymétrique dans le temps ; 7,8834 contre 7,6399 sur les symboles bruts, et 0,6049 contre 0,3583 sur les quantiles. La hiérarchie $III > IV$ est **stable**, mais l'écart relatif varie d'un facteur 2 selon la discrétisation.
+
+**Le contre-exemple de la règle 250, qui ruine l'interprétation naïve de $\sigma$.** Classe I : $\sigma_{real} = 0$ dans les deux discrétisations, erreur de bilan détaillé nulle — une apparence de réversibilité parfaite. Et pourtant sa **distance à l'inverse temporel vaut 4,98853** et son indice d'agentivité 3,3937 (colonne `dist inverse brut` et colonne `agentivite brut`, symboles bruts). Trois précisions que la mesure impose, et qui changent la portée du contre-exemple.
+
+1. La règle 250 n'est **pas** un décalage déterministe d'un cran : son pas est `roll(+1) | roll(-1)`, l'union de deux décalages — un **remplissage orienté**. Les vrais décalages purs de la table sont les règles 170 (`roll(-1)`) et 240 (`roll(+1)`).
+2. Le 4,98853 vient **entièrement du transitoire** : les comptes de la règle 250 valent 30, 51, 55, 59, 62, puis 64 **constant** sur toute la suite ; sur les 100 derniers pas seuls, la distance à l'inverse retombe à **0,00000**.
+3. « maximalement irréversible » est **contredit par la table du carnet elle-même** : sur la colonne `dist inverse brut`, les quatre valeurs non nulles sont 0,66667 (règle 6), 4,98853 (règle 250), 10,18649 (règle 110) et 10,51120 (règle 30) — la règle 250 est **troisième sur quatre**, à peine au-dessus du cycle à deux états.
+
+Ce qui reste vrai — et qui suffit à ruiner l'interprétation naïve de $\sigma$ — est le reste : une règle de classe I dont la densité sature peut afficher une distance à l'inverse non nulle et une entropie produite nulle.
+
+Mécaniquement, $\sigma$ est construit sur la distribution stationnaire des symboles ; pour une dynamique à densité constante cette distribution est dégénérée, il n'y a pas de désordre à dissiper, donc pas d'entropie à produire. **$\sigma$ mesure la dissipation d'un processus stochastique stationnaire, pas l'asymétrie temporelle d'une trajectoire.** Le bon indicateur de la flèche du temps est la distance à l'inverse, et c'est précisément pour cela que l'organe d'ICT-18 construit son indice d'agentivité à partir d'elle et **pas** de $\sigma$.
+
+**Ce que la section établit, et ce qu'elle n'établit pas.** Elle établit que l'ordre thermodynamique des quatre classes est le bon ($I \approx II$ au plancher, III et IV au plafond) et que $III > IV$ de façon stable. Elle n'établit **pas** que les deux classes hautes sont indiscernables — et cette séparation thermodynamique va dans le sens *inverse* de la séparation structurelle de la section 3, où c'est la classe IV qui portait un peu plus de corrélation locale. Les deux lectures ne se contredisent pas : elles mesurent deux choses différentes — la **corrélation locale** d'un côté, l'**irréversibilité de la séquence de densités** de l'autre.
+",,,,,,,,95b331ce57997a47,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,encartsigma00000,markdown,fr,6aadf8587aa65f77,"### Encart de mesure — σ résiste-t-il au changement de grille, de graine et d'alphabet ?
+
+La lecture ci-dessus portait sur **une** grille de discrétisation et **un** couple (`N_CELLS`, `seed`). Une hiérarchie tirée d'un point n'est pas une hiérarchie : il faut la faire varier.
+
+On reprend donc $\sigma$ sur `n_cells` ∈ {16, 32, 64, 128} × `seed` ∈ {1, 33, 99}, soit douze tirages par règle, sous **trois conventions d'alphabet** :
+
+| Convention | Bornes de discrétisation | Ce qu'elle représente |
+|---|---|---|
+| `niveaux=11` | `np.linspace(0, 1, 11)` sur les quantiles, bornes extrêmes incluses | l'alphabet **le plus fin** du carnet, celui de l'exemple de calibration d'origine |
+| `niveaux=10` | 9 bornes intérieures | l'alphabet intermédiaire |
+| `niveaux=6` | 5 bornes intérieures | la convention de la série (ICT-18, Exemple guidé 1), utilisée en section 4 |
+
+Ce que l'on cherche n'est pas une confirmation mais la **dispersion** : un indicateur dont le coefficient de variation dépasse 1 ne classe rien. Et la question que l'exemple de calibration posait déjà — un prédicat `cv < 0,15` annoncé **avant** la mesure tient-il ? — reçoit ici sa réponse sous les trois alphabets.
+",,,,,,,,6aadf8587aa65f77,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,encartsigma00001,code,fr,b4e184c26db71f32,"# --- Encart : stabilite de sigma sous grille, graine et alphabet -------------
+BORNES = {11: np.linspace(0, 1, 11), 10: np.linspace(0, 1, 11)[1:-1],
+          6: np.linspace(0, 1, 7)[1:-1]}
+
+rows = []
+for n_niveaux, bornes in BORNES.items():
+    for rule in [0, 30, 110]:
+        sigmas = []
+        for n_cells in [16, 32, 64, 128]:
+            for seed in [1, 33, 99]:
+                traj = wolfram_trajectory(rule=rule, n_cells=n_cells, n_steps=N_STEPS,
+                                          seed=seed, record_densities=True)
+                code = np.digitize(np.asarray(traj, dtype=float),
+                                   np.quantile(traj, bornes))
+                out = compare_real_reversed_reversibilized([int(v) for v in code])
+                sigmas.append(out[""sigma_real""])
+        sigmas = np.asarray(sigmas)
+        moyenne = float(sigmas.mean())
+        rows.append({
+            ""niveaux"": n_niveaux,
+            ""regle"": rule,
+            ""classe"": (WOLFRAM_CLASSES.get(rule) or ""-"").split("" "")[0],
+            ""sigma moyen"": round(moyenne, 4),
+            ""ecart-type"": round(float(sigmas.std()), 4),
+            ""cv"": round(float(sigmas.std() / max(moyenne, 1e-9)), 3),
+            ""min"": round(float(sigmas.min()), 4),
+            ""max"": round(float(sigmas.max()), 4),
+        })
+print(pd.DataFrame(rows).to_string(index=False))
+",,,,,,,,b4e184c26db71f32,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,encartsigma00002,markdown,fr,609cff15ee80d51d,"### Lecture de l'encart — le verdict tient, la valeur non
+
+- **Règle 0 : $\sigma = 0{,}0000$ sous les trois alphabets, écart-type nul sur les douze tirages.** Le plancher est un fait reproductible, indépendant de la grille, de la graine et de l'alphabet.
+- **Règles 30 et 110 : le coefficient de variation dépasse 1 dans chaque convention.** À 11 niveaux, cv = **0,587** (R30) et **1,130** (R110) ; à 10 niveaux, 0,635 et 1,303 ; à 6 niveaux, 1,186 et 1,513. Le prédicat `cv < 0,15` annoncé avant la mesure est donc **dépassé d'un facteur 4 à 10**, et l'écart se creuse à mesure que l'alphabet se réduit.
+- **Ce qui varie d'une convention à l'autre, c'est l'échelle, pas le verdict.** Les moyennes elles-mêmes se déplacent (R30 : 0,6194 → 0,5263 → 0,1783), donc une valeur de $\sigma$ ne se cite jamais sans son alphabet. Mais la conclusion « les classes non triviales ne sont pas stables » survit aux trois.
+
+Deux lectures de la section se trouvent ainsi confirmées et déplacées :
+
+1. L'écart III / IV lu plus haut à (64, 33) — 2,3× en faveur de la classe III — **ne survit pas** au changement de grille. L'ordre tient sur les moyennes, mais l'écart est très inférieur à la dispersion propre de chaque règle, et il existe des tirages où R110 rend $\sigma = 0$ quand R30 rend 0,0009.
+2. **$\sigma$ n'est pas un classificateur** : c'est un indicateur qui exige de déclarer sa grille, sa graine **et son alphabet**, exactement comme la densité de la section 1 exige de déclarer sa fenêtre. La sensibilité à l'alphabet est elle-même une mesure — c'est l'objet de l'exercice 7.
+
+C'est la même leçon qui revient sous une troisième forme — la densité perd la structure, les composantes et la translation perdent l'objet, $\sigma$ perd la stabilité. Un instrument ne se juge pas sur un point de mesure.
+",,,,,,,,609cff15ee80d51d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,c1120ba1,markdown,fr,9f43a957f96377e4,"## 5. Exercices
+
+**Avertissement de coût.** Les exercices 1 et 4 relancent des simulations (une par règle, et 48 pour la calibration) : quelques secondes chacun. Les exercices 2 et 3 réutilisent les objets déjà en mémoire (`states`, `counts`, `signatures`) et ne coûtent presque rien — c'est volontaire : la mesure est faite, l'exercice porte sur l'interprétation.
+
+Chaque exercice se termine par un `pass` : le carnet s'exécute de bout en bout même sans réponse, conformément à la convention de la série.",,,,,,,,9f43a957f96377e4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,1e32ff2d,markdown,fr,1c855ffa1c55064d,"### Exercice 1 — refaire la table de la section 1, et confronter indexation et mesure
+
+**Étape 1.** Recalcule les indicateurs pour les quatre règles canoniques de l'organe (`CANONICAL_RULES`) avec une graine différente de 33, en gardant `n_cells=64` et `n_steps=500`.
+
+**Étape 2.** Pour chaque règle, affiche l'étiquette **indexée** (`WOLFRAM_CLASSES`) et l'étiquette **mesurée** (`class_heuristic`).
+
+**Étape 3.** Conclus : quelles classes sont robustes au changement de graine, et laquelle ne l'est pas ? Relie ta réponse au cas de la règle 4 vu en section 2 — la fragilité vient-elle de la règle ou de l'observable ?
+
+*Indice :* `wolfram_trajectory(rule=..., record_densities=True)` rend directement les comptes de cellules à 1 ; `wolfram_class_indicators` attend ces comptes bruts et normalise lui-même quand on lui passe `n_cells`.",,,,,,,,1c855ffa1c55064d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,da872955,code,fr,7a3229ece4d280c8,"# Exercice 1 : table de la section 1 avec une autre graine
+#
+# Etape 1 : pour chaque regle de CANONICAL_RULES, simule avec seed=7 (et non 33),
+#            n_cells=64, n_steps=500, puis calcule les indicateurs de l'organe.
+# Etape 2 : affiche cote a cote l'etiquette INDEXEE (WOLFRAM_CLASSES) et
+#            l'etiquette MESUREE (classify_rule(...)[""indicators""][""class_heuristic""]).
+# Etape 3 : conclus sur la robustesse au changement de graine, et sur ce que
+#            la fragilite eventuelle dit de l'observable plutot que de la regle.
+
+pass  # TODO etudiant
+",,,,,,,,7a3229ece4d280c8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,cfbca14d,markdown,fr,208a0302cfc128fb,"### Exercice 2 — discriminer III et IV : la piste des composantes, puis la bonne mesure
+
+**Étape 1.** Reprends `composantes` (Exemple guidé 4) et applique-la aux règles 30 et 110 sur des fenêtres de tailles différentes (50, 100, 200, 400 pas). La conclusion « la 8-connexité percole » tient-elle à toutes les échelles, ou n'est-elle qu'un effet de la fenêtre ?
+
+**Étape 2.** Cherche une variante qui sépare réellement les deux classes : seuil sur l'aire, connectivité mixte, composantes des transitions (cellules qui changent d'état), ou détection sur une fenêtre temporelle glissante. Tu as le droit de conclure qu'aucune ne marche — à condition de le montrer, comme l'Exemple guidé 4.
+
+**Étape 3.** Confronte ta meilleure variante au **déterminisme de blocs** de la section 3 (0,0000 contre 0,4560 — valeurs brutes d'une fenêtre de 8, qui **dépassent le cône causal du motif de deux cellules** : refais le calcul au cône causal exact avant de t'en servir) et à l'information mutuelle. Conclus sur lequel des trois instruments tu garderais, et à quel coût.
+
+*Indice :* `mi_moyenne` attend la matrice d'états `(pas, cellules)` ; `lz76` attend une séquence binaire aplatie. Une densité plate rend une règle invisible à la section 1 — vérifie la densité avant de conclure.",,,,,,,,208a0302cfc128fb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,052286cf,code,fr,5f99392079140135,"# Exercice 2 : discriminer III et IV -- de la piste des composantes a la bonne mesure
+#
+# Etape 1 : reutilise composantes() (Exemple guide 4) sur les regles 30 et 110
+#            pour FENETRE in [50, 100, 200, 400]. La 8-connexite percole-t-elle a
+#            toutes les echelles, ou seulement sur la fenetre du carnet ?
+# Etape 2 : cherche une variante qui separe reellement les deux classes (seuil
+#            sur l'aire, connectivite mixte, composantes des transitions, fenetre
+#            glissante). Conclure qu'aucune ne marche est permis -- a condition
+#            de le montrer, comme l'Exemple guide 4.
+# Etape 3 : confronte ta meilleure variante au determinisme de blocs
+#            (0.0000 contre 0.4560) et a l'information mutuelle. Dis lequel des
+#            trois instruments tu garderais, et a quel cout.
+
+pass  # TODO etudiant
+",,,,,,,,5f99392079140135,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,5a5a0b56,markdown,fr,363afbc05d3e3997,"### Exercice 3 — la signature thermodynamique comme classificateur
+
+**Étape 1.** Applique `discretise` + `compare_real_reversed_reversibilized` aux quatre classes avec $k \in \{4, 6, 8\}$ quantiles, et calcule `agentivity_index` pour chaque couple (règle, $k$).
+
+**Étape 2.** L'ordre $I \approx II < III \approx IV$ survit-il au changement de $k$ ? Et l'écart III / IV — 2,3 fois sur $k = 6$, 8 % sur les symboles bruts — est-il stable, ou est-ce un effet de la discrétisation ?
+
+**Étape 3.** Réponds par oui ou non, avec preuve : la signature thermodynamique classe-t-elle les quatre classes de Wolfram ? Puis explique pourquoi la règle 250 conserve un indice d'agentivité non nul alors que $\sigma = 0$ — et ce que cela impose à l'usage de $\sigma$ dans la série ICT.
+
+*Indice :* regarde `n_symbols` avant d'interpréter $\sigma$ : sur une densité constante, la discrétisation en quantiles rend un alphabet de taille 1 et la mesure est vide. `agentivity_index` accepte `alpha` et `beta` : vérifie si ta conclusion dépend de leur valeur.",,,,,,,,363afbc05d3e3997,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,fb92889f,code,fr,09218228bae3bebb,"# Exercice 3 : la signature thermodynamique comme classificateur
+#
+# Etape 1 : applique discretise() + compare_real_reversed_reversibilized() aux
+#            quatre classes pour k in [4, 6, 8] quantiles, et calcule
+#            agentivity_index() pour chaque couple (regle, k).
+# Etape 2 : l'ordre I ~ II < III ~ IV survit-il au changement de k ? Et l'ecart
+#            III / IV (2.3x sur k=6, 8% sur les symboles bruts) est-il stable,
+#            ou est-ce un effet de la discretisation ?
+# Etape 3 : la signature thermodynamique classe-t-elle les quatre classes de
+#            Wolfram ? Reponds oui ou non avec preuve, puis explique pourquoi la
+#            regle 250 garde un indice d'agentivite non nul alors que sigma = 0.
+#
+# Indice : lis n_symbols avant d'interpreter sigma (alphabet de taille 1 sur une
+#          densite constante) ; agentivity_index accepte alpha et beta -- verifie
+#          si ta conclusion en depend.
+
+pass  # TODO etudiant
+",,,,,,,,09218228bae3bebb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,197fabd4,markdown,fr,090ed9ed80e2e6e2,"### Exercice 4 — calibrer : quelles classes résistent à la taille et à la graine ?
+
+**Étape 1.** Pour les règles 4, 6, 30 et 110, balaie `n_cells` ∈ {16, 32, 64, 128} et `seed` ∈ {1, 33, 99}, à `n_steps=500` fixé.
+
+**Étape 2.** Affiche la densité asymptotique en fonction de `n_cells` pour chaque graine. Quelles règles sont stables ? Lesquelles dépendent de la géométrie ou de la graine ?
+
+**Étape 3.** Conclus sur le protocole de mesure : quelle taille de grille faudrait-il imposer pour que les indicateurs de densité soient comparables entre laboratoires, et pourquoi la règle 110 échappe-t-elle en partie au problème ?
+
+*Indice :* 48 trajectoires, quelques secondes. Range les résultats dans une table à trois colonnes (`regle`, `n_cells`, `seed`) avant de tracer.
+
+**Étape 4.** L'encart de la section 4 a mesuré la stabilité de $\sigma$ sur les règles 0, 30 et 110, sous trois alphabets. Reprends le même balayage pour la **règle 4** et pour la **règle 6**, qui n'y figurent pas : leur $\sigma$ est-il plus stable que celui de la classe III, et qu'est-ce que cela dit du lien entre périodicité et production d'entropie ?",,,,,,,,090ed9ed80e2e6e2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,3c018aeb,code,fr,7f7b318c16c8e6b1,"# Exercice 4 : calibration en taille de grille et en graine
+#
+# Etape 1 : boucle sur RULES_CALIB = [4, 6, 30, 110], N_CELLS_CALIB = [16, 32, 64, 128]
+#            et SEEDS_CALIB = [1, 33, 99] ; calcule la densite asymptotique.
+# Etape 2 : affiche la table, puis une figure densite / n_cells par graine.
+# Etape 3 : conclus sur le protocole de mesure a imposer entre laboratoires.
+
+pass  # TODO etudiant",,,,,,,,7f7b318c16c8e6b1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,ex54regle00000,markdown,fr,ba53e7817697962a,"### Exercice 5 — la règle 54, hors de la typologie canonique
+
+**Contexte** : les exemples guidés couvrent les règles 0, 4, 6, 30, 110 et 250. La règle 54 n'appartient pas à `CANONICAL_RULES` : le carnet ne lui attribue ni classe de référence ni signature mesurée, et `classify_rule` doit la classer à partir de sa seule trajectoire.
+
+**Objectif** : classer la règle 54 avec `classify_rule`, mesurer sa signature thermodynamique avec la discrétisation de l'Exemple guidé 6, puis dire si la mesure la rapproche des règles triviales (0, 4, 250) ou des règles 30 et 110.
+
+**Indices** :
+- `classify_rule(rule, n_cells=64, n_steps=500)` renvoie un dictionnaire dont l'étiquette de classe est sous la clé `class_label`.
+- Reprenez la chaîne de l'Exemple guidé 6 : trajectoire par `wolfram_trajectory` (avec `record_densities=True`), discrétisation par `discretise`, mesure par `compare_real_reversed_reversibilized`.
+
+**Critère de vérification** : la réponse cite `class_label` et `sigma_real` pour la règle 54, et dit en une phrase si l'étiquette de classe et la mesure thermodynamique concordent.
+",,,,,,,,ba53e7817697962a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,ex54regle00001,code,fr,237e30c660102e7b,"# Exercice 5 : regle 54 -- classe mesuree et signature thermodynamique
+regle = 54
+# Etape 1 : classer la regle avec classify_rule (n_cells=64, n_steps=500)
+classement = None  # TODO etudiant : dictionnaire renvoye par classify_rule
+# Etape 2 : mesurer la signature thermodynamique de la trajectoire de la regle 54
+mesure = None  # TODO etudiant : dictionnaire renvoye par compare_real_reversed_reversibilized
+print(""Exercice a completer"")
+",,,,,,,,237e30c660102e7b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,exseuil00000000,markdown,fr,f8dfb83b61d085be,"### Exercice 6 — le seuil de non-trivialité
+
+**Contexte** : l'Exemple guidé 6 donne $\sigma$ nul pour la règle 0 et positif pour les règles 30 et 110 ; l'encart de la section 4 montre que la règle 0 reste nulle sous les trois alphabets, alors que les règles 30 et 110 varient d'un tirage à l'autre. Dire que l'instrument « sépare les triviales des non triviales » suppose donc de fixer un seuil — et de le confronter à la dispersion mesurée.
+
+**Objectif** : écrire `est_non_triviale(sigma_real, seuil)`, choisir un seuil, puis appliquer la fonction aux règles 0, 4, 30, 110 et 250 à partir du dictionnaire `signatures` de l'Exemple guidé 6.
+
+**Indices** :
+- `signatures[regle][""quantiles""][""sigma_real""]` donne la valeur à classer : lisez-la dans le dictionnaire, ne recopiez pas les nombres en dur.
+- Le seuil ne se lit pas dans les seules valeurs de l'Exemple guidé 6 : confrontez-le aux minima de l'encart (`min` par règles 30 et 110), qui descendent sous 0,001.
+
+**Critère de vérification** : la fonction renvoie un booléen pour chaque règle, et le seuil choisi est accompagné d'une phrase de justification qui cite une valeur de $\sigma$ ou de `cv` affichée par l'Exemple guidé 6 ou par l'encart.
+",,,,,,,,f8dfb83b61d085be,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,exseuil00000001,code,fr,5752b15b06bd4e3b,"# Exercice 6 : seuil de non-trivialite
+def est_non_triviale(sigma_real, seuil):
+    """"""Renvoie True si la signature sigma_real depasse le seuil.""""""
+    return None  # TODO etudiant : comparer sigma_real au seuil
+
+
+SEUIL = None  # TODO etudiant : choisir le seuil et justifier le choix dans la cellule markdown
+print(""Exercice a completer"")
+",,,,,,,,5752b15b06bd4e3b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,exquant00000000,markdown,fr,a770ff1cafd98538,"### Exercice 7 — la sensibilité de la mesure au nombre de quantiles
+
+**Contexte** : l'encart de la section 4 mesure le coefficient de variation sous **trois** alphabets (11, 10 et 6 niveaux) et constate que les moyennes comme les dispersions se déplacent. Trois points ne font pas une courbe : reste à savoir si la dérive est monotone, et où elle s'arrête.
+
+**Objectif** : mesurer $\sigma$ de la règle 30 pour plusieurs nombres de quantiles (par exemple 3, 4, 5, 6, 8, 10, 12, 16), puis dire si la valeur est stable et si la dérive observée entre 6 et 11 se prolonge.
+
+**Indices** :
+- `np.linspace(0, 1, k + 1)[1:-1]` donne les bornes intérieures de `k` intervalles de quantiles.
+- Réutilisez la trajectoire `counts[30]` : ne recalculez pas la trajectoire.
+- Chaque mesure suit l'enchaînement de l'Exemple guidé 6 : `np.digitize` puis `compare_real_reversed_reversibilized`.
+
+**Critère de vérification** : la réponse présente un tableau nombre de quantiles → $\sigma$, et une phrase sur la stabilité de la valeur, comparée aux trois points de l'encart.
+",,,,,,,,a770ff1cafd98538,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,exquant00000001,code,fr,20085107b07c242e,"# Exercice 7 : sensibilite au nombre de quantiles (regle 30)
+valeurs_k = None  # TODO etudiant : liste des nombres de quantiles a tester
+# Etape 1 : pour chaque k, discretiser counts[30] puis mesurer sigma_real
+sigma_par_k = None  # TODO etudiant : dictionnaire {k: sigma_real}
+print(""Exercice a completer"")
+",,,,,,,,20085107b07c242e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,conclusion00000,markdown,fr,7d46d46492c0aa6e,"### Exercice 8 — La classe asymptotique dépend-elle de la condition initiale ?
+
+L'Exemple guidé 1 mesure la densité asymptotique des six règles à partir d'un état initial **tiré au hasard** (graine fixée). Une seule condition initiale ne dit rien de cette dépendance : cet exercice la met à l'épreuve.
+
+Complétez le code ci-dessous pour mesurer la densité asymptotique des règles **0** et **250** à partir de trois états initiaux construits explicitement :
+
+1. toutes les cellules à 0 ;
+2. toutes les cellules à 1 ;
+3. un état aléatoire (graine 33), comme point de comparaison avec l'Exemple guidé 1.
+
+`wolfram_step(state, rule)` fait avancer un état d'un pas : c'est l'organe de la série importé au sommet du carnet.
+
+**Livrable attendu** : un tableau (règle × état initial) des densités asymptotiques, et une phrase qui répond à la question du titre — la classe est déterminée par la règle seule, ou par le couple (règle, état initial) ?
+
+**Indice** : deux états initiaux qui donnent la même densité asymptotique désignent une règle qui domine ; deux densités différentes désignent une classe qui dépend de l'état. Les deux règles de l'énoncé ne répondent pas de la même façon, et la règle 0 est la plus instructive des deux.
+",,,,,,,,7d46d46492c0aa6e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,29695205,code,fr,0f0291d50a47a81c,"# Exercice 8 : densite asymptotique de R0 et R250 selon l'etat initial
+#
+# Etape 1 : construire les trois etats initiaux
+n_cells = 64
+n_steps = 500
+regles_ex = [0, 250]
+
+etat_tous_zero = None   # TODO etudiant : tableau de n_cells zeros, dtype int8
+etat_tous_un = None     # TODO etudiant : tableau de n_cells uns, dtype int8
+etat_aleatoire = None   # TODO etudiant : tirage binaire reproductible, graine 33
+etats_initiaux = {'tous a 0': etat_tous_zero,
+                  'tous a 1': etat_tous_un,
+                  'aleatoire (33)': etat_aleatoire}
+
+# Etape 2 : pour chaque (regle, etat initial), iterer wolfram_step sur n_steps
+# pas, compter les cellules actives au pas n_steps et en tirer la densite
+table = {}
+for rule in regles_ex:
+    for nom, etat in etats_initiaux.items():
+        table[(rule, nom)] = None  # TODO etudiant : densite asymptotique
+
+print(""Exercice a completer -- tableau attendu : regle x etat initial"")
+for (rule, nom), valeur in table.items():
+    print(""  R%-4d %-16s %s"" % (rule, nom, valeur))
+",,,,,,,,0f0291d50a47a81c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb,77df25fc,markdown,fr,c60222b379cc0a32,"## Conclusion — six instruments, six portées
+
+| Instrument | Sépare | Ne sépare pas | Mesure |
+|---|---|---|---|
+| Densité et indicateurs d'organe | I vs II vs (III/IV) | III vs IV ; rate la règle 4 (II plate) | le régime de la projection |
+| Composantes connexes (gliders) | les classes I / II (objets nets) | **III vs IV** : percolation des 1 | l'existence d'objets **globaux** |
+| Translation diagonale ($d = 1$) | les règles immobiles des règles mobiles (0,0000 contre 0,25 / 0,40) | III vs IV (1,63×) ; et **pas le glider** : la règle 250, remplissage orienté, marque 0,9950 | le déplacement d'un cran par pas |
+| Information mutuelle spatiale | III vs IV, faiblement (1,3× à $d = 1$, 1,9× à $d = 2$) | I vs II ; s'éteint à $d = 4$ | la corrélation locale moyenne |
+| **Déterminisme de blocs ($w = 8$)** | **rien** : au cône causal exact, 1,0000 pour les six règles | III vs IV — le contraste brut (0,0000 contre 0,4560) vient des deux cellules de bord que le motif ne détermine pas | la **fenêtre** de l'instrument, plus que la reconstructibilité |
+| Signature thermodynamique ($\sigma$, agentivité) | I/II au plancher, III et IV au plafond, $III > IV$ aux paramètres du carnet | la quasi-égalité III / IV annoncée ; **et la stabilité** : cv 1,19 et 1,51 sur douze tirages | la dissipation de la **séquence de densités** |
+
+**Ce que le carnet retient.**
+
+1. La taxonomie de Wolfram ne se lit pas dans un seul nombre : chaque instrument en reconstruit une **coupe différente**, et quatre d'entre eux (densité, composantes, Lempel-Ziv, translation) produisent des ordres qui contredisent l'intuition « complexe = plus de X ».
+2. **Aucune frontière III / IV ne sort de ce banc.** La densité ne donne rien entre les deux classes, les composantes connexes percolent, la translation diagonale marque 1,63× tout en s'effondrant sur un remplissage trivial, et le déterminisme de blocs — le seul qui paraissait trancher — s'effondre dès qu'on le restreint au cône causal du motif (1,0000 pour les six règles). Les trois pistes de l'énoncé sont mesurées **et réfutées** ; c'est un résultat du carnet, pas une lacune.
+3. $\sigma$ **n'est pas** une mesure de la flèche du temps. La règle 250 le démontre : $\sigma$ nul dans les deux discrétisations, distance à l'inverse non nulle (4,98853 sur 500 pas — mais **0,00000** sur la queue de 100 : le chiffre est un transitoire, pas une régularité) et un rang de **troisième sur quatre** dans sa propre colonne. C'est la distance à l'inverse — et l'indice d'agentivité qui la porte — qui mesure l'asymétrie temporelle, à condition de déclarer sa fenêtre.
+4. Les deux lectures de III / IV ne se contredisent pas — mais la première est plus faible qu'on ne le croyait : la classe IV porte **un peu plus de corrélation locale** (information mutuelle, 1,3× à $d = 1$), la classe III **plus d'irréversibilité de séquence** à grille fixée. « Laquelle est la plus complexe ? » n'a pas de réponse unique — la question n'a de sens qu'avec l'observable et l'instrument.
+5. Un indicateur ne s'exporte pas hors de sa calibration. $\sigma$ classe à (`N_CELLS` = 64, graine 33) et ne classe plus dès que la grille ou la graine change ; **la densité, elle, est remarquablement stable** : sur `n_cells` ∈ {16, 32, 64, 128} et trois graines, la règle 30 varie de 0,4959 à 0,5088 (×1,03) et la règle 110 de 0,5566 à 0,5938 (×1,07). Le seul « facteur deux » de la table est un zéro divisé (règles 4 et 6, dont la densité passe de 0,0000 à 0,125-0,17 selon la graine). Ce carnet ne livre donc pas un classifieur des quatre classes, il livre **six instruments avec leur domaine de validité**.
+
+**Prolongements.** La discrimination structurelle de III / IV se poursuit avec [ICT-18b](ICT-18b-ReversibilityBudget-Python.ipynb) (budget de réversibilité) et, pour les instruments de complexité que ce carnet ne fait que nommer, avec les carnets qui instrumentent les structures du Jeu de la Vie (famille ICT-15k / ICT-32 / ICT-33) : ceux-là mesurent les objets, là où la thermodynamique mesure la dissipation. La jambe temporelle du capstone — « quel substrat porte le plus d'agentivité ? » — suppose résolu le problème posé ici : **sur quelle observable la mesure est prise, et ce que cette observable conserve**.
+
+**Suite Origami.** Le pli 3 instrumente la trajectoire espace-temps par $K_\text{trajectory}$, et le pli 4 étend la mesure aux quatre classes.
+
+**Suivant dans la série** : [ICT-49 — Machines de Gödel →](../ICT-49-MachinesDeGoedel-Python.ipynb) rejoue l'auto-amélioration optimale de Schmidhuber (2006) sur un jouet exécutable où chaque bascule n'est prise que sur preuve — le même geste de séparation mesure/instrument, appliqué cette fois à la preuve elle-même.
+
+**Navigation** : [Index](../README.md)",,,,,,,,c60222b379cc0a32,,,,,,,,,,,,,,,
