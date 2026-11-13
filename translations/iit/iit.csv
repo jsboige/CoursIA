@@ -1479,7 +1479,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFi
 resultat_orbital = None  # TODO etudiant
 print(""Exercice 3 a completer"")
 ",,,,,,,,0131e6ff56293ef6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,97888f26,markdown,fr,cedfbdbebb11cf6f,"# ICT-13 — Morphodynamique stratégique : une stratégie est-elle une forme stable ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,97888f26,markdown,fr,cedfbdbebb11cf6f,"# ICT-13 — Morphodynamique stratégique : une stratégie est-elle une forme stable ?
 
 **Sous-série ICT** (trajectoires intégrées, strate 3). Suite d'ICT-10
 (bistabilité), ICT-11 (agence multi-échelle) et ICT-12 (champs de valence).
@@ -1515,7 +1515,7 @@ numériquement** ses prévisions au lieu de re-dériver la théorie.
    sont pas en simulation le montrent en sortie.
 
 **Kernel** : Python 3 (numpy CPU pur). Module : `ict/strategic_morphodynamics.py`.",,,,,,,,cedfbdbebb11cf6f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,9ee3f180,code,fr,2cac3ccc1e4f087e,"import sys, os
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,9ee3f180,code,fr,2cac3ccc1e4f087e,"import sys, os
 sys.path.insert(0, os.getcwd())
 
 import numpy as np
@@ -1531,14 +1531,14 @@ print(""Strategies:"", list(strat.keys()))
 print(f""Gains canoniques T,R,P,S = {M.CANON['T']},{M.CANON['R']},{M.CANON['P']},{M.CANON['S']}"")
 print(f""Seuil grim (T-R)/(T-P) = {M.grim_threshold():.3f}"")
 ",,,,,,,,2cac3ccc1e4f087e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,8dd218fb,markdown,fr,4b231e0b29f7f498,"## 1. Le dilemme du prisonnier itere
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,8dd218fb,markdown,fr,4b231e0b29f7f498,"## 1. Le dilemme du prisonnier itere
 
 Gains canoniques d'Axelrod : $T=5$ (tentation), $R=3$ (recompense mutuelle),
 $P=1$ (punition mutuelle), $S=0$ (dupe). Contrainte $T>R>P>S$ et $2R>T+S$ :
 la coopération mutuelle est collectivement optimale, mais la défection est
 individuellement tentante. Les stratégies (TFT, grim, Pavlov, GTFT, AllC, AllD)
 sont des fonctions de l'historique des coups.",,,,,,,,4b231e0b29f7f498,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,36e11a4e,code,fr,ae9c9bb9c2e81d48,"own, opp = np.array([M.C]), np.array([M.C])
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,36e11a4e,code,fr,ae9c9bb9c2e81d48,"own, opp = np.array([M.C]), np.array([M.C])
 print(""tft(1er coup)   ="", M.tft(np.array([]), np.array([])), ""(C par defaut)"")
 print(""grim(apres C)   ="", M.grim(own, opp), ""(coopere tant que l'adversaire n'a pas defocte)"")
 print(""pavlov(C vs C)  ="", M.pavlov(np.array([M.C]), np.array([M.C])), ""(gagne -> stay)"")
@@ -1547,18 +1547,18 @@ print(""pavlov(C vs D)  ="", M.pavlov(np.array([M.C]), np.array([M.D])), ""(perd
 g_d, g_c = M.play_match(M.alld, M.allc, n_rounds=50, noise=0.0, rng=rng)
 print(f""\nAllD vs AllC (50 coups, sans bruit) : AllD={g_d:.2f} (T chaque), AllC={g_c:.2f} (S chaque)"")
 ",,,,,,,,ae9c9bb9c2e81d48,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,6038547c,markdown,fr,3b73ee114c319267,"## 2. Gate 1 — tournoi round-robin (Axelrod reproduit, simule)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,6038547c,markdown,fr,3b73ee114c319267,"## 2. Gate 1 — tournoi round-robin (Axelrod reproduit, simule)
 
 Chaque paire de stratégies (y compris contre elle-même) joue 200 coups. Le score
 est le gain moyen par coup. **Tout est simule**, aucun tableau recopie.",,,,,,,,3b73ee114c319267,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,91ea8512,code,fr,e698f20ca3f25151,"rng = np.random.default_rng(42)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,91ea8512,code,fr,e698f20ca3f25151,"rng = np.random.default_rng(42)
 sc = M.round_robin(strat, n_rounds=200, noise=0.0, n_reps=1, rng=rng)
 ranking = sorted(sc.items(), key=lambda x: -x[1])
 print(f""{'rang':4s} {'strategie':10s} {'score/coup':>10s}"")
 for i, (n, v) in enumerate(ranking, 1):
     print(f""{i:<4d} {n:10s} {v:10.3f}"")
 ",,,,,,,,e698f20ca3f25151,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3de70266,code,fr,c0f6eafbca636152,"fig, ax = plt.subplots(figsize=(7, 4))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3de70266,code,fr,c0f6eafbca636152,"fig, ax = plt.subplots(figsize=(7, 4))
 names = [n for n, _ in ranking]; vals = [v for _, v in ranking]
 colors = [""#2ca02c"" if n in (""tft"",""gtft"",""pavlov"",""grim"") else (""#d62728"" if n==""alld"" else ""#7f7f7f"") for n in names]
 ax.bar(names, vals, color=colors); ax.set_ylabel(""score moyen / coup"")
@@ -1567,12 +1567,12 @@ ax.axhline(M.CANON[""P""], ls=""--"", color=""grey"", alpha=0.5, label=f""P={M.C
 ax.legend(fontsize=8)
 fig.tight_layout(); plt.show()
 ",,,,,,,,c0f6eafbca636152,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,dead3775,markdown,fr,4f27fa92aa6be350,"Sans bruit, **TFT et grim** dominent (coordinateurs : ils punissent la
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,dead3775,markdown,fr,4f27fa92aa6be350,"Sans bruit, **TFT et grim** dominent (coordinateurs : ils punissent la
 défection sans s'engager dans une guerre d'usure contre eux-mêmes), **AllD**
 est dernier (il exploite AllC mais s'enferre contre les punitifs). C'est la
 reproduction numérique du résultat d'Axelrod 1980 — mais le verdict change sous
 bruit (section 4).",,,,,,,,4f27fa92aa6be350,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,28fc9740,markdown,fr,caa1ee168268a29d,"## 3. Gate 2 — seuil de grim trigger : analytique vs numérique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,28fc9740,markdown,fr,caa1ee168268a29d,"## 3. Gate 2 — seuil de grim trigger : analytique vs numérique
 
 La théorie (GT-6c, Folk theorem) predit que grim trigger soutient la coopération
 a l'équilibre face a AllD si le facteur de continuation (escompte) $\delta$ est
@@ -1584,14 +1584,14 @@ Pour les gains canoniques : $\delta^* = (5-3)/(5-1) = 0{,}5$. On verifie
 numériquement en comparant le gain escompte total $\sum_t \delta^t g_t$ de grim
 (qui rafle $R$ a chaque coup contre un autre grim) a celui d'AllD face a grim
 ($T$ au premier coup, puis $P$ a jamais).",,,,,,,,caa1ee168268a29d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,40cad9ed,code,fr,e618203958fb7cb4,"thr = M.grim_threshold()
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,40cad9ed,code,fr,e618203958fb7cb4,"thr = M.grim_threshold()
 deltas = np.linspace(0.1, 0.9, 17)
 _, diffs, crossing = M.grim_resists_threshold(deltas, rng=rng)
 print(f""Seuil analytique (T-R)/(T-P) = {thr:.3f}"")
 print(f""Croisement numerique          = {crossing:.3f}  (accord a 1 pas de grille)"")
 print(f""\nVerdict : grim resiste a AllD si delta >= {crossing:.2f} (numerique), {thr:.2f} (analytique)"")
 ",,,,,,,,e618203958fb7cb4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3b69b29a,code,fr,478fcfeaf89a2497,"fig, ax = plt.subplots(figsize=(7, 4))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3b69b29a,code,fr,478fcfeaf89a2497,"fig, ax = plt.subplots(figsize=(7, 4))
 ax.plot(deltas, diffs, ""o-"", color=""#1f77b4"", label=""$G_{grim} - G_{alld}$ (numerique)"")
 ax.axhline(0, color=""grey"", lw=0.8)
 ax.axvline(thr, ls=""--"", color=""#d62728"", label=f""seuil analytique $\\delta^*$={thr:.2f}"")
@@ -1601,7 +1601,7 @@ ax.set_title(""Gate 2 : seuil de grim trigger — analytique vs numerique"")
 ax.legend(fontsize=8)
 fig.tight_layout(); plt.show()
 ",,,,,,,,478fcfeaf89a2497,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3666f57c,markdown,fr,a6e367769eacb990,"## 4. Gate 3 — régime-dépendance : effondrement sous bruit
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3666f57c,markdown,fr,a6e367769eacb990,"## 4. Gate 3 — régime-dépendance : effondrement sous bruit
 
 Le **bruit d'implementation** (un coup intentionnel inverse avec probabilité
 $\epsilon$) discrimine les stratégies. TFT est fragile : une erreur entre deux
@@ -1610,7 +1610,7 @@ coopération. En théorie (Nowak & Sigmund), GTFT (pardonne avec prob 1/3) et
 Pavlov (win-stay lose-shift) **devraient resister** en restaurant la coopération.
 On teste cette prediction : le verdict (section 6) la nuance honnetement. C'est
 le fil régime-dépendance d'ICT-10/12 transpose aux stratégies.",,,,,,,,a6e367769eacb990,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,29e3f42f,code,fr,25e0f74664d7e265,"rng = np.random.default_rng(21)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,29e3f42f,code,fr,25e0f74664d7e265,"rng = np.random.default_rng(21)
 grid = np.linspace(0.0, 0.4, 9)
 out = M.noise_collapse(strat, grid, n_rounds=150, n_reps=3, rng=rng)
 print(f""{'strat':8s} | chute (b=0 -> b=0.4)"")
@@ -1618,7 +1618,7 @@ for n in strat:
     drop = out[n][0] - out[n][-1]
     print(f""{n:8s} | {drop:+.3f}"")
 ",,,,,,,,25e0f74664d7e265,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b95bd2e5,code,fr,2a69b7da4b0f26f6,"fig, ax = plt.subplots(figsize=(7, 4))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b95bd2e5,code,fr,2a69b7da4b0f26f6,"fig, ax = plt.subplots(figsize=(7, 4))
 for n in strat:
     ax.plot(grid, out[n], ""o-"", label=n,
             color=""#d62728"" if n==""tft"" else (""#2ca02c"" if n==""pavlov"" else None))
@@ -1627,14 +1627,14 @@ ax.set_title(""Gate 3 : effondrement sous bruit (TFT chute, Pavlov resiste)"")
 ax.legend(fontsize=8)
 fig.tight_layout(); plt.show()
 ",,,,,,,,2a69b7da4b0f26f6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,ee8c7f81,markdown,fr,41b39a6111ce7ba4,"## 5. Gate 4 — bassins d'invasion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,ee8c7f81,markdown,fr,41b39a6111ce7ba4,"## 5. Gate 4 — bassins d'invasion
 
 La mesure morphodynamique centrale : etant donne une population residente
 (majoritairement AllD), quelle **fraction initiale** d'un envahisseur suffit pour
 qu'il prenne le contrôle (frequence finale > 0,5) sous la dynamique de
 replicateur ? Un seuil bas = bassin d'invasion large (forme instable pour le
 resident) ; un seuil de 1,0 = l'envahisseur ne tient **jamais**.",,,,,,,,41b39a6111ce7ba4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,723a4fbc,code,fr,f9131e09be388226,"rng = np.random.default_rng(42)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,723a4fbc,code,fr,f9131e09be388226,"rng = np.random.default_rng(42)
 A = M.payoff_matrix(strat, n_rounds=150, noise=0.0, n_reps=2, rng=rng)
 names = list(strat.keys())
 alld_idx = names.index(""alld"")
@@ -1648,7 +1648,7 @@ for inv in [""tft"", ""gtft"", ""pavlov"", ""grim"", ""allc""]:
     msg = f""{crit:.2f}"" if crit is not None else ""jamais (1.0)""
     print(f""  {inv:8s}: seuil = {msg}"")
 ",,,,,,,,f9131e09be388226,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,efc317d6,code,fr,3d855e4fae76b7b6,"fig, ax = plt.subplots(figsize=(7, 4))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,efc317d6,code,fr,3d855e4fae76b7b6,"fig, ax = plt.subplots(figsize=(7, 4))
 for inv, (x0s, finals, crit) in results.items():
     ax.plot(x0s, finals, label=f""{inv}"" + (f"" (crit={crit:.2f})"" if crit is not None else "" (jamais)""))
 ax.plot([0, 1], [0.5, 0.5], ""k--"", lw=0.7, alpha=0.5)
@@ -1657,13 +1657,13 @@ ax.set_title(""Gate 4 : bassins d'invasion (resident = AllD)"")
 ax.legend(fontsize=7, loc=""lower right"")
 fig.tight_layout(); plt.show()
 ",,,,,,,,3d855e4fae76b7b6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,1e3a6cdb,markdown,fr,181132dea959cb52,"Les cooperateurs punitifs (TFT, grim) envahissent AllD a **très faible seuil**
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,1e3a6cdb,markdown,fr,181132dea959cb52,"Les cooperateurs punitifs (TFT, grim) envahissent AllD a **très faible seuil**
 (0.02) : ils se coordonnent en coopération mutuelle ($R$) qui bat la punition
 mutuelle des defectors ($P$). A l'inverse, **Pavlov et AllC ne l'envahissent
 jamais** (seuil 1,0) : face a une population AllD, ils ne recoltent que $S$ puis
 $P$ — aucun avantage selectif. C'est l'inegalite morphodynamique : toutes les
 stratégies coopératrices ne sont pas equivalentes face a l'invasion.",,,,,,,,181132dea959cb52,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,243977d2,markdown,fr,ce7e13227f1f2681,"## 7. Verdict sans complaisance
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,243977d2,markdown,fr,ce7e13227f1f2681,"## 7. Verdict sans complaisance
 
 - **Gate 1** : sans bruit, TFT et grim dominent le tournoi (2,635), AllD est
   dernier (2,313) — reproduction numérique d'Axelrod (sortie simulee, non recopiee).
@@ -1713,12 +1713,12 @@ régime-dépendance, ouvert en ICT-10 (le $\hat{p}$) et prolonge en ICT-12 (anim
 trouve ici sa troisieme incarnation : **la robustesse d'une stratégie est une
 fonction du régime d'interaction, pas une propriete intrinseque**.
 ",,,,,,,,ce7e13227f1f2681,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,4eda0108,markdown,fr,4f67ccdcc50d8266,"## 8. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,4eda0108,markdown,fr,4f67ccdcc50d8266,"## 8. Exercices
 
 Trois exercices (a completer). Stubs **sans erreur volontaire** ; le notebook
 s'execute de bout en bout même non complétée.
 ",,,,,,,,4f67ccdcc50d8266,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,30551825,markdown,fr,23da786c43451f1e,"### Exercice 1 — stratégie « tester-then-defect »
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,30551825,markdown,fr,23da786c43451f1e,"### Exercice 1 — stratégie « tester-then-defect »
 
 Implementez une stratégie qui coopere 3 coups puis defocte systematiquement
 (exploiteur tardif). Mesurez son score au tournoi et son bassin d'invasion face a
@@ -1727,14 +1727,14 @@ AllD. Objectif : determinez si elle bat TFT.
 *Indice* : ajoutez une entree dans `make_strategies` ; `M.round_robin` et
 `M.invasion_basin` prennent le dict.
 ",,,,,,,,23da786c43451f1e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,51f94a74,code,fr,7730d8e9f3881d01,"# Exercice 1 : a completer
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,51f94a74,code,fr,7730d8e9f3881d01,"# Exercice 1 : a completer
 def test_then_defect(own, opp):
     # TODO etudiant : cooperer si len(own) < 3, sinon defecter
     return None
 resultat_ex1 = None  # TODO etudiant
 print(""Exercice 1 a completer"")
 ",,,,,,,,7730d8e9f3881d01,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,5738e556,markdown,fr,772fea0e24daf10b,"### Exercice 2 — seuil de grim pour un autre jeu
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,5738e556,markdown,fr,772fea0e24daf10b,"### Exercice 2 — seuil de grim pour un autre jeu
 
 Recomputez le seuil analytique $\delta^*=(T-R)/(T-P)$ et le croisement numérique
 pour un PD modifie (T=4, R=3, P=2, S=1). Objectif : verifiez que l'accord
@@ -1742,12 +1742,12 @@ analytique/numérique se maintient.
 
 *Indice* : passez `T=,R=,P=,S=` a `M.grim_continuation_payoff` et `M.grim_threshold`.
 ",,,,,,,,772fea0e24daf10b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,21ba393e,code,fr,ff43f59ffe3ba352,"# Exercice 2 : a completer
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,21ba393e,code,fr,ff43f59ffe3ba352,"# Exercice 2 : a completer
 seuil_ex2 = None    # TODO etudiant : M.grim_threshold(T=4,R=3,P=1) etc.
 croisement_ex2 = None  # TODO etudiant
 print(""Exercice 2 a completer"")
 ",,,,,,,,ff43f59ffe3ba352,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,566d2ce6,markdown,fr,e11c3864fafa9d4c,"### Exercice 3 — invasion de GTFT dans une population mixte
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,566d2ce6,markdown,fr,e11c3864fafa9d4c,"### Exercice 3 — invasion de GTFT dans une population mixte
 
 Cartographiez le bassin d'invasion de GTFT face a un **resident Pavlov** (pas
 AllD). Objectif : determinez si GTFT peut envahir une population Pavlov, et a
@@ -1756,7 +1756,7 @@ quel seuil.
 *Étape 1* : construisez la matrice de gain 2-stratégies (gtft, pavlov) via
 `M.payoff_matrix`. *Étape 2* : `M.invasion_basin(A, invader_idx=0, resident_idx=1)`.
 ",,,,,,,,e11c3864fafa9d4c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b316e15b,code,fr,92d49142e4417b15,"# Exercice 3 : a completer
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b316e15b,code,fr,92d49142e4417b15,"# Exercice 3 : a completer
 resultat_ex3 = None  # TODO etudiant : seuil critique gtft-vs-pavlov
 print(""Exercice 3 a completer"")
 ",,,,,,,,92d49142e4417b15,,,,,,,,,,,,,,,
@@ -1764,7 +1764,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurp
 
 *La surprise du modèle interne est-elle une énergie libre, et ajoute-t-elle quoi que ce soit à l'erreur de prédiction ?*
 
-> **Navigation** : [← ICT-13](../ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) · [↑ ICT-Series](../README.md) · [→ ICT-14b](ICT-14b-ActiveInferenceEFE-Python.ipynb) · [Framing ICT](../ICT-0-Framing.md)
+> **Navigation** : [← ICT-13](../ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) · [↑ ICT-Series](../README.md) · [→ ICT-14b](ICT-14b-ActiveInferenceEFE-Python.ipynb) · [Framing ICT](../ICT-0-Framing.md)
 
 **Thèse.** ICT est né *« Integrated Complexity Theory »* — intégration dynamique ($\Phi_{dyn}$), **minimisation de la surprise** (énergie libre, lignée Friston), compression (Schmidhuber). La série a développé la jambe *causale* (Levin, Hoel, Thom) ; la jambe **énergie-libre** restait non attachée, alors que le banc expérimental la préparait sans le dire : le représentant interne $\hat p$ d'ICT-10.
 
@@ -9186,7 +9186,7 @@ verdict est, de plus en plus, **régime-dépendant** (ICT-10 → ICT-13).
 | **[ICT-10](ICT-10-CatastropheGrammar-Python.ipynb)** | La grammaire des catastrophes est-elle mesurable ? $\hat p$ anticipe-t-il ? | OUI en régime non dégénéré ($a<0$) ; hors régime = **fantôme**. $\hat p$ : avantage **régime-dépendant** | comptage [1,3], 2 transitions ; lacet aire signée +1.633 ; $\hat p$ horizon-4 0.055 vs persistance 0.101 ; $a$=+0.5 → 0 saut |
 | **[ICT-11](ICT-11-CausalAgencyProfiles-Python.ipynb)** | À quelle échelle l'agence est-elle la plus lisible ? | **Résultat négatif robuste** : pas de granularité privilégiée | 2 mesures se contredisent ; effectiveness↔repair\_gain $r$=+0.50 mais ↔basin\_return $r$=−0.14 ; effectiveness sans sommet (0.71/0.50/0.79/0.63) |
 | **[ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)** | Dans quels environnements le modèle interne $\hat p$ paie-t-il son coût ? | **Régime-dépendant** : $\hat p$ paie **où la source échappe au réactif ET reste prévisible** | balistique rapide capture $\hat p$ 0.072 vs réactif 0.018 ; anticipation $\hat p$ 2.44 vs persistance 14.95 (balist.) mais **perd** en bruité (0.62 vs 0.23) |
-| **[ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)** | Une stratégie est-elle une forme stable ? | Stable **seulement dans un paysage donné** ; TFT gagne sans bruit mais s'effondre ; correction honnête : **grim** chute le moins | sans bruit TFT/grim 2.635, AllD 2.313 ; $\delta^*$=0.5 (num. 0.55) ; chute sous bruit TFT +0.399 vs grim +0.287 ; invasion TFT/grim 0.02, pavlov/allc jamais (1.0) |
+| **[ICT-13](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)** | Une stratégie est-elle une forme stable ? | Stable **seulement dans un paysage donné** ; TFT gagne sans bruit mais s'effondre ; correction honnête : **grim** chute le moins | sans bruit TFT/grim 2.635, AllD 2.313 ; $\delta^*$=0.5 (num. 0.55) ; chute sous bruit TFT +0.399 vs grim +0.287 ; invasion TFT/grim 0.02, pavlov/allc jamais (1.0) |
 
 ### Strates 4-5 — les jambes que ce capstone consomme (gates 4-6)
 
@@ -9336,7 +9336,7 @@ print(f""S2 (bistable)     longueur={len(s2):5d}  etats distincts={len(set(s2)):
       f""(deciles occupes)"")",,,,,,,,969a99683f1da620,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb,7a32caab,markdown,fr,f933b7f79cb0dc2c,"### S3 — le réplicateur stratégique (strate 3)
 
-Le dilemme du prisonnier itéré sous dynamique de réplicateur ([ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)) :
+Le dilemme du prisonnier itéré sous dynamique de réplicateur ([ICT-13](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)) :
 plusieurs trajectoires depuis des populations initiales aléatoires, résumées par la **stratégie
 dominante** (argmax des fréquences) à chaque pas.
 ",,,,,,,,f933b7f79cb0dc2c,,,,,,,,,,,,,,,
@@ -10897,7 +10897,7 @@ verdict « payant ou ruineux » ne se declare qu'après avoir croise les regimes
 - Référence de l'expérience sur les champs de valence : [#4878](https://github.com/jsboige/CoursIA/issues/4878).
 - Prong B de la gate de non-dégénérescence : #3801.
 ",,,,,,,,7843f8beed8ec3eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,cell-a19bcce2,markdown,fr,a51b76b1975dc483,"## Bilan — ICT-13 : une stratégie n'est PAS une forme stable, elle est régime-dépendante
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,cell-a19bcce2,markdown,fr,a51b76b1975dc483,"## Bilan — ICT-13 : une stratégie n'est PAS une forme stable, elle est régime-dépendante
 
 Ce notebook pose la question centrale de la strate 3 : **une stratégie est-elle
 une forme stable dans un paysage d'interactions ?** La réponse, falsifiée gate
@@ -16111,7 +16111,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipy
   l'addition modulaire (`weight_decay=1`), avec la visualisation PCA « horloge » des embeddings.",,,,,,,,eeb7f3fd4e6c8d70,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,header,markdown,fr,9532324ed6f37bef,"# ICT-18b — Budget de réversibilité : la jambe « fin » de la réversibilisation
 
-> *Integrated Causal Trajectories*. Pont avec [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (le *moyen*), [ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) (l'*enjeu*), [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb) / [ICT-9](ICT-09-AgencyRegeneration-Python.ipynb) / [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
+> *Integrated Causal Trajectories*. Pont avec [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (le *moyen*), [ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) (l'*enjeu*), [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb) / [ICT-9](ICT-09-AgencyRegeneration-Python.ipynb) / [ICT-13](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
 
 **Navigation** : [README](README.md) | [ICT-0-Framing](ICT-0-Framing.md) | [sous-serie ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) -> [ICT-20](ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb)
 
@@ -21313,7 +21313,7 @@ et sa suite de tests · `docs/ict/synthese-invariants-dissociations-obstructions
 (section dédiée) · ICT-15d pour la leçon d'origine sur les verdicts vides.",,,,,,,,76490c596b8a8bba,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb,header,markdown,fr,9214360876913be9,"# ICT — Substrat argumentation : trajectoires de croyance et dette d'irréversibilité du discours (Phase B)
 
-> **Part of** [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588) — *Integrated Causal Trajectories*, graine strate 6. See #7289. Pont [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) (Axelrod), [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (σ), [ICT-18b](ICT-18b-ReversibilityBudget-Python.ipynb) (budget B), série [Tweety-5](../../SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung AF).
+> **Part of** [Epic #4588](https://github.com/jsboige/CoursIA/issues/4588) — *Integrated Causal Trajectories*, graine strate 6. See #7289. Pont [ICT-13](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) (Axelrod), [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (σ), [ICT-18b](ICT-18b-ReversibilityBudget-Python.ipynb) (budget B), série [Tweety-5](../../SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb) (Dung AF).
 >
 > **Phase A** (grounding : TPM sur états de croyance depuis un AF de Dung) = PR #7336, VERDICT PASS. Ce notebook est la **Phase B** : le substrat argumentation soumis au zoo ICT (σ, K, spectre, budget), avec trois prédictions **pré-enregistrées avant les tests**.
 
@@ -23162,7 +23162,7 @@ ré-implémente rien : il **appelle** l'interface canonique `ict.voi`
 et **consomme** le comparateur cross-engine `voi/` qui fait tourner
 les deux moteurs sur le même contrat JSON et journalise l'accord/désaccord.
 
-**Navigation** : [**Index**](../README.md) | [<< ICT-12d](ICT-12d-InhibitedActionAnimat-Python.ipynb) | [ICT-13 >>](../ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)",,,,,,,,25366626d3d3467b,,,,,,,,,,,,,,,
+**Navigation** : [**Index**](../README.md) | [<< ICT-12d](ICT-12d-InhibitedActionAnimat-Python.ipynb) | [ICT-13 >>](../ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)",,,,,,,,25366626d3d3467b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb,statut-epistemique,markdown,fr,5b16c4463763e87a,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,5b16c4463763e87a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of-Information-Animat-Python.ipynb,3be31b23,code,fr,904d28e8d915d1c7,"# Setup — même convention que les notebooks ICT voisins : le package `ict` est dans le cwd.
 import warnings
@@ -23442,14 +23442,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12e-Value-of
 - Maquette des gates falsifiables : #20300.
 - Extension institutionnelle : [#13570](https://github.com/jsboige/CoursIA/issues/13570).
 ",,,,,,,,3c327bd819fb7cfa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,a771e026,markdown,fr,06d078c78f73999b,"> **Statut épistémique** — 5 claims (4 Gates + verdict global), tous **Établi** :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,a771e026,markdown,fr,06d078c78f73999b,"> **Statut épistémique** — 5 claims (4 Gates + verdict global), tous **Établi** :
 > - TFT et Grim co-domident le tournoi Axelrod.
 > - Le seuil de coopération soutenable colle au Folk theorem.
 > - Sous bruit d'exécution, la réciprocité active (TFT) est le point de rupture.
 > - Les bassins d'invasion dépendent de la fraction initiale.
 > - La robustesse stratégique est **fonction du régime**, pas intrinsèque.
 > Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,06d078c78f73999b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,46d69461,markdown,fr,dae92d2d071a0dfe,"## 6. Population qui évolue — sélection-mutation (#12673)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,46d69461,markdown,fr,dae92d2d071a0dfe,"## 6. Population qui évolue — sélection-mutation (#12673)
 
 Les gates 1-4 above mesurent des **instantanés** : matrice de gain figée, dynamique
 de replicateur déterministe. Or une stratégie n'existe pas dans un vide
@@ -23465,7 +23465,7 @@ converger. C'est ce relief — la trajectoire, pas l'instantané — que le
 discriminant topologique d'ICT-15d consommera : une population figée sature son
 nerf simplicial, une population qui évolue creuse des cycles.
 ",,,,,,,,dae92d2d071a0dfe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b51b3f17,code,fr,a94f81301eaed50b,"rng_evo = np.random.default_rng(20260720)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b51b3f17,code,fr,a94f81301eaed50b,"rng_evo = np.random.default_rng(20260720)
 evo = M.evolve_population(M.make_strategies(rng_evo), pop_size=60,
                           n_generations=400, n_rounds=30, noise=0.02,
                           mutation_rate=0.05, rng=rng_evo)
@@ -23479,7 +23479,7 @@ for name, f in sorted(zip(evo.strategy_names, evo.frequencies[-1]),
                       key=lambda t: -t[1]):
     print(f""  {name:7s} {f:.3f}"")
 ",,,,,,,,a94f81301eaed50b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b4f26313,code,fr,4410b072c15bf2ee,"fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7.5, 6.5), sharex=True)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b4f26313,code,fr,4410b072c15bf2ee,"fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(7.5, 6.5), sharex=True)
 gen = np.arange(len(coop))
 ax1.stackplot(gen, *[evo.frequencies[:, i] for i in range(len(evo.strategy_names))],
               labels=evo.strategy_names, alpha=0.85)
@@ -23496,7 +23496,7 @@ ax2.legend(fontsize=8)
 fig.tight_layout()
 plt.show()
 ",,,,,,,,4410b072c15bf2ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,059bcf89,markdown,fr,ec12367fb78b2d54,"L'équilibre n'est **pas** une fixation : grim (0,45), AllC (0,20), GTFT (0,18)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,059bcf89,markdown,fr,ec12367fb78b2d54,"L'équilibre n'est **pas** une fixation : grim (0,45), AllC (0,20), GTFT (0,18)
 coexistent, TFT disparaît — exactement la hiérarchie bruit-robuste prédite par
 Nowak & Sigmund (1993). Le taux de coopération oscille entre 0,26 et 0,94 avec
 70 changements de dominante : la population trace une **trajectoire avec du
@@ -23504,7 +23504,7 @@ relief**, pas un point fixe. C'est ce substrat régénéré (taux de coopératio
 quantifié, 8 symboles) qui alimentera ICT-15d — l'ancien substrat binaire
 « l'argmax a-t-il changé » était saturé (nerf à 3 654 triangles, b1 = 0).
 ",,,,,,,,ec12367fb78b2d54,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,e3f307c4,markdown,fr,db9fb632ea84a961,"## 6b. Gate 5 — évolution : la stratégie comme forme dynamique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,e3f307c4,markdown,fr,db9fb632ea84a961,"## 6b. Gate 5 — évolution : la stratégie comme forme dynamique
 
 Gate 4 mesure le bassin d'invasion en lançant la dynamique de réplicateur **une seule fois**, depuis une population initiale fixe, sur un **jeu de stratégies figé** (`make_strategies`). Le substrat consommé par ICT-15d est donc un **instantané** : pour l'axe Axelrod, `argmax(replicator_trajectory(A, x0, 400))` converge vers une stratégie dominante (ici **tft**), la séquence symbolique est quasi-constante, et le complexe de Čech est **saturé** — `b1 = 0.0000` avec 435 arêtes et 4060 triangles (#12673 : « Axëlrod est saturé, pas trivial »).
 
@@ -23514,7 +23514,7 @@ Ce gate teste deux façons de faire **évoluer** la population, et ce que ça ch
 2. **Mutation turbulente** (injection d'une stratégie aléatoire à chaque pas) : la population voit **apparaître un variant** — c'est la mutation comme **source de nouveauté**, pas comme simple bruit.
 
 Hypothèse à tester : seule la mutation qui **génère un nouveau variant** peut détrôner tft, produire une trajectoire (la dominante change), et désaturer le substrat. La mutation vers l'uniforme, elle, retombe sur l'ESS.",,,,,,,,db9fb632ea84a961,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,17e8f15c,code,fr,351b33354074203e,"# Gate 5a : substrat ICT-15d reproduit + deux dynamiques d'evolution
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,17e8f15c,code,fr,351b33354074203e,"# Gate 5a : substrat ICT-15d reproduit + deux dynamiques d'evolution
 n_steps = 400
 
 # Substrat de reference (reproduction de la construction ICT-15d, seed 20260720).
@@ -23564,7 +23564,7 @@ for lab, tr in [(""instantané (mu=0)"", traj_static),
                 (""mutation turbulente (mu=0.10)"", traj_tur)]:
     st, uniq, trn, last = dominant(tr, n_names)
     print(f""  {lab:28s} : strategies visitees={uniq:>2d}  changements de dominante={trn:>3d}  finale={last}"")",,,,,,,,351b33354074203e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,e6cdb5bf,code,fr,4ebf51f2ffad783a,"# Gate 5a (suite) : trajectoire de la dominante et des 3 strategies top
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,e6cdb5bf,code,fr,4ebf51f2ffad783a,"# Gate 5a (suite) : trajectoire de la dominante et des 3 strategies top
 best3 = [n_names[i] for i in np.argsort(-A.mean(axis=1))[:3]]
 fig, axes = plt.subplots(1, 2, figsize=(13, 4), sharey=True)
 for ax, traj, lab in [(axes[0], traj_static, ""mu=0 (instantané, Gate 4)""),
@@ -23575,7 +23575,7 @@ for ax, traj, lab in [(axes[0], traj_static, ""mu=0 (instantané, Gate 4)""),
     ax.set_title(""Trajectoire — "" + lab); ax.legend(fontsize=7)
 plt.tight_layout(); plt.show()
 print(""Turbulent : la frequence de tft n'est plus figee — la population change de strategie."")",,,,,,,,4ebf51f2ffad783a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,117eae66,code,fr,77fbfbbe5996803a,"# Gate 5b : b1 du substrat — instantane vs uniforme vs turbulent (mesure ICT-15d)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,117eae66,code,fr,77fbfbbe5996803a,"# Gate 5b : b1 du substrat — instantane vs uniforme vs turbulent (mesure ICT-15d)
 from ict import cech_obstruction as CO
 from ict import nerve_discriminant as ND
 from ict import spectral as SP
@@ -23602,7 +23602,7 @@ print(f""{'substrat':30s}{'aretes':>7s}{'triangles':>10s}{'b1':>5s}{'b1_max_pers
 for r in res:
     print(f""{r.substrat:30s}{r.n_edges:>7d}{r.n_triangles:>10d}{r.b1:>5d}{r.b1_max_persistence:>12.4f}"")
 print(f""\nDelta b1 (turbulent - instantane) = {res[2].b1_max_persistence - res[0].b1_max_persistence:+.4f}"")",,,,,,,,77fbfbbe5996803a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3cfa21f4,markdown,fr,05db7c29462004c4,"### Lecture du Gate 5
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,3cfa21f4,markdown,fr,05db7c29462004c4,"### Lecture du Gate 5
 
 **Chiffres mesures (relis dans les sorties ci-dessus)** :
 
@@ -23615,7 +23615,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ip
 **Lecture honnete** : la mutation vers l'uniforme **ne desature rien** — tft est une ESS et la population y retombe (`b1_max_persistence = 0.0000`, aretes et triangles inchanges). C'est la mutation **turbulente** (injection d'un variant) qui fait circuler la population entre strategies : la dominante change 104 fois (grim/tft/pavlov/alld visites), le complexe s'ouvre (aretes 435→240, triangles 4060→1088), et `b1_max_persistence` remonte a 0.2444. Le relief du substrat Axelrod n'est donc pas une propriete du bruit, mais de la **nouveaute strategique** — precisement ce que le user pointait (une population figee ne trace pas de trajectoire).
 
 *Lecture a confirmer* : c'est exactement l'objet du Gate 5c ci-dessous (#13308) — le relief du kick est mis a l'epreuve d'un changement de generateur. Hypothese sous test, pas une loi.",,,,,,,,05db7c29462004c4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,d756a4f8,markdown,fr,e1774efa6a399832,"## 6c. Gate 5c — indépendance au générateur de nouveauté (#13308)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,d756a4f8,markdown,fr,e1774efa6a399832,"## 6c. Gate 5c — indépendance au générateur de nouveauté (#13308)
 
 Le b1 = 0,2444 du Gate 5b repose sur **un seul** mécanisme dit « de mutation
 turbulente » : un kick aléatoire de masse μ sur un vocabulaire **fixe**. C'est
@@ -23641,7 +23641,7 @@ Verdicts (#13308) : `ROBUSTE_AU_GENERATEUR` (R2 > 0 et R3 > 0, R4 ≈ 0) /
 `ARTEFACT_DE_GENERATEUR` (R2 seul > 0) / `CONFONDU_AVEC_LA_DIMENSION` (R4 > 0) /
 `INCONCLUSIVE`. Mesure multi-seeds (5) : le 0,2444 du 6b était un tirage simple,
 l'incertitude d'échantillonnage est affichée, pas escamotée (leçon #12936).",,,,,,,,e1774efa6a399832,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,252dd61d,code,fr,a87131a05076b4e0,"# Gate 5c (#13308) : generateur B (innovation de vocabulaire, gains mesures par
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,252dd61d,code,fr,a87131a05076b4e0,"# Gate 5c (#13308) : generateur B (innovation de vocabulaire, gains mesures par
 # le vrai moteur) + controle negatif de dimension (duplicata exact). Apparie au
 # R2 du 6b : meme substrat A, meme x0, meme n_steps, meme mu.
 SEEDS_5C = [7, 42, 13, 99, 2024]
@@ -23714,7 +23714,7 @@ print(f""  x0 uniforme 1/6 ; n_steps = {n_steps} ; mu = {MU_5C} ; K_arrivee = {K
 print(f""  masse d'arrivee = mu ; dimension finale R3 = R4 = {6 + N_ARRIVALS}"")
 print(f""  fenetrage b1 ws = max(2, (n_steps+1)//30) ; epsilon_quantile = 0.55 ; seeds = {SEEDS_5C}"")
 print(f""  R2 reutilise replicator_mutation (kick) ; R3/R4 = replicator_growing (vocabulaire croissant)"")",,,,,,,,a87131a05076b4e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,db2a6c04,code,fr,4deacd3503217b65,"# Mesure b1 par regime et par seed (R1 deterministe : mu uniforme sans rng -> 1 run).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,db2a6c04,code,fr,4deacd3503217b65,"# Mesure b1 par regime et par seed (R1 deterministe : mu uniforme sans rng -> 1 run).
 def b1_persist_5c(states, n_sym):
     ws = max(2, len(states) // 30)
     sec = CO.proxy_sections([int(s) for s in states], n_sym, ws, PROX)
@@ -23746,7 +23746,7 @@ m4, s4, x4 = summary[""R4 controle dimension""]
 print()
 print(f""Delta R3-R4 (nouveaute isolee, dimension controlee) : {m3 - m4:+.4f}"")
 print(f""R2 max (repli du tirage simple du 6b, seed 7 inclus) : {x2:.4f} (6b : 0.2444)"")",,,,,,,,4deacd3503217b65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,0501e695,markdown,fr,e2590ed53fefc879,"### Verdict du Gate 5c : `ARTEFACT_DE_GENERATEUR`
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,0501e695,markdown,fr,e2590ed53fefc879,"### Verdict du Gate 5c : `ARTEFACT_DE_GENERATEUR`
 
 Mesures (5 seeds, sortie ci-dessus) : R2 = 0,2304 ± 0,1447 avec le seed 7 à
 0,2444 — **réplique exacte du tirage simple du 6b**, la mécanique est
@@ -23771,18 +23771,18 @@ produise du relief — suite possible hors scope #13308. De même, la fréquence
 d'arrivée (une fois par 40 générations contre un kick par génération) fait
 partie de ce que « changement de générateur » signifie : c'est précisément le
 kick haute fréquence qui portait le 6b.",,,,,,,,e2590ed53fefc879,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,878dada2,markdown,fr,cc2849e274a6916b,"### Exercice 4 — seuil de mutation turbulente qui desature le b1
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,878dada2,markdown,fr,cc2849e274a6916b,"### Exercice 4 — seuil de mutation turbulente qui desature le b1
 
 Faites varier le taux $\mu$ de la **mutation turbulente** (`replicator_mutation`) dans $\{0.02, 0.05, 0.10, 0.20, 0.40\}$ et mesurez `b1_max_persistence` pour chaque. Objectif : determinez le seuil $\mu$ a partir duquel le substrat Axelrod cesse d'etre sature (b1 > 0), et expliquez la tension selection (qui fige sur tft) vs mutation (qui fait apparaitre des variants).
 
 *Indice* : bouclez sur `replicator_mutation` + `measure_b1` sur une meme graine.",,,,,,,,cc2849e274a6916b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,f433817c,code,fr,fd61af5ef1ad7acf,"# Exercice 4 : a completer — tension selection vs mutation turbulente
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,f433817c,code,fr,fd61af5ef1ad7acf,"# Exercice 4 : a completer — tension selection vs mutation turbulente
 seuil_mu_ex4 = None   # TODO etudiant : plus petit mu avec b1_max_persistence > 0
 b1_par_mu = {}        # TODO etudiant : {mu: b1_max_persistence}
 print(""Exercice 4 a completer"")",,,,,,,,fd61af5ef1ad7acf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,fae470c9,markdown,fr,813245c0e0244e5a,"# ICT-13b — Décroisement dynamique × observable : d'où vient le relief du substrat Axelrod
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,fae470c9,markdown,fr,813245c0e0244e5a,"# ICT-13b — Décroisement dynamique × observable : d'où vient le relief du substrat Axelrod
 
-> Notebook annexe scientifique de [ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb), consommateur du banc [ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb](ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb). See #13039, #12673.
+> Notebook annexe scientifique de [ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb), consommateur du banc [ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb](ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb). See #13039, #12673.
 
 Quatre PRs ouvertes sur l'EPIC substrat (#12732, #12803, #12886, #13009) mesurent le même objet — la persistance topologique `b1_max_persistence` de la trajectoire stratégique Axelrod — et rendent des chiffres en apparence inconciliables : `0.0000` (trois fois, sur l'observable `argmax`) contre `0.3989` (une fois, avec une population agent-based et un observable quantifié). Le diagnostic de #13039 : **le plan d'expérience a deux facteurs et personne n'a rempli les quatre cellules**.
 
@@ -23800,8 +23800,8 @@ Quatre PRs ouvertes sur l'EPIC substrat (#12732, #12803, #12886, #13009) mesuren
 - Reproduire les deux pôles publiés (0.0000 côté argmax-réplicateur, ~0.3989 côté digitize-agent-based) comme contrôles internes ;
 - Décroiser : attribuer le relief à la **résolution de l'observable**, à la **dynamique à population finie**, ou déclarer l'interaction non identifiable ;
 - Tester si l'observable est un facteur de confusion **généralisé** du banc ICT-15d/15j (contrôle de résolution).",,,,,,,,813245c0e0244e5a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,674ccc5f,code,fr,cb007b0e71b71c61,"# Socle commun : imports, proxys, pipeline b1 unique pour les 4 cellules
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,statut-epistemique,markdown,fr,16e8778ab95eef31,> **Statut épistémique** — **Sans verdict à ce jour** : aucune ligne de la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md) ne concerne ce notebook ; son statut épistémique sera porté par la matrice le cas échéant.,,,,,,,,16e8778ab95eef31,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,674ccc5f,code,fr,cb007b0e71b71c61,"# Socle commun : imports, proxys, pipeline b1 unique pour les 4 cellules
 import sys
 from pathlib import Path
 
@@ -23848,7 +23848,7 @@ N_STEPS = 400            # meme horizon
 
 print(f""Socle charge. MASTER_SEED={MASTER_SEED}, MU={MU}, N_STEPS={N_STEPS}"")
 print(f""strategies du socle : {list(SM.make_strategies(np.random.default_rng(0)).keys())}"")",,,,,,,,cb007b0e71b71c61,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,643c748c,markdown,fr,4deffd4b4e561b02,"## 1. Le plan d'expérience et les deux dynamiques
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,643c748c,markdown,fr,4deffd4b4e561b02,"## 1. Le plan d'expérience et les deux dynamiques
 
 Les deux dynamiques consomment **le même socle** : les stratégies IPD canoniques du module `ict.strategic_morphodynamics` (AllC, AllD, TFT, GTFT, Pavlov, Grim, Random — vocabulaire **fixe**, aucune stratégie nouvelle n'est jamais inventée), la même matrice de gains `A` (figée par la graine maîtresse), le même `mu = 0.05` là où la mutation s'applique, le même horizon de 400 générations.
 
@@ -23856,7 +23856,7 @@ Les deux dynamiques consomment **le même socle** : les stratégies IPD canoniqu
 - **Population finie agent-based** : 60 agents, appariement aléatoire par permutation à chaque génération, matchs IPD de 30 tours avec bruit d'exécution 2 %, reproduction de Wright-Fisher proportionnelle au gain, mutation uniforme `mu = 0.05` — la dynamique exacte de #12732 (`SM.evolve_population`, copiée byte-identique depuis sa branche). C'est une trajectoire **stochastique**.
 
 Pour exposer le **taux de coopération** du réplicateur (l'observable que #12732 mesure sur sa population), on construit le champ moyen exact : `coop(t) = x(t)^T C x(t)` où `C_ij` est le taux de coopération mutuel du match `(i, j)` rejoué sans bruit sur le même nombre de tours que la matrice de gains. C'est l'équivalent déterministe de la mesure `cooperation_rate` de l'agent-based — le bruit d'exécution fait partie de la dynamique agent-based, pas de l'observable.",,,,,,,,4deffd4b4e561b02,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,cb3d4e69,code,fr,1038054f546bbe5d,"# Bras 1 : replicateur deterministe + mutation uniforme (recette Gate 5a de #13009)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,cb3d4e69,code,fr,1038054f546bbe5d,"# Bras 1 : replicateur deterministe + mutation uniforme (recette Gate 5a de #13009)
 rng_ax = np.random.default_rng(MASTER_SEED)
 strategies_ax = SM.make_strategies(rng_ax)
 A = SM.payoff_matrix(strategies_ax, n_rounds=200, n_reps=3, rng=rng_ax)
@@ -23898,12 +23898,12 @@ print(f""Champ moyen coop : [{coop_repl.min():.3f}, {coop_repl.max():.3f}], ""
       f""final={coop_repl[-1]:.3f}"")
 print(f""Referentiel mu=0 : dominante finale = {names_ax[int(np.argmax(traj_0[-1]))]} ""
       f""(saturation attendue)"")",,,,,,,,1038054f546bbe5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,d52c7bdb,markdown,fr,9a15695c68f1a8d3,"**Lecture de la sortie.** Le réplicateur déterministe vit dans une coopération quasi nulle : le champ moyen oscille dans $[0{,}055,\ 0{,}255]$ et *finit* à $0{,}056$ -- la trajectoire s'enfonce et reste au fond. À l'observable argmax, la dominante finale est tft, et la sortie qualifie elle-même la saturation d'*attendue* : sans innovation de vocabulaire ni stochasticité de population, la trajectoire se fige tôt sur une stratégie et n'en bouge plus. C'est le pôle haut-gauche du plan -- celui qui doit reproduire les $0{,}0000$ des PRs argmax.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,d52c7bdb,markdown,fr,9a15695c68f1a8d3,"**Lecture de la sortie.** Le réplicateur déterministe vit dans une coopération quasi nulle : le champ moyen oscille dans $[0{,}055,\ 0{,}255]$ et *finit* à $0{,}056$ -- la trajectoire s'enfonce et reste au fond. À l'observable argmax, la dominante finale est tft, et la sortie qualifie elle-même la saturation d'*attendue* : sans innovation de vocabulaire ni stochasticité de population, la trajectoire se fige tôt sur une stratégie et n'en bouge plus. C'est le pôle haut-gauche du plan -- celui qui doit reproduire les $0{,}0000$ des PRs argmax.
 ",,,,,,,,9a15695c68f1a8d3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,4ec3161b,markdown,fr,92699f071d531af5,"## 2. Bras agent-based (recette exacte de #12732)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,4ec3161b,markdown,fr,92699f071d531af5,"## 2. Bras agent-based (recette exacte de #12732)
 
 La population de 60 agents évolue sur 400 générations avec la graine maîtresse — les paramètres sont ceux de la PR qui a publié 0.3989 : `pop_size=60`, `n_rounds=30`, `noise=0.02`, `mutation_rate=0.05`. `SM.evolve_population` expose directement les **deux observables** de la table : `dominant_idx` (quelle stratégie est majoritaire — l'équivalent agent-based de l'`argmax`) et `cooperation_rate` (taux de coopération réalisé — ce que #12732 quantifie en 8 symboles).",,,,,,,,92699f071d531af5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,8e60e1be,code,fr,b357215f8bd5cc61,"# Bras 2 : population agent-based (recette #12732, graine maitresse)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,8e60e1be,code,fr,b357215f8bd5cc61,"# Bras 2 : population agent-based (recette #12732, graine maitresse)
 rng_evo = np.random.default_rng(MASTER_SEED)
 evo = SM.evolve_population(SM.make_strategies(rng_evo), pop_size=60,
                            n_generations=N_STEPS, n_rounds=30, noise=0.02,
@@ -23913,12 +23913,12 @@ print(f""Agent-based : {len(coop_ab)} generations, ""
       f""coop[{coop_ab.min():.3f},{coop_ab.max():.3f}], final={coop_ab[-1]:.3f}"")
 print(f""Strategies visites (dominante) : ""
       f""{sorted(set(int(d) for d in evo.dominant_idx))}"")",,,,,,,,b357215f8bd5cc61,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,a742c157,markdown,fr,fcf641b316fd2bcd,"**Lecture de la sortie.** Même socle, même matrice de gains, même $\mu$ -- et pourtant tout diffère : sur 401 générations, la coopération traverse $[0{,}261,\ 0{,}938]$ et *finit* à $0{,}671$, douze fois le niveau final du réplicateur ($0{,}056$). Surtout, la liste des stratégies visitées à la dominante est $[0, 1, 2, 3, 4, 5]$ -- *tout* le vocabulaire, chaque stratégie a dominé au moins une génération. La population finie ne se fige pas : elle circule. C'est le contraste brut qui motive le plan décroisé -- avant même la mesure $b_1$, les deux dynamiques produisent des trajectoires qualitativement différentes sur le même substrat.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,a742c157,markdown,fr,fcf641b316fd2bcd,"**Lecture de la sortie.** Même socle, même matrice de gains, même $\mu$ -- et pourtant tout diffère : sur 401 générations, la coopération traverse $[0{,}261,\ 0{,}938]$ et *finit* à $0{,}671$, douze fois le niveau final du réplicateur ($0{,}056$). Surtout, la liste des stratégies visitées à la dominante est $[0, 1, 2, 3, 4, 5]$ -- *tout* le vocabulaire, chaque stratégie a dominé au moins une génération. La population finie ne se fige pas : elle circule. C'est le contraste brut qui motive le plan décroisé -- avant même la mesure $b_1$, les deux dynamiques produisent des trajectoires qualitativement différentes sur le même substrat.
 ",,,,,,,,fcf641b316fd2bcd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,6ba08a7c,markdown,fr,cf4a6d7ff492c284,"## 3. Les deux observables appliqués aux deux trajectoires
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,6ba08a7c,markdown,fr,cf4a6d7ff492c284,"## 3. Les deux observables appliqués aux deux trajectoires
 
 L'observable `argmax` réduit la trajectoire à « quelle stratégie domine » ; l'observable `digitize-8` réduit le taux de coopération à 8 symboles par quantiles **empiriques** (bords intérieurs à `linspace(0, 1, 9)[1:-1]` — recette exacte de #12732). Chaque croisement produit une séquence de symboles de longueur 401, consommée par le pipeline `b1` unique.",,,,,,,,cf4a6d7ff492c284,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,d1db57af,code,fr,e6c1b7d85642df05,"# Les 4 sequences de symboles du plan 2x2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,d1db57af,code,fr,e6c1b7d85642df05,"# Les 4 sequences de symboles du plan 2x2
 q8_repl = np.quantile(coop_repl, np.linspace(0, 1, 9)[1:-1])
 q8_ab = np.quantile(coop_ab, np.linspace(0, 1, 9)[1:-1])
 
@@ -23934,12 +23934,12 @@ print(f""{'dynamique':<6} {'observable':<8} {'long.':>6} {'symboles uniques':>17
 for (dyn, obs), st in seq.items():
     uniq, changes = describe_seq(st)
     print(f""{dyn:<6} {obs:<8} {len(st):>6} {uniq:>17} {changes:>12}"")",,,,,,,,e6c1b7d85642df05,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,59b35e13,markdown,fr,2642ac17e297d76e,"**Lecture du tableau des quatre séquences.** Longueur constante (401 partout), et deux facteurs qui se lisent en multiplicateurs sur la colonne *changements* : passer au digitize-8 multiplie les changements par 8 côté réplicateur ($1 \rightarrow 8$) et par 4 côté agent-based ($70 \rightarrow 280$) ; passer à la dynamique agent-based multiplie par 70 côté argmax ($1 \rightarrow 70$) et par 35 côté digit8 ($8 \rightarrow 280$). Les deux facteurs enrichissent le signal, mais la dynamique pèse un ordre de grandeur de plus que l'observable. La table est le plan factoriel $2 \times 2$ rendu visible *avant* la mesure -- la question de la section suivante est de savoir lequel des deux facteurs fabrique du relief $b_1$, ou si les deux y contribuent.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,59b35e13,markdown,fr,2642ac17e297d76e,"**Lecture du tableau des quatre séquences.** Longueur constante (401 partout), et deux facteurs qui se lisent en multiplicateurs sur la colonne *changements* : passer au digitize-8 multiplie les changements par 8 côté réplicateur ($1 \rightarrow 8$) et par 4 côté agent-based ($70 \rightarrow 280$) ; passer à la dynamique agent-based multiplie par 70 côté argmax ($1 \rightarrow 70$) et par 35 côté digit8 ($8 \rightarrow 280$). Les deux facteurs enrichissent le signal, mais la dynamique pèse un ordre de grandeur de plus que l'observable. La table est le plan factoriel $2 \times 2$ rendu visible *avant* la mesure -- la question de la section suivante est de savoir lequel des deux facteurs fabrique du relief $b_1$, ou si les deux y contribuent.
 ",,,,,,,,2642ac17e297d76e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,a5aea6fe,markdown,fr,4ef1ea5671ac94f0,"## 4. La table décroisée — les quatre cellules du plan
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,a5aea6fe,markdown,fr,4ef1ea5671ac94f0,"## 4. La table décroisée — les quatre cellules du plan
 
 Une seule table de sortie, même graine, même substrat, même matrice de gains, même `mu`, même pipeline `b1`. Les deux pôles publiés servent de contrôles internes : la ligne haut-gauche doit reproduire le `0.0000` des trois PRs argmax, la cellule bas-droite doit reproduire le `0.3989` de #12732. Les deux cellules jamais mesurées — **haut-droite** (réplicateur quantifié) et **bas-gauche** (agent-based argmax) — tranche l'attribution.",,,,,,,,4ef1ea5671ac94f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,f39d8f50,code,fr,1f7df255c2e22a19,"# LA TABLE : b1_max_persistence des 4 cellules
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,f39d8f50,code,fr,1f7df255c2e22a19,"# LA TABLE : b1_max_persistence des 4 cellules
 cells_b1 = {}
 for (dyn, obs), st in seq.items():
     label = f""{dyn} x {obs}""
@@ -23958,12 +23958,12 @@ for dyn, dyn_label in [('repl', 'replicateur + mu unif (0.05)'),
 print()
 for (dyn, obs), r in cells_b1.items():
     print(f""  [{dyn} x {obs}] b1={r.b1}, n_edges={r.n_edges}, n_triangles={r.n_triangles}"")",,,,,,,,1f7df255c2e22a19,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,723dc56f,markdown,fr,136d47e6e8524f3d,"**Lecture de la table décroisée, ligne par ligne.** Réplicateur : $0{,}0000$ en argmax *et* en digitize-8 -- y compris la cellule haut-droite, celle qui n'avait jamais été mesurée : même à résolution riche, une trajectoire saturée ne produit aucun relief. Agent-based : $0{,}0280$ en argmax (petit mais non nul -- les 70 changements de dominante laissent une trace) et $0{,}5036$ en digitize-8. Les deux contrôles internes annoncés en intro tiennent : la ligne réplicateur reproduit les $0{,}0000$ des trois PRs argmax, la cellule bas-droite est non nulle comme le $0{,}3989$ de #12732. Le détail edges/triangles porte une leçon de méthode à lui seul : le graphe le plus *dense* est celui du repl $\times$ argmax ($435$ arêtes, $4\,060$ triangles) -- précisément la cellule à $b_1 = 0$ -- parce que deux symboles qui se répètent enchaînent beaucoup d'adjacences sans aucun changement de motif ; la cellule au relief maximal ($239$ arêtes seulement) est la plus *pauvre* en arêtes. Densité de graphe et relief de persistance mesurent deux choses différentes -- la table répond au plan factoriel : le relief exige la dynamique à population finie, l'observable seule ne suffit pas.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,723dc56f,markdown,fr,136d47e6e8524f3d,"**Lecture de la table décroisée, ligne par ligne.** Réplicateur : $0{,}0000$ en argmax *et* en digitize-8 -- y compris la cellule haut-droite, celle qui n'avait jamais été mesurée : même à résolution riche, une trajectoire saturée ne produit aucun relief. Agent-based : $0{,}0280$ en argmax (petit mais non nul -- les 70 changements de dominante laissent une trace) et $0{,}5036$ en digitize-8. Les deux contrôles internes annoncés en intro tiennent : la ligne réplicateur reproduit les $0{,}0000$ des trois PRs argmax, la cellule bas-droite est non nulle comme le $0{,}3989$ de #12732. Le détail edges/triangles porte une leçon de méthode à lui seul : le graphe le plus *dense* est celui du repl $\times$ argmax ($435$ arêtes, $4\,060$ triangles) -- précisément la cellule à $b_1 = 0$ -- parce que deux symboles qui se répètent enchaînent beaucoup d'adjacences sans aucun changement de motif ; la cellule au relief maximal ($239$ arêtes seulement) est la plus *pauvre* en arêtes. Densité de graphe et relief de persistance mesurent deux choses différentes -- la table répond au plan factoriel : le relief exige la dynamique à population finie, l'observable seule ne suffit pas.
 ",,,,,,,,136d47e6e8524f3d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,7f167d18,markdown,fr,a00c02674b941810,"### Contrôle de reproduction des deux pôles publiés
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,7f167d18,markdown,fr,a00c02674b941810,"### Contrôle de reproduction des deux pôles publiés
 
 La table ci-dessus utilise le pipeline unifié (`CO.proxy_sections`). Les pôles publiés ont été mesurés avec des pipelines légèrement différents : #13009 (Gate 5b) utilise le même `CO.proxy_sections` ; #12732 mesure via `windowed_proxy_signature` (notebook ICT-15j) dont les frontières de fenêtres diffèrent d'un état ou deux. On reproduit ici le pôle bas-droit **avec le pipeline exact de #12732** pour clore la question de la reproduction : même graine, même `evolve_population` byte-identique, même quantification — seul le fenêtrage change.",,,,,,,,a00c02674b941810,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,bb46e33d,code,fr,9f36f95084c3f6d7,"# Controle : pole bas-droit de #12732 reproduit au pipeline 15j exact pres
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,bb46e33d,code,fr,9f36f95084c3f6d7,"# Controle : pole bas-droit de #12732 reproduit au pipeline 15j exact pres
 def windowed_proxy_signature(states, n_symbols, n_windows=30):
     """"""Recette exacte du notebook ICT-15j de #12732 (frontieres + padding).""""""
     L = len(states)
@@ -23995,12 +23995,12 @@ print(f""b1(agent-based x digitize-8) pipeline 15j exact : {r_12732.b1_max_persi
 print(f""b1(agent-based x digitize-8) pipeline unifie    : ""
       f""{cells_b1[('ab', 'digit8')].b1_max_persistence:.4f}"")
 print(""#12732 publiait 0.3989 sur cette cellule (graine 20260720)."")",,,,,,,,9f36f95084c3f6d7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,670bd0df,markdown,fr,5583bc27f62bacf1,"**Lecture du contrôle de reproduction.** Le pipeline 15j (frontières de fenêtres exactes de #12732) retrouve $0{,}3989$ -- la valeur *publiée*, identique, même graine maîtresse. Le pipeline unifié, lui, mesure $0{,}5036$ sur la même trajectoire. L'écart $0{,}3989 \leftrightarrow 0{,}5036$ n'est donc pas un désaccord sur la donnée mais un effet de *définition* : les frontières de fenêtres du proxy changent le découpage, pas le verdict qualitatif (non nul, même ordre de grandeur). C'est exactement pourquoi la table de la section 4 annonce les deux : le contrôle garantit que l'écart inter-pipelines est documenté, jamais lissé -- et que le chiffre cité dans l'arbitrage porte toujours son pipeline avec lui.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,670bd0df,markdown,fr,5583bc27f62bacf1,"**Lecture du contrôle de reproduction.** Le pipeline 15j (frontières de fenêtres exactes de #12732) retrouve $0{,}3989$ -- la valeur *publiée*, identique, même graine maîtresse. Le pipeline unifié, lui, mesure $0{,}5036$ sur la même trajectoire. L'écart $0{,}3989 \leftrightarrow 0{,}5036$ n'est donc pas un désaccord sur la donnée mais un effet de *définition* : les frontières de fenêtres du proxy changent le découpage, pas le verdict qualitatif (non nul, même ordre de grandeur). C'est exactement pourquoi la table de la section 4 annonce les deux : le contrôle garantit que l'écart inter-pipelines est documenté, jamais lissé -- et que le chiffre cité dans l'arbitrage porte toujours son pipeline avec lui.
 ",,,,,,,,5583bc27f62bacf1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,9b707bcb,markdown,fr,1795273f093cfab9,"## 5. Contrôle de résolution — l'observable est-il un facteur de confusion généralisé ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,9b707bcb,markdown,fr,1795273f093cfab9,"## 5. Contrôle de résolution — l'observable est-il un facteur de confusion généralisé ?
 
 Le point 3 de #13039 : si `b1` croît avec le nombre de symboles sur une trajectoire dont **tout le monde s'accorde à dire qu'elle est saturée** à l'`argmax` (le réplicateur), alors la résolution de l'observable fabrique du relief indépendamment de toute nouveauté dynamique — et le problème n'est pas spécifique au substrat Axelrod : il concerne **tous** les substrats du banc ICT-15d/15j consommés via un encodage quantifié.",,,,,,,,1795273f093cfab9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,833d115a,code,fr,065e0f041b4f4b0e,"# Controle de resolution : b1 en fonction du nombre de symboles (2, 4, 8, 16)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,833d115a,code,fr,065e0f041b4f4b0e,"# Controle de resolution : b1 en fonction du nombre de symboles (2, 4, 8, 16)
 symbols_grid = [2, 4, 8, 16]
 res_curve = {'repl': [], 'ab': []}
 for k in symbols_grid:
@@ -24023,12 +24023,12 @@ ax.set_ylabel('b1_max_persistence')
 ax.set_title('Contrôle de résolution : b1 vs taille du vocabulaire')
 ax.legend(); ax.grid(alpha=0.3)
 plt.tight_layout(); plt.show()",,,,,,,,065e0f041b4f4b0e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,36002304,markdown,fr,96520cccad268de7,"**Lecture du contrôle de résolution, ligne par ligne.** Colonne réplicateur : $0{,}0000$ à 2, 4, 8 *et* 16 symboles -- augmenter la résolution de l'observable ne fabrique aucun relief sur une trajectoire saturée, ce qui répond au point 3 de #13039 : l'observable n'est pas un facteur de confusion généralisé. Colonne agent-based : $0{,}0000$ (2 symboles), $0{,}1211$ (4), $0{,}5036$ (8), puis *chute* à $0{,}1598$ (16) -- non-monotone avec un pic net à 8. Trop peu de symboles : la séquence est grossière et le relief se moyenne ; trop : chaque symbole devient rare, les motifs longs se fragmentent et le $b_1$ se dilue. La résolution optimale vit entre les deux -- et le digitize-8 de la recette #12732 tombe précisément sur le pic de cette colonne.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,36002304,markdown,fr,96520cccad268de7,"**Lecture du contrôle de résolution, ligne par ligne.** Colonne réplicateur : $0{,}0000$ à 2, 4, 8 *et* 16 symboles -- augmenter la résolution de l'observable ne fabrique aucun relief sur une trajectoire saturée, ce qui répond au point 3 de #13039 : l'observable n'est pas un facteur de confusion généralisé. Colonne agent-based : $0{,}0000$ (2 symboles), $0{,}1211$ (4), $0{,}5036$ (8), puis *chute* à $0{,}1598$ (16) -- non-monotone avec un pic net à 8. Trop peu de symboles : la séquence est grossière et le relief se moyenne ; trop : chaque symbole devient rare, les motifs longs se fragmentent et le $b_1$ se dilue. La résolution optimale vit entre les deux -- et le digitize-8 de la recette #12732 tombe précisément sur le pic de cette colonne.
 ",,,,,,,,96520cccad268de7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,07c4c400,markdown,fr,9e42813fc63aa70a,"## 6. Multi-seed sur les cellules stochastiques
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,07c4c400,markdown,fr,9e42813fc63aa70a,"## 6. Multi-seed sur les cellules stochastiques
 
 Les trois PRs qui rendent `0.0000` sont déterministes ; celle qui rend `0.3989` est un tirage unique. Comparer un point déterministe à un tirage unique n'est pas une comparaison (point 5 de #13039). Les deux cellules agent-based sont donc mesurées sur 5 graines ; les cellules réplicateur sont déterministes (un point).",,,,,,,,9e42813fc63aa70a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,55f25eb6,code,fr,81ee2e83fd05df1d,"# Multi-seed : 5 graines sur les 2 cellules agent-based
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,55f25eb6,code,fr,81ee2e83fd05df1d,"# Multi-seed : 5 graines sur les 2 cellules agent-based
 SEEDS = [MASTER_SEED, 0, 1, 7, 42]
 ms_rows = []
 for s in SEEDS:
@@ -24048,7 +24048,7 @@ arr_dig = np.array([r[2] for r in ms_rows])
 print()
 print(f""agent-based x argmax     : {arr_arg.mean():.4f} +/- {arr_arg.std():.4f} (5 graines)"")
 print(f""agent-based x digitize-8 : {arr_dig.mean():.4f} +/- {arr_dig.std():.4f} (5 graines)"")",,,,,,,,81ee2e83fd05df1d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,da93215c,markdown,fr,adf4bdf801a3fbd7,"## 7. Verdict — le facteur responsable
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,da93215c,markdown,fr,adf4bdf801a3fbd7,"## 7. Verdict — le facteur responsable
 
 **La cellule manquante est mesurée : `b1(réplicateur × digitize-8) = 0.0000` — et elle reste à 0.0000 à toutes les résolutions (2, 4, 8, 16 symboles). Le relief publié par #12732 ne vient donc PAS de la résolution de l'observable : il vient de la dynamique à population finie.** Mais le facteur observable n'est pas inerte : les deux facteurs comptent, de façon **hiérarchique** et non symétrique.
 
@@ -24063,41 +24063,41 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.
 **Contrôle de résolution (section 5)** : sur le substrat saturé (champ moyen), `b1 = 0.0000` à 2/4/8/16 symboles — l'observable **n'est pas un facteur de confusion généralisé** du banc ICT-15d/15j : la quantification seule ne fabrique pas d'obstruction. Les encodages quantifiés existants (Gray-Scott 2, May 16) restent valides — ils amplifient un relief d'origine dynamique, ils n'en produisent pas *ex nihilo*. Nuance honnête : sur l'agent-based, la courbe de résolution est **non monotone** (`0.12 → 0.50 → 0.16`, pic à 8 symboles) — la résolution module l'amplitude du signal, elle ne le crée ni ne le garantit.
 
 **Ce que le verdict prescrit pour l'arbitrage #12673** : le relief `b1 > 0` sur le substrat Axelrod est la signature d'une **dérive d'échantillonnage dans un vocabulaire fixe**, lisible uniquement à un observable de résolution suffisante. Toute PR qui veut mesurer ce relief doit (a) une dynamique à population finie — le champ moyen ne peut pas en produire — et (b) un observable quantifié — l'argmax l'écrase. Inversement, un `b1 = 0` obtenu sur l'argmax d'un champ moyen ne prouve rien sur la capacité du substrat : c'est une propriété de l'instrument, pas du système.",,,,,,,,adf4bdf801a3fbd7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,5139e179,markdown,fr,c74b4cd4159ddfbe,## 8. Exercices,,,,,,,,c74b4cd4159ddfbe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,71ba64a6,markdown,fr,da75ee190e48557b,"### Exercice 1 — balayer le taux de mutation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,5139e179,markdown,fr,c74b4cd4159ddfbe,## 8. Exercices,,,,,,,,c74b4cd4159ddfbe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,71ba64a6,markdown,fr,da75ee190e48557b,"### Exercice 1 — balayer le taux de mutation
 
 **Objectif** : mesurer `b1` de la cellule décisive pour `mu` dans `{0.01, 0.05, 0.10}` et dire si le facteur identifié au verdict dépend de l'intensité de la mutation.
 
 **Étape 1** : boucler sur les trois valeurs de `mu` avec la même graine maîtresse.
 **Étape 2** : pour chaque `mu`, reconstruire la trajectoire (réplicateur et agent-based) et les deux observables.
 **Étape 3** : imprimer la table `mu x cellule -> b1_max_persistence`.",,,,,,,,da75ee190e48557b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,00fd7672,code,fr,0e5d17c2530ce0a6,"# Exercice 1 : sweep du taux de mutation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,00fd7672,code,fr,0e5d17c2530ce0a6,"# Exercice 1 : sweep du taux de mutation
 MU_GRID = [0.01, 0.05, 0.10]  # TODO etudiant
 sweep_mu = None  # TODO etudiant : {mu: {cellule: b1_max_persistence}}
 print(""Exercice a completer"")",,,,,,,,0e5d17c2530ce0a6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,7c1ca52f,markdown,fr,d9ab3c626b78fffa,"### Exercice 2 — l'effet de la taille de population
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,7c1ca52f,markdown,fr,d9ab3c626b78fffa,"### Exercice 2 — l'effet de la taille de population
 
 **Objectif** : si le verdict attribue le relief à la population finie, `b1` doit décroître quand `pop_size` croît (la dérive d'échantillonnage s'atténue) ; si le verdict attribue le relief à l'observable, `b1` doit être insensible à `pop_size`.
 
 **Étape 1** : balayer `pop_size` dans `{20, 60, 200}` à graine et `mu` fixés.
 **Étape 2** : mesurer `b1(digitize-8)` pour chaque taille.
 **Étape 3** : comparer la pente à la prédiction du verdict.",,,,,,,,d9ab3c626b78fffa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,2bce038a,code,fr,8c9e6379f08464f4,"# Exercice 2 : sweep de la taille de population
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,2bce038a,code,fr,8c9e6379f08464f4,"# Exercice 2 : sweep de la taille de population
 POP_GRID = [20, 60, 200]  # TODO etudiant
 sweep_pop = None  # TODO etudiant : {pop_size: b1_max_persistence}
 print(""Exercice a completer"")",,,,,,,,8c9e6379f08464f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,455a9637,markdown,fr,1331f29af16caf10,"### Exercice 3 — le bruit d'exécution est-il dans l'observable ou dans la dynamique ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,455a9637,markdown,fr,1331f29af16caf10,"### Exercice 3 — le bruit d'exécution est-il dans l'observable ou dans la dynamique ?
 
 **Objectif** : l'agent-based joue ses matchs avec bruit d'exécution 2 %. Balayer `noise` dans `{0.0, 0.02, 0.05}` et mesurer `b1(digitize-8)` : si le relief survive à `noise=0`, il ne vient pas du bruit d'exécution.
 
 **Étape 1** : re-exécuter `evolve_population` aux trois niveaux de bruit, même graine.
 **Étape 2** : mesurer `b1(digitize-8)` à chaque niveau.
 **Étape 3** : confronter au débat « bruit != nouveauté » de #13009.",,,,,,,,1331f29af16caf10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,23fa9f8b,code,fr,65fcfb5201239416,"# Exercice 3 : sweep du bruit d'execution
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,23fa9f8b,code,fr,65fcfb5201239416,"# Exercice 3 : sweep du bruit d'execution
 NOISE_GRID = [0.0, 0.02, 0.05]  # TODO etudiant
 sweep_noise = None  # TODO etudiant : {noise: b1_max_persistence}
 print(""Exercice a completer"")",,,,,,,,65fcfb5201239416,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,d0b40caa,markdown,fr,12bbbb288ae4868c,"## Bilan — ICT-13b
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb,d0b40caa,markdown,fr,12bbbb288ae4868c,"## Bilan — ICT-13b
 
 Ce notebook annexe a rempli la quatrième cellule du plan d'expérience factoriel du substrat Axelrod et attribué le relief `b1` mesuré par les quatre PRs de #12673. La table décroisée (section 4), le contrôle de résolution (section 5) et le multi-seed (section 6) constituent le ground-truth auquel l'arbitrage de merge sur #12673 peut se référer — chaque PR garde sa substance, aucun des quatre bancs n'est à refaire.
 
@@ -43562,32 +43562,32 @@ La cellule reconstitue les rôles a partir de la trajectoire seule (vitesse, vir
 Le point de lecture : la marche aléatoire fait 0.000 en capture mais 0.401 en switching -- elle tourne tout le temps et n'attrape jamais. Le contrôle d'ablation l'explicite : la marche aléatoire capture **~0** des que la source est structurée, les rôles de capture et d'escape (1.000) se remplissent plus que le switch (0.003-0.018) pour les deux animats guidés par le gradient, qui ne décident jamais `switch` dans le disque neutre.
 
 La section remplit donc sa promesse : les quatre grandeurs de rôle séparent les animats **sans étiquette** -- le reactif et le phat se distinguent par la capture (0.774 vs 1.000), l'aléatoire par le switching (0.401) et la capture nulle. Le contraste mesure l'information de rôle portée par la valence.",,,,,,,,96e0240028e8c8a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,carse-ref-ict13,markdown,fr,44954e519e381c6d,"## Références
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,carse-ref-ict13,markdown,fr,44954e519e381c6d,"## Références
 
 **Carse (1986)**, ch. 1 « There Are at Least Two Kinds of Games », §1 (p. 3) : « a finite game is played for the purpose of winning, an infinite game for the purpose of continuing the play » — le tournoi d'Axelrod n'a pas de dernier tour, et la morphodynamique stratégique de ce carnet décrit des stratégies qui s'adaptent pour que le jeu continue, pas pour gagner une finale. Gisement cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\`.
 ",,,,,,,,44954e519e381c6d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,ad3e94f6,markdown,fr,168b28ad31a94568,"**Lecture de la sortie.** Les quatre lignes du haut sont la *genetique comportementale* du tournoi a venir : tft ouvre par C (bit 0), grim cooperative tant que l'adversaire n'a pas defocte (bit 0), et pavlov encode l'apprentissage elementaire stay/shift -- il reste sur C apres un gain (bit 0) et bascule apres une perte (bit 1). La derniere ligne est le duel nu qui installe la fausse evidence : sur 50 coups sans bruit, AllD recolte 5,00 par coup (le gain T a chaque rencontre) et AllC tombe a 0,00 (le gain S). Vu de ce duel seul, la defection semble ecrasante. C'est exactement le piege que le round-robin de la section suivante demonte : dans une *population*, AllD ne rencontre pas que des AllC -- il finit par tomber sur les punitifs, et la hierarchie s'inverse. Le duel nu mesure un couple isole ; le tournoi mesure une ecologie.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,ad3e94f6,markdown,fr,168b28ad31a94568,"**Lecture de la sortie.** Les quatre lignes du haut sont la *genetique comportementale* du tournoi a venir : tft ouvre par C (bit 0), grim cooperative tant que l'adversaire n'a pas defocte (bit 0), et pavlov encode l'apprentissage elementaire stay/shift -- il reste sur C apres un gain (bit 0) et bascule apres une perte (bit 1). La derniere ligne est le duel nu qui installe la fausse evidence : sur 50 coups sans bruit, AllD recolte 5,00 par coup (le gain T a chaque rencontre) et AllC tombe a 0,00 (le gain S). Vu de ce duel seul, la defection semble ecrasante. C'est exactement le piege que le round-robin de la section suivante demonte : dans une *population*, AllD ne rencontre pas que des AllC -- il finit par tomber sur les punitifs, et la hierarchie s'inverse. Le duel nu mesure un couple isole ; le tournoi mesure une ecologie.
 ",,,,,,,,168b28ad31a94568,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-7,markdown,fr,4db574772e5c3d47,"### Lecture du résultat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-7,markdown,fr,4db574772e5c3d47,"### Lecture du résultat
 
 Le tournoi toutes-paires (round-robin, sans bruit) livre son classement : **tft et grim ex æquo en tête** (2,635 points par coup), devant gtft (2,583), pavlov (2,545), allc (2,455) — et **alld dernier** (2,313). C'est le résultat classique d'Axelrod reproduit par le moteur local : la réciprocité **rétaliatrice** paie, l'exploitation nue échoue. L'étroitesse de l'écart (0,32 point entre le premier et le dernier) dit autre chose : dans un pool où personne ne se laisse exploiter longtemps, aucune stratégie ne s'enrichit énormément aux dépens d'une autre — le classement se joue sur les marges, et les deux stratégies qui punissent sans rancune occupent le podium ensemble.",,,,,,,,4db574772e5c3d47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,270d9af2,markdown,fr,e900a6d51e6ca0df,"**Lecture de la sortie.** Le seuil analytique $(T-R)/(T-P) = 0{,}500$ dit : grim resiste a l'invasion d'AllD des que le futur pese au moins la moitie du present (avec $T=5$, $R=3$, $P=1$ : $(5-3)/(5-1) = 0{,}5$). Le croisement numerique atterrit a $0{,}550$, et la sortie ellememe qualifie l'ecart : *« accord a 1 pas de grille »*. Autrement dit, l'ecart de $0{,}05$ est exactement la maille d'echantillonnage de $\delta$ -- le vrai croisement vit quelque part entre $0{,}50$ et $0{,}55$, et la mesure numerique ne peut pas le resoudre plus fin. La lecon de methode : quand l'analytique et le numerique semblent diverger, verifier d'abord la resolution -- ici l'accord est exact a la maille pres, et la theorie de GT-6c est confirmee sans adjustment.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,270d9af2,markdown,fr,e900a6d51e6ca0df,"**Lecture de la sortie.** Le seuil analytique $(T-R)/(T-P) = 0{,}500$ dit : grim resiste a l'invasion d'AllD des que le futur pese au moins la moitie du present (avec $T=5$, $R=3$, $P=1$ : $(5-3)/(5-1) = 0{,}5$). Le croisement numerique atterrit a $0{,}550$, et la sortie ellememe qualifie l'ecart : *« accord a 1 pas de grille »*. Autrement dit, l'ecart de $0{,}05$ est exactement la maille d'echantillonnage de $\delta$ -- le vrai croisement vit quelque part entre $0{,}50$ et $0{,}55$, et la mesure numerique ne peut pas le resoudre plus fin. La lecon de methode : quand l'analytique et le numerique semblent diverger, verifier d'abord la resolution -- ici l'accord est exact a la maille pres, et la theorie de GT-6c est confirmee sans adjustment.
 ",,,,,,,,e900a6d51e6ca0df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b0fe9280,markdown,fr,1033b57b7a97b553,"**Lecture de la sortie, chiffre par chiffre.** La colonne mesure la chute de score moyen quand le bruit passe de $b=0$ a $b=0{,}4$ -- une valeur positive est une *perte*. L'ordre exact : tft perd le plus (+0,399), devant gtft (+0,392), pavlov (+0,376), allc (+0,369) et grim (+0,287), tandis qu'alld est statistiquement insensible (-0,001 : defecter n'a pas de memoire a corrompre). Deux lectures s'imposent. D'abord l'ampleur : **toutes** les strategies cooperatrices perdent 0,29 a 0,40 point par coup -- le bruit est le regime qui les taxe. Ensuite la hierarchie inverse de celle du tournoi : le vainqueur sans bruit (tft) est le plus fragilise, et grim -- rigide, donc mediocre en milieu propre -- est le plus resistant. Le mecanisme est lisible dans les bits de la section 1 : tft se coordonne par *echo* (copier le coup adverse), et le bruit corrompt l'echo (une defection accidentelle declenche une vendetta) ; grim, lui, ne se coordonne par rien qui puisse deraper -- il cooperative jusqu'a la premiere defection *reelle ou percue*, puis punit pour toujours, et le bruit lui coute sa rigueur, pas son mecanisme.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,b0fe9280,markdown,fr,1033b57b7a97b553,"**Lecture de la sortie, chiffre par chiffre.** La colonne mesure la chute de score moyen quand le bruit passe de $b=0$ a $b=0{,}4$ -- une valeur positive est une *perte*. L'ordre exact : tft perd le plus (+0,399), devant gtft (+0,392), pavlov (+0,376), allc (+0,369) et grim (+0,287), tandis qu'alld est statistiquement insensible (-0,001 : defecter n'a pas de memoire a corrompre). Deux lectures s'imposent. D'abord l'ampleur : **toutes** les strategies cooperatrices perdent 0,29 a 0,40 point par coup -- le bruit est le regime qui les taxe. Ensuite la hierarchie inverse de celle du tournoi : le vainqueur sans bruit (tft) est le plus fragilise, et grim -- rigide, donc mediocre en milieu propre -- est le plus resistant. Le mecanisme est lisible dans les bits de la section 1 : tft se coordonne par *echo* (copier le coup adverse), et le bruit corrompt l'echo (une defection accidentelle declenche une vendetta) ; grim, lui, ne se coordonne par rien qui puisse deraper -- il cooperative jusqu'a la premiere defection *reelle ou percue*, puis punit pour toujours, et le bruit lui coute sa rigueur, pas son mecanisme.
 ",,,,,,,,1033b57b7a97b553,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-19,markdown,fr,2537ab89a67178a4,"### Lecture du résultat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-19,markdown,fr,2537ab89a67178a4,"### Lecture du résultat
 
 Le classement du tournoi disait *qui marque* ; cette mesure dit *qui peut renverser*. Face à une population résidente AllD, chaque ligne donne la **fraction initiale critique** au-delà de laquelle l'envahisseur prend la population : **tft et grim n'ont besoin que de 2 %** de présence, gtft exige près d'un tiers (0,34), et **pavlov comme allc n'envahissent jamais** (seuil 1,00 : même unanitaires au départ, ils ne délogent pas AllD de cette dynamique). La mesure sépare ce que le score moyen mélangeait : gtft, proche de tft au classement, a un bassin d'invasion dix-sept fois plus étroit. C'est la quantité qui décide du destin d'une stratégie hors de son tournoi — dans une population adverse, seul un petit bassin se paie d'être gentil.",,,,,,,,2537ab89a67178a4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-23,markdown,fr,e802d35d2cc8de87,"### Lecture du résultat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-23,markdown,fr,e802d35d2cc8de87,"### Lecture du résultat
 
 La population évolue (mutations 5 %, bruit 2 %) et le paysage change du tout au tout : le taux de coopération oscille entre 0,261 et 0,938 (moyenne 0,714), la dominante change **70 fois en 400 générations**, et l'état final n'est **pas une fixation** mais un équilibre polymorphe — grim 0,450, allc 0,200, gtft 0,183, alld 0,100, pavlov 0,067, **tft 0,000**. Le résultat le plus instructif est l'extinction de tft : le vainqueur du tournoi de la première mesure meurt dans la population qui évolue, pendant que grim — son ex æquo statique — capte près de la moitié de la population. Classement statique et destin évolutif ne se lisent pas sur la même courbe : ce qui gagne un tournoi à pool fixe n'est pas ce qui survit à la sélection en population ouverte.",,,,,,,,e802d35d2cc8de87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-27,markdown,fr,8e498f14196699b2,"### Lecture du résultat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-27,markdown,fr,8e498f14196699b2,"### Lecture du résultat
 
 Trois régimes de dynamique replicatrice, même jeu, même durée — l'instantané à mu=0, les deux mutations à mu=0,10 — et l'axe qui discrimine n'est pas le **taux** de mutation mais sa **structure**. En instantané (mu=0) comme en mutation uniforme (mu=0,10), la population visite deux stratégies, change une fois de dominante et converge sur tft : la mutation uniforme, qui tire vers le centre, agit comme un bruit que la sélection efface. En mutation **turbulente** (même mu=0,10), tout change : les six stratégies sont visitées, la dominante change **104 fois**, et la trajectoire se termine sur grim. Même intensité, autre géométrie — la turbulence alimente sans cesse du matériel nouveau dans des directions favorables, et la population ne cesse de chercher. La leçon de mesure : mu ne se lit jamais seul, il se lit avec la distribution d'arrivée des mutants.",,,,,,,,8e498f14196699b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-28,markdown,fr,95d3cadf78f378fa,"### Lecture du résultat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-28,markdown,fr,95d3cadf78f378fa,"### Lecture du résultat
 
 Les deux panneaux sont le portrait de l'écart compté à la mesure précédente. À gauche (mu=0), les trajectoires des trois meilleures stratégies se figent vite : les fréquences atteignent leurs valeurs limites et n'en bougent plus — la population a terminé son histoire. À droite (mutation turbulente, mu=0,10), la fréquence de tft ne se fige jamais : les courbes continuent de serpenter jusqu'à la dernière génération, signature visuelle des cent-quatre changements de dominante comptés sur l'axe Axelrod. Convergence figée contre recherche perpétuelle : c'est la même opposition que les compteurs, vue cette fois depuis la trajectoire.",,,,,,,,95d3cadf78f378fa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-32,markdown,fr,191b22263aee466d,"### Lecture du résultat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,lecture-ict13-32,markdown,fr,191b22263aee466d,"### Lecture du résultat
 
 Ce manifeste est le contrat d'appariement des régimes R1 à R4 : **substrat identique** (sha256 7527a2ca, reproduction vérifiable de la construction ICT-15d), **départ identique** (x0 uniforme à six stratégies), **durée identique** (400 générations), mutation mu=0,1, arrivées tous les 40 générations, et le même jeu de cinq graines [7, 42, 13, 99, 2024]. Tout ce qui variera entre les régimes est donc attribuable à la dynamique seule, pas au jeu ni aux conditions initiales. La dimension finale (16 stratégies contre 6 au départ) dit ce que le générateur B ajoute : dix arrivées de stratégies nouvelles, payées par le vrai moteur, qui portent le vocabulaire au-delà du substrat de départ — c'est cette croissance de dimension que les régimes R3 et R4 exploitent.",,,,,,,,191b22263aee466d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb,2d2a67e9,markdown,fr,e89dd22f65eb8bd0,"**Lecture de la sortie.** Trois structures, trois codelengths de modele : identite (sparse eye) $10{,}000$ bits, diagonale asymetrique $26{,}751$ bits, uniforme $45{,}628$ bits. Toutes positives, comme toute longueur de code. L'ordre est exactement celui que MDL doit produire, et il s'explique par ce que le code doit reellement transmettre.

@@ -152,6 +152,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-19b-Bilevel-PPO-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/GameTheory"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory/SocialChoice"
     },
@@ -333,11 +338,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb",
       "series": "MyIA.AI.Notebooks/IIT/ICT-Series"
     },
     {
@@ -782,6 +782,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
@@ -798,11 +803,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
@@ -1012,21 +1012,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
     },
@@ -1038,6 +1023,21 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb"
     },
     {
@@ -1144,11 +1144,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Tweety"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-19b-Bilevel-PPO-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
     }
   ],
   "wrapped": [

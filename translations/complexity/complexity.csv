@@ -1862,7 +1862,7 @@ déjà dans le dépôt :
   Stearns »* ; il appelait l'épisode *« the story of how I almost won the Lanchester
   Prize »*. Le dépôt possède [`game_theory_lean/RepeatedGames`](../GameTheory/game_theory_lean/RepeatedGames/)
   (lake complet) et l'écho coopératif dans
-  [ICT-13 — Axelrod](../IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
+  [ICT-13 — Axelrod](../IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
 
 Ces deux fils (impossibilité d'agrégation, jeux répétés sous information incomplète) seront
 approfondis dans les volets 2 et 3 de l'hommage — l'encart présent suffit à dire le lien.

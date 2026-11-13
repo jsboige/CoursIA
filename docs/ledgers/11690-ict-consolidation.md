@@ -804,7 +804,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) Monde 2 états × 2 actions — assumé et écrit (contrat binaire du cross-engine, multi-états hors contrat) : portée bornée proprement. (2) L'animat est décisionnel mais pas encore **actif** (coût endogène du senseur renvoyé au cran suivant) : le titre « animat incarné » anticipe sur la greffe 4 (#13570). |
 | Verdict | **SOLIDE** — le standard organ-first appliqué à la VOI : formes closes dans `ict.voi`, comparateur cross-engine, contrôles négatif/oracle/bruit, contrat d'accord chiffré — le carnet démontre l'organe sans le réécrire. |
 
-### `ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` — toutes les cellules code exécutées
+### `ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
@@ -814,7 +814,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 | Critique | (1) L'appariement inter-régimes fait beaucoup en une cellule (3862 caractères) — la chaîne empreinte sha → verdict est lisible en sortie, le déroulé ne l'est pas. (2) b1_max_persistence à 5 runs : la disymétrie R2 (0,026-0,41) vs R3/R4 (0 exact) est nette, mais la borne inférieure de détection (b1 minimal détectable à 5 runs) n'est pas affichée. |
 | Verdict | **SOLIDE** — le carnet-charnière de la strate 3 : Axelrod reproduit, seuil théorique retrouvé, équilibre polymorphe, et la question TDA (stratégie comme forme) reçoit une réponse à trois visages dont un négatif affiché (R3−R4=0) — le plus riche de la tranche à ce jour. |
 
-### `ICT-13b-DecroisementDynamiqueObservable-Python.ipynb` — toutes les cellules code exécutées
+### `ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|
