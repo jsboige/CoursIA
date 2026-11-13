@@ -234,8 +234,9 @@ def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
     cured = _CURE_RE.sub(_repl, masked)
 
     # 3. restaurer les spans proteges (byte-identiques a l'original)
-    for i, original in enumerate(masked_spans):
-        cured = cured.replace("\x00MS{}\x00".format(i), original, 1)
+    # Restaurer les contenants avant leurs spans internes déjà masqués.
+    for i in reversed(range(len(masked_spans))):
+        cured = cured.replace("\x00MS{}\x00".format(i), masked_spans[i], 1)
     return cured, n[0]
 
 

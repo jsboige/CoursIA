@@ -876,9 +876,9 @@ Ce notebook a introduit les **problemes de satisfaction de contraintes (CSP)** e
 **Voir aussi** :
 - [CSP-2-Consistency.ipynb](CSP-2-Consistency.ipynb) pour les algorithmes de consistance (AC-3, forward checking)
 - [CSP-3-Advanced-CSharp.ipynb](CSP-3-Advanced-CSharp.ipynb) - Contraintes globales et optimisation multi-objectif",,,,,,,,90fa95fd5d60fbdd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,41d9eb7f,markdown,fr,43c81cd2ceb34672,"# CSP-1 : Fondamentaux des CSP
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,41d9eb7f,markdown,fr,d52e617cfaf48006,"# CSP-1 : Fondamentaux des CSP
 
-**Navigation** : [<< Search-5 GeneticAlgorithms](../Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-2-Consistance >>](CSP-2-Consistency.ipynb)
+**Navigation** : [<< Search-5 GeneticAlgorithms](../Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | [Index CSP](README.md) | [CSP-2-Consistance >>](CSP-2-Consistency.ipynb)
 
 ## Problèmes de Satisfaction de Contraintes - Fondamentaux
 
@@ -901,7 +901,7 @@ Ce notebook introduit le formalisme des **CSP** (Constraint Satisfaction Problem
 
 ### Lien avec d'autres séries
 
-Voir aussi la série [Sudoku](../../Sudoku/README.md) pour une application complète des CSP.",,,,,,,,43c81cd2ceb34672,,,,,,,,,,,,,,,
+Voir aussi la série [Sudoku](../../Sudoku/README.md) pour une application complète des CSP.",,,,,,,,d52e617cfaf48006,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,39d1a680,markdown,fr,ed0f8daba56d75cd,"***
 
 ## 1. Introduction (~5 min)
@@ -1999,10 +1999,10 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,feb7518b,markdown,fr
 3. En production, on préfère utiliser une bibliothèque pour gagner en fiabilité et en temps de développement
 
 > **Quand utiliser quoi ?** Implémentation manuelle pour **apprendre** les mécanismes. Bibliothèque pour **résoudre** des problèmes réels.",,,,,,,,8261db7eca9ef64c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,nav-restored,markdown,fr,ef5451a637163b17,"***
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,nav-restored,markdown,fr,6ed50a6336e5c30c,"***
 
-**Navigation** : [<< Search-5 GeneticAlgorithms](../Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | [Index](../README.md) | [CSP-2-Consistance >>](CSP-2-Consistency.ipynb)
-",,,,,,,,ef5451a637163b17,,,,,,,,,,,,,,,
+**Navigation** : [<< Search-5 GeneticAlgorithms](../Part1-Foundations/Search-05-GeneticAlgorithms.ipynb) | [Index CSP](README.md) | [CSP-2-Consistance >>](CSP-2-Consistency.ipynb)
+",,,,,,,,6ed50a6336e5c30c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2cd7141e,markdown,fr,ae12aa4c5b7c8f09,"***
 
 ## Recapitulatif et exercices
@@ -3183,9 +3183,9 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb,ca3c3c9c,markd
 - Mackworth, A. K. (1977). *Consistency in Networks of Relations*, Artificial Intelligence 8(1) — article fondateur de l'arc-consistance, dont AC-3 est l'algorithme.
 - Dechter, R. (2003). *Constraint Processing*. Morgan Kaufmann — ouvrage de reference sur la propagation de contraintes et les niveaux de consistance ; socle en amont de cette serie.
 ",,,,,,,,b699931a825603c6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,cell-0,markdown,fr,e20c676ea1a34d1c,"# CSP-2 : Propagation de Contraintes et Consistance
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,cell-0,markdown,fr,9e33f83be8c78053,"# CSP-2 : Propagation de Contraintes et Consistance
 
-**Navigation** : [<< CSP-1-Fondamentaux](CSP-1-Fundamentals.ipynb) | [Index](../README.md) | [CSP-3-Avance >>](CSP-3-Advanced.ipynb)
+**Navigation** : [<< CSP-1-Fondamentaux](CSP-1-Fundamentals.ipynb) | [Index CSP](README.md) | [CSP-3-Avance >>](CSP-3-Advanced.ipynb)
 
 ## Propagation de Contraintes et Consistance
 
@@ -3208,7 +3208,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Lien avec d'autres series
 
-Voir les notebooks App-6 (Minesweeper) et App-7 (Wordle) pour des applications utilisant la consistance d'arc.",,,,,,,,e20c676ea1a34d1c,,,,,,,,,,,,,,,
+Voir les notebooks App-6 (Minesweeper) et App-7 (Wordle) pour des applications utilisant la consistance d'arc.",,,,,,,,9e33f83be8c78053,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb,cell-1,markdown,fr,023664942bde26fe,"***
 
 ## 1. Pourquoi la propagation de contraintes ? (~5 min)
@@ -5142,9 +5142,9 @@ Ce notebook présente le **parallèle d'implémentation** entre **Choco-solver 4
 
 Part of #4956 (marathon parité .NET ⇄ Python série CSP).
 See #4711 (jurisprudence IKVM 8.15.0 + Choco).",,,,,,,,24df5177bed66acc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb,nav-header,markdown,fr,9ed1035e205493ab,"# CSP-3 : CSP Avance - Contraintes globales, OR-Tools et LNS
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb,nav-header,markdown,fr,709b12f6cf4d8699,"# CSP-3 : CSP Avance - Contraintes globales, OR-Tools et LNS
 
-**Navigation** : [<< CSP-2-Consistance](CSP-2-Consistency.ipynb) | [Index](../README.md) | [Applications >>](../Part3-Cas-pratiques/README.md)
+**Navigation** : [<< CSP-2-Consistance](CSP-2-Consistency.ipynb) | [Index CSP](README.md) | [CSP-4-Scheduling >>](CSP-4-Scheduling.ipynb) | [Applications](../Part3-Cas-pratiques/README.md)
 
 > **Solveur** : CP-SAT (Google OR-Tools). Le fonctionnement interne du solveur — presolve, recherche à grand voisinage (LNS), portfolio de workers — est détaillé dans [*The CP-SAT Primer*](https://d-krupke.github.io/cpsat-primer/) (Krupke & Schmitt, 2023, CC-BY, lecture en ligne gratuite).
 
@@ -5168,7 +5168,7 @@ A la fin de ce notebook, vous saurez :
 
 ### Lien avec d'autres series
 
-Ce notebook conclut la sous-serie **Fondations**. Pour voir ces techniques en action sur des problemes du monde reel, explorez la sous-serie [Applications](../Part3-Cas-pratiques/README.md) (planification, ordonnancement, routage). Voir aussi la serie [Sudoku](../../Sudoku/README.md) pour une application complete des CSP.",,,,,,,,9ed1035e205493ab,,,,,,,,,,,,,,,
+Ce notebook conclut la sous-serie **Fondations**. Pour voir ces techniques en action sur des problemes du monde reel, explorez la sous-serie [Applications](../Part3-Cas-pratiques/README.md) (planification, ordonnancement, routage). Voir aussi la serie [Sudoku](../../Sudoku/README.md) pour une application complete des CSP.",,,,,,,,709b12f6cf4d8699,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb,section-1-intro,markdown,fr,741b7f311fd7039f,"***
 
 ## 1. Introduction (~3 min)
@@ -7180,9 +7180,9 @@ Ce notebook a démontré la **parité Python/.NET** sur trois problèmes d'ordon
 - [CSP-4-Scheduling.ipynb](CSP-4-Scheduling.ipynb) — jumeau Python (OR-Tools CP-SAT, pip)
 - [Sudoku-11-Choco-CSharp.ipynb](../../Sudoku/Sudoku-11-Choco-CSharp.ipynb) — la route Choco-solver via IKVM
 - [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) — parité .NET ⇄ Python des séries de notebooks",,,,,,,,1ba831ab266d612c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb,d3c0280c,markdown,fr,fc297d6314f2a0de,"# CSP-4-Scheduling : Problèmes d'Ordonnancement
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb,d3c0280c,markdown,fr,1fce99713d83073f,"# CSP-4-Scheduling : Problèmes d'Ordonnancement
 
-**Navigation** : [<< CSP-3-Advanced](CSP-3-Advanced.ipynb) | [Index](../README.md) | [CSP-5-Optimization >>](CSP-5-Optimization.ipynb)
+**Navigation** : [<< CSP-3-Advanced](CSP-3-Advanced.ipynb) | [Index CSP](README.md) | [CSP-5-Optimization >>](CSP-5-Optimization.ipynb)
 
 > **Durée estimée** : 2h00
 
@@ -7205,7 +7205,7 @@ Ce notebook explore les problèmes d'ordonnancement classiques résolus par prog
 - Connaissances de base en OR-Tools CP-SAT
 
 
-> *Ancres savantes -- Garey, M.R. & Johnson, D.S. (1979), Computers and Intractability: A Guide to the Theory of NP-Completeness, W.H. Freeman (JSSP et RCPSP parmi les problemes d'ordonnancement NP-difficiles de reference, base du catalogue cite) ; Brucker, P. (2007), Scheduling Algorithms (5th ed.), Springer (manuel de reference sur le job-shop scheduling et les ordonnancements a contraintes de ressources) ; Herroelen, W., De Reyck, B. & Demeulemeester, E. (1998), Resource-Constrained Project Scheduling: A Survey of Recent Developments, Computers & Opérations Research 25(4):279-302 (RCPSP, classification des méthodes exactes et heuristiques) ; Burke, E.K., De Causmaecker, P., Vanden Berghe, G. & Van Landeghem, H. (2004), The State of the Art of Nurse Rostering, Journal of Scheduling 7(6):441-499 (survey de reference sur le Nurse Scheduling Problem).*",,,,,,,,fc297d6314f2a0de,,,,,,,,,,,,,,,
+> *Ancres savantes -- Garey, M.R. & Johnson, D.S. (1979), Computers and Intractability: A Guide to the Theory of NP-Completeness, W.H. Freeman (JSSP et RCPSP parmi les problemes d'ordonnancement NP-difficiles de reference, base du catalogue cite) ; Brucker, P. (2007), Scheduling Algorithms (5th ed.), Springer (manuel de reference sur le job-shop scheduling et les ordonnancements a contraintes de ressources) ; Herroelen, W., De Reyck, B. & Demeulemeester, E. (1998), Resource-Constrained Project Scheduling: A Survey of Recent Developments, Computers & Opérations Research 25(4):279-302 (RCPSP, classification des méthodes exactes et heuristiques) ; Burke, E.K., De Causmaecker, P., Vanden Berghe, G. & Van Landeghem, H. (2004), The State of the Art of Nurse Rostering, Journal of Scheduling 7(6):441-499 (survey de reference sur le Nurse Scheduling Problem).*",,,,,,,,1fce99713d83073f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb,87925f34,code,fr,dbf0bb2292789071,"# Installation des dépendances
 import subprocess
 import sys
@@ -8942,9 +8942,9 @@ Ce notebook a présenté quatre problèmes classiques d'optimisation combinatoir
 - [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956) — parité .NET ⇄ Python des séries de notebooks
 - [Issue #5005](https://github.com/jsboige/CoursIA/issues/5005) — bug kernel iopub post-`#r ""nuget:""` (tracking output capture)
 ",,,,,,,,699b8e7e4532cc27,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb,b4de4ca2,markdown,fr,97f554c98b06041c,"# CSP-5-Optimization : Problèmes d'Optimisation Combinatoire
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb,b4de4ca2,markdown,fr,b9028ad79b4b9854,"# CSP-5-Optimization : Problèmes d'Optimisation Combinatoire
 
-**Navigation** : [<< CSP-4-Scheduling](CSP-4-Scheduling.ipynb) | [Index](../README.md) | [CSP-6-Hybridization >>](CSP-6-Hybridization.ipynb)
+**Navigation** : [<< CSP-4-Scheduling](CSP-4-Scheduling.ipynb) | [Index CSP](README.md) | [CSP-6-Hybridization >>](CSP-6-Hybridization.ipynb)
 
 > **Durée estimée** : 2h00
 
@@ -8970,7 +8970,7 @@ Ce notebook explore les problèmes d'optimisation combinatoire classiques résol
 - Notions de base en optimisation combinatoire
 
 
-> *Ancres savantes -- Dantzig, G.B. (1957), Discrete-Variable Extremum Problems, Opérations Research 5(2):266-288 (knapsack 0/1, relaxation continue fractionnaire borneant l'optimum, fondement de la resolution par branch-and-bound) ; Johnson, D.S. (1974), Fast Algorithms for Bin Packing, Journal of Computer and System Sciences 8(3):272-314 (heuristique First-Fit-Decreasing pour le Bin Packing, garantie de performance 11/9*OPT) ; Garey, M.R. & Johnson, D.S. (1979), Computers and Intractability, W.H. Freeman (Bin Packing et Knapsack parmi les 21 problemes NP-complets fondateurs) ; Gilmore, P.C. & Gomory, R.E. (1961), A Linear Programming Approach to the Cutting-Stock Problem, Opérations Research 9(6):849-859 (Cutting Stock, generation de colonnes fondatrice) ; Markowitz, H. (1952), Portfolio Sélection, The Journal of Finance 7(1):77-91 (théorie moderne du portefeuille : frontier efficiente moyenne-variance, déjà nomme ci-dessous).*",,,,,,,,97f554c98b06041c,,,,,,,,,,,,,,,
+> *Ancres savantes -- Dantzig, G.B. (1957), Discrete-Variable Extremum Problems, Opérations Research 5(2):266-288 (knapsack 0/1, relaxation continue fractionnaire borneant l'optimum, fondement de la resolution par branch-and-bound) ; Johnson, D.S. (1974), Fast Algorithms for Bin Packing, Journal of Computer and System Sciences 8(3):272-314 (heuristique First-Fit-Decreasing pour le Bin Packing, garantie de performance 11/9*OPT) ; Garey, M.R. & Johnson, D.S. (1979), Computers and Intractability, W.H. Freeman (Bin Packing et Knapsack parmi les 21 problemes NP-complets fondateurs) ; Gilmore, P.C. & Gomory, R.E. (1961), A Linear Programming Approach to the Cutting-Stock Problem, Opérations Research 9(6):849-859 (Cutting Stock, generation de colonnes fondatrice) ; Markowitz, H. (1952), Portfolio Sélection, The Journal of Finance 7(1):77-91 (théorie moderne du portefeuille : frontier efficiente moyenne-variance, déjà nomme ci-dessous).*",,,,,,,,b9028ad79b4b9854,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb,6ec0404c,code,fr,25955465c1c08aec,"# Installation des dépendances
 import subprocess
 import sys
@@ -11216,9 +11216,9 @@ Le pattern general est : **chaque technique pure a ses limites, et l'hybridation
 6. **Hybridizing Constraint Programming and Meta-Heuristics for MMRCMPSP** (Ahmeti & Musliu, PATAT 2020/2021, p. 206 ; version journal : *Journal of Heuristics* 31(1), 2025) : un hybride CP × métaheuristique récent et complet (modèle CP exhaustif puis recherche métaheuristique, nouvelles bornes sur les instances MMRCMPSP)
 7. [*The CP-SAT Primer*](https://d-krupke.github.io/cpsat-primer/) (Krupke & Schmitt, 2023, CC-BY) : les mécanismes internes de CP-SAT (presolve, LNS, indices de littéraux) mobilisés côté solveur par la voie native .NET
 ",,,,,,,,e8970d960a5486eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb,4dc70eb7,markdown,fr,078afb8cd999d162,"# CSP-6-Hybridation : Approches Hybrides Modernes
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb,4dc70eb7,markdown,fr,13c2ae43910363f0,"# CSP-6-Hybridation : Approches Hybrides Modernes
 
-**Navigation** : [<< CSP-5-Optimization](CSP-5-Optimization.ipynb) | [Index](../README.md) | [CSP-7-Soft >>](CSP-7-Soft.ipynb)
+**Navigation** : [<< CSP-5-Optimization](CSP-5-Optimization.ipynb) | [Index CSP](README.md) | [CSP-7-Soft >>](CSP-7-Soft.ipynb)
 
 > **Durée estimée** : 1h30
 
@@ -11243,7 +11243,7 @@ Ce notebook explore les approches hybrides modernes en CP.
 - Notions de base en SAT solving et machine learning
 
 
-> *Ancres savantes -- Ohrimenko, A., Stuckey, P.J. & Codish, M. (2009), Propagation via Lazy Clause Generation, Constraints 14(3):357-391 (Lazy Clause Generation : un solveur CP propage et genere a la volee des clauses SAT appries, fusion CP-SAT fondatrice, sections 1-2) ; Een, N. & Sorensson, N. (2006), Translating Pseudo-Boolean Constraints into SAT, Journal on Satisfiability, Boolean Modeling and Computation 2:1-26 (CP-SAT : encodage des contraintes pseudo-Booleennes en SAT, moteur de Google OR-Tools CP-SAT, section 2) ; Kotthoff, L. (2016), Algorithm Sélection for Combinatorial Search Problems: A Survey, AI Magazine 35(3):48-60 (Machine Learning pour le branching et la sélection de stratégies, section 3) ; Xu, L., Hutter, F., Hoos, H.H. & Leyton-Brown, K. (2008), SATzilla: Portfolio-based Algorithm Sélection for SAT, Journal of Artificial Intelligence Research 32:565-606 (portfolio solving, section 5).*",,,,,,,,078afb8cd999d162,,,,,,,,,,,,,,,
+> *Ancres savantes -- Ohrimenko, A., Stuckey, P.J. & Codish, M. (2009), Propagation via Lazy Clause Generation, Constraints 14(3):357-391 (Lazy Clause Generation : un solveur CP propage et genere a la volee des clauses SAT appries, fusion CP-SAT fondatrice, sections 1-2) ; Een, N. & Sorensson, N. (2006), Translating Pseudo-Boolean Constraints into SAT, Journal on Satisfiability, Boolean Modeling and Computation 2:1-26 (CP-SAT : encodage des contraintes pseudo-Booleennes en SAT, moteur de Google OR-Tools CP-SAT, section 2) ; Kotthoff, L. (2016), Algorithm Sélection for Combinatorial Search Problems: A Survey, AI Magazine 35(3):48-60 (Machine Learning pour le branching et la sélection de stratégies, section 3) ; Xu, L., Hutter, F., Hoos, H.H. & Leyton-Brown, K. (2008), SATzilla: Portfolio-based Algorithm Sélection for SAT, Journal of Artificial Intelligence Research 32:565-606 (portfolio solving, section 5).*",,,,,,,,13c2ae43910363f0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization.ipynb,6651185b,code,fr,fd51f7f135604d10,"# Installation des dépendances
 import subprocess
 import sys
@@ -12947,9 +12947,9 @@ Ce notebook démontre les **primitives natives Choco 4.10.17** pour les CSP soup
 
 Part of #4956 (marathon parité .NET ⇄ Python série CSP).
 See #4711 (jurisprudence IKVM 8.15.0 + Choco).",,,,,,,,36dee9b53a54dec3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,nav-header,markdown,fr,5e1ea33336b0a9bd,"# CSP-7 : Contraintes Souples - Soft CSP
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,nav-header,markdown,fr,f246c9f9c4150e9d,"# CSP-7 : Contraintes Souples - Soft CSP
 
-**Navigation** : [<< CSP-6-Hybridization](CSP-6-Hybridization.ipynb) | [Index](../README.md) | [CSP-8-Temporal >>](CSP-8-Temporal.ipynb)
+**Navigation** : [<< CSP-6-Hybridization](CSP-6-Hybridization.ipynb) | [Index CSP](README.md) | [CSP-8-Temporal >>](CSP-8-Temporal.ipynb)
 
 > **Solveur** : CP-SAT (Google OR-Tools) pour les mises en œuvre résolues par programmation par contraintes. Son fonctionnement interne (presolve, LNS, hints) est détaillé dans [*The CP-SAT Primer*](https://d-krupke.github.io/cpsat-primer/) (Krupke & Schmitt, 2023, CC-BY, lecture en ligne gratuite).
 
@@ -12971,7 +12971,7 @@ A la fin de ce notebook, vous saurez :
 - CSP-2 : propagation de contraintes
 - Bases d'algebre (semirings)
 
-### Duree estimee : 60 minutes",,,,,,,,5e1ea33336b0a9bd,,,,,,,,,,,,,,,
+### Duree estimee : 60 minutes",,,,,,,,f246c9f9c4150e9d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,section-1-intro,markdown,fr,ea2c8ad113aaae1a,"***
 
 ## 1. Introduction : Pourquoi les contraintes souples ? (~10 min)
@@ -14369,7 +14369,7 @@ print(""Exercice a completer - Hierarchical CSP"")
 #     print(f""  {c:10s} : {best_assignment[c]}"")
 # print(f""Scores : {best_scores}"")
 ",,,,,,,,9fa15a8107212565,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,references,markdown,fr,62a2b1faeecc5551,"***
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,references,markdown,fr,a2b2bbd87450c831,"***
 
 ## References
 
@@ -14381,10 +14381,10 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,references,markdown,fr,62a2b
 ### Navigation
 
 - [<< CSP-6-Hybridization](CSP-6-Hybridization.ipynb)
-- [Index](../README.md)
+- [Index CSP](README.md)
 - [CSP-8-Temporal >>](CSP-8-Temporal.ipynb)
-",,,,,,,,62a2b1faeecc5551,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,6fb0f1ea,markdown,fr,72f6b9c3d55d3080,"## Conclusion
+",,,,,,,,a2b2bbd87450c831,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb,6fb0f1ea,markdown,fr,2a1cde90393e7f56,"## Conclusion
 
 Ce notebook a presente les **contraintes souples** (soft constraints), qui permettent de modeliser des préférences plutot que des exigences absolues.
 
@@ -14402,7 +14402,7 @@ Ce notebook a presente les **contraintes souples** (soft constraints), qui perme
 
 Les contraintes souples transforment un problème de **satisfiabilite** (oui/non) en un problème d'**optimisation** (meilleur compromis). Le framework semiring montre que la théorie est elegante, mais en pratique, OR-Tools CP-SAT avec ponderation des soft constraints est l'approche industrielle.
 
-**Suite** : [CSP-8 - Contraintes temporelles](CSP-8-Temporal.ipynb) | [Retour au sommaire](../README.md)",,,,,,,,72f6b9c3d55d3080,,,,,,,,,,,,,,,
+**Suite** : [CSP-8 - Contraintes temporelles](CSP-8-Temporal.ipynb) | [Retour au sommaire CSP](README.md)",,,,,,,,2a1cde90393e7f56,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb,4cb66f5a,markdown,fr,7f5592ac1b8b454d,"# CSP-8 : Temporels - Raisonnement sur le Temps
 
 **Série .NET** : [<< CSP-7-Soft-CSharp](CSP-7-Soft-CSharp.ipynb) | [Index](../README.md) | [CSP-9-Distributed-CSharp >>](CSP-9-Distributed-CSharp.ipynb)
@@ -15819,9 +15819,9 @@ Ce notebook a couvert **3 paradigmes de raisonnement temporel** :
 3. L. Perron, V. Furnon, *OR-Tools CP-SAT Solver*, Google, 2024 - solveur SOTA
 4. E. W. Dijkstra, *A Discipline of Programming*, Prentice-Hall, 1976 - attribution de
    Floyd-Warshall (variante de Dijkstra 1959)",,,,,,,,f56360c144cb0272,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,nav-header,markdown,fr,8cc1385fbc2df744,"# CSP-8 : Temporels - Raisonnement sur le Temps
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,nav-header,markdown,fr,ce75f737fd236476,"# CSP-8 : Temporels - Raisonnement sur le Temps
 
-**Navigation** : [<< CSP-7-Soft](CSP-7-Soft.ipynb) | [Index](../README.md) | [CSP-9-Distributed >>](CSP-9-Distributed.ipynb)
+**Navigation** : [<< CSP-7-Soft](CSP-7-Soft.ipynb) | [Index CSP](README.md) | [CSP-9-Distributed >>](CSP-9-Distributed.ipynb)
 
 ## Problemes de Satisfaction de Contraintes Temporels
 
@@ -15841,7 +15841,7 @@ A la fin de ce notebook, vous saurez :
 - CSP-2 : propagation de contraintes, arc consistency
 - Bases de théorie des graphes (plus courts chemins)
 
-### Duree estimee : 60 minutes",,,,,,,,8cc1385fbc2df744,,,,,,,,,,,,,,,
+### Duree estimee : 60 minutes",,,,,,,,ce75f737fd236476,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,setup-temporal,code,fr,d827cf534308f66d,"# Installation des dependances
 import subprocess
 import sys
@@ -16899,7 +16899,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,a3df3a84,code,fr,78fa591
 # Votre code ici
 print(""Exercice a completer"")
 ",,,,,,,,78fa5915e00a2f76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,references,markdown,fr,fe831b273e61c2eb,"## References
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,references,markdown,fr,5f8708a5aeac4455,"## References
 
 1. **Allen's Interval Algebra** : J.F. Allen (1983) - ""Maintaining Knowledge about Temporal Intervals""
 2. **STP/TCSP** : Dechter, Meiri, Pearl (1991) - ""Temporal Constraint Networks"" (AIJ Classic Paper Award 2020)
@@ -16910,10 +16910,10 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,references,markdown,fr,f
 ### Navigation
 
 - [<< CSP-7-Soft](CSP-7-Soft.ipynb)
-- [Index](../README.md)
+- [Index CSP](README.md)
 - [CSP-9-Distributed >>](CSP-9-Distributed.ipynb)
-",,,,,,,,fe831b273e61c2eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,984b49ca,markdown,fr,ea8c0bf488099c64,"## Conclusion
+",,,,,,,,5f8708a5aeac4455,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb,984b49ca,markdown,fr,b9eb07ff940fd2a4,"## Conclusion
 
 Ce notebook a presente deux paradigmes complementaires pour le **raisonnement temporel** en intelligence artificielle.
 
@@ -16929,7 +16929,7 @@ Ce notebook a presente deux paradigmes complementaires pour le **raisonnement te
 
 L'algebre d'Allen offre un **cadre qualitatif** pour raisonner sur les relations entre événements (avant, après, pendant, etc.) tandis que le STP fournit un cadre **quantitatif** pour les contraintes metriques (duree minimale, delais). Le résultat cle de tractabilite : le STP est polynomial (Floyd-Warshall detecte les cycles negatifs = inconsistances), tandis que le TCSP avec disjonctions devient NP-hard.
 
-**Suite** : [CSP-9 - Contraintes distribuees](CSP-9-Distributed.ipynb) | [Retour au sommaire](../README.md)",,,,,,,,ea8c0bf488099c64,,,,,,,,,,,,,,,
+**Suite** : [CSP-9 - Contraintes distribuees](CSP-9-Distributed.ipynb) | [Retour au sommaire CSP](README.md)",,,,,,,,b9eb07ff940fd2a4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb,51c388f5,markdown,fr,f52f85fe98ec0b52,"# CSP-9-Distributed : CSP Distribués (DisCSP)
 
 **Navigation** : [<< CSP-8-Temporal](CSP-8-Temporal.ipynb) | [Index](../README.md) | [CSP-10-Optimisation-Z3 >>](CSP-10-Optimisation-Z3.ipynb)
@@ -18496,9 +18496,9 @@ Les takeaways essentiels :
 - **Lecture** : Yokoo & Hirayama (2000) ""Algorithms for Distributed Constraint Satisfaction"" (survey)
 - **Implémentation** : la bibliothèque `chocosolver` (Pozo) i
 nclut des abstractions DisCSP- **Application réelle** : smart grids, coordination de robots, allocation de spectre, enchères combinatoires",,,,,,,,b114c0ec65d25c34,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ea8598c0,markdown,fr,55c36bca618312c3,"# CSP-9-Distributed : CSP Distribués (DisCSP)
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ea8598c0,markdown,fr,2926a774cf002470,"# CSP-9-Distributed : CSP Distribués (DisCSP)
 
-**Navigation** : [<< CSP-8-Temporal](CSP-8-Temporal.ipynb) | [Index](../README.md) | [CSP-10-Optimisation-Z3 >>](CSP-10-Optimisation-Z3.ipynb)
+**Navigation** : [<< CSP-8-Temporal](CSP-8-Temporal.ipynb) | [Index CSP](README.md) | [CSP-10-Optimisation-Z3 >>](CSP-10-Optimisation-Z3.ipynb)
 
 > **Durée estimée** : 2h00
 
@@ -18511,7 +18511,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ea8598c0,markdown,fr,
 3. **Découvrir** Asynchronous Weak-Commitment (AWC) et ses améliorations
 4. **Appliquer** les techniques de privacy-preserving CSP
 5. **Résoudre** des problèmes de coordination multi-agent
-",,,,,,,,55c36bca618312c3,,,,,,,,,,,,,,,
+",,,,,,,,2926a774cf002470,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,2a7dbea6,code,fr,f18d929280c08691,"# Imports
 from dataclasses import dataclass, field
 from typing import Dict, List, Set, Tuple, Optional, Any
@@ -19696,7 +19696,7 @@ if sol_q and verify_nqueens(sol_q):
     print(""\nPlateau :"")
     print(render_board(sol_q))
 ",,,,,,,,52fae853741f9460,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,62c027e8,code,fr,0b690b62b3d3c408,"# Exercice 1b : Coloration de graphe distribuee avec 5 couleurs
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,62c027e8,code,fr,c74f2f163085e4ed,"# Exercice 1b : Coloration de graphe distribuee avec 5 couleurs
 
 # Exercice: definissez le graphe et le domaine
 # graph_edges_5 = [(0, 1), (0, 2), (1, 3), (2, 3), (3, 4)]
@@ -19706,8 +19706,39 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,62c027e8,code,fr,0b69
 # Indice : utilisez ABTAgent et ABTSystem comme dans l'exemple
 
 # Votre code ici
-print(""Exercice a completer"")
-",,,,,,,,0b690b62b3d3c408,,,,,,,,,,,,,,,
+graph_edges_5 = [(0, 1), (0, 2), (1, 3), (2, 3), (3, 4)]
+domain_5 = ['R', 'G', 'B', 'Y', 'P']
+aretes_5 = {(min(a, b), max(a, b)) for a, b in graph_edges_5}   # ensemble -> test en O(1)
+
+def coloring_constraint_5(var1, val1, var2, val2):
+    if (min(var1, var2), max(var1, var2)) in aretes_5:
+        return val1 != val2
+    return True
+
+# 1 agent par noeud ; ses voisins = les autres extremites de ses aretes
+agents_5 = {}
+for i in range(5):
+    voisins = [n for e in graph_edges_5 for n in e if i in e and n != i]
+    agents_5[i] = ABTAgent(agent_id=i, domain=domain_5.copy(),
+                           constraint_func=coloring_constraint_5, neighbors=voisins)
+
+system_5 = ABTSystem(agents_5)
+solution_5 = system_5.run()
+
+print(""=== Exercice 1b : resultat ABT ==="")
+print(f""Solution : {solution_5}"")
+assert solution_5 is not None, ""ABT doit trouver une solution (5 couleurs, graphe peu dense)""
+
+print(""\nVerification arete par arete :"")
+for a, b in graph_edges_5:
+    ok = solution_5[a] != solution_5[b]
+    print(f""  {a}-{b} : {solution_5[a]} vs {solution_5[b]} -> {'OK' if ok else 'ECHEC'}"")
+    assert ok
+
+print(f""\nMessages echanges : {system_5.total_messages}"")
+print(f""Detail par type   : {system_5.message_type_counts}"")
+print(f""Nogoods           : {system_5.total_nogoods}"")
+print(f""Couleurs utilisees: {len(set(solution_5.values()))} sur {len(domain_5)}"")",,,,,,,,c74f2f163085e4ed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,ab01b036,markdown,fr,6f923143f8c26bcb,"### Exemple guide 2 : Comparaison ABT vs AWC
 
 Generez des instances aléatoires de coloration de graphe avec **densite variable** (fraction d'aretes presentes) et comparez les metriques ABT vs AWC : nombre total de messages, nogoods echanges, taux de solutions trouvees. L'implementation AWC du notebook augmente la priorite d'un agent qui accumule les conflits ; on s'attend a un avantage sur les instances denses.
@@ -19782,15 +19813,80 @@ for r in results:
           f""{r['abt_msgs']:>9.1f} {r['awc_msgs']:>9.1f} ""
           f""{r['abt_nogoods']:>8.1f} {r['awc_nogoods']:>8.1f}"")
 ",,,,,,,,16de8270c996879b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,4e07b2c6,code,fr,79f4bd807deba91c,"# Exercice 2b : Impact de la densite de contraintes sur ABT
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,4e07b2c6,code,fr,a78ed7f03a3106c1,"# Exercice 2b : Impact de la densite de contraintes sur ABT
 
 # Exercice: bouclez sur les densites [0.2, 0.4, 0.6, 0.8]
 # Exercice: pour chaque densite, genereez 10 instances et mesurez les messages
 # Indice : reutilisez _random_coloring_problem et ABTSystem
 
 # Votre code ici
-print(""Exercice a completer"")
-",,,,,,,,79f4bd807deba91c,,,,,,,,,,,,,,,
+import itertools
+
+N_AGENTS, DOMAIN_SIZE, N_INSTANCES = 6, 3, 10
+DENSITES = [0.2, 0.4, 0.6, 0.8]
+MAX_ITER = 2000
+
+def run_abt_instance(edges, constraint, domain, n_agents=N_AGENTS, max_iter=MAX_ITER):
+    agents = {}
+    for i in range(n_agents):
+        voisins = [o for e in edges for o in e if i in e and o != i]
+        agents[i] = ABTAgent(i, list(domain), constraint, voisins)
+    system = ABTSystem(agents)
+    solution = system.run(max_iterations=max_iter)
+    return {'solved': solution is not None,
+            'messages': system.total_messages,
+            'nogoods': system.total_nogoods}
+
+def est_coloriable(edges, n_agents, k):
+    return any(all(c[a] != c[b] for a, b in edges)
+               for c in itertools.product(range(k), repeat=n_agents))
+
+rng_2b = random.Random(2024)
+resultats_2b = []
+for d in DENSITES:
+    runs = []
+    for _ in range(N_INSTANCES):
+        edges, cons, dom = _random_coloring_problem(N_AGENTS, DOMAIN_SIZE, d, rng_2b)
+        r = run_abt_instance(edges, cons, dom)
+        r['sat'] = est_coloriable(edges, N_AGENTS, DOMAIN_SIZE)
+        r['n_edges'] = len(edges)
+        assert r['solved'] == r['sat'], ""ABT s'est trompe sur une instance""
+        runs.append(r)
+    msgs = [r['messages'] for r in runs]
+    msgs_sat = [r['messages'] for r in runs if r['sat']]
+    msgs_unsat = [r['messages'] for r in runs if not r['sat']]
+    resultats_2b.append({
+        'density': d,
+        'edges_mean': np.mean([r['n_edges'] for r in runs]),
+        'msgs_mean': np.mean(msgs), 'msgs_std': np.std(msgs), 'msgs_median': np.median(msgs),
+        'msgs_sat': np.mean(msgs_sat) if msgs_sat else float('nan'),
+        'msgs_unsat': np.mean(msgs_unsat) if msgs_unsat else float('nan'),
+        'nogoods_mean': np.mean([r['nogoods'] for r in runs]),
+        'success': np.mean([r['solved'] for r in runs]),
+    })
+
+print(f""{'dens':>5} {'aretes':>7} {'msgs moy':>9} {'ecart-t':>8} {'median':>7} ""
+      f""{'msgs SAT':>9} {'msgs UNSAT':>11} {'nogoods':>8} {'succes':>7}"")
+for r in resultats_2b:
+    print(f""{r['density']:>5.1f} {r['edges_mean']:>7.1f} {r['msgs_mean']:>9.1f} ""
+          f""{r['msgs_std']:>8.1f} {r['msgs_median']:>7.0f} {r['msgs_sat']:>9.1f} ""
+          f""{r['msgs_unsat']:>11.1f} {r['nogoods_mean']:>8.1f} {r['success']:>7.0%}"")
+
+# --- Graphique : densite (x) vs messages (y) ---
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(13, 4.5))
+xs = [r['density'] for r in resultats_2b]
+ax1.errorbar(xs, [r['msgs_mean'] for r in resultats_2b],
+             yerr=[r['msgs_std'] for r in resultats_2b],
+             marker='o', capsize=4, label='moyenne +/- ecart-type')
+ax1.plot(xs, [r['msgs_median'] for r in resultats_2b], 's--', label='mediane')
+ax1.plot(xs, [r['msgs_sat'] for r in resultats_2b], '^:', label='instances SAT seulement')
+ax1.set_xlabel('Densite de contraintes'); ax1.set_ylabel('Messages echanges')
+ax1.set_title(f'ABT : messages vs densite ({N_AGENTS} agents, {DOMAIN_SIZE} couleurs)')
+ax1.legend(); ax1.grid(alpha=0.3)
+ax2.bar([str(x) for x in xs], [r['success'] for r in resultats_2b], color='#51cf66')
+ax2.set_ylim(0, 1.05); ax2.set_xlabel('Densite'); ax2.set_ylabel('Taux de succes')
+ax2.set_title('Instances resolues (= instances satisfiables)')
+plt.tight_layout(); plt.show()",,,,,,,,a78ed7f03a3106c1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,c5130b42,markdown,fr,3d953229e2c968d5,"### Exemple guide 3 : Negociation multi-agent
 
 4 agents se disputent 5 ressources (creneaux horaires). Chaque agent a une **préférence secrete** (ordre sur les ressources). Contrainte dure : `AllDifferent` -- chaque agent recoit une ressource distincte. Objectif : mesurer l'**utilite sociale** (somme des préférences) de la solution sans que les agents ne revelent leur classement a autrui.
@@ -19887,7 +19983,7 @@ if result['status'] == 'OK':
         u = result['utilities'][agent_id]
         print(f""  Agent {agent_id} -> {slot:8s}  (utilite privee = {u})"")
 ",,,,,,,,f6140280236d912a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,2c475492,code,fr,337c2ea87402668e,"# Exercice 3b : Allocation de taches avec preferences privees
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,2c475492,code,fr,716461b83e43265e,"# Exercice 3b : Allocation de taches avec preferences privees
 
 # Exercice: definissez 5 agents et 8 taches
 # TASKS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']
@@ -19897,8 +19993,80 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,2c475492,code,fr,337c
 # Indice : proposez, evaluez avec preference secrete, acceptez/refusez
 
 # Votre code ici
-print(""Exercice a completer"")
-",,,,,,,,337c2ea87402668e,,,,,,,,,,,,,,,
+from itertools import permutations
+
+TASKS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']
+N_AGENTS_3B, CAPACITE = 5, 2
+AUCUNE = 'AUCUNE'
+
+def owner(slot_id, equitable=True):
+    return slot_id % N_AGENTS_3B if equitable else slot_id // CAPACITE
+
+def tache_unique(v1, val1, v2, val2):
+    if val1 == AUCUNE or val2 == AUCUNE:
+        return True
+    return val1 != val2
+
+class TaskAgent(PrivacyPreservingAgent):
+
+    def __init__(self, slot_id, tasks, preferences, neighbors):
+        super().__init__(slot_id, list(tasks) + [AUCUNE], tache_unique, neighbors,
+                         privacy_level='high')
+        self._preferences = dict(preferences)     # reste local, jamais envoye
+
+    def choose_value(self):
+        ordre = sorted((t for t in self.domain if t != AUCUNE),
+                       key=lambda t: -self._preferences[t]) + [AUCUNE]
+        for val in ordre:
+            if self.check_consistency(val):
+                return val
+        return None
+
+def run_task_allocation(seed=0, equitable=True):
+    rng = random.Random(seed)
+    prefs = {a: dict(zip(TASKS, rng.sample(range(1, len(TASKS) + 1), len(TASKS))))
+             for a in range(N_AGENTS_3B)}
+
+    n_slots = N_AGENTS_3B * CAPACITE
+    slots = {s: TaskAgent(s, TASKS, prefs[owner(s, equitable)],
+                          neighbors=[o for o in range(n_slots) if o != s])
+             for s in range(n_slots)}
+    system = ABTSystem(slots)
+    solution = system.run(max_iterations=10000)
+    assert solution is not None
+
+    allocation = {a: [] for a in range(N_AGENTS_3B)}
+    for s, t in solution.items():
+        if t != AUCUNE:
+            allocation[owner(s, equitable)].append(t)
+
+    toutes = [t for ts in allocation.values() for t in ts]
+    assert len(toutes) == len(set(toutes)), ""une tache attribuee deux fois""
+    assert set(toutes) == set(TASKS), ""une tache n'a pas ete attribuee""
+    assert all(len(ts) <= CAPACITE for ts in allocation.values()), ""capacite depassee""
+
+    satisfaction = {a: sum(prefs[a][t] for t in ts) for a, ts in allocation.items()}
+    total = sum(satisfaction.values())
+
+    slot_owner = [owner(s, equitable) for s in range(n_slots)]
+    optimum = max(sum(prefs[slot_owner[s]][TASKS[i]] for i, s in enumerate(perm))
+                  for perm in permutations(range(n_slots), len(TASKS)))
+    return allocation, satisfaction, total, optimum, system
+
+allocation_3b, satisfaction_3b, total_3b, optimum_3b, system_3b = run_task_allocation(seed=0)
+print(""=== Exercice 3b : allocation finale ==="")
+for a, ts in allocation_3b.items():
+    print(f""  Agent {a} -> {ts!s:14}  satisfaction privee = {satisfaction_3b[a]}"")
+print(f""\nSatisfaction totale : {total_3b} / optimum centralise {optimum_3b} ""
+      f""({total_3b / optimum_3b:.0%})"")
+print(f""Messages : {system_3b.total_messages}  (detail : {system_3b.message_type_counts})"")
+print(f""Nogoods  : {system_3b.total_nogoods}"")
+print(""Rapport de confidentialite (emplacement 0) :"", system_3b.agents[0].get_privacy_report())
+
+for eq in (True, False):
+    al, sa, to, op, _ = run_task_allocation(seed=0, equitable=eq)
+    print(f""equitable={eq!s:5} : taches/agent = {[len(v) for v in al.values()]}, ""
+          f""satisfaction = {to}/{op}, pire agent = {min(sa.values())}"")",,,,,,,,716461b83e43265e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,c1c4df9f,markdown,fr,d8df772f505d2d04,"### Exemple guide 4 : Analyse de la fuite d'information
 
 Dans ABT, chaque message `ok?` **revele la valeur** de l'expediteur a son destinataire. On mesure la fuite par :
@@ -19986,7 +20154,7 @@ print(f""\nMoyenne fuite ABT standard   : {avg_std:.1f} revelations"")
 print(f""Moyenne fuite disclosure min : {avg_min:.1f} revelations"")
 print(f""Reduction moyenne : {1 - avg_min/avg_std:.0%}"")
 ",,,,,,,,9f83cfd970dc39c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,81d0e9ee,code,fr,924d6fad133d844f,"# Exercice 4b : Etude comparative de la vie privee dans DisCSP
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,81d0e9ee,code,fr,7c26c34881085e97,"# Exercice 4b : Etude comparative de la vie privee dans DisCSP
 
 # Exercice: creez la classe PartialDisclosureAgent
 # Indice : entre ABTAgent (tout revele) et MinimalDisclosureAgent (rien ne revele)
@@ -19995,8 +20163,154 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,81d0e9ee,code,fr,924d
 # Exercice: mesurez et comparez messages, informations revelees, convergence
 
 # Votre code ici
-print(""Exercice a completer"")
-",,,,,,,,924d6fad133d844f,,,,,,,,,,,,,,,
+import time
+
+# ---------- 1. La variante intermediaire ----------
+class PartialDisclosureAgent(ABTAgent):
+
+    def __init__(self, agent_id, domain, constraint_func, neighbors):
+        super().__init__(agent_id, domain, constraint_func, neighbors)
+        self.zone = set(neighbors)
+
+    def set_two_hop(self, neighbors_of: Dict[int, List[int]]):
+        for n in self.neighbors:
+            self.zone.update(neighbors_of[n])
+        self.zone.discard(self.id)
+
+    def _send_ok_messages(self) -> List[Message]:
+        messages = []
+        for other in self.lower_priority:
+            if other not in self.zone:
+                continue                  # agent hors zone : il n'apprend rien
+            messages.append(Message(sender=self.id, receiver=other,
+                                    msg_type='ok?', content=(self.id, self.value)))
+            self.messages_sent += 1
+        return messages
+
+
+# ---------- 2. Instrumentation : journaliser chaque message livre ----------
+class FileJournalisee(list):
+    def __init__(self):
+        super().__init__()
+        self.journal: List[Message] = []
+    def pop(self, i=-1):
+        msg = super().pop(i)
+        self.journal.append(msg)
+        return msg
+
+class SystemeJournalise(ABTSystem):
+    def __init__(self, agents):
+        super().__init__(agents)
+        self.message_queue = FileJournalisee()
+def mesurer_revelations(journal: List[Message]) -> Dict:
+    valeurs, paires = 0, set()
+    for m in journal:
+        if m.msg_type == 'ok?':
+            i, _ = m.content
+            valeurs += 1
+            paires.add((i, m.receiver))
+        elif m.msg_type == 'nogood':
+            for i in m.content.assignments:
+                valeurs += 1
+                if i != m.receiver:
+                    paires.add((i, m.receiver))
+    return {'valeurs_exposees': valeurs, 'paires_apprises': len(paires)}
+
+
+# ---------- 3. Probleme de planification distribuee ----------
+def planification_reunions(n_reunions, n_creneaux, n_personnes, rng):
+    participants = {r: set(rng.sample(range(n_personnes), 2))
+                    for r in range(n_reunions)}
+    edges = [(a, b) for a in range(n_reunions) for b in range(a + 1, n_reunions)
+             if participants[a] & participants[b]]
+    edge_set = set(edges)
+    def contrainte(v1, val1, v2, val2):
+        if (min(v1, v2), max(v1, v2)) in edge_set:
+            return val1 != val2
+        return True
+    return edges, contrainte, [f""c{k}"" for k in range(n_creneaux)]
+
+def resoudre(agent_cls, n, edges, contrainte, domaine, max_iter=5000):
+    neighbors_of = {i: [o for e in edges for o in e if i in e and o != i] for i in range(n)}
+    agents = {i: agent_cls(i, list(domaine), contrainte, neighbors_of[i]) for i in range(n)}
+    if agent_cls is PartialDisclosureAgent:
+        for a in agents.values():
+            a.set_two_hop(neighbors_of)
+    system = SystemeJournalise(agents)
+    t0 = time.perf_counter()
+    solution = system.run(max_iterations=max_iter)
+    duree = time.perf_counter() - t0
+    rev = mesurer_revelations(system.message_queue.journal)
+    return {'solved': solution is not None, 'messages': system.total_messages,
+            'nogoods': system.total_nogoods, 'temps_ms': duree * 1000, **rev}
+
+
+# ---------- 4. Experience : les 3 approches sur les MEMES instances ----------
+def est_planifiable(n, edges, k):
+    adj = {i: set() for i in range(n)}
+    for a, b in edges:
+        adj[a].add(b); adj[b].add(a)
+    col = {}
+    def bt(i):
+        if i == n:
+            return True
+        for c in range(k):
+            if all(col.get(j) != c for j in adj[i]):
+                col[i] = c
+                if bt(i + 1):
+                    return True
+                del col[i]
+        return False
+    return bt(0)
+
+APPROCHES = {'ABT standard': ABTAgent,
+             'Partial Disclosure': PartialDisclosureAgent,
+             'Minimal Disclosure': MinimalDisclosureAgent}
+N_REUNIONS, N_CRENEAUX, N_PERSONNES, N_RUNS_4B = 10, 4, 14, 20
+
+rng_4b = random.Random(7)
+mesures = {nom: [] for nom in APPROCHES}
+for _ in range(N_RUNS_4B):
+    edges, cons, dom = planification_reunions(N_REUNIONS, N_CRENEAUX, N_PERSONNES, rng_4b)
+    faisable = est_planifiable(N_REUNIONS, edges, N_CRENEAUX)
+    for nom, cls in APPROCHES.items():
+        r = resoudre(cls, N_REUNIONS, edges, cons, dom)
+        r['faisable'] = faisable
+        assert r['solved'] == faisable, f""{nom} se trompe sur une instance""
+        mesures[nom].append(r)
+
+cles = ['messages', 'valeurs_exposees', 'paires_apprises', 'nogoods', 'temps_ms']
+def tableau(titre, filtre):
+    print(f""\n{titre}"")
+    print(f""{'approche':>20} {'n':>3} {'messages':>9} {'valeurs':>8} ""
+          f""{'paires':>7} {'nogoods':>8} {'temps(ms)':>10}"")
+    moy = {}
+    for nom, rs in mesures.items():
+        sel = [r for r in rs if filtre(r)]
+        moy[nom] = {k: np.mean([r[k] for r in sel]) for k in cles}
+        m = moy[nom]
+        print(f""{nom:>20} {len(sel):>3} {m['messages']:>9.1f} {m['valeurs_exposees']:>8.1f} ""
+              f""{m['paires_apprises']:>7.1f} {m['nogoods']:>8.1f} {m['temps_ms']:>10.2f}"")
+    return moy
+
+moy_sat = tableau(""Plannings REALISABLES (solution trouvee par les 3 approches)"", lambda r: r['faisable'])
+moy_all = tableau(""Toutes les instances (y compris impossibles : ABT doit PROUVER l'echec)"", lambda r: True)
+print(f""\n(paires i -> j possibles avec i plus prioritaire : {N_REUNIONS * (N_REUNIONS - 1) // 2})"")
+
+# ---------- 5. Graphique comparatif (instances realisables) ----------
+noms = list(APPROCHES)
+couleurs = ['#ff6b6b', '#ffa94d', '#51cf66']
+fig, axes = plt.subplots(1, 4, figsize=(17, 4))
+for ax, (cle, titre) in zip(axes, [('messages', 'Messages echanges'),
+                                   ('valeurs_exposees', 'Valeurs exposees'),
+                                   ('paires_apprises', 'Paires (i -> j) ayant appris'),
+                                   ('temps_ms', 'Temps de convergence (ms)')]):
+    ax.bar(range(3), [moy_sat[n][cle] for n in noms], color=couleurs)
+    ax.set_xticks(range(3)); ax.set_xticklabels(['ABT', 'Partial', 'Minimal'])
+    ax.set_title(titre); ax.grid(axis='y', alpha=0.3)
+plt.suptitle(f'Vie privee dans DisCSP : plannings realisables '
+             f'({N_REUNIONS} reunions, {N_CRENEAUX} creneaux, {N_PERSONNES} personnes)')
+plt.tight_layout(); plt.show()",,,,,,,,7c26c34881085e97,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,389ab12f,markdown,fr,1164e4ca0ee90c9c,"## References
 
 ### Papiers fondateurs
@@ -20057,7 +20371,7 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,bf924282,markdown,fr,
 3. **Privacy-preserving** est crucial pour les applications reelles
 4. **Communication asynchrone** = robustesse mais complexite accrue
 5. **Nogoods** = apprentissage distribue, mais attention a l'explosion",,,,,,,,5043daf7f031f9bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,721025c0,markdown,fr,4d5f7aaa0efcdf83,"## Conclusion
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb,721025c0,markdown,fr,4b6186c395658b3e,"## Conclusion
 
 Ce notebook a presente les **contraintes distribuees (DisCSP)**, ou plusieurs agents cooperent sans qu'aucun ne connaisse le problème global.
 
@@ -20075,9 +20389,9 @@ Ce notebook a presente les **contraintes distribuees (DisCSP)**, ou plusieurs ag
 2. **La privacy est un enjeu reel** : dans le cas multi-hopital, chaque etablissement ne peut pas reveler ses contraintes internes aux autres
 3. **Le compromis asynchroniete vs complexite** : ABT ne demande pas de synchronisation globale, mais le nombre de messages peut exploser (6-Queens : 442 messages, 110 nogoods)
 
-Ce notebook conclut la serie CSP (CSP-1 a CSP-9). Pour les applications concretes, voir les notebooks [App-1 a App-18](../../README.md).
+Poursuivez avec [CSP-10 : Optimisation Z3](CSP-10-Optimisation-Z3.ipynb), qui complète le parcours par une formulation SMT de couverture minimale. Pour les applications concrètes, voir les [notebooks d’application](../Part3-Cas-pratiques/README.md).
 
-**Retour au sommaire** : [Part2-CSP](../README.md) | [Search](../../README.md)",,,,,,,,4d5f7aaa0efcdf83,,,,,,,,,,,,,,,
+**Retour au sommaire** : [Part2-CSP](README.md) | [Search](../README.md)",,,,,,,,4b6186c395658b3e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb,fa31c9c5,markdown,fr,419b8dcd6357a355,"### Du brute force au backtracking
 
 Le brute force ci-dessus est **correct mais exhaustif** : il énumère tout le produit cartésien des domaines, puis filtre les combinaisons valides. Sur la coloration de l'Australie (7 territoires, 3 couleurs), cela fait $3^7 = 2187$ combinaisons — gérable. Mais sur un graphe à 30 variables et 5 couleurs, on passe à $5^{30} \approx 9{,}3 \times 10^{20}$ : l'explosion combinatoire rend le brute force inutilisable en pratique.
