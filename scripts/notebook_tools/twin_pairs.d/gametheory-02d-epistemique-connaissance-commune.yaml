@@ -1,5 +1,5 @@
 - name: "GameTheory-02d Epistemique Connaissance Commune"
-  family: GameTheory/.NET-Parity
+  family: GameTheory
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb
   parity_level: semantic
