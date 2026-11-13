@@ -55,6 +55,15 @@ PILOT_ABSORBED_LOT_12856 = frozenset({
     "Audit README -> .ipynb links",
     "check_interp_positioning.py",
     "markdown-rendering guard (main-repo notebooks)",
+    # DIXIEME garde du lot pilote absorbe (#25510, tranche T-A/2 du
+    # 2026-11-12) : `solution-leak-guard` passe en absorption --
+    # declencheur `pull_request` retire dans le meme commit. Le nom du
+    # garde est byte-identique au nom de check-run RENDU par le workflow
+    # (`Solution-leak HIGH delta (advisory, WARN phase, #8053)`) : le mot
+    # `advisory` y est PORTANT (pr_gate.py classe les checks non bloquants
+    # par ce mot, #12389), donc c'est le garde qui a ete renomme sur le
+    # nom rendu, et non l'inverse.
+    "Solution-leak HIGH delta (advisory, WARN phase, #8053)",
 })
 
 
@@ -130,7 +139,8 @@ def test_notebook_guards_select_a_root_level_notebook():
     """Controle de bout en bout du piege `**/` sur le registre reel."""
     changed = ["Notebook-A-La-Racine.ipynb"]
     selected = [g.name for g in PILOT if fast_lane.guard_applies(g, changed)]
-    for expected in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+    for expected in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)",
+                     "Solution-leak HIGH delta (advisory, WARN phase, #8053)",
                      "prose-counts"):
         assert expected in selected, (
             f"{expected} devrait couvrir un notebook a la racine "
@@ -575,7 +585,7 @@ def test_advisory_flags_match_the_source_workflows():
     echouer personne, seule une PR qui rouvre la veine rougit.
     """
     by_name = {g.name: g for g in PILOT}
-    assert by_name["solution-leak-guard"].blocking is False
+    assert by_name["Solution-leak HIGH delta (advisory, WARN phase, #8053)"].blocking is False
     assert by_name["prose-counts"].blocking is True
     assert "--strict" in by_name["prose-counts"].argv
     assert by_name["probeAddresses banner guard (main-repo notebooks)"].blocking is True
@@ -684,7 +694,8 @@ def test_non_iterate_guards_have_no_paths_placeholder():
     `{changed_paths}` dans argv (le placeholder n'aurait pas de sens). On
     verifie au moins que les 5 gardes existants en sont exempts."""
     by_name = {g.name: g for g in PILOT}
-    for name in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+    for name in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)",
+                 "Solution-leak HIGH delta (advisory, WARN phase, #8053)",
                  "prose-counts", "perimeter-review-guard"):
         assert "{changed_paths}" not in by_name[name].argv, (
             f"{name} n'est pas iterates_paths mais porte le placeholder"
@@ -909,10 +920,10 @@ def test_tranche1_guards_are_absorbed_and_pilot_is_not():
     pilote bloque sans preuve de comparaison, soit la tranche absorbee est
     neutralisee et son garde d'origine parti sans remplacement.
 
-    Lot PILOTE absorbe (#12856 etape 3, programme #12567) : les NEUF gardes
+    Lot PILOTE absorbe (#12856 etape 3, programme #12567) : les DIX gardes
     de PILOT_ABSORBED_LOT_12856 ont conclu leur comparaison -- job renomme
     byte-identique + declencheur `pull_request` retire dans le meme commit.
-    Le lot est EPINGLE par intention : absorber un dixieme garde PILOT sans
+    Le lot est EPINGLE par intention : absorber un onzieme garde PILOT sans
     mettre a jour cette liste (ni le checker d'identite) doit rougir ici --
     chaque absorption du pilote est un geste trace, pas un effet de bord."""
     assert TRANCHE1, "la tranche 1 est vide : ce test n'exerce plus rien"
@@ -1586,6 +1597,7 @@ def test_tranche5_guards_are_absorbed_single_testpaths_guard():
         ".github/workflows/scripts-tests.yml",
         ".github/workflows/ml-tests.yml",
         ".github/workflows/secret-scan.yml",
+        ".github/workflows/secret-scan-controls.yml",
         ".github/workflows/ict-tests.yml",
         ".github/workflows/testpaths-coverage-guard.yml",
     ):
