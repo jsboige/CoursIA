@@ -1,0 +1,45 @@
+[
+  {
+    "schema_version": "v1",
+    "ts": "2026-11-13T21:40:05Z",
+    "machine": "myia-ai-01",
+    "motor": "zonos3_mini",
+    "motor_size_b": 0.8,
+    "motor_license": "Apache-2.0",
+    "extract": "C",
+    "extract_text_sha256_prefix": "a2cab722b97d2378",
+    "extract_text_chars": 1649,
+    "seed": 42,
+    "speaker": "Gaspard (voix francaise livree, embedding 192-d du checkpoint)",
+    "language": "fr",
+    "wer": 0.0637,
+    "wer_model": "faster-whisper-large-v3",
+    "rtf": 0.415,
+    "vram_mb": 1713,
+    "duration_s": 146.75,
+    "wallclock_total_s": 60.88,
+    "asr_models": [
+      "tiny",
+      "small",
+      "large-v3"
+    ],
+    "omitted_segments": 0,
+    "fidelity_omitted_segments_3plus": 0,
+    "fidelity_added_words": null,
+    "inserted_words": null,
+    "voice_stable": true,
+    "voice_consistent": true,
+    "prosody_st_range": 7.0,
+    "prosody_cv": 58.6,
+    "prosody_velocity": 1.03,
+    "prosody_verdict": null,
+    "prosody_gate": "REJECT",
+    "prosody_reasons": [
+      "MONOTONE",
+      "FADING"
+    ],
+    "notes": "Rendu natif ggml CUDA sur GPU 2 ; partition identique au rendu de reference Zonos v0.1 (8 morceaux) ; rejeu bit-identique a graine 42 ; WER large-v3 = 0.0637 (274 mots reconnus) ; prosodie REJECT (MONOTONE, FADING) : melodie DRONE, mouvement 1.03 st/syll, voix CONSISTENT.",
+    "source_path": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/mesures/zonos3/zonos3-mini-a0c-metrics.json",
+    "prosody_source_path": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/mesures/zonos3/prosody-verdict.json"
+  }
+]

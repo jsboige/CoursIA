@@ -1,0 +1,198 @@
+{
+  "ts": "2026-11-13T21:40:05Z",
+  "suite": "Banc #19695 -- ZONOS3-Mini, rendu chunked sur extract_C",
+  "model": "Zyphra/ZONOS3-Mini",
+  "backend": "ggml natif (runtime C++/CUDA), pas le serveur SGLang",
+  "language": "fr (voix par defaut du checkpoint : Gaspard)",
+  "speaker": "Gaspard (voix francaise livree, embedding 192-d du checkpoint)",
+  "seed": 42,
+  "max_frames": 449,
+  "text_path": "/mnt/d/hf-models/zonos3-run/extract_C_long_narration.txt",
+  "text_chars": 1650,
+  "text_chars_normalized": 1649,
+  "text_sha256": "a2cab722b97d2378838e9ca04a246425b168da36e264cce7c2903ce7277bc5bd",
+  "cut_rule": {
+    "boundary": "fin de phrase (! ? .) suivie d'un espace",
+    "split_regex": "(?<=[.!?])\\s+",
+    "fallback_long_sentence": "si une phrase depasse max_chars, scission a une frontiere de proposition (, ; :) -- jamais au milieu d'un mot",
+    "clause_regex": "(?<=[,;:])\\s+",
+    "grouping": "glouton, unites entieres, jusqu'a max_chars",
+    "grouping_oversized_sentence": "une phrase trop longue forme un groupe autonome : ses propositions ne rejoignent jamais le groupe precedent",
+    "max_chars": 280,
+    "sentence_never_truncated": true,
+    "pause_between_chunks_s": 0.25
+  },
+  "n_sentences": 7,
+  "n_chunks": 8,
+  "chunk_identity": {
+    "chunk_chars_total": 1642,
+    "separators_reinstated": 7,
+    "lost_chars": 0,
+    "reassembled_equals_source": true,
+    "comparison": "espaces normalises (collapse) : le separateur de jointure entre deux morceaux est reinstalle avant comparaison",
+    "src_norm_chars": 1649,
+    "rebuilt_norm_chars": 1649
+  },
+  "per_chunk": [
+    {
+      "index": 1,
+      "chars": 149,
+      "duration_s": 13.0,
+      "wallclock_s": 7.714,
+      "rtf": 0.593,
+      "text": "Pendant plusieurs jours de suite des lambeaux d'armée en déroute avaient traversé la ville. Ce n'était point de la troupe, mais des hordes débandées."
+    },
+    {
+      "index": 2,
+      "chars": 138,
+      "duration_s": 12.133,
+      "wallclock_s": 7.727,
+      "rtf": 0.637,
+      "text": "Les hommes avaient la barbe longue et sale, des uniformes en guenilles, et ils avançaient d'une allure molle, sans drapeau, sans régiment."
+    },
+    {
+      "index": 3,
+      "chars": 162,
+      "duration_s": 13.667,
+      "wallclock_s": 7.638,
+      "rtf": 0.559,
+      "text": "Tous semblaient accablés, éreintés, incapables d'une pensée ou d'une résolution, marchant seulement par habitude, et tombant de fatigue sitôt qu'ils s'arrêtaient."
+    },
+    {
+      "index": 4,
+      "chars": 266,
+      "duration_s": 24.067,
+      "wallclock_s": 8.246,
+      "rtf": 0.343,
+      "text": "On voyait surtout des mobilisés, gens pacifiques, rentiers tranquilles, pliant sous le poids du fusil; des petits moblots alertes, faciles à l'épouvante et prompts à l'enthousiasme, prêts à l'attaque comme à la fuite; puis, au milieu d'eux, quelques culottes rouges,"
+    },
+    {
+      "index": 5,
+      "chars": 231,
+      "duration_s": 21.667,
+      "wallclock_s": 7.427,
+      "rtf": 0.343,
+      "text": "débris d'une division moulue dans une grande bataille; des artilleurs sombres alignés avec des fantassins divers; et, parfois, le casque brillant d'un dragon au pied pesant qui suivait avec peine la marche plus légère des lignards."
+    },
+    {
+      "index": 6,
+      "chars": 189,
+      "duration_s": 14.267,
+      "wallclock_s": 6.516,
+      "rtf": 0.457,
+      "text": "Des légions de francs-tireurs aux appellations héroïques: «les Vengeurs de la Défaite--les Citoyens de la Tombe--les Partageurs de la Mort»--passaient à leur tour, avec des airs de bandits."
+    },
+    {
+      "index": 7,
+      "chars": 266,
+      "duration_s": 24.533,
+      "wallclock_s": 7.637,
+      "rtf": 0.311,
+      "text": "Leurs chefs, anciens commerçants en draps ou en graines, ex-marchands de suif ou de savon, guerriers de circonstance, nommés officiers pour leurs écus ou la longueur de leurs moustaches, couverts d'armes, de flanelle et de galons, parlaient d'une voix retentissante,"
+    },
+    {
+      "index": 8,
+      "chars": 241,
+      "duration_s": 21.667,
+      "wallclock_s": 7.975,
+      "rtf": 0.368,
+      "text": "discutaient plans de campagne, et prétendaient soutenir seuls la France agonisante sur leurs épaules de fanfarons; mais ils redoutaient parfois leurs propres soldats, gens de sac et de corde, souvent braves à outrance, pillards et débauchés."
+    }
+  ],
+  "sum_chunk_audio_s": 145.0,
+  "pause_total_s": 1.75,
+  "duration_out_s": 146.75,
+  "sample_rate": 44100,
+  "wallclock_total_s": 60.88,
+  "rtf_global": 0.415,
+  "vram_peak_gb": 1.673,
+  "vram_peak_mb": 1713,
+  "out_wav": "/mnt/d/hf-models/zonos3-run/out/A0C-zonos3-mini-chunked.wav",
+  "provenance": {
+    "runtime": "Zyphra/ZONOS3-Mini (ggml natif, CUDA)",
+    "runtime_commit": null,
+    "binary_sha256": "3236df3b21b50755a47710503cea172d4b2adef897f338487e4e469e5f891fcb",
+    "model_files": {
+      "backbone-ptq-edit.gguf": {
+        "sha256": "7e23d261e2cef3cbbbaa33f43fbe683acb393a157ac672f2de04858aef21011f",
+        "bytes": 663491840
+      },
+      "backbone-ptq.gguf": {
+        "sha256": "66fceb6d73a8c30bde80249e4112bb308380ab7f3384fa11c8e4048115e4ceec",
+        "bytes": 663150624
+      },
+      "spk-encoder.gguf": {
+        "sha256": "9539f340b70be246005403b9c254732e180e85e0b3c57fb1973f0d6bc6c59bdc",
+        "bytes": 45385728
+      },
+      "ssl-teacher.gguf": {
+        "sha256": "59e4f150e1ccdf54e6349b06605c2274f2262139678688025b6614f1393e415a",
+        "bytes": 1548700000
+      },
+      "steer.gguf": {
+        "sha256": "6e8e3f86e89a09801ce083b9286f43263ec696acfaff72e25aca537aa9efa90c",
+        "bytes": 204960
+      },
+      "zac-encoder.gguf": {
+        "sha256": "4c4335196486fd24cc56b24a40ac4548f8cc58a6400bce8e4af4e72160b18053",
+        "bytes": 4034646368
+      },
+      "zac-keep2.gguf": {
+        "sha256": "834e5b70b88294afc3c702a478487e0664dcc6b574c16fc6167d72444aabeafd",
+        "bytes": 452325440
+      },
+      "zac.gguf": {
+        "sha256": "9dc8e29cb681dae320bd77329c0f7a39806ad5de6c231ad111adab1a1f6774d8",
+        "bytes": 2199903264
+      }
+    }
+  },
+  "wer": {
+    "by_model": {
+      "tiny": {
+        "wer": 0.2996,
+        "wer_pct": 29.96,
+        "hyp_words": 269,
+        "wallclock_s": 4.1
+      },
+      "small": {
+        "wer": 0.176,
+        "wer_pct": 17.6,
+        "hyp_words": 272,
+        "wallclock_s": 4.9
+      },
+      "large-v3": {
+        "wer": 0.0637,
+        "wer_pct": 6.37,
+        "hyp_words": 274,
+        "wallclock_s": 11.9
+      }
+    },
+    "ref_text_file": "/mnt/d/hf-models/zonos3-run/extract_C_long_narration.txt",
+    "hyps_full": {
+      "tiny": "Pendant plusieurs jours de suite, des lambos d'armées en des routes,  avaient traversé la ville, ce n'était point de la troupe,  mais des hors de débondées, les hommes avaient la barbe longue et salle,  des uniformes en genie, et ils avancées d'une allure molle,  sans drapeau, sans régiment, tout semblait, à câblé,  érinté, à câppable d'une pensée ou d'une résolution,  marchant seulement par habitude, et tombant de fatigue si tôt qu'il s'arrêtait.  On voyait surtout des mobilisés, Jean-Passifique,  rentier tranquille, clients sous le poids, du fusil,  des petits mobloes à l'erte, facile, à l'épouvant, et pronte à l'entusiasme,  prère la tâque comme à la fuite, puis au milieu de quelques culottes rouges,  débris d'une division moulue dans une grande bataille,  des artilleurs sombres alignées avec des fantasins diverses,  et parfois, le casque brillant d'un dragon ou pied pesant,  qui suivait avec peine, la marche plus légère, des lignards,  des légions de frontireurs aux appellations hérosiques,  les vangeurs de la défaite, les citoyens de la tombe, les partageurs de la mort,  passaient à leur tour, avec des herdes bandis.  Leur chef, ancien commerçant, endra, ou en graine.  Ex-marchant de Suif ou de Savon,  guerrier de circonstances, nommée officier,  pour leurs écus ou la longueur de leurs moustaches,  couvert d'armes, de flanelles et de galons,  parler d'une voix retentissante,  discutait plan de campagne, et prétendait soutenir seul,  la France agonisante sur leurs épaules de fanfaron.  Mais il redoutait parfois leur propre soldat,  genre de sac et de cordes, souvent braves à outrance,  piaire et débauché.",
+      "small": "Pendant plusieurs jours de suite, des lambeaux d'armée en des routes avaient traversé la ville.  Ce n'était point de la troupe, mais des hordes débandées, les hommes avaient la barbe longue et sale, des uniformes en guenille, et ils avançaient d'une allure molle, sans drapeau, sans régiment.  Tout se semblait accablé, érinter, incapable d'une pensée ou d'une résolution, marchant seulement par habitude, et tombant de fatigue si tôt qu'il s'arrêtait.  On voyait surtout des mobilisés, gens pacifiques, rentiers tranquilles, pliant sous le poids du fusil, des petits maux bleus alertes, faciles à l'épouvante et prontes à l'enthousiasme, prêts à l'attaque comme à la fuite, puis, au milieu d'eux, quelques culottes rouges, des bris d'une division moulu dans une grande bataille.  Des artilleurs sombres, alignés avec des fantasins divers, et parfois le casque brillant d'un dragon aux pieds pesants, qui suivait avec peine la marche plus légère des lignards, des légions de franc-tireur aux appellations héroïques, les vengeurs de la défaite, les citoyens de la tombe, les partageurs de la mort, passaient à leur tour avec des airs de bouleau.  Leur chef, ancien commerçant, andre à eau en graine, ex-marchant de suif ou de savon, guerriers de circonstance, nommés officiers pour leurs écus ou la longueur de leurs moustaches, couverts d'armes, de flanelles et de galons, parlaient d'une voie retentissante,  discutait plein de campagnes et prétendait soutenir seul la France agonisante sur leurs épaules de fanfarons. Mais ils redoutaient parfois leur propre soldat, gens de sacs et de cordes, souvent braves à outrance, pillards et débauchés.",
+      "large-v3": "Pendant plusieurs jours de suite, des lambeaux d'armée en déroute avaient traversé la ville. Ce n'était point de la troupe, mais des hordes débandées.  Les hommes avaient la barbe longue et sale, des uniformes en guenilles, et ils avançaient d'une allure molle, sans drapeau, sans régiment.  Tous semblaient accablés, éreintés, incapables d'une pensée ou d'une résolution, marchant seulement par habitude, et tombant de fatigue sitôt qu'ils s'arrêtaient.  On voyait surtout des mobilisés, gens pacifiques, rentiers tranquilles, pliant sous le poids du fusil, des petits moblots alertes, faciles à l'épouvante et prontes à l'entour.  On voyait aussi des hommes d'enthousiasme, prêts à l'attaque comme à la fuite, puis, au milieu d'eux, quelques culottes rouges, débris d'une division moulue dans une grande bataille, des artilleurs sombres alignés avec des fantassins divers,  et parfois le casque brillant d'un dragon aux pieds pesants qui suivait avec peine la marche plus légère des lignards.  Des légions de francs-tireurs aux appellations héroïques, les vengeurs de la défaite, les citoyens de la tombe, les partageurs de la mort, passaient à leur tour avec des airs de bandits, leurs chefs, anciens commerçants en draps ou en graines.  Ex-marchands de suif ou de savon, guerriers de circonstances, nommés officiers.  Pour leurs écus ou la longueur de leur moustache, couverts d'armes, de flanels et de galons, parlaient d'une voix retentissante, discutaient plans de campagne et prétendaient soutenir seuls la France agonisante sur leurs épaules de fanfarons.  Mais ils redoutaient parfois leurs propres soldats, gens de sacs et de cordes, souvent braves à outrance, pillards.  Et débauchés."
+    },
+    "normalization": "p7_verify._normalize_words (NFC, lower, alnum->space, split)"
+  },
+  "omissions": {
+    "n_omitted": 0,
+    "n_omitted_3asr": 0,
+    "segments": [],
+    "per_asr_runs": {
+      "tiny": [],
+      "small": [
+        {
+          "ref_slice": "draps ou en graines",
+          "n_words": 4
+        }
+      ],
+      "large-v3": []
+    }
+  },
+  "prosody": {
+    "raw_tail": "nked.wav\",\n  \"duration_s\": 146.75,\n  \"gate\": \"REJECT\",\n  \"reasons\": [\n    \"MONOTONE\",\n    \"FADING\"\n  ],\n  \"reason_kinds\": [\n    \"finding\",\n    \"informational\"\n  ],\n  \"erratic_axes\": [],\n  \"melody_verdict\": \"DRONE\",\n  \"drone_reasons\": [\n    \"effective_notes 5.0 < 7.0\",\n    \"top3_note_pct 78.7% >= 65.0%\",\n    \"motif3_repeat_pct 82.8% >= 60.0%\"\n  ],\n  \"effective_notes\": 5.0,\n  \"top3_note_pct\": 78.7,\n  \"motif3_repeat_pct\": 82.8,\n  \"melodic_span_p5p95_st\": 3.8,\n  \"n_syllables\": 305,\n  \"melodic_span_st\": 7.0,\n  \"mean_abs_interval_st\": 1.03,\n  \"pct_flat_transitions\": 58.6,\n  \"global_range_st\": 5.1,\n  \"breath_verdict\": \"FADING\",\n  \"breath_verdict_effective\": \"FADING\",\n  \"decay_db\": -2.77,\n  \"decay_trusted\": true,\n  \"max_voiced_run_s\": 3.3,\n  \"voice_verdict\": \"CONSISTENT\",\n  \"n_voice_clusters\": 1\n}",
+    "parse": "no-json-line"
+  }
+}
