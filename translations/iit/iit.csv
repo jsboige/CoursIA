@@ -47402,11 +47402,11 @@ Deux résultats à retenir :
 - Gibbard (1973) / Satterthwaite (1975) — le théorème d'impossibilité de la manipulation.
 - SC-13 — Fuzz & Invariants : la paire naïf/corrigé dont `BordaVote`/`BordaVoteBroken` est la continuation directe.
 - Greffe 2 — [Espace atteignable](ICT-Greffe2-EspaceAtteignable-Python.ipynb) : la greffe précédente de la strate 7.",,,,,,,,f7bd9176cb395447,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,37fbc37b,markdown,fr,b37dbef3ff22f398,"---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,37fbc37b,markdown,fr,00a7b17e61f947e0,"***
 
 > **Marchepied de l'escalier** — ce carnet est l'étape de l'escalier ICT-12 qui suit [ICT-12c — Animat prégnance/valence incarné](ICT-12c-PregnanceAnimat-Python.ipynb) : 12c établit que prégnance et représentation sont deux grandeurs dissociables, ce carnet en mesure la première case (`s ⟂ π`). Étape suivante : [ICT-12d — Animat inhibé (Laborit)](ICT-12d-InhibitedActionAnimat-Python.ipynb).
 >
-> [↑ Sous-série ICT-12 — Valence Fields & Animats](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) · [↑ Index ICT-Series](../README.md)",,,,,,,,b37dbef3ff22f398,,,,,,,,,,,,,,,
+> [↑ Sous-série ICT-12 — Valence Fields & Animats](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) · [↑ Index ICT-Series](../README.md)",,,,,,,,00a7b17e61f947e0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,3f9f3459,markdown,fr,a41bd1c5c4024b46,"## Vérifiez votre compréhension
 
 Trois exercices jalonnent ce carnet — retournez-y avant de refermer :
