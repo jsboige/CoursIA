@@ -5067,32 +5067,55 @@ def classify(author: str, body: str) -> str | None:
 
 
 def review_threads(pr: int) -> list[dict]:
-    """Threads inline (3e surface, absente de `gh pr view --json`)."""
+    """Threads inline (3e surface, absente de `gh pr view --json`).
+
+    #17437 (relecture ai-01 2026-11-13, point non bloquant) : la connexion
+    PAGINE (`after` + `pageInfo`) comme les deux autres surfaces typees.
+    `first:100` seul rendait les 100 threads les PLUS ANCIENS et laissait
+    les suivants invisibles — un thread inline non resolu posterieur a la
+    100e position sortait de l'analyse. Meme plafond dur (50 pages = 5000
+    threads) ; un curseur fige arrete la boucle au lieu de boucler.
+    """
     query = """
-    query($owner:String!,$repo:String!,$n:Int!){
+    query($owner:String!,$repo:String!,$n:Int!,$tAfter:String){
       repository(owner:$owner,name:$repo){
         pullRequest(number:$n){
-          reviewThreads(first:100){nodes{
-            isResolved isOutdated path line
-            comments(first:1){nodes{author{login __typename} body createdAt}}
-          }}
+          reviewThreads(first:100,after:$tAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{
+              isResolved isOutdated path line
+              comments(first:1){nodes{author{login __typename} body createdAt}}
+            }}
         }
       }
     }"""
     owner, name = REPO.split("/")
-    data = gh_json([
-        "api", "graphql", "-f", f"query={query}",
-        "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
-    ])
-    nodes = data["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"]
-    # Pas de pagination : au-dela de 100 threads inline, les suivants seraient
-    # invisibles. Plutot que de tronquer en silence — le mode d'echec que ce
-    # script existe pour combattre — on le DIT. Theorique sur ce depot ; si le
-    # message apparait, paginer devient necessaire, pas optionnel.
-    if len(nodes) == 100:
-        print(f"  [!] PR #{pr}: 100 threads inline retournes (plafond `first:100`) "
-              "— d'eventuels threads supplementaires ne sont PAS analyses.",
-              file=sys.stderr)
+    nodes: list[dict] = []
+    after: str | None = None
+    for _ in range(50):
+        args = [
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+        ]
+        if after:
+            args += ["-F", f"tAfter={after}"]
+        data = gh_json(args)
+        conn = data["data"]["repository"]["pullRequest"]["reviewThreads"]
+        nodes.extend(n for n in (conn.get("nodes") or [])
+                     if isinstance(n, dict))
+        info = conn.get("pageInfo") or {}
+        if not info.get("hasNextPage"):
+            break
+        nxt = info.get("endCursor")
+        if not nxt or nxt == after:
+            print(f"  [!] PR #{pr}: curseur de pagination fige sur "
+                  "reviewThreads — threads suivants non analyses.",
+                  file=sys.stderr)
+            break
+        after = nxt
+    else:
+        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
+              "reviewThreads — threads suivants non analyses.", file=sys.stderr)
     out = []
     for t in nodes:
         first = (t.get("comments") or {}).get("nodes") or [{}]

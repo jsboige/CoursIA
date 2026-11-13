@@ -358,3 +358,61 @@ def test_17437_surface_typee_curseur_fige_rend_vide(monkeypatch):
 
     monkeypatch.setattr(mod, "gh_json", fake)
     assert mod._typed_author_surfaces(1) == {}
+
+
+# --- review_threads : la 3e surface pagine aussi (relecture 2026-11-13) ------
+
+
+def _thread(resolved: bool, body: str) -> dict:
+    return {"isResolved": resolved, "isOutdated": False,
+            "path": "a.py", "line": 1,
+            "comments": {"nodes": [
+                {"author": {"login": "clusterManager-Myia",
+                            "__typename": "Bot"},
+                 "body": body, "createdAt": at(9)}]}}
+
+
+def _threads_page(nodes: list[dict], has_next: bool, cursor: str | None) -> dict:
+    return {"data": {"repository": {"pullRequest": {"reviewThreads": {
+        "pageInfo": {"hasNextPage": has_next, "endCursor": cursor},
+        "nodes": nodes}}}}}
+
+
+def test_17437_review_threads_pagine_au_dela_de_100(monkeypatch):
+    """Meme classe de troncature que le point du 13/11, sur la 3e surface :
+    la page 2 est demandee (curseur ``tAfter``) et son thread non resolu
+    apparait. Sans pagination, les 100 threads les plus anciens seulement
+    etaient lus et le non-resolu posterieur sortait de l'analyse."""
+    pages = [
+        _threads_page([_thread(True, "ok")] * 100, True, "t1"),
+        _threads_page([_thread(False, "reste a faire")], False, "t2"),
+    ]
+    calls: list[list[str]] = []
+
+    def fake(args):
+        calls.append(list(args))
+        return pages[len(calls) - 1]
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+    out = mod.review_threads(1)
+
+    assert len(out) == 101
+    assert out[-1]["resolved"] is False
+    assert out[-1]["body"] == "reste a faire"
+    assert "tAfter=t1" in calls[1]
+    assert "tAfter=t1" not in calls[0]
+
+
+def test_17437_review_threads_curseur_fige_rend_le_collecte(monkeypatch):
+    """Curseur qui n'avance pas : on s'arrete (pas de boucle) et on rend ce
+    qui a ete collecte, avec un avertissement — un thread deja lu ne se perd
+    pas parce que la page suivante est inatteignable. La page figee est lue
+    deux fois (le gel n'est detectable qu'apres la seconde lecture), donc
+    deux entrees identiques : le contrat est « ca termine et ca rend »,
+    jamais « ca boucle »."""
+    page = _threads_page([_thread(False, "x")], True, "t1")
+
+    monkeypatch.setattr(mod, "gh_json", lambda args: page)
+    out = mod.review_threads(1)
+    assert len(out) == 2
+    assert all(not t["resolved"] for t in out)
