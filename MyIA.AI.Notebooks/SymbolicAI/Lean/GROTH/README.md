@@ -31,7 +31,7 @@ provenance déclarative ; elles ne prétendent pas établir une égalité formel
 entre les énoncés. La source Axiom est épinglée au commit
 `5ed82d14634e8d9576bb844c7bd4e3da66d450e7` (lecture du 2026-11-08), fichier
 [`StacksCore/CategoryTheory/AdjointFunctors.lean`](https://github.com/AxiomMath/Stacks/blob/5ed82d14634e8d9576bb844c7bd4e3da66d450e7/StacksCore/CategoryTheory/AdjointFunctors.lean#L16).
-Le petit extrait parseable est conservé dans
+Un extrait partiel, limité aux lignes utiles à ces deux repères, est conservé dans
 [`scripts/lean/fixtures/stacks_adjoint_tags_excerpt.txt`](../../../../scripts/lean/fixtures/stacks_adjoint_tags_excerpt.txt) ;
 il provient du dépôt sous licence Apache-2.0
 ([texte de licence](https://github.com/AxiomMath/Stacks/blob/5ed82d14634e8d9576bb844c7bd4e3da66d450e7/LICENSE)).
