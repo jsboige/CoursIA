@@ -117,7 +117,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: scripts-tests-${{ github.ref }}
+  group: scripts-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -128,7 +128,7 @@ jobs:
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
     # mur du JOB (started_at -> completed_at du job nomme exactement
     # "Scripts Tests (CPU)"), celle sur laquelle timeout-minutes agit --
@@ -736,7 +736,7 @@ jobs:
     # `mcp==1.30.0` + `pytest>=8` + `requests>=2.31`, la suite passe --
     # c'est le triplet exact du `pip install` ci-dessous.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     timeout-minutes: 15
 
     steps:
@@ -773,7 +773,7 @@ jobs:
     # Seul ce job est concerne : `scripts-tests` reste sur la jambe locale
     # STATIQUE (sa suite est couplee a la forme du runner, #22820).
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     timeout-minutes: 15
 
     steps:
