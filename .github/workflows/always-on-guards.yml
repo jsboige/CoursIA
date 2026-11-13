@@ -235,82 +235,14 @@ jobs:
           fi
           echo "[heal] work dir complet -- reutilisation"
 
-      # T-K (#25510) : le checkout ne tire PLUS les 1 606 branches.
-      #
-      # `fetch-depth: 0` fait tirer `+refs/heads/*` + les tags : l'historique
-      # complet de TOUTES les branches. L'entree `refspec` de checkout v4 ne
-      # peut PAS resoudre cela -- elle est IGNOREE par le code de l'action
-      # (`src/git-source-provider.ts` appelle `getRefSpecForAllHistory`, qui
-      # construit `+refs/heads/*:refs/remotes/origin/*` + `tagsRefSpec` ;
-      # `settings.refspec` n'apparait nulle part). Mesure : 19 min de
-      # checkout sur 75e21a7fac (job 131524893709, `curl 28` apres
-      # 22:12-22:31Z) et 2 425 s sur le run 43318043479.
-      #
-      # Aucune jambe n'a besoin des autres branches : il faut la TETE (son
-      # ascendance complete -- merge-base du fast-lane, historique des
-      # carnets jumeaux) et la BASE (`origin/main`, merge-base et
-      # `_resolve_base_commit`). Le clone part a profondeur 1 (bon marché :
-      # un commit + son arbre), puis UN fetch elargit l'historique a ces
-      # deux refs seulement.
-      #
-      # `blob:none` reste : les arbres sont laisses en paresseux, comme
-      # avant (les organes metadata n'ont besoin que de l'arbre complet).
+      # fetch-depth: 0 + blob:none : requis par le fast-lane (les gardes
+      # delta comparent HEAD a la base) et SUFFISANT pour les organes
+      # metadata (leur sparse-checkout d'origine est un sous-ensemble de
+      # l'arbre complet). Paye UNE fois pour les douze.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
           filter: blob:none
-
-      - name: "T-K : ascendance de la tete + la base, sans les 1 606 branches"
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Le clone de checkout est superficiel (profondeur 1). On elargit
-          # l'historique a CE QUE la jambe lit, et a rien d'autre :
-          #   - la tete : son ascendance complete (merge-base, jumeaux) ;
-          #   - la base : `origin/main` (ref du fast-lane, candidat de
-          #     `_resolve_base_commit`).
-          #
-          # `--unshallow` porte sur les refs donnees : il fait disparaitre le
-          # bord du clone pour elles, sans toucher aux autres. Sur un work
-          # dir reutilise, les objets sont deja la : la negociation
-          # serveur ne renvoie rien et le cout est celui du reseau, pas
-          # celui du volume.
-          #
-          # La tete est tiree par son SHA et non par sa ref : c'est le
-          # precedent de checkout lui-meme (`getRefSpecForAllHistory` fait
-          # `+${commit}:refs/remotes/pull/<N>/merge` -- l'API accepte un
-          # SHA comme source), et la ref `refs/pull/<N>/merge` peut ne pas
-          # exister (PR en conflit).
-          deepen="--unshallow"
-          if [ ! -f .git/shallow ]; then
-            deepen=""
-          fi
-          git fetch --filter=blob:none --no-tags ${deepen} origin \
-            "+${GITHUB_SHA}:refs/remotes/origin/tete" \
-            "+refs/heads/main:refs/remotes/origin/main"
-
-      - name: "T-K : controle -- la base est visible, son historique est lu"
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Controle 1 : un garde `needs_base` voit sa base. Le fast-lane
-          # calcule `git diff origin/main...HEAD` et `git merge-base
-          # origin/main HEAD` : sans base resolue, il s'abstient (fail-closed).
-          base=$(git merge-base origin/main HEAD || true)
-          if [ -z "${base}" ]; then
-            echo "::error::T-K : merge-base(origin/main, HEAD) introuvable -- l'historique n'a pas ete tire"
-            exit 1
-          fi
-          # Controle 2 : l'historique est REELLEMENT lu, pas seulement
-          # present. Un historique tronque ferait classer `fabricated` les
-          # sha attestes du carnet jumeau (le test jumeau rougirait) ; le
-          # plancher ci-dessous attrape la troncature avant lui.
-          commits=$(git rev-list --count "${base}")
-          echo "T-K : base=${base} commits_dans_ascendance=${commits}"
-          if [ "${commits}" -lt 1000 ]; then
-            echo "::error::T-K : historique tronque (${commits} commits dans l'ascendance de la base)"
-            exit 1
-          fi
 
       - uses: actions/setup-python@v5
         with:

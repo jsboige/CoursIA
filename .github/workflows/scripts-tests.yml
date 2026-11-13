@@ -191,13 +191,14 @@ jobs:
       # ------------------------------------------------------------------
       # HEAL (#15387) : le pool self-hosted REUTILISE le work dir entre jobs.
       # Un job a profondeur par defaut y laisse un clone SHALLOW ; le
-      # `fetch-depth: 0` ci-dessous declenche alors un `fetch --unshallow`
-      # dont l'echec est AVALE par actions/checkout -- mesure firsthand sur
-      # #15492 (run 34542167016, job 103087137418) : `error: Could not read
-      # 0102d652b3...` emis PENDANT le fetch, etape rendue verte malgre tout.
-      # Le depot reste alors ni shallow ni complet, et tout `git log --raw` /
-      # `git rev-list` ulterieur casse -- ce qui fait rougir un check REQUIS
-      # sur une panne d'infrastructure, jamais sur du fond.
+      # checkout ci-dessous (profondeur 1) declenche alors un fetch
+      # d'approfondissement dont l'echec est AVALE par actions/checkout --
+      # mesure firsthand sur #15492 (run 34542167016, job 103087137418) :
+      # `error: Could not read 0102d652b3...` emis PENDANT le fetch, etape
+      # rendue verte malgre tout. Le depot reste alors ni shallow ni
+      # complet, et tout `git log --raw` / `git rev-list` ulterieur casse --
+      # ce qui fait rougir un check REQUIS sur une panne d'infrastructure,
+      # jamais sur du fond.
       #
       # T-K (#25510) : le `fetch --unshallow origin` SANS refspec tire
       # `+refs/heads/*` -- l'historique complet des 1 606 branches -- et c'est
