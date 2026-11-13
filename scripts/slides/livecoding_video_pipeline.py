@@ -1341,7 +1341,7 @@ def synthesize_narration_tts(
     path, default_voice = TTS_ENGINES[engine]
     voice = voice or default_voice
 
-    _load_env_files(Path(__file__).resolve().parents[1])
+    _load_env_files(Path(__file__).resolve().parents[2])
     gateway = gateway or os.environ.get("TTS_GATEWAY_URL", TTS_GATEWAY_DEFAULT)
     api_key = os.environ.get("TTS_GATEWAY_API_KEY", "")
 
