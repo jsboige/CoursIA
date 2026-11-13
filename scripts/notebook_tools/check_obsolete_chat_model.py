@@ -949,7 +949,7 @@ class NotebookScanner:
             # chaine. Sans ce cas, la chaine n'etait ni findee ni meme
             # ``unresolved`` proprement : le litteral restait une mention doc
             # et le site chat tombait en ``unresolved`` (faux negatif mesure
-            # sur ``scripts/livecoding_video_pipeline.py``, repli
+            # sur ``scripts/slides/livecoding_video_pipeline.py``, repli
             # ``gpt-4o-mini``).
             for operand in node.values:
                 candidate = self.bind_value(operand, ctx)
@@ -1195,7 +1195,7 @@ def analyze_python_module(path: str) -> dict:
 
     Les carnets ne sont pas le seul lieu d'un appel chat : des modules
     consommes par les carnets portent des replis litteraux (mesure
-    firsthand : ``scripts/livecoding_video_pipeline.py`` repliait sur un
+    firsthand : ``scripts/slides/livecoding_video_pipeline.py`` repliait sur un
     ``os.environ.get("OPENAI_MODEL", "<modele obsolete>")``). La detection
     y est identique, la forme du rapport aussi, seule l'unite change.
     """
