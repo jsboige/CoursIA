@@ -160,7 +160,41 @@ def test_claims_vivant_perime_mien_et_borne():
     assert etat(lec, 5).ecart == "PLAFOND"
     borne = etat(lec, 7)
     assert borne.ecart is None and borne.notes == [f"claim borne de {AUTRE} : a/b/**"]
-    assert etat(lec, 6).ecart is None
+    # Le claim est ferme, mais le [RELEASED] d'il y a 1 h tient l'issue a l'ecart.
+    assert etat(lec, 6).ecart == "RELACHEE"
+
+
+def test_relachee_trois_jours_puis_resservie():
+    """Mesure po-2023 du 13/11 : #17183, #13106, #7291 resservies a chaque lane
+    alors que leur dernier marqueur etait un [RELEASED] motive d'une autre lane."""
+    rendue = f"[RELEASED] lane {AUTRE} -- barriere reelle, mesuree"
+    lec = lecture([
+        issue(1, comments=[com(24, rendue)]),
+        issue(2, comments=[com(24 * 4, rendue)]),
+        issue(3, comments=[com(24, rendue), com(2, f"[CLAIMED] lane {AUTRE} -- je reprends")]),
+        issue(4, comments=[com(24, f"[RELEASED] lane {LANE} -- siege trop petit")]),
+        issue(5, comments=[com(24, rendue), com(2, f"[NOT-DELIVERED] lane {LANE} -- reste B")]),
+        issue(6, labels=["EPIC"], comments=[com(24, rendue)]),
+    ])
+    e1 = etat(lec, 1)
+    assert e1.ecart == "RELACHEE" and AUTRE in e1.motif
+    assert etat(lec, 2).ecart is None          # au-dela de RELACHE_J jours
+    assert etat(lec, 3).ecart == "RECLAMEE"    # le dernier marqueur n'est plus le [RELEASED]
+    assert etat(lec, 4).ecart == "RELACHEE"    # ma propre lane l'a rendue : pas de retour
+    assert etat(lec, 5).ecart is None          # un [NOT-DELIVERED] la rouvre
+    assert etat(lec, 6).ecart == "RELACHEE"    # un conteneur rendu aussi
+
+
+def test_livree_info_avec_lane_avant_le_mot():
+    """Forme de #20603 (13/11) : le mot vient apres `lane X --` sur la ligne du tag."""
+    lec = lecture([
+        issue(1, comments=[com(3, f"[INFO] lane {AUTRE} — candidate-delivered (cloture G.9)")]),
+        issue(2, comments=[com(3, f"[INFO] lane {AUTRE} — pas candidate-delivered : reste B")]),
+        issue(3, comments=[com(3, f"[INFO] lane {AUTRE} -- etat\n\ncandidate-delivered plus tard")]),
+    ])
+    assert etat(lec, 1).ecart == "LIVREE"
+    assert etat(lec, 2).ecart is None  # nie juste avant le mot
+    assert etat(lec, 3).ecart is None  # le mot n'est pas sur la ligne du tag
 
 
 def test_plafond_epic_visite_par_une_autre_lane():
@@ -397,14 +431,17 @@ def _violations(source: str) -> list[str]:
 
 
 def test_tapis_rapide_ne_lance_aucun_processus():
-    assert _violations((COORD / "tapis_rapide.py").read_text(encoding="utf-8")) == []
+    for nom in ("tapis_rapide.py", "tapis_marqueurs.py"):
+        assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
 
 
 # Plafonds releves une fois a la livraison (ecart MERGEE corrige, quota de conteneurs) ;
 # un depassement se paie en extrayant un module, pas en relevant le plafond.
-@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520)])
+# tapis_marqueurs.py est la premiere extraction (lecture des marqueurs, 14/11).
+@pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
+                                              ("tapis_marqueurs.py", 130)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

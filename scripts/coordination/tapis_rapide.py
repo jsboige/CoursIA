@@ -22,6 +22,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from coordination import frozen_campaigns, gh_bulk
+from coordination.tapis_marqueurs import (
+    _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _dt, _iso, _rouverte,
+    claims_ouverts, evenements, lane_de_pr)
 
 # Poids des familles, une ligne a changer pour regler la priorite. Ils restent
 # legers : aucune famille n'est privee de service.
@@ -34,42 +37,24 @@ PART_CONTENEURS = 0.25
 CLAIM_VIVANT_H = 48  # au-dela, un claim est tenu pour abandonne (meme borne que l'organe)
 # Plafond EPIC (#22500) : meme fenetre que l'organe check_lane_claim.py epic_visit_cap.
 PLAFOND_EPIC_J = 7
+# Une issue rendue par [RELEASED] n'est pas resservie pendant ce delai : la lane suivante
+# re-mesurait la meme barriere (38 cycles sans grain servable, po-2023, 13/11).
+RELACHE_J = 3
 PROFONDEUR_FAMILLE = 5
 LABEL_LIVRE = "candidate-delivered"
 LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "PLAFOND", "RECLAMEE")
+CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "RELACHEE", "PLAFOND", "RECLAMEE")
 REPLI = "python scripts/pick_idle_grain.py --belt --lane {lane}"
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 
-OUVRE = frozenset({"CLAIMED", "CLAIMED-AMEND"})
-FERME = frozenset({"RELEASED", "DELIVERED", "CANCELLED", "ABANDONED", "DONE"})
-VISITE = frozenset({"CLAIMED", "CLAIMED-AMEND", "DELIVERED"})
-ROUVRE = frozenset({"NOT-DELIVERED", "RELEASED", "CLAIMED", "CLAIMED-AMEND"})
-
-# Un marqueur est en tete de N'IMPORTE QUELLE ligne (souvent apres `Grain:`),
-# avec la decoration que tolere `check_lane_claim.py`.
-_DECOR = (r"^[ \t]*(?:[#>*+\-\u2192\u27a1\u279c\u00bb\u2022\u2013\u2014]{1,6}[ \t]*)*"
-          r"(?:\*\*|__)?[ \t]*")
-_MARQUEUR_RE = re.compile(
-    _DECOR + r"\[\s*(CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE|CANCELLED|ABANDONED"
-    r"|DONE|NOT-DELIVERED|UNFROZEN|FROZEN|CLOSURE REVIEW)\s*\](.*)$",
-    re.MULTILINE | re.IGNORECASE)
-_INFO_LIVRE_RE = re.compile(_DECOR + r"\[INFO\][ \t]*(?:\*\*)?candidate-delivered\b",
-                            re.MULTILINE | re.IGNORECASE)
-_FENCE_RE = re.compile(r"```.*?(?:```|\Z)", re.DOTALL)  # du code cite un marqueur sans le poser
-_PATHS_RE = re.compile(r"(?<![`\"'\w])paths\s*:\s*(\S[^\n]*)", re.IGNORECASE)
-_KEEP_RE = re.compile(r"verdict\s*:\s*\**\s*KEEP\b", re.IGNORECASE)
-_LANE_RE = re.compile(r"\blane\s*:?\s+`?([\w.-]+:[\w.-]+)", re.IGNORECASE)
-_LANE_NUE_RE = re.compile(r"\b(myia-[\w.-]+:[\w.-]+)")
 _CITE_RE = re.compile(r"#(\d+)\b")
 _PART_OF_RE = re.compile(r"\bpart\s+of\s*:?\s*#(\d+)\b", re.IGNORECASE)
 _TITRE_EPIC_RE = re.compile(r"^\s*\[\s*epic\b[^\]]{0,40}?#(\d+)", re.IGNORECASE)
 _TITRE_CROCHET_RE = re.compile(r"^\s*\[#(\d+)\b")
 _TITRE_KIND_RE = re.compile(r"^\s*[\w.\- ]+?\s*\([^)]*?,\s*#(\d+)[^)]*\)\s*:")
-_JAMAIS = datetime.min.replace(tzinfo=UTC)
 
 
 @dataclass
@@ -89,73 +74,6 @@ class Etat:
     motif: str = ""
     notes: list[str] = field(default_factory=list)
     mon_claim: bool = False
-
-
-@dataclass(frozen=True)
-class Evt:
-    """Un marqueur lu en tete de ligne d'un commentaire."""
-
-    quand: datetime
-    marque: str
-    lane: str | None
-    paths: str | None
-    reste: str
-
-
-def _dt(texte: str | None) -> datetime | None:
-    try:
-        d = datetime.fromisoformat(texte or "")
-    except ValueError:
-        return None
-    return d if d.tzinfo else d.replace(tzinfo=UTC)
-
-
-def _iso(d: datetime) -> str:
-    return d.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _lane(ligne: str, texte: str) -> str | None:
-    """Sur la ligne du marqueur, le premier jeton `lane X` ou `myia-...:...` nu ;
-    sinon le premier `lane X` du commentaire."""
-    trouves = [m for m in (_LANE_RE.search(ligne), _LANE_NUE_RE.search(ligne)) if m]
-    m = min(trouves, key=lambda m: m.start(1)) if trouves else _LANE_RE.search(texte)
-    return m.group(1).rstrip(".") if m else None
-
-
-def lane_de_pr(pr: dict) -> str | None:
-    """Le premier `lane <machine:workspace>` du body (la ligne `Grain:`), pour
-    ne pas prendre une lane citee plus bas."""
-    m = _LANE_RE.search(pr.get("body") or "")
-    return m.group(1).rstrip(".") if m else None
-
-
-def evenements(comments: list[dict]) -> list[Evt]:
-    """Les marqueurs des commentaires disponibles, dans l'ordre du fil."""
-    evts: list[Evt] = []
-    for c in comments:
-        texte = _FENCE_RE.sub("", c.get("body") or "")
-        quand = _dt(c.get("created_at")) or _JAMAIS
-        for m in _MARQUEUR_RE.finditer(texte):
-            p = _PATHS_RE.search(m.group(2))
-            evts.append(Evt(quand, m.group(1).upper(), _lane(m.group(0), texte),
-                            p.group(1).strip() if p else None, m.group(2)))
-    return sorted(evts, key=lambda e: e.quand)
-
-
-def claims_ouverts(evts: list[Evt]) -> dict[str, Evt]:
-    """Par lane, CLAIMED* ouvre et RELEASED/DELIVERED ferme ; OVERRIDE attribue
-    l'issue a sa lane et ferme les autres."""
-    ouverts: dict[str, Evt] = {}
-    for e in evts:
-        if e.lane is None:
-            continue
-        if e.marque == "OVERRIDE":
-            ouverts.clear()
-        if e.marque in OUVRE or e.marque == "OVERRIDE":
-            ouverts[e.lane] = e
-        elif e.marque in FERME:
-            ouverts.pop(e.lane, None)
-    return ouverts
 
 
 def parent_de(it: dict) -> int | None:
@@ -189,12 +107,6 @@ def _ancetres(n: int, parents: dict[int, int | None]) -> tuple[list[int], int]:
         vus.add(cur)
         cur = parents.get(cur)
     return chaine, (chaine[-1] if chaine else n)
-
-
-def _rouverte(evts: list[Evt], depuis: datetime) -> bool:
-    """Un commentaire posterieur rouvre-t-il l'issue ?"""
-    return any(e.quand > depuis and (e.marque in ROUVRE or (
-        e.marque == "CLOSURE REVIEW" and _KEEP_RE.search(e.reste))) for e in evts)
 
 
 def _gel(n: int, body: str, evts: list[Evt], ancetres: list[int]) -> str | None:
@@ -265,6 +177,18 @@ def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
     return f"plafond EPIC (#22500) : {quoi} il y a {age} j (< {PLAFOND_EPIC_J} j)"
 
 
+def _relachee(evts: list[Evt], maintenant: datetime) -> str | None:
+    """Le dernier marqueur du fil est un [RELEASED] de moins de RELACHE_J jours,
+    quelle que soit la lane : son motif (barriere, siege) vaut encore."""
+    if not evts or evts[-1].marque != "RELEASED":
+        return None
+    ev = evts[-1]
+    age = round((maintenant - ev.quand).total_seconds() / 86400, 1)
+    if age >= RELACHE_J:
+        return None
+    return f"rendue par {ev.lane or '?'} il y a {age} j (< {RELACHE_J} j) : lire son motif"
+
+
 def _reclamee(e: Etat, evts: list[Evt], lane: str, maintenant: datetime) -> None:
     """Claims vivants (< 48 h) : le mien remonte, celui d'une autre lane ecarte
     -- sauf sur un conteneur, ou seul un claim sans `paths:` ecarte."""
@@ -291,6 +215,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
             e.numero, evts, ctx["citations"], ctx["limite"])),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
+        ("RELACHEE", lambda: _relachee(evts, ctx["maintenant"])),
         ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
                                      ctx["lane"], ctx["maintenant"])),
     ]
