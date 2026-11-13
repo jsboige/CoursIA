@@ -343,7 +343,7 @@ def _index_zero_padded(stem: str) -> bool | None:
     la tête reste zéro-padée. L'ancien motif exigeait un séparateur
     immédiatement après les chiffres et rendait donc `None` — classé
     `ambigu` — sur 14 carnets réels de `main` (`03b_Typed_Decisions_System1`,
-    `09e_Production_Exploitation`, `01b-Lean-SocialChoice-Formal`, ...).
+    `09e_Production_Exploitation`, `SocialChoice-01b-Lean-SocialChoice-Formal-Lean`, ...).
     Mesure du 2026-11-05 (#24678) : le bucket `ambigu` passe de 40 à 26,
     sans qu'un seul nom du dépôt change.
 
@@ -558,7 +558,7 @@ _CASES = [
     # rendait None => ambigu sur 14 carnets reels (#24678).
     ("03b_Typed_Decisions_System1.ipynb", _CLASSIF_CONFORME, "python3", "3b"),
     ("09e_Production_Exploitation.ipynb", _CLASSIF_CONFORME, "python3", "9e"),
-    ("01b-Lean-SocialChoice-Formal.ipynb", _CLASSIF_CONFORME, "lean4", "1b"),
+    ("SocialChoice-01b-Lean-SocialChoice-Formal-Lean.ipynb", _CLASSIF_CONFORME, "lean4", "1b"),
     # Controle negatif : sans zero-pad, la meme forme reste a renommer.
     ("3b-Typed-Decisions.ipynb", _CLASSIF_RENAME, "python3", "3b"),
     # Controle negatif du lookahead : `3d-01` est un prefixe de serie mixte,
