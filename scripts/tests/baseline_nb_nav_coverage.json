@@ -1,36 +1,5 @@
 {
   "deficit": {
-    "GameTheory": [
-      "GameTheory/GameTheory-03-Topology2x2-CSharp.ipynb",
-      "GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb",
-      "GameTheory/GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb",
-      "GameTheory/GameTheory-04j-Rationalisabilite-Python.ipynb",
-      "GameTheory/GameTheory-05-ZeroSum-Minimax-CSharp.ipynb",
-      "GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb",
-      "GameTheory/GameTheory-07-ExtensiveForm-CSharp.ipynb",
-      "GameTheory/GameTheory-09-BackwardInduction-CSharp.ipynb",
-      "GameTheory/GameTheory-09b-Commitment-Stackelberg-Python.ipynb",
-      "GameTheory/GameTheory-10-ForwardInduction-SPE-CSharp.ipynb",
-      "GameTheory/GameTheory-11-BayesianGames-CSharp.ipynb",
-      "GameTheory/GameTheory-11e-Global-Games-Python.ipynb",
-      "GameTheory/GameTheory-12-ReputationGames-CSharp.ipynb",
-      "GameTheory/GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb",
-      "GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb",
-      "GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb",
-      "GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb",
-      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"
-    ],
-    "GameTheory/SocialChoice": [
-      "GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb"
-    ],
-    "GenAI/Audio/02-Advanced": [
-      "GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb"
-    ],
-    "GenAI/Audio/04-Applications": [
-      "GenAI/Audio/04-Applications/04-15-MERT2-Music-Understanding.ipynb",
-      "GenAI/Audio/04-Applications/04-20-Separation-Avancee-Qualite.ipynb",
-      "GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb"
-    ],
     "GenAI/Audio/05-Diffusion-from-scratch": [
       "GenAI/Audio/05-Diffusion-from-scratch/05-1-AudioDiffusion-Latent-From-Scratch.ipynb"
     ],
@@ -51,22 +20,6 @@
       "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-5-Multi-Provider/brancher-plusieurs-providers-par-l-api.ipynb",
       "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-5-Multi-Provider/presenter-ai-engine-par-son-api.ipynb"
     ],
-    "GenAI/PostTraining": [
-      "GenAI/PostTraining/PT_01_intro_post_training.ipynb",
-      "GenAI/PostTraining/PT_02_sft_baseline.ipynb",
-      "GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb",
-      "GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb",
-      "GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb",
-      "GenAI/PostTraining/PT_06_eval_comparative.ipynb",
-      "GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb",
-      "GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb",
-      "GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb",
-      "GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb",
-      "GenAI/PostTraining/PT_11c_grpo_qwen17_rlvr.ipynb",
-      "GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb",
-      "GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb",
-      "GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb"
-    ],
     "GenAI/Texte": [
       "GenAI/Texte/13b_Agent_Evaluation.ipynb"
     ],
@@ -74,18 +27,11 @@
       "GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb"
     ],
     "IIT/ICT-Series": [
-      "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb",
-      "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb",
-      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
-      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb",
       "IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb",
       "IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb",
       "IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb",
       "IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb",
       "IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb",
-      "IIT/ICT-Series/ICT-20-FeatureCatastrophes-Python.ipynb",
-      "IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb",
-      "IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb",
       "IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb",
       "IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb",
       "IIT/ICT-Series/ICT-26-SignalingConvention-Python.ipynb",
@@ -94,20 +40,32 @@
       "IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb",
       "IIT/ICT-Series/ICT-33-SoupCollisions-Python.ipynb",
       "IIT/ICT-Series/ICT-34-BancRecollementLectures-Python.ipynb",
-      "IIT/ICT-Series/ICT-35b-HumorCausalPairs-SAE-Python.ipynb",
-      "IIT/ICT-Series/ICT-35c-HumorDepthProfile-SAE-Python.ipynb",
       "IIT/ICT-Series/ICT-38-SLens-SelfLocation-Python.ipynb",
       "IIT/ICT-Series/ICT-40a-TriangulationCausale-Python.ipynb",
       "IIT/ICT-Series/ICT-42e-InoculationNegativeWitness-Python.ipynb",
-      "IIT/ICT-Series/ICT-Annexe-ProxyContextuality.ipynb",
-      "IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport.ipynb",
-      "IIT/ICT-Series/ICT-Dissociation-SaillancePregnance.ipynb",
-      "IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb",
-      "IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb"
+      "IIT/ICT-Series/ICT-Annexe-ProxyContextuality-Python.ipynb",
+      "IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb",
+      "IIT/ICT-Series/ICT-Greffe5-AttributionCausale-Python.ipynb",
+      "IIT/ICT-Series/ICT-Life-SubstratCertifie-Python.ipynb"
+    ],
+    "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis": [
+      "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb"
     ],
     "IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats": [
       "IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb",
       "IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb"
+    ],
+    "IIT/ICT-Series/ICT-15-IntegratedComplexity": [
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15b-SensitivityCanonicity-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15d-CechObstruction-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15g-EmpiricalHuangExploitation-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb",
+      "IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15j-NerveDiscriminant-Python.ipynb"
     ],
     "ML/DataScienceWithAgents/02-ML-Cours": [
       "ML/DataScienceWithAgents/02-ML-Cours/2.11b-Proximal-Operators-From-Scratch.ipynb",
@@ -116,64 +74,20 @@
       "ML/DataScienceWithAgents/02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb",
       "ML/DataScienceWithAgents/02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb"
     ],
-    "ML/DataScienceWithAgents/03-Deep-Learning": [
-      "ML/DataScienceWithAgents/03-Deep-Learning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb",
-      "ML/DataScienceWithAgents/03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb",
-      "ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb",
-      "ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb",
-      "ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb",
-      "ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb"
-    ],
     "ML/DataScienceWithAgents/04-Vision": [
       "ML/DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb",
       "ML/DataScienceWithAgents/04-Vision/4.3-TransferLearning-ResNet.ipynb",
       "ML/DataScienceWithAgents/04-Vision/4.4b-Detection-AnchorFree-From-Scratch.ipynb"
     ],
-    "ML/DataScienceWithAgents/05-Wavelet-Scattering": [
-      "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb",
-      "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb",
-      "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
-      "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb"
-    ],
-    "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star": [
-      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
-      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
-      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
-    ],
     "ML/ML.Net": [
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
       "ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb"
     ],
-    "Probas/Applications": [
-      "Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb"
-    ],
-    "Probas/Applications/Percolation": [
-      "Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb",
-      "Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb",
-      "Probas/Applications/Percolation/Percolation-03c-Critique-L512.ipynb",
-      "Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb"
-    ],
-    "Probas/DecisionTheory/Actuariat": [
-      "Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique.ipynb",
-      "Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb",
-      "Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb"
-    ],
-    "Probas/DecisionTheory/Causal-Bridges": [
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-04-Dowhy-Decouverte-Structure.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb",
-      "Probas/DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb"
-    ],
-    "Probas/DecisionTheory/DecInfer": [
-      "Probas/DecisionTheory/DecInfer/DecInfer-02b-Lean-Coherence.ipynb"
-    ],
     "Probas/DecisionTheory/DecPyMC": [
-      "Probas/DecisionTheory/DecPyMC/DecPyMC-5-Value-Information.ipynb"
+      "Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb"
     ],
     "Probas/PyMC": [
       "Probas/PyMC/PyMC-17-Kalman-Filter.ipynb",
-      "Probas/PyMC/PyMC-18-Change-Point.ipynb",
       "Probas/PyMC/PyMC-19-Survival-Analysis.ipynb",
       "Probas/PyMC/PyMC-Observabilite-OTel.ipynb"
     ],
@@ -194,26 +108,8 @@
     "QuantConnect/research": [
       "QuantConnect/research/research_fifty_two_week_high.ipynb"
     ],
-    "RL": [
-      "RL/RL-08-Dyna-Q-Planification-Python.ipynb",
-      "RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb",
-      "RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb",
-      "RL/RL-11-POMDP-Croyances-Python.ipynb",
-      "RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb",
-      "RL/RL-16-Dream-RSI-Python.ipynb"
-    ],
-    "RL/PostTraining": [
-      "RL/PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb",
-      "RL/PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb",
-      "RL/PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb",
-      "RL/PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb",
-      "RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb",
-      "RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb"
-    ],
     "Search/Part1-Foundations": [
-      "Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb",
-      "Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb",
-      "Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb"
+      "Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb"
     ],
     "Search/Part3-Cas-pratiques": [
       "Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb",
@@ -221,9 +117,7 @@
       "Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb",
-      "Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "Search/Part3-Cas-pratiques/App-2-GraphColoring-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb"
     ],
     "Search/Part4-Metaheuristics/MGS-vs-mealpy": [
@@ -233,26 +127,9 @@
       "Sudoku/Sudoku-14-BDD-Python.ipynb"
     ],
     "SymbolicAI/ArgumentAnalysis": [
-      "SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-01b-Schemes-Walton-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb",
       "SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb",
       "SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-07c-Orchestration-Modes-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-02-Initiation-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb",
-      "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb"
+      "SymbolicAI/ArgumentAnalysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb"
     ],
     "SymbolicAI/Lean/ANALYSE": [
       "SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya.ipynb",
@@ -261,47 +138,8 @@
     "SymbolicAI/Lean/Geometry": [
       "SymbolicAI/Lean/Geometry/Geometry-05-Pont-Formel-Python.ipynb"
     ],
-    "SymbolicAI/Lean/Serre100": [
-      "SymbolicAI/Lean/Serre100/01-corps-finis-borne-hasse.ipynb",
-      "SymbolicAI/Lean/Serre100/01b-chevalley-warning-divisibilite-solutions.ipynb",
-      "SymbolicAI/Lean/Serre100/02-valeurs-zeta-multiples-finies.ipynb",
-      "SymbolicAI/Lean/Serre100/03-cohomologie-cech-espaces-finis.ipynb",
-      "SymbolicAI/Lean/Serre100/04-lemme-yoneda-categories-finies.ipynb",
-      "SymbolicAI/Lean/Serre100/05-table-de-caracteres.ipynb",
-      "SymbolicAI/Lean/Serre100/06-bulles-minkowski.ipynb",
-      "SymbolicAI/Lean/Serre100/07-zeros-fonctions-l-gaps-gue.ipynb",
-      "SymbolicAI/Lean/Serre100/09-congruences-tau-lacunarite-delta.ipynb",
-      "SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb",
-      "SymbolicAI/Lean/Serre100/11-corps-quadratiques-reciprocite-quadratique.ipynb",
-      "SymbolicAI/Lean/Serre100/12-formes-quadratiques-binaires-nombre-classes.ipynb",
-      "SymbolicAI/Lean/Serre100/13-jacobi-kronecker-reciprocite-II.ipynb",
-      "SymbolicAI/Lean/Serre100/14-formes-quadratiques-composition-gauss.ipynb",
-      "SymbolicAI/Lean/Serre100/15-quatre-carres-lagrange.ipynb",
-      "SymbolicAI/Lean/Serre100/16-fonctions-l-dirichlet-progression-premiers.ipynb",
-      "SymbolicAI/Lean/Serre100/17-chebotarev-frobenius-types-cycles.ipynb",
-      "SymbolicAI/Lean/Serre100/18-discriminant-ramification-critere-dedekind.ipynb",
-      "SymbolicAI/Lean/Serre100/19-arbres-ping-pong-sl2.ipynb",
-      "SymbolicAI/Lean/Serre100/20-sylow-p-sous-groupes.ipynb",
-      "SymbolicAI/Lean/Serre100/20c-cohomologie-groupe-calculee.ipynb",
-      "SymbolicAI/Lean/Serre100/21-operateurs-hecke-formes-modulaires.ipynb",
-      "SymbolicAI/Lean/Serre100/22-vecteurs-witt-frobenius.ipynb",
-      "SymbolicAI/Lean/Serre100/23-e8-viazovska.ipynb",
-      "SymbolicAI/Lean/Serre100/24-hasse-minkowski-principe-local-global.ipynb",
-      "SymbolicAI/Lean/Serre100/25-groupe-galois-calcule.ipynb",
-      "SymbolicAI/Lean/Serre100/26-trois-carres-legendre.ipynb",
-      "SymbolicAI/Lean/Serre100/27-pell-fermat.ipynb",
-      "SymbolicAI/Lean/Serre100/28-inversion-mobius-phi-euler.ipynb",
-      "SymbolicAI/Lean/Serre100/29-reciprocite-quadratique-legendre.ipynb",
-      "SymbolicAI/Lean/Serre100/30-fonction-partition-nombres-pentagonaux.ipynb"
-    ],
-    "SymbolicAI/Planners/02-Classical": [
-      "SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
-      "SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb"
-    ],
     "SymbolicAI/SMT/Z3-Linq2Z3": [
       "SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb",
-      "SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb",
-      "SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb",
       "SymbolicAI/SMT/Z3-Linq2Z3/20_Theorem_Rewriters.ipynb"
     ],
     "SymbolicAI/SemanticWeb": [
@@ -310,35 +148,25 @@
       "SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb"
     ],
     "SymbolicAI/SymbolicLearning": [
-      "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",
       "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
       "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction-output.ipynb",
       "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
       "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
-      "SymbolicAI/SymbolicLearning/SL-2-KnowledgeBasedLearning-Csharp.ipynb",
       "SymbolicAI/SymbolicLearning/SL-3-RelevanceLearning-Csharp.ipynb",
       "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming-Csharp.ipynb",
       "SymbolicAI/SymbolicLearning/SL-5-InverseResolution-Csharp.ipynb",
       "SymbolicAI/SymbolicLearning/SL-6-ModernILP-Csharp.ipynb"
-    ],
-    "SymbolicAI/Tweety": [
-      "SymbolicAI/Tweety/Tweety-04-Belief-Revision-CSharp.ipynb",
-      "SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb",
-      "SymbolicAI/Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb",
-      "SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-CSharp.ipynb",
-      "SymbolicAI/Tweety/Tweety-08-Agent-Dialogues-CSharp.ipynb",
-      "SymbolicAI/Tweety/Tweety-11-Causal-CSharp.ipynb"
     ]
   },
   "instrument": "2026-11-02.1",
   "provenance": {
     "behind_origin_main": 0,
-    "branch": "feature/24224-nav-coverage",
-    "dirty": false,
-    "head": "10a7e223440509529db4ad205f8e311e5aefb42f",
+    "branch": "refactor/20298-ict12-marchepied",
+    "dirty": true,
+    "head": "fdfd3e045a352c9bb8c59160139d612e5c7a4565",
     "instrument": "2026-11-02.1",
     "non_main": true,
-    "origin_main": "4afd93c9016443e7e6f8712c50d24b669f262ee6",
-    "written_at": "2026-11-02T14:10:49Z"
+    "origin_main": "1f1aef2307e2125b09c7b16ef5b0f2787ce92ff7",
+    "written_at": "2026-11-13T17:27:18Z"
   }
 }
