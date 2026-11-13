@@ -1,12 +1,26 @@
 #!/usr/bin/env python3
 r"""
-Lean 4 Jupyter Kernel Wrapper for WSL (v8)
+Lean 4 Jupyter Kernel Wrapper for WSL (v9)
 
 This script converts Windows paths to WSL paths and launches the lean4_jupyter kernel.
 It handles various path formats that VSCode/Jupyter might pass:
 - Standard Windows paths: C:\Users\...
 - Tilde shorthand: ~\AppData\... or ~/AppData/...
 - Mangled paths (backslashes eaten): c:UsersjsboiAppData...
+
+v9 changes (#24913 -- the paired REPL is the one that runs):
+1. The matched REPL is exported as LEAN4_JUPYTER_REPL; lean4_jupyter
+   (fork tag v0.0.2-paired-repl) launches it directly, inside a lake and
+   outside one. `lake env repl` resolved `repl` on a PATH that `lake env`
+   prefixes with ~/.elan/bin: the default REPL ran, of another version on a
+   machine with several REPL builds, and every cell failed under exit 0.
+2. With an older lean4_jupyter that would run a REPL of another version, the
+   kernel REFUSES to start (exit 3) and names both binaries.
+3. The suggested `build-repl` command keeps the tag's leading `v`, the form
+   setup_native_lean4_import.py accepts.
+4. The embedded Lean version keeps its `-rcN` suffix: an rc toolchain embeds
+   `.../doc/reference/4.33.0-rc1/`. Read as `4.33.0`, a correctly built
+   `repl-4.33.0-rc1` was refused and an rc REPL passed for the release.
 
 v8 changes (#18511 -- the kernel no longer follows `stable`, and no longer fails silently):
 1. The toolchain is PINNED from the nearest `lean-toolchain` (the lake's own when
@@ -164,7 +178,10 @@ def find_toolchain_anchor(start_dir, max_levels=12):
 
 # Le binaire REPL embarque l'URL de documentation de la version de Lean qu'il
 # compilee : c'est une MESURE du binaire, pas une annotation declaree.
-REPL_DOC_URL_RE = re.compile(rb"lean-lang\.org/doc/reference/(\d+\.\d+\.\d+)")
+# Le suffixe `-rcN` fait partie de la version : une toolchain rc embarque
+# `.../reference/4.33.0-rc1/` (mesure). Sans lui, un `repl-4.33.0-rc1` etait
+# refuse, et un REPL rc passait pour la release (#24913).
+REPL_DOC_URL_RE = re.compile(rb"lean-lang\.org/doc/reference/(\d+\.\d+\.\d+(?:-rc\d+)?)/")
 
 
 def repl_lean_version(repl_path, chunk_size=8 * 1024 * 1024):
@@ -237,6 +254,31 @@ def _repl_shim_dir(repl_path):
     except OSError:
         return None
     return shim_dir
+
+
+def legacy_launch_target(repl_wrapper_cls, lake_root, default_repl):
+    """Binaire que lancerait un lean4_jupyter qui ignore LEAN4_JUPYTER_REPL.
+
+    Renvoie None quand le lean4_jupyter installe lit la variable : il lance
+    alors le binaire apparie. Sinon, renvoie le binaire qu'il choisirait
+    lui-meme (None si ce choix echoue de lui-meme, visiblement) :
+
+    - dans un lake, celui que rend son ``_repl_for_toolchain`` ;
+    - hors lake, ou quand ce binaire n'existe pas, il lance ``lake env repl``.
+      `lake env` prefixe le PATH par ~/.elan/bin : c'est ~/.elan/bin/repl qui
+      tourne s'il existe, le shim du wrapper sinon (#24913).
+    """
+    if hasattr(repl_wrapper_cls, '_repl_from_caller'):
+        return None
+    chooser = getattr(repl_wrapper_cls, '_repl_for_toolchain', None)
+    if lake_root and chooser is not None:
+        try:
+            chosen = chooser(lake_root)
+        except Exception:
+            return None
+        if chosen and os.path.isfile(chosen):
+            return chosen
+    return default_repl if os.path.isfile(default_repl) else None
 
 
 def main():
@@ -342,16 +384,25 @@ def main():
             f"reports Lean {repl_version or 'an unknown version'}. Refusing to "
             "start: a mismatched REPL renders every cell as a parse error under "
             "an exit 0. Fix: python scripts/lean/setup_native_lean4_import.py "
-            f"build-repl {tag.lstrip('v')}"
+            f"build-repl {tag}"
         )
         log(message)
         print(message, file=sys.stderr)
         return 3
     os.environ['ELAN_TOOLCHAIN'] = toolchain
+    # Le binaire apparie est transmis a lean4_jupyter, qui le lance directement
+    # (avec ou sans lake). Sans cette variable, le noyau lance `lake env repl` :
+    # `lake env` prefixe le PATH par ~/.elan/bin, si bien que `repl` y designe
+    # le REPL par defaut et non le binaire apparie -- mesure sous Linux, ou un
+    # REPL 4.33 a tourne sur les .olean d'un arbre ancre en v4.30.0, cellules en
+    # erreur sous exit 0 (#24913). Le fork lit la variable depuis sa version
+    # qui la connait ; les versions anterieures l'ignorent.
+    os.environ['LEAN4_JUPYTER_REPL'] = repl_path
     log(f"toolchain pinned: {toolchain} ; REPL: {repl_path} (Lean {repl_version})")
 
-    # `lake env repl` resout `repl` par le PATH : un binaire `repl-<tag>` ne
-    # serait jamais trouve sans ce shim.
+    # Shim conserve pour les versions de lean4_jupyter qui ignorent
+    # LEAN4_JUPYTER_REPL : `lake env repl` resout `repl` par le PATH. Il ne
+    # suffit pas quand ~/.elan/bin/repl existe (voir ci-dessus).
     default_repl = os.path.join(elan_bin, 'repl')
     shim_dir = _repl_shim_dir(repl_path)
     if shim_dir is None and os.path.abspath(repl_path) != os.path.abspath(default_repl):
@@ -366,6 +417,32 @@ def main():
     if shim_dir:
         os.environ['PATH'] = os.pathsep.join(
             [shim_dir] + os.environ['PATH'].split(os.pathsep))
+
+    # Un lean4_jupyter anterieur a LEAN4_JUPYTER_REPL choisit lui-meme son
+    # binaire. Quand ce choix n'a pas la version de la toolchain, chaque
+    # cellule rendrait une erreur Lean sous un exit 0 : refuser de demarrer.
+    try:
+        from lean4_jupyter.repl import Lean4ReplWrapper
+    except Exception as exc:
+        log(f"lean4_jupyter.repl import failed before launch: {exc}")
+        Lean4ReplWrapper = None
+    if Lean4ReplWrapper is not None:
+        target = legacy_launch_target(Lean4ReplWrapper, lake_root, default_repl)
+        if target and os.path.realpath(target) != os.path.realpath(repl_path):
+            target_version = repl_lean_version(target)
+            if target_version != tag.lstrip('v'):
+                message = (
+                    "Lean 4 kernel startup failed: the installed lean4_jupyter "
+                    "ignores LEAN4_JUPYTER_REPL and would run "
+                    f"{target} (Lean {target_version or 'unknown'}) instead of the "
+                    f"REPL paired with {toolchain}, {repl_path}. Refusing to start: "
+                    "a mismatched REPL renders every cell as an error under an "
+                    "exit 0. Fix: python scripts/lean/setup_native_lean4_import.py "
+                    "install"
+                )
+                log(message)
+                print(message, file=sys.stderr)
+                return 3
 
     # Un lake n'est plus indispensable en soi : `lake env` fonctionne sans
     # lakefile (mesure 2026-10-21). Ce qui est indispensable, c'est l'ancrage

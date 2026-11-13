@@ -1,0 +1,7 @@
+date: '2026-11-11'
+by: myia-ai-01:CoursIA-2
+python_sha: 034980ea9bf989969b04bdfd9672aedebca7d162
+csharp_sha: b1fc5f66b2fb21147ed1c5307ae521636d245875
+content_python_sha: 31a264c98a1a159a0cfe346e1e3a97f09085782265d12324aad8a5e6d54ed923
+content_csharp_sha: 857b9c712e411631bab1bfd1e1bae9936004a789467c50c7b17353e0b10d210f
+reason: "Edition MARKDOWN seule du jumeau Python (Search-07-MCTS-And-Beyond.ipynb), cote C# inchange : correction des trois points de la review du coordinateur (attribution d'UCB1 a Auer, Cesa-Bianchi et Fischer 2002, Kocsis & Szepesvari 2006 decrit comme UCT ; sens de c inverse dans la reponse 4 ; facteur d'iterations de la reponse 2 passe de dix a cinq). Aucune cellule de code touchee, aucune sortie modifiee -> aucune re-execution due (C.2, exception markdown). L'ecart de parite vient de ce seul cote Python ; l'ecart semantique attendu reste nul (meme moteur, meme configuration, meme pedagogie). Attestation, pas reparation."

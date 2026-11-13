@@ -21,7 +21,7 @@ Si `sigma_hat ≤ 0` (prix plats), la cible précédente est conservée.
 
 ## Instrumentation
 
-`main.py` expose par paramètres : `start`, `end`, `mode` (`base`, `hold-btc`, `spy`, `sixty40`), `fee_mult` (défaut 1), `sigma_etoile`, `vol_span`, `trade_band`. Le graphique `shadow` porte une valeur par barre journalière (`e0..e4` : portefeuille), plus les coûts cumulés `fees` et `turnover` — contrat du rejeu en ombre #18923. BTCUSD est souscrit sans remplissage vers l'avant, et le préchauffage remplit l'EWMA avant le premier ordre (version 2, ci-dessous).
+`main.py` expose par paramètres : `start`, `end` (obligatoires, sans valeur par défaut : la fenêtre du verdict est 2016-01-01 → 2026-09-30), `mode` (`base`, `hold-btc`, `spy`, `sixty40`), `fee_mult` (défaut 1), `sigma_etoile`, `vol_span`, `trade_band`. Le graphique `shadow` porte une valeur par barre journalière (`e0..e4` : portefeuille), plus les coûts cumulés `fees` et `turnover` — contrat du rejeu en ombre #18923. BTCUSD est souscrit sans remplissage vers l'avant, et le préchauffage remplit l'EWMA avant le premier ordre (version 2, ci-dessous).
 
 Architecture : IBKR pour les jambes equity des références, BTC en données journalières Bitfinex — la même que BitcoinRegimeGate-QC (#19929). Frais : modèle de courtier par défaut de Lean, mis à l'échelle par `fee_mult` (le mécanisme de #19929, identique sur tous les modes).
 
@@ -72,7 +72,9 @@ Même fenêtre (2016-01-01 → 2026-09-30), mêmes frais du courtier, statistiqu
 
 Les frais cumulés de la version 2 représentent environ 5 % de la valeur finale du portefeuille.
 
-Les tableaux de la section précédente mesurent la version 1 : les tests appariés et le verdict NO BEATS n'ont pas été relancés sur la version 2. L'écart entre les deux lignes vient des corrections (la version 2 traite dès janvier 2016 et ne reçoit plus de barre recopiée) et peut-être d'une révision des données entre les deux runs ; un rejeu de la version 1 le même jour les départagerait, il n'a pas été lancé. La version 2 sera gelée au registre d'ombre comme une nouvelle candidate, après son merge ; la version 1 y reste inscrite, mais ne peut produire aucun passage accepté.
+Les tableaux de la section précédente mesurent la version 1 : les tests appariés et le verdict NO BEATS n'ont pas été relancés sur la version 2. L'écart entre les deux lignes vient des corrections (la version 2 traite dès janvier 2016 et ne reçoit plus de barre recopiée) et peut-être d'une révision des données entre les deux runs ; un rejeu de la version 1 le même jour les départagerait, il n'a pas été lancé. La version 1 reste inscrite au registre d'ombre, mais ne peut produire aucun passage accepté.
+
+La version 2 lisait encore `start` et `end` avec des valeurs par défaut, ce que la règle 1 du contrat interdit : un backtest lancé sans elles tournait sur une période implicite. Elles sont retirées (2026-11-11) ; rien ne change quand les deux dates sont passées, ce que fait chaque passage. Un backtest de contrôle du 2026-10-17 au 2026-11-10 (projet QC 39243885) le vérifie. La version 2 est gelée au registre le 2026-11-12, sous l'identifiant `btc-voltarget-v2`, sur ce projet, au SHA de cette correction sur `main` (`fa1d63e`).
 
 ## Sources
 
