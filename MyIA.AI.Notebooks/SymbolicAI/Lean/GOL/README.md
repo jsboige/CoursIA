@@ -40,8 +40,8 @@ Les voisins hors sous-série : [Lean-16](../Lean-16-Conway-Homme-et-Oeuvre-Lean-
 (l'homme et l'œuvre, en amont), [Lean-16b](../Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb)
 (FRACTRAN sur kernel Lean natif, dont GOL-10 est le compagnon Python) et [Lean-13e](../Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb) (libre arbitre),
 puis [Lean-17](../Lean-17-Conway-Bridge-to-Knots-Python.ipynb) (pont vers les nœuds).
-Côté GameTheory, la série GT-20 (chemin minimal) précède GOL-08 :
-[GameTheory-20](../../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
+Côté GameTheory, le chemin minimal (escalier Metajeux) précède GOL-08 :
+[Metajeux-04](../../../GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
 Le carnet d'escalier qui survole la sous-série est
 [Lean-39-Capstone-GOL](../Lean-39-Capstone-GOL.ipynb).
 

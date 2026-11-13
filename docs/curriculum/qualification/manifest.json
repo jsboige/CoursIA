@@ -145,19 +145,45 @@
             "outillage": 2,
             "autonomie": 3
           },
-          "justification": "Prérequis : le carnet déclare explicitement « avoir parcouru 02 (MLE, lissage, perplexité) » ; le HMM et le décodage de Viterbi y sont enseignés (P2). Outillage : hmmlearn et NLTK exécutés comme deux témoins (O2). Autonomie : forward en log-espace et Viterbi avec backpointers sont à implémenter (A3). Niveau D3 = max(2, 3). Recherche R2 : le §5 « Le cas non dégénéré — là où le contexte renverse la décision » pose une question falsifiable (le contexte change-t-il vraiment la décision ?) et la mesure ; le §6 fixe le plancher à battre, le §9 analyse les six tokens qui résistent.",
+          "justification": "Les probabilités, le lissage et le carnet 02 sont requis ; HMM et Viterbi sont enseignés ici (P2). L'exercice 'backward et décodage marginal' demande d'implémenter la récurrence et le décodage, puis les activités varient le lissage et étendent le train (A3). 'Le contexte renverse' et l'analyse d'erreurs confrontent le modèle à une baseline token indépendante sans imposer la direction de toutes les variations (R2). hmmlearn et NLTK sont réellement employés comme deux témoins (O2).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 16,
             "cellules_md": 30,
-            "prose_chars": 29323,
-            "densite": 1832,
+            "prose_chars": 29998,
+            "densite": 1874,
             "densite_plancher": 1200,
             "kernel": "Python 3 (ipykernel)",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/05-HMM-Viterbi-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 3,
+            "autonomie": 3
+          },
+          "justification": "Les probabilités, le lissage et le carnet 02 sont requis ; HMM et Viterbi sont enseignés ici (P2). L'exercice 'backward et décodage marginal' demande d'implémenter la récurrence et le décodage, puis les activités varient le lissage et étendent le train (A3). 'Le contexte renverse' et l'analyse d'erreurs confrontent le modèle à une baseline token indépendante sans imposer la direction de toutes les variations (R2). Forward/Viterbi sont C# ; Python.NET et CPython donnent accès aux vrais témoins hmmlearn/NLTK et ajoutent une configuration tierce (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 16,
+            "cellules_md": 30,
+            "prose_chars": 29950,
+            "densite": 1871,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
