@@ -243,7 +243,14 @@ def _inspect(main_rows, approfond_rows=None):
     ],
 )
 def test_derniere_colonne_est_conforme(row):
-    item = _inspect([row], ["| 01b | [Preuves Lean](P.ipynb) | Certificats |"])
+    item = _inspect(
+        [row],
+        [
+            "| 01b | [Preuves Lean](P.ipynb) | Certificats |",
+            "| 02b | [Codecs](C.ipynb) | Encodage |",
+            "| 02c | [Fronts](F.ipynb) | Frontiere |",
+        ],
+    )
     assert "lettres_dans_parcours_principal" not in item["extra"], item
     assert item["conforming"] is True
 
@@ -296,3 +303,69 @@ def test_pipe_echappe_ne_coupe_pas_la_cellule():
     ]
     item = _inspect([row], ["| 01b | [B](b.ipynb) | Approfondir |"])
     assert "lettres_dans_parcours_principal" not in item["extra"], item
+
+
+def test_lien_lettre_derniere_colonne_sans_approfondissements_est_un_defaut():
+    """La forme autorisee n'exempte pas de la contrepartie : le palier doit etre traite.
+
+    Relecture ai-01 du 13/11 : un lien lettre en derniere colonne ne produisait
+    plus de `bad_main`, donc la verification « paliers absents
+    d'Approfondissements » ne tournait plus du tout pour cette forme. Une table
+    qui cite `[03a]` sans aucune section « Approfondissements » passait.
+    """
+    item = _inspect(
+        ["| 03 | [C](c.ipynb) | Apprendre | Decouverte | [03a - preuves](#x) |"],
+        None,
+    )
+    assert "lettres_absentes_d_Approfondissements" in item["extra"], item
+    assert item["conforming"] is False
+
+
+def test_lien_lettre_prose_d_approfondissements_couvre_le_palier():
+    """Un palier traite en prose est traite : la section se lit entiere, pas sa seule table."""
+    text = "\n".join([
+        "# Serie de test",
+        "",
+        "## Comment lire ce README",
+        "",
+        "Vous decouvrez : lisez le parcours principal.",
+        "",
+        "### Parcours principal",
+        "",
+        HEADER,
+        SEPARATOR,
+        "| 03 | [C](c.ipynb) | Apprendre | Decouverte | [03a - preuves](#x) |",
+        "",
+        "### Approfondissements",
+        "",
+        "Le palier 03a est traite ci-dessous en prose, sans ligne de tableau.",
+        "",
+    ])
+    item = check.inspect_text("Serie/README.md", text)
+    assert "lettres_absentes_d_Approfondissements" not in item["extra"], item
+
+
+def test_entete_sans_approfondir_n_exempte_pas_la_derniere_colonne():
+    """Sans « approfondir » dans l'en-tete, un palier en derniere colonne est une etape deguisee."""
+    text = "\n".join([
+        "# Serie de test",
+        "",
+        "## Comment lire ce README",
+        "",
+        "Vous decouvrez : lisez le parcours principal.",
+        "",
+        "### Parcours principal",
+        "",
+        "| # | Notebook | Ce qu'on y apprend | Public | Notebook |",
+        "|---|---|---|---|---|",
+        "| 03 | [C](c.ipynb) | Apprendre | Decouverte | [03a - preuves](#x) |",
+        "",
+        "### Approfondissements",
+        "",
+        "| # | Notebook | Ce qu'il ajoute |",
+        "|---|---|---|",
+        "| 03a | [P](p.ipynb) | Preuves |",
+        "",
+    ])
+    item = check.inspect_text("Serie/README.md", text)
+    assert "lettres_dans_parcours_principal" in item["extra"], item
