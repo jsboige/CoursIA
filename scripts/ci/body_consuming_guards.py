@@ -529,7 +529,7 @@ REFERENCE: dict[str, dict[str, dict]] = {
             },
         },
     },
-    "scripts/check_already_delivered.py": {
+    "scripts/coordination/check_already_delivered.py": {
         "channels": {
             "api-gh": {
                 "cabled_in": [],
