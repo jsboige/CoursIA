@@ -37,6 +37,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 # notebook_tools/ is not a package: its scripts import each other by bare
 # name, so the folder itself must be on sys.path for a by-path load.
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "notebook_tools"))
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "audit"))
 
 import git_index_renames  # noqa: E402
 
