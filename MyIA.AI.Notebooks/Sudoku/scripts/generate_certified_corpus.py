@@ -257,6 +257,43 @@ def tier_summary(name: str, records: list[dict]) -> str:
     )
 
 
+def audit_irredundancy(out_dir: Path, per_tier: int | None = None) -> list[dict]:
+    """Cardinal d'irredundance du corpus livre, par grille (organe Sudoku-20).
+
+    Pour chaque grille, ``corpus.minimal_clue_set`` retire gloutonnement les
+    indices dont le retrait preserve l'unicite de la solution : le cardinal
+    documente est ``N indices -> K conserves (R redondants)``, au format de
+    Sudoku-20. Irredundant (a l'ordre de suppression pres) n'est pas minimal
+    en cardinal -- la distinction est portee par l'organe lui-meme.
+
+    Rend la liste des enregistrements ``(tier, clues, kept, retired)`` pour
+    les tests ; l'impression est cote appelant.
+    """
+    rows: list[dict] = []
+    for tier in TIERS:
+        path = out_dir / f"Sudoku_gen_{tier}.txt"
+        lines = [l for l in path.read_text(encoding="utf-8").splitlines() if l.strip()]
+        if per_tier is not None:
+            lines = lines[:per_tier]
+        kept_list: list[int] = []
+        for idx, line in enumerate(lines, start=1):
+            grid = corpus.parse_puzzle(line)
+            clues = int((grid != 0).sum())
+            _, retired = corpus.minimal_clue_set(grid)
+            kept = clues - len(retired)
+            kept_list.append(kept)
+            rows.append(
+                {"tier": tier, "no": idx, "clues": clues, "kept": kept, "retired": len(retired)}
+            )
+            print(f"  {tier} no {idx:>2} : {clues} indices -> {kept} conserves ({len(retired)} redondants)")
+        kept_sorted = sorted(kept_list)
+        print(
+            f"{path.name:<28} irreductibilite : mediane {kept_sorted[len(kept_sorted) // 2]:>2} conserves"
+            f" | min : {kept_sorted[0]:>2} | max : {kept_sorted[-1]:>2}"
+        )
+    return rows
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Generation certifiee d'un corpus Sudoku equilibre."
@@ -265,9 +302,18 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--medium-clues", type=int, default=DEFAULT_MEDIUM_CLUES)
     parser.add_argument("--out-dir", type=Path, default=_SERIES_DIR / "Puzzles")
+    parser.add_argument(
+        "--audit",
+        action="store_true",
+        help="ne generer rien : documenter le cardinal d'irreductibilite du corpus existant",
+    )
     args = parser.parse_args(argv)
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
+
+    if args.audit:
+        audit_irredundancy(args.out_dir)
+        return 0
     all_unique = True
     for tier in TIERS:
         records = generate_tier(tier, args.per_tier, args.seed, args.medium_clues)
@@ -282,6 +328,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  !! grille non unique emise : {r['puzzle']}")
     print("certification : " + ("UNIQUE (exhausted, 1 solution) sur toutes les grilles emises"
                                 if all_unique else "ECHEC"))
+    audit_irredundancy(args.out_dir)
     return 0 if all_unique else 1
 
 

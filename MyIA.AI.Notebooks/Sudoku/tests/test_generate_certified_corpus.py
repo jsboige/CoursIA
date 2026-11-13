@@ -129,3 +129,24 @@ def test_corpus_commite_certifie():
             )
             emitted += 1
     assert emitted >= 30, "corpus equilibre attendu : au moins 10 grilles par palier"
+
+
+def test_audit_irreductibilite_documente_le_cardinal(capsys):
+    """Le cardinal d'irreductibilite est documente par grille (critere livrable 2).
+
+    ``minimal_clue_set`` etant glouton (a l'ordre de suppression pres), les
+    invariants testes sont structurels : conserves + redondants = indices,
+    et au moins 17 indices conserves (minimum connu pour l'unicite Sudoku).
+    """
+    puzzles_dir = _SERIES / "Puzzles"
+    if not (puzzles_dir / "Sudoku_gen_facile.txt").exists():
+        pytest.skip("corpus non encore genere")
+    rows = gen.audit_irredundancy(puzzles_dir, per_tier=2)
+    out = capsys.readouterr().out
+    assert len(rows) == 2 * len(gen.TIERS)
+    for row in rows:
+        assert row["kept"] + row["retired"] == row["clues"]
+        assert row["kept"] >= 17
+        assert row["retired"] >= 0
+    assert "irreductibilite : mediane" in out
+    assert "redondants" in out
