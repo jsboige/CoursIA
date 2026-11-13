@@ -1,0 +1,548 @@
+{
+  "schema_version": 1,
+  "series": "SymbolicAI",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "SymbolicAI",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "SymbolicAI"
+    },
+    {
+      "level": "subseries",
+      "path": "SymbolicAI/SemanticWeb",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "SemanticWeb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python",
+      "decimal_path": "1.1.1",
+      "depth": 2,
+      "label_fr": "SW-02-RDFBasics-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python",
+      "decimal_path": "1.1.2",
+      "depth": 2,
+      "label_fr": "SW-03-GraphOperations-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-04-SPARQL-Python",
+      "decimal_path": "1.1.3",
+      "depth": 2,
+      "label_fr": "SW-04-SPARQL-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-05-LinkedData-Python",
+      "decimal_path": "1.1.4",
+      "depth": 2,
+      "label_fr": "SW-05-LinkedData-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-06-RDFS-Python",
+      "decimal_path": "1.1.5",
+      "depth": 2,
+      "label_fr": "SW-06-RDFS-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-07-OWL-Python",
+      "decimal_path": "1.1.6",
+      "depth": 2,
+      "label_fr": "SW-07-OWL-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-08-SHACL-Python",
+      "decimal_path": "1.1.7",
+      "depth": 2,
+      "label_fr": "SW-08-SHACL-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/SemanticWeb/SW-09-JSONLD-Python",
+      "decimal_path": "1.1.8",
+      "depth": 2,
+      "label_fr": "SW-09-JSONLD-Python",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "7289cb64-d1ad-4f0d-851e-3f9469bbf756",
+      "path": "symbolicai/rdf",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Graphe RDF",
+      "label_en": "RDF graph",
+      "definition_fr": "Ensemble de triplets reliant un sujet à un objet par un prédicat.",
+      "definition_en": "A set of triples connecting a subject to an object through a predicate.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb",
+          "cell_id": "create-graph-interpretation"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "f5948103-bc9c-4124-914a-99c0f8b78b14",
+      "path": "symbolicai/rdf/noeuds",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Nœuds RDF",
+      "label_en": "RDF nodes",
+      "definition_fr": "Les URI identifient des ressources, les nœuds vides sont anonymes et les littéraux portent des valeurs éventuellement typées ou annotées de langue.",
+      "definition_en": "URIs identify resources, blank nodes are anonymous, and literals carry values that may have a datatype or language tag.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb",
+          "cell_id": "node-types-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756"
+      ]
+    },
+    {
+      "id": "8b663742-5a59-4da0-96a0-86985e9b77e9",
+      "path": "symbolicai/rdf/turtle",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Sérialisation Turtle",
+      "label_en": "Turtle serialization",
+      "definition_fr": "Syntaxe textuelle compacte pour représenter des triplets RDF, avec préfixes et regroupement des propriétés.",
+      "definition_en": "A compact textual syntax for RDF triples, using prefixes and grouped properties.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb",
+          "cell_id": "serialize-turtle-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756",
+        "f5948103-bc9c-4124-914a-99c0f8b78b14"
+      ]
+    },
+    {
+      "id": "6aae8651-8d80-499c-b3db-a9d710ec5dfc",
+      "path": "symbolicai/rdf/selection",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Sélection de triplets",
+      "label_en": "Triple selection",
+      "definition_fr": "Recherche de triplets par motif de sujet, prédicat et objet, dont certaines positions peuvent être libres.",
+      "definition_en": "Retrieval of triples by a subject, predicate and object pattern with some positions left open.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb",
+          "cell_id": "4b75e0f8957b"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756"
+      ]
+    },
+    {
+      "id": "c9c29906-f360-404d-a77a-4e490076e3b2",
+      "path": "symbolicai/rdf/listes",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Listes RDF",
+      "label_en": "RDF lists",
+      "definition_fr": "Représentation ordonnée chaînée par les propriétés rdf:first et rdf:rest.",
+      "definition_en": "An ordered linked representation using the rdf:first and rdf:rest properties.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-Python.ipynb",
+          "cell_id": "21ca41e3"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756"
+      ]
+    },
+    {
+      "id": "601b8590-d0de-4fda-b629-a9e15473d8c3",
+      "path": "symbolicai/sparql",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Requête SPARQL SELECT",
+      "label_en": "SPARQL SELECT query",
+      "definition_fr": "Sélectionne des associations de variables correspondant à des motifs de triplets dans un graphe.",
+      "definition_en": "Selects variable bindings matching triple patterns in a graph.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb",
+          "cell_id": "sparql-select-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756",
+        "6aae8651-8d80-499c-b3db-a9d710ec5dfc"
+      ]
+    },
+    {
+      "id": "9cfb24bd-6717-4b83-b19b-73485e0528df",
+      "path": "symbolicai/sparql/filtre",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "Filtre SPARQL",
+      "label_en": "SPARQL filter",
+      "definition_fr": "Restreint les solutions d’une requête à celles qui satisfont une expression.",
+      "definition_en": "Restricts query solutions to those satisfying an expression.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb",
+          "cell_id": "filter-explanation"
+        }
+      ],
+      "prerequisites": [
+        "601b8590-d0de-4fda-b629-a9e15473d8c3"
+      ]
+    },
+    {
+      "id": "77308a10-2b65-476d-b4fd-d92ceb3e8c36",
+      "path": "symbolicai/sparql/optionnel",
+      "decimal_path": "2.2",
+      "depth": 1,
+      "label_fr": "Motif optionnel SPARQL",
+      "label_en": "SPARQL optional pattern",
+      "definition_fr": "Conserve une solution même si un motif optionnel ne correspond pas au graphe.",
+      "definition_en": "Preserves a solution even when an optional pattern does not match the graph.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb",
+          "cell_id": "optional-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "601b8590-d0de-4fda-b629-a9e15473d8c3"
+      ]
+    },
+    {
+      "id": "ed40beb2-872b-43f0-a3f9-f7c5e1e897c3",
+      "path": "symbolicai/sparql/union",
+      "decimal_path": "2.3",
+      "depth": 1,
+      "label_fr": "Union de motifs SPARQL",
+      "label_en": "SPARQL pattern union",
+      "definition_fr": "Combine les solutions de motifs alternatifs.",
+      "definition_en": "Combines the solutions of alternative patterns.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04-SPARQL-Python.ipynb",
+          "cell_id": "union-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "601b8590-d0de-4fda-b629-a9e15473d8c3"
+      ]
+    },
+    {
+      "id": "618321f0-3b8b-4669-8bd3-797f2d484f5e",
+      "path": "symbolicai/donnees-liees",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Données liées",
+      "label_en": "Linked data",
+      "definition_fr": "Données publiées sur le Web avec des identifiants et des liens permettant de relier des ressources distribuées.",
+      "definition_en": "Data published on the Web with identifiers and links connecting distributed resources.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb",
+          "cell_id": "dbpedia-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756",
+        "f5948103-bc9c-4124-914a-99c0f8b78b14"
+      ]
+    },
+    {
+      "id": "89971e0d-22cc-45b7-916f-03b1a97c9091",
+      "path": "symbolicai/donnees-liees/federation",
+      "decimal_path": "3.1",
+      "depth": 1,
+      "label_fr": "Requêtes fédérées",
+      "label_en": "Federated queries",
+      "definition_fr": "Interrogation combinant des données de plusieurs sources ; le carnet illustre aussi une jointure manuelle par VALUES.",
+      "definition_en": "Querying that combines data from multiple sources; the notebook also illustrates a manual join using VALUES.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-Python.ipynb",
+          "cell_id": "federated-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "601b8590-d0de-4fda-b629-a9e15473d8c3",
+        "618321f0-3b8b-4669-8bd3-797f2d484f5e"
+      ]
+    },
+    {
+      "id": "06ee93ed-6f06-473c-82e3-41ccf4ba6583",
+      "path": "symbolicai/rdfs",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Hiérarchie RDFS",
+      "label_en": "RDFS hierarchy",
+      "definition_fr": "Organisation de classes par rdfs:subClassOf, relation transitive utilisable pour inférer des types.",
+      "definition_en": "Organization of classes with the transitive rdfs:subClassOf relation, usable to infer types.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb",
+          "cell_id": "267a6458"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756"
+      ]
+    },
+    {
+      "id": "ffa247bf-e19a-49c7-9435-9a15077a15c5",
+      "path": "symbolicai/rdfs/domaine-portee",
+      "decimal_path": "4.1",
+      "depth": 1,
+      "label_fr": "Domaine et portée RDFS",
+      "label_en": "RDFS domain and range",
+      "definition_fr": "Déclarations permettant d’inférer les types du sujet et de l’objet d’une propriété, sans constituer des contraintes de validation.",
+      "definition_en": "Declarations used to infer types of a property’s subject and object, rather than validation constraints.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb",
+          "cell_id": "ec36378d"
+        }
+      ],
+      "prerequisites": [
+        "06ee93ed-6f06-473c-82e3-41ccf4ba6583"
+      ]
+    },
+    {
+      "id": "0faedbfe-a0ed-45f7-8989-d9c5666cd9c7",
+      "path": "symbolicai/rdfs/inference",
+      "decimal_path": "4.2",
+      "depth": 1,
+      "label_fr": "Inférence RDFS",
+      "label_en": "RDFS inference",
+      "definition_fr": "Application de règles RDFS pour ajouter au graphe des conséquences telles que les types hérités et les sous-classes transitives.",
+      "definition_en": "Application of RDFS rules to add consequences such as inherited types and transitive subclasses to a graph.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-Python.ipynb",
+          "cell_id": "6f69650f"
+        }
+      ],
+      "prerequisites": [
+        "06ee93ed-6f06-473c-82e3-41ccf4ba6583",
+        "ffa247bf-e19a-49c7-9435-9a15077a15c5"
+      ]
+    },
+    {
+      "id": "9cc028e1-5f11-47a4-9abb-ccba06808789",
+      "path": "symbolicai/owl",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Ontologie OWL",
+      "label_en": "OWL ontology",
+      "definition_fr": "Description formelle de classes, propriétés et individus permettant un raisonnement sur un domaine.",
+      "definition_en": "A formal description of classes, properties and individuals supporting reasoning about a domain.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb",
+          "cell_id": "create-ontology-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "06ee93ed-6f06-473c-82e3-41ccf4ba6583"
+      ]
+    },
+    {
+      "id": "d3d07845-fafb-4d38-825f-bfda2c470084",
+      "path": "symbolicai/owl/restrictions",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "Restrictions OWL",
+      "label_en": "OWL restrictions",
+      "definition_fr": "Expressions de classe qui restreignent les valeurs ou la cardinalité d’une propriété, notamment some, only, min et max.",
+      "definition_en": "Class expressions restricting the values or cardinality of a property, including some, only, min and max.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb",
+          "cell_id": "restrictions-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "9cc028e1-5f11-47a4-9abb-ccba06808789"
+      ]
+    },
+    {
+      "id": "98e1066a-7b80-413c-a7b0-d496a46e8a61",
+      "path": "symbolicai/owl/raisonnement",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Raisonnement OWL",
+      "label_en": "OWL reasoning",
+      "definition_fr": "Déduction de types à partir des définitions de classes et des relations entre individus.",
+      "definition_en": "Inference of types from class definitions and relations between individuals.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb",
+          "cell_id": "reasoning-interpretation"
+        }
+      ],
+      "prerequisites": [
+        "9cc028e1-5f11-47a4-9abb-ccba06808789",
+        "d3d07845-fafb-4d38-825f-bfda2c470084"
+      ]
+    },
+    {
+      "id": "b6565a44-d047-4d12-9433-ad7042e349d7",
+      "path": "symbolicai/shacl",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Formes SHACL",
+      "label_en": "SHACL shapes",
+      "definition_fr": "Description de contraintes sur les nœuds ciblés et leurs propriétés pour valider un graphe RDF.",
+      "definition_en": "Descriptions of constraints on targeted nodes and their properties for validating an RDF graph.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb",
+          "cell_id": "interpretation-shapes"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756",
+        "06ee93ed-6f06-473c-82e3-41ccf4ba6583"
+      ]
+    },
+    {
+      "id": "22738503-581b-422c-9c65-2b51fd04a993",
+      "path": "symbolicai/shacl/rapport",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Rapport de validation SHACL",
+      "label_en": "SHACL validation report",
+      "definition_fr": "Résultat indiquant la conformité et les violations de contraintes détectées sur les données.",
+      "definition_en": "A result reporting conformance and constraint violations found in the data.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb",
+          "cell_id": "interpretation-validation"
+        }
+      ],
+      "prerequisites": [
+        "b6565a44-d047-4d12-9433-ad7042e349d7"
+      ]
+    },
+    {
+      "id": "beb1245b-eb67-4dab-a31d-152c5bbe417b",
+      "path": "symbolicai/jsonld",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "JSON-LD",
+      "label_en": "JSON-LD",
+      "definition_fr": "Format JSON permettant de représenter des données liées interprétables comme un graphe RDF.",
+      "definition_en": "A JSON format for linked data that can be interpreted as an RDF graph.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb",
+          "cell_id": "interpretation-json-vs-jsonld"
+        }
+      ],
+      "prerequisites": [
+        "7289cb64-d1ad-4f0d-851e-3f9469bbf756",
+        "618321f0-3b8b-4669-8bd3-797f2d484f5e"
+      ]
+    },
+    {
+      "id": "02448638-51ff-4cca-b2ea-b74a2fadafa8",
+      "path": "symbolicai/jsonld/contexte",
+      "decimal_path": "7.1",
+      "depth": 1,
+      "label_fr": "Contexte JSON-LD",
+      "label_en": "JSON-LD context",
+      "definition_fr": "Association des clés JSON à des IRI, définie localement ou par référence à un contexte distant.",
+      "definition_en": "Mapping from JSON keys to IRIs, defined locally or by reference to a remote context.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb",
+          "cell_id": "section2-context"
+        }
+      ],
+      "prerequisites": [
+        "beb1245b-eb67-4dab-a31d-152c5bbe417b"
+      ]
+    },
+    {
+      "id": "e918fc5b-cf15-4053-b808-0478bebd3c20",
+      "path": "symbolicai/jsonld/formes",
+      "decimal_path": "7.2",
+      "depth": 1,
+      "label_fr": "Formes JSON-LD",
+      "label_en": "JSON-LD forms",
+      "definition_fr": "Représentations compacte, étendue et aplatie d’un même graphe RDF.",
+      "definition_en": "Compact, expanded and flattened representations of the same RDF graph.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb",
+          "cell_id": "section2-forms"
+        }
+      ],
+      "prerequisites": [
+        "beb1245b-eb67-4dab-a31d-152c5bbe417b",
+        "02448638-51ff-4cca-b2ea-b74a2fadafa8"
+      ]
+    },
+    {
+      "id": "da4e602f-4df0-4d23-a192-2ac49d1986c2",
+      "path": "symbolicai/jsonld/schema-org",
+      "decimal_path": "7.3",
+      "depth": 1,
+      "label_fr": "Vocabulaire Schema.org",
+      "label_en": "Schema.org vocabulary",
+      "definition_fr": "Vocabulaire de types et de propriétés pour décrire des entités sur le Web.",
+      "definition_en": "A vocabulary of types and properties for describing entities on the Web.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb",
+          "cell_id": "interp-schemaorg-namespace"
+        }
+      ],
+      "prerequisites": [
+        "beb1245b-eb67-4dab-a31d-152c5bbe417b",
+        "02448638-51ff-4cca-b2ea-b74a2fadafa8"
+      ]
+    }
+  ]
+}
