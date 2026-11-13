@@ -18,9 +18,19 @@ class VolEnsembleConservativeAlgorithm(QCAlgorithm):
 
     This is the most conservative of the 3 volatility strategies.
     Assets: SPY, EFA, EEM, TLT, GLD, DBC.
+
+    Mesure de ligue (#26322, gabarit #22828) : le parametre `mode` ajoute
+    les references detenues et les diagnostics sans toucher la decision de
+    la strategie. Valeurs : strategy (defaut, code actuel), spy, 6040,
+    ew6 (univers equipondere, diagnostic), noregime (sans le filtre SMA200,
+    diagnostic).
     """
 
     def initialize(self):
+        self.mode = (self.get_parameter("mode") or "strategy").lower()
+        if self.mode not in ("strategy", "spy", "6040", "ew6", "noregime"):
+            raise ValueError(f"mode inconnu : {self.mode}")
+
         self.set_start_date(2018, 1, 1)
         self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
@@ -31,7 +41,13 @@ class VolEnsembleConservativeAlgorithm(QCAlgorithm):
 
         self.tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
         self.symbols = {}
-        for ticker in self.tickers:
+        if self.mode == "spy":
+            subscribed = ["SPY"]
+        elif self.mode == "6040":
+            subscribed = ["SPY", "BND"]
+        else:
+            subscribed = list(self.tickers)
+        for ticker in subscribed:
             equity = self.add_equity(ticker, Resolution.DAILY)
             self.symbols[ticker] = equity.symbol
 
@@ -63,6 +79,9 @@ class VolEnsembleConservativeAlgorithm(QCAlgorithm):
 
         self.day_count = 0
 
+        self._regime_filter = self.mode != "noregime"
+        self._closes = 0
+
         # Rebalance weekly
         self.schedule.on(
             self.date_rules.every(DayOfWeek.MONDAY),
@@ -70,7 +89,36 @@ class VolEnsembleConservativeAlgorithm(QCAlgorithm):
             self.rebalance,
         )
 
-        self.set_warm_up(250, Resolution.DAILY)
+        # Trace journaliere `shadow` (contrat #18923) : valeur du portefeuille a
+        # l'ouverture de chaque seance de SPY, repartie sur e0..e4. Tous les modes
+        # la prennent au meme instant.
+        self.schedule.on(
+            self.date_rules.every_day(self.symbols["SPY"]),
+            self.time_rules.after_market_open(self.symbols["SPY"], 0),
+            self._trace,
+        )
+
+        if self.mode in ("strategy", "noregime"):
+            self.set_warm_up(250, Resolution.DAILY)
+
+    def _trace(self):
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
+
+    def _rebalance_reference(self):
+        if self.mode == "spy":
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 1.0)])
+        elif self.mode == "6040":
+            self.set_holdings([
+                PortfolioTarget(self.symbols["SPY"], 0.6),
+                PortfolioTarget(self.symbols["BND"], 0.4),
+            ])
+        else:
+            weight = 1.0 / len(self.tickers)
+            self.set_holdings([
+                PortfolioTarget(self.symbols[ticker], weight)
+                for ticker in self.tickers
+            ])
 
     def on_data(self, data: Slice):
         for ticker, sym in self.symbols.items():
@@ -90,15 +138,21 @@ class VolEnsembleConservativeAlgorithm(QCAlgorithm):
         self.day_count += 1
 
     def rebalance(self):
+        if self.mode in ("spy", "6040", "ew6"):
+            self._rebalance_reference()
+            return
         if self.is_warming_up:
             return
         if not self.spy_sma_ind.IsReady:
             return
 
-        # Regime filter
+        # Regime filter (desactive en mode noregime)
         spy_price = float(self.securities[self.symbols["SPY"]].price)
         spy_sma_val = float(self.spy_sma_ind.Current.Value)
-        regime_mult = 1.0 if spy_price > spy_sma_val else 0.5
+        if self._regime_filter:
+            regime_mult = 1.0 if spy_price > spy_sma_val else 0.5
+        else:
+            regime_mult = 1.0
 
         weights = {}
         for ticker in self.tickers:
