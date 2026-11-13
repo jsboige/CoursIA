@@ -9,7 +9,7 @@ preflight that ultimately shows the work is already merged.
 
 This script encodes that preflight as a one-shot CLI :
 
-    python scripts/check_already_delivered.py 13850
+    python scripts/coordination/check_already_delivered.py 13850
 
 Exit codes :
     0 -- not delivered (safe to claim)
@@ -23,7 +23,7 @@ Sources crossed (3 axes) :
        `git log origin/main --diff-filter=R -- <dir>` -- renames already merged
 
 Usage :
-    $ python scripts/check_already_delivered.py 13850
+    $ python scripts/coordination/check_already_delivered.py 13850
     [LIVRÉ] #13850 — 1 PR merged, 2 commits, ref #13824 trouvé sur main.
     PR #13824 (MERGED 2026-08-30T19:51Z) : refactor(notebooks,#13753): reclasser Infer-6-Debugging en Infer-2b-Debugging-Bonnes-Pratiques (accretion transversale).
     Commit e821d5290 trouvé sur origin/main.
@@ -42,7 +42,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Tokens heuristiques : si le titre les contient, l'issue est probablement un
 # rename / reclass / zero-padding, et il faut aussi vérifier --diff-filter=R.
