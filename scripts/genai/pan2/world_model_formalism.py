@@ -197,6 +197,9 @@ def show() -> None:
 
 def main(argv: list[str]) -> int:
     if len(argv) > 1 and argv[1] == "--check":
+        if len(argv) > 2:
+            print(f"usage: {argv[0]} --check", file=sys.stderr)
+            return 2
         return run_checks()
     if len(argv) > 1 and argv[1] in ("-h", "--help"):
         print(__doc__)
