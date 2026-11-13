@@ -1586,6 +1586,7 @@ def test_tranche5_guards_are_absorbed_single_testpaths_guard():
         ".github/workflows/scripts-tests.yml",
         ".github/workflows/ml-tests.yml",
         ".github/workflows/secret-scan.yml",
+        ".github/workflows/secret-scan-controls.yml",
         ".github/workflows/ict-tests.yml",
         ".github/workflows/testpaths-coverage-guard.yml",
     ):
