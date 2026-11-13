@@ -66,13 +66,12 @@ import list_edited_trigger_workflows as census  # noqa: E402
 GUARD_BASE = "github.event.action != 'edited' || github.event.changes.base != null"
 GUARD_BODY = GUARD_BASE + " || github.event.changes.body != null"
 
-#: Workflow dont le fichier appartient a une autre tranche ouverte : son
-#: declencheur `pull_request` y est retire (la voie rapide absorbe le garde),
-#: donc il n'ecoutera plus `edited` du tout -- le garde y serait du code mort
-#: et l'edition du fichier se croiserait avec celle de l'autre tranche.
-EXCLUDED = {
-    ".github/workflows/notebook-latex-control-chars.yml",
-}
+#: Exclusions nominatives : workflows du census que le fixer ne doit pas
+#: toucher. Vide a ce jour. `notebook-latex-control-chars.yml` y figurait tant
+#: que la tranche T-A/2 etait ouverte ; elle est mergee, le declencheur
+#: `pull_request` du workflow est retire, et il sort du census de lui-meme.
+#: Une entree ne se justifie que pour un workflow qui ecoute ENCORE `edited`.
+EXCLUDED: set[str] = set()
 
 
 class Unsupported(Exception):

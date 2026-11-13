@@ -378,14 +378,25 @@ def test_le_producteur_du_check_requis_n_est_pas_touche():
     assert fixer.GUARD_BASE not in text
 
 
-def test_le_workflow_exclu_est_une_exclusion_raisonnee():
-    """L'exclusion porte sur un fichier qui appartient a une autre tranche
-    ouverte : le declencheur `pull_request` y est retire, donc le garde y
-    serait du code mort."""
+def test_une_exclusion_nominative_vise_un_workflow_qui_ecoute_encore_edited():
+    """Une exclusion n'a de sens que pour un workflow du census : une entree
+    qui nomme un workflow sorti du census est du code mort, et ce test la
+    refuse. C'est ce qui est arrive a `notebook-latex-control-chars.yml` :
+    exclu tant que la tranche T-A/2 etait ouverte, il a perdu son declencheur
+    `pull_request` a son merge et n'ecoute plus `edited` du tout."""
+    listening = {row["workflow"] for row in census.survey(ROOT)}
+    assert fixer.EXCLUDED <= listening, sorted(fixer.EXCLUDED - listening)
+    population = {row["workflow"] for row in fixer.population(ROOT)}
+    assert not (fixer.EXCLUDED & population)
+
+
+def test_le_garde_latex_absorbe_par_la_voie_rapide_est_hors_population():
+    """Temoin du cas ci-dessus : le workflow n'est plus dans le census, donc
+    plus dans la population, sans exclusion nominative."""
     rel = ".github/workflows/notebook-latex-control-chars.yml"
-    assert rel in fixer.EXCLUDED
-    assert rel in {row["workflow"] for row in census.survey(ROOT)}
+    assert rel not in {row["workflow"] for row in census.survey(ROOT)}
     assert rel not in {row["workflow"] for row in fixer.population(ROOT)}
+    assert rel not in fixer.EXCLUDED
 
 
 def test_le_workflow_a_dependance_titre_est_hors_population():
