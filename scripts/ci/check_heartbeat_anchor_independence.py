@@ -83,6 +83,14 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 DEFAULT_ADVISORIES = (
     ".github/workflows/linux-runner-starvation-advisory.yml",
     ".github/workflows/coursia-waiter-starvation-advisory.yml",
+    # #25510 (E1, 2026-11-12) : la sonde `coursia-ephemeral` a recu le
+    # meme heartbeat `workflow_run` que ses deux freres -- elle etait le
+    # seul des trois advisories de starvation sans ancre, donc le seul a
+    # dependre entierement du scheduler (#15332 : mesure du 2026-11-12, sa
+    # jambe `schedule` n'est livree que toutes les ~8 h). Ses ancres sont
+    # LES MEMES que celles de ses freres -> la mesure est dedupliquee par
+    # nom d'ancre (0 appel API de plus).
+    ".github/workflows/runner-starvation-advisory.yml",
 )
 # Evenements que GitHub delivre sans le parc : ils declenchent depuis l'API de
 # GitHub, pas depuis un runner. `workflow_dispatch` est exclu -- il exige une
@@ -350,7 +358,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--repo", default=DEFAULT_REPO)
     ap.add_argument("--advisory", action="append", default=None,
-                    help="chemin de l'advisory (repetable ; defaut : les deux)")
+                    help="chemin de l'advisory (repetable ; defaut : les trois)")
     ap.add_argument("--runs", type=int, default=3,
                     help="runs termines echantillonnes par ancre (defaut 3)")
     ap.add_argument("--json", action="store_true")
