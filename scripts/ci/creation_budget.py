@@ -1076,10 +1076,19 @@ def cliquet_actif(chemin: str | None = None) -> bool:
     return verdict != "AVANCE"
 
 
+# T3-d (#26104) : le module vit desormais dans `scripts/ci/`, mais ses
+# organes de famille restent dans `scripts/notebook_tools` -- un cran
+# au-dessus. La resolution se prend depuis la racine `scripts/`, jamais
+# depuis le dossier du module : resoudre `sibling / "notebook_tools"`
+# depuis `scripts/ci/` ne trouverait aucun organe, et le cliquet de noms
+# retiendrait alors moins que sur `main` (mesure : 6 tests rouges).
+_SCRIPTS_DIR = pathlib.Path(__file__).resolve().parent.parent
+
+
 def _organe_noms():
     """L'organe d'inventaire des noms, ou None s'il est absent."""
     try:
-        dossier = pathlib.Path(__file__).resolve().parent / "notebook_tools"
+        dossier = _SCRIPTS_DIR / "notebook_tools"
         if str(dossier) not in sys.path:
             sys.path.insert(0, str(dossier))
         import inventory_notebook_names as inv
@@ -1091,7 +1100,7 @@ def _organe_noms():
 def _organe_renommage():
     """L'organe de renommage canonique, ou None s'il est absent."""
     try:
-        dossier = pathlib.Path(__file__).resolve().parent / "notebook_tools"
+        dossier = _SCRIPTS_DIR / "notebook_tools"
         if str(dossier) not in sys.path:
             sys.path.insert(0, str(dossier))
         import rename_notebooks as rn
