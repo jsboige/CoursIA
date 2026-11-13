@@ -355,9 +355,9 @@ Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ co
 
 **Points clés appris** :
 - Diff de graphe = objet rejouable, validable, inférable, refusable — pas seulement une liste de triplets ajoutés
-- Pipeline composé : OWL (déclarer) + SHACL (juger) + owlrl (mesurer) + RDF-star (attribuer)
+- Pipeline composé : OWL (déclarer) + SHACL (juger) + owlrl (mesurer) + réification RDF (attribuer)
 - Le coup nul : une extension sans conséquence déductive est un résultat, pas un échec
-- Provenance de l'auteur du coup par reification RDF-star + PROV : *qui a proposé ce schéma, et au nom de quoi ?*
+- Provenance de l'auteur du coup par réification RDF 1.1 (`rdf:Statement`) + PROV : *qui a proposé ce schéma, et au nom de quoi ?*
 - **Contrôle négatif** : une extension rejetée par SHACL (`ebook2` sans `format`) doit produire un rapport de violation ; un rapport vide n'est pas un test
 
 #### SW-15-Coup-Argumentatif-Python (Bonus) : la greffe AIF/Dung (45 min)
