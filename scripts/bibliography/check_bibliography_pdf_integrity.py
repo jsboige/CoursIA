@@ -31,10 +31,10 @@ trois empreintes, et le rapport **nomme l'algorithme qui a matche** au lieu de
 rendre un booleen.
 
 Usage:
-  python scripts/check_bibliography_pdf_integrity.py --files A.pdf B.pdf
-  python scripts/check_bibliography_pdf_integrity.py --root "G:/Mon Drive/MyIA/IA/Bibliographie IA"
-  python scripts/check_bibliography_pdf_integrity.py --root <dir> --sample 60 --json out.json
-  python scripts/check_bibliography_pdf_integrity.py --root <dir> --anchors ancres.json
+  python scripts/bibliography/check_bibliography_pdf_integrity.py --files A.pdf B.pdf
+  python scripts/bibliography/check_bibliography_pdf_integrity.py --root "G:/Mon Drive/MyIA/IA/Bibliographie IA"
+  python scripts/bibliography/check_bibliography_pdf_integrity.py --root <dir> --sample 60 --json out.json
+  python scripts/bibliography/check_bibliography_pdf_integrity.py --root <dir> --anchors ancres.json
 
 Options:
   --files PATH ...     Valider ces fichiers precis (prioritaire sur --root)

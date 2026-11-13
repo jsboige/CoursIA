@@ -27,10 +27,10 @@ que des publications : un fichier de travail ecrit dedans la salit (regle
 `bibliography-hygiene.md`).
 
 Usage:
-  python scripts/build_bibliography_identifier_catalog.py
-  python scripts/build_bibliography_identifier_catalog.py --root "G:/Mon Drive/MyIA/IA/Bibliographie IA" --out catalogue.csv
-  python scripts/build_bibliography_identifier_catalog.py --a1-csv arXiv-A1-resolution.csv --a1-csv DOI-A1-resolution.csv
-  python scripts/build_bibliography_identifier_catalog.py --catalogue-entrant IDENTIFIANTS-catalogue-2026-10-14.csv --a1-csv arXiv-A1-resolution.csv
+  python scripts/bibliography/build_bibliography_identifier_catalog.py
+  python scripts/bibliography/build_bibliography_identifier_catalog.py --root "G:/Mon Drive/MyIA/IA/Bibliographie IA" --out catalogue.csv
+  python scripts/bibliography/build_bibliography_identifier_catalog.py --a1-csv arXiv-A1-resolution.csv --a1-csv DOI-A1-resolution.csv
+  python scripts/bibliography/build_bibliography_identifier_catalog.py --catalogue-entrant IDENTIFIANTS-catalogue-2026-10-14.csv --a1-csv arXiv-A1-resolution.csv
 
 Options:
   --root PATH        Racine du gisement (defaut G:/Mon Drive/MyIA/IA/Bibliographie IA)
