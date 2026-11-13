@@ -279,6 +279,26 @@ except ImportError:
     except ImportError:
         origami_parking = None  # type: ignore[assignment]
 
+# Les campagnes GELES par un veto USER (#17040). La definition PARTAGEE vit
+# dans `scripts/coordination/frozen_campaigns.py` : elle est deja lue par
+# `merge_ready` (skip de perimetre) et par le gate d'entree
+# `check_adjoint_prevalidation.py`. Le tapis, lui, ne lisait que des
+# marqueurs `[FROZEN]` poses dans un corps ou un fil -- donc une campagne
+# definie comme gelee pouvait etre servie tant que personne n'avait pose le
+# marqueur a la main (constate le 11/11 : #11601, dont la densification a
+# ete servie sous un parapluie gele, et refusee ensuite au merge).
+# Import best-effort, comme `origami_parking` : sans module, le tapis
+# tourne sans cette lecture (fail-OPEN), jamais l'inverse.
+try:
+    import frozen_campaigns
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import frozen_campaigns
+    except ImportError:
+        frozen_campaigns = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -754,7 +774,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
 
 
 # Saturation par zone d atterrissage (#13420) : l axe partition-proof que
-# le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
+# le compteur par issue ne peut pas porter. Voir scripts/coordination/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     BELT_WINDOW_DAYS,
@@ -2932,6 +2952,11 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     plus** -- et le filet des commentaires dans la requete qu'il fait de
     toute facon.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        # Un parapluie gele par un veto USER est ecarte SANS lecture du
+        # fil : le gel ne depend d'aucun marqueur pose a la main.
+        return True
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         return None
@@ -3076,12 +3101,40 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     return comments, body
 
 
+def frozen_umbrella_veto(issue_number: int) -> str | None:
+    """L'item est-il un parapluie GEL par un veto user ?
+
+    Rend le numero du veto (``"17040"``) si l'issue est une cle de
+    `FROZEN_UMBRELLAS`, ``None`` sinon.
+
+    La definition est PARTAGEE (`scripts/coordination/frozen_campaigns.py`) :
+    c'est elle que lisent deja `merge_ready` et le gate d'entree. Le tapis
+    la lisait pas : un parapluie defini comme gele n'etait vu gel que si
+    un marqueur `[FROZEN]` avait ete pose a la main dans son corps ou son
+    fil -- et la main posee oublie, la densification repartait sous un
+    parapluie gele (mesure du 11/11 : #11601, parapluie gele par le veto
+    #17040, dont la densification a ete servie puis refusee au merge).
+
+    Un veto USER ne se leve pas par un `[UNFROZEN]` de lane : il se leve
+    quand la definition change. C'est pourquoi cette lecture passe AVANT
+    la lecture des marqueurs, et qu'elle ne demande aucun acces reseau.
+    """
+    if frozen_campaigns is None:
+        return None
+    try:
+        return frozen_campaigns.FROZEN_UMBRELLAS.get(str(issue_number))
+    except Exception:  # noqa: BLE001 - une definition illisible gele personne
+        return None
+
+
 def has_frozen_marker(issue_number: int) -> str | None:
     """L'item est-il GEL ? Renvoie la SOURCE du gel, ou l'absence de gel.
 
     TRI-ETAT :
     - ``"body"``    -- regle A : le corps porte la ligne `[FROZEN] ...` ;
     - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le fil ;
+    - ``"veto #N"`` -- le parapluie est gele par un veto USER (la
+      definition partagee `FROZEN_UMBRELLAS`) ;
     - ``False``     -- l'item n'est pas gel ;
     - ``None``      -- la LECTURE a echoue (fail-OPEN).
 
@@ -3099,8 +3152,13 @@ def has_frozen_marker(issue_number: int) -> str | None:
 
     Cout : la MEME lecture que `has_recent_delivery_marker` (une requete,
     ou ZERO quand l'instantane de la passe sert le fil), et le corps vient
-    du cache du pool (`_POOL_BODIES`), que le pool paie deja.
+    du cache du pool (`_POOL_BODIES`), que le pool paie deja. La lecture
+    du veto USER, elle, ne coute **rien** : elle precede la lecture du
+    fil, et n'atteint jamais le reseau.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        return f"veto #{veto}"
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         # Lecture en echec : fail-OPEN. L'appelant distingue « pas gele »
@@ -3129,6 +3187,12 @@ def gel_cause_text(gel: str | None) -> str | None:
     if gel is None:
         return ("GEL NON MESURE : la lecture du gel a echoue -- fail-OPEN "
                 "assume, l'item n'est pas ecarte pour autant")
+    if isinstance(gel, str) and gel.startswith("veto #"):
+        return (f"GEL ({gel}) : le parapluie est gele par un VETO USER. Le "
+                f"gel se leve quand la definition partagee "
+                f"(`scripts/coordination/frozen_campaigns.py::FROZEN_UMBRELLAS`) "
+                f"change -- ni un `[UNFROZEN]` de lane, ni un `[RELEASED]`, "
+                f"ni un marqueur pose a la main dans le corps ne le leve.")
     return (f"GEL ({gel}) : l'item est gele. Regle A = ligne `[FROZEN] ...` "
             f"dans le corps ; regle B = en-tete `[FROZEN]` dans le fil. Le "
             f"degel consiste a retirer la ligne du corps, ou a poster "
@@ -5170,6 +5234,15 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
             blocking = data.get("blocking_lanes") or []
             if blocking:
                 return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
+            # #22687 constat 2 -- le plafond #22500 rend exit 1 cote producteur
+            # mais n'ecrit RIEN dans blocking_lanes (une discipline de visite
+            # n'est pas une collision de lane) : sans lire la cle, la sonde
+            # solitaire d'une fille plafonnee concluait FREE en ignorant le
+            # rouge. La cause est le LITTERAL de l'organe (prefixe
+            # ``PLAFOND EPIC (#22500)``), jamais reformulee ici.
+            cap_cause = data.get("epic_visit_cap")
+            if cap_cause:
+                return CLAIM_CODE_BLOCKED, "PLAFOND : " + str(cap_cause)
             # review 5429946072 : le claim de l'APPELANT est teste AVANT
             # l'occupation implicite -- un grain deja marque par la lane qui
             # tire est OWNED_BY_ME, une PR tierce citee en passant ne doit
@@ -5479,6 +5552,14 @@ def _claims_in_process(
                     # #25873 -- meme opt-in que la voie batch : servir une
                     # issue dont les claims d'autres lanes sont tous bornes.
                     serve_bounded=True,
+                    # #22687 constat 2 -- la voie solitaire du picker cable le
+                    # plafond #22500 : la sonde d'une fille plafonnee rend
+                    # BLOCKED (le reducteur lit ``epic_visit_cap``), alignee
+                    # sur le gate L898 et sur le plafond bulk du tapis. Le
+                    # pool est memoise par processus cote LECTEUR : la sonde
+                    # paie 1 requete par passe, pas par candidat. Le mode
+                    # batch reste cap-free (#22630 possede le tirage).
+                    epic_cap=True,
                 )
             verdicts = {n: _summarize_claim(buf_out.getvalue(), rc)}
         # Les refus nominatifs s'ajoutent aux verdicts servis : un numero
@@ -10570,7 +10651,9 @@ DELIVERED_URN_PRIOR = 2.5
 AUDIT_17073_PRIOR = 2.0
 AUDIT_17073_MARKER = "[Audit #17073]"
 #: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
-#: neuf) est d'autant plus streme que le pool s'en eloigne.
+#: neuf) est d'autant plus streme que le pool s'en eloigne. Le veto dur
+#: (`creation_budget.VETO_ACTIF`) est leve depuis le 12/11 ; ce seuil reste
+#: le pivot de la ponderation douce, qui ne refuse jamais.
 EXPANSION_VETO_THRESHOLD = 400
 #: Plancher du poids d'expansion : un poids nul serait un REFUS, et le
 #: mandat du 12/10 l'interdit.

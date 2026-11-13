@@ -12,15 +12,14 @@ name: bi-OS companion coverage
 # Perimetre = celui de l'acceptance : Vibe-Coding/, docs/archive/ et
 # _archive/ exclus, .ps1 Windows par nature exemptes (table dans le script).
 on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    paths:
-      - '**/*.ps1'
-      - '**/*.sh'
-      - '**/README*.md'
-      - '**/*[Ss]etup*.ipynb'
-      - 'scripts/ci/check_companion_coverage.py'
-      - '.github/workflows/bios-companion-coverage.yml'
+  # ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#25510, tranche T-A du
+  # 2026-11-12) : le verdict est porte par `always-on-guards.yml` (job
+  # `always-on-guards`, garde anti-fork conservee), dans UN checkout partage.
+  # Le nom du job ("Companion coverage (ps1/sh + Setup bi-OS)") est deja
+  # byte-identique au nom du garde du registre : le
+  # `check_absorbed_check_run_identity.py` VERIFIE donc ce garde au lieu de
+  # l'exempter. Les `paths:` d'origine vivent dans
+  # `scripts/ci/fast_lane_registry.py` (TRANCHE42).
   workflow_dispatch:
 
 permissions:
