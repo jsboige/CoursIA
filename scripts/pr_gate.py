@@ -541,6 +541,18 @@ class GateError(RuntimeError):
 # --- pure decision layer (no network; this is what the unit tests pin) -------
 
 
+def _is_skipped(check: Mapping[str, object]) -> bool:
+    """Whether the entry is a SKIPPED job (a job-level guard, a `paths:` filter).
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict. It must therefore never be read as the newest
+    opinion about the name it carries (#25510, tranche T-C).
+    """
+    if str(check.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(check.get("status") or "").lower() == "skipped"
+
+
 def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     """Keep only the most recent entry per check name.
 
@@ -548,6 +560,27 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     all of them makes a benign concurrency cancellation indistinguishable from a
     real failure. Ordering key is `started_at` then `id`, both monotonic per name;
     entries missing both keep their input order as a last resort.
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C). A `skipped` entry never replaces
+    an EARLIER non-skipped entry of the same name, on the same head. A skipped
+    job says nothing about the code, and `skipped` counts as a PASS
+    (`CONCLUSION_OK`): under a plain latest-wins fold, a job skipped by a
+    guard -- a title edit, a `paths:` filter -- emits a `skipped` NEWER than
+    the real verdict and would WHITEN a red PR. The failure mode was already
+    documented from the other side in
+    `scripts/tests/test_pr_gate_edited_trigger.py` (#16624): a job-level guard
+    on `edited` emits a verdict-shaped check-run, and under latest-wins that
+    is the newest verdict for the name.
+
+    The accepted side effect is fail-closed: after a base change that takes
+    the job out of the diff, a red stays displayed until the next push.
+
+    ORDER. The nature of the entry heads the ordering key, so the fold does
+    not depend on the order in which the entries arrive: the REST endpoint
+    `commits/<sha>/check-runs` returns them from the MOST RECENT to the OLDEST
+    (measured on three heads: 31, 53 and 70 runs, decreasing ids), and no
+    caller re-sorts them. A fold that kept "the first seen" would therefore
+    have kept the skip.
 
     PREMISE -- the rendered check-run `name` identifies the job uniquely. This
     premise is enforced by `scripts/ci/check_unique_check_run_names.py` and its
@@ -570,9 +603,22 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     best: dict[str, tuple[tuple, dict]] = {}
     for index, check in enumerate(checks):
         name = check.get("name") or ""
-        key = (check.get("started_at") or "", check.get("id") or 0, index)
+        # THE SKIPPED FALLBACK (#25510, T-C) : la NATURE est en TETE de la cle.
+        # Un `skipped` mesure rien et compte comme un PASS : il ne doit donc
+        # jamais remplacer un verdict reel du meme nom. La nature en tete rend
+        # le repli INDEPENDANT DE L'ORDRE d'arrivee -- ce qui compte, parce que
+        # `commits/<sha>/check-runs` rend les entrees du PLUS RECENT au PLUS
+        # ANCIEN (mesure sur 3 tetes : 31, 53 et 70 runs, ids decroissants),
+        # alors que les tests historiques fournissaient l'ordre croissant.
+        key = (not _is_skipped(check),
+               check.get("started_at") or "",
+               check.get("id") or 0,
+               index)
         current = best.get(name)
-        if current is None or key >= current[0]:
+        if current is None:
+            best[name] = (key, check)
+            continue
+        if key >= current[0]:
             best[name] = (key, check)
     return [entry[1] for entry in best.values()]
 

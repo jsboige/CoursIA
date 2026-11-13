@@ -439,6 +439,101 @@ def test_distinct_names_are_never_merged():
     assert code == 1 and "B" in msg and "A" not in msg.split("failing checks: ")[1]
 
 
+# --- #25510 (T-C) : le repli sur le skip ------------------------------------
+#
+# Un job SAUTE (garde job-level, filtre `paths:`) mesure RIEN du code, et
+# `skipped` compte comme VERT (`CONCLUSION_OK`). Sous un repli latest-wins
+# simple, une edition de titre emettrait un `skipped` plus RECENT que le
+# verdict reel -- et la PR ROUGE se debloquerait d'elle-meme. Le defaut etait
+# deja documente de l'autre cote dans
+# `scripts/tests/test_pr_gate_edited_trigger.py` (#16624) : un garde job-level
+# sur `edited` emet un check-run en forme de verdict, et sous latest-wins c'est
+# le verdict le plus recent du nom.
+
+
+def test_un_skipped_plus_recent_ne_remplace_pas_un_verdict_reel():
+    """Le repli : `failure`@t1 puis `skipped`@t2 doit rendre `failure`."""
+    checks = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    folded = pr_gate.dedupe_latest(checks)
+    assert len(folded) == 1
+    assert folded[0]["conclusion"] == "failure"
+    code, msg = decide(checks)
+    assert code == 1
+    assert "Lean CI" in msg
+
+
+def test_un_verdict_reel_remplace_un_skipped_anterieur():
+    """Le repli joue dans un seul sens : un VERDIT reel remplace toujours un
+    skip anterieur (le skip n'a rien mesure, il ne peut pas masquer un
+    verdict), et l'ordre de la liste ne decide de rien."""
+    checks = [
+        run("Lean CI", "skipped", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "failure", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    assert pr_gate.dedupe_latest(checks)[0]["conclusion"] == "failure"
+    assert decide(checks)[0] == 1
+    assert decide(list(reversed(checks)))[0] == 1
+
+
+def test_un_skipped_seul_reste_vert():
+    """Le cas ordinaire n'est pas casse : un job saute SANS verdict anterieur
+    (filtre `paths:` qui ne matche pas) reste VERT. Le geste inverse serait
+    pire que le defaut : #9819 -- un check requis qui ne demarre jamais reste
+    PENDING pour toujours, il ne peut pas etre `skipped`."""
+    code, msg = decide([run("Lean CI", "skipped", rid=1)])
+    assert code == 0, msg
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : `commits/<sha>/check-runs` rend du PLUS RECENT au PLUS
+    ANCIEN (mesure sur 3 tetes : 31, 53 et 70 runs, ids decroissants), et
+    aucun appelant ne retrie. Le repli doit donc tenir dans cet ordre-la :
+    `skipped`@t2 d'abord, `failure`@t1 ensuite -- c'est exactement le couple
+    que le premier jet du repli laissait passer (il gardait la premiere entree
+    vue, donc le `skipped`)."""
+    checks = [
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+    ]
+    folded = pr_gate.dedupe_latest(checks)
+    assert len(folded) == 1
+    assert folded[0]["conclusion"] == "failure"
+    code, msg = decide(checks)
+    assert code == 1
+    assert "Lean CI" in msg
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : le repli ne doit dependre d'aucun ordre d'arrivee. Toutes
+    les permutations d'un meme lot rendent le meme verdict."""
+    lot = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+    ]
+    for permutation in itertools.permutations(lot):
+        folded = pr_gate.dedupe_latest(list(permutation))
+        assert len(folded) == 1, permutation
+        assert folded[0]["conclusion"] == "failure", permutation
+        assert decide(list(permutation))[0] == 1, permutation
+
+
+def test_le_repli_est_independant_de_l_ordre_avec_trois_entrees():
+    """Meme propriete sur un lot de trois : le skip ne gagne jamais, et le
+    verdict reel le plus recent reste le verdict rendu."""
+    lot = [
+        run("Lean CI", "failure", started_at="2026-11-12T10:00:00Z", rid=1),
+        run("Lean CI", "skipped", started_at="2026-11-12T10:05:00Z", rid=2),
+        run("Lean CI", "success", started_at="2026-11-12T10:10:00Z", rid=3),
+    ]
+    for permutation in itertools.permutations(lot):
+        folded = pr_gate.dedupe_latest(list(permutation))
+        assert len(folded) == 1, permutation
+        assert folded[0]["conclusion"] == "success", permutation
+
+
 # --- 3. self-exclusion -------------------------------------------------------
 
 
@@ -2578,7 +2673,10 @@ def _decide_with_walls(checks, walls):
 def test_declared_wall_is_read_from_the_real_workflows():
     """Le cas fondateur, lu sur le depot et non sur une fixture."""
     walls = pr_gate.derive_declared_timeouts()
-    assert walls.get("Scripts Tests (CPU)") == 30
+    # #25968 : le mur de `Scripts Tests (CPU)` est passe de 30 a 40 min dans la
+    # meme PR que l'epingle -- les runs de `main` etaient coupes au mur, et un
+    # plafond releve sans son epingle rougit exactement ce test.
+    assert walls.get("Scripts Tests (CPU)") == 40
     # #16139 : le mur de `ML Pipeline Tests (CPU)` a ete atteint quatre fois a
     # 30 min, dont deux fois sur un `push main` ou `cancel-in-progress` est
     # faux (donc inannulable). Epingle en EGALITE, comme celui du dessus :
