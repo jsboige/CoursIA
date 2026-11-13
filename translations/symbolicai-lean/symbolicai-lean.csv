@@ -49910,10 +49910,10 @@ Ce carnet n'enseigne pas la théorie des nœuds : il indique **où** la trouver.
 
 **Carnet suivant dans la série principale** : [Lean-20 Capstone Digestions Tao](Lean-20-Capstone-Digestions-Tao-Python.ipynb).
 ",,,,,,,,284c9deb9b86b6b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,12ec8451,markdown,fr,c38dd2e1982cacc7,"# Lean-19 : Detection MIMO par index de comptage -- banc d'essai Hoeffding
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,12ec8451,markdown,fr,735d5e69a3ee3c13,"# Lean-19 : Detection MIMO par index de comptage -- banc d'essai Hoeffding
 
 **Navigation** : [<< Lean-17 Pont Conway](Lean-17-Conway-Bridge-to-Knots-Python.ipynb) · [Lean-19b Chernoff](Lean-19b-Borne-Chernoff-Python.ipynb) · [Lean-19c Bernstein](Lean-19c-Borne-Bernstein-Python.ipynb) · [Lean-19d Bayésien](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) · [Sommaire série](README.md)
-Carnet de **banc d'essai methodologique** pour la serie MIMO (Lean-21c/21/21b -> MIMO-01/02/03/04). L'invariant postule est trivial -- la loi de Bernoulli composee, `p_hat ~ p` -- mais sa verification empirique sur 20 instances aleatoires etablit un **etalon de mesure** pour les carnets MIMO a venir.
+Carnet de **banc d'essai methodologique** pour la serie MIMO (sous-serie [MIMO-01..04](MIMO/README.md)). L'invariant postule est trivial -- la loi de Bernoulli composee, `p_hat ~ p` -- mais sa verification empirique sur 20 instances aleatoires etablit un **etalon de mesure** pour les carnets MIMO de la sous-serie.
 
 **Enonce** : Soit un canal binaire symetrique (BSC) a `M` etats, observe sur `t` pas de temps, avec probabilite de flip `p` par pas. Le nombre total de flips sur `N = n_runs * t` tirages suit une loi de Bernoulli de parametre `p`. La borne de Hoeffding donne :
 
@@ -49923,12 +49923,12 @@ Carnet de **banc d'essai methodologique** pour la serie MIMO (Lean-21c/21/21b ->
 
 L'invariant tient ssi `|p_hat - p|` reste sous la borne pour `eps = 0.05` (5 % de confiance).
 
-**Pourquoi ce carnet n'est pas dans la sous-serie MIMO** : la sous-serie MIMO-01..04 n'est pas encore sur main (PR #20371 en attente de merge ai-01). Lean-19, dans la serie principale, fournit la **verification independante** que l'invariant de comptage tient avant la capstone. Quand #20371 mergera, Lean-19 devient l'etalon de reference pour la detection MIMO.
+**Pourquoi ce carnet n'est pas dans la sous-serie MIMO** : la sous-serie MIMO-01..04 vit dans [MIMO/](MIMO/README.md) (PR #20371, mergee). Lean-19, dans la serie principale, fournit la **verification independante** que l'invariant de comptage tient avant la capstone. Lean-19 y sert d'etalon de reference pour la detection MIMO.
 
 Protocole de mesure : pour chaque instance, le canal est simulé `n_runs` fois sur `t` pas — à chaque pas, un flip a lieu avec probabilité `p` (`rng.random() < p`) et l'état avance modulo `M`. On obtient `N = n_runs * t` tirages, la fréquence observée `p_hat = flips / N`, et l'invariant `|p_hat - p| <= borne` est testé ligne par ligne dans les tableaux imprimés.
 
 La borne de Hoeffding majore une probabilité : avec `eps = 0.05`, l'événement « l'écart dépasse la borne » a une probabilité inférieure à 5 % — d'où l'expression « 5 % de confiance » employée plus haut. C'est une garantie sur la queue de distribution, pas une valeur typique de l'écart.
-",,,,,,,,c38dd2e1982cacc7,,,,,,,,,,,,,,,
+",,,,,,,,735d5e69a3ee3c13,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,45f6baf3,code,fr,9fa788f8d4de5bcc,"import numpy as np
 
 # Graine pour reproductibilite
@@ -50022,16 +50022,16 @@ n_ok = sum(1 for *_, _, _, tient in all_inst if tient)
 print(f""--> {n_ok}/20 instances sous la borne Hoeffding ({100 * n_ok / 20:.0f} %)"")
 print(f""Marge : le pire ecart atteint {max(ratios)*100:.0f} % de la borne, marge confortable."")
 ",,,,,,,,c79e9ebaa3e47284,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,cdb47506,markdown,fr,546462abbbaba2eb,"## Interpretation
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,cdb47506,markdown,fr,17a0d5dbb2d198cc,"## Interpretation
 
 **Resultat** : les 20 instances (12 de reference + 8 d'extension) tiennent toutes sous la borne Hoeffding avec `eps = 0.05`. Le rapport ecart/borne va de 0.016 (tres loin) a 0.698 (a 70 % de la borne, mais toujours en dessous). La marge moyenne est de 27 % -- la borne n'est jamais saturee.
 
-**Pourquoi ce carnet precede la capstone MIMO-04** : la sous-serie MIMO-01/02/03/04 utilise un invariant de comptage sur l'ensemble des flips detectes. Lean-19 etablit que la loi de Bernoulli composee, sur laquelle repose la detection, est empiriquement verifiee avec une marge confortable. Quand #20371 mergera, Lean-19 devient l'etalon de reference : toute deviation systematique des carnets MIMO-04 capstone par rapport a Lean-19 signale soit un bug, soit un nouveau phenomene a documenter.
+**Pourquoi ce carnet precede la capstone MIMO-04** : la sous-serie MIMO-01/02/03/04 utilise un invariant de comptage sur l'ensemble des flips detectes. Lean-19 etablit que la loi de Bernoulli composee, sur laquelle repose la detection, est empiriquement verifiee avec une marge confortable. Lean-19 sert d'etalon de reference : toute deviation systematique des carnets MIMO-04 capstone par rapport a Lean-19 signale soit un bug, soit un nouveau phenomene a documenter.
 
 **Limites** : (a) le modele est un BSC simple, pas le canal MIMO general ; (b) la borne Hoeffding est une borne de concentration, pas un estimateur exact ; (c) le ratio 0.27 est empirique, pas une borne inferieure. Un futur carnet pourrait deriver la borne exacte (par Chernoff) pour ce modele.
 
 La cellule 3 affiche `Rapport ecart/borne : min=0.016, max=0.698, mean=0.265` et `--> 20/20 instances sous la borne Hoeffding (100 %)` : le pire cas est l'instance `M=12, p=0.500` (écart 0,0134 pour une borne de 0,0192), qui atteint 70 % de la borne sans jamais la dépasser.
-",,,,,,,,546462abbbaba2eb,,,,,,,,,,,,,,,
+",,,,,,,,17a0d5dbb2d198cc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,a702aa3b,markdown,fr,d0a5470b8fa3c611,"## Exercices
 
 ### Exercice 1 : calculer l'index sur une instance donnee
@@ -50081,7 +50081,7 @@ if resultat is not None:
 else:
     print(""Exercice 3 a completer"")
 ",,,,,,,,8bd9da4b7aa80982,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,08695498,markdown,fr,7c70de69e2bb9eba,"## Conclusion et references
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19-Detection-MIMO-Index-Python.ipynb,08695498,markdown,fr,5bb5cef0c7640b35,"## Conclusion et references
 
 Lean-19 etablit que la detection MIMO par comptage de flips est empiriquement verifiee sur 20 instances aleatoires, avec une marge Hoeffding moyenne de 27 %. Ce carnet precede la sous-serie MIMO-01..04 (PR #20371) et fournit un etalon pour la verification independante des resultats de la capstone.
 
@@ -50089,11 +50089,11 @@ Lean-19 etablit que la detection MIMO par comptage de flips est empiriquement ve
 
 - `Lean-17-Conway-Bridge-to-Knots-Python.ipynb` -- le carnet precedent, qui pose le pont Conway (machine de Turing jouet) vers la theorie des nœuds.
 - `Lean-20-Capstone-Digestions-Tao-Python.ipynb` -- la capstone de la serie, qui digere les techniques de Terence Tao sur les flots de Ricci.
-- `Lean-21c-Descente-Budget.ipynb` (futur `MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb`) -- le carnet qui pose la borne de budget pour la detection MIMO.
-- PR #20371 (en attente) -- la descente MIMO-01..04 qui consumera Lean-19 comme etalon.
+- [MIMO-01 -- Descente Budget](MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb) -- le carnet qui pose la borne de budget pour la detection MIMO.
+- [MIMO/README.md](MIMO/README.md) -- la descente MIMO-01..04 (PR #20371, mergee), qui consomme Lean-19 comme etalon.
 
 L'étalon chiffré à retenir, lu tel quel dans la sortie de la cellule 3 : `20/20` instances sous la borne, rapport `ecart/borne` max de `0.698`, moyenne de `0.265`. Ce sont ces trois valeurs — et non une marge « confortable » générique — que les carnets MIMO-01..04 devront dépasser ou expliquer.
-",,,,,,,,7c70de69e2bb9eba,,,,,,,,,,,,,,,
+",,,,,,,,5bb5cef0c7640b35,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19b-Borne-Chernoff-Python.ipynb,078d67dd,markdown,fr,6c23d3eedcab2420,"# Lean-19b : Borne de Chernoff pour le BSC -- extension de Lean-19
 
 **Navigation** : [<< Lean-19 Hoeffding](Lean-19-Detection-MIMO-Index-Python.ipynb) · [Lean-19c Bernstein](Lean-19c-Borne-Bernstein-Python.ipynb) · [Lean-19d Bayésien](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) · [Sommaire série](README.md)
@@ -50336,15 +50336,15 @@ if ratio_chernoff_hoeffding is not None:
 else:
     print(""Exercice 3 a completer"")
 ",,,,,,,,403348fa084baa61,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19b-Borne-Chernoff-Python.ipynb,b439c792,markdown,fr,a92407db0d4d715f,"## Conclusion et references
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19b-Borne-Chernoff-Python.ipynb,b439c792,markdown,fr,c137747f4e93414b,"## Conclusion et references
 
 Lean-19b etablit que la borne de Chernoff est plus tight que Hoeffding pour la distribution
 Bernoulli, sur 19/20 instances BSC (egalite numerique a p=0.50 sur la 20e). Le gain provient de l'exploitation de la variance reelle
 `p(1-p)` au lieu du majorant Hoeffding `1/4`. Bernstein est une borne intermediaire, plus
 polyvalente pour les distributions non-bornees.
 
-Quand la PR #20371 mergera et que les carnets MIMO post-capstone executeront la detection
-sur le vrai canal MIMO du lac `mimo_lean`, Chernoff et Bernstein deviendront les outils de
+Depuis la fusion de la PR #20371, les carnets MIMO post-capstone executent la detection
+sur le vrai canal MIMO du lac `mimo_lean`, Chernoff et Bernstein y sont les outils de
 choix pour des bornes de queue informatives.
 
 **References** :
@@ -50353,13 +50353,13 @@ choix pour des bornes de queue informatives.
   empiriquement sur 20 instances (20/20 sous la borne).
 - `Lean-20-Capstone-Digestions-Tao-Python.ipynb` -- la capstone de la serie, qui digere les
   techniques de Terence Tao sur les flots de Ricci.
-- `Lean-21c-Descente-Budget.ipynb` (futur `MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb`)
-  -- la borne de budget pour la detection MIMO, qui consumera Lean-19 et Lean-19b.
-- PR #20371 (en attente) -- la descente MIMO-01..04 qui consommera Lean-19b comme etalon
+- [MIMO-01 -- Descente Budget](MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb)
+  -- la borne de budget pour la detection MIMO, qui consomme Lean-19 et Lean-19b.
+- [MIMO/README.md](MIMO/README.md) -- la descente MIMO-01..04 (PR #20371, mergee), qui consomme Lean-19b comme etalon
   de borne de queue.
 
 **Bilan chiffré de la cellule 3** (sortie citée telle quelle) : `Chernoff plus tight (eps_C < eps_H) : 19/20` et `Hoeffding plus tight (eps_H < eps_C) : 1/20`, avec `Ecart Chernoff  : min=0.01160, max=0.02467` contre `Ecart Hoeffding : min=0.01358, max=0.02480`. Le gain maximal observé vient de la première instance (`p=0.100, N=3000`) : `eps_H = 0.02480` vs `eps_C = 0.01488`.
-",,,,,,,,a92407db0d4d715f,,,,,,,,,,,,,,,
+",,,,,,,,c137747f4e93414b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-19c-Borne-Bernstein-Python.ipynb,c6dcf6c0,markdown,fr,f2d46ed6b3f99e0e,"# Lean-19c : borne de Bernstein pour le BSC (Python)
 
 **Navigation** : [<< Lean-19 Hoeffding](Lean-19-Detection-MIMO-Index-Python.ipynb) · [Lean-19b Chernoff](Lean-19b-Borne-Chernoff-Python.ipynb) · [Lean-19d Bayésien](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) · [Sommaire série](README.md)
