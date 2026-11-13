@@ -49,12 +49,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: dotnet-shared-tests-${{ github.ref }}
+  group: dotnet-shared-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   dotnet-shared-tests-linux:
     name: Shared.Tests dotnet (ubuntu-latest, 56 floor)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
     # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
@@ -158,6 +159,7 @@ jobs:
 
   dotnet-shared-tests-windows:
     name: Shared.Tests dotnet (windows-latest, 56 floor)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: windows-latest
     timeout-minutes: 15
     env:

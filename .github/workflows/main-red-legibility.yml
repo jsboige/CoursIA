@@ -81,13 +81,22 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -u
-          # 1) le verdict, depuis l'organe (source unique de la mesure)
-          if ! python scripts/ci/check_cancelled_only_commits.py --commits 20 \
-               > legibility.txt 2> legibility.err; then
-            echo "::warning::organe non concluant : $(cat legibility.err | head -3)"
+          # 1) le verdict, depuis l'organe (source unique de la mesure).
+          # #25181 : l'organe sort 1 quand il A des findings -- un rouge
+          # emprunte ou une mort d'infra. Ce n'est PAS une panne de l'organe :
+          # c'est precisement le jour ou le commentaire a quelque chose a dire.
+          # Mesure du 2026-11-13 : les cinq runs precedents ont tous pris la
+          # branche « non concluant » (annotation « organe non concluant : »
+          # suivie d'un stderr vide, rc=1), et le commentaire rouleau n'a
+          # jamais ete poste sur #25181. Seul rc>=2 prive le releve de contenu.
+          rc=0
+          python scripts/ci/check_cancelled_only_commits.py --commits 20 \
+               > legibility.txt 2> legibility.err || rc=$?
+          if [ "$rc" -ge 2 ]; then
+            echo "::warning::organe non concluant (rc=$rc) : $(head -3 legibility.err)"
             exit 0
           fi
-          # 2) le rendre lisible : commentaire rouleau sur #22088 (find-or-update)
+          # 2) le rendre lisible : commentaire rouleau sur #25181 (find-or-update)
           python - <<'PY'
           import json, os, subprocess, datetime, tempfile
           issue, repo = 25181, "jsboige/CoursIA"
@@ -99,9 +108,16 @@ jobs:
           when = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
           body = (f"{sentinel}\n\n"
                   f"**Main red legibility** — auto, {when}\n\n"
-                  f"La croix rouge sur `main` est le plus souvent une annulation "
-                  f"de cohortes (saturation de runners), pas un echec. Separation "
-                  f"merite / emprunte sur la fenetre glissante :\n\n```\n{report}\n```\n")
+                  f"Deux choses portent la meme croix rouge sur `main` sans "
+                  f"qu'aucun test n'ait echoue : une annulation **avant "
+                  f"demarrage** (le job n'a jamais eu de runner -- rien de "
+                  f"mesure, rien de depense) et une annulation **apres "
+                  f"demarrage** (le job a tenu un runner et a ete arrete avant "
+                  f"de conclure ; GitHub rend un `timeout-minutes` en "
+                  f"`cancelled`). La premiere est un rouge emprunte ; la "
+                  f"seconde est une mort d'infrastructure, et l'appeler "
+                  f"empruntee l'exonere. Separation sur la fenetre glissante "
+                  f":\n\n```\n{report}\n```\n")
           def gh(*a):
               return subprocess.run(["gh", *a], capture_output=True, text=True)
           def post():
@@ -110,6 +126,15 @@ jobs:
                   comments = json.loads(lst.stdout or "[]")
               except Exception as e:
                   print("::warning::lecture des commentaires en echec:", e); return
+              # #25181 : `gh api` rend un OBJET quand il refuse (401/403/404) ; iterer
+              # un dict rend ses CLES, et le `.get` suivant echoue sur une chaine.
+              # Mesure : run 43041203361, « post en echec: 'str' object has no
+              # attribute 'get' » -- une annotation qui ne dit ni le refus ni son
+              # code, donc indiscernable d'un bug du workflow.
+              if lst.returncode != 0 or not isinstance(comments, list):
+                  print("::warning::commentaires illisibles (rc=%s): %s"
+                        % (lst.returncode, (lst.stderr or lst.stdout or "")[:200]))
+                  return
               hit = next((c for c in comments if sentinel in c.get("body", "")), None)
               with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
                                                encoding="utf-8") as tf:
