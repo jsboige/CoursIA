@@ -222,6 +222,10 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 04j | [Rationalisabilité](GameTheory-04j-Rationalisabilite-Python.ipynb) | Ce que la seule rationalité délie, sans l'hypothèse d'équilibre : dominance par une stratégie mixte (Table 5.8 de Bonanno), théorème de Pearce vérifié par programmation linéaire dans les deux sens, IDSDS cardinal rejoué sur la Figure 5.9, et l'inclusion stricte rationalisables ⊃ équilibres mesurée sur les jeux du palier 04 | Python | Licence |
 | 04k | [Équilibre corrélé (Aumann 1974)](GameTheory-04k-Equilibre-Correle-Python.ipynb) | L'équilibre corrélé comme **polytope LP** (`scipy.linprog`) : le médiateur coordonné amène Battle of the Sexes à (2;2), strictement au-dessus du Nash mixte (0,75;0,75), les Nash purs et le Nash mixte en sommets du polytope (tout Nash est un CE), et la frontière mesurée : la distribution uniforme est corrélée mais n'est pas un CE | Python | Licence |
 
+#### Routage et prix de l’anarchie — GameTheory-04h
+
+Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [jumeau C#](GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb) calculent l’équilibre de Wardrop, l’optimum social et le prix de l’anarchie sur l’instance de Pigou. Les deux implémentations sont analytiques et sans solveur externe ; C# utilise la bibliothèque standard .NET. Le [compagnon Lean](GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) vérifie un résultat atomique distinct : une borne 2× pour un équilibre minimisant le potentiel, avec un autre équilibre de Nash à 15/7 de l’optimum ; il ne formalise pas la borne non atomique 4/3. Le C# fournit en plus un balayage de grille indépendant pour contrôler l’optimum ; les sorties stochastiques ou machine-dépendantes ne sont pas concernées.
+
 ### Autour de 05 — minimax
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
@@ -730,6 +734,7 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 - [asouther4/lean-social-choice](https://github.com/asouther4/lean-social-choice) : Arrow (Lean 3, source originale)
 - [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) : Gibbard-Satterthwaite, Split Cycle (Lean 4, MIT)
 
+
 ## Licence
 
 Voir la licence du dépôt principal.
@@ -749,8 +754,3 @@ Voir la licence du dépôt principal.
 *Version 1.4.1 — Juillet 2026 (2026-07-16) — réconciliation EPIC #4365 : retrait des lakes supprimés `cooperative_games_lean` et `stable_marriage_lean`, absorbés dans `game_theory_lean`.*
 
 *Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles vers hub : intégration du marathon de parité C# #4956, comptes délégués au marqueur CATALOG-STATUS.*
-
-
-#### Routage et prix de l’anarchie — GameTheory-04h
-
-Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [jumeau C#](GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb) calculent l’équilibre de Wardrop, l’optimum social et le prix de l’anarchie sur l’instance de Pigou. Les deux implémentations sont analytiques et sans solveur externe ; C# utilise la bibliothèque standard .NET. Le [compagnon Lean](GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) vérifie un résultat atomique distinct : une borne 2× pour un équilibre minimisant le potentiel, avec un autre équilibre de Nash à 15/7 de l’optimum ; il ne formalise pas la borne non atomique 4/3. Le C# fournit en plus un balayage de grille indépendant pour contrôler l’optimum ; les sorties stochastiques ou machine-dépendantes ne sont pas concernées.
