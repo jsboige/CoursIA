@@ -77,11 +77,9 @@ from ict import causal_attribution as ca
 #
 #   quasi_experimental.py -> bridges -> ict -> ICT-Series -> IIT -> MyIA.AI.Notebooks
 #                                                                   ^ parents[4]
-_CAUSAL_BRIDGES_DIR = (
-    Path(__file__).resolve().parents[4] / "Probas" / "DecisionTheory" / "Causalité"
-)
-if str(_CAUSAL_BRIDGES_DIR) not in sys.path:
-    sys.path.insert(0, str(_CAUSAL_BRIDGES_DIR))
+_CAUSALITE_DIR = Path(__file__).resolve().parents[4] / "Probas" / "Causalite"
+if str(_CAUSALITE_DIR) not in sys.path:
+    sys.path.insert(0, str(_CAUSALITE_DIR))
 
 from causal_organs import (  # noqa: E402  (import differe : sys.path ci-dessus)
     TAU_TRUE_DID,
