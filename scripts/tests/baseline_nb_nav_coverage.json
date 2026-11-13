@@ -18,11 +18,7 @@
       "GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb",
       "GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb",
       "GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb",
-      "GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb",
-      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb",
-      "GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb",
-      "GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb",
-      "GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb"
+      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"
     ],
     "GameTheory/SocialChoice": [
       "GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb"
@@ -80,8 +76,8 @@
     "IIT/ICT-Series": [
       "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb",
       "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb",
-      "IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
-      "IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb",
       "IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb",
       "IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb",
       "IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb",
