@@ -25,6 +25,25 @@ def _resource(kind: str, key: str) -> URIRef:
     return URIRef(f"https://github.com/jsboige/CoursIA/cursus/{kind}/{quote(key, safe='')}")
 
 
+def _subseries_levels(entry: dict) -> list[str]:
+    """Niveaux de sous-série du catalogue, du plus haut au plus bas.
+
+    Le catalogue expose `sous_serie_levels` (liste des niveaux) depuis #24994 ;
+    `sous_serie` reste lu comme repli pour les entrées qui ne portent que ce
+    champ. Aucune hiérarchie n'est déduite du chemin du carnet : seul le
+    catalogue fait foi.
+    """
+    levels = entry.get("sous_serie_levels")
+    if isinstance(levels, list):
+        cleaned = [value.strip() for value in levels if isinstance(value, str) and value.strip()]
+        if cleaned:
+            return cleaned
+    single = entry.get("sous_serie")
+    if isinstance(single, str) and single.strip():
+        return [single.strip()]
+    return []
+
+
 def build_graph(entries: list[dict]) -> Graph:
     """Convertit les champs présents du catalogue en ressources RDF."""
     graph = Graph()
@@ -47,21 +66,60 @@ def build_graph(entries: list[dict]) -> Graph:
         graph.add((notebook, DCTERMS.identifier, Literal(path)))
         graph.add((notebook, VOCAB.inSeries, series_uri))
 
+        # Contraintes d'exécution réellement présentes dans le catalogue.
+        # Elles sont distinctes des ressources/API précises, que le catalogue
+        # ne nomme pas aujourd'hui.
+        for field, predicate in (
+            ("requires_api", VOCAB.requiresAPI),
+            ("requires_gpu", VOCAB.requiresGPU),
+            ("requires_cloud", VOCAB.requiresCloud),
+            ("requires_wsl", VOCAB.requiresWSL),
+        ):
+            value = entry.get(field)
+            if isinstance(value, bool):
+                graph.add((notebook, predicate, Literal(value)))
+            elif value is not None:
+                raise ValueError(f"{path}: {field} doit être booléen")
+
+        for field, predicate in (
+            ("duree_estimee", VOCAB.estimatedDuration),
+            ("status", VOCAB.status),
+        ):
+            value = entry.get(field)
+            if isinstance(value, str) and value.strip():
+                graph.add((notebook, predicate, Literal(value.strip(), lang="fr")))
+            elif value is not None and not isinstance(value, str):
+                raise ValueError(f"{path}: {field} doit être une chaîne non vide")
+
         if series not in series_seen:
             graph.add((series_uri, RDF.type, VOCAB.Series))
             graph.add((series_uri, RDFS.label, Literal(series, lang="fr")))
             series_seen.add(series)
 
         # Le catalogue ne porte pas de champs de taxonomie ou de prérequis.
-        # La sous-série disponible est reproduite quand elle existe.
-        subsection = entry.get("sous_serie")
-        if isinstance(subsection, str) and subsection.strip():
-            subsection_key = f"{series}/{subsection}"
+        # La hiérarchie des sous-séries, elle, est dans le catalogue : le
+        # générateur de catalogue l'expose depuis #24994 sous
+        # `sous_serie_levels` (niveaux) et `sous_serie_path` (chemin complet).
+        # L'export la reproduit telle quelle, au lieu d'aplatir l'arbre sur son
+        # premier niveau -- sans cela, 639 entrees du catalogue perdaient leur
+        # imbrication dans le graphe.
+        levels = _subseries_levels(entry)
+        parent_uri = series_uri
+        deepest_uri = None
+        for depth, level in enumerate(levels):
+            subsection_key = f"{series}/{'/'.join(levels[:depth + 1])}"
             subsection_uri = _resource("sous-serie", subsection_key)
             graph.add((subsection_uri, RDF.type, VOCAB.Subseries))
-            graph.add((subsection_uri, RDFS.label, Literal(subsection, lang="fr")))
-            graph.add((subsection_uri, VOCAB.partOfSeries, series_uri))
-            graph.add((notebook, VOCAB.inSubseries, subsection_uri))
+            graph.add((subsection_uri, RDFS.label, Literal(level, lang="fr")))
+            graph.add((subsection_uri, VOCAB.subseriesPath, Literal("/".join(levels[:depth + 1]))))
+            if depth == 0:
+                graph.add((subsection_uri, VOCAB.partOfSeries, series_uri))
+            else:
+                graph.add((subsection_uri, VOCAB.partOfSubseries, parent_uri))
+            parent_uri = subsection_uri
+            deepest_uri = subsection_uri
+        if deepest_uri is not None:
+            graph.add((notebook, VOCAB.inSubseries, deepest_uri))
 
         # Qualifications seulement si explicitement présentes dans une
         # évolution future du catalogue. Aucun champ de remplacement n'est

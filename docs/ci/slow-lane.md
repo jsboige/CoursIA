@@ -289,7 +289,8 @@ analyses per-PR continuent de tirer** et le compte ne baisse pas.
 Une part de la hausse est en outre une **granularité**, pas du travail
 supplémentaire : la voie rapide est passée d'un check agrégé
 (`Fast lane (ombre) -- 21 gardes, 1 checkout`) à un check **par garde**
-(`fast-lane (ombre): perimeter-review-guard`, `… : solution-leak-guard`,
+(`fast-lane (ombre): perimeter-review-guard`,
+`… : Solution-leak HIGH delta (advisory, WARN phase, #8053)`,
 `… : notebook-navlink-check`, …). Le même travail se compte sous plus de
 noms. Le reste — les ratchets `Output-collapse`, `Source-collapse`,
 `Split-reading`, `Output-flood`, les advisories de markdown, le bundle
@@ -305,6 +306,237 @@ nom exact.
 qu'après le bascule admin du *default setup*. C'est là — et seulement là —
 que le compte de checks par PR doit **descendre**. La mesure à re-faire après
 bascule, sur un témoin de même surface, avec la même méthode.
+
+## Tranche 3 — lot quotidien en ombre (P3 du plan « CI à deux étages »)
+
+Le lot quotidien est un **job de plus** dans ce workflow, pas un workflow de
+plus. La voie lente est un organe unique : lui ajouter une cadence, un
+budget et une politique de runner dans un second fichier aurait dupliqué
+trois choses et aurait rendu « la voie lente » une notion diffuse.
+
+### Ce que le lot fait — et ce qu'il ne fait pas
+
+Il **mesure**. Depuis la tranche 2, le lot **émet un check-run *advisory* par
+tête du lot** : le verdict devient lisible sur la PR, mais il **ne bloque
+rien** — son nom porte le marqueur `advisory` que le `PR gate` route hors
+porte. Le `PR gate` reste le seul juge. Le job est une mesure du coût de
+l'étage 2, et la phase d'ombre d'avant bascule.
+
+Il mesure deux choses :
+
+- la **durée** d'un lot vert et d'un lot rouge ;
+- la **fin de lot avant l'échéance** de son créneau (10:00Z / 13:00Z /
+  21:30Z / 00:00Z). Un lot qui déborde retarde le suivant — la cadence
+  tient, ou elle ne tient pas, et c'est cette mesure qui le dira.
+
+### La tranche livrée, et ce qui reste
+
+La **tranche 1** livre **ce qu'on mesure** :
+
+- l'**arbre d'intégration** — `main` plus les PRs du lot ;
+- la **suite complète** de la jambe `Scripts Tests`, jouée sur cet arbre.
+
+La **tranche 2** livre le **check-run sur chaque tête du lot** : le verdict
+du lot devient lisible sur la PR, et il porte aussi la **remarque de
+troncature** du pool.
+
+Ce qui reste pour la phase suivante : la **bascule** — le `PR gate` accepte
+« étage 2 vert sur le lot du jour » à la place du vert par tête, et
+`merge_ready` merge le lot. C'est **P4**, qui ne s'exécute qu'après une
+semaine d'ombre qui tient le critère des 24 h.
+
+### Le check-run du lot (tranche 2)
+
+Un check-run par tête du lot, nommé `Heavy batch lot (advisory, non
+bloquant)`. Trois règles le structurent.
+
+**1. Il ne bloque aucun merge.** Le `PR gate` ne traite en *advisory* que
+les check-runs dont le **nom** contient `advisory`
+(`scripts/pr_gate.py::is_advisory`) : c'est le même prédicat que celui de la
+voie rapide, et la mesure qui l'a établi est dans son code — un check d'ombre
+dont le nom ne portait pas le marqueur entrait dans les rouges du gate et
+rendait le gate **requis** rouge (mesure du 2026-08-25, 2 PR bloquées sur
+125 portant un check d'ombre). Le test de cette tranche applique le
+prédicat du gate lui-même, pas une copie.
+
+**2. Le verdict porte sur l'arbre, pas sur l'isolement.** Le lot mesure
+`main` plus les PRs du lot ; le résumé du check-run le dit, et nomme la PR
+coupable quand la bissection en a isolé une. Un check-run qui prétendrait
+juger la PR seule serait un mensonge : une PR peut être verte en isolement
+et rouge dans l'arbre.
+
+**3. Ce qui n'a pas été mesuré ne se présente pas comme rouge.** Seul le
+statut `rouge` — la suite rejouée **et** en échec — donne `failure`. Une
+dépendance manquante, une sélection vide, un sélecteur en échec, une PR de
+fork : `neutral`, `skipped`, ou **pas de check-run du tout** avec le motif
+nommé. Une PR de fork n'a pas de tête dans le dépôt de base : l'API Checks
+ne peut pas y porter de check-run, et le motif le dit.
+
+**La troncature du pool est portée dans le résumé.** Quand la population
+inspectée atteint le plafond de lecture (`pool_inspecte == limit`), la
+sélection peut être **partielle**, et un lot « vert » ne dit rien des PRs
+non inspectées. Le plan du lot emporte donc son plafond et son droit de
+troncature, et le check-run le dit sur la PR — pas seulement dans le rapport
+du run.
+
+L'**écriture** passe par l'organe natif `scripts/ci/fast_lane.py`
+(`emit_check_run`) : le dépôt avait déjà la fonction qui poste un check-run
+sur une tête de PR, avec le même `gh api --input -`. Ce module ne fait que
+décrire le verdict du lot.
+
+**Un check-run par tête, et un seul.** Deux publications de même nom sur la
+**même** tête ne s'empilent pas : la seconde **remplace** la première
+(mesuré au témoin : deux publications sur une même tête → un seul check-run
+survivant, celui de la dernière). Deux têtes distinctes portent chacune leur
+check-run (mesuré : un `success` sur la tête du témoin et un `neutral` sur
+la tête précédente coexistent). Un lot rejoué sur la même tête met donc son
+verdict à jour, au lieu d'empiler des verdicts contradictoires sur la PR.
+
+### La porte du lot : l'APPROVE du coordinateur à la tête exacte
+
+Une PR n'occupe un créneau que si elle porte l'**APPROVE du coordinateur**
+(`myia-ai-01`) **à sa tête exacte**. C'est la porte que le merge franchit :
+le lot mesure ainsi la durée du lot **réel**, celui qui mergera.
+
+Un `LGTM` dans le corps d'une review Hermes n'est **pas** une approbation —
+c'est un avis, pas la porte. Le verdict de revue est toujours lu et affiché
+dans le rapport (il informe sur l'état de la file), mais il ne sélectionne
+plus.
+
+L'approbation vaut pour la tête qu'elle couvre : une APPROVE posée sur une
+tête qui a bougé depuis ne couvre plus le contenu qui mergera. Et sur une
+même tête, c'est la **dernière** review du coordinateur qui fait foi — une
+APPROVE suivie d'une `CHANGES_REQUESTED` referme la porte.
+
+### La population du lot, et l'absence de plafond
+
+La population candidates est celle que le **merge** touche : les PRs
+ouvertes que le coordinateur a **relues** (`--search "reviewed-by:myia-ai-01
+sort:created-asc"`), les plus anciennes d'abord.
+
+Le lot n'a **pas de plafond par défaut**. Un plafond appliqué *après* la
+porte ne fait que retrancher des PRs que le merge mergera : la liste
+courte des 15 PRs les plus anciennes decidait du lot, alors que la
+population utile était plus large — mesure du 2026-11-09 sur le pool réel :
+**16 PRs inspectées, 5 sélectionnées**, 11 exclusions nommées. Sous la
+liste tronquée et le plafond de 4, la même mesure donnait 1 PR
+sélectionnée sur 15 : c'était la troncature et le plafond qui décidaient,
+pas la porte.
+
+Le détail (verdict, approbation) est lu **par PR** — une requête GraphQL
+par PR — donc élargir la population ne coûte pas une requête unique, elle
+coûte une requête de plus par PR.
+
+`--max-prs` reste disponible pour un lot volontairement restreint ; `0`
+signifie « pas de plafond ».
+
+### L'environnement : celui de la suite, pas une liste recopiée
+
+Le lot installe son environnement avec le **même script** que la jambe
+`Scripts Tests` : `scripts/ci/install_scripts_tests_deps.sh`. Le bloc
+d'installation a été extrait **verbatim** de `scripts-tests.yml` le
+2026-11-09, et les deux jambes l'appellent.
+
+C'est ce qui rend les durées comparables. Une liste de dépendances minimale
+donne des durées qu'on ne peut comparer à rien : une dépendance manquante
+rend la PR « non mesurable » au lieu de la faire échouer.
+
+De même, les **cibles** de la suite ne sont pas recopiées dans l'organe :
+elles sont **lues** dans le bloc pytest de `scripts-tests.yml`
+(`heavy_batch.py::suite_lourde_cible`). Le lot joue donc exactement les
+chemins de la jambe, avec les mêmes options pytest (`-n 4 --dist loadscope
+--tb=short -q`). Un bloc de cible introuvable rend la mesure
+**non mesurable** — jamais un lot vide présenté comme un lot vert.
+
+### La cadence — quatre créneaux par jour
+
+| Créneau (UTC) | Secours (UTC) | Échéance de fin |
+|---|---|---|
+| 04:17 | 04:47 | 10:00 |
+| 10:17 | 10:47 | 13:00 |
+| 16:17 | 16:47 | 21:30 |
+| 21:17 | 21:47 | 00:00 (le lendemain) |
+
+Les créneaux sont placés **hors des deux pics mesurés** de la file CI
+(13:00-15:00Z et 00:00-02:00Z) : le lot occupe le parc quand celui-ci
+respire. Le créneau du mardi 02:30 reste celui du pilote — les deux
+n'empruntent pas la même nuit.
+
+**Pourquoi un cron de secours.** Sous la charge de la flotte, GitHub retarde
+ou abandonne des événements `schedule`. Sur les anciens crons (minute :30),
+le lot a démarré à 10:16, 12:49, 21:51, 01:19, 11:58, 22:51, 02:20 et 12:59
+entre le 10/11 et le 12/11 : deux lots par jour au lieu de quatre, avec 1,5 à
+5 h de retard, et aucun lot parti des créneaux 04:30 et 16:30. Chaque créneau
+est donc doublé d'un cron trente minutes plus tard. Le job `lot-gate` saute ce
+secours quand un lot planifié a déjà été servi depuis moins de 150 min : son
+job `lot` a réussi, ou tourne encore. Un `workflow_dispatch`, l'avance du
+coordinateur, n'est jamais dédoublonné. Si l'API ne répond pas, la garde
+laisse passer : un lot en double coûte un runner hébergé, un lot perdu coûte
+une journée.
+
+### Un seul lot à la fois
+
+Le groupe de concurrence `slow-lane-lot` est partagé par les quatre
+créneaux, et `cancel-in-progress` est **faux** : un créneau qui déborde
+**attend** le lot en cours au lieu de l'annuler. Une annulation automatique
+produirait un rapport partiel présenté comme un rapport complet. Le pilote
+habite un groupe distinct (`slow-lane-pilot`) : il ne retarde pas un lot, et
+un lot ne retarde pas le pilote.
+
+### L'arbre d'intégration
+
+Le lot joue deux temps. D'abord, chaque PR du lot est mesurée **isolément**
+sur sa ref de fusion, avec les tests **sélectionnés par chemin** (la mesure
+fine de l'étage 1). Ensuite — c'est la mesure qui compte — il construit
+l'arbre **qui va réellement atterrir** — `main` plus les PRs du lot, dans
+l'ordre du lot — et joue **la suite complète** dessus.
+
+C'est la seule forme qui supprime **par construction** la classe de #24821
+(`main` rouge après le merge de PRs vertes à leur propre tête, sur un `main`
+qui avait bougé) : on ne la rattrape plus après coup, on ne la crée plus.
+
+Un conflit d'intégration est **nommé** (le numéro de la PR) et la PR sort de
+l'arbre — elle n'est pas testée du tout, et elle n'est pas réputée verte
+pour autant.
+
+### La bissection
+
+Quand l'arbre est rouge, la PR fautive est isolée par **`git bisect run`** —
+l'organe natif, pas une recherche maison. Chaque fusion de l'arbre porte le
+sujet `lot: PR #N` : le commit que la bissection isole est donc rattaché à
+sa PR, et le coupable est **nommé** dans le rapport.
+
+Le rattachement se fait par deux lectures, dans cet ordre : le sujet du
+commit s'il porte la marque, sinon **l'ascendance** (la première fusion du
+lot dont le commit contient le coupable). La seconde lecture est celle de
+confiance : elle ne dépend d'aucun nom, et elle reste juste quand la
+référence de fusion d'une PR est elle-même un commit de fusion — ce que
+GitHub produit.
+
+Un `ModuleNotFoundError` rend la mesure **indéterminée** (code 125), jamais
+rouge : une dépendance absente n'est pas une régression.
+
+### Avancer un test
+
+Le coordinateur déclenche l'étage 2 sur **une seule** PR, tout de suite, par
+`workflow_dispatch` avec l'entrée `pr`. Cette PR prend la place du lot.
+
+La **garde fork n'est pas levée** par cette désignation : une PR de fork
+n'entre dans le lot qu'après l'APPROVE du coordinateur, parce que le job
+exécute du code de PR. Le refus est explicite et le lot ne peut pas se
+présenter comme vert.
+
+### Permissions et runner
+
+`contents: read` et `pull-requests: read`, et rien d'autre — sauf le job du
+lot, qui demande en plus `checks: write` depuis la tranche 2 : il publie
+un check-run par tête du lot. Les permissions d'un job **remplacent** celles
+du workflow, donc les deux lectures sont rédéclarées au niveau du job.
+Aucun `secrets.*` n'est lu : le job exécute du code de PR, sur un runner
+**hébergé** par GitHub — hors du parc de la flotte, et sans rien pouvoir
+lire de sensible. Une jambe self-hosted exigerait une entrée dans
+`SELF_HOSTED_WORKFLOW_ALLOWLIST`, qui est une politique d'owner : le
+coordinateur, pas la lane.
 
 ## Hors scope
 

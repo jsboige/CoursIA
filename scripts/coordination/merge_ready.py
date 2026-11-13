@@ -119,10 +119,24 @@ Comportement :
 - Ordre : PR la plus ancienne d'abord (par numero).
 - Retenues : ``hold.txt`` a cote du journal (surchargeable
   ``--hold-file``), une PR par ligne -- ``<numero> [motif]`` ; lignes
-  vides et commentaires ``# ...`` ignores. Une PR listee est sautee
-  (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
-  retenue ; fichier illisible ou ligne malformee -> exit 2 (on ne merge
-  pas sans savoir ce qui est retenu).
+  vides et commentaires ``# ...`` ignores. La sentinelle reserve le numero
+  0 pour l'etat de ``Scripts Tests (CPU)`` sur ``main`` : ``failure`` ->
+  retenue globale, ``success`` -> retrait de sa seule ligne. Le verdict
+  juge est celui du **dernier commit de ``main`` qui porte un verdict
+  TERMINE** de ce check : un check en cours, une annulation ou un
+  ``timed_out`` ne sont pas des regressions, le verdict remonte au commit
+  precedent ; au-dela de 20 commits sans verdict termine, refus fail-closed
+  (borne ecrite). Une PR listee est
+  sautee (``hold:<motif>``) AVANT tout appel gh. Fichier absent = aucune
+  retenue utilisateur ; fichier illisible ou ligne malformee -> exit 2 (on
+  ne merge pas sans savoir ce qui est retenu).
+- **Qui merge le correctif d'un ``main`` rouge** : la retenue globale saute
+  aussi la PR qui repare le rouge. Cette PR est donc mergee **a la main par
+  le coordinateur** (``myia-ai-01``), qui retire ensuite la retenue :
+  ``python scripts/coordination/merge_ready.py --clear-main-red-hold
+  --hold-file <chemin>`` -- la commande ne touche que la ligne de la
+  sentinelle, jamais les retenues du coordinateur. Le chemin vert la retire
+  de lui-meme au run suivant, si ce run a lieu avant le correctif.
 - Review : deux lectures distinctes. La disposition journalisee (champ
   ``review``) est CLASSEE a la tete que la ligne declare
   (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
@@ -441,6 +455,53 @@ def default_journal_path() -> Path:
 # vivaient dans un hold.txt de scratchpad de SESSION, que cet organe ne
 # lisait pas -- un run --apply, ou la tache planifiee, les aurait ignorees.
 HOLD_LINE = re.compile(r"^(\d+)(?:\s+(.*))?$")
+MAIN_RED_HOLD_PREFIX = "main-red-sentinel "
+MAIN_RED_HOLD_NUMBER = 0  # identifiant global reserve, jamais un numero de PR
+SCRIPTS_TESTS_CHECK = "Scripts Tests (CPU)"
+
+#: Borne ECRITE de la remontee dans l'historique de `main` (#24828, revue
+#: ai-01 du 2026-11-10, point 1). On juge le dernier commit qui porte un
+#: VERDICT TERMINE de `Scripts Tests (CPU)` ; au-dela de cette borne, et
+#: seulement au-dela, l'organe refuse de demarrer (fail-closed).
+MAIN_RED_HISTORY_LIMIT = 20
+
+#: Conclusions qui portent un VERDICT DE CODE. Seul `failure` pose la
+#: retenue, `success` la retire. Tout le reste -- `cancelled`,
+#: `timed_out`, `action_required`, `skipped`, `stale` -- est de l'INFRA :
+#: une annulation ou un runner perdu n'est pas une regression, et le
+#: verdict remonte au commit precedent (point 2 de la meme revue).
+MAIN_RED_CODE_VERDICTS = ("success", "failure")
+
+#: Etapes d'INFRASTRUCTURE du job `Scripts Tests (CPU)`. Une `failure` dont
+#: la PREMIERE etape en echec est l'une d'elles n'est pas un verdict de code :
+#: le job n'a pas execute un seul test. Le cas mesure (12/11, run 43316243195,
+#: job 131524893709, runner `myia-ai-01-wsl-14`) : l'etape
+#: `actions/checkout@v4` a tire les 1 606 branches (`fetch-depth: 0`) de 22:12
+#: a 22:31Z puis a echoue sur `RPC failed; curl 28 Operation too slow`. Les
+#: gardes de plancher de collection qui suivent ont alors echoue faute de
+#: fichiers -- consequence, pas cause. Aucun test n'etait identifie dans le
+#: log : la sentinelle retenait `main` sur une panne de checkout.
+#:
+#: Les marqueurs sont des sous-chaines du NOM de l'etape, en minuscules. Les
+#: noms rendus par l'API sont ceux du workflow (mesure sur le job cite :
+#: `Run actions/checkout@v4`, `Run actions/setup-python@v5`,
+#: `Install dependencies`, `Purger un work dir reutilise au graphe
+#: incomplet (#15387)`).
+MAIN_RED_INFRA_STEP_MARKERS = (
+    "set up job",
+    "actions/checkout",
+    "actions/setup-python",
+    "install dependencies",
+    "purger un work dir",
+    "[heal]",
+    # T-K (#25510) : les deux etapes du checkout borne tirees
+    # ("T-K : ascendance de la tete + la base, sans les 1 606 branches",
+    # "T-K : controle -- la base est visible, son historique est lu").
+    # Une panne de reseau sur le `git fetch --unshallow` est une panne
+    # d'infrastructure, pas un verdict de code : la sentinelle doit
+    # remonter au commit precedent, comme pour `actions/checkout`.
+    "t-k :",
+)
 
 
 def default_hold_path(journal_path: Path) -> Path:
@@ -477,6 +538,274 @@ def load_holds(path: Path) -> dict[int, str]:
         reason = (match.group(2) or "").strip().lstrip("#-").strip()
         holds[int(match.group(1))] = reason or "hold.txt"
     return holds
+
+
+def _main_commit_history(
+    runner: Runner, gh_env: dict[str, str], limit: int = MAIN_RED_HISTORY_LIMIT
+) -> list:
+    """SHA des `limit` derniers commits de `main`, du plus recent au plus ancien.
+
+    L'historique est lu en UN appel : c'est lui qui remplace la lecture de la
+    seule tete, puisque le verdict a juger n'est pas forcement celui de la
+    tete (point 1 de la revue ai-01 du 2026-11-10).
+    """
+    result = runner.run(
+        [
+            "gh", "api",
+            f"repos/{REPO}/commits?sha=main&per_page={limit}",
+            "--jq", ".[] | .sha",
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        raise CannotRunError(
+            "lecture de l'historique de main impossible pour la sentinelle CI"
+        )
+    shas = []
+    for line in (result.stdout or "").splitlines():
+        sha = line.strip().strip('"')
+        if re.fullmatch(r"[0-9a-fA-F]{7,40}", sha):
+            shas.append(sha)
+    return shas
+
+
+def _scripts_tests_check(
+    runner: Runner, gh_env: dict[str, str], sha: str
+) -> "dict | None":
+    """Check ``Scripts Tests (CPU)`` d'un commit, ou None si ce check n'existe pas.
+
+    None signifie « pas de signal sur ce commit » -- une poussee qui ne
+    touche pas les chemins du workflow, ou un check renomme. Ce n'est ni un
+    vert ni un rouge : la remontee continue.
+    """
+    checks_result = runner.run(
+        [
+            "gh", "api", f"repos/{REPO}/commits/{sha}/check-runs?per_page=100",
+            "--paginate", "--jq",
+            ".check_runs[] | {name, conclusion, status, started_at, output, details_url} | tojson",
+        ],
+        env=gh_env,
+    )
+    if checks_result.returncode != 0:
+        raise CannotRunError(f"lecture des checks de {sha} impossible")
+    try:
+        checks = [
+            json.loads(line) for line in (checks_result.stdout or "").splitlines()
+            if line.strip()
+        ]
+    except ValueError as exc:
+        raise CannotRunError(f"reponse des checks de {sha} non JSON") from exc
+    scripts_checks = [row for row in checks if row.get("name") == SCRIPTS_TESTS_CHECK]
+    if not scripts_checks:
+        return None
+    return max(scripts_checks, key=lambda row: str(row.get("started_at") or ""))
+
+
+def _job_id_of_check(check: dict) -> str:
+    """Identifiant du job GitHub Actions qui a produit ce check-run.
+
+    Le `details_url` d'un check-run de job porte le job : mesure sur le job
+    cite par le coordinateur (131524893709), il vaut
+    `https://github.com/jsboige/CoursIA/actions/runs/43316243195/job/131524893709`.
+    On retombe sur l'identifiant du check-run lui-meme, qui vaut le job
+    dans ce cas. Vide si rien n'est identifiable -- et alors on ne lit
+    AUCUNE etape : une lecture impossible ne vaut pas un verdict.
+    """
+    details_url = str(check.get("details_url") or "")
+    match = re.search(r"/job/(\d+)", details_url)
+    if match:
+        return match.group(1)
+    raw = str(check.get("id") or "").strip()
+    return raw if raw.isdigit() else ""
+
+
+def _first_failing_step(runner: Runner, gh_env: dict[str, str],
+                        check: dict) -> str:
+    """Nom de la PREMIERE etape en echec du job ("" si elle est illisible).
+
+    Une seule lecture de job par commit juge, et seulement dans le cas
+    `failure` sans test identifie. Le tri se fait sur le numero d'etape :
+    l'API renvoie les etapes dans l'ordre, mais le tri le rend explicite.
+    """
+    job_id = _job_id_of_check(check)
+    if not job_id:
+        return ""
+    result = runner.run(
+        [
+            "gh", "api", f"repos/{REPO}/actions/jobs/{job_id}",
+            "--jq",
+            '[.steps[] | select(.conclusion == "failure")'
+            ' | {n: .name, o: .number}] | sort_by(.o) | .[0].n // ""',
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ""
+    return (result.stdout or "").strip().strip('"')
+
+
+def _is_infra_step(step_name: str) -> bool:
+    """Vrai si l'etape nommee est une etape d'INFRASTRUCTURE."""
+    lowered = (step_name or "").lower()
+    return any(marker in lowered for marker in MAIN_RED_INFRA_STEP_MARKERS)
+
+
+def _identified_test(runner: Runner, gh_env: dict[str, str], check: dict) -> str:
+    """Nom du test en echec identifie dans le check, sinon dans le log du run.
+
+    Vide quand aucun test n'est identifie -- et c'est precisement ce cas
+    qui demande de regarder les ETAPES du job : un `failure` sans test
+    identifiable peut etre une panne d'infrastructure.
+    """
+    summary = str((check.get("output") or {}).get("summary") or "")
+    test_match = re.search(r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)", summary)
+    if test_match:
+        return test_match.group(1)
+    # Le check-run natif Actions contient souvent un resume sans le detail
+    # pytest. Dans ce cas, lire le log d'echec du run associe au check.
+    details_url = str(check.get("details_url") or "")
+    run_match = re.search(r"/actions/runs/(\d+)(?:/|$)", details_url)
+    if run_match:
+        log_result = runner.run(
+            ["gh", "run", "view", run_match.group(1), "--repo", REPO, "--log-failed"],
+            env=gh_env,
+        )
+        if log_result.returncode == 0:
+            test_match = re.search(
+                r"(?:FAILED|ERROR)\s+([^\s<]+(?:\s*::\s*[^\s<]+)*)",
+                log_result.stdout or "",
+            )
+            if test_match:
+                return test_match.group(1)
+    return ""
+
+
+def refresh_main_red_hold(
+    runner: Runner, gh_env: dict[str, str], hold_path: Path
+) -> None:
+    """Actualise la retenue globale depuis le dernier VERDICT DE CODE de `main`.
+
+    Ce qui est juge, et comment (#24828, revue ai-01 du 2026-11-10) :
+
+    1. **Un check en cours n'est pas un refus de demarrer.** On remonte
+       l'historique de `main` jusqu'au dernier commit qui porte un verdict
+       TERMINE de `Scripts Tests (CPU)`, et on juge celui-la. Refuser parce
+       que la tete est en cours serialiserait tous les merges sur la suite
+       lourde -- mesure du 2026-11-10 sur la flotte : mediane 26,6 min,
+       p90 112,8 min, et 69,7 % des runs annules par la poussee suivante.
+    2. **Seul `failure` pose la retenue.** `cancelled`, `timed_out` et les
+       autres conclusions sans verdict de code sont de l'INFRA (runner
+       perdu, annulation en rafale) : le verdict remonte au commit
+       precedent, comme au point 1.
+    3. **Fail-closed borne.** Si aucun des `MAIN_RED_HISTORY_LIMIT` derniers
+       commits ne porte de verdict termine, l'organe refuse de demarrer et
+       nomme la borne.
+    4. **Une `failure` sans test identifie peut etre une panne
+       d'infrastructure.** On lit alors les etapes du job : si la PREMIERE
+       etape en echec est une etape d'infrastructure (checkout, setup-python,
+       installation, purge HEAL), le commit est ecarte comme
+       `infra(failure-step:<nom>)` et le verdict remonte au commit
+       precedent, comme pour `cancelled`. Le cas mesure (12/11, run
+       43316243195) : le checkout avait echoue sur `curl 28` apres 19 min
+       de fetch, aucun test n'avait ete execute, et la sentinelle retenait
+       `main` sur une panne d'infrastructure.
+
+    La ligne posee par cette sentinelle est la seule que le chemin vert peut
+    retirer ; les retenues du coordinateur ne sont jamais touchees.
+    """
+    history = _main_commit_history(runner, gh_env, MAIN_RED_HISTORY_LIMIT)
+    if not history:
+        raise CannotRunError(
+            "historique de main vide pour la sentinelle CI ; refus fail-closed"
+        )
+
+    judged = None
+    skipped = []
+    for sha in history:
+        check = _scripts_tests_check(runner, gh_env, sha)
+        if check is None:
+            skipped.append((sha, "check-absent"))
+            continue
+        status = str(check.get("status") or "").lower()
+        conclusion = str(check.get("conclusion") or "").lower()
+        if status != "completed":
+            skipped.append((sha, f"en-cours({status or 'sans-statut'})"))
+            continue
+        if conclusion not in MAIN_RED_CODE_VERDICTS:
+            skipped.append((sha, f"infra({conclusion or 'sans-verdict'})"))
+            continue
+        test_name = ""
+        if conclusion == "failure":
+            test_name = _identified_test(runner, gh_env, check)
+            if not test_name:
+                # Aucun test identifie : la `failure` peut venir de
+                # l'infrastructure. UNE lecture de job, dans ce cas seul.
+                step = _first_failing_step(runner, gh_env, check)
+                if step and _is_infra_step(step):
+                    skipped.append((sha, f"infra(failure-step:{step})"))
+                    print(
+                        "merge_ready : sentinelle main-red -- commit "
+                        f"{sha[:9]} ecarte, premiere etape en echec "
+                        f"'{step}' (infrastructure) : le verdict remonte au "
+                        "commit precedent"
+                    )
+                    continue
+        judged = (sha, check, conclusion, test_name)
+        break
+
+    if judged is None:
+        raise CannotRunError(
+            "aucun verdict termine de {!r} sur les {} derniers commits de main "
+            "({} ecarte(s) : {}) ; refus fail-closed".format(
+                SCRIPTS_TESTS_CHECK, len(history), len(skipped),
+                ", ".join(f"{sha[:9]}:{motif}" for sha, motif in skipped[:5]),
+            )
+        )
+
+    sha, check, conclusion, test_name = judged
+
+    lines = hold_path.read_text(encoding="utf-8-sig").splitlines() if hold_path.exists() else []
+    owned = [line for line in lines if line.strip().startswith(f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")]
+    retained = [line for line in lines if line not in owned]
+    if conclusion == "success":
+        updated = retained
+    else:
+        test_name = test_name or "test-non-identifie-dans-le-check"
+        reason = (
+            f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}sha={sha} "
+            f"check={SCRIPTS_TESTS_CHECK} conclusion={conclusion} test={test_name}"
+        )
+        updated = [*retained, reason]
+    if updated != lines:
+        hold_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp_path = hold_path.with_name(hold_path.name + ".tmp")
+        tmp_path.write_text("\n".join(updated) + ("\n" if updated else ""), encoding="utf-8")
+        tmp_path.replace(hold_path)
+
+
+def clear_main_red_hold(hold_path: Path) -> bool:
+    """Retire UNIQUEMENT la ligne de la sentinelle du fichier de retenues.
+
+    Le chemin vert la retire deja au run suivant ; cette fonction existe pour
+    le cas ou le correctif d'un `main` rouge doit etre merge AVANT ce run --
+    la retenue globale saute aussi la PR qui repare le rouge (point 3 de la
+    revue ai-01 du 2026-11-10). Les retenues du coordinateur ne sont
+    jamais touchees. Renvoie True si une ligne a ete retiree.
+    """
+    if not hold_path.exists():
+        return False
+    lines = hold_path.read_text(encoding="utf-8-sig").splitlines()
+    kept = [
+        line for line in lines
+        if not line.strip().startswith(
+            f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")
+    ]
+    if kept == lines:
+        return False
+    tmp_path = hold_path.with_name(hold_path.name + ".tmp")
+    tmp_path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
+    tmp_path.replace(hold_path)
+    return True
 
 
 def scope_exclusion(path: str) -> str | None:
@@ -1583,9 +1912,18 @@ def evaluate_pr(
         if pstate != "MERGED":
             return skip(f"stacked-on-main:{parent}:{pstate}",
                         stack_state, stack_inc)
+    # Prelecture REST bon marche : ne pas payer les tests d'arbre fusionne
+    # pour une PR que l'etape 6 refuserait. L'etape 6 reste la garde finale
+    # contre une evolution de l'etat ou de la tete pendant ces tests.
+    pre_state, pre_live_head = mergeable_state_and_head(runner, pr, gh_env)
+    if pre_state not in ("clean", "unstable"):
+        return skip(f"mergeable-state:{pre_state or 'absent'}",
+                    stack_state, stack_inc)
+    if pre_live_head != view_head:
+        return skip("head-moved", stack_state, stack_inc)
     # 5quinquies. tests d'integrite sur l'arbre fusionne main + tete. Place
-    # apres tous les controles bon marche (il coute ~1 min) et avant le REST,
-    # qui reste le dernier pour garder la fenetre de course courte.
+    # apres tous les autres controles bon marche (il coute ~1 min) et avant le
+    # REST final, qui reste le dernier pour garder la fenetre de course courte.
     reason = combined_tree_reason(runner, pr, view_head, gh_env)
     if reason is not None:
         return skip(reason, stack_state, stack_inc)
@@ -1726,9 +2064,34 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
     hold_path = (
         args.hold_file if args.hold_file is not None else default_hold_path(journal_path)
     )
+    if args.clear_main_red_hold:
+        # Voie manuelle : aucune lecture GitHub, aucune PR evaluee. La ligne
+        # de la sentinelle seule est retiree ; les retenues du coordinateur
+        # restent intactes.
+        try:
+            removed = clear_main_red_hold(hold_path)
+        except OSError as exc:
+            print(
+                f"merge_ready : fichier de retenues {hold_path} illisible -- {exc}",
+                file=sys.stderr,
+            )
+            return 2
+        if args.json:
+            emit_output(
+                args, [], "main-red-hold-cleared" if removed else "main-red-hold-absent", 0
+            )
+        else:
+            print(
+                "merge_ready : ligne de la sentinelle retiree"
+                if removed else
+                "merge_ready : aucune ligne de la sentinelle a retirer"
+            )
+        return 0
     try:
         holds = load_holds(hold_path)
         token = resolve_token(active_runner)
+        refresh_main_red_hold(active_runner, {**os.environ, "GH_TOKEN": token}, hold_path)
+        holds = load_holds(hold_path)
     except CannotRunError as exc:
         print(f"merge_ready : impossible de demarrer -- {exc}", file=sys.stderr)
         return 2
@@ -1754,8 +2117,9 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
         if merged_count >= args.max:
             stopped_reason = "max-merges-reached"
             break
-        if pr in holds:
-            held = PRVerdict(pr, None, "skipped", f"hold:{holds[pr]}", False)
+        if MAIN_RED_HOLD_NUMBER in holds or pr in holds:
+            reason = holds.get(MAIN_RED_HOLD_NUMBER, holds.get(pr, "hold.txt"))
+            held = PRVerdict(pr, None, "skipped", f"hold:{reason}", False)
             results.append(held)
             try:
                 append_journal(journal_path, held)
@@ -1840,6 +2204,16 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
         type=Path,
         default=None,
         help="fichier de retenues (defaut : hold.txt a cote du journal)",
+    )
+    parser.add_argument(
+        "--clear-main-red-hold",
+        action="store_true",
+        help=(
+            "retire UNIQUEMENT la ligne de la sentinelle du fichier de "
+            "retenues, puis sort (aucun appel gh, aucune PR evaluee). "
+            "Sert au correctif d'un `main` rouge : la retenue globale saute "
+            "aussi la PR qui le repare."
+        ),
     )
     parser.add_argument(
         "--json",

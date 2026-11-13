@@ -1,5 +1,7 @@
 # Trousseau partagé `MyIA-Keys` — organe d'accès, bootstrap par machine, empreinte de preuve
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Détail durable de l'organe `scripts/secrets/agent_keyring.py`. La règle qui le gouverne reste
 [.claude/rules/secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — ce fichier ne pose
 aucune prescription nouvelle, il documente un outil et l'état vérifié de son déploiement.
@@ -162,6 +164,27 @@ Cette PR portait d'abord son propre correctif ; #17442 l'a livré entre-temps, a
 L'organe du trousseau réutilise cette mesure pour `get` au lieu d'en tenir une seconde. La leçon
 générale reste : **un test d'ignorance lancé dans ce clone mesure ce clone, pas le dépôt** — et une
 énumération est par construction aveugle au fichier qu'on ajoutera demain.
+
+## Quand le coffre semble absent — chercher l'arbre Drive fourché avant de conclure
+
+Deux pièges mesurés les 2026-11-09/10 : un `coffre : ABSENT` est un **défaut compté** —
+`cmd_doctor()` rend `EXIT_DEFECT` (1), jamais un feu vert — et une absence au chemin attendu
+ne prouve pas la perte du coffre.
+
+Le Drive partagé peut porter un **arbre jumeau fourché** (`Synchronisation (1)\` à côté de
+`Synchronisation\`) : le coffre vivait dans le jumeau figé au 29/10 pendant que l'arbre par
+défaut ne le portait plus. Avant de conclure « absent » :
+`ls "G:/Mon Drive/" | grep -i "Synchronisation ("`, puis comparer les copies des deux arbres
+(taille, SHA-256). `vault_candidates()` énumère ces jumeaux et `doctor` les signale par
+`CONFLIT` dès que plusieurs copies existent — arrêt **avant toute écriture**, même à contenu
+identique (mesure po-2023 du 2026-11-10 : `coffre : OK` + `CONFLIT 2 copies visibles`,
+rc=1). La **résolution du fork appartient à roo-extensions**, signalée sur le dashboard
+global — pas à un geste local de consolidation ou de suppression.
+
+On ne **reconstruit jamais** le coffre depuis un seul `master.env` : ce serait fabriquer une
+source unique de substitution. Laisser Drive synchroniser, relancer `doctor` ; la phase 6
+(retrait des `master.env` et `.env` rendus) reste bloquée tant qu'un coffre vivant n'est pas
+mesuré.
 
 ## Voir aussi
 

@@ -18,11 +18,7 @@
       "GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb",
       "GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb",
       "GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb",
-      "GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb",
-      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb",
-      "GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb",
-      "GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb",
-      "GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb"
+      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"
     ],
     "GameTheory/SocialChoice": [
       "GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb"
@@ -80,8 +76,8 @@
     "IIT/ICT-Series": [
       "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb",
       "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb",
-      "IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
-      "IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb",
       "IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb",
       "IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb",
       "IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb",
@@ -147,10 +143,6 @@
     "ML/ML.Net": [
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
       "ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb"
-    ],
-    "Probas": [
-      "Probas/Probas-CLT-Theoreme-Central-Limite.ipynb",
-      "Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb"
     ],
     "Probas/Applications": [
       "Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb"
@@ -224,20 +216,18 @@
       "Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb"
     ],
     "Search/Part3-Cas-pratiques": [
-      "Search/Part3-Cas-pratiques/App-11b-Picross-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-17b-VRP-Logistics-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb",
-      "Search/Part3-Cas-pratiques/App-1b-NQueens-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "Search/Part3-Cas-pratiques/App-2b-GraphColoring-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-2-GraphColoring-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb"
     ],
     "Search/Part4-Metaheuristics/MGS-vs-mealpy": [
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb",
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb",
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb"
+      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb"
     ],
     "Sudoku": [
       "Sudoku/Sudoku-14-BDD-Python.ipynb"

@@ -849,7 +849,7 @@ def test_corpus_scan_migration_compatible(path):
 #
 # Un appel chat ne vit pas seulement dans un carnet : des modules consommes
 # par les carnets portent des replis litteraux. Mesure firsthand (31/10) :
-# ``scripts/livecoding_video_pipeline.py`` repliait sur ``gpt-4o-mini`` via
+# ``scripts/slides/livecoding_video_pipeline.py`` repliait sur ``gpt-4o-mini`` via
 # ``os.environ.get("OPENAI_MODEL", ...)`` -- invisible d'un scan borne aux
 # carnets, et invisible aussi d'un scan .py avant le cas ``or`` ci-dessous.
 # ---------------------------------------------------------------------------

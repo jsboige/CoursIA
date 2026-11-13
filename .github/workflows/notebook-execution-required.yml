@@ -37,6 +37,7 @@ on:
       # verdict perime disponible pour toutes les PRs.
       - 'scripts/notebook_tools/notebook_tools.py'
       - 'scripts/ci/golden_set_verdict_key.py'
+      - '.github/workflows/notebook-execution-required.yml'
   workflow_dispatch:
     inputs:
       notebook_paths:
@@ -54,7 +55,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: notebook-execution-required-${{ github.ref }}
+  group: notebook-execution-required-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -74,7 +75,7 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
     # job herite de 360 min et peut figer un slot ephemere du parc local --
     # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
@@ -140,7 +141,7 @@ jobs:
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     needs: detect-changes
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
+    if: ((github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
     # job herite de 360 min et peut figer un slot ephemere du parc local --
     # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
@@ -281,7 +282,7 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Independent of notebook-change detection: the golden-set is a FIXED
     # certified core, re-executed whenever the manifest/lockfile/workflow
     # change (PR + main push) or on manual dispatch. The trigger paths above
@@ -308,16 +309,17 @@ jobs:
       # Reutilisation du verdict (#22468, tranche 1 ; levier 6 de #22461).
       # Mesure de #22468 : 19 runs sur 21 rejouaient la suite alors qu'aucune
       # entree du verdict n'avait bouge. La cle couvre le manifeste, le
-      # lockfile, l'executeur, la version de Python et le contenu octet pour
-      # octet de chaque carnet -- tout ce qui peut changer le verdict, et rien
-      # d'autre (le YAML du workflow en est exclu, il bouge pour des raisons
-      # qui ne l'affectent pas ; sa version est consignee dans la provenance).
+      # lockfile, l'executeur, le workflow appelant, la version de Python et le
+      # contenu octet pour octet de chaque carnet. Un changement du contrat
+      # du job invalide donc le verdict reutilisable.
       # Script stdlib-only : il tourne AVANT l'installation du lockfile, ce qui
       # est tout l'interet -- un verdict reutilise ne paie pas l'installation.
       - name: Compute golden-set verdict key
         id: verdict
         run: |
-          python scripts/ci/golden_set_verdict_key.py --out "${RUNNER_TEMP}/golden_verdict_key.json"
+          python scripts/ci/golden_set_verdict_key.py \
+            --workflow .github/workflows/notebook-execution-required.yml \
+            --out "${RUNNER_TEMP}/golden_verdict_key.json"
           # Heredoc plutot que `python -c` multi-ligne : un `-c` indente par le
           # YAML meurt en IndentationError (mesure en local avant commit).
           python - <<'PY'
@@ -342,6 +344,7 @@ jobs:
               "| manifeste | `%s` |" % comp["manifest_sha256"][:16],
               "| lockfile | `%s` |" % comp["lockfile_sha256"][:16],
               "| executeur | `%s` |" % comp["implementation_sha256"][:16],
+              "| workflow | `%s` |" % comp["workflow_sha256"][:16],
               "| carnets | %d |" % comp["notebook_count"],
               "| python | %s |" % comp["python_version"],
           ]

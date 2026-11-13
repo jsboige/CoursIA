@@ -93,6 +93,19 @@ def test_nonexistent_cell_citation_is_rejected():
         raise AssertionError("une citation de cellule inexistante doit être refusée")
 
 
+def test_uppercase_path_segment_is_rejected():
+    data = copy.deepcopy(load_taxonomy())
+    parts = data["concepts"][0]["path"].split("/")
+    parts[-1] = "SujetMajuscule"
+    data["concepts"][0]["path"] = "/".join(parts)
+    try:
+        validate_taxonomy(data)
+    except ValueError as error:
+        assert "segment de path en majuscules" in str(error)
+    else:
+        raise AssertionError("un segment de path en majuscules doit être refusé")
+
+
 def test_export_writes_parseable_skos_and_owl(tmp_path):
     skos_path = tmp_path / "compression.ttl"
     owl_path = tmp_path / "compression.owl"
