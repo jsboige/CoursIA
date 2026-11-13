@@ -1459,6 +1459,29 @@ def _governing_header(cells: list[dict], idx: int) -> dict | None:
     return None
 
 
+# Même reconnaissance des séparateurs initiaux que le lecteur de sections.
+_SECTION_RULE_RE = re.compile(r"^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$")
+
+
+def _section_header(cells: list[dict], idx: int) -> dict | None:
+    """Trouve le titre effectif de section, au-delà des codes intermédiaires.
+
+    Comme dans le lecteur, lignes vides et séparateurs horizontaux précédant
+    un titre ne masquent pas ce titre. La règle de lien générique reste distincte.
+    """
+    for cell in reversed(cells[:idx]):
+        if cell.get("cell_type") != "markdown":
+            continue
+        for line in "".join(cell.get("source", [])).split("\n"):
+            line = line.strip()
+            if not line or _SECTION_RULE_RE.match(line):
+                continue
+            if line.startswith("#"):
+                return cell
+            break
+    return None
+
+
 def _credited_example_code_indices(cells: list[dict]) -> set[int]:
     """Indices des cellules de code qui sont du contenu d'EXEMPLE GUIDE CREDITE.
 
@@ -1476,7 +1499,7 @@ def _credited_example_code_indices(cells: list[dict]) -> set[int]:
     for idx, cell in enumerate(cells):
         if cell.get("cell_type") != "code":
             continue
-        header = _governing_header(cells, idx)
+        header = _section_header(cells, idx)
         if header is not None and is_credited_example_header(header):
             out.add(idx)
     return out
