@@ -560,7 +560,7 @@ _CASES = [
     ("09e_Production_Exploitation.ipynb", _CLASSIF_CONFORME, "python3", "9e"),
     # Toute serie a prefixe (Coalitions-, Metajeux-, SocialChoice-) a une
     # base implicite sans index en tete : idx=None, classe conforme.
-    ("SocialChoice-01b-Lean-SocialChoice-Formal-Lean.ipynb", _CLASSIF_CONFORME, "lean4", None),
+    ("ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb", _CLASSIF_CONFORME, "lean4", None),
     # Controle negatif : sans zero-pad, la meme forme reste a renommer.
     ("3b-Typed-Decisions.ipynb", _CLASSIF_RENAME, "python3", "3b"),
     # Controle negatif du lookahead : `3d-01` est un prefixe de serie mixte,
