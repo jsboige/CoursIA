@@ -1,0 +1,10 @@
+- name: "Complexity-03e Barrieres et word RAM"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "L'interprete word RAM pedagogique est l'objet du source, sans moteur externe ; BigInteger conserve les mots de largeur arbitraire."
+  known_differences:
+    - "System.Random et Python random engendrent des instances distinctes."
+    - "Les mesures chronometriques dependent du runtime et de la machine."
