@@ -1069,7 +1069,8 @@ runtime — **autour de 1** : le coût/op est **plat** de N=1 à N=10 000.
    petites cellules.
 
 **Provenance.** Logs bruts hors dépôt, scratch de la lane
-(`D:/CoursIA-2/.tmp/sf-25635/results/`) ; analyse : médiane des 5 moyennes par (cellule,
+(sous-répertoire `sf-25635/results/`, chemin hors dépôt non versionné) ;
+analyse : médiane des 5 moyennes par (cellule,
 N, runtime), intervalles `[min,max]`. Document amont détaillé :
 `benchmarks/REGIME-operations-per-invoke-25635.md` (PR #112 de
 `MyIntelligenceAgency/semantic-fleet`).
