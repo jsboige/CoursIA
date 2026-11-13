@@ -72,8 +72,8 @@
             "exercices": 3,
             "cellules_code": 12,
             "cellules_md": 34,
-            "prose_chars": 10405,
-            "densite": 867,
+            "prose_chars": 11503,
+            "densite": 958,
             "densite_plancher": 1200,
             "kernel": "coursia-ml-training",
             "exigences": {
@@ -98,8 +98,8 @@
             "exercices": 3,
             "cellules_code": 12,
             "cellules_md": 34,
-            "prose_chars": 10771,
-            "densite": 897,
+            "prose_chars": 11869,
+            "densite": 989,
             "densite_plancher": 1200,
             "kernel": ".NET (C#)",
             "exigences": {
