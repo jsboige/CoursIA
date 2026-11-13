@@ -32,6 +32,8 @@ Un carnet posé à la racine d'une série est **légitime** quand le README de c
 
 Une série **plate** — tous ses carnets à la racine, sans dossier intermédiaire — n'est pas un défaut : c'est un choix de niveau, et il se dit. Le README de la série annonce que la série est plate et dit pourquoi (le sujet est commun, la numérotation est continue, aucun sous-arc ne se dessine).
 
+> État (mesuré sur `origin/main` au 2026-11-13) : les séries plates sont **Sudoku** (39/39 carnets à la racine), **Complexity** (26/26) et **NLP** (12/12) ; les trois déclarent leur platitude dans leur README. RL (29/40 à la racine + sous-série PostTraining) et GameTheory (101/142 + sous-séries) ne sont pas plates — leur structure est déclarée par leurs sous-séries, la règle 2 ne leur demande rien.
+
 ## Règle 3 — la série jumelle
 
 Deux séries qui enseignent le même plan sur deux moteurs ne sont pas une duplication tant que le dépôt **le déclare** : le README de chacune nomme **la série canonique** et **la variante déclarée**, et dit en une phrase ce qui diffère (le moteur, le format des entrées, l'API).
