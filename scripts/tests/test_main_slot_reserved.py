@@ -231,5 +231,64 @@ def test_le_check_signale_un_slot_absent(prefix_jetable):
         "un slot absent doit etre signale comme une derive")
 
 
+def _faux_binaires(tmp_path) -> tuple[Path, Path]:
+    """Faux `docker` et faux `gh` sur le PATH du test.
+
+    `docker inspect` repond comme si le slot EXISTAIT deja -- c'est le cas
+    qui ne doit pas mint de token. `gh` note chaque appel dans un fichier :
+    un appel = un token d'enregistrement mint.
+    """
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    marqueur_gh = tmp_path / "gh-appele"
+
+    docker = bin_dir / "docker"
+    docker.write_text(
+        "#!/bin/sh\n"
+        "if [ \"$1\" = \"inspect\" ]; then\n"
+        "  if [ \"$2\" = \"--format\" ]; then\n"
+        "    printf '4294967296 512 3000000000 true\\n'\n"
+        "  else\n"
+        "    printf 'CONTAINER\\n'\n"
+        "  fi\n"
+        "  exit 0\n"
+        "fi\n"
+        "exit 0\n",
+        encoding="utf-8")
+    gh = bin_dir / "gh"
+    gh.write_text(
+        "#!/bin/sh\n"
+        f"printf 'appel\\n' >> '{marqueur_gh}'\n"
+        "printf 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\\n'\n",
+        encoding="utf-8")
+    docker.chmod(0o755)
+    gh.chmod(0o755)
+    return bin_dir, marqueur_gh
+
+
+def test_le_mint_ne_se_produit_pas_si_le_slot_existe_deja(tmp_path):
+    """Un slot deja present ne doit MINT aucun token d'enregistrement.
+
+    Constat du coordinateur (13/11) : en `--apply`, le token etait mint et
+    son fichier LAISSE dans `$BASE`, car seule la branche de creation le
+    supprimait. Un jeton d'enregistrement valide, ecrit en clair, pour un
+    slot qui n'est meme pas cree : c'est un secret laisse sur le disque.
+    """
+    bin_dir, marqueur_gh = _faux_binaires(tmp_path)
+    base = tmp_path / "base"
+    proc = _run("--apply", env={
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+        "COURSIA_MAIN_BASE": str(base),
+        "COURSIA_MAIN_PREFIX": "coursia-test-jetable-token",
+    })
+    assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+    assert "[EXISTANT]" in proc.stdout, proc.stdout
+    assert not marqueur_gh.exists(), (
+        "aucun token ne doit etre mint quand le slot existe deja")
+    residus = list(base.glob(".token-registration.*")) if base.exists() else []
+    assert not residus, (
+        f"un fichier de token a ete laisse sur le disque : {residus}")
+
+
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(pytest.main([__file__]))

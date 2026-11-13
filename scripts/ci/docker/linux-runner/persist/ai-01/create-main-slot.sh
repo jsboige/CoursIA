@@ -97,6 +97,9 @@ TOOLCACHE_MOUNT="/opt/hostedtoolcache"
 # visible par `docker inspect`, comme pour tout conteneur -- le token
 # est court-lived, et seul ai-01 le monte.)
 TOKEN_FILE_PLACEHOLDER="<fichier-token-mode-600>"
+#: Chemin du fichier de token de l'EXUTION en cours. Global : le `trap` de
+#: fin de script le lit apres la sortie de la fonction qui l'a pose.
+TOKEN_FILE_PATH=""
 
 # Le label de la famille PR. Un slot reserve qui le porterait ne serait plus
 # reserve : il redeviendrait un client du pool PR, et la file de `main`
@@ -292,20 +295,12 @@ mode_create() {
   local name state token token_file created=0 skipped=0
   name="$(slot_name)"
 
-  if [ "$MODE" = "apply" ]; then
-    # Le `mkdir` n'a lieu qu'en APPLY. En `--dry-run`, le script ne doit
-    # laisser AUCUNE trace sur le disque : c'est ce qui le rend
-    # verifiable partout, y compris la ou le dossier ne doit pas
-    # exister (mesure : la suite de tests creeait le dossier).
-    mkdir -p "$BASE" || { err "impossible de creer ${BASE}"; exit 2; }
-    token="$(mint_token)" || { err "abandon : pas de token d'enregistrement"; exit 3; }
-    token_file="$(mktemp "${BASE}/.token-registration.XXXXXX")" \
-      || { err "impossible de creer le fichier de token dans ${BASE}"; exit 3; }
-    chmod 600 "$token_file"
-    printf 'ACTIONS_RUNNER_INPUT_TOKEN=%s\n' "$token" > "$token_file"
-    TOKEN_FILE_PLACEHOLDER="$token_file"
-  fi
-
+  # L'etat du slot est lu AVANT tout mint. Si le slot existe deja, on ne
+  # mint AUCUN token d'enregistrement : le secret n'atteint donc jamais
+  # le disque. Constat du coordinateur (13/11) : le token etait mint et
+  # son fichier LAISSE dans `$BASE`, car seule la branche de creation le
+  # supprimait -- un jeton d'enregistrement valide, ecrit en clair, pour un
+  # slot qui n'est meme pas cree.
   state="$(slot_state)"
   if [ "$state" != "ABSENT" ]; then
     log "[EXISTANT] ${name} — laisse en place (le script ne supprime jamais un slot)"
@@ -316,8 +311,26 @@ mode_create() {
     log ""
     created=$((created + 1))
   else
+    # Le `mkdir` n'a lieu qu'en APPLY, et seulement quand le slot va
+    # reellement etre cree. En `--dry-run`, le script ne doit laisser
+    # AUCUNE trace sur le disque : c'est ce qui le rend verifiable
+    # partout, y compris la ou le dossier ne doit pas exister (mesure :
+    # la suite de tests creeait le dossier).
+    mkdir -p "$BASE" || { err "impossible de creer ${BASE}"; exit 2; }
+    token="$(mint_token)" || { err "abandon : pas de token d'enregistrement"; exit 3; }
+    token_file="$(mktemp "${BASE}/.token-registration.XXXXXX")" \
+      || { err "impossible de creer le fichier de token dans ${BASE}"; exit 3; }
+    chmod 600 "$token_file"
+    printf 'ACTIONS_RUNNER_INPUT_TOKEN=%s\n' "$token" > "$token_file"
+    TOKEN_FILE_PLACEHOLDER="$token_file"
+    # Filet : le fichier de token ne doit jamais survivre au script, meme
+    # si la creation echoue. `TOKEN_FILE_PATH` est GLOBAL : un `trap` pose
+    # dans une fonction verrait sa variable locale disparue a la sortie
+    # (`set -u` la ferait echouer).
+    TOKEN_FILE_PATH="$token_file"
+    trap 'rm -f "${TOKEN_FILE_PATH:-}"' EXIT
     log "--- creation : ${name} ---"
-    eval "$(run_cmd)" || { err "echec de creation de ${name}"; rm -f "$token_file"; exit 4; }
+    eval "$(run_cmd)" || { err "echec de creation de ${name}"; exit 4; }
     rm -f "$token_file"
     created=$((created + 1))
   fi
