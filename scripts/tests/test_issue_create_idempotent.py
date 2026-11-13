@@ -17,7 +17,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest import mock
 
-_SCRIPT = Path(__file__).resolve().parent.parent / "issue_create_idempotent.py"
+_SCRIPT = Path(__file__).resolve().parent.parent / "coordination" / "issue_create_idempotent.py"
 _spec = importlib.util.spec_from_file_location(
     "issue_create_idempotent", _SCRIPT,
 )
@@ -206,6 +206,7 @@ class TestCLILive(unittest.TestCase):
                 "--window-minutes", "10",
             ],
             capture_output=True, text=True, timeout=30,
+            encoding="utf-8", errors="replace",
         )
         self.assertEqual(proc.returncode, 0, msg=proc.stdout + proc.stderr)
         self.assertIn("no-recent-duplicate", proc.stdout)
