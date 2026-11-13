@@ -322,7 +322,9 @@ class TTSResult(BaseModel):
     reference_id: str
     mp3_path: str
     duration_s: float = 0.0
-    seed: int = 0
+    # The seed the runtime reports (e.g. the ZONOS3 X-Seed header); None when
+    # the engine reports none — never a substituted value (acceptance #6).
+    seed: int | None = None
     status: str = "pending"
     whisper_wer: float = -1.0
     attempts: int = 0

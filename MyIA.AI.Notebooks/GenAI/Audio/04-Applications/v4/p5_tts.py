@@ -1440,36 +1440,42 @@ def _synthesize_narrator_zonos3(
     # consumes it); a render under the char-derived floor is degenerate.
     duration_s = audio_duration_wav(audio)
     floor_s = _zonos3_min_expected_s(plain_text)
-    if 0 < duration_s < floor_s:
+    # A 0s render is degenerate too: it must fail, not pass as "generated".
+    if duration_s < floor_s:
         raise NarratorZonos3Unavailable(
             f"seg {seg.seg_index}: ZONOS3 render {duration_s:.2f}s is under "
             f"the plausibility floor {floor_s:.2f}s for {len(plain_text)} "
             f"chars — degenerate render, not fast speech"
         )
 
-    # Write the rendered WAV: the narrator engine contract is an MP3 at
+    # Write the rendered audio: the narrator engine contract is an MP3 at
     # 192 kbps (matching the other narrator paths). Convert when pydub is
-    # available, otherwise keep the WAV and note it in the reference id.
+    # available, otherwise keep the WAV. `written_path` tracks the file that
+    # is actually on disk so the result never points at a .mp3 that was
+    # never written (a missing pydub writes a .wav, not the .mp3).
+    written_path = mp3_path
     try:
         from pydub import AudioSegment
 
         audio_segment = AudioSegment.from_file(io.BytesIO(audio), format="wav")
         buffer = io.BytesIO()
         audio_segment.export(buffer, format="mp3", bitrate="192k")
-        mp3_path.write_bytes(buffer.getvalue())
+        written_path.write_bytes(buffer.getvalue())
     except Exception:  # pragma: no cover — pydub/ffmpeg missing
-        mp3_path.with_suffix(".wav").write_bytes(audio)
+        written_path = mp3_path.with_suffix(".wav")
+        written_path.write_bytes(audio)
 
     return TTSResult(
         seg_index=seg.seg_index,
         speaker=seg.speaker,
         reference_id=_NARRATOR_ENGINE_REFERENCE_IDS["zonos3"],
-        mp3_path=str(mp3_path),
+        mp3_path=str(written_path),
         duration_s=duration_s,
         # The seed the runtime reports in X-Seed is the one recorded in
-        # the manifest (acceptance #6); the requested seed is the fallback
-        # when the header is absent.
-        seed=seed_used if seed_used is not None else seed,
+        # the manifest (acceptance #6: captured, never invented). When the
+        # header is absent the field stays None — substituting the requested
+        # seed here would record a value the runtime never reported.
+        seed=seed_used,
         status="generated",
         attempts=1,
         text_hash=text_hash,

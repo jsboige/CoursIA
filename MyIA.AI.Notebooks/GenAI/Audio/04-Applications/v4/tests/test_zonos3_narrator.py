@@ -259,6 +259,71 @@ def test_synthesize_batch_propagates_zonos3_hard_failure():
     )
 
 
+def _render_zonos3(*, seed_used, duration, text="Un texte de test.",
+                   pydub_absent=False):
+    """Drive _synthesize_narrator_zonos3 to completion with the ZONOS3 client
+    stubbed (no network, no GPU): zonos3_tts -> fixed blob + the reported
+    X-Seed, audio_duration_wav -> fixed duration, steering kept empty. When
+    pydub_absent, pydub is hidden so the .wav fallback branch is taken. The
+    fake audio blob is not a decodable WAV, so a present pydub also falls
+    through to that branch."""
+    import v4.p5_tts as p5_tts
+
+    seg = _build_seg(speaker="narrateur", text=text)
+    pydub_ctx = (mock.patch.dict(sys.modules, {"pydub": None})
+                 if pydub_absent else mock.MagicMock())
+    with pydub_ctx, \
+         mock.patch("v4.zonos3_client.zonos3_tts",
+                    return_value=(b"FAKEWAV", seed_used)), \
+         mock.patch("v4.zonos3_client.audio_duration_wav",
+                    return_value=duration), \
+         mock.patch("v4.zonos3_client.zonos3_controls", return_value={}), \
+         mock.patch.object(p5_tts, "_zonos3_annotations_for_segment",
+                           return_value=[]):
+        return p5_tts._synthesize_narrator_zonos3(
+            seg=seg,
+            fishaudio_text=text,
+            mp3_path=Path("/tmp/zone_render_test.mp3"),
+            seed=42,
+            text_hash="deadbeef",
+        )
+
+
+def test_synthesize_narrator_zonos3_records_none_seed_not_invented():
+    """The recorded seed is the X-Seed the runtime reports. When the header is
+    absent the result records None -- it does NOT substitute the requested
+    seed (acceptance #6: captured, never invented)."""
+    result = _render_zonos3(seed_used=None, duration=30.0)
+    assert result.seed is None
+
+
+def test_synthesize_narrator_zonos3_records_reported_seed():
+    """When the runtime reports an X-Seed, that exact value is recorded."""
+    result = _render_zonos3(seed_used=12345, duration=30.0)
+    assert result.seed == 12345
+
+
+def test_synthesize_narrator_zonos3_raises_on_zero_duration():
+    """A 0s render is degenerate and must raise, not pass as 'generated' (the
+    old `0 < duration_s < floor_s` guard let a 0s render through)."""
+    from v4.p5_tts import NarratorZonos3Unavailable
+
+    try:
+        _render_zonos3(seed_used=7, duration=0.0)
+    except NarratorZonos3Unavailable:
+        return  # success: 0s render rejected
+    raise AssertionError("a 0s render was not rejected as degenerate")
+
+
+def test_synthesize_narrator_zonos3_wav_fallback_path_in_result():
+    """When pydub is unavailable the render is written as a .wav; the result
+    must point at the .wav actually written, not the .mp3 that was never
+    produced."""
+    result = _render_zonos3(seed_used=None, duration=30.0, pydub_absent=True)
+    # Points at the .wav that was written (same base name), not the .mp3.
+    assert Path(result.mp3_path).name == "zone_render_test.wav"
+
+
 # ---------------------------------------------------------------------------
 # Steering resolver (v4/zonos3_steering.py)
 # ---------------------------------------------------------------------------

@@ -174,6 +174,10 @@ class SteeringResolution:
 #: ``"1.5"``, ``"arousal-1.5"``.  Reads the raw-magnitude form of an axis
 #: value (an optional axis name precedes the signed number).
 _SIGNED_NUMBER_RE = re.compile(r"[+-]?\d+(?:\.\d+)?\s*$")
+# The runtime reports these axes on a raw scale ~8x the pipeline's
+# normalized [-1, 1] dose; this divisor maps a parsed raw magnitude back
+# into the normalized range (see parse_axis_value).
+_RUNTIME_AXIS_UNIT_SCALE = 8.0
 
 
 def parse_axis_value(value: object) -> float | None:
@@ -206,7 +210,7 @@ def parse_axis_value(value: object) -> float | None:
         # The runtime unit for these axes is an order of magnitude larger
         # than the pipeline's normalized value; the mapping's dose_scale
         # carries that conversion, so normalize here.
-        return max(-1.0, min(1.0, magnitude / 8.0))
+        return max(-1.0, min(1.0, magnitude / _RUNTIME_AXIS_UNIT_SCALE))
     return None
 
 
