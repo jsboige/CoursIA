@@ -1,0 +1,11 @@
+- name: "RL-08 Dyna-Q Planning"
+  family: RL/.NET-Parity
+  python: MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-08-Dyna-Q-Planification-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux côtés sont des implémentations pédagogiques tabulaires from-scratch : le contenu source n'invoque ni Gym/SB3 ni moteur RL Python, et l'objectif est d'enseigner le modèle, Dyna-Q, Dyna-Q+ et les rollouts. Le jumeau C# emploie le BCL .NET 9 (tableaux, dictionnaires, générateur aléatoire, PriorityQueue dans l'exercice, SVG inline) ; aucun moteur externe pertinent n'est omis. parity_level semantic : mêmes concepts et expériences, implémentations idiomatiques différentes."
+  known_differences:
+    - "Port C# exécuté dans le kernel .net-csharp disponible, qui expose .NET 10.0.14 ; le code ne dépend que du BCL et reste compatible .NET 9. Les flux Random C# et NumPy ne sont pas censés produire des trajectoires bit-à-bit identiques."
+    - "Les figures C# sont des SVG statiques inline ; la source Python utilise matplotlib. Le modèle déterministe, BFS oracle, Q-Learning, Dyna-Q, Blocking Maze/Dyna-Q+, budget d'expériences et rollouts sont portés. Les sorties et seuils restent ceux mesurés dans chaque runtime."
+    - "Trois exercices C# compilables restent volontairement non résolus : Shortcut Maze, prioritized sweeping et balayage de kappa."

@@ -434,7 +434,7 @@ Leur numéro nu reste un héritage de leur livraison, pas une étape du parcours
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
 | 19b | [Co-design bilevel](GameTheory-19b-Bilevel-PPO-Python.ipynb) | Stackelberg PPO (Dai et al., ICLR 2026) rejoué à l'échelle pédagogique : le leader apprend la morphologie d'un nageur jouet, le suiveur est un PPO — le co-design bat la morphologie fixée, l'ablation adapté-contre-figé reste non tranchée à cette échelle | Python | Recherche |
-| 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart au jeu myope vaut exactement 2γ, et l'adversaire qui conteste la transition le capte (ex-26, renum #14944) | Python | Recherche |
+| 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart entre valeur statique et valeur dynamique vaut 2γ sans mesurer à lui seul un gain de planification, et l'adversaire qui conteste la transition l'annule (ex-26, renum #14944) | Python | Recherche |
 | 23 | [Failles légales](GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb) | Les règles fiscales comme jeu formel (distillation de l'article Lexifina, 11/2026) : un BFS borné retrouve le backdoor Roth sans qu'on le lui décrive, et le compagnon Lean `LegalLoophole/Toy` du lake de la série prouve le plafond à toute profondeur et l'optimalité du témoin sans taxe — chaque coup du plan est légal, la faille est dans les règles (#25686) | Python | Recherche |
 | — | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
 | — | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
@@ -491,6 +491,10 @@ Les jumeaux C# s'exécutent avec .NET Interactive (.NET 9) :
 dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
+
+#### Parité des jeux stochastiques (22)
+
+Le carnet [GameTheory-22 en Python](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) possède un [jumeau C#](GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb). Les expériences à deux états gardent les mêmes gains, transitions et budgets : l’écart entre valeur statique et valeur dynamique vaut analytiquement 2γ à l’état 0 du modèle, et zéro à l’état absorbant ; évalués sur la même partie, les deux départages du joueur myope obtiennent 2 (il reste) et 3,8 (il saute). NumPy/Matplotlib deviennent des tableaux BCL et un SVG statique ; les exercices C# ajoutent des contrôles sur les appels et traces réellement observés. Les valeurs itérées restent des approximations numériques.
 
 ### Vérification et configuration
 
