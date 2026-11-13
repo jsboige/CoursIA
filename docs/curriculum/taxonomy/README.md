@@ -55,6 +55,19 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 
 Les tranches suivantes étendront la série aux sous-séries de `Search/` (autres parties du catalogue) et aux carnets de `Part1-Foundations` non couverts ici — ajoutées au même `search.json`, une PR par tranche, sur ce même modèle.
 
+## Série Planners — tranche 1 (cœur classique : formulation → PDDL → espace d'états → Fast Downward → heuristiques → domaines)
+
+`planners.json` étend le même format à la série **Planners**, sur le **cœur classique** de la série : six carnets (`01-Foundation` : `Planners-01-Introduction`, `02-PDDL-Basics`, `03-State-Space` ; `02-Classical` : `04-Fast-Downward`, `05-Heuristics`, `06-Domains`, versions `-Python`) et 26 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; l'arbre de carnets porte ici le niveau **sous-série** (`Planners/01-Foundation` et `Planners/02-Classical`). Les **prérequis** relient les carnets entre eux (par ex. la formulation du problème avant PDDL et la recherche d'états, la recherche d'états avant Fast Downward, PDDL avant les domaines). Chaque concept cite les cellules de carnet où il est enseigné ; ceux qui s'y rattachent (formulation, PDDL, planification comme recherche d'états, heuristiques de planification) nomment en outre le chapitre **AIMA ch. 10** correspondant dans leur définition, les concepts sans équivalent AIMA (Fast Downward, graphe de planification, LM-cut, satisficing, les heuristiques h^max/h^add/FF/landmarks, les domaines de référence) n'en citant aucun.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/planners.json \
+  --skos-output /tmp/planners.ttl \
+  --owl-output /tmp/planners.owl
+```
+
+Les tranches suivantes étendront la série aux sous-séries avancées de `SymbolicAI/Planners/` (planification sous incertitude, planification temporelle, SAT-based) et aux autres carnets de `01-Foundation` / `02-Classical` non couverts ici — ajoutées au même `planners.json`, une PR par tranche, sur ce même modèle.
+
 ## Série IIT — tranches 1+2 (cœur : réseau causal → Φ → CES → complexe majeur → coarse-graining → frontière → lentilles → objection Aaronson → formalisation Lean → partitionnement MIP)
 
 `iit.json` étend le même format à la série **IIT** (Integrated Information Theory), sur le **cœur** de la série : dix carnets (`IIT-01` à `IIT-09`, dont `IIT-08b` — 6 carnets Python PyPhi/Φ et 4 carnets Lean du lake `iit_lean`) et 28 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent ; les **prérequis** relient les carnets entre eux (par ex. le réseau causal avant Φ et la CES, Φ avant le complexe majeur, le problème de frontière, l'objection d'Aaronson et la formalisation Lean). Chaque concept cite les cellules de carnet où il est enseigné. IIT étant une théorie de la conscience spécifique, **aucun concept ne nomme de chapitre AIMA** (hors du périmètre d'AIMA) — les citations pointent les cellules des carnets uniquement.
