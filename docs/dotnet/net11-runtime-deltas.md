@@ -1068,7 +1068,7 @@ runtime — **autour de 1** : le coût/op est **plat** de N=1 à N=10 000.
    tiering » reste, comme en 2026-11-10, bornée par la dispersion inter-passes sur les
    petites cellules.
 
-**Provenance.** Logs bruts (15 fichiers) hors dépôt, scratch de la lane
+**Provenance.** Logs bruts hors dépôt, scratch de la lane
 (`D:/CoursIA-2/.tmp/sf-25635/results/`) ; analyse : médiane des 5 moyennes par (cellule,
 N, runtime), intervalles `[min,max]`. Document amont détaillé :
 `benchmarks/REGIME-operations-per-invoke-25635.md` (PR #112 de
