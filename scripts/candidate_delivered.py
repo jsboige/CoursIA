@@ -148,9 +148,23 @@ from delivery_grammar import (  # noqa: E402
     ATTESTED,
     REVOKED,
     attestation_state,
+    delivery_state,
 )
 
 LABEL_DEFAULT = "candidate-delivered"
+
+# #25082 -- la classe `consolidation` : le LABEL, et lui seul. C'est le meme
+# predicat que `pick_idle_grain.is_consolidation` (parite epinglee par
+# `test_parite_de_la_classe_consolidation_avec_le_tapis`). Il est recopie ici
+# en trois lignes plutot qu'importe : ce fichier tourne en CI depuis un
+# sparse-checkout qui ne peut pas heberger `pick_idle_grain` (#23762).
+CONSOLIDATION_TAG = "consolidation"
+
+
+def is_consolidation(labels: Iterable[str]) -> bool:
+    """True si l'issue porte le label `consolidation` (casse et espaces toleres)."""
+    return any((lab or "").strip().lower() == CONSOLIDATION_TAG
+               for lab in labels or [])
 LABEL_COLOR = "5319e7"  # purple -- "delivered, awaiting close triage"
 LABEL_DESC = "Referenced by a merged PR with no post-merge activity -- candidate for close triage (#10466)"
 
@@ -356,16 +370,17 @@ def classify(
         ``"active"``       -- a comment landed after the latest merge
         ``"candidate"``    -- delivered + silent: pose the label
         ``"attested"``     -- the thread carries a LIVING attestation:
-                              the `[INFO] candidate-delivered` forms, or
-                              `[RELEASED] ... acceptance deja couverte`.
-                              Grammaire **ETROITE** : la forme
-                              `[DELIVERED] lane X -- PR #N` et le dossier
-                              `[CLOSURE PREFLIGHT]` de verdict CLOSE
-                              n'arment **pas** le label (cf.
-                              `delivery_grammar.attestation_state`, qui
-                              exclut la premiere et que le labeler
-                              interroge avec `dossier=False`) : pose the
-                              label (#24461)
+                              the `[INFO] candidate-delivered` forms,
+                              `[RELEASED] ... acceptance deja couverte`, or
+                              -- depuis le residu #24461 (11/11) -- la forme
+                              `[DELIVERED] lane X -- PR #N` SANS clause
+                              `paths:`. Le dossier `[CLOSURE PREFLIGHT]`
+                              n'arme pas le label (`dossier=False`).
+                              **Exception, classe `consolidation`** (#25082) :
+                              la forme `[DELIVERED] lane` n'y arme PAS le
+                              label -- c'est une tranche d'un chantier
+                              multi-tranches (#22500), que le tapis n'ecarte
+                              que 48 h : pose the label (#24461)
         ``"attestation_revoked"`` -- the thread carries a RETRACTED
                               attestation (`[NOT-DELIVERED]` /
                               `[INFO] candidate-delivered-revoked`): remove
@@ -417,9 +432,25 @@ def classify(
     # ici armerait le label en local et pas en CI -- deux comportements pour
     # le meme depot. Le dossier reste le signal de l'adjoint, et le tapis
     # (qui tourne sur le depot complet) continue de le lire.
-    attestation = attestation_state(
-        [c.get("body") or "" for c in (issue.get("comments") or [])],
-        dossier=False)
+    #
+    # #25082 -- la classe `consolidation` garde la grammaire ETROITE. Une
+    # consolidation est un chantier MULTI-tranches (#22500) : la lane qui en
+    # livre une poste `[DELIVERED] lane X -- PR #N`, et le tapis n'ecarte
+    # l'issue que 48 h (`CONSOLIDATION_LAG_H`) -- « le label reste intact ».
+    # Depuis le residu #24461 (11/11), ce meme marqueur armait AUSSI le
+    # label : la regle des 48 h ne mordait plus, et la consolidation sortait
+    # du tapis pour de bon. Mesure du 13/11 : 6 des 27 consolidations
+    # ouvertes portaient le label, dont #20298 (six tranches livrees, cinq
+    # paliers restants) et #20316 (six tranches, trois restantes). Pour cette
+    # classe, seule une attestation PROPRE (`[INFO] candidate-delivered`,
+    # `[RELEASED] ... acceptance deja couverte`) arme le label ; le marqueur
+    # de lane y redevient ce qu'il est sur un chantier multi-tranches -- une
+    # tranche -- et l'issue retombe sur l'heuristique de references.
+    bodies = [c.get("body") or "" for c in (issue.get("comments") or [])]
+    if is_consolidation(labels):
+        attestation = delivery_state(bodies, lane_marker=False, dossier=False)
+    else:
+        attestation = attestation_state(bodies, dossier=False)
     if attestation == ATTESTED:
         return ("attested",
                 "attestation de livraison vivante dans le fil "
