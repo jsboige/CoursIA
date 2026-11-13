@@ -374,25 +374,44 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
     return False
 
 
+# Les marqueurs d'un refus de QUOTA, et eux seuls. Un 403 de DROIT
+# ("Resource not accessible by integration") porte le meme code que le
+# refus de quota : le code ne suffit donc pas a distinguer les deux.
+# (`remarque du coordinateur sur #26270`, 2026-11-13)
+QUOTA_MARKERS: tuple[str, ...] = (
+    "rate limit",
+    "secondary rate",
+    "too many requests",
+    "quota",
+)
+
+
 def is_quota_refusal(stderr: str) -> bool:
     """Le POST a-t-il ete refuse PAR LE QUOTA (et non par un autre defaut) ?
 
-    Une reponse de quota porte 403 et parle de `rate limit` ou de quota ;
-    une autre erreur (droit, nom invalide, payload refuse) doit etre
-    signalee telle quelle, sans nouvelle tentative qui la republierait
-    indefiniment.
+    Une reponse de quota parle de `rate limit`, `secondary rate`, `too many
+    requests` ou `quota` ; elle porte souvent 403, mais un 403 de DROIT
+    (`Resource not accessible by integration`) porte le meme code : le code
+    seul ne distingue pas les deux, et une relance sur un refus de droit
+    republierait indefiniment une publication qui echouera toujours.
+
+    Une autre erreur (droit, nom invalide, payload refuse) doit etre
+    signalee telle quelle, sans nouvelle tentative.
     """
     lowered = (stderr or "").lower()
-    return ("403" in lowered or "rate limit" in lowered
-            or "quota" in lowered or "too many requests" in lowered)
+    return any(marker in lowered for marker in QUOTA_MARKERS)
 
 
 def latest_check_runs(repo: str, head_sha: str) -> dict[str, tuple[str, str]]:
     """Rend le check-run le PLUS RECENT de chaque nom, pour une tete.
 
     L'API rend les entrees **du plus recent au plus ancien** (mesure du
-    2026-11-12 : ids decroissants sur 214 entrees) : la premiere occurrence
-    d'un nom est donc son check-run le plus recent.
+    2026-11-12 : ids decroissants sur 214 entrees), mais elle ne
+    **documente** pas cet ordre. Le plus recent est donc designe par son
+    **identifiant** (`id`), pas par sa position : un tri par id rend le
+    resultat independant de l'ordre dans lequel l'API repond -- sinon un
+    ordre inverse ferait retenir un verdict perime
+    (`remarque du coordinateur sur #26270`, 2026-11-13).
 
     La valeur est le couple `(conclusion, title)`. Une jambe `skipped` n'est
     **pas** retenue : une jambe sautee n'a rien mesure et ne peut pas
@@ -420,17 +439,28 @@ def latest_check_runs(repo: str, head_sha: str) -> dict[str, tuple[str, str]]:
         return {}
     pages = payload if isinstance(payload, list) else [payload]
     latest: dict[str, tuple[str, str]] = {}
+    seen_id: dict[str, int] = {}
     for page in pages:
         if not isinstance(page, dict):
             continue
         for run in page.get("check_runs") or []:
             name = run.get("name")
-            if not name or name in latest:
+            if not name:
+                continue
+            run_id = run.get("id")
+            run_id = run_id if isinstance(run_id, int) else 0
+            known_id = seen_id.get(name)
+            if known_id is not None and known_id >= run_id:
+                # Un check-run plus recent existe deja pour ce nom.
                 continue
             if (run.get("status") == "completed"
                     and run.get("conclusion") == "skipped"):
+                # Une jambe sautee ne remplace pas un verdict reel : son id
+                # n'est donc pas retenu, pour qu'un verdict reel plus ancien
+                # reste eligible.
                 continue
             output = run.get("output") or {}
+            seen_id[name] = run_id
             latest[name] = (run.get("conclusion") or "",
                             output.get("title") or "")
     return latest

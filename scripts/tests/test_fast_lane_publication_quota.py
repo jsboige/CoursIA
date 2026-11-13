@@ -207,16 +207,16 @@ def test_le_compte_des_publications_est_dans_le_journal(monkeypatch, tmp_path,
 def test_lis_le_plus_recent_check_run_de_chaque_nom(monkeypatch):
     """`latest_check_runs` lit le PLUS RECENT de chaque nom.
 
-    L'API rend les entrees du plus recent au plus ancien : la premiere
-    occurrence d'un nom est donc son check-run le plus recent.
+    Le plus recent est designe par son **id**, pas par sa position dans la
+    reponse : l'ordre de l'API n'est pas documente.
     """
     payload = {
         "check_runs": [
-            {"name": "garde A", "status": "completed",
+            {"id": 30, "name": "garde A", "status": "completed",
              "conclusion": "success", "output": {"title": "garde A -- OK"}},
-            {"name": "garde B", "status": "completed",
+            {"id": 20, "name": "garde B", "status": "completed",
              "conclusion": "failure", "output": {"title": "garde B -- echec"}},
-            {"name": "garde A", "status": "completed",
+            {"id": 10, "name": "garde A", "status": "completed",
              "conclusion": "neutral", "output": {"title": "garde A -- neutre"}},
         ],
     }
@@ -231,6 +231,68 @@ def test_lis_le_plus_recent_check_run_de_chaque_nom(monkeypatch):
         "garde A": ("success", "garde A -- OK"),
         "garde B": ("failure", "garde B -- echec"),
     }
+
+
+def test_le_plus_recent_est_choisi_par_id_et_non_par_position(monkeypatch):
+    """Un ordre de reponse inverse ne doit pas changer le verdict retenu.
+
+    L'API rend aujourd'hui les entrees du plus recent au plus ancien, mais
+    elle ne documente pas cet ordre : si elle s'inversait, une
+    implementation « premiere occurrence » retiendrait un verdict perime.
+    """
+    payload = {
+        "check_runs": [
+            # ordre ANORMAL : l'ancien d'abord
+            {"id": 10, "name": "garde A", "status": "completed",
+             "conclusion": "neutral", "output": {"title": "garde A -- neutre"}},
+            {"id": 30, "name": "garde A", "status": "completed",
+             "conclusion": "success", "output": {"title": "garde A -- OK"}},
+        ],
+    }
+    monkeypatch.setattr(
+        fast_lane.subprocess, "run",
+        lambda cmd, **kw: subprocess.CompletedProcess(
+            cmd, 0, __import__("json").dumps(payload), ""))
+
+    latest = fast_lane.latest_check_runs("jsboige/CoursIA", "beef" * 10)
+
+    assert latest == {"garde A": ("success", "garde A -- OK")}
+
+
+def test_un_403_de_droit_nest_pas_un_refus_de_quota(monkeypatch):
+    """Un 403 de DROIT ne se relance pas : le republier ne le fera pas
+    disparaitre, et le code 403 ne distingue pas du quota."""
+    calls = []
+
+    def _fake_run(cmd, **kwargs):
+        calls.append(cmd)
+        return subprocess.CompletedProcess(
+            cmd, 1, "",
+            "gh: HTTP 403: Resource not accessible by integration")
+
+    monkeypatch.setattr(fast_lane.subprocess, "run", _fake_run)
+    monkeypatch.setattr(fast_lane.time, "sleep",
+                        lambda s: pytest.fail("pas de relance sans quota"))
+
+    ok = fast_lane.emit_check_run("jsboige/CoursIA", "beef" * 10, "garde",
+                                  "success", "titre", "resume", False)
+
+    assert ok is False
+    assert len(calls) == 1, "un refus de droit ne se relance pas"
+
+
+def test_les_marqueurs_de_quota_sont_reconnus(monkeypatch):
+    """Les quatre marqueurs mesures sont reconnus ; un 403 seul ne l'est pas."""
+    for message in (
+            "gh: HTTP 403: API rate limit exceeded for installation",
+            "gh: HTTP 403: You have exceeded a secondary rate limit",
+            "gh: HTTP 429: Too Many Requests",
+            "gh: HTTP 403: monthly quota exhausted"):
+        assert fast_lane.is_quota_refusal(message), message
+
+    assert not fast_lane.is_quota_refusal(
+        "gh: HTTP 403: Resource not accessible by integration")
+    assert not fast_lane.is_quota_refusal("gh: HTTP 422: Validation Failed")
 
 
 def test_une_jambe_skipped_ne_remplace_pas_un_verdict(monkeypatch):
