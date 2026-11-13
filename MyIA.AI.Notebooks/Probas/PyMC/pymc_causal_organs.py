@@ -8,7 +8,7 @@ que les adaptateurs cross-engine — notamment ``ict.bridges.pymc_enumerate``
 (PR #13921) — aient une cible **reellement observable**, plutot que de
 redeclarer localement et de verifier ICT contre une copie d'elle-meme.
 
-Le module frere ``Probas/DecisionTheory/Causal-Bridges/causal_organs.py``
+Le module frere ``Probas/Causalite/causal_organs.py``
 (livre par PR #14076) couvre les estimateurs Quasi-Experimental (DiD, IV).
 Le present module couvre l'autre ligne de la table d'acceptance #14051 :
 

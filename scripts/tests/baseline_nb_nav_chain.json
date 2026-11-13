@@ -532,33 +532,33 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
+      "notebook": "MyIA.AI.Notebooks/Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/Causalite"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
+      "notebook": "MyIA.AI.Notebooks/Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/Causalite"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
+      "notebook": "MyIA.AI.Notebooks/Probas/Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/Causalite"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
+      "notebook": "MyIA.AI.Notebooks/Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/Causalite"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
+      "notebook": "MyIA.AI.Notebooks/Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/Causalite"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/Causalite-07-Quasi-Experimentales-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges"
+      "notebook": "MyIA.AI.Notebooks/Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Probas/Causalite"
     },
     {
       "kind": "orphan_entry",

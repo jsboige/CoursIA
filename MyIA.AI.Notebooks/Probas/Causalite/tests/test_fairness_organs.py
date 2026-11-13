@@ -1,4 +1,4 @@
-"""Tests pytest pour fairness_organs.py -- Causal-Fairness (Epic #16620 P3).
+"""Tests pytest pour fairness_organs.py -- Équité causale (Epic #16620 P3).
 
 Même stratégie que test_dowhy_organs.py : on exécute réellement le SCM
 (pas de mock, H.1) et on vérifie que :

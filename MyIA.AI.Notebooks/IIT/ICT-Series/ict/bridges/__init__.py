@@ -5,7 +5,7 @@ Greffe 5 tranche 2/3 (issue #13903, Epic #4588) -- **cross-engine verification**
 Organes natifs reellement presents dans le depot (inventaire first-hand c.293) :
 
 - ``Quasi-Experimental.make_panel_did`` et ``Quasi-Experimental.iv_replay``
-  dans ``Probas/DecisionTheory/Causal-Bridges/Causalite-07-Quasi-Experimentales-Python.ipynb``
+  dans ``Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb``
 - ``PyMC-05.enumerate_scm`` et ``PyMC-05.p_y_given_m_x``
   dans ``Probas/PyMC/PyMC-05-Causal-Inference.ipynb``
 

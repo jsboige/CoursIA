@@ -3,7 +3,7 @@
 Greffe 5 tranche 2/3 (issue #13903), **decouple de ses copies** par la
 tranche 3 de l'issue #14051.
 
-Estimateurs de l'organe natif ``Probas/DecisionTheory/Causal-Bridges/
+Estimateurs de l'organe natif ``Probas/Causalite/
 Causalite-07-Quasi-Experimentales-Python.ipynb``, desormais consommes depuis le module canonique
 ``causal_organs`` qui vit a cote de ce notebook :
 
@@ -78,7 +78,7 @@ from ict import causal_attribution as ca
 #   quasi_experimental.py -> bridges -> ict -> ICT-Series -> IIT -> MyIA.AI.Notebooks
 #                                                                   ^ parents[4]
 _CAUSAL_BRIDGES_DIR = (
-    Path(__file__).resolve().parents[4] / "Probas" / "DecisionTheory" / "Causal-Bridges"
+    Path(__file__).resolve().parents[4] / "Probas" / "DecisionTheory" / "Causalité"
 )
 if str(_CAUSAL_BRIDGES_DIR) not in sys.path:
     sys.path.insert(0, str(_CAUSAL_BRIDGES_DIR))

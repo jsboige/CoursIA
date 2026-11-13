@@ -50,7 +50,7 @@ aggregee, pas la realisation particuliere.
 References
 ----------
 
-- Source canonique : ``MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/
+- Source canonique : ``MyIA.AI.Notebooks/Probas/Causalite/
   Causalite-07-Quasi-Experimentales-Python.ipynb`` cellules 5 et 40, branche ``origin/main``.
 - Duplication declaree : meme algorithme que PR #13921 tranche 2/3
   (``MyIA.AI.Notebooks/IIT/ICT-Series/ict/bridges/quasi_experimental.py``)
