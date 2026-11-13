@@ -5694,6 +5694,11 @@ def test_cache_v2_complete_is_read_by_the_reader_without_network(
         "additions": 10,
         "deletions": 1,
         "files": [{"path": "scripts/check_lane_claim.py"}],
+        # #25910 -- l'enumeration produit toujours cette cle (vide quand la PR
+        # ne renomme rien) : elle est ce qui distingue un cache courant d'un
+        # cache ecrit par une version anterieure, qui n'indexait pas les
+        # anciens chemins de renommage.
+        "renames": [],
     }]
     monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
     path = pig._build_open_prs_cache_for_belt("myia-ai-01:CoursIA-2")

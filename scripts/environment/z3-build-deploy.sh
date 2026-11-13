@@ -66,13 +66,23 @@ if [[ -z "$Z3_VERSION" ]]; then
     echo "ERROR: Microsoft.Z3 PackageReference version not found in $CSPROJ"
     exit 1
 fi
-NATIVE_LIB="libz3.dll"
-[[ "$(uname -s)" == "Linux" ]] && NATIVE_LIB="libz3.so"
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+case "$OS" in
+    Linux) NATIVE_LIB="libz3.so" ;;
+    Darwin)
+        NATIVE_LIB="libz3.dylib"
+        case "$ARCH" in
+            x86_64|arm64) ;;
+            *) echo "ERROR: unsupported macOS architecture: $ARCH"; exit 1 ;;
+        esac ;;
+    *) NATIVE_LIB="libz3.dll" ;;
+esac
 required_dlls=("Z3.Linq.dll" "Microsoft.Z3.dll" "$NATIVE_LIB" "ExpressionUtils.dll")
 if [[ -d "$DEPLOY_DIR" && "$FORCE" != "1" ]]; then
     missing=()
     for d in "${required_dlls[@]}"; do
-        [[ -f "$DEPLOY_DIR/$d" ]] || missing+=("$d")
+        [[ -s "$DEPLOY_DIR/$d" ]] || missing+=("$d")
     done
     if [[ ${#missing[@]} -eq 0 ]]; then
         echo ".deploy/ already complete (4 DLLs present). Set Z3_FORCE=1 to rebuild."
@@ -103,12 +113,19 @@ else
 fi
 
 # --- prepare .deploy/ ------------------------------------------------------------------
-rm -rf "$DEPLOY_DIR"
-mkdir -p "$DEPLOY_DIR"
+STAGE_DIR="$(mktemp -d "$SUBMODULE_DIR/.deploy-stage.XXXXXX")"
+WHEEL_DIR=""
+cleanup() {
+    [[ -z "$STAGE_DIR" ]] || rm -rf "$STAGE_DIR"
+    [[ -z "$WHEEL_DIR" ]] || rm -rf "$WHEEL_DIR"
+}
+trap cleanup EXIT
 
 # 1. wrapper + native solver from local build output
-cp "$BUILD_OUT/Z3.Linq.dll" "$DEPLOY_DIR/"
-cp "$BUILD_OUT/libz3.dll"   "$DEPLOY_DIR/"
+cp "$BUILD_OUT/Z3.Linq.dll" "$STAGE_DIR/"
+if [[ "$NATIVE_LIB" == "libz3.dll" ]]; then
+    cp "$BUILD_OUT/libz3.dll" "$STAGE_DIR/"
+fi
 
 # 2. managed dependencies from the NuGet package cache.
 #    dotnet build of a library does not copy managed deps into bin/ (resolved at
@@ -126,7 +143,7 @@ EXPR_UTILS="$NUGET_ROOT/miaplaza.expressionutils/1.2.0/lib/netstandard2.0/Expres
 for dep in "$Z3_MANAGED:Microsoft.Z3.dll" "$EXPR_UTILS:ExpressionUtils.dll"; do
     src="${dep%%:*}"; name="${dep##*:}"
     if [[ -f "$src" ]]; then
-        cp "$src" "$DEPLOY_DIR/$name"
+        cp "$src" "$STAGE_DIR/$name"
     else
         echo "ERROR: dependency not found in NuGet cache: $src"
         echo "  Run: dotnet restore $CSPROJ  (then re-run this script)"
@@ -134,26 +151,45 @@ for dep in "$Z3_MANAGED:Microsoft.Z3.dll" "$EXPR_UTILS:ExpressionUtils.dll"; do
     fi
 done
 
-# 3. Linux only: native libz3.so from the z3-solver wheel of the same Z3 release
-#    (the Microsoft.Z3 NuGet package has no linux-x64 native asset).
-if [[ "$NATIVE_LIB" == "libz3.so" ]]; then
+# 3. macOS x64 : bibliothèque native du même paquet NuGet que la DLL managée.
+#    Microsoft.Z3 4.12.2 ne fournit pas ARM64 : utiliser la wheel correspondante.
+if [[ "$OS" == "Darwin" && "$ARCH" == "x86_64" ]]; then
+    Z3_NATIVE="$NUGET_ROOT/microsoft.z3/$Z3_VERSION/runtimes/osx-x64/native/libz3.dylib"
+    if [[ ! -f "$Z3_NATIVE" ]]; then
+        echo "ERROR: macOS x64 native dependency not found: $Z3_NATIVE"
+        exit 1
+    fi
+    cp "$Z3_NATIVE" "$STAGE_DIR/libz3.dylib"
+fi
+
+# Linux et macOS ARM64 : bibliothèque native de la wheel z3-solver de même version
+#    (le paquet NuGet Microsoft.Z3 ne fournit pas de natif linux-x64).
+if [[ "$OS" == "Linux" || ( "$OS" == "Darwin" && "$ARCH" == "arm64" ) ]]; then
     WHEEL_DIR="$(mktemp -d)"
-    trap 'rm -rf "$WHEEL_DIR"' EXIT
-    WHEEL_PLATFORM="manylinux2014_$(uname -m)"
-    echo "Fetching libz3.so from z3-solver==$Z3_VERSION.0 ($WHEEL_PLATFORM)..."
+    if [[ "$OS" == "Linux" ]]; then
+        WHEEL_PLATFORM="manylinux2014_$ARCH"
+    else
+        WHEEL_PLATFORM="macosx_11_0_arm64"
+    fi
+    echo "Fetching $NATIVE_LIB from z3-solver==$Z3_VERSION.0 ($WHEEL_PLATFORM)..."
     if ! python3 -m pip download "z3-solver==$Z3_VERSION.0" --no-deps --only-binary=:all: \
             --platform "$WHEEL_PLATFORM" -d "$WHEEL_DIR" -q; then
         echo "ERROR: could not download z3-solver==$Z3_VERSION.0 for $WHEEL_PLATFORM (python3 -m pip required)."
         exit 1
     fi
-    python3 - "$WHEEL_DIR" "$DEPLOY_DIR/libz3.so" <<'PY'
+    python3 - "$WHEEL_DIR" "$STAGE_DIR/$NATIVE_LIB" "$NATIVE_LIB" <<'PY'
 import glob
 import sys
 import zipfile
 
-wheel = glob.glob(sys.argv[1] + "/z3_solver-*.whl")[0]
-with zipfile.ZipFile(wheel) as zf:
-    member = next(n for n in zf.namelist() if n.endswith("/libz3.so"))
+wheels = glob.glob(sys.argv[1] + "/z3_solver-*.whl")
+if len(wheels) != 1:
+    sys.exit("ERROR: expected exactly one z3-solver wheel")
+with zipfile.ZipFile(wheels[0]) as zf:
+    members = [n for n in zf.namelist() if n.endswith("/" + sys.argv[3])]
+    if len(members) != 1:
+        sys.exit("ERROR: expected exactly one native library in wheel")
+    member = members[0]
     with open(sys.argv[2], "wb") as out:
         out.write(zf.read(member))
 PY
@@ -163,13 +199,30 @@ fi
 echo ""
 echo "=== .deploy/ contents ==="
 for d in "${required_dlls[@]}"; do
-    if [[ -f "$DEPLOY_DIR/$d" ]]; then
-        size=$(( $(stat -f%z "$DEPLOY_DIR/$d" 2>/dev/null || stat -c%s "$DEPLOY_DIR/$d" 2>/dev/null) / 1024 ))
+    if [[ -s "$STAGE_DIR/$d" ]]; then
+        size=$(( $(stat -f%z "$STAGE_DIR/$d" 2>/dev/null || stat -c%s "$STAGE_DIR/$d" 2>/dev/null) / 1024 ))
         printf "  %-22s %6d KB\n" "$d" "$size"
     else
         echo "FAILED: missing $d"; exit 1
     fi
 done
+
+# Publier le répertoire vérifié ; conserver le précédent si le remplacement échoue.
+BACKUP_DIR=""
+if [[ -e "$DEPLOY_DIR" ]]; then
+    BACKUP_DIR="$(mktemp -d "$SUBMODULE_DIR/.deploy-backup.XXXXXX")"
+    rmdir "$BACKUP_DIR"
+    mv "$DEPLOY_DIR" "$BACKUP_DIR"
+fi
+if ! mv "$STAGE_DIR" "$DEPLOY_DIR"; then
+    if [[ -n "$BACKUP_DIR" ]]; then
+        mv "$BACKUP_DIR" "$DEPLOY_DIR" || echo "ERROR: restore previous deployment from $BACKUP_DIR"
+    fi
+    echo "ERROR: could not publish deployment."
+    exit 1
+fi
+STAGE_DIR=""
+[[ -z "$BACKUP_DIR" ]] || rm -rf "$BACKUP_DIR"
 
 echo ""
 echo "=== Z3.Linq fork build complete ==="
