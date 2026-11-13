@@ -31,25 +31,39 @@
 #                         verifiable partout (CI comprise).
 #   --check             : compare l'etat VIVANT (docker inspect) a la
 #                         specification ; sort en 1 sur derive (labels,
-#                         famille, cap memoire, etat de marche). C'est
-#                         l'organe du critere "le slot existe et il est
-#                         vraiment reserve".
+#                         image, cgroup-parent, cap memoire, etat de
+#                         marche). C'est l'organe du critere "le slot
+#                         existe et il est vraiment reserve".
 #   --apply             : cree le slot s'il est absent. Mint du registration
 #                         token via `gh` (GH_TOKEN fourni par l'environnement,
-#                         jamais en dur).
+#                         jamais en dur) ; le token est passe par
+#                         `--env-file` (fichier en mode 600, supprime apres
+#                         la creation) et non par `-e KEY=<valeur>`, qui
+#                         le lirait dans l'argv de `docker run`.
 #
 # LE REPLI ECRIT (quand le runner tombe)
 # ---------------------------------------
-# Un slot reserve qui tombe laisse le job de `main` en file : le workflow
-# `scripts-tests.yml` porte alors une entree `workflow_dispatch` nommee
-# `runner_override`, qui rejoue la MEME verification sur `ubuntu-latest` :
+# Un slot reserve qui tombe laisse le job de `main` en file. Le repli
+# REEL, aujourd'hui, est le rejeu du workflow :
 #
-#   gh workflow run scripts-tests.yml -f runner_override=ubuntu-latest
+#   gh workflow run scripts-tests.yml --ref main
 #
-# La commande est ecrit ici, dans le corps du workflow, et verrouillee par
-# `scripts/tests/test_main_slot_reserved.py` (qui verifie aussi que le
-# dry-run porte les bons labels et que le script REFUSE un label
-# `coursia-ephemeral`).
+# Ce que ce repli fait -- et ce qu'il ne fait pas : il rejoue la MEME
+# verification de `main`, mais il ne change PAS de runner. Le workflow
+# ne declare AUCUNE entree `workflow_dispatch` (`workflow_dispatch:` est
+# suivi de `permissions:` -- il n'y a pas de `inputs:`), donc passer
+# `-f runner_override=ubuntu-latest` n'existe pas : la commande serait
+# rejetee par GitHub. Le job CPU vise des labels STATIQUES, et ces
+# labels sont ceux du pool PR : le repli rend donc la main a la file, il
+# ne la court-circuite pas. C'est precisement la raison d'etre du slot
+# reserve.
+#
+# La commande est ecrit ici, dans le fichier que l'operateur ouvre quand
+# le runner tombe, et elle est verrouillee CONTRE le workflow par
+# `scripts/tests/test_main_slot_reserved.py` : le fichier designe existe,
+# il declare `workflow_dispatch`, et toute entree passee par `-f` y est
+# declaree. Une entree morte (comme le `runner_override` qui a ete
+# ecrit ici par erreur) fait rougir le test.
 #
 # EXEMPLE
 # -------
@@ -75,6 +89,15 @@ BASE="${COURSIA_MAIN_BASE:-$HOME/CoursIA-runners-main}"
 WORK_MOUNT="/home/runner/_work"
 TOOLCACHE_MOUNT="/opt/hostedtoolcache"
 
+# Le token d'enregistrement est passe par `--env-file`, et non par
+# `-e ACTIONS_RUNNER_INPUT_TOKEN=<valeur>` : un `-e` porte la VALEUR dans
+# l'argv de `docker run`, donc elle est lisible par `ps` pendant
+# l'execution. Le fichier porte le token, il est cree en mode 600 et
+# supprime juste apres la creation. (Le conteneur garde l'env : c'est
+# visible par `docker inspect`, comme pour tout conteneur -- le token
+# est court-lived, et seul ai-01 le monte.)
+TOKEN_FILE_PLACEHOLDER="<fichier-token-mode-600>"
+
 # Le label de la famille PR. Un slot reserve qui le porterait ne serait plus
 # reserve : il redeviendrait un client du pool PR, et la file de `main`
 # recommencerait a attendre derriere les PRs.
@@ -83,7 +106,10 @@ EPHEMERAL_LABEL="coursia-ephemeral"
 MODE="dry-run"
 
 usage() {
-  sed -n '2,58p' "$0" | sed 's/^# \{0,1\}//'
+  # L'en-tete est imprime jusqu'a la premiere ligne de CODE : le corte
+  # suit l'en-tete, il ne depend pas de son nombre de lignes (une
+  # edition de l'en-tete ne doit pas rendre `--help` faux).
+  sed -n '2,/^set -u$/p' "$0" | sed '$d' | sed 's/^# \{0,1\}//'
   exit "${1:-0}"
 }
 
@@ -130,7 +156,8 @@ fi
 slot_name() { printf '%s-%s' "$PREFIX" "$SLOT"; }
 
 # Commande de creation du slot. Le corps isole pour que `--dry-run` imprime
-# exactement la ligne executee en `--apply` (une seule source de verite).
+# exactement la ligne executee en `--apply` (une seule source de verite) --
+# au fichier de token pres, qui n'existe qu'au moment de l'execution.
 run_cmd() {
   local name slot_vol cfg_vol
   name="$(slot_name)"
@@ -147,7 +174,7 @@ docker run -d --name ${name} \\
   -v ${slot_vol}:${WORK_MOUNT} \\
   -v ${cfg_vol}:/home/runner/.runner \\
   -e RUNNER_MODE=persistent \\
-  -e ACTIONS_RUNNER_INPUT_TOKEN=\${TOKEN} \\
+  --env-file ${TOKEN_FILE_PLACEHOLDER} \\
   -e ACTIONS_RUNNER_INPUT_URL=https://github.com/${REPO} \\
   -e ACTIONS_RUNNER_INPUT_NAME=${name} \\
   -e ACTIONS_RUNNER_INPUT_LABELS=${LABELS} \\
@@ -225,6 +252,22 @@ mode_check() {
         | grep '^ACTIONS_RUNNER_INPUT_LABELS=' | sed 's/^/    /'
       rc=1
     fi
+    # L'IMAGE : un slot qui tourne sur une image differente n'est pas le
+    # slot specifie (le runner pourrait etre un autre, ou une version
+    # qui ne connait pas les labels).
+    image="$(docker inspect --format '{{.Config.Image}}' "$name" 2>/dev/null)"
+    if [ "$image" != "$IMAGE" ]; then
+      log "  DERIVE : image attendue '${IMAGE}', mesure '${image}'"
+      rc=1
+    fi
+    # Le `cgroup-parent` : le slot doit vivre dans la meme tranche de
+    # cgroups que le reste de la CI, sinon ses caps ne sont pas ceux
+    # qu'on croit (et il peut survived a l'arret de la tranche).
+    cgroup="$(docker inspect --format '{{.HostConfig.CgroupParent}}' "$name" 2>/dev/null)"
+    if [ "$cgroup" != "$CGROUP_PARENT" ]; then
+      log "  DERIVE : cgroup-parent attendu '${CGROUP_PARENT}', mesure '${cgroup}'"
+      rc=1
+    fi
   fi
   log ""
   if [ "$rc" -eq 0 ]; then
@@ -246,12 +289,21 @@ mint_token() {
 
 # --- mode --dry-run / --apply ----------------------------------------------
 mode_create() {
-  local name state token created=0 skipped=0
-  mkdir -p "$BASE"
+  local name state token token_file created=0 skipped=0
   name="$(slot_name)"
 
   if [ "$MODE" = "apply" ]; then
+    # Le `mkdir` n'a lieu qu'en APPLY. En `--dry-run`, le script ne doit
+    # laisser AUCUNE trace sur le disque : c'est ce qui le rend
+    # verifiable partout, y compris la ou le dossier ne doit pas
+    # exister (mesure : la suite de tests creeait le dossier).
+    mkdir -p "$BASE" || { err "impossible de creer ${BASE}"; exit 2; }
     token="$(mint_token)" || { err "abandon : pas de token d'enregistrement"; exit 3; }
+    token_file="$(mktemp "${BASE}/.token-registration.XXXXXX")" \
+      || { err "impossible de creer le fichier de token dans ${BASE}"; exit 3; }
+    chmod 600 "$token_file"
+    printf 'ACTIONS_RUNNER_INPUT_TOKEN=%s\n' "$token" > "$token_file"
+    TOKEN_FILE_PLACEHOLDER="$token_file"
   fi
 
   state="$(slot_state)"
@@ -265,7 +317,8 @@ mode_create() {
     created=$((created + 1))
   else
     log "--- creation : ${name} ---"
-    TOKEN="$token" eval "$(run_cmd)" || { err "echec de creation de ${name}"; exit 4; }
+    eval "$(run_cmd)" || { err "echec de creation de ${name}"; rm -f "$token_file"; exit 4; }
+    rm -f "$token_file"
     created=$((created + 1))
   fi
 
