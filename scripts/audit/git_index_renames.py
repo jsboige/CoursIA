@@ -46,7 +46,7 @@ import subprocess
 from pathlib import Path
 from typing import Iterable
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # Garde-fou anti-blocage : sur un clone PARTIEL (promisor/blob:none, le cas
 # de ce dépôt sur les postes de la flotte), git peut avoir besoin d'un blob
