@@ -8,7 +8,7 @@ pagetitle: "Probas - Programmation Probabiliste"
 series: Probas
 pedagogical_count: 93
 breakdown: DecisionTheory=38, Infer=21, PyMC=20, Applications=12, Fondations=2
-maturity: BETA=87, ALPHA=5, DRAFT=1
+maturity: BETA=88, ALPHA=4, DRAFT=1
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
@@ -416,7 +416,7 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET, logique) | modèle causal structurel, opérateur `do`, contrefactuels |
 | [Infer-05-Causal-Inference](Infer/Infer-05-Causal-Inference.ipynb) | Infer.NET (message passing) | backdoor, front-door, paradoxe de Simpson, médiation |
 | [PyMC-05-Causal-Inference](PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC (MCMC) | backdoor, front-door, contrefactuel bayésien |
-| [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
+| [ICT-5](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) · [ICT-6](../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | émergence causale, information effective de Hoel |
 
 Ce que le pont ajoute par rapport aux quatre notebooks pris isolément :
 

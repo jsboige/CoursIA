@@ -35,6 +35,14 @@ ANS répond à une autre limite : un code préfixe binaire non trivial paie au m
 
 Le palier 05 change de contrat : le réseau comprimé doit conserver une qualité utile, sans devoir restituer exactement ses poids initiaux. Quantifier réduit leur précision ; élaguer introduit des zéros ; distiller apprend un autre réseau à partir des sorties du premier. Le palier 06 revient au coût de représentation : augmenter la précision du modèle peut raccourcir les données tout en allongeant excessivement le modèle. L'optimum porte sur leur somme.
 
+### LZ77 en Python et C#
+
+| Python | C# | Moteur et vérifications |
+|---|---|---|
+| [LZ77 Python](Compression-03-LZ77-Python.ipynb) | [LZ77 C#](Compression-03-LZ77-CSharp.ipynb) | Algorithmes pédagogiques, fenêtres et copies chevauchantes ; aller-retour octet/hash, tableau de suffixes et comparaison avec zlib ou ZLibStream. |
+
+Le compagnon C# utilise .NET Interactive `.net-csharp`, .NET 9 et la BCL. Les limites du parse borné, les champs sérialisés et le coût du cadre y sont explicites ; les bornes d'entropie restent distinctes des flux réellement encodés.
+
 ## Approfondissements — Recherche
 
 ### Autour de 01 — codes et preuves (Recherche)

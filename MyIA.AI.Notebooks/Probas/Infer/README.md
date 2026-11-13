@@ -50,7 +50,7 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 
 | # | Notebook | Durée | Concepts |
 |---|----------|-------|----------|
-| 1 | [Infer-01-Setup](Infer-01-Setup.ipynb) | 15 min | Installation, premier modèle |
+| 1 | [Infer-01-Setup](Infer-01-Setup.ipynb) | 15 min | Installation, premier modèle ; [suite d’introduction : Infer-01b](#autour-de-01) |
 | 2 | [Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb) · [Approfondissement](#autour-de-02) | 50 min | Postérieurs, mélanges, Dirichlet |
 | 3 | [Infer-03-Factor-Graphs](Infer-03-Factor-Graphs.ipynb) | 45 min | Inférence discrète, Monty Hall |
 | 4 | [Infer-04-Bayesian-Networks](Infer-04-Bayesian-Networks.ipynb) | 55 min | CPT, D-séparation, causalité |
@@ -72,6 +72,39 @@ Le trait distinctif d'Infer.NET : le modèle déclaratif est **compilé** (via R
 ## Approfondissements
 
 Les notebooks lettrés complètent un palier précis du parcours principal. Leurs prérequis, objectifs, contenus détaillés et références restent associés à leur notebook parent.
+
+### Autour de 01
+
+#### [Infer-01b : Premiers modèles — introduction à Infer.NET](Infer-01b-Premiers-Modeles.ipynb)
+
+Cette accrétion fait le lien entre la configuration de l’environnement et les mélanges gaussiens :
+elle passe d’un premier modèle à variable `Variable<T>`, puis à l’apprentissage, la prédiction et
+la comparaison de modèles. Le carnet utilise des observations de temps de trajet définies dans le
+code pour illustrer ces mécanismes ; il ne constitue pas une validation sur des données réelles.
+
+**Enchaînement** : [Infer-01-Setup](Infer-01-Setup.ipynb) →
+[Infer-01b : Premiers modèles](Infer-01b-Premiers-Modeles.ipynb) →
+[Infer-02-Gaussian-Mixtures](Infer-02-Gaussian-Mixtures.ipynb).
+
+**Durée estimée indiquée par le carnet** : 2 h 30. Cette accrétion s’ajoute au parcours numéroté.
+
+**Prérequis** : Infer-01-Setup ; C# et .NET Interactive ; notions de probabilités, loi normale
+et inférence bayésienne.
+
+**Acquis ciblés** :
+
+- Représenter une quantité incertaine par `Variable<T>`, déclarer les dépendances du modèle et
+  interroger `InferenceEngine` pour obtenir des distributions postérieures conditionnées par les
+  observations (`ObservedValue`).
+- Distinguer précision et variance dans les paramètres gaussiens, puis interpréter la distribution
+  prédictive et les probabilités qu’elle induit.
+- Séparer définition, entraînement et prédiction dans des classes C# réutilisables (`CyclisteBase`,
+  `EntrainementCycliste`, `PredictionCycliste`), puis reprendre cette structure pour un mélange.
+- Mettre à jour les a priori d’une période avec les postérieurs de la précédente afin de poursuivre
+  l’apprentissage en ligne.
+- Représenter un mélange avec `Variable.Discrete` et `Variable.Switch`, puis comparer une
+  gaussienne simple au mélange au moyen de la preuve logarithmique (`log evidence` / facteur de
+  Bayes).
 
 ### Autour de 02
 
@@ -702,7 +735,7 @@ Cette extraction clarifie les deux fils du corpus Probas : la **modélisation ba
 
 **Positionnement** : le notebook [Infer-4](Infer-04-Bayesian-Networks.ipynb) n'abordait la causalité qu'en deux cellules isolées. Infer-5 en fait un traitement dédié et **distributionnel** : les effets causaux sont **calculés** par le moteur d'inférence Infer.NET via mutilation de graphe, là où le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) raisonne en Java propositionnel, et où [PyMC-4](../PyMC/PyMC-04-Bayesian-Networks.ipynb) démontre `P(Cloudy|do(Rain))` en MCMC.
 
-**Ponts causaux** : Infer-5 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-5](../PyMC/PyMC-05-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
+**Ponts causaux** : Infer-5 est le maillon **distributionnel par message passing** (Infer.NET, EP/VMP) d'un pont à quatre paradigmes autour du `do(·)` de Pearl — le jumeau symbolique [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) (Java propositionnel), le jumeau MCMC [PyMC-5](../PyMC/PyMC-05-Causal-Inference.ipynb), et la lecture par l'émergence causale [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb), où la distribution d'intervention `p(C)` uniforme **est** `do(X_t = x)`. Vue d'ensemble : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
 **Applications** : baromètre (confondeur), diagnostic médical (paradoxe de Simpson), tabac-cancer (front-door), requêtes contrefactuelles.
 

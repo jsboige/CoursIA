@@ -320,6 +320,47 @@ def test_classer_sans_d_marg_reste_compatible_avec_la_lecture_brute():
     assert classer_proxys(0, 3, 1, 0.5, 0.4) == "nouveau (renommage actif)"
 
 
+def test_concept_et_alias_ne_sont_pas_une_nouvelle_classe():
+    # Le concept existe, mais son action ne fait que renommer une action existante.
+    for inst in (0.0, 0.5):
+        assert classer_proxys(1, 1, 1, 0.0, inst, d_a_t_marg=0) == (
+            "ornamental (concept sans action ouverte)"
+        )
+    # Sans quotient explicite, la lecture historique reste brute.
+    assert classer_proxys(1, 1, 1, 0.0, 0.5) == "nouveau"
+    assert classer_proxys(1, 1, 1, 0.0, 0.0) == "nouveau (non institutionnalise)"
+
+
+def test_banc_concept_alias_et_action_reelle_sur_quatre_graines():
+    agents = ("auteur", "tiers")
+    g0 = EvolutiveGame(
+        agents=agents, lexicon=frozenset({"acte"}), actions=frozenset({"acte"}),
+        payoffs={(agent, action): 1.0 for agent in agents
+                 for action in ("acte", "acte_alias")},
+    )
+    coup = OntologicalMove(
+        proposer="auteur", new_concepts=("jargon",),
+        opened_actions={"jargon": ("acte_alias",)},
+    )
+    g1 = apply_ontology(g0, coup)
+    for seed in range(4):
+        alias = bancher_mecanisme(
+            "alias", g0, g1, coup, (coup,), equivalence={"acte_alias": "acte"},
+            horizon=20, n_sim=30, rng=np.random.default_rng(seed),
+        )
+        nouveau = bancher_mecanisme(
+            "action", g0, g1, coup, (coup,),
+            horizon=20, n_sim=30, rng=np.random.default_rng(seed),
+        )
+        assert alias.O_t == alias.dA_t == 1
+        assert alias.dA_t_marg == 0 and alias.P_R_marg == 0
+        assert alias.institutionnalisation > 0
+        assert alias.classe == "ornamental (concept sans action ouverte)"
+        assert alias.temoin and "O_t" in alias.temoin[0]
+        assert nouveau.dA_t_marg == 1 and nouveau.P_R_marg > 0
+        assert nouveau.institutionnalisation > 0 and nouveau.classe == "nouveau"
+
+
 def test_temoin_est_le_dual_exact_du_classifieur():
     # Propriete enforcee par test (mesuree empiriquement dans la review #23900
     # pt 5) : temoin vide <=> classe 'decoratif', sur TOUTE la grille.
@@ -457,3 +498,28 @@ def test_bench_verdict_porte_l_ouverture_marginalisee():
         institutionnalisation=0.0, I_R=10.0, classe="decoratif",
     )
     assert v.dA_t_marg == 0  # defaut : champ present, valeur neutre
+
+
+def test_fixed_predictor_rejects_undefined_distribution():
+    with pytest.raises(ValueError, match="distinctes"):
+        FixedSpacePredictor(("a", "a"))
+    p = FixedSpacePredictor(("a", "b"))
+    with pytest.raises(ValueError, match="observation"):
+        p.log_loss("a")
+    for epsilon in (-1.0, float("nan"), float("inf")):
+        with pytest.raises(ValueError, match="epsilon"):
+            p.log_loss("a", epsilon=epsilon)
+    assert p.log_loss("a", epsilon=1.0) == pytest.approx(1.0)
+    p.update("a")
+    assert p.log_loss("a") == pytest.approx(0.0)
+    assert p.log_loss("unknown") == pytest.approx(np.log2(3))
+
+
+def test_banc_lectures_brute_et_identite_partagent_tirages():
+    g0, eta = _banc_vote()
+    g1 = apply_ontology(g0, eta)
+    result = bancher_mecanisme(
+        "identite", g0, g1, eta, (eta,), equivalence={},
+        horizon=8, n_sim=3, rng=np.random.default_rng(92),
+    )
+    assert result.P_R == pytest.approx(result.P_R_marg, abs=1e-15)

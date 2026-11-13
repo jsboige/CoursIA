@@ -1,5 +1,7 @@
 # Gabarit de reference -- READMEs de series (MyIA.AI.Notebooks/)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Canevas commun pour l'harmonisation des READMEs de series (niveau 1) et de sous-series (niveau 2), Partie 2 de l'issue #2651. Chaque element du gabarit est **derive d'un exemplaire existant** du depot (recensement des 37 READMEs, commentaire #2651) : rien n'est invente, on generalise ce qui marche deja.
 
 Le README principal du depot donne le ton de reference (registre sobre, ouverture par une question, pas de jugement de valeur editorial) ; les READMEs de series emmenent le lecteur **plus loin**, au plus pres du contenu réel des notebooks.
