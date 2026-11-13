@@ -25,7 +25,7 @@ Le **point clé** ([CLAUDE.md § G.1](../../CLAUDE.md) vérif biblio c.741 — a
 |---|---|---|---|
 | **#16619** (PR-16619) | P2-1 | `2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb` (02-ML-Cours) — SHAP (Tree exact + Kernel brut), LIME, contrefactuels DiCE sur German Credit (vendé offline). Acceptance 7/7 — additivité Tree SHAP 1.1e-16, LIME R² 0.496 + instabilité σ≤0.0352 (6 seeds) | ✓ LIVRÉ (Hermès CONCERN LEVÉ) |
 | #16627 (PR-16627) | P1 EPIC #16620 | tree-SHAP correction sur feature catégorielle | ✓ LIVRÉ |
-| #16629 (PR-16629) | P3 EPIC #16620 | `Équité causale.ipynb` 31 cellules — famille TV (TV/TE/Exp-SE/NDE/NIE) | ✓ LIVRÉ |
+| #16629 (PR-16629) | P3 EPIC #16620 | `Causalite-08-Equite-Causale-Python.ipynb` — famille TV (TV/TE/Exp-SE/NDE/NIE) | ✓ LIVRÉ |
 | #16632 (PR-16632) | P4 EPIC #16620 | `Do-Calculus-Bridge.ipynb` enrichi 30→43 cellules — 4 tâches data-fusion R4, CHT L1→L2, jonction do-calculus ≅ conditional Shapley T9 | ✓ LIVRÉ |
 | #16639 (PR-16639) | P5a EPIC #16620 | Infer-5 médiation NDE + NIE = TE (énumération exacte) | ✓ LIVRÉ |
 | #16640 (PR-16640) | P5b EPIC #16620 | PyMC-05 médiation NDE + NIE = TE (sans interaction) | ✓ LIVRÉ |
@@ -33,7 +33,7 @@ Le **point clé** ([CLAUDE.md § G.1](../../CLAUDE.md) vérif biblio c.741 — a
 
 ## 3. Inventaire des notebooks existants preflight first-hand
 
-`Causalite/` contient 7 notebooks + 5 organs (`causal_organs.py`, `dowhy_organs.py`, `dowhy_iv_organs.py`, `dowhy_discovery_organs.py`, `dowhy_sensitivity_organs.py`) + `tests/`. **Aucun** notebook XAI/Shap dédié — la série s'arrête à l'identification causale sans couvrir l'**attribution** (XAI lecture boîte noire) ni la **jonction attribution↔causalité**. Le notebook comble donc un **gap explicite** que la table de lecture des 17 notebooks causaux (session 2026-09-18) a identifié.
+`Causalite/` contient la série et ses organs (`causal_organs.py`, `dowhy_organs.py`, `dowhy_iv_organs.py`, `dowhy_discovery_organs.py`, `dowhy_sensitivity_organs.py`) + `tests/`. **Aucun** notebook XAI/Shap dédié — la série s'arrête à l'identification causale sans couvrir l'**attribution** (XAI lecture boîte noire) ni la **jonction attribution↔causalité**. Le notebook comble donc un **gap explicite** que la table de lecture des carnets causaux (session 2026-09-18) a identifié.
 
 Convention noyau `coursia-ml-training` (Python 3, kernel `.venv`).
 
