@@ -4,7 +4,7 @@
 
 **Barreau déclaré** : quasi-expérimental (DiD imparfait), avec passage obligatoire par les trois réserves DiD décrites en §3.1 ci-dessous.
 
-**Conformité** : respecte les cinq exigences de §3 du protocole (date du changement, fenêtre pré/post, quantité, direction attendue, réfutation). Le branchement sur l'outillage est [`../../Probas/DecisionTheory/Causal-Bridges/Causalite-07-Quasi-Experimentales-Python.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/Causalite-07-Quasi-Experimentales-Python.ipynb) (livré, MERGED, lien vérifiable) — **aucune réimplémentation locale**.
+**Conformité** : respecte les cinq exigences de §3 du protocole (date du changement, fenêtre pré/post, quantité, direction attendue, réfutation). Le branchement sur l'outillage est [`../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) (livré, MERGED, lien vérifiable) — **aucune réimplémentation locale**.
 
 **Hors périmètre de ce document** :
 - collecte des données (grain séparé, à ouvrir après pré-inscription acceptée) ;
@@ -163,7 +163,7 @@ Conformément au périmètre de ce document, **aucune donnée n'est collectée, 
 ## 8. See also
 
 - [`Argument_Analysis_RelationalForms_Protocol.md`](Argument_Analysis_RelationalForms_Protocol.md) — protocole de l'EPIC #13303, dont ce document applique §3.
-- [`../../Probas/DecisionTheory/Causal-Bridges/Causalite-07-Quasi-Experimentales-Python.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/Causalite-07-Quasi-Experimentales-Python.ipynb) — outillage DiD livré, MERGED, lien vérifiable.
+- [`../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb`](../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) — outillage DiD livré, MERGED, lien vérifiable.
 - #13303 (EPIC parent Observatoire), #12680/#12682/#12683 (sister issues humour / désir / attachement).
 - #16410 — Cas 1, application de rencontre, DiD temporel.
 - #13310 — instrument `Dated_Graphs`.
