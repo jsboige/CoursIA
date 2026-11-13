@@ -185,3 +185,114 @@ def test_17437_litteral_app_epingle_a_la_derivation():
     assert mod.LIFT_OVERRIDE_LOGINS == {
         "myia-ai-01", APP_LOGIN_REST,
     }
+
+
+# --- pagination de la surface typee (#17437 relecture 2026-11-13) ------------
+#
+# Le defaut mesure par ai-01 : ``first:100`` rend les 100 lignes les PLUS
+# ANCIENNES, et ``data.update`` remplace la surface CLI COMPLETE. Sur une PR
+# de plus de 100 commentaires, une reserve RECENTE sortait de l'analyse et
+# B.0 rendait rc=0 — la porte s'ouvrait. Ces tests epinglent la pagination.
+
+
+def _page(nodes: list[dict], has_next: bool, cursor: str | None) -> dict:
+    return {"pageInfo": {"hasNextPage": has_next, "endCursor": cursor},
+            "nodes": nodes}
+
+
+def _graphql_page(comments: dict, reviews: dict) -> dict:
+    return {"data": {"repository": {"pullRequest": {
+        "comments": comments, "reviews": reviews}}}}
+
+
+def _user_line(login: str, body: str, hour: int) -> dict:
+    return {"author": {"login": login, "__typename": "User"},
+            "body": body, "createdAt": at(hour)}
+
+
+RESERVE_PAGE_2 = (
+    "Attention 2 nits:\r\n- il va falloir splitter\r\n"
+    "- l'attribution est fausse"
+)
+
+
+def _pages_avec_reserve_page_2() -> list[dict]:
+    """Page 1 : 100 commentaires anodins (hasNextPage). Page 2 : la reserve."""
+    benin = _user_line("jsboige", "note anodine", 1)
+    reserve = _user_line("jsboige", RESERVE_PAGE_2, 9)
+    return [
+        _graphql_page(_page([benin] * 100, True, "c1"),
+                      _page([], False, None)),
+        _graphql_page(_page([reserve], False, "c2"),
+                      _page([], False, None)),
+    ]
+
+
+def test_17437_surface_typee_pagine_page_2(monkeypatch):
+    """La page 2 est reellement demandee (curseur ``cAfter=c1``) et ses
+    lignes sont rendues : 101 commentaires, pas 100."""
+    pages = _pages_avec_reserve_page_2()
+    calls: list[list[str]] = []
+
+    def fake(args):
+        calls.append(list(args))
+        return pages[len(calls) - 1]
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+    out = mod._typed_author_surfaces(1)
+
+    assert len(out["comments"]) == 101
+    assert out["comments"][-1]["body"] == RESERVE_PAGE_2
+    assert len(calls) == 2
+    assert "cAfter=c1" in calls[1]
+    assert "cAfter=c1" not in calls[0]
+
+
+def test_17437_reserve_en_page_2_bloque(monkeypatch):
+    """LE test exige par la relecture : la reserve postee APRES la page 1
+    est analysee. Sans pagination, la surface remplacee s'arretait a la
+    page 1 et B.0 rendait rc=0 — la porte s'ouvrait."""
+    pages = _pages_avec_reserve_page_2()
+    calls: list[list[str]] = []
+
+    def fake(args):
+        calls.append(list(args))
+        return pages[len(calls) - 1]
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+    data = {
+        "number": 1, "title": "t", "author": {"login": "jsboige"},
+        "comments": [], "reviews": [],
+        "commits": [{"committedDate": at(19)}],
+    }
+    data.update(mod._typed_author_surfaces(1))
+    assert mod.analyse(data, [], MERGED)["blocked"] is True
+
+
+def test_17437_surface_typee_echec_page_2_rend_vide(monkeypatch):
+    """Echec en page 2 : la surface rend un dict VIDE (jamais une surface
+    partielle qui remplacerait la surface CLI complete). Fail-closed."""
+    pages = _pages_avec_reserve_page_2()
+    state = {"n": 0}
+
+    def fake(args):
+        state["n"] += 1
+        if state["n"] == 1:
+            return pages[0]
+        raise RuntimeError("gh muet en page 2")
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+    assert mod._typed_author_surfaces(1) == {}
+
+
+def test_17437_surface_typee_curseur_fige_rend_vide(monkeypatch):
+    """``hasNextPage`` vrai mais curseur qui n'avance pas : on s'arrete au
+    lieu de boucler, et on rend vide (fail-closed)."""
+    benin = _user_line("jsboige", "note", 1)
+
+    def fake(args):
+        return _graphql_page(_page([benin], True, "c1"),
+                             _page([], False, None))
+
+    monkeypatch.setattr(mod, "gh_json", fake)
+    assert mod._typed_author_surfaces(1) == {}

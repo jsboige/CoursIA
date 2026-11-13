@@ -172,51 +172,92 @@ def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
     ``author``/``body``/``createdAt``, ``author``/``body``/``submittedAt``/
     ``state``).
 
-    Echec (gh muet, payload inattendu) : dict vide — les surfaces CLI non
-    typees restent alors lues telles quelles, ou toute forme nue App
-    echoue les bornes d'auteur : fail-closed, jamais un crash du gate.
+    #17437 (relecture ai-01 2026-11-13) : la requete PAGINE (``after`` +
+    ``pageInfo``). Sans pagination, ``first:100`` rendait les 100 lignes
+    les PLUS ANCIENNES et ``data.update`` remplacait la surface CLI
+    COMPLETE : sur une PR de plus de 100 commentaires, une reserve recente
+    sortait de l'analyse et B.0 rendait rc=0 — la porte s'ouvrait. Le
+    plafond dur (50 pages = 5000 lignes par surface) rend un dict vide
+    plutot qu'une surface partielle : on retombe alors sur les surfaces CLI
+    non typees, ou une forme nue App echoue les bornes d'auteur —
+    fail-closed dans tous les cas, jamais un rc=0 fabrique.
+
+    Echec (gh muet, payload inattendu, plafond atteint) : dict vide — les
+    surfaces CLI non typees restent alors lues telles quelles, ou toute
+    forme nue App echoue les bornes d'auteur : fail-closed, jamais un crash
+    du gate.
     """
     query = """
-    query($owner:String!,$repo:String!,$n:Int!){
+    query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String){
       repository(owner:$owner,name:$repo){
         pullRequest(number:$n){
-          comments(first:100){nodes{author{__typename login} body createdAt}}
-          reviews(first:100){nodes{author{__typename login} body
-                                   submittedAt state}}
+          comments(first:100,after:$cAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{author{__typename login} body createdAt}}
+          reviews(first:100,after:$rAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{author{__typename login} body submittedAt state}}
         }
       }
     }"""
     owner, name = REPO.split("/")
-    try:
-        data = gh_json([
+    comments: list[dict] = []
+    reviews: list[dict] = []
+    c_after: str | None = None
+    r_after: str | None = None
+    for _ in range(50):
+        args = [
             "api", "graphql", "-f", f"query={query}",
             "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
-        ])
-        node = data["data"]["repository"]["pullRequest"]
-        comments = node["comments"]["nodes"]
-        reviews = node["reviews"]["nodes"]
-    except Exception:
-        return {}
-    if not isinstance(comments, list) or not isinstance(reviews, list):
+        ]
+        if c_after:
+            args += ["-F", f"cAfter={c_after}"]
+        if r_after:
+            args += ["-F", f"rAfter={r_after}"]
+        try:
+            data = gh_json(args)
+            node = data["data"]["repository"]["pullRequest"]
+            c_conn = node["comments"]
+            r_conn = node["reviews"]
+        except Exception:
+            return {}
+        c_nodes = c_conn.get("nodes")
+        r_nodes = r_conn.get("nodes")
+        if not isinstance(c_nodes, list) or not isinstance(r_nodes, list):
+            return {}
+        comments.extend(n for n in c_nodes if isinstance(n, dict))
+        reviews.extend(n for n in r_nodes if isinstance(n, dict))
+        c_info = c_conn.get("pageInfo") or {}
+        r_info = r_conn.get("pageInfo") or {}
+        c_more = bool(c_info.get("hasNextPage"))
+        r_more = bool(r_info.get("hasNextPage"))
+        if not c_more and not r_more:
+            break
+        next_c = c_info.get("endCursor") or c_after
+        next_r = r_info.get("endCursor") or r_after
+        # Curseur qui n'avance pas = page identique : on s'arrete plutot
+        # que de boucler, et on rend une surface vide (fail-closed).
+        if (c_more and next_c == c_after) or (r_more and next_r == r_after):
+            return {}
+        c_after, r_after = next_c, next_r
+    else:
+        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
+              "une surface typee (comments/reviews) — surface non remplacee, "
+              "fail-closed.", file=sys.stderr)
         return {}
     out: dict[str, list[dict]] = {}
-    if len(comments) == 100 or len(reviews) == 100:
-        print(f"  [!] PR #{pr}: plafond `first:100` atteint sur une surface "
-              "typee (comments/reviews) — d'eventuelles lignes "
-              "supplementaires ne sont PAS analysees.",
-              file=sys.stderr)
     if comments:
         out["comments"] = [
             {"author": c.get("author") or {}, "body": c.get("body") or "",
              "createdAt": c.get("createdAt")}
-            for c in comments if isinstance(c, dict)
+            for c in comments
         ]
     if reviews:
         out["reviews"] = [
             {"author": r.get("author") or {}, "body": r.get("body") or "",
              "submittedAt": r.get("submittedAt"),
              "state": r.get("state")}
-            for r in reviews if isinstance(r, dict)
+            for r in reviews
         ]
     return out
 
