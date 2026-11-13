@@ -199,7 +199,14 @@ class ScriptedRunner:
         # (``Bot`` = App confirmee). Une cle absente rend 404 : c'est le
         # silence fail-closed de la vraie API sur un login inexistant.
         user_types: dict[str, str] | None = None,
+        # #17437 (relecture 2026-11-12) : lignes de la surface REST typee
+        # ``pulls/N/reviews`` (forme REST brute : ``user.login`` suffixe,
+        # ``user.type``, ``submitted_at``, ``commit_id``). Defaut vide :
+        # l'organe retombe alors sur les lignes du payload ``pr view``
+        # (non typees) — le chemin des tests historiques.
+        rest_reviews: list[dict] | None = None,
     ):
+        self.rest_reviews = list(rest_reviews or [])
         self.user_types = user_types or {}
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
@@ -327,6 +334,14 @@ class ScriptedRunner:
             return mr.RunResult(0, self.auto_tree + "\n", "")
         if c[:1] == ["git"] and ("cat-file" in c or "merge-base" in c):
             return mr.RunResult(0, "", "")
+        if (c[:2] == ["gh", "api"] and "/pulls/" in c[2]
+                and c[2].split("?", 1)[0].endswith("/reviews")):
+            # #17437 : surface REST typee des reviews (preuve de type PAR
+            # LIGNE, relecture ai-01 2026-11-12). DOIT preceder la branche
+            # generique ``/pulls/`` (mergeable_state) : l'URL porte aussi
+            # ``/pulls/``. ``--slurp`` rend une liste de pages.
+            return mr.RunResult(
+                0, json.dumps([list(self.rest_reviews)]), "")
         if c[:2] == ["gh", "api"] and "/pulls/" in c[2]:
             row = self.pulls.pop(0) if len(self.pulls) > 1 else self.pulls[0]
             return mr.RunResult(0, json.dumps(row), "")
@@ -688,7 +703,8 @@ def test_mergeable_unknown_then_clean_merges(tmp_path):
     assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
     # 2 lectures en prelecture (unknown puis clean), 1 garde finale clean,
     # et un seul sommeil entre les deux lectures `unknown` et `clean`.
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == 3
+    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]
+                   and not c[2].split("?", 1)[0].endswith("/reviews")) == 3
     assert runner.sleeps == [mr.MERGEABLE_RETRY_SLEEP_S]
 
 
@@ -701,7 +717,9 @@ def test_mergeable_unknown_persistant_skippe(tmp_path):
     assert lines[-1]["reason"] == "mergeable-state:unknown"
     # La prelecture seule est payee : 1 lecture initiale + MERGEABLE_RETRIES
     # relectures, autant de sommeils ; la garde finale n'est pas atteinte.
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == mr.MERGEABLE_RETRIES + 1
+    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]
+                   and not c[2].split("?", 1)[0].endswith("/reviews")
+               ) == mr.MERGEABLE_RETRIES + 1
     assert len(runner.sleeps) == mr.MERGEABLE_RETRIES
 
 
@@ -1941,58 +1959,66 @@ def test_base_absente_fail_closed(tmp_path):
 #
 # Mesure ai-01 du 2026-11-04 : sous identite App, la porte ne trouvait pas
 # l'APPROVE — la voix du coordinateur etait cablee sur le seul login humain.
-# La voix compte desormais DEUX logins (``COORDINATOR_VOICES``), et le login
-# NU rendu par ``gh pr view --json reviews`` (auteur SANS champ de type,
-# mesure 2026-11-12) se resout par une sonde REST bornee
-# ``users/<login>[bot] --jq .type`` — fail-closed sur silence ou 404 (un
-# compte UTILISATEUR nomme comme le slug de l'App ne passe pas la porte).
+# La voix compte desormais DEUX logins (``COORDINATOR_VOICES``). Relecture
+# ai-01 du 2026-11-12 : la preuve d'identite est le TYPE PORTE PAR LA LIGNE
+# (REST ``pulls/N/reviews`` rend ``user.type`` ; GraphQL rend
+# ``author.__typename``), JAMAIS une sonde ``users/<slug>[bot]`` — la sonde
+# prouve que l'App existe, pas que l'auteur de la ligne EST l'App (un
+# compte UTILISATEUR homonyme du slug serait confondu avec elle). Une ligne
+# sans type est refusee ; l'orthographe canonique nue de l'humain
+# (``myia-ai-01``) reste valable sur la surface CLI non typee.
 
 APP_LOGIN_BARE = "coursia-lane-ai-01"
 APP_LOGIN_REST = "coursia-lane-ai-01[bot]"
 
 
+def rest_review(*, login: str, type_: str = "Bot",
+                state: str = "APPROVED", oid: str = HEAD,
+                submitted: str = "2026-09-25T03:00:00Z",
+                body: str = "") -> dict:
+    """Ligne de la surface REST typee ``pulls/N/reviews`` (forme brute)."""
+    return {
+        "user": {"login": login, "type": type_},
+        "state": state, "body": body,
+        "submitted_at": submitted, "commit_id": oid,
+    }
+
+
 def test_17437_approve_app_login_rest_compte(tmp_path):
-    """Orthographe REST (suffixee) : l'APPROVE de l'App est la voix du
+    """Orthographe REST TYPEE (``pulls/N/reviews`` : login suffixe +
+    ``user.type: Bot`` sur la ligne) : l'APPROVE de l'App est la voix du
     coordinateur — le chemin nominal, sans sonde."""
-    mr._APP_BARE_LOGIN_CACHE.clear()
-    view = default_view(reviews=[review_row(oid=HEAD, login=APP_LOGIN_REST)])
-    runner = ScriptedRunner(views={123: view})
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[rest_review(login=APP_LOGIN_REST)],
+    )
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[-1]["verdict"] == "would-merge"
-    # un login deja suffixe ne tire jamais la sonde
+    # la preuve vient de la ligne, jamais d'une sonde users/
     assert not any("users/" in f for f in runner.flat())
+    assert any("/reviews" in f for f in runner.flat())
 
 
-def test_17437_approve_app_login_nu_resolu_par_sonde(tmp_path):
-    """Orthographe gh-json (nue, sans type) : la sonde REST prouve le type
-    Bot et la voix compte — l'APPROVE sous App ne se perd plus."""
-    mr._APP_BARE_LOGIN_CACHE.clear()
+def test_17437_approve_app_login_nu_sans_type_refuse_meme_app_existante(tmp_path):
+    """LE test manquant de la relecture ai-01 : une ligne
+    ``{"login": "coursia-lane-ai-01"}`` SANS type, la sonde etant scriptee
+    a ``Bot`` (l'App existe bel et bien). Elle ne doit NI approuver NI
+    compter — la preuve est le type de la ligne, pas l'existence de l'App."""
     view = default_view(reviews=[review_row(oid=HEAD, login=APP_LOGIN_BARE)])
     runner = ScriptedRunner(
         views={123: view},
         user_types={f"users/{APP_LOGIN_BARE}[bot]": "Bot"},
     )
-    rc, lines, _ = run_organ(tmp_path, runner)
-    assert lines[-1]["verdict"] == "would-merge"
-    assert ["gh", "api", f"users/{APP_LOGIN_BARE}[bot]",
-            "--jq", ".type"] in runner.cmds()
-
-
-def test_17437_approve_app_login_nu_sonde_404_fail_closed(tmp_path):
-    """Fail-closed : la sonde rend 404 (pas d'App de ce slug — un compte
-    UTILISATEUR homonyme) — la forme nue ne passe PAS la porte."""
-    mr._APP_BARE_LOGIN_CACHE.clear()
-    view = default_view(reviews=[review_row(oid=HEAD, login=APP_LOGIN_BARE)])
-    # users/ non scriptee -> 404 par defaut du ScriptedRunner
-    runner = ScriptedRunner(views={123: view})
     _, lines, _ = run_organ(tmp_path, runner)
     assert lines[-1]["reason"] == "no-coordinator-approval"
+    # la sonde a disparu : meme scriptee, elle n'est plus appelee
+    assert not any("users/" in f for f in runner.flat())
 
 
 def test_17437_approve_app_login_nu_type_dans_payload_compte(tmp_path):
     """Preuve de type dans le payload (GraphQL ``__typename``) : la
     normalisation gh_identity suffit, sans sonde."""
-    mr._APP_BARE_LOGIN_CACHE.clear()
     view = default_view(reviews=[{
         "author": {"login": APP_LOGIN_BARE, "__typename": "Bot"},
         "state": "APPROVED", "body": "",
@@ -2005,14 +2031,44 @@ def test_17437_approve_app_login_nu_type_dans_payload_compte(tmp_path):
     assert not any("users/" in f for f in runner.flat())
 
 
-def test_17437_approve_app_d_une_autre_lane_ne_compte_pas(tmp_path):
-    """L'App d'une lane worker n'est pas la voix du siege : meme suffixee,
-    elle ne compte pas."""
-    mr._APP_BARE_LOGIN_CACHE.clear()
-    view = default_view(
-        reviews=[review_row(oid=HEAD, login="coursia-lane-po-2026[bot]")]
+def test_17437_approve_humain_surf_rest_typee_compte(tmp_path):
+    """L'humain sur la surface typee : ``user.type: User`` nu canonique —
+    la normalisation le laisse nu, il est la voix."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[rest_review(login="myia-ai-01", type_="User")],
     )
-    _, lines, _ = run_organ(tmp_path, ScriptedRunner(views={123: view}))
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+
+
+def test_17437_approve_surf_rest_typee_latest_wins(tmp_path):
+    """Latest-wins preserve par le mapping REST : un CHANGES_REQUESTED
+    posterieur de la MEME voix retire l'approbation anterieure."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[
+            rest_review(login=APP_LOGIN_REST, state="APPROVED",
+                        submitted="2026-09-25T03:00:00Z"),
+            rest_review(login=APP_LOGIN_REST, state="CHANGES_REQUESTED",
+                        submitted="2026-09-25T04:00:00Z"),
+        ],
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_17437_approve_app_d_une_autre_lane_ne_compte_pas(tmp_path):
+    """Point Hermes : l'App d'une autre lane, MEME typee Bot sur la surface
+    REST, n'est pas la voix du siege — le prefixe seul ne suffit pas."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[rest_review(login="coursia-lane-po-2026[bot]")],
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
     assert lines[-1]["reason"] == "no-coordinator-approval"
 
 

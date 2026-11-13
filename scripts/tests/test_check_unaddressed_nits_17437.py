@@ -5,18 +5,16 @@ seul login humain ``myia-ai-01`` sont (a) la détection de l'APPROVE dans
 ``merge_ready`` (testée dans test_merge_ready.py) et (b) la trappe de levée
 ``[OVERRIDE] lane`` de B.0, testée ici via ``LIFT_OVERRIDE_LOGINS``.
 
-La mesure API qui fonde la sonde (2026-11-12) : ``gh pr view --json
-comments,reviews`` rend l'auteur SANS champ de type (``{"login": ...}``
-seul) — pour une App, le login est NU. La doctrine gh_identity interdit
-d'accepter la forme nue telle quelle (un compte UTILISATEUR nommé comme le
-slug de l'App passerait la borne d'auteur) : la preuve se prend à la source
-REST ``users/<login>[bot]`` (``type: Bot`` = App ; 404 = utilisateur).
-
-Les tests couvrent les trois orthographes réelles (REST suffixée, GraphQL
-typée, gh-json nue résolue par sonde), les deux échecs fail-closed (sonde
-muette, sonde rendant un type User), l'App d'une autre lane (jamais la voix
-du siège), et l'invariant BOT_LOGINS (les deux orthographes d'un même bot
-restent du bruit après normalisation).
+Relecture ai-01 du 2026-11-12 : la preuve d'identité est le TYPE PORTÉ PAR
+LA LIGNE elle-même (REST ``user.type``, GraphQL ``author.__typename`` —
+l'overlay ``_typed_author_surfaces``), JAMAIS une sonde
+``users/<login>[bot]`` : la sonde prouve que l'App EXISTE, pas que
+l'AUTEUR de la ligne est l'App. Une ligne nue sans type est refusée ; le
+suffixe ``[bot]`` résisté par GitHub aux Apps reste une preuve structurelle
+en soi. Les tests couvrent : l'orthographe suffixée (CLI), l'orthographe
+GraphQL typée, la forme nue refusée même quand l'App existe, l'homonyme
+UTILISATEUR typé ``User`` refusé, l'App d'une autre lane (point Hermes),
+et les invariants BOT_LOGINS.
 """
 
 import importlib.util
@@ -38,14 +36,6 @@ spec.loader.exec_module(mod)
 
 APP_LOGIN_BARE = "coursia-lane-ai-01"
 APP_LOGIN_REST = "coursia-lane-ai-01[bot]"
-
-
-@pytest.fixture(autouse=True)
-def _cache_app_vide():
-    """Le cache de sonde est un etat module : chaque test part vierge."""
-    mod._APP_BARE_LOGIN_CACHE.clear()
-    yield
-    mod._APP_BARE_LOGIN_CACHE.clear()
 
 
 def at(hour: int) -> str:
@@ -79,70 +69,74 @@ OVERRIDE_BODY = (
 def run_lift(lift_author: dict, comments=(), monkeypatch=None, gh_json_fake=None):
     """PR d'un worker, réserve posée par un tiers — la trappe OVERRIDE est
     le seul chemin de levée, et l'auteur de la levée est paramétrable."""
+    probe_calls: list[list[str]] = []
+
     if gh_json_fake is not None and monkeypatch is not None:
-        monkeypatch.setattr(mod, "gh_json", gh_json_fake)
+        def fake_gh_json(args):
+            probe_calls.append(list(args))
+            return gh_json_fake(args)
+        monkeypatch.setattr(mod, "gh_json", fake_gh_json)
     lift = {"author": lift_author, "createdAt": at(12), "body": OVERRIDE_BODY}
     data = {
         "number": 0, "title": "t", "author": {"login": "myia-po-2026"},
         "comments": [lift, *comments], "reviews": [HERMES_REVIEW],
         "commits": [{"committedDate": at(19)}],
     }
-    return mod.analyse(data, [], MERGED)
+    res = mod.analyse(data, [], MERGED)
+    res["_probe_calls"] = probe_calls
+    return res
 
 
 # --- la voix App du coordinateur lève, dans ses orthographes réelles ----------
 
 
 def test_17437_levee_app_login_rest_leve():
-    """Orthographe REST (suffixée, sans champ type) : l'App du coordinateur
-    lève la réserve d'un tiers par la trappe OVERRIDE."""
+    """Orthographe suffixée (celle du suffixe ``[bot]`` réservé par GitHub
+    aux Apps — preuve structurelle, aucun utilisateur ne le porte) : l'App
+    du coordinateur lève la réserve d'un tiers par la trappe OVERRIDE."""
     assert run_lift({"login": APP_LOGIN_REST})["blocked"] is False
 
 
 def test_17437_levee_app_typbot_graphql_leve():
-    """Orthographe GraphQL (login nu + ``__typename: Bot``) : la
-    normalisation gh_identity reconstruit le suffixe, sans sonde."""
+    """Orthographe GraphQL de l'overlay typé (login nu +
+    ``__typename: Bot``) : la normalisation gh_identity reconstruit le
+    suffixe — la preuve de type vient de la ligne."""
     assert run_lift({"login": APP_LOGIN_BARE, "__typename": "Bot"})["blocked"] is False
 
 
-def test_17437_levee_app_nue_resolue_par_sonde_leve(monkeypatch):
-    """Orthographe gh-json (login nu, sans type) : la sonde REST prouve le
-    type Bot et la levée compte — l'angle mort mesuré par ai-01."""
-    def fake_gh_json(args):
-        assert args[:2] == ["api", f"users/{APP_LOGIN_BARE}[bot]"], args
-        return {"type": "Bot"}
-    res = run_lift({"login": APP_LOGIN_BARE}, monkeypatch=monkeypatch,
-                   gh_json_fake=fake_gh_json)
-    assert res["blocked"] is False
+# --- fail-closed : la forme nue sans TYPE SUR LA LIGNE ne passe jamais -------
 
 
-# --- fail-closed : la forme nue sans preuve ne passe jamais -------------------
-
-
-def test_17437_levee_app_nue_sonde_muette_fail_closed(monkeypatch):
-    """Sonde muette (crash gh / réseau) : la forme nue est conservée, donc
-    refusée par la borne d'auteur — la réserve reste debout."""
-    def fake_gh_json(args):
-        raise RuntimeError("gh indisponible")
-    res = run_lift({"login": APP_LOGIN_BARE}, monkeypatch=monkeypatch,
-                   gh_json_fake=fake_gh_json)
+def test_17437_levee_app_nue_sans_type_refuse_meme_sonde_scriptable(monkeypatch):
+    """LE test manquant de la relecture ai-01 : une ligne
+    ``{"login": "coursia-lane-ai-01"}`` sans type, la sonde étant scriptée
+    à ``Bot`` (l'App existe). Elle ne doit NI lever NI compter — et la
+    sonde n'est même plus appelée : la preuve est le type de la ligne, pas
+    l'existence de l'App."""
+    res = run_lift(
+        {"login": APP_LOGIN_BARE},
+        monkeypatch=monkeypatch,
+        gh_json_fake=lambda args: {"type": "Bot"},
+    )
     assert res["blocked"] is True
+    # la sonde a disparu : aucun appel users/ n'a été tenté
+    assert res["_probe_calls"] == []
 
 
-def test_17437_levee_app_nue_sonde_rend_user_fail_closed(monkeypatch):
-    """La sonde rend un type User : un compte UTILISATEUR nommé comme le
-    slug de l'App n'est pas l'App — la doctrine gh_identity tient."""
-    def fake_gh_json(args):
-        return {"type": "User"}
-    res = run_lift({"login": APP_LOGIN_BARE}, monkeypatch=monkeypatch,
-                   gh_json_fake=fake_gh_json)
+def test_17437_levee_homonyme_utilisateur_type_user_ne_leve_pas():
+    """L'homonyme UTILISATEUR du slug, typé ``User`` par l'overlay GraphQL
+    (le vrai visage de l'attaque mesurée) : la normalisation laisse le
+    login nu, il échoue la borne suffixée — la doctrine tient, preuve de
+    type à l'appui."""
+    res = run_lift({"login": APP_LOGIN_BARE, "__typename": "User"})
     assert res["blocked"] is True
 
 
 def test_17437_app_d_une_lane_worker_ne_leve_pas():
-    """L'App d'une lane worker, même suffixée REST, n'est pas la voix du
-    siège : la trappe OVERRIDE reste coordinateur-only."""
-    res = run_lift({"login": "coursia-lane-po-2026[bot]"})
+    """Point Hermes : l'App d'une autre lane, même TYPÉE ``Bot`` par
+    l'overlay, n'est pas la voix du siège — la trappe OVERRIDE reste
+    coordinateur-only."""
+    res = run_lift({"login": "coursia-lane-po-2026", "__typename": "Bot"})
     assert res["blocked"] is True
 
 

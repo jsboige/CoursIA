@@ -255,7 +255,8 @@ COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
 # La voix du coordinateur : le login humain ET l'App, en orthographe REST
 # (suffixee). Les formes nues sans preuve de type ne sont PAS acceptees
 # (doctrine gh_identity : un compte UTILISATEUR nomme comme le slug de
-# l'App ne doit pas passer la porte) -- cf ``_review_author_voice_login``.
+# l'App ne doit pas passer la porte) -- cf ``_voice_login`` : la preuve de
+# type est PORTEE PAR LA LIGNE (relecture ai-01 2026-11-12), jamais sondee.
 COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_APP_LOGIN))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
@@ -888,64 +889,91 @@ def review_disposition(view: dict, head: str) -> str:
 # --- approbation du coordinateur (etape 2ter, Q67 option a) --------------------
 
 
-# Cache des sondes REST de la session (login nu -> login suffixe, ou "" si la
-# sonde a ete faite et que ce n'est PAS une App). Borne aux logins prefixes
-# ``coursia-lane-`` : hors bascule App (#17437), il ne se remplit jamais.
-_APP_BARE_LOGIN_CACHE: dict[str, str] = {}
+def _voice_login(row: dict) -> str:
+    """Login d'auteur d'une ligne de review, TYPE PAR LA LIGNE elle-meme.
 
-
-def _resolve_app_bare_login(login: str, runner: Runner | None) -> str:
-    """Login App potentiellement NU, resolu en orthographe REST si App.
-
-    ``gh pr view --json reviews`` rend l'auteur SANS champ de type (mesure
-    2026-11-12 : ``{"login": ...}`` seul) : pour une App, la forme est nue
-    et ``gh_identity.normalize_author_login`` ne peut pas reconstruire le
-    suffixe sans preuve de type. La doctrine gh_identity interdit d'accepter
-    la forme nue telle quelle -- un compte UTILISATEUR nomme comme le slug
-    de l'App passerait la porte. La preuve se prend a la source : REST
-    ``users/<login>[bot]`` rend ``type: Bot`` pour une App installee et 404
-    pour un compte utilisateur du meme nom. Sonde bornee aux logins
-    prefixes, cachee par session, fail-closed (sonde absente -- ``runner``
-    ``None`` en lecture pure -- ou muette : la forme nue est renvoyee telle
-    quelle, donc REFUSEE par la comparaison a ``COORDINATOR_VOICES``).
+    #17437, relecture ai-01 du 2026-11-12 : la preuve d'identite est le
+    champ de TYPE de la ligne (REST ``user.type`` / GraphQL
+    ``author.__typename``), JAMAIS une sonde globale -- ``gh api
+    users/<slug>[bot]`` prouve que l'App EXISTE, pas que l'AUTEUR de la
+    ligne est l'App : un compte UTILISATEUR homonyme du slug serait
+    confondu avec elle. Les lignes typees reconstruisent le suffixe par
+    ``gh_identity`` ; une ligne NON typee n'est une voix que pour
+    l'orthographe canonique EXACTE de l'humain (``myia-ai-01``, nu par
+    construction) : toute forme nue App est refusee, sans sonde ni
+    reconstruction -- fail-closed par construction, plus de cas muets.
     """
-    if not login or not login.startswith(gh_identity.APP_LOGIN_PREFIX):
-        return login
-    if login.endswith("[bot]"):
-        return login
-    if login in _APP_BARE_LOGIN_CACHE:
-        resolved = _APP_BARE_LOGIN_CACHE[login]
-        return resolved or login
-    if runner is None:
-        return login
-    res = runner.run(["gh", "api", f"users/{login}[bot]", "--jq", ".type"])
-    resolved = ""
-    if res.returncode == 0 and (res.stdout or "").strip() == "Bot":
-        resolved = login + "[bot]"
-    _APP_BARE_LOGIN_CACHE[login] = resolved
-    return resolved or login
-
-
-def _review_author_voice_login(row: dict, runner: Runner | None = None) -> str:
-    """Login d'auteur d'une review, en orthographe REST (suffixe App reconstruit).
-
-    #17437 : le coordinateur signera sous son App (``coursia-lane-ai-01``).
-    La normalisation gh_identity traite les formes typees (REST, GraphQL
-    ``__typename``) ; la forme nue rendue par ``gh --json`` passe par la
-    sonde bornee ``_resolve_app_bare_login`` quand un runner est fourni.
-    """
-    author = row.get("author") or {}
+    author = row.get("author") or row.get("user") or {}
     if not isinstance(author, dict):
         return ""
-    login = gh_identity.normalize_author_login(author)
-    return _resolve_app_bare_login(login, runner)
+    if author.get("__typename") or author.get("type"):
+        return gh_identity.normalize_author_login(author)
+    login = str(author.get("login") or "")
+    if login == COORDINATOR_USER:
+        return login
+    return ""
 
 
-def coordinator_approval_oid(view: dict, runner: Runner | None = None) -> str | None:
+def _typed_reviews(runner: Runner, pr: int,
+                   gh_env: dict[str, str] | None = None) -> list[dict]:
+    """Reviews d'une PR sur la surface REST TYPEE, en forme canonique.
+
+    #17437 : ``gh pr view --json reviews`` rend l'auteur SANS champ de type ;
+    la preuve de type par ligne se prend sur une surface qui le transporte.
+    REST ``pulls/N/reviews`` rend chaque ligne avec ``user.login`` (deja
+    suffixe pour une App) ET ``user.type`` -- les deux ce dont
+    ``_voice_login`` a besoin. La ligne est mappee a la forme attendue par
+    ``_review_voice_state`` et le latest-wins (``submittedAt``,
+    ``commit.oid`` depuis ``commit_id``).
+
+    Echec de lecture : liste vide -- la preuve illisible vaut refus, le
+    verdict ``no-coordinator-approval`` en rend compte (fail-closed).
+    """
+    cmd = ["gh", "api", f"repos/{REPO}/pulls/{pr}/reviews",
+           "--paginate", "--slurp"]
+    res = runner.run(cmd, env=gh_env) if gh_env else runner.run(cmd)
+    if res.returncode != 0 or not (res.stdout or "").strip():
+        return []
+    try:
+        pages = json.loads(res.stdout)
+    except json.JSONDecodeError:
+        return []
+    flat: list = []
+    for page in pages if isinstance(pages, list) else [pages]:
+        if isinstance(page, list):
+            flat.extend(page)
+        elif isinstance(page, dict):
+            flat.append(page)
+    out: list[dict] = []
+    for row in flat:
+        if not isinstance(row, dict):
+            continue
+        user = row.get("user") or {}
+        out.append({
+            "author": {
+                "login": (user or {}).get("login") or "",
+                "type": (user or {}).get("type") or "",
+            },
+            "state": row.get("state") or "",
+            "body": row.get("body") or "",
+            "submittedAt": row.get("submitted_at") or "",
+            "commit": {"oid": row.get("commit_id") or ""},
+        })
+    return out
+
+
+def coordinator_approval_oid(view: dict, runner: Runner | None = None,
+                             gh_env: dict[str, str] | None = None) -> str | None:
     """Oid du commit que la DERNIERE voix du coordinateur approuve, ou None.
 
     #17437 : la voix du coordinateur est le login humain OU son App
-    (``COORDINATOR_VOICES``), en orthographe REST apres normalisation.
+    (``COORDINATOR_VOICES``). La preuve d'identite est TYPEE PAR LIGNE :
+    avec un runner, les reviews se relisent sur la surface REST typee
+    (``pulls/N/reviews``, ``user.type`` par ligne) ; sans runner (lecture
+    pure, tests), seules comptent les lignes deja typees du payload et
+    l'orthographe canonique exacte de l'humain -- une forme nue App n'est
+    JAMAIS resolue (relecture ai-01 2026-11-12 : la sonde prouve que
+    l'App existe, pas que l'auteur de la ligne est l'App).
 
     Latest-wins sur les seules voix du coordinateur, lues comme le canon (etat
     reel, puis verdict type en corps) : un ``CHANGES_REQUESTED`` ou un
@@ -954,11 +982,19 @@ def coordinator_approval_oid(view: dict, runner: Runner | None = None) -> str | 
     l'etat REEL ``APPROVED`` vaut approbation : c'est le geste explicite de
     lecture, pas un jeton de corps.
     """
+    rows: list = []
+    if runner is not None and isinstance(view.get("number"), int):
+        rows = _typed_reviews(runner, view["number"], gh_env)
+    if not rows:
+        # Surface CLI non typee : l'humain nu canonique y est reconnu
+        # (orthographe exacte), toute forme App y est invisible -- les
+        # lignes typees du payload restent valables (tests, GraphQL).
+        rows = [row for row in view.get("reviews") or []
+                if isinstance(row, dict)]
     voices = [
         row
-        for row in view.get("reviews") or []
-        if isinstance(row, dict)
-        and _review_author_voice_login(row, runner) in COORDINATOR_VOICES
+        for row in rows
+        if _voice_login(row) in COORDINATOR_VOICES
         and _review_voice_state(row)
     ]
     if not voices:
@@ -1006,7 +1042,7 @@ def coordinator_approval_reason(
     commit de contenu. Toute autre difference perime la lecture ; une preuve
     illisible vaut refus.
     """
-    approved = coordinator_approval_oid(view, runner)
+    approved = coordinator_approval_oid(view, runner, gh_env)
     if approved is None:
         return "no-coordinator-approval"
     if approved == head:

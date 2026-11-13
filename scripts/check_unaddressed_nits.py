@@ -126,38 +126,17 @@ BOT_LOGINS = {
 # --- Identites App : extraction normalisee (#17437) ----------------------------
 #
 # ``gh pr view --json comments,reviews`` rend l'auteur SANS champ de type
-# (mesure 2026-11-12 : ``{"login": ...}`` seul) : pour une App, le login est
-# NU et la reconstruction du suffixe ``[bot]`` est impossible sans preuve de
-# type. La doctrine gh_identity interdit d'accepter la forme nue telle
-# quelle -- un compte UTILISATEUR nomme comme le slug d'une App passerait
-# les bornes d'auteur. La preuve se prend a la source : REST
-# ``users/<login>[bot]`` rend ``type: Bot`` pour une App et 404 pour un
-# compte utilisateur du meme nom (mesure 2026-11-12 sur
-# ``coursia-lane-ai-01[bot]`` : Bot ; forme nue : 404). Sonde bornee aux
-# logins prefixes ``coursia-lane-``, memoisee comme ``gh_json``, cachee par
-# session, fail-closed (echec ou silence : la forme nue est conservee, donc
-# refusee par toute borne d'auteur).
-_APP_BARE_LOGIN_CACHE: dict[str, str] = {}
-
-
-def _resolve_app_bare_login(login: str) -> str:
-    """Login App potentiellement NU, resolu en orthographe REST si App."""
-    if (not login
-            or not login.startswith(gh_identity.APP_LOGIN_PREFIX)
-            or login.endswith("[bot]")):
-        return login
-    if login in _APP_BARE_LOGIN_CACHE:
-        resolved = _APP_BARE_LOGIN_CACHE[login]
-        return resolved or login
-    resolved = ""
-    try:
-        obj = gh_json(["api", f"users/{login}[bot]"])
-        if isinstance(obj, dict) and obj.get("type") == "Bot":
-            resolved = login + "[bot]"
-    except Exception:
-        resolved = ""
-    _APP_BARE_LOGIN_CACHE[login] = resolved
-    return resolved or login
+# (mesure 2026-11-12 : ``{"login": ...}`` seul). La preuve d'identite d'une
+# ligne est le TYPE DE LA LIGNE ELLE-MEME (relecture ai-01 du 2026-11-12 :
+# une sonde ``users/<login>[bot]`` prouve que l'App EXISTE, pas que
+# l'AUTEUR de la ligne est l'App — un compte UTILISATEUR homonyme du slug
+# serait confondu avec elle). Les surfaces typees — REST ``user.type``,
+# GraphQL ``author.__typename`` via ``_typed_author_surfaces`` — portent
+# cette preuve par ligne ; ``gh_identity.normalize_author_login`` en
+# reconstruit le suffixe. Une ligne nue reste nue : par simple inegalite de
+# chaine, elle echoue toute borne d'auteur App (LIFT_OVERRIDE_LOGINS,
+# BOT_LOGINS suffixe). Le login humain nu reste canonique : orthographe
+# exacte, aucune reconstruction.
 
 
 def _author_login(row: object, key: str = "author") -> str:
@@ -165,17 +144,81 @@ def _author_login(row: object, key: str = "author") -> str:
 
     #17437 : LE point de passage des extractions d'auteur du module — la
     forme canonique unique, celle de ``gh_identity`` (source unique, jamais
-    recopiee), plus la resolution bornee des logins nus prefixes. Toute
-    comparaison d'auteur (LIFT_OVERRIDE_LOGINS, PERSONA_ALIAS_LOGINS,
-    BOT_LOGINS, bornes d'auteur #11145/#12836) se fait sur cette forme.
+    recopiee), SANS sonde : la preuve de type vit dans la ligne (type ou
+    ``__typename`` transporte par ``_typed_author_surfaces``), jamais dans
+    une resolution globale par login. Toute comparaison d'auteur
+    (LIFT_OVERRIDE_LOGINS, PERSONA_ALIAS_LOGINS, BOT_LOGINS, bornes
+    d'auteur #11145/#12836) se fait sur cette forme.
     """
     if not isinstance(row, dict):
         return ""
     author = row.get(key)
     if not isinstance(author, dict):
         return ""
-    return _resolve_app_bare_login(
-        gh_identity.normalize_author_login(author))
+    return gh_identity.normalize_author_login(author)
+
+
+def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
+    """Comments et reviews d'une PR avec le TYPE d'auteur PAR LIGNE.
+
+    #17437 (relecture ai-01 2026-11-12) : ``gh pr view --json
+    comments,reviews`` rend l'auteur sans champ de type. La preuve
+    d'identite se prend sur une surface qui transporte le type : UNE
+    requete GraphQL rend les deux connexions avec
+    ``author{__typename login}`` — le suffixe ``[bot]`` s'y reconstruit
+    par ``gh_identity``, et une forme nue typee ``User`` reste
+    distinguishable d'une App homonyme. Les clefs rendues remplacent les
+    surfaces correspondantes du payload ``pr view`` (memes champs :
+    ``author``/``body``/``createdAt``, ``author``/``body``/``submittedAt``/
+    ``state``).
+
+    Echec (gh muet, payload inattendu) : dict vide — les surfaces CLI non
+    typees restent alors lues telles quelles, ou toute forme nue App
+    echoue les bornes d'auteur : fail-closed, jamais un crash du gate.
+    """
+    query = """
+    query($owner:String!,$repo:String!,$n:Int!){
+      repository(owner:$owner,name:$repo){
+        pullRequest(number:$n){
+          comments(first:100){nodes{author{__typename login} body createdAt}}
+          reviews(first:100){nodes{author{__typename login} body
+                                   submittedAt state}}
+        }
+      }
+    }"""
+    owner, name = REPO.split("/")
+    try:
+        data = gh_json([
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+        ])
+        node = data["data"]["repository"]["pullRequest"]
+        comments = node["comments"]["nodes"]
+        reviews = node["reviews"]["nodes"]
+    except Exception:
+        return {}
+    if not isinstance(comments, list) or not isinstance(reviews, list):
+        return {}
+    out: dict[str, list[dict]] = {}
+    if len(comments) == 100 or len(reviews) == 100:
+        print(f"  [!] PR #{pr}: plafond `first:100` atteint sur une surface "
+              "typee (comments/reviews) — d'eventuelles lignes "
+              "supplementaires ne sont PAS analysees.",
+              file=sys.stderr)
+    if comments:
+        out["comments"] = [
+            {"author": c.get("author") or {}, "body": c.get("body") or "",
+             "createdAt": c.get("createdAt")}
+            for c in comments if isinstance(c, dict)
+        ]
+    if reviews:
+        out["reviews"] = [
+            {"author": r.get("author") or {}, "body": r.get("body") or "",
+             "submittedAt": r.get("submittedAt"),
+             "state": r.get("state")}
+            for r in reviews if isinstance(r, dict)
+        ]
+    return out
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
 # Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
@@ -6312,6 +6355,10 @@ def analyse_pr(pr: int) -> dict:
     """
     try:
         data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+        # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
+        # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
+        # remplace quand il repond.
+        data.update(_typed_author_surfaces(pr))
         # #13639 + #15556 : resolution serveur du contexte SHA (messages,
         # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
         _attach_absent_sha_context(data)
@@ -6346,6 +6393,10 @@ def _ensure_utf8_stdout() -> None:
 def gate(pr: int, as_json: bool) -> int:
     _ensure_utf8_stdout()
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+    # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
+    # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
+    # remplace quand il repond.
+    data.update(_typed_author_surfaces(pr))
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
     _attach_absent_sha_context(data)
@@ -6409,6 +6460,11 @@ def audit(limit: int, search: str | None = None) -> int:
             p["commits"] = _pr_commits_rest(p["number"])
         except subprocess.CalledProcessError:
             p["commits"] = []
+        # #17437 : preuve de TYPE d'auteur par ligne, payee uniquement sur
+        # les candidates (le pre-filtre ci-dessus lit la surface non typee
+        # de ``pr list`` : une levee sous App y est invisible — sur-approx
+        # conservatrice, l'overlay la reconnait avant le verdict rendu).
+        p.update(_typed_author_surfaces(p["number"]))
         # Ce 2e passage rend le MEME verdict `blocked` que le pre-filtre — un
         # commit ne leve rien (c'est le principe de B.0). Il n'est pas pour le
         # verdict : il renseigne `code_pushed_after`, dont la Phase 2 de #11044
