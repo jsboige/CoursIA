@@ -221,6 +221,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (meme release, meme ${GITLEAKS_VERSION}), forme deja eprouvee sur ce
     #   pool par son job positive-controls. La jambe fork reste GitHub-hosted
     #   sous la forme docker : `gitleaks-fork`.
+    "secret-scan-controls.yml",
+    # secret-scan-controls.yml (#25510 tranche T-B, 2026-11-12, lane
+    #   myia-ai-01:CoursIA) : les jobs positive-controls et assert-egress
+    #   sortis de secret-scan.yml, a forme hybride inchangee (#22461) et
+    #   garde anti-fork conservee. Seul le declenchement change (paths:).
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
@@ -554,9 +559,9 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
     #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-plan-loss-gate.yml",
-    # #22209 TRANCHE42 : ABSORBE par la voie rapide -- vehicule
+    # #22209 TRANCHE45 : ABSORBE par la voie rapide -- vehicule
     #   workflow_dispatch-ONLY servant de cible d'identite au check-run
-    #   absorbe par fast-lane (registre TRANCHE42) ; la jambe per-PR vit
+    #   absorbe par fast-lane (registre TRANCHE45) ; la jambe per-PR vit
     #   dans le job fast-lane d'always-on-guards.yml. L'entree RESTE
     #   (precedent TRANCHE39/cell-order) : la sortie d'allowlist vise les
     #   workflows migres vers ubuntu-latest, pas les absorbes dormants.

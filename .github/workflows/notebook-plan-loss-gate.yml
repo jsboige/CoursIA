@@ -48,7 +48,7 @@ name: Notebook plan-loss gate
 # passes de substance -- le marker du body n'est requis que pour les
 # disparitions ASSUMEES).
 
-# ABSORBE PAR LA VOIE RAPIDE (#22209, registre TRANCHE42) : la jambe per-PR
+# ABSORBE PAR LA VOIE RAPIDE (#22209, registre TRANCHE45) : la jambe per-PR
 # vit desormais dans le job fast-lane d'always-on-guards.yml, sous le MEME
 # nom de check-run (contrat d'identite byte-a-byte
 # `check_absorbed_check_run_identity.py`), avec le pre-controle pytest du

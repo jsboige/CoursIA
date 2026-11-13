@@ -922,7 +922,7 @@ jobs:
           # legitime (squelette `sorry`, `native_decide` documente) restait
           # rouge faute de moyen de la declarer.
           LEAN_CLIQUET_PR_BODY: ${{ github.event.pull_request.body }}
-          # #22209 (TRANCHE42) : meme canal in-memory pour les marqueurs
+          # #22209 (TRANCHE45) : meme canal in-memory pour les marqueurs
           # `plan-loss: section assumee -- <notebook> section: <titre> : <raison>`
           # du detecteur de perte de plan (#14532) -- l'arbitrage
           # par-section que le garde prescrit lui-meme. Sans lui, un
