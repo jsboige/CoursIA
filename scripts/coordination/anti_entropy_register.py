@@ -328,20 +328,24 @@ REGISTRE: tuple[Entree, ...] = (
                                   "inventory_notebook_names.py"
                                   "@30c90b42b6b19ead9d2872495cba9547d6bf1c58")),
             # Reference precedente (26), mesuree le 2026-11-06 sur l'arbre
-            # a284df8293f avec l'instrument 18c887da79d. Point AVANT le
-            # sixieme rebasage (#5081, 2026-11-13) : l'instrument du
-            # correctif reconnait le prefixe `coursia-py313`, la grandeur
-            # change (26 -> 25), la comparaison transverse est refusee.
-            # La valeur 27 mesuree les 09/11 et 12/11 sur cet instrument
-            # documentait deux carnets arrives sur main (dont
-            # `Argumentation-08b-Executor-Python`, nomme dans la visite du
-            # 09/11) ; le correctif les reconnait, ils ne comptent plus.
+            # a284df8293f. Point AVANT le sixieme rebasage (#5081,
+            # 2026-11-13) : l'instrument du correctif reconnait le prefixe
+            # `coursia-py313`, la grandeur change (26 -> 25), la comparaison
+            # transverse est refusee. La valeur 27 mesuree les 09/11 et
+            # 12/11 sur ce meme instrument documentait deux carnets arrives
+            # sur main (dont `Argumentation-08b-Executor-Python`, nomme dans
+            # la visite du 09/11) ; le correctif les reconnait, ils ne
+            # comptent plus. Identite : le correctif #23655 declarait le sha
+            # de branche (18c887da79d), mort au squash -- comme le 3e
+            # rebasage, la serie declare l'identite RESOLVABLE de main
+            # (400799b0f4, meme contenu, mesurant 26 puis 27 sur les arbres
+            # de l'epoque).
             Reference(26.0, "2026-11-06",
                       "issue #23655, reference precedente (arbre "
-                      "a284df8293f, instrument 18c887da79d)",
+                      "a284df8293f, contenu = 400799b0f4 sur main)",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
-                                  "@18c887da79de8dcb3f59e7c62800e8c8c242e957")),
+                                  "@400799b0f4362e2c87982cd5631f6a745d0b3ab4")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
