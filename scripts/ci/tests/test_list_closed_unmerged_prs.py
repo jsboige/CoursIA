@@ -2,7 +2,7 @@
 
 Ce que le fichier prouve
 ------------------------
-  1. Les cinq verdicts sont atteignables, et l'ordre d'evaluation est celui du
+  1. Les six verdicts sont atteignables, et l'ordre d'evaluation est celui du
      contrat : un contenu sur `main` n'est jamais un accident, une fermeture
      expliquee n'est jamais un orphelin, `UNKNOWN` n'est jamais un vert.
   2. Le signal d'accident est le couple **force-push + fermeture du MEME acteur
@@ -11,12 +11,15 @@ Ce que le fichier prouve
      le piege que #20374 porte lui-meme (`Part of #20316`).
   4. Le balayage complet fonctionne sur des dicts injectes (aucun reseau).
   5. **Controle positif sur le cas reel #20374** : il doit sortir en
-     `ACCIDENTAL_EMPTY_CLOSE`. Le test est ignore si `gh` ou le depot ne sont
-     pas disponibles, mais il ne se rabat jamais sur une fixture.
+     `ACCIDENTAL_EMPTY_CLOSE`.
   6. **Controle negatif** : une PR fermee volontairement avec une raison doit
      sortir en `SUPERSEDED` (ou `INTEGRATED`).
+  7. **Controles reels hermetiques** (#24676) : les controles `test_real_*` lisent
+     un snapshot versionne (`fixtures/list_closed_unmerged_prs_snapshot.json`)
+     au lieu du depot vivant ; ils tournent sans reseau et ne sont jamais `skip`.
 
 Run: python -m pytest scripts/ci/tests/test_list_closed_unmerged_prs.py -q
+(hors reseau : `GH_TOKEN=invalid HTTPS_PROXY=http://127.0.0.1:9 python -m pytest ...`)
 """
 from __future__ import annotations
 
@@ -24,7 +27,7 @@ import importlib.util
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -342,135 +345,209 @@ def test_upsert_replaces_existing_block_without_duplicating():
     assert "#2" in out and "#1" not in out.split(lcu.MARKER_START)[1]  # l'ancien bloc est remplace
 
 
-# --- 5. controle POSITIF sur le cas reel #20374 ------------------------------------
+# --- 5. controles REELS, hermetiques (#24676) ----------------------------------------
+#
+# Les controles `test_real_*` lisaient le depot vivant (API, timeline, ls-remote,
+# objets git) : leur verdict changeait avec le depot, sans qu'une ligne du produit
+# change. Ils lisent desormais le snapshot versionne
+# `fixtures/list_closed_unmerged_prs_snapshot.json`. L'oracle (`evaluate_pr`,
+# `closed_unmerged`, `content_state`) tourne tel quel ; seules les fonctions d'acces
+# (API, ls-remote, `git merge-base`, `content_diff`) sont remplacees.
+#
+# Capture (une fois, 2026-11-07, lectures GET uniquement) :
+#   gh api repos/jsboige/CoursIA/pulls?state=closed&sort=updated&direction=desc&per_page=100&page=N  (N=1..15, arret de closed_unmerged)
+#   GET repos/jsboige/CoursIA/issues/N/timeline?per_page=100 et .../comments?per_page=100 (pagines), PR de la fenetre + 20374 + 24196
+#   git ls-remote --heads https://github.com/jsboige/CoursIA.git
+#   git merge-base origin/main <tete> ; orphan_branch_scan.content_diff(branche, tete, origin/main)
+#   avec origin/main = e6397230f43765afa9612bc8f4935f53409d3eaa
+# Projection, pseudonymisation des logins et regles d'absence : bloc `_meta` du fichier.
+# Un controle se rejoue en re-capturant ; il ne se rejoue jamais en lisant le depot.
 
-def _gh_ready() -> bool:
-    """Le controle reseau est-il possible ?
-
-    On interroge l'API (`GET /user`) plutot que `gh auth status` : ce
-    dernier est un probe **instable** sur cette machine -- mesure le
-    2026-11-03, le meme jeton valide a rendu `rc=1` puis `rc=0` sur trois
-    appels consecutifs. Un probe instable fait **sauter silencieusement**
-    un controle exige : un « skipped » se lit comme un vert, alors que le
-    controle n'a pas ete joue. L'API est l'etat reel du jeton ; elle
-    repond, et son echec se voit.
-    """
-    try:
-        proc = subprocess.run(["gh", "api", "user", "--jq", ".login"],
-                              capture_output=True, text=True, check=False,
-                              encoding="utf-8", errors="replace")
-        return proc.returncode == 0 and bool(proc.stdout.strip())
-    except (OSError, FileNotFoundError):
-        return False
-
-
-needs_gh = pytest.mark.skipif(not _gh_ready(), reason="gh absent ou non authentifie")
-
-
-def _local_object_present(sha: str) -> bool:
-    """L'objet du commit est-il dans l'historique local ?"""
-    return subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"],
-                          capture_output=True, text=True, check=False,
-                          encoding="utf-8", errors="replace").returncode == 0
+FIXTURE = Path(__file__).resolve().parent / "fixtures" / "list_closed_unmerged_prs_snapshot.json"
+SNAP = json.loads(FIXTURE.read_text(encoding="utf-8"))
+MAIN = SNAP["_meta"]["main_label"]  # "origin/main", fige a SNAP["_meta"]["main_sha"]
+WINDOW_SINCE = datetime(2026, 11, 4, 17, 0, tzinfo=timezone.utc)  # ~72 h avant captured_utc
 
 
-def _fetch_pr_head(number: int) -> bool:
-    """Amene la tete de la PR dans le clone local.
-
-    Une PR expose toujours `refs/pull/<N>/head` : c'est le seul chemin qui
-    reste quand la branche distante a disparu, et c'est aussi ce qui rend
-    le controle **reproductible** sur un clone CI (qui, par defaut, n'a que
-    la profondeur 1 du ref de merge).
-    """
-    proc = subprocess.run(
-        ["git", "fetch", "--quiet", "origin", f"refs/pull/{number}/head"],
-        capture_output=True, text=True, check=False,
-        encoding="utf-8", errors="replace")
-    return proc.returncode == 0
+class _Unpinned(AssertionError):
+    """Acces a une donnee non epinglee : un controle ne retombe JAMAIS sur le reseau."""
 
 
-@needs_gh
+@pytest.fixture
+def pinned(monkeypatch):
+    """Remplace les seules fonctions d'acces par le snapshot. Tout acces manquant echoue."""
+
+    def _entry(number):
+        try:
+            return SNAP["prs"][str(number)]
+        except KeyError:
+            raise _Unpinned(f"PR #{number} absente du snapshot")
+
+    def _timeline(repo, number):
+        return _entry(number)["timeline"]
+
+    def _comments(repo, number):
+        return _entry(number)["comments"]
+
+    def _remote_branches(repo):
+        return dict(SNAP["branches"])
+
+    def _content_diff(branch, branch_tip, main_ref="origin/main"):
+        assert main_ref == MAIN, main_ref
+        try:
+            return SNAP["content"][branch_tip]["files"]
+        except KeyError:
+            raise _Unpinned(f"contenu de la tete {branch_tip} non epingle")
+
+    def _run(cmd):
+        # Seul `git merge-base <main> <tete>` est lu par content_state.
+        if cmd[:2] != ["git", "merge-base"] or cmd[2] != MAIN:
+            raise _Unpinned(f"commande git non epinglee : {cmd}")
+        try:
+            merge_base = SNAP["content"][cmd[3]]["merge_base"]
+        except KeyError:
+            raise _Unpinned(f"tete {cmd[3]} non epinglee")
+        return subprocess.CompletedProcess(cmd, 0, stdout=merge_base + "\n", stderr="")
+
+    monkeypatch.setattr(lcu, "timeline", _timeline)
+    monkeypatch.setattr(lcu, "comments", _comments)
+    monkeypatch.setattr(lcu.obs, "remote_branches", _remote_branches)
+    monkeypatch.setattr(lcu.obs, "content_diff", _content_diff)
+    monkeypatch.setattr(lcu, "_run", _run)
+    return SNAP
+
+
+def _pinned_page(page_number):
+    """Page d'API rejouee. Item compact : [numero, closed_at, merged_at, updated_at, complet].
+    `complet` = 1 : la PR est dans la fenetre et non fusionnee, son enregistrement vit dans
+    SNAP["prs"][N]["pr"] (pas de copie du body dans les pages)."""
+    pages = SNAP["closed_pages"]
+    if not 1 <= page_number <= len(pages):
+        return []
+    out = []
+    for number, closed_at, merged_at, updated_at, full in pages[page_number - 1]:
+        if full:
+            out.append(SNAP["prs"][str(number)]["pr"])
+        else:
+            out.append({"number": number, "closed_at": closed_at,
+                        "merged_at": merged_at, "updated_at": updated_at})
+    return out
+
+
+def _pinned_pr(number):
+    return SNAP["prs"][str(number)]["pr"]
+
+
+@pytest.mark.usefixtures("pinned")
 def test_real_20374_is_accidental_empty_close():
     """Controle positif exige par #22166 : le cas fondateur doit sortir ACCIDENTAL.
 
-    **Ce controle depend de l'etat local du depot** (mesure du 2026-11-04,
-    revue Hermes sur #24480 : sur un clone frais le verdict rendait
-    ``UNKNOWN`` -- « contenu non verifiable (merge-base introuvable ou
-    branche supprimee) » -- la ou le body annoncait le vert).
-
-    Diagnostic exact, mesure : la branche `feature/20316-dynamics-t3`
-    existe **toujours** sur le depot distant (API, 2026-11-04 : head
-    `1b23a54a`), et le verdict local est bien `ACCIDENTAL_EMPTY_CLOSE`
-    (fermee 33 s apres un `head_ref_force_pushed`, 19 fichier(s)
-    absent(s)/divergent(s) de `main`). Ce qui manque sur un clone frais,
-    c'est l'**objet** du commit dans l'historique local : un clone CI
-    (`fetch-depth: 1`) ne contient pas un head de branche de 2024, donc
-    `git merge-base origin/main <tip>` ne rend rien et l'oracle degrade en
-    `UNKNOWN`.
-
-    Le test rend donc son verdict explicite, et **jamais un faux vert** :
-
-    - il **repare l'environnement** d'abord (fetch de `refs/pull/20374/head`)
-      quand l'objet manque ;
-    - si le contenu reste non verifiable (clone superficiel qui ne peut pas
-      etendre son historique), il exige l'oracle **honnete** (`UNKNOWN`) et
-      verifie **separement** la signature API -- 33 s entre le
-      `head_ref_force_pushed` et la fermeture -- qui ne depend d'aucun clone
-      local ;
-    - quand le contenu est verifiable, il exige `ACCIDENTAL` **et** les
-      fichiers perdus.
-
-    Le chemin de classification `ACCIDENTAL` reste epingle **hors reseau**
-    par `test_accidental_is_the_force_push_signature`.
+    Signature : `closed` 33 s apres un `head_ref_force_pushed` du meme acteur, et
+    19 fichiers absents/divergents de `main` (tete de branche epinglee dans le
+    snapshot). Verdict attendu : `ACCIDENTAL_EMPTY_CLOSE`, sans reseau.
     """
-    pr = json.loads(subprocess.run(
-        ["gh", "api", f"repos/{REPO}/pulls/20374"],
-        capture_output=True, text=True, check=True,
-        encoding="utf-8", errors="replace").stdout)
-    branches = lcu.obs.remote_branches(REPO)
-    if not _local_object_present(pr["head"]["sha"]):
-        _fetch_pr_head(20374)
-    row = lcu.evaluate_pr(pr, REPO, "origin/main", branches)
-    # La signature de l'accident vient du TIMELINE (API) : elle est
-    # verifiable meme quand le contenu local ne l'est pas.
+    row = lcu.evaluate_pr(_pinned_pr(20374), REPO, MAIN, lcu.obs.remote_branches(REPO))
     assert row["force_push_to_close_s"] is not None, row
     assert row["force_push_to_close_s"] <= 60.0, row
-    if row["verdict"] == lcu.ACCIDENTAL:
-        assert row["files_lost"] and row["files_lost"] > 0, row
-    else:
-        assert row["verdict"] == lcu.UNKNOWN, row
+    assert row["verdict"] == lcu.ACCIDENTAL, row
+    assert row["files_lost"] and row["files_lost"] > 0, row
 
 
-@needs_gh
+@pytest.mark.usefixtures("pinned")
 def test_real_24196_is_superseded():
     """Controle positif exige par la reouverture (Q162, 03/11).
 
-    #24196 a ete repliee dans une fournee : ses commentaires de fermeture
-    nomment le successeur (« Contenu fondu en fournee dans #24354 » a 03:16:42Z,
-    « [REPLIEE] Repliee en fournee dans la PR #24361 » a 04:21:36Z). Elle doit
-    donc sortir SUPERSEDED, et plus ORPHANED_CONTENT.
+    #24196 a ete repliee dans une fournee : ses commentaires de fermeture nomment
+    le successeur (#24354 puis #24361). Verdict attendu : `SUPERSEDED`, sans reseau.
     """
-    pr = json.loads(subprocess.run(
-        ["gh", "api", f"repos/{REPO}/pulls/24196"],
-        capture_output=True, text=True, check=True,
-        encoding="utf-8", errors="replace").stdout)
-    branches = lcu.obs.remote_branches(REPO)
-    row = lcu.evaluate_pr(pr, REPO, "origin/main", branches)
+    row = lcu.evaluate_pr(_pinned_pr(24196), REPO, MAIN, lcu.obs.remote_branches(REPO))
     assert row["verdict"] == lcu.SUPERSEDED, row
     assert "successeur nomme" in row["detail"], row
 
 
-# --- 6. controle NEGATIF ------------------------------------------------------------
-
-@needs_gh
+@pytest.mark.usefixtures("pinned")
 def test_a_real_deliberate_close_is_not_orphaned():
-    """Controle negatif : sur la fenetre reelle, aucune fermeture expliquee ne
-    doit etre classee ORPHANED ni ACCIDENTAL."""
-    prs = lcu.closed_unmerged(REPO, datetime(2026, 10, 9, tzinfo=timezone.utc))
-    if not prs:
-        pytest.skip("aucune PR fermee sans merge sur la fenetre")
+    """Controle negatif : sur la fenetre, aucune fermeture expliquee ne doit sortir
+    ORPHANED ni ACCIDENTAL. La fenetre (~72 h avant la capture) est epinglee avec les
+    pages que closed_unmerged lit reellement. Le controle doit rester non trivial :
+    la fenetre contient au moins une fermeture a successeur nomme et au moins une a
+    raison d'abandon ; si elle devient vide ou triviale, le test rougit."""
+    assert SNAP["_meta"]["window_since"] == WINDOW_SINCE.isoformat(), SNAP["_meta"]["window_since"]
+    prs = lcu.closed_unmerged(REPO, WINDOW_SINCE, fetch_page=_pinned_page)
+    assert prs, "snapshot sans fenetre : le controle ne prouve rien"
     branches = lcu.obs.remote_branches(REPO)
-    rows = [lcu.evaluate_pr(pr, REPO, "origin/main", branches) for pr in prs]
-    for row in rows:
-        if "raison d'abandon" in row.get("detail", "") or "successeur nomme" in row.get("detail", ""):
-            assert row["verdict"] == lcu.SUPERSEDED, row
+    rows = [lcu.evaluate_pr(pr, REPO, MAIN, branches) for pr in prs]
+    successors = [r for r in rows if "successeur nomme" in r.get("detail", "")]
+    abandons = [r for r in rows if "raison d'abandon" in r.get("detail", "")]
+    assert len(successors) > 0, "fenetre sans fermeture a successeur nomme : controle trivial"
+    assert len(abandons) > 0, "fenetre sans fermeture a raison d'abandon : controle trivial"
+    for row in successors + abandons:
+        assert row["verdict"] == lcu.SUPERSEDED, row
+
+
+# --- lignes de tri tardives + parked-veto (#22166 point 2, reouverture 03/11) --------
+
+def test_tri_marker_comment_is_read_outside_the_window():
+    """Controle positif : une ligne [TRI] postee 3 j apres la fermeture nomme un successeur.
+
+    Le tri du secretariat est pose apres coup ; la fenetre de 30 min autour de
+    closed_at le rendait structurellement invisible (#22166 point 2).
+    """
+    c = _c("[TRI] Repliee en fournee dans la PR #24361", ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[0] == 24361
+
+
+def test_tri_marker_with_abandon_word_outside_the_window():
+    c = _c("[TRI] Abandonnee : le canon 3.13 a rendu la reexecution obsolete",
+           ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[1] is True
+
+
+@pytest.mark.parametrize("prefix", ["[TRI]", "[tri]", "  [TRI]", "[TRI] #22166 point 2"])
+def test_tri_marker_forms_are_case_and_space_tolerant(prefix):
+    c = _c(f"{prefix} -- fondu en fournee dans #24354", ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[0] == 24354
+
+
+def test_late_comment_without_marker_stays_ignored():
+    """Controle negatif : la forme reconnue SANS marqueur reste hors fenetre = ignoree.
+
+    La garde est le marqueur : elargir la fenetre a toute la prose tardive
+    rouvrirait le piege que le commentaire de lane quelconque classe une PR.
+    """
+    c = _c("Repliee en fournee dans la PR #24361", ts="2026-10-15T10:20:00Z")
+    assert lcu.closing_evidence("", [c], CLOSED)[0] is None
+
+
+def test_tri_marker_alone_classifies_nothing():
+    """Un marqueur sans forme reconnue dedans ne classe pas : liste close."""
+    c = _c("[TRI] ligne de tri sans successeur ni raison", ts="2026-10-15T10:20:00Z")
+    succ, abandon = lcu.closing_evidence("", [c], CLOSED)
+    assert succ is None and abandon is False
+
+
+def test_window_comment_still_beats_nothing_when_no_tri():
+    c = _c("Doublon de #20400")  # dans la fenetre par defaut (ts == CLOSED - 14 s)
+    assert lcu.closing_evidence("", [c], CLOSED)[0] == 20400
+
+
+def test_parked_label_yields_parked_verdict():
+    v, d = lcu.verdict_of(integrated=False, parked=True, branch_present=True, content_lost=2)
+    assert v == lcu.PARKED and "parked-veto" in d
+
+
+def test_integrated_beats_parked():
+    """Un contenu deja sur main est le fait le plus fort, meme garé."""
+    assert lcu.verdict_of(integrated=True, parked=True)[0] == lcu.INTEGRATED
+
+
+def test_successor_beats_parked():
+    """Un successeur nomme est le fait actionnable, meme sur une PR garée."""
+    assert lcu.verdict_of(integrated=False, parked=True, successor=42)[0] == lcu.SUPERSEDED
+
+
+def test_parked_beats_accidental_signature():
+    """Un veto assume n'est pas l'accident du force-push, meme dans les 60 s."""
+    v, _ = lcu.verdict_of(integrated=False, parked=True,
+                          force_push_to_close_s=5.0, branch_present=True, content_lost=1)
+    assert v == lcu.PARKED

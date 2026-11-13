@@ -33,6 +33,15 @@ import re
 import sys
 from pathlib import Path
 
+# Shared rename probe (#24068): a notebook staged as a pure rename was only
+# MOVED, so the Lean paths it cites pre-date the move -- a consolidation-by-
+# move must not be reported for a stale path it did not introduce. Same
+# family as #24039 (scripts/check_subprocess_encoding.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# T3-c (#25366) : probe git_index_renames reloge dans scripts/audit/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "audit"))
+from git_index_renames import skip_pure_renames  # noqa: E402
+
 # Candidat : un chemin de fichier ``.lean`` qui ressemble à un chemin
 # du projet. La regex capture :
 #  - `knot_lean/.../*.lean` (relatif au cwd d'exécution du notebook)
@@ -197,6 +206,15 @@ def main(argv: list[str] | None = None) -> int:
         # (cf. test_path_filter_matches_windows_path dans le fichier
         # de tests, cas fondateur preserve).
         paths = [p for p in paths if flt.search(p.as_posix())]
+
+    # A notebook staged as a pure rename was only MOVED (#24068): the Lean
+    # paths it cites pre-date the move, so re-reporting them would blame a
+    # consolidation-by-move for a stale path it did not introduce.
+    kept, skipped = skip_pure_renames([p.as_posix() for p in paths])
+    if skipped:
+        print(f"check_knots_extracts: {len(skipped)} pure rename(s) ignored "
+              "-- their paths pre-date the move (#24068)", file=sys.stderr)
+    paths = [Path(p) for p in kept]
 
     if not paths:
         return 0

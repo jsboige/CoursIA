@@ -341,7 +341,7 @@ Le code ci-dessus résout le problème classique des **3 missionnaires et 3 cann
 
 > **Note**: La méthode `Solve()` trouve **une** solution satisfaisant les contraintes, mais pas nécessairement la plus courte. Pour obtenir la solution optimale, il faut utiliser `Optimize()` (voir section suivante).
 ",,,,,,,,01e970dbf43f3d68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,b81a1e52,markdown,fr,d38681429e986d03,"### Exercice 2 : Problème de dimensionnement (n-Queens lite)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,b81a1e52,markdown,fr,baef170072b0afa8,"### Exercice 1 : Problème de dimensionnement (n-Queens lite)
 
 Il s'agit de placer N reines sur un echiquier NxN de sorte qu'aucune ne soit sur la même ligne, colonne ou diagonale qu'une autre.
 
@@ -351,8 +351,8 @@ Il s'agit de placer N reines sur un echiquier NxN de sorte qu'aucune ne soit sur
 - Utilisez `Symbols<int, int, int, int>` pour un echiquier 4x4
 - Contrainte 1 : toutes les colonnes différentes (Q1 != Q2 != Q3 != Q4)
 - Contrainte 2 : pas de diagonale => |Qi - Qj| != |i - j|
-- Utilisez `Math.Abs` pour la valeur absolue des différences",,,,,,,,d38681429e986d03,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,26bfd605,code,fr,e16eaf1cd86a9e31,"// Exercice 2 : n-Queens 4x4 avec Z3.Linq
+- Utilisez `Math.Abs` pour la valeur absolue des différences",,,,,,,,baef170072b0afa8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,26bfd605,code,fr,a4c2f9d5c54db73a,"// Exercice 1 : n-Queens 4x4 avec Z3.Linq
 // TODO etudiant : placez 4 reines sur un echiquier 4x4
 // Etape 1 : definissez un theoreme avec 4 variables (Q1, Q2, Q3, Q4)
 // Etape 2 : ajoutez les contraintes de colonnes distinctes
@@ -369,7 +369,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,26bfd605,code
 //     Console.WriteLine($""Q1={solution.X1}, Q2={solution.X2}, Q3={solution.X3}, Q4={solution.X4}"");
 // }
 
-Console.WriteLine(""Exercice a completer : n-Queens 4x4 avec Z3.Linq"");",,,,,,,,e16eaf1cd86a9e31,,,,,,,,,,,,,,,
+Console.WriteLine(""Exercice a completer : n-Queens 4x4 avec Z3.Linq"");",,,,,,,,a4c2f9d5c54db73a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,5e0ad9fc,markdown,fr,d3f1b43f059f6f49,### Recherche de la solution la plus courte,,,,,,,,d3f1b43f059f6f49,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,a5c8a9da,code,fr,ada2267e9b906564,"using System.Diagnostics;
 var stopWatch = new Stopwatch();
@@ -395,7 +395,7 @@ var stopWatch = new Stopwatch();
 
 
 ",,,,,,,,ada2267e9b906564,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,1763a6b4,markdown,fr,32155a2f90bfad7c,"### Analyse de l'optimisation
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,1763a6b4,markdown,fr,722200b9f6439310,"### Analyse de l'optimisation
 
 **Différence entre `Solve()` et `Optimize()`:**
 
@@ -403,13 +403,13 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,1763a6b4,mark
 - **`Optimize(Optimization.Minimize, objMnC => objMnC.Length)`**: Trouve la solution avec la **plus petite** valeur de `Length`
 
 Dans le cas des missionnaires et cannibales, cela signifie:
-- `Solve()` peut retourner un chemin de 15 étapes alors qu'il existe un chemin de 11 étapes
+- `Solve()` a retourné un chemin bien plus long que l'optimum (la sortie ci-dessus en témoigne — 24 étapes à cette exécution), alors que le chemin optimal en compte 12 : sans garantie d'optimalité
 - `Optimize()` garantit de trouver le chemin le plus court possible
 
 > **Performance**: L'optimisation est plus coûteuse en temps de calcul, car le solveur doit explorer l'espace de recherche pour prouver qu'aucune solution plus courte n'existe.
 
-**Résultat attendu**: Le chemin optimal pour 3 missionnaires et 3 cannibales avec une barque de capacité 2 est de **11 étapes**.
-",,,,,,,,32155a2f90bfad7c,,,,,,,,,,,,,,,
+**Résultat attendu** : Le chemin optimal pour 3 missionnaires et 3 cannibales avec une barque de capacité 2 est de **12 états à l'encodage** — l'état initial plus les 11 traversées de la solution classique. C'est le `Length = 12` qu'affiche la sortie `Optimize()` ci-dessus.
+",,,,,,,,722200b9f6439310,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,2c1f373b,code,fr,092a50335aaf5191,"using System.Diagnostics;
 var stopWatch = new Stopwatch();
       stopWatch.Start();
@@ -434,7 +434,7 @@ var stopWatch = new Stopwatch();
 
 
 ",,,,,,,,092a50335aaf5191,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,b6cb8246,markdown,fr,65e33642b6a0e544,"### Exercice 3 : Variante du problème - Loups, Chevres et Choux
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,b6cb8246,markdown,fr,6ac52ef870d22f9b,"### Exercice 2 : Variante du problème - Loups, Chevres et Choux
 
 Generalisez le modèle des missionnaires-cannibales pour resoudre un problème voisin : un fermier doit traverser une riviere avec un loup, une chevre et un chou. La barque ne peut transporter que le fermier plus un seul item. Le loup mange la chevre et la chevre mange le chou s'ils restent seuls ensemble.
 
@@ -444,8 +444,8 @@ Generalisez le modèle des missionnaires-cannibales pour resoudre un problème v
 - Le fermier est toujours dans la barque (pas besoin de variable separree, il est implicite)
 - 3 items a transporter : L (loup), C (chevre), X (chou)
 - Invariant : le fermier ne peut pas laisser (L+C) ou (C+X) seuls sur une rive
-- Utilisez un codage similaire avec des tableaux pour les positions a chaque étape",,,,,,,,65e33642b6a0e544,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,1ba631d6,code,fr,84e038c7d6d9b98e,"// Exercice 3 : Loups, Chevres et Choux avec Z3.Linq
+- Utilisez un codage similaire avec des tableaux pour les positions a chaque étape",,,,,,,,6ac52ef870d22f9b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,1ba631d6,code,fr,e81272f500e5dc02,"// Exercice 2 : Loups, Chevres et Choux avec Z3.Linq
 // TODO etudiant : modelisez le probleme du fermier, loup, chevre et chou
 // Etape 1 : definissez les variables d'etat (positions de chaque item par etape)
 // Etape 2 : ajoutez les contraintes de transition (1 seul item par traverse)
@@ -458,16 +458,16 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,1ba631d6,code
 // public class FarmerProblem { ... }
 // using (var ctx = new Z3Context()) { ... }
 
-Console.WriteLine(""Exercice a completer : loups, chevres et choux avec Z3.Linq"");",,,,,,,,84e038c7d6d9b98e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,af7cac81,markdown,fr,68bb8ea4c490f7f6,"## B9 - Environnements `record` positionnels (DSL `NewTheorem<PositionalRecord>`)
+Console.WriteLine(""Exercice a completer : loups, chevres et choux avec Z3.Linq"");",,,,,,,,e81272f500e5dc02,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,af7cac81,markdown,fr,58e14985ea8abb9b,"## B9 - Environnements `record` positionnels (DSL `NewTheorem<PositionalRecord>`)
 
-L'environnement d'un théorème (le type `T` passe a `NewTheorem<T>`) peut etre un **record positionnel** C# -- par exemple `record Point(int X, int Y)` -- et non une `class` mutable. La reconstruction de la solution passe alors par une branche dediee du solveur ([`Theorem.cs:993-1099`](../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L993)) qui selectionne le *primary constructor* du record, evalue chaque paramètre depuis le modèle Z3, puis invoque `Activator.CreateInstance(t, args)` avec les valeurs positionnelles -- l'ancienne branche `Activator.CreateInstance(t)` throw sur un record sans constructeur sans paramètre (un positional record n'expose que des `init`-only setters).
+L'environnement d'un théorème (le type `T` passe a `NewTheorem<T>`) peut etre un **record positionnel** C# -- par exemple `record Point(int X, int Y)` -- et non une `class` mutable. La reconstruction de la solution passe alors par une branche dediee du solveur ([`Theorem.cs:1589-1704`](../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L1589)) qui selectionne le *primary constructor* du record, evalue chaque paramètre depuis le modèle Z3, puis invoque `Activator.CreateInstance(t, args)` avec les valeurs positionnelles -- l'ancienne branche `Activator.CreateInstance(t)` throw sur un record sans constructeur sans paramètre (un positional record n'expose que des `init`-only setters).
 
 Le mini-problème : sur un point `(X, Y)` dans le plan, trouver le point satisfaisant `X + Y = 12` **et** `X = 2·Y` (solution unique attendue : `X = 8, Y = 4`).
 
 > **Stack : A+B** -- le raw doit gerer manuellement la reconstruction via `Model.Eval` sur chaque `IntExpr`, tandis que le DSL `NewTheorem<Point>().Where(...)` invoque la branche `ConstructFromModel` automatiquement ; l'objet rendu (`Point { X = 8, Y = 4 }`) est type C#, pas une paire de `IntNum`.
 
-**Ancre fork** : `Theorem.cs:993-1099` (branche `ConstructFromModel`), tests `Z3.Linq.Tests/RecordEnvTheoryTests.cs:18-91` (4 cas : positional standard, scalaires mixtes int+bool, trois paramètres, UNSAT). La feature etait listee dans le backlog `B9` d'[#4688](https://github.com/jsboige/CoursIA/issues/4688) avec une ancre « a confirmer » -- le grep la trouve dans la branche reconstruction, **pas** dans la declaration de type (qui est du C# standard).",,,,,,,,68bb8ea4c490f7f6,,,,,,,,,,,,,,,
+**Ancre fork** : `Theorem.cs:1589-1704` (branche `ConstructFromModel`), tests `Z3.Linq.Tests/RecordEnvTheoryTests.cs:18-91` (4 cas : positional standard, scalaires mixtes int+bool, trois paramètres, UNSAT). La feature etait listee dans le backlog `B9` d'[#4688](https://github.com/jsboige/CoursIA/issues/4688) avec une ancre « a confirmer » -- le grep la trouve dans la branche reconstruction, **pas** dans la declaration de type (qui est du C# standard).",,,,,,,,58e14985ea8abb9b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,999c4775,code,fr,1642dddcb8763e73,"// B9 - Record positionnel ""deux stacks"" sur le meme probleme (X+Y=12, X=2Y).
 //   Un point (X, Y) dans le plan, soumis a 2 contraintes lineaires.
 //   Solution unique attendue : X=8, Y=4.
@@ -528,7 +528,7 @@ public record PointRecord(int X, int Y) { }
     sUn.Assert(z3.MkLt(x, z3.MkInt(0)));
     Console.WriteLine($""[RAW]   X>=0 et X<0 : {sUn.Check()}   (aucune affectation)"");
 }",,,,,,,,1642dddcb8763e73,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,4ab72a78,markdown,fr,2bf2911e61616539,"### Lecture B9 - deux ecritures d'un même record, un même résultat
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,4ab72a78,markdown,fr,8aaea3374ccf196c,"### Lecture B9 - deux ecritures d'un même record, un même résultat
 
 Les deux ecritures resolvent **le même système** (`X + Y = 12`, `X = 2·Y`) et produisent **le même temoin** (`X = 8, Y = 4`), mais leur cout d'ecriture est asymetrique :
 
@@ -541,15 +541,15 @@ Les deux ecritures resolvent **le même système** (`X + Y = 12`, `X = 2·Y`) et
 | Surface code | plusieurs lignes significatives + risque d'erreur de typage des `IntNum` | quelques lignes de contraintes |
 | Constructeur sans paramètre | non requis (le raw n'instancie jamais d'objet C#) | **necessaire dans le cas d'une `class` mutable**, **interdit dans le cas d'un record** (l'ancienne branche `Activator.CreateInstance(t)` throw) |
 
-> **Ligne de contraste** : la valeur ajoutee du DSL ici n'est pas une fecondation d'expression (comme `Sum` qui replie N termes en un seul `MkAdd`), mais le **routage de reconstruction** -- la detection du type d'environnement (`class` mutable avec setter vs `record` positionnel vs type anonyme) et l'invocation de la bonne branche de [`Theorem.cs:993-1099`](../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L993). Cote raw, c'est au chercheur de coder la reconstruction -- cote DSL, elle est *incluse par defaut* dans `NewTheorem<T>()`. Les tests unitaires `RecordEnvTheoryTests` (4 cas) verifient que la branche positionnelle couvre records a 2-3 params, scalaires mixtes (int + bool), et le retour `null` sur UNSAT.",,,,,,,,2bf2911e61616539,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,68738069,markdown,fr,14c938d613183429,"### Exercice 4 : record positionnel a 3 paramètres (stability of constructor order)
+> **Ligne de contraste** : la valeur ajoutee du DSL ici n'est pas une fecondation d'expression (comme `Sum` qui replie N termes en un seul `MkAdd`), mais le **routage de reconstruction** -- la detection du type d'environnement (`class` mutable avec setter vs `record` positionnel vs type anonyme) et l'invocation de la bonne branche de [`Theorem.cs:1589-1704`](../Z3.Linq/solutions/Z3.Linq/Theorem.cs#L1589). Cote raw, c'est au chercheur de coder la reconstruction -- cote DSL, elle est *incluse par defaut* dans `NewTheorem<T>()`. Les tests unitaires `RecordEnvTheoryTests` (4 cas) verifient que la branche positionnelle couvre records a 2-3 params, scalaires mixtes (int + bool), et le retour `null` sur UNSAT.",,,,,,,,8aaea3374ccf196c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,68738069,markdown,fr,beaa6833d49bd636,"### Exercice 3 : record positionnel a 3 paramètres (stability of constructor order)
 
 Reproduisez la demarche ci-dessus avec un record a **trois** paramètres -- par exemple `record Triple(int A, int B, int C)` -- et trois contraintes scalaires (par exemple `A == 1, B == 2, C == 3`). Le solveur doit rendre un `Triple { A = 1, B = 2, C = 3 }`.
 
 **Variante discriminante** : declarez les contraintes dans un ordre différent (par exemple `B == 2, C == 3, A == 1`). La solution reste-t-elle la même ? Le matching des arguments du constructeur se fait-il par nom ou par position dans le `.Where` ?
 
-**Indice** : voir [Theorem.cs:1076](..%2F..%2FZ3.Linq%2Fsolutions%2FZ3.Linq%2FTheorem.cs#L1076) -- la reconstruction selectionne le constructeur dont tous les paramètres sont dans l'environnement, puis passe les args **positionnellement**.",,,,,,,,14c938d613183429,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,851f1272,code,fr,873a5b11d9450446,"// Exercice 4 : record positionnel a 3 parametres avec Z3.Linq
+**Indice** : voir [Theorem.cs:1648](..%2FZ3.Linq%2Fsolutions%2FZ3.Linq%2FTheorem.cs#L1648) -- la reconstruction selectionne le constructeur dont tous les paramètres sont dans l'environnement, puis passe les args **positionnellement**.",,,,,,,,beaa6833d49bd636,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,851f1272,code,fr,355e6aced7c07dbf,"// Exercice 3 : record positionnel a 3 parametres avec Z3.Linq
 // TODO etudiant : modelisez un record Triple(int A, int B, int C) puis :
 // Etape 1 : declarez record Triple(int A, int B, int C) au niveau de la cellule
 // Etape 2 : 3 contraintes scalaires : A == 1, B == 2, C == 3
@@ -557,13 +557,13 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,851f1272,code
 // Etape 4 (variante discriminante) : changez l'ordre des contraintes en B==2, C==3, A==1
 //           et verifiez que la solution reste la meme (le matching des params se fait par NOM, pas par ordre du Where)
 
-// Indice : la reconstruction du record (Theorem.cs:1076) selectionne le constructeur
+// Indice : la reconstruction du record (Theorem.cs:1648) selectionne le constructeur
 // dont TOUS les parametres sont satisfiables par l'environnement ; le passage des args
 // est positionnel. L'ordre de declaration des Where ne change donc pas la solution,
 // seul l'ordre des parametres du constructeur compte.
 
-Console.WriteLine(""Exercice a completer : record Triple positionnel a 3 parametres avec Z3.Linq"");",,,,,,,,873a5b11d9450446,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,2142ea44,markdown,fr,7eac565ebaa8622d,"## Conclusion et analyse comparative
+Console.WriteLine(""Exercice a completer : record Triple positionnel a 3 parametres avec Z3.Linq"");",,,,,,,,355e6aced7c07dbf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,2142ea44,markdown,fr,4c7bb7331de299a8,"## Conclusion et analyse comparative
 
 Ce notebook a illustré l'utilisation de **Z3.Linq** pour résoudre des problèmes de satisfaction de contraintes en combinant la puissance du solveur SMT Z3 avec la syntaxe LINQ de C#.
 
@@ -592,7 +592,7 @@ Ce notebook a illustré l'utilisation de **Z3.Linq** pour résoudre des problèm
 
 ***
 
-## Exercice : Modélisez un Problème de Planification
+## Exercice 4 : Modélisez un Problème de Planification
 
 Modélisez et résolvez un problème de planification avec Z3.Linq.
 
@@ -605,7 +605,7 @@ Créez un solveur pour planifier des tâches sur plusieurs machines.
 ### Questions d'analyse
 1. Combien de machines sont utilisées dans la solution optimale ?
 2. Quelle est la différence entre `Solve()` et `Optimize()` pour ce problème ?
-3. Comment ajouter une contrainte ""tâches A et b ne peuvent pas être sur la même machine"" ?",,,,,,,,7eac565ebaa8622d,,,,,,,,,,,,,,,
+3. Comment ajouter une contrainte ""tâches A et b ne peuvent pas être sur la même machine"" ?",,,,,,,,4c7bb7331de299a8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb,c4eecb38,code,fr,e1275576fe8691fb,"// TODO: Définissez le problème de planification
 // - 5 tâches avec des durées différentes
 // - 3 machines avec des capacités différentes
@@ -631,7 +631,7 @@ public class PlanningProblem
 // var solution = theorem.Optimize(...);
 
 Console.WriteLine(""Exercice a completer : modeliser un probleme de planification avec Z3.Linq"");",,,,,,,,e1275576fe8691fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,a1b2c3d4,markdown,fr,56f4c3eeea8062ef,"# Sudoku : Théorème Explicite vs Modèle Implicite par Arrays
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,a1b2c3d4,markdown,fr,ac0779b5f73b5813,"# Sudoku : Théorème Explicite vs Modèle Implicite par Arrays
 
 **Navigation** : [Index SymbolicAI](../../README.md) | [Serie Z3](README.md) | [<< Introduction Linq2Z3](01_Linq2Z3_Intro.ipynb)
 
@@ -660,7 +660,11 @@ Ce notebook presente la **transition pedagogique cle** entre deux approches de m
 
 Cette transition illustre l'innovation apportee par la branche EPFdevelopment du fork Z3.Linq : la capacite d'utiliser des indexeurs de collection dans les expressions lambda traduites en formules SMT.
 
-> **Contexte** : Le modèle implicite par arrays est la base de tous les notebooks Sudoku avances de cette serie. Le comprendre en profondeur est essentiel pour la suite.",,,,,,,,56f4c3eeea8062ef,,,,,,,,,,,,,,,
+> **Contexte** : Le modèle implicite par arrays est la base de tous les notebooks Sudoku avances de cette serie. Le comprendre en profondeur est essentiel pour la suite.
+
+## Source
+
+L'encodage par tableau d'une grille de 9 par 9 vient de **Yurichev, *SAT/SMT by Example*** (édition du 12 février 2023) : §8.1.2 « Simple sudoku in SMT using functions and array » (p. 212) pose exactement les mêmes contraintes que ce carnet — domaine 1..9, une valeur par case, trois cases distinctes par bloc de 3x3. L'**instance**, en revanche, n'est pas celle du livre : la grille de la section §8.1 (p. 205) est le « world's hardest sudoku » (`..53.....8......2..7..1.5..4....53...1..7...6..32...8..6.5....9..4....3......97..`, 23 indices), et le carnet en résout une autre, à 30 indices. Copie archivée : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (sections et folios relevés sur les pages de l'ouvrage archivé).",,,,,,,,ac0779b5f73b5813,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,360fa043,markdown,fr,625d18604e80d651,"### Vue d'ensemble : deux stratégies de modelisation du même Sudoku
 
 ```mermaid
@@ -818,9 +822,9 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,d0e
 | **Lisibilite** | Les contraintes de boite sont illisibles (9 noms de proprietes melanges) |
 
 > **Conclusion** : l'approche explicite est pedagogiquement utile pour comprendre ce que Z3 fait, mais elle ne passe pas a l'echelle. C'est ce qui motive le modèle implicite par arrays.",,,,,,,,d48eee67bdba93dc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,e1f2a3b4,markdown,fr,d6a02e5e8c84aee3,"## 3. Approche 2 : Modèle implicite par arrays
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,e1f2a3b4,markdown,fr,b6cdc733903447c9,"## 3. Approche 2 : Modèle implicite par arrays
 
-L'approche par arrays exploite une capacite fondamentale de Z3.Linq : la traduction d'**indexeurs de collection** (`list[i]`) en variables de decision SMT. Au lieu de 81 proprietes nommees, on utilise une seule propriete `List<int> Cells` de taille 81.
+L'approche par arrays exploite une capacite fondamentale de Z3.Linq : la traduction d'**indexeurs de collection** (`list[i]`) en termes SMT : au mode par defaut du contexte (`CollectionHandling.Array`, detaille dans NB-03), la collection devient un **seul symbole de tableau** interroge par `select`, et au mode `Constants` chaque element devient une variable distincte. Au lieu de 81 proprietes nommees, on utilise une seule propriete `List<int> Cells` de taille 81.
 
 ### Principe cle : closures et capture de variable
 
@@ -828,14 +832,17 @@ Quand on ecrit une boucle `for` qui genere des contraintes Z3 :
 
 ```csharp
 for (int i = 0; i < 9; i++) {
-    var i1 = i;  // Copie locale OBLIGATOIRE
-    theorem = theorem.Where(s => s.Cells[i1 * 9 + j1] > 0);
+    for (int j = 0; j < 9; j++) {
+        var i1 = i;  // Copie locale OBLIGATOIRE
+        var j1 = j;  // Idem pour l'indice interne
+        theorem = theorem.Where(s => s.Cells[i1 * 9 + j1] > 0);
+    }
 }
-```
+```  
 
-La variable `i1` est une **copie locale** qui capture la valeur de `i` a chaque itération. Sans cette copie, toutes les expressions lambda partageraient la même reference vers `i`, qui vaudrait 9 en sortie de boucle. C'est le mécanisme standard de closure en C#, applique ici aux expressions traduites en SMT.
+Les variables `i1` et `j1` sont des **copies locales** qui capture la valeur de `i` a chaque itération. Sans cette copie, toutes les expressions lambda partageraient la même reference vers `i`, qui vaudrait 9 en sortie de boucle. C'est le mécanisme standard de closure en C#, applique ici aux expressions traduites en SMT.
 
-### Classe du modèle implicite",,,,,,,,d6a02e5e8c84aee3,,,,,,,,,,,,,,,
+### Classe du modèle implicite",,,,,,,,b6cdc733903447c9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,f2a3b4c5,code,fr,273975dca2219d0f,"public class SudokuArray
 {
     public List<int> Cells { get; set; } = Enumerable.Repeat(0, 81).ToList();
@@ -915,7 +922,7 @@ sw.Stop();
 
 Console.WriteLine($""Resolution en {sw.ElapsedMilliseconds} ms"");
 DisplaySudoku(solution.Cells, ""Solution Sudoku (sans indices)"");",,,,,,,,9b3b3cec5419e34c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,e7f8a9b0,markdown,fr,c4038672d918f32e,"### Interpretation : Sudoku vide
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,e7f8a9b0,markdown,fr,fe6d9a5c7f38aec8,"### Interpretation : Sudoku vide
 
 Le solveur produit une grille Sudoku valide (chaque ligne, colonne et boite 3x3 contient les chiffres 1 a 9 exactement une fois). Ce n'est pas un Sudoku ""interessant"" (pas de puzzle a resoudre), mais il demontre que **toutes les contraintes structurelles sont correctes**.
 
@@ -927,16 +934,16 @@ Le solveur produit une grille Sudoku valide (chaque ligne, colonne et boite 3x3 
 | Contraintes de boites | 9 | Une par boite 3x3 |
 | Total | 108 | Identique a l'approche explicite, mais genere par boucles |
 
-> **Note technique** : le modèle implicite genere exactement le même ensemble de contraintes SMT que le modèle explicite. La différence est purement syntaxique (C#), pas sémantique (Z3).",,,,,,,,c4038672d918f32e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,223a2311,markdown,fr,de6b2825c3f1cfb0,"### Précision de vocabulaire — « array » C# vs « Array » SMT
+> **Note technique** : le modèle implicite genere le même ensemble de **contraintes logiques** (108 au total, le tableau ci-dessus), mais **pas le même encodage SMT**. Côté explicite : 81 constantes entières nommées et des contraintes binaires. Côté implicite, au mode par défaut du fork (`CollectionHandling.Array`) : la propriété `Cells` devient **une seule `ArrayExpr`** et chaque `Cells[i*9+j]` un **`select`** — la théorie des tableaux de Z3. La différence est syntaxique en C#, mais l'encodage envoyé au solveur diffère (même espace de solutions, deux représentations).",,,,,,,,fe6d9a5c7f38aec8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,223a2311,markdown,fr,0987c627570b8d7c,"### Précision de vocabulaire — « array » C# vs « Array » SMT
 
-Puisque nous venons d'évoquer le **niveau SMT**, il faut clarifier un point de vocabulaire qui sinon prête à confusion : le mot **« array »** dans ce notebook ne désigne **pas** la théorie des tableaux de Z3.
+Puisque nous venons d'évoquer le **niveau SMT**, précisons ce que devient `List<int> Cells` de ce côté-là : au **mode par défaut du fork** (`CollectionHandling.Array`), l'« array » C# devient **un vrai tableau SMT** — un seul symbole `(Array Int Int)` construit par `MkArrayConst`, que chaque `s.Cells[i*9+j]` interroge par `select`. La théorie des tableaux de Z3 (celle du notebook [04 — Array Theory](04_Array_Theory.ipynb)) est donc bien en jeu ici, appliquée automatiquement par le binding.
 
-- **Ici, « array » = `List<int>` C#.** La propriété `Cells` est une collection C#, et l'indexeur `s.Cells[i*9+j]` est un *sucre d'indexeur* que Z3.Linq traduit en **une variable de décision Z3 distincte par cellule** (81 variables au total, comme le rappelle la conclusion). Le « modèle implicite par arrays » compactifie donc le **code source C#**, pas la **représentation SMT** — d'où la note ci-dessus : les deux approches génèrent le même ensemble de contraintes.
+- **Ici, « array » = `List<int>` C#** : la propriété `Cells` reste une collection C# côté modèle. C'est l'**encodage SMT** qui la traite comme un tableau (mode `Array`, le défaut du contexte) — et non comme 81 constantes distinctes.
 
-- **La théorie des tableaux SMT** (le `(Array Int Int)` de SMT-LIB, avec ses opérations `select`/`store` et les axiomes de McCarthy) est **autre chose** : là, le tableau est un *seul* symbole logique que l'on interroge par `select(arr, i)`. Cette théorie est enseignée dans le notebook [04 — Array Theory](04_Array_Theory.ipynb).
+- **Le mode « une constante par cellule » existe** : c'est `CollectionHandling.Constants`, où chaque élément de la collection devient une constante Z3 séparée. Ce carnet ne le configure pas — il tourne en mode `Array`, le défaut — et la comparaison systématique des deux encodages (une `ArrayExpr` + `select`/`store` vs une constante par élément) est détaillée dans le notebook [03 — Sudoku Modes Comparison](03_Sudoku_Modes_Comparison.ipynb).
 
-Le « array » de ce notebook et l'« Array » de NB-04 sont donc deux notions différentes qui partagent un mot. Si vous cherchez à modéliser le Sudoku comme un *vrai tableau SMT* (`select`/`store`), c'est NB-04 qu'il faut voir ; la comparaison des deux modes d'encodage des collections (une variable par cellule vs un seul symbole de tableau) est elle détaillée dans le notebook [03 — Sudoku Modes Comparison](03_Sudoku_Modes_Comparison.ipynb).",,,,,,,,de6b2825c3f1cfb0,,,,,,,,,,,,,,,
+Si vous voulez voir la théorie des tableaux maniée **explicitement** (`store` pour poser les indices, `select` pour lire), c'est NB-04 qu'il faut lire ; ici, le binding la génère pour vous sous le capot.",,,,,,,,0987c627570b8d7c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb,f8a9b0c1,markdown,fr,910df05352db0e36,"## 4. Résolution avec un puzzle reel (indices)
 
 La vraie puissance du modèle implicite apparait quand on ajoute des **indices** (cellules pre-remplies du puzzle). Avec l'approche explicite, ajouter un indice suppose connaitre le nom de la propriete (`Cell34`). Avec le modèle implicite, une simple boucle suffit.
@@ -1291,9 +1298,12 @@ using System;
 using System.Linq;
 
 Console.WriteLine($""Z3.Linq chargé. CollectionHandling disponible : {nameof(CollectionHandling.Array)}, {nameof(CollectionHandling.Constants)}"");",,,,,,,,6b6eef10c9fdf2fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,a3cec73d,markdown,fr,82166fa0536d74eb,"### Type de grille et théorème Sudoku 4x4
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,a3cec73d,markdown,fr,5737d6cfec593df3,"### Type de grille et théorème Sudoku 4x4
 
-On définit une grille 4x4 comme un `int[][]`. Le théorème impose : chaque cellule dans `[1,4]`, chaque ligne et chaque colonne a 4 valeurs distinctes (carré latin).",,,,,,,,82166fa0536d74eb,,,,,,,,,,,,,,,
+On définit une grille 4x4 comme un `int[][]`. Le théorème impose : chaque cellule dans `[1,4]`, chaque ligne et chaque colonne a 4 valeurs distinctes (carré latin).
+
+
+Concrètement, `BuildSudoku` empile sur le même type `SudokuGrid4` une contrainte de domaine $1 \le g.Cells[i][j] \le 4$ par cellule, puis des contraintes `Distinct` — une par ligne et une par colonne. C'est tout le CSP : pas de contrainte de bloc ici, ce Sudoku 4x4 se traite comme un carré latin.",,,,,,,,5737d6cfec593df3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,71f09d1d,code,fr,fbbcbc894fd60ded,"public class SudokuGrid4
 {
     public int[][] Cells { get; set; } = new int[4][];
@@ -1349,9 +1359,12 @@ Console.WriteLine($""Mode actif : {ctxConst.DefaultCollectionHandling}"");
 var solConst = BuildSudoku(ctxConst).Solve();
 Console.WriteLine(""Solution (mode Constants) :"");
 Console.WriteLine(GridToString(solConst));",,,,,,,,7539aa7e08c1f8a4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,09a6e45a,markdown,fr,8968b28930242f2c,"### Vérification : les deux solutions sont des carrés latins valides
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,09a6e45a,markdown,fr,8201c7649520df59,"### Vérification : les deux solutions sont des carrés latins valides
 
-Indépendamment du mode, le résultat doit satisfaire les contraintes (lignes et colonnes = permutations de 1..4).",,,,,,,,8968b28930242f2c,,,,,,,,,,,,,,,
+Indépendamment du mode, le résultat doit satisfaire les contraintes (lignes et colonnes = permutations de 1..4).
+
+
+`IsLatinSquare` trie chaque ligne, puis chaque colonne, et compare le résultat à `[1, 2, 3, 4]` : la vérification ne dépend pas de l'encodage Z3 choisi, elle ne regarde que la grille résolue.",,,,,,,,8201c7649520df59,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,734abd31,code,fr,eb6cd1c757bcccc3,"bool IsLatinSquare(SudokuGrid4 g)
 {
     var expected = new int[] { 1, 2, 3, 4 };
@@ -1367,7 +1380,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,734
 
 Console.WriteLine($""Array     valide ? {IsLatinSquare(solArray)}"");
 Console.WriteLine($""Constants valide ? {IsLatinSquare(solConst)}"");",,,,,,,,eb6cd1c757bcccc3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,6782ae48,markdown,fr,cc4bfa41231be8c3,"### Interprétation : pourquoi les deux modes convergent-ils vers la même solution ?
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,6782ae48,markdown,fr,760a468697770f84,"### Interprétation : pourquoi les deux modes convergent-ils vers la même solution ?
 
 Vous aurez remarqué un fait frappant : les deux modes produisent **exactement la même grille** :
 
@@ -1382,11 +1395,11 @@ Ce n'est pas une coïncidence, et ce n'est pas non plus un défaut. C'est préci
 
 | Question | Réponse |
 |----------|---------|
-| Pourquoi la même solution ? | Les deux modes résolvent le **même théorème** (mêmes contraintes LINQ), Z3 explore donc le même espace de solutions et converge vers la même solution minimale. |
+| Pourquoi la même solution ? | Les deux modes résolvent le **même théorème** (mêmes contraintes LINQ) : le CSP n'a **aucun objectif d'optimisation** (pas d'`Optimize()` ici), et l'exploration déterministe du solveur conduit chaque encodage à exhiber la même première solution — pas une solution « minimale », simplement la première trouvée. |
 | Le mode change-t-il la sémantique ? | **Non.** `CollectionHandling` est un paramètre d'*encodage*, pas de *signification*. Le CSP (carré latin 4x4) est invariant. |
 | Que change le mode alors ? | La **représentation interne** envoyée au solver : une `ArrayExpr` (mode Array) vs 16 constantes nommées (mode Constants). |
 
-> **Leçon clé** : c'est la **preuve que le mode `Constants` est bien vivant**. Si l'enum était encore du dead code non câblé (son état historique), le mode Constants aurait soit échoué silencieusement, soit reproduit le comportement Array par défaut. Ici, il résout réellement le CSP via des symboles séparés — le chemin d'exécution est distinct, le résultat est identique par correction.",,,,,,,,cc4bfa41231be8c3,,,,,,,,,,,,,,,
+> **Leçon clé** : c'est la **preuve que le mode `Constants` est bien vivant**. Si l'enum était encore du dead code non câblé (son état historique), le mode Constants aurait soit échoué silencieusement, soit reproduit le comportement Array par défaut. Ici, il résout réellement le CSP via des symboles séparés — le chemin d'exécution est distinct, le résultat est identique par correction.",,,,,,,,760a468697770f84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,e382c909,markdown,fr,6a4121644fd6c6b0,"**Indice pédagogique — quand utiliser quel mode ?**
 
 - **`Array`** : quand on veut un modèle compact ou qu'on manipule des index symboliques (ex. « existe-t-il un index `k` tel que… »). C'est aussi le seul mode qui supporte nativement le `int[][]` imbriqué via la théorie des tableaux.
@@ -1444,9 +1457,9 @@ Ce notebook a démontré que l'enum `CollectionHandling` — historiquement du *
 ***
 
 **Navigation** : [Index SymbolicAI](../../README.md) | [Série Z3](README.md) | [<< Sudoku Theorem vs Array](02_Sudoku_Theorem_vs_Array.ipynb) | [Array Theory >>](04_Array_Theory.ipynb)",,,,,,,,d472956c4d04f59d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,a1b2c3d0,markdown,fr,a3d70ac807e996b0,"# Théorie des Tableaux Z3 — Select, Store et Switching
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,a1b2c3d0,markdown,fr,fd403367bc56038e,"# Théorie des Tableaux Z3 — Select, Store et Switching
 
-**Navigation** : [Index SymbolicAI](../../README.md) | [Série Z3](README.md) | [<< Sudoku Theorem vs Array](02_Sudoku_Theorem_vs_Array.ipynb) | [Nested Arrays 2D >>](05_Nested_Arrays_2D.ipynb)
+**Navigation** : [Index SymbolicAI](../../README.md) | [Série Z3](README.md) | [<< Sudoku Modes Comparison](03_Sudoku_Modes_Comparison.ipynb) | [Nested Arrays 2D >>](05_Nested_Arrays_2D.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -1468,7 +1481,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,a1b2c3d0,markd
 
 Ce notebook explore la **théorie des tableaux** (Array Theory) dans Z3, une extension fondamentale de la logique SMT qui permet de raisonner sur des tableaux symboliques. Nous découvrirons les opérations **Select** (lecture) et **Store** (écriture fonctionnelle), ainsi que le **switching** qui permet de modéliser des permutations.
 
-> **Contexte** : La théorie des tableaux a été formalisée par John McCarthy (1962) avec les axiomes `select(store(a, i, v), i) = v` et `i ≠ j ⇒ select(store(a, i, v), j) = select(a, j)`. Ces axiomes sont au cœur du raisonnement sur les structures de données mutables.",,,,,,,,a3d70ac807e996b0,,,,,,,,,,,,,,,
+> **Contexte** : La théorie des tableaux a été formalisée par John McCarthy (1962) avec les axiomes `select(store(a, i, v), i) = v` et `i ≠ j ⇒ select(store(a, i, v), j) = select(a, j)`. Ces axiomes sont au cœur du raisonnement sur les structures de données mutables.",,,,,,,,fd403367bc56038e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,b2c3d4e1,code,fr,b1283f3158597e02,"#r ""../Z3.Linq/.deploy/Microsoft.Z3.dll""
 #r ""../Z3.Linq/.deploy/ExpressionUtils.dll""
 #r ""../Z3.Linq/.deploy/Z3.Linq.dll""
@@ -2081,9 +2094,9 @@ using (var ctx = new Microsoft.Z3.Context())
     Console.WriteLine($""\nRésultat trié : {sorted}"");
     Console.WriteLine(""Tri par 3 switches vérifié par Z3."");
 }",,,,,,,,fc3ccccc21d757fd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,a9b0c1d2,markdown,fr,420d14f557ea7a97,"### Interprétation 5 — Tri par switching en 3 étapes
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,a9b0c1d2,markdown,fr,1ace308dc3e3f6b1,"### Interprétation 5 — Tri par switching en 3 étapes
 
-**Sortie obtenue** : `[30, 10, 40, 20]` → `[10, 30, 20, 40]` → `[10, 30, 20, 40]` → `[10, 20, 30, 40]` puis vérification que le résultat est trié.
+**Sortie obtenue** : `[30, 10, 40, 20]` → `[10, 30, 40, 20]` → `[10, 30, 20, 40]` → `[10, 20, 30, 40]` puis vérification que le résultat est trié.
 
 | Étape | Swap | État intermédiaire |
 |-------|------|---------------------|
@@ -2095,7 +2108,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,a9b0c1d2,markd
 **Points clés** :
 1. Chaque swap est un double Store : lire les deux valeurs, puis écrire la première à la position de la seconde et inversement
 2. La séquence de 3 swaps correspond à un **bubble sort** sur 4 éléments
-3. Z3 vérifie formellement que le résultat final est bien trié (UNSAT si on nie `arr[k] <= arr[k+1]`)",,,,,,,,420d14f557ea7a97,,,,,,,,,,,,,,,
+3. Z3 vérifie formellement que le résultat final est bien trié (UNSAT si on nie `arr[k] <= arr[k+1]`)",,,,,,,,1ace308dc3e3f6b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,b0c1d2e3,markdown,fr,2d1cece474fbaf93,"## 6. Vérification de permutation
 
 Un problème classique en théorie des tableaux est de vérifier qu'un tableau `b` est une **permutation** d'un tableau `a`. Cela signifie que `b` contient exactement les mêmes éléments que `a`, mais potentiellement dans un ordre différent.
@@ -2242,7 +2255,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,d8e9fa0b,code,
 // }
 
 Console.WriteLine(""Exercice à compléter : tri de [4,3,2,1] en k switches (k=1 UNSAT, k=2 SAT)"");",,,,,,,,0da625cd6bad0e07,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,e9fa0b1c,markdown,fr,aa279f6a2312a56b,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/04_Array_Theory.ipynb,e9fa0b1c,markdown,fr,8ecc20a51491724f,"## Conclusion
 
 Ce notebook a exploré la **théorie des tableaux** dans Z3 à travers trois concepts fondamentaux.
 
@@ -2270,7 +2283,7 @@ Ce notebook a exploré la **théorie des tableaux** dans Z3 à travers trois con
 
 ***
 
-**Navigation** : [Index SymbolicAI](../../README.md) | [Série Z3](README.md) | [<< Sudoku Theorem vs Array](02_Sudoku_Theorem_vs_Array.ipynb) | [Nested Arrays 2D >>](05_Nested_Arrays_2D.ipynb)",,,,,,,,aa279f6a2312a56b,,,,,,,,,,,,,,,
+**Navigation** : [Index SymbolicAI](../../README.md) | [Série Z3](README.md) | [<< Sudoku Modes Comparison](03_Sudoku_Modes_Comparison.ipynb) | [Nested Arrays 2D >>](05_Nested_Arrays_2D.ipynb)",,,,,,,,8ecc20a51491724f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,a225c9d1,markdown,fr,464337c3a91210d2,"# Tableaux Imbriqués et Grilles 2D : API Déclarative `Theorem<Grid>`
 
 **Navigation** : [Index SymbolicAI](../../README.md) | [Série Z3](README.md) | [<< Array Theory](04_Array_Theory.ipynb) | [Meal Planner >>](06_Meal_Planner_Modelisation.ipynb)
@@ -2298,7 +2311,7 @@ Ce notebook poursuit la **transition pédagogique** initiée dans le notebook 02
 > **Contexte** : la prise en charge des tableaux imbriqués `int[][]` dans `Theorem<T>` a été ajoutée au fork Z3.Linq (commit `096a638`, branche #1206) en portant le traitement des collections imbriquées depuis `Z3.LinqBinding@EPFdevelopment`. Un tableau imbriqué a le type SMT `Array Int (Array Int Int)` : `select(select(grid, i), j)` accède à la cellule `(i, j)`. Le binding LINQ traduit automatiquement `g.Cells[i][j]` vers cette chaîne de `Select`.
 
 > **Résolution du package** : cette fonctionnalité n'étant pas encore publiée sur NuGet (le paquet public `Z3.Linq` 2.0.1 ne gère qu'un seul niveau de collection), ce notebook charge le **fork local** via les DLL compilées du sous-module `Z3.Linq`. Voir la cellule de configuration ci-dessous.",,,,,,,,464337c3a91210d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,816df432,markdown,fr,f2e9b36922c7539a,"### Deux encodages canoniques d'une grille 2D en SMT
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,816df432,markdown,fr,1663aa4418ca57c7,"### Deux encodages canoniques d'une grille 2D en SMT
 
 Modéliser une grille 2D dans la théorie des tableaux de Z3 n'a rien d'évident : le type SMT de base est un tableau **unidimensionnel** `(Array Index Elem)`. Il existe donc **deux stratégies** pour représenter une structure bidimensionnelle, et le choix a des conséquences sur la façon dont on écrit `select` et `store`. Ce notebook utilise exclusivement la seconde — mais il est essentiel de connaître les deux pour comprendre ce que l'on choisit.
 
@@ -2330,7 +2343,7 @@ On encode la grille comme un tableau de lignes, chaque ligne étant elle-même u
 
 **Pourquoi ce notebook choisit l'encodage imbriqué.** L'objectif est de manipuler la grille via l'API déclarative `Theorem<Grid>` où `Cells` est une propriété `int[][]`. L'encodage imbriqué est le miroir exact de cette structure : `g.Cells[i][j]` se traduit naturellement en `select(select(grid, i), j)`. L'encodage aplati exigerait de réécrire chaque accès `Cells[i][j]` en `flat[i*W + j]`, ce qui obscurcirait la lisibilité déclarative que ce notebook cherche justement à mettre en avant. La section 4 montre l'équivalent en API raw `Microsoft.Z3` avec ces deux `select` imbriqués.
 
-> **Remarque sur la sécurité des indices ( hors-scope pratique )**. En SMT-LIB pur, `select(arr, i)` est *non défini* pour un indice `i` en dehors du domaine de la théorie — ce qui soulève la question des accès hors-bornes. Dans ce notebook toutefois, les indices `i` et `j` sont des **constantes C#** bornées par des boucles `for` (et non des variables de décision Z3 libres) : le risque d'accès hors-domaine est donc absent du code. Cette subtilité ne devient pertinente que si l'on modélisait les *indices eux-mêmes* comme des inconnues symboliques — ce que nous ne faisons pas ici.",,,,,,,,f2e9b36922c7539a,,,,,,,,,,,,,,,
+> **Remarque sur la sécurité des indices**. En SMT-LIB pur, `select(arr, i)` est une fonction **totale** : lire un indice situé hors de la zone écrite ne lève ni erreur ni valeur « indéfinie » — elle renvoie une valeur **arbitraire**, que rien ne contraint. Le risque n'est donc pas un plantage mais une contrainte **vacante** (une case jamais écrite pourrait prendre n'importe quelle valeur). Dans ce notebook toutefois, les indices `i` et `j` sont des **constantes C#** bornées par des boucles `for` (et non des variables de décision Z3 libres) : le risque d'accès hors-domaine est donc absent du code. Cette subtilité ne devient pertinente que si l'on modélisait les *indices eux-mêmes* comme des inconnues symboliques — ce que nous ne faisons pas ici.",,,,,,,,1663aa4418ca57c7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,6c6341fa,markdown,fr,295f1652178a8817,"### Vue d'ensemble : deux stratégies d'encodage d'une grille 2D
 
 ```mermaid
@@ -2569,7 +2582,7 @@ sw2.Stop();
 DisplayGrid(solved.Cells, ""Sudoku 4x4 (declaratif)"", box: B);
 Console.WriteLine($""Temps de resolution : {sw2.Elapsed.TotalMilliseconds:F1} ms"");
 ",,,,,,,,3bb3874b22572c89,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,82dd425f,markdown,fr,f3d9a5e22b84b694,"### Interprétation 2 — Sudoku 4x4 déclaratif
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,82dd425f,markdown,fr,c25984f38c260fa8,"### Interprétation 2 — Sudoku 4x4 déclaratif
 
 **Sortie obtenue** : le Sudoku 4x4 est résolu avec lignes, colonnes et blocs 2x2 valides.
 
@@ -2579,17 +2592,17 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,82dd425f,m
 | Lignes | N × 6 = 24 | O(N³) |
 | Colonnes | N × 6 = 24 | O(N³) |
 | Blocs | 4 × 6 = 24 | O(N³) |
-| Indices | 6 égalités | — |
+| Indices | une égalité par case pré-remplie | — |
 
 **Points clés** :
 1. La contrainte de bloc 2x2 se code en une seule lambda `Distinct` listant les 4 cellules du bloc — à comparer à la double-boucle nécessaire en API raw
 2. Les indices pré-remplis sont de simples égalités `g.Cells[i][j] == v`, ajoutées par `.Where()`
-3. **Scalabilité** : pour un Sudoku 9x9, `Theorem<Grid>` fonctionne (≈ 600 ms, cf. `SudokuGridTheorem.cs`) mais la construction des 729 contraintes lambda ralentit la phase de setup ; pour des grilles plus grandes, il vaut mieux se restreindre à des sous-ensembles ou utiliser l'API raw avec `MkDistinct` global",,,,,,,,f3d9a5e22b84b694,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,0abbaf32,markdown,fr,3122a72827a20c8e,"## 3. Carré magique — sommes de lignes et colonnes
+3. **Scalabilité** : pour un Sudoku 9x9, `Theorem<Grid>` fonctionne (≈ 600 ms, cf. `SudokuGridTheorem.cs`) mais la construction des contraintes lambda de ce modèle (bornes, `Distinct` par ligne, par colonne et par bloc) ralentit la phase de setup ; le compte de contraintes de l'encodage booléen par candidat n'est pas celui de ce DSL ; pour des grilles plus grandes, il vaut mieux se restreindre à des sous-ensembles ou utiliser l'API raw avec `MkDistinct` global",,,,,,,,c25984f38c260fa8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,0abbaf32,markdown,fr,dd285babd2d675d0,"## 3. Carré magique — sommes de lignes et colonnes
 
 Un autre usage des grilles 2D est la vérification de propriétés **globales**, comme la somme de chaque ligne et colonne. Un **carré magique** d'ordre N (N impair) est une grille NxN où chaque ligne, colonne et diagonale somme à la même valeur `S = N(N²+1)/2`. L'API déclarative exprime ces sommes par accumulation de `Cells[i][j]`.
 
-> **Note** : `Z3Methods.Distinct` existe, mais il n'y a pas de sucre pour ""somme"" — on accumule les cellules dans une expression arithmétique `a + b + c` que le visiteur traduit en `MkAdd`.",,,,,,,,3122a72827a20c8e,,,,,,,,,,,,,,,
+> **Note** : le binding expose bien un sucre de somme — `Z3Methods.Sum(...)`, traduit en un `MkAdd` variadique (`ExpressionVisitor.cs` du fork chargé par ce notebook). L'opérateur `+` du visiteur, lui, replie un seul couple d'opérandes (`MkAddDispatch`) : l'accumulation `a + b + c` de l'exemple ci-dessous est donc la somme écrite à la main.",,,,,,,,dd285babd2d675d0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,a43d8100,code,fr,99287055ab0c2582,"// Exemple 3 : Carre magique 3x3 via Theorem<Grid3> (sommes lignes + colonnes = 15)
 int N3 = 3;
 
@@ -2804,7 +2817,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,cfb5c945,m
 1. Le store imbriqué préserve la **localité** : seule la cellule ciblée est modifiée (axiome read-over-write de McCarthy)
 2. C'est le pattern fondamental pour les mises à jour impératives de grilles, hors paradigme déclaratif
 3. L'absence d'équivalent déclaratif est **fondée** : un théorème est une spécification relationnelle, pas un programme séquentiel",,,,,,,,af800e60452f614a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,e3513758,markdown,fr,b507dcf25119cc3f,"## 6. Exercices
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,e3513758,markdown,fr,34d8b3a9d509bfab,"## 6. Exercices
 
 Les exercices suivants utilisent l'API déclarative `Theorem<Grid>`. Chaque stub se contente d'un `print`/`Console.WriteLine` de confirmation (convention C.1 : aucune erreur volontaire) — à vous de remplir la solution.
 
@@ -2812,20 +2825,26 @@ Les exercices suivants utilisent l'API déclarative `Theorem<Grid>`. Chaque stub
 
 **Objectif** : ajoutez les contraintes de **diagonales** au Latin Square 3x3 de l'exemple 1. Un Latin Square diagonal exige que chaque diagonale contienne également des valeurs distinctes.
 
+**Attendu — c'est le point de l'exercice** : il n'existe **aucun** Latin Square diagonal d'ordre 3. Une fois les deux contraintes de diagonales ajoutées, le problème devient **insatisfaisable** : `Solve()` renvoie `null` au lieu d'une grille. Le plus petit Latin Square diagonal est d'ordre **4**. Le travail consiste à *constater* l'impossibilité avec le solveur, puis à l'**expliquer**.
+
 **Indices** :
 - Diagonale principale : `g.Cells[0][0]`, `g.Cells[1][1]`, `g.Cells[2][2]` doivent être distincts
 - Diagonale anti-principale : `g.Cells[0][2]`, `g.Cells[1][1]`, `g.Cells[2][0]` doivent être distincts
 - Reprenez le code de l'exemple 1 (bornes + lignes + colonnes) et ajoutez les deux `Z3Methods.Distinct` de diagonales
-- Fixez la première ligne à `[1, 2, 3]` pour réduire la symétrie",,,,,,,,b507dcf25119cc3f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,eff5dea6,code,fr,4d841a5a579baba3,"// Exercice 1 : Latin Square 3x3 avec contraintes diagonales (API declarative)
+- Fixez la première ligne à `[1, 2, 3]` pour réduire la symétrie — c'est ce qui rend l'explication manuelle possible : il ne reste alors que **deux** carrés latins 3x3 compatibles avec cette première ligne, et chacun échoue sur une diagonale (anti-principale `[3, 3, 3]` pour l'un, principale `[1, 1, 1]` pour l'autre)",,,,,,,,34d8b3a9d509bfab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,eff5dea6,code,fr,b55d978394df8b06,"// Exercice 1 : Latin Square 3x3 avec contraintes diagonales (API declarative)
 // TODO etudiant : ajoutez les contraintes de diagonales au Latin Square
 // Etape 1 : reprenez le code de l'exemple 1 (bornes + lignes + colonnes distinctes)
 // Etape 2 : ajoutez Distinct(g.Cells[0][0], g.Cells[1][1], g.Cells[2][2])
 // Etape 3 : ajoutez Distinct(g.Cells[0][2], g.Cells[1][1], g.Cells[2][0])
 // Indice : chaque contrainte est un theorem.Where(g => Z3Methods.Distinct(...))
+// ATTENDU : le probleme devient INSATISFAISABLE -- il n'existe aucun Latin Square
+// diagonal d'ordre 3 (le plus petit est d'ordre 4). Solve() renvoie donc null.
+// Expliquez-le : avec la premiere ligne fixee a (1,2,3), il ne reste que deux carres
+// latins 3x3, et chacun echoue sur une diagonale (anti = [3,3,3] ou principale = [1,1,1]).
 
 Console.WriteLine(""Exercice a completer : Latin Square 3x3 avec diagonales distinctes"");
-",,,,,,,,4d841a5a579baba3,,,,,,,,,,,,,,,
+",,,,,,,,b55d978394df8b06,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/05_Nested_Arrays_2D.ipynb,5a5da616,markdown,fr,cd5661dd7ab53917,"### Exercice 2 : Sudoku 4x4 avec grille de départ différente
 
 **Objectif** : résolvez le Sudoku 4x4 avec un autre jeu d'indices, puis vérifiez que la solution satisfait toutes les contraintes (lignes, colonnes, blocs).
@@ -5561,7 +5580,9 @@ disjonction-liée naïve explose dès la construction).
 ***
 
 *Série SMT / Z3.Linq — voir le [README](README.md) pour le parcours complet.*",,,,,,,,466c82c5a9888a99,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,a6f26a1c,markdown,fr,aaf38f03f7c038b2,"# 09 — Convergence à l'échelle : l'encodage décide de la tractabilité
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,a6f26a1c,markdown,fr,728e620e705ec684,"# 09 — Convergence à l'échelle : l'encodage décide de la tractabilité
+
+[10 — Génération de témoins →](10_Witness_Generation_Automata.ipynb)
 
 **Clôture du bloc meal-planner (Epic #4677).** La modélisation déclarative ([06](06_Meal_Planner_Modelisation.ipynb)) a posé les modèles du planificateur sur un corpus jouet ; la couche de données ([07](07_Meal_Planner_Data_External.ipynb)) a construit le corpus réel — recettes RecipeML appariées à Ciqual ANSES 2025 **sans faux positifs** et agrégées **pondérées par la masse**. Ce notebook branche enfin le solveur sur ces données réelles, et y rencontre le problème que les corpus jouets masquaient : à l'échelle, l'encodage naïf explose dès la **construction**, l'encodage le plus **compact** (théorie des tableaux) devient **insoluble**, et seul l'encodage **one-hot pseudo-booléen** se construit instantanément et se résout.
 
@@ -5570,7 +5591,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ip
 > **Question de convergence.** Le problème fidèle reste-t-il *tractable* quand on remonte à l'échelle réelle (7 menus × 5 créneaux × ~2 200 recettes × constituants Ciqual) ? La puissance brute du solveur Z3 suffit-elle, ou le choix d'**encodage** décide-t-il seul de la tractabilité ?
 >
 > **Insight clé (formulation du problème).** Plus de recettes = plus de **solutions possibles**, pas plus de contraintes : des recettes supplémentaires sont des **contraintes enablantes** (elles élargissent l'espace des modèles). C'est l'encodage — pas le solveur — qui décide si cet espace est explorable.
-",,,,,,,,aaf38f03f7c038b2,,,,,,,,,,,,,,,
+",,,,,,,,728e620e705ec684,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,228ddea8,markdown,fr,97c027fab198618b,"## Objectifs d'apprentissage
 
 - Consommer la **couche de données** construite par le notebook 07 (cache JSON : vecteurs nutritionnels **pondérés par la masse**, appariement curé sans faux positifs).
@@ -5982,9 +6003,11 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ip
 
 Ce notebook clôt l'arc du planificateur de repas : [06](06_Meal_Planner_Modelisation.ipynb) pose les modèles Z3 sur un corpus jouet, [07](07_Meal_Planner_Data_External.ipynb) construit la couche de données réelle Ciqual × RecipeML, [08](08_Meal_Planner_Patient_Capstone.ipynb) pousse le théorème patient en capstone déclaratif, et ce notebook fait converger le problème fidèle à l'échelle réelle. La leçon structurante : la puissance du solveur Z3 ne compense **pas** un mauvais encodage — c'est la reformulation **one-hot pseudo-booléenne** qui fait converger le planificateur (les fenêtres nutritionnelles patient deviennent des contraintes cardinales pondérées natives `MkPBGe`/`MkPBLe`, et l'espace de recherche rétrécit aux sélecteurs booléens plutôt qu'à l'énumération disjonctive des compositions). La même leçon d'encodage vaut pour tout problème combinatoire où le corpus grossit.
 ",,,,,,,,28d74ba97d49c886,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,13e003ad,markdown,fr,ea73eb5afca3981b,"# 10 — Générer un témoin depuis `A & ~B` (fork Automata vivant)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,13e003ad,markdown,fr,9b63504c36a923d7,"# 10 — Générer un témoin depuis `A & ~B` (fork Automata vivant)
 
-`<<` [06 — Meal Planner hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [Sudoku-13 — Automates symboliques `>>`](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb)
+[← 09 — Convergence à l’échelle](09_Meal_Planner_Convergence_Scale.ipynb) | [11 — Ordonnancement Job Shop →](11_Job_Shop_Scheduling.ipynb)
+
+**Voir aussi** : [06 — Planificateur de repas hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [Sudoku-13 — Automates symboliques](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb)
 
 ***
 
@@ -6012,7 +6035,7 @@ On consomme le **fork `MyIntelligenceAgency/Automata`** (modernisation net8.0 de
 3. Émettre la formule **SMT-LIB** correspondante (`re.inter` / `re.comp`) **et la résoudre avec Z3** pour en extraire un témoin.
 4. Comprendre **honnêtement** la portée : le fork lève le mur du témoin, **pas** l'explosion d'automate à grande échelle — voir le Sudoku-13 pour le verdict mesuré.
 
-> **Non-but** (issue #2979) : ce patch **ne remplace pas RE#** pour la reconnaissance et **ne réveille pas** `Z3.LinqBinding`. Il ajoute ce que RE# ne fait pas : *un témoin depuis la syntaxe `&`/`~`*.",,,,,,,,ea73eb5afca3981b,,,,,,,,,,,,,,,
+> **Non-but** (issue #2979) : ce patch **ne remplace pas RE#** pour la reconnaissance et **ne réveille pas** `Z3.LinqBinding`. Il ajoute ce que RE# ne fait pas : *un témoin depuis la syntaxe `&`/`~`*.",,,,,,,,9b63504c36a923d7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,76086898,code,fr,a3172888c69408b3,"// Le fork est déployé en submodule sibling (Windows/PowerShell : scripts/environment/automata-build-deploy.ps1 ;
 // Linux/macOS : scripts/environment/automata-build-deploy.sh — jumeau cross-platform, mêmes commandes dotnet).
 // .deploy/ contient Microsoft.Automata.dll (pure-managed, fork net8.0) + sa dépendance System.CodeDom.
@@ -6027,7 +6050,7 @@ using Microsoft.Automata;
 using Microsoft.Automata.Rex;
 
 Console.WriteLine(""Imports OK — fork Automata (surface &/~ + témoin non-capé) chargé."");",,,,,,,,a3172888c69408b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,bbc5abdb,markdown,fr,50af6ce6b9e9ba9e,"## 1. Reconnaître vs produire — trois outils, trois rôles
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,bbc5abdb,markdown,fr,92f3749ad7fb5b10,"## 1. Reconnaître vs produire — trois outils, trois rôles
 
 | Outil | Question répondue | Direction |
 |-------|-------------------|-----------|
@@ -6035,7 +6058,8 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb
 | **RexEngine** (ce notebook) | « donne-moi un *s* de *L* » | **génération de témoin** |
 | **Z3** (notebooks 01–09) | « existe-t-il un *s* satisfaisant ces contraintes ? » | résolution SMT générale |
 
-Les trois sont complémentaires. RexEngine occupe la case que RE# laisse vide : il **fabrique** un mot du langage, et — grâce au fork — depuis un langage décrit avec `&` et `~`.",,,,,,,,50af6ce6b9e9ba9e,,,,,,,,,,,,,,,
+Les trois sont complémentaires. RexEngine occupe la case que RE# laisse vide : il **fabrique** un mot du langage, et — grâce au fork — depuis un langage décrit avec `&` et `~`.
+Le carnet [Search-10 — Automates symboliques](../../../Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb) construit cette même notion depuis zéro (classe `SymbolicAutomaton` sur prédicats Z3) : à lire avant celui-ci si l'on veut voir l'automate symbolique **se construire** avant de le voir produire un témoin.",,,,,,,,92f3749ad7fb5b10,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb,0839c0fe,markdown,fr,7641e018414f5eab,"## 2. L'algèbre `CharSetSolver` — des BDD sur l'alphabet
 
 Sous le capot, un langage régulier est un **automate dont les transitions sont étiquetées par des ensembles de caractères**. Ces ensembles ne sont pas stockés en clair mais comme **BDD** (*Binary Decision Diagrams*) — une représentation compacte et canonique des prédicats booléens sur les bits d'un caractère.
@@ -6388,7 +6412,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb
 ***
 
 `<<` [06 — Meal Planner hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [Sudoku-13 — Automates symboliques `>>`](../../../Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb)",,,,,,,,a2729d8d1c301397,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,f4109dfc,markdown,fr,85ca5da9b7a915bd,"← [06 — Planificateur de repas hiérarchique](06_Meal_Planner_Modelisation.ipynb) | [README Z3](README.md)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,f4109dfc,markdown,fr,182bd6e64a6da023,"[← 10 — Génération de témoins](10_Witness_Generation_Automata.ipynb) | [12 — Coloration de Petersen →](12_Graph_Coloring_Petersen.ipynb) | [README Z3](README.md)
 
 ***
 
@@ -6417,7 +6441,7 @@ flowchart LR
     %% color: explicite -- sans lui, libelle clair sur fond clair en mode sombre GitHub (#15022) ; ton parfois plus fonce que le stroke (le stroke en couleur de texte rendrait infer illisible) : ne pas harmoniser
     style CO fill:#c8f7c5,color:#1b5e20
     style CG fill:#f7d5c5,color:#8a3e1e
-```",,,,,,,,85ca5da9b7a915bd,,,,,,,,,,,,,,,
+```",,,,,,,,182bd6e64a6da023,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,2acdaa53,code,fr,01bd8e76488ace2a,"#r ""../Z3.Linq/.deploy/Microsoft.Z3.dll""
 #r ""../Z3.Linq/.deploy/ExpressionUtils.dll""
 #r ""../Z3.Linq/.deploy/Z3.Linq.dll""
@@ -6610,12 +6634,12 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,aa46793
 Le diagramme Gantt textuel ci-dessous utilise la convention :
 - `0` = J0, `1` = J1, `2` = J2, `.` = machine inactive
 - Chaque caractère représente 1 heure",,,,,,,,100d67a83d1e24c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,8ae54a47,markdown,fr,7152e3dc9a45e434,"## B10 — Optimisation directe du Cmax (DSL `.Optimize(Minimize, …)`)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,8ae54a47,markdown,fr,750842a429d2e3f3,"## Optimisation directe du Cmax (DSL `.Optimize(Minimize, …)`)
 
 La cellule 9 ci-dessus minimise le `Cmax` par une **recherche linéaire** : on énumère des bornes `T = 9, 10, 11, …` et on interroge Z3 jusqu'au premier SAT. C'est correct, mais c'est un **mauvais réflexe d'optimisation** : on demande à un solveur de satisfaisabilité de faire *à la main* ce qu'il sait faire *nativement*. Z3 expose depuis longtemps un objet `Optimize` (l'API `MkOptimize + AssertSoft + MkMinimize + Check`) qui trouve l'optimum **en un seul appel** — pas en N+1. Le binding Z3.Linq le rend chaînable via deux sucres LINQ : `.OrderBy(lambda)` ([`Theorem{T}.cs:142`](../Z3.Linq/solutions/Z3.Linq/Theorem{T}.cs#L142), `⇒ Optimize(Optimization.Minimize)`) et `.OrderByDescending(lambda)` ([`Theorem{T}.cs:150`](../Z3.Linq/solutions/Z3.Linq/Theorem{T}.cs#L150), `⇒ Optimize(Optimization.Maximize)`), tous deux sucres au-dessus de la même méthode `Optimize<TResult>(Optimization direction, Expression<Func<T,TResult>> lambda)` ([`Theorem{T}.cs:86`](../Z3.Linq/solutions/Z3.Linq/Theorem{T}.cs#L86)). L'instance Job Shop 3×2 sert ici de **discriminateur** : la boucle linéaire `for T = 9..16` s'exécute *jusqu'à* la borne inférieure avant SAT (ici 1 itération seulement, ce qui cache la supériorité), mais sur des instances où l'optimum est *éloigné* de la borne inférieure (5+ itérations), `.Optimize` est asymptotiquement imbattable — c'est exactement le rôle du solveur MaxSAT (qui sait que les softs sont un compromis entre préférences violées) face à la recherche linéaire.
 
-> **Stack : A + B — pourquoi**. Ce bloc juxtapose **deux écritures du même optimum** : côté DSL `.Optimize(Minimize, t => t.Cmax)`, le binding matérialise l'objet `Optimize`, y pose toutes les contraintes `.Where`, traduit la lambda en `ArithExpr`, puis appelle `MkMinimize` + `Check` ; côté raw, l'utilisateur instancie lui-même `var opt = ctx.MkOptimize()`, manipule directement `BoolExpr`/`IntExpr` et appelle `MkMinimize(cmaxExpr)`. La même instance produit le **même `Cmax` optimal = 9h** dans les deux cas — mais l'un exprime l'objectif dans le vocabulaire du modèle-objet, l'autre dans celui des termes Z3.",,,,,,,,7152e3dc9a45e434,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,eab66d1a,code,fr,82ea05c694c4bb73,"// B10 - Optimisation directe du Cmax ""deux stacks"" sur le meme Job Shop 3x2 (cellule 9)
+> **Stack : A + B — pourquoi**. Ce bloc juxtapose **deux écritures du même optimum** : côté DSL `.Optimize(Minimize, t => t.Cmax)`, le binding matérialise l'objet `Optimize`, y pose toutes les contraintes `.Where`, traduit la lambda en `ArithExpr`, puis appelle `MkMinimize` + `Check` ; côté raw, l'utilisateur instancie lui-même `var opt = ctx.MkOptimize()`, manipule directement `BoolExpr`/`IntExpr` et appelle `MkMinimize(cmaxExpr)`. La même instance produit le **même `Cmax` optimal = 9h** dans les deux cas — mais l'un exprime l'objectif dans le vocabulaire du modèle-objet, l'autre dans celui des termes Z3.",,,,,,,,750842a429d2e3f3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,eab66d1a,code,fr,651d2db4cbcfbc85,"// Optimisation directe du Cmax ""deux stacks"" sur le meme Job Shop 3x2 (cellule 9)
 // Meme instance (JobShopSchedule a 7 variables : S00..S21, Cmax), memes contraintes dures,
 // memes precedents, memes non-chevauchements. La difference : au lieu d'enumerer les bornes
 // T dans une boucle lineaire, on declare l'objectif ""minimiser Cmax"" une seule fois et on
@@ -6721,10 +6745,10 @@ Console.WriteLine();
     }
 }
 Console.WriteLine();
-Console.WriteLine(""B10 OK : raw (MkOptimize + MkMinimize) et DSL (.Optimize(Minimize)) produisent le meme"");
+Console.WriteLine(""Optimisation directe OK : raw (MkOptimize + MkMinimize) et DSL (.Optimize(Minimize)) produisent le meme"");
 Console.WriteLine(""Cmax = 9h sur la meme instance, l'un en une passe optimisee, l'autre sous forme de lambda."");
-",,,,,,,,82ea05c694c4bb73,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,8dd0154b,markdown,fr,cdfc55863c6fda42,"### Lecture B10 — deux écritures du même optimum
+",,,,,,,,651d2db4cbcfbc85,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,8dd0154b,markdown,fr,9ab3ecb10a44e219,"### Lecture — deux écritures du même optimum
 
 Les deux blocs résolvent **exactement la même instance** (Job Shop 3×2, mêmes variables `S00..S21`, mêmes précédences, mêmes non-chevauchements, même définition du `Cmax`) et trouvent **le même `Cmax` optimal = 9h** — l'un en une seule passe `Check()` sur un objet `Optimize`, l'autre en un appel `.OrderBy(t => t.Cmax)` chaînable. La différence n'est pas sémantique, elle est **architecturale** :
 
@@ -6738,7 +6762,7 @@ Les deux blocs résolvent **exactement la même instance** (Job Shop 3×2, même
 
 > **Ligne de contraste (à retenir)** : *la recherche linéaire `for T = lowerBound..upperBound` est un anti-pattern d'optimisation qui externalise au solveur SAT un travail qu'il sait faire nativement* — `.Optimize(Minimize, …)` matérialise cette capacité en une ligne, en chaînant avec `.Where` comme n'importe quel autre solveur, et le sucre LINQ `.OrderBy(...)` la rend **aussi familière** qu'un `orderby` SQL. **Même `Cmax` = 9h, deux façons de le demander** — l'une impérative et bouclée, l'autre déclarative et directe.
 
-**Cas d'usage** : on préfère le DSL `.OrderBy` (lisibilité, chaînable dans un pipeline `.Where(...).Where(...).OrderBy(...)` façon LINQ-to-SQL) ; on bascule en raw `.Optimize` quand on doit mixer **plusieurs objectifs** (un `Optimize` peut porter plusieurs `MkMinimize` / `MkMaximize`, là où le DSL `.OrderBy` est limité à un seul objectif par appel) ou **inspecter le modèle** avant l'objectif. Sur l'instance 3×2, le gain est invisible (la borne inférieure *est* l'optimum : 1 itération linéaire vs 1 passe directe) — sur des instances où l'optimum diverge de la borne basse (≥5 unités de temps), `Optimize` est asymptotiquement imbattable.",,,,,,,,cdfc55863c6fda42,,,,,,,,,,,,,,,
+**Cas d'usage** : on préfère le DSL `.OrderBy` (lisibilité, chaînable dans un pipeline `.Where(...).Where(...).OrderBy(...)` façon LINQ-to-SQL) ; on bascule en raw `.Optimize` quand on doit mixer **plusieurs objectifs** (un `Optimize` peut porter plusieurs `MkMinimize` / `MkMaximize`, là où le DSL `.OrderBy` est limité à un seul objectif par appel) ou **inspecter le modèle** avant l'objectif. Sur l'instance 3×2, le gain est invisible (la borne inférieure *est* l'optimum : 1 itération linéaire vs 1 passe directe) — sur des instances où l'optimum diverge de la borne basse (≥5 unités de temps), `Optimize` est asymptotiquement imbattable.",,,,,,,,9ab3ecb10a44e219,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/11_Job_Shop_Scheduling.ipynb,exo4-stub-md,markdown,fr,36e41bec272a510c,"## Exercice 4 - Etendre l'instance et observer le cout de la recherche lineaire vs MkMinimize
 
 **Enonce.** Reprenez l'instance 3 x 2 (J0, J1, J2 sur Machine A puis B) et ajoutez un quatrieme job `J3 : Machine B(1h) -> Machine A(3h)`. Reconstruisez un `JobShopScheduleExt` (variables `S30`, `S31` supplementaires, plus les disjonctions Machine A et Machine B pour `J3`, et la precedence `S30 >= S31 + 1`). Appelez ensuite le DSL :
@@ -6983,9 +7007,9 @@ Le **Job Shop Scheduling** est un problème NP-difficile en général. Sur notre
 - Pour des instances plus grandes, des solveurs spécialisés (Google OR-Tools CP-SAT, CPLEX) sont préférables
 
 **Référence** : *Garey & Johnson (1979)* — Computers and Intractability (NP-complétude du JSP général)",,,,,,,,e0958a23c48d5cd6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb,fe129563,markdown,fr,09fb51876ec1f009,"# Notebook 12 - Coloration de graphe : le graphe de Petersen
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb,fe129563,markdown,fr,e6c5c1e18155ac21,"# Notebook 12 - Coloration de graphe : le graphe de Petersen
 
-**Navigation** : [Index Z3](./README.md) | [Index SymbolicAI](../../README.md) | [Index général](../../../README.md) | [<< 11 Job Shop Scheduling](11_Job_Shop_Scheduling.ipynb)
+**Navigation** : [Index Z3](./README.md) | [Index SymbolicAI](../../README.md) | [Index général](../../../README.md) | [← 11 — Ordonnancement Job Shop](11_Job_Shop_Scheduling.ipynb) | [13 — Cryptarithmes →](13_Cryptarithmetic_SMT.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -7005,7 +7029,7 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb,fe1
 
 La **coloration de graphe** est un problème NP-difficile classique : étant donné un graphe, attribuer une couleur à chaque sommet de sorte que deux sommets reliés par une arête aient des couleurs différentes, en minimisant le nombre de couleurs. Ses applications sont nombreuses : planification d'examens (sommet = examen, arête = étudiant commun, couleur = créneau horaire), allocation de registres dans un compilateur, attribution de fréquences radio, etc.
 
-Ce notebook le démontre sur le **graphe de Petersen**, un graphe à 10 sommets et 15 arêtes, célèbre parce qu'il sert de contre-exemple à de nombreuses conjectures. Son nombre chromatique vaut `χ = 3` — mais une lecture naïve pourrait en suggérer davantage, et une heuristique gloutonne s'y trompe. C'est exactement le terrain où le solveur fait la différence.",,,,,,,,09fb51876ec1f009,,,,,,,,,,,,,,,
+Ce notebook le démontre sur le **graphe de Petersen**, un graphe à 10 sommets et 15 arêtes, célèbre parce qu'il sert de contre-exemple à de nombreuses conjectures. Son nombre chromatique vaut `χ = 3` — mais une lecture naïve pourrait en suggérer davantage, et une heuristique gloutonne s'y trompe. C'est exactement le terrain où le solveur fait la différence.",,,,,,,,e6c5c1e18155ac21,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/12_Graph_Coloring_Petersen.ipynb,c03d60a1,markdown,fr,67f7155947c5b389,"### Vue d'ensemble : du graphe à sa coloration optimale
 
 ```mermaid
@@ -7376,7 +7400,7 @@ Ce notebook a transposé le paradigme déclaratif de Z3.Linq à une **structure 
 ***
 
 **Navigation** : [<< 11 Job Shop Scheduling](11_Job_Shop_Scheduling.ipynb) | [Index Z3](./README.md) | [Index SymbolicAI](../../README.md)",,,,,,,,9f0b10afb959eb44,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,5083685c,markdown,fr,9f3af419fa32805d,"← [12 — Graph Coloring Petersen](12_Graph_Coloring_Petersen.ipynb) | [README Z3](README.md)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,5083685c,markdown,fr,87461bfceaafe690,"[← 12 — Graph Coloring Petersen](12_Graph_Coloring_Petersen.ipynb) | [14 — Optimisation MaxSAT →](14_Optimize_MaxSAT.ipynb) | [README Z3](README.md)
 
 ***
 
@@ -7411,7 +7435,11 @@ Un **cryptarithme** (ou alphamétique) est une équation où chaque lettre repr�
 
 Chaque lettre (`S, E, N, D, M, O, R, Y`) est un chiffre de 0 à 9, **toutes différentes**, et les lettres de tête (`S` pour `SEND`, `M` pour `MORE` et `MONEY`) **ne peuvent pas valoir 0** (sinon le nombre aurait un zéro non-significatif). L'égalité arithmétique doit être vérifiée.
 
-C'est l'archétype d'un problème où la **modélisation déclarative** bat l'énumération brutale : il y a 10×9×7×6×5×4×3 ≈ 1,6 million de combinaisons à explorer naïvement pour 8 lettres distinctes, mais la propagation de contraintes du solveur en réduit l'espace drastiquement.",,,,,,,,9f3af419fa32805d,,,,,,,,,,,,,,,
+C'est l'archétype d'un problème où la **modélisation déclarative** bat l'énumération brutale : il y a 10×9×7×6×5×4×3 ≈ 1,6 million de combinaisons à explorer naïvement pour 8 lettres distinctes, mais la propagation de contraintes du solveur en réduit l'espace drastiquement.
+
+## Source
+
+Les cryptarithmes reprennent l'exemple SEND + MORE = MONEY de **Yurichev, *SAT/SMT by Example*** (édition du 12 février 2023) : §8.10 « Alphametics » (p. 276). Copie archivée : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (section et folio relevés sur la page de l'ouvrage).",,,,,,,,87461bfceaafe690,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,860459a3,code,fr,36a8cf47c83a3682,"#r ""../Z3.Linq/.deploy/Microsoft.Z3.dll""
 #r ""../Z3.Linq/.deploy/ExpressionUtils.dll""
 #r ""../Z3.Linq/.deploy/Z3.Linq.dll""
@@ -7631,17 +7659,25 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,d9f5da7
 // 2. Recommencer jusqu'à UNSAT (sol == null)
 // 3. Afficher le nombre total de solutions
 Console.WriteLine(""Exercice 2 à compléter : énumérez toutes les solutions de SEND + MORE = MONEY"");",,,,,,,,8047d5dd20dd8c03,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,58622724,markdown,fr,6f637d69b6cc2d2f,"### Exercice 3 — Cryptarithme avec produit (multiplication)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,58622724,markdown,fr,73c4fe78e114a595,"### Exercice 3 — Cryptarithme avec produit (multiplication)
 
-Modélisez la multiplication : `ABC × D = DBC` où chaque lettre est un chiffre distinct, `A ≠ 0` et `D ≠ 0`. Attention : ici c'est une **multiplication** (`==`), pas une addition — l'équation est `ABC * D == DBC` (avec `ABC = 100·A + 10·B + C`).
+Généralisez à la **multiplication** : `ABCD × 4 = DCBA`, où `ABCD = 1000·A + 100·B + 10·C + D` et `DCBA = 1000·D + 100·C + 10·B + A`.
 
-**Question subsidiaire** : ce cryptarithme admet-il une solution ? Si oui, combien ?",,,,,,,,6f637d69b6cc2d2f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,fecdfa63,code,fr,fe1b0191990f5aab,"// Exercice 3 : ABC × D = DBC (multiplication)
+**Étapes** :
+1. Classe `{ A, B, C, D }` (int), domaine 0..9.
+2. `Distinct(A, B, C, D)`, têtes `A > 0` et `D > 0`.
+3. Équation positionnelle : `(1000*A + 100*B + 10*C + D) * 4 == (1000*D + 100*C + 10*B + A)`.
+4. Résolvez, puis **prouvez l'unicité** comme à l'exercice 2 : ajoutez la négation du modèle trouvé (`!=` sur au moins une lettre) et vérifiez que le solveur répond `null` (UNSAT).
+
+**Indice** : contrairement à `SEND + MORE = MONEY`, le multiplicateur n'est pas une variable mais la **constante 4**. Commencez par le chiffre des unités : `A` est le dernier chiffre de `D * 4`, et `D` est le premier chiffre du produit — les deux se contraignent mutuellement.
+",,,,,,,,73c4fe78e114a595,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,fecdfa63,code,fr,dbbf2108acbce3e5,"// Exercice 3 : ABCD × 4 = DCBA (multiplication)
 // TODO étudiant :
 // 1. Classe { A, B, C, D } (int), domaine 0..9
 // 2. Distinct(A, B, C, D), têtes A > 0 et D > 0
-// 3. Équation : (100*A + 10*B + C) * D == (100*D + 10*B + C)
-Console.WriteLine(""Exercice 3 à compléter : modélisez ABC × D = DBC"");",,,,,,,,fe1b0191990f5aab,,,,,,,,,,,,,,,
+// 3. Équation : (1000*A + 100*B + 10*C + D) * 4 == (1000*D + 100*C + 10*B + A)
+// 4. Unicité : ajouter la négation du modèle trouvé et vérifier null/UNSAT (cf exercice 2)
+Console.WriteLine(""Exercice 3 à compléter : modélisez ABCD × 4 = DCBA"");",,,,,,,,dbbf2108acbce3e5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/13_Cryptarithmetic_SMT.ipynb,a96469c8,markdown,fr,d84f83687970900e,"## Conclusion
 
 Le **cryptarithme** est le terrain idéal pour appréhender la **modélisation déclarative** d'un problème combinatoire :
@@ -7656,7 +7692,7 @@ Le **cryptarithme** est le terrain idéal pour appréhender la **modélisation d
 - Le même schéma (domaine + Distinct + têtes + équation) s'adapte à **tout cryptarithme**, quelle que soit sa longueur.
 
 **Référence** : *Dudeney (1924)* — ""Send More Money"", publié dans le *Strand Magazine*. Premier cryptarithme largement popularisé.",,,,,,,,d84f83687970900e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb,e852f5d9,markdown,fr,ec90f4d3a6facebf,"← [13 — Cryptarithmetic SMT](13_Cryptarithmetic_SMT.ipynb) | [README Z3](README.md)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb,e852f5d9,markdown,fr,10d50976990e36dd,"[← 13 — Cryptarithmetic SMT](13_Cryptarithmetic_SMT.ipynb) | [15 — Bit-vectors →](15_BitVectors_Overflow.ipynb) | [README Z3](README.md)
 
 ***
 
@@ -7684,7 +7720,7 @@ Les dix premiers notebooks de la série posent des problèmes de **satisfiabilit
 
 Mais de nombreux problèmes réels ne demandent pas *une* solution, mais la **meilleure** selon un critère : minimiser un coût, maximiser une valeur, satisfaire un maximum de préférences. C'est le cadre de l'**optimisation** — et Z3 fournit un solveur d'optimisation dédié, exposé par Z3.Linq via la méthode `.Optimize()` et la syntaxe LINQ `orderby`.
 
-Ce notebook comble un **gap volontairement laissé ouvert** par les notebooks précédents : aucun n'utilisait `.Optimize()`. On le fait ici sur deux terrains — le **sac à dos** (optimisation entière simple) puis le **roulement d'affectation** (MaxSAT : contraintes dures + préférences molles).",,,,,,,,ec90f4d3a6facebf,,,,,,,,,,,,,,,
+Ce notebook comble un **gap volontairement laissé ouvert** par les notebooks précédents : aucun n'utilisait `.Optimize()`. On le fait ici sur deux terrains — le **sac à dos** (optimisation entière simple) puis le **roulement d'affectation** (MaxSAT : contraintes dures + préférences molles).",,,,,,,,10d50976990e36dd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/14_Optimize_MaxSAT.ipynb,1e381e24,code,fr,36a8cf47c83a3682,"#r ""../Z3.Linq/.deploy/Microsoft.Z3.dll""
 #r ""../Z3.Linq/.deploy/ExpressionUtils.dll""
 #r ""../Z3.Linq/.deploy/Z3.Linq.dll""
@@ -8097,7 +8133,9 @@ Ce notebook comble le **gap d'optimisation** de la série Z3.Linq : là où les 
 - Le **weighted MaxSAT** (préférences pondérées) s'obtient gratuitement en pondérant l'objectif, sans changer la structure du modèle.
 
 **Référence** : le MaxSAT est le cadre standard pour l'optimisation sous contraintes booléennes ; Z3 implémente les algorithmes state-of-the-art (MaxRes, OLL) pour le résoudre. Le nurse rostering en est l'application canonique en recherche opérationnelle.",,,,,,,,06e8c9165151206d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb,0f8570b5,markdown,fr,286570acb2321e95,"# 15 — Théorie des bit-vectors Z3 : vérifier le débordement arithmétique
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb,0f8570b5,markdown,fr,3d5f121fba8c950f,"[← 14 — Optimisation et MaxSAT](14_Optimize_MaxSAT.ipynb) | [16 — Arithmétique réelle →](16_RealArithmetic.ipynb)
+
+# 15 — Théorie des bit-vectors Z3 : vérifier le débordement arithmétique
 
 > Notebook de la série **Z3 / SMT** (Track C#, [Z3.Linq](../Z3.Linq/) fork).
 > Démontre une théorie Z3 **jamais exercée** dans les 14 notebooks précédents : les
@@ -8125,7 +8163,7 @@ attend d'un solveur SMT.
 `a + b ≥ a` toujours (addition croissante) — l'overflow est *impossible par construction*.
 C'est précisément la **borne 32 bits** qui rend le débordement possible et sa preuve
 intéressante : la théorie BV **crée** le phénomène que l'on demande ensuite à Z3 de
-certifier. Un notebook d'entiers non bornés ne pourrait pas le faire.",,,,,,,,286570acb2321e95,,,,,,,,,,,,,,,
+certifier. Un notebook d'entiers non bornés ne pourrait pas le faire.",,,,,,,,3d5f121fba8c950f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/15_BitVectors_Overflow.ipynb,0e36ec43,markdown,fr,ea290681485f94da,"## 1. Théorie des bit-vectors (SMT-LIB `BitVec`)
 
 Un **bit-vector** est une suite de *n* bits interprétée comme un entier modulo 2ⁿ. Z3 en
@@ -8465,12 +8503,14 @@ Ce notebook introduit la **théorie des bit-vectors**, dernier domaine SMT canon
 - Le seuil `2³¹` (et non `2³⁰`) pour le théorème d'inévitabilité n'est pas anecdotique : `2³⁰ + 2³⁰ = 2³¹ < 2³²` ne déborde pas — la précision de la borne est elle-même une leçon de modélisation.
 
 **Référence** : la théorie `BitVec` est normalisée par SMT-LIB (logiques `QF_BV` et `BV`) et constitue le socle des **model checkers** matériels (STP, Boolector, Z3) pour la vérification de circuits et d'analyseurs statiques. La suite (notebook [16 — Real Arithmetic](16_RealArithmetic.ipynb)) quitte le domaine discret pour l'arithmétique des réels.",,,,,,,,bef757f94f17a316,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,629a0d75,markdown,fr,4f7bd81d7a2233e3,"# 16 — Arithmétique réelle Z3 : raisonner sur les irrationnels exacts
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,629a0d75,markdown,fr,a67ed082e76a390d,"# 16 — Arithmétique réelle Z3 : raisonner sur les irrationnels exacts
 
 > Notebook de la série **Z3 / SMT** (Track C#, [Z3.Linq](../Z3.Linq/) fork).
 > Démontre une seconde théorie Z3 **jamais exercée** dans les notebooks 01-15 : l'**arithmétique
 > réelle** (`RealSort`), après les bit-vectors (NB-15) et les entiers non bornés (01-14).
 > **Stack : B — API brute Microsoft.Z3** (`RealSort`, racines algébriques `root-obj`) : le raisonnement exact et la preuve par réfutation se font au niveau solveur, sous le DSL.
+
+**Navigation** : [← 15 — Bit-vectors](15_BitVectors_Overflow.ipynb) | [Suivant >> 17 — UNSAT cores](17_UnsatCores.ipynb) | [Index Z3](./README.md) | [Index SymbolicAI](../../README.md)
 
 ## Pourquoi ce notebook
 
@@ -8491,7 +8531,7 @@ simplexe), mais l'arithmétique réelle **non-linéaire** est un terrain subtil 
 les entiers (dixième problème de Hilbert), mais **décidable sur les réels** (théorème de
 Tarski : la théorie des corps réels clos admet l'élimination des quantificateurs). C'est
 précisément cette décibabilité des réels, que ni les entiers ni les bit-vectors ne partagent,
-que ce notebook met en scène : trouver √2, prouver que `x² + 1 = 0` n'a pas de racine réelle.",,,,,,,,4f7bd81d7a2233e3,,,,,,,,,,,,,,,
+que ce notebook met en scène : trouver √2, prouver que `x² + 1 = 0` n'a pas de racine réelle.",,,,,,,,a67ed082e76a390d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,d9925641,markdown,fr,9e08c6a47b3bf0c0,"## 1. La théorie des réels (SMT-LIB `Real`)
 
 Un **réel Z3** n'est pas un `double` machine (approximation à 15 chiffres, erreurs d'arrondi).
@@ -8779,13 +8819,15 @@ RealExpr py = (RealExpr)ctx.MkConst(""py"", rs);
 // Etape 3 : opt.MkMinimize(ctx.MkAdd(ctx.MkMul(px,px), ctx.MkMul(py,py)));
 // Etape 4 : opt.Check() -> minimum exact = 8 en px = py = 2 (distance √8)
 Console.WriteLine(""Exercice 3 à compléter."");",,,,,,,,fb80304af4391c4b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb,9e82d5d8,markdown,fr,71781298ad9964a5,"# 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le « pourquoi »)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb,9e82d5d8,markdown,fr,c64a4f6da44fbebb,"# 17 — UNSAT cores Z3 : expliquer l'insatisfiabilité (le « pourquoi »)
 
 > Notebook de la série **Z3 / SMT** (Track C#, [Z3.Linq](../Z3.Linq/) fork).
 > Troisième et dernière théorie-capacité **jamais exercée** dans les notebooks 01-16 :
 > les **UNSAT cores** — non plus *décider* qu'une formule est insatisfiable, mais **expliquer
 > quelles contraintes** précisément la rendent insatisfiable.
 > **Stack : B — API brute Microsoft.Z3** (`Check(assumptions)`/`UnsatCore`) : l'extraction de core n'a pas d'équivalent dans le DSL Z3.Linq.
+
+**Navigation** : [Précédent ← 16 — Arithmétique réelle](16_RealArithmetic.ipynb) | [Suivant >> 18 — Einstein](18_Einsteins_Riddle.ipynb) | [Index Z3](./README.md) | [Index SymbolicAI](../../README.md)
 
 ## Pourquoi ce notebook
 
@@ -8804,7 +8846,7 @@ pour trouver l'incohérence, on laisse le solveur pointer les coupables.
 la simple décision SAT/UNSAT. Il repose sur la **résolution assimilable** (clauses
 apprises/`learned clauses`) et l'extraction du sous-ensemble d'hypothèses impliqué dans la
 dérivation du vide. Aucun des notebooks 01-16 ne l'exerçait — tous s'arrêtaient au verdict
-(SAT/UNSAT), jamais à l'explication.",,,,,,,,71781298ad9964a5,,,,,,,,,,,,,,,
+(SAT/UNSAT), jamais à l'explication.",,,,,,,,c64a4f6da44fbebb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/17_UnsatCores.ipynb,6f927439,markdown,fr,db2fbc005eefe084,"## 1. Du verdict à l'explication
 
 Jusqu'ici, la série posait une question binaire :
@@ -9082,13 +9124,13 @@ IntExpr k = ctx.MkIntConst(""k"");
 // Etape 2 : solver.Check((IEnumerable<BoolExpr>)ten)
 // Etape 3 : compter solver.UnsatCore -> doit valoir 3 (les 3 k==n incompatibles)
 Console.WriteLine(""Exercice 3 à compléter."");",,,,,,,,eb45cac2007ea4d9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb,dc7a6d82,markdown,fr,38e93d1abccb79ff,"<- [17 - Unsat Cores](17_UnsatCores.ipynb) | [README Z3](README.md)
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb,dc7a6d82,markdown,fr,c427f226ab6bc9fb,"<- [17 - Unsat Cores](17_UnsatCores.ipynb) | [README Z3](README.md)
 
 ***
 
 # Notebook 18 - L'enigme d'Einstein : la logique des attributs croises comme CSP
 
-**Navigation** : [Index Z3](./README.md) | [Index SymbolicAI](../../README.md) | [Index general](../../../README.md)
+**Navigation** : [Index Z3](./README.md) | [Index SymbolicAI](../../README.md) | [Index general](../../../README.md) | [Suivant >> 19 - Solver Choice](19_Solver_Choice_And_Tactics.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -9108,7 +9150,11 @@ MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb,dc7a6d82,m
 
 L'**enigme d'Einstein** (ou *Zebra puzzle*) est un problème de logique attribue - probablement a tort - a Albert Einstein. Cinq maisons alignees, cinq nationalites, cinq couleurs, cinq boissons, cinq cigarettes, cinq animaux. A partir de quinze indices, determiner la disposition complete et, surtout : **a qui appartient le poisson ?**
 
-L'espace de recherche est colossal : 5 attributs x 5! permutations chacun = (120)^5 de l'ordre de **2,5 milliards** de combinaisons. La resolution humaine procede par deduction pas-a-pas (remplir un tableau en propageant les indices). C'est le terrain ideal pour montrer comment un solveur SMT **propage globalement** des contraintes entrelacees plutot que d'enumerer.",,,,,,,,38e93d1abccb79ff,,,,,,,,,,,,,,,
+L'espace de recherche est colossal : 5 attributs x 5! permutations chacun = (120)^5 de l'ordre de **2,5 milliards** de combinaisons. La resolution humaine procede par deduction pas-a-pas (remplir un tableau en propageant les indices). C'est le terrain ideal pour montrer comment un solveur SMT **propage globalement** des contraintes entrelacees plutot que d'enumerer.
+
+## Source
+
+Le livre-ancrage de la série (**Yurichev, *SAT/SMT by Example***, édition du 12 février 2023) présente cette même famille de problème en §8.2 « Zebra puzzle (AKA Einstein puzzle) » (p. 232) : cinq maisons, cinq groupes d'attributs, **quatorze** indices, et pour conclusion « who owns the zebra? » — la réponse canonique étant que c'est le Japonais. Le carnet garde le **cadre d'encodage** du livre (une variable entière par couple attribut/valeur, `Distinct` par groupe, voisinage encodé en différence de 1), mais résout une **autre instance** : **quinze** indices au lieu de quatorze, des attributs renommés (le « Japonais » du livre devient ici l'« Allemand », le zèbre devient le **poisson**), et la position de la verte inversée (immédiatement à gauche de la blanche, et non à droite de l'ivoire). D'où la solution affichée : « l'Allemand qui possède le poisson ». Copie archivée : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Symbolic\Satisfiability and SMT Solvers\2023 - SAT_SMT_by_example.pdf` (section et folio relevés sur la page de l'ouvrage archivé).",,,,,,,,c427f226ab6bc9fb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/18_Einsteins_Riddle.ipynb,4fd7735c,code,fr,36a8cf47c83a3682,"#r ""../Z3.Linq/.deploy/Microsoft.Z3.dll""
 #r ""../Z3.Linq/.deploy/ExpressionUtils.dll""
 #r ""../Z3.Linq/.deploy/Z3.Linq.dll""
@@ -9518,3 +9564,83 @@ Console.WriteLine($""Echelle pleine : natif PB R={R}, bande IQR [{loB},{hiB}] ->
 Console.WriteLine(""   (cf. pb-bench c.8252 du fork : n=100 pondere -> 103 vs 307 noeuds AST ; la §3.4 mesurait 653x en resolution non ponderee, ici l'ecart devient qualitatif : plat vs mur)"");
 
 public class MenuW { public bool[] S { get; set; } = new bool[8]; }",,,,,,,,b3b719b23116c5e2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,401faa97,markdown,fr,97a8dc872e9a05cf,"### Lecture du résultat
+
+La sortie confirme la mise en place : « Sorte réelle créée : Real », puis « 1/3 = 1/3  (rationnel exact, pas 0.333...) » — la constante 1/3 est stockée comme le couple (1, 3) et s'affiche telle quelle, jamais tronquée. C'est cette exactitude de la représentation qui distingue un réel Z3 d'un `double` machine, et qui rendra possibles plus bas les preuves par réfutation (section 4).
+",,,,,,,,97a8dc872e9a05cf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,840940cb,markdown,fr,97d8e2e88f7115c2,"### Lecture du résultat
+
+Verdict : « Système x+y=1, x−y=3 : SATISFIABLE » avec le modèle « x = 2 » et « y = -1 » — deux entiers, donc deux rationnels exacts ; la sortie le répète : « -> Solution rationnelle EXACTE (pas d'arrondi flottant). » Sur un système linéaire, Z3 répond comme un simplexe, mais avec des valeurs exactes : la même réponse qu'un calcul flottant, sauf que celle-ci se revérifie à la main — 2 + (−1) = 1 et 2 − (−1) = 3.
+",,,,,,,,97d8e2e88f7115c2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,884e66fb,markdown,fr,a08413c663df834e,"### Lecture du résultat
+
+Z3 répond « SATISFIABLE » à « xs² = 2 » avec le modèle « xs = (root-obj (+ (^ x 2) (- 2)) 1) » : non pas 1.4142…, mais la première racine du polynôme x² − 2, un objet algébrique exact que le solveur manipule (la sortie le rappelle : « (root-obj = k-ième racine d'un polynôme à coeff. rationnels) »). C'est la capacité distinctive de la théorie des réels : √2 n'étant pas rationnel, aucun couple p/q ne le représente, mais le root-obj, oui — et Z3 peut raisonner dessus (le comparer, le combiner), là qu'un flottant ne fournit qu'une approximation.
+",,,,,,,,a08413c663df834e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,52cc54a9,markdown,fr,8022795b05c1e511,"### Lecture du résultat
+
+« xn² + 1 = 0 » sur les réels : « UNSATISFIABLE », traduit par la sortie : « -> UNSAT : Z3 PROUVE qu'il n'existe pas de racine réelle. » C'est la preuve par réfutation : asserter l'existence d'une racine réelle rend le système insatisfiable, donc aucune racine réelle n'existe. Sur les complexes, xn = ±i satisferaient l'équation ; c'est précisément le passage aux réels qui rend le verdict UNSAT — la théorie des corps réels clos décide (Tarski) et certifie, sans aucun calcul approché.
+",,,,,,,,8022795b05c1e511,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/16_RealArithmetic.ipynb,c5b6f237,markdown,fr,af4f8cfa38126a65,"### Lecture du résultat
+
+Deux verdicts tranchés : « Triangle(3, 4, 5) : SATISFIABLE » et « Triangle(1, 2, 5) : UNSATISFIABLE », avec la justification imprimée « -> UNSAT : impossible (1 + 2 = 3 < 5, le plus long côté est trop long). » L'inégalité triangulaire est une contrainte sur des longueurs, donc sur les réels, et Z3 la tranche exactement : 3-4-5 forme un triangle (rectangle, pythagoricien), 1-2-5 n'en forme pas. C'est le raisonnement géométrique type que la théorie des réels capture nativement — distances, aires, inégalités — sans aucune discrétisation.
+",,,,,,,,af4f8cfa38126a65,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,58721506,markdown,fr,e90c68e76939b430,"### Lecture du résultat
+
+La sortie confirme le chargement du fork : l'enum `CollectionHandling` expose bien les deux modes `Array` et `Constants`, que les cellules suivantes vont comparer sur le même Sudoku.",,,,,,,,e90c68e76939b430,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,6ddfc3ba,markdown,fr,10d46477d1991cc0,"### Lecture du résultat
+
+Le mode `Array` (théorie des tableaux) résout le Sudoku 4x4 et imprime la grille :
+
+```
+2 3 4 1
+3 4 1 2
+4 1 2 3
+1 2 3 4
+```
+
+Chaque ligne et chaque colonne y est une permutation de 1..4 : la solution imprimée est un carré latin valide.",,,,,,,,10d46477d1991cc0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb,787b0253,markdown,fr,fb519a07f782329a,"### Lecture du résultat
+
+Le mode `Constants` imprime exactement les mêmes quatre lignes — `2 3 4 1`, `3 4 1 2`, `4 1 2 3`, `1 2 3 4` — que le mode `Array` : même théorème LINQ, autre encodage des collections, même solution.",,,,,,,,fb519a07f782329a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,708bf97d,markdown,fr,a54301e3849b7386,"### Lecture du résultat
+
+La sortie confirme le chargement du corpus réel : `Cache present : data/meals\mealplan_cache.json (555 Ko)`, puis `Cache charge en 0,1s : 3125 recettes exploitables (sur 10850 brutes), 5 constituants` — le filtre par catégorie de créneau écarte les recettes non catégorisées au lieu de leur fabriquer un rôle. Les cinq constituants affichés sont ceux du cache Ciqual construit par 07 : `[0] Energie`, `[1] Protéines`, `[2] Glucides (g/100 g)`, `[3] Lipides (g/100 g)`, `[4] Sel chlorure de sodium (g/100 g)`.",,,,,,,,a54301e3849b7386,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,c1360b79,markdown,fr,12038eba235fe4a8,"### Lecture du résultat
+
+La sortie découpe le catalogue trié en cinq plages d'index contiguës : créneau 1 (entrée) `index [0..319]` — 320 plats, créneau 2 (plat principal) `[320..828]` — 509 plats, créneau 3 (accompagnement) `[829..1911]` — 1083 plats, créneau 4 (laitage/fromage) `[1912..1961]` — 50 plats, créneau 5 (dessert) `[1962..3124]` — 1163 plats, soit `Total exploitable : 3125 plats sur 5 creneaux`. C'est cette contiguïté qui permettra d'exprimer la contrainte de rôle par de simples bornes `[lo..hi]` dans `Menu.WithBounds`.",,,,,,,,12038eba235fe4a8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,3e856916,markdown,fr,1478d466999e426b,"### Lecture du résultat
+
+La sortie affiche `Helpers definis : WeeklyMenuPlan, Menu.WithBounds, Menu.PrintPlan.` : la classe statique `Menu` est bien persistée dans le noyau et sera réutilisable par le théorème et les exercices. Le `warning CS1701` qui l'accompagne est un simple avertissement de binding d'assembly (`System.Linq.Expressions` 8.0.0.0 unifié vers 9.0.0.0) — il n'affecte pas le calcul.",,,,,,,,1478d466999e426b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,df4848a7,markdown,fr,6491807384ade380,"### Lecture du résultat
+
+La sortie liste d'abord les constituants suivis — `[0] Energie, Règlement UE N° 1169/2011 (kJ/100 g)`, `[1] Protéines, N x facteur de Jones (g/100 g)`, `[3] Lipides (g/100 g)` — puis `Pool curee : 15 plats (3 creneaux x 5 candidats)`, et l'aperçu des candidats par créneau avec leur énergie en kJ : par exemple `7 Layer Dip(11374)` en créneau 1, `1-Pot Pastitsio Goes Light(15054)` en créneau 2, `1-2-3 Meurbeteig Dough (Mellow Dough)(14026)` en créneau 3. Les teneurs sont arrondies à l'entier (`Teneur`) : l'arithmétique reste entièrement entière côté Z3.",,,,,,,,6491807384ade380,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,d97738e7,markdown,fr,2720651ba6244999,"### Lecture du résultat
+
+La sortie confirme la définition du modèle : `Modele PlanRepas defini (PlatId, Comp, MenuNut).` — trois `int[][]` aux tailles fixées (`PlatId` 2×3, `Comp` 6×3, `MenuNut` 2×3), prêts à être contraints par le théorème de la section 3.",,,,,,,,2720651ba6244999,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,3b80ffca,markdown,fr,0b6f537d8c1aa819,"### Lecture du résultat
+
+La sortie imprime les bornes du patient telles qu'elles seront câblées dans le théorème : `Patient : energie in [3347, 10878] kJ, proteines >= 30 g, lipides <= 600 g (par menu)`. Ce sont ces nombres — fenêtre énergétique `[3347, 10878]` kJ, protéines `>= 30` g, lipides `<= 600` g, par menu — que la vérification de la section 2.4 contrôlera un par un sur la solution.",,,,,,,,0b6f537d8c1aa819,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,1046b82b,markdown,fr,fe9339f3df99c698,"### Lecture du résultat
+
+La sortie affiche d'abord `Theoreme resolu en 90 ms`, puis les deux menus résolus : `== Menu 1 ==  energie=10571 kJ | proteines=111 g | lipides=119 g` (créneaux : 'ncapriata Di Fave (kJ=5922, prot=58, lip=73), 10 Minute Szechuan Chicken (kJ=1178, prot=11, lip=15), 1-Pot Creamy Chicken Noodle Casserole (kJ=3471, prot=42, lip=31)) et `== Menu 2 ==  energie=9756 kJ | proteines=43 g | lipides=111 g` (4 B's Restaurant Tomato Soup (kJ=3409, prot=16, lip=63), (Sort-Of) Sweet and Sour Chicken (kJ=1018, prot=3, lip=0), 'sense and Sensibility' Scones (kJ=5329, prot=24, lip=48)). Les deux menus tombent dans la fenêtre énergétique du patient — la cellule suivante le re-vérifiera hors Z3.",,,,,,,,fe9339f3df99c698,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb,df0e1d2e,markdown,fr,b5f02efea45a6978,"### Lecture du résultat
+
+La sortie re-calcule chaque menu directement depuis la pool, indépendamment des variables Z3 : `Menu 1 : recalc energie=10571(OK), prot=111(OK), lip=119(OK) ; coherent avec MenuNut=oui` et `Menu 2 : recalc energie=9756(OK), prot=43(OK), lip=111(OK) ; coherent avec MenuNut=oui`, puis le verdict global `VERIFIE : toutes les restrictions patient sont respectees.` Les sommes re-calculées retombent exactement sur les `MenuNut` du solveur et chaque borne Min/Max est respectée : le plan est confirmé, pas seulement cru.",,,,,,,,b5f02efea45a6978,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,r09c06,markdown,fr,498de49efbdf80f6,"### Lecture du résultat
+
+L'énoncé soumis aux trois encodages est posé par la sortie : « Theoreme : 7 menus x 5 plats, sur R=4934 recettes (vecteurs recette entiere). » avec « energie/menu in [13725,74840] kJ, proteines/menu >= 85 g, sel/menu <= 30 g. » — les bornes sont calibrées sur les quartiles mesurés en section 1.",,,,,,,,498de49efbdf80f6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,r09c08,markdown,fr,85963f5b9ec2cf6d,"### Lecture du résultat
+
+La construction seule atteint « 105000 disjonctions construites en 2,05s » pour R=1000, et la sortie conclut : « le solveur n'a meme pas commence a chercher une solution » — l'encodage naïf explose avant même la résolution.",,,,,,,,85963f5b9ec2cf6d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,r09c10,markdown,fr,b692e4bd568a9754,"### Lecture du résultat
+
+Z3 répond « UNKNOWN en 15,0s » sur les « chaines de Store de longueur 4934 » : la sortie conclut « Compacite != resolubilite » — l'encodage le plus compact à écrire reste insoluble à l'échelle.",,,,,,,,b692e4bd568a9754,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,r09c15,markdown,fr,4d2fa3b4ce62c34c,"### Lecture du résultat
+
+Sur un seul créneau, la sortie tranche : « natif 0,17s vs expansion 83,73s = 493x plus lent » entre « PB natif MkPBEq » et « expansion MkIte+MkAdd » — ExactlyOne vers le PB natif n'est pas optionnel, c'est lui qui préserve la propagation pseudo-booléenne de Z3.",,,,,,,,4d2fa3b4ce62c34c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,r09c17,markdown,fr,59237708927a53ab,"### Lecture du résultat
+
+À l'échelle pleine R=4934, la sortie oppose « SATISFIABLE en 0,19s » au natif PB à « pas de reponse sous 600 s » en expansion MkIte (à n=1600 déjà « natif PB 0,06s » contre « expansion MkIte 41,38s ») : l'écart n'est plus un facteur, c'est un mur.",,,,,,,,59237708927a53ab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/09_Meal_Planner_Convergence_Scale.ipynb,r09c22,markdown,fr,a1c97f97e96d6b92,"### Lecture du résultat
+
+La restriction patient reste soluble : « vegetarien : 472 recettes viande/poisson interdites -- resolution 5,1s -> SATISFIABLE », avec un premier menu affiché (« Menu vegetarien 1 -> Entree : Aztec Stuffed Mushroo ») — exclure une catégorie ne casse pas la satisfiabilité.",,,,,,,,a1c97f97e96d6b92,,,,,,,,,,,,,,,

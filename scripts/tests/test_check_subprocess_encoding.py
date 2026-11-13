@@ -12,12 +12,18 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "audit"))
 
 import check_subprocess_encoding as cse  # noqa: E402
+import git_index_renames  # noqa: E402
 
-# Kept before any fixture replaces it: the two #24039 parsing tests below
-# restore the real probe to exercise it against a synthetic git payload.
-_REAL_STAGED_PURE_RENAMES = cse.staged_pure_renames
+# Kept before any fixture replaces it: the #24039 parsing tests below restore
+# the real git layer to exercise it against a synthetic git payload. Since
+# #24068 the probe lives in scripts/audit/git_index_renames.py (shared with the
+# four sibling hooks); main() reads it through the module, so the hermetic
+# pin patches the shared module's git_out -- the single source both probes
+# read.
+_REAL_GIT_OUT = git_index_renames.git_out
 
 
 @pytest.fixture(autouse=True)
@@ -26,7 +32,7 @@ def _hermetic_renames(monkeypatch):
     contributor's staging area, which would make the suite depend on whatever
     happens to be ``git add``-ed at the time it runs. The #24039 tests below
     patch it again themselves."""
-    monkeypatch.setattr(cse, "staged_pure_renames", lambda: set())
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: "")
 
 
 def test_clean_text_with_encoding():
@@ -195,15 +201,13 @@ def test_staged_pure_renames_keeps_only_r100_destination(monkeypatch):
                "R087\0a.py\0b.py\0"
                "M\0c.py\0"
                "A\0d.py\0")
-    monkeypatch.setattr(cse, "staged_pure_renames", _REAL_STAGED_PURE_RENAMES)
-    monkeypatch.setattr(cse, "git_out", lambda *a: payload)
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: payload)
     # R087 is a rename *with edits*: its content did change, so it is scanned.
     assert cse.staged_pure_renames() == {"new/dir/x.py"}
 
 
 def test_staged_pure_renames_without_git_is_empty(monkeypatch):
-    monkeypatch.setattr(cse, "staged_pure_renames", _REAL_STAGED_PURE_RENAMES)
-    monkeypatch.setattr(cse, "git_out", lambda *a: None)
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: None)
     assert cse.staged_pure_renames() == set()
 
 
@@ -211,7 +215,8 @@ def test_main_files_mode_skips_pure_rename(tmp_path, capsys, monkeypatch):
     moved = tmp_path / "moved.py"
     moved.write_text("import subprocess\nsubprocess.run(['x'], text=True)\n",
                      encoding="utf-8")
-    monkeypatch.setattr(cse, "staged_pure_renames", lambda: {moved.as_posix()})
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a:
+                        f"R100\0old.py\0{moved.as_posix()}\0")
     assert cse.main([str(moved)]) == 0
     out = capsys.readouterr().out
     assert "pure rename(s) ignored" in out
@@ -224,9 +229,11 @@ def test_main_files_mode_still_scans_non_rename(tmp_path, capsys, monkeypatch):
     bad = tmp_path / "bad.py"
     bad.write_text("import subprocess\nsubprocess.run(['x'], text=True)\n",
                    encoding="utf-8")
-    monkeypatch.setattr(cse, "staged_pure_renames", lambda: {"/elsewhere.py"})
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a:
+                        "R100\0old.py\0/elsewhere.py\0")
     assert cse.main([str(bad)]) == 1
     assert "text=True without encoding=" in capsys.readouterr().out
+
 
 
 # ---- #19475: ipynb code-cell extraction ----
@@ -323,3 +330,115 @@ def test_main_files_mode_mixed_py_ipynb(tmp_path, capsys):
     assert f"{bad_py}" in out
     assert f"{good_nb}" not in out
     assert f"{bad_nb}:cell_00:2" in out  # cell index in the report
+
+
+# ---- #24068: the probe now lives in the shared module -------------------
+
+def test_shared_module_staged_pure_renames_matches_shim(monkeypatch):
+    """The check_subprocess_encoding.staged_pure_renames shim delegates to
+    scripts/audit/git_index_renames.py; both must return the same set."""
+    payload = "R100\0old/x.py\0new/x.py\0R087\0a.py\0b.py\0"
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: payload)
+    assert cse.staged_pure_renames() == git_index_renames.staged_pure_renames()
+    assert cse.staged_pure_renames() == {"new/x.py"}
+
+
+def test_shared_module_renames_with_old_carries_all_renames(monkeypatch):
+    """The delta half of #24066: staged_renames_with_old returns EVERY rename
+    (any similarity) as destination -> source, not only R100."""
+    payload = ("R100\0old/pure.py\0new/pure.py\0"
+               "R042\0src/edited.py\0dst/edited.py\0"
+               "C100\0orig.py\0copy.py\0"
+               "M\0plain.py\0")
+    monkeypatch.setattr(git_index_renames, "git_out", lambda *a: payload)
+    renames = git_index_renames.staged_renames_with_old()
+    assert renames == {
+        "new/pure.py": "old/pure.py",
+        "dst/edited.py": "src/edited.py",
+        "copy.py": "orig.py",  # copy: content also comes from an existing blob
+    }
+
+
+# ---- #24066: rename WITH edits reports only the delta -------------------
+
+def test_main_files_mode_rename_with_edits_reports_only_new_sites(
+        tmp_path, capsys, monkeypatch):
+    """The issue's measured scenario: R100 rename, then a retouche adds one
+    new call. Expected after fix: only the new site (line 8) is reported;
+    the inherited one (line 5) is silent."""
+    moved = tmp_path / "new" / "x.py"
+    moved.parent.mkdir()
+    moved.write_text(
+        "import subprocess\n"
+        "cmd = ['echo']\n"
+        "\n"
+        "def f1():\n"
+        "    return subprocess.run(cmd, capture_output=True, text=True)\n"
+        "\n"
+        "def f2():\n"
+        "    return subprocess.run(cmd, text=True)\n",
+        encoding="utf-8")
+    renames = {moved.as_posix(): "old/dir/x.py"}
+    old_blob = (
+        "import subprocess\n"
+        "cmd = ['echo']\n"
+        "def f1():\n"
+        "    return subprocess.run(cmd, capture_output=True, text=True)\n",
+    )
+    monkeypatch.setattr(git_index_renames, "staged_renames_with_old",
+                        lambda: renames)
+    monkeypatch.setattr(git_index_renames, "staged_pure_renames", lambda: set())
+    # The source blob: same content WITHOUT f2 -- the inherited site is f1's
+    # call, whose normalized text the new file carries verbatim.
+    monkeypatch.setattr(cse, "git_out", lambda *a:
+                        old_blob[0] if a[:2] == ("show", "HEAD:old/dir/x.py")
+                        else _REAL_GIT_OUT(*a))
+    assert cse.main([str(moved)]) == 1
+    out = capsys.readouterr().out
+    assert "(cmd, text=True)" in out                            # the new site
+    assert "capture_output=True, text=True" not in out          # inherited: silent
+    # One reported site only (the summary line also carries the phrase).
+    reports = [ln for ln in out.splitlines()
+               if ln.startswith(str(moved)) and "text=True without encoding=" in ln]
+    assert len(reports) == 1
+
+
+def test_main_files_mode_rename_with_edits_and_unreadable_blob_reports_all(
+        tmp_path, capsys, monkeypatch):
+    """Fail-open: if the previous blob cannot be read (orphan rename), no
+    site is proven inherited and everything stays reportable."""
+    moved = tmp_path / "x.py"
+    moved.write_text("import subprocess\nsubprocess.run(['x'], text=True)\n",
+                     encoding="utf-8")
+    monkeypatch.setattr(git_index_renames, "staged_renames_with_old",
+                        lambda: {moved.as_posix(): "old/x.py"})
+    monkeypatch.setattr(git_index_renames, "staged_pure_renames", lambda: set())
+    monkeypatch.setattr(cse, "git_out", lambda *a: None)  # blob unreadable
+    assert cse.main([str(moved)]) == 1
+    assert "text=True without encoding=" in capsys.readouterr().out
+
+
+def test_main_files_mode_rename_delta_still_blocks_new_violation(
+        tmp_path, capsys, monkeypatch):
+    """The delta is a ratchet, not an amnesty: an edited rename that ADDS a
+    violating call still exits 1."""
+    moved = tmp_path / "x.py"
+    moved.write_text("import subprocess\nsubprocess.run(['new'], text=True)\n",
+                     encoding="utf-8")
+    monkeypatch.setattr(git_index_renames, "staged_renames_with_old",
+                        lambda: {moved.as_posix(): "old/x.py"})
+    monkeypatch.setattr(git_index_renames, "staged_pure_renames", lambda: set())
+    monkeypatch.setattr(cse, "git_out", lambda *a:
+                        "import subprocess\nsubprocess.run(['old'], text=True, encoding='utf-8')\n"
+                        if a[:2] == ("show", "HEAD:old/x.py") else _REAL_GIT_OUT(*a))
+    assert cse.main([str(moved)]) == 1
+    assert "(['new'], text=True)" in capsys.readouterr().out
+
+
+def test_inherited_sites_matches_normalized_snippet(monkeypatch):
+    """The comparison key is scan_source's snippet (whitespace collapsed):
+    a call reformatted across lines still counts as inherited."""
+    monkeypatch.setattr(cse, "git_out", lambda *a:
+                        "subprocess.run(cmd,\n   capture_output=True,\n   text=True)\n")
+    sites = cse.inherited_sites("old/x.py")
+    assert sites == {"(cmd, capture_output=True, text=True)"}

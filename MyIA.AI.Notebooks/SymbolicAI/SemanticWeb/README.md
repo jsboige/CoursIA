@@ -34,7 +34,7 @@ flowchart BT
     KG --> GRAG["<b>GraphRAG</b><br/>ancrer les LLMs"]
 ```
 
-La série propose délibérément deux stacks en parité (.NET ⇄ Python, marathon #4956) : **.NET C#** avec dotNetRDF (fondations SW-1 à SW-7, standards modernes SW-8/9/10/11/13) et **Python** avec rdflib/pySHACL/owlready2 (miroirs fondations SW-2b à SW-7b, standards modernes SW-8 à SW-13, extensions SW-14 à SW-16). Les sidetracks Python (SW-2b, 3b, 4b, 5b, 6b, 7b) offrent un miroir des notebooks C# fondations en Python.
+La série propose délibérément deux stacks en parité (.NET ⇄ Python, marathon #4956) : **.NET C#** avec dotNetRDF (fondations SW-1 à SW-7, standards modernes SW-8/9/10/11/13 et SW-14 via Python.NET pour OWL-RL) et **Python** avec rdflib/pySHACL/owlready2 (miroirs fondations SW-02-Python à SW-07-Python, standards modernes SW-8 à SW-13, extensions SW-14 à SW-16). Les sidetracks Python (SW-02-Python à SW-07-Python) offrent un miroir des notebooks C# fondations en Python.
 
 ## Concepts clés
 
@@ -52,7 +52,7 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 | **Graphe de connaissances** | Un RDF riche, visualisable, requêtable, ancré dans une ontologie | SW-11 |
 | **GraphRAG** | Un KG ancré dans un LLM pour du RAG structuré (anti-hallucination) | SW-12 |
 | **Raisonneurs OWL/RDFS** | Moteurs d'inférence (owlrl, HermiT, reasonable, Growl, StaticRdfsReasoner) — compromis Python/Java/Rust | SW-13 |
-| **Coup ontologique** | Extension de vocabulaire exécutable : triplets ajoutés, verdict pySHACL, delta owlrl, provenance RDF-star | SW-14 |
+| **Coup ontologique** | Extension de vocabulaire exécutable : triplets ajoutés, verdict pySHACL, delta owlrl, provenance par réification RDF | SW-14 |
 | **Coup argumentatif** | Greffe AIF/Dung sur le pipeline : extension grounded basculée par le coup | SW-15 |
 | **Proof-Carrying Ontologies** | Une conclusion de raisonneur accompagnée d'un certificat qu'un checker indépendant accepte ou rejette (PCO) | SW-16 |
 
@@ -61,7 +61,7 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 | Statistique | Valeur |
 |-------------|--------|
 | Notebooks .NET C# (dotNetRDF) | fondations SW-1..7, standards SW-8/9/10/11/13, legacy `RDF.Net-Legacy/` |
-| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | miroirs SW-2b..7b, standards SW-8..13, extensions SW-14/15/16 |
+| Notebooks Python (rdflib/pySHACL/owlready2/kglab) | miroirs SW-02-Python..SW-07-Python, standards SW-8..13, extensions SW-14/15/16 |
 | Nombre de notebooks | voir le bandeau `CATALOG-STATUS` en tête de fichier (régénéré par le catalogue) |
 | Durée totale | ~10h (parcours principal), +4h (twins optionnels) |
 | Langages | .NET C# + Python |
@@ -81,12 +81,12 @@ Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui prés
 
 | Sidetrack | Notebook principal | Contenu |
 |-----------|-------------------|---------|
-| SW-02b-RDFBasics-Python | SW-02-RDFBasics-CSharp | RDF en Python avec rdflib |
-| SW-03b-GraphOperations-Python | SW-03-GraphOperations-CSharp | Graphes RDF en Python avec rdflib |
-| SW-04b-SPARQL-Python | SW-04-SPARQL-CSharp | SPARQL en Python avec rdflib |
-| SW-05b-LinkedData-Python | SW-05-LinkedData-CSharp | DBpedia/Wikidata avec SPARQLWrapper |
-| SW-06b-RDFS-Python | SW-06-RDFS-CSharp | RDFS en Python avec rdflib/owlrl |
-| SW-07b-OWL-Python | SW-07-OWL-CSharp | Ontologies OWL avec OWLReady2 |
+| SW-02-RDFBasics-Python | SW-02-RDFBasics-CSharp | RDF en Python avec rdflib |
+| SW-03-GraphOperations-Python | SW-03-GraphOperations-CSharp | Graphes RDF en Python avec rdflib |
+| SW-04-SPARQL-Python | SW-04-SPARQL-CSharp | SPARQL en Python avec rdflib |
+| SW-05-LinkedData-Python | SW-05-LinkedData-CSharp | DBpedia/Wikidata avec SPARQLWrapper |
+| SW-06-RDFS-Python | SW-06-RDFS-CSharp | RDFS en Python avec rdflib/owlrl |
+| SW-07-OWL-Python | SW-07-OWL-CSharp | Ontologies OWL avec OWLReady2 |
 
 ---
 
@@ -99,9 +99,9 @@ Cette partie pose les fondations du Web Sémantique en utilisant l'écosystème 
 | # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
 | 1 | **SW-01-Setup-CSharp** | 20 min | - |
-| 2 | **SW-02-RDFBasics-CSharp** | 45 min | SW-02b-RDFBasics-Python |
-| 3 | **SW-03-GraphOperations-CSharp** | 50 min | SW-03b-GraphOperations-Python |
-| 4 | **SW-04-SPARQL-CSharp** | 45 min | SW-04b-SPARQL-Python |
+| 2 | **SW-02-RDFBasics-CSharp** | 45 min | SW-02-RDFBasics-Python |
+| 3 | **SW-03-GraphOperations-CSharp** | 50 min | SW-03-GraphOperations-Python |
+| 4 | **SW-04-SPARQL-CSharp** | 45 min | SW-04-SPARQL-Python |
 
 #### SW-01-Setup-CSharp : Premier pas dans le Web Sémantique (20 min)
 
@@ -123,7 +123,7 @@ Dans ce notebook, vous approfondirez votre compréhension du modèle de données
 - Formats de sérialisation : Turtle, N-Triples, RDF/XML
 - Création de namespaces pour simplifier l'écriture
 
-> **Sidetrack Python disponible** : [SW-02b-RDFBasics-Python](SW-02b-RDFBasics-Python.ipynb) - Équivalent Python avec rdflib
+> **Sidetrack Python disponible** : [SW-02-RDFBasics-Python](SW-02-RDFBasics-Python.ipynb) - Équivalent Python avec rdflib
 
 #### SW-03-GraphOperations-CSharp : Manipulation Avancée de Graphes (50 min)
 
@@ -147,7 +147,7 @@ SPARQL est au RDF ce que SQL est aux bases de données relationnelles. Ce notebo
 - `UNION` pour combiner plusieurs patterns
 - `ORDER BY`, `LIMIT`, `OFFSET` pour pagination
 
-> **Sidetrack Python disponible** : [SW-04b-SPARQL-Python](SW-04b-SPARQL-Python.ipynb) - Équivalent Python avec rdflib
+> **Sidetrack Python disponible** : [SW-04-SPARQL-Python](SW-04-SPARQL-Python.ipynb) - Équivalent Python avec rdflib
 
 ---
 
@@ -157,9 +157,9 @@ Cette partie étend vos compétences aux données du Web ouvert et aux ontologie
 
 | # | Notebook | Durée | Sidetrack Python |
 |---|----------|-------|------------------|
-| 5 | **SW-05-LinkedData-CSharp** | 50 min | SW-05b-LinkedData-Python |
-| 6 | **SW-06-RDFS-CSharp** | 40 min | SW-06b-RDFS-Python |
-| 7 | **SW-07-OWL-CSharp** | 50 min | SW-07b-OWL-Python |
+| 5 | **SW-05-LinkedData-CSharp** | 50 min | SW-05-LinkedData-Python |
+| 6 | **SW-06-RDFS-CSharp** | 40 min | SW-06-RDFS-Python |
+| 7 | **SW-07-OWL-CSharp** | 50 min | SW-07-OWL-Python |
 
 #### SW-05-LinkedData-CSharp : DBpedia, Wikidata et Requêtes Fédérées (50 min)
 
@@ -172,7 +172,7 @@ Découvrez le Web de données liées en interrogeant des endpoints publics comme
 - Exploration de DBpedia : sujets, catégories, liens inter-langues
 - Wikidata et ses Q-items/P-properties
 
-> **Sidetrack Python disponible** : [SW-05b-LinkedData-Python](SW-05b-LinkedData-Python.ipynb) - DBpedia/Wikidata avec SPARQLWrapper
+> **Sidetrack Python disponible** : [SW-05-LinkedData-Python](SW-05-LinkedData-Python.ipynb) - DBpedia/Wikidata avec SPARQLWrapper
 
 #### SW-06-RDFS-CSharp : Schema et Inférence (40 min)
 
@@ -195,7 +195,7 @@ OWL (Web Ontology Language) étend RDFS avec des constructeurs logiques puissant
 - Restrictions et cardinalités sur les classes (`Restriction`, `Cardinality`)
 - Raisonnement avec `OntologyGraph`
 
-> **Sidetrack Python disponible** : [SW-07b-OWL-Python](SW-07b-OWL-Python.ipynb) - Ontologies OWL avec OWLReady2
+> **Sidetrack Python disponible** : [SW-07-OWL-Python](SW-07-OWL-Python.ipynb) - Ontologies OWL avec OWLReady2
 
 ---
 
@@ -262,7 +262,8 @@ Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs e
 | 12 | **SW-12-GraphRAG-Python** | 50 min | KG + LLMs pour le RAG |
 | **Bonus** | **SW-13-Reasoners-Python** | 45 min | Comparaison raisonneurs OWL |
 | 13 (C#) | **SW-13-Reasoners-CSharp** | 40 min | Jumeau .NET : raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner`) |
-| **Bonus** | **SW-14-Coup-Ontologique-Python** | 40 min | Le coup ontologique comme diff de graphe exécutable (extension, verdict SHACL, delta owlrl, provenance RDF-star) |
+| **Bonus** | **SW-14-Coup-Ontologique-Python** | 40 min | Le coup ontologique comme diff de graphe exécutable (extension, verdict SHACL, delta owlrl, provenance par réification RDF) |
+| 14 (C#) | **[SW-14-Coup-Ontologique-CSharp](SW-14-Coup-Ontologique-CSharp.ipynb)** | 90 min | dotNetRDF, SHACL et OWL-RL via Python.NET |
 | **Bonus** | **SW-15-Coup-Argumentatif-Python** | 45 min | Greffe AIF/Dung sur le pipeline de SW-14 : le coup argumentatif bascule l'extension grounded |
 | **Bonus** | **SW-16-ProofCarryingOntologies-Python** | 50 min | Certificat d'inférence (PCO) : checker indépendant qui accepte ou rejette nommément ; théorème Lean cité, non rejoué |
 
@@ -346,20 +347,22 @@ couche logique qui transforme un graphe déclaratif en connaissances déductible
 > **Convention d'accessibilité** : Toutes les figures portent un `alt-text` français (régénérés via `extract_readme_figures.py`, EPIC #5654). Poids total ≈ 626 KB (≤ 1.5 MB borne), max-dim 1200 px (≤ 1200 px borne), max fichier 163 KB (≤ 200 KB borne).
 
 
+> **Jumeau C#** : [SW-14-Coup-Ontologique-CSharp](SW-14-Coup-Ontologique-CSharp.ipynb) contient une recette Linux de préparation de CPython 3.13, du venv et du pont Python.NET avant le démarrage de Jupyter.
+
 #### SW-14-Coup-Ontologique-Python (Bonus) : le coup ontologique comme diff de graphe exécutable (40 min)
 
-Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ comme **diff de graphe exécutable** sur rdflib. L'ontologie jouet (bibliothèque, classes `Book` / `Member` / `Loan`) subit un coup : sous-classe `Ebook`, datatype property `format`, assertion RDF-star de provenance. Les gestes sont ceux de la série, **composés** autour d'un même objet : OWL déclare (via rdflib), SHACL juge l'admissibilité du coup, owlrl calcule le delta d'inférences (y compris le **coup nul** comme résultat), RDF-star/PROV nomme l'auteur du coup.
+Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ comme **diff de graphe exécutable** sur rdflib. L'ontologie jouet (bibliothèque, classes `Book` / `Member` / `Loan`) subit un coup : sous-classe `Ebook`, datatype property `format`, assertion de provenance par réification RDF. Les gestes sont ceux de la série, **composés** autour d'un même objet : OWL déclare (via rdflib), SHACL juge l'admissibilité du coup, owlrl calcule le delta d'inférences (y compris le **coup nul** comme résultat), la réification RDF et PROV nomment l'auteur du coup.
 
 **Points clés appris** :
 - Diff de graphe = objet rejouable, validable, inférable, refusable — pas seulement une liste de triplets ajoutés
-- Pipeline composé : OWL (déclarer) + SHACL (juger) + owlrl (mesurer) + RDF-star (attribuer)
+- Pipeline composé : OWL (déclarer) + SHACL (juger) + owlrl (mesurer) + réification RDF (attribuer)
 - Le coup nul : une extension sans conséquence déductive est un résultat, pas un échec
-- Provenance de l'auteur du coup par reification RDF-star + PROV : *qui a proposé ce schéma, et au nom de quoi ?*
+- Provenance de l'auteur du coup par réification RDF 1.1 (`rdf:Statement`) + PROV : *qui a proposé ce schéma, et au nom de quoi ?*
 - **Contrôle négatif** : une extension rejetée par SHACL (`ebook2` sans `format`) doit produire un rapport de violation ; un rapport vide n'est pas un test
 
 #### SW-15-Coup-Argumentatif-Python (Bonus) : la greffe AIF/Dung (45 min)
 
-Ce notebook bonus greffe un **graphe d'argumentation AIF** (I-nodes / RA-nodes / CA-nodes, vocabulaire de l'ontologie [Argumentum](../Argument_Analysis/ontologies/argumentum_fallacies.owl) du dépôt) sur le pipeline de SW-14 : le débat porte sur l'adoption de la classe `Ebook` elle-même. Le coup étend le vocabulaire argumentatif (nouveau schéma d'inférence `RepresentativeSample_Inference`, nouveau type de conflit `SelectionBiasRebuttal_Conflict`, conventions de nommage Argumentum), passe le juge SHACL — contrôle négatif rejeté à l'appui —, produit un delta owlrl non vide, et **bascule l'extension grounded de Dung** de `{RA4}` à `{RA3, RA5}` : l'attaque du coup réhabilite l'argument du pilote. La provenance du coup est tracée par reification RDF classique + PROV (rdflib 7.6 ne supporte pas encore la syntaxe quoted-triple native, la double lecture est établie par SW-10). Pont naturel vers la série [Argument_Analysis](../Argument_Analysis/) — taxonomie complète des schémas Walton et sémantiques preferred/stable comme prolongement.
+Ce notebook bonus greffe un **graphe d'argumentation AIF** (I-nodes / RA-nodes / CA-nodes, vocabulaire de l'ontologie [Argumentum](../ArgumentAnalysis/ontologies/argumentum_fallacies.owl) du dépôt) sur le pipeline de SW-14 : le débat porte sur l'adoption de la classe `Ebook` elle-même. Le coup étend le vocabulaire argumentatif (nouveau schéma d'inférence `RepresentativeSample_Inference`, nouveau type de conflit `SelectionBiasRebuttal_Conflict`, conventions de nommage Argumentum), passe le juge SHACL — contrôle négatif rejeté à l'appui —, produit un delta owlrl non vide, et **bascule l'extension grounded de Dung** de `{RA4}` à `{RA3, RA5}` : l'attaque du coup réhabilite l'argument du pilote. La provenance du coup est tracée par reification RDF classique + PROV (rdflib 7.6 ne supporte pas encore la syntaxe quoted-triple native, la double lecture est établie par SW-10). Pont naturel vers la série [ArgumentAnalysis](../ArgumentAnalysis/) — taxonomie complète des schémas Walton et sémantiques preferred/stable comme prolongement.
 
 **Points clés appris** :
 - Le coup ontologique est le **format naturel d'un coup argumentatif** : étendre le vocabulaire d'un débat se juge (SHACL) et se mesure (owlrl + Dung) avec les mêmes outils qu'une ontologie
@@ -387,9 +390,9 @@ Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion 
 
 **Techniques**
 
-1. **Modéliser un domaine en RDF** (triplets, IRIs, littéraux typés, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-02-RDFBasics-CSharp.ipynb`, `SW-03-GraphOperations-CSharp.ipynb`) ou en Python avec rdflib (`SW-02b-RDFBasics-Python.ipynb`).
-2. **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) côté .NET (`SW-04-SPARQL-CSharp.ipynb`) et Python (`SW-04b-SPARQL-Python.ipynb`), puis publier des données Linked Data résolvables (`SW-05-LinkedData-CSharp.ipynb`, `SW-05b-LinkedData-Python.ipynb`).
-3. **Formaliser une ontologie en RDFS puis OWL** (classes, propriétés, restrictions, hiérarchies) et tirer parti d'un raisonneur pour matérialiser les inférences (`SW-06-RDFS-CSharp.ipynb`, `SW-07-OWL-CSharp.ipynb`, `SW-07b-OWL-Python.ipynb`, `SW-13-Reasoners-Python.ipynb`).
+1. **Modéliser un domaine en RDF** (triplets, IRIs, littéraux typés, namespaces) et manipuler des graphes en C# avec dotNetRDF (`SW-02-RDFBasics-CSharp.ipynb`, `SW-03-GraphOperations-CSharp.ipynb`) ou en Python avec rdflib (`SW-02-RDFBasics-Python.ipynb`).
+2. **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) côté .NET (`SW-04-SPARQL-CSharp.ipynb`) et Python (`SW-04-SPARQL-Python.ipynb`), puis publier des données Linked Data résolvables (`SW-05-LinkedData-CSharp.ipynb`, `SW-05-LinkedData-Python.ipynb`).
+3. **Formaliser une ontologie en RDFS puis OWL** (classes, propriétés, restrictions, hiérarchies) et tirer parti d'un raisonneur pour matérialiser les inférences (`SW-06-RDFS-CSharp.ipynb`, `SW-07-OWL-CSharp.ipynb`, `SW-07-OWL-Python.ipynb`, `SW-13-Reasoners-Python.ipynb`).
 4. **Valider la conformité d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalité et de type, rapport de validation) via pySHACL (`SW-08-SHACL-Python.ipynb`).
 5. **Sérialiser et échanger des données RDF en JSON-LD** (`@context`, `@id`/`@type`, `@graph`, formes compactée, étendue et aplatie) pour interopérer avec les APIs Web modernes (`SW-09-JSONLD-Python.ipynb`).
 6. **Annoter des assertions avec RDF-Star** (citations de triplets, provenance, niveau de confiance), et mesurer le coût de la réification classique qui la remplace sous rdflib (`SW-10-RDFStar-Python.ipynb`).
@@ -400,7 +403,7 @@ Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion 
 
 **Extensions** (Bonus Python)
 
-8. **Composer les standards autour d'un même geste** : étendre le vocabulaire d'un graphe RDF comme diff de triplets, juger l'admissibilité du coup (SHACL), mesurer le delta d'inférences (OWL-RL), tracer la provenance de l'auteur (RDF-star / PROV) — `SW-14-Coup-Ontologique-Python.ipynb`.
+8. **Composer les standards autour d'un même geste** : étendre le vocabulaire d'un graphe RDF comme diff de triplets, juger l'admissibilité du coup (SHACL), mesurer le delta d'inférences (OWL-RL), tracer la provenance de l'auteur (réification RDF / PROV) — `SW-14-Coup-Ontologique-Python.ipynb`.
 9. **Transplanter ce geste sur un graphe d'argumentation AIF** : étendre le vocabulaire d'un débat (nouveaux schémas d'inférence, nouveaux types de conflit), mesurer la bascule de l'extension grounded de Dung — `SW-15-Coup-Argumentatif-Python.ipynb`.
 10. **Émettre et vérifier un certificat d'inférence** : faire passer une conclusion de raisonneur d'« acte de confiance » à « fait vérifiable par un tiers » via un checker indépendant (relecture d'étapes sous une seule substitution, rejets nommés), distinguer `entailed` de `entailed_under_supplied_rules`, distinguer aussi ce qu'un certificat **ne prouve pas** (provenance, moteurs jumeaux, théorème cité) — `SW-16-ProofCarryingOntologies-Python.ipynb`.
 
@@ -412,7 +415,7 @@ Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion 
 
 Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les notebooks Python :
 
-1. **SW-2b** (RDF Basics Python) → **SW-3b** (Graph Ops Python) → **SW-4b** (SPARQL Python) → **SW-5b** (Linked Data Python) → **SW-6b** (RDFS Python) → **SW-7b** (OWL Python) : les 6 sidetracks couvrent les fondamentaux avec rdflib/owlready2.
+1. **SW-02-Python** (RDF Basics Python) → **SW-03-Python** (Graph Ops Python) → **SW-04-Python** (SPARQL Python) → **SW-05-Python** (Linked Data Python) → **SW-06-Python** (RDFS Python) → **SW-07-Python** (OWL Python) : les 6 sidetracks couvrent les fondamentaux avec rdflib/owlready2.
 2. Puis **SW-8** (SHACL) → **SW-9** (JSON-LD) → **SW-10** (RDF-Star) → **SW-11** (KG) → **SW-12** (GraphRAG) : les standards modernes et l'IA.
 3. Extensions : **SW-14** (coup ontologique) → **SW-15** (coup argumentatif) → **SW-16** (proof-carrying) : la trilogie qui ferme le pipeline.
 
@@ -420,35 +423,35 @@ Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les noteb
 
 Pour les praticiens qui veulent aller vite :
 
-1. **SW-2b** (RDF Basics) → **SW-4b** (SPARQL) → **SW-8** (SHACL : valider vos données) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
+1. **SW-02-Python** (RDF Basics) → **SW-04-Python** (SPARQL) → **SW-8** (SHACL : valider vos données) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
 2. Si vous déployez des ontologies en production, ajoutez **SW-14** (coup) et **SW-16** (certificat) à la fin.
 
 ### Parcours ontologue
 
 Pour les personnes créant des ontologies et des vocabulaires :
 
-1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les données) → **SW-13** (comparaison raisonneurs).
+1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-07-Python** (OWL Python) → **SW-8** (SHACL : contraintes sur les données) → **SW-13** (comparaison raisonneurs).
 2. La trilogie de l'**évolution d'ontologie** : **SW-14** (coup) → **SW-15** (coup argumentatif) → **SW-16** (preuve vérifiable).
 
 ### Parcours extensions (bonus Python)
 
 Pour les personnes intéressées par la **composition des standards** et la **vérification des inférences** :
 
-1. **SW-14** (coup ontologique) : composer OWL + SHACL + OWL-RL + RDF-star autour d'un diff de graphe exécutable.
+1. **SW-14** (coup ontologique) : composer OWL + SHACL + OWL-RL + réification RDF autour d'un diff de graphe exécutable.
 2. **SW-15** (coup argumentatif) : transplanter ce geste sur un graphe d'argumentation AIF et observer la bascule de l'extension grounded de Dung.
 3. **SW-16** (proof-carrying ontologies) : faire passer une conclusion de raisonneur d'« acte de confiance » à « fait vérifiable » via un certificat d'inférence et un checker indépendant ; connaître les limites load-bearing écrites (provenance, moteurs jumeaux, théorème cité).
 
 ## Quick Start
 
 ```bash
-# Python (notebooks SW-2b a SW-7b, SW-8 a SW-13 ; bonus SW-14/15/16)
+# Python (notebooks SW-02-Python a SW-07-Python, SW-8 a SW-13 ; bonus SW-14/15/16)
 pip install rdflib pySHACL owlready2 owlrl reasonable kglab SPARQLWrapper
 
 # .NET (notebooks SW-1 a SW-7, jumeaux C# SW-8/9/10/11/13)
 dotnet restore
 
 # Premier notebook recommandé (Python) :
-jupyter notebook SW-02b-RDFBasics-Python.ipynb
+jupyter notebook SW-02-RDFBasics-Python.ipynb
 
 # Ou en .NET :
 jupyter notebook SW-01-Setup-CSharp.ipynb
@@ -480,7 +483,7 @@ Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11) ni pour l
 ### 1. Environnement .NET
 
 ```bash
-dotnet tool install -g Microsoft.dotnet-interactive
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
 
@@ -525,10 +528,10 @@ La série SemanticWeb illustre un mouvement profond du dépôt CoursIA : **prend
 | dotNetRDF | 3.4.0 / 3.4.1 | Jumeaux C# SW-8 à SW-13 | Standards modernes en .NET (SW-9 en 3.4.0, les autres en 3.4.1) |
 | rdflib | 7.6.0 | Sidetracks, SW-8 à SW-16 | Core RDF/SPARQL en Python (version des sorties commitées) |
 | pySHACL | 0.31.0 à 0.40.1 | SW-8, SW-14, SW-15 | Validation SHACL (version des sorties commitées) |
-| OWLReady2 | 0.50+ | SW-7b, SW-11 | Manipulation ontologies |
-| SPARQLWrapper | 2.0+ | SW-5b | Requêtes endpoints distants |
+| OWLReady2 | 0.50+ | SW-07-Python, SW-11 | Manipulation ontologies |
+| SPARQLWrapper | 2.0+ | SW-05-Python | Requêtes endpoints distants |
 | kglab | 0.6.1+ | SW-11 | Abstraction graphes de connaissances |
-| owlrl | 6.0+ | SW-6b, SW-13, SW-14 | Raisonneur OWL 2 RL Python pur |
+| owlrl | 6.0+ | SW-06-Python, SW-13, SW-14 | Raisonneur OWL 2 RL Python pur |
 | reasonable | 0.1+ | SW-13 | Raisonneur OWL 2 RL Rust |
 
 ## Standards W3C couverts
@@ -556,8 +559,8 @@ SemanticWeb/
 │   ├── person-shape.ttl     # Shapes SHACL
 │   ├── person-data.ttl      # Données test (avec erreurs)
 │   ├── movies.csv           # Dataset pour KG
-│   ├── temp_company.ttl     # Données Turtle entreprise (SW-7b)
-│   ├── temp_company.owl     # Ontologie OWL entreprise (SW-7b)
+│   ├── temp_company.ttl     # Données Turtle entreprise (SW-07-Python)
+│   ├── temp_company.owl     # Ontologie OWL entreprise (SW-07-Python)
 │   ├── pizza.owl            # Ontologie pizza OWL (exemple classique, SW-7)
 │   ├── pizza_test.owl       # Ontologie test reasoners (SW-13)
 │   ├── product.jsonld       # Exemple JSON-LD (SW-9)
@@ -565,17 +568,17 @@ SemanticWeb/
 │   └── example.srx          # Résultats SPARQL XML (SW-5)
 ├── SW-01-Setup-CSharp.ipynb
 ├── SW-02-RDFBasics-CSharp.ipynb
-├── SW-02b-RDFBasics-Python.ipynb     # Sidetrack
+├── SW-02-RDFBasics-Python.ipynb     # Sidetrack
 ├── SW-03-GraphOperations-CSharp.ipynb
-├── SW-03b-GraphOperations-Python.ipynb   # Sidetrack
+├── SW-03-GraphOperations-Python.ipynb   # Sidetrack
 ├── SW-04-SPARQL-CSharp.ipynb
-├── SW-04b-SPARQL-Python.ipynb        # Sidetrack
+├── SW-04-SPARQL-Python.ipynb        # Sidetrack
 ├── SW-05-LinkedData-CSharp.ipynb
-├── SW-05b-LinkedData-Python.ipynb    # Sidetrack
+├── SW-05-LinkedData-Python.ipynb    # Sidetrack
 ├── SW-06-RDFS-CSharp.ipynb
-├── SW-06b-RDFS-Python.ipynb           # Sidetrack
+├── SW-06-RDFS-Python.ipynb           # Sidetrack
 ├── SW-07-OWL-CSharp.ipynb
-├── SW-07b-OWL-Python.ipynb           # Sidetrack
+├── SW-07-OWL-Python.ipynb           # Sidetrack
 ├── SW-08-SHACL-CSharp.ipynb           # Jumeau .NET de SW-8 (dotNetRDF.SHACL, marathon #4956)
 ├── SW-08-SHACL-Python.ipynb
 ├── SW-09-JSONLD-Python.ipynb
@@ -588,6 +591,7 @@ SemanticWeb/
 ├── SW-13-Reasoners-Python.ipynb     # Bonus
 ├── SW-13-Reasoners-CSharp.ipynb     # Twin C# (marathon #4956 Prong B)
 ├── SW-14-Coup-Ontologique-Python.ipynb   # Bonus (coup ontologique : diff de graphe executable, #13566)
+├── SW-14-Coup-Ontologique-CSharp.ipynb   # Jumeau C# : dotNetRDF et OWL-RL via Python.NET
 ├── SW-15-Coup-Argumentatif-Python.ipynb  # Bonus (coup argumentatif : greffe AIF/Dung, #13567)
 ├── SW-16-ProofCarryingOntologies-Python.ipynb   # Bonus (PCO : ontologies a preuves Lean, #16787)
 ├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
@@ -600,8 +604,8 @@ SemanticWeb/
 ```
 
 > **Note** — `RDF.Net-Legacy/` conserve l'ancien notebook C# (kernel .NET Interactive)
-> avant la bascule pédagogique vers Python (`SW-02b-RDFBasics-Python.ipynb` et suivants).
-> Archive de référence, non maintenue. Pour le RDF actuel, voir SW-2 / SW-2b.
+> avant la bascule pédagogique vers Python (`SW-02-RDFBasics-Python.ipynb` et suivants).
+> Archive de référence, non maintenue. Pour le RDF actuel, voir SW-2 / SW-02-Python.
 
 ## Ressources
 
@@ -697,10 +701,10 @@ Les comptes de notebooks et leur maturité vivent dans le bandeau `CATALOG-STATU
 | Sous-catégorie | Paradigmes / stacks dominants |
 |----------------|-------------------------------|
 | Fondations RDF/OWL — .NET C# (dotNetRDF, SW-1 à SW-7) | Triplet RDF, graphe nommé, SPARQL, RDFS, OWL (HermiT), raisonneur DL |
-| Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
+| Fondations RDF/OWL — miroirs Python (SW-02-Python à SW-07-Python, rdflib/owlready2) | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
 | Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) |
 | Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
-| Extensions Python (SW-14 coup ontologique, SW-15 coup argumentatif, SW-16 Proof-Carrying Ontologies) | Diff de graphe exécutable (pySHACL, owlrl, RDF-star), greffe AIF/Dung, certificat d'inférence vérifié par un checker indépendant (théorème Lean cité) |
+| Extensions Python (SW-14 coup ontologique, SW-15 coup argumentatif, SW-16 Proof-Carrying Ontologies) | Diff de graphe exécutable (pySHACL, owlrl, réification RDF), greffe AIF/Dung, certificat d'inférence vérifié par un checker indépendant (théorème Lean cité) |
 | Setup / legacy .NET (`RDF.Net-Legacy/`) | Démonstration RDF.Net historique |
 
 **Conformité C.1 — stubs d'exercice sans erreur volontaire** : les cellules « Exercices à compléter » des carnets portent des stubs conformes (`pass`, `return None`, `print("Exercice a completer")`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0` (aucune occurrence dans les cellules source). Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglab`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
@@ -719,12 +723,12 @@ La série SemanticWeb est le **carrefour données structurées** du dépôt — 
 |------------------|----------------|-------------------|
 | SW-7 (OWL / logique de description) | [Tweety](../Tweety/) (Tweety-3 DL) | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes (HermiT côté Java, dotNetRDF côté .NET) |
 | SW-11 (Graphe de connaissances) | [Planners](../Planners/) (PDDL) | Un KG décrit le monde que les planificateurs peuvent exploiter — SPARQL ↔ PDDL extraction |
-| SW-12 (GraphRAG anti-hallucination) | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel memory backend) | Même besoin : ancrer un LLM sur des faits vérifiables via un KG RDF |
+| SW-12 (GraphRAG anti-hallucination) | [ArgumentAnalysis](../ArgumentAnalysis/) (Semantic Kernel memory backend) | Même besoin : ancrer un LLM sur des faits vérifiables via un KG RDF |
 | SW-8 (SHACL validation) | [Lean](../Lean/) (mathlib4) | Les shapes SHACL sont des invariants sur les données ; Lean pousse cette idée à son terme — prouver la correction d'un programme |
 | SW-9 (JSON-LD NFTs ERC-721) | [SmartContracts](../SmartContracts/) (SC-7 Token Standards) | Identité auto-souveraine (DID), blockchains et RDF — graphe décentralisé |
 | SW-12 (GraphRAG garde-fou LLM) | [GenAI](../../GenAI/) (Qwen 2.5-VL, ComfyUI) | GraphRAG = anti-hallucination par KG ; GenAI = génération visuelle/texte — la fiabilité passe par les graphes de connaissances |
 
-**Effet de composition** : SemanticWeb est l'**assise du Web et de l'IA fiable** dans le dépôt. Le pipeline complet relie les **notebooks** (.NET C# typés pour les fondations RDF/OWL, Python expressifs pour SHACL/JSON-LD/RDF-Star/GraphRAG) aux **standards W3C** (RDF, SPARQL, OWL, SHACL, JSON-LD, RDF-Star) et aux **lakes** (Lean 4 formalise les invariants SHACL, Argument_Analysis orchestre un KG via Semantic Kernel, SmartContracts marient RDF+DID+blockchain). Là où Tweety est le carrefour **logique**, où GameTheory est le carrefour **simulation/proof**, où CaseStudies est le carrefour **intégration**, SemanticWeb est le carrefour **données structurées — du triplet RDF au GraphRAG anti-hallucination**.
+**Effet de composition** : SemanticWeb est l'**assise du Web et de l'IA fiable** dans le dépôt. Le pipeline complet relie les **notebooks** (.NET C# typés pour les fondations RDF/OWL, Python expressifs pour SHACL/JSON-LD/RDF-Star/GraphRAG) aux **standards W3C** (RDF, SPARQL, OWL, SHACL, JSON-LD, RDF-Star) et aux **lakes** (Lean 4 formalise les invariants SHACL, ArgumentAnalysis orchestre un KG via Semantic Kernel, SmartContracts marient RDF+DID+blockchain). Là où Tweety est le carrefour **logique**, où GameTheory est le carrefour **simulation/proof**, où CaseStudies est le carrefour **intégration**, SemanticWeb est le carrefour **données structurées — du triplet RDF au GraphRAG anti-hallucination**.
 
 ## Licence
 

@@ -1011,7 +1011,7 @@ def test_silence_pacing_duration_with_lecture_qualifier() -> None:
 def test_plan_table_cost_routed_to_domain_quantity() -> None:
     """Frontiere : « N + M = K min » = cout d'action dans une table de plan.
 
-    Cas reel Planners-8-Temporal cell[37] : « | D1 | A -> B | 5 + 4 = 9 min | ».
+    Cas reel Planners-08-Temporal-Python cell[37] : « | D1 | A -> B | 5 + 4 = 9 min | ».
     Le « 9 min » est la duree DETERMINISTE d'une livraison drone (somme acces +
     vol), pas une duree machine. Routed vers domain_quantity (compte, visible),
     pas wallclock.

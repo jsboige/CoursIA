@@ -65,10 +65,63 @@ def test_matrix_step_is_gated_on_the_manifest_key():
         (REPO / ".github/workflows/lean-build.yml").read_text(encoding="utf-8"))
     steps = doc["jobs"]["ci-matrix"]["steps"]
     axiom = [s for s in steps if s.get("uses", "").endswith("actions/lean-axiom")]
-    assert len(axiom) == 1, "exactly one axiom step in the matrix job"
-    assert axiom[0]["if"] == "matrix.axiom-target-modules != ''"
-    assert axiom[0]["with"]["target-modules"] == "${{ matrix.axiom-target-modules }}"
-    assert axiom[0]["with"]["project-path"] == "${{ matrix.project-path }}"
+    assert len(axiom) == 2, "one advisory step and one optional blocking step"
+    advisory = next(s for s in axiom if "axiom-target-modules" in s["if"])
+    blocking = next(s for s in axiom if "axiom-blocking-target-modules" in s["if"])
+    assert advisory["if"] == "matrix.axiom-target-modules != ''"
+    assert advisory["with"]["target-modules"] == "${{ matrix.axiom-target-modules }}"
+    assert advisory["with"]["project-path"] == "${{ matrix.project-path }}"
+    assert blocking["if"] == "matrix.axiom-blocking-target-modules != ''"
+    assert blocking["with"]["target-modules"] == "${{ matrix.axiom-blocking-target-modules }}"
+    assert blocking["with"]["allow-axioms"] == "${{ matrix.axiom-blocking-allow-axioms || '' }}"
+    assert blocking["with"]["fail-on-sorry"] == "${{ matrix.axiom-blocking-fail-on-sorry || 'true' }}"
+    assert blocking["with"]["project-path"] == "${{ matrix.project-path }}"
+    assert blocking["with"]["display-name"] == "${{ matrix.display-name }} (blocking)"
+
+
+def test_blocking_profile_is_optional_and_conway_is_its_only_manifest_user():
+    """Les champs plats `axiom-blocking-*` sont optionnels et seuls conway
+    les porte : une matrice créée par le dispatcher laisse les autres lakes
+    hors de ce second passage."""
+    lakes = _manifest()["lakes"]
+    blocking_keys = {
+        "axiom-blocking-target-modules",
+        "axiom-blocking-allow-axioms",
+        "axiom-blocking-fail-on-sorry",
+    }
+    conway = next(e for e in lakes if e["lake"] == "conway")
+    assert conway["axiom-blocking-target-modules"] == (
+        "Conway.KochenSpecker,Conway.FreeWillTheorem")
+    assert conway["axiom-blocking-allow-axioms"] == (
+        "Classical.choice,propext,funext,Quot.lift,Quot.mk,Quot.sound")
+    assert conway["axiom-blocking-fail-on-sorry"] == "true"
+    for lake in lakes:
+        if lake["lake"] != "conway":
+            assert blocking_keys.isdisjoint(lake), lake["lake"]
+
+
+def test_matrix_step_passes_the_thread_cap_under_the_composite_input_name():
+    """The ci-matrix job passes the manifest key `build-threads` to the
+    composite -- whose DECLARED input is `build-jobs` (#23247). Under any
+    other name the composite ignores the value with a mere warning
+    (measured warning, run 42475534833) -- the cap never reaches
+    LEAN_NUM_THREADS, exposing Conway to the previously reported OOM
+    risk (#23247). This run stopped before the build. The wiring is part of the conway
+    migration contract (#13751)."""
+    doc = yaml.safe_load(
+        (REPO / ".github/workflows/lean-build.yml").read_text(encoding="utf-8"))
+    steps = doc["jobs"]["ci-matrix"]["steps"]
+    build = [s for s in steps if s.get("uses", "").endswith("actions/lean-build")]
+    assert len(build) == 1, "exactly one lean-build step in the matrix job"
+    with_block = build[0]["with"]
+    assert "build-threads" not in with_block, (
+        "l'input composite s'appelle `build-jobs` : un `build-threads:` passe "
+        "au composite est IGNORE avec un simple warning (run 42475534833) -- "
+        "le cap ne pose jamais LEAN_NUM_THREADS, avec un risque d'OOM")
+    assert with_block.get("build-jobs") == "${{ matrix.build-threads || '' }}", (
+        "la cle manifeste `build-threads` doit rejoindre l'input composite "
+        "`build-jobs` -- seul chemin vers LEAN_NUM_THREADS (#23247)")
+
 
 
 def test_one_copy_of_the_rule_workflow_calls_the_shared_script():
@@ -231,8 +284,12 @@ def test_composites_trigger_on_the_axiom_step_program():
     the #8712 lesson applied one layer down (#22453). lean-knot.yml left
     this loop at its matrix migration (#13751): the dispatcher's own
     self-cover (test_axiom_gate_files_are_self_covered) carries the rule
-    for matrix lakes."""
-    for wf in ("lean-conway",):
+    for matrix lakes. lean-conway.yml -- the LAST autonomous wrapper with
+    an axiom gate -- left it at its own matrix migration (2026-11-08,
+    #13751 axe workflows, lane myia-ai-01:CoursIA-2): the loop is EMPTY
+    since, every manifest lake rides the dispatcher's self-cover. A future
+    autonomous wrapper born with an axiom gate MUST add itself back here."""
+    for wf in ():
         doc = yaml.safe_load(
             (REPO / f".github/workflows/{wf}.yml").read_text(encoding="utf-8"))
         on = doc.get("on") or doc.get(True)

@@ -131,7 +131,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ict-tests-${{ github.ref }}
+  group: ict-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -149,7 +149,7 @@ jobs:
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
     # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 15 -> 30 (#14598 Option A) -> 60 min. Le passage a 30 avait
     # DEPLACE le mur, pas mesure sa position : trois PRs de CONTENU sont mortes
     # dessus le 2026-09-12 (#15657, #15660, #15609 -- 30,5 / 30,4 / 30,4 min,
@@ -449,7 +449,7 @@ jobs:
           cache: pip
           cache-dependency-path: MyIA.AI.Notebooks/IIT/ICT-Series/pyproject.toml
 
-      - name: Install ict package + deps dans venv per-job (pyphi 1.2.0, numpy<2, scipy, matplotlib)
+      - name: Install ict package + deps dans venv per-job (extra [iit] -- pyphi 1.2.0, numpy<2, antropy, #25381)
         # Fix #14571a : le toolcache `/opt/hostedtoolcache/Python/3.9.x/x64` du runner
         # self-heberge `coursia-ephemeral` est PERSISTANT entre conteneurs (etiquette
         # declarative, pas mode --ephemeral). `pip install -e .` y ecrit des fichiers
@@ -458,16 +458,25 @@ jobs:
         # d'abord a un probleme de la PR). Le venv `$RUNNER_TEMP` est detruit a la fin
         # du job par GitHub Actions, donc zero contamination inter-jobs. Acceptance :
         # 2 runs consecutifs du MEME workflow sur le MEME runner, le 2e doit reussir.
+        # #25381 : les deps pyphi/numpy<2/antropy ont quitte le coeur du pyproject
+        # pour l'extra [iit] -- le coeur est desormais un package leger installable
+        # sur tout Python >= 3.9 pour les consommateurs hors serie. La CI installe
+        # ".[iit]" pour garder l'env d'avant le split, au byte de borne pres.
         id: install
         working-directory: MyIA.AI.Notebooks/IIT/ICT-Series
         env:
           ICT_VENV: ${{ runner.temp }}/ict-venv
+          # #22502 : l'entrypoint exporte PIP_USER=1 (isolation du toolcache
+          # partage) ; pip refuse un --user DANS un venv. Ce venv $RUNNER_TEMP
+          # est deja isole et detruit avec le job : retour au comportement
+          # nominal du venv pour ses installs.
+          PIP_USER: "0"
         run: |
           python -m venv "$ICT_VENV"
           # shellcheck disable=SC1091
           source "$ICT_VENV/bin/activate"
           python -m pip install --upgrade pip
-          pip install -e .
+          pip install -e ".[iit]"
           pip install pytest pytest-xdist
           # Garde-fou : verifier que `pip show` rapporte le site-packages du venv,
           # pas celui du toolcache partage. Un editable install fait pointer

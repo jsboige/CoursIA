@@ -1,9 +1,9 @@
 name: dotnet-ArgumentAnalysis
 
 # Tranche 1 de #14696 (orphelins .sln signales par ai-01 msg-20260905T014247) :
-# le trio Argument_Analysis — CoursIA.GSheetSync, CoursIA.OwlAdapter,
+# le trio ArgumentAnalysis — CoursIA.GSheetSync, CoursIA.OwlAdapter,
 # CoursIA.DatasetUpdater.Prompts + leurs 3 projets de tests xunit — est
-# exclu du glob parent depuis #5167, absent de MyIA.CoursIA.sln, et n'a
+# exclu du glob parent depuis #5167, absent de dotnet/MyIA.CoursIA.sln, et n'a
 # donc JAMAIS eu de CI. Cette PR les ajoute a la solution (entrees
 # minimales, +36 lignes) et les cable en workflow dedie.
 #
@@ -30,33 +30,34 @@ on:
   push:
     branches: [main]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**'
       - '.github/workflows/dotnet-ArgumentAnalysis.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**'
       - '.github/workflows/dotnet-ArgumentAnalysis.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: dotnet-argumentanalysis-${{ github.ref }}
+  group: dotnet-argumentanalysis-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   AA_TESTS: >-
-    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-GSheetSync/src/CoursIA.GSheetSync.Tests/CoursIA.GSheetSync.Tests.csproj
-    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-OwlAdapter/src/CoursIA.OwlAdapter.Tests/CoursIA.OwlAdapter.Tests.csproj
-    MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/CoursIA-DatasetUpdater-Prompts/src/CoursIA.DatasetUpdater.Prompts.Tests/CoursIA.DatasetUpdater.Prompts.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/CoursIA-GSheetSync/src/CoursIA.GSheetSync.Tests/CoursIA.GSheetSync.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/CoursIA-OwlAdapter/src/CoursIA.OwlAdapter.Tests/CoursIA.OwlAdapter.Tests.csproj
+    MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/CoursIA-DatasetUpdater-Prompts/src/CoursIA.DatasetUpdater.Prompts.Tests/CoursIA.DatasetUpdater.Prompts.Tests.csproj
 
 jobs:
   dotnet-argumentanalysis-linux:
     name: ArgumentAnalysis dotnet (ubuntu-latest, floors 12/23/19)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
     # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
@@ -124,6 +125,7 @@ jobs:
 
   dotnet-argumentanalysis-windows:
     name: ArgumentAnalysis dotnet (windows-latest, floors 12/23/19)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: windows-latest
     timeout-minutes: 20
 

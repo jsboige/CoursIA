@@ -98,6 +98,26 @@ _LINK_TARGET_RE = re.compile(r"\]\([^)]*\)")
 # beneficie aussi, uniformement.
 _INLINE_SPAN_RE = re.compile(r"`[^`\n]*`")
 _BARE_URL_RE = re.compile(r"\bhttps?://\S+")
+# #21277 (suite) : une CITATION -- blockquote `>` ou guillemets «...» / "..." --
+# n'est curee que si elle porte sa PROPRE preuve de contexte francais. Sans cette
+# garde, une citation anglaise dans une cellule francaise herite du contexte FR de
+# la cellule (`cell_fr`, ≥2 marqueurs sur la cellule entiere) et y est "corrigee" :
+# `element` -> `element` (signal c.6757419949, Riemann200/13-bernoulli cellule 15).
+# La preuve se mesure sur le TEXTE DE LA CITATION, jamais sur la cellule : une
+# phrase anglaise n'y porte aucun mot-outil FR, donc elle traverse la cure intacte.
+_BLOCKQUOTE_RE = re.compile(r"^\s{0,3}>\s?(.*)$")
+# guillemets : francais «...» et doubles "..." (les deux sont des citations)
+_INLINE_QUOTE_RE = re.compile(r"«[^»\n]*»|\"[^\"]*\"")
+
+# #17222 : un libelle de lien qui NOMME le fichier cible porte le meme defaut
+# qu'une cible accentuee (#7135/#7145) -- l'accentuer le decouple du fichier
+# reel. Cas mesure sur la serie PyMC : [PyMC-10-Model-Selection] rendait
+# [PyMC-10-Model-Sélection](PyMC-10-Model-Selection.ipynb), un libelle qui
+# nomme un carnet qui n'existe pas. Regle : le libelle est masque quand son
+# texte (casse et espaces normalises) est contenu dans la cible du meme lien.
+# Le test est volontairement conservateur -- laisser une prose non curee est
+# benin, corrompre une reference de fichier ne l'est pas.
+_LABELLED_LINK_RE = re.compile(r"\[([^\]\n]*)\](\([^)\n]*\))")
 
 
 def _preserve_case(match_str: str, suggestion: str) -> str:
@@ -124,6 +144,10 @@ def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
     une puce `- Representation : PDDL 2.1+` n'a aucun mot-outil et serait sinon
     laissee non curee dans une cellule francaise.
 
+    #21277 (suite) : les citations (blockquote `>`, guillemets «...» / "..."
+    inline) sont curees sur leur PROPRE preuve FR ; une citation anglaise
+    traverse la cure intacte, meme dans une cellule francaise.
+
     Retourne (ligne_curee, n_cures).
     """
     # 1. extraire + masquer les zones non-prose. Chaque span protege est remplace
@@ -136,9 +160,49 @@ def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
         masked_spans.append(m.group(0))
         return "\x00MS{}\x00".format(len(masked_spans) - 1)
 
-    masked = _LINK_TARGET_RE.sub(_mask, line)
+    # 1bis. #21277 (suite) : les citations. Un blockquote `>` n'est cure que sur
+    # sa PROPRE preuve FR ; un blockquote anglais (aucun mot-outil FR dans son
+    # texte) est retourne tel quel -- c'est le FP fondeur (Riemann200/13-bernoulli
+    # cellule 15, signal c.6757419949 : `element` -> `element` dans une citation
+    # anglaise d'une cellule francaise).
+    bq = _BLOCKQUOTE_RE.match(line)
+    if bq:
+        if _is_english_quote(bq.group(1)):
+            return line, 0  # citation anglaise : non curee, masquee en bloc
+        fr_context = True  # citation francaise : curee sur sa propre preuve
+    # (les guillemets inline sont masques plus bas, APRES les spans de
+    #  lien/code/URL -- voir #25613 : un titre de lien entre guillemets masque
+    #  en premier creait un placeholder imbrique que la restauration ne levait
+    #  pas -> fuite \x00MS0\x00 dans la cible du lien)
+
+    def _mask_filename_label(m):
+        label, target = m.group(1), m.group(2)
+        stripped = label.strip().lower()
+        if stripped and stripped in target.lower():
+            masked_spans.append("[" + label + "]")
+            ph_label = "\x00MS{}\x00".format(len(masked_spans) - 1)
+            masked_spans.append(target)
+            ph_target = "\x00MS{}\x00".format(len(masked_spans) - 1)
+            return ph_label + ph_target
+        return m.group(0)
+
+    labelled = _LABELLED_LINK_RE.sub(_mask_filename_label, line)
+    masked = _LINK_TARGET_RE.sub(_mask, labelled)
     masked = _INLINE_SPAN_RE.sub(_mask, masked)
     masked = _BARE_URL_RE.sub(_mask, masked)
+    # guillemets inline «...» / "..." : masques s'ils ne portent PAS de preuve
+    # FR, UNIQUEMENT dans un contexte deja francais (fr_context), et APRES les
+    # spans de lien/code/URL ci-dessus -- une citation en PROSE seule. Un titre
+    # de lien entre guillemets est deja masquee en bloc par `_LINK_TARGET_RE` ;
+    # le masquer en premier (l'ordre ancien) creait un placeholder imbrique que
+    # la restauration n'aurait pas levé -> fuite \x00MS0\x00 (#25613).
+    if fr_context:
+        def _mask_quote(m):
+            if _is_english_quote(m.group(0)):
+                masked_spans.append(m.group(0))
+                return "\x00MS{}\x00".format(len(masked_spans) - 1)
+            return m.group(0)  # citation FR : reste curee
+        masked = _INLINE_QUOTE_RE.sub(_mask_quote, masked)
     # Zone grise FR/EN : sans preuve de contexte francais, les formes en
     # collision sont masquees (elles traverseront la cure intactes).
     masked = _mask_en_colliding(masked, masked_spans, fr_context)
@@ -170,8 +234,9 @@ def _cure_line(line: str, fr_context: bool = False) -> tuple[str, int]:
     cured = _CURE_RE.sub(_repl, masked)
 
     # 3. restaurer les spans proteges (byte-identiques a l'original)
-    for i, original in enumerate(masked_spans):
-        cured = cured.replace("\x00MS{}\x00".format(i), original, 1)
+    # Restaurer les contenants avant leurs spans internes déjà masqués.
+    for i in reversed(range(len(masked_spans))):
+        cured = cured.replace("\x00MS{}\x00".format(i), masked_spans[i], 1)
     return cured, n[0]
 
 
@@ -415,6 +480,30 @@ _FR_MARKER_RE = re.compile(
 def _fr_markers(text: str) -> set[str]:
     """Marqueurs FR distincts presents dans `text` (minuscules)."""
     return {m.group(0).lower() for m in _FR_MARKER_RE.finditer(text)}
+
+
+# #25613 : une citation se juge ANGLAISE par un signal POSITIF -- la presence
+# d'un mot fonctionnel anglais (the, by, of, is, ...). Compter les marqueurs FR
+# ne distingue PAS les deux contre-exemples adjoints : « the element defined by
+# de Finetti » (anglais, mais porte "de") et « Un probleme de methode »
+# (francais non accentue, "de" est son SEUL marqueur FR) sont a l'identique sur
+# ce critere. Un mot-outil anglais ne figure jamais dans une phrase francaise :
+# c'est le discriminateur fiable.
+# COMPROMIS CONSERVATEUR : or, in, as, at, by, it, is sont AUSSI des mots
+# francais legitimes. Une citation FR qui en porte un est classee ANGLAISE par
+# le discriminateur ci-dessus et retournee telle quelle (non curee) -- temoin
+# « Un probleme en or » (or = le metal) conserve "probleme". On prefere
+# SOUS-curer ce cas rare (citation FR courte sans autre marqueur) a risquer de
+# curer une citation EN genuine portant le meme mot. Le temoin de test le fige
+# comme comportement ATTENDU, pas un defaut.
+_EN_QUOTE_MARKER_RE = re.compile(
+    r"\b(the|by|of|to|in|and|for|with|that|this|it|is|are|was|were|been|"
+    r"from|as|at|we|you|or)\b")
+
+
+def _is_english_quote(text: str) -> bool:
+    """True si la citation porte un mot fonctionnel anglais (-> non curee)."""
+    return bool(_EN_QUOTE_MARKER_RE.search(text.lower()))
 
 
 def _fr_context_line(text: str) -> bool:

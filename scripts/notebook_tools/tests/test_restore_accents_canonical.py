@@ -94,6 +94,35 @@ class TestLinkTargetProtection:
         # le ](...) "title" ) entier est un span ; la cible reste intacte
         assert "Model-Selection.ipynb" in cured
 
+    def test_filename_label_not_accented(self):
+        # #17222 : un libelle qui NOMME le fichier cible reste byte-identique
+        # au fichier. Mesure : la serie PyMC rendait
+        # [PyMC-10-Model-Sélection](PyMC-10-Model-Selection.ipynb).
+        line = "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)"
+        cured, n = rac._cure_line(line)
+        assert cured == line
+        assert n == 0
+        assert "Sélection" not in cured
+
+    def test_filename_label_not_accented_in_puce(self):
+        line = "- Theme connexe : [PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb) (selection bayesienne)."
+        cured, n = rac._cure_line(line)
+        assert "[PyMC-10-Model-Selection](PyMC-10-Model-Selection.ipynb)" in cured
+        assert "Sélection" not in cured
+
+    def test_partial_reference_label_not_accented(self):
+        # libelle abrege du meme fichier : sous-chaine de la cible
+        line = "Voir [PyMC-10](PyMC-10-Model-Selection.ipynb) pour la selection."
+        cured, n = rac._cure_line(line)
+        assert "[PyMC-10](PyMC-10-Model-Selection.ipynb)" in cured
+
+    def test_prose_label_still_cured(self):
+        # contre-temoin : un libelle de PROSE garde sa cure, la cible reste intacte
+        line = "Voir [les modeles](PyMC-10-Model-Selection.ipynb)."
+        cured, n = rac._cure_line(line)
+        assert "modèles" in cured
+        assert "](PyMC-10-Model-Selection.ipynb)" in cured
+
 
 # ---------------------------------------------------------------------------
 # 3. preservation casse + dictionnaire conservateur
@@ -828,3 +857,155 @@ class Test21277SecondFournee:
         res = rac.cure_notebook(p, write=True)
         assert "problemes" in res.get("contextual_uncured", {})
         assert "problemes" not in res.get("hors_table", {})
+
+
+# ---------------------------------------------------------------------------
+# 7. #21277 (suite) : masque de citation -- une citation n'est curee que sur sa
+#    PROPRE preuve FR ; une citation anglaise dans une cellule francaise traverse
+#    la cure intacte (FP fondeur : Riemann200/13-bernoulli, `element` -> `element`).
+# ---------------------------------------------------------------------------
+class Test21277CitationMask:
+    def test_english_blockquote_in_french_cell_not_cured(self, tmp_path):
+        # Cellule FR (>=2 marqueurs) qui CITE une phrase anglaise en blockquote.
+        # Avant le fix : `element` etait "corrigee" en `element` par heritance du
+        # contexte FR de la cellule. Maintenant : la citation anglaise est retournee
+        # telle quelle, la prose FR avoisinante reste curee.
+        nb = _nb([("markdown",
+                   "Le memoire de 1859 pose un modele celebre :\n"
+                   "> the element of the group is the identity\n"
+                   "Le modele reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation anglaise est intacte (element non accentue)
+        assert "the element of the group is the identity" in src
+        assert "élément" not in src
+        # la prose FR avoisinante, elle, est curee (memoire n'est pas dans la
+        # table canonique : seul modele -> modele est attendu ici)
+        assert "modèle" in src
+
+    def test_french_blockquote_still_cured(self, tmp_path):
+        # Controle positif : une citation FRANCAISE en blockquote reste curee.
+        nb = _nb([("markdown",
+                   "La citation est centrale :\n"
+                   "> « le modele de la selection est central »\n"
+                   "Elle reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "modèle" in src
+        assert "sélection" in src
+
+    def test_french_blockquote_with_or_kept_unaccented(self, tmp_path):
+        # Temoin FR du compromis conservateur (#25613, rejeu c.2008) : `or`
+        # (le metal) est AUSSI un mot fonctionnel anglais dans
+        # `_EN_QUOTE_MARKER_RE`. Une citation FR qui en porte un est classee
+        # ANGLAISE et retournee telle quelle -- « Un probleme en or » conserve
+        # "probleme" (non accentue). Fige comme comportement ATTENDU, pas un
+        # defaut : on prefere sous-curer ce cas rare a corrompre une citation
+        # EN genuine portant le meme mot.
+        nb = _nb([("markdown",
+                   "Le metal en jeu :\n"
+                   "> Un probleme en or\n"
+                   "La suite est claire.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation FR portant "or" est retournee telle quelle (sous-curee)
+        assert "Un probleme en or" in src
+        assert "problème" not in src
+
+    def test_inline_double_quotes_language_aware(self, tmp_path):
+        # Une ligne FR cite en double-quotes : la citation FR est curee, la
+        # citation anglaise est masquee (element non accentue).
+        nb = _nb([("markdown",
+                   'En francais on note "le modele de base", mais on cite '
+                   '"the element of the group" sans le changer.')])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "modèle" in src
+        assert "the element of the group" in src
+        assert "élément" not in src
+
+    def test_english_blockquote_list_source_not_cured(self, tmp_path):
+        # Meme garde sur la branche LIST nbformat (chunks) : la citation anglaise
+        # en blockquote reste intacte, la prose FR des autres chunks est curee.
+        nb = {"cells": [
+            {"cell_type": "markdown",
+             "source": ["Le memoire pose :\n",
+                         "> the element of the group\n",
+                         "Le modele reste central.\n"],
+             "metadata": {}},
+        ], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = "".join(json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"])
+        assert "the element of the group" in src
+        assert "élément" not in src
+        assert "modèle" in src
+
+    def test_english_quote_with_de_name_not_cured(self, tmp_path):
+        # Contre-exemple adjoint #25613 : une citation ANGLAISE portant le token
+        # "de" (nom propre « de Finetti ») ne doit PAS etre prise pour francaise.
+        # Avant le fix : "de" etait dans _FR_MARKER_RE, la citation etait jugee FR
+        # et "element" y etait accentue. Les marqueurs d'une citation excluent
+        # "de"/"en" (collision avec l'anglais) -> la citation reste intacte.
+        nb = _nb([("markdown",
+                   "Le memoire de 1859 cite le resultat :\n"
+                   "> the element defined by de Finetti is central\n"
+                   "Le modele reste la reference.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # la citation anglaise (avec "de Finetti") est intacte
+        assert "the element defined by de Finetti is central" in src
+        assert "élément" not in src
+        # la prose FR avoisinante reste curee
+        assert "modèle" in src
+
+    def test_link_title_in_quotes_not_corrupted(self, tmp_path):
+        # Contre-exemple adjoint #25613 : un lien dont le TITRE est entre guillemets
+        # ne doit pas faire fuiter le placeholder de masquage (\x00MS0\x00) dans la
+        # cible. Avant le fix : la citation etait masquee en premier, puis la cible
+        # de lien masquee autour d'elle -> placeholder imbrique non restaure.
+        # Les guillemets sont masques APRES la cible de lien (masquee en bloc,
+        # titre inclus) -> restauree byte-identique, pas de fuite.
+        nb = _nb([("markdown",
+                   'Voir le modele de base : [la reference]'
+                   '(notes/model.md "The Selection Model") pour le detail.')])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        # le placeholder de masquage ne doit JAMAIS fuiter dans la sortie
+        assert "\x00" not in src
+        assert "MS0" not in src
+        # la cible de lien (titre entre guillemets inclus) est integre
+        assert '[la reference](notes/model.md "The Selection Model")' in src
+        # la prose FR avoisinante reste curee
+        assert "modèle" in src
+
+
+class TestNestedMaskRestoration:
+    def test_citation_with_inline_code_from_pymc_15(self):
+        # Extrait réel de PyMC-15-Recommenders, cellule 15.
+        text = 'Le warning dit : « Increase `target_accept` or reparameterize ».'
+        assert rac._cure_line(text, fr_context=True) == (text, 0)
+
+    def test_modal_code_not_corrupted(self):
+        # Extrait réel de Argumentation-05, cellule 15.
+        text = '- `[](phi)` : **necessairement** `phi`'
+        result, _ = rac._cure_line(text, fr_context=True)
+        assert '`[](phi)`' in result
+        assert '\x00MS' not in result
+
+    def test_citation_with_bare_url(self):
+        text = 'La citation dit "the element https://example.org/x is central".'
+        assert rac._cure_line(text, fr_context=True) == (text, 0)

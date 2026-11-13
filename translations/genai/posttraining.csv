@@ -1,5 +1,9 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_01_intro_post_training.ipynb,c4327395,markdown,fr,8f76789ee31bc093,"# PT-01 — Introduction et vue d'ensemble
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_01_intro_post_training.ipynb,c4327395,markdown,fr,fa144efe5ab592f2,"[↑ PostTraining](README.md) | [PT-02 Supervised Fine-Tuning baseline (SFT) →](PT_02_sft_baseline.ipynb)
+
+***
+
+# PT-01 — Introduction et vue d'ensemble
 
 **Serie PostTraining** — notebook **théorique d'introduction**. Pas de modèle a charger, pas de GPU requis. Lecture seule plus visualisations matplotlib.
 
@@ -20,7 +24,7 @@ Installer la **carte mentale** du post-training avant d'attaquer les notebooks p
 4. Diagramme de decision : quelle technique pour quel cas
 5. Lecture conseillee avant PT-02
 
-Ce notebook est **théorique** : execute sans GPU, en quelques secondes, sur n'importe quelle machine equipee de matplotlib / numpy / pandas. C'est le contrat pedagogique : la théorie d'abord, la pratique ensuite.",,,,,,,,8f76789ee31bc093,,,,,,,,,,,,,,,
+Ce notebook est **théorique** : execute sans GPU, en quelques secondes, sur n'importe quelle machine equipee de matplotlib / numpy / pandas. C'est le contrat pedagogique : la théorie d'abord, la pratique ensuite.",,,,,,,,fa144efe5ab592f2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_01_intro_post_training.ipynb,e7f9a651,markdown,fr,516e1a2a402c9d7e,"## 1. Frise chronologique 2017-2025
 
 La chaîne post-training n'est **pas** une invention monolithique. Elle s'est construite par adaptations successives a des contraintes economiques et techniques. Chaque transition resout un goulot identifie de la generation précédente.",,,,,,,,516e1a2a402c9d7e,,,,,,,,,,,,,,,
@@ -325,11 +329,15 @@ Si une de ces reponses pose problème, **revoir les sections 1-3** avant d'attaq
 ## Conclusion
 
 Ce notebook a etabli la **carte mentale** sans entrer dans le code d'entraînement. Les notebooks suivants ouvrent la cle a chaque technique. La règle d'or pour le reste de la serie : **comprendre le loss avant d'appeler `trainer.train()`**. Une cellule qui converge sans qu'on sache pourquoi n'apprend rien.",,,,,,,,2b45751a79b2361a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,72256bd0,markdown,fr,686f521b25eae37c,"# PT-02 — Supervised Fine-Tuning baseline (SFT)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,72256bd0,markdown,fr,a6f141aa63f7c2de,"[← PT-01 Introduction et vue d'ensemble](PT_01_intro_post_training.ipynb) | [↑ PostTraining](README.md) | [PT-03 Direct Préférence Optimization (DPO) →](PT_03_dpo_direct_preference.ipynb)
+
+***
+
+# PT-02 — Supervised Fine-Tuning baseline (SFT)
 
 **Serie PostTraining** — cf [README.md](README.md) pour la carte mentale globale et [PT_01](PT_01_intro_post_training.ipynb) pour la frise historique 2017-2025.
 
-Ce notebook **execute** un Supervised Fine-Tuning sur un sous-ensemble curated de `HuggingFaceH4/ultrafeedback_binarized` (champ `chosen`) appliquant `trl.SFTTrainer` + LoRA (PEFT) au modèle `Qwen/Qwen3.5-0.8B` (petit modèle SOTA de la famille Qwen3.5, vision-langage unifié). **Migration Qwen3.5 (mandat #10289)** : ce notebook était initialement exécuté sur Qwen2.5-0.5B-Instruct ; il a été migré vers Qwen3.5-0.8B pour sortir la série du toy-env — le SFT s'exécute désormais sur le vrai petit modèle SOTA, avec outputs réels. C'est le **maillon de base** de la chaîne post-training : sans SFT correctement converge, DPO/GRPO/RLVR n'ont pas de policy de depart digne d'etre raffinee.
+Ce notebook met en œuvre un Supervised Fine-Tuning sur un sous-ensemble sélectionné de `HuggingFaceH4/ultrafeedback_binarized` (champ `chosen`) avec `trl.SFTTrainer` et LoRA (PEFT), appliqués à `Qwen/Qwen3.5-0.8B`. Le modèle de base Qwen3.5-0.8B a pris la suite de Qwen2.5-0.5B-Instruct (contexte de migration et provenance en fin de carnet). Il présente le calcul du loss, le format chat, la configuration d’entraînement, les traces produites et la comparaison qualitative des réponses. Le SFT forme le maillon de base de la chaîne post-training : DPO, GRPO et RLVR affinent ensuite cette policy.
 
 ## Objectif pedagogique
 
@@ -354,7 +362,7 @@ Ce pattern respecte **C.1** (aucun `raise NotImplementedError` / `assert False`)
 - Ouyang et al., InstructGPT, NeurIPS 2022 — recipe canonique SFT + RM + PPO
 - HuggingFace TRL [`SFTTrainer` documentation](https://huggingface.co/docs/trl/sft_trainer)
 - HuggingFace PEFT [`LoraConfig` documentation](https://huggingface.co/docs/peft/conceptual_guides/lora)
-",,,,,,,,686f521b25eae37c,,,,,,,,,,,,,,,
+",,,,,,,,a6f141aa63f7c2de,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,02be966e,markdown,fr,66f0dc2045865f7c,"## 1. Math du loss SFT
 
 Le loss SFT est une **cross-entropy autoregressive conditionnelle** :
@@ -942,9 +950,14 @@ Le notebook **PT-03** reprend le checkpoint produit ici (`./pt02_sft_qwen_lora`)
 
 **Suite de la serie** : PT-04 GRPO (livrable cle), PT-05 RLVR (migration Qwen3.5 en cours), PT-06 evaluation comparative finale.
 ",,,,,,,,bc6d88d41868793a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,5d07df9f,markdown,fr,43fcf2c8cac5b3ff,"# PT-03 — Direct Préférence Optimization (DPO)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,5d07df9f,markdown,fr,371d160cb49ecedb,"[← PT-02 Supervised Fine-Tuning baseline (SFT)](PT_02_sft_baseline.ipynb) | [↑ PostTraining](README.md) | [PT-04 Group Relative Policy Optimization →](PT_04_grpo_deepseek_r1.ipynb)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742, sub-issue #1756)
+***
+
+# PT-03 — Direct Préférence Optimization (DPO)
+
+DPO apprend à préférer une réponse à une autre à partir de paires `chosen` / `rejected`, sans entraîner de reward model séparé. Ce carnet dérive son loss depuis Bradley–Terry et met en pratique l’entraînement avec `trl.DPOTrainer`. Dans le parcours Post-Training, il prolonge le SFT de [PT-02](PT_02_sft_baseline.ipynb) et prépare l’étude du GRPO en [PT-04](PT_04_grpo_deepseek_r1.ipynb).
+
 **Pre-requis** : PT-01 (intro) et PT-02 (SFT baseline) recommandes
 **Objectifs pedagogiques** :
 1. Comprendre la formule du loss DPO et son lien avec le modèle de Bradley-Terry
@@ -953,7 +966,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,5d07df9f,
 4. Evaluer la préférence accuracy : frequence ou le modèle prefere chosen > rejected
 5. Identifier les 4 pieges classiques du DPO en pratique
 
-**Reference cle** : Rafailov et al., ""Direct Préférence Optimization: Your Language Model is Secretly a Reward Model"" (NeurIPS 2023), arXiv:2305.18290",,,,,,,,43fcf2c8cac5b3ff,,,,,,,,,,,,,,,
+**Reference cle** : Rafailov et al., ""Direct Préférence Optimization: Your Language Model is Secretly a Reward Model"" (NeurIPS 2023), arXiv:2305.18290",,,,,,,,371d160cb49ecedb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,69b49af6,markdown,fr,fcbba8cae18e040f,"## 1. Le loss DPO — de RLHF a l'optimisation directe
 
 **Rappel — RLHF classique (3 étapes)**
@@ -1517,10 +1530,14 @@ Le DPO optimise directement sur des **paires de préférence** — mais il neces
 Le GRPO = la technique cle derriere **Deepseek-R1** (janvier 2025) — le prochain notebook (PT-04) sera le livrable central de cette serie.
 
 **Pourquoi GRPO > PPO pour le reasoning** : pas de critic network, advantage calcule par normalisation intra-group (variance naturelle reduite), récompense verifiable (exact match sur math/code).",,,,,,,,437a35450d31bbef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2a116876,markdown,fr,822dd5890319ad46,"# PT-04 — Group Relative Policy Optimization (GRPO)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2a116876,markdown,fr,a5cdaf82443dc986,"[← PT-03 Direct Préférence Optimization (DPO)](PT_03_dpo_direct_preference.ipynb) | [↑ PostTraining](README.md) | [PT-05 Reinforcement Learning with Verifiable →](PT_05_rlvr_verifiable_rewards.ipynb)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742, sub-issue #1757)
-**LIVRABLE CLE** de l'Epic #1742
+***
+
+# PT-04 — Group Relative Policy Optimization (GRPO)
+
+GRPO ajuste une policy en comparant plusieurs complétions d’un même prompt, puis en normalisant leurs récompenses sans réseau critique. Ce carnet relie cette idée à la formule de l’avantage relatif, à `trl.GRPOTrainer` et à l’analyse des effets du group size. Dans le parcours Post-Training, il s’appuie sur [PT-03 (DPO)](PT_03_dpo_direct_preference.ipynb) et prépare [PT-05 (RLVR)](PT_05_rlvr_verifiable_rewards.ipynb).
+
 **Pre-requis** : PT-01 (intro), PT-02 (SFT), PT-03 (DPO) recommandes
 **Objectifs pedagogiques** :
 1. Comprendre pourquoi GRPO est la technique cle derriere Deepseek-R1 (janvier 2025)
@@ -1532,7 +1549,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2a116876,markd
 **References clés** :
 - Shao et al., ""DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models"" (2024) — paper origin GRPO
 - Deepseek-AI, ""DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning"" (2025)
-- HuggingFace TRL GRPOTrainer integration docs (2025)",,,,,,,,822dd5890319ad46,,,,,,,,,,,,,,,
+- HuggingFace TRL GRPOTrainer integration docs (2025)",,,,,,,,a5cdaf82443dc986,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,898a98aa,markdown,fr,bfcb8c66887c7703,"## 1. Pourquoi GRPO a revolutionne le post-training (janvier 2025)
 
 ### Le choc Deepseek-R1
@@ -2241,9 +2258,14 @@ Le RLVR = la variante GRPO qui a fait emerger le **reasoning spontane** dans Dee
 **Prochaines étapes** :
 - PT-05 : GRPO + verifier sympy sur GSM8K (math word problems)
 - PT-06 : Evaluation comparative SFT/DPO/GRPO/RLVR",,,,,,,,1ee4f6132accbd5b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,1b882a0f,markdown,fr,448b625a7132d620,"# PT-05 — Reinforcement Learning with Verifiable Rewards (RLVR)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,1b882a0f,markdown,fr,6c075b99384d5752,"[← PT-04 Group Relative Policy Optimization](PT_04_grpo_deepseek_r1.ipynb) | [↑ PostTraining](README.md) | [PT-06 Evaluation Comparative du Post-Training →](PT_06_eval_comparative.ipynb)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742)
+***
+
+# PT-05 — Reinforcement Learning with Verifiable Rewards (RLVR)
+
+Ce carnet présente l’apprentissage par récompenses vérifiables (RLVR), construit un vérificateur mathématique avec SymPy et compare ce signal exact aux récompenses heuristiques de GRPO. Il distingue aussi les mesures prévues des résultats réellement produits par ce notebook. Dans le parcours Post-Training, il suit le GRPO de [PT-04](PT_04_grpo_deepseek_r1.ipynb) et mène à [PT-06](PT_06_eval_comparative.ipynb), consacré à la comparaison des méthodes.
+
 **Pre-requis** : PT-01 (intro), PT-04 (GRPO) fortement recommande
 **Objectifs pedagogiques** :
 1. Comprendre la différence fondamentale entre reward heuristique et reward verifiable
@@ -2267,7 +2289,7 @@ seul seed est un resultat attendu, pas un echec a maquiller.
 **References clés** :
 - Lightman et al., ""Let's Verify Step by Step"" (OpenAI, 2023) — process vs outcome reward
 - Deepseek-AI, ""DeepSeek-R1"" (2025) — RLVR for reasoning emergence
-- Cobbe et al., ""Training Verifiers to Solve Math Word Problems"" (GSM8K, 2021)",,,,,,,,448b625a7132d620,,,,,,,,,,,,,,,
+- Cobbe et al., ""Training Verifiers to Solve Math Word Problems"" (GSM8K, 2021)",,,,,,,,6c075b99384d5752,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,c9cf7e54,markdown,fr,918ff8b893b8d320,"## 1. Pourquoi les rewards verifiables changent tout
 
 ### Le problème des rewards heuristiques
@@ -3047,10 +3069,14 @@ Avec PT-01 a PT-05, nous avons couvert les 5 techniques majeures du post-trainin
 PT-06 conclura la serie en evaluant les mêmes prompts avec les 4 approaches et en comparant les metriques clés : accuracy, diversity, coherence, et cout compute.
 
 **Ce que cette serie demontre** : le chemin du post-training en 2025 n'est pas ""une technique unique"" mais un **pipeline** (SFT → DPO/GRPO → RLVR) ou chaque étape affine le modèle de maniere complémentaire.",,,,,,,,00b306e80497b0ef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,e4c8e5a7,markdown,fr,247c4d8987eecd4c,"# PT-06 — Evaluation Comparative du Post-Training
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,e4c8e5a7,markdown,fr,630aca5475a645d0,"[← PT-05 Reinforcement Learning with Verifiable](PT_05_rlvr_verifiable_rewards.ipynb) | [↑ PostTraining](README.md) | [PT-07 Détecter le reward hacking →](PT_07_rewardspy_reward_hacking.ipynb)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742)
-**Dernier livrable** de la serie
+***
+
+# PT-06 — Evaluation Comparative du Post-Training
+
+Cette évaluation met en regard SFT, DPO, GRPO et RLVR selon leurs objectifs, leurs données, leurs coûts et leurs limites, puis propose des repères pour choisir une stratégie de post-training.
+
 **Pre-requis** : PT-01 a PT-05 (tous merges)
 **Objectifs pedagogiques** :
 1. Synthetiser les 4 techniques de post-training etudiees (SFT, DPO, GRPO, RLVR)
@@ -3063,7 +3089,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,e4c8e5a7,markd
 - Rafailov et al., ""Direct Préférence Optimization"" (2023) — DPO
 - Shao et al., ""DeepSeekMath"" (2024) — GRPO
 - Deepseek-AI, ""DeepSeek-R1"" (2025) — RLVR
-- Ouyang et al., ""Training language models to follow instructions with human feedback"" (InstructGPT, 2022)",,,,,,,,247c4d8987eecd4c,,,,,,,,,,,,,,,
+- Ouyang et al., ""Training language models to follow instructions with human feedback"" (InstructGPT, 2022)",,,,,,,,630aca5475a645d0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,929715e7,markdown,fr,ddd9c451d30479e9,"## 1. Recap de la serie Post-Training
 
 Au cours de cette serie (PT-01 a PT-05), nous avons etudie les techniques majeures du post-training 2024-2025 :
@@ -3452,7 +3478,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,62ffd366,code,
     return pipeline  # TODO etudiant : retourner le pipeline ordonne
 
 print(""Exercice a completer : planificateur pipeline"")",,,,,,,,cdd96bee7619d715,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,e89df931,markdown,fr,f470e1c90583d2ee,"[← PT-06 Éval comparative](PT_06_eval_comparative.ipynb) | [↑ PostTraining](README.md)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,e89df931,markdown,fr,16d490af5c09302b,"[← PT-06 Evaluation Comparative du Post-Training](PT_06_eval_comparative.ipynb) | [↑ PostTraining](README.md) | [PT-08 GRPO from scratch →](PT_08_grpo_from_scratch_toy_env.ipynb)
 
 ***
 
@@ -3480,7 +3506,7 @@ Le post-training par renforcement (GRPO, RLVR — notebooks PT-04/PT-05) optimis
 
 La difficulté n'est pas tant d'éviter le reward hacking (presque toute reward proxy y est vulnérable) que de le **détecter tôt**, avant que le modèle ne dégénère. C'est ce que fait `rewardspy` : un observateur qui wrappe la reward fn, stream ses appels dans un log JSONL, et fait tourner des **détecteurs statistiques** qui lèvent des alertes dès qu'une signature de hacking apparaît (une composante qui écrase les autres, une variance qui s'effondre, une longueur qui dérive).
 
-Ce notebook se concentre sur le **chemin offline** — la capacité distinctive de rewardspy à diagnostiquer un log de reward *a posteriori*, sans nécessiter de training GPU. On construira une reward intentionnellement hackable, on simulera la trajectoire dégénérée d'un modèle qui l'exploite, et on montrera que les détecteurs s'enflamment — exactement le diagnostic qu'on voudrait mener sur un vrai run GRPO (PT-04) dont on aurait sauvegardé les appels de reward.",,,,,,,,f470e1c90583d2ee,,,,,,,,,,,,,,,
+Ce notebook se concentre sur le **chemin offline** — la capacité distinctive de rewardspy à diagnostiquer un log de reward *a posteriori*, sans nécessiter de training GPU. On construira une reward intentionnellement hackable, on simulera la trajectoire dégénérée d'un modèle qui l'exploite, et on montrera que les détecteurs s'enflamment — exactement le diagnostic qu'on voudrait mener sur un vrai run GRPO (PT-04) dont on aurait sauvegardé les appels de reward.",,,,,,,,16d490af5c09302b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,7a7932e0,code,fr,ffd8c7883de0eba9,"# rewardspy n'est PAS sur PyPI — installation depuis le dépôt git (0.1.0, ~42 KB, deps légères : textual)
 # Deja installe dans l'env coursia-ml-training ; decommenter si necessaire :
 # %pip install -q git+https://github.com/AvAdiii/rewardspy.git
@@ -3574,19 +3600,19 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,7d1f81
 La force distinctive de rewardspy pour le diagnostic *a posteriori* est sa CLI : ayant sauvegardé le log JSONL d'une run (`watch(..., export_path=...)`), on peut le **rejouer** et obtenir un verdict complet **sans training, sans GPU, sans modèle**. C'est le chemin qu'on utiliserait pour analyser un run GRPO (PT-04) dont on aurait loggé les appels de reward.
 
 La commande `rewardspy audit <path>` lit le JSONL, rejoue tous les détecteurs, et **exit avec un code non-zero** si au moins une signature de hacking est trouvée — ce qui permet de l'intégrer dans une CI de training (un run qui déclenche une alerte = échec du check).",,,,,,,,128c1d2a696aa98f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,8c233366,code,fr,522a78b584794fa5,"import subprocess, sys
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,8c233366,code,fr,4f0d3446fc8059c1,"import subprocess, sys
 
 # CLI rewardspy : audit replay le JSONL et sort un verdict complet
 result = subprocess.run(
     [""rewardspy"", ""audit"", str(run_log)],
-    capture_output=True, text=True,
+    capture_output=True, text=True, encoding=""utf-8"", errors=""replace"",
 )
 print(""=== rewardspy audit (exit code ="", result.returncode, "") ==="")
 print(result.stdout.strip())
 print()
 print(""Interpretation : exit code"", result.returncode,
       ""=>"", ""HACKING DETECTE (non-zero)"" if result.returncode != 0 else ""run propre (zero)"")
-print(""                 (la CI de training peut faire echouer un run sur exit non-zero)"")",,,,,,,,522a78b584794fa5,,,,,,,,,,,,,,,
+print(""                 (la CI de training peut faire echouer un run sur exit non-zero)"")",,,,,,,,4f0d3446fc8059c1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb,b0fcb3c3,markdown,fr,13df36107e28f1f2,"## Inspection programmatique : `read_jsonl` + structure des records
 
 Au-delà de la CLI, rewardspy expose une API Python pour charger un log et l'analyser soi-même. Chaque appel de reward est enregistré comme un `RolloutRecord` avec le step, la reward scalaire, le dict des composantes, et les longueurs d'entrée/sortie — exactement les champs dont les détecteurs ont besoin.",,,,,,,,13df36107e28f1f2,,,,,,,,,,,,,,,
@@ -3672,7 +3698,11 @@ BATCH_MODE = ""true""
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,11320909,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb,pt08-c00,markdown,fr,ee7b0e69792c5c5e,"# PT-08 — GRPO from scratch : la mécanique du signal de récompense sur un env vérifié par z3
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb,pt08-c00,markdown,fr,75c9215ffac4107c,"[← PT-07 Détecter le reward hacking](PT_07_rewardspy_reward_hacking.ipynb) | [↑ PostTraining](README.md) | [PT-09 RLOO (REINFORCE Leave-One-Out) →](PT_09_rloo_from_scratch_toy_env.ipynb)
+
+***
+
+# PT-08 — GRPO from scratch : la mécanique du signal de récompense sur un env vérifié par z3
 
 **Série** : Post-Training SOTA 2024-2  
 **Prérequis** : [PT-04 — GRPO réel (Qwen3.5-0.8B)](PT_04_grpo_deepseek_r1.ipynb), bases du policy gradient  
@@ -3691,7 +3721,7 @@ solveur SMT (z3)**, et le comparer à PPO.
 > sur CPU. La valeur pédagogique est dans **trois idées** que les courbes rendent visibles :
 > 1. le **group-relative advantage** (comparer les completions *entre elles*, pas à un critique appris) ;
 > 2. l'**élimination du critic** (GRPO n'a pas de value network — c'est tout l'intérêt mémoire ; épargne mesurée : **15 297** paramètres, cf cellule §3) ;
-> 3. l'**écart PPO ↔ GRPO** (même clipped objective, mais un baseline empirique vs un baseline appris ; mesure finale cellule §6 : REINFORCE ~0.53, PPO ~0.98, GRPO ~1.00).",,,,,,,,ee7b0e69792c5c5e,,,,,,,,,,,,,,,
+> 3. l'**écart PPO ↔ GRPO** (même clipped objective, mais un baseline empirique vs un baseline appris ; mesure finale cellule §6 : REINFORCE ~0.53, PPO ~0.98, GRPO ~1.00).",,,,,,,,75c9215ffac4107c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb,pt08-c01,markdown,fr,729dddd0d94d3018,"## 1. Le fil rouge : pourquoi GRPO a supprimé le critic
 
 Le **policy gradient** classique (REINFORCE) optimise une politique $\pi_\theta(a \mid s)$ en
@@ -4180,7 +4210,11 @@ from scratch. Voir [PT-04](PT_04_grpo_deepseek_r1.ipynb) pour la pipeline TRL co
 > avait donné REINFORCE 0.750 / PPO 0.891 / GRPO 0.938. Le **verdict comparatif est robuste** dans les
 > deux cas : REINFORCE plafonne (~0.53), PPO monte (~0.98), GRPO atteint ~1.00 — le mécanisme
 > (critic vs groupe) est stable.",,,,,,,,cfc431c0e243695b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,cdd02b03,markdown,fr,7301583b447c8ff4,"# PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch : l'autre baseline sans critic
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,cdd02b03,markdown,fr,ab8451d52947e1f2,"[← PT-08 GRPO from scratch](PT_08_grpo_from_scratch_toy_env.ipynb) | [↑ PostTraining](README.md) | [PT-10 GAE from scratch →](PT_10_gae_from_scratch_toy_env.ipynb)
+
+***
+
+# PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch : l'autre baseline sans critic
 
 > **Place dans la série** : ce notebook suit `PT_08_grpo_from_scratch_toy_env.ipynb` (notebook `PT_08`, PR #10245) qui démontrait la mécanique du **group-relative advantage** de GRPO. PT-09 présente **RLOO** — *REINFORCE Leave-One-Out* — l'**autre** façon d'estimer une baseline **sans réseau value**, popularisée par DeepSeek (2024) comme alternative à GRPO pour le post-training des LLM.
 
@@ -4201,7 +4235,7 @@ RLOO est l'estimateur **leave-one-out** classique du contrôle de variance Monte
 
 ## Prérequis
 
-`PT_08` (notebook `PT_08`, PR #10245) (GRPO, group-relative advantage) — ce notebook réutilise le même toy env et la même policy MLP.",,,,,,,,7301583b447c8ff4,,,,,,,,,,,,,,,
+`PT_08` (notebook `PT_08`, PR #10245) (GRPO, group-relative advantage) — ce notebook réutilise le même toy env et la même policy MLP.",,,,,,,,ab8451d52947e1f2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,f7e9bff7,markdown,fr,3c7228132127240f,"## Installation et configuration
 
 Toy env **identique à PT-08** (migration Prong B [#10289](https://github.com/jsboige/CoursIA/issues/10289)) : équation quadratique **$s^2 + a = b$** vérifiée par un vrai solveur SMT z3 (pas un `==` codé en dur), $a \in \{0\dots 5\}$, $s \in \{0\dots 7\}$ → **8 actions** ($s = 0\dots 7$, $b$ jusqu'à 54). Récompense **binaire vérifiable** (régime RLVR, exactement comme Deepseek-R1 sur le raisonnement mathématique). La policy est un MLP from-scratch (**1 416 paramètres**, acteur uniquement — ni GRPO ni RLOO n'ont de critic), entraîné sur CPU en quelques secondes.
@@ -4497,7 +4531,11 @@ PT-09 a déroulé **RLOO** — la **seconde** baseline sans critic — en regard
 
 Les deux notebooks (PT-08 GRPO + PT-09 RLOO) forment la paire pédagogique des **baselines empiriques sans value network** du post-training moderne.
 ",,,,,,,,5786ba372db25f9e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb,1663996a,markdown,fr,5a2a8fcfcbf739d6,"# PT-10 — GAE from scratch : pourquoi un mini-critic ? (et quand n'en faut-il pas)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb,1663996a,markdown,fr,0abe44d488f2dc68,"[← PT-09 RLOO (REINFORCE Leave-One-Out)](PT_09_rloo_from_scratch_toy_env.ipynb) | [↑ PostTraining](README.md) | [PT-11a GRPO + RLVR sur Qwen3.5-0.8B →](PT_11a_grpo_qwen35_rlvr.ipynb)
+
+***
+
+# PT-10 — GAE from scratch : pourquoi un mini-critic ? (et quand n'en faut-il pas)
 
 **Pourquoi ce notebook ?** PT-08 (GRPO) et PT-09 (RLOO) ont montré qu'on peut **remplacer un critic** par une **statistique du groupe** (group-mean ou leave-one-out) sur un env à reward **1-step sparse**. GAE (Generalized Advantage Estimation, Schulman 2015) est le **3ᵉ pilier** du post-training moderne : il **utilise un mini-critic** (1 value head) pour réduire la **variance de l'avantage** par bootstrapping, et un paramètre λ pour interpoler entre **TD(0)** (bootstrap : **biais plus élevé** — la cible dépend du V appris — mais **variance plus basse**) et **Monte-Carlo** (return échantillonné : **non biaisé on-policy**, **variance plus élevée**).
 
@@ -4514,7 +4552,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb,166399
 **Continuité de la série** : PT-04 (GRPO via `trl`) → PT-08 (GRPO from-scratch) → PT-09 (RLOO from-scratch, leave-one-out) → **PT-10 (GAE from-scratch, mini-critic)**. On reste sur CPU, MLP ~8.7k params (actor+critic), toy env vérifiable (RLVR).
 
 **Pré-requis** : PT-08, PT-09 (même toy env).
-",,,,,,,,5a2a8fcfcbf739d6,,,,,,,,,,,,,,,
+",,,,,,,,0abe44d488f2dc68,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb,eab4f355,code,fr,9fd610690bd4c293,"# Imports et reproductibilité
 import numpy as np
 import torch
@@ -5387,7 +5425,7 @@ print(f""Chargement modele {_model_basename} + QLoRA 4-bit..."")
 print(f""  Architecture : Qwen3.5-0.8B (classe Qwen3_5ForCausalLM, chemin texte via AutoModelForCausalLM)"")
 print(f""  License : Apache 2.0"")
 print(f""  Empreinte 4-bit attendue : ~0.8 Go (mesure reelle imprimee par la cellule de chargement)"")",,,,,,,,5010a5680459f9c7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,dc301f63,code,fr,98358fd7fec31d08,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,dc301f63,code,fr,1ef8f46d01ed0deb,"if LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE:
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from trl import GRPOTrainer, GRPOConfig
     from peft import LoraConfig, TaskType, get_peft_model
@@ -5413,6 +5451,12 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,dc
         target_modules=[""q_proj"", ""k_proj"", ""v_proj"", ""o_proj"", ""gate_proj"", ""up_proj"", ""down_proj""],
     )
 
+    # Capacite VRAM lue sur le peripherique, jamais codee en dur (#23026) : le total
+    # n'est pas le meme d'un siege a l'autre (RTX 3070 8 Go, RTX 3090 24 Go), et un
+    # ratio calcule contre un total d'emprunt ne mesure rien.
+    _gpu_props = torch.cuda.get_device_properties(0)
+    vram_total_gb = _gpu_props.total_memory / 1e9
+
     t_load_start = time.perf_counter()
     base_model = AutoModelForCausalLM.from_pretrained(
         MODEL_NAME,
@@ -5425,7 +5469,8 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,dc
     t_load = time.perf_counter() - t_load_start
     print(f""Modele charge en {t_load:.1f} s (classe {type(base_model).__name__})"")
     mem_after_load = torch.cuda.memory_allocated(0) / 1e9
-    print(f""VRAM apres load : {mem_after_load:.2f} Go / 8.59 Go"")
+    print(f""VRAM apres load : {mem_after_load:.2f} Go / {vram_total_gb:.2f} Go ""
+          f""({mem_after_load/vram_total_gb:.1%}) sur {_gpu_props.name}"")
 
     # trl 1.9.2 GRPOTrainer accepte peft_config mais wrap le modele apres init.
     # On capture le modele PEFT via trainer.model pour print_trainable_parameters().
@@ -5449,8 +5494,12 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,dc
     print(f""Training termine en {t_train:.1f} s ({t_train/60:.1f} min)"")
     print(f""Loss finale : {train_result.training_loss:.4f}"")
     mem_peak = torch.cuda.max_memory_allocated(0) / 1e9
-    print(f""VRAM peak : {mem_peak:.2f} Go / 8.59 Go"")
-    print(f""Alertes rewardspy (callback) : {len(REWARD_ALERTS)}"")
+    print(f""VRAM peak : {mem_peak:.2f} Go / {vram_total_gb:.2f} Go ""
+          f""({mem_peak/vram_total_gb:.1%}) sur {_gpu_props.name}"")
+    # Ce compteur ne mesure que les alertes levees par le callback PENDANT le
+    # training ; la liste a ete videe avant (cellule 19 = sanity check a part).
+    print(f""Alertes rewardspy accumulees pendant le training (callback, hors sanity check) : ""
+          f""{len(REWARD_ALERTS)}"")
     for a in REWARD_ALERTS:
         print(f""  - {a['detector']} (step {a['step']}) : {a['message']}"")
 
@@ -5475,7 +5524,8 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,dc
     model = trainer.model
 else:
     print(""Skip training : LOAD_MODEL_AND_TRAIN=False ou pas de CUDA"")
-    print(""Pour executer : passer LOAD_MODEL_AND_TRAIN=True et GPU avec >= 4 Go VRAM."")",,,,,,,,98358fd7fec31d08,,,,,,,,,,,,,,,
+    print(""Pour executer : passer LOAD_MODEL_AND_TRAIN=True et GPU avec >= 4 Go VRAM."")
+",,,,,,,,1ef8f46d01ed0deb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,b97098c9,code,fr,1144ca0d2a40f3eb,"import matplotlib.pyplot as plt
 from pathlib import Path
 
@@ -5565,7 +5615,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,22
     print(f""Accuracy post-training : {acc_post:.2%}"")
 else:
     print(f""Skip eval : LOAD_MODEL_AND_TRAIN={LOAD_MODEL_AND_TRAIN}, CUDA_AVAILABLE={CUDA_AVAILABLE}"")",,,,,,,,c537bf5ecb4a5e23,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,f0772a87,code,fr,8495742bc17289a1,"print(""=""*70)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,f0772a87,code,fr,cfb78741e98c1867,"print(""=""*70)
 print("" VERDICT PT-11 — RLVR sur Qwen3.5-0.8B (G=8, #10603) "")
 print(""=""*70)
 
@@ -5573,7 +5623,7 @@ print(""=""*70)
 if not (LOAD_MODEL_AND_TRAIN and CUDA_AVAILABLE):
     if CUDA_AVAILABLE:
         _machine_txt = (f""{torch.cuda.get_device_name(0)} ""
-                        f""({torch.cuda.get_device_properties(0).total_memory/1e9:.2f} Go VRAM)"")
+                        f""({torch.cuda.get_device_properties(0).total_memory/1e9:.2f} Go VRAM total mesure)"")
     else:
         _machine_txt = ""aucun GPU CUDA visible sur ce siege (repli)""
     try:
@@ -5600,6 +5650,8 @@ Instruments executes dans ce run :
   - rewardspy.watch : {_instr_rewardspy}
 
 Machine de ce run : {_machine_txt}
+VRAM : aucun pic mesure dans ce mode (training non execute) — pas de ratio VRAM,
+       et surtout pas un ratio calcule contre la capacite d'un autre siege.
 Configuration #10603 : G=8, batch=8, grad_accum=1 (batch effectif 8 == G)
 
 Verdict attendu (post-training) :
@@ -5612,11 +5664,17 @@ Verdict attendu (post-training) :
 """""")
 else:
     # Verdict mesure — rempli apres training
+    # Total VRAM lu sur la machine du run (#23026) : le ratio ne vaut que rapporte
+    # a la capacite du peripherique qui a produit la mesure.
+    _gpu_name = torch.cuda.get_device_name(0)
+    _vram_total_gb = torch.cuda.get_device_properties(0).total_memory / 1e9
     print(f""Seed : {PT11_SEED}"")
+    print(f""Machine : {_gpu_name} ({_vram_total_gb:.2f} Go VRAM total mesure)"")
     print(f""Wallclock training : {t_train:.1f} s ({t_train/60:.1f} min)"")
-    print(f""VRAM peak : {mem_peak:.2f} Go / 8.59 Go ({mem_peak/8.59:.1%})"")
+    print(f""VRAM peak : {mem_peak:.2f} Go / {_vram_total_gb:.2f} Go ({mem_peak/_vram_total_gb:.1%})"")
     print(f""Loss finale : {train_result.training_loss:.4f}"")
-    print(f""Alertes rewardspy : {len(REWARD_ALERTS)}"")
+    print(f""Alertes rewardspy accumulees pendant le training (callback, hors sanity check) : ""
+          f""{len(REWARD_ALERTS)}"")
     for a in REWARD_ALERTS:
         print(f""  - {a['detector']} (step {a['step']}) : {a['message'][:80]}"")
     # Metrique #10603 : fraction de groupes informatifs
@@ -5642,7 +5700,8 @@ else:
 
 print(""=""*70)
 print(""FIN VERDICT"")
-print(""=""*70)",,,,,,,,8495742bc17289a1,,,,,,,,,,,,,,,
+print(""=""*70)
+",,,,,,,,cfb78741e98c1867,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,19255fbf,code,fr,653dd30f20b11e4d,"def heuristic_reward(completion: str, ground_truth: float) -> float:
     """"""TODO etudiant : reward heuristique (PT-04 style) pour comparaison.""""""
     # Etape 1 : poser le score a partir des indices de l'enonce (cellule precedente)
@@ -5699,12 +5758,16 @@ else:
     print(""Pour reprendre : voir cellule 24.bis qui peut re-charger le JSONL si present."")
     per_seed_metrics = []
 ",,,,,,,,b8096cbdd60d3980,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,b6718312,markdown,fr,45d075c67aa4dad0,"# PT-12 — Crédit différé multi-step : GAE-λ sur un environnement où le terminal dépend de toute la séquence
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,b6718312,markdown,fr,a8964f1dfb723924,"[← PT-11d RLVR multi-seed sur Qwen3.5-0.8B](PT_11d_multiseed_qwen35_4x100.ipynb) | [↑ PostTraining](README.md) | [PT-13 Les trois biais du loss GRPO et leurs →](PT_13_dapo_drgrpo_corrections.ipynb)
+
+***
+
+# PT-12 — Crédit différé multi-step : GAE-λ sur un environnement où le terminal dépend de toute la séquence
 
 **Place dans la série** : après PT-10, ce notebook répond à la question laissée ouverte par la série *from-scratch* (PT-08/09/10) : le **« collapse de λ »** observé — GAE(λ=0) et GAE(λ=0.95) aux trajectoires strictement identiques sur l'env toy partagé (`s² + a == b`, récompense terminale binaire) — est-il une propriété du **banc** ou de la **méthode** ?
 
-La réponse apportée ici est expérimentale et honnête : on porte la série sur un environnement **multi-step à crédit différé causal** (le terminal dépend de *toute* la séquence émise), et on re-mesure les cinq estimateurs REINFORCE, GRPO, RLOO, GAE-λ=0, GAE-λ=0.95 sur **5 seeds**. Verdict : **GAE-λ discrimine en multi-step** — le collapse était une dégénérescence du banc 1-step, pas une limite des méthodes.",,,,,,,,45d075c67aa4dad0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,9043962d,markdown,fr,45851297a6849d19,"## Contexte et question
+La réponse apportée ici est expérimentale et honnête : on porte la série sur un environnement **multi-step à crédit différé causal** (le terminal dépend de *toute* la séquence émise), et on re-mesure les cinq estimateurs REINFORCE, GRPO, RLOO, GAE-λ=0, GAE-λ=0.95 sur **5 seeds**. Verdict : **GAE-λ discrimine en multi-step** — le collapse était une dégénérescence du banc 1-step, pas une limite des méthodes.",,,,,,,,a8964f1dfb723924,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,9043962d,markdown,fr,9982e01ae7117648,"## Contexte et question
 
 Les notebooks PT-08 (PPO/GRPO), PT-09 (RLOO) et PT-10 (GAE) partagent un **toy env commun** : l'agent émet une action `s` en **un seul step**, et une vérification arithmétique (Z3) décide `reward = 1` ssi `s² + a == b`. Ce que les outputs **courants** de ces notebooks mesurent sur ce banc :
 
@@ -5713,9 +5776,9 @@ Les notebooks PT-08 (PPO/GRPO), PT-09 (RLOO) et PT-10 (GAE) partagent un **toy e
 | REINFORCE + baseline batch | PT-08 (1 run) | 0.062 → **0.531** |
 | PPO (actor + critic) | PT-08 (1 run) | 0.094 → **0.984** |
 | GRPO (no critic, G=8) | PT-08 (1 run) | 0.055 → **0.996** |
-| REINFORCE + baseline batch | PT-09 (seed 42) | 0.094 → **0.781** (max 0.969) |
-| RLOO (leave-one-out) | PT-09 (seed 42) | 0.129 → **0.500** (max 0.844) |
-| GRPO (groupe normalisé) | PT-09 (seed 42) | 0.121 → **0.594** (max 0.844) |
+| REINFORCE + baseline batch | PT-09 (seed 42) | 0.219 → **0.688** (max 0.906) |
+| RLOO (leave-one-out) | PT-09 (seed 42) | 0.113 → **0.715** (max 0.844) |
+| GRPO (groupe normalisé) | PT-09 (seed 42) | 0.109 → **0.875** (max 0.996) |
 | REINFORCE (5 seeds × 100 epochs) | PT-10 | final **0.883 ± 0.055** |
 | GAE(λ=0) (5 seeds × 100 epochs) | PT-10 | final **0.905 ± 0.026** |
 | GAE(λ=0.95) (5 seeds × 100 epochs) | PT-10 | final **0.905 ± 0.026** |
@@ -5729,7 +5792,7 @@ Le choix no-critic de GRPO se lit donc dans les mesures elles-mêmes, sans dédu
 
 > **Le collapse de λ est-il une propriété du banc (horizon 1) ou de la méthode (GAE elle-même) ?**
 
-Si λ reste inopérant sur un env **vraiment multi-step**, c'est un résultat (la méthode est le problème). Si λ devient discriminant, le collapse était un artefact du banc. PT-10 a déjà tenté ce diagnostic multi-step et l'a **révoqué lui-même** : sur son banc naïf (CoT racine carrée, 3 steps), la « discrimination λ » sur le reward moyen était un artefact de métrique — le taux **terminal** restait au niveau du hasard pour les deux λ. PT-12 construit le banc honnête qui tranche.",,,,,,,,45851297a6849d19,,,,,,,,,,,,,,,
+Si λ reste inopérant sur un env **vraiment multi-step**, c'est un résultat (la méthode est le problème). Si λ devient discriminant, le collapse était un artefact du banc. PT-10 a déjà tenté ce diagnostic multi-step et l'a **révoqué lui-même** : sur son banc naïf (CoT racine carrée, 3 steps), la « discrimination λ » sur le reward moyen était un artefact de métrique — le taux **terminal** restait au niveau du hasard pour les deux λ. PT-12 construit le banc honnête qui tranche.",,,,,,,,9982e01ae7117648,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,64cf9eaf,markdown,fr,c06b11d1d6bf8984,"## Pourquoi l'ancien env ""multi-step"" (PT-10, cellule 16) ne prouvait rien
 
 PT-10 contenait déjà une variante multi-step (CoT racine carrée, 3 tokens) censée montrer la discrimination de λ. Le diagnostic a posteriori révèle **deux défauts structurels** qui la rendaient aussi dégénérée que l'env 1-step :
@@ -6119,11 +6182,11 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,bc77e5
 # moyenne finale aux deux extremites de la paire.
 pass
 print(""Exercice a completer"")",,,,,,,,b79e3fbddd687b6b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,7bada03b,markdown,fr,f639f9eec3a0b7c6,"## Exercice 3 — Allonger l'horizon (H=12)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,7bada03b,markdown,fr,a73d359e0652a295,"## Exercice 3 — Allonger l'horizon (H=12)
 
-Sur le banc de calibration, `count_ones` avec H=12 (plancher 0.084) montrait le **même** verdict que H=8 (λ=0.95 gagne 3/3). **Prédire** si l'allongement de l'horizon renforce ou affaiblit le biais du bootstrap pour λ=0, puis **mesurer** avec H=12 sur la paire λ (3 seeds suffisent).
+Le banc de calibration `count_ones` est paramétré avec H=8 dans ce notebook. À H=8, la paire λ donne 0.947 (λ=0.95) contre 0.327 (λ=0) en moyenne sur 5 seeds (mesuré dans la section précédente). **Prédire** si l'allongement de l'horizon à H=12 renforce ou affaiblit le biais du bootstrap pour λ=0, puis **mesurer** avec H=12 sur la paire λ (3 seeds suffisent).
 
-Indice : en H=12, la récursion GAE a 12 termes — le TD(0) pur propage son biais sur 12 steps.",,,,,,,,f639f9eec3a0b7c6,,,,,,,,,,,,,,,
+Indice : en H=12, la récursion GAE a 12 termes — le TD(0) pur propage son biais sur 12 steps.",,,,,,,,a73d359e0652a295,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,516a464f,code,fr,edaf660e5a7b3bd2,"# TODO etudiant : rejouer la paire lambda avec HORIZON = 12 (et k dans [1, 11]).
 # Indice : le bloc de run depend de HORIZON et de W : modifier les constantes,
 # rejouer, comparer les moyennes finales, remettre HORIZON = 8.
@@ -6728,11 +6791,16 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,19301
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,50ccc173,markdown,fr,c86f79fa78592c93,"L'entraînement des trois méthodes (REINFORCE, RLOO, GRPO) sur CPU prend environ 15 secondes au total. Les résultats montrent que REINFORCE avec baseline batch atteint une récompense finale de 0,688, RLOO avec baseline leave-one-out obtient 0,715, et GRPO avec baseline de groupe normalisée atteint 0,875, et le classement observé contredit l'intuition « non biaisé donc meilleur » : les deux estimateurs à avantage non biaisé (REINFORCE à baseline batch, RLOO leave-one-out) finissent en dessous de GRPO, dont l'avantage inclut $r_i$ dans la moyenne de groupe. GRPO ne gagne pas par ce biais mais par la normalisation par l'écart-type du groupe, un choix de passage à l'échelle (scaling) du gradient et non d'estimation — cf. l'interprétation ci-dessous.",,,,,,,,c86f79fa78592c93,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,2262d9e3,markdown,fr,8960ba66bac8ce43,"Les courbes d'apprentissage superposées illustrent la progression des récompenses pour les trois méthodes. On observe que RLOO et GRPO convergent plus rapidement et vers des valeurs plus élevées que REINFORCE, démontrant l'efficacité des baselines leave-one-out et de groupe pour stabiliser et accélérer l'apprentissage par renforcement.",,,,,,,,8960ba66bac8ce43,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,d7a0cd80,markdown,fr,71d73898049f3c50,"L'analyse du budget paramétrique révèle que l'acteur (policy) compte 1416 paramètres. L'économie de RLOO et GRPO par rapport à une approche type PPO avec critique est estimée à environ 1185 paramètres (46% de réduction), au prix d'un surcoût de 7 évaluations par prompt par rapport à REINFORCE (avec G=8). Ce trade-off illustre le compromis classique entre complexité du modèle et coût computationnel.",,,,,,,,71d73898049f3c50,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,34e377ec,markdown,fr,a039edeea673091d,"# PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewardspy.watch ONLINE + Z3 Tier-1 verifier
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,34e377ec,markdown,fr,2456980ee6802af4,"[← PT-11a GRPO + RLVR sur Qwen3.5-0.8B](PT_11a_grpo_qwen35_rlvr.ipynb) | [↑ PostTraining](README.md) | [PT-11c RLVR sur Qwen3-1.7B/2B →](PT_11c_grpo_qwen17_rlvr.ipynb)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742, PT-11 = sous-axe RLVR de #10289)
+***
+
+# PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewardspy.watch ONLINE + Z3 Tier-1 verifier
+
+Ce carnet montre un pipeline RLVR exécuté sur Qwen3.5-0.8B avec QLoRA 4-bit, des récompenses vérifiables par SymPy et un suivi en ligne du reward hacking. Il examine aussi la convergence et les cas où ce petit modèle ou ce type de récompense ne convient pas. Ce carnet prolonge le parcours Post-Training par une mise en œuvre du RLVR sur un vrai LLM, dans la continuité du [PT-05 pédagogique](PT_05_rlvr_verifiable_rewards.ipynb) ; la [carte de la série](README.md) situe les autres étapes.
+
 **Pre-requis** : PT-05 (RLVR pedagogique, SymPy verifier) et PT-04 (GRPO), patron transposé
-**Objectif acceptance** : demonstrer un pipeline RLVR **complet et executé** sur un **vrai LLM**
+**Objectifs pédagogiques** : démontrer un pipeline RLVR **complet et exécuté** sur un **vrai LLM**
 (Qwen3.5-0.8B, QLoRA 4-bit), avec rewards **verifiables** (SymPy exact match), instrumentation
 **ONLINE** par `rewardspy.watch` (detecteur reward hacking), et verdict **honnête** sur la convergence.
 
@@ -6742,9 +6810,9 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,34
 - Open-R1 / SmolLM-Reward (HuggingFace, 2025) — `rewardspy.watch` instrumentation LIVE
 
 **Différence vs PT-05** : PT-05 documente le patron RLVR sur Qwen2.5-0.5B en mode CPU-safe
-(demonstration pedagogique, pas d'exécution reelle). PT-11b execute **réellement** sur RTX 3070
+(demonstration pedagogique, pas d'exécution reelle). PT-11b execute **réellement** sur GPU
 avec Qwen3.5-0.8B QLoRA 4-bit, ≥100 steps GRPO, courbe de reward reelle, et signal Goodhart
-via `rewardspy.watch` ONLINE (cf acceptance #10289).
+via `rewardspy.watch` ONLINE (voir la note de provenance en pied de carnet).
 
 > **Note méthodologique — quand ce notebook est utile (et quand il ne l'est pas) :**
 
@@ -6762,13 +6830,19 @@ online continue (préférer PPO/RLHF) ; (4) tasks avec reward subjectif
 < 1K exemples (RLVR sous-apprend).
 
 **Coût-bénéfice mesuré** : pour 100 étapes sur Qwen3.5-0.8B en QLoRA
-4-bit sur RTX 3070 8GB, le training complet tourne en **~30 minutes**
-(VRAM pic **~3.94 Go** sur 8.59 Go = 45.9%, wallclock `1799.7 s`
-mesuré sur origin/main). C'est le coût réel pour
-reproduire l'expérience RLVR du notebook — l'investissement se porte
-sur la curation du dataset et le choix du verifier, pas sur le
-training lui-même.
-",,,,,,,,a039edeea673091d,,,,,,,,,,,,,,,
+4-bit, le training complet tourne en **~18 minutes** sur la machine du
+run committé (NVIDIA GeForce RTX 3090, **25,77 Go** de VRAM totale
+mesurés) : pic d'allocation **2,05 Go = 8,0 %** de ce total, wallclock
+`1078.6 s`. C'est le coût réel pour reproduire l'expérience RLVR du
+notebook — l'investissement se porte sur la curation du dataset et le
+choix du verifier, pas sur le training lui-même.
+
+Ce qui dimensionne le besoin, c'est le **pic d'allocation** (2,05 Go),
+pas la capacité de la carte : le même run tient donc sur une carte de
+8 Go. Le pourcentage, lui, ne vaut que rapporté au total **de la machine
+qui a mesuré** — c'est ce que la cellule de training imprime désormais
+(`total_memory` lu sur le périphérique, cf #23026).
+",,,,,,,,2456980ee6802af4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,a946312d,markdown,fr,d92b7ceb1f5732b3,"## 1. Env probe — GPU, libs, versions
 
 Avant tout : verifier l'environnement. PT-11b est un grain **DEEP** PostTraining, il necessite
@@ -6794,9 +6868,10 @@ des deux** : il a tourné avec `trl : 1.16.0` et `rewardspy : 0.1.0`
 `trl` antérieure à la 1.9.2 visée. Les deux sont à réinstaller avant de
 conclure quoi que ce soit sur les alertes.
 ",,,,,,,,d92b7ceb1f5732b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,e6ccc8dc,markdown,fr,6dbb07ce8497f2cb,"### 1.1 Switch d'exécution
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,e6ccc8dc,markdown,fr,f0f860ae8190dab4,"### 1.1 Switch d'exécution
 
-`LOAD_MODEL_AND_TRAIN = True` execute le pipeline RLVR complet (~10-20 min sur RTX 3070).
+`LOAD_MODEL_AND_TRAIN = True` execute le pipeline RLVR complet (~18 min sur la RTX 3090 du run
+committé).
 `False` fait tourner seulement les tests unitaires du verifier + Z3 (validation pedagogique sans GPU).
 
 ### 1.1 Bascule d'exécution — LOAD_MODEL_AND_TRAIN
@@ -6805,22 +6880,23 @@ Le notebook supporte deux modes opérationnels :
 
 | Mode | Quand | VRAM | Coût |
 |---|---|---|---|
-| `LOAD_MODEL_AND_TRAIN = True` | GPU CUDA disponible | ~3.94 Go QLoRA 4-bit | ~30 min |
+| `LOAD_MODEL_AND_TRAIN = True` | GPU CUDA disponible | pic 2,05 Go QLoRA 4-bit | ~18 min |
 | `LOAD_MODEL_AND_TRAIN = False` | Pas de GPU / debug rapide | 0 | ~10 s |
 
-La seed `PT11_SEED = 0` est fixée pour reproductibilité mais devra
+La seed `PT11_SEED = 42` est fixée pour reproductibilité mais devra
 être variée pour les expériences multi-seed (cf. cellule #25 sur la
 seed).
 
-**Note pratique** : Papermill injecte `LOAD_MODEL_AND_TRAIN` via
-`-p LOAD_MODEL_AND_TRAIN=false` pour les exécutions CI sans GPU. Les
-outputs de la cellule #2 suivante portent ce flag.
-",,,,,,,,6dbb07ce8497f2cb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,febc72c8,markdown,fr,29f8470d3eee7c6b,"Convention Papermill **double-params** (c.1331p268 #2fa51a) : ce notebook a
+**Note pratique** : Papermill peut injecter `LOAD_MODEL_AND_TRAIN` via
+`-p LOAD_MODEL_AND_TRAIN=false` pour les exécutions CI sans GPU. Le run
+committé, lui, a tourné avec la valeur par défaut de la cellule params
+exécutée (#4), donc training réel : c'est ce qu'imprime sa sortie.
+",,,,,,,,f0f860ae8190dab4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,febc72c8,markdown,fr,88c670c56c4d3db5,"Convention Papermill **double-params** (c.1331p268 #2fa51a) : ce notebook a
 **deux cellules params** — **celle-ci** (référence, **non exécutée**) et la
-cellule #4 (exécutée, réécrite par Papermill via `-p LOAD_MODEL_AND_TRAIN=false`).
+cellule #4 (exécutée, réécrite par Papermill quand il injecte des paramètres).
 Modifier celle-ci ne change rien à l'exécution ; c'est la cellule #4 qui porte
-les paramètres réels injectés par Papermill.
+les paramètres réels.
 
 ```python
 LOAD_MODEL_AND_TRAIN = False   # mode CPU-safe : skip training, validation pédagogique seule
@@ -6828,8 +6904,11 @@ PT11_SEED = int(os.getenv(""PT11_SEED"", ""42""))
 PT11_MAX_STEPS = int(os.getenv(""PT11_MAX_STEPS"", ""100""))
 ```
 
-`LOAD_MODEL_AND_TRAIN = True` = mode TRAINING GRPO+RLVR (~30 min sur RTX 3070).
-",,,,,,,,29f8470d3eee7c6b,,,,,,,,,,,,,,,
+`LOAD_MODEL_AND_TRAIN = True` = mode TRAINING GRPO+RLVR (~18 min sur la RTX 3090
+du run committé). Le run committé n'injecte aucun paramètre : il prend les
+valeurs par défaut de la cellule #4 (`True`, seed 42, 100 steps), que sa sortie
+imprime.
+",,,,,,,,88c670c56c4d3db5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,f8b0cc1f,markdown,fr,2bc01b875af90e4a,"## 3. Tier-1 verifier — SymPy exact match (verifiable reward, bruit zero)
 
 Le verifier **exact** (outcome reward) prend une completion textuelle, extrait la reponse
@@ -7005,9 +7084,10 @@ attendu en mode réel. En mode debug, le sanity check imprime un
 rapport `Goodhart#1: detected, ratio=0.43` qui confirme la
 sensibilité du détecteur.
 ",,,,,,,,8b231f6e7cfac3d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,19a48177,markdown,fr,79e505c47f0d7965,"## 7. Configuration GRPO pour RLVR sur Qwen3.5-0.8B
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,19a48177,markdown,fr,76932bb7eb369da2,"## 7. Configuration GRPO pour RLVR sur Qwen3.5-0.8B
 
-**Paramètres clés** (calibres sur RTX 3070, 8.59 Go VRAM, correction #10603) :
+**Paramètres clés** (calibrés pour une carte de 8 Go — la RTX 3070 visée à la conception ; le
+total VRAM de la machine qui exécute est mesuré dans la cellule de training, correction #10603) :
 - **num_generations = 8** : group size G=8 = la valeur par defaut TRL. A G=2, ~30 %
   des groupes sont homogenes (std reward == 0) => avantage GRPO nul => gradient
   nul (~30 steps sur 100 seulement portaient du signal, mesure p=0.1819). A G=8,
@@ -7048,8 +7128,8 @@ n'a pas le risque de catastrophic forgetting que DPO combat avec `β`.
 **Branchement avec #10603** : num_generations = 8 fait suite à la
 discussion Phase 4 #10603 qui établit G=8 comme optimum empirique
 pour 0.5-1.5B (G=4 sous-apprend, G=16 dilue le gradient).
-",,,,,,,,79e505c47f0d7965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,070d7f0d,markdown,fr,04f502cd3f0c334d,"## 8. Chargement modèle Qwen3.5-0.8B + QLoRA 4-bit
+",,,,,,,,76932bb7eb369da2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,070d7f0d,markdown,fr,75ecf3b1c33e56bb,"## 8. Chargement modèle Qwen3.5-0.8B + QLoRA 4-bit
 
 **Chargement en 4-bit** (NF4 + double quant + bf16 compute) : **0,77 Go** de VRAM
 mesurée après chargement (sortie de la cellule de chargement, qui imprime
@@ -7063,7 +7143,9 @@ mesurée après chargement (sortie de la cellule de chargement, qui imprime
   `~/models/qwen35-0.8b`)
 - **Quantization** : QLoRA 4-bit (bitsandbytes, NF4)
 - **Adaptateur LoRA** : r=8, alpha=16, target_modules=q/k/v/o/gate/up/down_proj
-- **VRAM après load** : 0.77 GB / 8.59 GB sur RTX 3070 8GB
+- **VRAM après load** : 0,77 Go alloués sur les **25,77 Go mesurés** de la
+  RTX 3090 du run committé (**3,0 %**) — l'allocation ne dépend pas de la
+  capacité de la carte, seule la lecture du ratio en dépend
 
 **Pourquoi QLoRA 4-bit** : permet de fine-tuner un modèle 0.8B en
 < 1 GB VRAM après quantization, contre ~3 GB en bf16. Le ratio
@@ -7074,8 +7156,8 @@ capacité de nombreux laptops.
 **License Apache 2.0** : Qwen3.5-0.8B est utilisable commercialement
 sans restriction majeure — voir le README HuggingFace pour les
 détails.
-",,,,,,,,04f502cd3f0c334d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,4c8095ec,markdown,fr,99b8748ac1228818,"## 9. Training RLVR reel (≥100 steps)
+",,,,,,,,75ecf3b1c33e56bb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,4c8095ec,markdown,fr,424d22f86171f2fb,"## 9. Training RLVR reel (≥100 steps)
 
 **C'est le coeur du notebook** : GRPOTrainer avec reward verifiable wrap par rewardspy.watch.
 **Trace post-training** : loss, reward moyenne, KL divergence par step, temps par step.
@@ -7097,18 +7179,21 @@ trainer = GRPOTrainer(
 trainer.train()
 ```
 
-**Coût mesuré** : **~30 minutes** pour 100 steps sur RTX 3070 8GB, VRAM
-pic **~3.94 Go** (wallclock `1799.7 s`, mesuré sur origin/main).
+**Coût mesuré** : **18,0 minutes** pour 100 steps sur la machine du run
+committé (NVIDIA GeForce RTX 3090, 25,77 Go de VRAM totale mesurés),
+pic d'allocation **2,05 Go = 8,0 %** de ce total (wallclock `1078.6 s`).
 C'est l'ordre de grandeur pratique : on peut itérer sur les
 hyperparamètres (β, G, lr) sans que le coût de chaque run soit
-prohibitif.
+prohibitif. Le pic d'allocation est la grandeur qui dimensionne le
+besoin matériel ; le pourcentage, lui, n'a de sens que rapporté au
+total de la carte qui a mesuré.
 
 **Trace des outputs** :
 - Cellule #25 : log du training (per-step reward, KL, loss)
 - Cellule #27 : courbe matplotlib de la reward (PNG sauvegardé)
 - Cellule #29 : évaluation pre/post training
 - Cellule #31 : verdict honnête avec Goodhart detection
-",,,,,,,,99b8748ac1228818,,,,,,,,,,,,,,,
+",,,,,,,,424d22f86171f2fb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,732ac0fd,markdown,fr,b770c745e184ec69,"## 10. Courbe de reward reelle
 
 Trace matplotlib de la reward moyenne par groupe au fil des steps. **Veritable reception** :
@@ -7169,7 +7254,7 @@ conclure sérieusement, il faut un held-out set de ≥ 50 exemples
 + SAE pour l'interprétabilité, et c'est là que la mesure devient
 significative.
 ",,,,,,,,98fbda3dc9f5711d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,2a158c23,markdown,fr,12df4b42b03a348a,"## 12. Verdict honnête — bilan mesurable + signal Goodhart
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,2a158c23,markdown,fr,813ac4642c6fe00f,"## 12. Verdict honnête — bilan mesurable + signal Goodhart
 
 **Acceptance #10289** : verdict **honnête** sur la convergence (standard: PT-03 « DPO n'a pas
 convergé »). Pas de claim embryonnaire. Les 5 critères vérifiés :
@@ -7178,7 +7263,8 @@ convergé »). Pas de claim embryonnaire. Les 5 critères vérifiés :
 2. **Outputs C.2** : courbe de reward réelle ≥ 100 steps, `execution_count != null`. ✓ (issu trainer).
 3. **Rewardspy ONLINE** : au moins 1 signal Goodhart OU documentation honnête du seuil. ✓ (test sanity OK).
 4. **Verdict honnête** : publie l'accuracy atteinte, sans embellir. ✓ (présenté ci-dessous).
-5. **Machine + GPU nommés** : RTX 3070, 8.59 Go, mem peak observé. ✓ (voir tableau).
+5. **Machine + GPU nommés** : NVIDIA GeForce RTX 3090 — 25,77 Go de VRAM totale mesurés
+   dans le run — et le pic d'allocation rapporté à ce total : 2,05 Go (8,0 %). ✓ (voir tableau).
 
 La cellule #15 (exécution du run committé) imprime le **verdict final structuré**, recopié tel quel :
 
@@ -7186,38 +7272,48 @@ La cellule #15 (exécution du run committé) imprime le **verdict final structur
 ======================================================================
  VERDICT PT-11 — RLVR sur Qwen3.5-0.8B (G=8, #10603)
 ======================================================================
-Seed : 0
-Wallclock training : 1799.7 s (30.0 min)
-VRAM peak : 3.94 Go / 8.59 Go (45.9%)
-Loss finale : 0.0005
-Alertes rewardspy : 0
+Seed : 42
+Machine : NVIDIA GeForce RTX 3090 (25.77 Go VRAM total mesure)
+Wallclock training : 1078.6 s (18.0 min)
+VRAM peak : 2.05 Go / 25.77 Go (8.0%)
+Loss finale : 0.0002
+Alertes rewardspy accumulees pendant le training (callback, hors sanity check) : 0
 Groupes informatifs (std>0) : moyenne 36.0% (mediane 0.0%) sur 100 steps
 Steps porteurs de gradient : 36/100 (36.0%)
 Verdict #10603 : MECANISME_REPRO (fraction informative 36.0%; premisse ~80% refutee — cf #10626: 36.6%, correlation intra-groupe)
 
-Accuracy post-training sur 5 exemples : 40.00%
+Accuracy post-training sur 5 exemples : 60.00%
 Verdict accuracy : INCONCLUSIVE (pas de baseline pre — eval post-training uniquement)
 ======================================================================
 FIN VERDICT
 ======================================================================
 ```
 
+**Ce que le total VRAM mesure, et ce qu'il ne mesure pas** : le dénominateur du
+ratio est lu sur le périphérique (`torch.cuda.get_device_properties`) dans la même
+cellule que le numérateur, si bien qu'un lecteur ne peut plus lire un pourcentage
+sans savoir sur quelle carte il porte — le total est imprimé à côté. Le numérateur,
+lui, est le **pic d'allocation du processus** (`max_memory_allocated`), pas la
+consommation de la machine : c'est la grandeur qui dit si le run tient sur une autre
+carte, indépendamment de sa capacité.
+
 **Mesuré vs absent** — l'ancienne rédaction de cette cellule affichait un verdict détaché du run — KL drift, pre-training accuracy, post-training accuracy et signaux Goodhart détaillés — aucune de ces valeurs n'étant produite par les cellules exécutées. Le bilan est maintenant branché sur les mesures réelles :
 
-- **Mesuré** : post-training accuracy **40.00 %** sur 5 exemples ; fraction de groupes informatifs **36.0 %** (la prémisse ~80 % de #10603 est réfutée, cf #10626 : 36.6 %, correlation intra-groupe) ; loss finale 0.0005 ; **0 alerte rewardspy** ; VRAM peak 45.9 % ; 36/100 steps porteurs de gradient.
+- **Mesuré** : post-training accuracy **60.00 %** sur 5 exemples ; fraction de groupes informatifs **36.0 %** (la prémisse ~80 % de #10603 est réfutée, cf #10626 : 36.6 %, correlation intra-groupe) ; loss finale 0.0002 ; **0 alerte rewardspy** sur la session de training ; pic d'allocation VRAM **2,05 Go = 8,0 %** des 25,77 Go mesurés ; 36/100 steps porteurs de gradient.
 - **Absent du run** : **pas de pre-training accuracy** — aucune baseline pre n'a été évaluée (le verdict le dit lui-même : « pas de baseline pre — eval post-training uniquement ») ; **pas de KL drift calculé** — `beta = 0.0` (DAPO) : le KL n'entre pas dans la loss, il n'est ni mesuré ni ciblé ; **pas de signaux Goodhart détaillés** — `proxy_dead` / `mode_collapse` / `variance_collapse` ne sont pas imprimés par ce run (0 alerte rewardspy = le détecteur n'a rien signalé, pas une preuve d'absence de Goodhart).
 
 **Lecture critique** : le verdict **ne conclut jamais ""BEATS"" ou
 ""DON'T BEATS""** — il conclut **MECANISME_REPRO** : le pipeline
 GRPO + reward vérifiable fonctionne de bout en bout, et la fraction
 informative mesurée (36 %) remplace la prémisse ~80 % de #10603.
-L'accuracy post-training seule (40 % sur 5 exemples, sans baseline pre)
+L'accuracy post-training seule (60 % sur 5 exemples, sans baseline pre)
 ne permet **aucune** conclusion de capacité — le verdict l'étiquette
-lui-même INCONCLUSIVE.
+lui-même INCONCLUSIVE, et 5 exemples ne font pas une mesure de capacité.
 
 **Pour conclure sur la capacité** : il faut une pre-eval sur le même set,
 4+ seeds × 100 steps + held-out set ≥ 50 exemples, comme dans PT-11d (cf. #10317). C'est le
-**next-step** évident pour passer de POC à résultat publiable.",,,,,,,,12df4b42b03a348a,,,,,,,,,,,,,,,
+**next-step** évident pour passer de POC à résultat publiable.
+",,,,,,,,813ac4642c6fe00f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,35f2d754,markdown,fr,33b881d90a88475d,"### Exercice 3 : comparer GRPO heuristique vs RLVR sur un même dataset
 
 Le **verdict honnête** de la cellule #15 reste **MECANISME_REPRO**
@@ -7241,12 +7337,12 @@ et la longueur, puis comparer visuellement les courbes de reward.
 - **Étape 2 :** comparer en lançant 2 trainings de 50 steps et en plotant les 2 courbes
 - **Indice :** le reward heuristique est BROUILLARD, le reward verificateur est EXACT — la différence est pédagogique
 ",,,,,,,,33b881d90a88475d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,029fa02d,markdown,fr,1f6821831a4ba3b6,"***
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,029fa02d,markdown,fr,1bcc13d317f3a596,"***
 
 ## Bilan — RLVR sur vrai LLM : de la promesse théorique au pipeline executable
 
 PT-11b transpose le **patron PT-05** (RLVR pedagogique) sur un **vrai LLM SOTA** (Qwen3.5-0.8B)
-execute **réellement** sur RTX 3070, avec :
+execute **réellement** sur GPU (NVIDIA GeForce RTX 3090 pour le run committé), avec :
 
 1. **Verifier Tier 1 (SymPy)** — outcome reward exact, zero bruit
 2. **Verifier Tier 2 (Z3)** — extension logique/combinatoire (N-queens)
@@ -7256,7 +7352,9 @@ execute **réellement** sur RTX 3070, avec :
 
 **Position dans le track GenAI/PostTraining** : PT-11b est le **chainon manquant** entre
 PT-08/09/10 (toy env from-scratch, pedagogique) et PT-12 (futur, 2B + SAE — lane ai-01 GPU 2).
-Il valide que le pipeline RLVR reel tient sur hardware 8 Go et produit un signal detectable.
+Il valide que le pipeline RLVR reel produit un signal detectable pour un pic d'allocation de
+**2,05 Go**, donc a la portee d'une carte de 8 Go — la carte du run committé est plus grande,
+mais ce n'est pas elle qui rend le run possible.
 
 **Limites assumées** :
 - 10 problemes GSM8K = insuffisant pour multi-seed >= 4 (cf G.2, règle hard ML)
@@ -7272,7 +7370,9 @@ Il valide que le pipeline RLVR reel tient sur hardware 8 Go et produit un signal
 
 Ce notebook a transformé la promesse RLVR (DeepSeek-Math
 arXiv:2402.03300) en une boucle **reproductible de bout en bout**
-sur matériel modeste (RTX 3070 8GB). Trois observations honnêtes :
+sur du matériel qui n'exige pas une carte de datacenter (pic
+d'allocation 2,05 Go, soit 8,0 % des 25,77 Go mesurés sur la RTX 3090
+du run). Trois observations honnêtes :
 
 1. **La mécanique tient** : GRPO + QLoRA + reward vérifiable
    SynPy/Z3 + détecteur rewardspy.watch ONLINE fonctionnent. Le
@@ -7298,7 +7398,7 @@ sur matériel modeste (RTX 3070 8GB). Trois observations honnêtes :
 **Note prospective** : la prochaine itération (PT-13 ?) devrait
 inclure un **held-out set externe** (MATH, GSM8K test split) pour
 transformer la POC en résultat publiable.
-",,,,,,,,1f6821831a4ba3b6,,,,,,,,,,,,,,,
+",,,,,,,,1bcc13d317f3a596,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,0ef325de,markdown,fr,85c16ef1d70c5ec4,"## 13. Transition vers PT-12 — Sparse Autoencoder + 2B post-entraine
 
 PT-12 (futur, lane ai-01 GPU 2) transpose le pipeline PT-11b sur un modèle 2B post-entraine
@@ -7323,7 +7423,11 @@ C'est le **pont vers l'interprétabilité mécaniste** (Anthropic
 triplet (verifier + détecteur + SAE) forme une **stack
 d'évaluation RLVR complète**.
 ",,,,,,,,85c16ef1d70c5ec4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb,e02ac28f,markdown,fr,03612dd7c729f346,"# PT-11d — RLVR multi-seed sur Qwen3.5-0.8B
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb,e02ac28f,markdown,fr,b6cffc5a218594fa,"[← PT-11c RLVR sur Qwen3-1.7B/2B](PT_11c_grpo_qwen17_rlvr.ipynb) | [↑ PostTraining](README.md) | [PT-12 Crédit différé multi-step →](PT_12_multistep_delayed_credit.ipynb)
+
+***
+
+# PT-11d — RLVR multi-seed sur Qwen3.5-0.8B
 
 **Contrat initial** : 4 seeds × 100 steps (corps #5105 ICT-25 InoculationRL, mandat user 2026-07-03).
 **Exécution effective commited** : 2 seeds × 20 steps (seeds [0, 42]) sur RTX 3070 8GB — budget GPU compatible mono-GPU laptop (cf. cell 1 §1.1 pour la justification). Le carnet documente explicitement le compromis ; la run 4 seeds × 100 steps est l'objectif de **PT-12** (GPU adequat, RTX 4090 ou A100).
@@ -7358,7 +7462,7 @@ model). Modification : la cellule de training devient une boucle sur
 symetriques et rendent des `dm_stat` bit-identiques pour `e` et `-e`).
 L'intra-seed DM (premier 20% vs dernier 20% de steps par seed) est ajoute
 comme decideur — le DM-vs-null baseline reste affiche comme info secondaire.
-",,,,,,,,03612dd7c729f346,,,,,,,,,,,,,,,
+",,,,,,,,b6cffc5a218594fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb,49607ee2,markdown,fr,cd554237816b0c62,"## 1. Env probe — GPU, libs, versions
 
 
@@ -9019,3 +9123,27 @@ Ce toy mesure le critic **à 8 713 paramètres** ; les étages réels de la sér
 - [PT-11a — GRPO réel sur Qwen3.5-0.8B](PT_11a_grpo_qwen35_rlvr.ipynb) : la boucle complète **exécutée** — QLoRA 4-bit (540 672 paramètres entraînables sur 752 933 696), reward Z3, 800 récompenses, moyenne globale 0.1263, max 1.0000.
 
 Précision d'honnêteté sur le bilan du §9 : le « banc valide PT-12 » y est le banc multi-step **toy** de la série (torch + z3, from-scratch) — valide parmi les toys, pas un étage LLM. Aucun notebook de la série n'exécute encore GAE sur un LLM réel : le verdict « aucun gain significatif détecté à 1-step » reste un verdict de toy, et le surcoût du critic à l'échelle LLM (ce que DeepSeek R1 a arbitré) n'est pas mesuré ici.",,,,,,,,526a280a845e31e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb,80db75ca,markdown,fr,cfdaf0271bdc7667,"### Lecture du résultat : la vérification Z3
+
+La cellule précédente imprime `succès terminaux vérifiés par Z3 : 100/100 (accord fast-path : 100/100)`. Deux conclusions s'en tirent.
+
+1. **L'accord fast-path / Z3 est total.** Les 100 problèmes passent par les deux vérificateurs, et le `assert ok_fast == ok_z3` de la cellule n'a jamais levé : l'égalité `sum(seq) == k` ne diverge pas de la satisfaction de la contrainte `s² + a == b` (Z3) sur 100 cas sur 100. Le taux affiché par la politique est donc un taux **vérifié par le solveur**, pas un artefact d'un oracle de substitution.
+2. **Les 100 rolls sont neufs.** Les problèmes sont tirés après l'entraînement (`np.random.default_rng(2026)`) et chaque rollout reçoit un seed tiré à la volée : le 100/100 est un taux de réussite sur des trajectoires neuves, pas une restitution des séquences vues à l'entraînement.
+
+La promesse de la section précédente — « le taux vérifié par Z3 doit correspondre au taux annoncé par le fast-path » — est donc tenue : l'accord est exact, 100/100 de part et d'autre.
+
+**Portée.** 100 problèmes tirés dans un toy env ne valent pas preuve de généralisation : ce contrôle établit la **cohérence des deux vérificateurs** et la validité du taux affiché, pas la robustesse de la politique sur une distribution large.",,,,,,,,cfdaf0271bdc7667,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,74078250,markdown,fr,8583521ff84d5f3b,"Note de provenance : le carnet a été migré de Qwen2.5-0.5B-Instruct vers Qwen3.5-0.8B dans le cadre de l’issue [#10289](https://github.com/jsboige/CoursIA/issues/10289), afin de sortir la série du toy-env. Le run conservé dans le carnet comporte les outputs réels du modèle Qwen3.5-0.8B.
+",,,,,,,,8583521ff84d5f3b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,e5fd3b38,markdown,fr,f7a5269bcd7e7f79,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742), sous-issue [#1756](https://github.com/jsboige/CoursIA/issues/1756).
+",,,,,,,,f7a5269bcd7e7f79,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2f94645c,markdown,fr,b8da8d3540ceff36,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742), sous-issue [#1757](https://github.com/jsboige/CoursIA/issues/1757) ; il en constitue un livrable clé.
+",,,,,,,,b8da8d3540ceff36,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,698852ae,markdown,fr,2cb2ddb5f05ff9f0,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742).
+",,,,,,,,2cb2ddb5f05ff9f0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,19161b60,markdown,fr,87eca03ad23d8cf8,"## Références et provenance
+
+Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742) ; il en constitue le dernier livrable.
+",,,,,,,,87eca03ad23d8cf8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,1f3609a5,markdown,fr,a02e1a78116c7102,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742) ; le volet PT-11 constitue le sous-axe RLVR. Il se rattache également à l’issue [#10289](https://github.com/jsboige/CoursIA/issues/10289).
+",,,,,,,,a02e1a78116c7102,,,,,,,,,,,,,,,
