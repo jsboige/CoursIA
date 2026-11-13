@@ -195,7 +195,7 @@ insatisfiable, respect des indices), sans réseau ni service.
 du répertoire courant, cœur absent ou cassé refusé avant démarrage, `--check-only`
 qui sort 0 sur le dossier livré et 2 sur un dossier vide, et le carnet servi qui
 est bien le carnet phare).
-`test_flagship_endpoint.py` : 12 tests de la cellule d'endpoint du carnet servi
+`test_flagship_endpoint.py` : 11 tests de la cellule d'endpoint du carnet servi
 (structure — une seule annotation HTTP, placée avant le récapitulatif — et
 comportement dans les quatre formes de `REQUEST` que la gateway injecte, plus
 l'entrée invalide et le cœur indisponible), sans réseau ni service.
