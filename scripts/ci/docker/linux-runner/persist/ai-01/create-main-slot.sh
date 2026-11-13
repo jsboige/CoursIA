@@ -23,22 +23,60 @@
 #   3. ne supprime JAMAIS un slot, et ne touche JAMAIS un slot occupe ;
 #   4. est idempotent : un slot deja present est signale, pas recree.
 #
+# LE DAEMON VISE ET LE STOCKAGE (mesures du 13/11 sur ai-01)
+# -----------------------------------------------------------
+# Le script ne parle PAS au daemon du contexte par defaut : il vise
+# explicitement le daemon du pool de runners, `unix:///var/run/docker-ce.sock`
+# (l'epinglage du lanceur `/usr/local/bin/coursia-runner-start.sh`, l. 67).
+# Un `--apply` lance sans `DOCKER_HOST` visait l'AUTRE daemon -- celui-la ne
+# porte pas l'image du pool, et l'echec etait muet : le slot n'etait pas cree,
+# sans dire pourquoi. Le `DOCKER_HOST` ambiant est desormais **ignore** (il
+# est affiche, pas applique) ; seul `COURSIA_MAIN_DOCKER_HOST` change la
+# cible.
+#
+# Le stockage par defaut est le meme que celui du pool : des VOLUMES NOMMES
+# (`coursia-main-work-<slot>`, `coursia-main-config-<slot>`, et le
+# `coursia-runner-toolcache` partage). Le prefixe de volume est DISTINCT de
+# celui du pool (`coursia-runner-work-1` est deja porte par le slot
+# `myia-ai-01-wsl-1`) : un volume partage entre un slot du pool et le slot
+# reserve serait une collision silencieuse.
+#
+# Le mode `bind` reste disponible (`COURSIA_MAIN_STORAGE=bind`) pour les
+# machines ou un volume nomme ne convient pas ; il ne depend alors PAS de
+# `$HOME` : la base est un chemin ABSOLU (`/var/lib/coursia-runners-main`).
+# Mesure du 13/11 : l'ancien script derivait la base de `$HOME`, donc un
+# `--apply` et un `--check` faits par deux operateurs differents ne
+# parlaient pas du meme slot.
+#
+# LE CONTROLE DES MONTAGES (`--check`)
+# ------------------------------------
+# Le `--check` verifie l'IDENTITE des trois montages du slot : le nom du
+# volume pour un volume nomme, le chemin absolu pour un bind mount. C'est la
+# derive la plus discrete de toutes : un slot peut tourner, labels et caps
+# conformes, et travailler pourtant dans un volume qui n'est pas celui de la
+# specification -- son toolcache n'est pas celui du pool. Comparer la
+# `Source` brute serait FAUX pour un volume : `docker inspect` y rend le
+# mountpoint du daemon, pas le nom du volume.
+#
 # LES TROIS MODES (rien n'est fait sans `--apply`)
 # --------------------------------------------------
 #   --dry-run (defaut) : affiche la commande `docker run` exacte. Aucun
-#                         conteneur n'est cree, aucun token n'est mint, et
-#                         docker n'est meme pas requis : ce mode est donc
-#                         verifiable partout (CI comprise).
+#                         conteneur n'est cree, aucun token n'est mint, aucun
+#                         repertoire n'est cree, et docker n'est meme pas
+#                         requis : ce mode est donc verifiable partout
+#                         (CI comprise).
 #   --check             : compare l'etat VIVANT (docker inspect) a la
 #                         specification ; sort en 1 sur derive (labels,
 #                         image, cgroup-parent, cap memoire, etat de
-#                         marche). C'est l'organe du critere "le slot
-#                         existe et il est vraiment reserve".
+#                         marche, identite des trois montages). C'est l'organe
+#                         du critere "le slot existe et il est vraiment
+#                         reserve".
 #   --apply             : cree le slot s'il est absent. Mint du registration
 #                         token via `gh` (GH_TOKEN fourni par l'environnement,
 #                         jamais en dur) ; le token est passe par
-#                         `--env-file` (fichier en mode 600, supprime apres
-#                         la creation) et non par `-e KEY=<valeur>`, qui
+#                         `--env-file` (fichier en mode 600 dans
+#                         `COURSIA_MAIN_TOKEN_DIR`, supprime apres la
+#                         creation) et non par `-e KEY=<valeur>`, qui
 #                         le lirait dans l'argv de `docker run`.
 #
 # LE REPLI ECRIT (quand le runner tombe)
@@ -98,9 +136,50 @@ CPUS="${COURSIA_MAIN_CPUS:-2}"
 IMAGE="${COURSIA_MAIN_IMAGE:-${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.338.0}}"
 LABELS="${COURSIA_MAIN_LABELS:-self-hosted,coursia-main,coursia-linux}"
 CGROUP_PARENT="${COURSIA_CGROUP_PARENT:-coursia-ci.slice}"
-BASE="${COURSIA_MAIN_BASE:-$HOME/CoursIA-runners-main}"
 WORK_MOUNT="/home/runner/_work"
 TOOLCACHE_MOUNT="/opt/hostedtoolcache"
+
+# LE DAEMON EINGLE (mesure du 13/11 sur ai-01). Le pool de runners de cette
+# machine ne tourne PAS sur le daemon du contexte par defaut
+# (`unix:///var/run/docker.sock`) mais sur le socket Docker CE
+# (`unix:///var/run/docker-ce.sock`) : c'est l'epinglage du lanceur
+# `/usr/local/bin/coursia-runner-start.sh` (l. 67), et sur po-2028 le drop-in
+# `coursia-socket.conf` fait le meme. Sans cet epinglage, un `--apply` lance
+# sans `DOCKER_HOST` dans l'environnement visait l'AUTRE daemon -- celui-la ne
+# porte pas l'image du pool (`error from registry: denied`), et l'echec etait
+# muet : le slot n'etait pas cree, sans dire pourquoi. Le `DOCKER_HOST`
+# ambiant est donc **ignore** (il est affiche, pas applique) : seul
+# `COURSIA_MAIN_DOCKER_HOST` change la cible.
+DOCKER_HOST_AMBIENT="${DOCKER_HOST:-}"
+DOCKER_HOST="${COURSIA_MAIN_DOCKER_HOST:-unix:///var/run/docker-ce.sock}"
+export DOCKER_HOST
+
+# LE STOCKAGE. Deux formes, la forme du POOL par defaut :
+#
+#   volume (defaut) : des VOLUMES NOMMES, comme les slots du pool. Mesure du
+#                     13/11 : `docker inspect myia-ai-01-wsl-2` ->
+#                     `coursia-runner-work-2` et `coursia-runner-toolcache`.
+#                     Le slot reserve, lui, montait des BIND MOUNTS sous
+#                     `$HOME/CoursIA-runners-main` (mesure :
+#                     `/home/jesse/CoursIA-runners-main/...`) -- un chemin qui
+#                     depend de QUI lance le script : un `--apply` et un
+#                     `--check` faits par deux operateurs differents ne
+#                     parlaient pas du meme slot. Le prefixe de volume est
+#                     DISTINCT de celui du pool (`coursia-runner-work-1` est
+#                     deja pris par le slot `myia-ai-01-wsl-1`).
+#   bind            : des bind mounts, sur un chemin ABSOLU, choisi par
+#                     `COURSIA_MAIN_BASE`. Ce mode existe pour les machines
+#                     ou un volume nomme ne convient pas ; il ne doit pas
+#                     dependre de `$HOME`.
+STORAGE="${COURSIA_MAIN_STORAGE:-volume}"
+VOLUME_PREFIX="${COURSIA_MAIN_VOLUME_PREFIX:-coursia-main}"
+TOOLCACHE_VOLUME="${COURSIA_MAIN_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
+BASE="${COURSIA_MAIN_BASE:-/var/lib/coursia-runners-main}"
+# Le repertoire du FICHIER DE TOKEN : il n'existe que le temps de la
+# creation, et il est supprime a la sortie (filet). Il ne depend pas de
+# `$HOME` : le fichier doit etre lisible par le daemon vise, quel que soit
+# l'operateur.
+TOKEN_DIR="${COURSIA_MAIN_TOKEN_DIR:-${TMPDIR:-/tmp}}"
 
 # Le token d'enregistrement est passe par `--env-file`, et non par
 # `-e ACTIONS_RUNNER_INPUT_TOKEN=<valeur>` : un `-e` porte la VALEUR dans
@@ -171,31 +250,45 @@ fi
 
 slot_name() { printf '%s-%s' "$PREFIX" "$SLOT"; }
 
+# Les deux volumes NOMMES du slot reserve. Le prefixe est distinct de celui
+# du pool (`coursia-runner-work-N`) : `coursia-runner-work-1` est deja porte
+# par le slot `myia-ai-01-wsl-1` (mesure du 13/11), et un volume partage
+# entre un slot du pool et le slot reserve serait une collision silencieuse.
+work_volume() { printf '%s-work-%s' "$VOLUME_PREFIX" "$SLOT"; }
+config_volume() { printf '%s-config-%s' "$VOLUME_PREFIX" "$SLOT"; }
+
 # Commande de creation du slot. Le corps isole pour que `--dry-run` imprime
 # exactement la ligne executee en `--apply` (une seule source de verite) --
 # au fichier de token pres, qui n'existe qu'au moment de l'execution.
 run_cmd() {
-  local name slot_vol cfg_vol
+  local name m_tool m_work m_config
   name="$(slot_name)"
-  slot_vol="${BASE}/${name}-work"
-  cfg_vol="${BASE}/${name}-config"
+  if [ "$STORAGE" = "bind" ]; then
+    m_tool="${BASE}/toolcache:${TOOLCACHE_MOUNT}"
+    m_work="${BASE}/${name}-work:${WORK_MOUNT}"
+    m_config="${BASE}/${name}-config:/home/runner/.runner"
+  else
+    m_tool="${TOOLCACHE_VOLUME}:${TOOLCACHE_MOUNT}"
+    m_work="$(work_volume):${WORK_MOUNT}"
+    m_config="$(config_volume):/home/runner/.runner"
+  fi
 
-  cat <<EOF
-docker run -d --name ${name} \\
-  --cpus=${CPUS} --memory=${MEMORY} --pids-limit=${PIDS} \\
-  --label coursia-ci=1 --label coursia-family=main \\
-  ${CGROUP_PARENT:+--cgroup-parent=${CGROUP_PARENT}} \\
-  --security-opt=no-new-privileges \\
-  -v ${TOOLCACHE_MOUNT}:${TOOLCACHE_MOUNT} \\
-  -v ${slot_vol}:${WORK_MOUNT} \\
-  -v ${cfg_vol}:/home/runner/.runner \\
-  -e RUNNER_MODE=persistent \\
-  --env-file ${TOKEN_FILE_PLACEHOLDER} \\
-  -e ACTIONS_RUNNER_INPUT_URL=https://github.com/${REPO} \\
-  -e ACTIONS_RUNNER_INPUT_NAME=${name} \\
-  -e ACTIONS_RUNNER_INPUT_LABELS=${LABELS} \\
-  ${IMAGE}
-EOF
+  printf '%s\n' "docker run -d --name ${name} \\"
+  printf '%s\n' "  --cpus=${CPUS} --memory=${MEMORY} --pids-limit=${PIDS} \\"
+  printf '%s\n' "  --label coursia-ci=1 --label coursia-family=main \\"
+  if [ -n "$CGROUP_PARENT" ]; then
+    printf '%s\n' "  --cgroup-parent=${CGROUP_PARENT} \\"
+  fi
+  printf '%s\n' "  --security-opt=no-new-privileges \\"
+  printf '%s\n' "  -v ${m_tool} \\"
+  printf '%s\n' "  -v ${m_work} \\"
+  printf '%s\n' "  -v ${m_config} \\"
+  printf '%s\n' "  -e RUNNER_MODE=persistent \\"
+  printf '%s\n' "  --env-file ${TOKEN_FILE_PLACEHOLDER} \\"
+  printf '%s\n' "  -e ACTIONS_RUNNER_INPUT_URL=https://github.com/${REPO} \\"
+  printf '%s\n' "  -e ACTIONS_RUNNER_INPUT_NAME=${name} \\"
+  printf '%s\n' "  -e ACTIONS_RUNNER_INPUT_LABELS=${LABELS} \\"
+  printf '%s\n' "  ${IMAGE}"
 }
 
 # --- etat vivant du slot ---------------------------------------------------
@@ -224,12 +317,33 @@ expected_nano_cpus() {
   printf '%s' "$(( $1 * 1000000000 ))"
 }
 
+# Les identites de montage ATTENDUES, une par destination. Pour un volume
+# nomme, l'identite est le NOM du volume ; pour un bind mount, c'est le
+# chemin absolu. On compare donc l'identite, pas la source brute : pour un
+# volume, `docker inspect` donne un `Source` qui est le mountpoint du
+# daemon, pas le nom du volume.
+expected_mount_ids() {
+  local name
+  name="$(slot_name)"
+  if [ "$STORAGE" = "bind" ]; then
+    printf '%s\n' "${BASE}/toolcache" "${BASE}/${name}-work" "${BASE}/${name}-config"
+  else
+    printf '%s\n' "${TOOLCACHE_VOLUME}" "$(work_volume)" "$(config_volume)"
+  fi
+}
+
 # --- mode --check : derive entre l'etat vivant et la specification ---------
 mode_check() {
   local rc=0 name state mem pids nano running want_mem want_nano
+  local mounts i attendu mesure destination
   want_mem="$(expected_memory_bytes "$MEMORY")"
   want_nano="$(expected_nano_cpus "$CPUS")" || return 2
   log "Specification : slot=$(slot_name) cpus=${CPUS} memory=${MEMORY} pids=${PIDS} labels=${LABELS}"
+  log "Daemon vise : ${DOCKER_HOST}"
+  if [ -n "$DOCKER_HOST_AMBIENT" ] && [ "$DOCKER_HOST_AMBIENT" != "$DOCKER_HOST" ]; then
+    log "  (DOCKER_HOST ambiant '${DOCKER_HOST_AMBIENT}' IGNORE : le slot vise le daemon du pool)"
+  fi
+  log "Stockage : ${STORAGE}"
   log ""
   name="$(slot_name)"
   state="$(slot_state)"
@@ -284,6 +398,33 @@ mode_check() {
       log "  DERIVE : cgroup-parent attendu '${CGROUP_PARENT}', mesure '${cgroup}'"
       rc=1
     fi
+    # Les MONTAGES. C'est la derive la plus discrete de toutes : le slot
+    # peut tourner,(labels conformes, image conforme, caps conformes) et
+    # pourtant travailler dans un volume qui n'est pas celui de la
+    # specification -- son toolcache partage n'est pas celui du pool, son
+    # espace de travail n'est pas celui du slot. Mesure du 13/11 : le slot
+    # reserve montait `/home/jesse/CoursIA-runners-main/...` (bind, chemin
+    # dependent de l'operateur) alors que le pool monte des volumes NOMMES
+    # ; le `--check` d'alors ne le voyait pas.
+    #
+    # On compare l'IDENTITE du montage : le NOM du volume pour un volume
+    # nomme, le chemin absolu pour un bind mount. Comparer la `Source`
+    # brute serait faux pour un volume : `docker inspect` y rend le
+    # mountpoint du daemon, pas le nom du volume.
+    mounts="$(docker inspect --format '{{range .Mounts}}{{.Type}}|{{.Name}}|{{.Source}}|{{.Destination}}{{println}}{{end}}' "$name" 2>/dev/null)"
+    i=1
+    for destination in "${TOOLCACHE_MOUNT}" "${WORK_MOUNT}" "/home/runner/.runner"; do
+      attendu="$(expected_mount_ids | sed -n "${i}p")"
+      mesure="$(printf '%s\n' "$mounts" | awk -F'|' -v d="$destination" '$4 == d { if ($1 == "volume") print $2; else print $3; exit }')"
+      if [ -z "$mesure" ]; then
+        log "  DERIVE : montage '${destination}' ABSENT (attendu '${attendu}')"
+        rc=1
+      elif [ "$mesure" != "$attendu" ]; then
+        log "  DERIVE : montage '${destination}' attendu '${attendu}', mesure '${mesure}'"
+        rc=1
+      fi
+      i=$((i + 1))
+    done
   fi
   log ""
   if [ "$rc" -eq 0 ]; then
@@ -308,6 +449,17 @@ mode_create() {
   local name state token token_file created=0 skipped=0
   name="$(slot_name)"
 
+  # Le daemon vise et le mode de stockage sont affiches AVANT toute
+  # action : c'est la premiere question de l'operateur ("sur quel daemon ?,
+  # avec quel stockage ?"), et la reponse doit etre lisible dans le
+  # dry-run comme dans l'apply.
+  log "Daemon vise : ${DOCKER_HOST}"
+  if [ -n "$DOCKER_HOST_AMBIENT" ] && [ "$DOCKER_HOST_AMBIENT" != "$DOCKER_HOST" ]; then
+    log "  (DOCKER_HOST ambiant '${DOCKER_HOST_AMBIENT}' IGNORE : le slot vise le daemon du pool)"
+  fi
+  log "Stockage : ${STORAGE}"
+  log ""
+
   # L'etat du slot est lu AVANT tout mint. Si le slot existe deja, on ne
   # mint AUCUN token d'enregistrement : le secret n'atteint donc jamais
   # le disque. Constat du coordinateur (13/11) : le token etait mint et
@@ -329,10 +481,25 @@ mode_create() {
     # AUCUNE trace sur le disque : c'est ce qui le rend verifiable
     # partout, y compris la ou le dossier ne doit pas exister (mesure :
     # la suite de tests creeait le dossier).
-    mkdir -p "$BASE" || { err "impossible de creer ${BASE}"; exit 2; }
+    #
+    # En mode `volume` (defaut), AUCUN repertoire n'est cree : le slot
+    # monte des volumes NOMMES, que le daemon cree lui-meme. En mode
+    # `bind`, les trois repertoires sources sont crees -- un bind mount
+    # dont la source n'existe pas est cree par le daemon, en root, et
+    # le `--check` le mesurerait alors comme un montage a l'identite
+    # inattendue.
+    if [ "$STORAGE" = "bind" ]; then
+      mkdir -p "${BASE}/toolcache" "${BASE}/$(slot_name)-work" "${BASE}/$(slot_name)-config" \
+        || { err "impossible de creer les repertoires sous ${BASE}"; exit 2; }
+    fi
     token="$(mint_token)" || { err "abandon : pas de token d'enregistrement"; exit 3; }
-    token_file="$(mktemp "${BASE}/.token-registration.XXXXXX")" \
-      || { err "impossible de creer le fichier de token dans ${BASE}"; exit 3; }
+    # Le fichier de token vit dans `TOKEN_DIR` (par defaut `/tmp`), et NON
+    # dans `${BASE}` : `BASE` est le repertoire de STOCKAGE du slot, il ne
+    # doit pas contenir de secret, meme transitoire. Il est supprime a la
+    # sortie, mais un `kill -9` entre la creation et la suppression
+    # laisserait un jeton d'enregistrement valide en clair sur le disque.
+    token_file="$(mktemp "${TOKEN_DIR%/}/.token-registration.XXXXXX")" \
+      || { err "impossible de creer le fichier de token dans ${TOKEN_DIR}"; exit 3; }
     chmod 600 "$token_file"
     printf 'ACTIONS_RUNNER_INPUT_TOKEN=%s\n' "$token" > "$token_file"
     TOKEN_FILE_PLACEHOLDER="$token_file"

@@ -132,16 +132,246 @@ def test_le_dry_run_ne_cree_aucun_repertoire(tmp_path, prefix_jetable):
     Le `mkdir` du repertoire de base est un geste d'`--apply` : un
     dry-run qui cree un dossier est un dry-run qui a des effets de bord
     (mesure : la suite de tests creeait `$HOME/CoursIA-runners-main`).
+
+    Le mode `bind` est force ici : c'est le SEUL mode ou un `mkdir` a
+    lieu en `--apply`, donc le seul ou un dry-run pourrait laisser une
+    trace. Le mode `volume` (defaut) ne cree aucun repertoire du tout.
     """
     base = tmp_path / "repertoire-de-base"
     assert not base.exists()
     proc = _run("--dry-run", env={
         "COURSIA_MAIN_PREFIX": prefix_jetable,
         "COURSIA_MAIN_BASE": str(base),
+        "COURSIA_MAIN_STORAGE": "bind",
     })
     assert proc.returncode == 0, proc.stderr
     assert not base.exists(), (
         f"le dry-run a cree {base} : le mkdir appartient a la branche --apply")
+
+
+def test_le_dry_run_cible_le_daemon_du_pool(prefix_jetable):
+    """Le slot reserve doit viser le daemon du POOL, pas celui du contexte.
+
+    Mesure (13/11, ai-01) : le pool tourne sur
+    `unix:///var/run/docker-ce.sock` (l'epinglage du lanceur
+    `/usr/local/bin/coursia-runner-start.sh`, l. 67). Un `--apply` sans
+    `DOCKER_HOST` visait l'AUTRE daemon -- celui-la ne porte pas l'image
+    du pool (`error from registry: denied`), et l'echec etait MUET : le
+    slot n'etait pas cree, sans dire pourquoi.
+    """
+    proc = _run("--dry-run", env={"COURSIA_MAIN_PREFIX": prefix_jetable})
+    assert proc.returncode == 0, proc.stderr
+    assert "unix:///var/run/docker-ce.sock" in proc.stdout, (
+        "le dry-run doit nommer le daemon vise : le slot doit tourner sur "
+        "le meme daemon que le pool")
+
+
+def test_le_dry_run_nomme_les_volumes_du_slot(prefix_jetable):
+    """Le slot reserve doit monter des VOLUMES NOMMES, comme le pool.
+
+    Mesure (13/11) : `docker inspect myia-ai-01-wsl-2` ->
+    `coursia-runner-work-2` et `coursia-runner-toolcache`. Le slot reserve
+    montait des bind mounts sous `$HOME/CoursIA-runners-main` : un chemin
+    qui depend de QUI lance le script, donc deux operateurs ne parlaient
+    pas du meme slot.
+
+    Le prefixe de volume est distinct de celui du pool :
+    `coursia-runner-work-1` est deja porte par le slot `myia-ai-01-wsl-1`,
+    et un volume partage entre le pool et le slot reserve serait une
+    collision silencieuse.
+    """
+    proc = _run("--dry-run", env={"COURSIA_MAIN_PREFIX": prefix_jetable})
+    assert proc.returncode == 0, proc.stderr
+    out = proc.stdout
+    assert "coursia-main-work-1" in out, (
+        "le slot reserve doit monter un volume de travail NOMME")
+    assert "coursia-main-config-1" in out, (
+        "le slot reserve doit monter un volume de configuration NOMME")
+    assert "coursia-runner-toolcache" in out, (
+        "le slot reserve doit monter le toolcache partage du pool")
+    assert "coursia-runner-work-1" not in out, (
+        "le prefixe de volume du slot reserve ne doit pas coller au prefixe "
+        "du pool : `coursia-runner-work-1` est deja porte par le slot "
+        "`myia-ai-01-wsl-1`")
+
+
+def test_le_dry_run_ne_porte_pas_de_chemin_dependent_de_home(prefix_jetable):
+    """Aucun chemin du slot ne doit dependre de `$HOME`.
+
+    C'etait la derive mesuree du 13/11 : le repertoire de base etait
+    `$HOME/CoursIA-runners-main`. Le chemin du slot ne doit dependre que
+    de la machine, jamais de l'operateur qui lance le script.
+    """
+    proc = _run("--dry-run", env={"COURSIA_MAIN_PREFIX": prefix_jetable})
+    assert proc.returncode == 0, proc.stderr
+    assert "/home/" not in proc.stdout.replace("/home/runner", ""), (
+        "le dry-run ne doit produire aucun chemin dependant de $HOME "
+        f"(hors les destinations intra-conteneur) :\n{proc.stdout}")
+
+
+def test_la_base_de_stockage_ne_depend_pas_de_home() -> None:
+    """La base par defaut doit etre un chemin ABSOLU, sans `$HOME`."""
+    texte = SCRIPT.read_text(encoding="utf-8")
+    correspondance = re.search(r'^BASE="\$\{COURSIA_MAIN_BASE:-([^}]+)\}"',
+                               texte, re.M)
+    assert correspondance, "la base de stockage n'est plus lisible"
+    valeur = correspondance.group(1)
+    assert valeur.startswith("/"), (
+        f"la base de stockage par defaut doit etre ABSOLUE : {valeur}")
+    assert "$HOME" not in valeur, (
+        f"la base de stockage par defaut ne doit pas dependre de $HOME : {valeur}")
+
+
+def test_le_daemon_est_epingle_par_le_script() -> None:
+    """Le `DOCKER_HOST` vise doit etre EXPORTE, pas seulement affecte.
+
+    Un `DOCKER_HOST` affecte sans `export` ne passe pas aux processus
+    enfants -- donc pas a `docker` : l'epinglage serait sans effet.
+    """
+    texte = SCRIPT.read_text(encoding="utf-8")
+    assert re.search(r'^DOCKER_HOST="\$\{COURSIA_MAIN_DOCKER_HOST:-',
+                      texte, re.M), (
+        "le script doit epingler le DOCKER_HOST vise")
+    assert re.search(r"^export DOCKER_HOST$", texte, re.M), (
+        "le DOCKER_HOST vise doit etre exporte : sans `export`, il ne "
+        "parvient pas a `docker`")
+
+
+def test_le_fichier_de_token_vit_hors_du_repertoire_de_stockage() -> None:
+    """Le token d'enregistrement ne doit pas etre ecrit dans la base.
+
+    La base est le repertoire de STOCKAGE du slot : elle ne doit pas
+    contenir de secret, meme transitoire. Le fichier vit dans
+    `COURSIA_MAIN_TOKEN_DIR` (`/tmp` par defaut) et il est supprime a la
+    sortie -- mais un `kill -9` entre la creation et la suppression
+    laisserait un jeton valide en clair sur le disque.
+    """
+    texte = SCRIPT.read_text(encoding="utf-8")
+    correspondance = re.search(r'token_file="\$\(mktemp "([^"]+)"\)', texte)
+    assert correspondance, "le fichier de token n'est plus lisible"
+    assert "TOKEN_DIR" in correspondance.group(1), (
+        f"le fichier de token doit etre cree dans TOKEN_DIR : "
+        f"{correspondance.group(1)}")
+    assert "BASE" not in correspondance.group(1), (
+        f"le fichier de token ne doit pas etre cree dans la base de "
+        f"stockage : {correspondance.group(1)}")
+
+
+def _faux_docker_conforme(tmp_path) -> Path:
+    """Un faux `docker` qui repond comme un slot CONFORME a la spec.
+
+    Le `--check` lit l'etat vivant par cinq `docker inspect` distincts
+    (c caps, env, image, cgroup-parent, montages). Ce faux binaire repond
+    a chacun, avec des montages NOMMES conformes a la specification.
+    """
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    docker = bin_dir / "docker"
+    docker.write_text(
+        "#!/bin/sh\n"
+        "fmt=\"$3\"\n"
+        "case \"$fmt\" in\n"
+        "  *NanoCpus*)\n"
+        "    printf '4294967296 512 2000000000 true\\n'\n"
+        "    ;;\n"
+        "  *Config.Env*)\n"
+        "    printf 'ACTIONS_RUNNER_INPUT_LABELS="
+        "self-hosted,coursia-main,coursia-linux\\n'\n"
+        "    ;;\n"
+        "  *Config.Image*)\n"
+        "    printf 'coursia-linux-runner:2.338.0\\n'\n"
+        "    ;;\n"
+        "  *CgroupParent*)\n"
+        "    printf 'coursia-ci.slice\\n'\n"
+        "    ;;\n"
+        "  *Mounts*)\n"
+        "    printf 'volume|coursia-runner-toolcache|/var/lib/docker/volumes/"
+        "tc/_data|/opt/hostedtoolcache\\n'\n"
+        "    printf 'volume|coursia-main-work-1|/var/lib/docker/volumes/w1/"
+        "_data|/home/runner/_work\\n'\n"
+        "    printf 'volume|coursia-main-config-1|/var/lib/docker/volumes/c1/"
+        "_data|/home/runner/.runner\\n'\n"
+        "    ;;\n"
+        "  *)\n"
+        "    printf 'CONTAINER\\n'\n"
+        "    ;;\n"
+        "esac\n"
+        "exit 0\n",
+        encoding="utf-8")
+    docker.chmod(0o755)
+    return bin_dir
+
+
+def test_le_check_accepte_un_slot_conforme(tmp_path, prefix_jetable):
+    """Un slot dont les MONTAGES sont conformes doit passer le `--check`.
+
+    Ce test ferme le trou que le `--check` d'avant laisait : il verifiait
+    les caps, les labels, l'image et le cgroup-parent, mais pas les
+    montages. Un slot pouvait donc tourner dans un volume qui n'etait pas
+    celui de la specification, et le `--check` le declarait conforme.
+    """
+    bin_dir = _faux_docker_conforme(tmp_path)
+    proc = _run("--check", env={
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+        "COURSIA_MAIN_PREFIX": prefix_jetable,
+    })
+    assert proc.returncode == 0, f"{proc.stdout}\n{proc.stderr}"
+    assert "OK" in proc.stdout, proc.stdout
+
+
+def test_le_check_refuse_un_slot_de_montage_derive(tmp_path, prefix_jetable):
+    """CONTROLE NEGATIF : des montages qui ne sont pas ceux de la spec
+    doivent etre signales comme une derive (fail-closed).
+
+    Le cas mesure (13/11) : le slot reserve montait
+    `/home/jesse/CoursIA-runners-main/...` (bind, chemin dependent de
+    l'operateur) au lieu des volumes nommes du pool.
+    """
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir(parents=True, exist_ok=True)
+    docker = bin_dir / "docker"
+    docker.write_text(
+        "#!/bin/sh\n"
+        "fmt=\"$3\"\n"
+        "case \"$fmt\" in\n"
+        "  *NanoCpus*)\n"
+        "    printf '4294967296 512 2000000000 true\\n'\n"
+        "    ;;\n"
+        "  *Config.Env*)\n"
+        "    printf 'ACTIONS_RUNNER_INPUT_LABELS="
+        "self-hosted,coursia-main,coursia-linux\\n'\n"
+        "    ;;\n"
+        "  *Config.Image*)\n"
+        "    printf 'coursia-linux-runner:2.338.0\\n'\n"
+        "    ;;\n"
+        "  *CgroupParent*)\n"
+        "    printf 'coursia-ci.slice\\n'\n"
+        "    ;;\n"
+        "  *Mounts*)\n"
+        "    printf 'volume|coursia-runner-toolcache|/var/lib/docker/volumes/"
+        "tc/_data|/opt/hostedtoolcache\\n'\n"
+        "    printf 'bind|/home/jesse/CoursIA-runners-main/myia-ai-01-linux-"
+        "main-1-work|/home/jesse/CoursIA-runners-main/myia-ai-01-linux-"
+        "main-1-work|/home/runner/_work\\n'\n"
+        "    printf 'bind|/home/jesse/CoursIA-runners-main/myia-ai-01-linux-"
+        "main-1-config|/home/jesse/CoursIA-runners-main/myia-ai-01-linux-"
+        "main-1-config|/home/runner/.runner\\n'\n"
+        "    ;;\n"
+        "  *)\n"
+        "    printf 'CONTAINER\\n'\n"
+        "    ;;\n"
+        "esac\n"
+        "exit 0\n",
+        encoding="utf-8")
+    docker.chmod(0o755)
+    proc = _run("--check", env={
+        "PATH": f"{bin_dir}{os.pathsep}{os.environ.get('PATH', '')}",
+        "COURSIA_MAIN_PREFIX": prefix_jetable,
+    })
+    assert proc.returncode != 0, (
+        "des montages hors specification doivent etre signales comme une "
+        f"derive :\n{proc.stdout}")
+    assert "DERIVE" in proc.stdout, proc.stdout
 
 
 def test_le_token_ne_passe_pas_dans_l_argv(prefix_jetable):
