@@ -1351,9 +1351,14 @@ def test_belt_visit_stamp_is_latest_of_merge_claim_child():
     assert pig.belt_visit_stamp(never) is None
 
 
-def test_belt_claim_moves_issue_behind_unvisited_ones():
+# Date fixe du scenario : le test reste deterministe apres la fenetre de 7 jours.
+_SCENARIO_NOW = datetime(2026, 11, 8, tzinfo=timezone.utc)
+
+
+def test_belt_claim_moves_issue_behind_unvisited_ones(monkeypatch):
     """Une issue reservee depuis son dernier merge passe derriere une issue
     plus recente jamais visitee, sans attendre de merge."""
+    monkeypatch.setattr(pig, "NOW", _SCENARIO_NOW)
     old = _make_item(10, age_days=90, idle=1, last="2026-08-01T00:00:00Z",
                      created="2026-07-01T00:00:00Z")
     newer = _make_item(11, age_days=30, idle=1, last=None,
