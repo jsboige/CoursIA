@@ -319,6 +319,7 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
 | [transients/2026-07-19-epic-4957-status.md](transients/2026-07-19-epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
 | [translation/translations-root-diagnostic.md](translation/translations-root-diagnostic.md) | Diagnostic du répertoire `translations/` à la racine : état des lieux et options de disposition. **Doc-only, sans action destructive** — le diagnostic est écrit et arbitrable avant qu'une ligne ne soit supprimée |
+| [translation/translation-override-protocol.md](translation/translation-override-protocol.md) | Voie normale du double-clé `translation-override` : quand resynchroniser un CSV par `T1 --update`, à qui le demander, motif type. Transpose l'arbitrage ai-01 du dispatch `c2760` (#20232) |
 
 ## Recherche (docs/research/)
 
