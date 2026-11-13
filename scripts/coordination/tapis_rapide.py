@@ -28,6 +28,9 @@ from coordination import frozen_campaigns, gh_bulk
 PRIO_CONSOLIDATION = 1.5
 PRIO_VIEIL_EPIC = 1.5
 AGE_VIEIL_EPIC_J = 60
+# Part au plus des conteneurs (EPIC, parapluie) dans la liste : la lane recoit des grains,
+# pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains.
+PART_CONTENEURS = 0.25
 CLAIM_VIVANT_H = 48  # au-dela, un claim est tenu pour abandonne (meme borne que l'organe)
 PROFONDEUR_FAMILLE = 5
 LABEL_LIVRE = "candidate-delivered"
@@ -223,8 +226,10 @@ def _livree(it: dict, e: Etat, evts: list[Evt]) -> str | None:
 
 
 def _mergee(n: int, evts: list[Evt], citations: dict, limite: datetime) -> str | None:
-    dates = [(d, c["sha"]) for c in citations.get(n, []) if (d := _dt(c.get("date")))
-             and d >= limite]
+    """Seul un commit qui FERME l'issue compte (`gh_bulk`) ; une simple citation
+    reste une visite."""
+    dates = [(d, c["sha"]) for c in citations.get(n, []) if c.get("ferme", True)
+             and (d := _dt(c.get("date"))) and d >= limite]
     if not dates:
         return None
     quand, sha = max(dates)
@@ -261,7 +266,7 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
          if any(lab.strip().lower() == LABEL_LIVRE for lab in e.labels) else None),
         ("GEL", lambda: _gel(e.numero, it.get("body") or "", evts, ancetres)),
         ("LIVREE", lambda: _livree(it, e, evts)),
-        ("MERGEE", lambda: None if e.conteneur else _mergee(
+        ("MERGEE", lambda: None if e.conteneur or e.consolidation else _mergee(
             e.numero, evts, ctx["citations"], ctx["limite"])),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
@@ -362,10 +367,17 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
         if not e.mon_claim:
             groupes.setdefault(e.famille, []).append(e)
     ordre = sorted(groupes, key=lambda f: (-_cle_famille(graine, f, poids[f][0]), f))
-    rang = 0
-    while len(file) < grains and any(rang < len(groupes[f]) for f in ordre):
-        file.extend(groupes[f][rang] for f in ordre if rang < len(groupes[f]))
+    tour, rang = [], 0
+    while any(rang < len(groupes[f]) for f in ordre):
+        tour.extend(groupes[f][rang] for f in ordre if rang < len(groupes[f]))
         rang += 1
+    quota, pris = max(1, int(grains * PART_CONTENEURS)), set()
+    for e in tour:  # un conteneur ne passe que dans son quota
+        if len(file) < grains and (not e.conteneur or quota > 0):
+            quota -= e.conteneur
+            file.append(e)
+            pris.add(e.numero)
+    file += [e for e in tour if e.numero not in pris][:max(grains - len(file), 0)]
     return file[:max(grains, 0)]
 
 

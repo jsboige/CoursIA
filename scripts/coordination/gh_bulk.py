@@ -25,6 +25,11 @@ TAILLES_PAGE = (50, 25, 12)
 PAGES_PRS_MAX = 20  # au-dela : lecture incomplete plutot que tronquee
 _TRANSITOIRE_RE = re.compile(r"\b50[24]\b|Bad Gateway|Gateway Time-?out", re.IGNORECASE)
 _CITATION_RE = re.compile(r"#(\d+)\b")
+# Un commit FERME #N s'il le nomme apres un mot de fermeture, ou dans la portee de son
+# sujet (`type(zone,#N):`, le tag du grain) ; `See #N` et `Part of #N` ne livrent rien.
+_FERME_RE = re.compile(r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+#(\d+)\b",
+                       re.IGNORECASE)
+_PORTEE_RE = re.compile(r"^[\w.\- ]+\(([^)]*)\)\s*:")
 _ISO = "%Y-%m-%dT%H:%M:%SZ"
 _PR_TEXTE = ("title", "body", "created_at", "updated_at")
 # Requete legere : y ajouter `timelineItems` fait repondre le serveur en 504.
@@ -146,7 +151,7 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict
 
 def lire_citations_mergees(depot: str | Path, jours: int = 14,
                            run: Run = run_defaut) -> dict[int, list[dict]]:
-    """Par numero cite, les commits `{sha, date, sujet}` de `origin/main` sur `jours` jours.
+    """Par numero cite, les commits `{sha, date, sujet, ferme}` d'`origin/main` sur `jours` jours.
 
     Un seul `git log`, sans fetch : le body de la PR devient le message du squash."""
     argv = ["git", "-C", str(depot), "log", "origin/main", f"--since={jours}.days",
@@ -161,8 +166,13 @@ def lire_citations_mergees(depot: str | Path, jours: int = 14,
         if len(parts) < 3 or not parts[1].strip().isdigit():
             continue
         date = datetime.fromtimestamp(int(parts[1]), UTC).strftime(_ISO)
-        for num in sorted({int(n) for n in _CITATION_RE.findall("\n".join(parts[2:]))}):
-            citations.setdefault(num, []).append({"sha": parts[0], "date": date, "sujet": parts[2]})
+        message = "\n".join(parts[2:])
+        portee = _PORTEE_RE.match(parts[2])
+        fermes = {int(n) for n in _FERME_RE.findall(message)}
+        fermes |= {int(n) for n in _CITATION_RE.findall(portee.group(1))} if portee else set()
+        for num in sorted({int(n) for n in _CITATION_RE.findall(message)}):
+            citations.setdefault(num, []).append({"sha": parts[0], "date": date,
+                                                  "sujet": parts[2], "ferme": num in fermes})
     return citations
 
 

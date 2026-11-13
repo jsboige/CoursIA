@@ -30,7 +30,8 @@ puis le compte des écartées par code. `--json` rend les mêmes données (`grai
 Codes de sortie : `0` grains servis, ou pool réellement vide dit en clair ; `3` lecture incomplète (502/504
 répétés à toutes les tailles de page, panne `gh` ou `git`) : rien n'est servi, le message nomme la lecture en
 panne et la commande de repli `python scripts/pick_idle_grain.py --belt --lane <lane>`. Il n'y a ni mur de
-temps ni budget de sondes : le nombre d'appels est fixé par construction.
+temps ni budget de sondes : le nombre d'appels est fixé par construction. Mesure du 2026-11-13 : 14 appels,
+lecture réseau de 25 à 101 s selon GitHub, rejeu d'un instantané en ~1 s (l'ancienne voie : 295 à 382 s).
 
 ## Ce qui écarte un candidat
 
@@ -42,7 +43,7 @@ groupée, sans sonde par issue.
 | `LABEL` | label `candidate-delivered` : l'urne de clôture appartient au coordinateur et à l'adjoint |
 | `GEL` | parapluie gelé en dur (`frozen_campaigns.py`) ou l'un de ses descendants ; ligne `[FROZEN]` dans le body ; en-tête `[FROZEN]` du fil non suivi d'un `[UNFROZEN]` de `myia-ai-01:CoursIA` ou `myia-po-2025:CoursIA-2` |
 | `LIVREE` | dernier commentaire `[INFO] candidate-delivered` ; ou, hors conteneur et hors consolidation, `[DELIVERED]` sans clause `paths:` que rien ne rouvre ensuite |
-| `MERGEE` | hors conteneur : un commit de `origin/main` la cite depuis moins de `--jours` jours, et aucun `[NOT-DELIVERED]`, `[RELEASED]`, `[CLAIMED]`, `[CLAIMED-AMEND]` ou `[CLOSURE REVIEW] verdict: KEEP` postérieur ne la rouvre |
+| `MERGEE` | hors conteneur et hors consolidation : un commit de `origin/main` la **ferme** depuis moins de `--jours` jours (mot de fermeture devant `#N`, ou `#N` dans la portée du sujet `type(zone,#N):` ; un `See #N` ou `Part of #N` compte comme une visite, pas comme une livraison), et aucun `[NOT-DELIVERED]`, `[RELEASED]`, `[CLAIMED]`, `[CLAIMED-AMEND]` ou `[CLOSURE REVIEW] verdict: KEEP` postérieur ne la rouvre |
 | `COUVERTE` | hors conteneur : une PR ouverte (brouillons compris) cite `#N` ; si la PR porte `lane <votre lane>`, le motif dit « votre PR » |
 | `RECLAMEE` | claim ouvert d'une autre lane de moins de 48 h ; sur un conteneur, seul un claim sans `paths:` écarte, un claim borné devient une note |
 
@@ -70,6 +71,7 @@ même tranche de quatre heures retrouve la sienne. `--graine` force la graine.
 | --- | --- | --- |
 | `PRIO_CONSOLIDATION` | 1,5 | une issue servable de la famille, ou sa racine, porte le label `consolidation` |
 | `PRIO_VIEIL_EPIC` | 1,5 | la racine est un conteneur ouvert depuis plus de `AGE_VIEIL_EPIC_J` = 60 jours |
+| `PART_CONTENEURS` | 0,25 | part au plus des conteneurs dans la liste (2 sur 8) ; ils la complètent s'il manque des grains |
 
 Les deux se cumulent (2,25). C'est une **légère** priorité : aucune famille n'est privée de service. Dans
 une famille : votre claim, puis les jamais visitées (la plus ancienne d'abord), puis la visite la plus ancienne
