@@ -206,7 +206,12 @@ def test_python_dotenv_is_checked_under_its_module_name(validator, tmp_path, mon
     (tmp_path / "dotenv.py").write_text("__version__ = '1.2.4'\n", encoding="utf-8")
     monkeypatch.syspath_prepend(str(tmp_path))
     monkeypatch.delitem(sys.modules, "dotenv", raising=False)
-    assert validator.check_python_package("python-dotenv") is True
+    try:
+        assert validator.check_python_package("python-dotenv") is True
+    finally:
+        # L'import charge le faux module : le retirer avant la restauration
+        # de l'eventuel module initial par monkeypatch.
+        sys.modules.pop("dotenv", None)
 
 
 def test_no_distribution_maps_to_a_dashed_module_name(validator):
