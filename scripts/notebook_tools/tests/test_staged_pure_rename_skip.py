@@ -15,7 +15,7 @@ What each test asserts, per the issue's acceptance criteria:
      pure rename still makes the hook fail. Without (2), the skip would be
      a blanket silence -- the failure mode the issue names explicitly.
 
-The probe itself lives in ``scripts/git_index_renames.py``; these tests
+The probe itself lives in ``scripts/audit/git_index_renames.py``; these tests
 patch its ``git_out`` (the single source both probes read) rather than
 patching each hook, so the wiring is exercised end to end.
 """
@@ -36,6 +36,7 @@ sys.path.insert(0, str(REPO_ROOT / "scripts"))
 # name (check_null_exec -> validate_pr_notebooks), so the folder itself must
 # be on sys.path for a by-path load to resolve those.
 sys.path.insert(0, str(REPO_ROOT / "scripts" / "notebook_tools"))
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "audit"))
 
 import git_index_renames  # noqa: E402
 
@@ -254,7 +255,7 @@ def test_hook_scripts_stay_importable_under_python39():
     """The py39 hook-import guard follows the import closure of every
     ``entry:`` script. The new shared module is in that closure for four
     hooks, so it must carry the future-import the guard requires."""
-    src = (REPO_ROOT / "scripts" / "git_index_renames.py").read_text(
+    src = (REPO_ROOT / "scripts" / "audit" / "git_index_renames.py").read_text(
         encoding="utf-8")
     assert "from __future__ import annotations" in src
 
