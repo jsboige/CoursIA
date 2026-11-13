@@ -83,6 +83,7 @@ Cette section absorbe le contenu durable de l'ancienne Partie 3, centrée sur la
 ### Autour de 05
 
 - **[5b Natural Evolution Strategies](Search-05b-NaturalEvolutionStrategies.ipynb)** — Stratégies d'évolution naturelles (Wierstra *et al.*, JMLR 2014) : on fait évoluer une **distribution** et non une population. Gradient simple contre gradient naturel sur la figure 1 du papier (80/300 tirages en échec contre 0/300), invariance par transformation monotone à la précision machine, **xNES** et **SNES** réglés sur la table 1, banc décisif ellipsoïde séparable puis tourné, confrontation à CMA-ES (~2,3× plus rapide que xNES), équivalence au premier ordre avec le rang-μ de CMA-ES vérifiée en O(η²).
+  - [Version C#](Search-05b-NaturalEvolutionStrategies-CSharp.ipynb) : gradients, xNES/SNES et CMA-ES avec MetaGeneticSharp natif, banc par rotation et figures SVG.
 
 ### Autour de 09
 
