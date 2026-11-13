@@ -1080,14 +1080,17 @@ def test_persona_alias_lift_override_logins_unchanged():
     d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
     une troisieme voie pour le dialogue Hermes <-> Hermes self-bot.
 
-    #17437 : la voix du siege compte DEUX logins -- l'humain ``myia-ai-01``
-    et son App ``coursia-lane-ai-01[bot]`` (orthographe REST seule, la forme
-    nue sans preuve de type ne passe pas la porte). Aucun autre login ne
-    s'ajoute : l'App d'une lane worker ne leve jamais."""
+    #17437 : la voix du siege reste l'humain ``myia-ai-01`` SEUL (arbitrage
+    ai-01 du 2026-11-13). L'App ``coursia-lane-ai-01`` est nommee par
+    MACHINE, et ai-01 porte deux lanes : sa cle privee, dans le clone
+    (``.secrets/github-apps/coursia-lane-ai-01.pem``), est lisible par la
+    lane worker soeur ``myia-ai-01:CoursIA-2``, qui forge donc le meme
+    jeton. Une App de machine ne peut pas porter la voix du coordinateur ;
+    seul un login humain, ou une App propre a la lane coordinatrice, leve.
+    Aucun autre login ne s'ajoute : l'App d'une lane worker ne leve jamais."""
     assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
-    assert mod.LIFT_OVERRIDE_LOGINS == {
-        "myia-ai-01", "coursia-lane-ai-01[bot]",
-    }
+    assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+    assert "coursia-lane-ai-01[bot]" not in mod.LIFT_OVERRIDE_LOGINS
 
 
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS

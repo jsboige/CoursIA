@@ -158,8 +158,8 @@ def _author_login(row: object, key: str = "author") -> str:
     return gh_identity.normalize_author_login(author)
 
 
-def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
-    """Comments et reviews d'une PR avec le TYPE d'auteur PAR LIGNE.
+def _typed_author_surfaces(pr: int) -> dict[str, object]:
+    """Comments, reviews ET auteur de la PR, type par ligne.
 
     #17437 (relecture ai-01 2026-11-12) : ``gh pr view --json
     comments,reviews`` rend l'auteur sans champ de type. La preuve
@@ -182,6 +182,15 @@ def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
     non typees, ou une forme nue App echoue les bornes d'auteur —
     fail-closed dans tous les cas, jamais un rc=0 fabrique.
 
+    #17437 (relecture ai-01 2026-11-13, second point) : la PR porte aussi
+    son AUTEUR type (``pullRequest.author{__typename login}``, cle
+    ``author`` du dict rendu). Sans lui, ``pr_author`` se lisait sur la
+    surface CLI non typee, qui rend une App SANS suffixe ``[bot]`` : une PR
+    ouverte sous l'App et levee par la meme App ne voyaient jamais
+    l'egalite ``lift_author == pr_author``, et la trappe #13495 restait
+    ouverte. La cle ``author`` ecrase celle du payload CLI, et
+    ``_author_login`` en fait la forme canonique REST.
+
     Echec (gh muet, payload inattendu, plafond atteint) : dict vide — les
     surfaces CLI non typees restent alors lues telles quelles, ou toute
     forme nue App echoue les bornes d'auteur : fail-closed, jamais un crash
@@ -191,6 +200,7 @@ def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
     query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String){
       repository(owner:$owner,name:$repo){
         pullRequest(number:$n){
+          author{__typename login}
           comments(first:100,after:$cAfter){
             pageInfo{hasNextPage endCursor}
             nodes{author{__typename login} body createdAt}}
@@ -203,6 +213,7 @@ def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
     owner, name = REPO.split("/")
     comments: list[dict] = []
     reviews: list[dict] = []
+    pr_author: dict = {}
     c_after: str | None = None
     r_after: str | None = None
     for _ in range(50):
@@ -221,6 +232,8 @@ def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
             r_conn = node["reviews"]
         except Exception:
             return {}
+        if not pr_author and isinstance(node.get("author"), dict):
+            pr_author = node["author"]
         c_nodes = c_conn.get("nodes")
         r_nodes = r_conn.get("nodes")
         if not isinstance(c_nodes, list) or not isinstance(r_nodes, list):
@@ -245,7 +258,11 @@ def _typed_author_surfaces(pr: int) -> dict[str, list[dict]]:
               "une surface typee (comments/reviews) — surface non remplacee, "
               "fail-closed.", file=sys.stderr)
         return {}
-    out: dict[str, list[dict]] = {}
+    out: dict[str, object] = {}
+    if pr_author:
+        # L'auteur de la PR, type a la source : ecrase la forme CLI non
+        # typee, qui rend une App SANS suffixe (borne #13495 aveugle sinon).
+        out["author"] = pr_author
     if comments:
         out["comments"] = [
             {"author": c.get("author") or {}, "body": c.get("body") or "",
@@ -322,14 +339,20 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
-# #17437 : l'identite GitHub App du coordinateur joint sa voix a la sienne.
-# Litteral en orthographe REST (suffixee), meme convention que
-# ``check_adjoint_prevalidation.COORDINATOR_APP_LOGIN`` (un test epingle les
-# deux ensemble) ; les formes nues ne sont JAMAIS acceptees directement --
-# ``_author_login`` ne reconstruit le suffixe qu'avec la preuve de type a la
-# source (sonde REST bornee). Un compte utilisateur nomme comme le slug de
-# l'App ne leve donc rien.
-LIFT_OVERRIDE_LOGINS = {"myia-ai-01", "coursia-lane-ai-01[bot]"}
+# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
+# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
+# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
+# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
+# fichier et forge le meme jeton. Une App par machine ne peut donc pas
+# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
+# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
+# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+#
+# La preuve d'identite reste typee par ligne (``_author_login`` +
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
+# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
+# existe, son login REST rejoint cet ensemble par une edition consciente.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
 # reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
 # principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un

@@ -2145,12 +2145,17 @@ def test_base_absente_fail_closed(tmp_path):
 #
 # Mesure ai-01 du 2026-11-04 : sous identite App, la porte ne trouvait pas
 # l'APPROVE — la voix du coordinateur etait cablee sur le seul login humain.
-# La voix compte desormais DEUX logins (``COORDINATOR_VOICES``). Relecture
-# ai-01 du 2026-11-12 : la preuve d'identite est le TYPE PORTE PAR LA LIGNE
-# (REST ``pulls/N/reviews`` rend ``user.type`` ; GraphQL rend
-# ``author.__typename``), JAMAIS une sonde ``users/<slug>[bot]`` — la sonde
-# prouve que l'App existe, pas que l'auteur de la ligne EST l'App (un
-# compte UTILISATEUR homonyme du slug serait confondu avec elle). Une ligne
+# L'App a d'abord ete cablee comme seconde voix ; l'arbitrage ai-01 du
+# 2026-11-13 l'a RETIREE. La cle privee de ``coursia-lane-ai-01`` vit sur la
+# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
+# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
+# fichier et forge le meme jeton. Une App nommee par MACHINE ne peut pas
+# representer la lane coordinateur seule — il faut une App propre a la lane
+# coordinatrice.
+#
+# Le mecanisme de preuve d'identite reste en place et reste teste : la
+# preuve est le TYPE PORTE PAR LA LIGNE (REST ``user.type``, GraphQL
+# ``author.__typename``), JAMAIS une sonde ``users/<slug>[bot]``. Une ligne
 # sans type est refusee ; l'orthographe canonique nue de l'humain
 # (``myia-ai-01``) reste valable sur la surface CLI non typee.
 
@@ -2170,17 +2175,19 @@ def rest_review(*, login: str, type_: str = "Bot",
     }
 
 
-def test_17437_approve_app_login_rest_compte(tmp_path):
-    """Orthographe REST TYPEE (``pulls/N/reviews`` : login suffixe +
-    ``user.type: Bot`` sur la ligne) : l'APPROVE de l'App est la voix du
-    coordinateur — le chemin nominal, sans sonde."""
+def test_17437_app_login_rest_typee_n_est_pas_la_voix(tmp_path):
+    """Orthographe REST typée (``pulls/N/reviews`` : login suffixé +
+    ``user.type: Bot``) : le TYPE de la ligne est correct, mais l'App de
+    MACHINE n'est pas la voix du coordinateur (arbitrage ai-01 du
+    2026-11-13) — la lane sœur d'ai-01 forge le même jeton. La porte reste
+    fermée, et la preuve vient toujours de la ligne."""
     view = default_view(reviews=[])
     runner = ScriptedRunner(
         views={123: view},
         rest_reviews=[rest_review(login=APP_LOGIN_REST)],
     )
-    rc, lines, _ = run_organ(tmp_path, runner)
-    assert lines[-1]["verdict"] == "would-merge"
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
     # la preuve vient de la ligne, jamais d'une sonde users/
     assert not any("users/" in f for f in runner.flat())
     assert any("/reviews" in f for f in runner.flat())
@@ -2202,9 +2209,10 @@ def test_17437_approve_app_login_nu_sans_type_refuse_meme_app_existante(tmp_path
     assert not any("users/" in f for f in runner.flat())
 
 
-def test_17437_approve_app_login_nu_type_dans_payload_compte(tmp_path):
-    """Preuve de type dans le payload (GraphQL ``__typename``) : la
-    normalisation gh_identity suffit, sans sonde."""
+def test_17437_app_login_nu_type_dans_payload_refuse(tmp_path):
+    """Preuve de type dans le payload (GraphQL ``__typename: Bot``) : la
+    normalisation gh_identity reconstruit bien le suffixe, et le résultat
+    est refusé — l'App de machine n'est pas la voix coordinatrice."""
     view = default_view(reviews=[{
         "author": {"login": APP_LOGIN_BARE, "__typename": "Bot"},
         "state": "APPROVED", "body": "",
@@ -2212,8 +2220,8 @@ def test_17437_approve_app_login_nu_type_dans_payload_compte(tmp_path):
         "commit": {"oid": HEAD},
     }])
     runner = ScriptedRunner(views={123: view})
-    rc, lines, _ = run_organ(tmp_path, runner)
-    assert lines[-1]["verdict"] == "would-merge"
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
     assert not any("users/" in f for f in runner.flat())
 
 
@@ -2230,15 +2238,17 @@ def test_17437_approve_humain_surf_rest_typee_compte(tmp_path):
 
 
 def test_17437_approve_surf_rest_typee_latest_wins(tmp_path):
-    """Latest-wins preserve par le mapping REST : un CHANGES_REQUESTED
-    posterieur de la MEME voix retire l'approbation anterieure."""
+    """Latest-wins preserve par le mapping REST, sur la voix qui compte :
+    un CHANGES_REQUESTED posterieur de l'HUMAIN retire son approbation
+    anterieure."""
     view = default_view(reviews=[])
     runner = ScriptedRunner(
         views={123: view},
         rest_reviews=[
-            rest_review(login=APP_LOGIN_REST, state="APPROVED",
+            rest_review(login="myia-ai-01", type_="User", state="APPROVED",
                         submitted="2026-09-25T03:00:00Z"),
-            rest_review(login=APP_LOGIN_REST, state="CHANGES_REQUESTED",
+            rest_review(login="myia-ai-01", type_="User",
+                        state="CHANGES_REQUESTED",
                         submitted="2026-09-25T04:00:00Z"),
         ],
     )
@@ -2258,16 +2268,14 @@ def test_17437_approve_app_d_une_autre_lane_ne_compte_pas(tmp_path):
     assert lines[-1]["reason"] == "no-coordinator-approval"
 
 
-def test_17437_litteral_app_epingle_a_la_derivation():
-    """Le littéral ``COORDINATOR_APP_LOGIN`` et la derivation gh_identity ne
-    doivent pas diverger (meme convention que le gate adjoint #22567 : le
-    littéral vit sans import, un test epingle les deux ensemble)."""
-    assert mr.COORDINATOR_APP_LOGIN == (
-        mr.gh_identity.APP_LOGIN_PREFIX + "ai-01[bot]"
-    )
-    assert mr.COORDINATOR_VOICES == frozenset((
-        "myia-ai-01", mr.COORDINATOR_APP_LOGIN,
-    ))
+def test_17437_voix_du_coordinateur_humain_seul():
+    """Arbitrage ai-01 du 2026-11-13 : ``COORDINATOR_VOICES`` ne porte que
+    le login humain. Le rouge est ici la potence — si une edition future y
+    ajoute ``coursia-lane-ai-01[bot]`` (App nommee par MACHINE, forgeable
+    par la lane sœur ``myia-ai-01:CoursIA-2``), ce test le dit avant que la
+    porte Q131 ne s'ouvre."""
+    assert mr.COORDINATOR_VOICES == frozenset(("myia-ai-01",))
+    assert not hasattr(mr, "COORDINATOR_APP_LOGIN")
 
 
 # --- #19002 : defense en profondeur sur la base -----------------------------

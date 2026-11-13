@@ -244,20 +244,26 @@ import gh_identity  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
-# #17437 : identite GitHub App du coordinateur, la seconde porte encore
-# cablee sur le seul login humain (etat mesure par ai-01 le 2026-11-04 :
-# sous identite App, l'organe ne trouverait pas l'APPROVE). Litteral plutot
-# que derive de ``gh_identity.APP_LOGIN_PREFIX``, meme convention que le
-# gate adjoint (``check_adjoint_prevalidation.COORDINATOR_APP_LOGIN``) : le
-# module reste importable meme si gh_identity ne l'est pas, un test epingle
-# les deux ensemble.
-COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
-# La voix du coordinateur : le login humain ET l'App, en orthographe REST
-# (suffixee). Les formes nues sans preuve de type ne sont PAS acceptees
-# (doctrine gh_identity : un compte UTILISATEUR nomme comme le slug de
-# l'App ne doit pas passer la porte) -- cf ``_voice_login`` : la preuve de
-# type est PORTEE PAR LA LIGNE (relecture ai-01 2026-11-12), jamais sondee.
-COORDINATOR_VOICES = frozenset((COORDINATOR_USER, COORDINATOR_APP_LOGIN))
+# La voix du coordinateur : le login humain SEUL. L'App ``coursia-lane-ai-01``
+# n'en fait PAS partie (arbitrage ai-01 2026-11-13, portee par ce module).
+#
+# Sa cle privee vit sur la machine ai-01, dans le clone du depot
+# (``.secrets/github-apps/coursia-lane-ai-01.pem``, cf
+# ``scripts/secrets/github_app_manifest.KEY_DIR``). La machine porte DEUX
+# lanes : ``myia-ai-01:CoursIA`` (le coordinateur) et ``myia-ai-01:CoursIA-2``
+# (la lane worker sœur). La seconde lit le meme fichier et forge donc le meme
+# jeton d'installation : compter cette App comme voix du coordinateur
+# ouvrirait la porte Q131 a une lane non coordinatrice -- une APPROVE ou un
+# ``[OVERRIDE]`` de CoursIA-2 vaudrait ceux du coordinateur. Une App PROPRE a
+# la lane coordinateur est le prealable ; une App nommee par machine ne le
+# remplace pas.
+#
+# Le mecanisme de preuve d'identite reste en place (``_voice_login`` /
+# ``_typed_reviews``) : la preuve est le TYPE porte par la ligne, jamais une
+# sonde ``users/<login>[bot]``. Il sert la voix humaine et refuse toute forme
+# App ; le jour ou une App de lane coordinateur existe, elle s'ajoute ici par
+# une edition consciente, accompagnee de sa cle dediee.
+COORDINATOR_VOICES = frozenset((COORDINATOR_USER,))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
