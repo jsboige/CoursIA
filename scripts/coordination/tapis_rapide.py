@@ -5,7 +5,7 @@ Le tapis PROPOSE, il ne fait pas autorite : avant d'editer, la lane relance
 `check_lane_claim.py N --lane L`. Tout est decide en fonctions pures sur la lecture
 groupee de `gh_bulk`, seul module qui parle au reseau. Doc : docs/reference/tapis-rapide.md.
 
-Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 14]
+Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
     [--cache-s 300] [--graine S] [--lecture <dossier>]   (sortie 0, ou 3 : lecture incomplete)
 """
 from __future__ import annotations
@@ -32,13 +32,15 @@ AGE_VIEIL_EPIC_J = 60
 # pas des Epics ou chercher sa tranche ; ils completent la liste s'il manque des grains.
 PART_CONTENEURS = 0.25
 CLAIM_VIVANT_H = 48  # au-dela, un claim est tenu pour abandonne (meme borne que l'organe)
+# Plafond EPIC (#22500) : meme fenetre que l'organe check_lane_claim.py epic_visit_cap.
+PLAFOND_EPIC_J = 7
 PROFONDEUR_FAMILLE = 5
 LABEL_LIVRE = "candidate-delivered"
 LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "RECLAMEE")
+CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "PLAFOND", "RECLAMEE")
 REPLI = "python scripts/pick_idle_grain.py --belt --lane {lane}"
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 
@@ -244,6 +246,25 @@ def _couverte(n: int, lane: str, prs_par_issue: dict[int, list[dict]]) -> str | 
     return f"PR ouverte #{prs[0]['number']} la cite" if prs else None
 
 
+def _plafond(e: Etat, evts: list[Evt], naissances: list[tuple[int, str | None]],
+             lane: str, maintenant: datetime) -> str | None:
+    """Plafond hebdo des conteneurs hors consolidation (#22500 point 3) : le
+    tapis ne sert pas un EPIC que le gate L898 refuserait. Une visite = un
+    marqueur d'une AUTRE lane (#25443) ou la creation d'une fille ouverte."""
+    if not e.conteneur or e.consolidation:
+        return None
+    limite = maintenant - timedelta(days=PLAFOND_EPIC_J)
+    visites = [(ev.quand, f"visite de {ev.lane}") for ev in evts if ev.marque in VISITE
+               and ev.lane and ev.lane != lane and ev.quand > limite]
+    visites += [(d, f"sous-issue #{n} creee") for n, cree in naissances
+                if (d := _dt(cree)) and d > limite]
+    if not visites:
+        return None
+    quand, quoi = max(visites)
+    age = round((maintenant - quand).total_seconds() / 86400, 1)
+    return f"plafond EPIC (#22500) : {quoi} il y a {age} j (< {PLAFOND_EPIC_J} j)"
+
+
 def _reclamee(e: Etat, evts: list[Evt], lane: str, maintenant: datetime) -> None:
     """Claims vivants (< 48 h) : le mien remonte, celui d'une autre lane ecarte
     -- sauf sur un conteneur, ou seul un claim sans `paths:` ecarte."""
@@ -270,6 +291,8 @@ def _decider(e: Etat, it: dict, evts: list[Evt], ancetres: list[int], ctx: dict)
             e.numero, evts, ctx["citations"], ctx["limite"])),
         ("COUVERTE", lambda: None if e.conteneur else _couverte(
             e.numero, ctx["lane"], ctx["prs_par_issue"])),
+        ("PLAFOND", lambda: _plafond(e, evts, ctx["filles"].get(e.numero, []),
+                                     ctx["lane"], ctx["maintenant"])),
     ]
     for code, regle in regles:
         if motif := regle():
@@ -288,13 +311,18 @@ def _prs_par_issue(prs: list[dict]) -> dict[int, list[dict]]:
 
 
 def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
-          jours: int = 14) -> list[Etat]:
+          jours: int = 45) -> list[Etat]:
     """Un `Etat` par issue ouverte, decide sur la seule lecture."""
     ouvertes = {it["number"]: it for it in lecture.issues}
     parents = {n: parent_de(it) for n, it in ouvertes.items()}
     nommes = {p for p in parents.values() if p is not None}
+    # Naissances des filles ouvertes par conteneur : une visite du parent (#22500).
+    filles: dict[int, list[tuple[int, str | None]]] = {}
+    for n, p in parents.items():
+        if p is not None:
+            filles.setdefault(p, []).append((n, ouvertes[n].get("created_at")))
     ctx = {"lane": lane, "maintenant": maintenant, "citations": lecture.citations,
-           "limite": maintenant - timedelta(days=jours),
+           "limite": maintenant - timedelta(days=jours), "filles": filles,
            "prs_par_issue": _prs_par_issue(lecture.prs)}
     resultat = []
     for n, it in ouvertes.items():
@@ -401,6 +429,7 @@ def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane
         "lecture": {"issues": len(etats_), "servables": sum(e.ecart is None for e in etats_),
                     "familles": len(poids), "lu_a": lecture.lu_a, "appels": lecture.appels,
                     "secondes": lecture.secondes, "depuis_cache": lecture.depuis_cache,
+                    "fetch_note": lecture.fetch_note,
                     "origin_main_le": lecture.origin_main_le,
                     "origin_main_age_h": _age(maintenant, lecture.origin_main_le, 3600)},
         "vos_prs": [{"numero": pr["number"], "titre": pr.get("title") or "",
@@ -424,11 +453,12 @@ def texte(r: dict, source: str) -> str:
     lu, age_h = r["lecture"], r["lecture"]["origin_main_age_h"]
     age = "inconnu" if age_h is None else (
         f"il y a {age_h} h" if age_h >= 0 else f"{-age_h} h apres la lecture rejouee")
+    fetch = f" ; {lu['fetch_note']}" if lu.get("fetch_note") else ""
     lignes = [f"Tapis rapide -- lane {r['lane']} -- {r['maintenant']} -- source : {source}"]
     lignes.append(f"{lu['issues']} issues ouvertes, {lu['servables']} servables en "
                   f"{lu['familles']} familles ; lecture {lu['secondes']} s, {lu['appels']} "
                   f"appels, cache {'oui' if lu['depuis_cache'] else 'non'} ; origin/main "
-                  f"local : dernier commit {age} (pas de fetch)")
+                  f"local : dernier commit {age}{fetch}")
     lignes.append(f"\nVos PRs ouvertes ({len(r['vos_prs'])}) -- portez d'abord au merge "
                   "celles de plus de 24 h :")
     lignes += [f"  #{p['numero']}  {p['age_j']} j  {_court(p['titre'], 90)}"
@@ -454,7 +484,7 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--lane", required=True, help="machine:workspace")
     p.add_argument("--grains", type=int, default=8)
     p.add_argument("--json", action="store_true")
-    p.add_argument("--jours", type=int, default=14, help="fenetre des commits cites")
+    p.add_argument("--jours", type=int, default=45, help="fenetre des commits cites")
     p.add_argument("--cache-s", type=int, default=300, help="0 desactive le cache")
     p.add_argument("--graine", default=None)
     p.add_argument("--lecture", default=None, help="rejouer un dossier deja lu")

@@ -107,13 +107,13 @@ def test_delivered_sans_paths_contre_avec_paths_sur_consolidation():
 def test_commit_citant_contre_closure_review_keep():
     keep = com(1, "[CLOSURE REVIEW] verdict: KEEP \u2014 #2 (critere 3 non livre)")
     citations = {1: [commit("abc1234def", 5)], 2: [commit("abc1234def", 5)],
-                 3: [commit("abc1234def", 24 * 20)], 4: [commit("abc1234def", 5)]}
+                 3: [commit("abc1234def", 24 * 50)], 4: [commit("abc1234def", 5)]}
     lec = lecture([issue(1), issue(2, comments=[keep]), issue(3),
                    issue(4, titre="[EPIC] conteneur")], citations=citations)
     e1 = etat(lec, 1)
     assert e1.ecart == "MERGEE" and e1.motif == "livraison probable, commit abc1234"
     assert etat(lec, 2).ecart is None  # rouverte par la revue
-    assert etat(lec, 3).ecart is None  # hors de la fenetre de 14 jours
+    assert etat(lec, 3).ecart is None  # hors de la fenetre de 45 jours
     assert etat(lec, 4).ecart is None  # un conteneur ne s'ecarte pas par un commit
 
 
@@ -139,22 +139,66 @@ def test_pr_ouverte_cite_un_grain_contre_un_conteneur():
 
 
 def test_claims_vivant_perime_mien_et_borne():
+    """Depuis PLAFOND, un [CLAIMED] d'une autre lane sur un CONTENEUR est
+    une visite recente : il ecarte via PLAFOND (borne ou pas), avant RECLAMEE.
+    La note « claim borne » ne survit que pour un [OVERRIDE] paths: (une
+    remise de main n'est pas une visite au sens du plafond)."""
     lec = lecture([
         issue(1, comments=[com(2, f"[CLAIMED] lane {AUTRE} -- je prends")]),
         issue(2, comments=[com(60, f"[CLAIMED] lane {AUTRE} -- je prends")]),
         issue(3, comments=[com(3, f"[CLAIMED] lane {LANE} -- je prends")]),
         issue(4, labels=["EPIC"], comments=[com(2, f"[CLAIMED] lane {AUTRE} -- paths: a/b/**")]),
         issue(5, labels=["EPIC"], comments=[com(2, f"[CLAIMED] lane {AUTRE} -- tout l'EPIC")]),
+        issue(7, labels=["EPIC"], comments=[com(2, f"[OVERRIDE] lane {AUTRE} -- paths: a/b/**")]),
         issue(6, comments=[com(4, f"[CLAIMED] lane {AUTRE}"), com(1, f"[RELEASED] lane {AUTRE}")]),
     ])
     assert etat(lec, 1).ecart == "RECLAMEE" and AUTRE in etat(lec, 1).motif
     assert etat(lec, 2).ecart is None
     mien = etat(lec, 3)
     assert mien.ecart is None and mien.mon_claim and mien.notes[0] == "votre claim"
-    borne = etat(lec, 4)
+    assert etat(lec, 4).ecart == "PLAFOND"  # un claim borne reste une visite
+    assert etat(lec, 5).ecart == "PLAFOND"
+    borne = etat(lec, 7)
     assert borne.ecart is None and borne.notes == [f"claim borne de {AUTRE} : a/b/**"]
-    assert etat(lec, 5).ecart == "RECLAMEE"
     assert etat(lec, 6).ecart is None
+
+
+def test_plafond_epic_visite_par_une_autre_lane():
+    """Le tapis ne sert pas un EPIC que le gate L898 refuserait (#22500) :
+    visite d'une AUTRE lane de moins de 7 jours -- ici perimee pour RECLAMEE
+    (plus de 48 h), seule PLAFOND peut l'ecarter."""
+    visite = com(72, f"[CLAIMED] lane {AUTRE} -- tranche")
+    livre = com(24 * 5, f"[DELIVERED] lane {AUTRE} -- PR #900")
+    vieux = com(24 * 8, f"[CLAIMED] lane {AUTRE} -- ancienne visite")
+    lec = lecture([issue(10, labels=["EPIC"], comments=[visite]),
+                   issue(11, labels=["EPIC"], comments=[livre]),
+                   issue(12, labels=["EPIC"], comments=[vieux])])
+    e10 = etat(lec, 10)
+    assert e10.ecart == "PLAFOND"
+    assert e10.motif == f"plafond EPIC (#22500) : visite de {AUTRE} il y a 3.0 j (< 7 j)"
+    assert etat(lec, 11).ecart == "PLAFOND"  # un [DELIVERED] est une visite
+    assert etat(lec, 11).motif == f"plafond EPIC (#22500) : visite de {AUTRE} il y a 5.0 j (< 7 j)"
+    assert etat(lec, 12).ecart is None  # la visite a plus de PLAFOND_EPIC_J jours
+
+
+def test_plafond_epic_filles_et_exemptions():
+    """Une fille creee visite son parent ; sa propre lane, la consolidation
+    et les non-conteneurs n'arment rien (#25443 pour la lane)."""
+    mienne = com(72, f"[CLAIMED] lane {LANE} -- ma visite d'avant")
+    lec = lecture([
+        issue(20, labels=["EPIC"]),                       # parent d'une fille neuve
+        issue(21, body="Part of #20", cree=_h(24 * 2)),   # fille creee il y a 2 j
+        issue(22, labels=["EPIC"], comments=[mienne]),    # visite de MA lane
+        issue(23, labels=["EPIC", "consolidation"],
+              comments=[com(72, f"[CLAIMED] lane {AUTRE} -- retour")]),
+        issue(24, comments=[com(72, f"[CLAIMED] lane {AUTRE}")]),  # pas un conteneur
+    ])
+    e20 = etat(lec, 20)
+    assert e20.ecart == "PLAFOND"
+    assert e20.motif == "plafond EPIC (#22500) : sous-issue #21 creee il y a 2.0 j (< 7 j)"
+    assert etat(lec, 22).ecart is None   # mes visites n'arment pas (#25443)
+    assert etat(lec, 23).ecart is None   # consolidation exempte
+    assert etat(lec, 24).ecart is None   # PLAFOND ne vise que les conteneurs
 
 
 def test_mon_claim_remonte_en_tete():
@@ -309,6 +353,20 @@ def test_cli_pool_vide_dit_en_clair(tmp_path, capsysbinary):
     sortie = capsysbinary.readouterr().out.decode("utf-8")
     assert "Pool vide" in sortie and "LABEL 1" in sortie
     assert "portez d'abord au merge celles de plus de 24 h" in sortie
+
+
+def test_rapport_et_texte_portent_la_note_de_fetch():
+    """Un fetch d'origin/main echoue se voit dans le rapport JSON et la sortie
+    texte (ligne lecture) ; sans note, la ligne n'en parle pas."""
+    lec = lecture([issue(1)])
+    lec.fetch_note = "fetch origin/main impossible (x), pointe locale gardee"
+    r = tr.rapport(lec, tr.etats(lec, LANE, NOW), [], LANE, NOW, "g")
+    assert r["lecture"]["fetch_note"] == lec.fetch_note
+    assert "; fetch origin/main impossible" in tr.texte(r, "test")
+    lec.fetch_note = None
+    r = tr.rapport(lec, tr.etats(lec, LANE, NOW), [], LANE, NOW, "g")
+    assert r["lecture"]["fetch_note"] is None
+    assert "fetch" not in tr.texte(r, "test")
 
 
 # --- structure --------------------------------------------------------------
