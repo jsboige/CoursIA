@@ -112,7 +112,19 @@ jobs:
     # La concurrence vit au niveau du JOB, plus du workflow : au niveau
     # workflow, un run en attente est annule AVANT l'evaluation de ce `if`,
     # et l'email part quand meme. Un job saute n'entre pas dans le groupe.
-    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
+    # #25510 T-G elargi (mesure quota 12/11) : la porte 1-sur-4 de #22937
+    # vivait cote SCRIPT -- le run checkoutait quand meme et payait 1 appel
+    # API de cadence sur les 3/4 non-mesurants. Deplacee cote JOB via une
+    # etape `gate` SHELL : les expressions GHA n'ont PAS d'operateur
+    # arithmetique (%), donc le modulo se calcule dans le shell (voir etape
+    # gate). Les 3/4 runs workflow_run non-mesurants ne checkoutent plus et
+    # n'appellent plus l'API. Le if: de JOB ne garde que la clause ANTI-FORK
+    # (le seul predicat expressible sans arithmetique). La jambe schedule
+    # n'est JAMAIS gatee (cadence de reference) ; la cadence REELLE de la
+    # mesure (1 passage complet sur 4) est intacte.
+    if: >-
+      github.event_name != 'workflow_run' ||
+      github.event.workflow_run.head_repository.full_name == github.repository
     concurrency:
       group: linux-runner-starvation-advisory
       cancel-in-progress: false
@@ -147,7 +159,20 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
+      # Porte 1-sur-4 de #22937, deplacee cote JOB (T-G #25510). Les
+      # expressions GHA n'ont AUCUN operateur arithmetique (%), donc le modulo
+      # se calcule dans le shell : cette etape ne fait ni checkout ni appel
+      # d'API. Evenement non workflow_run (schedule, dispatch) -> mesure ON ;
+      # workflow_run -> 1 run sur 4.
+      - id: gate
+        run: |
+          if [ "$GITHUB_EVENT_NAME" != "workflow_run" ] || [ $(( GITHUB_RUN_NUMBER % 4 )) -eq 0 ]; then
+            echo "measure=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "measure=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.measure == 'true'
         with:
           fetch-depth: 1
           # L'observateur ne lit que ses scripts et les deux advisories dont
@@ -156,6 +181,7 @@ jobs:
             scripts/ci
             .github/workflows
       - name: Measure starvation on coursia-linux
+        if: steps.gate.outputs.measure == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}

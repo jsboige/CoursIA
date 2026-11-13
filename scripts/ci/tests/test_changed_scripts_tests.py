@@ -8,8 +8,13 @@ Contrat verifie ici, dans cet ordre :
 2. **garde-fou de la tranche** : workflow, pytest.ini, conftest.py, script
    d'install, chien de garde et l'organe lui-meme forcent la pleine suite ;
 3. **fail-open** : lecteurs en echec -> pleine suite avec raisons nommees ;
-   chemins hors table -> pleine suite ; portee restreinte vide -> pleine
-   suite ; workflow_dispatch -> pleine suite sans lire le diff ;
+   delegation hors table en echec ou sans suite couvrante -> pleine suite ;
+   portee restreinte vide -> pleine suite ; workflow_dispatch -> pleine
+   suite sans lire le diff ;
+3bis. **delegation hors table (#25510)** : un chemin hors de toute aire de
+   veille delegue a l'organe natif select_tests.py — la regle R4 (portee
+   depot) couvre par construction tout changement ; une suite sans test R4
+   ni citation reste EXCLUE (le trou que le lot 4x/jour borne) ;
 4. **aires de veille** : derivation parent (suite X/tests veille X/),
    overrides (suite racine tests, suites fichiers agent_tests/v4/gateway),
    selecteur additionnel du registre arxiv (#17850) ;
@@ -55,6 +60,28 @@ def _scope(event, paths, suite_list=None, readers=None):
         event, suite_list if suite_list is not None else SUITES,
         readers=[("diff", lambda _base: paths)] if readers is None else readers,
     )
+
+
+def _native_repo(tmp_path):
+    """Depot synthetique pour la delegation hors table (#25510) : une suite
+    a portee depot (R4 stricte : REPO_ROOT.rglob) et une suite aveugle (ni
+    parcours, ni citation, ni convention de nom)."""
+    r4 = tmp_path / "pkgA" / "tests"
+    r4.mkdir(parents=True)
+    (r4 / "test_scan.py").write_text(
+        "from pathlib import Path\n"
+        "REPO_ROOT = Path(__file__).resolve().parents[2]\n"
+        "def test_scan():\n"
+        "    for p in REPO_ROOT.rglob('*.py'):\n"
+        "        assert p\n",
+        encoding="utf-8",
+    )
+    blind = tmp_path / "pkgB" / "tests"
+    blind.mkdir(parents=True)
+    (blind / "test_local.py").write_text(
+        "def test_local():\n    assert True\n", encoding="utf-8"
+    )
+    return tmp_path
 
 
 # ---------------------------------------------------------------- 1. positif
@@ -142,7 +169,8 @@ def test_organe_install_et_watchdog_forcent_pleine_suite():
     for path in ("scripts/ci/changed_scripts_tests.py",
                  "scripts/ci/install_scripts_tests_deps.sh",
                  "scripts/ci/xdist_watchdog.py",
-                 "scripts/ci/guard_test_root.py"):
+                 "scripts/ci/guard_test_root.py",
+                 "scripts/ci/select_tests.py"):  # organe de la delegation (#25510)
         mode, _, reason = _scope("pull_request", [path])
         assert mode == "full", path
         assert "producteur du verdict" in reason
@@ -171,14 +199,72 @@ def test_lecteurs_en_echec_pleine_suite_raisons_nommees():
     assert "autre: RuntimeError: quota epuise" in reason
 
 
-def test_chemins_hors_table_pleine_suite():
-    mode, suites, reason = _scope("pull_request", [
-        "scripts/sudoku/generator.py",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Foo.lean",
-    ])
+def test_chemins_hors_table_delegue_a_la_selection_native(tmp_path):
+    """#25510 : un chemin hors table delegue a select_tests.py (regle R4,
+    portee depot) au lieu de rendre la pleine suite."""
+    _native_repo(tmp_path)
+    mode, suites, reason = mod.scope(
+        "pull_request", ["pkgA/tests", "pkgB/tests"],
+        readers=[("diff", lambda _b: ["MyIA.AI.Notebooks/Serie/x-CSharp.ipynb"])],
+        repo_root=tmp_path,
+    )
+    assert mode == "restricted"
+    assert suites == ["pkgA/tests"]  # pkgB : sans test R4 ni citation, EXCLUE
+    assert "R4 native" in reason
+    assert "1 chemin(s) hors table" in reason
+
+
+def test_mapped_et_hors_table_union_dans_l_ordre_du_workflow(tmp_path):
+    """Le profil marathon II (twin_pairs.d + carnets) : les suites d'aire et
+    les suites R4 de la delegation fusionnent, dans l'ordre du workflow."""
+    _native_repo(tmp_path)
+    mode, suites, reason = mod.scope(
+        "pull_request", ["pkgB/tests", "pkgA/tests", "scripts/tests"],
+        readers=[("diff", lambda _b: [
+            "scripts/notebook_tools/twin_pairs.d/serie-01.yaml",
+            "MyIA.AI.Notebooks/Serie/x.ipynb"])],
+        repo_root=tmp_path,
+    )
+    assert mode == "restricted"
+    assert suites == ["pkgA/tests", "scripts/tests"]
+    assert "R4 native" in reason
+
+
+def test_hors_table_sans_couverture_native_pleine_suite(tmp_path):
+    """Depot sans test a portee depot : aucun filet R4, le repli pleine
+    suite reste (le gain ne doit jamais acheter un silence)."""
+    blind = tmp_path / "pkgB" / "tests"
+    blind.mkdir(parents=True)
+    (blind / "test_local.py").write_text(
+        "def test_local():\n    assert True\n", encoding="utf-8"
+    )
+    mode, suites, reason = mod.scope(
+        "pull_request", ["pkgB/tests"],
+        readers=[("diff", lambda _b: ["MyIA.AI.Notebooks/Serie/x.ipynb"])],
+        repo_root=tmp_path,
+    )
     assert mode == "full"
-    assert suites == SUITES
+    assert suites == ["pkgB/tests"]
+    assert "aucune suite native couvrante" in reason
+
+
+def test_delegation_en_echec_pleine_suite_raison_nommee(monkeypatch):
+    """L'organe natif indisponible -> fail-OPEN documente, jamais une
+    selection muette."""
+
+    def boom(_root, _changed):
+        raise RuntimeError("organe natif absent")
+
+    monkeypatch.setattr(mod, "_select_native", boom)
+    mode, suites, reason = mod.scope(
+        "pull_request", ["scripts/tests"],
+        readers=[("diff", lambda _b: ["MyIA.AI.Notebooks/Serie/x.ipynb"])],
+    )
+    assert mode == "full"
+    assert suites == ["scripts/tests"]
     assert "chemins hors table" in reason
+    assert "delegation en echec" in reason
+    assert "organe natif absent" in reason
 
 
 def test_portee_vide_pleine_suite():
@@ -361,3 +447,59 @@ def test_integration_vrai_workflow_depuis_le_depot():
         areas = mod.watch_areas(suite)
         assert areas, f"aucune aire de veille pour {suite}"
         assert all(a for a in areas), f"aire vide pour {suite}"
+
+
+def test_integration_profil_marathon_delegation_mesuree():
+    """#25510, mesure du plan : le profil des PRs du marathon II (carnets +
+    twin_pairs.d/) rendait 37/37 par le repli hors table ; la delegation
+    native le restreint (14 suites mesurees le 2026-11-12). Bornes larges --
+    le plancher R4 derive quand des tests a portee depot sont ajoutes ou
+    retires -- mais le sens est verrouille : restreint, tres en-deca de la
+    pleine suite, et les trois suites jumelles (racine, scripts generique,
+    notebook_tools pour twin_pairs.d) presentes."""
+    suites = mod.parse_collected_paths(mod.DEFAULT_WORKFLOW)
+    marathon = [
+        "MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langage-CSharp.ipynb",
+        "MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langage.ipynb",
+        "MyIA.AI.Notebooks/NLP/README.md",
+        "scripts/notebook_tools/twin_pairs.d/nlp-02-ngrammes.yaml",
+    ]
+    mode, selected, reason = mod.scope(
+        "pull_request", suites,
+        readers=[("diff", lambda _b: marathon)],
+    )
+    assert mode == "restricted"
+    assert set(selected) <= set(suites)
+    assert 5 <= len(selected) < len(suites)
+    for expected in ("tests", "scripts/tests", "scripts/notebook_tools/tests"):
+        assert expected in selected, expected
+    assert "R4 native" in reason
+    # La suite pin du controle positif (scripts/validation/tests, sans test
+    # R4 ni citation litterale du carnet ou d'un README) reste EXCLUE :
+    # c'est le trou temoin que le lot 4x/jour (P3) borne. Ce test a vu le
+    # defaut R3 initial (review #26253) -- le garder strict.
+    if "scripts/validation/tests" in suites:
+        assert "scripts/validation/tests" not in selected
+
+
+def test_integration_profil_temoin_pin_exclu():
+    """#25510, controle positif : sur le profil temoin (edition du carnet
+    pin + un twin_pairs.d/), la delegation retient des suites restreintes
+    qui EXCLUENT scripts/validation/tests -- le pin n'y est selectionne par
+    aucune regle (nom du carnet construit par concatenation : R3-aveugle ;
+    aucun parcours d'arborescence : R4-aveugle ; convention test_<stem>.py
+    : R2-aveugle). La selection restreinte passe donc VERT sur ce profil,
+    et seul le lot 4x/jour (P3, slow-lane.yml) joue le pin."""
+    suites = mod.parse_collected_paths(mod.DEFAULT_WORKFLOW)
+    temoin = [
+        "MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb",
+        "scripts/notebook_tools/twin_pairs.d/sudoku-01-backtracking.yaml",
+    ]
+    mode, selected, reason = mod.scope(
+        "pull_request", suites,
+        readers=[("diff", lambda _b: temoin)],
+    )
+    assert mode == "restricted", reason
+    assert set(selected) <= set(suites)
+    # le pin est hors selection : c'est le trou temoin que le lot borne.
+    assert "scripts/validation/tests" not in selected, selected

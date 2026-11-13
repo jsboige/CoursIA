@@ -194,6 +194,15 @@ class ScriptedRunner:
         # commit (la tete), avec le jeu de checks nominal.
         main_history: list[str] | None = None,
         main_checks_by_sha: dict[str, str] | None = None,
+        # #25510 T-J : etapes du job associe a un check-run de job. La
+        # CLE est l'identifiant de job, la VALEUR est le nom de la PREMIERE
+        # etape en echec ("" = aucune etape en echec). Sert a prouver que
+        # la sentinelle distingue une panne d'infrastructure d'un verdict
+        # de code.
+        job_steps: dict[str, str] | None = None,
+        # Log d'echec du run (`gh run view --log-failed`). Vide par defaut :
+        # aucun test n'y est identifie.
+        run_log: str = "",
     ):
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
@@ -206,6 +215,8 @@ class ScriptedRunner:
         self.main_sha = main_sha
         self.main_history = list(main_history) if main_history is not None else [main_sha]
         self.main_checks_by_sha = main_checks_by_sha or {}
+        self.job_steps = job_steps or {}
+        self.run_log = run_log
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -302,6 +313,16 @@ class ScriptedRunner:
             # l'URL des check-runs porte `/commits/` et serait capturee par
             # elle (le SHA extrait serait `check-runs?per_page=100`).
             return mr.RunResult(0, self.check_runs, "")
+        if c[:2] == ["gh", "api"] and "/actions/jobs/" in c[2]:
+            # #25510 T-J : etapes du job associe au check-run. La reponse
+            # est le nom de la premiere etape en echec ("" = aucune).
+            job_id = c[2].rsplit("/", 1)[-1]
+            step = self.job_steps.get(job_id, "")
+            return mr.RunResult(0, (step + "\n") if step else "\n", "")
+        if c[:3] == ["gh", "run", "view"]:
+            # Log d'echec du run : la sentinelle le lit quand le resume du
+            # check-run ne nomme aucun test.
+            return mr.RunResult(0, self.run_log, "")
         if c[:2] == ["gh", "api"] and "/commits/" in c[2]:
             sha = c[2].rsplit("/", 1)[-1]
             if sha not in self.commits:
@@ -1110,11 +1131,17 @@ def test_main_check_absent_fail_closed(tmp_path):
 # et seul `failure` pose la retenue.
 
 
-def _scripts_check(conclusion, status="completed", summary="21 000 passed", started="2026-11-10T10:00:00Z"):
-    return json.dumps([
-        {"name": "Scripts Tests (CPU)", "conclusion": conclusion, "status": status,
-         "started_at": started, "output": {"summary": summary}}
-    ])
+def _scripts_check(conclusion, status="completed", summary="21 000 passed", started="2026-11-10T10:00:00Z", details_url=None):
+    row = {"name": "Scripts Tests (CPU)", "conclusion": conclusion, "status": status,
+           "started_at": started, "output": {"summary": summary}}
+    if details_url:
+        row["details_url"] = details_url
+    return json.dumps([row])
+
+
+def _job_url(job_id: int) -> str:
+    """`details_url` d'un check-run de job (forme mesuree sur l'API)."""
+    return f"https://github.com/jsboige/CoursIA/actions/runs/43316243195/job/{job_id}"
 
 
 def test_sentinelle_juge_le_commit_derriere_une_tete_en_cours(tmp_path):
@@ -1216,6 +1243,224 @@ def test_sentinelle_sans_verdict_termine_fail_closed_borne(tmp_path, capsys):
     err = capsys.readouterr().err
     assert "fail-closed" in err
     assert str(mr.MAIN_RED_HISTORY_LIMIT) in err
+
+
+# --- #25510 T-J : `failure` d'infrastructure vs verdict de code ----------
+# Un `failure` sans test identifiable peut venir de l'infrastructure (le
+# checkout qui tombe, l'install des dependances qui echoue). La sentinelle
+# ne doit pas retenir `main` sur une panne d'infrastructure : elle remonte
+# au commit precedent. Un `failure` dont la premiere etape en echec est
+# une etape de TEST reste une retenue, meme sans nom de test identifiable.
+
+
+def test_sentinelle_failure_d_infrastructure_ne_pose_pas_de_retenue(tmp_path, capsys):
+    """CONTROLE POSITIF : le checkout en echec n'est pas un verdict de code.
+
+    Mesure de reference (run 43316243195, job 131524893709) : la premiere
+    etape en echec est `Run actions/checkout@v4`, et le log d'echec ne
+    contient aucun jeton `FAILED`/`ERROR` -- donc aucun test n'est
+    identifiable. Le commit est ecarte, le verdict remonte au precedent.
+    """
+    tete = "a1" * 20
+    ancien = "b2" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(131524893709)),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+        job_steps={"131524893709": "Run actions/checkout@v4"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    # Le commit d'infrastructure n'est PAS retenu : le verdict remonte.
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert f"sha={tete}" not in contenu
+    assert f"sha={ancien}" in contenu
+
+
+def test_sentinelle_failure_d_infrastructure_nomme_l_etape_ecartee(tmp_path, capsys):
+    """Point 4 du plan : le journal nomme l'etape ecartee."""
+    tete = "c3" * 20
+    ancien = "c4" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(42)),
+            ancien: _scripts_check("success"),
+        },
+        job_steps={"42": "Install dependencies"},
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "Install dependencies" in out
+    assert "sentinelle main-red" in out
+
+
+def test_sentinelle_failure_a_l_etape_de_test_garde_la_retenue(tmp_path):
+    """CONTROLE NEGATIF : un test non identifiable n'est PAS de l'infra.
+
+    La premiere etape en echec est l'etape de test : la retenue est
+    conservee, et elle porte l'absence d'identification du test.
+    """
+    tete = "d4" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(43)),
+        },
+        job_steps={"43": "Run tests"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
+    assert "test=test-non-identifie-dans-le-check" in contenu
+
+
+def test_sentinelle_reconnait_les_etapes_du_checkout_borne_t_k(tmp_path):
+    """T-K (#25510) : une panne du `git fetch --unshallow` est une panne
+    d'INFRASTRUCTURE, pas un verdict de code.
+
+    Les deux etapes du checkout borne portent le prefixe `T-K :`. Si la
+    sentinelle ne les reconnait pas, un `curl 28` sur le reseau retient
+    `main` au lieu de remonter au commit precedent -- exactement la panne
+    que la sentinelle T-J a ete creee pour ecarter.
+    """
+    tete = "1a" * 20
+    ancien = "2b" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(47)),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+        job_steps={"47": "T-K : ascendance de la tete + la base, sans les 1 606 branches"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert f"sha={tete}" not in contenu
+    assert f"sha={ancien}" in contenu
+
+
+def test_sentinelle_ne_prend_pas_le_prefixe_t_k_sans_le_deux_points(tmp_path):
+    """CONTROLE NEGATIF : le marqueur est `t-k :`, pas `t-k`.
+
+    Un nom d'etape qui porte `T-K` sans les deux points (une etape de
+    test du meme prefixe, un workflow nomme T-K) n'est PAS de l'infra : la
+    retenue doit etre conservee.
+    """
+    tete = "3c" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(48)),
+        },
+        job_steps={"48": "T-K tests du script"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
+
+
+def test_sentinelle_success_ne_lit_aucun_job(tmp_path):
+    """Un `success` ne declenche aucune lecture de job (cout nul)."""
+    tete = "e5" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={tete: _scripts_check("success", details_url=_job_url(44))},
+        job_steps={"44": "Run actions/checkout@v4"},
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    lectures = [c for c, _ in runner.calls if "/actions/jobs/" in " ".join(c)]
+    assert lectures == []
+
+
+def test_sentinelle_lit_le_job_une_seule_fois_par_commit_juge(tmp_path):
+    """Une seule lecture de job par commit juge, et seulement en cas de
+    `failure` sans test identifiable."""
+    tete = "f6" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(45)),
+        },
+        job_steps={"45": "Run tests"},
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    lectures = [c for c, _ in runner.calls if "/actions/jobs/" in " ".join(c)]
+    assert len(lectures) == 1
+
+
+def test_sentinelle_identifie_un_test_et_ne_lit_aucun_job(tmp_path):
+    """Un `failure` dont le resume nomme un test est un verdict de code :
+    la retenue porte le nom du test, et aucun job n'est lu."""
+    tete = "a7" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+                details_url=_job_url(46),
+            ),
+        },
+        job_steps={"46": "Run actions/checkout@v4"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert "test=scripts/tests/test_x.py::test_y" in contenu
+    lectures = [c for c, _ in runner.calls if "/actions/jobs/" in " ".join(c)]
+    assert lectures == []
 
 
 def test_clear_main_red_hold_ne_retire_que_la_ligne_de_la_sentinelle(tmp_path):

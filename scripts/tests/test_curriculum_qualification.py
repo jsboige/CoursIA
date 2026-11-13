@@ -113,6 +113,10 @@ def test_manifeste_livre_couvre_la_serie_pilote():
     series = {s["id"]: s for s in manifest["series"]}
     assert "NLP" in series
     notebooks = series["NLP"]["notebooks"]
+    # La couverture carnet par carnet est portee par check_manifest (deux sens) :
+    # un compte fige casserait a chaque jumeau ajoute a la serie. Le controle
+    # ci-dessous verifie donc l'inventaire (sources du pilote + compagnons
+    # admis individuellement) sans figer un total.
     _assert_nlp_pilot_inventory(notebooks)
     for entry in notebooks:
         assert entry["difficulte"] in cq.DIFFICULTY_LEVELS
