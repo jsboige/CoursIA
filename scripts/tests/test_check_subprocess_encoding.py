@@ -12,13 +12,14 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "audit"))
 
 import check_subprocess_encoding as cse  # noqa: E402
 import git_index_renames  # noqa: E402
 
 # Kept before any fixture replaces it: the #24039 parsing tests below restore
 # the real git layer to exercise it against a synthetic git payload. Since
-# #24068 the probe lives in scripts/git_index_renames.py (shared with the
+# #24068 the probe lives in scripts/audit/git_index_renames.py (shared with the
 # four sibling hooks); main() reads it through the module, so the hermetic
 # pin patches the shared module's git_out -- the single source both probes
 # read.
@@ -335,7 +336,7 @@ def test_main_files_mode_mixed_py_ipynb(tmp_path, capsys):
 
 def test_shared_module_staged_pure_renames_matches_shim(monkeypatch):
     """The check_subprocess_encoding.staged_pure_renames shim delegates to
-    scripts/git_index_renames.py; both must return the same set."""
+    scripts/audit/git_index_renames.py; both must return the same set."""
     payload = "R100\0old/x.py\0new/x.py\0R087\0a.py\0b.py\0"
     monkeypatch.setattr(git_index_renames, "git_out", lambda *a: payload)
     assert cse.staged_pure_renames() == git_index_renames.staged_pure_renames()

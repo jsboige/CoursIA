@@ -26,8 +26,8 @@ ete nommee par personne.
 
 Usage
 -----
-    python scripts/series_saturation.py --json
-    python scripts/series_saturation.py --days 7
+    python scripts/coordination/series_saturation.py --json
+    python scripts/coordination/series_saturation.py --days 7
 """
 
 from __future__ import annotations
@@ -50,7 +50,7 @@ from gh_payload_cache import PayloadCache, cache_key
 # livraisons qu'une fenetre longue existe pour voir (#19209). Le helper
 # retrecit une tranche saturee et **leve** plutot que de rendre un corpus
 # tronque. Import par chemin de dossier, comme `variation_adjacency_guard.py`.
-sys.path.insert(0, str(Path(__file__).resolve().parent / "ci"))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 from fetch_merged_prs_since import (  # noqa: E402
     fetch as fetch_merged_window,
     run_gh as fetch_slice_raw,
@@ -568,7 +568,7 @@ def saturation(prs: list[dict]) -> tuple[dict[str, dict], dict[int, str]]:
             # alphabetique : une PR d outillage pur rattachait donc l issue
             # qu elle cite a `scripts/<fichier>.py`. Mesure du 2026-08-29 :
             # `i2f[12373]` -- l EPIC MGS, une serie de notebooks -- valait
-            # `scripts/series_saturation.py`, parce que mes propres PRs de
+            # `scripts/coordination/series_saturation.py`, parce que mes propres PRs de
             # picker citent #12373 en prose et ne touchent que des scripts.
             # Toute fille de cet EPIC heritait de la zone d un script.
             dominant = max(
@@ -728,7 +728,7 @@ def enrich_parent_families(pool, issue_to_family: dict, zones: dict) -> dict:
     EPIC c'est un piege : un EPIC est un tracker, cite par tout ce qui
     l'outille, et la premiere PR d'outillage le fige sur un chemin de script
     qui ne portera jamais de notebook. Mesure du 2026-08-29 : #12373 (EPIC
-    MGS, 9 paires de notebooks) etait fige sur `scripts/series_saturation.py`,
+    MGS, 9 paires de notebooks) etait fige sur `scripts/coordination/series_saturation.py`,
     zone a 0 notebook -- si bien que sa fille #13268, sans PR citante propre,
     heritait d'un frein NUL (x1.00) la ou sa soeur #13394 prenait x0.33 dans
     la meme zone saturee. Deux grains d'expansion du meme EPIC, deux poids
@@ -785,7 +785,7 @@ def resolve_family(item: dict, issue_to_family: dict, families=(),
     n'informe pas un frein qui compte des notebooks : la cascade continue au
     lieu de s'arreter dessus (`zones` fourni). Mesure du 2026-08-29 :
     #13268 (paire 8/9 de l'EPIC #12373, MGS) n'avait pas de PR citante, sa
-    source parente rendait `scripts/series_saturation.py` -- l'EPIC est un
+    source parente rendait `scripts/coordination/series_saturation.py` -- l'EPIC est un
     tracker, la premiere PR d'outillage qui le cite le lie a un chemin de
     script par `setdefault` + departage alphabetique -- et ce chemin, qui ne
     peut par construction porter aucun notebook, ANNULAIT le frein : x1.00 la
