@@ -23,7 +23,7 @@ import sys
 import os
 import json
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "coordination"))
 
 from check_already_delivered import check  # noqa: E402
 
@@ -178,10 +178,10 @@ def test_ambigu_body_ref_sans_keyword_partage():
     """
     r = _patched_check(
         issue=13876,
-        title="scripts/check_already_delivered.py preflight cross-check",
+        title="scripts/coordination/check_already_delivered.py preflight cross-check",
         git_log={"commits": [], "count": 0, "note": "subject-only"},
         search_prs={"prs": [], "count": 0, "errors": []},
-        body={"body_excerpt": "old refs: #9780, #10000, #10500", "title": "scripts/check_already_delivered.py preflight", "state": "OPEN", "pr_refs": [9780, 10000, 10500], "commit_refs": []},
+        body={"body_excerpt": "old refs: #9780, #10000, #10500", "title": "scripts/coordination/check_already_delivered.py preflight", "state": "OPEN", "pr_refs": [9780, 10000, 10500], "commit_refs": []},
         indirect=[
             {"number": 9780, "state": "MERGED", "mergedAt": "2024-01-01T00:00:00Z", "title": "fix(notebooks): add X11 binding", "url": "", "body": ""},
             {"number": 10000, "state": "MERGED", "mergedAt": "2024-06-01T00:00:00Z", "title": "chore(deps): bump Y", "url": "", "body": ""},
@@ -191,7 +191,7 @@ def test_ambigu_body_ref_sans_keyword_partage():
     assert r["verdict"] == "AMBIGU", r
     assert r["exit_code"] == 2
     # None of the 3 historical PRs share a keyword with the issue title
-    # (issue title: "scripts/check_already_delivered.py preflight cross-check")
+    # (issue title: "scripts/coordination/check_already_delivered.py preflight cross-check")
     assert r["indirect_merged_prs"] == [9780, 10000, 10500]
     assert r["indirect_credited_prs"] == [], "the keyword filter must reject these"
 

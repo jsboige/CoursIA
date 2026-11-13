@@ -270,7 +270,14 @@ PILOT_LOT_NAME = "PILOT"
 # dans le workflow source n'a pas ete renomme byte-identique au `guard.name`.
 # Programme #12567 est le geste de bascule ; en attendant, le filet
 # d'identite les signale sans les exiger.
-TRANCHE_ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
+#
+# VIDE depuis le 2026-11-12 : le dernier membre (TRANCHE10 --
+# `notebook-outputs-required`) a ete ALIGNE dans le meme commit que
+# l'absorption de la tranche T-A de #25510 -- le job `validate` du workflow
+# source a ete renomme byte-identique au `guard.name` ET son declencheur
+# `pull_request` retire. Le filet d'identite VERIFIE donc ce garde au lieu
+# de l'exempter (cf check_absorbed_check_run_identity.py).
+TRANCHE_ALIGNMENT_EN_COURS = frozenset()
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
@@ -598,16 +605,17 @@ PILOT: list[Guard] = [
             ".github/workflows/*.yml",
             ".github/workflows/*.yaml",
             "scripts/ci/check_self_hosted_runner_policy.py",
-            "scripts/ci/self_hosted_timeout_baseline.txt",
             "scripts/tests/test_check_self_hosted_runner_policy.py",
             "scripts/ci/fast_lane_registry.py",
         ],
-        # #22954 : `--check-timeouts` ajoute le cliquet qui refuse un job
-        # auto-heberge sans `timeout-minutes` (defaut d'Actions : 6 h, et un job
-        # fige tient son slot tout ce temps). La dette existante est nommee dans
-        # `self_hosted_timeout_baseline.txt`, qui ne doit jamais grossir.
+        # #22954 : le cliquet refuse un job auto-heberge sans `timeout-minutes`
+        # (defaut d'Actions : 6 h, et un job fige tient son slot tout ce temps).
+        # #23349 (tranche finale, 2026-11-11) : la dette historique est eteinte,
+        # le fichier `self_hosted_timeout_baseline.txt` est supprime, et le
+        # cliquet est le DEFAUT du CLI -- l'argv ne porte plus le drapeau, et
+        # `--no-check-timeouts` serait la seule sortie (visible dans ce diff).
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
-              "--check", "--check-timeouts"],
+              "--check"],
         blocking=True,
         shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
@@ -1282,6 +1290,9 @@ TRANCHE5: list[Guard] = [
             ".github/workflows/scripts-tests.yml",
             ".github/workflows/ml-tests.yml",
             ".github/workflows/secret-scan.yml",
+            # secret-scan-controls.yml porte depuis #25510 les cibles gitleaks
+            # de WORKFLOW_COVERAGE : l'editer peut desynchroniser le dict.
+            ".github/workflows/secret-scan-controls.yml",
             ".github/workflows/ict-tests.yml",
             # sudoku-tests.yml declare une cible de couverture (cible-fichier
             # `test_dlx_certificates.py`, cablage de #22375) : l'editer peut
@@ -1996,7 +2007,7 @@ TRANCHE19: list[Guard] = [
 #
 # Origine : reserve de revue Hermes sur #19260 -- « l'organe n'est cable nulle
 # part ». Le README de `docs/` reecrit par cette PR remplace le compte ecrit
-# (146) par l'invariant lui-meme, en citant `python scripts/check_docs_index.py`
+# (146) par l'invariant lui-meme, en citant `python scripts/ci/check_docs_index.py`
 # et son `exit 1`. Or `grep -rln check_docs_index .github/workflows/
 # scripts/ci/` rendait vide des deux cotes : l'invariant n'existait que quand un
 # humain pensait a l'executer. Si une revision supprimait une ligne d'index,
@@ -2027,12 +2038,12 @@ TRANCHE18: list[Guard] = [
         source=FAST_LANE_NATIVE,
         paths=[
             "docs/**",
-            "scripts/check_docs_index.py",
+            "scripts/ci/check_docs_index.py",
             "scripts/tests/test_check_docs_index.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
-        argv=["python", "scripts/check_docs_index.py"],
+        argv=["python", "scripts/ci/check_docs_index.py"],
         blocking=True,
         absorbed=True,
     ),
@@ -2987,6 +2998,83 @@ def _body_md_hierarchy(rc: int, payload: str, ctx: dict) -> str:
     return "\n".join(lines)
 
 
+def _body_outputs_required(rc: int, payload: str, ctx: dict) -> str:
+    """Recapitulatif du garde `outputs-required` (#25510, tranche T-A).
+
+    Le corps est celui du workflow source, mot pour mot : c'est la section
+    que les reviewers lisent depuis le 2026-09-11 (`## Notebook
+    outputs-required (H.4 schema): ...`), et le dossier de prevalidation en
+    reconnait le prefixe (`_BOT_ONLY_PREFIX_MARKERS`). Le workflow source
+    ecrivait cette section dans le resume de job PUIS la collait (ou la
+    retirait) ; ici elle n'est plus ecrite que dans le commentaire.
+
+    Le SUCCES RETIRE la section (#15511 : le succes ne parle plus) -- c'est
+    exactement ce que faisait le workflow (`--clear` sur un run vert).
+    """
+    data: dict = {}
+    if payload.strip():
+        try:
+            data = json.loads(payload)
+        except (json.JSONDecodeError, ValueError):
+            data = {}
+    if not isinstance(data, dict):
+        data = {}
+    total = data.get("occurrences") or 0
+    notebooks = data.get("notebooks") or []
+    errors = data.get("errors") or []
+    if total > 0:
+        lines = [
+            f"## Notebook outputs-required (H.4 schema): **FAIL** ({total} "
+            f"defective cell(s) in {len(notebooks)} notebook(s))",
+            "",
+        ]
+        for entry in notebooks:
+            lines.append(f"### {entry.get('notebook', '')}")
+            lines.append("")
+            for defect in entry.get("defects") or []:
+                lines.append(
+                    f"- cell#{defect.get('cell_index')} "
+                    f"id={defect.get('cell_id')}: {defect.get('reason', '')}"
+                )
+            lines.append("")
+        lines += [
+            "### How to fix",
+            "",
+            "A code cell without an `outputs` key violates the nbformat 5.10.4 "
+            "strict schema:",
+            "",
+            "```python",
+            "# Option 1: re-execute the notebook so Papermill fills outputs",
+            "python scripts/notebook_tools/notebook_tools.py execute <path>",
+            "",
+            "# Option 2: add an empty outputs list explicitly (stub cells)",
+            "# Find cells missing the key in the .ipynb JSON and add:",
+            '#   "outputs": [],',
+            '# immediately after the "source" entry.',
+            "```",
+            "",
+            "See Hermes Concern on PR #15631 (2026-09-11T19:06:00Z) for the "
+            "founding incident.",
+            "",
+        ]
+        return "\n".join(lines)
+    if errors:
+        lines = [
+            f"## Notebook outputs-required (H.4 schema): **ERROR** "
+            f"({len(errors)} unreadable notebook(s))",
+            "",
+        ]
+        for entry in errors:
+            lines.append(
+                f"- {entry.get('notebook', '')}: {entry.get('error', '')}"
+            )
+        lines.append("")
+        return "\n".join(lines)
+    # PASS : la section est RETIREE ; le verdict vit dans le check-run du
+    # garde bloquant (TRANCHE10), qui porte le detail.
+    return ""
+
+
 _COMMENTS_OUT_GLOB = "**/*.ipynb"
 
 # ---------------------------------------------------------------------------
@@ -3882,6 +3970,175 @@ TRANCHE40: list[Guard] = [
         blocking=True,
         needs_base=True,
         diff_bounded=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 42 (#25510, tranche T-A du 2026-11-12) -- VOIE RAPIDE / VOIE LENTE.
+#
+# Le programme "tri de la CI" : un carnet pousse sur une PR declenche ~33
+# workflows, chacun avec son `actions/checkout` (82 % du temps d'execution
+# d'un garde, mesure du coordinateur dans docs/coordination/ci-two-tier.md).
+# Ces gardes AUTONOMES ne regardent que la PR -- ils n'ont besoin ni du
+# corps de la PR, ni d'un artefact, ni d'une etiquette. La voie rapide les
+# execute dans UN checkout partage : c'est ce que cette tranche absorbe.
+#
+# GESTE (procedure de l'etape 3 de #12856) : dans le meme commit, on retire
+# le declencheur `pull_request` du workflow source ET on renomme le job
+# byte-identique au `guard.name`. `check_absorbed_check_run_identity.py`
+# VERIFIE alors au lieu d'exempter, et `check_absorbed_path_parity.py`
+# exige que les `paths` du registre COUVRENT ceux du declencheur retire
+# (sinon le garde cesse d'etre selectionne pour les fichiers qu'il
+# surveillait).
+#
+# PERIMETRE DE CETTE TRANCHE (5 gardes, 5 workflows) :
+#   - `notebook-outputs-required` : le job `validate` est renomme
+#     byte-identique a "Notebook outputs required (H.4 schema)" (le garde
+#     bloquant est TRANCHE10) ; son recapitulatif collant est repris par une
+#     entree de registre a commentaires (le workflow d'origine ecrivait ce
+#     texte dans le resume de job PUIS le collait).
+#   - `notebook-cell-source-parses`, `notebook-papermill-ratchet`,
+#     `notebook-cell-id-ratchet`, `bios-companion-coverage` : un job, un
+#     detecteur, aucun effet de bord PR (ni etiquette, ni artefact, ni
+#     commentaire).
+#
+# HORS PERIMETRE MALGRE SON RANG (mesure, pas intuition) :
+#   - `notebook-exec-sequence-ratchet` : son declencheur porte le type
+#     `labeled`, qui porte le MECANISME D'ACK (`exec-sequence-ack` +
+#     marker `[EXEC-SEQ-ACK] head=<sha40>`). La voie rapide ne rejoue que
+#     [opened, synchronize, reopened] : absorber ce workflow supprimerait le
+#     seul evenement qui fait relire l'ack a l'organe, et le garde resterait
+#     rouge malgre un ack pose. Il part en tranche 2, avec la question du
+#     declencheur `labeled` traitee explicitement.
+#
+# DEVIATIONS CONNUES, ETABLIES ET NON CACHEES :
+#   1. `notebook-outputs-required` : le `rc=2` de l'organe (perimetre PR non
+#      evaluable, sonde git en echec) reste en NEUTRAL -- decision #23068 deja
+#      inscrite dans TRANCHE10. Le workflow d'origine rougeait sur TOUT
+#      non-zero ; apres absorption, le cas « sonde git en echec » ne peut plus
+#      accuser la PR, il la signale comme non concluant.
+#   2. `notebook-cell-source-parses` : le workflow utilisait `BASE` = SHA de
+#      base de l'evenement ; la voie rapide travaille en `origin/<base_ref>`.
+#      Les deux sont equivalentes pour `git diff A...B` (trois points =
+#      merge-base), convention deja celle de la voie rapide.
+# ---------------------------------------------------------------------------
+TRANCHE42: list[Guard] = [
+    # --- notebook-outputs-required -----------------------------------------
+    # Recapitulatif collant de l'organe. Le VERDICT bloquant est porte par
+    # TRANCHE10 (meme workflow, nom canonique) ; ce garde ne publie que la
+    # section consultative, comme le faisait le workflow d'origine.
+    Guard(
+        name="Detect notebook changes (outputs-required)",
+        source="notebook-outputs-required.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_notebook_outputs_required.py",
+            ".github/workflows/notebook-outputs-required.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        blocking=False,
+        absorbed=True,
+        # Le verdict de ce garde est son commentaire : `argv` reste vide et
+        # le moteur execute `commenters` a sa place (cf fast_lane.main).
+        argv=[],
+        commenters=(
+            Commenter(
+                header="notebook-outputs-required",
+                argv=[
+                    "python",
+                    "scripts/notebook_tools/check_notebook_outputs_required.py",
+                    "--pr-diff", "{base_ref}", "HEAD", "--json",
+                ],
+                body=_body_outputs_required,
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+            ),
+        ),
+    ),
+    # --- notebook-cell-source-parses ---------------------------------------
+    Guard(
+        name="cell-source-parses",
+        source="notebook-cell-source-parses.yml",
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_cell_source_parses.py",
+            ".github/workflows/notebook-cell-source-parses.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "unittest",
+            "scripts.tests.test_check_cell_source_parses", "-v",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_cell_source_parses.py",
+            "--target-py", "3.12", "--pr-diff", "{base_ref}", "HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # --- notebook-papermill-ratchet ----------------------------------------
+    Guard(
+        name="Papermill ratchet (base vs PR)",
+        source="notebook-papermill-ratchet.yml",
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_papermill_ratchet.py",
+            ".github/workflows/notebook-papermill-ratchet.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_check_papermill_ratchet.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_papermill_ratchet.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # --- notebook-cell-id-ratchet ------------------------------------------
+    Guard(
+        name="Cell ID ratchet (base vs PR)",
+        source="notebook-cell-id-ratchet.yml",
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_cell_id_invalid_ratchet.py",
+            "scripts/notebook_tools/fix_cell_ids.py",
+            "scripts/notebook_tools/tests/test_cell_id_schema.py",
+            ".github/workflows/notebook-cell-id-ratchet.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_cell_id_schema.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_cell_id_invalid_ratchet.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # --- bios-companion-coverage -------------------------------------------
+    Guard(
+        name="Companion coverage (ps1/sh + Setup bi-OS)",
+        source="bios-companion-coverage.yml",
+        paths=[
+            "**/*.ps1",
+            "**/*.sh",
+            "**/README*.md",
+            "**/*[Ss]etup*.ipynb",
+            "scripts/ci/check_companion_coverage.py",
+            ".github/workflows/bios-companion-coverage.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/ci/check_companion_coverage.py"],
+        blocking=True,
         absorbed=True,
     ),
 ]

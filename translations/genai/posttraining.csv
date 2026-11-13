@@ -329,7 +329,7 @@ Si une de ces reponses pose problème, **revoir les sections 1-3** avant d'attaq
 ## Conclusion
 
 Ce notebook a etabli la **carte mentale** sans entrer dans le code d'entraînement. Les notebooks suivants ouvrent la cle a chaque technique. La règle d'or pour le reste de la serie : **comprendre le loss avant d'appeler `trainer.train()`**. Une cellule qui converge sans qu'on sache pourquoi n'apprend rien.",,,,,,,,2b45751a79b2361a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,72256bd0,markdown,fr,a82b29c3fc39694b,"[← PT-01 Introduction et vue d'ensemble](PT_01_intro_post_training.ipynb) | [↑ PostTraining](README.md) | [PT-03 Direct Préférence Optimization (DPO) →](PT_03_dpo_direct_preference.ipynb)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,72256bd0,markdown,fr,a6f141aa63f7c2de,"[← PT-01 Introduction et vue d'ensemble](PT_01_intro_post_training.ipynb) | [↑ PostTraining](README.md) | [PT-03 Direct Préférence Optimization (DPO) →](PT_03_dpo_direct_preference.ipynb)
 
 ***
 
@@ -337,7 +337,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,72256bd0,markdown,
 
 **Serie PostTraining** — cf [README.md](README.md) pour la carte mentale globale et [PT_01](PT_01_intro_post_training.ipynb) pour la frise historique 2017-2025.
 
-Ce notebook **execute** un Supervised Fine-Tuning sur un sous-ensemble curated de `HuggingFaceH4/ultrafeedback_binarized` (champ `chosen`) appliquant `trl.SFTTrainer` + LoRA (PEFT) au modèle `Qwen/Qwen3.5-0.8B` (petit modèle SOTA de la famille Qwen3.5, vision-langage unifié). **Migration Qwen3.5 (mandat #10289)** : ce notebook était initialement exécuté sur Qwen2.5-0.5B-Instruct ; il a été migré vers Qwen3.5-0.8B pour sortir la série du toy-env — le SFT s'exécute désormais sur le vrai petit modèle SOTA, avec outputs réels. C'est le **maillon de base** de la chaîne post-training : sans SFT correctement converge, DPO/GRPO/RLVR n'ont pas de policy de depart digne d'etre raffinee.
+Ce notebook met en œuvre un Supervised Fine-Tuning sur un sous-ensemble sélectionné de `HuggingFaceH4/ultrafeedback_binarized` (champ `chosen`) avec `trl.SFTTrainer` et LoRA (PEFT), appliqués à `Qwen/Qwen3.5-0.8B`. Le modèle de base Qwen3.5-0.8B a pris la suite de Qwen2.5-0.5B-Instruct (contexte de migration et provenance en fin de carnet). Il présente le calcul du loss, le format chat, la configuration d’entraînement, les traces produites et la comparaison qualitative des réponses. Le SFT forme le maillon de base de la chaîne post-training : DPO, GRPO et RLVR affinent ensuite cette policy.
 
 ## Objectif pedagogique
 
@@ -362,7 +362,7 @@ Ce pattern respecte **C.1** (aucun `raise NotImplementedError` / `assert False`)
 - Ouyang et al., InstructGPT, NeurIPS 2022 — recipe canonique SFT + RM + PPO
 - HuggingFace TRL [`SFTTrainer` documentation](https://huggingface.co/docs/trl/sft_trainer)
 - HuggingFace PEFT [`LoraConfig` documentation](https://huggingface.co/docs/peft/conceptual_guides/lora)
-",,,,,,,,a82b29c3fc39694b,,,,,,,,,,,,,,,
+",,,,,,,,a6f141aa63f7c2de,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,02be966e,markdown,fr,66f0dc2045865f7c,"## 1. Math du loss SFT
 
 Le loss SFT est une **cross-entropy autoregressive conditionnelle** :
@@ -950,13 +950,14 @@ Le notebook **PT-03** reprend le checkpoint produit ici (`./pt02_sft_qwen_lora`)
 
 **Suite de la serie** : PT-04 GRPO (livrable cle), PT-05 RLVR (migration Qwen3.5 en cours), PT-06 evaluation comparative finale.
 ",,,,,,,,bc6d88d41868793a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,5d07df9f,markdown,fr,1d38aab6311cddb8,"[← PT-02 Supervised Fine-Tuning baseline (SFT)](PT_02_sft_baseline.ipynb) | [↑ PostTraining](README.md) | [PT-04 Group Relative Policy Optimization →](PT_04_grpo_deepseek_r1.ipynb)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,5d07df9f,markdown,fr,371d160cb49ecedb,"[← PT-02 Supervised Fine-Tuning baseline (SFT)](PT_02_sft_baseline.ipynb) | [↑ PostTraining](README.md) | [PT-04 Group Relative Policy Optimization →](PT_04_grpo_deepseek_r1.ipynb)
 
 ***
 
 # PT-03 — Direct Préférence Optimization (DPO)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742, sub-issue #1756)
+DPO apprend à préférer une réponse à une autre à partir de paires `chosen` / `rejected`, sans entraîner de reward model séparé. Ce carnet dérive son loss depuis Bradley–Terry et met en pratique l’entraînement avec `trl.DPOTrainer`. Dans le parcours Post-Training, il prolonge le SFT de [PT-02](PT_02_sft_baseline.ipynb) et prépare l’étude du GRPO en [PT-04](PT_04_grpo_deepseek_r1.ipynb).
+
 **Pre-requis** : PT-01 (intro) et PT-02 (SFT baseline) recommandes
 **Objectifs pedagogiques** :
 1. Comprendre la formule du loss DPO et son lien avec le modèle de Bradley-Terry
@@ -965,7 +966,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,5d07df9f,
 4. Evaluer la préférence accuracy : frequence ou le modèle prefere chosen > rejected
 5. Identifier les 4 pieges classiques du DPO en pratique
 
-**Reference cle** : Rafailov et al., ""Direct Préférence Optimization: Your Language Model is Secretly a Reward Model"" (NeurIPS 2023), arXiv:2305.18290",,,,,,,,1d38aab6311cddb8,,,,,,,,,,,,,,,
+**Reference cle** : Rafailov et al., ""Direct Préférence Optimization: Your Language Model is Secretly a Reward Model"" (NeurIPS 2023), arXiv:2305.18290",,,,,,,,371d160cb49ecedb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,69b49af6,markdown,fr,fcbba8cae18e040f,"## 1. Le loss DPO — de RLHF a l'optimisation directe
 
 **Rappel — RLHF classique (3 étapes)**
@@ -1529,14 +1530,14 @@ Le DPO optimise directement sur des **paires de préférence** — mais il neces
 Le GRPO = la technique cle derriere **Deepseek-R1** (janvier 2025) — le prochain notebook (PT-04) sera le livrable central de cette serie.
 
 **Pourquoi GRPO > PPO pour le reasoning** : pas de critic network, advantage calcule par normalisation intra-group (variance naturelle reduite), récompense verifiable (exact match sur math/code).",,,,,,,,437a35450d31bbef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2a116876,markdown,fr,f55d42655a9df236,"[← PT-03 Direct Préférence Optimization (DPO)](PT_03_dpo_direct_preference.ipynb) | [↑ PostTraining](README.md) | [PT-05 Reinforcement Learning with Verifiable →](PT_05_rlvr_verifiable_rewards.ipynb)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2a116876,markdown,fr,a5cdaf82443dc986,"[← PT-03 Direct Préférence Optimization (DPO)](PT_03_dpo_direct_preference.ipynb) | [↑ PostTraining](README.md) | [PT-05 Reinforcement Learning with Verifiable →](PT_05_rlvr_verifiable_rewards.ipynb)
 
 ***
 
 # PT-04 — Group Relative Policy Optimization (GRPO)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742, sub-issue #1757)
-**LIVRABLE CLE** de l'Epic #1742
+GRPO ajuste une policy en comparant plusieurs complétions d’un même prompt, puis en normalisant leurs récompenses sans réseau critique. Ce carnet relie cette idée à la formule de l’avantage relatif, à `trl.GRPOTrainer` et à l’analyse des effets du group size. Dans le parcours Post-Training, il s’appuie sur [PT-03 (DPO)](PT_03_dpo_direct_preference.ipynb) et prépare [PT-05 (RLVR)](PT_05_rlvr_verifiable_rewards.ipynb).
+
 **Pre-requis** : PT-01 (intro), PT-02 (SFT), PT-03 (DPO) recommandes
 **Objectifs pedagogiques** :
 1. Comprendre pourquoi GRPO est la technique cle derriere Deepseek-R1 (janvier 2025)
@@ -1548,7 +1549,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2a116876,markd
 **References clés** :
 - Shao et al., ""DeepSeekMath: Pushing the Limits of Mathematical Reasoning in Open Language Models"" (2024) — paper origin GRPO
 - Deepseek-AI, ""DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning"" (2025)
-- HuggingFace TRL GRPOTrainer integration docs (2025)",,,,,,,,f55d42655a9df236,,,,,,,,,,,,,,,
+- HuggingFace TRL GRPOTrainer integration docs (2025)",,,,,,,,a5cdaf82443dc986,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,898a98aa,markdown,fr,bfcb8c66887c7703,"## 1. Pourquoi GRPO a revolutionne le post-training (janvier 2025)
 
 ### Le choc Deepseek-R1
@@ -2257,13 +2258,14 @@ Le RLVR = la variante GRPO qui a fait emerger le **reasoning spontane** dans Dee
 **Prochaines étapes** :
 - PT-05 : GRPO + verifier sympy sur GSM8K (math word problems)
 - PT-06 : Evaluation comparative SFT/DPO/GRPO/RLVR",,,,,,,,1ee4f6132accbd5b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,1b882a0f,markdown,fr,eff8816892c3c7da,"[← PT-04 Group Relative Policy Optimization](PT_04_grpo_deepseek_r1.ipynb) | [↑ PostTraining](README.md) | [PT-06 Evaluation Comparative du Post-Training →](PT_06_eval_comparative.ipynb)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,1b882a0f,markdown,fr,6c075b99384d5752,"[← PT-04 Group Relative Policy Optimization](PT_04_grpo_deepseek_r1.ipynb) | [↑ PostTraining](README.md) | [PT-06 Evaluation Comparative du Post-Training →](PT_06_eval_comparative.ipynb)
 
 ***
 
 # PT-05 — Reinforcement Learning with Verifiable Rewards (RLVR)
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742)
+Ce carnet présente l’apprentissage par récompenses vérifiables (RLVR), construit un vérificateur mathématique avec SymPy et compare ce signal exact aux récompenses heuristiques de GRPO. Il distingue aussi les mesures prévues des résultats réellement produits par ce notebook. Dans le parcours Post-Training, il suit le GRPO de [PT-04](PT_04_grpo_deepseek_r1.ipynb) et mène à [PT-06](PT_06_eval_comparative.ipynb), consacré à la comparaison des méthodes.
+
 **Pre-requis** : PT-01 (intro), PT-04 (GRPO) fortement recommande
 **Objectifs pedagogiques** :
 1. Comprendre la différence fondamentale entre reward heuristique et reward verifiable
@@ -2287,7 +2289,7 @@ seul seed est un resultat attendu, pas un echec a maquiller.
 **References clés** :
 - Lightman et al., ""Let's Verify Step by Step"" (OpenAI, 2023) — process vs outcome reward
 - Deepseek-AI, ""DeepSeek-R1"" (2025) — RLVR for reasoning emergence
-- Cobbe et al., ""Training Verifiers to Solve Math Word Problems"" (GSM8K, 2021)",,,,,,,,eff8816892c3c7da,,,,,,,,,,,,,,,
+- Cobbe et al., ""Training Verifiers to Solve Math Word Problems"" (GSM8K, 2021)",,,,,,,,6c075b99384d5752,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,c9cf7e54,markdown,fr,918ff8b893b8d320,"## 1. Pourquoi les rewards verifiables changent tout
 
 ### Le problème des rewards heuristiques
@@ -3067,14 +3069,14 @@ Avec PT-01 a PT-05, nous avons couvert les 5 techniques majeures du post-trainin
 PT-06 conclura la serie en evaluant les mêmes prompts avec les 4 approaches et en comparant les metriques clés : accuracy, diversity, coherence, et cout compute.
 
 **Ce que cette serie demontre** : le chemin du post-training en 2025 n'est pas ""une technique unique"" mais un **pipeline** (SFT → DPO/GRPO → RLVR) ou chaque étape affine le modèle de maniere complémentaire.",,,,,,,,00b306e80497b0ef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,e4c8e5a7,markdown,fr,7cc2acddf610ee0e,"[← PT-05 Reinforcement Learning with Verifiable](PT_05_rlvr_verifiable_rewards.ipynb) | [↑ PostTraining](README.md) | [PT-07 Détecter le reward hacking →](PT_07_rewardspy_reward_hacking.ipynb)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,e4c8e5a7,markdown,fr,630aca5475a645d0,"[← PT-05 Reinforcement Learning with Verifiable](PT_05_rlvr_verifiable_rewards.ipynb) | [↑ PostTraining](README.md) | [PT-07 Détecter le reward hacking →](PT_07_rewardspy_reward_hacking.ipynb)
 
 ***
 
 # PT-06 — Evaluation Comparative du Post-Training
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742)
-**Dernier livrable** de la serie
+Cette évaluation met en regard SFT, DPO, GRPO et RLVR selon leurs objectifs, leurs données, leurs coûts et leurs limites, puis propose des repères pour choisir une stratégie de post-training.
+
 **Pre-requis** : PT-01 a PT-05 (tous merges)
 **Objectifs pedagogiques** :
 1. Synthetiser les 4 techniques de post-training etudiees (SFT, DPO, GRPO, RLVR)
@@ -3087,7 +3089,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,e4c8e5a7,markd
 - Rafailov et al., ""Direct Préférence Optimization"" (2023) — DPO
 - Shao et al., ""DeepSeekMath"" (2024) — GRPO
 - Deepseek-AI, ""DeepSeek-R1"" (2025) — RLVR
-- Ouyang et al., ""Training language models to follow instructions with human feedback"" (InstructGPT, 2022)",,,,,,,,7cc2acddf610ee0e,,,,,,,,,,,,,,,
+- Ouyang et al., ""Training language models to follow instructions with human feedback"" (InstructGPT, 2022)",,,,,,,,630aca5475a645d0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,929715e7,markdown,fr,ddd9c451d30479e9,"## 1. Recap de la serie Post-Training
 
 Au cours de cette serie (PT-01 a PT-05), nous avons etudie les techniques majeures du post-training 2024-2025 :
@@ -6789,15 +6791,16 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,19301
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,50ccc173,markdown,fr,c86f79fa78592c93,"L'entraînement des trois méthodes (REINFORCE, RLOO, GRPO) sur CPU prend environ 15 secondes au total. Les résultats montrent que REINFORCE avec baseline batch atteint une récompense finale de 0,688, RLOO avec baseline leave-one-out obtient 0,715, et GRPO avec baseline de groupe normalisée atteint 0,875, et le classement observé contredit l'intuition « non biaisé donc meilleur » : les deux estimateurs à avantage non biaisé (REINFORCE à baseline batch, RLOO leave-one-out) finissent en dessous de GRPO, dont l'avantage inclut $r_i$ dans la moyenne de groupe. GRPO ne gagne pas par ce biais mais par la normalisation par l'écart-type du groupe, un choix de passage à l'échelle (scaling) du gradient et non d'estimation — cf. l'interprétation ci-dessous.",,,,,,,,c86f79fa78592c93,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,2262d9e3,markdown,fr,8960ba66bac8ce43,"Les courbes d'apprentissage superposées illustrent la progression des récompenses pour les trois méthodes. On observe que RLOO et GRPO convergent plus rapidement et vers des valeurs plus élevées que REINFORCE, démontrant l'efficacité des baselines leave-one-out et de groupe pour stabiliser et accélérer l'apprentissage par renforcement.",,,,,,,,8960ba66bac8ce43,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb,d7a0cd80,markdown,fr,71d73898049f3c50,"L'analyse du budget paramétrique révèle que l'acteur (policy) compte 1416 paramètres. L'économie de RLOO et GRPO par rapport à une approche type PPO avec critique est estimée à environ 1185 paramètres (46% de réduction), au prix d'un surcoût de 7 évaluations par prompt par rapport à REINFORCE (avec G=8). Ce trade-off illustre le compromis classique entre complexité du modèle et coût computationnel.",,,,,,,,71d73898049f3c50,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,34e377ec,markdown,fr,56bcc262bff3cce7,"[← PT-11a GRPO + RLVR sur Qwen3.5-0.8B](PT_11a_grpo_qwen35_rlvr.ipynb) | [↑ PostTraining](README.md) | [PT-11c RLVR sur Qwen3-1.7B/2B →](PT_11c_grpo_qwen17_rlvr.ipynb)
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,34e377ec,markdown,fr,2456980ee6802af4,"[← PT-11a GRPO + RLVR sur Qwen3.5-0.8B](PT_11a_grpo_qwen35_rlvr.ipynb) | [↑ PostTraining](README.md) | [PT-11c RLVR sur Qwen3-1.7B/2B →](PT_11c_grpo_qwen17_rlvr.ipynb)
 
 ***
 
 # PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) + rewardspy.watch ONLINE + Z3 Tier-1 verifier
 
-**Serie** : Post-Training SOTA 2024-2025 (Epic #1742, PT-11 = sous-axe RLVR de #10289)
+Ce carnet montre un pipeline RLVR exécuté sur Qwen3.5-0.8B avec QLoRA 4-bit, des récompenses vérifiables par SymPy et un suivi en ligne du reward hacking. Il examine aussi la convergence et les cas où ce petit modèle ou ce type de récompense ne convient pas. Ce carnet prolonge le parcours Post-Training par une mise en œuvre du RLVR sur un vrai LLM, dans la continuité du [PT-05 pédagogique](PT_05_rlvr_verifiable_rewards.ipynb) ; la [carte de la série](README.md) situe les autres étapes.
+
 **Pre-requis** : PT-05 (RLVR pedagogique, SymPy verifier) et PT-04 (GRPO), patron transposé
-**Objectif acceptance** : demonstrer un pipeline RLVR **complet et executé** sur un **vrai LLM**
+**Objectifs pédagogiques** : démontrer un pipeline RLVR **complet et exécuté** sur un **vrai LLM**
 (Qwen3.5-0.8B, QLoRA 4-bit), avec rewards **verifiables** (SymPy exact match), instrumentation
 **ONLINE** par `rewardspy.watch` (detecteur reward hacking), et verdict **honnête** sur la convergence.
 
@@ -6809,7 +6812,7 @@ MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,34
 **Différence vs PT-05** : PT-05 documente le patron RLVR sur Qwen2.5-0.5B en mode CPU-safe
 (demonstration pedagogique, pas d'exécution reelle). PT-11b execute **réellement** sur GPU
 avec Qwen3.5-0.8B QLoRA 4-bit, ≥100 steps GRPO, courbe de reward reelle, et signal Goodhart
-via `rewardspy.watch` ONLINE (cf acceptance #10289).
+via `rewardspy.watch` ONLINE (voir la note de provenance en pied de carnet).
 
 > **Note méthodologique — quand ce notebook est utile (et quand il ne l'est pas) :**
 
@@ -6839,7 +6842,7 @@ pas la capacité de la carte : le même run tient donc sur une carte de
 8 Go. Le pourcentage, lui, ne vaut que rapporté au total **de la machine
 qui a mesuré** — c'est ce que la cellule de training imprime désormais
 (`total_memory` lu sur le périphérique, cf #23026).
-",,,,,,,,56bcc262bff3cce7,,,,,,,,,,,,,,,
+",,,,,,,,2456980ee6802af4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,a946312d,markdown,fr,d92b7ceb1f5732b3,"## 1. Env probe — GPU, libs, versions
 
 Avant tout : verifier l'environnement. PT-11b est un grain **DEEP** PostTraining, il necessite
@@ -9130,3 +9133,17 @@ La cellule précédente imprime `succès terminaux vérifiés par Z3 : 100/100 (
 La promesse de la section précédente — « le taux vérifié par Z3 doit correspondre au taux annoncé par le fast-path » — est donc tenue : l'accord est exact, 100/100 de part et d'autre.
 
 **Portée.** 100 problèmes tirés dans un toy env ne valent pas preuve de généralisation : ce contrôle établit la **cohérence des deux vérificateurs** et la validité du taux affiché, pas la robustesse de la politique sur une distribution large.",,,,,,,,cfdaf0271bdc7667,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_02_sft_baseline.ipynb,74078250,markdown,fr,8583521ff84d5f3b,"Note de provenance : le carnet a été migré de Qwen2.5-0.5B-Instruct vers Qwen3.5-0.8B dans le cadre de l’issue [#10289](https://github.com/jsboige/CoursIA/issues/10289), afin de sortir la série du toy-env. Le run conservé dans le carnet comporte les outputs réels du modèle Qwen3.5-0.8B.
+",,,,,,,,8583521ff84d5f3b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_03_dpo_direct_preference.ipynb,e5fd3b38,markdown,fr,f7a5269bcd7e7f79,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742), sous-issue [#1756](https://github.com/jsboige/CoursIA/issues/1756).
+",,,,,,,,f7a5269bcd7e7f79,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_04_grpo_deepseek_r1.ipynb,2f94645c,markdown,fr,b8da8d3540ceff36,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742), sous-issue [#1757](https://github.com/jsboige/CoursIA/issues/1757) ; il en constitue un livrable clé.
+",,,,,,,,b8da8d3540ceff36,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb,698852ae,markdown,fr,2cb2ddb5f05ff9f0,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742).
+",,,,,,,,2cb2ddb5f05ff9f0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb,19161b60,markdown,fr,87eca03ad23d8cf8,"## Références et provenance
+
+Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742) ; il en constitue le dernier livrable.
+",,,,,,,,87eca03ad23d8cf8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb,1f3609a5,markdown,fr,a02e1a78116c7102,"Note de provenance : ce carnet appartient à la série Post-Training SOTA 2024–2025, Epic [#1742](https://github.com/jsboige/CoursIA/issues/1742) ; le volet PT-11 constitue le sous-axe RLVR. Il se rattache également à l’issue [#10289](https://github.com/jsboige/CoursIA/issues/10289).
+",,,,,,,,a02e1a78116c7102,,,,,,,,,,,,,,,

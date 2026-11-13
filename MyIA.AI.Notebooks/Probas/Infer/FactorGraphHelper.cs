@@ -8,6 +8,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 
+// Contexte nullable explicite : sans lui, chaque annotation "string?" du
+// helper emet un warning CS8632 au #load, et Roslyn y cite le chemin ABSOLU
+// du fichier charge — 8 chemins machine par carnet dans la sortie commitee
+// (ratchet MACHINE_PATH, mesuree sur la re-execution du 11/11 #25276).
+#nullable enable
+
 /// <summary>
 /// Helper pour generer et afficher les factor graphs Infer.NET dans les notebooks Jupyter.
 /// Necessite Graphviz installe pour la conversion .gv -> .svg
@@ -15,7 +21,7 @@ using System.Net;
 public static class FactorGraphHelper
 {
     private static bool? _graphvizAvailable = null;
-    private static string _dotPath = null;
+    private static string? _dotPath = null;
     private static bool _dotResolved = false;
 
     /// <summary>
@@ -26,7 +32,7 @@ public static class FactorGraphHelper
     /// d'ou ce fallback (issue #3473). Retourne le chemin resolu (ou "dot" si
     /// present sur le PATH), ou null si introuvable. Resultat mis en cache.
     /// </summary>
-    private static string ResolveDotPath()
+    private static string? ResolveDotPath()
     {
         if (_dotResolved) return _dotPath;
         _dotResolved = true;
@@ -206,11 +212,11 @@ public static class FactorGraphHelper
     public static string GetLatestFactorGraphHtml(int maxWidth = 800, string? modelScope = null)
     {
         var gvFiles = GetFactorGraphSearchDirectories(modelScope)
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.gv"))
             .Distinct()
             .ToArray();
         var svgFiles = GetFactorGraphSearchDirectories(modelScope)
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.svg"))
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.svg"))
             .Distinct()
             .ToArray();
 
@@ -462,6 +468,10 @@ public static class FactorGraphHelper
             };
 
             using var proc = Process.Start(psi);
+            if (proc is null)
+            {
+                return "<div style='color:red'>Impossible de lancer Graphviz (dot).</div>";
+            }
             proc.WaitForExit(5000);
 
             if (proc.ExitCode == 0 && File.Exists(svgPath))
@@ -493,7 +503,7 @@ public static class FactorGraphHelper
     public static string ConvertAndGetLatestGvHtml(int maxWidth = 800, string? modelScope = null)
     {
         var gvFiles = GetFactorGraphSearchDirectories(modelScope)
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.gv"))
             .Distinct()
             .ToArray();
 
@@ -512,14 +522,40 @@ public static class FactorGraphHelper
     }
 
     /// <summary>
-    /// Nettoie les fichiers .gv et .svg generes
+    /// Nettoie les fichiers .gv et .svg generes.
+    /// Avec <paramref name="scope"/> : ne nettoie que GeneratedSource/&lt;scope&gt;/.
+    /// Sans portee : nettoie l'espace large ET les sous-dossiers de portee
+    /// GeneratedSource/&lt;scope&gt;/, sinon les artefact portes par ConfigureEngine
+    /// s'accumulent au fil des re-executions (suivi #25362 sur #25276).
     /// </summary>
-    public static int CleanupGeneratedFiles()
+    public static int CleanupGeneratedFiles(string? scope = null)
     {
-        var files = GetFactorGraphSearchDirectories()
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
-            .Concat(GetFactorGraphSearchDirectories()
-                .SelectMany(d => SafeEnumerateFiles(d, "Model_*.svg")))
+        var directories = GetFactorGraphSearchDirectories(scope).ToList();
+
+        // Mode large : descendre d'un niveau sous chaque racine GeneratedSource/
+        // pour atteindre les dossiers de portee (SafeEnumerateFiles est
+        // TopDirectoryOnly). Les autres sous-dossiers du cwd ne sont pas touches.
+        if (string.IsNullOrEmpty(scope))
+        {
+            var scopedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var directory in directories)
+            {
+                if (!string.Equals(Path.GetFileName(directory), "GeneratedSource", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                foreach (var sub in SafeEnumerateDirectories(directory))
+                {
+                    scopedDirectories.Add(sub);
+                }
+            }
+            directories.AddRange(scopedDirectories);
+        }
+
+        var files = directories
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.gv"))
+            .Concat(directories
+                .SelectMany(d => SafeEnumerateFiles(d, "Model*.svg")))
             .Distinct();
 
         int count = 0;
@@ -528,6 +564,18 @@ public static class FactorGraphHelper
             try { File.Delete(file); count++; } catch { }
         }
         return count;
+    }
+
+    private static IEnumerable<string> SafeEnumerateDirectories(string dir)
+    {
+        try
+        {
+            return Directory.EnumerateDirectories(dir);
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
     }
 
     /// <summary>
@@ -543,6 +591,16 @@ public static class FactorGraphHelper
         // sans identite de modele : la portee ne peut matcher que le chemin, donc le
         // dossier d'ecriture doit le porter (defaut #25276, remede 1+2).
         engine.Compiler.GeneratedSourceFolder = string.IsNullOrEmpty(scope)
+            ? "GeneratedSource"
+            : Path.Combine("GeneratedSource", scope);
+        // Le .gv du factor graph suit SaveFactorGraphToFolder, une propriete du
+        // MOTEUR (InferenceEngine), pas du compilateur : GeneratedSourceFolder ne
+        // route que les sources .cs de WriteSourceFiles. Sans cette ligne, le .gv
+        // atterrit a la racine du cwd en Model_<ts>.gv (mesure : vagues de re-
+        // execution du 11/11) et la lecture stricte par portee ne le trouve pas.
+        // Pose, il ecrit Model.gv/.dgml directement dans le dossier de portee
+        // (preuve kernel : GeneratedSource/PROBE-SCOPE/Model.gv).
+        engine.SaveFactorGraphToFolder = string.IsNullOrEmpty(scope)
             ? "GeneratedSource"
             : Path.Combine("GeneratedSource", scope);
     }
