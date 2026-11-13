@@ -474,3 +474,58 @@ def test_banque_212_porte_147_cas_undec():
         if any(v == "undec" for v in arg.grounded_labeling(af).values())
     )
     assert n_undec == 147
+
+
+# Une arrivée par argument : les comptes et la signature portent les mêmes
+# transitions, même si seul le second encodage conserve leur identité.
+def _assert_tpm_alignee(summary, signature, summary_indices, signature_indices):
+    """Compare les transitions dans l'ordre de la trajectoire, pas des indices."""
+    assert len(set(summary_indices)) == len(summary_indices)
+    assert len(set(signature_indices)) == len(signature_indices)
+    a = summary[np.ix_(summary_indices, summary_indices)]
+    b = signature[np.ix_(signature_indices, signature_indices)]
+    np.testing.assert_array_equal(a, b)
+    attendu = np.zeros_like(a)
+    for i in range(len(summary_indices) - 1):
+        attendu[i, i + 1] = 1.0
+    attendu[-1, -1] = 1.0
+    np.testing.assert_array_equal(a, attendu)
+
+
+@pytest.mark.parametrize("factory", [arg.nixon_diamond, arg.tweety_bird])
+@pytest.mark.parametrize("reverse", [False, True])
+def test_encodages_et_ordres_alignent_transitions(factory, reverse):
+    af = factory()
+    order = list(range(af.n()))
+    if reverse:
+        order.reverse()
+    trajectory = arg.belief_trajectory(af, order, include_empty=True)
+    # Le premier argument arrivé est bien celui demandé, même en ordre inverse.
+    assert set(trajectory[1]) == {order[0]}
+    assert all(set(lab) == set(order[:i]) for i, lab in enumerate(trajectory))
+    summary = [arg.belief_summary(lab) for lab in trajectory]
+    signature = [arg.state_signature(lab, n_args=af.n()) for lab in trajectory]
+    p, p_map = arg.belief_transition_matrix(af, order, encoding="summary")
+    q, q_map = arg.belief_transition_matrix(af, order, encoding="signature")
+    si = [p_map[state] for state in summary]
+    qi = [q_map[state] for state in signature]
+    _assert_tpm_alignee(p, q, si, qi)
+
+
+def test_temoin_refuse_fusion_et_transition_modifiee():
+    """Une fusion ou une transition erronée ne satisfait pas le contrôle."""
+    af = arg.tweety_bird()
+    order = list(range(af.n()))
+    trajectory = arg.belief_trajectory(af, order, include_empty=True)
+    p, p_map = arg.belief_transition_matrix(af, order, encoding="summary")
+    q, q_map = arg.belief_transition_matrix(af, order, encoding="signature")
+    si = [p_map[arg.belief_summary(lab)] for lab in trajectory]
+    qi = [q_map[arg.state_signature(lab, n_args=af.n())] for lab in trajectory]
+    _assert_tpm_alignee(p, q, si, qi)
+    with pytest.raises(AssertionError):
+        _assert_tpm_alignee(p, q, si, [qi[0], qi[0], *qi[2:]])
+    altered = q.copy()
+    altered[qi[0]] = 0.0
+    altered[qi[0], qi[0]] = 1.0
+    with pytest.raises(AssertionError):
+        _assert_tpm_alignee(p, altered, si, qi)

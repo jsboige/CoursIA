@@ -31,7 +31,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: validation-matrix-${{ github.ref }}
+  group: validation-matrix-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -43,7 +43,7 @@ jobs:
     # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Borne de duree posee le 2026-10-28 (#23053 famille b, lane
     # myia-ai-01:CoursIA-2). Valeur : 10 min = 3 x le maximum mesure sur les
     # 8 derniers runs REUSSIS du workflow (duree totale du run), arrondi a la

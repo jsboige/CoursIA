@@ -43,12 +43,15 @@ name: solution-leak-guard
 #     scope here.
 
 on:
-  pull_request:
-    paths:
-      - '**.ipynb'
-      - 'scripts/notebook_tools/audit_solution_leaks.py'
-      - 'scripts/notebook_tools/solution_leak_delta.py'
-      - '.github/workflows/solution-leak-guard.yml'
+  # ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#25510, tranche T-A/2 du
+  # 2026-11-12) : le declencheur `pull_request` est retire et le garde est
+  # execute par `always-on-guards.yml` -> `scripts/ci/fast_lane.py --shadow`,
+  # dans le checkout partage. Le `name:` du job est INCHANGE : il est
+  # byte-identique au `guard.name` du registre
+  # ("Solution-leak HIGH delta (advisory, WARN phase, #8053)"), et le mot
+  # `advisory` qu'il porte est ce que `pr_gate.py` lit pour classer un check
+  # non bloquant (cf l'en-tete de ce fichier et #12389) -- le renommer
+  # changerait le traitement du check cote porte.
   workflow_dispatch:
 
 permissions:

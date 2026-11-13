@@ -1,5 +1,7 @@
 # Lean dev-machine disk hygiene
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Structural note (perennial). Source: #8924 cluster disk-hygiene grain, measured
 2026-08-05 on `myia-po-2026`. Records the *normal* Lean disk footprint on a dev
 machine, the experiment-worktree accumulation pattern, and the safe-removal
