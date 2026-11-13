@@ -3003,17 +3003,6 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Pyth
   - Effets: vehicule au lieu d'arrivee, plus au lieu de départ
 
 > **Note technique** : Le domaine est reutilisable pour tous les problèmes de logistique (nombre de colis, lieux, véhicules variable).",,,,,,,,de00c742682bbf43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,43748612,markdown,fr,1ae1dc2cc13b5df8,"### Interpretation du domaine Logistics
-
-| Élément | Description |
-|---------|-------------|
-| **Types** | `location`, `package`, `vehicle`, `truck` (sous-type de vehicle) |
-| **Predicats** | `at-loc`, `at-veh`, `in`, `empty` |
-| **load** | Charge un colis dans un vehicule (même lieu, vehicule vide) |
-| **unload** | Decharge un colis d'un vehicule |
-| **drive** | Deplace un vehicule entre deux lieux |
-
-> **Note** : Chaque action a des **preconditions** (conditions necessaires) et des **effets** (changements appliques).",,,,,,,,1ae1dc2cc13b5df8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,5bd3f42f,markdown,fr,5d137315a7630c57,"***
 
 ## 4. Structure d'un fichier problème PDDL
@@ -3086,7 +3075,7 @@ Le but définit l'état a atteindre. C'est une formule logique (généralement u
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,7af03fc1,markdown,fr,2e3f8b810e23cb18,"***
 
 ## 5. Exemple complet : Problème Logistics",,,,,,,,2e3f8b810e23cb18,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,19ac429a,code,fr,fa06551b4082a023,"# Definition du probleme PDDL - Logistics
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,19ac429a,code,fr,849ec34834b01438,"# Definition du probleme PDDL - Logistics
 LOGISTICS_PROBLEM = """"""
 (define (problem logistics-simple-1)
   (:domain logistics-simple)
@@ -3124,16 +3113,10 @@ LOGISTICS_PROBLEM = """"""
 )
 """"""
 
-print(""Probleme PDDL defini : logistics-simple-1"")
-print(""\nEtat initial :"")
-print(""  - box1, box2 au depot"")
-print(""  - truck1 au depot (vide)"")
-print(""\nBut :"")
-print(""  - box1 au store"")
-print(""  - box2 au warehouse"")",,,,,,,,fa06551b4082a023,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,3c675d90,markdown,fr,6863ed4645a0ca3b,"### Interpretation : Problème Logistics
+",,,,,,,,849ec34834b01438,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,3c675d90,markdown,fr,a31c101ae0868322,"### Interpretation : Problème Logistics
 
-**Sortie obtenue** : Le problème est instancie avec 6 objets (3 lieux, 2 colis, 1 camion).
+**Instance définie** : Le problème est instancie avec 6 objets (3 lieux, 2 colis, 1 camion).
 
 | Élément | Valeur | Signification |
 |---------|--------|---------------|
@@ -3151,7 +3134,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Pyth
 - Le camion ne peut porter qu'un colis a la fois (prédicat `empty`)
 - Il faut revenir au dépôt pour charger le deuxieme colis
 
-> **Note technique** : C'est un problème de ""transport"" classique. La difficulte vient de la coordination entre les deplacements du vehicule et les chargements/dechargements des colis.",,,,,,,,6863ed4645a0ca3b,,,,,,,,,,,,,,,
+> **Note technique** : C'est un problème de ""transport"" classique. La difficulte vient de la coordination entre les deplacements du vehicule et les chargements/dechargements des colis.",,,,,,,,a31c101ae0868322,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,4ce8d8af,markdown,fr,73b253336d1779e0,"### Visualisation du problème
 
 | Objet | Type | État initial | But |
@@ -3548,7 +3531,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Pyth
 
 > **Note technique** : Ce domaine illustre l'importance de bien modéliser les ressources (les 2 pinces). Une mauvaise modélisation serait d'avoir un seul prédicat `free` sans preciser quelle pince.",,,,,,,,604a0d66f42ecb50,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,opks33hg4ue,markdown,fr,377e7324f849f548,"Definition du problème PDDL correspondant au domaine Gripper, instanciant les objets concrets, l'état initial et le but a atteindre.",,,,,,,,377e7324f849f548,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,2873108b,code,fr,890543ab1b142d1a,"# Probleme PDDL du Gripper
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,2873108b,code,fr,2dc2ab86288b7bb9,"# Probleme PDDL du Gripper
 GRIPPER_PROBLEM = """"""
 (define (problem strips-gripper2)
   (:domain gripper-strips)
@@ -3580,57 +3563,40 @@ GRIPPER_PROBLEM = """"""
 )
 """"""
 
-print(""Probleme Gripper defini"")
-print(""\nEtat initial:"")
-print(""  - Robot dans rooma"")
-print(""  - ball1, ball2 dans rooma"")
-print(""  - Pinces left, right libres"")
-print(""\nBut:"")
-print(""  - ball1 et ball2 dans roomb"")",,,,,,,,890543ab1b142d1a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,054a298d,markdown,fr,b8f9b2e95ba5f46b,"### Interprétation : le problème Gripper
+",,,,,,,,2dc2ab86288b7bb9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,054a298d,markdown,fr,d9b450b824665c6a,"### Interprétation : le problème Gripper
 
-**Sortie obtenue** : le problème est instancié avec 6 objets et 11 prédicats initiaux.
+**Instance définie** : le problème est instancié avec 6 objets et 11 prédicats initiaux.
 
 | Élément | Valeur | Signification |
 |---------|--------|---------------|
 | Objets | 2 rooms, 2 balls, 2 grippers | Instances du monde |
 | État initial | Robot + balles dans rooma, pinces libres | Tout au départ |
 | But | Les 2 balles dans roomb | Transport complet |
-| Actions possibles | move, pick (×2), drop (×2) | Les actions du plan |
+| Exemple de plan | pick (×2), move, drop (×2) | Une séquence valide |
 
 **Analyse de l'état initial** :
 - `at-robby rooma` : le robot est dans la pièce rooma
 - `at ball1 rooma`, `at ball2 rooma` : les deux balles sont dans rooma
 - `free left`, `free right` : les deux pinces sont libres
 
-**Stratégie optimale** (5 actions) :
+**Stratégie théorique optimale** (5 actions), construite à partir du domaine :
+elle n’est pas calculée par un planificateur dans cette section.
 1. `pick(ball1, rooma, left)`
 2. `pick(ball2, rooma, right)`
 3. `move(rooma, roomb)`
 4. `drop(ball1, roomb, left)`
 5. `drop(ball2, roomb, right)`
+
+Chaque `pick` trouve une balle et une pince libre dans `rooma` ; après le déplacement,
+chaque `drop` pose une balle dans `roomb`. Le but est donc atteint.
+Chaque balle exige au moins une prise et un dépôt, et le robot doit changer
+de pièce au moins une fois : aucune solution ne peut avoir moins de 5 actions.
 
 > **Observation** : le robot peut porter les 2 balles en même temps car il a deux
 > pinces. Un planificateur qui ignorerait cette capacité ferait 7 actions au lieu
 > de 5 (prendre, déplacer, poser, revenir, reprendre, déplacer, poser).
-",,,,,,,,b8f9b2e95ba5f46b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,aa5c31a3,markdown,fr,5c85b37cb093ec42,"### Analyse du problème Gripper
-
-| Élément | Valeur |
-|---------|--------|
-| **Objets** | 2 rooms, 2 balls, 2 grippers |
-| **Etat initial** | Robot + balles dans rooma |
-| **But** | Balles dans roomb |
-| **Actions possibles** | move, pick (x2), drop (x2) |
-
-Une solution optimale :
-1. `pick(ball1, rooma, left)`
-2. `pick(ball2, rooma, right)`
-3. `move(rooma, roomb)`
-4. `drop(ball1, roomb, left)`
-5. `drop(ball2, roomb, right)`
-
-> **Observation** : Le robot peut porter deux balles simultanement car il a deux pinces !",,,,,,,,5c85b37cb093ec42,,,,,,,,,,,,,,,
+",,,,,,,,d9b450b824665c6a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,85acd2ba,markdown,fr,e9256b940778e759,"***
 
 ## 9. Exercices",,,,,,,,e9256b940778e759,,,,,,,,,,,,,,,
@@ -3694,7 +3660,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Pyth
 - Créer des actions inutiles ou redondantes
 
 ***",,,,,,,,009a08441f4c0f01,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,11a9e346,markdown,fr,40dddfe220dde129,"### Exemple guide : Domaine Robot-Entrepot
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,11a9e346,markdown,fr,358a7d31eb0904e2,"### Exemple guide : Domaine Robot-Entrepot
 
 Avant de passer a l'Exercice 9.2, voici un exemple complet de definition d'un domaine PDDL simplifie. Le contexte est proche : un robot dans un entrepot peut **saisir** un objet et le **deposer** sur une etagere.
 
@@ -3703,8 +3669,16 @@ Avant de passer a l'Exercice 9.2, voici un exemple complet de definition d'un do
 - 3 prédicats : position de l'objet, robot libre, objet sur une etagere
 - 2 actions : `saisir` et `deposer`
 
-Observez comment chaque action declare ses **préconditions** (conditions necessaires) et ses **effets** (ajouts et suppressions de prédicats).",,,,,,,,40dddfe220dde129,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,b6c17ced,code,fr,97f566d2fa1c7a7c,"# Exemple guide : Domaine PDDL Robot-Entrepot (solution complete)
+Observez comment chaque action declare ses **préconditions** (conditions necessaires) et ses **effets** (ajouts et suppressions de prédicats).
+
+| Action | Préconditions | Effets |
+|--------|---------------|--------|
+| `saisir(objet, etagere)` | Objet sur étagère et robot libre | Le robot tient l’objet, qui quitte l’étagère ; le robot n’est plus libre |
+| `deposer(objet, etagere)` | Le robot tient l’objet | L’objet est sur l’étagère, le robot est libre et ne tient plus l’objet |
+
+Chaque effet négatif `(not ...)` indique au planificateur ce qui cesse d’être vrai après l’action.
+",,,,,,,,358a7d31eb0904e2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,b6c17ced,code,fr,649749ea657d620a,"# Exemple guide : Domaine PDDL Robot-Entrepot (solution complete)
 ROBOT_ENTREPOT_DOMAIN = """"""
 (define (domain robot-entrepot)
   (:requirements :strips :typing)
@@ -3747,19 +3721,8 @@ ROBOT_ENTREPOT_DOMAIN = """"""
 # Verification structurelle : compter les composantes PDDL
 actions = ROBOT_ENTREPOT_DOMAIN.count(""(:action"")
 predicates = ROBOT_ENTREPOT_DOMAIN.count(""("") - ROBOT_ENTREPOT_DOMAIN.count(""(not"")  # approximation
-print(""Domaine Robot-Entrepot defini : robot-entrepot"")
 print(f""Actions definies : {actions} (saisir, deposer)"")
-print()
-print(""Action 'saisir(objet, etagere)' :"")
-print(""  Preconditions : objet sur etagere + robot libre"")
-print(""  Effets        : robot tient objet + objet retire de l'etagere + robot plus libre"")
-print()
-print(""Action 'deposer(objet, etagere)' :"")
-print(""  Preconditions : robot tient objet"")
-print(""  Effets        : objet sur etagere + robot libre + robot ne tient plus l'objet"")
-print()
-print(""> Chaque effet negatif (not ...) est indispensable pour que le planificateur"")
-print(""  comprenne que l'etat du monde change apres l'action."")",,,,,,,,97f566d2fa1c7a7c,,,,,,,,,,,,,,,
+",,,,,,,,649749ea657d620a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,ex-pl2-robot-md,markdown,fr,321cf6e8a2b441ff,"### Exercice 9.2 - Domaine PDDL Robot-Cuisine
 
 Ecrivez un domaine PDDL pour un robot dans une cuisine.
@@ -14882,25 +14845,6 @@ Le solveur HTN a trouvé un plan de 3 actions pour livrer pkg1 du dépôt au sto
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb,w1f1kl7d2eh,markdown,fr,48f2dc0ad82c197b,"### 5.1 Definition du domaine HTN Logistics
 
 Nous definissons maintenant les actions primitives (`load`, `unload`, `drive`) et les méthodes de décomposition pour la tâche abstraite `deliver`.",,,,,,,,48f2dc0ad82c197b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb,cell-20,markdown,fr,3bb28320853f8dc0,"### Interpretation du plan HTN
-
-Le solveur HTN a decompose la tache abstraite en actions primitives :
-
-| Etape | Action | Etat resultat |
-|-------|--------|---------------|
-| 1 | `load(pkg1, truck1, depot)` | pkg1 est dans truck1 |
-| 2 | `drive(truck1, depot, store)` | truck1 est maintenant au store |
-| 3 | `unload(pkg1, truck1, store)` | pkg1 est au store |
-
-**Analyse de la decomposition** :
-1. La methode `m_deliver_direct` a ete choisie (preconditions satisfaites)
-2. Les sous-taches ont ete executees sequentiellement
-3. Chaque action primitive verifie ses preconditions avant execution
-
-**Limitation de ce solveur simplifie** :
-- Le solveur ne gere pas le repositionnement automatique du vehicule
-- Pour livrer pkg2 (depuis warehouse), il faudrait que le camion y soit deja
-- Un solveur HTN complet aurait une methode `reposition_vehicle` pour gerer ce cas",,,,,,,,3bb28320853f8dc0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb,htn-aries-intro,markdown,fr,07da7e2fc8144262,"### 5.2 Le même problème avec un vrai planificateur HTN SOTA (`unified_planning` + aries)
 
 Le solveur des sections 4 et 5 est volontairement **pédagogique** : il code a la
@@ -17061,26 +17005,6 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Plann
 
 Les temps exacts sont ceux **imprimes par la cellule de comparaison ci-dessus**. Ils dependent de la machine et de son démarrage a froid : les recopier ici les figerait sur une exécution alors que la cellule les reimprime a chaque passage — c'est pourquoi la colonne `Temps` n'est pas reproduite dans ce tableau. Ce qui reste stable d'une exécution a l'autre, et qui porte la lecture, c'est l'**ordre** des solveurs et la longueur des plans.",,,,,,,,9bc0c49f0840a4dd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,a40w8be6wev,markdown,fr,ca8f3bf2e7d4f362,"Affichage formate sous forme de tableau des résultats de la comparaison entre solveurs, incluant le statut, le temps de resolution et la longueur du plan produit.",,,,,,,,ca8f3bf2e7d4f362,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,db874126,markdown,fr,4b84ef542f885770,"### Interpretation : Affichage formate de la comparaison
-
-**Sortie obtenue** : Le tableau comparatif affiche les metriques reelles des deux solveurs :
-
-```
-Solveur              | Statut              | Temps      | Longueur Plan
-------------------------------------------------------------------------
-pyperplan            | SOLVED_SATISFICING  | 0.018s     | 6
-fast-downward        | SOLVED_SATISFICING  | 0.972s     | 6
-```
-
-- **Plus rapide** : pyperplan (0.018s)
-- **Plan le plus court** : ex aequo (6 actions pour les deux)
-
-**Metriques cles** :
-- **Temps** : Latence de resolution (critique pour applications interactives). Ici dominee par le startup du moteur, pas par la recherche.
-- **Statut** : `SOLVED_OPTIMALLY` (optimal), `SOLVED_SATISFICING` (plan trouve, optimalite non garantie), `UNSATISFIABLE` (insoluble prouve).
-- **Longueur Plan** : Nombre d'actions (plus court = mieux). Les deux moteurs convergent ici vers le chemin optimal de 6 moves.
-
-> **Note technique** : Pour des problemes plus riches (gros graphe, objectifs multiples, couts variables), la longueur du plan peut varier significativement entre solveurs. Un solveur satisficing (GBFS) peut trouver un plan 2x plus long qu'un solveur optimal (A*), mais beaucoup plus rapidement. C'est sur ce type de probleme que fast-downward, avec ses heuristiques puissantes, prendrait l'avantage sur pyperplan.",,,,,,,,4b84ef542f885770,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,cell-display-comparison,code,fr,cfb268d19d0c0e13,"# Affichage formate de la comparaison
 def display_comparison_table(results):
     """"""Affiche un tableau de comparaison des resultats.""""""
@@ -17167,29 +17091,6 @@ que fast-downward (heuristiques configurables) resterait efficace.
 > C'est tout l'intérêt d'unified-planning : tester facilement plusieurs solveurs et
 > laisser les métriques (temps, longueur de plan) décider.
 ",,,,,,,,0dbd248ef2419b8f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,57676fdc,markdown,fr,d3fcaf5dbea05d41,"### Interpretation : Qui gagne, et quand ?
-
-**Sortie obtenue** : Sur ce labyrinthe de 15 noeuds, **pyperplan est le plus rapide** (0.018s vs 0.972s), mais les deux solveurs produisent le **meme plan optimal de 6 actions**. Il n'y a pas de ""vainqueur"" absolu : chaque moteur a son domaine de predilection.
-
-**Comparaison theorique des solveurs unified-planning** :
-
-| Solveur | Optimalite | Vitesse | Specialites |
-|---------|------------|---------|-------------|
-| **Pyperplan** | Satisficing | Tres rapide (start leger) | Problemes simples, prototypage |
-| **Fast Downward** | Optimal/Satisficing | Moyenne (start lourd) | Heuristiques puissantes (LM-cut, FF, merge-and-shrink) |
-| **Tamer** | Satisficing | Rapide | Preferences, plans avec qualite |
-| **ENHSP** | Optimal | Lent | Fluents numeriques, PDDL 2.1 |
-| **LPG** | Satisficing | Moyenne | Planification temporelle |
-
-**Quand utiliser chaque solveur** :
-- **Pyperplan** : Tests rapides, petits problemes (<100 objets) -- comme ici, ou sa legerete l'emporte.
-- **Fast Downward** : Production, problemes complexes -- ses heuristiques dominent des que l'espace de recherche devient grand (le startup fixe devient negligeable face au cout de recherche).
-- **ENHSP** : Problemes numeriques (couts, ressources).
-- **LPG** : Planification temporelle (PDDL 2.1).
-
-**Lecon de cette instance** : le labyrinthe a 15 noeuds et 7 impasses, ce qui est assez riche pour qu'**aucun des deux moteurs ne degeneres** (tous deux trouvent un plan non trivial de 6 actions en evitant les dead-ends), mais assez petit pour que le **temps soit domine par le startup**. Pour voir fast-downward prendre l'avantage, il faudrait un graphe beaucoup plus large ou pyperplan (satisficing, heuristique limitee) ralentirait alors que fast-downward (heuristiques configurables) resterait efficace.
-
-> **Note importante** : Le choix du solveur depend fortement du type de probleme ET de sa taille. Un solveur excellent sur Block World peut etre mediocre sur Logistics. C'est tout l'interet d'unified-planning : tester facilement plusieurs solveurs et laisser les metriques (temps, longueur de plan) decider.",,,,,,,,d3fcaf5dbea05d41,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,cell-temporal-intro,markdown,fr,e10a97e6f1cbdff7,"***
 
 ## 4. Fonctionnalites Avancees
