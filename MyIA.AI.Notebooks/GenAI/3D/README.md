@@ -32,6 +32,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 | [3D-04-3DGS-From-Scratch-with-gsplat](3D-04-3DGS-From-Scratch-with-gsplat.ipynb) | Entraînement 3DGS complet sur le moteur CUDA réel `gsplat` : paramétrisation (positions, quaternions, échelles, opacités, couleurs SH), conversion caméra OpenGL vers OpenCV, parité et vitesse mesurées contre l'implémentation maison | gsplat, PyTorch CUDA |
 | [3D-05-3DGS-Optimization-Tradeoffs](3D-05-3DGS-Optimization-Tradeoffs.ipynb) | Les leviers d'entraînement à la mesure sur banc comparatif : densification par clones et scissions, reset d'opacité, learning rates différenciés, plancher d'échelle — et ce que le banc court réfute des intuitions du papier | gsplat, PyTorch CUDA |
 | [3D-06-Spark-Interactive-Demo](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/3D/3D-06-Spark-Interactive-Demo.md) | Annexe : lecture annotée d'une application navigateur réelle à base de splats (`bmild/spark-physics`) — tri côté GPU, taxe permanente des conventions d'axes, image contre géométrie de collision, pas de temps fixe | lecture guidée (sans exécution) |
+| [3D-08-Rendu-Analytique-vs-Radiance-Field-Python](3D-08-Rendu-Analytique-vs-Radiance-Field-Python.ipynb) | Le paradigme opposé au champ appris : la chaîne projective de Penrose (point → matrice hermitienne → spineur de direction → relation d'incidence) vérifiée par résidus mesurés, le pont SU(2)/SO(3) transporté sur les trois objets, puis le duel à matériel constant rendu analytique contre champ de radiance — culling, plafond de généralisation, récupération de pose et ses masques durs qui n'ont pas de gradient | PyTorch (CPU), matplotlib |
 
 ## Prérequis et exécution
 
@@ -45,6 +46,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 - **Pli 1 — Fourier features** : [`3.4d-Fourier-Features-Biais-Spectral-Python`](../../ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) (ML/DataScienceWithAgents) — le socle spectral commun.
 - **Pli 2 — NeRF from scratch** : 3D-01 (pipeline complet), 3D-02 (limitations mesurées).
 - **Pli 3 — R-gsplat** : la transition NeRF → 3D Gaussian Splatting (Kerbl et al., SIGGRAPH 2023) avec `nerfstudio-project/gsplat` comme moteur CUDA — concepts et tri (3D-03), entraînement from scratch (3D-04), leviers d'optimisation (3D-05), annexe application réelle (3D-06).
+- **Pli 4 — le paradigme opposé** : 3D-08 reprend la scène jouet pour la rendre **analytiquement** — spineurs et twisteurs de Penrose, intersection exacte à tout budget, culling mesuré — et confronte la forme écrite au champ de radiance appris des plis 2-3 sur le même banc (distillation `twistor-render-core`, issue [#26114](https://github.com/jsboige/CoursIA/issues/26114)) ; c'est la contre-épreuve exacte de 3D-04/3D-05 : entraîner la pose à travers un moteur de rendu, ici écrit plutôt qu'appris.
 
 ## Références
 
