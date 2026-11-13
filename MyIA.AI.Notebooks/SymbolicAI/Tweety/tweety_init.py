@@ -61,6 +61,20 @@ def spass_candidate_paths(base_dirs, exe_suffix=""):
     return candidates
 
 
+def find_spass():
+    """Trouve SPASS sur le PATH, près du module, puis selon le cwd historique."""
+    on_path = shutil.which("SPASS")
+    if on_path:
+        return on_path
+    suffix = ".exe" if platform.system() == "Windows" else ""
+    bases = [pathlib.Path(__file__).resolve().parent / "ext_tools",
+             pathlib.Path("ext_tools"), pathlib.Path("../ext_tools")]
+    for candidate in spass_candidate_paths(bases, suffix):
+        if candidate.is_file():
+            return str(candidate.resolve())
+    return None
+
+
 def _detect_tools():
     """Auto-détection des outils externes."""
     system = platform.system()
@@ -75,13 +89,10 @@ def _detect_tools():
             EXTERNAL_TOOLS["CLINGO"] = str(parent.resolve())
             break
 
-    # 2. SPASS (Modal logic prover) — Linux 3.5 (spass/SPASS) + Windows 3.0 (spass/SPASS-3.0/)
-    for sp in [shutil.which("SPASS"),
-               *spass_candidate_paths([pathlib.Path("ext_tools"),
-                                       pathlib.Path("../ext_tools")], exe_suffix)]:
-        if sp and (isinstance(sp, str) or sp.exists()):
-            EXTERNAL_TOOLS["SPASS"] = str(pathlib.Path(sp).resolve()) if isinstance(sp, pathlib.Path) else sp
-            break
+    # 2. SPASS : PATH prioritaire, installation provisionnée, puis replis historiques.
+    spass = find_spass()
+    if spass:
+        EXTERNAL_TOOLS["SPASS"] = spass
 
     # 3. EProver (FOL theorem prover)
     for ep in [shutil.which("eprover"),

@@ -180,6 +180,22 @@ class TestDetectTools:
         assert t.EXTERNAL_TOOLS["SPASS"] != ""
         assert "SPASS-3.0" in t.EXTERNAL_TOOLS["SPASS"]
 
+    @pytest.mark.parametrize("relative_base", ["ext_tools", "../ext_tools"])
+    def test_spass_keeps_cwd_fallbacks(self, tmp_path, monkeypatch, relative_base):
+        cwd = tmp_path / "cwd"
+        cwd.mkdir()
+        monkeypatch.chdir(cwd)
+        monkeypatch.setenv("PATH", "")
+        monkeypatch.setattr(t, "__file__", str(tmp_path / "module" / "tweety_init.py"))
+        binary = cwd / relative_base / "spass" / ("SPASS.exe" if sys.platform == "win32" else "SPASS")
+        binary.parent.mkdir(parents=True)
+        binary.write_text("fixture", encoding="utf-8")
+        assert t.find_spass() == str(binary.resolve())
+
+    def test_spass_path_precedes_module_and_cwd(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(t.shutil, "which", lambda name: "/path/SPASS" if name == "SPASS" else None)
+        assert t.find_spass() == "/path/SPASS"
+
     def test_spass_candidate_paths_lists_both_locations(self):
         # La source unique ordonne : racine (Linux 3.5) puis dossier versionne
         # (Windows 3.0), pour chaque base probee.

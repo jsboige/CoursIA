@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import json
 import os
-import shutil
 import sys
 from types import ModuleType
 
@@ -266,16 +265,8 @@ def _tweety_jars_present() -> bool:
 
 
 def _spass_present() -> bool:
-    """SPASS detectable exactement comme le MOTEUR : en PATH, ou a l'un des
-    chemins candidats de ``tweety_init.spass_candidate_paths`` (SPASS 3.5 Linux
-    en racine de ``ext_tools/spass/`` + SPASS 3.0 Windows dans ``SPASS-3.0/``).
-    La sonde du test et la detection du moteur partagent la meme liste."""
-    if shutil.which("SPASS"):
-        return True
-    exe = ".exe" if os.name == "nt" else ""
-    base = os.path.join(_TWEETY_DIR, "ext_tools")
-    return any(os.path.isfile(str(p))
-               for p in tweety_init.spass_candidate_paths([base], exe))
+    """Utilise la même détection SPASS que le moteur Tweety."""
+    return tweety_init.find_spass() is not None
 
 
 @pytest.mark.skipif(
@@ -338,6 +329,37 @@ async def main():
     print('NATIVE_OK')
 asyncio.run(main())
 """
+
+
+@pytest.mark.parametrize("nested_cwd", [False, True])
+def test_spass_detection_matches_engine_outside_path(tmp_path, monkeypatch, nested_cwd):
+    """La garde et le moteur voient le même fichier, quel que soit le cwd."""
+    module_dir = tmp_path / "Tweety"
+    binary = module_dir / "ext_tools" / "spass" / (
+        "SPASS.exe" if os.name == "nt" else "SPASS"
+    )
+    binary.parent.mkdir(parents=True)
+    binary.write_text("fixture de chemin", encoding="utf-8")
+    monkeypatch.setattr(tweety_init, "__file__", str(module_dir / "tweety_init.py"))
+    monkeypatch.setenv("PATH", "")
+    cwd = tmp_path / "racine"
+    if nested_cwd:
+        cwd = cwd / "isole"
+    cwd.mkdir(parents=True)
+    monkeypatch.chdir(cwd)
+    for name, value in tweety_init.EXTERNAL_TOOLS.copy().items():
+        monkeypatch.setitem(tweety_init.EXTERNAL_TOOLS, name, value)
+    tweety_init.EXTERNAL_TOOLS["SPASS"] = ""
+
+    assert _spass_present()
+    tweety_init._detect_tools()
+    assert tweety_init.EXTERNAL_TOOLS["SPASS"] == str(binary.resolve())
+
+    binary.unlink()
+    monkeypatch.setitem(tweety_init.EXTERNAL_TOOLS, "SPASS", "")
+    assert not _spass_present()
+    tweety_init._detect_tools()
+    assert tweety_init.EXTERNAL_TOOLS["SPASS"] == ""
 
 
 @pytest.mark.skipif(
