@@ -3019,6 +3019,29 @@ def test_matching_indices_memo_bounded_by_cumulative_indices(monkeypatch):
     clc._MATCHING_INDICES_MEMO_SIZE = 0
 
 
+def test_path_matches_pair_memo_is_bounded():
+    # #25913 (reponse a la reserve Hermes) : le memo par paire est borne par
+    # un lru_cache a maxsize FINI. Un lru_cache() (maxsize=None) retiendrait
+    # chaque (chemin, motif) vu dans la fenetre sans eviction. Le plafond
+    # 262144 est un working set delibere (#24824) ; le test le pique pour
+    # qu'un maxsize=None ne reparte jamais silencieusement.
+    # Les lru_cache de matching sont module-level et partagees entre tests :
+    # on les nettoie avant ET apres (comme test_path_match_keeps_windows_*)
+    # pour ne pas polluer les tests de scope/lint qui courent apres.
+    clc._path_matches_pair.cache_clear()
+    clc._compiled_path_pattern.cache_clear()
+    clc._normcase_path.cache_clear()
+    try:
+        assert clc._path_matches_pair.cache_info().maxsize == 262144
+        # Le verdict reste correct a travers la memo (pure de ses deux args).
+        assert clc._path_matches_pair("knot_lean/Foo.lean", "*.lean") is True
+        assert clc._path_matches_pair("src/app.py", "*.lean") is False
+    finally:
+        clc._path_matches_pair.cache_clear()
+        clc._compiled_path_pattern.cache_clear()
+        clc._normcase_path.cache_clear()
+
+
 def test_path_match_keeps_windows_case_and_separator_rules(monkeypatch):
     import fnmatch
     import ntpath

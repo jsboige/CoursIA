@@ -3243,13 +3243,16 @@ def _normcase_path(path: str) -> str:
 
 @lru_cache(maxsize=262144)
 def _path_matches_pair(path: str, pattern: str) -> bool:
-    """Match one immutable path/pattern pair with fnmatch's platform rules.
+    """Match one immutable (path, pattern) pair, memoized above.
 
-    The pair verdict itself is memoized by the ``@lru_cache`` above; its key
-    is two immutable ``str`` (path, pattern), so each entry is a pure function
-    of its arguments and stays independent of any mutable caller list. The
-    compiled regex and normcase helpers are cached separately. Windows
-    normcase and separator behavior are retained.
+    The glob is compiled to a regex by ``_compiled_path_pattern`` and matched
+    with ``re.match`` against the ``os.path.normcase``-normalized FULL path
+    AND against the normalized BASENAME, so ``*.lean`` matches both
+    ``knot_lean/Foo.lean`` and a bare ``Foo.lean``. The verdict is a pure
+    function of its two immutable ``str`` arguments, so the (bounded,
+    ``maxsize=262144``) memo can never change it; the compiled-regex and
+    normcase helpers are cached separately. Windows normcase and separator
+    behavior are retained.
     """
     basename = path.rsplit("/", 1)[-1]
     regex = _compiled_path_pattern(pattern)
