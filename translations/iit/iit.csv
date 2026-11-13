@@ -448,7 +448,7 @@ precede a ete **calcule par le vrai PyPhi**, puis narre tel quel.
   — trajectoires et robustesse sur le toy-model de tri.
 - Zhang, Goldstein & Levin (2025), *Classical sorting algorithms as a model of
   morphogenesis*, [arXiv:2401.05375](https://arxiv.org/abs/2401.05375).",,,,,,,,d375222ab876be92,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,420be610,markdown,fr,6bb8db1024d3bac6,"# ICT-10 — Grammaire des catastrophes : *l'obstacle qui engendre les formes, le verbe qui les fait basculer*
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,420be610,markdown,fr,6bb8db1024d3bac6,"# ICT-10 — Grammaire des catastrophes : *l'obstacle qui engendre les formes, le verbe qui les fait basculer*
 
 > **Serie ICT** (Integrated Causal Trajectories) — **charniere strate 2 -> strate 3**.
 > Prerequis conseilles : [ICT-0-Framing](ICT-0-Framing.md), [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb)
@@ -488,7 +488,7 @@ On n'ouvre donc **pas** un front « langage » non instrumente : on **nomme la c
 caveat de Thom lui-même — *« le modèle saillance-pregnance ne vise pas a la prediction »* (p.51). Le pont
 vers les LLM (et leur explicabilite par auto-encodeurs epars) reste **lointain** : on en discute les
 barreaux honnetement en section 6.",,,,,,,,6bb8db1024d3bac6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,61cce5e1,code,fr,9daba068a4036e47,"import os, sys
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,61cce5e1,code,fr,9daba068a4036e47,"import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -503,7 +503,7 @@ trapz = getattr(np, ""trapezoid"", None) or np.trapz   # numpy >= 2.0 : trapz ->
 # a = parametre de ""dedoublement"" (a<0 : bistable) ; b = parametre de ""biais"" (penche un puits)
 print(""Catastrophe fronce (cusp) -- la catastrophe elementaire a 2 parametres de controle (a, b)."")
 print(""Region bistable (2 actants) :  4a^3 + 27b^2 < 0   (donc a < 0)."")",,,,,,,,9daba068a4036e47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,46a1208d,markdown,fr,32d483ff59f9bf48,"## 1. La fronce : le squelette mesure
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,46a1208d,markdown,fr,32d483ff59f9bf48,"## 1. La fronce : le squelette mesure
 
 La fronce est la catastrophe a **deux paramètres de contrôle** $(a, b)$, de potentiel
 $V(x) = \tfrac{x^4}{4} + \tfrac{a}{2}x^2 + b\,x$. Les **equilibres** sont les racines de
@@ -516,7 +516,7 @@ disparaissent** : un **pli**.
 C'est *le même objet* qu'en ICT-8 : la bifurcation pli du modèle de paturage de May etait une **section**
 de cette fronce ; le ralentissement critique mesure la-bas (la valeur propre $\to 0$) *est* l'aplatissement
 du puits a l'approche du pli, ci-dessous a droite.",,,,,,,,32d483ff59f9bf48,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,c7bc3c92,code,fr,3ea5bcd275eacea4,"fig, (axL, axR) = plt.subplots(1, 2, figsize=(13, 5))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,c7bc3c92,code,fr,3ea5bcd275eacea4,"fig, (axL, axR) = plt.subplots(1, 2, figsize=(13, 5))
 
 # (gauche) potentiel : monostable (a>0) vs bistable (a<0, deux puits)
 x = np.linspace(-2.2, 2.2, 400)
@@ -544,7 +544,7 @@ plt.tight_layout(); plt.show()
 print(""a=-1, b=0   -> equilibres :"", [(round(x,3), 'stable' if s else 'col') for x,s in cat.cusp_equilibria(-1,0)])
 print(""a=+1, b=0   -> equilibres :"", [(round(x,3), 'stable' if s else 'col') for x,s in cat.cusp_equilibria(1,0)])
 print(f""pli a a=-1 : b = +/-{cat.fold_lines(-1.0)[1]:.4f}"")",,,,,,,,3ea5bcd275eacea4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,b1d18f8c,markdown,fr,7cf58bdc78a9318e,"## 2. Le metatheoreme : l'obstacle comme source de l'ontologie
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,b1d18f8c,markdown,fr,7cf58bdc78a9318e,"## 2. Le metatheoreme : l'obstacle comme source de l'ontologie
 
 Le **metatheoreme** de Thom (Ch.3, §B) dit, en substance : une forme saillante mobile dans un flux ne
 peut donner naissance qu'a un **petit nombre de transitions generiques** — *debut*, *fin*, *ramification*,
@@ -560,7 +560,7 @@ d'un chemin generique, il n'y a donc **exactement deux** transitions de comptage
 > mot, celles dont Thom dit qu'elles *« symbolisent adequatement le contenu »* des premiers pivots du
 > langage enfantin. La confluence devient d'abord une preposition (« chez »), puis un **verbe divalent**
 > (Tesnière). Le comptage qu'on trace ici est la **proto-grammaire** mesuree.",,,,,,,,7cf58bdc78a9318e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,01806a92,code,fr,cb961b42c5d82073,"a = -1.0
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,01806a92,code,fr,cb961b42c5d82073,"a = -1.0
 b_lo, b_hi = cat.fold_lines(a)
 bs = np.linspace(b_lo - 0.35, b_hi + 0.35, 400)
 counts = np.array([cat.count_equilibria(a, float(b)) for b in bs])
@@ -580,7 +580,7 @@ plt.tight_layout(); plt.show()
 print(f""valeurs prises par le comptage : {sorted(set(counts.tolist()))}  (1 hors region, 3 dedans)"")
 print(f""nombre de transitions de comptage le long du balayage : {len(transitions)}  (les deux plis)"")
 print(""les quatre types generiques de Thom : naissance (1->3), confluence/disparition (3->1)."")",,,,,,,,cb961b42c5d82073,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,a5938e11,markdown,fr,2b9e848d19543956,"### Exercice 1 — la fourche (pitchfork), section symetrique de la fronce
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,a5938e11,markdown,fr,2b9e848d19543956,"### Exercice 1 — la fourche (pitchfork), section symetrique de la fronce
 
 A $b=0$ (pas de biais), la fronce devient symetrique : c'est la **fourche**. Quand $a$ descend sous $0$,
 l'unique equilibre $x=0$ se **dedouble** en deux minima symetriques (plus le col en $0$). Completez
@@ -589,7 +589,7 @@ dedoublement.
 
 *Indices :* `cat.cusp_equilibria(a, 0.0)` renvoie la liste `(x*, stable)` ; on ne demande ici que les
 positions `x*`. Le point critique (la « pointe » de la fourche) est en $a=0$.",,,,,,,,2b9e848d19543956,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,5a5fb4b9,code,fr,fac4766b2b6bab43,"def equilibres_fourche(a):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,5a5fb4b9,code,fr,fac4766b2b6bab43,"def equilibres_fourche(a):
     """"""Positions d'equilibre de la fronce SYMETRIQUE (b=0), pour observer la fourche.
     Renvoyer None tant que l'exercice n'est pas complete.""""""
     # TODO etudiant : extraire les positions x* depuis cat.cusp_equilibria(a, 0.0)
@@ -600,7 +600,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,5a5fb4b9
 # for a in [0.5, 0.0, -0.5, -1.0]:
 #     print(f""a={a:+.1f} -> equilibres (b=0) : {equilibres_fourche(a)}"")
 print(""Exercice 1 a completer : observer le dedoublement de la fourche quand a passe sous 0."")",,,,,,,,fac4766b2b6bab43,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,1b9908cb,markdown,fr,a5c48d99010e0f45,"## 3. Le lacet de predation : la scene actantielle mesuree
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,1b9908cb,markdown,fr,a5c48d99010e0f45,"## 3. Le lacet de predation : la scene actantielle mesuree
 
 On ferme la strate 2 (morphogenese) et on **ouvre la strate 3** (agents). Le **lacet de predation** de
 Thom (Ch.4, §C) est la scene actantielle canonique : deux actants (predateur, proie) comme deux minima,
@@ -616,7 +616,7 @@ c'est la catastrophe.
 > (non nulle) mesure l'**irreversibilite** : capture $\neq$ emission — la direction agent$\to$patient de
 > la scene. C'est la *même* fronce que la transition liquide-gaz de Van der Waals (note 8 du Ch.2) et que
 > « la chaleur fait fondre la glace » (p.48).",,,,,,,,a5c48d99010e0f45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,b0c97999,code,fr,c9be6b83411256ca,"a = -1.0
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,b0c97999,code,fr,c9be6b83411256ca,"a = -1.0
 b_up = np.linspace(-0.7, 0.7, 90)
 b_path = np.concatenate([b_up, b_up[::-1]])               # aller (montee) puis retour (descente)
 x0 = cat.cusp_equilibria(a, float(b_path[0]))[0][0]
@@ -648,7 +648,7 @@ plt.tight_layout(); plt.show()
 print(f""nombre de catastrophes le long du lacet : {len(jumps)}  (J = capture, K = relachement)"")
 print(f""b aux franchissements : {[round(float(b_path[j]),3) for j in jumps]}  (pli theorique : +/-{b_hi:.3f})"")
 print(f""aire du cycle (hysteresis, signe = orientation) : {aire:+.3f}  -> non nulle = scene orientee (SVO)"")",,,,,,,,c9be6b83411256ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,11c70949,markdown,fr,c79a5e5edee3adfd,"### Exercice 2 — l'hysteresis disparait a la pointe de la fronce
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,11c70949,markdown,fr,c79a5e5edee3adfd,"### Exercice 2 — l'hysteresis disparait a la pointe de la fronce
 
 L'irreversibilite (l'aire du lacet) doit **s'effondrer** quand on rapproche $a$ de $0$ : a la pointe
 $a=0$, les deux puits fusionnent, il n'y a plus de bistabilite, donc plus de saut — la scene actantielle
@@ -657,7 +657,7 @@ cycle d'hysteresis pour un $a<0$ donne, et verifiez la decroissance vers $0$.
 
 *Indices :* reproduire le balayage `b_path` de la section 3, appeler `cat.hysteresis_loop(a, b_path, ...)`,
 puis `abs(trapz(xs, b_path))`. Adapter l'amplitude du balayage de $b$ a la taille du pli `cat.fold_lines(a)`.",,,,,,,,c79a5e5edee3adfd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,9641735a,code,fr,1793480203adc57a,"def aire_lacet(a):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,9641735a,code,fr,1793480203adc57a,"def aire_lacet(a):
     """"""Aire (valeur absolue) du cycle d'hysteresis pour un a < 0 donne.
     Mesure l'irreversibilite de la scene actantielle. Renvoyer None tant que non complete.""""""
     # TODO etudiant :
@@ -673,7 +673,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,9641735a
 # for a in [-1.0, -0.6, -0.3, -0.1]:
 #     print(f""a={a:+.2f} -> aire du lacet = {aire_lacet(a)}"")
 print(""Exercice 2 a completer : l'hysteresis (aire) s'effondre quand a -> 0 (degenerescence)."")",,,,,,,,1793480203adc57a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,6f1c92ee,markdown,fr,bc87a1063f18ca50,"## 4. Le representant interne `p_hat` : anticiper la proie
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,6f1c92ee,markdown,fr,bc87a1063f18ca50,"## 4. Le representant interne `p_hat` : anticiper la proie
 
 Thom (Ch.4) place dans l'etat metabolique du predateur un **representant interne** de la proie, qui
 *« anticipe »* la proie reelle (et Ch.2, p.50 : on se deplace en *« anticipant la trajectoire de
@@ -698,7 +698,7 @@ On le mesure **sans complaisance**, sur un banc durci en trois directions :
 famille (le gain se reporte par famille, jamais en moyenne). S'il ne gagne pas sur au moins 2 familles
 sur 3, le verdict honnete est *« avantage regime-dependant »* — pas *« p_hat anticipe »*. La ou
 `p_hat` echoue doit rester **visible** dans la sortie.",,,,,,,,bc87a1063f18ca50,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,eb36d885,code,fr,523b14a99cde72f1,"familles = [""sinus"", ""derive"", ""creneau""]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,eb36d885,code,fr,523b14a99cde72f1,"familles = [""sinus"", ""derive"", ""creneau""]
 ETIQUETTES = {""sinus"": ""sinus bruite (inertie lisse)"",
               ""derive"": ""marche a derive (bruit dominant)"",
               ""creneau"": ""creneau (discontinuites)""}
@@ -773,7 +773,7 @@ print(f""\nVerdict : p_hat bat la meilleure baseline sur {n_gagnees}/{len(famill
       f"" (critere de la clause : >= 2/3 pour crediter l'anticipation)"")
 print(""-> avantage REGIME-DEPENDANT : p_hat anticipe la ou l'inertie est exploitable (sinus),""
       ""\n   pas sur la derive bruitee ni sur les discontinuites. L'echec reste visible ci-dessus."")",,,,,,,,523b14a99cde72f1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,fd8434db,markdown,fr,8399b1fce96a6fd4,"### Verdict sans complaisance : un avantage regime-dependant
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,fd8434db,markdown,fr,8399b1fce96a6fd4,"### Verdict sans complaisance : un avantage regime-dependant
 
 Le banc durci renverse la conclusion trop confortable d'un banc a une seule famille
 (« `p_hat` bat la persistance ») :
@@ -795,7 +795,7 @@ trajectoire a une inertie exploitable, illusoire ailleurs. C'est ce que la claus
 exigeait de rendre visible ; un banc a une seule famille l'aurait masque. L'AR(1), ajuste in-sample sur
 la serie complete, reste l'adversaire le plus dur partout — le battre sur le sinus n'en a que plus de
 valeur.",,,,,,,,8399b1fce96a6fd4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,ec48792e,markdown,fr,c6b6d9082d5ffecb,"### Exercice 3 — *sans complaisance* : le compromis de l'anticipation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,ec48792e,markdown,fr,c6b6d9082d5ffecb,"### Exercice 3 — *sans complaisance* : le compromis de l'anticipation
 
 L'anticipation n'est pas gratuite. La vitesse **brute** (`alpha=1`, sans lissage) amplifie le bruit
 d'observation d'un facteur `lead` : en milieu bruite, `p_hat` peut alors devenir **pire** que la simple
@@ -805,7 +805,7 @@ persistance. C'est un **compromis biais-variance** qu'il faut *mesurer*, pas mas
 
 *Indices :* regenerer une proie `sin + bruit * randn` (graine fixe), construire `p_hat` avec l'`alpha`
 donne et le `suiveur`, puis comparer `cat.lead_error(..., LEAD)`.",,,,,,,,c6b6d9082d5ffecb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,15d9ce70,code,fr,45ee4fcfb1d46f3a,"def gain_anticipation(bruit, alpha):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,15d9ce70,code,fr,45ee4fcfb1d46f3a,"def gain_anticipation(bruit, alpha):
     """"""Gain de l'anticipation : lead_error(persistance) - lead_error(p_hat), a l'horizon LEAD.
     Positif = p_hat utile ; chute vers <=0 si alpha=1 (vitesse brute) sur proie bruitee.
     Renvoyer None tant que non complete.""""""
@@ -821,14 +821,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,15d9ce70
 # for al in [0.25, 0.5, 1.0]:
 #     print(f""bruit=0.20, alpha={al:.2f} -> gain anticipation = {gain_anticipation(0.20, al)}"")
 print(""Exercice 3 a completer : mesurer le compromis biais-variance (alpha=1 degrade en milieu bruite)."")",,,,,,,,45ee4fcfb1d46f3a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,2af67d4b,markdown,fr,1a100659f3adcda0,"## 5. *Sans complaisance* : la catastrophe n'est reelle que hors degenerescence
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,2af67d4b,markdown,fr,1a100659f3adcda0,"## 5. *Sans complaisance* : la catastrophe n'est reelle que hors degenerescence
 
 La tentation serait de balayer $b$ **sans verifier $a<0$** et d'appeler « hysteresis » la courbe obtenue.
 Or a $a \geq 0$ il n'y a **qu'un** equilibre : le suivi est **continu**, **zero** saut, aire **nulle**.
 Annoncer une « scene actantielle » dans ce regime, c'est fabriquer un **phantome** — l'equivalent, pour
 les catastrophes, du « problème degenere » (un A\* sur graphe a cout uniforme, ou un Z3 sur une contrainte
 qu'un `if` resout). On le **mesure** : même balayage, deux regimes.",,,,,,,,1a100659f3adcda0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,0d0ef4e7,code,fr,c1de0f554458910e,"b_up = np.linspace(-0.7, 0.7, 90); b_path = np.concatenate([b_up, b_up[::-1]])
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,0d0ef4e7,code,fr,c1de0f554458910e,"b_up = np.linspace(-0.7, 0.7, 90); b_path = np.concatenate([b_up, b_up[::-1]])
 fig, axes = plt.subplots(1, 2, figsize=(13, 4.8), sharey=True)
 for ax, (a_, ttl) in zip(axes, [(-1.0, ""a=-1 : NON degenere (vraie fronce)""), (0.5, ""a=+0.5 : degenere (monostable)"")]):
     xs = cat.hysteresis_loop(a_, b_path, x_start=cat.cusp_equilibria(a_, float(b_path[0]))[0][0])
@@ -843,7 +843,7 @@ plt.tight_layout(); plt.show()
 for a_ in (-1.0, 0.5):
     xs = cat.hysteresis_loop(a_, b_path, x_start=cat.cusp_equilibria(a_, float(b_path[0]))[0][0])
     print(f""a={a_:+.1f} : {len(cat.loop_jumps(b_path, xs, 0.5))} saut(s), aire={abs(float(trapz(xs,b_path))):.3f}, bistable={cat.in_bistable_region(a_, 0.0)}"")",,,,,,,,c1de0f554458910e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,cf40873b,markdown,fr,f7c3fecc265f6621,"## 6. Portee et barreaux : du gradient basse-dimension aux systèmes discrets
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,cf40873b,markdown,fr,f7c3fecc265f6621,"## 6. Portee et barreaux : du gradient basse-dimension aux systèmes discrets
 
 **Le caveat, droit.** La théorie des catastrophes classe les singularites des **dynamiques gradient de
 basse dimension** (les 7 catastrophes elementaires couvrent $\leq 4$ paramètres de contrôle). Un LLM
@@ -870,7 +870,7 @@ telle**, et **hors ICT** (materiel serie neurosymbolique).
 [ICT-11](ICT-11-CausalAgencyProfiles-Python.ipynb) (profils d'agence causale aux echelles micro/meso/macro) et **ICT-Synthese** (reunir $\Phi$,
 trajectoires, bassins, transitions, reparation, agence). Discipline de la serie : *ne pas ouvrir cinq
 fronts a la fois*.",,,,,,,,f7c3fecc265f6621,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,62f52a55,markdown,fr,91725d01a72cd35c,"## Conclusion — la grammaire tenue par la mesure
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,62f52a55,markdown,fr,91725d01a72cd35c,"## Conclusion — la grammaire tenue par la mesure
 
 On a tresse les deux fils, et le chapitre 2 de Thom les a noues a sa théorie du langage :
 
@@ -1224,7 +1224,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb,14f9d0
 *ICT-11 — Profils d'agence causale. Epic #4588, strate 3. Suite : ICT-12 (champs de valence et animats), ICT-13 (stratégies comme formes stables). Voir [ICT-0-Framing](ICT-0-Framing.md) pour le cadrage de la série.*",,,,,,,,b180a7e0e032dd5f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb,f42cc0ee,markdown,fr,635df33933b2f4c9,"# ICT-12 — Champs de valence et animats : rôles mesures, modèle interne payant ou ruineux
 
-**Sous-série ICT — trajectoires intégrées, strate 3.** Après [ICT-10](../ICT-10-CatastropheGrammar-Python.ipynb) (durcissement du banc $\hat{p}$, verdict honnête « avantage régime-dépendant ») et [ICT-11](../ICT-11-CausalAgencyProfiles-Python.ipynb) (profils d'agence multi-échelle), ce carnet étudie les champs de valence et leur effet sur l'action des animats.
+**Sous-série ICT — trajectoires intégrées, strate 3.** Après [ICT-10](../ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb) (durcissement du banc $\hat{p}$, verdict honnête « avantage régime-dépendant ») et [ICT-11](../ICT-11-CausalAgencyProfiles-Python.ipynb) (profils d'agence multi-échelle), ce carnet étudie les champs de valence et leur effet sur l'action des animats.
 
 ## Question directrice
 
@@ -4953,7 +4953,7 @@ Ce carnet est le **producteur** du jouet `SelfSortingArray`, consommé par une d
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb,febd299a,markdown,fr,4f8c08062af7b522,"# ICT-20 — FeatureCatastrophes : *calibration de méthode*
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) -- strate 5 : *calibration*.
-> Prerequis : [ICT-0-Framing](../ICT-0-Framing.md), [ICT-08-AttractorLandscapesEWS-Python](../ICT-08-AttractorLandscapesEWS-Python.ipynb) (EWS), [ICT-10-CatastropheGrammar-Python](../ICT-10-CatastropheGrammar-Python.ipynb) (pli / lacet).
+> Prerequis : [ICT-0-Framing](../ICT-0-Framing.md), [ICT-08-AttractorLandscapesEWS-Python](../ICT-08-AttractorLandscapesEWS-Python.ipynb) (EWS), [ICT-10-CatastropheGrammar-Python](../ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb) (pli / lacet).
 > Prerequis numériques : numpy ; ce notebook n'utilise aucun modèle GPU.
 **Navigation** : [Index](../README.md) | [ICT-21 — SAE Trajectoires >>](ICT-21-SAETrajectoires-Python.ipynb)
 
@@ -9183,7 +9183,7 @@ verdict est, de plus en plus, **régime-dépendant** (ICT-10 → ICT-13).
 | **[ICT-7](ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb)** | Le tri auto-organisé est-il scale-free ? | **NON** : échelle caractéristique (la taille $n$, révélée par effondrement d'échelle) ; le scale-free est rare et réglé | branchement critique $\mu$=1 : $\alpha$=1.58, KS=0.017, $p$=0.625 ($\tau$=3/2) ; tri **rejeté** $p$-GoF=0.0 |
 | **[ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb)** | Les *early-warning signals* montent-ils **avant** la bascule ? | OUI (variance ↑, AR1 ↑) ; une mesure naïve **fabrique ou masque** le signal | $c_\text{fold}$≈2.604 ; stationnaire $\tau$=+1.00 ; AR1 brute 0.9987 (saturée) vs amincie 0.939 |
 | **[ICT-9](ICT-09-AgencyRegeneration-Python.ipynb)** | Quand un système répare-t-il *sa propre* forme (agence) ? | Agence = **gain de réparation > 0** (réaction-diffusion vs diffusion pure) ; mesure naïve = signal fantôme | gain=1.22 ; cosinus spectral RD 0.631 **<** diffusion 0.735 (fantôme) ; sweep 9/9 positif (moy 1.26) |
-| **[ICT-10](ICT-10-CatastropheGrammar-Python.ipynb)** | La grammaire des catastrophes est-elle mesurable ? $\hat p$ anticipe-t-il ? | OUI en régime non dégénéré ($a<0$) ; hors régime = **fantôme**. $\hat p$ : avantage **régime-dépendant** | comptage [1,3], 2 transitions ; lacet aire signée +1.633 ; $\hat p$ horizon-4 0.055 vs persistance 0.101 ; $a$=+0.5 → 0 saut |
+| **[ICT-10](ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb)** | La grammaire des catastrophes est-elle mesurable ? $\hat p$ anticipe-t-il ? | OUI en régime non dégénéré ($a<0$) ; hors régime = **fantôme**. $\hat p$ : avantage **régime-dépendant** | comptage [1,3], 2 transitions ; lacet aire signée +1.633 ; $\hat p$ horizon-4 0.055 vs persistance 0.101 ; $a$=+0.5 → 0 saut |
 | **[ICT-11](ICT-11-CausalAgencyProfiles-Python.ipynb)** | À quelle échelle l'agence est-elle la plus lisible ? | **Résultat négatif robuste** : pas de granularité privilégiée | 2 mesures se contredisent ; effectiveness↔repair\_gain $r$=+0.50 mais ↔basin\_return $r$=−0.14 ; effectiveness sans sommet (0.71/0.50/0.79/0.63) |
 | **[ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)** | Dans quels environnements le modèle interne $\hat p$ paie-t-il son coût ? | **Régime-dépendant** : $\hat p$ paie **où la source échappe au réactif ET reste prévisible** | balistique rapide capture $\hat p$ 0.072 vs réactif 0.018 ; anticipation $\hat p$ 2.44 vs persistance 14.95 (balist.) mais **perd** en bruité (0.62 vs 0.23) |
 | **[ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)** | Une stratégie est-elle une forme stable ? | Stable **seulement dans un paysage donné** ; TFT gagne sans bruit mais s'effondre ; correction honnête : **grim** chute le moins | sans bruit TFT/grim 2.635, AllD 2.313 ; $\delta^*$=0.5 (num. 0.55) ; chute sous bruit TFT +0.399 vs grim +0.287 ; invasion TFT/grim 0.02, pavlov/allc jamais (1.0) |
@@ -21762,7 +21762,7 @@ La Phase B soumet le substrat argumentation au zoo ICT et confirme (ou infirme, 
 Ce substrat (S-arg) prépare la **strate 6** (horizon collaboration agentique et altérité, #7291) : la thèse unificatrice — la réversibilisation comme maintien d'agents autres capables de coopérer — y sera soumise à un **contrat de falsifiabilité** écrit avant tout run.
 
 > **Garde-fou** (issue #7289) : les verdicts ci-dessus portent sur des **topologies** (symétrique vs asymétrique), jamais sur le contenu d'un discours réel. Toute transposition à un corpus réel (Argumentum, `argumentation_analysis`) devra reconduire les mêmes mesures structurelles — et accepter qu'un discours « de son camp » puisse être classé irréversibiliste si la topologie le mesure ainsi.",,,,,,,,f98bf74ab5397b7b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,90e840be,markdown,fr,769da2fa579ad7d4,"# Boucle auto-referentielle p_hat (case 2 / Epic #9533)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,90e840be,markdown,fr,769da2fa579ad7d4,"# Boucle auto-referentielle p_hat (case 2 / Epic #9533)
 
 ## Contexte et ancrage
 
@@ -21825,7 +21825,7 @@ these : le verdict experimental reste independant du temoin.
 11+. Exercices (>=3) et conclusion
 *Famille **dissociations** de la serie ICT : Precedent : [case 1 -- s ⟂ π](ICT-Dissociation-SaillancePregnance-Python.ipynb) | Suivant : [case F2 -- self-model et store etendu](ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb).*
 ",,,,,,,,769da2fa579ad7d4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,06f9926b,code,fr,3652fcb9fa0888f2,"import sys, os
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,06f9926b,code,fr,3652fcb9fa0888f2,"import sys, os
 # Le notebook vit dans ICT-Series/ ; le package ict est juste a cote.
 sys.path.insert(0, os.getcwd())
 
@@ -21848,7 +21848,7 @@ print(""KAPPA_C_PREDICTED:"", KAPPA_C_PREDICTED)
 print(""KAPPA_GRID:"", KAPPA_GRID)
 print(""RATIO_DIVERGENT:"", RATIO_DIVERGENT)
 print(""RATIO_BORNE_HIGH:"", RATIO_BORNE_HIGH)",,,,,,,,3652fcb9fa0888f2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,03ff8fb3,markdown,fr,1c8affa1cfac34bd,"## Sanity check -- delieur borne, bouclee diverge
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,03ff8fb3,markdown,fr,1c8affa1cfac34bd,"## Sanity check -- delieur borne, bouclee diverge
 
 Avant de lancer le scan complet, on verifie les deux regimes extremes :
 
@@ -21856,7 +21856,7 @@ Avant de lancer le scan complet, on verifie les deux regimes extremes :
   Ratio `R_T / R_0` doit rester sous `RATIO_BORNE_HIGH = 2`.
 - **Bouclee amplifiee** (`kappa = 1.0`) : prediction amplifiee sur
   l'environnement. Ratio doit depasser largement `RATIO_DIVERGENT = 5`.",,,,,,,,1c8affa1cfac34bd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,3c817a99,code,fr,e20f5d7c221fc092,"rng_sanity = np.random.default_rng(42)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,3c817a99,code,fr,e20f5d7c221fc092,"rng_sanity = np.random.default_rng(42)
 sim_delieur = simulate_self_reference_loop(kappa=0.0, rng=rng_sanity)
 sim_bouclee = simulate_self_reference_loop(kappa=1.0, rng=rng_sanity)
 
@@ -21866,7 +21866,7 @@ print(f""Bouclee  kappa=1.0   : ratio median = {float(np.median(sim_bouclee['rat
 assert float(np.max(sim_delieur['ratio'])) < RATIO_BORNE_HIGH, ""Delieur devrait rester borne""
 assert float(np.min(sim_bouclee['ratio'])) >= RATIO_DIVERGENT, ""Bouclee a kappa=1 devrait diverger""
 print(""\nSanity check OK : delieur borne, bouclee diverge."")",,,,,,,,e20f5d7c221fc092,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,9bad35ec,markdown,fr,585bc56e8b0e77e0,"## Mecanique de la boucle `p_hat -> action -> p_hat`
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,9bad35ec,markdown,fr,585bc56e8b0e77e0,"## Mecanique de la boucle `p_hat -> action -> p_hat`
 
 Trois equations definissent la dynamique :
 
@@ -21882,12 +21882,12 @@ computation interne reste formellement en boucle.
 compte, pas la recurrence du calcul de prediction. Le predicteur reste
 exact (`a_hat = a`) pour isoler l'effet de la boucle de toute erreur
 d'estimation -- condition experimentale qui rend le test falsifiable.",,,,,,,,585bc56e8b0e77e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,e7d2ceb9,markdown,fr,c50cb27b02613dbf,"## Substrat A -- scan de stabilite `R_T / R_0 vs kappa`
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,e7d2ceb9,markdown,fr,c50cb27b02613dbf,"## Substrat A -- scan de stabilite `R_T / R_0 vs kappa`
 
 On balaye la grille `KAPPA_GRID` pour 5 graines (0, 1, 7, 42, 99) avec
 `N_INIT = 30` conditions initiales par graine et `HORIZON_T = 200` pas.
 Le ratio `R_T / R_0` est la mesure de divergence (1 = stationnaire, > 5 = divergent).",,,,,,,,c50cb27b02613dbf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,e79301fd,code,fr,14fbf36242a2a77c,"scan = stability_scan(seeds=(0, 1, 7, 42, 99))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,e79301fd,code,fr,14fbf36242a2a77c,"scan = stability_scan(seeds=(0, 1, 7, 42, 99))
 print(""Grille balayee :"", scan['kappa_grid'])
 print()
 header = f""{'kappa':>8}  {'R_med (5 graines)':>20}  {'stable (5/5?)':>15}  {'divergent (5/5?)':>15}""
@@ -21898,41 +21898,41 @@ for j, k in enumerate(scan['kappa_grid']):
     stable = bool(np.all(scan['stable_mask'][:, j]))
     divergent = bool(np.all(scan['divergent_mask'][:, j]))
     print(f""{k:>8.3f}  {med:>20.3e}  {str(stable):>15}  {str(divergent):>15}"")",,,,,,,,14fbf36242a2a77c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,8a07d7f8,markdown,fr,33f9dbb70cee3b53,"## Substrat B -- delieur causal vs bouclee divergente
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,8a07d7f8,markdown,fr,33f9dbb70cee3b53,"## Substrat B -- delieur causal vs bouclee divergente
 
 Le delieur (`kappa = 0`) doit presenter un ratio tres inferieur a
 `RATIO_DIVERGENT` sur toutes les graines. Si oui, la dissociation tient :
 c'est bien le couplage boucle qui cause la divergence aux grands `kappa`.",,,,,,,,33f9dbb70cee3b53,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,786895b8,code,fr,304062d157298871,"v_deleur = delieur_verdict(scan)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,786895b8,code,fr,304062d157298871,"v_deleur = delieur_verdict(scan)
 print(f""Delieur (kappa=0) ratio par graine : {v_deleur['delieur_ratio_per_seed']}"")
 print(f""Delieur ratio max   : {v_deleur['delieur_ratio_max']:.4f}"")
 print(f""Delieur ratio mean  : {v_deleur['delieur_ratio_mean']:.4f}"")
 print(f""Delieur stable ?    : {v_deleur['delieur_stable']}"")",,,,,,,,304062d157298871,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,2af4d339,markdown,fr,d36b2ea1e10465e2,"## Substrat C -- frontiere de stabilite observee vs predite
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,2af4d339,markdown,fr,d36b2ea1e10465e2,"## Substrat C -- frontiere de stabilite observee vs predite
 
 Pour chaque graine, on cherche le plus petit `kappa` ou le ratio median
 depasse `RATIO_DIVERGENT = 5`. La frontiere mediane est comparee a
 `KAPPA_C_PREDICTED = (1 - 0.95) / 0.95 ~= 0.053`.
 
 **Tolerance** : on accepte `+/- 0.05` (demi-maille de la grille fine).",,,,,,,,d36b2ea1e10465e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,493ebb8f,code,fr,e0c0bfd5f11c8960,"boundary = estimate_stability_boundary(scan)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,493ebb8f,code,fr,e0c0bfd5f11c8960,"boundary = estimate_stability_boundary(scan)
 print(f""kappa_critical par graine : {boundary['kappa_critical_per_seed']}"")
 print(f""kappa_critical median     : {boundary['kappa_critical_median']:.4f}"")
 print(f""kappa_critical std        : {boundary['kappa_critical_std']:.4f}"")
 print(f""biais vs prediction       : {boundary['bias_vs_predicted']:+.4f}"")
 print(f""KAPPA_C_PREDICTED (theorie): {KAPPA_C_PREDICTED:.4f}"")",,,,,,,,e0c0bfd5f11c8960,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,295fa6d8,markdown,fr,c64c0a4708a44dd1,"## Substrat D -- sensibilite a T (horizon) : preuve de non-trivialite
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,295fa6d8,markdown,fr,c64c0a4708a44dd1,"## Substrat D -- sensibilite a T (horizon) : preuve de non-trivialite
 
 Un test degenere (trivial) ne serait pas sensible a l'horizon T. Ici, la
 divergence est cumulative sur T (l'AR(1) effectif amplifie a chaque pas),
 donc le ratio doit croitre avec T au voisinage de la frontiere.",,,,,,,,c64c0a4708a44dd1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,f5be2e61,code,fr,72bd954bd76c70b3,"sim_T50 = simulate_self_reference_loop(kappa=0.06, horizon=50, rng=np.random.default_rng(0))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,f5be2e61,code,fr,72bd954bd76c70b3,"sim_T50 = simulate_self_reference_loop(kappa=0.06, horizon=50, rng=np.random.default_rng(0))
 sim_T200 = simulate_self_reference_loop(kappa=0.06, horizon=200, rng=np.random.default_rng(0))
 sim_T500 = simulate_self_reference_loop(kappa=0.06, horizon=500, rng=np.random.default_rng(0))
 print(f""T=  50 : ratio median = {float(np.median(sim_T50['ratio'])):.3f}"")
 print(f""T= 200 : ratio median = {float(np.median(sim_T200['ratio'])):.3f}"")
 print(f""T= 500 : ratio median = {float(np.median(sim_T500['ratio'])):.3f}"")",,,,,,,,72bd954bd76c70b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,ecc3c96c,markdown,fr,95be24e2e2ba6dab,"## Synthese -- verdict honnete a 2 niveaux
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,ecc3c96c,markdown,fr,95be24e2e2ba6dab,"## Synthese -- verdict honnete a 2 niveaux
 
 Le verdict se decompose en deux niveaux independants :
 
@@ -21943,7 +21943,7 @@ Le verdict se decompose en deux niveaux independants :
 
 Les 3 issues possibles : `CONFIRMED` (les deux), `PARTIAL` (dissociation
 seule) ou `FALSIFIED` (ni l'un ni l'autre).",,,,,,,,95be24e2e2ba6dab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,06f799b3,code,fr,4cc80ba039a0779e,"verdict_full = predict_and_dissociate(scan)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,06f799b3,code,fr,4cc80ba039a0779e,"verdict_full = predict_and_dissociate(scan)
 print(f""VERDICT : {verdict_full['verdict']}"")
 print()
 print(verdict_full['verdict_detail'])
@@ -21952,12 +21952,12 @@ print(f""Prediction numerique confirmee  : {verdict_full['prediction_confirmed']
 print(f""Dissociation bouclee/delieur     : {verdict_full['dissociation_confirmed']}"")
 print(f""n_seeds                          : {verdict_full['n_seeds']}"")
 print(f""n_within_tolerance               : {verdict_full['n_within_tolerance']}"")",,,,,,,,4cc80ba039a0779e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,083b98cf,markdown,fr,a41050936909f1d5,"## Verdict agrege (5 graines, protocole complet)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,083b98cf,markdown,fr,a41050936909f1d5,"## Verdict agrege (5 graines, protocole complet)
 
 Appel direct a `run_full_protocol()` -- un seul appel suffit pour le verdict
 complet. Le verdict est stable entre 3 et 5 graines (cf tests unitaires
 `test_3_seeds_vs_5_seeds_meme_verdict`).",,,,,,,,a41050936909f1d5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,d95e66e5,code,fr,944ab71db48bcdfb,"r = run_full_protocol()
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,d95e66e5,code,fr,944ab71db48bcdfb,"r = run_full_protocol()
 v = r['verdict']
 print(f""VERDICT AGREGE : {v['verdict']}"")
 print()
@@ -21967,7 +21967,7 @@ print(f""kappa_critical median : {v['boundary']['kappa_critical_median']:.4f}"")
 print(f""KAPPA_C_PREDICTED     : {KAPPA_C_PREDICTED:.4f}"")
 print(f""biais                 : {v['boundary']['bias_vs_predicted']:+.4f}"")
 print(f""delieur max           : {v['delieur']['delieur_ratio_max']:.4f}"")",,,,,,,,944ab71db48bcdfb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,7afa0f18,markdown,fr,a5762ffc0c6ed90b,"## Credit temoin (grade C) -- Hofstadter strange loops
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,7afa0f18,markdown,fr,a5762ffc0c6ed90b,"## Credit temoin (grade C) -- Hofstadter strange loops
 
 Le hook grade C est active par ce test :
 **Hofstadter** -- *strange loops* (auto-reference comme boucle etrange,
@@ -21984,11 +21984,11 @@ experimentale** de la boucle etrangete, pas une illustration de celle-ci.
 **Reactivation #8182** : commentaire de reactivation post-test sur l'issue
 #8182 (jalon 2 du tracker), cf protocole discipline de livraison
 (`docs/ict/dissociations-matrix.md` section *Discipline de livraison*).",,,,,,,,a5762ffc0c6ed90b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,c869c663,markdown,fr,ebe751ae31e5ca12,"## Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,c869c663,markdown,fr,ebe751ae31e5ca12,"## Exercices
 
 Trois exercices pour prolonger l'experience (cohabitent avec l'exemple guide,
 cf `exercise-example-labeling.md` : la cellule ci-dessous contient un stub).",,,,,,,,ebe751ae31e5ca12,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,99248a5b,code,fr,3a96c2f97d794270,"# Exercice 1 : etude de sensibilite au predicteur imparfait.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,99248a5b,code,fr,3a96c2f97d794270,"# Exercice 1 : etude de sensibilite au predicteur imparfait.
 # On a suppose `a_hat = a` (predicteur exact). Que se passe-t-il si
 # `a_hat = a + delta` avec delta = +/- 0.05 ? La frontiere de stabilite
 # change-t-elle ? Repondre en implementant une variante de
@@ -22002,7 +22002,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb
 def exercise1_predicteur_imparfait():
     """"""A implementer par l'etudiant.""""""
     pass",,,,,,,,3a96c2f97d794270,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,4110a14d,code,fr,eb6950eb46a5a946,"# Exercice 2 : ajouter du bruit non-gaussien (heavy-tailed).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,4110a14d,code,fr,eb6950eb46a5a946,"# Exercice 2 : ajouter du bruit non-gaussien (heavy-tailed).
 # La prediction actuelle utilise epsilon_t ~ N(0, sigma^2). Que se passe-t-il
 # si epsilon_t est tire d'une distribution a queues lourdes (par exemple
 # Student-t a 3 degres de liberte) ? La frontiere devient-elle plus
@@ -22016,7 +22016,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb
 def exercise2_bruit_heavy_tailed():
     """"""A implementer par l'etudiant.""""""
     pass",,,,,,,,eb6950eb46a5a946,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,742e44ac,code,fr,33f8fb0d137a81ce,"# Exercice 3 : reproduire la dissociation sur une dimension > 1.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,742e44ac,code,fr,33f8fb0d137a81ce,"# Exercice 3 : reproduire la dissociation sur une dimension > 1.
 # Notre animat est scalaire (1-D). Le vecteur d'etat est `x in R`. Etendre
 # la simulation a un vecteur `x in R^2` ou `x in R^3` change-t-il la
 # topologie de la frontiere de stabilite ?
@@ -22029,7 +22029,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb
 def exercise3_dimension_superieure():
     """"""A implementer par l'etudiant.""""""
     pass",,,,,,,,33f8fb0d137a81ce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,b23e7f19,markdown,fr,7591202565890e6e,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,b23e7f19,markdown,fr,7591202565890e6e,"## Conclusion
 
 Cette 2eme case de la matrice inversee (#9533) a ete testee avec une
 pre-enregistrement explicite (`PR #9546 SHA 3f6590fa4`, verrouille avant
@@ -23042,7 +23042,7 @@ Dans la fenêtre d'avant-bascule, les deux précurseurs EWS montent sans ambigu�
 
 **Lecture derivee -- l'ecart et l'echelle.** Le pli disparait a $c = 2{,}604$, la trajectoire retombe a $2{,}622$ : $0{,}018$ de retard, l'ordre de grandeur de l'inertie du bruit dans un puits qui vient de s'evanouir. Compares aux $\tau = 1{,}00$ de la table stationnaire, ces coefficients de rampe sont modestes -- mais une p-valeur a $10^{-180}$ ou en dessous, mesuree sur la fenetre qui precede la bascule, ne dit plus « effet peut-etre » : elle dimensionne l'evidence.",,,,,,,,868c89e668fbd537,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,bf43f43c,markdown,fr,3618c3a4b98ee011,> **Statut épistémique** — **Établi** : L'agence est mesurable comme *gain de réparation* (RD − diffusion) après `do(·)`. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,3618c3a4b98ee011,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,7e7ae71a,markdown,fr,32fd122c42530481,"> **Statut épistémique** — 3 claims, verdicts distingués :
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb,7e7ae71a,markdown,fr,32fd122c42530481,"> **Statut épistémique** — 3 claims, verdicts distingués :
 > - **Établi** : Le métathéorème (comptage d'équilibres ne change qu'aux plis) clôt la strate 2.
 > - **Fortement soutenu** : `p̂` *gagne* en anticipation sur trajectoire lisse, *perd* sur dérive/créneau.
 > - **Spéculatif** : La correspondance sémiophysique (Ch.2 Thom) : pivots ↔ transitions, verbe SVO ↔ lacet, anticipation ↔ `p̂`.
@@ -38003,10 +38003,10 @@ Ce carnet a distille la couche **revision** de l'argumentation : un moteur JTMS 
 **Pour aller plus loin** : Doyle 1979 (*A truth maintenance system*, AI 12) pour le JTMS original ; de Kleer 1986 (*An assumption-based TMS*, AI 28) pour l'ATMS ; Dung 1995 (*On the acceptability of arguments*) pour la semantique grounded — les trois references que la source EPITA operationnalise.
 
 **Suivant — tête de la strate 6** : [→ ICT-Argumentation-Capstone](ICT-Argumentation-Capstone-Python.ipynb) — le capstone de la strate qui consume les trois graines (BeliefTrajectories, QBFAcceptance, TruthMaintenance) sur un corpus réel codé argument par argument.",,,,,,,,92667269c5e73b66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,statut-epistemique,markdown,fr,7bef78e611f7124c,"> **Statut épistémique** — **Testé (confirmé)**, case « p̂ auto-référent » : la boucle fermée `p̂ → action → p̂` diverge au-delà d'une frontière de couplage κ_c, sur 5/5 graines. L'écart initial à la prédiction linéaire (0.080 mesuré contre ≈ 0.053) est diagnostiqué `ARTEFACT_DE_MESURE` : critère fini et arrondi de maille. Ce diagnostic n'est pas produit par les sorties de ce carnet, qui n'exécute que la grille de maille 0.02 ; il vient de la grille fine du module `ict/phat_causal_unlink.py` (`FINE_GRID` sur l'intervalle [0.050, 0.080]), où la frontière retombe à 0.062, au voisinage de `KAPPA_STAR_FINITE` ≈ 0.06113. Ce biais n'est donc pas une propriété de la boucle. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,7bef78e611f7124c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,acquis-renvoi,markdown,fr,218adf502a3594d1,"> **Acquis et parenté** : second cas produit par le générateur de dissociations [#9533](https://github.com/jsboige/CoursIA/issues/9533) — se lit après le premier cas du même générateur, [ICT-Dissociation-SaillancePregnance-Python](ICT-Dissociation-SaillancePregnance-Python.ipynb).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,statut-epistemique,markdown,fr,7bef78e611f7124c,"> **Statut épistémique** — **Testé (confirmé)**, case « p̂ auto-référent » : la boucle fermée `p̂ → action → p̂` diverge au-delà d'une frontière de couplage κ_c, sur 5/5 graines. L'écart initial à la prédiction linéaire (0.080 mesuré contre ≈ 0.053) est diagnostiqué `ARTEFACT_DE_MESURE` : critère fini et arrondi de maille. Ce diagnostic n'est pas produit par les sorties de ce carnet, qui n'exécute que la grille de maille 0.02 ; il vient de la grille fine du module `ict/phat_causal_unlink.py` (`FINE_GRID` sur l'intervalle [0.050, 0.080]), où la frontière retombe à 0.062, au voisinage de `KAPPA_STAR_FINITE` ≈ 0.06113. Ce biais n'est donc pas une propriété de la boucle. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,7bef78e611f7124c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,acquis-renvoi,markdown,fr,218adf502a3594d1,"> **Acquis et parenté** : second cas produit par le générateur de dissociations [#9533](https://github.com/jsboige/CoursIA/issues/9533) — se lit après le premier cas du même générateur, [ICT-Dissociation-SaillancePregnance-Python](ICT-Dissociation-SaillancePregnance-Python.ipynb).
 ",,,,,,,,218adf502a3594d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-sa-d2-d03,markdown,fr,0d61d7cb95fff89f,"### Lecture du sanity check -- deux regimes, 39 ordres de grandeur d'ecart
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-sa-d2-d03,markdown,fr,0d61d7cb95fff89f,"### Lecture du sanity check -- deux regimes, 39 ordres de grandeur d'ecart
 
 Le delieur (kappa = 0) reste confine : ratio median 0.251, max 0.251 -- huit fois sous le seuil
 RATIO_BORNE_HIGH = 2. La bouclee (kappa = 1.0) explose a 4.438e+38. L'ecart entre les deux regimes
@@ -38015,7 +38015,7 @@ initialise a la graine 42, donc meme loi des tirages) : il vient uniquement du c
 C'est la demonstration la plus economique du notebook -- une seule variable manipulee, deux
 comportements qualitativement distincts. Un ratio qui passe de 0.251 a 4.4e+38 quand tout le reste
 est tenu constant, c'est la definition operationnelle d'une cause ici.",,,,,,,,0d61d7cb95fff89f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-r_-4b-d07,markdown,fr,0d37594a22467d63,"### Lecture du scan -- la frontiere vit entre kappa = 0.06 et kappa = 0.08
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-r_-4b-d07,markdown,fr,0d37594a22467d63,"### Lecture du scan -- la frontiere vit entre kappa = 0.06 et kappa = 0.08
 
 La colonne R_med croit de facon monotone avec kappa : 0.261 (kappa = 0), 0.363 (0.02), 0.528 (0.04),
 1.269 (0.05), 4.368 (0.06), puis 131.9 (0.08), 3.3e+03 (0.10), 6.8e+06 (0.15), 6.8e+09 (0.20),
@@ -38025,7 +38025,7 @@ stables sur les 5 graines (True/False), toutes les mailles >= 0.08 sont divergen
 c'est precisement la que la theorie situe la frontiere (kappa_c = 0.0526). Noter l'echelle : entre
 0.08 et 0.50, le ratio gagne environ 21 ordres de grandeur -- la divergence est exponentielle, la
 ligne ""stable/divergent"" est le seul resume lisible d'une telle dynamique.",,,,,,,,0d37594a22467d63,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-de-ef-d10,markdown,fr,95e1dd4eeec86569,"### Lecture du delieur -- marge confortable sur les 5 graines
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-de-ef-d10,markdown,fr,95e1dd4eeec86569,"### Lecture du delieur -- marge confortable sur les 5 graines
 
 Les ratios par graine : 0.201, 0.229, 0.288, 0.251, 0.336. Toutes sous 0.34, soit environ quinze
 fois sous le seuil divergent RATIO_DIVERGENT = 5, et six fois sous RATIO_BORNE_HIGH = 2. La
@@ -38035,7 +38035,7 @@ n'influence pas l'environnement, aucune graine ne diverge, quel que soit le brui
 comparaison avec la maille kappa = 0.08 du scan (131.9) donne la mesure brute de l'effet causal du
 couplage : meme environnement, meme famille de bruit, ratio median multiplie par environ 500
 (0.261 contre 131.9).",,,,,,,,95e1dd4eeec86569,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-t-7f-d13,markdown,fr,6944bffe5dfee78c,"### Lecture de la frontiere -- biais +0.027, dans la tolerance pre-enregistree
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-t-7f-d13,markdown,fr,6944bffe5dfee78c,"### Lecture de la frontiere -- biais +0.027, dans la tolerance pre-enregistree
 
 Les 5 graines tombent toutes sur kappa_c = 0.08 (std 0.0000). Cette unanimite n'est pas un
 copier-coller : la bascule stable/divergent d'une maille depend du coefficient effectif
@@ -38046,7 +38046,7 @@ le biais +0.0274 reste sous la demi-tolerance +/- 0.05, et 5 graines sur 5 sont 
 au-dessus de 1, mais la croissance exponentielle d'un facteur si proche de l'unite reste lente --
 le ratio n'atteint que 4.37 en T = 200 pas (mediane du scan sur ses 5 graines ; le substrat D mesure la meme maille sur la seule graine 0 et rend une mediane plus haute -- les deux nombres ne mesurent pas la meme statistique). La frontiere mesuree depend donc de l'horizon : c'est
 le substrat D qui quantifie cette dependence.",,,,,,,,6944bffe5dfee78c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-cr-4e-d16,markdown,fr,5ad92aab55eadec8,"### Lecture de la sensibilite a l'horizon -- la frontiere est une fonction de T
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-cr-4e-d16,markdown,fr,5ad92aab55eadec8,"### Lecture de la sensibilite a l'horizon -- la frontiere est une fonction de T
 
 A kappa = 0.06 fixe, le ratio median passe de 1.655 (T = 50) a 4.487 (T = 200) puis 33.019 (T = 500).
 Trois lectures. (1) Le seuil RATIO_DIVERGENT = 5 est franchi entre 200 et 500 pas : une experience
@@ -38056,7 +38056,7 @@ lineaire : facteur ~2.7 entre 50 et 200, ~7.4 entre 200 et 500 -- signature d'un
 preuve de non-trivialite annoncee : un test degenere serait insensible a l'horizon. Consequence
 methodologique directe : la frontiere 0.08 du substrat C est celle de l'horizon T = 200 ; un horizon
 plus long la deplacerait vers le bas, plus pres de la prediction 0.0526.",,,,,,,,5ad92aab55eadec8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-de-c2-d21,markdown,fr,ac762a0490ea557f,"### Lecture du verdict agrege -- CONFIRMED, et ce qu'il couvre
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-de-c2-d21,markdown,fr,ac762a0490ea557f,"### Lecture du verdict agrege -- CONFIRMED, et ce qu'il couvre
 
 Le protocole complet (run_full_protocol) rejoue les substrats A a C en un seul appel et retourne le
 memes triple verdict : CONFIRMED, avec prediction_confirmed = True, dissociation_confirmed = True,
@@ -40070,7 +40070,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,25f9a9c3,ma
 **Suite logique (hors scope ce grain)** :
 - Lecture firsthand de Solms (affect, valence) et Joscha Bach (world-model, self-model) -- **dette explicite** mentionnee dans le grain #12215.
 - Six autres lentilles (IIT au sens strict, Integrated Information, Phenomenal Consciousness theories) pour completer le panorama.
-- Vers la serie ICT -- la question posee par ce grain (""l'angle dissociation merite-t-il une serie dediee ?"") a depuis une reponse partielle : les carnets  [ICT-Dissociation-DehaeneF2-SelfReport-Python](./ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) (self-model vs vidage du store etendu),  [ICT-Dissociation-SaillancePregnance-Python](./ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) (dissociation saillance / pregnance) et  [ICT-Dissociation-PhatSelfReference-Python](./ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) (boucle auto-referentielle p_hat) ; le pont IIT-GWT falsifiable est  [ICT-24](./ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb). Carte complete de la serie : [README ICT](./ICT-Series/README.md).",,,,,,,,812e7c20745e0e53,,,,,,,,,,,,,,,
+- Vers la serie ICT -- la question posee par ce grain (""l'angle dissociation merite-t-il une serie dediee ?"") a depuis une reponse partielle : les carnets  [ICT-Dissociation-DehaeneF2-SelfReport-Python](./ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) (self-model vs vidage du store etendu),  [ICT-Dissociation-SaillancePregnance-Python](./ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) (dissociation saillance / pregnance) et  [ICT-Dissociation-PhatSelfReference-Python](./ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb) (boucle auto-referentielle p_hat) ; le pont IIT-GWT falsifiable est  [ICT-24](./ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb). Carte complete de la serie : [README ICT](./ICT-Series/README.md).",,,,,,,,812e7c20745e0e53,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d046143c,markdown,fr,c4efe5a0bfe80968,"## Références
 
 - Baars, B. J. (1988). *A Cognitive Theory of Consciousness*. Cambridge University Press. **RAPORTE**.
