@@ -946,7 +946,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Les rapports qui ne portent QUE des ecarts sont conserves (#21621) : les
     # retirer ferait disparaitre du total publie les commentaires qu'on ecarte.
-    reports = [r for r in reports if r.concerns or r.remarks or r.excluded]
+    reports = [r for r in reports if r.concerns or r.remarks or r.reserves or r.excluded]
     unresolved = sum(len(r.unresolved) for r in reports)
     excluded = excluded_by_signature(reports)
 
@@ -964,6 +964,10 @@ def main(argv: list[str] | None = None) -> int:
             "remarks_total": sum(len(r.remarks) for r in reports),
             "remarks_unresolved": sum(
                 1 for r in reports for c in r.remarks if c.status != "REPONDU"
+            ),
+            "reserves_total": sum(len(r.reserves) for r in reports),
+            "reserves_unresolved": sum(
+                1 for r in reports for c in r.reserves if c.status != "REPONDU"
             ),
             "unresolved": unresolved,
             "excluded_total": sum(excluded.values()),

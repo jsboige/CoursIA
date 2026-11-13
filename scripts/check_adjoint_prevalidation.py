@@ -904,6 +904,17 @@ def pre18637_surfaces_fingerprint(
     )
 
 
+def _is_skipped_run(run: dict[str, Any]) -> bool:
+    """Whether the check-run is a SKIPPED job.
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict (#25510, tranche T-C).
+    """
+    if str(run.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(run.get("status") or "").lower() == "skipped"
+
+
 def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
     """Last COMPLETED verdict per check name: group by name, latest ``started_at``
     (``id`` as tiebreak), keep that run.
@@ -912,15 +923,34 @@ def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str,
     back to its latest completed run, which is the last word actually said.
     Grouping by name -- not reading the rollup twin -- is what avoids painting
     a head red with the cancelled run of a superseded pair (#16957).
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C), shared with the two canonical
+    folds (``scripts/pr_gate.py::dedupe_latest`` and
+    ``scripts/check_run_state.py::fold_latest``): a ``skipped`` run measured
+    NOTHING about the code, so it never replaces an EARLIER non-skipped run of
+    the same name. ``skipped`` counts as a PASS here, so under a plain
+    latest-wins fold a job skipped by a guard (a title edit, a ``paths:``
+    filter) would WHITEN a red head -- and this dossier would certify
+    ``latest-wins-green`` on a head the gate itself reads as red. The three
+    organs must measure the same "latest".
     """
     verdicts: dict[str, tuple[tuple, dict[str, Any]]] = {}
-    for run in check_runs or []:
+    for index, run in enumerate(check_runs or []):
         if (run.get("status") or "").lower() != "completed":
             continue
         key = run.get("name") or ""
-        rank = (run.get("started_at") or "", run.get("id") or 0)
+        # La NATURE est en tete du rang (verdict reel > `skipped`) : le repli
+        # est ainsi independant de l'ordre d'arrivee, alors que l'API rend les
+        # check-runs du plus recent au plus ancien.
+        rank = (not _is_skipped_run(run),
+                run.get("started_at") or "",
+                run.get("id") or 0,
+                index)
         current = verdicts.get(key)
-        if current is None or rank > current[0]:
+        if current is None:
+            verdicts[key] = (rank, run)
+            continue
+        if rank >= current[0]:
             verdicts[key] = (rank, run)
     return {name: run for name, (rank, run) in verdicts.items()}
 

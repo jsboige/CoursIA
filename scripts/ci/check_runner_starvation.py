@@ -99,6 +99,11 @@ DEFAULT_CADENCE_WARN_MINUTES = 360.0
 DEFAULT_JOB_READ_BUDGET = 120
 DEFAULT_IN_PROGRESS_SAMPLE = 20
 RUNS_PAGE_SIZE = 100
+# Inventaire DECLARE des hotes de pool (#20697 point 4). Vit a cote de l'organe
+# pour que le defaut soit resolu sans argument : une sonde dont le predicat
+# depend d'un fichier qu'aucun workflow ne passe resterait inerte.
+DEFAULT_DECLARED_HOSTS = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)), "declared_runner_hosts.json")
 
 
 @dataclass
@@ -243,6 +248,73 @@ class InventoryUnavailable(RunnerInventory):
     @property
     def available(self) -> bool:
         return False
+
+
+@dataclass
+class DeclaredHosts:
+    """Inventaire DECLARE des hotes de pool (#20697 point 4).
+
+    Le predicat `evaluate_host_loss` ne voit que les hotes PRESENTS dans
+    l'inventaire mesure. Un hote dont ZERO runner est enregistre n'y figure
+    pas du tout : c'est precisement le cas fondateur de #20697 -- dix
+    conteneurs vivants sur `myia-ai-01-wsl`, zero runner inscrit cote GitHub
+    pendant environ deux jours, aucun signal. Le predicat exige `offline > 0`
+    et ne peut donc pas voir l'absence totale.
+
+    Ce que `scripts/ci/declared_runner_hosts.json` apporte est la seule chose
+    qui manquait : la liste de ce qui DEVRAIT exister, comparee a ce qui est
+    mesure. Le fichier est une DECLARATION d'intention (qui sert quel label),
+    pas une photo : c'est au superviseur qui cree ou retire des slots de le
+    tenir a jour, et l'avertissement nomme le fichier pour que le geste soit
+    evident.
+
+    `hosts` est restreint au label mesure par `load_declared_hosts` : un hote
+    declare pour `coursia-linux` ne doit pas alerter quand la sonde tourne sur
+    `coursia-waiter`, sinon chaque passage crie sur les hotes des autres.
+    """
+    hosts: dict[str, int] = field(default_factory=dict)  # host -> slots attendus
+    source: str = ""
+    error: str = ""
+    available: bool = True
+
+
+def load_declared_hosts(path: str | None, label: str) -> DeclaredHosts:
+    """Charge l'inventaire declare, restreint au label mesure.
+
+    Absence du fichier par defaut = pas d'erreur (compatibilite : l'organe
+    reste utilisable sans declaration). Un chemin DEMANDE explicitement et
+    introuvable, ou un fichier illisible, rend `available=False` avec sa
+    raison -- l'appelant en fait une note, jamais un rouge : un inventaire
+    qu'on ne sait pas lire ne prouve pas qu'un hote a disparu.
+    """
+    if not path:
+        return DeclaredHosts(available=False, error="aucun chemin d'inventaire declare")
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            data = json.load(fh)
+    except FileNotFoundError:
+        return DeclaredHosts(available=False, source=path,
+                             error=f"fichier absent ({path})")
+    except (OSError, json.JSONDecodeError) as exc:
+        return DeclaredHosts(available=False, source=path,
+                             error=f"illisible ({exc})")
+    entries = data.get("hosts")
+    if not isinstance(entries, list):
+        return DeclaredHosts(available=False, source=path,
+                             error="champ 'hosts' absent ou non-liste")
+    hosts: dict[str, int] = {}
+    for item in entries:
+        if not isinstance(item, dict):
+            continue
+        host = item.get("host")
+        labels = item.get("labels") or []
+        if not isinstance(host, str) or not host:
+            continue
+        if label not in labels:
+            continue
+        slots = item.get("slots")
+        hosts[host] = int(slots) if isinstance(slots, int) and slots > 0 else 0
+    return DeclaredHosts(hosts=hosts, source=path)
 
 
 @dataclass
@@ -695,9 +767,12 @@ def gate_measurement(
 
     La jambe `schedule` n'est PAS concernee : elle est la cadence de
     REFERENCE de l'advisory, elle mesure toujours. Le gate ne s'applique
-    qu'aux runs `workflow_run` -- ce qui laisse intact l'advisory
-    `runner-starvation-advisory.yml` (coursia-lean), qui n'a pas de
-    heartbeat workflow_run et n'est donc jamais gate.
+    qu'aux runs `workflow_run` -- jusqu'au #25510 (E1, 2026-11-12) cela
+    laissait intact l'advisory `runner-starvation-advisory.yml`
+    (coursia-ephemeral), le seul des trois sans heartbeat ; il en a recu un
+    depuis, avec la meme porte que ses deux freres : la sonde observe le
+    pool qui sert les jobs Lean, elle ne peut pas dependre du seul
+    scheduler (#15332).
 
     `every_n <= 1` desactive la porte : le defaut est volontairement
     inerte, pour qu'un appelant tiers ne change pas de comportement sans
@@ -776,7 +851,8 @@ class Verdict:
 
 
 def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
-             label: str = DEFAULT_LABEL) -> Verdict:
+             label: str = DEFAULT_LABEL,
+             declared: DeclaredHosts | None = None) -> Verdict:
     v = Verdict()
 
     if inv.available:
@@ -908,8 +984,18 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
     # pool global reste vert (les autres hotes du label tournent). Cas
     # fondateur : myia-ai-01-wsl 0 online / 10 offline pendant ~2 jours,
     # EXTINCTION muette car d'autres hotes du label restaient online.
-    if inv.available:
-        v.warnings.extend(evaluate_host_loss(inv))
+    # Inventaire vide = LABEL INCONNU, deja nomme ci-dessus : la perte par
+    # hote n'a rien a comparer et dirait N fois la meme chose (un hote declare
+    # serait « absent » par construction). On ne l'evalue que si le label a au
+    # moins une entree mesuree.
+    if inv.available and (inv.online or inv.offline):
+        v.warnings.extend(evaluate_host_loss(inv, declared))
+    if declared is not None and not declared.available and declared.error:
+        # Un inventaire declare qu'on ne sait pas lire ne prouve pas qu'un
+        # hote a disparu : note, jamais un rouge (meme discipline que
+        # l'inventaire non lisible ci-dessus).
+        v.notes.append(f"inventaire declare non lu ({declared.error}) -- "
+                       f"predicat POOL ABSENT non evalue")
 
     v.status = "ERROR" if v.errors else "OK"
     return v
@@ -930,7 +1016,8 @@ def _host_of(runner_name: str) -> str:
     return _HOST_SUFFIX.sub("", runner_name)
 
 
-def evaluate_host_loss(inv: RunnerInventory) -> list[str]:
+def evaluate_host_loss(inv: RunnerInventory,
+                       declared: DeclaredHosts | None = None) -> list[str]:
     """Warnings de perte de pool par hote (#20697 point 4).
 
     Constat fondateur (12:45Z) : le pool `myia-ai-01-wsl` est reste 0 online
@@ -970,6 +1057,28 @@ def evaluate_host_loss(inv: RunnerInventory) -> list[str]:
                 f"POOL LOSS: host {host} a 0 runner online et {counts['offline']} offline -- "
                 f"conteneurs listes mais aucun ne s'inscrit (superviseur mort ? #20697)"
             )
+
+    # POOL ABSENT -- le residu du point 4 (#20697). L'hote DECLARE n'apparait
+    # ni en online ni en offline : zero runner inscrit cote GitHub, alors que
+    # ses conteneurs peuvent tourner. Le predicat ci-dessus exige `offline > 0`
+    # et ne peut donc structurellement pas le voir : c'est le cas fondateur
+    # (10 conteneurs vivants, 0 runner inscrit, ~2 jours sans signal).
+    # Un hote declare qui apparait, meme offline, est deja couvert (ou non)
+    # par le predicat precedent : on ne double pas le message.
+    if declared is not None and declared.available:
+        for host, slots in sorted(declared.hosts.items()):
+            if host in by_host:
+                continue
+            attendu = (f"{slots} slot(s) attendu(s)" if slots
+                       else "nombre de slots non chiffre")
+            out.append(
+                f"POOL ABSENT: host {host} declare ({attendu}) n'a AUCUN runner "
+                f"dans l'inventaire du label -- ni online ni offline : le "
+                f"superviseur ne s'inscrit plus (conteneurs peut-etre vivants, "
+                f"invisibles cote GitHub). Declaration: {declared.source} ; "
+                f"si l'hote est retire volontairement, mettre ce fichier a jour "
+                f"(#20697)"
+            )
     return out
 
 
@@ -977,6 +1086,12 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--repo", default=os.environ.get("REPO", DEFAULT_REPO))
     ap.add_argument("--label", default=os.environ.get("LABEL", DEFAULT_LABEL))
+    ap.add_argument("--declared-hosts",
+                    default=os.environ.get("DECLARED_HOSTS_FILE", DEFAULT_DECLARED_HOSTS),
+                    help="inventaire DECLARE des hotes de pool (#20697 point 4) ; "
+                         "les hotes declares pour le label mesure qui n'ont AUCUN "
+                         "runner dans l'inventaire rendent un warning POOL ABSENT. "
+                         "Vide = predicat desactive.")
     ap.add_argument("--starve-minutes", type=float,
                     default=float(os.environ.get("STARVE_MINUTES", DEFAULT_STARVE_MINUTES)))
     ap.add_argument("--warn-floor", type=int, default=DEFAULT_WARN_FLOOR)
@@ -1043,6 +1158,10 @@ def main() -> int:
 
     inv: RunnerInventory | None = None
     st: Starvation | None = None
+    # #15332 : le chemin cadence-only n'appelle pas load_declared_hosts, mais
+    # le payload annonce toujours `declared_hosts`. Sans cette initialisation,
+    # la porte de mesure economisait la lecture ET cassait le passage.
+    declared: DeclaredHosts | None = None
     if measure:
         token = os.environ.get("RUNNERS_READ_PAT") or None
         inv = fetch_inventory(args.repo, args.label, token)
@@ -1053,7 +1172,9 @@ def main() -> int:
             job_read_budget=args.job_read_budget,
             in_progress_sample=args.in_progress_sample,
         )
-        full = evaluate(inv, st, args.warn_floor, label=args.label)
+        declared = load_declared_hosts(args.declared_hosts, args.label)
+        full = evaluate(inv, st, args.warn_floor, label=args.label,
+                        declared=declared)
         v.notes = full.notes + v.notes
         v.warnings = full.warnings + v.warnings
         v.errors = full.errors + v.errors
@@ -1073,6 +1194,8 @@ def main() -> int:
         },
         "online_runners": inv.online if (inv is not None and inv.available) else None,
         "offline_runners": inv.offline if (inv is not None and inv.available) else None,
+        "declared_hosts": (sorted(declared.hosts) if declared is not None
+                           and declared.available else None),
         "starved_jobs": [r.__dict__ for r in st.starved] if st is not None else [],
         "in_progress_jobs": len(st.in_progress) if st is not None else None,
         "unexamined_runs": st.unexamined if st is not None else None,
