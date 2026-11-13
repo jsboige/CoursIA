@@ -77,6 +77,70 @@ class DemoComposite(QCAlgorithm):
         ))
 """
 
+# --- Angle mort positionnel (reserve de la revue Hermes sur #25924) ------
+#
+# Un consommateur qui passe `additive` EN POSITION passe bien le parametre :
+# le signaler serait un faux positif sur du code correct. Pour distinguer
+# « passe en positionnel » de « omis », il faut la position du parametre
+# dans la signature du canonique -- donc une signature qui reproduit celle
+# du vrai canonique (`alpha_allocations`, `rebalance`, `additive`), pas la
+# signature de test minimale ou `additive` est le premier parametre.
+
+CANONICAL_REAL_SIG_SRC = """from AlgorithmImports import *
+
+
+class MultiStrategyPouchesPCM(PortfolioConstructionModel):
+    \"\"\"Canonique de test, signature reelle.\"\"\"
+
+    def __init__(self, alpha_allocations, rebalance=None, additive=False,
+                 algorithm=None):
+        super().__init__()
+        self.additive = additive
+"""
+
+# `additive` passe en positionnel (3e argument positionnel) : il est fourni.
+CONSUMER_POSITIONAL_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
+
+
+class DemoComposite(QCAlgorithm):
+    \"\"\"Consommateur qui passe `additive` en positionnel.\"\"\"
+
+    def initialize(self):
+        self.set_portfolio_construction(MultiStrategyPouchesPCM(
+            {"Demo": 1.0}, None, False,
+        ))
+"""
+
+# Seuls `alpha_allocations` et `rebalance` en positionnel : `additive` est
+# omis, le consommateur herite du defaut -- il doit etre signale.
+CONSUMER_POSITIONAL_WITHOUT_ADDITIVE_SRC = """from AlgorithmImports import *
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
+
+
+class DemoComposite(QCAlgorithm):
+    \"\"\"Consommateur positionnel qui n'atteint pas `additive`.\"\"\"
+
+    def initialize(self):
+        self.set_portfolio_construction(MultiStrategyPouchesPCM(
+            {"Demo": 1.0}, None,
+        ))
+"""
+
+# Signature ambigue (`*args`) : la position de `additive` n'est pas
+# etablie, la garde ne peut pas certifier l'invariant sur les appels
+# positionnels -- elle le dit au lieu de passer en silence.
+CANONICAL_VARARG_SIG_SRC = """from AlgorithmImports import *
+
+
+class MultiStrategyPouchesPCM(PortfolioConstructionModel):
+    \"\"\"Canonique de test, signature ambigue.\"\"\"
+
+    def __init__(self, alpha_allocations, *args, additive=False, algorithm=None):
+        super().__init__()
+        self.additive = additive
+"""
+
 
 def _digest(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
@@ -89,16 +153,16 @@ def _write(root: Path, rel: str, text: str) -> Path:
     return path
 
 
-def _tree(tmp_path: Path) -> tuple[Path, Path]:
+def _tree(tmp_path: Path, canonical_src: str = CANONICAL_SRC) -> tuple[Path, Path]:
     """Arbre minimal : canonique + une copie declaree, avec son manifeste."""
-    _write(tmp_path, CANONICAL_REL, CANONICAL_SRC)
+    _write(tmp_path, CANONICAL_REL, canonical_src)
     _write(tmp_path, COPY_REL, COPY_SRC)
     manifest = {
         "issue": "#20188",
         "canonical": {
             "path": CANONICAL_REL,
             "classes": ["MultiStrategyPouchesPCM"],
-            "sha256": _digest(CANONICAL_SRC),
+            "sha256": _digest(canonical_src),
         },
         "declared_copies": [
             {
@@ -185,6 +249,44 @@ def test_consommateur_avec_additive_passe(tmp_path):
     report = analyse(root, manifest)
     assert report["verdict"] == "OK", report
     assert "CONSUMER_IMPLICIT_DEFAULT" not in _codes(report)
+
+
+def test_consommateur_additive_positionnel_passe(tmp_path):
+    """`additive` passe en positionnel : il est fourni, la garde reste verte.
+
+    Reserve Hermes (#25924) : avant ce correctif, un appel positionnel
+    etait vu comme n'omettant pas `additive`... non : comme l'omettant,
+    donc signale a tort.
+    """
+    root, manifest = _tree(tmp_path, CANONICAL_REAL_SIG_SRC)
+    _write(root, f"{QC_ROOT}/projects/DemoComposite/main.py", CONSUMER_POSITIONAL_SRC)
+    report = analyse(root, manifest)
+    assert report["verdict"] == "OK", report
+    assert "CONSUMER_IMPLICIT_DEFAULT" not in _codes(report)
+
+
+def test_consommateur_positionnel_sans_additive_fait_rougir(tmp_path):
+    """CONTROLE POSITIF : un appel positionnel qui n'atteint PAS `additive`
+    est bien signale -- le correctif positionnel ne rend pas la garde
+    aveugle."""
+    root, manifest = _tree(tmp_path, CANONICAL_REAL_SIG_SRC)
+    _write(
+        root,
+        f"{QC_ROOT}/projects/DemoComposite/main.py",
+        CONSUMER_POSITIONAL_WITHOUT_ADDITIVE_SRC,
+    )
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "CONSUMER_IMPLICIT_DEFAULT" in _codes(report)
+
+
+def test_signature_positionnelle_non_etablie_fait_rougir(tmp_path):
+    """Une signature ambigue (`*args`) rend l'invariant non certifiable :
+    la garde le dit au lieu de rendre un vert qui ne mesure rien."""
+    root, manifest = _tree(tmp_path, CANONICAL_VARARG_SIG_SRC)
+    report = analyse(root, manifest)
+    assert report["verdict"] == "FAIL", report
+    assert "CANONICAL_SIGNATURE_UNREADABLE" in _codes(report)
 
 
 def test_canonique_modifie_fait_rougir(tmp_path):

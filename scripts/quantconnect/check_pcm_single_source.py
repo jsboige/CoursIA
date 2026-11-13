@@ -34,8 +34,11 @@ d'avant, `additive=True` sans `algorithm` était un `ValueError` chez un
 consommateur qui ne l'aurait pas vu venir. Aucun consommateur ne doit
 instancier le canonique sans passer `additive` explicitement : il hériterait
 du défaut, et son comportement changerait si le défaut change. Les deux
-contrôles sont syntaxiques (AST) : le défaut est lu dans la signature, la
-présence du mot-clé dans l'appel.
+contrôles sont syntaxiques (AST) : le défaut est lu dans la signature, et
+la fourniture du paramètre est lue dans l'appel — par mot-clé **ou par
+position** (la position de `additive` est elle-même lue dans la signature du
+canonique ; un appel positionnel dont la position n'est pas établissable est
+déclaré non certifiable, `CANONICAL_SIGNATURE_UNREADABLE`).
 
 **Contrôle positif.** Une copie volontairement modifiée fait rougir la
 garde : c'est le cas `DECLARATION_STALE` du corps de tests
@@ -308,13 +311,56 @@ def canonical_additive_default(path: Path) -> tuple[str, object]:
     return ("absent", None)
 
 
-def scan_implicit_consumers(root: Path, canonical_rel: str) -> list[dict]:
+def additive_positional_index(path: Path) -> int | None:
+    """Position de `additive` parmi les arguments de `__init__` du canonique.
+
+    Renvoie l'index du parametre dans la liste des arguments (index 0 =
+    `self`), ou None quand la position ne peut pas etre etablie : classe
+    sans `__init__`, signature illisible, ou `*args` present — dans ce
+    dernier cas la correspondance positionnelle est ambigue.
+
+    L'index sert a lever un angle mort de la garde des consommateurs : un
+    appel `MultiStrategyPouchesPCM(allocations, rebalance, False)` passe
+    `additive` en positionnel. Signaler ce code correct serait un faux
+    positif sur du code valide (reserve de la revue Hermes sur #25924).
+    """
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, SyntaxError, ValueError):
+        return None
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.ClassDef) and node.name == CANONICAL_CLASS):
+            continue
+        for sub in node.body:
+            if not (isinstance(sub, ast.FunctionDef) and sub.name == "__init__"):
+                continue
+            if sub.args.vararg is not None:
+                return None  # `*args` : correspondance positionnelle ambigue
+            for position, arg in enumerate(sub.args.args):
+                if arg.arg == "additive":
+                    return position
+            return None
+    return None
+
+
+def scan_implicit_consumers(
+    root: Path, canonical_rel: str, additive_index: int | None = None
+) -> list[dict]:
     """Consommateurs qui instancient le canonique SANS passer `additive`.
 
     Un consommateur qui n'ecrit pas le parametre herite du defaut du
     canonique : si le defaut change, son comportement change aussi, et
     personne ne le voit. C'est l'invariant que #20188 veut tenir (« chaque
     projet garde son comportement actuel »).
+
+    `additive` passe en positionnel compte comme passe : la position du
+    parametre est lue dans la signature du canonique
+    (`additive_positional_index`), et un appel dont le nombre d'arguments
+    positionnels atteint cette position n'est pas signale — c'etait un faux
+    positif sur du code correct (reserve Hermes sur #25924). Si la position
+    ne peut pas etre etablie, aucun appel positionnel n'est signale : la
+    garde ne peut pas certifier l'invariant dans ce cas, et le dit
+    (`CANONICAL_SIGNATURE_UNREADABLE`).
 
     Bornes assumees : un appel qui passe `**kwargs` n'est pas compte (le
     parametre peut y etre fourni) ; un appel dont le symbole est aliase
@@ -349,6 +395,10 @@ def scan_implicit_consumers(root: Path, canonical_rel: str) -> list[dict]:
                 continue  # **kwargs : le parametre peut etre fourni ailleurs
             if any(keyword.arg == "additive" for keyword in node.keywords):
                 continue
+            if additive_index is not None and len(node.args) >= additive_index:
+                continue  # `additive` passe en positionnel : il est fourni
+            if additive_index is None and node.args:
+                continue  # position non etablie : ne pas signaler du code correct
             hits.append({"path": rel, "line": node.lineno})
     return hits
 
@@ -501,6 +551,7 @@ def analyse(root: Path, manifest_path: Path) -> dict:
     # 4. Le defaut du canonique est sur (`additive=False`) et aucun
     #    consommateur n'en herite : changer le defaut ne peut alors changer
     #    le comportement d'aucun projet qui ne l'a pas demande.
+    additive_index = None
     if canonical_path and canonical_path.is_file():
         state, value = canonical_additive_default(canonical_path)
         if not (state == "default" and value is False):
@@ -520,7 +571,23 @@ def analyse(root: Path, manifest_path: Path) -> dict:
                     "detail": detail,
                 }
             )
-    for hit in scan_implicit_consumers(root, canonical_rel):
+        # Position positionnelle de `additive` : sans elle, la garde ne peut
+        # pas distinguer « passe en positionnel » de « omis » sur un appel
+        # positionnel. On ne le devine pas : on le dit (fail-CLOSED), plutot
+        # que de laisser l'invariant non verifie en silence.
+        additive_index = additive_positional_index(canonical_path)
+        if additive_index is None:
+            findings.append(
+                {
+                    "code": "CANONICAL_SIGNATURE_UNREADABLE",
+                    "path": canonical_rel,
+                    "detail": "position positionnelle de `additive` non "
+                    "etablie (classe sans `__init__`, signature illisible ou "
+                    "`*args`) : la garde ne peut pas certifier l'invariant "
+                    "du defaut sur les appels positionnels",
+                }
+            )
+    for hit in scan_implicit_consumers(root, canonical_rel, additive_index):
         findings.append(
             {
                 "code": "CONSUMER_IMPLICIT_DEFAULT",
