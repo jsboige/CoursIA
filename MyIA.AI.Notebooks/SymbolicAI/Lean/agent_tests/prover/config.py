@@ -280,7 +280,7 @@ import Mathlib.Tactic
 # ── Conway calibration (Epic #1453) ──
 # Conway hommage series relocated 2026-05-28: was MyIA.AI.Notebooks/GameTheory/conway_lean.
 _CONWAY_CANDIDATES = [
-    _workspace_relative("SymbolicAI/Lean/GOL/conway_lean"),
+    _workspace_relative("SymbolicAI/Lean/GameOfLife/conway_lean"),
     Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"D:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
     Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean"),
@@ -314,10 +314,10 @@ CONWAY_HASHLIFE_FILE = (
 )
 # ── Knots terrain (Epic #1453 « Ce qui reste » n.1 — first knot_lean DEMO) ──
 _KNOT_CANDIDATES = [
-    _workspace_relative("SymbolicAI/Lean/KNOTS/knot_lean"),
-    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
-    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
-    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
+    _workspace_relative("SymbolicAI/Lean/Knots/knot_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\Knots\knot_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\Knots\knot_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\Knots\knot_lean"),
 ]
 KNOT_DIR = next(
     (p for p in _KNOT_CANDIDATES if p is not None and p.exists()),

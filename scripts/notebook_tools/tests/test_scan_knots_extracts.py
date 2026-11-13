@@ -45,7 +45,7 @@ from scan_knots_extracts import (  # noqa: E402
 # Helpers
 # ---------------------------------------------------------------------------
 
-KNOTS_REL = Path("MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS")
+KNOTS_REL = Path("MyIA.AI.Notebooks/SymbolicAI/Lean/Knots")
 
 
 def _md(source: str) -> dict:
@@ -67,7 +67,7 @@ def _write_ground_truth_files(repo_root: Path) -> None:
     """Pose les 2 fichiers .lean de verite a leur chemin canonique.
 
     Conserve de la premiere generation : les chemins sont ceux du depot
-    (``.../KNOTS/knot_lean/Knots/<Module>.lean``), ce qui donne a
+    (``.../Knots/knot_lean/Knots/<Module>.lean``), ce qui donne a
     ``LeanTruth.build`` les memes cles de module que sur le vrai arbre.
     """
     lean_dir = repo_root / KNOTS_REL / "knot_lean" / "Knots"
@@ -583,7 +583,7 @@ class TestFilterKnots:
 
 class TestReadOnly:
     def test_scan_does_not_modify_notebook_bytes(self, tmp_path: Path):
-        nb = tmp_path / "KNOTS/demo.ipynb"
+        nb = tmp_path / "Knots/demo.ipynb"
         _write_nb(nb, [_md("FigureEight.lean modelise le noeud 8_1.")])
         before = nb.read_bytes()
         truth = _bare_truth({"FigureEight": {"4_1"}})

@@ -213,7 +213,7 @@ def test_knots_extracts_ignores_pure_rename(tmp_path, monkeypatch, capsys):
     nb = _write_nb(tmp_path / "moved.ipynb", _nb([("markdown", stale)]))
     payload = _staged("R100", "old/moved.ipynb", nb.as_posix())
     monkeypatch.setattr(git_index_renames, "git_out", lambda *a: payload)
-    # The default --path-filter targets Lean/KNOTS/; the moved notebook must
+    # The default --path-filter targets Lean/Knots/; the moved notebook must
     # match it for the skip to be the thing under test.
     assert mod.main([str(nb), "--path-filter", ""]) == 0
     err = capsys.readouterr().err

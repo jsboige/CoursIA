@@ -309,7 +309,7 @@ def deleted_dispatchers(ref: str) -> list[dict]:
     it is empty -- yet ``--all`` found a deletion on a ref ``main`` does not
     carry and ``rev-list -n 1 --all`` returned the rename commit ``88edc37b4``
     instead, so the pre-rename path ``.../Lean/galois_lean`` was reported
-    lost while the live job gates ``.../Lean/GALOIS/galois_lean``.
+    lost while the live job gates ``.../Lean/Galois/galois_lean``.
 
     For each deletion commit, ``<sha>^:<path>`` holds the last version that
     existed on the ref's history, so ``had_gate`` and ``gated_paths`` are read
@@ -357,7 +357,7 @@ def _moved_successor(d: dict, gated_now: set[str], exists_at) -> str | None:
       that still lives there and is simply not gated any more: that is a real
       loss, and treating it as a move would hide it;
     * **filiation** -- the successor must live *under the former parent
-      directory* (``.../Lean/galois_lean`` -> ``.../Lean/GALOIS/galois_lean``).
+      directory* (``.../Lean/galois_lean`` -> ``.../Lean/Galois/galois_lean``).
       A same-basename path in an unrelated subtree is a homonym, not a
       successor: crediting it would report a move nobody made and silence the
       real loss (#23908, review Hermes du 31/10) ;

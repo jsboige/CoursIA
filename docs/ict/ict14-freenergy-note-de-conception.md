@@ -19,7 +19,7 @@ Le dossier porte le numéro du palier (`ICT-14/`) : c'est le pattern établi par
 
 ### Mouvement
 1. `git mv` des 2 carnets vers `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14/` (même pattern que `ICT-15/` #22289 et `ICT-19/` #22780). **Aucun renommage de fichier** : les noms `ICT-14*` sont conservés, seul le dossier regroupe.
-2. Réparation des liens entrants (préfixe `ICT-14/`) : **liens entrants réparés** — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-40b`, le cross-série `SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb`, et les docs (`curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/tresse-cartographie`, `ict/genealogy-representation-interne`, `ict/dissolution-scalaires`, `cadrage/grothendieckian-lens`, `notebook-metadata/scientific-review-registry`).
+2. Réparation des liens entrants (préfixe `ICT-14/`) : **liens entrants réparés** — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-40b`, le cross-série `SymbolicAI/Lean/Analyse/ANALYSE-03-PFR-Lean.ipynb`, et les docs (`curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/tresse-cartographie`, `ict/genealogy-representation-interne`, `ict/dissolution-scalaires`, `cadrage/grothendieckian-lens`, `notebook-metadata/scientific-review-registry`).
    - **Le lien frère intra-dossier** `ICT-14b → ICT-14` reste **sans préfixe** : les deux carnets deviennent *siblings* dans `ICT-14/`, leur lien relatif ne change pas.
 3. `docs/reference/rename-ledger.tsv` : 2 entrées append (ancien → nouveau chemin).
 4. `pedagogy_density_baseline.json` : 2 clés déportées + `baseline_nb_nav_chain.json` : 1 clé (la tête) — valeurs préservées (garde LOST_KEY/ORPHAN_KEY #13815/#16122).

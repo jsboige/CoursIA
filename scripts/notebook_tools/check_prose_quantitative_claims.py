@@ -255,7 +255,7 @@ class ArtifactExemption(NamedTuple):
 
 ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/README.md",
         motif=re.compile(r"Gosper Glider Gun \(36 cellules vivantes"),
         raison=(
             "« 36 cellules » = cellules VIVANTES du canon de Gosper dans le Jeu "
@@ -264,7 +264,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/README.md",
         motif=re.compile(r"Pulsar \(48 cellules\)"),
         raison=(
             "« 48 cellules » = periode-3 Pulsar du Jeu de la Vie, cite comme cas "
@@ -272,7 +272,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/README.en.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/README.en.md",
         motif=re.compile(r"Pulsar \(48 cells\)"),
         raison=(
             "Sibling anglais du README precedent : meme Pulsar, memes cellules de "
@@ -370,7 +370,7 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
         ),
     ),
     ArtifactExemption(
-        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/README.md",
+        path="MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/scripts/README.md",
         motif=re.compile(r"la v1 du gun, 36 cellules fausses"),
         raison=(
             "« 36 cellules » = population d'une transcription FABRIQUEE du canon "

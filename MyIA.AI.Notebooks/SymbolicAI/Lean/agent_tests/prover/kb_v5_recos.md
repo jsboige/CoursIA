@@ -116,7 +116,7 @@ Historical list (all "next prover session" candidates exhausted by 2026-05-19):
 ## Conway Tribute — CGT Targets
 
 ### Current state (VERIFIED)
-- `SymbolicAI/Lean/GOL/conway_lean/` exists with 3 "noix" COMPLETE (0 sorry) — relocated 2026-05-28 from `GameTheory/conway_lean/`:
+- `SymbolicAI/Lean/GameOfLife/conway_lean/` exists with 3 "noix" COMPLETE (0 sorry) — relocated 2026-05-28 from `GameTheory/conway_lean/`:
   - Doomsday.lean: Conway's day-of-week algorithm
   - LookAndSay.lean: Look-and-say sequence + Conway's constant
   - Fractran.lean: FRACTRAN universal machine

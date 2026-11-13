@@ -112,7 +112,7 @@ def find_lean_project(project_name: str) -> Path:
             if candidate.exists() and (candidate / "lakefile.lean").exists():
                 return candidate.resolve()
             # Descente en sous-serie (#23164) : un lake peut vivre dans un
-            # sous-dossier de la serie (GROTH/grothendieck_lean, GOL/conway_lean) ;
+            # sous-dossier de la serie (Grothendieck/grothendieck_lean, GameOfLife/conway_lean) ;
             # le walker remonte par les parents, il descend aussi d'un niveau.
             try:
                 for child in sorted(current.iterdir()):

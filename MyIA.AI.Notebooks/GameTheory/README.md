@@ -425,7 +425,7 @@ Les extensions autonomes de la série vivent dans des **escaliers** : des sous-d
 
 Le dossier [Metajeux/](Metajeux/README.md) descend des extensions 18-20c de la racine (tranche T6 de la restructuration #20316) : open games et lentilles (ex-18), casser la composition (ex-18b), abstraction à dette (ex-19), chemin minimal Robinson-Goforth (ex-20), témoins d'impossibilité (ex-20b) et chemin minimal 3×2 (ex-20c) y forment les marches `Metajeux-01` à `Metajeux-06` ; la marche 03 consomme le lake `Abstraction`.
 
-**Descentes vers d'autres séries** : des extensions nées ici ont rejoint leur série d'organe — [DecInfer-11](../Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) (ex-04f, théories de la décision, série Probas), [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) (ex-15d, décomposition de Möbius, sous-série SocialChoice) et [GOL-08 / GOL-09](../SymbolicAI/Lean/GOL/README.md) (ex-20d/20e, sous-série GOL de la série Lean, réorg #20204).
+**Descentes vers d'autres séries** : des extensions nées ici ont rejoint leur série d'organe — [DecInfer-11](../Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) (ex-04f, théories de la décision, série Probas), [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) (ex-15d, décomposition de Möbius, sous-série SocialChoice) et [GOL-08 / GOL-09](../SymbolicAI/Lean/GameOfLife/README.md) (ex-20d/20e, sous-série GOL de la série Lean, réorg #20204).
 
 ### Extensions restées en racine
 

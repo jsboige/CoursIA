@@ -188,7 +188,7 @@ flowchart TD
 ## Notes
 
 - Part of the GameTheory Lean series
-- Companion notebook: `GOL/GOL-01-Regles-Vie-Lean.ipynb`
+- Companion notebook: `GameOfLife/GOL-01-Regles-Vie-Lean.ipynb`
 - Cross-link: Epic #1647 Conway Phase 2 (Life-as-Computation)
 - Cross-link: Epic #1651 Conway Phase 3 (Free Will Theorem)
 - Cross-link: Epic #2162 Conway depth (HashlifeCorrectness P4/P5)

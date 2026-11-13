@@ -644,7 +644,7 @@
     }
   ],
   "organ": {
-    "path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/scripts/hashlife.py",
+    "path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/scripts/hashlife.py",
     "sha256": "233303a1354a1d2735b5a8c5371db11a0a765ad65960cccc48dc392f47b74417"
   },
   "environment": {

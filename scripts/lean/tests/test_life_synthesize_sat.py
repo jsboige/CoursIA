@@ -302,7 +302,7 @@ class TestCertificatLean:
     """
 
     LAKE = (Path(__file__).resolve().parents[3]
-            / "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"
+            / "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean"
             / "Conway/Life/Spaceships.lean")
 
     @staticmethod

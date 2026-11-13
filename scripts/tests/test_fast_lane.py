@@ -207,14 +207,14 @@ def test_controle_positif_le_controle_negatif_un_lean_voisin_non_declare():
     sources declarees : le test reste valide si le registre evolue.
     """
     declares = {cell["source"] for cell in _live_read_cells()}
-    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life"
+    dossier = REPO_ROOT / "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/Conway/Life"
     voisins = sorted(
         p.relative_to(REPO_ROOT).as_posix()
         for p in dossier.glob("*.lean")
         if p.relative_to(REPO_ROOT).as_posix() not in declares
     )
     assert voisins, "aucun .lean voisin non declare : le controle negatif serait vide"
-    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/Pillars.lean"])
+    assert fast_lane.guard_applies(LIVE_READ_GUARD, ["MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/Conway/Life/Pillars.lean"])
     assert not fast_lane.guard_applies(LIVE_READ_GUARD, [voisins[0]])
 
 

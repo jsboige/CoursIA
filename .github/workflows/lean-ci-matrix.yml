@@ -182,11 +182,11 @@ on:
       # axiom target-modules "*" + fail-on-sorry true (defaut matrice) =
       # parametres exacts du wrapper. lean_server/lean_utils deja
       # self-cover ci-dessous, cites au manifeste comme serre100.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lake-manifest.json'
       # planning_lean (herite du wrapper lean-planning.yml supprime, #13751 :
       # 0 sorry verifie de naissance, axiom target-modules "*" -- parametres
       # reportes au manifeste ; lake-manifest.json ajoute au declenchement,
@@ -232,14 +232,14 @@ on:
       # reste un declencheur (#8712) : un depin de Mathlib doit rejouer le
       # lake. lean_server.py / lean_utils.py restent des entrees de gate du
       # lac au manifeste, comme formal_groups.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lake-manifest.json'
       # knot_lean (herite du wrapper lean-knot.yml supprime, #13751 : 35e lake.
       # sorry-baseline "8" = compte reel distinct_code_sorry mesure au
       # commit (l'instrument fait foi ; le recit par declaration vit dans
-      # KNOTS/knot_lean/README.md §sorry, pas ici -- motif #15598). Parametres
+      # Knots/knot_lean/README.md §sorry, pas ici -- motif #15598). Parametres
       # exacts du wrapper : axiom target-modules "*" + allow-axioms vide +
       # fail-on-sorry false (les 8 sorries reconnus sont rapportes has_sorry,
       # non gates) + include-i18n-siblings true (les 24 jumeaux _en portent
@@ -251,10 +251,10 @@ on:
       # advisory target-coverage du wrapper n'est pas portee : son audit
       # comparait modules compiles vs cible liste-a-la-main, et la cible est
       # "*" -- l'ecart etait nul par construction.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -272,11 +272,11 @@ on:
       # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
       # La jambe target-coverage du wrapper n'est pas portee : cible "*",
       # ecart nul par construction (meme trancher que knot).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.
@@ -443,11 +443,11 @@ on:
       # axiom target-modules "*" + fail-on-sorry true (defaut matrice) =
       # parametres exacts du wrapper. lean_server/lean_utils deja
       # self-cover ci-dessous, cites au manifeste comme serre100.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lake-manifest.json'
       # planning_lean (herite du wrapper lean-planning.yml supprime, #13751 :
       # 0 sorry verifie de naissance, axiom target-modules "*" -- parametres
       # reportes au manifeste ; lake-manifest.json ajoute au declenchement,
@@ -493,14 +493,14 @@ on:
       # reste un declencheur (#8712) : un depin de Mathlib doit rejouer le
       # lake. lean_server.py / lean_utils.py restent des entrees de gate du
       # lac au manifeste, comme formal_groups.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lake-manifest.json'
       # knot_lean (herite du wrapper lean-knot.yml supprime, #13751 : 35e lake.
       # sorry-baseline "8" = compte reel distinct_code_sorry mesure au
       # commit (l'instrument fait foi ; le recit par declaration vit dans
-      # KNOTS/knot_lean/README.md §sorry, pas ici -- motif #15598). Parametres
+      # Knots/knot_lean/README.md §sorry, pas ici -- motif #15598). Parametres
       # exacts du wrapper : axiom target-modules "*" + allow-axioms vide +
       # fail-on-sorry false (les 8 sorries reconnus sont rapportes has_sorry,
       # non gates) + include-i18n-siblings true (les 24 jumeaux _en portent
@@ -512,10 +512,10 @@ on:
       # advisory target-coverage du wrapper n'est pas portee : son audit
       # comparait modules compiles vs cible liste-a-la-main, et la cible est
       # "*" -- l'ecart etait nul par construction.)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -533,11 +533,11 @@ on:
       # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
       # La jambe target-coverage du wrapper n'est pas portee : cible "*",
       # ecart nul par construction (meme trancher que knot).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.

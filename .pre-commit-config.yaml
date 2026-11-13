@@ -234,18 +234,18 @@ repos:
         description: |
           Implements the (A) arm of the prevention strategy in #21007 (KNOTS):
           scans staged KNOTS notebooks for cells that cite a Lean file path
-          (``knot_lean/.../*.lean`` or ``MyIA.AI.Notebooks/.../KNOTS/...``)
+          (``knot_lean/.../*.lean`` or ``MyIA.AI.Notebooks/.../Knots/...``)
           that does not resolve on disk relative to the notebook directory.
           Catches the "stale path" class measured in KNOTS-01 (post-#20134 V5.3)
           where a cell cites a module that has moved, been renamed, or never
           existed at the claimed location. Pre-commit refuses the commit on
-          any mismatch. Scope is KNOTS-01 only (filter `Lean/KNOTS/`); the
+          any mismatch. Scope is KNOTS-01 only (filter `Lean/Knots/`); the
           classes 2 and 3 of the same issue are carried by the sibling hook
           `knots-extracts-class23` below. See #21007.
         entry: python scripts/notebook_tools/check_knots_extracts.py
         language: system
         pass_filenames: true
-        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.ipynb$'
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/Knots/.*\.ipynb$'
         stages: [pre-commit]
 
       - id: vendored-data-consumers
@@ -296,5 +296,5 @@ repos:
         entry: python scripts/notebook_tools/scan_knots_extracts.py
         language: system
         pass_filenames: false
-        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.(ipynb|lean)$'
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/Knots/.*\.(ipynb|lean)$'
         stages: [pre-commit]

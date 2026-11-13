@@ -9,7 +9,7 @@ l'installation Mathlib : il ferme quatre buts représentatifs avec les tactiques
 du quotidien (`ring`, `linarith`, `omega`, `rw`), confirmant que
 `lake build MathLibExamples` compile contre une Mathlib fonctionnelle. C'est
 aussi une première prise en main des automatiseurs de Lean avant d'aborder les
-projets plus ambitieux (`calibration_lean`, `GOL/conway_lean`, `sensitivity_lean`).
+projets plus ambitieux (`calibration_lean`, `GameOfLife/conway_lean`, `sensitivity_lean`).
 
 ## Statut
 
@@ -73,5 +73,5 @@ aperçu exhaustif.
   (tactiques exercées sur Mathlib importé directement) et
   `Lean-26-Munkres-Tribute.ipynb` (cours 18.901 de Munkres, exécuté sur ce lake).
 - **Projets Lean plus complets** : [`calibration_lean/`](../calibration_lean/),
-  [`conway_lean/`](../GOL/conway_lean/), [`sensitivity_lean/`](../sensitivity_lean/)
+  [`conway_lean/`](../GameOfLife/conway_lean/), [`sensitivity_lean/`](../sensitivity_lean/)
   — projets Lean de production bâtis sur Mathlib.

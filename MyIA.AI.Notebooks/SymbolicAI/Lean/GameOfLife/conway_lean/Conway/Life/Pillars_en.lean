@@ -145,7 +145,7 @@ when needed.
 ### Why scaffold the witnesses now ?
 
 User mandate 2026-06-01 : prepare a complete-presentation scaffold so
-that the Annex F roadmap of `GOL/GOL-01-Regles-Vie-Lean.ipynb` is concrete and
+that the Annex F roadmap of `GameOfLife/GOL-01-Regles-Vie-Lean.ipynb` is concrete and
 visible. Memoization was validated at the start of Phase 3 ; the
 witnesses are the natural endpoint.
 -/
