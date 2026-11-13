@@ -136,6 +136,14 @@ GESTURE_WINDOW = 400
 #: rendu sert au rapport. Un corps qui en porte une est un post de lane, jamais
 #: un candidat — deux tiers des commentaires du compte partage sont ainsi ecartes.
 _LANE_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    # Dossier de clôture produit par la session hors flotte : le login GitHub
+    # est partagé, mais l'en-tête structuré identifie explicitement sa lane.
+    # Ancrer la forme entière en tête évite d'exclure une remarque qui cite
+    # simplement un dossier dans sa prose.
+    ("astra-closure-preflight", re.compile(
+        r"\AHors flotte[^\n]*\n\s*\[CLOSURE PREFLIGHT\]\s*\n"
+        r"schema:\s*1\s*\nlane:\s*astra:CoursIA\s*(?:\n|\Z)"
+    )),
     ("lane-near-seat", re.compile(r"\blane\b[^\w\n]{0,12}myia-", re.IGNORECASE)),
     ("seat-token", re.compile(r"myia-[a-z0-9-]+:[A-Za-z0-9._-]+")),
     ("grain-tag", re.compile(r"\bGrain\s*:", re.IGNORECASE)),
@@ -692,7 +700,9 @@ def analyse_comments(
             # raison de… » est une vraie remarque du mainteneur, tandis qu'un
             # « [LIVRAISON] … » est un post de lane. Faute de pouvoir trancher,
             # il est ROUTE vers MANUAL_REVIEW au lieu d'etre ecarte.
-            ambiguous = signature == "head-tag"
+            # Un humain peut aussi copier l'en-tête d'un dossier : ne jamais
+            # écarter sa remarque sans revue.
+            ambiguous = signature in {"head-tag", "astra-closure-preflight"}
             if signature and not ambiguous:
                 excluded[signature] = excluded.get(signature, 0) + 1
                 continue
@@ -936,7 +946,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Les rapports qui ne portent QUE des ecarts sont conserves (#21621) : les
     # retirer ferait disparaitre du total publie les commentaires qu'on ecarte.
-    reports = [r for r in reports if r.concerns or r.remarks or r.excluded]
+    reports = [r for r in reports if r.concerns or r.remarks or r.reserves or r.excluded]
     unresolved = sum(len(r.unresolved) for r in reports)
     excluded = excluded_by_signature(reports)
 
@@ -954,6 +964,10 @@ def main(argv: list[str] | None = None) -> int:
             "remarks_total": sum(len(r.remarks) for r in reports),
             "remarks_unresolved": sum(
                 1 for r in reports for c in r.remarks if c.status != "REPONDU"
+            ),
+            "reserves_total": sum(len(r.reserves) for r in reports),
+            "reserves_unresolved": sum(
+                1 for r in reports for c in r.reserves if c.status != "REPONDU"
             ),
             "unresolved": unresolved,
             "excluded_total": sum(excluded.values()),

@@ -740,11 +740,11 @@ font échouer toute requête au chargement de l'export.
 
 ## Extraction & parsing (la couche `lib`)
 
-- `notebook_tools.py` : **CLI multi-famille** (2262 lignes) -- point
+- `notebook_tools.py` : **CLI multi-famille** -- point
   d'entree canon pour les operations structurelles (`validate`,
   `execute`, `skeleton`, `analyze`).
-- `notebook_helpers.py` : helpers parsing nbformat (1585 lignes).
-- `notebook_lint.py` : linting structurel (333 lignes).
+- `notebook_helpers.py` : helpers parsing nbformat.
+- `notebook_lint.py` : linting structurel.
 - `extract_notebook_skeleton.py` : extrait squelette (markdown +
   cellules stub) pour catalogues.
 - `count_exercises.py`, `count_notebooks_by_series.py` : metriques
