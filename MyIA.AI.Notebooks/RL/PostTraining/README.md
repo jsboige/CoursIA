@@ -9,7 +9,7 @@ L'arc part du déplacement du RLHF (Christiano et al. 2017) : personne ne sait *
 À la fin du parcours, le lecteur sait :
 
 - entraîner un reward model **from scratch** depuis des paires de préférences (Bradley-Terry, sans `trl`), l'évaluer contre le plafond de Bayes et lire sa calibration (RLPT-00) ;
-- injecter des biais de longueur, de position et d'annotateur **à paramètres connus**, mesurer leur dégât contre un juge oracle, et confronter les mitigations usuelles au seuil des deux écarts-types — verdict mesuré : aucune ne le franchit (RLPT-00b) ;
+- injecter des biais de longueur, de position et d'annotateur **à paramètres connus**, mesurer leur dégât contre un juge oracle, et confronter les mitigations usuelles au seuil des deux écarts-types — verdict mesuré : aucune prise isolément ne le franchit ; leur combinaison oui (+2,0σ) (RLPT-00b) ;
 - diagnostiquer un reward hacking **qui prend**, par bras de contrôle et normalisation par canal, plutôt que par chirurgie du proxy (RLPT-00c, RLPT-03) ;
 - rejouer le même monde, le même juge et les mêmes graines sous `trl.RewardTrainer`, `trl.DPOTrainer` et `trl.GRPOTrainer`, et lire ce que le verdict mesuré dit de chaque pile — y compris son coût fixe (RLPT-00d à 00g) ;
 - aligner un petit modèle de langue par PPO avec pénalité KL contre la politique SFT de référence (RLPT-01), puis par GRPO avec récompense arithmétique vérifiable sur un modèle local (RLPT-02) ;
