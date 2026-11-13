@@ -63,6 +63,10 @@ ses séquences reproductibles; elles diffèrent de celles de NumPy. Le facteur d
 paires est $4+2/(n-1)$ au doublement de la taille, donc il tend vers 4 sans lui
 être exactement égal.
 
+### Parité C# — word RAM
+
+[Complexity-03e : barrières d'exposants et word RAM (C#)](Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) accompagne la [version Python](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb). L'interpréteur utilise BigInteger pour les mots modulaires ; les générateurs et les chronomètres diffèrent.
+
 ## Parcours
 
 La série se lit de haut en bas : chaque notebook principal ne suppose que ceux qui le
@@ -189,7 +193,3 @@ les rangées minimales par programmation linéaire.
 Chaque notebook embarque au moins trois exercices (`TODO etudiant`) : étendre une machine,
 dériver un compte, déplacer un budget — les stubs s'exécutent sans erreur (règle C.1 du
 dépôt) et les corrigés restent la propriété de l'étudiant.
-
-### Parité C# — word RAM
-
-[Complexity-03e : barrières d'exposants et word RAM (C#)](Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) accompagne la [version Python](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb). L'interpréteur utilise BigInteger pour les mots modulaires ; les générateurs et les chronomètres diffèrent.
