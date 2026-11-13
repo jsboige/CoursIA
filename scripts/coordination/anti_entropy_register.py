@@ -269,12 +269,33 @@ REGISTRE: tuple[Entree, ...] = (
         # le sha de branche (8434d7f3a8f) ne survivra pas au squash, la
         # comparaison tiendra par la SOURCE du script puis par l'identite
         # derivee a la fin du jour de la reference.
-        reference=Reference(27.0, "2026-11-13",
+        #
+        # SEPTIEME rebasage (2026-11-13, PR #26349, review ai-01 point 2) :
+        # l'organe APPREND l'index d'accretion des series a prefixe -- le
+        # nom livre ChoixSocial-01b-...-Lean echouait l'organe d'inventaire
+        # que la PR modifie (self-test KO). Correctif qui change ce que
+        # l'instrument COMPTE, comme le quatrieme rebasage : un nom a
+        # prefixe PORTANT une lettre d'accretion rend son numero+lettre
+        # comme index, et la conformite se lit alors sur le NOM seul
+        # (zero-pad) au lieu de la branche base implicite gatee sur le
+        # kernel. Sur le meme arbre, ambigu passe de 27 a 21 : 6 carnets
+        # paddes (`02b`, `01b`) a kernel non lu quittent le bucket. En
+        # retour, 2 dettes reelles non paddes (SC-7b, SL-1b) deviennent
+        # visibles `rename_proposed` -- hors de cette grandeur, mais
+        # documentees ici pour la lecture croisee. Mesure egale (21) sur
+        # l'arbre de la PR et sur `origin/main` nu : les 16 renommages
+        # restent neutres. Le point du sixieme (27, instrument
+        # 8434d7f3a8f) devient un point reel de la serie. Meme mecanique
+        # d'instrument declare : le sha de branche (235498f392d) ne
+        # survivra pas au squash, la comparaison tiendra par la SOURCE du
+        # script puis par l'identite derivee a la fin du jour de la
+        # reference.
+        reference=Reference(21.0, "2026-11-13",
                             "PR #26349, re-mesure du 2026-11-13 sur "
-                            "l'arbre 8434d7f3a8f",
+                            "l'arbre 235498f392d",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@8434d7f3a8f14ca64e10c5666c206f8f1af9799a")),
+                                        "@235498f392d41037935b8c2135a8631efc9edd5e")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -346,6 +367,20 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@400799b0f4362e2c87982cd5631f6a745d0b3ab4")),
+            # Mesure du 2026-11-13 (sixieme rebasage, PR #26349) : 27, sur
+            # l'instrument AVANT l'apprentissage de l'index d'accretion des
+            # series a prefixe. Reference vivante jusqu'au septieme
+            # rebasage (meme PR, review ai-01 point 2). Le sha de branche
+            # (8434d7f3a8f) ne survivra pas au squash : le point declare
+            # l'identite derivee a la fin du jour du squash de #26349 --
+            # remplacee par la comparaison par SOURCE tant que la reference
+            # n'est pas resolue.
+            Reference(27.0, "2026-11-13",
+                      "PR #26349, re-mesure du 2026-11-13 sur "
+                      "l'arbre 8434d7f3a8f",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@8434d7f3a8f14ca64e10c5666c206f8f1af9799a")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit

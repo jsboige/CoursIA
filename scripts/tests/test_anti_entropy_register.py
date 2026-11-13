@@ -78,7 +78,15 @@ PADDING_REFERENCE = 776.0
 # comme sur `origin/main` nu. L'ecart 26 -> 27 vient de l'arbre main
 # depuis le 2026-11-06, pas de l'instrument ; la mesure du 2026-11-06
 # (26, instrument 18c887da79d) rejoint l'historique comme point reel.
-PADDING_REFERENCE_REBASE = 27.0
+#
+# Septieme rebasage (2026-11-13, PR #26349, review ai-01 point 2) :
+# l'organe APPREND l'index d'accretion des series a prefixe -- le correctif
+# change ce que l'instrument compte, comme le quatrieme rebasage. Six
+# carnets paddes a kernel non lu quittent le bucket (27 -> 21) ; 2 dettes
+# non paddes (SC-7b, SL-1b) deviennent visibles rename_proposed, hors de
+# cette grandeur. Mesure egale (21) sur l'arbre PR et origin/main nu ; le
+# point du sixieme (27, instrument 8434d7f3a8f) rejoint l'historique.
+PADDING_REFERENCE_REBASE = 21.0
 # Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
 # identite attendue du registre (c'etait le faux vert de #24678 -- la
 # constante de test et la donnee etaient la meme chaine, donc le test ne
