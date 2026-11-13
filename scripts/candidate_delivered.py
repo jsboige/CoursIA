@@ -230,10 +230,15 @@ def _is_bot(actor: str) -> bool:
 # ``issue_containers`` branch below invokes for itself).
 #
 #   `[INFO] candidate-delivered`         attestation -- the label's own idiom
-#   `[DELIVERED] lane ... -- PR #N`      attestation for the BELT (it closes the
-#                                        item on the tapis); it does **not**
-#                                        arm the LABEL -- #24461, cf.
-#                                        `delivery_grammar.attestation_state`
+#   `[DELIVERED] lane ... -- PR #N`      attestation for BOTH organs when the
+#                                        marker line carries no `paths:` clause
+#                                        (epic-wide delivery) -- #24461 residu
+#                                        (11/11): the belt already excluded the
+#                                        issue, but only through a budgeted
+#                                        per-issue probe (fail-OPEN served it
+#                                        anyway, 76/120); with a `paths:` clause
+#                                        it stays a TRANCHE and arms neither.
+#                                        Cf. `delivery_grammar.attestation_state`
 #   `[RELEASED] lane ... -- <coverage>`  attestation -- delivered, per picker
 #   `[RELEASED] lane ... -- <barrier>`   ACTIVITY -- nothing was delivered;
 #                                        the item becomes servable again
