@@ -34,7 +34,7 @@ from check_i18n_token_fidelity import (  # noqa: E402
 REPO_ROOT = Path(__file__).resolve().parents[3]
 KNOTS = (
     REPO_ROOT
-    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "KNOTS" / "knot_lean" / "Knots"
+    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Knots" / "knot_lean" / "Knots"
 )
 
 

@@ -355,7 +355,7 @@ def scan_classe3(
 # ---------------------------------------------------------------------------
 
 def default_knots_dir(repo_root: Path) -> Path:
-    return repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "KNOTS"
+    return repo_root / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Knots"
 
 
 def discover_knots_notebooks(knots_dir: Path) -> list[Path]:
@@ -399,7 +399,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--notebook", type=Path, default=None,
-        help="Cible un carnet unique (defaut : tous les KNOTS/*.ipynb).",
+        help="Cible un carnet unique (defaut : tous les Knots/*.ipynb).",
     )
     parser.add_argument(
         "--changed", type=Path, nargs="*", default=None,

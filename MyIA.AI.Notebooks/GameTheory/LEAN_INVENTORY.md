@@ -45,7 +45,7 @@ les précédentes — le contrôle est le même, et il est vert.
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
 
-**Série hommage Conway déplacée** : `conway_lean/` (hommage Conway — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) a été déplacé vers [`SymbolicAI/Lean/GOL/conway_lean/`](../SymbolicAI/Lean/GOL/conway_lean/) car il formalise des résultats Conway moins connus (pas du contenu game-théorique en soi). Les cibles de calibration du prover définies dans `agent_tests/prover/config.py` suivent le nouveau chemin.
+**Série hommage Conway déplacée** : `conway_lean/` (hommage Conway — Doomsday, FRACTRAN, Look-and-Say, Nim, Angel) a été déplacé vers [`SymbolicAI/Lean/GameOfLife/conway_lean/`](../SymbolicAI/Lean/GameOfLife/conway_lean/) car il formalise des résultats Conway moins connus (pas du contenu game-théorique en soi). Les cibles de calibration du prover définies dans `agent_tests/prover/config.py` suivent le nouveau chemin.
 
 **Calibration déplacée** : `calibration_lean/` a été déplacé vers [`SymbolicAI/Lean/calibration_lean/`](../SymbolicAI/Lean/calibration_lean/) (issue #1764) car c'est un composant de harnais prover, pas du contenu game-théorique.
 
@@ -324,7 +324,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 | SocialChoice/social_choice_lean_peters | EN COURS | 0 sorry. Tour de Peters (référence, `94a4c650`, Mathlib `520045ab`, v4.32.1) **plus** six libs de preuve du core d'approbation BGP 2026 (`Approval*`, plan #17988) — ces dernières sont une cible de preuve, pas seulement une référence ; le théorème de non-vacuité du core reste à livrer (cf. §Cibles de preuve restantes). |
 | conway_cgt_lean | N/A | Tour de référence (v4.31.0-rc2, suit l'amont). |
 
-Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/GOL/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).
+Les cibles de calibration Conway (Doomsday / FRACTRAN / Look-and-Say / Nim / Angel) vivent dans `SymbolicAI/Lean/GameOfLife/conway_lean/` et sont toujours consommées par `agent_tests/prover/config.py` (co-évolution du harnais prover #1453).
 
 ---
 

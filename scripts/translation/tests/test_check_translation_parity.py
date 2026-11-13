@@ -708,14 +708,14 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-10-05 (#1650 tranche FT-02, QLoRA-Quantization): +1 paire T4 --
 # FineTuning/FT-02-QLoRA-Quantization. Total apres fusion : 8.
 # 2026-10-09 (PR #19996, pli 5 Origami famille 155, #19993): +1 paire --
-# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-09-Tuilage-Aperiodique_en.
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/Analyse/ANALYSE-09-Tuilage-Aperiodique_en.
 # Ce n'est PAS une paire rendue par T4 : la declaration compte le perimetre
 # decouvert par discover_pairs(), pas une famille de rendu. La paire est arrivee
 # sur main avec son carnet et sans mettre a jour cette ligne, ce qui a rougi
 # `test_full_repo_state_passes_parity` (found 9, declared 8) sur toute PR
 # path-filtree scripts/**. Total apres fusion : 9.
 # 2026-10-12 (PR #20392, #20184 pli ANALYSE-06 Sensibilite): +1 paire --
-# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python_en.
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/Analyse/ANALYSE-06-Sensibilite-2026-Lean-Python_en.
 # Meme classe que l'entree #19996 ci-dessus : la paire arrive avec son carnet,
 # la declaration l'enregistre dans la meme PR (rouge mesure a tete constante,
 # 1 failed / 34 passed, avant cet enregistrement). Total apres fusion : 10.
@@ -737,7 +737,7 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 0 orphelin, 0 fallback ; serie non jugee par le nav-chain, aucune entree
 # baseline requise -- sortie guard byte-identique a main). Total : 13 + 1 = 14.
 # 2026-10-19 (PR #19943, #19898 pli 3 Origami tranches A+B): +1 paire --
-# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/Analyse/ANALYSE-07-Percolation-Critique_en.
 # Meme classe que #19996/#20392 : la paire est arrivee sur main avec son carnet
 # sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
 # (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
@@ -757,7 +757,7 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # l'arbre fusionne porte 17 + 1 = 18. Compte MESURE par
 # discover_pairs(repo_root, ["en","ru"]) sur l'arbre fusionne, la constante suit.
 # 2026-10-20 (PR #19916, #19908 tranche B pli 2): +1 paire -- jumeau _en du
-# carnet Lean natif : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.
+# carnet Lean natif : SymbolicAI/Lean/Analyse/ANALYSE-06-Sensibilite-2026-Lean_en.
 # Meme classe que #19996/#20392/#19943 : la PR ne touchait pas scripts/**, le
 # Scripts Tests path-filtre n'a pas tourne, et la garde PR-time #21397
 # (check_pair_count_declared.py) n'est cablee dans aucun workflow. Rouge sur main

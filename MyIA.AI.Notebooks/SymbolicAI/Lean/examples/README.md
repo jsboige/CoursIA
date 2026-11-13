@@ -40,7 +40,7 @@ L'exécution se fait **cellule par cellule** via le kernel Jupyter `lean4-wsl`,
 sans projet Lake — c'est le terrain d'expérimentation rapide de la série
 d'introduction, par contraste avec les projets Lake complets
 ([`../calibration_lean/`](../calibration_lean/),
-[`../GOL/conway_lean/`](../GOL/conway_lean/),
+[`../GameOfLife/conway_lean/`](../GameOfLife/conway_lean/),
 [`../sensitivity_lean/`](../sensitivity_lean/)) qui structurent des preuves
 volumineuses.
 

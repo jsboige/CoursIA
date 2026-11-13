@@ -557,7 +557,7 @@ def test_veto_actif_positif_sur_la_pr_23745(monkeypatch, capsys):
     pendant le veto. La variable est simulee localement, le compte avec
     elle : compte et seuil doivent paraitre dans le resume."""
     _pr_fichiers(monkeypatch, [
-        fichier("MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/"
+        fichier("MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/"
                 "KNOTS-05-Dynamique-Tresses-Python.ipynb", "added")])
     monkeypatch.setenv(cp.VETO_VAR, "400")
     monkeypatch.setattr(cp, "open_issue_count", lambda: 651)

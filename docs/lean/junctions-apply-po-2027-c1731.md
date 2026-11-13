@@ -29,7 +29,7 @@ EPIC parente : [#4362](https://github.com/jsboige/CoursIA/issues/4362) — Lean 
 
 ```
 === Apply groupe leanprover_lean4_v4.33.0-db584cd6 (17 a traiter, 7 deja junctionne(s)) ===
-Donneur : MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean -> D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
+Donneur : MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean -> D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\mathlib
   junction : MyIA.AI.Notebooks/Compression/Compression_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/GameTheory/assignment_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction REPOINTEE : MyIA.AI.Notebooks/GameTheory/game_theory_lean
@@ -44,7 +44,7 @@ Donneur : MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean -> D:\dev\CoursIA-2\
   junction REPOINTEE : MyIA.AI.Notebooks/Search/search_lean
   junction : MyIA.AI.Notebooks/Sudoku/sudoku_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean -> leanprover_lean4_v4.33.0-db584cd6 
-  junction : MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean -> leanprover_lean4_v4.33.0-db584cd6 
+  junction : MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction : MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean -> leanprover_lean4_v4.33.0-db584cd6 
   junction REPOINTEE : MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean

@@ -317,7 +317,7 @@ def test_the_filter_splits_the_bilingual_surface_of_a_real_lake():
     snapshot of counts would rot on every module added."""
     sys.path.insert(0, str(REPO / "scripts" / "lean"))
     from check_target_coverage import discover_modules, filter_i18n_siblings
-    project = REPO / "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean"
+    project = REPO / "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean"
     discovered = set(discover_modules(project, None))
     kept = set(filter_i18n_siblings(discovered))
     excluded = discovered - kept

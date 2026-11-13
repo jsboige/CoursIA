@@ -7,7 +7,7 @@ Implements the (A) arm of the prevention strategy in #21007 (KNOTS):
   notebook directory.
 
 This is a pre-commit hook. It runs on staged ``.ipynb`` files whose path
-contains ``Lean/KNOTS/`` (or any other ``Lean/<series>`` cell path
+contains ``Lean/Knots/`` (or any other ``Lean/<series>`` cell path
 configured below). It scans the cells (markdown + code) for
 ``lean_file_path`` candidates and fails the commit if any of them cannot
 be resolved from the notebook's parent directory.
@@ -45,19 +45,19 @@ from git_index_renames import skip_pure_renames  # noqa: E402
 # Candidat : un chemin de fichier ``.lean`` qui ressemble à un chemin
 # du projet. La regex capture :
 #  - `knot_lean/.../*.lean` (relatif au cwd d'exécution du notebook)
-#  - `KNOTS/.../*.lean` (relatif, forme post-4ee14af19e)
-#  - `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/...` (absolu repo)
+#  - `Knots/.../*.lean` (relatif, forme post-4ee14af19e)
+#  - `MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/...` (absolu repo)
 #
 # Variante historique pré-4ee14af19e NON capturée (volontaire) :
 #  - `lean/Knots/...` (lowercase ``lean/`` + capital ``Knots/``) — le
 #    défaut historique que ce hook ne vise pas. La convention repo
-#    post-4ee14af19e est normalisée sur ``knot_lean/`` ou ``KNOTS/`` ;
+#    post-4ee14af19e est normalisée sur ``knot_lean/`` ou ``Knots/`` ;
 #    on n'élargit pas le périmètre au-delà de ce qui est mesuré.
 LEAN_PATH_RE = re.compile(
     r"""
     (?P<path>
         (?:[A-Za-z0-9_./-]*?/)?
-        (?:knot_lean|KNOTS)/[A-Za-z0-9_./-]*\.lean
+        (?:knot_lean|Knots)/[A-Za-z0-9_./-]*\.lean
     )
     """,
     re.VERBOSE,
@@ -90,6 +90,25 @@ def find_lean_paths(source: str) -> list[tuple[str, int]]:
     return out
 
 
+def lake_roots(notebook_dir: Path) -> list[Path]:
+    """Les racines de lac voisines du carnet (``knot_lean/``, ...).
+
+    Un chemin relatif comme ``Knots/FigureEight.lean`` est relatif a la
+    **RACINE DU LAC**, pas au dossier du carnet : le carnet dit « le fichier
+    ``Knots/FigureEight.lean`` du scaffold ``knot_lean/`` ». Resolu depuis le
+    dossier du carnet, ce chemin n'existe pas -- et le carnet est signale
+    STALE_PATH alors que sa reference est valide (mesure du 2026-11-13,
+    tranche #26056 : le renommage du repertoire `KNOTS` -> `Knots` a rendu
+    cette forme capturable, et elle a fracasse sur une resolution qui ne
+    connait pas la racine du lac).
+    """
+    try:
+        return sorted(p for p in notebook_dir.iterdir()
+                      if p.is_dir() and p.name.endswith("_lean"))
+    except OSError:
+        return []
+
+
 def check_notebook(
     notebook_path: Path,
     notebook_root: Path,
@@ -114,6 +133,7 @@ def check_notebook(
         return findings
 
     notebook_dir = notebook_path.parent
+    lakes = lake_roots(notebook_dir)
 
     for cell_idx, cell_type, src in iter_cells(nb):
         for path, line_no in find_lean_paths(src):
@@ -121,7 +141,8 @@ def check_notebook(
                 continue
             # Two resolution strategies:
             # 1. Absolute repo path → check directly.
-            # 2. Relative path (knot_lean/...) → check relative to notebook_dir.
+            # 2. Relative path (knot_lean/...) → check relative to notebook_dir,
+            #    puis a la racine du lac voisine (forme ``Knots/<Module>.lean``).
             #    Opt-in repli repo_root si R3 active.
             abs_candidate = notebook_root / path
             rel_candidate = notebook_dir / path
@@ -133,6 +154,8 @@ def check_notebook(
                     )
             else:
                 resolved = rel_candidate.exists()
+                if not resolved:
+                    resolved = any((lake / path).exists() for lake in lakes)
                 if not resolved and rel_resolve_from_repo_root:
                     resolved = abs_candidate.exists()
                 if not resolved:
@@ -159,9 +182,9 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--path-filter",
-        default=r"Lean/KNOTS/",
+        default=r"Lean/Knots/",
         help="Substring path filter — only check notebooks under this. "
-        "Default: r'Lean/KNOTS/'. Pass empty string to disable filter.",
+        "Default: r'Lean/Knots/'. Pass empty string to disable filter.",
     )
     parser.add_argument(
         "--rel-resolve-from-repo-root",
@@ -198,7 +221,7 @@ def main(argv: list[str] | None = None) -> int:
         flt = re.compile(args.path_filter)
         # Windows : ``str(Path)`` rend des antislashs (``\``) sur les
         # .ipynb crees/renommes par Git ou par pre-commit. Le filtre
-        # par defaut (``Lean/KNOTS/``) est forward-slash -- applique
+        # par defaut (``Lean/Knots/``) est forward-slash -- applique
         # sur la forme Windows, il ne matche JAMAIS, le hook scanne 0
         # carnet et sort en rc 0 sans un mot. C'est la classe 1 stale
         # path documente par #21007. On normalise via ``as_posix()``

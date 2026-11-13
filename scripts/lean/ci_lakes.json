@@ -423,16 +423,16 @@
     },
     {
       "lake": "galois",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean",
       "display-name": "galois_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Galois/galois_lean/lean-toolchain",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ],
@@ -487,16 +487,16 @@
     },
     {
       "lake": "grothendieck",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean",
       "display-name": "grothendieck_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ],
@@ -504,7 +504,7 @@
     },
     {
       "lake": "knot",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean",
       "display-name": "knot_lean",
       "sorry-baseline": "8",
       "sorry-filter-mode": "real",
@@ -512,17 +512,17 @@
       "axiom-fail-on-sorry": "false",
       "axiom-include-i18n-siblings": "true",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/lake-manifest.json",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py"
       ]
     },
     {
       "lake": "conway",
-      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean",
       "display-name": "conway_lean",
       "sorry-baseline": "1",
       "sorry-filter-mode": "real",
@@ -535,11 +535,11 @@
       "axiom-blocking-fail-on-sorry": "true",
       "build-threads": "1",
       "paths": [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lake-manifest.json",
         "scripts/lean/allow_axioms_conway.txt"
       ]
     }

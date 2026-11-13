@@ -83,7 +83,7 @@ CACHE_PIVOT = (
     / "MyIA.AI.Notebooks"
     / "SymbolicAI"
     / "Lean"
-    / "GOL"
+    / "GameOfLife"
     / "conway_lean"
 )
 

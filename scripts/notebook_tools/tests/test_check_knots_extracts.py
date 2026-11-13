@@ -24,6 +24,7 @@ from check_knots_extracts import (
     LEAN_PATH_RE,
     find_lean_paths,
     check_notebook,
+    lake_roots,
 )
 
 
@@ -60,15 +61,15 @@ class TestFindLeanPaths:
         assert line_no == 1
 
     def test_captures_absolute_repo_path(self):
-        src = "imported from MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Lidman.lean"
+        src = "imported from MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Lidman.lean"
         out = find_lean_paths(src)
-        assert any(p == "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Lidman.lean" for p, _ in out)
+        assert any(p == "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Lidman.lean" for p, _ in out)
 
-    def test_captures_KNOTS_uppercase_subpath(self):
-        # Le regex accepte (?:knot_lean|KNOTS) ; KNOTS en sous-chemin est OK.
-        src = "see KNOTS/Knots/Conway.lean for the obstruction gadget."
+    def test_captures_capstone_dir_subpath(self):
+        # Le regex accepte (?:knot_lean|Knots) ; Knots en sous-chemin est OK.
+        src = "see Knots/Knots/Conway.lean for the obstruction gadget."
         out = find_lean_paths(src)
-        assert any(p == "KNOTS/Knots/Conway.lean" for p, _ in out)
+        assert any(p == "Knots/Knots/Conway.lean" for p, _ in out)
 
     def test_line_number_is_one_based(self):
         src = "\n".join([
@@ -97,7 +98,7 @@ class TestCheckNotebook:
         # Repo root bidon : on y pose le fichier .lean que le carnet declare
         repo = tmp_path / "repo"
         repo.mkdir()
-        lean_abs = repo / "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Invariant.lean"
+        lean_abs = repo / "MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Invariant.lean"
         lean_abs.parent.mkdir(parents=True, exist_ok=True)
         lean_abs.write_text("-- stub\n", encoding="utf-8")
         # Carnet qui declare ce chemin absolu
@@ -111,15 +112,15 @@ class TestCheckNotebook:
         repo.mkdir()
         # Aucun fichier cree : chemin absolu pointe dans le vide
         nb = tmp_path / "KNOTS" / "demo.ipynb"
-        _write_nb(nb, [_md("see MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/Stale.lean")])
+        _write_nb(nb, [_md("see MyIA.AI.Notebooks/SymbolicAI/Lean/Knots/knot_lean/Knots/Stale.lean")])
         findings = check_notebook(nb, repo, allow_patterns=())
         assert len(findings) == 1
         assert "STALE_PATH (abs)" in findings[0]
         assert "Stale.lean" in findings[0]
 
     def test_relative_path_resolves_from_notebook_dir(self, tmp_path: Path):
-        # Le carnet est dans KNOTS/ ; le chemin relatif knot_lean/...
-        # est cherche depuis KNOTS/, pas depuis le cwd.
+        # Le carnet est dans Knots/ ; le chemin relatif knot_lean/...
+        # est cherche depuis Knots/, pas depuis le cwd.
         nb_dir = tmp_path / "KNOTS"
         lean_rel = nb_dir / "knot_lean" / "Knots" / "Invariant.lean"
         lean_rel.parent.mkdir(parents=True, exist_ok=True)
@@ -235,7 +236,7 @@ class TestRelativeResolutionScope:
 # ---------------------------------------------------------------------------
 # R1-fix Windows : la classe 1 stale path documentee par #21007
 #
-# Le filtre par defaut du hook (``Lean/KNOTS/``) est forward-slash.
+# Le filtre par defaut du hook (``Lean/Knots/``) est forward-slash.
 # Sur Windows, ``str(Path)`` rend des antislashs (``\``), donc
 # ``re.search(filter, str(path))`` ne matche JAMAIS un carnet KNOTS,
 # et le hook scanne 0 fichier puis sort en rc 0 sans un mot. C'est
@@ -251,17 +252,17 @@ class TestRelativeResolutionScope:
 # ---------------------------------------------------------------------------
 
 class TestPathFilterWindowsCompat:
-    """Le filtre par defaut ``Lean/KNOTS/`` doit attraper les chemins
+    """Le filtre par defaut ``Lean/Knots/`` doit attraper les chemins
     Windows antislashes comme les chemins POSIX forward-slashes."""
 
-    DEFAULT_FILTER = re.compile(r"Lean/KNOTS/")
+    DEFAULT_FILTER = re.compile(r"Lean/Knots/")
 
     def test_str_path_windows_antislashes_does_not_match(self):
         """Cas fondateur preserve : SANS le fix, le hook ne matche
         jamais un carnet KNOTS sur Windows. Ce test documente la
         regression si quelqu'un revient a ``str(p)``."""
         # PureWindowsPath rend inconditionnellement des antislashs.
-        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "KNOTS", "demo.ipynb")
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Knots", "demo.ipynb")
         s = str(p)  # forme native Windows : antislashs
         assert "\\" in s, "sanity check : on est bien sur une forme Windows"
         # Le filtre forward-slash NE MATCHE PAS la forme antislashes.
@@ -270,7 +271,7 @@ class TestPathFilterWindowsCompat:
     def test_as_posix_path_windows_antislashes_matches(self):
         """Avec ``as_posix()``, le filtre forward-slash retrouve la
         forme Windows normalisee -- c'est le fix."""
-        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "KNOTS", "demo.ipynb")
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Knots", "demo.ipynb")
         # ``as_posix()`` rend la forme forward-slash portable.
         posix_form = p.as_posix()
         assert "\\" not in posix_form
@@ -278,16 +279,58 @@ class TestPathFilterWindowsCompat:
 
     def test_posix_path_forward_slashes_still_matches(self):
         """Le fix ne regresse pas le cas POSIX historique."""
-        p = Path("MyIA/AI/Notebooks/Lean/KNOTS/demo.ipynb")
+        p = Path("MyIA/AI/Notebooks/Lean/Knots/demo.ipynb")
         # ``as_posix()`` est un no-op sur POSIX, le filtre matche.
         assert self.DEFAULT_FILTER.search(p.as_posix()) is not None
 
-    def test_filter_rejects_non_KNOTS_path(self):
-        """Le filtre reste restrictif : un carnet hors KNOTS n'est
+    def test_filter_rejects_non_Knots_path(self):
+        """Le filtre reste restrictif : un carnet hors Knots n'est
         pas scanne, meme apres le fix."""
-        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Knots", "demo.ipynb")
-        # ``Knots`` (capitalisation differente) ne matche pas ``KNOTS/``.
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "KNOTS", "demo.ipynb")
+        # ``KNOTS`` (capitalisation differente) ne matche pas ``Knots/``.
         # NOTE : le filtre par defaut est sensible a la casse sur
-        # intention (le perimetre est la convention repo ``KNOTS/``).
+        # intention (le perimetre est la convention repo ``Knots/``).
         assert self.DEFAULT_FILTER.search(p.as_posix()) is None
+
+
+# ---------------------------------------------------------------------------
+# R4 -- racine de lac : la forme ``Knots/<Module>.lean``
+#
+# Le carnet dit « le fichier ``Knots/FigureEight.lean`` du scaffold
+# ``knot_lean/`` » : ce chemin est relatif a la RACINE DU LAC, pas au
+# dossier du carnet. Resolu seulement depuis le dossier du carnet, il
+# n'existe pas -- et une reference valide est signalee STALE_PATH
+# (mesure du 2026-11-13, tranche #26056).
+# ---------------------------------------------------------------------------
+
+class TestLakeRootResolution:
+    def test_bare_module_path_resolves_under_the_lake_root(self, tmp_path: Path):
+        repo = tmp_path / "repo"
+        nb_dir = repo / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Knots"
+        # Le fichier est dans le lac, pas dans le dossier du carnet.
+        lean = nb_dir / "knot_lean" / "Knots" / "FigureEight.lean"
+        lean.parent.mkdir(parents=True, exist_ok=True)
+        lean.write_text("-- stub\n", encoding="utf-8")
+        nb = nb_dir / "demo.ipynb"
+        _write_nb(nb, [_md("Voir `Knots/FigureEight.lean` du scaffold `knot_lean/`.")])
+        findings = check_notebook(nb, repo, allow_patterns=())
+        assert findings == []
+
+    def test_missing_module_is_still_reported(self, tmp_path: Path):
+        repo = tmp_path / "repo"
+        nb_dir = repo / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Knots"
+        (nb_dir / "knot_lean" / "Knots").mkdir(parents=True, exist_ok=True)
+        nb = nb_dir / "demo.ipynb"
+        _write_nb(nb, [_md("Voir `Knots/DoesNotExist.lean`.")])
+        findings = check_notebook(nb, repo, allow_patterns=())
+        assert len(findings) == 1
+        assert "STALE_PATH (rel)" in findings[0]
+        assert "DoesNotExist.lean" in findings[0]
+
+    def test_lake_roots_lists_only_lake_directories(self, tmp_path: Path):
+        (tmp_path / "knot_lean").mkdir()
+        (tmp_path / "figures").mkdir()
+        (tmp_path / "KNOTS-01.ipynb").write_text("{}", encoding="utf-8")
+        roots = lake_roots(tmp_path)
+        assert [p.name for p in roots] == ["knot_lean"]
 

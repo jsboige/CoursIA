@@ -538,7 +538,7 @@ def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pu
     triggers = workflow["on"]
     assert "paths" not in triggers["push"]
     pr_paths = triggers["pull_request"]["paths"]
-    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean" in pr_paths
+    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/**.lean" in pr_paths
     # Keep both the original ADK contracts tree and the #25201 refactor target.
     assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**" in pr_paths
     assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**" in pr_paths

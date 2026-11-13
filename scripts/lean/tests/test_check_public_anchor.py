@@ -33,7 +33,7 @@ from check_public_anchor import (  # noqa: E402
 REPO_ROOT = Path(__file__).resolve().parents[3]
 HASHLIFE = (
     REPO_ROOT
-    / "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeCorrectness.lean"
+    / "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/Conway/Life/HashlifeCorrectness.lean"
 )
 
 

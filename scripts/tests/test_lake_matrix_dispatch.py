@@ -138,7 +138,7 @@ def test_dispatch_preserves_optional_blocking_profile_only_for_conway(
     dual-leg doivent survivre au rendu de matrice sans devenir un defaut
     pour les autres lakes."""
     changed = [
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/KochenSpecker.lean"
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/Conway/KochenSpecker.lean"
     ]
     entries = dispatch_mod.changed_lakes(changed, manifest)
     assert len(entries) == 1

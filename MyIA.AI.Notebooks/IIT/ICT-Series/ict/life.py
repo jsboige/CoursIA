@@ -21,7 +21,7 @@ ce qui en fait un banc discriminant pour l'emergence causale multi-echelle.
 naive pas-a-pas, toroidale) est l'exact pendant Python de la branche « naive »
 du theoreme ``evolveHashlifeFastAtN_correct_uncond`` formalise en Lean dans la
 track ``conway_lean``
-(``MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway/Life/HashlifeCorrectness.lean``
+(``MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/Conway/Life/HashlifeCorrectness.lean``
 l. 7202, PR #11781 commit ``c5df96d5b0`` 2026-08-19, tracker #6724). Ce
 theoreme — **prouve sans hypothese, non-vacuous** sur ``main`` (chaine
 ``evolveHashlifeFastAtN_correct one_jumpAt_correct``, ou ``one_jumpAt_correct``

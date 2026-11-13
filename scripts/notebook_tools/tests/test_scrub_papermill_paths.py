@@ -528,7 +528,7 @@ def test_scrub_outputs_posix_checkout_root(tmp_path):
     """
     raw = (
         "Projet Lean (WSL) : /mnt/c/dev/CoursIA-2/MyIA.AI.Notebooks/"
-        "SymbolicAI/Lean/GOL/conway_lean\n"
+        "SymbolicAI/Lean/GameOfLife/conway_lean\n"
     )
     p = _write_nb_with_output(tmp_path / "nb.ipynb", "setup()", raw)
     before = p.read_text(encoding="utf-8")
@@ -543,7 +543,7 @@ def test_scrub_outputs_posix_checkout_root(tmp_path):
     assert "/mnt/c/dev/CoursIA-2" not in out_text
     # the label + repo-relative tail survive
     assert "Projet Lean (WSL)" in out_text
-    assert "SymbolicAI/Lean/GOL/conway_lean" in out_text
+    assert "SymbolicAI/Lean/GameOfLife/conway_lean" in out_text
     # source cell byte-identical
     assert json.loads(after)["cells"][0]["source"] == ["setup()"]
 

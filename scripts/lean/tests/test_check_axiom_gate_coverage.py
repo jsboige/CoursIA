@@ -106,15 +106,15 @@ class TestGateProjectPaths:
             "  proof-integrity:\n"
             "    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main\n"
             "    with:\n"
-            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean\n"
+            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean\n"
             "  proof-integrity-audit:\n"
             "    uses: jsboige/CoursIA/.github/workflows/lean-axiom.yml@main\n"
             "    with:\n"
-            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean\n"
+            "      project-path: MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean\n"
         )
         assert gate_project_paths(text) == [
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
-            "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean",
+            "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean",
         ]
 
     def test_commented_project_path_is_ignored(self):
@@ -336,17 +336,17 @@ class TestClassifyDeleted:
     def test_a_moved_lake_is_relocation_not_loss(self):
         """Old path gone from the tree + same-basename successor gated today."""
         d = self._d(["A/Lean/galois_lean"])
-        gated = {"A/Lean/GALOIS/galois_lean"}
+        gated = {"A/Lean/Galois/galois_lean"}
         r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
         assert r["lost"] == []
         [entry] = r["relocated"]
-        assert entry["moved_to"] == "A/Lean/GALOIS/galois_lean"
+        assert entry["moved_to"] == "A/Lean/Galois/galois_lean"
 
     def test_a_surviving_old_path_keeps_it_lost(self):
         """Negative control: both paths exist -> the old lake lives there, ungated."""
         d = self._d(["A/Lean/galois_lean"])
-        present = {"A/Lean/galois_lean", "A/Lean/GALOIS/galois_lean"}
-        gated = {"A/Lean/GALOIS/galois_lean"}
+        present = {"A/Lean/galois_lean", "A/Lean/Galois/galois_lean"}
+        gated = {"A/Lean/Galois/galois_lean"}
         r = classify_deleted([d], gated, exists_at=lambda p: p in present)
         assert r["relocated"] == []
         assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
@@ -361,7 +361,7 @@ class TestClassifyDeleted:
     def test_a_move_without_absence_probe_stays_lost(self):
         """No probe is no evidence: the second shape stays fail-closed."""
         d = self._d(["A/Lean/galois_lean"])
-        r = classify_deleted([d], {"A/Lean/GALOIS/galois_lean"})
+        r = classify_deleted([d], {"A/Lean/Galois/galois_lean"})
         assert r["relocated"] == []
         assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
 
@@ -388,7 +388,7 @@ class TestClassifyDeleted:
     def test_a_sibling_prefix_is_not_filiation(self):
         """Controle negatif de `_is_under` : `A/LeanX` n'est pas sous `A/Lean`."""
         from check_axiom_gate_coverage import _is_under
-        assert _is_under("A/Lean/GALOIS/galois_lean", "A/Lean") is True
+        assert _is_under("A/Lean/Galois/galois_lean", "A/Lean") is True
         assert _is_under("A/LeanX/galois_lean", "A/Lean") is False
         assert _is_under("A/Lean", "A/Lean") is False
 

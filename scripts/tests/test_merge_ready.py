@@ -2601,7 +2601,7 @@ def test_combined_operator_rollback_env(tmp_path, monkeypatch):
 # la tete. La couverture de tete suit la meme regle que l'APPROVE (remontee
 # first-parent de merge_dwell).
 
-LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean"
+LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/Conway.lean"
 ATTESTED_SHA = "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
 
 
@@ -2660,10 +2660,10 @@ def test_outillage_lean_sans_attestation_donne_un_skip(tmp_path):
     """``lakefile.*``, ``lean-toolchain`` et ``lake-manifest.json`` sont des
     fichiers Lean : changer la toolchain change ce que le build doit prouver."""
     for path in (
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean/lake-manifest.json",
     ):
         runner = ScriptedRunner(views={123: default_view(files=(path,))})
         _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))

@@ -124,7 +124,7 @@ même pin Lean et Mathlib v4.33.0 que nos lacs) ; le carnet la lit, en mesure
 chaque maillon sur des fonctions jouets et la confronte au théorème de Huang
 du lac [`sensitivity_lean`](../SymbolicAI/Lean/sensitivity_lean/), que développent
 [Lean-12](../SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb) et
-[ANALYSE-06](../SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb) :
+[ANALYSE-06](../SymbolicAI/Lean/Analyse/ANALYSE-06-Sensibilite-2026-Lean-Python.ipynb) :
 deux théorèmes miroirs sur le même cube. Aucun `lake build` n'est lancé.
 
 Le notebook 03c referme la boucle **côté carte** : les précédents mesuraient des

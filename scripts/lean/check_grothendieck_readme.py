@@ -42,7 +42,7 @@ Usage
     python scripts/lean/check_grothendieck_readme.py --ref origin/main
 
 Defaults to the canonical grothendieck_lean lake (auto-detected via
-``MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/``). Exit code ``0``
+``MyIA.AI.Notebooks/SymbolicAI/Lean/Grothendieck/grothendieck_lean/``). Exit code ``0``
 on a clean README, ``1`` on any blocking drift. ``--json`` outputs a single
 JSON document on stdout (machine-parseable for the gate).
 
@@ -66,7 +66,7 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_LAKE = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH" / "grothendieck_lean"
+DEFAULT_LAKE = REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Grothendieck" / "grothendieck_lean"
 
 # Patterns calibrated on disk measurements 2026-09-10 (origin/main @ b474cf8f30).
 # Adjust only if the structural convention changes; the README prose is the

@@ -31,12 +31,12 @@ from check_i18n_siblings import (  # noqa: E402
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-# Le lake a descendu sous `Lean/GOL/` (#23164). Ce chemin est en dur : s'il
+# Le lake a descendu sous `Lean/GameOfLife/` (#23164). Ce chemin est en dur : s'il
 # n'est pas suivi, la garde ne trouve plus le lake et se tait (cf. le `skip`
 # explicite du test conway ci-dessous, qui rend cette disparition visible).
 CONWAY_DIR = (
     REPO_ROOT
-    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GOL" / "conway_lean" / "Conway"
+    / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GameOfLife" / "conway_lean" / "Conway"
 )
 
 
@@ -594,7 +594,7 @@ def test_real_grothendieck_godement_pairs_are_not_half_done():
     ``Godement*_en`` mirrors are OK-CONSUMER siblings whose module docstring is
     translated; the HALF-DONE hit came from the shared licence header alone.
     They must no longer be reported."""
-    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH"
+    groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "Grothendieck"
              / "grothendieck_lean" / "Grothendieck")
     # Nine pairs, two of them nested: the ninth lives in the SheafCohomology
     # sub-folder, so entries carry their relative path when it differs (#24161).

@@ -39,7 +39,7 @@ def _load_module():
 
 mod = _load_module()
 
-LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean"
+LAC_EPINGLE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GameOfLife/conway_lean"
 LAKEFILE = LAC_EPINGLE + "/lakefile.lean"
 LAC_INCONNU = "MyIA.AI.Notebooks/Series/unknown_lean"
 

@@ -36,5 +36,5 @@ Le versant **preuves** vit dans le lake compagnon [`riemann200_lean/`](riemann20
 
 - [Serre 100](../Serre100/README.md) — carnets 11–15 : le monde pré-analytique que 1854/1859 ont prolongé.
 - Le **691** fait pont : numérateur de $B_{12}$ **mesuré** en R-13 (von Staudt–Clausen, k = 6), congruence $\tau(n) \equiv \sigma_{11}(n) \pmod{691}$ **mesurée** dans [Serre 100-09](../Serre100/09-congruences-tau-lacunarite-delta.ipynb) — deux visages d'un même entier ; le pont théorique (K-théorie, Lichtenbaum) y est cité, jamais démontré.
-- [ANALYSE](../ANALYSE/) — l'intégrale de Riemann y est un sol (ANALYSE-02 Tao) ; R-04 fait pont, pas doublon : ses objets propres sont les **sommes de Darboux** et les témoins de non-intégrabilité (Dirichlet, Thomae), que la série ANALYSE ne construit pas.
+- [ANALYSE](../Analyse/) — l'intégrale de Riemann y est un sol (ANALYSE-02 Tao) ; R-04 fait pont, pas doublon : ses objets propres sont les **sommes de Darboux** et les témoins de non-intégrabilité (Dirichlet, Thomae), que la série ANALYSE ne construit pas.
 - [#19333](https://github.com/jsboige/CoursIA/issues/19333) (géométrie différentielle Sheydvasser) et [#18286](https://github.com/jsboige/CoursIA/issues/18286) (formes modulaires Borcherds) — périmètres cités par R-07 et R-01/R-02, frontière vérifiée à chaque grain.

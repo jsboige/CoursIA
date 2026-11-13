@@ -27,7 +27,7 @@ Une statuation ne s'appuie pas sur la mesure d'un autre sans relire (G.1). Toute
 |---|---|---|---|
 | `Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb` | 24 | 0 | 0 |
 | `Search/Part1-Foundations/Search-03f-Reparer-Localement-Sous-Garantie-Python.ipynb` | 31 | 0 | 0 |
-| `SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb` | 11 | 0 | 0 |
+| `SymbolicAI/Lean/Analyse/ANALYSE-04-PFR-Primitives-Python.ipynb` | 11 | 0 | 0 |
 | `GameTheory/GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb` | 13 | 0 | 0 |
 
 Les empreintes numériques des témoins ont été vérifiées **dans les sorties committées** (pas seulement en source) :
@@ -57,7 +57,7 @@ Les empreintes numériques des témoins ont été vérifiées **dans les sorties
 
 ## Statuation — Opération 3 « Quotienter/fibrer » : PROMUE TABLE
 
-**Attestation 1** — `MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb` (primitives PFR, miroir Python de Lean-21b ; PR #12252, 2026-08-22, exécutée intégralement : aucune cellule à `execution_count` null, aucune erreur) : distance de Ruzsa `d[X;Y] = H(X−Y) − ½·(H(X)+H(Y))` exécutable avec tests de limite — translation `d = 0`, cas dégénéré `d = 1.5`, dépendance à la loi de groupe mesurée (Z/4Z vs Klein : `0.5` vs `0.0` sur mêmes distributions), inégalité triangulaire avec égalité exacte et saturation sans colinéarité (cell. 2, 4, 7).
+**Attestation 1** — `MyIA.AI.Notebooks/SymbolicAI/Lean/Analyse/ANALYSE-04-PFR-Primitives-Python.ipynb` (primitives PFR, miroir Python de Lean-21b ; PR #12252, 2026-08-22, exécutée intégralement : aucune cellule à `execution_count` null, aucune erreur) : distance de Ruzsa `d[X;Y] = H(X−Y) − ½·(H(X)+H(Y))` exécutable avec tests de limite — translation `d = 0`, cas dégénéré `d = 1.5`, dépendance à la loi de groupe mesurée (Z/4Z vs Klein : `0.5` vs `0.0` sur mêmes distributions), inégalité triangulaire avec égalité exacte et saturation sans colinéarité (cell. 2, 4, 7).
 
 **Attestation 2** — `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb` (quotient d'occupation du puzzle glissant ; PR #19109 livrée en 03g puis fondue dans 03b, mergée le 05/10, exécutée intégralement : aucune cellule à `execution_count` null, aucune erreur) : règle de chaîne `H(X) = H(S_B) + H(X|S_B)` à `15.8842 = 6.3923 + 9.4919` (1.8e-15), témoin `I(X_A;X_B | S_B) = 0` exact contre `2.070389` marginaux, contre-témoin `1.582975` hiérarchisé, dette Ruzsa `81/81` structure vs `80/84` contingence. **Origine documentairement établie** sur les trois axes ci-dessus.
 

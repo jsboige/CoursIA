@@ -145,7 +145,7 @@ nécessaire.
 
 Mandat user 2026-06-01 : préparer un scaffold de présentation
 complète pour que la feuille de route de l'Annexe F du carnet
-`GOL/GOL-01-Regles-Vie-Lean.ipynb` soit concrète et visible.
+`GameOfLife/GOL-01-Regles-Vie-Lean.ipynb` soit concrète et visible.
 La mémoïsation a été validée au début de la Phase 3 ; les témoins
 sont le point d'arrivée naturel.
 -/
