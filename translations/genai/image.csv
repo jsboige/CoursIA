@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,793a205e,markdown,fr,6ef113cf62204ca4,"# OpenAI DALL-E 3 - Generation d'Images
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,793a205e,markdown,fr,c6864a39d64ffbcd,"# OpenAI DALL-E 3 - Generation d'Images
 
 **Navigation** : [Index](../README.md) | [Suivant >>](01-2-Generation-Image-API.ipynb)
 
@@ -84,7 +84,7 @@ OpenRouter НЕ поддерживает endpoint `/v1/images/generations`.
 Если у вас есть только ключ OpenRouter, перейдите к notebook 01-2 (анализ изображений GPT-5).
 
 
-**Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,6ef113cf62204ca4,31e2de5245f1297a,,,,,ad347d002848efb9,,,,,,,,,
+**Научная привязка.** У DALL-E 3 нет отдельной научной статьи; OpenAI анонсировала его в записи блога (октябрь 2023), сопровождаемой официальной *System Card*. Его главная инновация -- **автоматическое переписывание prompts** (знаменитая prompt revision, рассматриваемая ниже) -- происходит от языковой модели (GPT-4), которая уплотняет описание, и от **обучения на улучшенных captions** (recaptioning): см. *DALL-E 3 System Card* (OpenAI, 2023) и, для архитектурной преемственности (CLIP latents + diffusion), статью DALL-E 2 [Ramesh et al. 2022, arXiv:2204.06125].",,c6864a39d64ffbcd,208d02230ee0c368,,,,,5f92a7b4fd831656,,c6864a39d64ffbcd,,,,,c6864a39d64ffbcd,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,02190507,code,fr,58bec2d4319d6420,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration generation
@@ -1193,9 +1193,9 @@ observations_ex3 = (
 print(f""\nObservations : {observations_ex3}"")
 
 print(""\nExemple guide 3 termine"")",,,,,,,,ca7b8f75d700d3b4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07ca49a,markdown,fr,c87237c35a3d3d35,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07ca49a,markdown,fr,46ed19848da1cf75,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-1-OpenAI-DALL-E-3.ipynb) | [Suivant >>](01-3-Basic-Image-Operations.ipynb)
 
-# GPT-5 Multimodal - Analyse et Génération d'Images
+# Génération et analyse d'images par API multimodale
 
 **Module :** 01-Images-Foundation  
 **Niveau :** 🟢 Débutant  
@@ -1224,7 +1224,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07c
 - **Raisonnement** : Analyse complexe et déductive
 - **Éducatif** : Parfait pour l'enseignement","**Navigation** : [Index](../../README.md) | [<< Previous](01-1-OpenAI-DALL-E-3.ipynb) | [Next >>](01-3-Basic-Image-Operations.ipynb)
 
-# GPT-5 Multimodal - Image Analysis and Generation
+# Image Generation and Analysis via Multimodal API
 
 **Module :** 01-Images-Foundation
 **Level :** 🟢 Beginner
@@ -1253,7 +1253,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07c
 - **Reasoning** : Complex and deductive analysis
 - **Educational** : Perfect for teaching",,,,,"**Навигация** : [Индекс](../../README.md) | [<< Назад](01-1-OpenAI-DALL-E-3.ipynb) | [Далее >>](01-3-Basic-Image-Operations.ipynb)
 
-# GPT-5 Мультимодальный - Анализ и генерация изображений
+# Генерация и анализ изображений через мультимодальный API
 
 **Модуль :** 01-Images-Foundation  
 **Уровень :** 🟢 Начинающий  
@@ -1280,7 +1280,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,b07c
 - **Мультимодальность** : Одновременный диалог текст + изображение
 - **Расширенный контекст** : До 400K токенов [OpenAI 2025]
 - **Рассуждение** : Сложный и дедуктивный анализ
-- **Образование** : Идеально для обучения",,c87237c35a3d3d35,2e04cc24b5a6aef2,,,,,7dec99dd3bd02449,,,,,,,,,
+- **Образование** : Идеально для обучения",,46ed19848da1cf75,a7b7c1a81ba5d791,,,,,c26ca0e029e59505,,46ed19848da1cf75,,,,,46ed19848da1cf75,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb,21befb91,code,fr,67bdbb608fac2cb4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration conversation
