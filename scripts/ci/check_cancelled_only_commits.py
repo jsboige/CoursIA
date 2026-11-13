@@ -57,11 +57,14 @@ either -- UNKNOWN is counted and printed.
   dies looking exactly like a queue supersession. That is an INFRA death -- a
   real red -- and calling it borrowed EXONERATES it.
 
-Measured on 2026-11-13: the two offenders of the day were both `Build Quarto
-site` killed at 60 min 15 s and 60 min 17 s on hosted runners
-(`timeout-minutes: 60`, `.github/workflows/quarto-pages-deploy.yml`), against a
-documented render of 19-31 min and five such kills in the last 25 push runs.
-Counting them as borrowed declared `main` clean while a job burned an hour.
+Measured on 2026-11-13, on the two offenders of the day and on their
+successors: five `Build Quarto site` jobs were killed at exactly 60 min in the
+last 25 push runs of `.github/workflows/quarto-pages-deploy.yml`
+(`timeout-minutes: 60`), while the runs that DID conclude took 43 and 52 min of
+job time. The comment beside that ceiling still documents a render of 19-31
+min, which is the figure the ceiling was chosen on -- the render has since
+roughly doubled and now grazes it. Counting the kills as borrowed declared
+`main` clean while a job burned an hour of runner, five times.
 
 Run: python scripts/ci/check_cancelled_only_commits.py --commits 20
 """
