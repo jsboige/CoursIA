@@ -126,6 +126,15 @@ jobs:
                   comments = json.loads(lst.stdout or "[]")
               except Exception as e:
                   print("::warning::lecture des commentaires en echec:", e); return
+              # #25181 : `gh api` rend un OBJET quand il refuse (401/403/404) ; iterer
+              # un dict rend ses CLES, et le `.get` suivant echoue sur une chaine.
+              # Mesure : run 43041203361, « post en echec: 'str' object has no
+              # attribute 'get' » -- une annotation qui ne dit ni le refus ni son
+              # code, donc indiscernable d'un bug du workflow.
+              if lst.returncode != 0 or not isinstance(comments, list):
+                  print("::warning::commentaires illisibles (rc=%s): %s"
+                        % (lst.returncode, (lst.stderr or lst.stdout or "")[:200]))
+                  return
               hit = next((c for c in comments if sentinel in c.get("body", "")), None)
               with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
                                                encoding="utf-8") as tf:
