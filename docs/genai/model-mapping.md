@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Inventaire et table de correspondance — modèles GenAI/OpenAI (issue #14755, tranche 1)
 
