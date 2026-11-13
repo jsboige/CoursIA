@@ -1,4 +1,4 @@
-"""Tests for scripts/whisper_int8_comparison.py — Whisper comparison helpers."""
+"""Tests for scripts/notebook_tools/whisper_int8_comparison.py — Whisper comparison helpers."""
 
 import importlib.util
 import os
@@ -14,6 +14,7 @@ os.environ.setdefault("WHISPER_API_KEY", "test-key-for-unit-tests")
 _MOD_PATH = (
     Path(__file__).resolve().parent.parent.parent.parent
     / "scripts"
+    / "notebook_tools"
     / "whisper_int8_comparison.py"
 )
 _spec = importlib.util.spec_from_file_location("whisper_int8_comparison", _MOD_PATH)
