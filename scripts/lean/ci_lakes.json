@@ -378,6 +378,21 @@
       "axiom-include-i18n-siblings": "true"
     },
     {
+      "lake": "combinators",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean",
+      "display-name": "combinators_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lake-manifest.json"
+      ],
+      "axiom-include-i18n-siblings": "false"
+    },
+    {
       "lake": "compression",
       "project-path": "MyIA.AI.Notebooks/Compression/Compression_lean",
       "display-name": "compression_lean",

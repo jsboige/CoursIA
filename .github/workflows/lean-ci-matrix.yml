@@ -277,6 +277,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # combinators_lean (lake dedie du pli 4 Origami #19742, grain B
+      # #25061 -- confluence S/K/I par l'organe Relation.church_rosser,
+      # 0 sorry de naissance, axiom target-modules "*", Mathlib epingle
+      # v4.33.0/rev db584cd6d4 -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.
@@ -538,6 +546,14 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # combinators_lean (lake dedie du pli 4 Origami #19742, grain B
+      # #25061 -- confluence S/K/I par l'organe Relation.church_rosser,
+      # 0 sorry de naissance, axiom target-modules "*", Mathlib epingle
+      # v4.33.0/rev db584cd6d4 -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/combinators_lean/lake-manifest.json'
       # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
       # la listait pas) : la liste EST la regle du gate axiom de ce lake --
       # un nom ajoute/retire doit rejouer le gate qui l'applique.
