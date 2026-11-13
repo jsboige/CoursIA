@@ -100,7 +100,7 @@ Faits d'API mesurés sur 1.41.3 (couche agents) :
 
 ### 2.4 Pilote Google ADK — handoff natif C5 + désignation C4 (organe Track2 invoqué)
 
-`VERIFIÉ` — pilote [`07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables **par construction** : le modèle est épinglé en constante dans les deux pilotes, aucune sonde ne peut le substituer), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
+`VERIFIÉ` — pilote [`07-Orchestration-d-Agents/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables **par construction** : le modèle est épinglé en constante dans les deux pilotes, aucune sonde ne peut le substituer), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
 
 Deux observables, alignés sur les deux mécaniques distinctes du contrat du track :
 
@@ -453,7 +453,7 @@ Le point 5 demande trois choses : ce qui existe déjà, la dette de migration, e
 | Moteur | Présence dans le dépôt | Mesure |
 |---|---|---|
 | **Semantic Kernel** | série pédagogique **bi-langage**, C# concentrée | `GenAI/SemanticKernel/` — 23 carnets (18 Python, 5 `.net-csharp`) selon `COURSE_CATALOG.generated.json` au head (mesuré, §5.4). La partie C# (5 carnets) inclut les 2 du préfixe `Semantic-fleet-*` ; la couche agents (`01` à `11`) est **Python seule** |
-| **Google ADK** | série pédagogique dédiée (Python) + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/07-Agent-Orchestration/` (14 carnets), plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
+| **Google ADK** | série pédagogique dédiée (Python) + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/07-Orchestration-d-Agents/` (14 carnets), plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
 | **Microsoft Agent Framework** | **aucune série pédagogique** — présent uniquement dans les pilotes d'évaluation de ce chantier | `grep` sur `agent-framework`/`Microsoft.Agents.AI` dans les `.ipynb` ne retourne que les pilotes ; MAF n'apparaît que dans `eval-pilots/` |
 | **semantic-fleet** | sous-module épinglé | `MyIntelligenceAgency/semantic-fleet`, branche `stable-from-v0343` (`.gitmodules`) — infrastructure de flotte SK, hors série pédagogique |
 | **pilotes d'évaluation** | pilotes autonomes + traces committées | `eval-pilots/` : SK (T1/T2/T4/P1), MAF (T5/T7/T8/P2), ADK (P3) — chacun exécutable firsthand, traces dans `traces/` |
@@ -491,7 +491,7 @@ Ce qui subsiste, et qui fait la valeur d'un enseignement multi-moteurs :
 **Réserve d'honnêteté — une seule « couverture C# », pas deux.** Le §2.7 mesure la **couverture d'API C#** (quels types un moteur expose-t-il réellement en C# ?). Cette section parle de **série pédagogique C#** (qu'y a-t-il à enseigner ?). Les deux mots se ressemblent, ne mesurent pas la même chose, et les confondre avait produit une affirmation fausse. La réserve se formule donc ainsi :
 
 - **couverture d'API C#** : SK expose le modèle historique seul ; MAF expose les cinq topologies, le checkpoint et l'OTel ; ADK n'a **aucune distribution C#** (mesuré : aucun paquet NuGet — §2.7 et §5.5) ;
-- **série pédagogique C#** : le dépôt n'en compte qu'une, celle de SK — 5 carnets `.net-csharp` sur les 23 de `GenAI/SemanticKernel/` (mesuré, §5.4). 07-Agent-Orchestration est intégralement Python, et MAF n'a rien.
+- **série pédagogique C#** : le dépôt n'en compte qu'une, celle de SK — 5 carnets `.net-csharp` sur les 23 de `GenAI/SemanticKernel/` (mesuré, §5.4). 07-Orchestration-d-Agents est intégralement Python, et MAF n'a rien.
 
 Un cours bi-langage ne peut donc pas être symétrique sur les trois moteurs ; c'est une borne à déclarer, pas à masquer. Le verdict par critère (quel moteur pour quel usage) reste au point 6, réservé à ai-01 + user.
 
@@ -516,7 +516,7 @@ Sources des dates : API PyPI (`https://pypi.org/pypi/<paquet>/json`, date de pub
 | MAF (.NET) | `Microsoft.Agents.AI` / `.Workflows` | **1.27.0** | 2026-10-30 | 1.24.0 (2026-10-07) | 28 j |
 | ADK (Python) | `google-adk` | **2.13.0** | 2026-10-23 | 2.8.0 (2026-08-26) | 70 j |
 
-`VÉRIFIÉ` — également mesuré : le pin `google-adk==2.8.0` n'est pas propre aux pilotes, il est aussi celui du track pédagogique [`07-Agent-Orchestration/requirements.txt`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt). **L'écart du pin pilote n'est donc pas un artefact d'évaluation : c'est l'état du cours lui-même**, et il porte sur 14 carnets.
+`VÉRIFIÉ` — également mesuré : le pin `google-adk==2.8.0` n'est pas propre aux pilotes, il est aussi celui du track pédagogique [`07-Orchestration-d-Agents/requirements.txt`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/requirements.txt). **L'écart du pin pilote n'est donc pas un artefact d'évaluation : c'est l'état du cours lui-même**, et il porte sur 14 carnets.
 
 **La lecture qu'il faut faire de ce tableau, et celle qu'il ne faut pas faire.** Un seul pin est franchement vieux : **SK Python, 190 jours**. MAF est à **27 jours** de sa version courante — les pilotes MAF tournent sur une ligne récente, et l'écart avec la version courante est de **trois versions mineures**, pas d'une génération. ADK est à 70 jours (cinq versions mineures derrière). Une formulation du type « les pilotes tournent sur des versions de six mois, trois mois et deux mois et demi » serait donc **fausse pour MAF**, qui est le cas le plus favorable de la série.
 
@@ -573,9 +573,9 @@ Sources des dates : API PyPI (`https://pypi.org/pypi/<paquet>/json`, date de pub
 | **Distillation** producteur → critique → arbitre | les trois pilotes `P1`/`P2`/`P3` + leurs traces committées | le tour doit être **contrôlable** par l'appelant, pas délégué au moteur |
 | **Long run avec reprise** | le prover Lean (`…/SymbolicAI/Lean/agent_tests/prover/`) tourne sur `agent_framework` | le moteur doit savoir **reprendre** un run interrompu |
 | **Traces** | `…/agent_tests/prover/baselines/traces/*.spans.jsonl` — des milliers de spans déjà produites | il faut un **format de trace** stable et lisible par un tiers |
-| **Comptage de tokens** | `07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb` ; note du carnet : « Jusqu'à la trace 1, ADK produisait bien `usage_metadata` sur ses events » | il faut un compte **fiable et détaillé**, pas approximatif |
+| **Comptage de tokens** | `07-Orchestration-d-Agents/Day5-DS-Star/Lab12d-Token-Usage.ipynb` ; note du carnet : « Jusqu'à la trace 1, ADK produisait bien `usage_metadata` sur ses events » | il faut un compte **fiable et détaillé**, pas approximatif |
 | **Série pédagogique bilingue C#/Python** | SK : 23 carnets (18 Python, 5 `.net-csharp`) ; ADK : 14 carnets Python ; MAF : **0** | il faut une **offre existante** ou l'accepter comme un coût de création |
-| **Endpoint local** (vLLM, claudish) | `07-Agent-Orchestration/utils/adk_runtime.py` (`LiteLlm`, `api_base`) ; pilotes SK/MAF (`AsyncOpenAI(base_url=…)`, `base_url=…`) | le branchement doit passer par une **API compatible OpenAI** |
+| **Endpoint local** (vLLM, claudish) | `07-Orchestration-d-Agents/utils/adk_runtime.py` (`LiteLlm`, `api_base`) ; pilotes SK/MAF (`AsyncOpenAI(base_url=…)`, `base_url=…`) | le branchement doit passer par une **API compatible OpenAI** |
 
 Deux découverts en mesurant cet inventaire, et qu'aucun tableau précédent ne portait :
 

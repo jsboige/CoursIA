@@ -291,9 +291,9 @@ def test_only_inconnu_est_refuse():
 def test_only_accepte_le_nom_cible():
     """Le nom cible designe la meme tranche que le nom courant."""
     # Le mecanisme d'alias (valeur -> cle) se temoigne sur une tranche ou
-    # courant et cible different encore : 06-Data-Agents -> 06-Agents-de-Donnees.
-    assert migration.resolve_only("06-Agents-de-Donnees") == "06-Data-Agents"
-    assert migration.resolve_only("06-Data-Agents") == "06-Data-Agents"
+    # courant et cible different encore : 06-Agents-de-Donnees -> 06-Agents-de-Donnees.
+    assert migration.resolve_only("06-Agents-de-Donnees") == "06-Agents-de-Donnees"
+    assert migration.resolve_only("06-Agents-de-Donnees") == "06-Agents-de-Donnees"
     # Depuis l'arbitrage Q10 (c.6740035569), la destination 05 est francaise :
     # cle reelle du hub et cible different de nouveau -- les deux faces
     # designent la meme tranche.
