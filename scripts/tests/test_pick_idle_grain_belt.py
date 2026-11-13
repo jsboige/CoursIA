@@ -919,9 +919,18 @@ def test_belt_json_stdout_neporte_que_le_document_json(monkeypatch, capsys):
 
     Controle positif du retrait : si le `file=sys.stderr` disparait du
     bandeau, `json.loads(captured.out)` leve et ce test rougit.
+
+    # #23174 : depuis le 11/11, `main` mesure le compte REEL d'issues
+    # ouvertes par une requete `gh` (`measure_open_issue_count`), et le garde
+    # « pas de reseau sous pytest » s'appuie sur `PYTEST_CURRENT_TEST` --
+    # que ce test neutralise justement pour atteindre la branche du bandeau.
+    # Sans stub, la mesure partait sur le reseau et le garde bruyant du
+    # fichier levait `_RealGhReached` : le test rougissait pour une raison
+    # etrangere a son objet. La mesure est donc neutralisee explicitement.
     """
     _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
     monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "measure_open_issue_count", lambda: None)
     monkeypatch.setattr(pig, "merged_prs_index", lambda **kwargs: [{
         "number": 19001,
         "title": "PR fusionnee de la fenetre",
@@ -1917,6 +1926,80 @@ def test_belt_budget_ceiling_withholds_the_unprobed_candidate():
     assert state["budget_hit"] is True
     assert state["budget_unprobed"] == [23500]
     assert 19100 not in state["budget_unprobed"]
+
+
+def _saturated_head_pool(n_delivered=36, n_free=4):
+    """Tete de tapis saturee de livraisons, puis des grains LIBRES.
+
+    La famine mesuree par Hermes (review du 2026-11-12 sur PR #25920) :
+    36 issues livrees en tete, 4 grains libres plus loin dans la fenetre
+    parcourue. Chaque candidat livre en coute 3 sondes (livraison, PR
+    mergee, couverture).
+    """
+    delivered = [_make_item(20000 + i, age_days=90 - i, idle=9, last=None)
+                  for i in range(n_delivered)]
+    free = [_make_item(21000 + i, age_days=60 - i, idle=4, last=None)
+            for i in range(n_free)]
+    return delivered + free
+
+
+def test_belt_saturated_head_serves_nothing_with_the_head_only_ceiling():
+    """Le defaut mesure : le plafond calcule sur la fenetre de TETE est
+    atteint avant la fin de la fenetre parcourue, et le tapis rend 0 grain
+    alors que des grains libres existent plus loin."""
+    pool = _saturated_head_pool()
+    args = _belt_args(grains=4)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), args, probe_budget=8 * 3 + 12,
+        delivered_probe=lambda n, lane=None: n < 21000,
+        merged_pr_probe=lambda n, lane=None: n < 21000,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [], (
+        "ce test verrouille le DEFAUT : sans plafond couvrant la fenetre, "
+        "le tapis rend 0 grain sur une tete saturee")
+    assert state["budget_hit"] is True
+
+
+def test_belt_ceiling_covering_the_service_window_serves_the_free_grains():
+    """#25920 -- le plafond de sondes doit COUVRIR la fenetre PARCOURUE.
+
+    Contre-positif du test precedent : avec un plafond qui couvre la
+    fenetre de service, le tapis rend les 4 grains LIBRES malgre les 36
+    livraisons en tete. Le plafond reste un plafond : au-dela, un
+    candidat non lu est ecarte « a sonder » (c2817, intact).
+    """
+    pool = _saturated_head_pool()
+    args = _belt_args(grains=4)
+    service_window = pig.belt_service_window(args, len(pool))
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), args, probe_budget=8 * 3 + 12,
+        service_window=service_window,
+        delivered_probe=lambda n, lane=None: n < 21000,
+        merged_pr_probe=lambda n, lane=None: n < 21000,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [21000, 21001, 21002, 21003], (
+        "le tapis doit rendre les grains libres de la fenetre parcourue")
+    assert state["budget_hit"] is False
+    assert not state.get("budget_unprobed")
+    assert state["probe_budget_ceiling"] >= service_window * 3
+
+
+def test_belt_ceiling_stays_a_ceiling_when_the_window_is_not_covered():
+    """Le plafond elargi ne doit PAS servir un candidat non lu : il reste
+    un plafond de COUT, fail-CLOSED comme le contrat c2817."""
+    pool = _saturated_head_pool(n_delivered=36, n_free=4)
+    args = _belt_args(grains=4)
+    # Fenetre de service amputee : le plafond ne couvre plus la fenetre.
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), args, probe_budget=8 * 3 + 12,
+        service_window=2,
+        delivered_probe=lambda n, lane=None: n < 21000,
+        merged_pr_probe=lambda n, lane=None: n < 21000,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == []
+    assert state["budget_hit"] is True
+    assert state["budget_unprobed"], (
+        "un candidat non lu doit etre ecarte, jamais servi")
 
 
 def test_belt_real_probe_serves_item_released_on_barrier(monkeypatch):

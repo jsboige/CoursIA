@@ -12771,7 +12771,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivery_event_probe=None,
                                 time_budget_s=None,
                                 gpu_probe=None,
-                                frozen_probe=None):
+                                frozen_probe=None,
+                                service_window=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -12861,12 +12862,35 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     son budget de run (echeance absolue, pas duree par appel) : c'est ce qui
     rend le mur du tapis deterministe au lieu de dependre du nombre de
     candidats bloques. ``None`` (defaut) = pas de mur, comportement d'avant.
+
+    ``service_window`` (#25920) est la fenetre que la boucle va parcourir
+    (`belt_service_window`). Quand il est fourni, le PLAFOND de sondes est
+    elargi pour COUVRIR cette fenetre : le plafond etait calcule sur la
+    fenetre de TETE (36 sondes pour `grains=4`), alors que la boucle parcourt
+    70 positions et que chaque candidat livre en coute 3 (livraison + PR
+    mergee + couverture). Sur une tete de tapis saturee de livraisons, le
+    plafond etait donc atteint bien avant la fin de la fenetre parcourue :
+    le tapis rendait 0 grain alors que des grains LIBRES existaient plus
+    loin dans la meme fenetre (mesure Hermes, review du 2026-11-12 sur
+    #25920). Le plafond est un PLAFOND, pas une depense -- la boucle
+    s'arrete des que `grains` grains sont servis -- l'elargissement ne
+    coute donc rien quand la tete est libre, et il reste borne par le mur
+    de temps de la boucle. ``None`` (defaut) = le plafond du caller est
+    respecte a la lettre (les tests du contrat c2817 s'appuient dessus).
     """
     budget = [int(probe_budget)]
+    if service_window is not None:
+        # Le plafond doit couvrir la fenetre PARCOURUE : trois sondes par
+        # position (livraison, PR mergee, couverture) plus la marge.
+        _cover = int(service_window) * 3 + 12
+        if _cover > budget[0]:
+            budget[0] = _cover
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
              "cover_failures": [], "time_budget_hit": False,
-             "frozen_unread": [], "frozen_filtered": 0}
+             "frozen_unread": [], "frozen_filtered": 0,
+             "probe_budget_ceiling": budget[0],
+             "probe_budget_requested": int(probe_budget)}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -15160,7 +15184,16 @@ def main(argv: list[str] | None = None) -> int:
                                         delivery_event_probe=delivery_event,
                                         time_budget_s=belt_time_remaining,
                                         gpu_probe=gpu_gate_probe,
-                                        frozen_probe=frozen_probe))
+                                        frozen_probe=frozen_probe,
+                                        # #25920 -- le plafond doit couvrir la
+                                        # fenetre PARCOURUE, pas seulement la
+                                        # tete : sinon une tete saturee de
+                                        # livraisons epuise le plafond avant
+                                        # la fin de la fenetre et le tapis rend
+                                        # 0 grain alors que des grains libres
+                                        # existent plus loin (mesure Hermes du
+                                        # 2026-11-12).
+                                        service_window=belt_claim_window))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
@@ -15238,6 +15271,14 @@ def main(argv: list[str] | None = None) -> int:
                       f"{_svc_extended} ; "
                       f"{belt_pick_state.get('pending_deliveries', 0)} "
                       f"livraison(s) en attente.")
+            # #25920 -- le plafond elargi est DIT : une lane qui lit
+            # « plafond atteint » doit pouvoir distinguer « la tete est
+            # saturee » de « la fenetre parcourue n'a pas ete couverte ».
+            _ceil = belt_pick_state.get("probe_budget_ceiling")
+            _req = belt_pick_state.get("probe_budget_requested")
+            if _ceil and _req and _ceil > _req:
+                print(f"   plafond de sondes : {_req} -> {_ceil} "
+                      f"(couvre la fenetre de service parcourue)")
             if belt_dead_signal.get("applied"):
                 print(f"   tetes mortes : {belt_dead_signal['moved']} issue(s) "
                       f"deja servie(s) a cette lane sans visite, passee(s) en "
