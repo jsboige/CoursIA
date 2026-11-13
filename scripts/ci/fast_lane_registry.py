@@ -4334,9 +4334,16 @@ TRANCHE44: list[Guard] = [
 # detecteur qui ne prouve pas qu'il tire est indiscernable d'un detecteur
 # debranche.
 # Limite documentee (meme limite que TRANCHE4, #22331/#22333) : `edited`
-# est deliberement absent des types pull_request d'always-on-guards.yml ;
-# un marqueur de body ajoute APRES le dernier push n'est re-evalue qu'au
-# push suivant, corrige par la lecture vivante du body a ce moment-la.
+# est deliberement absent des types pull_request d'always-on-guards.yml.
+# Le declencheur d'origine n'etait pas decoratif -- #20260
+# (`e43677ef895`) l'avait ajoute expres pour #20256, ou l'auteur qui
+# posait son marqueur apres le dernier push laissait le check rouge
+# jusqu'a un push sans rapport. La voie de levee SANS push reste le REJEU
+# du job : l'etape « Body live » relit le corps par API a l'execution, et
+# ce PR_BODY-la alimente PLAN_LOSS_PR_BODY a l'export. Un marqueur ajoute
+# apres le dernier push est donc pris en compte des le rejeu, sans commit
+# ni push ; seule la reevaluation AUTOMATIQUE sur edition seule est
+# perdue.
 # ---------------------------------------------------------------------------
 TRANCHE45: list[Guard] = [
     Guard(
