@@ -1336,6 +1336,66 @@ def test_sentinelle_failure_a_l_etape_de_test_garde_la_retenue(tmp_path):
     assert "test=test-non-identifie-dans-le-check" in contenu
 
 
+def test_sentinelle_reconnait_les_etapes_du_checkout_borne_t_k(tmp_path):
+    """T-K (#25510) : une panne du `git fetch --unshallow` est une panne
+    d'INFRASTRUCTURE, pas un verdict de code.
+
+    Les deux etapes du checkout borne portent le prefixe `T-K :`. Si la
+    sentinelle ne les reconnait pas, un `curl 28` sur le reseau retient
+    `main` au lieu de remonter au commit precedent -- exactement la panne
+    que la sentinelle T-J a ete creee pour ecarter.
+    """
+    tete = "1a" * 20
+    ancien = "2b" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(47)),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+        job_steps={"47": "T-K : ascendance de la tete + la base, sans les 1 606 branches"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert f"sha={tete}" not in contenu
+    assert f"sha={ancien}" in contenu
+
+
+def test_sentinelle_ne_prend_pas_le_prefixe_t_k_sans_le_deux_points(tmp_path):
+    """CONTROLE NEGATIF : le marqueur est `t-k :`, pas `t-k`.
+
+    Un nom d'etape qui porte `T-K` sans les deux points (une etape de
+    test du meme prefixe, un workflow nomme T-K) n'est PAS de l'infra : la
+    retenue doit etre conservee.
+    """
+    tete = "3c" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(48)),
+        },
+        job_steps={"48": "T-K tests du script"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
+
+
 def test_sentinelle_success_ne_lit_aucun_job(tmp_path):
     """Un `success` ne declenche aucune lecture de job (cout nul)."""
     tete = "e5" * 20
