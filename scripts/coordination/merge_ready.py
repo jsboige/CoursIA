@@ -280,6 +280,23 @@ COMBINED_PATH = SCRIPTS_DIR / "coordination" / "premerge_combined_check.py"
 COMBINED_DISABLE_ENV = "MERGE_READY_COMBINED_CHECK"
 REPO_ROOT = SCRIPTS_DIR.parent
 
+
+def _repo_relative(path: Path) -> str:
+    """Chemin d'organe RELATIF au depot, pour l'argv des sous-processus.
+
+    #26102 (repro ai-01 2026-11-13) : les argv absolus embarquent le chemin
+    du worktree de la machine. Un worktree nomme pour une PR (p. ex.
+    ``CoursIA-26102``) fait alors tripper toute assertion qui cherche le
+    NUMERO d'une autre PR dans les commandes enregistrees, et le journal
+    d'un meme run differe d'une machine a l'autre. Le couplage est double :
+    argv relatifs ici + ``cwd=REPO_ROOT`` epingle dans
+    ``SubprocessRunner.run`` -- les organes appeles resolvent leurs propres
+    chemins depuis ``__file__`` ou le cwd, jamais depuis cet argv.
+    Forme canonique en barres obliques (``as_posix``) : l'argv est identique
+    sous Windows et POSIX -- Python accepte les deux sur les deux OS.
+    """
+    return path.relative_to(REPO_ROOT).as_posix()
+
 # Parapluies et branches de campagne GELES par un veto user, exemption des
 # redressements comprise : definition et historique portes par le module
 # PARTAGE scripts/coordination/frozen_campaigns.py (importe ci-dessus -- les
@@ -410,6 +427,9 @@ class SubprocessRunner:
     """Runner reel : rc capture DIRECTEMENT (subprocess.returncode, jamais un pipe)."""
 
     def run(self, cmd: list[str], env: dict[str, str] | None = None) -> RunResult:
+        # cwd epingle a la racine du depot : les argv d'organes sont RELATIFS
+        # (cf. ``_repo_relative``) -- c'est ce qui les rend resolus ici, et le
+        # journal independant du chemin du worktree de la machine.
         proc = subprocess.run(
             cmd,
             capture_output=True,
@@ -417,6 +437,7 @@ class SubprocessRunner:
             encoding="utf-8",
             errors="replace",
             env=env,
+            cwd=REPO_ROOT,
         )
         return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
 
@@ -1081,8 +1102,10 @@ def coordinator_approval_oid(view: dict, runner: Runner | None = None,
                              gh_env: dict[str, str] | None = None) -> str | None:
     """Oid du commit que la DERNIERE voix du coordinateur approuve, ou None.
 
-    #17437 : la voix du coordinateur est le login humain OU son App
-    (``COORDINATOR_VOICES``). La preuve d'identite est TYPEE PAR LIGNE :
+    #17437 : la voix du coordinateur est le login humain seul
+    (``COORDINATOR_VOICES``) -- toute forme App y est refusee : une App de
+    machine est forgeable par la lane soeur (bloc justificatif au-dessus de
+    sa definition). La preuve d'identite est TYPEE PAR LIGNE :
     avec un runner, les reviews se relisent sur la surface REST typee
     (``pulls/N/reviews``, ``user.type`` par ligne) ; sans runner (lecture
     pure, tests), seules comptent les lignes deja typees du payload et
@@ -1242,7 +1265,7 @@ def lean_build_attestation_reason(
 
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     """Etape 4 : organe B.0. Retourne son rc (0 = clear), hors contrat -> arret."""
-    res = runner.run([sys.executable, str(NITS_PATH), str(pr)], env=gh_env)
+    res = runner.run([sys.executable, _repo_relative(NITS_PATH), str(pr)], env=gh_env)
     if res.returncode not in NITS_DOCUMENTED_RC:
         raise UnexpectedError(
             f"B.0 PR {pr} rc={res.returncode} hors contrat : "
@@ -1304,7 +1327,7 @@ def twin_collision_reason(
     # 0013) -- aucune n'etait visible de l'arbre de fusion, puisque aucune des
     # deux PRs n'etait mergee.
     claims_res = runner.run(
-        [sys.executable, str(TWIN_CLAIMS_PATH), "--json"]
+        [sys.executable, _repo_relative(TWIN_CLAIMS_PATH), "--json"]
     )
     if claims_res.returncode != 0:
         # « je n'ai pas pu lire » n'est pas « c'est propre » : skip dur, comme
@@ -1319,7 +1342,7 @@ def twin_collision_reason(
         return "twin-collision-unreadable:open-claims"
     try:
         res = runner.run(
-            [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
+            [sys.executable, _repo_relative(TWIN_PATH), "--repo", ".",
              "--base", "origin/main", "--head", head, "--merged", "--json",
              "--open-claims", claims_path, "--head-pr", str(pr)]
         )
@@ -1472,7 +1495,7 @@ def slot_reservation_reason(
     # pour la source `open_prs`. La voie rapide ne dispose pas de `gh`, ce
     # qui l'a forcee a `--offline` ; ici on en sert.
     res = runner.run(
-        [sys.executable, str(SLOT_PATH),
+        [sys.executable, _repo_relative(SLOT_PATH),
          "--base", "origin/main", "--head", head,
          "--exclude-pr", str(pr),
          "--json"],
@@ -1571,7 +1594,7 @@ def combined_tree_reason(
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
         return None
     res = runner.run(
-        [sys.executable, str(COMBINED_PATH), "--pr", str(pr), "--head", head,
+        [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr), "--head", head,
          "--json"],
         env=gh_env,
     )

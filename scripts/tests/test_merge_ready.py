@@ -787,6 +787,35 @@ def test_max_arrete_le_run(tmp_path):
     assert [row["pr"] for row in lines] == [101]
 
 
+def test_argv_organes_relatif_au_depot(tmp_path):
+    """#26102 : l'argv journalise ne depend pas du chemin du worktree.
+
+    Repro ai-01 2026-11-13 : ``test_max_arrete_le_run`` echouait depuis un
+    worktree nomme pour la PR (``CoursIA-26102``) -- l'assertion cherchait
+    « 102 » dans les commandes enregistrees et le CHEMIN ABSOLU de l'organe
+    invoque le contenait. La propriete « la seconde PR n'est pas evaluee »
+    tenait deja (bilan : 1 evaluee) ; le defaut reel etait le bruit machine
+    dans l'argv. Regression : les organes sont invoques par leur chemin
+    RELATIF au depot, quel que soit l'endroit ou vit le checkout.
+    """
+    runner = ScriptedRunner(prs=(101,))
+    rc, _, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    nits = [c for c in runner.cmds()
+            if len(c) > 1 and "check_unaddressed_nits.py" in c[1]]
+    assert nits, "l'organe B.0 doit etre invoque"
+    assert nits[0][1] == "scripts/check_unaddressed_nits.py", nits[0]
+    combined = [c for c in runner.cmds()
+                if len(c) > 1 and "premerge_combined_check.py" in c[1]]
+    assert combined, "l'organe premerge doit etre invoque"
+    assert combined[0][1] == "scripts/coordination/premerge_combined_check.py", combined[0]
+    # et aucun argv n'embarque un chemin absolu de la machine executante
+    for cmd in runner.cmds():
+        for tok in cmd[1:]:
+            assert not re.match(r"^[A-Za-z]:[\\/]", tok), cmd
+            assert not tok.startswith("/"), cmd
+
+
 def test_erreur_de_portee_generale_arrete_le_run(tmp_path):
     # #17672 point 3 : le fail-closed est PRESERVE pour ce qui frappe toute la
     # passe -- ici un jeton refuse (marqueur « bad credentials ») sur la
