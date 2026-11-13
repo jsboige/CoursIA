@@ -270,7 +270,7 @@ REGISTRE: tuple[Entree, ...] = (
                             "l'arbre 9f2ffff292b9",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@branche-fix-5081-coursia-py313-kernel")),
+                                        "@e7c3de1b80d0e6b40422307f52929d6af7b977b3")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
