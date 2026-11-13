@@ -29,6 +29,16 @@ _ARGUMENT_ANALYSIS_DIR = os.path.dirname(_THIS_DIR)
 if _ARGUMENT_ANALYSIS_DIR not in sys.path:
     sys.path.insert(0, _ARGUMENT_ANALYSIS_DIR)
 
+# Le module d'init Tweety est la SOURCE UNIQUE de la liste des chemins
+# candidats SPASS (tweety_init.spass_candidate_paths) : la sonde de ce test
+# l'importe pour que la detection du moteur et la garde du test ne divergent
+# jamais (sonde native modale).
+_TWEETY_DIR = os.path.normpath(os.path.join(_ARGUMENT_ANALYSIS_DIR, "..", "Tweety"))
+if _TWEETY_DIR not in sys.path:
+    sys.path.insert(0, _TWEETY_DIR)
+
+import tweety_init  # noqa: E402
+
 
 def _install_sk_mock() -> None:
     """Mock semantic_kernel si absent (meme strategie que les tests voisins)."""
@@ -255,6 +265,19 @@ def _tweety_jars_present() -> bool:
         return False
 
 
+def _spass_present() -> bool:
+    """SPASS detectable exactement comme le MOTEUR : en PATH, ou a l'un des
+    chemins candidats de ``tweety_init.spass_candidate_paths`` (SPASS 3.5 Linux
+    en racine de ``ext_tools/spass/`` + SPASS 3.0 Windows dans ``SPASS-3.0/``).
+    La sonde du test et la detection du moteur partagent la meme liste."""
+    if shutil.which("SPASS"):
+        return True
+    exe = ".exe" if os.name == "nt" else ""
+    base = os.path.join(_TWEETY_DIR, "ext_tools")
+    return any(os.path.isfile(str(p))
+               for p in tweety_init.spass_candidate_paths([base], exe))
+
+
 @pytest.mark.skipif(
     not _tweety_jars_present(),
     reason="jars Tweety absents : provisionner via "
@@ -318,11 +341,9 @@ asyncio.run(main())
 
 
 @pytest.mark.skipif(
-    not _tweety_jars_present() or not (shutil.which("SPASS") or os.path.isfile(
-        os.path.join(_ARGUMENT_ANALYSIS_DIR, "..", "Tweety", "ext_tools",
-                     "spass", "SPASS-3.0", "SPASS")
-    )),
-    reason="jars Tweety et SPASS requis pour la sonde native",
+    not _tweety_jars_present() or not _spass_present(),
+    reason="jars Tweety et SPASS requis pour la sonde native "
+    "(SPASS 3.5 Linux en ext_tools/spass/, 3.0 Windows en SPASS-3.0/)",
 )
 def test_real_modal_solver_through_kernel():
     import subprocess

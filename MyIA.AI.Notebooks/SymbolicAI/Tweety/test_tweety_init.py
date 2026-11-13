@@ -155,6 +155,40 @@ class TestDetectTools:
         assert t.EXTERNAL_TOOLS["EPROVER"] != ""
         assert "eprover" in t.EXTERNAL_TOOLS["EPROVER"]
 
+    def test_detect_spass_linux_top_level_from_ext_tools(self, tmp_path, monkeypatch, tools_snapshot):
+        # Linux : le provisionneur extrait spass35pclinux*.tgz dans ext_tools/spass/
+        # -> le binaire 3.5 vit au premier niveau (spass/SPASS), PAS dans SPASS-3.0/.
+        monkeypatch.chdir(tmp_path)
+        exe = tmp_path / "ext_tools" / "spass" / ("SPASS" + (".exe" if sys.platform == "win32" else ""))
+        exe.parent.mkdir(parents=True, exist_ok=True)
+        exe.write_text("# fake SPASS 3.5")
+        t.EXTERNAL_TOOLS["SPASS"] = ""
+        t._detect_tools()
+        assert t.EXTERNAL_TOOLS["SPASS"] != ""
+        assert "spass" in t.EXTERNAL_TOOLS["SPASS"]
+
+    def test_detect_spass_windows_versioned_from_ext_tools(self, tmp_path, monkeypatch, tools_snapshot):
+        # Windows : installation manuelle dans le dossier versionne spass/SPASS-3.0/.
+        # La branch Windows 3.0 reste probee (non supprimee par l'ajout Linux).
+        monkeypatch.chdir(tmp_path)
+        exe = (tmp_path / "ext_tools" / "spass" / "SPASS-3.0"
+               / ("SPASS" + (".exe" if sys.platform == "win32" else "")))
+        exe.parent.mkdir(parents=True, exist_ok=True)
+        exe.write_text("# fake SPASS 3.0")
+        t.EXTERNAL_TOOLS["SPASS"] = ""
+        t._detect_tools()
+        assert t.EXTERNAL_TOOLS["SPASS"] != ""
+        assert "SPASS-3.0" in t.EXTERNAL_TOOLS["SPASS"]
+
+    def test_spass_candidate_paths_lists_both_locations(self):
+        # La source unique ordonne : racine (Linux 3.5) puis dossier versionne
+        # (Windows 3.0), pour chaque base probee.
+        paths = t.spass_candidate_paths([Path("ext_tools")], ".exe")
+        assert paths == [
+            Path("ext_tools/spass/SPASS.exe"),
+            Path("ext_tools/spass/SPASS-3.0/SPASS.exe"),
+        ]
+
     def test_detect_tools_empty_env_leaves_unfound_empty(self, tmp_path, monkeypatch, tools_snapshot):
         # Aucun ext_tools, aucun outil sur PATH (cwd isole) -> les outils non
         # trouves restent vides (pas d'exception).
