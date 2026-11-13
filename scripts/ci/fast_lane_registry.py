@@ -2007,7 +2007,7 @@ TRANCHE19: list[Guard] = [
 #
 # Origine : reserve de revue Hermes sur #19260 -- « l'organe n'est cable nulle
 # part ». Le README de `docs/` reecrit par cette PR remplace le compte ecrit
-# (146) par l'invariant lui-meme, en citant `python scripts/check_docs_index.py`
+# (146) par l'invariant lui-meme, en citant `python scripts/ci/check_docs_index.py`
 # et son `exit 1`. Or `grep -rln check_docs_index .github/workflows/
 # scripts/ci/` rendait vide des deux cotes : l'invariant n'existait que quand un
 # humain pensait a l'executer. Si une revision supprimait une ligne d'index,
@@ -2038,12 +2038,12 @@ TRANCHE18: list[Guard] = [
         source=FAST_LANE_NATIVE,
         paths=[
             "docs/**",
-            "scripts/check_docs_index.py",
+            "scripts/ci/check_docs_index.py",
             "scripts/tests/test_check_docs_index.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
-        argv=["python", "scripts/check_docs_index.py"],
+        argv=["python", "scripts/ci/check_docs_index.py"],
         blocking=True,
         absorbed=True,
     ),
