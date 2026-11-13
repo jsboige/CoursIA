@@ -887,7 +887,7 @@ CONTENT_TAGS = {
     # `container_only: true`. These inherit the bbox of their parent block in
     # normal flow, so adding them does NOT inflate `n_elem` for slides
     # already counted via their parent P/LI/EM — the counter-test in
-    # `tests/test_scan_slidev_composition.py` covers the regression risk.
+    # `tests/test_slidev_canvas_contract.py` covers the regression risk.
     # `ABBR` is included because the deck-rendering layer uses it for
     # underlined glossary hits; without it, an inline abbreviation edge
     # cut would slip through.
@@ -1197,7 +1197,7 @@ def main():
         browser_version, [canvas_w, canvas_h], rendered_font_slides)
     out_str = json.dumps(report, ensure_ascii=False, indent=2)
     if args.out:
-        args.out.write_text(out_str, encoding="utf-8")
+        args.out.write_text(out_str, encoding="utf-8", newline="")
     print(out_str)
 
     if args.github_annotations:

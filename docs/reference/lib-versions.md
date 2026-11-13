@@ -1,5 +1,7 @@
 # Versions de bibliotheques chargees par les carnets
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Organe : `scripts/notebook_tools/check_lib_versions.py` — manifeste :
 `scripts/notebook_tools/lib_versions_manifest.json` — issue : #23073.
 
