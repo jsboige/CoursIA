@@ -754,7 +754,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
 
 
 # Saturation par zone d atterrissage (#13420) : l axe partition-proof que
-# le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
+# le compteur par issue ne peut pas porter. Voir scripts/coordination/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     BELT_WINDOW_DAYS,
@@ -10587,7 +10587,9 @@ DELIVERED_URN_PRIOR = 2.5
 AUDIT_17073_PRIOR = 2.0
 AUDIT_17073_MARKER = "[Audit #17073]"
 #: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
-#: neuf) est d'autant plus streme que le pool s'en eloigne.
+#: neuf) est d'autant plus streme que le pool s'en eloigne. Le veto dur
+#: (`creation_budget.VETO_ACTIF`) est leve depuis le 12/11 ; ce seuil reste
+#: le pivot de la ponderation douce, qui ne refuse jamais.
 EXPANSION_VETO_THRESHOLD = 400
 #: Plancher du poids d'expansion : un poids nul serait un REFUS, et le
 #: mandat du 12/10 l'interdit.
