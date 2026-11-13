@@ -24,6 +24,12 @@ DEUX VUES, NE PAS LES CONFONDRE :
    #16232 est MERGE avec une jambe rouge residuelle encore presente sur son
    head : pour un meme nom d'un meme app, le gate retient la plus recente.
 
+   UNE EXCEPTION, et elle est recente (#25510, tranche T-C) : une jambe
+   `skipped` ne remplace jamais une jambe anterieure non-skipped du meme nom.
+   Un job saute mesure rien du code, et `skipped` compte comme VERT : sous un
+   repli latest-wins simple, une edition de titre emettrait un `skipped` plus
+   recent que le verdict reel, et une PR rouge se debloquerait d'elle-meme.
+
 2. `residual_reds` : les jambes rouges ANCIENNES encore presentes sous un vert
    recent. Elles ne disparaissent PAS de la liste plate. Contre-preuve mesuree
    (#11532, CodeQL default setup) : une jambe rouge d'une suite distincte a
@@ -81,10 +87,29 @@ def normalize_leg(entry: dict) -> dict:
     }
 
 
+def _is_skipped(leg: dict) -> bool:
+    """Whether the normalized leg is a SKIPPED job.
+
+    A skipped job measured NOTHING about the code : it is the absence of a
+    verdict, not a verdict. `skipped` is nonetheless counted as a PASS
+    (`GREEN`), so it must never be read as the newest opinion about its name
+    (#25510, tranche T-C).
+    """
+    return (leg.get("conclusion") or "").lower() == "skipped"
+
+
 def fold_latest(legs: list[dict]) -> dict[str, dict]:
     """Derniere jambe par nom, semantique dedupe_latest (clee started_at puis
     id, monotones au niveau check-run -- #11416 : un rerun cree une entree
     fraiche d'id ET de started_at plus grands).
+
+    LE REPLI SUR LE SKIP (#25510, T-C) : une jambe `skipped` ne remplace JAMAIS
+    une jambe anterieure non-skipped du meme nom, sur la meme tete. Un job
+    saute (garde job-level, `paths:`) mesure rien, et `skipped` compte comme
+    VERT : sous un repli latest-wins simple, une edition de titre emettrait un
+    `skipped` plus recent que le verdict reel, et une PR ROUGE se
+    debloquerait d'elle-meme. Effet de bord fail-closed accepte : un rouge
+    reste affiche jusqu'au push suivant.
 
     La jambe rendue est la jambe BRUTE enrichie des champs canoniques
     (name/conclusion/started_at/id/details_url ecrasent les formes brutes) :
@@ -94,9 +119,20 @@ def fold_latest(legs: list[dict]) -> dict[str, dict]:
     best: dict[str, tuple[tuple, dict]] = {}
     for index, raw in enumerate(legs):
         leg = normalize_leg(raw)
-        key = (leg.get("started_at") or "", leg.get("id") or 0, index)
+        # La NATURE est en tete de la cle (verdict reel > `skipped`), donc le
+        # repli est independant de l'ordre d'arrivee : `check-runs` rend les
+        # entrees du plus recent au plus ancien.
+        key = (not _is_skipped(leg),
+               leg.get("started_at") or "",
+               leg.get("id") or 0,
+               index)
         current = best.get(leg["name"])
-        if current is None or key >= current[0]:
+        if current is None:
+            merged = dict(raw)
+            merged.update(leg)
+            best[leg["name"]] = (key, merged)
+            continue
+        if key >= current[0]:
             merged = dict(raw)
             merged.update(leg)
             best[leg["name"]] = (key, merged)
