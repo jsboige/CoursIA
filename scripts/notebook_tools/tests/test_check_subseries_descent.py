@@ -5,7 +5,9 @@ la resolution de liens (relatif, ./, fragment, %20, ../, http ignore, href),
 source de cellule liste ou chaine, exclusions (_output, checkpoints, _archive,
 dossier sans carnets), tete/accretions en comparaison entiere, chaine de
 ledger, plafond des traductions, metadata papermill informative, tri naturel
-du dernier carnet, carnets illisibles, codes de sortie de ``main``.
+du dernier carnet, carnets illisibles, codes de sortie de ``main``, capstone
+(en racine, en sous-serie soeur, nom sans lien, lien sans nom, couverture en
+carnets distincts) et option ``--exclude``.
 """
 from __future__ import annotations
 
@@ -22,6 +24,7 @@ assert spec.loader
 spec.loader.exec_module(check)
 
 SUB_REL = "MyIA.AI.Notebooks/Test/S-01-Topic"
+CAPSTONE = "S-02-Capstone-Sujet.ipynb"
 
 
 # ---------------------------------------------------------------------------
@@ -76,6 +79,13 @@ def _build_finished(tmp_path: Path, sub_name: str = "S-01-Topic") -> tuple[Path,
         root / "S-01-Alpha.ipynb",
         md_blocks=["[Descend](%s/S-01-a.ipynb)" % sub_name],
     )
+    _write_nb(
+        root / CAPSTONE,
+        md_blocks=[
+            "[a](%s/S-01-a.ipynb)" % sub_name,
+            "[b](%s/S-01-b.ipynb)" % sub_name,
+        ],
+    )
     _write_md(sub / "README.md", "# Sujet\n")
     _write_nb(sub / "S-01-a.ipynb")
     _write_nb(sub / "S-01-b.ipynb")
@@ -95,6 +105,12 @@ def _measure(root: Path, tmp_path: Path, ledger_rows=None, translation_lines=Non
 def _only_sub(data: dict) -> dict:
     assert len(data["sous_series"]) == 1
     return data["sous_series"][0]
+
+
+def _sub_named(data: dict, name: str) -> dict:
+    found = [ss for ss in data["sous_series"] if ss["nom"] == name]
+    assert len(found) == 1
+    return found[0]
 
 
 # ---------------------------------------------------------------------------
@@ -225,9 +241,11 @@ class TestFinie:
         assert ss["carnets"] == 3
         assert ss["readme"] is True
         assert ss["marche"] == 1
-        assert ss["descente"] == ["S-01-Alpha.ipynb"]
+        assert ss["descente"] == ["S-01-Alpha.ipynb", CAPSTONE]
         assert ss["remontee_dernier"] is True
         assert ss["remontee_total"] == 1
+        assert ss["capstones"] == [{"carnet": CAPSTONE, "couverture": 2}]
+        assert ss["consommateur_max"] == {"carnet": CAPSTONE, "couverture": 2}
         assert illisibles == []
         assert data["finies"] == 1
         assert data["total"] == 1
@@ -257,9 +275,107 @@ class TestManqueSlugs:
         assert ss["manques"] == ["marche"]
 
     def test_manque_descente(self, tmp_path):
+        # Aucun carnet de racine ne descend ; le capstone vit dans une
+        # sous-serie soeur (modele #18857), donc seule la descente manque.
         root, _sub = _build_finished(tmp_path)
         _write_nb(root / "S-01-Alpha.ipynb")
+        (root / CAPSTONE).unlink()
+        other = root / "T-01-Autre"
+        _write_md(root / "README.md", "[S](S-01-Topic/README.md) [T](T-01-Autre/README.md)\n")
+        _write_md(other / "README.md", "#\n")
+        _write_nb(
+            other / "T-08-Sujet-Capstone.ipynb",
+            md_blocks=[
+                "[a](../S-01-Topic/S-01-a.ipynb)",
+                "[b](../S-01-Topic/S-01-b.ipynb)",
+                "[c](../S-01-Topic/S-01-c.ipynb)",
+            ],
+        )
+        ss = _sub_named(_measure(root, tmp_path)[0], "S-01-Topic")
+        assert ss["descente"] == []
+        assert ss["capstones"] == [
+            {"carnet": "T-01-Autre/T-08-Sujet-Capstone.ipynb", "couverture": 3}
+        ]
+        assert ss["manques"] == ["descente"]
+
+    def test_manque_capstone_nom_sans_lien(self, tmp_path):
+        # Un carnet nomme Capstone qui ne cite aucun carnet de la sous-serie
+        # n'en est pas le capstone ; Alpha reste le plus large consommateur.
+        root, _sub = _build_finished(tmp_path)
+        _write_nb(root / CAPSTONE, md_blocks=["[Index](README.md)"])
         ss = _only_sub(_measure(root, tmp_path)[0])
+        assert ss["capstones"] == []
+        assert ss["consommateur_max"] == {"carnet": "S-01-Alpha.ipynb", "couverture": 1}
+        assert ss["manques"] == ["capstone"]
+        assert check._row_cells(ss)[6] == "non (max 1/3)"
+
+    def test_manque_capstone_lien_sans_nom(self, tmp_path):
+        # Une synthese qui cite toute la sous-serie sans s'appeler Capstone
+        # est rendue comme consommateur_max, pas comme capstone.
+        root, _sub = _build_finished(tmp_path)
+        (root / CAPSTONE).unlink()
+        _write_nb(
+            root / "S-03-Synthese.ipynb",
+            md_blocks=[
+                "[a](S-01-Topic/S-01-a.ipynb)",
+                "[b](S-01-Topic/S-01-b.ipynb)",
+                "[c](S-01-Topic/S-01-c.ipynb)",
+            ],
+        )
+        ss = _only_sub(_measure(root, tmp_path)[0])
+        assert ss["capstones"] == []
+        assert ss["consommateur_max"] == {"carnet": "S-03-Synthese.ipynb", "couverture": 3}
+        assert ss["manques"] == ["capstone"]
+
+    def test_capstone_interne_ne_compte_pas(self, tmp_path):
+        # Un carnet nomme Capstone DANS la sous-serie ne la consomme pas
+        # depuis la serie parente.
+        root, sub = _build_finished(tmp_path)
+        (root / CAPSTONE).unlink()
+        _write_nb(
+            sub / "S-01-bb-Capstone.ipynb",
+            md_blocks=["[a](S-01-a.ipynb)", "[b](S-01-b.ipynb)"],
+        )
+        ss = _only_sub(_measure(root, tmp_path)[0])
+        assert ss["capstones"] == []
+        assert "capstone" in ss["manques"]
+
+    def test_couverture_compte_les_carnets_distincts(self, tmp_path):
+        root, _sub = _build_finished(tmp_path)
+        _write_nb(
+            root / CAPSTONE,
+            md_blocks=[
+                "[a](S-01-Topic/S-01-a.ipynb)",
+                "[encore a](./S-01-Topic/S-01-a.ipynb#section)",
+                "[readme](S-01-Topic/README.md)",
+            ],
+        )
+        ss = _only_sub(_measure(root, tmp_path)[0])
+        assert ss["capstones"] == [{"carnet": CAPSTONE, "couverture": 1}]
+        assert ss["manques"] == []
+
+    def test_descente_sans_objet_sans_carnet_de_racine(self, tmp_path):
+        # Racine sans numerotation principale : deux familles soeurs, le
+        # capstone de l'une vit dans l'autre. La descente n'est pas un manque.
+        root = tmp_path / "MyIA.AI.Notebooks" / "Test"
+        a, b = root / "Alpha", root / "Beta"
+        _write_md(root / "README.md", "[A](Alpha/README.md) [B](Beta/README.md)\n")
+        _write_md(a / "README.md", "#\n")
+        _write_md(b / "README.md", "#\n")
+        _write_nb(a / "Alpha-01-x.ipynb", md_blocks=["[Retour](../README.md)"])
+        _write_nb(
+            b / "Beta-08-Alpha-Capstone.ipynb",
+            md_blocks=["[x](../Alpha/Alpha-01-x.ipynb)", "[Retour](../README.md)"],
+        )
+        data, _ = _measure(root, tmp_path)
+        assert data["racine_carnets"] == 0
+        ss = _sub_named(data, "Alpha")
+        assert ss["descente"] is None
+        assert ss["manques"] == []
+        assert check._row_cells(ss)[4] == "n/a"
+        # Des qu'un carnet de racine existe sans descendre, le manque revient.
+        _write_nb(root / "Test-01-Intro.ipynb")
+        ss = _sub_named(_measure(root, tmp_path)[0], "Alpha")
         assert ss["descente"] == []
         assert ss["manques"] == ["descente"]
 
@@ -343,7 +459,7 @@ class TestTeteAccretions:
         assert ss["tete_racine"] is None
         assert ss["accretions_racine"] is None
         cells = check._row_cells(ss)
-        assert cells[6] == "n/a"
+        assert cells[7] == "n/a"
 
 
 # ---------------------------------------------------------------------------
@@ -548,6 +664,8 @@ class TestMain:
             "descente",
             "remontee_dernier",
             "remontee_total",
+            "capstones",
+            "consommateur_max",
             "tete_racine",
             "accretions_racine",
             "ledger_lignes",
@@ -569,11 +687,23 @@ class TestMain:
         assert rc == 0
         md = capsys.readouterr().out
         assert "**MyIA.AI.Notebooks/Test** — 1/1 sous-series finies" in md
-        assert "| Sous-serie | Carnets | README | Marche | Descente | Remontee |" in md
-        assert "| S-01-Topic | 3 | oui | 1 | 1 | oui |" in md
+        assert "| Sous-serie | Carnets | README | Marche | Descente | Remontee | Capstone |" in md
+        assert "| S-01-Topic | 3 | oui | 1 | 2 | oui | oui (2/3) |" in md
         rc = check.main(["--root", "MyIA.AI.Notebooks/Test", "--repo-root", str(tmp_path)])
         assert rc == 0
         text = capsys.readouterr().out
         assert "Sous-serie" in text
         assert "1/1 sous-series finies" in text
         assert "S-01-Topic" in text
+
+    def test_exclude_retire_un_dossier_du_recensement(self, tmp_path, capsys):
+        root, _sub = _build_finished(tmp_path)
+        _write_nb(root / "service" / "outil.ipynb")
+        base = ["--root", "MyIA.AI.Notebooks/Test", "--repo-root", str(tmp_path), "--json"]
+        assert check.main(base) == 0
+        roots = json.loads(capsys.readouterr().out)["roots"]
+        assert [ss["nom"] for ss in roots[0]["sous_series"]] == ["S-01-Topic", "service"]
+        assert check.main(base + ["--exclude", "service", "--strict"]) == 0
+        rd = json.loads(capsys.readouterr().out)["roots"][0]
+        assert [ss["nom"] for ss in rd["sous_series"]] == ["S-01-Topic"]
+        assert rd["finies"] == rd["total"] == 1

@@ -8,9 +8,14 @@ manque a la descente :
 - ``readme`` : la sous-serie a-t-elle un README ;
 - ``marche`` : le README de la serie racine contient-il un lien vers elle ;
 - ``descente`` : un carnet de la numerotation principale de la racine
-  contient-il un lien qui descend vers elle ;
+  contient-il un lien qui descend vers elle (sans objet quand la racine ne
+  porte aucun carnet : il n'y a pas de numerotation d'ou descendre) ;
 - ``remontee`` : le dernier carnet de la sous-serie remonte-t-il vers le
   README racine ou un carnet de racine ;
+- ``capstone`` : un carnet de la serie, hors de la sous-serie (en racine ou
+  dans une sous-serie soeur), dont le nom contient ``Capstone``, cite-t-il au
+  moins un carnet de la sous-serie (regle 6 de #5081 : le capstone vit dans
+  la serie parente et consomme la sous-serie ; modele livre : #18857) ;
 - ``ledger`` : le ledger de renommage pointe-t-il vers des cibles disparues ;
 - ``traductions`` : les memoires de traduction citent-elles encore un ancien
   nom de fichier renomme.
@@ -18,10 +23,14 @@ manque a la descente :
 Consultatif : lecture seule, jamais une gate CI. Sert les issues #20298,
 #20316 et #19297.
 
-Ce que cet organe NE certifie PAS : il ne juge pas si un carnet descendant
-est un vrai capstone (il constate seulement qu'un lien existe), et il ne lit
-pas les cellules de code des carnets -- seules les cellules markdown sont
-parcourues pour les liens.
+Ce que cet organe NE certifie PAS : la dimension ``capstone`` est une
+convention de nommage plus un lien. Elle ne dit pas que le carnet consomme
+reellement la sous-serie (il peut n'en citer qu'un carnet : la couverture est
+rendue a cote), ni qu'un carnet de synthese nomme autrement n'en tient pas
+lieu -- ``consommateur_max`` nomme le carnet exterieur qui cite le plus de
+carnets de la sous-serie, pour que le lecteur tranche. Il ne lit pas les
+cellules de code des carnets : seules les cellules markdown sont parcourues
+pour les liens.
 """
 from __future__ import annotations
 
@@ -49,9 +58,19 @@ HREF_RE = re.compile(r'href="([^"]+)"')
 NOM_NU_RE = re.compile(r"^(?:[A-Za-z]+-)?\d+[a-z]?$")
 PREFIXED_DIR_RE = re.compile(r"^(?P<prefix>[A-Za-z]+)-(?P<num>\d+)-.+$")
 ROOT_NB_NAME_RE = re.compile(r"^(?P<prefix>[A-Za-z]+)-(?P<num>\d+)(?P<accretion>[a-z]*)-")
+CAPSTONE_NAME_RE = re.compile(r"capstone", re.IGNORECASE)
 
 # Ordre fixe des slugs du champ ``manques``.
-MANQUE_SLUGS = ("readme", "nom-nu", "marche", "descente", "remontee", "ledger", "traductions")
+MANQUE_SLUGS = (
+    "readme",
+    "nom-nu",
+    "marche",
+    "descente",
+    "remontee",
+    "capstone",
+    "ledger",
+    "traductions",
+)
 
 
 # ---------------------------------------------------------------------------
@@ -254,8 +273,14 @@ def measure_subseries(
     translation_lines: dict[str, list[str]],
     repo_root: Path,
     illisibles: list[str],
+    series_nb_links: dict[str, list[str]] | None = None,
 ) -> dict[str, Any]:
-    """Mesure toutes les dimensions d'une sous-serie."""
+    """Mesure toutes les dimensions d'une sous-serie.
+
+    ``series_nb_links`` : liens de tous les carnets de la serie (racine et
+    sous-series soeurs), cle = chemin relatif a ``root_dir``. Absent : seuls
+    les carnets de racine sont candidats au capstone.
+    """
     sub_name = sub_dir.name
     sub_notebooks = list_direct_notebooks(sub_dir)
 
@@ -269,13 +294,18 @@ def measure_subseries(
     # Dimension 4 : marche depuis le README racine.
     marche = sum(1 for target in root_readme_links if _within(target, sub_dir))
 
-    # Dimension 5 : descente depuis un carnet de racine.
-    descente = [
-        name
-        for name, links in root_nb_links.items()
-        if any(_within(target, sub_dir) for target in links)
-    ]
-    descente.sort(key=natural_key)
+    # Dimension 5 : descente depuis un carnet de racine. Sans carnet en
+    # racine, la dimension est sans objet (None), pas un manque.
+    descente: list[str] | None
+    if root_nb_links:
+        descente = [
+            name
+            for name, links in root_nb_links.items()
+            if any(_within(target, sub_dir) for target in links)
+        ]
+        descente.sort(key=natural_key)
+    else:
+        descente = None
 
     # Dimension 6 : remontee depuis les carnets de la sous-serie.
     root_readme_canon = _canon(root_dir / "README.md")
@@ -297,6 +327,31 @@ def measure_subseries(
             remontee_total += 1
             if nb_path.name == last_name:
                 remontee_dernier = True
+
+    # Dimension 6 bis : capstone. Candidats = carnets de la serie hors de la
+    # sous-serie ; chacun est compte par le nombre de carnets DISTINCTS de la
+    # sous-serie qu'il cite.
+    if series_nb_links is None:
+        series_nb_links = dict(root_nb_links)
+    sub_canon = {_canon(p) for p in sub_notebooks}
+    consommateurs: list[tuple[int, str]] = []
+    for rel_name, links in series_nb_links.items():
+        if _within(root_dir / rel_name, sub_dir):
+            continue
+        cited = {_canon(target) for target in links} & sub_canon
+        if cited:
+            consommateurs.append((len(cited), rel_name))
+    consommateurs.sort(key=lambda item: (-item[0], natural_key(item[1])))
+    capstones = [
+        {"carnet": rel_name, "couverture": count}
+        for count, rel_name in consommateurs
+        if CAPSTONE_NAME_RE.search(os.path.basename(rel_name))
+    ]
+    consommateur_max = (
+        {"carnet": consommateurs[0][1], "couverture": consommateurs[0][0]}
+        if consommateurs
+        else None
+    )
 
     # Dimension 7 : tete et accretions en racine (comparees en entiers).
     dir_match = PREFIXED_DIR_RE.match(sub_name)
@@ -363,8 +418,9 @@ def measure_subseries(
         "readme": not has_readme,
         "nom-nu": nom_nu,
         "marche": marche == 0,
-        "descente": not descente,
+        "descente": descente is not None and not descente,
         "remontee": not remontee_dernier,
+        "capstone": not capstones,
         "ledger": bool(ledger_cibles_disparues),
         "traductions": traductions_perimees_total > 0,
     }
@@ -380,6 +436,8 @@ def measure_subseries(
         "descente": descente,
         "remontee_dernier": remontee_dernier,
         "remontee_total": remontee_total,
+        "capstones": capstones,
+        "consommateur_max": consommateur_max,
         "tete_racine": tete_racine,
         "accretions_racine": accretions_racine,
         "ledger_lignes": ledger_lignes,
@@ -397,8 +455,13 @@ def measure_root(
     repo_root: Path,
     ledger_rows: list[dict[str, str]],
     translation_lines: dict[str, list[str]],
+    exclude: frozenset[str] = frozenset(),
 ) -> tuple[dict[str, Any], list[str]]:
-    """Mesure une serie racine ; renvoie (donnees, carnets illisibles)."""
+    """Mesure une serie racine ; renvoie (donnees, carnets illisibles).
+
+    ``exclude`` : noms de sous-dossiers directs a ne pas compter comme
+    sous-series (un dossier de service qui porte un carnet, par exemple).
+    """
     illisibles: list[str] = []
     root_notebooks = list_direct_notebooks(root_dir)
 
@@ -423,8 +486,20 @@ def measure_root(
     subdirs = [
         p
         for p in sorted(root_dir.iterdir(), key=lambda p: natural_key(p.name))
-        if is_subseries_dir(p)
+        if is_subseries_dir(p) and p.name not in exclude
     ]
+
+    # Liens de tous les carnets de la serie (capstone) : racine + sous-series.
+    # Un carnet illisible est signale par la mesure de sa sous-serie.
+    series_nb_links: dict[str, list[str]] = dict(root_nb_links)
+    for sub in subdirs:
+        for nb_path in list_direct_notebooks(sub):
+            nb = load_notebook(nb_path)
+            rel_name = "%s/%s" % (sub.name, nb_path.name)
+            series_nb_links[rel_name] = (
+                extract_links(notebook_markdown(nb), sub) if nb is not None else []
+            )
+
     sous_series = [
         measure_subseries(
             sub_dir=p,
@@ -436,6 +511,7 @@ def measure_root(
             translation_lines=translation_lines,
             repo_root=repo_root,
             illisibles=illisibles,
+            series_nb_links=series_nb_links,
         )
         for p in subdirs
     ]
@@ -462,6 +538,7 @@ HEADERS = [
     "Marche",
     "Descente",
     "Remontee",
+    "Capstone",
     "Accretions en racine",
     "Ledger",
     "Traductions",
@@ -473,6 +550,12 @@ def _row_cells(ss: dict[str, Any]) -> list[str]:
     """Cellules texte/markdown d'une ligne de sous-serie."""
     readme = "oui" if ss["readme"] else "non"
     remontee = "oui" if ss["remontee_dernier"] else "non"
+    if ss["capstones"]:
+        capstone = "oui (%d/%d)" % (ss["capstones"][0]["couverture"], ss["carnets"])
+    elif ss["consommateur_max"]:
+        capstone = "non (max %d/%d)" % (ss["consommateur_max"]["couverture"], ss["carnets"])
+    else:
+        capstone = "non"
     if ss["accretions_racine"] is None:
         accretions = "n/a"
     else:
@@ -486,8 +569,9 @@ def _row_cells(ss: dict[str, Any]) -> list[str]:
         str(ss["carnets"]),
         readme,
         str(ss["marche"]),
-        str(len(ss["descente"])),
+        "n/a" if ss["descente"] is None else str(len(ss["descente"])),
         remontee,
+        capstone,
         accretions,
         ledger,
         str(ss["traductions_perimees_total"]),
@@ -572,6 +656,13 @@ def main(argv: list[str] | None = None) -> int:
         default=TRANSLATIONS_DEFAULT,
         help="repertoire des memoires de traduction, relatif au repo racine",
     )
+    parser.add_argument(
+        "--exclude",
+        action="append",
+        default=[],
+        metavar="NOM",
+        help="sous-dossier direct a ne pas compter comme sous-serie (repeter)",
+    )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--json", action="store_true", help="sortie machine JSON")
     group.add_argument("--markdown", action="store_true", help="tableau markdown par racine")
@@ -596,7 +687,7 @@ def main(argv: list[str] | None = None) -> int:
             print("erreur : --root %s n'est pas un repertoire" % raw, file=sys.stderr)
             return 2
         data, root_illisibles = measure_root(
-            candidate, repo_root, ledger_rows, translation_lines
+            candidate, repo_root, ledger_rows, translation_lines, frozenset(args.exclude)
         )
         data["root"] = Path(raw).as_posix()
         roots_data.append(data)
