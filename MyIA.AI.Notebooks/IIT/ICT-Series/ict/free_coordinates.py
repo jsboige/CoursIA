@@ -33,6 +33,7 @@ fourni par l'appelant. Aucune dependance hors numpy.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field, replace
 
 import numpy as np
@@ -525,14 +526,14 @@ def classer_proxys(
     (nombre de classes d'actions nouvelles) ; ``None`` la pose egale a
     ``d_a_t`` (lecture brute, comportement historique).
 
-    - ``nouveau``   : l'espace change reellement (``O_t > 0`` et ``dA_t > 0``)
+    - ``nouveau``   : l'espace change reellement (``O_t > 0`` et ``dA_t_marg > 0``)
       ET le coup survit au retrait de son instigateur (``institutionnalisation > 0``) ;
     - ``nouveau (renommage actif)`` : des descripteurs nouveaux dont les
       CLASSES sont nouvelles sous quotient (``dA_t > 0``, ``dA_t_marg > 0``,
       ``O_t = 0``) — la copie change la dynamique de fond, ce n'est pas du
       vernis ;
     - ``ornamental`` : un concept nouveau qui n'ouvre RIEN (``O_t > 0``,
-      ``dA_t = 0``) — du verbiage, detecte par le garde-fou ``Delta A_t`` ;
+      ``dA_t_marg = 0``) — du verbiage, detecte par le garde-fou ``Delta A_t`` ;
     - ``latent``    : l'espace ne change pas sous quotient (``O_t = 0``,
       ``dA_t_marg = 0``) mais la coordonnee preexistante est activee
       (``P(R) marginalisee > eps``) ;
@@ -543,7 +544,7 @@ def classer_proxys(
       sous le quotient — c'est le cas central de la strate.
     """
     d_marg = d_a_t if d_a_t_marg is None else d_a_t_marg
-    if o_t > 0 and d_a_t > 0:
+    if o_t > 0 and d_marg > 0:
         return "nouveau" if institutionalisation > 0 else "nouveau (non institutionnalise)"
     if o_t > 0:
         return "ornamental (concept sans action ouverte)"
@@ -641,8 +642,10 @@ def bancher_mecanisme(
     o_t = expansion_ontology(g0, g1)
     d_a_t = political_opening(g0, g1)
     c_t = non_canonicity(g0, candidate_extensions, equivalence)
+    # Les lectures brute et quotient reutilisent les memes trajectoires.
+    paired_rng = deepcopy(rng)
     p_r = performative_power(g1, g0, horizon, n_sim, rng)
-    p_r_marg = performative_power(g1, g0, horizon, n_sim, rng, equivalence)
+    p_r_marg = performative_power(g1, g0, horizon, n_sim, paired_rng, equivalence)
     inst = institutionalization(g1, eta, horizon, rng)
     i_r = irreversibility_debt(eta)
     return BenchVerdict(
