@@ -3748,6 +3748,23 @@ theorem hcap_of_period_span {T i : Nat} (hTi : T = 2 ^ i) (g : Grid)
     ⟨(gridToMacroCellWithOffset (evolve j g)).2.level - i, by omega⟩
   rw [hTi, hm, pow_add]
   exact ⟨2 ^ m, by ring⟩
+/-- **L2 assemblee pour `period_span` — corollaire de reduction (tranche 25).**
+    Une MacroCell dont la grille rendue a l'origine est `T`-periodique dyadique
+    (`T = 2 ^ i`) et dont chaque phase s'etale sur au moins `2 ^ i` (le temoin
+    de niveau de la reconstruction) satisfait l'egalite Hashlife a tout horizon
+    `2 ^ k` sous `centralCorrect` : le maillon `hcap_of_period_span` releve la
+    classe en `hcap`, la machine L2 (`hashlife_correct_margin_of_hcap`,
+    sorry-free) fait le reste. Complete la tour dyadique du maillon 3 cote
+    enonce-cadre. -/
+theorem hashlife_correct_margin_of_period_span (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T i : Nat} (hTi : T = 2 ^ i)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0))
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s (c.toGrid (0, 0)) ∧
+      q ∈ evolve s (c.toGrid (0, 0)) ∧ 2 ^ i ≤ chebDist p q) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_period_span hTi _ (canonical_sortDedup _) hper hspan t)
+
 
 /-- **hcap des unions périodiques dégénérées — le maillon 4.** Une union
     `g₁ ++ g₂` dont la seconde partie est vide se réduit à sa partie porteuse
@@ -4218,6 +4235,28 @@ theorem hcap_of_period_mod_of_box (g : Grid) (hg : Canonical g) {T : Nat}
     ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true :=
   hcap_of_period_mod g hg hT0 hper
     (hwin_of_orbit_box hT0 g hper a₁ a₂ b₁ b₂ hbox hframe)
+/-- **L2 assemblee pour `period_mod_of_box` — corollaire de reduction (tranche
+    25).** Meme decharge pour la classe de la tranche 15 : un oscillateur
+    `T`-periodique dont l'orbite vit dans une boite que contient le cadre de
+    chaque phase est couvert par `hcap_of_period_mod_of_box` ; l'egalite
+    Hashlife a tout horizon `2 ^ k` suit sous `centralCorrect`, sans sorry. -/
+theorem hashlife_correct_margin_of_period_mod_of_box (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T : Nat} (hT0 : 0 < T)
+    (hper : evolve T (c.toGrid (0, 0)) = c.toGrid (0, 0)) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j (c.toGrid (0, 0)),
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (c.toGrid (0, 0)))).2.level : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) :=
+  hashlife_correct_margin_of_hcap c k h_central
+    (fun t _ => hcap_of_period_mod_of_box _ (canonical_sortDedup _) hT0 hper
+      a₁ a₂ b₁ b₂ hbox hframe t)
+
 
 /-- **hcap des unions mixtes par boîte statique.** La même décharge pour la
     classe hétérogène de la tranche 15 : une union `T`-périodique de deux
@@ -4244,6 +4283,36 @@ theorem hcap_of_union_mixed_of_box {T T₁ T₂ : Nat} (hT : 0 < T)
     evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
   exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
     (hwin_of_orbit_box hT (g₁ ++ g₂) hperU a₁ a₂ b₁ b₂ hbox hframe)
+/-- **L2 assemblee pour `union_mixed_of_box` — corollaire de reduction (tranche
+    25).** Une MacroCell dont la grille rendue a l'origine se scinde en deux
+    oscillateurs de periodes distinctes `T₁ ∣ T`, `T₂ ∣ T`, 3-separes, dont
+    l'union vit dans une boite contenue par le cadre de chaque phase, satisfait
+    l'egalite Hashlife a tout horizon `2 ^ k` sous `centralCorrect` — le
+    maillon `hcap_of_union_mixed_of_box` releve la classe heterogene de la
+    tranche 15 en `hcap`, sans sorry. -/
+theorem hashlife_correct_margin_of_union_mixed_of_box (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j (g₁ ++ g₂),
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_mixed_of_box hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
+    a₁ a₂ b₁ b₂ hbox hframe t
+
 
 /-! ### Tranche 24 — capture par boîte statique du demi-cadre médian (apériodique)
 
