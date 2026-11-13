@@ -43,6 +43,7 @@ Run : python -m pytest scripts/tests/test_validate_lean_setup.py
 """
 
 import importlib.util
+from types import ModuleType
 import io
 import json
 import sys
@@ -201,11 +202,13 @@ def test_kernel_drives_wsl_reads_the_registered_argv(kernel_check, tmp_path):
 # --- Defaut 4 : le nom de module du paquet --------------------------------
 
 
-def test_python_dotenv_is_checked_under_its_module_name(validator, tmp_path, monkeypatch):
+def test_python_dotenv_is_checked_under_its_module_name(validator, monkeypatch):
     """Controle POSITIF : un paquet `python-dotenv` installe est vu installe."""
-    (tmp_path / "dotenv.py").write_text("__version__ = '1.2.4'\n", encoding="utf-8")
-    monkeypatch.syspath_prepend(str(tmp_path))
-    monkeypatch.delitem(sys.modules, "dotenv", raising=False)
+    # Enregistrer le remplacement, meme si dotenv n'etait pas encore importe,
+    # pour que le teardown retire le faux module ou restaure le module reel.
+    fake_dotenv = ModuleType("dotenv")
+    fake_dotenv.__version__ = "1.2.4"
+    monkeypatch.setitem(sys.modules, "dotenv", fake_dotenv)
     assert validator.check_python_package("python-dotenv") is True
 
 
