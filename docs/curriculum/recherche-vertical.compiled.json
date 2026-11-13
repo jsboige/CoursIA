@@ -621,7 +621,7 @@
       ],
       "notebooks": [
         {
-          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb",
+          "path": "Probas/DecisionTheory/Causal-Bridges/Causalite-01-Calcul-Do-Python.ipynb",
           "title": "Du graphe causal au do-calculus — le pont entre les quatre séries causales",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -634,7 +634,7 @@
           }
         },
         {
-          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
+          "path": "Probas/DecisionTheory/Causal-Bridges/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb",
           "title": "CausalBridges-02 — Exiger un estimand : l'identification causale avant le chiffre",
           "duration_minutes": 30,
           "kernel": "Python 3",
@@ -647,7 +647,7 @@
           }
         },
         {
-          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb",
+          "path": "Probas/DecisionTheory/Causal-Bridges/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb",
           "title": "CausalBridges-03 — Le contrefactuel individuel : quand l'effet moyen cache tout",
           "duration_minutes": 30,
           "kernel": "Python 3",
@@ -660,7 +660,7 @@
           }
         },
         {
-          "path": "Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb",
+          "path": "Probas/DecisionTheory/Causal-Bridges/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb",
           "title": "CausalBridges-05 — Le confondeur non observé : sensibilité, pas certitude",
           "duration_minutes": 45,
           "kernel": "Python 3 (coursia-ml-training)",

@@ -18112,7 +18112,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-L
 
 Ce notebook est le versant **explication prédictive** ; le dépôt couvre par ailleurs le versant **causal**, et les deux se répondent :
 
-- [Causal-Bridges](../../../Probas/DecisionTheory/Causal-Bridges/README.md) — do-calculus, DoWhy de bout en bout : [DoWhy-2-Contrefactuel-Individuel](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb) fait sur données causales ce que DiCE fait sur features indépendantes — la comparaison des deux démarches est le meilleur exercice de lecture critique des contrefactuels.
+- [Causal-Bridges](../../../Probas/DecisionTheory/Causal-Bridges/README.md) — do-calculus, DoWhy de bout en bout : [DoWhy-2-Contrefactuel-Individuel](../../../Probas/DecisionTheory/Causal-Bridges/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb) fait sur données causales ce que DiCE fait sur features indépendantes — la comparaison des deux démarches est le meilleur exercice de lecture critique des contrefactuels.
 - [PyMC-05-Causal-Inference](../../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) — inférence causale bayésienne : estimer un effet, avec incertitude, dans un graphe.
 - [Infer-05-Causal-Inference](../../../Probas/Infer/Infer-05-Causal-Inference.ipynb) — les fondations : corrélations, con founders, identification.
 - [Tweety-11-Causal-Python](../../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) — raisonnement causal symbolique (argumentation causale côté Tweety).
@@ -18229,8 +18229,8 @@ Ce notebook creuse un point que **2.14 effleure et que la litterature XAI confon
 **Socle du depot** (jonction XAI <-> causal) :
 
 - [2.14-Explicabilite-SHAP-LIME-Contrefactuels](2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) — la base XAI (SHAP Tree/Kernel, LIME et contrefactuels DiCE)
-- [CausalBridges-01-Do-Calculus.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — do-calculus Bareinboim-Pearl R-90 et médiation contrefactuelle.
-- [CausalBridges-01-Do-Calculus.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — jonction do-calculus ≅ Shapley conditionnelle.
+- [Causalite-01-Calcul-Do-Python.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/Causalite-01-Calcul-Do-Python.ipynb) — do-calculus Bareinboim-Pearl R-90 et médiation contrefactuelle.
+- [Causalite-01-Calcul-Do-Python.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/Causalite-01-Calcul-Do-Python.ipynb) — jonction do-calculus ≅ Shapley conditionnelle.
 - [Causal-Bridges](../../../Probas/DecisionTheory/Causal-Bridges/README.md) — versant causal pur (DoWhy, contrefactuels sur DAG)
 ",,,,,,,,67b905f3759d0aa9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb,67d83cda,markdown,fr,5421b5fddf28891b,"## Garde-fous d'honnêteté (cf [`verify-before-claiming.md`](../../../../.claude/rules/verify-before-claiming.md))
@@ -18477,7 +18477,7 @@ print(""Contrefactuels DiCE pour"", x_test.iloc[0].to_dict())
 print(cf_df.to_string(index=False))",,,,,,,,1a9e481944a23755,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb,9d935896,markdown,fr,3f80fa169301af67,"**Lecture.** Les contrefactuels montrent **comment** la prediction peut changer (ex : « age=42 au lieu de 28 »). Mais ils ne disent pas **pourquoi causalement** — un contrefactuel `age=42` n'est **pas** une intervention $do(\text{age}=42)$ au sens de Pearl : il presuppose que tout le reste reste fixe, ce que le DAG ne permet pas forcement (si `age -> credit_amount`, fixer `age=42` **doit** aussi ajuster `credit_amount`).
 
-C'est la frontiere que **Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb** explore avec les graphes causaux structures.",,,,,,,,3f80fa169301af67,,,,,,,,,,,,,,,
+C'est la frontiere que **Causal-Bridges/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb** explore avec les graphes causaux structures.",,,,,,,,3f80fa169301af67,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb,fd45a3cb,markdown,fr,ac3708743e2db458,"## 7bis. Counterfactual SHAP : le niveau 3 d'attribution (Bareinboim thm 6.2.6)
 
 Le notebook s'arrete au barreau 2 (marginal vs conditionnel) et mentionne DiCE (section 7) en precisant que ce dernier ""n'est pas une intervention causale"". **Bareinboim thm 6.2.6** (*Causal Artificial Intelligence*, 2026) definit un **troisieme objet** : le **counterfactual SHAP**, qui attribue les responsabilites sur un contrefactuel $Y_{x}(u)$ (couche 3 de l'echelle causale de Pearl), par opposition au contrefactuel DiCE qui cherche un **voisin realiste** mais sans engagement causal.
@@ -18493,7 +18493,7 @@ La difference pratique : **memes features $X$ peuvent avoir des attributions dif
 
 **Ce que cette section montre.** Une **approximation pedagogique** : on prend un contrefactuel $x'$ (en modifiant `age` de +14 ans), on evalue le modele sur $x'$, et on compare la **somme des attributions conditionnelles (Tree SHAP)** au **gap contrefactuel** $f(x') - f(x^*)$. Ce n'est pas le counterfactual SHAP au sens formel Bareinboim thm 6.2.6 (qui necessite le contrefactuel $Y_{x'}(u)$ sur le DAG), mais cela revele la **meme structure** : l'attribution sur le contrefactuel n'est pas la prediction, et la decomposition n'est pas invariante par translation de feature.
 
-**Note methodologique.** DiCE (section 7) reste pertinent pour la **generation de voisins realistes** ; Counterfactual SHAP (cette section) pour l'**attribution causale au contrefactuel**. Les deux sont des outils du niveau 3 mais avec des garanties differentes : DiCE optimise une distance dans l'espace des features, Counterfactual SHAP decompose une difference causale. La section 8 (Ponts) renvoie au notebook `CausalBridges-01-Do-Calculus.ipynb` pour l'estimation rigoureuse de $Y_{x}(u)$ via do-calculus.
+**Note methodologique.** DiCE (section 7) reste pertinent pour la **generation de voisins realistes** ; Counterfactual SHAP (cette section) pour l'**attribution causale au contrefactuel**. Les deux sont des outils du niveau 3 mais avec des garanties differentes : DiCE optimise une distance dans l'espace des features, Counterfactual SHAP decompose une difference causale. La section 8 (Ponts) renvoie au notebook `Causalite-01-Calcul-Do-Python.ipynb` pour l'estimation rigoureuse de $Y_{x}(u)$ via do-calculus.
 ",,,,,,,,ac3708743e2db458,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attribution-Causal-Bridge.ipynb,371f55b8,code,fr,eaa79a7eec844986,"# Helper _phi_class1 (posture humble, clause G.9 : verifier avant d'affirmer)
 # Cellule idx=21 (apres insertion) appelle _phi_class1(tree_sv_cf)[0].
@@ -18567,9 +18567,9 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.14b-XAI-Shap-Attributio
 Ce notebook est le **versant explication predictive**. Le depot couvre par ailleurs le **versant causal**, et les deux se repondent :
 
 - [2.14 Explicabilite (XAI)](2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb) — la base : SHAP, LIME, DiCE contrefactuels.
-- [Causal-Bridges](../../../Probas/DecisionTheory/Causal-Bridges/README.md) — do-calculus, DoWhy de bout en bout : [DoWhy-2-Contrefactuel-Individuel](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb) fait sur DAG ce que **DiCE fait sur features independantes** — la comparaison est directe.
-- [CausalBridges-01-Do-Calculus.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — do-calculus Bareinboim-Pearl R-90, mediation counterfactuelle formelle.
-- [CausalBridges-01-Do-Calculus.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) — 4 taches data-fusion, CHT L1→L2, jonction do-calculus ≅ conditional Shapley.
+- [Causal-Bridges](../../../Probas/DecisionTheory/Causal-Bridges/README.md) — do-calculus, DoWhy de bout en bout : [DoWhy-2-Contrefactuel-Individuel](../../../Probas/DecisionTheory/Causal-Bridges/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb) fait sur DAG ce que **DiCE fait sur features independantes** — la comparaison est directe.
+- [Causalite-01-Calcul-Do-Python.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/Causalite-01-Calcul-Do-Python.ipynb) — do-calculus Bareinboim-Pearl R-90, mediation counterfactuelle formelle.
+- [Causalite-01-Calcul-Do-Python.ipynb](../../../Probas/DecisionTheory/Causal-Bridges/Causalite-01-Calcul-Do-Python.ipynb) — 4 taches data-fusion, CHT L1→L2, jonction do-calculus ≅ conditional Shapley.
 - [Infer-05-Causal-Inference.ipynb](../../../Probas/Infer/Infer-05-Causal-Inference.ipynb) — mediation NDE+NIE=TE en Infer.NET (enumeration exacte).
 - [PyMC-05-Causal-Inference.ipynb](../../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) — version PyMC de la mediation NDE+NIE=TE.
 
@@ -18631,7 +18631,7 @@ Identifiant de suivi antérieur : #16619.
 
 Cadrage : Epic #16669.
 
-Les deux ponts vers `CausalBridges-01-Do-Calculus.ipynb` correspondent aux jalons P2 (médiation contrefactuelle) et P4 (do-calculus ≅ Shapley conditionnelle) de l'Epic #16620.
+Les deux ponts vers `Causalite-01-Calcul-Do-Python.ipynb` correspondent aux jalons P2 (médiation contrefactuelle) et P4 (do-calculus ≅ Shapley conditionnelle) de l'Epic #16620.
 
 **Critères de réalisation consignés au cadrage #16669** :
 

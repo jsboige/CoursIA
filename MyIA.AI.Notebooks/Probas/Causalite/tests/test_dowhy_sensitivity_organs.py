@@ -56,7 +56,7 @@ if str(_PARENT_DIR) not in sys.path:
 
 import dowhy_sensitivity_organs as dso
 
-NB_PATH = _PARENT_DIR / "CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb"
+NB_PATH = _PARENT_DIR / "Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb"
 
 
 # ---------------------------------------------------------------------------
