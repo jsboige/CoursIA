@@ -259,9 +259,14 @@ FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 # les NEUF gardes qui declenchaient encore sur `pull_request` : leur job est
 # renomme byte-identique et leur declencheur retire, donc ils sont desormais
 # VERIFIES et non plus exemptes. L'exemption declared ne couvre plus que le
-# residu : `solution-leak-guard`, `perimeter-review-guard`,
-# `self-hosted-runner-policy` -- dont le workflow d'origine ne declenche pas
-# sur `pull_request` (cf PILOT_SHADOW_SANS_EMETTEUR).
+# residu : `perimeter-review-guard`, `self-hosted-runner-policy` -- dont le
+# workflow d'origine ne declenche pas sur `pull_request` (cf
+# PILOT_SHADOW_SANS_EMETTEUR). Le dixieme garde du lot (`solution-leak-guard`)
+# a ete aligne par la tranche T-A/2 de #25510 (2026-11-12) : declencheur
+# `pull_request` retire, `guard.name` byte-identique au nom de check-run
+# RENDU par le workflow -- le mot `advisory` de ce nom est portant pour
+# `pr_gate.py` (#12389), donc c'est le garde qui a ete renomme sur le nom
+# rendu, et non l'inverse.
 PILOT_LOT_NAME = "PILOT"
 
 # Gardes absorbes apres #19168 dont le byte-a-byte-identique n'est pas encore
@@ -384,15 +389,37 @@ PILOT: list[Guard] = [
         absorbed=True,
     ),
     Guard(
-        name="solution-leak-guard",
+        # Nom byte-identique au nom de check-run RENDU par le workflow source
+        # (`jobs.solution-leak-delta.name`) -- le filet d'identite
+        # (check_absorbed_check_run_identity.py) l'exige pour un garde
+        # absorbes, et le caractere `advisory` de ce nom est
+        # PORTANT (pr_gate.py::is_advisory reconnait un check non bloquant
+        # par ce seul mot, cf l'en-tete du workflow et #12389). Renommer le
+        # job source aurait retire le marqueur ; renommer le garde l'echange
+        # contre le nom que le workflow rendait DEJA, donc le nom de
+        # check-run visible par les relecteurs ne change pas.
+        name="Solution-leak HIGH delta (advisory, WARN phase, #8053)",
         source="solution-leak-guard.yml",
-        paths=NOTEBOOK_GLOBS,
+        paths=NOTEBOOK_GLOBS + [
+            # Les motifs du declencheur retire doivent etre COUVERTS par le
+            # registre (check_absorbed_path_parity.py) : sans eux, une PR qui
+            # ne touche que le detecteur ou le delta n'allumerait plus le
+            # garde (mesure fondatrice #20166).
+            "scripts/notebook_tools/audit_solution_leaks.py",
+            "scripts/notebook_tools/solution_leak_delta.py",
+            ".github/workflows/solution-leak-guard.yml",
+        ],
         argv=["python", "scripts/notebook_tools/audit_solution_leaks.py", "--json"],
         delta_argv=["python", "scripts/notebook_tools/solution_leak_delta.py",
                     "{base_json}", "{head_json}"],
         swap_paths=["MyIA.AI.Notebooks"],
         blocking=False,          # WARN phase (#8053) -- ne rougit jamais
         needs_base=True,
+        # ABSORBE (#25510, tranche T-A/2 du 2026-11-12) : le workflow source
+        # perd son declencheur `pull_request` dans le meme commit, donc la
+        # voie rapide devient l'unique emetteur de ce nom de check-run --
+        # le filet d'identite VERIFIE ce garde au lieu de l'exempter.
+        absorbed=True,
     ),
     Guard(
         name="prose-counts",
@@ -4139,6 +4166,140 @@ TRANCHE42: list[Guard] = [
         ],
         argv=["python", "scripts/ci/check_companion_coverage.py"],
         blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 43 (#25510, tranche T-A/2 du 2026-11-12) -- absorption du garde des
+# caracteres de controle LaTeX (`notebook-latex-control-chars.yml`).
+#
+# POURQUOI CE GESTE (#25510, plan de tri de la CI) : une PR de carnet
+# declenchait 31 workflows, chacun avec son runner, son checkout et son
+# `setup-python` ; un garde de carnet median coute 1,2 min, dont 82 % de
+# checkout (`docs/coordination/ci-two-tier.md` §3.4). La voie rapide fait
+# tourner les gardes dans le checkout DEJA materialise de `always-on-guards`.
+#
+# SEMANTIQUE CONSERVEE, point par point :
+#   - portee : le workflow balayait les carnets touches par la PR
+#     (`--pr-diff BASE HEAD`) ; la voie rapide passe `{base_ref}` = la
+#     branche de base de la PR, et `--pr-diff` a la MEME semantique
+#     trois-points (merge-base) des deux cotes -> les memes carnets ;
+#   - verdict : le workflow sortait 0 sur occurrence (ADVISORY : un
+#     `::warning::`, la PR n'est pas rouge) et 1 sur erreur du detecteur
+#     (rc=2). Ici : `blocking=False` (rc=1 -> check-run neutre, titre
+#     « signale (advisory) ») et `warn_rc=(2,)` (rc=2 -> « verdict inconnu »,
+#     non bloquant) -- la doctrine du depot pour un incident d'instrument
+#     (cf TRANCHE10, `hr-substitution-guard`) ;
+#   - controle par faux negatif : la suite unitaire du detecteur est rejouee
+#     en `pre_argv` (le workflow le faisait aussi, dans une etape dediee).
+#
+# ECART ASSUME : le workflow d'origine ECHOUAIT (exit 1) sur un rc=2 du
+# detecteur ; ici ce rc est NEUTRE (« verdict inconnu »), donc la PR n'est
+# pas rougie par une panne de l'instrument. C'est la meme doctrine que les
+# autres gardes absorbes du programme (#12567), et le check-run reste
+# VISIBLE et nomme « verdict inconnu » -- jamais un vert muet.
+#
+# Le job source garde son nom rendu `latex-control-chars`, byte-identique au
+# `guard.name` ci-dessous : le filet d'identite
+# (check_absorbed_check_run_identity.py) VERIFIE donc ce garde au lieu de
+# l'exempter.
+# ---------------------------------------------------------------------------
+TRANCHE43: list[Guard] = [
+    Guard(
+        name="latex-control-chars",
+        source="notebook-latex-control-chars.yml",
+        paths=[
+            # Meme perimetre que le declencheur retire du workflow (le motif
+            # `**.ipynb` couvre les carnets a la racine comme les autres),
+            # plus le detecteur, son test et les deux fichiers du moteur
+            # (convention des gardes natifs voisins : une revision qui
+            # change l.engineur ou le registre doit rejouer le garde).
+            "**.ipynb",
+            "scripts/notebook_tools/check_latex_control_chars.py",
+            "scripts/tests/test_check_latex_control_chars.py",
+            ".github/workflows/notebook-latex-control-chars.yml",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "unittest",
+            "scripts.tests.test_check_latex_control_chars", "-v",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_latex_control_chars.py",
+            "--pr-diff", "{base_ref}", "HEAD",
+        ],
+        blocking=False,          # ADVISORY (#14859) : signale sans rougir
+        warn_rc=(2,),            # incident du detecteur -> verdict inconnu
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# TRANCHE 44 (#25510, tranche T-A/3 du 2026-11-12) -- absorption du garde de
+# derive de traduction (`translation-drift.yml`).
+#
+# POURQUOI CE GESTE : un garde de carnet median coute 1,2 min, dont 82 % de
+# checkout (docs/coordination/ci-two-tier.md §3.4). Ce garde balayait les
+# carnets touches par la PR dans son propre checkout ; la voie rapide le
+# rend dans le checkout DEJA materialise de `always-on-guards`.
+#
+# LE NOM EST CELUI DU CHECK-RUN RENDU, PAS L'INVERSE. Le job source porte
+# `name: "Translation drift (read-only, advisory)"` et le marqueur
+# `advisory` de ce nom est PORTANT : `scripts/pr_gate.py` classe un check
+# non bloquant par ce seul mot dans le nom rendu (`ADVISORY_MARKER`, regle 6
+# de son module) -- il ne lit ni l'en-tete du workflow, ni le registre
+# (cf #15998 et l'en-tete du workflow, qui l'ecrit noir sur blanc). Renommer
+# le job en `translation-drift` effacerait le marqueur et ferait compter un
+# echec d'INFRASTRUCTURE de ce job comme un check REQUIS : c'est exactement
+# l'incident mesure sur #22216 le 2026-10-26 ("PR gate: FAIL -- failing
+# checks: Translation drift (read-only) (failure)", job mort au checkout).
+# C'est donc le garde qui adopte le nom rendu.
+#
+# SEMANTIQUE CONSERVEE, point par point :
+#   - portee : le workflow balayait les carnets touches par la PR
+#     (`paths:` du declencheur) ; le registre reprend les memes motifs ;
+#   - verdict : le workflow sortait 0 TOUJOURS (le drift est une annotation
+#     `::notice`, jamais un echec) et `--check` fait de meme dans l'outil
+#     (`return 0 if args.check else 1`) : le garde est `blocking=False`, donc
+#     un rc non nul rend un check-run NEUTRE, jamais rouge ;
+#   - rapport : le detail du drift (stderr + JSON) reste lisible -- le
+#     check-run de la voie rapide publie le log du garde dans son corps.
+#
+# ECART ASSUME, declare : sur une panne du detecteur (rc=2, entree absente),
+# le workflow emettait un `::warning` et restait VERT ; ici le check-run est
+# NEUTRE (« incident »), donc visible et non bloquant. La doctrine du depot
+# pour un instrument casse : jamais un vert muet.
+#
+# Le `workflow_dispatch` reste : le check manuel (relance apres un
+# re-translation) continue de fonctionner hors PR.
+# ---------------------------------------------------------------------------
+TRANCHE44: list[Guard] = [
+    Guard(
+        name="Translation drift (read-only, advisory)",
+        source="translation-drift.yml",
+        paths=[
+            # Meme perimetre que le declencheur retire, plus le workflow
+            # lui-meme (une revision qui touche le filtre doit rejouer le
+            # garde, convention des gardes voisins).
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "translations/**",
+            "scripts/translation/**",
+            ".github/workflows/translation-drift.yml",
+        ],
+        argv=[
+            "python", "scripts/translation/check_translation_sync.py",
+            "translations", "--check", "--repo-root", ".",
+            # `--no-json` : le rapport JSON pese environ 857 Ko pour 2537
+            # anomalies, et le resume du check-run est coupe vers 60 Ko. Le
+            # JSON occupe la place entiere du resume et ecrase les lignes de
+            # signal (REMPLISSAGE, DRIFT DETECTE) : le garde affichait « OK »
+            # sans jamais nommer le drift. Le signal stderr reste integral.
+            "--no-json",
+        ],
+        blocking=False,          # ADVISORY : le drift est signale, jamais bloque
         absorbed=True,
     ),
 ]
