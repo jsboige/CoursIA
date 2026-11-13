@@ -18,9 +18,9 @@ cannot escape to the repository root and come back, so the organ can only
 under-credit reachability, never over-credit it (fail-closed).
 
 Usage:
-    python scripts/check_docs_index.py                      # Report unreachable docs
-    python scripts/check_docs_index.py --json               # Machine-readable verdict
-    python scripts/check_docs_index.py --expect-unreachable 3   # Positive control
+    python scripts/ci/check_docs_index.py                      # Report unreachable docs
+    python scripts/ci/check_docs_index.py --json               # Machine-readable verdict
+    python scripts/ci/check_docs_index.py --expect-unreachable 3   # Positive control
 
 Positive control
 ----------------
@@ -45,7 +45,7 @@ from collections import deque
 from pathlib import Path
 from urllib.parse import unquote
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 
 # The index that owns the reachability claim. Its `## Racine (docs/)` table
 # carries the metric in prose; this organ is what holds the claim true.
