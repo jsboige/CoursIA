@@ -79,7 +79,7 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 **L'opération.** *Ce qui s'améliore en compression* — la diminution de la longueur de description d'un objet sans perte d'information *utile*. La dissociation, dans la grille du premier document, est le **tell** d'un gain de compression : deux proxys qui *s'éloignent* (l'un comprime mieux que l'autre) marquent une transition de phase représentationnelle.
 
 **Ancrage dépôt.**
-- [ICT-17b-Grokking-CompressionProgress-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive lue comme transition de phase, avec bosse Crutchfield-Feldman sur `model_bits + résiduel` (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 5 : K bipolaire puis tri-polaire, la bosse force deux dimensions).
+- [ICT-17b-Grokking-CompressionProgress-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive lue comme transition de phase, avec bosse Crutchfield-Feldman sur `model_bits + résiduel` (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 5 : K bipolaire puis tri-polaire, la bosse force deux dimensions).
 - [ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
 
 **Aboutissants opérationnels dans la série ICT.**
