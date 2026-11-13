@@ -81,8 +81,21 @@ PREFIX="${COURSIA_MAIN_PREFIX:-myia-ai-01-linux-main}"
 SLOT="${COURSIA_MAIN_SLOT:-1}"
 MEMORY="${COURSIA_MAIN_MEMORY:-4g}"
 PIDS="${COURSIA_MAIN_PIDS:-512}"
-CPUS="${COURSIA_MAIN_CPUS:-3}"
-IMAGE="${COURSIA_MAIN_IMAGE:-ghcr.io/jsboige/coursia-runner:latest}"
+# 2 vCPU, comme les slots du pool de CETTE machine : l'unite vivante
+# `coursia-runner.service` pose `Environment=COURSIA_RUNNER_CPUS=2` (mesure
+# le 13/11 sur ai-01), et les slots qu'elle supervise tournent a 2 vCPU
+# (`docker inspect myia-ai-01-wsl-1` -> `NanoCpus=2000000000`). La slice
+# porte un quota de 32 vCPU pour une demande deja declaree de 38 (14 x 2 +
+# 10 x 1) : un slot a 3 vCPU aggraverait une surreservation mesuree.
+CPUS="${COURSIA_MAIN_CPUS:-2}"
+# L'image est celle du POOL, prise a la meme source : `supervise.sh` (l. 104)
+# lit `COURSIA_RUNNER_IMAGE`, avec le meme repli. Un nom d'image different
+# n'est pas pullable sur ce daemon -- mesure du 13/11 :
+# `ghcr.io/jsboige/coursia-runner:latest` -> `error from registry: denied`,
+# et l'`--apply` echouait apres avoir deja mint le token d'enregistrement.
+# Un slot reserve qui ne tournerait pas la meme image que le pool qui
+# l'evalue n'aurait pas sa garantie de version.
+IMAGE="${COURSIA_MAIN_IMAGE:-${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.338.0}}"
 LABELS="${COURSIA_MAIN_LABELS:-self-hosted,coursia-main,coursia-linux}"
 CGROUP_PARENT="${COURSIA_CGROUP_PARENT:-coursia-ci.slice}"
 BASE="${COURSIA_MAIN_BASE:-$HOME/CoursIA-runners-main}"

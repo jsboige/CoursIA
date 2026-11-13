@@ -290,5 +290,55 @@ def test_le_mint_ne_se_produit_pas_si_le_slot_existe_deja(tmp_path):
         f"un fichier de token a ete laisse sur le disque : {residus}")
 
 
+def test_le_slot_reserve_emploie_l_image_du_pool() -> None:
+    """Le slot reserve doit tourner l'image du pool, prise a la meme source.
+
+    Mesure (13/11, ai-01) : le defaut du script visait
+    `ghcr.io/jsboige/coursia-runner:latest`, que le daemon de cette machine
+    ne peut pas tirer -- `error from registry: denied`. L'`--apply` echouait
+    donc apres avoir deja mint le token d'enregistrement. Le pool tire son
+    image de `COURSIA_RUNNER_IMAGE` (`supervise.sh` l. 104) : le slot doit
+    heriter de la meme source, sinon il ne tourne pas la meme version que
+    le pool qui l'evalue.
+    """
+    supervise = (REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner"
+                 / "supervise.sh").read_text(encoding="utf-8")
+    correspondance = re.search(
+        r"^IMAGE=\"\$\{COURSIA_RUNNER_IMAGE:-([^}]+)\}\"", supervise, re.M)
+    assert correspondance, "l'image du pool n'est plus lisible dans supervise.sh"
+    image_du_pool = correspondance.group(1)
+
+    texte = SCRIPT.read_text(encoding="utf-8")
+    ligne_image = next(ligne for ligne in texte.splitlines()
+                       if ligne.startswith("IMAGE="))
+    assert "COURSIA_RUNNER_IMAGE" in ligne_image, (
+        "le slot reserve doit prendre son image a la meme source que le pool "
+        f"(COURSIA_RUNNER_IMAGE) -- trouve : {ligne_image}")
+    assert image_du_pool in ligne_image, (
+        f"le repli de l'image du slot reserve ({ligne_image}) ne reprend pas "
+        f"le repli du pool ({image_du_pool})")
+
+
+def test_le_slot_reserve_est_dimensionne_comme_le_pool_de_la_machine() -> None:
+    """2 vCPU, comme les slots du pool d'ai-01.
+
+    Mesure (13/11) : l'unite vivante `coursia-runner.service` pose
+    `Environment=COURSIA_RUNNER_CPUS=2`, et ses slots tournent a 2 vCPU
+    (`docker inspect myia-ai-01-wsl-1` -> `NanoCpus=2000000000`). La slice
+    porte un quota de 32 vCPU pour une demande deja declaree de 38
+    (14 x 2 + 10 x 1) : un slot a 3 vCPU aggraverait la surreservation
+    mesuree. La valeur est **epinglee** : si le pool est redimensionne, ce
+    test doit etre revisite (il nomme la mesure dont il derive).
+    """
+    texte = SCRIPT.read_text(encoding="utf-8")
+    correspondance = re.search(r"^CPUS=\"\$\{COURSIA_MAIN_CPUS:-(\d+)\}\"",
+                               texte, re.M)
+    assert correspondance, "le nombre de vCPU du slot reserve n'est plus lisible"
+    assert correspondance.group(1) == "2", (
+        "le slot reserve doit etre dimensionne comme le pool de la machine "
+        "(2 vCPU, cf. l'unite vivante coursia-runner.service) -- trouve : "
+        f"{correspondance.group(1)}")
+
+
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(pytest.main([__file__]))
