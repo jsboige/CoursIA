@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests unitaires de `scripts/check_bibliography_pdf_integrity.py`.
+"""Tests unitaires de `scripts/bibliography/check_bibliography_pdf_integrity.py`.
 
 L'organe existe pour lever une confusion precise, mesuree le 2026-09-26/30 :
 un PDF servi par le client Google Drive n'est pas toujours hydrate, et une
