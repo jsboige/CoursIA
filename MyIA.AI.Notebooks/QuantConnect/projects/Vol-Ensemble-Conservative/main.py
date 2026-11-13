@@ -31,8 +31,12 @@ class VolEnsembleConservativeAlgorithm(QCAlgorithm):
         if self.mode not in ("strategy", "spy", "6040", "ew6", "noregime"):
             raise ValueError(f"mode inconnu : {self.mode}")
 
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2025, 1, 1)
+        start_date = self.get_parameter("start_date") or "2018-01-01"
+        end_date = self.get_parameter("end_date") or "2025-01-01"
+        sy, sm, sd = (int(v) for v in start_date.split("-"))
+        ey, em, ed = (int(v) for v in end_date.split("-"))
+        self.set_start_date(sy, sm, sd)
+        self.set_end_date(ey, em, ed)
         self.set_cash(100000)
 
         self.set_brokerage_model(
