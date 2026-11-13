@@ -46,7 +46,7 @@ pip install requests bcrypt jupyter_client
 # kernelspec disparait a nouveau.
 pip install ipykernel
 pip install pyyaml tomli
-# python-dotenv: scripts/whisper_int8_comparison.py (and several
+# python-dotenv: scripts/notebook_tools/whisper_int8_comparison.py (and several
 # genai-stack modules) import `dotenv` at top level.
 pip install python-dotenv
 # matplotlib: MyIA.AI.Notebooks/GameTheory/trust_simulation/visualization.py

@@ -269,6 +269,48 @@ def scan(repo_root: Path) -> dict:
     }
 
 
+def find_ambiguous_flat_imports(repo_root: Path) -> list[dict]:
+    """Signale les imports plats non résolus, sans choisir un des modules.
+
+    Un test ``test_foo`` peut importer ``check_foo`` : le diagnostic accepte
+    aussi cette forme. Il ne crée pas de paire candidate.
+    """
+    occurrences: dict[str, list[Path]] = {}
+    for path in (repo_root / "scripts").rglob("*.py"):
+        if _is_excluded(path.relative_to(repo_root)) or _is_noise_module(path, repo_root):
+            continue
+        occurrences.setdefault(path.name, []).append(path.resolve())
+    ambiguous = {name: sorted(paths) for name, paths in occurrences.items()
+                 if len(paths) > 1}
+    found = []
+    for test_path in iter_test_files(repo_root):
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", SyntaxWarning)
+                tree = ast.parse(test_path.read_text(encoding="utf-8", errors="replace"))
+        except (SyntaxError, OSError):
+            continue
+        names = set()
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Import):
+                names.update(alias.name for alias in node.names if "." not in alias.name)
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                if "." not in node.module:
+                    names.add(node.module)
+        for name in sorted(names):
+            paths = ambiguous.get(f"{name}.py")
+            affinity = name in test_path.stem or (
+                name.startswith("check_") and bool(name[6:]) and name[6:] in test_path.stem
+            )
+            if paths and affinity:
+                found.append({
+                    "test_file": test_path.relative_to(repo_root).as_posix(),
+                    "module": name,
+                    "candidates": [path.relative_to(repo_root).as_posix() for path in paths],
+                })
+    return found
+
+
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[1])
     parser.add_argument("--repo-root", type=Path, default=None)
@@ -278,6 +320,11 @@ def main(argv=None) -> int:
 
     repo_root = (args.repo_root or find_repo_root(Path(__file__).resolve())).resolve()
     result = scan(repo_root)
+    # Avertissement uniquement : stdout JSON et les codes --check gardent leur
+    # contrat historique ; une ambiguïté ne prouve pas une paire dupliquée.
+    for item in find_ambiguous_flat_imports(repo_root):
+        print(f"Import ambigu : {item['test_file']} : {item['module']} -> "
+              f"{', '.join(item['candidates'])}", file=sys.stderr)
 
     if args.as_json:
         print(json.dumps(result, indent=2))

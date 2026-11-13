@@ -22,11 +22,19 @@ Ce que ces tests verrouillent, par ordre d'importance :
 
 Le compte employe (519 issues ouvertes) est la mesure du 11/11 sur
 `jsboige/CoursIA` ; le seuil (400) est celui du mandat user du 30/10.
+
+Le veto est LEVE depuis la decision user du 12/11 (`VETO_ACTIF = False`).
+Les tests du mecanisme l'ARMENT explicitement (fixture `_armer_le_veto`),
+pour qu'un nouveau mandat le rearme sans redecouvrir la porte ; deux tests
+verrouillent la levee elle-meme, sur la valeur par defaut du module.
 """
 
 import creation_budget as cb
 import pytest
 import sys
+
+# La valeur du module AVANT toute fixture : c'est elle que la levee fixe.
+VETO_PAR_DEFAUT = cb.VETO_ACTIF
 
 CATALOG_PATHS = [
     "MyIA.AI.Notebooks/NLP/01-Introduction-Python.ipynb",
@@ -50,6 +58,13 @@ def _isoler_les_commentaires(monkeypatch):
     monkeypatch.setattr(cb, "_commentaires_locaux", lambda: {})
 
 
+@pytest.fixture(autouse=True)
+def _armer_le_veto(monkeypatch):
+    """Les tests du mecanisme portent sur le veto ARME : la levee du 12/11
+    se teste a part, sur la valeur par defaut capturee a l'import."""
+    monkeypatch.setattr(cb, "VETO_ACTIF", True)
+
+
 def issue(number=1, title="", body="", labels=None, parent=None):
     return {"number": number, "title": title, "body": body,
             "labels": labels or [], "parent": parent}
@@ -68,6 +83,25 @@ def grain_de_reparation(numeros=2):
     return issue(number=numeros,
                  title="Fix(lean,#18408): aligner la prose de ANALYSE-04",
                  body="Corriger la prose de ANALYSE-04.")
+
+
+# --- la levee du 12/11 ----------------------------------------------------------
+
+def test_le_veto_est_leve_par_defaut():
+    """La decision user du 12/11 leve le veto : le module le livre desarme.
+    Ce test rougit si quelqu'un le rearme sans le dire dans une PR."""
+    assert VETO_PAR_DEFAUT is False
+
+
+def test_veto_leve_un_grain_de_creation_est_servi(catalog, monkeypatch):
+    """Veto leve, un grain de creation n'est plus ecarte au-dela du seuil :
+    a 441 issues ouvertes (le compte du 12/11), la porte retombe sur le
+    budget, fail-OPEN sans etat."""
+    monkeypatch.setattr(cb, "VETO_ACTIF", VETO_PAR_DEFAUT)
+    assert cb.veto_creation(441) is False
+    pool = [grain_qui_cree()]
+    gate = cb.creation_gate(pool, catalog=catalog, state=None, open_count=441)
+    assert gate == {}
 
 
 # --- le veto ------------------------------------------------------------------
