@@ -23,7 +23,7 @@ TTS_URL = "http://127.0.0.1:8191/v1/audio/speech"
 STT_URL = "http://127.0.0.1:8190/v1/audio/transcriptions"
 # Load from GenAI .env if available
 from pathlib import Path
-_env_path = Path(__file__).resolve().parents[1] / "MyIA.AI.Notebooks" / "GenAI" / ".env"
+_env_path = Path(__file__).resolve().parents[2] / "MyIA.AI.Notebooks" / "GenAI" / ".env"
 if _env_path.exists():
     from dotenv import load_dotenv
     load_dotenv(_env_path)
