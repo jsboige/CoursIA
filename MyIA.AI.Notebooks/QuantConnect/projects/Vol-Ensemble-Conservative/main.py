@@ -126,6 +126,12 @@ class VolEnsembleConservativeAlgorithm(QCAlgorithm):
 
     def on_data(self, data: Slice):
         for ticker, sym in self.symbols.items():
+            # Mode 6040 : BND est abonne mais hors de self.tickers (univers de
+            # la strategie) ; les dictionnaires d'etat ne portent que les
+            # tickers de l'univers. En mode strategy/noregime/ew6, abonnes =
+            # universe et ce garde ne change rien.
+            if ticker not in self.returns:
+                continue
             if not data.ContainsKey(sym):
                 continue
             bar = data[sym]
