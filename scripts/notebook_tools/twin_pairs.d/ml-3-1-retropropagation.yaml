@@ -1,0 +1,11 @@
+- name: "ML-3.1 Retropropagation"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Calcul manuel MathNet comparé à la vraie autograd TorchSharp ; les données et la baseline scikit-learn sont appelées via Python.NET."
+  known_differences:
+    - "Python utilise NumPy, PyTorch et scikit-learn directement ; C# utilise MathNet et TorchSharp, avec scikit-learn via Python.NET."
+    - "Les générateurs aléatoires Python et C# diffèrent ; les deux bras comparés dans chaque carnet partent exactement des mêmes paramètres."
+    - "Matplotlib produit les figures Python ; le twin C# utilise trois SVG statiques."

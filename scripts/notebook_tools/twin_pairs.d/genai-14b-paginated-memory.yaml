@@ -1,0 +1,11 @@
+- name: "GenAI-14b Paginated Memory"
+  family: GenAI
+  python: MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le notebook source est CPU-pur et construit les structures de mémoire from-scratch ; aucun SDK d'agent, modèle ou service n'est appelé. Le jumeau C# utilise le BCL .NET pour reproduire fenêtre glissante, troncature, FIFO/LRU, éviction par importance, pages, profils synthétiques et exercices. SOTA-OK signifie que le port respecte l'objet pédagogique analytique du source, sans substituer un moteur externe absent. Les coûts sont des unités modélisées en caractères, non des tokens mesurés ; seule la représentation rendue est bornée, le stockage des archives reste O(N)."
+  known_differences:
+    - "Le C# utilise Queue, LinkedList avec index d'identité, listes et dictionnaires BCL ; le Python conserve collections.deque/OrderedDict. Les démonstrations sont déterministes. Les fixtures des exercices s’appuient sur des horloges et vecteurs connus, indépendants des sorties testées."
+    - "Les exercices C# sont répartis après les mécanismes concernés et reçoivent des gardes d'acceptation bornées ; les stubs restent non résolus dans les deux versions."
+    - "2026-11-12 : Ex2 vérifie les vecteurs réellement produits depuis Spec, un cosine indépendant (seuil 0,05, vecteur nul à 0), Now déterministe et une éviction importance contre FIFO ; Ex3 discrimine dernière page visitée de dernière page ajoutée. C# réexécuté intégralement."
