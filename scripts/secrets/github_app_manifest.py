@@ -51,7 +51,9 @@ OWNER_ID = 3159389
 APP_PREFIX = "coursia-lane-"
 # Le pilote `coursia-lane-ai-01` existe deja (App 5036190) : il n'est pas recree,
 # il s'aligne sur PERMISSIONS depuis sa page de reglages.
-LANES = ("po-2023", "po-2024", "po-2025", "po-2026", "po-2027", "web1")
+# po-2028 (secretaire CoursIA-3 et lane CoursIA-2) ajoute le 2026-11-13 : la
+# machine n'a pas de compte GitHub, son App lui donne un quota propre.
+LANES = ("po-2023", "po-2024", "po-2025", "po-2026", "po-2027", "po-2028", "web1")
 
 PERMISSIONS = {
     "metadata": "read",            # obligatoire pour toute App
