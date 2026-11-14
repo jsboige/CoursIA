@@ -16662,7 +16662,7 @@ avec ce null à ~0,94 comme référence, et la reproductibilité au bit établie
 comme garantie qu'un écart observé viendra du modèle et non du banc. Le SAE
 `W32K-L0_100` (même modèle, même couche, densité doublée) fournit le second readout qui
 permettra de vérifier qu'un effet mesuré ne dépend pas du choix de dictionnaire.",,,,,,,,bdeae08d68de1c93,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,54751726,markdown,fr,3e1fda61565ff46a,"[← ICT-24 — WorkspaceIgnition](ICT-24-WorkspaceIgnition-Python.ipynb) | [→ ICT-25b — StratificationInterTailles](ICT-25b-StratificationInterTailles-Python.ipynb) | [↑ ICT-Series](README.md)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,54751726,markdown,fr,a6a9f5c33e057524,"[← ICT-24 — WorkspaceIgnition](../ICT-24-WorkspaceIgnition-Python.ipynb) | [→ ICT-25b — StratificationInterTailles](../ICT-25b-StratificationInterTailles-Python.ipynb) | [↑ ICT-Series](../README.md)
 
 # ICT-25 — InoculationRL : GRPO à récompense *hackable*, inoculation de persona, et le pont ICT↔PostTraining
 
@@ -16700,8 +16700,7 @@ Détail :
 6. **§5★ — le résultat unique**, et **§5★-b — le crossover de l'inoculation** (1.5B → 32B) : le résultat le plus fort de la campagne.
 7. **Exercices** — faille plus ou moins flagrante, dose-réponse de l'inoculation, désapprentissage + hystérésis.
 8. **Cellule frontière** — ce que la phase CPU prouve, ce que le run GPU tranchera, et la portée du §5★-b.
-9. **Annexe — mesure EOS et calibration du budget** (issue #13596) : la mesure qui a fait passer le cap de 80 à 1024, et la ré-exécution des bras N/I qui la valide.
-",,,,,,,,3e1fda61565ff46a,,,,,,,,,,,,,,,
+9. **Annexe — mesure EOS et calibration du budget** (issue #13596) : la mesure qui a fait passer le cap de 80 à 1024, et la ré-exécution des bras N/I qui la valide.",,,,,,,,a6a9f5c33e057524,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,b8c09856,markdown,fr,afcc8cf249269903,"## Garde-fous d'honnêteté (à lire avant les résultats)
 
 1. **Hackable par construction** — la faille est *plantée par nous*, découverte par personne. Le notebook démontre la *mécanique* du reward hacking et de la détection, pas une attaque surprise sur un modèle de production.
@@ -18633,7 +18632,7 @@ Ce notebook est le **point de jonction** entre la série ICT (mesure de l'émerg
 Le reward hacking (PT-07) n'est plus seulement *diagnostiqué* ; il devient l'**outil expérimental** qui révèle si une persona contaminée par le secret (bras N) résiste à l'inoculation par permission (bras I) — l'acte étant invariant, seule l'identité peut diverger.
 
 **Frontière d'objet** : ce notebook est clos sur le verdict 0.5B (§5★) et le pont pédagogique ICT↔PostTraining. L'expérience à plus grande échelle (2B, Gates 20-21/bonus) vit dans un **objet dédié** — le capstone #5105 reste ouvert pour sa finalisation GPU — et non dans de nouvelles sections 5f/5g ici : la série des négatifs §5.1-§5.7 est le résultat, pas une marche d'escalier vers un 0.5B « réussi ».",,,,,,,,ff0996bd89db2b09,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,0b5baea0,markdown,fr,7a81aee791f9459f,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,0b5baea0,markdown,fr,eb28cc102855862e,"## Conclusion
 
 ICT-25 referme la strate 5 en franchissant le seuil du PostTraining : de *mesurer* une dynamique émergente à l'**injecter** et mesurer sa résistance. La faille hackable, plantée par construction, est le signal expérimental ; l'inoculation par GRPO est le levier ; l'hystérésis (exercice 3) est la trace structurelle — le dual de la réversibilisation.
 
@@ -28533,7 +28532,7 @@ les criteres du §8, pas par lecture post-hoc.
 (contrat de trace v1 — cable au merge), tranches 1-2 : PR #15599 / #15605.",,,,,,,,5350d77979f3bcaf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb,ab421631,markdown,fr,15634485a1d4551a,"> **Statut épistémique** — **Fortement soutenu** : Le désalignement émergent est modélisable par fronce (V(p; a, b)). Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,15634485a1d4551a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb,statut-epistemique,markdown,fr,3507fec97ed227e0,"> **Statut épistémique** — **Établi** (Gates 22-23) : l'ignition workspace (Baars) et l'emergence_gain (Hoel) ne co-localisent pas sur S4 — les deux lectures IIT↔GWT capturent des choses différentes. **Constat mesuré** (Gate 24) : dans l'exécution committée, le clamp des features-workspace **n'effondre pas** les gains crédités — il les augmente. **Borné par le protocole** : cette exécution ne montre pas l'effondrement attendu ; ce protocole n'établit pas le mécanisme causal, sans démontrer son absence — le contrôle apparié n'atteint aucune des 7 features du panneau mesuré, et la mesure porte sur une exécution unique. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,3507fec97ed227e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,statut-epistemique,markdown,fr,b9e37c1d97098fee,> **Statut épistémique** — **Fortement soutenu** : l'uptake d'une faille annoncée croît avec la taille du modèle sous GRPO à récompense hackable (sans gain de capacité mathématique) ; le préfixe interdit-explicite ne produit pas de retenue monotone (écart Np-N changeant de signe entre 7B et 14B). Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,b9e37c1d97098fee,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,statut-epistemique,markdown,fr,26aa502fcba935a2,> **Statut épistémique** — **Fortement soutenu** : l'uptake d'une faille annoncée croît avec la taille du modèle sous GRPO à récompense hackable (sans gain de capacité mathématique) ; le préfixe interdit-explicite ne produit pas de retenue monotone (écart Np-N changeant de signe entre 7B et 14B). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,1a6a32d36ac56c8c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,b2771ca6,markdown,fr,cbc636d21a66ff55,"### 5.1. Mesure distribution EOS -- calibration du budget 80 tokens (issue #13596)
 
 Issue #13596 : 40/40 steps GRPO sur ICT-25 ont complete avec min=max=80 tokens, 
@@ -45395,15 +45394,57 @@ def display_arm_summary(artifact):
               f""elapsed={m.get('elapsed_s', 0):.0f}s lr={m.get('learning_rate', '?')} ""
               f""num_gen={m.get('num_generations', '?')} sys={m.get('system_prompt_kind', '?')} ""
               f""sig={m.get('signal_kind', '?')}"")",,,,,,,,3991913c4fed8199,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,77c4e6d9,code,fr,c0c9fb86009136e3,"# === Voie 5 (PR #20560) : papermill parameters (issue #5105, c.450) ===
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,77c4e6d9,code,fr,8570e6e88568ee65,"# === Voie 5 (PR #20560) : papermill parameters (issue #5105, c.450) ===
 # Cellule 0 (legacy injected-parameters) est gardee pour retrocompat, mais papermill
 # cible la PREMIERE cellule taggee parameters -- c2 prend la main.
 # RUN_TRAINING : True=chaque cellule GPU execute ict25_arms.py via subprocess.
 # False (defaut) : cellules GPU shuntEes, display cells chargent un artefact pre-calcule.
 RUN_TRAINING = False
-ARMS_DIR = ""results/ict25""
 ARTIFACT_GIT_COMMIT = ""f1db0986b7""  # commit de ict25_arms.py qui a produit les artefacts
-",,,,,,,,c0c9fb86009136e3,,,,,,,,,,,,,,,
+
+# --- Racine de la serie et dossier des artefacts (walk-up) ------------------
+# Ce carnet vit dans la sous-serie `ICT-25-InoculationRL/` et ses artefacts
+# (`results/ict25/`) voyagent avec lui. On ne depend donc pas du `cwd` du
+# kernel -- deux conventions coexistent dans le depot (#14356) -- : on REMONTE
+# jusqu'a la racine de la serie, c'est-a-dire le dossier qui porte le package
+# `ict/`, l'organe consomme par les cellules GPU, puis on en deduit le
+# dossier du carnet.
+#
+# Voie contractuelle #25381 : si `ict` est installe (pip install -e
+# MyIA.AI.Notebooks/IIT/ICT-Series), l'import des cellules GPU reussit sans
+# ce walk-up ; celui-ci couvre l'environnement non installe.
+from pathlib import Path as _Path
+import sys as _sys
+
+
+def _racine_serie(depuis):
+    """"""Dossier qui porte le package `ict/` : l'organe de la serie.""""""
+    for anc in (depuis, *depuis.parents):
+        if (anc / ""ict"" / ""__init__.py"").is_file():
+            return anc
+    return None
+
+
+_cwd = _Path.cwd().resolve()
+SERIE_ROOT = _racine_serie(_cwd)
+if SERIE_ROOT is None:
+    # cwd hors serie (racine du depot) : on cherche la serie dans les ancetres.
+    for anc in (_cwd, *_cwd.parents):
+        candidat = anc / ""MyIA.AI.Notebooks"" / ""IIT"" / ""ICT-Series""
+        if (candidat / ""ict"" / ""__init__.py"").is_file():
+            SERIE_ROOT = candidat
+            break
+if SERIE_ROOT is None:
+    raise RuntimeError(
+        ""Racine de la serie ICT introuvable : ni `ict/` dans les ancetres du cwd, ""
+        ""ni `MyIA.AI.Notebooks/IIT/ICT-Series`. Lancer le carnet depuis la serie, ""
+        ""ou installer le package (pip install -e MyIA.AI.Notebooks/IIT/ICT-Series, #25381)."")
+if str(SERIE_ROOT) not in _sys.path:
+    _sys.path.insert(0, str(SERIE_ROOT))
+
+# Dossier du carnet = la sous-serie qui le porte ; les artefacts y voyagent.
+CARNET_DIR = SERIE_ROOT / ""ICT-25-InoculationRL""
+ARMS_DIR = str(CARNET_DIR / ""results"" / ""ict25"")",,,,,,,,8570e6e88568ee65,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/ICT-25-InoculationRL-Python.ipynb,410a3265,code,fr,3692fc80a424d485,"# === Voie 5 display (c.445/c.454) : N vs I-inoculation @ 40 steps (charge 2 artefacts) ===
 if not RUN_TRAINING:
     _artN40 = _artI40 = None

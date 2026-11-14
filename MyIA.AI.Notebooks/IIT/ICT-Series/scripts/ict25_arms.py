@@ -5,7 +5,7 @@ N/I@120, cell[21] N-signal@40, cell[23] N-signal@120 multi-seed, cell[26] I-inoc
 multi-seed, cell[29] N'-informe-sans-permission, cell[32] onset engineering) est factorisee
 dans ce script. Le carnet recoit un parametre papermill ``RUN_TRAINING = False`` ; a False
 chaque cellule d'entraînement charge l'artefact agrege ecrit par ce script (sous
-``results/ict25_<bras>_<modele>.json`` ou analogue, < 512 Ko cf ``results-artifact-policy``),
+``ICT-25-InoculationRL/results/ict25_<bras>_<modele>.json`` ou analogue, < 512 Ko cf ``results-artifact-policy``),
 a True elle relance ce script via ``subprocess``.
 
 Inspire de ``ict25a_scaleup_grpo.py`` (campagne ICT-25a scale-up Gates 20-21) : meme garde
@@ -16,17 +16,17 @@ learning_rate, num_generations, reward kind).
 
 Usage :
     python ict25_arms.py --arm N-signal --steps 120 --seeds 0,1,42 --gpu 2 \\
-        --out results/ict25_N-signal_120steps.json
+        --out ICT-25-InoculationRL/results/ict25_N-signal_120steps.json
     python ict25_arms.py --arm N-signal --steps 40 --seeds 42 --gpu 2 \\
-        --out results/ict25_N-signal_40steps.json
+        --out ICT-25-InoculationRL/results/ict25_N-signal_40steps.json
     python ict25_arms.py --arm I-inoculation --steps 120 --seeds 0,1,42 --gpu 2 \\
-        --out results/ict25_I-inoculation_120steps.json
+        --out ICT-25-InoculationRL/results/ict25_I-inoculation_120steps.json
     python ict25_arms.py --arm N-informe --steps 120 --seeds 0,1,42 --gpu 2 \\
-        --out results/ict25_N-informe_120steps.json
+        --out ICT-25-InoculationRL/results/ict25_N-informe_120steps.json
     python ict25_arms.py --arm onset-W --steps 120 --seeds 0,1,42,7 --gpu 2 \\
-        --out results/ict25_onset-W_120steps.json
+        --out ICT-25-InoculationRL/results/ict25_onset-W_120steps.json
     python ict25_arms.py --arm onset-S --steps 120 --seeds 0,1,42,7 --gpu 2 \\
-        --out results/ict25_onset-S_120steps.json
+        --out ICT-25-InoculationRL/results/ict25_onset-S_120steps.json
 """
 from __future__ import annotations
 

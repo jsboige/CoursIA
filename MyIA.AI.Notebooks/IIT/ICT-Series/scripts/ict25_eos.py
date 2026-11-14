@@ -8,7 +8,7 @@ jusqu'a EOS naturel et on l'ecrit dans un artefact JSON.
 
 Pourquoi un script et une artefact (et non une cellule qui imprime) : la
 cellule d'affichage du carnet `ICT-25-InoculationRL-Python.ipynb` (voie 5,
-`RUN_TRAINING=False`) lit ses valeurs dans `results/ict25/`, comme les six
+`RUN_TRAINING=False`) lit ses valeurs dans `ICT-25-InoculationRL/results/ict25/` (le dossier de son carnet), comme les six
 autres bras. Un artefact daté et committe rend la mesure re-derivable du
 depot seul, et evite qu'une re-execution CPU la remplace par un message de
 repli -- la perte que C.2 interdit.
@@ -16,7 +16,7 @@ repli -- la perte que C.2 interdit.
 Usage (GPU-2 ai-01) :
 
     python MyIA.AI.Notebooks/IIT/ICT-Series/scripts/ict25_eos.py \
-        --gpu 2 --out MyIA.AI.Notebooks/IIT/ICT-Series/results/ict25/eos_13596.json
+        --gpu 2 --out MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL/results/ict25/eos_13596.json
 
 Le device est choisi par `--gpu` (index CUDA) ; `--gpu -1` force le CPU.
 """
