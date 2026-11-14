@@ -237,7 +237,7 @@ Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` con
 
 **Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
 
-### MYIA-PO-2024 (mesuré 2026-11-14T02:30Z — rangée d'origine : #24883, commentaire `6870260888`)
+### MYIA-PO-2024 (mesuré 2026-11-14T02:30Z, re-mesuré 2026-11-14T05:00Z après réparation des enregs morts — rangée d'origine : #24883, commentaire `6870260888`)
 
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
@@ -251,10 +251,17 @@ Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` con
 | `python3119` | 3.11.9 | 2.4.6 | `C:/Users/jsboi/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
 | `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/pyphi/python.exe` |
 | `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** (numpy 2.0.2 → 1.26.4 + `antropy` + `cryptography` ; `pyemd` re-importable, `pip check` clean) |
-| `cb09-ass` / `difflogic-sl12` / `ft03-gpu` / `mert2-gpu` / `pymc311` | **MORT** (argv[0] absent) | - | 5 pointeurs vers des worktrees/venvs supprimés, **hors `%TEMP%`** ; 3 référencés par des carnets de `main` (cf. commentaire #24883) |
+| `cb09-ass` / `pymc311` | **RETIRÉ le 14/11** | - | 0 consommateur sur `main` → enreg retiré, `kernel.json` sauvegardé (`%APPDATA%\jupyter\kernels\_bak-20261114-deadargv\`) |
+| `ft03-gpu` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/ft03-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.14.0+cu126 CUDA True, transformers 5.15.1, peft 0.20.0, datasets 5.0.1, pillow) ; **noyau lancé et dépendances importées** |
+| `mert2-gpu` | 3.13.16 | 2.5.4 | `D:/Dev/venvs/mert2-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.6.0+cu126, torchaudio 2.6.0+cu126, transformers 4.53.2, soundfile, scikit-learn, scipy) + `ipykernel` ; **noyau lancé et dépendances importées** |
+| `difflogic-sl12` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/difflogic-sl12/Scripts/python.exe` — **reconstruit le 14/11** ; **noyau lancé, `difflogic.LogicLayer` forward CUDA avec autograd vérifié** |
 | `lean4-wsl` / `python3-wsl` / `python3-wsl-swipl` / `python3-sc16-concrete-wsl` | non-Python (wsl) | - | `wsl.exe` |
 
 **Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `C:/Users/jsboi/AppData/Local/Programs/Python/Python313`.
+
+**Les 5 pointeurs morts de po-2024 sont refermés (14/11) : 0 pointeur mort subsiste** (29 enregs restants, tous résolus). Deux enregs **sans consommateur sur `main`** (`cb09-ass`, `pymc311`) ont été retirés, `kernel.json` sauvegardé avant retrait ; les trois autres (`ft03-gpu`, `mert2-gpu`, `difflogic-sl12`) ont été **reconstruits et repointés** — avec, pour chacun, la preuve du **lancement effectif du noyau** (pas seulement la réécriture du chemin).
+
+**`difflogic` n'est PAS « GPU-only » pour la copie du dépôt — le fork vendored l'est.** Le paquet PyPI `difflogic` 0.1.0 déclare `CUDAExtension` inconditionnellement et importe `difflogic_cuda` sans garde : son installation exige un **CUDA Toolkit assorti au torch** (13.3 installé ici, mais les wheels torch cp313 existent en cu126/cu128/cu130 — **pas de cu133**), et son import échoue sans l'extension. La copie **vendored** `SymbolicAI/SymbolicLearning/vendor/difflogic/` corrige cela : `setup.py` ne construit `CUDAExtension` que si le **major** de `nvcc` égale celui de `torch.version.cuda`, et `difflogic.py` garde l'import de `difflogic_cuda` sous `try/except ImportError`. Conséquence mesurée : avec torch cu126 (major 12) face à nvcc 13.3 (major 13), **l'extension est sautée et l'implémentation `python` (PyTorch pur) est la seule disponible** — ce qui est exactement le mode du snapshot commité de `SL-12` (`IMPL = "python"`). Le carnet n'exige donc **ni CUDA Toolkit-matching ni GPU** pour sa ré-exécution ; réinstaller le **fork vendored** (et non le paquet PyPI) suffit. Le mismatch de **major** est le seul bloquant de compilation (`torch/utils/cpp_extension.py` : major différent → `RuntimeError`, minor différent → simple avertissement).
 
 ### Ce que les trois rangées mesurées établissent
 
