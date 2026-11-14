@@ -8,9 +8,9 @@ pagetitle: "SymbolicAI - Intelligence Artificielle Symbolique"
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 405
-breakdown: Lean=162, SMT=52, Tweety=39, ArgumentAnalysis=38, SmartContracts=32, SemanticWeb=28, SymbolicLearning=27, Planners=26, root=1
-maturity: BETA=373, DRAFT=20, ALPHA=12
+pedagogical_count: 407
+breakdown: Lean=164, SMT=52, Tweety=39, ArgumentAnalysis=38, SmartContracts=32, SemanticWeb=28, SymbolicLearning=27, Planners=26, root=1
+maturity: BETA=385, ALPHA=12, DRAFT=10
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -31,7 +31,7 @@ Chaque série est autonome. Un fil rouge les traverse pourtant : du formalisme p
 
 À l'issue d'un parcours sur la famille **SymbolicAI**, le lecteur est capable de :
 
-1. **Représenter** la connaissance sous forme symbolique et la rendre manipulable par une machine — logiques formelles, révision de croyances, argumentation abstraite (Dung, ASPIC+, AGM, Pearl) côté [Tweety](Tweety/README.md) (cell.0 de `Tweety-01-Setup-Python.ipynb`) ; graphes RDF, interrogation SPARQL 1.1, ontologies RDFS/OWL, validation SHACL, JSON-LD et RDF-Star côté [SemanticWeb](SemanticWeb/README.md) (cell.0 de `SW-02b-RDFBasics-Python.ipynb`) ; analyse argumentative outillée (Toulmin, sophismes Walton, sémantiques de Dung) côté [ArgumentAnalysis](ArgumentAnalysis/README.md) (cell.0 de `Argumentation-00-Setup-Tweety-Python.ipynb`).
+1. **Représenter** la connaissance sous forme symbolique et la rendre manipulable par une machine — logiques formelles, révision de croyances, argumentation abstraite (Dung, ASPIC+, AGM, Pearl) côté [Tweety](Tweety/README.md) (cell.0 de `Tweety-01-Setup-Python.ipynb`) ; graphes RDF, interrogation SPARQL 1.1, ontologies RDFS/OWL, validation SHACL, JSON-LD et RDF-Star côté [SemanticWeb](SemanticWeb/README.md) (cell.0 de `SW-02-RDFBasics-Python.ipynb`) ; analyse argumentative outillée (Toulmin, sophismes Walton, sémantiques de Dung) côté [ArgumentAnalysis](ArgumentAnalysis/README.md) (cell.0 de `Argumentation-00-Setup-Tweety-Python.ipynb`).
 2. **Prouver** la correction d'un énoncé par assistant de preuve interactif — types dépendants, isomorphisme de Curry-Howard, tactiques Lean, librairie Mathlib4 côté [Lean](Lean/README.md) (cell.0 de `Lean-01-Setup-Lean-Python.ipynb`) ; démonstration automatique en géométrie (vérification probabiliste, bases de Gröbner, méthode de Wu) côté Lean/Geometry (notebook `Geometry-01-From-Figure-To-Equation`).
 3. **Décider** la satisfiabilité et optimiser sous contraintes — encodeur SMT-LIB, preuves par `unsat`, arithmétique linéaire/non-linéaire, optimisation modulo théories côté [SMT](SMT/README.md) (cell.0 de `Z3-API/Z3-01-Introduction-Python.ipynb`) ; planification classique PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique côté [Planners](Planners/README.md) (cell.0 de `00-Environment/Planners-00-Setup-Python.ipynb`).
 4. **Exécuter** dans un monde simulé ou sur blockchain — agents autonomes, recherche heuristique et compromis expressivité/temps de recherche côté Planners (notebooks `Planners-1-*`) ; standards de jetons (ERC-20, ERC-721), DeFi, gouvernance on-chain, ZK, conservation de la valeur côté [SmartContracts](SmartContracts/README.md) (cell.0 de `00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb`).
@@ -117,7 +117,7 @@ L'ordre proposé ci-dessous n'est pas une obligation : chaque série se suit seu
 | Étape | Série | Ce qu'on y apprend | Porte d'entrée | Public | Noyau |
 |---|---|---|---|---|---|
 | 1 | [Tweety](Tweety/README.md) | Logiques formelles, révision de croyances, argumentation abstraite et structurée, raisonnement incertain et causal | [Tweety-01-Setup-Python](Tweety/Tweety-01-Setup-Python.ipynb) | Licence | Python (JPype) · C# |
-| 2 | [SemanticWeb](SemanticWeb/README.md) | RDF, SPARQL, données liées, RDFS et OWL, SHACL, graphes de connaissances | [SW-02b-RDFBasics-Python](SemanticWeb/SW-02b-RDFBasics-Python.ipynb) · [SW-01-Setup-CSharp](SemanticWeb/SW-01-Setup-CSharp.ipynb) | Découverte → Licence | Python · C# |
+| 2 | [SemanticWeb](SemanticWeb/README.md) | RDF, SPARQL, données liées, RDFS et OWL, SHACL, graphes de connaissances | [SW-02-RDFBasics-Python](SemanticWeb/SW-02-RDFBasics-Python.ipynb) · [SW-01-Setup-CSharp](SemanticWeb/SW-01-Setup-CSharp.ipynb) | Découverte → Licence | Python · C# |
 | 3 | [Lean](Lean/README.md) | Types dépendants, Curry-Howard, quantificateurs, tactiques, Mathlib4 | [Lean-01-Setup-Lean-Python](Lean/Lean-01-Setup-Lean-Python.ipynb) | Licence → Recherche | Lean (WSL) · Python |
 | 4 | [SMT / Z3](SMT/README.md) | Satisfiabilité modulo théories, du premier `solve()` aux preuves par `unsat` | [Z3-01-Introduction-Python](SMT/Z3-API/Z3-01-Introduction-Python.ipynb) · [C#](SMT/Z3-API/Z3-01-Introduction-CSharp.ipynb) | Découverte → Licence | Python · C# |
 | 5 | [Planners](Planners/README.md) | PDDL, recherche dans l'espace d'états, heuristiques, CP-SAT, planification temporelle et hiérarchique | [Planners-00-Setup-Python](Planners/00-Environment/Planners-00-Setup-Python.ipynb) | Licence | Python · C# |
@@ -145,7 +145,7 @@ Chaque série se présente en trois temps : ce qu'elle apprend, son **parcours l
 
 ### SemanticWeb — le web de données
 
-- **Parcours léger** — SW-1 à SW-12 : RDF, opérations sur les graphes, SPARQL, données liées, RDFS, OWL, puis SHACL, JSON-LD, RDF-Star, graphes de connaissances et GraphRAG. Les paliers 1 à 7 sont en C# (dotNetRDF) ; les lettres `b` de 2b à 7b en sont les **jumeaux Python** (rdflib, owlready2). Un lecteur Python-only prend donc SW-2b à SW-7b, puis SW-8 et la suite. Cette série est la seule de la famille où la lettre désigne un jumeau et non un approfondissement : la normalisation (#16231) résorbera l'exception.
+- **Parcours léger** — SW-1 à SW-12 : RDF, opérations sur les graphes, SPARQL, données liées, RDFS, OWL, puis SHACL, JSON-LD, RDF-Star, graphes de connaissances et GraphRAG. Les paliers 1 à 7 sont en C# (dotNetRDF) ; leurs **jumeaux Python** (rdflib, owlready2) sont les notebooks SW-02-Python à SW-07-Python. Un lecteur Python-only prend donc cette plage, puis SW-8 et la suite. Cette série était la seule de la famille où une lettre désignait un jumeau et non un approfondissement — exception résorbée par la normalisation (#16231).
 - **Pour approfondir** — SW-13 (comparatif de raisonneurs), SW-14 et SW-15 (le coup ontologique, la greffe argumentative AIF/Dung), SW-16 (ontologies porteuses de preuve).
 - [README de la série SemanticWeb](SemanticWeb/README.md)
 

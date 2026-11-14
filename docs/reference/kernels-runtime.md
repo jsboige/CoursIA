@@ -1,5 +1,7 @@
 # Kernels & Runtime — Cluster CoursIA
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
 **Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026, po-2027, po-2028) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
@@ -14,7 +16,7 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
-| .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
+| .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore dotnet/MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
 | dotnet-interactive | **1.0.712001** (canon depuis le 02/10/2026, decision #18766 — historique ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
@@ -178,9 +180,153 @@ dotnet interactive jupyter install
 
 Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte : matrice tenue a jour dans [Conformite flotte au canon](#conformite-flotte-au-canon--matrice-machine-x-version) (au 2026-10-09 : `po-2023`/`po-2024`/`po-2025`/`po-2026`/`po-2027` conformes par mesure — `po-2027` l'a ete apres reparation, sa mesure ayant d'abord trouve l'ancien canon installe ; `ai-01` canon teste en isole mais outil global encore sur l'ancien pin. **Mise a jour 2026-10-19** : `ai-01` est desormais mesuree elle aussi — l'outil **global** porte le canon et l'execution reelle d'un carnet .NET via le kernelspec global passe : la derniere ligne non mesuree de la matrice est close).
 
+## Relevé (python, numpy) par kernelspec — le nom ne dénote pas l'environnement (#24883)
+
+**Pourquoi cette table existe.** Un nom de kernelspec ne dénote pas un environnement : deux sièges peuvent déclarer le même nom pour des tuples `(python, numpy)` différents, et un même environnement peut répondre à plusieurs noms (mesuré dans les deux sens ci-dessous). Une consigne de re-exécution nomme donc toujours un **tuple mesuré et publié**, jamais un label seul — c'est le critère de fermeture de #24883 (suite de #23997, qui couvre les pointeurs morts sous `%TEMP%`, une classe distincte).
+
+**Sonde (aucune valeur déclarée, tout est mesuré au lancement)** : pour chaque kernelspec de `jupyter kernelspec list --json`, lire `argv[0]` du `kernel.json`, puis exécuter cet exécutable :
+
+```bash
+<argv0> -c "import sys; print(sys.version.split()[0]); import numpy; print(numpy.__version__)"
+```
+
+### MYIA-PO-2023 (mesuré 2026-11-08T20:19Z — rangée d'origine : #24883, commentaire `6726598127`)
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet) | - | `dotnet` |
+| `acestep` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\acestep\python.exe` |
+| `acestep-venv` | 3.11.15 | 2.4.4 | `D:\envs\acestep-venv\Scripts\python.exe` |
+| `argu-reexec-310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `arviz11-py312` | 3.12.10 | 2.5.3 | `D:\Dev\venvs\arviz11-py312\Scripts\python.exe` |
+| `bonsai-gpu` | 3.11.15 | 2.4.4 | `C:\Users\jsboi\.conda\envs\bonsai\python.exe` |
+| `chc-py312` | 3.12.10 | 2.5.3 | `C:\Users\jsboi\.venvs\chc-py312\Scripts\python.exe` |
+| `cogvideox` | 3.13.3 | 2.4.4 | `C:\Tools\venv-cogvideox\Scripts\python.exe` |
+| `coursia-gpu-tests` | 3.11.15 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-gpu-tests\python.exe` |
+| `coursia-ml-training` | 3.11.16 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-ml-training\python.exe` |
+| `coursia-py313-argu` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `dia-tts` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\dia-tts\python.exe` |
+| `gametheory-wsl` / `python3-wsl` / `lean4-wsl` | non-Python (wsl) | - | `wsl` |
+| `gsplat310` | 3.10.22 | 2.2.6 | `C:\Users\jsboi\.conda\envs\gsplat310\python.exe` |
+| `mcp-jupyter-py310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `py313-clean` | 3.13.3 | 2.3.5 | `D:\Dev\venvs\py313-clean\Scripts\python.exe` |
+| `pyphi` | 3.9.25 | 1.26.4 | `C:\Users\jsboi\.conda\envs\pyphi\python.exe` |
+| `python3` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `python3-lean` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
+| `sheetsage2-gpu` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\sheetsage2\Scripts\python.exe` |
+| `smartcontracts` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
+| `trl-probe` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\trl-probe\Scripts\python.exe` |
+
+**Canon de re-exécution po-2023** : `python3` → **(3.13.16, numpy 2.5.2)**, conda `coursia-canonical`. Quatre specs de la classe #23997 (`cleanenv-k`, `py3137`, `coursia-venv-21078`, `qdrant120`) ont été **retirées** au passage du relevé (pointeurs morts sous `%TEMP%`, 0 consommateur sur `main`, `kernel.json` sauvegardés avant retrait).
+
+### MYIA-PO-2028 (mesuré 2026-11-05T21:50Z — rangée d'origine : #24883, commentaires `6670474664` et `6670983139` pour la réparation `py311-po2028`)
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
+| `coursia-canonical` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `coursia-ml-training` | 3.12.15 | 2.5.4 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training/python.exe` |
+| `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training-py310/python.exe` |
+| `coursia-pymc` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `lean4-wsl` / `lean4-wsl-perc` / `python3-wsl` | non-Python (wsl) | - | wsl |
+| `py311-po2028` | 3.11.17 | 2.4.6 | `C:\Users\jsboi\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
+| `pymc-528` | 3.12.16 | 2.4.6 | `C:/Users/jsboi/miniconda3/envs/pymc528/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `C:/Users/jsboi/miniconda3/envs/pyphi/python.exe` |
+| `python3` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `python3-lean` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter-py313/python.exe` |
+
+**Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
+
+### Ce que les deux rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023) contre **2.2.6** (po-2028). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310`. Dans les deux sens, le nom ne dénote pas l'artefact.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
+
+### Sièges restants
+
+Non mesurés à la date de cette section : `ai-01`, `po-2024`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+
 ## Python 3.10+ (notebooks Python)
 
 Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python).
+
+### Relever le runtime effectif des kernelspecs Python (#24883)
+
+Le nom d'un kernelspec identifie une entrée Jupyter sur une machine ; il ne
+garantit ni l'interpréteur ni les bibliothèques réellement chargés. Le relevé
+doit donc démarrer le noyau, exécuter une sonde dedans, et enregistrer ensemble
+le nom, `argv[0]` déclaré, `sys.executable` résolu, `sys.version` et la version
+de NumPy. L'outil ci-dessous énumère les kernelspecs locaux et écrit un JSON
+réutilisable. Il rapporte les noyaux non Python et les incidents avec un état
+structuré ; il ne journalise pas le texte des exceptions ni l'environnement du
+noyau. Après démarrage, il demande au noyau son `kernel_info_reply` et ne lance
+la sonde que si `language_info.name` annonce Python. Les autres langages sont
+rapportés comme `not_python` avec leur langage effectif. Pour un noyau annoncé
+Python, toute erreur, absence de sortie ou sortie JSON invalide reste un
+incident de sonde, jamais un faux classement non Python.
+
+```bash
+source /workspace/coursia-cloud/activate.sh
+python scripts/notebook_tools/measure_kernels_runtime.py \
+  --timeout 60 --output /tmp/kernels-runtime.json
+# Pour borner le sondage : répéter --kernel <nom> ; sans --kernel, tous sont sondés.
+```
+
+La mesure porte sur la configuration et l'instant où la commande s'exécute.
+`ok` signifie que la sonde Python s'est exécutée ; `not_python` identifie,
+d'après le `kernel_info_reply` effectif, un noyau d'un autre langage ;
+`probe_output_missing` signale un noyau Python qui n'a pas rendu la sonde ; `timeout`,
+`startup_error`, `kernel_info_error`, `probe_error`, `invalid_probe_output` et
+`kernelspec_missing` signalent des lignes à examiner. Les kernels démarrés par
+l'outil sont arrêtés à la fin de leur sonde.
+Le code de sortie vaut 0 si chaque ligne est `ok` ou `not_python`, 1 en présence
+d'un incident. Le JSON est écrit hors du dépôt pour qu'un relevé local daté ne
+soit pas confondu avec une valeur canonique.
+
+#### Échantillon de l'environnement cloud (mesuré le 2026-11-08)
+
+La commande a réellement démarré les deux kernelspecs installés dans
+l'environnement cloud de cette session. Les deux noms ont résolu vers le même
+exécutable et les mêmes versions **dans cet échantillon** :
+
+| Kernelspec | `argv[0]` déclaré | Exécutable effectif | Python | NumPy |
+|---|---|---|---|---|
+| `coursia` | `/workspace/coursia-cloud/venv/bin/python` | `/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12` | 3.12.14 | 2.4.4 |
+| `python3` | `python` | `/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12` | 3.12.14 | 2.4.4 |
+
+Cette observation décrit uniquement l'environnement cloud temporaire de la
+session (`bb1b6860b79a`, relevé UTC `2026-11-08T00:02:59Z`). Elle ne mesure aucun
+poste de la flotte et ne doit pas servir à nommer un environnement de
+ré-exécution sur un autre siège.
+
+**Vérification mixte après ajout de la détection par langage effectif**
+(`2026-11-08T00:18:08Z`) : le lancement réel de `.net-csharp` et `python3` a
+rendu `not_python`, langage `C#`, pour le premier sans lui envoyer de code
+Python, puis `ok`, Python 3.12.14 / NumPy 2.4.4, pour le second. Les journaux de
+démarrage .NET ne font pas partie du JSON de mesure.
+
+#### Procédure de collecte de la flotte
+
+Sur **chaque siège**, dans son propre environnement Jupyter, récupérer la
+branche contenant l'outil puis exécuter la commande complète sans filtre :
+
+```bash
+python scripts/notebook_tools/measure_kernels_runtime.py \
+  --timeout 120 --output kernels-runtime-<siege>-<date-utc>.json
+```
+
+Transmettre le JSON ainsi produit avec le nom du siège et l'heure UTC du
+relevé. Un lancement non réussi reste une ligne d'incident et ne devient pas
+une mesure par lecture de `kernel.json`. Répéter le relevé après une réparation
+d'environnement ; conserver la mesure datée antérieure comme historique.
+
+**Inventaire flotte complet : non mesuré dans cette session.** Les mesures
+cloud ci-dessus ne remplissent aucune ligne de flotte. Le commentaire de suivi
+MYIA-PO-2028 du 2026-11-05 dans [#24883](https://github.com/jsboige/CoursIA/issues/24883)
+fournit une observation datée de ce seul siège ; il ne constitue pas un relevé
+actuel ni exhaustif des autres sièges. L'issue reste ouverte jusqu'à la collecte
+des sièges manquants et à la publication de leurs mesures réelles.
 
 ### Envs Conda dédiés (ai-01, référence)
 

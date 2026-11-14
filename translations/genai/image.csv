@@ -1844,22 +1844,21 @@ Let us test the analysis function on a concrete image. GPT-5 will describe the c
 1. Время ответа не линейно по длине вывода: переход от 942 к 2256 токенам (×2.4) переводит время с 7.76s на 25.73s (×3.3). Латентность определяется фазой рассуждения (`reasoning_tokens`: 192 → 320 → 704), а не генерацией.
 2. Стоимость upstream (со стороны провайдера инференса) приблизительно следует общим токенам; промпт `educational` самый дорогой, потому что он внедряет структуру + формат вывода во вход.
 3. Для использования `alt-text` достаточно режима `quick` — 206 символов после trim попадает в диапазон WCAG (<125). Для структурированного педагогического использования режим `educational` даёт вдобавок наводящие вопросы для ученика.",,04758d06016ab082,e7e95b2db5cbe804,,,,,9764119d4bfbacfe,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,lecture-cmp-modes-guide,markdown,fr,c160cc0b21abe3b5,"### Lecture du résultat — comparaison quick/detailed/educational
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,lecture-cmp-modes-guide,markdown,fr,12300a81ef57555b,"### Lecture du résultat — comparaison quick/detailed/educational
 
 La cellule précédente lance trois appels successifs sur l'image `Architecture Historique` (en fait la Gran Vía à Madrid — première surprise factuelle à noter). La sortie se termine par une table `📊 COMPARAISON DES MODES D'ANALYSE` imprimée par le code lui-même : caractères, tokens et temps y sont récapitulés pour les trois modes — relisez-la directement dans la sortie, elle reflète l'exécution que vous venez de lancer (ses valeurs changent à chaque ré-exécution).
 
 **Ce qu'on y lit, en guide** :
 1. Le temps de réponse n'est pas linéaire en longueur de sortie : comparez le rapport des `total_tokens` et celui des temps — la latence est dominée par la phase de raisonnement (`reasoning_tokens`, dans les `completion_tokens_details` de chaque bloc), pas par la génération elle-même.
 2. Le coût upstream (`upstream_inference_cost` dans les détails de tokens) suit approximativement les tokens totaux ; le prompt `educational` est le plus cher parce qu'il injecte structure + format de sortie dans l'entrée.
-3. Pour un usage `alt-text`, c'est le prompt spécialisé de la section suivante qui garantit la contrainte (≤ 125 caractères imposée dans le prompt) — la sortie `quick` est concise, mais c'est le prompt qui tient la promesse WCAG, pas la seule brièveté du mode. Pour un usage pédagogique structuré, le mode `educational` produit des questions de guidage de l'élève en sus.
-","### Reading the result — quick/detailed/educational comparison
+3. Pour un usage `alt-text`, c'est le prompt spécialisé de la section suivante qui garantit la contrainte (≤ 125 caractères imposée dans le prompt) — la sortie `quick` est concise, mais c'est le prompt qui tient la promesse de longueur, pas la seule brièveté du mode. Pour un usage pédagogique structuré, le mode `educational` produit des questions de guidage de l'élève en sus.","### Reading the result — quick/detailed/educational comparison
 
 The previous cell launches three successive calls on the `Architecture Historique` image (actually the Gran Vía in Madrid — a first factual surprise worth noting). The output ends with a `📊 COMPARAISON DES MODES D'ANALYSE` table printed by the code itself: characters, tokens and time are recapitulated there for the three modes — read it directly in the output, it reflects the execution you have just launched (its values change on each re-run).
 
 **What to read there, as a guide**:
 1. The response time is not linear in output length: compare the ratio of the `total_tokens` and that of the times — latency is dominated by the reasoning phase (`reasoning_tokens`, in the `completion_tokens_details` of each block), not by generation itself.
 2. The upstream cost (`upstream_inference_cost` in the token details) roughly follows the total tokens; the `educational` prompt is the most expensive because it injects structure + output format into the input.
-3. For an `alt-text` use, it is the specialized prompt of the next section that guarantees the constraint (≤ 125 characters imposed in the prompt) — the `quick` output is concise, but it is the prompt that holds the WCAG promise, not the mere brevity of the mode. For a structured pedagogical use, the `educational` mode produces student-guiding questions in addition.",,,,,,,c160cc0b21abe3b5,b7ed08bb803adedc,,,,,,,,,,,,,,
+3. For an `alt-text` use, it is the specialized prompt of the next section that guarantees the constraint (≤ 125 characters imposed in the prompt) — the `quick` output is concise, but it is the prompt that holds the length promise, not the mere brevity of the mode. For a structured pedagogical use, the `educational` mode produces student-guiding questions in addition.",,,,,,,12300a81ef57555b,67f66cfbed0192f6,,,,,,,12300a81ef57555b,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,368e963b,code,fr,d4e94d8c40e61cf0,"# Analyse d'une image de démonstration
 print(""\n🚀 ANALYSE DE DÉMONSTRATION - GPT-5"")
 print(""="" * 50)
@@ -2020,7 +2019,7 @@ if texte:
     for q in questions:
         print("" •"", q)
 ",,,,,,,,0d807edc1de50e29,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jxwlftsm05,markdown,fr,aeb831f0f515474f,"### Applications pratiques : accessibilite et pedagogie
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,jxwlftsm05,markdown,fr,1e13c6d0b9cf7aef,"### Applications pratiques : accessibilite et pedagogie
 
 GPT-5 excelle dans deux cas d'usage concrets :
 - **Alt text** : generer automatiquement des descriptions d'accessibilite pour les images web
@@ -2031,7 +2030,7 @@ GPT-5 excelle dans deux cas d'usage concrets :
 
 La cellule précédente appelle `analyze_image_with_gpt5()` avec un prompt spécialisé accessibilité qui impose trois contraintes : (1) sortie ≤ 125 caractères, (2) ton factuel et objectif, (3) pas de formatage additionnel. La sortie obtenue décrit la scène visible en une phrase factuelle unique ; le `print` affiche sa longueur en caractères — vérifiez qu'elle reste sous le seuil de 125 imposé par le prompt (le texte exact change à chaque exécution, la contrainte, elle, est tenue par le prompt).
 
-**Pourquoi cette longueur compte** : le standard WCAG 2.1 (critère 1.1.1 *Non-text Content*) recommande des alt texts courts pour les images informatives. Au-delà de 125 caractères, les lecteurs d'écran tronquent et l'expérience se dégrade. Au-dessous de 50, l'utilisateur perd le contexte. L'exemple guidé de la cellule 19 ci-dessous exécute les trois niveaux de longueur pour étudier cette zone de confort — c'est l'un des usages où la multimodalité native remplace un pipeline séparé (modèle vision → modèle texte → formatage).","### Practical applications : accessibility and pedagogy
+**Pourquoi cette longueur compte** : WCAG 2.1 (critère 1.1.1 *Non-text Content*) exige une alternative textuelle qui rend le **même sens** que l'image — la norme **n'impose aucune longueur**. Le seuil de 125 caractères est une **convention de ce carnet**, inscrite dans le prompt, et non une valeur normative : au-delà, l'alt text devient long à lire en consultation rapide ; en dessous de 50, il perd le contexte. L'exemple guidé de la cellule 19 ci-dessous exécute les trois niveaux de longueur pour étudier cette zone de confort — c'est l'un des usages où la multimodalité native remplace un pipeline séparé (modèle vision → modèle texte → formatage).","### Practical applications : accessibility and pedagogy
 
 GPT-5 excels in two concrete use cases:
 - **Alt text** : automatically generate accessibility descriptions for web images
@@ -2042,7 +2041,7 @@ GPT-5 excels in two concrete use cases:
 
 The previous cell calls `analyze_image_with_gpt5()` with a specialized accessibility prompt that imposes three constraints: (1) output ≤ 125 characters, (2) factual and objective tone, (3) no additional formatting. The output obtained describes the visible scene in a single factual sentence; the `print` displays its length in characters — check that it remains under the 125 threshold imposed by the prompt (the exact text changes on each execution, the constraint is held by the prompt).
 
-**Why this length matters** : the WCAG 2.1 standard (criterion 1.1.1 *Non-text Content*) recommends short alt texts for informative images. Beyond 125 characters, screen readers truncate and the experience degrades. Below 50, the user loses context. The guided example in cell 19 below runs the three length levels to study this comfort zone — this is one of the uses where native multimodality replaces a separate pipeline (vision model → text model → formatting).",,,,,"### Практические применения: доступность и педагогика
+**Why this length matters** : WCAG 2.1 (criterion 1.1.1 *Non-text Content*) requires a text alternative that conveys the **same meaning** as the image — the standard **imposes no length**. The 125-character threshold is a **convention of this notebook**, written into the prompt, not a normative value: beyond it, the alt text becomes long to read in quick consultation; below 50, the user loses context. The guided example in cell 19 below runs the three length levels to study this comfort zone — this is one of the uses where native multimodality replaces a separate pipeline (vision model → text model → formatting).",,,,,"### Практические применения: доступность и педагогика
 
 GPT-5 отлично справляется с двумя конкретными сценариями использования:
 - **Alt text**: автоматическая генерация описаний доступности для веб-изображений
@@ -2052,7 +2051,7 @@ GPT-5 отлично справляется с двумя конкретными
 
 Предыдущая ячейка вызывает `analyze_image_with_gpt5()` со специализированным промптом доступности, налагающим три ограничения: (1) вывод ≤ 125 символов, (2) фактический и объективный тон, (3) без дополнительного форматирования. Полученный вывод — *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 символов** (ниже порога 125), что подтверждает следующий за ним `print`.
 
-**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,aeb831f0f515474f,5616b980302adc0f,,,,,7bb55f5783c16de6,,,,,,,,,
+**Почему эта длина имеет значение**: WCAG 2.1 (критерий 1.1.1 *Non-text Content*) требует текстовой альтернативы, передающей **тот же смысл**, что и изображение, — при этом норма **не устанавливает никакой длины**. Порог в 125 символов — это **соглашение, принятое в этом тетради** и записанное в промпт, а не нормативное значение: за этой границей alt text становится слишком длинным для быстрого чтения; ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,1e13c6d0b9cf7aef,ad4c63031003b6fe,,,,,f4c1226adb628e44,,1e13c6d0b9cf7aef,,,,,1e13c6d0b9cf7aef,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
 if generate_alt_text and analysis_results:
     print(""\n♿ GÉNÉRATION DE DESCRIPTIONS D'ACCESSIBILITÉ"")
@@ -2091,7 +2090,7 @@ Format : Fournis UNIQUEMENT la description, sans formatage supplémentaire."""""
         print(f""❌ Erreur génération alt text: {alt_result['error']}"")
 else:
     print(f""\n⏭️  Génération alt text désactivée ou pas d'analyse disponible"")",,,,,,,,fafb03e3949280b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9bf10ff2,markdown,fr,46a561f48fba8e12,"### Exemple guidé : descriptions d'accessibilité multi-niveaux
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,9bf10ff2,markdown,fr,defbf0ae38334e91,"### Exemple guidé : descriptions d'accessibilité multi-niveaux
 
 *Contribution d'un groupe d'étudiants EPF (TP2, PR #20551), intégrée comme exemple guidé.*
 
@@ -2099,9 +2098,8 @@ L'accessibilité web exige des textes alternatifs (alt text) adaptés au context
 
 **Points clés** :
 - Chaque niveau a son **propre prompt** : la longueur maximale et le public sont écrits noir sur blanc dans la consigne
-- La vérification s'appuie sur `len()` des textes réels — la conformité à la limite WCAG est **constatée**, pas supposée
-- Le texte court vise ≤ 125 caractères : au-delà, les lecteurs d'écran tronquent (cf. l'analyse WCAG ci-dessus)
-","### Guided example: multi-level accessibility descriptions
+- La vérification s'appuie sur `len()` des textes réels — la conformité à la limite imposée par le prompt est **constatée**, pas supposée
+- Le texte court vise ≤ 125 caractères : au-delà, l'alt text devient long à lire en consultation rapide (cf. l'analyse ci-dessus)","### Guided example: multi-level accessibility descriptions
 
 *Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
 
@@ -2109,8 +2107,8 @@ Web accessibility requires alternative texts (alt text) adapted to the context. 
 
 **Key points**:
 - Each level has its **own prompt**: the maximum length and the audience are spelled out in the instruction
-- The check relies on `len()` of the actual texts — compliance with the WCAG limit is **observed**, not assumed
-- The short text targets ≤ 125 characters: beyond that, screen readers truncate (see the WCAG analysis above)",,,,,"### Упражнение 2 : Генерация многоуровневых описаний доступности
+- The check relies on `len()` of the actual texts — compliance with the limit imposed by the prompt is **observed**, not assumed
+- The short text targets ≤ 125 characters: beyond that, the alt text becomes long to read in quick consultation (see the analysis above)",,,,,"### Упражнение 2 : Генерация многоуровневых описаний доступности
 
 Веб-доступность требует альтернативных текстов (alt text), адаптированных к контексту. Одно и то же изображение может требовать описаний разной длины в зависимости от использования: быстрая навигация (125 символов), подробное описание (для программ чтения с экрана) или педагогическое резюме.
 
@@ -2123,7 +2121,7 @@ Web accessibility requires alternative texts (alt text) adapted to the context. 
 4. Сгенерируйте педагогическое резюме, адаптированное к уровню ""secondary""
 5. Проверьте, что каждое описание является фактическим и объективным
 
-**Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,46a561f48fba8e12,1902fe83d7ce19e5,,,,,12029e1026361450,,,,,,,,,
+**Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,defbf0ae38334e91,7d88d83dfcf10c8b,,,,,12029e1026361450,,defbf0ae38334e91,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,01e1a458,code,fr,8c2207deb8e7dae8,"# Exemple guide : descriptions d'accessibilite multi-niveaux
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -2337,7 +2335,7 @@ print(f""2. Analyse GPT-5 avec prompt éducatif"")
 print(f""3. Génération de questions pour les étudiants"")
 print(f""4. Discussion interactive basée sur l'analyse"")
 print(f""5. Évaluation de la compréhension"")",,,,,,,,583bd43216b1385e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a07f0ce4,markdown,fr,fdb32ce3796d93f1,"## 🎯 Résumé et Bonnes Pratiques
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a07f0ce4,markdown,fr,7e238d99efa17b7d,"## 🎯 Résumé et Bonnes Pratiques
 
 ### ✅ Ce que vous avez appris
 
@@ -2390,7 +2388,7 @@ Le `print('Cas d'usage pédagogiques')` précédent est un **catalogue statique*
 
 **Trois choses à retenir pour la cellule de résumé** :
 1. L'API OpenRouter expose une large famille de modèles GPT-5 (l'inventaire de l'exécution est dans la sortie de connexion) — la nomenclature est plus large que la nomenclature OpenAI officielle, et la sélection se fait sur le compromis `contexte × coût × capabilities` (vision, tools, etc.).
-2. Les trois modes d'analyse (quick/detailed/educational) ne sont pas interchangeables : quick est optimisé pour l'alt-text WCAG, educational produit des questions de guidage de l'élève — c'est le seul mode qui fournit un livrable pédagogique clé en main.
+2. Les trois modes d'analyse (quick/detailed/educational) ne sont pas interchangeables : quick est optimisé pour l'alt-text court, educational produit des questions de guidage de l'élève — c'est le seul mode qui fournit un livrable pédagogique clé en main.
 3. Le pipeline multimodal (encode → POST → parse) est uniforme quelle que soit l'image — la complexité se trouve dans le prompt, pas dans le transport.","## 🎯 Summary and Best Practices
 
 ### ✅ What you have learned
@@ -2440,11 +2438,11 @@ Le `print('Cas d'usage pédagogiques')` précédent est un **catalogue statique*
 
 ### Reading the result — what the next cell really presents
 
-The `print('Cas d'usage pédagogiques')` above is a **static catalog**, not an execution. The five domains listed are there to give the student a structured starting point — each `prompt_template` is immediately reusable via `analyze_image_with_gpt5(image, prompt=...)`, without having to rewrite it. The `print('Template de prompt disponible')` is the clue that the cell has already played its pedagogical role by the time the student reads it, even if nothing was executed.
+The `print('Cas d'usage pédagogiques')` above is a **static catalog**, not an execution. The five domains listed are there to give the student a structured starting point — each `prompt_template` is immediately reusable via `analyze_image_with_gpt5(image, prompt=...)`, without having to rewrite it. The `print('Template de prompt disponible')` is the clue that the cell has already played its educational role at the time the student read it, even if nothing was executed.
 
 **Three things to remember for the summary cell** :
 1. The OpenRouter API exposes a large family of GPT-5 models (the execution inventory is in the connection output) — the nomenclature is wider than the official OpenAI nomenclature, and the selection is made on the `contexte × coût × capabilities` trade-off (vision, tools, etc.).
-2. The three analysis modes (quick/detailed/educational) are not interchangeable: quick is optimized for WCAG alt-text, educational produces student-guiding questions — it is the only mode that provides a turnkey pedagogical deliverable.
+2. The three analysis modes (quick/detailed/educational) are not interchangeable: quick is optimized for short alt-text, educational produces student-guiding questions — it is the only mode that provides a turnkey pedagogical deliverable.
 3. The multimodal pipeline (encode → POST → parse) is uniform whatever the image — the complexity lies in the prompt, not in the transport.",,,,,"## 🎯 Резюме и лучшие практики
 
 ### ✅ Что вы изучили
@@ -2496,9 +2494,9 @@ The `print('Cas d'usage pédagogiques')` above is a **static catalog**, not an e
 Предыдущий `print('Cas d'usage pédagogiques')` — это **статический каталог**, а не выполнение. Перечисленные пять доменов дают студенту структурированную отправную точку — каждый `prompt_template` немедленно переиспользуется через `analyze_image_with_gpt5(image, prompt=...)` без переписывания. `print('Template de prompt disponible')` — знак того, что ячейка уже сыграла свою педагогическую роль к моменту, когда студент её прочитал, даже если ничего не было выполнено.
 
 **Три вещи, которые стоит запомнить для ячейки резюме**:
-1. API OpenRouter выставляет 26 различных моделей GPT-5 — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
-2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под alt-text WCAG, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
-3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,fdb32ce3796d93f1,0f434e59eed8ba0c,,,,,2de15031478a994d,,,,,,,,,
+1. API OpenRouter предоставляет широкое семейство моделей GPT-5 (перечень приведён в выводе подключения) — номенклатура шире официальной номенклатуры OpenAI, и выбор делается по компромиссу `контекст × стоимость × возможности` (зрение, tools и т.д.).
+2. Три режима анализа (quick/detailed/educational) не взаимозаменяемы: quick оптимизирован под короткий alt-text, educational даёт наводящие вопросы для ученика — это единственный режим, дающий готовый педагогический результат.
+3. Мультимодальный пайплайн (encode → POST → parse) одинаков для любого изображения — сложность живёт в промпте, а не в транспорте.",,7e238d99efa17b7d,544a0c89c953c0b7,,,,,3075d36d99503666,,7e238d99efa17b7d,,,,,7e238d99efa17b7d,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ubm6sfxypqb,markdown,fr,2c703bc7de7a4b02,"***
 
 ## Exemples guidés : trois gestes mesurés
@@ -14289,16 +14287,16 @@ class MultiLevelCache:
 #     result = ml_cache.get_or_compute(prompt, {""seed"": 42}, generate_fn=lambda: ""fake_image"")
 # print(ml_cache.get_stats())
 print(""Exercice a completer"")",,,,,,,,6c7d9ff988c9aab2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,ffd5ad77,markdown,fr,46cf4bd188e5ce0c,"**Navigation** : [Index](../../README.md) | [<< Précédent](../03-Orchestration/03-3-Performance-Optimization.ipynb) | [Suivant >>](04-2-Creative-Workflows.ipynb)
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,ffd5ad77,markdown,fr,6f0b4f607db73005,"**Navigation** : [Index](../../README.md) | [<< Précédent](../03-Orchestration/03-3-Performance-Optimization.ipynb) | [Suivant >>](04-2-Creative-Workflows.ipynb)
 
 # Educational Content Generation - GenAI
 
 **Auteur :** Équipe CoursIA  
 **Date :** 2025-01-08  
 **Version :** 1.0.0  
-**Module :** 04-Images-Applications  
+**Module :** 04-Applications  
 **Niveau :** 🔴 Expert  
-**Technologies :** DALL-E 3, GPT-5, OpenRouter  
+**Technologies :** gpt-image-1, anthropic/claude-sonnet-4.5 via OpenRouter  
 **Durée estimée :** 45 minutes  
 
 ## 🎯 Objectifs d'Apprentissage
@@ -14306,7 +14304,6 @@ MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generatio
 - [ ] Générer des diagrammes éducatifs automatisés
 - [ ] Créer des illustrations pour cours scientifiques
 - [ ] Implémenter l'alt text automatique pour l'accessibilité
-- [ ] Exporter en formats multiples (PDF, PNG, SVG)
 - [ ] Développer des templates par matière scolaire
 - [ ] Construire un workflow professeur → contenu complet
 
@@ -14315,7 +14312,7 @@ MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generatio
 - Environment Setup (notebook 00-1) complété
 - API Configuration (notebook 00-3) complété
 - Foundation DALL-E 3 (notebook 01-1) complété
-- GPT-5 Image Generation (notebook 01-2) complété",,,,,,,,46cf4bd188e5ce0c,,,,,,,,,,,,,,,
+- GPT-5 Image Generation (notebook 01-2) complété",,,,,,,,6f0b4f607db73005,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,cf2c0a34,code,fr,f528ec8d39eba111,"# Paramètres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration génération
@@ -14452,12 +14449,12 @@ logger = logging.getLogger('educational_content')
 print(f""🎓 Educational Content Generation - GenAI"")
 print(f""📅 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
 print(f""📚 Matière: {subject_area} | Niveau: {education_level} | Sujet: {topic}"")",,,,,,,,b4e2f6995824daf1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,a73f87a8,markdown,fr,78cce886f9bfd16e,"### Lecture du résultat : un environnement prêt, des paramètres injectés
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,a73f87a8,markdown,fr,61cd78b2f87cde5b,"### Lecture du résultat : un environnement prêt, des paramètres injectés
 
-La sortie confirme que toutes les dépendances externes sont disponibles et que le fichier `.env` est chargé depuis le répertoire courant. Les paramètres Papermill sont bien injectés dans le notebook : matière `biology`, niveau `high_school`, sujet `photosynthesis`. La date d'exécution (`2026-08-31 02:37:47`) et le bandeau `🎓 Educational Content Generation - GenAI` confirment que l'environnement est correctement configuré pour ce module. Cette vérification en amont évite les échecs tardifs : aucune génération ne démarrera si une dépendance manque ou si les identifiants API sont absents.
+La sortie confirme que toutes les dépendances externes sont disponibles et que le fichier `.env` est chargé depuis le répertoire courant. Les paramètres Papermill sont bien injectés dans le notebook : matière `biology`, niveau `high_school`, sujet `photosynthesis`. La date d'exécution (`2026-08-31 02:37:47`) et le bandeau `🎓 Educational Content Generation - GenAI` confirment que l'environnement est correctement configuré pour ce module. Le comportement dépend du fournisseur manquant : sans clé OpenAI, la démonstration batch saute la génération d’image ; sans clé OpenRouter, la méthode renvoie un alt text générique (« Diagramme éducatif sur {topic} en {subject} »). La génération d’image peut donc avoir lieu sans OpenRouter.
 
-La configuration des APIs valide la disponibilité de chaque clé et instancie les clients OpenAI et OpenRouter. Cette vérification en amont permet d'identifier rapidement les identifiants manquants avant tout appel de génération.",,,,,,,,78cce886f9bfd16e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,c67ed52d,code,fr,6f9f82bf2007041c,"# Configuration APIs et validation
+La configuration des APIs valide la disponibilité de chaque clé et instancie les clients OpenAI et OpenRouter. Cette vérification en amont permet d'identifier rapidement les identifiants manquants avant tout appel de génération.",,,,,,,,61cd78b2f87cde5b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,c67ed52d,code,fr,99cb0f85ef208eaf,"# Configuration APIs et validation
 from dotenv import load_dotenv
 
 # Charger variables d'environnement
@@ -14474,7 +14471,7 @@ api_configs = {
         'api_key': os.getenv('OPENAI_API_KEY'),
         'base_url': os.getenv('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
         'model_chat': os.getenv('OPENAI_CHAT_MODEL_ID', 'gpt-5-mini'),
-        'model_image': 'gpt-image-1'
+        'model_image': os.getenv('OPENAI_IMAGE_MODEL_ID', 'gpt-image-1.5')
     },
     'openrouter': {
         'api_key': os.getenv('OPENROUTER_API_KEY'),
@@ -14495,14 +14492,14 @@ for api_name, config in api_configs.items():
         print(f""❌ {api_name.upper()}: Clé API manquante"")
 
 print(f""\n📊 Configuration APIs: {config_status}"")
-",,,,,,,,6f9f82bf2007041c,,,,,,,,,,,,,,,
+",,,,,,,,99cb0f85ef208eaf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,a99f0ee2,markdown,fr,87245a6e61d0344b,"### Génération de contenu éducatif
 
 La classe `EducationalContentGenerator` transforme un sujet scolaire en matériel pédagogique complet : illustrations, schémas, exercices visuels et alt text accessible. Elle encapsule toute la chaîne de génération — construction du prompt, appel API image, génération du texte alternatif — derrière une interface unique, ce que les cellules suivantes illustrent étape par étape.
 ",,,,,,,,87245a6e61d0344b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,f6dd6278,code,fr,38cb555afa95bf8c,"# Classe Educational Content Generator
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,f6dd6278,code,fr,056a35f3b120665a,"# Classe Educational Content Generator
 class EducationalContentGenerator:
-    """"""Générateur de contenu éducatif avec gpt-image-1 et GPT-5""""""
+    """"""Générateur de contenu éducatif avec le modèle image configuré et GPT-5""""""
     
     def __init__(self, api_configs: Dict):
         self.api_configs = api_configs
@@ -14602,16 +14599,17 @@ Level: {level.replace('_', ' ').title()}
         return base_prompt.strip()
     
     async def generate_educational_image(self, prompt: str, size: str = ""1024x1024"") -> Optional[Dict]:
-        """"""Génère une image éducative avec gpt-image-1""""""
+        """"""Génère une image éducative avec le modèle image configuré (OPENAI_IMAGE_MODEL_ID).""""""
         
         if not self.openai_client:
             raise RuntimeError(""Client OpenAI non initialisé"")
         
+        model_image = self.api_configs['openai']['model_image']
         try:
             print(f""🎨 Génération image éducative..."")
             
             response = self.openai_client.images.generate(
-                model=""gpt-image-1"",
+                model=model_image,
                 prompt=prompt,
                 size=size,
                 quality=""high"",
@@ -14626,10 +14624,10 @@ Level: {level.replace('_', ' ').title()}
                     'revised_prompt': getattr(response.data[0], 'revised_prompt', prompt),
                     'timestamp': datetime.now().isoformat(),
                     'size': size,
-                    'model': 'gpt-image-1'
+                    'model': model_image
                 }
                 
-                print(f""✅ Image générée (gpt-image-1, base64 {len(b64_data) // 1024} KB)"")
+                print(f""✅ Image générée ({model_image}, base64 {len(b64_data) // 1024} KB)"")
                 return result
             
         except Exception as e:
@@ -14683,7 +14681,7 @@ Format: Alt text uniquement, sans guillemets.
 
 # Initialisation du générateur
 content_generator = EducationalContentGenerator(api_configs)
-print(""🎓 Générateur de contenu éducatif initialisé"")",,,,,,,,38cb555afa95bf8c,,,,,,,,,,,,,,,
+print(""🎓 Générateur de contenu éducatif initialisé"")",,,,,,,,056a35f3b120665a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,2f1162da,markdown,fr,498f2e72da13f3c0,"### Exercice 1 : Exploration des templates par matiere
 
 **Objectif** : Ecrire une fonction qui parcourt les `subject_templates` du générateur et produit un tableau recapitulatif des styles, couleurs et types de diagrammes disponibles pour chaque matiere.
@@ -14726,7 +14724,7 @@ if summary:
               f""Mot-cle: {entry.get('example_keyword', 'N/A')}"")
 
 print(""Exercice a completer"")",,,,,,,,8170088538141824,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,b1120659,markdown,fr,c6eb40050b9c5eb0,"L'interface interactive Jupyter permet de configurer la génération via des widgets. Le bouton de génération déclenche le workflow complet : construction du prompt optimisé, appel DALL-E 3, génération du texte alternatif, et sauvegarde du package en JSON.",,,,,,,,c6eb40050b9c5eb0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,b1120659,markdown,fr,ec54174b7cbc91df,"L'interface interactive Jupyter permet de configurer la génération via des widgets. Le bouton de génération déclenche le workflow complet : construction du prompt optimisé, appel de `gpt-image-1`, génération du texte alternatif, et sauvegarde du package en JSON (`outputs/educational_content/*.json`, lorsque `save_templates` est actif).",,,,,,,,ec54174b7cbc91df,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,471b7eee,code,fr,1f322be6d65a7203,"# Interface utilisateur interactive
 print(""🎛️ Interface de génération de contenu éducatif"")
 
@@ -14895,11 +14893,12 @@ generate_button.on_click(on_generate_clicked)
 display(ui_box)
 
 print(""\n📱 Interface prête! Configurez les paramètres et cliquez sur 'Générer Contenu'"")",,,,,,,,1f322be6d65a7203,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,demo-gptimage-md,markdown,fr,1bda8192d3cf8422,"### Demonstration : generation reelle avec gpt-image-1
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,demo-gptimage-md,markdown,fr,a1a05ea08279f59b,"### Demonstration : generation reelle avec le modele image configure
 
 L'interface interactive ci-dessus ne se declenche qu'en mode interactif (clic sur le bouton). Pour une exécution **reproductible** (batch / Papermill), on appelle directement le générateur avec les paramètres du notebook et on affiche le diagramme educatif **reellement produit**.
 
-> Note modèle : `dall-e-3` a ete **retire** de l'API OpenAI. Le modèle image actuel est **`gpt-image-1`**, qui retourne l'image encodee en **base64** (et non une URL) ; on l'affiche ici via une *data URI*.",,,,,,,,1bda8192d3cf8422,,,,,,,,,,,,,,,
+> Note modèle : le modèle image est lu dans l'environnement (`OPENAI_IMAGE_MODEL_ID`, défaut **`gpt-image-1.5`**) ; il retourne l'image encodée en **base64** (et non une URL), qu'on affiche ici via une *data URI*. L'identifiant est **sondé avant d'être écrit** (règle du dépôt : on teste l'endpoint, pas le catalogue) — avec la clé partagée, `gpt-image-1` et `dall-e-3` répondent `400 The model '<modele>' does not exist`, un refus d'**accès clé/organisation** et non un retrait du fournisseur, tandis que `gpt-image-1.5`, `gpt-image-2` et la famille `gpt-image-2.x` répondent `200 OK` et renvoient du base64.
+",,,,,,,,a1a05ea08279f59b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,demo-gptimage-code,code,fr,dd30b689143b9c12,"# Demonstration batch reproductible : generation reelle d'un diagramme educatif (gpt-image-1)
 demo_image_result = None
 if content_generator.openai_client:
@@ -15084,14 +15083,14 @@ teacher_workflow = TeacherWorkflow(content_generator)
 print(f""👩‍🏫 Workflow enseignant initialisé"")
 print(f""📚 Templates disponibles: {list(teacher_workflow.lesson_templates.keys())}"")
 print(f""\n💡 Usage: await teacher_workflow.create_complete_lesson_package('biology', 'photosynthesis', 'high_school')"")",,,,,,,,f78e7f58258be7fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,d30709e6,markdown,fr,632a1a03096f2edd,"## 🏁 Résumé et Prochaines Étapes
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,d30709e6,markdown,fr,63c7af121a32edb9,"## 🏁 Résumé et Prochaines Étapes
 
 ### ✅ Fonctionnalités Implémentées
 
-1. **🎨 Génération de contenu éducatif** avec DALL-E 3 et GPT-5
+1. **🎨 Génération de contenu éducatif** avec `gpt-image-1` (image) et `anthropic/claude-sonnet-4.5` via OpenRouter (alt text)
 2. **📚 Templates par matière** (biologie, physique, chimie, mathématiques, histoire)
 3. **♿ Accessibilité intégrée** avec génération automatique d'alt text
-4. **📤 Export multi-formats** (PNG, PDF, SVG, JPEG)
+4. **💾 Sauvegarde du package** en JSON (branche interactive du widget)
 5. **🔄 Mode batch** pour génération multiple
 6. **👩‍🏫 Workflow enseignant** complet
 7. **🎛️ Interface interactive** avec widgets Jupyter
@@ -15110,7 +15109,7 @@ prompt = content_generator.generate_educational_prompt(
 )
 
 image_result = await content_generator.generate_educational_image(prompt)
-alt_text = content_generator.generate_alt_text(image_result['url'], 'biology', 'photosynthesis')
+alt_text = content_generator.generate_alt_text(image_result['data_uri'], 'biology', 'photosynthesis')
 
 # Workflow enseignant complet
 lesson_package = await teacher_workflow.create_complete_lesson_package(
@@ -15123,15 +15122,21 @@ lesson_package = await teacher_workflow.create_complete_lesson_package(
 - [x] Configuration APIs opérationnelle
 - [x] Génération d'images éducatives
 - [x] Alt text automatique pour accessibilité
-- [x] Export formats multiples
+- [ ] Export formats multiples
 - [x] Templates par matière scolaire
 - [x] Interface utilisateur intuitive
 - [x] Workflow enseignant intégré
-- [x] Sauvegarde et réutilisation
+- [ ] Sauvegarde et réutilisation
+
+### 🚧 Prochaines Étapes
+
+- Implémenter l'export multi-formats (PNG, PDF, SVG) à partir du `data_uri` produit par `gpt-image-1` ;
+- Étendre `TeacherWorkflow.lesson_templates` au-delà de `biology/photosynthesis` : les autres matières et niveaux du générateur n'ont pas de template de cours ;
+- Rendre le rendu image reproductible d'une exécution à l'autre : la génération ne prend aujourd'hui aucun paramètre de reproductibilité.
 
 ### ➡️ Notebook Suivant
 
-**04-2-Creative-Workflows.ipynb** - Pipelines créatifs multi-étapes avec APIs",,,,,,,,632a1a03096f2edd,,,,,,,,,,,,,,,
+**04-2-Creative-Workflows.ipynb** - Pipelines créatifs multi-étapes avec APIs",,,,,,,,63c7af121a32edb9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,f7b9b703,markdown,fr,a89f50405013c223,"***
 
 ## Exercice : Système de Contenu Éducatif Adaptatif
@@ -15224,17 +15229,17 @@ pass
 - [ ] Test avec au moins 2 sujets différents
 - [ ] Structure de données cohérente et documentée
 - [ ] Validation de la qualité pédagogique (pertinence des questions)",,,,,,,,a89f50405013c223,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,1205a8a3,markdown,fr,dd0645489f28b140,"### Exercice 3 : Validation de la qualite d'un alt text
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,1205a8a3,markdown,fr,b5514d2316dd54c7,"### Exercice 3 : Validation de la qualite d'un alt text
 
 **Objectif** : Implementer une fonction qui evalue si un alt text genere est conforme aux standards d'accessibilite WCAG-AA.
 
-**Contexte** : La méthode `generate_alt_text()` de `EducationalContentGenerator` produit des descriptions pour les lecteurs d'ecran. Avant de publier du contenu educatif, il faut verifier que ces descriptions repondent aux critères de qualite.
+**Contexte** : La méthode `generate_alt_text()` de `EducationalContentGenerator` produit des descriptions pour les lecteurs d'ecran. Elle est d'ailleurs écrite à partir du **contexte** (matière, sujet, usage) et non d'une analyse de l'image : c'est la qualité de cette rédaction que l'exercice évalue, pas sa fidélité à l'image. Avant de publier du contenu educatif, il faut verifier que ces descriptions repondent aux critères de qualite.
 
 **Indices** :
-- La recommandation WCAG suggerre un alt text de 125 caractères maximum
+- Le prompt de génération du carnet demande lui-même un alt text « Rester concis (max 125 caractères) » : ce plafond est une convention de ce carnet, pas une valeur normative de WCAG
 - Un bon alt text doit mentionner le sujet et le topic decrits
-- Le score global peut etre la moyenne de sous-scores booléens (0.0 ou 1.0)",,,,,,,,dd0645489f28b140,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,5b5da3ea,code,fr,5d587958cd702bb8,"# Exercice 3 : Validation de la qualite pedagogique d'un alt text
+- Le score global peut etre la moyenne de sous-scores booléens (0.0 ou 1.0)",,,,,,,,b5514d2316dd54c7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,5b5da3ea,code,fr,7711f828defd2ffc,"# Exercice 3 : Validation de la qualite pedagogique d'un alt text
 # Objectif : Evaluer si un alt text genere est conforme aux standards WCAG-AA
 # TODO etudiant : implementer la fonction evaluate_alt_text_quality
 
@@ -15242,7 +15247,8 @@ def evaluate_alt_text_quality(alt_text: str, subject: str, topic: str) -> dict:
     """"""
     Evalue la qualite pedagogique d'un alt text pour l'accessibilite.
 
-    # Etape 1 : Verifier la longueur (max 125 caracteres recommande WCAG)
+    # Etape 1 : Verifier la longueur (plafond de 125 caracteres -- convention
+    #            du carnet, impose par le prompt, et non une valeur normative WCAG)
     # Etape 2 : Verifier la presence du sujet et du topic dans le texte
     # Etape 3 : Calculer un score global (0.0 a 1.0)
 
@@ -15265,7 +15271,7 @@ for alt, subj, top in test_cases:
     evaluation = evaluate_alt_text_quality(alt, subj, top)
     print(f""Alt text: '{alt[:50]}...' -> Score: {evaluation}"")
 
-print(""Exercice a completer"")",,,,,,,,5d587958cd702bb8,,,,,,,,,,,,,,,
+print(""Exercice a completer"")",,,,,,,,7711f828defd2ffc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-2-Creative-Workflows.ipynb,5d101ba8,markdown,fr,98b5e05b453302c7,"**Navigation** : [Index](../../README.md) | [<< Précédent](04-1-Educational-Content-Generation.ipynb) | [Suivant >>](04-3-Production-Integration.ipynb)
 
 # Creative Workflows - GenAI
@@ -21349,18 +21355,18 @@ Les ~282 s se décomposent en ~48 s de chargement du transformer ternaire dans l
 MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb,interp-bench-4597a8,markdown,fr,cc558169e9672860,"### Lecture du résultat : Bonsai face aux modèles grand public
 
 Le graphique reprend les trois métriques publiées sur la page HuggingFace du modèle : **GenEval 0,723** (alignement compositionnel prompt/image), **HPSv3 12,22** (préférence humaine) et **DPG-Bench 0,851** (fidélité à des prompts denses). Chaque barre utilise la borne naturelle de sa métrique (1,0 pour GenEval et DPG-Bench, ~30 pour HPSv3) : comparer des scores à des bornes différentes sur une échelle commune les rendrait illisibles. Ces scores placent Bonsai au niveau des modèles grand public alors que le transformer ne pèse que 0,74 Go on-disk — la démonstration quantitative du compromis 1.58-bit.",,,,,,,,cc558169e9672860,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-config-d86f30,markdown,fr,79c9d4bfcf5e479f,"### Lecture du résultat : une configuration hybride à deux fournisseurs
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-config-d86f30,markdown,fr,c70d7ceba3d73c02,"### Lecture du résultat : une configuration hybride à deux fournisseurs
 
-La cellule valide la présence des deux clés d'API avant toute génération : OpenAI (`✅ OPENAI: API configurée`) pour la génération d'images et OpenRouter (`✅ OPENROUTER: API configurée`) pour l'appel des modèles de langage. Le dictionnaire `Configuration APIs` récapitule cet état — deux fournisseurs distincts, chacun à sa place dans le pipeline : l'image côté OpenAI, l'alt text côté OpenRouter. Ce double contrôle en amont évite les erreurs tardives : le notebook refuse de démarrer une génération dont l'un des deux canaux serait indisponible.",,,,,,,,79c9d4bfcf5e479f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-widgets-d6a4d3,markdown,fr,244f07896a4b04cb,"### Lecture du résultat : une interface interactive, pas une génération
+La cellule valide la présence des deux clés d'API avant toute génération : OpenAI (`✅ OPENAI: API configurée`) pour la génération d'images et OpenRouter (`✅ OPENROUTER: API configurée`) pour l'appel des modèles de langage. Le dictionnaire `Configuration APIs` récapitule cet état — deux fournisseurs distincts, chacun à sa place dans le pipeline : l'image côté OpenAI, l'alt text côté OpenRouter. Ce double contrôle en amont évite les erreurs tardives, mais les deux canaux n'ont pas le même comportement en cas d'absence : sans clé OpenAI, la démonstration n'appelle pas l'API image (le client reste à `None`) ; sans clé OpenRouter, l'alt text se dégrade en un texte générique plutôt que d'échouer — les deux branches sont visibles dans la cellule de démonstration.",,,,,,,,c70d7ceba3d73c02,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-widgets-d6a4d3,markdown,fr,2bf68c79078952b2,"### Lecture du résultat : une interface interactive, pas une génération
 
-La sortie affiche un widget Jupyter vivant (`VBox` contenant des `Dropdown` pour la matière, le sujet et le niveau), pas un résultat de génération : le bouton « Générer Contenu » déclencherait l'appel API au clic. Le `widget-view` (identifié par son `model_id`) n'est qu'un état d'interface dans la session. C'est la cellule de démonstration suivante qui produit une vraie image, de façon reproductible et sans interaction — l'interface sert la configuration manuelle, la démo sert la vérification automatique.",,,,,,,,244f07896a4b04cb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-demo-21b5a7,markdown,fr,6e8c47ab709a1c2e,"### Lecture du résultat : une génération réelle, les deux canaux attestés
+La sortie affiche un widget Jupyter vivant (`VBox` contenant des `Dropdown` pour la matière, le sujet et le niveau), pas un résultat de génération : le bouton « Générer Contenu » déclencherait l'appel API au clic. Le `widget-view` (identifié par son `model_id`) n'est qu'un état d'interface dans la session. C'est la cellule de démonstration suivante qui produit une vraie image sans interaction, avec un prompt reproductible — l'interface sert la configuration manuelle, la démo sert la vérification automatique.",,,,,,,,2bf68c79078952b2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-demo-21b5a7,markdown,fr,e45e828f3230f387,"### Lecture du résultat : une génération réelle, les deux canaux attestés
 
-La démonstration batch exécute le pipeline complet sans interface : un appel `POST https://api.openai.com/v1/images/generations` répond `HTTP/1.1 200 OK` et produit une image `gpt-image-1` de **2259 KB** (base64), affichée dans la sortie (`data:image/png`). Un second appel — `POST https://openrouter.ai/api/v1/chat/completions`, lui aussi en `200 OK` — génère l'alt text accessible (WCAG) : « Diagramme de la photosynthèse montrant une feuille absorbant lumière solaire, CO2 et eau… ». Les paramètres de génération (matière `biology`, sujet `photosynthesis`, niveau `high_school`) sont injectés par Papermill, rendant la démo reproductible à l'identique d'une exécution à l'autre.",,,,,,,,6e8c47ab709a1c2e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-workflow-7c7705,markdown,fr,8d73a8e133213520,"### Lecture du résultat : le workflow orchestre, l'exécution attend son appel
+La démonstration batch exécute le pipeline complet sans interface : un appel `POST https://api.openai.com/v1/images/generations` répond `HTTP/1.1 200 OK` et produit une image `gpt-image-1` encodée en base64, affichée dans la sortie (`data:image/png`). Un second appel — `POST https://openrouter.ai/api/v1/chat/completions`, lui aussi en `200 OK` — génère l'alt text accessible (WCAG) : « Diagramme de la photosynthèse montrant une feuille absorbant lumière solaire, CO2 et eau pour produire glucose et oxygène ». L'alt text est rédigé à partir du **contexte** (matière, sujet, usage) : la méthode reçoit bien l'image, mais n'en analyse pas les pixels. Les paramètres de génération (matière `biology`, sujet `photosynthesis`, niveau `high_school`) sont injectés par Papermill : le **prompt** est donc reproductible d'une exécution à l'autre, mais l'image elle-même est rendue par l'API sans graine fixe — deux exécutions produisent deux rendus différents.",,,,,,,,e45e828f3230f387,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-1-Educational-Content-Generation.ipynb,interp-workflow-7c7705,markdown,fr,1fc263d1a1badc60,"### Lecture du résultat : le workflow orchestre, l'exécution attend son appel
 
-La classe `TeacherWorkflow` est initialisée avec les templates disponibles (`['biology']`) et expose une méthode unique : `create_complete_lesson_package('biology', 'photosynthesis', 'high_school')`. La sortie est un mode d'emploi, pas une exécution : le package pédagogique complet (leçon, exercices, images, alt text) serait assemblé par l'appel de cette méthode, enchaînant les générations image (OpenAI) et texte (OpenRouter) sur le même sujet — la version automatisée du workflow que l'exercice 2 prépare à construire.",,,,,,,,8d73a8e133213520,,,,,,,,,,,,,,,
+La classe `TeacherWorkflow` est initialisée avec les templates disponibles (`['biology']`) et expose une méthode unique : `create_complete_lesson_package('biology', 'photosynthesis', 'high_school')`. La sortie est un mode d'emploi, pas une exécution : le package pédagogique complet (leçon, exercices, images, alt text) serait assemblé par l'appel de cette méthode, enchaînant les générations image (OpenAI) et texte (OpenRouter) sur le même sujet — la version automatisée du système que l'exercice final (« Système de Contenu Éducatif Adaptatif ») propose de construire.",,,,,,,,1fc263d1a1badc60,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/04-Applications/04-4-Cross-Stitch-Pattern-Maker-Legacy.ipynb,dbed0095,code,fr,744a375939e86ee1,"# Parameters
 # Override possible : si env var BATCH_MODE definie, prend precedence (utile pour
 # le dispatch EPF-LIVE #14617 : on force le mode interactif depuis l env kernel
@@ -22011,13 +22017,18 @@ print(""ComfyUI    :"", systeme.get(""comfyui_version"", ""?""))
 print(""Python     :"", systeme.get(""python_version"", ""?""))
 print(""GPU        :"", periph.get(""name"", ""?""))
 print(""VRAM libre : {:.1f} / {:.1f} Go"".format(periph.get(""vram_free"", 0) / 1e9, periph.get(""vram_total"", 0) / 1e9))",,,,,,,,6a4b8a3327143775,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c06_015c,markdown,fr,4de82a0d5c25af48,"### Lecture de l'etat
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c06_015c,markdown,fr,718a3df846d92302,"### Lecture de l'etat
 
-La reponse `system_stats` fait foi pour l'identite de l'instance : la version
-ComfyUI annonce deciderea si les noeuds recents de la famille edit (§7) sont
-disponibles, la VRAM libre confirme que le palier INT8 est charge sans
-saturation. Un echec ici (401, timeout) signifie un jeton perime ou une
-instance arrete : le carnet ne masque pas l'erreur -- il la leve.",,,,,,,,4de82a0d5c25af48,,,,,,,,,,,,,,,
+La reponse `system_stats` fait foi pour l'identite de l'instance : ComfyUI
+**0.37.2** sur Python 3.11.14 (GCC 14.2.0 — l'instance tourne sous Linux), GPU
+**RTX 3090** avec **24.2 / 25.8 Go** de VRAM libre. Ces deux derniers chiffres
+confirment le palier INT8 : les poids 8 bits laissent la quasi-totalite de la
+memoire libre pour les latents et le decodage VAE, la ou le bf16 complet
+saturerait la carte. La version ComfyUI, elle, annonce d'avance si les noeuds
+recents de la famille edit (§7) sont disponibles — un workflow versionne qui
+exige un noeud absent rendrait une erreur cote instance, jamais une image
+fausse. Un echec ici (401, timeout) signifie un jeton perime ou une instance
+arrete : le carnet ne masque pas l'erreur -- il la leve. La lecture de cet etat avant toute generation est aussi une sonde de sanite a cout nul : un endpoint qui ne rend pas `system_stats` ou rend une VRAM anormalement basse signale un instance saturee par d'autres travaux — mieux vaut le decouvrir ici qu'apres une generation echouee a la 300e seconde. La remontee des identifiants exacts de version fait partie du temoin : elle rend le diagnostic reproductible.",,,,,,,,718a3df846d92302,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c07_015c,markdown,fr,2645703e7ef9f282,"## 3. Du workflow UI au prompt API
 
 ComfyUI parle deux formats :
@@ -22059,10 +22070,12 @@ for n in wf_ui[""nodes""]:
     widgets = n.get(""widgets_values"")
     detail = """" if not widgets else "" "" + str(widgets)[:64]
     print(f""  {n['id']:>3} {n['type']:<20}{detail}"")",,,,,,,,8eecc8af5711c74f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c09_015c,markdown,fr,ff7d022843bf978f,"Le graphe ci-dessus est court : trois chargeurs de modeles, un encodeur de
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c09_015c,markdown,fr,5a792139df95bd26,"Le graphe ci-dessus est court : trois chargeurs de modeles, un encodeur de
 texte, un `ConditioningZeroOut` pour le negatif (cfg = 1 : le negatif est
 zeroe, pas redige), un `ResolutionSelector` qui pilote `EmptyLatentImage` en
-megapixels, le `KSampler`, le decodage VAE, la sauvegarde.",,,,,,,,ff7d022843bf978f,,,,,,,,,,,,,,,
+megapixels, le `KSampler`, le decodage VAE, la sauvegarde.
+
+L'inventaire chiffre la sortie : **11 nœuds, 11 liens, version 0.4** du format d'export UI — le workflow text2image dans sa forme minimale, trois chargeurs pointant les poids du palier INT8 versionné. Aucune image n'est commitee a cette etape : la preuve d'execution vit dans la sortie texte du graphe, les planches reelles arrivent au §4.",,,,,,,,5a792139df95bd26,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c10_015c,code,fr,02263fec415f0100,"# Convertisseur UI -> API pour les noeuds natifs (core) du workflow
 WIDGETS_NOMMES = {
     ""UNETLoader"": [""unet_name"", ""weight_dtype""],
@@ -22124,7 +22137,7 @@ for classe, (champ, attendu) in manifeste.items():
 print(""Garde de coherence palier INT8 : les 3 chargeurs pointent sur le manifeste versionne"")
 print()
 print(json.dumps(prompt_api, indent=1, ensure_ascii=False)[:2200])",,,,,,,,02263fec415f0100,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c11_015c,markdown,fr,f2fb91b2910181f4,"### Lecture de la conversion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c11_015c,markdown,fr,549e7172844e3fef,"### Lecture de la conversion
 
 Deux choses a noter dans le dictionnaire produit :
 
@@ -22134,7 +22147,11 @@ Deux choses a noter dans le dictionnaire produit :
   connexions sur les valeurs de widgets -- c'est aussi ce que fait l'editeur ;
 - le `KSampler` arrive avec `cfg = 1` : Qwen-Image 2.1 est distille, le
   negatif passe par `ConditioningZeroOut` (zero, pas redige). L'exercice 3
-  fait payer cette hypothese en la testant.",,,,,,,,f2fb91b2910181f4,,,,,,,,,,,,,,,
+  fait payer cette hypothese en la testant.
+
+La sortie fait aussi voir **ce que le convertisseur n'a pas fait** : aucun champ n'a ete retouche a la main entre le JSON d'export UI et le prompt affiche — l'organe `convertir_workflow()` produit un prompt executable directement, ce qui rend le carnet reproductible sur toute instance qui charge le meme manifeste. Les valeurs de widgets qui survivent sans liens (`seed`, `cfg`, `steps`) restent editables par code dans la suite du carnet : le graphe converti est une structure de donnees, pas une image figee.
+
+La garde de cohérence en tête de sortie (assert sur les trois chargeurs contre le manifeste versioné) transforme la conversion en contrat vérifié : un fichier re-exporté avec un autre checkpoint échoue immédiatement au lieu de générer des images hors palier INT8.",,,,,,,,549e7172844e3fef,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c12_015c,markdown,fr,511d9ca8166a1af0,"## 4. Execution du workflow text2image
 
 La graine est fixee pour la reproductibilite, et la resolution est reduite en
@@ -22157,13 +22174,20 @@ assert images, ""Aucune image renvoyee par l'instance""
 image_principale = images[0]
 print(f""Generation : {duree:.0f} s -- {image_principale.size[0]}x{image_principale.size[1]} px ({MEGAPIXELS} MP demandes)"")
 display(image_principale)",,,,,,,,16d29b3ff0782e68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c14_015c,markdown,fr,3456a8de0df49390,"### Lecture du resultat
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c14_015c,markdown,fr,79fc2c5bea37ea66,"### Lecture du resultat
 
 L'illustration est le prompt de reference de l'editeur (femme en veste email
 argentee, ciel de cumulonimbus), genere ici sans aucune modification du
 workflow : ce temoin atteste que le palier INT8 versionne produit bien la
-sortie attendue. Le temps mesure, rapporte a la reference 12 Go de l'editeur,
-donne l'ordre de grandeur du gain de l'instance dediee.",,,,,,,,3456a8de0df49390,,,,,,,,,,,,,,,
+sortie attendue. Les chiffres de la sortie precistent le contexte : **181 s**
+pour **1184x1760 px** (2 MP en mode batch, au lieu des 4 MP du graphe de
+reference) — la reduction de resolution est le compromis declare de la cellule
+precedente : le carnet doit rester executable en un temps de cours, et 3
+minutes par image est le seuil au-dela duquel la classe regarde passer.
+Rapporte a la reference de l'editeur (~2 min a 4 MP sur une carte 12 Go), la
+mesure donne un ordre de grandeur honnete du gain de l'instance dediee : la
+carte 24 Go ne divise pas le temps par deux — elle rend possible une
+resolution que la carte 12 Go ne tient pas. Ce temoin reste reproductible tel quel : le workflow est charge depuis le manifeste versionne du depot (meme graphe, meme graine sur toute instance), la seule difference d'une machine a l'autre etant le temps de generation. Le format 1184x1760 est celui demande par le mode batch du manifeste, pas un choix de la cellule : la cellule ne touche aucun parametre du graphe.",,,,,,,,79fc2c5bea37ea66,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c15_015c,markdown,fr,9958b2dbcc860965,"## 5. Le seed change tout
 
 La documentation de l'editeur insiste : a prompt constant, **la graine fait
@@ -22185,12 +22209,14 @@ for ax, img in zip(axes, images_graines):
     ax.axis(""off"")
 plt.tight_layout()
 plt.show()",,,,,,,,5847a8f3393ca50f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c17_015c,markdown,fr,e14e75fec221ec70,"### Lecture de la variance
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c17_015c,markdown,fr,fa504aeb88cb5163,"### Lecture de la variance
 
 Pose, orientation du regard, silhouette des nuages : les trois sorties sont
 trois compositions distinctes d'une meme intention. La consequence pratique
 est directe : un benchmark de prompt ou une comparaison de modeles qui ne
-fixe pas la graine mesure du bruit, pas une difference.",,,,,,,,e14e75fec221ec70,,,,,,,,,,,,,,,
+fixe pas la graine mesure du bruit, pas une difference. Les trois graines utilisees (20260925-27) restent **consignees dans la cellule** : refaire tourner la cellule reproduit exactement la planche a trois compositions, ce qui est la moindre exigence d'un temoin pedagogique.
+
+Le balayage `megapixels = 1` en tête de cellule ramène chaque génération à une résolution modeste : trois images à 4 MP l'une après l'autre auraient allongé le temps total sans rien changer à la démonstration.",,,,,,,,fa504aeb88cb5163,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c18_015c,markdown,fr,45b9f4d0a9ff9591,"## 7. Ce que l'instance couvre vraiment
 
 Les 12 workflows versionnes ne demandent pas tous les memes noeuds : la
@@ -22211,15 +22237,17 @@ for chemin in sorted(DOSSIER_WF.glob(""*.json"")):
     nom = chemin.name.replace(""qwen_image_2_1_"", """").replace("".json"", """")
     etat = "", "".join(sorted(manquantes)) if manquantes else ""-- 100 % couvert""
     print(f""{nom:<26}{len(classes):>4}     {etat}"")",,,,,,,,56bd5aea7b1a01f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c20_015c,markdown,fr,17d122f88fe143f8,"### Lecture de la couverture
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c20_015c,markdown,fr,aa57c5b808da7bf2,"### Lecture de la couverture
 
 Le tableau tranche ce qui reste executable : les workflows 100 % couverts
 tournent tel quels (le convertisseur du §3 suffit), ceux dont il manque une
 classe exigent soit une mise a jour du coeur ComfyUI de l'instance (voie
 `RECOVERABLE-MACHINE` : decision d'hebergement, pas de carnet), soit un
-paquet custom a installer (openpose, boucles de decomposition en calques).
+paquet custom a installer (openpose, layer_decomposition, panorama).
 Aucun de ces manquants n'est `INTRINSIC` : la limite est d'exploitation, pas
-de nature.",,,,,,,,17d122f88fe143f8,,,,,,,,,,,,,,,
+de nature.
+
+**Les chiffres de la sortie.** L'inventaire `object_info` rend **981 classes** de noeuds disponibles sur cette instance — le tableau teste les 12 workflows versionnes de l'editeur contre cet ensemble. Neuf tournent tels quels (image_edit, image_edit_local, image_edit_local_mask, image_edit_upscale, outpainting, ref2image, subject_extraction, text2image, text2image_rgba) ; les trois manquants le sont chacun pour sa raison propre : `image_edit_openpose` attend `OpenposePreprocessor`, `panorama` attend `PanoramaPreview`, et `layer_decomposition` echoue sur le detail le plus revelateur — sa classe `Reroute` manquante porte un UUID (`da2ffc0e-…`), trace d'un node pack embarque dans l'export UI que le coeur seul ne fournit pas : la conversion §3 n'a pas de lien a rebrancher, c'est le paquet qui manque a l'instance. Le verdict de couverture reste executable : rien dans ces manquants n'est `INTRINSIC`, tout est `RECOVERABLE-*`. La frontiere de couverture bouge avec les mises a jour du coeur : le tableau est une photographie a la date d'execution, a re-balayer apres toute montee de version de l'instance.",,,,,,,,aa57c5b808da7bf2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,c21_015c,markdown,fr,ad7829d545424f00,"## 8. Exercices
 
 Trois exercices prolongent le carnet. Chacun part du code du corps sans
@@ -22267,24 +22295,23 @@ La lignee continue : ce carnet attaque `ref2image` (section 6) ; les
 notebooks suivants attaqueront le reste de la famille edit (edition locale,
 outpainting, extraction de sujet) -- le §7 donne l’etat exact de ce que
 l’instance couvre.",,,,,,,,f183960d86f074e8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,conclusion,markdown,fr,52999168987cebf9,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,conclusion,markdown,fr,a067edff2958dded,"## Conclusion
 
 GPT-5 image generation (via OpenRouter) incarne l'approche **multimodale native** : le modèle ne se contente pas de générer des images à partir d'un prompt texte, il analyse et produit dans un même flux, ce qui ouvre trois modes d'usage pédagogique distincts — quick, detailed, educational — richesse et coût croissent ensemble (les mesures vivent dans la table imprimée par le test). Le ratio coût d'inférence / richesse du contenu est directement exposé à l'utilisateur par le choix du mode.
 
-**Apport spécifique de la multimodalité native** : la génération automatique d'alt text (une phrase unique sous le seuil de 125 caractères des référentiels d'accessibilité WCAG) intègre la description d'image comme **livrable de première classe**, pas comme un post-traitement optionnel. Pour les 5 cas d'usage éducatif couverts (Histoire, Sciences, Géographie, Art et Culture, Médecine), c'est un gain d'accessibilité substantiel par rapport aux modèles purement text-to-image.
+**Apport spécifique de la multimodalité native** : la génération automatique d'alt text (une phrase unique sous le seuil de 125 caractères imposé par le prompt) intègre la description d'image comme **livrable de première classe**, pas comme un post-traitement optionnel. Pour les 5 cas d'usage éducatif couverts (Histoire, Sciences, Géographie, Art et Culture, Médecine), c'est un gain d'accessibilité substantiel par rapport aux modèles purement text-to-image.
 
 **Positionnement dans l'écosystème** : GPT-5 complète la palette du cours en couvrant l'axe *compréhension + génération*, là où DALL-E 3 se concentre sur la génération seule et où SD XL Turbo expose les rouages internes. La large famille de modèles GPT-5 exposée par l'API OpenRouter ouvrent un terrain d'expérimentation comparative large mais introduisent une dépendance forte au fournisseur de route.
 
-**Pour aller plus loin** : explorer le notebook `04-1-Educational-Content-Generation` qui orchestre plusieurs modèles pour produire un livrable pédagogique complet (image + alt text + métadonnées structurées).
-","## Conclusion
+**Pour aller plus loin** : explorer le notebook `04-1-Educational-Content-Generation` qui orchestre plusieurs modèles pour produire un livrable pédagogique complet (image + alt text + métadonnées structurées).","## Conclusion
 
 GPT-5 image generation (via OpenRouter) embodies the **native multimodal** approach: the model does not merely generate images from a text prompt, it analyzes and produces in a single flow, which opens three distinct pedagogical usage modes — quick, detailed, educational — richness and cost grow together (the measurements live in the table printed by the test). The inference cost / content richness ratio is directly exposed to the user by the choice of mode.
 
-**Specific contribution of native multimodality**: the automatic generation of alt text (a single sentence under the 125-character threshold of the WCAG accessibility referentials) integrates image description as a **first-class deliverable**, not as an optional post-processing. For the 5 educational use cases covered (History, Science, Geography, Art and Culture, Medicine), this is a substantial accessibility gain over purely text-to-image models.
+**Specific contribution of native multimodality**: the automatic generation of alt text (a single sentence under the 125-character threshold imposed by the prompt) integrates image description as a **first-class deliverable**, not as an optional post-processing. For the 5 educational use cases covered (History, Science, Geography, Art and Culture, Medicine), this is a substantial accessibility gain over purely text-to-image models.
 
 **Positioning in the ecosystem**: GPT-5 completes the course's palette by covering the *comprehension + generation* axis, where DALL-E 3 focuses on generation alone and SD XL Turbo exposes the internal workings. The large family of GPT-5 models exposed by the OpenRouter API opens a wide comparative experimentation ground but introduces a strong dependency on the routing provider.
 
-**To go further**: explore the `04-1-Educational-Content-Generation` notebook which orchestrates several models to produce a complete pedagogical deliverable (image + alt text + structured metadata).",,,,,,,52999168987cebf9,163ad7407b7aaac6,,,,,,,,,,,,,,
+**To go further**: explore the `04-1-Educational-Content-Generation` notebook which orchestrates several models to produce a complete pedagogical deliverable (image + alt text + structured metadata).",,,,,,,a067edff2958dded,ef5f76dd1f274074,,,,,,,a067edff2958dded,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,d19f9c6c,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
@@ -24364,7 +24391,7 @@ for ax in axes:
     ax.axis(""off"")
 plt.tight_layout()
 plt.show()",,,,,,,,5ad1df7461a2a4d5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,6131a93d,markdown,fr,3d6916b4c6db28cb,"### Lecture de la comparaison
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,6131a93d,markdown,fr,4ac96e95f71ab1b1,"### Lecture de la comparaison
 
 Les deux images partagent la meme graine et le meme concept. La baseline
 s'appuie sur une description textuelle **soignee** du style vise (palette
@@ -24380,4 +24407,9 @@ verbale n'atteint pas, et cette difference est visible dans la sortie comparee
 `rules-kids.png`) proviennent du depot Argumentum, diffuse sous licence
 **LGPL-3.0** : elles sont telechargees a l'execution et jamais commitees.
 La planche comparative ci-dessus embarque leurs pixels en reduction a titre
-de temoin -- ces deux vignettes de la planche restent sous LGPL-3.0.",,,,,,,,3d6916b4c6db28cb,,,,,,,,,,,,,,,
+de temoin -- ces deux vignettes de la planche restent sous LGPL-3.0.
+
+**Les chiffres de la sortie.** La baseline texte tourne en **74 s**, le transfert par ancres en **345 s** — environ **4,7x** plus lent, le prix du chemin `<image1>/<image2>` : les deux references passent par l'encodeur vision du modele en plus du denoising. Le workflow de reference converti par l'organe du §3 porte **12 noeuds** (contre 10 pour le text2image), configure ici avec la graine **20261018** et `megapixels = 1` pour que les deux bras de la comparaison produisent des images de meme taille — la seule variable teste est la presence de la reference, pas la resolution. Le temps cite n'inclut pas le chargement des poids : les deux generations partent de l'instance deja chaude, la difference de 271 s mesure donc bien le surcout du chemin vision, pas un cold start.",,,,,,,,4ac96e95f71ab1b1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb,38156584,markdown,fr,1a3cc466b02247c0,"### Lecture du résultat
+
+La sortie établit les deux prérequis de connexion en une ligne chacun : l'endpoint (`https://qwen-image-edit.myia.io`, l'instance hébergée du palier INT8 décrite en §1) et le token — **présent mais jamais affiché**, la sortie ne portant que son existence. C'est la discipline de secrets du dépôt appliquée au fil du carnet : le `.env` de la série est découvert en remontant les répertoires parents, les deux noms de variables (`COMFYUI_AUTH_TOKEN`/`COMFYUI_API_TOKEN`) couvrent les deux conventions du stack, et une exception explicite (« voir scripts/genai-stack ») renvoie vers l'audit d'auth plutôt que de laisser une ValueError nue. Le `CLIENT_ID` uuid4 en fin de cellule est le marqueur de session WebSocket : ComfyUI y route les événements d'exécution du client qui a soumis le prompt. Le meme pattern se retrouve dans tous les carnets GenAI de la serie : la presence d'un secret se teste, sa valeur ne se print jamais — une sortie de cellule commitee est un artefact public du depot. Concretement : qui clone le depot et execute le carnet sans `.env` voit la cellule echouer sur une exception explicite — jamais sur un appel reseau qui part sans authentification.",,,,,,,,1a3cc466b02247c0,,,,,,,,,,,,,,,

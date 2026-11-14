@@ -117,8 +117,11 @@ def test_guard_green_on_current_main() -> None:
     )
     uncovered = [tp for tp in testpaths if not is_covered(tp, covered_dirs) and tp not in excluded]
     assert uncovered == [], f"testpaths non couverts: {uncovered}"
-    # Le testpath `tests` racine a été retiré de pytest.ini (reliquat vide).
-    assert "tests" not in testpaths
+    # Critère 1 de #25366 : `tests` racine est joué par le run pytest partagé
+    # de scripts-tests.yml et déclaré dans WORKFLOW_COVERAGE (T0). Il est donc
+    # DANS les testpaths — un pytest lancé à la main voit ce que la CI voit.
+    # (Il en avait été retiré quand le répertoire était un reliquat vide.)
+    assert "tests" in testpaths
     # Second sens (#22735) : aucune suite sur le disque sans exécution CI.
     assert uncovered_suites(REPO_ROOT) == [], "suites sur disque non exécutées"
     assert missing_declared_suites(REPO_ROOT) == [], "suites déclarées absentes"
@@ -521,6 +524,49 @@ def test_missing_pytest_pin_is_detected(tmp_path: Path) -> None:
     assert "pytest>=8" in problems[0]
 
 
+def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pushes() -> None:
+    """The Conway ratchet must run for its own source changes on PRs and main.
+
+    Main pushes are intentionally unfiltered for #24828's red-main sentinel;
+    pull requests retain the scoped trigger, including the native_decide subject.
+    """
+    yaml = __import__("pytest").importorskip("yaml")
+    wf_path = REPO_ROOT / ".github/workflows/scripts-tests.yml"
+    with wf_path.open(encoding="utf-8") as fh:
+        workflow = yaml.load(fh, Loader=yaml.BaseLoader)
+
+    triggers = workflow["on"]
+    assert "paths" not in triggers["push"]
+    pr_paths = triggers["pull_request"]["paths"]
+    assert "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean" in pr_paths
+    # Keep both the original ADK contracts tree and the #25201 refactor target.
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**" in pr_paths
+    assert "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**" in pr_paths
+
+    job = workflow["jobs"]["scripts-tests"]
+    assert job["name"] == "Scripts Tests (CPU)"
+    assert job["runs-on"] == ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+
+
+def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> None:
+    """The ADK steps must execute and collect tests from their live tree."""
+    import pytest
+
+    yaml = pytest.importorskip("yaml")
+    wf_path = REPO_ROOT / ".github/workflows/scripts-tests.yml"
+    with wf_path.open(encoding="utf-8") as fh:
+        workflow = yaml.load(fh, Loader=yaml.BaseLoader)
+
+    steps = workflow["jobs"]["adk-contracts"]["steps"]
+    runs = "\n".join(step.get("run", "") for step in steps)
+    root = "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration"
+    contract = f"{root}/utils/test_adk_runtime_contracts.py"
+    providers = f"{root}/config/test_providers.py"
+    assert runs.count(contract) == 2, "runtime contract run and collection floor must target the live tree"
+    assert runs.count(providers) == 2, "provider test run and collection floor must target the live tree"
+    assert "Track2-GoogleADK" not in runs
+    assert (REPO_ROOT / contract).is_file()
+    assert (REPO_ROOT / providers).is_file()
 # --- #25366 T0 : basenames dupliqués + convergence CI -> testpaths ----------
 #
 # Cinquième sens : deux répertoires de tests découverts qui portent le même
@@ -604,16 +650,16 @@ def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
 def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
     """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
 
-    36 basenames mesurés le 2026-11-09 (#25366), dont un triple. Le plafond
-    est un cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
+    33 basenames après les renommages Slidev (#25366). Le plafond est un
+    cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
     T2 en supprime — jamais l'inverse.
     """
     from check_testpaths_coverage import duplicate_basenames
 
     dupes = duplicate_basenames(REPO_ROOT)
-    assert len(dupes) <= 36, f"dette de doublons en hausse : {len(dupes)} > 36"
-    assert "test_scan_slidev_composition.py" in dupes
-    assert len(dupes["test_scan_slidev_composition.py"]) == 3
+    assert len(dupes) <= 33, f"dette de doublons en hausse : {len(dupes)} > 33"
+    assert "test_batch_reexecute.py" in dupes
+    assert len(dupes["test_batch_reexecute.py"]) == 2
 
 
 def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
@@ -627,16 +673,21 @@ def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:
     assert discover_test_dirs(tmp_path) == ["scripts/alpha/tests", "tests"]
 
 
-def test_coverage_without_testpaths_rougit_sur_la_racine_tests() -> None:
-    """Contrôle positif sur le dépôt réel : `tests` (racine) est joué par le
-    run partagé de la CI mais absent des testpaths — critère 1 de #25366,
-    le trou le plus étroit. Ce test rougira en vertu une fois T1 tranché."""
+def test_coverage_without_testpaths_vert_sur_la_racine_tests() -> None:
+    """Critère 1 de #25366, tranché en T1 : `tests` (racine) est joué par le
+    run partagé de la CI ET déclaré dans les testpaths — un pytest lancé à la
+    main voit ce que la CI voit, le trou le plus étroit est fermé.
+
+    Contrôle de non-régression : si une cible-dossier jouée par la CI ressort
+    des testpaths (retrait de l'entrée ou de sa déclaration), ce test rougit.
+    """
     from check_testpaths_coverage import coverage_without_testpaths
 
     testpaths = load_testpaths(REPO_ROOT / "pytest.ini")
     excluded = load_ci_excluded(REPO_ROOT)
 
-    assert coverage_without_testpaths(testpaths, excluded) == ["tests"]
+    assert "tests" in testpaths
+    assert coverage_without_testpaths(testpaths, excluded) == []
 
 
 def test_coverage_without_testpaths_vert_quand_declare(tmp_path: Path) -> None:
@@ -683,9 +734,13 @@ def test_cli_inventory_est_strict_par_defaut(tmp_path: Path) -> None:
 
 
 def test_cli_inventory_advisory_est_vert_sur_main() -> None:
-    """Sur le dépôt réel, la dette connue (25 répertoires, 36 basenames,
-    `tests` racine) listée en advisory ne fait pas échouer : c'est le mode
-    mesure de T1/T2, exit 0 garanti."""
+    """Sur le dépôt réel, la dette connue (répertoires hors CI et basenames
+    dupliqués) listée en advisory ne fait pas échouer : c'est le mode mesure
+    de T1/T2, exit 0 garanti.
+
+    Depuis T1 (#25366), `tests` racine n'est plus un trou : il est dans les
+    testpaths, donc la ligne de convergence ne le liste plus.
+    """
     import subprocess
 
     proc = subprocess.run(
@@ -694,5 +749,5 @@ def test_cli_inventory_advisory_est_vert_sur_main() -> None:
         capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert proc.returncode == 0, proc.stdout
-    assert "INFO tests" in proc.stdout
+    assert "\n  INFO tests\n" not in proc.stdout
     assert "FAIL" not in proc.stdout

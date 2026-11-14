@@ -6,6 +6,13 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Net;
+
+// Contexte nullable explicite : sans lui, chaque annotation "string?" du
+// helper emet un warning CS8632 au #load, et Roslyn y cite le chemin ABSOLU
+// du fichier charge — 8 chemins machine par carnet dans la sortie commitee
+// (ratchet MACHINE_PATH, mesuree sur la re-execution du 11/11 #25276).
+#nullable enable
 
 /// <summary>
 /// Helper pour generer et afficher les factor graphs Infer.NET dans les notebooks Jupyter.
@@ -14,7 +21,7 @@ using System.Diagnostics;
 public static class FactorGraphHelper
 {
     private static bool? _graphvizAvailable = null;
-    private static string _dotPath = null;
+    private static string? _dotPath = null;
     private static bool _dotResolved = false;
 
     /// <summary>
@@ -25,7 +32,7 @@ public static class FactorGraphHelper
     /// d'ou ce fallback (issue #3473). Retourne le chemin resolu (ou "dot" si
     /// present sur le PATH), ou null si introuvable. Resultat mis en cache.
     /// </summary>
-    private static string ResolveDotPath()
+    private static string? ResolveDotPath()
     {
         if (_dotResolved) return _dotPath;
         _dotResolved = true;
@@ -128,7 +135,7 @@ public static class FactorGraphHelper
     /// endroits (cwd du process, cwd alternatif, dossier courant, dossier du
     /// binaire) et on agrege. Voir issue #18672.
     /// </summary>
-    private static string[] GetFactorGraphSearchDirectories()
+    internal static string[] GetFactorGraphSearchDirectories(string? scope = null)
     {
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var list = new List<string>();
@@ -161,6 +168,39 @@ public static class FactorGraphHelper
         // vaut "GeneratedSource" par defaut, donc les .gv sont sous {cwd}/GeneratedSource/
         // et le pattern Model_*.gv ne les trouve pas au niveau superieur. Voir #18672.
         var roots = list.ToArray();
+
+        // Portee stricte (fuite mesuree #25362, sonde disque de l'adjoint) : quand
+        // une portee est demandee, l'espace de recherche se REDUIT aux sous-dossiers
+        // GeneratedSource/<scope>/ de chaque racine — l'endroit exact ou le moteur
+        // porte sa portee (ConfigureEngine -> GeneratedSourceFolder =
+        // GeneratedSource/<scope>/). Un artefact "plat" dans le cwd (ou dans
+        // GeneratedSource/ sans la portee) est par definition etranger a la portee :
+        // le laisser dans l'espace de recherche lui ouvrait le chemin du rendu (un
+        // Model_Foreign.svg plat etait rendu pour la portee "A").
+        if (!string.IsNullOrEmpty(scope))
+        {
+            var scopedSeen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var scoped = new List<string>();
+            foreach (var root in roots)
+            {
+                try
+                {
+                    var d = Path.GetFullPath(Path.Combine(root, "GeneratedSource", scope));
+                    if (Directory.Exists(d) && scopedSeen.Add(d))
+                    {
+                        scoped.Add(d);
+                    }
+                }
+                catch
+                {
+                    // chemin invalide -> on ignore
+                }
+            }
+            return scoped.ToArray();
+        }
+
+        // Sans portee : l'espace de recherche large (cwd + GeneratedSource) reste tel
+        // quel — la regle "exactement un candidat" y fait la discrimination.
         foreach (var root in roots)
         {
             Add(Path.Combine(root, "GeneratedSource"));
@@ -169,37 +209,74 @@ public static class FactorGraphHelper
         return list.ToArray();
     }
 
-    public static string GetLatestFactorGraphHtml(int maxWidth = 800)
+    public static string GetLatestFactorGraphHtml(int maxWidth = 800, string? modelScope = null)
     {
-        var gvFiles = GetFactorGraphSearchDirectories()
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
+        var gvFiles = GetFactorGraphSearchDirectories(modelScope)
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.gv"))
             .Distinct()
             .ToArray();
-        var svgFiles = GetFactorGraphSearchDirectories()
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.svg"))
+        var svgFiles = GetFactorGraphSearchDirectories(modelScope)
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.svg"))
             .Distinct()
             .ToArray();
 
-        // Prefere reconvertir le .gv le plus recent (la source de verite produite
-        // par la derniere inference) quand Graphviz est disponible, pour que le
-        // graphe affiche corresponde au modele courant et non a un .svg perime
-        // ou issu d'un autre modele (bug #3473 stale-pick).
-        if (gvFiles.Length > 0 && IsGraphvizAvailable())
+        // Le .gv de la portee est la source de verite : on ne le choisit que s'il
+        // est UNIQUE dans la portee (plusieurs .gv = ambiguite nommee, jamais un
+        // choix par mtime global — defaut #25276).
+        var chosenGv = SelectFactorGraphFile(gvFiles, modelScope, out int gvRemaining);
+
+        // Cas 1 : un .gv unique dans la portee.
+        if (chosenGv != null)
         {
-            return ConvertAndGetLatestGvHtml(maxWidth);
+            // Graphviz disponible : on reconvertit le .gv (source de verite), pour
+            // que le graphe affiche corresponde au modele courant et non a un .svg
+            // perime (bug #3473 stale-pick).
+            if (IsGraphvizAvailable())
+            {
+                return ConvertAndGetGvHtml(chosenGv, maxWidth);
+            }
+
+            // Sans Graphviz : le .svg ne sert de cache QUE s'il partage le chemin
+            // exact du .gv unique (ChangeExtension). Un .svg d'un autre modele est
+            // "etranger" : on le REFUSE plutot que de l'afficher (remede #25293).
+            var matchingSvg = Path.ChangeExtension(chosenGv, ".svg");
+            var matchingSvgFile = svgFiles.FirstOrDefault(p =>
+                string.Equals(Path.GetFullPath(p), Path.GetFullPath(matchingSvg),
+                    StringComparison.OrdinalIgnoreCase));
+            if (matchingSvgFile != null)
+            {
+                return GetSvgFileHtml(matchingSvgFile, maxWidth);
+            }
+            if (svgFiles.Length > 0)
+            {
+                return GetMismatchedGraphHtml(chosenGv, svgFiles);
+            }
+            // .gv unique, ni Graphviz ni .svg : voie de secours (viz-js), pas
+            // un "aucun fichier".
+            return ConvertAndGetGvHtml(chosenGv, maxWidth);
         }
 
-        // Sinon (Graphviz absent, ou seulement un .svg pre-rendu disponible),
-        // reutiliser le .svg le plus recent s'il existe.
+        // Cas 2 : plusieurs .gv dans la portee → ambiguite nommee, jamais de
+        // choix, y compris quand un seul .svg est present (il serait alors
+        // "etranger" a l'un des .gv ambigus).
+        if (gvRemaining > 1)
+        {
+            return GetAmbiguousArtifactsHtml(".gv", gvFiles);
+        }
+
+        // Cas 3 : aucun .gv → le .svg unique de la portee conserve le fallback
+        // legacy (selection unique, jamais par mtime global).
         if (svgFiles.Length > 0)
         {
-            var latestSvg = svgFiles
-                .OrderByDescending(f => new FileInfo(f).LastWriteTime)
-                .First();
-            return GetSvgFileHtml(latestSvg, maxWidth);
+            var chosenSvg = SelectFactorGraphFile(svgFiles, modelScope, out int svgRemaining);
+            if (chosenSvg == null)
+            {
+                return GetAmbiguousArtifactsHtml(".svg", svgFiles);
+            }
+            return GetSvgFileHtml(chosenSvg, maxWidth);
         }
 
-        return ConvertAndGetLatestGvHtml(maxWidth);
+        return FormatGraphUnavailable(0, modelScope, "gv");
     }
 
     private static IEnumerable<string> SafeEnumerateFiles(string dir, string pattern)
@@ -212,6 +289,121 @@ public static class FactorGraphHelper
         {
             return Array.Empty<string>();
         }
+    }
+
+    /// <summary>
+    /// Selectionne UNIQUEMENT un fichier de graphe parmi une liste de candidats,
+    /// sans jamais trancher par <c>LastWriteTime</c> global quand l'ensemble est
+    /// ambiguo (defaut #25276 : deux carnets du meme dossier <c>Probas/Infer/</c>
+    /// s'echangent mutuellement leur graphe car le "plus recent" global est une
+    /// course d'horodatage, pas une portee par carnet).
+    ///
+    /// Regle de selection :
+    /// <list type="bullet">
+    /// <item><c>scope</c> non nul : ne garder que les candidats dont le chemin
+    /// contient <c>scope</c> (le nom de modele du carnet appelant, transmis par
+    /// celui-ci) ;</item>
+    /// <item>exactement <b>1</b> candidat restant : il est choisi (deterministe,
+    /// pas de course) ;</item>
+    /// <item><b>0</b> ou <b>plusieurs</b> candidats restants : <b>pas</b> de
+    /// selection — le caller rend un message qui nomme l'ambiguite (ou l'absence)
+    /// plutot qu'un choix silencieux.</item>
+    /// </list>
+    ///
+    /// Fonction pure (aucun acces disque) : testable en isolation.
+    /// </summary>
+    /// <param name="candidates">Fichiers candidats (deja distincts).</param>
+    /// <param name="scope">Cle de portee optionnelle (segment exact du chemin), ou null.</param>
+    /// <param name="remaining">Nombre de candidats apres le filtre de portee :
+    /// 0 = aucun, 1 = selection, &gt;1 = ambiguo.</param>
+    /// <returns>Le fichier choisi, ou null (aucun, ou ambiguo).</returns>
+    /// <summary>
+    /// Indique si le chemin porte <paramref name="scope"/> comme segment COMPLET
+    /// (un composant borné par les séparateurs <c>/</c> ou <c>\</c>), et non comme
+    /// sous-chaine n'importe où dans le chemin : la portée <c>A</c> ne doit ni matcher
+    /// <c>AA</c> ni un segment <c>parentAchild</c> (le filtre historique
+    /// <c>Contains(scope)</c> sur le chemin entier isolait mal la portée — #25293/#25276).
+    /// </summary>
+    private static bool PathHasSegment(string path, string scope)
+    {
+        return path
+            .Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries)
+            .Any(seg => string.Equals(seg, scope, StringComparison.OrdinalIgnoreCase));
+    }
+
+    internal static string? SelectFactorGraphFile(
+        IReadOnlyCollection<string> candidates, string? scope, out int remaining)
+    {
+        var kept = candidates
+            .Where(f => string.IsNullOrEmpty(scope)
+                || PathHasSegment(f, scope))
+            .Distinct()
+            .ToList();
+        remaining = kept.Count;
+        return kept.Count == 1 ? kept[0] : null;
+    }
+
+    /// <summary>
+    /// Rend le HTML d'information quand aucun graphe ne peut etre selectionne de
+    /// facon non-ambigue : soit aucun fichier n'existe (<c>remaining == 0</c>),
+    /// soit plusieurs coexistent (<c>remaining &gt; 1</c>, ambiguite nommee —
+    /// on refuse un choix par mtime global, cf #25276).
+    /// </summary>
+    private static string FormatGraphUnavailable(int remaining, string? scope, string ext)
+    {
+        if (remaining == 0)
+        {
+            var scopeNote = string.IsNullOrEmpty(scope)
+                ? ""
+                : $", pour la portee <code>{scope}</code>";
+            return $@"<div style='padding: 10px; border: 1px solid #d9534f; background: #f2dede; border-radius: 5px;'>
+                Aucun fichier .{ext} trouve{scopeNote}.<br/>
+                Activez <code>ShowFactorGraph = true</code> sur le moteur d'inference.
+            </div>";
+        }
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            <strong>Grille de facteurs ambigue : {remaining} fichiers .{ext} en cours.</strong><br/>
+            Plusieurs carnets ont ecrit des <code>Model_*.{ext}</code> au meme endroit ;
+            choisir le plus recent global serait un choix silencieux (defaut #25276).<br/>
+            Passez la portee du carnet a <code>GetLatestFactorGraphHtml</code>
+            (argument <code>modelScope</code> = nom de modele distinctif) pour afficher
+            le bon graphe.
+        </div>";
+    }
+
+    /// <summary>
+    /// Rend le HTML d'ambiguite : plusieurs graphes de la portee coexistent et
+    /// aucun n'est choisi (defaut #25276). Le diagnostic NOMME chaque candidat
+    /// pour que le carnet enchoque la selection explicite avec le bon chemin.
+    /// </summary>
+    private static string GetAmbiguousArtifactsHtml(string extension, IEnumerable<string> files)
+    {
+        var candidates = string.Join("<br/>", files
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => $"<code>{WebUtility.HtmlEncode(path)}</code>"));
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            <strong>Grille de facteurs ambigue : plusieurs graphes {extension} dans la portee.</strong><br/>
+            Aucun n'a ete choisi, car leur carnet d'origine est ambigu (defaut #25276).<br/>
+            Selectionnez explicitement le fichier voulu avec <code>ConvertAndGetGvHtml(chemin)</code> ou <code>GetSvgFileHtml(chemin)</code> :<br/>
+            {candidates}
+        </div>";
+    }
+
+    /// <summary>
+    /// Rend le HTML de non-correspondance : sans Graphviz, un .svg est refuse
+    /// quand il ne partage pas le chemin exact du .gv unique de la portee
+    /// (remede #25293) — on n'affiche jamais le graphe d'un autre modele.
+    /// </summary>
+    private static string GetMismatchedGraphHtml(string gvFile, IEnumerable<string> svgFiles)
+    {
+        var source = $"<code>{WebUtility.HtmlEncode(gvFile)}</code>";
+        var candidates = string.Join("<br/>", svgFiles
+            .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+            .Select(path => $"<code>{WebUtility.HtmlEncode(path)}</code>"));
+        return $@"<div style='padding: 10px; border: 1px solid #f0ad4e; background: #fcf8e3; border-radius: 5px;'>
+            Graphviz est indisponible et aucun SVG ne correspond au chemin du graphe source. Aucun SVG n'a ete choisi.<br/>
+            Source .gv : {source}<br/>SVG disponibles :<br/>{candidates}
+        </div>";
     }
 
     /// <summary>
@@ -276,6 +468,10 @@ public static class FactorGraphHelper
             };
 
             using var proc = Process.Start(psi);
+            if (proc is null)
+            {
+                return "<div style='color:red'>Impossible de lancer Graphviz (dot).</div>";
+            }
             proc.WaitForExit(5000);
 
             if (proc.ExitCode == 0 && File.Exists(svgPath))
@@ -295,39 +491,71 @@ public static class FactorGraphHelper
     }
 
     /// <summary>
-    /// Trouve et convertit le dernier fichier .gv, retourne le HTML
+    /// Trouve et convertit le .gv de la portee demandee, retourne le HTML.
+    ///
+    /// <paramref name="modelScope"/> (optionnel) borne la selection aux
+    /// candidats dont le chemin contient cette cle (le nom de modele du carnet
+    /// appelant). Sans portee, un seul candidat dans tout l'espace de recherche
+    /// est choisi ; plusieurs candidats = ambiguite nommee, jamais un choix par
+    /// <c>LastWriteTime</c> global (defaut #25276 : les carnets de
+    /// <c>Probas/Infer/</c> s'echangent mutuellement leur graphe).
     /// </summary>
-    public static string ConvertAndGetLatestGvHtml(int maxWidth = 800)
+    public static string ConvertAndGetLatestGvHtml(int maxWidth = 800, string? modelScope = null)
     {
-        var gvFiles = GetFactorGraphSearchDirectories()
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
+        var gvFiles = GetFactorGraphSearchDirectories(modelScope)
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.gv"))
             .Distinct()
             .ToArray();
 
         if (gvFiles.Length == 0)
         {
-            return @"<div style='padding: 10px; border: 1px solid #d9534f; background: #f2dede; border-radius: 5px;'>
-                Aucun fichier .gv trouve.<br/>
-                Activez <code>ShowFactorGraph = true</code> sur le moteur d'inference.
-            </div>";
+            return FormatGraphUnavailable(0, modelScope, "gv");
         }
 
-        var latestGv = gvFiles
-            .OrderByDescending(f => new FileInfo(f).LastWriteTime)
-            .First();
+        var chosen = SelectFactorGraphFile(gvFiles, modelScope, out int remaining);
+        if (chosen == null)
+        {
+            return GetAmbiguousArtifactsHtml(".gv", gvFiles);
+        }
 
-        return ConvertAndGetGvHtml(latestGv, maxWidth);
+        return ConvertAndGetGvHtml(chosen, maxWidth);
     }
 
     /// <summary>
-    /// Nettoie les fichiers .gv et .svg generes
+    /// Nettoie les fichiers .gv et .svg generes.
+    /// Avec <paramref name="scope"/> : ne nettoie que GeneratedSource/&lt;scope&gt;/.
+    /// Sans portee : nettoie l'espace large ET les sous-dossiers de portee
+    /// GeneratedSource/&lt;scope&gt;/, sinon les artefact portes par ConfigureEngine
+    /// s'accumulent au fil des re-executions (suivi #25362 sur #25276).
     /// </summary>
-    public static int CleanupGeneratedFiles()
+    public static int CleanupGeneratedFiles(string? scope = null)
     {
-        var files = GetFactorGraphSearchDirectories()
-            .SelectMany(d => SafeEnumerateFiles(d, "Model_*.gv"))
-            .Concat(GetFactorGraphSearchDirectories()
-                .SelectMany(d => SafeEnumerateFiles(d, "Model_*.svg")))
+        var directories = GetFactorGraphSearchDirectories(scope).ToList();
+
+        // Mode large : descendre d'un niveau sous chaque racine GeneratedSource/
+        // pour atteindre les dossiers de portee (SafeEnumerateFiles est
+        // TopDirectoryOnly). Les autres sous-dossiers du cwd ne sont pas touches.
+        if (string.IsNullOrEmpty(scope))
+        {
+            var scopedDirectories = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (var directory in directories)
+            {
+                if (!string.Equals(Path.GetFileName(directory), "GeneratedSource", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+                foreach (var sub in SafeEnumerateDirectories(directory))
+                {
+                    scopedDirectories.Add(sub);
+                }
+            }
+            directories.AddRange(scopedDirectories);
+        }
+
+        var files = directories
+            .SelectMany(d => SafeEnumerateFiles(d, "Model*.gv"))
+            .Concat(directories
+                .SelectMany(d => SafeEnumerateFiles(d, "Model*.svg")))
             .Distinct();
 
         int count = 0;
@@ -338,13 +566,42 @@ public static class FactorGraphHelper
         return count;
     }
 
+    private static IEnumerable<string> SafeEnumerateDirectories(string dir)
+    {
+        try
+        {
+            return Directory.EnumerateDirectories(dir);
+        }
+        catch
+        {
+            return Array.Empty<string>();
+        }
+    }
+
     /// <summary>
     /// Configure un InferenceEngine pour generer des factor graphs
     /// </summary>
-    public static void ConfigureEngine(dynamic engine)
+    public static void ConfigureEngine(dynamic engine, string? scope = null)
     {
         engine.ShowFactorGraph = true;
         engine.Compiler.WriteSourceFiles = true;
-        engine.Compiler.GeneratedSourceFolder = "GeneratedSource";
+        // Portee par carnet/modele : ecrire les artefacts sous GeneratedSource/<scope>/
+        // pour que la selection par portee (SelectFactorGraphFile) devienne effective.
+        // Les noms de fichiers Infer.NET sont des horodatages purs (Model_<ts>.gv),
+        // sans identite de modele : la portee ne peut matcher que le chemin, donc le
+        // dossier d'ecriture doit le porter (defaut #25276, remede 1+2).
+        engine.Compiler.GeneratedSourceFolder = string.IsNullOrEmpty(scope)
+            ? "GeneratedSource"
+            : Path.Combine("GeneratedSource", scope);
+        // Le .gv du factor graph suit SaveFactorGraphToFolder, une propriete du
+        // MOTEUR (InferenceEngine), pas du compilateur : GeneratedSourceFolder ne
+        // route que les sources .cs de WriteSourceFiles. Sans cette ligne, le .gv
+        // atterrit a la racine du cwd en Model_<ts>.gv (mesure : vagues de re-
+        // execution du 11/11) et la lecture stricte par portee ne le trouve pas.
+        // Pose, il ecrit Model.gv/.dgml directement dans le dossier de portee
+        // (preuve kernel : GeneratedSource/PROBE-SCOPE/Model.gv).
+        engine.SaveFactorGraphToFolder = string.IsNullOrEmpty(scope)
+            ? "GeneratedSource"
+            : Path.Combine("GeneratedSource", scope);
     }
 }

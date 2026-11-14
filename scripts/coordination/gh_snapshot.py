@@ -614,11 +614,13 @@ def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
 
     Rend `(snapshot, nb_appels_gh)`.
     """
+    # Borne conservative : un commentaire peut arriver pendant la lecture
+    # paginee, apres le passage de sa page. Le prochain balayage doit le revoir.
+    now = time.time()
     grouped = fetch_repo_comments_since(repo, since, timeout=timeout)
     comments = dict(snapshot.get("comments") or {})
     meta = dict(snapshot.get("meta") or {})
     stamps = dict(meta.get("comment_stamps") or {})
-    now = time.time()
     for number, items in grouped.items():
         key = str(number)
         existing = [c for c in (comments.get(key) or [])

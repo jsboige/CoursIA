@@ -273,17 +273,24 @@ Track avancé intégrant les frameworks Google ADK (DS-STAR, MLE-STAR) avec supp
 | 8 | [ADK-Introduction](07-Agent-Orchestration/Day4-Foundations/Lab8-ADK-Introduction.ipynb) | Architecture ADK, configuration providers |
 | 9 | [First-ADK-Agent](07-Agent-Orchestration/Day4-Foundations/Lab9-First-ADK-Agent.ipynb) | Premier agent pour Data Science |
 
-### Day 5 - DS-STAR (Labs 10-12 + extensions 12b-12d, 18)
+### Day 5 - DS-STAR (Labs 10-12, puis approfondissements)
 
-| Lab | Notebook | Objectif |
-|-----|----------|----------|
-| 10 | [File-Analyzer](07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes |
-| 11 | [Planner-Coder-Loop](07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents |
-| 12 | [DS-Star-Workshop](07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète |
-| 12b | [Sequential-Orchestration](07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK |
-| 12c | [Agent-Handoff](07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable |
-| 12d | [Token-Usage](07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM |
-| 12e | [Session-Persistence](07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient |
+| Lab | Notebook | Objectif | Pour approfondir |
+|-----|----------|----------|------------------|
+| 10 | [File-Analyzer](07-Agent-Orchestration/Day5-DS-Star/Lab10-File-Analyzer.ipynb) | Analyse de fichiers hétérogènes | |
+| 11 | [Planner-Coder-Loop](07-Agent-Orchestration/Day5-DS-Star/Lab11-Planner-Coder-Loop.ipynb) | Boucle itérative multi-agents | |
+| 12 | [DS-Star-Workshop](07-Agent-Orchestration/Day5-DS-Star/Lab12-DS-Star-Workshop.ipynb) | Application complète | [12b–12e](#approfondissements-autour-de-12) |
+
+#### Approfondissements autour de 12
+
+Ces notebooks prolongent l'atelier DS-STAR par des contrats distincts. Le Lab 12e établit d'abord la persistance C1b, qui éclaire la mesure des usages sur une conversation ; les Labs 12b et 12c mettent en regard deux façons distinctes de choisir l'agent actif (stratégie déclarée par l'orchestrateur ou transfert décidé par l'agent). Ils ne sont pas des jumeaux de langage. Le Lab 12d rend ensuite la consommation observable. Les prérequis explicites de chaque notebook restent indiqués dans celui-ci.
+
+| Lab | Notebook | Ce qu'il ajoute et provenance |
+|-----|----------|------------------------------|
+| 12e | [Session-Persistence](07-Agent-Orchestration/Day5-DS-Star/Lab12e-Session-Persistence.ipynb) | Persistance d'état de session : une conversation qui se souvient. Contrat comportemental C1b du corpus EPITA (#14058). |
+| 12b | [Sequential-Orchestration](07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb) | Contrat C4 : désignation séquentielle, l'orchestrateur explicite au-dessus d'ADK. Portage livré par #14685, contrat du registre EPITA #14058. |
+| 12c | [Agent-Handoff](07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb) | Contrat C5 : handoff inter-agents natif câblé et observable. Câblage livré par #14686, contrat du registre EPITA #14058. |
+| 12d | [Token-Usage](07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb) | Contrat C6 : traçabilité de la consommation LLM. Grain #14687, registre EPITA #14058. |
 
 ### Day 6 - MLE-STAR (Labs 13-15)
 

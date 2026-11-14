@@ -289,7 +289,8 @@ analyses per-PR continuent de tirer** et le compte ne baisse pas.
 Une part de la hausse est en outre une **granularité**, pas du travail
 supplémentaire : la voie rapide est passée d'un check agrégé
 (`Fast lane (ombre) -- 21 gardes, 1 checkout`) à un check **par garde**
-(`fast-lane (ombre): perimeter-review-guard`, `… : solution-leak-guard`,
+(`fast-lane (ombre): perimeter-review-guard`,
+`… : Solution-leak HIGH delta (advisory, WARN phase, #8053)`,
 `… : notebook-navlink-check`, …). Le même travail se compte sous plus de
 noms. Le reste — les ratchets `Output-collapse`, `Source-collapse`,
 `Split-reading`, `Output-flood`, les advisories de markdown, le bundle
@@ -315,9 +316,11 @@ trois choses et aurait rendu « la voie lente » une notion diffuse.
 
 ### Ce que le lot fait — et ce qu'il ne fait pas
 
-Il **mesure**. Aucun check-run n'est émis sur une PR, aucune conclusion n'est
-rouge, rien ne bloque un merge : le `PR gate` reste le seul juge. Le job est
-une mesure du coût de l'étage 2, et la phase d'ombre d'avant bascule.
+Il **mesure**. Depuis la tranche 2, le lot **émet un check-run *advisory* par
+tête du lot** : le verdict devient lisible sur la PR, mais il **ne bloque
+rien** — son nom porte le marqueur `advisory` que le `PR gate` route hors
+porte. Le `PR gate` reste le seul juge. Le job est une mesure du coût de
+l'étage 2, et la phase d'ombre d'avant bascule.
 
 Il mesure deux choses :
 
@@ -328,14 +331,66 @@ Il mesure deux choses :
 
 ### La tranche livrée, et ce qui reste
 
-Cette tranche livre **ce qu'on mesure** :
+La **tranche 1** livre **ce qu'on mesure** :
 
 - l'**arbre d'intégration** — `main` plus les PRs du lot ;
 - la **suite complète** de la jambe `Scripts Tests`, jouée sur cet arbre.
 
-Ce qui reste pour la tranche suivante : le **check-run sur chaque tête du
-lot** (l'étage 2 complet, tel que P4 le décrit). Le lot n'émet aujourd'hui
-aucun check-run et ne juge aucune PR.
+La **tranche 2** livre le **check-run sur chaque tête du lot** : le verdict
+du lot devient lisible sur la PR, et il porte aussi la **remarque de
+troncature** du pool.
+
+Ce qui reste pour la phase suivante : la **bascule** — le `PR gate` accepte
+« étage 2 vert sur le lot du jour » à la place du vert par tête, et
+`merge_ready` merge le lot. C'est **P4**, qui ne s'exécute qu'après une
+semaine d'ombre qui tient le critère des 24 h.
+
+### Le check-run du lot (tranche 2)
+
+Un check-run par tête du lot, nommé `Heavy batch lot (advisory, non
+bloquant)`. Trois règles le structurent.
+
+**1. Il ne bloque aucun merge.** Le `PR gate` ne traite en *advisory* que
+les check-runs dont le **nom** contient `advisory`
+(`scripts/pr_gate.py::is_advisory`) : c'est le même prédicat que celui de la
+voie rapide, et la mesure qui l'a établi est dans son code — un check d'ombre
+dont le nom ne portait pas le marqueur entrait dans les rouges du gate et
+rendait le gate **requis** rouge (mesure du 2026-08-25, 2 PR bloquées sur
+125 portant un check d'ombre). Le test de cette tranche applique le
+prédicat du gate lui-même, pas une copie.
+
+**2. Le verdict porte sur l'arbre, pas sur l'isolement.** Le lot mesure
+`main` plus les PRs du lot ; le résumé du check-run le dit, et nomme la PR
+coupable quand la bissection en a isolé une. Un check-run qui prétendrait
+juger la PR seule serait un mensonge : une PR peut être verte en isolement
+et rouge dans l'arbre.
+
+**3. Ce qui n'a pas été mesuré ne se présente pas comme rouge.** Seul le
+statut `rouge` — la suite rejouée **et** en échec — donne `failure`. Une
+dépendance manquante, une sélection vide, un sélecteur en échec, une PR de
+fork : `neutral`, `skipped`, ou **pas de check-run du tout** avec le motif
+nommé. Une PR de fork n'a pas de tête dans le dépôt de base : l'API Checks
+ne peut pas y porter de check-run, et le motif le dit.
+
+**La troncature du pool est portée dans le résumé.** Quand la population
+inspectée atteint le plafond de lecture (`pool_inspecte == limit`), la
+sélection peut être **partielle**, et un lot « vert » ne dit rien des PRs
+non inspectées. Le plan du lot emporte donc son plafond et son droit de
+troncature, et le check-run le dit sur la PR — pas seulement dans le rapport
+du run.
+
+L'**écriture** passe par l'organe natif `scripts/ci/fast_lane.py`
+(`emit_check_run`) : le dépôt avait déjà la fonction qui poste un check-run
+sur une tête de PR, avec le même `gh api --input -`. Ce module ne fait que
+décrire le verdict du lot.
+
+**Un check-run par tête, et un seul.** Deux publications de même nom sur la
+**même** tête ne s'empilent pas : la seconde **remplace** la première
+(mesuré au témoin : deux publications sur une même tête → un seul check-run
+survivant, celui de la dernière). Deux têtes distinctes portent chacune leur
+check-run (mesuré : un `success` sur la tête du témoin et un `neutral` sur
+la tête précédente coexistent). Un lot rejoué sur la même tête met donc son
+verdict à jour, au lieu d'empiler des verdicts contradictoires sur la PR.
 
 ### La porte du lot : l'APPROVE du coordinateur à la tête exacte
 
@@ -395,17 +450,29 @@ chemins de la jambe, avec les mêmes options pytest (`-n 4 --dist loadscope
 
 ### La cadence — quatre créneaux par jour
 
-| Créneau (UTC) | Échéance de fin |
-|---|---|
-| 04:30 | 10:00 |
-| 10:30 | 13:00 |
-| 16:30 | 21:30 |
-| 21:30 | 00:00 (le lendemain) |
+| Créneau (UTC) | Secours (UTC) | Échéance de fin |
+|---|---|---|
+| 04:17 | 04:47 | 10:00 |
+| 10:17 | 10:47 | 13:00 |
+| 16:17 | 16:47 | 21:30 |
+| 21:17 | 21:47 | 00:00 (le lendemain) |
 
 Les créneaux sont placés **hors des deux pics mesurés** de la file CI
 (13:00-15:00Z et 00:00-02:00Z) : le lot occupe le parc quand celui-ci
 respire. Le créneau du mardi 02:30 reste celui du pilote — les deux
 n'empruntent pas la même nuit.
+
+**Pourquoi un cron de secours.** Sous la charge de la flotte, GitHub retarde
+ou abandonne des événements `schedule`. Sur les anciens crons (minute :30),
+le lot a démarré à 10:16, 12:49, 21:51, 01:19, 11:58, 22:51, 02:20 et 12:59
+entre le 10/11 et le 12/11 : deux lots par jour au lieu de quatre, avec 1,5 à
+5 h de retard, et aucun lot parti des créneaux 04:30 et 16:30. Chaque créneau
+est donc doublé d'un cron trente minutes plus tard. Le job `lot-gate` saute ce
+secours quand un lot planifié a déjà été servi depuis moins de 150 min : son
+job `lot` a réussi, ou tourne encore. Un `workflow_dispatch`, l'avance du
+coordinateur, n'est jamais dédoublonné. Si l'API ne répond pas, la garde
+laisse passer : un lot en double coûte un runner hébergé, un lot perdu coûte
+une journée.
 
 ### Un seul lot à la fois
 
@@ -461,8 +528,11 @@ présenter comme vert.
 
 ### Permissions et runner
 
-`contents: read` et `pull-requests: read`, et rien d'autre. Aucun
-`secrets.*` n'est lu : le job exécute du code de PR, sur un runner
+`contents: read` et `pull-requests: read`, et rien d'autre — sauf le job du
+lot, qui demande en plus `checks: write` depuis la tranche 2 : il publie
+un check-run par tête du lot. Les permissions d'un job **remplacent** celles
+du workflow, donc les deux lectures sont rédéclarées au niveau du job.
+Aucun `secrets.*` n'est lu : le job exécute du code de PR, sur un runner
 **hébergé** par GitHub — hors du parc de la flotte, et sans rien pouvoir
 lire de sensible. Une jambe self-hosted exigerait une entrée dans
 `SELF_HOSTED_WORKFLOW_ALLOWLIST`, qui est une politique d'owner : le

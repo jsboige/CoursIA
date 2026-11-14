@@ -1,0 +1,92 @@
+{
+  "p1_each_seed": true,
+  "p2_median": true,
+  "p3_each_seed": true,
+  "p4_median": true,
+  "p5_each_seed": true,
+  "per_seed": [
+    {
+      "content_ratio_nocortex": 0.0,
+      "dissociation_contrast": 1.034794502429251,
+      "feel_ratio_nocortex": 1.034794502429251,
+      "feel_ratio_nosubcortex": 0.0,
+      "h0_feel_ratio_nocortex": 0.0,
+      "p1": true,
+      "p2": true,
+      "p3": true,
+      "p4": true,
+      "p5": true,
+      "seed": 0,
+      "valence_tracks_dU": 0.8930734867258509,
+      "verdict": "PASS"
+    },
+    {
+      "content_ratio_nocortex": 0.0,
+      "dissociation_contrast": 0.9928424248227039,
+      "feel_ratio_nocortex": 0.9928424248227039,
+      "feel_ratio_nosubcortex": 0.0,
+      "h0_feel_ratio_nocortex": 0.0,
+      "p1": true,
+      "p2": true,
+      "p3": true,
+      "p4": true,
+      "p5": true,
+      "seed": 1,
+      "valence_tracks_dU": 0.886488112181713,
+      "verdict": "PASS"
+    },
+    {
+      "content_ratio_nocortex": 0.0,
+      "dissociation_contrast": 1.011270868130405,
+      "feel_ratio_nocortex": 1.011270868130405,
+      "feel_ratio_nosubcortex": 0.0,
+      "h0_feel_ratio_nocortex": 0.0,
+      "p1": true,
+      "p2": true,
+      "p3": true,
+      "p4": true,
+      "p5": true,
+      "seed": 7,
+      "valence_tracks_dU": 0.8792313522362623,
+      "verdict": "PASS"
+    },
+    {
+      "content_ratio_nocortex": 0.0,
+      "dissociation_contrast": 0.9530474343369164,
+      "feel_ratio_nocortex": 0.9530474343369164,
+      "feel_ratio_nosubcortex": 0.0,
+      "h0_feel_ratio_nocortex": 0.0,
+      "p1": true,
+      "p2": true,
+      "p3": true,
+      "p4": true,
+      "p5": true,
+      "seed": 42,
+      "valence_tracks_dU": 0.879045778369609,
+      "verdict": "PASS"
+    },
+    {
+      "content_ratio_nocortex": 0.0,
+      "dissociation_contrast": 1.0476684054327658,
+      "feel_ratio_nocortex": 1.0476684054327658,
+      "feel_ratio_nosubcortex": 0.0,
+      "h0_feel_ratio_nocortex": 0.0,
+      "p1": true,
+      "p2": true,
+      "p3": true,
+      "p4": true,
+      "p5": true,
+      "seed": 99,
+      "valence_tracks_dU": 0.8919665281423624,
+      "verdict": "PASS"
+    }
+  ],
+  "seeds": [
+    0,
+    1,
+    7,
+    42,
+    99
+  ],
+  "verdict": "SUPPORTED"
+}

@@ -91,6 +91,12 @@ def _make_item(number, age_days, idle, klass="grain", last=None,
     }
 
 
+def test_belt_delivery_status_distinguishes_delivered_and_free_grains():
+    assert pig._belt_delivery_status({"klass": "delivered"}) == "livre"
+    assert pig._belt_delivery_status({"klass": "grain"}) == "libre"
+    assert pig._belt_delivery_status({"klass": "umbrella"}) == "servable"
+
+
 class _FakeArgs:
     """Args minimum pour draw_belt / belt_sort_key / belt_filter."""
 
@@ -113,7 +119,13 @@ class _FakeArgs:
 
 
 def test_belt_sort_key_orders_by_last_delivery_first():
-    """Critere 1 : ordre par derniere visite (None d'abord, ISO asc)."""
+    """Les dates de visite restent ordonnees ; l'issue jamais visitee les rejoint.
+
+    Relecture du 11/11 (#24373) : la classe 3 a disparu. Une issue jamais
+    visitee creee hors de la fenetre hebdomadaire n'est plus repoussee
+    derriere tout item deja visite : elle rejoint la classe 2, ou elle est
+    triee par sa date de creation -- ici plus ancienne que les deux visites.
+    """
     never = _make_item(1, age_days=5, idle=1, last=None)
     fresh = _make_item(2, age_days=10, idle=2,
                        last="2026-10-01T00:00:00Z")  # tres recente (hier)
@@ -121,7 +133,9 @@ def test_belt_sort_key_orders_by_last_delivery_first():
                          last="2026-08-01T00:00:00Z")  # ~2 mois
     pool = [fresh, never, ancient]
     pool.sort(key=pig.belt_sort_key)
-    # None en tete, puis 2026-08 avant 2026-10 (plus ancien d'abord)
+    # Les deux issues visitees gardent leur ordre chronologique ; l'issue
+    # jamais visitee passe devant elles, sa creation (2026-06-01) etant
+    # plus ancienne que leurs deux visites.
     assert [it["number"] for it in pool] == [1, 3, 2]
 
 
@@ -143,26 +157,25 @@ def test_belt_sort_key_tie_breaks_on_created_then_number():
 # Predicat 2 : une issue jamais servie se classe par sa creation.
 
 
-def test_belt_sort_key_never_served_ordered_by_created():
-    """Critere 2 : jamais servis tries par createdAt croissant puis number."""
+def test_belt_sort_key_never_served_oldest_is_behind_visited_items():
+    """Les jamais servis anciens se rangent par creation, dans la classe 2."""
     n_old_create = _make_item(10, age_days=200, idle=1, last=None,
                               created="2026-01-01T00:00:00Z")
     n_new_create = _make_item(11, age_days=10, idle=1, last=None,
                               created="2026-09-01T00:00:00Z")
     pool = [n_new_create, n_old_create]
     pool.sort(key=pig.belt_sort_key)
-    # Plus ancienne creation en premier
-    assert pool[0]["number"] == 10
-    assert pool[1]["number"] == 11
+    # Ces deux dates sont hors de la priorite initiale : les deux items sont
+    # en classe 2, ranges par leur date de creation (la plus ancienne
+    # d'abord), l'ordre interne reste deterministe et chronologique.
+    assert [it["number"] for it in pool] == [10, 11]
 
 
 # Predicat 3 : une issue livree hier passe derriere une livree il y a un mois.
 
 
 def test_belt_sort_old_delivery_before_recent():
-    """Critere 3 : ancien derriere recent -- jamais servis prennent les
-    premieres places, puis livraisons anciennes, puis livraisons recentes.
-    """
+    """Les visites gardent leur ordre ; la jamais servie se range a sa creation."""
     fresh = _make_item(20, age_days=20, idle=2,
                        last="2026-10-01T00:00:00Z")  # hier
     ancient = _make_item(21, age_days=20, idle=2,
@@ -170,10 +183,121 @@ def test_belt_sort_old_delivery_before_recent():
     never = _make_item(22, age_days=20, idle=2, last=None)
     pool = [fresh, ancient, never]
     pool.sort(key=pig.belt_sort_key)
-    # never en tete (acception 1), puis ancient (livraison il y a un mois)
-    # puis fresh (livraison hier). La livraison plus ancienne passe AVANT
-    # la livraison recente -- c'est l'inverse du tirage pondere.
+    # Les visitees gardent l'ordre plus ancienne d'abord ; l'issue jamais
+    # servie, creee le 2026-03-01, passe devant elles : c'est sa date de
+    # creation qui la range, dans la meme classe 2.
     assert [it["number"] for it in pool] == [22, 21, 20]
+
+
+def test_belt_sort_key_recent_grain_reaches_service_and_frozen_veto_holds():
+    """Un grain frais sort du prefixe ancien ; le GEL continue de l'ecarter."""
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    stale_umbrella = _make_item(
+        40, age_days=200, idle=200, klass="umbrella", last=None,
+        created="2026-01-01T00:00:00Z")
+    recently_visited = _make_item(
+        41, age_days=30, idle=1, last="2026-11-07T00:00:00Z",
+        created="2026-10-01T00:00:00Z")
+    fresh_grain = _make_item(
+        42, age_days=1, idle=1, last=None,
+        created="2026-11-07T12:00:00Z")
+    fresh_frozen = _make_item(
+        43, age_days=1, idle=1, last=None,
+        created="2026-11-07T11:00:00Z")
+    pool = [stale_umbrella, recently_visited, fresh_grain, fresh_frozen]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    # Les deux grains frais ouvrent (classe 1) ; l'umbrella jamais visitee
+    # rejoint la classe 2 par sa creation (2026-01-01) et passe devant
+    # l'item visite le 2026-11-07.
+    assert [item["number"] for item in pool] == [42, 43, 40, 41]
+
+    picks, withheld, _state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False,
+        frozen_probe=lambda n: "comment" if n == 43 else False)
+    assert [item["number"] for item in picks] == [42, 40]
+    assert [(item["number"], reason.split(" ", 1)[0])
+            for item, reason in withheld] == [(43, "GEL")]
+    unreadable_date = _make_item(49, age_days=0, idle=0, last=None,
+                                 created="not-a-date")
+    assert pig.belt_sort_key(unreadable_date, now=now) > pig.belt_sort_key(
+        recently_visited, now=now)
+
+
+def test_belt_sort_key_bounds_never_visited_before_consolidation_due():
+    """Un due recent reste prioritaire ; un due visite egalement ; un vieux jamais vu non.
+
+    Relecture du 11/11 (#24373) : le vieux jamais visite n'a plus sa classe
+    propre derriere tout ; il rejoint la classe 2, ou il est range par sa
+    date de creation -- ici le 2026-07-01, avant la visite du 2026-11-07.
+    """
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    fresh_due = _make_item(44, age_days=3, idle=3, last=None,
+                          created="2026-11-05T00:00:00Z")
+    fresh_due["labels"] = [pig.CONSOLIDATION_TAG]
+    visited_due = _make_item(
+        45, age_days=60, idle=3, last=None)
+    visited_due["labels"] = [pig.CONSOLIDATION_TAG]
+    visited_due["last_claim_stamp"] = "2026-11-05T00:00:00Z"
+    old_never_due = _make_item(46, age_days=60, idle=60, last=None)
+    old_never_due["labels"] = [pig.CONSOLIDATION_TAG]
+    ordinary_visited = _make_item(
+        47, age_days=60, idle=1, last="2026-11-07T00:00:00Z")
+    pool = [old_never_due, ordinary_visited, fresh_due, visited_due]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    assert [item["number"] for item in pool] == [44, 45, 46, 47]
+
+    three_day_grain = _make_item(
+        48, age_days=3, idle=3, last=None,
+        created="2026-11-05T00:00:00Z")
+    # Fenetre par defaut (7 j) : le grain est encore frais, donc classe 1 --
+    # devant tout item visite.
+    assert pig.belt_sort_key(three_day_grain, now=now)[0] == 1
+    assert pig.belt_sort_key(three_day_grain, now=now) < \
+        pig.belt_sort_key(ordinary_visited, now=now)
+    # Fenetre ramenee a 2 j : le grain sort de la priorite, il rejoint la
+    # classe 2 -- et sa creation (2026-11-05) est plus ancienne que la
+    # visite du 2026-11-07, il passe donc devant.
+    assert pig.belt_sort_key(
+        three_day_grain, now=now, never_visited_priority_days=2
+    )[0] == 2
+    assert pig.belt_sort_key(
+        three_day_grain, now=now, never_visited_priority_days=2
+    ) < pig.belt_sort_key(ordinary_visited, now=now)
+
+
+def test_belt_sort_key_melange_les_vieilles_jamais_visitees_aux_visitees():
+    """La classe 2 melange creations et visites sur une seule ligne de temps.
+
+    Relecture du 11/11 (#24373) : la classe 3 a disparu. Les issues
+    anciennes jamais servies sont triees par `created_at` et melangees aux
+    items visites (tries par date de visite) : la file sert le stock des
+    issues a fermer au lieu de le repousser derriere tout item deja visite.
+    """
+    now = datetime(2026, 11, 8, tzinfo=timezone.utc)
+    old_never = _make_item(60, age_days=300, idle=300, last=None,
+                            created="2026-01-01T00:00:00Z")
+    mid_never = _make_item(61, age_days=120, idle=120, last=None,
+                            created="2026-07-01T00:00:00Z")
+    visited_recent = _make_item(62, age_days=60, idle=1,
+                                last="2026-11-07T00:00:00Z")
+    visited_old = _make_item(63, age_days=60, idle=1,
+                             last="2026-09-01T00:00:00Z")
+    pool = [visited_recent, mid_never, old_never, visited_old]
+    pool.sort(key=lambda item: pig.belt_sort_key(item, now=now))
+    # Une seule ligne de temps : creation des jamais-visitees et visite des
+    # autres, la plus ancienne d'abord.
+    assert [item["number"] for item in pool] == [60, 61, 63, 62]
+    # Aucun item de ce pool ne sort en classe 3 : la classe a disparu.
+    assert {pig.belt_sort_key(item, now=now)[0] for item in pool} == {2}
+    # Une date illisible n'a pas d'ordre : elle passe en dernier.
+    unreadable = _make_item(64, age_days=0, idle=0, last=None,
+                            created="not-a-date")
+    assert pig.belt_sort_key(unreadable, now=now) > \
+        pig.belt_sort_key(visited_recent, now=now)
 
 
 # Predicat 4 : une issue reclamee par une autre lane est sautee.
@@ -777,6 +901,55 @@ def test_belt_json_repair_key_absent_when_no_red(monkeypatch, capsys):
     assert payload["last_delivery_window_days"] == 90
 
 
+def test_belt_json_stdout_neporte_que_le_document_json(monkeypatch, capsys):
+    """Le bandeau d'index local ne pollue pas stdout (dispatch c2818).
+
+    Mesure du coordinateur (cycle c2818) : `pick_idle_grain.py --belt
+    --json` imprimait sur STDOUT le bandeau « (index local des PRs mergees
+    : N PRs ...) », alors que le `print` voisin de la branche d'echec
+    partait deja sur stderr. La sortie etait donc un document JSON suivi
+    d'une ligne de prose, et `json.load` echouait sur le tirage meme du
+    coordinateur.
+
+    Le bandeau n'est emis que HORS pytest : le code ne construit l'index
+    local que si `PYTEST_CURRENT_TEST` n'est pas dans l'environnement
+    (`args.cache_dir is None`). Le test neutralise donc ce garde et
+    injecte un index factice -- sans quoi la branche reprochee ne serait
+    jamais atteinte et le defaut resterait invisible a la suite.
+
+    Controle positif du retrait : si le `file=sys.stderr` disparait du
+    bandeau, `json.loads(captured.out)` leve et ce test rougit.
+
+    # #23174 : depuis le 11/11, `main` mesure le compte REEL d'issues
+    # ouvertes par une requete `gh` (`measure_open_issue_count`), et le garde
+    # « pas de reseau sous pytest » s'appuie sur `PYTEST_CURRENT_TEST` --
+    # que ce test neutralise justement pour atteindre la branche du bandeau.
+    # Sans stub, la mesure partait sur le reseau et le garde bruyant du
+    # fichier levait `_RealGhReached` : le test rougissait pour une raison
+    # etrangere a son objet. La mesure est donc neutralisee explicitement.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "measure_open_issue_count", lambda: None)
+    monkeypatch.setattr(pig, "merged_prs_index", lambda **kwargs: [{
+        "number": 19001,
+        "title": "PR fusionnee de la fenetre",
+        "body": "Closes #19001",
+        "mergedAt": "2026-11-01T00:00:00Z",
+    }])
+
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    captured = capsys.readouterr()
+    # Avant le fix : cette ligne leve (le bandeau precedait le document).
+    payload = json.loads(captured.out)
+    assert payload["mode"] == "belt"
+    # Le bandeau a bien ete emis -- sur stderr, et sur stderr seulement.
+    assert "index local des PRs mergees" in captured.err
+    assert "index local des PRs mergees" not in captured.out
+
+
 class _RealProbeReached(AssertionError):
     """Un test a atteint une sonde reseau par defaut -- le piege #19913."""
 
@@ -1227,19 +1400,29 @@ def test_belt_visit_stamp_is_latest_of_merge_claim_child():
     assert pig.belt_visit_stamp(never) is None
 
 
-def test_belt_claim_moves_issue_behind_unvisited_ones():
+# `settle_belt_head` trie avec `belt_sort_key` sans `now` explicite : la cle
+# lit alors l'horloge du module (`pig.NOW`). La fenetre de premiere visite
+# (#24373, sept jours) rend ces scenarios dates ; sans horloge epinglee, le
+# premier a vire au rouge le 2026-11-13 a 00:00Z, quand la creation du
+# 2026-11-06 est sortie de la fenetre. L'horloge est donc fixee au lendemain
+# des dates du scenario.
+_SCENARIO_NOW = datetime(2026, 11, 8, tzinfo=timezone.utc)
+
+
+def test_belt_claim_moves_issue_behind_unvisited_ones(monkeypatch):
     """Une issue reservee depuis son dernier merge passe derriere une issue
     plus recente jamais visitee, sans attendre de merge."""
+    monkeypatch.setattr(pig, "NOW", _SCENARIO_NOW)
     old = _make_item(10, age_days=90, idle=1, last="2026-08-01T00:00:00Z",
                      created="2026-07-01T00:00:00Z")
     newer = _make_item(11, age_days=30, idle=1, last=None,
-                       created="2026-09-01T00:00:00Z")
+                       created="2026-11-06T00:00:00Z")
     pool = [old, newer]
-    claims = {10: "2026-10-04T19:49:00Z"}
+    claims = {10: "2026-11-05T19:49:00Z"}
     probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
     assert [it["number"] for it in pool] == [11, 10]
     assert probed == {10, 11}
-    assert old["last_claim_stamp"] == "2026-10-04T19:49:00Z"
+    assert old["last_claim_stamp"] == "2026-11-05T19:49:00Z"
 
 
 def test_belt_claim_older_than_merge_changes_nothing():
@@ -1255,24 +1438,32 @@ def test_belt_claim_older_than_merge_changes_nothing():
 
 def test_belt_settle_reads_the_freed_slot_until_head_is_stable():
     """Toute la tete est reservee : chaque place liberee est lue a son tour,
-    et la premiere issue non reservee finit en tete."""
+    et la premiere issue non reservee finit en tete.
+
+    Les dates de creation sont relatives a `NOW` : le test ne doit pas
+    dependre du jour ou il tourne. La fenetre de priorite des 7 jours
+    (#24373) faisait sortir les items au bout d'une semaine -- le test a
+    echoue le 11/11 sur une base datee, avant tout changement de politique.
+    """
     pool = [_make_item(20 + k, age_days=90, idle=1, last=None,
-                       created=f"2026-07-0{k + 1}T00:00:00Z") for k in range(5)]
-    claims = {20: "2026-10-04T10:00:00Z", 21: "2026-10-04T11:00:00Z",
-              22: "2026-10-04T12:00:00Z"}
+                       created=(pig.NOW - timedelta(days=6 - k))
+                       .isoformat().replace("+00:00", "Z"))
+            for k in range(5)]
+    claims = {24: "2026-11-07T10:00:00Z", 23: "2026-11-07T11:00:00Z",
+              22: "2026-11-07T12:00:00Z"}
     probed = pig.settle_belt_head(pool, need=2, probe=claims.get, max_probes=10)
-    assert [it["number"] for it in pool][:2] == [23, 24]
+    assert [it["number"] for it in pool][:2] == [21, 20]
     assert {20, 21, 22, 23, 24} <= probed
 
 
 def test_belt_settle_is_bounded_by_max_probes():
     pool = [_make_item(40 + k, age_days=90, idle=1, last=None,
-                       created=f"2026-07-{k + 1:02d}T00:00:00Z") for k in range(20)]
+                       created="2026-11-02T00:00:00Z") for k in range(20)]
     calls = []
 
     def probe(n):
         calls.append(n)
-        return f"2026-10-04T{len(calls):02d}:00:00Z"
+        return f"2026-11-07T{len(calls):02d}:00:00Z"
 
     pig.settle_belt_head(pool, need=3, probe=probe, max_probes=7)
     assert len(calls) == 7
@@ -1285,15 +1476,15 @@ def test_belt_child_issue_visits_its_parent_7265_scenario():
                       last="2026-08-13T00:00:00Z",
                       created="2026-07-18T00:00:00Z")
     august = _make_item(14000, age_days=40, idle=3, last=None,
-                        created="2026-08-25T00:00:00Z")
+                        created="2026-11-05T00:00:00Z")
     child = _make_item(19088, age_days=0, idle=0, last=None,
-                       created="2026-10-04T09:50:00Z")
+                       created="2026-11-06T09:50:00Z")
     child["title"] = "[#7265 · pépite A3] Object explorer metadata-driven"
     child["body"] = "Pepite A3 de l'EPIC #7265."
     belt_pool = [epic, august]
     latest = pig.apply_child_visits([epic, august, child], belt_pool)
-    assert latest[7265] == "2026-10-04T09:50:00Z"
-    assert epic["last_child_stamp"] == "2026-10-04T09:50:00Z"
+    assert latest[7265] == "2026-11-06T09:50:00Z"
+    assert epic["last_child_stamp"] == "2026-11-06T09:50:00Z"
     belt_pool.sort(key=pig.belt_sort_key)
     assert [it["number"] for it in belt_pool] == [14000, 7265]
 
@@ -1414,8 +1605,15 @@ def test_every_marker_keyword_of_the_organ_has_a_translation():
 
 def test_belt_released_issue_stays_behind_7742_scenario():
     """Bout en bout, cas mesure #7742 : prise le 31/08, rendue le 19/09 apres
-    deux tranches mergees. Lue a la prise seule, elle repassait devant une
-    issue visitee le 10/09 ; lue a sa cloture, elle reste derriere."""
+    deux tranches mergees.
+
+    Relecture du 11/11 (#24373) : la classe 3 a disparu. L'issue jamais
+    servie n'est plus renvoyee en queue de la file ; elle rejoint la classe 2,
+    ou elle est rangee par sa date de creation (2026-07-21) -- donc devant
+    l'issue visitee le 10/09. Ce qui reste verifie, c'est la chute de la
+    trace : la prise du 31/08 vaut visite mesuree, la RENDUE du 19/09 la
+    retire et l'issue retombe sur sa creation.
+    """
     claim = _claim("2026-08-31T01:31:34Z",
                    "[CLAIMED] lane myia-po-2024:CoursIA -- paths: a.ipynb")
     release = _claim("2026-09-19T14:46:38Z",
@@ -1437,9 +1635,21 @@ def test_belt_released_issue_stays_behind_7742_scenario():
             max_probes=4)
         return [it["number"] for it in pool]
 
-    assert order([]) == [7742, 200]                 # jamais servie : en tete
-    assert order([claim]) == [7742, 200]            # prise le 31/08 < 10/09
-    assert order([claim, release]) == [200, 7742]   # rendue le 19/09 : derriere
+    # Jamais servie : le rang vient de sa creation (2026-07-21) -- elle
+    # passe devant 200, la classe 3 qui la repoussait en queue a disparu.
+    assert order([]) == [7742, 200]
+    # Prise le 31/08 : le rang vient de la visite mesuree (2026-08-31).
+    assert order([claim]) == [7742, 200]
+    # Rendue le 19/09 : la visite la plus recente est la rendu, donc apres la
+    # visite du 10/09 de 200 -- l'issue repasse derriere.
+    assert order([claim, release]) == [200, 7742]
+
+    # La discrimination est dans le STAMP, pas dans l'ordre final.
+    item = _make_item(7742, age_days=75, idle=0, last=None,
+                      created="2026-07-21T16:31:50Z")
+    assert pig.belt_sort_key(item, now=pig.NOW)[2] == "2026-07-21T16:31:50Z"
+    item["last_claim_stamp"] = "2026-08-31T01:31:34Z"
+    assert pig.belt_sort_key(item, now=pig.NOW)[2] == "2026-08-31T01:31:34Z"
 
 
 def test_latest_claim_stamp_reads_claims_of_any_lane(monkeypatch):
@@ -1545,23 +1755,26 @@ def test_latest_claim_stamp_takes_max_of_claim_and_delivered(monkeypatch):
     assert len(calls) == 1
 
 
-def test_belt_delivered_info_moves_served_issue_behind_13107_scenario():
-    """Acceptance #19295 en bout en bout : #13107 servie par un
-    `[INFO] candidate-delivered` recule derriere une issue jamais servie,
-    au meme titre qu'un claim -- le tapis cesse de la reservir comme
-    grain neuf."""
+def test_belt_delivered_info_moves_served_issue_behind_13107_scenario(
+        monkeypatch):
+    """Acceptance #19295 : une creation jamais servie de moins de 7 j
+    passe avant #13107 apres son marqueur de livraison."""
+    # Meme horloge epinglee que le scenario du claim : sans elle, la
+    # creation du 2026-11-06 n'a plus « moins de 7 j » et le test ne passe
+    # plus que parce que la date du claim lui est posterieure.
+    monkeypatch.setattr(pig, "NOW", _SCENARIO_NOW)
     palomar = _make_item(13107, age_days=90, idle=1,
                          last="2026-08-26T19:38:55Z",
                          created="2026-08-26T12:17:31Z")
-    fresh = _make_item(19088, age_days=30, idle=1, last=None,
-                       created="2026-09-10T00:00:00Z")
+    fresh = _make_item(19088, age_days=2, idle=1, last=None,
+                       created="2026-11-06T00:00:00Z")
     pool = [palomar, fresh]
     pig.settle_belt_head(
         pool, need=2,
-        probe={13107: "2026-10-05T06:58:26Z"}.get,
+        probe={13107: "2026-11-07T06:58:26Z"}.get,
         max_probes=10)
     assert [it["number"] for it in pool][0] == 19088
-    assert palomar["last_claim_stamp"] == "2026-10-05T06:58:26Z"
+    assert palomar["last_claim_stamp"] == "2026-11-07T06:58:26Z"
 
 
 def test_belt_merge_only_flag_is_accepted(monkeypatch, capsys):
@@ -1653,10 +1866,15 @@ def test_belt_recent_marker_excludes_hors_budget():
 
 def test_belt_recent_marker_survives_budget_exhaustion():
     """Le cas fondateur du tapis (mesure po-2023 du 10-09 : 5 candidats
-    servis non prenables) : budget de sonde EPUIS -- la sonde pleine rend
-    UNPROBED et un candidat non filtre est servi (fail-OPEN, doctrine
-    inchangee). Le marque, lui, ne passe PLUS : le filtre recent est HORS
-    budget, l'epuisement ne peut plus servir une cloture marquee."""
+    servis non prenables) : budget de sonde EPUIS.
+
+    Le marque ne passe PLUS : le filtre recent est HORS budget,
+    l'epuisement ne peut plus servir une cloture marquee.
+
+    c2817 : le candidat NON SONDE ne passe plus non plus. Le plafond etait
+    fail-OPEN (le candidat etait servi sans lecture) ; il est abroge --
+    le candidat est ecarte « a sonder », comme le mur de temps (#22983).
+    """
     marked = _make_item(7742, age_days=90, idle=9, last=None)
     clean = _make_item(19008, age_days=40, idle=4, last=None)
     picks, withheld, state = pig.belt_pick_with_replacements(
@@ -1665,13 +1883,123 @@ def test_belt_recent_marker_survives_budget_exhaustion():
         delivered_probe=lambda n, lane=None: True,
         merged_pr_probe=lambda n, lane=None: True,
         recent_marker_probe=lambda n: n == 7742)
-    # Le clean, non marque, reste servi en fail-OPEN (budget eteint) ;
-    # le marque, lui, est ecarte hors budget.
-    assert [p["number"] for p in picks] == [19008]
+    # Le marque est ecarte hors budget ; le clean, non lu, l'est aussi.
+    assert [p["number"] for p in picks] == []
     causes = {w[0]["number"]: w[1] for w in withheld}
     assert causes[7742].startswith("LIVRAISON (recent)")
+    assert causes[19008].startswith("a sonder")
     assert state["recent_filtered"] == 1
     assert state["budget_hit"] is True
+    assert 19008 in state["budget_unprobed"]
+
+
+def test_belt_budget_ceiling_withholds_the_unprobed_candidate():
+    """c2817 -- le plafond de sondes ne peut plus SERVIR un candidat dont
+    la livraison n'a pas ete lue.
+
+    Cas fondateur mesure (c3128) : #23500 et #25375 ont ete servis par le
+    tapis alors que la lecture de leur livraison n'avait pas eu lieu (le
+    plafond de sondes etait atteint). La lane recevait alors
+    « ACTION REQUISE : poser [CLAIMED] » sur un travail DEJA LIVRE, et le
+    claim ainsi pose relockait l'issue pour toute la flotte.
+
+    Le correctif n'est pas « servir plus » : un candidat dont la
+    livraison n'a pas pu etre lue est ECARTE, avec un motif nomme
+    (« a sonder »), et ne porte AUCUN ordre de claim. Le candidat lu,
+    lui, est servi normalement : le plafond est un plafond de COUT.
+    """
+    served = _make_item(19100, age_days=60, idle=6, last=None)
+    unprobed = _make_item(23500, age_days=59, idle=6, last=None)
+    pool = [served, unprobed]
+    # budget = 3 : le premier candidat consomme delivered + merged + cover ;
+    # le second arrive apres epuisement et n'est donc JAMAIS lu.
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=2), probe_budget=3,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19100], (
+        "le candidat lu est servi ; le candidat non lu ne doit pas l'etre")
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert 23500 in causes and causes[23500].startswith("a sonder"), (
+        "le candidat non lu doit etre ecarte avec un motif nomme")
+    assert state["budget_hit"] is True
+    assert state["budget_unprobed"] == [23500]
+    assert 19100 not in state["budget_unprobed"]
+
+
+def _saturated_head_pool(n_delivered=36, n_free=4):
+    """Tete de tapis saturee de livraisons, puis des grains LIBRES.
+
+    La famine mesuree par Hermes (review du 2026-11-12 sur PR #25920) :
+    36 issues livrees en tete, 4 grains libres plus loin dans la fenetre
+    parcourue. Chaque candidat livre en coute 3 sondes (livraison, PR
+    mergee, couverture).
+    """
+    delivered = [_make_item(20000 + i, age_days=90 - i, idle=9, last=None)
+                  for i in range(n_delivered)]
+    free = [_make_item(21000 + i, age_days=60 - i, idle=4, last=None)
+            for i in range(n_free)]
+    return delivered + free
+
+
+def test_belt_saturated_head_serves_nothing_with_the_head_only_ceiling():
+    """Le defaut mesure : le plafond calcule sur la fenetre de TETE est
+    atteint avant la fin de la fenetre parcourue, et le tapis rend 0 grain
+    alors que des grains libres existent plus loin."""
+    pool = _saturated_head_pool()
+    args = _belt_args(grains=4)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), args, probe_budget=8 * 3 + 12,
+        delivered_probe=lambda n, lane=None: n < 21000,
+        merged_pr_probe=lambda n, lane=None: n < 21000,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [], (
+        "ce test verrouille le DEFAUT : sans plafond couvrant la fenetre, "
+        "le tapis rend 0 grain sur une tete saturee")
+    assert state["budget_hit"] is True
+
+
+def test_belt_ceiling_covering_the_service_window_serves_the_free_grains():
+    """#25920 -- le plafond de sondes doit COUVRIR la fenetre PARCOURUE.
+
+    Contre-positif du test precedent : avec un plafond qui couvre la
+    fenetre de service, le tapis rend les 4 grains LIBRES malgre les 36
+    livraisons en tete. Le plafond reste un plafond : au-dela, un
+    candidat non lu est ecarte « a sonder » (c2817, intact).
+    """
+    pool = _saturated_head_pool()
+    args = _belt_args(grains=4)
+    service_window = pig.belt_service_window(args, len(pool))
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), args, probe_budget=8 * 3 + 12,
+        service_window=service_window,
+        delivered_probe=lambda n, lane=None: n < 21000,
+        merged_pr_probe=lambda n, lane=None: n < 21000,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [21000, 21001, 21002, 21003], (
+        "le tapis doit rendre les grains libres de la fenetre parcourue")
+    assert state["budget_hit"] is False
+    assert not state.get("budget_unprobed")
+    assert state["probe_budget_ceiling"] >= service_window * 3
+
+
+def test_belt_ceiling_stays_a_ceiling_when_the_window_is_not_covered():
+    """Le plafond elargi ne doit PAS servir un candidat non lu : il reste
+    un plafond de COUT, fail-CLOSED comme le contrat c2817."""
+    pool = _saturated_head_pool(n_delivered=36, n_free=4)
+    args = _belt_args(grains=4)
+    # Fenetre de service amputee : le plafond ne couvre plus la fenetre.
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), args, probe_budget=8 * 3 + 12,
+        service_window=2,
+        delivered_probe=lambda n, lane=None: n < 21000,
+        merged_pr_probe=lambda n, lane=None: n < 21000,
+        recent_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == []
+    assert state["budget_hit"] is True
+    assert state["budget_unprobed"], (
+        "un candidat non lu doit etre ecarte, jamais servi")
 
 
 def test_belt_real_probe_serves_item_released_on_barrier(monkeypatch):
@@ -2047,9 +2375,13 @@ def test_belt_marker_KO_and_budget_epuise_ne_sert_pas_silencieusement():
         container_marker_probe=lambda n: False)
     # Le budget de sondes est epuise : la sonde pleine n'a rien vu.
     assert state["budget_hit"] is True
-    # Le fail-OPEN reste assume : le candidat est servi.
-    assert [p["number"] for p in picks] == [19030]
-    # ... mais l'echec de la sonde de marqueur est PUBLIE.
+    # c2817 : le plafond ne sert PLUS un candidat non lu -- il l'ecarte
+    # « a sonder ». Ce qui reste fail-OPEN, c'est le TIRAGE (la boucle ne
+    # refuse pas de grain : elle remplace).
+    assert [p["number"] for p in picks] == []
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[19030].startswith("a sonder")
+    # ... et l'echec de la sonde de marqueur reste PUBLIE.
     assert state["marker_unread"] == [19030]
 
 
@@ -2210,13 +2542,9 @@ def test_container_marker_survit_a_un_released_de_queue(monkeypatch):
 
 
 def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
-    """Controle negatif : le saut ne porte pas sur l'EN-TETE seul.
+    """Un marqueur de grain n'annule pas la livraison du conteneur.
 
-    Un `[RELEASED]` dont le corps porte lui-meme un marqueur d'etat est un
-    evenement : il reste le dernier commentaire LU, et ce qu'il dit compte.
-    Ce controle discrimine les deux lectures -- si le `[RELEASED]` etait saute
-    sur son en-tete, la sonde remonterait au `[INFO] candidate-delivered` de
-    tete et rendrait True ; en lisant le corps de queue, elle rend False.
+    Seule une retractation explicite change l'etat du marqueur de conteneur.
     """
     _stub_comments(monkeypatch, [
         "[INFO] candidate-delivered -- les cinq arcs sont clos.",
@@ -2226,7 +2554,7 @@ def test_container_marker_lit_un_released_qui_porte_un_marqueur(monkeypatch):
             "[DELIVERED] lane myia-po-2028:CoursIA -- PR #21212",
         ]),
     ])
-    assert pig.has_recent_container_delivery_marker(17528) is False
+    assert pig.has_recent_container_delivery_marker(17528) is True
 
 
 # Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans
@@ -2304,10 +2632,11 @@ def test_belt_rewithholds_when_a_marker_follows_the_revocation(monkeypatch):
     assert withheld[0][1].startswith("LIVRAISON")
 
 
-def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
+def test_belt_probe_budget_is_bounded_and_withholds_the_unprobed():
     """Cout borne : le budget de sondes vaut la fenetre de tete. Au-dela,
-    plus personne n'est sonde -- fail-OPEN rapporte (budget_hit), jamais
-    un faux LIVRAISON sur un candidat jamais lu."""
+    plus personne n'est sonde -- et un candidat jamais lu n'est PAS servi
+    (c2817) : il est ecarte « a sonder ». Jamais de faux LIVRAISON sur un
+    candidat jamais lu, jamais de silence non dit."""
     items = [_make_item(n, age_days=30, idle=3, last=None)
              for n in (19006, 19007, 19008)]
     probes = []
@@ -2319,13 +2648,19 @@ def test_belt_probe_budget_is_bounded_and_fail_open_when_exhausted():
     picks, withheld, state = pig.belt_pick_with_replacements(
         items, _free_claims(items), _belt_args(), probe_budget=1,
         delivered_probe=counting_probe)
-    # 1 sonde : le premier candidat est ecarte (marqueur lu), les deux
-    # suivants sont SERVIS sans lecture -- le budget epuise ne fabrique
-    # ni retrait ni silence non dit.
+    # 1 sonde : le premier candidat est ecarte (marqueur lu) ; les deux
+    # suivants ne sont JAMAIS lus, donc ils ne sont pas servis non plus
+    # -- le budget epuise ne fabrique ni retrait, ni silence non dit,
+    # ni claim sur un travail non lu.
     assert probes == [19006]
-    assert [p["number"] for p in picks] == [19007, 19008]
-    assert [w[0]["number"] for w in withheld] == [19006]
+    assert [p["number"] for p in picks] == []
+    assert [w[0]["number"] for w in withheld] == [19006, 19007, 19008]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert causes[19006].startswith("LIVRAISON")
+    assert causes[19007].startswith("a sonder")
+    assert causes[19008].startswith("a sonder")
     assert state["budget_hit"] is True
+    assert state["budget_unprobed"] == [19007, 19008]
 
 
 def test_belt_probe_budget_covers_the_settle_window():
@@ -2345,7 +2680,12 @@ def test_belt_head_denser_than_the_window_no_longer_serves_delivered_items():
     Mesure firsthand du rapport : sur un seul tirage, huit candidats servis
     par le tapis etaient deja livres. Au-dela du budget, la sonde rendait
     DELIVERED_SIGNAL_UNPROBED et le candidat partait en ``picks`` comme un
-    grain neuf -- fail-OPEN assume, mais sous-dimensionne."""
+    grain neuf -- fail-OPEN assume, mais sous-dimensionne.
+
+    c2817 : ce fail-OPEN est abroge. Meme avec le budget etroit, un livre
+    non lu n'est plus servi -- il est ecarte « a sonder ». Le temoin
+    (l'ancien budget) ne laisse donc plus FUITER de livres : c'est la
+    garantie, elle, qui s'est renforcee."""
     window = 8
     delivered = set(range(19100, 19114))          # 14 livres, fenetre de 8
     items = [_make_item(n, age_days=200 - i, idle=2, last=None)
@@ -2356,9 +2696,9 @@ def test_belt_head_denser_than_the_window_no_longer_serves_delivered_items():
     def probe(n, lane=None):
         return n in delivered
 
-    # Budget d'AVANT (la fenetre seule) : des livres sont servis, et
-    # l'epuisement est rapporte -- le temoin du defaut.
-    old_picks, _, old_state = pig.belt_pick_with_replacements(
+    # Budget d'AVANT (la fenetre seule) : l'epuisement est rapporte et
+    # AUCUN livre n'est servi (c2817) -- le temoin du defaut a disparu.
+    old_picks, old_withheld, old_state = pig.belt_pick_with_replacements(
         list(pool), _free_claims(pool), _belt_args(grains=20),
         probe_budget=window, delivered_probe=probe,
         # 3e surface #19913 : explicitement False. Sous l'ancien defaut
@@ -2368,8 +2708,14 @@ def test_belt_head_denser_than_the_window_no_longer_serves_delivered_items():
         # dependance visible.
         merged_pr_probe=lambda n, lane=None: False)
     leaked = [p["number"] for p in old_picks if p["number"] in delivered]
-    assert leaked, "temoin : l'ancien budget doit laisser fuiter des livres"
+    assert not leaked, ("temoin : le plafond ne doit plus laisser fuiter "
+                        "de livres (c2817)")
     assert old_state["budget_hit"] is True
+    old_causes = {w[0]["number"]: w[1] for w in old_withheld}
+    # Les livres lus sont ecartees LIVRAISON, ceux qui n'ont pas ete lus
+    # sont ecartees « a sonder » -- jamais servis.
+    assert all(old_causes[n].startswith(("LIVRAISON", "a sonder"))
+               for n in old_causes)
 
     # Budget aligne : plus aucun livre servi, et plus d'epuisement.
     new_picks, new_withheld, new_state = pig.belt_pick_with_replacements(
@@ -2883,11 +3229,11 @@ def test_check_claims_na_plus_de_repli_unitaire(monkeypatch):
 
 
 def test_belt_budget_banner_is_printed_when_the_budget_is_exhausted(capsys):
-    """Le fail-OPEN du budget est assume, son SILENCE ne l'est pas."""
+    """Le budget est un plafond de COUT, son SILENCE ne l'est pas (c2817)."""
     pig.print_belt_budget_report(True)
     out = capsys.readouterr().out
     assert "Plafond de sondes de livraison atteint" in out
-    assert "fail-OPEN" in out
+    assert "a sonder" in out
     assert "check_unaddressed_nits" in out
     # Verrou d'egalite sur le texte entier : trois sous-chaines
     # laisseraient passer une reecriture du milieu des phrases, ou la perte
@@ -2895,8 +3241,8 @@ def test_belt_budget_banner_is_printed_when_the_budget_is_exhausted(capsys):
     # du 2026-10-22).
     assert out == (
         "   Plafond de sondes de livraison atteint : les candidats\n"
-        "   au-dela ne sont pas sondes (fail-OPEN) -- la verification\n"
-        "   de livraison leur revient, cf check_unaddressed_nits.\n"
+        "   au-dela ne sont pas sondes et ne sont donc PAS servis\n"
+        "   (a sonder) -- cf c2817 et check_unaddressed_nits.\n"
     )
 
 
@@ -2946,10 +3292,11 @@ def test_belt_delivery_probe_cost_is_bounded_by_the_budget():
     # Une requete par candidat sonde, dans les deux cas.
     assert old_calls == 8
     assert new_calls == 30
-    # Budget d'AVANT : 22 livres servis en fail-OPEN (le contrat), et
-    # l'epuisement REPORTE -- la banniere l'annonce.
+    # Budget d'AVANT : l'epuisement est REPORTE (la banniere l'annonce) et
+    # plus aucun livre n'est servi -- c2817 a abroge le fail-OPEN du
+    # plafond : un livre non lu est ecarte « a sonder », pas servi.
     assert old_state["budget_hit"] is True
-    assert old_picks == 22
+    assert old_picks == 0
     # Budget aligne : 30 sondes suffisent, aucun livre servi, aucun
     # epuisement.
     assert new_state["budget_hit"] is False
@@ -3535,8 +3882,12 @@ def test_belt_cover_probe_shares_the_delivery_budget():
 
     assert seen == []
     assert state["budget_hit"] is True
-    # Fail-OPEN : les candidats restent servis.
-    assert [p["number"] for p in picks] == [19001, 19002, 19003, 19004]
+    # c2817 : plus de fail-OPEN -- aucun candidat n'a ete lu (la sonde de
+    # livraison epuise le plafond, la couverture n'a rien vu), donc aucun
+    # n'est servi : ils sont ecartes « a sonder ».
+    assert [p["number"] for p in picks] == []
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert all(causes[n].startswith("a sonder") for n in causes)
 
 
 def test_belt_cover_probe_budget_exhausts_mid_hand():
@@ -3572,8 +3923,12 @@ def test_belt_cover_probe_budget_exhausts_mid_hand():
     # PREMIER candidat, alors que trois restent servables.
     assert seen == [19011]
     assert state["budget_hit"] is True
-    # Fail-OPEN : les 4 candidats restent servis malgre le plafond atteint.
-    assert [p["number"] for p in picks] == [19011, 19012, 19013, 19014]
+    # c2817 : seul le candidat entierement lu (sonde de livraison + sonde
+    # de couverture) est servi ; les trois autres n'ont pas ete lus, ils
+    # sont ecartes « a sonder » (le plafond ne sert plus de fail-OPEN).
+    assert [p["number"] for p in picks] == [19011]
+    causes = {w[0]["number"]: w[1] for w in withheld}
+    assert all(causes[n].startswith("a sonder") for n in causes)
     # Le contrat d'etat porte la cle de couverture des le depart (#22986).
     assert state["cover_failures"] == []
 
@@ -4109,10 +4464,9 @@ def test_belt_json_withheld_complete_reflects_probe_ceilings(
     assert payload["delivered_signal"]["withheld_complete"] is True
 
 
-def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
-    """#22983 : le fail-CLOSED STRICT refuse la FENETRE entiere des qu'UN
-    seul numero est perime -- le refus n'est pas proportionnel au nombre
-    de numeros perimes.
+def test_le_refus_strict_est_par_numero_et_non_par_fenetre(monkeypatch, capsys):
+    """#22983 (v3) : le fail-CLOSED STRICT refuse le NUMERO perime, pas la
+    FENETRE entiere.
 
     Mesure fondatrice (09/11, run c3010 de cette lane, sur `main` a jour) :
     le tapis a rendu sur stderr
@@ -4125,14 +4479,17 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
 
     Onze numeros perimes sur 70 -- et **les 59 autres ont ete refuses
     eux aussi** : « 0 retenu(s), 70 witheld », « picks : 0 ». Le message ne
-    nomme que les 11, mais le refus porte sur la fenetre entiere.
+    nomme que les 11, mais le refus portait sur la fenetre entiere.
 
-    La lecture du code nomme la mecanique, et ce temoin la PROVE :
-    `gh_snapshot.serves()` est une validite **par issue** (une issue
-    perimee rend le predicat faux), mais l'appelant l'applique a la
-    fenetre entiere : un seul numero perime fait echouer `serves()` pour
-    les 70, et la voie STRICT rend alors `BLOCKED` pour les 70 -- aucun
-    grain servi, le tapis fail-CLOSED.
+    La lecture du code nomme la mecanique : `gh_snapshot.serves()` est une
+    validite **par issue** (un stamp frais par issue, ET les commentaires
+    de cette issue), mais l'appelant l'appliquait a la fenetre entiere --
+    un seul numero perime faisait echouer `serves()` pour les 70, et la
+    voie STRICT rendait alors `BLOCKED` pour les 70 : aucun grain servi,
+    le tapis fail-CLOSED sur une fenetre dont 59 numeros etait lisibles.
+
+    Ce temoin est le temoin INVERSE : les deux numeros frais sont
+    **servis**, et le numero perime est refuse **avec son motif**.
 
     Ce que ce temoin NE dit pas : que la porte
     `MAX_SWEEP_LOOKBACK_SECONDS` serait en cause. Elle ecarte le
@@ -4145,6 +4502,11 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
     # le teardown le restaure (monkeypatch restaure la valeur qu'il a
     # relevee, pas celle que le code a ensuite ecrite).
     monkeypatch.setattr(clc, "_SNAPSHOT", None)
+    # La jambe IMPLICIT (#14300) partirait sur `gh pr list` : elle est
+    # neutralisee ici -- ce temoin mesure le refus STRICT, pas les PRs
+    # ouvertes qui referencent l'issue.
+    monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
+                        lambda number, my_lane, prs=None, threshold=None: [])
 
     snapshot = _mini_snapshot([11, 12, 13])
     # 12 est perime (2 h > le TTL de 30 min) ; 11 et 13 sont frais.
@@ -4155,17 +4517,48 @@ def test_le_refus_strict_est_par_fenetre_et_non_par_numero(monkeypatch, capsys):
                                 strict_snapshot=True)
 
     err = capsys.readouterr().err
-    assert "[22983] voie en processus indisponible" in err, (
+    assert "[22983] refus STRICT par numero" in err, (
         f"le refus doit NOMMER sa cause sur stderr (got: {err!r})")
     perimes = re.search(r"perimes: ([^)]*)", err)
     assert perimes is not None, f"la cause doit nommer les perimes ({err!r})"
     assert perimes.group(1).strip() == "12", (
         f"seul le numero perime doit etre nomme ({perimes.group(1)!r})")
 
-    # Le refus porte sur la FENETRE : les deux numeros frais sont refuses
-    # eux aussi. C'est ce qui produit « 0 retenu(s), 70 witheld ».
-    for numero in (11, 12, 13):
+    # Les deux numeros frais sont SERVIS : le refus ne les concerne pas.
+    for numero in (11, 13):
         code, _human = verdicts[numero]
-        assert code == pig.CLAIM_CODE_BLOCKED, (
-            f"le numero {numero} devrait etre refuse avec la fenetre "
-            f"(verdict: {verdicts[numero]!r})")
+        assert code in (pig.CLAIM_CODE_FREE, pig.CLAIM_CODE_FREE_STALE), (
+            f"le numero frais {numero} doit etre servi (verdict: "
+            f"{verdicts[numero]!r})")
+
+    # Le numero perime est refuse, ET son refus porte son MOTIF : un refus
+    # muet serait indistinguable d'une panne de fenetre.
+    code, human = verdicts[12]
+    assert code == pig.CLAIM_CODE_BLOCKED, verdicts[12]
+    assert "perime" in human, f"le refus doit porter son motif ({human!r})"
+    assert "#12" in human, f"le motif doit nommer le numero ({human!r})"
+
+@pytest.mark.parametrize("as_json", [False, True])
+def test_belt_public_output_carries_delivery_status(monkeypatch, capsys, as_json):
+    """Les deux sorties exposent les statuts des urnes effectivement servies."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    items = [_make_item(4101, 50, 5, klass="grain"),
+             _make_item(4102, 50, 5, klass="delivered"),
+             _make_item(4103, 50, 5, klass="umbrella")]
+    monkeypatch.setattr(pig, "belt_pick_with_replacements",
+                        lambda *a, **k: (items, [],
+                                         {"failures": [], "budget_hit": False}))
+    argv = ["--lane", "myia-po-2024:CoursIA-2", "--belt", "--belt-validate", "off"]
+    if as_json:
+        argv.append("--json")
+    assert pig.main(argv) == 0
+    out = capsys.readouterr().out
+    if as_json:
+        picks = json.loads(out)["picks"]
+        assert [(p["number"], p["delivery_status"]) for p in picks] == [
+            (4101, "libre"), (4102, "livre"), (4103, "servable")]
+    else:
+        assert "statut" in out
+        for klass, status in [("grain", "libre"), ("delivered", "livre"),
+                              ("umbrella", "servable")]:
+            assert any(klass in line and status in line for line in out.splitlines())

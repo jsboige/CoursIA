@@ -1,5 +1,7 @@
 # Etape 3 de #19741 — les depots lanyonai, mesures sur l'amont
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Mesure posee le 2026-10-28 par la lane `myia-po-2028:CoursIA`, cycle c.2451, depuis
 `main` a `62691e121`. Elle sert l'etape 3 de l'issue #19741 (chaine Gorard,
 entretien *The Physicist Revolutionizing Physics With AI*) : decider **si un carnet

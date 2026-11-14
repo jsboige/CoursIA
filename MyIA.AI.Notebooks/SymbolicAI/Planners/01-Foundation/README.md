@@ -22,7 +22,7 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 1 | [Planners-01-Introduction-Python](Planners-01-Introduction-Python.ipynb) — jumeau [C#](Planners-01-Introduction-Csharp.ipynb) | Triptyque État-Action-But, hypothèses STRIPS (1971), taxonomie des paradigmes de planification. Le jumeau C# refait la même introduction *from-scratch* (BFS et états STRIPS en C# pur, sans dépendance), puis branche un moteur de production (Fast Downward via l'API Docker) | Découverte | — |
+| 1 | [Planners-01-Introduction-Python](Planners-01-Introduction-Python.ipynb) — jumeau [C#](Planners-01-Introduction-Csharp.ipynb) | Triptyque État-Action-But, hypothèses STRIPS (1971), taxonomie des paradigmes de planification. Le jumeau C# refait la même introduction *from-scratch* (BFS et états STRIPS en C# pur, sans dépendance), puis branche un moteur de production (Fast Downward, service Docker ou plugin local) | Découverte | — |
 | 2 | [Planners-02-PDDL-Basics-Python](Planners-02-PDDL-Basics-Python.ipynb) — jumeau [C#](Planners-02-PDDL-Basics-Csharp.ipynb) | Syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions, effets. Le jumeau C# implémente un planificateur STRIPS complet (modèle typé, grounding, BFS forward) sur Logistics et Gripper, puis compare au même moteur industriel | Découverte | — |
 | 3 | [Planners-03-State-Space-Python](Planners-03-State-Space-Python.ipynb) — jumeau [C#](Planners-03-State-Space-Csharp.ipynb) | Recherche dans l'espace d'états, explosion combinatoire en $O(2^n)$, nécessité des heuristiques. Le jumeau C# oppose BFS, DFS, Greedy et A* sur un terrain uniforme puis pondéré, avec QuikGraph puis Fast Downward en processus local | Découverte | [Partie 2 — Planification classique](../02-Classical/README.md) |
 
@@ -51,7 +51,7 @@ Cette partie n'en contient pas. Elle est elle-même une **sous-série** de [Plan
 - **Algorithmique de base** : graphes, parcours en largeur et en profondeur.
 - **Logique propositionnelle** : prédicats, connecteurs.
 - **.NET 9 (jumeaux C# uniquement)** : les notebooks `-Csharp` s'exécutent sous .NET Interactive. Leur première tranche ne demande ni service ni Python.
-- **Services et paquets de la seconde tranche des jumeaux** : le service Docker Fast Downward (port 8200) pour les jumeaux 1 et 2 — leur appel HTTP n'a pas de garde-fou, sans le service la cellule échoue ; pour le jumeau 3, le paquet NuGet `QuikGraph` 2.5.0 et le paquet Python `up_fast_downward`, absent de `requirements.txt`.
+- **Services et paquets de la seconde tranche des jumeaux** : Fast Downward pour les jumeaux 1 à 3, par [`FastDownwardBackend.cs`](../FastDownwardBackend.cs) : le service Docker (port 8200) s'il répond, sinon le paquet Python `up-fast-downward` de `requirements.txt` ; sans l'un ni l'autre, la cellule échoue et nomme la commande d'installation. Le jumeau 3 tire en plus le paquet NuGet `QuikGraph` 2.5.0.
 
 ## Pour aller plus loin — niveau Recherche
 

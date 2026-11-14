@@ -293,6 +293,8 @@ def test_retroactive_control_sees_third_pair_pre_consolidation(tmp_path):
     result = scanner.scan(tmp_path)
     pairs = _pairs_by_module(result)
     for module in (
+        # T3-c (#25366) : l arbre HISTORIQUE extrait ci-dessous porte le module
+        # a la racine de scripts/ -- chemin d epoque, pas chemin courant.
         "scripts/extract_pptx_titles.py",
         "scripts/extract_slidev_titles.py",
     ):
@@ -314,5 +316,28 @@ def test_current_tree_extract_pair_stays_consolidated():
     """
     result = scanner.scan(REPO_ROOT)
     modules_in_pairs = {pair["module"] for pair in result["pairs"]}
-    assert "scripts/extract_pptx_titles.py" not in modules_in_pairs
+    assert "scripts/notebook_tools/extract_pptx_titles.py" not in modules_in_pairs
     assert "scripts/extract_slidev_titles.py" not in modules_in_pairs
+
+
+def test_from_package_import_module_resolves_exact_path(tmp_path):
+    """Les imports de module depuis un paquet ne disparaissent pas du census."""
+    _write(tmp_path / "scripts/zoo/animal.py", "KIND = 'zoo'\n")
+    _write(tmp_path / "scripts/other/animal.py", "KIND = 'other'\n")
+    _write(tmp_path / "scripts/tests/test_animal_a.py",
+           "from scripts.zoo import animal as subject\n")
+    _write(tmp_path / "scripts/zoo/tests/test_animal_b.py",
+           "from scripts.zoo import animal\n")
+    report = scanner.scan(tmp_path)
+    assert [pair["module"] for pair in report["pairs"]] == ["scripts/zoo/animal.py"]
+    assert all("import" in entry["evidence"] for entry in report["pairs"][0]["test_files"])
+
+
+def test_from_module_import_symbol_still_resolves_parent(tmp_path):
+    _write(tmp_path / "scripts/zoo/animal.py", "KIND = 'zoo'\n")
+    _write(tmp_path / "scripts/tests/test_animal_a.py",
+           "from scripts.zoo.animal import KIND\n")
+    _write(tmp_path / "scripts/zoo/tests/test_animal_b.py",
+           "from scripts.zoo.animal import KIND as kind\n")
+    report = scanner.scan(tmp_path)
+    assert [pair["module"] for pair in report["pairs"]] == ["scripts/zoo/animal.py"]
