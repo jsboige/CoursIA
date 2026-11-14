@@ -68,13 +68,7 @@
       "ecosystem": "nuget",
       "canonical": "5.0.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "3.0.0",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 3.0.0 a une contrainte de la serie, donc l'ecart est classe « a converger »."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "SkiaSharp",

@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-12
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
@@ -63,10 +63,10 @@ Le détail par notebook suit en strate A ci-dessous : consultation, plus décisi
 <!-- MyIA.AI.Notebooks/GenAI/Image/01-Foundation -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb`
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb`
 <!-- MyIA.AI.Notebooks/GenAI/Audio/01-Foundation -->
 
 - [ ] `MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb`
@@ -206,7 +206,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 
 <!-- MyIA.AI.Notebooks/GenAI/Image/02-Advanced -->
 
-- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb`
+- [ ] `MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb`
 - [ ] `MyIA.AI.Notebooks/GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb`
