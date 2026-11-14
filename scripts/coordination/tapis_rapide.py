@@ -308,6 +308,26 @@ def _cle_membre(e: Etat) -> tuple:
             e.conteneur, e.numero)
 
 
+def _decalage_grains(graine: str, famille: int, grains: list[Etat]) -> list[Etat]:
+    """Les grains jamais visites d'une famille sont decales par lane.
+
+    Mesure du 14/11 : deux sieges (meme prefixe de machine, workspaces
+    differents) ont recu les memes deux grains. La cause lue dans ce module :
+    `_cle_famille` seme l'ordre des FAMILLES par lane, mais `_cle_membre`
+    range les membres d'une famille de facon identique pour toutes les lanes.
+
+    Le decalage porte sur le RANG, pas sur le contenu : l'anciennete reste le
+    critere a l'interieur du decalage. Il est deterministe pour
+    (graine, famille), donc une lane retrouve la sienne dans la meme tranche
+    de quatre heures.
+    """
+    if len(grains) < 2:
+        return grains
+    h = hashlib.sha256(f"{graine}|{famille}|decalage".encode()).digest()
+    k = int.from_bytes(h[:8], "big") % len(grains)
+    return grains[k:] + grains[:k]
+
+
 def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
              graine: str | None = None) -> list[Etat]:
     """Vos claims en tete, puis les familles servies a tour de role."""
@@ -319,6 +339,17 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     for e in servables:
         if not e.mon_claim:
             groupes.setdefault(e.famille, []).append(e)
+    # Les grains jamais visites d'une famille sont decales par lane : deux
+    # lanes qui servent la meme famille ne recoivent pas le meme grain. Les
+    # conteneurs et les grains deja visites gardent leur rang : ils passent
+    # derriere les grains jamais visites, jamais devant.
+    for f, membres in groupes.items():
+        grains_famille = [e for e in membres if e.derniere_visite is None
+                          and not e.conteneur]
+        if len(grains_famille) < 2:
+            continue
+        groupes[f] = _decalage_grains(graine, f, grains_famille) + [
+            e for e in membres if e not in grains_famille]
     ordre = sorted(groupes, key=lambda f: (-_cle_famille(graine, f, poids[f][0]), f))
     tour, rang = [], 0
     while any(rang < len(groupes[f]) for f in ordre):

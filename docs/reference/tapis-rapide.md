@@ -84,8 +84,18 @@ même tranche de quatre heures retrouve la sienne. `--graine` force la graine.
 | `PART_CONTENEURS` | 0,25 | part au plus des conteneurs dans la liste (2 sur 8) ; ils la complètent s'il manque des grains |
 
 Les deux se cumulent (2,25). C'est une **légère** priorité : aucune famille n'est privée de service. Dans
-une famille : votre claim, puis les jamais visitées (la plus ancienne d'abord), puis la visite la plus ancienne
+une famille : votre claim, puis les jamais visitées, puis la visite la plus ancienne
 (marqueurs de claim ou de livraison, commits qui la citent) ; à égalité, le grain avant son conteneur.
+
+**Le rang des grains jamais visités d'une famille est décalé par lane** (`sha256(graine|famille)`, la graine
+portant la lane, la date et la tranche de quatre heures). Deux lanes qui servent la même famille ne
+reçoivent donc pas le même grain. Mesuré le 14/11 : deux sièges (même préfixe de machine, workspaces
+différents) avaient reçu les mêmes deux grains, parce que l'ordre des *familles* était semé par lane mais
+celui des *membres* d'une famille était le même pour toutes les lanes. Le décalage porte sur le **rang**,
+pas sur le contenu : l'ancienneté reste le critère à l'intérieur du décalage, et les grains jamais visités
+passent devant les conteneurs et devant les grains déjà visités. Résidu mesuré : sur une famille de
+*n* grains, deux lanes ont 1/*n* chance de partager le même rang — le taux de chevauchement porte sur la
+liste entière (8 familles servies), pas sur une famille isolée.
 
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 

@@ -292,7 +292,7 @@ def test_variete_trente_familles_huit_grains():
     assert len(file) == 8 and len({e.famille for e in file}) == 8
 
 
-def test_une_seule_famille_dans_l_ordre_de_visite():
+def test_une_seule_famille_garde_ses_invariants():
     lec = lecture([
         issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z"),
         issue(2, body="Part of #1", cree="2026-01-01T00:00:00Z"),
@@ -301,8 +301,41 @@ def test_une_seule_famille_dans_l_ordre_de_visite():
         issue(5, body="Part of #1", comments=[com(300, f"[CLAIMED] lane {AUTRE} -- paths: b")]),
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
-    # jamais visitees (la plus ancienne, le grain avant son conteneur), puis la moins recente
-    assert [e.numero for e in file] == [2, 1, 3, 5, 4]
+    ordre = [e.numero for e in file]
+    # jamais visitees devant les visitees
+    assert set(ordre[:3]) == {1, 2, 3}
+    # le grain avant son conteneur
+    assert ordre.index(2) < ordre.index(1) and ordre.index(3) < ordre.index(1)
+    # puis la visite la plus ancienne
+    assert ordre.index(5) < ordre.index(4)
+
+
+def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
+    """Mesure du 14/11 : deux sieges ont recu les memes grains, parce que
+    l'ordre des membres d'une famille ne dependait pas de la lane."""
+    lec = lecture([issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z")]
+                  + [issue(k, body="Part of #1", cree=f"2026-02-0{k - 1}T00:00:00Z")
+                     for k in (2, 3, 4, 5)])
+    etats_ = tr.etats(lec, LANE, NOW)
+    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero
+             for lane in (LANE, AUTRE)}
+    assert len(set(tetes.values())) == 2, tetes
+
+
+def test_le_decalage_est_deterministe_pour_une_lane_et_une_tranche():
+    lec = lecture([issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z")]
+                  + [issue(k, body="Part of #1", cree=f"2026-02-0{k - 1}T00:00:00Z")
+                     for k in (2, 3, 4, 5)])
+    etats_ = tr.etats(lec, LANE, NOW)
+    debut = NOW.replace(hour=12, minute=0)
+    premier = [e.numero for e in tr.ordonner(etats_, LANE, debut, 8)]
+    # la meme lane, la meme tranche de quatre heures : la meme tete
+    assert premier == [e.numero for e in tr.ordonner(etats_, LANE,
+                                                     debut.replace(hour=15, minute=59), 8)]
+    # la tranche suivante change le tirage, jamais les invariants
+    autre = [e.numero for e in tr.ordonner(etats_, LANE, debut.replace(hour=16), 8)]
+    assert set(autre[:4]) == {2, 3, 4, 5}
+    assert autre.index(1) > max(autre.index(k) for k in (2, 3, 4, 5))
 
 
 def test_quota_de_conteneurs_puis_complement():
