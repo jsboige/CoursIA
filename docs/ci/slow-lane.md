@@ -289,7 +289,8 @@ analyses per-PR continuent de tirer** et le compte ne baisse pas.
 Une part de la hausse est en outre une **granularité**, pas du travail
 supplémentaire : la voie rapide est passée d'un check agrégé
 (`Fast lane (ombre) -- 21 gardes, 1 checkout`) à un check **par garde**
-(`fast-lane (ombre): perimeter-review-guard`, `… : solution-leak-guard`,
+(`fast-lane (ombre): perimeter-review-guard`,
+`… : Solution-leak HIGH delta (advisory, WARN phase, #8053)`,
 `… : notebook-navlink-check`, …). Le même travail se compte sous plus de
 noms. Le reste — les ratchets `Output-collapse`, `Source-collapse`,
 `Split-reading`, `Output-flood`, les advisories de markdown, le bundle

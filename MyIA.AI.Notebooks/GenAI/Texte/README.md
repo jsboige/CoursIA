@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 49
-breakdown: Texte=49
-maturity: BETA=40, ALPHA=5, DRAFT=4
+pedagogical_count: 50
+breakdown: Texte=50
+maturity: BETA=41, ALPHA=5, DRAFT=4
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -93,6 +93,7 @@ Les lettres prolongent le numéro nu du même palier. Les prérequis techniques 
 
 ### Autour de 14
 - **14b — [14b_Paginated_Memory-Python.ipynb](14b_Paginated_Memory-Python.ipynb)** : Mémoire paginée d'agent (Python) — fenêtre glissante, résumé progressif, éviction LRU/MRU, mémoire vectorielle paginée, mémoire multi-domaine ; 3 exercices (#18330) — **70 min**
+  Son [jumeau C#](14b_Paginated_Memory-CSharp.ipynb) reprend les mêmes structures en BCL, sans modèle ni service externe ; les coûts sont des unités pédagogiques en caractères et l’archive reste O(N).
 
 ### Autour de 22
 - **22b — [22b_Profil_Cognitif_CHC.ipynb](22b_Profil_Cognitif_CHC.ipynb)** : Approfondit le 22 : on évalue le **générateur** plutôt que sa sortie. **Profil cognitif CHC** (Hendrycks et al., 2025) mesuré par une mini-batterie à correction mécanique sur 8 domaines (mémoire de travail générée, stockage long terme, hallucinations, fluence, vitesse...) sur 4 modèles réels (Qwen3.5-0.8B local + 3 API), avec IC bootstrap ; profil « jagged » vs score agrégé ; **contortions de capacité** mesurées (carnet de mémoire réinjecté, RAG) ; types d'IA stratégiques et cube **A×G×I** du *Singapore Consensus* 2026, 3 exercices C.1

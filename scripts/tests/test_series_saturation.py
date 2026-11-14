@@ -25,7 +25,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(REPO_ROOT / "scripts"))
+sys.path.insert(0, str(REPO_ROOT / "scripts" / "coordination"))
 
 import series_saturation as ss  # noqa: E402
 
@@ -420,12 +420,12 @@ def test_issue_zone_is_a_series_not_a_script_path():
 
     Cas reel : mes propres PRs de picker citent #12373 (l'EPIC MGS) en prose
     et ne touchent que des scripts. `i2f[12373]` valait donc
-    `scripts/series_saturation.py`, et TOUTE fille de cet EPIC heritait de la
+    `scripts/coordination/series_saturation.py`, et TOUTE fille de cet EPIC heritait de la
     zone d'un script au lieu de sa serie.
     """
     prs = [
         {"number": 1, "title": "tooling", "body": "See #12373.",
-         "files": [{"path": "scripts/series_saturation.py",
+         "files": [{"path": "scripts/coordination/series_saturation.py",
                     "additions": 40, "deletions": 2}]},
         {"number": 2, "title": "notebook", "body": "See #12373.",
          "files": [{"path": "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/"
@@ -451,7 +451,7 @@ def test_series_attribution_is_not_overwritten_by_a_later_script_pr():
 
 def test_is_series_rejects_tooling_paths():
     assert ss._is_series("MyIA.AI.Notebooks/ML/DataScienceWithAgents")
-    for p in ("scripts/series_saturation.py", ".github/workflows/x.yml",
+    for p in ("scripts/coordination/series_saturation.py", ".github/workflows/x.yml",
               "docs/reference/y.md"):
         assert not ss._is_series(p), p
 def test_parent_issue_prose_renvoi_mid_body_returns_none():
@@ -515,7 +515,7 @@ if __name__ == "__main__":
 
 NB_A = "MyIA.AI.Notebooks/Search/Part4-Metaheuristics"
 NB_B = "MyIA.AI.Notebooks/GenAI/Texte"
-SCRIPT_ZONE = "scripts/series_saturation.py"
+SCRIPT_ZONE = "scripts/coordination/series_saturation.py"
 
 
 def test_parent_vote_replaces_a_zone_that_holds_no_notebook():
