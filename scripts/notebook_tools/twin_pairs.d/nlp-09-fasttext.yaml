@@ -1,0 +1,11 @@
+- name: "NLP-09 FastText"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets implémentent la même variante pédagogique from scratch ; la source n'invoque pas de moteur fastText externe."
+  known_differences:
+    - "Python utilise NumPy/Matplotlib, C# utilise MathNet pour les normales et BCL pour les calculs avec un graphique SVG."
+    - "Les générateurs aléatoires diffèrent ; les mesures de convergence et voisinages varient malgré le même protocole."
+    - "La variante explicite somme les sous-mots sans hachage ni vecteur atomique additionnel, contrairement au moteur de production."

@@ -301,15 +301,41 @@
             "outillage": 1,
             "autonomie": 3
           },
-          "justification": "Prérequis : dépend du carnet 08 (word2vec), dont il reprend le modèle et le protocole ; la décomposition en sous-mots est une notion nouvelle (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : le modèle fastText (table de sous-mots, somme, gradient) est écrit de zéro (A3). Niveau D3 = max(2, 3). Recherche R2 : le §4 « La capacité distinctive : généraliser aux mots OOV » et le §5 « Confrontation 08 vs 09 » posent la question falsifiable de la généralisation OOV ; le verdict (word2vec n'a aucun vecteur, fastText replacé) est mesuré, non supposé.",
+          "justification": "Le carnet 08, les vecteurs et la descente de gradient sont requis (P2). Les exercices 'Vérifier le gradient de sortie', 'Couverture OOV' et 'Coût du vocabulaire de sous-mots' demandent une vérification numérique et des métriques calculées sur plusieurs cas (A3). La section 'généraliser aux mots OOV' mesure les voisinages et la couverture des fragments ; la comparaison 08/09 est explicitement non appariée et ne prouve pas seule un gain causal (R2). NumPy et Matplotlib suffisent à la variante pédagogique sans hachage ni vecteur atomique ajouté (O1).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 10,
-            "cellules_md": 19,
-            "prose_chars": 12176,
-            "densite": 1217,
+            "cellules_md": 20,
+            "prose_chars": 9285,
+            "densite": 928,
             "densite_plancher": 1200,
             "kernel": "Python 3",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 2,
+            "autonomie": 3
+          },
+          "justification": "Le carnet 08, les vecteurs et la descente de gradient sont requis (P2). Les exercices 'Vérifier le gradient de sortie', 'Couverture OOV' et 'Coût du vocabulaire de sous-mots' demandent une vérification numérique et des métriques calculées sur plusieurs cas (A3). La section 'généraliser aux mots OOV' mesure les voisinages et la couverture des fragments ; la comparaison 08/09 est explicitement non appariée et ne prouve pas seule un gain causal (R2). Le modèle de sous-mots et son gradient sont C# ; MathNet.Numerics fournit les primitives numériques sans prétendre au moteur fastText de production (O2).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 10,
+            "cellules_md": 20,
+            "prose_chars": 9381,
+            "densite": 938,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
             "exigences": {
               "api": false,
               "gpu": false,
