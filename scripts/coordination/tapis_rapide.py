@@ -3,10 +3,14 @@
 
 Le tapis PROPOSE, il ne fait pas autorite : avant d'editer, la lane relance
 `check_lane_claim.py N --lane L`. Tout est decide en fonctions pures sur la lecture
-groupee de `gh_bulk`, seul module qui parle au reseau. Doc : docs/reference/tapis-rapide.md.
+groupee de `gh_bulk`, seul module qui parle au reseau -- sauf le parcage
+Origami (#26523), qui lit l'etat des plis d'un EPIC via le cache machine de
+`origami_parking` (deux appels groupes, au plus une fois toutes les 30 min).
+Doc : docs/reference/tapis-rapide.md.
 
 Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
-    [--cache-s 300] [--graine S] [--lecture <dossier>]   (sortie 0, ou 3 : lecture incomplete)
+    [--cache-s 300] [--graine S] [--lecture <dossier>]
+    (sortie 0, ou 3 : lecture incomplete -- groupee ou Origami)
 """
 from __future__ import annotations
 
@@ -21,7 +25,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk
+from coordination import frozen_campaigns, gh_bulk, tapis_origami
 from coordination.tapis_marqueurs import (
     _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
@@ -46,7 +50,8 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "RELACHEE", "PLAFOND", "RECLAMEE")
+CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "RELACHEE", "PLAFOND",
+         "ORIGAMI", "RECLAMEE")
 REPLI = "python scripts/pick_idle_grain.py --belt --lane {lane}"
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 
@@ -268,6 +273,17 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     return resultat
 
 
+def _parquer(tous: list[Etat], parcs: dict[int, str]) -> None:
+    """Les EPICs Origami dont le pli suivant n'est pas deplie sortent du tirage.
+
+    Le parcage est applique **apres** les autres ecarts : celui qui gagne
+    reste le plus informatif pour la lane (un EPIC deja livre le reste livre).
+    """
+    for e in tous:
+        if e.numero in parcs and e.ecart is None:
+            e.ecart, e.motif = "ORIGAMI", parcs[e.numero]
+
+
 def graine_defaut(lane: str, maintenant: datetime) -> str:
     """Meme lane, meme tranche de 4 h : meme liste ; deux lanes : deux listes."""
     m = maintenant.astimezone(UTC)
@@ -401,6 +417,15 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
+    orig = r.get("origami_parking") or {}
+    if orig.get("measured"):
+        parcs = orig.get("parked") or []
+        detail = ", ".join(f"#{n}" for n in parcs[:8]) if parcs else "aucun"
+        suites = f" (+{len(parcs) - 8})" if len(parcs) > 8 else ""
+        lignes.append(f"Parcage Origami : {len(parcs)} EPIC(s) en attente de depliage "
+                      f"-- {detail}{suites}")
+    else:
+        lignes.append(f"Parcage Origami : NON MESURE ({orig.get('reason') or 'inconnu'})")
     return "\n".join(lignes)
 
 
@@ -431,10 +456,22 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         return 3
     # Un rejeu se tire a l'instant de sa lecture : memes ages de claims, meme graine.
     maintenant = maintenant or (args.lecture and _dt(lecture.lu_a)) or datetime.now(UTC)
+    # Le parcage Origami (#24373) : un EPIC dont le pli suivant n'est pas deplie
+    # n'est pas servi aux lanes -- c'est le geste du coordinateur. La mesure
+    # passe par le cache machine ; un rejeu hors ligne ne la refait pas.
+    parcs, origami = tapis_origami.mesurer(lecture, reseau=not args.lecture)
+    if not origami.get("measured") and origami.get("active") and not args.lecture:
+        # Mesure impossible en direct : lecture incomplete, comme la lecture
+        # groupee. Rien n'est servi, et la cause est nommee.
+        print(f"Mesure Origami impossible : {origami.get('reason')}\n"
+              f"Rien n'est servi. Repli : {REPLI.format(lane=args.lane)}", file=sys.stderr)
+        return 3
     tous = etats(lecture, args.lane, maintenant, args.jours)
+    _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
+    r["origami_parking"] = origami
     source = f"dossier {args.lecture}" if args.lecture else "GitHub + origin/main local"
     out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else texte(r, source)
     sys.stdout.buffer.write((out + "\n").encode("utf-8"))
