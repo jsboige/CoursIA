@@ -1190,6 +1190,25 @@ def analyze_notebook(path: str) -> dict:
     return _report(path, "notebook", scanner)
 
 
+def _skipped_report(path: str) -> dict:
+    """Rapport d'un module ``.py`` injoignable : compte comme saute, zero finding.
+
+    Ne traverse pas ``_report`` (pas de scanner) : le fichier n'a pu etre ni
+    stat ni lu. La mention part sur stderr pour rester visible dans un log.
+    """
+    print(f"AVERTISSEMENT: module .py injoignable, saute: {path}",
+          file=sys.stderr)
+    return {
+        "kind": "python",
+        "notebook": path,
+        "findings": [],
+        "doc_mentions": [],
+        "doc_marked_cells": 0,
+        "unresolved": [],
+        "stats": {"skipped": 1},
+    }
+
+
 def analyze_python_module(path: str) -> dict:
     """Scanne un module ``.py`` du depot (hors carnet).
 
@@ -1200,12 +1219,22 @@ def analyze_python_module(path: str) -> dict:
     y est identique, la forme du rapport aussi, seule l'unite change.
     """
     p = Path(path)
-    if not p.exists():
+    try:
+        exists = p.exists()
+    except OSError:
+        # ``exists()`` lui-meme peut lever (chemin long / fichier verrou,
+        # WinError 1920) : la collecte ci-dessous est censee avoir ecarte ces
+        # dossiers ; si un fichier echappe, il degrade en skip rapporte, jamais
+        # en crash de la passe entiere.
+        return _skipped_report(path)
+    if not exists:
         raise FileNotFoundError(path)
     try:
         source = p.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         raise ValueError(f"encodage invalide: {path}: {exc}") from exc
+    except OSError:
+        return _skipped_report(path)
     scanner = NotebookScanner(path)
     scanner.scan_python_source(source)
     return _report(path, "python", scanner)
@@ -1217,9 +1246,25 @@ def analyze_python_module(path: str) -> dict:
 
 SOURCE_SUFFIXES = (".ipynb", ".py")
 
+# Dossiers de build / dependances / cache : jamais une source premiere partie
+# a scanner. Les descendre est a la fois lent, faux, et sur Windows source
+# d'echec d'acces a chemin long dans l'arbre de build d'une toolchain vendue
+# (WinError 1920 : .lake/packages/mathlib crashait la passe sur SymbolicAI,
+# po-2024, #14755). ``.lake`` est git-ignore : de la sortie de build pure.
+SKIP_DIR_NAMES = frozenset({
+    ".lake", ".git", "__pycache__", "node_modules", ".venv", "venv",
+    ".mypy_cache", ".pytest_cache", ".ruff_cache", ".ipynb_checkpoints",
+    "dist", "build", ".eggs", ".tox",
+})
+
 
 def source_kind(p: Path) -> str:
     return "notebook" if p.suffix == ".ipynb" else "python"
+
+
+def _is_skipped(q: Path) -> bool:
+    """Vrai si ``q`` vit sous un dossier de build/dependance a ne pas scanner."""
+    return any(part in SKIP_DIR_NAMES for part in q.parts)
 
 
 def collect_sources(paths: list[str]) -> list[tuple[Path, str]]:
@@ -1229,14 +1274,19 @@ def collect_sources(paths: list[str]) -> list[tuple[Path, str]]:
     porte l'un des deux. Ce que la ligne de commande accepte ne dit PAS ce que
     le garde CI itere : le cablage fast-lane reste volontairement borne aux
     carnets (``iterate_paths=["**.ipynb"]``, incident #13220), le module
-    n'etant atteignable que par un appel explicite.
+    n'etant atteignable que par un appel explicite. Les dossiers de
+    build/dependance (``SKIP_DIR_NAMES``) sont ecarter de la descente.
     """
     out: list[tuple[Path, str]] = []
     for raw in paths:
         p = Path(raw)
         if p.is_dir():
             for pattern in ("*.ipynb", "*.py"):
-                out.extend((q, source_kind(q)) for q in sorted(p.rglob(pattern)))
+                out.extend(
+                    (q, source_kind(q))
+                    for q in sorted(p.rglob(pattern))
+                    if not _is_skipped(q)
+                )
         elif p.suffix in SOURCE_SUFFIXES:
             out.append((p, source_kind(p)))
         else:
