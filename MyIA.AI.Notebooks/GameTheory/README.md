@@ -759,3 +759,7 @@ Voir la licence du dépôt principal.
 *Version 1.4.1 — Juillet 2026 (2026-07-16) — réconciliation EPIC #4365 : retrait des lakes supprimés `cooperative_games_lean` et `stable_marriage_lean`, absorbés dans `game_theory_lean`.*
 
 *Version 1.4.0 — Juillet 2026 (2026-07-07) — passe ascendante feuilles vers hub : intégration du marathon de parité C# #4956, comptes délégués au marqueur CATALOG-STATUS.*
+
+### Parité du carnet de screening 16j
+
+[Screening et loyer d’information — Python](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [C#](GameTheory-16j-Screening-Loyer-Information-CSharp.ipynb) : mêmes contrats et décomposition numérique, NumPy et BCL .NET respectivement.
