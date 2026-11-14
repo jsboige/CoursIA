@@ -237,7 +237,7 @@ Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` con
 
 **Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
 
-### MYIA-PO-2024 (mesuré 2026-11-14T02:30Z, re-mesuré 2026-11-14T05:00Z après réparation des enregs morts — rangée d'origine : #24883, commentaire `6870260888`)
+### MYIA-PO-2024 (mesuré 2026-11-14T02:30Z, re-mesuré 2026-11-14T04:02Z après réparation des enregs morts — heure UTC, celle du commit `f9a38a6f878` qui porte la fermeture des 5 pointeurs morts ; l'heure portée avant était l'heure locale +01:00 suffixée `Z` — rangée d'origine : #24883, commentaire `6870260888`)
 
 | Kernelspec | Python | numpy | Executable |
 |---|---|---|---|
@@ -250,7 +250,7 @@ Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` con
 | `coursia-drift` | 3.11.16 | 1.26.4 | `C:/Users/jsboi/.conda/envs/coursia-drift/python.exe` |
 | `python3119` | 3.11.9 | 2.4.6 | `C:/Users/jsboi/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
 | `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/pyphi/python.exe` |
-| `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** (numpy 2.0.2 → 1.26.4 + `antropy` + `cryptography` ; `pyemd` re-importable, `pip check` clean) |
+| `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** : `pip install numpy==1.26.4` (restaure le pin déclaré, tuple d'origine 1.26.4 mesuré le 08/11) puis `pip install "antropy<0.2" "cryptography>=3.4,<44"` (les deux deps déclarées de `ict-series` qui manquaient) ; après réparation `numpy 1.26.4`, `import pyemd` OK, `import ict` OK, `pip check` → « No broken requirements found » — étapes et mesures d'origine : commentaire `6870260888` de #24883 |
 | `cb09-ass` / `pymc311` | **RETIRÉ le 14/11** | - | 0 consommateur sur `main` → enreg retiré, `kernel.json` sauvegardé (`%APPDATA%\jupyter\kernels\_bak-20261114-deadargv\`) |
 | `ft03-gpu` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/ft03-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.14.0+cu126 CUDA True, transformers 5.15.1, peft 0.20.0, datasets 5.0.1, pillow) ; **noyau lancé et dépendances importées** |
 | `mert2-gpu` | 3.13.16 | 2.5.4 | `D:/Dev/venvs/mert2-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.6.0+cu126, torchaudio 2.6.0+cu126, transformers 4.53.2, soundfile, scikit-learn, scipy) + `ipykernel` ; **noyau lancé et dépendances importées** |
