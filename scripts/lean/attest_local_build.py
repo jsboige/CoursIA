@@ -521,6 +521,45 @@ def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
     ] + list(payload)
 
 
+#: Une ligne d'erreur Lean (`error: 'x' has type ...`).
+ERROR_MARKER = "error:"
+#: Nombre de lignes de contexte conservees apres chaque ligne d'erreur : le
+#: detail du diagnostic Lean est sur les lignes SUIVANTES, pas sur la ligne
+#: `error:` elle-meme.
+ERROR_CONTEXT_LINES = 3
+#: Plafond du nombre d'erreurs extraites (une sortie de build peut en contenir
+#: des centaines ; le champ doit rester lisible).
+ERROR_MAX = 50
+
+
+def extract_errors(text: str, *, context_lines: int = ERROR_CONTEXT_LINES,
+                   limit: int = ERROR_MAX) -> list[dict]:
+    """Les lignes d'erreur d'une sortie de build, avec leur contexte.
+
+    `lake build` ecrit ses diagnostics sur stderr, et l'organe ne capture
+    qu'une QUEUE de 4000 caracteres : une erreur nommee y etait noyee, et
+    l'organe ne pouvait dire QUE « le build a echoue ». Ici chaque ligne
+    `error:` est extraite avec les lignes qui la completent, et le champ
+    `errors[]` porte la liste.
+
+    L'extraction est une LECTURE : le texte n'est jamais reecrit.
+    """
+    lines = (text or "").splitlines()
+    found: list[dict] = []
+    for index, line in enumerate(lines):
+        if ERROR_MARKER not in line:
+            continue
+        found.append({
+            "text": line.strip(),
+            "line_number": index + 1,
+            "context": [item.rstrip() for item in
+                        lines[index + 1: index + 1 + context_lines]],
+        })
+        if len(found) >= limit:
+            break
+    return found
+
+
 def run_lake_build(lake_dir: Path, timeout: float,
                    jobs: int = DEFAULT_BUILD_JOBS,
                    budget: int = DEFAULT_BUILD_BUDGET) -> dict:
@@ -564,6 +603,11 @@ def run_lake_build(lake_dir: Path, timeout: float,
         payload = {}
     payload["stdout_tail"] = stdout_text[-4000:]
     payload["stderr_tail"] = stderr_text[-4000:]
+    # Les erreurs nommees, hors de la queue : c'est ce que l'organe peut
+    # dire du build qui a echoue, au-dela de « le build a echoue ».
+    payload["errors"] = (
+        extract_errors(stdout_text) + extract_errors(stderr_text)
+    )[:ERROR_MAX]
     payload["organ_rc"] = proc.returncode
     return payload
 
@@ -597,6 +641,9 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
             "orphans": payload.get("orphans") or [],
             "stdout_tail": payload.get("stdout_tail", "")[-2000:],
             "stderr_tail": payload.get("stderr_tail", "")[-2000:],
+            # Les erreurs nommees du build (3a du dispatch) : elles voyagent
+            # avec le verdict du lake, pas seulement avec la queue.
+            "errors": payload.get("errors") or [],
             # La violation de budget est la **cause** d'un echec que
             # `lean_exec` presente comme un `timeout` : la propager, sinon le
             # diagnostic se perd et l'echec se lit comme un probleme de
@@ -786,6 +833,9 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
                 build_lake(lake, worktree, CACHE_PIVOT, timeout, jobs=jobs, budget=budget)
             )
         result["builds"] = builds
+        # Les erreurs nommees de tous les builds : le diagnostic du build
+        # qui a echoue, hors de la queue de 4000 caracteres.
+        result["errors"] = [e for b in builds for e in (b.get("errors") or [])]
         failed = [b for b in builds if not b.get("ok")]
         if failed:
             result["ok"] = False
@@ -802,8 +852,12 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
                     " ; ".join(violations)
                 )
             else:
-                result["reason"] = "build en echec : {}".format(
-                    ", ".join(str(b.get("lake")) for b in failed)
+                # La raison nomme la PREMIERE erreur : « le build a echoue »
+                # sans elle ne dit pas quoi corriger.
+                first = (result["errors"] or [{}])[0].get("text", "")
+                result["reason"] = "build en echec : {}{}".format(
+                    ", ".join(str(b.get("lake")) for b in failed),
+                    " -- {}".format(first[:160]) if first else "",
                 )
             return result
         jobs = 0
