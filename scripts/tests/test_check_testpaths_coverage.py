@@ -24,6 +24,8 @@ registered under a different name" ; l'option ini
 
 from __future__ import annotations
 
+import json
+import re
 import sys
 from pathlib import Path
 
@@ -524,6 +526,26 @@ def test_missing_pytest_pin_is_detected(tmp_path: Path) -> None:
     assert "pytest>=8" in problems[0]
 
 
+def _jeux_de_labels_runs_on(runs_on: object) -> list[list[str]]:
+    """Jeux de labels vises par un `runs-on`, dans l'ordre d'apparition.
+
+    La forme statique est une liste ; la forme hybride auditee (#26386) est une
+    expression a deux jambes :
+
+        ${{ (GARD) && fromJSON('["..."]') || fromJSON('["..."]') }}
+
+    Les deux lectures renvoient la meme structure, ce qui permet d'asserter les
+    jambes -- et non la chaine entiere.
+    """
+    if isinstance(runs_on, list):
+        return [[str(label) for label in runs_on]]
+    expression = str(runs_on)
+    return [
+        [str(label) for label in json.loads(jeu)]
+        for jeu in re.findall(r"fromJSON\(\s*'(\[[^\]]*\])'\s*\)", expression)
+    ]
+
+
 def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pushes() -> None:
     """The Conway ratchet must run for its own source changes on PRs and main.
 
@@ -545,7 +567,24 @@ def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pu
 
     job = workflow["jobs"]["scripts-tests"]
     assert job["name"] == "Scripts Tests (CPU)"
-    assert job["runs-on"] == ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+    # Le job reste sur le parc auto-heberge. Depuis #26386 le `runs-on` est une
+    # forme hybride auditee : la jambe `push` vise le slot reserve de main
+    # {self-hosted, coursia-main, coursia-linux}, le repli vise le pool des PR
+    # {self-hosted, coursia-ephemeral, coursia-linux}. On asserte les DEUX
+    # jambes -- pas la chaine -- pour que le repli ne puisse pas glisser vers
+    # `ubuntu-latest` sans que le test le voie.
+    runs_on = job["runs-on"]
+    if isinstance(runs_on, list):
+        assert runs_on == ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+    else:
+        assert "github.event_name == 'push'" in str(runs_on), (
+            "la forme hybride doit rester gardee par l'evenement -- sans la "
+            "garde, la jambe du slot reserve de main serait atteinte par toute PR"
+        )
+        assert _jeux_de_labels_runs_on(runs_on) == [
+            ["self-hosted", "coursia-main", "coursia-linux"],
+            ["self-hosted", "coursia-ephemeral", "coursia-linux"],
+        ]
 
 
 def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> None:
@@ -650,16 +689,17 @@ def test_duplicate_basenames_ne_compte_que_les_enfants_directs(
 def test_duplicate_basenames_plafond_sur_main_actuel() -> None:
     """Contrôle positif sur le dépôt réel : le sens voit la dette connue.
 
-    33 basenames après les renommages Slidev (#25366). Le plafond est un
+    30 basenames après les tranches de dédoublonnage (#25366 ; T2 #26137 a
+    retiré `tests/test_batch_reexecute.py` racine). Le plafond est un
     cliquet inversé : il rougit sur un doublon NOUVEAU, verdit quand
     T2 en supprime — jamais l'inverse.
     """
     from check_testpaths_coverage import duplicate_basenames
 
     dupes = duplicate_basenames(REPO_ROOT)
-    assert len(dupes) <= 33, f"dette de doublons en hausse : {len(dupes)} > 33"
-    assert "test_batch_reexecute.py" in dupes
-    assert len(dupes["test_batch_reexecute.py"]) == 2
+    assert len(dupes) <= 30, f"dette de doublons en hausse : {len(dupes)} > 30"
+    assert "test_check_cell_source_parses.py" in dupes
+    assert len(dupes["test_check_cell_source_parses.py"]) == 2
 
 
 def test_discover_test_dirs_voit_la_racine_tests(tmp_path: Path) -> None:

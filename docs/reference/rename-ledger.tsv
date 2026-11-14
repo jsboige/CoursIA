@@ -364,9 +364,6 @@ MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14b-ConnectFour.ipynb	MyIA
 MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12c-ConnectFour.ipynb	2026-10-23	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb	2026-10-18	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb	MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb	2026-10-18	myia-po-2023:CoursIA
-MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb	MyIA.AI.Notebooks/Search/App-32-Szpiro-Pasten-2026.ipynb	2026-10-20	myia-po-2023:CoursIA-2
-MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14b-ConnectFour.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour.ipynb	2026-10-23	myia-po-2023:CoursIA-2
-MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12c-ConnectFour.ipynb	2026-10-23	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb	2026-10-24	myia-po-2027:CoursIA-2
@@ -585,3 +582,12 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16-Conway-Man-and-Work-Lean-Python.ipynb	
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Free-Will-Theorem-Lean-Python.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb	2026-11-10	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb	MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-Depuis-Zero-Python.ipynb	2026-11-09	hors-flotte
 MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critic.ipynb	MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critique-Python.ipynb	2026-11-09	hors-flotte
+MyIA.AI.Notebooks/GameTheory/GameTheory-18-Open-Games-et-Lentilles-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-01-Open-Games-Lentilles-Python.ipynb	2026-11-08	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-02-Casser-la-Composition-Python.ipynb	2026-11-08	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/GameTheory/GameTheory-19-Abstraction-a-Dette-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-03-Abstraction-a-Dette-Python.ipynb	2026-11-08	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb	2026-11-08	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-05-Temoins-Impossibilite-Python.ipynb	2026-11-08	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Metajeux/Metajeux-06-Chemin-Minimal-3x2-Ordinal-Python.ipynb	2026-11-08	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Grothendieck-Tribute.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-02-Tribut-Python.ipynb	2026-11-12	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-03-Atelier-Python.ipynb	2026-11-12	myia-po-2028:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15c-Lean-Grothendieck-Companion.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-04-Companion-Lean.ipynb	2026-11-12	myia-po-2028:CoursIA

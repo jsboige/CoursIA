@@ -890,3 +890,29 @@ def test_le_stamp_extreme_ferme_le_balayage_mais_laisse_la_fenetre_servable(
     # refuse rien, il change seulement la maniere de lire.
     assert gs.serves(out, [7, 9]), (
         "apres la lecture par issue, la fenetre doit redevenir servable")
+
+
+def test_commentaire_ajoute_pendant_le_balayage_est_repris(monkeypatch):
+    """Le stamp ne doit pas depasser le debut de la lecture distante."""
+    debut = 1800000000
+    horloge = [debut]
+    monkeypatch.setattr(gs.time, "time", lambda: horloge[0])
+    evenement = debut + 5
+    commentaire = gs.normalise_comment(_commentaire(7, body="claim concurrent"))
+
+    def lire(repo, since, **kwargs):
+        if horloge[0] == debut:
+            # La reponse ne contient pas encore le commentaire ; il arrive
+            # avant que la requete paginee ne soit completement terminee.
+            horloge[0] = debut + 10
+            return {}
+        borne = dt.datetime.fromisoformat(since.replace("Z", "+00:00"))
+        return {7: [commentaire]} if borne.timestamp() <= evenement else {}
+
+    monkeypatch.setattr(gs, "fetch_repo_comments_since", lire)
+    snapshot = {"comments": {"7": []},
+                "meta": {"comment_stamps": {"7": debut - 60}}}
+    gs.sweep_repo_comments("o/r", snapshot, since=_iso(debut - 60))
+    stamp = snapshot["meta"]["comment_stamps"]["7"]
+    gs.sweep_repo_comments("o/r", snapshot, since=_iso(stamp))
+    assert [c["body"] for c in snapshot["comments"]["7"]] == ["claim concurrent"]
