@@ -309,3 +309,7 @@ Le pont entre les deux cultures de la recherche s'exprime dans les notebooks Hyb
 ## Navigation
 
 [← Partie 2 : CSP](../Part2-CSP/README.md) | [↑ Série Search](../README.md) | [Partie 4 : Métaheuristiques →](../Part4-Metaheuristics/README.md)
+
+## Comparaison statistique de colorations
+
+Le compagnon [Python](App-2-GraphColoring-Statistical-Validity-Python.ipynb) et son [jumeau C#](App-2-GraphColoring-Statistical-Validity-CSharp.ipynb) comparent des colorations sur plusieurs graphes, avec bootstrap, tests appariés et balayage de densité. Le C# appelle CP-SAT natif et les références NetworkX et SciPy par Python.NET ; les générateurs de graines diffèrent et les résultats numériques peuvent varier. Les résolutions CP-SAT sans solution sont exclues des mesures du solveur.
