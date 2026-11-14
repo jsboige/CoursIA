@@ -142,7 +142,18 @@ jobs:
     # Le merge de ce routage suppose le slot DEPLOYE (`--apply` du script de
     # creation) : sans runner `coursia-main`, le job de `main` attendrait un
     # runner inexistant. Ordre : deployer le slot, puis merger.
-    runs-on: ${{ (github.event_name == 'push') && fromJSON('["self-hosted","coursia-main","coursia-linux"]') || fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') }}
+    #
+    # #21978 (routage par label) : la jambe LOURDE est intercalee entre le
+    # slot reserve et le pool PR. Elle n'est atteinte que si un operateur
+    # pose la variable de depot `CI_HEAVY_PERSISTENT` (ABSENTE PAR DEFAUT)
+    # ET que la PR est du meme depot : c'est la famille `coursia-persistent`
+    # (4 Gio, 512 pids) au lieu du pool PR (1,5 Gio), dont le cgroup tuait
+    # ce job en `exit 137` le 21/10 (c2207).
+    # La forme est une CHAINE de routage auditee par
+    # `scripts/ci/check_self_hosted_runner_policy.py` : chaque jambe porte sa
+    # garde enumeratee, le repli reste le pool PR (auto-heberge) -- donc la
+    # garde meme-depot du job reste obligatoire.
+    runs-on: ${{ (github.event_name == 'push') && fromJSON('["self-hosted","coursia-main","coursia-linux"]') || (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_HEAVY_PERSISTENT == 'true') && fromJSON('["self-hosted","coursia-persistent","coursia-linux"]') || fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
     # mur du JOB (started_at -> completed_at du job nomme exactement

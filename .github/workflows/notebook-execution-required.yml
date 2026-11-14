@@ -281,7 +281,17 @@ jobs:
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
-    runs-on: ubuntu-latest
+    #
+    # #21978 (routage par label) : la forme devient la forme HYBRIDE auditee
+    # a jambe lourde -- la garde est DANS l'expression (meme-depot ET
+    # `vars.CI_HEAVY_PERSISTENT == 'true'`), donc une PR de fork n'atteint
+    # jamais la famille `coursia-persistent` (4 Gio). Variable ABSENTE PAR
+    # DEFAUT : l'etat par defaut laisse le job heberge, comme aujourd'hui.
+    # L'expression est admise par
+    # `scripts/ci/check_self_hosted_runner_policy.py` (garde enumeree + jeu
+    # de labels enumere), et ce workflow figure dans
+    # HEAVY_WORKFLOW_ALLOWLIST -- seul garde-fou de la famille lourde.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_HEAVY_PERSISTENT == 'true') && fromJSON('["self-hosted","coursia-persistent","coursia-linux"]') || 'ubuntu-latest' }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Independent of notebook-change detection: the golden-set is a FIXED
     # certified core, re-executed whenever the manifest/lockfile/workflow
