@@ -4,7 +4,7 @@ Sous-série de la série [RL](../README.md) : le post-training d'un modèle de l
 
 L'arc part du déplacement du RLHF (Christiano et al. 2017) : personne ne sait **noter** une réponse, tout le monde sait **comparer** deux réponses au même prompt. Bradley-Terry transforme ces paires en reward utilisable (RLPT-00) ; des biais injectés à paramètres connus mesurent ensuite ce qu'un dataset de préférences fait subir au juge (RLPT-00b), et comment un reward biaisé détourne PPO (RLPT-00c) ; le même monde passe alors sous le harnais `trl` pour être comparé à budget égal au code maison (RLPT-00d à 00g) ; les algorithmes s'exécutent sur de vrais petits modèles (RLPT-01 à 03) ; la sortie départage offline contre online avec test statistique (RLPT-04).
 
-## Objectifs
+## Objectifs d'apprentissage
 
 À la fin du parcours, le lecteur sait :
 
