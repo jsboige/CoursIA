@@ -127,7 +127,22 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    #
+    # T-L (#25510) : ce job est un job REQUIS -- tant qu'il n'a pas de verdict,
+    # `main` n'est pas verifie. Il etait route sur le meme pool que les PRs
+    # (`coursia-ephemeral`), donc il attendait derriere elles (mesure du
+    # 2026-11-12 : plus de 27 minutes en file, 31 runners sur 31 occupes).
+    # Il vise desormais le slot RESERVE (`coursia-main`) sur un push, et le
+    # pool PR sinon -- repli ENUMERE, exige par
+    # `scripts/ci/check_self_hosted_runner_policy.py` (forme auditee : jeu de
+    # labels + garde `push` + repli ; le jeu seul, ou le jeu sans garde, ou
+    # le jeu sans repli sont refuses).
+    # La garde same-repo ci-dessous reste obligatoire : le repli est
+    # auto-heberge, donc une PR de fork ne doit pas l'atteindre.
+    # Le merge de ce routage suppose le slot DEPLOYE (`--apply` du script de
+    # creation) : sans runner `coursia-main`, le job de `main` attendrait un
+    # runner inexistant. Ordre : deployer le slot, puis merger.
+    runs-on: ${{ (github.event_name == 'push') && fromJSON('["self-hosted","coursia-main","coursia-linux"]') || fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
     # mur du JOB (started_at -> completed_at du job nomme exactement
@@ -183,23 +198,86 @@ jobs:
     #                                     INCHANGEE : elle etait 45 -> 52)
     # La regle (enfant < aggregateur < runner) et ses marges sont donc
     # preservees a l'identique : seule la valeur du mur de l'enfant bouge.
-    # Re-mesurer sur les 70 prochains runs, une fois les 7 coupes reussies :
-    # c'est ce qui dira si 40 min suffit.
-    timeout-minutes: 40
+    #
+    # Mesure du 2026-11-14 -- LA REPONSE, CORRIGEE PAR L'ANNOTATION.
+    #
+    # Premier passage (organe `scripts/ci/measure_declared_ceiling.py`,
+    # meme grandeur : le mur du job "Scripts Tests (CPU)", 43,4 h
+    # reellement couvertes) :
+    #     plafond 30 min   29 candidats / 220 jobs  dont 25 CONFIRMEES (TIMEOUT)
+    #     plafond 40 min   14 candidats / 523 jobs  dont 12 CONFIRMEES (TIMEOUT)
+    # soit 2,3 % sous le plafond de 40 -- et la conclusion ecritte etait
+    # « ne pas relever ».
+    #
+    # CE CHIFFRE ETAIT MAL COMPTE, et la faute n'est pas dans l'annotation :
+    # elle est dans la POPULATION. L'endpoint `runs/<id>/jobs` ne renvoie,
+    # par defaut, que la DERNIERE tentative d'un run ; or un job coupe au
+    # mur est tres souvent REJOUE (rejeu automatique de la CI, ou re-run
+    # humain) -- et le run ne porte alors plus que la tentative rejouee, qui
+    # reussit. La coupe DISPARAIT de la population : elle est censuree par
+    # le rejeu. Mesure du controle croise du 2026-11-14 (meme organe natif
+    # `scripts/ci/classify_job_deaths.py`, classe `TIMEOUT` sur
+    # l'annotation « The job has exceeded the maximum execution time »,
+    # population collectee avec `filter=all`) : 26 des 40 coupes au mur du
+    # segment 40 min sont ABSENTES du cache collecte SANS `filter=all`.
+    # L'organe collecte donc desormais avec `filter=all`, et son cache
+    # porte une VERSION : un cache anterieur est ignore, pas relu.
+    #
+    # Ce que dit la mesure CORRIGEE (population entiere, chaque coupe
+    # CONFIRMEE par l'annotation de l'organe natif) :
+    #     plafond 30 min   60 coupes / 249 jobs executes   (24,1 %)
+    #     plafond 40 min   38 coupes / 582 jobs executes   ( 6,5 %)
+    # (`skipped` exclus : un job jamais demarre n'a pas de duree.)
+    # Le seuil de decision pose par la premiere mesure (>= 5 % des
+    # executions coupees au mur) est donc franchi APRES le releve : le
+    # plafond BINDE encore. Sur la fenetre mesuree, 42 PRs distinctes ont
+    # porte au moins un rouge de mur.
+    #
+    # Le releve, et ses trois valeurs (les marges de la chaine ne
+    # bougent pas) :
+    #     enfant   40        -> 44
+    #     gate     40 + 15   -> 59   (marge de 15 min INCHANGEE ; 59 reste
+    #                                  SOUS le plafond propre de Quarto (60),
+    #                                  donc la queue reelle de Quarto reste
+    #                                  sur le chemin STARVED -> auto-annulation
+    #                                  (#13510, #14412))
+    #     runner   59 + 7    -> 66   (marge de 7 min pour le verdict
+    #                              INCHANGEE)
+    # 44 est le maximum coherent : l'agregateur doit rester SOUS 60, donc
+    # l'enfant sous 45.
+    #
+    # Ce que le releve ne repare pas : les 8 coupes qui portent aussi un
+    # etape en echec (le test y echoue, il n'y finit pas) et les annulations
+    # par supersede. Le releve rend au succes les coupes AU MUR, pas la
+    # duree de la jambe -- celle-ci se gagne sur le plan a deux etages
+    # (#25510, etage 1) et sur le pool de runners (slot reserve pour
+    # `main`, tranche T-L).
+    #
+    # Re-mesurer : `python scripts/ci/measure_declared_ceiling.py
+    # --workflow scripts-tests.yml --hours 48 --jobs-cache
+    # .tmp/ceiling_jobs_v2.json --annotate --out .tmp/ceiling4.json`
+    timeout-minutes: 44
 
     steps:
       # ------------------------------------------------------------------
       # HEAL (#15387) : le pool self-hosted REUTILISE le work dir entre jobs.
       # Un job a profondeur par defaut y laisse un clone SHALLOW ; le
-      # `fetch-depth: 0` ci-dessous declenche alors un `fetch --unshallow`
-      # dont l'echec est AVALE par actions/checkout -- mesure firsthand sur
-      # #15492 (run 34542167016, job 103087137418) : `error: Could not read
-      # 0102d652b3...` emis PENDANT le fetch, etape rendue verte malgre tout.
-      # Le depot reste alors ni shallow ni complet, et tout `git log --raw` /
-      # `git rev-list` ulterieur casse -- ce qui fait rougir un check REQUIS
-      # sur une panne d'infrastructure, jamais sur du fond. On tente donc un
-      # unshallow explicite et verifie avant de laisser actions/checkout agir;
-      # seul un fetch en echec ou un graphe toujours incomplet impose le clone neuf.
+      # checkout ci-dessous (profondeur 1) declenche alors un fetch
+      # d'approfondissement dont l'echec est AVALE par actions/checkout --
+      # mesure firsthand sur #15492 (run 34542167016, job 103087137418) :
+      # `error: Could not read 0102d652b3...` emis PENDANT le fetch, etape
+      # rendue verte malgre tout. Le depot reste alors ni shallow ni
+      # complet, et tout `git log --raw` / `git rev-list` ulterieur casse --
+      # ce qui fait rougir un check REQUIS sur une panne d'infrastructure,
+      # jamais sur du fond.
+      #
+      # T-K (#25510) : le `fetch --unshallow origin` SANS refspec tire
+      # `+refs/heads/*` -- l'historique complet des 1 606 branches -- et c'est
+      # exactement le cout que la tranche supprime (19 min sur 75e21a7fac,
+      # job 131524893709, `curl 28` apres 22:12-22:31Z). L'historique utile
+      # (tete + base) est tire par l'etape T-K ci-dessous, bornee et
+      # VERIFIEE. Le work dir est donc conserve tel quel ; seule la purge
+      # d'un graphe reellement incomplet reste.
       # ------------------------------------------------------------------
       - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
         shell: bash
@@ -210,33 +288,91 @@ jobs:
             exit 0
           fi
           if [ -f .git/shallow ]; then
-            echo "::notice::[heal] work dir SHALLOW reutilise -- tentative d'unshallow explicite"
-            if git fetch --unshallow origin && [ ! -f .git/shallow ] && git rev-list --all --count >/dev/null 2>&1; then
-              echo "[heal] unshallow explicite reussi -- graphe complet reutilise"
-              exit 0
-            fi
-            echo "::notice::[heal] unshallow impossible ou graphe incomplet -- purge du work dir"
-            rm -rf .git
-            exit 0
+            echo "::notice::[heal] work dir SHALLOW reutilise -- profondeur conservee ; l'historique utile (tete + base) sera tire par l'etape T-K, sans les 1 606 branches"
           fi
           if ! git rev-list --all --count >/dev/null 2>&1; then
             echo "::notice::[heal] graphe d'objets incomplet -- purge du work dir"
             rm -rf .git
             exit 0
           fi
-          echo "[heal] work dir complet -- reutilisation"
+          echo "[heal] work dir utilise -- graphe valide"
 
+      # T-K (#25510) : le checkout ne tire PLUS les 1 606 branches.
+      #
+      # `fetch-depth: 0` fait tirer `+refs/heads/*` + les tags : l'historique
+      # complet de TOUTES les branches. L'entree `refspec` de checkout v4 ne
+      # peut PAS resoudre cela -- elle est IGNOREE par le code de l'action
+      # (`src/git-source-provider.ts` appelle `getRefSpecForAllHistory`, qui
+      # construit `+refs/heads/*:refs/remotes/origin/*` + `tagsRefSpec` ;
+      # `settings.refspec` n'apparait nulle part). Mesure : 19 min de
+      # checkout sur 75e21a7fac (job 131524893709) et 2 425 s sur le run
+      # 43318043479.
+      #
+      # Le clone part a profondeur 1 (un commit + son arbre), puis UN fetch
+      # elargit l'historique a la TETE (son ascendance complete) et a la
+      # BASE (`origin/main`) -- rien d'autre.
       - uses: actions/checkout@v4
         with:
-          # Full history required by test_twin_registry_integrity.py::
-          # test_audit_shas_exist_in_file_history (#9399 volet b), which asserts
-          # each attested audit sha really existed as a file blob. A shallow
-          # clone exposes only the HEAD blob, so legitimate drifts (e.g. the
-          # ai-01 Sudoku-08/14-BDD/9 reserve) whose attested sha predates HEAD
-          # would false-fail. Consistent with the other git-aware gates
-          # (catalog-cron/catalog-drift/cell-order-gate/exercise-leak-ci).
-          fetch-depth: 0
+          # Full history of the HEAD and of the BASE is required by
+          # test_twin_registry_integrity.py::test_audit_shas_exist_in_file_history
+          # (#9399 volet b), which asserts each attested audit sha really
+          # existed as a file blob, and by the base resolution of that same
+          # test (`_resolve_base_commit` -> merge-base(base, HEAD)). T-K
+          # keeps that guarantee while dropping the 1 605 other branches:
+          # the depth-1 clone is deepened right after by a bounded fetch.
+          fetch-depth: 1
           filter: blob:none
+
+      - name: "T-K : ascendance de la tete + la base, sans les 1 606 branches"
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Le clone de checkout est superficiel (profondeur 1). On elargit
+          # l'historique a CE QUE la jambe lit :
+          #   - la tete : son ascendance complete (historique des carnets
+          #     jumeaux, merge-base du fast-lane) ;
+          #   - la base : `origin/main` (candidat de `_resolve_base_commit`).
+          #
+          # `--unshallow` porte sur les refs donnees : il fait disparaitre le
+          # bord du clone pour elles, sans toucher aux autres. Sur un work
+          # dir reutilise, les objets sont deja la : la negociation
+          # serveur ne renvoie rien et le cout est celui du reseau, pas
+          # celui du volume.
+          #
+          # La tete est tiree par son SHA et non par sa ref : c'est le
+          # precedence de checkout lui-meme (`getRefSpecForAllHistory` fait
+          # `+${commit}:refs/remotes/pull/<N>/merge` -- l'API accepte un
+          # SHA comme source), et la ref `refs/pull/<N>/merge` peut ne pas
+          # exister (PR en conflit).
+          deepen="--unshallow"
+          if [ ! -f .git/shallow ]; then
+            deepen=""
+          fi
+          git fetch --filter=blob:none --no-tags ${deepen} origin \
+            "+${GITHUB_SHA}:refs/remotes/origin/tete" \
+            "+refs/heads/main:refs/remotes/origin/main"
+
+      - name: "T-K : controle -- l'historique de la base est lu"
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Controle : l'historique est REELLEMENT lu, pas seulement
+          # present. Un historique tronque ferait classer `fabricated` les
+          # sha attestes du carnet jumeau -- le test jumeau rougirait sur
+          # un sha qui n'est pas absent, mais rendu absent par la
+          # troncature. Le plancher ci-dessous attrape la troncature avant
+          # lui, et nomme la mesure.
+          base=$(git merge-base origin/main HEAD || true)
+          if [ -z "${base}" ]; then
+            echo "::error::T-K : merge-base(origin/main, HEAD) introuvable -- l'historique n'a pas ete tire"
+            exit 1
+          fi
+          commits=$(git rev-list --count "${base}")
+          echo "T-K : base=${base} commits_dans_ascendance=${commits}"
+          if [ "${commits}" -lt 1000 ]; then
+            echo "::error::T-K : historique tronque (${commits} commits dans l'ascendance de la base)"
+            exit 1
+          fi
 
       - uses: actions/setup-python@v5
         with:
@@ -487,6 +623,7 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
+            MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_flagship_endpoint.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-SemanticKernel
-pedagogical_count: 23
-breakdown: SemanticKernel=23
-maturity: BETA=18, TEMPLATE=3, DRAFT=2
+pedagogical_count: 24
+breakdown: SemanticKernel=24
+maturity: BETA=19, TEMPLATE=3, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
@@ -205,7 +205,7 @@ Le fil rouge de cette série est le NotebookMaker, un système multi-agents qui 
 
 ### Janvier 2026
 
-- Modernisation complète de la série Python (8 notebooks)
+- Modernisation complète de la série Python
 - Ajout notebooks 04-08 (Filters, VectorStores, Process, MultiModal, MCP)
 - Remplacement des Planners dépréciés par `FunctionChoiceBehavior.Auto()`
 - Ajout interprétations pédagogiques style GameTheory
