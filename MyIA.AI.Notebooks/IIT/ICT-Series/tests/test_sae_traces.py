@@ -213,6 +213,17 @@ def test_densify_empty_panel_after_nonfinite_features():
     assert all(x.shape == (1, 0) for x in st.acts_topk_panels(traces, features).values())
 
 
+def test_densify_repeated_feature_columns(synthetic_npz):
+    tr = st.load_traces(synthetic_npz)
+    entry = tr["prompts"][("setB", 1)]
+    dense = st.densify(entry["ids"], entry["vals"], np.array([13, 2, 13, 999]))
+    assert dense.shape == (T, 4)
+    np.testing.assert_array_equal(dense[:, 0], entry["vals"][:, 1])
+    np.testing.assert_array_equal(dense[:, 2], entry["vals"][:, 1])
+    np.testing.assert_array_equal(dense[:, 1], entry["vals"][:, 0])
+    assert np.all(dense[:, 3] == 0)
+
+
 def test_acts_topk_panels_shapes(synthetic_npz):
     tr = st.load_traces(synthetic_npz)
     feats = st.differential_features(tr, k=4)

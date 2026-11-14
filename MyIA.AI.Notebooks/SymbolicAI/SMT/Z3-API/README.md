@@ -9,13 +9,87 @@ maturity:
 
 [← SMT](../README.md) | [Z3 C# (Z3.Linq) →](../Z3-Linq2Z3/README.md)
 
-Le [service REST gateway pour le Sudoku](gateway/README.md) complète le parcours de notebooks comme composant distinct.
+## Le carnet 02, à la fois cours et service web
 
-## Série en quelques mots
+Le carnet [Sudoku](Z3-02-Sudoku-Python.ipynb) se lit et s'exécute comme les autres : les sections 1 à 3 posent le modèle déclaratif (`Int`, domaine 1-9, `Distinct` par ligne, colonne et bloc) et les exercices. Sa **section 4** place ce même modèle derrière une API HTTP — c'est le fichier que sert le [gateway Kernel Gateway](gateway/README.md), et non un second carnet à maintenir en phase.
 
-L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série canonique : les notebooks Python principaux (z3-solver + matplotlib) couvrent la satisfaction de contraintes, l'optimisation avancée, l'ordonnancement combinatoire, les énigmes logiques (CSP), l'arithmétique symbolique (cryptarithmes), la coloration de graphe (NP-complet), l'arithmétique réelle exacte (irrationnels algébriques), l'explication de l'insatisfiabilité (UNSAT cores), l'arithmétique machine bornée (bit-vectors, débordement), la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`), la théorie générale des tableaux (`Select`/`Store` et axiomes de McCarthy), la comparaison des modes de résolution d'un même Sudoku (`Array` vs `Constants`) et le pont déclaratif avec la série sœur Z3.Linq (C#) ; **6 twins C# .NET** (notebooks 01ᶜˢ-06ᶜˢ) assurent la parité langage ; **4 compagnons Meal-Planner** (16b/c/d/e, statut BETA) étendent le module 16 sur un corpus réel (Ciqual ANSES 2025 × RecipeML).
+| Usage | Commande | Ce qu'on obtient |
+|---|---|---|
+| Cours | Jupyter sur le carnet, ou `papermill Z3-02-Sudoku-Python.ipynb` | le carnet exécuté avec ses sorties ; la cellule d'endpoint affiche la démonstration locale et la compare au solveur de la section 2 |
+| Service | `pip install -r gateway/requirements.txt`, puis `python gateway/run_gateway.py` | `POST http://localhost:8899/sudoku/solve` avec `{"puzzle": "<81 caractères, 0 ou . pour vide>"}` |
+
+Contrat complet (`sat` / `unsat` / `invalid`, `time_ms`, cas d'erreur), démarrage manuel et rejeu des cas de panne : [`gateway/README.md`](gateway/README.md).
+
+## Ouverture — ce que cette série enseigne (Découverte)
+
+L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimize`, tactiques, théories `BitVec`/`Array`/`String`. Série canonique : les notebooks Python principaux (z3-solver + matplotlib) couvrent la satisfaction de contraintes, l'optimisation avancée, l'ordonnancement combinatoire, les énigmes logiques (CSP), l'arithmétique symbolique (cryptarithmes), la coloration de graphe (NP-complet), l'arithmétique réelle exacte (irrationnels algébriques), l'explication de l'insatisfiabilité (UNSAT cores), l'arithmétique machine bornée (bit-vectors, débordement), la modélisation de grilles 2D (tableaux imbriqués, carrés latins et magiques), l'optimisation réaliste d'un meal-planner hebdomadaire (matrice booléenne `jours × plats`), la théorie générale des tableaux (`Select`/`Store` et axiomes de McCarthy), la comparaison des modes de résolution d'un même Sudoku (`Array` vs `Constants`) et le pont déclaratif avec la série sœur Z3.Linq (C#) ; les twins C# .NET (notebooks 01ᶜˢ à 06ᶜˢ) assurent la parité langage ; les compagnons Meal-Planner (16b à 16e, statut BETA) étendent le module 16 sur un corpus réel (Ciqual ANSES 2025 × RecipeML).
 
 **À qui s'adresse cette série** : étudiants en IA, développeurs Python souhaitant découvrir la programmation par contraintes, et tout curieux voulant comprendre comment exprimer un problème non pas comme un algorithme de résolution, mais comme un ensemble de contraintes que le solveur satisfait automatiquement. Aucun prérequis en logique formelle n'est supposé : les notebooks partent de la syntaxe de base de z3-py pour monter progressivement vers l'optimisation et la modélisation de problèmes combinatoires.
+
+## Comment lire ce README (Découverte)
+
+Ce README suit la [signalétique de lecture du dépôt](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) : un parcours principal pour comprendre, des paliers d'approfondissement pour aller plus loin.
+
+- **Numéros nus au parcours, lettres en approfondissement** : les carnets numérotés sans lettre (`01` à `06` puis `08` à `20` — la série ne comporte pas de `07`) forment le parcours principal ; les suffixes en lettres (`01b`, `13b`, `16b` à `16e`) sont des compagnons regroupés sous « [Approfondissements](#approfondissements-découverte) », jamais des étapes obligatoires du parcours.
+- **« jumeau [C#] »** : le même notebook rejoué en .NET via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage. Les twins portent le numéro du notebook Python suivi de l'exposant `ᶜˢ`.
+- **Statuts** : tout notebook du parcours est PRODUCTION, sauf mention inline « **(BETA)** » ; les compagnons d'approfondissement sont signalés dans leur palier.
+
+## Parcours principal (Découverte)
+
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|----------|---------------------|--------|------------------|
+| 01 | [Introduction](Z3-01-Introduction-Python.ipynb) — jumeau [C#](Z3-01-Introduction-CSharp.ipynb) | `Solver`, `Int`/`Bool`/`Real`, sat/unsat, `Optimize` | Découverte | [Autour de 01](#autour-de-01) |
+| 02 | [Sudoku](Z3-02-Sudoku-Python.ipynb) — jumeau [C#](Z3-02-Sudoku-CSharp.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | Découverte | — |
+| 03 | [Tactiques et théories](Z3-03-Tactics-Python.ipynb) — jumeau [C#](Z3-03-Tactics-CSharp.ipynb) | `Tactic`, `BitVec`, `Array` | Découverte | — |
+| 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) — jumeau [C#](Z3-04-Strings-Regex-CSharp.ipynb) | `String`, `Re` (théorie des chaînes Z3) | Découverte | — |
+| 05 | [Quantificateurs et preuves](Z3-05-Quantifiers-Proofs-Python.ipynb) — jumeau [C#](Z3-05-Quantifiers-Proofs-CSharp.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | Découverte | — |
+| 06 | [Optimisation avancée](Z3-06-Advanced-Optimization-Python.ipynb) — jumeau [C#](Z3-06-Advanced-Optimization-CSharp.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | Découverte | — |
+| 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-08-Ordonnancement-Python.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | Découverte | — |
+| 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-09-Enigme-Einstein-Python.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | Découverte | — |
+| 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-10-Cryptarithmetic-Python.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | Découverte | — |
+| 11 | [Coloration de graphe (Petersen)](Z3-11-Graph-Coloring-Python.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | Découverte | — |
+| 12 | [Arithmétique réelle](Z3-12-Real-Arithmetic-Python.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | Découverte | — |
+| 13 | [UNSAT cores](Z3-13-UnsatCores-Python.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | Découverte | [Autour de 13](#autour-de-13) |
+| 14 | [Bit-vectors](Z3-14-BitVectors-Overflow-Python.ipynb) | Théorie `BitVec`, débordement arithmétique (`ULT`/`UGE`), preuve d'inévitabilité/sécurité, extraction de champ bit-à-bit | Découverte | — |
+| 15 | [Tableaux imbriqués et grilles 2D](Z3-15-Nested-Arrays-2D-Python.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | Découverte | — |
+| 16 | [Meal-Planner déclaratif](Z3-16-Meal-Planner-Python.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | Découverte | [Autour de 16](#autour-de-16) |
+| 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | Découverte | — |
+| 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | Découverte | — |
+| 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | Découverte | — |
+| 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) **(BETA)** | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | Découverte | — |
+
+> **Les jumeaux C#** : les notebooks 01 à 06 existent chacun en version .NET (`Z3-01-Introduction-CSharp.ipynb`, …), accessibles directement depuis la colonne *Notebook* ci-dessus. Chaque jumeau rejoue le parcours du notebook Python via le binding `Microsoft.Z3` (NuGet) — même moteur Z3, autre langage — et se repère au suffixe `CSharp` du fichier et à l'exposant `ᶜˢ` (01ᶜˢ–06ᶜˢ) utilisé dans le reste du README.
+
+## Approfondissements (Découverte)
+
+Des compagnons regroupés par palier : chaque palier prolonge un notebook du parcours sans en être une étape obligatoire.
+
+### Autour de 01
+
+*Prérequis : notebook 01 (types de base, patron `Solver`). Une familiarité avec LINQ (C#) aide à goûter le pont, sans être requise.*
+
+| # | Notebook | Ce qu'on y apprend |
+|---|----------|---------------------|
+| 01b | [Du style déclaratif LINQ au solveur Z3](Z3-01b-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) — où le déclaratif surpasse l'impératif |
+
+### Autour de 13
+
+*Prérequis : notebook 13 (`assert_and_track`, `unsat_core`).*
+
+| # | Notebook | Ce qu'on y apprend |
+|---|----------|---------------------|
+| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) **(BETA)** | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT |
+
+### Autour de 16
+
+*Prérequis : notebook 16 (les encodages du meal-planner). Lire 16b d'abord, puis 16c/16d/16e.*
+
+| # | Notebook | Ce qu'on y apprend |
+|---|----------|---------------------|
+| 16b | [Meal-Planner : données réelles](Z3-16b-Meal-Planner-Data-External-Python.ipynb) **(BETA)** | Couche de données (compagnon du 16) : corpus Ciqual ANSES 2025 × archive RecipeML, lecture en flux (`iterparse`), appariement lexical flou, agrégation pondérée par la masse |
+| 16c | [Meal-Planner : capstone patient](Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) **(BETA)** | Capstone (compagnon du 16) : restrictions nutritionnelles (énergie bornée, protéines min, lipides max), menu multi-jours, port du C# `08_Meal_Planner_Patient_Capstone` |
+| 16d | [Meal-Planner : convergence à l'échelle](Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) **(BETA)** | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle |
+| 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) **(BETA)** | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global |
 
 ## Ouvrage de référence
 
@@ -75,43 +149,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | **Vérification** | Tester les solutions | Les solutions satisfont les contraintes par construction |
 | **Limite** | Difficile à généraliser | Performance sur les très grandes instances |
 
-## Vue d'ensemble
-
-| # | Notebook | Sujet | Durée | Statut |
-|---|----------|-------|------|--------|
-| 01 | [Introduction](Z3-01-Introduction-Python.ipynb) | `Solver`, `Int`/`Bool`/`Real`, sat/unsat, `Optimize` | ~30 min | PRODUCTION |
-| 01ᶜˢ | [Introduction (twin C# .NET)](Z3-01-Introduction-CSharp.ipynb) | Parité .NET : même moteur Z3 via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
-| 01b | [Du style déclaratif LINQ au solveur Z3](Z3-01b-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
-| 02 | [Sudoku](Z3-02-Sudoku-Python.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
-| 02ᶜˢ | [Sudoku (twin C# .NET)](Z3-02-Sudoku-CSharp.ipynb) | Parité .NET : même moteur Z3, visualisation ASCII | ~25 min | PRODUCTION |
-| 03 | [Tactiques et théories](Z3-03-Tactics-Python.ipynb) | `Tactic`, `BitVec`, `Array` | ~40 min | PRODUCTION |
-| 03ᶜˢ | [Tactiques et théories (twin C# .NET)](Z3-03-Tactics-CSharp.ipynb) | Parité .NET : tactiques, `BitVec`, `Array` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
-| 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~35 min | PRODUCTION |
-| 04ᶜˢ | [Chaînes et expressions régulières (twin C# .NET)](Z3-04-Strings-Regex-CSharp.ipynb) | Parité .NET : théorie des chaînes, regex via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
-| 05 | [Quantificateurs et preuves](Z3-05-Quantifiers-Proofs-Python.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | ~35 min | PRODUCTION |
-| 05ᶜˢ | [Quantificateurs et preuves (twin C# .NET)](Z3-05-Quantifiers-Proofs-CSharp.ipynb) | Parité .NET : `MkForall`, `MkExists`, réfutation, `ReasonUnknown` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
-| 06 | [Optimisation avancée](Z3-06-Advanced-Optimization-Python.ipynb) | Pareto, objectifs multiples, `Optimize` hiérarchique, MaxSAT | ~40 min | PRODUCTION |
-| 06ᶜˢ | [Optimisation avancée (twin C# .NET)](Z3-06-Advanced-Optimization-CSharp.ipynb) | Parité .NET : `MkOptimize`, `MkMaximize`/`MkMinimize`, front de Pareto, `AssertSoft` (MaxSAT) via `Microsoft.Z3` (NuGet) | ~40 min | PRODUCTION |
-| 08 | [Ordonnancement (Job-Shop Scheduling)](Z3-08-Ordonnancement-Python.ipynb) | `Optimize.minimize`, contrainte disjonctive `Or(...)`, makespan minimal, diagramme de Gantt | ~35 min | PRODUCTION |
-| 09 | [L'énigme d'Einstein (Zebra puzzle)](Z3-09-Enigme-Einstein-Python.ipynb) | Encodage par position, `Distinct`, adjacences, satisfiabilité vs optimisation, unicité prouvée | ~30 min | PRODUCTION |
-| 10 | [Cryptarithmes (SEND + MORE = MONEY)](Z3-10-Cryptarithmetic-Python.ipynb) | `Int`, `Distinct`, équation positionnelle, propagation vs brute force, retenues déduites | ~25 min | PRODUCTION |
-| 11 | [Coloration de graphe (Petersen)](Z3-11-Graph-Coloring-Python.ipynb) | `Int` par sommet, contraintes d'arêtes `!=`, recherche linéaire du nombre chromatique, `unsat` = preuve d'optimalité | ~30 min | PRODUCTION |
-| 12 | [Arithmétique réelle](Z3-12-Real-Arithmetic-Python.ipynb) | Théorie `Real`, solution rationnelle exacte, irrationnel algébrique (racine de 2 comme `root-obj`), preuve d'absence sur R (`unsat`) | ~25 min | PRODUCTION |
-| 13 | [UNSAT cores](Z3-13-UnsatCores-Python.ipynb) | `assert_and_track`, `unsat_core()`, noyau minimal d'insatisfiabilité, diagnostic des contraintes conflictuelles | ~25 min | PRODUCTION |
-| 13b | [UNSAT cores : le MUS](Z3-13b-UnsatCores-MUS-Python.ipynb) | Compagnon du 13 : core invisible à l'inspection (chaîne de précédences), minimalité non garantie par Z3, MUS (Minimal Unsatisfiable Subset) par algorithme deletion-based, deux preuves du même UNSAT | ~20 min | BETA |
-| 14 | [Bit-vectors](Z3-14-BitVectors-Overflow-Python.ipynb) | Théorie `BitVec`, débordement arithmétique (`ULT`/`UGE`), preuve d'inévitabilité/sécurité, extraction de champ bit-à-bit | ~30 min | PRODUCTION |
-| 15 | [Tableaux imbriqués et grilles 2D](Z3-15-Nested-Arrays-2D-Python.ipynb) | Grille 2D déclarative (`Distinct`/`Sum`) vs brute (`Array` de `Array`, `Store`/`Select`), carré latin, Sudoku 4×4, carré magique | ~30 min | PRODUCTION |
-| 16 | [Meal-Planner déclaratif](Z3-16-Meal-Planner-Python.ipynb) | Menu équilibré (index / énumération / booléen), `Optimize.minimize` du coût, plan hebdomadaire matriciel `jours × plats` vs glouton | ~35 min | PRODUCTION |
-| 16b | [Meal-Planner : données réelles](Z3-16b-Meal-Planner-Data-External-Python.ipynb) | Couche de données (compagnon du 16) : corpus Ciqual ANSES 2025 × archive RecipeML, lecture en flux (`iterparse`), appariement lexical flou, agrégation pondérée par la masse | ~40 min | BETA |
-| 16c | [Meal-Planner : capstone patient](Z3-16c-Meal-Planner-Patient-Capstone-Python.ipynb) | Capstone (compagnon du 16) : restrictions nutritionnelles (énergie bornée, protéines min, lipides max), menu multi-jours, port du C# `08_Meal_Planner_Patient_Capstone` | ~40 min | BETA |
-| 16d | [Meal-Planner : convergence à l'échelle](Z3-16d-Meal-Planner-Convergence-Scale-Python.ipynb) | Convergence (compagnon du 16) : l'encodage décide de la tractabilité — index+disjonction explose, `Array` insoluble (`unknown`), one-hot pseudo-booléen (`PbEq`/`PbLe`/`PbGe`) passe à l'échelle | ~45 min | BETA |
-| 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global | ~45 min | BETA |
-| 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
-| 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
-| 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | ~30 min | PRODUCTION |
-| 20 | [Machine de Gödel](Z3-20-Machine-de-Goedel-Python.ipynb) | Auto-réécriture sur preuve (Schmidhuber 2006) : théorème cible prouvé par réfutation sous axiomes d'environnement, optimalité globale contre une machine gloutonne, prix d'une amélioration non prouvable (contre-exemple Z3), coût du temps de preuve (`rlimit`) | ~45 min | BETA |
-
-### Fil pédagogique
+## Fil pédagogique
 
 1. **Notebook 01** pose les bases : le patron `Solver()`, les types de base (`Int`, `Bool`, `Real`), les réponses `sat`/`unsat`/`unknown`, et l'optimisation avec `Optimize`
 2. **Notebook 02** applique l'approche déclarative au Sudoku : modélisation par `Distinct`, résolution et visualisation (donné en noir / résolu en bleu)
@@ -146,7 +184,7 @@ La série manipule un vocabulaire précis hérité de la programmation par contr
 
 | Concept | Description | Notebook |
 |---------|-------------|----------|
-| **Solveur SMT (Z3)** | Décide la satisfiabilité d'une formule sur des *théories* (entiers, réels, vecteurs de bits, tableaux, chaînes), pas seulement sur des booléens. | 01 |
+| **Solveur SMT (Z3)** | Décide la satisfiabilité d'une formule sur des *théories* (entiers, réels, booléens, vecteurs de bits, tableaux, chaînes), pas seulement sur des booléens. | 01 |
 | **`Solver` vs `Optimize`** | `Solver` répond sat/unsat (le problème a-t-il une solution ?) ; `Optimize` ajoute un objectif à maximiser ou minimiser sous contraintes. | 01, 06, 16 |
 | **`sat` / `unsat` / `unknown`** | Les trois verdicts de `check()` : il existe un modèle / aucune solution / le solveur ne tranche pas (théorie non décidable, timeout). | 01 |
 | **Modèle** | L'assignation concrète des variables qui satisfait les contraintes, obtenu via `s.model()`. Un seul exemple parmi les solutions possibles, à n'appeler que sur `sat`. | 01 |
@@ -176,7 +214,7 @@ flowchart TD
 
 Les **trois verdicts** de `check()` appellent trois postures distinctes — c'est l'épine dorsale de l'usage du solveur, posée au notebook 01 et raffinée jusqu'au noyau d'insatisfiabilité et à la preuve par réfutation.
 
-## Prérequis
+## Installation
 
 | Besoin | Détail |
 |--------|--------|

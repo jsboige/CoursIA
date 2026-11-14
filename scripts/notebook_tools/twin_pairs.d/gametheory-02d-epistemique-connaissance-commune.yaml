@@ -1,0 +1,9 @@
+- name: "GameTheory-02d Epistemique Connaissance Commune"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux versions construisent explicitement les partitions, les opérateurs épistémiques et les balayages exhaustifs ; ce calcul sans solveur est l'objet pédagogique. Python utilise la bibliothèque standard et C# la BCL."
+  known_differences:
+    - "Les partitions et événements sont des ensembles Python et des masques binaires C# ; les probabilités du balayage à six états sont exactes dans les deux versions."

@@ -172,6 +172,14 @@ def tpm_description_length(counts: np.ndarray) -> float:
     return line_bits + overhead
 
 
+def _validate_state_mapping(mapping: dict) -> None:
+    """Un index unique dans [0, k) par etat, pour indexer les TPM."""
+    values = list(mapping.values())
+    if (any(isinstance(i, (bool, np.bool_)) or not isinstance(i, (int, np.integer))
+            for i in values) or set(values) != set(range(len(values)))):
+        raise ValueError("indices des etats : permutation entiere de 0 a k-1 requise")
+
+
 # ---------------------------------------------------------- code deux parties
 def two_part_code(states: Sequence, split: float = 0.5,
                   states_to_index: dict | None = None) -> dict:
@@ -228,6 +236,7 @@ def two_part_code(states: Sequence, split: float = 0.5,
         mapping = {s: i for i, s in enumerate(labels)}
     else:
         mapping = dict(states_to_index)
+        _validate_state_mapping(mapping)
     k = len(mapping)
 
     # Comptes d'apprentissage.
@@ -371,6 +380,7 @@ def fit_markov_order(states, heldout=None, max_order: int = 4,
         mapping = {s: i for i, s in enumerate(labels)}
     else:
         mapping = dict(states_to_index)
+        _validate_state_mapping(mapping)
 
     k = len(mapping)
     train = [mapping[s] for s in train_seq]

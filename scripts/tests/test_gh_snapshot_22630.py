@@ -69,11 +69,21 @@ def _redirige_gh_snapshot(monkeypatch, cible):
     non isolee) reprend alors la main, avec ses appels gh et son
     ``%LOCALAPPDATA%``. On patche donc les DEUX surfaces : l'entree
     ``sys.modules`` ET l'attribut du package.
+
+    Quand le package n'a pas encore ete importe dans ce worker, son
+    remplacant se pose PAR ``monkeypatch`` lui aussi. Pose par
+    ``sys.modules.setdefault``, il survivait au test avec un ``__path__``
+    vide : tout ``from coordination import gh_snapshot`` ulterieur du meme
+    worker levait alors ``ImportError ... (unknown location)``. L'echec
+    dependait de la repartition xdist (mesure le 2026-11-13 : 2 runs sur 5,
+    deux tests differents de ``test_pick_idle_grain_belt.py``).
     """
     monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", cible)
-    package = sys.modules.setdefault(
-        "coordination", types.ModuleType("coordination"))
-    package.__path__ = getattr(package, "__path__", [])
+    package = sys.modules.get("coordination")
+    if package is None:
+        package = types.ModuleType("coordination")
+        package.__path__ = []
+        monkeypatch.setitem(sys.modules, "coordination", package)
     monkeypatch.setattr(package, "gh_snapshot", cible, raising=False)
 
 
