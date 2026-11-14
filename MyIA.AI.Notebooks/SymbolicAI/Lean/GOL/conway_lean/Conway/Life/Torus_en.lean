@@ -43,12 +43,12 @@ differ only in their docstrings: statements, proofs and tactics are identical
 — no inline bilingual block in a single file (Option B rejected).
 -/
 
-import Conway.Life
+import Conway.Life_en
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 namespace Torus_en
 
 /-! ## Toroidal wrap of one coordinate
