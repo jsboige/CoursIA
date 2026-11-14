@@ -4,7 +4,7 @@
 
 Le rendu 3D neuronal a ouvert une voie différente de la géométrie discrète classique (maillages, voxels, nuages de points) : **paramétrer la scène entière par un réseau de neurones continu**, entraîné uniquement depuis des images 2D calibrées. Cette série introduit le geste fondateur — NeRF (Mildenhall et al., ECCV 2020) — entièrement from scratch, puis mesure ses limitations structurelles, celles-là mêmes qui ont motivé le champ suivant (Mip-NeRF, Instant-NGP, 3D Gaussian Splatting).
 
-Elle comble la lacune « 3D (nuages de points, NeRF, splatting) : confirmé absent » identifiée par l'audit [EPIC #18220](https://github.com/jsboige/CoursIA/issues/18220) pli 3, et porte le Pli 2 (NeRF, 3D-01 et 3D-02) puis le Pli 3 — R-gsplat (3D-03 à 3D-06) — de l'[Epic origami #18605](https://github.com/jsboige/CoursIA/issues/18605) (coord-based neural representations). Le Pli 4 (3D-07) retourne la question : après avoir appris à **rendre** une scène, comment en **générer** une — et pourquoi la factorisation hiérarchique des générateurs de voxels les prive, par construction, de l'information fine au moment où ils décident du grossier.
+Elle comble la lacune « 3D (nuages de points, NeRF, splatting) : confirmé absent » identifiée par l'audit [EPIC #18220](https://github.com/jsboige/CoursIA/issues/18220) pli 3, et porte le Pli 2 (NeRF, 3D-01 et 3D-02) puis le Pli 3 — R-gsplat (3D-03 à 3D-06) — de l'[Epic origami #18605](https://github.com/jsboige/CoursIA/issues/18605) (coord-based neural representations). Le Pli 4 (3D-07) retourne la question : après avoir appris à **rendre** une scène, comment en **générer** une — et pourquoi la factorisation hiérarchique des générateurs de voxels les prive, par construction, de l'information fine au moment où ils décident du grossier. Le Pli 5 (3D-08) referme la série sur le paradigme opposé : rendre la même scène **analytiquement** — spineurs et twisteurs de Penrose — et mesurer, à matériel constant, ce que le champ appris gagne en généralisation et ce qu'il perd partout où un masque dur coupe le gradient.
 
 ## Fil rouge : construire, puis mettre à l'épreuve
 
@@ -22,6 +22,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 - **Piloter l'entraînement par la mesure** : densification (clones/scissions), reset d'opacité, learning rates différenciés, plancher d'échelle — chaque levier comparé sur banc court, avec son échelle temporelle d'action (3D-05).
 - **Lire du code de production** : reconnaître tri côté GPU, conventions d'axes et pas de temps fixe dans une application navigateur réelle à base de splats (3D-06).
 - **Générer plutôt que rendre** : écrire un flow matching discret (source masquée, équations de chemin et de perte), le rendre **hiérarchique et joint** sur trois niveaux de voxels, et mesurer ce que la factorisation interdit — les niveaux grossiers y sont décidés sans information fine, et jamais révisés (3D-07).
+- **Rendre sans apprentissage** : écrire la scène comme forme analytique — chaîne projective de Penrose (point, matrice hermitienne, spineur de direction, relation d'incidence) vérifiée par résidus mesurés, pont SU(2)/SO(3) transporté sur les trois objets — puis confronter, à matériel constant, le rendu exact au champ de radiance appris : culling, plafond de généralisation, récupération de pose et ses masques durs sans gradient (3D-08).
 
 ## Notebooks
 
@@ -42,6 +43,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 - **Exécution** : PyTorch (CPU jouable pour la scène jouet ; GPU recommandé — ~2-3 min pour 3D-01, ~10-12 min pour 3D-02 sur RTX 3090). Les seeds sont fixés : les résultats sont reproductibles.
 - **Pli 3 (3D-04, 3D-05)** : GPU requis, kernel conda `gsplat310` (Python 3.10, torch 2.4.1+cu124, roue officielle gsplat +pt24cu124) ; 3D-03 est jouable CPU. À taille de nuage fixe, l'ordre flottant des atomiques CUDA varie légèrement les trajectoires entre exécutions — les conclusions citent les statistiques robustes (perte, moyennes), pas les extrema. 3D-06 est une lecture guidée, sans exécution.
 - **Pli 4 (3D-07)** : CPU seul, environ 70 s dont 51 s d'entraînement (mesuré sur le kernel `python3` de l'environnement `mcp-jupyter`, torch 2.14 CPU). Graines fixées : deux exécutions successives donnent exactement les mêmes chiffres.
+- **Pli 5 (3D-08)** : CPU seul, environ 276 s (mesuré sur le kernel `python3` de l'environnement `mcp-jupyter`). Graines fixées (`np.random.seed` et `torch.manual_seed`, re-posées avant chaque phase stochastique) : les chiffres sont reproductibles.
 - **Dataset** : `tiny_nerf_data.npz` (scène Blender « Lego » 100×100, © les auteurs de NeRF) téléchargé au premier lancement depuis la page projet UCSD des auteurs, mis en cache dans `data/` (hors dépôt).
 
 ## Les plis de la série (Epic #18605)
