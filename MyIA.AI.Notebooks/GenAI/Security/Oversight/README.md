@@ -15,6 +15,7 @@ chaque carnet porte sa propre méthodologie et ses propres sorties.
 | 3 | [Oversight-Scaling-Laws-Statistics](Oversight-Scaling-Laws-Statistics.ipynb) | Le module statistique consolidé : validation de l'inversion Elo sur données contrôlées et consolidation des carnets antérieurs du parcours. |
 | 4 | [Oversight-Scaling-Laws-Wargames](Oversight-Scaling-Laws-Wargames.ipynb) | Le scénario Wargames de R12, section 5, en simulation stochastique pure, sans LLM externe. |
 | 5 | [Backdoor-Code-From-Scratch](Backdoor-Code-From-Scratch.ipynb) | L'autre face de la série : un pipeline de backdoor construit et mesuré de bout en bout. |
+| 6 | [Backdoor-Dormant-Neurons](Backdoor-Dormant-Neurons.ipynb) | La porte dérobée par les poids : la réprogrammation d'un neurone dormant, mesurée de bout en bout (ASR, fuite, dérive bénigne). |
 
 Chaque carnet porte, en fin de corps, sa ligne de navigation vers le précédent,
 cet index et le suivant.
