@@ -220,6 +220,45 @@ class DetectPythonNuJobsTests(unittest.TestCase):
         self.assertNotIn("windows-dotnet-tests", result.stdout)
         self.assertIn("other-windows-job", result.stdout)
 
+    def test_corroboration_job_exempted_named(self) -> None:
+        """Le job `corroboration` du workflow `corroboration-python-nu.yml`
+        est exempté nommément : ce job EST l'instrument qui mesure la
+        visibilité du `python` nu (critère 3 de #17444), ses appels sont
+        l'objet de la mesure. Un refactor qui élargirait l'exemption par
+        règle générale (par exemple, "tout workflow de mesure") échouerait
+        ce test."""
+        _write_workflow(
+            self.wf_dir,
+            "corroboration-python-nu.yml",
+            """\
+            name: Corroboration python nu
+            on: [workflow_dispatch]
+            jobs:
+              corroboration:
+                runs-on: [self-hosted, coursia-linux]
+                steps:
+                  - run: |
+                      if command -v python; then
+                        python --version 2>&1 || true
+                      fi
+              other-measure-job:
+                runs-on: [self-hosted, coursia-linux]
+                steps:
+                  - run: python scripts/fabrique.py
+            """,
+        )
+        result = _run_detector(self.wf_dir, repo_root=self.repo_root)
+        # Le job exempté n'est PAS attrapé, mais `other-measure-job` (qui
+        # n'est pas dans l'exemption nommée) EST attrapé.
+        self.assertEqual(
+            result.returncode,
+            1,
+            msg=f"defaut attendu sur other-measure-job, stdout={result.stdout!r}",
+        )
+        # La ligne du rapport cite le workflow, mais pas le job exempté.
+        self.assertNotIn("corroboration-python-nu.yml corroboration ", result.stdout)
+        self.assertIn("other-measure-job", result.stdout)
+
     def test_comment_lines_ignored(self) -> None:
         """Un commentaire qui mentionne `python` n'est pas un appel : la
         detection regarde `run:`, pas la prose. La fixture evite les
