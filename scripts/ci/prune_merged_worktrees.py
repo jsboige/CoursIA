@@ -863,6 +863,31 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     return True, ""
 
 
+def _make_parent_writable(target) -> None:
+    """Rend ecrivant le repertoire qui contient `target` (best effort).
+
+    Sous POSIX, l'unlink d'un fichier en lecture seule (444) **reussit** :
+    c'est le mode du **repertoire parent** qui decide. La simulation
+    d'un depot git en lecture seule rend donc les deux, et une
+    correction qui rend ecrivant le seul fichier ne change rien sous
+    Linux : l'echec est `PermissionError [Errno 13]` sur l'entree, avec
+    le message du FICHIER alors que le bloqueur est son repertoire
+    (mesure : 4 tests en echec sur le runner Linux du 14/11, PR #26561).
+    Sous Windows, c'est l'inverse : l'attribut du fichier bloque, le
+    mode du repertoire ne compte pas.
+    """
+    parent = os.path.dirname(os.fspath(target))
+    if not parent:
+        return
+    try:
+        mode = os.stat(parent).st_mode
+        os.chmod(parent, mode | stat.S_IWRITE | stat.S_IXUSR)
+    except OSError:
+        # Le repertoire parent peut disparaitre entre-temps : ce n'est
+        # pas une raison d'abandonner, l'appelant reessaiera.
+        pass
+
+
 def _rmtree_readonly_tolerant(path: Path) -> None:
     """Supprime un arbre en supportant les fichiers en lecture seule.
 
@@ -871,12 +896,20 @@ def _rmtree_readonly_tolerant(path: Path) -> None:
     (mesure, #25838) : la charge utile de la quarantaine ne peut ni
     etre remplie ni etre purgee. On rend l'attribut ecrivant, puis on
     reessaye l'operation qui avait echoue.
+
+    Sous POSIX, il faut en outre rendre ecrivant le **repertoire**
+    qui contient l'entree (voir `_make_parent_writable`) : c'est lui,
+    et non le mode du fichier, qui bloque l'unlink.
     """
     def _repair(func, target, exc_info):
         try:
-            os.chmod(target, stat.S_IWRITE)
+            # On AJOUTE le bit ecrivant au lieu de le poser seul : poser
+            # `S_IWRITE` seul retirerait le bit d'execution d'un
+            # repertoire, que rmtree doit pouvoir parcourir ensuite.
+            os.chmod(target, os.stat(target).st_mode | stat.S_IWRITE)
         except OSError:
             raise exc_info[1]
+        _make_parent_writable(target)
         func(target)
 
     if sys.version_info >= (3, 12):
@@ -886,12 +919,22 @@ def _rmtree_readonly_tolerant(path: Path) -> None:
 
 
 def _unlink_readonly_tolerant(path: Path) -> None:
-    """Supprime un fichier, meme en lecture seule."""
+    """Supprime un fichier, meme en lecture seule.
+
+    Le message d'erreur qui remonte alors Designne le FICHIER, mais le
+    bloqueur peut etre son repertoire parent (POSIX) : on traite les
+    deux, sinon la purge de la quarantaine echoue sur Linux la ou elle
+    reussit sous Windows.
+    """
     try:
         path.unlink()
     except PermissionError:
-        os.chmod(path, stat.S_IWRITE)
-        path.unlink()
+        os.chmod(path, os.stat(path).st_mode | stat.S_IWRITE)
+        try:
+            path.unlink()
+        except PermissionError:
+            _make_parent_writable(path)
+            path.unlink()
 
 
 def _move_tree_readonly_safe(src: Path, dst: Path) -> None:

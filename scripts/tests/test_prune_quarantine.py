@@ -564,7 +564,65 @@ class TestCliWiring:
 # sur `copytree` + `rmtree` ; le `rmtree` echoue sur les objets git en
 # lecture seule (mode 444) -> `[WinError 5]`. La copie aboutit, la source
 # reste : la charge utile est dupliquee a chaque passe (4,8 Go mesures).
+#
+# Asymetrie des plateformes, mesuree sur le runner Linux du 14/11 :
+# sous Windows, l'attribut du FICHIER bloque l'unlink ; sous POSIX, le
+# mode du fichier est sans effet et c'est le REPERTOIRE parent (555)
+# qui bloque. Un correctif qui rend ecrivant le seul fichier passe donc
+# sous Windows et echoue sous Linux (`PermissionError [Errno 13]`) --
+# c'est ce qui a rendu la PR #26561 rouge sur la CI.
 # ---------------------------------------------------------------------------
+
+
+class TestPosixReadonlyDirectory:
+    """Le cas POSIX pur : le repertoire est 555, le fichier est ecritable."""
+
+    def test_repertoire_lecture_seule_bloque_l_unlink_natif(self, tmp_path):
+        """Le symptome isole : sous POSIX, c'est le repertoire qui bloque."""
+        if os.name == "nt":
+            pytest.skip("Windows ignore le mode du repertoire")
+        payload = tmp_path / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        with pytest.raises(PermissionError):
+            blob.unlink()
+
+    def test_suppression_tolerant_quand_seul_le_repertoire_est_lecture_seule(
+            self, tmp_path):
+        """Le correctif doit rendre ecrivant le repertoire, pas le fichier."""
+        payload = tmp_path / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        pmw._rmtree_readonly_tolerant(tmp_path / "objects")
+        assert not (tmp_path / "objects").exists()
+
+    def test_unlink_tolerant_quand_seul_le_repertoire_est_lecture_seule(
+            self, tmp_path):
+        payload = tmp_path / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        pmw._unlink_readonly_tolerant(blob)
+        assert not blob.exists()
+
+    def test_purge_tolerant_quand_seul_le_repertoire_est_lecture_seule(
+            self, tmp_path):
+        """Le chemin de purge de la quarantaine (voie nommee #21743)."""
+        root = tmp_path / "q"
+        root.mkdir()
+        (root / pmw.QUARANTINE_MARKER).write_text("x", encoding="utf-8")
+        payload = root / "dest" / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        ok, why, _info = pmw.purge_quarantine(root)
+        assert (ok, why) == (True, "")
 
 
 class TestMoveReadonlySafe:
