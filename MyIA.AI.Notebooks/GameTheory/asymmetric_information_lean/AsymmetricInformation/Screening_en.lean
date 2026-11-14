@@ -64,9 +64,12 @@ def expectedProfit (c : Contract) (r : RiskProfile) (q : RiskType) : Int :=
 def breakEvenType (c : Contract) (r : RiskProfile) (q : RiskType) : Prop :=
   expectedProfit c r q = 0
 
-/-- Global expected profit of a contract on the full profile.
-    Convention: sum (not average) so the linear arithmetic in `omega`
-    works without Mathlib division handling. -/
+/-- Global expected profit of a contract on the full profile, **summed**
+    over the 2 types (no division). The **sum** lies in the linear domain
+    of `omega`, hence comparable via closed `Int` arithmetic without a
+    divisibility hypothesis. An **averaged** variant could be added if
+    needed, but the average (`Int` division by 2) leaves the linear
+    domain and would block `omega`. -/
 def globalExpectedProfit (c : Contract) (r : RiskProfile) : Int :=
   expectedProfit c r .high + expectedProfit c r .low
 
@@ -135,6 +138,8 @@ theorem cream_skim_breaks_nash
     ¬ nashMenu menu r := by
   obtain ⟨c', hNotMem, hPosOff, c, hMemC, hNegH, hNegL⟩ := hCream
   intro hNash
+  -- The instance `hNash` on `c ∈ menu` and `c' ∉ menu` gives the upper
+  -- bound of Nash on the profitable deviation `c'`.
   have hle := hNash c hMemC c' hNotMem
   -- `hNegH : ep c r .high < 0` + `hNegL : ep c r .low ≤ 0` give
   -- `globalExpectedProfit c r ≤ -1` by `Int.add_le_add`. We unfold
@@ -146,11 +151,12 @@ theorem cream_skim_breaks_nash
     have h2 : c.premium * 100 - r.pLow * c.coverage ≤ 0 := by
       simpa [expectedProfit] using hNegL
     omega
-  -- Unfold `globalExpectedProfit` on both sides of `hle` and combine
-  -- with `hPosOff` and `hNegSum`; `omega` closes the contradiction
-  -- `0 < ... ≤ ... ≤ -1`. The `simpa [globalExpectedProfit, expectedProfit]
-  -- using` transformation unfolds both sides of `hle` and `hPosOff`
-  -- to render them linear in `Int`, usable by `omega`.
+  -- Unfold `globalExpectedProfit` on both sides of `hle` and
+  -- combine with `hPosOff` and `hNegSum`; `omega` closes the
+  -- contradiction `0 < ... ≤ ... ≤ -1`.
+  -- The `simpa [globalExpectedProfit, expectedProfit] using` transformation
+  -- unfolds both sides of `hle` and `hPosOff` to render them
+  -- linear in `Int`, usable by `omega`.
   have hle' : (c'.premium * 100 - r.pHigh * c'.coverage) +
                 (c'.premium * 100 - r.pLow * c'.coverage) ≤
               (c.premium * 100 - r.pHigh * c.coverage) +

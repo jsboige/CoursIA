@@ -37,7 +37,18 @@ Cas couverts :
 15. `strip_comments` retire bloc et ligne : un `import` ou un `def` commentes
     ne comptent pas ;
 16. `census` compte les `_en.lean` **hors lac** au lieu de les taire ;
-17. la sortie texte nomme le commit mesure (ou dit qu'il est hors depot git).
+17. la sortie texte nomme le commit mesure (ou dit qu'il est hors depot git) ;
+18. (#24666) un `_en.lean` hors `roots` est un **orphelin** non compte, le meme
+    fichier sous un root declare remonte (probe de la sonde) ;
+19. (#24666) un `_en.lean` importe par une racine est atteignable (fermeture des
+    imports, comme Lake) ;
+20. (#24666) un fichier sous un lac imbrique appartient au lac le plus proche,
+    jamais au lac parent ;
+21. (#24666) `lakefile.lean` : la forme `lean_lib X where roots := #[...]` est
+    lue, un commentaire `-- lean_lib` ignore ;
+22. (#24666) une clause `roots` de forme inconnue, ou un toml casse, est un
+    **incident** (rc 2), jamais un retour silencieux au defaut `[name]` ;
+23. (#24666) une racine declaree sans fichier est rapportee (`missing_roots`).
 
 Le module est charge **par chemin** : `scripts/lean/` n'est pas un paquet
 importable depuis la racine du depot.
@@ -62,7 +73,12 @@ def _lake(tmp: str, name: str = "fixture_lean") -> Path:
     """Micro-lac : une dependance FR `Alpha/Base.lean` avec son jumeau `_en`."""
     lake = Path(tmp) / name
     (lake / "Alpha").mkdir(parents=True)
-    (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+    # Lac declare (#24666) : sans `[[lean_lib]]`, Lake ne compile rien et tout
+    # `_en.lean` serait un orphelin. Les globs couvrent le sous-arbre `Alpha`.
+    (lake / "lakefile.toml").write_text(
+        'name = "fixture"\n\n[[lean_lib]]\nname = "Fixture"\nglobs = ["Alpha.*"]\n',
+        encoding="utf-8",
+    )
     (lake / "Alpha" / "Base.lean").write_text(
         "namespace Alpha.Base\n\ndef base := 1\n\nend Alpha.Base\n", encoding="utf-8"
     )
@@ -310,6 +326,255 @@ def test_render_shows_total_and_list_detail():
     assert "Alpha/Hybrid_en.lean" not in text
     detailed = mod.render(report, show_list=True)
     assert "Alpha/Hybrid_en.lean" in detailed, detailed
+
+
+_HYBRID_HIDDEN = (
+    "import Alpha.Base\n\nnamespace Alpha.Hidden_en\n\ndef h := 2\n\n"
+    "end Alpha.Hidden_en\n"
+)
+
+
+def _set_toml(lake: Path, text: str) -> None:
+    (lake / "lakefile.toml").write_text(text, encoding="utf-8")
+
+
+def test_orphan_hybrid_counted_only_under_a_declared_root():
+    """Probe (#24666) : le meme hybride, hors roots -> orphelin ; sous un root -> compte."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outside = _lake(tmp, "outside_lean")
+        _set_toml(
+            outside,
+            'name = "fixture"\n\n[[lean_lib]]\nname = "Fixture"\nroots = ["Alpha.Base"]\n',
+        )
+        _write(outside / "Alpha" / "Hidden_en.lean", _HYBRID_HIDDEN)
+        report_out = mod.census(outside)
+
+        inside = _lake(tmp, "inside_lean")
+        _set_toml(
+            inside,
+            'name = "fixture"\n\n[[lean_lib]]\nname = "Fixture"\n'
+            'roots = ["Alpha.Base", "Alpha.Hidden_en"]\n',
+        )
+        _write(inside / "Alpha" / "Hidden_en.lean", _HYBRID_HIDDEN)
+        report_in = mod.census(inside)
+
+    assert report_out["files"] == 0, report_out["hybrids"]
+    assert {"lake": "outside_lean", "relative": "Alpha/Hidden_en.lean"} in report_out["orphans"], report_out["orphans"]
+    assert report_out["n_en_orphans"] >= 1, report_out
+    assert report_in["files"] == 1, report_in["hybrids"]
+    # Base_en.lean n'est pas une racine ici : il reste orphelin, mais l'hybride, lui, est atteint.
+    assert {"lake": "inside_lean", "relative": "Alpha/Hidden_en.lean"} not in report_in["orphans"], report_in["orphans"]
+    text = mod.render(report_out, show_list=False)
+    assert "orphelins non mesures" in text, text
+
+
+def test_en_file_imported_by_a_root_is_reachable():
+    """Lake compile la fermeture des imports d'une racine : un `_en` importe est atteignable."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp)
+        _set_toml(
+            lake,
+            'name = "fixture"\n\n[[lean_lib]]\nname = "Fixture"\nroots = ["Alpha.Entry"]\n',
+        )
+        _write(lake / "Alpha" / "Entry.lean", "import Alpha.Hidden_en\n\nnamespace Alpha.Entry\n\nend Alpha.Entry\n")
+        _write(lake / "Alpha" / "Hidden_en.lean", _HYBRID_HIDDEN)
+        report = mod.census(lake)
+    assert report["files"] == 1, report["hybrids"]
+    # Alpha/Base_en.lean n'est importe par aucune racine : orphelin, lui. Le `_en`
+    # importe (Hidden_en) ne doit pas figurer parmi les orphelins.
+    orphan_names = {item["relative"] for item in report["orphans"]}
+    assert "Alpha/Hidden_en.lean" not in orphan_names, orphan_names
+
+
+def test_nested_lake_owns_its_files_not_the_parent():
+    """Un `_en` sous un lac imbrique appartient au lac le plus proche (#24666)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        outer = Path(tmp) / "outer_lean"
+        outer.mkdir()
+        _set_toml(
+            outer,
+            'name = "outer"\n\n[[lean_lib]]\nname = "Outer"\nglobs = ["inner_lean.*"]\n',
+        )
+        inner = outer / "inner_lean"
+        inner.mkdir()
+        _write(
+            inner / "lakefile.toml",
+            'name = "inner"\n\n[[lean_lib]]\nname = "Inner"\nglobs = ["Beta.*"]\n',
+        )
+        _write(inner / "Beta" / "Base.lean", "namespace Beta.Base\n\ndef b := 1\n\nend Beta.Base\n")
+        _write(inner / "Beta" / "Base_en.lean", "namespace Beta.Base_en\n\ndef b := 1\n\nend Beta.Base_en\n")
+        _write(
+            inner / "Beta" / "Hyb_en.lean",
+            "import Beta.Base\n\nnamespace Beta.Hyb_en\n\ndef h := 2\n\nend Beta.Hyb_en\n",
+        )
+        report = mod.census(outer)
+    assert report["per_lake"] == {"inner_lean": {"files": 1, "edges": 1}}, report["per_lake"]
+    # Deux `_en` appartiennent au lac interieur (Base_en, Hyb_en) ; le lac parent n'en possede aucun.
+    assert report["n_en_files"] == 2, report["n_en_files"]
+
+
+def test_lakefile_lean_roots_dsl_is_read():
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp, "dsl_lean")
+        (lake / "lakefile.toml").unlink()
+        _write(
+            lake / "lakefile.lean",
+            "import Lake\nopen Lake DSL\n\npackage dsl\n\n"
+            "-- lean_lib Ignored where roots := #[`Ghost]\n"
+            "@[default_target]\nlean_lib Fixture where\n"
+            "  roots := #[`Alpha.Hidden_en]\n",
+        )
+        _write(lake / "Alpha" / "Hidden_en.lean", _HYBRID_HIDDEN)
+        _write(lake / "Alpha" / "Other_en.lean", _HYBRID_HIDDEN.replace("Hidden", "Other"))
+        selectors = mod.lake_selectors(lake)
+        report = mod.census(lake)
+    assert selectors == [("one", "Alpha.Hidden_en")], selectors
+    assert report["files"] == 1, report["hybrids"]
+    assert {"lake": "dsl_lean", "relative": "Alpha/Other_en.lean"} in report["orphans"], report["orphans"]
+
+
+def test_unreadable_roots_is_incident_not_default():
+    """Une clause `roots` de forme inconnue ne doit pas retomber sur le defaut `[name]`."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp, "weird_lean")
+        (lake / "lakefile.toml").unlink()
+        _write(
+            lake / "lakefile.lean",
+            "lean_lib Fixture where\n  roots := base ++ #[`Alpha.Base]\n",
+        )
+        try:
+            mod.census(lake)
+        except mod.LakefileError:
+            pass
+        else:
+            raise AssertionError("LakefileError attendu pour une clause roots non reconnue")
+        assert mod.main(["--root", str(Path(tmp))]) == 2
+
+
+def test_broken_toml_is_incident():
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        lake = root / "broken_lean"
+        lake.mkdir()
+        _write(lake / "lakefile.toml", "[[lean_lib\nname = \n")
+        _write(lake / "Alpha" / "Base_en.lean", "namespace Alpha.Base_en\n")
+        assert mod.main(["--root", str(root)]) == 2
+
+
+def test_missing_root_is_reported_not_silent():
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp)
+        _set_toml(
+            lake,
+            'name = "fixture"\n\n[[lean_lib]]\nname = "Fixture"\nroots = ["Alpha.Ghost"]\n',
+        )
+        report = mod.census(lake)
+    assert report["missing_roots"] == [{"lake": "fixture_lean", "module": "Alpha.Ghost"}], report["missing_roots"]
+    assert "Alpha.Ghost" in mod.render(report, show_list=False)
+
+
+# Formes reelles relevees sur le depot complet (#24666, point 1 de la reserve
+# coordinateur) : copie verbatim des blocs `lean_lib` de trois lakefiles du depot
+# (GameTheory/assignment_lean, SymbolicAI/Lean/differential_lean,
+# Compression/Compression_lean), reunis dans un seul fichier de test.
+_REAL_SHAPES_LAKEFILE = """import Lake
+open Lake DSL
+
+package «fixture» where
+  leanOptions := #[⟨`pp.unicode.fun, true⟩]
+
+@[default_target]
+lean_lib Assignment where
+  globs := #[`Assignment.*, `Assignment_en]
+
+lean_lib «PrefixCodes» where
+  -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`).
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `SymbolCodec_en]
+
+lean_lib «Differential» where
+  -- `Poincare` et `Poincare_en` suivent la meme regle.
+  globs := #[
+    `DifferentialTour, `DifferentialTour_en,
+    `Poincare, `Poincare_en]
+"""
+
+
+def test_backtick_glob_forms_are_read_dsl():
+    """`X`, `X.*`, `X.+` et les `.one/.submodules/.andSubmodules` (#24666)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = _lake(tmp, "forms_lean")
+        (lake / "lakefile.toml").unlink()
+        _write(
+            lake / "lakefile.lean",
+            "import Lake\nopen Lake DSL\n\npackage forms\n\n"
+            "lean_lib «Forms» where\n  globs := #[`Alpha.*, `Alpha_en, `Beta.+]\n\n"
+            "lean_lib «Kinds» where\n"
+            "  globs := #[.submodules `Gamma, .andSubmodules `Delta, .one `Eps]\n",
+        )
+        _write(lake / "Beta" / "Hidden_en.lean", _HYBRID_HIDDEN)
+        _write(lake / "Beta_en.lean", "namespace Beta_en\n\nend Beta_en\n")
+        selectors = mod.lake_selectors(lake)
+        _, reach, _ = mod.lake_reachable(lake, mod.find_lakes(lake))
+    assert selectors == [
+        ("all", "Alpha"),
+        ("one", "Alpha_en"),
+        ("sub", "Beta"),
+        ("sub", "Gamma"),
+        ("all", "Delta"),
+        ("one", "Eps"),
+    ], selectors
+    reached = {p.relative_to(lake).as_posix() for p in reach}
+    # `Beta.+` = sous-modules seuls : Beta/Hidden_en est atteint, Beta_en (la racine) non.
+    assert "Beta/Hidden_en.lean" in reached, reached
+    assert "Beta_en.lean" not in reached, reached
+
+
+def test_toml_glob_suffixes_are_read():
+    assert mod._glob_to_selector("Foo") == ("one", "Foo")
+    assert mod._glob_to_selector("Foo.*") == ("all", "Foo")
+    assert mod._glob_to_selector("Foo.+") == ("sub", "Foo")
+    try:
+        mod._glob_to_selector("Foo bar")
+    except mod.LakefileError:
+        pass
+    else:
+        raise AssertionError("forme inconnue doit lever LakefileError (fail-closed)")
+
+
+def test_real_repo_shapes_are_read_not_incident():
+    """Non-regression : les formes relevees dans le depot complet sont lues (aucun incident)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = Path(tmp) / "shapes_lean"
+        lake.mkdir()
+        _write(lake / "lakefile.lean", _REAL_SHAPES_LAKEFILE)
+        selectors = mod.lake_selectors(lake)
+    assert selectors == [
+        ("all", "Assignment"),
+        ("one", "Assignment_en"),
+        ("one", "PrefixCodes"),
+        ("one", "PrefixCodes_en"),
+        ("one", "Decode"),
+        ("one", "SymbolCodec_en"),
+        ("one", "DifferentialTour"),
+        ("one", "DifferentialTour_en"),
+        ("one", "Poincare"),
+        ("one", "Poincare_en"),
+    ], selectors
+
+
+def test_lib_with_globs_has_no_default_root():
+    """Une lib qui declare `globs` n'ajoute pas la racine `[name]` (Planning, Kelly du depot)."""
+    with tempfile.TemporaryDirectory() as tmp:
+        lake = Path(tmp) / "planning_lean"
+        lake.mkdir()
+        _write(
+            lake / "lakefile.lean",
+            "lean_lib «Planning» where\n  globs := #[.submodules `Planning]\n",
+        )
+        selectors = mod.lake_selectors(lake)
+        report = mod.census(lake)
+    assert selectors == [("sub", "Planning")], selectors
+    assert report["missing_roots"] == [], report["missing_roots"]
 
 
 def main() -> int:

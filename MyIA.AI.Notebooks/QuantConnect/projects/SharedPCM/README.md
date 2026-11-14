@@ -61,6 +61,10 @@ Duplication restante hors périmètre de l'extraction : `TrendWeatherPointInTime
 conserve son `portfolio_construction.py` **par gel délibéré** — la candidate
 `tw-pit` du suivi en ombre #18923 épingle l'empreinte du fichier
 (`6c325cd73df0`), et le code gelé est le contrat des passages mensuels : la
-déduplication redevient possible à la fin de la campagne d'ombre. S'y ajoutent
+déduplication redevient possible à la fin de la campagne d'ombre. Mesure du
+2026-11-04 (PR #24631) : la copie gelée est équivalente en comportement au
+canonique sur ce projet — séries d'équité identiques bit pour bit, Sharpe net
+0,92, CAGR 19,9 %, pire baisse 36,6 % — et la déduplication est possible sans
+changement de résultat. S'y ajoutent
 `partner-course-quant-trading/kit-transitoire` et la cellule pédagogique du
 notebook `QC-Py-14` (déclarée copie d'enseignement).

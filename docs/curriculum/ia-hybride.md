@@ -82,15 +82,15 @@ Pour chaque étape : ce qu'elle **apporte**, ce qu'elle **suppose acquis** — l
 Prérequis réelle du notebook quand elle existe (marqué « déclaré »), sinon déduit de son
 contenu — et sa durée catalogue.
 
-### Bloc 1 — Le pont LLM → solveur (série Argument_Analysis)
+### Bloc 1 — Le pont LLM → solveur (série ArgumentAnalysis)
 
-1. **[Argumentation 00 — Setup Tweety](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-00-Setup-Tweety-Python.ipynb)**
+1. **[Argumentation 00 — Setup Tweety](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-00-Setup-Tweety-Python.ipynb)**
    (`Argumentation-00-Setup`, 15 min)
    - **Apporte** : l'environnement de la série — JVM, pont JPype vers TweetyProject,
      Semantic Kernel, `.env` de clés — installé et vérifié une fois pour toutes.
    - **Suppose** : rien. C'est le point d'entrée.
 
-2. **[Argumentation 02 — Détection de sophismes](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb)**
+2. **[Argumentation 02 — Détection de sophismes](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb)**
    (`Argumentation-02`, 30 min)
    - **Apporte** : la détection d'homme de paille, faux dilemmes, appels à l'autorité —
      d'abord déterministe (sections 1-4, sans clé), puis par entonnoir agentique LLM
@@ -98,20 +98,20 @@ contenu — et sa durée catalogue.
    - **Suppose** : l'étape 1 ; `pandas`, `semantic_kernel` installés ; lecture de CSV
      (déclarés) ; la clé API pour la seule section 5 (déclaré).
 
-3. **[Argumentation 05 — Vérification formelle](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb)**
+3. **[Argumentation 05 — Vérification formelle](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb)**
    (`Argumentation-05`, 30 min)
    - **Apporte** : la moitié vérificatrice du pont — formalisation propositionnelle des
      arguments extraits, contrôle de cohérence par le solveur, matrices de richesse formelle.
    - **Suppose** : l'étape 1 (déclaré) ; des bases de logique formelle (déclaré) ;
      `jpype` installé.
 
-4. **[Argumentation 07 — Orchestration](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-07-Orchestration-Python.ipynb)**
+4. **[Argumentation 07 — Orchestration](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-07-Orchestration-Python.ipynb)**
    (`Argumentation-07`, 30 min)
    - **Apporte** : l'assemblage — comment les briques informelles (02) et formelles (05)
      deviennent un pipeline orchestré ; stdlib uniquement, zéro appel LLM (déclaré).
    - **Suppose** : les notebooks 02 et 05 (déclaré) ; des bases d'algorithmique de graphe.
 
-5. **[Argumentation 08 — Capstone](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-08-Capstone-Python.ipynb)**
+5. **[Argumentation 08 — Capstone](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-08-Capstone-Python.ipynb)**
    (`Argumentation-08`, 45 min)
    - **Apporte** : le pipeline complet sur un vrai texte — extraction, formalisation,
      vérification, verdict — et la comparaison LLM-only vs hybride.
@@ -150,7 +150,7 @@ contenu — et sa durée catalogue.
 
 - La thèse « LLM + solveurs + vérificateurs » se prétend de plusieurs familles du dépôt ;
   l'itinéraire en traverse **trois** et les prend au moment précis où chacune fait tenir la
-  couture. Argument_Analysis est le pont le plus court et le plus complet (extraction LLM →
+  couture. ArgumentAnalysis est le pont le plus court et le plus complet (extraction LLM →
   SAT → orchestration SK) ; SocialChoice montre le vérificateur **sans** LLM — il faut avoir
   vu ce que la machine prouve seule pour mesurer ce que le LLM ajoute et ce qu'il ne peut
   pas ; QC-Py-42 retourne le sens du pont (le LLM devient le *générateur*, la conjonction
@@ -175,7 +175,7 @@ contenu — et sa durée catalogue.
 - **Lean 7-10, la preuve à l'ère des LLMs** — intégration LLM, preuve agentique,
   orchestration multi-agents, LeanDojo (suppose les fondations Lean-1 à Lean-6 ≈ 4 h 30).
   Cf [README Lean](../../MyIA.AI.Notebooks/SymbolicAI/Lean/README.md).
-- **Argument_Analysis, les approfondissements** — schémas de Walton (01b), cartes
+- **ArgumentAnalysis, les approfondissements** — schémas de Walton (01b), cartes
   Argumentum (02b), sémantiques de Dung (03), JTMS (06), gouvernance multi-agents et
   règles de sophismes symboliques.
 - **GameTheory/SocialChoice** — Arrow par preuve Lean (01b), manipulation et pouvoir
@@ -194,7 +194,7 @@ contenu — et sa durée catalogue.
   comme un parcours : … puis les ponts avec les LLMs. »
 - [genai-rush.md](genai-rush.md) — le moule : durée annoncée, liste numérotée, clause de
   prérequis, critère de prérequis vérifié étape par étape.
-- READMEs des séries traversées : [Argument_Analysis](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md)
+- READMEs des séries traversées : [ArgumentAnalysis](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/README.md)
   (~4-5 h pour la série complète, orchestration LLM + Tweety + SK),
   [SocialChoice](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/README.md) (DAG : cinq
   angles du même résultat — simulation, vote, preuve Lean, SAT-Z3, manipulation),

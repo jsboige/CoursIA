@@ -113,7 +113,7 @@ Cette série est **3ᵉ dans le rollout** à présenter exclusivement des **figu
 
 ## Conformité règles
 
-- **§A single-subject** : 1 sujet (audit figures GameTheory/SocialChoice), 1 domaine (GameTheory), 1 fichier. Bien sous plafond 3000L.
+- **§A single-subject** : un seul sujet (audit figures GameTheory/SocialChoice), un seul domaine (GameTheory), un seul fichier. Bien sous plafond 3000L.
 - **§E doctrine corrigée** (issue #5780) : pas de section `## Galerie`, figures inline dans le tableau récapitulatif + section *Contenu réel vérifié* en lecture linéaire, légende/alt-text décrivent le contenu réel de l'image vérifié par lecture directe.
 - **R1 catalog-pr-hygiene** : `git diff origin/main..HEAD -- "**/CATALOG-STATUS*" "**/COURSE_CATALOG*"` = vide. Catalogue byte-identique à main.
 - **L268 #4 LF-only** : `git diff | tr -cd '\r' | wc -c` = 0. Pas de retour chariot dans le diff.

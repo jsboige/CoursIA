@@ -41,6 +41,11 @@ Ce que fait cet organe
    ecrit. La levee d'une reserve reste au tiers : cet organe ne pretend pas
    valider une PR, il publie un constat.
 
+   Un avis non bloquant `repli_versionne` signale aussi, sur l'etat des
+   carnets examines, un message litteral `print` de skip avec version dans
+   un `except` Python. Il ne prouve pas que ce repli a ete execute ; les
+   cellules non analysables et les messages calcules ne sont pas couverts.
+
 Ce que cet organe ne fait pas
 -----------------------------
 
@@ -67,8 +72,10 @@ exactement la regression que l'organe doit empecher.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
+import posixpath
 import re
 import subprocess
 import sys
@@ -78,6 +85,38 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = Path(__file__).resolve().parent / "lib_versions_manifest.json"
+
+# Racine des series de carnets. Une canonique **par serie** s'ecrit
+# relative a ce prefixe (`RL`, `ML/DataScienceWithAgents/04-Vision`) : le
+# lecteur ne repetera pas le long prefixe a chaque entree.
+NOTEBOOKS_ROOT = "MyIA.AI.Notebooks"
+
+
+def series_path(notebook_relative: str) -> str:
+    """Chemin d'un carnet (ou d'un prefixe de serie) relatif aux series.
+
+    Un prefixe ecrit avec la racine des series (`MyIA.AI.Notebooks/RL`) et
+    un prefixe ecrit sans (`RL`) designent la meme serie : la normalisation
+    les ramene au meme etat.
+    """
+    prefix = NOTEBOOKS_ROOT + "/"
+    if notebook_relative.startswith(prefix):
+        return notebook_relative[len(prefix):]
+    return notebook_relative
+
+
+def _series_covers(series_key: str, notebook_relative: str) -> bool:
+    """Vrai si le prefixe de serie couvre le carnet, a la frontiere d'un segment.
+
+    `RL` couvre `RL/RL-06-DQN-Policy-Gradient-Python.ipynb` et
+    `RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb` ; il ne couvre pas
+    `RLance/...` -- la frontiere est un segment, pas un prefixe de chaines.
+    """
+    key = series_path(notebook_relative)
+    entry = series_key.strip("/")
+    if not entry:
+        return True
+    return key == entry or key.startswith(entry + "/")
 
 # Epinglages NuGet : `#r "nuget: IKVM, 8.15.0"`. La virgule peut suivre sans
 # espace (`nuget:pythonnet,3.1.0`) : le motif l'accepte.
@@ -219,6 +258,98 @@ class Library:
     note: str = ""
     # Ecarts classes : version -> {decision, reason}
     divergences: dict[str, dict] = field(default_factory=dict)
+    # Canonique **PAR SERIE** : la version attendue peut differer d'une serie
+    # a l'autre (une serie epingle torch==2.14.0, une autre converge vers
+    # 2.13). Chaque entree porte un prefixe de chemin de serie, et la
+    # **plus longue** correspondance gagne -- un prefixe long decrit une
+    # sous-serie plus fine que son parent.
+    canonical_by_series: list[dict] = field(default_factory=list)
+    # Observer la version **reellement chargee** dans les sorties commitees.
+    # C'est un opt-in : seules les bibliotheques dont la version n'est
+    # portee par aucun epinglage (torch, numpy) sont relevees ainsi -- voir
+    # `observed_versions_from_payload`.
+    observe_outputs: bool = False
+
+    def resolve_series_canonicals(
+        self, repo_root: Path
+    ) -> tuple[list[tuple[str, str | None]], list[str]]:
+        """Resout les canoniques par serie : (liste (prefixe, version), erreurs).
+
+        Chaque prefixe est resolu **une fois** : un artefact de serie est lu
+        au runtime, et le relire par carnet multiplierait les lectures sans
+        changer le resultat.
+        """
+        resolved: list[tuple[str, str | None]] = []
+        errors: list[str] = []
+        for entry in self.canonical_by_series:
+            key = series_path(entry.get("series", "")).strip("/")
+            source = entry.get("canonical_source", "manifest")
+            if source == "artifact":
+                value, error = self._read_artifact(repo_root, entry)
+                if error:
+                    errors.append(f"{self.id} [{key}] : {error}")
+            else:
+                value, error = entry.get("canonical"), None
+            resolved.append((key, value))
+        return resolved, errors
+
+    def resolve_canonical_for(
+        self, repo_root: Path, notebook_relative: str
+    ) -> tuple[str | None, str | None]:
+        """Canonique applicable a UN carnet : la serie prime sur le defaut.
+
+        Une bibliotheque sans `canonical_by_series` garde le comportement
+        d'avant -- la canonique unique du manifeste. Une bibliotheque qui en
+        declare des series resout la **plus longue** correspondance, puis
+        retombe sur la canonique unique si aucune serie ne couvre le carnet.
+        """
+        if not self.canonical_by_series:
+            return self.resolve_canonical(repo_root)
+        entries, errors = self.resolve_series_canonicals(repo_root)
+        best: tuple[str, str | None] | None = None
+        for key, value in entries:
+            if not _series_covers(key, notebook_relative):
+                continue
+            if best is None or len(key) > len(best[0]):
+                best = (key, value)
+        if best is None:
+            return self.resolve_canonical(repo_root)
+        if best[1] is None:
+            detail = next(
+                (error for error in errors if f"[{best[0]}]" in error), ""
+            )
+            return None, detail or f"canonique de serie non resolue : {best[0]}"
+        return best[1], None
+
+    def _read_artifact(
+        self, repo_root: Path, entry: dict
+    ) -> tuple[str | None, str | None]:
+        """Lit la version epinglee dans un artefact de serie (`id==version`).
+
+        L'artefact est lu au runtime : le manifeste ne recopie pas la valeur,
+        il pointe vers le fichier qui la porte -- deux surfaces qui recopient
+        la meme valeur finissent par diverger, ce que l'organe existe pour
+        empecher.
+        """
+        rel = entry.get("organ_path", "")
+        artifact = repo_root / rel
+        if not artifact.is_file():
+            return None, f"artefact introuvable : {rel}"
+        try:
+            text = artifact.read_text(encoding="utf-8", errors="replace")
+        except OSError as exc:
+            return None, f"artefact illisible : {rel} ({exc})"
+        pattern = re.compile(
+            rf"^\s*{re.escape(self.id)}\s*(==|>=)\s*([0-9][^\s#;]*)",
+            re.MULTILINE | re.IGNORECASE,
+        )
+        match = pattern.search(text)
+        if not match:
+            return None, (
+                f"contrainte {self.id}== ou {self.id}>= introuvable dans {rel} "
+                f"(serie {entry.get('series', '')})"
+            )
+        return match.group(2), None
 
     def resolve_canonical(self, repo_root: Path) -> tuple[str | None, str | None]:
         """Retourne (version canonique, erreur)."""
@@ -278,6 +409,17 @@ def load_manifest(path: Path) -> Manifest:
             local_symbol=entry.get("local_symbol", ""),
             foreign_provisioning=list(entry.get("foreign_provisioning", [])),
             note=entry.get("note", ""),
+            canonical_by_series=[
+                {
+                    "series": item.get("series", ""),
+                    "canonical": item.get("canonical"),
+                    "canonical_source": item.get("canonical_source", "manifest"),
+                    "organ_path": item.get("organ_path", ""),
+                    "note": item.get("note", ""),
+                }
+                for item in entry.get("canonical_by_series", [])
+            ],
+            observe_outputs=bool(entry.get("observe_outputs", False)),
             divergences={
                 d["version"]: {
                     "decision": d.get("decision", "to_converge"),
@@ -311,6 +453,59 @@ def _cell_text(cell: dict) -> str:
     if isinstance(source, list):
         return "".join(source)
     return str(source)
+
+
+_SKIP_MESSAGE = re.compile(r"\b(?:skip(?:ped|ping)?|saut(?:e|é|ée|er))\b", re.I)
+_MESSAGE_VERSION = re.compile(r"(?<![\d.])\d+\.\d+(?:\.\d+)*(?![\d.])")
+
+
+def versioned_fallbacks(notebook: str, payload: dict) -> list[dict]:
+    """Avis borne : message litteral de skip imprime dans un `except` Python.
+
+    Les cellules non analysables (magics, autres langages) et les messages
+    calcules ne sont pas couverts. Aucun avis ne prouve que le handler a tourne.
+    """
+    result: list[dict] = []
+    for index, cell in enumerate(payload.get("cells", []) or []):
+        if cell.get("cell_type") != "code":
+            continue
+        try:
+            tree = ast.parse(_cell_text(cell))
+        except (SyntaxError, ValueError):
+            continue
+        class Visitor(ast.NodeVisitor):
+            in_handler = False
+
+            def visit_ExceptHandler(self, node: ast.ExceptHandler) -> None:
+                previous = self.in_handler
+                self.in_handler = True
+                for statement in node.body:
+                    self.visit(statement)
+                self.in_handler = previous
+
+            def visit_FunctionDef(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
+                previous = self.in_handler
+                self.in_handler = False
+                self.generic_visit(node)
+                self.in_handler = previous
+
+            visit_AsyncFunctionDef = visit_FunctionDef
+            visit_ClassDef = visit_FunctionDef
+            visit_Lambda = visit_FunctionDef
+
+            def visit_Call(self, node: ast.Call) -> None:
+                if self.in_handler and isinstance(node.func, ast.Name) and node.func.id == "print":
+                    for arg in node.args:
+                        if (isinstance(arg, ast.Constant) and isinstance(arg.value, str)
+                                and _SKIP_MESSAGE.search(arg.value)
+                                and _MESSAGE_VERSION.search(arg.value)):
+                            result.append({"notebook": notebook, "cell": index,
+                                           "line": node.lineno, "message": arg.value,
+                                           "kind": "repli_versionne"})
+                self.generic_visit(node)
+
+        Visitor().visit(tree)
+    return result
 
 
 def _declaration_lines(payload: dict):
@@ -556,6 +751,14 @@ _CHECKSUM_RE = re.compile(
     r"sha-?256|sha256|Get-FileHash|hashlib\.(?:sha256|sha1|md5)|--checksum",
     re.IGNORECASE,
 )
+_SHA256_HEX_RE = re.compile(r"^[0-9a-fA-F]{64}$")
+# Meme digest, mais cherche dans le texte libre d'une cellule (la forme
+# historique #24520 le declare a cote de l'URL, pas dans un champ JSON).
+_SHA256_DIGEST_RE = re.compile(r"(?<![0-9a-fA-F])[0-9a-fA-F]{64}(?![0-9a-fA-F])")
+_REPRODUCTION_DIRECTIVE_RE = re.compile(
+    r"<!--\s*reproduction\s*:\s*(\{.*?\})\s*-->", re.DOTALL
+)
+_REPRODUCTION_ARTIFACT_RE = re.compile(r"^[^\s/]+/[^\s]+$")
 
 _SUBMODULE_CACHE: dict[str, list[str]] = {}
 
@@ -674,30 +877,127 @@ def _tracked_paths(repo_root: Path, relatives: list[str]) -> set[str]:
     return {line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()}
 
 
-def _declared_reproduction(payload: dict) -> dict[str, bool]:
-    """Artefacts nommes par une URL declaree, avec empreinte PAR ARTEFACT.
+def _declared_reproduction(payload: dict) -> dict[str, dict]:
+    """Déclarations de reproduction, avec empreinte par artefact.
 
-    Le mecanisme de reproduction (#23103, point 3) est « URL + version +
-    checksum ». Le nom de l'artefact est la queue de l'URL ; la version vient
-    de l'URL elle-meme (`.../1.28/x.jar`) ou de la ligne qui la porte.
+    Trois formes coexistent, toutes rendues par clé de nom d'artefact :
 
-    L'empreinte est portee par l'artefact, pas par le carnet (reserve Hermes,
-    #24520) : elle doit apparaitre dans LA cellule qui declare l'URL de
-    l'artefact -- une empreinte declaree ailleurs dans le carnet ne leve pas
-    le constat d'un artefact different.
+    - URL dont la queue nomme l'artefact, avec empreinte dans la même cellule
+      (contrat de #24520). Cette forme historique exige désormais **les deux** :
+      un marqueur de mécanisme (``sha256``, ``Get-FileHash``, ``hashlib.sha256``,
+      ``--checksum``) **et** un digest de 64 hexadécimaux. Sans le digest, un
+      ``SHA256 = "abc123"`` satisfaisait la forme faible et court-circuitait la
+      directive ``archive``, qui exige un SHA-256 valide (#24943) ;
+    - directive ``<!-- reproduction: {...} -->`` de type ``archive`` : URL,
+      version, ``entry`` et SHA-256 de l'entrée extraite ;
+    - directive de type ``build`` : ``command`` et ``project`` versionné.
+
+    ``artifact`` vaut ``<classe>/<nom>`` : ``archive/QuikGraph.dll`` ou
+    ``build/MyIA.AI.Shared.dll``. Cette clé explicite évite d'apparier une
+    archive par la queue de son URL. Une directive mal formée ne rend jamais
+    l'artefact reproductible.
     """
-    declarations: dict[str, bool] = {}
+    declarations: dict[str, dict] = {}
     for cell in payload.get("cells", []) or []:
         if (cell.get("cell_type") or "") not in ("code", "markdown"):
             continue
         text = _cell_text(cell)
-        has_checksum = bool(_CHECKSUM_RE.search(text))
+        # Forme historique (#24520) : le marqueur seul ne suffit pas, il doit
+        # etre accompagne d'un digest. `SHA256 = "abc123"` declarait sinon une
+        # empreinte sans en porter une, et la forme faible contournait la
+        # directive `archive` qui, elle, exige 64 hexadecimaux (#24943).
+        has_checksum = bool(_CHECKSUM_RE.search(text)) and bool(
+            _SHA256_DIGEST_RE.search(text)
+        )
         for match in _URL_RE.finditer(text):
             url = match.group(0).rstrip(".,;:")
             tail = url.rsplit("/", 1)[-1].split("?", 1)[0].split("#", 1)[0]
             if tail:
-                declarations[tail] = declarations.get(tail, False) or has_checksum
+                declarations[tail] = {
+                    "kind": "url",
+                    "declared": True,
+                    "checksum": declarations.get(tail, {}).get("checksum", False)
+                    or has_checksum,
+                    "reproducible": has_checksum
+                    or declarations.get(tail, {}).get("reproducible", False),
+                }
+        for match in _REPRODUCTION_DIRECTIVE_RE.finditer(text):
+            try:
+                directive = json.loads(match.group(1))
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(directive, dict):
+                continue
+            kind = directive.get("kind")
+            key = directive.get("artifact", "")
+            if kind not in ("archive", "build") or not _REPRODUCTION_ARTIFACT_RE.fullmatch(key):
+                continue
+            declared = False
+            reproducible = False
+            command = ""
+            project = ""
+            if kind == "archive":
+                url = directive.get("url", "")
+                entry = directive.get("entry", "")
+                checksum = directive.get("sha256", "")
+                declared = bool(
+                    isinstance(url, str)
+                    and url.startswith(("https://", "http://"))
+                    and isinstance(entry, str)
+                    and entry
+                    and directive.get("version")
+                )
+                reproducible = bool(
+                    declared
+                    and isinstance(checksum, str)
+                    and _SHA256_HEX_RE.fullmatch(checksum)
+                    and key.rsplit("/", 1)[-1] == entry.rsplit("/", 1)[-1]
+                )
+            else:
+                command = directive.get("command", "")
+                project = directive.get("project", "")
+                declared = bool(command and project)
+                # Le suivi par git est vérifié dans binary_findings, qui
+                # connaît repo_root ; une recette hors du dépôt n'est jamais
+                # une preuve de reproductibilité.
+                reproducible = declared
+            previous = declarations.get(key, {})
+            # Une recette incomplète postérieure ne doit pas casser une preuve
+            # complète déjà lue ; dans le cas inverse, la nouvelle preuve gagne.
+            if not previous.get("reproducible", False) or reproducible:
+                declarations[key] = {
+                    "kind": kind,
+                    "declared": declared or previous.get("declared", False),
+                    "checksum": reproducible or previous.get("checksum", False),
+                    "reproducible": reproducible
+                    or previous.get("reproducible", False),
+                    "project": project if kind == "build" else "",
+                    "directive": directive,
+                }
     return declarations
+
+
+def _reproduction_matches(
+    name: str, declarations: dict[str, dict], tracked: set[str]
+) -> tuple[bool, bool]:
+    """Retourne ``(déclaré, reproductible)`` sans confondre les classes."""
+    direct = declarations.get(name)
+    if direct and direct.get("reproducible", False):
+        return True, True
+    for prefix in ("archive", "build"):
+        key = f"{prefix}/{name}"
+        candidate = declarations.get(key)
+        if not candidate:
+            continue
+        if prefix == "build":
+            project = candidate.get("project", "")
+            normalized = posixpath.normpath(project).strip("/")
+            if normalized.startswith("../") or normalized not in tracked:
+                return True, False
+        return candidate.get("declared", False), candidate.get("reproducible", False)
+    if direct:
+        return direct.get("declared", False), False
+    return False, False
 
 
 @dataclass
@@ -782,29 +1082,50 @@ def binary_findings(
     if not loads:
         return []
     declared_names = _declared_reproduction(payload)
+    # Les recettes nomment un projet qui doit être versionné. Il n'est pas
+    # nécessairement chargé par le carnet : cette liste complète donc les
+    # chemins de chargement utilisés plus haut.
+    projects = [
+        value.get("project", "")
+        for key, value in declared_names.items()
+        if key.startswith("build/") and value.get("project")
+    ]
+    tracked_projects = _tracked_paths(repo_root, projects)
     findings: list[dict] = []
     seen: set[tuple] = set()
     for load in loads:
         if load.scope in ("sous-module", "versionne"):
             continue
         name = load.resolved.rsplit("/", 1)[-1] or load.path
-        declared = name in declared_names
-        has_checksum = declared_names.get(name, False)
-        if declared and has_checksum:
+        declared, reproducible = _reproduction_matches(
+            name, declared_names, tracked_projects
+        )
+        if declared and reproducible:
             # Mecanisme de reproduction declare : rien a signaler.
             continue
+        reproduction_hint = (
+            "declarer une URL et l'empreinte de l'artefact, ou une directive "
+            "structuree : URL + version + entree + empreinte pour une archive, "
+            "commande + projet suivi par git pour un build"
+        )
+        incomplete_reason = (
+            f"une reproduction de `{name}` est declaree, mais sa preuve est "
+            "incomplete : une archive exige URL, version, entree et empreinte "
+            "de cette entree ; un build exige une commande et son projet suivi "
+            "par git ; l'ancienne forme exige une URL et une empreinte dans la "
+            "meme cellule"
+        )
         if load.scope == "hors-depot":
             kind = "binary_hors_depot" if not declared else "binary_sans_empreinte"
             reason = (
                 f"chargement depuis `{load.resolved}` par `{load.form}` : hors du "
                 f"depot, le {_artifact_label(name)} n'existe pas apres un clone et la "
-                "re-execution n'est pas reproductible ; aucun sous-module ne le porte, "
-                "et le carnet ne declare ni URL ni empreinte de l'artefact"
+                f"re-execution n'est pas reproductible ; aucun sous-module ne le porte, "
+                f"et il faut {reproduction_hint}"
                 if not declared
                 else (
-                    f"chargement depuis `{load.resolved}` par `{load.form}` : un "
-                    f"telechargement de `{name}` est declare, mais sans empreinte "
-                    "-- la version obtenue peut changer sans que rien ne le signale"
+                    f"chargement depuis `{load.resolved}` par `{load.form}` : "
+                    f"{incomplete_reason}"
                 )
             )
         else:
@@ -812,11 +1133,11 @@ def binary_findings(
             reason = (
                 f"chargement depuis `{load.relative}` par `{load.form}` : le "
                 f"{_artifact_label(name)} est dans le depot mais ignore par git, donc "
-                "absent apres un clone ; versionner l'artefact, ou declarer URL + empreinte"
+                f"absent apres un clone ; versionner l'artefact, ou {reproduction_hint}"
                 if not declared
                 else (
-                    f"chargement depuis `{load.relative}` par `{load.form}` : un "
-                    f"telechargement de `{name}` est declare, mais sans empreinte"
+                    f"chargement depuis `{load.relative}` par `{load.form}` : "
+                    f"{incomplete_reason}"
                 )
             )
         key = (kind, load.resolved or load.path, load.form)
@@ -1070,6 +1391,78 @@ def _version_mentions(text: str, version: str) -> bool:
     """
     pattern = r"(?<![\d.])" + re.escape(version) + r"(?![\d.])"
     return re.search(pattern, text) is not None
+
+
+# Version **chargee** relevee dans une sortie : au moins TROIS composantes
+# numeriques. La notation scientifique (`2.22e-16`) et les metriques (`0.4014`)
+# ne sont pas des versions : exiger trois composantes les ecarte, la ou un
+# motif plus permissif les aurait confondues avec des versions -- cas mesure
+# sur `3.2-Optimisateurs.ipynb` (`ecart max apres 1 pas NumPy vs torch =
+# 2.22e-16`) et `3.3-Regularisation.ipynb` (`numpy=0.4014 | torch=0.4007`).
+_OBSERVED_VERSION = r"(\d+\.\d+\.\d+(?:\.\d+)*(?:\+[0-9A-Za-z][0-9A-Za-z.+-]*)?)"
+
+
+def _observed_version_re(library_id: str) -> re.Pattern:
+    """Motif de releve de la version chargee d'une bibliotheque.
+
+    Le nom peut etre suivi de `_version` (forme JSON
+    `"torch_version": "2.14.0+cu126"`), d'un separateur (`torch 2.13.0`,
+    `torch=2.8.0`, `torch : 2.6.0`) ou d'une fin de ligne. Le nom doit
+    etre un mot entier : `torchvision` et `pytorch` ne sont pas `torch`.
+    """
+    return re.compile(
+        r"(?<![A-Za-z0-9_])"
+        + re.escape(library_id)
+        + r"(?:[_-]?version)?"
+        + r"[\"']?\s*(?::|=){0,2}\s*[\"']?"
+        + _OBSERVED_VERSION,
+        re.IGNORECASE,
+    )
+
+
+def _base_version(version: str) -> str:
+    """Version sans le tag de construction local (`+cu126`).
+
+    `2.14.0+cu126` est la **memere** release que `2.14.0`, pas une version
+    inferieure : le comparateur de versions traite un suffixe `+` comme un
+    marqueur de pre-publication, ce qui classerait `2.14.0+cu126` en dessous
+    de `2.14.0` -- un faux recul.
+    """
+    return version.split("+", 1)[0]
+
+
+def observed_versions_from_payload(
+    payload: dict, manifest: Manifest
+) -> dict[str, list[tuple[int, str, str]]]:
+    """Versions **chargees** relevees dans les sorties commitees.
+
+    Certaines bibliotheques n'apparaitrent dans aucune ligne d'epinglage :
+    la serie RL declare `torch>=2.0` dans son `requirements.txt`, jamais dans
+    une cellule, et la version reellement chargee ne se lit que dans les
+    sorties commitees. L'observation est un **opt-in** (`observe_outputs`) :
+    seules les bibliotheques declarees observees sont relevees.
+
+    Les sorties seules sont balayees : une version ecrite dans la SOURCE est
+    une intention, la mesure, c'est ce que le kernel a charge.
+
+    Retourne, par bibliotheque, la liste des triplets `(cellule, ligne,
+    version)` -- la ligne etant celle qui porte la version.
+    """
+    observed: dict[str, list[tuple[int, str, str]]] = {}
+    for lib_id, lib in manifest.libraries.items():
+        if not lib.observe_outputs:
+            continue
+        pattern = _observed_version_re(lib.id)
+        occurrences: list[tuple[int, str, str]] = []
+        for index, cell in enumerate(payload.get("cells", []) or []):
+            for text in _output_texts(cell):
+                for line in text.splitlines():
+                    for match in pattern.finditer(line):
+                        version = _base_version(_norm_version(match.group(1)))
+                        occurrences.append((index, line.strip(), version))
+        if occurrences:
+            observed[lib_id] = occurrences
+    return observed
 
 
 def _mention_finding(
@@ -1335,11 +1728,163 @@ def resolve_canonicals(
     return canonicals, errors
 
 
+class CanonicalResolver:
+    """Resout la canonique **applicable a un carnet**.
+
+    Une bibliotheque sans `canonical_by_series` garde sa canonique unique.
+    Une bibliotheque qui en declare resout la **plus longue** correspondance
+    de prefixe de serie -- un prefixe long decrit une sous-serie plus fine
+    que son parent -- puis retombe sur la canonique unique si aucune serie
+    ne couvre le carnet.
+
+    Les artefacts de serie sont lus **une fois** a la construction : le
+    resultat ne depend pas du carnet, et le relire par carnet serait un
+    gaspillage de lectures.
+    """
+
+    def __init__(self, manifest: Manifest, repo_root: Path):
+        self.manifest = manifest
+        self.repo_root = repo_root
+        self.flat, self.errors = resolve_canonicals(manifest, repo_root)
+        self._series: dict[str, list[tuple[str, str | None]]] = {}
+        for lib_id, lib in manifest.libraries.items():
+            if not lib.canonical_by_series:
+                continue
+            entries, errors = lib.resolve_series_canonicals(repo_root)
+            self._series[lib_id] = entries
+            self.errors.extend(errors)
+
+    def for_notebook(self, lib_id: str, relative: str) -> str | None:
+        """Canonique applicable au carnet `relative` (chemin relatif au depot)."""
+        entries = self._series.get(lib_id)
+        if not entries:
+            return self.flat.get(lib_id)
+        key = series_path(relative)
+        best: tuple[str, str | None] | None = None
+        for prefix, value in entries:
+            if prefix and not (key == prefix or key.startswith(prefix + "/")):
+                continue
+            if best is None or len(prefix) > len(best[0]):
+                best = (prefix, value)
+        if best is None:
+            return self.flat.get(lib_id)
+        return best[1]
+
+    def series_for(self, lib_id: str, relative: str) -> str:
+        """Prefixe de serie qui gouverne le carnet (vide si aucun)."""
+        entries = self._series.get(lib_id)
+        if not entries:
+            return ""
+        key = series_path(relative)
+        best = ""
+        for prefix, _value in entries:
+            if prefix and not (key == prefix or key.startswith(prefix + "/")):
+                continue
+            if len(prefix) > len(best):
+                best = prefix
+        return best
+
+
+def observed_findings(
+    notebook: str,
+    payload: dict,
+    manifest: Manifest,
+    resolver: CanonicalResolver,
+) -> list[dict]:
+    """Constats sur la version **reellement chargee** d'une bibliotheque.
+
+    L'epinglage declare ce que le carnet *demande* ; la sortie commitee dit
+    ce que le kernel a *charge*. Les deux peuvent diverger -- c'est exactement
+    le recul que #23941 a laisse passer : le carnet RL-01c a ete re-execute
+    sous torch 2.9.0 sans qu'aucune garde ne le voie, parce que torch n'etait
+    pas au manifeste.
+
+    Le constat porte sur la **sortie** ; une version ecrite dans la source
+    n'est pas une mesure de ce qui a ete charge.
+    """
+    findings: list[dict] = []
+    observed = observed_versions_from_payload(payload, manifest)
+    for lib_id, occurrences in sorted(observed.items()):
+        lib = manifest.libraries[lib_id]
+        canonical = resolver.for_notebook(lib_id, notebook)
+        if canonical is None:
+            # Aucune canonique pour cette serie : l'organe constate la
+            # version, il ne la juge pas.
+            continue
+        for cell, line, version in occurrences:
+            # La canonique d'une serie **observee** est un **plancher** : la
+            # serie tourne legitimement sous plusieurs versions voisines (2.13
+            # et 2.14 dans la serie RL, 2.13 a 2.14.1 dans 04-Vision), et elle
+            # converge vers le haut. Seul une version **inferieure** au
+            # plancher est un recul ; une version superieure n'est pas un
+            # defaut, c'est une serie qui avance.
+            if compare_versions(version, canonical) >= 0:
+                continue
+            if _allowlisted(manifest, lib_id, version, notebook):
+                continue
+            kind = "downgrade"
+            divergence = lib.divergences.get(version)
+            reason = (divergence or {}).get("reason", "")
+            if divergence and divergence.get("decision") == "justified":
+                kind = "divergence"
+            findings.append(
+                {
+                    "notebook": notebook,
+                    "library": lib_id,
+                    "kind": kind,
+                    "version": version,
+                    "canonical": canonical,
+                    "cell": cell,
+                    "line": line[:160],
+                    "reason": reason
+                    or (
+                        f"version chargee relevee dans les sorties commitees "
+                        f"({version}) differente de la canonique de la serie "
+                        f"({canonical})"
+                    ),
+                }
+            )
+    return findings
+
+
+def delta_observed_findings(
+    notebook: str,
+    base_payload: dict | None,
+    head_payload: dict,
+    manifest: Manifest,
+    resolver: CanonicalResolver,
+) -> list[dict]:
+    """Versions chargees **introduites** par la PR.
+
+    Meme semantique que les epinglages : une version deja chargee en base et
+    non touchee par la PR est une derive historique -- le recensement la
+    rapporte, la convergence la traite, la PR ne la porte pas. Seul compte
+    le constat sur une version que la base ne portait pas.
+    """
+    head = observed_findings(notebook, head_payload, manifest, resolver)
+    if base_payload is None:
+        return head
+    base_observed = observed_versions_from_payload(base_payload, manifest)
+    base_versions = {
+        lib_id: {version for _cell, _line, version in occurrences}
+        for lib_id, occurrences in base_observed.items()
+    }
+    return [
+        finding
+        for finding in head
+        if finding["version"]
+        not in base_versions.get(finding["library"], set())
+    ]
+
+
 def run_census(repo_root: Path, manifest: Manifest) -> dict:
     """Recensement repo-wide : table de dispersion + classement des ecarts."""
-    canonicals, errors = resolve_canonicals(manifest, repo_root)
+    resolver = CanonicalResolver(manifest, repo_root)
+    canonicals, errors = resolver.flat, resolver.errors
     dispersion: dict[str, dict[str, list[str]]] = {}
     floating: dict[str, list[str]] = {}
+    observed_dispersion: dict[str, dict[str, list[str]]] = {}
+    below_canonical: list[dict] = []
     unreadable: list[str] = []
     binaries: list[dict] = []
     for notebook in tracked_notebooks(repo_root):
@@ -1369,6 +1914,33 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
             bucket.setdefault(pin.version, [])
             if relative not in bucket[pin.version]:
                 bucket[pin.version].append(relative)
+        # Versions **chargees** (torch, numpy) : elles ne sont pas declarees
+        # par une ligne d'epinglage, elles se lisent dans les sorties
+        # commitees. Le recensement les range par version ET signale les
+        # carnets **en dessous** de la canonique de leur serie.
+        for lib_id, occurrences in observed_versions_from_payload(
+            payload, manifest
+        ).items():
+            canonical = resolver.for_notebook(lib_id, relative)
+            series = resolver.series_for(lib_id, relative)
+            bucket_o = observed_dispersion.setdefault(lib_id, {})
+            for _cell, _line, version in occurrences:
+                bucket_o.setdefault(version, [])
+                if relative not in bucket_o[version]:
+                    bucket_o[version].append(relative)
+                if canonical is None:
+                    continue
+                if compare_versions(version, canonical) >= 0:
+                    continue
+                below_canonical.append(
+                    {
+                        "notebook": relative,
+                        "library": lib_id,
+                        "version": version,
+                        "canonical": canonical,
+                        "series": series,
+                    }
+                )
 
     table = []
     phantoms: list[dict] = []
@@ -1418,6 +1990,31 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
                 "canonical": canonical,
                 "canonical_source": lib.canonical_source,
                 "versions": rows,
+                "observed": [
+                    {
+                        "version": version,
+                        "notebooks": sorted(notebooks),
+                        "count": len(notebooks),
+                    }
+                    for version, notebooks in sorted(
+                        observed_dispersion.get(lib_id, {}).items(),
+                        key=lambda item: version_key(item[0]),
+                    )
+                ],
+                "canonical_by_series": [
+                    {
+                        "series": series_path(
+                            entry.get("series", "")
+                        ).strip("/"),
+                        "canonical": entry.get("canonical"),
+                        "canonical_source": entry.get(
+                            "canonical_source", "manifest"
+                        ),
+                        "organ_path": entry.get("organ_path", ""),
+                        "note": entry.get("note", ""),
+                    }
+                    for entry in lib.canonical_by_series
+                ],
                 "note": lib.note,
                 "multiple_versions": len(rows) > 1,
                 "floating_notebooks": sorted(floating.get(lib_id, [])),
@@ -1431,13 +2028,15 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
         "phantom_divergences": phantoms,
         "unreadable_notebooks": sorted(unreadable),
         "binary_findings": binaries,
+        "below_canonical": below_canonical,
     }
 
 
 def render_census(report: dict) -> str:
     lines = ["# Recensement des versions de bibliotheques", ""]
     for lib in report["libraries"]:
-        if not lib["versions"]:
+        observed = lib.get("observed") or []
+        if not lib["versions"] and not observed:
             continue
         canonical = lib["canonical"]
         source = "organe de serie" if lib["canonical_source"] == "organ" else "manifeste"
@@ -1446,23 +2045,71 @@ def render_census(report: dict) -> str:
         if lib.get("note"):
             lines.append(lib["note"])
             lines.append("")
-        lines.append("| version | carnets | classement | motif |")
-        lines.append("|---|---|---|---|")
-        for row in lib["versions"]:
-            motif = row["reason"].replace("|", "\\|")
+        for entry in lib.get("canonical_by_series") or []:
+            origin = entry.get("canonical_source", "manifest")
+            if origin == "artifact":
+                origin = f"artefact de serie ({entry.get('organ_path', '')})"
             lines.append(
-                f"| {row['version']} | {row['count']} | {row['decision']} | {motif} |"
+                f"- canonique de la serie **{entry['series'] or '(racine)'}** : "
+                f"`{entry['canonical']}` -- {origin}"
             )
-        if lib.get("floating_notebooks"):
+            if entry.get("note"):
+                lines.append(f"  - {entry['note']}")
+        if lib.get("canonical_by_series"):
+            lines.append("")
+        if lib["versions"]:
+            lines.append("| version | carnets | classement | motif |")
+            lines.append("|---|---|---|---|")
+            for row in lib["versions"]:
+                motif = row["reason"].replace("|", "\\|")
+                lines.append(
+                    f"| {row['version']} | {row['count']} | {row['decision']} | {motif} |"
+                )
+            if lib.get("floating_notebooks"):
+                lines.append(
+                    f"| (non versionne) | {len(lib['floating_notebooks'])} "
+                    f"| pin flottant | {FLOATING_PIN_REASON} |"
+                )
+            lines.append("")
+            for row in lib["versions"]:
+                if row["decision"] in ("canonique", "justified"):
+                    continue
+                lines.append(f"- **{row['version']}** : " + ", ".join(row["notebooks"]))
+            lines.append("")
+        if observed:
             lines.append(
-                f"| (non versionne) | {len(lib['floating_notebooks'])} "
-                f"| pin flottant | {FLOATING_PIN_REASON} |"
+                "Versions **chargeees** relevees dans les sorties commitees "
+                "(aucune ligne d'epinglage ne les porte) :"
             )
+            lines.append("")
+            lines.append("| version | carnets |")
+            lines.append("|---|---|")
+            for row in observed:
+                lines.append(f"| {row['version']} | {row['count']} |")
+            lines.append("")
+            for row in observed:
+                lines.append(
+                    f"- **{row['version']}** : " + ", ".join(row["notebooks"])
+                )
+            lines.append("")
+    below = report.get("below_canonical") or []
+    if below:
+        lines.append("## Carnets en dessous de la canonique de leur serie")
         lines.append("")
-        for row in lib["versions"]:
-            if row["decision"] in ("canonique", "justified"):
-                continue
-            lines.append(f"- **{row['version']}** : " + ", ".join(row["notebooks"]))
+        lines.append(
+            "La version chargee, lue dans les sorties commitees, est inferieure "
+            "a la canonique de la serie du carnet. Ces carnets sont a "
+            "re-executer sous la version cible."
+        )
+        lines.append("")
+        lines.append("| carnet | bibliotheque | serie | version chargee | canonique |")
+        lines.append("|---|---|---|---|---|")
+        for item in below:
+            lines.append(
+                f"| {item['notebook']} | {item['library']} "
+                f"| {item['series'] or '(racine)'} | {item['version']} "
+                f"| {item['canonical']} |"
+            )
         lines.append("")
     if report.get("phantom_divergences"):
         lines.append("## Divergences declarees mais absentes du depot")
@@ -1613,7 +2260,8 @@ def main(argv: list[str] | None = None) -> int:
             print(render_census(report))
         return 0
 
-    canonicals, errors = resolve_canonicals(manifest, repo_root)
+    resolver = CanonicalResolver(manifest, repo_root)
+    canonicals, errors = resolver.flat, list(resolver.errors)
     errors.extend(allowlist_errors(manifest))
     if errors:
         for error in errors:
@@ -1621,6 +2269,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     findings: list[dict] = []
+    advisories: list[dict] = []
     checked = 0
     # Le mode « chemins explicites » est un mode d'ETAT : la sortie JSON doit
     # le dire, sinon elle annonce `"state": false` pour une lecture d'etat.
@@ -1654,7 +2303,13 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"ERREUR : carnet illisible : {raw_path}", file=sys.stderr)
                 return 2
             pins = pins_from_payload(payload, manifest)
+            advisories.extend(versioned_fallbacks(relative, payload))
             findings.extend(state_findings(relative, pins, manifest, canonicals))
+            # Version **chargeee** : elle ne se lit dans aucune ligne
+            # d'epinglage, mais dans les sorties commitees.
+            findings.extend(
+                observed_findings(relative, payload, manifest, resolver)
+            )
             # Le chargement hors depot est signale sur l'ETAT : son dommage se
             # produit a l'execution, pas a l'edition (meme regle que le
             # provisionnement etranger).
@@ -1688,12 +2343,16 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 2
             head_pins = pins_from_payload(head_payload, manifest)
+            advisories.extend(versioned_fallbacks(relative, head_payload))
             if args.state:
                 # Relecture d'etat : le constat porte sur le carnet, pas sur un
                 # delta -- un binaire absent du clone l'est deja dans la base.
                 findings.extend(binary_findings(relative, head_payload, repo_root))
                 findings.extend(
                     state_findings(relative, head_pins, manifest, canonicals)
+                )
+                findings.extend(
+                    observed_findings(relative, head_payload, manifest, resolver)
                 )
                 if not args.no_mentions:
                     findings.extend(
@@ -1719,6 +2378,14 @@ def main(argv: list[str] | None = None) -> int:
                         relative, base_pins, head_pins, manifest, canonicals
                     )
                 )
+                # Version **chargeee** introduite par la PR : c'est le cas
+                # d'un carnet re-execute sous une version inferieure a celle
+                # que la base portait (cf #23941).
+                findings.extend(
+                    delta_observed_findings(
+                        relative, base_payload, head_payload, manifest, resolver
+                    )
+                )
                 findings.extend(
                     delta_binary_findings(
                         relative, base_payload, head_payload, repo_root
@@ -1740,6 +2407,7 @@ def main(argv: list[str] | None = None) -> int:
                     "mode": "check",
                     "state": state_mode,
                     "findings": findings,
+                    "advisories": advisories,
                     "checked": checked,
                 },
                 indent=2,
@@ -1748,6 +2416,11 @@ def main(argv: list[str] | None = None) -> int:
         )
     else:
         print(render_findings(findings))
+        if advisories:
+            print("\nAvis non bloquants : replis versionnes (source, pas execution)")
+            for advisory in advisories:
+                print(f"- {advisory['notebook']} cellule {advisory['cell']} "
+                      f"ligne {advisory['line']} : {advisory['message']}")
     return 1 if findings else 0
 
 

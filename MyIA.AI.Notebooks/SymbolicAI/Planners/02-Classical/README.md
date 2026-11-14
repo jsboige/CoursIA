@@ -22,15 +22,15 @@ Un README de série se lit à plusieurs vitesses : le parcours principal par les
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
-| 4 | [Planners-4-Fast-Downward](Planners-4-Fast-Downward.ipynb) — jumeau [C#](Planners-4-Fast-Downward-Csharp.ipynb) | Architecture 3 étapes (translator PDDL→SAS+, preprocessor, search) ; A*, GBFS, EHC via Docker sur Blocks World et Logistics. Le jumeau C# refait un planificateur SAS+ *from-scratch* (prevail/pre/eff, h^max/h^FF par RPG, domaines Ferry + Logistics) puis branche Fast Downward via l'API Docker, port 8200 (See #4956) | Découverte | — |
-| 5 | [Planners-5-Heuristics](Planners-5-Heuristics.ipynb) — jumeau [C#](Planners-5-Heuristics-Csharp.ipynb) | Classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut) ; comparaison expérimentale du nombre de nœuds expansés. Le jumeau C# dérive h-max/h-add/h-FF/landmarks *from-scratch* (démo de non-admissibilité de h^add) puis valide h* = 4 sur Blocks World par Fast Downward, port 8200, avec la comparaison LM-cut (See #4956) | Découverte | [Paliers 5b / 5c](#approfondissements-découverte) |
-| 6 | [Planners-6-Domains](Planners-6-Domains.ipynb) — jumeau [C#](Planners-6-Domains-Csharp.ipynb) | Domaines IPC standards (Blocks World, Logistics, Gripper, Ferry, Hanoï) de complexité croissante. Le jumeau C# modélise Atom/Action/State et un BFS forward + anti-cycle *from-scratch* sur Block World, Hanoï et Gripper, puis branche Fast Downward 24.06.1 via l'API Docker, port 8200 (See #4956) | Découverte | [Partie 3 — Avancée](../03-Advanced/README.md) |
+| 4 | [Planners-04-Fast-Downward-Python](Planners-04-Fast-Downward-Python.ipynb) — jumeau [C#](Planners-04-Fast-Downward-Csharp.ipynb) | Architecture 3 étapes (translator PDDL→SAS+, preprocessor, search) ; A*, GBFS, EHC sur Blocks World et Logistics, par le service Docker ou le plugin local. Le jumeau C# refait un planificateur SAS+ *from-scratch* (prevail/pre/eff, h^max/h^FF par RPG, domaines Ferry + Logistics) puis branche Fast Downward par [`FastDownwardBackend.cs`](../FastDownwardBackend.cs) (See #4956) | Découverte | — |
+| 5 | [Planners-05-Heuristics-Python](Planners-05-Heuristics-Python.ipynb) — jumeau [C#](Planners-05-Heuristics-Csharp.ipynb) | Classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut) ; comparaison expérimentale du nombre de nœuds expansés. Le jumeau C# dérive h-max/h-add/h-FF/landmarks *from-scratch* (démo de non-admissibilité de h^add) puis valide h* = 4 sur Blocks World par Fast Downward, port 8200, avec la comparaison LM-cut (See #4956) | Découverte | [Paliers 5b / 5c](#approfondissements-découverte) |
+| 6 | [Planners-06-Domains-Python](Planners-06-Domains-Python.ipynb) — jumeau [C#](Planners-06-Domains-Csharp.ipynb) | Domaines IPC standards (Blocks World, Logistics, Gripper, Ferry, Hanoï) de complexité croissante. Le jumeau C# modélise Atom/Action/State et un BFS forward + anti-cycle *from-scratch* sur Block World, Hanoï et Gripper, puis branche Fast Downward par [`FastDownwardBackend.cs`](../FastDownwardBackend.cs) (See #4956) | Découverte | [Partie 3 — Avancée](../03-Advanced/README.md) |
 
 Les jumeaux partagent la ligne de leur numéro : même arc, deux langages. Le C# se lit seul — sa première tranche (from-scratch, .NET 9) ne demande ni service ni Python — et sa seconde tranche suppose l'environnement décrit en [Installation](#installation).
 
 **Ce que vous saurez faire à l'issue de cette partie :**
 
-1. **Configurer** un planificateur optimal (Fast Downward via Docker + unified-planning) ;
+1. **Configurer** un planificateur optimal (Fast Downward, service Docker ou plugin local, + unified-planning) ;
 2. **Choisir** l'heuristique adéquate (LM-cut pour l'optimalité, h-FF pour la vitesse) ;
 3. **Modéliser** n'importe quel domaine IPC classique en PDDL ;
 4. **Distinguer** heuristiques admissibles (garantie d'optimalité) et non-admissibles (rapidité) ;
@@ -44,8 +44,8 @@ Cette partie porte **deux paliers lettrés**, tous deux accrochés au numéro 5.
 
 | Lettre | Notebook | Ce qu'elle ajoute | Prérequis en plus |
 |---|---|---|---|
-| 5b | [Planners-5b-Lean-Relaxation](Planners-5b-Lean-Relaxation.ipynb) | Companion **natif** kernel Lean 4 : preuve formelle 0-sorry de $h^{+} \leq h^{*}$ dans le lake `planning_lean` | kernel Lean 4 (via WSL) |
-| 5c | [Planners-5c-Differentiel-Atteignabilite](Planners-5c-Differentiel-Atteignabilite.ipynb) | Différentiel d'atteignabilité (strate 7) : protocole 4 pas — inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré ; consomme les théorèmes du lake `planning_lean` | Python stdlib pur (sans Docker) |
+| 5b | [Planners-05b-Lean-Relaxation-Lean](Planners-05b-Lean-Relaxation-Lean.ipynb) | Companion **natif** kernel Lean 4 : preuve formelle 0-sorry de $h^{+} \leq h^{*}$ dans le lake `planning_lean` | kernel Lean 4 (via WSL) |
+| 5c | [Planners-05c-Differentiel-Atteignabilite-Python](Planners-05c-Differentiel-Atteignabilite-Python.ipynb) | Différentiel d'atteignabilité (strate 7) : protocole 4 pas — inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré ; consomme les théorèmes du lake `planning_lean` | Python stdlib pur (sans Docker) |
 
 Les jumeaux C# ne sont pas des approfondissements : ce sont les mêmes numéros dans un autre langage, ils figurent donc sur la ligne de leur numéro dans la table du parcours principal. Le détail de leurs deux tranches (from-scratch, puis moteur SOTA) est décrit dans la colonne « Ce qu'on y apprend ».
 
@@ -56,11 +56,11 @@ Cette partie n'en contient pas. Elle est elle-même une **sous-série** de [Plan
 ## Installation
 
 - **Partie 1** maîtrisée : modélisation PDDL, espace d'états (notebooks 1-3).
-- **Docker** : les notebooks 4-6 appellent le serveur HTTP Fast Downward (`jsboige/coursia-fast-downward`, port 8200) — les notebooks 5b et 5c n'en dépendent pas (5b : kernel Lean via WSL ; 5c : stdlib pur). Pour les jumeaux C# (4-6), la tranche 1 est from-scratch (.NET 9) et n'en dépend pas ; leur tranche 2 appelle le même serveur sur le port 8200, sans garde-fou : Docker est donc requis pour exécuter le jumeau en entier.
+- **Fast Downward** : le notebook 4 et les jumeaux C# 4-6 l'appellent par le serveur HTTP (`jsboige/coursia-fast-downward`, port 8200) s'il répond, sinon par le pilote local du paquet `up-fast-downward` de `requirements.txt` — le module `fast_downward_backend.py` côté Python, `FastDownwardBackend.cs` côté C#. Docker n'est donc pas requis. Les notebooks 5 et 6 passent par pyperplan, 5b et 5c n'appellent pas de moteur (5b : kernel Lean via WSL ; 5c : stdlib pur). La tranche 1 des jumeaux C# est from-scratch (.NET 9).
 - **Algorithmique** : A*, recherche heuristique dans les graphes.
 - **.NET 9 (jumeaux C# uniquement)** : les notebooks `-Csharp` s'exécutent sous .NET Interactive ; leur première tranche ne demande ni service ni Python.
 
-Si Docker n'est pas disponible, les notebooks théoriques (explication de l'architecture, classification des heuristiques) restent accessibles ; seules les exécutions de planification en ligne seront sautées. Pour les jumeaux C#, rien n'est sauté : la cellule de tranche 2 échoue sans le service, et la tranche 1 reste exécutable.
+Sans service Docker ni paquet `up-fast-downward`, le notebook 4 saute ses exécutions de planification, et la cellule de tranche 2 des jumeaux C# échoue en nommant la commande d'installation ; la tranche 1 reste exécutable.
 
 ## Pour aller plus loin — niveau Recherche
 

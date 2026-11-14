@@ -1,5 +1,7 @@
 # Lean axiom coverage — proof-integrity gate triage (per #8738 step 3)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 **Issue de référence** : [#8738](https://github.com/jsboige/CoursIA/issues/8738) (proof-integrity gate multiline parse, parser fix livré via PR #8740 c.947 MERGED 2026-07-28).
 **Cycle-id de production** : c.948 (worker po-2023, lane `myia-po-2023:CoursIA-2`).
 **Mesure** : `git grep -E` sur le commit `35e1258df` (origin/main HEAD), 2026-07-29.
@@ -17,7 +19,7 @@ python scripts/lean/axiom_coverage.py --json     # pour dossier/CI
 
 Elle vérifie de surcroît que chaque module **explicitement** nommé existe sur disque (notation pointée du manifeste ↔ chemin `.lean`) — un `WIRED-DEAD` dénonce un vert hors-cible (cas #8782). L'état vivant est celui de la commande (le compte des wired/bare dérive à chaque câblage, il ne se recopie pas en prose — #9377) ; au 2026-09-27 il était de **2 wired** (`gametheory` à liste explicite vérifiée sur disque, `serre100` passe-partout `*`) et **18 bare** — gap de naissance constaté par #17097, câblage progressif suivi par #18038. Le triage statique §2-3 ci-dessous date de la pré-matrice (22 lakes sur disque, grep-firsthand) et reste valable comme exposition *par lake* ; la colonne « câblé » qu'il portait est supplantée par la commande.
 
-**Le quatrième verdict — `NOT-APPLICABLE` (#24092, 2026-11-02).** La tranche #22519 a laissé deux lakes **sans gate par décision écrite** (§4.1) parce qu'ils ne déclarent rien d'énumérable. Le census les comptait pourtant `BARE`, c'est-à-dire « à câbler » — et la première lane qui a suivi ce verdict a produit une jambe rouge permanente (`axiom-target-modules: "*"` sur `conway_cgt_lean` : `FAIL: lake-level non-vacuity -- all module(s) enumerated zero declarations`, job `125031198506`). Le census distingue désormais les deux états **avec l'énumérateur du gate lui-même** (`lean_server._enumerate_module_declarations` / `_classify_empty_enumeration`, chargé par le même chemin que `axiom_check_step.py` — jamais un second lexique de mots-clés, qui dériverait du premier : la première version comptait les `example` et rendait `mathlib_examples` « câblable »). `NOT-APPLICABLE` exige `declaration_free_module` sur **tous** les modules : un `source_not_found` (checkout partiel) ou un `all_private_declarations` reste `BARE`, à instruire. **Ce classement suit le contenu du module, il ne l'exonère pas d'un contrôle de code réel** : un module dont le code passerait massivement en commentaire lirait `NOT-APPLICABLE` au lieu de `BARE`, et le gate ne tourne pas sur ces lakes par construction — c'est pourquoi §4.1 les nomme un par un, et pourquoi une entrée nouvelle dans cette classe demande une lecture, pas un classement automatique. État mesuré sur `origin/main` au 2026-11-02 : **31 wired, 0 wired-dead, 0 bare, 2 sans déclaration** — le zéro de `BARE` n'est pas une case vide, c'est la vérification que la décision de §4.1 est complète.
+**Le quatrième verdict — `NOT-APPLICABLE` (#24092, 2026-11-02).** La tranche #22519 a laissé deux lakes **sans gate par décision écrite** (§4.1) parce qu'ils ne déclarent rien d'énumérable. Le census les comptait pourtant `BARE`, c'est-à-dire « à câbler » — et la première lane qui a suivi ce verdict a produit une jambe rouge permanente (`axiom-target-modules: "*"` sur `conway_cgt_lean` : `FAIL: lake-level non-vacuity -- all module(s) enumerated zero declarations`, job `125031198506`). Le census distingue désormais les deux états **avec l'énumérateur du gate lui-même** (`lean_server._enumerate_module_declarations` / `_classify_empty_enumeration`, chargé par le même chemin que `axiom_check_step.py` — jamais un second lexique de mots-clés, qui dériverait du premier : la première version comptait les `example` et rendait `mathlib_examples` « câblable »). `NOT-APPLICABLE` exige `declaration_free_module` sur **tous** les modules : un `source_not_found` (checkout partiel) ou un `all_private_declarations` reste `BARE`, à instruire. **Ce classement suit le contenu du module, il ne l'exonère pas d'un contrôle de code réel** : un module dont le code passerait massivement en commentaire lirait `NOT-APPLICABLE` au lieu de `BARE`, et le gate ne tourne pas sur ces lakes par construction — c'est pourquoi §4.1 les nomme un par un, et pourquoi une entrée nouvelle dans cette classe demande une lecture, pas un classement automatique. État mesuré sur `origin/main` au 2026-11-02 : **31 wired, 0 wired-dead, 0 bare, 2 sans déclaration** — le zéro de `BARE` n'est pas une case vide, c'est la vérification que la décision de §4.1 est complète. Ce zéro a cédé le 2026-11-08 : la marche Axler (#24871) a donné des déclarations nommées à `mathlib_examples`, que le census a rendu `BARE` ; #25154 l'a recâblé, et la mesure de ce jour est de **34 wired, 0 bare, 1 sans déclaration** (`conway_cgt_lean`).
 
 
 ### 0.1 Câblage tranche par tranche (critère 2 de #18038)
@@ -29,6 +31,32 @@ Une PR par lake. Chaque tranche rend le verdict **de son** lake ; un lake laiss�
 **Où le verdict se lit — et l'endroit où on le cherche en vain.** Sur un lake **matriciel**, la passe d'axiomes n'est pas un check-run : c'est une **étape** du job `lean-matrix / Lean CI (<lake>)` (`lean-build.yml`, composite `lean-axiom`, gardée par `if: matrix.axiom-target-modules != ''`). Chercher un check-run nommé `Proof integrity` ne rend rien et laisse croire à un gate absent. Le dernier workflow mono-lake restant (`lean-conway.yml` après les migrations #13751 — knot était le dernier autre, migré depuis) a lui un vrai job `proof-integrity` ; les deux formes coexistent, et c'est le nom du lake dans le manifeste qui décide laquelle s'applique.
 
 Un rouge éventuel part en **issue nommée** plutôt qu'en whitelist.
+
+### 0.2 Le census complémentaire — les modules compilés que le gate ne regarde pas (#8782)
+
+`axiom_coverage.py` mesure **un bord** : un module *nommé* par le manifeste qui n'existe pas sur disque (`WIRED-DEAD`). L'autre bord — un module *compilé* par le lake que le manifeste ne nomme pas — n'était mesuré par aucun organe : c'est la classe « un vert qui ne mesure rien » (un gate vert sur une fraction du lake qui s'amincit, sans que rien ne rougisse).
+
+```bash
+python scripts/lean/check_manifest_target_gap.py            # table par lake
+python scripts/lean/check_manifest_target_gap.py --json     # sortie machine
+```
+
+L'organe lit les **globs du lakefile** (la seule source de vérité sur ce que le lake compile — un `.lean` sur disque hors glob n'est pas un module), en déduit les modules réellement compilés, et les compare à `axiom-target-modules`. Il distingue trois états de sens opposés, jamais confondus dans un chiffre : liste bornée (écart mesuré), `"*"` (liste dérivée à l'exécution — couverture totale), liste vide (aucun gate : ce n'est pas un écart de liste mais une absence de gate, que `axiom_coverage.py` classe `NOT-APPLICABLE`). Pour chaque module hors liste il donne le compte de `sorry` canonique (`count_code_sorry.scan_file`) et un prescreen des trois classes `forbidden` (`native_decide`, `sorryAx`, `Classical.choice`) — le prescreen signale, il ne dispense pas : le verdict reste au job.
+
+**La sémantique des globs est celle de Lake, lue dans sa source** (`Lake/Config/Glob.lean`) : `X.*` est un `Glob.andSubmodules` et **inclut** la racine `X.lean` (« including itself »), seul `X.+` — ou la forme `.submodules `X`` — l'exclut. Un census qui traiterait `X.*` comme `X.+` compterait comme non compilées des racines que le lake compile : l'écart affiché serait faux dans les deux sens. Cette sémantique est verrouillée par deux cas de test (un glob `X.*`, un glob `X.+`) dans `scripts/lean/tests/test_check_manifest_target_gap.py`.
+
+**Les racines de lib sont des cibles, pas des angles morts.** Une racine `X.lean` est un agrégateur d'imports : l'instrument du gate (`agent_tests/lean_server.py`) la classe `declaration_free_module`, donc NOTE non fatale — elle ne peut ni faire rougir la jambe ni masquer un `sorry` (un fichier porteur de `sorry` est routé vers `sorry_without_declaration`, qui est fatal). Les racines sont donc des cibles explicites de `axiom-target-modules`, comme les trois qui y étaient déjà (`Abstraction`, `RepeatedGames_en`, `StableMarriage_en`) : les laisser hors liste faisait paraître l'écart du recensement comme un manque de couverture alors qu'il n'y avait rien à auditer.
+
+État mesuré au 2026-11-11 sur `origin/main` : les lakes à liste bornée sont `gametheory` et `formal_logic` — les autres portent `"*"` (couverture totale par dérivation), et `conway_cgt_lean` est sans gate par décision écrite (§4.1). Mesure sur le lake à liste bornée qui suit `main`, avant et après la tranche :
+
+| | compilés par le lake | cibles du gate | compilés hors liste |
+|---|---|---|---|
+| `main` | 66 | 23 | 43 |
+| après la tranche | 66 | 61 | 5 |
+
+Les cinq qui restent hors liste sont les seuls qui portent quelque chose à auditer : `RepeatedGames.Folk`, `RepeatedGames.Folk_en`, `RepeatedGames.Panel` et `RepeatedGames.Panel_en` portent un `sorry` de code réel, `StackelbergBilevel.StackelbergBilevel` porte quatre `native_decide`. Aucun n'entre dans la liste sans faire rougir la jambe (`axiom-fail-on-sorry: true`, et `native_decide` est une classe `forbidden`).
+
+**Ces nombres sont une mesure datée, pas un état du dépôt** : l'organe les recalcule à chaque invocation, et c'est sa sortie qui fait foi.
 
 ## 1. Portée et méthode
 
@@ -229,9 +257,9 @@ forbidden union : []
 | `percolation_lean` | matrice `ci_lakes.json` (`percolation.axiom-target-modules`, migré depuis `lean-percolation.yml` **supprimé** — #13751/#18996) | OUI (#14904, 2026-09-06 ; **porté par la matrice depuis #18996**, 2026-10-04) | **GREEN re-mesuré 2026-10-09 sur le chemin matriciel** — `distinct_code_sorry = 0` (`count_code_sorry.py --json`), 0 `native_decide` (grep FR). Exécution locale du step exact du gate (`scripts/lean/axiom_check_step.py`, paramètres du manifeste : `target-modules: "*"`, `allow-axioms` vide, `fail-on-sorry: true`) : les modules FR du lake sont énumérés (`Percolation`, agrégateur déclaration-free, puis `Basic`, `Boundary`, `Components`, `Connectivity`, `Examples`), clôture `[propext, Classical.choice, Quot.sound]` (défauts — aucune entrée `allow-axioms` requise), 0 `sorryAx`, **RC=0**. `_en` exclus par défaut (défaut matriciel #10889 ; les paires FR/EN du lake sont des miroirs). **Contrôle négatif exécuté sur le chemin matriciel (2026-10-09)** : `sorry` injecté dans un module cible puis lake reconstruit → `axioms: [propext, sorryAx, Classical.choice, Quot.sound]`, `has_sorry: True`, **RC=1** ; source restaurée (md5 identique, `git status` vide) → **RC=0**. **Piège mesuré** : l'organe **ne reconstruit pas** le lake (il lit les oleans) — une mutation de source **seule** rougit par `build_failed_returncode` (`Unknown constant`), **pas** par `sorryAx` ; un contrôle fidèle exige un `lake build` entre la mutation et le run |
 | `planning_lean` | matrice `ci_lakes.json` (`planning.axiom-target-modules`, migré depuis `lean-planning.yml` **supprimé** — #13751) | OUI (#15305, 2026-09-09 ; **porté par la matrice depuis #13751**) | **GREEN — re-mesuré à la source lors de la migration** : `count_code_sorry.py --lake MyIA.AI.Notebooks/SymbolicAI/Planners/planning_lean --json` → `distinct_code_sorry = 0` (`naive_sorry` non nul : tous en commentaire/docstring, pas du code). 0 `native_decide` (token fiable §1.1), 0 `noncomputable` (aucune inférence `Classical.choice`) — mesures héritées de la ligne précédente, **non rejouées ici** : re-mesurer la clôture `#print axioms` exige un `lake build` WSL. `target-modules: "*"` (dérivation runtime #10889, `_en` exclus par défaut → `Planning.Strips`/`Relaxation`/`Admissibility`) + `fail-on-sorry: true` cohérent baseline `0`. **Advisory `target-coverage` : disparu avec le wrapper** — sans perte de couverture, `*` inspecte tout module compilé par construction (le rôle de l'advisory #8782 était de rendre l'écart lisible ; ici l'écart est nul par construction) |
 | `game_theory_lean` | matrice `ci_lakes.json` (`gametheory.axiom-target-modules`, migré depuis `lean-social-choice.yml` supprimé — #17374) | OUI — partiel (subtree, #12330 ; étendu ProgramGames 2026-09-10, PR B.3 #15221 follow-up ; cibles portées par le manifeste matriciel depuis #17374) | GREEN sur les cibles câblées : SocialChoice.* (modules FR+EN, pinning `SocialChoice/CERTIFIED.txt`) + `Abstraction`/`Abstraction.Basic` + `ProgramGames.Basic`/`ProgramGames.Basic_en` (L1 noyau borné #15176/#15221) + `ProgramGames.Bounded`/`ProgramGames.Bounded_en` (module atterri **après** la rédaction du scope, #15395 — ajouté sur demande du digest de review #15379) : 0 sorry, 0 `native_decide` — grep FR/EN firsthand ; `fail-on-sorry: true`, companions épinglés par `test_workflow_targets_match_manifest`. **Hors cible délibérée** : `RepeatedGames.Folk` (stretch sorry #4880), racines agrégateurs (`SocialChoice.lean`, `ProgramGames.lean`, sans decls). Reste du lake (StableMarriage, CooperativeGames, RepeatedGames, Swaps) non ciblé — candidat aux tranches #11699 |
-| **Lacs du manifeste historiquement non cables** | matrice `ci_lakes.json`, cable `axiom-target-modules` par la tranche **#22519** sauf deux (decision par lake : §4.1 ci-dessous) | OUI, sauf deux lakes decides **sans gate** | Le gate les atteint depuis #22519 ; leur verdict d'execution se lit sur le premier run matriciel qui les couvre, jamais d'avance. `decisiontheory` porte en outre `axiom-fail-on-sorry: "false"` (2 `sorry` declares, §4.1). `conway_cgt_lean` et `mathlib_examples` restent **sans gate** : ils ne declarent aucune declaration nommable, donc le gate n'aurait rien a inspecter (§4.1) |
+| **Lacs du manifeste historiquement non cables** | matrice `ci_lakes.json`, cable `axiom-target-modules` par la tranche **#22519** sauf deux (decision par lake : §4.1 ci-dessous), puis `mathlib_examples` recable par **#25154** (2026-11-08) | OUI, sauf `conway_cgt_lean`, decide **sans gate** | Le gate les atteint depuis #22519 ; leur verdict d'execution se lit sur le premier run matriciel qui les couvre, jamais d'avance. `decisiontheory` porte en outre `axiom-fail-on-sorry: "false"` (2 `sorry` declares, §4.1). `conway_cgt_lean` reste **sans gate** : il ne declare aucune declaration nommable, donc le gate n'aurait rien a inspecter (§4.1). `mathlib_examples`, decide sans gate le 2026-10-27 pour la meme raison, ne l'est plus depuis la marche Axler (#24871) : il est recable `"*"` (§4.1) |
 
-Le câblage du gate sur les lacs non-pilotes a longtemps été un travail séparé, hors du scope #8738 (chaque workflow lake était un livrable à part avec son `target-modules` adapté). Ce n'est plus une roadmap : la tranche #22519 a câblé les derniers lacs matriciels **qui peuvent l'être**, et **deux lakes restent sans gate par décision écrite** (§4.1). Ce qui subsiste n'est pas une liste de lakes à câbler mais une règle : un lake ajouté demain à la matrice doit être câblé ou porter sa décision écrite ici, et `check_axiom_gate_coverage.py --check --strict` refuse le silence (§4.1). La consolidation des **wrappers per-lake** (workflow dédié remplacé par la matrice, #13751) reste, elle, une roadmap ouverte : re-mesuré le 2026-11-01, **2 workflows restent sur disque** (`conway`, `knot` — `planning` et `formal-groups` migrés par #23467/#23463, `asymmetric-information` par #23552, `grothendieck` par #23758, `formal-logic` par #23761, `galois` par #23011, `mimo` par cette PR #23579) — voir #11699.
+Le câblage du gate sur les lacs non-pilotes a longtemps été un travail séparé, hors du scope #8738 (chaque workflow lake était un livrable à part avec son `target-modules` adapté). Ce n'est plus une roadmap : la tranche #22519 a câblé les derniers lacs matriciels **qui peuvent l'être**, et **un lake reste sans gate par décision écrite** (`conway_cgt_lean`, §4.1 ; `mathlib_examples`, décidé sans gate le 2026-10-27, est recâblé depuis le 2026-11-08 par #25154). Ce qui subsiste n'est pas une liste de lakes à câbler mais une règle : un lake ajouté demain à la matrice doit être câblé ou porter sa décision écrite ici, et `check_axiom_gate_coverage.py --check --strict` refuse le silence (§4.1). La consolidation des **wrappers per-lake** (workflow dédié remplacé par la matrice, #13751) reste, elle, une roadmap ouverte : re-mesuré le 2026-11-01, **2 workflows restent sur disque** (`conway`, `knot` — `planning` et `formal-groups` migrés par #23467/#23463, `asymmetric-information` par #23552, `grothendieck` par #23758, `formal-logic` par #23761, `galois` par #23011, `mimo` par cette PR #23579) — voir #11699.
 
 ### 4.1. Décision par lake — tranche #22519 (2026-10-27)
 
@@ -265,8 +293,8 @@ puisque tout axiome **nouveau** rougit immédiatement. L'écart de preuve lui-m�
 reste ouvert et suivi par **#23022** : le whitelist nommé le rend visible
 dans le manifeste, il ne le résout pas.
 
-**Une quatrième classe existe : le lake qui ne déclare rien.** Deux des treize
-lakes rougissent au câblage sur `FAIL: lake-level non-vacuity -- all N module(s)
+**Une quatrième classe existe : le lake qui ne déclare rien.** Au 2026-10-27,
+deux des treize lakes rougissaient au câblage sur `FAIL: lake-level non-vacuity -- all N module(s)
 enumerated zero declarations`, et ce verdict est **correct** : c'est le garde qui
 empêche un gate vert d'avoir inspecté zéro déclaration. Les deux causes sont
 distinctes et aucune n'est un défaut de configuration :
@@ -280,14 +308,24 @@ distinctes et aucune n'est un défaut de configuration :
   `MathLibExamples/Basic.lean` n'énumère que des `example`, **anonymes** et donc
   exclus par construction de l'énumération.
 
-Ces deux lakes sont donc **décidés sans gate**, avec leur justification dans la
-table ci-dessous — la branche « décision écrite » que #22519 prévoit
+Ces deux lakes ont donc été **décidés sans gate** le 2026-10-27, avec leur
+justification dans la table ci-dessous — la branche « décision écrite » que #22519 prévoit
 explicitement. Câbler un gate sur une surface déclarative nulle ne rend pas la
 preuve plus sûre : il rend l'organe rouge sur une mesure honnête, et le réflexe
 suivant serait de baisser le garde. La mesure locale qui tranche, reproductible
 sans Lean : `_enumerate_module_declarations` rend `[]` et
 `_classify_empty_enumeration` rend `declaration_free_module` sur chacun des trois
 modules concernés.
+
+**Mise à jour du 2026-11-08 (#25154) : la décision sur `mathlib_examples` est
+tombée.** La marche Axler (#24871) a ajouté au lake une quarantaine de
+déclarations nommées : il n'est plus déclaratif-nul, le census le rendait `BARE`,
+et le test du manifeste rougissait sur `main` nu (#25138). #25154 l'a recâblé
+(`axiom-target-modules: "*"`, `axiom-include-i18n-siblings: "true"`, jumeaux
+`_en` compris). Une décision « sans gate » se relit donc à chaque fois que le lake gagne
+des déclarations : la mesure de non-vacuité du 2026-10-27 vaut pour le contenu de
+ce jour-là, pas pour le lake. `conway_cgt_lean` reste le seul lake de cette
+classe.
 
 | Lake | Décision | Justification |
 |---|---|---|
@@ -300,7 +338,7 @@ modules concernés.
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | `"*"` + `axiom-fail-on-sorry: "false"` | `sorry-baseline = 2` : le gate voit et **rapporte** les `sorryAx` sans échouer, le ratchet restant tenu par le build. Rouge immédiat sur tout `native_decide` introduit |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | **sans gate** (décision écrite) | Le lake ne **déclare rien de nommable** : `MathLibExamples.lean` est un agrégateur d'une ligne (`import MathLibExamples.Basic`) et `Basic.lean` n'énumère que des `example` — des déclarations **anonymes**, exclues par construction de l'énumération (`_enumerate_module_declarations`). **0 déclaration** sur les deux modules, donc aucun `#print axioms` à émettre. Mesuré localement le 2026-10-27 : les deux modules rendent `[]` / `declaration_free_module`, et le gate câblé rougit sur la non-vacuité de lake — verdict correct, pas un défaut de configuration. Un gate qui n'inspecte rien ne doit pas être vert ; il ne doit pas non plus être câblé |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | `"*"` depuis le 2026-11-08 (#25154) ; **sans gate** (décision écrite) du 2026-10-27 au 2026-11-08 | **Recâblé** : la marche Axler (#24871) a ajouté une quarantaine de déclarations nommées, la décision ci-après est caduque (voir la mise à jour au-dessus de cette table). Décision d'origine, conservée pour l'historique : le lake ne **déclarait rien de nommable** : `MathLibExamples.lean` est un agrégateur d'une ligne (`import MathLibExamples.Basic`) et `Basic.lean` n'énumère que des `example` — des déclarations **anonymes**, exclues par construction de l'énumération (`_enumerate_module_declarations`). **0 déclaration** sur les deux modules, donc aucun `#print axioms` à émettre. Mesuré localement le 2026-10-27 : les deux modules rendent `[]` / `declaration_free_module`, et le gate câblé rougit sur la non-vacuité de lake — verdict correct, pas un défaut de configuration. Un gate qui n'inspecte rien ne doit pas être vert ; il ne doit pas non plus être câblé |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
@@ -374,7 +412,7 @@ L'énoncé ci-dessus est conservé comme état daté. Depuis, `axiom arrow_impos
 - [x] **3 lacs borderline** identifiés : whitelist `Classical.choice` recommandée au câblage futur avec issue nommée par lake (`sudoku_lean`, `learning_theory_lean`, `decision_theory_lean`)
 - [x] **14 lacs GREEN** : câblage futur sans coût
 
-**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage tranche-par-tranche était suivi sous [#11699](https://github.com/jsboige/CoursIA/issues/11699) : il est **terminé** depuis #22519 ; deux lakes du manifeste restent sans gate, **par décision écrite** (§4.1 : `conway_cgt_lean` et `mathlib_examples`).
+**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage tranche-par-tranche était suivi sous [#11699](https://github.com/jsboige/CoursIA/issues/11699) : il est **terminé** depuis #22519 ; un lake du manifeste reste sans gate, **par décision écrite** (§4.1 : `conway_cgt_lean`). `mathlib_examples`, décidé sans gate à la même date, est recâblé depuis le 2026-11-08 (#25154).
 
 ## 6. Acceptance step 4 — note sur §B.3 pr-review-discipline.md
 

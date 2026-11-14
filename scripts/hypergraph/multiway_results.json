@@ -1,0 +1,45 @@
+{
+  "protocol": "MULTIWAY-PROTOCOLE.md",
+  "engine_commit": "44c868bf4622e4542b306846ffdcc47c19d0bba8",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.41",
+  "rows": [
+    {
+      "depth": 16,
+      "states": 17,
+      "median_seconds": 0.0313005,
+      "min_seconds": 0.0207105,
+      "max_seconds": 0.0459065
+    },
+    {
+      "depth": 24,
+      "states": 25,
+      "median_seconds": 0.0900346,
+      "min_seconds": 0.0688251,
+      "max_seconds": 0.105981
+    },
+    {
+      "depth": 32,
+      "states": 33,
+      "median_seconds": 0.291552,
+      "min_seconds": 0.176361,
+      "max_seconds": 0.40851
+    },
+    {
+      "depth": 40,
+      "states": 41,
+      "median_seconds": 0.318909,
+      "min_seconds": 0.310118,
+      "max_seconds": 0.623493
+    },
+    {
+      "depth": 48,
+      "states": 49,
+      "median_seconds": 0.576462,
+      "min_seconds": 0.568194,
+      "max_seconds": 1.38751
+    }
+  ],
+  "alpha": 2.750576423453816,
+  "r_squared": 0.9711039950265283,
+  "interpretation": "ajustement descriptif"
+}

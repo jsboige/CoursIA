@@ -12,6 +12,7 @@ de git reel.
 import importlib.util
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -30,6 +31,21 @@ TOKEN = "tok-myia-ai-01-fake"
 GRAIN_MED = "Grain: MED/guard -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 GRAIN_DEEP = "Grain: DEEP/lean -- lane myia-po-2026:CoursIA -- prev: MED/guard #1"
 BASE = "ba5eba5eba5eba5eba5eba5eba5eba5eba5eba5e"
+#: Jambes nominales du chemin `unstable` (#25059) : la porte verte, un check
+#: vert, et une jambe ANNULEE d'un run remplace dont le nom a ete repris par
+#: une jambe verte plus recente -- le cas mesure sur #24116 (run annule puis
+#: run vert pour les memes noms).
+DEFAULT_CHECK_RUNS = "\n".join(
+    json.dumps(row)
+    for row in (
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "success",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+        {"name": "Scripts Tests (CPU)", "conclusion": "cancelled",
+         "status": "completed", "started_at": "2026-11-07T09:00:00Z", "id": 3},
+    )
+)
 # Sentinelle : « pas precise » n'est pas « aucune approbation ». Par defaut une
 # vue porte l'approbation du coordinateur a la tete (le chemin nominal depuis
 # Q67) ; une vue dont les reviews sont fournies explicitement n'en recoit que si
@@ -167,9 +183,54 @@ class ScriptedRunner:
         # defaut, pour que les tests historiques gardent leur chemin nominal.
         combined_rc: int = 0,
         combined_stdout: str = '{"verdict": "GREEN", "failed": []}',
+        # #25059 : etape 6 bis, lecture des jambes de check. Valeur = stdout
+        # du ``gh api .../check-runs`` (une ligne JSON par jambe). Defaut :
+        # le jeu nominal vert.
+        check_runs: str | None = None,
+        main_check_runs: str | None = None,
+        main_sha: str = "a" * 40,
+        # #24828 : historique de main lu par la sentinelle (SHA du plus
+        # recent au plus ancien) et check-runs par SHA. Le defaut : un seul
+        # commit (la tete), avec le jeu de checks nominal.
+        main_history: list[str] | None = None,
+        main_checks_by_sha: dict[str, str] | None = None,
+        # #17437 : reponses de la sonde d'identite App (DESORMAIS INERTE :
+        # la sonde a ete supprimee le 2026-11-12, la preuve d'identite est
+        # portee par le type de la ligne. Conservee pour que le test qui
+        # prouve l'absence d'appel puisse scripter une reponse ``Bot`` et
+        # verifier qu'elle n'est jamais consultee).
+        user_types: dict[str, str] | None = None,
+        # #17437 (relecture 2026-11-12) : lignes de la surface REST typee
+        # ``pulls/N/reviews`` (forme REST brute : ``user.login`` suffixe,
+        # ``user.type``, ``submitted_at``, ``commit_id``). Defaut vide :
+        # l'organe retombe alors sur les lignes du payload ``pr view``
+        # (non typees) — le chemin des tests historiques.
+        rest_reviews: list[dict] | None = None,
+        # #25510 T-J : etapes du job associe a un check-run de job. La
+        # CLE est l'identifiant de job, la VALEUR est le nom de la PREMIERE
+        # etape en echec ("" = aucune etape en echec). Sert a prouver que
+        # la sentinelle distingue une panne d'infrastructure d'un verdict
+        # de code.
+        job_steps: dict[str, str] | None = None,
+        # Log d'echec du run (`gh run view --log-failed`). Vide par defaut :
+        # aucun test n'y est identifie.
+        run_log: str = "",
     ):
+        self.rest_reviews = list(rest_reviews or [])
+        self.user_types = user_types or {}
         self.combined_rc = combined_rc
         self.combined_stdout = combined_stdout
+        self.check_runs = check_runs if check_runs is not None else DEFAULT_CHECK_RUNS
+        self.main_check_runs = main_check_runs if main_check_runs is not None else json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "success",
+             "status": "completed", "started_at": "2026-11-08T10:00:00Z",
+             "output": {"summary": "21 000 passed"}}
+        ])
+        self.main_sha = main_sha
+        self.main_history = list(main_history) if main_history is not None else [main_sha]
+        self.main_checks_by_sha = main_checks_by_sha or {}
+        self.job_steps = job_steps or {}
+        self.run_log = run_log
         self.token = token
         self.token_rc = token_rc
         self.prs = list(prs)
@@ -248,6 +309,42 @@ class ScriptedRunner:
             if self.merge_rc == 0:
                 return mr.RunResult(0, "", "")
             return mr.RunResult(self.merge_rc, "", "merge refused")
+        if c[:2] == ["gh", "api"] and c[2].startswith("users/"):
+            # #17437 : sonde d'identite App (``users/<login>[bot] --jq .type``).
+            # Defaut = 404 (rc 1) : une sonde non scriptee est un login
+            # inconnu, fail-closed cote organe -- meme silence que la vraie
+            # API rend pour un utilisateur qui n'existe pas.
+            if c[2] in self.user_types:
+                return mr.RunResult(0, self.user_types[c[2]] + "\n", "")
+            return mr.RunResult(1, "", "HTTP 404")
+        if c[:2] == ["gh", "api"] and "/commits/main" in c[2]:
+            return mr.RunResult(0, self.main_sha + "\n", "")
+        if c[:2] == ["gh", "api"] and "/commits?sha=" in c[2]:
+            # Historique de main lu par la sentinelle (le plus recent d'abord).
+            return mr.RunResult(0, "\n".join(self.main_history) + "\n", "")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            sha = c[2].split("/commits/", 1)[1].split("/", 1)[0]
+            if sha == self.main_sha or sha in self.main_history:
+                payload = self.main_checks_by_sha.get(sha, self.main_check_runs)
+                return mr.RunResult(0, "\n".join(
+                    json.dumps(row) for row in json.loads(payload)
+                ), "")
+            return mr.RunResult(0, self.check_runs, "")
+        if c[:2] == ["gh", "api"] and "/check-runs" in c[2]:
+            # #25059 : etape 6 bis. La branche est AVANT celle des commits :
+            # l'URL des check-runs porte `/commits/` et serait capturee par
+            # elle (le SHA extrait serait `check-runs?per_page=100`).
+            return mr.RunResult(0, self.check_runs, "")
+        if c[:2] == ["gh", "api"] and "/actions/jobs/" in c[2]:
+            # #25510 T-J : etapes du job associe au check-run. La reponse
+            # est le nom de la premiere etape en echec ("" = aucune).
+            job_id = c[2].rsplit("/", 1)[-1]
+            step = self.job_steps.get(job_id, "")
+            return mr.RunResult(0, (step + "\n") if step else "\n", "")
+        if c[:3] == ["gh", "run", "view"]:
+            # Log d'echec du run : la sentinelle le lit quand le resume du
+            # check-run ne nomme aucun test.
+            return mr.RunResult(0, self.run_log, "")
         if c[:2] == ["gh", "api"] and "/commits/" in c[2]:
             sha = c[2].rsplit("/", 1)[-1]
             if sha not in self.commits:
@@ -259,6 +356,14 @@ class ScriptedRunner:
             return mr.RunResult(0, self.auto_tree + "\n", "")
         if c[:1] == ["git"] and ("cat-file" in c or "merge-base" in c):
             return mr.RunResult(0, "", "")
+        if (c[:2] == ["gh", "api"] and "/pulls/" in c[2]
+                and c[2].split("?", 1)[0].endswith("/reviews")):
+            # #17437 : surface REST typee des reviews (preuve de type PAR
+            # LIGNE, relecture ai-01 2026-11-12). DOIT preceder la branche
+            # generique ``/pulls/`` (mergeable_state) : l'URL porte aussi
+            # ``/pulls/``. ``--slurp`` rend une liste de pages.
+            return mr.RunResult(
+                0, json.dumps([list(self.rest_reviews)]), "")
         if c[:2] == ["gh", "api"] and "/pulls/" in c[2]:
             row = self.pulls.pop(0) if len(self.pulls) > 1 else self.pulls[0]
             return mr.RunResult(0, json.dumps(row), "")
@@ -463,7 +568,10 @@ def test_skip_b0_organ_rc1(tmp_path):
 
 
 def test_skip_mergeable_state_not_clean(tmp_path):
-    for state in ("dirty", "unstable", "blocked", "has_hooks"):
+    # `unstable` n'est plus dans cette liste : il a son etage a lui (#25059,
+    # les quatre tests juste apres) -- il se decide sur les jambes, pas sur
+    # le seul libelle de l'etat.
+    for state in ("dirty", "blocked", "has_hooks"):
         runner = ScriptedRunner(
             pulls=[{"mergeable_state": state, "head": {"sha": HEAD}}]
         )
@@ -471,6 +579,124 @@ def test_skip_mergeable_state_not_clean(tmp_path):
         assert rc == 0, state
         assert lines[-1]["reason"] == f"mergeable-state:{state}", state
         assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_prelecture_blocked_evite_les_tests_d_arbre_fusionne(tmp_path):
+    runner = ScriptedRunner(
+        pulls=[{"mergeable_state": "blocked", "head": {"sha": HEAD}}]
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "mergeable-state:blocked"
+    assert not any("premerge_combined_check.py" in flat for flat in runner.flat())
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_prelecture_clean_puis_garde_finale_joue_les_tests_d_arbre(tmp_path):
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+    assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+def test_prelecture_unstable_ne_saute_pas_les_tests_d_arbre(tmp_path):
+    runner = _unstable_runner(DEFAULT_CHECK_RUNS)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+def test_prelecture_tete_deplacee_evite_les_tests_d_arbre_fusionne(tmp_path):
+    runner = ScriptedRunner(
+        pulls=[{"mergeable_state": "clean", "head": {"sha": HEAD_MOVED}}]
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["reason"] == "head-moved"
+    assert not any("premerge_combined_check.py" in flat for flat in runner.flat())
+
+
+# --- etape 6 bis : `unstable` (#25059) -------------------------------------------
+
+
+def _legs(*rows: dict) -> str:
+    """stdout du `gh api .../check-runs` : une ligne JSON par jambe."""
+    return "\n".join(json.dumps(row) for row in rows)
+
+
+def _unstable_runner(check_runs: str) -> ScriptedRunner:
+    return ScriptedRunner(
+        pulls=[{"mergeable_state": "unstable", "head": {"sha": HEAD}}],
+        check_runs=check_runs,
+    )
+
+
+def test_unstable_latest_wins_vert_est_accepte(tmp_path):
+    # Pli vert partout : la PR passe, et le journal dit pourquoi elle passait
+    # (`unstable-accepted:<n>`) -- un merge mu n'apporte aucune preuve.
+    runner = _unstable_runner(DEFAULT_CHECK_RUNS)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+    assert any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_une_jambe_non_advisory_rouge_saute_nomme(tmp_path):
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+         "status": "completed", "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):failure"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
+
+
+def test_unstable_un_rouge_advisory_seul_est_accepte(tmp_path):
+    # Un check advisory ne bloque pas le gate (#15548) : il ne doit pas
+    # bloquer l'organe de merge non plus.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "CJK residue advisory (label, non-blocking)",
+         "conclusion": "failure", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged"
+    assert lines[-1]["reason"].startswith("unstable-accepted:")
+
+
+def test_unstable_une_jambe_en_vol_sans_jambe_terminee_saute(tmp_path):
+    # Une jambe en vol dont le nom n'a AUCUNE jambe terminee : rien n'a ete
+    # mesure pour ce nom, donc rien n'est acquis -- saut nomme.
+    legs = _legs(
+        {"name": "PR gate", "conclusion": "success", "status": "completed",
+         "started_at": "2026-11-07T10:00:00Z", "id": 4},
+        {"name": "Scripts Tests (CPU)", "conclusion": "",
+         "status": "in_progress", "started_at": "2026-11-07T10:00:00Z",
+         "id": 5},
+    )
+    runner = _unstable_runner(legs)
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == (
+        "mergeable-state:unstable:Scripts Tests (CPU):no-completed-leg"
+    )
+    assert not any(c[:3] == ["gh", "pr", "merge"] for c in runner.cmds())
 
 
 def test_skip_head_moved(tmp_path):
@@ -497,8 +723,10 @@ def test_mergeable_unknown_then_clean_merges(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
-    # 2 lectures REST (unknown puis clean) + 1 sommeil entre les deux
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == 2
+    # 2 lectures en prelecture (unknown puis clean), 1 garde finale clean,
+    # et un seul sommeil entre les deux lectures `unknown` et `clean`.
+    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]
+                   and not c[2].split("?", 1)[0].endswith("/reviews")) == 3
     assert runner.sleeps == [mr.MERGEABLE_RETRY_SLEEP_S]
 
 
@@ -509,8 +737,11 @@ def test_mergeable_unknown_persistant_skippe(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
     assert lines[-1]["reason"] == "mergeable-state:unknown"
-    # 1 lecture initiale + MERGEABLE_RETRIES relectures, autant de sommeils
-    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]) == mr.MERGEABLE_RETRIES + 1
+    # La prelecture seule est payee : 1 lecture initiale + MERGEABLE_RETRIES
+    # relectures, autant de sommeils ; la garde finale n'est pas atteinte.
+    assert sum(1 for c in runner.cmds() if c[:2] == ["gh", "api"] and "/pulls/" in c[2]
+                   and not c[2].split("?", 1)[0].endswith("/reviews")
+               ) == mr.MERGEABLE_RETRIES + 1
     assert len(runner.sleeps) == mr.MERGEABLE_RETRIES
 
 
@@ -554,6 +785,35 @@ def test_max_arrete_le_run(tmp_path):
     # la seconde PR n'est meme pas evaluee une fois le plafond atteint
     assert not any("102" in flat for flat in runner.flat())
     assert [row["pr"] for row in lines] == [101]
+
+
+def test_argv_organes_relatif_au_depot(tmp_path):
+    """#26102 : l'argv journalise ne depend pas du chemin du worktree.
+
+    Repro ai-01 2026-11-13 : ``test_max_arrete_le_run`` echouait depuis un
+    worktree nomme pour la PR (``CoursIA-26102``) -- l'assertion cherchait
+    « 102 » dans les commandes enregistrees et le CHEMIN ABSOLU de l'organe
+    invoque le contenait. La propriete « la seconde PR n'est pas evaluee »
+    tenait deja (bilan : 1 evaluee) ; le defaut reel etait le bruit machine
+    dans l'argv. Regression : les organes sont invoques par leur chemin
+    RELATIF au depot, quel que soit l'endroit ou vit le checkout.
+    """
+    runner = ScriptedRunner(prs=(101,))
+    rc, _, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    nits = [c for c in runner.cmds()
+            if len(c) > 1 and "check_unaddressed_nits.py" in c[1]]
+    assert nits, "l'organe B.0 doit etre invoque"
+    assert nits[0][1] == "scripts/check_unaddressed_nits.py", nits[0]
+    combined = [c for c in runner.cmds()
+                if len(c) > 1 and "premerge_combined_check.py" in c[1]]
+    assert combined, "l'organe premerge doit etre invoque"
+    assert combined[0][1] == "scripts/coordination/premerge_combined_check.py", combined[0]
+    # et aucun argv n'embarque un chemin absolu de la machine executante
+    for cmd in runner.cmds():
+        for tok in cmd[1:]:
+            assert not re.match(r"^[A-Za-z]:[\\/]", tok), cmd
+            assert not tok.startswith("/"), cmd
 
 
 def test_erreur_de_portee_generale_arrete_le_run(tmp_path):
@@ -874,6 +1134,428 @@ def test_hold_file_override(tmp_path):
     )
     assert rc == 0
     assert lines[-1]["reason"] == "hold:ordre de stack"
+
+
+def test_main_rouge_pose_hold_nommee_et_bloque_tout_merge(tmp_path):
+    disposable = tmp_path / "repo-jetable"
+    disposable.mkdir()
+    subprocess.run(["git", "init", "-b", "main"], cwd=disposable, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=disposable, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=disposable, check=True)
+    (disposable / "preuve.txt").write_text("main\n", encoding="utf-8")
+    subprocess.run(["git", "add", "preuve.txt"], cwd=disposable, check=True)
+    subprocess.run(["git", "commit", "-m", "commit rouge simule"], cwd=disposable, check=True, capture_output=True)
+    main_sha = subprocess.run(
+        ["git", "rev-parse", "HEAD"], cwd=disposable, check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).stdout.strip()
+    journal = tmp_path / "journal.jsonl"
+    hold = tmp_path / "hold.txt"
+    hold.write_text("16808 attente utilisateur\n", encoding="utf-8")
+    red = ScriptedRunner(
+        main_check_runs=json.dumps([
+            {"name": "Scripts Tests (CPU)", "conclusion": "failure",
+             "status": "completed", "started_at": "2026-11-08T11:00:00Z",
+             "output": {"summary": "FAILED scripts/tests/test_guard.py::test_case - assertion"}}
+        ]),
+        main_sha=main_sha,
+    )
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=red)
+    rows = [json.loads(row) for row in journal.read_text(encoding="utf-8").splitlines()]
+    assert rc == 0
+    assert rows[0]["reason"].startswith("hold:main-red-sentinel sha=" + red.main_sha)
+    assert "test=scripts/tests/test_guard.py::test_case" in rows[0]["reason"]
+    assert not any("gh pr view" in cmd or "gh pr merge" in cmd for cmd in red.flat())
+    assert hold.read_text(encoding="utf-8").splitlines() == [
+        "16808 attente utilisateur",
+        "0 main-red-sentinel sha=" + red.main_sha
+        + " check=Scripts Tests (CPU) conclusion=failure test=scripts/tests/test_guard.py::test_case",
+    ]
+
+    # Le vert retire uniquement la ligne appartenant a la sentinelle.
+    green = ScriptedRunner(main_sha=main_sha)
+    rc = mr.run(["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=green)
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert any("gh pr merge 123" in cmd for cmd in green.flat())
+
+
+def test_main_check_absent_fail_closed(tmp_path):
+    runner = ScriptedRunner(main_check_runs="[]")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 2
+    assert lines == []
+    assert not any("gh pr merge" in cmd for cmd in runner.flat())
+
+
+# --- remontee dans l'historique de main (revue ai-01 du 2026-11-10) ---------
+# Points 1 et 2 : on juge le dernier commit qui porte un VERDICT TERMINE,
+# et seul `failure` pose la retenue.
+
+
+def _scripts_check(conclusion, status="completed", summary="21 000 passed", started="2026-11-10T10:00:00Z", details_url=None):
+    row = {"name": "Scripts Tests (CPU)", "conclusion": conclusion, "status": status,
+           "started_at": started, "output": {"summary": summary}}
+    if details_url:
+        row["details_url"] = details_url
+    return json.dumps([row])
+
+
+def _job_url(job_id: int) -> str:
+    """`details_url` d'un check-run de job (forme mesuree sur l'API)."""
+    return f"https://github.com/jsboige/CoursIA/actions/runs/43316243195/job/{job_id}"
+
+
+def test_sentinelle_juge_le_commit_derriere_une_tete_en_cours(tmp_path):
+    """Point 1 : un check EN COURS n'est pas un refus de demarrer.
+
+    On remonte l'historique et on juge le premier verdict TERMINE trouve.
+    """
+    tete = "1" * 40
+    ancien = "2" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check(None, status="in_progress", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    journal = tmp_path / "journal.jsonl"
+    rc = mr.run(
+        ["--journal", str(journal), "--hold-file", str(hold), "--apply"], runner=runner
+    )
+    assert rc == 0
+    # La retenue nomme le commit JUGUE, pas la tete.
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+    assert "test=scripts/tests/test_x.py::test_y" in contenu
+
+
+def test_sentinelle_cancelled_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `cancelled` est de l'INFRA, pas un verdict de code."""
+    tete = "3" * 40
+    ancien = "4" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("cancelled", summary=""),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={ancien}" in contenu
+    assert f"sha={tete}" not in contenu
+
+
+def test_sentinelle_timed_out_remonte_au_commit_precedent(tmp_path):
+    """Point 2 : `timed_out` est de l'INFRA ; le verdict vert precedent gagne."""
+    tete = "5" * 40
+    ancien = "6" * 40
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("timed_out", summary=""),
+            ancien: _scripts_check("success"),
+        },
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    # Aucun verdict de code rouge : la sentinelle n'ecrit aucune retenue.
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert "main-red-sentinel" not in contenu
+
+
+def test_sentinelle_sans_verdict_termine_fail_closed_borne(tmp_path, capsys):
+    """Point 3 : fail-closed AVEC la borne nommee (N ecrit)."""
+    history = [f"{i:040x}" for i in range(1, mr.MAIN_RED_HISTORY_LIMIT + 1)]
+    runner = ScriptedRunner(
+        main_sha=history[0],
+        main_history=history,
+        main_checks_by_sha={
+            sha: _scripts_check(None, status="in_progress", summary="")
+            for sha in history
+        },
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "fail-closed" in err
+    assert str(mr.MAIN_RED_HISTORY_LIMIT) in err
+
+
+# --- #25510 T-J : `failure` d'infrastructure vs verdict de code ----------
+# Un `failure` sans test identifiable peut venir de l'infrastructure (le
+# checkout qui tombe, l'install des dependances qui echoue). La sentinelle
+# ne doit pas retenir `main` sur une panne d'infrastructure : elle remonte
+# au commit precedent. Un `failure` dont la premiere etape en echec est
+# une etape de TEST reste une retenue, meme sans nom de test identifiable.
+
+
+def test_sentinelle_failure_d_infrastructure_ne_pose_pas_de_retenue(tmp_path, capsys):
+    """CONTROLE POSITIF : le checkout en echec n'est pas un verdict de code.
+
+    Mesure de reference (run 43316243195, job 131524893709) : la premiere
+    etape en echec est `Run actions/checkout@v4`, et le log d'echec ne
+    contient aucun jeton `FAILED`/`ERROR` -- donc aucun test n'est
+    identifiable. Le commit est ecarte, le verdict remonte au precedent.
+    """
+    tete = "a1" * 20
+    ancien = "b2" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(131524893709)),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+        job_steps={"131524893709": "Run actions/checkout@v4"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    # Le commit d'infrastructure n'est PAS retenu : le verdict remonte.
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert f"sha={tete}" not in contenu
+    assert f"sha={ancien}" in contenu
+
+
+def test_sentinelle_failure_d_infrastructure_nomme_l_etape_ecartee(tmp_path, capsys):
+    """Point 4 du plan : le journal nomme l'etape ecartee."""
+    tete = "c3" * 20
+    ancien = "c4" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(42)),
+            ancien: _scripts_check("success"),
+        },
+        job_steps={"42": "Install dependencies"},
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    out = capsys.readouterr().out
+    assert "Install dependencies" in out
+    assert "sentinelle main-red" in out
+
+
+def test_sentinelle_failure_a_l_etape_de_test_garde_la_retenue(tmp_path):
+    """CONTROLE NEGATIF : un test non identifiable n'est PAS de l'infra.
+
+    La premiere etape en echec est l'etape de test : la retenue est
+    conservee, et elle porte l'absence d'identification du test.
+    """
+    tete = "d4" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(43)),
+        },
+        job_steps={"43": "Run tests"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
+    assert "test=test-non-identifie-dans-le-check" in contenu
+
+
+def test_sentinelle_reconnait_les_etapes_du_checkout_borne_t_k(tmp_path):
+    """T-K (#25510) : une panne du `git fetch --unshallow` est une panne
+    d'INFRASTRUCTURE, pas un verdict de code.
+
+    Les deux etapes du checkout borne portent le prefixe `T-K :`. Si la
+    sentinelle ne les reconnait pas, un `curl 28` sur le reseau retient
+    `main` au lieu de remonter au commit precedent -- exactement la panne
+    que la sentinelle T-J a ete creee pour ecarter.
+    """
+    tete = "1a" * 20
+    ancien = "2b" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete, ancien],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(47)),
+            ancien: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+            ),
+        },
+        job_steps={"47": "T-K : ascendance de la tete + la base, sans les 1 606 branches"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8") if hold.exists() else ""
+    assert f"sha={tete}" not in contenu
+    assert f"sha={ancien}" in contenu
+
+
+def test_sentinelle_ne_prend_pas_le_prefixe_t_k_sans_le_deux_points(tmp_path):
+    """CONTROLE NEGATIF : le marqueur est `t-k :`, pas `t-k`.
+
+    Un nom d'etape qui porte `T-K` sans les deux points (une etape de
+    test du meme prefixe, un workflow nomme T-K) n'est PAS de l'infra : la
+    retenue doit etre conservee.
+    """
+    tete = "3c" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(48)),
+        },
+        job_steps={"48": "T-K tests du script"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert f"sha={tete}" in contenu
+
+
+def test_sentinelle_success_ne_lit_aucun_job(tmp_path):
+    """Un `success` ne declenche aucune lecture de job (cout nul)."""
+    tete = "e5" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={tete: _scripts_check("success", details_url=_job_url(44))},
+        job_steps={"44": "Run actions/checkout@v4"},
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    lectures = [c for c, _ in runner.calls if "/actions/jobs/" in " ".join(c)]
+    assert lectures == []
+
+
+def test_sentinelle_lit_le_job_une_seule_fois_par_commit_juge(tmp_path):
+    """Une seule lecture de job par commit juge, et seulement en cas de
+    `failure` sans test identifiable."""
+    tete = "f6" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check("failure", summary="", details_url=_job_url(45)),
+        },
+        job_steps={"45": "Run tests"},
+    )
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(tmp_path / "h.txt"), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    lectures = [c for c, _ in runner.calls if "/actions/jobs/" in " ".join(c)]
+    assert len(lectures) == 1
+
+
+def test_sentinelle_identifie_un_test_et_ne_lit_aucun_job(tmp_path):
+    """Un `failure` dont le resume nomme un test est un verdict de code :
+    la retenue porte le nom du test, et aucun job n'est lu."""
+    tete = "a7" * 20
+    runner = ScriptedRunner(
+        main_sha=tete,
+        main_history=[tete],
+        main_checks_by_sha={
+            tete: _scripts_check(
+                "failure",
+                summary="FAILED scripts/tests/test_x.py::test_y - assertion",
+                details_url=_job_url(46),
+            ),
+        },
+        job_steps={"46": "Run actions/checkout@v4"},
+    )
+    hold = tmp_path / "hold.txt"
+    rc = mr.run(
+        ["--journal", str(tmp_path / "j.jsonl"), "--hold-file", str(hold), "--apply"],
+        runner=runner,
+    )
+    assert rc == 0
+    contenu = hold.read_text(encoding="utf-8")
+    assert "test=scripts/tests/test_x.py::test_y" in contenu
+    lectures = [c for c, _ in runner.calls if "/actions/jobs/" in " ".join(c)]
+    assert lectures == []
+
+
+def test_clear_main_red_hold_ne_retire_que_la_ligne_de_la_sentinelle(tmp_path):
+    """Point 3 : la voie manuelle ne touche PAS les retenues du coordinateur."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    assert mr.clear_main_red_hold(hold) is True
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    # Idempotent : une seconde passe ne trouve plus rien a retirer.
+    assert mr.clear_main_red_hold(hold) is False
+
+
+def test_cli_clear_main_red_hold_nappelle_pas_gh(tmp_path):
+    """La voie manuelle sort avant tout appel GitHub."""
+    hold = tmp_path / "hold.txt"
+    hold.write_text(
+        "16808 attente utilisateur\n"
+        "0 main-red-sentinel sha=deadbeef check=Scripts Tests (CPU) "
+        "conclusion=failure test=scripts/tests/test_x.py::test_y\n",
+        encoding="utf-8",
+    )
+    runner = ScriptedRunner()
+    rc = mr.run(
+        ["--clear-main-red-hold", "--hold-file", str(hold)], runner=runner
+    )
+    assert rc == 0
+    assert hold.read_text(encoding="utf-8") == "16808 attente utilisateur\n"
+    assert runner.flat() == []
 
 
 # --- disposition de review classee a la tete evaluee (point 1 de #17672) ---------
@@ -1548,6 +2230,143 @@ def test_base_absente_fail_closed(tmp_path):
     assert lines[-1]["reason"] == "coordinator-approval-unverifiable:no-base"
 
 
+# --- #17437 : l'APPROVE du coordinateur sous identite GitHub App -------------
+#
+# Mesure ai-01 du 2026-11-04 : sous identite App, la porte ne trouvait pas
+# l'APPROVE — la voix du coordinateur etait cablee sur le seul login humain.
+# L'App a d'abord ete cablee comme seconde voix ; l'arbitrage ai-01 du
+# 2026-11-13 l'a RETIREE. La cle privee de ``coursia-lane-ai-01`` vit sur la
+# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
+# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
+# fichier et forge le meme jeton. Une App nommee par MACHINE ne peut pas
+# representer la lane coordinateur seule — il faut une App propre a la lane
+# coordinatrice.
+#
+# Le mecanisme de preuve d'identite reste en place et reste teste : la
+# preuve est le TYPE PORTE PAR LA LIGNE (REST ``user.type``, GraphQL
+# ``author.__typename``), JAMAIS une sonde ``users/<slug>[bot]``. Une ligne
+# sans type est refusee ; l'orthographe canonique nue de l'humain
+# (``myia-ai-01``) reste valable sur la surface CLI non typee.
+
+APP_LOGIN_BARE = "coursia-lane-ai-01"
+APP_LOGIN_REST = "coursia-lane-ai-01[bot]"
+
+
+def rest_review(*, login: str, type_: str = "Bot",
+                state: str = "APPROVED", oid: str = HEAD,
+                submitted: str = "2026-09-25T03:00:00Z",
+                body: str = "") -> dict:
+    """Ligne de la surface REST typee ``pulls/N/reviews`` (forme brute)."""
+    return {
+        "user": {"login": login, "type": type_},
+        "state": state, "body": body,
+        "submitted_at": submitted, "commit_id": oid,
+    }
+
+
+def test_17437_app_login_rest_typee_n_est_pas_la_voix(tmp_path):
+    """Orthographe REST typée (``pulls/N/reviews`` : login suffixé +
+    ``user.type: Bot``) : le TYPE de la ligne est correct, mais l'App de
+    MACHINE n'est pas la voix du coordinateur (arbitrage ai-01 du
+    2026-11-13) — la lane sœur d'ai-01 forge le même jeton. La porte reste
+    fermée, et la preuve vient toujours de la ligne."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[rest_review(login=APP_LOGIN_REST)],
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    # la preuve vient de la ligne, jamais d'une sonde users/
+    assert not any("users/" in f for f in runner.flat())
+    assert any("/reviews" in f for f in runner.flat())
+
+
+def test_17437_approve_app_login_nu_sans_type_refuse_meme_app_existante(tmp_path):
+    """LE test manquant de la relecture ai-01 : une ligne
+    ``{"login": "coursia-lane-ai-01"}`` SANS type, la sonde etant scriptee
+    a ``Bot`` (l'App existe bel et bien). Elle ne doit NI approuver NI
+    compter — la preuve est le type de la ligne, pas l'existence de l'App."""
+    view = default_view(reviews=[review_row(oid=HEAD, login=APP_LOGIN_BARE)])
+    runner = ScriptedRunner(
+        views={123: view},
+        user_types={f"users/{APP_LOGIN_BARE}[bot]": "Bot"},
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    # la sonde a disparu : meme scriptee, elle n'est plus appelee
+    assert not any("users/" in f for f in runner.flat())
+
+
+def test_17437_app_login_nu_type_dans_payload_refuse(tmp_path):
+    """Preuve de type dans le payload (GraphQL ``__typename: Bot``) : la
+    normalisation gh_identity reconstruit bien le suffixe, et le résultat
+    est refusé — l'App de machine n'est pas la voix coordinatrice."""
+    view = default_view(reviews=[{
+        "author": {"login": APP_LOGIN_BARE, "__typename": "Bot"},
+        "state": "APPROVED", "body": "",
+        "submittedAt": "2026-09-25T03:00:00Z",
+        "commit": {"oid": HEAD},
+    }])
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert not any("users/" in f for f in runner.flat())
+
+
+def test_17437_approve_humain_surf_rest_typee_compte(tmp_path):
+    """L'humain sur la surface typee : ``user.type: User`` nu canonique —
+    la normalisation le laisse nu, il est la voix."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[rest_review(login="myia-ai-01", type_="User")],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+
+
+def test_17437_approve_surf_rest_typee_latest_wins(tmp_path):
+    """Latest-wins preserve par le mapping REST, sur la voix qui compte :
+    un CHANGES_REQUESTED posterieur de l'HUMAIN retire son approbation
+    anterieure."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[
+            rest_review(login="myia-ai-01", type_="User", state="APPROVED",
+                        submitted="2026-09-25T03:00:00Z"),
+            rest_review(login="myia-ai-01", type_="User",
+                        state="CHANGES_REQUESTED",
+                        submitted="2026-09-25T04:00:00Z"),
+        ],
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_17437_approve_app_d_une_autre_lane_ne_compte_pas(tmp_path):
+    """Point Hermes : l'App d'une autre lane, MEME typee Bot sur la surface
+    REST, n'est pas la voix du siege — le prefixe seul ne suffit pas."""
+    view = default_view(reviews=[])
+    runner = ScriptedRunner(
+        views={123: view},
+        rest_reviews=[rest_review(login="coursia-lane-po-2026[bot]")],
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+
+
+def test_17437_voix_du_coordinateur_humain_seul():
+    """Arbitrage ai-01 du 2026-11-13 : ``COORDINATOR_VOICES`` ne porte que
+    le login humain. Le rouge est ici la potence — si une edition future y
+    ajoute ``coursia-lane-ai-01[bot]`` (App nommee par MACHINE, forgeable
+    par la lane sœur ``myia-ai-01:CoursIA-2``), ce test le dit avant que la
+    porte Q131 ne s'ouvre."""
+    assert mr.COORDINATOR_VOICES == frozenset(("myia-ai-01",))
+    assert not hasattr(mr, "COORDINATOR_APP_LOGIN")
+
+
 # --- #19002 : defense en profondeur sur la base -----------------------------
 # Le gate refusait READY si la base n'est pas `main` (cf test_base_* dans
 # test_check_adjoint_prevalidation.py) ; depuis le retrait du dossier
@@ -1972,3 +2791,224 @@ def test_combined_operator_rollback_env(tmp_path, monkeypatch):
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[0]["verdict"] == "would-merge"
     assert _combined_calls(runner) == []
+
+
+# --- #24989 : garde Lean -- attestation de `lake build` local -----------------
+# La regle HARD `lean-merge-discipline.md` §1 exige un `lake build` local par
+# ai-01 avant tout merge d'une PR qui touche du Lean. La garde exige une
+# **preuve** : un commentaire d'attestation pose par `myia-ai-01` et couvrant
+# la tete. La couverture de tete suit la meme regle que l'APPROVE (remontee
+# first-parent de merge_dwell).
+
+LEAN_FILE = "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/Conway.lean"
+ATTESTED_SHA = "c0ffee00c0ffee00c0ffee00c0ffee00c0ffee00"
+
+
+def _attestation_body(
+    sha: str = HEAD,
+    *,
+    lakes: str = "conway_lean",
+    jobs: int = 2948,
+    tag: str = "[ACTION] lake build local",
+) -> str:
+    """Corps d'un commentaire d'attestation, au format canonique."""
+    return (
+        "{tag}\n\n"
+        "PR #123\n"
+        "tete: {sha}\n"
+        "lakes: {lakes}\n"
+        "jobs: {jobs}\n"
+    ).format(tag=tag, sha=sha, lakes=lakes, jobs=jobs)
+
+
+def _attestation_comment(
+    sha: str = HEAD, *, login: str = "myia-ai-01", created: str = "2026-11-06T18:00:00Z",
+    body: str | None = None,
+) -> dict:
+    """Commentaire d'attestation, forme de ``gh pr view --json comments``."""
+    return {
+        "author": {"login": login},
+        "body": body if body is not None else _attestation_body(sha),
+        "createdAt": created,
+    }
+
+
+def test_diff_lean_sans_attestation_donne_un_skip(tmp_path):
+    """Controle positif : un diff `.lean` sans attestation est bloque."""
+    view = default_view(files=(LEAN_FILE,))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert lines[-1]["merged"] is False
+    # la garde est en AMONT des organes couteux : rien n'a ete paye
+    assert not any("check_unaddressed_nits.py" in flat for flat in runner.flat())
+
+
+def test_diff_sans_lean_n_est_pas_affecte(tmp_path):
+    """Controle negatif : un diff sans Lean n'exige aucune attestation."""
+    view = default_view(files=("src/a.py", "docs/b.md"))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+
+
+def test_outillage_lean_sans_attestation_donne_un_skip(tmp_path):
+    """``lakefile.*``, ``lean-toolchain`` et ``lake-manifest.json`` sont des
+    fichiers Lean : changer la toolchain change ce que le build doit prouver."""
+    for path in (
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json",
+    ):
+        runner = ScriptedRunner(views={123: default_view(files=(path,))})
+        _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+        assert lines[-1]["reason"] == "lean:no-local-build-attestation", path
+
+
+def test_attestation_a_la_tete_passe(tmp_path):
+    """Attestation posee a la tete exacte : la garde laisse passer."""
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "would-merge"
+    assert lines[-1]["reason"] is None
+
+
+def test_attestation_signee_par_un_autre_login_est_refusee(tmp_path):
+    """Une attestation posee par une autre lane ne vaut rien : l'acte est
+    celui du coordinateur."""
+    for login in ("jsboige", "myia-po-2026:CoursIA", "clusterManager-Myia"):
+        view = default_view(
+            files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, login=login)]
+        )
+        runner = ScriptedRunner(views={123: view})
+        _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+        assert lines[-1]["reason"] == "lean:no-local-build-attestation", login
+
+
+def test_attestation_avec_un_autre_tag_est_refusee(tmp_path):
+    """Le tag en premiere ligne est le contrat : un corps qui cite le SHA
+    dans la prose n'est pas une attestation."""
+    body = _attestation_body(HEAD, tag="[DIAG] lake build local")
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, body=body)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_sans_champ_tete_est_refusee(tmp_path):
+    """Un SHA cite en prose ne fait pas une attestation : seul le champ
+    etiquete ``tete:`` porte le SHA atteste."""
+    body = "[ACTION] lake build local\n\nSHA {} cite en prose.\n".format(HEAD)
+    view = default_view(
+        files=(LEAN_FILE,), comments=[_attestation_comment(HEAD, body=body)]
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+
+
+def test_attestation_a_une_tete_anterieure_et_commit_de_contenu_donne_un_skip(tmp_path):
+    """L'attestation perime quand un commit de contenu passe apres elle."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    runner = ScriptedRunner(
+        views={123: view}, **refresh_topology(head_parents=[HEAD_MOVED])
+    )
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "lean:no-local-build-attestation"
+    assert lines[-1]["merged"] is False
+
+
+def test_attestation_suivie_d_un_rafraichissement_seul_laisse_passer(tmp_path):
+    """L'attestation survit a un rafraichissement de base PROUVE content-free :
+    la couverture de tete suit la meme regle que l'APPROVE."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    runner = ScriptedRunner(views={123: view}, **refresh_topology())
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["merged"] is True
+
+
+def test_attestation_illisible_fail_closed(tmp_path):
+    """Preuve illisible (base absente) -> refus, jamais « c'est propre »."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(HEAD_MOVED)],
+    )
+    view["baseRefOid"] = ""
+    runner = ScriptedRunner(views={123: view}, **refresh_topology())
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] == "lean:local-build-attestation-unverifiable:no-base"
+
+
+def test_l_attestation_la_plus_recente_gagne(tmp_path):
+    """Deux attestations : la plus recente regne (l'ordre est celui du
+    serveur, ``createdAt``)."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[
+            _attestation_comment(
+                ATTESTED_SHA, created="2026-11-06T18:00:00Z"
+            ),
+            _attestation_comment(
+                HEAD, created="2026-11-06T19:00:00Z"
+            ),
+        ],
+    )
+    runner = ScriptedRunner(views={123: view})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["verdict"] == "would-merge"
+
+
+def test_une_attestation_postee_sur_une_autre_pr_ne_suffit_pas(tmp_path):
+    """Une attestation qui cite une autre tete (SHA inconnu de la PR) ne
+    couvre pas la tete courante : la remontee echoue -> refus explicite."""
+    view = default_view(
+        files=(LEAN_FILE,),
+        comments=[_attestation_comment(ATTESTED_SHA)],
+    )
+    runner = ScriptedRunner(views={123: view}, commits={})
+    _, lines, _ = run_organ(tmp_path, runner)
+    assert lines[-1]["reason"] in (
+        "lean:local-build-attestation-unverifiable",
+        "lean:no-local-build-attestation",
+    )
+    assert lines[-1]["merged"] is False
+
+
+def test_format_partage_entre_organe_et_garde():
+    """L'organe qui ECRIT et la garde qui LIT partagent le meme format : un
+    corps rendu par l'organe est relu par la garde."""
+    import importlib.util as _ilu
+
+    spec = _ilu.spec_from_file_location(
+        "lean_build_attestation_under_test",
+        HERE.parent / "lean" / "lean_build_attestation.py",
+    )
+    module = _ilu.module_from_spec(spec)
+    sys.modules["lean_build_attestation_under_test"] = module
+    spec.loader.exec_module(module)
+
+    body = module.render_attestation(
+        sha=HEAD, lakes=["conway_lean"], jobs=2948, pr=123
+    )
+    assert module.first_line(body) == module.ATTESTATION_TAG
+    parsed = module.parse_attestation(body)
+    assert parsed and parsed["sha"] == HEAD
+    assert parsed["lakes"] == ["conway_lean"]
+    assert parsed["jobs"] == 2948

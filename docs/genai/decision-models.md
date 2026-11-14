@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-03
+> REFERENCE — vivante — dernière révision 2026-11-10
 
 # Modèles de décision — relevé et shortlist (issue #18204, Pli 1)
 
@@ -263,16 +263,18 @@ Les modèles de décision posés sur un encodeur (famille `laya`, `Lavoir`, `GLi
 ## 4. Shortlistoire 3-5 modèles
 
 > **Critère de shortlistoire** (Pli 1 sortie) : score `balanced_skill` ≥ 40 (palier autorégressif) **ET** servabilité sur cartes 24 Go **ET** présentation reproductible disponible (à vérifier Pli 2).
+>
+> **Cases « à confirmer » levées le 2026-11-10** : repo HF, licence et disponibilité des poids vérifiés **firsthand** — index `data/index.json` régénéré le **2026-11-06** (édition `0.4.1` / `release-v4`, base `release-v2.1`, 274 entrées, corpus `b2b56d6f…`), API Hugging Face interrogée par dépôt. Les scores du tableau initial (édition 0.2.1 du 2026-09-28) ont **dévié** à la régénération : la colonne Score ci-dessous donne le score **courant**, l'ancien en barré.
 
-| # | Modèle | Score | Servabilité 24 Go | Présentation | Verdict |
-|---:|---|---:|---|---|---|
-| 1 | **JPT-9B** | 46,9 | oui (vLLM, Qwen3.5-9B) | à confirmer | shortlistoire candidat |
-| 2 | **JPT-4B** | 43,0 | oui (vLLM, llama.cpp) | à confirmer | shortlistoire candidat |
-| 3 | **Jet v6.2** | 42,6 | oui (vLLM, llama.cpp) | à confirmer | shortlistoire candidat |
-| 4 | **Winnow-12B** | 50,0 | oui (vLLM quantisé) | à confirmer | shortlistoire candidat |
-| 5 | **Surogate Rune 26B-A4B** | 57,4 | limite (vLLM quantisé, 24 Go) | non vérifié | shortlistoire candidat si présentation disponible |
+| # | Modèle | Repo HF (poids) | Licence (API HF) | Gated | Poids | Score courant (0.4.1) | Servabilité 24 Go | Présentation | Verdict |
+|---:|---|---|---|---|---|---:|---|---|---|
+| 1 | **Surogate Rune 26B-A4B v3** | `surogate/rune-26b-a4b-GGUF` | `apache-2.0` | **`auto`** (étape manuelle d'acceptation, y compris en CI) | OUI (`.gguf`) | 56,42 (~~57,4~~) | oui (**GGUF → llama.cpp**, pas vLLM) | Pli 2 | **candidat confirmé** |
+| 2 | **Winnow-12B** (Q8_0) | `EldanRing/Winnow-12B` | `apache-2.0` | non | OUI | 46,57 (~~50,0~~) | oui (vLLM quantisé, base `gemma-4-12B`) | Pli 2 | **candidat confirmé** |
+| 3 | **JPT-9B** | `kirp/jpt-9b` | `cc-by-nc-4.0` | non | OUI | 44,08 (~~46,9~~) | oui (vLLM, LoRA sur `Qwen3.5-9B-Base`) | Pli 2 | candidat confirmé — **NC** : contrainte réelle pour l'usage CI/coordination visé au Pli 4 |
+| 4 | ~~**JPT-4B**~~ | `kirp/jpt-4b` | `cc-by-nc-4.0` | non | OUI | **39,56** (~~43,0~~) | oui | — | **ne qualifie plus** : score courant sous le seuil ≥ 40 |
+| 5 | ~~**Jet v6.2**~~ | — (repo sondé `michaljach/jet` : HTTP 401 dès la 0.2.1) | — | — | — | **absent** de l'édition courante | — | — | **sorti** : l'entrée n'existe plus dans l'index régénéré |
 
-**Sortie Pli 1** : 5 cartes pressenties. La **vérification locale** (rejouer 2-3 benchmarks sur 3 modèles) sort de cette PR et est routée vers une machine GPU 24 Go+.
+**Sortie Pli 1 (mise à jour du 2026-11-10)** : la shortlistoire vérifiée tombe de 5 cartes pressenties à **3 confirmées** — `Surogate Rune 26B-A4B v3` (GGUF, gated `auto`), `Winnow-12B` (apache-2.0, non gated), `JPT-9B` (NC). Deux cartes quittent la liste pour des raisons mesurées, pas d'opinion : `JPT-4B` passe sous le seuil de score à la régénération de l'index, `Jet v6.2` en a disparu. La **vérification locale** (rejouer 2-3 benchmarks sur 3 modèles) sort de cette PR et est routée vers une machine GPU 24 Go+.
 
 ## 5. Vérification locale — hors périmètre de cette PR
 

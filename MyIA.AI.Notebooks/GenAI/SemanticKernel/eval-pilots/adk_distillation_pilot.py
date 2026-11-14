@@ -34,7 +34,7 @@ import sys
 import time
 from pathlib import Path
 
-TRACK_ROOT = Path(__file__).resolve().parents[3] / "ML" / "DataScienceWithAgents" / "Track2-GoogleADK"
+TRACK_ROOT = Path(__file__).resolve().parents[3] / "ML" / "DataScienceWithAgents" / "07-Agent-Orchestration"
 sys.path.insert(0, str(TRACK_ROOT))
 
 import google.adk

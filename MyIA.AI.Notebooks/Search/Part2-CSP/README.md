@@ -28,7 +28,9 @@ Le benchmark de parallélisation de CSP-6 rappelle enfin qu'aucun mécanisme n'e
 
 [![Parallélisation CP-SAT sur N-Queens 12 : temps de résolution et speedup restant sous 1x avec 1, 2 puis 4 workers](assets/readme/csp6-lazy-clause-generation.png)](CSP-6-Hybridization.ipynb)
 
-Les trois derniers notebooks desserrent chacun une hypothèse du cadre classique : et si toutes les contraintes n'avaient pas le même poids (CSP-7, contraintes souples) ? Et si les variables étaient des intervalles de temps (CSP-8, algèbre d'Allen) ? Et si personne ne détenait le problème en entier (CSP-9, résolution distribuée et préservation de la vie privée) ?
+Trois approfondissements desserrent chacun une hypothèse du cadre classique : et si toutes les contraintes n'avaient pas le même poids (CSP-7, contraintes souples) ? Et si les variables étaient des intervalles de temps (CSP-8, algèbre d'Allen) ? Et si personne ne détenait le problème en entier (CSP-9, résolution distribuée et préservation de la vie privée) ?
+
+CSP-10 revient à l'optimisation avec un autre solveur : il formule une couverture minimale en SMT avec Z3 et la compare à une énumération brute. Après CSP-5, il offre un pont entre la modélisation CP et le raisonnement SMT ; il peut aussi se lire après le parcours complet.
 
 L'algèbre d'Allen (CSP-8) donne le vocabulaire de ce temps qualitatif : treize relations de base entre deux intervalles. La figure extraite du notebook n'en rend toutefois **que cinq visibles** (before, meets, overlaps, during, equals) — le tracé des huit autres vignettes est défaillant dans la sortie actuelle du notebook ; limitation illustrative assumée, en attendant une correction du tracé et une ré-exécution :
 
@@ -67,9 +69,9 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 
 ### Parité Python ⇄ .NET
 
-Les neuf notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. CSP-10 (SMT Z3) est en **Python seul** — c'est le pont CP↔SMT de la partie, sans jumeau .NET. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
+Les dix notebooks de cette partie existent en **binôme bilingue** : une version Python et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. CSP-10 utilise Z3 des deux côtés pour illustrer le pont CP↔SMT. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
 
-| # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
+| # | Python | .NET (C#) | Solveur .NET |
 |---|--------------------------|-----------|--------------|
 | 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.ipynb) | [CSP-1-Fundamentals-CSharp](CSP-1-Fundamentals-CSharp.ipynb) | Choco-solver via IKVM |
 | 2 | [CSP-2-Consistency](CSP-2-Consistency.ipynb) | [CSP-2-Consistency-CSharp](CSP-2-Consistency-CSharp.ipynb) | Choco-solver via IKVM (propagation native) |
@@ -80,29 +82,45 @@ Les neuf notebooks de cette partie existent en **binôme bilingue** : une versio
 | 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | [CSP-7-Soft-CSharp](CSP-7-Soft-CSharp.ipynb) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
 | 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | [CSP-8-Temporal-CSharp](CSP-8-Temporal-CSharp.ipynb) | OR-Tools CP-SAT natif (IntervalVar temporels) |
 | 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | [CSP-9-Distributed-CSharp](CSP-9-Distributed-CSharp.ipynb) | ABT multi-agent (port from scratch, Yokoo 1992) |
+| 10 | [CSP-10-Optimisation-Z3](CSP-10-Optimisation-Z3.ipynb) | [CSP-10-Optimisation-Z3-CSharp](CSP-10-Optimisation-Z3-CSharp.ipynb) | Microsoft.Z3 natif (Optimize et Solver) |
 
 > **Quel solveur .NET pour quel terrain ?** CSP-4 (ordonnancement `IntervalVar`, `NoOverlap`, `Cumulative`), CSP-6 (Lazy Clause Generation, CP+SAT) et CSP-8 (intervalles temporels) sont routés vers **OR-Tools CP-SAT natif** — le terrain où CP-SAT excelle, cf. *vrai outil SOTA pour le problème* (#3801). Les binômes 1, 2, 3, 5 et 7 illustrent **Choco via IKVM** comme levier de parité .NET pour une lib Java — y compris `binPacking`, contrainte globale dont la propagation surpasse la linéarisation BoolVar manuelle. CSP-9 (DisCSP) n'a pas de solveur off-the-shelf : l'algorithme ABT (Yokoo 1992) y est porté **from scratch** en C# multi-agent.
 
 ## Progression
 
-CSP-1 et CSP-2 sont incontournables : tout le paradigme — un modèle déclaratif, une propagation qui élague — tient dans ces deux notebooks. Au-delà, trois chemins s'offrent selon votre objectif :
+Le tableau des carnets donne un **ordre de lecture** : les flèches précédent/suivant
+permettent de parcourir CSP-1 à CSP-10. Cet ordre est un itinéraire conseillé ; il
+ne signifie pas que chaque carnet exige tous ceux qui le précèdent.
 
-- **Applications industrielles** : CSP-3 puis CSP-4 (Scheduling) et/ou CSP-5 (Optimization)
-- **Frontières** : CSP-6 (Hybridization, le notebook le plus avancé), puis CSP-7/8/9 (Soft/Temporal/Distributed)
-- **Indépendants** : CSP-7, CSP-8 et CSP-9 sont accessibles après CSP-1 + CSP-2
+Commencez par **CSP-1 puis CSP-2**, pour le modèle et la propagation. Choisissez
+ensuite selon votre objectif :
+
+- **Applications** : CSP-3 introduit les contraintes globales, puis CSP-4 et CSP-5
+  les appliquent à l'ordonnancement et à l'optimisation.
+- **Solveurs et hybridation** : après CSP-3, CSP-6 ouvre le fonctionnement de
+  CP-SAT et ses hybridations ; CSP-10 complète CSP-5 par une formulation SMT
+  de couverture minimale avec Z3.
+- **Variantes du modèle** : après le socle, CSP-7, CSP-8 et CSP-9 peuvent être
+  abordés séparément selon que l'on étudie les contraintes souples, le temps ou
+  la distribution ; ils ne dépendent pas les uns des autres.
 
 ```mermaid
 flowchart LR
-    SOCLE["<b>Socle du paradigme</b><br/>CSP-1 — Modèle (X, D, C)<br/>&amp; backtracking + MRV/LCV<br/>CSP-2 — Propagation<br/>(AC-3, Forward Checking, MAC)"]
-    APP["<b>Applications industrielles</b><br/>CSP-3 — Contraintes globales<br/>→ CSP-4 Scheduling<br/>→ CSP-5 Optimization"]
-    FRO["<b>Frontières</b><br/>CSP-6 — Hybridization<br/>(LCG, CP+SAT/ML/LLM)<br/>→ CSP-7 Soft<br/>→ CSP-8 Temporal<br/>→ CSP-9 Distributed"]
-    IND["<b>Indépendants</b><br/>CSP-7 / CSP-8 / CSP-9<br/>(accessibles dès<br/>CSP-1 + CSP-2)"]
-    SOCLE --> APP
-    SOCLE --> FRO
-    SOCLE --> IND
+    S["CSP-1 Modèle → CSP-2 Propagation"] --> G["CSP-3 Contraintes globales"]
+    G --> A["CSP-4 Ordonnancement"]
+    G --> O["CSP-5 Optimisation"]
+    G --> H["CSP-6 Hybridation"]
+    O --> Z["CSP-10 Optimisation SMT"]
+    S --> V["CSP-7 Souple / CSP-8 Temporel / CSP-9 Distribué"]
 ```
 
-Les notebooks CSP présupposent les bases de la Partie 1 : formalisation en espace d'états ([Search-1](../Part1-Foundations/Search-01-StateSpace.ipynb)) et backtracking ([Search-2](../Part1-Foundations/Search-02-Uninformed.ipynb)).
+Les flèches du schéma indiquent des **prérequis conseillés**, pas la chaîne
+linéaire de navigation. Les versions C# correspondantes sont accessibles dans le
+tableau de parité, CSP-10 compris.
+
+Les carnets présupposent aussi les bases de la Partie 1 : formalisation en espace
+d'états ([Search-1](../Part1-Foundations/Search-01-StateSpace.ipynb)) et
+backtracking ([Search-2](../Part1-Foundations/Search-02-Uninformed.ipynb)).
 
 ## Prérequis & environnement
 
@@ -128,24 +146,6 @@ Pour le setup complet, voir le [README de la série Search](../README.md).
 Les notebooks CSP nécessitent une compréhension préalable de :
 - **[Search-1 (StateSpace)](../Part1-Foundations/Search-01-StateSpace.ipynb)** : formalisation des problèmes
 - **[Search-2 (Uninformed)](../Part1-Foundations/Search-02-Uninformed.ipynb)** : backtracking = DFS avec retour arrière
-
-## Progression recommandée
-
-```text
-CSP-1 (Fundamentals) ──> CSP-2 (Consistency) ──> CSP-3 (Advanced)
-                                                    │
-                                    ┌───────────────┼───────────────┐
-                                    │               │               │
-                              CSP-4           CSP-5           CSP-6
-                            (Scheduling)   (Optimization)  (Hybridization)
-                                    │               │
-                                    └───────────────┘
-                                            │
-                              ┌─────────────┼─────────────┐
-                              │             │             │
-                         CSP-7         CSP-8         CSP-9
-                         (Soft)      (Temporal)   (Distributed)
-```
 
 ## Transition vers SymbolicAI
 
@@ -216,6 +216,7 @@ Cette deuxième partie a opéré un **changement de paradigme** : ne plus cherch
 - **Les applications industrielles** (CSP-4, CSP-5) — ordonnancement (Job-Shop, RCPSP, planification d'infirmiers avec IntervalVar/NoOverlap) et optimisation combinatoire (Bin Packing, Knapsack, portefeuille) : l'arsenal CSP appliqué aux deux grands classiques de la recherche opérationnelle.
 - **Sous le capot et les frontières** (CSP-6) — la **Lazy Clause Generation** explique pourquoi CP-SAT s'appelle ainsi : un solveur CP qui apprend des clauses SAT en cours de route ; les hybridations CP+ML et LLM+CSP esquissent la discipline à l'ère des grands modèles.
 - **Desserrer les hypothèses** (CSP-7, CSP-8, CSP-9) — contraintes souples (poids inégaux), contraintes temporelles (algèbre d'Allen, STP), résolution distribuée et préservation de la vie privée.
+- **Changer de solveur** (CSP-10) — couverture minimale formulée en SMT avec Z3 et comparée à une énumération brute.
 
 Le véritable enseignement est une **sensibilité à la modélisation** : le même problème, déclaré avec des contraintes binaires ou avec une contrainte globale équivalente, peut passer de plusieurs heures à quelques millisecondes — le solveur n'a pas changé, seule la formulation a changé. Cette compétence de formulation est ce qui distingue le praticien CSP.
 

@@ -88,6 +88,10 @@ jobs:
     outputs:
       action: ${{ steps.resolve.outputs.action }}
       run_id: ${{ steps.resolve.outputs.run_id }}
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 3 derniers runs
+    # verts de ce job : max 0.17 min. Marge x2 -- le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 10
     steps:
       # #17680 : la route vit dans scripts/ci/pr_gate_route.py (stdlib pur) --
       # testable en unitaire, horloge incluse. Le bash inline ne pouvait pas

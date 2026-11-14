@@ -64,6 +64,10 @@ def _no_shell_escape(forbid_shell_escape, monkeypatch):
     `pig.subprocess.run`.
     """
     monkeypatch.setenv("GH_TOKEN", "tok-fake-picker-gpu-gate")
+    # #25522 : la lecture de perimetrie du picker (deux `git` locaux) passe
+    # par ce point de couture -- hors du comportement sous test, et la
+    # sentinelle refuse tout processus.
+    monkeypatch.setattr(pig, "_git_read", lambda *a, **k: None)
     return forbid_shell_escape
 
 

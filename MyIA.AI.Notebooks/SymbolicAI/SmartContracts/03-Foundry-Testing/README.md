@@ -1,22 +1,10 @@
-# 03-Foundry-Testing - Tests, Fuzzing et Verification Formelle
+# 03-Foundry-Testing — Tests, Fuzzing et Vérification Formelle
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-11 LLM-Assisted](../02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | [SC-15 Zero-Knowledge Proofs >>](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb)
+[← 02 — Solidity Avancé](../02-Solidity-Advanced/README.md) | [↑ SmartContracts](../README.md) | [04 — Privacy & Cryptography →](../04-Privacy-Cryptography/README.md)
 
-Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** des smart contracts : la suite d'outils Foundry (forge, cast, anvil), le fuzz testing d'invariants, puis la vérification formelle avec Certora Prover et le langage CVL. C'est le passage du « code qui semble marcher » au « code dont on prouve les propriétés ». Ces notebooks ont une signature pédagogique particulière : le code Solidity y est présenté comme chaînes de caractères. Les sorties de tests (`[PASS]`/`[FAIL]`) de SC-12 sont documentées comme illustration ; SC-13 lance réellement `forge` et committe sa sortie (cf. Points de vigilance). Une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
+## Ouverture — ce que cette partie enseigne (Licence)
 
----
-
-## Notebooks
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 12 | [SC-12-Foundry-Testing-Python](SC-12-Foundry-Testing-Python.ipynb) | 45 min | Installation Foundry, structure de projet, tests Solidity (DSTest), cheatcodes, assertions |
-| 13 | [SC-13-Fuzz-Invariants-Python](SC-13-Fuzz-Invariants-Python.ipynb) | 40 min | Fuzz testing, paramètres aléatoires, invariants de contrats, `vm.assume` |
-| 14 | [SC-14-Formal-Verification-Python](SC-14-Formal-Verification-Python.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, spécifications, règles |
-
-**Total** : ~2h15.
-
-Cette sous-série est une **escalade de l'assurance** : chaque étape couvre une classe de bugs plus large que la précédente — du « ça marche sur mes exemples » au « propriété garantie quelles que soient les entrées ».
+Cette troisième sous-série introduit le **testing rigoureux** des smart contracts : la suite d'outils Foundry (`forge`, `cast`, `anvil`), le fuzz testing d'invariants, puis la vérification formelle avec Certora Prover et le langage CVL. C'est le passage du « code qui semble marcher » au « code dont on prouve les propriétés » — une **escalade de l'assurance** où chaque étape couvre une classe de bugs plus large que la précédente.
 
 ```mermaid
 flowchart LR
@@ -28,91 +16,63 @@ flowchart LR
     V -->|"pont vers Lean"| LEAN["preuve formelle<br/>mathématique"]
 ```
 
----
+**Signature pédagogique.** Le code Solidity y est présenté comme chaînes de caractères. **SC-13 exécute `forge` pour de vrai** : il lance `forge test --fuzz-runs 512` sur un mini-projet et committe sa sortie (#3921), où la moyenne naïve `(a+b)/2` déborde (`panic: arithmetic underflow or overflow`) alors que la version safe passe. **SC-12 ne lance pas `forge test`** : sa cellule vérifie seulement la présence de `forge`, et ses lignes `[PASS]` sont une sortie d'exemple, honnêtement signalée comme illustration. Une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
 
-## Parcours d'apprentissage
+**À qui elle s'adresse.** Un lecteur ayant terminé [02-Solidity-Advanced](../02-Solidity-Advanced/README.md) et qui veut savoir **comment garantir** les propriétés des contrats qu'il écrit. Les prérequis exacts sont en [Installation](#installation).
 
-### Étape 1 : Suite Foundry (SC-12, 45 min)
+Le décompte des carnets de cette sous-série est tenu par le [catalogue des cours](../../../../COURSE_CATALOG.generated.md), régénéré automatiquement.
 
-Installation et configuration de **Foundry** (forge, cast, anvil), création d'un projet avec la structure standard, écriture de tests en Solidity avec DSTest, utilisation des **cheatcodes** (`vm.prank`, `vm.warp`, `vm.expectRevert`) pour simuler des scénarios, et application des assertions avec logging.
+## Comment lire ce README (Licence)
 
-### Étape 2 : Fuzz et invariants (SC-13, 40 min)
+Un README de série se lit à plusieurs vitesses : le parcours principal par les numéros nus, l'approfondissement par les lettres, la recherche en cours par les sous-séries et la section « Pour aller plus loin ». Le principe est exposé à la racine du dépôt, dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
-Le **fuzz testing** : passer des paramètres aléatoires aux fonctions de test, tester des **invariants** (propriétés qui doivent toujours tenir, quelles que soient les entrées), et filtrer les entrées invalides avec `vm.assume`. Cette étape change la manière de penser les tests : on ne vérifie plus des cas isolés mais des familles entières de comportements.
+- **Vous sécurisez vos contrats** : suivez la table du parcours principal, de haut en bas — l'escalade est cumulative.
+- **Vous creusez un palier** : cette partie n'en porte aucun (voir [Approfondissements](#approfondissements-licence)) ; les compagnons lettrés vivent dans la partie précédente.
+- **Vous cherchez la recherche en cours** : SC-14 ouvre le pont vers la preuve formelle — voir [« Pour aller plus loin »](#pour-aller-plus-loin--niveau-recherche).
 
-### Étape 3 : Verification formelle (SC-14, 50 min)
+## Parcours principal (Licence)
 
-La **vérification formelle** comme niveau au-dessus du testing : **Certora Prover** et le langage de spécification **CVL** (Certora Verification Language), écriture de **spécifications** et de **règles**, vérification d'invariants mathématiques. Pont naturel avec la série Lean (preuve formelle de propriétés).
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 12 | [SC-12-Foundry-Testing-Python](SC-12-Foundry-Testing-Python.ipynb) | Installation Foundry, structure de projet standard, tests en Solidity avec DSTest, **cheatcodes** (`vm.prank`, `vm.warp`, `vm.expectRevert`) pour simuler des scénarios, assertions avec logging | Licence | — |
+| 13 | [SC-13-Fuzz-Invariants-Python](SC-13-Fuzz-Invariants-Python.ipynb) | Fuzz testing : paramètres aléatoires, **invariants** (propriétés qui doivent tenir quelles que soient les entrées), filtrage par `vm.assume` — et la découverte réelle d'un contre-exemple d'overflow par le fuzzer | Licence | — |
+| 14 | [SC-14-Formal-Verification-Python](SC-14-Formal-Verification-Python.ipynb) | Vérification formelle : **Certora Prover** et le langage de spécification **CVL**, écriture de spécifications et de règles, vérification d'invariants mathématiques — le pont vers la preuve Lean | Recherche | — |
 
----
+**Ce que vous saurez faire à l'issue de cette partie :**
 
-## Prérequis
+1. **Écrire** une suite de tests Foundry avec cheatcodes et assertions DSTest ;
+2. **Fuzzer** des invariants et lire un contre-exemple produit par le fuzzer ;
+3. **Spécifier** des règles CVL et distinguer test, fuzz et preuve — ce que chacun garantit et ne garantit pas.
 
-### Par notebook
+## Approfondissements (Licence)
 
-| Notebook | Fondations requises | Dépendances |
-|----------|---------------------|-------------|
-| SC-12 Foundry-Testing | SC-1 a SC-4 (syntaxe Solidity, cf. [01-Solidity-Foundation](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) ; SC-6 (erreurs et événements) pour `vm.expectRevert` et `emit` ; terminal/bash | Foundry (`forge`, `cast`, `anvil`) |
-| SC-13 Fuzz-Invariants | SC-12 complète ; tests unitaires Solidity | Foundry |
-| SC-14 Formal-Verification | SC-12 + SC-13 complètes ; notions de logique formelle | Foundry ; Certora Prover ou Halmos (recommandé) |
+Cette partie **ne porte aucun approfondissement lettré** : l'escalade tests → fuzz → preuve est un parcours continu, sans variante qui se détacherait d'un numéro porteur. Rien n'est perdu ici — il n'y a rien à replier.
 
-### Configuration requise
+## Sous-séries (Licence)
 
-- **Foundry installé** : `curl -L https://foundry.paradigm.xyz | bash && foundryup`. Les notebooks SC-12/13 invoquent `forge test` / `forge build`.
-- **Certora Prover** (SC-14) : compte Certora + accès cloud ; alternative open-source **Halmos** (symbolic exécution).
-- **Python 3.10+** pour les cellules d'orchestration.
-- Aucun faucet, aucun ETH réel nécessaire : les tests tournent en local via `anvil` ou en simulation.
+Cette partie n'en contient pas. Elle est elle-même une **sous-série** de [SmartContracts](../README.md), dont le README porte la vue d'ensemble de l'arc et l'escalier entre les parties.
 
----
+## Installation
 
-## Ponts inter-séries
+- **Prérequis d'entrée** : SC-1 à SC-4 (syntaxe Solidity) et SC-6 (erreurs et événements, pour `vm.expectRevert` et `emit`) ; un terminal/bash.
+- **Foundry installé** : `curl -L https://foundry.paradigm.xyz | bash && foundryup`. Les notebooks SC-12/13 invoquent `forge test` / `forge build` depuis des cellules Python d'orchestration (Python 3.10+).
+- **SC-14** : **Certora Prover** (compte Certora + accès cloud, commercial) ou l'alternative open-source **Halmos** (exécution symbolique) — sans ces outils, les règles CVL ne sont pas toutes vérifiables.
+- Aucun faucet, aucun ETH réel : les tests tournent en local via `anvil` ou en simulation.
 
-| Série | Lien | Relation |
-|-------|------|----------|
-| [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [02-Solidity-Advanced](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | Prérequis | SC-7..11 (standards ERC, DeFi, DAO, AA, LLM) |
-| [04-Privacy-Cryptography](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb) | Suite | SC-15..17 (ZK proofs, chiffrement homomorphe, vote vérifiable) |
-| [SymbolicAI/Lean](../../Lean/) | SC-14 (formal verif) | Verification formelle = même paradigme que la preuve Lean (CVL vs tactiques Lean) |
+## Pour aller plus loin — niveau Recherche
 
----
+**Formalisations Lean.** Cette partie ne consomme pas le lake `erc20_lean` (qui vit en [02-Solidity-Advanced](../02-Solidity-Advanced/README.md)), mais SC-14 ouvre le même paradigme : **spécifier puis prouver**. [SymbolicAI/Lean](../../Lean/README.md) développe ce paradigme dans un cadre mathématique pur — CVL et Lean sont deux instances du même idéal de vérification. L'inventaire des modules de la série vit dans le README parent, il n'est pas recopié ici.
 
-## Points de vigilance (exécution Foundry)
-
-- **Foundry doit être installé localement** pour reproduire les tests pour de vrai (`forge`, `cast`, `anvil` sur le PATH). Les notebooks orchestrent les commandes `forge` depuis des cellules Python.
-- **Signature pédagogique** : le code Solidity est présenté comme chaînes de caractères. **SC-13 exécute `forge` pour de vrai** : il lance `forge test --fuzz-runs 512` sur un mini-projet et committe la sortie (#3921), où la moyenne naïve `(a+b)/2` déborde (`panic: arithmetic underflow or overflow`) alors que la version safe passe. **SC-12 ne lance pas `forge test`** : sa cellule vérifie seulement la présence de `forge` (`forge --version`) et affiche les commandes à exécuter. Ses lignes `[PASS]` sont une sortie d'exemple, affichée en repli si `forge` est absent, et le notebook le signale.
-- **SC-14 Certora** : la vérification formelle requiert un accès Certora (commercial) ou Halmos (open-source). Les règles CVL ne sont pas toutes vérifiables sans ces outils.
-- **Audit #3164** : cette sous-série a été auditée (fidélité) — les résultats de tests sont honnêtement documentés comme illustration, pas comme exécution masquée. 1 finding de labeling (SC-12) résolu via #3369.
-
----
+**Le fil de recherche.** Ne plus demander « est-ce que ça marche sur mes exemples ? » mais **« quelles propriétés sont garanties quelles que soient les entrées ? »**. Sur une chaîne où le code est immuable et où une faille coûte des millions, prouver un invariant (qu'il résiste à toute entrée, même aléatoire, même adversariale) est précisément ce qui distingue un protocole déployable d'une démonstration de prototype — et cette exigence d'assurance est le pont vers les protocoles cryptographiques de la partie suivante.
 
 ## Ressources
 
-- **Foundry Book** (Foundry contributors) -- `forge test`, `forge build`, fuzzing, cheatcodes. book.getfoundry.sh.
-- **Certora Documentation** (Certora Inc.) -- Certora Prover, langage CVL, écriture de spécifications. docs.certora.com.
-- **Halmos** (a16z, 2023) -- symbolic exécution open-source pour tests Foundry.
-- Wilkinson, M. (2022) -- "Foundry: A Blazing Fast, Portable, and Modular Toolkit for Ethereum Application Development".
-- Voir aussi les références transversales dans le [README parent de la série](../README.md).
-
----
-
-## Conclusion / Prochaines étapes
-
-### Ce que vous avez appris
-
-Cette troisième sous-série introduit le **testing rigoureux** : le passage du « code qui semble marcher » au « code dont on prouve les propriétés ». L'arc pédagogique est une **escalade de l'assurance** — chaque étape couvre une classe de bugs plus large que la précédente :
-
-- **La suite Foundry** (SC-12) — installation et configuration de `forge`/`cast`/`anvil`, structure de projet, tests en Solidity avec DSTest, **cheatcodes** (`vm.prank`, `vm.warp`, `vm.expectRevert`) pour simuler des scénarios, et assertions avec logging.
-- **Le fuzz et les invariants** (SC-13) — passer des paramètres aléatoires aux fonctions de test, vérifier des **invariants** (propriétés qui doivent toujours tenir), filtrer les entrées invalides avec `vm.assume`. Cette étape change la manière de penser les tests : on ne vérifie plus des cas isolés mais des **familles entières** de comportements.
-- **La vérification formelle** (SC-14) — le niveau au-dessus du testing : **Certora Prover** et le langage de spécification **CVL**, écriture de spécifications et de règles, vérification d'invariants mathématiques. Pont naturel avec la série [Lean](../../Lean/) (même paradigme de preuve formelle).
-
-Cette sous-série a une signature pédagogique particulière : le code Solidity y est présenté comme chaînes de caractères. Les sorties `[PASS]` de SC-12 sont documentées comme illustration, tandis que SC-13 exécute réellement `forge` — une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
-
-### Prochaines étapes
-
-- **Appliquer la preuve à la confidentialité** : la suite est [04-Privacy-Cryptography](../04-Privacy-Cryptography/README.md) (SC-15 à SC-17), où la rigueur formelle des protocoles cryptographiques (ZKP, chiffrement homomorphe) devient centrale.
-- **Approfondir la preuve formelle** : [SymbolicAI/Lean](../../Lean/README.md) développe le même paradigme (spécifier puis prouver) dans un cadre mathématique pur — CVL et Lean sont deux instances du même idéal de vérification.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci est le garde-fous qualité.
-
-### Le fil rouge
-
-Le testing des smart contracts propose un changement de regard sur la fiabilité : ne plus demander « est-ce que ça marche sur mes exemples ? » mais **« quelles propriétés sont garanties quelles que soient les entrées ? »**. L'escalade tests unitaires → fuzz → vérification formelle n'est pas un luxe : sur une chaîne où le code est immuable et où une faille coûte des millions, prouver un invariant (qu'il résiste à toute entrée, même aléatoire, même adversariale) est précisément ce qui distingue un protocole déployable d'une démonstration de prototype — et cette exigence d'assurance est le pont vers les protocoles cryptographiques de la sous-série suivante.
+- [SmartContracts — README de la série](../README.md) : le parcours global, les parties suivantes, l'inventaire Lean.
+- [02 — Solidity Avancé](../02-Solidity-Advanced/README.md) : ce que cette partie vient sécuriser.
+- [04 — Privacy & Cryptography](../04-Privacy-Cryptography/README.md) : la suite, où la rigueur formelle devient centrale.
+- [SymbolicAI/Lean](../../Lean/README.md) : le même paradigme de preuve, cadre mathématique pur.
+- **Foundry Book** (Foundry contributors) — `forge test`, `forge build`, fuzzing, cheatcodes : book.getfoundry.sh.
+- **Certora Documentation** (Certora Inc.) — Prover, langage CVL : docs.certora.com.
+- **Halmos** (a16z, 2023) — exécution symbolique open-source pour tests Foundry.
+- Wilkinson, M. (2022) — *Foundry: A Blazing Fast, Portable, and Modular Toolkit for Ethereum Application Development*.
+- [Choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) : le principe des parcours à plusieurs vitesses, à la racine du dépôt.

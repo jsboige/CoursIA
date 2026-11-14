@@ -44,8 +44,8 @@ identical; only docstrings and comments differ.
 Epic #1646, Phase 2 (#2159). No `sorry` introduced.
 -/
 
-import Grothendieck.Spaces
-import Grothendieck.SpacesMathlib
+import Grothendieck.Spaces_en
+import Grothendieck.SpacesMathlib_en
 import Mathlib.Topology.Sheaves.Points
 import Mathlib.Topology.Sheaves.Stalks
 
@@ -58,6 +58,9 @@ open CategoryTheory CategoryTheory.Limits Opposite TopCat TopologicalSpace
 section Contenu
 
 variable (T : Type u) [TopologicalSpace T] (x : T)
+
+open Grothendieck_en
+open Grothendieck.SpacesMathlib_en
 
 /-- **The point of the site of opens attached to `x`**: the fiber of an
 open `U` is the set of elements of `U` equal to `x` (an at most singleton

@@ -8,9 +8,9 @@ pagetitle: "RL - Reinforcement Learning"
 
 <!-- CATALOG-STATUS
 series: RL
-pedagogical_count: 38
-breakdown: root=27, PostTraining=11
-maturity: BETA=33, ALPHA=3, DRAFT=2
+pedagogical_count: 40
+breakdown: root=29, PostTraining=11
+maturity: BETA=40
 -->
 
 Comment un agent apprend-il à décider quand personne ne lui donne la bonne réponse ? Le reinforcement learning (apprentissage par renforcement) répond par l'essai et l'erreur : l'agent agit, observe la conséquence de son action, et ajuste sa politique. C'est le paradigme derrière AlphaGo, le contrôle de robots, et l'alignement des modèles de langue par retour humain.
@@ -41,35 +41,65 @@ Les kernels sont relevés dans les carnets eux-mêmes (`metadata.kernelspec.name
 
 > **Note de comptage.** Le bloc `CATALOG-STATUS` ci-dessus fait foi pour l'**agrégat** — il est régénéré par `catalog-cron.yml` et ne se corrige jamais à la main sur une branche de feature. La table ci-dessous fait foi pour l'**énumération**. Leurs totaux peuvent donc différer d'une unité, et cet écart ne se tranche ni ici ni par une retouche du marqueur : il se lit dans la prochaine régénération du catalogue.
 
+### Socle du parcours principal
+
+Les numéros nus constituent le parcours principal. Les liens de la dernière colonne ouvrent les approfondissements facultatifs rattachés à leur marche.
+
+| # | Notebook | Kernel | Contenu | Durée | Approfondissements |
+|---|----------|--------|---------|-------|---------------------|
+| 01 | [RL-01-Premiers-Pas-Stable-Baselines3-Python](RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | python3 | Premier agent PPO sur CartPole avec Stable Baselines3 : boucle reset/step, évaluation avant/après, sauvegarde du modèle. L'usage avant la théorie | 25-30 min | [Autour de 01](#autour-de-01) |
+| 02 | [RL-02-Wrappers-Sauvegarde-Callbacks-Python](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | python3 | Outils de production : wrappers Gym, sauvegarde et chargement de modèles, multiprocessing, callbacks de suivi, environnement personnalisé | 35-40 min | |
+| 03 | [RL-03-Experience-Replay-HER-Python](RL-03-Experience-Replay-HER-Python.ipynb) | python3 | Hindsight Experience Replay sur `parking-v0` : ré-étiqueter des échecs en succès par changement d'objectif, avec SAC et DDPG comme moteurs off-policy | 40-45 min | |
+| 04 | [RL-04-Bandits-Manchots-Python](RL-04-Bandits-Manchots-Python.ipynb) | python3 | Bandit à K bras Bernoulli : epsilon-greedy et ses décroissances, UCB, regret cumulé comparé au tirage uniforme ; Thompson Sampling proposé en exercice | 30-35 min | |
+| 05 | [RL-05-MDP-Programmation-Dynamique-Q-Learning-Python](RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) | python3 | Formalisation MDP, équation de Bellman, value et policy iteration exactes, puis Q-Learning tabulaire et ses variantes (SARSA, expected, n-step) sur FrozenLake et CliffWalking | 45-50 min | |
+| 06 | [RL-06-DQN-Policy-Gradient-Python](RL-06-DQN-Policy-Gradient-Python.ipynb) | python3 | DQN complet en PyTorch pur (replay buffer, target network) et REINFORCE, sur le même environnement : la comparaison off-policy / on-policy | 50-55 min | [Autour de 06](#autour-de-06) |
+| 07 | [RL-07-Apprentissage-Multi-Agent-Python](RL-07-Apprentissage-Multi-Agent-Python.ipynb) | python3 | Apprentissage multi-agent avec PettingZoo : API AEC, apprentissage indépendant (IQL) sur des jeux coopératifs, auto-jeu sur TicTacToe | 45-50 min | [Autour de 07](#autour-de-07) |
+| 08 | [RL-08-Dyna-Q-Planification-Python](RL-08-Dyna-Q-Planification-Python.ipynb) · [C#](RL-08-Dyna-Q-Planification-CSharp.ipynb) | python3 / .net-csharp | Model-based : modèle tabulaire, Q-Learning, Dyna-Q/Dyna-Q+, Blocking Maze et rollouts ; jumeau C# BCL .NET 9 | 45-50 min | |
+| 09 | [RL-09-RL-Offline-Behavior-Cloning-Python](RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) | python3 | RL offline : behavior cloning, erreur d'extrapolation du Q-learning naïf, contrainte de support (BCQ-lite), pont vers RLHF et DPO | 50-55 min | |
+| 10 | [RL-10-Reward-Shaping-Curriculum-Python](RL-10-Reward-Shaping-Curriculum-Python.ipynb) | python3 | Récompense sparse : shaping potential-based (Ng et al. 1999) contre shaping naïf, curriculum par phases, et ce que le shaping enseigne du reward model appris | 45-50 min | |
+| 11 | [RL-11-POMDP-Croyances-Python](RL-11-POMDP-Croyances-Python.ipynb) | python3 | Observabilité partielle : Tiger Problem, suivi de croyance par filtre bayésien, approximation Q-MDP, et les limites du tabulaire sur un état caché | 45-50 min | |
+| 12 | [RL-12-Distributional-RL-C51-Python](RL-12-Distributional-RL-C51-Python.ipynb) | python3 | RL distributionnel : C51 depuis zéro, distribution du retour sur support à atomes fixes, projection catégorielle de la cible de Bellman, politique sensible au risque (CVaR) | 50-55 min | |
+| 13 | [RL-13-Curiosite-RND-Python](RL-13-Curiosite-RND-Python.ipynb) | python3 | Exploration profonde par curiosité : Random Network Distillation, cible figée contre prédicteur, bonus de nouveauté, et le piège d'exploitation qu'elle fait sortir | 35-40 min | |
+| 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.ipynb) | python3 | Abstraction temporelle : options `(I, π, β)` de Sutton, Precup et Singh, gridworld à quatre pièces, crédit sur longue horizon, formalisme semi-MDP enseigné sur place | 50 min | |
+| 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | python3 | GRPO contre PPO sur CartPole-v1 : avantage relatif intra-groupe contre GAE bootstrappé, six graines appariées, verdict tri-conditionnel (seuil à deux écarts-types, Wilcoxon apparié, intervalle bootstrap des différences). **Verdict du run committé : PPO devant GRPO** (six graines sur six, p = 0,0312) ; portée et limites documentées dans le carnet. Exige un GPU CUDA | 40-45 min | |
+| 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | python3 | Exploration explicite et programmable (la politique est du code), historique de découverte utilisé comme simulateur-replay, évaluation off-policy à coût nul, boucle d'auto-amélioration avec incumbent ; monde jouet circle-packing en bibliothèque standard, ablation replay brut contre guidance sémantique | 40-45 min | |
+| 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.ipynb) | python3 | Du specification gaming au reward tampering : *Rocks and Diamonds* à paramètre modifiable (Everitt et al. 2021), quatre agents résolus par induction arrière exacte, et la mesure qui compte — l'indifférence n'est pas la protection, le départage des égalités suffit à déclencher la manipulation | 35-40 min | |
+| 20 | [RL-20-Randomisation-Domaine-Sim-to-Real-Python](RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | python3 | Du simulateur au réel : les paramètres physiques de `CartPole-v1` modifiés pour de vrai (`masscart`, `masspole`, `length`, `gravity`, `tau`), trois régimes de test — nominal, interpolation, extrapolation — et la question de transfert qu'ils posent | 40-45 min | |
+| 21 | [RL-21-Auto-Jeu-AlphaZero-Python](RL-21-Auto-Jeu-AlphaZero-Python.ipynb) | python3 | Auto-jeu à la AlphaZero sur CPU (Puissance 4 réduit) : MCTS guidé par réseau (PUCT, valeur du réseau au lieu de rollouts), cibles politiques prises sur les distributions de visites, deux têtes politique/valeur, tournoi round-robin à budget égal — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | 10 min | |
+
+### Approfondissements
+
+Les lettres restent des extensions facultatives de leur parent : leurs identifiants, descriptions, kernels et durées sont conservés ci-dessous.
+
+#### Autour de 01
+
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 01 | [RL-01-Premiers-Pas-Stable-Baselines3-Python](RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb) | python3 | Premier agent PPO sur CartPole avec Stable Baselines3 : boucle reset/step, évaluation avant/après, sauvegarde du modèle. L'usage avant la théorie | 25-30 min |
 | 01b | [RL-01b-Synthese-Logique-Bitwise-Python](RL-01b-Synthese-Logique-Bitwise-Python.ipynb) | python3 | Synthèse logique d'un contrôleur CartPole : lire le bit de signe IEEE-754 de l'observation, en tirer un contrôleur à quatre règles, le confronter au PPO appris (taux de désaccord), étude de rupture et ablation | 20-25 min |
 | 01c | [RL-01c-Distillation-Politique-Prolog-Python](RL-01c-Distillation-Politique-Prolog-Python.ipynb) | python3 | Distiller une politique PPO en programme Prolog exécuté par le vrai moteur SWI-Prolog (image Docker officielle, version journalisée dans la sortie) : enseignant PPO à graine fixe, recensement exhaustif de T-bar, induction gloutonne type FOIL, liste de décision avec cuts, one-pass contre DAgger | 45-60 min |
-| 02 | [RL-02-Wrappers-Sauvegarde-Callbacks-Python](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | python3 | Outils de production : wrappers Gym, sauvegarde et chargement de modèles, multiprocessing, callbacks de suivi, environnement personnalisé | 35-40 min |
-| 03 | [RL-03-Experience-Replay-HER-Python](RL-03-Experience-Replay-HER-Python.ipynb) | python3 | Hindsight Experience Replay sur `parking-v0` : ré-étiqueter des échecs en succès par changement d'objectif, avec SAC et DDPG comme moteurs off-policy | 40-45 min |
-| 04 | [RL-04-Bandits-Manchots-Python](RL-04-Bandits-Manchots-Python.ipynb) | python3 | Bandit à K bras Bernoulli : epsilon-greedy et ses décroissances, UCB, Thompson Sampling, regret cumulé comparé au tirage uniforme | 30-35 min |
-| 05 | [RL-05-MDP-Programmation-Dynamique-Q-Learning-Python](RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) | python3 | Formalisation MDP, équation de Bellman, value et policy iteration exactes, puis Q-Learning tabulaire et ses variantes (SARSA, expected, n-step) sur FrozenLake et CliffWalking | 45-50 min |
-| 06 | [RL-06-DQN-Policy-Gradient-Python](RL-06-DQN-Policy-Gradient-Python.ipynb) | python3 | DQN complet en PyTorch pur (replay buffer, target network) et REINFORCE, sur le même environnement : la comparaison off-policy / on-policy | 50-55 min |
+
+#### Autour de 06
+
+| # | Notebook | Kernel | Contenu | Durée |
+|---|----------|--------|---------|-------|
 | 06b | [RL-06b-Actor-Critic-Python](RL-06b-Actor-Critic-Python.ipynb) | python3 | A2C : critic, avantage, bonus d'entropie, réduction de variance par rapport à REINFORCE, et ouverture vers PPO | 45-50 min |
 | 06c | [RL-06c-PPO-Depuis-Zero-Python](RL-06c-PPO-Depuis-Zero-Python.ipynb) | python3 | PPO depuis zéro : ratios d'échantillonnage d'importance, surrogate clippé, GAE, comparaison A2C contre PPO, et pont vers le RLHF | 45-50 min |
 | 06d | [RL-06d-SAC-Depuis-Zero-Python](RL-06d-SAC-Depuis-Zero-Python.ipynb) | python3 | SAC depuis zéro : maximum entropy, twin Q-networks, auto-température, politique gaussienne pour les actions continues | 45-50 min |
 | 06e | [RL-06e-GRPO-Depuis-Zero-Python](RL-06e-GRPO-Depuis-Zero-Python.ipynb) | python3 | GRPO depuis zéro : avantage relatif intra-groupe sans critic, clip PPO et pénalité KL contre la référence, portefeuille synthétique multi-graines | 45-50 min |
 | 06f | [RL-06f-SAC-Reel-Comparaison-Python](RL-06f-SAC-Reel-Comparaison-Python.ipynb) | python3 | SAC réel avec Stable-Baselines3 : même environnement Pendulum-v1 que le jouet RL-06d, trois graines, évaluation déterministe, et comparaison chiffrée des deux étages (paramètres appris, budget de pas, temps mural, reward final) | 30-35 min |
-| 07 | [RL-07-Apprentissage-Multi-Agent-Python](RL-07-Apprentissage-Multi-Agent-Python.ipynb) | python3 | Apprentissage multi-agent avec PettingZoo : API AEC, apprentissage indépendant (IQL) sur des jeux coopératifs, auto-jeu sur TicTacToe | 45-50 min |
+
+#### Autour de 07
+
+| # | Notebook | Kernel | Contenu | Durée |
+|---|----------|--------|---------|-------|
 | 07b | [RL-07b-Sur-Generalisation-Climbing-Game-Python](RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) | python3 | Sur-généralisation relative dans le Climbing Game : même agent tabulaire, IQL contre Hysteretic Q-learning, protocole multi-graines, IQM et intervalle bootstrap, ablation du pessimisme | 40-45 min |
-| 08 | [RL-08-Dyna-Q-Planification-Python](RL-08-Dyna-Q-Planification-Python.ipynb) | python3 | Model-based : apprendre un modèle du monde et planifier dessus (Dyna-Q, Dyna-Q+, rollouts), Blocking Maze, et porte ouverte vers MCTS puis AlphaZero | 45-50 min |
-| 09 | [RL-09-RL-Offline-Behavior-Cloning-Python](RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) | python3 | RL offline : behavior cloning, erreur d'extrapolation du Q-learning naïf, contrainte de support (BCQ-lite), pont vers RLHF et DPO | 50-55 min |
-| 10 | [RL-10-Reward-Shaping-Curriculum-Python](RL-10-Reward-Shaping-Curriculum-Python.ipynb) | python3 | Récompense sparse : shaping potential-based (Ng et al. 1999) contre shaping naïf, curriculum par phases, et ce que le shaping enseigne du reward model appris | 45-50 min |
-| 11 | [RL-11-POMDP-Croyances-Python](RL-11-POMDP-Croyances-Python.ipynb) | python3 | Observabilité partielle : Tiger Problem, suivi de croyance par filtre bayésien, approximation Q-MDP, et les limites du tabulaire sur un état caché | 45-50 min |
-| 12 | [RL-12-Distributional-RL-C51-Python](RL-12-Distributional-RL-C51-Python.ipynb) | python3 | RL distributionnel : C51 depuis zéro, distribution du retour sur support à atomes fixes, projection catégorielle de la cible de Bellman, politique sensible au risque (CVaR) | 50-55 min |
-| 13 | [RL-13-Curiosite-RND-Python](RL-13-Curiosite-RND-Python.ipynb) | python3 | Exploration profonde par curiosité : Random Network Distillation, cible figée contre prédicteur, bonus de nouveauté, et le piège d'exploitation qu'elle fait sortir | 35-40 min |
-| 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.ipynb) | python3 | Abstraction temporelle : options `(I, π, β)` de Sutton, Precup et Singh, gridworld à quatre pièces, crédit sur longue horizon, formalisme semi-MDP enseigné sur place | 50 min |
-| 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | python3 | GRPO contre PPO sur CartPole-v1 : avantage relatif intra-groupe contre GAE bootstrappé, six graines appariées, verdict tri-conditionnel (seuil à deux écarts-types, Wilcoxon apparié, intervalle bootstrap des différences). **Verdict du run committé : PPO devant GRPO** (six graines sur six, p = 0,0312) ; portée et limites documentées dans le carnet. Exige un GPU CUDA | 40-45 min |
-| 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | python3 | Exploration explicite et programmable (la politique est du code), historique de découverte utilisé comme simulateur-replay, évaluation off-policy à coût nul, boucle d'auto-amélioration avec incumbent ; monde jouet circle-packing en bibliothèque standard, ablation replay brut contre guidance sémantique | 40-45 min |
-| 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.ipynb) | python3 | Du specification gaming au reward tampering : *Rocks and Diamonds* à paramètre modifiable (Everitt et al. 2021), quatre agents résolus par induction arrière exacte, et la mesure qui compte — l'indifférence n'est pas la protection, le départage des égalités suffit à déclencher la manipulation | 35-40 min |
-| 20 | [RL-20-Randomisation-Domaine-Sim-to-Real-Python](RL-20-Randomisation-Domaine-Sim-to-Real-Python.ipynb) | python3 | Du simulateur au réel : les paramètres physiques de `CartPole-v1` modifiés pour de vrai (`masscart`, `masspole`, `length`, `gravity`, `tau`), trois régimes de test — nominal, interpolation, extrapolation — et la question de transfert qu'ils posent | 40-45 min |
-| 21 | [RL-21-Auto-Jeu-AlphaZero-Python](RL-21-Auto-Jeu-AlphaZero-Python.ipynb) | python3 | Auto-jeu à la AlphaZero sur CPU (Puissance 4 réduit) : MCTS guidé par réseau (PUCT, valeur du réseau au lieu de rollouts), cibles politiques prises sur les distributions de visites, deux têtes politique/valeur, tournoi round-robin à budget égal — la boucle fermée fonctionne, l'avantage du guidage demande des budgets plus élevés | 10 min |
+
+### Sous-série indépendante PostTraining
+
+La sous-série conserve ses identifiants RLPT propres et son parcours de post-training ; elle ne fait pas partie de la numérotation du socle RL.
+
+| # | Notebook | Kernel | Contenu | Durée |
+|---|----------|--------|---------|-------|
 | pt-00 | [RLPT-00-Reward-Model-Bradley-Terry-Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | python3 | Reward model from scratch : apprendre `r(x, y)` depuis des paires de préférences (Bradley-Terry), sans `trl` ; évaluation contre le plafond de Bayes, calibration (ECE), identification affine, multi-graines. C'est de ce monde que partent les carnets suivants | 35-40 min |
 | pt-00b | [RLPT-00b-Biais-Dataset-Preferences-Python](PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | python3 | Biais d'un dataset de préférences : trois biais classiques (longueur, position, annotateur) injectés à paramètres connus, dégât mesuré contre le plafond d'un juge oracle non biaisé, puis les mitigations usuelles — verdict mesuré : aucune ne franchit deux écarts-types, le length-controlled est structurellement sans effet sur une métrique de classement, l'orthogonalisation de longueur aggrave le biais | 40-45 min |
 | pt-00c | [RLPT-00c-Anatomie-Reward-Hacking-Python](PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | coursia-ml-training | Anatomie d'un reward hacking qui **prend** : reward model biaisé en longueur, PPO from scratch sur ce proxy, puis bras de contrôle (récompense longueur-contrôlée, oracle) qui isole la cause. Diagnostic par canal et normalisation par canal : l'arbitrage, pas la chirurgie | 35-40 min |
@@ -78,7 +108,7 @@ Les kernels sont relevés dans les carnets eux-mêmes (`metadata.kernelspec.name
 | pt-00f | [RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python](PostTraining/RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb) | python3 | `trl.GRPOTrainer` contre le PPO maison de RLPT-01 sur le même monde et le même juge, à budget apparié : verdict non concluant, et la différence robuste est le critic (réseau de valeur appris contre moyenne de groupe). Inclut le fait mesuré dans l'environnement : `PPOTrainer` a quitté la racine de `trl` pour `trl.experimental.ppo` | 30-45 min |
 | pt-00g | [RLPT-00g-PPO-TRL-Experimental-Python](PostTraining/RLPT-00g-PPO-TRL-Experimental-Python.ipynb) | python3 | `trl.experimental.ppo.PPOTrainer` instancié comme surface réelle, signature introspectée, boucle PPO conforme (rollout, GAE, surrogate clippé, perte de valeur) : la mini-tâche ne se branche pas directement sur le trainer, la limite est documentée et l'algorithme reste celui que TRL enveloppe. Complément de RLPT-00f sur l'axe RLHF | 30-40 min |
 | pt-01 | [RLPT-01-PPO-RLHF-Petit-Modele-Python](PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb) | python3 | PPO pour l'alignement d'un petit modèle de langue (RLHF jouet, from scratch, char-level) : reward model jouet, pénalité KL contre la politique SFT de référence, multi-graines — la signature RLHF, distincte de RL-06c et RL-06e | 40-45 min |
-| pt-02 | [RLPT-02-GRPO-Minimal-Python](PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | coursia-ml-training | GRPO sur Qwen3.5-0.8B local, récompense vérifiable par programme (arithmétique), rollouts groupés sans réseau de valeur : le cœur « à la DeepSeek » écrit à la main, sans la pile `trl` complète | 45-55 min |
+| pt-02 | [RLPT-02-GRPO-Minimal-Python](PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | coursia-ml-training | GRPO sur Qwen3.5-0.8B local avec `trl.GRPOTrainer` : récompense arithmétique vérifiable par programme et générations groupées sans réseau de valeur | 45-55 min |
 | pt-03 | [RLPT-03-Reward-Hacking-Python](PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | coursia-ml-training | Reward hacking sur récompense vérifiable faillible : trois voies pour tenter de déclencher le hack, détection, inoculation comme variable expérimentale, verdict reproductible à graine fixée | 35-40 min |
 | pt-04 | [RLPT-04-DPO-Offline-contre-GRPO-Online-Python](PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) | coursia-ml-training | DPO offline contre GRPO online sur la même tâche conversationnelle, à budget égal, préférences auto-fabriquées : verdict multi-graines avec test de Diebold-Mariano et dispersion inter-graines documentée | 50-55 min |
 
@@ -86,7 +116,7 @@ Les carnets `RL-17` et `RL-18` n'existent plus dans cette série : ce sont déso
 
 ## Contenu détaillé du parcours principal
 
-Les carnets du socle (01 à 13) sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les carnets 14 à 21 et la sous-série `PostTraining/` sont décrits dans la table ci-dessus.
+Les carnets du socle numérotés de 01 à 13 sont détaillés ci-dessous, section par section, avec les figures extraites de leurs sorties réelles — la provenance exacte de chaque figure (cellule source, poids, alt-text) est consignée dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md). Les sections 6b à 6f détaillent séparément les approfondissements de leur parent. Les carnets 14 à 21 et la sous-série `PostTraining/` sont décrits dans la table ci-dessus.
 ### Notebook 1 - Introduction avec PPO et CartPole
 
 | Section | Contenu |
@@ -216,6 +246,8 @@ Les carnets du socle (01 à 13) sont détaillés ci-dessous, section par section
 
 ### Notebook 8 - Model-Based RL : Dyna-Q et planification
 
+Le [jumeau C#](RL-08-Dyna-Q-Planification-CSharp.ipynb) utilise la BCL sans package NuGet, affiche des figures SVG statiques et propose trois exercices non résolus avec contrôles conditionnels.
+
 | Section | Contenu |
 |---------|---------|
 | Model-free vs model-based | Compromis calcul vs expérience, sample efficiency |
@@ -327,7 +359,7 @@ Les accrétions de l'entrée (`01b` synthèse logique bitwise, `01c` distillatio
 | Découverte | 01 | Voir un agent apprendre, en une séance |
 | Fondations par la pratique | 01, 02, 03, 04 | Savoir entraîner et instrumenter un agent sur des problèmes jouets |
 | Théorie et algorithmes | 04, 05, 06, 06b, 06c | Comprendre Bellman, puis dériver PPO à la main |
-| Couverture du socle | 01 à 14 | Le socle complet, lettres comprises ; les carnets 15 à 21 sont les phases de recherche, listées à la ligne suivante |
+| Couverture du socle | 01 à 14 | Le parcours principal en numéros nus ; ouvrez les approfondissements lettrés depuis leurs paliers. Les carnets 15 à 21 sont les phases de recherche, listées à la ligne suivante |
 | Alignement par préférences | 06e, RLPT-01, RLPT-00, RLPT-04 | La chaîne complète du RLHF, du reward model au DPO |
 | Recherche | 08, 12, 13, 14, 15, 16, 19, 20, 21 | Les carnets où chaque hypothèse est relâchée et mesurée |
 
@@ -335,12 +367,12 @@ Les accrétions de l'entrée (`01b` synthèse logique bitwise, `01c` distillatio
 
 | Kernel | Carnets | Environnement | Packages | Clés |
 |---|---|---|---|---|
-| `python3` | Tous les autres | Python 3.11 à 3.13 selon le carnet (relevé dans les `language_info`), CPU suffisant | `stable-baselines3[extra]`, `gymnasium`, `torch`, `highway-env`, `pettingzoo[classic]`, `trl`, `transformers`, `datasets` | Aucune : tout s'exécute en local |
+| `python3` | Tous les autres | Python 3.11 à 3.13 selon le carnet (relevé dans les `language_info`) ; CPU généralement suffisant, sauf `RL-15` qui exige CUDA | `stable-baselines3[extra]`, `gymnasium`, `torch`, `highway-env`, `pettingzoo[classic]`, `trl`, `transformers`, `datasets` | Aucune : tout s'exécute en local |
 | `coursia-ml-training` | RLPT-00c, RLPT-02, RLPT-03, RLPT-04 | Kernel d'entraînement du dépôt, modèle de langue local | Les mêmes, plus la pile d'entraînement du kernel | Aucune |
 
 Connaissances attendues : Python intermédiaire (classes, NumPy) ; notions de tenseurs et d'autograd pour les carnets `06` à `06f` et la sous-série ; probabilités élémentaires pour `04` et `11`.
 
-Trois carnets ont une exigence propre, écrite dans leur en-tête : `RL-01c` demande **Docker** (le programme Prolog est exécuté par le vrai moteur SWI-Prolog, et la version du moteur est journalisée dans la sortie) ; `RL-15` demande un **GPU CUDA** ; `RLPT-02` et `RLPT-04` chargent un petit modèle de langue et demandent de la mémoire plutôt que du calcul.
+Certains carnets ont une exigence propre : `RL-01c` demande **Docker** pour exécuter SWI-Prolog ; `RL-15` demande un **GPU CUDA** pour le comparatif complet ; `RLPT-02` et `RLPT-04` utilisent également CUDA pour leur petit modèle de langue.
 
 L'installation détaillée, avec les versions épinglées, vit dans [`requirements.txt`](requirements.txt) et dans la première cellule de chaque carnet — elle n'est pas recopiée ici pour ne pas dériver de ce que les carnets exécutent réellement. Les sorties committées proviennent d'exécutions réelles : la cellule d'installation journalise le kernel et les versions de la pile dans sa propre sortie.
 
@@ -348,7 +380,7 @@ L'installation détaillée, avec les versions épinglées, vit dans [`requiremen
 
 Chaque carnet se termine sur des exercices à compléter dans les cellules prévues : la correction n'est pas fournie, mais le carnet s'exécute de bout en bout même quand les exercices ne sont pas faits, et la sortie attendue de chaque cellule est visible dans la version committée. Les exercices demandent en général de modifier un hyperparamètre ou une fonction de récompense, puis de relire les courbes — l'objectif est de faire bouger une mesure, pas de recopier une réponse.
 
-Le seul carnet qui n'en porte pas encore est `RL-15` (comparatif multi-graines) : il se lit comme une étude, avec ses verdicts et ses limites, et les exercices y sont en cours d'ajout.
+Dans `RL-15`, les exercices prolongent le comparatif multi-graines : ils invitent à examiner l'avantage relatif au groupe, le choix du nombre de graines et l'effet de la taille du groupe.
 
 ## Ponts vers les autres séries
 
@@ -377,14 +409,14 @@ La sous-série [`PostTraining/`](PostTraining/) et [GenAI/PostTraining](../GenAI
 | Pourquoi un reward model apprend-il le biais de son annotateur plutôt que la qualité ? | [RLPT-00b](PostTraining/RLPT-00b-Biais-Dataset-Preferences-Python.ipynb) | Les trois biais d'un dataset de préférences injectés à paramètres connus : le reward model recopie le raccourci du juge quand le biais lui est représentable, et se contente de le sous-échelonner quand il ne l'est pas |
 | Le harnais du marché fait-il mieux que ma boucle écrite à la main, et que me coûte-t-il ? | [RLPT-00d](PostTraining/RLPT-00d-Reward-Trainer-TRL-Python.ipynb) | `trl.RewardTrainer` sur le même monde, à architecture identique : le harnais gagne, impose des réglages de contrat, coûte un ordre de grandeur en temps, et n'évalue pas pour vous |
 | Comment fonctionne PPO-RLHF en petit, sans framework ? | [RLPT-01](PostTraining/RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb) | RLHF from scratch sur un modèle char-level : on voit les gradients, le reward model jouet, la pénalité KL contre la politique SFT de référence |
-| Comment GRPO est-il câblé intérieurement (rollouts groupés, avantage intra-groupe, pas de critic) ? | [RLPT-02](PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | GRPO sur Qwen3.5-0.8B local sans la pile `trl` complète : la boucle d'entraînement est écrite à la main, on voit chaque rollout, chaque récompense |
+| Comment appliquer GRPO à un petit modèle avec une récompense vérifiable ? | [RLPT-02](PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) | `trl.GRPOTrainer` sur Qwen3.5-0.8B local : configuration des générations groupées et fonction de récompense arithmétique |
 | Le reward hacking est-il un attracteur spontané sur un petit modèle, et comment l'inoculer ? | [RLPT-03](PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | Cas clinique minimal : trois voies pour tenter de déclencher le hack, inoculation comme variable expérimentale, verdict reproductible |
 | Pourquoi le reward hacking arrive-t-il — le reward model est-il vraiment la cause ? | [RLPT-00c](PostTraining/RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb) | Isolation de cause : le biais de longueur est lu dans les poids du reward model appris, puis retiré — la qualité se rétablit, et le basculement est situé |
 | DPO offline contre GRPO online à budget égal : qui gagne ? | [RLPT-04](PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) | Comparaison à budget égal, préférences auto-fabriquées, verdict multi-graines avec test de Diebold-Mariano |
 | GRPO et RLVR sur un vrai modèle, avec `trl` et un vérificateur ? | [PT_11a](../GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb), [PT_11b](../GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | La chaîne appliquée : `trl.GRPOTrainer`, Qwen3.5-0.8B en QLoRA 4 bits, vérificateur Z3/SymPy |
 | Quels sont les détecteurs statistiques du reward hacking ? | [PT-07](../GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | Le catalogue `rewardspy.detectors` (dominance de composante, dérive de longueur…) — `RLPT-03` en est le cas d'usage |
 
-**Une phrase à retenir** : `RLPT-*` = *la mécanique, en petit, sans framework* (from scratch, CPU ou petit modèle sans la pile complète : on voit chaque rollout et chaque gradient) ; `GenAI/PostTraining` = *la chaîne réelle, à l'échelle* (`trl`, vrai modèle, solveur vérifiable, multi-graines, détecteurs Goodhart en ligne). Si votre question porte sur **pourquoi** un algorithme fonctionne, ouvrez `RLPT-*`. Si elle porte sur **comment le déployer**, ouvrez `PT_*`.
+**Une phrase à retenir** : `RLPT-*` explore les mécanismes en petit, avec des implémentations maison et des exemples utilisant `trl` ; `GenAI/PostTraining` approfondit les chaînes de post-entraînement, notamment les vérificateurs et les détecteurs de reward hacking. Le tableau ci-dessus aide à choisir selon la question étudiée.
 
 ### Recherche adversariale et jeux
 
@@ -430,7 +462,7 @@ L'apprentissage supervisé apprend à partir de données étiquetées : à chaqu
 
 ### Faut-il un GPU pour suivre la série ?
 
-Non, à une exception près. Les réseaux des carnets deep sont volontairement compacts et s'exécutent sur CPU. Deux carnets font exception et le disent dans leur en-tête : `RL-15` exige un GPU CUDA pour son protocole multi-graines, et `RL-01c` exige Docker pour exécuter le vrai moteur Prolog.
+Les réseaux de nombreux carnets deep sont compacts et s'exécutent sur CPU. Le protocole multi-graines complet de `RL-15` exige toutefois un GPU CUDA, tout comme les exécutions de `RLPT-02` et `RLPT-04`. Indépendamment du GPU, `RL-01c` exige Docker pour exécuter le vrai moteur Prolog.
 
 ### Qu'est-ce qu'un MDP, et pourquoi est-ce central ?
 
@@ -462,7 +494,7 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | **DDPG** | Off-policy | 3 | Actions continues |
 | **HER** | Replay strategy | 3 | Goal-conditioned tasks |
 | **Epsilon-greedy** | Exploration | 4 | Stratégie d'exploration basique |
-| **Thompson Sampling** | Exploration | 4 | Exploration bayésienne |
+| **Thompson Sampling** | Exploration | 4 | Exploration bayésienne présentée en théorie et proposée en exercice |
 | **Value Iteration** | Model-based | 5 | Résolution exacte de MDP |
 | **Policy Iteration** | Model-based | 5 | Résolution exacte de MDP |
 | **Q-Learning** | Model-free (tabulaire) | 5 | Espaces discrets |
@@ -488,7 +520,8 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | CartPole-v1 | Contrôle classique, discret | 1, 6, 6b, 6c |
 | Pendulum-v1 | Contrôle continu | 2, 6d, 6f |
 | Parking-v0 | Goal-conditioned, continu | 3 |
-| GaussianBandit | Bandit stochastique | 4 |
+| BernoulliBandit | Bandit stochastique à récompenses binaires | 4 |
+| GaussianBandit | Bandit à récompenses continues, proposé en exercice | 4 |
 | FrozenLake-v1 | Grille discrète, stochastique | 5 |
 | CliffWalking-v1 | Grille, compromis risque/récompense | 5 |
 | TicTacToe-v3 | Jeu à somme nulle | 7 |
@@ -543,6 +576,12 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | **Exploration profonde** | Atteindre une récompense cachée derrière une longue séquence d'actions | 13 |
 
 ---
+
+## Jumeau C# : RL offline et Behavior Cloning
+
+Le [notebook RL-09 en Python](RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) a maintenant un [jumeau C#](RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb). Les deux versions implémentent de zéro le Q-learning tabulaire, le Behavior Cloning et la contrainte de support BCQ-lite; le code C# s’appuie sur la bibliothèque standard .NET, sans moteur RL ni package NuGet.
+
+Les trajectoires et retours mesurés diffèrent entre langages, car NumPy et .NET n’emploient pas le même générateur pseudo-aléatoire ni le même ordre de départage. Les mêmes invariants sont contrôlés : géométrie du labyrinthe, chemin BFS de 14 pas, cibles terminales, actions hors support et dimensions de couverture. Le twin C# rend ses figures en SVG statique.
 
 ## Licence
 

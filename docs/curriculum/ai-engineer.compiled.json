@@ -1,0 +1,979 @@
+{
+  "groups": [
+    {
+      "id": "environnement-stack",
+      "kind": "branches",
+      "prerequisites": [],
+      "notebooks": [
+        {
+          "path": "GenAI/00-GenAI-Environment/00-1-Environment-Setup.ipynb",
+          "title": "GenAI Environment Setup - CoursIA",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb",
+          "title": "Docker Services Management - GenAI",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/00-GenAI-Environment/00-3-API-Endpoints-Configuration.ipynb",
+          "title": "Configuration des API Endpoints",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/00-GenAI-Environment/00-4-Environment-Validation.ipynb",
+          "title": "Environment Validation - GenAI",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/00-GenAI-Environment/00-7-Terminal-Long-Runs.ipynb",
+          "title": "GenAI Environment — Terminal pour les longs entraînements (tmux + tunnels SSH)",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": true,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "appel-et-controle",
+      "kind": "branches",
+      "prerequisites": [
+        "environnement-stack"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/01_OpenAI_Intro.ipynb",
+          "title": "1. Introduction a l'IA generative avec l'API OpenAI",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/02_PromptEngineering.ipynb",
+          "title": "2. Prompt Engineering : Techniques Avancées",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/03_Structured_Outputs.ipynb",
+          "title": "3. Structured Outputs : Sorties JSON Garanties",
+          "duration_minutes": 45,
+          "kernel": "base",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/04_Function_Calling.ipynb",
+          "title": "Function Calling : Connecter les LLMs au Monde Réel",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "generation-multimodale",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
+          "title": "OpenAI DALL-E 3 - Generation d'Images",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
+          "title": "GPT-5 Multimodal - Analyse et Génération d'Images",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb",
+          "title": "Stable Diffusion Forge - SD XL Turbo",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb",
+          "title": "Qwen-Image 2.1 : workflows de reference et execution hebergee",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb",
+          "title": "OpenAI TTS - Synthese Vocale par API",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb",
+          "title": "OpenAI Whisper STT - Reconnaissance Vocale par API",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb",
+          "title": "Whisper Local - Transcription GPU avec faster-whisper",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb",
+          "title": "Kokoro TTS Local - Synthèse vocale légère",
+          "duration_minutes": 60,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb",
+          "title": "Opérations de Base sur les Videos",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb",
+          "title": "AnimateDiff - Introduction a la Generation Text-to-Video",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "orchestration-multi-modeles",
+      "kind": "branches",
+      "prerequisites": [
+        "generation-multimodale"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb",
+          "title": "Comparaison Multi-Modèles : SDXL Lightning-4step, Qwen Image Edit fp8",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb",
+          "title": "Workflow Orchestration - Chaînage Multi-Modèles",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb",
+          "title": "Comparaison Multi-Modèles Audio",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb",
+          "title": "Orchestration de Pipelines Audio",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb",
+          "title": "Comparaison Multi-Modèles de Generation Video",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb",
+          "title": "Orchestration de Pipelines Video",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "agents-et-applications",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/13_Agentic_Orchestration.ipynb",
+          "title": "13. Orchestration agentique du test-time scaling",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb",
+          "title": "23. Du notebook a l'application - servir le RAG de la serie",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/24_Generative_Agents_MiniMonde.ipynb",
+          "title": "24 — Agents génératifs : mémoire, réflexion et planification d'un mini-monde",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/SemanticKernel/fort-boyard-python.ipynb",
+          "title": "Jeu de devinette : Père Fouras vs Laurent Jalabert",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb",
+          "title": "Docteur vs ChatGPT : Chatbot medical multi-agent",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb",
+          "title": "Duel Verbal : Barbie vs l'Âne de Shrek",
+          "duration_minutes": 45,
+          "kernel": "Python 3 (ipykernel)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb",
+          "title": "Générateur de Recettes PDF",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "plateformes-copilots",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb",
+          "title": "Configurer et interroger des chatbots — le chatbot est un document JSON",
+          "duration_minutes": 15,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb",
+          "title": "Les fichiers du chatbot — une memoire ephemere par l'API",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb",
+          "title": "Obtenir des données structurées — la case json, le fallback sans env et le null silencieux",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb",
+          "title": "Mesurer la dérive d'un copilot — le gate par étape ne protège pas la chaîne",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/differencier-les-assistants.ipynb",
+          "title": "Différencier plusieurs assistants — mesurer ce qu'un prompt promet",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "production-exploitation",
+      "kind": "branches",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/09_Production_Patterns.ipynb",
+          "title": "9. Production Patterns",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/09c_Production_Routage_Repli.ipynb",
+          "title": "9c. Routage et Repli : choisir le bon modèle, au bon moment",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/09d_Production_Caches.ipynb",
+          "title": "9d. Production Caches : payer une fois, servir mille fois",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/09e_Production_Exploitation.ipynb",
+          "title": "9e — Production : l'exploitation (coût, budget, déploiement, SLO)",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Texte/11b_Materiel_Debit_Cout.ipynb",
+          "title": "11b. Matériel, coût, débit : ce que paie réellement un token",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "securite-applicative",
+      "kind": "branches",
+      "prerequisites": [
+        "plateformes-copilots"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb",
+          "title": "9b. Prompt Security & Red-Teaming sur notre stack self-hosted",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb",
+          "title": "Surface d'attaque des outils MCP — le piège de la description",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb",
+          "title": "Auditer un serveur MCP qu'on n'a pas ecrit",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb",
+          "title": "Consommer vs exposer le MCP — sur l'instance reelle",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "semantic-kernel",
+      "kind": "accretions",
+      "prerequisites": [
+        "agents-et-applications"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb",
+          "title": "SK-1-Fundamentals : Introduction a Semantic Kernel",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/SemanticKernel/03-SemanticKernel-Agents.ipynb",
+          "title": "SK-3-Agents : Agent Framework Semantic Kernel",
+          "duration_minutes": 15,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb",
+          "title": "SK-4-Filters : Filtres et Observabilite",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb",
+          "title": "SK-8-MCP : Model Context Protocol et Integration",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/SemanticKernel/fort-boyard-csharp.ipynb",
+          "title": "Jeu de devinette : Père Fouras vs Laurent Jalabert",
+          "duration_minutes": 30,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "aspire-orleans",
+      "kind": "accretions",
+      "prerequisites": [
+        "production-exploitation"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb",
+          "title": "Aspire : orchestrer notre pile GenAI en C#",
+          "duration_minutes": 45,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Integrations-DotNet/Aspire/03-Aspire-Observabilite.ipynb",
+          "title": "Aspire 3 : Observabilite .NET moderne — Serilog, OpenTelemetry, ActivitySource",
+          "duration_minutes": 45,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Integrations-DotNet/Orleans/01-Orleans-Grains-Agents.ipynb",
+          "title": "Orleans : des acteurs stateful pour les workloads IA",
+          "duration_minutes": 30,
+          "kernel": ".NET (C#)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "qa-plateformes",
+      "kind": "accretions",
+      "prerequisites": [
+        "plateformes-copilots"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/05-Playwright-AI-Engine/00-Parcours-QA-AI-Engine.ipynb",
+          "title": "Parcours QA — ce que l'API ne voit pas",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/01-decouverte/01-Decouverte-QA-OWUI.ipynb",
+          "title": "Module 01 — Découverte de Playwright & Open WebUI",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (ipykernel)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb",
+          "title": "Module 03 — Chat & Streaming LLM",
+          "duration_minutes": 30,
+          "kernel": "Python 3 (ipykernel)",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "vibe-coding",
+      "kind": "accretions",
+      "prerequisites": [
+        "agents-et-applications"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Vibe-Coding/Claude-Code/notebooks/01-Claude-CLI-Bases.ipynb",
+          "title": "Claude CLI - Les Bases",
+          "duration_minutes": 45,
+          "kernel": "base",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Vibe-Coding/Claude-Code/notebooks/04-Claude-CLI-Agents.ipynb",
+          "title": "Claude CLI - Agents et Subagents",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": true
+          }
+        },
+        {
+          "path": "GenAI/Vibe-Coding/Claude-Code/notebooks/05-Claude-CLI-Automatisation.ipynb",
+          "title": "Claude CLI - Automatisation Avancee",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": false,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "multimodal-avance",
+      "kind": "accretions",
+      "prerequisites": [
+        "generation-multimodale"
+      ],
+      "notebooks": [
+        {
+          "path": "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
+          "title": "FLUX.1 - Génération d'Images Avancée",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb",
+          "title": "Z-Image (Lumina-2) : Generation Avancee avec ComfyUI",
+          "duration_minutes": 30,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
+          "title": "XTTS v2 - Clonage Vocal Zero-Shot",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": true,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb",
+          "title": "Ace-Step v1.5 - Generation Musicale avec Paroles",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb",
+          "title": "LTX-Video - Generation Video Rapide et Legere",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        },
+        {
+          "path": "GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb",
+          "title": "SVD - Stable Video Diffusion (Image-to-Video)",
+          "duration_minutes": 45,
+          "kernel": "Python 3",
+          "execution_constraints": {
+            "requires_api": false,
+            "requires_gpu": true,
+            "requires_cloud": false,
+            "requires_wsl": false,
+            "executable_locally": false
+          }
+        }
+      ]
+    }
+  ],
+  "duration_minutes": 2535,
+  "known_duration_minutes": 2535
+}

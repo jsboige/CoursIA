@@ -18,7 +18,7 @@
   être prédéterminée sans conspiration.
 
   Ce fichier formalise la structure du théorème et la connecte au
-  contexte du projet `conway_lein` (Kochen-Specker, Conway's legacy).
+  contexte du projet `conway_lean` (Kochen-Specker, Conway's legacy).
 
   **Insight clé (Conway-Kochen)** : ici, le « libre arbitre » est une
   *définition mathématique*, non une thèse philosophique. Cela signifie que

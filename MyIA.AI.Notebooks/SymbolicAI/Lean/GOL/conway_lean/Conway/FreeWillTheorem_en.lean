@@ -17,7 +17,7 @@
   with a classical eigenvalue can be predetermined without conspiracy.
 
   This file formalizes the structure of the theorem and connects it to
-  the context of the `conway_lein` project (Kochen-Specker, Conway's legacy).
+  the context of the `conway_lean` project (Kochen-Specker, Conway's legacy).
 
   **Key insight (Conway-Kochen)**: here, "free will" is a *mathematical*
   definition, not a philosophical thesis. It means the particle's response
