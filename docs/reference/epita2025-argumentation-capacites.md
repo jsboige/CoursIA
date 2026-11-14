@@ -77,7 +77,7 @@ libs/native/        lingeling.dll, minisat.dll, picosat.dll
 libs/java/          org.tweetyproject.tweety-full-1.28-with-dependencies.jar
 ```
 
-**16 binaires au total, aucun accompagné d'un fichier de licence, aucun source, aucune README** — des exécutables Windows PE / un JAR fat vendus tels quels. EProver, SPASS et Prover9 sont sous licence GPL/académique : les re-vendrer dans le repo public CoursIA est un **blocage de redistribution** et une charge de license-incompatibility. Le recensement complet est produit par l'organe [`scripts/research/argumentation_capacity_dedup.py`](../../scripts/research/argumentation_capacity_dedup.py) (`dedup`, § exposition licence).
+**16 binaires au total, aucun accompagné d'un fichier de licence, aucun source, aucune README** — des exécutables Windows PE / un JAR fat vendus tels quels. EProver, SPASS et Prover9 sont sous licence GPL/académique : les re-vendrer dans le repo public CoursIA est un **blocage de redistribution** et une charge de license-incompatibility. Le recensement complet est produit par l'organe `scripts/research/argumentation_capacity_dedup.py` (commande `dedup`, section exposition licence ; organe livré par la PR jumelle du sous-grain #26422, en vol au moment de l'écriture — le chemin devient un lien actif à son merge).
 
 > **Décision de charter B — Prouveurs externes.** Les capacités de prouvé FOL ne sont **pas** distillées en binaire. CoursIA les expose comme **dépendances externes optionnelles** : `eprover_runner.py` appelle l'exécutable si présent sur le `PATH`, sinon le notebook documente et route vers une machine qui l'a (règle F, exception GPU/outil — pas un « workaround dégradé »). Le runner reste portable ; le binaire, non.
 
