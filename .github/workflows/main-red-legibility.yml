@@ -68,9 +68,11 @@ jobs:
         with:
           sparse-checkout-cone-mode: false
           # #26355 : l'organe importe le predicat consultatif de
-          # `scripts/pr_gate.py` (source unique, jamais de copie). Sans ce
-          # fichier il sort en rc=2 « instrument incomplet » -- bruyant, jamais
-          # une mesure degradee. Il lit aussi `.github/workflows/` pour la
+          # `scripts/pr_gate.py` (source unique, jamais de copie), qui importe
+          # lui-meme `scripts/gh_identity.py` au module (fermeture des imports,
+          # pas seulement le premier niveau). Sans l'un de ces fichiers il sort
+          # en rc=2 « instrument incomplet » -- bruyant, jamais une mesure
+          # degradee. Il lit aussi `.github/workflows/` pour la
           # derivation des workflows dont seul le NOM porte `advisory` : en
           # sparse checkout cette derivation est vide, et le marqueur porte par
           # le nom du job (la voie majoritaire, ~30 workflows) continue seul.
@@ -78,6 +80,7 @@ jobs:
             .github/workflows/main-red-legibility.yml
             scripts/ci/check_cancelled_only_commits.py
             scripts/pr_gate.py
+            scripts/gh_identity.py
 
       - name: Set up Python
         uses: actions/setup-python@v5

@@ -374,3 +374,63 @@ def test_analyse_ne_compte_que_du_consultatif_comme_une_quatrieme_categorie():
     assert row["advisory_legs"] == [
         "CJK residue advisory (label, non-blocking)=FAILURE",
     ]
+
+
+#: Le workflow `main-red-legibility.yml` fait tourner l'organe sur un sparse
+#: checkout : si la liste oublie une depense locale d'import (le garde-fou
+#: #26458 : `pr_gate.py` importe `gh_identity.py` au module), le job de main
+#: sort « instrument incomplet » a chaque passe alors que les tests, eux,
+#: tournent sur un checkout complet et restent verts. Ce test rejoue la liste
+#: telle quelle : il copie EXACTEMENT les fichiers du bloc `sparse-checkout:`
+#: dans un dossier vide et exige que l'organe y reponde `--help` (rc=0).
+_WF_NAME = "main-red-legibility.yml"
+
+
+def _sparse_checkout_list(workflow_text):
+    """Extrait la liste du bloc `sparse-checkout: |` du workflow."""
+    import re
+
+    m = re.search(
+        r"sparse-checkout:\s*\|\s*\n((?:[ \t]+\S[^\n]*\n)+)",
+        workflow_text,
+    )
+    assert m, f"bloc sparse-checkout introuvable dans {_WF_NAME}"
+    lignes = [l.strip() for l in m.group(1).splitlines()]
+    return [l for l in lignes if l and not l.startswith("#")]
+
+
+def test_sparse_checkout_ferme_les_imports_de_l_organe(tmp_path):
+    """L'organe doit vivre avec la SEULE liste sparse-checkout du workflow."""
+    import shutil
+    import subprocess
+
+    racine = pathlib.Path(__file__).resolve().parents[2]
+    workflow = racine / ".github" / "workflows" / _WF_NAME
+    assert workflow.is_file(), f"workflow absent : {workflow}"
+    fichiers = _sparse_checkout_list(workflow.read_text(encoding="utf-8"))
+    assert fichiers, "liste sparse-checkout vide"
+
+    for rel in fichiers:
+        source = racine / rel
+        assert source.is_file(), (
+            f"la liste sparse-checkout cite un fichier absent du depot : {rel}"
+        )
+        cible = tmp_path / rel
+        cible.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, cible)
+
+    organe = tmp_path / "scripts" / "ci" / "check_cancelled_only_commits.py"
+    resultat = subprocess.run(
+        [sys.executable, "-I", str(organe), "--help"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        cwd=str(tmp_path),
+    )
+    assert resultat.returncode == 0, (
+        "l'organe sort en rc="
+        f"{resultat.returncode} sur la seule liste sparse-checkout "
+        "(depense locale d'import manquante ?)\n"
+        f"stdout: {resultat.stdout[-400:]}\nstderr: {resultat.stderr[-400:]}"
+    )
