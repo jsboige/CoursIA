@@ -1,4 +1,4 @@
-- name: "GameTheory-16c Extraction Revenu DSIC IR"
+- name: "GameTheory-16c Extraction Revenu Contraintes Locales"
   family: GameTheory
   python: MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb
