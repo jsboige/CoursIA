@@ -731,6 +731,14 @@ def test_real_repo_eligible_zero(tmp_path: Path) -> None:
         None,
     )
     assert plan_loss is not None, "notebook-plan-loss-gate.yml absent"
-    assert plan_loss["classification"] == "exempt_documented", (
-        "notebook-plan-loss-gate doit etre exempt_documented (#14391/#14429)"
+    # #22209 TRANCHE45 : le workflow est ABSORBE par la voie rapide --
+    # declencheur pull_request retire, le fichier est dormant
+    # (workflow_dispatch-only). Il n'est plus PR-triggered du tout :
+    # classification no_pr_trigger (comme tout dormant), et l'invariant
+    # unfiltered_eligible == 0 tient toujours. Le perimetre notebooks vit
+    # dans Guard.iterate_paths du registre, sans filtre -- contrat
+    # check_absorbed_path_parity (declencheur d'origine sans filtre).
+    assert plan_loss["classification"] == "no_pr_trigger", (
+        "notebook-plan-loss-gate dormant (#22209 TRANCHE45) doit etre "
+        "no_pr_trigger"
     )
