@@ -86,6 +86,20 @@ _quarto.yml text eol=lf
 # commit CRLF, diff vs main gonfle 22x (2483/2483 au lieu de 114/114 reelles).
 # Meme motif que `*.lean text eol=lf` ci-dessus.
 slides/**/*.md text eol=lf
+# Docs Markdown : meme motif "L268", et cabble sur la garde eol-blob-guard
+# (#23547). Mesure #22988 (revue du 2026-10-27, head 643f8c12) : sans
+# regle, docs/README.md reecrit par un outil Windows portait 499 CRLF et
+# un diff +499/-499 pour une seule ligne de contenu reel ; renormalise,
+# le meme diff tombe a +10/-16 -- 705 lignes de bruit EOL sur 715. La
+# garde eol-blob-guard ne rougissait RIEN de cette classe : elle ne voit
+# que les blobs sous attribut text|lf, donc docs/ en etait exclu -- cette
+# regle EST le cablage. Mesure 2026-11-04 sur origin/main : 60 blobs .md
+# CRLF sur 588 sous docs/ (docs/archive/ledgers-reviews/ pour l'essentiel),
+# tous attr/ vide (aucun CRLF revendique : aucun eol=crlf, aucun -text
+# sous docs/) -- leur renormalisation part en PR de fournée SEPARÉE
+# (l'attribut et la garde d'abord, la fournée ensuite), sinon les 60
+# fichiers polluent le diff de cablage.
+docs/**/*.md text eol=lf
 # Git LFS tracking for model files referenced by notebooks
 *.pt filter=lfs diff=lfs merge=lfs -text
 *.pkl filter=lfs diff=lfs merge=lfs -text
@@ -121,7 +135,7 @@ scripts/notebook_tools/twin_pairs.d/*/*.yaml text eol=lf
 
 # Snapshots verbatim des taxonomies Argumentum (amont : ArgumentumGames/Argumentum).
 # Ces deux CSV ne sont PAS edites ici : ils sont recopies octet pour octet depuis
-# l'amont, et tout le reste (notebooks Argument_Analysis, FallacyDetection,
+# l'amont, et tout le reste (notebooks ArgumentAnalysis, FallacyDetection,
 # scripts/fallacy_detection) les lit comme source de verite locale.
 #
 # Pourquoi `-text` et non `text eol=crlf` : la source porte 139 sauts de ligne
@@ -131,7 +145,7 @@ scripts/notebook_tools/twin_pairs.d/*/*.yaml text eol=lf
 # juillet (#5183), dont le message annoncait "verbatim" alors que le blob stocke
 # differait de l'amont. `-text` desactive toute conversion : le blob est l'amont.
 # Ne pas "corriger" en `text eol=...` : ce serait re-ouvrir la meme corruption.
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_*_taxonomy.csv -text
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_*_taxonomy.csv -text
 # Meme regle pour le paquet Scenarii, recopie octet pour octet (Phase 2 de
 # l'EPIC #10355) : il est en CRLF pur, mais sans `-text` le blob stocke serait
 # normalise en LF sous `core.autocrlf=true` et differerait de l'amont.
@@ -160,7 +174,7 @@ MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/MAFALDA/*.jsonl -text
 # `text eol=crlf` ne conviendrait pas davantage que pour les CSV : il ecraserait
 # les 41 LF nus. La preuve de verbatim est l'EGALITE DES SHA DE BLOB (consignee
 # dans argumentum_snapshot.json), et elle n'est atteignable qu'avec `-text`.
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_*.owl -text
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/argumentum_*.owl -text
 
 # Banc Phase 2 de FallacyDetection : les deux CSV sont le PRODUIT du constructeur
 # (cartesian_dataset_builder), pas une recopie d'amont ; leur forme canonique est
@@ -201,3 +215,16 @@ MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/data/acic2016/LICENSE tex
 # portent des CR (traces SemanticKernel, 97 octets au total) ne sont pas
 # concernes, donc cette regle ne les renormalise pas au passage.
 MyIA.AI.Notebooks/**/datasets/*.txt text eol=lf
+
+# Preuve de rendu #22286 (`docs/captures/22286/`) : deux fichiers, deux formes,
+# deux regles explicites.
+#   - `README.md` est un markdown : LF, comme les autres `.md` de `docs/` (le
+#     blob herite etait en CRLF pur, 101/101 lignes). Meme motif que
+#     `MyIA.AI.Notebooks/**/datasets/*.txt` ci-dessus : sans regle, le premier
+#     outil qui reecrit le fichier sur Windows produit un diff plein-fichier.
+#   - `manifest.json` est produit par `slides/_tools/build_capture_manifest.py`,
+#     qui l'ecrit en CRLF pour rester identique au blob herite ; `-text`
+#     interdit toute conversion, donc une regeneration ne fait pas bouger les
+#     1 136 lignes du manifeste.
+docs/captures/22286/README.md text eol=lf
+docs/captures/22286/manifest.json -text

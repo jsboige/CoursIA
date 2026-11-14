@@ -30,8 +30,9 @@ require mathlib from git
 -- SocialChoice.lean) deplaces byte-identique depuis `social_choice_lean/`
 -- vers `game_theory_lean/SocialChoice/`. La coquille technique du lake source
 -- `social_choice_lean/` (lakefile + toolchain + manifest) a été retirée en
--- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 4 markdown
--- (README/STATUS/NOTICE/LEAN_PREREQUISITES) subsistent comme tombstone.
+-- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 3 markdown
+-- (README/STATUS/LEAN_PREREQUISITES) subsistent comme tombstone ; la NOTICE
+-- vit dans `game_theory_lean/SocialChoice/NOTICE.md` (#24183, T1).
 -- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
 -- INTRINSIC documente si port depasse budget cf sota-not-workaround).
 --
@@ -167,6 +168,30 @@ lean_lib StackelbergBilevel where
 @[default_target]
 lean_lib CongestionGames where
   globs := #[`CongestionGames.*]
+
+-- Grain #25686 (po-2024, distillation Lexifina) : ajout `lean_lib
+-- LegalLoophole` — modele jouet « regles fiscales comme jeu formel » :
+-- 3 comptes (cash, traditionnel ventile pre-tax/basis, Roth), 4 coups
+-- (contribution Roth directe interdite aux hauts revenus, contributions
+-- deductible et non deductible partageant un budget annuel `maxContrib`,
+-- conversion taxee au pro-rata de la part pre-tax). Semantique
+-- executable (`step`/`run` sur `Option`, zero dependance hors core —
+-- compilable en quelques secondes, pas de Mathlib), deux familles de
+-- theoremes : `wealth_conservation` + `cash_floor` -> `roth_ceiling`
+-- (a toute profondeur, le Roth final est plafonne par l'etat initial et
+-- le budget annuel) et `backdoor_exists` + `backdoor_optimal` (la
+-- sequence non-deductible + conversion atteint exactement le plafond
+-- sans taxe : le temoin est optimal). Copie pedagogique declaree de
+-- l'echelle du modele CC0 lexifina/global-law (reduit, v4.33.0), citee
+-- dans le module. Compagnon Lean du carnet
+-- GameTheory-23-Loopholes-Fiscaux-Python-Lean. 10e cohorte `lean_lib`
+-- du meme package. 0 sorry, 0 axiome ad hoc.
+-- c.Hermes-26022 : `@[default_target]` requis comme pour les 9 autres libs --
+-- sans lui, `lake -R build` (la jambe CI) ne construit pas la cible et le
+-- module peut casser sans faire rougir aucun job.
+@[default_target]
+lean_lib LegalLoophole where
+  globs := #[`LegalLoophole.*]
 
 -- Tranche L2 (po-2025) : `ProgramGames/FairBot.lean` (+ sibling `_en`) —
 -- EPIC #15062, FairBot par le théorème de Löb. Interface

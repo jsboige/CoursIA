@@ -30,9 +30,52 @@ Ce que le module est, et ce qu'il n'est pas
 * `collisions_by_ordinal` -- pur : les (paire, ordinal) revendiques par deux
   PRs ou plus.
 
+La couverture de la lecture, et son defaut mesure
+--------------------------------------------------
+Lire les PRs ouvertes suppose de les **TOUTES** lire : une revendication
+hors lecture est une revendication **invisible**, donc un VERT faux. La
+premiere version lisait `gh pr list --limit 200` -- un plafond **fige**.
+
+Mesure fondatrice (2026-11-04, `jsboige/CoursIA`) : le parc comptait **241**
+PRs ouvertes, et la PR **#24340** se situait au **rang 204** -- soit **hors**
+du lot (le plafond fige etait 200). Sa revendication d'ordinal
+(`search-03-informed` / `0027`) n'était pas lue par la couche OPEN-PR de la
+porte : le verdict OPEN-PR ne la voyait pas.
+
+Le plafond est donc **derive du compte exact** des PRs ouvertes (API search)
+**plus une marge** (`READ_MARGIN`), et une lecture **tronquee** leve
+`GhError` au lieu de rendre un resultat partiel : « je n'ai pas pu tout lire »
+n'est pas « c'est propre ».
+
+La marge n'est pas un caprice : `total_count` est servi par un **index qui a
+du retard** sur l'etat reel (de quelques secondes a quelques minutes). S'il
+sous-compte, un plafond calcule sur ce compte tronque la liste, et l'ecart
+est **invisible** : `len(rows) == total`. `gh pr list` rend les PRs **les plus
+recentes** d'abord -- ce sont donc les plus anciennes qui disparaissent, ce
+qui est exactement le defaut que ce module corrige. Avec la marge, le lot
+revient **plein** (`len(rows) >= eff`), et un lot plein prouve la troncature
+quel que soit le compte de l'index.
+
 Ce module NE decide pas si une PR peut merger : il produit la MATIERE. La
 porte (`check_twin_index_collisions.py --open-claims`) en tire le verdict, et
 c'est elle qui reste l'organe unique du verdict.
+
+La fenetre residuelle -- et pourquoi elle est INTRINSIQUE (#26464, limite 2)
+-----------------------------------------------------------------------------
+Lire les revendications des PRs ouvertes **restreint** la course, ne la
+**ferme pas**. La fenetre qui reste : deux branches qui partent du meme `main`
+au meme instant, **avant que l'une ne soit ouverte et visible par l'index de
+recherche** -- chacune calcule le meme plancher et emet le meme `NNNN`. Le
+module ne peut pas la refermer : il faudrait une **reservation atomique cote
+serveur** (une seule branche obtient l'ordinal), hors de portee d'un fix local.
+Defaut **INTRINSIQUE cote depot** (#25742), pas un oubli du module.
+
+La remediation est au garde, pas ici : le doublon ainsi produit est attrape
+APRES coup par l'integrite
+`test_audit_index_unique_and_no_identical_duplicates_per_pair`
+(`tests/test_twin_registry_integrity.py`), et la renumeration de la paire est
+le redecollage connu (pass #24518). Ce module ne la previent pas ; il
+documente la fenetre et renvoie au garde.
 
 Contrat de restitution : stdout ne porte QUE le JSON -- la ligne de verdict
 part sur stderr. Un rapport machine melange a une ligne de texte n'est plus un
@@ -50,6 +93,13 @@ import sys
 from pathlib import Path
 
 REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
+
+# Marge demandee AU-DELA du compte exact des PRs ouvertes. Elle couvre le
+# retard de l'index de la recherche (`total_count` sous-compte pendant
+# quelques minutes) : sans elle, un index en retard tronque la liste sans
+# qu'aucun ecart ne soit visible. 50 PRs est tres au-dessus du bruit mesure
+# (le parc du depot est de l'ordre de 250 PRs ouvertes).
+READ_MARGIN = 50
 
 # `scripts/notebook_tools/twin_pairs.d/<paire>/<NNNN>-<date>-<lane>.yaml`
 _CLAIM_RE = re.compile(
@@ -167,19 +217,74 @@ def repo_slug(cwd: Path | None = None) -> str:
     return out
 
 
-def open_prs_touching_registry(slug: str, *, limit: int = 200,
+def open_pr_total(slug: str, *, cwd: Path | None = None) -> int:
+    """Nombre EXACT de PRs ouvertes du depot.
+
+    L'API search rend `total_count` : c'est le nombre reel, independamment de
+    toute pagination. C'est la mesure qui remplace le plafond fige de 200
+    (mesure : 241 PRs ouvertes au 2026-11-04, #24340 au rang 204, soit **hors**
+    du lot de 200 -> invisible pour la couche OPEN-PR).
+
+    L'index qui sert ce compte a du retard sur l'etat reel : c'est pourquoi
+    `open_prs_touching_registry` ajoute `READ_MARGIN` par-dessus.
+    """
+    raw = _gh(["api",
+               "search/issues?q=repo:%s+type:pr+state:open&per_page=1" % slug],
+              cwd=cwd)
+    try:
+        payload = json.loads(raw)
+    except (json.JSONDecodeError, ValueError) as exc:
+        raise GhError("l'API search n'a pas rendu du JSON : %s" % exc) from exc
+    total = (payload or {}).get("total_count")
+    if not isinstance(total, int) or total < 0:
+        raise GhError("l'API search n'a pas rendu de total_count : %r" % total)
+    return total
+
+
+def open_prs_touching_registry(slug: str, *, limit: int | None = None,
                                cwd: Path | None = None) -> list[int]:
     """Numeros des PRs ouvertes dont les fichiers touchent le registre twin.
 
     Le filtre se fait sur les CHEMINS (deja connus de `gh pr list`), donc une
     seule requete suffit pour ecarter la quasi-totalite du parc.
+
+    **Le plafond de lecture n'est jamais fige** : il vaut le compte EXACT des
+    PRs ouvertes (`open_pr_total`) **plus `READ_MARGIN`**, de sorte qu'aucune
+    revendication ne puisse disparaitre dans un lot tronque. La marge est ce
+    qui rend la troncature **visible** : `total_count` est servi par un index
+    qui a du retard, donc un compte qui sous-compte tronque la liste sans
+    qu'aucun ecart ne se voie (`len(rows) == total`). Un lot **plein**
+    (`len(rows) >= eff`) prouve la troncature, quel que soit le compte.
+
+    Une liste rendue plus courte que le compte est une lecture **incomplete** :
+    elle leve `GhError` (fail-closed) plutot que de rendre un resultat
+    partiel -- sauf si un second compte montre que l'ecart vient d'une
+    fermeture survenue entre les deux appels.
     """
+    total = open_pr_total(slug, cwd=cwd)
+    eff = (total if limit is None else max(int(limit), total)) + READ_MARGIN
     raw = _gh(["pr", "list", "--repo", slug, "--state", "open",
-               "--json", "number,files", "--limit", str(limit)], cwd=cwd)
+               "--json", "number,files", "--limit", str(eff)], cwd=cwd)
     try:
         rows = json.loads(raw)
     except (json.JSONDecodeError, ValueError) as exc:
         raise GhError("gh pr list n'a pas rendu du JSON : %s" % exc) from exc
+    read = len(rows or [])
+    if read >= eff:
+        # le lot est PLEIN : la liste est tronquee, quoi que dise le compte de
+        # l'index. C'est le seul test qui survit a un `total_count` en retard.
+        raise GhError(
+            "liste des PRs ouvertes tronquee : %d lue(s) pour un plafond de %d "
+            "(total_count de l'index : %d -- l'index a du retard)"
+            % (read, eff, total))
+    if read < total:
+        # soit une PR s'est fermee entre les deux appels, soit la liste est
+        # tronquee : le second compte tranche.
+        total_after = open_pr_total(slug, cwd=cwd)
+        if read < total_after:
+            raise GhError(
+                "liste des PRs ouvertes tronquee : %d lue(s) pour %d ouverte(s)"
+                % (read, total_after))
     out: list[int] = []
     for row in rows or []:
         paths = [str((f or {}).get("path") or "")
@@ -208,7 +313,7 @@ def pr_new_claims(slug: str, number: int, *, cwd: Path | None = None
 
 
 def collect_open_claims(slug: str, *, cwd: Path | None = None,
-                         limit: int = 200) -> dict:
+                         limit: int | None = None) -> dict:
     """Les ordinals revendiques par chaque PR ouverte qui touche le registre.
 
     Rend `{"prs": {num: [claims]}}`. Une PR dont la lecture echoue est

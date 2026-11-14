@@ -65,6 +65,16 @@ RUNNER_LEGS: tuple[tuple[str, str, str, str, int], ...] = (
      "COURSIA_LEAN_RUNNER_MEMORY", 6 * 1024),
 )
 
+# Allocation RSS d'un waiter oisif, declaree dans le drop-in de la machine
+# (#22532, dispatch c2770) : la famille waiters est comptee au budget a
+# instances x RSS declare (mesure docker stats --no-stream + marge), PAS au
+# cap docker -- symetrie memoire de l'arbitrage #15574 item 3 (le budget
+# garde la part qui calcule, pas la part qui dort ; pour la memoire, la part
+# qui dort est comptee a ce qu'elle consomme reellement, pas a son plafond).
+# Sans declaration dans l'unite deployee, l'organe retombe au cap :
+# conservateur, et le garde supervise.sh le signale par AVERTISSEMENT.
+WAITER_RSS_VAR = "COURSIA_RUNNER_WAITER_RSS_MB"
+
 # Marge de securite en GiB : arrondis d'unite (1 GiB = 1024 MiB mais
 # declare parfois comme 1000 MB) + memoire reservee a l'hote (Windows +
 # WSL overhead, ~200-400 MiB mesures).
@@ -192,6 +202,11 @@ class CompositionFamily:
     instances: int
     cap_gib: float
     total_gib: float
+    # Base de comptage PAR SLOT effectivement retenue au budget (#22532) :
+    # le RSS declare pour la famille waiters, sinon identique au cap. None
+    # (defaut) signifie « compte au cap » -- les snapshots JSON existants
+    # n'ont pas de champ counte et restent valides tels quels.
+    counted_gib: float | None = None
 
 
 @dataclass
@@ -323,11 +338,26 @@ class BudgetSnapshot:
                 missing.append(f"{root / unit} (ExecStart {script} illisible)")
                 continue
             cap = _cap_gib_from_env(text, var, default_mib)
-            sources.append(f"{name}={instances}x{cap:g}G")
+            # #22532 : base de comptage. La famille waiters est comptee au
+            # RSS declare (WAITER_RSS_VAR) quand l'unite deployee le porte ;
+            # les autres familles -- et les waiters sans declaration -- au
+            # cap. _cap_gib_from_env sert de parseur (entier Mo sans suffixe
+            # -> Mo/1024) ; default 0 = « non declare ».
+            counted: float | None = None
+            if name == "waiters":
+                rss_gib = _cap_gib_from_env(text, WAITER_RSS_VAR, 0)
+                if rss_gib > 0:
+                    counted = rss_gib
+                    sources.append(
+                        f"{name}={instances}x{counted:.3f}G (RSS declare, cap {cap:g}G non compte)"
+                    )
+            if counted is None:
+                sources.append(f"{name}={instances}x{cap:g}G")
             comp[name] = CompositionFamily(
                 instances=instances,
                 cap_gib=cap,
-                total_gib=round(instances * cap, 3),
+                total_gib=round(instances * (counted if counted is not None else cap), 3),
+                counted_gib=counted,
             )
 
         if missing:
@@ -418,10 +448,19 @@ def assert_memory_budget(
 
     details: list[str] = []
     for name, fam in budget.composition.items():
-        details.append(
-            f"  {name:>10s} : {fam.instances:>3d} x {fam.cap_gib:>5.1f} GiB "
-            f"= {fam.total_gib:>6.1f} GiB"
-        )
+        # #22532 : quand la famille est comptee a une base autre que le cap
+        # (RSS declare des waiters), la ligne dit LES DEUX -- sinon un total
+        # passe pour un cap et l'ecart de ~1,9 Go devient invisible.
+        if fam.counted_gib is not None and abs(fam.counted_gib - fam.cap_gib) > 1e-9:
+            details.append(
+                f"  {name:>10s} : {fam.instances:>3d} x {fam.counted_gib:>5.2f} GiB "
+                f"= {fam.total_gib:>6.2f} GiB  (RSS declare ; cap {fam.cap_gib:.2f} GiB/slot non compte -- #22532)"
+            )
+        else:
+            details.append(
+                f"  {name:>10s} : {fam.instances:>3d} x {fam.cap_gib:>5.1f} GiB "
+                f"= {fam.total_gib:>6.1f} GiB"
+            )
     details.append(f"  {'TOTAL':>10s} : {'':>3s}   {'':>6s}   {budget.composition_total_gib:>6.1f} GiB")
     if vm_total_gib is not None:
         details.append(f"  VM RAM        : {vm_total_gib:>6.1f} GiB  (hote reserve {HOST_RESERVED_GIB} GiB)")

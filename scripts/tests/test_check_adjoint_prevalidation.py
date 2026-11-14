@@ -1,6 +1,7 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import itertools
 import json
 import os
 import subprocess
@@ -1051,17 +1052,25 @@ def test_any_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
-# --- #17437 : la voix du coordinateur sous l'identite de son App de lane -----
+# --- #26102/#26405 : l'App de la machine ai-01 n'est PAS la voix du coordinateur
 
 
-def test_coordinator_app_identity_does_not_expire_the_dossier():
-    """#17437: the coordinator's App identity is its own voice too.
+def test_coordinator_app_act_expires_the_dossier():
+    """#26102 (appliqué ici par #26405) : un acte de l'App EXPIRE le dossier.
 
-    The lane migration replaces the coordinator's PAT with an installation
-    token, so its post-dossier rows reach the API as
-    ``coursia-lane-ai-01[bot]``. Missing that spelling from the neutralised
-    set would make the coordinator's own lift (B.0 voie 1) expire its own
-    dossier -- #16840's defect, reproduced under the App identity.
+    L'App ``coursia-lane-ai-01`` n'est plus une voix du coordinateur : sa clé
+    privée vit sur la machine ai-01, que partagent les DEUX lanes
+    ``myia-ai-01:CoursIA`` (coordinateur) et ``myia-ai-01:CoursIA-2``
+    (worker soeur) -- la seconde forge le même jeton d'installation.
+    Neutraliser un acte de l'App, c'est neutraliser un acte qu'une lane NON
+    coordinatrice peut écrire : le dossier ne périmait alors pas sur un
+    commentaire post-dossier de CoursIA-2 sous l'App.
+
+    Inverse du comportement #17437 historique (l'acte de l'App était
+    neutralisé) : aligné sur ``merge_ready.COORDINATOR_VOICES`` et
+    ``check_unaddressed_nits.LIFT_OVERRIDE_LOGINS``, qui refusent toute
+    forme App. Le coordinateur lève toujours sous ses logins humains
+    (``myia-ai-01`` / ``jsboige``, cf #16883).
     """
     base = _stamped_snapshot("")
     base["comments"].pop()
@@ -1070,16 +1079,18 @@ def test_coordinator_app_identity_does_not_expire_the_dossier():
     own["createdAt"] = T1
     snapshot["comments"].append(own)
     verdict, errors = mod.evaluate(snapshot)
-    assert verdict == mod.VERDICT_READY, errors
+    assert verdict != mod.VERDICT_READY, (verdict, errors)
+    assert any("discussion changed after dossier" in e for e in errors), errors
 
 
 def test_worker_lane_app_still_expires_the_dossier():
-    """#17437 negative control: widening stops at the coordinator.
+    """#26405 negative control: NO App spelling is neutralised anymore.
 
     Neutralising ``ACCEPTED_DOSSIER_AUTHORS`` wholesale would let any worker
     lane's App write a blocking row after the dossier without expiring it --
-    that is the gate's entire control. Only the coordinator's own App is
-    neutralised, so these two must still refuse.
+    that is the gate's entire control. Since #26102 no App at all is
+    neutralised (the coordinator machine's App included, see
+    ``test_coordinator_app_act_expires_the_dossier``), so these must refuse.
     """
     for login in ("coursia-lane-po-2024[bot]", "coursia-lane-po-2026[bot]"):
         base = _stamped_snapshot("")
@@ -1098,7 +1109,9 @@ def test_coordinator_app_login_is_an_accepted_dossier_author():
     ``COORDINATOR_APP_LOGIN`` is a literal so this module imports without
     ``gh_identity``. If the App prefix or the lane list ever changes there,
     this fails instead of silently neutralising a login the dossier gate
-    would reject as an author.
+    would reject as an author. The App stays an accepted dossier AUTHOR
+    (signing a dossier is not a post-dossier act) -- since #26102 it just no
+    longer neutralises anything written after the dossier.
     """
     assert mod.COORDINATOR_APP_LOGIN in mod.gh_identity.ACCEPTED_DOSSIER_AUTHORS
 
@@ -1365,6 +1378,83 @@ def test_latest_wins_picks_the_most_recent_completed_run_per_name():
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+def test_le_repli_sur_le_skip_garde_le_verdict_reel_anterieur():
+    """#25510 (T-C) : un check-run `skipped` plus RECENT ne remplace pas un
+    verdict reel anterieur du meme nom.
+
+    `skipped` compte comme VERT ici aussi : sous un repli latest-wins simple,
+    une edition de titre emettrait un `skipped` plus recent que le verdict
+    reel, et ce dossier certifierait `latest-wins-green` sur une tete que le
+    gate lit comme ROUGE. Les trois organes (gate, `check_run_state`,
+    dossier) doivent mesurer le meme « latest ».
+    """
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_un_skipped_seul_ne_contredit_pas_le_dossier():
+    """Le cas ordinaire n'est pas casse : un job saute sans verdict anterieur
+    (filtre `paths:`) reste VERT pour le dossier aussi."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : l'API rend les check-runs du PLUS RECENT au PLUS
+    ANCIEN. Le dossier doit mesurer le meme « latest » que le gate dans cet
+    ordre-la (skip d'abord, verdict reel ensuite)."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : toutes les permutations d'un meme lot rendent le meme
+    verdict -- le dossier, le gate et `check_run_state` doivent mesurer le
+    meme « latest », quel que soit l'ordre d'arrivee."""
+    lot = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    for permutation in itertools.permutations(lot):
+        snapshot = _snapshot(_body())
+        snapshot["checkRuns"] = list(permutation)
+        errors = _errors(snapshot)
+        assert any(
+            "checks claim 'latest-wins-green' is contradicted by live check "
+            "'PR gate' (failure)" in error
+            for error in errors
+        ), permutation
 
 
 def test_latest_wins_red_older_run_loses_to_newer_green():
@@ -1793,7 +1883,7 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
 # le gel se mesure sur #11601, seul parapluie gele en vie.
 FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"
 REDRESSEMENT_TITLE = (
-    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "fix(semanticweb,#17066): redressement critique de SW-04-SPARQL-CSharp "
     "-- reference de campagne"
 )
 
@@ -3331,23 +3421,38 @@ def test_queue_non_coordinator_approval_does_not_qualify():
     assert entry.review_qualifying is False
 
 
-def test_queue_coordinator_app_approval_qualifies_on_exact_head():
-    """#17437: the review door recognizes the coordinator's App as well."""
+def test_queue_coordinator_app_approval_does_not_qualify():
+    """#26102 (appliqué ici par #26405) : la porte review refuse l'App aussi.
+
+    La queue expose la porte à titre d'information ; l'autorité de merge est
+    le 2ter de ``merge_ready`` (``COORDINATOR_VOICES``), qui refuse toute
+    forme App depuis #26102 : la clé de l'App vit sur la machine ai-01
+    partagée par la lane worker soeur CoursIA-2, donc son APPROVE n'est pas
+    une preuve d'identité coordinateur. Inverse du comportement #17437
+    historique (la porte reconnaissait l'App).
+    """
     snapshot = _queue_snapshot([_review(login=mod.COORDINATOR_APP_LOGIN)])
     entry = _classified(snapshot)
-    assert entry.verdict == mod.VERDICT_READY
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
     assert entry.review_disposition == "approved-exact-head"
-    assert entry.review_qualifying is True
+    assert entry.review_qualifying is False
 
 
-def test_queue_coordinator_graphql_bot_approval_qualifies_on_exact_head():
-    """#21818: GraphQL supplies the App login without its REST suffix."""
+def test_queue_coordinator_graphql_bot_approval_does_not_qualify():
+    """#21818 spelling, #26102 verdict: normalisation inchangée, refus aligné.
+
+    GraphQL fournit toujours le login de l'App sans son suffixe REST
+    (``coursia-lane-ai-01``, ``type: Bot``) et ``normalize_author_login`` le
+    replie toujours en ``coursia-lane-ai-01[bot]`` -- c'est la forme repliée
+    qui est comparée, et depuis #26102 elle n'est plus une voix du
+    coordinateur : la porte reste fermée.
+    """
     review = _review(login="coursia-lane-ai-01")
     review["author"]["type"] = "Bot"
     entry = _classified(_queue_snapshot([review]))
-    assert entry.verdict == mod.VERDICT_READY
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
     assert entry.review_disposition == "approved-exact-head"
-    assert entry.review_qualifying is True
+    assert entry.review_qualifying is False
 
 
 def test_queue_worker_app_approval_still_does_not_qualify():
@@ -3851,17 +3956,89 @@ def test_queue_run_block_reports_the_cost():
 
 
 def test_stack_index_builds_the_same_entries_in_parallel(monkeypatch):
-    """#22938 : la mesure pile est la MEME, seule l'ordonnancement change."""
-    monkeypatch.setattr(mod, "gh_lines", lambda args: ["1", "2", "3"])
+    """#22938 : la mesure pile est la MEME, seule l'ordonnancement change.
+
+    #23100 -- l'enumeration rend des lignes ``[number, head.ref, base.ref]``
+    (meme appel, aucun cout supplementaire) : les noms atterrissent sur
+    l'entree, et une ligne courte (champ absent) degrade en noms vides sans
+    casser la passe.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        '[2, "feature/b", "feature/a"]',
+        '[3]',
+    ])
     monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
     monkeypatch.setattr(
         mod, "_git",
         lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
     )
+    # Ce test porte sur l'enumeration parallele, pas sur la garde shallow
+    # (qui a ses propres tests sur clone jetable) : le clone hote peut porter
+    # des racines shallow vivantes sans que ce soit un defaut de la passe.
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
     index, incidents = mod.build_stack_index()
     assert incidents == []
     assert sorted(index) == [1, 2, 3]
     assert all(entry.ref.startswith(mod.STACK_REF_PREFIX) for entry in index.values())
+    assert index[1].head_name == "feature/a"
+    assert index[1].base_name == "main"
+    assert index[2].base_name == "feature/a"
+    assert index[3].head_name == "" and index[3].base_name == ""
+
+
+def test_stack_index_degrades_a_malformed_line_without_killing_the_pass(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : ligne non-JSON = une PR sort de
+    la passe, pas la porte entiere.
+
+    Avant : le ``json.loads`` vivait sous le seul ``try`` de l'enumeration --
+    une ligne bruitee (warning gh interleve, troncature) rendait l'index
+    ``None`` et eteignait la porte STACK pour TOUTES les PRs du cycle. Apres :
+    la PR de la ligne fautive sort de la passe (ni porte ni exemption pour
+    elle seule), les autres gardent porte ET exemption, et l'incident se dit
+    sans fabriquer de refus.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        "warning: request timed out, retrying",  # ligne malformee
+        '[2, "feature/b", "feature/a"]',
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert index[2].base_name == "feature/a"  # exemption preservee pour les valides
+    assert len(incidents) == 1
+    assert "ligne d'enumeration ignoree" in incidents[0]
+
+
+def test_stack_index_reports_head_name_collision_as_incident(monkeypatch):
+    """#23100 (reserve NanoClaw 2026-11-05) : deux entrees de meme ``head_name``
+    s'ecrasent silencieusement dans le ``by_head`` de ``_is_stack_descendant``.
+
+    L'incident rend la collision OBSERVABLE (les deux numeros cites) ; le
+    verdict ne change pas -- le gagnant des remontees depend de l'ordre
+    parallele de l'index, exactement comme avant l'incident.
+    """
+    monkeypatch.setattr(mod, "gh_lines", lambda args: [
+        '[1, "feature/a", "main"]',
+        '[2, "feature/a", "main"]',  # head_name duplique
+    ])
+    monkeypatch.setattr(mod, "_fetch_pr_heads", lambda numbers: (list(numbers), []))
+    monkeypatch.setattr(
+        mod, "_git",
+        lambda args, check=True: subprocess.CompletedProcess(args, 0, "", ""),
+    )
+    monkeypatch.setattr(mod, "_base_history_truncated", lambda: False)
+    index, incidents = mod.build_stack_index()
+    assert sorted(index) == [1, 2]
+    assert len(incidents) == 1
+    assert "feature/a" in incidents[0]
+    assert "#1" in incidents[0] and "#2" in incidents[0]
 
 
 def test_default_stack_index_builds_once_under_concurrency(monkeypatch):
@@ -4126,7 +4303,15 @@ class _Completed:
 
 
 def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
-    """`gh api graphql` paie le bucket partage, tout le reste le bucket core."""
+    """Le bucket partage est celui de GraphQL — y compris les appels `--json`.
+
+    #17315 (correction de classification, 06/11) : `gh pr view --json` passe
+    par l'API **GraphQL** (la CLI construit une requete GraphQL), donc par le
+    BUCKET PARTAGE de la flotte. Le compter comme du REST sous-reportait la
+    consommation du bucket que le levier 4 cherche a reduire. La regle
+    classee est desormais : `api graphql` et `pr|issue ... --json` = GraphQL ;
+    les endpoints `api repos/...` = REST.
+    """
     monkeypatch.setattr(
         mod.subprocess, "run", lambda *a, **k: _Completed('{"ok": true}')
     )
@@ -4136,8 +4321,9 @@ def test_api_usage_counter_separates_the_two_buckets(monkeypatch):
     mod.gh_json(["api", "repos/o/r/pulls/1"])
     mod.gh_json(["api", "repos/o/r/commits/deadbeef/check-runs"])
     mod.gh_json(["pr", "view", "1", "--json", "state"])
+    mod.gh_json(["pr", "list", "--json", "number"])
 
-    assert mod.API_USAGE == {"rest": 3, "graphql": 1}
+    assert mod.API_USAGE == {"rest": 2, "graphql": 3}
 
 
 def test_api_usage_is_published_in_json_and_on_stderr(monkeypatch, capsys):
@@ -4349,10 +4535,12 @@ def _synthetic_git(ancestor_pairs=()):
     return fake
 
 
-def _stack_entry(pr, subjects):
+def _stack_entry(pr, subjects, head_name="", base_name="", mergeable=""):
     # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
     # tests qui n'ont pas besoin d'exercer le saut content-free
     # preservent l'ancien comportement sans modifier chaque call site.
+    # #23100 -- `head_name`/`base_name` vides par defaut : l'exemption
+    # enfant est inerte et les tests existants gardent la porte d'avant.
     ref = f"{mod.STACK_REF_PREFIX}{pr}"
     return mod.StackEntry(
         number=pr,
@@ -4360,6 +4548,9 @@ def _stack_entry(pr, subjects):
         commits=list(subjects),
         subjects=dict(subjects),
         author_ref=ref,
+        head_name=head_name,
+        base_name=base_name,
+        mergeable=mergeable,
     )
 
 
@@ -4425,6 +4616,189 @@ def test_stack_bottom_linear_stays_ready(monkeypatch):
     )
     assert verdict == mod.VERDICT_READY, reasons
     assert reasons == []
+
+
+# --- #23100 : partenaire enfant (la cible est le bas d'une vraie pile) -----
+
+
+def test_stack_parent_of_delayed_child_stays_ready(monkeypatch):
+    """#23100 (controle positif) -- enfant retarde : la porte se tait sur le parent.
+
+    Topologie #22741 x #22811 : l'enfant a pour BASE la tete de la cible
+    (`base.ref == headRefName`), mais il a ete bat AVANT que le parent
+    n'avance -- aucune des deux tetes n'est ancetre de l'autre. Pre-fix,
+    la porte voyait « commits partages + commits absents » et bloquait le
+    seul merge executable de la paire. Merger le parent d'abord est
+    l'ordre correct d'une pile : aucune raison.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            22741, {"a": "A", "b": "B"},
+            head_name="feature/22733-theorem-rewriters",
+        ),
+        _stack_entry(
+            22811, {"a": "A", "b": "B", "c": "C: apport propre de l'enfant"},
+            head_name="feature/22740-portage",
+            base_name="feature/22733-theorem-rewriters",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 22741
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_parent_exempt_through_grandchild(monkeypatch):
+    """#23100 -- l'exemption remonte la chaine des liens base -> head.
+
+    Pile de trois (l'instance fondatrice #19548 -> #19556 -> #19567 est une
+    pile de trois) : le petit-enfant a pour base la tete de l'enfant, pas
+    celle de la cible. Sans la remontee, la porte bloquerait le parent via
+    le petit-enfant -- exactement le defaut #23100 transpose d'un niveau.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(1, {"a": "A"}, head_name="feature/parent"),
+        _stack_entry(
+            2, {"a": "A", "b": "B"}, head_name="feature/child",
+            base_name="feature/parent",
+        ),
+        _stack_entry(
+            3, {"a": "A", "b": "B", "c": "C"},
+            base_name="feature/child",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 1
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_sister_with_names_still_blocked(monkeypatch):
+    """#23100 (controle negatif) -- la soeur rebassee reste bloquante.
+
+    Les noms de branches sont presents (l'exemption est armee) mais la base
+    de la soeur est `main`, pas la tete de la cible : ce n'est pas un enfant,
+    c'est la soeur qui porte les corrections -- le cas que la porte existe
+    pour attraper. Le motif `stack top` reste rendu.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            19548, {"a": "A", "b": "B"},
+            head_name="feature/19548-old-version",
+        ),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            head_name="feature/19556-rebuilt", base_name="main",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+# --- #23100 (seconde moitie) : un partenaire CONFLICTING ne bloque pas ----
+
+
+def test_stack_conflicting_partner_does_not_block(monkeypatch):
+    """#23100 (controle positif) -- la soeur en conflit ne bloque pas la cible.
+
+    La PR soeur est DIRTY contre `main` : son porteur doit la rebaser avant
+    qu'elle puisse atterrir. Exiger de la cible qu'elle attende cette PR-la
+    rend la cible inmergeable par une PR qui n'a pas d'aliance -- c'est le
+    fork de base commune dont la PR soeur ne peut pas atterrir, le titre de
+    l'issue.
+
+    L'exemption n'est armee que par un etat MESURE : `CONFLICTING` ici.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            22741, {"a": "A", "b": "B"},
+            head_name="feature/22733-theorem-rewriters",
+        ),
+        _stack_entry(
+            22811, {"a": "A", "b": "B", "c": "C: apport propre de la soeur"},
+            head_name="feature/22740-portage", base_name="main",
+            mergeable="CONFLICTING",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 22741
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_mergeable_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- une soeur MERGEABLE reste bloquante.
+
+    L'exemption ne porte que sur l'etat mesure : une soeur mergeable qui
+    porte des corrections absentes de la cible reste le sommet de pile que
+    la porte existe pour attraper.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            19548, {"a": "A", "b": "B"},
+            head_name="feature/19548-old-version",
+        ),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            head_name="feature/19556-rebuilt", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+def test_stack_unmeasured_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- mesure absente : comportement d'avant.
+
+    `mergeable` vide (mesure non faite) ou `UNKNOWN` : l'exemption est
+    INERTE. Une mesure absente ne deroge a rien -- le risque de la porte
+    reste du bon cote.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    for state in ("", "UNKNOWN"):
+        index = _stack_index(
+            _stack_entry(
+                19548, {"a": "A", "b": "B"},
+                head_name="feature/19548-old-version",
+            ),
+            _stack_entry(
+                19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+                head_name="feature/19556-rebuilt", base_name="main",
+                mergeable=state,
+            ),
+        )
+        snapshot = _base_snapshot()
+        snapshot["number"] = 19548
+        verdict, reasons = mod.derive_verdict(
+            snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+        )
+        assert verdict == mod.VERDICT_BLOCKED, (state, reasons)
+        assert any("stack top" in r and "#19556" in r for r in reasons), (state, reasons)
 
 
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------
@@ -4946,7 +5320,10 @@ def test_stack_door_is_measured_after_a_rewritten_pr_head(tmp_path, monkeypatch)
     assert head != old_sha
 
     # Et la porte STACK est MESUREE, pas desactivee.
-    monkeypatch.setattr(mod, "gh_lines", lambda args: ["42"])
+    # #23100 -- l'enumeration rend des lignes [number, head.ref, base.ref].
+    monkeypatch.setattr(
+        mod, "gh_lines", lambda args: ['[42, "feature/rewritten", "main"]']
+    )
     monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
     monkeypatch.setattr(
         mod, "_STACK_INDEX_CACHE",

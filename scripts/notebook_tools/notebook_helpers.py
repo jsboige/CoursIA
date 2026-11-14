@@ -81,12 +81,31 @@ class NotebookHelper:
         with open(self.path, 'r', encoding='utf-8', newline='') as f:
             self.notebook = json.load(f)
 
-    def save(self, path: Optional[str] = None) -> None:
-        """Save notebook JSON to file with LF line endings."""
+    def save(self, path: Optional[str] = None,
+             strip_stale_metadata: bool = False) -> None:
+        """Save notebook JSON to file with LF line endings.
+
+        Ne retire PAS ``metadata.papermill`` / ``metadata.execution`` par
+        defaut. Ce writer ne reexecute aucune cellule : il ne peut donc pas
+        fabriquer de bloc perime (#12722), il ne peut que detruire la
+        provenance d'un carnet deja execute. Mesure #24434 sur
+        ``SW-09-JSONLD-Python.ipynb`` : une edition d'une seule ligne de
+        source via ``CellIterator`` donnait 1 insertion et 984
+        suppressions -- 107 blocs ``metadata.papermill`` et 37 blocs
+        ``metadata.execution`` tombaient a 0 **sans qu'un seul
+        ``execution_count`` bouge**, donc les controles mecaniques de C.2
+        passaient et la perte restait invisible.
+
+        L'invariant #12722 reste tenu la ou il compte : les executeurs qui
+        reecrivent des sorties fraiches sans passer par Papermill appellent
+        ``strip_stale_papermill_metadata`` directement
+        (``dotnet_executor``, ``exec_single_cell``, ``exec_dotnet_persist``,
+        ``execute_qcpy_docker``). Passer ``strip_stale_metadata=True``
+        uniquement pour un appelant qui vient d'ecrire des sorties fraiches.
+        """
         save_path = Path(path) if path else self.path
-        # Les sorties fraîches décrivent CE run : un bloc papermill hérité
-        # d'une passe antérieure les daterait au mauvais run (#12722).
-        strip_stale_papermill_metadata(self.notebook)
+        if strip_stale_metadata:
+            strip_stale_papermill_metadata(self.notebook)
         with open(save_path, 'w', encoding='utf-8', newline='\n') as f:
             json.dump(self.notebook, f, indent=1, ensure_ascii=False)
             f.write('\n')
@@ -703,9 +722,16 @@ class CellIterator:
         """Apply a correction to the cell source."""
         self.helper.set_cell_source(self.cell_index, new_source)
 
-    def save(self) -> None:
-        """Save the notebook with corrections."""
-        self.helper.save()
+    def save(self, strip_stale_metadata: bool = False) -> None:
+        """Save the notebook with corrections.
+
+        Cet iterateur ne reexecute rien : il delegue a
+        ``NotebookHelper.save()``, dont le strip est opt-in depuis #24434
+        (une correction de source detruisait la provenance papermill du
+        carnet). Les executeurs, eux, appellent
+        ``strip_stale_papermill_metadata`` directement.
+        """
+        self.helper.save(strip_stale_metadata=strip_stale_metadata)
 
     def get_summary(self) -> Dict[str, Any]:
         """Get summary of the iteration process."""
@@ -1421,9 +1447,21 @@ def read_notebook(path: str) -> Dict[str, Any]:
     return helper.notebook
 
 
-def write_notebook(path: str, notebook: Dict[str, Any]) -> None:
-    """Write notebook JSON to file."""
-    strip_stale_papermill_metadata(notebook)
+def write_notebook(path: str, notebook: Dict[str, Any], strip_stale_metadata: bool = False) -> None:
+    """Write notebook JSON to file.
+
+    Ne retire PAS ``metadata.papermill`` / ``metadata.execution`` par defaut :
+    ce writer ne reexecute aucune cellule, donc il ne peut pas fabriquer de
+    bloc perime -- il ne peut que detruire la provenance d'un carnet deja
+    execute (mesure #24434 : une edition markdown-only de 2 phrases
+    supprimait 344 lignes de metadonnees papermill). Les executeurs qui
+    reecrivent des sorties sans passer par Papermill appellent
+    ``strip_stale_papermill_metadata`` directement (cf. ``_papermill_meta``).
+    Passer ``strip_stale_metadata=True`` uniquement si l'appelant vient
+    d'ecrire des sorties fraiches.
+    """
+    if strip_stale_metadata:
+        strip_stale_papermill_metadata(notebook)
     with open(path, 'w', encoding='utf-8', newline='\n') as f:
         json.dump(notebook, f, indent=1, ensure_ascii=False)
         f.write('\n')

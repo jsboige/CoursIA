@@ -1,5 +1,7 @@
 # Protocole de variation — détail, justifications mesurées, incidents fondateurs
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Détail déporté de [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) (harness-hygiene : la règle reste succincte et auto-chargée, le détail vit ici et se lit à la demande).
 
 ***
@@ -11,6 +13,8 @@ Verbatim du mandat user 2026-07-21 : « la monoculture de PRs facile est toujour
 Les concepts de variation (tiers, rotation, never-idle) existaient déjà dans [`proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) R6/R7 depuis 2026-07-06. La monoculture a persisté quinze jours de plus. Diagnostic du mandat : les concepts étaient **auto-évalués** (le worker décide seul si son grain est « de la substance »), **invisibles** (rien dans la PR ne dit à quel tier elle prétend), et **non-gatés** (le coordinateur mergeait sans lire).
 
 C'est l'application directe de la leçon `rule-needs-an-organ-not-more-vigilance` : une règle dont le seul mécanisme d'application est la vigilance sera violée. Le tag est l'organe — il rend le grain **auditable en un coup d'œil**, ce qui est la précondition du merge-gate.
+
+Il ne le certifie pas : c'est pourquoi la clause « le tag déclaré n'est pas auto-exécutoire » **reste dans la règle** — merger sans lire le tag laisse le protocole s'auto-certifier. Ce que la règle doit porter à chaque passe, c'est l'obligation de lire le tag ; ce que ce fichier porte, c'est la raison pour laquelle cette lecture n'est pas optionnelle.
 
 ## 2. Champ `prev:` — pourquoi le numéro de PR est obligatoire
 
@@ -146,6 +150,8 @@ Le mandat 2026-07-21 dit « steere **mieux** », pas « constate la vague au mer
 
 Détail du mécanisme (loterie substance, variation du dispatch d'un cycle à l'autre) : mémoire locale `feedback-substance-lottery-provisioning.md`. Le principe qui lie le coordinateur : **sous-provisionner puis merger la monoculture qui en résulte est le manquement que ce protocole corrige.**
 
+Le second manquement qu'il nomme — ralentir la production pour accommoder la digestion en est un autre — est celui qu'interdit la décision user du 12/10 : aucun mécanisme ne freine la productivité des lanes. La digestion se traite par une **piste parallèle**, jamais par une backpressure sur les producteurs (voir le point 5 de la règle : admission et production dissociées). C'est pourquoi cette phrase, qui nomme un défaut, **reste dans la règle** : c'est elle qui empêche de prendre une file d'admission pour une raison de ralentir.
+
 Deux corollaires mesurés de l'obligation « ≥1 grain DEEP de CONTENU par lane » :
 
 1. **Agréger les GENRES des merges récents avant de provisionner, pas seulement leurs tiers.** « 15 MED sur 21 » avait l'air sain et cachait 15 grains de harnais pour 0 `qc`/`genai`/`notebook` — le tier alone répète exactement l'échappatoire que la clause CONTENU/META a fermée (§11).
@@ -253,3 +259,67 @@ Sign-off : mandat user direct du 2026-10-25 (CLAUDE.md §A, « un mandat user di
 - [`.claude/rules/proactive-coordination.md`](../../.claude/rules/proactive-coordination.md) — R1, R5, R6/R7
 - [`.claude/rules/coordinator-discipline.md`](../../.claude/rules/coordinator-discipline.md) — R4 (jamais sanctionner l'idle), R5 (steer qui ATTEINT/VRAI/DÉCIDE)
 - [`docs/reference/proactive-coordination-detail.md`](proactive-coordination-detail.md) — backlog, sources, anti-patterns
+
+## § Levier B — rationales déportés de `.claude/rules/variation-protocol.md`
+
+La règle `variation-protocol.md` est **auto-chargée** à chaque session ; ce
+fichier ne l'est pas. Le déplacement ci-dessous est donc un gain de contexte
+systémique. Aucun bloc déplacé n'est réécrit : le texte des blocs est celui
+qui a quitté la règle.
+
+| Ligne de la règle (base `7a558e4d7ce8`) | Bloc | Statut |
+|---|---|---|
+| L29 | litmus LIGHT : le cœur anti-gaming | déplacé |
+| L42 | un genre META n'est pas inférieur | déplacé |
+| L64 | le pool global porte toujours du DEEP de contenu | déplacé |
+| L66 | provenance de la priorité « consolidation en tête du tapis » | déplacé |
+| L82 | le protocole ne mord que si `ai-01` cesse de merger passivement | déplacé |
+| L93 | le tag déclaré n'est pas auto-exécutoire | **conservé dans la règle** |
+| L101 | pourquoi pas un quota par lane à tous les cycles | déplacé |
+| L110 | le manquement que le protocole corrige | **conservé dans la règle** |
+
+Deux lignes ne sont pas déplacées : **L93** et **L110**. Elles portent des
+phrases **normatives**, pas des justifications — l'obligation de lire le tag à
+chaque passe, et le second manquement que le protocole corrige. Un allègement
+fidèle déplace la justification ; il ne déplace pas la phrase qui nomme le
+défaut. C'est la règle elle-même qui tranche, et la justification qui part ici.
+
+### L29 — litmus LIGHT : le cœur anti-gaming
+
+Le litmus LIGHT est le **cœur anti-gaming** : guards, resyncs, ledger-entries, accents le passent tous.
+
+### L42 — un genre META n'est pas inférieur
+
+Un genre META n'est pas inférieur — un guard qui rougit au bon moment vaut mieux qu'un notebook de plus — mais une flotte qui ne produit que du META construit un atelier sans rien y fabriquer.
+
+### L64 — le pool global porte toujours du DEEP de contenu
+
+Le pool global porte toujours du DEEP de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+
+### L66 — provenance de la priorité « consolidation en tête du tapis »
+
+Les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois — règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md), issue #22500, organe en PR #22504.
+
+### L82 — le protocole ne mord que si `ai-01` cesse de merger passivement
+
+Le protocole ne mord que si `ai-01` cesse de merger passivement.
+
+### L93 — le tag déclaré n'est pas auto-exécutoire
+
+**Conservé dans la règle** (phrase normative) : la justification est en
+[§1](#1-pourquoi-un-tag-déclaré-plutôt-quune-simple-exhortation) — le tag rend
+le grain auditable en un coup d'œil, ce qui est la précondition du merge-gate,
+mais il ne le certifie pas : merger sans lire le tag laisse le protocole
+s'auto-certifier.
+
+### L101 — pourquoi pas un quota par lane à tous les cycles
+
+Un quota par lane à tous les cycles rendrait le steering structurellement toujours premier sur le tirage, ce que la règle 5 de [proactive-coordination.md](../../.claude/rules/proactive-coordination.md) interdit.
+
+### L110 — le manquement que le protocole corrige
+
+**Conservé dans la règle** (phrase normative) : la justification est en
+[§9](#9-obligation-de-provisionnement--la-moitié-coordinateur-du-problème) —
+sous-provisionner puis merger la monoculture qui en résulte est **le**
+manquement que ce protocole corrige, et ralentir la production pour accommoder
+la digestion en est un autre.

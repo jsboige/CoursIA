@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 64
-breakdown: Python=64
-maturity: BETA=35, DRAFT=27, ALPHA=2
+pedagogical_count: 65
+breakdown: Python=65
+maturity: BETA=36, DRAFT=27, ALPHA=2
 -->
 
 # QuantConnect Python Notebooks
@@ -104,6 +104,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | |
 | QC-Py-43-Diffusion-Series-Synthetiques | EXÉCUTÉ | cellules exécutées localement sur SPY (yfinance, 2 515 rendements log) — diffusion vs bootstrap i.i.d., augmentation `INCONCLUSIF` |
 | QC-Py-44-Agent-Trading-Multi-LLM | EXÉCUTÉ | 295 appels LLM réels (gpt-5.6-luna) : débat bull/bear via `AgentGroupChat`, mémoire soldée vs single-shot — verdict §C `INCONCLUSIVE` |
+| QC-Py-45-Noyau-Risque-Deterministe | EXÉCUTÉ | ablation du noyau de risque déterministe de Steward sur des ETF (yfinance, 2015-2026), sans LLM — verdict `BEATS` sur le drawdown |
 
 **Récapitulatif** : la majorité des notebooks sont NON EXÉCUTÉS (code réel, exécution kernel ou QC Cloud à faire) ; une part croissante est EXÉCUTÉE et 10 sont des `doc cloud` (markdown-only). Le décompte précis relève du catalogue généré.
 
@@ -304,6 +305,23 @@ améliorer la précision appariée d'un LLM isolé — ici il le fait en tendanc
 échantillon de 32 paires — mais la barre §C (≥ 2σ ET p < 0,05) existe précisément pour
 empêcher de déclarer victoire sur cette taille d'effet. Le carnet requiert `OPENAI_API_KEY`
 à l'exécution (lue depuis `.secrets/master.env`, hors dépôt).
+
+## Recherche — noyau de risque déterministe (QC-Py-45)
+
+Le système **Steward** (Feng et al., arXiv:2610.30557) confie le choix des lignes à des
+agents LLM, mais fait passer chaque ordre par un **noyau invariant** de règles fixes : stop à
+2 ATR sous l'entrée, plafond de 40 % par groupe, exposition nette d'au plus 90 %, aucune
+vente à découvert, coupe-circuit après une séance à −3 %. Le papier mesure aussi ce noyau
+seul, sans LLM, avec 5 points de base de frais par côté. Le carnet reproduit cette ablation sur un univers
+d'ETF en quatre groupes : actions US, actions hors US, obligations, matières et immobilier.
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-45-Noyau-Risque-Deterministe](QC-Py-45-Noyau-Risque-Deterministe.ipynb) | Moteur journalier vectorisé (yfinance, 2015-2026), validé par trois contrôles. Mêmes entrées avec et sans noyau : un chemin momentum, puis des tirages aléatoires sur 50 graines. Six variantes d'ablation. Verdict pré-enregistré à trois jambes (écart de drawdown ≥ 2σ, Diebold-Mariano, écart de Sharpe) contre deux témoins, dont une exposition de 90 % sans aucune autre règle | Le noyau réduit le drawdown maximal sur chacune des 50 graines, sans coûter de rendement médian : verdict `BEATS` contre les deux témoins. La répartition entre règles s'inverse par rapport au papier : sur ces ETF, ce sont les stops qui font le travail, le coupe-circuit presque rien. Le noyau peut aussi finir plus loin de son plus haut que les variantes sans noyau (fin de fenêtre 2026) |
+
+La conclusion transférable : une règle de risque se juge par une ablation sur des entrées
+**sans mérite**, à tirages identiques, et contre un témoin qui sépare son effet de la simple
+réduction d'exposition. Le carnet requiert un accès réseau (yfinance) à l'exécution.
 
 ## Utilitaires
 

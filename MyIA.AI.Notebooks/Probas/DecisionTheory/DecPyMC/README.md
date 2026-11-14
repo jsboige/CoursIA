@@ -8,6 +8,27 @@ Arc autonome de **théorie de la décision bayésienne** en PyMC — le socle (1
 
 **Stack** : PyMC (Python 3, NUTS/ADVI), échantillonnage MCMC par défaut, diagnostics ArviZ. Miroir Python de l'arc [DecisionTheory/DecInfer/](../DecInfer/README.md) (Infer.NET, message passing).
 
+> **Paires jumelles (Infer.NET ↔ PyMC, théorie de la décision)** — déclaration de maintenance (issue #24197, section C) : `DecInfer/` et `DecPyMC/` enseignent le *même plan* — 7 étapes communes — sur *deux moteurs* (message passing compilé vs échantillonnage MCMC) ; ce ne sont pas des doublons. Un changement pédagogique commun (une étape ajoutée, retirée ou renvoyée de l'une à l'autre) se porte **dans les deux** : si tu modifies l'une, vérifie l'autre.
+
+**Paire symétrique, sans canonique** : les deux arcs ont le même statut — aucun n'est le port de l'autre, et chacun porte des carnets que l'autre n'a pas. La déclaration porte donc sur l'**invariant de maintenance** ci-dessus et sur les exceptions ci-dessous, pas sur une hiérarchie.
+
+**Le plan commun** — numéros alignés depuis le re-flow voie (a) (2026-11-05, EPIC #12933 ; avant : décalage d'un cran, titre faisait foi) :
+
+
+| Étape | `DecInfer` | `DecPyMC` |
+|---|---|---|
+| Fondements axiomatiques (VNM) | `01-Utility-Foundations` | `01-Utility-Foundations` |
+| Utilité de l'argent, aversion au risque | `02-Utility-Money` | `02-Utility-Money` |
+| Utilité multi-attributs | `03-Multi-Attribute` | `03-Multi-Attribute` |
+| Réseaux de décision | `04-Decision-Networks` | `04-Decision-Networks` |
+| Valeur de l'information | `05-Value-Information` | `05-Value-Information` |
+| Systèmes experts, décisions robustes | `06-Expert-Systems` | `06-Expert-Systems` |
+| MDPs, bandits, POMDPs | `07-Sequential` (+ `10-Thompson-Sampling`) | `07-Sequential` |
+| Théories de la décision face à un prédicteur (EDT, CDT, UDT) | `11-Theories-Decision-Predicteur-Python` | — |
+
+**Sans jumeau de l'autre côté** : côté Infer, les trois companions formels Lean 4 — `01b-Lean-ExpectedUtility`, `01c-Lean-Coherence`, `07b-Lean-Gittins` — n'ont pas d'équivalent Python, et l'étape « MDPs, bandits, POMDPs » y est **découpée** en `07` + `10`. Côté PyMC, `08-Actuariat-Capstone` ouvre la sous-série [`Actuariat/`](../Actuariat/README.md) (T1-T5) et n'a pas de jumeau Infer. `11-Theories-Decision-Predicteur-Python` est également propre à l'arc Infer : il est descendu de `GameTheory-04f` le 2026-11-05 (#24825), après le re-flow, et n'a pas de jumeau PyMC.
+
+
 ## Pourquoi un arc autonome
 
 Jusqu'à la restructuration de la série, la théorie de la décision était imbriquée dans le corpus bayésien PyMC, ce qui masquait la **dualité des deux fils** : *modéliser l'incertitude* (inférence bayésienne) vs *décider face à l'incertitude* (théorie de la décision). L'extraction dans [`DecisionTheory/DecPyMC/`](./) rend ces deux arcs **physiquement indépendants** tout en préservant le continuum pédagogique (le fil décision s'appuie sur les posteriors du corpus bayésien). Le lake [`decision_theory_lean`](../decision_theory_lean/), à la **racine de la série Probas**, reste visible des deux pistes (PyMC et Infer.NET).

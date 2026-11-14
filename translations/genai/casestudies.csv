@@ -25,7 +25,7 @@ This notebook covers the main concepts and techniques of barbie schreck. The lea
 Этот notebook охватывает основные понятия и техники barbie schreck. Педагогические цели включают понимание фундаментальных основ, практическое применение через упражнения и анализ результатов.
 
 **Предварительные требования** : базовые знания Python и алгоритмики.",,036770fc8ee911b5,0298b55eefa58d3d,,,,,a9dea1e8bad17e7f,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,da30ce89,markdown,fr,f845e7e89e3bfb3c,"Notebook utilisant **Semantic Kernel** pour organiser un débat contraint entre deux agents — Barbie et l'Âne de Shrek — où chaque réplique de l'Âne est illustrée par une image générée sur l'instance **ComfyUI** de la série.
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,da30ce89,markdown,fr,fa378a1e471b35fb,"Notebook utilisant **Semantic Kernel** pour organiser un débat contraint entre deux agents — Barbie et l'Âne de Shrek — où chaque réplique de l'Âne est illustrée par une image générée sur l'instance **ComfyUI** de la série.
 
 Le fil conducteur pédagogique en 4 actes :
 
@@ -34,7 +34,7 @@ Le fil conducteur pédagogique en 4 actes :
 3. **Plugin** — un `ImagePlugin` branché sur l'Âne illustre chaque réplique via l'API de l'instance ComfyUI ;
 4. **Orchestration** — un `AgentGroupChat` + une stratégie de terminaison font tourner le duel jusqu'à `MAX_TURNS`.
 
-Les trois exercices d'origine ont été résolus par un groupe de l'APP3A (PR #21089) : leurs solutions sont intégrées en **exemples guidés** (section 8), chacune suivie de la lecture de son résultat et de ses limites. Trois **exercices de remplacement** les prolongent en section 9.
+Les trois exercices d'origine ont été résolus par un groupe de l'APP3A (PR #21089) : leurs solutions sont intégrées en **exemples guidés 1, 2 et 3**, chacun suivi de la lecture de son résultat et de ses limites. Trois **exercices de remplacement** les prolongent dans la section « 9. Exercices ».
 ","Notebook using **Semantic Kernel** to run a constrained debate between two agents — Barbie and Shrek's Donkey — where each of the Donkey's replies is illustrated by an image generated on the series' **ComfyUI** instance.
 
 The pedagogical thread unfolds in four acts:
@@ -44,7 +44,7 @@ The pedagogical thread unfolds in four acts:
 3. **Plugin** — an `ImagePlugin` wired to the Donkey illustrates each reply through the ComfyUI instance's API;
 4. **Orchestration** — an `AgentGroupChat` + a termination strategy keep the duel running up to `MAX_TURNS`.
 
-The three original exercises were solved by an APP3A group (PR #21089): their solutions are integrated as **guided examples** (section 8), each followed by the reading of its result and its limits. Three **replacement exercises** extend them in section 9.",,,,,"Ноутбук, использующий Semantic Kernel для ограниченных дебатов с генерацией изображений",,f845e7e89e3bfb3c,a739f587c542000a,,,,,d067bc5e70ed533b,,,,,,,,,
+The three original exercises were solved by an APP3A group (PR #21089): their solutions are integrated as **guided examples 1, 2 and 3**, each followed by the reading of its result and its limits. Three **replacement exercises** extend them in the « 9. Exercices » section.",,,,,"Ноутбук, использующий Semantic Kernel для ограниченных дебатов с генерацией изображений",,fa378a1e471b35fb,247d63ae3ea693df,,,,,d067bc5e70ed533b,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,beaa46fc,code,fr,1a03546a3386985f,"# Import guards - availability flags for external dependencies
 
 try:
@@ -68,7 +68,7 @@ except ImportError:
     SEMANTIC_KERNEL_AVAILABLE = False
     print(f'  semantic_kernel non disponible - certaines fonctionnalites seront limitees')
 ",,,,,,,,1a03546a3386985f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,a7548b48,markdown,fr,abbf2d69c53dba2a,"## Configuration initiale
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,a7548b48,markdown,fr,0ca44c11fad6eb6c,"## Configuration initiale
 
 Cette cellule importe toutes les briques nécessaires et prépare l'environnement :
 
@@ -78,9 +78,9 @@ Cette cellule importe toutes les briques nécessaires et prépare l'environnemen
 
 Le `logging.basicConfig(level=logging.INFO)` active les logs INFO qui rendront l'exécution du débat lisible (sélection d'agent, usage API). L'output `Imports et configuration OK` confirme que toutes les dépendances sont présentes sur la machine d'exécution.
 
-La cellule `# Import guards` précédente joue un rôle de pré-vol : elle vérifie la disponibilité de `IPython`, `dotenv` et `semantic_kernel` et définit des flags (`IPYTHON_AVAILABLE`, etc.) sans interrompre le notebook si une dépendance manque.","## Initial configuration
+La cellule `# Import guards` précédente joue un rôle de pré-vol : elle vérifie la disponibilité de `IPython`, `dotenv` et `semantic_kernel` et définit des flags (`IPYTHON_AVAILABLE`, etc.) — **mais ces gardes ne protègent pas le carnet** : la cellule suivante importe `dotenv` et `semantic_kernel` au niveau module, sans garde, si bien qu'une dépendance manquante interrompt l'exécution à cet import. Les flags documentent l'état de la machine, ils n'arrêtent rien.","## Initial configuration
 Loading environment variables and initializing services",,,,,"## Начальная конфигурация
-Загрузка переменных окружения и инициализация сервисов",,abbf2d69c53dba2a,9bf0b4f4278abce2,,,,,5aa096170a693583,,,,,,,,,
+Загрузка переменных окружения и инициализация сервисов",,0ca44c11fad6eb6c,9bf0b4f4278abce2,,,,,5aa096170a693583,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e3198a5c,code,fr,fb3219c173520a17,"import os
 import random
 import logging
@@ -117,7 +117,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('BarbieVsAne')
 print(""Imports et configuration OK"")
 ",,,,,,,,fb3219c173520a17,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e9592b88,markdown,fr,c8ac4c82ef7e6d56,"## Définition des contraintes linguistiques
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,e9592b88,markdown,fr,89217fabcab0a32e,"## Définition des contraintes linguistiques
 
 Le débat ne gagne en intérêt que si les répliques obéissent à une règle. La liste `CONTRAINTES` définit **trois styles possibles**, chacun sous la forme d'un tuple `(nom, description)` :
 
@@ -127,9 +127,9 @@ Le débat ne gagne en intérêt que si les répliques obéissent à une règle. 
 | `Shakespeare` | Imiter le style théâtral de Shakespeare |
 | `Chanson` | Répondre sur l'air d'I'm a Believer |
 
-`random.choice` tire une contrainte au sort à chaque exécution — l'output montre que la **Rime** a été choisie, et les répliques du débat riment effectivement. La structure en tuples `(nom, description)` est celle que l'Exercice 1 demande d'étendre : la description est interpolée dans les instructions des agents, donc toute nouvelle entrée de la liste se répercute automatiquement sur le comportement des deux duellistes.","## Definition of Linguistic Constraints
+`random.choice` tire une contrainte au sort **à chaque exécution** : le tirage n'est donc pas reproductible — la contrainte effective est celle que la cellule suivante affiche, et les répliques du débat la suivent. (Dans la sortie committée, c'est **Chanson** — « Répondre sur l'air de 'I'm a Believer' » — qui a été tirée.) La structure en tuples `(nom, description)` est celle que l'Exercice 1 demande d'étendre : la description est interpolée dans les instructions des agents, donc toute nouvelle entrée de la liste se répercute automatiquement sur le comportement des deux duellistes.","## Definition of Linguistic Constraints
 Random selection of a constraint for the debate",,,,,"## Определение лингвистических ограничений
-Случайный выбор ограничения для дебатов",,c8ac4c82ef7e6d56,5f59b1a0a67de378,,,,,d315fba7a653a091,,,,,,,,,
+Случайный выбор ограничения для дебатов",,89217fabcab0a32e,5f59b1a0a67de378,,,,,d315fba7a653a091,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,b732326a,code,fr,91dea5ab52872319,"CONTRAINTES = [
     (""Rime"", ""Chaque réplique doit contenir une rime parfaite""),
     (""Shakespeare"", ""Imiter le style théâtral de Shakespeare""),
@@ -562,7 +562,7 @@ async def run_debate():
 
 await run_debate()
 ",,,,,,,,c5c0a94022439722,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,c827dcb0,markdown,fr,4ddd7d5605c7828e,"## Conclusion
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,c827dcb0,markdown,fr,ec4e051e81101d15,"## Conclusion
 
 Ce notebook a démontré un **débat multi-agents contraint** avec Semantic Kernel : deux `ChatCompletionAgent` (Barbie et l'Âne de Shrek) s'affrontent en respectant une contrainte linguistique tirée au sort, et l'Âne illustre ses répliques par des images générées sur l'instance ComfyUI de la série.
 
@@ -573,7 +573,7 @@ Ce notebook a démontré un **débat multi-agents contraint** avec Semantic Kern
 - **la génération d'images passe par un service externe** (ComfyUI), appelé en HTTP avec le workflow versionné de la série — le service de conversation et le service d'images sont deux dépendances distinctes ;
 - **la stratégie de terminaison fonctionne** : le débat s'arrête selon la règle implémentée.
 
-**Pour aller plus loin** : les trois exercices de la section 9 prolongent les exemples guidés de la section 8 — une contrainte vérifiable par le code, l'Arbitre réellement convoqué dans le duel, et une détection de capitulation qui ne se trompe pas de cible. L'architecture (kernel + plugin + stratégie de terminaison) est réutilisable telle quelle pour d'autres formats de joute (débat politique, concours de poésie, improvisation théâtrale).
+**Les exercices de la section « 9. Exercices »** prolongent les exemples guidés 1, 2 et 3 — une contrainte vérifiable par le code, l'Arbitre réellement convoqué dans le duel, et une détection de capitulation qui ne se trompe pas de cible. L'architecture (kernel + plugin + stratégie de terminaison) est réutilisable telle quelle pour d'autres formats de joute (débat politique, concours de poésie, improvisation théâtrale).
 ","## Conclusion
 
 This notebook demonstrated a **constrained multi-agent debate** with Semantic Kernel: two `ChatCompletionAgent` (Barbie and Shrek's Donkey) face off while respecting a randomly drawn linguistic constraint, and the Donkey illustrates its replies with images generated on the series' ComfyUI instance.
@@ -585,7 +585,7 @@ This notebook demonstrated a **constrained multi-agent debate** with Semantic Ke
 - **image generation goes through an external service** (ComfyUI), called over HTTP with the series' versioned workflow — the conversation service and the image service are two distinct dependencies;
 - **the termination strategy works**: the debate stops according to the implemented rule.
 
-**To go further**: the three exercises in section 9 extend the guided examples of section 8 — a constraint checkable by code, a Referee actually summoned into the duel, and a capitulation detection that does not mistake its target. The architecture (kernel + plugin + termination strategy) is reusable as-is for other contest formats (political debate, poetry contest, theatrical improvisation).",,,,,"## Заключение
+**The exercises of the « 9. Exercices » section** extend guided examples 1, 2 and 3 — a constraint checkable by code, a Referee actually summoned into the duel, and a capitulation detection that does not mistake its target. The architecture (kernel + plugin + termination strategy) is reusable as-is for other contest formats (political debate, poetry contest, theatrical improvisation).",,,,,"## Заключение
 
 Этот notebook позволил изучить основные аспекты barbie schreck. Ключевые моменты:
 
@@ -593,7 +593,7 @@ This notebook demonstrated a **constrained multi-agent debate** with Semantic Ke
 - Упражнения предлагают постепенное практическое освоение
 - Полученные результаты позволяют подтвердить понимание
 
-**Чтобы пойти дальше** : углубить продвинутые аспекты темы и изучить связи с другими областями.",,4ddd7d5605c7828e,6bbb935b02c73f74,,,,,fb1a327d9893f9b6,,,,,,,,,
+**Чтобы пойти дальше** : углубить продвинутые аспекты темы и изучить связи с другими областями.",,ec4e051e81101d15,0c829b3a4d8ee892,,,,,fb1a327d9893f9b6,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,f27b1648,markdown,fr,b9fe38f2af8ba3b2,"### Exemple guidé 3 — Stratégie de terminaison personnalisée
 
 *Contribution étudiante du groupe de la PR #21089, intégrée comme exemple guidé.*
@@ -2512,16 +2512,16 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,93c36a2c
 
 L'exercice 3 de remplacement demande de traiter ces deux points.
 ",,,,,,,,cbef4a5e84e088e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,87cc6fec,markdown,fr,6e6c3c58cc714eef,"## 9. Exercices
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,87cc6fec,markdown,fr,957039a4c4056674,"## 9. Exercices
 
-Trois exercices de remplacement, sur le même carnet. Chacun prolonge l'un des exemples guidés de la section 8 — même socle, question différente. Les cellules ci-dessous sont des **squelettes** : elles s'exécutent telles quelles et affichent ce qu'il reste à faire.
+Trois exercices de remplacement, sur le même carnet. Chacun prolonge l'un des trois exemples guidés — même socle, question différente. Les cellules ci-dessous sont des **squelettes** : elles s'exécutent telles quelles et affichent ce qu'il reste à faire.
 
 | Exercice | Prolonge | Question |
 |---|---|---|
 | 1 | Exemple guidé 1 (contraintes) | rendre une contrainte **vérifiable par le code** et mesurer son taux de respect |
 | 2 | Exemple guidé 2 (Arbitre) | faire **entrer l'Arbitre dans le duel** et exploiter ses notes |
 | 3 | Exemple guidé 3 (terminaison) | détecter une capitulation **sans se tromper de cible** |
-",,,,,,,,6e6c3c58cc714eef,,,,,,,,,,,,,,,
+",,,,,,,,957039a4c4056674,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,c0a00040,markdown,fr,c83212c5735a56e1,"### Exercice 1 — Une contrainte que le code peut vérifier
 
 L'exemple guidé 1 ajoute des contraintes **déclaratives** : leur description est une phrase en français, et rien ne vérifie que le modèle l'a suivie. L'objectif est de rendre une contrainte **mesurable**.
@@ -2575,8 +2575,8 @@ L'exemple guidé 2 crée l'agent `Arbitre`, mais le duel tourne toujours à deux
 - `# Étape 2` : parcourir les répliques dont `msg.name == ""Arbitre""` ;
 - `# Indice` : `float(m.group(1).replace("","", "".""))` pour convertir la note trouvée.
 ",,,,,,,,a3e8ae298e2e27a3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,54ea1c2d,code,fr,e1abe5549f93df78,"# Exercice 2 — Mettre l'Arbitre dans le duel et lire ses notes.
-# `arbitre` a été créé dans l'exemple guidé 2 ; `repliques_du_duel` vient du duel de la section 7.
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,54ea1c2d,code,fr,ad8564aff3c6785c,"# Exercice 2 — Mettre l'Arbitre dans le duel et lire ses notes.
+# `arbitre` a été créé dans l'exemple guidé 2 ; `repliques_du_duel` vient du duel de la section « Lancement du débat ».
 import re
 
 
@@ -2605,7 +2605,7 @@ else:
         print(""Exercice 2 à compléter : aucune note extraite des repliques de l'Arbitre."")
     else:
         print(f""{len(notes)} notes d'arbitre, moyenne {sum(notes) / len(notes):.2f}/10"")
-",,,,,,,,e1abe5549f93df78,,,,,,,,,,,,,,,
+",,,,,,,,ad8564aff3c6785c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,a82b04d0,markdown,fr,ece9674abe57f514,"### Exercice 3 — Une détection de capitulation qui ne se trompe pas de cible
 
 L'exemple guidé 3 détecte la capitulation par **sous-chaîne** dans le dernier message. Deux façons de se tromper, toutes deux mesurables : « je n'abandonnerai jamais » (négation) et « tu vas abandonner, l'Âne » (parler de l'autre) déclenchent l'arrêt alors que personne ne cède.
@@ -2651,16 +2651,8 @@ else:
     for phrase in ecarts:
         print(f""  écart : {phrase!r} -> {verdicts.get(phrase)}"")
 ",,,,,,,,bc24c6a4afd53f7b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,8bd04e78,markdown,fr,6276e7cdf3ab5b76,"### Note : mode batch
-
-`BATCH_MODE = True` active l'exécution sans interaction (pour Papermill). Les variables d'environnement (`OPENAI_API_KEY`, `OPENAI_CHAT_MODEL_ID`) sont lues par `create_kernel()` — jamais codées en dur.","### Note: batch mode
-
-`BATCH_MODE = True` enables non-interactive execution (for Papermill). Environment variables (`OPENAI_API_KEY`, `OPENAI_CHAT_MODEL_ID`) are read by `create_kernel()` — never hard-coded.",,,,,,,6276e7cdf3ab5b76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,35a43dd0,markdown,fr,01cb1efac8803053,"### Note : dépendances importées
-
-Les imports couvrent `dotenv` (chargement des variables d'environnement), `logging` (traces structurées horodatées) et les composants Semantic Kernel : `Kernel`, `OpenAIChatCompletion`, `ChatCompletionAgent`, `AgentGroupChat`. Les drapeaux `DOTENV_AVAILABLE`, `SK_AVAILABLE` et `OPENAI_AVAILABLE` permettent de détecter les dépendances manquantes sans faire échouer le notebook.","### Note: imported dependencies
-
-The imports cover `dotenv` (loading environment variables), `logging` (timestamped structured traces) and the Semantic Kernel components: `Kernel`, `OpenAIChatCompletion`, `ChatCompletionAgent`, `AgentGroupChat`. The flags `DOTENV_AVAILABLE`, `SK_AVAILABLE` and `OPENAI_AVAILABLE` make it possible to detect missing dependencies without failing the notebook.",,,,,,,01cb1efac8803053,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,8bd04e78,markdown,fr,5d542fd77efb5026,"> **Note :** mode batch — `BATCH_MODE = True` active l'exécution sans interaction (pour Papermill). Les variables d'environnement (`OPENAI_API_KEY`, `OPENAI_CHAT_MODEL_ID`) sont lues par `create_kernel()` — jamais codées en dur.","> **Note:** batch mode — `BATCH_MODE = True` enables non-interactive execution (for Papermill). Environment variables (`OPENAI_API_KEY`, `OPENAI_CHAT_MODEL_ID`) are read by `create_kernel()` — never hard-coded.",,,,,,,5d542fd77efb5026,19289fd3e6cec280,,,,,,,5d542fd77efb5026,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,35a43dd0,markdown,fr,9d947ab90b921f94,"> **Note :** dépendances importées — Les imports couvrent `dotenv` (chargement des variables d'environnement), `logging` (traces structurées horodatées) et les composants Semantic Kernel : `Kernel`, `OpenAIChatCompletion`, `ChatCompletionAgent`, `AgentGroupChat`. Les drapeaux `DOTENV_AVAILABLE`, `SK_AVAILABLE` et `OPENAI_AVAILABLE` permettent de détecter les dépendances manquantes sans faire échouer le notebook.","> **Note:** imported dependencies — The imports cover `dotenv` (loading environment variables), `logging` (timestamped structured traces) and the Semantic Kernel components: `Kernel`, `OpenAIChatCompletion`, `ChatCompletionAgent`, `AgentGroupChat`. The flags `DOTENV_AVAILABLE`, `SK_AVAILABLE` and `OPENAI_AVAILABLE` make it possible to detect missing dependencies without failing the notebook.",,,,,,,9d947ab90b921f94,2f1e8f6b9f0a691d,,,,,,,9d947ab90b921f94,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a3996d75,markdown,fr,7ef5b2f54029c699,"### Lecture du résultat : kernel instancié et choix pédagogique du mot
 
 La cellule 6 instancie le **kernel Semantic Kernel** — le conteneur de services IA qui hébergera le modèle de chat — et fixe la constante `MOT_A_DEVINER = ""anticonstitutionnellement""`, le mot que **l'agent devra deviner** au cours du duel via les énigmes du Père Fouras. Ce choix de 25 lettres (Grand Robert, l'un des plus longs mots français) cumule plusieurs difficultés pédagogiques : longueur (force des indices progressifs), composition morphologique (`anti-+constitution+nelle+ment` — l'agent peut deviner par décomposition), et rareté (vocabulaire juridique peu courant). Pour un **jeu d'énigmes LLM**, c'est un excellent stress-test : si l'agent devine ce mot en moins de 10 essais, le prompt Père Fouras est bien calibré. L'étudiant peut **mesurer le taux de réussite** sur 100 parties avec `evaluer_partie()` (exemple guidé 3), puis comparer avec un mot plus simple (ex. `""kayak""`, 5 lettres) pour isoler l'effet longueur — ou substituer un mot plus court pour des parties plus rapides (`""kayak""` pour un palindrome).","### Reading the result: kernel instantiated and the pedagogical word choice
@@ -2676,11 +2668,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,066e0ed
 Chaque agent reçoit son propre `create_kernel()` : ils partagent le même service OpenAI (même modèle, même clé API) mais restent des entités indépendantes. Cette indépendance permet de les reconfigurer séparément — changer le modèle d'un agent, lui ajouter un plugin, ou modifier son prompt — sans affecter l'autre. C'est le pattern **kernel partagé, agents indépendants**, central dans Semantic Kernel.","### Complement: agent independence
 
 Each agent gets its own `create_kernel()`: they share the same OpenAI service (same model, same API key) but remain independent entities. This independence lets you reconfigure them separately — change one agent's model, add a plugin to it, or edit its prompt — without affecting the other. This is the **shared kernel, independent agents** pattern, central to Semantic Kernel.",,,,,,,b5f69706788bd45b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48e85b50,markdown,fr,5c763ef7a44baaae,"### Note : import de la stratégie de terminaison
-
-Cette cellule importe `TerminationStrategy` (classe de base) et `AgentChatMessage` (type de message échangé). La stratégie métier `FortBoyardTerminationStrategy` sera définie dans l'exemple guidé 2 ; elle hérite de `TerminationStrategy` et redéfinit `should_agent_terminate` pour arrêter la partie quand le mot est deviné ou après 20 itérations.","### Note: importing the termination strategy
-
-This cell imports `TerminationStrategy` (base class) and `AgentChatMessage` (message type exchanged). The business strategy `FortBoyardTerminationStrategy` will be defined in guided example 2; it inherits from `TerminationStrategy` and overrides `should_agent_terminate` to stop the game when the word is guessed or after 20 iterations.",,,,,,,5c763ef7a44baaae,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48e85b50,markdown,fr,58978baf3d2b4413,> **Note :** import de la stratégie de terminaison — Cette cellule importe `TerminationStrategy` (classe de base) et `AgentChatMessage` (type de message échangé). La stratégie métier `FortBoyardTerminationStrategy` sera définie dans l'exemple guidé 2 ; elle hérite de `TerminationStrategy` et redéfinit `should_agent_terminate` pour arrêter la partie quand le mot est deviné ou après 20 itérations.,> **Note:** importing the termination strategy — This cell imports `TerminationStrategy` (base class) and `AgentChatMessage` (message type exchanged). The business strategy `FortBoyardTerminationStrategy` will be defined in guided example 2; it inherits from `TerminationStrategy` and overrides `should_agent_terminate` to stop the game when the word is guessed or after 20 iterations.,,,,,,,58978baf3d2b4413,9dc15929685051aa,,,,,,,58978baf3d2b4413,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,260c1aed,markdown,fr,17b853a4ede2a35c,"### Lecture du résultat : stratégie de renoncement configurée
 
 La sortie `Strategie de renoncement configuree !` confirme que la stratégie hybride — arrêt si le mot est trouvé **ou** si le devineur abandonne — est correctement enregistrée et prête à l'emploi.","### Reading the result: forfeit strategy configured

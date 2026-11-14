@@ -12,6 +12,16 @@
 
 set -uo pipefail
 
+# La suite ne lit RIEN sur stdin : chaque entree vient de fixtures ou de
+# variables. Elle ferme donc son propre stdin au lieu d'heriter de celui de
+# l appelant. Mesure faite (#23051 point 3, N=20 sur ce siege) : invoquee
+# depuis une boucle en tache de fond -- stdin herite d un canal qui reste
+# ouvert -- la suite a saute un cas entier puis aborte sur une erreur de
+# syntaxe a numero de ligne decale, 3 passes sur 5, sans jamais se reproduire
+# quand stdin etait epingle (</dev/null) ou au premier plan, 0 sur 9. Un
+# harnais de test ne doit pas dependre du cablage stdin de son appelant.
+exec 0</dev/null
+
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUT="$HERE/dryrun-sizing-control.sh"
 [ -x "$SUT" ] || [ -r "$SUT" ] || { echo "introuvable : $SUT" >&2; exit 2; }
@@ -139,12 +149,23 @@ run_sut() {   # $1 = fixture, reste = arguments ; sortie combinee dans $OUTPUT
   # Non defini -- le cas nominal -- PATH est rendu inchange : aucun test
   # existant ne change de comportement.
   local fx="$1"; shift
+  # Etat du temoin de throttling par delta : HORS de la fixture, sinon il
+  # apparaitrait dans l'empreinte de non-mutation (qui n'exclut que /bundle/),
+  # et surtout il persisterait d'un cas a l'autre. Chaque cas part donc d'un
+  # etat neuf, sauf FX_STATE explicite -- c'est ce qui permet d'exercer la
+  # deuxieme lecture sans attendre.
+  local st="${FX_STATE:-$TMP/state/$(basename "$fx")}"
   OUTPUT="$(PATH="${FX_PATH_PREFIX:+$FX_PATH_PREFIX:}$PATH" \
             COURSIA_DRYRUN_ROOT="$fx" \
+            COURSIA_DRYRUN_STATE="$st" \
             COURSIA_DRYRUN_SYSTEMCTL="$fx/bin/systemctl" \
             COURSIA_DRYRUN_OUT="$fx/bundle" \
             bash "$SUT" "$@" 2>&1)"
   RC=$?
+  # DEBUG_M=1 : imprime la sortie complete de chaque invocation. Sert a
+  # diagnostiquer un cas dont le motif attendu n'apparait pas, sans avoir a
+  # deviner lequel des trois etats du temoin a parle.
+  [ -n "${DEBUG_M:-}" ] && printf '\n--- %s ---\n%s\n' "$(basename "$fx")" "$OUTPUT" >&2
   return 0
 }
 
@@ -164,6 +185,25 @@ expect_succes() {   # $1 = libelle
   else
     ok "$1"
   fi
+}
+
+# Les trois helpers ci-dessous sont definis ICI, avant leur premiere use,
+# et pas dans la section qui les a introduits (L). Mesure faite au N=20
+# (#23051 point 3) : definis apres les cas S, ils rendaient « command not
+# found » a CHAQUE passe et leurs assertions ne comptaient jamais -- la
+# suite restait verte sans jamais verifier ce qu'ils devaient verifier.
+expect_rc() {      # $1 = libelle, $2 = rc attendu
+  if [ "$RC" -eq "$2" ]; then ok "$1"
+  else ko "$1" "attendu rc=$2, obtenu rc=$RC : $(printf '%s' "$OUTPUT" | tail -3)"; fi
+}
+expect_out() {     # $1 = libelle, $2 = motif attendu
+  if printf '%s' "$OUTPUT" | grep -qF "$2"; then ok "$1"
+  else ko "$1" "motif absent de la sortie : « $2 »"; fi
+}
+expect_no_out() {  # $1 = libelle, $2 = motif qui ne doit PAS apparaitre
+  if printf '%s' "$OUTPUT" | grep -qF "$2"; then
+    ko "$1" "motif PRESENT alors qu il ne devait pas : « $2 »"
+  else ok "$1"; fi
 }
 
 echo "=== A. Validation des entrees ==="
@@ -399,16 +439,77 @@ make_fixture p
 FX_START_ENV='COURSIA_RUNNER_MEMORY="6 g"' run_sut "$TMP/fxp" --slots 1 --cpus 2
 expect_refus "valeur quotee dans l Environment : refus" "valeur quotee"
 
+# --- Surcharge : la MESURE decide, plus l ordre des noms de fichiers (#23051) --
+#
+# La version precedente refusait des qu un drop-in etait lu APRES la cible
+# d apres son nom. Ces trois cas fixent la nouvelle regle : c est la valeur
+# EFFECTIVE attribuee a un fichier qui decide, pas la position.
+
+# S1. Un drop-in lu apres la cible qui ne porte AUCUNE directive de la
+# proposition ne peut pas la surcharger : le controle doit passer. C est le cas
+# mesure sur ai-01 le 2026-10-28 (20-pids.conf, 30-budget.conf, 40-scale-14.conf
+# lus apres la cible, aucune surcharge reelle) et il faisait refuser le script.
 make_fixture p
+printf '[Service]\nEnvironment=COURSIA_RUNNER_LOG_LEVEL=info\n' \
+  > "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/20-autre.conf"
 FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/20-autre.conf" \
   run_sut "$TMP/fxp" --slots 1 --cpus 2
-expect_refus "drop-in lu APRES la cible : refus" "lus APRES la cible"
+expect_succes "S1 drop-in posterieur SANS directive de la proposition : pas de refus"
 
-# Controle negatif : un drop-in lu AVANT ne peut pas ecraser la proposition.
+# S2. Le meme nom de fichier, mais il PORTE la valeur effective de CPUS : il est
+# en vigueur, la proposition serait ecrite en pur no-op. Refus, et le refus doit
+# NOMMER le fichier et la valeur mesuree -- pas une position dans un ordre.
 make_fixture p
+printf '[Service]\nEnvironment=COURSIA_RUNNER_CPUS=3\n' \
+  > "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/20-autre.conf"
+FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/20-autre.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "S2 drop-in en vigueur sur CPUS : refus (surcharge mesuree)" "surcharge MESUREE"
+expect_out "S2 le refus nomme le fichier en vigueur" "20-autre.conf"
+
+# S3. Il declare CPUS mais une valeur qui n est PAS celle qui s applique, ET la
+# cible fournit l effective (elle declare CPUS=3, l Environment effectif le
+# confirme) : le claimant est surclasse par la cible, et changer la valeur de la
+# cible ne le met pas en vigueur. Pas de refus -- mais il est signale, pour que
+# le silence ne soit pas pris pour une absence.
+make_fixture p
+printf 'Environment=COURSIA_RUNNER_CPUS=3\n' \
+  >> "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/10-sizing.conf"
+printf '[Service]\nEnvironment=COURSIA_RUNNER_CPUS=7\n' \
+  > "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/20-autre.conf"
+FX_START_ENV='COURSIA_RUNNER_MEMORY=6g COURSIA_RUNNER_CPUS=3' \
+FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/20-autre.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_succes "S3 drop-in declare mais surclasse : pas de refus (controle negatif)"
+expect_out "S3 le drop-in surclasse est signale" "SANS etre en vigueur"
+
+# S3b. Meme drop-in (CPUS=7), mais personne ne fournit la valeur effective (la
+# cible ne declare pas CPUS, l effective est le defaut du wrapper) : la mesure
+# ne peut pas attribuer cette valeur ni a la cible ni au claimant. Fail-closed :
+# refus « attribution IMPOSSIBLE », pas un pass sur une valeur sans origine.
+make_fixture p
+printf '[Service]\nEnvironment=COURSIA_RUNNER_CPUS=7\n' \
+  > "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/20-autre.conf"
+FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/20-autre.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "S3b valeur effective sans origine : refus (attribution impossible)" "attribution IMPOSSIBLE"
+
+# S4. Un drop-in liste par systemd mais illisible : l attribution est
+# impossible, donc refus. Fail-closed, jamais « probablement pas de surcharge ».
+make_fixture p
+FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/30-budget.conf" \
+  run_sut "$TMP/fxp" --slots 1 --cpus 2
+expect_refus "S4 drop-in liste mais illisible : refus (attribution impossible)" "ILLISIBLE"
+
+# Controle negatif : un drop-in lu AVANT la cible et sans directive portee par
+# la proposition ne change rien. Il doit rester LISIBLE : un chemin liste mais
+# absent est desormais un refus (cf S4).
+make_fixture p
+printf '[Service]\nEnvironment=COURSIA_RUNNER_LOG_LEVEL=debug\n' \
+  > "$TMP/fxp/etc/systemd/system/coursia-runner.service.d/05-base.conf"
 FX_DROPINS="/etc/systemd/system/coursia-runner.service.d/05-base.conf" \
   run_sut "$TMP/fxp" --slots 1 --cpus 2
-expect_succes "drop-in lu AVANT la cible : pas de refus (controle negatif)"
+expect_succes "drop-in anterieur sans directive portee : pas de refus (controle negatif)"
 
 # Une directive que la proposition ne reconduit pas doit bloquer.
 make_fixture p
@@ -706,20 +807,6 @@ make_cgroup() {   # $1 = fixture, $2 = nr_throttled, $3 = throttled_usec, $4 = n
   printf 'max 0\n' > "$cg/memory.events.local"
 }
 
-expect_rc() {      # $1 = libelle, $2 = rc attendu
-  if [ "$RC" -eq "$2" ]; then ok "$1"
-  else ko "$1" "attendu rc=$2, obtenu rc=$RC : $(printf '%s' "$OUTPUT" | tail -3)"; fi
-}
-expect_out() {     # $1 = libelle, $2 = motif attendu
-  if printf '%s' "$OUTPUT" | grep -qF "$2"; then ok "$1"
-  else ko "$1" "motif absent de la sortie : « $2 »"; fi
-}
-expect_no_out() {  # $1 = libelle, $2 = motif qui ne doit PAS apparaitre
-  if printf '%s' "$OUTPUT" | grep -qF "$2"; then
-    ko "$1" "motif PRESENT alors qu il ne devait pas : « $2 »"
-  else ok "$1"; fi
-}
-
 echo "=== L. Temoin de throttling ==="
 
 make_fixture l1
@@ -763,18 +850,98 @@ expect_out "L6 nr_periods illisible : temoin INDETERMINE" "TEMOIN THROTTLING : I
 expect_no_out "L6 nr_periods illisible : aucun « passe » rendu" "TEMOIN THROTTLING : passe"
 expect_no_out "L6 nr_periods illisible : aucune ALERTE sans borne inferieure" "ALERTE"
 
-# L7 : le temoin alerte ET une autre source refuse ensuite (un drop-in lu
-# apres la cible). Le code de sortie doit porter l'ALERTE (3), pas le refus
+# L7 : le temoin alerte ET une autre source refuse ensuite (un drop-in en
+# vigueur sur CPUS). Le code de sortie doit porter l'ALERTE (3), pas le refus
 # (1) : sinon la mesure qui contredit la declaration disparait derriere un
 # refus de configuration, et l'automatisme qui lit le code de sortie se
 # trompe de diagnostic. Le motif du refus doit rester imprime.
+#
+# Le drop-in doit EXISTER et porter la valeur effective (3, le defaut du
+# wrapper) : depuis #23051 le refus ne se deduit plus de l'ordre des noms, donc
+# un fichier absent ou muet ne provoque plus de refus du tout.
 make_fixture l7
 make_cgroup "$TMP/fxl7" 7 120000000 741863
+printf '[Service]\nEnvironment=COURSIA_RUNNER_CPUS=3\n' \
+  > "$TMP/fxl7/etc/systemd/system/coursia-runner.service.d/20-pids.conf"
 FX_DROPINS="$TMP/fxl7/etc/systemd/system/coursia-runner.service.d/20-pids.conf" \
   COURSIA_DRYRUN_UPTIME_S=90298 run_sut "$TMP/fxl7" --slots 1 --cpus 2
 expect_rc "L7 alerte + refus concomitant : la sortie est 3 (l alerte prime)" 3
-expect_out "L7 le motif du refus reste imprime" "lus APRES la cible"
+expect_out "L7 le motif du refus reste imprime" "surcharge MESUREE"
 expect_out "L7 l alerte est rappelee dans le refus" "la MESURE contredit la declaration"
+
+# --- M. Temoin de throttling PAR DELTA (#23051, point 2) --------------------
+#
+# Le cumule perd de la sensibilite avec l'age de la slice. Le delta entre deux
+# lectures datees garde une fenetre courte. Ces cas fixent les trois etats et
+# l'ecriture de l'etat -- sans quoi le temoin suivant serait aveugle pour une
+# raison qu'aucun message ne nommerait.
+echo "=== M. Temoin de throttling par delta ==="
+
+# M1. Premiere lecture : aucun etat anterieur, donc AUCUN « passe ». Et l'etat
+# doit etre ecrit, sinon la deuxieme lecture serait aveugle pour toujours.
+make_fixture m1
+make_cgroup "$TMP/fxm1" 7 2417700 741863
+FX_STATE="$TMP/state-m1" run_sut "$TMP/fxm1" --slots 1 --cpus 2
+expect_succes "M1 premiere lecture : pas d alerte sans etat anterieur"
+expect_out "M1 premiere lecture : delta INDETERMINE" "TEMOIN THROTTLING (delta) : INDETERMINE (premiere lecture"
+if [ -s "$TMP/state-m1/dryrun-sizing-throttle.state" ]; then
+  ok "M1 etat enregistre pour la lecture suivante"
+else
+  ko "M1 etat enregistre pour la lecture suivante" "aucun fichier d'etat ecrit"
+fi
+expect_out "M1 l etat ecrit est annonce" "etat enregistre :"
+
+# M2. Deuxieme lecture, delta AU-DELA de l'allocation de la fenetre : alerte
+# certaine, et sortie 3 (la mesure prime sur toute autre source).
+#   fenetre 3600 s -> allocation = 60 s x 3600 / 86400 = 2,5 s
+#   delta mesure  = 120 s  > 2,5 s
+make_fixture m2
+make_cgroup "$TMP/fxm2" 7 120000000 2000000
+mkdir -p "$TMP/state-m2"
+printf '%s 0 0\n' "$(( $(date -u +%s) - 3600 ))" \
+  > "$TMP/state-m2/dryrun-sizing-throttle.state"
+FX_STATE="$TMP/state-m2" run_sut "$TMP/fxm2" --slots 1 --cpus 2
+expect_rc "M2 delta au-dela de l allocation : sortie 3" 3
+expect_out "M2 delta : ALERTE CERTAINE" "TEMOIN THROTTLING (delta) : ALERTE CERTAINE"
+if printf '%s' "$OUTPUT" | grep -qE 'fenetre 36[0-9]{2} s ; delta 120\.00 s ; allocation'; then
+  ok "M2 la fenetre et le delta sont imprimes"
+else
+  ko "M2 la fenetre et le delta sont imprimes" "ligne « fenetre ... ; delta ... ; allocation ... » absente"
+fi
+
+# M3. Controle negatif : meme fenetre, delta SOUS l'allocation -> « passe ». Sans
+# ce cas, M2 prouverait seulement que le temoin alerte toujours.
+#   delta mesure = 1 s  <  2,5 s
+make_fixture m3
+make_cgroup "$TMP/fxm3" 7 120000000 2000000
+mkdir -p "$TMP/state-m3"
+printf '%s 7 119000000\n' "$(( $(date -u +%s) - 3600 ))" \
+  > "$TMP/state-m3/dryrun-sizing-throttle.state"
+FX_STATE="$TMP/state-m3" run_sut "$TMP/fxm3" --slots 1 --cpus 2
+expect_succes "M3 delta sous l allocation : pas d alerte (controle negatif)"
+expect_out "M3 delta : passe" "TEMOIN THROTTLING (delta) : passe"
+
+# M4. Les compteurs ont REGRESSE : la slice a ete recreee, le delta n'a pas de
+# sens. INDETERMINE -- jamais « passe », jamais une alerte fabriquee sur une
+# soustraction entre deux vies differentes du cgroup.
+make_fixture m4
+make_cgroup "$TMP/fxm4" 7 120000000 2000000
+mkdir -p "$TMP/state-m4"
+printf '%s 9 900000000\n' "$(( $(date -u +%s) - 3600 ))" \
+  > "$TMP/state-m4/dryrun-sizing-throttle.state"
+FX_STATE="$TMP/state-m4" run_sut "$TMP/fxm4" --slots 1 --cpus 2
+expect_out "M4 compteurs remis a zero : delta INDETERMINE" "compteurs remis a zero"
+expect_no_out "M4 aucun « passe » sur un delta sans sens" "TEMOIN THROTTLING (delta) : passe"
+
+# M5. Etat anterieur illisible : meme consequence, et l'etat est REECRIT (sinon
+# un fichier corrompu condamnerait le temoin pour toujours).
+make_fixture m5
+make_cgroup "$TMP/fxm5" 7 120000000 2000000
+mkdir -p "$TMP/state-m5"
+printf 'pas un etat\n' > "$TMP/state-m5/dryrun-sizing-throttle.state"
+FX_STATE="$TMP/state-m5" run_sut "$TMP/fxm5" --slots 1 --cpus 2
+expect_out "M5 etat anterieur illisible : delta INDETERMINE" "etat anterieur illisible"
+expect_out "M5 l etat corrompu est reecrit" "etat enregistre :"
 
 echo
 printf 'reussis=%d  echoues=%d  non-exercables=%d\n' "$PASS" "$FAIL" "$SKIP"

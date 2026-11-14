@@ -3,14 +3,19 @@
   ===================================================================
 
   English mirror of `StableMarriage/Lemmas.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
-  fichiers `.lean` distincts FR + EN siblings dans le même lake, les deux compilent.
-  Drift-CI detectable : contenu non-docstring byte-identique entre siblings.
-  Namespace sibling : `StableMarriage_en` (le FR canonique reste `StableMarriage`).
-  Convention observée : imports intra-lake restent sur fichiers FR canoniques.
-  Pas une traduction destructive : manual translation FR-first-from-origin
-  (pas d'historique EN pré-Option A pour ce fichier) ; code tactique Lean
-  byte-identique préservé verbatim, prose traduite. Pattern identique
+  Invariants preserved by each step of the GS algorithm:
+  - Matching consistency (every matched pair is mutual)
+  - Monotonicity of the proposals (the set of proposals only grows)
+  - Men always propose in decreasing order of preference (to less preferred women)
+  - Termination invariants (a bound on the number of proposals)
+
+  i18n convention (cf #4980): headers, sections, docstrings and intra-proof
+  comments are in English in this mirror; Lean symbol names, lemma statements
+  and tactics are preserved in English (Mathlib compatibility).
+  Convention observed: intra-lake imports stay on the FR canonical files.
+  Not a destructive translation: manual translation FR-first-from-origin
+  (no pre-Option A EN history for this file); Lean tactic code
+  byte-identical, preserved verbatim; prose translated. Same pattern as
   c.238.2/#5362 (RepeatedGames), c.238.3/#5363 (Minimax), c.238.4/#5419 (Shapley).
 
   Adapté de / Adapted from: https://github.com/mmaaz-git/stable-marriage-lean (v4.25.0)
@@ -144,7 +149,7 @@ def menProposedDownward (prof : PrefProfile n) (σ : GSState prof) : Prop :=
 
 /-! ## Invariant - best match for each woman -/
 
-/-- Le partenaire actuel de chaque femme est la meilleure proposition qu'elle ait reçue. -/
+/-- The current partner of every woman is the best proposal she has received. -/
 def womenBestState (prof : PrefProfile n) (σ : GSState prof) : Prop :=
   ∀ w m m', σ.matching.womenMatch w = some m → σ.proposed m' w →
     prof.womenPref w m ≤ prof.womenPref w m'
@@ -164,7 +169,7 @@ end womenBestState
 
 /-! ## Invariant - every matched man has proposed -/
 
-/-- Tout homme apparié a bien proposé à sa partenaire actuelle. -/
+/-- Every matched man has indeed proposed to his current partner. -/
 def menMatchedProposed (prof : PrefProfile n) (σ : GSState prof) : Prop :=
   ∀ m w, σ.matching.menMatch m = some w → σ.proposed m w
 
@@ -199,17 +204,17 @@ lemma swapMatch (h : GSConsistent σ.matching) (m mOld w : Fin n)
   have hne : m ≠ mOld := by intro heq; subst heq; simp_all
   intro m' w'
   simp only [GSMatching.swapMatch, Function.update_apply]
-  -- `if` extérieur : `m' = mOld` (depuis la mise à jour extérieure)
-  -- puis `if` intérieur : `m' = m` (depuis la mise à jour intérieure)
-  -- `if` côté droit : `w' = w`
+  -- outer `if`: `m' = mOld` (from the outer update)
+  -- then inner `if`: `m' = m` (from the inner update)
+  -- right-hand `if`: `w' = w`
   split_ifs with h_mOld h_ww h_m h_nw h_nm
-  · -- `m' = mOld`, `w' = w` : les deux côtés sont `False` par `hne`
+  · -- `m' = mOld`, `w' = w`: both sides are `False` by `hne`
     simp_all
   · -- `m' = mOld`, `w' ≠ w` : on a besoin de `μ.womenMatch w' ≠ some mOld`
     have : σ.matching.womenMatch w' ≠ some mOld := by
       intro heq; have := (h mOld w').mpr heq; simp_all
     simp_all
-  · -- `m' ≠ mOld`, `m' = m`, `w' = w` : les deux côtés sont `True`
+  · -- `m' ≠ mOld`, `m' = m`, `w' = w`: both sides are `True`
     simp_all
   · -- `m' ≠ mOld`, `m' = m`, `w' ≠ w` : on a besoin de `μ.womenMatch w' ≠ some m`
     have hnw' : w ≠ w' := ne_comm.mp ‹¬w' = w›
@@ -221,7 +226,7 @@ lemma swapMatch (h : GSConsistent σ.matching) (m mOld w : Fin n)
     have : σ.matching.menMatch m' ≠ some w := by
       intro heq; have := (h m' w).mp heq; simp_all
     simp_all
-  · -- `m' ≠ mOld`, `m' ≠ m`, `w' ≠ w` : cohérence directe
+  · -- `m' ≠ mOld`, `m' ≠ m`, `w' ≠ w`: direct consistency
     exact h m' w'
 
 /-- `gsStepWith` preserves the consistency of the matching. -/
@@ -235,11 +240,11 @@ lemma stepWith (h : GSConsistent σ.matching) (m w : Fin n)
     exact matchFree h m w hm ‹_›
   · -- `womenMatch w = some mOld`
     split
-    · -- La femme préfère `m` à `mOld` : cas `swapMatch`
+    · -- The woman prefers `m` to `mOld`: `swapMatch` case
       next mOld hwm hwlt =>
         have hmOld : σ.matching.menMatch mOld = some w := (h mOld w).mpr hwm
         exact swapMatch prof h m mOld w hm hwm hmOld
-    · -- La femme ne préfère PAS `m` : couplage inchangé
+    · -- The woman does not prefer `m`: matching unchanged
       exact h
 
 /-- `gsStep` preserves the consistency of the matching. -/
@@ -385,7 +390,7 @@ lemma step (h : menProposedDownward prof σ)
     have := gsChooseMax_mem prof σ m₀ hm₀.2
     simp [gsCandidates] at this
     exact this h
-  -- Maximalité : `gsChooseMax` renvoie la candidate la plus préférée ; aucune candidate n'est davantage préférée
+  -- Maximality: `gsChooseMax` returns the most preferred candidate; no candidate is more preferred
   have hmax : ∀ w', w' ∈ gsCandidates prof σ m₀ →
       gsMenPrefLE prof m₀ w₀ w' → w₀ = w' := by
     intro w' hw'in hle
@@ -457,13 +462,13 @@ lemma stepWith (h : menMatchedProposed prof σ) (m w : Fin n) :
   · -- Cas `some mOld`
     rename_i mOld
     split_ifs at *
-    · -- La femme préfère `m` : `swapMatch m mOld w`
+    · -- The woman prefers `m`: `swapMatch m mOld w`
       dsimp [GSMatching.swapMatch] at hmatch ⊢
       rw [Function.update_apply, Function.update_apply] at hmatch
       split_ifs at hmatch
       · injection hmatch with hw; right; exact ⟨‹m' = m›, hw.symm⟩
       · left; exact h m' w' hmatch
-    · -- Pas de préférence : couplage inchangé
+    · -- No preference: matching unchanged
       dsimp at hmatch ⊢
       left; exact h m' w' hmatch
 
@@ -497,7 +502,7 @@ end menMatchedProposed
 
 /-! ## Invariant - every proposed woman is matched -/
 
-/-- Si un homme a proposé à une femme, alors elle doit être appariée. -/
+/-- If a man has proposed to a woman, then she must be matched. -/
 def womenProposedImpliesMatched (prof : PrefProfile n) (σ : GSState prof) : Prop :=
   ∀ w m, σ.proposed m w → σ.matching.womenMatch w ≠ none
 
@@ -597,7 +602,7 @@ lemma step (h : womenBestState prof σ)
     rw [proposedSet.stepWith_insert prof σ m₀ w₀] at hmem
     simp only [Finset.mem_insert, Prod.mk.injEq, proposedSet.mem_iff] at hmem
     cases hmem with | inl h => right; exact h | inr h => left; exact h
-  -- Réduire le couplage de `gsStepWith` et découper sur le discriminant
+  -- Reduce the matching of `gsStepWith` and split on the discriminant
   change (gsStepWith prof σ m₀ w₀).matching.womenMatch w = some m at hmatch
   simp only [gsStepWith] at hmatch
   split at hmatch
@@ -711,7 +716,7 @@ lemma gsTerminated_allMenMatched (prof : PrefProfile n) {σ : GSState prof}
     obtain ⟨m', hm'⟩ := Option.ne_none_iff_exists.mp (hwMatched w)
     have hwf : σ.matching.womenMatch w = some m' := hm'.symm
     exact ⟨m', hwf, (hcon m' w).mpr hwf⟩
-  -- Construire une injection `f : Fin n → {m' : Fin n // m' ≠ m}`, puis déduire la contradiction
+  -- Build an injection `f : Fin n → {m' : Fin n // m' ≠ m}`, then derive the contradiction
   have hSpec (w : Fin n) :
       σ.matching.womenMatch w = some (Classical.choose (hex w)) ∧
       σ.matching.menMatch (Classical.choose (hex w)) = some w :=
@@ -733,10 +738,10 @@ lemma gsTerminated_allMenMatched (prof : PrefProfile n) {σ : GSState prof}
     have := congrArg (σ.matching.menMatch ·) hval
     simp only [h1, h2, Option.some.injEq] at this
     exact this
-  -- `|{m' ≠ m}| < |Fin n|` contredit l'injection `Fin n → {m' ≠ m}`
+  -- `|{m' ≠ m}| < |Fin n|` contradicts the injection `Fin n → {m' ≠ m}`
   have hle := Fintype.card_le_of_injective f hf
   have hcard_fin : Fintype.card (Fin n) = n := Fintype.card_fin n
-  -- Contradiction : `Fin n` s'injecte dans `{m' ≠ m}` mais `{m' ≠ m} ⊂ Fin n`
+  -- Contradiction: `Fin n` injects into `{m' ≠ m}` but `{m' ≠ m} ⊂ Fin n`
   have hcontra : Fintype.card (Fin n) ≤ Fintype.card { m' : Fin n // m' ≠ m } :=
     Fintype.card_le_of_injective f hf
   have hlt : Fintype.card { m' : Fin n // m' ≠ m } < Fintype.card (Fin n) :=
@@ -768,7 +773,7 @@ lemma gsAllWomenMatched {μ : GSMatching n}
   by_contra hnone
   have hNoMan : ∀ m, μ.menMatch m ≠ some w := by
     intro m hmw; have := hcon m w |>.mp hmw; rw [hnone] at this; simp at this
-  -- Chaque homme est associé à un certain `w' ≠ w`, injectivement → contradiction par pigeonhole
+  -- Each man is matched to some `w' ≠ w`, injectively → pigeonhole contradiction
   have hMap (m : Fin n) : ∃ w', μ.menMatch m = some w' ∧ w' ≠ w := by
     obtain ⟨w', hw'⟩ := Option.ne_none_iff_exists.mp (hall m)
     exact ⟨w', hw'.symm, fun heq => hNoMan m (heq ▸ hw'.symm)⟩
@@ -780,7 +785,7 @@ lemma gsAllWomenMatched {μ : GSMatching n}
     have h₁ := (Classical.choose_spec (hMap m₁)).1
     have h₂ := (Classical.choose_spec (hMap m₂)).1
     rw [heq] at h₁
-    -- h₁ : μ.menMatch m₁ = some c  (où `c = Classical.choose (hMap m₂)`)
+    -- h₁ : μ.menMatch m₁ = some c  (where `c = Classical.choose (hMap m₂)`)
     -- h₂ : μ.menMatch m₂ = some c
     have hw₁ := hcon m₁ (Classical.choose (hMap m₂)) |>.mp h₁
     have hw₂ := hcon m₂ (Classical.choose (hMap m₂)) |>.mp h₂
@@ -794,7 +799,7 @@ lemma gsAllWomenMatched {μ : GSMatching n}
       (Subtype.val : {w' : Fin n // w' ≠ w} → Fin n) Subtype.coe_injective w (by simp)
   omega
 
-/-- Construire un `Matching` total à partir d'un `GSMatching` terminé. -/
+/-- Build a total `Matching` from a finished `GSMatching`. -/
 noncomputable def gsFinalMatching (prof : PrefProfile n)
     (σ : GSState prof)
     (hall : ∀ m, σ.matching.menMatch m ≠ none)
@@ -814,7 +819,7 @@ noncomputable def gsFinalMatching (prof : PrefProfile n)
       -- hw₁ : σ.matching.womenMatch _ = some m₁
       -- hw₂ : σ.matching.womenMatch _ = some m₂
       exact Option.some.inj (hw₁.symm.trans hw₂)
-    · -- surjectif : pour chaque `w`, trouver `m` avec `spouse m = w`
+    · -- surjective: for every `w`, find `m` with `spouse m = w`
       intro w
       have hwn := gsAllWomenMatched hall hcon w
       obtain ⟨m, hm⟩ := Option.ne_none_iff_exists.mp hwn
@@ -826,7 +831,7 @@ noncomputable def gsFinalMatching (prof : PrefProfile n)
         -- hspec : some w = some (gsSpouse σ.matching hall m)
         exact Option.some.inj hspec.symm⟩
 
-/-- Lemme clé : `gsFinalMatching.spouse m` extrait directement la valeur de l'`Option`. -/
+/-- Key lemma: `gsFinalMatching.spouse m` directly extracts the value of the `Option`. -/
 lemma gsFinalMatching_spouse_get (prof : PrefProfile n) (σ : GSState prof)
     (hall : ∀ m, σ.matching.menMatch m ≠ none)
     (hcon : GSConsistent σ.matching) (m : Fin n) :
@@ -866,29 +871,29 @@ lemma gsNoBlockingPairs (prof : PrefProfile n)
   set hall : ∀ m, σ.matching.menMatch m ≠ none :=
     fun m => gsTerminated_allMenMatched prof hterm hwp hcon m
   set μ := gsFinalMatching prof σ hall hcon
-  -- Étape 1 : `m` est apparié, extraire sa partenaire `wMatch`
+  -- Step 1: `m` is matched, extract his partner `wMatch`
   have hwMatch' : σ.matching.menMatch m = some (μ.spouse m) :=
     gsSpouse_spec σ.matching hall m
-  -- Étape 2 : `m` a proposé à sa partenaire (`μ.spouse m`)
+  -- Step 2: `m` has proposed to his partner (`μ.spouse m`)
   have hpropMatch : σ.proposed m (μ.spouse m) :=
     hmatch_prop m (μ.spouse m) hwMatch'
-  -- Étape 3 : `m` a proposé à `w` (clôture décroissante)
-  -- Le blocage dit que `menPref m w < menPref m (μ.spouse m)`, donc `w` est préférée
+  -- Step 3: `m` has proposed to `w` (decreasing closure)
+  -- Blocking says `menPref m w < menPref m (μ.spouse m)`, hence `w` is preferred
   have hpropw : σ.proposed m w :=
     hdown m (μ.spouse m) w hpropMatch hmpref
-  -- Étape 4 : `w` est appariée (`womenProposedImpliesMatched`)
+  -- Step 4: `w` is matched (`womenProposedImpliesMatched`)
   have hwomMatch : σ.matching.womenMatch w ≠ none := hwp w m hpropw
   obtain ⟨mW, hmW⟩ := Option.ne_none_iff_exists.mp hwomMatch
   have hmW' : σ.matching.womenMatch w = some mW := hmW.symm
-  -- Étape 5 : `womenBestState` donne `womenPref w mW ≤ womenPref w m`
+  -- Step 5: `womenBestState` gives `womenPref w mW ≤ womenPref w m`
   have hbest' : prof.womenPref w mW ≤ prof.womenPref w m :=
     hbest w mW m hmW' hpropw
-  -- Étape 6 : `μ.inverse w = mW`
-  -- Par cohérence : `menMatch mW = some w`, donc `spouse mW = w`
+  -- Step 6: `μ.inverse w = mW`
+  -- By consistency: `menMatch mW = some w`, hence `spouse mW = w`
   have hmw' : σ.matching.menMatch mW = some w := (hcon mW w).mpr hmW'
   have hspouse_mW : μ.spouse mW = w := by
     have h₁ := gsSpouse_spec σ.matching hall mW
-    -- h₁ : `menMatch mW = some (gsSpouse ...)` et `hmw'` : `menMatch mW = some w`
+    -- h₁ : `menMatch mW = some (gsSpouse ...)` and `hmw'`: `menMatch mW = some w`
     exact Option.some.inj (h₁.symm.trans hmw')
   -- `inverse w = mW` car `spouse mW = w`
   have hwinv : μ.inverse w = mW := by
@@ -898,9 +903,9 @@ lemma gsNoBlockingPairs (prof : PrefProfile n)
   rw [hwinv] at hwpref
   -- `hwpref` : `womenPref w m < womenPref w mW`
   -- `hbest'` : `womenPref w mW ≤ womenPref w m`
-  -- Contradiction : `hbest'` dit `womenPref w mW ≤ womenPref w m`
-  -- mais `hwpref` dit `womenPref w m < womenPref w mW`
-  -- c'est-à-dire : `a ≤ b` et `b < a` est impossible
+  -- Contradiction: `hbest'` says `womenPref w mW ≤ womenPref w m`
+  -- but `hwpref` says `womenPref w m < womenPref w mW`
+  -- that is: `a ≤ b` and `b < a` is impossible
   have : (prof.womenPref w mW : Nat) ≤ (prof.womenPref w m : Nat) := by
     exact mod_cast hbest'
   have : (prof.womenPref w m : Nat) < (prof.womenPref w mW : Nat) := by

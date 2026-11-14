@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**
+---
+
 # SOTA : vrai outil + probleme non-trivial — install/invoke/re-plug, faire valoir le moteur (HARD)
 
 S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21, 3 messages — verbatim en [detail §1](../../docs/reference/sota-verdicts-detail.md). Registre = [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (l'EPIC #3801 est **close depuis le 2026-07-09** : elle reste la provenance doctrinale du mandat, elle n'est plus le tracker). Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).
@@ -40,13 +44,13 @@ Autorite : [secrets-hygiene.md](secrets-hygiene.md) **regle 6**, auto-chargee el
 
 Un notebook qui demontre un **moteur / solveur / modele** (search, CSP, SMT/Z3, planners, metaheuristiques, tactiques Lean, ML, GenAI) DOIT poser un probleme assez riche pour **exercer et faire valoir la capacite distinctive du moteur** — pas un **cas degenere** ou le moteur SOTA equivaut a une baseline triviale.
 
-Cas canonique : **BFS vs A*** sur un graphe a cout uniforme (A* degenere en BFS, l'heuristique ne sert a rien) -> remplacer par un terrain **pondere** ou l'heuristique discrimine. Memes pieges de famille : un Z3 sur une contrainte qu'un `if` resout, un planner sans parallelisme, une metaheuristique sur une fonction convexe a optimum unique. Instance fondatrice et correctif : [detail §3](../../docs/reference/sota-verdicts-detail.md).
+Cas canonique : **BFS vs A*** sur un graphe a cout uniforme (A* degenere en BFS, l'heuristique ne sert a rien) -> remplacer par un terrain **pondere** ou l'heuristique discrimine. Memes pieges de famille, instance fondatrice et correctif : [detail §3](../../docs/reference/sota-verdicts-detail.md).
 
 Action : **complexifier le probleme existant** OU **ajouter un probleme additionnel plus riche**, de sorte que la capacite annoncee soit **visible dans la sortie**. **Modulo un temps de traitement raisonnable** : viser un probleme **discriminant mais borne**, pas un benchmark de plusieurs minutes dans un notebook pedagogique.
 
 ### Verification anti-fabrication — mesurer la discrimination AVANT de clamer « heuristique X echoue »
 
-Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact). Un pitch non mesure = violation G.9 en attente d'etre livree. Recits fondateurs (anti-exemple Mycielski, faux signal grep MiniZinc, commit `8905f8845`) : [detail §3](../../docs/reference/sota-verdicts-detail.md).
+Un enrichissement Prong-B ne se declare pas sur un **pitch plausible** : on **mesure** d'abord la discrimination firsthand (installer le solveur — regle F — et comparer resultat-heuristique vs optimum exact). Un pitch non mesure = violation G.9 en attente d'etre livree. Recits fondateurs : [detail §3](../../docs/reference/sota-verdicts-detail.md).
 
 ## Comportement des bots reviewers (signaler + enforce)
 
@@ -70,4 +74,4 @@ Les bots **DOIVENT** poster `CHANGES_REQUESTED` quand une PR notebook (interne/c
 - [pr-review-discipline.md](pr-review-discipline.md) §H — critere bots SOTA + non-trivialite
 - [anti-regression.md](anti-regression.md) — ne pas stripper le code reel
 - [three-exercises-per-notebook.md](three-exercises-per-notebook.md) — richesse pedagogique (exercices)
-- [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille (30 entrees au 2026-09-03) ; EPIC #3801 (CLOSE) = provenance doctrinale, **ne rien y deposer** ; #10459 = omission PythonNet, close par la checklist 6 axes ([detail §2](../../docs/reference/sota-verdicts-detail.md))
+- [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) — **le registre** axe-2 SOTA + problem-richness, par famille ; EPIC #3801 (CLOSE) = provenance doctrinale, **ne rien y deposer**

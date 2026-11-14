@@ -11,7 +11,7 @@ Verify and test Jupyter notebooks in the CoursIA repository.
 
 ## Arguments
 
-- `target`: Notebook path, family name (`Sudoku`, `Search`, `SymbolicAI`, `Argument_Analysis`, `GenAI`, `ML`, `Probas`, `IIT`, `Tweety`, `Lean`, `GameTheory`), or `all`
+- `target`: Notebook path, family name (`Sudoku`, `Search`, `SymbolicAI`, `ArgumentAnalysis`, `GenAI`, `ML`, `Probas`, `IIT`, `Tweety`, `Lean`, `GameTheory`), or `all`
 - `--quick`: Structure validation only, no execution
 - `--fix`: Attempt automatic fixes (max 3 attempts per cell)
 - `--python-only` / `--dotnet-only`: Filter by kernel type

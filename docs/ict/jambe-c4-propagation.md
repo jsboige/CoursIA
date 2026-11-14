@@ -231,7 +231,7 @@ Pour éviter la confusion entre jauge et verdict, ce document assume expliciteme
 
 | Niveau | Élément |
 |---|---|
-| **Mesuré** (par les jambes-sœurs) | `π_t` via ICT-14b / ICT-Dissociation-SaillancePregnance (`docs/ict/dissociations-matrix.md` PR [#9584](https://github.com/jsboige/CoursIA/pull/9584) MERGED c.1244) · `W_t` via ICT-24 [#5635](https://github.com/jsboige/CoursIA/issues/5635) · `P(R)` via inoculation RL ICT-25 [#5105](https://github.com/jsboige/CoursIA/issues/5105) PR [#9592](https://github.com/jsboige/CoursIA/pull/9592) OPEN (reward_dynamics 4th detector) |
+| **Mesuré** (par les jambes-sœurs) | `π_t` via ICT-14b / ICT-Dissociation-SaillancePregnance-Python (`docs/ict/dissociations-matrix.md` PR [#9584](https://github.com/jsboige/CoursIA/pull/9584) MERGED c.1244) · `W_t` via ICT-24 [#5635](https://github.com/jsboige/CoursIA/issues/5635) · `P(R)` via inoculation RL ICT-25 [#5105](https://github.com/jsboige/CoursIA/issues/5105) PR [#9592](https://github.com/jsboige/CoursIA/pull/9592) OPEN (reward_dynamics 4th detector) |
 | **Construit** (formalisé dans le présent cadrage) | Le cycle à quatre temps · la jauge `(π, W, causalité)` · la notion de *bascule* · la notion d'*hystérésis* · la correspondance C4 ↔ D1 (ρ_c = (π_c, W_c, P_c)) · la lecture C4 = tresse opérationnelle · le déblocage potentiel de C3 par la forme |
 | **Nommé sans démonstration** (grade C, posé pour cadrage) | L'idée que *la grammaire de propagation est invariante par instanciation* (§3.4) · l'idée que *la tresse est rendue opérationnelle par C4* (§4.3) · l'idée que *C4 prépare la commensurabilité sans forcer le démarrage* (§5.3) |
 

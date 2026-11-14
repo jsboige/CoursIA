@@ -30,12 +30,18 @@ name: Notebook outputs required (H.4 schema)
 #   exit 2 -> erreur (notebook illisible / argument invalide)
 
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'scripts/notebook_tools/check_notebook_outputs_required.py'
-      - '.github/workflows/notebook-outputs-required.yml'
+  # ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#25510, tranche T-A du
+  # 2026-11-12) : ce workflow ne declenche plus sur une PR, c'est
+  # `always-on-guards.yml` (job `always-on-guards`, garde anti-fork conservee)
+  # qui porte le verdict, dans UN checkout partage au lieu de deux. Le job
+  # `validate` a ete renomme byte-identique au nom du garde
+  # ("Notebook outputs required (H.4 schema)") : c'est la condition du
+  # `check_absorbed_check_run_identity.py`, qui VERIFIE au lieu d'exempter.
+  # Le recapitulatif collant (`advisory_sticky --organ
+  # notebook-outputs-required`) est repris par la voie rapide, dans le job
+  # `always-on-commenters` (le seul qui a le droit d'ecrire sur la PR).
+  # Les `paths:` d'origine vivent dans `scripts/ci/fast_lane_registry.py`
+  # (TRANCHE10 pour le verdict, TRANCHE42 pour le recapitulatif).
   push:
     branches: [main]
     paths:
@@ -64,6 +70,10 @@ jobs:
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 0.22 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
@@ -78,7 +88,7 @@ jobs:
             NOTEBOOKS="${{ github.event.inputs.notebook_paths }}"
           elif [ "${{ github.event_name }}" = "pull_request" ]; then
             NOTEBOOKS=$(git diff --name-only --diff-filter=ACM \
-              origin/${{ github.base_ref }} HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+              origin/${{ github.base_ref }}...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
           else
             # push to main : scan complet via git ls-tree du tree courant.
             NOTEBOOKS=$(git ls-tree -r --name-only HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
@@ -101,11 +111,15 @@ jobs:
           echo "Detected $COUNT notebook(s) changed"
 
   validate:
-    name: Validate 'outputs' key on every code cell
+    name: Notebook outputs required (H.4 schema)
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
+    # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
+    # runs verts de ce job : max 3.13 min. Marge large (le defaut
+    # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:

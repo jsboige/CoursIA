@@ -116,7 +116,7 @@ class TestIsSetupNotebook:
         "Probas/Infer/Infer-1-Setup.ipynb",
         "GenAI/00-GenAI-Environment/00-1-Environment-Setup.ipynb",
         "Sudoku/Sudoku-00-Environment-CSharp.ipynb",
-        "Planners/00-Environment/Planners-0-Setup.ipynb",
+        "Planners/00-Environment/Planners-00-Setup-Python.ipynb",
     ])
     def test_noms_setup(self, name):
         assert mod.is_setup_notebook(name)

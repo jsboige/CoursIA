@@ -1,5 +1,5 @@
 {
-  "schema": "harvey-sources-pin/v1",
+  "schema": "harvey-sources-pin/v2",
   "upstream_repo": "https://github.com/bbrhuft/Cartier-Miller-evaluation-of-genus-one-coefficient-sums",
   "commit": "37a9b727dfd5034af0b8aa8185246d58008b9e5c",
   "commit_short": "37a9b72",
@@ -18,6 +18,16 @@
     "sha256": "empreinte du contenu CANONIQUE : octets du blob Git, fins de ligne normalisees en LF (CRLF -> LF avant hachage). C'est la valeur que la garde verifie.",
     "sha256_crlf": "empreinte du fichier de travail tel quel sur un clone Windows (core.autocrlf=true, donc CRLF). Recoupement : `sha256sum <fichier>` dans un clone Windows rend cette valeur, dans un clone Linux la valeur `sha256`.",
     "reverification": "git clone <upstream_repo> && git checkout 37a9b727dfd5034af0b8aa8185246d58008b9e5c && git cat-file blob 37a9b727dfd5034af0b8aa8185246d58008b9e5c:Cartier_Miller_Benchmark/<fichier> | sha256sum  (ou : sha256sum -c Cartier_Miller_Benchmark/SHA256SUMS.txt dans le clone)"
+  },
+  "executable": {
+    "sha256": null,
+    "note": "Empreinte attendue du binaire vendorise (harvey_adapter), verifiee par le driver au demarrage, au meme titre que les sources. `null` = pas encore epinglee : le rapport porte alors executable_pin.status='unpinned', ce qui est un etat nomme et non un silence, et la validation reste possible. Le pin devient utile le jour ou la passe alimente un chemin moins supervise qu'un run de recherche relu (#22751) ; la re-build locale ne garantit pas une empreinte identique d'une chaine de compilation a l'autre, donc c'est le moment de ce changement de regime qui decide de la valeur a epingler.",
+    "how_to_pin": "python scripts/cartier_miller/run_harvey_p1_plus.py --executable <chemin du binaire> --record-executable-pin",
+    "measured_at": null
+  },
+  "headers": {
+    "pinned": false,
+    "reason": "Aucune empreinte de header n'est publiable en amont : SHA256SUMS.txt couvre les trois fichiers de `files` et SOURCE_PROVENANCE.json en couvre deux ; les headers ne figurent ni dans l'un ni dans l'autre. Le constat est celui qui a produit ce manifeste (#22751), il n'est pas une verification nouvelle."
   },
   "files": [
     {

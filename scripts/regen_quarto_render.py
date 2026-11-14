@@ -48,6 +48,10 @@ LANDING_PAGES = [
     "MyIA.AI.Notebooks/Probas/index.qmd",
     "MyIA.AI.Notebooks/Physique/index.qmd",
     "docs/index.qmd",
+    # Page parcours : deplacee de la racine vers docs/ (#13751, fenetre Quarto)
+    # — la racine ne garde que index.qmd ; le glob "*.qmd" ci-dessus ne la
+    # couvre plus, elle est listee explicitement.
+    "docs/parcours.qmd",
     # COURSE_CATALOG.generated.md est lie depuis index.qmd (L64) mais servi en
     # texte brut sinon : on le REND en HTML (verifie firsthand #10925 Q2 —
     # quarto render standalone -> HTML 176 Ko, exit 0, sans front-matter).
@@ -107,7 +111,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/IIT/",                    # tranche 15 #10923 (56)
     "MyIA.AI.Notebooks/ML/",                     # tranche 15 #10923 (48)
     "MyIA.AI.Notebooks/RL/",                     # tranche 15 #10923 (21)
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/",  # tranche 3 #10923 (25, EPITA Argumentum)
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/",  # tranche 3 #10923 (25, EPITA Argumentum)
     "MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/",         # tranche 5 #10923 (26, RDF/OWL/SPARQL EPITA-Sub-symbolic)
     "MyIA.AI.Notebooks/SymbolicAI/SMT/",               # tranche 14 #10923 (46 notebooks Z3/SMT)
     "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/",    # tranche 14 #10923 (27 notebooks blockchain)

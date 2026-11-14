@@ -1,0 +1,63 @@
+{
+  "runs": [
+    "minicpm5_seed0",
+    "minicpm5_seed1",
+    "minicpm5_seed42",
+    "minicpm5_seed7",
+    "qwen35_seed0",
+    "qwen35_seed1",
+    "qwen35_seed42",
+    "qwen35_seed7"
+  ],
+  "aborted_runs": [],
+  "runs_sans_post_eval": [],
+  "per_model": {
+    "minicpm5": {
+      "label": "MiniCPM5-2B",
+      "n_seeds": 4,
+      "pre_mean": 0.2265625,
+      "post_mean": 0.6843750000000001,
+      "delta_mean": 0.45781249999999996,
+      "delta_std": 0.04600759957604828,
+      "deltas": [
+        0.43125,
+        0.43125,
+        0.5375,
+        0.43125
+      ]
+    },
+    "qwen35": {
+      "label": "Qwen3.5-0.8B",
+      "n_seeds": 4,
+      "pre_mean": 0.19999999999999998,
+      "post_mean": 0.515625,
+      "delta_mean": 0.315625,
+      "delta_std": 0.16591954940572856,
+      "deltas": [
+        0.0625,
+        0.43749999999999994,
+        0.27499999999999997,
+        0.48750000000000004
+      ]
+    }
+  },
+  "verdict": {
+    "mini_curves_healthy": false,
+    "qwen_curves_healthy": false,
+    "delta_intervals_disjoint": false,
+    "beats": false,
+    "rule": "BEATS si courbes MiniCPM5 saines (post>pre par seed, pas d'effondrement de longueur) ET delta eval moyen > qwen avec intervalles \u00b11std disjoints (\u22652 seeds par mod\u00e8le)"
+  },
+  "pairs": {
+    "minicpm5_vs_qwen35": {
+      "curves_healthy": {
+        "minicpm5": false,
+        "qwen35": false
+      },
+      "delta_intervals_disjoint": false,
+      "beats": false,
+      "higher_delta": "minicpm5",
+      "rule": "BEATS si courbes MiniCPM5-2B saines (post>pre par seed, pas d'effondrement de longueur) ET delta eval moyen > Qwen3.5-0.8B avec intervalles +-1std disjoints (>=2 seeds par modele)"
+    }
+  }
+}

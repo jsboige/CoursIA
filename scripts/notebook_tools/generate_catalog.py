@@ -36,6 +36,11 @@ from functools import lru_cache
 from pathlib import Path
 from urllib.parse import quote
 
+if __package__:
+    from .curriculum_qualification import load_manifest, qualification_for
+else:
+    from curriculum_qualification import load_manifest, qualification_for
+
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 NOTEBOOKS_DIR = REPO_ROOT / "MyIA.AI.Notebooks"
 
@@ -50,8 +55,12 @@ RESEARCH_DIR_KEYWORDS = {"research", "archive", "_archive", "_archives", "exampl
 
 SERIES_ORDER = [
     "GenAI", "Search", "ML", "SymbolicAI", "QuantConnect",
-    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL", "EPF",
+    "GameTheory", "Sudoku", "Probas", "Physique", "IIT", "RL",
 ]
+# Pas d'entrée "EPF" : elle listait une série sans répertoire sous
+# MyIA.AI.Notebooks/ (mesuré #24994 -- aucun dossier EPF sur main). _serie_order
+# ne retient que les séries présentes dans les entrées, l'entrée était donc
+# inerte ; OWNER_MAP portait la même clé morte, retirée dans le même geste.
 
 # Keywords indicating special requirements
 API_KEYWORDS = {"openai", "anthropic", "api_key", "API_KEY", "bearer", "endpoint", "SemanticKernel"}
@@ -70,7 +79,6 @@ OWNER_MAP = {
     "Probas": "po-2023",
     "IIT": "po-2025",
     "RL": "po-2025",
-    "EPF": "ai-01",
 }
 # "Physique" is deliberately absent: the map is per-serie and this one is served
 # by three lanes on disjoint sub-trees (Jauge, Numerique, Integrales -- EPIC
@@ -221,6 +229,17 @@ def classify_creation_cost(git_meta_entry: dict | None) -> dict:
         return {"class": "UNKNOWN", "history": "TRUNCATED",
                 "revisions": revisions, "authors": gm.get("authors"),
                 "first_commit": "", "span_days": None}
+    if gm.get("history_unresolved_rename", False):
+        # Le carnet porte un nom nouveau, son histoire est sous un nom
+        # ancien, et rien n'etablit le lien (absent du registre des
+        # renommages, et pas un renommage exact que git aurait vu) : la
+        # chaine n'est pas fermee. La date de premiere revision sous le nom
+        # nouveau est la date du RENOUSSAGE, pas une date de creation --
+        # elle est tuee comme sur un clone coupe, sinon le catalogue
+        # fabriquerait l'age qu'il pretend mesurer.
+        return {"class": "UNKNOWN", "history": "UNRESOLVED_RENAME",
+                "revisions": revisions, "authors": gm.get("authors"),
+                "first_commit": "", "span_days": None}
     cost_class = "VERY_HEAVY"
     for ceiling, name in CREATION_COST_THRESHOLDS_REVISIONS:
         if revisions <= ceiling:
@@ -358,34 +377,156 @@ def shallow_boundaries() -> set[str] | None:
         return None
 
 
-def build_git_metadata() -> dict[str, dict]:
-    """Build last-commit metadata for all notebooks via git log.
+def _parse_name_status(stdout: str) -> list[dict]:
+    """Decoupe la sortie `git log --name-status` en commits.
 
-    Returns dict keyed by relative path (forward slashes) with:
-        last_validation: ISO date of last commit touching the file
-        last_validator: email of last committer
-        issues_prs: list of '#NNN' references from commit messages
-        revisions: number of commits touching the file
-        authors: number of distinct committer emails
-        first_commit: ISO date of the OLDEST commit touching the file
+    Chaque commit porte ses chemins par statut : `added`, `modified`,
+    `deleted`, et `renames` (couples ancien -> nouveau). `--name-status` est ce
+    qui rend le renommage EXACT visible : `--name-only` ne rendait que le nom
+    nouveau, et l'ancien historique etait perdu (#25865).
 
-    Les trois derniers alimentent le proxy de cout de creation. Ils sont
-    accumules dans cette meme passe -- `git log` parcourt deja tout
-    l'historique pour ne retenir que le commit le plus recent, donc les
-    compter est gratuit ; les obtenir autrement couterait un second parcours.
+    La sortie est lue telle quelle, sans lecture de blob : c'est la propriete
+    qui permet a la passe de tourner sur le clone PARTIEL du catalogue
+    (#24230).
+    """
+    commits: list[dict] = []
+    current: dict | None = None
+    for line in stdout.split("\n"):
+        if line.startswith("COMMIT:"):
+            parts = line[7:].split("|", 3)
+            if len(parts) >= 4:
+                current = {
+                    "sha": parts[0],
+                    "date": parts[1][:10],
+                    "email": parts[2],
+                    "subject": parts[3],
+                    "added": [],
+                    "modified": [],
+                    "deleted": [],
+                    "renames": [],
+                }
+                commits.append(current)
+            else:
+                current = None
+            continue
+        if current is None or not line.strip():
+            continue
+        parts = line.split("\t")
+        status = parts[0].strip()
+        if status.startswith("R") and len(parts) >= 3:
+            current["renames"].append((parts[1].strip(), parts[2].strip()))
+        elif status == "A" and len(parts) >= 2:
+            current["added"].append(parts[1].strip())
+        elif status == "D" and len(parts) >= 2:
+            current["deleted"].append(parts[1].strip())
+        elif status in ("M", "T") and len(parts) >= 2:
+            current["modified"].append(parts[1].strip())
+    return commits
 
-    Raises:
-        GitMetadataUnavailable: git timed out, is missing, or exited non-zero.
-            Whether that aborts the run or degrades it is the caller's
-            decision (``--allow-degraded-git``) -- never this function's, and
-            never silent.
+
+def _load_rename_ledger_rows(repo_root: Path) -> list[tuple[str, str, str]]:
+    """Les lignes du registre des renommages : (ancien, nouveau, date).
+
+    `docs/reference/rename-ledger.tsv` est un historique partage, appendu par
+    plusieurs branches : son en-tete peut apparaitre plus d'une fois dans le
+    fichier (mesure du 2026-11-11, #16231). Il est donc reconnu par sa FORME
+    -- les deux premieres colonnes valent `ancien` et `nouveau` -- et non par
+    sa position.
+
+    Les chemins sont relatifs a la racine du depot, comme ceux que rend
+    `git log`. Un registre absent ou illisible rend une liste vide : la passe
+    reste alors celle d'avant, jamais une table a moitie lue.
+    """
+    path = repo_root / "docs" / "reference" / "rename-ledger.tsv"
+    lignes: list[tuple[str, str, str]] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return lignes
+    for line in text.splitlines():
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        old, new = parts[0].strip(), parts[1].strip()
+        if not old or not new:
+            continue
+        if old == "ancien" and new == "nouveau":
+            continue                      # en-tete, ou qu'il soit dans le fichier
+        date = parts[2].strip() if len(parts) > 2 else ""
+        lignes.append((old, new, date))
+    return lignes
+
+
+def _load_rename_ledger(repo_root: Path) -> dict[str, str]:
+    """Table d'alias `ancien` -> `nouveau`, lue dans le registre des renommages.
+
+    Voir `_load_rename_ledger_rows` pour la lecture du registre.
+    """
+    return {old: new for old, new, _ in _load_rename_ledger_rows(repo_root)}
+
+
+def _resolve_current_path(path: str, aliases: dict[str, str], alive: set[str]) -> str | None:
+    """Chemin courant d'un chemin historique, a travers les renommages.
+
+    `aliases` relie un chemin a son successeur ; `alive` porte les chemins qui
+    existent encore. La chaine est suivie jusqu'a son bout -- un maillon
+    intermediaire a disparu, ca ne rompt pas la chaine, c'est son dernier
+    maillon qui compte. Le resultat est le DERNIER maillon vivant : c'est le
+    nom que porte aujourd'hui le carnet.
+
+    La resolution s'arrete sur un CYCLE -- le registre est un graphe, pas une
+    liste -- et rend alors None plutot qu'un chemin invente.
+    """
+    seen = {path}
+    chain = [path]
+    current = path
+    while current in aliases:
+        suivant = aliases[current]
+        if suivant in seen:
+            return None                  # chaine ambigue : on ne devine pas
+        seen.add(suivant)
+        chain.append(suivant)
+        current = suivant
+    for node in reversed(chain):
+        if node in alive:
+            return node
+    return path
+
+
+def _rename_chain(path: str, aliases_ci: dict[str, str]) -> list[str]:
+    """Les noms successifs d'un chemin, registre compris.
+
+    La table est indexee SANS CASSE : le depot ecrit `-Csharp` et `-CSharp`
+    pour deux noms distincts, et c'est le second qui porte l'historique du
+    premier. Une chaine s'arrete sur un cycle -- le registre est un graphe --
+    plutot que de boucler.
+    """
+    chain = [path]
+    vus = {path.lower()}
+    current = path
+    while current.lower() in aliases_ci:
+        suivant = aliases_ci[current.lower()]
+        if suivant.lower() in vus:
+            break
+        vus.add(suivant.lower())
+        chain.append(suivant)
+        current = suivant
+    return chain
+
+
+def _run_git_log() -> tuple[list[dict], float]:
+    """`git log` du depot, decoupe en commits. Leve `GitMetadataUnavailable`.
+
+    La passe rend `--name-status` : c'est ce qui rend le renommage EXACT
+    visible (`R100`, compare par OID, sans lecture de blob). `--name-only` ne
+    rendait que le nom nouveau, et l'historique anterieur etait perdu (#25865).
     """
     started = time.monotonic()
     try:
         result = subprocess.run(
             [
                 "git", "log", GIT_LOG_RENAME_FLAG,
-                "--name-only", "--format=COMMIT:%H|%ai|%ae|%s",
+                "--name-status", "--format=COMMIT:%H|%ai|%ae|%s",
                 "--", GIT_LOG_PATHSPEC,
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace",
@@ -408,51 +549,364 @@ def build_git_metadata() -> dict[str, dict]:
             f"'git log' a rendu rc={result.returncode} en {elapsed:.1f}s "
             f"(cwd={REPO_ROOT}) -- stderr: {stderr or '(vide)'}"
         )
+    return _parse_name_status(result.stdout), elapsed
 
-    metadata: dict[str, dict] = {}
-    current_sha = ""
-    current_date = ""
-    current_email = ""
-    current_subject = ""
+
+def audit_rename_reconnection() -> dict:
+    """Compte les carnets dont l'historique reste coupe par un renommage.
+
+    Deux mesures sur les memes cibles (les carnets du registre qui existent
+    encore) :
+
+    - **AVANT** : premiere revision sous le CHEMIN COURANT seul -- l'historique
+      anterieur au renommage est hors de portee ;
+    - **APRES** : premiere revision une fois l'historique raccorde a travers
+      les renommages connus.
+
+    Un carnet est coupe quand sa premiere revision est POSTERIEURE ou egale a
+    la date du renommage : la date mesuree est alors celle du renommage, pas
+    une date de creation.
+
+    La fonction rend aussi les renommages que rien n'explique, et ceux qui ne
+    sont rattaches a aucun carnet actuel (orphelins).
+    """
+    commits, _ = _run_git_log()
     prefix = f"{GIT_LOG_PATHSPEC}/"
 
-    for line in result.stdout.split("\n"):
-        if line.startswith("COMMIT:"):
-            parts = line[7:].split("|", 3)
-            if len(parts) >= 4:
-                current_sha = parts[0]
-                current_date = parts[1][:10]
-                current_email = parts[2]
-                current_subject = parts[3]
-        elif line.strip() and current_date:
-            path = line.strip()
-            if not path.endswith(".ipynb"):
+    # Les cibles du registre : chemin nouveau -> date du renommage le plus
+    # ancien qui y aboutit (une chaine de renommages a plusieurs dates).
+    dates_renommage: dict[str, str] = {}
+    for _ancien, nouveau, date in _load_rename_ledger_rows(REPO_ROOT):
+        if not nouveau.startswith(prefix):
+            continue
+        rel = nouveau[len(prefix):]
+        if rel not in dates_renommage or (date and date < dates_renommage[rel]):
+            dates_renommage[rel] = date
+
+    # L'historique BRUT : premiere revision de chaque chemin, sans raccord.
+    # `git log` rend du plus recent au plus ancien : la date retenue est
+    # la PLUS ANCIENNE -- celle que le catalogue annoncait avant le raccord.
+    premiere_brute: dict[str, str] = {}
+    for commit in commits:
+        for path in commit["added"] + commit["modified"]:
+            if not path.startswith(prefix) or not path.endswith(".ipynb"):
                 continue
-            if not path.startswith(prefix):
+            rel = path[len(prefix):]
+            if rel not in premiere_brute or commit["date"] < premiere_brute[rel]:
+                premiere_brute[rel] = commit["date"]
+        for old, new in commit["renames"]:
+            # `--name-status` ne rend qu'une ligne `R` pour un renommage :
+            # les DEUX noms doivent etre remis dans l'historique brut,
+            # sinon le nom nouveau y serait absent.
+            for chemin in (old, new):
+                if not chemin.startswith(prefix) or not chemin.endswith(".ipynb"):
+                    continue
+                rel = chemin[len(prefix):]
+                if rel not in premiere_brute or commit["date"] < premiere_brute[rel]:
+                    premiere_brute[rel] = commit["date"]
+
+    metadata = build_git_metadata()
+
+    avant = apres = sans_revision = 0
+    for rel, date_renommage in dates_renommage.items():
+        if rel not in premiere_brute:
+            sans_revision += 1
+            continue
+        if date_renommage and premiere_brute[rel] >= date_renommage:
+            avant += 1
+        entry = metadata.get(rel)
+        if entry is None:
+            continue
+        if date_renommage and entry.get("first_commit", "") >= date_renommage:
+            apres += 1
+
+    aliases = _alias_table(commits)
+    alive = _alive_paths(commits)
+    rattachements, orphelins = _unresolved_renames(commits, aliases, alive)
+    return {
+        "cibles": len(dates_renommage),
+        "avant": avant,
+        "apres": apres,
+        "sans_revision": sans_revision,
+        "non_raccordes": sorted(rattachements),
+        "orphelins": sorted(orphelins),
+    }
+
+
+
+def _alias_table(commits: list[dict]) -> dict[str, str]:
+    """La table des renommages connus : registre + renommages exacts vus par git.
+
+    Ce sont deux tables de chemins, jamais des lectures de blob : la passe
+    reste jouable sur le clone PARTIEL du catalogue (#24230).
+    """
+    aliases = _load_rename_ledger(REPO_ROOT)
+    for commit in commits:
+        for old, new in commit["renames"]:
+            if old.endswith(".ipynb") and new.endswith(".ipynb"):
+                aliases.setdefault(old, new)
+    return aliases
+
+
+def _alive_paths(commits: list[dict]) -> set[str]:
+    """Les chemins qui existent encore.
+
+    `git log` rend du plus recent au plus ancien : le PREMIER statut vu pour
+    un chemin est donc son statut actuel. Un chemin renomme n'existe plus sous
+    son ancien nom (`R`), un chemin supprime non plus (`D`) ; `A` et `M` sont
+    les statuts d'un chemin vivant.
+    """
+    statut: dict[str, str] = {}
+    for commit in commits:
+        for old, new in commit["renames"]:
+            statut.setdefault(old, "R")
+            statut.setdefault(new, "A")
+        for path in commit["added"]:
+            statut.setdefault(path, "A")
+        for path in commit["modified"]:
+            statut.setdefault(path, "M")
+        for path in commit["deleted"]:
+            statut.setdefault(path, "D")
+    return {path for path, code in statut.items() if code in ("A", "M")}
+
+
+def _unresolved_renames(
+    commits: list[dict], aliases: dict[str, str], alive: set[str],
+) -> tuple[dict[str, str], set[str]]:
+    """Les renommages que rien n'explique.
+
+    Un ajout est EXPLIQUE quand la chaine d'un fichier supprime dans le meme
+    commit passe par son nom : le renommage est connu, meme si la chaine
+    continue apres (deplacement ulterieur dans un sous-dossier). Un ajout non
+    explique n'est signale que si son nom prolonge un nom supprime dans le
+    meme dossier -- meme famille que le renommage du depot : meme dossier,
+    nom nouveau = nom ancien + suffixe. La comparaison des noms est insensible
+    a la casse (`-Csharp` et `-CSharp` sont deux noms distincts, mais la
+    difference n'est qu'une capitalisation) ; l'egalite, elle, est exacte --
+    un nom qui ne differe que par sa casse reste un renommage a signaler.
+
+    Rend (rattachements, orphelins) :
+    - rattachements : chemin courant du carnet -> chemin historique non
+      explique ; le drapeau va sur l'entree du catalogue ;
+    - orphelins : les renommages non expliques dont AUCUN carnet actuel n'est
+      identifiable -- le registre ne dit pas par quel nom il a ete renomme.
+    """
+    aliases_ci = {k.lower(): v for k, v in aliases.items()}
+    non_resolus: set[str] = set()
+    for commit in commits:
+        ajoutes = [p for p in commit["added"] if p.endswith(".ipynb")]
+        supprimes = [p for p in commit["deleted"] if p.endswith(".ipynb")]
+        for neuf in ajoutes:
+            dossier_n, base_n = neuf.rsplit("/", 1)
+            memes_dossier = [
+                p for p in supprimes
+                if p.rsplit("/", 1)[0].lower() == dossier_n.lower()
+            ]
+            if not memes_dossier:
                 continue
-            rel = path[len(prefix):].replace("\\", "/")
-            if rel not in metadata:
-                issues = re.findall(r"#(\d+)", current_subject)
-                metadata[rel] = {
-                    "last_validation": current_date,
-                    "last_validator": current_email,
-                    "issues_prs": [f"#{n}" for n in issues[:5]],
+            if any(noeud.lower() == neuf.lower()
+                   for ancien in memes_dossier
+                   for noeud in _rename_chain(ancien, aliases_ci)):
+                continue                    # rename connu : rien a signaler
+            for ancien in memes_dossier:
+                base_a = ancien.rsplit("/", 1)[1]
+                if base_n[:-6].lower().startswith(base_a[:-6].lower()):
+                    if base_n[:-6] != base_a[:-6]:
+                        non_resolus.add(neuf)
+                    break
+
+    rattachements: dict[str, str] = {}
+    orphelins: set[str] = set()
+    for path in non_resolus:
+        resolved = _resolve_current_path(path, aliases, alive) or path
+        if resolved in alive:
+            rattachements[resolved] = path
+        else:
+            orphelins.add(path)
+    return rattachements, orphelins
+
+
+
+def build_git_metadata() -> dict[str, dict]:
+    """Build last-commit metadata for all notebooks via git log.
+
+    Returns dict keyed by relative path (forward slashes) with:
+        last_validation: ISO date of last commit touching the file
+        last_validator: email of last committer
+        issues_prs: list of '#NNN' references from commit messages
+        revisions: number of commits touching the file
+        authors: number of distinct committer emails
+        first_commit: ISO date of the OLDEST commit touching the file
+
+    Les trois derniers alimentent le proxy de cout de creation. Ils sont
+    accumules dans cette meme passe -- `git log` parcourt deja tout
+    l'historique pour ne retenir que le commit le plus recent, donc les
+    compter est gratuit ; les obtenir autrement couterait un second parcours.
+
+    L'historique est RACCORDE a travers les renommages : un carnet renomme
+    porte l'historique de ses noms anciens (registre des renommages +
+    renommages exacts vus par git). Sans ce raccord, le catalogue annonçait
+    une date de creation posterieure au renommage, et un historique coupe
+    qu'il declarait COMPLETE (#25865).
+
+    Raises:
+        GitMetadataUnavailable: git timed out, is missing, or exited non-zero.
+            Whether that aborts the run or degrades it is the caller's
+            decision (``--allow-degraded-git``) -- never this function's, and
+            never silent.
+    """
+    commits, elapsed = _run_git_log()
+
+    prefix = f"{GIT_LOG_PATHSPEC}/"
+
+    # Qui existe encore ? `git log` rend du plus recent au plus ancien : le
+    # PREMIER statut vu pour un chemin est donc son statut actuel. Un chemin
+    # renomme n'existe plus sous son ancien nom (`R`), un chemin supprime non
+    # plus (`D`) ; `A` et `M` sont les statuts d'un chemin vivant.
+    alive = _alive_paths(commits)
+
+    # Table d'alias : le registre des renommages, complete par les
+    # renommages EXACTS que git a vus (`R100`, contenu identique). Les deux
+    # sources sont des tables de chemins, jamais des lectures de blob.
+    aliases = _alias_table(commits)
+
+    metadata: dict[str, dict] = {}
+    raccordes = 0
+
+    # Frontieres d'incarnation : les evenements qui changent l'existence d'un
+    # chemin -- ajout (`A`), renommage (`R` sur l'ancien nom), suppression
+    # (`D`). `git log` rend du plus recent au plus ancien : l'index 0 est le
+    # commit le plus recent, donc un evenement d'index < i est PLUS RECENT que
+    # le commit i.
+    frontieres: dict[str, list[tuple[int, str]]] = {}
+    for index, commit in enumerate(commits):
+        for path in commit["added"]:
+            frontieres.setdefault(path, []).append((index, "A"))
+        for path in commit["deleted"]:
+            frontieres.setdefault(path, []).append((index, "D"))
+        for old, new in commit["renames"]:
+            frontieres.setdefault(old, []).append((index, "R"))
+            frontieres.setdefault(new, []).append((index, "A"))
+
+    def _incarnation_ended(path: str, index: int) -> bool:
+        """L'incarnation du chemin au commit `index` a-t-elle ete renommee ou
+        supprimee ENSUITE ?
+
+        C'est ce qui distingue un renommage d'une RENUMEROTATION de nom : un
+        nom supprime puis recree garde sa propre incarnation, et son
+        historique ne doit pas partir vers le successeur du premier.
+        """
+        evenements = frontieres.get(path)
+        if not evenements:
+            return False
+        for j in range(len(evenements) - 1, -1, -1):
+            idx, code = evenements[j]
+            if idx < index:
+                return code in ("R", "D")
+        return False
+
+    for index, commit in enumerate(commits):
+        issue_nums = re.findall(r"#(\d+)", commit["subject"])
+        directes: list[str] = []
+        supprimees: list[str] = []
+        for path in commit["added"] + commit["modified"]:
+            if path.endswith(".ipynb"):
+                directes.append(path)
+        for old, new in commit["renames"]:
+            if new.endswith(".ipynb"):
+                directes.append(new)
+        for path in commit["deleted"]:
+            if path.endswith(".ipynb"):
+                supprimees.append(path)
+
+        vus: dict[str, bool] = {}
+        for path in directes:
+            if _incarnation_ended(path, index):
+                resolved = _resolve_current_path(path, aliases, alive)
+                if resolved is None:
+                    resolved = path          # chaine ambigue : chemin brut
+                if resolved != path:
+                    raccordes += 1
+            else:
+                resolved = path              # incarnation vivante : son propre nom
+            vus[resolved] = True
+        for path in supprimees:
+            # Une suppression EST le renommage : le chemin disparu porte
+            # l'historique de son successeur.
+            resolved = _resolve_current_path(path, aliases, alive)
+            if resolved is None:
+                resolved = path
+            if resolved != path:
+                raccordes += 1
+            vus.setdefault(resolved, False)
+
+        for resolved, direct in vus.items():
+            if not resolved.startswith(prefix):
+                continue
+            rel = resolved[len(prefix):].replace("\\", "/")
+            entry = metadata.get(rel)
+            if entry is None:
+                entry = metadata[rel] = {
+                    "last_validation": "",
+                    "last_validator": "",
+                    "issues_prs": [],
                     "revisions": 0,
                     "_authors": set(),
+                    "_issues": [],
+                    "_alias_issues": [],
+                    "_last_any": ("", ""),
                 }
-            entry = metadata[rel]
             entry["revisions"] += 1
-            entry["_authors"].add(current_email)
+            entry["_authors"].add(commit["email"])
             # `git log` rend du plus recent au plus ancien : le dernier commit
             # vu pour un chemin est donc le plus ancien.
-            entry["first_commit"] = current_date
-            entry["_first_sha"] = current_sha
+            entry["first_commit"] = commit["date"]
+            entry["_first_sha"] = commit["sha"]
+            if not entry["_last_any"][0]:
+                entry["_last_any"] = (commit["date"], commit["email"])
+            if direct:
+                # Le commit touche le chemin LUI-MEME : c'est lui qui date la
+                # derniere validation et qui porte les issues du carnet.
+                if not entry["last_validation"]:
+                    entry["last_validation"] = commit["date"]
+                    entry["last_validator"] = commit["email"]
+                    entry["_issues"] = list(issue_nums)
+            else:
+                # Le commit touche un CHEMIN ANCIEN : il compte pour le
+                # chemin courant (revisions, auteurs, premiere revision), et
+                # ses issues rattachent aussi a ce carnet.
+                for num in issue_nums:
+                    if num not in entry["_alias_issues"]:
+                        entry["_alias_issues"].append(num)
+
+    # Un renommage que rien ne raccorde : le carnet porte le nom nouveau, son
+    # historique est sous l'ancien nom, et le registre ne dit rien de ce
+    # lien. La chaine n'est donc pas etablie -- l'etat sera visible, jamais un
+    # COMPLETE silencieux.
+    rattachements, orphelins = _unresolved_renames(commits, aliases, alive)
+    for resolved in rattachements:
+        rel = resolved[len(prefix):].replace("\\", "/")
+        entry = metadata.get(rel)
+        if entry is not None:
+            entry["history_unresolved_rename"] = True
+    non_resolus = set(rattachements.values()) | orphelins
 
     grafts = shallow_boundaries()
     truncated_count = 0
     for entry in metadata.values():
         entry["authors"] = len(entry.pop("_authors"))
         first_sha = entry.pop("_first_sha", "")
+        # Les issues du carnet : celles de son dernier commit, plus celles des
+        # commits qui touchaient ses chemins anciens (le renommage et ce qui
+        # l'a precede). Sans renommage, la liste est celle d'avant.
+        issues = list(entry.pop("_issues"))
+        for num in entry.pop("_alias_issues"):
+            if num not in issues:
+                issues.append(num)
+        entry["issues_prs"] = [f"#{n}" for n in issues[:5]]
+        last_any = entry.pop("_last_any")
+        if not entry["last_validation"]:
+            entry["last_validation"], entry["last_validator"] = last_any
         # Un notebook est coupe si son PROPRE plus vieux commit est une
         # frontiere de greffe : l'historique s'y arrete faute d'objets, pas
         # faute de commits. `grafts is None` (question impossible) est traite
@@ -462,6 +916,17 @@ def build_git_metadata() -> dict[str, dict]:
     if truncated_count:
         print(f"Git metadata: {truncated_count} notebook(s) a historique COUPE "
               "-- resource_cost.creation y rendra UNKNOWN/TRUNCATED")
+    if raccordes:
+        print(f"Git metadata: {raccordes} commit(s) raccorde(s) a travers un "
+              "renommage -- l'historique precede le carnet renomme")
+    if non_resolus:
+        print(f"Git metadata: {len(non_resolus)} notebook(s) ont un renommage "
+              "NON RACCORDE (absent du registre, non exact) -- "
+              "resource_cost.creation y rendra UNRESOLVED_RENAME")
+        if orphelins:
+            print(f"Git metadata: {len(orphelins)} de ces renommages sont ORPHELINS "
+                  "-- aucun carnet actuel n'est identifiable : le registre ne "
+                  "dit pas par quel nom le carnet a ete renomme")
 
     # Emitted on every run so a healthy pass is legible too: a low
     # "Preserved curated fields" count only means something next to the number
@@ -478,11 +943,14 @@ def get_head_sha() -> str:
     """
     try:
         result = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
+            ["git", "rev-parse", "--short=7", "HEAD"],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT), timeout=10,
         )
         if result.returncode == 0:
-            return result.stdout.strip()
+            # Largeur epinglee a 7 (#24860), miroir de forensic_scan.get_last_commit_sha :
+            # sans epinglage, l'abrege suit la taille du depot (9 puis 10 puis 9 mesures)
+            # et classify_reproducibility() compare deux resolutions independantes.
+            return result.stdout.strip()[:7]
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pass
     return ""
@@ -1077,6 +1545,19 @@ _FORENSIC_CATEGORY_REPRO = {
 }
 
 
+def _sha_prefix_equal(a: str, b: str) -> bool:
+    """Egalite d'abreges SHA robuste a la largeur (#24860).
+
+    L'historique du champ `last_success_sha` porte des largeurs 9 et 10 issues
+    d'abreges non epingles ; les producteurs sont desormais epingles a 7
+    (forensic_scan.get_last_commit_sha, get_head_sha). Deux abreges designent
+    le meme commit ssi leur prefixe commun -- d'au moins 7 caracteres -- est
+    identique ; une valeur trop courte ne suffit pas a attester.
+    """
+    n = min(len(a), len(b))
+    return n >= 7 and a[:n].lower() == b[:n].lower()
+
+
 def classify_reproducibility(
     forensic_category: str | None,
     *,
@@ -1094,8 +1575,10 @@ def classify_reproducibility(
     if not forensic_category:
         return "UNTESTED"
     base = _FORENSIC_CATEGORY_REPRO.get(forensic_category, "UNTESTED")
-    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA
-    if base == "EXECUTED" and last_success_sha and head_sha and last_success_sha == head_sha and executed_at:
+    # Pas de promotion EXECUTED -> REPRODUCED sans coherence SHA.
+    # Comparaison normalisee en prefixe (#24860) : l'attestation ne depend plus
+    # de la largeur d'abrege (historique 9/10 vs epingle 7).
+    if base == "EXECUTED" and last_success_sha and head_sha and _sha_prefix_equal(last_success_sha, head_sha) and executed_at:
         return "REPRODUCED"
     return base
 
@@ -1256,7 +1739,10 @@ def aggregate_maturity(
     return "DRAFT"
 
 
-def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = None) -> dict | None:
+def analyze_notebook(
+    nb_path: Path, pedagogical: bool, git_meta: dict | None = None,
+    qualification_manifest: dict | None = None,
+) -> dict | None:
     """Analyze a single notebook and return its catalog entry."""
     try:
         notebook = json.loads(nb_path.read_text(encoding="utf-8"))
@@ -1272,6 +1758,14 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
     # Determine serie and sous-serie
     serie = parts[0] if parts else ""
     sous_serie = parts[1] if len(parts) > 2 else ""
+    # Profondeur réelle de l'arbre (#24994) : `sous_serie` garde le PREMIER
+    # segment (compat marqueurs/parcours qui filtrent par égalité), tandis que
+    # `sous_serie_path` / `sous_serie_levels` portent le chemin complet sous la
+    # série, tous niveaux compris. C'est ce niveau-là que le rendu bucketise et
+    # que l'export RDF de l'Epic #24993 réutilisera : la structure du graphe,
+    # pas seulement un affichage.
+    sous_serie_path = "/".join(parts[1:-1])
+    sous_serie_levels = list(parts[1:-1])
 
     title = extract_title(notebook)
     kernel = detect_kernel(notebook)
@@ -1292,6 +1786,9 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
 
     rel_str = str(rel).replace("\\", "/")
     gm = (git_meta or {}).get(rel_str, {})
+    qualification = qualification_for(
+        qualification_manifest or {}, f"{NOTEBOOKS_DIR.name}/{rel_str}"
+    )
 
     # Maturity 3-axes (cf docs/PARCOURS.md, issue #8051) :
     #   1. editorial    = prose pedagogique (DRAFT/ALPHA/BETA/FINAL)
@@ -1338,8 +1835,17 @@ def analyze_notebook(nb_path: Path, pedagogical: bool, git_meta: dict | None = N
         "title": title or nb_path.stem,
         "serie": serie,
         "sous_serie": sous_serie,
+        # Chemin complet et niveaux sous la série (#24994) -- `sous_serie` seul
+        # ne portait que le premier segment et aplatissait DataScienceWithAgents
+        # (113 carnets sur 3 niveaux) et Lean (159 sur 2) en sections plates.
+        "sous_serie_path": sous_serie_path,
+        "sous_serie_levels": sous_serie_levels,
         "kernel": kernel,
         "status": status,
+        # Axes déclarés indépendants du statut historique basé sur le chemin.
+        "difficulte": qualification["difficulte"] if qualification else None,
+        "recherche": qualification["recherche"] if qualification else None,
+        "qualification_justification": qualification["justification"] if qualification else None,
         # Jugement editorial curé (registre, #15080 critere 4) : a quoi SERT le
         # notebook pour un etudiant. Independant de `status` par construction --
         # un corrige resolu est READY et inutilisable comme sujet ; un enonce
@@ -1911,6 +2417,11 @@ def scan_all_notebooks(
     scripts/notebook_tools/README.md (section Catalogue).
     """
     tracked = _git_tracked_files() if git_tracked_only else None
+    try:
+        qualification_manifest = load_manifest(REPO_ROOT / "docs/curriculum/qualification/manifest.json")
+    except FileNotFoundError:
+        # Un ancien checkout peut ne pas encore porter le manifeste.
+        qualification_manifest = {}
     entries = []
     dirs = sorted(NOTEBOOKS_DIR.iterdir()) if not series_filter else [
         NOTEBOOKS_DIR / series_filter
@@ -1954,7 +2465,10 @@ def scan_all_notebooks(
                 )
                 _count(f"pedagogical:{motif}", nb_path)
                 continue
-            entry = analyze_notebook(nb_path, pedagogical, git_meta=git_meta)
+            entry = analyze_notebook(
+                nb_path, pedagogical, git_meta=git_meta,
+                qualification_manifest=qualification_manifest,
+            )
             if entry:
                 entries.append(entry)
             else:
@@ -2005,14 +2519,24 @@ def _md_href(path: str) -> str:
 
 
 def _serie_buckets(items: list[dict]) -> list[tuple[str, list[dict]]]:
-    """Group a serie's entries by sous_serie; root notebooks under Racine.
+    """Group a serie's entries by full sous-serie path; root notebooks under Racine.
 
-    Deterministic order: Racine first, then sous-series alphabetically
+    Le bucket est le CHEMIN COMPLET de sous-série (#24994) : un carnet
+    ``Serie/A/B/nb.ipynb`` vit sous ``A/B``, pas sous ``A`` -- chaque niveau de
+    l'arbre reste visible jusqu'au carnet, et les buckets restent disjoints
+    (leur somme réconcilie le total de la série, cf l'assertion des tests).
+    Markdown plafonne les headings à h6 alors que l'arbre réel descend à 5
+    niveaux de sous-série (mesuré #24994) : une heading par bucket portant le
+    chemin complet tient à toute profondeur, là où des headings imbriqués par
+    niveau casseraient. Les entrées synthétiques qui ne portent que
+    ``sous_serie`` (tests, consommateurs tiers) retombent sur ce champ.
+
+    Deterministic order: Racine first, then paths alphabetically
     (case-insensitive, exact case as tiebreaker).
     """
     buckets: dict[str, list[dict]] = {}
     for e in items:
-        name = e.get("sous_serie") or ROOT_BUCKET
+        name = e.get("sous_serie_path") or e.get("sous_serie") or ROOT_BUCKET
         buckets.setdefault(name, []).append(e)
     return sorted(
         buckets.items(),
@@ -2136,10 +2660,10 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
             lines.append(f"#### {bucket_name} ({len(bucket_items)})")
             lines.append("")
             lines.append(
-                "| # | Notebook | Title | Kernel | Status | Maturity | Duration | Owner |"
+                "| # | Notebook | Title | Kernel | Status | Maturity | Difficulté | Recherche | Duration | Owner |"
             )
             lines.append(
-                "|---|----------|-------|--------|--------|----------|----------|-------|"
+                "|---|----------|-------|--------|--------|----------|------------|----------|----------|-------|"
             )
             for i, e in enumerate(bucket_items, 1):
                 basename = Path(e["path"]).name if e.get("path") else ""
@@ -2172,7 +2696,10 @@ def generate_markdown_report(entries: list[dict], repo_root: Path | None = None)
                 )
                 lines.append(
                     f"| {i} | {notebook_cell} | {title} | {kernel} "
-                    f"| {status_cell} | {maturity_cell} | {duration_cell} | {owner_cell} |"
+                    f"| {status_cell} | {maturity_cell} | "
+                    f"{_md_escape_cell(str(e.get('difficulte') or '—'))} | "
+                    f"{_md_escape_cell(str(e.get('recherche') or '—'))} | "
+                    f"{duration_cell} | {owner_cell} |"
                 )
             lines.append("")
 
@@ -2212,6 +2739,14 @@ def main():
         help="Print status summary and exit",
     )
     parser.add_argument(
+        "--audit-renommages", action="store_true",
+        help=(
+            "Compte les carnets dont l'historique reste coupe par un "
+            "renommage (avant / apres raccord), et les renommages que "
+            "rien n'explique. N'ecrit aucun catalogue."
+        ),
+    )
+    parser.add_argument(
         "--status", type=str, default=None,
         choices=["READY", "DEMO", "RESEARCH", "BROKEN"],
         help="Filter entries by status",
@@ -2242,6 +2777,25 @@ def main():
         ),
     )
     args = parser.parse_args()
+
+    if args.audit_renommages:
+        try:
+            rapport = audit_rename_reconnection()
+        except GitMetadataUnavailable as exc:
+            print(f"ERREUR: metadonnees git indisponibles -- {exc}", file=sys.stderr)
+            raise SystemExit(2)
+        print("=== AUDIT DU RACCORD DES RENOMMAGES ===")
+        print(f"cibles du registre (carnets presents) : {rapport['cibles']}")
+        print(f"AVANT -- premiere revision posterieure au renommage : {rapport['avant']}")
+        print(f"APRES -- premiere revision posterieure au renommage : {rapport['apres']}")
+        print(f"cibles sans aucune revision dans l'historique brut : {rapport['sans_revision']}")
+        print(f"renommages NON RACCORDES : {len(rapport['non_raccordes'])}")
+        for rel in rapport["non_raccordes"]:
+            print(f"    {rel}")
+        print(f"renommages ORPHELINS (aucun carnet actuel identifiable) : {len(rapport['orphelins'])}")
+        for rel in rapport["orphelins"]:
+            print(f"    {rel}")
+        return
 
     scan_exclusions: Counter[str] = Counter()
     pedagogical = not args.all

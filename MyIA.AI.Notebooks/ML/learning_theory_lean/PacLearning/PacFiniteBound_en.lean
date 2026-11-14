@@ -114,7 +114,13 @@ Generic analytic lemma (not PAC-specific). Proof via the logarithm route:
 `log(1 − x) ≤ (1 − x) − 1 = −x` (`Real.log_le_sub_one_of_pos`), hence
 `log((1−x)^n) = n·log(1−x) ≤ −(x·n) ≤ −(ε·n)`, and `(1−x)^n = exp(log((1−x)^n))
 ≤ exp(−ε·n)` by monotonicity of `exp`. The case `x = 1` (`(1−x) = 0`) is handled
-separately. -/
+separately.
+
+**General** form of the pair: `mimo_lean` carries its instance `ε = p` under the name
+`one_sub_pow_le_exp_mul` (with `0 < n` as an extra hypothesis, required by its Mathlib
+proof) (`MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/Converse.lean`). The two lakes do
+not import each other and each keeps its own copy — the duplicate is declared on both
+sides. -/
 theorem one_sub_pow_le_exp (x : ℝ) (n : ℕ) (hx0 : 0 ≤ x) (hx1 : x ≤ 1) (ε : ℝ)
     (hxe : ε ≤ x) : (1 - x) ^ n ≤ Real.exp (-(ε * n)) := by
   have h1mx : 0 ≤ 1 - x := by linarith

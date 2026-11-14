@@ -154,7 +154,27 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"add a path to .{0,20} to the path", re.IGNORECASE),
     re.compile(r"executablenotfound", re.IGNORECASE),
     re.compile(r"modulenotfounderror", re.IGNORECASE),
-    re.compile(r"filenotfound(error|exception)", re.IGNORECASE),
+    # FileNotFoundError (#24051), meme regime que ImportError ci-dessous : la
+    # FORME d'une exception levee, pas le mot nu. La prose pedagogique cite la
+    # classe -- « Attraper des exceptions precises (except FileNotFoundError:)
+    # plutot qu'un except Exception nu » -- et cette citation a ete mesuree en
+    # delta 0 -> 1 sur une re-execution de 01-Claude-CLI-Bases (grain #24049,
+    # reponse LLM stochastique). Trois gardes, dont deux suffisent chacune :
+    #   - un nom entre backticks est une citation (`(?<!`)) ;
+    #   - un nom precede du mot-cle `except` est un extrait de code : une levee
+    #     reelle n'est jamais precedee de `except` (PEP 8 impose une seule
+    #     espace, d'ou les deux largeurs epinglees) ;
+    #   - il faut un message apres les deux-points (`: ` + jeton), ou une
+    #     derniere ligne de trace qui ne porte que le nom. La prose mesuree
+    #     s'arrete sur `:)`, sans espace apres le deux-points.
+    # `search` saute une citation et rend la levee qui la suit dans le meme
+    # flux : la troisieme garde n'absout pas le reste du texte.
+    re.compile(r"(?<!`)(?<!except )(?<!except\t)"
+               r"fileNotFound(?:Error|Exception)"
+               r"(?:\x1b\[[0-9;]*m)*:[ \t]+\S+"
+               r"|^[ \t]*(?:\x1b\[[0-9;]*m)*fileNotFound(?:Error|Exception)"
+               r"(?:\x1b\[[0-9;]*m)*[ \t\r]*$",
+               re.IGNORECASE | re.MULTILINE),
     re.compile(r"command not found", re.IGNORECASE),
     re.compile(r"is not recognized as an internal or external command",
                re.IGNORECASE),
@@ -214,6 +234,39 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"workflow execution failed", re.IGNORECASE),
     re.compile(r"erreur generation image", re.IGNORECASE),
     re.compile(r"illustration indisponible", re.IGNORECASE),
+    # Bandeau de repli du carnet LTX-2 (02-5) -- meme famille ComfyUI que
+    # #21816, meme regime : DUR. La cellule attrape toute exception de
+    # soumission / polling / recuperation et imprime un bandeau en MAJUSCULES
+    # a la place de la sortie reelle (le MP4). Ce bandeau ne portait aucun
+    # marqueur reconnu par l'organe : une re-execution faite sur un poste
+    # sans le conteneur `comfyui-video` committerait le repli en silence et
+    # la CI resterait verte.
+    #
+    # Mesure (revue Hermes du 05/11 sur #24645) : le mutant du head -- sorties
+    # reelles remplacees par ce bandeau -- rend `TOOL_FAILURE 0 -> 0`,
+    # `DECLARED_FALLBACK 0 -> 0`, `capability_downgrades: []`,
+    # `regressed: false`. Les cinq variantes d'exception realistes
+    # (URLError / connection refused / TimeoutError / HTTPError 401 / timeout
+    # de polling / RuntimeError de validation de graphe) etaient toutes
+    # silencieuses : le motif doit porter sur le MARQUEUR, pas sur le type
+    # d'exception.
+    #
+    # Le motif est epingle au marqueur en MAJUSCULES, SANS IGNORECASE : c'est
+    # un marqueur machine, et la forme francaise accentuee
+    # (`generation non executee` dans une prose) ne doit pas le declencher.
+    #
+    # ECART ASSUME ET TRACE (#24780, critere 5) : la forme francaise GENERALE
+    # `<service> indisponible` n'est PAS couverte par ce motif. Mesure : le
+    # mot `indisponible` apparait dans 125 carnets du depot, dont des replis
+    # declares legitimes (`non configuree`, `non disponible`) qui ne doivent
+    # pas devenir du bruit -- la rendre bloquante transformerait une
+    # famille de replis assumes en rouge de flotte. Le motif couvre donc la
+    # forme BANNERE (marqueur en majuscules, une par cellule), pas la forme
+    # MOT (n'importe quelle prose ou sortie qui cite un service indisponible).
+    # La forme a couvrir est tracee et assumee ici ; la voie complementaire --
+    # un jeton porte par le carnet lui-meme -- est suivie cote carnet dans
+    # #24786.
+    re.compile(r"GENERATION NON EXECUTEE"),
 )
 
 # Witnesses: real strings observed in committed outputs. The self-test asserts
@@ -226,6 +279,11 @@ _PATTERN_WITNESSES = (
     'and add a path to "dot" to the PATH',
     "Le fichier specifie est introuvable.",
     "ModuleNotFoundError: No module named 'simanneal'",
+    # #24051 : la levee reelle, en forme Windows. Aucun motif voisin ne la
+    # couvre -- ni « no such file », ni « fichier ... est introuvable » -- donc
+    # elle epingle le motif FileNotFoundError lui-meme, et pas son voisinage.
+    "FileNotFoundError: [WinError 3] Le chemin d'acces specifie est "
+    "introuvable: 'D:" + BS + "dev" + BS + "CoursIA'",
     "graphviz.backend.ExecutableNotFound",
     "bash: dot: command not found",
     "simanneal non disponible",
@@ -238,6 +296,13 @@ _PATTERN_WITNESSES = (
     "ERROR:BarbieVsAne:Erreur generation image: Workflow execution failed "
     "(server reported error)",
     "WARNING:BarbieVsAne:Illustration indisponible pour cette replique",
+    # #24490 : le bandeau de repli du carnet LTX-2 (02-5), tel que la cellule
+    # l'imprime -- prefixe en majuscules + type d'exception. La chaine vient
+    # de la SOURCE de la branche de la PR (le `print` de la cellule), pas
+    # d'une sortie commitee : c'est la seule surface ou elle apparait, et
+    # c'est celle qu'une re-execution ratée produirait.
+    "GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+    "(URLError : <urlopen error [Errno 11001]>)",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -990,12 +1055,34 @@ def self_test(cwd=None):
                    "lancement depuis `sample_project/` ; ne pas introduire "
                    "d'imports relatifs |",
                    "Voir `ImportError: cannot import name 'X'` dans la doc.",
-                   "Le module peut lever ImportError pendant l'import."):
+                   "Le module peut lever ImportError pendant l'import.",
+                   # Citation de FileNotFoundError par une reponse de LLM
+                   # (#24051) : la prose mesuree sur 01-Claude-CLI-Bases telle
+                   # quelle, la meme citation dans un extrait de code, et la
+                   # forme complete entre backticks. Un extrait de code et une
+                   # citation sont des donnees, pas une levee.
+                   "Attraper des exceptions precises (except FileNotFoundError:) "
+                   "plutot qu'un except Exception nu...",
+                   "Utiliser `except FileNotFoundError: pass` plutot qu'un "
+                   "`except Exception` nu.",
+                   "`FileNotFoundError: [Errno 2] ...` est la forme complete."):
         hit = ([p.pattern for p in TOOL_FAILURE_PATTERNS if p.search(benign)]
                + [p.pattern for p in MACHINE_PATH_PATTERNS if p.search(benign)])
         if hit:
             failures.append("benign text matched " + str(hit) + ": "
                             + repr(benign))
+
+    # #24051 : dans le meme flux, la citation est sautee et la levee qui la
+    # suit continue de tirer -- une exemption qui ne prouve que son silence est
+    # indiscernable d'un trou. La levee porte volontairement un message sans
+    # motif voisin, sinon ce serait le voisin qui tirerait a sa place.
+    _cite_then_raise = scan({"cells": [{"cell_type": "code", "outputs": [
+        {"output_type": "error", "traceback": [
+            "Conseil: (except FileNotFoundError:) plutot qu'un except nu",
+            "FileNotFoundError: impossible de lire x.csv"]}]}]})
+    if len(_cite_then_raise["TOOL_FAILURE"]) != 1:
+        failures.append("citation swallowed the real raise (#24051): "
+                        + repr(_cite_then_raise))
 
     # URL controls (#18567): a cited web page under /home/<user>/ is silent,
     # while a local-server URL, a file:// URL and a bare path sitting next to
@@ -1088,6 +1175,33 @@ def self_test(cwd=None):
     def _one(text):
         return scan({"cells": [{"cell_type": "code", "outputs": [
             {"output_type": "stream", "text": text}]}]})["TOOL_FAILURE"]
+
+    # #24490 : le bandeau de repli LTX-2 doit etre classe TOOL_FAILURE (dur).
+    # Sans ce cas, un motif ajoute sans temoin fait mentir le jeu de motifs.
+    _ltx_banner_out = ("GENERATION NON EXECUTEE - stack ComfyUI indisponible "
+                       "(URLError : <urlopen error [Errno 11001]>)\n")
+    _ltx_banner = scan({"cells": [{"cell_type": "code",
+                                    "source": "print(f\"GENERATION NON EXECUTEE - "
+                                              "stack ComfyUI indisponible ({e})\")\n",
+                                    "outputs": [{"output_type": "stream",
+                                                 "name": "stdout",
+                                                 "text": _ltx_banner_out}]}],
+                         "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    if not _ltx_banner.get("TOOL_FAILURE"):
+        failures.append("bandeau de repli LTX-2 non classe TOOL_FAILURE : "
+                        + repr(_ltx_banner))
+    # La forme francaise, elle, ne declenche pas : c'est un marqueur machine
+    # en majuscules, pas une formule de prose.
+    _ltx_prose = scan({"cells": [{"cell_type": "code",
+                                  "source": "print('ok')\n",
+                                  "outputs": [{"output_type": "stream",
+                                               "name": "stdout",
+                                               "text": "La generation n'a pas ete "
+                                                       "executee sur ce poste.\n"}]}],
+                        "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    if _ltx_prose.get("TOOL_FAILURE"):
+        failures.append("prose francaise classee TOOL_FAILURE : "
+                        + repr(_ltx_prose))
 
     if _one(_banner):
         failures.append("benign transformers fast-path banner still fires")

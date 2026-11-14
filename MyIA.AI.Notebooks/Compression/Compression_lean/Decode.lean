@@ -32,8 +32,10 @@ Contenu distillé :
    liste — le contrat d'une table de décodage : ce que l'émetteur a
    coupé, le récepteur le recolle, dans l'ordre, sans reste.
 5. **Ancres numériques** (`#eval`) : le code de longueurs `(1, 2, 3, 3)`
-   du carnet 01 (`sf4` : `a=0, b=10, c=110, d=111`), un flux tronqué
-   (`none`), et le round-trip intégral du code lui-même.
+   du carnet 02 (son « code jouet » : `a=0, b=10, c=110, d=111` en bits
+   Python), que le lake rejoue sous la convention inverse (`sf4` :
+   `a=[true]`, `b=[false, true]`, `c=[false, false, true]`), un flux
+   tronqué (`none`), et le round-trip intégral du code lui-même.
 
 Roadmap (plis suivants de #18706, hors de cette tranche) : le théorème de
 McMillan (réciproque de Kraft), le trie canonique de Huffman, et
@@ -253,8 +255,9 @@ theorem decode_encode (t : CodeTree) (ws : List (List Bool))
 
 /-! ## Ancres numériques des carnets frères -/
 
-/- Le code de longueurs `(1, 2, 3, 3)` du carnet 01 (`a=0, b=10, c=110,
-d=111`) décode le message `a b c` sans reste. -/
+/- Le code de longueurs `(1, 2, 3, 3)` du carnet 02 (son « code jouet » :
+`a=0, b=10, c=110, d=111` en bits Python ; le lake inverse la convention,
+`true` = gauche) décode le message `a b c` sans reste. -/
 #eval decode sf4 [true, false, true, false, false, true]
 -- some [[true], [false, true], [false, false, true]]
 

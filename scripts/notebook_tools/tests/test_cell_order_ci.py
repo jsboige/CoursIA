@@ -96,3 +96,88 @@ class TestMainExitCodes:
         # --head HEAD (a git ref, not a path) must fail loudly, not exit 0.
         with pytest.raises(SystemExit, match="n'existe pas"):
             main(["--base", "NONE", "--head", "HEAD"])
+
+
+def _nb_bytes(cells: list[dict]) -> bytes:
+    return json.dumps(
+        {"cells": cells, "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+    ).encode("utf-8")
+
+
+def _fake_git_show(monkeypatch, *, rc=0, blob=b""):
+    """Remplace subprocess.run pour `git show <ref>:<path>`.
+
+    Enregistre les appels et rend le blob (ou l'echec rc!=0 = blob absent de
+    la ref). Les autres usages de subprocess ne sont pas attendus par ces
+    tests : tout appel imprévu fait echouer le test (args inattendus).
+    """
+    import cell_order_ci
+
+    calls = []
+
+    def fake_run(args, **kwargs):
+        calls.append(args)
+        import subprocess as _sp
+        return _sp.CompletedProcess(args, rc, blob, b"")
+
+    monkeypatch.setattr(cell_order_ci.subprocess, "run", fake_run)
+    return calls
+
+
+class TestBaseRefMode:
+    """#22209 -- le mode `--base-ref` de la voie rapide : la base est lue dans
+    le blob `<ref>:<head path>`, reproduisant la boucle du workflow d'origine
+    (`git cat-file -e` puis `git show $BASE:$nb`)."""
+
+    def test_absent_blob_is_a_new_file(self, monkeypatch, tmp_path):
+        # rc!=0 de git show = blob absent de la ref = NOUVEAU carnet : base
+        # vide, chaque HIGH compte (semantique NONE de la boucle d'origine).
+        import cell_order_ci
+
+        _fake_git_show(monkeypatch, rc=128, blob=b"fatal: path not in ref")
+        head = _write(tmp_path / "h.ipynb", _BAD)
+        assert cell_order_ci.high_signatures_from_ref(
+            "origin/main", str(head)) == set()
+        assert main(["--base-ref", "origin/main", "--head", str(head)]) == 1
+
+    def test_blob_present_is_scanned_as_base(self, monkeypatch, tmp_path):
+        # La base portait deja le defect, la tete l'a corrigee -> pas de
+        # regression : le blob EST la base, pas un fichier vide.
+        import cell_order_ci
+
+        _fake_git_show(monkeypatch, rc=0, blob=_nb_bytes(_BAD))
+        head = _write(tmp_path / "h.ipynb", _CLEAN)
+        assert main(["--base-ref", "origin/main", "--head", str(head)]) == 0
+
+    def test_blob_clean_base_with_bad_head_is_regression(self, monkeypatch, tmp_path):
+        import cell_order_ci
+
+        _fake_git_show(monkeypatch, rc=0, blob=_nb_bytes(_CLEAN))
+        head = _write(tmp_path / "h.ipynb", _BAD)
+        assert main(["--base-ref", "origin/main", "--head", str(head)]) == 1
+
+    def test_blob_unreadable_yields_empty_base(self, monkeypatch, tmp_path):
+        # Blob present mais illisible (JSON casse) : meme grace que
+        # high_signatures sur un fichier illisible -- base vide, pas d'echec.
+        import cell_order_ci
+
+        _fake_git_show(monkeypatch, rc=0, blob=b"{not json")
+        head = _write(tmp_path / "h.ipynb", _BAD)
+        assert main(["--base-ref", "origin/main", "--head", str(head)]) == 1
+
+    def test_git_show_reads_the_head_path_under_the_ref(self, monkeypatch, tmp_path):
+        import cell_order_ci
+
+        calls = _fake_git_show(monkeypatch, rc=0, blob=_nb_bytes(_CLEAN))
+        head = _write(tmp_path / "h.ipynb", _BAD)
+        main(["--base-ref", "origin/main", "--head", str(head)])
+        assert calls and calls[0] == [
+            "git", "show", f"origin/main:{head}"
+        ], "la base doit etre lue a <ref>:<head path>, comme la boucle d'origine"
+
+    def test_base_and_base_ref_are_exclusive(self, tmp_path):
+        head = _write(tmp_path / "h.ipynb", _CLEAN)
+        with pytest.raises(SystemExit) as exc:
+            main(["--base", "NONE", "--base-ref", "origin/main",
+                  "--head", str(head)])
+        assert exc.value.code == 2, "argparse refuse la double specification de base"

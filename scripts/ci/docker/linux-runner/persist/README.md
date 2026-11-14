@@ -30,6 +30,7 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `ai-01/coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **deploye et vivant** (2026-10-28) -- unite PERSISTANTE du pool d'attente PR-gate (label `coursia-waiter`), famille B : 10 slots, prefixe `myia-ai-01-wsl-waiterb`, state dir `/var/lib/coursia-waiters-b`, `enable`d. Remplace l'unite TRANSITOIRE `coursia-waiters-b.service` (memes parametres, releves a l'identique), qui disparaitait au reboot. **Depuis le 2026-10-28**, `ExecStart`/`ExecStop` pointent vers le wrapper PINLE `/usr/local/bin/coursia-waiters-start.sh` (arbitrage `ai01-c2721-23037-budget` point 3) et non plus vers le wrapper du clone de travail partage. Le bandeau « DEPRECATED » qui figurait ici (2026-10-15, #20835) est REFUTE : `pr-gate.yml` l.172 consomme le label depuis #21063 (2026-10-16) |
 | `ai-01/coursia-runner.service.d/40-scale-14.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/40-scale-14.conf` | **deploye et vivant** (2026-10-28) -- drop-in de SCALAGE et de BUDGET (le `10-sizing.conf` porte le dimensionnement : memoire, cap par slot, nombre de slots). `ExecStart` du runner a 14 slots, `COURSIA_RUNNER_BUDGET_GB=80`, et **`COURSIA_RUNNER_CPU_BUDGET=40`** (arbitrage `ai01-c2721-23037-budget` : 32 -> 40, sans couper aucune famille). La mesure qui fonde la decision -- 38 vCPU de demande declaree (14 x 2 + 10 x 1), slice a 32 coeurs, `cpu.stat` a 7 evenements / 2,4 s sur ~25 h -- est ecrite dans le fichier meme et dans la section « Le budget CPU : 32 -> 40 » ci-dessous |
 | `ai-01/coursia-waiters.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-waiters.service.d/10-sizing.conf` | **deploye et vivant** (2026-10-28 ; **corrige dans l'arbre le 30/10** -- la copie vivante pose encore 10) -- caps des slots waiters (1 vCPU, 512m, 128 pids, mesures sur le pool transitoire) + budget CPU **inter-familles a 40 vCPU** (celui de l'arbitrage 2026-10-28, aligne sur `40-scale-14.conf`). Le « 10 » du depot initial lisait la variable comme une taille de famille : elle plafonne la somme des familles de calcul (waiters exclus, #15574), donc chaque demarrage des waiters refusait sur la seule famille start (28 vCPU > 10) -- **panne du 30/10** (echec du boot 12:04Z au repair 16:52Z, drop-in live `20-cpu-budget.conf` = 40). Deployer cette copie rend le drop-in de depannage redondant |
+| `ai-01/create-main-slot.sh` | **ai-01** | `/usr/local/bin/create-main-slot.sh` (depose et vivant ; le depot est la source) | **deploye et vivant** (2026-11-14) -- decrit le slot runner **reserve a la verification de `main`** : labels `self-hosted,coursia-main,coursia-linux`, **sans** `coursia-ephemeral` (le script REFUSE un label ephemere : un slot reserve qui le porterait redeviendrait un client du pool PR, et la file de `main` recommencerait a attendre derriere les PRs -- mesure du 2026-11-12 : plus de 27 min en file, 31 runners sur 31 occupes). Trois modes : `--dry-run` (defaut, sans docker ni token, et SANS laisser de trace sur le disque), `--check` (etat VIVANT, fail-closed : labels, image, cgroup-parent, caps, etat de marche), `--apply` (mint du token via `gh`, passe par `--env-file` en mode 600 -- pas par `-e KEY=<valeur>`, qui le lirait dans l'argv de `docker run`). **DAEMON EPINGLE** (2026-11-13, #25510 T-L) : `COURSIA_MAIN_DOCKER_HOST` (defaut `unix:///var/run/docker-ce.sock`) -- le socket du **pool**, mesure sur `coursia-runner-start.sh` l. 67 (`export DOCKER_HOST="${DOCKER_HOST:-unix:///var/run/docker-ce.sock}"`). Le `DOCKER_HOST` **ambiant** est **affiche et IGNORE** : sans cet epinglage, un `--apply` vise l'autre daemon, qui ne porte pas l'image du pool (`error from registry: denied`) -- et l'echec etait **muet** (slot non cree, sans dire pourquoi). **STOCKAGE** : `COURSIA_MAIN_STORAGE=volume` (defaut) = **volumes nommes** `coursia-main-work-<slot>`, `coursia-main-config-<slot>` et `coursia-runner-toolcache` (la forme du pool, mesure du 13/11) ; `bind` = `${COURSIA_MAIN_BASE}/...` avec `COURSIA_MAIN_BASE` **absolu** (defaut `/var/lib/coursia-runners-main`) -- jamais `$HOME`, qui rendait le slot dependant de l'operateur. **TOKEN HORS STOCKAGE** : le fichier mode 600 vit dans `COURSIA_MAIN_TOKEN_DIR` (defaut `/tmp`) et est supprime en sortie -- il n'atteint plus `$BASE`. **`--check` verifie l'IDENTITE des montages** : `.Mounts[].Name` pour un volume, `.Mounts[].Source` pour un bind -- comparer la source brute confond les deux formes. Modele : `po-2024/create-persist-slots.sh`. Le REPLI ecrit (slot tombe -> rejeu de la verification de `main`) est dans l'entete du script : `gh workflow run scripts-tests.yml --ref main` -- il ne change PAS de runner (le workflow ne declare aucune entree `workflow_dispatch`), il rend donc la main a la file ; le routage du job CPU vers ce slot n'est PAS encore pose (la politique des runners n'admet pas encore la forme requise -- cf. `scripts/ci/check_self_hosted_runner_policy.py`) **Repare le 2026-11-14** : apres le merge de #26386, le job CPU du push de `main` a echoue en 4 s sur `myia-ai-01-linux-main-1` (`UnauthorizedAccessException '/home/runner/_work/_tool'`) -- les bind mounts sous `/home/jesse/CoursIA-runners-main` appartenaient a root. Conteneur retire puis recree par `create-main-slot.sh --apply` (version de `main`, volumes nommes) ; `--check` rend OK et le runner est connecte. Les anciens dossiers bind restent sur le disque, non supprimes |
 | `po-2026/pool.sh` | **po-2026** | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, **8 slots** et **borne depuis le 2026-09-22** (cf. `po-2026/README.md`) |
 | `po-2026/run-pool-po2026.sh` | **po-2026** (hote Windows) | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. **Attention : ce fichier vit sous `C:\dev\...`, pas sous `D:\Dev\CoursIA-runners-p0\`** (cf. `po-2026/README.md`) |
 | `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
@@ -201,7 +202,9 @@ voir.
 | `coursia-ci.slice` | `/etc/systemd/system/` + `cgroup-parent` du daemon | la **somme** de tous les conteneurs : `CPUQuota=800%`, `MemoryHigh`/`MemoryMax`/`MemorySwapMax`, `IOWriteBandwidthMax` | rien en dessous : elle ne distingue pas un slot glouton d'une famille entiere |
 | `--device-write-bps` / `--device-read-bps` | drapeaux passes par `supervise.sh` a chaque `docker run` | **un** conteneur | la somme : 12 conteneurs conformes un a un saturent quand meme le disque |
 | `COURSIA_RUNNER_CPU_BUDGET` | verification dans `supervise.sh` au demarrage | la **somme des demandes** de vCPU entre familles, **avant** de lancer quoi que ce soit | l'usage reel : c'est un refus de demarrage, pas un plafond kernel |
-| `COURSIA_RUNNER_BUDGET_GB` | **declare par le wrapper de CHAQUE machine** (les trois jambes, meme nombre) | la **somme des memoires** en vol **plus** la demande, toutes familles, avant de lancer un slot | la memoire reellement consommee ensuite, et le page cache de la VM : c'est un refus de demarrage, pas un plafond kernel |
+| `COURSIA_RUNNER_BUDGET_GB` | **declare par le wrapper de CHAQUE machine** (les trois jambes, meme nombre) | la **somme des memoires** en vol **plus** la demande, toutes familles, avant de lancer un slot ; **sa valeur declare la composition de la machine** : somme des caps memoire des slots declares, arrondie au Go superieur -- changer la composition et changer le budget se font **dans le meme geste** (arbitrage #22532, ai-01 2026-10-25) | la memoire reellement consommee ensuite, et le page cache de la VM : c'est un refus de demarrage, pas un plafond kernel ; la protection de l'hote est le mur kernel de `coursia-ci.slice`, pas ce budget |
+
+**Convention de valeur (arbitrage ai-01 du 2026-10-25, #22532)** : la valeur declaree est la **somme des caps memoire des slots declares**, arrondie au Go superieur -- elle declare la composition de la machine. Un budget plus large que la composition serait inerte (un slot ajoute plus tard passe sans que personne redimensionne quoi que ce soit) ; elargir le parc exige de re-ecrire le budget dans le meme geste. La protection de l'hote n'est pas son role : c'est le mur kernel de `coursia-ci.slice`.
 
 **`COURSIA_RUNNER_BUDGET_GB` est la seule borne de ressource qui n'est PAS inerte
 par defaut**, et c'est pour cela qu'elle doit etre ecrite : elle ne peut pas valoir
@@ -244,16 +247,87 @@ Trois surfaces portent ce sujet, chacune avec son role : **ce paragraphe** est l
 actionnable (ne pas recopier le fichier, et quelle valeur mettre a la place) ; l'en-tete de
 `coursia-ci.slice` (bloc `PIEGE DE RECOPIE`) porte le mecanisme et sa conclusion ; la
 **mesure chiffree du 2026-09-08** (`memory.peak`, sous-groupes, `max` sur le leurre) vit
-dans le corps de #15157, et nulle part ailleurs dans le depot.
+dans le corps de #15157, et nulle part ailleurs dans le depot. L'**etat du daemon au
+2026-11-11** (defaut present ou absent, leurre plat, mur reel) vit ci-dessous, avec la
+recette qui le re-mesure.
 
 Le `daemon.json` du daemon Docker Desktop, lui, **ne vit pas dans ce depot** : ce sont
-`~/.docker/daemon.json` et `settings-store.json` de l'hote. Au 2026-10-23, le leurre plat a
-ete retire de la machine -- reproductible par `ls -d /sys/fs/cgroup/coursia-ci.slice`,
-attendu **absent** ; la presence d'un `cgroup-parent` par defaut sur ce daemon n'est en
-revanche **pas confirmee**. Tant qu'elle ne l'est pas, les conteneurs de la flotte entrent
-dans le mur par le drapeau explicite que pose `supervise.sh`, et un conteneur lance a la
-main y echappe -- `report_slice_membership()` rend cette evasion **visible** (`EVASION`),
-il ne la corrige pas.
+`~/.docker/daemon.json` et `settings-store.json` de l'hote. Le leurre plat a ete retire de
+la machine le 2026-10-23.
+
+**Etat mesure le 2026-11-11 sur ai-01 : le defaut est ABSENT, le leurre plat est absent, et
+le mur reel est en place et mord.** La mention « pas confirmee » est donc tranchee.
+
+| Ce qui est mesure | Valeur | Source de la mesure |
+|---|---|---|
+| Defaut `cgroup-parent` du daemon Docker Desktop | **absent** -- `HostConfig.CgroupParent` rend `""` sur un conteneur temoin lance sans `--cgroup-parent` | `docker inspect` sur un temoin `alpine`, lance puis supprime |
+| Configuration de l'hote | `~/.docker/daemon.json` ne porte que `builder` et `experimental` ; `settings-store.json` ne porte **aucune** cle `cgroup*` ni `daemonJson` | lecture directe des deux fichiers |
+| Leurre plat `/sys/fs/cgroup/coursia-ci.slice` | **absent** | `ls -d` dans le distro `docker-desktop` |
+| Mur reel `/sys/fs/cgroup/coursia.slice/coursia-ci.slice` | `memory.max` = 66,0 Gio, `memory.high` = 56,0 Gio, `memory.current` = 32,4 Gio, `memory.peak` = 56,0 Gio | lecture des quatre fichiers du cgroup |
+| Le mur mord-il | **oui** : `memory.events.local` rend `high 1402`, `max 0`, `oom 0`, `oom_kill 0` -- le plafond doux a ete franchi 1402 fois, le plafond dur jamais | meme fichier |
+| Conteneurs dans le mur | 20 groupes `docker-*` sous la slice, au moment de la mesure | `ls` du repertoire de la slice |
+
+**Ce que l'absence de defaut change.** Les conteneurs de la flotte entrent dans le mur par
+le drapeau explicite que pose `supervise.sh` -- et la mesure le confirme de bout en bout :
+le mur existe, il contient les groupes de conteneurs, et son plafond doux a ete franchi
+1402 fois depuis la mise en place. Ce qui n'est pas pose n'est donc **pas** le mur : c'est
+l'entree par defaut -- et elle fait l'objet d'une decision, ci-dessous. Un conteneur
+lance a la main pour un debug y echappe toujours --
+`report_slice_membership()` rend cette evasion **visible** (`EVASION`), il ne la corrige pas.
+
+**Decision : le defaut au niveau du daemon est ecarte.** Le geste consistait a poser, dans
+`Settings > Docker Engine` du daemon Docker Desktop d'ai-01, la cle
+`"cgroup-parent": "coursia.slice/coursia-ci.slice"` (le chemin imbrique complet, **jamais**
+le nom plat `coursia-ci.slice`, qui creerait un leurre a la racine de l'arbre cgroup --
+cf. « Le nom plat de `cgroup-parent` » ci-dessus), puis a **redemarrer le moteur**. Il
+n'est pas fait, et le motif est mesure.
+
+Un defaut pose au niveau du daemon s'applique a **tout** conteneur que le daemon cree
+ensuite, sans opt-in et sans exception. Mesure du 2026-11-12 sur ai-01 : **51
+conteneurs en cours** (58 tous etats). Au prochain `compose up` de chacun de ses
+projets, ils entreraient tous sous la slice CI -- le vLLM de la flotte
+`myia_vllm-medium-swift15-27b`, `qdrant_production`, `postgres_production`, les six
+Open WebUI des ecoles, `hermes`, `sk-agent`, `claudish-sidecar`, les WordPress -- et
+partageraient son plafond de 66,0 Gio, celui que la CI se partage deja. Un defaut
+destine a des conteneurs de CI ne peut pas s'appliquer a des services de production : le
+remede serait pire que l'evasion qu'il corrige.
+
+Le mur reste donc pose **explicitement**, la ou il doit l'etre : par le drapeau
+`--cgroup-parent` que `supervise.sh` pose sur les conteneurs de la CI. L'evasion
+residuelle -- un conteneur lance a la main pour un debug -- reste visible, et n'est pas
+corrigee.
+
+**Toute fermeture future de cette evasion passe par le lanceur des conteneurs CI** -- le
+`supervise.sh` de la CI -- et **jamais** par le daemon partage : le daemon n'appartient
+pas a une lane, et le redemarrage du moteur Docker Desktop interromprait les 8 runners de
+la flotte.
+
+**Recette de verification (rejouable, falsifiable).**
+
+```bash
+# Sous Git Bash : sans cet export, MSYS reecrit les chemins `/sys/...` en
+# `C:/Program Files/Git/sys/...` et la commande rend "No such file or directory"
+# -- la MEME reponse qu'un leurre absent. Les etapes 2 a 4 seraient donc
+# lisibles comme un mur absent alors que le mur est en place.
+export MSYS_NO_PATHCONV=1
+
+# 1. le defaut du daemon -- attendu ABSENT : le defaut est ecarte (decision ci-dessus)
+docker run -d --rm --name cgroup-probe alpine sleep 20
+docker inspect cgroup-probe --format '{{.HostConfig.CgroupParent}}'
+docker rm -f cgroup-probe
+
+# 2. controle POSITIF : la commande voit-elle bien l'arbre cgroup ?
+# Attendu : le chemin s'affiche. S'il ne s'affiche pas, l'argument a ete reecrit
+# et tous les resultats ci-dessous sont faux.
+wsl -d docker-desktop -- ls -d /sys/fs/cgroup/coursia.slice
+
+# 3. le leurre plat -- attendu ABSENT
+wsl -d docker-desktop -- ls -d /sys/fs/cgroup/coursia-ci.slice
+
+# 4. le mur reel et son mordant
+wsl -d docker-desktop -- cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/memory.max
+wsl -d docker-desktop -- cat /sys/fs/cgroup/coursia.slice/coursia-ci.slice/memory.events.local
+```
 
 **Ce que la recopie produirait n'est pas ce qui a ete observe.** Le leurre plat constate le
 2026-09-08 existait alors qu'**aucun** `cgroup-parent` par defaut n'etait pose sur Docker
@@ -829,10 +903,36 @@ garde -- ici c'est la **mesure** du noyau qui parle, pas le garde) ; et
 ou un `nr_periods` illisible ne rendent **ni** « passe » **ni** alerte : une
 panne d'instrument ne se confond pas avec une absence de throttling.
 
-Les sept cas du temoin sont exerces dans `ai-01/test-dryrun-sizing-control.sh`
-(section L) : cumul faible, depassement de la borne superieure, depassement
-entre les deux bornes, seuil abaisse (controle negatif du seuil reellement
-lu), `cpu.stat` absent, `nr_periods` illisible.
+Le temoin cumule garde un defaut de sensibilite (#23051, point 2) : son seuil
+est proportionnel a l age de la slice, donc une rafale de 60 s survenue
+aujourd hui passe sous le seuil d une slice de plusieurs semaines. La section
+**4bis-ter** ajoute donc un temoin **par delta** : la lecture precedente est
+datee et conservee hors depot (`COURSIA_DRYRUN_STATE`, sinon
+`%LOCALAPPDATA%\CoursIA`, sinon `/var/lib/coursia`), et le delta des deux
+lectures est confronte a l allocation de la fenetre **exacte** entre elles --
+aucune borne a encadrer, donc un verdict certain dans les deux sens. Trois
+etats egalement : `passe` ; `ALERTE CERTAINE` (sortie 3, elle aussi) ;
+`INDETERMINE` (premiere lecture, etat illisible, horloge non monotone, ou
+compteurs remis a zero : la slice a ete recreee, le delta n a pas de sens). Le
+cumule reste imprime comme borne de long terme ; aucun des deux temoins ne
+remplace l autre. C est le seul fichier que le script ecrit hors de son bundle
+-- il ne configure rien, il date une lecture.
+
+Le refus de surcharge de la section 7 a change de fondement (#23051, point 1) :
+il ne se deduit plus de l ordre lexicographique des noms de drop-ins mais de la
+**valeur effective** mesuree en section 1, attribuee a son fichier. Un drop-in
+lu apres la cible mais ne portant aucune directive de la proposition ne fait
+plus refuser le controle ; un drop-in qui fournit la valeur effective, lui,
+fait toujours refuser -- avec son nom et la valeur mesuree. L attribution
+impossible (valeur effective sans origine relevee, drop-in liste mais
+illisible) reste un refus : fail-closed.
+
+Les cas des temoins sont exerces dans `ai-01/test-dryrun-sizing-control.sh`
+(section L pour le cumule : cumul faible, depassement de la borne superieure,
+depassement entre les deux bornes, seuil abaisse, `cpu.stat` absent,
+`nr_periods` illisible ; section M pour le delta : premiere lecture, alerte,
+controle negatif, compteurs remis a zero, etat corrompu reecrit ; section S
+pour l attribution des surcharges).
 
 ### Le pin du wrapper
 

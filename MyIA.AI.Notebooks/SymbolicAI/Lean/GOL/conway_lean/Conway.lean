@@ -1,6 +1,6 @@
 /-
 Conway hommage : formalisations accessibles de résultats méconnus
-de John Horton Conway (1937-2020).
+de John Horton Conway (1937-2020), sous la convention i18n EPIC #4980.
 
 John Conway a été emporté par la COVID-19 le 11 avril 2020.
 Ce workspace formalise quelques-uns de ses élégants résultats méconnus.

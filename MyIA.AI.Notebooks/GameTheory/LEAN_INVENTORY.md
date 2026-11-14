@@ -15,13 +15,18 @@ lors re-dérivés des lakefiles par `scripts/lean/check_lean_inventory.py`, qui 
 bibliothèque déclarée n'est plus nommée par la carte (contrôle CI :
 `scripts/lean/tests/test_check_lean_inventory.py`).
 
+**Ré-derivation du 2026-11-05 (issue #21765).** Le contrôle CI ci-dessus échouait sur `main`
+depuis le 2026-11-04 : la 9ᵉ `lean_lib` du package `game_theory_lean`, `CongestionGames` (grain
+#24423), n'était pas nommée par la carte. La ligne ci-dessous est re-derivée du lakefile, comme
+les précédentes — le contrôle est le même, et il est vert.
+
 ## Résumé
 
 **Lakes actifs (8)** :
 
 | Répertoire | Toolchain | sorry (production) | Modules | Statut |
 |-----------|-----------|--------------------|---------|--------|
-| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps + Abstraction + ProgramGames + StackelbergBilevel (61 `.lean` FR+EN) | COMPLET (EPIC #4365) |
+| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps + Abstraction + ProgramGames + StackelbergBilevel + CongestionGames + LegalLoophole (70 `.lean` FR+EN) | COMPLET (EPIC #4365) |
 | `lean_game_defs` | v4.33.0 | 0 | 12 (6 FR + 6 `_en`) | COMPLET (defs partagés) |
 | `lean_game_defs_ext` | v4.33.0 | 0 | Bayesian/* 24 (12 FR + 12 `_en`) + 2 umbrellas | COMPLET |
 | `minimax_lean` | v4.33.0 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |
@@ -35,7 +40,7 @@ bibliothèque déclarée n'est plus nommée par la carte (contrôle CI :
 | Répertoire | Devenir |
 |-----------|---------|
 | ~~`cooperative_games_lean`~~ | **Supprimé** (rm #6587) → [`game_theory_lean/CooperativeGames/`](game_theory_lean/CooperativeGames/) |
-| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 4 markdown tombstone |
+| ~~`social_choice_lean`~~ | Absorbé (#6058, 2026-07-11) → [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) — ne subsistent que 3 markdown tombstone |
 | ~~`repeated_games_lean`~~ | Absorbé (#6146) → [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/) — coquille retirée du disque (#4362) |
 
 Note : `SymbolicAI/Lean/examples/llm_assisted_proof.lean` (2 sorry) est un exemple pédagogique, pas du code de production. `asymmetric_information_lean` porte 2 *naive* sorry (prose/docstrings) pour 0 vrai sorry de code.
@@ -60,6 +65,20 @@ jusqu'à la re-derivation du 2026-10-29 (#21765) : `Abstraction` (grain #12204, 
 `ProgramGames` (grain #15176, EPIC #15062 « Math for AI Safety ») et `StackelbergBilevel`
 (grain #21221). Les trois sont `@[default_target]` : `lake build` les compile.
 
+Une quatrième `lean_lib` est venue après cette re-derivation : `CongestionGames` (grain #24423,
+9ᵉ cohorte du package, critère 4 de #21927, le 2026-11-04) — la borne élémentaire 2× du prix de
+l'anarchie pour l'équilibre minimisant le potentiel de Rosenthal. Elle est `@[default_target]`
+comme les trois autres, et n'était pas nommée par la carte : le contrôle CI `check_lean_inventory`
+échouait depuis son merge (voir la re-derivation du 2026-11-05, en tête de document).
+
+Une cinquième suit dans le même mouvement : `LegalLoophole` (grain #25686, 10ᵉ cohorte, distillation
+Lexifina) — modèle jouet « règles fiscales comme jeu formel » : 3 comptes, 4 coups, sémantique
+exécutable `step`/`run` sur `Option`, **volontairement sans Mathlib** (compilable en quelques
+secondes par `lean` seul). Ce n'est pas une absorption : lib neuve, compagnon du carnet
+`GameTheory-23-Loopholes-Fiscaux-Python-Lean`. Contrairement aux neuf autres elle n'est pas
+`@[default_target]` — la jambe CI `gametheory` la couvre via les globs `game_theory_lean/**.lean`
+du manifeste.
+
 **Objectif** : formaliser le curriculum GameTheory — jeux coopératifs (Shapley, cœur), mariage stable de Gale-Shapley, choix social (Arrow, Sen, électeur médian), jeux répétés (théorème folk), chemins d'échange sur jeux ordinaux 2×2, dette d'exploitabilité et abstraction, équilibre en programmes borné, jeu de Stackelberg.
 
 **Toolchain** : v4.33.0 | **Dépendances** : Mathlib4
@@ -74,6 +93,8 @@ jusqu'à la re-derivation du 2026-10-29 (#21765) : `Abstraction` (grain #12204, 
 | `Abstraction/` (1 FR, sans jumeau `_en`) | 0 | dette d'exploitabilité d'un duel 2×2 à coefficients entiers (`dette`, `encadrement`, `dette_nonneg`, `selle_dette_nulle`) ; contre-exemple certifié `raffinement_aggrave_la_dette` — raffiner une abstraction peut aggraver la dette retransportée (grain #12204) |
 | `ProgramGames/` (3 FR + 3 `_en`) | 0 | équilibre en programmes borné (Barasz et al. 2014, arXiv:1401.5577 ; Critch 2016, arXiv:1602.04184) : noyau L1 `outcome_probeBot_probeBot` / `programNash_probeBot_probeBot` / `probeBot_unexploitable_in_family` / `probeBot_exploited_by_exploiterBot` ; agents à budget explicite (`Bounded.lean`) ; FairBot par le théorème de Löb (`FairBot.lean`, `fairBot_fairBot_cooperation`) (grain #15176) |
 | `StackelbergBilevel/` (1 FR, sans jumeau `_en`) | 0 | duopole de Stackelberg en rationnels (demande linéaire, coûts marginaux constants) : réaction de Cournot et point fixe (`cournot_reaction_fixed_point`), forme close du suiveur (`stackelberg_follower_eq_reaction`), avantage du premier entrant (`first_mover_advantage_at_default`) (grain #21221) |
+| `CongestionGames/` (1 FR, sans jumeau `_en`) | 0 | prix de l'anarchie des jeux de congestion atomiques à coûts linéaires, sur `Nat` sans fraction : potentiel de Rosenthal sous forme doublée `Phi' = sum_e a_e x_e (x_e + 1)`, identité d'exactitude (`potential_exchange`), minimiseur du potentiel qui est équilibre de Nash (`minPotential_isNash`), borne `cost_minPotential_le_two` (l'équilibre potentiel-minimal coûte au plus 2× l'optimum social) + deux témoins `decide` (`w2Good`/`w2Bad`, `w3Bad`) (grain #24423) |
+| `LegalLoophole/` (1 FR, sans jumeau `_en`, **sans Mathlib**) | 0 | règles fiscales comme jeu formel (distillation Lexifina, #25686) : comptes cash/traditionnel (pre-tax + basis)/Roth, 4 coups dont la conversion taxée au pro-rata `convertTax = n * pretax / (pretax + basis)`, sémantique exécutable `step`/`run` sur `Option` ; `wealth_conservation` (aucun coup ne crée d'argent), `cash_floor` → `roth_ceiling` (le Roth final est plafonné par l'état initial + budget annuel, à toute profondeur), `backdoor_exists`/`backdoor_optimal` (le témoin non-déductible + conversion atteint exactement le plafond sans taxe : optimal) + deux `#eval` témoins (IRA vide : taxe 0 ; IRA sale : pro-rata 2) |
 
 **Compilation** : `lake build` — SUCCESS. CI : `lean-ci-matrix.yml` (clé `gametheory`, qui couvre aussi `SocialChoice/`).
 
@@ -83,6 +104,8 @@ jusqu'à la re-derivation du 2026-10-29 (#21765) : `Abstraction` (grain #12204, 
 - `bondareva_shapley` (`Core.Nonempty ↔ Balanced`) — prouvé intégralement, aucun axiome ajouté (tranches compactes + Weierstrass, #3954)
 - `grim_trigger_sustains_iff` — FORMAL-CERTIFIED, 0 sorry
 - `raffinement_aggrave_la_dette` / `programNash_probeBot_probeBot` / `stackelberg_follower_eq_reaction` — théorèmes-phare des trois libs ajoutées après le 2026-08-26 (`Abstraction`, `ProgramGames`, `StackelbergBilevel`), tous 0 sorry (`distinct_code_sorry = 0` par module, instrument canonique)
+- `cost_minPotential_le_two` — théorème-phare de `CongestionGames` (grain #24423) : l'équilibre qui minimise le potentiel de Rosenthal coûte au plus deux fois l'optimum social, en entier sur `Nat` ; 0 sorry (`distinct_code_sorry = 0` par module, instrument canonique)
+- `backdoor_optimal` — théorème-phare de `LegalLoophole` (grain #25686) : la séquence backdoor (contribution non déductible puis conversion) atteint exactement le plafond de `roth_ceiling` sans payer de taxe — témoin et borne coïncident, le plan trouvé par la recherche bornée est optimal ; 0 sorry, 0 axiome ad hoc, sans Mathlib
 
 ---
 
@@ -110,7 +133,7 @@ MechanismDesign, SortedListCounting) ont été absorbés byte-identique dans
 [`game_theory_lean/SocialChoice/`](game_theory_lean/SocialChoice/) (FR canonique + miroirs
 `_en.lean` Pattern A #4980). **Ce répertoire n'est plus un lake** — la coquille technique
 (`lakefile.lean`, `lean-toolchain`, `lake-manifest.json`) a été retirée ; ne subsistent que
-4 markdown (`README`, `STATUS`, `NOTICE`, `LEAN_PREREQUISITES`) conservés comme tombstone.
+3 markdown (`README`, `STATUS`, `LEAN_PREREQUISITES`) conservés comme tombstone.
 
 **Statut (historique, préservé dans le home canonique)** : COMPLET, 0 sorry — impossibilité
 d'Arrow (Geanakoplos 2005), paradoxe libéral de Sen, électeur médian / Split Cycle / clones,
@@ -150,7 +173,7 @@ modules sources (`Stage`, `Discounting`, `GrimTrigger`, `Folk`) ont été absorb
 byte-identique dans [`game_theory_lean/RepeatedGames/`](game_theory_lean/RepeatedGames/).
 Ce répertoire est conservé comme **coquille archive** : `package`, `require mathlib`,
 manifest et documentation restent présents, mais la `lean_lib` est neutralisée dans le
-`lakefile.lean` (ses globs matchaient 0 fichier depuis le déménagement). Certification et
+`lakefile.lean` (ses globs ne matchaient plus aucun fichier depuis le déménagement). Certification et
 build repris par `game_theory_lean` (`.github/workflows/lean-ci-matrix.yml`, clé `gametheory`).
 
 **Statut (historique, préservé dans le home canonique)** : `grim_trigger_sustains_iff`
@@ -300,7 +323,7 @@ Folk (`folk_theorem_discounted`) porte 1 sorry stretch, toléré au titre de #48
 
 | Projet | Décision | Justification |
 |---------|----------|-----------|
-| game_theory_lean | COMPLET | 1 sorry (stretch Folk, toléré #4880). StableMarriage : anciens énoncés faux réfutés, `exists_isManOptimal` honnête prouvé ; Lattice fermé. A absorbé `stable_marriage_lean/` + `cooperative_games_lean/` + `social_choice_lean/` + `repeated_games_lean/` (EPIC #4365) ; porte en outre `Abstraction`, `ProgramGames` et `StackelbergBilevel` (0 sorry chacune). |
+| game_theory_lean | COMPLET | 1 sorry (stretch Folk, toléré #4880). StableMarriage : anciens énoncés faux réfutés, `exists_isManOptimal` honnête prouvé ; Lattice fermé. A absorbé `stable_marriage_lean/` + `cooperative_games_lean/` + `social_choice_lean/` + `repeated_games_lean/` (EPIC #4365) ; porte en outre `Abstraction`, `ProgramGames`, `StackelbergBilevel`, `CongestionGames` et `LegalLoophole` (0 sorry chacune). |
 | ~~cooperative_games_lean~~ | **Supprimé** (rm #6587) | Absorbé byte-identique dans `game_theory_lean/CooperativeGames/`. |
 | ~~social_choice_lean~~ | **Absorbé** (#6058) | → `game_theory_lean/SocialChoice/` ; docs tombstone uniquement. |
 | ~~repeated_games_lean~~ | **Absorbé** (#6146) | → `game_theory_lean/RepeatedGames/` ; coquille retirée du disque (#4362). |

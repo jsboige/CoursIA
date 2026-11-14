@@ -251,14 +251,32 @@ jobs:
       # (runs of 2026-08-09). This swap step stays as cheap insurance against a
       # future cache-miss peak; it is no longer the only mitigation. The same
       # commit elaborates clean on WSL (`lake build` exit 0) — the ceiling was
-      # the runner's 16 GB RAM, not the proof. /mnt on ubuntu-latest carries
-      # ~70 GB free, so 32 G is affordable; `df -h /mnt` keeps that auditable.
+      # the runner's 16 GB RAM, not the proof. /mnt sits on /dev/root, so the
+      # swap is sized from its free space, capped at 32 G (2026-11-04).
       run: |
-        df -h /mnt
-        sudo fallocate -l 32G /mnt/lean-swap
-        sudo chmod 600 /mnt/lean-swap
-        sudo mkswap /mnt/lean-swap
-        sudo swapon /mnt/lean-swap
+        df -h /mnt / || true
+        # Size the swap from the free space really left on its filesystem.
+        # /mnt sits on /dev/root on hosted runners (145G, 84G free measured
+        # 2026-11-04): a fixed 32G fallocate starved runners with less room,
+        # which died "No space left on device" a minute in. Keep 30G for the
+        # toolchain, the Mathlib cache and the build; cap the swap at 32G.
+        avail_g=$(df --output=avail -BG /mnt 2>/dev/null | tail -n 1 | tr -dc '0-9' || true)
+        if [ -z "$avail_g" ]; then
+          echo "::warning title=Lean swap skipped::df could not read the free space on /mnt"
+        else
+          swap_g=$(( avail_g - 30 ))
+          if [ "$swap_g" -gt 32 ]; then swap_g=32; fi
+          if [ "$swap_g" -lt 4 ]; then
+            echo "::warning title=Lean swap skipped::${avail_g}G free on /mnt, under 34G (4G swap + 30G build reserve)"
+          elif sudo fallocate -l "${swap_g}G" /mnt/lean-swap; then
+            sudo chmod 600 /mnt/lean-swap
+            sudo mkswap /mnt/lean-swap
+            sudo swapon /mnt/lean-swap
+          else
+            sudo rm -f /mnt/lean-swap
+            echo "::warning title=Lean swap skipped::fallocate of ${swap_g}G failed on /mnt"
+          fi
+        fi
         free -h
 
     - name: Authenticate lake's git clones
@@ -385,6 +403,18 @@ jobs:
         display-name: ${{ matrix.display-name }}
         sorry-baseline: ${{ matrix.sorry-baseline }}
         sorry-filter-mode: ${{ matrix.sorry-filter-mode }}
+        # #23247 (portage matriciel, conway 2026-11-08) : cap optionnel par
+        # lake, cle `build-threads` du manifeste, passee a l'input composite
+        # `build-jobs` (son nom declare -- un appel sous `build-threads` est
+        # IGNORE avec un simple warning, mesure au run 42475534833 : le cap
+        # "1" de conway ne posait pas LEAN_NUM_THREADS ; ce run s'est arrete
+        # avant le build. Absente = '' -> le composite garde son defaut (tous les
+        # coeurs) : comportement exact des 35 entrees sans la cle. conway_lean
+        # la pose a "1" : depuis le 26/10, chaque run main meurt par OOM
+        # d'elaboration sans -j1 (pics 13,3 GiB > plafond 16 Go
+        # d'ubuntu-latest, exit 143) -- la migrer sans le cap, c'est rougir
+        # chaque build du lake sans avoir touche une preuve.
+        build-jobs: ${{ matrix.build-threads || '' }}
     # Proof integrity (B.3) sur le chemin matriciel (#17336, template de
     # l'EPIC #17287) : opt-in par cle du manifeste -- une entree SANS
     # `axiom-target-modules` s'interpole en '' et le step est saute (les 19
@@ -404,6 +434,19 @@ jobs:
         allow-axioms: ${{ matrix.axiom-allow-axioms || '' }}
         fail-on-sorry: ${{ matrix.axiom-fail-on-sorry || 'true' }}
         include-i18n-siblings: ${{ matrix.axiom-include-i18n-siblings || 'false' }}
+    # Le wrapper lean-conway.yml portait aussi une seconde jambe, bloquante,
+    # sur les deux modules showcase. Les trois cles restent optionnelles :
+    # hors conway, une valeur matricielle absente interpole en '' et le step
+    # est saute, sans modifier le profil advisory existant.
+    - name: Proof integrity blocking (${{ matrix.display-name }})
+      if: matrix.axiom-blocking-target-modules != ''
+      uses: ./.github/actions/lean-axiom
+      with:
+        project-path: ${{ matrix.project-path }}
+        display-name: ${{ matrix.display-name }} (blocking)
+        target-modules: ${{ matrix.axiom-blocking-target-modules }}
+        allow-axioms: ${{ matrix.axiom-blocking-allow-axioms || '' }}
+        fail-on-sorry: ${{ matrix.axiom-blocking-fail-on-sorry || 'true' }}
     # Contrat certifie (#17374, herite du wrapper lean-social-choice.yml
     # supprime) : opt-in par cle `certified-subdir` du manifeste -- une entree
     # sans la cle saute le step (comportement exact des autres lakes). Porte

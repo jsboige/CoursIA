@@ -37,6 +37,17 @@ Usage :
     python scripts/lean/lean_theorem_duplicates.py --write      # regenere la page
     python scripts/lean/lean_theorem_duplicates.py --check      # exit 1 si derive
     python scripts/lean/lean_theorem_duplicates.py --df-max 8
+
+Garde de derive d'arbre (`--ref`, `--require-fresh`) :
+    `git ls-files` mesure l'**index de l'arbre courant**, pas une reference. Sur
+    un arbre de travail en retard, l'organe mesure donc des fichiers que la
+    reference n'a plus -- et le tableau se remplit de paires qui n'existent
+    nulle part ailleurs (lacs fantomes). Constat mesure du 09/11/2026 sur
+    #24183 : **415 lignes** depuis l'arbre partage contre **49** depuis un
+    arbre a `origin/main`, sans un mot d'avertissement. L'organe compare
+    desormais sa population a celle de `--ref` (defaut `origin/main`) et
+    avertit sur **stderr** -- la page commitee reste byte-identique, donc le
+    gate `--check` n'est pas couple a la fraicheur de l'arbre local.
 """
 
 from __future__ import annotations
@@ -155,6 +166,129 @@ def git_paths(*patterns: str) -> list[str]:
     """Les chemins git correspondant aux motifs (population mesuree)."""
     out = _git("ls-files", "-z", *patterns)
     return [p for p in out.split("\0") if p]
+
+
+def _git_opt(*args: str) -> str | None:
+    """Comme `_git`, mais distingue l'echec de la sortie vide.
+
+    `_git` rend `""` aussi bien quand la commande echoue que quand elle ne rend
+    rien. Pour une garde de derive, confondre les deux ferait passer une
+    reference illisible pour une reference vide : tous les fichiers mesures
+    seraient alors declares « absents de la reference ». La sonde rend donc
+    `None` sur echec, et l'appelant traite ce cas comme NON MESURE.
+    """
+    try:
+        r = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+        )
+    except OSError:
+        return None
+    if r.returncode != 0:
+        return None
+    return r.stdout
+
+
+DEFAULT_UPSTREAM = "origin/main"
+
+
+def drift_between(measured: list[str], upstream: list[str]) -> list[str]:
+    """Chemins MESURES absents de la reference, tries.
+
+    Fonction pure (ni disque ni git) : c'est elle que le test exerce. La derive
+    d'arbre est un ensemble, pas un compte -- deux arbres differents peuvent
+    mesurer le meme nombre de fichiers.
+    """
+    return sorted(set(measured) - set(upstream))
+
+
+def measured_lean_paths() -> list[str]:
+    """Les `.lean` que `collect()` va reellement mesurer (meme filtre)."""
+    return [
+        p
+        for p in git_paths("*.lean")
+        if not any(marker in p for marker in EXCLUDED_MARKERS)
+    ]
+
+
+def upstream_lean_paths(ref: str = DEFAULT_UPSTREAM) -> list[str] | None:
+    """Les `.lean` de la reference distante, ou `None` si elle est illisible.
+
+    `git ls-tree` lit l'ARBRE de la reference, la ou `git ls-files` lit l'INDEX
+    de l'arbre courant ; c'est cette difference qui rend la derive mesurable.
+
+    Le filtrage se fait **en Python, pas par pathspec**. Mesure du 09/11/2026
+    sur git 2.51.0.windows.1 : `git ls-tree -r <ref> -- '*.lean'` rend **0**
+    fichier alors que l'arbre en porte 924, et `-- 'CLAUDE*'` rend 0 la ou
+    `-- 'CLAUDE.md'` en rend 1 -- les pathspecs a wildcard sont **inertes** sur
+    cet `ls-tree` (un chemin litteral, lui, fonctionne). Un filtre `*.lean`
+    pose ici aurait donc declare la totalite de la population « absente de la
+    reference », c'est-a-dire accuse l'arbre a tort, en silence. On liste tout
+    et on filtre soi-meme : aucun wildcard ne peut plus mentir par vide.
+
+    Une liste **vide** est traitee comme NON MESUREE (`None`) : un depot qui
+    porte des fichiers `.lean` mesures n'a pas zero fichier `.lean` en amont,
+    donc le vide dit l'echec de la sonde, pas une reference vide.
+    """
+    out = _git_opt("ls-tree", "-r", "--name-only", ref)
+    if out is None:
+        return None
+    paths = [p for p in out.splitlines() if p]
+    if not paths:
+        return None
+    return [p for p in paths if p.endswith(".lean")]
+
+
+def tree_drift(ref: str = DEFAULT_UPSTREAM) -> tuple[int, list[str]] | None:
+    """(nombre de mesures, chemins absents de la reference), ou `None`.
+
+    `None` = reference illisible : la fraicheur n'est pas prouvable, ce qui
+    n'est PAS la meme chose qu'une absence de derive.
+    """
+    measured = measured_lean_paths()
+    upstream = upstream_lean_paths(ref)
+    if upstream is None:
+        return None
+    return len(measured), drift_between(measured, upstream)
+
+
+def warn_if_stale(ref: str = DEFAULT_UPSTREAM, require_fresh: bool = False) -> int:
+    """Avertit sur STDERR quand l'arbre mesure derive de la reference.
+
+    Ecrit sur `stderr` et jamais sur `stdout` : la page commitee est comparee
+    octet a octet par `--check`, et coupler la garde de derive a cette page
+    ferait rougir le gate sur un simple retard d'arbre local.
+
+    Rend 0 en temps normal, 1 seulement sous `--require-fresh` : la garde est
+    informative par defaut, bloquante sur demande explicite.
+    """
+    drift = tree_drift(ref)
+    if drift is None:
+        print(
+            "AVERTISSEMENT : reference `%s` illisible (clone superficiel ou ref"
+            " absente) ; la fraicheur de l'arbre n'est pas prouvable." % ref,
+            file=sys.stderr,
+        )
+        return 1 if require_fresh else 0
+    total, absent = drift
+    if not absent:
+        return 0
+    print(
+        "AVERTISSEMENT : %d fichier(s) `.lean` mesures ici sont ABSENTS de `%s`"
+        " (sur %d mesures). L'arbre de travail est en retard sur la reference :"
+        " la mesure porte sur des fichiers que la reference n'a plus (lacs"
+        " fantomes compris). Relancer depuis un arbre a jour avant de conclure."
+        % (len(absent), ref, total),
+        file=sys.stderr,
+    )
+    for path in absent[:5]:
+        print("  absent de %s : %s" % (ref, path), file=sys.stderr)
+    if len(absent) > 5:
+        print("  ... et %d autre(s)" % (len(absent) - 5), file=sys.stderr)
+    return 1 if require_fresh else 0
 
 
 def _deaccent(text: str) -> str:
@@ -577,20 +711,18 @@ def render_section(pairs: list[dict], df_max: int, min_containment: float) -> li
                 )
             )
         lines.append("")
-    lines.append("Detail des paires (fichier et ligne) :")
+    lines.append("Detail des paires (fichier et declaration) :")
     lines.append("")
     for p in pairs:
         lines.append(
-            "- **%.2f** -- `%s` (%s:%d) et `%s` (%s:%d) -- nom %.2f /"
+            "- **%.2f** -- `%s` (%s) et `%s` (%s) -- nom %.2f /"
             " docstring %.2f / enonce %.2f / termes %s"
             % (
                 p["score"],
                 p["name"],
                 p["a"]["path"],
-                p["a"]["line"],
                 p["other_name"],
                 p["b"]["path"],
-                p["b"]["line"],
                 p["name_containment"],
                 p["doc_sim"],
                 p["stmt_sim"],
@@ -673,7 +805,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="echoue (1) quand la page regeneree differe de l'arbre",
     )
+    parser.add_argument(
+        "--ref",
+        default=DEFAULT_UPSTREAM,
+        help="reference de comparaison pour la garde de derive (defaut : %s)"
+        % DEFAULT_UPSTREAM,
+    )
+    parser.add_argument(
+        "--require-fresh",
+        action="store_true",
+        help="echoue (1) quand l'arbre mesure derive de --ref, ou quand --ref"
+        " est illisible (fraicheur non prouvable)",
+    )
     args = parser.parse_args(argv)
+
+    # La garde passe AVANT la collecte : elle coute un `ls-tree`, et un arbre
+    # en retard fausse le resultat qu'on s'apprete a produire.
+    stale = warn_if_stale(args.ref, args.require_fresh)
+    if stale:
+        return stale
 
     decls = collect(include_mirrors=args.include_mirrors)
     df = document_frequency(decls)

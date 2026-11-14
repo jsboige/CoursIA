@@ -45,7 +45,7 @@ layout: section
 
 ## Duree totale estimee
 
-**~11 heures** (14 notebooks, 15 min a 2h chacun)
+**~11 heures** (15 min a 2h par carnet)
 
 ---
 layout: section

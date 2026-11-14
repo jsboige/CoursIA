@@ -1,0 +1,10 @@
+- name: "NLP-04 PCFG CYK"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les trois parseurs NLTK sont appelés directement en Python et via Python.NET en C# ; les algorithmes pédagogiques sont propres à chaque carnet."
+  known_differences:
+    - "C# réalise la conversion, CYK, inside et Viterbi en BCL et utilise Python.NET pour les témoins NLTK ; Python utilise directement NLTK."
+    - "Les figures Python utilisent Matplotlib ; le twin C# utilise des SVG statiques."

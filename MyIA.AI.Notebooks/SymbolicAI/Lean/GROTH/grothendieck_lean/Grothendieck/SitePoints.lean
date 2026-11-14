@@ -328,7 +328,7 @@ l'API Mathlib (pattern winner L902 ★★ Tier 5) : args résidents
 instances structurelles uniquement, zéro constructeur polymorphe d'univers.
 
 Universe note (leçon c.1301+143-L1) : `Point.{w} J` vit dans
-`Type (max (max u v) (w + 1))` — le 3ᵉ univers `w` est celui des fibres
+`Type (max (max u v) (w + 1))` — le troisième univers `w` est celui des fibres
 (`Φ.fiber : C ⥤ Type w`). Le foncteur fibre préfaisceau exige en sus la
 cocomplétude de la cible (`HasColimitsOfSize`), que la catégorie des types
 `Type (max u w)` satisfait toujours ; il est `noncomputable` (le colimite

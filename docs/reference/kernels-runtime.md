@@ -1,5 +1,7 @@
 # Kernels & Runtime — Cluster CoursIA
 
+> REFERENCE — vivante — dernière révision 2026-11-14
+
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
 **Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026, po-2027, po-2028) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
@@ -14,7 +16,7 @@ Notebooks dans `SymbolicAI/SemanticWeb/`, `SymbolicAI/SmartContract/`, `Search/`
 
 | Prerequis | Version | Verification |
 |-----------|---------|-------------|
-| .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
+| .NET SDK | 8.0 + 9.0 + 10.0 (10.0 requis par `dotnet restore dotnet/MyIA.CoursIA.sln` : cinq projets `net10.0`) | `dotnet --list-sdks` |
 | dotnet-interactive | **1.0.712001** (canon depuis le 02/10/2026, decision #18766 — historique ci-dessous) | `dotnet interactive --version` |
 | Jupyter kernels `.net-csharp`, `.net-fsharp`, `.net-powershell` | auto-installes | `jupyter kernelspec list` |
 
@@ -70,7 +72,7 @@ Chaque ligne est une **mesure firsthand de la machine**, jamais une deduction d'
 | `myia-po-2025` | **1.0.712001** | 2026-10-02 | `dotnet tool list -g` — conforme, aucune mise a niveau requise |
 | `myia-po-2026` | **1.0.712001** | 2026-10-05 (re-mesure) | `dotnet tool list -g` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` |
 | `myia-ai-01` | **1.0.712001** (outil **global**) | 2026-10-19 (re-mesure) | `dotnet tool list -g` = `microsoft.dotnet-interactive 1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026 et po-2027**, sur une troisieme machine. Execution reelle via le kernelspec `.net-csharp` **global** (dont l'`argv` est `dotnet interactive jupyter`, donc l'outil global) : probe `#load` + appel, **SUCCES** (`Greet says: Hello from helper.cs`), et `language_info.version` = `13.0` — **aucun drift `13.0 -> 14.0`** sous le nouveau canon. La commande machine-globale, due au **coordinateur**, a ete jouee depuis le 2026-10-02 : l'etat « outil global encore `1.0.617701` » consigne dans la mesure du 2026-10-02 est **perime**. Le `ArgumentNullException` #8485 reste **non reproduit** |
-| `myia-po-2027` | **1.0.712001** | 2026-10-09 | mesure firsthand par sa lane, **avant / apres reparation** — l'outil **global** portait `1.0.617701`, l'ancien canon : une **divergence non signalee de plus**, du meme type que celle de po-2024 avant le de-pin. Reparee par `dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` (regle F ; les 3 noyaux `.net-csharp`/`.net-fsharp`/`.net-powershell` re-enregistres). Apres reparation, les **deux** mesures concordent : `dotnet tool list -g` = `1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026**, sur une autre machine et une autre lane. Cette machine est celle du bug `#r "nuget:"` documente sous l'ancien canon ([`dotnet-restore-rfc-17361.md`](dotnet-restore-rfc-17361.md)) : ce bug n'est **pas** re-teste ici |
+| `myia-po-2027` | **1.0.712001** | 2026-10-09 | mesure firsthand par sa lane, **avant / apres reparation** — l'outil **global** portait `1.0.617701`, l'ancien canon : une **divergence non signalee de plus**, du meme type que celle de po-2024 avant le de-pin. Reparee par `dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` (regle F ; les 3 noyaux `.net-csharp`/`.net-fsharp`/`.net-powershell` re-enregistres). Apres reparation, les **deux** mesures concordent : `dotnet tool list -g` = `1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026**, sur une autre machine et une autre lane. Cette machine est celle du bug `#r "nuget:"` documente sous l'ancien canon ([`2026-09-25-dotnet-restore-rfc-17361.md`](../transients/2026-09-25-dotnet-restore-rfc-17361.md)) : ce bug n'est **pas** re-teste ici |
 | `myia-po-2028` | **1.0.712001** | 2026-10-20 | `dotnet tool list -g` = `microsoft.dotnet-interactive 1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build** que po-2026, po-2027 et ai-01, sur un poste livre **vierge cote dev** dont la toolchain a ete remontee de zero (`jsboige/CoursIA#21603`) ; SDKs 8.0.426 / 9.0.319 / 10.0.402 installes per-user. **Reserve posee le 2026-10-20, levee par re-mesure le 2026-10-23** : ce jour-la, sous ce **meme** build, l'execution reelle y emettait `language_info.version` = **`12.0`** la ou ai-01 mesure `13.0`. La re-mesure du 2026-10-23 rend **`13.0`** par les **deux** chemins — execution canonique (`notebook_tools.py execute --kernel .net-csharp`) et handshake `kernel_info` — sur un carnet neuf ; sous le meme build, les variables de l'epoque sont re-testees **inertes**. Le `12.0` ne se reproduit donc plus, et la cause du 2026-10-20 reste **non etablie** — **critere 1 de #21691 clos le 2026-10-29 par epuisement des configurations de demarrage**, la cause etant declaree irreductible avec sa preuve (meme section). Un **autre** defaut, reel et bloquant, a en revanche ete mesure et repare ce jour-la : le muxer `dotnet` en tete de PATH machine n'a **aucun `sdk/`**. Detail, reproduction et hypothese non prouvee : [po-2028](#po-2028-inventaire-kernels-2026-10-20), suivi **#21691** |
 
 **Etat de l'acceptance de #18766** : le canon est **unique** et documente ici — oui ; **les machines de la flotte sont conformes par mesure** (`po-2023`, `po-2024`, `po-2025`, `po-2026`, `po-2027`, `po-2028` depuis le 2026-10-20, et `ai-01` depuis la re-mesure du 2026-10-19). La derniere ligne qui restait non mesuree — `ai-01`, dont l'outil global portait encore l'ancien canon au 2026-10-09 — est **desormais mesuree et conforme** : l'outil global porte le canon, l'execution reelle d'un carnet .NET via le kernelspec global passe, et le stamp `language_info.version` confirme `13.0`. Les deux cases d'acceptance sont donc tenues : la matrice est publiee, et le canon est unique et tenu par mesure sur chaque machine — il ne l'est plus « par confiance de compte », ce qui est exactement le mecanisme qui avait laisse la divergence vivre trois semaines.
@@ -138,6 +140,28 @@ grep -o 'id="Microsoft.CodeAnalysis[^"]*" version="[^"]*"' \
 
 **Piege de diagnostic adjacent** : sur cet hote (32 threads), un notebook .NET non borne en threads OpenMP part en timeouts de cellule qui *ressemblent* a un blocage kernel. `OMP_NUM_THREADS=4` a ramene ce meme notebook de **6 380,9 s (7 cellules en timeout a 900 s)** a **14,8 s** — facteur **x431**. Borner les threads **avant** de conclure a un hang. Les executeurs du depot (`dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `NotebookExecutor.execute_with_papermill`) exportent desormais `OMP_NUM_THREADS`/`OPENBLAS_NUM_THREADS`/`MKL_NUM_THREADS=4` par defaut avant de lancer le kernel (#11111) ; une valeur deja posee dans l'environnement gagne (surcharge explicite pour ne pas brider une machine ou c'est voulu). `wsl_papermill.py` reste hors de ce mecanisme : l'environnement Windows ne traverse pas la frontiere `wsl.exe`.
 
+### Bug `#r "nuget:"` du canon 1.0.617701 : reparation a la demande, **jamais** de conversion de masse
+
+Sous l'ancien canon, une cellule portant `#r "nuget: ..."` peut lever a la restauration :
+
+```
+System.ArgumentException: Must provide errors when succeeded is false
+  at Microsoft.DotNet.Interactive.PackageManagement.PackageRestoreResult..ctor(...)
+```
+
+et bloquer la re-execution du carnet. Le defaut est **non deterministe** (3 reproductions le 2026-09-22 sur po-2027, aucune sur cache chaud ni cache froid le lendemain), et il **n'a pas ete re-teste sous le canon 1.0.712001** : le rencontrer aujourd'hui commence donc par la mesure de version contre le canon (matrice « Conformite flotte au canon », ci-dessus).
+
+**Remede, a la demande** : precharger les packages en assemblies plates puis referencer le fichier local.
+
+```bash
+python scripts/ci/dotnet_preload_packages.py QuikGraph==2.5.0
+# puis dans la cellule :  #r "./_deps/QuikGraph.dll"
+```
+
+**Ce qu'il ne faut PAS en faire** : une conversion de masse des carnets vers `#r "./_deps/..."`. Le pilote du 2026-09-25 (`CSP-1-Fundamentals-CSharp.ipynb`) a mesure les trois bras — nuget d'origine 19/19 OK, local seul 16/19 (`Could not locate ikvm home path`), mixte 15/19 (`MSB4036 IkvmResolveNearestRuntimeIdentifier introuvable`). Les packages IKVM ont besoin du **graphe de restauration NuGet** que `_deps/` ne reconstitue pas, et `_deps/` est gitignore : une conversion generalisee casserait de facon **deterministe** tout clone neuf, pour un bug intermittent. L'outil est un **remede de reparation ponctuelle**, pas une migration.
+
+Recit complet, 5 probes, mesures des trois bras : [`2026-09-25-dotnet-restore-rfc-17361.md`](../transients/2026-09-25-dotnet-restore-rfc-17361.md).
+
 ### Divergence po-2024 du 2026-08-16 (#11157) : le pin n'etait jamais installe
 
 L'ecart « le meme notebook ML-3 AutoML passe sur po-2024 et echoue sur ai-01 » (#11157) n'etait **ni le notebook ni le cache NuGet** : les deux machines ne tournaient pas le meme kernel. Etat mesure firsthand sur po-2024 le 2026-08-16 matin : le tool store ne contenait **que** `1.0.712001` (Roslyn `Microsoft.CodeAnalysis.CSharp.dll` FileVersion `5.0.25.56712`, hote `tools/net10.0/any/`) — le pin `1.0.617701` n'y avait jamais ete installe. Le kernelspec resout via PATH vers ce build derive, sans qu'aucun `dotnet interactive --version` de routine ne signale l'ecart (il faut comparer au pin, pas seulement verifier que la commande repond).
@@ -156,9 +180,183 @@ dotnet interactive jupyter install
 
 Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte : matrice tenue a jour dans [Conformite flotte au canon](#conformite-flotte-au-canon--matrice-machine-x-version) (au 2026-10-09 : `po-2023`/`po-2024`/`po-2025`/`po-2026`/`po-2027` conformes par mesure — `po-2027` l'a ete apres reparation, sa mesure ayant d'abord trouve l'ancien canon installe ; `ai-01` canon teste en isole mais outil global encore sur l'ancien pin. **Mise a jour 2026-10-19** : `ai-01` est desormais mesuree elle aussi — l'outil **global** porte le canon et l'execution reelle d'un carnet .NET via le kernelspec global passe : la derniere ligne non mesuree de la matrice est close).
 
+## Relevé (python, numpy) par kernelspec — le nom ne dénote pas l'environnement (#24883)
+
+**Pourquoi cette table existe.** Un nom de kernelspec ne dénote pas un environnement : deux sièges peuvent déclarer le même nom pour des tuples `(python, numpy)` différents, et un même environnement peut répondre à plusieurs noms (mesuré dans les deux sens ci-dessous). Une consigne de re-exécution nomme donc toujours un **tuple mesuré et publié**, jamais un label seul — c'est le critère de fermeture de #24883 (suite de #23997, qui couvre les pointeurs morts sous `%TEMP%`, une classe distincte).
+
+**Sonde (aucune valeur déclarée, tout est mesuré au lancement)** : pour chaque kernelspec de `jupyter kernelspec list --json`, lire `argv[0]` du `kernel.json`, puis exécuter cet exécutable :
+
+```bash
+<argv0> -c "import sys; print(sys.version.split()[0]); import numpy; print(numpy.__version__)"
+```
+
+### MYIA-PO-2023 (mesuré 2026-11-08T20:19Z — rangée d'origine : #24883, commentaire `6726598127`)
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet) | - | `dotnet` |
+| `acestep` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\acestep\python.exe` |
+| `acestep-venv` | 3.11.15 | 2.4.4 | `D:\envs\acestep-venv\Scripts\python.exe` |
+| `argu-reexec-310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `arviz11-py312` | 3.12.10 | 2.5.3 | `D:\Dev\venvs\arviz11-py312\Scripts\python.exe` |
+| `bonsai-gpu` | 3.11.15 | 2.4.4 | `C:\Users\jsboi\.conda\envs\bonsai\python.exe` |
+| `chc-py312` | 3.12.10 | 2.5.3 | `C:\Users\jsboi\.venvs\chc-py312\Scripts\python.exe` |
+| `cogvideox` | 3.13.3 | 2.4.4 | `C:\Tools\venv-cogvideox\Scripts\python.exe` |
+| `coursia-gpu-tests` | 3.11.15 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-gpu-tests\python.exe` |
+| `coursia-ml-training` | 3.11.16 | 2.4.6 | `C:\Users\jsboi\.conda\envs\coursia-ml-training\python.exe` |
+| `coursia-py313-argu` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `dia-tts` | 3.10.20 | 2.2.6 | `C:\Users\jsboi\.conda\envs\dia-tts\python.exe` |
+| `gametheory-wsl` / `python3-wsl` / `lean4-wsl` | non-Python (wsl) | - | `wsl` |
+| `gsplat310` | 3.10.22 | 2.2.6 | `C:\Users\jsboi\.conda\envs\gsplat310\python.exe` |
+| `mcp-jupyter-py310` | 3.10.18 | 1.26.0 | `C:\Users\jsboi\.conda\envs\mcp-jupyter-py310\python.exe` |
+| `py313-clean` | 3.13.3 | 2.3.5 | `D:\Dev\venvs\py313-clean\Scripts\python.exe` |
+| `pyphi` | 3.9.25 | 1.26.4 | `C:\Users\jsboi\.conda\envs\pyphi\python.exe` |
+| `python3` | 3.13.16 | 2.5.2 | `C:\Users\jsboi\.conda\envs\coursia-canonical\python.exe` |
+| `python3-lean` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
+| `sheetsage2-gpu` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\sheetsage2\Scripts\python.exe` |
+| `smartcontracts` | 3.13.3 | 2.3.5 | `C:\Python313\python.exe` |
+| `trl-probe` | 3.13.3 | 2.5.3 | `D:\Dev\venvs\trl-probe\Scripts\python.exe` |
+
+**Canon de re-exécution po-2023** : `python3` → **(3.13.16, numpy 2.5.2)**, conda `coursia-canonical`. Quatre specs de la classe #23997 (`cleanenv-k`, `py3137`, `coursia-venv-21078`, `qdrant120`) ont été **retirées** au passage du relevé (pointeurs morts sous `%TEMP%`, 0 consommateur sur `main`, `kernel.json` sauvegardés avant retrait).
+
+### MYIA-PO-2028 (mesuré 2026-11-05T21:50Z — rangée d'origine : #24883, commentaires `6670474664` et `6670983139` pour la réparation `py311-po2028`)
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
+| `coursia-canonical` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `coursia-ml-training` | 3.12.15 | 2.5.4 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training/python.exe` |
+| `coursia-ml-training-py310` | 3.10.22 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/coursia-ml-training-py310/python.exe` |
+| `coursia-pymc` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `lean4-wsl` / `lean4-wsl-perc` / `python3-wsl` | non-Python (wsl) | - | wsl |
+| `py311-po2028` | 3.11.17 | 2.4.6 | `C:\Users\jsboi\.venvs\py311-po2028\Scripts\python.exe` — **réparé le 05/11** (venv reconstruit hors `%TEMP%`, règle F ; tuple d'origine : venv cassé sous `%TEMP%`, numpy AttributeError) |
+| `pymc-528` | 3.12.16 | 2.4.6 | `C:/Users/jsboi/miniconda3/envs/pymc528/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.23.5 | `C:/Users/jsboi/miniconda3/envs/pyphi/python.exe` |
+| `python3` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter/python.exe` |
+| `python3-lean` | 3.13.16 | 2.2.6 | `C:/Users/jsboi/miniconda3/envs/mcp-jupyter-py313/python.exe` |
+
+**Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
+
+### MYIA-PO-2024 (mesuré 2026-11-14T02:30Z, re-mesuré 2026-11-14T04:02Z après réparation des enregs morts — heure UTC, celle du commit `f9a38a6f878` qui porte la fermeture des 5 pointeurs morts ; l'heure portée avant était l'heure locale +01:00 suffixée `Z` — rangée d'origine : #24883, commentaire `6870260888`)
+
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp{,-r9,-r10,-r10-canon,-r11,-stdio}` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
+| `python3` / `python3-lean` / `mcp-jupyter` / `global-3.13` / `coursia-py313-argu` | 3.13.16 | 2.4.2 | `C:/Users/jsboi/AppData/Local/Programs/Python/Python313/python.exe` |
+| `py31315` | 3.13.16 | 2.5.4 | `C:/Users/jsboi/.venvs/py31315/Scripts/python.exe` |
+| `sheetsage2-gpu` | 3.13.16 | 2.5.3 | `D:/Dev/venvs/sheetsage2-gpu/Scripts/python.exe` |
+| `ict-py313` | 3.13.7 | 2.5.4 | `D:/Dev/venvs/ict-py3137/Scripts/python.exe` |
+| `coursia-ml-training` | 3.11.15 | 2.4.6 | `C:/Users/jsboi/.conda/envs/coursia-ml-training/python.exe` |
+| `coursia-drift` | 3.11.16 | 1.26.4 | `C:/Users/jsboi/.conda/envs/coursia-drift/python.exe` |
+| `python3119` | 3.11.9 | 2.4.6 | `C:/Users/jsboi/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/pyphi/python.exe` |
+| `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** : `pip install numpy==1.26.4` (restaure le pin déclaré, tuple d'origine 1.26.4 mesuré le 08/11) puis `pip install "antropy<0.2" "cryptography>=3.4,<44"` (les deux deps déclarées de `ict-series` qui manquaient) ; après réparation `numpy 1.26.4`, `import pyemd` OK, `import ict` OK, `pip check` → « No broken requirements found » — étapes et mesures d'origine : commentaire `6870260888` de #24883 |
+| `cb09-ass` / `pymc311` | **RETIRÉ le 14/11** | - | 0 consommateur sur `main` → enreg retiré, `kernel.json` sauvegardé (`%APPDATA%\jupyter\kernels\_bak-20261114-deadargv\`) |
+| `ft03-gpu` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/ft03-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.14.0+cu126 CUDA True, transformers 5.15.1, peft 0.20.0, datasets 5.0.1, pillow) ; **noyau lancé et dépendances importées** |
+| `mert2-gpu` | 3.13.16 | 2.5.4 | `D:/Dev/venvs/mert2-gpu/Scripts/python.exe` — **reconstruit le 14/11** (torch 2.6.0+cu126, torchaudio 2.6.0+cu126, transformers 4.53.2, soundfile, scikit-learn, scipy) + `ipykernel` ; **noyau lancé et dépendances importées** |
+| `difflogic-sl12` | 3.13.16 | 2.4.2 | `D:/Dev/venvs/difflogic-sl12/Scripts/python.exe` — **reconstruit le 14/11** ; **noyau lancé, `difflogic.LogicLayer` forward CUDA avec autograd vérifié** |
+| `lean4-wsl` / `python3-wsl` / `python3-wsl-swipl` / `python3-sc16-concrete-wsl` | non-Python (wsl) | - | `wsl.exe` |
+
+**Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `C:/Users/jsboi/AppData/Local/Programs/Python/Python313`.
+
+**Preuve d'exécution, pas seulement de lancement** — les cellules **3** (résolution d'env), **5** (construction du modèle aux dimensions du carnet) et **6** (forward réel) de `SL-12-DifferentiableLogicGateNetworks` s'exécutent **sans erreur** dans l'enreg reconstruit : `difflogic : fork vendor chargé | Python 3.13.16 | PyTorch 2.14.0+cu126 | CUDA dispo : True | Execution : cpu (snapshot reproductible) | Graine : 42 | Algorithmes : deterministes`, puis `DEVICE : cpu | Implementation : python (pure PyTorch, reference CPU) | Modele difflogic : 96 000 parametres`, puis `Logits shape : (100, 10) (attendu : (100, 10)) | OK -- forward pass difflogic fonctionne`. C'est le **carnet lui-même** qui valide son env, pas une sonde exterior. (Cellules 8+ hors périmètre de cette preuve : téléchargement MNIST et campagne de 2 000 itérations.)
+
+**Les 5 pointeurs morts de po-2024 sont refermés (14/11) : 0 pointeur mort subsiste** (29 enregs restants, tous résolus). Deux enregs **sans consommateur sur `main`** (`cb09-ass`, `pymc311`) ont été retirés, `kernel.json` sauvegardé avant retrait ; les trois autres (`ft03-gpu`, `mert2-gpu`, `difflogic-sl12`) ont été **reconstruits et repointés** — avec, pour chacun, la preuve du **lancement effectif du noyau** (pas seulement la réécriture du chemin).
+
+**Classe #23997 re-attestée sur ce siège après les réparations (14/11 05:17Z)** — le prédicat de l'issue (aucun `argv[0]` sous un répertoire temporaire) est **distinct** de la classe des 5 pointeurs morts hors `%TEMP%` refermés ci-dessus, et il est **revérifié séparément** : `python scripts/notebook_tools/check_kernelspec_temp_paths.py --check-exists` rend `29 kernelspec(s) mesure(s), 1 racine(s) temporaire(s)` puis `CLEAN : aucun interpreteur sous un chemin temporaire` (rc 0) ; en JSON, `{"kernels": 29, "temp_roots": ["c:\\users\\jsboi\\appdata\\local\\temp"], "offenders": [], "verdict": "CLEAN"}` — **0 `argv[0]` sous `%TEMP%`** et **0 interpréteur absolu mort**. Les quatre enregs `wsl` (`lean4-wsl`, `python3-wsl`, `python3-wsl-swipl`, `python3-sc16-concrete-wsl`) portent `argv[0] = "wsl.exe"` : c'est une **commande nue** résolue par `PATH`, que l'organe exclut par construction (il ne mesure que les `argv[0]` **absolus**) — ce n'est donc pas un pointeur mort, et le signaler comme tel serait un faux positif.
+
+**`difflogic` n'est PAS « GPU-only » pour la copie du dépôt — le fork vendored l'est.** Le paquet PyPI `difflogic` 0.1.0 déclare `CUDAExtension` inconditionnellement et importe `difflogic_cuda` sans garde : son installation exige un **CUDA Toolkit assorti au torch** (13.3 installé ici, mais les wheels torch cp313 existent en cu126/cu128/cu130 — **pas de cu133**), et son import échoue sans l'extension. La copie **vendored** `SymbolicAI/SymbolicLearning/vendor/difflogic/` corrige cela : `setup.py` ne construit `CUDAExtension` que si le **major** de `nvcc` égale celui de `torch.version.cuda`, et `difflogic.py` garde l'import de `difflogic_cuda` sous `try/except ImportError`. Conséquence mesurée : avec torch cu126 (major 12) face à nvcc 13.3 (major 13), **l'extension est sautée et l'implémentation `python` (PyTorch pur) est la seule disponible** — ce qui est exactement le mode du snapshot commité de `SL-12` (`IMPL = "python"`). Le carnet n'exige donc **ni CUDA Toolkit-matching ni GPU** pour sa ré-exécution ; réinstaller le **fork vendored** (et non le paquet PyPI) suffit. Le mismatch de **major** est le seul bloquant de compilation (`torch/utils/cpp_extension.py` : major différent → `RuntimeError`, minor différent → simple avertissement).
+
+### Ce que les trois rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310`. Dans les deux sens, le nom ne dénote pas l'artefact.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, **(3.11.15, 2.4.6)** sur po-2024 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
+
+### Sièges restants
+
+Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+
 ## Python 3.10+ (notebooks Python)
 
 Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/SemanticWeb/` (Python).
+
+### Relever le runtime effectif des kernelspecs Python (#24883)
+
+Le nom d'un kernelspec identifie une entrée Jupyter sur une machine ; il ne
+garantit ni l'interpréteur ni les bibliothèques réellement chargés. Le relevé
+doit donc démarrer le noyau, exécuter une sonde dedans, et enregistrer ensemble
+le nom, `argv[0]` déclaré, `sys.executable` résolu, `sys.version` et la version
+de NumPy. L'outil ci-dessous énumère les kernelspecs locaux et écrit un JSON
+réutilisable. Il rapporte les noyaux non Python et les incidents avec un état
+structuré ; il ne journalise pas le texte des exceptions ni l'environnement du
+noyau. Après démarrage, il demande au noyau son `kernel_info_reply` et ne lance
+la sonde que si `language_info.name` annonce Python. Les autres langages sont
+rapportés comme `not_python` avec leur langage effectif. Pour un noyau annoncé
+Python, toute erreur, absence de sortie ou sortie JSON invalide reste un
+incident de sonde, jamais un faux classement non Python.
+
+```bash
+source /workspace/coursia-cloud/activate.sh
+python scripts/notebook_tools/measure_kernels_runtime.py \
+  --timeout 60 --output /tmp/kernels-runtime.json
+# Pour borner le sondage : répéter --kernel <nom> ; sans --kernel, tous sont sondés.
+```
+
+La mesure porte sur la configuration et l'instant où la commande s'exécute.
+`ok` signifie que la sonde Python s'est exécutée ; `not_python` identifie,
+d'après le `kernel_info_reply` effectif, un noyau d'un autre langage ;
+`probe_output_missing` signale un noyau Python qui n'a pas rendu la sonde ; `timeout`,
+`startup_error`, `kernel_info_error`, `probe_error`, `invalid_probe_output` et
+`kernelspec_missing` signalent des lignes à examiner. Les kernels démarrés par
+l'outil sont arrêtés à la fin de leur sonde.
+Le code de sortie vaut 0 si chaque ligne est `ok` ou `not_python`, 1 en présence
+d'un incident. Le JSON est écrit hors du dépôt pour qu'un relevé local daté ne
+soit pas confondu avec une valeur canonique.
+
+#### Échantillon de l'environnement cloud (mesuré le 2026-11-08)
+
+La commande a réellement démarré les deux kernelspecs installés dans
+l'environnement cloud de cette session. Les deux noms ont résolu vers le même
+exécutable et les mêmes versions **dans cet échantillon** :
+
+| Kernelspec | `argv[0]` déclaré | Exécutable effectif | Python | NumPy |
+|---|---|---|---|---|
+| `coursia` | `/workspace/coursia-cloud/venv/bin/python` | `/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12` | 3.12.14 | 2.4.4 |
+| `python3` | `python` | `/opt/codex/runtimes/codex-primary-runtime/dependencies/python/bin/python3.12` | 3.12.14 | 2.4.4 |
+
+Cette observation décrit uniquement l'environnement cloud temporaire de la
+session (`bb1b6860b79a`, relevé UTC `2026-11-08T00:02:59Z`). Elle ne mesure aucun
+poste de la flotte et ne doit pas servir à nommer un environnement de
+ré-exécution sur un autre siège.
+
+**Vérification mixte après ajout de la détection par langage effectif**
+(`2026-11-08T00:18:08Z`) : le lancement réel de `.net-csharp` et `python3` a
+rendu `not_python`, langage `C#`, pour le premier sans lui envoyer de code
+Python, puis `ok`, Python 3.12.14 / NumPy 2.4.4, pour le second. Les journaux de
+démarrage .NET ne font pas partie du JSON de mesure.
+
+#### Procédure de collecte de la flotte
+
+Sur **chaque siège**, dans son propre environnement Jupyter, récupérer la
+branche contenant l'outil puis exécuter la commande complète sans filtre :
+
+```bash
+python scripts/notebook_tools/measure_kernels_runtime.py \
+  --timeout 120 --output kernels-runtime-<siege>-<date-utc>.json
+```
+
+Transmettre le JSON ainsi produit avec le nom du siège et l'heure UTC du
+relevé. Un lancement non réussi reste une ligne d'incident et ne devient pas
+une mesure par lecture de `kernel.json`. Répéter le relevé après une réparation
+d'environnement ; conserver la mesure datée antérieure comme historique.
+
+**Inventaire flotte complet : non mesuré dans cette session.** Les mesures
+cloud ci-dessus ne remplissent aucune ligne de flotte. Le commentaire de suivi
+MYIA-PO-2028 du 2026-11-05 dans [#24883](https://github.com/jsboige/CoursIA/issues/24883)
+fournit une observation datée de ce seul siège ; il ne constitue pas un relevé
+actuel ni exhaustif des autres sièges. L'issue reste ouverte jusqu'à la collecte
+des sièges manquants et à la publication de leurs mesures réelles.
 
 ### Envs Conda dédiés (ai-01, référence)
 
@@ -172,6 +370,7 @@ Notebooks dans `GenAI/`, `QuantConnect/`, `GameTheory/`, `IIT/`, `SymbolicAI/Sem
 | `llmcompressor` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\llmcompressor` | LLM quantization tooling |
 | `e2e_test_env` | 3.10+ | `C:\Users\MYIA\miniconda3\envs\e2e_test_env` | E2E tests |
 | **pyphi** | **3.9** | Nom **machine-dépendant** — mesuré `pyphi39` sur po-2026 (`C:\Users\jsboi\miniconda3\envs\pyphi39`) ; chemin ai-01 non mesuré | Cœur Φ série IIT/ICT (PyPhi 1.2.0). Cf. § « Série IIT/ICT » ci-dessous |
+| **ict-py39** | **3.9** | env **dédié** série IIT/ICT — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`), cloné de `pyphi` | Unifie numpy<2 + torch CPU + package local `ict` : strates cœur Φ **et** LLM/SAE dans un seul env. Cf. § « Env dédié ICT » ci-dessous |
 | `base` | 3.10+ | `C:\Users\MYIA\miniconda3` | Conda base — NE PAS modifier |
 
 ### Série IIT/ICT — env canonique `pyphi` (PyPhi 1.2.0)
@@ -222,7 +421,7 @@ Les **4 notebooks de la strate Φ** — ceux dont les outputs **committés** vie
 | `ICT-01-PhiTrajectories-Python` | 10 · 4 → 4 | aucune dérive | aucun | 0 `exec_count` nul, 0 erreur | — |
 | `ICT-05-CausalEmergence-Python` | 10 · 0 → 0 | aucune dérive | aucun | 0 / 0 | 12 s |
 | `ICT-18-ArrowOfTimeReversibilization-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 7 s |
-| `ICT-Synthese-CrossSubstrat` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
+| `ICT-Synthese-CrossSubstrat-Python` | 14 · 1 → 1 | aucune dérive | aucun | 0 / 0 | 55 s |
 
 Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression across **4** changed notebooks`.
 
@@ -237,6 +436,27 @@ Et le garde lui-même, sur l'état **commité** : `OK: 0 kernel-drift regression
 **Prérequis d'env, mesuré lui aussi.** `matplotlib` est **indispensable** (les strates trajectoires / heatmaps / EWS l'importent), et la note d'en-tête de `MyIA.AI.Notebooks/IIT/requirements.txt` décrivait la liste du script de setup en l'**omettant** — un env créé en suivant cette note ne peut pas exécuter la série (constaté : `pyphi39` sur po-2026 en était dépourvu ; `matplotlib 3.9.4` installé, `numpy` resté à 1.26.4, pin préservé). La note est corrigée dans la même PR.
 
 **Reste ouvert (#17185).** Trancher la population au-dessus de 3.9 (73 des 77) : un env pinné **par strate**, ou une passe de re-exécution homogénéisante — dans les deux cas c'est une décision sur l'**artefact d'env**, pas un correctif de notebook.
+
+### Env dédié ICT — `ict-py39` (numpy<2 + torch CPU + `ict`, 2026-11-08, #22297)
+
+L'env `pyphi` ci-dessus ne porte que la strate cœur Φ : il n'a **ni** torch, **ni** le package local `ict`. Or deux exigences supplémentaires sont **orthogonales** au pin py3.9/numpy<2 de `pyphi`, et ne tiennent pas dans l'env py3.13 partagé (numpy 2.x casse pyemd) :
+
+- les strates **LLM/SAE** (ICT-21/22/24, ICT-SAE-JLens, ICT-40a) exigent `torch` + `transformers` ;
+- les notebooks qui font `from ict import ...` exigent le **package local** `ict` (simulations, F/Lens, bridges) installé.
+
+L'env dédié `ict-py39` unifie les trois dans **un seul** env Python 3.9, pour exécuter toute la série (cœur Φ **et** LLM/SAE **et** `ict`) sans va-et-vient d'interpréteur.
+
+| Élément | Valeur |
+|---------|--------|
+| Env conda | `ict-py39`, Python **3.9** — créé par `MyIA.AI.Notebooks/IIT/scripts/setup_ict_env.ps1` (ou `.sh`) |
+| Construction | **Cloné de l'env `pyphi`** (hérite `pyemd` 0.5.1 binaire prebuilt + `pyphi` 1.2.0 + numpy<2 + scipy, **sans compilateur**), puis `pip install -e ICT-Series` (package local `ict` + ses deps déclarées) + `pip install torch --index-url …/whl/cpu` + `pip install transformers` |
+| Kernelspec | `ict-py39` (« Python 3 (ICT 3.9 dedicated) ») |
+| Stack mesurée (2026-11-08, po-2024) | Python 3.9.23 · numpy 1.26.4 · pyphi 1.2.0 · scipy 1.13.1 · pandas 2.3.3 · torch 2.8.0+cpu · transformers 4.57.6 · `ict` (editable) |
+| Usage | Exécution locale de toute la série IIT/ICT sous **un** env 3.9. Complément de l'env `coursia-sae` (py3.12) : celui-ci est py3.9 (pin pyphi) et porte le package local `ict` |
+
+**Pourquoi cloner plutôt que créer l'env à zéro.** PyPI ne publie aucun wheel cp39 de `pyemd` 0.5.1 et conda-forge ne livre pas de `gcc` utilisable sur cette machine Windows (`c-compiler` / `m2w64-gcc` ne produisent pas de compilateur fonctionnel, mesure firsthand 2026-11-08) : compiler la sdist de `pyemd` est un impasse. Cloner l'env `pyphi` de base hérite du binaire known-good **pour free** — c'est le seul chemin sans compilateur.
+
+**Prérequis** : l'env `pyphi` doit exister (créé par `setup_pyphi_env.ps1`) ; `setup_ict_env` le clone. **C.2** : une re-exécution sous `ict-py39` fait repasser le `Kernel drift guard` de la même façon que sous `pyphi` (numpy 1.x, même noyau 3.9) — le kernelspec stocké dans le notebook doit être `ict-py39`, et le paramètre `--ExecutePreprocessor.kernel_name=ict-py39` passé explicitement (cf. § « Série IIT/ICT » plus haut).
 
 ### Stack ML training (coursia-ml-training, vérifié 2026-05-06)
 

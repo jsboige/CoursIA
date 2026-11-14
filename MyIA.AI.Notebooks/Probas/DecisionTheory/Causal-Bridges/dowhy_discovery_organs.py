@@ -38,9 +38,11 @@ Pieges pedagogiques que le module expose, mesures :
    differents (0.81 / 1.05 / 0.22 sur le monde par defaut) -- cf.
    ``effet_backdoor_depuis_aretes``.
 5. **alpha de PC est un vrai compromis** : sur ce monde, alpha = 0.05
-   perd la v-structure environ 1 seed sur 4 (un test de vraie
-   independance rejette au niveau 5 % ; mesure : 15/20 seeds canoniques
-   a 0.05, 20/20 a 0.01).
+   perd la v-structure 2 seeds sur 20 a n = 2000 (un test de vraie
+   independance rejete au niveau 5 %) et la fragilite croit quand les
+   donnees se rarefient : 5 seeds sur 20 perdus a n = 500 (mesure :
+   15/20 seeds canoniques a 0.05) ; alpha = 0.01 rend le CPDAG
+   canonique 20 fois sur 20.
 6. **un contre-resultat sans rival mesure n'est pas un resultat** :
    « LiNGAM rend un DAG complet et faux » se lit differemment selon
    qu'on le compare au hasard ou a l'ordre trivial des colonnes. Le
@@ -148,8 +150,9 @@ BRUIT_M: float = 0.5
 BRUIT_Y: float = 0.5
 BRUIT_Z: float = 0.5
 # alpha par defaut de PC : le standard causal-learn. Sur CE monde, la
-# v-structure est fragile a 0.05 (15/20 seeds canoniques) et robuste a
-# 0.01 (20/20) -- le notebook motive le choix, l'exercice 2 le mesure.
+# v-structure est fragile a 0.05 (18/20 seeds canoniques a n = 2000,
+# 15/20 a n = 500) et robuste a 0.01 (20/20) -- le notebook motive le
+# choix, l'exercice 2 le mesure.
 ALPHA_PC_DEFAUT: float = 0.05
 SEUIL_COEF_LINGAM: float = 0.1
 
@@ -278,9 +281,9 @@ def executer_pc(
         Les colonnes utilisees sont ``labels`` (defaut : ``ORDRE_COLONNES``).
     alpha : float, default 0.05
         Seuil des tests d'independance. Compromis mesure sur le monde
-        par defaut : 0.05 -> v-structure perdue ~1 seed sur 4 ;
-        0.01 -> 20/20 canonique (au prix de la puissance sur signaux
-        faibles -- il n'y a pas d'alpha gratuit).
+        par defaut : 0.05 -> v-structure perdue 2 seeds sur 20 (n = 2000 ;
+        5/20 a n = 500) ; 0.01 -> 20/20 canonique (au prix de la puissance
+        sur signaux faibles -- il n'y a pas d'alpha gratuit).
     labels : list[str], optional
         Noms de colonnes dans l'ordre de la matrice passee a PC.
 

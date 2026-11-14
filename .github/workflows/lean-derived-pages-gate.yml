@@ -1,0 +1,157 @@
+name: Lean derived pages gate
+
+# Purpose
+# -------
+# BLOQUING gate, portee par le garde `scripts/lean/check_lean_derived_pages.py` :
+# les pages derivees de l'arbre Lean (`docs/reference/lean-theorem-duplicates.md`,
+# `docs/reference/lean-material-map.md`) sont **regenerees**, jamais ecrites a la
+# main. Ce garde verifie que la page **commitee** suit l'arbre **de la revision
+# testee**, et nomme la commande qui la regenere.
+#
+# Pourquoi une porte dediee, et non le test global
+# --------------------------------------------------
+# Le job `Scripts Tests (CPU)` execute tous les tests de `scripts/`, donc le
+# test de derive de `lean-theorem-duplicates.md` rendait ROUGE **toute PR de la
+# flotte** qui touche `scripts/` -- mesure du 2026-11-03 : 22 PRs de la lane
+# `myia-ai-01:CoursIA-2` bloquees le meme jour, sans qu'aucune n'ait touche
+# l'arbre Lean. La derive, elle, est legitime : l'arbre bouge, la page doit
+# suivre. C'est la **portee** du predicat qui etait fausse -- une porte qui
+# accuse une PR d'un defaut qu'elle ne peut pas causer.
+#
+# Ce garde porte le predicat la ou il est causable : il ne se declenche que
+# sur les PRs qui touchent l'arbre Lean, les generateurs, ou les pages.
+#
+# Paths watched
+# -------------
+#   - **/*.lean                    (l'arbre Lean lui-meme, lakefiles inclus)
+#   - **/lakefile.toml             (les lacs declares hors `.lean`)
+#   - scripts/lean/lean_*.py      (les generateurs, proprietaires des pages)
+#   - scripts/lean/check_lean_derived_pages.py (ce garde)
+#   - docs/reference/lean-*.md    (les pages derivees)
+#   - .github/workflows/**         (la carte du materiel lit la couverture CI)
+#   - scripts/lean/ci_lakes.json, scripts/lean/lean_births.json,
+#     scripts/lean/check_axiom_gate_coverage.py, scripts/lean/count_code_sorry.py
+#                                  (les autres entrees de lean_material_map.py :
+#                                  sans elles, #25154 a recable un lake dans
+#                                  ci_lakes.json sans que la porte se declenche,
+#                                  et la page perimee a rougi toutes les PRs Lean)
+#
+# Le declencheur est un `pull_request` ordinaire : la porte ne fait que LIRE
+# (elle appelle les generateurs en `--check`), elle n'ecrit rien et ne
+# demande aucun droit.
+
+on:
+  pull_request:
+    paths:
+      - '**/*.lean'
+      - '**/lakefile.toml'
+      - 'scripts/lean/lean_*.py'
+      - 'scripts/lean/check_lean_derived_pages.py'
+      - 'docs/reference/lean-*.md'
+      - '.github/workflows/**'
+      - 'scripts/lean/ci_lakes.json'
+      - 'scripts/lean/lean_births.json'
+      - 'scripts/lean/check_axiom_gate_coverage.py'
+      - 'scripts/lean/count_code_sorry.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lean-derived-pages-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  derived-pages:
+    name: "Lean derived pages gate (#24183, #23097)"
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check the derived pages against the Lean tree
+        # Le verdict porte sur la REVISION TESTEE : le checkout d'un evenement
+        # `pull_request` materialise la ref de merge, c'est-a-dire l'etat que
+        # `main` aura apres le merge de cette PR. C'est exactement l'etat que
+        # la page doit decrire.
+        run: |
+          set +e
+          python scripts/lean/check_lean_derived_pages.py --json \
+              > lean_derived_pages.json 2>lean_derived_pages_stderr.log
+          EXIT=$?
+          set -e
+          # En mode `--json`, le garde ecrit le JSON **pure** sur stdout et la
+          # ligne de verdict (`VERDICT: ...`) sur stderr : le rapport reste
+          # donc parsable, et le verdict reste lisible dans le journal.
+          if [ -s lean_derived_pages_stderr.log ]; then
+            echo "Derived-pages tool output (stderr):"
+            cat lean_derived_pages_stderr.log
+          fi
+          if ! python3 -c "import json; json.load(open('lean_derived_pages.json'))" 2>/dev/null; then
+            echo "::error title=Lean derived pages report unparseable::The JSON report could not be parsed. Tool exit was $EXIT."
+            tail -c 400 lean_derived_pages.json || true
+            cat lean_derived_pages_stderr.log 2>/dev/null || true
+            exit 1
+          fi
+          python3 - <<'PY'
+          import json
+          import sys
+
+          data = json.load(open("lean_derived_pages.json"))
+          pages = data.get("pages") or []
+          drifted = [p for p in pages if p.get("drifted")]
+          # Une page non mesuree (`expiree` : la machine n'a pas repondu dans
+          # le delai) n'est PAS conforme : elle est simplement inconnue. La
+          # nommer evite qu'un vert muet se lise comme une verification.
+          expired = [p for p in pages if p.get("status") == "expiree"]
+
+          if not drifted:
+              if expired:
+                  print("::warning title=Lean derived pages non mesurees::%d page(s) n'ont pas pu etre verifiees dans le delai de la machine -- le verdict CONFORME ne porte pas sur elles." % len(expired))
+                  for p in expired:
+                      print("- %s" % p.get("page"))
+                      if p.get("detail"):
+                          print("  %s" % p["detail"])
+              else:
+                  print("::notice title=Lean derived pages::%d page(s) derivee(s) conforme(s) a l'arbre Lean." % len(pages))
+              sys.exit(0)
+
+          if expired:
+              # Une page non mesuree reste non mesuree, meme quand une autre
+              # diverge : la nommer evite qu'un vert partiel se lise comme
+              # une verification complete.
+              print("::warning title=Lean derived pages non mesurees::%d page(s) n'ont pas pu etre verifiees dans le delai de la machine." % len(expired))
+              for p in expired:
+                  print("- %s" % p.get("page"))
+                  if p.get("detail"):
+                      print("  %s" % p["detail"])
+
+          print("::error title=Lean derived pages divergeantes::%d page(s) derivee(s) ne suivent plus l'arbre Lean de cette revision." % len(drifted))
+          for p in drifted:
+              print("- %s" % p.get("page"))
+              if p.get("detail"):
+                  print("  %s" % p["detail"])
+              if p.get("status") == "non_mesurable":
+                  # Historique tronque : regenerer ici ecrirait des dates
+                  # fabriquees. La reparation est `git fetch --unshallow`.
+                  print("  geste : reparer l'historique, PAS regenerer")
+              elif p.get("status") == "mesure_impossible":
+                  # La machine n'a pas repondu a l'organe amont : la page n'a
+                  # pas ete mesuree, elle n'est pas fausse pour autant.
+                  # Regenerer ici ecrirait une mesure degradee.
+                  print("  geste : la machine n'a pas repondu -- NE PAS regenerer ici ; rejouer ou elargir le budget")
+              else:
+                  print("  geste : python %s --write" % p.get("generator"))
+          sys.exit(1)
+          PY

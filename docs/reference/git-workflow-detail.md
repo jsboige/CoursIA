@@ -1,5 +1,7 @@
 # Git workflow — détail : verbatim force-push, incidents, rationale
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Détail durable de [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) (harness-hygiene tier 2). La règle porte le périmètre opératoire ; ce fichier porte les verbatims et les incidents qui le fondent.
 
 ## 1. Force-push — décision user 2026-08-08 (verbatim)
@@ -86,6 +88,8 @@ Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand 
 
 Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
 
+**L'ancre PR passe au listing REST par branche (2026-11, #23636)** : `gh pr list --state all --search "head:<branche>"` consomme le chemin de recherche GraphQL, refusé sous le login partagé alors même que le compteur horaire du seau `search` reste positif (plafond de points propre au chemin de recherche ; mesure firsthand 2026-10-31 : 3 échecs consécutifs `GraphQL: API rate limit already exceeded` alors que `gh api rate_limit` rendait `core: 4950` — le compteur ne prédit pas ce refus, seul le log de l'appel tranche). L'ancre autoritative est désormais `gh api "repos/<owner>/<repo>/pulls?state=all&head=<owner>:<branche>&per_page=5"` : seau `core`, filtre sur la tête **exacte** — le qualificatif `head:` de `--search` matche par sous-chaîne, donc moins précis pour l'intention « la PR dont `headRefName == branche` ». Le repli `--search` reste réservé aux branches de fork dont le propriétaire du head est inconnu : le filtre `head=` accepte bien `<fork-owner>:<branch>`, mais la voie REST de l'organe ne connaît que le propriétaire du dépôt courant. Ce n'est **pas** l'ancre interdite `commits/<oid>/pulls` (faux négatifs mesurés sur PRs OPEN) : le listing par branche n'a pas ce défaut. Fail-closed conservé dans l'organe : une erreur `gh` reste un `RuntimeError` → verdict `no_gh_unverifiable`, jamais un « 0 worktree » silencieux. Correctif appliqué dans `anchor_search_pr_for_branch` de `scripts/ci/prune_merged_worktrees.py` ; récurrence fondatrice #15369, mesure #23636, déploiement #23642.
+
 ## 6. Le scope avale le mot-clé — la mesure sur 500 commits (#23348)
 
 Détail déporté de la puce « Safe reference syntax » de la règle. Le mandat `type(scope): subject` a une place invite pour le numéro d'issue — `type(scope,#N): subject` — et cette forme ne ferme rien : `(` et le scope s'assoient entre le mot-clé de fermeture et le numéro.
@@ -100,3 +104,52 @@ L'organe de triage : `python scripts/ci/list_scope_swallowed_issues.py` (`--json
 - [`docs/reference/orphan-branch-scan-l576.md`](orphan-branch-scan-l576.md) — scan de branche orpheline, 4 ancres
 - [`.claude/rules/lane-claim-protocol.md`](../../.claude/rules/lane-claim-protocol.md) — « plusieurs agents de front » = un `[CLAIMED]` d'une autre lane
 - [`.claude/rules/secrets-hygiene.md`](../../.claude/rules/secrets-hygiene.md) règle 5 — secret commité : cherry-pick + rotation, jamais réécriture d'historique
+
+## § Levier B — rationales déportés de `.claude/rules/git-workflow.md`
+
+La règle `git-workflow.md` est **auto-chargée** à chaque session ; ce fichier
+ne l'est pas. Les blocs ci-dessous sont repris **verbatim** : ce qui sort de
+la règle entre ici sans réécriture.
+
+| Ligne de la règle (base `7a558e4d7ce8`) | Bloc déplacé |
+|---|---|
+| L27 | le scope avale le mot-clé — la mesure sur 500 commits |
+| L32 | incident fondateur de l'auto-close prématuré |
+| L38 | pourquoi un périmètre plutôt qu'un interdit global |
+| L53 | `update-branch` tue le dossier de prévalidation |
+| L62 | pourquoi la forme opérationnelle n'est pas reformulée ici |
+| L63 | `--force-with-lease` plutôt que `--force` |
+| L67 | `allow_force_pushes` n'est pas lisible sans droit admin |
+| L125 | mesure datée et contrôle positif du prune |
+
+### L27 — le scope avale le mot-clé — la mesure sur 500 commits
+
+The mandated `type(scope): subject` form has an inviting place for the issue number — `type(scope,#N): subject` — and that form closes nothing: `(` and the scope sit between the keyword and the number. Never rely on the subject alone to close (mesure sur `origin/main` : 500 commits, 299 numéros cités ainsi, **186 encore ouverts** ; parmi les 162 cités par un verbe de correction, **95 encore ouverts** — des fixes déjà sur `main`).
+
+### L32 — incident fondateur de l'auto-close prématuré
+
+Incident fondateur : trois issues fermées par `Refs #N` sur des PRs partielles.
+
+### L38 — pourquoi un périmètre plutôt qu'un interdit global
+
+Les deux cas n'ont pas la même conséquence (contenu partagé sur `main`, travail non mergé d'une seule lane sur sa branche) — le détail du verbatim, de la table de décision et de l'incident 2026-03-13 est dans §1.
+
+### L53 — `update-branch` tue le dossier de prévalidation
+
+C'est la moitié qu'on oublie : c'est cette péremption, et non le DWELL, qui referme la boucle — [prevalidation-dossier-order-detail.md](prevalidation-dossier-order-detail.md) §1-§3.
+
+### L62 — pourquoi la forme opérationnelle n'est pas reformulée ici
+
+Deux surfaces qui redécrivent la même règle finissent par diverger (#16962) — le verbatim de l'organe et la réconciliation de l'issue fondatrice sont dans [prevalidation-dossier-order-detail.md](prevalidation-dossier-order-detail.md).
+
+### L63 — `--force-with-lease` plutôt que `--force`
+
+Il échoue si le remote a bougé depuis ta dernière lecture — précisément le cas « une autre lane a poussé sans que je le sache ». C'est le garde-fou qui rend le périmètre ci-dessus sûr.
+
+### L67 — `allow_force_pushes` n'est pas lisible sans droit admin
+
+Un 404 sur `branches/main/protection` est **une question, pas une absence mesurée** (#9991). Ce qu'une lane peut vérifier sans admin, c'est le comportement : un `push --force` sur `main` est rejeté par le serveur. Cf §1.
+
+### L125 — mesure datée et contrôle positif du prune
+
+Mesure datée et contrôle positif (po-2027, cycle #14195 ; tableau avant/après et contrôle positif du squash-merge) : §5.

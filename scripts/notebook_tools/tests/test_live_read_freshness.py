@@ -35,6 +35,8 @@ from check_live_read_freshness import (  # noqa: E402
     citations,
     count_claims,
     main,
+    signature_findings,
+    stamp,
     UNDECLARED_BASELINE,
     undeclared_live_read_cells,
 )
@@ -214,6 +216,181 @@ def test_audit_cell_positive_control_matches_founding_case_shape():
 # ---------------------------------------------------------------------------
 # Registre
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# Axe signature d'execution (#23390) -- opt-in, temoin negatif, deduplication
+# ---------------------------------------------------------------------------
+def _signed_notebook(source="x = 1\n"):
+    """Carnet minimal portant une signature d'execution valide.
+
+    ``stamp`` arrive par le module teste (qui l'importe explicitement) et non
+    par un effet de bord d'ordre d'import -- reserve 4 de la review #24669.
+    """
+    nb = {
+        "cells": [{"cell_type": "code", "id": "c1", "execution_count": 1,
+                   "source": [source], "outputs": []}],
+        "metadata": {"kernelspec": {"name": "python3",
+                                    "display_name": "Python 3"}},
+    }
+    stamp(nb, {}, "2026-01-01T00:00:00Z")
+    return nb
+
+
+def test_signature_absente_est_ignoree():
+    """Critere 3 : un carnet sans signature est ignore, pas declare non conforme."""
+    assert signature_findings({"cells": [], "metadata": {}}) == []
+    assert signature_findings({"cells": [], "metadata": {"kernelspec": {}}}) == []
+
+
+def test_signature_fraiche_ne_produit_aucun_constat():
+    """Critere 1 : l'introduction de l'axe ne rougit aucun carnet deja signe."""
+    assert signature_findings(_signed_notebook()) == []
+
+
+def test_source_editee_apres_execution_est_signalee():
+    """Critere 2 : le temoin negatif de l'axe -- source editee apres attestation."""
+    nb = _signed_notebook()
+    nb["cells"][0]["source"] = ["x = 2\n"]
+    findings = signature_findings(nb)
+    assert len(findings) == 1
+    assert findings[0].startswith("SIGNATURE_PERIMEE:")
+
+
+def test_kernel_change_depuis_l_attestation_est_signale():
+    nb = _signed_notebook()
+    nb["metadata"]["kernelspec"]["name"] = ".net-csharp"
+    assert any(f.startswith("KERNEL_INCOHERENT:")
+               for f in signature_findings(nb))
+
+
+def test_cellule_annexe_non_executee_rougit_le_carnet_entier():
+    """Granularite de l'axe : le CARNET, pas la cellule declaree (reserve 2).
+
+    ``verify`` atteste le carnet entier : une cellule annexe commise sans
+    ``execution_count`` emet CELLULE_NON_EXECUTEE et rougit les declarations
+    du carnet meme quand leur cellule est fraiche. Le comportement est
+    assumi dans la docstring de ``signature_findings`` -- ce test l'epingle
+    pour qu'il ne derive pas en silence.
+    """
+    nb = _signed_notebook()
+    nb["cells"].append({"cell_type": "code", "id": "c2",
+                        "execution_count": None,
+                        "source": ["# annexe jamais executee\n"], "outputs": []})
+    findings = signature_findings(nb)
+    assert any(f.startswith("CELLULE_NON_EXECUTEE:") for f in findings)
+
+
+def test_run_compte_les_carnets_perimes_au_niveau_carnet(tmp_path, monkeypatch):
+    """``stale`` compte des declarations, ``signature_stale_notebooks`` des
+    carnets -- les deux unites ne se confondent plus (reserve 1)."""
+    import check_live_read_freshness as mod
+
+    nb = _signed_notebook()
+    nb["cells"][0]["outputs"] = [
+        {"output_type": "stream", "text": ["f.lean (1 lignes)\nL1: alpha\n"]}]
+    nb["cells"][0]["source"] = ["x = 2\n"]
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    (tmp_path / "f.lean").write_text("alpha\n", encoding="utf-8")
+    (tmp_path / "reg.json").write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": "f.lean"},
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": "f.lean"}]}),
+        encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    report = mod.run()
+
+    assert report["stale"] == 2, "une declaration perimee par entree"
+    assert report["signature_stale_notebooks"] == 1, "un carnet perime, pas deux"
+
+
+def test_run_pose_le_champ_signature_sur_les_sorties_precoces(tmp_path, monkeypatch):
+    """Sortie precoce CELL_NOT_FOUND : le champ signature ne ment plus par
+    defaut -- les constats de l'axe sont visibles meme sur une ligne deja
+    rouge (reserve 3)."""
+    import check_live_read_freshness as mod
+
+    nb = _signed_notebook()
+    nb["cells"][0]["source"] = ["x = 2\n"]  # perimee pour l'axe signature
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    (tmp_path / "reg.json").write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "absente", "source": "f.lean"}]}),
+        encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    report = mod.run()
+
+    assert report["rows"][0]["verdict"] == "CELL_NOT_FOUND"
+    assert any(f.startswith("SIGNATURE_PERIMEE:")
+               for f in report["rows"][0]["signature_findings"]), (
+        "la ligne est deja rouge, le JSON ne doit pas cacher l'axe")
+
+
+def test_run_herite_les_constats_et_ne_verifie_qu_une_fois(tmp_path, monkeypatch):
+    """L'axe est porte par le CARNET : quatre entrees ne pesent qu'une verification.
+
+    Chaque ligne du registre herite des constats, sinon la meme cellule
+    apparaitrait verte ou rouge selon l'entree par laquelle on la lit.
+    """
+    import check_live_read_freshness as mod
+
+    nb = _signed_notebook()
+    nb["cells"][0]["outputs"] = [
+        {"output_type": "stream", "text": ["f.lean (1 lignes)\nL1: alpha\n"]}]
+    (tmp_path / "f.lean").write_text("alpha\n", encoding="utf-8")
+    registry = {"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": "f.lean"},
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": "f.lean"},
+    ]}
+    (tmp_path / "reg.json").write_text(json.dumps(registry), encoding="utf-8")
+    # La source est editee APRES l'attestation : l'axe doit rougir, sans que
+    # les invariants live-read (compte et citation) ne bougent.
+    nb["cells"][0]["source"] = ["x = 2\n"]
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+
+    calls = {"n": 0}
+    real = mod.signature_findings
+
+    def _count(notebook):
+        calls["n"] += 1
+        return real(notebook)
+
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    monkeypatch.setattr(mod, "signature_findings", _count)
+
+    report = mod.run()
+
+    assert calls["n"] == 1, "une verification par carnet, pas par entree"
+    assert report["signature_notebooks"] == 1
+    assert report["stale"] == 2
+    for row in report["rows"]:
+        assert any(f.startswith("SIGNATURE_PERIMEE:") for f in row["findings"])
+
+
+def test_run_desactive_l_axe_sur_demande(tmp_path, monkeypatch):
+    """``--no-signature`` rend le comportement d'avant l'axe, a l'identique."""
+    import check_live_read_freshness as mod
+
+    nb = _signed_notebook()
+    nb["cells"][0]["outputs"] = [
+        {"output_type": "stream", "text": ["f.lean (1 lignes)\nL1: alpha\n"]}]
+    nb["cells"][0]["source"] = ["x = 2\n"]
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    (tmp_path / "f.lean").write_text("alpha\n", encoding="utf-8")
+    (tmp_path / "reg.json").write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": "f.lean"}]}),
+        encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    report = mod.run(with_signature=False)
+
+    assert report["signature_notebooks"] == 0
+    assert report["stale"] == 0
+    assert report["rows"][0]["verdict"] == "FRESH"
+
+
 def test_registry_is_well_formed():
     reg = json.loads(REGISTRY.read_text(encoding="utf-8"))
     assert reg["cells"], "le registre est vide : l'organe ne verifie rien"
@@ -223,15 +400,28 @@ def test_registry_entries_resolve_to_real_artifacts():
     reg = json.loads(REGISTRY.read_text(encoding="utf-8"))
     for entry in reg["cells"]:
         nb = REPO_ROOT / entry["notebook"]
-        src = REPO_ROOT / entry["source"]
+        # Le carnet et la cellule sont TOUJOURS reels, quelle que soit la
+        # source : seule la SOURCE peut vivre hors du depot (source externe
+        # epinglee, #23499).
         assert nb.is_file(), f"carnet introuvable : {entry['notebook']}"
-        assert src.is_file(), f"fichier lu introuvable : {entry['source']}"
         data = json.loads(nb.read_text(encoding="utf-8"))
         ids = {c.get("id") for c in data["cells"]}
         assert entry["cell_id"] in ids, (
             f"cellule {entry['cell_id']} introuvable dans {nb.name} -- "
             "la declaration est perimee"
         )
+        if entry.get("source_kind", "repo") == "external":
+            # Source externe : le fichier lu est dans un clone amont epingle,
+            # pas dans le depot -- is_file() y est structurellement faux. Le
+            # contrat de l'organe est le pin + l'empreinte (mirror de run(),
+            # #23499), pas l'existence locale du chemin.
+            assert str(entry.get("pin") or "").strip(), (
+                f"source externe sans pin : {entry['source']}")
+            assert str(entry.get("sha256") or "").strip(), (
+                f"source externe sans sha256 : {entry['source']}")
+        else:
+            src = REPO_ROOT / entry["source"]
+            assert src.is_file(), f"fichier lu introuvable : {entry['source']}"
 
 
 def test_self_test_passes():
@@ -335,3 +525,139 @@ def test_une_cellule_hors_socle_rougit_l_organe(monkeypatch):
         {"notebook": "MyIA.AI.Notebooks/Serie/Nouveau.ipynb",
          "cell_id": "neuf", "literals": ["Modele.lean"]}])
     assert organe.main(["--check-declarations"]) == 1
+
+
+# ---------------------------------------------------------------------------
+# Source EXTERNE au depot (#23499 -- Pli 2 de l'EPIC #18205)
+# ---------------------------------------------------------------------------
+SHA = "a" * 64
+PIN = "qinz1yang/differential-geometry@v0.1.3"
+CHEMIN_AMONT = "DifferentialGeometry/Topology/ThreeManifold/Poincare.lean"
+
+
+def _external_entry(**extra) -> dict:
+    entry = {"notebook": "nb.ipynb", "cell_id": "c1", "source": CHEMIN_AMONT,
+             "source_kind": "external", "pin": PIN, "sha256": SHA}
+    entry.update(extra)
+    return entry
+
+
+def _external_run(tmp_path, monkeypatch, output: str, entry: dict) -> dict:
+    """Joue l'organe sur une declaration de source externe."""
+    import check_live_read_freshness as mod
+
+    nb = {"cells": [_cell("c1", "print(1)\n", output)], "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    (tmp_path / "reg.json").write_text(
+        json.dumps({"version": 1, "cells": [entry]}), encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+    return mod.run()
+
+
+def test_source_externe_echellee_par_son_empreinte(tmp_path, monkeypatch):
+    """Cas nominal : la cellule imprime le sha256 du fichier epingle qu'elle a lu.
+
+    Le fichier lu est IMPUABLE (un tag ne bouge pas) : la fraicheur est
+    deleguee au pin, et le lien entre la sortie commitee et le fichier lu est
+    ferme par l'empreinte. Le verdict est FRESH, sans lecture du fichier.
+    """
+    report = _external_run(tmp_path, monkeypatch,
+                           f"sha256: {SHA}\n", _external_entry())
+    assert report["stale"] == 0
+    assert report["rows"][0]["verdict"] == "FRESH"
+
+
+def test_source_externe_sans_empreinte_rougit(tmp_path, monkeypatch):
+    """Une source externe sans sha256 n'atteste rien : elle rougit."""
+    entry = _external_entry()
+    entry.pop("sha256")
+    report = _external_run(tmp_path, monkeypatch, "Poincare.lean -- 23 lignes\n",
+                           entry)
+    assert report["stale"] == 1
+    assert report["rows"][0]["verdict"] == "EXTERNAL_SANS_EMPREINTE"
+
+
+def test_source_externe_sans_pin_rougit(tmp_path, monkeypatch):
+    """Sans pin, la fraicheur serait deleguee a rien : elle rougit."""
+    entry = _external_entry()
+    entry.pop("pin")
+    report = _external_run(tmp_path, monkeypatch, f"sha256: {SHA}\n", entry)
+    assert report["stale"] == 1
+    assert report["rows"][0]["verdict"] == "EXTERNAL_NON_ECINGLE"
+
+
+def test_source_externe_empreinte_absente_de_la_sortie_rougit(tmp_path, monkeypatch):
+    """La cellule doit prouver qu'elle a lu le fichier epingle : l'empreinte
+    attendue doit apparaitre dans la sortie commitee."""
+    report = _external_run(tmp_path, monkeypatch,
+                           "Poincare.lean -- 23 lignes\n", _external_entry())
+    assert report["stale"] == 1
+    assert report["rows"][0]["verdict"] == "EXTERNAL_EMPREINTE_ABSENTE"
+
+
+def test_registry_integrity_admet_une_source_externe(tmp_path, monkeypatch):
+    """Le contrat d'integrite du registre admet une source EXTERNE.
+
+    Controle par reinsertion (#23499) : la premiere entree externe REALE
+    (carnet + cellule reels, source epinglee par pin + empreinte) doit
+    satisfaire le test. Sans l'adaptation de
+    ``test_registry_entries_resolve_to_real_artifacts``, ``is_file()`` sur le
+    chemin AMONT -- absent du depot par construction -- la ferait rougir pour
+    un motif qu'elle ne porte pas.
+    """
+    import sys
+
+    mod = sys.modules[__name__]
+    nb = {"cells": [_cell("c1", "print(1)\n", f"sha256: {SHA}\n")],
+          "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": CHEMIN_AMONT,
+         "source_kind": "external", "pin": PIN, "sha256": SHA}]}),
+        encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", reg)
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    test_registry_entries_resolve_to_real_artifacts()  # ne doit pas lever
+
+
+def test_registry_integrity_exige_pin_et_empreinte_sur_source_externe(
+        tmp_path, monkeypatch):
+    """Controle negatif : une source externe SANS pin ne satisfait PAS le
+    contrat d'integrite -- le test la nomme, il ne la tolere pas."""
+    import sys
+
+    mod = sys.modules[__name__]
+    nb = {"cells": [_cell("c1", "print(1)\n", "Poincare.lean -- 23 lignes\n")],
+          "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": CHEMIN_AMONT,
+         "source_kind": "external", "sha256": SHA}]}),  # pin absent
+        encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", reg)
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    with pytest.raises(AssertionError):
+        test_registry_entries_resolve_to_real_artifacts()
+
+
+def test_une_entree_sans_source_kind_reste_repo(tmp_path, monkeypatch):
+    """Le defaut reste la source du depot : une entree legacy ne change pas."""
+    import check_live_read_freshness as mod
+
+    nb = {"cells": [_cell("c1", "print(1)\n", "Modele.lean -- 3 lignes\n")],
+          "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    (tmp_path / "reg.json").write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1",
+         "source": "Modele.lean"}]}), encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", tmp_path / "reg.json")
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    report = mod.run()
+
+    assert report["rows"][0]["verdict"] == "SOURCE_MISSING"

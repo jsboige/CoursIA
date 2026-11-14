@@ -5,7 +5,7 @@
 work that is already delivered but not closed: delivery PRs write ``See #N``
 -- the marker of a PARTIAL tranche per git-workflow.md -- even when the tranche
 in fact fully resolves the issue, so GitHub does not close it. Since #23762 the
-marker family is split (see ``_closing_marker_re``): only the CLOSING forms
+marker family is split (see ``closing_marker``): only the CLOSING forms
 (``Closes``/``Fixes``/``Resolves``) are evidence of a complete delivery; the
 partial forms (``See``, ``Part of``, ``Refs``) classify as ``partial`` and never
 earn the label -- a tranche is not a delivery. The issue stays in the pool, the
@@ -132,14 +132,39 @@ import time
 from typing import Iterable
 
 import issue_containers
+from grain_tag import find_close_keyword_pr_refs, find_non_closing_refs
 # The coverage predicate is imported, not re-implemented: `[RELEASED]` means
 # two different things and the picker is the organ that already tells them
 # apart (see the block above `_is_protocol_attestation`). It lives in
 # `released_covers`, a dependency-free module, because this file runs in CI
 # from a sparse-checkout that cannot host `pick_idle_grain` (#23762).
 from released_covers import _released_covers_acceptance
+# #24461 -- la grammaire de l'etat de livraison est source UNIQUE, dans
+# `delivery_grammar`, lue par le tapis (`pick_idle_grain.py`) comme par ce
+# poseur de label. Sans ce partage, l'attestation d'une lane armait l'etat
+# du tapis et JAMAIS le label -- et le tapis, qui paie sa lecture issue par
+# issue, laissait passer l'issue quand son budget de sondes etait epuise.
+from delivery_grammar import (  # noqa: E402
+    ATTESTED,
+    REVOKED,
+    attestation_state,
+    delivery_state,
+)
 
 LABEL_DEFAULT = "candidate-delivered"
+
+# #25082 -- la classe `consolidation` : le LABEL, et lui seul. C'est le meme
+# predicat que `pick_idle_grain.is_consolidation` (parite epinglee par
+# `test_parite_de_la_classe_consolidation_avec_le_tapis`). Il est recopie ici
+# en trois lignes plutot qu'importe : ce fichier tourne en CI depuis un
+# sparse-checkout qui ne peut pas heberger `pick_idle_grain` (#23762).
+CONSOLIDATION_TAG = "consolidation"
+
+
+def is_consolidation(labels: Iterable[str]) -> bool:
+    """True si l'issue porte le label `consolidation` (casse et espaces toleres)."""
+    return any((lab or "").strip().lower() == CONSOLIDATION_TAG
+               for lab in labels or [])
 LABEL_COLOR = "5319e7"  # purple -- "delivered, awaiting close triage"
 LABEL_DESC = "Referenced by a merged PR with no post-merge activity -- candidate for close triage (#10466)"
 
@@ -156,18 +181,6 @@ def is_epic(title: str, labels: Iterable[str]) -> bool:
     return any(_EPIC_RE.search(lab or "") for lab in labels)
 
 
-# Delivery markers the repo's link discipline (git-workflow.md) requires for an
-# intentional PR->issue link: `See #N`/`Part of #N` for a partial contribution,
-# `Closes #N`/`Fixes #N` for a full one. A bare `(#N)` in a grain title, "the
-# dispatch #N", or a `feature/N-...` branch name is context, not a claim.
-def _delivery_marker_re(number: int) -> "re.Pattern[str]":
-    return re.compile(
-        r"\b(?:see|part\s+of|refs|references?"
-        r"|close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#%d\b" % number,
-        re.IGNORECASE,
-    )
-
-
 # #23762: the marker family splits in two, and only the CLOSING class
 # (`Closes`/`Fixes`/`Resolves`) is evidence of a complete delivery.
 # `See #N` / `Part of #N` are the repo's markers for a PARTIAL contribution
@@ -176,13 +189,6 @@ def _delivery_marker_re(number: int) -> "re.Pattern[str]":
 # shape that used to earn the label. Measured by the secretariat (c228,
 # 2026-10-31): `Part of #22178` on #22202 is a reference to its umbrella, not a
 # delivery, and that marker is the mechanism behind the false positive.
-def _closing_marker_re(number: int) -> re.Pattern[str]:
-    return re.compile(
-        rf"\b(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\b\s*:?\s*#{number}\b",
-        re.IGNORECASE,
-    )
-
-
 def closing_marker(body: str, number: int) -> bool:
     """True iff ``body`` claims a COMPLETE delivery of issue ``number``.
 
@@ -190,7 +196,8 @@ def closing_marker(body: str, number: int) -> bool:
     the number), restricted to the closing keywords. A body that carries only
     a partial marker is a delivered tranche, not a delivered issue.
     """
-    return bool(_closing_marker_re(number).search(body or ""))
+    return any(hit["number"] == number
+               for hit in find_close_keyword_pr_refs(body or ""))
 
 
 def delivery_marker(body: str, number: int) -> bool:
@@ -203,7 +210,13 @@ def delivery_marker(body: str, number: int) -> bool:
     whether a merged PR counts as evidence of delivery, and an unreadable
     reference must fail safe (#15060), not produce a candidate.
     """
-    return bool(_delivery_marker_re(number).search(body or ""))
+    # Keep the delivery/closing distinction on the repo's shared parser.
+    # In particular, code citations such as `` `Closes #N` `` are not claims.
+    hits = find_close_keyword_pr_refs(body or "")
+    if any(hit["number"] == number for hit in hits):
+        return True
+    return any(hit["number"] == number
+               for hit in find_non_closing_refs(body or ""))
 
 
 def _is_bot(actor: str) -> bool:
@@ -231,7 +244,15 @@ def _is_bot(actor: str) -> bool:
 # ``issue_containers`` branch below invokes for itself).
 #
 #   `[INFO] candidate-delivered`         attestation -- the label's own idiom
-#   `[DELIVERED] lane ... -- PR #N`      attestation -- closes the item
+#   `[DELIVERED] lane ... -- PR #N`      attestation for BOTH organs when the
+#                                        marker line carries no `paths:` clause
+#                                        (epic-wide delivery) -- #24461 residu
+#                                        (11/11): the belt already excluded the
+#                                        issue, but only through a budgeted
+#                                        per-issue probe (fail-OPEN served it
+#                                        anyway, 76/120); with a `paths:` clause
+#                                        it stays a TRANCHE and arms neither.
+#                                        Cf. `delivery_grammar.attestation_state`
 #   `[RELEASED] lane ... -- <coverage>`  attestation -- delivered, per picker
 #   `[RELEASED] lane ... -- <barrier>`   ACTIVITY -- nothing was delivered;
 #                                        the item becomes servable again
@@ -322,6 +343,15 @@ def classify(
                       (the default) means "not consulted" and preserves the
                       pre-#14307 behaviour, so existing callers are unaffected.
 
+    Contract -- ``issue["comments"]`` must carry the THREAD of the issue.
+    The attestation branch reads it (and only it): a payload fetched
+    without its comments therefore sees no living attestation, and the
+    issue falls back to the reference heuristic. This is not a bug today
+    (``main`` loads the comments), but it was an IMPLICIT contract: it is
+    written down here, and pinned by
+    ``test_sans_commentaires_pas_d_attestation_voyait`` (review Hermes,
+    2026-11-03, note de suivi).
+
     Returns:
         ``(verdict, detail)`` where verdict is one of:
         ``"epic"``         -- excluded (EPIC by title/label)
@@ -339,6 +369,22 @@ def classify(
                               a tranche is not a delivery (#23762)
         ``"active"``       -- a comment landed after the latest merge
         ``"candidate"``    -- delivered + silent: pose the label
+        ``"attested"``     -- the thread carries a LIVING attestation:
+                              the `[INFO] candidate-delivered` forms,
+                              `[RELEASED] ... acceptance deja couverte`, or
+                              -- depuis le residu #24461 (11/11) -- la forme
+                              `[DELIVERED] lane X -- PR #N` SANS clause
+                              `paths:`. Le dossier `[CLOSURE PREFLIGHT]`
+                              n'arme pas le label (`dossier=False`).
+                              **Exception, classe `consolidation`** (#25082) :
+                              la forme `[DELIVERED] lane` n'y arme PAS le
+                              label -- c'est une tranche d'un chantier
+                              multi-tranches (#22500), que le tapis n'ecarte
+                              que 48 h : pose the label (#24461)
+        ``"attestation_revoked"`` -- the thread carries a RETRACTED
+                              attestation (`[NOT-DELIVERED]` /
+                              `[INFO] candidate-delivered-revoked`): remove
+                              the label, and let no other path arm it (#24461)
     """
     title = issue.get("title", "")
     labels = issue.get("labels", []) or []
@@ -363,6 +409,56 @@ def classify(
         who = retraction.get("actor") or "unknown"
         when = retraction.get("created_at") or "?"
         return ("retracted", f"label removed by {who} on {when}; verdict stands")
+
+    # #24461 -- l'ATTESTATION d'une lane arme le LABEL, et une RETRACTATION
+    # le retire. L'etat du fil se lit avec la MEME grammaire que le tapis
+    # (`delivery_grammar`, source unique) : une attestation VIVANTE dit
+    # « les criteres sont couverts, rend la main », une retractation dit
+    # « ce n'est pas livre ».
+    #
+    # Pourquoi cela change la donne : le tapis ecarte deja ces issues, mais
+    # il le fait par une SONDE par issue, donc par un budget de sondes --
+    # epuise, la sonde rend fail-OPEN et l'issue est servie comme un grain
+    # neuf (mesure #24461 : 37 des 120 grains servis portaient un marqueur
+    # vivant, contre 1 issue sur 165 portant le label). Le LABEL, lui, est
+    # dans le payload du pool : il rend l'exclusion gratuite.
+    #
+    # La branche se place APRES la retraction humaine (un verdict humain
+    #prime sur tout, #14307) et AVANT l'heuristique de references : une
+    # attestation vivante EST une livraison, et une retraction doit
+    # empecher l'heuristique de re-armer un label que le fil a retire.
+    # `dossier=False` : l'organe qui parse le dossier `[CLOSURE PREFLIGHT]`
+    # n'est pas dans le sparse-checkout de ce cron (#23762), donc le poser
+    # ici armerait le label en local et pas en CI -- deux comportements pour
+    # le meme depot. Le dossier reste le signal de l'adjoint, et le tapis
+    # (qui tourne sur le depot complet) continue de le lire.
+    #
+    # #25082 -- la classe `consolidation` garde la grammaire ETROITE. Une
+    # consolidation est un chantier MULTI-tranches (#22500) : la lane qui en
+    # livre une poste `[DELIVERED] lane X -- PR #N`, et le tapis n'ecarte
+    # l'issue que 48 h (`CONSOLIDATION_LAG_H`) -- « le label reste intact ».
+    # Depuis le residu #24461 (11/11), ce meme marqueur armait AUSSI le
+    # label : la regle des 48 h ne mordait plus, et la consolidation sortait
+    # du tapis pour de bon. Mesure du 13/11 : 6 des 27 consolidations
+    # ouvertes portaient le label, dont #20298 (six tranches livrees, cinq
+    # paliers restants) et #20316 (six tranches, trois restantes). Pour cette
+    # classe, seule une attestation PROPRE (`[INFO] candidate-delivered`,
+    # `[RELEASED] ... acceptance deja couverte`) arme le label ; le marqueur
+    # de lane y redevient ce qu'il est sur un chantier multi-tranches -- une
+    # tranche -- et l'issue retombe sur l'heuristique de references.
+    bodies = [c.get("body") or "" for c in (issue.get("comments") or [])]
+    if is_consolidation(labels):
+        attestation = delivery_state(bodies, lane_marker=False, dossier=False)
+    else:
+        attestation = attestation_state(bodies, dossier=False)
+    if attestation == ATTESTED:
+        return ("attested",
+                "attestation de livraison vivante dans le fil "
+                "(meme grammaire que le tapis)")
+    if attestation == REVOKED:
+        return ("attestation_revoked",
+                "retractation de l'attestation dans le fil "
+                "([NOT-DELIVERED] / candidate-delivered-revoked)")
 
     # #11100: an OPEN PR referencing the issue is work in flight -- the
     # multi-phase rollout shape (e.g. #10984, referenced by open #10986 plus
@@ -772,7 +868,8 @@ def main(argv: list[str] | None = None) -> int:
     issues = _rotate_window(list_open_issues(repo), args.offset, args.limit)
 
     counts = {"candidate": 0, "active": 0, "in_flight": 0, "no_delivery": 0,
-              "epic": 0, "retracted": 0}
+              "epic": 0, "retracted": 0, "attested": 0, "attestation_revoked": 0,
+              "container": 0}
     title_only_issues = 0
     print(f"[candidate-delivered] repo={repo} mode={'dry-run' if args.dry_run else 'apply'} "
           f"open_issues={len(issues)} label={args.label}")
@@ -809,6 +906,23 @@ def main(argv: list[str] | None = None) -> int:
             if not labeled:
                 apply_label(repo, number, args.label, args.dry_run)
             print(f"  #{number:<6} CANDIDATE  {why}")
+        elif verdict == "attested":
+            # #24461 -- une attestation VIVANTE arme le label. Le label est
+            # ce que le tapis lit sans payer une sonde par issue.
+            if not labeled:
+                apply_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} ATTESTED  {why}  (label pose)")
+            else:
+                print(f"  #{number:<6} ATTESTED  {why}")
+        elif verdict == "attestation_revoked":
+            # Une attestation RETIRACEE : le label s'en va, et l'heuristique
+            # de references ne peut pas le rearmer (la branche a ete prise
+            # avant elle).
+            if labeled:
+                remove_label(repo, number, args.label, args.dry_run)
+                print(f"  #{number:<6} revoked   {why}  (label retracted)")
+            else:
+                print(f"  #{number:<6} revoked   {why}")
         elif verdict == "active":
             if labeled:  # became active again -- retract the label (idempotent)
                 remove_label(repo, number, args.label, args.dry_run)

@@ -236,10 +236,51 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json'
+      # knot_lean (herite du wrapper lean-knot.yml supprime, #13751 : 35e lake.
+      # sorry-baseline "8" = compte reel distinct_code_sorry mesure au
+      # commit (l'instrument fait foi ; le recit par declaration vit dans
+      # KNOTS/knot_lean/README.md §sorry, pas ici -- motif #15598). Parametres
+      # exacts du wrapper : axiom target-modules "*" + allow-axioms vide +
+      # fail-on-sorry false (les 8 sorries reconnus sont rapportes has_sorry,
+      # non gates) + include-i18n-siblings true (les 24 jumeaux _en portent
+      # 751 declarations que le filtre FR-only excluait, #22453). Le wrapper
+      # declarait lakefile.toml : le lake n'en a pas (mesure au repertoire),
+      # pattern mort non reporte. lake-manifest.json AJOUTE au declenchement
+      # (le wrapper ne l'avait pas), comme planning, mimo, compression et
+      # riemann200 : un depin de Mathlib doit rejouer le lake. La jambe
+      # advisory target-coverage du wrapper n'est pas portee : son audit
+      # comparait modules compiles vs cible liste-a-la-main, et la cible est
+      # "*" -- l'ecart etait nul par construction.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # conway_lean (GOL, migration du wrapper lean-conway.yml supprime --
+      # dernier per-lake, #13751 axe workflows). Baseline "1" = compte reel
+      # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
+      # HashlifeMarginFragment.lean, framework sorry documente). Le profil
+      # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
+      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # (liste explicite, source de verite #21905 -- le compte de ce
+      # commentaire est mesure contre le fichier par test_axiom_allow_file)
+      # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
+      # bidirectionnel) + i18n true (les _en sont des modules compiles).
+      # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
+      # La jambe target-coverage du wrapper n'est pas portee : cible "*",
+      # ecart nul par construction (meme trancher que knot).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
+      # la listait pas) : la liste EST la regle du gate axiom de ce lake --
+      # un nom ajoute/retire doit rejouer le gate qui l'applique.
+      - 'scripts/lean/allow_axioms_conway.txt'
       # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
       # supprime (#17374) : l'instrument ou son test change -> la jambe
       # certifiee de gametheory rejoue.
@@ -456,10 +497,51 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/lake-manifest.json'
+      # knot_lean (herite du wrapper lean-knot.yml supprime, #13751 : 35e lake.
+      # sorry-baseline "8" = compte reel distinct_code_sorry mesure au
+      # commit (l'instrument fait foi ; le recit par declaration vit dans
+      # KNOTS/knot_lean/README.md §sorry, pas ici -- motif #15598). Parametres
+      # exacts du wrapper : axiom target-modules "*" + allow-axioms vide +
+      # fail-on-sorry false (les 8 sorries reconnus sont rapportes has_sorry,
+      # non gates) + include-i18n-siblings true (les 24 jumeaux _en portent
+      # 751 declarations que le filtre FR-only excluait, #22453). Le wrapper
+      # declarait lakefile.toml : le lake n'en a pas (mesure au repertoire),
+      # pattern mort non reporte. lake-manifest.json AJOUTE au declenchement
+      # (le wrapper ne l'avait pas), comme planning, mimo, compression et
+      # riemann200 : un depin de Mathlib doit rejouer le lake. La jambe
+      # advisory target-coverage du wrapper n'est pas portee : son audit
+      # comparait modules compiles vs cible liste-a-la-main, et la cible est
+      # "*" -- l'ecart etait nul par construction.)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/lean_utils.py'
+      # conway_lean (GOL, migration du wrapper lean-conway.yml supprime --
+      # dernier per-lake, #13751 axe workflows). Baseline "1" = compte reel
+      # distinct_code_sorry mesure au move (98 fichiers, naive 200 -> 1 reel :
+      # HashlifeMarginFragment.lean, framework sorry documente). Le profil
+      # axiom porte le MODELE du wrapper : target "*" + fail-on-sorry false
+      # allow-axioms: 79 native_decide axioms via @allow_axioms_conway.txt
+      # (liste explicite, source de verite #21905 -- le compte de ce
+      # commentaire est mesure contre le fichier par test_axiom_allow_file)
+      # (advisory -- le gate sorry bloquant, lui, vit dans sorry-baseline
+      # bidirectionnel) + i18n true (les _en sont des modules compiles).
+      # build-threads "1" herite du #23247 : OOM d'elaboration sans cap.
+      # La jambe target-coverage du wrapper n'est pas portee : cible "*",
+      # ecart nul par construction (meme trancher que knot).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lake-manifest.json'
+      # Self-cover allow-list (#8712, dette du wrapper : lean-conway.yml ne
+      # la listait pas) : la liste EST la regle du gate axiom de ce lake --
+      # un nom ajoute/retire doit rejouer le gate qui l'applique.
+      - 'scripts/lean/allow_axioms_conway.txt'
       # Self-cover du contrat certifie herite du wrapper lean-social-choice.yml
       # supprime (#17374) : l'instrument ou son test change -> la jambe
       # certifiee de gametheory rejoue.
@@ -483,6 +565,16 @@ on:
 permissions:
   contents: read
 
+# Partage du pool `ubuntu-latest` avec roo-extensions (proposition du 03/11,
+# dashboard global) : sur une PR, un run depasse par un push plus recent rend
+# sa place au lieu de garder la file. Sur `push` (main), le groupe porte le SHA :
+# chaque commit a son propre groupe, rien n'est annule ni mis en attente.
+# Ce workflow ecoute aussi `edited` : une edition du titre ou du body annule le run
+# en cours de la PR et le relance au meme SHA.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   # Detection : quels lakes du manifeste sont touches par l'evenement.
   # Les fichiers changes viennent de l'API REST (pull_request : fichiers
@@ -492,6 +584,7 @@ jobs:
   # arrive par le self-cover).
   changes:
     name: lean-matrix-changes
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # 2026-10-28 (#23053 famille (c), lane myia-ai-01:CoursIA-2) : forme hybride
     # de debordement CI (#22937/#22944/#23016). PR meme-depot ET
     # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
@@ -549,7 +642,7 @@ jobs:
   # jamais ; il apparait comme check-run SKIPPED (inactif, jamais bloquant).
   lean-matrix:
     needs: changes
-    if: needs.changes.outputs.any == 'true'
+    if: (needs.changes.outputs.any == 'true') && (github.event.action != 'edited' || github.event.changes.base != null)
     # Ref LOCALE `./` (pas `jsboige/CoursIA/...@main`) : la resolution
     # per-PR est la condition meme de livrabilite de cette PR -- sur une
     # PR de test, `@main` appellerait le lean-build.yml de main, qui n'a

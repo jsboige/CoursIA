@@ -35,7 +35,8 @@
   Origine : Conway.lean l.39-2458 (2420 lignes), commit de référence
   origin/main 1cef8a55024. Aucun reformatage, aucune tactique modifiée.
   Après cette tranche, `Knots/Conway.lean` est réduit au stub
-  aggregator du plan Option A. -/
+  aggregator du plan Option A. Le texte EN a été déplacé depuis
+  Conway_en.lean l.50-2471 (2422 lignes). -/
 
 import Knots.Basic
 import Knots.Mutation
@@ -302,13 +303,13 @@ normalisation désignée (mineur sans première ligne ni dernière colonne), la
 fonction rend t³ − 2·t² + 2·t sur le code planaire canonique (#17595).
 
 Remarque d'honnêteté : cette valeur n'est PAS le polynôme d'Alexander
-classique de 4_1 (qui vaut t² − 3·t + 1 à un facteur unité près) ; le
-théorème mesure la valeur réellement produite par la fonction désignée sur
-un câblage à 4 croisements qui forme une boucle unique. Le trèfle
-(t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1) sont bien
-reproduits, mais la forme du polynôme diverge du classique — la matrice
-non signée traite les deux croisements négatifs du code planaire comme
-positifs. La divergence est formalisée ci-dessous
+classique de 4_1 (qui vaut ±t² ∓ 3·t ± 1, soit t² − 3·t + 1 à un facteur
+unité près) ; le théorème mesure la valeur réellement produite par la
+fonction désignée sur un câblage à 4 croisements qui forme une boucle
+unique. Le trèfle (t² − t + 1) et le déterminant |P(−1)| = 5 = det(4_1)
+sont bien reproduits, mais la forme du polynôme diverge du classique — la
+matrice non signée traite les deux croisements négatifs du code planaire
+comme positifs. La divergence est formalisée ci-dessous
 (`alexander_figureEight_not_classical` : pas une unité) et réparée par la
 variante signée (`alexander_figureEight_signed` : le classique exact).
 -/

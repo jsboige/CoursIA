@@ -28,7 +28,13 @@ Verdicts (un seul par PR)
 ``SUPERSEDED``
     Le body ou un commentaire de fermeture nomme une PR successeure, **ou** donne
     une raison explicite d'abandon (obsolete, doublon, sans objet, abandonne).
-    Le contenu a ete ecarte deliberement -- ce n'est pas une perte.
+    Le contenu a ete ecarte deliberement -- ce n'est pas une perte. Une ligne de
+    tri ``[TRI]`` postee apres coup (secretariat, #22166 point 2) compte comme
+    commentaire de fermeture, sans fenetre temporelle.
+``PARKED_VETO``
+    La PR porte le label ``parked-veto`` : fermeture assumee par veto, contenu
+    garde pour reprise ulterieure (#22166 point 2, instance #24024). Le contenu
+    a ete ecarte deliberement -- ce n'est pas une perte.
 ``INTEGRATED``
     Le contenu de la branche est present sur ``main`` (identite de contenu via
     l'organe ``orphan_branch_scan``, robuste au squash).
@@ -44,9 +50,10 @@ revient au coordinateur. Il sort 0 dans tous les cas -- ce n'est pas un gate CI.
 Ordre d'evaluation
 ------------------
 ``UNKNOWN`` (illisible) -> ``INTEGRATED`` (contenu sur main) -> ``SUPERSEDED``
-(ecarte deliberement) -> ``ACCIDENTAL_EMPTY_CLOSE`` (signature du force-push) ->
-``ORPHANED_CONTENT``. Un contenu deja sur ``main`` n'est jamais un accident, et
-une fermeture expliquee n'est jamais un orphelin.
+(ecarte deliberement, successeur ou abandon) -> ``PARKED_VETO`` (veto assume) ->
+``ACCIDENTAL_EMPTY_CLOSE`` (signature du force-push) -> ``ORPHANED_CONTENT``.
+Un contenu deja sur ``main`` n'est jamais un accident, et une fermeture
+expliquee n'est jamais un orphelin.
 
 Usage
 -----
@@ -79,16 +86,44 @@ ACCIDENTAL = "ACCIDENTAL_EMPTY_CLOSE"
 ORPHANED = "ORPHANED_CONTENT"
 SUPERSEDED = "SUPERSEDED"
 INTEGRATED = "INTEGRATED"
+PARKED = "PARKED_VETO"
 UNKNOWN = "UNKNOWN"
-VERDICTS = (ACCIDENTAL, ORPHANED, SUPERSEDED, INTEGRATED, UNKNOWN)
+VERDICTS = (ACCIDENTAL, ORPHANED, PARKED, SUPERSEDED, INTEGRATED, UNKNOWN)
+
+#: Marqueur de ligne de tri (#22166, point 2 de la reouverture du 03/11) : un
+#: commentaire dont la premiere ligne commence par ``[TRI]`` est une decision
+#: explicite du secretariat, lisible SANS fenetre temporelle -- le tri est pose
+#: apres coup, des jours apres la fermeture, et la fenetre de 30 min autour de
+#: ``closed_at`` le rendait structurellement invisible. Le marqueur seul ne
+#: classe rien : les formes reconnues (:data:`_SUCCESSOR_RE`,
+#: :data:`_ABANDON_RE`) s'appliquent DANS le commentaire marque, et rien
+#: d'autre -- la liste close ne s'elargit pas a la prose.
+_TRI_MARKER_RE = re.compile(r"^\s*\[TRI\]", re.IGNORECASE)
+
+#: Label de stationnement deliberé (#22166, point 2) : pose sur la PR (les
+#: labels d'une PR et de son issue sont le meme objet), il signifie que la
+#: fermeture est un veto assume dont le contenu est garde pour reprise --
+#: ni une perte ni un orphelin. Instance nommee par la reouverture : #24024.
+PARKED_LABEL = "parked-veto"
 
 #: Un successeur doit etre nomme explicitement. ``See #N`` et ``Part of #N`` sont
 #: volontairement EXCLUS : dans le body d'une PR empilee ils designent le parent,
 #: pas un successeur -- #20374 porte « Part of #20316 » et n'est pas superseded.
+#:
+#: Le vocabulaire des **fournees** (Q162, 03/11) compte comme un successeur
+#: nomme : « Contenu fondu en fournee dans #24354 », « [REPLIEE] Repliee en
+#: fournee dans la PR #24361 », « folded into #N ». Sans ces formes, une PR
+#: repliee proprement sortait ``ORPHANED_CONTENT`` (« aucune raison de
+#: fermeture nommee ») alors que ses commentaires nommaient le successeur --
+#: instance #24196. Les accents sont optionnels dans les deux sens : les
+#: commentaires reels ecrivent « fournee » comme « fournée ».
 _SUCCESSOR_RE = re.compile(
     r"(?:superseded\s+by|replaced\s+by|successor\s*:?|closed\s+in\s+favou?r\s+of|"
     r"remplac[ée]e?s?\s+par|reprise?s?\s+(?:dans|par)|reprend\s+(?:dans|par)|"
-    r"duplicate\s+of|doublon\s+de|en\s+faveur\s+de)"
+    r"duplicate\s+of|doublon\s+de|en\s+faveur\s+de|"
+    r"fondu[es]?\s+en\s+fourn[ée]e\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
+    r"repli[ée]e?s?\s+en\s+fourn[ée]e\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
+    r"folded\s+into)"
     r"\s*:?\s*#(\d+)",
     re.IGNORECASE,
 )
@@ -113,6 +148,7 @@ def verdict_of(
     integrated: bool | None = None,
     successor: int | None = None,
     abandon_reason: bool = False,
+    parked: bool = False,
     force_push_to_close_s: float | None = None,
     branch_present: bool | None = None,
     content_lost: int | None = None,
@@ -127,6 +163,8 @@ def verdict_of(
             ``False`` s'il en manque, ``None`` si non verifiable.
         successor: numero de la PR successeure nommee, s'il y en a une.
         abandon_reason: un commentaire de fermeture donne une raison d'abandon.
+        parked: la PR porte le label ``parked-veto`` -- fermeture assumee,
+            contenu garde pour reprise (#22166 point 2).
         force_push_to_close_s: delai en secondes entre le dernier
             ``head_ref_force_pushed`` et la fermeture (``None`` si aucun).
         branch_present: la branche distante existe-t-elle encore ?
@@ -143,6 +181,8 @@ def verdict_of(
         return (SUPERSEDED, f"successeur nomme : #{successor}")
     if abandon_reason:
         return (SUPERSEDED, "raison d'abandon explicite dans un commentaire de fermeture")
+    if parked:
+        return (PARKED, f"label {PARKED_LABEL} : ecartee deliberement, gardee pour reprise")
     if integrated is None:
         return (UNKNOWN, "contenu non verifiable (merge-base introuvable ou branche supprimee)")
     if branch_present and content_lost:
@@ -211,7 +251,7 @@ def closed_unmerged(repo: str, since: datetime, fetch_page=None) -> list[dict]:
     fetch = fetch_page or _page
     out: list[dict] = []
     page = 1
-    while page <= 50:
+    while True:
         data = fetch(page)
         if not data:
             break
@@ -270,9 +310,11 @@ def force_push_to_close_seconds(events: list[dict], closed_at: datetime) -> floa
 def closing_evidence(body: str, comments_: list[dict], closed_at: datetime) -> tuple[int | None, bool]:
     """``(successeur, raison_d_abandon)`` depuis le body et les commentaires proches.
 
-    Seuls les commentaires dans :data:`CLOSING_COMMENT_WINDOW_S` autour de la
-    fermeture comptent : un ``superseded by #N`` poste trois semaines plus tot
-    parlait d'autre chose.
+    Les commentaires dans :data:`CLOSING_COMMENT_WINDOW_S` autour de la
+    fermeture comptent. Hors de cette fenetre, seuls les commentaires dont
+    le corps commence par ``[TRI]`` sont retenus : ils consignent une decision
+    explicite de triage, meme postee apres coup. Un commentaire ordinaire tel
+    que ``superseded by #N`` poste trois semaines plus tot ne compte pas.
     """
     successor: int | None = None
     reason = False
@@ -281,8 +323,14 @@ def closing_evidence(body: str, comments_: list[dict], closed_at: datetime) -> t
         ts = _parse_ts(c.get("created_at"))
         if ts is None:
             continue
+        body_text = c.get("body") or ""
         if abs((ts - closed_at).total_seconds()) <= CLOSING_COMMENT_WINDOW_S:
-            comment_texts.append(c.get("body") or "")
+            comment_texts.append(body_text)
+        elif _TRI_MARKER_RE.match(body_text):
+            # Ligne de tri #22166 point 2 : decision explicite postee apres
+            # coup, lisible sans fenetre. Le marqueur est la garde : la prose
+            # ordinaire ne commence pas par ``[TRI]``.
+            comment_texts.append(body_text)
     # Successeur : le body ET les commentaires de fermeture (un body peut porter
     # « superseded by #N »).
     for text in [body or ""] + comment_texts:
@@ -337,6 +385,7 @@ def evaluate_pr(pr: dict, repo: str, main_ref: str, branches: dict[str, str]) ->
 
     delta = force_push_to_close_seconds(events, closed_at) if closed_at else None
     successor, abandon = closing_evidence(pr.get("body") or "", cmts, closed_at) if closed_at else (None, False)
+    labels = {lab.get("name") for lab in (pr.get("labels") or []) if lab.get("name")}
 
     present = branch in branches
     if present:
@@ -348,6 +397,7 @@ def evaluate_pr(pr: dict, repo: str, main_ref: str, branches: dict[str, str]) ->
         integrated=integrated,
         successor=successor,
         abandon_reason=abandon,
+        parked=PARKED_LABEL in labels,
         force_push_to_close_s=delta,
         branch_present=present,
         content_lost=lost,

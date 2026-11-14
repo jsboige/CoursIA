@@ -450,8 +450,8 @@ TAXONOMY_SCHEMAS = (
 )
 
 TAXONOMY_DEFAULTS = (
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv",
-    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_virtues_taxonomy.csv",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv",
+    "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_virtues_taxonomy.csv",
 )
 
 

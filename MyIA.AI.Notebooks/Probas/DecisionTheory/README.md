@@ -57,10 +57,10 @@ flowchart TD
 
 Le parcours suit une progression unique, portée en parallèle par les deux moteurs (Infer.NET et PyMC) :
 
-1. **Fondations** — On pose les axiomes de rationalité (von Neumann–Morgenstern), on dérive la fonction d'utilité, on modélise l'aversion au risque (paradoxe de Saint-Pétersbourg, CARA/CRRA). C'est ici qu'intervient le **premier notebook Lean** ([DecInfer-02](DecInfer/DecInfer-02-Lean-ExpectedUtility.ipynb)) : la direction saine du théorème de représentation vNM, prouvée `0 sorry`.
+1. **Fondations** — On pose les axiomes de rationalité (von Neumann–Morgenstern), on dérive la fonction d'utilité, on modélise l'aversion au risque (paradoxe de Saint-Pétersbourg, CARA/CRRA). C'est ici qu'intervient le **premier notebook Lean** ([DecInfer-01b](DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb)) : la direction saine du théorème de représentation vNM, prouvée `0 sorry`.
 2. **Structure de décision** — On passe des choix isolés aux décisions structurées : critères multiples (MAUT), diagrammes d'influence (nœuds de chance / décision / utilité), et surtout la **valeur de l'information** (EVPI, EVSI) — combien vaut un test avant de l'acheter.
 3. **Robustesse & séquentiel** — Décision sous incertitude sévère (Minimax, regret) puis passage au temps : processus de décision markoviens (MDP), équation de Bellman, itération valeur/politique.
-4. **Bandits** — L'arbitrage exploration/exploitation : Thompson Sampling (posterior Beta-Bernoulli calculé par le moteur), comparé à ε-greedy et UCB1. C'est ici qu'intervient le **second notebook Lean** ([DecInfer-08b](DecInfer/DecInfer-08b-Lean-Gittins.ipynb)) : l'indice de Gittins et les identités d'escompte géométrique.
+4. **Bandits** — L'arbitrage exploration/exploitation : Thompson Sampling (posterior Beta-Bernoulli calculé par le moteur), comparé à ε-greedy et UCB1. C'est ici qu'intervient le **second notebook Lean** ([DecInfer-07b](DecInfer/DecInfer-07b-Lean-Gittins.ipynb)) : l'indice de Gittins et les identités d'escompte géométrique.
 5. **Pont causal (capstone)** — [CausalBridges-01 — Do-Calculus](Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) fédère les quatre traitements de la causalité disséminés dans le dépôt (Tweety logique, Infer.NET, PyMC, émergence causale PyPhi) autour de l'**échelle de Pearl** (association → intervention → contrefactuel) et du **do-calculus**, exécutés sur l'outil de référence [`dowhy`](https://www.pywhy.org/dowhy/). Une décision optimale suppose de savoir ce que l'on *cause*, pas seulement ce que l'on *observe*.
 6. **Règles de décision sous corrélation** — [ReglesDeDecision-01](ReglesDeDecision-01-EDT-CDT-CCDT-UDT.ipynb) reprend la distinction observation/intervention au moment où elle change la **valeur d'un acte**. Sur des modèles causaux finis énumérés exactement, le carnet compare EDT, CDT, CCDT et l'intervention sur une procédure, de Fisher et Newcomb au cas d'Egan et au dilemme du prisonnier. Il mesure aussi la condition de reconnaissance sous laquelle l'avantage reproductif des agents CDT du problème de Dai s'inverse.
 
@@ -68,7 +68,7 @@ Le parcours suit une progression unique, portée en parallèle par les deux mote
 
 ### `DecInfer/` — l'arc de référence (Infer.NET + Lean 4)
 
-Onze notebooks, dont **huit en C#/.NET Interactive** (message passing EP/VMP) et **trois à kernel Lean 4** (companions natifs de preuve formelle). C'est l'arc canonique, le plus complet ; il va des axiomes vNM (notebook 1) jusqu'au Thompson Sampling (notebook 10), avec les preuves Lean de vNM (notebook 2), de de Finetti (notebook 2b) et de Gittins (notebook 8b) intercalées à leur place pédagogique. **Détail notebook par notebook** : [`DecInfer/README.md`](DecInfer/README.md).
+Douze notebooks, dont **huit en C#/.NET Interactive** (message passing EP/VMP), **trois à kernel Lean 4** (companions natifs de preuve formelle) et **un à kernel Python** (notebook 11). C'est l'arc canonique, le plus complet ; il va des axiomes vNM (notebook 1) jusqu'aux théories de la décision face à un prédicteur (notebook 11, EDT/CDT/UDT — descendu de GameTheory), avec les preuves Lean de vNM (notebook 2), de de Finetti (notebook 2b) et de Gittins (notebook 8b) intercalées à leur place pédagogique. **Détail notebook par notebook** : [`DecInfer/README.md`](DecInfer/README.md).
 
 ### `DecPyMC/` — le miroir Python (MCMC)
 
@@ -87,7 +87,7 @@ Quatre notebooks-ponts, dont [CausalBridges-01 — Do-Calculus](Causal-Bridges/C
 Le lake Lean 4 [`decision_theory_lean`](decision_theory_lean/), à la racine de la série Probas (visible des deux pistes), formalise trois résultats canoniques :
 
 - **Utility** — la représentation d'utilité espérée de von Neumann–Morgenstern : les quatre axiomes (complétude, transitivité, indépendance, continuité/Archimède), la **direction saine** du théorème (représentation ⟹ rationalité) et la stabilité affine, démontrées **sans aucun `sorry`**. La direction d'existence (Herstein–Milnor 1953) est documentée comme jalon ouvert.
-- **Coherence** — la cohérence de de Finetti / Dutch Book : la direction constructive (cas fini) et le cas mono-ticket sont **clos sans `sorry`** ; des prix de pari incohérents exposent l'agent à un livret de paris à perte sûre, via l'identité d'inclusion–exclusion. **Vitrine notebook** : [DecInfer-02b-Lean-Coherence](DecInfer/DecInfer-02b-Lean-Coherence.ipynb), companion dédié extrait des sections 7-8 de DecInfer-02 (G4b, #14873) (`#check`/`#print axioms` sur `non_additive_implies_dutch_book` et `single_coherent_iff_prob_bounds`, EPIC visibilité #11703).
+- **Coherence** — la cohérence de de Finetti / Dutch Book : la direction constructive (cas fini) et le cas mono-ticket sont **clos sans `sorry`** ; des prix de pari incohérents exposent l'agent à un livret de paris à perte sûre, via l'identité d'inclusion–exclusion. **Vitrine notebook** : [DecInfer-01c-Lean-Coherence](DecInfer/DecInfer-01c-Lean-Coherence.ipynb), companion dédié extrait des sections 7-8 de DecInfer-01b (G4b, #14873) (`#check`/`#print axioms` sur `non_additive_implies_dutch_book` et `single_coherent_iff_prob_bounds`, EPIC visibilité #11703).
 - **Gittins** — le bandit actualisé à horizon infini : les **briques de l'escompte géométrique sont entièrement prouvées** ; le théorème phare d'optimalité de l'indice reste **énoncé mais intraitable** dans le Mathlib actuel (pas de formalisation MDP/Bellman), maintenu en `sorry` documenté — un jalon honnête, non un trou masqué.
 
 Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs). **Détail** : [`decision_theory_lean/README.md`](decision_theory_lean/README.md).
@@ -100,7 +100,7 @@ Le lake suit la convention i18n FR/EN de la série (fichiers `*_en.lean` miroirs
 
 - **Piste Infer.NET (`DecInfer/`)** : .NET 9.0 + `dotnet-interactive`. Voir [`../README.md`](../README.md#installation) pour l'installation du kernel.
 - **Piste PyMC (`DecPyMC/`), pont causal (`Causal-Bridges/`) et règles de décision (`ReglesDeDecision-01`)** : Python 3.12+ (PyMC 6 et ArviZ 1.x ne s'installent pas sur une version antérieure), dépendances `pymc`, `arviz`, `dowhy` dans [`../requirements.txt`](../requirements.txt). Les notebooks `DecPyMC` et `ReglesDeDecision` déclarent le kernel `python3` ; la plupart des `Causal-Bridges` déclarent encore `coursia-ml-training`, un kernel propre aux machines de la flotte ([#17654](https://github.com/jsboige/CoursIA/issues/17654)).
-- **Companions Lean (`DecInfer-02`, `DecInfer-02b`, `DecInfer-08b`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
+- **Companions Lean (`DecInfer-01b`, `DecInfer-01c`, `DecInfer-07b`)** : kernel Lean 4 (WSL) + lake [`decision_theory_lean`](decision_theory_lean/). Compilation : `lake -R build` dans le dossier du lake.
 
 Chaque sous-série démarre par ses fondations (`DecInfer-01` / `DecPyMC-01`) et se lit dans l'ordre numérique — la progression est cumulative.
 

@@ -46,11 +46,17 @@ from fast_lane_registry import (  # noqa: E402
     TRANCHE14, TRANCHE15, TRANCHE16, TRANCHE17, TRANCHE18, TRANCHE19,
     TRANCHE20, TRANCHE21, TRANCHE22, TRANCHE23, TRANCHE24, TRANCHE25, TRANCHE26,
     TRANCHE27, TRANCHE28, TRANCHE29, TRANCHE30, TRANCHE31, TRANCHE32,
-    TRANCHE33, TRANCHE34, TRANCHE35, TRANCHE36, TRANCHE37, Guard,
+    TRANCHE33, TRANCHE34, TRANCHE35, TRANCHE36, TRANCHE37, TRANCHE38,
+    TRANCHE39, TRANCHE40, TRANCHE41, TRANCHE42, TRANCHE43,
+    TRANCHE44, TRANCHE45, TRANCHE46, Guard,
 )
+import advisory_sticky  # noqa: E402  # organe partage (#24514, comme #24441)
 
 SHADOW_PREFIX = "fast-lane (ombre): "
 GUARD_TIMEOUT_S = 600
+# T-H (#25510) : pause avant la SEULE relance d'une publication refusee par
+# le quota d'ecriture de l'API Checks.
+CHECK_RUN_RETRY_S = 8
 OUTPUT_LIMIT = 60000  # marge sous la limite de 65535 de l'API Checks
 
 # Le nom d'un garde est un NOM DE CHECK-RUN (display string), jamais un nom de
@@ -313,7 +319,24 @@ def stale_added_paths(porcelain: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
-                   title: str, summary: str, dry_run: bool) -> None:
+                   title: str, summary: str, dry_run: bool,
+                   details_url: str | None = None,
+                   etat: dict[str, bool] | None = None) -> bool:
+    """Emet un check-run sur une tete. Renvoie `True` si le check-run est parti.
+
+    Le retour est **additif** (l'appelant d'origine ignore la valeur) : il
+    permet a un autre organe — le lot quotidien en ombre, P3 tranche 2 — de
+    reutiliser cette fonction au lieu de reimplementer le POST, et de
+    consigner le resultat de la publication dans son propre journal.
+    `details_url` est egalement additif : il pointe le run qui a produit le
+    verdict (l'API Checks l'accepte, il est optionnel).
+
+    `etat` est l'etat de quota partage dans l'execution (par defaut,
+    l'etat de module). Il porte une seule information : le quota est
+    epuise, donc on ne relancera plus une publication.
+    """
+    if etat is None:
+        etat = _QUOTA_ETAT
     payload = {
         "name": name,
         "head_sha": head_sha,
@@ -324,37 +347,216 @@ def emit_check_run(repo: str, head_sha: str, name: str, conclusion: str,
             "summary": summary[:OUTPUT_LIMIT],
         },
     }
+    if details_url:
+        payload["details_url"] = details_url
     if dry_run:
         print(f"[fast-lane][a-blanc] check-run {name!r} -> {conclusion} ({title})")
-        return
-    proc = subprocess.run(
-        ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
-        input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", errors="replace",
-    )
-    if proc.returncode != 0:
+        return True
+    # T-H (#25510) : le quota d'ecriture de l'API Checks est consomme PAR
+    # POST. Une voie rapide qui emet un check-run par garde en consomme
+    # ~80 par execution, et la voie rapide peut revenir sur la MEME tete
+    # (re-ouverture d'une PR, rejeu d'un job, dispatch de la voie ombre) :
+    # republier un verdict identique coute une ecriture pour rien.
+    #
+    # La RELANCE est reservee au refus de QUOTA SECONDAIRE, le seul qui se
+    # retablit en quelques secondes. Le refus de limite PRIMAIRE (le
+    # message mesure : `HTTP 403: API rate limit exceeded for
+    # installation`, 29 refus sur un meme run) ne se retablit PAS en 8 s :
+    # relancer dessus paie 29 x 8 s ~= 4 min sur le run mesure, et
+    # ~74 x 8 s ~= 10 min si tous les gardes sont refuses (timeout du job
+    # : 25 min). Apres le premier refus non relancable, ou apres une
+    # relance elle-meme refusee, on ne RELANCE plus : le POST continue
+    # (il peut reussir si la limite est par minute), la pause non.
+    for attempt in (1, 2):
+        proc = subprocess.run(
+            ["gh", "api", "-X", "POST", f"repos/{repo}/check-runs", "--input", "-"],
+            input=json.dumps(payload), capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        if proc.returncode == 0:
+            print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
+            return True
+        err = proc.stderr.strip()
+        if (attempt == 1 and not etat["relance_bloquee"]
+                and is_secondary_rate_refusal(err)):
+            print(f"[fast-lane] publication REFUSEE par le quota SECONDAIRE "
+                  f"pour {name!r} : {err} -- nouvelle tentative dans "
+                  f"{CHECK_RUN_RETRY_S}s", file=sys.stderr)
+            time.sleep(CHECK_RUN_RETRY_S)
+            continue
+        if is_quota_refusal(err):
+            # Le quota ne se retablit pas en 8 s : on ne relancera plus
+            # pour les publications suivantes de cette execution.
+            if not etat["relance_bloquee"]:
+                etat["relance_bloquee"] = True
+                print(f"[fast-lane] quota epuise ({err}) -- plus de relance "
+                      "pour les publications suivantes de cette execution",
+                      file=sys.stderr)
         # Ne pas faire echouer le job entier : un verdict non publie doit
         # rester visible dans le log plutot que de masquer les autres.
         print(f"[fast-lane] ECHEC de publication du check-run {name!r} : "
-              f"{proc.stderr.strip()}", file=sys.stderr)
-    else:
-        print(f"[fast-lane] check-run publie : {name} -> {conclusion}")
+              f"{err}", file=sys.stderr)
+        return False
+    return False
+
+
+# Les marqueurs d'un refus de QUOTA, et eux seuls. Un 403 de DROIT
+# ("Resource not accessible by integration") porte le meme code que le
+# refus de quota : le code ne suffit donc pas a distinguer les deux.
+# (`remarque du coordinateur sur #26270`, 2026-11-13)
+QUOTA_MARKERS: tuple[str, ...] = (
+    "rate limit",
+    "secondary rate",
+    "too many requests",
+    "quota",
+)
+
+# Les marqueurs du refus de QUOTA SECONDAIRE -- le SEUL qui se retablit
+# en quelques secondes, et donc le SEUL qui merite une relance.
+#
+# Le refus de limite PRIMAIRE ne se retablit PAS en 8 s. Message mesure
+# (2026-11-12) : `HTTP 403: API rate limit exceeded for installation`,
+# 29 refus sur un meme run. Relancer dessus paie 29 x 8 s ~= 4 min sur
+# ce run, et ~74 x 8 s ~= 10 min si tous les gardes sont refuses
+# (timeout du job : 25 min).
+#
+# (`remarque du coordinateur sur #26270`, 2026-11-13)
+SECONDARY_RATE_MARKERS: tuple[str, ...] = (
+    "secondary rate",
+)
+
+#: Etat de quota d'une execution. Une seule information : le quota est
+#: epuise, donc on ne relancera plus de publication. Le POST continue
+#: (il peut reussir si la limite est par minute) ; la pause, non.
+_QUOTA_ETAT: dict[str, bool] = {"relance_bloquee": False}
+
+
+def reset_quota_state() -> None:
+    """Remet l'etat de quota a zero : une execution = un etat."""
+    _QUOTA_ETAT["relance_bloquee"] = False
+
+
+def is_secondary_rate_refusal(stderr: str) -> bool:
+    """Le refus est-il un refus de QUOTA SECONDAIRE (donc relancable) ?
+
+    C'est le SEUL refus qui se retablit en quelques secondes. Le refus de
+    limite primaire (`API rate limit exceeded for installation`) ne se
+    retablit pas en 8 s : le relancer coute des minutes de job pour rien.
+    """
+    lowered = (stderr or "").lower()
+    return any(marker in lowered for marker in SECONDARY_RATE_MARKERS)
+
+
+def is_quota_refusal(stderr: str) -> bool:
+    """Le POST a-t-il ete refuse PAR LE QUOTA (et non par un autre defaut) ?
+
+    Une reponse de quota parle de `rate limit`, `secondary rate`, `too many
+    requests` ou `quota` ; elle porte souvent 403, mais un 403 de DROIT
+    (`Resource not accessible by integration`) porte le meme code : le code
+    seul ne distingue pas les deux, et une relance sur un refus de droit
+    republierait indefiniment une publication qui echouera toujours.
+
+    Une autre erreur (droit, nom invalide, payload refuse) doit etre
+    signalee telle quelle, sans nouvelle tentative.
+    """
+    lowered = (stderr or "").lower()
+    return any(marker in lowered for marker in QUOTA_MARKERS)
+
+
+def latest_check_runs(repo: str, head_sha: str) -> dict[str, tuple[str, str]]:
+    """Rend le check-run le PLUS RECENT de chaque nom, pour une tete.
+
+    L'API rend les entrees **du plus recent au plus ancien** (mesure du
+    2026-11-12 : ids decroissants sur 214 entrees), mais elle ne
+    **documente** pas cet ordre. Le plus recent est donc designe par son
+    **identifiant** (`id`), pas par sa position : un tri par id rend le
+    resultat independant de l'ordre dans lequel l'API repond -- sinon un
+    ordre inverse ferait retenir un verdict perime
+    (`remarque du coordinateur sur #26270`, 2026-11-13).
+
+    La valeur est le couple `(conclusion, title)`. Une jambe `skipped` n'est
+    **pas** retenue : une jambe sautee n'a rien mesure et ne peut pas
+    remplacer un verdict reel (regle du repli, cf #26255).
+
+    Rend `{}` si la lecture echoue : l'appelant ne saute alors AUCUNE
+    publication. L'optimisation ne doit jamais fabriquer un verdict -- au
+    pire, elle disparait.
+
+    `filter=all` est demande explicitement : l'API applique `filter=latest`
+    par defaut, et la branche qui ecarte une jambe `skipped` (une jambe
+    sautee n'a rien mesure) n'aurait alors aucun effet. Le defaut etant
+    change un jour, le comportement resterait le meme -- c'est le sens
+    sur, le POST repart.
+    (`remarque du coordinateur sur #26270`, 2026-11-13)
+    """
+    proc = subprocess.run(
+        ["gh", "api", "--paginate", "--slurp",
+         f"repos/{repo}/commits/{head_sha}/check-runs?per_page=100&filter=all"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    if proc.returncode != 0:
+        print(f"[fast-lane] lecture des check-runs existants impossible : "
+              f"{proc.stderr.strip()[:300]} -- aucune publication ne sera "
+              f"sautee", file=sys.stderr)
+        return {}
+    try:
+        payload = json.loads(proc.stdout or "{}")
+    except json.JSONDecodeError:
+        print("[fast-lane] lecture des check-runs existants illisible -- "
+              "aucune publication ne sera sautee", file=sys.stderr)
+        return {}
+    pages = payload if isinstance(payload, list) else [payload]
+    latest: dict[str, tuple[str, str]] = {}
+    seen_id: dict[str, int] = {}
+    for page in pages:
+        if not isinstance(page, dict):
+            continue
+        for run in page.get("check_runs") or []:
+            name = run.get("name")
+            if not name:
+                continue
+            run_id = run.get("id")
+            run_id = run_id if isinstance(run_id, int) else 0
+            known_id = seen_id.get(name)
+            if known_id is not None and known_id >= run_id:
+                # Un check-run plus recent existe deja pour ce nom.
+                continue
+            if (run.get("status") == "completed"
+                    and run.get("conclusion") == "skipped"):
+                # Une jambe sautee ne remplace pas un verdict reel : son id
+                # n'est donc pas retenu, pour qu'un verdict reel plus ancien
+                # reste eligible.
+                continue
+            output = run.get("output") or {}
+            seen_id[name] = run_id
+            latest[name] = (run.get("conclusion") or "",
+                            output.get("title") or "")
+    return latest
 
 
 # ---------------------------------------------------------------------------
-# Effets de bord PR : stickies et artefacts (#22209, tranche 1b)
+# Effets de bord PR : advisory partage et artefacts (#22209 tranche 1b, #24514)
 # ---------------------------------------------------------------------------
 #
 # Les gardes de cette tranche ne rendent pas leur verdict par un check-run
-# seul : ils ECRIVENT sur la PR (commentaire a marqueur) et, pour l'un d'eux,
-# deposent un artefact JSON. L'ecriture est isolee dans ce module et n'est
-# atteinte que par `--effects`, executee par le SEUL job qui porte
-# `pull-requests: write` (`Always-on commenters`). Le job principal
+# seul : ils ECRIVENT sur la PR et, pour l'un d'eux, deposent un artefact
+# JSON. L'ecriture est isolee dans ce module et n'est atteinte que par
+# `--effects`, executee par le SEUL job qui porte `pull-requests: write` +
+# `issues: write` (`Always-on commenters`). Le job principal
 # (`Always-on guards`) n'a pas ce drapeau : un defaut dans le code d'un garde
 # ne peut donc pas ecrire sur une PR.
 #
-# Le marqueur est celui de `marocchino/sticky-pull-request-comment@v2`,
-# byte-identique et en FIN de corps -- c'est la forme que reconnait le
-# parseur du dossier de prevalidation (`check_adjoint_prevalidation.py`).
+# Depuis #24514 (famille #15511), l'ecriture passe par l'organe partage
+# `advisory_sticky.py` -- le meme branchement que #24441 pour les six
+# workflows unitaires : UNE section par organe dans un commentaire unique,
+# retiree quand le signal redevient vert, et RIEN d'ecrit quand le succes
+# n'a rien a signaler. Le verrou d'ecriture par label, la verification apres
+# ecriture et le dedoublonnage id-max sont delegues a l'organe.
+#
+# Le marqueur marocchino ci-dessous ne sert plus a poser des commentaires :
+# il ne reconnait plus que les stickies poses par l'ANCIEN mecanisme sur les
+# PRs ouvertes avant le branchement, pour les perimer (renvoi `forwarded`,
+# forme que reconnait le parseur du dossier de prevalidation -- les deux
+# formes restent lues par `check_adjoint_prevalidation.py`).
 
 STICKY_MARKER = "<!-- Sticky Pull Request Comment{h} -->"
 
@@ -413,43 +615,89 @@ def _existing_sticky(repo: str, pr: str, marker: str) -> str:
     return ""
 
 
-def upsert_sticky_comment(repo: str, pr: str, header: str, body: str,
-                          dry_run: bool) -> str:
-    """Pose ou met a jour le sticky `header`. Rend l'action effectuee.
+def publish_advisory_section(repo: str, pr: str, header: str, body: str,
+                             dry_run: bool) -> str:
+    """Publie -- ou retire -- la section `header` de l'advisory partage.
 
-    Idempotence : le commentaire existant est retrouve par son marqueur puis
-    PATCHe. Sans cela, chaque push empilerait un commentaire de plus sur la
-    PR -- l'accident que la tranche absorbe justement.
+    #24514 (famille #15511) : le succes ne parle pas. Un corps VIDE n'ecrit
+    rien ; il RETIRE la section d'un signal passe (l'organe rend ``silent``
+    s'il n'existe aucun commentaire porteur : aucun commentaire n'est cree
+    pour un succes). Un corps porteur ecrit la section -- un seul commentaire
+    par PR, verrou d'ecriture par label, verification apres ecriture et
+    dedoublonnage delegates a ``advisory_sticky`` (#24441 fait le meme
+    branchement pour les six workflows unitaires).
+
+    Rend l'action effectuee ; l'echec reste COSMETIQUE : le verdict de ces
+    gardes vit dans leurs check-runs nommes, le commentaire n'est qu'un
+    resume. Une erreur d'API (quota, 5xx) ne rougit donc pas le job -- le
+    signal est re-tente au run suivant sur le meme push.
     """
     if not pr:
-        print("[fast-lane][effets] pas de numero de PR : sticky non pose",
+        print("[fast-lane][effets] pas de numero de PR : advisory non publie",
               file=sys.stderr)
         return "skipped"
-    marker = sticky_marker(header)
-    text = body.rstrip() + "\n\n" + marker
     if dry_run:
-        print(f"[fast-lane][a-blanc] sticky {header!r} -> "
-              f"{len(text)} caracteres")
+        action = "clear" if not body.strip() else "upsert"
+        print(f"[fast-lane][a-blanc] advisory {header!r} -> {action} "
+              f"({len(body)} caracteres)")
         return "dry-run"
-    existing = _existing_sticky(repo, pr, marker)
+    try:
+        if body.strip():
+            out = advisory_sticky.upsert_section(header, body, int(pr), repo)
+        else:
+            out = advisory_sticky.clear_section(header, int(pr), repo)
+    except Exception as exc:  # noqa: BLE001 -- publication cosmetique (#24441)
+        print(f"[fast-lane][effets] ECHEC de publication advisory {header!r} :"
+              f" {exc}", file=sys.stderr)
+        return "error"
+    action = str(out.get("action", "done"))
+    verified = " (constate)" if out.get("verified") else ""
+    print(f"[fast-lane][effets] advisory {header!r} : {action}{verified}")
+    return action
+
+
+def retire_legacy_sticky(repo: str, pr: str, header: str,
+                         dry_run: bool) -> str:
+    """Perime le sticky marocchino d'un header migre vers l'organe partage.
+
+    Les PRs ouvertes avant le branchement portent encore le commentaire
+    ``<!-- Sticky Pull Request Comment<header> -->`` pose par l'ancien
+    mecanisme : les phrases de succes y resteraient lisibles indefiniment.
+    Sa reecriture EN PLACE en forme de renvoi (prefixe ``forwarded`` de
+    l'organe partage, reconnu par le dossier de prevalidation au meme titre
+    que le marqueur d'origine) fait descendre la mesure de bruit au fil des
+    runs. Rien n'est supprime (#15372) et l'operation est idempotente : un
+    corps deja reecrit ne se termine plus par le marqueur d'origine, donc
+    n'est plus retrouve.
+
+    N'est appelee qu'apres une publication advisory REUSSIE : si la section
+    n'a pas pu etre ecrite, perimer l'ancien support effacerait le seul
+    endroit ou le signal vit encore.
+    """
+    if not pr or dry_run:
+        return "skipped"
+    marker = sticky_marker(header)
+    cid = _existing_sticky(repo, pr, marker)
+    if not cid:
+        return "noop"
+    text = (
+        f"{advisory_sticky.FORWARD_MARKER}\n\n"
+        f"*Cet advisory vit desormais dans le commentaire consultatif unique "
+        f"de la PR : une section par organe, retiree quand le signal "
+        f"redevient vert. Rien n'est efface.*"
+    )
     payload = json.dumps({"body": text})
-    if existing:
-        proc = _gh_api(False, "-X", "PATCH",
-                       f"repos/{repo}/issues/comments/{existing}",
-                       stdin=payload)
-        action = "updated"
-    else:
-        proc = _gh_api(False, "-X", "POST",
-                       f"repos/{repo}/issues/{pr}/comments", stdin=payload)
-        action = "created"
+    proc = _gh_api(False, "-X", "PATCH",
+                   f"repos/{repo}/issues/comments/{cid}", stdin=payload)
     if proc.returncode != 0:
-        # Jamais de repli en POST quand le PATCH echoue : ce serait creer le
-        # doublon que l'upsert existe pour eviter.
-        print(f"[fast-lane][effets] ECHEC du sticky {header!r} : "
+        # Cosmetique aussi : l'ancien commentaire reste valide (marqueur
+        # d'origine, reconnu par les lecteurs), il sera perime au run suivant.
+        print(f"[fast-lane][effets] ECHEC du perimage legacy {header!r} : "
               f"{proc.stderr.strip()}", file=sys.stderr)
         return "error"
-    print(f"[fast-lane][effets] sticky {header!r} : {action}")
-    return action
+    print(f"[fast-lane][effets] sticky legacy {header!r} : perime "
+          f"(commentaire {cid})")
+    return "retired"
 
 
 def drop_empty_pairs(cmd: list[str]) -> list[str]:
@@ -518,9 +766,16 @@ def run_effects(guard: Guard, ctx: dict[str, str],
         local = dict(ctx, trunc_note="")
 
         def _post(commenter=commenter, text=""):
-            if text:
-                upsert_sticky_comment(ctx["repo"], ctx["pr_number"],
-                                      commenter.header, text, dry_run)
+            # #24514 : publier TOUJOURS. Un corps vide RETIRE la section d'un
+            # signal passe (et ne cree rien sur une PR saine) ; un corps
+            # porteur ecrit la section. Le perimage du sticky marocchino
+            # legacy ne suit qu'une publication reussie : sans elle, l'ancien
+            # commentaire reste le seul endroit ou le signal vit.
+            action = publish_advisory_section(ctx["repo"], ctx["pr_number"],
+                                              commenter.header, text, dry_run)
+            if action not in ("error", "skipped", "dry-run"):
+                retire_legacy_sticky(ctx["repo"], ctx["pr_number"],
+                                     commenter.header, dry_run)
 
         # Les abstentions passent AVANT la selection de chemins. Une base
         # introuvable rend sinon « aucun fichier a scanner », donc un quitus
@@ -546,8 +801,9 @@ def run_effects(guard: Guard, ctx: dict[str, str],
             local["trunc_note"] = trunc_note(total, len(kept))
             merged = expand_paths_token(merged, kept)
             if not kept:
-                # Rien a scanner : l'original ne lance pas le detecteur et
-                # rend un quitus explicite, pas un silence.
+                # Rien a scanner : vert, donc silence (#24514) -- le corps
+                # vide de body(0) RETIRE une section posee par un push
+                # precedent qui, lui, avait des fichiers a scanner.
                 _post(text=commenter.body(0, "", local))
                 chunks.append(f"--- {commenter.header} ---\n"
                               "(aucun fichier modifie a scanner)")
@@ -594,6 +850,9 @@ def conclusion_for(guard: Guard, rc: int, shadow: bool = False) -> str:
 # ---------------------------------------------------------------------------
 
 def main(argv: list[str] | None = None) -> int:
+    # Une execution = un etat de quota : la relance est bloquee des le
+    # premier refus non relancable (cf `emit_check_run`).
+    reset_quota_state()
     parser = argparse.ArgumentParser(description="Voie rapide CI (#11835)")
     parser.add_argument("--base-ref",
                         default=os.environ.get("FAST_LANE_BASE", "origin/main"))
@@ -636,7 +895,8 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE20 + TRANCHE21 + TRANCHE22 + TRANCHE23 + TRANCHE24 + TRANCHE25
               + TRANCHE26 + TRANCHE27 + TRANCHE28 + TRANCHE29 + TRANCHE30
               + TRANCHE31 + TRANCHE32 + TRANCHE33 + TRANCHE34 + TRANCHE35
-              + TRANCHE36 + TRANCHE37
+              + TRANCHE36 + TRANCHE37 + TRANCHE38 + TRANCHE39 + TRANCHE40 + TRANCHE41
+              + TRANCHE42 + TRANCHE43 + TRANCHE44 + TRANCHE45 + TRANCHE46
               if not args.only or g.name == args.only]
     if args.effects:
         guards = [g for g in guards if g.commenters]
@@ -828,6 +1088,36 @@ def main(argv: list[str] | None = None) -> int:
     # ombre et la neutralisation jusqu'a la conclusion de la comparaison.
     head_sha = args.head_sha or git("rev-parse", "HEAD").stdout.strip()
     blocking_failed = False
+    # T-H (#25510) : la publication est **idempotente**. Un verdict deja
+    # publie sur CETTE tete, avec le meme nom, la meme conclusion et le meme
+    # titre, n'est pas republie : le POST coute une ecriture de quota.
+    #
+    # Ce qui ramene la voie rapide sur la MEME tete (mesure sur les
+    # appelants, 2026-11-13) :
+    #   - `reopened` -- une PR fermee puis rouverte garde son head sha
+    #     (`always-on-guards.yml:63`, `always-on-commenters.yml:48` :
+    #     `[ opened, synchronize, reopened ]`) ;
+    #   - le rejeu d'un job sur le meme run (`gh run rerun <run> --job
+    #     <job>`) ;
+    #   - le `workflow_dispatch` de la voie ombre (`fast-lane-shadow.yml`),
+    #     qui ne change pas la ref.
+    #
+    # Le declencheur `edited` n'est PLUS declare par aucun appelant : il a
+    # ete retire volontairement (#22331 -- une edition de body annulait le
+    # run de contenu en file et le renvoyait en fin de file, 113/268
+    # re-declenchements a tete egale). C'etait justement la source de
+    # re-declenchements a tete egale ; les causes restantes sont ci-dessus.
+    # Le verdict reste visible (il est deja dans l'API) et son `started_at`
+    # ne bouge pas -- c'est le comportement voulu d'un verdict stable.
+    existing: dict[str, tuple[str, str]] = {}
+    if not args.dry_run and selected:
+        existing = latest_check_runs(args.repo, head_sha)
+        if existing:
+            print(f"[fast-lane] {len(existing)} verdict(s) deja presents sur "
+                  f"la tete -- publication identique non republiee")
+    published = 0
+    skipped = 0
+    refused = 0
     for guard in selected:
         rc, log = results.get(guard.name, (0, "(aucune sortie)"))
         # #17941 : un rc de warn_rc arriving ici est un incident du GARDE
@@ -854,18 +1144,30 @@ def main(argv: list[str] | None = None) -> int:
             title = "signale (advisory)"
         name = ((SHADOW_PREFIX + guard.name) if effective_shadow
                 else guard.name)
-        emit_check_run(
+        check_title = f"{guard.name} -- {title}"
+        if existing.get(name) == (conclusion, check_title):
+            skipped += 1
+            print(f"[fast-lane] verdict identique deja publie : {name}")
+        elif emit_check_run(
             args.repo, head_sha, name, conclusion,
-            f"{guard.name} -- {title}",
+            check_title,
             f"Source : `{guard.source}`\n\n```\n{log}\n```",
             args.dry_run,
-        )
+        ):
+            published += 1
+        else:
+            refused += 1
         if guard.blocking and rc != 0 and not effective_shadow:
             blocking_failed = True
 
     verdict = ("au moins un bloquant en echec" if blocking_failed
                else "aucun bloquant en echec")
     print(f"[fast-lane] {len(selected)} garde(s) evalue(s), {verdict}")
+    # T-H (#25510) : le COMPTE des publications est dans le journal du job.
+    # C'est la seule mesure qui rend le quota lisible sans l'instrumenter :
+    # avant, une publication refusee disparaitait dans le stderr d'un garde.
+    print(f"[fast-lane] publications : {published} publiee(s), "
+          f"{skipped} identique(s) non republiee(s), {refused} refusee(s)")
 
     # En mode ombre le job ne rougit jamais : il observe, il ne juge pas
     # encore. Les verdicts vivent dans les check-runs. En mode MIXTE

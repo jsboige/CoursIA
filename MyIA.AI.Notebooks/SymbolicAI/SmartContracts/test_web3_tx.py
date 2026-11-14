@@ -28,18 +28,15 @@ SERIES_ROOT = Path(__file__).resolve().parent
 # Carnets de la serie ou l'appel direct a `.transact()` a ete remplace par
 # l'organe. Les carnets non listes ici ne sont pas (encore) contraints : la
 # garde s'elargit a mesure que la conversion avance, elle ne se referme jamais.
-#
-# SC-07 n'y figure pas encore : la PR #22877 (ouverte) y a pose un helper local
-# `transact_and_wait` avant que cet organe existe. Les deux ne peuvent pas
-# cohabiter sur la meme branche ; SC-07 rejoint cette liste quand #22877 est
-# mergee, en remplacant son helper local par l'import. Tant qu'il n'y figure
-# pas, la garde ne dit rien de lui — elle ne l'exempte pas, elle ne le voit pas.
 GUARDED_NOTEBOOKS = [
+    "00-Foundations/SC-02-Setup-Web3py-Python.ipynb",
     "01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb",
     "01-Solidity-Foundation/SC-04-Functions-State-Python.ipynb",
     "01-Solidity-Foundation/SC-05-Inheritance-Python.ipynb",
     "01-Solidity-Foundation/SC-06-Errors-Events-Python.ipynb",
+    "02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb",
     "02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb",
+    "06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb",
 ]
 
 

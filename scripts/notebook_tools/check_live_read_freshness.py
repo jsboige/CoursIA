@@ -75,6 +75,49 @@ garde ni un test, par l'autre bout du mode de defaillance de #21899. Le meme
 passage desormais part aussi des carnets et remonte vers le registre ; une
 cellule non declaree hors du socle mesure ci-dessous fait rougir l'organe.
 
+La source EXTERNE au depot (#23499)
+-----------------------------------
+
+Une cellule peut lire un fichier qui n'est PAS dans le depot : le module d'un
+clone Lake amont, epingle par un tag. Ce fichier est IMMUABLE -- un tag ne
+bouge pas -- donc l'invariant de fraicheur n'a pas d'objet. Mais la
+resolution par nom de fichier de l'invariant inverse confond alors la source
+amont avec un fichier du depot de MEME nom (mesure : la source amont
+``DifferentialGeometry/Topology/ThreeManifold/Poincare.lean`` et le temoin
+``differential_lean/Poincare.lean`` du depot), ce qui produit un rouge sans
+remede dans le cadre d'une source repo.
+
+Une entree de registre declare alors ``source_kind: "external"``, le ``pin``
+de l'amont epingle et le ``sha256`` du fichier lu. La fraicheur est DELEGUEE
+au pin, et le lien entre la sortie commitee et le fichier lu est ferme par
+l'empreinte : la cellule doit IMPRIMER le sha256 du fichier qu'elle a lu.
+Sont rouges : une source externe sans pin, une source externe sans
+empreinte, et une source externe dont l'empreinte n'apparait pas dans la
+sortie commitee.
+
+L'axe SIGNATURE D'EXECUTION (#23390)
+------------------------------------
+
+La fraicheur live-read atteste la coherence entre une sortie committee et
+l'etat COURANT du fichier lu. Elle ne dit rien de la coherence entre la source
+du CARNET et l'execution qui a produit cette sortie : une cellule reecrite sans
+re-execution laisse une sortie d'apparence fraiche, que rien ne distingue d'une
+sortie attestee. C'est la reserve (C) de la PR #22210, dont cet axe est la
+levee par l'outillage plutot que par une re-execution manuelle.
+
+L'organe consomme la signature produite par ``execution_signature.py``
+(``metadata.execution_signature``, ecrite par
+``check_execution_signature.py --stamp`` apres une execution reelle) : pour
+chaque carnet declare au registre, l'empreinte de la source executee est
+recalculee et confrontee a l'attestation.
+
+**La signature est elle-meme l'opt-in** : un carnet qui n'en porte pas est
+IGNORE, pas signale comme non conforme. Aucun carnet existant ne rougit donc a
+l'introduction de l'axe (critere 1 de #23390), et le temoin negatif -- source
+editee apres l'execution attestee -- est prouve par ``--self-test`` et par un
+test a fixture (critere 2). Verification deduite par carnet : les quatre
+entrees de ``Dynamics-02`` ne pesent qu'une verification.
+
 Usage
 -----
 
@@ -82,6 +125,7 @@ Usage
     python check_live_read_freshness.py --ref origin/main
     python check_live_read_freshness.py --json
     python check_live_read_freshness.py --check-declarations
+    python check_live_read_freshness.py --no-signature  # diagnostic : axe seule
     python check_live_read_freshness.py --self-test
 
 Sortie 0 si toutes les declarations sont fraiches ET si aucun nouveau couple
@@ -97,6 +141,9 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from execution_signature import stamp, verify as verify_signature  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REGISTRY = Path(__file__).resolve().parent / "live_read_registry.json"
@@ -300,6 +347,32 @@ def audit_cell(src_lines: list[str], text: str, basename: str) -> list[str]:
     return findings
 
 
+def signature_findings(notebook: dict) -> list[str]:
+    """Constats de la signature d'execution du carnet (#23390), ou liste vide.
+
+    La signature est l'opt-in : sans ``metadata.execution_signature``, la
+    fonction rend une liste vide -- un carnet non signe est IGNORE, jamais
+    signale comme non conforme (critere 3 de #23390). L'empreinte confrontee
+    est celle des cellules code executees, recalculee ici : c'est le temoin
+    negatif de l'axe, une source editee apres l'execution attestee ne peut pas
+    rester verte (critere 2).
+
+    Les constats sont prefixes du code rendu par
+    ``execution_signature.verify`` : un lecteur doit pouvoir dire quel axe
+    rougit -- la fraicheur du fichier lu, ou celle du carnet lui-meme.
+
+    Granularite assumee : le CARNET, pas la cellule declaree. ``verify``
+    atteste le carnet entier ; une cellule annexe commise sans
+    ``execution_count`` emet ``CELLULE_NON_EXECUTEE`` et rougit TOUTES les
+    declarations du carnet, meme celles dont la cellule est fraiche. C'est
+    voulu (un carnet partiellement execute n'est pas une attestation
+    fiable) et pinné par
+    ``test_cellule_annexe_non_executee_rougit_le_carnet_entier``.
+    """
+    return [f"{f['code']}: {f['detail']}"
+            for f in verify_signature(notebook, require_signature=False)]
+
+
 def read_from_ref(rel_path: str, ref: str) -> str:
     proc = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "show", f"{ref}:{rel_path}"],
@@ -322,11 +395,22 @@ def load(ref: str | None):
     return _load_text, _load_nb
 
 
-def run(ref: str | None = None) -> dict:
+def run(ref: str | None = None, with_signature: bool = True) -> dict:
     registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
     load_text, load_nb = load(ref)
     rows: list[dict] = []
     stale = 0
+    # La signature est portee par le CARNET, pas par l'entree du registre : un
+    # carnet declare plusieurs fois (Dynamics-02 porte quatre entrees) ne se
+    # verifie qu'une fois, et chaque ligne herite des memes constats.
+    sig_cache: dict[str, list[str]] = {}
+    signed: set[str] = set()
+    # Carnets signes dont l'axe signature a produit des constats : le compte
+    # se lit au niveau CARNET, alors que ``stale`` compte des DECLARATIONS
+    # (un carnet perime a quatre entrees y compte quatre fois -- reserve 1
+    # de la review #24669 : les deux unites ne s'affichent pas dans la meme
+    # phrase).
+    sig_stale: set[str] = set()
 
     for entry in registry.get("cells", []):
         nb_path = entry["notebook"]
@@ -334,7 +418,7 @@ def run(ref: str | None = None) -> dict:
         src_path = entry["source"]
         basename = Path(src_path).name
         row = {"notebook": nb_path, "cell_id": cell_id, "source": src_path,
-               "verdict": None, "findings": []}
+               "verdict": None, "findings": [], "signature_findings": []}
 
         try:
             nb = load_nb(nb_path)
@@ -345,6 +429,23 @@ def run(ref: str | None = None) -> dict:
             stale += 1
             continue
 
+        sig: list[str] = []
+        if with_signature:
+            sig = sig_cache.get(nb_path)
+            if sig is None:
+                sig = signature_findings(nb)
+                sig_cache[nb_path] = sig
+                if (nb.get("metadata") or {}).get("execution_signature"):
+                    signed.add(nb_path)
+            if sig:
+                sig_stale.add(nb_path)
+        # Pose AVANT les sorties precoces (CELL_NOT_FOUND, SOURCE_MISSING,
+        # NO_OUTPUT, NO_INVARIANT) : ces lignes sont deja rouges, mais le
+        # JSON ne doit pas exposer un champ qui dit "rien a signaler" pour
+        # un carnet dont l'axe signature a des constats -- reserve 3 de la
+        # review #24669.
+        row["signature_findings"] = sig
+
         cell = next((c for c in nb.get("cells", []) if c.get("id") == cell_id), None)
         if cell is None:
             row["verdict"] = "CELL_NOT_FOUND"
@@ -354,6 +455,53 @@ def run(ref: str | None = None) -> dict:
             ]
             rows.append(row)
             stale += 1
+            continue
+
+        # Source EXTERNE au depot (#23499, Pli 2 de l'EPIC #18205) : le
+        # fichier lu vit dans un clone Lake amont, epingle par un tag. Il est
+        # donc IMMUABLE -- l'invariant de fraicheur du fichier n'a pas d'objet
+        # (rien ne bouge dans le depot) -- et la resolution par nom de fichier
+        # de l'invariant inverse confond la source amont avec un fichier du
+        # depot de MEME nom (ici `Poincare.lean`), ce qui produit un rouge
+        # sans remede dans le cadre d'une source repo. La declaration porte
+        # alors le PIN de l'amont et l'empreinte sha256 du fichier lu ; la
+        # cellule doit imprimer cette empreinte, sans quoi la sortie
+        # commitee n'est rattachee a rien.
+        if entry.get("source_kind", "repo") == "external":
+            pin = str(entry.get("pin") or "").strip()
+            expected_sha = str(entry.get("sha256") or "").strip().lower()
+            text = cell_output_text(cell)
+            if not pin:
+                row["verdict"] = "EXTERNAL_NON_ECINGLE"
+                row["findings"] = [
+                    "source externe sans pin : la fraicheur serait "
+                    "deleguee a rien -- le fichier lu peut changer sans "
+                    "que rien ne le distingue"
+                ]
+            elif not expected_sha:
+                row["verdict"] = "EXTERNAL_SANS_EMPREINTE"
+                row["findings"] = [
+                    f"source externe pinnee ({pin}) sans sha256 : la sortie "
+                    "commitee ne peut pas etre rattachee au fichier lu"
+                ]
+            elif not text.strip():
+                row["verdict"] = "NO_OUTPUT"
+                row["findings"] = ["cellule sans sortie committee"]
+            elif expected_sha not in text.lower():
+                row["verdict"] = "EXTERNAL_EMPREINTE_ABSENTE"
+                row["findings"] = [
+                    f"sha256 attendu absent de la sortie commitee "
+                    f"({expected_sha[:12]}...) -- la cellule ne prouve pas "
+                    f"qu'elle a lu le fichier epingle ({pin})"
+                ]
+            else:
+                row["verdict"] = "FRESH"
+                row["findings"] = list(sig)
+                if sig:
+                    row["verdict"] = "STALE"
+            rows.append(row)
+            if row["verdict"] != "FRESH":
+                stale += 1
             continue
 
         try:
@@ -373,7 +521,7 @@ def run(ref: str | None = None) -> dict:
             stale += 1
             continue
 
-        findings = audit_cell(src.splitlines(), text, basename)
+        findings = audit_cell(src.splitlines(), text, basename) + sig
         if not count_claims(text, basename) and not citations(text):
             row["verdict"] = "NO_INVARIANT"
             row["findings"] = [
@@ -392,7 +540,9 @@ def run(ref: str | None = None) -> dict:
         rows.append(row)
 
     return {"ref": ref or "WORKTREE", "declared": len(rows),
-            "stale": stale, "rows": rows}
+            "stale": stale, "rows": rows,
+            "signature_notebooks": len(signed),
+            "signature_stale_notebooks": len(sig_stale)}
 
 
 def _repo_basenames(repo_root: Path) -> set[str]:
@@ -541,6 +691,9 @@ def main(argv=None) -> int:
                          "carnets est-elle declaree au registre ?")
     ap.add_argument("--no-declarations", action="store_true",
                     help="ne pas passer l'invariant inverse (diagnostic rapide)")
+    ap.add_argument("--no-signature", action="store_true",
+                    help="ne pas confronter la signature d'execution des carnets "
+                         "declares (axe seule ou diagnostic rapide)")
     args = ap.parse_args(argv)
 
     if args.self_test:
@@ -558,7 +711,7 @@ def main(argv=None) -> int:
             print("Registre complet : toutes les cellules live-read sont declarees.")
         return 1 if new else 0
 
-    report = run(args.ref)
+    report = run(args.ref, with_signature=not args.no_signature)
     new: list[dict] = []
     resolved: list[tuple] = []
     if not args.no_declarations:
@@ -568,6 +721,13 @@ def main(argv=None) -> int:
     else:
         print(f"Cellules live-read declarees : {report['declared']} "
               f"(ref {report['ref']})")
+        if not args.no_signature:
+            print(f"Signature d'execution : {report['signature_notebooks']} "
+                  f"carnet(s) declare(s) porteur(s) d'une signature -- les "
+                  f"autres sont ignores (opt-in, #23390)")
+            if report.get("signature_stale_notebooks"):
+                print(f"  dont {report['signature_stale_notebooks']} carnet(s) "
+                      "signe(s) perime(s) par l'axe signature")
         for row in report["rows"]:
             mark = "OK  " if row["verdict"] == "FRESH" else "ROUGE"
             print(f"  [{mark}] {row['verdict']} -- {Path(row['notebook']).name}"
@@ -575,8 +735,12 @@ def main(argv=None) -> int:
             for f in row["findings"]:
                 print(f"          {f}")
         if report["stale"]:
-            print(f"\n{report['stale']} cellule(s) perimee(s) : re-executer le "
-                  "carnet (Stop & Repair), jamais editer la sortie a la main.")
+            # ``stale`` compte des DECLARATIONS (entrees du registre), pas des
+            # cellules : un carnet perime declare quatre fois y compte quatre
+            # fois -- reserve 1 de la review #24669.
+            print(f"\n{report['stale']} declaration(s) perimee(s) : re-executer "
+                  "le carnet (Stop & Repair), jamais editer la sortie a la "
+                  "main.")
         if not args.no_declarations:
             _print_declarations(new, resolved)
     return 1 if (report["stale"] or new) else 0
@@ -605,10 +769,36 @@ def _self_test() -> int:
             failures += 1
             print(f"  ECHEC self-test : {text!r} -> {got} (attendu "
                   f"{'rouge' if expected else 'vert'})")
+
+    # Temoin negatif de l'axe signature (#23390), construit a la main : la
+    # source est attestee par une execution, puis editee -- l'axe doit rougir.
+    # Un carnet SANS signature doit rester muet : c'est l'opt-in lui-meme, et
+    # sans lui l'introduction de l'axe rendrait rouges des carnets existants.
+    nb = {
+        "cells": [{"cell_type": "code", "execution_count": 1,
+                   "source": ["x = 1\n"], "outputs": []}],
+        "metadata": {"kernelspec": {"name": "python3",
+                                    "display_name": "Python 3"}},
+    }
+    stamp(nb, {}, "2026-01-01T00:00:00Z")
+    sig_cases = [("signature fraiche", signature_findings(nb), True)]
+    nb["cells"][0]["source"] = ["x = 2\n"]
+    sig_cases.append(
+        ("source editee apres execution", signature_findings(nb), False))
+    sig_cases.append(
+        ("carnet sans signature", signature_findings({"cells": [],
+                                                      "metadata": {}}), True))
+    for label, got, expected_fresh in sig_cases:
+        if bool(got) == expected_fresh:
+            failures += 1
+            print(f"  ECHEC self-test signature : {label} -> {got} (attendu "
+                  f"{'vert' if expected_fresh else 'rouge'})")
+
     if failures:
         print(f"self-test : {failures} echec(s)")
         return 1
-    print(f"self-test : {len(ok) + len(bad)} cas, discriminant conforme")
+    print(f"self-test : {len(ok) + len(bad) + len(sig_cases)} cas, "
+          f"discriminant conforme")
     return 0
 
 

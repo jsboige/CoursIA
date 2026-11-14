@@ -22,10 +22,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import check_docs_links
 from check_docs_links import (
     BASELINE_PATH,
+    CODE_BASELINE_PATH,
+    DOC_CITATION_PATTERN,
     LinkRef,
     ScanResult,
     check_link,
     check_regression,
+    find_code_files,
     find_deck_files,
     find_orphan_docs,
     find_scan_files,
@@ -33,9 +36,16 @@ from check_docs_links import (
     load_baseline,
     preexisting_broken,
     run_scan,
+    scan_code_content,
+    scan_code_file,
     scan_content,
     scan_file,
     write_baseline,
+    _citation_exists,
+    _citation_exists_in_tree,
+    _comment_spans,
+    _is_output_position,
+    _is_scoped_doc_citation,
     _is_valid_target,
     _link_exists_in_tree,
     _should_skip,
@@ -138,6 +148,47 @@ class TestSiteArtifactSkip:
         """
         gitignore = (REPO_ROOT / ".gitignore").read_text(encoding="utf-8")
         assert "_site/" in gitignore
+
+
+class TestScratchSkip:
+    """`.tmp/` (agent scratch) is not repository source either (#24410).
+
+    Same defect class as `_site/`: gitignored, never checked out in CI, and
+    repo-wide README sweep makes it reachable on any machine that has run a
+    scratch worktree. Measured 2026-11-03: 29 of the 31 "broken links" the
+    organ reported locally came from three `.tmp/` worktrees, against 2 real
+    defects -- the real ones drowned in scratch noise.
+    """
+
+    def test_tmp_root_skipped(self):
+        p = REPO_ROOT / ".tmp" / "sf-labeler" / "README.md"
+        assert _should_skip(p) is True
+
+    def test_tmp_nested_skip_is_by_directory_name(self):
+        """Skip matches the directory NAME anywhere in the path, like `_site/`."""
+        p = REPO_ROOT / "docs" / ".tmp" / "analysis" / "note.md"
+        assert _should_skip(p) is True
+
+    def test_tmp_is_gitignored(self):
+        """The skip list and `.gitignore` must agree on `.tmp/`.
+
+        `.tmp/` is ignored by the `*.tmp` glob (see `.gitignore`), not by a
+        literal `.tmp/` line: a DIRECTORY named `.tmp` ends in `.tmp` and
+        matches. Asserting git's own verdict rather than a spelling keeps the
+        test honest if the pattern is ever rewritten.
+        """
+        res = subprocess.run(
+            ["git", "check-ignore", "-q", ".tmp/scratch/README.md"],
+            cwd=REPO_ROOT, capture_output=True,
+        )
+        assert res.returncode == 0, (
+            ".tmp/ is no longer gitignored -- the skip would mask real content"
+        )
+
+    def test_dot_tmp_named_file_still_scanned(self):
+        """Only the `.tmp` DIRECTORY is skipped -- not names merely containing it."""
+        p = REPO_ROOT / "docs" / "notes.tmp.md"
+        assert _should_skip(p) is False
 
 
 class TestShouldSkipArchiveVariants:
@@ -877,7 +928,9 @@ class TestPositiveControl:
         `run_scan` is stubbed: the claim under test is the control's verdict on
         a zero-broken result, not path resolution.
         """
-        monkeypatch.setattr("check_docs_links.run_scan", lambda report_orphans=False: ScanResult())
+        monkeypatch.setattr(
+            "check_docs_links.run_scan",
+            lambda report_orphans=False, code=False: ScanResult())
         monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--expect-broken", "1"])
         with pytest.raises(SystemExit) as exc:
             check_docs_links.main()
@@ -891,7 +944,7 @@ class TestPositiveControl:
         trained away within a week, so it is confined to the bare scan.
         """
         monkeypatch.setattr("check_docs_links.run_scan",
-                            lambda report_orphans=False: ScanResult())
+                            lambda report_orphans=False, code=False: ScanResult())
         monkeypatch.setattr("check_docs_links.load_baseline",
                             lambda *a, **k: {"broken_links": []})
         monkeypatch.setattr("sys.argv", ["check_docs_links.py", "--check"])
@@ -947,6 +1000,312 @@ class TestDeckScopeWiring:
         assert any(
             p.startswith(f"{check_docs_links.DECK_DIR}/") for p in guard.paths
         ), "the deck scope is scanned but the gate never watches it"
+
+
+# ---------------------------------------------------------------------------
+# Code-comment citation pass (#24410)
+# ---------------------------------------------------------------------------
+
+class TestDocCitationPattern:
+    """The shape filter: what counts as a doc path inside a comment."""
+
+    def test_plain_repo_path(self):
+        m = DOC_CITATION_PATTERN.search("see docs/reference/x.md for the reason")
+        assert m is not None and m.group(1) == "docs/reference/x.md"
+
+    def test_dotted_top_level_dir(self):
+        m = DOC_CITATION_PATTERN.search("per .claude/rules/git-workflow.md")
+        assert m is not None and m.group(1) == ".claude/rules/git-workflow.md"
+
+    def test_parent_relative_path(self):
+        m = DOC_CITATION_PATTERN.search("cf. ../docs/reference/x.md")
+        assert m is not None and m.group(1) == "../docs/reference/x.md"
+
+    def test_equivalence_shape_is_not_matched(self):
+        """`docs/...md` is how PROSE names the pattern, not a cited page.
+
+        This is the shape the organ's own docstring uses to describe itself; if
+        it matched, the instrument would report itself as broken forever.
+        """
+        assert DOC_CITATION_PATTERN.search("every `docs/...md`-shaped string") is None
+
+    def test_bare_filename_is_not_matched(self):
+        """A bare `README.md` names no resolvable file -- which directory?"""
+        assert DOC_CITATION_PATTERN.search("see README.md for setup") is None
+
+    def test_mdx_is_not_md(self):
+        assert DOC_CITATION_PATTERN.search("see docs/page.mdx") is None
+
+
+class TestCommentSpansPython:
+    """Python comments and docstrings, told apart from string literals."""
+
+    def test_hash_comment(self):
+        spans = _comment_spans(".py", "x = 1  # see docs/a.md\n")
+        assert ("docs/a.md" in spans[0][1]) and spans[0][0] == 1
+
+    def test_hash_inside_string_is_not_a_comment(self):
+        spans = _comment_spans(".py", 'URL = "http://x/#frag"  # real\n')
+        assert len(spans) == 1
+        assert "real" in spans[0][1]
+
+    def test_docstring_is_scanned(self):
+        src = 'def f():\n    """Cite docs/a.md here."""\n    return 1\n'
+        text = " ".join(t for _, t in _comment_spans(".py", src))
+        assert "docs/a.md" in text
+
+    def test_module_docstring_is_scanned(self):
+        src = '"""Module citing docs/b.md."""\n'
+        text = " ".join(t for _, t in _comment_spans(".py", src))
+        assert "docs/b.md" in text
+
+    def test_unparsable_source_does_not_raise(self):
+        """A file the interpreter rejects is still a file to scan."""
+        assert isinstance(_comment_spans(".py", "def f(:\n  # docs/a.md\n"), list)
+
+
+class TestCommentSpansGeneric:
+    """Lean and C# comment syntax, including Lean's nesting."""
+
+    def test_lean_line_comment(self):
+        spans = _comment_spans(".lean", "-- cites docs/a.md\n¬p\n")
+        assert len(spans) == 1 and "docs/a.md" in spans[0][1]
+
+    def test_lean_nested_block_comment(self):
+        """Lean nests `/- -/`: stopping at the first `-/` would scan code."""
+        spans = _comment_spans(".lean", "/- outer /- inner -/ tail -/\n")
+        text = " ".join(t for _, t in spans)
+        assert "outer" in text and "inner" in text and "tail" in text
+
+    def test_lean_marker_inside_string_is_not_a_comment(self):
+        spans = _comment_spans(".lean", 'def s := "-- not a comment"\n')
+        assert spans == []
+
+    def test_csharp_line_comment(self):
+        spans = _comment_spans(".cs", "// cites docs/a.md\nvar x = 1;\n")
+        assert len(spans) == 1 and "docs/a.md" in spans[0][1]
+
+    def test_csharp_block_comment(self):
+        spans = _comment_spans(".cs", "/* cite docs/a.md */\n")
+        assert "docs/a.md" in spans[0][1]
+
+    def test_csharp_marker_inside_string_is_not_a_comment(self):
+        spans = _comment_spans(".cs", 'var u = "http://x";\n')
+        assert spans == []
+
+    def test_unknown_suffix_yields_nothing(self):
+        assert _comment_spans(".txt", "# docs/a.md") == []
+
+
+class TestCitationScope:
+    """The three noise families, excluded structurally rather than by list."""
+
+    def test_third_party_repo_path_is_out_of_scope(self):
+        """`lean/docs/132.md` belongs to the upstream project, not to us."""
+        assert _is_scoped_doc_citation("lean/docs/132.md", {"docs", "scripts"}) is False
+
+    def test_path_anchored_at_our_top_level_is_in_scope(self):
+        assert _is_scoped_doc_citation("docs/a.md", {"docs"}) is True
+
+    def test_relative_path_is_in_scope(self):
+        assert _is_scoped_doc_citation("../docs/a.md", set()) is True
+
+    def test_command_output_position_is_excluded(self):
+        assert _is_output_position("--out ") is True
+
+    def test_write_call_position_is_excluded(self):
+        assert _is_output_position('target.write_text("') is True
+        assert _is_output_position('open("') is True
+
+    def test_arrow_is_not_an_output_redirect(self):
+        """`-> Path` in a signature must not read as a shell redirect."""
+        assert _is_output_position("parse(x) -> Path(") is False
+
+    def test_plain_prose_is_a_citation_position(self):
+        assert _is_output_position("# see ") is False
+
+
+class TestCitationAnchoring:
+    """A citation is dead only when NEITHER anchor finds it."""
+
+    def _tree(self, tmp_path, monkeypatch):
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "root-page.md").write_text("# root\n")
+        nested = tmp_path / "a" / "b"
+        nested.mkdir(parents=True)
+        (tmp_path / "a" / "docs").mkdir()
+        (tmp_path / "a" / "docs" / "sibling-page.md").write_text("# sibling\n")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        return "a/b/f.py"
+
+    def test_root_anchor_resolves_a_nested_citation(self, tmp_path, monkeypatch):
+        """The issue's convention: a deep file writes `docs/x.md` meaning root."""
+        source = self._tree(tmp_path, monkeypatch)
+        assert _citation_exists("docs/root-page.md", source) is True
+
+    def test_source_dir_anchor_still_works(self, tmp_path, monkeypatch):
+        """A file at `a/f.py` citing `docs/...` resolves to `a/docs/...`."""
+        self._tree(tmp_path, monkeypatch)
+        assert _citation_exists("docs/sibling-page.md", "a/f.py") is True
+
+    def test_neither_anchor_resolves_is_dead(self, tmp_path, monkeypatch):
+        source = self._tree(tmp_path, monkeypatch)
+        assert _citation_exists("docs/nowhere.md", source) is False
+
+    def test_explicit_relative_path_is_not_re_anchored(self, tmp_path, monkeypatch):
+        """`../docs/...` names one anchor; the root must not rescue it."""
+        source = self._tree(tmp_path, monkeypatch)
+        assert _citation_exists("../docs/root-page.md", source) is False
+
+    def test_tree_oracle_mirrors_both_anchors(self):
+        files = {"docs/root-page.md", "a/docs/sibling-page.md"}
+        dirs = _tree_dirs(files)
+        assert _citation_exists_in_tree("docs/root-page.md", "a/b/f.py", files, dirs, None)
+        assert _citation_exists_in_tree("../docs/sibling-page.md", "a/b/f.py", files, dirs, None)
+        assert not _citation_exists_in_tree("docs/nowhere.md", "a/b/f.py", files, dirs, None)
+
+
+class TestCodeScan:
+    """End-to-end behaviour of the code-comment pass."""
+
+    def test_scan_code_content_reports_dead_and_alive(self, tmp_path, monkeypatch):
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "alive.md").write_text("# alive\n")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        content = "# see docs/alive.md\n# see docs/dead.md\n"
+        refs = scan_code_content(content, "pkg/mod.py")
+        assert {r.target for r in refs} == {"docs/alive.md", "docs/dead.md"}
+
+    def test_output_position_is_not_reported(self, tmp_path, monkeypatch):
+        (tmp_path / "docs").mkdir()
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        refs = scan_code_content("# --out docs/generated.md\n", "pkg/gen.py")
+        assert refs == []
+
+    def test_same_path_twice_on_a_line_is_one_citation(self, tmp_path, monkeypatch):
+        (tmp_path / "docs").mkdir()
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        refs = scan_code_content("# docs/a.md and docs/a.md again\n", "pkg/m.py")
+        assert len(refs) == 1
+
+    def test_file_without_md_is_not_lexed(self, tmp_path, monkeypatch):
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        assert scan_code_content("x = 1\n", "pkg/m.py") == []
+
+    def test_test_trees_are_not_scanned(self, tmp_path, monkeypatch):
+        """Family 1: a path in a test tree is a fixture value, not a claim."""
+        (tmp_path / "scripts" / "tests").mkdir(parents=True)
+        (tmp_path / "scripts" / "tests" / "test_x.py").write_text(
+            "# docs/fixture.md\n")
+        (tmp_path / "scripts" / "src").mkdir()
+        (tmp_path / "scripts" / "src" / "mod.py").write_text("# docs/a.md\n")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        rel = {
+            (tmp_path / p).relative_to(tmp_path).as_posix()
+            for p in ("scripts/tests/test_x.py", "scripts/src/mod.py")
+        }
+        found = {
+            f.relative_to(tmp_path).as_posix()
+            for f in find_code_files()
+            if f.relative_to(tmp_path).as_posix() in rel
+        }
+        assert found == {"scripts/src/mod.py"}
+
+    def test_run_scan_code_mode_fills_broken(self, tmp_path, monkeypatch):
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "pkg").mkdir()
+        (tmp_path / "pkg" / "m.py").write_text("# cites docs/gone.md\n")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        result = run_scan(code=True)
+        assert [r.target for r in result.broken] == ["docs/gone.md"]
+        assert result.scanned_files == 1
+
+    def test_run_scan_markdown_mode_ignores_code(self, tmp_path, monkeypatch):
+        """The two passes stay separate: markdown mode never opens a .py."""
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "pkg").mkdir()
+        (tmp_path / "pkg" / "m.py").write_text("# cites docs/gone.md\n")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        assert run_scan().broken == []
+
+
+class TestIssueReproducibleCases:
+    """The four citations that founded #24410, measured on the real tree.
+
+    Each names a path that no longer exists at the cited location because the
+    target moved. Before the fix the organ could not see any of them: they live
+    in `.py` files, which the markdown scan never opens.
+    """
+
+    CASES = [
+        ("MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/m13_ms_har.py",
+         "docs/M13_MS_HAR.md"),
+        ("MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/hmm_regime_vol.py",
+         "docs/M5_HMM_REGIME.md"),
+        ("MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/_archive/"
+         "s2_gsp_cross_asset_vol.py", "docs/RECAP_KEEPERS_V2.md"),
+        ("MyIA.AI.Notebooks/GenAI/shared/helpers/comfyui_client.py",
+         "docs/suivis/genai-image/phase-29-corrections-qwen/"
+         "SYNTHESE-COMPLETE-PHASE-29.md"),
+    ]
+
+    @pytest.mark.parametrize("source,target", CASES)
+    def test_case_is_detected_and_dead(self, source, target):
+        path = REPO_ROOT / source
+        if not path.is_file():
+            pytest.skip(f"{source} no longer exists on this tree")
+        refs = scan_code_file(path)
+        assert target in {r.target for r in refs}, (
+            f"{source} cites {target} but the organ does not see it")
+        assert _citation_exists(target, source) is False, (
+            f"{target} was expected to be dead at this location")
+
+    def test_positive_control_arms_the_code_pass(self, monkeypatch, capsys):
+        """Requirement 3: `--expect-broken` is wired to the NEW detection path.
+
+        main() is invoked with the code pass selected and a scan that reports
+        nothing: an unmet control must exit 2, which is what distinguishes "0
+        dead citations" from "the code pass never ran". The pass is stubbed so
+        the test measures the CONTROL BRANCH, not a 70 s full scan; that the
+        real pass finds real citations is what the case tests above prove.
+        """
+        import check_docs_links
+
+        monkeypatch.setattr(sys, "argv", [
+            "check_docs_links.py", "--code", "--quiet", "--expect-broken", "1",
+        ])
+        monkeypatch.setattr(
+            check_docs_links, "run_scan",
+            lambda **kw: ScanResult(scanned_files=1, total_links=1),
+        )
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 2
+        assert "POSITIVE CONTROL FAILED" in capsys.readouterr().err
+
+    def test_preexisting_accepts_the_code_scanner(self):
+        """--check --base --code routes through the code pass, not markdown.
+
+        A fake scanner reports the citation at the base revision and a fake
+        oracle reports it dead there: the pair must then be excused. The kwargs
+        are the only seam; if they disappear, code mode silently compares
+        against the MARKDOWN scan and every dead citation reddens again.
+        """
+        ref = LinkRef(source="README.md", target="docs/x.md", line=1, text="t")
+        seen = {}
+
+        def fake_scanner(content, rel_source):
+            seen["scanned"] = rel_source
+            return [LinkRef(source=rel_source, target="docs/x.md", line=9, text="t")]
+
+        def fake_oracle(target, source, files, dirs, quarto):
+            seen["oracle"] = True
+            return False
+
+        out = preexisting_broken([ref], "HEAD",
+                                 scanner=fake_scanner, exists_in_tree=fake_oracle)
+        assert out == {("README.md", "docs/x.md")}
+        assert seen == {"scanned": "README.md", "oracle": True}
 
 
 if __name__ == "__main__":

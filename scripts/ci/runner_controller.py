@@ -58,6 +58,7 @@ REGISTRATION_TOKEN_ENV = "GITHUB_RUNNER_REGISTRATION_TOKEN"
 REMOVAL_TOKEN_ENV = "GITHUB_RUNNER_REMOVAL_TOKEN"
 TASK_NAME = "CoursIA-Runner-Controller"
 TASK_TICK_SECONDS = 60
+TASK_LAUNCHER_NAME = "controller-task.vbs"
 
 CommandRunner = subprocess.run
 
@@ -153,25 +154,124 @@ def _is_elevated() -> bool:
         return False
 
 
-def task_action(profile: Profile) -> str:
+def task_action(profile: Profile, command: list[str] | None = None) -> str:
     """Le CORPS du script de la tache : lit le mot de passe du fichier machine local
     conventionnel, negocie tout le reste a chaud, logue a cote des autres logs.
 
-    Ne porte ni interpreteur ni enrobage `-Command "..."` : l'enveloppe `<Exec>`
-    declare deja `<Command>pwsh.exe</Command>` et ses arguments. L'ancien enrobage
+    Ne porte ni interpreteur ni enrobage `-Command "..."` : c'est le lanceur VBS
+    qui declare `<Command>pwsh.exe</Command>` et ses arguments (cf. `task_launcher`),
+    et l'XML de la tache ne porte plus que `wscript.exe`. L'ancien enrobage
     empilait deux `pwsh.exe -Command "..."` (le second avec des guillemets
     imbriques non echappes) et rendait l'XML invalide — mesure #20174.
+
+    `command` remplace la commande du controleur : c'est un point d'entree pour
+    les tests, qui ne peuvent pas lancer `ensure --apply` (il enregistre un
+    runner). Sans lui, le corps est exactement celui de la tache installee.
     """
     secrets_file = profile.root.parent / "secrets" / "runner_pwd.txt"
     logs_dir = profile.root.parent / "logs"
     python = Path(sys.executable)
     controller = Path(__file__).resolve()
+    log = logs_dir / "controller.log"
+    if command is None:
+        # La forme d'origine est conservee mot pour mot (`ensure --profile X
+        # --apply` d'un seul tenant) : c'est elle que les controles existants
+        # assertent, et un lanceur VBS qui la recopie doit la retrouver.
+        call = (f"'{python}' '{controller}' ensure --profile {profile.name} --apply")
+    else:
+        # Chaque element est quote comme un litteral PowerShell : un chemin qui
+        # porte un espace ne doit pas se faire couper en deux.
+        call = " ".join("'" + a.replace("'", "''") + "'" for a in command)
+    # Tout le flux passe par controller.log : sortie du controleur ET raison de
+    # l'echec. La redirection shell `*>>` ne portait que la DERNIERE instruction,
+    # donc un echec preparatoire (fichier de mot de passe absent) partait vers la
+    # sortie invisible de la tache : le journal restait absent ou vide alors que
+    # le code retour portait 1 (mesure 2026-11-04, Maintenance#75). Ici l'echec
+    # est attrape et ecrit dans le journal, et la sortie du controleur est
+    # capturee puis ecrite -- ecriture .NET en UTF-8 sans BOM, qui n'ouvre pas
+    # le fichier en exclusif (une ecriture dans le catch ne peut pas se faire
+    # refuser par la redirection, cf. la sonde du 04/11).
     return (
+        f"$log='{log}';"
+        f"try {{"
         f"New-Item -ItemType Directory -Force -Path '{logs_dir}' | Out-Null;"
         f"$ErrorActionPreference='Stop';"
         f"$env:{ACCOUNT_PASSWORD_ENV}=(Get-Content -LiteralPath '{secrets_file}' -Raw).Trim();"
-        f"& '{python}' '{controller}' ensure --profile {profile.name} --apply"
-        f" *>> '{logs_dir}\\controller.log'"
+        f"$ErrorActionPreference='Continue';"
+        f"$out = & {call} 2>&1 | Out-String;"
+        f"$code = $LASTEXITCODE;"
+        # FILET, pas correction d'un defaut reproduit : un executable
+        # introuvable ne met PAS `$LASTEXITCODE` a jour (la commande n'a
+        # jamais demarre -> `$LASTEXITCODE` reste `$null`, et `exit $null`
+        # rendrait 0). Mesure sur les DEUX moteurs du poste (pwsh 7 et
+        # Windows PowerShell 5.1) : l'exception « commande introuvable »
+        # est toutefois TERMINANTE pour le `try` du corps -- elle est donc
+        # attrapee par le `catch` ci-dessous, qui ecrit la raison dans le
+        # journal et rend deja 1. Le rc ne ment donc pas aujourd'hui ; la
+        # garde le garantit meme si cette exception devenait non
+        # terminante. Le temoin qui verrouille le comportement mesure est
+        # dans scripts/tests/test_runner_controller.py.
+        f"if ($null -eq $code) {{ $code = 1 }};"
+        f"$ErrorActionPreference='Stop';"
+        f"[IO.File]::AppendAllText($log, $out);"
+        f"if ($code -ne 0) {{ exit $code }}"
+        f"}} catch {{"
+        f"New-Item -ItemType Directory -Force -Path '{logs_dir}' | Out-Null;"
+        f"[IO.File]::AppendAllText($log, ('{{0}} ERREUR : {{1}}' -f (Get-Date -Format s),"
+        f" ($_ | Out-String)));"
+        f"exit 1"
+        f"}}"
+    )
+
+
+def task_launcher_path(profile: Profile) -> Path:
+    """Emplacement du lanceur sans fenetre, derive du profil.
+
+    Le chemin n'est jamais code en dur : un chemin fixe deploye le defaut sur une
+    autre machine des que la racine des runners differe, et le controle de
+    non-regression cesserait alors de couvrir la machine reellement installee.
+    """
+    return profile.root.parent / "launchers" / TASK_LAUNCHER_NAME
+
+
+def _vbs_escape(text: str) -> str:
+    """Echappe un litteral de chaine VBScript : un `"` s'y ecrit `""`."""
+    return text.replace('"', '""')
+
+
+def task_launcher(profile: Profile, command: str | None = None) -> str:
+    """Le lanceur `wscript.exe` qui masque la fenetre du tick.
+
+    `<Command>wscript.exe</Command>` seul ne suffit pas : `pwsh.exe` lance
+    directement par le Planificateur ouvre une console a chaque tick. La tache se
+    repete toutes les 60 s et n'a pas de condition « seulement si l'utilisateur
+    est absent » — d'ou 60 fenetres par heure sur l'ecran de la session ouverte
+    (mesure lane Maintenance, 2026-11-04). `WScript.Shell.Run` avec le second
+    argument a `0` demande au systeme une fenetre masquee ; le troisieme a
+    `True` attend la fin du tick et rend son code de sortie, propage par
+    `WScript.Quit rc` (detail au commentaire du corps ci-dessous, review #24707).
+
+    Le corps execute est exactement `task_action` : la seule difference avec
+    l'ancienne action est l'enveloppe, pas le travail.
+    """
+    if command is None:
+        command = (
+            "pwsh.exe -NoProfile -NonInteractive -WindowStyle Hidden "
+            f'-Command "{task_action(profile)}"'
+        )
+    # Troisieme argument a True + WScript.Quit rc : sans cela (False, forme
+    # initiale de cette PR, review #24707) le code retour du controleur ne
+    # remonte jamais -- LastTaskResult vaut 0 quel que soit le sort du tick --
+    # et la tache se terminant aussitot, MultipleInstancesPolicy=IgnoreNew ne
+    # protege plus contre les ticks qui se chevauchent. Meme forme que
+    # install_merge_ready_task.py et install_overflow_trigger_task.py.
+    return (
+        "Option Explicit\n"
+        "Dim shell, rc\n"
+        'Set shell = CreateObject("WScript.Shell")\n'
+        f'rc = shell.Run("{_vbs_escape(command)}", 0, True)\n'
+        "Set shell = Nothing\n"
+        "WScript.Quit rc\n"
     )
 
 
@@ -212,6 +312,11 @@ def task_xml(profile: Profile) -> str:
       <Enabled>true</Enabled>
     </TimeTrigger>
   </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <RunLevel>HighestAvailable</RunLevel>
+    </Principal>
+  </Principals>
   <Settings>
     <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
     <DisallowStartIfOnBatteries>false</DisallowStartIfOnBatteries>
@@ -221,8 +326,8 @@ def task_xml(profile: Profile) -> str:
   </Settings>
   <Actions Context="Author">
     <Exec>
-      <Command>pwsh.exe</Command>
-      <Arguments>-NoProfile -NonInteractive -WindowStyle Hidden -Command &quot;{_xml_escape(task_action(profile))}&quot;</Arguments>
+      <Command>wscript.exe</Command>
+      <Arguments>//B //Nologo &quot;{_xml_escape(str(task_launcher_path(profile)))}&quot;</Arguments>
     </Exec>
   </Actions>
 </Task>
@@ -241,14 +346,25 @@ def apply_task_install(profile: Profile, run: CommandRunner) -> dict:
     xml_file = profile.root.parent / "logs" / "controller-task.xml"
     xml_file.parent.mkdir(parents=True, exist_ok=True)
     xml_file.write_text(xml, encoding="utf-16")
-    for args in (
+    # Le lanceur est ECRIT par le generateur, jamais pose a la main : un
+    # durcissement manuel de la tache est annule au premier `task-install
+    # --apply` (mesure 2026-11-04 : durcissement a 18:33:21Z, annule a 18:33:22Z).
+    launcher = task_launcher_path(profile)
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.write_text(task_launcher(profile), encoding="ascii")
+    # Un seul appel : le niveau d'execution est porte par `<Principals>` dans le
+    # XML (voir task_xml). Le `schtasks /Change /TN ... /RL HIGHEST` qui suivait
+    # la creation exige le mot de passe du compte des lors que le principal
+    # differe de l'appelant, donc il **bloque une session elevee non
+    # interactive** sur une invite que personne ne verra (mesure 2026-11-04 :
+    # processus suspendus > 180 s, fenetre UAC utilisateur consommee pour rien).
+    completed = run(
         ["schtasks", "/Create", "/TN", TASK_NAME, "/XML", str(xml_file), "/F"],
-        ["schtasks", "/Change", "/TN", TASK_NAME, "/RL", "HIGHEST"],
-    ):
-        completed = run(args, capture_output=True, text=True, encoding="utf-8", check=False)
-        if completed.returncode != 0:
-            raise Broken(f"schtasks failed: {(completed.stderr or '').strip()[:200]}")
-    return {"action": "task-installed", "task": TASK_NAME}
+        capture_output=True, text=True, encoding="utf-8", check=False,
+    )
+    if completed.returncode != 0:
+        raise Broken(f"schtasks failed: {(completed.stderr or '').strip()[:200]}")
+    return {"action": "task-installed", "task": TASK_NAME, "launcher": str(launcher)}
 
 
 def apply_task_remove(profile: Profile, run: CommandRunner) -> dict:
@@ -282,6 +398,10 @@ def main(argv: list[str] | None = None) -> int:
             plan = {"planned_actions": ["create-scheduled-task"]}
             if args.apply:
                 plan["result"] = apply_task_install(profile, subprocess.run)
+            else:
+                xml = task_xml(profile)
+                _validate_task_xml(xml)
+                plan["xml"] = xml
         elif args.command == "task-remove":
             plan = {"planned_actions": ["delete-scheduled-task"]}
             if args.apply:

@@ -150,11 +150,11 @@ def stepChar (c : Char) (st : ParseState) : Except String ParseState :=
     let d : Nat := c.toNat - '0'.toNat
     Except.ok { st with runCnt := st.runCnt * 10 + d }
   else if c == 'b' then
-    -- Dead cells: advance column by `effRun`, reset run count.
+    -- Dead cells: advance column by `effRun`, reset run count to 0.
     let n := effRun st
     Except.ok { st with col := st.col + Int.ofNat n, runCnt := 0 }
   else if c == 'o' then
-    -- Live cells: emit `effRun` live cells, advance column, reset run.
+    -- Live cells: emit `effRun` live cells, advance column, reset run to 0.
     let n := effRun st
     let cells' := appendLiveRun st.row st.col n st.cells
     Except.ok { st with
@@ -162,7 +162,7 @@ def stepChar (c : Char) (st : ParseState) : Except String ParseState :=
       col := st.col + Int.ofNat n,
       runCnt := 0 }
   else if c == '$' then
-    -- End of row(s): advance row by `effRun`, reset column.
+    -- End of row(s): advance row by `effRun`, reset column to 0.
     let n := effRun st
     Except.ok { st with
       row := st.row + Int.ofNat n,

@@ -17,7 +17,7 @@
   with a classical eigenvalue can be predetermined without conspiracy.
 
   This file formalizes the structure of the theorem and connects it to
-  the context of the `conway_lein` project (Kochen-Specker, Conway's legacy).
+  the context of the `conway_lean` project (Kochen-Specker, Conway's legacy).
 
   **Key insight (Conway-Kochen)**: here, "free will" is a *mathematical*
   definition, not a philosophical thesis. It means the particle's response
@@ -26,20 +26,21 @@
 
   ### i18n — convention #4980 (ratified 2026-07-04)
 
-  This file is the **French canonical**. The English mirror is the sibling
-  file `FreeWillTheorem_en.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
-  `open Conway_en`, `open Conway.KochenSpecker`, `import Conway.KochenSpecker`)
+  This file is the **English mirror** of the French canonical
+  `FreeWillTheorem.lean` (`namespace Conway_en > namespace FreeWillTheorem_en`,
+  `open Conway_en`, `open KochenSpecker_en`, `import Conway.KochenSpecker_en`)
   — sibling pair V2 nested model (cf `code-style.md` §Lean i18n and the analogue
   `Conway/Fractran` c.451 Pattern A, `Conway/LookAndSay` c.457, `Conway/Nim` c.518).
-  Docstrings in French here; the body (signatures, defs, proofs) stays
+  Docstrings in English here; the body (signatures, defs, proofs) stays
   byte-identical between the two files. No inline bilingual block (option B
   rejected, ratified 2026-07-04).
 
   Cross-references: c.366 `Conway.lean` bilingual root (MERGED), c.451
-  `Conway/Fractran` sibling pair (MERGED), c.456 `Conway/FreeWillTheorem`
+  `Conway/Fractran` sibling pair (MERGED — #6690), c.456 `Conway/FreeWillTheorem`
   sibling pair (MERGED — standalone EN twin created), c.457 `Conway/LookAndSay`
-  sibling pair (MERGED), c.518 `Conway/Nim` sibling pair (MERGED),
-  **c.519 `Conway/FreeWillTheorem` FR canonical bilingual strip (this PR)**.
+  sibling pair (MERGED — #6707), c.518 `Conway/Nim` sibling pair (MERGED — #6710),
+  **c.519 `Conway/FreeWillTheorem` FR canonical bilingual strip (MERGED — #6712)**.
+  #NNNN is carried only by entries whose PR is identifiable in the repository history; c.366 and c.456 predate it, hence no anchor.
 
   Sources:
   - J. H. Conway and S. Kochen, "The Free Will Theorem",

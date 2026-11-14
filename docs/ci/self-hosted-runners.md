@@ -132,6 +132,18 @@ python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
 
 Les deux nombres étant versés et datés ci-dessus, la caractérisation est complète ; reste ouverte la décision de capacité (plafond de concurrence par hôte, retrait ou renfort documenté des slots), qui relève du coordinateur et n'est pas prise dans ce document.
 
+### Ce que l'OS local peut dire d'une topologie — et ce qu'il ne peut pas
+
+La mesure d'un hôte depuis son propre système d'exploitation (`scripts/ci/measure_po2024_topology.py`) répond à une autre question que l'inventaire API ci-dessus, et les deux ne se substituent pas. Ce qu'elle établit durablement :
+
+1. **Deux des nombres qui bornent la concurrence ne sont pas des propriétés de la machine.** Le plafond de jobs d'un hôte et le nombre de slots qui le partagent vivent dans l'enregistrement `self-hosted runner` côté GitHub et dans `actions/runners` — jamais dans l'OS. Un rapport qui les déclare « restant à mesurer » depuis la machine ne signale donc pas une lacune de mesure : il signale que **la machine n'est pas l'instrument**. Ces deux-là se lisent par l'API (bloc `runners_inventory` ci-dessus), ou ne se lisent pas.
+2. **La borne Docker/WSL2 n'est un plafond que sous hypothèse.** Le daemon local plafonne vCPU et mémoire de la VM qui le porte ; ce plafond borne réellement la concurrence **si** les conteneurs éphémères de GitHub s'exécutent dans cette VM. Sur un hôte où Actions monte une VM dédiée, le chiffre mesuré localement ne dit rien de la CI. Il s'écrit donc comme une **borne supérieure conditionnelle**, jamais comme la capacité de l'hôte.
+3. **Une propriété stable et une lecture instantanée ne se mélangent pas sans être nommées.** Modèle, cœurs, RAM installée et plafond du daemon sont reproductibles ; charge CPU et mémoire libre changent à chaque relecture. L'instrument suffixe les seconds d'`instant` dans son JSON pour qu'un re-run qui les voit bouger ne se lise pas comme une dérive de la mesure.
+
+Une absence de ce type n'est pas un zéro (cf. §« Exhaustivité et zéros ») : « non mesurable depuis l'OS » et « mesuré à zéro » sont deux verdicts distincts, et les confondre est l'erreur que cette section existe pour empêcher.
+
+Le relevé de topologie de l'hôte po-2024 — propriétés stables, lectures instantanées, complémentarité avec les deux nombres côté API — est un rapport figé : [`2026-09-15-po2024-topology-baseline.md`](../transients/2026-09-15-po2024-topology-baseline.md).
+
 ## Topologie retenue
 
 `jsboige/CoursIA` appartient à un compte GitHub personnel. Les groupes de runners personnalisés sont réservés aux organisations et ne constituent donc pas une barrière disponible ici. La frontière activable repose sur deux contrôles complémentaires :
@@ -215,7 +227,7 @@ Le contrôleur est `scripts/ci/runner_controller.py` :
 | `status` | État distant + plan, aucun effet de bord. |
 | `ensure --apply` | **Idempotent** : runner online → no-op ; absent → token frais via `gh` + `register` + `verify` du gestionnaire. Sans `--apply`, imprime le plan JSON. |
 | `deregister --apply` | Arrêt propre : `config.cmd remove` avec token de retrait. L'installation demeure ; l'état redevient « préparé, pas activé ». |
-| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. |
+| `task-install --apply` | Enregistre la tâche planifiée `CoursIA-Runner-Controller` (tick 60 s, limite d'exécution 10 min, `IgnoreNew`) qui déclenche `ensure --apply`. **C'est le bouton** — exige une session élevée. L'action passe par un lanceur `wscript.exe` masqué, réécrit à chaque installation dans `<racine>/launchers/controller-task.vbs` : une action de tâche modifiée à la main serait annulée au prochain `task-install` (#24706). |
 | `task-remove --apply` | Retire la tâche (retour arrière du bouton). Second passage sur une tâche absente = succès explicite. |
 
 Le tick ne fait quasiment rien quand le runner est online (une lecture d'API) : autant de passages que de minutes, un seul état stable. L'action de la tâche lit le mot de passe du compte dédié dans le fichier machine local conventionnel (`<racine-parent>\secrets\runner_pwd.txt`, jamais dans le dépôt), négocie tout le reste à chaud et journalise dans `<racine-parent>\logs\controller.log`. Le token d'enregistrement ne transite jamais par argv, commit, PR, commentaire ou dashboard, et est retiré de l'environnement après chaque cycle.
@@ -550,16 +562,21 @@ Docker relance le conteneur à chaque démarrage du daemon (donc de la distro) ;
 
 La primitive de routage est le **jeu de labels dédié** : `DEDICATED_LABEL_SETS` dans `scripts/ci/check_self_hosted_runner_policy.py` porte un jeu par pool, et c'est le label distinct qui garantit le routage — jamais une convention de nommage.
 
-### Inventaire des pools (mesuré sur `main`, octobre 2026)
+**La règle jumelle, mesurée le 2026-11-04 : un pool qui sort de la flotte sort de la liste d'autorisation.** `DEDICATED_LABEL_SETS` est une liste de jeux **servis**, pas une liste de jeux **planifiés** : y laisser un pool éteint ouvre un trou *fail-open* — le garde certifie un routage qu'aucun runner ne peut prendre, et le job attend en file d'attente indéfiniment. Le retrait s'oppose donc à l'oubli : le jeu retiré est conservé, renommé, dans `RETIRED_LABEL_SETS`, et un test interdit sa ré-admission silencieuse.
+
+### Inventaire des pools (mesuré sur `main`, octobre 2026 ; re-mesuré les 2026-11-04 et 2026-11-05)
 
 | Pool | Jeu de labels | Support | Rôle |
 |---|---|---|---|
 | `coursia-fast-guards` | `REQUIRED_LABELS` | hôte Windows | gardes Windows (po-2024) |
 | `coursia-linux` | `LINUX_RUNNER_LABELS` | conteneur, image minimale + python/gh/jq | gardes PR pure-Python |
 | `coursia-waiter` | `WAITER_LABELS` | label distinct sans slot de travail | laisser un gate **attendre** sans consommer de CPU (arbitrage ai-01 2026-09-02 : « attendre ne coûte pas de CPU ») |
-| `coursia-lean` | `LEAN_RUNNER_LABELS` | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; un slot lean ne porte **jamais** `coursia-linux` |
+| `coursia-lean` | `RETIRED_LEAN_RUNNER_LABELS` — **retiré**, pool éteint | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; **pool éteint** — extinction mesurée le 2026-10-23 par la sonde du dépôt, confirmée le 2026-11-04 (48 runners) et re-mesurée le 2026-11-05 (49 runners) — **zéro** porteur de `coursia-lean` dans les deux mesures ; les jambes Lean sont passées à `[self-hosted, coursia-ephemeral, coursia-linux]` |
+| `coursia-persistent` | jeu **non autorisé** par le garde | conteneur, slots persist de po-2024 | 7 slots **enregistrés mais offline** à la mesure du 2026-11-04 ; leur jeu de labels n'est pas dans `DEDICATED_LABEL_SETS`, donc aucun workflow ne peut y router ; ils portent `coursia-ephemeral` alors que leur spécification versionnée (`scripts/ci/docker/linux-runner/persist/po-2024/create-persist-slots.sh`) impose l'inverse (« un slot persist porte `coursia-persistent` et **NE porte PAS** `coursia-ephemeral` ») — arbitrage de composition de flotte, pas de lane |
 
 Les pools `coursia-docs` (quarto/pandoc) et `coursia-browser` (npm + navigateurs Playwright) restent des **candidats non livrés** : leur déploiement touche le conteneur runner porté par po-2024 — l'infra d'un autre workspace se demande au workspace qui la porte, elle ne s'applique pas depuis l'extérieur.
+
+**Le tiroir ne s'arrête pas au garde.** La jambe Lean reste portée par deux autres organes, et l'écart est intentionnel plutôt qu'un oubli : le budget mémoire (`scripts/ci/assert_memory_budget.py`, jambe `lean : 1 x 6.0 GiB`) et l'épinglage d'image (`check_runner_version_pin.py` → `supervise.sh:LEAN_IMAGE`) conservent la jambe Lean jusqu'à sa ré-admission ou son démontage explicite. Tant que les slots existent sur le parc, la CI ne peut pas prétendre que le coût Lean a disparu ; le garde dit seulement que le **routage** vers le pool éteint est refusé. Le retrait du jeu de labels et la ré-admission du pool sont deux gestes distincts : le premier est fait, le second attend la mesure du parc.
 
 ### La gate mémoire de la migration des builds Lean
 
@@ -569,7 +586,8 @@ La ligne de migration qui déplace le coût réel est le `runs-on` de `lean-buil
 
 1. un nouveau jeu de labels dans `DEDICATED_LABEL_SETS` ;
 2. une image dédiée — jamais un ajout à l'image commune ;
-3. l'entrée correspondante dans `scripts/tests/test_check_self_hosted_runner_policy.py`.
+3. l'entrée correspondante dans `scripts/tests/test_check_self_hosted_runner_policy.py` ;
+4. **la mesure du parc** : `gh api repos/jsboige/CoursIA/actions/runners` rend les runners **en service** et leurs jeux de labels — c'est cette mesure, et non la présence du jeu dans la liste, qui dit si un routage est servi. Le symétrique est obligatoire : quand un pool s'éteint, son jeu sort de `DEDICATED_LABEL_SETS` et passe dans `RETIRED_LABEL_SETS` (constante conservée, test de non-ré-admission à l'appui), faute de quoi le garde certifie une file d'attente éternelle.
 
 ## Tranches suivantes, activation partielle
 

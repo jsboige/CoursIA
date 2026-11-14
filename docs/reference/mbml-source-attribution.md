@@ -1,5 +1,7 @@
 # Attribution de source MBML / Infer.NET — `MyIA.AI.Notebooks/Probas/`
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Référence pérenne d'attribution de source : table de correspondance **notebook ↔ source canonique** pour la série Probas/Infer+PyMC (36 notebooks : 17 Infer + 17 PyMC + 2 racine). Établie lors de l'audit de distillation [#8081](https://github.com/jsboige/CoursIA/issues/8081) (c.803, 2026-07-23, lane `myia-po-2024:CoursIA-2`).
 
 Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus dans ce fichier (réqualification [#7422](https://github.com/jsboige/CoursIA/issues/7422)) : ils sont tracés dans #8081 ; les 4 sous-items de backfill/archivage extraits de la version initiale ont été ouverts en issues filles.

@@ -30,7 +30,7 @@ commentees). Les fixtures ``traces_a`` / ``traces_b`` sont synthetiques
 :func:`ict.lens_agreement.acts_topk_panels` et
 :func:`ict.lens_agreement.differential_features` pour eviter la
 dependance aux veritables traces SAE / J-Lens (qui demandent le
-notebook ICT-SAE-JLens-TeteATete et les fichiers .npz de la couche 16).
+notebook ICT-SAE-JLens-TeteATete-Python et les fichiers .npz de la couche 16).
 """
 
 from __future__ import annotations

@@ -7,6 +7,12 @@
 > `lean-social-choice.yml` a été absorbé dans la matrice par #17374, et le pin Lean a avancé
 > depuis (voir [`game_theory_lean/lean-toolchain`](../game_theory_lean/lean-toolchain)). Les
 > valeurs du tableau ci-dessous sont donc un **instantané historique**, pas l'état courant.
+>
+> **⚑ Sortie programmée — tranche T3 de [#24183](https://github.com/jsboige/CoursIA/issues/24183).**
+> Ce document est un **instantané historique absorbable** : l'état actif du lake est tenu par
+> `game_theory_lean/`. La preuve de préservation des documents de cette coquille — dont la
+> disposition du présent fichier — est livrée dans le [README de la coquille](README.md), section
+> « Preuve de préservation ».
 
 ## Build Info
 

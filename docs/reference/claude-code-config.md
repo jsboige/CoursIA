@@ -1,5 +1,7 @@
 # Claude Code Extension Points
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 ## Agents (`.claude/agents/`)
 
 Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model, tools, memory, and skills configuration. **The roster below lists 9 representative agents** — the **full roster (21 agents)** with descriptions, mapping Epic → specialist, et mapping side-track est dans [subagents-reference.md](subagents-reference.md) (la source de vérité).
@@ -83,7 +85,20 @@ Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model,
 | `organ-first-implementation` | nommer l'organe natif d'une autre série avant de réimplémenter (5 questions dans le body) |
 | `submodule-maintenance` | les cinq sous-modules : mesure de dérive du gitlink, états de gate, droits `gh`, ordre du bump |
 
-**Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** (celles qui portent un frontmatter `paths:`) ne se chargent que si la session touche les fichiers visés ; toutes les autres sont **auto-chargées** à chaque session. **La liste des path-gated ne se recopie pas ici** : elle se recalcule, et une copie en dur diverge au premier ajout/rétraction d'un frontmatter — `grep -l '^paths:' .claude/rules/*.md` (mesurée **14** au 2026-10-29) est la source, pas cette phrase.
+### Ce que porte chaque famille de règles path-gatées
+
+Table déportée de `CLAUDE.md` §Règles modulaires (tranche #11554, verdict de phase 2 du 2026-10-27) : le harnais garde la prescription condensée, la ventilation par domaine et la liste des règles de chaque famille vivent ici. Colonne de droite : ce qu'un lecteur doit savoir **sans** avoir chargé la règle.
+
+| Domaine | Règles path-gatées | Ce qu'un lecteur doit savoir sans les avoir chargées |
+|---|---|---|
+| Notebooks | `notebook-conventions` · `cell-interpretation-ordering` · `exercise-example-labeling` · `three-exercises-per-notebook` · `consecutive-code-cells` · `audit-cross-source-distillation` · `notebook-accretion-numbering` | C.1/C.2/C.3 sont précisés au `CLAUDE.md` §C. Un notebook **ne se renomme pas sans un argument pédagogique écrit** (`notebook-accretion-numbering`) ; un finding d'audit automatisé **se re-vérifie avant tout fix** (`audit-reassessment`, ~60 % de faux positifs) ; la **sortie** d'un audit va au dashboard, jamais dans l'arbre (`audit-cross-source-distillation`, déjà porté par §A). |
+| Catalogue & README | `catalog-pr-hygiene` · `readme-french-first` | **Le catalogue appartient à l'automatisation** : `COURSE_CATALOG.generated.*` et les blocs `CATALOG-STATUS` ne se régénèrent JAMAIS à la main sur une branche feature — laisser byte-identique à `main`. Toute prose de doc **ajoutée ou réécrite** est en français, même dans un fichier anglais. |
+| Artefacts de résultats | `results-artifact-policy` | **Nouveau fichier de `scripts/results/` > 512 Ko = bloqué par CI** (#15890) : committer l'agrégé falsifiable (biais signés, p-values DM, preuves de folds), les séries complètes vont hors dépôt (GDrive) avec le chemin cité dans le body. Artefacts déjà sur main : grandfathered, aucune réécriture d'historique. |
+| GenAI | `genai-config` | — |
+| Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` · `lean-i18n` | Docstrings FR par défaut, traduction en jumeau `_en` (paire `Foo`/`Foo_en`, byte-identité hors commentaires) — détail : [`lean-i18n.md`](../../.claude/rules/lean-i18n.md). |
+| Python | `codeql-suppressions-inertes` | Un commentaire `# codeql[rule-id]` est **inerte** sur ce dépôt (CodeQL en *default setup*) : ne pas en ajouter, ne pas en déplacer. |
+
+**Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** (celles qui portent un frontmatter `paths:`) ne se chargent que si la session touche les fichiers visés ; toutes les autres sont **auto-chargées** à chaque session. **La liste des path-gated ne se recopie pas ici** : elle se recalcule, et une copie en dur diverge au premier ajout/rétraction d'un frontmatter — `grep -l '^paths:' .claude/rules/*.md` est la source, pas cette phrase.
 
 ## Model Selection Strategy
 

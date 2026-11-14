@@ -287,11 +287,12 @@ def test_committed_manifest_declares_builder_licence():
 
 # --- ancrage cote depot (mesure po-2023 du 2026-10-08 sur #17578) -----------
 #
-# Le manifeste epingle le pin AMONT (0ab05d66) ; le gitlink du sous-module a
-# derive depuis (65af9c38 le 06/10, puis edb39554). La reproductibilite doit se
-# lire depuis un commit que le depot atteint : le commit du build (dont le
-# gitlink etait encore le pin amont) et la copie verbatim in-repo que le
-# constructeur lit effectivement -- pas le sous-module vivant.
+# Le manifeste epingle le pin AMONT ; le gitlink du sous-module derive en
+# continu (0ab05d66 -> 65af9c38 -> ... -> 9038690 a la resynchronisation du
+# 2026-11-03). La reproductibilite doit se lire depuis un commit que le depot
+# atteint : le commit de `main` dont l'arbre porte le gitlink epingle, et la
+# copie verbatim in-repo que le constructeur lit effectivement -- pas le
+# sous-module vivant.
 
 @pytest.mark.skipif(not (PHASE2 / "manifest.json").exists(), reason="manifeste absent")
 def test_manifest_names_repo_side_pins():
@@ -320,9 +321,22 @@ def test_build_gitlink_matches_repo_commit_tree():
     if probe.returncode != 0:
         pytest.skip("commit du build absent du clone (shallow ?)")
     ls = subprocess.run(
-        ["git", "ls-tree", B.BUILD_REPO_COMMIT, "--", B.ARGUMENTUM_SUBMODULE_PATH],
+        ["git", "ls-tree", B.BUILD_REPO_COMMIT, "--", B.BUILD_GITLINK_TREE_PATH],
         cwd=B._REPO_ROOT, capture_output=True, text=True,
         encoding="utf-8", errors="replace")
     assert ls.returncode == 0
     assert B.BUILD_GITLINK_COMMIT in ls.stdout, (
         "le gitlink du manifeste n'est pas celui de l'arbre au commit du build")
+    # Le chemin historique et le chemin vivant ne se confondent pas : sans cette
+    # borne, une "resynchronisation" de la constante de provenance sur le chemin
+    # courant rendrait un ls-tree VIDE (rc=0) et l'echec ci-dessus ne dirait pas
+    # pourquoi. Ici on verifie que le chemin vivant designe bien le sous-module
+    # dans l'arbre COURANT.
+    live = subprocess.run(
+        ["git", "ls-tree", "HEAD", "--", B.ARGUMENTUM_SUBMODULE_PATH],
+        cwd=B._REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    assert live.returncode == 0
+    assert live.stdout.startswith("160000"), (
+        "le chemin vivant du sous-module ne designe pas un gitlink dans HEAD : %r"
+        % (live.stdout,))

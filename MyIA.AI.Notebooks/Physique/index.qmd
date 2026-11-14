@@ -1,7 +1,7 @@
 ---
 title: "Physique — Physique numérique et théorie des champs"
 subtitle: "Série pédagogique — vérifier un calcul contre une vérité exacte : théorème de Noether, invariance de jauge, Yang-Mills sur réseau, volumes finis"
-description: "Série Physique du dépôt CoursIA — théorème de Noether dérivé symboliquement, invariance de jauge U(1) et SU(2), Yang-Mills bidimensionnel sur réseau comparé à sa solution exacte, équation de Burgers par volumes finis avec solveur de Riemann, intégrales vérifiées."
+description: "Série Physique du dépôt CoursIA — théorème de Noether dérivé symboliquement, invariance de jauge U(1) et SU(2), Yang-Mills bidimensionnel sur réseau comparé à sa solution exacte, équation de Burgers par volumes finis avec solveur de Riemann, intégrales vérifiées, distillations de physique de l'information."
 listing:
   - id: jauge
     contents: "Jauge/*.ipynb"
@@ -15,6 +15,11 @@ listing:
     page-size: 24
   - id: integrales
     contents: "Integrales/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
+  - id: chaines
+    contents: "Chaines/*.ipynb"
     type: grid
     sort: "filename"
     page-size: 24
@@ -32,13 +37,14 @@ connue indépendamment, calcule, puis compare.
 
 ## Vue d'ensemble
 
-Trois sous-séries, un même principe de vérification.
+Quatre sous-séries, un même principe de vérification.
 
 | Sous-série | Objet | Ce qui sert de vérité |
 |------------|-------|-----------------------|
-| **Jauge** | Symétries continues et théories de jauge : Noether, U(1) → SU(2), Yang-Mills sur réseau | La quantité conservée prédite par la symétrie ; la covariance du tenseur de champ ; la solution exacte du modèle bidimensionnel |
+| **Jauge** | Symétries continues et théories de jauge : Noether, U(1) → SU(2), Yang-Mills sur réseau, spineurs et twisteurs | La quantité conservée prédite par la symétrie ; la covariance du tenseur de champ ; la solution exacte du modèle bidimensionnel ; le résidu d'incidence au plancher numérique |
 | **Numerique** | Équations aux dérivées partielles par volumes finis, solveur de Riemann | La vitesse de propagation du choc de Burgers, connue analytiquement |
 | **Integrales** | Intégrales définies et impropres, calcul exact | La valeur close obtenue symboliquement, recroisée numériquement |
+| **Chaines** | Physique de l'information : distillation de programmes à axiome unique (Chain Theory) | Le calcul de la source, rejoué indépendamment ; les déterminations expérimentales citées — avec le statut épistémique de chaque affirmation posé avant le calcul |
 
 **Kernels** : `python3` · **GPU** : non requis · **Prérequis** : analyse (dérivées
 partielles, intégrales multiples), algèbre linéaire, Python scientifique. La théorie des
@@ -74,6 +80,19 @@ Le versant calculatoire de la série : méthodes analytiques, vérification num�
 croisée, et le passage de l'un à l'autre comme contrôle mutuel.
 
 ::: {#integrales}
+:::
+
+## Physique de l'information
+
+Des programmes récents dérivent une conséquence physique calculable d'un axiome
+informationnel unique. La sous-série les distille avec un patron strict — **Mesuré /
+Cité / Ouvert** : ce que le carnet rejoue lui-même est mesuré (énumérations, écarts
+numériques), la chaîne dérivative de la source est citée, et ce que la source ne
+prouve pas est listé ligne à ligne. Premier grain : le candidat exact de la constante
+de structure fine issu de l'axiome d'intrication de Chain Theory, dont l'énumération
+des 172 enregistrements est rejouée et comparée au script amont.
+
+::: {#chaines}
 :::
 
 ## Démarrage rapide

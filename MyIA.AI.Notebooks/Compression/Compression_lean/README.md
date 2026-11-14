@@ -19,7 +19,8 @@ lake dédié `Compression_lean/`, mathlib seule.
 3. **`kraft_le_one`** — **inégalité de Kraft** sur les rationnels exacts :
    `kraftSum t ≤ 1`. Un nœud divise chaque poids par `2`
    (`kraftSum_node`), donc chaque étage de l'arbre partage le même budget
-   unitaire — le « partage du gâteau » binaire du carnet 01.
+   unitaire — le partage binaire du budget que le carnet 01 pose en § 3
+   (inégalité de Kraft).
 4. **`kraft_full`** — l'arbre complet de profondeur `k` porte `2 ^ k`
    feuilles (`length_leafWords_full`) et **sature exactement** la borne :
    `kraftSum (full k) = 1`. Ancres exécutables `#eval` : le code fixe 2 bits

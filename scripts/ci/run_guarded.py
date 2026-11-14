@@ -45,6 +45,24 @@ permissif. Hors Windows, l'instrument n'existe pas (l'equivalent Linux est un
 cgroup, pas un compteur) : la garde est alors declaree NON APPLICABLE et ne
 refuse pas -- un refus systematique y bloquerait tout lancement.
 
+Garde d'admission -- projection de l'engagement (#23531, #23546). Le seuil
+ci-dessus compare un etat **avant** engagement a une valeur qui ne dit rien
+de ce que le job va engager ensuite : a 89,9 % de charge, un job plafonne a
+48 GiB peut porter l'hote AU-DELA de sa limite de commit. Une famine de
+commit touche alors le vLLM de flotte (GPU 0/1) autant que le job -- c'est
+precisement le service que la regie cherche a ne pas deranger. L'admission
+compare donc aussi la **projection** : charge courante + plafond de commit
+du job, rapportee au plafond de commit de l'hote. Elle est refusee au-dela du
+**meme seuil de sante** que l'etat d'avant (``--max-commit-charge-pct``) :
+100 % du plafond de commit, c'est la famine meme -- et le vLLM de flotte
+(GPU 0/1) n'a alors aucune marge.
+La lecture est UNIQUE (pourcentage, engagement courant et plafond sont lus
+dans le meme instant) : deux sondes successives pourraient voir deux etats
+differents, et la projection ne serait plus un etat coherent de la machine.
+Sans plafond de commit du job (``--job-memory-limit-gib`` a 0), l'engagement
+est sans borne, la projection est INDEMONTRABLE : le lanceur refuse
+(fail-CLOSED), sauf opt-in explicite ``--allow-unbounded-commit``.
+
 Exclusion N=1 -- #21661. ``--exclusive-lock <chemin>`` prend un verrou
 exclusif sur un fichier ; si un autre lancement le tient deja, le demarrage
 est refuse. Le verrou est tenu par ce lanceur, donc par toute la duree de
@@ -69,7 +87,9 @@ le device pris pour toute la flotte ; ``--gpu-issue`` est facultatif.
 Codes de sortie : 0 commande terminee sous les deux plafonds · 3 plafond
 processus franchi · 4 plancher machine franchi · 5 demarrage refuse (RAM libre
 insuffisante, Job Object indisponible sans ``--allow-no-job``, charge de
-commit au-dessus du seuil ou illisible, verrou N=1 deja pris, gate GPU
+commit au-dessus du seuil ou illisible, projection d'engagement au-dela de
+100 % du plafond de commit, engagement sans borne sans
+``--allow-unbounded-commit``, verrou N=1 deja pris, gate GPU
 defavorable ou indisponible, reservation GPU non ecrite) · 6 la
 commande n'a pas demarre · 7 commande terminee mais l'observation ``released``
 du ledger GPU n'a pas pu etre ecrite (la reservation reste vivante) ·
@@ -200,8 +220,8 @@ def _resume_suspended(proc):
         return False
 
 
-def _commit_charge_pct():
-    """Charge de commit de la machine en pourcentage, ou ``None`` si illisible.
+def _commit_charge():
+    """Lecture de la charge de commit : ``(pct, committed_bytes, limit_bytes)``.
 
     Meme instrument que la garde GPU existante : ``Win32_PerfFormattedData_
     PerfOS_Memory`` (``CommittedBytes`` / ``CommitLimit``). Les compteurs
@@ -209,13 +229,25 @@ def _commit_charge_pct():
     **physique** n'est pas la charge de commit : les deux sondes se
     ressemblent et l'ecart enjambe le seuil. Retourner ``None`` sur echec
     permet a l'appelant de refuser (fail-CLOSED) au lieu de laisser passer.
+
+    La LECTURE EST UNIQUE (#23531, #23546). Le pourcentage seul ne suffit
+    plus : projeter l'engagement du job exige le **plafond** de commit de
+    l'hote, et deux sondes successives pourraient voir deux etats
+    differents -- la projection ne serait alors pas un etat coherent de la
+    machine. Le trio est donc lu dans le meme instant, par le meme appel.
+
+    Les trois quantites viennent de la meme source : ``CommittedBytes`` est
+    l'engagement courant, ``CommitLimit`` le plafond (RAM physique +
+    pagefile) que l'hote ne peut pas depasser. Une limite de commit
+    elle-meme illisible ou nulle rend la lecture ``None`` : sans plafond,
+    aucune projection n'est demontrable.
     """
     if os.name != "nt":
         return None
     cmd = [
         "powershell", "-NoProfile", "-Command",
         "$m=Get-CimInstance Win32_PerfFormattedData_PerfOS_Memory; "
-        "if ($m) { [int](100*$m.CommittedBytes/$m.CommitLimit) }",
+        "if ($m) { '{0}|{1}' -f $m.CommittedBytes,$m.CommitLimit }",
     ]
     try:
         out = subprocess.run(cmd, capture_output=True, text=True, timeout=60,
@@ -224,11 +256,32 @@ def _commit_charge_pct():
         return None
     if out.returncode != 0:
         return None
-    raw = (out.stdout or "").strip()
+    lines = [ln for ln in (out.stdout or "").splitlines() if ln.strip()]
+    if not lines:
+        return None
+    parts = lines[-1].strip().split("|")
+    if len(parts) != 2:
+        return None
     try:
-        return int(raw)
+        committed = int(parts[0].strip())
+        limit = int(parts[1].strip())
     except ValueError:
         return None
+    if committed < 0 or limit <= 0:
+        return None
+    return (int(100 * committed / limit), committed, limit)
+
+
+def _commit_charge_pct():
+    """Charge de commit en pourcentage, ou ``None`` si illisible.
+
+    Enveloppe de compatibilite : le pourcentage seul ne permet plus de
+    projeter l'engagement du job (il faut le plafond), mais reste l'API la
+    plus simple pour qui ne veut qu'un etat. Le predicat d'admission, lui,
+    lit ``_commit_charge`` -- une seule lecture.
+    """
+    reading = _commit_charge()
+    return None if reading is None else reading[0]
 
 
 def _acquire_exclusive_lock(path):
@@ -613,7 +666,19 @@ def main(argv=None):
     ap.add_argument("--max-commit-charge-pct", type=int, default=0,
                     help="refuse le demarrage si la charge de commit de la "
                          "machine depasse ce pourcentage. 0 = desactive. "
-                         "Une mesure ILLISIBLE refuse aussi (fail-CLOSED)")
+                         "Une mesure ILLISIBLE refuse aussi (fail-CLOSED). "
+                         "Active aussi la PROJECTION d'engagement : le "
+                         "demarrage est refuse si la charge de commit, une "
+                         "fois l'engagement du job (--job-memory-limit-gib) "
+                         "ajoute, depasse 100 %% du plafond de commit de "
+                         "l'hote (#23531, #23546)")
+    ap.add_argument("--allow-unbounded-commit", action="store_true",
+                    help="assumer explicitement que l'engagement du job n'est "
+                         "PAS borne (aucun --job-memory-limit-gib) : la limite "
+                         "de commit de l'hote ne sera alors PAS protegee par "
+                         "ce lanceur. Sans cette option, la garde refuse "
+                         "(fail-CLOSED) : sans plafond, la projection est "
+                         "indemontrable")
     ap.add_argument("--exclusive-lock", default=None,
                     help="chemin d'un fichier de verrou exclusif : refuse le "
                          "demarrage si un autre lancement le tient (N = 1)")
@@ -708,9 +773,28 @@ def main(argv=None):
         return RC_REFUSED
 
     # --- Garde d'admission : charge de commit (#21661) ------------------------
+    #
+    # Deux predicats, tous deux fail-CLOSED, lances dans cet ordre :
+    #
+    #  1. le seuil de charge de l'hote (``--max-commit-charge-pct``) : l'etat
+    #     de la machine AVANT que le job n'engage quoi que ce soit ;
+    #  2. la PROJECTION (#23531, #23546) : l'etat de la machine APRES
+    #     l'engagement que le job va prendre. Le premier predicat compare un
+    #     etat a un seuil qui ne dit rien de ce que le job va engager : a
+    #     89,9 % de charge, un job de 48 GiB peut porter l'hote AU-DELA de
+    #     sa limite de commit -- et une famine de commit touche le vLLM de
+    #     flotte (GPU 0/1) autant que le job. La projection est donc ce que
+    #     l'admission doit dire, pas seulement la charge courante.
+    #
+    #     Elle est bornee par le MEME seuil de sante que l'etat d'avant
+    #     (``--max-commit-charge-pct``), pas par 100 % du plafond de commit :
+    #     100 %, c'est la famine elle-meme, et le vLLM de flotte n'a aucune
+    #     marge a ce point. Avec un plafond de commit de 399,8 GiB et un job
+    #     de 48 GiB, la projection franchit 90 % des 78,0 % de charge
+    #     courante -- donc bien avant le seuil de l'etat d'avant.
     if args.max_commit_charge_pct > 0:
-        charge = _commit_charge_pct()
-        if charge is None and os.name != "nt":
+        reading = _commit_charge()
+        if reading is None and os.name != "nt":
             # Hors Windows il n'existe pas d'instrument equivalent (la charge
             # de commit est une notion du gestionnaire de memoire Windows ;
             # l'equivalent Linux est un cgroup, pas un compteur). Ce n'est pas
@@ -719,20 +803,64 @@ def main(argv=None):
             _say(fh, "garde de charge de commit : NON APPLICABLE sur cette "
                      "plateforme (pas d'instrument equivalent) -- demarrage "
                      "autorise. Le plafond memoire, lui, reste actif.")
-        elif charge is None:
+        elif reading is None:
             _say(fh, f"REFUS : charge de commit ILLISIBLE (capteur muet) -- "
                      f"fail-CLOSED, rien n'est lance. Seuil demande : "
                      f"{args.max_commit_charge_pct} %.")
             close_logs()
             return RC_REFUSED
-        elif charge > args.max_commit_charge_pct:
-            _say(fh, f"REFUS : charge de commit {charge} % > "
-                     f"{args.max_commit_charge_pct} % -- rien n'est lance.")
-            close_logs()
-            return RC_REFUSED
         else:
-            _say(fh, f"admission : charge de commit {charge} % <= "
-                     f"{args.max_commit_charge_pct} % -- demarrage autorise")
+            charge, committed, limit = reading
+            if charge > args.max_commit_charge_pct:
+                _say(fh, f"REFUS : charge de commit {charge} % > "
+                         f"{args.max_commit_charge_pct} % -- rien n'est lance.")
+                close_logs()
+                return RC_REFUSED
+            engagement = int(args.job_memory_limit_gib * GiB)
+            if engagement <= 0:
+                # Aucun plafond de commit du job : l'engagement est SANS
+                # BORNE, donc la projection est INDEMONTRABLE. Refuser par
+                # defaut (fail-CLOSED, comme une mesure illisible) : c'est la
+                # seule maniere de ne pas laisser un job franchir la limite
+                # de commit de l'hote en pretending qu'elle est protegee.
+                if not args.allow_unbounded_commit:
+                    _say(fh, f"REFUS : engagement du job NON BORNE (aucun "
+                             f"--job-memory-limit-gib) -- la projection de la "
+                             f"charge de commit apres engagement est "
+                             f"indemontrable, et la limite de commit de l'hote "
+                             f"({limit / GiB:.1f} GiB) ne serait pas protegee "
+                             f"par ce lanceur. Fail-CLOSED : rien n'est lance. "
+                             f"Poser --job-memory-limit-gib, ou assumer "
+                             f"explicitement avec --allow-unbounded-commit.")
+                    close_logs()
+                    return RC_REFUSED
+                _say(fh, "ATTENTION : engagement du job NON BORNE, assume "
+                         "explicitement (--allow-unbounded-commit) -- la limite "
+                         "de commit de l'hote n'est PAS protegee par ce "
+                         "lanceur. La charge courante est "
+                         f"{charge} % (plafond {limit / GiB:.1f} GiB).")
+            else:
+                projected = 100.0 * (committed + engagement) / limit
+                if projected > args.max_commit_charge_pct:
+                    _say(fh, f"REFUS : projection de charge de commit "
+                             f"{projected:.1f} % > "
+                             f"{args.max_commit_charge_pct} % -- l'hote est "
+                             f"engage a {charge} % ({committed / GiB:.1f} GiB) "
+                             f"et le job peut encore engager "
+                             f"{engagement / GiB:.1f} GiB, pour un plafond de "
+                             f"commit de {limit / GiB:.1f} GiB. Rien n'est "
+                             f"lance : l'etat APRES engagement depasse le meme "
+                             f"seuil de sante que l'etat d'avant, et le vLLM "
+                             f"de flotte (GPU 0/1) n'a aucune marge si l'hote "
+                             f"sature son plafond de commit.")
+                    close_logs()
+                    return RC_REFUSED
+                _say(fh, f"admission : charge de commit {charge} % <= "
+                         f"{args.max_commit_charge_pct} % et projection "
+                         f"{projected:.1f} % <= {args.max_commit_charge_pct} % "
+                         f"apres engagement de "
+                         f"{engagement / GiB:.1f} GiB (plafond de commit "
+                         f"{limit / GiB:.1f} GiB) -- demarrage autorise")
 
     # --- Exclusion N=1 (#21661) ------------------------------------------------
     if args.exclusive_lock:

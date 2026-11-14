@@ -33,8 +33,13 @@ send once the live orders are accounted for. It is intentionally **pure
 Python** (no `AlgorithmImports`), on the same pattern as
 `carry_forecast.py` and `breadth_multiplier.py`: contracts are any
 hashable keys — QC `Symbol` objects in production, strings in the tests.
-The wiring into `main_carver13` (items 1 and 3) deliberately waits for
-the merge of #23847 and #23961, which both carry `main_carver13.py`.
+`main_carver13._rebalance` wires it in behind its `orders` parameter
+(`net` by default, `cancel`, or `off` to replay the #23841 path).
+
+``NET`` assumes each live remainder eventually fills. While it stays
+open, the held position differs from the target by that remainder; if
+it is cancelled or expires instead, it leaves the live set and the next
+rebalance recomputes the gap from holdings alone.
 """
 
 
@@ -75,9 +80,10 @@ def open_order_remainder(open_orders, contract):
     Parameters
     ----------
     open_orders : iterable of OpenOrder
-        The live orders of the instrument, as returned by
-        ``self.transactions.get_open_orders(contract)`` in production
-        (one call per contract of the instrument, per item 1).
+        The live orders of the instrument. In production,
+        `main_carver13._instrument_open_orders` reads them with one
+        ``self.transactions.get_open_order_tickets()`` call and keeps the
+        tickets whose ``symbol.canonical`` is the continuous future.
     contract : hashable
         The contract whose orders to sum.
 

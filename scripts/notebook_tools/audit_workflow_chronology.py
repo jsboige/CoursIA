@@ -111,6 +111,44 @@ def scan_notebook(path: str):
     return hits
 
 
+def _emit_utf8(text, indent=None):
+    """Ecrit sur stdout en UTF-8, quel que soit l'encodage du flux redirige.
+
+    Sous Windows, un stdout redirige encode en cp1252 : un accent du corpus
+    (« la ou » avec un accent grave) sort en octet 0xe0 et tout consommateur
+    UTF-8 leve ``UnicodeDecodeError`` au premier accent. Le rapport devient
+    alors illisible pour une chaine d'outils, alors que l'audit lui-meme est
+    correct.
+
+    On reconfigure le flux quand il l'expose ; si l'encodage reste contraint,
+    on retombe sur une serialisation ASCII echappee -- du JSON valide quand
+    le texte en est, du texte lisible sinon.
+    """
+    stream = sys.stdout
+    reconfigure = getattr(stream, "reconfigure", None)
+    if reconfigure is not None:
+        try:
+            reconfigure(encoding="utf-8")
+        except (ValueError, OSError):
+            pass
+    try:
+        stream.write(text)
+    except UnicodeEncodeError:
+        try:
+            payload = json.loads(text)
+        except ValueError:
+            stream.write(text.encode("ascii", "backslashreplace").decode("ascii"))
+        else:
+            reserialized = json.dumps(payload, ensure_ascii=True, indent=indent)
+            # Symetrie avec la voie primaire : conserver le saut de ligne final
+            # du texte d'origine, pour que le fichier produit ne depende pas de
+            # l'encodage du flux (repli : pas de "\\n" final sinon).
+            if text.endswith("\n"):
+                reserialized += "\n"
+            stream.write(reserialized)
+    stream.flush()
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("path", help="carnet .ipynb ou répertoire")
@@ -135,15 +173,20 @@ def main(argv=None):
     results.sort(key=lambda r: (r["path"]))
 
     if args.json:
-        print(json.dumps({"n_notebooks_flagged": len(results), "notebooks": results},
-                         ensure_ascii=False, indent=1))
+        indent = 1
+        rendered = json.dumps({"n_notebooks_flagged": len(results), "notebooks": results},
+                              ensure_ascii=False, indent=indent)
+        _emit_utf8(rendered + "\n", indent)
     else:
+        lines = []
         if not results:
-            print("aucun marqueur de chronologie de livraison")
+            lines.append("aucun marqueur de chronologie de livraison")
         for r in results:
-            print("%s  (%d marqueur%s)" % (r["path"], r["n_hits"], "s" if r["n_hits"] > 1 else ""))
+            lines.append("%s  (%d marqueur%s)" % (r["path"], r["n_hits"],
+                                                  "s" if r["n_hits"] > 1 else ""))
             for idx, name, snippet in r["hits"]:
-                print("   cellule %2d  [%s]  …%s…" % (idx, name, snippet))
+                lines.append("   cellule %2d  [%s]  …%s…" % (idx, name, snippet))
+        _emit_utf8("\n".join(lines) + "\n")
     return 1 if results else 0
 
 

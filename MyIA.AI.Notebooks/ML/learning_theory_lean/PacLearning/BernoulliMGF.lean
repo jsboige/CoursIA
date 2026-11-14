@@ -16,13 +16,15 @@ Cette brique (2b/5) borne cette forme fermée :
 pour `μ ∈ [0, 1]` et `t ∈ ℝ`. C'est le **lemme de Hoeffding** (forme Bernoulli) — le
 résultat analytique dur requis pour clore la concentration. On établit ici les
 **ingrédients prouvés** (variance de Bernoulli `≤ 1/4`, positivité, normalisation, et le
-**cas symétrique `μ = 1/2`** via `cosh x ≤ exp(x²/2)`), et documente la borne générale
-comme OPEN avec sa preuve variationnelle (Donsker–Varadhan + Pinsker).
+**cas symétrique `μ = 1/2`** via `cosh x ≤ exp(x²/2)`), et **prouve la borne générale**
+par la méthode du gap `g(t) = t²/8 − K(t) ≥ 0` (monotonie de `g'`).
 
-## Pourquoi la borne générale est OPEN (honnête, G.3)
+## Trois routes de preuve de la borne générale (approches alternatives, non retenues)
 
 La borne `μ·exp(t(1−μ)) + (1−μ)·exp(−tμ) ≤ exp(t²/8)` est le vrai contenu analytique de
-Hoeffding. Trois routes de preuve, toutes lourdes hors du cadre Measure de Mathlib :
+Hoeffding. Elle est **prouvée ici** par la méthode du gap ; les trois routes ci-dessous
+sont des **approches alternatives, non retenues** (toutes lourdes hors du cadre Measure
+de Mathlib) :
 
 1. **Second-deriv + Taylor** : `K(t) = ln(E[exp(t(ind−μ))])` satisfait `K(0) = K'(0) = 0`
    et `K''(t) ≤ 1/4` (variance de la Bernoulli **tiltée**). Alors `K(t) ≤ t²/8` via Taylor
@@ -37,26 +39,34 @@ Hoeffding. Trois routes de preuve, toutes lourdes hors du cadre Measure de Mathl
 
 Le **cas symétrique `μ = 1/2`** (cette brique) se ferme élégamment : la MGF devient
 `cosh(t/2)` et `cosh x ≤ exp(x²/2)` (Mathlib `cosh_le_exp_half_sq`) donne
-`cosh(t/2) ≤ exp((t/2)²/2) = exp(t²/8)`. La borne générale est laissée OPEN — c'est un
-travail d'analyse dédié (cycle futur), pas un stub non prouvé.
+`cosh(t/2) ≤ exp((t/2)²/2) = exp(t²/8)`. La borne générale est également close ici par un
+argument de monotonie de la dérivée sur le gap `g(t) = t²/8 − K(t)` (voir
+`bernoulli_mgf_le` plus bas). C'est un travail d'analyse dédié, c'est une vraie preuve,
+pas un stub.
 
 ## Briques Hoeffding (décomposition 5 sous-briques)
 
 - 1/5 Chernoff-Markov (`chernoff_ineq`) — PR #4516
 - 2a/5 MGF réduction algébrique (`expect_exp_centered_eq`) — PR #4525
-- **2b/5 borne analytique** — Cette PR (ingrédients + cas symétrique prouvés, général OPEN) :
+- **2b/5 borne analytique** — Ce module (ingrédients + cas symétrique prouvés, borne
+  générale prouvée par la méthode du gap) :
   - **2b/5-étape2 LIVRÉE** : cœur analytique de Hoeffding prouvé — dérivée du log-MGF
     `φ'(t) = q(t)` (moyenne tiltée), `q ∈ [0,1]`, et **2e dérivée `φ''(t) = q(t)(1−q(t)) ≤ 1/4`**
     (variance tiltée, via `bernoulli_var_le` inconditionnelle). C'est l'ingrédient exact
     de Hoeffding : la variance d'une v.a. bornée dans [0,1] est ≤ (plage/2)² = 1/4.
-  - **2b/5-restant OPEN** : borne finale `MGF ≤ exp(t²/8)` depuis `φ''≤1/4` (pas Taylor/
-    convexity : `K(t) = φ(t) − tμ` a `K(0)=K'(0)=0`, `K''≤1/4` ⟹ `K(t)≤t²/8`), nécessite
-    le machinery `convexOn_univ_of_deriv2_nonneg` + `(deriv^[2] f)` qui timeout sur `simp`.
+  - **2b/5-final LIVRÉE** : borne finale `MGF ≤ exp(t²/8)` par le gap
+    `g(t) = t²/8 − K(t) ≥ 0`, établie par la monotonie de `g'` (sans le
+    `convexOn_univ_of_deriv2_nonneg` / `deriv^[2]` machinery, qui timeout sur `simp`).
 - 3/5 indépendance produit (MGF d'une somme = produit des MGF) — OPEN
 - 4/5 optimisation `t = 4ε` — OPEN
-- 5/5 concentration bilatérale — OPEN
+- 5/5 concentration bilatérale — **prouvée** (méthode du gap)
 
 Style **ℝ-weight pédagogique** (pas de `ℝ≥0∞` / `Measure`), cohérent avec `Data.lean`.
+
+Jumeau EN (`BernoulliMGF_en.lean`) du canonique FR (`BernoulliMGF.lean`), selon l'EPIC #4980
+de la convention i18n Lean FR+EN. Namespace `PacLearning_en` pour éviter la collision avec
+le canonique FR. Code de preuve inchangé ; seuls les docstrings/comments sont traduits
+FR→EN.
 -/
 
 namespace PacLearning
@@ -95,9 +105,9 @@ se réduit à `cosh(t/2)`, et le lemme de Mathlib `cosh x ≤ exp(x²/2)` donne 
 
 C'est le seul cas où la borne générale se ferme élégamment (la MGF est symétrique en `t`,
 le max en `μ` est atteint en `1/2`). La borne générale `μ·exp(t(1−μ)) + (1−μ)·exp(−tμ)
-≤ exp(t²/8)` pour `μ ∈ [0,1]` arbitraire est documentée OPEN (voir docstring module) :
-elle requiert la route variationnelle (Pinsker) ou la seconde-dérivée (cgf tilté), lourdes
-hors du cadre Measure. -/
+≤ exp(t²/8)` pour `μ ∈ [0,1]` arbitraire est **prouvée** par la méthode du gap dans
+`bernoulli_mgf_le` plus bas (la route variationnelle/Pinsker ou la route par la
+seconde-dérivée restent lourdes hors du cadre Measure). -/
 theorem bernoulli_mgf_half_le (t : ℝ) :
     (1 : ℝ) / 2 * Real.exp (t * ((1 : ℝ) / 2)) + (1 : ℝ) / 2 * Real.exp (-(t * ((1 : ℝ) / 2))) ≤
       Real.exp (t ^ 2 / 8) := by
@@ -112,7 +122,7 @@ theorem bernoulli_mgf_half_le (t : ℝ) :
 
 /-! ## Brique 2b/5-étape2 — dérivée du log-MGF (moyenne tiltée) et borne analytique
 
-Ingrédient analytique de la borne générale `bernoulli_mgf_le` (encore OPEN). On
+Ingrédient analytique de la borne générale `bernoulli_mgf_le` (prouvée plus bas). On
 établit la structure dérivée du **log-MGF non-centré** `φ(t) = log((1−μ) + μ·exp t)` :
 
   φ'(t) = q(t) := μ·exp t / ((1−μ) + μ·exp t)   (« moyenne tiltée », ∈ [0,1] pour μ ∈ [0,1])
@@ -120,8 +130,9 @@ Ingrédient analytique de la borne générale `bernoulli_mgf_le` (encore OPEN). 
 
 La borne `φ'' ≤ 1/4` est le **cœur analytique** de Hoeffding (toute la difficulté de la
 concentration réside là : la variance d'une v.a. bornée dans [0,1] est ≤ (plage/2)² = 1/4).
-La borne finale `MGF ≤ exp(t²/8)` suit par convexité/Taylor (K(t) := φ(t) − tμ a K(0)=K'(0)=0
-et K'' = φ'' ≤ 1/4 ⟹ K(t) ≤ t²/8) — étape documentée OPEN (reste le pas Taylor/convexité).
+La borne finale `MGF ≤ exp(t²/8)` suit par une monotonie de type Taylor/convexité
+(`K(t) := φ(t) − tμ` a `K(0)=K'(0)=0` et `K'' = φ'' ≤ 1/4` ⟹ `K(t) ≤ t²/8`) — prouvée par
+la méthode du gap dans `bernoulli_mgf_le`.
 -/
 
 /-- **Positivité du dénominateur du log-MGF** : pour `μ ∈ [0,1]` et tout `t`,
@@ -194,8 +205,9 @@ theorem bernoulli_tilted_mean_deriv (μ t : ℝ) (hμ : 0 ≤ μ) (hμ2 : μ ≤
     non-centré `φ''(t) = q(t)·(1−q(t))` satisfait `≤ 1/4` — le **cœur analytique** de
     Hoeffding. La borne `x·(1−x) ≤ 1/4` est **inconditionnelle** (vraie ∀ `x ∈ ℝ`, via la
     complétion du carré `(x − 1/2)² ≥ 0`), donc s'applique à `x = q(t)` sans hypothèse de
-    domaine. C'est l'ingrédient exact qui, combiné à Taylor/convexité (`K(t) = φ(t) − tμ`
-    avec `K(0) = K'(0) = 0`), donne la borne finale `MGF ≤ exp(t²/8)` (étape OPEN). -/
+    domaine. C'est l'ingrédient exact qui, combiné à la monotonie de type Taylor/convexité
+    (`K(t) = φ(t) − tμ` avec `K(0) = K'(0) = 0`), donne la borne finale `MGF ≤ exp(t²/8)`
+    — prouvée par la méthode du gap dans `bernoulli_mgf_le`. -/
 theorem bernoulli_logmgf_second_deriv_le (μ t : ℝ) (hμ : 0 ≤ μ) (hμ2 : μ ≤ 1) :
     deriv (fun s => μ * Real.exp s / ((1 - μ) + μ * Real.exp s)) t ≤ 1 / 4 := by
   rw [bernoulli_tilted_mean_deriv μ t hμ hμ2]

@@ -95,7 +95,7 @@ Lecture directe de l'amont, sans téléchargement du dépôt (2,2 Go) : `NOTICE`
 
 ### 3.2 Recommandation
 
-**Option B** : rattachement à `MyIA.AI.Notebooks/SymbolicAI/Lean/` à côté des lakes existants (`knot_lean/`, `geometry_lean/`, `percolation_lean/`, `social_choice_lean/`).
+**Option B** : rattachement à `MyIA.AI.Notebooks/SymbolicAI/Lean/` à côté des lakes existants (`knot_lean/`, `geometry_lean/`, `percolation_lean/`). La mention de `game_theory_lean/SocialChoice/` désigne un **module de la série GameTheory** (`MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/`), où vit aujourd'hui le contenu SocialChoice — ce n'est pas un lake rattaché à `SymbolicAI/Lean/` ; la coquille `social_choice_lean/` reste une coquille documentaire sans source.
 
 ### 3.3 Justification
 

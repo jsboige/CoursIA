@@ -135,16 +135,24 @@ on:
 
 
 def test_founding_instance_scripts_tests_is_lost_on_a_stacked_base():
-    """Temoin #15751 : la PR empilee modifiait l'outil ET sa propre suite, et
-    `Scripts Tests (CPU)` n'a jamais tourne -- les deux fichiers matchaient
-    `paths: scripts/**` terme a terme ; c'est le filtre de branche qui a tout
-    eteint. Teste sur l'arbre reel, comme le lock test de l'umbrella."""
+    """Temoin #15751, ETAT AVANT/APRES l'option (b) de #19426 : la PR empilee
+    modifiait l'outil ET sa propre suite, et `Scripts Tests (CPU)` n'a jamais
+    tourne -- les deux fichiers matchaient `paths: scripts/**` terme a terme ;
+    c'est le filtre de branche qui a tout eteint. Depuis #19426 option (b)
+    (precedent #19381), scripts-tests.yml n'a plus de `branches:` sur son
+    `pull_request` : il tourne sur toute base, l'instance fondatrice est
+    REPAREE. pr-gate.yml garde son filtre par design (#16624 -- `edited`
+    deliberement non ecoute) : lui reste compte. Teste sur l'arbre reel,
+    comme le lock test de l'umbrella."""
     from pathlib import Path
     wfdir = Path(__file__).resolve().parents[2] / ".github" / "workflows"
     skipped = workflows_skipped_by_base(
         wfdir, "fix/15398-slidev-overlay",
         ["scripts/post_bake_slides.py", "scripts/tests/test_post_bake_slides.py"])
-    assert "scripts-tests.yml" in skipped
+    # Repare : sans filtre de branche, le workflow n'est plus jamais compte
+    # comme skippe par la base (cf docstring de workflows_skipped_by_base).
+    assert "scripts-tests.yml" not in skipped
+    # Toujours skippe par design (#16624) : le temoin du mecanisme reste.
     assert "pr-gate.yml" in skipped
 
 

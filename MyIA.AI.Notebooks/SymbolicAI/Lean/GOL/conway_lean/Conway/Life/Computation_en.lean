@@ -112,18 +112,18 @@ X.X.
 
 After the `mergeSort -> insertionSort` swap (#8895, 2026-07-30), `isStillLife eater1`
 reduces under `decide`: the static check (still life, no evolution) exercises only the
-`sortDedup` sort on a fixed grid, now decide-reducible. `#print axioms
-Conway.Life.eater1_still_life` is empty (zero axioms) — a purely computational kernel
+`sortDedup` sort on a fixed grid, now decide-reducible.
+`#print axioms Conway.Life.eater1_still_life` is empty (zero axioms) — a purely computational kernel
 proof. (The #8749 probe of 2026-07-29, prior to #8895, correctly observed the
 obstruction under `mergeSort`; it has since been lifted.)
 
-As with the `evolveHashlife n g = evolve n g` equivalences of Section 1, this
-theorem is proved by `decide` in the kernel (zero axiom). Historically,
+As with the `evolveHashlife n g = evolve n g` equivalences of Section 1,
+this theorem is proved by `decide` in the kernel (zero axiom). Historically,
 `eater1_still_life` became `decide`-reducible with the `mergeSort -> insertionSort`
 swap (#8895), whereas the Section 1 equivalences additionally required rewriting
-`ceilLog2` via `Nat.log 2` (#9536): as long as it was a `WellFounded` recursion
-opaque to the reducer, they remained `native_decide`. The historical pre-#9536
-contrast is documented in Section 1.
+`ceilLog2` via `Nat.log 2` (#9536): as long as it was a `WellFounded`
+recursion opaque to the reducer, they remained `native_decide`. The historical
+pre-#9536 contrast is documented in Section 1.
 -/
 
 /-- The **eater 1** (fishhook), a 7-cell still life. -/

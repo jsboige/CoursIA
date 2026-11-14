@@ -25,14 +25,33 @@ The organ runs in TWO modes (review of #22527, squash-merge convention):
               survives a squash: the marker and the floor.
 
   PR mode     (``--base <ref>``): dates ARE compared, but only for the docs the
-              PR itself modifies, and against each doc's own last commit on the
-              branch -- the one place where ``git log -1 --format=%cs`` still
-              reads a content date. A mismatch means the document was revised
-              without refreshing its header (``STALE_DATE``); a failing git
-              call is a finding (``GIT_LOG_FAILED`` / ``GIT_DIFF_FAILED``),
-              never a silent pass. Run it from the PR HEAD checkout, not the
-              merge ref: on the merge ref every touched doc's last commit is
-              the merge commit, dated at CI time.
+              PR ITSELF modifies -- its OWN commits, against the PR's base:
+              ``git log <base>..HEAD --no-merges --name-only -- docs/``. A
+              mismatch means the document was revised without refreshing its
+              header (``STALE_DATE``); a failing git call is a finding
+              (``GIT_LOG_FAILED``), never a silent pass. Run it from the PR
+              HEAD checkout, not the merge ref: on the merge ref every touched
+              doc's last commit is the merge commit, dated at CI time.
+
+              ``GIT_LOG_FAILED`` **replaces** the ``GIT_DIFF_FAILED`` code this
+              organ used to publish on the same path: the touched-doc list is
+              now read by ``git log``, so it is a failing ``git log`` that is
+              reported. The published finding code changes with it -- a
+              consumer filtering on ``GIT_DIFF_FAILED`` would stop seeing it.
+              The sibling organ ``check_docs_transients_lane.py`` reads a
+              ``git diff`` of its own and keeps publishing its own
+              ``GIT_DIFF_FAILED``.
+
+              Two properties of that range are load-bearing:
+
+              - the range is measured against the **PR's base**, not against
+                ``origin/main``: on a STACKED PR, ``origin/main..HEAD`` also
+                contains the commits of the base branch, and the false positive
+                of #24482 would survive the fix;
+              - ``--no-merges`` and ``--first-parent``: an ``update-branch``
+                or a ``git merge origin/main`` must not turn the docs that
+                ``main`` modified into docs the PR modified -- neither the
+                merge commit itself nor the ordinary commits it brings in.
 
   coverage    (both modes) a monotone ratchet over the whole perennial set: the
               number of documents carrying the header must not drop below
@@ -74,9 +93,11 @@ ARCHIVE_REL = Path("docs") / "archive"
 
 # Default coverage floor = wave 1 (docs/notebook-metadata/, 9 documents)
 # + wave 2 (docs/qc/, 8 documents, hors qc-strategies-status chaud par PRs)
-# + wave 3 (docs/genai/, 16 documents). Raise it as perenne waves land;
-# it is a monotone floor, never a target.
-DEFAULT_BASELINE = 33
+# + wave 3 (docs/genai/, 16 documents)
+# + wave 4 (docs/reference/, 70 documents, hors scripts-reference chaud par
+# #25433, STABLE_SNAPSHOT et quant-prose-census dates-par-signature).
+# Raise it as perenne waves land; it is a monotone floor, never a target.
+DEFAULT_BASELINE = 102
 
 # "> REFERENCE — vivante — dernière révision 2026-10-31"
 # (marker, then "vivante", then "derniere revision" with its trailing date --
@@ -129,13 +150,52 @@ def _git(root: Path, *args: str) -> str:
     return proc.stdout
 
 
-def _git_last_commit_date(root: Path, relpath: str) -> str | None:
-    """Last commit short-date (YYYY-MM-DD) touching ``relpath``, or None."""
+def _pr_own_commits(root: Path, base: str) -> list[tuple[str, list[str]]] | None:
+    """The PR's OWN commits: (committer date, docs touched), most recent first.
+
+    The range is ``base..HEAD``, the merges are excluded, and only the FIRST
+    parent chain is walked. Three properties are load-bearing, and the first
+    two were false positives before (arbitration of the coordinator,
+    2026-11-04):
+
+      - the range is measured against the **PR's base**, not ``origin/main``:
+        on a stacked PR, ``origin/main..HEAD`` also contains the commits of
+        the base branch, and the false positive of #24482 (a doc the PR never
+        touched, reddened because the BASE branch had touched it) would
+        survive the fix;
+      - ``--no-merges``: an ``update-branch`` or a ``git merge origin/main``
+        must not make the docs that ``main`` modified look like the PR's;
+      - ``--first-parent``: the commits that an update-branch merge BRINGS IN
+        are not merge commits -- they are ordinary commits that became
+        reachable from the PR's head. Without this flag they stay in the
+        range, and the false positive of #24482 survives the two fixes above:
+        on that PR, the only source of ``docs/genai/decision-models.md`` in
+        the range was main's squash commit ``3903e1c5`` (dated 2026-11-04,
+        header 2026-11-03), reached through the merge.
+
+    Returns ``None`` when git cannot answer -- the caller turns that into a
+    finding (fail-closed), never into a silent pass.
+    """
     try:
-        out = _git(root, "log", "-1", "--format=%cs", "--", relpath)
+        out = _git(root, "log", f"{base}..HEAD", "--no-merges", "--first-parent",
+                   "--format=@@@%H %cs", "--name-only", "--", "docs/")
     except (subprocess.CalledProcessError, OSError):
         return None
-    return out.strip() or None
+    commits: list[tuple[str, list[str]]] = []
+    date: str | None = None
+    files: list[str] = []
+    for line in out.splitlines():
+        if line.startswith("@@@"):
+            if date is not None:
+                commits.append((date, files))
+            parts = line[3:].split()
+            date = parts[1] if len(parts) > 1 else None
+            files = []
+        elif line.strip() and date is not None:
+            files.append(line.strip().replace("\\", "/"))
+    if date is not None:
+        commits.append((date, files))
+    return commits
 
 
 def _perenne_docs(root: Path) -> list[Path]:
@@ -157,7 +217,12 @@ def _perenne_docs(root: Path) -> list[Path]:
 
 def _changed_docs(root: Path, base: str) -> set[str] | None:
     """Docs under docs/ changed between ``base`` and HEAD (repo-relative,
-    forward slashes), or None when git cannot answer (fail-closed)."""
+    forward slashes), or None when git cannot answer (fail-closed).
+
+    Kept for the callers that need the DIFF; the date check itself no longer
+    reads it -- the PR's own commits are the only thing that decides which
+    docs the PR is answerable for (see ``_pr_own_commits``).
+    """
     try:
         out = _git(root, "diff", "--name-only", f"{base}...HEAD", "--", "docs/")
     except (subprocess.CalledProcessError, OSError):
@@ -177,18 +242,31 @@ def scan_perenne(
     total = len(docs)
 
     touched: set[str] | None
+    date_of: dict[str, str] = {}
     if base is None:
         touched = None  # tree mode: no date comparison at all
     else:
-        touched = _changed_docs(root, base)
-        if touched is None:
+        commits = _pr_own_commits(root, base)
+        if commits is None:
             findings.append(
                 {
                     "file": "docs/**",
-                    "reason": "GIT_DIFF_FAILED: ne peut pas lire git diff "
-                    "{base}...HEAD -- docs/".format(base=base),
+                    "reason": "GIT_LOG_FAILED: ne peut pas lire git log "
+                    "{base}..HEAD --no-merges --name-only -- docs/".format(base=base),
                 }
             )
+            touched = set()
+        else:
+            # The PR's OWN commits decide both WHICH docs it is answerable
+            # for and WHEN it revised them. A doc that only the base branch
+            # or main touched is not the PR's business -- that finding
+            # belongs to the PR that made the change.
+            touched = set()
+            for commit_date, files in commits:  # most recent first
+                for name in files:
+                    if name not in date_of:
+                        date_of[name] = commit_date
+                    touched.add(name)
 
     for path in docs:
         rel = path.relative_to(root)
@@ -199,16 +277,11 @@ def scan_perenne(
         covered += 1
         if touched is None or rel_str not in touched:
             continue  # date judged only for the docs this PR modifies
-        date_checked += 1
-        last = _git_last_commit_date(root, rel_str)
+        last = date_of.get(rel_str)
         if last is None:
-            findings.append(
-                {
-                    "file": rel_str,
-                    "reason": "GIT_LOG_FAILED: ne peut pas lire git log -1 du fichier",
-                }
-            )
-        elif last != match.group("date"):
+            continue  # the PR's own commits never touched it: not its revision
+        date_checked += 1
+        if last != match.group("date"):
             findings.append(
                 {
                     "file": rel_str,
@@ -297,9 +370,11 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         metavar="REF",
         help=(
-            "mode PR : ne verifier les dates que des docs modifies entre REF et "
-            "HEAD, contre leur propre dernier commit. Defaut (absent) : mode "
-            "arbre, marqueur + plancher seulement (survit au squash-merge)."
+            "mode PR : ne verifier que les docs modifies par les commits PROPRES "
+            "de la PR -- git log REF..HEAD --no-merges --name-only -- docs/ -- "
+            "REF est la base de la PR (sur une PR empilee, la branche de base, "
+            "PAS origin/main). Defaut (absent) : mode arbre, marqueur + plancher "
+            "seulement (survit au squash-merge)."
         ),
     )
     parser.add_argument("--json", action="store_true", help="sortie machine")

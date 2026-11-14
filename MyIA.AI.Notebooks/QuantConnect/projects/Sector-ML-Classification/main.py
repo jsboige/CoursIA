@@ -25,12 +25,23 @@ class SectorMLClassificationAlgorithm(QCAlgorithm):
     - When all RF proba < 0.50 threshold, strategy holds stale positions
     - Fix: always rebalance to top-N, threshold only filters bear cash decision
 
-    Performance history:
+    Iteration log (design history, not reproduced by the current code: the
+    windows below are not the coded window, and every line predates the
+    training-RSI fix of #23329, when the RSI feature was constant in training):
     - v2b (2018-2026): Sharpe 0.352, Beta 0.964, Alpha -0.007, MaxDD 41.7%
     - v3   (2015-2026): Sharpe 0.288, Beta 0.832, Alpha -0.012, MaxDD 36.0%
     - v3.1 (2015-2026): Sharpe 0.253, Beta 0.833, Alpha -0.018, MaxDD 39.1%
     - v4   (2015-2026): Sharpe 0.308, Beta 0.639, Alpha +0.003, MaxDD 32.7%
     - v5   (2015-2026): Sharpe 0.473, Beta 0.799, Alpha +0.009, MaxDD 34.4%
+
+    Measured on QC Cloud, 2026-11-04, coded window 2015-01-01 -> 2024-12-31,
+    default parameters (README.en.md, "Measured results"):
+    - current code (after #23329): Sharpe 0.382, CAGR 9.57%, MaxDD 35.3%,
+      1033 orders, backtest 7ae7eab21fb1455fa56f4f051d714ed0
+    - code before #23329 (constant training RSI): Sharpe 0.46, CAGR 11.20%,
+      MaxDD 35.3%, 1024 orders, backtest c9ba4426833348253d1b31b2285b99a3
+    - control, SPY held alone: Sharpe 0.535, CAGR 12.99%, MaxDD 33.5%,
+      backtest 6c2bce7882ff4af927e3bd67fc84847b
     """
 
     SECTOR_ETFS = {

@@ -34,7 +34,7 @@ the overlap under a common translation, same path) ; Claim 3.2
 identity). The detailed state lives in `FORMAL_STATUS.md`.
 -/
 
-import Discrepancy.Basic
+import Discrepancy.Basic_en
 
 /-!
 # Overlap operator `overlap` (Karingula–Lovett)

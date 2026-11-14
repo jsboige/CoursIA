@@ -11,7 +11,9 @@ The hardcap must:
   (a) yield once escalations reach the hardcap while tactic_history is
       EMPTY (the model structurally cannot tool-call),
   (b) latch state.freeze_loop_terminal so _derive_result_kind classifies
-      freeze_loop (distinct from no_progress),
+      the freeze family (no_attempt on the yield path — cycle-29 #1453
+      split: zero submissions; freeze_loop defensively after real ones —
+      both distinct from no_progress),
   (c) NOT fire when a tactic was ever submitted (a run that works the
       tools is iterating, not frozen),
   (d) stay legacy-safe in the classifier (field absent -> no_progress).
@@ -147,7 +149,22 @@ def test_no_yield_when_proof_already_found():
 
 
 def test_classifies_freeze_loop():
-    assert _derive_result_kind({"freeze_loop": True}, 4, 4) == "freeze_loop"
+    # Cycle-29 split (#1453, po-2025 measure 2026-11-04): a yield on the
+    # freeze hardcap with ZERO tactic submissions is no_attempt — the model
+    # never attempted a proof (lever: model/provider, not iterations) —
+    # while a freeze AFTER real submissions stays freeze_loop (the agent
+    # demonstrably tool-calls; more iterations can still pay). The latch
+    # requires an empty tactic_history, so absent attempts (legacy dicts)
+    # classifies no_attempt, the verdict the latch produced anyway.
+    assert _derive_result_kind({"freeze_loop": True}, 4, 4) == "no_attempt"
+    assert (
+        _derive_result_kind({"freeze_loop": True, "attempts": 0}, 4, 4)
+        == "no_attempt"
+    )
+    assert (
+        _derive_result_kind({"freeze_loop": True, "attempts": 3}, 4, 4)
+        == "freeze_loop"
+    )
 
 
 def test_freeze_loop_outranked_by_every_progress_and_outage_flag():
@@ -173,6 +190,28 @@ def test_freeze_loop_outranked_by_every_progress_and_outage_flag():
 def test_legacy_safe_without_field():
     assert _derive_result_kind({}, 4, 4) == "no_progress"
     assert _derive_result_kind({"attempts": 0}, 4, 4) == "no_progress"
+
+
+def test_root_launcher_wrapper_never_claims_decrease_on_unknown_counts():
+    """Cycle-29 (#1453): the root launcher delegates to the canonical
+    classifier but adapts its sorry peeks. A count that is None or -1
+    (_peek_sorry_count's OSError sentinel) is UNKNOWN, not zero — a
+    missing post count against a real pre count must NOT read as a
+    decrease (founder near-miss while wiring the delegation)."""
+    import run_prover_bg as root_launcher
+
+    assert root_launcher._classify_result(
+        {"freeze_loop": True, "attempts": 0}, 1, 1
+    ) == "no_attempt"
+    assert root_launcher._classify_result(
+        {"freeze_loop": True, "attempts": 2}, 1, 1
+    ) == "freeze_loop"
+    # Unknown on either side collapses both sides: no decrease claim.
+    assert root_launcher._classify_result({}, None, None) == "no_progress"
+    assert root_launcher._classify_result({}, -1, 3) == "no_progress"
+    assert root_launcher._classify_result({}, 3, -1) == "no_progress"
+    # Real measured decreases still classify.
+    assert root_launcher._classify_result({}, 2, 5) == "sorry_decreased"
 
 
 # --- state defaults --------------------------------------------------------

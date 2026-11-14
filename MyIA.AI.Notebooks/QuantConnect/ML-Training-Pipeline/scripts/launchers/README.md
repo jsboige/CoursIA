@@ -48,7 +48,7 @@ Prerequisites on Mac/Linux:
 
 The bash launcher resolves the Python interpreter via `CONDA_PREFIX` if set, otherwise via `conda env list`. This matches the PowerShell script's `$CondaEnv = "coursia-ml-training"` + explicit Python path.
 
-## Plafond memoire et exclusion N=1 (Windows)
+## Plafond memoire et exclusion N=1
 
 Les trois lanceurs `.ps1` passent par le lanceur commun `launch_capped.ps1`,
 qui fait tourner l'entrainement sous `scripts/ci/run_guarded.py` :
@@ -62,20 +62,48 @@ qui fait tourner l'entrainement sous `scripts/ci/run_guarded.py` :
   aussi (fail-CLOSED) ; **le seuil est porte par le lanceur** —
   `run_guarded.py` appele seul n'active pas la garde, son
   `--max-commit-charge-pct` valant 0 par defaut (desactive) ;
+- **garde d'admission conjointe** : le seuil de 90 % compare un etat **avant**
+  engagement, or le job engage jusqu'a 48 Go — la garde projette donc aussi la
+  charge **apres** engagement et refuse au-dela du **meme seuil de sante** que
+  l'etat d'avant : 100 % du plafond de commit, c'est la famine meme, et le
+  vLLM de flotte (GPU 0/1) n'y a aucune marge (#23531, #23546). Sur ai-01
+  (plafond mesure : 399,8 GiB), la projection refuse des **78,0 %** de charge,
+  soit bien plus tot que le seuil. Sans
+  `--job-memory-limit-gib`, l'engagement est sans borne, la projection est
+  indemontrable et le lanceur refuse (fail-CLOSED), sauf
+  `--allow-unbounded-commit` assume explicitement ;
 - **exclusion N=1** : un seul entrainement CoursIA a la fois sur la machine
   (verrou exclusif) ;
 - **anti-orphelin** : le superviseur tient le Job Object, donc l'entrainement
   meurt avec lui.
 
-Le lanceur commun s'appelle seul :
+Le lanceur commun PowerShell s'appelle seul :
 
 ```powershell
 .\launch_capped.ps1 -FilePath C:\...\python.exe -ArgumentList @("train_lstm.py") `
     -LogPath D:\out\train.log -ErrPath D:\out\train.err -PidPath D:\out\PID.txt
 ```
 
-Les companions `.sh` (macOS/Linux) ne sont pas concernes : le Job Object est
-une API Windows, l'equivalent Linux etant un cgroup (`memory.max`).
+Le compagnon Bash `launch_capped.sh` appelle le meme organe `run_guarded.py`
+pour les commandes lancees depuis Linux, macOS ou WSL :
+
+```bash
+./launch_capped.sh --log-path "runs/train log.txt" \
+    --err-path "runs/train err.txt" --pid-path "runs/train pid.txt" \
+    --lock-path "runs/coursia.lock" -- python train_lstm.py --epochs 100
+```
+
+Il tourne au premier plan et transmet le code de sortie de la commande. Sur
+POSIX, `run_guarded.py` mesure le RSS cumule du processus et de ses enfants,
+la RAM libre, tient le verrou exclusif, et ecrit les journaux et le PID. Le
+plafond RSS est surveille par sondage (5 secondes par defaut) : ce n'est pas
+une limite noyau `memory.max`. Le Job Object Windows, son plafond de memoire
+commitee et la sonde Windows de charge de commit ne sont pas disponibles sur
+POSIX ; la garde de charge de commit est donc journalisee comme non applicable.
+Le superviseur POSIX n'a pas d'equivalent a `KILL_ON_JOB_CLOSE` : le lancer au
+premier plan garde le superviseur visible, mais tuer brutalement celui-ci peut
+laisser la commande enfant en vie. Pour les travaux longs, garder la session
+active ou utiliser un gestionnaire de processus propre a l'hote.
 
 **Regle d'usage** : tout entrainement CoursIA lance sur ai-01 passe par ce
 lanceur commun -- y compris les clones locaux et les bras que d'autres lanes

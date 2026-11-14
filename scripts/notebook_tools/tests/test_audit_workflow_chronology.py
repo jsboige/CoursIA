@@ -13,6 +13,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 
@@ -136,3 +138,67 @@ class TestMainExitCodes:
         assert mod.main([str(p), "--json"]) == 1
         data = json.loads(capsys.readouterr().out)
         assert data["n_notebooks_flagged"] == 1
+
+
+class TestUtf8Emission:
+    """Le rapport doit rester lisible par un consommateur UTF-8 sous redirection.
+
+    Sous Windows, un stdout redirige encode en cp1252 : un accent du corpus
+    (« la ou » avec accent grave) sort en octet 0xe0 et ``json.load`` leve
+    ``UnicodeDecodeError`` au premier accent. Mesure du 2026-11-05 sur
+    ``MyIA.AI.Notebooks/RL`` : octet 0xe0 en position 241, rapport entier perdu.
+    """
+
+    @pytest.mark.parametrize("extra", [["--json"], []], ids=["json", "humain"])
+    def test_redirected_stdout_is_utf8_decodable(self, tmp_path, extra):
+        """Les DEUX branches d'emission (``--json`` et humaine) doivent survivre
+        a un stdout cp1252 redirige -- le mutant qui reveindrait la branche humaine
+        a ``print()`` est tue par la variante ``extra == []``."""
+        import io
+        p = _write(tmp_path, "accent.ipynb", [("markdown", "l'EPIC #12205 là où le pli passe.")])
+        raw = io.BytesIO()
+        wrapper = io.TextIOWrapper(raw, encoding="cp1252")
+        original, sys.stdout = sys.stdout, wrapper
+        try:
+            assert mod.main([str(p)] + extra) == 1
+            wrapper.flush()
+        finally:
+            sys.stdout = original
+        text = raw.getvalue().decode("utf-8")
+        if "--json" in extra:
+            assert json.loads(text)["n_notebooks_flagged"] == 1
+        else:
+            # Branche humaine : l'accent du snippet doit sortir en octets UTF-8
+            # reels, pas en cp1252 (0xe0) ni en echappement backslashreplace.
+            assert "là où" in text
+
+    def test_stream_without_reconfigure_falls_back_to_ascii(self, tmp_path):
+        p = _write(tmp_path, "accent2.ipynb", [("markdown", "l'EPIC #12205 là où le pli passe.")])
+
+        class AsciiOnly:
+            """Flux sans `reconfigure`, qui refuse tout caractere non-ASCII."""
+
+            def __init__(self):
+                self.chunks = []
+
+            def write(self, text):
+                non_ascii = [c for c in text if ord(c) > 127]
+                if non_ascii:
+                    raise UnicodeEncodeError("ascii", text, 0, len(text), "ordinal not in range(128)")
+                self.chunks.append(text)
+
+            def flush(self):
+                pass
+
+        fake = AsciiOnly()
+        original, sys.stdout = sys.stdout, fake
+        try:
+            assert mod.main([str(p), "--json"]) == 1
+        finally:
+            sys.stdout = original
+        text = "".join(fake.chunks)
+        assert text.isascii(), "le repli doit emettre des octets ASCII"
+        data = json.loads(text)
+        assert data["n_notebooks_flagged"] == 1
+        # Les accents survivent au repli : ils sont echappes dans le JSON, pas perdus.
+        assert any("là où" in hit[2] for hit in data["notebooks"][0]["hits"])

@@ -88,8 +88,7 @@ Cette série ne propose pas de choisir l'un ou l'autre, mais de **comprendre les
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 38 racine (13 Python + 7 Lean companion + 18 C#) + 1 probe |
-| Cellules totales | 1170 (dont 446 code) — 38 racine + 1 probe |
+| Inventaire notebooks | délégué au bloc `CATALOG-STATUS` en tête de page (règle E — comptes non entretenus en prose) |
 | Durée estimée | ~6h (tutorat) |
 | Kernel | Python 3 (JPype/Java) |
 | Version Tweety | 1.30 recommandée |
@@ -172,16 +171,16 @@ Numéros nus uniquement, lisibles de haut en bas. Le compte et la maturité exac
 
 | # | Notebook | Ce qu'on y apprend | Stack |
 |---|----------|--------------------|-------|
-| 1  | [Tweety-01-Setup-Python](Tweety-01-Setup-Python.ipynb) | Configuration JVM, JARs, solveurs externes | Python |
-| 2  | [Tweety-02-Basic-Logics-Python](Tweety-02-Basic-Logics-Python.ipynb) | Logique propositionnelle (SAT) et du premier ordre (FOL) | Python |
-| 3  | [Tweety-03-Advanced-Logics-Python](Tweety-03-Advanced-Logics-Python.ipynb) | DL, Modale, QBF, Conditionnelle | Python |
+| 1  | [Tweety-01-Setup-Python](Tweety-01-Setup-Python.ipynb) | Chaîne JVM → JPype → JARs → solveurs externes | Python |
+| 2  | [Tweety-02-Basic-Logics-Python](Tweety-02-Basic-Logics-Python.ipynb) | Logique propositionnelle (SAT, pySAT) et du premier ordre (FOL, EProver) | Python |
+| 3  | [Tweety-03-Advanced-Logics-Python](Tweety-03-Advanced-Logics-Python.ipynb) | Ontologies OWL (DL), logique modale (SPASS), QBF, conditionnelle | Python |
 | 4  | [Tweety-04-Belief-Revision-Python](Tweety-04-Belief-Revision-Python.ipynb) | MUS, MaxSAT, Mesures d'incohérence, AGM | Python |
-| 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.ipynb) | Dung AF, sémantiques grounded/stable/CF2 | Python |
-| 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP | Python |
+| 5  | [Tweety-05-Abstract-Argumentation-Python](Tweety-05-Abstract-Argumentation-Python.ipynb) | Dung AF, sémantiques grounded/stable/CF2, frameworks aléatoires | Python |
+| 6  | [Tweety-06-Structured-Argumentation-Python](Tweety-06-Structured-Argumentation-Python.ipynb) | ASPIC+, DeLP, ABA, ASP — quel cadre selon le domaine | Python |
 | 7  | [Tweety-07a-Extended-Frameworks-Python](Tweety-07a-Extended-Frameworks-Python.ipynb) | ADF, Bipolar, WAF, SAF, SetAF, Extended | Python |
 | 8  | [Tweety-08-Agent-Dialogues-Python](Tweety-08-Agent-Dialogues-Python.ipynb) | Agents, dialogues argumentatifs, loteries | Python |
-| 9  | [Tweety-09-Preferences-Python](Tweety-09-Preferences-Python.ipynb) | Préférences, théorie du vote | Python |
-| 10 | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb) | Markov Logic Networks (FOL pondérée) | Python |
+| 9  | [Tweety-09-Preferences-Python](Tweety-09-Preferences-Python.ipynb) | Préférences, théorie du vote (Borda, Condorcet) | Python |
+| 10 | [Tweety-10-MLN-Python](Tweety-10-MLN-Python.ipynb) | Markov Logic Networks : FOL pondérée, marginales, exceptions (le pingouin) | Python |
 | 11 | [Tweety-11-Causal-Python](Tweety-11-Causal-Python.ipynb) | do-calculus de Pearl, interventions, contrefactuels | Python |
 | 12 | [Tweety-12-Grounded-Via-TweetyProject-Python](Tweety-12-Grounded-Via-TweetyProject-Python.ipynb) | Bouclage de la sémantique grounded entre Python et Lean | Python |
 
@@ -261,53 +260,9 @@ Le palier 07 est porté par le **07a** (Python) et son jumeau **07ac** (C#) ; le
 
 ### Sous-série Argumentation — Argumentum
 
-Les notebooks 5 et 6 sont la **couche Tweety** de la sous-série Argumentation : ils portent les fondations de Dung et d'ASPIC+. **Argumentum**, le partenaire agentique, vit dans un dépôt externe et applique ces sémantiques à des textes. Voir [Argument_Analysis](../Argument_Analysis/) pour la série partenaire, et le sous-module pour le code source de l'agent.
+Les notebooks 5 et 6 sont la **couche Tweety** de la sous-série Argumentation : ils portent les fondations de Dung et d'ASPIC+. **Argumentum**, le partenaire agentique, vit dans un dépôt externe et applique ces sémantiques à des textes. Voir [ArgumentAnalysis](../ArgumentAnalysis/) pour la série partenaire, et le sous-module pour le code source de l'agent.
 
-**Durée totale indicative** : ~13 h (Python) + ~10 h (C#/.NET). Le tableau ci-dessus couvre les notebooks principaux (12 Python + 18 C#/.NET + 7 Lean companion) ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4, toolchain `v4.32.1` depuis #11587, avec les fichiers `.lean` du dossier `Argumentation/` — les modules FR : Basic, Characteristic, Extensions, Fundamental, Grounded, Synthesis + leurs siblings `_en` i18n #4980).
-
-## En quoi chaque notebook est unique
-
-Chaque notebook introduit un concept ou cadre théorique spécifique. Le tableau ci-dessous résume en une ligne l'apport pédagogique de chacun — couvrant les notebooks principaux (12 Python + 18 C#/.NET + 7 Lean companion) :
-
-| #  | Notebook                      | Concept clé enseigné                                                    |
-|----|-------------------------------|--------------------------------------------------------------------------|
-| 1  | Setup                         | Boucle configuration : JVM → JPype → JARs → solveurs externes          |
-| 2  | Basic Logics                  | SAT solving en pratique (pySAT) + formalisme FOL avec EProver            |
-| 2a | Basic Logics (C#, pilote)     | Logique propositionnelle .NET — port pilote IKVM (#4792), premier pont Java→.NET de la série |
-| 2b | Semantics (C#)                | Sémantique propositionnelle .NET (mondes possibles) — port IKVM 8.15.0  |
-| 2c | Basic Logics (C#)             | FOL porté .NET via IKVM 8.15.0 : `tweetyproject.logics.fol.*` réel      |
-| 2d | FOL Lab (Python+Lean)         | Un syllogisme, deux moteurs : `SimpleFolReasoner` exécute six verdicts, le noyau Lean **certifie** conséquences (théorèmes) et non-conséquences (contre-modèles finis) — `FALSE` n'est pas « négation prouvée » |
-| 2e | Preuves Hilbert/LK (Python+Lean) | Deux calculs de preuve mesurés : Hilbert (axiomes + MP, recherche par chaînage avant, coût en instances/MP) et séquents LK (hauteur/taille d'arbre **avant/après** élimination des coupures, Hauptsatz = théorème du noyau) |
-| 2f | Zoo modal (Python+Lean) | Huit systèmes modaux et leur **ordre partiel** : les données du module exportées par `lake env lean`, l'ordre recalculé sur les profils, puis la carte — 11 arêtes de couverture contre 7 paires **incomparables** ; « incomparable » n'est ni « un peu plus faible » ni « on ne sait pas » |
-| 3  | Advanced Logics               | Ontologies OWL (DL) + raisonnement modale (SPASS) + QBF                 |
-| 3b | Modal Lab (Python+Lean)       | Théorie de la correspondance mesurée : énumération exhaustive 512 cadres ↔ contre-modèles kernel-vérifiés (pont ModalBridge) |
-| 3c-DL | Advanced Logics (C#)         | DL/ML/QBF/CL .NET — **DRAFT** : conflits de noms DLL entre `logics.ml` + `logics.cl` + `logics.qbf` simultanés |
-| 3c-CL | Conditional Logics (C#)      | Logique conditionnelle .NET (IKVM) — raisonneur `cl` réel               |
-| 3c-Dung | Dung (C#)                   | Argumentation de Dung .NET (IKVM, c.182 PR #5194) — `NaiveDlReasoner`  |
-| 3c-ML | Modal Logic (C#)             | Logique modale .NET (IKVM) — `MlReasoner` réel                          |
-| 3c-QBF | QBF (C#)                    | QBF .NET (IKVM, c.185 PR #5202) — solveur QBF réel                       |
-| 4  | Belief Revision               | Identification de conflits (MUS) + révision AGM + MaxSAT                |
-| 4c-BR | Belief Revision (C#)         | Belief Revision .NET (IKVM) : `Revision`/`MUSMaxSAT` réels, BETA        |
-| 4c-Aspic | Aspic (C#)                 | ASPIC+ .NET (IKVM) — `AspicArgumentation` réel                          |
-| 5  | Abstract Argumentation        | Sémantiques de Dung (grounded/stable/CF2) + frameworks aléatoires      |
-| 5b | Lean Argumentation            | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de Dung dans le lake `argumentation_lean`, BETA |
-| 5c | Abstract Argumentation (C#)   | Dung AF **from-scratch** BCL .NET (sans IKVM/JVM) : sémantiques grounded/stable/preferred, labeling 3 valeurs |
-| 5d | Stable Synthesis (Lean)       | Synthèse certifiée d'extensions stables : spécification → générateur **Z3** → témoin → certificat Lean `by decide` dans le lake `argumentation_lean` (module `Argumentation.Synthesis`), cas UNSAT du 3-cycle certifié |
-| 5e | Propositional Lab (Lean)      | Trois lectures d'une même formule — Tweety (verdicts et contre-modèles **calculés**), recomptage Python des 8 mondes, certification **Lean sur Foundation (FFL)** au commit épinglé ; théâtre des trois verdicts `valid` / `satisfiable non valide` / `insatisfiable` |
-| 6  | Structured Argumentation      | Comparaison ASPIC+/DeLP/ABA/ASP — le cadre idéal selon le domaine      |
-| 6c | Structured Argumentation (C#) | ASPIC+ **from-scratch** BCL .NET (sans IKVM) — DeLP/ABA/ASP en contrepoint conceptuel |
-| 7a | Extended Frameworks           | Au-delà de Dung : ADF, bipolarité, attaques pondérées et collectives   |
-| 7ac| Extended Frameworks (C#)      | Hybride : ADF/SetAF/EAF/VAF **from-scratch** BCL .NET (logique de Kleene 3 valeurs) + tranche 2 Dung/Weighted/Social/ADF via la lib Tweety reelle (IKVM, DLL shade 7a versionnee) |
-| 7b | Ranking & Probabilistic       | Classement graduel des arguments + incertitude sur les arguments        |
-| 7bc| Ranking & Probabilistic (C#)  | Ranking/Probabiliste .NET (IKVM) — `Ranking`, `SubgraphProbability` réels |
-| 8  | Agent Dialogues               | Protocoles d'échange entre agents + négociation argumentative          |
-| 8c | Agent Dialogues (C#)          | Dialogues argumentatifs **from-scratch** BCL .NET : protocole Claim/Argue/Concede/Retract + loterie Monte-Carlo |
-| 9  | Preferences                   | Agrégation de préférences (Borda, Condorcet) + théorie du vote          |
-| 9c | Preferences (C#)              | Préférences .NET (IKVM, EPIC #4667 PR #5268)                            |
-| 10 | MLN                           | Pont symbolique/statistique : FOL + poids, marginales, exceptions (pingouin) |
-| 10c| MLN (C#)                      | MLN porté .NET (IKVM) : `MarkovLogicNetwork`, vrais appels              |
-| 11 | Causalité                     | do-calculus de Pearl : intervention `do(X)` vs observation, contrefactuels |
-| 11c| Causalité (C#)                | Moteur causal booléen **from-scratch** .NET : do-operator, contrefactuels par mondes jumeaux |
+**Durée totale indicative** : ~13 h (Python) + ~10 h (C#/.NET). L'inventaire exact par langage vit dans le bloc `CATALOG-STATUS` en tête de page ; voir aussi `_probes/Tweety-IKVM-Init-Probe.ipynb` (BETA smoke-test IKVM) et `argumentation_lean/` (lake Lean 4, toolchain `v4.32.1` depuis #11587, avec les fichiers `.lean` du dossier `Argumentation/` — les modules FR : Basic, Characteristic, Extensions, Fundamental, Grounded, Synthesis + leurs siblings `_en` i18n #4980).
 
 ## Le pont symbolique/statistique (notebook 10 — MLN)
 
@@ -345,7 +300,7 @@ Tweety raisonne sur le do-calculus en **logique propositionnelle** : `do(X)` y e
 
 - [Infer-05-Causal-Inference](../../Probas/Infer/Infer-05-Causal-Inference.ipynb) — le **jumeau distributionnel par message passing** : `P(Y|do(X))` calculé par mutilation de graphe en Infer.NET (EP/VMP), ajustements backdoor / front-door, paradoxe de Simpson résolu numériquement.
 - [PyMC-05-Causal-Inference](../../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) — la version **MCMC** avec l'opérateur natif `pm.do` et le contrefactuel par abduction.
-- [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
+- [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) — le même `do` monte d'un cran : à **quelle échelle** un système fait-il le plus de travail causal ?
 
 Vue d'ensemble des quatre paradigmes : le [README IIT](../../IIT/README.md), section « Ponts causaux : le do-calculus de Pearl à travers les paradigmes ».
 
@@ -820,7 +775,7 @@ La version est configurable dans `Tweety-01-Setup-Python.ipynb` (variable `TWEET
 
 | Série | Connection | Détails |
 |-------|------------|---------|
-| **[Argument_Analysis](../Argument_Analysis/)** | Argumentation agentique | Utilise Tweety comme backend Java pour le raisonnement argumentatif. Les sémantiques de Dung (notebook 5) sont directement appliquées dans l'analyse de textes. |
+| **[ArgumentAnalysis](../ArgumentAnalysis/)** | Argumentation agentique | Utilise Tweety comme backend Java pour le raisonnement argumentatif. Les sémantiques de Dung (notebook 5) sont directement appliquées dans l'analyse de textes. |
 | **[Lean](../Lean/)** | Vérification formelle | Les logiques propositionnelles et FOL (notebooks 2-3) correspondent aux tactiques de preuve Lean. Les SAT solvers de Tweety complètent la vérification Lean. |
 | **[SmartContracts](../SmartContracts/)** | Méthodes formelles | La vérification formelle SC-14 (Certora/SMTChecker) utilise les mêmes solveurs SAT/SMT. La logique propositionnelle de Tweety est la base des invariants Solidity. |
 | **[SemanticWeb](../SemanticWeb/)** | Logique de Description / OWL | La logique de Description (Tweety-3) est le fondement du raisonnement OWL : les ontologies OWL DL (SW-6/SW-7) utilisent les mêmes solveurs DL que Tweety. |
@@ -840,7 +795,7 @@ Tweety est l'outil où **le raisonnement devient explicite et vérifiable** — 
 
 ### Prochaines étapes
 
-- **Appliquez l'argumentation à du texte réel** : la série **[Argument_Analysis](../Argument_Analysis/)** utilise Tweety comme backend pour analyser des argumentations naturelles — c'est le terrain où les sémantiques de Dung rencontrent du langage humain.
+- **Appliquez l'argumentation à du texte réel** : la série **[ArgumentAnalysis](../ArgumentAnalysis/)** utilise Tweety comme backend pour analyser des argumentations naturelles — c'est le terrain où les sémantiques de Dung rencontrent du langage humain.
 - **Certifiez** : les SAT/SMT solvers de Tweety et la vérification formelle partagent le même socle. La série **[Lean](../Lean/)** pousse la logique jusqu'à la preuve de programmes ; **[SmartContracts](../SmartContracts/)** (SC-14) l'applique aux invariants Solidity.
 - **Reliez aux ontologies** : la logique de description de Tweety-3 est le moteur de raisonnement OWL. La série **[SemanticWeb](../SemanticWeb/)** (SW-6/SW-7) en fait le cœur des graphes de connaissances.
 - **Élargissez au choix social** : le notebook 9 (vote, préférences) est la porte d'entrée vers la théorie du choix social formalisée en Lean dans la série **[GameTheory](../../GameTheory/)** (Arrow, Sen, Voting).
@@ -888,13 +843,13 @@ La sous-série Tweety s'inscrit dans un **réseau cross-lane structuré** autour
 | Cette sous-série                  | Symétrie dans                                      | Pont pédagogique                                                                |
 |-----------------------------------|----------------------------------------------------|----------------------------------------------------------------------------------|
 | Tweety-3 (logique de description) | [SemanticWeb](../SemanticWeb/) (SW-6/SW-7 OWL)      | DL = moteur de raisonnement OWL ; même formalisme, deux écosystèmes              |
-| Tweety-3 (Dung frameworks)        | [Argument_Analysis](../Argument_Analysis/)         | Détection de sophismes via cadres de Dung + Semantic Kernel (LLM-contrôle)      |
+| Tweety-3 (Dung frameworks)        | [ArgumentAnalysis](../ArgumentAnalysis/)         | Détection de sophismes via cadres de Dung + Semantic Kernel (LLM-contrôle)      |
 | Tweety-3 (logique modale/QBF)     | [Lean](../Lean/) (mathlib4)                          | Formalisation des logiques Tweety dans l'assistant de preuve Lean 4              |
 | Tweety-9 (préférences, vote)      | [GameTheory](../../GameTheory/SocialChoice/)        | Préférences individuelles → fonction de choix social (Borda, Condorcet, Arrow)   |
 | Tweety-4 (révision AGM)           | [SmartContracts](../SmartContracts/) (SC-14)       | Mise à jour de croyances → invariants Solidity, logique de révision on-chain    |
 | Tweety-11 (Causalité, do-calculus)| [ML](../../ML/) (inférence causale)                | do-calculus Pearl ↔ modèles causaux structurels (Pearl 2009)                     |
 
-**Effet de composition** : Tweety est le **carrefour logique** du dépôt — chaque sous-série partenaire (Lean, SemanticWeb, Argument_Analysis, GameTheory, SmartContracts, ML) y trouve un point d'entrée formel vers l'argumentation computationnelle. Le pipeline complet relie les **notebooks** (qui motivent la pertinence du raisonnement explicite) aux **ports C#/.NET** (qui rendent Tweety invocable sans JVM, via IKVM 8.14, EPIC #4667) et aux **lakes** (qui formalisent les théorèmes sous-jacents, ex. Arrow en Lean 4).
+**Effet de composition** : Tweety est le **carrefour logique** du dépôt — chaque sous-série partenaire (Lean, SemanticWeb, ArgumentAnalysis, GameTheory, SmartContracts, ML) y trouve un point d'entrée formel vers l'argumentation computationnelle. Le pipeline complet relie les **notebooks** (qui motivent la pertinence du raisonnement explicite) aux **ports C#/.NET** (qui rendent Tweety invocable sans JVM, via IKVM 8.14, EPIC #4667) et aux **lakes** (qui formalisent les théorèmes sous-jacents, ex. Arrow en Lean 4).
 
 ## Historique des versions
 

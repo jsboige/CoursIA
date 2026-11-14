@@ -1,5 +1,7 @@
 # Évaluation approfondie des moteurs agentiques — ADK vs Semantic Kernel vs MS Agent Framework
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 > Livrable de l'issue [#14499](https://github.com/jsboige/CoursIA/issues/14499) (mandat user 2026-09-23 : « Il faut analyser les 3 en profondeur »).
 > Protocole commun : 6 points (état de l'art, modes d'orchestration **exécutés**, déterminisme, couverture C#/Python, coût pour le dépôt, verdict par critère).
 > Ce document porte les mesures et les tableaux — pas de rapport de cycle. Chaque affirmation est `VERIFIÉ` (mesure firsthand, commit/chemin cité) ou `RAPPORTE` (source primaire citée).
@@ -20,7 +22,8 @@
 | P2 | pt 3 — réplique **MAF** sur la même fixture, même politique de tour (`GroupChatBuilder` + selection function + termination condition) | livré |
 | P3 | pt 3 — réplique **ADK** sur la même fixture, même politique de tour (boucle Python de désignation explicite + `InMemorySessionService` partagée) | livré |
 | — | coût pour le dépôt (pt 5) | livré (§4) |
-| — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
+| — | pt 1 état de l'art | livré hors repo : note datée du 2026-10-05 sur [#19380](https://github.com/jsboige/CoursIA/issues/19380) — **périmée au 2026-11-06 et remplacée par le §5** de ce document ; mémo inventaire local du 2026-10-07 (po-2024:CoursIA-2) sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) |
+| Q17 | pt 1 **rafraîchi** + axes API courantes / trajectoire / besoins réels | livré (§5) — versions et cadence remesurées au 2026-11-04, sondes d'API rejouées aux versions courantes |
 | — | pts 3-5 (déterminisme, couverture langages, coût) | livrés (§2-§4) |
 | — | pt 6 verdict par critère | réservé à ai-01 + user |
 
@@ -97,7 +100,7 @@ Faits d'API mesurés sur 1.41.3 (couche agents) :
 
 ### 2.4 Pilote Google ADK — handoff natif C5 + désignation C4 (organe Track2 invoqué)
 
-`VERIFIÉ` — pilote [`Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables **par construction** : le modèle est épinglé en constante dans les deux pilotes, aucune sonde ne peut le substituer), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
+`VERIFIÉ` — pilote [`07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/eval-pilots/adk_handoff_pilot.py), exécuté sous `py -3.11` / google-adk **2.8.0** via l'**organe du track** ([`utils/adk_runtime.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/adk_runtime.py) : `build_agent` + `run_agent_turn` ; [`utils/adk_orchestrator.py`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/adk_orchestrator.py) : `AdkOrchestrator`) — aucune réimplémentation. Service **réel** `gpt-4o-mini`, température 0 (même modèle, même réglage, même scénario de triage que le pilote T2 — les deux moteurs deviennent directement comparables **par construction** : le modèle est épinglé en constante dans les deux pilotes, aucune sonde ne peut le substituer), budget ex-post 12 appels mesuré par les snapshots d'usage du contrat C6. Reproduction firsthand depuis l'emplacement livré : exit 0.
 
 Deux observables, alignés sur les deux mécaniques distinctes du contrat du track :
 
@@ -219,13 +222,17 @@ PILOT OK maf workflow roles=3
 
 Le point 4 de l'issue demande « ce que chaque moteur offre réellement en C# ». La méthode n'interroge pas la documentation mais **énumère les types publics des assemblages réellement déployés** par le restaurateur de paquets : un type absent de cette énumération n'est pas utilisable, quelle que soit la doc.
 
-**Ce que la mesure renverse.** L'intuition naturelle — SK est le moteur historique du dépôt, donc le plus mature en C# — est fausse sur la couche agents. Les cinq objets d'orchestration mesurés en Python 1.41.3 (§2.3 à §2.5) **n'existent pas** dans SK C# 1.81.0, qui n'expose que le modèle historique `AgentGroupChat`. Ils existent tous les cinq dans **MAF C# 1.24.0**, avec le checkpoint et l'OTel que l'issue demande au point 3. Autrement dit, la couche la plus récente de SK est **Python d'abord**, tandis que MAF est **C# d'abord**.
+**Ce que la mesure renverse.** L'intuition naturelle — SK est le moteur historique du dépôt, donc le plus mature en C# — est fausse sur la couche agents. Les cinq objets d'orchestration mesurés en Python 1.41.3 (§2.3 à §2.5) **n'existent pas dans la surface stable** de SK C# 1.81.0, qui n'expose que le modèle historique `AgentGroupChat`. Ils existent tous les cinq dans **MAF C# 1.24.0**, avec le checkpoint et l'OTel que l'issue demande au point 3. Autrement dit, la couche la plus récente de SK est **Python d'abord**, tandis que MAF est **C# d'abord**.
+
+> **Précision Q17 (2026-11-04)** — la phrase ci-dessus est **trop forte**, et la mesure l'a renversée : l'orchestration C# de SK **existe et est publiée**, mais **uniquement en version `-preview`** (`Microsoft.SemanticKernel.Agents.Orchestration` et `…Agents.Magentic`, qui n'ont jamais eu de version stable). La formulation exacte, mesurée et sourcée, est au **§5.6**. Ce que T6 établit reste vrai : ces topologies **ne sont pas** dans la surface stable, et le checkpoint comme l'OTel SK C# sont absents des **deux** surfaces.
 
 | Moteur | Version mesurée | Types publics | Orchestration multi-agents en C# |
 | --- | --- | --- | --- |
 | Semantic Kernel | famille `Microsoft.SemanticKernel*` 1.81.0 — **4 assemblages**, dont `…Agents.Core` qui porte **17** types | **210** (union) | **modèle historique seul** : `AgentGroupChat`, `AgentGroupChatSettings`, `SequentialSelectionStrategy`, `ChatCompletionAgent` |
-| MS Agent Framework | famille `Microsoft.Agents.AI*` 1.24.0 — **3 assemblages**, dont `…Workflows` qui porte **132** types | **285** (union) | **les cinq topologies** : `SequentialWorkflowBuilder`, `ConcurrentWorkflowBuilder`, `GroupChatWorkflowBuilder`, `MagenticWorkflowBuilder`, `HandoffWorkflowBuilder`, plus `WorkflowBuilder` |
+| MS Agent Framework | famille `Microsoft.Agents.AI*` 1.27.0 — **3 assemblages**, dont `…Workflows` qui porte **132** types | **286** (union) | **les cinq topologies** : `SequentialWorkflowBuilder`, `ConcurrentWorkflowBuilder`, `GroupChatWorkflowBuilder`, `MagenticWorkflowBuilder`, `HandoffWorkflowBuilder`, plus `WorkflowBuilder` |
 | Google ADK | — | — | **aucune distribution C#** |
+
+**Re-mesure Q17 du 2026-11-04** ([`eval-pilots/traces/out-Q17-csharp-coverage-1.27.0.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-Q17-csharp-coverage-1.27.0.txt), sortie 0, contrôles négatif et positif au vert). La sonde T6 mesurait MAF C# **1.24.0** ; elle a été rejouée à la version courante **1.27.0**. Le delta est faible mais réel : l'union dédoublonnée passe de **285 à 286** types, les quatre assemblages SK restent **inchangés** (`Abstractions` 132, `Agents.Abstractions` 27, `Agents.Core` 17, `Core` 35 → union **210**, identique à T6, SK .NET n'ayant rien publié depuis le 2026-10-06), et MAF C# garde les trois mêmes assemblages (`Agents.AI.Abstractions` 28, `Agents.AI.Workflows` 132, `Agents.AI` 126). **Aucun type n'a disparu** : les cinq topologies, les capacités de checkpoint et d'OTel sont toutes encore là.
 
 **Ce que le chiffre est, et ce qu'il n'est pas** (précision apportée en réponse à une review). `210` et `285` sont l'**union dédoublonnée sur le nom court** des types publics de **toute la famille** d'assemblages préfixée, pas le compte d'un assemblage : le détail par assemblage est publié dans la trace ci-dessous (`Agents.Core` = 17, `Agents.Abstractions` = 27, `Abstractions` = 132, `Core` = 35 → union 210). Deux conséquences assumées : le total **dépend de ce que le projet hôte a restauré** (un connecteur de plus le gonfle), et deux types homonymes de namespaces différents y fusionnent — c'est donc un **plancher**, jamais un compte de types. Le propos de fond ne s'appuie pas sur ces totaux mais sur les **contrôles nommés** qui suivent.
 
@@ -284,7 +291,7 @@ VERDICT controles : negatif=OK positif=OK
 
 **Ce que le relevé apprend pour l'évaluation comparative.** La question « quel moteur pour la distillation » reçoit ici une contrainte dure qui n'était pas visible dans la grille du 11/09 : nos séries sont **bilingues**, et un moteur qui n'existe qu'en Python oblige à maintenir deux piles pour un même enseignement. Sur ce critère, MAF couvre **les deux langages avec les mêmes topologies**, SK ne les couvre qu'en Python sur la couche agents, et ADK n'a pas de C# du tout. Cela ne tranche pas l'arbitrage — la maturité runtime et la dette de migration restent à mesurer — mais cela déplace un critère de « préférence » vers un **fait mesuré**.
 
-**Forme du livrable, et pourquoi.** La sonde est une **app mono-fichier** (.NET 10, directives `#:package`) : aucun `.csproj` n'est ajouté au dépôt, donc aucun impact sur `MyIA.CoursIA.sln`, `MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par chemin) — un projet orphelin aurait été happé par l'un ou l'autre. La reproduction demande le réseau pour la restauration des paquets, comme les pilotes Python demandent une clé d'API.
+**Forme du livrable, et pourquoi.** La sonde est une **app mono-fichier** (.NET 10, directives `#:package`) : aucun `.csproj` n'est ajouté au dépôt, donc aucun impact sur `dotnet/MyIA.CoursIA.sln`, `dotnet/MyIA.AI.Shared/MyIA.AI.Shared.sln` ni sur les workflows .NET (tous filtrés par chemin) — un projet orphelin aurait été happé par l'un ou l'autre. La reproduction demande le réseau pour la restauration des paquets, comme les pilotes Python demandent une clé d'API.
 
 **Les traces d'exécution sont committées** ([`eval-pilots/traces/`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/)) : les `stdout` des pilotes, tels quels — pour qu'une affirmation `VÉRIFIÉ` de ce document soit une **propriété du dépôt** et non du poste de l'auteur. Le `stderr` n'est pas committé : les avertissements Python y impriment des chemins absolus, et un fichier committé n'en porte pas. La séparation est faite **à la capture**, jamais par retrait de lignes après coup. Une trace committée n'est pas un contrôle — le contrôle est le pilote, rejouable par la commande du README ; la trace est le témoin daté.
 
@@ -445,8 +452,8 @@ Le point 5 demande trois choses : ce qui existe déjà, la dette de migration, e
 
 | Moteur | Présence dans le dépôt | Mesure |
 |---|---|---|
-| **Semantic Kernel** | série pédagogique complète, **C# et Python** | `GenAI/SemanticKernel/` — la seule série véritablement bi-langage du chantier (kernels .NET Interactive et Python ; compte exact = catalogue, non recopié ici) |
-| **Google ADK** | série pédagogique dédiée + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/Track2-GoogleADK/`, plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
+| **Semantic Kernel** | série pédagogique **bi-langage**, C# concentrée | `GenAI/SemanticKernel/` — 23 carnets (18 Python, 5 `.net-csharp`) selon `COURSE_CATALOG.generated.json` au head (mesuré, §5.4). La partie C# (5 carnets) inclut les 2 du préfixe `Semantic-fleet-*` ; la couche agents (`01` à `11`) est **Python seule** |
+| **Google ADK** | série pédagogique dédiée (Python) + organe d'orchestration réutilisable | `ML/DataScienceWithAgents/07-Agent-Orchestration/` (14 carnets), plus `utils/adk_runtime.py` (`build_agent`, `run_agent_turn`) et `utils/adk_orchestrator.py` (contrat C4) — réutilisés tels quels par le pilote P3 |
 | **Microsoft Agent Framework** | **aucune série pédagogique** — présent uniquement dans les pilotes d'évaluation de ce chantier | `grep` sur `agent-framework`/`Microsoft.Agents.AI` dans les `.ipynb` ne retourne que les pilotes ; MAF n'apparaît que dans `eval-pilots/` |
 | **semantic-fleet** | sous-module épinglé | `MyIntelligenceAgency/semantic-fleet`, branche `stable-from-v0343` (`.gitmodules`) — infrastructure de flotte SK, hors série pédagogique |
 | **pilotes d'évaluation** | pilotes autonomes + traces committées | `eval-pilots/` : SK (T1/T2/T4/P1), MAF (T5/T7/T8/P2), ADK (P3) — chacun exécutable firsthand, traces dans `traces/` |
@@ -459,14 +466,173 @@ Le constat structurel : **le dépôt enseigne déjà deux des trois moteurs** (S
 
 - **Pas de migration à proprement parler** : SK et ADK ont chacun leur série et leurs idiomes, stables. Rien à porter d'un moteur à l'autre — les séries coexistent sans se concurrencer.
 - **La dette réelle est un manque, pas un portage** : MAF n'a pas de série pédagogique. Le combler signifierait **écrire** une série (au moins un carnet couche agents : `HandoffBuilder`, `GroupChatBuilder`, `MagenticBuilder` — les trois idiomes déjà exécutés en T7/T8), pas migrer du contenu existant. Le coût est donc celui d'une **création**, bornée par ce que T5/T7/T8/P2 ont déjà mesuré et documenté (les pièges d'extraction, la termination condition, la ligne de versions `core 1.21.0` + `orchestrations 1.3.1` + connecteur résolu).
-- **Dette d'environnement déclarée** : les trois moteurs exigent des venv **distincts** (SK 1.41.3 ; MAF core 1.21.0 + orchestrations 1.3.1 ; ADK 2.8.0 + litellm + pydantic-settings). Ce n'est pas une dette de code mais une dette de **reproductibilité** : un étudiant qui veut rejouer les trois pilotes doit monter trois environnements. Le README `eval-pilots/` documente chacun.
+- **Dette d'environnement déclarée, et elle a grandi** : les trois moteurs exigent des venv **distincts** (SK 1.41.3 ; MAF core 1.21.0 + orchestrations 1.3.1 ; ADK 2.8.0 + litellm + pydantic-settings). Ce n'est pas une dette de code mais une dette de **reproductibilité** : un étudiant qui veut rejouer les trois pilotes doit monter trois environnements. Le README `eval-pilots/` documente chacun. **L'écart s'est creusé depuis** : au 2026-11-04, les versions courantes sont SK 1.46.0, MAF core 1.24.0 + orchestrations 1.4.1, ADK 2.13.0 (§5.1) — mais **l'écart n'est pas uniforme** : le pin SK a **190 jours**, celui d'ADK **70 jours**, et celui de MAF **27 jours** seulement (§5.1). Le pilote SK est donc la dette principale ; le pilote MAF est à trois versions mineures de la version courante.
 
 ### 4.3 Valeur pédagogique — enseigner les trois est la bonne réponse pour un cours
 
-Le point 3 a mesuré la chose décisive : **à charge identique, les trois moteurs produisent la même structure et le même verdict** (P1 ré-exécuté = P2 = P3, `RESIDUEL tour 1`). Ce qui diffère, c'est **l'idiome de contrôle du tour**, pas le résultat. C'est exactement ce qui fait la valeur d'un enseignement multi-moteurs :
+**Corrections apportées par Q17 (2026-11-04).** Trois affirmations de cette section étaient fausses ou ambiguës ; elles sont rectifiées ci-dessous, et la section a été réécrite pour ne rien laisser subsister. Les traces committées des trois pilotes sont la preuve.
 
-- **Le concept transférable est la politique d'orchestration** (producteur → critique → [révision] → arbitre), et elle se ré-encode dans trois idiomes : un manager à deux méthodes (SK), une selection function + une termination condition (MAF), une boucle de désignation de l'appelant (ADK). Un étudiant qui a vu les trois sait que l'orchestration est un **choix de conception**, pas une propriété du moteur.
+Le point 3 a mesuré la chose décisive : **à charge identique, les trois moteurs convergent sur la décision finale, pas sur la structure de l'orchestration.** Ce qui est commun, c'est le `DECISION` rendu à l'arbitre (`RESIDUEL tour 1`) ; ce qui diffère, c'est **le nombre d'étapes et l'idiome de contrôle du tour**.
+
+| Réplique | Trace | Étapes | Verdict du critique | Décision finale |
+| --- | --- | --- | --- | --- |
+| P1 (SK) | [`out-P1-sk-distillation-reexec.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P1-sk-distillation-reexec.txt) | **5** (producteur → critique → producteur → critique → arbitre) | `REVISION` | `RESIDUEL tour 1` |
+| P2 (MAF) | [`out-P2-maf-distillation.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P2-maf-distillation.txt) | **5** (même séquence) | `REVISION` | `RESIDUEL tour 1` |
+| P3 (ADK) | [`out-P3-adk-distillation.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-P3-adk-distillation.txt) | **3** (producteur → critique → arbitre) | `ACCEPTE` | `RESIDUEL tour 1` |
+
+La version initiale de cette section affirmait « les trois moteurs produisent **la même structure et le même verdict** ». C'est faux sur la structure : SK et MAF convergent entre eux à 5 étapes, ADK s'arrête à 3 parce que son critique **accepte** là où les deux autres demandent une révision. La convergence réelle — et c'est elle qui est instructive — porte sur la **décision de l'arbitre**, qui est la même pour les trois. Le §3.4 décrivait déjà exactement cela ; cette section en divergeait.
+
+Ce qui subsiste, et qui fait la valeur d'un enseignement multi-moteurs :
+
+- **Le concept transférable est la politique d'orchestration** (producteur → critique → [révision] → arbitre), et elle se ré-encode dans trois idiomes : un manager à deux méthodes (SK), une selection function + une termination condition (MAF), une boucle de désignation de l'appelant (ADK). Un étudiant qui a vu les trois sait que l'orchestration est un **choix de conception**, pas une propriété du moteur — et la mesure le prouve : à charge identique, la même politique ne produit pas la même conversation.
 - **La différence de nature est elle-même le cours** : SK et MAF exposent un **point d'extension orchestrateur** (le moteur appelle votre code pour savoir qui parle ensuite), ADK expose des **primitives** (`Runner`, `SessionService`) et laisse la politique à l'appelant. C'est une distinction architecturale réelle, mesurée, qu'on ne peut pas enseigner avec un seul moteur.
-- **L'expertise multi-moteurs de la flotte est un atout, pas un coût** : les trois séries (et les pilotes) sont déjà écrites et exécutées. Le coût marginal d'enseigner les trois est faible une fois les organes en place ; la valeur — un étudiant capable de lire une orchestration quel que soit le moteur — est élevée.
+- **L'expertise multi-moteurs de la flotte est un atout, mais un atout à deux moteurs.** SK et ADK ont chacun leur série **écrite et exécutée** ; MAF n'a **aucune série pédagogique** (§4.1) — il n'existe chez nous que comme objet de mesure, dans les pilotes. Le coût marginal d'enseigner MAF est donc celui d'une **création**, pas celui d'une exploitation ; celui d'enseigner SK et ADK est quasi nul.
 
-**Réserve d'honnêteté** : la couverture C# n'existe que pour SK (§2.7) — ADK est Python-only, MAF a une couche C# mesurée par les assemblages mais pas de série. Un cours bi-langage ne peut donc pas être symétrique sur les trois moteurs ; c'est une borne à déclarer, pas à masquer. Le verdict par critère (quel moteur pour quel usage) reste au point 6, réservé à ai-01 + user.
+**Réserve d'honnêteté — une seule « couverture C# », pas deux.** Le §2.7 mesure la **couverture d'API C#** (quels types un moteur expose-t-il réellement en C# ?). Cette section parle de **série pédagogique C#** (qu'y a-t-il à enseigner ?). Les deux mots se ressemblent, ne mesurent pas la même chose, et les confondre avait produit une affirmation fausse. La réserve se formule donc ainsi :
+
+- **couverture d'API C#** : SK expose le modèle historique seul ; MAF expose les cinq topologies, le checkpoint et l'OTel ; ADK n'a **aucune distribution C#** (mesuré : aucun paquet NuGet — §2.7 et §5.5) ;
+- **série pédagogique C#** : le dépôt n'en compte qu'une, celle de SK — 5 carnets `.net-csharp` sur les 23 de `GenAI/SemanticKernel/` (mesuré, §5.4). 07-Agent-Orchestration est intégralement Python, et MAF n'a rien.
+
+Un cours bi-langage ne peut donc pas être symétrique sur les trois moteurs ; c'est une borne à déclarer, pas à masquer. Le verdict par critère (quel moteur pour quel usage) reste au point 6, réservé à ai-01 + user.
+
+## 5. Arbitrage 2026-11 — API courantes, trajectoire et besoins réels (Q17)
+
+Cette section répond au grain posé par ai-01 sur [#14499](https://github.com/jsboige/CoursIA/issues/14499) le 2026-11-04 : **les API réelles aux versions courantes**, **l'évolution récente et la trajectoire**, **nos besoins moteur par moteur**. Elle porte aussi les corrections apportées au §4.
+
+Comme le reste du document, chaque affirmation est `VÉRIFIÉ` (mesure firsthand, trace ou chemin cité) ou `RAPPORTÉ` (source primaire datée citée).
+
+### 5.1 Versions courantes — mesurées le 2026-11-04
+
+Sources des dates : API PyPI (`https://pypi.org/pypi/<paquet>/json`, date de publication **la plus ancienne** d'une version — la première publication, pas la dernière, pour ne pas dater une version par un re-push) et API NuGet *flat container* (`https://api.nuget.org/v3-flatcontainer/<id>/index.json` pour les versions, puis date lue dans l'index central ZIP du `.nupkg`). L'API `registration` paginée n'est pas utilisée : elle rend `items: null` pour `microsoft.semantickernel`, ce qui la rend muette là où elle devrait parler.
+
+| Moteur | Paquet | Version courante | Publiée le | Pin des pilotes | Âge du pin |
+| --- | --- | --- | --- | --- | --- |
+| SK (Python) | `semantic-kernel` | **1.46.0** | 2026-10-28 | 1.41.3 (2026-04-28) | **190 j** |
+| SK (.NET, surface stable) | `Microsoft.SemanticKernel.Agents.Core` | **1.81.0** | 2026-10-06 | 1.81.0 | 29 j |
+| SK (.NET, surface preview) | `…Agents.Orchestration` / `…Agents.Magentic` | **1.81.0-preview** | 2026-10-06 | (non épinglé) | 29 j |
+| MAF (Python, cœur) | `agent-framework-core` | **1.24.0** | 2026-10-30 | 1.21.0 (2026-10-08) | 27 j |
+| MAF (Python, topologies) | `agent-framework-orchestrations` | **1.4.1** | 2026-10-30 | 1.3.1 (2026-10-08) | 27 j |
+| MAF (Python, connecteur) | `agent-framework-openai` | **1.18.0** | 2026-10-30 | 1.16.0 (2026-10-08) | 27 j |
+| MAF (.NET) | `Microsoft.Agents.AI` / `.Workflows` | **1.27.0** | 2026-10-30 | 1.24.0 (2026-10-07) | 28 j |
+| ADK (Python) | `google-adk` | **2.13.0** | 2026-10-23 | 2.8.0 (2026-08-26) | 70 j |
+
+`VÉRIFIÉ` — également mesuré : le pin `google-adk==2.8.0` n'est pas propre aux pilotes, il est aussi celui du track pédagogique [`07-Agent-Orchestration/requirements.txt`](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/requirements.txt). **L'écart du pin pilote n'est donc pas un artefact d'évaluation : c'est l'état du cours lui-même**, et il porte sur 14 carnets.
+
+**La lecture qu'il faut faire de ce tableau, et celle qu'il ne faut pas faire.** Un seul pin est franchement vieux : **SK Python, 190 jours**. MAF est à **27 jours** de sa version courante — les pilotes MAF tournent sur une ligne récente, et l'écart avec la version courante est de **trois versions mineures**, pas d'une génération. ADK est à 70 jours (cinq versions mineures derrière). Une formulation du type « les pilotes tournent sur des versions de six mois, trois mois et deux mois et demi » serait donc **fausse pour MAF**, qui est le cas le plus favorable de la série.
+
+### 5.2 Cadence de publication depuis le 2026-09-01
+
+`VÉRIFIÉ` — comptage sur les dates de publication mesurées ci-dessus, fenêtre de 64 jours.
+
+| Paquet | Sorties dans la fenêtre | Rythme observé |
+| --- | --- | --- |
+| `agent-framework-core` | **8** | ~une par semaine |
+| `agent-framework-openai` | 7 | ~une par semaine |
+| `agent-framework-orchestrations` | 6 | ~une par semaine |
+| `Microsoft.Agents.AI` et `.Workflows` | 7 chacun | ~une par semaine |
+| `google-adk` | 7 | ~une par semaine |
+| `semantic-kernel` (Python) | **2** | ~une par mois |
+| `Microsoft.SemanticKernel.Agents.Core` (.NET) | **2** | 1.80.1 le 2026-09-03, 1.81.0 le 2026-10-06, **rien depuis** |
+
+**Ce que la cadence dit, et qu'elle ne dit pas.** L'écart de rythme entre MAF/ADK (une sortie par semaine) et SK (une par mois) est **mesuré**. Il **s'explique** par la succession annoncée (§5.3) — mais cette explication est `RAPPORTÉ`, pas mesurée : la cadence est un fait, sa cause est une intention de l'éditeur. Deux observations complètent la mesure sans la surinterpréter :
+
+- **SK Python a connu un trou de deux mois** : 1.44.1 le 2026-08-06, puis 1.45.0 le 2026-10-06. Sur les neuf versions depuis avril, c'est le seul intervalle de plus de cinq semaines.
+- **SK .NET est silencieux depuis le 2026-10-06** (29 jours à la date de mesure), et la version qui plafonne est **exactement celle qu'épingle la sonde C#** : la surface C# de SK n'a pas bougé depuis la mesure T6 (§2.7).
+
+### 5.3 Statut et trajectoire — sources primaires datées
+
+`RAPPORTÉ` — sauf mention contraire, faits relevés sur source primaire datée, consultée le 2026-11-04.
+
+**Semantic Kernel → Microsoft Agent Framework : une succession annoncée, pas une dépréciation silencieuse.**
+
+- `VÉRIFIÉ` (source primaire datée) — [devblogs.microsoft.com/agent-framework/semantic-kernel-and-microsoft-agent-framework/](https://devblogs.microsoft.com/agent-framework/semantic-kernel-and-microsoft-agent-framework/), **7 octobre 2025** : « We will continue to support Semantic Kernel v1.x for the foreseeable future. We will continue to address critical bugs, security issues […] for a least one year after Microsoft Agent Framework leaves Preview and is Generally Available. » Le même billet pose : « Think of Microsoft Agent Framework as Semantic Kernel v2.0 (it's built by the same team!). »
+- `VÉRIFIÉ` — [github.com/microsoft/semantic-kernel](https://github.com/microsoft/semantic-kernel) (README, page non datée, consultée le 2026-11-04) : « Semantic Kernel is now Microsoft Agent Framework! […] Microsoft Agent Framework (MAF) is the enterprise‑ready successor to Semantic Kernel. » Le README renvoie à un guide de migration.
+- `VÉRIFIÉ` — [devblogs.microsoft.com/agent-framework/category/announcements/](https://devblogs.microsoft.com/agent-framework/category/announcements/), **3 avril 2026** : « Microsoft Agent Framework has reached version 1.0 for both .NET and Python. […] This is the production-ready release: stable APIs, and a commitment to long-term support. »
+
+**Ce que ces trois sources donnent, une fois composées.** MAF est GA depuis le **2026-04-03** ; la promesse de support de SK v1.x court donc **au moins un an après cette date**, soit **jusqu'au 2027-04-03 au plus tôt**. C'est une borne, pas une date : le billet dit « for the foreseeable future » et ne publie pas de date de fin. La conséquence pratique est nette — **SK n'est pas mort, mais il ne recevra plus de fonctionnalités** : ce sont les correctifs de sécurité et les bugs critiques qui continuent, et les nouveautés vont à MAF. Pour un choix d'adoption à trois ans, c'est l'argument qui pèse.
+
+`VÉRIFIÉ` — [github.com/microsoft/agent-framework](https://github.com/microsoft/agent-framework) (README, non daté) : « Full framework support for both Python and C#/.NET implementations with consistent APIs » ; Go est maintenu dans un dépôt séparé. `VÉRIFIÉ` — [releases MAF](https://github.com/microsoft/agent-framework/releases), **2026-10-30** : `python-1.24.0` et `dotnet-1.27.0` ; le README fournit un « Guide to migrate from Semantic Kernel ».
+
+**Google ADK : deux lignes vivantes, et une documentation qui advertise plus de langages que ce que nous mesurons.**
+
+- `VÉRIFIÉ` — [adk.dev](https://adk.dev/) (non daté, consulté le 2026-11-04) : « Available in Python, TypeScript, Go, Java, and Kotlin. » / « New in ADK 2.0! » (graph workflows), « ADK TypeScript 2.0 GA ».
+- `VÉRIFIÉ` — [releases adk-python](https://github.com/google/adk-python/releases) : la ligne 2.x publie `v2.13.0` le **2026-10-23** ; la ligne 1.x a encore publié `v1.39.1` le **2026-08-27**, c'est-à-dire **après** le démarrage de la ligne 2.x (`v2.7.1`, 2026-08-17). Les deux lignes coexistent donc — mais **la ligne 1.x est silencieuse depuis le 2026-08-27** (69 jours), quand la ligne 2.x a continued à publier au rythme hebdomadaire. Le fait mesuré est une **coexistence qui s'est figée**, pas un parallélisme actif.
+- `VÉRIFIÉ` — mêmes notes de version : `v2.13.0` déprécie la télémétrie legacy (« deprecate call_llm span and OpenTelemetry 1.36 GenAI semconv ») ; `v2.10.0` fait émettre un `DeprecationWarning` **à l'import** des modules audio legacy.
+- `NON TROUVÉ` — aucune déclaration explicite de politique de maintenance 1.x vs 2.x (page d'accueil, README, notes de version : rien). Pas de roadmap publiée pour ADK non plus.
+
+**Ce que « ADK n'est pas Python-only » ne veut pas dire.** La documentation annonce cinq langages, mais **notre mesure porte sur la distribution .NET** : aucun paquet NuGet ADK n'existe (§2.7, §5.5), et la seule assembly « Google » déployée par la restauration est `Google.Protobuf.dll`, dépendance transitive. La formulation exacte est donc : **ADK n'a pas de distribution C#** — pas « ADK est Python-only », qui serait faux au sens de la documentation.
+
+**Non trouvé, et c'est un résultat.** Aucune feuille de route publiée pour SK ; aucun document de roadmap dédié dans le dépôt MAF. Ces absences sont des faits de mesure, pas des oublis : elles sont listées ici pour que le lecteur sache que la trajectoire **n'est documentée que par les billets de succession et les notes de version**.
+
+### 5.4 Nos besoins — tirés du dépôt, pas imaginés
+
+`VÉRIFIÉ` — inventaire mesuré sur l'arbre (`git grep`), pas sur une liste d'exigences imaginée.
+
+| Besoin | Où il est déjà dans le dépôt | Contrainte réelle qu'il impose |
+| --- | --- | --- |
+| **Distillation** producteur → critique → arbitre | les trois pilotes `P1`/`P2`/`P3` + leurs traces committées | le tour doit être **contrôlable** par l'appelant, pas délégué au moteur |
+| **Long run avec reprise** | le prover Lean (`…/SymbolicAI/Lean/agent_tests/prover/`) tourne sur `agent_framework` | le moteur doit savoir **reprendre** un run interrompu |
+| **Traces** | `…/agent_tests/prover/baselines/traces/*.spans.jsonl` — des milliers de spans déjà produites | il faut un **format de trace** stable et lisible par un tiers |
+| **Comptage de tokens** | `07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb` ; note du carnet : « Jusqu'à la trace 1, ADK produisait bien `usage_metadata` sur ses events » | il faut un compte **fiable et détaillé**, pas approximatif |
+| **Série pédagogique bilingue C#/Python** | SK : 23 carnets (18 Python, 5 `.net-csharp`) ; ADK : 14 carnets Python ; MAF : **0** | il faut une **offre existante** ou l'accepter comme un coût de création |
+| **Endpoint local** (vLLM, claudish) | `07-Agent-Orchestration/utils/adk_runtime.py` (`LiteLlm`, `api_base`) ; pilotes SK/MAF (`AsyncOpenAI(base_url=…)`, `base_url=…`) | le branchement doit passer par une **API compatible OpenAI** |
+
+Deux découverts en mesurant cet inventaire, et qu'aucun tableau précédent ne portait :
+
+- **MAF est déjà en production chez nous.** `…/agent_tests/prover/agents.py` importe `from agent_framework import Agent, ChatOptions`, et `…/agent_tests/requirements.txt` épingle `agent-framework-openai>=1.3.0,<2.0.0` — un **plancher, pas un pin exact**. Le prover est donc exposé à tout ce que MAF publie dans la branche 1.x, c'est-à-dire aux **huit versions** sorties depuis le 2026-09-01 (§5.2). C'est le besoin de *stabilité* le plus concret du dépôt, et il est mesuré.
+- **Le pin `google-adk==2.8.0` du track pédagogique est lui aussi en retard de cinq versions mineures** (§5.1). Le lab « Token-Usage » documente d'ailleurs un comportement déjà observé : « Jusqu'à la trace 1, ADK produisait bien `usage_metadata` sur ses events ».
+
+### 5.5 Couverture des besoins par moteur — mesurée aux versions courantes
+
+`VÉRIFIÉ` — sonde [`eval-pilots/current_api_probe.py`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/current_api_probe.py) (Python) et rejeu de [`eval-pilots/csharp_coverage_probe.cs`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/csharp_coverage_probe.cs) (C#, surface stable) + [`eval-pilots/csharp_preview_surface_probe.cs`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/csharp_preview_surface_probe.cs) (C#, surface preview), **sans aucun appel LLM ni clé API**. Traces : [`out-Q17-sk-api-1.46.0.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-Q17-sk-api-1.46.0.txt), [`out-Q17-maf-api-1.24.0.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-Q17-maf-api-1.24.0.txt), [`out-Q17-adk-api-2.13.0.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-Q17-adk-api-2.13.0.txt), [`out-Q17-csharp-coverage-1.27.0.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-Q17-csharp-coverage-1.27.0.txt), [`out-Q17-csharp-preview-1.81.0.txt`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/traces/out-Q17-csharp-preview-1.81.0.txt).
+
+**La sonde a une méthode, et ses limites sont mesurées aussi.** Chaque capacité porte un **contrôle positif** (ce qui doit être là) et un **contrôle négatif** ; s'y ajoute un **contrôle négatif inter-moteurs** (les deux autres moteurs doivent être **non importables** dans l'environnement mesuré), qui prouve que les verdicts « ABSENT » ne viennent pas d'un environnement contaminé. Deux faux négatifs ont été observés puis corrigés pendant la mesure, et ils sont de deux natures différentes :
+
+- **un chemin mal cheminé** : interroger `semantic_kernel.agents.orchestration.X` rend « absent » parce que le paquet **ne re-exporte pas** ses classes — il faut passer par le sous-module (`…orchestration.group_chat.GroupChatOrchestration`). Le contrôle négatif de convention qui en découle est désormais dans la sonde ;
+- **un granulaire inadapté** : le comptage de tokens est un **champ** (pydantic `model_fields`, dataclass `dataclasses.fields`, `__annotations__`, `dir()` en repli), pas un symbole — une recherche par symbole seul rendrait « absent » à tort.
+
+| Besoin | SK 1.46.0 | MAF 1.24.0 (+ orch 1.4.1) | ADK 2.13.0 |
+| --- | --- | --- | --- |
+| **Cinq topologies** | **présent** (5 sous-modules, ré-exportées depuis `semantic_kernel.agents`) | **présent** (`SequentialBuilder`, `ConcurrentBuilder`, `GroupChatBuilder`, `MagenticBuilder`, `HandoffBuilder`) | primitives (`SequentialAgent`, `LoopAgent`, `ParallelAgent`), pas de topologie équivalente |
+| **Reprise d'un long run** | **ABSENT** — aucun symbole `checkpoint`/`resume`/`restore`/`snapshot` dans tout le paquet | **présent** — `WorkflowCheckpoint`, `CheckpointStorage`, `FileCheckpointStorage`, `InMemoryCheckpointStorage`, `CheckpointID`, `AgentExecutorCheckpointState` | **présent** — `ResumabilityConfig` (`google.adk.agents.invocation_context`), sessions `InMemory`/`VertexAi`/`PerAgentDatabase` |
+| **Traces / observabilité** | `TracerProvider`, `get_tracer_provider` (`agents.runtime.core.telemetry.tracing`) | `ChatTelemetryLayer`, `AgentTelemetryLayer`, `get_tracer`, `workflow_tracer` | callbacks `Before/AfterModel`, `AfterTool`, `OnModelError` + télémétrie |
+| **Comptage de tokens** | `CompletionUsage` existe et est **posé dans `metadata["usage"]`** par le service (`open_ai_chat_completion_base.py:222`) — donc **pas un champ du message** (`ChatMessageContent` : `CHAMPS ABSENT`) et **pas d'agrégateur** | `UsageDetails` (`TypedDict` : entrée, sortie, total, cache création/lecture, raisonnement) + `Content.from_usage(...)` + `agent_framework.add_usage_details(...)` — **agrégation de première classe** | `Event.usage_metadata` → `GenerateContentResponseUsageMetadata` : total, prompt, candidats, cache, **raisonnement**, tools — **le plus détaillé des trois** |
+| **Endpoint local** | `base_url` **n'est pas un paramètre** de `OpenAIChatCompletion.__init__` : il faut passer `async_client=AsyncOpenAI(base_url=…)` (forme du pilote) — construction vérifiée | `base_url` **accepté directement** par `OpenAIChatCompletionClient` — construction vérifiée | par `LiteLlm(api_base=…)` — l'organe du dépôt (`utils/adk_runtime.py`) |
+| **Avertissements de dépréciation à l'import** | **0** | 0 (`ExperimentalWarning` hors dépréciation : `[FIDES] ContentVariableStore`) | **0** |
+
+**Trois lectures que la mesure autorise, et qu'elle n'autorise pas à élargir.**
+
+1. **L'API publique de SK n'a pas bougé.** Les cinq topologies, `AgentGroupChat`, `ProcessBuilder` (déplacé en module de premier niveau, `semantic_kernel.processes`) sont tous là en 1.46.0, et **aucun `DeprecationWarning` n'est émis à l'import**. Un code écrit contre 1.41.3 n'a pas à être réécrit — mais il ne recevra plus de fonctionnalité (§5.3).
+2. **Sur la reprise, SK n'offre rien** — ni en Python (aucun symbole), ni en C# (zéro type sur les six fragments cherchés : `Checkpoint`, `OpenTelemetry`, `Telemetry`, `Workflow`, `Resume`, `Persistence`), y compris dans sa surface preview (§5.6). MAF expose sept types de checkpoint et trois extensions OpenTelemetry côté C#, et la même chose en Python ; ADK expose `ResumabilityConfig`. **Si le prover Lean doit pouvoir reprendre un long run, SK est hors sujet.**
+3. **Le branchement local n'a pas la même facilité partout.** MAF accepte `base_url` directement ; SK l'a **retiré** de la signature du service (le passage par `async_client` reste la forme correcte, vérifiée par construction) ; ADK passe par un adaptateur tiers (LiteLLM), ce qui ajoute une dépendance de plus au track.
+
+### 5.6 La surface C# — stable, preview, et ce que la mesure overturnait
+
+`VÉRIFIÉ` — la sonde C# de T6 mesure la **surface stable** (`Microsoft.SemanticKernel.Agents.Core` 1.81.0). Le §2.7 en conclut que « les cinq objets d'orchestration **n'existent pas** dans SK C# 1.81.0 ». **Cette formulation est trop forte, et la mesure Q17 l'a renversée.**
+
+Contrôle de la source : l'archive `main` du dépôt SK contient bien `dotnet/src/Agents/Orchestration/` (avec `ConcurrentOrchestration.cs`, `GroupChatOrchestration.cs`, `HandoffOrchestration.cs`, `SequentialOrchestration.cs`) et `dotnet/src/Agents/Magentic/` (`MagenticManager.cs`, `MagenticAgentActor.cs`) — et ces deux répertoires sont **des projets .csproj distincts** (`Agents.Orchestration.csproj`, `Agents.Magentic.csproj`). Autrement dit, la couche d'orchestration C# de SK n'est pas dans le paquet `Agents.Core` : elle est **dans deux paquets à part**.
+
+Contrôle de la distribution : sur NuGet, `microsoft.semantickernel.agents.orchestration` et `microsoft.semantickernel.agents.magentic` existent, et **aucune de leurs 32 versions n'est stable** — la liste complète est `1.51.0-preview` … `1.81.0-preview`. La dernière, `1.81.0-preview`, a été publiée le **2026-10-06**, le même jour que la 1.81.0 stable.
+
+Mesure directe : la sonde [`csharp_preview_surface_probe.cs`](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/eval-pilots/csharp_preview_surface_probe.cs) restaure ces deux paquets `-preview` **en plus** du paquet stable, et mesure la surface deployée :
+
+| Mesure | Résultat |
+| --- | --- |
+| Assemblages deployés (préfixe `Microsoft.SemanticKernel.Agents`) | `Abstractions` 27 · `Core` 17 · `Magentic` 11 · `Orchestration` 29 · `Runtime.Abstractions` 15 · `Runtime.Core` 10 |
+| Les cinq topologies | **présentes** — `ConcurrentOrchestration`, `SequentialOrchestration`, `GroupChatOrchestration`, `HandoffOrchestration` dans `Agents.Orchestration.dll`, `MagenticOrchestration` dans `Agents.Magentic.dll` |
+| Contrôle négatif de provenance | les cinq sont **absentes** de `Agents.Core.dll` (l'assemblage stable) — donc bien fournies par la couche preview |
+| Reprise / telemetry / workflow (six fragments) | **AUCUN** type, dans la surface preview comme dans la stable |
+
+**La correction, en une phrase.** L'orchestration C# de SK **existe et est publiée**, mais **uniquement en version `-preview`** — il n'y a jamais eu de version stable de `Microsoft.SemanticKernel.Agents.Orchestration`. L'absence constatée par T6 n'était donc pas une absence de capacité : c'était une absence de **version stable**. La formulation juste est : « SK C# n'expose pas l'orchestration **en version stable** ; il l'expose en preview, dans des paquets distincts de la couche agents stable. »
+
+**Ce que cela ne change pas.** Les topologies SK C# restent, dans la surface stable, absentes ; le checkpoint et l'OTel SK C# restent absents **des deux surfaces** (preview comprise). Et MAF C# les expose **en version stable**. La conclusion du §2.7 — « SK est Python d'abord sur la couche agents, MAF est C# d'abord » — **tient**, avec une nuance qu'elle ne portait pas : l'écart SK/MAF côté C# n'est pas « une capacité de plus chez MAF », c'est « une capacité **stable** de plus chez MAF ».
+
+### 5.7 Limites de la mesure
+
+Ce que cette section **ne** mesure pas, et qu'il faut savoir avant de s'en servir :
+
+- **Aucun appel LLM n'a été fait.** Les sondes mesurent la **surface d'API** et la **forme de l'appel** (construction réelle d'un client, sans requête). Elles ne disent rien du comportement à l'exécution — la preuve comportementale reste celle des traces P1/P2/P3, qui datent des versions de septembre.
+- **Les pilotes n'ont pas été rejoués aux versions courantes.** Le poste n'a pas de clé de modèle (`gpt-4o-mini` est épinglé dans les pilotes) ; le rejeu exigerait de changer le modèle, ce qui romprait la comparabilité du protocole. **L'écart entre « l'API existe » et « le pilote rejoué » n'est donc pas mesuré** — il est signalé, pas comblé. C'est le point le plus faible de cette section, et il est assumé comme tel.
+- **Une dépendance optionnelle peut faire tomber un import.** `semantic_kernel.agents.autogen` (nouveau en 1.46.0) exige le paquet `autogen` ; `semantic_kernel.agents.runtime` exige `google-genai` et `protobuf`. Un environnement minimal échoue à l'import sur une dépendance absente — ce qui a d'abord produit un **faux négatif** de sonde, corrigé depuis. C'est un fait d'installation, pas une absence d'API, et il est reproduit dans la trace.
+- **Les chiffres de types publics sont des planchers**, pas des comptes : l'union dédoublonnée sur le nom court fusionne des homonymes de namespaces différents et dépend de ce que l'hôte a restauré (§2.7).
+- **Le point 6 reste réservé** : le verdict par critère — quel moteur pour quel usage — appartient à ai-01 et à l'arbitrage user. Cette section **documente**, elle ne tranche pas.

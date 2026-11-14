@@ -120,12 +120,16 @@ def get_last_commit_sha(path: Path, repo_root: Path) -> str | None:
     rel = path.relative_to(repo_root).as_posix()
     try:
         out = subprocess.run(
-            ["git", "-C", str(repo_root), "log", "-1", "--format=%h", "--", rel],
+            ["git", "-C", str(repo_root), "log", "-1", "--abbrev=7", "--format=%h", "--", rel],
             check=True,
             capture_output=True,
             text=True, encoding="utf-8", errors="replace",
         )
-        return out.stdout.strip() or None
+        # Largeur epinglee a 7 (#24860) : git peut allonger l'abrege si la
+        # config ou la taille du depot l'exigent -- la troncature rend le
+        # champ deterministe, comparable a get_head_sha() et stable entre
+        # generations successives.
+        return out.stdout.strip()[:7] or None
     except subprocess.CalledProcessError:
         return None
 

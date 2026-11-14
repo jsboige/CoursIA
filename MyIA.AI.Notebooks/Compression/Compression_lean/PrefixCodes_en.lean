@@ -29,8 +29,8 @@ dedicated lake `Compression_lean`, mathlib only). Distilled content:
    rationals. Proof: an isolated leaf weighs `1`; a `node l r` divides every
    weight by `2` (one more bit per word), hence
    `kraftSum (node l r) = kraftSum l / 2 + kraftSum r / 2 ≤ 1`. Every level
-   of the tree shares the same total budget — exactly the binary
-   "cake-sharing" illustrated by the bar diagram of notebook 01.
+   of the tree shares the same total budget — exactly the binary sharing
+   of the budget that notebook 01 sets out in § 3 (Kraft's inequality).
 4. **Complete tree** (`full k`): the balanced tree of depth `k` carries
    `2 ^ k` leaves (`length_leafWords_full`) all of length `k`, and its Kraft
    sum equals exactly `1` (`kraft_full`): the fixed-length code of `2 ^ k`
@@ -207,7 +207,9 @@ theorem kraft_full (k : ℕ) : kraftSum (full k) = 1 := by
 def fixed2 : CodeTree := full 2
 
 /-- The length-`(1, 2, 3, 3)` code — letters `a=0, b=10, c=110, d=111` of
-notebook 01 (Shannon–Fano on the distribution `1/2, 1/4, 1/8, 1/8`). -/
+notebook 02 (its "toy code": counts `8, 4, 2, 2`, canonical form); it is
+also the Shannon–Fano code of the dyadic distribution
+`1/2, 1/4, 1/8, 1/8`. -/
 def sf4 : CodeTree := .node .leaf (.node .leaf (.node .leaf .leaf))
 
 /-- Anchor: the fixed 2-bit code saturates Kraft exactly. -/

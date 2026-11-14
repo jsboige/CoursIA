@@ -76,8 +76,9 @@ T3 (cette tranche) epingle le backend d'execution par lake :
    commandement ``backends`` expose le registre et les sondes.
 
 Tout run passe par l'admission sous verrou machine-wide, impose un parallelisme
-borne aux enfants (``LEAN_NUM_THREADS``, ``-Kjobs=N`` pour ``lake build``) et
-publie ses metriques en JSON.
+borne aux enfants (``LEAN_NUM_THREADS`` — le seul levier mesure qui borne la
+concurrence reelle de Lake ; ``-Kjobs=N`` est **inerte**, cf.
+``bound_command`` et #26480) et publie ses metriques en JSON.
 
 Interface operateur (case 8 de #15666) — diagnostic, arret d'urgence et
 recuperation :
@@ -141,6 +142,7 @@ import hashlib
 import json
 import os
 import platform
+import re
 import shlex
 import shutil
 import signal
@@ -169,6 +171,10 @@ EXIT_INTERRUPTED = 130
 CREATE_SUSPENDED = 0x00000004
 
 LEAN_PROC_NAMES = {"lean", "lean.exe", "lake", "lake.exe"}
+# Les COMPILATIONS, seules, portent le budget : `lake` est le scheduler et
+# ses aides, pas une compilation. Les compter decalait le seuil d'une unite
+# et rendait le budget inapplicable (#26480, mesure du 14/11).
+LEAN_WORKER_NAMES = {"lean", "lean.exe"}
 
 _STATE_SUBDIR_WIN = ("CoursIA", "lean_exec")
 _STATE_SUBDIR_POSIX = ("coursia", "lean_exec")
@@ -292,6 +298,25 @@ def _count_from_lines(lines: list[str]) -> int:
     return n
 
 
+def _count_live_posix_lines(lines: list[str]) -> int:
+    """Compte les processus Lean sauf les zombies, sans exclure les autres états."""
+    if not lines:
+        raise ValueError("sortie ps vide")
+    names = []
+    for line in lines:
+        fields = line.strip().split(maxsplit=1)
+        if len(fields) != 2:
+            raise ValueError("ligne ps sans état ou nom")
+        state, name = fields
+        # États Linux documentés et modificateurs de ps ; tout autre format
+        # refuse la mesure plutôt que de sous-compter silencieusement.
+        if not re.fullmatch(r"[RSDTtZXxKWPI][<NLsl+]*", state):
+            raise ValueError(f"état ps inconnu : {state!r}")
+        if not state.startswith("Z"):
+            names.append(name)
+    return _count_from_lines(names)
+
+
 def scan_native_population() -> tuple[int, str]:
     """Compte les lean/lake vivants cote natif. Echec = mesurable=false."""
     try:
@@ -308,11 +333,12 @@ def scan_native_population() -> tuple[int, str]:
             ]
             return _count_from_lines(names), "tasklist"
         out = subprocess.run(
-            ["ps", "-eo", "comm="], capture_output=True, text=True, timeout=15,
+            ["ps", "-eo", "stat=,comm="], capture_output=True, text=True, timeout=15,
             encoding="utf-8", errors="replace",
         )
-        return _count_from_lines(out.stdout.splitlines()), "ps"
-    except (OSError, subprocess.SubprocessError) as exc:
+        out.check_returncode()
+        return _count_live_posix_lines(out.stdout.splitlines()), "ps"
+    except (OSError, subprocess.SubprocessError, ValueError) as exc:
         return -1, f"unavailable: {exc}"
 
 
@@ -1508,6 +1534,56 @@ def descendants_of(root_pid: int, table: dict[int, int] | None = None) -> set[in
     return found
 
 
+def count_lean_workers(root_pid: int,
+                       table: dict[int, int] | None = None) -> int:
+    """Nombre de COMPILATIONS lean vivantes sous `root_pid`.
+
+    Seuls les processus `lean` sont comptes : `lake` est le scheduler du
+    build (et ses aides), pas une compilation. Le budget de l'organe porte
+    sur les compilations concurrentes -- la grandeur que la parallélisme
+    accordee controle reellement. Compter le scheduler decalait le seuil
+    d'une unite : le run etait tue alors qu'il hebergeait exactement la
+    parallélisme qu'on lui avait accordee (#26480).
+
+    La fonction est **pure** (table de processus fournie) : elle se teste
+    sans Windows, sans Lake et sans toolchain.
+    """
+    table = table if table is not None else snapshot_processes()
+    return sum(
+        1 for p in descendants_of(root_pid, table)
+        if _proc_name(p, table) in LEAN_WORKER_NAMES
+    )
+
+
+def budget_violation_reason(own: int, granted: int, budget: int) -> str | None:
+    """Raison d'une violation du budget de concurrence, ou ``None``.
+
+    Le seuil est la **parallélisme accordee** (`granted`), qui est elle-meme
+    bornee par les places reservees dans le cap machine (`budget`). Comparer
+    au seul `budget` tuait les runs qui utilisaient exactement la
+    parallélisme qu'on leur avait accordee (#26480) ; compter les processus
+    du scheduler `lake` decalait le seuil d'une unite.
+
+    Fonction **pure** : elle se teste sans Windows, sans Lake, sans
+    toolchain -- le temoin du defaut.
+    """
+    if own <= granted:
+        return None
+    return (f"{own} compilations lean > parallélisme accordée {granted} "
+            f"(places reservees {budget})")
+
+
+def effective_granted(granted: int, budget: int) -> int:
+    """Parallélisme effectivement accordee a un run.
+
+    Le cap machine-wide compte des PROCESSUS (`native_pop + budget <= cap`) :
+    le budget est donc le nombre de compilations que le run peut heberger.
+    Une parallélisme accordee superieure au budget produirait un run CONCU
+    pour violer son propre budget (#26480). On aligne les deux grandeurs.
+    """
+    return max(0, min(granted, budget))
+
+
 def kill_pids(pids: list[int]) -> None:
     if os.name == "nt":
         k32 = ctypes.windll.kernel32
@@ -1560,7 +1636,25 @@ def config() -> dict:
 
 def bound_command(cmd: list[str], jobs: int) -> list[str]:
     """Parallelisme explicitement borne (regle interim de flotte #15666) :
-    ``-Kjobs=N`` insere pour ``lake build`` nu, le flag reste decidable."""
+    ``-Kjobs=N`` insere pour ``lake build`` nu, le flag reste decidable.
+
+    **Avertissement mesure (#26480, 14/11) : ce drapeau est INERTE.** Dans
+    Lake, ``-K`` est une CLE DE CONFIGURATION (``-K key[=value]``), pas le
+    nombre de jobs ; ni ``-j`` ni ``--jobs`` n'existent, et la source de
+    Lake 4.35 ne definit aucune option de configuration ``jobs``. Mesure :
+    4 modules independants de ~20 s, meme disque -- ``-Kjobs=1`` donne un
+    mural de 23,7 s / 18,4 s, ``-Kjobs=4`` un mural de 19,8 s / 24,3 s :
+    la concurrence reelle est la meme dans les deux bras.
+
+    Le seul levier mesure qui borne la concurrence reelle est
+    ``LEAN_NUM_THREADS`` (le nombre de heartbeats du runtime Lean, dont
+    depend le scheduler ``Task`` de Lake) : meme projet,
+    ``LEAN_NUM_THREADS=1`` -> mural 67,3 s / 77,1 s (modules serialises),
+    ``LEAN_NUM_THREADS=4`` -> mural 22,3 s / 21,4 s (modules paralleles).
+    C'est lui que l'organe pose (cf. `_attempt`). Le drapeau est conserve
+    parce qu'il est sans effet, pas parce qu'il bornerait quoi que ce soit :
+    le dire ici evite qu'un lecteur lui prête un pouvoir qu'il n'a pas.
+    """
     if (
         len(cmd) >= 2
         and cmd[0].rsplit("\\", 1)[-1].rsplit("/", 1)[-1].lower()
@@ -1729,6 +1823,15 @@ def run_command(
                 return "telemetry"
             granted, budgets = compute_granted(
                 cfg["jobs"], resources, native_pop)
+            # Le cap machine-wide compte des PROCESSUS (`native_pop + budget
+            # <= cap`) : le budget est donc le nombre de compilations que ce
+            # run peut heberger. Si la parallélisme accordee le depasse, le
+            # run est CONCU pour violer son propre budget -- et la
+            # supervision le tue des qu'il l'atteint (mesure #26480 :
+            # `7 lean/lake descendants > budget 3` pour `granted_jobs=6`).
+            # On aligne donc la parallélisme accordee sur les places
+            # reservees : les deux grandeurs ne doivent jamais se contredire.
+            granted = effective_granted(granted, budget)
             result["granted_jobs"] = granted
             result["budgets"] = budgets
             if granted < 1:
@@ -2007,17 +2110,15 @@ def run_command(
                     orphans = terminate_tree()
                     break
                 # Budget supervise : ce run ne doit jamais heberger plus de
-                # lean/lake vivants que son budget declare.
+                # COMPILATIONS lean vivantes que la parallélisme accordee
+                # (qui est elle-meme bornee par les places reservees dans le
+                # cap machine). Le seuil n'est plus decale par les processus
+                # du scheduler `lake` (#26480).
                 if confined and os.name == "nt" and job is not None:
-                    table = snapshot_processes()
-                    own = sum(
-                        1 for p in descendants_of(proc.pid, table)
-                        if _proc_name(p, table) in LEAN_PROC_NAMES
-                    )
-                    if own > budget:
-                        result["budget_violation"] = (
-                            f"{own} lean/lake descendants > budget {budget}"
-                        )
+                    own = count_lean_workers(proc.pid)
+                    reason = budget_violation_reason(own, granted, budget)
+                    if reason is not None:
+                        result["budget_violation"] = reason
                         status = "timeout"
                         killed = True
                         orphans = terminate_tree()

@@ -45,7 +45,7 @@
   * Convention: `namespace Knots`, proofs and theorem statements in
     English (Mathlib 4 / tactic DSL compatibility); this `_en` mirror
     carries the English documentation strings and prose comments
-    (cf #4980 ratified 2026-07-04).
+    (cf `#4980` ratified 2026-07-04).
 -/
 
 import Knots.Basic_en

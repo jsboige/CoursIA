@@ -7,7 +7,8 @@ Une PR peut porter la **disposition de merge** (une review `APPROVED` de
 `myia-ai-01` a la tete exacte) et l'**etat de merge** (rollup vert, B.0 clair,
 `mergeStateStatus: CLEAN`) sans qu'aucun organe ne la voie :
 
-- `merge_ready.py` ne merge que sur dossier `[ADJOINT PREFLIGHT]` valide ;
+- `merge_ready.py` ne mergeait que sur dossier `[ADJOINT PREFLIGHT]` valide
+  (jusqu'au 2026-11-05 ; depuis, il n'exige plus de dossier) ;
 - la file du coordinateur part des dossiers recus ;
 - une chaine lancee a la main expire au bout de 4 h.
 
@@ -64,6 +65,13 @@ PAGE_SIZE = 40
 
 EXIT_OK = 0
 EXIT_ERROR = 2
+
+# Conclusions de check-run classees ROUGES, miroir des trois organes canoniques
+# (check_run_state.py, check_adjoint_prevalidation.py, check_stale_guard_reds.py).
+# `skipped` et `neutral` sont des VERTES : le predicate precedent (`!= "success"`)
+# les comptait comme rouges et fabriquait des rouges fantomes sur des jambes
+# desactivees (ex. Build Quarto / Deploy Pages sur une PR de docs).
+RED_CONCLUSIONS = {"failure", "timed_out"}
 
 _PR_QUERY = """
 query($owner: String!, $name: String!, $cursor: String) {
@@ -261,7 +269,7 @@ def probe_checks(pr: int, head: str) -> dict:
     latest = data.get("latest") or {}
     reds = sorted(
         name for name, leg in latest.items()
-        if (leg or {}).get("conclusion") != "success"
+        if (leg or {}).get("conclusion") in RED_CONCLUSIONS
     )
     residual = data.get("residual_reds") or []
     reds += sorted(

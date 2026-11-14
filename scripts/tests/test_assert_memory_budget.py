@@ -383,6 +383,125 @@ def test_from_deployed_units_reads_cap_from_environment(tmp_path):
     assert snap.composition["waiters"].total_gib == 1.0
 
 
+# -- Tests pour la base RSS des waiters (#22532, symetrie memoire #15574) --
+
+
+def test_from_deployed_units_counts_waiters_at_declared_rss(tmp_path):
+    """#22532 : RSS declare -> la famille waiters est comptee au RSS, pas au cap.
+
+    Le cap docker reste le cap (regle #15202 : on ne touche pas aux bornes des
+    jobs) ; seule la BASE DE COMPTAGE budgetaire change. Un organe qui
+    compterait encore 6 x 512 Mo annoncerait 3 Go la ou la machine reserve
+    6 x 192 Mo = 1,125 Go -- exactement la reservation fantome que la PR ferme.
+    """
+    (tmp_path / "coursia-runner.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-runner-start.sh start 2\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-waiters.service").write_text(
+        "[Service]\nEnvironment=COURSIA_RUNNER_WAITER_MEMORY=512m\n"
+        "ExecStart=/usr/local/bin/coursia-waiters-start.sh 6\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-lean.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-lean-start.sh 2\n",
+        encoding="utf-8",
+    )
+    dropin_dir = tmp_path / "po-2024" / "coursia-waiters.service.d"
+    dropin_dir.mkdir(parents=True)
+    (dropin_dir / "10-sizing.conf").write_text(
+        "[Service]\nEnvironment=COURSIA_RUNNER_WAITER_RSS_MB=192\n",
+        encoding="utf-8",
+    )
+
+    snap = BudgetSnapshot.from_deployed_units("po-2024", tmp_path)
+    fam = snap.composition["waiters"]
+    assert fam.instances == 6
+    assert fam.cap_gib == 0.5  # le cap reste le cap
+    assert fam.counted_gib == pytest.approx(192 / 1024)
+    assert fam.total_gib == pytest.approx(6 * 192 / 1024)  # 1.125, pas 3.0
+    # Les autres familles restent comptees au cap.
+    assert snap.composition["start"].counted_gib is None
+    assert snap.composition["lean"].counted_gib is None
+    assert "RSS declare" in snap.notes
+    # La somme suit la base comptee : 2x1.5 + 1.125 + 2x6 = 16.125 GiB.
+    assert snap.composition_total_gib == pytest.approx(16.125, abs=0.01)
+
+
+def test_from_deployed_units_without_rss_declaration_counts_cap(tmp_path):
+    """Sans declaration RSS : repli conservateur au cap, et rien d'autre ne bouge."""
+    (tmp_path / "coursia-runner.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-runner-start.sh start 2\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-waiters.service").write_text(
+        "[Service]\nEnvironment=COURSIA_RUNNER_WAITER_MEMORY=512m\n"
+        "ExecStart=/usr/local/bin/coursia-waiters-start.sh 6\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "coursia-lean.service").write_text(
+        "[Service]\nExecStart=/usr/local/bin/coursia-lean-start.sh 2\n",
+        encoding="utf-8",
+    )
+    snap = BudgetSnapshot.from_deployed_units("po-2024", tmp_path)
+    fam = snap.composition["waiters"]
+    assert fam.counted_gib is None
+    assert fam.total_gib == pytest.approx(6 * 0.5)  # 3.0 au cap
+    assert "RSS declare" not in snap.notes
+    # 2x1.5 + 6x0.5 + 2x6 = 3 + 3 + 12 = 18.0 GiB, tout au cap.
+    assert snap.composition_total_gib == pytest.approx(18.0, abs=0.01)
+
+
+def test_from_deployed_units_real_po2024_rss_basis_matches_dropin():
+    """Sur le depot reel : le drop-in po-2024 declare le RSS (#22532).
+
+    Si la declaration disparaissait du drop-in sans que l'organe ne bouge, la
+    composition budgetaire remonterait silencieusement de ~1,9 Go et l'ecart
+    redeviendrait invisible a l'organe offline. Le test re-parse le drop-in :
+    l'organe n'est pas cru sur parole.
+    """
+    import re as _re
+
+    persist = REPO_ROOT / "scripts" / "ci" / "docker" / "linux-runner" / "persist"
+    dropin = persist / "po-2024" / "coursia-waiters.service.d" / "10-sizing.conf"
+    assert dropin.is_file()
+    m = _re.search(
+        r"^Environment=COURSIA_RUNNER_WAITER_RSS_MB=(\d+)",
+        dropin.read_text(encoding="utf-8"),
+        _re.MULTILINE,
+    )
+    assert m, "declaration RSS attendue dans le drop-in po-2024 (#22532)"
+    rss_mib = int(m.group(1))
+
+    snap = BudgetSnapshot.from_deployed_units("po-2024")
+    fam = snap.composition["waiters"]
+    assert fam.counted_gib == pytest.approx(rss_mib / 1024)
+    assert fam.total_gib == pytest.approx(fam.instances * rss_mib / 1024)
+    assert fam.cap_gib == 0.5
+
+
+def test_assert_details_show_both_rss_and_cap():
+    """La ligne de detail dit les DEUX : base comptee ET cap non compte.
+
+    Un total affiche sans le cap ecarte rend l'ecart inintelligible -- le
+    lecteur ne peut plus reconcilier l'organe offline avec le garde supervise.
+    """
+    snap = BudgetSnapshot(
+        machine="test",
+        composition={
+            "waiters": CompositionFamily(
+                instances=6, cap_gib=0.5, total_gib=1.125, counted_gib=192 / 1024
+            )
+        },
+        composition_total_gib=1.125,
+    )
+    result = assert_memory_budget(snap, vm_total_gib=23.47, slice_memory_max_gib=22.0)
+    joined = "\n".join(result.details)
+    assert "RSS declare" in joined
+    assert "cap 0.50 GiB/slot non compte" in joined
+    assert result.verdict == "OK"
+
+
 def test_from_deployed_units_missing_unit_raises(tmp_path):
     """Une jambe absente leve : l'organe ne devine pas un effectif."""
     (tmp_path / "coursia-runner.service").write_text(
