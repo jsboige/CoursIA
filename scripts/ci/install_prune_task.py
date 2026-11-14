@@ -49,6 +49,17 @@ TASK_NAME = r"CoursIA\prune_merged_worktrees"
 THIS_FILE = Path(__file__).resolve()
 LOG_DIR = Path(os.environ.get("LOCALAPPDATA", str(Path.home() / "AppData" / "Local"))) / "CoursIA" / "prune_task" / "logs"
 
+# Une machine peut porter PLUSIEURS clones du depot (mesure 2026-11-12 :
+# `D:\CoursIA`, `D:\CoursIA-2` et `D:\Dev\CoursIA-2` coexistent sur ai-01).
+# Un seul nom de tache, un seul lanceur et un seul journal horodate ne peuvent
+# pas couvrir plusieurs clones : la tache installee ecrase la precedente
+# (`schtasks /Create /F`), le lanceur VBS pointe vers le dernier clone
+# installe, et les deux runs se melangent dans le meme fichier journal.
+# D'ou les deux options `--task-name` et `--launcher-dir` : une tache, un
+# lanceur et un journal PAR CLONE. Les defauts sont inchanges -- une
+# installation qui ne passe pas les options reste identique a celle d'hier.
+DEFAULT_LAUNCHER_DIR = LOG_DIR.parent
+
 # Meme correction que le controleur des runners : une tache planifiee qui
 # lance directement python.exe fait clignoter une console (le planificateur
 # alloue une console neuve au binaire console). Le lanceur VBS passe par
@@ -97,13 +108,22 @@ def check_prune_fix_present(repo: Path) -> tuple[bool, str]:
     return True, "fix #14476 present"
 
 
-def task_command(repo: Path) -> list[str]:
+def task_command(repo: Path, launcher_dir: Path | None = None) -> list[str]:
     """Commande enregistree dans le planificateur : ce script --run, qui
-    journalise et appelle l'organe en --apply."""
-    return [sys.executable, str(THIS_FILE), "--run", "--repo", str(repo)]
+    journalise et appelle l'organe en --apply.
+
+    `--launcher-dir` n'est passe que si le clone a son propre repertoire :
+    le journal du run doit suivre le lanceur, sinon deux clones ecrivent
+    dans le meme fichier horodate (mesure 2026-11-12).
+    """
+    cmd = [sys.executable, str(THIS_FILE), "--run", "--repo", str(repo)]
+    if launcher_dir is not None:
+        cmd += ["--launcher-dir", str(launcher_dir)]
+    return cmd
 
 
-def build_schtasks_install(launcher: Path, time: str) -> list[str]:
+def build_schtasks_install(launcher: Path, time: str,
+                           task_name: str | None = None) -> list[str]:
     """Ligne schtasks /Create : quotidienne, contexte utilisateur courant
     (gh auth vit au niveau utilisateur), fenetre masquee.
 
@@ -114,16 +134,17 @@ def build_schtasks_install(launcher: Path, time: str) -> list[str]:
     tr = f'wscript.exe //B //Nologo "{launcher}"'
     return [
         "schtasks", "/Create", "/F",
-        "/TN", TASK_NAME,
+        "/TN", task_name or TASK_NAME,
         "/SC", "DAILY",
         "/ST", time,
         "/TR", tr,
     ]
 
 
-def launcher_path() -> Path:
+def launcher_path(launcher_dir: Path | None = None) -> Path:
     """Le lanceur cache que la tache planifiee execute."""
-    return LOG_DIR.parent / LAUNCHER_NAME
+    base = launcher_dir if launcher_dir is not None else LOG_DIR.parent
+    return base / LAUNCHER_NAME
 
 
 def _vbs_literal(text: str) -> str:
@@ -150,58 +171,75 @@ def launcher_vbs(cmd: list[str]) -> str:
     )
 
 
-def log_path_for(day: _dt.date | None = None) -> Path:
+def log_dir_for(launcher_dir: Path | None = None) -> Path:
+    """Repertoire des journaux : celui du clone quand il en a un."""
+    if launcher_dir is None:
+        return LOG_DIR
+    return launcher_dir / "logs"
+
+
+def log_path_for(day: _dt.date | None = None,
+                 log_dir: Path | None = None) -> Path:
     day = day or _dt.date.today()
-    return LOG_DIR / f"prune_{day:%Y%m%d}.log"
+    base = log_dir if log_dir is not None else LOG_DIR
+    return base / f"prune_{day:%Y%m%d}.log"
 
 
-def task_exists() -> bool:
-    return _run(["schtasks", "/Query", "/TN", TASK_NAME]).returncode == 0
+def task_exists(task_name: str | None = None) -> bool:
+    return _run(["schtasks", "/Query", "/TN", task_name or TASK_NAME]).returncode == 0
 
 
-def cmd_install(repo: Path, time: str, dry_run: bool = False) -> int:
+def cmd_install(repo: Path, time: str, dry_run: bool = False,
+                task_name: str | None = None,
+                launcher_dir: Path | None = None) -> int:
     ok, msg = check_prune_fix_present(repo)
     if not ok:
         print(f"REFUSE : {msg}", file=sys.stderr)
         return 2
     print(f"garde OK : {msg}")
-    launcher = launcher_path()
-    command = build_schtasks_install(launcher, time)
+    name = task_name or TASK_NAME
+    launcher = launcher_path(launcher_dir)
+    logs = log_dir_for(launcher_dir)
+    command = build_schtasks_install(launcher, time, name)
     if dry_run:
         print(f"lanceur : {launcher}")
-        print(f"lanceur VBS :\n{launcher_vbs(task_command(repo))}")
+        print(f"lanceur VBS :\n{launcher_vbs(task_command(repo, launcher_dir))}")
         print(f"schtasks argv : {command!r}")
         print(f"schtasks commande : {subprocess.list2cmdline(command)}")
         return 0
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
+    logs.mkdir(parents=True, exist_ok=True)
     # Le lanceur est ecrit AVANT la tache : une tache installee dont le
     # lanceur manque echoue a chaque tour, sans rien journaliser.
     launcher.parent.mkdir(parents=True, exist_ok=True)
-    launcher.write_text(launcher_vbs(task_command(repo)), encoding="utf-8", newline="")
+    launcher.write_text(launcher_vbs(task_command(repo, launcher_dir)),
+                        encoding="utf-8", newline="")
     proc = _run(command)
     if proc.returncode != 0:
         print(f"schtasks /Create echoue (rc={proc.returncode}) : "
               f"{proc.stdout.strip()} {proc.stderr.strip()}", file=sys.stderr)
         return 2
-    print(f"tache installee : {TASK_NAME} quotidienne a {time}")
-    print(f"commande : {' '.join(task_command(repo))}")
-    print(f"journal  : {log_path_for()}")
+    print(f"tache installee : {name} quotidienne a {time}")
+    print(f"commande : {' '.join(task_command(repo, launcher_dir))}")
+    print(f"journal  : {log_path_for(log_dir=logs)}")
     print("verification : schtasks /Query /TN "
-          + TASK_NAME.replace("\\", "\\") + " /V /FO LIST")
+          + name.replace("\\", "\\") + " /V /FO LIST")
     return 0
 
 
-def cmd_status() -> int:
-    if not task_exists():
-        print(f"tache ABSENTE : {TASK_NAME}")
+def cmd_status(task_name: str | None = None) -> int:
+    name = task_name or TASK_NAME
+    if not task_exists(name):
+        print(f"tache ABSENTE : {name}")
         return 1
-    proc = _run(["schtasks", "/Query", "/TN", TASK_NAME, "/V", "/FO", "LIST"])
+    proc = _run(["schtasks", "/Query", "/TN", name, "/V", "/FO", "LIST"])
     print(proc.stdout)
     return 0
 
 
-def cmd_uninstall(dry_run: bool = False) -> int:
-    command = ["schtasks", "/Delete", "/TN", TASK_NAME, "/F"]
+def cmd_uninstall(dry_run: bool = False, task_name: str | None = None,
+                  launcher_dir: Path | None = None) -> int:
+    name = task_name or TASK_NAME
+    command = ["schtasks", "/Delete", "/TN", name, "/F"]
     if dry_run:
         print(f"schtasks argv : {command!r}")
         print(f"schtasks commande : {subprocess.list2cmdline(command)}")
@@ -213,16 +251,17 @@ def cmd_uninstall(dry_run: bool = False) -> int:
         return 2
     # Le lanceur part avec la tache : il ne sert plus a rien et pointerait vers
     # une tache absente. Il est regenere par le prochain --install.
-    launcher = launcher_path()
+    launcher = launcher_path(launcher_dir)
     existed = launcher.is_file()
     launcher.unlink(missing_ok=True)
-    print(f"tache supprimee : {TASK_NAME}")
+    print(f"tache supprimee : {name}")
     if existed:
         print(f"lanceur supprime : {launcher}")
     return 0
 
 
-def cmd_run(repo: Path, warn_threshold: int = 20) -> int:
+def cmd_run(repo: Path, warn_threshold: int = 20,
+            launcher_dir: Path | None = None) -> int:
     """Invoque par la tache planifiee : journal horodate, pas de TTY.
 
     `--warn-threshold` (#3895) est relaie a l'organe : au-dela, il emet sa
@@ -244,8 +283,9 @@ def cmd_run(repo: Path, warn_threshold: int = 20) -> int:
     inchanges. La quarantaine n'est PAS purgee ici : `--purge-quarantine`
     reste un geste nomme.
     """
-    LOG_DIR.mkdir(parents=True, exist_ok=True)
-    log = log_path_for()
+    logs = log_dir_for(launcher_dir)
+    logs.mkdir(parents=True, exist_ok=True)
+    log = log_path_for(log_dir=logs)
     stamp = _dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     with log.open("a", encoding="utf-8") as fh:
         fh.write(f"\n=== {stamp} run start ===\n")
@@ -282,19 +322,33 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--warn-threshold", type=int, default=20, metavar="N",
                    help="seuil refused > N pour l'emission [WARN][prune-task] "
                         "de l'organe en mode --run (defaut 20, #3895)")
+    p.add_argument("--task-name", default=None,
+                   help="nom de la tache planifiee (defaut : "
+                        f"{TASK_NAME}). A passser quand la machine porte "
+                        "plusieurs clones : `schtasks /Create /F` ecrase la "
+                        "tache de meme nom.")
+    p.add_argument("--launcher-dir", type=Path, default=None,
+                   help="repertoire du lanceur VBS et du journal de ce clone "
+                        "(defaut : %%LOCALAPPDATA%%/CoursIA/prune_task). Un "
+                        "repertoire par clone : deux clones sinon partagent "
+                        "le lanceur et le journal horodate.")
     args = p.parse_args(argv)
 
     if args.dry_run and (args.install == args.uninstall or args.status or args.run):
         p.error("--dry-run requiert exactement --install ou --uninstall")
     repo = args.repo.resolve()
+    launcher_dir = args.launcher_dir.resolve() if args.launcher_dir else None
     if args.install:
-        return cmd_install(repo, args.time, dry_run=args.dry_run)
+        return cmd_install(repo, args.time, dry_run=args.dry_run,
+                           task_name=args.task_name, launcher_dir=launcher_dir)
     if args.status:
-        return cmd_status()
+        return cmd_status(task_name=args.task_name)
     if args.uninstall:
-        return cmd_uninstall(dry_run=args.dry_run)
+        return cmd_uninstall(dry_run=args.dry_run, task_name=args.task_name,
+                             launcher_dir=launcher_dir)
     if args.run:
-        return cmd_run(repo, warn_threshold=args.warn_threshold)
+        return cmd_run(repo, warn_threshold=args.warn_threshold,
+                       launcher_dir=launcher_dir)
     p.print_help()
     return 1
 
