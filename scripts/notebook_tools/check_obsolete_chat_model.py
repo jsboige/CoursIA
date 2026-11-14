@@ -34,6 +34,16 @@ Les trois categories de #22783 et ce que l'organe en fait :
                 l'appariement est EXACT (jamais par prefixe -- un prefixe
                 ``gpt-4o`` accuserait a tort ``gpt-4o-mini-tts``), et ces
                 familles ne figurent pas dans la liste obsolete chat.
+  PARAMETRE     une CONTRAINTE D'API liee a la FAMILLE du modele, pas a
+                son nom seul : la generation 5.6 refuse `temperature`
+                different de 1 et refuse `max_tokens` (deux HTTP 400
+                mesures le 2026-11-14). Un appel dont le modele RESOLU est
+                de la famille `gpt-5.6*` est donc signale s'il porte un
+                `temperature` litteral different de 1, ou un `max_tokens`
+                -- meme quand le NOM du modele a deja ete migre : c'est
+                le cas fondateur #26413 (nom migre en 5.6, `temperature=0.8`
+                reste, l'appel casse a l'execution reelle). Migrer le nom ne
+                suffit donc pas.
 
 Resolution bornee inter-cellules, dans l'ordre d'execution du carnet :
 
@@ -137,6 +147,23 @@ OBSOLETE_CHAT_MODELS: frozenset[str] = frozenset({
 #: la liste chat.
 DATE_SNAPSHOT_RE = re.compile(r"-\d{4}-\d{2}-\d{2}$")
 
+#: Familles de chat dont l'API refuse deux PARAMETRES (mesure du 2026-11-14,
+#: sondes reelles sur le service du site, une par ligne) :
+#:
+#:   - ``temperature`` : seule la valeur 1 (le defaut) est acceptee --
+#:     HTTP 400 « Only the default (1) value is supported » ;
+#:   - ``max_tokens`` : refuse -- HTTP 400 « Use 'max_completion_tokens'
+#:     instead ».
+#:
+#: L'identifiant nu ``gpt-5.6`` n'existe pas sur le site : la famille se
+#: decline en variantes (``gpt-5.6-sol``, ``gpt-5.6-terra``,
+#: ``gpt-5.6-luna``) -- d'ou un motif sur la FAMILLE, pas une liste close.
+PARAM_CONSTRAINED_MODEL_RE = re.compile(r"^gpt-5\.6($|-)")
+
+#: Nom du parametre refuse par la generation 5.6, et son remplacant.
+MAX_TOKENS_PARAM = "max_tokens"
+MAX_COMPLETION_TOKENS_PARAM = "max_completion_tokens"
+
 #: Marqueurs documentaires reconnus pour le tier advisory (equivalents du
 #: canonique ``# obsolescence: DOC``). Ils n'exonerent jamais un appel chat.
 DOC_MARKER_PATTERNS = tuple(re.compile(p, re.IGNORECASE) for p in (
@@ -190,6 +217,9 @@ class Ctx:
     local_dicts: dict = field(default_factory=dict)  # nom -> {cle: Binding}
     multi_dicts: dict = field(default_factory=dict)  # nom -> [{cle: Binding}, ...]
     local_dict_model: dict = field(default_factory=dict)  # nom -> node "model"
+    #: nom -> noeud du DICT LITERAL lui-meme (entier pour les parametres
+    #: de la requete : ``temperature``, ``max_tokens``).
+    local_dict_body: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -202,6 +232,8 @@ class PendingSelfSite:
     class_name: str
     attr: str
     path: str
+    ctx: Ctx = None            # type: ignore[assignment]
+    call: ast.Call = None      # type: ignore[assignment]
 
 
 @dataclass
@@ -214,6 +246,8 @@ class RetryNameSite:
     site: str
     name: str
     path: str
+    ctx: Ctx = None            # type: ignore[assignment]
+    call: ast.Call = None      # type: ignore[assignment]
 
 
 # ---------------------------------------------------------------------------
@@ -247,14 +281,19 @@ def iter_code_nodes(root: ast.AST):
             stack.extend(ast.iter_child_nodes(node))
 
 
-def _dict_model_entry(node: ast.AST) -> ast.AST | None:
-    """Node de la valeur de la cle "model" d'un littéral dict plat, ou None."""
+def _dict_entry(node: ast.AST, wanted: str) -> ast.AST | None:
+    """Node de la valeur de la cle `wanted` d'un litteral dict plat, ou None."""
     if not isinstance(node, ast.Dict):
         return None
     for key, value in zip(node.keys, node.values):
-        if isinstance(key, ast.Constant) and key.value == "model":
+        if isinstance(key, ast.Constant) and key.value == wanted:
             return value
     return None
+
+
+def _dict_model_entry(node: ast.AST) -> ast.AST | None:
+    """Node de la valeur de la cle "model" d'un littéral dict plat, ou None."""
+    return _dict_entry(node, "model")
 
 
 def classify_chat_call(call: ast.Call, dspy_imported: bool) -> tuple[str, bool] | None:
@@ -348,6 +387,36 @@ def is_obsolete_chat_model(value: str) -> bool:
     return base != model and base in OBSOLETE_CHAT_MODELS
 
 
+def model_has_param_constraints(value: str) -> bool:
+    """Le modele resolu appartient-il a une famille dont l'API refuse
+    ``temperature`` != 1 et ``max_tokens`` ?
+
+    Mesure du 2026-11-14 (sondes reelles sur le service du site) : sur
+    ``gpt-5.6`` et ``gpt-5.6-luna``, un ``temperature`` different de 1
+    donne HTTP 400 « Only the default (1) value is supported », et un
+    ``max_tokens`` donne HTTP 400 « Use 'max_completion_tokens' instead » ;
+    ``temperature=1`` et ``max_completion_tokens`` passent.
+
+    La contrainte est portee par le modele **RESOLU** : un ``temperature``
+   appartenant a un autre fournisseur (vLLM local) n'est pas concerne.
+    """
+    return bool(PARAM_CONSTRAINED_MODEL_RE.match(normalize_model(value)))
+
+
+def _numeric_literal(node: ast.AST | None) -> float | None:
+    """Valeur numerique LITTERALE d'un noeud ; None si elle n'en est pas une.
+
+    Un ``temperature`` porte par une variable n'est pas une faute prouvee :
+    il est ignore (jamais accuse), comme tout ce que l'organe ne sait pas
+    resoudre.
+    """
+    if (isinstance(node, ast.Constant)
+            and isinstance(node.value, (int, float))
+            and not isinstance(node.value, bool)):
+        return node.value
+    return None
+
+
 def has_doc_marker(source: str) -> bool:
     return any(p.search(source) for p in DOC_MARKER_PATTERNS)
 
@@ -390,18 +459,27 @@ class NotebookScanner:
         #: Nom d'un dict littéral -> node de l'entree "model" (HTTP brut
         #: ``json=<nom>``, #25072) ; le version scope local vit dans Ctx.
         self.dict_model_nodes: dict[str, ast.AST] = {}
+        #: Nom d'un dict litteral -> noeud du dict ENTIER (la forme
+        #: complete, pour lire les parametres de la requete).
+        self.dict_body_nodes: dict[str, ast.AST] = {}
         #: Batteries ``NAME = [{cle: valeur}, ...]`` (liste de dictionnaires) :
         #: chaque entree est une table cle -> Binding (forme #23387 point 3).
         self.multi_dict_values: dict[str, list[dict[str, Binding]]] = {}
         self.class_infos: dict[str, ClassInfo] = {}
         self.class_attr_values: dict[str, dict[str, list[Binding]]] = {}
         self.findings: list[dict] = []
+        #: Contraintes de PARAMETRES d'un appel dont le modele resolu est de
+        #: la famille `gpt-5.6*` (`temperature` != 1, `max_tokens`).
+        self.param_findings: list[dict] = []
         self.doc_mentions: list[dict] = []
         self.doc_marked_cells = 0
         self.unresolved: list[dict] = []
         self.pending_self: list[PendingSelfSite] = []
         self.retry_names: list[RetryNameSite] = []
         self.consumed_node_ids: set[int] = set()
+        #: (cell, ligne, parametre) deja signale : un site n'est accuse
+        #: qu'une fois par parametre.
+        self._param_sites: set[tuple[int, int, str]] = set()
         self.doc_candidates: list[tuple[int, int, str]] = []  # (node, cell, value)
         self.dspy_imported = False
         self.stats = {"code_cells": 0, "python_cells": 0,
@@ -578,6 +656,21 @@ class NotebookScanner:
                     ctx.local_dict_model[name] = entry
                 else:
                     self.dict_model_nodes[name] = entry
+            self._retain_dict_body(stmt.value, stmt.targets[0].id, ctx)
+
+    def _retain_dict_body(self, value: ast.AST, name: str, ctx: Ctx) -> None:
+        """Retient le DICT litteral lui-meme (forme complete) sous son nom.
+
+        L'entree "model" suffit a resoudre le modele ; la forme complete est
+        necessaire pour lire les PARAMETRES de la requete (``temperature``,
+        ``max_tokens``) portes par le meme corps.
+        """
+        if not isinstance(value, ast.Dict):
+            return
+        if ctx.func_name is not None or ctx.class_name is not None:
+            ctx.local_dict_body[name] = value
+        else:
+            self.dict_body_nodes[name] = value
 
     def handle_annassign(self, stmt: ast.AnnAssign, ctx: Ctx) -> None:
         self.scan_expr(stmt.value, ctx)
@@ -595,6 +688,7 @@ class NotebookScanner:
                     ctx.local_dict_model[name] = entry
                 else:
                     self.dict_model_nodes[name] = entry
+            self._retain_dict_body(stmt.value, stmt.target.id, ctx)
 
     def handle_for(self, stmt: ast.stmt, ctx: Ctx) -> None:
         """Boucle sur une batterie de dictionnaires.
@@ -710,14 +804,14 @@ class NotebookScanner:
             return
         self.resolve_model_expr(arg, label, call, ctx, defer_self=True)
 
-    def _http_model_node(self, call: ast.Call, ctx: Ctx) -> ast.AST | None:
-        """Site HTTP brut (#25072) : le "model" vit dans le corps de la
-        requête (``json=``/``data=``), pas en argument ``model=``.
+    def _http_body(self, call: ast.Call, ctx: Ctx) -> ast.AST | None:
+        """Corps de la requete HTTP brut (``json=``/``data=``), ou None.
 
-        Deux formes : un littéral dict inline (``json={"model": ...}``) et
-        un dict lié à un nom (``payload = {"model": ...}`` puis
-        ``json=payload``), ce dernier résolu via ``dict_model_nodes``
-        (scope local d'abord, puis module).
+        Le corps peut etre : un litteral dict inline, un dict lie a un nom,
+        ou le resultat de ``json.dumps(...)`` / ``.encode()`` d'un de
+        ceux-la. C'est le meme corps que lit ``_http_model_node`` ; il est
+        isole ici pour que les PARAMETRES de la requete (``temperature``,
+        ``max_tokens``) soient lus par la meme porte que le modele.
         """
         request = call.args[0] if call.args else next(
             (kw.value for kw in call.keywords if kw.arg == "url"), None)
@@ -749,12 +843,135 @@ class NotebookScanner:
                 body = body.args[0]
             else:
                 return None
+        return body
+
+    def _http_model_node(self, call: ast.Call, ctx: Ctx) -> ast.AST | None:
+        """Site HTTP brut (#25072) : le "model" vit dans le corps de la
+        requête (``json=``/``data=``), pas en argument ``model=``.
+
+        Deux formes : un littéral dict inline (``json={"model": ...}``) et
+        un dict lié à un nom (``payload = {"model": ...}`` puis
+        ``json=payload``), ce dernier résolu via ``dict_model_nodes``
+        (scope local d'abord, puis module).
+        """
+        body = self._http_body(call, ctx)
         if isinstance(body, ast.Dict):
             return _dict_model_entry(body)
         if isinstance(body, ast.Name):
             return (ctx.local_dict_model.get(body.id)
                     or self.dict_model_nodes.get(body.id))
         return None
+
+    def _http_body_entry(self, call: ast.Call, ctx: Ctx,
+                         key: str) -> ast.AST | None:
+        """Valeur d'une cle du corps d'une requete HTTP brut.
+
+        Meme porte que le modele : corps inline, corps lie a un nom, ou
+        ``json.dumps`` de l'un des deux. Un corps dynamique reste
+        irresolu -- jamais accuse.
+        """
+        body = self._http_body(call, ctx)
+        if isinstance(body, ast.Dict):
+            return _dict_entry(body, key)
+        if isinstance(body, ast.Name):
+            node = (ctx.local_dict_body.get(body.id)
+                    or self.dict_body_nodes.get(body.id))
+            if isinstance(node, ast.Dict):
+                return _dict_entry(node, key)
+        return None
+
+    def _call_parameters(self, call: ast.Call, ctx: Ctx,
+                         label: str) -> dict[str, ast.AST]:
+        """PARAMETRES de la requete, lus sur la PORTE de l'appel.
+
+        Formes SDK : les arguments NOMMES de l'appel (``temperature=``,
+        ``max_tokens=``). Forme HTTP brut : les cles du corps de la
+        requete.
+
+        Seuls les parametres reellement passes a l'API sont lus : un
+        ``max_tokens`` qui est un parametre de fonction, une cle de
+        configuration ou une charge utile de TTS n'est PAS un parametre de
+        l'API -- l'accuser serait faux (temoins mesures : le carnet
+        ``22b_Profil_Cognitif_CHC`` dont le ``max_tokens`` est un argument
+        de fonction, ``providers.py`` dont le ``max_tokens`` configure le
+        provider Qwen, ``p5_tts.py`` dont la ``temperature`` est une
+        charge utile de synthese vocale).
+        """
+        params: dict[str, ast.AST] = {}
+        for kw in call.keywords:
+            if kw.arg in ("temperature", MAX_TOKENS_PARAM):
+                params[kw.arg] = kw.value
+        if label == "http.chat.completions":
+            for key in ("temperature", MAX_TOKENS_PARAM):
+                node = self._http_body_entry(call, ctx, key)
+                if node is not None:
+                    params.setdefault(key, node)
+        return params
+
+    def _check_param_constraints(self, model_value: str, label: str,
+                                 ctx: Ctx, call: ast.Call) -> None:
+        """Contraintes de PARAMETRES d'un appel dont le modele resolu est de
+        la famille ``gpt-5.6*`` (mesure du 2026-11-14).
+
+        Deux defauts, deux signatures :
+
+          - ``temperature`` litteral different de 1 -> HTTP 400 « Only the
+            default (1) value is supported » ;
+          - ``max_tokens``, quelle que soit sa valeur -> HTTP 400 « Use
+            'max_completion_tokens' instead ».
+
+        Le modele est celui deja RESOLU par l'organe : la contrainte est
+        donc liee au modele reellement appele, pas au nom brut ecrit dans
+        la source. Un ``temperature`` porte par un autre fournisseur (le
+        vLLM local) n'est jamais accuse.
+        """
+        if not model_has_param_constraints(model_value):
+            return
+        for name, node in self._call_parameters(call, ctx, label).items():
+            if name == MAX_TOKENS_PARAM:
+                self._record_param_finding(ctx, call, label, model_value,
+                                           name, None)
+                continue
+            literal = _numeric_literal(node)
+            if literal is None or literal == 1:
+                # Valeur DYNAMIQUE : jamais accusee (l'organe ne sait pas
+                # ce qu'elle vaut). Valeur 1 : acceptee par l'API.
+                continue
+            self._record_param_finding(ctx, call, label, model_value, name,
+                                       repr(literal))
+
+    def _record_param_finding(self, ctx: Ctx, call: ast.Call, label: str,
+                               model_value: str, param: str,
+                               value: str | None) -> None:
+        """Enregistre une contrainte de parametre violee.
+
+        Un site n'est accuse qu'une fois par parametre : la meme requete
+        peut etre evaluee plusieurs fois (batterie de dictionnaires, nom
+        repris contre l'etat final).
+        """
+        key = (ctx.cell_index, call.func.lineno, param)
+        if key in self._param_sites:
+            return
+        self._param_sites.add(key)
+        if param == MAX_TOKENS_PARAM:
+            reason = (f"l'API de la generation 5.6 refuse '{param}' "
+                      f"(HTTP 400 : use '{MAX_COMPLETION_TOKENS_PARAM}' "
+                      f"instead)")
+        else:
+            reason = ("l'API de la generation 5.6 n'accepte que "
+                      "temperature=1 (HTTP 400 : only the default (1) "
+                      "value is supported)")
+        self.param_findings.append({
+            "path": self.path,
+            "cell": ctx.cell_index,
+            "cell_id": self._cell_id(ctx.cell_index),
+            "line": call.func.lineno,
+            "site": label,
+            "model": normalize_model(model_value),
+            "param": param,
+            "value": value,
+            "reason": reason,
+        })
 
     def resolve_model_expr(self, node: ast.AST, label: str, call: ast.Call,
                            ctx: Ctx, defer_self: bool) -> None:
@@ -770,7 +987,7 @@ class NotebookScanner:
             if defer_self and ctx.class_name:
                 self.pending_self.append(PendingSelfSite(
                     ctx.cell_index, cell_id, call.func.lineno, label,
-                    ctx.class_name, node.attr, self.path))
+                    ctx.class_name, node.attr, self.path, ctx, call))
             elif ctx.class_name:
                 bindings = (self.class_attr_values.get(ctx.class_name, {})
                             .get(node.attr))
@@ -863,7 +1080,7 @@ class NotebookScanner:
             if binding.kind == "unresolved":
                 self.retry_names.append(RetryNameSite(
                     ctx.cell_index, cell_id, call.func.lineno, label,
-                    name, self.path))
+                    name, self.path, ctx, call))
                 self.unresolved.append(self._site(
                     ctx, cell_id, call, label,
                     f'variable "{name}" dynamique au point d\'appel'))
@@ -871,7 +1088,8 @@ class NotebookScanner:
                 self._evaluate(binding, label, ctx, call)
             return
         self.retry_names.append(RetryNameSite(
-            ctx.cell_index, cell_id, call.func.lineno, label, name, self.path))
+            ctx.cell_index, cell_id, call.func.lineno, label, name,
+            self.path, ctx, call))
         self.unresolved.append(self._site(
             ctx, cell_id, call, label, f'variable "{name}" pas encore liee'))
 
@@ -894,6 +1112,10 @@ class NotebookScanner:
                 "model": normalize_model(binding.value),
                 "via": binding.origin,
             })
+        # Contraintes de PARAMETRES de la generation 5.6 : elles dependent du
+        # modele RESOLU, pas de son nom -- et le modele vient d'etre
+        # resolu par le meme chemin que le finding d'obsolescence.
+        self._check_param_constraints(binding.value, label, ctx, call)
 
     def _evaluate_many(self, bindings: list[Binding], label: str, ctx: Ctx,
                        call: ast.Call) -> None:
@@ -1117,6 +1339,9 @@ class NotebookScanner:
                             "model": normalize_model(binding.value),
                             "via": binding.origin,
                         })
+                    if binding.value is not None and site.ctx is not None:
+                        self._check_param_constraints(
+                            binding.value, site.site, site.ctx, site.call)
             else:
                 self.unresolved.append({
                     "path": site.path, "cell": site.cell_index,
@@ -1125,18 +1350,21 @@ class NotebookScanner:
                     "reason": f"self.{site.attr} jamais lie par instanciation"})
         for retry in self.retry_names:
             binding = self.module_values.get(retry.name)
-            if binding is not None and binding.value is not None \
-                    and is_obsolete_chat_model(binding.value):
-                if binding.node_id is not None:
-                    self.consumed_node_ids.add(binding.node_id)
-                self.findings.append({
-                    "path": retry.path, "cell": retry.cell_index,
-                    "cell_id": retry.cell_id, "line": retry.line,
-                    "site": retry.site,
-                    "model": normalize_model(binding.value),
-                    "via": f'"{retry.name}" <- {binding.origin} '
-                           f'(etat final du carnet)',
-                })
+            if binding is not None and binding.value is not None:
+                if is_obsolete_chat_model(binding.value):
+                    if binding.node_id is not None:
+                        self.consumed_node_ids.add(binding.node_id)
+                    self.findings.append({
+                        "path": retry.path, "cell": retry.cell_index,
+                        "cell_id": retry.cell_id, "line": retry.line,
+                        "site": retry.site,
+                        "model": normalize_model(binding.value),
+                        "via": f'"{retry.name}" <- {binding.origin} '
+                               f'(etat final du carnet)',
+                    })
+                if retry.ctx is not None:
+                    self._check_param_constraints(
+                        binding.value, retry.site, retry.ctx, retry.call)
         self._collect_doc_mentions()
 
     def _collect_doc_mentions(self) -> None:
@@ -1170,6 +1398,7 @@ def _report(path: str, kind: str, scanner: NotebookScanner) -> dict:
         "kind": kind,
         "notebook": path,
         "findings": scanner.findings,
+        "param_findings": scanner.param_findings,
         "doc_mentions": scanner.doc_mentions,
         "doc_marked_cells": scanner.doc_marked_cells,
         "unresolved": scanner.unresolved,
@@ -1275,6 +1504,7 @@ def filter_base(sources: list[tuple[Path, str]], base: str
 
 def print_text(reports: list[dict], merge_base: str | None) -> None:
     findings = [f for r in reports for f in r["findings"]]
+    params = [p for r in reports for p in r["param_findings"]]
     mentions = [m for r in reports for m in r["doc_mentions"]]
     unresolved = [u for r in reports for u in r["unresolved"]]
     stats = {k: sum(r["stats"].get(k, 0) for r in reports) for k in
@@ -1288,12 +1518,19 @@ def print_text(reports: list[dict], merge_base: str | None) -> None:
         print(f"FINDING {f['path']} cell {f['cell']}{cid} line {f['line']}: "
               f"{f['site']} cible le modele chat obsolete '{f['model']}' "
               f"-- via {f['via']}")
+    for p in params:
+        cid = f" id {p['cell_id']}" if p["cell_id"] else ""
+        value = f"={p['value']}" if p["value"] else ""
+        print(f"PARAM-FINDING {p['path']} cell {p['cell']}{cid} "
+              f"line {p['line']}: {p['site']} vers '{p['model']}' porte "
+              f"{p['param']}{value} -- {p['reason']}")
     for m in mentions:
         print(f"DOC-MENTION {m['path']} cell {m['cell']}: "
               f"mentions {', '.join(m['models'])} sans marqueur "
               f"'# obsolescence: DOC' (advisory, sans effet sur l'exit)")
     marked = sum(r["doc_marked_cells"] for r in reports)
-    print(f"-- {len(findings)} finding(s) ; {len(unresolved)} site(s) chat non "
+    print(f"-- {len(findings)} finding(s) ; {len(params)} contrainte(s) de "
+          f"parametre(s) ; {len(unresolved)} site(s) chat non "
           f"resolus statiquement (rapportes, jamais accuses) ; "
           f"{len(mentions)} mention(s) doc sans marqueur, {marked} cellule(s) "
           f"marquee(s).")
@@ -1348,6 +1585,7 @@ def main(argv=None) -> int:
             "merge_base": merge_base,
             "obsolete_models": sorted(OBSOLETE_CHAT_MODELS),
             "findings": findings,
+            "param_findings": [p for r in reports for p in r["param_findings"]],
             "doc_mentions": [m for r in reports for m in r["doc_mentions"]],
             "unresolved": [u for r in reports for u in r["unresolved"]],
             "stats": {
@@ -1365,7 +1603,8 @@ def main(argv=None) -> int:
     else:
         print_text(reports, merge_base)
 
-    return 1 if any(r["findings"] for r in reports) else 0
+    return 1 if any(r["findings"] or r["param_findings"]
+                    for r in reports) else 0
 
 
 if __name__ == "__main__":

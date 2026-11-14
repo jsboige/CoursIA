@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-13
+> REFERENCE — vivante — dernière révision 2026-11-14
 
 # Mapping des modèles OpenAI — génération courante (tranche 1, #14755)
 
@@ -60,6 +60,19 @@ Le mandat insiste : **« les identifiants exacts d'API sont à vérifier firstha
 > **Unité** : le champ brut `pricing.prompt` d'OpenRouter est exprimé en **dollars par token** (`0.000002`) ; la colonne ci-dessus est convertie en **$ / 1M tokens** (× 10⁶ → `$2.00` / `$0.20`), l'unité de tout budget de re-exécution établi depuis cette table.
 
 Le « 5.6 principal » se traduit donc par **`gpt-5.6-sol`** (flagship), et le « Luna mini » par **`gpt-5.6-luna`** (confirmé économique/mini par son prix et sa description). `gpt-5.6-terra` est l'alternative équilibrée si l'on veut un modèle principal moins coûteux en latence.
+
+### Contraintes de paramètres de la série 5.6 (mesurées le 2026-11-14)
+
+Migrer le **nom** du modèle ne suffit pas : la série 5.6 refuse deux paramètres que les anciens appels passaient couramment. Sondes réelles, un appel minimal par ligne, clé du `.env` GenAI :
+
+| paramètre | `gpt-5.6`, `gpt-5.6-luna` | correction |
+|---|---|---|
+| `temperature` | **seule la valeur 1 est acceptée** — HTTP 400 « Only the default (1) value is supported » | retirer le paramètre (1 est le défaut) ou l'écrire explicitement à 1 |
+| `max_tokens` | **refusé** — HTTP 400 « Use 'max_completion_tokens' instead » | renommer en `max_completion_tokens` |
+
+`temperature=1` et `max_completion_tokens` passent. Un appel qui porte l'un de ces deux paramètres vers un modèle 5.6 **casse à l'exécution réelle** — et la sortie committée ne le montre pas quand le carnet tourne en mode démonstration (`use_mock_api = True`) : c'est le cas fondateur **#26413** (nom migré en `gpt-5.6-luna`, `temperature=0.8` resté).
+
+La détection statique est portée par `scripts/notebook_tools/check_obsolete_chat_model.py`, tier « PARAMETRE » : un appel dont le **modèle résolu** est de la famille `gpt-5.6*` est signalé s'il porte un `temperature` littéral différent de 1, ou un `max_tokens`. La contrainte suit le modèle résolu, pas le nom écrit : un `temperature` destiné au vLLM local n'est jamais accusé.
 
 ## Preuve de vérification (firsthand, 2026-09-05)
 

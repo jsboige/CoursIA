@@ -53,6 +53,7 @@ def _analyze(notebook):
     scanner = mod.NotebookScanner("mem")
     scanner.scan(notebook["cells"])
     return {"findings": scanner.findings,
+            "param_findings": scanner.param_findings,
             "doc_mentions": scanner.doc_mentions,
             "doc_marked_cells": scanner.doc_marked_cells,
             "unresolved": scanner.unresolved,
@@ -983,3 +984,210 @@ def test_suffixe_inconnu_refuse(tmp_path):
     p.write_text("gpt-4o-mini", encoding="utf-8")
     with pytest.raises(FileNotFoundError):
         collect_sources([str(p)])
+
+
+# ---------------------------------------------------------------------------
+# PARAMETRES : ce que la generation 5.6 refuse (volet 1 de #22783)
+#
+# Mesure du 2026-11-14 (sondes reelles sur le service du site) : sur
+# `gpt-5.6` et `gpt-5.6-luna`, un `temperature` different de 1 donne
+# HTTP 400 « Only the default (1) value is supported », et un `max_tokens`
+# donne HTTP 400 « Use 'max_completion_tokens' instead ». Migrer le NOM du
+# modele ne suffit donc pas : c'est le cas fondateur #26413.
+# ---------------------------------------------------------------------------
+
+def _appel(model="gpt-5.6-luna", extra=""):
+    """Appel chat SDK, forme exacte du cas fondateur #26413."""
+    return code(
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "r = client.chat.completions.create(\n"
+        f"    model={model!r},\n"
+        "    messages=[],\n"
+        f"{extra}"
+        ")"
+    )
+
+
+def test_forme_fondatrice_26413_signalee():
+    """Controle POSITIF sur la forme exacte de #26413 : le nom a ete migre
+    en 5.6, le `temperature=0.8` est reste -- l'appel casse a l'execution
+    reelle (HTTP 400)."""
+    params = _analyze(nb(_appel(extra="    temperature=0.8,\n")))["param_findings"]
+    assert len(params) == 1
+    assert params[0]["param"] == "temperature"
+    assert params[0]["value"] == "0.8"
+    assert params[0]["model"] == "gpt-5.6-luna"
+    assert "temperature" in params[0]["reason"]
+
+
+def test_max_tokens_signale():
+    """`max_tokens` est refuse par l'API, quelle que soit sa valeur."""
+    params = _analyze(nb(_appel(extra="    max_tokens=500,\n")))["param_findings"]
+    assert len(params) == 1
+    assert params[0]["param"] == "max_tokens"
+    assert "max_completion_tokens" in params[0]["reason"]
+
+
+def test_max_completion_tokens_accepte():
+    """Controle NEGATIF : le remplacant documente passe."""
+    params = _analyze(
+        nb(_appel(extra="    max_completion_tokens=500,\n")))["param_findings"]
+    assert params == []
+
+
+def test_temperature_valeur_1_acceptee():
+    """Controle NEGATIF : la seule valeur acceptee par l'API."""
+    params = _analyze(nb(_appel(extra="    temperature=1,\n")))["param_findings"]
+    assert params == []
+
+
+def test_temperature_d_un_autre_fournisseur_ignore():
+    """Controle NEGATIF : un `temperature` porte par un autre fournisseur
+    (le vLLM local) n'est jamais accuse -- la contrainte est portee par le
+    modele RESOLU."""
+    params = _analyze(
+        nb(_appel(model="qwen3.6-35b-a3b", extra="    temperature=0.8,\n"))
+    )["param_findings"]
+    assert params == []
+
+
+def test_max_tokens_d_un_autre_fournisseur_ignore():
+    """Controle NEGATIF : meme `max_tokens`, meme appel, mais vers un modele
+    d'un autre fournisseur -- rien n'est signale."""
+    params = _analyze(
+        nb(_appel(model="qwen3.6-35b-a3b", extra="    max_tokens=500,\n"))
+    )["param_findings"]
+    assert params == []
+
+
+def test_prefixe_fournisseur_normalise():
+    """Le prefixe fournisseur est retire avant la comparaison de famille :
+    `openai/gpt-5.6-luna` est bien de la famille 5.6."""
+    params = _analyze(
+        nb(_appel(model="openai/gpt-5.6-luna", extra="    temperature=0.7,\n"))
+    )["param_findings"]
+    assert len(params) == 1
+    assert params[0]["model"] == "gpt-5.6-luna"
+
+
+def test_toutes_les_variantes_de_la_famille_sont_concernees():
+    """La famille se decline en variantes : les trois mesurees, plus
+    l'identifiant nu, sont concernees -- une famille voisine (5.5) ne
+    l'est pas."""
+    for model in ("gpt-5.6", "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna"):
+        params = _analyze(
+            nb(_appel(model=model, extra="    temperature=0.7,\n"))
+        )["param_findings"]
+        assert len(params) == 1, model
+    params = _analyze(
+        nb(_appel(model="gpt-5.5", extra="    temperature=0.7,\n"))
+    )["param_findings"]
+    assert params == []
+
+
+def test_temperature_dynamique_jamais_accuse():
+    """Un `temperature` porte par une variable n'est pas une faute prouvee :
+    l'organe ne l'accuse pas (il ne sait pas ce qu'elle vaut)."""
+    params = _analyze(nb(code(
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "t = 0.8\n"
+        "r = client.chat.completions.create(\n"
+        "    model='gpt-5.6-luna',\n"
+        "    messages=[],\n"
+        "    temperature=t,\n"
+        ")")))["param_findings"]
+    assert params == []
+
+
+def test_max_tokens_parametre_de_fonction_nest_pas_un_defaut():
+    """Un `max_tokens` qui est un ARGUMENT DE FONCTION n'est pas le
+    parametre de l'API : l'accuser serait faux (forme mesuree dans le
+    carnet `22b_Profil_Cognitif_CHC`)."""
+    params = _analyze(nb(code(
+        "def interroger(modele, messages, max_tokens=60):\n"
+        "    return modele, messages, max_tokens\n"
+        "r = interroger('gpt-5.6-luna', [], max_tokens=5)\n"
+    )))["param_findings"]
+    assert params == []
+
+
+def test_http_rough_corps_inline_signale():
+    """Forme HTTP brut : les parametres sont dans le CORPS de la requete."""
+    params = _analyze(nb(code(
+        "import requests\n"
+        "r = requests.post('https://api.openai.com/v1/chat/completions',\n"
+        "                  json={'model': 'gpt-5.6-luna',\n"
+        "                        'messages': [],\n"
+        "                        'max_tokens': 10})\n"
+    )))["param_findings"]
+    assert len(params) == 1
+    assert params[0]["param"] == "max_tokens"
+    assert params[0]["site"] == "http.chat.completions"
+
+
+def test_http_rough_corps_nomme_signale():
+    """Corps lie a un nom : le modele et les parametres sont lus dans le
+    meme dict."""
+    params = _analyze(nb(code(
+        "import requests\n"
+        "payload = {'model': 'gpt-5.6-luna', 'messages': [],\n"
+        "           'temperature': 0.5}\n"
+        "r = requests.post('https://api.openai.com/v1/chat/completions',\n"
+        "                  json=payload)\n"
+    )))["param_findings"]
+    assert len(params) == 1
+    assert params[0]["param"] == "temperature"
+    assert params[0]["value"] == "0.5"
+
+
+def test_http_rough_modele_d_un_autre_fournisseur_ignore():
+    """Controle NEGATIF : meme corps, modele local -- rien n'est signale."""
+    params = _analyze(nb(code(
+        "import requests\n"
+        "r = requests.post('http://localhost:8000/v1/chat/completions',\n"
+        "                  json={'model': 'qwen3.6-35b-a3b',\n"
+        "                        'messages': [],\n"
+        "                        'max_tokens': 10})\n"
+    )))["param_findings"]
+    assert params == []
+
+
+def test_contrainte_de_parametre_independante_de_l_obsolescence():
+    """Les deux classes sont distinctes : un modele OBSOLETE n'est pas dans
+    la famille 5.6, donc sa `temperature` n'est pas signalee -- et le
+    finding d'obsolescence reste intact."""
+    report = _analyze(nb(_appel(model="gpt-4o-mini", extra="    temperature=0.8,\n")))
+    assert len(report["findings"]) == 1
+    assert report["findings"][0]["model"] == "gpt-4o-mini"
+    assert report["param_findings"] == []
+
+
+def test_un_site_n_est_accuse_qu_une_fois_par_parametre():
+    """Un meme appel evalue plusieurs fois (batterie, nom repris) n'est pas
+    accuse en double."""
+    params = _analyze(nb(code(
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "BATTERY = [{'model': 'gpt-5.6-luna'}, {'model': 'gpt-5.6-sol'}]\n"
+        "for cfg in BATTERY:\n"
+        "    r = client.chat.completions.create(\n"
+        "        model=cfg['model'], messages=[], temperature=0.7)\n"
+    )))["param_findings"]
+    assert len(params) == 1
+
+
+def test_cli_rougit_sur_une_contrainte_de_parametre(tmp_path, capsys):
+    """La contrainte de parametre fait rougir l'organe comme un finding."""
+    p = tmp_path / "appel.py"
+    p.write_text(
+        "from openai import OpenAI\n"
+        "client = OpenAI()\n"
+        "r = client.chat.completions.create(\n"
+        "    model='gpt-5.6-luna', messages=[], temperature=0.8)\n",
+        encoding="utf-8")
+    assert main([str(p)]) == 1
+    out = capsys.readouterr().out
+    assert "PARAM-FINDING" in out
+    assert "temperature" in out
