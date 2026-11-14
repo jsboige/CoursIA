@@ -2676,7 +2676,16 @@ def test_declared_wall_is_read_from_the_real_workflows():
     # #25968 : le mur de `Scripts Tests (CPU)` est passe de 30 a 40 min dans la
     # meme PR que l'epingle -- les runs de `main` etaient coupes au mur, et un
     # plafond releve sans son epingle rougit exactement ce test.
-    assert walls.get("Scripts Tests (CPU)") == 40
+    # #22937 (2026-11-14) : 40 -> 44. La mesure qui le justifie est dans le
+    # bloc de commentaire de `scripts-tests.yml` : la population de la
+    # premiere mesure etait CENSOREE par les rejeux (26 des 40 coupes au mur
+    # du segment 40 min etaient absentes du cache collecte sans `filter=all`,
+    # un job coupe puis rejoue disparaissant de la population) ; sur la
+    # population entiere, 38 coupes sur 582 jobs executes (6,5 %) tombent au
+    # mur de 40, contre 60 sur 249 (24,1 %) sous le mur de 30. 44 est le
+    # maximum coherent : l'agregateur doit rester SOUS le plafond propre de
+    # Quarto (60), donc l'enfant sous 45.
+    assert walls.get("Scripts Tests (CPU)") == 44
     # #16139 : le mur de `ML Pipeline Tests (CPU)` a ete atteint quatre fois a
     # 30 min, dont deux fois sur un `push main` ou `cancel-in-progress` est
     # faux (donc inannulable). Epingle en EGALITE, comme celui du dessus :
