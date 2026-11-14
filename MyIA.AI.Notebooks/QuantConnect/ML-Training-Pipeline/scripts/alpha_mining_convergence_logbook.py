@@ -70,6 +70,12 @@ RESULTS_REL = ("scripts", "results")
 # incluse (et pas au-dela), pour rester dans la tranche 1 de l'issue.
 GA_MARKER = "eaMuPlusLambda"
 
+# Cellule du carnet qui publie le tableau de la baseline des facteurs fixes.
+# Elle est reperee par un **marqueur textuel**, pas par un decalage arithmetique
+# depuis la cellule GA : un decalage casse silencieusement la baseline
+# d'equivalence des qu'une cellule est inseree entre les deux.
+BASELINE_MARKER = "FIXED = {"
+
 # Ecart tolere entre la valeur recalculee et la valeur publiee par le carnet.
 IC_TOLERANCE = 5e-3
 
@@ -93,6 +99,19 @@ def ga_cell_index(nb: dict) -> int:
         if cell["cell_type"] == "code" and GA_MARKER in "".join(cell["source"]):
             return i
     raise RuntimeError("cellule de boucle deap introuvable dans le carnet")
+
+
+def baseline_cell_index(nb: dict) -> int:
+    """Cellule qui publie le tableau de la baseline des facteurs fixes.
+
+    Reperee par le marqueur textuel `FIXED = {`, comme la cellule GA l'est par
+    `eaMuPlusLambda` : la correspondance est **semantique**, elle survit a une
+    reorganisation du carnet, la ou un ecart d'index ne survit a rien.
+    """
+    for i, cell in enumerate(nb["cells"]):
+        if cell["cell_type"] == "code" and BASELINE_MARKER in "".join(cell["source"]):
+            return i
+    raise RuntimeError("cellule de baseline des facteurs fixes introuvable dans le carnet")
 
 
 def cell_outputs_text(nb: dict, idx: int) -> str:
@@ -269,7 +288,7 @@ def main() -> int:
     nb = load_notebook(nb_path)
     idx = ga_cell_index(nb)
     published = committed_ic_by_seed(nb, idx)
-    published_baseline = committed_baseline_by_factor(nb, idx - 3)
+    published_baseline = committed_baseline_by_factor(nb, baseline_cell_index(nb))
 
     os.chdir(root)
     t0 = time.time()
