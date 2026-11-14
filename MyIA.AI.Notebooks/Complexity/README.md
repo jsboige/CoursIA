@@ -144,6 +144,8 @@ raison visible (les mondes d'oracles de Baker–Gill–Solovay, construits et ex
 et le gap Mathlib devient structurel : la calculabilité est formalisée, la complexité
 pas encore.
 
+[Complexity-03f : chaîne des réductions (C#)](Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb) accompagne la [version Python](Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb). Les corpus et intersections sont calculés en BCL ; les générateurs diffèrent et l'algorithme du papier reste cité, non exécuté.
+
 Le notebook 03d confronte la série à la position **annoncée** : deux preuves machine
 d'octobre 2026 (OpenAI, Anthropic) prétendent réfuter l'ETH. Le carnet lit leurs trois
 surfaces Lean à la source — définitions, hypothèses, axiomes, `sorry` finaux —, cite
