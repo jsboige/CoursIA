@@ -299,6 +299,16 @@ def test_this_prs_own_change_set_is_not_a_full_render():
     assert files == ["index.qmd", "README.md"]
 
 
+@pytest.mark.parametrize("path", [
+    "scripts/ci/quarto_readme_titles.py",
+    "scripts/ci/tests/test_quarto_readme_titles.py",
+])
+def test_readme_title_machinery_selects_readme_smoke(path):
+    mode, files, _ = qrs.decide([("M", path)], ENTRIES)
+    assert mode == "scoped"
+    assert files == ["index.qmd", "README.md"]
+
+
 def test_smoke_yields_to_real_changed_documents():
     """The smoke set is a floor for an empty selection, never an addition."""
     rows = [("M", ".github/workflows/quarto-pages-deploy.yml"),
@@ -460,3 +470,44 @@ def test_changed_files_deepens_a_shallow_checkout_and_retries(tmp_path, monkeypa
     rows = qrs.changed_files(base, head)
     assert ("A", "f4.txt") in rows
     assert ("A", "f0.txt") not in rows  # base side stays outside the diff
+
+
+def test_changed_files_reports_gits_stderr_on_a_real_failure(tmp_path, monkeypatch):
+    """A red that cannot say WHY is a defect of its own (#24506).
+
+    On the measured failure the CI log showed only
+    `returned non-zero exit status 128` -- git's `fatal:` line never reached
+    it, so the job could not be diagnosed from its own output. The raised
+    error must carry that line, and the deepen leg's own message with it.
+    """
+    import subprocess as sp
+
+    src = tmp_path / "src"
+    src.mkdir()
+    gitcfg = ["-c", "user.email=t@example.com", "-c", "user.name=t"]
+
+    def git(*args, cwd):
+        sp.run(["git", *gitcfg, *args], cwd=cwd, check=True,
+               capture_output=True, text=True)
+
+    git("init", "-q", "-b", "main", cwd=src)
+    (src / "f.txt").write_text("x", encoding="utf-8")
+    git("add", "-A", cwd=src)
+    git("commit", "-qm", "c0", cwd=src)
+    git("remote", "add", "origin", src.as_uri(), cwd=src)
+    head = sp.run(["git", "rev-parse", "HEAD"], cwd=src, check=True,
+                  capture_output=True, text=True).stdout.strip()
+
+    monkeypatch.setattr(qrs, "REPO_ROOT", src)
+
+    # An absent base is a real, non-shallowness 128: the same shape the job hit.
+    with pytest.raises(RuntimeError) as err:
+        qrs.changed_files("0" * 40, head)
+
+    msg = str(err.value)
+    assert "exit 128" in msg, msg
+    assert "--- git stderr ---" in msg, msg
+    assert "fatal:" in msg, msg                      # git's own words, not a repr
+    assert "--- git fetch --deepen=400 origin ---" in msg, msg
+    # The original error stays reachable for anyone who needs the process args.
+    assert isinstance(err.value.__cause__, sp.CalledProcessError)

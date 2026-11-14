@@ -1,3 +1,7 @@
+---
+paths: .gitmodules, MyIA.AI.Notebooks/Search/MetaGeneticSharp/**, MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq/**, MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/**, MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum/**, MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/**
+---
+
 # Sous-modules — maintenance active, jamais un dépôt dormant
 
 S'applique au **coordinateur ai-01** et à toute lane qui touche un sous-module. Source : mandat user 2026-09-02 (verbatim : [detail, en-tête](../../docs/reference/submodule-maintenance-detail.md)).
@@ -13,7 +17,7 @@ La conséquence pratique : un sous-module n'est pas une dépendance qu'on subit,
 | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | `jsboige/MetaGeneticSharp` | coordination ai-01 |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | `MyIntelligenceAgency/Z3.Linq` — **fork de `endjin/Z3.Linq`** | coordination ai-01 ; les livraisons partent **en PR upstream** (Epic #1206) |
 | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | `MyIntelligenceAgency/Automata` | coordination ai-01 |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | `ArgumentumGames/Argumentum` | **agent permanent dédié** — ai-01 ne fait que le bump de pointeur |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum` | `ArgumentumGames/Argumentum` | **agent permanent dédié** — ai-01 ne fait que le bump de pointeur |
 | `MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet` | `MyIntelligenceAgency/semantic-fleet` (`branch = stable-from-v0343`) | coordination ai-01 |
 
 **La liste faisant foi est `.gitmodules`, jamais un souvenir** — `Automata` est le cinquième et s'oublie, et `MetaGeneticSharp` vit sous `jsboige/`, **pas** sous `MyIntelligenceAgency/`.

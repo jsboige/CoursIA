@@ -1,109 +1,69 @@
-# 01-Solidity-Foundation - Fondements du langage Solidity
+# 01-Solidity-Foundation — Fondements du langage Solidity
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-2 Setup Web3py](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb) | [SC-7 Token Standards >>](../02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb)
+[← 00-Foundations](../00-Foundations/README.md) | [↑ SmartContracts](../README.md) | [02 — Solidity Avancé →](../02-Solidity-Advanced/README.md)
 
-Cette première sous-série de code Solidity (SC-3 a SC-6) pose les fondamentaux du langage : structure d'un contrat, types et variables, fonctions et état (data locations, visibilite, modifiers), héritage et interfaces, puis erreurs et events. Aucune ligne de Solidity serieuse ne peut être ecrite sans ces quatres notebooks. Chaque concept est illustre par un contrat compile et déployé réellement sur `anvil` (le noeud local de test fourni par Foundry) -- pas de simulation, les adresses et les receipts dans les outputs sont authentiques.
+## Ouverture — ce que cette partie enseigne (Licence)
 
----
+Cette première sous-série de code Solidity pose les fondamentaux du langage : structure d'un contrat, types et variables, fonctions et état (data locations, visibilité, modifiers), héritage et interfaces, puis erreurs et events. Aucune ligne de Solidity sérieuse ne s'écrit sans ces piliers. Chaque concept est illustré par un contrat compilé et déployé **réellement** sur `anvil` (le nœud local de test fourni par Foundry) — pas de simulation : les adresses et les receipts dans les outputs sont authentiques, et le pattern `compile -> deploy -> call` hérité de [SC-2](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb) est celui repris dans toute la suite.
 
-## Notebooks
+**À qui elle s'adresse.** Un lecteur ayant terminé [00-Foundations](../00-Foundations/README.md) (environnement Foundry + web3.py opérationnel) et qui écrit ses premiers contrats. Aucune expérience Solidity préalable n'est supposée ; les prérequis exacts sont en [Installation](#installation).
 
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 3 | [SC-03-Solidity-Basics-Python](SC-03-Solidity-Basics-Python.ipynb) | 40 min | Structure de contrat, types valeur, variables d'état, conversions |
-| 4 | [SC-04-Functions-State-Python](SC-04-Functions-State-Python.ipynb) | 45 min | Data locations (storage/memory/calldata), visibilite, modifiers (view/pure/payable) |
-| 5 | [SC-05-Inheritance-Python](SC-05-Inheritance-Python.ipynb) | 35 min | Héritage simple et multiple, interfaces, abstract/override |
-| 6 | [SC-06-Errors-Events-Python](SC-06-Errors-Events-Python.ipynb) | 30 min | `require`/`revert`/`assert`, custom errors (0.8.4+), events |
+Le décompte des carnets de cette sous-série est tenu par le [catalogue des cours](../../../../COURSE_CATALOG.generated.md), régénéré automatiquement.
 
-**Total** : ~2h30.
+## Comment lire ce README (Licence)
 
----
+Un README de série se lit à plusieurs vitesses : le parcours principal par les numéros nus, l'approfondissement par les lettres, la recherche en cours par les sous-séries et la section « Pour aller plus loin ». Le principe est exposé à la racine du dépôt, dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
-## Parcours d'apprentissage
+- **Vous apprenez Solidity** : suivez la table du parcours principal, de haut en bas — chaque notebook suppose les précédents.
+- **Vous creusez un palier** : cette partie n'en porte aucun (voir [Approfondissements](#approfondissements-licence)) ; les paliers lettrés commencent à la partie suivante, avec les compagnons ERC-20.
+- **Vous cherchez la recherche en cours** : allez à [« Pour aller plus loin »](#pour-aller-plus-loin--niveau-recherche) — les formalisations Lean de la série vivent dans la partie avancée.
 
-### Étape 1 : Syntaxe et types (SC-3, 40 min)
+## Parcours principal (Licence)
 
-On commence par la structure minimale d'un contrat, les types valeur (uint, address, bool, bytes), les variables d'état vs locales, et les conversions explicites. Premier déploiement sur `anvil`.
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 3 | [SC-03-Solidity-Basics-Python](SC-03-Solidity-Basics-Python.ipynb) | Structure minimale d'un contrat, types valeur (`uint`, `address`, `bool`, `bytes`), variables d'état vs locales, conversions explicites — premier déploiement réel sur `anvil` | Découverte | — |
+| 4 | [SC-04-Functions-State-Python](SC-04-Functions-State-Python.ipynb) | Le cœur du langage : les trois data locations (`storage`, `memory`, `calldata`) et leur coût en gas, la visibilité (`public`/`external`/`internal`/`private`), les modifiers d'accès (`view`, `pure`, `payable`) | Licence | — |
+| 5 | [SC-05-Inheritance-Python](SC-05-Inheritance-Python.ipynb) | Héritage simple et multiple via `is`, interfaces pour l'abstraction, contrats `abstract` et `override` — la préparation directe aux standards ERC de la partie suivante | Licence | — |
+| 6 | [SC-06-Errors-Events-Python](SC-06-Errors-Events-Python.ipynb) | `require` (conditions d'entrée, gas rembourseé), `revert` (erreurs complexes), `assert` (invariants internes), custom errors économes en gas depuis 0.8.4, et les events pour le logging hors-chaîne | Licence | — |
 
-### Étape 2 : Fonctions et état (SC-4, 45 min)
+**Ce que vous saurez faire à l'issue de cette partie :**
 
-Le coeur de la programmation Solidity : les trois **data locations** (storage, memory, calldata) et leur cout en gas, la visibilite (public/external/internal/private), et les modifiers qui restreignent l'acces (`view`, `pure`, `payable`).
+1. **Écrire** la structure d'un contrat Solidity avec les bons types et les bonnes conversions ;
+2. **Choisir** la data location et la visibilité adaptées — et mesurer leur coût en gas ;
+3. **Composer** par héritage et interfaces, en préparant les standards ERC ;
+4. **Signaler** erreurs et événements proprement (`require`/`revert`/`assert`, custom errors, events).
 
-### Étape 3 : Héritage et abstraction (SC-5, 35 min)
+## Approfondissements (Licence)
 
-Solidity supporte l'héritage multiple avec le mot-clé `is`, les interfaces pour l'abstraction, et les contrats `abstract`. Cette étape prepare directement aux standards ERC de la sous-série suivante (02-Solidity-Advanced).
+Cette partie **ne porte aucun approfondissement lettré** : c'est le socle continu du langage, chaque notebook suppose les précédents et aucun ne se détache comme variante d'un numéro porteur. Les paliers lettrés de la série commencent à la partie suivante — les compagnons ERC-20 de SC-7 — et rien n'est perdu ici : il n'y a rien à replier.
 
-### Étape 4 : Erreurs et observabilite (SC-6, 30 min)
+## Sous-séries (Licence)
 
-`require` (conditions d'entrée, gas rembourse), `revert` (erreurs complexes), `assert` (invariants internes), les custom errors economes en gas depuis 0.8.4, et les events pour le logging hors-chain.
+Cette partie n'en contient pas. Elle est elle-même une **sous-série** de [SmartContracts](../README.md), dont le README porte la vue d'ensemble de l'arc et l'escalier entre les parties.
 
----
+## Installation
 
-## Prérequis
+- **Prérequis d'entrée** : [00-Foundations](../00-Foundations/README.md) complété — Foundry installé, `web3`/`py-solc-x` disponibles, pattern compile-deploy-call en main.
+- **Python 3.10+** avec `pip install web3 py-solc-x`.
+- **`anvil` sur le PATH et lancé** avant l'exécution : chaque notebook se connecte à un nœud local. Sans `anvil` actif, les cellules de déploiement échouent en `ConnectionRefusedError`.
+- **`py-solc-x` télécharge le compilateur** au premier appel (`solcx.install_solc`) ; le versioning se fait via `foundry-lib/` au niveau de la série.
+- Aucune clé API, aucun faucet, aucun ETH réel : tout tourne sur le nœud local `anvil`.
 
-### Par notebook
+Les outputs committés proviennent d'exécutions réelles sur `anvil` : adresses de contrat, gas utilisés et receipts sont authentiques — sans erreur volontaire.
 
-| Notebook | Fondations requises | Dépendances |
-|----------|---------------------|-------------|
-| SC-3 Solidity-Basics | [SC-2 Setup Web3py](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb) | `web3`, `py-solc-x` |
-| SC-4 Functions-State | SC-3 complète | idem |
-| SC-5 Inheritance | SC-3 + SC-4 complètes | idem |
-| SC-6 Errors-Events | SC-3 + SC-4 + SC-5 complètes | idem |
+## Pour aller plus loin — niveau Recherche
 
-### Configuration requise
+**Formalisations Lean.** Cette partie ne consomme aucune formalisation Lean. Le lake de la série, `erc20_lean`, formalise l'ERC-20 et n'est convoqué qu'en [02-Solidity-Advanced](../02-Solidity-Advanced/README.md) ; l'inventaire des modules vit dans le README parent, il n'est pas recopié ici.
 
-- **Python 3.10+** avec `pip install web3 py-solc-x`
-- **Foundry installe** : `anvil` doit être sur le PATH. Lancez `anvil` dans un terminal avant d'exécuter les cellules (les quatre notebooks s'y connectent en local).
-- Aucune clé API, aucun faucet, aucun ETH réel nécessaire : tout tourne sur le noeud local `anvil`.
-
----
-
-## Ponts inter-séries
-
-| Série | Lien | Relation |
-|-------|------|----------|
-| [SmartContracts (parent)](../README.md) | Vue d'ensemble | Contexte, parcours global, glossaire |
-| [00-Foundations](../00-Foundations/) | Prérequis | SC-2 (Setup Web3py) fournit l'environnement |
-| [02-Solidity-Advanced](../02-Solidity-Advanced/) | Suite | SC-7+ (ERC-20/721/1155, DeFi, DAO, Account Abstraction) construisent sur ces fondamentaux |
-
----
-
-## Points de vigilance (exécution sur anvil)
-
-- **Lancer `anvil` avant l'exécution** : chaque notebook se connecte a un noeud local. Sans `anvil` actif, les cellules de déploiement echouent en `ConnectionRefusedError`.
-- **`py-solc-x` telecharge le compilateur** au premier appel (`solcx.install_solc`) ; le versioning se fait via `foundry-lib/` au niveau de la série.
-- Les outputs committes proviennent d'executions réelles sur `anvil` : les adresses de contrat, les gas utilises et les receipts sont authentiques. La sous-série 03 (Foundry) exécute elle aussi `forge` pour de vrai (SC-12 re-exécute la suite Foundry, SC-13 lance un fuzz qui découvre un contre-exemple d'overflow) ; seuls certains notebooks restent en repli disclose quand l'outil est verrouille par acces commercial (SC-14 Certora) ou depend d'un CLI externe non installe (sous-série 05 : Vyper / Bitcoin Script / Move / Rust).
-
----
+**Le fil de recherche.** Le changement de regard proposé par les fondations du langage : ne plus écrire du code qui « tourne », mais du code qui **coûte** (chaque instruction a un prix en gas) et qui est **observable** (chaque état est public sur la chaîne). Si la théorie du gas et des data locations reste abstraite, reprenez [SC-00](../00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) — comprendre *pourquoi* une blockchain fait payer chaque opération éclaire le modèle économique de la EVM.
 
 ## Ressources
 
-- **Foundry Book** (Foundry contributors) -- `anvil`, `forge`, `cast`. Documentation officielle : book.getfoundry.sh.
-- **Solidity Documentation officielle** (Ethereum Foundation) -- types, data locations, héritage, errors/events. docs.soliditylang.org.
-- Wood, G. (2014) -- "Ethereum: A Secure Decentralised Generalised Transaction Ledger" (Yellow Paper) : EVM, gas, modèle d'exécution.
-- Voir aussi les références transversales dans le [README parent de la série](../README.md).
-
----
-
-## Conclusion / Prochaines étapes
-
-### Ce que vous avez appris
-
-Cette première sous-série de code Solidity vous a posé les **quatre piliers** sans lesquels aucune ligne de contrat sérieuse ne s'écrit. L'arc pédagogique procède de la brique minimale au contrat observable :
-
-- **La syntaxe et les types** (SC-3) — la structure d'un contrat, les types valeur (`uint`, `address`, `bool`, `bytes`), les variables d'état vs locales, et les conversions explicites. Premier déploiement réel sur `anvil`.
-- **Les fonctions et l'état** (SC-4) — le cœur de la programmation Solidity : les trois **data locations** (`storage`, `memory`, `calldata`) et leur coût en gas, la visibilité (`public`/`external`/`internal`/`private`), et les modifiers qui restreignent l'accès (`view`, `pure`, `payable`).
-- **L'héritage et l'abstraction** (SC-5) — l'héritage multiple via `is`, les interfaces, les contrats `abstract` et l'`override`. Cette étape prépare directement aux standards ERC de la sous-série suivante.
-- **Les erreurs et l'observabilité** (SC-6) — `require` (conditions d'entrée), `revert` (erreurs complexes), `assert` (invariants internes), les custom errors économes en gas depuis 0.8.4, et les events pour le logging hors-chaîne.
-
-Chaque concept est illustré par un contrat compilé et déployé **réellement** sur `anvil` — les adresses et receipts dans les outputs sont authentiques, et le pattern `compile -> deploy -> call` hérité de [SC-2](../00-Foundations/SC-02-Setup-Web3py-Python.ipynb) est celui repris dans toute la suite.
-
-### Prochaines étapes
-
-- **Standards et cas d'usage réels** : la suite immédiate est [02-Solidity-Advanced](../02-Solidity-Advanced/README.md) (SC-7 à SC-11), qui construit sur ces fondamentaux — ERC-20/721/1155, primitives DeFi, gouvernance DAO, account abstraction, assistance LLM.
-- **Revenir aux fondations** : si la théorie du gas et des data locations (SC-4) reste abstraite, reprenez [SC-00-Cypherpunk-Origins-Python](../00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) — comprendre *pourquoi* une blockchain fait payer chaque opération éclaire le modèle économique de la EVM.
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci n'est que le socle du langage.
-
-### Le fil rouge
-
-Les fondations de Solidity proposent un changement de regard sur la programmation : ne plus écrire du code qui « tourne », mais du code qui **coûte** (chaque instruction a un prix en gas) et qui est **observable** (chaque état est public sur la chaîne). Comprendre les data locations, la visibilité et les events, c'est comprendre que sur la EVM, l'optimisation et la transparence ne sont pas des raffinements mais des contraintes structurelles — et que le pattern `compile -> deploy -> call` établi ici est le squelette de toute la série.
+- [SmartContracts — README de la série](../README.md) : le parcours global, les parties suivantes, l'inventaire Lean.
+- [00-Foundations](../00-Foundations/README.md) : l'environnement que cette partie suppose.
+- [02 — Solidity Avancé](../02-Solidity-Advanced/README.md) : la suite immédiate — ERC-20/721/1155, DeFi, DAO, account abstraction, assistance LLM.
+- **Foundry Book** (Foundry contributors) — `anvil`, `forge`, `cast` : book.getfoundry.sh.
+- **Solidity Documentation officielle** (Ethereum Foundation) — types, data locations, héritage, errors/events : docs.soliditylang.org.
+- Wood, G. (2014) — *Ethereum: A Secure Decentralised Generalised Transaction Ledger* (Yellow Paper) : EVM, gas, modèle d'exécution.
+- [Choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) : le principe des parcours à plusieurs vitesses, à la racine du dépôt.

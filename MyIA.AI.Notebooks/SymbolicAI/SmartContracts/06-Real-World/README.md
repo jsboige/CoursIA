@@ -1,24 +1,12 @@
-# 06-Real-World - SmartContracts en Production
+# 06-Real-World — SmartContracts en Production
 
-**Navigation** : [Sommaire de la série](../README.md) | [<< SC-22 Solana & Anchor](../05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb)
+[← 05 — Alternative Chains](../05-Alternative-Chains/README.md) | [↑ SmartContracts](../README.md)
 
-La dernière sous-série SmartContracts (SC-23 a SC-27) fait le passage de la théorie au déploiement réel. On quitte le bac a sable `anvil` local pour affronter des réseaux publics : testnets Ethereum/XRP, mainnets L2 (Base, Polygon), ponts cross-chain Chainlink CCIP, et un projet capstone qui combine vote, chiffrement homomorphique, preuve ZKP et tests Foundry. L'épilogue SC-27 referme la boucle en **revenant au bac à sable** : la boucle de gouvernance y est déroulée et **mesurée** (gas par étape, quorum, timelock, coût du retour arrière, verrous sans rollback).
+## Ouverture — ce que cette partie enseigne (Licence)
 
-Ces notebooks supposent que les clés API et private keys sont lues depuis l'environnement (`.env`, `os.getenv`) -- ils ne s'exécutent pas end-to-end sans configuration externe (faucet testnet, clé Infura/Alchemy, ETH sur L2). Les outputs committes documentent honnêtement ce qui se passe quand la configuration est absente (messages `DEPLOYER_PRIVATE_KEY non configure`, simulations conceptuelles disclosees), et ce qui a réellement tourne quand elle est présente. **Exception : SC-27** s'exécute entièrement sur `anvil` local (comptes pré-financés) -- aucune clé, aucun faucet, exécution end-to-end réelle.
+La dernière sous-série fait le passage de la théorie au déploiement réel. On quitte le bac à sable `anvil` local pour affronter des réseaux publics : testnets Ethereum/XRP, mainnets L2 (Base, Polygon), ponts cross-chain Chainlink CCIP, et un projet capstone qui combine vote, chiffrement homomorphique, preuve ZKP et tests Foundry. L'épilogue SC-27 referme la boucle en **revenant au bac à sable** : la boucle de gouvernance y est déroulée et **mesurée** (gas par étape, quorum, timelock, coût du retour arrière, verrous sans rollback).
 
----
-
-## Notebooks
-
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 23 | [SC-23-Cross-Chain-Python](SC-23-Cross-Chain-Python.ipynb) | ~45 min | Interoperabilite, Chainlink CCIP, bridge simple, sécurité cross-chain |
-| 24 | [SC-24-Testnet-Deploy-Python](SC-24-Testnet-Deploy-Python.ipynb) | ~50 min | Sepolia via Alchemy/Infura, faucet, déploiement + interaction testnet, XRP Testnet via xrpl-py |
-| 25 | [SC-25-Mainnet-Deploy-Python](SC-25-Mainnet-Deploy-Python.ipynb) | ~40 min | Choix L2 (Base/Polygon/Arbitrum), estimation de cout, déploiement mainnet, checklist sécurité, vérification explorateur |
-| 26 | [SC-26-Final-Project-Python](SC-26-Final-Project-Python.ipynb) | ~90 min | Capstone : vote Solidity + chiffrement Paillier + preuve ZKP + déploiement anvil/testnet + tests Foundry |
-| 27 | [SC-27-Dette-Irreversibilite-Python](SC-27-Dette-Irreversibilite-Python.ipynb) | ~45 min | Épilogue mesuré : boucle gouvernance (proposition→vote→timelock→exécution) avec coûts gas réels, retour arrière, table de dette paramètre/logique/migration, verrou du brûlage |
-
-Le capstone SC-26 ne présente pas un concept nouveau : il **assemble les briques acquises** dans les sous-séries précédentes en une DApp de vote complète. Ce diagramme en fait la synthèse — chaque brique pointe vers son notebook d'origine :
+Le capstone SC-26 ne présente pas un concept nouveau : il **assemble les briques acquises** dans les parties précédentes en une DApp de vote complète :
 
 ```mermaid
 flowchart LR
@@ -37,105 +25,71 @@ flowchart LR
     SC24 --> SC26
 ```
 
----
+**Exécution et secrets.** Ces notebooks supposent que les clés API et private keys sont lues depuis l'environnement (`.env`, `os.getenv`) — ils ne s'exécutent pas end-to-end sans configuration externe (faucet testnet, clé Infura/Alchemy, ETH sur L2). Les outputs committés documentent honnêtement ce qui se passe quand la configuration est absente (messages `DEPLOYER_PRIVATE_KEY non configure`, simulations conceptuelles disclose), et ce qui a réellement tourné quand elle est présente. **Exception : SC-27** s'exécute entièrement sur `anvil` local (comptes pré-financés) — aucune clé, aucun faucet, exécution end-to-end réelle.
 
-## Parcours d'apprentissage
+**À qui elle s'adresse.** Un lecteur ayant parcouru la série jusqu'ici (le capstone suppose tout ce qui précède). Les prérequis exacts et les variables d'environnement sont en [Installation](#installation).
 
-### Phase 1 : Interoperabilite (SC-23, ~45 min)
+Le décompte des carnets de cette sous-série est tenu par le [catalogue des cours](../../../../COURSE_CATALOG.generated.md), régénéré automatiquement.
 
-Pourquoi deplacer un actif ou un message d'une chaîne a l'autre, comment Chainlink CCIP fait transituer des données on-chain de manière vérifiable, et ou se cachent les attaques cross-chain (reentrancy de bridge, message spoofing). Le notebook reste en mode source-as-strings (les contrats CCIP sont lus comme texte pédagogique, non déployés).
+## Comment lire ce README (Licence)
 
-### Phase 2 : Deploiement public (SC-24 + SC-25, ~1h30)
+Un README de série se lit à plusieurs vitesses : le parcours principal par les numéros nus, l'approfondissement par les lettres, la recherche en cours par les sous-séries et la section « Pour aller plus loin ». Le principe est exposé à la racine du dépôt, dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
 
-Le coeur metier de la sous-série. SC-24 déployé sur Sepolia (Ethereum testnet) et envoie des transactions sur le XRP Testnet ; SC-25 monte en gamme vers un mainnet L2 (Base, chain_id 8453) ou un déploiement coute quelques centimes. Les deux notebooks couvrent le cycle complet : connexion RPC, wallet, gas, broadcast, vérification.
+- **Vous passez en production** : suivez la table du parcours principal, de haut en bas — testnet systématiquement avant mainnet.
+- **Vous creusez un palier** : cette partie n'en porte aucun (voir [Approfondissements](#approfondissements-licence)) ; les paliers lettrés vivent en [02-Solidity-Advanced](../02-Solidity-Advanced/README.md).
+- **Vous cherchez la recherche en cours** : l'épilogue mesuré SC-27 (méthodologie de mesure de dette) et le capstone sont décrits dans [« Pour aller plus loin »](#pour-aller-plus-loin--niveau-recherche).
 
-> **Cout réel** : SC-25 sur Base/Polygon coute ~$0.01-0.50 par déploiement, contre des dizaines de dollars sur Ethereum L1. C'est le motif pédagogique des L2 : même sécurité (settlement L1), cout divisé par 100-1000x.
+## Parcours principal (Licence)
 
-### Phase 3 : Capstone (SC-26, ~90 min)
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 23 | [SC-23-Cross-Chain-Python](SC-23-Cross-Chain-Python.ipynb) | Pourquoi déplacer un actif ou un message d'une chaîne à l'autre, comment Chainlink CCIP fait transiter des données on-chain de manière vérifiable, et où se cachent les attaques cross-chain (reentrancy de bridge, message spoofing) — contrats CCIP lus comme texte pédagogique | Licence | — |
+| 24 | [SC-24-Testnet-Deploy-Python](SC-24-Testnet-Deploy-Python.ipynb) | Le déploiement public sur Sepolia via Alchemy/Infura (faucet, broadcast, interaction) et les transactions sur le XRP Testnet via `xrpl-py` — le cycle complet : connexion RPC, wallet, gas, vérification | Licence | — |
+| 25 | [SC-25-Mainnet-Deploy-Python](SC-25-Mainnet-Deploy-Python.ipynb) | Le choix d'un mainnet L2 (Base/Polygon/Arbitrum), l'estimation de coût, le déploiement réel, la checklist sécurité et la vérification du source sur l'explorateur (Basescan/Polygonscan) | Licence | — |
+| 26 | [SC-26-Final-Project-Python](SC-26-Final-Project-Python.ipynb) | Le capstone : DApp de vote complète assemblant gouvernance (SC-9), chiffrement Paillier des bulletins (SC-16/17), preuve ZKP de validité (SC-15), déploiement anvil puis testnet (SC-24) et tests Foundry (SC-12/14) | Licence | — |
+| 27 | [SC-27-Dette-Irreversibilite-Python](SC-27-Dette-Irreversibilite-Python.ipynb) | L'épilogue mesuré : boucle de gouvernance déroulée sur `anvil` transaction par transaction (gas mesuré depuis de vrais receipts), coût du retour arrière et liste de l'irréversible, table de dette (paramètre/logique/migration), verrou du brûlage démontré par une proposition unanime refusée | Recherche | — |
 
-SC-26 assemble toute la série (SC-0..25) en une DApp de vote complète : smart contract de gouvernance (cf SC-9), chiffrement homomorphique des bulletins via Paillier (cf SC-16-17), preuve zero-knowledge de validite du bulletin (cf SC-15), déploiement sur anvil puis testnet (cf SC-24), tests Foundry (cf SC-12-14). C'est le notebook de cloture -- il suppose tous les autres acquis.
+**Ce que vous saurez faire à l'issue de cette partie :**
 
-### Phase 4 : Épilogue mesuré (SC-27, ~45 min)
+1. **Déployer** sur un réseau public, du testnet gratuit au mainnet L2, avec vérification du source ;
+2. **Assembler** une DApp complète (contrat + crypto + preuve + tests) dans le capstone ;
+3. **Mesurer** ce que le monde réel rend irréversible : coûts gas réels, retour arrière, formes de dette d'un mécanisme on-chain.
 
-Après le capstone, SC-27 change d'angle : au lieu d'ajouter une brique, il **mesure** ce que la série a construit. La boucle de gouvernance (proposition → vote → timelock → exécution) est déroulée sur anvil transaction par transaction, chaque étape ayant son gas mesuré depuis un vrai receipt. Le notebook tente ensuite le **retour arrière** (son coût, et la liste explicite de ce qui ne revient pas : gas brûlé, historique append-only, surpaiement de fenêtre), compare trois formes de changement (paramètre / logique / migration) dans une **table de dette** coût-quorum-délai-réversibilité, et démontre l'échelon zéro : le brûlage de jetons de gouvernance, verrou sans aucun rollback (le geste le moins cher du mécanisme, prouvé par une proposition unanime refusée).
+## Approfondissements (Licence)
 
----
+Cette partie **ne porte aucun approfondissement lettré** : c'est la partie de convergence (déploiement, capstone, épilogue), sans variante qui se détacherait d'un numéro porteur. Rien n'est perdu ici — il n'y a rien à replier.
 
-## Prérequis
+## Sous-séries (Licence)
 
-### Par notebook
+Cette partie n'en contient pas. Elle est elle-même une **sous-série** de [SmartContracts](../README.md), dont le README porte la vue d'ensemble de l'arc et l'escalier entre les parties.
 
-| Notebook | Prérequis | Dépendances |
-|----------|-----------|-------------|
-| SC-23 Cross-Chain | SC-3 à SC-10 (Solidity et account abstraction), notions de bridges | Compte testnet Sepolia |
-| SC-24 Testnet-Deploy | SC-2 (Setup web3.py), SC-3 (Solidity Basics) | `web3 py-solc-x xrpl-py python-dotenv` + clé API Alchemy/Infura |
-| SC-25 Mainnet-Deploy | SC-24 complète | `web3 py-solc-x python-dotenv` + ETH sur Base/Polygon (~$0.01-0.50) |
-| SC-26 Final-Project | SC-0..25 (toute la série), en particulier SC-9/SC-15/SC-16-17/SC-24 | Foundry (forge, anvil), web3, pycryptodome |
-| SC-27 Dette-Irreversibilite | SC-9 (mécanique DAO gouvernance) | `web3 py-solc-x` + anvil local (aucune clé externe) |
+## Installation
 
-### Configuration requise
+- **Prérequis d'entrée** : SC-3 à SC-10 (Solidity et account abstraction) pour SC-23 ; SC-24 pour SC-25 ; toute la série pour le capstone SC-26 ; SC-9 (mécanique DAO) pour SC-27.
+- **Variables d'environnement** (via `.env`, jamais inline dans le code) :
+  - `ALCHEMY_API_KEY` ou `INFURA_API_KEY` — endpoint RPC Sepolia/Base ;
+  - `DEPLOYER_PRIVATE_KEY` — wallet de déploiement (testnet ou L2 mainnet) ;
+  - XRP Testnet : wallet + seed générés via faucet XRP.
+- **Paquets** : `pip install web3 py-solc-x xrpl-py python-dotenv` ; Foundry (`forge`, `anvil`) pour SC-26 ; `pycryptodome` pour le capstone.
+- **Coût réel du mainnet** : sur Base/Polygon, un déploiement coûte ~$0.01-0.50, contre des dizaines de dollars sur Ethereum L1 — le motif pédagogique des L2 : même sécurité (settlement L1), coût divisé d'un à trois ordres de grandeur.
+- **SC-27 ne demande rien d'externe** : `web3 py-solc-x` + `anvil` local (comptes pré-financés), aucune clé, aucun faucet.
+- Sans ces variables, les notebooks tournent en mode dégradé et les outputs committés le documentent (messages `non configure`, `Interaction non disponible`).
 
-Ces notebooks ne s'exécutent pas sans configuration externe. Variables d'environnement attendues (via `.env`, jamais inline dans le code) :
+**Discipline de sécurité** : jamais de clé privée dans le code — `os.getenv("DEPLOYER_PRIVATE_KEY")` sans valeur par défaut ; testnet systématiquement avant mainnet ; gas = coût réel, la checklist de SC-25 (audit, vérification explorateur, proxy pattern) existe pour ça.
 
-- `ALCHEMY_API_KEY` ou `INFURA_API_KEY` -- endpoint RPC Sepolia/Base
-- `DEPLOYER_PRIVATE_KEY` -- wallet de déploiement (testnet ou L2 mainnet)
-- XRP Testnet : wallet + seed generes via faucet XRP
+## Pour aller plus loin — niveau Recherche
 
-Sans ces variables, les notebooks tournent en mode degrade et les outputs committes le documentent (messages `non configure`, `Interaction non disponible`).
+**Formalisations Lean.** Cette partie ne consomme pas le lake `erc20_lean` (qui vit en [02-Solidity-Advanced](../02-Solidity-Advanced/README.md)), mais le capstone mobilise les mêmes briques que la preuve : le vote vérifiable de SC-26 renvoie aux fondations théoriques de [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) — le théorème d'Arrow prouvé formellement éclaire les limites de tout système de vote on-chain — et l'idéal de vérification de SC-14 se prolonge en [SymbolicAI/Lean](../../Lean/README.md). L'inventaire des modules vit dans le README parent, il n'est pas recopié ici.
 
----
-
-## Ponts inter-séries
-
-| Série | Lien | Relation |
-|-------|------|----------|
-| [05-Alternative-Chains](../05-Alternative-Chains/SC-22-Solana-Anchor-Python.ipynb) | Precedent | Solana, Move, Vyper, XRP -- les blockchains abordees dans SC-24/25 |
-| [03-Foundry-Testing](../03-Foundry-Testing/) | Tests | SC-26 capstone utilise forge/anvil |
-| [04-Privacy-Cryptography](../04-Privacy-Cryptography/) | Crypto | SC-26 réutilise Paillier (SC-16-17) et ZKP (SC-15) |
-| [SmartContracts parent](../README.md) | Vue d'ensemble | Progression complète SC-0..SC-27 |
-
----
-
-## Points de vigilance (déploiement réel)
-
-- **Jamais de clé privée dans le code** : `os.getenv("DEPLOYER_PRIVATE_KEY")` sans valeur par defaut. Un secret inline = leak (cf `.claude/rules/secrets-hygiene.md`).
-- **Testnet avant mainnet** : SC-24 (Sepolia, gratuit) systematiquement avant SC-25 (Base/Polygon, payant).
-- **Gas est un cout réel sur mainnet** : SC-25 sur L2 reste bon marche, mais un déploiement foire multiplie le cout. La checklist de SC-25 (audit, vérification explorateur, proxy pattern) existe pour ca.
-- **Verification de contrat** : après déploiement mainnet, publier le source code sur l'explorateur (Basescan, Polygonscan) pour transparence et interaction depuis le front-end.
-
----
+**Le fil de recherche.** Ne plus opposer **théorie** et **pratique** : un protocole n'est vraiment éprouvé qu'**exposé au monde réel** (gas coûteux, adversaires, immutabilité). Le passage testnet → mainnet L2, la discipline du secret et le capstone ne sont pas des exercices accessoires : ils sont la *validation* de tout ce que les parties précédentes ont construit. La leçon transversale : un smart contract n'est jamais « fini » tant qu'il n'a pas survécu au contact d'un réseau public — et l'épilogue SC-27 ajoute le regard du praticien : mesurer la **dette d'irréversibilité** que chaque geste on-chain contracte.
 
 ## Ressources
 
-- [Chainlink CCIP Docs](https://docs.chain.link/ccip) -- cross-chain messaging (SC-23)
-- [Sepolia Faucet](https://sepoliafaucet.com/) -- testnet ETH gratuit (SC-24)
-- [XRP Ledger Testnet](https://xrpl.org/xrp-test-net-faucets.html) -- faucet XRP (SC-24)
-- [Base / Polygon docs](https://docs.base.org/) -- L2 mainnet deployment (SC-25)
-- [Basescan](https://basescan.org/) / [Polygonscan](https://polygonscan.com/) -- vérification de contrat (SC-25)
-
-Voir aussi les [Ressources Externes du README parent](../README.md#ressources-externes) pour les références academiques transversales (Foundry Book, OpenZeppelin, ElectionGuard).
-
----
-
-## Conclusion / Prochaines étapes
-
-### Ce que vous avez appris
-
-Cette dernière sous-série fait le **passage de la théorie au déploiement réel**. L'arc pédagogique quitte le bac à sable `anvil` local pour affronter des réseaux publics, et assemble toute la série dans un capstone :
-
-- **L'interopérabilité cross-chain** (SC-23) — pourquoi déplacer un actif ou un message d'une chaîne à l'autre, comment Chainlink CCIP fait transiter des données on-chain de manière vérifiable, et où se cachent les attaques (reentrancy de bridge, message spoofing).
-- **Le déploiement public** (SC-24, SC-25) — le cœur métier : déployer sur Sepolia (testnet Ethereum) et transiger sur le XRP Testnet (SC-24), puis monter en gamme vers un mainnet L2 (Base, chain_id 8453) où un déploiement coûte quelques centimes (SC-25). Le cycle complet : connexion RPC, wallet, gas, broadcast, vérification.
-- **Le capstone** (SC-26) — la DApp de vote qui assemble toute la série : smart contract de gouvernance (cf SC-9), chiffrement homomorphe des bulletins via Paillier (cf SC-16/17), preuve zero-knowledge de validité (cf SC-15), déploiement anvil puis testnet (cf SC-24), tests Foundry (cf SC-12/14).
-- **L'épilogue mesuré** (SC-27) — le retour au bac à sable pour mesurer ce que le monde réel rend irréversible : coûts gas réels de chaque étape de la boucle de gouvernance, coût du retour arrière et liste de ce qui ne revient jamais, table de dette (paramètre / logique / migration × coût-quorum-délai-réversibilité), et démonstration par échec du verrou du brûlage — détruire le mécanisme coûte moins cher que le faire tourner une fois.
-
-Ces notebooks supposent des clés API et private keys lues depuis l'environnement — les outputs committés documentent honnêtement ce qui se passe quand la configuration est absente, et ce qui a réellement tourné quand elle est présente.
-
-### Prochaines étapes
-
-- **Le retour aux fondamentaux** : après ce capstone, la série est complète. Le meilleur approfondissement est de reprendre un notebook fondateur ([SC-0](../00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb) ou [SC-3](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) — les primitives et la syntaxe se comprennent autrement une fois qu'on a déployé et sécurisé un système réel.
-- **Au-delà des smart contracts** : [SymbolicAI/Lean](../../Lean/README.md) prolonge l'idéal de vérification (cf SC-14) vers la preuve mathématique ; [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) approfondit les fondations théoriques du vote (cf SC-9/SC-17, capstone SC-26).
-- **La série dans son ensemble** : le [sommaire SmartContracts](../README.md) cartographie les sept sous-séries — celle-ci clôt le parcours SC-0 → SC-27.
-
-### Le fil rouge
-
-Les smart contracts en production proposent un changement de regard sur le déploiement : ne plus opposer **théorie** et **pratique**, mais comprendre qu'un protocole n'est vraiment éprouvé qu'**exposé au monde réel** (gas coûteux, adversaires, immutabilité). Le passage testnet → mainnet L2, la discipline du secret (`os.getenv`, jamais inline) et le capstone qui assemble vote, chiffrement homomorphe et preuve ZKP ne sont pas des exercices accessoires : ils sont la *validation* de tout ce que les cinq sous-séries précédentes ont construit. La leçon transversale : un smart contract n'est jamais « fini » tant qu'il n'a pas survécu au contact d'un réseau public — et c'est précisément cette épreuve qui transforme une démonstration pédagogique en un système digne de confiance.
+- [SmartContracts — README de la série](../README.md) : le parcours global, l'inventaire Lean, les ressources externes transversales.
+- [Chainlink CCIP Docs](https://docs.chain.link/ccip) — cross-chain messaging (SC-23).
+- [Sepolia Faucet](https://sepoliafaucet.com/) — testnet ETH gratuit (SC-24).
+- [XRP Ledger Testnet](https://xrpl.org/xrp-test-net-faucets.html) — faucet XRP (SC-24).
+- [Base / Polygon docs](https://docs.base.org/) — L2 mainnet deployment (SC-25).
+- [Basescan](https://basescan.org/) / [Polygonscan](https://polygonscan.com/) — vérification de contrat (SC-25).
+- [GameTheory/SocialChoice](../../../GameTheory/SocialChoice/README.md) — fondations théoriques du vote (SC-9, SC-17, capstone).
+- [Choisir sa vitesse de lecture](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) : le principe des parcours à plusieurs vitesses, à la racine du dépôt.

@@ -243,3 +243,31 @@ def test_run_json_ligne_unique_sans_usage(monkeypatch):
 def test_run_json_sortie_illisible_rend_none(monkeypatch):
     monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess("panic: boom"))
     assert awd._run_json(["organe"]) is None
+
+
+# --- 5. probe_checks : skipped/neutral ne sont pas des rouges (#25092) -----
+
+
+def test_probe_checks_ne_compte_pas_skipped_neutral_rouges(monkeypatch):
+    """`skipped` et `neutral` sont des VERTES, miroir des trois organes
+    canoniques : le predicate de `probe_checks` ne doit compter que
+    `failure`/`timed_out`. Le predicate precedent (`!= "success"`) comptait
+    skipped/neutral comme rouges et fabriquait des rouges fantomes sur des
+    jambes desactivees (ex. Build Quarto / Deploy Pages d'une PR de docs)."""
+    payload = {
+        "head": HEAD,
+        "latest": {
+            "Build": {"conclusion": "success"},
+            "Quarto": {"conclusion": "skipped"},
+            "Deploy": {"conclusion": "skipped"},
+            "Advisory": {"conclusion": "neutral"},
+            "Tests": {"conclusion": "failure"},
+            "Slow": {"conclusion": "timed_out"},
+        },
+        "residual_reds": [],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    result = awd.probe_checks(7, HEAD)
+    assert result["green"] is False
+    assert result["reds"] == ["Slow", "Tests"]

@@ -51,7 +51,7 @@ convention). It is that statement, and not an open arbitration, that k4.3
 awaits. The detailed state lives in `FORMAL_STATUS.md`.
 -/
 
-import Discrepancy.Basic
+import Discrepancy.Basic_en
 
 /-!
 # Hellinger's inequality and Weierstrass' product inequality

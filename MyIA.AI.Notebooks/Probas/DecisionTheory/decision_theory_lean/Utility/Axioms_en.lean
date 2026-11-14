@@ -1,5 +1,5 @@
 import Mathlib
-import Utility.Basic
+import Utility.Basic_en
 
 /-!
 # von Neumann–Morgenstern Axioms (English mirror)
@@ -20,8 +20,6 @@ siblings `Foo.lean` (FR) + `Foo_en.lean` (EN), both compile in one lake.
 -/
 
 namespace Utility_en
-
-open Utility
 
 variable {α : Type*} [Fintype α]
 

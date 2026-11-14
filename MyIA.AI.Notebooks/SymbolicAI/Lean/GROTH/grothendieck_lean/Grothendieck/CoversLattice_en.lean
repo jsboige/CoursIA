@@ -33,11 +33,12 @@ and `sSup_covers` (the arrow form of the `sSup`, absent even though
 -/
 
 import Mathlib.CategoryTheory.Sites.Grothendieck
-import Grothendieck.TopologyLattice
+import Grothendieck.TopologyLattice_en
 
 namespace Grothendieck.CoversLattice_en
 
 open CategoryTheory
+open Grothendieck.TopologyLattice_en
 
 /-!
 ## Section 1 : indexed greatest lower bound (sInf)
@@ -97,9 +98,9 @@ theorem sSup_covers {C : Type*} [Category C] {s : Set (GrothendieckTopology C)}
   constructor
   · intro hS K hK
     rw [GrothendieckTopology.covers_iff]
-    exact (Grothendieck.TopologyLattice.sSup_covering (s := s) (S.pullback f)).mp hS K hK
+    exact (Grothendieck.TopologyLattice_en.sSup_covering (s := s) (S.pullback f)).mp hS K hK
   · intro h
     rw [← GrothendieckTopology.covers_iff]
-    exact (Grothendieck.TopologyLattice.sSup_covering (s := s) (S.pullback f)).mpr h
+    exact (Grothendieck.TopologyLattice_en.sSup_covering (s := s) (S.pullback f)).mpr h
 
 end Grothendieck.CoversLattice_en

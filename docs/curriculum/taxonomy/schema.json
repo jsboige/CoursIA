@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jsboige/CoursIA/schemas/curriculum-taxonomy.schema.json",
+  "title": "Taxonomie pédagogique du cursus CoursIA",
+  "description": "Taxonomie inspirée de la structure path, decimal_path, depth d'Argumentum. Les niveaux exemples et exercices sont réservés pour une évolution ultérieure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "series", "hierarchy", "notebooks", "notebook_tree", "concepts"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "series": {"type": "string", "minLength": 1},
+    "hierarchy": {
+      "type": "array",
+      "minItems": 5,
+      "items": {"enum": ["series", "subseries", "notebook", "example", "exercise"]},
+      "uniqueItems": true,
+      "description": "Niveaux de rattachement pédagogique ; example et exercise sont réservés."
+    },
+    "notebooks": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^MyIA\\.AI\\.Notebooks/[^#]+\\.ipynb$"}
+    },
+    "notebook_tree": {
+      "type": "array",
+      "minItems": 2,
+      "items": {"$ref": "#/$defs/notebookNode"}
+    },
+    "concepts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/concept"}
+    }
+  },
+  "$defs": {
+    "notebookNode": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "path", "decimal_path", "depth", "label_fr"],
+      "properties": {
+        "level": {"enum": ["series", "subseries", "notebook"]},
+        "path": {"type": "string", "pattern": "^[^/]+(/[^/]+)*$"},
+        "decimal_path": {"type": "string", "pattern": "^[1-9][0-9]*(\\.[1-9][0-9]*)*$"},
+        "depth": {"type": "integer", "minimum": 0},
+        "label_fr": {"type": "string", "minLength": 1},
+        "repository_path": {"type": "string", "pattern": "^MyIA\\.AI\\.Notebooks/[^#]+\\.ipynb$"}
+      },
+      "if": {"properties": {"level": {"const": "notebook"}}},
+      "then": {"required": ["repository_path"]}
+    },
+    "citation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["notebook", "cell_id"],
+      "properties": {
+        "notebook": {"type": "string"},
+        "cell_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "concept": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "decimal_path", "depth", "label_fr", "label_en", "definition_fr", "definition_en", "citations", "prerequisites"],
+      "properties": {
+        "id": {"type": "string", "format": "uuid"},
+        "path": {"type": "string", "pattern": "^[^/]+(/[^/]+)*$"},
+        "decimal_path": {"type": "string", "pattern": "^[1-9][0-9]*(\\.[1-9][0-9]*)*$"},
+        "depth": {"type": "integer", "minimum": 0},
+        "label_fr": {"type": "string", "minLength": 1},
+        "label_en": {"type": "string", "minLength": 1},
+        "definition_fr": {"type": "string", "minLength": 1},
+        "definition_en": {"type": "string", "minLength": 1},
+        "citations": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/citation"}},
+        "prerequisites": {"type": "array", "uniqueItems": true, "items": {"type": "string", "format": "uuid"}}
+      }
+    }
+  }
+}

@@ -1,5 +1,7 @@
 # Guide d'enrichissement des notebooks — méthodologie & vocabulaire par domaine
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 
 
 > **Provenance** : consolidé depuis `.claude/agent-memory/notebook-enricher/MEMORY.md` (relocalisé ici le 2026-08-10, item-7 de #9535). Ce fichier regroupe les leçons trans-machine de l'agent `notebook-enricher` : règles de positionnement des cellules, vocabulaire pédagogique par famille, patrons de contenu et checklist qualité. Il complète [.claude/rules/notebook-conventions.md](../../.claude/rules/notebook-conventions.md) (règles C.1/C.2/C.3) et [docs/reference/procedures-recurrentes.md](procedures-recurrentes.md) (workflow d'enrichissement).
@@ -95,7 +97,7 @@
   - All stubs use `None` / `pass` pattern with `# Etape N` and `# Indice` comments
   - Each exercise preceded by markdown cell with objective + indices
   - No `raise NotImplementedError` / `assert False` / `1/0` used
-  - Path correction: NumPy/Pandas notebooks are under `01-Python-For-Data-Science/` not `Track1-LangChain/`
+  - Path correction: NumPy/Pandas notebooks are under `01-Python-For-Data-Science/` not `06-Data-Agents/`
 
 
 

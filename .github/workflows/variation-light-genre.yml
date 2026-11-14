@@ -55,6 +55,10 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # #22954 : borne explicite. Mesure du 2026-11-11 (run 43090090929, dispatch sur
+    # main) : duree du job 17 s. Plancher de 10 min (le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
     steps:
       # variation_light_cap.py importe grain_tag.py (#9485 : extracteur
       # partage avec le guard tag). Les deux modules sont checkout ensemble
