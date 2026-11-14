@@ -80,6 +80,11 @@ CONTEXTE_MAX = 120
 # Nom de fichier : motif nu tolere (nommage curate par nos soins).
 ARXIV_BARE_RE = re.compile(r"\b(\d{4}\.\d{4,5})(?:v\d+)?\b")
 DOI_BARE_RE = re.compile(r"\b(10\.\d{4,9}/[^\s\"'<>,;]+)", re.IGNORECASE)
+#: Le nommage maison remplace le `/` du DOI par un `_` (le slash est interdit
+#: dans un nom de fichier) : `DOI 10.1007_s10441-020-09400-0`. Mesure #22537 :
+#: cette forme n'etait couverte ni par le motif nu slash ni par la premiere
+#: page (copie preprint sans tampon DOI) -- la ligne manquait au catalogue.
+DOI_BARE_UNDERSCORE_RE = re.compile(r"\b(10\.\d{4,9}_[^\s\"'<>,;]+)", re.IGNORECASE)
 # Premiere page : seuls les formes marquees sont de confiance elevee ; les
 # matches nus restent collectes en confiance standard (bruit tolerable : la
 # jointure A1 ne cherche que des identifiants deja connus).
@@ -146,6 +151,30 @@ def _clean_doi(raw: str) -> str:
     return raw.rstrip(".,;)]}")
 
 
+def _normaliser_doi_underscore(brut: str) -> str:
+    """`10.1007_suf-fixe` -> `10.1007/suf-fixe` (forme nom de fichier).
+
+    Seul le PREMIER underscore separe le registre du suffixe ; les suivants
+    appartiennent au suffixe lui-meme. Le `.pdf` final du nom de fichier et la
+    ponctuation enveloppante sont retires avant la normalisation.
+    """
+    brut = re.sub(r"\.pdf$", "", brut, flags=re.IGNORECASE)
+    return re.sub(r"^(10\.\d{4,9})_", r"\1/", _clean_doi(brut), count=1)
+
+
+def _spans_doi(texte: str) -> list[tuple[int, int]]:
+    """Etendues des matches DOI (formes slash et underscore) dans ``texte``.
+
+    Le suffixe d'un DOI peut matcher le motif arXiv nu (`frobt.2017.00060` ->
+    faux `2017.00060`, mesure #22537 sur le rayon Consciousness) : un match
+    arXiv INCLUS dans un match DOI est un fragment de DOI, pas un identifiant.
+    """
+    spans: list[tuple[int, int]] = []
+    for regex in (DOI_BARE_RE, DOI_BARE_UNDERSCORE_RE):
+        spans.extend(m.span() for m in regex.finditer(texte))
+    return spans
+
+
 def _clip(texte: str) -> str:
     """Reduit un contexte a une fenetre lisible autour du match."""
     compact = re.sub(r"\s+", " ", texte).strip()
@@ -157,12 +186,21 @@ def _clip(texte: str) -> str:
 def extraire_du_nom(nom: str) -> list[dict]:
     """Identifiants extraits du seul nom de fichier (confiance elevee)."""
     trouves: list[dict] = []
-    for m in ARXIV_BARE_RE.finditer(nom):
-        trouves.append({"type_id": "arxiv", "id": m.group(1),
-                        "source": "nom_fichier", "confiance": "elevee",
-                        "contexte": _clip(nom)})
+    # DOI d'abord : leurs spans servent a ecarter les faux arXiv de suffixe.
+    spans = _spans_doi(nom)
     for m in DOI_BARE_RE.finditer(nom):
         trouves.append({"type_id": "doi", "id": _clean_doi(m.group(1)),
+                        "source": "nom_fichier", "confiance": "elevee",
+                        "contexte": _clip(nom)})
+    for m in DOI_BARE_UNDERSCORE_RE.finditer(nom):
+        trouves.append({"type_id": "doi",
+                        "id": _normaliser_doi_underscore(m.group(1)),
+                        "source": "nom_fichier", "confiance": "elevee",
+                        "contexte": _clip(nom)})
+    for m in ARXIV_BARE_RE.finditer(nom):
+        if any(m.start() >= debut and m.end() <= fin for debut, fin in spans):
+            continue
+        trouves.append({"type_id": "arxiv", "id": m.group(1),
                         "source": "nom_fichier", "confiance": "elevee",
                         "contexte": _clip(nom)})
     return trouves
@@ -191,7 +229,12 @@ def extraire_du_texte(texte: str) -> list[dict]:
     for m in DOI_MARKED_RE.finditer(texte):
         debut = max(0, m.start() - 40)
         ajouter("doi", _clean_doi(m.group(1)), "elevee", texte[debut:m.end() + 40])
+    # Un arXiv nu inclus dans un DOI est un fragment de suffixe, pas un
+    # identifiant (mesure #22537 : `frobt.2017.00060` -> faux `2017.00060`).
+    spans = _spans_doi(texte)
     for m in ARXIV_BARE_RE.finditer(texte):
+        if any(m.start() >= debut_d and m.end() <= fin_d for debut_d, fin_d in spans):
+            continue
         debut = max(0, m.start() - 40)
         ajouter("arxiv", m.group(1), "standard", texte[debut:m.end() + 40])
     for m in DOI_BARE_RE.finditer(texte):

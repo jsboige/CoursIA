@@ -250,6 +250,61 @@ def test_fournee_without_a_number_is_not_a_successor(body):
     assert lcu.closing_evidence("", [_c(body)], CLOSED)[0] is None
 
 
+# --- vocabulaire elargi (dispatch du coordinateur, 14/11) ----------------------
+#
+# Trois formes de fermeture nommee ne etaient pas reconnues : « superseded
+# par », « repliee dans », « incluse dans #N ». Elles sortaient de l'organe en
+# `ORPHANED_CONTENT` (« aucune raison de fermeture nommee ») alors que le
+# commentaire de fermeture nommeit le successeur.
+
+@pytest.mark.parametrize("body,expected", [
+    ("superseded par #20400", 20400),
+    ("Superseded par #20400", 20400),
+    ("Repliée dans #24361", 24361),
+    ("Repliee dans #24361", 24361),
+    ("Repliée dans la PR #24361", 24361),
+    ("incluse dans #20400", 20400),
+    ("inclus dans #20400", 20400),
+    ("Incluse dans la PR #20400", 20400),
+])
+def test_formes_elargies_nomment_un_successeur(body, expected):
+    """Chaque forme elargie nomme le successeur qu'elle designe."""
+    assert lcu.closing_evidence("", [_c(body)], CLOSED)[0] == expected
+
+
+@pytest.mark.parametrize("body", [
+    # Les references de parent restent exclues : le piege de #20374.
+    "Part of #20316 · See #16231 (EPIC GT-03 split)",
+    "See #16231",
+    # Une forme elargie SANS numero ne nomme rien.
+    "Le contenu est inclus dans la fournée de la semaine",
+    "superseded par la nouvelle version",
+    "Repliee en fournee, a confirmer",
+])
+def test_formes_elargies_sans_numero_ne_nomment_rien(body):
+    """Le controle negatif : elargir le vocabulaire ne l'elargit pas au vide."""
+    assert lcu.closing_evidence("", [_c(body)], CLOSED)[0] is None
+
+
+@pytest.mark.parametrize("body", [
+    "Repliee en fournee, a confirmer",
+    "superseded par la nouvelle version",
+])
+def test_une_fermeture_deliberee_sans_successeur_nomme_est_deliberee(body):
+    """Une repliee ou un superseded SANS successeur nomme : fermeture deliberee.
+
+    La forme dit que la fermeture est assumee ; elle ne dit pas ou est le
+    contenu. C'est `SUPERSEDED` (fermeture expliquee), pas `ORPHANED_CONTENT`
+    (contenu perdu) -- la difference est celle du triage du secretariat.
+    """
+    assert lcu.closing_evidence("", [_c(body)], CLOSED)[1] is True
+
+
+def test_une_fermeture_sans_forme_connue_ne_devient_pas_deliberee():
+    """Le controle negatif de l'elargissement : une prose ordinaire ne suffit pas."""
+    assert lcu.closing_evidence("", [_c("PR fermee, contenu a verifier")], CLOSED)[1] is False
+
+
 def test_abandon_reason_is_recognised():
     assert lcu.closing_evidence("", [_c("PR obsolete, sans objet")], CLOSED)[1] is True
 
