@@ -67,6 +67,7 @@ from check_markdown_claims_output import (  # noqa: E402
     _is_threshold_expression,
     _is_version_token,
     _in_exception_code_span,
+    _anchored_output_cells,
     _lit_skip,
     _lit_marker_pos,
     _normalize_num,
@@ -1441,6 +1442,111 @@ class TestDerivedClaims:
         assert result["verdict"] == "CLEAN", result
         assert not result["findings"]
         assert not result["derived_claims"]
+
+    def test_ratio_operands_on_separate_lines_share_one_source_cell(self, tmp_path: Path):
+        """GT-18c prints the class count and corpus total on separate lines.
+
+        The relation is supported because both operands come from the same
+        output cell; unrelated cells must not be combined into a proof.
+        """
+        nb = _mk_nb([
+            _code_cell("print('distribution')", [
+                _stream_output("total : 120 instances\nhumour_reussi : 48\n"),
+            ]),
+            _md_cell("Le pourcentage calculé de 48 sur 120 est 40 %."),
+        ])
+        path = tmp_path / "derived_ratio_separate_lines.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+        assert not result["derived_claims"]
+
+    def test_wrong_ratio_remains_unproven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('distribution')", [
+                _stream_output("total : 120 instances\nhumour_reussi : 48\n"),
+            ]),
+            _md_cell("Le pourcentage calculé de 48 sur 120 est 41 %."),
+        ])
+        path = tmp_path / "derived_ratio_wrong.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [claim["normalized"] for claim in result["derived_claims"]] == ["41"]
+
+    def test_distant_section_anchor_proves_matching_output(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("# Section 4 : mesure", [_stream_output("raccourcis : 15.0 %")]),
+            _code_cell("step_1()", [_stream_output("étape 1")]),
+            _code_cell("step_2()", [_stream_output("étape 2")]),
+            _code_cell("step_3()", [_stream_output("étape 3")]),
+            _md_cell("La mesure de la §4 est 15.0 %.")
+        ])
+        path = tmp_path / "distant_section_anchor.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+
+    def test_ambiguous_section_anchor_does_not_prove_value(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("# Section 4 : première mesure", [_stream_output("ratio : 15.0 %")]),
+            _code_cell("# Section 4 : seconde mesure", [_stream_output("ratio : 15.0 %")]),
+            _code_cell("step_1()", [_stream_output("étape 1")]),
+            _code_cell("step_2()", [_stream_output("étape 2")]),
+            _code_cell("step_3()", [_stream_output("étape 3")]),
+            _md_cell("La mesure de la §4 est 15.0 %.")
+        ])
+        path = tmp_path / "ambiguous_section_anchor.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["15.0"]
+
+    def test_huge_cell_range_is_clamped_to_existing_prior_cells(self):
+        cells = [
+            _code_cell(f"print({idx})", [_stream_output(f"value={idx}")])
+            for idx in range(4)
+        ] + [_md_cell("valeur")]
+        anchored = _anchored_output_cells("cell[0-9999999999]", cells, 4)
+        assert [idx for idx, _ in anchored] == [0, 1, 2, 3]
+
+    def test_parent_section_anchor_does_not_match_decimal_subsection(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("# Section 4.1 : mesure", [_stream_output("ratio : 15.0 %")]),
+            _code_cell("step_1()", [_stream_output("étape 1")]),
+            _code_cell("step_2()", [_stream_output("étape 2")]),
+            _code_cell("step_3()", [_stream_output("étape 3")]),
+            _md_cell("La mesure de la section §4 est 15.0 %.")
+        ])
+        path = tmp_path / "parent_section_not_subsection.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["15.0"]
+
+    def test_haiku_model_identifier_is_not_a_measurement(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('status')", [_stream_output("status : ready")]),
+            _md_cell("Le modèle épinglé haiku-4.5 est évalué."),
+        ])
+        path = tmp_path / "model_identifier.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+
+    def test_haiku_identifier_does_not_hide_a_real_metric(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('score')", [_stream_output("F1 : 0.42")]),
+            _md_cell("Le modèle haiku-4.5 donne F1=0.455."),
+        ])
+        path = tmp_path / "model_identifier_metric.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["0.455"]
 
     def test_same_row_difference_is_proven(self, tmp_path: Path):
         nb = _mk_nb([
