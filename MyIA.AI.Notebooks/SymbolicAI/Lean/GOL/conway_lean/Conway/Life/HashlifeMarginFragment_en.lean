@@ -325,7 +325,7 @@ theorem dilation_window_forces_empty (c : MacroCell) (a b : Int × Int)
     omega
 
 /-- **A period repeats itself** (local byte-identical copy of
-    `evolve_mul_of_period`, JumpCapture L518 — this module cannot import it,
+    `evolve_mulJ_of_period`, JumpCapture — this module cannot import it,
     import cycle A↔B, cf docstring of `jumpCapturedF`): if `g` has period
     `T` (in the weak sense `evolve T g = g`), then any multiple `m·T` of
     steps brings it back to itself. By induction on `m` via `evolve_add`. -/
