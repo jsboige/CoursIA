@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-13
+> REFERENCE — vivante — dernière révision 2026-11-14
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
@@ -313,7 +313,7 @@ l'Epic) ; un dossier de revue est alors préparé (T2).*
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12-Sensitivity-Theorem.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14-Finiteness-Derivatives.ipynb`
-- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15-Grothendieck-Tribute.ipynb`
+- [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/GROTH-02-Tribut-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-01-Conway-Proofs-Lean-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-02-Invariants-Python.ipynb`
 - [ ] `MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb`
