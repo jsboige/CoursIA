@@ -36,6 +36,7 @@ GUARDED_NOTEBOOKS = [
     "01-Solidity-Foundation/SC-06-Errors-Events-Python.ipynb",
     "02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb",
     "02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb",
+    "02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb",
     "06-Real-World/SC-27-Dette-Irreversibilite-Python.ipynb",
 ]
 
