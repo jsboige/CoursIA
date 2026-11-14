@@ -139,7 +139,7 @@ CGROUP_PARENT="${COURSIA_CGROUP_PARENT:-coursia-ci.slice}"
 WORK_MOUNT="/home/runner/_work"
 TOOLCACHE_MOUNT="/opt/hostedtoolcache"
 
-# LE DAEMON EINGLE (mesure du 13/11 sur ai-01). Le pool de runners de cette
+# LE DAEMON EPINGLE (mesure du 13/11 sur ai-01). Le pool de runners de cette
 # machine ne tourne PAS sur le daemon du contexte par defaut
 # (`unix:///var/run/docker.sock`) mais sur le socket Docker CE
 # (`unix:///var/run/docker-ce.sock`) : c'est l'epinglage du lanceur
@@ -177,8 +177,9 @@ TOOLCACHE_VOLUME="${COURSIA_MAIN_TOOLCACHE_VOLUME:-coursia-runner-toolcache}"
 BASE="${COURSIA_MAIN_BASE:-/var/lib/coursia-runners-main}"
 # Le repertoire du FICHIER DE TOKEN : il n'existe que le temps de la
 # creation, et il est supprime a la sortie (filet). Il ne depend pas de
-# `$HOME` : le fichier doit etre lisible par le daemon vise, quel que soit
-# l'operateur.
+# `$HOME` : le fichier doit etre lisible par le client `docker` qui invoque
+# le daemon vise (`--env-file` est lu par le client, pas par le daemon),
+# quel que soit l'operateur.
 TOKEN_DIR="${COURSIA_MAIN_TOKEN_DIR:-${TMPDIR:-/tmp}}"
 
 # Le token d'enregistrement est passe par `--env-file`, et non par
@@ -189,7 +190,7 @@ TOKEN_DIR="${COURSIA_MAIN_TOKEN_DIR:-${TMPDIR:-/tmp}}"
 # visible par `docker inspect`, comme pour tout conteneur -- le token
 # est court-lived, et seul ai-01 le monte.)
 TOKEN_FILE_PLACEHOLDER="<fichier-token-mode-600>"
-#: Chemin du fichier de token de l'EXUTION en cours. Global : le `trap` de
+#: Chemin du fichier de token de l'EXECUTION en cours. Global : le `trap` de
 #: fin de script le lit apres la sortie de la fonction qui l'a pose.
 TOKEN_FILE_PATH=""
 
@@ -399,7 +400,7 @@ mode_check() {
       rc=1
     fi
     # Les MONTAGES. C'est la derive la plus discrete de toutes : le slot
-    # peut tourner,(labels conformes, image conforme, caps conformes) et
+    # peut tourner (labels conformes, image conforme, caps conformes) et
     # pourtant travailler dans un volume qui n'est pas celui de la
     # specification -- son toolcache partage n'est pas celui du pool, son
     # espace de travail n'est pas celui du slot. Mesure du 13/11 : le slot
