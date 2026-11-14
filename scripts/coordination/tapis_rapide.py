@@ -444,6 +444,9 @@ def _parser() -> argparse.ArgumentParser:
     p.add_argument("--cache-s", type=int, default=300, help="0 desactive le cache")
     p.add_argument("--graine", default=None)
     p.add_argument("--lecture", default=None, help="rejouer un dossier deja lu")
+    p.add_argument("--allow-stale", action="store_true",
+                   help="outre-passer la garde de fraicheur (main local en retard "
+                        "ou module du tirage divergent d'origin/main)")
     return p
 
 
@@ -451,6 +454,25 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
          maintenant: datetime | None = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
+    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE sur un main
+    # local en retard ou un module du tirage divergent d'origin/main. Import
+    # local et bloc compact : le conflit eventuel avec une PR parallele sur
+    # ce fichier reste trivial. Un rejeu --lecture est un diagnostic hors
+    # ligne : il ne sert pas de grains, la garde ne s'y applique pas.
+    fraicheur = None
+    if not args.lecture:
+        from coordination import main_freshness
+        fraicheur = main_freshness.garder(depot, allow_stale=args.allow_stale)
+        if fraicheur["refuse"]:
+            for r in fraicheur["raisons"]:
+                print(f"TIRAGE REFUSE [{r['code']}] : {r['motif']} -- remede : {r['remede']}",
+                      file=sys.stderr)
+            sys.stdout.buffer.write((json.dumps(fraicheur, ensure_ascii=False, indent=1)
+                                     + "\n").encode("utf-8"))
+            return 4  # pas le repli picker : il fait rejouer le meme incident
+        if fraicheur.get("outre_passe"):
+            print("TIRAGE SUR UN ETAT PERIME (--allow-stale) : "
+                  + " ; ".join(r["motif"] for r in fraicheur["raisons"]), file=sys.stderr)
     try:
         if args.lecture:
             lecture = gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
@@ -466,6 +488,8 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
+    if fraicheur is not None:
+        r["fraicheur"] = fraicheur  # le depassement --allow-stale se LIT dans le JSON
     source = f"dossier {args.lecture}" if args.lecture else "GitHub + origin/main local"
     out = json.dumps(r, ensure_ascii=False, indent=1) if args.json else texte(r, source)
     sys.stdout.buffer.write((out + "\n").encode("utf-8"))

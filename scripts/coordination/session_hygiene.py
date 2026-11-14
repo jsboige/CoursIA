@@ -524,15 +524,180 @@ MANUAL_REMINDERS = [
 ]
 
 
-def main() -> int:
+# --- verrou de lane : une session par lane, VISIBLE (incident du 14/11) -----
+#
+# Mesure du 2026-11-14 : sur myia-po-2027:CoursIA, une seconde session de la
+# meme lane a pousse un commit sur la branche d'une PR pendant que la premiere
+# y travaillait. `check_lane_claim.py` traite deux sessions d'une meme lane
+# comme une reprise legitime (premisse « une lane = un agent actif », #14323)
+# : il ne peut pas voir ce cas. Ce verrou rend le second processus VISIBLE,
+# sur cette machine, au debut du cycle. Le mecanisme d'apparition des
+# doublons n'est pas etabli : l'organe ne suppose pas de cause, il mesure.
+
+#: Le verrou vit sous `.tmp/` (ignore par git) : un fichier par depot, une
+#: entree par lane -- une machine peut porter plusieurs lanes.
+LANE_LOCK_NAME = ".tmp/lane-session.json"
+
+
+def _pid_windows(pid: int) -> tuple[bool, float | None]:
+    """(vivant, heure de creation epoch s) d'un PID sous Windows.
+
+    Un PID qu'on ne peut pas sonder (erreur 5, processus eleve) est VIVANT :
+    on ne declare jamais mort un processus qu'on n'a pas pu interroger.
+    L'heure de creation defait la reutilisation de numero : le PID est rendu
+    a un autre processus, l'heure de creation ne le suit pas.
+    """
+    import ctypes
+    import ctypes.wintypes as wt
+
+    process_query_limited_information = 0x1000
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    handle = k32.OpenProcess(process_query_limited_information, False, pid)
+    if not handle:
+        # 5 = acces refuse (il vit, eleve) ; 87 = parametre invalide (absent).
+        return (ctypes.get_last_error() == 5, None)
+    try:
+        creation, exit_t, kern, user = (wt.FILETIME() for _ in range(4))
+        if not k32.GetProcessTimes(handle, ctypes.byref(creation), ctypes.byref(exit_t),
+                                   ctypes.byref(kern), ctypes.byref(user)):
+            return (True, None)
+        ticks = (creation.dwHighDateTime << 32) | creation.dwLowDateTime
+        return (True, (ticks - 116444736000000000) / 1e7)
+    finally:
+        k32.CloseHandle(handle)
+
+
+def _pid_posix(pid: int) -> tuple[bool, float | None]:
+    """(vivant, None) sous POSIX : os.kill(pid, 0) comme sonde, jamais comme signal."""
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return (False, None)
+    except PermissionError:
+        return (True, None)
+    except OSError:
+        return (True, None)  # insondable n'est pas mort
+    return (True, None)
+
+
+def pid_etat(pid: int) -> tuple[bool, float | None]:
+    """(vivant, heure de creation epoch s) d'un PID ; robuste a un PID mort."""
+    if not isinstance(pid, int) or pid <= 0:
+        return (False, None)
+    if os.name == "nt":
+        try:
+            return _pid_windows(pid)
+        except OSError:
+            return (True, None)  # echec de sonde : pas une preuve de mort
+    return _pid_posix(pid)
+
+
+def _lire_verrou(path: Path) -> dict:
+    """Le verrou lu : dict lane -> entree ; illisible = absent (remplace plus tard)."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _ecrire_verrou(path: Path, verrous: dict) -> None:
+    """Ecriture remplacee atomiquement : deux demarrages simultanes ne se bribent pas."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.parent / f"lane-session.{os.getpid()}.new"
+    tmp.write_text(json.dumps(verrous, ensure_ascii=False, indent=1), encoding="utf-8")
+    os.replace(tmp, path)
+
+
+def _entree_verrou(pid: int, session_id: str, maintenant: float | None,
+                   etat_pid=pid_etat) -> dict:
+    """Une entree de verrou : PID, heure de debut UTC explicite, session, machine."""
+    _, creation = etat_pid(pid)
+    debut = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(maintenant or time.time()))
+    return {"pid": pid, "debut": debut, "debut_proc": creation,
+            "session": session_id or os.environ.get("CLAUDE_SESSION_ID", ""),
+            "machine": os.environ.get("COMPUTERNAME")
+            or os.environ.get("HOSTNAME") or ""}
+
+
+def check_lane_lock(root: Path, lane: str, pid: int | None = None,
+                    session_id: str = "", maintenant: float | None = None,
+                    etat_pid=pid_etat) -> list[Check]:
+    """Verrou de lane : un second processus VIVANT sous la meme lane, sur ce depot.
+
+    Pose `<repo>/.tmp/lane-session.json` et le lit d'abord. Un PID vivant
+    different du sien est un ROUGE nomme : deux sessions d'une meme lane sont
+    indiscernables pour le protocole de claim (#14323), et c'est le doublon
+    qui se supprime -- `CronList` puis `CronDelete` DANS la session qui le
+    porte (regle de flotte : une session par lane). Robuste a un PID mort
+    (reprise silencieuse du verrou) et, sous Windows, a la reutilisation du
+    numero (l'heure de creation ne suit pas le numero). Les entrees des
+    AUTRES lanes du depot sont preservees.
+    """
+    path = root / LANE_LOCK_NAME
+    mon_pid = pid if pid is not None else os.getpid()
+    verrous = _lire_verrou(path)
+    entree = verrous.get(lane)
+    autre = entree.get("pid") if isinstance(entree, dict) else None
+    if isinstance(autre, int) and autre > 0 and autre != mon_pid:
+        vivant, creation = etat_pid(autre)
+        debut_proc = entree.get("debut_proc")
+        # Numero reutilise : le PID vit mais CE processus a demarre a une autre
+        # heure que celui qui a pose le verrou -- le porteur est mort.
+        reuse = (vivant and isinstance(creation, float) and isinstance(debut_proc, float)
+                 and abs(creation - debut_proc) > 1.0)
+        if vivant and not reuse:
+            return [Check(
+                "session-double",
+                RED,
+                f"le processus {autre} (lane {lane}, demarre "
+                f"{entree.get('debut') or '?'}) est VIVANT : une SECONDE session "
+                f"tourne sous cette lane",
+                "regle une session par lane : CronList puis CronDelete du cron du "
+                "doublon DANS la session qui le porte ; cette session n'edite rien "
+                "tant qu'il vit",
+                {"lane": lane, "autre_pid": autre},
+            )]
+        verrous[lane] = _entree_verrou(mon_pid, session_id, maintenant, etat_pid)
+        _ecrire_verrou(path, verrous)
+        return [Check(
+            "session-double",
+            GREEN,
+            f"verrou repris : le processus precedent ({autre}) est mort"
+            + (" (son numero a ete reutilise par un autre processus)" if reuse else ""),
+            data={"lane": lane, "reprise": True},
+        )]
+    if isinstance(entree, dict) and autre == mon_pid:
+        return [Check("session-double", GREEN,
+                      "verrou deja pose par ce processus (meme session)",
+                      data={"lane": lane})]
+    illisible = path.exists() and not verrous  # lu avant d'y poser sa propre entree
+    verrous[lane] = _entree_verrou(mon_pid, session_id, maintenant, etat_pid)
+    _ecrire_verrou(path, verrous)
+    detail = f"verrou de lane pose (pid {mon_pid})"
+    if illisible:
+        detail = f"verrou illisible, remplace -- {detail}"
+    return [Check("session-double", GREEN, detail, data={"lane": lane})]
+
+
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--json", action="store_true", help="sortie structuree")
     ap.add_argument("--quiet", action="store_true", help="n'afficher que RED et AMBER")
-    args = ap.parse_args()
+    ap.add_argument("--lane", default=None,
+                    help="machine:workspace -- pose et verifie le verrou de session "
+                         "de lane (debut de cycle)")
+    ap.add_argument("--session-id", default=None,
+                    help="ID de session du harnais (defaut : $CLAUDE_SESSION_ID)")
+    args = ap.parse_args(argv)
 
     root = repo_root()
 
     checks: list[Check] = check_fetch(root)
+    if args.lane:
+        # Des le debut du cycle : un doublon vivant invalide tout ce qui suit.
+        checks += check_lane_lock(root, args.lane,
+                                  session_id=args.session_id or "")
     checks += check_branch(root)
     checks += check_main_hostage(root)
     checks += check_organs(root)
