@@ -165,6 +165,10 @@ En [17](Sudoku-17-LLM-Python.ipynb), la comparaison porte sur le rôle du modèl
 
 Ces choix se retrouvent dans l'ordonnancement et l'allocation sous contraintes, la vérification de règles avec SMT ou la recherche d'une bonne configuration en optimisation. Le Sudoku permet d'en observer les mécanismes sur un problème dont le résultat se vérifie facilement.
 
+### Comparaison statistique en C#
+
+[Sudoku-18b — Comparaison statistique en C#](Sudoku-18b-Statistical-Comparison-CSharp.ipynb) complète la [version Python](Sudoku-18b-Statistical-Comparison-Python.ipynb). Les solveurs et le bootstrap sont natifs C# ; Python.NET donne accès aux tests de référence SciPy et à l'oracle Holm de statsmodels. L'environnement Python doit fournir NumPy, SciPy et statsmodels ; `PYTHONNET_PYDLL` désigne sa bibliothèque partagée, avec `PYTHONHOME` et `PYTHONPATH` si nécessaire.
+
 ## Installation — pratique, tous niveaux
 
 Commencer par le carnet de la méthode choisie dans un clone du dépôt, qui fournit les puzzles, les bibliothèques locales et les ressources voisines.

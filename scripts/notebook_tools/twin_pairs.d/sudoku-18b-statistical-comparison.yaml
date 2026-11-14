@@ -1,0 +1,10 @@
+- name: "Sudoku-18b Statistical Comparison"
+  family: Sudoku
+  python: MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les solveurs, chronométrages et bootstrap sont natifs C# ; les tests Wilcoxon, Mann-Whitney et rangs utilisent réellement SciPy via Python.NET, et statsmodels fournit l'oracle Holm. NumPy ne produit que les masques reproductibles."
+  known_differences:
+    - "Les chronométrages et le générateur C# du bootstrap diffèrent du Python : les valeurs réalisées ne sont pas supposées identiques."
+    - "Les graphiques C# sont des SVG statiques ; le Python utilise Matplotlib."
