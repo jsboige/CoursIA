@@ -97,7 +97,7 @@ Cette série ancre ses carnets dans la **référence canonique du deep learning*
 | Chapitre | Sujet | Carnet(s) d'ancrage |
 |---|---|---|
 | ch. 5 | Machine learning de base | [3.0-Théorie-Information](3.0-Theorie-Information.ipynb) (entropie, KL) |
-| ch. 6 (6.5) | Réseaux feedforward, backprop | [3.1-Rétropropagation](3.1-Retropropagation.ipynb) — contre-exemple fondateur soldé |
+| ch. 6 (6.5) | Réseaux feedforward, backprop | [3.1-Rétropropagation Python](3.1-Retropropagation.ipynb) · [C#](3.1-Retropropagation-CSharp.ipynb) — gradients manuels et témoin autograd TorchSharp ; données et baseline sklearn via Python.NET en C# |
 | ch. 7 (5.2.2, 7.5, 7.8) | Régularisation | [3.3-Régularisation](3.3-Regularisation.ipynb) |
 | ch. 8 (8.1-8.3) | Optimisation pour le deep learning | [2.2-Descente-de-gradient](../02-ML-Cours/2.2-Descente-de-gradient.ipynb) (carnet 02, ancrage par [#19329](https://github.com/jsboige/CoursIA/pull/19329)) |
 | ch. 9 | Réseaux convolutifs | [4.1-Conv-NumPy-Torch-Allclose](../04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) |

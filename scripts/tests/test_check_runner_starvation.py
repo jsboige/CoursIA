@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
@@ -902,3 +906,269 @@ def test_main_cadence_only_pass_still_reports_the_scheduler_silence(
     assert payload["gh_calls"] == 1
     assert seen == {"inventory": 0, "starvation": 0}
     assert any("SCHEDULER MUET" in w for w in payload["warnings"])
+
+
+# --- MIROIR D'OBJETS (#26453) ----------------------------------------------
+# L'alerte `[WARN][mirror]` du superviseur ne vaut que si elle REMONTE sur une
+# surface qu'une lane lit. Ces tests mesurent ce branchement -- et ses
+# limites : hors de l'hote qui porte le miroir, l'etat est illisible, et
+# l'organe doit le dire sans rougir (un rouge sur une absence de preuve
+# apprendrait a etre ignore).
+
+def _mirror_fixture(tmp_path, fails=None, warn=False, age_s=0.0):
+    """Ecrit l'etat du miroir comme le superviseur l'ecrit (#26459).
+
+    Le compteur `.objects-mirror.fails` et l'horodatage `.objects-mirror.ok`
+    vivent dans le PARENT du miroir (le volume toolcache) ; le journal
+    `objects-mirror.log` vit dans le repertoire d'etat du superviseur.
+    """
+    state_dir = tmp_path / "state"
+    volume = tmp_path / "toolcache"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    volume.mkdir(parents=True, exist_ok=True)
+    mirror = volume / "coursia-mirror.git"
+    if fails is not None:
+        path = volume / ".objects-mirror.fails"
+        path.write_text(str(fails), encoding="utf-8")
+        if age_s:
+            old = time.time() - age_s
+            os.utime(path, (old, old))
+    if warn:
+        (state_dir / "objects-mirror.log").write_text(
+            "miroir: rafraichi (2026-11-14T01:02:35+00:00)\n"
+            "[WARN][mirror] refresh en echec 3 fois de suite (~15 min) "
+            "-- cause : le fetch a echoue (voir la sortie du fetch ci-dessus)\n",
+            encoding="utf-8")
+    return str(state_dir), str(mirror)
+
+
+def test_mirror_absent_is_a_note_and_never_an_error(tmp_path):
+    # Hors de l'hote du miroir (runner GitHub-hosted), aucun fichier n'existe.
+    # L'organe ne peut rien conclure sur le miroir : c'est une NOTE.
+    state = rs.read_mirror_state(str(tmp_path / "nope"), str(tmp_path / "no-mirror"))
+    assert state.available is False
+    errors, warnings, notes = rs.mirror_verdict(state)
+    assert errors == []
+    assert warnings == []
+    assert any("ne conclut rien" in n for n in notes)
+
+
+def test_mirror_counter_below_threshold_is_not_an_error(tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=1)
+    state = rs.read_mirror_state(state_dir, mirror)
+    assert state.available is True
+    assert state.fails == 1
+    errors, _warnings, notes = rs.mirror_verdict(state)
+    assert errors == []
+    assert any("aucun gel" in n for n in notes)
+
+
+def test_mirror_fresh_counter_at_threshold_is_an_error_with_the_verbatim_line(
+        tmp_path):
+    # Le cas fondateur : la boucle tourne et le miroir echoue. C'est un
+    # ROUGE, et la ligne `[WARN][mirror]` du superviseur est reprise VERBATIM
+    # (c'est elle qui nomme la cause).
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+    state = rs.read_mirror_state(state_dir, mirror)
+    errors, _warnings, _notes = rs.mirror_verdict(state)
+    assert len(errors) == 1
+    assert "MIROIR FIGE" in errors[0]
+    assert "[WARN][mirror] refresh en echec 3 fois de suite" in errors[0]
+    assert "le fetch a echoue" in errors[0]
+
+
+def test_mirror_stale_counter_is_a_note_not_a_permanent_red(tmp_path):
+    # Un compteur VIEUX ne prouve pas que le miroir echoue : il prouve que la
+    # boucle de rafraichissement est arretee (service desactive, hote eteint).
+    # Confondre les deux produirait un rouge permanent sur un etat fige depuis
+    # des semaines -- et un rouge permanent s'apprend a etre ignore.
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True, age_s=7200.0)
+    state = rs.read_mirror_state(state_dir, mirror)
+    errors, _warnings, notes = rs.mirror_verdict(state)
+    assert errors == []
+    assert any("n'est plus reecrit" in n for n in notes)
+
+
+def test_mirror_warn_line_is_read_from_the_tail_of_the_log(tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+    state = rs.read_mirror_state(state_dir, mirror)
+    assert state.warn_line.startswith("[WARN][mirror]")
+    assert state.counter_age_s is not None
+    assert state.counter_age_s < 60.0
+
+
+def test_main_surfaces_the_mirror_alert_in_its_payload(monkeypatch, capsys,
+                                                         tmp_path):
+    # La branche qui compte : l'alerte du miroir doit changer le VERDICT de
+    # l'organe (rc 1) et apparaitre dans le payload JSON -- c'est ce que lit
+    # une machine, pas seulement un oeil.
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", lambda *a, **k: [])
+    monkeypatch.setattr(rs, "fetch_inventory", lambda *a, **k: rs.RunnerInventory())
+    monkeypatch.setattr(rs, "fetch_starvation", lambda *a, **k: rs.Starvation())
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json",
+        "--mirror-state-dir", state_dir,
+        "--mirror-path", mirror,
+    ])
+
+    assert rs.main() == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "ERROR"
+    assert payload["mirror"]["available"] is True
+    assert payload["mirror"]["fails"] == 3
+    assert payload["mirror"]["threshold"] == 3
+    assert "[WARN][mirror]" in payload["mirror"]["warn_line"]
+    assert any("MIROIR FIGE" in e for e in payload["errors"])
+
+
+def test_main_leaves_the_mirror_quiet_when_it_is_healthy(monkeypatch, capsys,
+                                                          tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=0)
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", lambda *a, **k: [])
+    monkeypatch.setattr(rs, "fetch_inventory", lambda *a, **k: rs.RunnerInventory())
+    monkeypatch.setattr(rs, "fetch_starvation", lambda *a, **k: rs.Starvation())
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json",
+        "--mirror-state-dir", state_dir,
+        "--mirror-path", mirror,
+    ])
+
+    assert rs.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "OK"
+    assert payload["mirror"]["fails"] == 0
+    assert not any("MIROIR" in e for e in payload["errors"])
+
+
+# --- MODE MIROIR SEUL + SURFACE PR (#26465) --------------------------------
+# L'etat du miroir est LOCAL a l'hote qui le porte. Les trois advisories de
+# starvation le lisaient depuis `ubuntu-latest`, ou il n'existe pas : l'alerte
+# n'atteignait donc AUCUNE surface (revue ai-01 du 14/11, reserve 1). Le mode
+# `--mirror-only` est le mode du job de PR : il tourne sur le slot
+# auto-heberge qui porte le miroir, ne paie AUCUN appel API, et sa
+# conclusion tombe sur la PR.
+
+def test_mirror_only_mode_is_red_on_a_frozen_mirror(monkeypatch, capsys,
+                                                     tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+
+    def _interdit(*a, **k):
+        raise AssertionError("le mode miroir seul ne doit appeler aucune API")
+
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", _interdit)
+    monkeypatch.setattr(rs, "fetch_inventory", _interdit)
+    monkeypatch.setattr(rs, "fetch_starvation", _interdit)
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--mirror-only", "--json",
+        "--mirror-state-dir", state_dir,
+        "--mirror-path", mirror,
+    ])
+
+    assert rs.main() == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["measurement"] == "mirror-only"
+    assert payload["gh_calls"] == 0
+    assert payload["status"] == "ERROR"
+    assert any("MIROIR FIGE" in e for e in payload["errors"])
+    assert "[WARN][mirror]" in payload["mirror"]["warn_line"]
+
+
+def test_mirror_only_mode_is_a_note_when_the_state_is_unreadable(monkeypatch,
+                                                                  capsys,
+                                                                  tmp_path):
+    # Hors de l'hote du miroir, l'absence d'etat ne prouve rien : note,
+    # jamais rouge (anti-FP).
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--mirror-only", "--json",
+        "--mirror-state-dir", str(tmp_path / "absent"),
+        "--mirror-path", str(tmp_path / "absent" / "coursia-mirror.git"),
+    ])
+
+    assert rs.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "OK"
+    assert not payload["errors"]
+    assert any("ne conclut rien" in n for n in payload["notes"])
+
+
+def test_le_rouge_du_miroir_atteint_la_pr():
+    """TEMOIN : le rouge doit avoir une surface, et cette surface est la PR.
+
+    Ce test ne mesure pas le verdict -- les tests du dessus le font. Il
+    **pince le cablage**. Sans lui, on pourrait faire tourner le job sur
+    `ubuntu-latest` (ou l'enlever) : l'etat du miroir redeviendrait illisible
+    sur la seule surface ou l'alerte atterrissait, et le rouge mourrait en
+    silence -- exactement comme le 26/10.
+    """
+    workflow = CI_DIR.parents[1] / ".github/workflows/mirror-state-pr-advisory.yml"
+    assert workflow.exists(), "le job de PR du miroir doit exister"
+    texte = workflow.read_text(encoding="utf-8")
+
+    # 1. La surface : le job est declenche par une PR.
+    assert "pull_request:" in texte
+    # 2. Il tourne sur le slot qui PORTE le miroir (le volume y est monte).
+    assert "self-hosted" in texte and "coursia-linux" in texte
+    # 3. Il appelle l'organe en mode miroir seul -- le mode qui ne paie
+    #    aucun appel API.
+    assert "--mirror-only" in texte
+    # 4. Il ne consomme pas de quota : aucun appel `gh` dans le job.
+    assert "gh api" not in texte and "gh issue" not in texte
+
+    # 5. Structure : le job existe bien, avec le runner auto-heberge.
+    try:
+        import yaml  # type: ignore
+    except ImportError:  # pragma: no cover
+        return
+    data = yaml.safe_load(texte)
+    # YAML 1.1 : la cle `on:` se parse en booleen True.
+    triggers = data.get("on", data.get(True))
+    assert "pull_request" in triggers
+    job = data["jobs"]["mirror"]
+    runs_on = job["runs-on"]
+    assert isinstance(runs_on, list)
+    assert "self-hosted" in runs_on and "coursia-linux" in runs_on
+    etapes = "\n".join(str(s.get("run", "")) for s in job["steps"])
+    assert "--mirror-only" in etapes
+
+    # 6. Le job ne fait PAS de checkout. Mesure du 14/11 : sur la tete
+    #    `13a27f53ced7a`, le checkout a consomme les 5 minutes du job
+    #    (`git fetch --depth=1 origin +<sha>:refs/remotes/pull/26465/merge`
+    #    de 05:51:19 a 05:56:16, puis `##[error]The operation was canceled.`)
+    #    et le job a ete tue SANS produire de verdict. C'est structurel : le
+    #    checkout est precisement ce qui se degrade quand le miroir est fige
+    #    (A/B #26468 : 296,5 s mediane par la voie paresseuse, 132,1 s en
+    #    fetch bulk, 12,1 s par les alternates). Un observateur qui meurt de
+    #    la panne qu'il observe n'alerte personne.
+    assert not any("actions/checkout" in str(s.get("uses", ""))
+                   for s in job["steps"]), (
+        "le job du miroir ne doit PAS faire de checkout : c'est la panne "
+        "qu'il observe qui le tuerait (mesure du 14/11, job annule a 5 min)"
+    )
+    # 7. L'organe est recupere par URL brute, epinglee sur la tete de la PR :
+    #    c'est le contenu du checkout (le code de la PR a sa tete), sans le
+    #    fetch. Un organe deplace est un ROUGE nomme, pas une disparition
+    #    silencieuse -- c'est l'incident du 26/10 qu'on ne rejoue pas.
+    #    Le controle passe par le **netloc** PARSE : comparer une
+    #    sous-chaine a une URL est le patron que CodeQL signale comme
+    #    assainissement incomplet (`Incomplete URL substring
+    #    sanitization`), et le signalement tombait sur le *test* lui-meme
+    #    (annotation CodeQL du 14/11 sur cette ligne). On compare donc le
+    #    host PARSE, puis le chemin -- l'URL complete etant epinglee sur la
+    #    tete de la PR.
+    urls = [urlsplit(m) for m in re.findall(r"https://[^'\"\n]+", texte)]
+    miroirs = [u for u in urls if u.netloc == "raw.githubusercontent.com"]
+    assert miroirs, (
+        "l'organe du miroir doit etre recupere par URL brute, epinglee sur "
+        "la tete de la PR"
+    )
+    assert any(
+        u.path.endswith("/scripts/ci/check_runner_starvation.py")
+        and "github.event.pull_request.head.sha" in u.path
+        for u in miroirs
+    ), (
+        "l'URL de l'organe doit pointer sur scripts/ci/"
+        "check_runner_starvation.py, a la tete epinglee de la PR"
+    )
+    assert "::error::" in etapes
