@@ -10,6 +10,8 @@ exacts, simulations Monte Carlo, chronos encadrés), puis confronté à l'état 
 [Mathlib](https://github.com/leanprover-community/mathlib4) — ce qui y existe, ce qui
 n'y existe pas encore, et pourquoi.
 
+**Une série plate.** Positions numérotées (03, 04, …) et approfondissements par lettres (02b, 02c, …) vivent côte à côte à la racine : chaque lettre creuse la position dont elle porte le numéro, et les séparer en dossiers couperait la paire qu'elles forment. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
+
 ## Jumeau Python/C# — simulation classique d’une loi quantique connue
 
 [Complexity-06 Python](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) ⇄ [Complexity-06 C#](Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb). Le port BCL/Complex construit réellement les amplitudes et probabilités, puis compare 4096 tirages aux mêmes tailles avec un tirage direct uniforme. Le second n’est pas Gottesman–Knill ; ce banc ne démontre aucune séparation BQP/P. Les PRNG diffèrent, les budgets restent identiques.

@@ -152,6 +152,8 @@ La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à
 
 Le palier 16 est l'un des cas réels mesurés par le [critère de frontière utilitaire-de-série / exposition MCP](../../docs/reference/ict-mcp-frontier-criterion.md) — verdict : rien dû, le palier reste notebook.
 
+Dans la même famille d'exposition, le palier 13 possède un service pendant : le dossier [gateway/](gateway/README.md) expose la résolution CFR du carnet 13 en microservice REST (`POST /gametheory/cfr`, Jupyter Kernel Gateway, pli 0 de l'Epic #19571 / issue #21104). Le carnet pédagogique n'est pas modifié — le service vit à côté, comme composant distinct.
+
 Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite, la stabilité coopérative, la convergence d'agents en auto-apprentissage.
 
 ![CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).](assets/readme/gt13-cfr.png)

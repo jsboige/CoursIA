@@ -591,6 +591,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
     #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-plan-loss-gate.yml",
+    # #22209 TRANCHE45 : ABSORBE par la voie rapide -- vehicule
+    #   workflow_dispatch-ONLY servant de cible d'identite au check-run
+    #   absorbe par fast-lane (registre TRANCHE45) ; la jambe per-PR vit
+    #   dans le job fast-lane d'always-on-guards.yml. L'entree RESTE
+    #   (precedent TRANCHE39/cell-order) : la sortie d'allowlist vise les
+    #   workflows migres vers ubuntu-latest, pas les absorbes dormants.
     # #15322 (owner myia-po-2023:CoursIA) : vehicule workflow_dispatch-ONLY
     #   servant de cible d'identite au check-run absorbe par fast-lane
     #   (registre TRANCHE2) et de re-run manuel du self-test sur main.
