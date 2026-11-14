@@ -191,3 +191,126 @@ def test_frise_du_plafond_de_scripts_tests(frise_cpu):
 def test_frise_ordonnee_croissante(frise_cpu):
     dates = [stamp for stamp, _ in frise_cpu]
     assert dates == sorted(dates)
+
+
+# --- 6. la passe d'annotation : la fenetre propose, l'organe natif tranche -
+# La fenetre bilaterale est un PROXY : elle dit qu'un job annule a dure
+# assez longtemps pour avoir touche son plafond. La preuve est l'annotation
+# que GitHub pose sur le check-run (« The job has exceeded the maximum
+# execution time of 40m0s »), lue par l'organe natif
+# `classify_job_deaths.py` (classe `TIMEOUT`).
+#
+# Ces tests verifient que cet organe **branche** sur l'organe natif au lieu
+# de reecrire sa classification, et que les deux verdicts sont comptes
+# separement -- jamais fusionnes en un chiffre unique qui masquerait le taux
+# de faux positifs.
+
+class _FakeClassifyJobDeaths:
+    """Module factice : l'organe natif est *appele*, pas reecrit.
+
+    Le contrat verifie ici est celui de l'appel : `classify_job(job,
+    annotations)` et `fetch_annotations(job_id)`.
+    """
+
+    def __init__(self, classes):
+        self.classes = classes
+        self.calls = []
+
+    def classify_job(self, job, annotations):
+        # L'organe natif lit `conclusion` et `steps` ; l'identifiant du
+        # check-run est porte par `job_id` dans la collecte de cet organe.
+        ident = job.get("job_id", job.get("id"))
+        self.calls.append((ident, len(annotations)))
+        return self.classes.get(ident, "CANCELLED_OTHER")
+
+    def fetch_annotations(self, job_id):
+        return [{"message": "The job has exceeded the maximum execution time"}]
+
+
+@pytest.fixture
+def fausse_annotations(monkeypatch):
+    """Installe un module `classify_job_deaths` factice dans `sys.modules`."""
+    import types
+
+    faux = _FakeClassifyJobDeaths({})
+    module = types.ModuleType("classify_job_deaths")
+    module.classify_job = faux.classify_job
+    module.fetch_annotations = faux.fetch_annotations
+    monkeypatch.setitem(sys.modules, "classify_job_deaths", module)
+    return faux
+
+
+def _job(job_id, conclusion, started, completed, name="Scripts Tests (CPU)"):
+    return {
+        "id": job_id,
+        "name": name,
+        "conclusion": conclusion,
+        "started_at": started,
+        "completed_at": completed,
+        "steps": [{"name": "Run tests", "conclusion": conclusion}],
+    }
+
+
+def test_coupe_confirmee_par_annotation_comptee_a_part(monkeypatch, fausse_annotations):
+    """Un job coupe au mur separe par l'organe natif est compte comme tel."""
+    fausse_annotations.classes = {11: "TIMEOUT"}
+    run = {"id": 900, "created_at": "2026-11-13T10:00:00Z", "head_branch": "main"}
+    jobs = [
+        _job(11, "cancelled", "2026-11-13T10:00:00Z", "2026-11-13T10:40:30Z"),
+        # Annule a 38,6 min : la fenetre (borne basse 38,5) la compte comme
+        # une coupe, l'organe natif dit le contraire -- c'est le faux positif
+        # mesure de la fenetre, reproduit ici a l'echelle d'un test.
+        _job(12, "cancelled", "2026-11-13T11:00:00Z", "2026-11-13T11:38:36Z"),
+    ]
+    monkeypatch.setattr(mod, "list_runs", lambda *a, **k: [run])
+    monkeypatch.setattr(mod, "api", lambda path: {"jobs": jobs})
+    rapport = mod.measure("scripts-tests.yml", 48, 1, "", True)
+    segment = next(r for r in rapport["segments"] if r["job"] == "Scripts Tests (CPU)")
+    # La fenetre voit deux coupes (annule au mur, et annule proche du mur).
+    assert segment["coupes"] == 2
+    # L'organe natif n'en confirme qu'une : le deuxieme etait une autre cause.
+    assert segment["coupes_confirmees_annotation"] == 1
+    assert segment["classes_annulation"]["TIMEOUT"] == 1
+    assert segment["classes_annulation"]["CANCELLED_OTHER"] == 1
+
+
+def test_echec_de_lecture_ne_compte_pas_comme_une_coupe(monkeypatch, fausse_annotations):
+    """Une annotation illisible ne doit jamais etre comptee comme un succes."""
+    import types
+
+    module = types.ModuleType("classify_job_deaths")
+
+    def _boom(job_id):
+        raise RuntimeError("403")
+
+    module.classify_job = lambda job, ann: "TIMEOUT"
+    module.fetch_annotations = _boom
+    monkeypatch.setitem(sys.modules, "classify_job_deaths", module)
+    run = {"id": 901, "created_at": "2026-11-13T10:00:00Z", "head_branch": "main"}
+    jobs = [_job(21, "cancelled", "2026-11-13T10:00:00Z", "2026-11-13T10:40:30Z")]
+    monkeypatch.setattr(mod, "list_runs", lambda *a, **k: [run])
+    monkeypatch.setattr(mod, "api", lambda path: {"jobs": jobs})
+    rapport = mod.measure("scripts-tests.yml", 48, 1, "", True)
+    segment = next(r for r in rapport["segments"] if r["job"] == "Scripts Tests (CPU)")
+    assert segment["coupes_confirmees_annotation"] == 0
+    assert segment["classes_annulation"]["LECTURE_IMPOSSIBLE"] == 1
+
+
+def test_le_cache_de_jobs_evite_de_refrapper_lapi(monkeypatch, tmp_path, fausse_annotations):
+    """Le cache garde la collecte : re-mesurer ne reboucle pas l'API."""
+    cache = tmp_path / "jobs.json"
+    run = {"id": 902, "created_at": "2026-11-13T10:00:00Z", "head_branch": "main"}
+    jobs = [_job(31, "success", "2026-11-13T10:00:00Z", "2026-11-13T10:05:00Z")]
+
+    monkeypatch.setattr(mod, "list_runs", lambda *a, **k: [run])
+    monkeypatch.setattr(mod, "api", lambda path: {"jobs": jobs})
+    mod.measure("scripts-tests.yml", 48, 1, str(cache), False)
+    assert cache.exists(), "le cache doit etre ecrit"
+
+    # Seconde mesure : le cache doit servir, l'API ne doit plus etre touchee.
+    def _api_interdite(path):
+        raise AssertionError("l'API ne doit pas etre reappellee avec un cache")
+
+    monkeypatch.setattr(mod, "api", _api_interdite)
+    rapport = mod.measure("scripts-tests.yml", 48, 1, str(cache), False)
+    assert rapport["jobs_mesures"] == 1

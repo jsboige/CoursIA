@@ -39,11 +39,38 @@ Trois pieges que la mesure ferme
    courte que la fenetre demandee. La couverture effective est ecrite dans la
    sortie (`window_covered`), jamais supposee.
 
+L'organe natif de la mort des jobs
+-----------------------------------
+
+`scripts/ci/classify_job_deaths.py` est **l'organe qui sait pourquoi un job
+est mort** : il lit l'annotation que GitHub pose sur le check-run et en tire
+la classe `TIMEOUT` (« The job has exceeded the maximum execution time of
+40m0s »), `NO_RUNNER_ACQUIRED`, `OOM`, etc.
+
+Cet organe ne reecrit **pas** cette classification -- il s'y branche. La
+fenetre bilaterale de ce module sert a **produire les candidats** (un job
+annule est un candidat ; un job reussi ne l'est pas), et le mode
+`--cross-check` confronte chaque candidat a la classe de l'organe natif :
+
+- `coupe` (fenetre) **confirmee** par `TIMEOUT` (annotation) ;
+- `coupe` **non confirmee** (l'annulation n'etait pas un depassement) ;
+- `TIMEOUT` **ratee** par la fenetre (le job a coupe sans que sa duree tombe
+  dans la fenetre -- la fenetre est alors un proxy, pas une preuve).
+
+Ce que cet organe ajoute a l'organe natif : la **frise des plafonds**. La
+classe `TIMEOUT` dit *ce* job a coupe par *un* plafond ; elle ne dit pas si
+le plafond en vigueur au moment du job etait 30 ou 40 minutes. Sans la
+frise, un job tue en 30 min le 13/11 (plafond 40) serait lu comme une coupe
+du plafond 40 -- une coupe qui n'existe pas.
+
 Usage :
 
     python scripts/ci/measure_declared_ceiling.py \
         --workflow .github/workflows/scripts-tests.yml --hours 48 \
         --out .tmp/ceiling.json
+
+    # controle croise : la fenetre bilaterale confirme-t-elle l'annotation ?
+    python scripts/ci/measure_declared_ceiling.py --cross-check 24
 
 Lecture seule : aucune ecriture dans le depot, aucun secret (le jeton est lu
 par `gh auth token` au moment de l'appel).
@@ -82,6 +109,12 @@ except ImportError:  # pragma: no cover
 #: durer bien plus longtemps que le plafond) d'entrer dans le compte.
 TOL_LO_S = 90
 TOL_HI_S = 120
+
+#: Largeur du seau "proche du plafond", en minutes. Un job dont la duree
+#: approche la limite declaree a moins de cette largeur est comptabilise
+#: dans la queue : c'est la queue qui dit si un releve du plafond servirait
+#: a quelque chose.
+NEAR_CEILING_MIN = 2
 
 
 def limits_from_yaml(text: str) -> dict[str, int]:
@@ -234,6 +267,8 @@ def measure(
     workflow_file: str,
     hours: int,
     max_pages: int,
+    jobs_cache: str = "",
+    annotate_cuts: bool = False,
 ) -> dict:
     rel_path = f".github/workflows/{workflow_file}"
     since = datetime.now(timezone.utc) - timedelta(hours=hours)
@@ -242,32 +277,52 @@ def measure(
 
     jobs: list[dict] = []
     runs_sans_jobs = 0
-    for run in runs:
-        try:
-            listed = api(
-                f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100"
-            ).get("jobs", [])
-        except Exception:  # noqa: BLE001 - une page illisible ne doit pas
-            # faire tomber la mesure entiere ; le run compte pour rien.
-            runs_sans_jobs += 1
-            continue
-        for job in listed:
-            started = parse_ts(job.get("started_at") or "")
-            completed = parse_ts(job.get("completed_at") or "")
-            if started is None or completed is None:
+    # Le parcours des runs est la partie COUTEUSE de la mesure (un appel
+    # `jobs` par run, donc un millier d'appels pour 48 h). Le cache garde la
+    # liste des jobs : re-mesurer apres un changement de code ne reboucle pas
+    # l'API, et le passage d'annotation (une requete par job annule) ne
+    # paie qu'une fois la collecte.
+    if jobs_cache and Path(jobs_cache).exists():
+        cached = json.loads(Path(jobs_cache).read_text(encoding="utf-8"))
+        jobs = cached.get("jobs", [])
+        runs = cached.get("runs") or runs
+        runs_sans_jobs = cached.get("runs_sans_jobs", 0)
+    else:
+        for run in runs:
+            try:
+                listed = api(
+                    f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100"
+                ).get("jobs", [])
+            except Exception:  # noqa: BLE001 - une page illisible ne doit pas
+                # faire tomber la mesure entiere ; le run compte pour rien.
+                runs_sans_jobs += 1
                 continue
-            execution = (completed - started).total_seconds() / 60
-            if execution < 0:
-                continue
-            jobs.append({
-                "run_id": run["id"],
-                "job_id": job.get("id"),
-                "name": job.get("name") or "",
-                "conclusion": job.get("conclusion"),
-                "started_at": job.get("started_at"),
-                "execution_min": execution,
-                "branch": run.get("head_branch"),
-            })
+            for job in listed:
+                started = parse_ts(job.get("started_at") or "")
+                completed = parse_ts(job.get("completed_at") or "")
+                if started is None or completed is None:
+                    continue
+                execution = (completed - started).total_seconds() / 60
+                if execution < 0:
+                    continue
+                jobs.append({
+                    "run_id": run["id"],
+                    "job_id": job.get("id"),
+                    "name": job.get("name") or "",
+                    "conclusion": job.get("conclusion"),
+                    "started_at": job.get("started_at"),
+                    "execution_min": execution,
+                    "branch": run.get("head_branch"),
+                    "steps": job.get("steps") or [],
+                })
+        if jobs_cache:
+            Path(jobs_cache).write_text(json.dumps({
+                "jobs": jobs,
+                "runs": [{"id": r["id"], "created_at": r.get("created_at"),
+                          "head_branch": r.get("head_branch")}
+                         for r in runs],
+                "runs_sans_jobs": runs_sans_jobs,
+            }, ensure_ascii=False), encoding="utf-8")
 
     segments: dict[tuple[str, int], list[dict]] = {}
     unknown = 0
@@ -282,12 +337,25 @@ def measure(
         segments.setdefault((job["name"], limit), []).append(job)
 
     rows = []
+    classify_job = fetch_annotations = None
+    if annotate_cuts:
+        # L'organe NATIF de la mort des jobs : c'est lui qui lit l'annotation
+        # « The job has exceeded the maximum execution time of 40m0s » et en
+        # tire la classe TIMEOUT. Cet organe ne reecrit pas la classification,
+        # il l'**importe** et compte.
+        from classify_job_deaths import classify_job, fetch_annotations
     for (name, limit), group in sorted(segments.items()):
         cuts = [j for j in group if j["coupe"]]
         successes = [j["execution_min"] for j in group
                       if j["conclusion"] == "success"]
         annules_hors_mur = [j for j in group
                             if j["conclusion"] == "cancelled" and not j["coupe"]]
+        # Seau "proche du plafond" : les jobs dont la duree approche la limite
+        # declaree. C'est ce seau qui dit si un releve du plafond GANTERAIT
+        # quelque chose : un plafond ne serre que s'il y a une queue, et la
+        # queue se mesure ici, pas dans le seul taux de coupes.
+        proches = [j for j in group
+                   if j["execution_min"] >= limit - NEAR_CEILING_MIN]
         rows.append({
             "job": name,
             "limit_min": limit,
@@ -302,8 +370,29 @@ def measure(
             "marge_succ_max_min": (
                 round(limit - max(successes), 2) if successes else None
             ),
+            "seau_proche_du_plafond_min": NEAR_CEILING_MIN,
+            "jobs_proches_du_plafond": len(proches),
+            "succ_proches_du_plafond": sum(
+                1 for j in proches if j["conclusion"] == "success"),
             "coupe_run_ids": [j["run_id"] for j in cuts],
         })
+        if annotate_cuts:
+            classes: dict[str, int] = {}
+            confirmed = 0
+            for j in group:
+                if j["conclusion"] != "cancelled":
+                    continue
+                try:
+                    klass = classify_job(j, fetch_annotations(j["job_id"]))
+                except Exception:  # noqa: BLE001 - une annotation illisible
+                    # ne doit pas faire tomber la mesure ; elle compte comme
+                    # « non confirmee », jamais comme un succes.
+                    klass = "LECTURE_IMPOSSIBLE"
+                classes[klass] = classes.get(klass, 0) + 1
+                if klass == "TIMEOUT":
+                    confirmed += 1
+            rows[-1]["coupes_confirmees_annotation"] = confirmed
+            rows[-1]["classes_annulation"] = classes
 
     created = sorted(r["created_at"] for r in runs if r.get("created_at"))
     return {
@@ -327,6 +416,131 @@ def measure(
     }
 
 
+def cross_check(workflow: str, sample: int, job_name: str,
+                from_json: str = "") -> int:
+    """Confronte la fenetre bilaterale a la classe de mort de l'organe natif.
+
+    La fenetre est un **proxy** : elle dit qu'un job annule a dure assez
+    longtemps pour avoir touche son plafond. L'organe natif
+    (`classify_job_deaths.py`) lit l'annotation que GitHub pose sur le
+    check-run (« The job has exceeded the maximum execution time of 40m0s »)
+    et rend la classe `TIMEOUT` -- la **preuve**, pas le proxy.
+
+    Ce mode mesure l'ecart entre les deux, sur un echantillon de runs :
+    combien de coupes la fenetre annonce sont confirmees, combien sont
+    ecartees, et combien la fenetre rate.
+
+    `--cross-check-from` ajoute les runs que la mesure a designes comme
+    porteurs de coupes : sans eux, l'echantillon ne contredit que des
+    annulations par supersession, et le controle ne prouve rien sur les
+    coupes qu'il est cense valider.
+
+    Il ne reecrit pas la classification : il **importe** l'organe natif.
+    """
+    from classify_job_deaths import classify_job, fetch_annotations
+
+    rel_path = f".github/workflows/{workflow}"
+    timeline = limit_timeline(rel_path)
+    since = datetime.now(timezone.utc) - timedelta(hours=48)
+    runs = list_runs(workflow, since, 10)
+    if not runs:
+        print("aucun run lu : controle croise impossible")
+        return 2
+
+    by_id = {r["id"]: r for r in runs}
+    picked: list[dict] = []
+    seen: set[int] = set()
+    cut_ids: list[int] = []
+
+    # D'abord les runs porteurs de coupes, si la mesure est fournie.
+    if from_json:
+        report = json.loads(Path(from_json).read_text(encoding="utf-8"))
+        for row in report.get("segments", []):
+            for run_id in row.get("coupe_run_ids", []):
+                if run_id not in cut_ids:
+                    cut_ids.append(run_id)
+        for run_id in cut_ids:
+            run = by_id.get(run_id)
+            if run is not None and run_id not in seen:
+                picked.append(run)
+                seen.add(run_id)
+        print(f"runs porteurs de coupes ajoutes a l'echantillon : {len(picked)}")
+
+    # Puis les runs les plus recents (la ou sont les coupes du plafond
+    # courant) et un pas regulier sur le reste de la fenetre.
+    for run in runs[: max(1, sample // 2)]:
+        if len(picked) >= sample + len(cut_ids):
+            break
+        if run["id"] not in seen:
+            picked.append(run)
+            seen.add(run["id"])
+    stride = max(1, len(runs) // max(1, sample))
+    for run in runs[::stride]:
+        if len(picked) >= sample + len(cut_ids):
+            break
+        if run["id"] not in seen:
+            picked.append(run)
+            seen.add(run["id"])
+
+    rows: list[dict] = []
+    for run in picked:
+        try:
+            listed = api(
+                f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100"
+            ).get("jobs", [])
+        except Exception:  # noqa: BLE001 - un run illisible ne fait pas
+            # tomber le controle croise ; il compte pour rien.
+            continue
+        for job in listed:
+            name = job.get("name") or ""
+            if job_name and name != job_name:
+                continue
+            conclusion = job.get("conclusion")
+            if conclusion not in ("cancelled", "failure"):
+                continue
+            started = parse_ts(job.get("started_at") or "")
+            completed = parse_ts(job.get("completed_at") or "")
+            if started is None or completed is None:
+                continue
+            execution = (completed - started).total_seconds() / 60
+            limit = resolve_limit(timeline, name, started)
+            fenetre = is_cut(execution, conclusion, limit) if limit else None
+            annotations = fetch_annotations(job["id"])
+            klass = classify_job(job, annotations)
+            rows.append({
+                "run_id": run["id"],
+                "job_id": job.get("id"),
+                "job": name,
+                "conclusion": conclusion,
+                "execution_min": round(execution, 2),
+                "limit_min": limit,
+                "fenetre": fenetre,
+                "classe": klass,
+            })
+
+    confirms = [r for r in rows if r["fenetre"] and r["classe"] == "TIMEOUT"]
+    ecartees = [r for r in rows if r["fenetre"] and r["classe"] != "TIMEOUT"]
+    rates = [r for r in rows if not r["fenetre"] and r["classe"] == "TIMEOUT"]
+    classes: dict[str, int] = {}
+    for row in rows:
+        classes[row["classe"]] = classes.get(row["classe"], 0) + 1
+
+    for row in rows:
+        print(
+            f"run {row['run_id']} job {row['job_id']} -- {row['job']} : "
+            f"{row['execution_min']} min, plafond {row['limit_min']}, "
+            f"conclusion {row['conclusion']}, fenetre={row['fenetre']}, "
+            f"classe={row['classe']}"
+        )
+    print("")
+    print(f"echantillon : {len(picked)} run(s), {len(rows)} job(s) annule(s)/en echec")
+    print(f"coupes fenetre CONFIRMEES par l'annotation TIMEOUT : {len(confirms)}")
+    print(f"coupes fenetre NON confirmees : {len(ecartees)}")
+    print(f"TIMEOUT rates par la fenetre : {len(rates)}")
+    print(f"classes vues : {classes}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--workflow", default="scripts-tests.yml",
@@ -336,9 +550,30 @@ def main() -> int:
                          "couverte est plus courte : l'API plafonne a 1000 runs)")
     ap.add_argument("--max-pages", type=int, default=10)
     ap.add_argument("--out", default="")
+    ap.add_argument("--cross-check", type=int, default=0,
+                    help="nombre de runs a confronter a la classe de mort de "
+                         "l'organe natif (classify_job_deaths.py) ; 0 = "
+                         "aucun controle croise")
+    ap.add_argument("--cross-check-job", default="",
+                    help="nom du job a controler (defaut : tous)")
+    ap.add_argument("--cross-check-from", default="",
+                    help="sortie JSON d'une mesure : les runs porteurs de "
+                         "coupes y sont ajoutes a l'echantillon")
+    ap.add_argument("--jobs-cache", default="",
+                    help="fichier de cache de la liste des jobs (la collecte "
+                         "est la partie couteuse : ~1 appel API par run)")
+    ap.add_argument("--annotate", action="store_true",
+                    help="classer chaque job annule avec l'organe natif "
+                         "(classify_job_deaths.py) et compter les coupes "
+                         "CONFIRMEES par annotation")
     args = ap.parse_args()
 
-    report = measure(args.workflow, args.hours, args.max_pages)
+    if args.cross_check:
+        return cross_check(args.workflow, args.cross_check, args.cross_check_job,
+                           args.cross_check_from)
+
+    report = measure(args.workflow, args.hours, args.max_pages,
+                     args.jobs_cache, args.annotate)
     text = json.dumps(report, ensure_ascii=False, indent=1)
     if args.out:
         Path(args.out).write_text(text, encoding="utf-8")
@@ -346,12 +581,22 @@ def main() -> int:
     else:
         print(text)
     for row in report["segments"]:
-        print(
+        line = (
             f"{row['job']}: plafond {row['limit_min']} min -- "
             f"{row['coupes']} coupe(s) sur {row['jobs_mesures']} jobs "
             f"({row['taux_coupe']}), annules hors mur {row['annules_hors_mur']}, "
             f"succ max {row['succ_max_min']} min (marge {row['marge_succ_max_min']})"
+            f" -- queue (>= {row['limit_min'] - row['seau_proche_du_plafond_min']} min) : "
+            f"{row['jobs_proches_du_plafond']} job(s), "
+            f"{row['succ_proches_du_plafond']} succes(s)"
         )
+        if "coupes_confirmees_annotation" in row:
+            line += (
+                f" -- CONFIRMEES par annotation (organe natif TIMEOUT) : "
+                f"{row['coupes_confirmees_annotation']} ; classes : "
+                f"{row['classes_annulation']}"
+            )
+        print(line)
     return 0
 
 
