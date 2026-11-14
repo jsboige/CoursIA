@@ -4592,6 +4592,16 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #     semaine se bloquerait. Meme regle pour un claim pose directement sur
 #     l'EPIC. »
 #
+# #26414 (decision ai-01 du 2026-11-13, option 1 « filles existantes hors
+# plafond, pas du tout ») : la demande ci-dessus est CORRIGEE sur un point --
+# les parents de N ne sont plus des sujets. Une claim sur une fille DEJA
+# OUVERTE est le SERVICE d'un sous-grain existant, permis par #22500 point 2
+# et par `.claude/rules/proactive-coordination.md` (« piocher un sous-grain
+# ouvert, ou en creer un seul par visite ») ; le plafond gate la CREATION
+# (cote picker, `umbrella_visit_cause` au tirage), pas le service. Reste
+# sujet : N lui-meme quand c'est un umbrella (claim pose directement sur
+# l'EPIC, demande explicite conservee).
+#
 # ORGANE-FIRST : la semantique du plafond n'est PAS re-ecrite ici. Tout vient de
 # `scripts/pick_idle_grain.py`, importe a la demande (`_epic_cap_picker`) :
 #   - `parent_refs(it)` (l. 5904) : la definition d'un parent (prefixe de titre
@@ -4612,13 +4622,12 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #
 # COUT -- la contrainte du coordinateur est explicite (274 s pour la commande
 # des lanes, dont 45 s pour 8 sondes de claims) :
-#   - issue sans parent ET pas elle-meme un umbrella : **zero appel, zero
-#     seconde** (c'est le cas le plus frequent, et `parent_refs` se lit sur la
-#     charge deja telechargee) ;
-#   - issue avec parent(s) : 1 appel `gh issue view` par parent, et le pool
-#     (1 appel, 8,6 s mesure le 2026-10-26 sur 555 issues ouvertes) UNIQUEMENT
-#     si au moins un parent est un umbrella hors consolidation -- un parent
-#     ordinaire ne coute donc pas le pool ;
+#   - toute issue qui n'est pas elle-meme un umbrella (grain ordinaire, fille
+#     d'EPIC comprise depuis #26414) : **zero appel, zero seconde** -- c'est
+#     le cas le plus frequent ;
+#   - N umbrella hors consolidation : le pool seul (1 appel, 8,6 s mesure le
+#     2026-10-26 sur 555 issues ouvertes) ; depuis #26414 plus AUCUN
+#     `gh issue view` de parent ;
 #   - le pool est memoise par processus (`_EPIC_CAP_POOL_MEMO`) : le mode batch
 #     le paie une fois pour N issues ;
 #   - si une autre lane bloque deja (verdict exit 1 acquis), le plafond n'est
@@ -4637,7 +4646,8 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 # #22687 -- deux corrections depuis cette annonce : (a) le plafond SAUTE quand
 # la lane appelante tient deja un claim actif sur une FILLE N (arbitrage ai-01
 # du 2026-11-08, cas #23499 : la reprise d'un chantier ouvert n'est pas une
-# nouvelle visite -- le plafond gate l'ENTREE d'une fille, pas sa reprise ;
+# nouvelle visite ; depuis #26414 les filles ne sont de toute facon plus
+# sujet du plafond -- le saut reste, il evite la mesure) ;
 # JAMAIS sur l'EPIC lui-meme, la demande du 09/11 reste entiere) ;
 # (b) la voie unitaire EN PROCESSUS du picker cable desormais `epic_cap=True`
 # et son reducteur lit la cle : la sonde solitaire d'une fille plafonnee rend
@@ -4647,7 +4657,7 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #
 # ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
 # anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
-# Un parent ou un pool illisible ne bloque donc PAS : il est NOMME dans
+# Un pool illisible ne bloque donc PAS : il est NOMME dans
 # `epic_visit_cap_error` et sur stderr. Un plafond non mesurable ne doit jamais
 # se lire comme un plafond respecte, ni fermer la voie a une lane sur une panne
 # de transport.
@@ -4806,10 +4816,17 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         CETTE mesure, pour que la borne se verifie au lieu de se croire ;
       - ``error`` : les lectures qui ont echoue (``None`` si tout a ete lu).
 
-    Sujets examines, dans l'ordre : l'issue N elle-meme si c'est un umbrella
-    (demande explicite : « Meme regle pour un claim pose directement sur
-    l'EPIC »), puis chaque parent de N au sens de `parent_refs`. Un sujet est
-    retenu s'il est un umbrella ET hors classe `consolidation`.
+    Sujets examines : l'issue N elle-meme, et elle seule, quand c'est un
+    umbrella (demande explicite : « Meme regle pour un claim pose directement
+    sur l'EPIC »), hors classe `consolidation`. Les parents de N ne sont plus
+    des sujets (#26414, decision ai-01 du 2026-11-13, option 1 « filles
+    existantes hors plafond, pas du tout ») : une claim sur une fille DEJA
+    OUVERTE est le SERVICE d'un sous-grain existant -- permis par #22500
+    point 2 et par `.claude/rules/proactive-coordination.md` (« piocher un
+    sous-grain ouvert, ou en creer un seul par visite ») -- pas une nouvelle
+    visite de l'EPIC. Le plafond porte la CREATION, qui reste cappee cote
+    picker (`umbrella_visit_cause` au tirage) ; les filles existantes se
+    servent librement ici.
 
     L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
     recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
@@ -4839,20 +4856,19 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     number = payload.get("number")
     number = int(number) if isinstance(number, int) else None
 
-    # (1) les sujets candidats, sans reseau : N si c'est un umbrella, puis ses
-    # parents (`parent_refs` lit titre/corps de la charge DEJA telechargee).
+    # (1) le sujet candidat, sans reseau : N lui-meme si c'est un umbrella.
+    # #26414 : les parents ne sont plus sujets -- servir une fille DEJA
+    # OUVERTE n'est pas une nouvelle visite de l'EPIC (#22500 point 2) ; la
+    # creation reste cappee cote picker.
     subjects: list[tuple[int, dict | None]] = []
     if number is not None and _is_umbrella_issue(payload):
         subjects.append((number, payload))
-    for parent in sorted(picker.parent_refs(payload)):
-        if parent == number:
-            continue  # une issue ne se visite pas elle-meme
-        subjects.append((parent, None))
     if not subjects:
-        return verdict  # zero appel : le cas le plus frequent
+        return verdict  # zero appel : le cas le plus frequent (fille ou grain)
 
-    # (2) resoudre les charges parent (1 appel chacune) et ne garder que les
-    # EPICs hors consolidation. AUCUN pool tant qu'aucun sujet n'est retenu.
+    # (2) ne garder que les EPICs hors consolidation (le sujet N est deja
+    # charge ; `parent_loader` ne sert plus qu'aux sondes injectees).
+    # AUCUN pool tant qu'aucun sujet n'est retenu.
     capped: list[tuple[int, dict]] = []
     for epic, body in subjects:
         if body is None:
@@ -5438,7 +5454,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             # cours compris) reste entiere -- les regles #25443 (marqueur
             # propre exclut) et 09/11 (visite close arme) gouvernent seules
             # les marqueurs propres sur l'EPIC ; ce saut ne les touche pas.
-            # les marqueurs propres sur l'EPIC, ce saut ne les touche pas.
+            # (#26414 : les filles ne sont de toute facon plus sujet du
+            # plafond -- le saut reste, il evite de payer la mesure.)
             epic_cap_verdict["skipped"] = (
                 "calling lane already holds an active claim on this issue "
                 "-- resuming an open claim is not a new umbrella visit"
@@ -5985,22 +6002,25 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # BLOCKED. Il passe AVANT la branche `NOT_SCOPED` ci-dessous : celle-ci
     # invite a re-executer avec `--paths`, et re-scoper ne leve PAS un plafond
     # de visite -- le conseil serait faux. La cause imprimee est le litteral de
-    # l'organe (`umbrella_visit_cause`), inchange.
+    # l'organe (`umbrella_visit_cause`), inchange. Depuis #26414, la cause ne
+    # peut plus venir que d'un claim sur l'EPIC N lui-meme : les filles
+    # existantes ne sont plus plafonnees.
     if epic_cap_verdict.get("cause"):
         epic_number = epic_cap_verdict.get("epic")
         where = (f"#{epic_number}" if epic_number is not None
                  else "un EPIC parent")
         print(
             f"\nBLOCKED: {epic_cap_verdict['cause']}\n"
-            f"  #{payload.get('number')} appartient a l'EPIC {where}, deja "
-            f"visite cette semaine : une sous-issue y a ete creee, ou un "
-            f"claim y a ete pose, il y a moins de 7 jours (#22500 point 3). "
+            f"  #{payload.get('number')} EST l'EPIC {where}, deja visite "
+            f"cette semaine : une sous-issue y a ete creee, ou un marqueur "
+            f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC "
-            f"{where}, ou prendre un autre grain du pool. Re-scoper avec "
-            f"`--paths` ne leve pas ce plafond ; `--force` reste reserve a "
-            f"l'arbitrage coordinateur.",
+            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
+            f"(#26414 : une fille existante se sert librement, seul le claim "
+            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
+            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
+            f"`--force` reste reserve a l'arbitrage coordinateur.",
             file=sys.stderr,
         )
         return 1

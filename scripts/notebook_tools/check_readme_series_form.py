@@ -8,6 +8,14 @@ V1 compte les trois marqueurs de forme (au moins deux requis). V2 signale
 une ligne de palier lettré dans « Parcours principal » ou des paliers
 lettrés absents de « Approfondissements ». --base-ref est obligatoire : le
 code de sortie ne sanctionne que les violations ajoutées depuis cette base.
+
+La doctrine #3973 autorise explicitement un palier lettré **en lien court
+dans la dernière colonne** de la table du parcours (« Pour approfondir »).
+V2 ne signale donc que les lettres hors de cette forme : une ligne dont la
+première cellule est un numéro lettré, ou un lien lettré dans une colonne
+autre que la dernière. Compter toute ligne contenant un lien lettré
+signalait la forme conforme comme un défaut (9 fichiers sur 9, mesuré le
+2026-11-12 sur `origin/main`).
 """
 from __future__ import annotations
 
@@ -51,19 +59,129 @@ def _table_rows(text: str, heading: str) -> list[str]:
     return rows
 
 
+def _cells(row: str) -> list[str]:
+    """Découpe une ligne de tableau Markdown en cellules, pipes échappés respectés."""
+    body = row.strip()
+    if body.startswith("|"):
+        body = body[1:]
+    if body.endswith("|"):
+        body = body[:-1]
+    return re.split(r"(?<!\\)\|", body)
+
+
+def _section_text(text: str, heading: str) -> str:
+    """Corps d'une section, prose ET tableaux, jusqu'au titre de niveau égal ou supérieur.
+
+    `_table_rows` ne rend que les lignes de tableau ; la contrepartie de la
+    doctrine #3973 se lit dans toute la section — un palier traité en prose
+    est traité.
+    """
+    heading_re = re.compile(rf"^(#{{1,6}})\s+{re.escape(heading)}\b", re.I)
+    out: list[str] = []
+    depth = 0
+    active = False
+    for line in text.splitlines():
+        if not active:
+            match = heading_re.match(line)
+            if match:
+                active = True
+                depth = len(match.group(1))
+            continue
+        match = re.match(r"^(#{1,6})\s+", line)
+        if match and len(match.group(1)) <= depth:
+            break
+        out.append(line)
+    return "\n".join(out)
+
+
+def _last_column_allows_letters(main_rows: list[str]) -> bool:
+    """La dernière colonne n'exempte que si son en-tête annonce l'approfondissement.
+
+    Sans cette garde, une table `| # | Notebook |` où le palier lettré est
+    présenté comme le carnet de l'étape bénéficiait de l'exemption réservée à
+    la colonne « Pour approfondir ».
+    """
+    if not main_rows:
+        return False
+    header = _cells(main_rows[0])
+    if len(header) < 2:
+        return False
+    return "approfondir" in header[-1].lower()
+
+
+def _last_column_letters(main_rows: list[str]) -> list[str]:
+    """Paliers cités en lien court dans la dernière colonne (forme autorisée)."""
+    if not _last_column_allows_letters(main_rows):
+        return []
+    letters: list[str] = []
+    for row in main_rows:
+        cells = _cells(row)
+        if len(cells) < 2:
+            continue
+        for match in LETTER_LINK.finditer(cells[-1]):
+            token = re.match(r"\[\s*(\d{1,2}[a-z])", match.group(0), re.I)
+            if token:
+                letters.append(token.group(1).lower())
+    return letters
+
+
+def _letter_is_covered(letter: str, section: str) -> bool:
+    """Le palier est traité par la section : lien court ou numéro nu."""
+    return re.search(
+        rf"\[\s*{re.escape(letter)}\b|(?<![\w]){re.escape(letter)}(?![\w])",
+        section, re.I) is not None
+
+
+def _main_path_violations(main_rows: list[str]) -> list[str]:
+    """Lignes du parcours principal portant une lettre hors de la forme autorisée.
+
+    Forme autorisée par la doctrine #3973 : un palier lettré peut être cité
+    en **lien court dans la dernière colonne** (« Pour approfondir »). Une
+    lettre ailleurs est un défaut : en première cellule, c'est un palier
+    déguisé en étape du parcours ; dans une colonne intermédiaire, c'est un
+    palier présenté comme une étape.
+    """
+    allow_last = _last_column_allows_letters(main_rows)
+    bad: list[str] = []
+    for row in main_rows:
+        if LETTER.match(row):
+            bad.append(row)
+            continue
+        cells = _cells(row)
+        if len(cells) < 2:
+            if LETTER_LINK.search(row):
+                bad.append(row)
+            continue
+        # L'exemption de la dernière colonne est conditionnelle à son en-tête.
+        scope = cells[:-1] if allow_last else cells
+        if LETTER_LINK.search("|".join(scope)):
+            bad.append(row)
+    return bad
+
+
 def inspect_text(path: str, text: str) -> dict:
     found = [name for name, pattern in MARKERS if pattern.search(text)]
     missing = [name for name, _ in MARKERS if name not in found]
     main_rows = _table_rows(text, "Parcours principal")
     approfond_rows = _table_rows(text, "Approfondissements")
-    bad_main = [row for row in main_rows if LETTER.match(row) or LETTER_LINK.search(row)]
+    bad_main = _main_path_violations(main_rows)
     letters_below = [row for row in approfond_rows if LETTER.match(row)]
-    v2 = bool(bad_main)
     extra = []
     if bad_main:
         extra.append("lettres_dans_parcours_principal")
         if not any(LETTER.match(row) or LETTER_LINK.search(row) for row in approfond_rows):
             extra.append("lettres_absentes_d_Approfondissements")
+    # Forme autorisée : un lien lettré en dernière colonne reste soumis à la
+    # contrepartie de la doctrine #3973 — le palier qu'il cite doit être traité
+    # par la section « Approfondissements » (lien court ou numéro, prose
+    # comprise). Sans ce contrôle, la forme autorisée échappait entièrement à
+    # la vérification que son exemption a précisément pour but de rendre due.
+    section = _section_text(text, "Approfondissements")
+    uncovered = [x for x in _last_column_letters(main_rows)
+                 if not _letter_is_covered(x, section)]
+    if uncovered and "lettres_absentes_d_Approfondissements" not in extra:
+        extra.append("lettres_absentes_d_Approfondissements")
+    v2 = bool(bad_main) or bool(uncovered)
     return {"path": path, "conforming": len(found) >= 2 and not v2,
             "missing": missing, "extra": extra}
 

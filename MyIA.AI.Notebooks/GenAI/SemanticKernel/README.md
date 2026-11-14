@@ -205,7 +205,7 @@ Le fil rouge de cette série est le NotebookMaker, un système multi-agents qui 
 
 ### Janvier 2026
 
-- Modernisation complète de la série Python (8 notebooks)
+- Modernisation complète de la série Python
 - Ajout notebooks 04-08 (Filters, VectorStores, Process, MultiModal, MCP)
 - Remplacement des Planners dépréciés par `FunctionChoiceBehavior.Auto()`
 - Ajout interprétations pédagogiques style GameTheory

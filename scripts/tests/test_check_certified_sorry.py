@@ -210,6 +210,64 @@ def test_workflow_targets_match_manifest():
         f"gametheory still carries SocialChoice targets after the descent: "
         f"{sorted(m for m in gt if m.startswith('SocialChoice.'))}")
 
+    # Compagnons du lac gametheory : la descente ne les touche pas, et
+    # leur liste reste epinglee ici pour qu'un ajout de cible soit un
+    # changement de test explicite, jamais une derive silencieuse
+    # (#25858, #25686/#26022). Les deux cibles SocialChoice.* en sont
+    # retirees : elles vivent dans le lac autonome, et l'assertion
+    # ci-dessus verifie qu'elles ne sont pas revenues.
+    allowed_companions = {
+        "Abstraction", "Abstraction.Basic",
+        "ProgramGames.Basic", "ProgramGames.Basic_en",
+        "ProgramGames.Bounded", "ProgramGames.Bounded_en",
+        # #25858 : 30 modules de gametheory hors SocialChoice, ajoutes a
+        # axiom-target-modules apres recensement (chacun verifie a
+        # code_sorry = 0 et 0 occurrence des classes forbidden par le
+        # prescreen de la PR). Meme statut de revue que les precedents,
+        # epingles ici pour que le prochain ajout reste un changement de
+        # test explicite, jamais une derive silencieuse.
+        "CongestionGames.PoA",
+        "CooperativeGames.Basic", "CooperativeGames.Basic_en",
+        "CooperativeGames.ConeKernel", "CooperativeGames.ConeKernel_en",
+        "CooperativeGames.Shapley", "CooperativeGames.Shapley_en",
+        "ProgramGames.FairBot", "ProgramGames.FairBot_en",
+        "RepeatedGames.Discounting", "RepeatedGames.Discounting_en",
+        "RepeatedGames.GrimTrigger", "RepeatedGames.GrimTrigger_en",
+        "RepeatedGames.Stage", "RepeatedGames.Stage_en",
+        "RepeatedGames_en",
+        "StableMarriage.Definitions", "StableMarriage.Definitions_en",
+        "StableMarriage.GSState", "StableMarriage.GSState_en",
+        "StableMarriage.GaleShapley", "StableMarriage.GaleShapley_en",
+        "StableMarriage.Lattice", "StableMarriage.Lattice_en",
+        "StableMarriage.Lemmas", "StableMarriage.Lemmas_en",
+        "StableMarriage_en",
+        "Swaps.Basic", "Swaps.Parite",
+        # #25858 (reserve du 11/11) : les RACINES de lib compilees par
+        # `X.*` (Lake les compile : « including itself »). Chacune est un
+        # simple aggregateur d'imports, 0 declaration -- l'instrument du
+        # gate les classe `declaration_free_module`, donc NOTE non
+        # fatale, et aucune ne peut masquer un sorry. Les laisser hors
+        # liste faisait paraitre l'ecart du recensement comme un manque
+        # de couverture alors qu'il n'y avait rien a auditer : la racine
+        # est desormais une cible explicite, comme les trois racines
+        # declaration-free deja presentes (Abstraction, RepeatedGames_en,
+        # StableMarriage_en). Elles sont 7 ici et non 8 : la racine
+        # SocialChoice a suivi la descente #24183 (#25262) dans le lac
+        # autonome, ou elle figure parmi les `allowed_extras`.
+        "CongestionGames", "CooperativeGames", "ProgramGames",
+        "RepeatedGames", "StableMarriage",
+        "StackelbergBilevel", "Swaps",
+        # #25686/#26022 : LegalLoophole (racine aggregatrice, sans
+        # declaration) + LegalLoophole.Toy (module reel, 0 sorry / 0 axiome
+        # ad hoc) ajoutes a axiom-target-modules avec le default_target --
+        # la revendication d'axiomes de la PR devient mesuree par l'organe.
+        "LegalLoophole", "LegalLoophole.Toy",
+    }
+    assert gt == allowed_companions, (
+        f"gametheory matrix entry has unreviewed companion targets: "
+        f"extras={sorted(gt - allowed_companions)} "
+        f"missing={sorted(allowed_companions - gt)}")
+
     # Le declencheur lake-entier suit le lac autonome : glob **.lean du
     # nouveau repertoire, strictement plus large que les sous-chemins
     # explicites (#17374).
