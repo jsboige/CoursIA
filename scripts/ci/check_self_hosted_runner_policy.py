@@ -292,6 +292,30 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
     "mermaid-fill-color-advisory.yml",
+    # #26459/#26465 (owner myia-ai-01:CoursIA-2, PR #26465) : advisory de
+    #   l'etat du MIROIR D'OBJETS du pool de runners. L'etat (le compteur
+    #   d'echecs consecutifs `.objects-mirror.fails` et le miroir lui-meme)
+    #   vit sur l'HOTE du parc, dans un volume que seul un runner
+    #   auto-heberge voit : une jambe GitHub-hosted ne peut pas le lire, et
+    #   son verdict serait un « OK » de deaf. C'est la raison d'etre du
+    #   workflow : porter l'alerte sur la PR elle-meme, la surface que les
+    #   lanes lisent (la reserve 1 de la revue du 14/11 demandait
+    #   exactement cela : « nomme la surface choisie, et ajoute un test qui
+    #   prouve que le rouge y arrive »).
+    #   Job unique `mirror`, statique [self-hosted, coursia-ephemeral,
+    #   coursia-linux], `timeout-minutes: 5`, `concurrency` par PR avec
+    #   annulation du precedent, permissions `contents: read` seule, garde
+    #   same-repo au niveau job (`if: head.repo.full_name == repository`),
+    #   mode `--mirror-only` de `check_runner_starvation.py` (ZERO appel API,
+    #   zero lecture de cadence, zero inventaire). Aucun secret lu, aucun
+    #   GITHUB_TOKEN cote job, code de PR non execute (l'appelee lit l'etat
+    #   LOCAL, elle ne lit pas le diff).
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte
+    #   par `Scripts Tests (CPU)` (run 43560273660, 14/11) : la PR routait
+    #   le job self-hosted sans toucher cette allowlist fail-closed -- meme
+    #   classe que organ-duplication-advisory.yml et live-read-freshness.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "mirror-state-pr-advisory.yml",
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
