@@ -40780,7 +40780,7 @@ violations de l'ancien certificat — un morphisme les préserve toutes les deux
 non-morphisme en change au moins une. La cellule suivante confronte ce critère à trois
 expériences : percer le mur au point de traversée, rendre mur une feuille de sol éloignée, et
 balayer le coût du mur pour déplacer le point de passage.",,,,,,,,a7313521dad5e3eb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a307af03,markdown,fr,5bf0c306455752b2,"### Lien avec la topologie des jeux 2×2
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,a307af03,markdown,fr,dce6084b48ed7a3b,"### Lien avec la topologie des jeux 2×2
 
 L'opération « traverser un mur » n'est pas née ici : elle vient de la **topologie des jeux 2×2 de
 Robinson-Goforth**, construite dans la série GameTheory. La correspondance terme à terme :
@@ -40802,8 +40802,8 @@ détour par une traversée plus économe devient rentable.
 
 Pour la géométrie complète : [GameTheory-03-Topology2x2-Python](../../GameTheory/GameTheory-03-Topology2x2-Python.ipynb),
 [GameTheory-03b — Chambres, murs et chemins](../../GameTheory/GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb)
-et [GameTheory-20 — Le chemin minimal](../../GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
-",,,,,,,,5bf0c306455752b2,,,,,,,,,,,,,,,
+et [Metajeux-04 — Le chemin minimal](../../GameTheory/Metajeux/Metajeux-04-Chemin-Minimal-Robinson-Goforth-Python.ipynb).
+",,,,,,,,dce6084b48ed7a3b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb,0290e5fd,markdown,fr,fa0540dc1f727a5e,"## Exemples guidés et exercices
 
 Trois exemples guidés reconstruisent la mécanique sur d'autres murs, trois exercices la
