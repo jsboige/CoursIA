@@ -10,7 +10,8 @@ Doc : docs/reference/tapis-rapide.md.
 
 Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
     [--cache-s 300] [--graine S] [--lecture <dossier>]
-    (sortie 0, ou 3 : lecture incomplete -- groupee ou Origami)
+    (sortie 0, ou 3 : lecture groupee incomplete ; une mesure Origami en
+     echec ne bloque pas le tirage -- fail-OPEN, la cause est nommee)
 """
 from __future__ import annotations
 
@@ -461,11 +462,16 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
     # passe par le cache machine ; un rejeu hors ligne ne la refait pas.
     parcs, origami = tapis_origami.mesurer(lecture, reseau=not args.lecture)
     if not origami.get("measured") and origami.get("active") and not args.lecture:
-        # Mesure impossible en direct : lecture incomplete, comme la lecture
-        # groupee. Rien n'est servi, et la cause est nommee.
+        # Mesure impossible en direct : le parcage Origami est une protection
+        # AUXILIAIRE, et le tapis rapide est le tirage de reference de toute
+        # la flotte -- une protection en panne ne doit pas l'eteindre
+        # (arbitrage du coordinateur, #26528). La sortie reste `0`, la cause
+        # reste nommee dans le `--json` et dans le texte (« Parcage Origami :
+        # NON MESURE (...) »), et un avertissement part sur stderr : un EPIC
+        # Origami servi pendant la panne se lit comme tel.
         print(f"Mesure Origami impossible : {origami.get('reason')}\n"
-              f"Rien n'est servi. Repli : {REPLI.format(lane=args.lane)}", file=sys.stderr)
-        return 3
+              f"Le parcage Origami est indisponible : les EPICs Origami ne sont "
+              f"PAS ecartes du tirage pour cette lecture.", file=sys.stderr)
     tous = etats(lecture, args.lane, maintenant, args.jours)
     _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)

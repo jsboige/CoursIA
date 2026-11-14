@@ -143,6 +143,24 @@ def test_rejeu_hors_ligne_dit_quil_ne_sait_pas():
     assert "hors ligne" in etat["reason"]
 
 
+def test_un_cache_non_ecrit_est_signale_sur_stderr(capsysbinary):
+    """La promesse « une mesure toutes les 30 min » doit etre observable.
+
+    Un cache non ecrit signifie que la prochaine lecture remesure : le
+    silence le rendait invisible (reserve NanoClaw, #26528).
+    """
+    class OpDisquePlein(Op):
+        def save_cache(self, verdicts):
+            raise OSError("disque plein")
+
+    lec = lecture([issue(19309, titre=TITRE_EPIC)])
+    parcs, etat = to.mesurer(lec, op=OpDisquePlein(verdicts=[verdict()]))
+    err = capsysbinary.readouterr().err.decode("utf-8")
+    assert "Cache Origami non ecrit" in err and "disque plein" in err
+    # La mesure reste juste : l'echec du cache n'est pas l'echec de la mesure.
+    assert list(parcs) == [19309] and etat["measured"] is True
+
+
 def test_le_cache_machine_evite_la_mesure():
     lec = lecture([issue(19309, titre=TITRE_EPIC)])
     op = Op(cache={"verdicts": [verdict()]})

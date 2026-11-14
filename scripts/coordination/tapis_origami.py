@@ -29,10 +29,13 @@ le dit, et il le borne : deux appels groupes, au plus une fois toutes les
 
 Le parcage est **fail-OPEN** comme celui du tapis lourd (#24373) : une mesure
 absente ne supprime jamais un grain. Ce qui change, c'est que la mesure est
-faite -- l'absence de mesure se voit au lieu de passer inapercue.
+faite -- l'absence de mesure se voit au lieu de passer inapercue. Une mesure
+en echec **ne bloque pas le tirage** : la sortie reste `0`, `measured: false`
+et la cause sont nommes (arbitrage du coordinateur, #26528).
 """
 from __future__ import annotations
 
+import sys
 from typing import Any
 
 from coordination import gh_bulk
@@ -89,8 +92,12 @@ def _verdicts(lecture: gh_bulk.Lecture, op: Any, *, cache: bool,
     verdicts = op.measure(pool, delivered_probe=lambda n: bool(stamps.get(int(n))))
     try:
         op.save_cache(verdicts)
-    except OSError:
-        pass  # un cache non ecrit ne change pas la mesure
+    except OSError as exc:
+        # La mesure reste correcte, mais la promesse « une mesure toutes les
+        # 30 min » doit etre OBSERVABLE : un cache non ecrit signifie que la
+        # prochaine lecture remesure. Le silence ici la rendait invisible.
+        print(f"Cache Origami non ecrit ({exc}) : la prochaine lecture remesurera.",
+              file=sys.stderr)
     return verdicts
 
 

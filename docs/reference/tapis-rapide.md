@@ -41,8 +41,12 @@ temps ni budget de sondes : le nombre d'appels est fixé par construction. Mesur
 (15 depuis la lecture de la pointe `origin/main`, plus un `git fetch` quand elle dépasse 6 h),
 lecture réseau de 25 à 101 s selon GitHub, rejeu d'un instantané en ~1 s (l'ancienne voie : 295 à 382 s).
 
-Le `3` couvre aussi la **mesure Origami** impossible (voir plus bas) : c'est une lecture incomplète au même
-titre que la lecture groupée. Un **rejeu** (`--lecture`) ne la refait pas et n'est jamais invalidé par elle.
+Une **mesure Origami** impossible (voir plus bas) ne rend **pas** le `3` : le parcage Origami est une
+protection **auxiliaire**, et le tapis rapide est le tirage de référence de toute la flotte — une protection
+en panne ne doit pas l'éteindre. La sortie reste `0`, `measured: false` et la cause restent visibles dans le
+`--json` et dans le texte (« Parcage Origami : NON MESURE (…) »), et un avertissement part sur stderr : un
+EPIC Origami servi pendant la panne se lit comme tel. Le `3` reste réservé à la lecture groupée incomplète.
+Un **rejeu** (`--lecture`) ne refait pas la mesure et n'est jamais invalidé par elle.
 
 ## Ce qui écarte un candidat
 
@@ -97,11 +101,16 @@ Trois états, jamais mélangés — le bloc `origami_parking` du `--json` les po
 | État | Ce que ça veut dire |
 | --- | --- |
 | `measured: true` | la mesure est faite ; les EPICs parqués sont écartés du tirage et listés dans `details` (le tableau du coordinateur les lit sans changement) |
-| `measured: false` + `reason` | la mesure est **impossible** ; rien n'est parqué et **la cause est nommée** — jamais une liste vide, qui se lirait « rien à parquer ». En direct, c'est une lecture incomplète : sortie `3`, rien n'est servi |
+| `measured: false` + `reason` | la mesure est **impossible** ; rien n'est parqué et **la cause est nommée** — jamais une liste vide, qui se lirait « rien à parquer ». La sortie reste `0` : le tirage continue, et un avertissement sur stderr nomme la cause |
 | `measured: true`, `epics: 0` | le pool ne porte aucun EPIC Origami : la mesure est faite, et vide |
 
 Le parcage est **fail-OPEN**, comme celui du tapis lourd : une mesure absente ne supprime jamais un grain.
 Ce qui change, c'est que la mesure est faite — l'absence de mesure se voit au lieu de passer inaperçue.
+
+Un **rejeu** (`--lecture <dossier>`) est hors ligne par contrat : il ne refait **pas** la mesure Origami et
+**ne parque rien**. Un rejeu peut donc servir des EPICs Origami que le tirage en direct avait parqués — c'est
+le prix du rejeu, et il est assumé. L'état rendu porte alors `measured: false` avec la cause « rejeu hors
+ligne ».
 
 ## L'ordre et les poids
 
