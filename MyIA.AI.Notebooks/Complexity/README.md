@@ -189,3 +189,7 @@ les rangées minimales par programmation linéaire.
 Chaque notebook embarque au moins trois exercices (`TODO etudiant`) : étendre une machine,
 dériver un compte, déplacer un budget — les stubs s'exécutent sans erreur (règle C.1 du
 dépôt) et les corrigés restent la propriété de l'étudiant.
+
+## Jumeau C# et différences de portage
+
+- [Complexity-04 — Décider sans connaître la suite (C#)](Complexity-04-OnlineAlgorithms-CSharp.ipynb) : même couverture conceptuelle, implémentations idiomatiques avec la bibliothèque standard .NET ; espérances des skis calculées par sommes discrètes exactes, et permutations du secrétaire générées réellement par Fisher–Yates (`Random(42)`). Les résultats Monte Carlo peuvent différer de NumPy malgré la graine commune. Les exercices LFU et secrétaire fine vérifient leurs fixtures et leurs budgets.
