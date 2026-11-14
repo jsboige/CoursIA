@@ -36,7 +36,11 @@ from pathlib import Path
 from typing import List, Sequence
 
 CORE_MODULE = "z3_sudoku_core.py"
-SERVICE_NOTEBOOK = "z3-sudoku-service.ipynb"
+# Le carnet servi est le carnet phare de la serie (acceptation v2 de #21100) :
+# il porte le cours, les exercices et la cellule annotee ``# POST /sudoku/solve``.
+# Le chemin est relatif au dossier du lanceur, qui est aussi le dossier de
+# travail du gateway (voir ``main``), d'ou le ``../``.
+SERVICE_NOTEBOOK = "../Z3-02-Sudoku-Python.ipynb"
 DEFAULT_PORT = 8899
 CORE_DIR_ENV = "Z3_GATEWAY_CORE_DIR"
 
@@ -61,7 +65,9 @@ def preflight(directory: Path) -> List[str]:
     problems: List[str] = []
 
     core = Path(directory) / CORE_MODULE
-    notebook = Path(directory) / SERVICE_NOTEBOOK
+    # ``resolve()`` : le carnet servi vit un niveau au-dessus du lanceur, et le
+    # message d'erreur doit nommer un chemin reel, pas ``gateway/../...``.
+    notebook = (Path(directory) / SERVICE_NOTEBOOK).resolve()
 
     if not core.is_file():
         problems.append(f"coeur absent : {core}")

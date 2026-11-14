@@ -983,3 +983,39 @@ def test_suffixe_inconnu_refuse(tmp_path):
     p.write_text("gpt-4o-mini", encoding="utf-8")
     with pytest.raises(FileNotFoundError):
         collect_sources([str(p)])
+
+
+def test_collect_sources_skips_build_and_dep_dirs(tmp_path):
+    """La descente d'un dossier ecart les dossiers de build/dependance
+    (``.lake``, ``__pycache__``, ...) : de la sortie de build, pas une source a
+    scanner. Regression #14755 : .lake/packages/mathlib crashait la passe."""
+    (tmp_path / "top.py").write_text("x = 1\n", encoding="utf-8")
+    lake = tmp_path / ".lake" / "packages" / "mathlib"
+    lake.mkdir(parents=True)
+    (lake / "deep.py").write_text("y = 2\n", encoding="utf-8")
+    cache = tmp_path / "__pycache__"
+    cache.mkdir()
+    (cache / "cached.py").write_text("z = 3\n", encoding="utf-8")
+
+    collected = collect_sources([str(tmp_path)])
+    names = {q.name for q, _kind in collected}
+    assert names == {"top.py"}
+
+
+def test_analyze_python_module_unstatable_degrades_to_skip(
+        tmp_path, monkeypatch, capsys):
+    """Un fichier dont ``exists()`` leve (chemin long / verrou, WinError 1920)
+    degrade en skip rapporte, jamais en crash de la passe entiere.
+    Regression #14755 : le .lake de SymbolicAI tuait le scan."""
+    p = tmp_path / "module.py"
+    p.write_text("x = 1\n", encoding="utf-8")
+
+    def boom(self):
+        raise OSError(1920, "chemin injoignable")
+
+    monkeypatch.setattr(Path, "exists", boom)
+    report = analyze_python_module(str(p))
+    assert report["kind"] == "python"
+    assert report["findings"] == []
+    assert report["stats"]["skipped"] == 1
+    assert "injoignable" in capsys.readouterr().err
