@@ -159,8 +159,18 @@ on:
   # 230-293 s of execution. `concurrency.cancel-in-progress: false` below
   # coalesces a burst of merges into one pending sweep; it never kills a
   # running one.
-  push:
-    branches: [main]
+  # #25510 T-G (regle 24h mainteneur 09/11, decision coord 12/11) : le push: main
+  # est RETIRE. Sa justification #15770 (re-agregation d'un verdict PR gate
+  # perime ; le push = 11 min) est un REFINEMENT du service que le schedule
+  # FOURNIT DEJA sous 24 h -- cron horaire servi 178-341 min en retard sur ce
+  # depot (~3-5,7 h), toujours < 24 h. Le push n'apporte donc pas une
+  # reactivite sous 24 h que le schedule ne fournit PAS : il la raffine.
+  # Degradation acceptee : un verdict perime est re-agregue en ~3-5,7 h au lieu
+  # de 11 min (le « best-effort backstop » que #15770 documente deja comme le
+  # role du schedule), jamais au-dela de 24 h. Le sibling sweep-health GARDE
+  # son push (#15332 : liveness PENDANT la coupure totale du scheduler --
+  # service que le schedule ne fournit PAS, il est mort) ; evict-orphan-caches
+  # a son push retire dans la meme PR (cron horaire).
   workflow_dispatch:
     inputs:
       dry_run:

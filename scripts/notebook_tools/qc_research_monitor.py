@@ -46,6 +46,8 @@ from pathlib import Path
 
 _SCRIPTS_PARENT = Path(__file__).resolve().parent.parent  # scripts/
 sys.path.insert(0, str(_SCRIPTS_PARENT))
+# T3-c (#25366) : issue_create_idempotent reloge dans scripts/coordination/.
+sys.path.insert(0, str(_SCRIPTS_PARENT / "coordination"))
 
 from issue_create_idempotent import find_recent_duplicate  # noqa: E402
 
@@ -109,7 +111,7 @@ def list_seeded_issues(dry_run: bool) -> list[dict]:
     proc = subprocess.run(
         ["gh", "issue", "list", "--label", LABEL, "--state", "all",
          "--json", "number,title", "--limit", "300"],
-        capture_output=True, text=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     if proc.returncode != 0:
         if not dry_run:

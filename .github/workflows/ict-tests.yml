@@ -131,7 +131,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ict-tests-${{ github.ref }}
+  group: ict-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -149,7 +149,7 @@ jobs:
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
     # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 15 -> 30 (#14598 Option A) -> 60 min. Le passage a 30 avait
     # DEPLACE le mur, pas mesure sa position : trois PRs de CONTENU sont mortes
     # dessus le 2026-09-12 (#15657, #15660, #15609 -- 30,5 / 30,4 / 30,4 min,
