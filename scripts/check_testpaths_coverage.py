@@ -216,10 +216,21 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
     ".github/workflows/genai-helpers-tests.yml": [
         "MyIA.AI.Notebooks/GenAI/shared/helpers",
     ],
+    # genai-texte-tests.yml : famille GenAI Texte (#25018 pli 0 v2, point 4
+    # de l'acceptance) — dir entier, 24 tests collectés (test_structured_
+    # outputs_core.py seul fichier), hermétiques (serveur uvicorn loopback,
+    # clients injectés ; aucun appel réseau externe), deps httpx/uvicorn/
+    # pydantic/openai/jsonschema/fastapi au pip install du job. Sans cette
+    # entrée, le testpath ajouté à pytest.ini par la MÊME PR rendait ce garde
+    # rouge : il ne compare qu'aux workflows DÉCLARÉS ici, jamais à
+    # l'arborescence des workflows (mesuré sur la tête 75bca05ae20,
+    # 2026-11-12 — `testpaths vs CI coverage: failure @01:21:24Z`).
+    ".github/workflows/genai-texte-tests.yml": [
+        "MyIA.AI.Notebooks/GenAI/Texte",
+    ],
     # Les deux modules gitleaks vivent dans secret-scan-controls.yml depuis
     # #25510 (tranche T-B) : le job `positive-controls` y a demenage avec eux.
-    ".github/workflows/secret-scan-controls.yml": [
-        "scripts/secrets/tests/test_gitleaks_qwen_rule.py",
+    ".github/workflows/secret-scan-controls.yml": [        "scripts/secrets/tests/test_gitleaks_qwen_rule.py",
         "scripts/secrets/tests/test_gitleaks_10143_classes.py",
     ],
     # ict-tests.yml : scopé à MyIA.AI.Notebooks/IIT/ICT-Series (test-cwd

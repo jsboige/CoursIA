@@ -1,46 +1,46 @@
 # Tableau de santé du dépôt — snapshot dérivé du catalogue
 
-> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-11-12**).
+> Snapshot statique généré depuis `COURSE_CATALOG.generated.json` (date catalogue : **2026-11-14**).
 > Ce fichier **n'est pas maintenu à la main** : il est dérivé du catalogue (acceptance #4 de #4210).
 > Pour le régénérer : `python scripts/notebook_tools/generate_health_dashboard.py`.
 
-**1630** notebooks référencés au catalogue.
+**1657** notebooks référencés au catalogue.
 
 ## État global
 
 | Statut | Count | % |
 |--------|-------|---|
-| READY | 1406 | 86.3% |
-| DEMO | 222 | 13.6% |
+| READY | 1431 | 86.4% |
+| DEMO | 224 | 13.5% |
 | BROKEN | 2 | 0.1% |
 
 ## Exigences d'environnement (badges)
 
 | Exigence | Notebooks concernés |
 |----------|---------------------|
-| **local** (exécutable sans GPU/cloud/WSL) | 953 |
+| **local** (exécutable sans GPU/cloud/WSL) | 975 |
 | WSL requis | 205 |
-| GPU requis | 215 |
+| GPU requis | 218 |
 | Cloud requis (QC / GenAI Docker) | 128 |
-| API key requise | 226 |
+| API key requise | 229 |
 
 ## Distribution par série
 
 | Série | READY | DEMO | BROKEN | Total | % READY |
 |-------|-------|------|--------|-------|---------|
 | CaseStudies | 6 | 0 | 0 | 6 | 100% |
-| Complexity | 22 | 2 | 0 | 24 | 92% |
-| Compression | 8 | 0 | 0 | 8 | 100% |
-| GameTheory | 139 | 2 | 0 | 141 | 99% |
-| GenAI | 166 | 142 | 2 | 310 | 54% |
+| Complexity | 26 | 2 | 0 | 28 | 93% |
+| Compression | 11 | 0 | 0 | 11 | 100% |
+| GameTheory | 140 | 2 | 0 | 142 | 99% |
+| GenAI | 171 | 144 | 2 | 317 | 54% |
 | IIT | 107 | 7 | 0 | 114 | 94% |
-| ML | 117 | 20 | 0 | 137 | 85% |
-| NLP | 11 | 0 | 0 | 11 | 100% |
-| Physique | 11 | 0 | 0 | 11 | 100% |
+| ML | 120 | 20 | 0 | 140 | 86% |
+| NLP | 13 | 0 | 0 | 13 | 100% |
+| Physique | 12 | 0 | 0 | 12 | 100% |
 | Probas | 92 | 1 | 0 | 93 | 99% |
 | QuantConnect | 90 | 34 | 0 | 124 | 73% |
-| RL | 33 | 5 | 0 | 38 | 87% |
-| Search | 164 | 1 | 0 | 165 | 99% |
+| RL | 35 | 5 | 0 | 40 | 88% |
+| Search | 168 | 1 | 0 | 169 | 99% |
 | Sudoku | 38 | 1 | 0 | 39 | 97% |
 | SymbolicAI | 401 | 6 | 0 | 407 | 99% |
 | cross-series | 1 | 1 | 0 | 2 | 50% |
@@ -49,9 +49,9 @@
 
 | Kernel | Count |
 |--------|-------|
-| Python 3 | 1072 |
-| .NET (C#) | 274 |
-| Python 3 (ipykernel) | 74 |
+| Python 3 | 1074 |
+| .NET (C#) | 298 |
+| Python 3 (ipykernel) | 75 |
 | Lean 4 (WSL) | 65 |
 | Python (coursia-ml-training) | 21 |
 | Python 3 (coursia-ml-training) | 15 |

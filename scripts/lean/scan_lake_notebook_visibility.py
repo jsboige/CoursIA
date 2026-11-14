@@ -13,6 +13,19 @@ Deux bornes sont rendues, parce qu'un nom court et generique (`map`,
   cite_large  : tout nom trouve                     (borne haute)
   cite_strict : noms distinctifs (>=10 car. ou '_') (borne basse)
 
+Trois classes de modules sont rendues, pour ne pas confondre une metrique
+de citation et un verdict de visibilite (EPIC #11703, faux-noir de nom
+court) :
+
+  dark_modules       : borne STRICTE -- noir si aucune declaration
+                       distinctive (>=10 car. ou '_') n'est citee.
+  dark_modules_large : borne LARGE -- noir si AUCUNE declaration (tout nom)
+                       n'est citee ; le seul "noir" sans ambiguite.
+  dark_gray          : zone grise = strict - large. Modules "noirs" a la
+                       borne stricte mais cites par des noms courts seulement
+                       (pas de preuve qu'un carnet les enseigne) : le faux-noir
+                       de nom court, rendu nomme avec les noms courts trouves.
+
 CONTROLE POSITIF : le script verifie dans la meme invocation que des noms
 connus-presents sont bien extraits ET bien trouves, et sort en erreur
 sinon. Un zero rendu par un instrument casse est indiscernable d'un zero
@@ -286,8 +299,13 @@ def main_pr_mode(base: str, head: str, out_path: str | None) -> int:
     for p in sorted(added):
         lake = next(seg for seg in p.split("/") if seg.endswith("_lean"))
         for n in sorted(added[p]):
-            rows.append({"lake": lake, "file": p, "name": n, "cited": n in seen})
+            rows.append({
+                "lake": lake, "file": p, "name": n,
+                "cited": n in seen,                             # borne large
+                "cited_strict": n in seen and is_distinctive(n),  # borne stricte
+            })
     uncited = [r for r in rows if not r["cited"]]
+    gray = [r for r in rows if r["cited"] and not r["cited_strict"]]
 
     print(f"{n_notebooks} notebooks lus ; {len(rows)} declaration(s) ajoutee(s) "
           f"sur les lakes dans base...{head[:10]}")
@@ -295,8 +313,12 @@ def main_pr_mode(base: str, head: str, out_path: str | None) -> int:
         print("Aucune declaration ajoutee sur un lake -- rien a signaler.")
     for r in uncited:
         print(f"  AJOUTEE NON CITEE: {r['name']}  ({r['lake']}/{Path(r['file']).name})")
+    for r in gray:
+        print(f"  CITEE NOM COURT SEUL (zone grise): {r['name']}  "
+              f"({r['lake']}/{Path(r['file']).name})")
     if rows:
-        print(f"TOTAL ajoutees: {len(rows)}  non citees (borne large): {len(uncited)}")
+        print(f"TOTAL ajoutees: {len(rows)}  non citees (borne large): {len(uncited)}  "
+              f"zone grise (nom court seul): {len(gray)}")
 
     if out_path:
         Path(out_path).write_text(
@@ -352,8 +374,21 @@ def main() -> int:
         distinct = {n for n in names if is_distinctive(n)}
         cite_large = sum(1 for n in names if n in seen)
         cite_strict = sum(1 for n in distinct if n in seen)
+        # dark_modules : borne STRICTE (semantique d'origine) -- un module est
+        # noir si aucune de ses declarations DISTINCTIVES n'est citee. Les modules
+        # cites par des noms courts seulement tombent ici : d'ou la zone grise.
         dark = [m for m, v in sorted(lakes[lake].items())
                 if v and not any(n in seen and is_distinctive(n) for n in v)]
+        # dark_modules_large : borne LARGE -- noir seulement si AUCUNE declaration
+        # (tout nom) n'est citee ; le seul "noir" sans ambiguite.
+        dark_large = [m for m, v in sorted(lakes[lake].items())
+                      if v and not any(n in seen for n in v)]
+        # dark_gray : zone grise = strict - large. Modules "noirs" a la borne
+        # stricte mais cites par des noms courts (pas de preuve qu'un carnet les
+        # enseigne) : le faux-noir de nom court, rendu nomme + noms courts trouves.
+        large_set = set(dark_large)
+        dark_gray = {m: sorted(n for n in lakes[lake][m] if n in seen)
+                     for m in dark if m not in large_set}
         top = collections.Counter()
         for n in distinct & seen:
             top.update(per_nb.get(n, {}))
@@ -362,26 +397,37 @@ def main() -> int:
         out[lake] = {
             "declarations": len(names), "distinctive": len(distinct),
             "cite_large": cite_large, "cite_strict": cite_strict,
-            "modules": len(lakes[lake]), "dark_modules": dark,
+            "modules": len(lakes[lake]),
+            "dark_modules": dark,
+            "dark_modules_large": dark_large,
+            "dark_gray": dark_gray,
             "companion_notebook": companion[0][0] if companion else None,
         }
 
     print(f"{n_notebooks} notebooks lus, {len(lakes)} lakes, {len(owner)} declarations\n")
-    print(f"{'lake':24} {'decl':>5} {'large':>6} {'strict':>7} {'noirs':>6}  compagnon principal")
+    print(f"{'lake':24} {'decl':>5} {'large':>6} {'strict':>7} "
+          f"{'noirsS':>6} {'noirsL':>6} {'gris':>5}  compagnon principal")
     for lake, tot, cl, cs, dark, comp in sorted(rows, key=lambda r: r[3] / r[1] if r[1] else 1):
         if args.lake and lake != args.lake:
             continue
         c = comp[0][0] if comp else "-- AUCUN --"
-        print(f"{lake:24} {tot:5} {cl:6} {cs:7} {len(dark):3}/{out[lake]['modules']:<3} {c}")
+        print(f"{lake:24} {tot:5} {cl:6} {cs:7} {len(dark):6} "
+              f"{len(out[lake]['dark_modules_large']):6} {len(out[lake]['dark_gray']):5} {c}")
         if args.lake:
             for m in dark:
-                print(f"    module invisible: {m} ({len(lakes[lake][m])} declarations)")
+                gray = out[lake]["dark_gray"].get(m)
+                if gray:
+                    print(f"    zone grise (nom court): {m} -> {', '.join(gray)}")
+                else:
+                    print(f"    module invisible (strict): {m} "
+                          f"({len(lakes[lake][m])} declarations)")
 
     T = sum(r[1] for r in rows)
+    n_gray = sum(len(out[l]["dark_gray"]) for l in out)
     print(f"\nTOTAL {sum(r[2] for r in rows)}/{T} (borne haute)  "
           f"{sum(r[3] for r in rows)}/{T} (borne basse)  "
-          f"modules invisibles: {sum(len(r[4]) for r in rows)}/"
-          f"{sum(len(lakes[l]) for l in lakes)}")
+          f"modules invisibles (strict): {sum(len(r[4]) for r in rows)}/"
+          f"{sum(len(lakes[l]) for l in lakes)}  zone grise: {n_gray}")
 
     if args.out:
         Path(args.out).write_text(json.dumps(out, indent=1, ensure_ascii=False), encoding="utf-8")

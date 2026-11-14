@@ -6,6 +6,8 @@ Comment transformer un texte en objets que l'on peut analyser, comparer ou class
 
 Le parcours s'adresse aux étudiants et enseignants connaissant Python et les probabilités élémentaires. Le calcul matriciel et les gradients deviennent utiles pour les représentations et les modèles appris ; les carnets en explicitent les opérations. Les expériences fonctionnent sur CPU, sans clé d'API. Le [support de cours TAL](../../slides/09-traitement-automatique-langues/slides.md) situe ces fondations dans le passage aux modèles de langage modernes.
 
+**Une série plate.** Tous les carnets vivent à la racine, sans dossier intermédiaire : ils tracent un seul arc du mot aux modèles de langage, la numérotation continue ordonne la progression, et les approfondissements vivent dans les carnets eux-mêmes plutôt que dans des compagnons séparés. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
+
 ## Comment lire ce README — Découverte
 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) permet de choisir sa profondeur de lecture.
@@ -24,8 +26,8 @@ Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/Cou
 | 02 | [N-grammes et modèles de langue](02_NGrammes_Modeles_De_Langue.ipynb) | Estimer les probabilités de suites de mots, comprendre les probabilités nulles et comparer les lissages par la perplexité. | Licence ; probabilités conditionnelles. | Distinguer perplexité d'entraînement et de test. |
 | 03 | [CRF et étiquetage séquentiel](03_CRF_Etiquetage_Sequentiel.ipynb) | Apprendre conjointement les étiquettes d'une séquence ; calculer la normalisation et décoder avec Viterbi. | Licence ; étiquettes de 01, probabilités et gradients. | Contrôle numérique du gradient, ablation et comparaison à CRFsuite. |
 | 04 | [Grammaires probabilistes et CYK](04_PCFG_CYK_Parsing.ipynb) | Convertir une grammaire en forme normale de Chomsky, reconstruire un arbre syntaxique et quantifier une ambiguïté. | Licence ; grammaires et programmation dynamique. | Comparaison à NLTK et effet des règles non observées. |
-| 05 | [HMM et Viterbi](05-HMM-Viterbi.ipynb) | Modéliser des étiquettes cachées et leurs observations ; voir comment le contexte change une décision locale. | Licence ; probabilités de 02 et décodage de séquences. | Comparer des implémentations à paramètres identiques. |
-| 06 | [Recherche d'information : TF-IDF et BM25](06-Recherche-Information-TFIDF-BM25.ipynb) | Classer des documents pour une requête en pondérant rareté des termes, répétition et longueur. | Licence ; fréquences et logarithmes. | Interpréter la mesure de rappel choisie. |
+| 05 | [HMM et Viterbi](05-HMM-Viterbi.ipynb) · [C#](05-HMM-Viterbi-CSharp.ipynb) | Modéliser des étiquettes cachées et leurs observations ; voir comment le contexte change une décision locale. | Licence ; probabilités de 02 et décodage de séquences. | Comparer des implémentations à paramètres identiques. |
+| 06 | [Recherche d'information : TF-IDF et BM25](06-Recherche-Information-TFIDF-BM25.ipynb) · [C#](06-Recherche-Information-TFIDF-BM25-CSharp.ipynb) | Classer des documents pour une requête en pondérant rareté des termes, répétition et longueur. | Licence ; fréquences et logarithmes. | Interpréter la mesure de rappel choisie. |
 | 07 | [Cooccurrences, PPMI et SVD](07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb) | Construire des vecteurs de mots à partir de leurs contextes, corriger l'effet des fréquences et réduire la dimension. | Licence ; matrices et produit scalaire. | Passage aux vecteurs appris en 08. |
 | 08 | [Word2vec : CBOW et skip-gram](08-Word2Vec-CBOW-SkipGram.ipynb) | Apprendre des vecteurs par prédiction du contexte ; entraîner CBOW et comprendre le coût de l'échantillonnage négatif. | Licence ; après 07, dérivation et gradient. | Entraînement de skip-gram proposé en exercice. |
 | 09 | [FastText et sous-mots](09-FastText-Subword-Vectors.ipynb) | Composer un vecteur à partir de fragments de caractères pour représenter un mot absent de l'entraînement. | Licence ; après 08. | Distinguer régularité morphologique et proximité de sens. |
@@ -34,7 +36,7 @@ Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/Cou
 
 ### Le fil du parcours — Licence
 
-Le premier changement de perspective est celui du **contexte**. Une étiquette attribuée mot par mot peut être plausible localement et incohérente dans la phrase. Les CRF de 03 et les HMM de 05 modélisent des relations entre étiquettes ; CYK, en 04, représente plutôt une structure d'arbre. Le HMM fournit aussi une relecture générative du problème traité par le CRF discriminatif : on peut revenir de 05 à 03 pour comparer les hypothèses.
+Le premier changement de perspective est celui du **contexte**. Une étiquette attribuée mot par mot peut être plausible localement et incohérente dans la phrase. Les CRF de 03 et les HMM de 05 ([Python](05-HMM-Viterbi.ipynb) · [C#](05-HMM-Viterbi-CSharp.ipynb)) modélisent des relations entre étiquettes ; le jumeau C# utilise Python.NET pour les témoins hmmlearn et NLTK ; CYK, en 04, représente plutôt une structure d'arbre. Le HMM fournit aussi une relecture générative du problème traité par le CRF discriminatif : on peut revenir de 05 à 03 pour comparer les hypothèses.
 
 Le second changement porte sur la **représentation**. Une fréquence brute favorise les mots omniprésents, souvent peu utiles à une recherche. TF-IDF et BM25 corrigent cette pondération en 06. Les cooccurrences de 07 font du contexte un vecteur ; 08 apprend ces vecteurs par optimisation ; 09 partage des fragments entre mots pour traiter des formes jamais vues. Une proximité calculée peut ainsi venir d'un contexte commun ou d'une ressemblance morphologique : le contrôle choisi doit permettre de les distinguer.
 
@@ -68,7 +70,7 @@ Les petits corpus servent à isoler un mécanisme. En 02, le lissage évite des 
 
 En 03, le CRF pédagogique obtient un F1 par entité de 0,947 sur le petit test, contre 1,000 pour CRFsuite. L'accord avec `seqeval` porte sur le **calcul de la métrique appliqué aux mêmes prédictions**, pas sur l'identité des prédictions de ces modèles. C'est un exemple utile de deux validations différentes : contrôler l'évaluation et comparer les systèmes.
 
-De même, le rappel `Recall@3` de 06 mesure les documents pertinents retrouvés parmi les premiers résultats, sans distinguer leur ordre interne. Les voisins et analogies de 07–09 sont observés sur des corpus construits ; les bons résultats sur des dérivés morphologiques ne constituent pas une évaluation sémantique générale. Les classifieurs de 10–11 montrent comment bâtir un protocole hors échantillon, avec des conclusions limitées à leurs bancs.
+De même, le rappel `Recall@3` de 06 mesure les documents pertinents retrouvés parmi les premiers résultats, sans distinguer leur ordre interne. La précision@k à k fixé compte les pertinents du préfixe sans départager leur ordre ; MRR et nDCG binaires ne différencient pas deux documents ayant le même grade positif. Les voisins et analogies de 07–09 sont observés sur des corpus construits ; les bons résultats sur des dérivés morphologiques ne constituent pas une évaluation sémantique générale. Les classifieurs de 10–11 montrent comment bâtir un protocole hors échantillon, avec des conclusions limitées à leurs bancs.
 
 ### Passer aux systèmes de recherche et aux LLM
 
