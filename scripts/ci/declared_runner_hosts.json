@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "_note": [
+    "Inventaire DECLARE des hotes de pool pour scripts/ci/check_runner_starvation.py (#20697 point 4).",
+    "Ce fichier repond a la seule question que le predicat mesure ne peut pas poser : quels hotes",
+    "DEVRAIENT exister. L'inventaire rendu par l'API ne contient que les runners INSCRITS ; un hote",
+    "dont zero runner est enregistre n'y figure pas du tout, et le predicat historique (online == 0",
+    "ET offline > 0) ne peut donc pas voir le cas fondateur de #20697 : dix conteneurs vivants sur",
+    "myia-ai-01-wsl, zero runner inscrit cote GitHub pendant environ deux jours, aucun signal.",
+    "",
+    "Un hote declare ici pour un label qui n'apparait NI en online NI en offline dans l'inventaire",
+    "de ce label rend un warning POOL ABSENT. C'est un warning, jamais un rouge : l'organe est",
+    "advisory par construction et un pool peut etre retire volontairement.",
+    "",
+    "PROVENANCE de l'etat initial : mesure firsthand du 2026-11-12T~10:0xZ, par",
+    "`gh api repos/jsboige/CoursIA/actions/runners?per_page=100` (41 runners), groupee par hote.",
+    "`slots` est DOCUMENTAIRE (il chiffre l'ampleur de la perte dans le message) ; le predicat ne",
+    "compare que la PRESENCE -- un slot en redemarrage ne doit pas crier.",
+    "",
+    "MAINTENANCE : c'est le superviseur qui cree ou retire des slots qui tient ce fichier a jour.",
+    "Un hote decommissionne qui reste ici produit un POOL ABSENT permanent ; le message nomme ce",
+    "fichier pour que le geste de correction soit evident.",
+    "",
+    "NON COUVERT ICI, volontairement : les runners Windows `coursia-fast-guards` sont declares par",
+    "`scripts/ci/self_hosted_runner_profiles.json` (profils par runner, pas par hote de pool). A la",
+    "mesure du 2026-11-12, l'API ne rendait AUCUN runner portant ce label, alors que les profils",
+    "declarent myia-po-2023-fast-guards et myia-po-2024-fast-guards : ecart signale au coordinateur",
+    "sur #20697 plutot que chiffre ici avec une valeur supposee."
+  ],
+  "hosts": [
+    {
+      "host": "myia-ai-01-wsl",
+      "labels": ["coursia-ephemeral", "coursia-linux"],
+      "slots": 13,
+      "declared_at": "2026-11-12"
+    },
+    {
+      "host": "myia-ai-01-wsl-waiterb",
+      "labels": ["coursia-waiter"],
+      "slots": 10,
+      "declared_at": "2026-11-12"
+    },
+    {
+      "host": "myia-po-2024-linux-persist",
+      "labels": ["coursia-ephemeral", "coursia-linux", "coursia-persistent"],
+      "slots": 7,
+      "declared_at": "2026-11-12"
+    },
+    {
+      "host": "myia-po-2025-linux-docker",
+      "labels": ["coursia-ephemeral", "coursia-linux"],
+      "slots": 2,
+      "declared_at": "2026-11-12"
+    },
+    {
+      "host": "myia-po-2027-linux-docker",
+      "labels": ["coursia-ephemeral", "coursia-linux"],
+      "slots": 5,
+      "declared_at": "2026-11-12"
+    },
+    {
+      "host": "myia-po-2028-linux-docker",
+      "labels": ["coursia-ephemeral", "coursia-linux"],
+      "slots": 3,
+      "declared_at": "2026-11-12"
+    }
+  ]
+}

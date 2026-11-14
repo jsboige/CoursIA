@@ -16,7 +16,7 @@ static void Require(bool condition, string message)
     }
 }
 
-Console.WriteLine("[FactorGraphHelper.Selection.Tests v1.0.0]");
+Console.WriteLine("[FactorGraphHelper.Selection.Tests v1.3.0]");
 
 var originalDirectory = Environment.CurrentDirectory;
 var testDirectory = Path.Combine(Path.GetTempPath(), "factor-graph-selection-" + Guid.NewGuid().ToString("N"));
@@ -173,10 +173,88 @@ try
         graphvizCacheField.SetValue(null, previousGraphvizCache);
     }
 
+    // --- ConfigureEngine : routage du dossier d'ecriture vers la portee ---
+    // (suivi #25362 sur #25276) : ConfigureEngine doit activer le graphe de
+    // facteurs ET porter la portee dans GeneratedSourceFolder, sinon la
+    // selection par portee ne trouve jamais les artefacts.
+    var fakeScoped = new FakeEngine();
+    FactorGraphHelper.ConfigureEngine(fakeScoped, "Infer-02-Gaussian-Mixtures");
+    Require(fakeScoped.ShowFactorGraph, "ConfigureEngine doit activer ShowFactorGraph.");
+    Require(fakeScoped.Compiler.WriteSourceFiles, "ConfigureEngine doit activer WriteSourceFiles.");
+    Require(fakeScoped.Compiler.GeneratedSourceFolder == Path.Combine("GeneratedSource", "Infer-02-Gaussian-Mixtures"),
+        "ConfigureEngine doit router GeneratedSourceFolder vers GeneratedSource/<portee>/.");
+    Require(fakeScoped.SaveFactorGraphToFolder == Path.Combine("GeneratedSource", "Infer-02-Gaussian-Mixtures"),
+        "ConfigureEngine doit router SaveFactorGraphToFolder (le .gv du factor graph, "
+        + "propriete du MOTEUR InferenceEngine, pas du compilateur) vers "
+        + "GeneratedSource/<portee>/ : sans lui, le .gv atterrit a la racine du cwd "
+        + "et la lecture stricte par portee ne le trouve pas.");
+    var fakeUnscoped = new FakeEngine();
+    FactorGraphHelper.ConfigureEngine(fakeUnscoped);
+    Require(fakeUnscoped.Compiler.GeneratedSourceFolder == "GeneratedSource",
+        "Sans portee, ConfigureEngine conserve le dossier GeneratedSource racine.");
+    Require(fakeUnscoped.SaveFactorGraphToFolder == "GeneratedSource",
+        "Sans portee, SaveFactorGraphToFolder reste sur le dossier GeneratedSource racine.");
+
+    // --- CleanupGeneratedFiles : nettoyage par portee et nettoyage large ---
+    // Sans portee, un cleanup large doit atteindre les sous-dossiers de portee
+    // GeneratedSource/<scope>/ (TopDirectoryOnly ne les voit pas sinon) ; avec
+    // portee, il ne touche QUE cette portee.
+    var cleanupDirA = Path.Combine(testDirectory, "GeneratedSource", "CleanA");
+    var cleanupDirB = Path.Combine(testDirectory, "GeneratedSource", "CleanB");
+    Directory.CreateDirectory(cleanupDirA);
+    Directory.CreateDirectory(cleanupDirB);
+    var cleanupFlat = Path.Combine(testDirectory, "Model_CleanFlat.gv");
+    var cleanupA1 = Path.Combine(cleanupDirA, "Model_CleanA1.gv");
+    var cleanupA2 = Path.Combine(cleanupDirA, "Model_CleanA2.svg");
+    var cleanupB1 = Path.Combine(cleanupDirB, "Model_CleanB1.gv");
+    File.WriteAllText(cleanupFlat, "digraph { flat }");
+    File.WriteAllText(cleanupA1, "digraph { a1 }");
+    File.WriteAllText(cleanupA2, "<svg/>");
+    File.WriteAllText(cleanupB1, "digraph { b1 }");
+
+    var scopedCleanupCount = FactorGraphHelper.CleanupGeneratedFiles("CleanA");
+    Require(scopedCleanupCount == 2,
+        $"Le cleanup par portee doit supprimer les 2 artefacts de la portee (rendu {scopedCleanupCount}).");
+    Require(!File.Exists(cleanupA1) && !File.Exists(cleanupA2),
+        "Le cleanup par portee doit vider GeneratedSource/CleanA/.");
+    Require(File.Exists(cleanupB1) && File.Exists(cleanupFlat),
+        "Le cleanup par portee ne doit toucher ni les autres portees ni les artefacts plats.");
+
+    var wideCleanupCount = FactorGraphHelper.CleanupGeneratedFiles();
+    Require(!File.Exists(cleanupB1) && !File.Exists(cleanupFlat),
+        "Le cleanup large doit atteindre artefacts plats ET sous-dossiers de portee.");
+    Require(wideCleanupCount >= 2,
+        $"Le cleanup large doit rapporter les suppressions effectives (rendu {wideCleanupCount}).");
+
     Console.WriteLine("FactorGraphHelper selection checks passed.");
 }
 finally
 {
     Environment.CurrentDirectory = originalDirectory;
     Directory.Delete(testDirectory, recursive: true);
+}
+
+/// <summary>
+/// Faux compilateur fidele au ModelCompiler reel d'Infer.NET : il porte
+/// WriteSourceFiles/GeneratedSourceFolder (les sources .cs) mais PAS
+/// SaveFactorGraphToFolder — un Fake qui porterait la propriete validerait
+/// un routage que le vrai compilateur n'a pas (RuntimeBinderException a
+/// l'execution, mesure vagues du 11/11 sur #25276).
+/// </summary>
+internal sealed class FakeCompiler
+{
+    public bool WriteSourceFiles { get; set; }
+    public string? GeneratedSourceFolder { get; set; }
+}
+
+/// <summary>
+/// Faux moteur fidele a l'InferenceEngine reel : ShowFactorGraph ET
+/// SaveFactorGraphToFolder vivent sur le moteur (String, setter public) —
+/// c'est lui qui route le .gv du factor graph.
+/// </summary>
+internal sealed class FakeEngine
+{
+    public bool ShowFactorGraph { get; set; }
+    public string? SaveFactorGraphToFolder { get; set; }
+    public FakeCompiler Compiler { get; } = new();
 }

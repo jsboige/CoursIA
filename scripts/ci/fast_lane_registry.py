@@ -259,9 +259,14 @@ FAST_LANE_NATIVE = "(garde natif de la voie rapide : aucun workflow d'origine)"
 # les NEUF gardes qui declenchaient encore sur `pull_request` : leur job est
 # renomme byte-identique et leur declencheur retire, donc ils sont desormais
 # VERIFIES et non plus exemptes. L'exemption declared ne couvre plus que le
-# residu : `solution-leak-guard`, `perimeter-review-guard`,
-# `self-hosted-runner-policy` -- dont le workflow d'origine ne declenche pas
-# sur `pull_request` (cf PILOT_SHADOW_SANS_EMETTEUR).
+# residu : `perimeter-review-guard`, `self-hosted-runner-policy` -- dont le
+# workflow d'origine ne declenche pas sur `pull_request` (cf
+# PILOT_SHADOW_SANS_EMETTEUR). Le dixieme garde du lot (`solution-leak-guard`)
+# a ete aligne par la tranche T-A/2 de #25510 (2026-11-12) : declencheur
+# `pull_request` retire, `guard.name` byte-identique au nom de check-run
+# RENDU par le workflow -- le mot `advisory` de ce nom est portant pour
+# `pr_gate.py` (#12389), donc c'est le garde qui a ete renomme sur le nom
+# rendu, et non l'inverse.
 PILOT_LOT_NAME = "PILOT"
 
 # Gardes absorbes apres #19168 dont le byte-a-byte-identique n'est pas encore
@@ -270,7 +275,14 @@ PILOT_LOT_NAME = "PILOT"
 # dans le workflow source n'a pas ete renomme byte-identique au `guard.name`.
 # Programme #12567 est le geste de bascule ; en attendant, le filet
 # d'identite les signale sans les exiger.
-TRANCHE_ALIGNMENT_EN_COURS = frozenset({"TRANCHE10"})
+#
+# VIDE depuis le 2026-11-12 : le dernier membre (TRANCHE10 --
+# `notebook-outputs-required`) a ete ALIGNE dans le meme commit que
+# l'absorption de la tranche T-A de #25510 -- le job `validate` du workflow
+# source a ete renomme byte-identique au `guard.name` ET son declencheur
+# `pull_request` retire. Le filet d'identite VERIFIE donc ce garde au lieu
+# de l'exempter (cf check_absorbed_check_run_identity.py).
+TRANCHE_ALIGNMENT_EN_COURS = frozenset()
 
 NOTEBOOK_GLOBS = ["**/*.ipynb"]
 
@@ -377,15 +389,37 @@ PILOT: list[Guard] = [
         absorbed=True,
     ),
     Guard(
-        name="solution-leak-guard",
+        # Nom byte-identique au nom de check-run RENDU par le workflow source
+        # (`jobs.solution-leak-delta.name`) -- le filet d'identite
+        # (check_absorbed_check_run_identity.py) l'exige pour un garde
+        # absorbes, et le caractere `advisory` de ce nom est
+        # PORTANT (pr_gate.py::is_advisory reconnait un check non bloquant
+        # par ce seul mot, cf l'en-tete du workflow et #12389). Renommer le
+        # job source aurait retire le marqueur ; renommer le garde l'echange
+        # contre le nom que le workflow rendait DEJA, donc le nom de
+        # check-run visible par les relecteurs ne change pas.
+        name="Solution-leak HIGH delta (advisory, WARN phase, #8053)",
         source="solution-leak-guard.yml",
-        paths=NOTEBOOK_GLOBS,
+        paths=NOTEBOOK_GLOBS + [
+            # Les motifs du declencheur retire doivent etre COUVERTS par le
+            # registre (check_absorbed_path_parity.py) : sans eux, une PR qui
+            # ne touche que le detecteur ou le delta n'allumerait plus le
+            # garde (mesure fondatrice #20166).
+            "scripts/notebook_tools/audit_solution_leaks.py",
+            "scripts/notebook_tools/solution_leak_delta.py",
+            ".github/workflows/solution-leak-guard.yml",
+        ],
         argv=["python", "scripts/notebook_tools/audit_solution_leaks.py", "--json"],
         delta_argv=["python", "scripts/notebook_tools/solution_leak_delta.py",
                     "{base_json}", "{head_json}"],
         swap_paths=["MyIA.AI.Notebooks"],
         blocking=False,          # WARN phase (#8053) -- ne rougit jamais
         needs_base=True,
+        # ABSORBE (#25510, tranche T-A/2 du 2026-11-12) : le workflow source
+        # perd son declencheur `pull_request` dans le meme commit, donc la
+        # voie rapide devient l'unique emetteur de ce nom de check-run --
+        # le filet d'identite VERIFIE ce garde au lieu de l'exempter.
+        absorbed=True,
     ),
     Guard(
         name="prose-counts",
@@ -598,16 +632,17 @@ PILOT: list[Guard] = [
             ".github/workflows/*.yml",
             ".github/workflows/*.yaml",
             "scripts/ci/check_self_hosted_runner_policy.py",
-            "scripts/ci/self_hosted_timeout_baseline.txt",
             "scripts/tests/test_check_self_hosted_runner_policy.py",
             "scripts/ci/fast_lane_registry.py",
         ],
-        # #22954 : `--check-timeouts` ajoute le cliquet qui refuse un job
-        # auto-heberge sans `timeout-minutes` (defaut d'Actions : 6 h, et un job
-        # fige tient son slot tout ce temps). La dette existante est nommee dans
-        # `self_hosted_timeout_baseline.txt`, qui ne doit jamais grossir.
+        # #22954 : le cliquet refuse un job auto-heberge sans `timeout-minutes`
+        # (defaut d'Actions : 6 h, et un job fige tient son slot tout ce temps).
+        # #23349 (tranche finale, 2026-11-11) : la dette historique est eteinte,
+        # le fichier `self_hosted_timeout_baseline.txt` est supprime, et le
+        # cliquet est le DEFAUT du CLI -- l'argv ne porte plus le drapeau, et
+        # `--no-check-timeouts` serait la seule sortie (visible dans ce diff).
         argv=["python", "scripts/ci/check_self_hosted_runner_policy.py",
-              "--check", "--check-timeouts"],
+              "--check"],
         blocking=True,
         shadow_reason=PILOT_SHADOW_SANS_EMETTEUR,
     ),
@@ -1282,6 +1317,9 @@ TRANCHE5: list[Guard] = [
             ".github/workflows/scripts-tests.yml",
             ".github/workflows/ml-tests.yml",
             ".github/workflows/secret-scan.yml",
+            # secret-scan-controls.yml porte depuis #25510 les cibles gitleaks
+            # de WORKFLOW_COVERAGE : l'editer peut desynchroniser le dict.
+            ".github/workflows/secret-scan-controls.yml",
             ".github/workflows/ict-tests.yml",
             # sudoku-tests.yml declare une cible de couverture (cible-fichier
             # `test_dlx_certificates.py`, cablage de #22375) : l'editer peut
@@ -1996,7 +2034,7 @@ TRANCHE19: list[Guard] = [
 #
 # Origine : reserve de revue Hermes sur #19260 -- « l'organe n'est cable nulle
 # part ». Le README de `docs/` reecrit par cette PR remplace le compte ecrit
-# (146) par l'invariant lui-meme, en citant `python scripts/check_docs_index.py`
+# (146) par l'invariant lui-meme, en citant `python scripts/ci/check_docs_index.py`
 # et son `exit 1`. Or `grep -rln check_docs_index .github/workflows/
 # scripts/ci/` rendait vide des deux cotes : l'invariant n'existait que quand un
 # humain pensait a l'executer. Si une revision supprimait une ligne d'index,
@@ -2027,12 +2065,12 @@ TRANCHE18: list[Guard] = [
         source=FAST_LANE_NATIVE,
         paths=[
             "docs/**",
-            "scripts/check_docs_index.py",
+            "scripts/ci/check_docs_index.py",
             "scripts/tests/test_check_docs_index.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
-        argv=["python", "scripts/check_docs_index.py"],
+        argv=["python", "scripts/ci/check_docs_index.py"],
         blocking=True,
         absorbed=True,
     ),
@@ -2987,6 +3025,83 @@ def _body_md_hierarchy(rc: int, payload: str, ctx: dict) -> str:
     return "\n".join(lines)
 
 
+def _body_outputs_required(rc: int, payload: str, ctx: dict) -> str:
+    """Recapitulatif du garde `outputs-required` (#25510, tranche T-A).
+
+    Le corps est celui du workflow source, mot pour mot : c'est la section
+    que les reviewers lisent depuis le 2026-09-11 (`## Notebook
+    outputs-required (H.4 schema): ...`), et le dossier de prevalidation en
+    reconnait le prefixe (`_BOT_ONLY_PREFIX_MARKERS`). Le workflow source
+    ecrivait cette section dans le resume de job PUIS la collait (ou la
+    retirait) ; ici elle n'est plus ecrite que dans le commentaire.
+
+    Le SUCCES RETIRE la section (#15511 : le succes ne parle plus) -- c'est
+    exactement ce que faisait le workflow (`--clear` sur un run vert).
+    """
+    data: dict = {}
+    if payload.strip():
+        try:
+            data = json.loads(payload)
+        except (json.JSONDecodeError, ValueError):
+            data = {}
+    if not isinstance(data, dict):
+        data = {}
+    total = data.get("occurrences") or 0
+    notebooks = data.get("notebooks") or []
+    errors = data.get("errors") or []
+    if total > 0:
+        lines = [
+            f"## Notebook outputs-required (H.4 schema): **FAIL** ({total} "
+            f"defective cell(s) in {len(notebooks)} notebook(s))",
+            "",
+        ]
+        for entry in notebooks:
+            lines.append(f"### {entry.get('notebook', '')}")
+            lines.append("")
+            for defect in entry.get("defects") or []:
+                lines.append(
+                    f"- cell#{defect.get('cell_index')} "
+                    f"id={defect.get('cell_id')}: {defect.get('reason', '')}"
+                )
+            lines.append("")
+        lines += [
+            "### How to fix",
+            "",
+            "A code cell without an `outputs` key violates the nbformat 5.10.4 "
+            "strict schema:",
+            "",
+            "```python",
+            "# Option 1: re-execute the notebook so Papermill fills outputs",
+            "python scripts/notebook_tools/notebook_tools.py execute <path>",
+            "",
+            "# Option 2: add an empty outputs list explicitly (stub cells)",
+            "# Find cells missing the key in the .ipynb JSON and add:",
+            '#   "outputs": [],',
+            '# immediately after the "source" entry.',
+            "```",
+            "",
+            "See Hermes Concern on PR #15631 (2026-09-11T19:06:00Z) for the "
+            "founding incident.",
+            "",
+        ]
+        return "\n".join(lines)
+    if errors:
+        lines = [
+            f"## Notebook outputs-required (H.4 schema): **ERROR** "
+            f"({len(errors)} unreadable notebook(s))",
+            "",
+        ]
+        for entry in errors:
+            lines.append(
+                f"- {entry.get('notebook', '')}: {entry.get('error', '')}"
+            )
+        lines.append("")
+        return "\n".join(lines)
+    # PASS : la section est RETIREE ; le verdict vit dans le check-run du
+    # garde bloquant (TRANCHE10), qui porte le detail.
+    return ""
+
+
 _COMMENTS_OUT_GLOB = "**/*.ipynb"
 
 # ---------------------------------------------------------------------------
@@ -3883,5 +3998,465 @@ TRANCHE40: list[Guard] = [
         needs_base=True,
         diff_bounded=True,
         absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 42 (#25510, tranche T-A du 2026-11-12) -- VOIE RAPIDE / VOIE LENTE.
+#
+# Le programme "tri de la CI" : un carnet pousse sur une PR declenche ~33
+# workflows, chacun avec son `actions/checkout` (82 % du temps d'execution
+# d'un garde, mesure du coordinateur dans docs/coordination/ci-two-tier.md).
+# Ces gardes AUTONOMES ne regardent que la PR -- ils n'ont besoin ni du
+# corps de la PR, ni d'un artefact, ni d'une etiquette. La voie rapide les
+# execute dans UN checkout partage : c'est ce que cette tranche absorbe.
+#
+# GESTE (procedure de l'etape 3 de #12856) : dans le meme commit, on retire
+# le declencheur `pull_request` du workflow source ET on renomme le job
+# byte-identique au `guard.name`. `check_absorbed_check_run_identity.py`
+# VERIFIE alors au lieu d'exempter, et `check_absorbed_path_parity.py`
+# exige que les `paths` du registre COUVRENT ceux du declencheur retire
+# (sinon le garde cesse d'etre selectionne pour les fichiers qu'il
+# surveillait).
+#
+# PERIMETRE DE CETTE TRANCHE (5 gardes, 5 workflows) :
+#   - `notebook-outputs-required` : le job `validate` est renomme
+#     byte-identique a "Notebook outputs required (H.4 schema)" (le garde
+#     bloquant est TRANCHE10) ; son recapitulatif collant est repris par une
+#     entree de registre a commentaires (le workflow d'origine ecrivait ce
+#     texte dans le resume de job PUIS le collait).
+#   - `notebook-cell-source-parses`, `notebook-papermill-ratchet`,
+#     `notebook-cell-id-ratchet`, `bios-companion-coverage` : un job, un
+#     detecteur, aucun effet de bord PR (ni etiquette, ni artefact, ni
+#     commentaire).
+#
+# HORS PERIMETRE MALGRE SON RANG (mesure, pas intuition) :
+#   - `notebook-exec-sequence-ratchet` : son declencheur porte le type
+#     `labeled`, qui porte le MECANISME D'ACK (`exec-sequence-ack` +
+#     marker `[EXEC-SEQ-ACK] head=<sha40>`). La voie rapide ne rejoue que
+#     [opened, synchronize, reopened] : absorber ce workflow supprimerait le
+#     seul evenement qui fait relire l'ack a l'organe, et le garde resterait
+#     rouge malgre un ack pose. Il part en tranche 2, avec la question du
+#     declencheur `labeled` traitee explicitement.
+#
+# DEVIATIONS CONNUES, ETABLIES ET NON CACHEES :
+#   1. `notebook-outputs-required` : le `rc=2` de l'organe (perimetre PR non
+#      evaluable, sonde git en echec) reste en NEUTRAL -- decision #23068 deja
+#      inscrite dans TRANCHE10. Le workflow d'origine rougeait sur TOUT
+#      non-zero ; apres absorption, le cas « sonde git en echec » ne peut plus
+#      accuser la PR, il la signale comme non concluant.
+#   2. `notebook-cell-source-parses` : le workflow utilisait `BASE` = SHA de
+#      base de l'evenement ; la voie rapide travaille en `origin/<base_ref>`.
+#      Les deux sont equivalentes pour `git diff A...B` (trois points =
+#      merge-base), convention deja celle de la voie rapide.
+# ---------------------------------------------------------------------------
+TRANCHE42: list[Guard] = [
+    # --- notebook-outputs-required -----------------------------------------
+    # Recapitulatif collant de l'organe. Le VERDICT bloquant est porte par
+    # TRANCHE10 (meme workflow, nom canonique) ; ce garde ne publie que la
+    # section consultative, comme le faisait le workflow d'origine.
+    Guard(
+        name="Detect notebook changes (outputs-required)",
+        source="notebook-outputs-required.yml",
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/check_notebook_outputs_required.py",
+            ".github/workflows/notebook-outputs-required.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        blocking=False,
+        absorbed=True,
+        # Le verdict de ce garde est son commentaire : `argv` reste vide et
+        # le moteur execute `commenters` a sa place (cf fast_lane.main).
+        argv=[],
+        commenters=(
+            Commenter(
+                header="notebook-outputs-required",
+                argv=[
+                    "python",
+                    "scripts/notebook_tools/check_notebook_outputs_required.py",
+                    "--pr-diff", "{base_ref}", "HEAD", "--json",
+                ],
+                body=_body_outputs_required,
+                paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+            ),
+        ),
+    ),
+    # --- notebook-cell-source-parses ---------------------------------------
+    Guard(
+        name="cell-source-parses",
+        source="notebook-cell-source-parses.yml",
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_cell_source_parses.py",
+            ".github/workflows/notebook-cell-source-parses.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "unittest",
+            "scripts.tests.test_check_cell_source_parses", "-v",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_cell_source_parses.py",
+            "--target-py", "3.12", "--pr-diff", "{base_ref}", "HEAD",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # --- notebook-papermill-ratchet ----------------------------------------
+    Guard(
+        name="Papermill ratchet (base vs PR)",
+        source="notebook-papermill-ratchet.yml",
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_papermill_ratchet.py",
+            ".github/workflows/notebook-papermill-ratchet.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_check_papermill_ratchet.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_papermill_ratchet.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # --- notebook-cell-id-ratchet ------------------------------------------
+    Guard(
+        name="Cell ID ratchet (base vs PR)",
+        source="notebook-cell-id-ratchet.yml",
+        paths=[
+            "**/*.ipynb",
+            "scripts/notebook_tools/check_cell_id_invalid_ratchet.py",
+            "scripts/notebook_tools/fix_cell_ids.py",
+            "scripts/notebook_tools/tests/test_cell_id_schema.py",
+            ".github/workflows/notebook-cell-id-ratchet.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_cell_id_schema.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_cell_id_invalid_ratchet.py",
+            "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+    ),
+    # --- bios-companion-coverage -------------------------------------------
+    Guard(
+        name="Companion coverage (ps1/sh + Setup bi-OS)",
+        source="bios-companion-coverage.yml",
+        paths=[
+            "**/*.ps1",
+            "**/*.sh",
+            "**/README*.md",
+            "**/*[Ss]etup*.ipynb",
+            "scripts/ci/check_companion_coverage.py",
+            ".github/workflows/bios-companion-coverage.yml",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/ci/check_companion_coverage.py"],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 43 (#25510, tranche T-A/2 du 2026-11-12) -- absorption du garde des
+# caracteres de controle LaTeX (`notebook-latex-control-chars.yml`).
+#
+# POURQUOI CE GESTE (#25510, plan de tri de la CI) : une PR de carnet
+# declenchait 31 workflows, chacun avec son runner, son checkout et son
+# `setup-python` ; un garde de carnet median coute 1,2 min, dont 82 % de
+# checkout (`docs/coordination/ci-two-tier.md` §3.4). La voie rapide fait
+# tourner les gardes dans le checkout DEJA materialise de `always-on-guards`.
+#
+# SEMANTIQUE CONSERVEE, point par point :
+#   - portee : le workflow balayait les carnets touches par la PR
+#     (`--pr-diff BASE HEAD`) ; la voie rapide passe `{base_ref}` = la
+#     branche de base de la PR, et `--pr-diff` a la MEME semantique
+#     trois-points (merge-base) des deux cotes -> les memes carnets ;
+#   - verdict : le workflow sortait 0 sur occurrence (ADVISORY : un
+#     `::warning::`, la PR n'est pas rouge) et 1 sur erreur du detecteur
+#     (rc=2). Ici : `blocking=False` (rc=1 -> check-run neutre, titre
+#     « signale (advisory) ») et `warn_rc=(2,)` (rc=2 -> « verdict inconnu »,
+#     non bloquant) -- la doctrine du depot pour un incident d'instrument
+#     (cf TRANCHE10, `hr-substitution-guard`) ;
+#   - controle par faux negatif : la suite unitaire du detecteur est rejouee
+#     en `pre_argv` (le workflow le faisait aussi, dans une etape dediee).
+#
+# ECART ASSUME : le workflow d'origine ECHOUAIT (exit 1) sur un rc=2 du
+# detecteur ; ici ce rc est NEUTRE (« verdict inconnu »), donc la PR n'est
+# pas rougie par une panne de l'instrument. C'est la meme doctrine que les
+# autres gardes absorbes du programme (#12567), et le check-run reste
+# VISIBLE et nomme « verdict inconnu » -- jamais un vert muet.
+#
+# Le job source garde son nom rendu `latex-control-chars`, byte-identique au
+# `guard.name` ci-dessous : le filet d'identite
+# (check_absorbed_check_run_identity.py) VERIFIE donc ce garde au lieu de
+# l'exempter.
+# ---------------------------------------------------------------------------
+TRANCHE43: list[Guard] = [
+    Guard(
+        name="latex-control-chars",
+        source="notebook-latex-control-chars.yml",
+        paths=[
+            # Meme perimetre que le declencheur retire du workflow (le motif
+            # `**.ipynb` couvre les carnets a la racine comme les autres),
+            # plus le detecteur, son test et les deux fichiers du moteur
+            # (convention des gardes natifs voisins : une revision qui
+            # change l.engineur ou le registre doit rejouer le garde).
+            "**.ipynb",
+            "scripts/notebook_tools/check_latex_control_chars.py",
+            "scripts/tests/test_check_latex_control_chars.py",
+            ".github/workflows/notebook-latex-control-chars.yml",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        pre_argv=[
+            "python", "-m", "unittest",
+            "scripts.tests.test_check_latex_control_chars", "-v",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_latex_control_chars.py",
+            "--pr-diff", "{base_ref}", "HEAD",
+        ],
+        blocking=False,          # ADVISORY (#14859) : signale sans rougir
+        warn_rc=(2,),            # incident du detecteur -> verdict inconnu
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# TRANCHE 44 (#25510, tranche T-A/3 du 2026-11-12) -- absorption du garde de
+# derive de traduction (`translation-drift.yml`).
+#
+# POURQUOI CE GESTE : un garde de carnet median coute 1,2 min, dont 82 % de
+# checkout (docs/coordination/ci-two-tier.md §3.4). Ce garde balayait les
+# carnets touches par la PR dans son propre checkout ; la voie rapide le
+# rend dans le checkout DEJA materialise de `always-on-guards`.
+#
+# LE NOM EST CELUI DU CHECK-RUN RENDU, PAS L'INVERSE. Le job source porte
+# `name: "Translation drift (read-only, advisory)"` et le marqueur
+# `advisory` de ce nom est PORTANT : `scripts/pr_gate.py` classe un check
+# non bloquant par ce seul mot dans le nom rendu (`ADVISORY_MARKER`, regle 6
+# de son module) -- il ne lit ni l'en-tete du workflow, ni le registre
+# (cf #15998 et l'en-tete du workflow, qui l'ecrit noir sur blanc). Renommer
+# le job en `translation-drift` effacerait le marqueur et ferait compter un
+# echec d'INFRASTRUCTURE de ce job comme un check REQUIS : c'est exactement
+# l'incident mesure sur #22216 le 2026-10-26 ("PR gate: FAIL -- failing
+# checks: Translation drift (read-only) (failure)", job mort au checkout).
+# C'est donc le garde qui adopte le nom rendu.
+#
+# SEMANTIQUE CONSERVEE, point par point :
+#   - portee : le workflow balayait les carnets touches par la PR
+#     (`paths:` du declencheur) ; le registre reprend les memes motifs ;
+#   - verdict : le workflow sortait 0 TOUJOURS (le drift est une annotation
+#     `::notice`, jamais un echec) et `--check` fait de meme dans l'outil
+#     (`return 0 if args.check else 1`) : le garde est `blocking=False`, donc
+#     un rc non nul rend un check-run NEUTRE, jamais rouge ;
+#   - rapport : le detail du drift (stderr + JSON) reste lisible -- le
+#     check-run de la voie rapide publie le log du garde dans son corps.
+#
+# ECART ASSUME, declare : sur une panne du detecteur (rc=2, entree absente),
+# le workflow emettait un `::warning` et restait VERT ; ici le check-run est
+# NEUTRE (« incident »), donc visible et non bloquant. La doctrine du depot
+# pour un instrument casse : jamais un vert muet.
+#
+# Le `workflow_dispatch` reste : le check manuel (relance apres un
+# re-translation) continue de fonctionner hors PR.
+# ---------------------------------------------------------------------------
+TRANCHE44: list[Guard] = [
+    Guard(
+        name="Translation drift (read-only, advisory)",
+        source="translation-drift.yml",
+        paths=[
+            # Meme perimetre que le declencheur retire, plus le workflow
+            # lui-meme (une revision qui touche le filtre doit rejouer le
+            # garde, convention des gardes voisins).
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "translations/**",
+            "scripts/translation/**",
+            ".github/workflows/translation-drift.yml",
+        ],
+        argv=[
+            "python", "scripts/translation/check_translation_sync.py",
+            "translations", "--check", "--repo-root", ".",
+            # `--no-json` : le rapport JSON pese environ 857 Ko pour 2537
+            # anomalies, et le resume du check-run est coupe vers 60 Ko. Le
+            # JSON occupe la place entiere du resume et ecrase les lignes de
+            # signal (REMPLISSAGE, DRIFT DETECTE) : le garde affichait « OK »
+            # sans jamais nommer le drift. Le signal stderr reste integral.
+            "--no-json",
+        ],
+        blocking=False,          # ADVISORY : le drift est signale, jamais bloque
+        absorbed=True,
+    ),
+]
+
+
+# TRANCHE 45 (#22209, garde bloquant) -- renumérotée à la fusion de main : 42, 43 et 44 sont pris par #25510 (voie rapide/lente).
+# Absorption du Notebook plan-loss gate (#14532).
+# gate (#14532, workflow notebook-plan-loss-gate.yml). Complement
+# structurel de TRANCHE4 md-content-loss : axe PLAN (disparition de
+# sections) vs axe VOLUME (perte de prose intra-cellulaire). Semantique
+# conservee EXACTE (boucle d'origine du workflow) :
+#   - rc=1 par carnet (LOST_SECTION / STRUCTURE_DRIFT non arbitres) =
+#     finding bloquant, le moteur rend 1 ;
+#   - rc=2 par carnet (illisible) = WARNING (warn_rc), pas un rouge -- la
+#     boucle d'origine les comptait sans echouer ;
+#   - anti-auto-desarmement AGREGE (reserve ai-01 c.28 sur #8656,
+#     transposee #14532) : si CHAQUE carnet tente etait illisible, le gate
+#     n'a rien analyse et ne peut pas certifier l'integrite du plan ->
+#     `fail_on_all_warn` rend 1, exactement comme le `exit 1` du workflow ;
+#   - carnet supprime par la PR : le moteur filtre les chemins inexistants
+#     avant l'iteration, meme skip que `[ -f "$nb" ] || continue` ;
+#   - marqueur d'arbitrage `plan-loss: section assumee -- ...` : le body
+#     vivant de la PR est promu dans l'env PLAN_LOSS_PR_BODY par l'etape
+#     « Body live » d'always-on-guards.yml (meme canal que
+#     MD_CONTENT_LOSS_PR_BODY, cf. la promotion X="${PR_BODY:-$X}") ; le
+#     detecteur le lit nativement (priorite --pr-body > env).
+# `--base {base_ref}` = origin/<branche>, comme BASE="origin/$base_ref"
+# de la boucle d'origine (le workflow faisait git diff --name-only
+# "$BASE"...HEAD puis appelait le detecteur par carnet avec --base "$BASE").
+# `pre_argv` : la suite pytest du detecteur (28 tests) est le controle par
+# faux negatif (lecon #11685/#12817, meme convention que TRANCHE39) -- un
+# detecteur qui ne prouve pas qu'il tire est indiscernable d'un detecteur
+# debranche.
+# Limite documentee (meme limite que TRANCHE4, #22331/#22333) : `edited`
+# est deliberement absent des types pull_request d'always-on-guards.yml.
+# Le declencheur d'origine n'etait pas decoratif -- #20260
+# (`e43677ef895`) l'avait ajoute expres pour #20256, ou l'auteur qui
+# posait son marqueur apres le dernier push laissait le check rouge
+# jusqu'a un push sans rapport. La voie de levee SANS push reste le REJEU
+# du job : l'etape « Body live » relit le corps par API a l'execution, et
+# ce PR_BODY-la alimente PLAN_LOSS_PR_BODY a l'export. Un marqueur ajoute
+# apres le dernier push est donc pris en compte des le rejeu, sans commit
+# ni push ; seule la reevaluation AUTOMATIQUE sur edition seule est
+# perdue.
+# ---------------------------------------------------------------------------
+TRANCHE45: list[Guard] = [
+    Guard(
+        name="No notebook plan loss in changed notebooks",
+        source="notebook-plan-loss-gate.yml",
+        # Sans filtre, comme le declencheur d'origine (contrat
+        # check_absorbed_path_parity : un `pull_request` sans filtre exige un
+        # registre sans filtre). C'est aussi le choix de conception du
+        # workflow absorbe : « PAS de paths: ici : un seul evenement manquant
+        # = la garde ne protege rien » (auto-couverture #14391/#14429 -- une
+        # PR qui ne touche que le workflow ou le detecteur re-evalue la
+        # garde). La PORTEE de l'analyse reste le perimetre notebooks via
+        # `iterate_paths` ; une PR sans carnet change rend le no-op rc=0 du
+        # moteur (« iterates_paths vide »), equivalent exact du « No
+        # notebooks changed -- clean. » de la boucle d'origine.
+        paths=[],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_detect_notebook_plan_loss.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_notebook_plan_loss.py",
+            "--base", "{base_ref}", "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        needs_base=True,
+        iterates_paths=True,
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        absorbed=True,
+        warn_rc=(2,),
+        fail_on_all_warn=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 46 d'absorption (#25510, T-A/3) -- perte de volume de RENDU d'un
+# carnet (#11656).
+#
+# LE NOM EST CELUI DU CHECK-RUN RENDU. Le job source porte
+# `name: "Render volume delta (#11656 advisory)"` : le registre adopte ce
+# nom mot pour mot, comme l'exige le controle positif d'identite
+# (`check_absorbed_check_run_identity.py`).
+#
+# LE SOURCE N'A PLUS DE DECLENCHEUR `pull_request`. Le workflow
+# `render-volume-delta-advisory.yml` ne Declenche plus que sur `schedule`
+# (18 03 * * *, balayage nocturne) et `workflow_dispatch` (#12817 a retire
+# le declencheur PR, trop lourd : un clone par PR). L'absorption n'ajoute
+# donc rien au couverture de la source -- elle porte la MESURE a l'instant
+# ou la PR est ouverte, la ou le balayage nocturne ne verrait la perte
+# qu'apres le merge. Il n'y a donc RIEN a comparer pour l'organe de parite
+# de couverture (`check_absorbed_path_parity.py`) : la source n'a plus de
+# `pull_request` a retirer.
+#
+# SEMANTIQUE CONSERVEE, point par point :
+#   - base : le MERGE-BASE (`git merge-base origin/main HEAD`), jamais
+#     `origin/main` deux-points -- sur une branche en retard, le
+#     deux-points inclut les evolutions de main hors PR et fait signaler
+#     des pertes que la PR n'a pas causees (c.357-L1) ;
+#   - abstention : merge-base introuvable -> on s'abstient EN LE DISAIT,
+#     jamais de repli silencieux ;
+#   - perimetre : les carnets modifies ou renommes entre la base et la
+#     tete (`--diff-filter=MR -M50%`), plafond 50.
+#
+# CE QUE CETTE TRANCHE AJOUTE (ecarts assumes, declares) :
+#   - le VERDICT CIBLE est un finding `LOST_MIME` de famille `image` (le
+#     cas #26032 : une PNG de 40 Ko disparue de la cellule 10, PR gate
+#     vert). Les autres kinds sont rapportes sans faire echouer la garde ;
+#   - l'abstention et l'erreur structurelle rendent rc=2, classe en
+#     `warn_rc` : le check-run est NEUTRE (« incident »), donc visible et
+#     non bloquant. La source sortait en 0 avec un simple `::warning` --
+#     un abstention lu « OK » dans un check-run est un vert muet ;
+#   - le cas multi-carnets : la source passait la liste des carnets a un
+#     outil dont l'argument positionnel est UNIQUE -- argparse echouait
+#     des le second carnet, le JSON restait illisible, et le commentaire
+#     affichait « rien de perdu » sur une PR qui en avait change
+#     plusieurs. L'adaptateur mesure chaque carnet dans le meme
+#     processus.
+#
+# `blocking=False` : la source est un ADVISORY (elle ecrit un commentaire
+# PR et ne gate rien). L'etape 3 du plan (#25510) fera passer ce finding
+# en bloquant, sur la mesure de l'etape 2 (census des PRs de carnet
+# ouvertes qui portent un `LOST_MIME` image).
+# ---------------------------------------------------------------------------
+TRANCHE46: list[Guard] = [
+    Guard(
+        name="Render volume delta (#11656 advisory)",
+        source="render-volume-delta-advisory.yml",
+        paths=[
+            # Les actifs d'abord : la mesure porte sur les carnets.
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            # L'organe de la mesure (appele, jamais reecrit) et
+            # l'adaptateur qui l'appelle.
+            "scripts/notebook_tools/check_render_volume_delta.py",
+            "scripts/ci/run_render_volume_guard.py",
+            # Le workflow source : une revision qui le touche rejoue le
+            # garde (convention des gardes voisins).
+            ".github/workflows/render-volume-delta-advisory.yml",
+        ],
+        argv=[
+            # `--base-ref {base_ref}` porte le BORNAGE : l'organe de
+            # bornage des gardes absorbées (`check_absorbed_argv_scope.py`)
+            # voit le jeton explicite et la valeur `{base_ref}` -- la base
+            # vient de la lane, elle n'est pas en dur.
+            "python", "scripts/ci/run_render_volume_guard.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=False,          # ADVISORY (etape 1) : signale, jamais bloque
+        needs_base=True,         # le runner garantit origin/<base_ref>
+        diff_bounded=True,       # verdict base vs tete : bornage par la PR
+        absorbed=True,
+        # rc=2 : abstention (merge-base introuvable) ou erreur
+        # structurelle. Classe NEUTRE (« incident »), jamais un vert.
+        warn_rc=(2,),
     ),
 ]

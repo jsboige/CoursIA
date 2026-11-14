@@ -1,4 +1,4 @@
-"""Tests for scripts/audit_genai_corruption.py — GenAI notebook corruption audit.
+"""Tests for scripts/audit/audit_genai_corruption.py — GenAI notebook corruption audit.
 
 Hermetic: targets the pure detection functions (no filesystem, no glob). The
 module's side-effects live under `if __name__ == "__main__"`, so importing it
@@ -14,7 +14,7 @@ import importlib.util
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SCRIPT_PATH = HERE.parent.parent / "audit_genai_corruption.py"
+SCRIPT_PATH = HERE.parent / "audit_genai_corruption.py"
 
 
 def _load():

@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,0d778293,markdown,fr,c7cea32eca2a0185,"# SW-10-RDFStar-CSharp — Jumeau C# : annoter des triplets (réification) via dotNetRDF
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,0d778293,markdown,fr,90373a4d439f8d51,"# SW-10-RDFStar-CSharp — Jumeau C# : annoter des triplets (réification) via dotNetRDF
 
 > **Jumeau C# (.NET 9)** de [`SW-10-RDFStar-Python`](SW-10-RDFStar-Python.ipynb). Le notebook Python utilise **rdflib** pour illustrer l'annotation de triplets (provenance, confiance, validité temporelle) via la **réification classique** RDF (4 triplets par assertion) et les **graphes nommés** (`rdflib.Dataset`). **Ce jumeau invoque le vrai moteur .NET natif** : **dotNetRDF 3.4.1** (`VDS.RDF.Graph`, `Triple`, `SparqlQueryParser`, `ExecuteQuery`) — pas une réimplémentation jouet.
 
@@ -22,15 +22,15 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,0d778293,mar
 ### Posture du jumeau : mêmes concepts, moteur natif
 
 La méthode de concordance fixée pour cette paire : chaque étape du notebook Python (`reify()` helper, graphe de connaissances, filtrage SPARQL, graphes nommés, sérialisation) possède ici son exécution dotNetRDF équivalente, avec les mêmes valeurs d'exemple (mêmes personnes, mêmes scores de confiance) — les compteurs de triplets et les tables de résultats doivent coïncider, aux différences d'API près. Quand un chiffre diverge entre les deux notebooks, l'écart est documenté dans le texte (il traduit presque toujours une différence de vocabulaire d'annotation, pas de mécanique). Cette discipline fait du couple un même cours exécutable dans deux écosystèmes, plutôt que deux cours parallèles.
-",,,,,,,,c7cea32eca2a0185,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,5d33bcbe,markdown,fr,bc18fb1c0a6ef724,"## 1. Installation et espace de noms
+",,,,,,,,90373a4d439f8d51,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,5d33bcbe,markdown,fr,3097300dcbfbe0ed,"## 1. Installation et espace de noms
 
 dotNetRDF est le moteur .NET natif pour RDF/SPARQL. On charge le NuGet `dotNetRDF` 3.4.1 (le même que `SW-09-JSONLD-CSharp`). On définit les préfixes et URI de base comme le twin Python (`ex:`, `foaf:`, `rdf:`, `xsd:`).
 Côté espaces de noms, tout vit sous `VDS.RDF.*` : `Graph`/`TripleStore` pour les graphes, `Parsing`/`Writing` pour les sérialisations, `Query` pour SPARQL — miroir des modules `rdflib.graph`/`rdflib.plugins.sparql` du côté Python.
 
 Le chargement `#r ""nuget: dotNetRDF, 3.4.1""` installe le moteur depuis NuGet à la première exécution (mécanisme .NET Interactive), puis les `using VDS.RDF.*` ouvrent les quatre quadrants de la bibliothèque : `VDS.RDF` (le modèle : `Graph`, `Triple`, nœuds), `VDS.RDF.Parsing` (lecteurs Turtle/JSON-LD et `SparqlQueryParser`), `VDS.RDF.Writing` (sérialiseurs, dont `CompressingTurtleWriter`), `VDS.RDF.Query` (`SparqlResultSet`, `ISparqlResult`). La correspondance avec rdflib est terme à terme : `Graph` ↔ `rdflib.Graph`, `Assert` ↔ `add`, `ExecuteQuery` ↔ `query` — apprendre l'un, c'est savoir naviguer l'autre.
-",,,,,,,,bc18fb1c0a6ef724,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,7a93dd6f,code,fr,69b5da1023df0829,"#r ""nuget: dotNetRDF, 3.4.1""
+",,,,,,,,3097300dcbfbe0ed,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,7a93dd6f,code,fr,42fabe29ec9ddec5,"#r ""nuget: dotNetRDF, 3.4.1""
 
 using VDS.RDF;
 using VDS.RDF.Parsing;
@@ -41,7 +41,7 @@ using System.IO;
 using System.Text;
 
 Console.WriteLine(""dotNetRDF charge (VDS.RDF) -- marathon #4956, parite avec SW-10-RDFStar-Python (rdflib)"");
-",,,,,,,,69b5da1023df0829,,,,,,,,,,,,,,,
+",,,,,,,,42fabe29ec9ddec5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,de19e0e3,markdown,fr,e20194220a2fad39,"## 2. Le problème : pourquoi annoter des triplets ?
 
 RDF représente des faits sous forme de **triplets** (sujet, prédicat, objet). Mais un triplet est atomique : on ne peut pas lui attacher directement une provenance, un score de confiance ou une date. Pour dire « Alice affirme que Bob connaît Carol avec 85 % de confiance », il faut **réifier** le triplet — le décomposer en 4 triplets auxiliaires — puis annoter ce nœud-réification.
@@ -436,7 +436,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,24ac542f,cod
 // avec leur graphe d'origine ; un GROUP BY ?s ?o HAVING(COUNT(*)>1) trouve les faits multi-sources.
 Console.WriteLine(""Exercice 3 a completer : 3e graphe nommé + detection des faits multi-sources."");
 ",,,,,,,,c061d22e74ec02c0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,7527bc67,markdown,fr,94c800b164ab263f,"## Conclusion — synthèse
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-CSharp.ipynb,7527bc67,markdown,fr,c5bdb72fd1c0ad4c,"## Conclusion — synthèse
 
 | Mécanisme | Coût (triplets) | Lisibilité | Portabilité |
 |-----------|----------------|------------|-------------|
@@ -471,8 +471,8 @@ Les gestes du notebook se traduisent un-à-un vers rdflib (`Graph` ↔ `rdflib.G
 Le parcours chiffré du notebook condense le tableau ci-dessus : **7** triplets pour le premier fait annoté (section 2), **14** après le second (section 3), **35** pour le graphe de connaissances complet (section 4) — la réification facture partout ses 4 auxiliaires par fait, et la sérialisation finale (1370 caractères, section 8) en montre le volume. Les graphes nommés (section 7) n'ont facturé que 2 nœuds-noms pour 2 relations — l'économie mesurée du mécanisme alternatif. Toutes ces valeurs concordent avec le twin Python aux vocabulaires d'annotation près (37 vs 35 : deux annotations `since` de plus côté Python), et c'est la discipline de la paire : mêmes concepts, mêmes scénarios, mesures en regard.
 
 Ce qui doit rester du côté C# spécifiquement : les trois marches d'API franchies ici — nœuds-réifications **URI nommés** (adressables) plutôt que blank nodes, littéraux typés en **culture invariante** (sinon le `xsd:double` casse silencieusement en culture française), identité des graphes nommés par **nœud-nom** `Graph(IRefNode)` (le piège de migration 3.x). Trois détails qui ne touchent pas au modèle RDF — et c'est le point : le modèle, lui, est exactement le même des deux côtés de la paire.
-",,,,,,,,94c800b164ab263f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,header-nav,markdown,fr,0d168babd98225cf,"# SW-10-RDFStar-Python
+",,,,,,,,c5bdb72fd1c0ad4c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,header-nav,markdown,fr,908d5fadd1123671,"# SW-10-RDFStar-Python
 
 **Navigation** : [<< 9-JSONLD](SW-09-JSONLD-Python.ipynb) | [Index](README.md) | [11-KnowledgeGraphs >>](SW-11-Python-KnowledgeGraphs.ipynb)
 
@@ -493,7 +493,7 @@ A la fin de ce notebook, vous saurez :
 
 | Concept | Description |
 |---------|-------------|
-| RDF 1.2 | Evolution du standard RDF integrant les quoted triples (W3C, 2024) |
+| RDF 1.2 | Evolution du standard RDF integrant les quoted triples (W3C, document Concepts en Candidate Recommendation depuis avril 2026) |
 | Quoted Triple | Triplet utilise comme sujet ou objet d'un autre triplet : `<< s p o >>` |
 | Reification classique | Mécanisme RDF 1.0 pour parler de triplets (4 triplets par assertion) |
 | Graphes nommes | Regrouper des triplets dans un contexte identifie par une URI |
@@ -511,7 +511,7 @@ Cependant, rdflib 7.x ne supporte pas encore le parsing Turtle-Star ni la classe
 Nous utilisons donc la **reification standard** et les **graphes nommes** comme implementations pratiques,
 tout en montrant comment RDF-Star simplifierait l'ecriture.
 
-***",,,,,,,,0d168babd98225cf,,,,,,,,,,,,,,,
+***",,,,,,,,908d5fadd1123671,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,install-intro,markdown,fr,c7402abcec729010,## Installation des dependances,,,,,,,,c7402abcec729010,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,install-pip,code,fr,948dfd69d63b0c63,"# Dependances pre-provisionnees (rdflib) : voir SemanticWeb/requirements.txt ; imports dans les cellules suivantes.
 ",,,,,,,,948dfd69d63b0c63,,,,,,,,,,,,,,,
@@ -653,7 +653,7 @@ La sortie de la cellule précédente donne le compte exact : **7 triplets** pour
 Une subtilité sémantique enfin : le point 2 du tableau (« le Statement est indépendant ») découle de l'**hypothèse ouverte du monde** combinée à l'**absence de négation en RDF**. On ne peut écrire ni « ce Statement correspond à un triplet présent » ni « aucun triplet ne correspond » — le graphe ne peut pas exprimer la cohérence entre fait et mention. RDF 1.2 rend cette liaison *configurable* (mode par défaut : mention seule), ce qui est précisément le réglage qui manquait.
 
 > **Point cle** : RDF-Star (devenu RDF 1.2) resout ces problemes en permettant d'utiliser un triplet directement comme sujet ou objet d'un autre triplet. En attendant un support complet dans rdflib, nous pouvons utiliser la reification de maniere structuree grace a une fonction utilitaire.",,,,,,,,29b4e5a9d9c69dbb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section2-title,markdown,fr,29798a3468ab0bbe,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section2-title,markdown,fr,1b6b9d406b757609,"***
 
 ## 2. RDF 1.2 et les Quoted Triples
 
@@ -664,8 +664,9 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section2-tit
 | 2014 | Olaf Hartig propose RDF* (RDF-Star) dans un article academique |
 | 2017-2019 | Adoption par des triple stores (Blazegraph, Stardog, Jena) |
 | 2021 | Le W3C créé le RDF-Star Community Group |
-| 2023 | Le W3C integre RDF-Star dans la specification RDF 1.2 |
-| 2024 | RDF 1.2 devient une W3C Recommendation (Candidate) |
+| 2022 | Le W3C cree le groupe de travail RDF-star (charte du 29 aout 2022), qui porte le projet RDF-star |
+| 2025 | Le groupe est rechartre et renomme Working Group RDF & SPARQL (charte du 1er mai 2025) ; il porte RDF 1.2 et ses triple terms |
+| 2026 | Le document RDF 1.2 Concepts and Abstract Data Model passe au stade Candidate Recommendation Snapshot (7 avril 2026) ; Turtle et N-Triples restent Working Draft. La Recommandation en vigueur reste RDF 1.1 |
 
 ### Syntaxe des Quoted Triples
 
@@ -691,10 +692,10 @@ Cela remplacerait les 7 triplets de la reification classique par seulement **2 t
 
 > **Note pratique** : rdflib 7.6.0 ne supporte pas encore la syntaxe Turtle-Star (`<< ... >>`). Dans les sections suivantes, nous implementons les mêmes concepts via la reification standard, en montrant a chaque fois comment RDF-Star simplifierait l'ecriture.
 
-Deux repères pour lire l'historique ci-dessus. L'article d'Olaf Hartig (2014) part d'un constat d'ingénieur — la réification est correcte mais *personne* ne l'utilise en production à cause de son coût — et propose la syntaxe `<< ... >>` comme sucre sémantique : le triplet cité devient une valeur manipulable, sans ressource intermédiaire. Les triple stores l'adoptent avant le standard (Blazegraph, puis Jena et Stardog) parce que leurs clients industriels — moteurs de recherche, graphes de connaissances — annotent massivement. Le W3C formalise le mouvement en 2021 (Community Group), puis l'intègre à RDF 1.2 en 2023-2024 : le chemin habituel du Web sémantique, la pratique d'abord, la norme ensuite.
+Deux repères pour lire l'historique ci-dessus. L'article d'Olaf Hartig (2014) part d'un constat d'ingénieur — la réification est correcte mais *personne* ne l'utilise en production à cause de son coût — et propose la syntaxe `<< ... >>` comme sucre sémantique : le triplet cité devient une valeur manipulable, sans ressource intermédiaire. Les triple stores l'adoptent avant le standard (Blazegraph, puis Jena et Stardog) parce que leurs clients industriels — moteurs de recherche, graphes de connaissances — annotent massivement. Le W3C formalise le mouvement en 2021 (Community Group), puis ouvre un groupe de travail dédié en 2022 (RDF-star Working Group), rechartré en 2025 sous le nom RDF & SPARQL pour porter RDF 1.2 : le chemin habituel du Web sémantique, la pratique d'abord, la norme ensuite.
 
 Sur la sémantique, un point que le tableau ne montre pas : RDF 1.2 introduit la distinction **annotation** et **citation**. La forme `<< s p o >> q v` (annotation) *asserte aussi* le triplet interne par défaut ; la forme `:m rdf:reifies << s p o >>` (citation) ne l'asserte pas — elle en parle seulement. C'est exactement la distinction asserté/mentionné que la section 4.1 construira à la main avec le fait 4. Le standard ne fait pas qu'économiser des triplets : il donne un *statut explicite* à ce que la réification classique laisse implicite.
-",,,,,,,,29798a3468ab0bbe,,,,,,,,,,,,,,,
+",,,,,,,,1b6b9d406b757609,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section2-rdflib-intro,markdown,fr,1b3b3b0b140a0c57,"### 2.1 Fonction utilitaire de reification
 
 Pour faciliter la creation de reifications et reduire la verbosite du code, definissons une fonction `reify()` qui encapsule les 4 triplets necessaires.
@@ -1678,7 +1679,7 @@ La verbosité, elle, paie un second tribut. Mesuré sur la sortie : Turtle reste
 
 Le test qui conclut naturellement cette section, à exécuter sur tout pipeline réel d'échange : re-parser chaque sérialisation (`Graph().parse(data=..., format=...)`) et comparer au graphe source (les blank nodes changent d'identifiant, mais le contenu isomorphe doit matcher). Ce qui survit à l'aller-retour existe ; ce qui ne survit pas n'a jamais existé au sens RDF.
 ",,,,,,,,9902a6e70d1ba6ec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section8-comparison-title,markdown,fr,e83b7f13b32bb25e,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section8-comparison-title,markdown,fr,ededd605eed38f29,"***
 
 ## 8. Comparaison des trois approches
 
@@ -1686,7 +1687,7 @@ Recapitulons les trois mécanismes pour annoter des triplets RDF :
 
 | Critere | Reification classique | Graphes nommes | RDF-Star / RDF 1.2 |
 |---------|----------------------|----------------|--------------------|
-| **Standard** | RDF 1.0 (2004) | SPARQL 1.1 (2013) | RDF 1.2 (2024) |
+| **Standard** | RDF 1.0 (2004) | SPARQL 1.1 (2013) | RDF 1.2 (Concepts, CR avril 2026) |
 | **Granularite** | Par triplet | Par groupe | Par triplet |
 | **Cout en triplets** | 4 par annotation | 1 URI par contexte | 0 (inline) |
 | **Complexite SPARQL** | Jointures multiples | `GRAPH` clause | Pattern `<< >>` |
@@ -1708,13 +1709,13 @@ Pour lire ce tableau de synthèse, remontez le fil des mesures du notebook : 7 t
 De là, les recommandations du bas de tableau se déduisent plutôt qu'ils ne se décrètent : le choix n'est pas « quel est le meilleur mécanisme » mais « quelle granularité d'annotation mon cas d'usage exige-t-il, et quels outils le consommeront ». Annotation fine consommée par rdflib aujourd'hui → réification (avec `reify()`). Provenance par import, par fichier, par source → graphes nommés. Consommateur final déjà choisi parmi les stores RDF-Star (Jena, Stardog, Oxigraph) → RDF-Star natif, quitte à garder la réification comme format d'archivage universellement lisible.
 
 Le fil conducteur à retenir au-delà du choix d'outillage : **les dimensions d'annotation — qui, quand, combien, jusqu'à quand — sont la compétence transférable**. Le mécanisme exact changera (il est en train de changer) ; les questions, elles, restent.
-",,,,,,,,e83b7f13b32bb25e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section9-title,markdown,fr,338139356b8a8925,"***
+",,,,,,,,ededd605eed38f29,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section9-title,markdown,fr,e5ef0fa044c279bb,"***
 
 ## 9. Exercices et Exemples guide
 
-Cette section rassemble les travaux dirigés du notebook : trois exemples résolus d'abord (dont les solutions sont créditées à leurs auteurs), trois exercices à compléter ensuite — chaque exercice ayant sa cellule guide immédiatement au-dessus. La correspondance précise entre guides et exercices est donnée dans la cellule d'introduction aux exercices.
-",,,,,,,,338139356b8a8925,,,,,,,,,,,,,,,
+Cette section rassemble les travaux dirigés du notebook : six exemples résolus d'abord (dont les solutions sont créditées à leurs auteurs), puis trois exercices à compléter ensuite — chaque exercice ayant sa cellule guide immédiatement au-dessus. La correspondance précise entre guides et exercices est donnée dans la cellule d'introduction aux exercices.
+",,,,,,,,e5ef0fa044c279bb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,exercise1-title,markdown,fr,b1ee497bbbaa5d0e,"### Exemple guide 1 : Critiques de film avec reification
 
 *Solution proposee par Lilou Mayot (promo 2026)*
@@ -1862,9 +1863,9 @@ for row in g_kg.query(query_2b):
     p1 = str(row.person1).split(""/"")[-1]
     p2 = str(row.person2).split(""/"")[-1]
     print(f""  {p1} connait {p2} depuis {row.since}"")",,,,,,,,366aa25a998d6cf8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section10-title,markdown,fr,94bc240841d77555,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,section10-title,markdown,fr,70cdb6893bf1f261,"***
 
-## 10. Ecosysteme et compatibilite
+## Annexe A - Ecosysteme et compatibilite (lecture optionnelle)
 
 RDF-Star est de plus en plus adopte par l'ecosysteme du Web Sémantique.
 
@@ -1892,18 +1893,18 @@ RDF-Star est de plus en plus adopte par l'ecosysteme du Web Sémantique.
 
 ### Standardisation W3C
 
-| Document | Statut (2024) |
+| Document | Statut au 2 novembre 2026 |
 |----------|---------------|
-| RDF 1.2 Concepts | Candidate Recommendation |
-| RDF 1.2 Turtle | Candidate Recommendation |
-| RDF 1.2 N-Triples | Candidate Recommendation |
-| SPARQL 1.2 Query | Working Draft |
-| RDF 1.2 JSON-LD | En discussion |
+| RDF 1.2 Concepts | Candidate Recommendation Snapshot (7 avril 2026) |
+| RDF 1.2 Turtle | Working Draft (1er novembre 2026) |
+| RDF 1.2 N-Triples | Working Draft (23 octobre 2026) |
+| SPARQL 1.2 Query | Working Draft (1er novembre 2026) |
+| RDF 1.2 JSON-LD | En discussion (proposition du JSON-LD Community Group, hors livrables du groupe) |
 
 Pour lire ces tableaux : le support **triple store** conditionne ce que vous pourrez déployer en production (une requête SPARQL-Star sur un store qui ne la parse pas échoue à la première ligne), tandis que le support **bibliothèque** conditionne ce que vous pouvez construire côté application. L'écart entre les deux colonnes est instructif — les moteurs ont devancé les bibliothèques : Jena et Stardog exécutent du Turtle-Star depuis 2021, alors que rdflib 7.6.0 ne le parse toujours pas. Conséquence pratique pour ce notebook : le même fichier pédagogique est exécutable chez un étudiant (réification) et, demain, nativement compact sur une infrastructure RDF-Star — la sémantique étant stable, seule la syntaxe bascule.
 
-Côté standardisation, la ligne à retenir du dernier tableau est le contraste de maturité : les documents *Concepts* et *Turtle* de RDF 1.2 sont au stade Candidate Recommendation (le contenu est stable, les implémenteurs peuvent s'engager), tandis que SPARQL 1.2 reste au stade Working Draft — le requêtage des annotations standardisées est le maillon encore en mouvement. D'où la posture de ce notebook : enseigner les concepts et les patterns avec les outils d'aujourd'hui, en gardant chaque variante RDF-Star posée comme cible documentée plutôt que comme dépendance d'exécution.
-",,,,,,,,94bc240841d77555,,,,,,,,,,,,,,,
+Côté standardisation, la ligne à retenir du dernier tableau est le contraste de maturité : seul le document *Concepts* de RDF 1.2 est au stade Candidate Recommendation (le contenu est stable, les implémenteurs peuvent s'engager) ; *Turtle* et SPARQL 1.2 restent au stade Working Draft — le requêtage des annotations standardisées est le maillon encore en mouvement. D'où la posture de ce notebook : enseigner les concepts et les patterns avec les outils d'aujourd'hui, en gardant chaque variante RDF-Star posée comme cible documentée plutôt que comme dépendance d'exécution.
+",,,,,,,,70cdb6893bf1f261,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,49b52742,markdown,fr,6f3d4155180cc891,"### Exemple guide 3 : Graphe de confiance avec RDF-Star
 
 *Solution proposee par Mustapha Oumeziane et Coraline Carpin (promo 2026)*
@@ -2007,22 +2008,13 @@ Une façon de réviser ce tableau : pour chaque concept de la colonne de gauche,
 
 La ligne « Quoted Triple » du tableau porte la nuance la plus importante à emporter : RDF-Star n'est pas « une meilleure réification », c'est un changement de statut — le triplet devient une *valeur* du langage. La réification décrit un triplet avec quatre autres ; le quoted triple le cite directement. Toute la différence de coût mesurée dans ce notebook (4+ contre 0 par annotation) vient de là.
 ",,,,,,,,5c81cc0937b342e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,footer-nav,markdown,fr,02ca5f0a8960d8cf,"## Exercices
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,footer-nav,markdown,fr,47a232cf790f944b,"***
 
-Les exemples guides 1 a 3 ci-dessus (critiques de film, requetage SPARQL des reifications, graphe de confiance) demontrent les briques ; les exercices 4 a 6 qui suivent reclament de les **transposer** a des domaines nouveaux :
+Le notebook suivant explore les graphes de connaissances (Knowledge Graphs), en combinant les technologies RDF, SPARQL et les patterns vus dans cette serie.
 
-| Exercice | Domaine | Brique exercee | Guide correspondant |
-|----------|---------|----------------|---------------------|
-| 4 : Donnees sportives multi-sources | Scores de matchs | Reification + confiance par source | Exemple guide 1 |
-| 5 : Agregats SPARQL sur scores | Statistiques | Requetes sur annotations | Exemple guide 2 |
-| 6 : Annotations temporelles historiques | Evenements dates | Validite temporelle d'un fait | Section 5.2 |
+***
 
-Chaque exercice a sa cellule guidee immédiatement au-dessus : en cas de blocage, etudiez le guide, puis revenez a la version a completer.
-
-La progression n'est pas décorative : chaque exercice reprend une brique *démontrée* dans le guide de même colonne et la déplace dans un domaine où les valeurs, les sources et les contraintes changent. Transposer, ici, veut dire : identifier ce qui est invariant (le motif `reify()` + annotations + requête) et ce qui est à réinventer (le vocabulaire du domaine, la politique de seuil, la clé de regroupement).
-
-En cas de blocage, la méthode donnée en fin de cellule vaut pour les trois : lire la solution guide *en entier* d'abord, la faire tourner, puis revenir à l'énoncé et n'en reprendre que la structure — pas les littéraux. Un exercice « résolu » en copiant les valeurs du guide n'a rien transposé.
-",,,,,,,,02ca5f0a8960d8cf,,,,,,,,,,,,,,,
+**Navigation** : [<< 9-JSONLD](SW-09-JSONLD-Python.ipynb) | [Index](README.md) | [11-KnowledgeGraphs >>](SW-11-Python-KnowledgeGraphs.ipynb)",,,,,,,,47a232cf790f944b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,exemples-guides-sosolalt,markdown,fr,e94210eb22f03f76,"***
 
 ## Exemples guides (solutions proposees par @Sosolalt)
@@ -2335,7 +2327,7 @@ Le fil des mesures du notebook raconte la même histoire que ce tableau : 7 trip
 
 Ce qui doit survivre à la lecture de ce notebook n'est pourtant ni la syntaxe `<< ... >>`, ni le motif `rdf:Statement` — l'un n'est pas encore exécutable, l'autre est en voie d'obsolescence. Ce sont les **quatre questions d'annotation** que chaque mécanisme a permises : *qui affirme* (provenance), *à quel degré* (confiance), *de quand à quand* (temporalité), *confirmé par qui d'autre* (fusion). Les poser avant de choisir l'outillage — et exiger d'un candidat mécanisme qu'il y réponde à un coût mesurable — est la compétence qui restera vraie quand RDF 1.2 sera déployé partout, et après.
 ",,,,,,,,97d1faac7bd028b7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,9f7b0d71,markdown,fr,d041aec4af931873,"# SW-11-CSharp-KnowledgeGraphs
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,9f7b0d71,markdown,fr,9592b89fa23a4fdf,"# SW-11-CSharp-KnowledgeGraphs
 
 **Navigation** : [Index](./README.md) | [10-RDFStar](SW-10-RDFStar-CSharp.ipynb) | [11-Python-KG](SW-11-Python-KnowledgeGraphs.ipynb) | [13-Reasoners](SW-13-Reasoners-CSharp.ipynb)
 
@@ -2361,18 +2353,18 @@ Notebook C# / .NET Interactive sur les **Knowledge Graphs** (KG) dans dotNetRDF 
 - **Ontologie** : schema formel qui definit les classes et proprietes d'un domaine.
 - **Triple store** : moteur de stockage optimise pour les graphes RDF (ici, en memoire via IGraph).
 
-**Prerequis** : SW-3 Graph Operations, SW-4 SPARQL. Pas de requetes distantes ici (KG local).",,,,,,,,d041aec4af931873,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,ea75cca7,markdown,fr,e23d05681568e7db,"## 0. Installation de dotNetRDF
+**Prerequis** : SW-3 Graph Operations, SW-4 SPARQL. Pas de requetes distantes ici (KG local).",,,,,,,,9592b89fa23a4fdf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,ea75cca7,markdown,fr,3d818b0c4d5805dc,"## 0. Installation de dotNetRDF
 
-L'installation utilise `dotNetRDF 3.4.1` (version legerement plus recente que pour SW-3 a SW-5). Cette version inclut des corrections pour `TurtleFormatter` et `IGraph.GetTriplesWithX`.
+L'installation utilise `dotNetRDF 3.4.1` — la meme version que SW-1 a SW-9. Cette version inclut des corrections pour `TurtleFormatter` et `IGraph.GetTriplesWithX`.
 
 **Sortie observee de code[0]** (verbatim) : `dotNetRDF charge.`. La cellule execute le `#r ""nuget:""` et confirme que la bibliotheque est chargee.
 
 **Note de version** :
-- **3.2.1** : utilisee pour SW-3, SW-4, SW-5 (stable).
-- **3.4.1** : utilisee pour ce notebook (corrige un bug de TurtleFormatter sur les namespaces complexes).
+- **3.4.1** : version epinglee dans toute la serie C# (SW-1 a SW-9, SW-11, SW-13). Jusqu'a la convergence de la serie (2026-10-28), SW-1 a SW-5 epinglalent 3.2.1 et SW-9 epinglait 3.4.0.
+- La correction de `TurtleFormatter` et de `IGraph.GetTriplesWithX` ci-dessus est presente dans 3.4.1, donc dans tous les carnets de la serie.
 
-**Compatibilite** : les APIs de base (Graph, Triple, INode, SPARQL) sont stables depuis 3.0. Pas de breaking changes entre 3.2.1 et 3.4.1 pour les concepts couverts.",,,,,,,,e23d05681568e7db,,,,,,,,,,,,,,,
+**Compatibilite** : les APIs de base (Graph, Triple, INode, SPARQL) sont stables depuis 3.0. Aucun breaking change entre les versions successives de la serie n'affecte les concepts couverts.",,,,,,,,3d818b0c4d5805dc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,05ccae9b,code,fr,4cf98baa4affa81f,"#r ""nuget: dotNetRDF, 3.4.1""
 using VDS.RDF;
 using VDS.RDF.Parsing;
@@ -2543,7 +2535,7 @@ var results = (SparqlResultSet)g.ExecuteQuery(q1);
 Console.WriteLine($""Films de Nolan (ordre annee desc) : {results.Count}"");
 foreach (SparqlResult r in results)
     Console.WriteLine($""  {r[""title""].ToString().Replace(""http://example.org/cinema#"","""")} ({((ILiteralNode)r[""year""]).Value})"");",,,,,,,,b28f32b5c9eaaba5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,0b29a659,markdown,fr,b857ff908379f0df,"### 3.2 Agregats : nombre de films par genre
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,0b29a659,markdown,fr,d45a9324bda28dee,"### 3.2 Agregats : nombre de films par genre
 
 Cette requete utilise `COUNT` et `GROUP BY` pour compter les films par genre.
 
@@ -2553,6 +2545,10 @@ Nombre de films par genre :
   Drama : 6
   SciFi : 3
   Action : 2
+  Crime : 2
+  War : 1
+  Western : 1
+  Thriller : 1
 ```
 
 **Decomposition** :
@@ -2560,7 +2556,7 @@ Nombre de films par genre :
 - `GROUP BY ?genre` : on groupe par genre.
 - `ORDER BY DESC(?count)` : on trie par popularite.
 
-Les agregats disponibles en SPARQL et l'ordre d'evaluation (WHERE, GROUP BY, agregats, HAVING, ORDER BY, SELECT) sont en **annexe B**.",,,,,,,,b857ff908379f0df,,,,,,,,,,,,,,,
+Les agregats disponibles en SPARQL et l'ordre d'evaluation (WHERE, GROUP BY, agregats, HAVING, ORDER BY, SELECT) sont en **annexe B**.",,,,,,,,d45a9324bda28dee,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,456d463a,code,fr,13579cfe1060705e,"string q2 = @""
 PREFIX ex: <http://example.org/cinema#>
 SELECT ?genre (COUNT(?film) AS ?n) WHERE {
@@ -2737,8 +2733,8 @@ Console.WriteLine($""Films complets (directeur+annee+genre) : {complete}/{allFil
 var years = g.Triples.Where(t => t.Predicate.Equals(RELEASED))
     .Select(t => int.Parse(((ILiteralNode)t.Object).Value)).OrderBy(y=>y).ToList();
 Console.WriteLine($""Annees : min={years.First()}, max={years.Last()}, mediane={years[years.Count/2]}"");",,,,,,,,d57e916b8da7948a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,8e097143,markdown,fr,17f38fcebae5825f,"**Interprétation** : les 3 métriques de qualité valident que le KG est bien formé. (1) **Complétude** : `complete == allFilms.Count` (8/8) confirme qu'aucun film n'a de champ manquant (directeur, année, genre). (2) **Cohérence du range** : les années s'étalent de 1994 à 2019, médiane 2012 — une plage réaliste pour un corpus de cinéma moderne. (3) **Orphelins** : les 3 classes « orphelines » détectées (`Director`, `Film`, `Genre`) sont les **méta-types** eux-mêmes — elles n'apparaissent comme sujet que de leur propre `rdf:type ex:Class`, ce qui est **attendu** (ce sont les types, pas des instances) et non un défaut de données. Ces vérifications sont l'équivalent C# du bloc « Qualité » du twin Python.",,,,,,,,17f38fcebae5825f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,48f5fd4d,markdown,fr,2b3d0b6b68b13484,"## Annexe E -- Centralite : degre des realisateurs
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,8e097143,markdown,fr,8ecb5b05fb675ca4,"**Interprétation** : sur les 3 métriques de qualité, **deux mesurent réellement les données** et **la troisième ne peut pas en signaler** -- il faut les distinguer. (1) **Complétude** : `complete == allFilms.Count` (8/8) confirme qu'aucun film n'a de champ manquant (directeur, année, genre). (2) **Cohérence du range** : les années s'étalent de 1994 à 2019, médiane 2012 — une plage réaliste pour un corpus de cinéma moderne. (3) **Orphelins** : la métrique affiche 3 classes « orphelines » (`Director`, `Film`, `Genre`), mais c'est un **artefact de construction**, pas un défaut de données — ces 3 nœuds n'apparaissent comme sujet que de leur propre `rdf:type ex:Class`, et la métrique teste précisément l'absence de ce genre de triplet. Sur le patron de ce graphe (classes déclarées uniquement par `rdf:type ex:Class`), elle vaut donc **3/3 par construction** : elle ne peut signaler aucun défaut sur les données de ce carnet — elle documente le patron de déclaration, elle ne valide rien. Ce qui atteste la qualité des données, c'est que les deux autres métriques soient vraies ; la troisième ne fait que rappeler d'où viennent les classes. Ces vérifications sont l'équivalent C# du bloc « Qualité » du twin Python.",,,,,,,,8ecb5b05fb675ca4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,48f5fd4d,markdown,fr,a8f355df111dfd54,"## Annexe E -- Centralite : degre des realisateurs
 
 La **centralite de degre** mesure combien de connexions sortantes (ou entrantes) un noeud a. C'est la metrique la plus simple mais utile pour identifier les acteurs cles.
 
@@ -2764,7 +2760,7 @@ var ranking = deg.OrderByDescending(kv => kv.Value);
 **Types de centralite** :
 - **Degre** : nombre de voisins. Simple et rapide (O(V + E)).
 - **Betweenness** : nombre de plus courts chemins passant par le noeud. O(VE).
-- **Closeness** : inverse de la somme des distances. O(V log V).
+- **Closeness** : (N-1) / somme des distances du noeud a tous les autres. Le calcul exact impose un plus court chemin **depuis chaque noeud** (un BFS par noeud) : O(V.(V+E)). Le O(V log V) est le cout d'un **plus court chemin unique** (Dijkstra sur graphe pondere), pas de la centralite.
 - **Eigenvector** : importance basee sur l'importance des voisins (PageRank). O(V + E) iteratif.
 
 **Cas d'usage** :
@@ -2772,7 +2768,7 @@ var ranking = deg.OrderByDescending(kv => kv.Value);
 - **Detection d'influence** : les noeuds a haute centralite sont des leaders d'opinion.
 - **Analyse de reseau social** : influenceurs, communautes.
 
-**Note de portee** : la centralite de degre est biaisee par la taille du voisinage. Pour des graphes heterogenes (certains noeuds ont beaucoup de voisins, d'autres peu), preferer PageRank.",,,,,,,,2b3d0b6b68b13484,,,,,,,,,,,,,,,
+**Note de portee** : la centralite de degre est biaisee par la taille du voisinage. Pour des graphes heterogenes (certains noeuds ont beaucoup de voisins, d'autres peu), preferer PageRank.",,,,,,,,a8f355df111dfd54,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,6c2384d5,code,fr,fd8508cd8d152223,"var deg = new Dictionary<string,int>();
 foreach (var t in g.Triples.Where(t => t.Predicate.Equals(DIRECTED_BY))) {
     var dir = Short(t.Object);
@@ -2837,7 +2833,7 @@ var res4 = (SparqlResultSet)g.ExecuteQuery(q4);
 Console.WriteLine(""Filmographie de Bong (genres agreges) :"");
 foreach (SparqlResult r in res4)
     Console.WriteLine($""  {Short(r[""film""])} : {((ILiteralNode)r[""genres""]).Value.Replace(""http://example.org/cinema#"","""")}"");",,,,,,,,7faedaffc9c5c913,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,e698f783,markdown,fr,8547b9bb525ea87d,"## 7. Exercices a completer
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,e698f783,markdown,fr,caff815bc0fc50a7,"## 7. Exercices a completer
 
 Cette section contient 3 exercices progressifs :
 
@@ -2855,6 +2851,10 @@ Inception (Nolan)
 Drama : 6
 SciFi : 3
 Action : 2
+Crime : 2
+War : 1
+Western : 1
+Thriller : 1
 ```
 
 ### Exercice 3 : Chemin le plus court entre deux entites
@@ -2866,7 +2866,7 @@ Inception --hasGenre--> SciFi
 ...
 ```
 
-**Note pedagogique** : les exercices combinent SPARQL (SW-4) avec theorie des graphes (SW-11). L'exercice 3 introduit l'algorithme BFS pour les graphes RDF.",,,,,,,,8547b9bb525ea87d,,,,,,,,,,,,,,,
+**Note pedagogique** : les exercices combinent SPARQL (SW-4) avec theorie des graphes (SW-11). L'exercice 3 introduit l'algorithme BFS pour les graphes RDF.",,,,,,,,caff815bc0fc50a7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,4ac36fa4,markdown,fr,cb03d9550f56fd03,"### Exercice 1 : Films d'une annee donnee
 
 **Objectif** : Ecrivez une requete SPARQL qui retourne tous les films sortis en 2010.
@@ -2887,25 +2887,34 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,6a15
 // var res = (SparqlResultSet)g.ExecuteQuery(q);
 // foreach (SparqlResult r in res) Console.WriteLine($""  {Short(r[""film""])} ({r[""year""]})"");
 Console.WriteLine(""Exercice 1 a completer"");",,,,,,,,5040329d5c476277,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,2cb9e511,markdown,fr,d07726c4d79a302e,"### Exercice 2 : Degre entrant d'un genre
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,2cb9e511,markdown,fr,2489a930e1843e40,"### Exercice 2 : Degre entrant d'un genre
 
-**Objectif** : Calculez combien de films appartiennent a chaque genre. C'est l'equivalent du ""degre entrant"" du noeud genre (nombre de films qui pointent vers lui).
+**Objectif** : comptez, **en C#**, combien de films appartiennent a chaque genre -- c'est l'equivalent du ""degre entrant"" du noeud genre (nombre de films qui pointent vers lui). La section 3.2 a deja fait ce decompte **en SPARQL** ; ici vous le refaites **en LINQ sur les triplets** (`g.Triples`), comme le prevoit le squelette de la cellule suivante.
 
-**Sortie attendue** :
+**Sortie attendue** (les 7 genres du graphe) :
 ```
 Drama : 6
 SciFi : 3
 Action : 2
+Crime : 2
+War : 1
+Western : 1
+Thriller : 1
 ```
 
+L'ordre des genres a effectif egal depend de l'algorithme de tri (la sortie SPARQL de la section 3.2 les ordonne `War, Western, Thriller` ; un `OrderByDescending` en C# conserve l'ordre d'apparition) : ce qui compte est le **compte** associe a chaque genre.
+
+Les 8 films portent chacun 2 genres : le graphe contient donc **16 liens** `ex:hasGenre` au total -- 6+3+2+2+1+1+1 = 16 -- et non 8.
+
 **Indices** :
-- `SELECT ?genre (COUNT(?film) AS ?count)`.
-- `GROUP BY ?genre`.
-- `ORDER BY DESC(?count)`.
+- Le predicat de lien est `HAS_GENRE` (`ex:hasGenre`) ; l'**objet** du triplet porte le genre, le **sujet** porte le film.
+- Le regroupement se fait en C# (`GroupBy`) et le tri par `OrderByDescending` sur l'effectif -- l'equivalent de `GROUP BY` + `ORDER BY DESC` de la section 3.2.
+- Pour l'affichage, `Short(...)` (utilise dans l'annexe E) transforme l'URI du genre en nom lisible.
 
-**Note pedagogique** : on inverse la perspective -- on regarde combien de films *appartiennent* a un genre (degre entrant du genre), au lieu de regarder combien de genres *appartiennent* a un film (degre sortant du film).
+**Note pedagogique** : on inverse la perspective -- on regarde combien de films *appartiennent* a un genre (degre entrant du genre), au lieu de regarder combien de genres *appartiennent* a un film (degre sortant du film). Et on compare deux langages sur la meme question : la requete SPARQL de la section 3.2 et son equivalent LINQ doivent rendre le meme decompte.
 
-**Difficulte** : moyenne. Utilise COUNT + GROUP BY.",,,,,,,,d07726c4d79a302e,,,,,,,,,,,,,,,
+**Difficulte** : moyenne. GROUP BY + ORDER BY, transposes en LINQ.
+",,,,,,,,2489a930e1843e40,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,59952cf6,code,fr,55dd240d47d48810,"// Exercice 2 : a completer
 // var genreCount = new Dictionary<string,int>();
 // foreach (var t in g.Triples.Where(t => t.Predicate.Equals(HAS_GENRE))) { ... }
@@ -5522,7 +5531,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,conc
 Ce notebook a explore la construction et l'exploration de Knowledge Graphs a partir de données structurees. Nous avons vu le pipeline complet : chargement CSV, definition d'un vocabulaire RDF, transformation en triplets, verification par SPARQL, puis serialisation dans plusieurs formats (Turtle, JSON-LD, N-Triples). La bibliotheque kglab offre une couche d'abstraction qui simplifie la creation et l'interrogation de Knowledge Graphs en encapsulant les opérations rdflib courantes.
 
 La visualisation, qu'elle soit statique (matplotlib + NetworkX) ou interactive (pyvis), permet de comprendre la topologie du graphe et d'identifier des patterns structurels. Nous avons également introduit OWLReady2 pour la manipulation d'ontologies OWL et le raisonnement automatique via HermiT, ainsi que les dimensions de qualite (completude, coherence) essentielles pour valider un Knowledge Graph en production. Ces competences constituent le socle technique necessaire pour aborder les systèmes de GraphRAG et le raisonnement avance sur données liees.",,,,,,,,50730184b2519f69,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,header-nav,markdown,fr,17d16190645e3447,"# SW-12-GraphRAG-Python
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,header-nav,markdown,fr,f7a50bb774e48d17,"# SW-12-GraphRAG-Python
 
 **Navigation** : [<< 11-KnowledgeGraphs](SW-11-Python-KnowledgeGraphs.ipynb) | [Index](README.md) | [13-Reasoners >>](SW-13-Reasoners-Python.ipynb)
 
@@ -5555,7 +5564,7 @@ A la fin de ce notebook, vous saurez :
 ### Prerequis
 - Python 3.10+
 - Notebook [SW-11-Python-KnowledgeGraphs](SW-11-Python-KnowledgeGraphs.ipynb) (construction de KG avec rdflib)
-- (Optionnel) Cle API OpenAI ou Anthropic (le notebook fonctionne sans grace aux données de demonstration)",,,,,,,,17d16190645e3447,,,,,,,,,,,,,,,
+- (Optionnel) Cle API OpenAI ou Anthropic (le notebook fonctionne sans grace aux données de demonstration)",,,,,,,,f7a50bb774e48d17,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,install-title,markdown,fr,77bf6d9f20bd9dc7,"## Installation des dependances
 
 Chaque dépendance a un rôle précis dans le pipeline : `rdflib` porte les triplets RDF (sections 4 et 5), `networkx` l'analyse structurelle et la détection de communautés (sections 4 et 7), `matplotlib` les visualisations, `openai` / `anthropic` l'extraction LLM réelle (optionnelle — le notebook fonctionne sans), `python-dotenv` le chargement des clés, `pandas` l'intégration tabulaire de l'exercice 5. Rien n'est installé à l'exécution : un notebook de cours doit rester déterministe et hors-ligne sur ce plan.
@@ -7235,7 +7244,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,exercise3,c
 # Etape 2 : comparez le nombre de faits recuperes entre 1-hop et 2-hop
 
 print(""Decommentez et completez le code ci-dessus."")",,,,,,,,13daa528e891d532,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,322e9483,markdown,fr,32dbb39c452a44e2,"## Resume et perspectives
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,322e9483,markdown,fr,d03bdbcfbfc83fbf,"## Resume et perspectives
 
 
 
@@ -7270,19 +7279,8 @@ Dans le notebook suivant (**SW-13-Reasoners-Python**), nous comparerons les rais
 
 Pour aller plus loin que ce notebook : comparer l'extraction API réelle aux données de démonstration sur le même texte est l'expérience la plus instructive. Les écarts portent sur les choix de granularité ontologique, la cardinalité des prix et la normalisation des noms.
 
-**Lecture des mesures** : les compteurs d'entités, de relations et de triplets, la taille des sous-graphes, les communautés, le gain du cache et les scores d'évaluation sont produits par les cellules. Ils ne sont pas recopiés ici, car une nouvelle exécution peut les faire varier. Leur rôle architectural reste stable : l'expansion en triplets justifie un stockage dédié, les nœuds isolés éventuels motivent le filtrage, le cache évite les appels répétés, et les écarts avec le gold rappellent l'importance de l'accord d'annotation.
-
-**Perspectives au-delà du notebook** : le pipeline démontré ici est *local* (sous-graphe autour des entités de la question). Le mode *global* de Microsoft GraphRAG — résumer chaque communauté puis interroger la hiérarchie de résumés — devient rentable quand les questions portent sur le corpus entier (« quels sont les thèmes dominants ? »), précisément ce qu'aucun sous-graphe local ne peut assembler. Entre les deux, l'ingénierie réelle joue sur trois leviers que ce notebook n'a fait qu'effleurer : la qualité du liaison d'entités (un NER ou un LLM plutôt que le match exact de noms), la stratégie de `max_hops` selon la question, et l'hybridation avec le vectoriel — retrouver d'abord les entités candidates par similarité, puis les étendre par parcours de graphe.
-
-
-### Ressources pour approfondir
-
-- [Microsoft GraphRAG (GitHub)](https://github.com/microsoft/graphrag) - Implementation officielle
-- [From Local to Global: A Graph RAG Approach (paper)](https://arxiv.org/abs/2404.16130) - Article de recherche Microsoft
-- [LangChain GraphRAG](https://python.langchain.com/docs/use_cases/graph/) - Integration LangChain
-- [Neo4j GraphRAG](https://neo4j.com/developer-blog/graphrag/) - Approche Neo4j
-- [Leiden Algorithm (paper)](https://arxiv.org/abs/1810.08473) - Detection de communautes",,,,,,,,32dbb39c452a44e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,a08b7ef7,markdown,fr,b19996c97e6f5493,"# SW-13-Reasoners
+Lecture des mesures du carnet, perspectives au-delà du pipeline local et ressources d'approfondissement : voir **Annexe B**.",,,,,,,,d03bdbcfbfc83fbf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,a08b7ef7,markdown,fr,474ed7a2fb90c5bf,"# SW-13-Reasoners
 
 **Navigation** : [<< 13-GraphRAG](SW-12-GraphRAG-Python.ipynb) | [Index](README.md)
 
@@ -7335,7 +7333,7 @@ Les **raisonneurs OWL** (OWL reasoners) sont des moteurs d'inférence capables d
 | **owlrl** | Python | OWL 2 RL | RDFLib native |
 | **OWLReady2 + HermiT** | Python/Java | OWL 2 DL | pip + Java bridge |
 | **reasonable** | Rust + Python | OWL 2 RL | pip + Rust compiled |
-| **Growl** | C (+ Z3 verified) | OWL 2 RL (76/78 règles) | CLI/subprocess |",,,,,,,,b19996c97e6f5493,,,,,,,,,,,,,,,
+| **Growl** | C (+ Z3 verified) | OWL 2 RL (76/78 règles) | CLI/subprocess |",,,,,,,,474ed7a2fb90c5bf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,da6683f9,markdown,fr,5989d0c7bd463662,"## Configuration
 
 Installons les dépendances nécessaires.
@@ -7658,7 +7656,7 @@ for i, t in enumerate(list(inferred_triples)[:15]):
     print(f""  {t}"")
 if len(inferred_triples) > 15:
     print(f""  ... et {len(inferred_triples) - 15} autres"")",,,,,,,,f2b82eeb61cc6287,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,962e5645,markdown,fr,aee6a0aa43f925f0,"### Interpretation : Triples inférés par owlrl
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,962e5645,markdown,fr,78dc77187e0d9a5b,"### Interpretation : Triples inférés par owlrl
 
 **Sortie obtenue** : owlrl a généré 211 triples inférés à partir des 40 triples originaux (ratio d'expansion 6.3x). Les 15 premiers exemples montrent la diversité des règles OWL 2 RL appliquées.
 
@@ -7671,12 +7669,12 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,962e5645,m
 | Restrictions | margherita ⊑ VegetarianRestriction | Application de ∀hasTopping.VegetarianTopping |
 
 **Points clés** :
-1. **Complétude OWL 2 RL** : owlrl implémente les ~300 règles de la spécification W3C OWL 2 RL
+1. **Complétude OWL 2 RL** : owlrl implémente le profil OWL 2 RL, dont la spécification W3C nomme 78 règles (tables 4 à 9 du REC owl2-profiles)
 2. **Inférences transitives** : si A ⊑ B et B ⊑ C, alors A ⊑ C (transitivité de rdfs:subClassOf)
 3. **Typage automatique** : tous les types XSD sont déclarés comme rdfs:Datatype
 4. **Application des restrictions** : la restriction ∀hasTopping.VegetarianTopping est correctement appliquée à margherita
 
-> **Note technique** : owlrl suit strictement la spécification W3C OWL 2 RL (https://www.w3.org/TR/owl2-rl/). Les règles sont implémentées sous forme de règles Datalog qui peuvent être exécutées en temps polynomial. Les 211 triples inférés incluent non seulement les déductions sémantiques sur l'ontologie pizza, mais aussi toutes les règles de typage XSD, les axiomes OWL standards (sameAs réflexif, subClassOf transitif), et les inférences de propriétés. C'est pourquoi le nombre de triples est beaucoup plus élevé qu'avec reasonable.",,,,,,,,aee6a0aa43f925f0,,,,,,,,,,,,,,,
+> **Note technique** : owlrl suit strictement la spécification W3C OWL 2 RL (https://www.w3.org/TR/owl2-profiles/). Les règles sont implémentées sous forme de règles Datalog qui peuvent être exécutées en temps polynomial. Les 211 triples inférés incluent non seulement les déductions sémantiques sur l'ontologie pizza, mais aussi toutes les règles de typage XSD, les axiomes OWL standards (sameAs réflexif, subClassOf transitif), et les inférences de propriétés. C'est pourquoi le nombre de triples est beaucoup plus élevé qu'avec reasonable.",,,,,,,,78dc77187e0d9a5b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,60666422,markdown,fr,31389a924d1666e2,"### Analyse des résultats owlrl
 
 Les triples inférés incluent typiquement:
@@ -7815,7 +7813,19 @@ démarrage de la JVM — les appels suivants sur la même session seraient plus
 rapides — et c'est pour cela que la comparaison finale de ce notebook mesure
 HermiT à part des raisonneurs RL.
 ",,,,,,,,3997499e1b0fefe4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,286ae58e,code,fr,179ef1f3a2b5c923,"if OWLREADY2_AVAILABLE:
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,286ae58e,code,fr,5964395aae73b974,"if OWLREADY2_AVAILABLE:
+    # Heriter d'un JRE : PATH machine d'abord, sinon JRE embarque dans le
+    # venv (jdk4py) -- HermiT ne s'execute pas sans Java.
+    import shutil
+    java_path = shutil.which(""java"")
+    if not java_path:
+        try:
+            import jdk4py
+            java_path = str(jdk4py.JAVA) + "".exe""
+        except ImportError:
+            pass
+    if java_path:
+        owlready2.JAVA_EXE = java_path
     # Raisonnement avec HermiT
     print(""Démarrage du raisonnement HermiT..."")
     start = time.time()
@@ -7853,7 +7863,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,286ae58e,c
 else:
     time_hermit = None
     triples_hermit = None
-    print(""⚠ Test HermiT skip (OWLReady2 non disponible)"")",,,,,,,,179ef1f3a2b5c923,,,,,,,,,,,,,,,
+    print(""⚠ Test HermiT skip (OWLReady2 non disponible)"")",,,,,,,,5964395aae73b974,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,3fe185b2,markdown,fr,f53b1471bc92f0d0,"### Interpretation : Résultats du raisonneur HermiT (OWL 2 DL)
 
 **Sortie obtenue** : HermiT a termine le raisonnement en *runtime machine-dep* : ~1,4 s, produisant 43 triples au total.
@@ -7946,7 +7956,7 @@ else:
     triples_reasonable = None
     inferred_reasonable = None
     print(""⚠ Test reasonable skip (non disponible)"")",,,,,,,,f2a9bdbcaae5acd1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,e2f3b3a2,markdown,fr,a85bc2192050e325,"### Interpretation : Résultats du raisonneur reasonable
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,e2f3b3a2,markdown,fr,612a08aa1245534a,"### Interpretation : Résultats du raisonneur reasonable
 
 **Sortie obtenue** : Le raisonneur reasonable a infere **42 triples** en *runtime machine-dep* : ~1,5 ms (40 -> 82 triples, ratio d'expansion ~2x).
 
@@ -7960,10 +7970,10 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,e2f3b3a2,m
 **Points cles** :
 1. **Vitesse et complétude combinées** : reasonable (Rust compilé) reste le raisonneur le plus rapide **tout en inférant 42 triples** -- soit l'essentiel des inférences utiles d'owlrl, pour ~40x moins de temps
 2. **Inférences proches d'owlrl** : 42 triples inférés vs 211 pour owlrl -- reasonable couvre la majorité des règles OWL 2 RL utiles en pratique, l'écart porte surtout sur les inférences de type/sous-type transitifs exhaustifs
-3. **Philosophie pragmatique** : reasonable cible les règles OWL 2 RL les plus fréquemment utiles, optimisées pour la performance Rust, plutôt que la spécification W3C exhaustive (~300 règles)
+3. **Philosophie pragmatique** : reasonable cible les règles OWL 2 RL les plus fréquemment utiles, optimisées pour la performance Rust, plutôt que la table exhaustive de la spécification W3C (78 règles nommées, tables 4 à 9 du REC owl2-profiles)
 4. **Cas d'usage idéal** : applications temps réel, microservices, architectures serverless où l'on veut à la fois rapidité ET une bonne couverture sémantique
 
-> **Note technique** : reasonable utilise l'algorithme de chase optimisé pour OWL 2 RL. Contrairement a owlrl qui implémente toutes les règles W3C (~300 règles), reasonable se concentre sur les règles les plus fréquemment utilisées. L'écart d'inférences (42 vs 211) porte principalement sur les fermetures transitives exhaustives. Pour la plupart des applications pratiques, reasonable suffit largement ; si vous avez besoin de complétude sémantique totale (ex: validation d'ontologie), préférez owlrl.",,,,,,,,a85bc2192050e325,,,,,,,,,,,,,,,
+> **Note technique** : reasonable utilise l'algorithme de chase optimisé pour OWL 2 RL. owlrl en couvre l'essentiel, sans que la couverture soit exhaustive pour autant : dans owlrl 7.6.2, `OWLRL.py` porte **78 étiquettes de règle distinctes**, mais deux noms du REC n'y figurent pas sous leur nom (`scm-eqc1`, `cax-eqc2`) -- le décompte porte donc sur les étiquettes implémentées, pas sur les 78 règles du REC. Mesure reproductible, qui rend 78 : `grep -oE '(prp|cls|scm|eq|cax|dt|rdf|rdfs)-[a-z0-9]+' ""$(python -c ""import owlrl,inspect,os;print(os.path.dirname(inspect.getfile(owlrl)))"")/OWLRL.py"" | sort -u | wc -l`. La review de la PR #24275 compte de son côté 68 étiquettes et 60/73 hors `cax-*` : les deux comptages ne mesurent pas la même chose, et aucun ne soutient le mot « complet ». reasonable, lui, se concentre sur les règles les plus fréquemment utilisées. L'écart d'inférences (42 vs 211) porte principalement sur les fermetures transitives exhaustives. Pour la plupart des applications pratiques, reasonable suffit largement ; si vous avez besoin de la matérialisation la plus large (ex: validation d'ontologie), préférez owlrl.",,,,,,,,612a08aa1245534a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,f5776cf1,markdown,fr,7cf0c3adebf7be29,"### Analyse des résultats reasonable
 
 reasonable offre généralement des performances comparables ou supérieures à owlrl grâce à son implémentation en Rust.",,,,,,,,7cf0c3adebf7be29,,,,,,,,,,,,,,,
@@ -8022,7 +8032,7 @@ imprime la procédure de compilation et le notebook continue — Growl est le
 seul des quatre raisonneurs qui exige une installation manuelle, et le
 tableau comparatif final saura ignorer proprement son absence.
 ",,,,,,,,d28f5e434dcc0c14,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,68c97c3d,code,fr,4cd87794f63dace2,"if GROWL_AVAILABLE:
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,68c97c3d,code,fr,aba7cacd6500ebea,"if GROWL_AVAILABLE:
     # Preparer les fichiers pour Growl
     input_file = ""data/pizza_test.ttl""
     output_file = ""data/pizza_test_inferred.ttl""
@@ -8038,6 +8048,8 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,68c97c3d,c
             [""growl"", ""-i"", input_file, ""-o"", output_file],
             capture_output=True,
             text=True,
+            encoding=""utf-8"",
+            errors=""replace"",
             timeout=30
         )
         
@@ -8065,7 +8077,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,68c97c3d,c
 else:
     time_growl = None
     triples_growl = None
-    print(""Growl non disponible : test ignore (time_growl=None)"")",,,,,,,,4cd87794f63dace2,,,,,,,,,,,,,,,
+    print(""Growl non disponible : test ignore (time_growl=None)"")",,,,,,,,aba7cacd6500ebea,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,ffaa0d07,markdown,fr,ac02c894ad3e7cc4,"## Comparaison et Benchmarks
 
 Synthétisons les résultats de tous les raisonneurs. Trois axes structurent
@@ -8256,7 +8268,7 @@ if len(rl_results) >= 2:
     plt.show()
 else:
     print(""Pas assez de données RL pour la comparaison"")",,,,,,,,acb475d6e22c890b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,31881ba2,markdown,fr,4386bc306bf9cd20,"### Interpretation : Comparaison des triples inférés (OWL 2 RL)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,31881ba2,markdown,fr,66c41a8a86b567fb,"### Interpretation : Comparaison des triples inférés (OWL 2 RL)
 
 **Sortie obtenue** : Graphique à barres comparant le nombre de triples inférés par les raisonneurs OWL 2 RL compatibles (owlrl, reasonable).
 
@@ -8267,7 +8279,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,31881ba2,m
 
 **Points cles** :
 1. **Écart modéré** : owlrl infère ~5x plus de triples que reasonable (211 vs 42), l'écart porte sur les fermetures transitives exhaustives
-2. **Complétude vs pragmatisme** : owlrl suit strictement la spécification W3C OWL 2 RL (~300 règles), reasonable se concentre sur les règles les plus courantes
+2. **Complétude vs pragmatisme** : owlrl implémente le profil OWL 2 RL (78 règles nommées dans la spécification W3C), reasonable se concentre sur les règles les plus courantes
 3. **Impact sur les applications** : plus de triples inférés = meilleure complétude sémantique mais aussi plus de données à traiter
 4. **Choix du raisonneur** : dépend de l'expressivité requise (owlrl pour complétude exhaustive, reasonable pour performance avec bonne couverture)
 
@@ -8300,7 +8312,7 @@ JVM) ; Growl — faible (compilation C manuelle, interface CLI uniquement).
 **Le compromis en une phrase.** Aucun raisonneur ne domine sur les trois
 axes : le choix est une fonction du besoin — complétude de matérialisation
 (owlrl), vitesse à couverture utile (reasonable), services DL et garantie
-logique (HermiT), preuve formelle des règles (Growl).",,,,,,,,4386bc306bf9cd20,,,,,,,,,,,,,,,
+logique (HermiT), preuve formelle des règles (Growl).",,,,,,,,66c41a8a86b567fb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,a80aceaa,markdown,fr,b7fed6d40f6ad9bc,"### Analyse comparative
 
 **Performances**:
@@ -8513,7 +8525,7 @@ et demande aux deux familles de raisonneurs ce qu'elles en tirent. La sortie
 oppose un verdict logique et une matérialisation silencieuse ; la lecture
 qui suit la cellule en tire la règle de choix.
 ",,,,,,,,6cc6ecdc152e23c4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,exemple-code-f4c8e8e3,code,fr,51c5e4cd9b5e753d,"# Exercice 4 : Detection d'incoherence avec HermiT (DL) vs tolerance owlrl (RL)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,exemple-code-f4c8e8e3,code,fr,a886001c3d62e485,"# Exercice 4 : Detection d'incoherence avec HermiT (DL) vs tolerance owlrl (RL)
 
 # --- Partie DL : HermiT via OWLReady2 ---
 if OWLREADY2_AVAILABLE:
@@ -8522,6 +8534,13 @@ if OWLREADY2_AVAILABLE:
                            sync_reasoner_hermit, OwlReadyInconsistentOntologyError)
 
     java_path = shutil.which(""java"")
+    if not java_path:
+        # JRE embarque dans le venv (jdk4py) si la machine n'en a pas.
+        try:
+            import jdk4py
+            java_path = str(jdk4py.JAVA) + "".exe""
+        except ImportError:
+            pass
     if java_path:
         owlready2.JAVA_EXE = java_path
 
@@ -8574,7 +8593,7 @@ print(""\nConclusion :"")
 print(""  - DL (HermiT)  : valide la coherence logique (detecte les contradictions)."")
 print(""  - RL (owlrl)   : materialise rapidement la cloture, mais tolere l'incoherence."")
 print(""  => DL pour la validation logique, RL pour la materialisation rapide."")
-",,,,,,,,51c5e4cd9b5e753d,,,,,,,,,,,,,,,
+",,,,,,,,a886001c3d62e485,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,exemple-7a9d8adc,markdown,fr,b6098cacb2945205,"### Exemple guidé 5 : Inferences sur axiomes de proprietes OWL
 
 *Solution proposee par @Sosolalt (EPITA-IS, promo 2028).*
@@ -8642,7 +8661,7 @@ L'opinion répandue veut que la classification par restriction
 deux constructions — la classification d'une pizza, puis une cardinalité
 minimale — et la sortie nuance sérieusement la légende.
 ",,,,,,,,9b1e4417ba2e7fde,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,exemple-code-626076ee,code,fr,5c8dc0ab0526ac8a,"# Exercice 6 : OWL 2 RL vs OWL 2 DL sur someValuesFrom (classification automatique)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,exemple-code-626076ee,code,fr,7ee4b3eaaae64c58,"# Exercice 6 : OWL 2 RL vs OWL 2 DL sur someValuesFrom (classification automatique)
 
 # --- Partie DL : HermiT via OWLReady2 ---
 meatpizza_dl = None
@@ -8652,6 +8671,13 @@ if OWLREADY2_AVAILABLE:
         from owlready2 import (get_ontology, Thing, ObjectProperty,
                                sync_reasoner_hermit)
         java_path = shutil.which(""java"")
+        if not java_path:
+            # JRE embarque dans le venv (jdk4py) si la machine n'en a pas.
+            try:
+                import jdk4py
+                java_path = str(jdk4py.JAVA) + "".exe""
+            except ImportError:
+                pass
         if java_path:
             owlready2.JAVA_EXE = java_path
 
@@ -8782,7 +8808,7 @@ print(f""| DL (HermiT)  | {bigfamily_dl if bigfamily_dl is not None else 'non ex
 print(""\n=> Ici la difference est nette : seule la logique DL (HermiT) classifie ""
       ""par cardinalite minimale ;"")
 print(""   le profil RL ne supporte pas min-cardinality en position de super-classe."")
-",,,,,,,,5c8dc0ab0526ac8a,,,,,,,,,,,,,,,
+",,,,,,,,7ee4b3eaaae64c58,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,cd34ea41,markdown,fr,1ff32003ff68370e,"#### Lecture de l'exemple 6 : realization, et soundness vs completeness
 
 L'exemple 6 illustre en acte **deux concepts théoriques centraux** que les raisonneurs mettent en œuvre — et qu'il faut nommer explicitement.
@@ -9179,9 +9205,9 @@ modélisation qui décide de ce que le raisonnement peut prouver.
 - [HermiT reasoner](https://github.com/phileas-hermiT/hermit)
 - [reasonable](https://github.com/jekyllandre/reasonable)
 - [Growl](https://github.com/S-Toby-Jacobs/growl)",,,,,,,,f46f606c83caabce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,7oyuh5l3sdw,markdown,fr,5193b76f62da29b9,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,7oyuh5l3sdw,markdown,fr,320d7fdf82f011ac,"***
 
-**Navigation** : [<< 13-GraphRAG](SW-12-GraphRAG-Python.ipynb) | [Index](README.md)",,,,,,,,5193b76f62da29b9,,,,,,,,,,,,,,,
+**Navigation** : [<< 13-GraphRAG](SW-12-GraphRAG-Python.ipynb) | [Index](README.md)",,,,,,,,320d7fdf82f011ac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,69c7dbc6,markdown,fr,cb43c932ffbfc6da,"## Resume et perspectives
 
 Ce notebook a compare quatre raisonneurs OWL couvrant un spectre allant de l'implementation Python pure au code compile en Rust et en C, avec des profils OWL allant de RL (polynomial) a DL (NExpTime-complet). Les benchmarks sur l'ontologie pizza ont revele des ecarts de performance considerables : reasonable (Rust) est environ 70 fois plus rapide qu'owlrl (Python) sur l'ontologie pizza complete (et ~40 fois sur l'ontologie de test reduite a 40 triples), tandis qu'HermiT (Java, OWL 2 DL complet) offre une expressivite superieure au prix d'un temps d'exécution plus eleve.
@@ -9202,7 +9228,7 @@ précisément ces briques — OWL, SHACL, OWL-RL et RDF-star — autour d'un
 même geste d'extension de vocabulaire.
 
 Ce notebook conclut la serie Semantic Web. Au fil des notebooks, vous avez parcouru l'ensemble de la pile technologique : les triplets RDF (SW-1 a SW-3), les requêtes SPARQL (SW-4 a SW-5), les schemas et ontologies RDFS/OWL (SW-6 a SW-7), la validation SHACL (SW-8), les formats modernes JSON-LD et RDF-Star (SW-9 a SW-10), les graphes de connaissances (SW-11), l'integration avec les LLMs via GraphRAG (SW-12), et enfin les moteurs d'inférence (SW-13).",,,,,,,,cb43c932ffbfc6da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,9886dde6,markdown,fr,45abe5a39f38ff9b,"# SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des connaissances
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,9886dde6,markdown,fr,5640f15bbf05f9f4,"# SW-13 (C#) : Raisonneurs RDF/OWL — Inferer des connaissances
 
 **Twin C# (.NET Interactive / dotNetRDF) du notebook Python [SW-13-Reasoners-Python](SW-13-Reasoners-Python.ipynb)** (owlrl, owlready2+HermiT, reasonable).
 
@@ -9221,7 +9247,7 @@ Formellement : un graphe `G` **entratine** un triplet `T` (note `G |= T`) si tou
 
 `StaticRdfsReasoner` (section 3) est du premier type : apres `Apply`, les triplets inferez sont physiquement dans le graphe. Le choix a une consequence mesurable dans ce notebook — la section 5 compte les triplets ajoutes, et la section 3.1 documente ce que le raisonneur a **choisi de ne pas** materialiser (reflexivite rdfs10, cloture transitive des sous-classes) : la materialisation est toujours un compromis entre completude et volume.
 
-**Plan** : section 1 formalise les regles, section 2 pose l'ontologie de travail, section 3 applique le raisonneur et verifie les inferences une par une, section 4 etablit le verdict SOTA pour OWL 2 DL, section 5 mesure le cout du raisonnement, section 6 montre la limite de RDFS (transitivite) et la porte de sortie (regles N3).",,,,,,,,45abe5a39f38ff9b,,,,,,,,,,,,,,,
+**Plan** : section 1 formalise les regles, section 2 pose l'ontologie de travail, section 3 applique le raisonneur et verifie les inferences une par une, section 4 etablit le verdict SOTA pour OWL 2 DL, section 5 mesure le cout du raisonnement, section 6 montre la limite de RDFS (transitivite) et la porte de sortie (regles N3).",,,,,,,,5640f15bbf05f9f4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,fbf2f133,markdown,fr,c5655e40e60bd593,"## 0. Environnement
 
 Installation du moteur **dotNetRDF** (NuGet), qui embarque le namespace `VDS.RDF.Query.Inference` (raisonneurs RDFS, N3 rules).
@@ -9334,7 +9360,7 @@ int before = g.Triples.Count;
 reasoner.Apply(g);
 int after = g.Triples.Count;
 Console.WriteLine(""Triplets : "" + before + "" explicites -> "" + after + "" apres raisonnement ("" + (after-before) + "" inferez)"");",,,,,,,,6b7edcd60f9f91e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,bee267a2,markdown,fr,a7c1bcb7647456df,"### 3.1 Triples inferez : qu'a-t-on deduit ?
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,bee267a2,markdown,fr,f25a093d9bb41d66,"### 3.1 Triples inferez : qu'a-t-on deduit ?
 
 Examinons les inferences cles. D'après les règles RDFS, on s'attend a :
 - **rdfs9** : `Alice` (Etudiant ⊂ Personne) → `Alice rdf:type Personne` ; `Bob` (Professeur ⊂ Personne) → `Bob rdf:type Personne`.
@@ -9349,9 +9375,9 @@ Examinons les inferences cles. D'après les règles RDFS, on s'attend a :
 2. `Bob rdf:type Personne` — rdfs9 via `Professeur subset Personne` ;
 3. `Maths rdf:type Cours` — rdfs3 via le range de `enseigne` (le range de `suit` donnerait le même triplet, deduplique par le graphe : un ensemble de triplets ne compte pas les doublons).
 
-Les 2 restants se derivent de la même facon : `Maths rdf:type Cours` etant deja compte, il reste les domaines — `Bob enseigne Maths` + `enseigne domain Professeur` ne peut rien ajouter (`Bob rdf:type Professeur` est deja explicite) ; en fait sur cette ontologie precise, les inferences utiles sont exactement les 3 verifiees plus les entailments triviaux des types explicites vers `Personne` des deux cotes. Le point pedagogique tient : **chaque triplet inferez se justifie en une ligne** (regle + premisses), et la verification par `Chk` est une re-derivation independante — le raisonneur dit, la regle prouve.
+Les 2 restants ne sont pas des inferences supplementaires sur les instances : ce sont les typages de schema `Etudiant rdf:type rdfs:Class` et `Professeur rdf:type rdfs:Class` — le raisonneur type comme classe toute classe **sujet** d'un `rdfs:subClassOf` (`Personne`, uniquement objet de la hierarchie, n'est pas tapee ; les domaines rdfs2 n'ajoutent rien non plus ici, `Bob rdf:type Professeur` etant deja explicite). Listez les 15 triplets du graphe raisonne pour les voir apparaitre. Le point pedagogique tient : **chaque triplet inferez se justifie en une ligne** (regle + premisses), et la verification par `Chk` est une re-derivation independante — le raisonneur dit, la regle prouve.
 
-**Ce que le `False` de rdfs10 enseigne** : la ligne `Etudiant subClassOf Etudiant reflexive (rdfs10) : False` n'est pas un echec du raisonneur, c'est la mesure de son perimetre. La regle rdfs10 (`C rdfs:subClassOf C`) fait partie de la semantique RDFS standard, mais le forward-chaining borne de dotNetRDF ne la materialise pas — de même que `Sous-proprietes inferez : 0` (aucune reflexivite rdfs5/rdfs7 des proprietes). Un raisonneur complet (owlrl cote Python, en mode RDFS/D) materialiserait ces triplets reflexivity. Pour le raisonnement utile (types, hierarchies, domain/range), ces omissions ne changent rien ; pour une question du type « toutes les sous-classes de X », elles comptent — et il faut alors soit un raisonneur complet, soit calculer la cloture transitive soi-même.",,,,,,,,a7c1bcb7647456df,,,,,,,,,,,,,,,
+**Ce que le `False` de rdfs10 enseigne** : la ligne `Etudiant subClassOf Etudiant reflexive (rdfs10) : False` n'est pas un echec du raisonneur, c'est la mesure de son perimetre. La regle rdfs10 (`C rdfs:subClassOf C`) fait partie de la semantique RDFS standard, mais le forward-chaining borne de dotNetRDF ne la materialise pas — de même que `Sous-proprietes inferez : 0` (aucune reflexivite rdfs5/rdfs7 des proprietes). Un raisonneur complet (owlrl cote Python, en mode RDFS/D) materialiserait ces triplets reflexivity. Pour le raisonnement utile (types, hierarchies, domain/range), ces omissions ne changent rien ; pour une question du type « toutes les sous-classes de X », elles comptent — et il faut alors soit un raisonneur complet, soit calculer la cloture transitive soi-même.",,,,,,,,f25a093d9bb41d66,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,ac25f189,code,fr,95d150427f30a189,"Console.WriteLine(""--- Verifications d inferences (re-derivees a la main) ---"");
 bool Chk(string s, string p, string o) => g.ContainsTriple(new Triple(U(g,s), U(g,p), U(g,o)));
 Console.WriteLine(""Alice rdf:type Personne  (rdfs9) : "" + Chk(""ex:Alice"",""rdf:type"",""ex:Personne""));
@@ -9521,7 +9547,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,1bb972e3,m
 - **La frontiere RDFS/OWL est une frontiere de regles sur les donnees** : la section 6 installe la demonstration (3 triplets `parent`, zero inference possible) — transitivite, symetrie, compositions n'existent pas en RDFS pur, et le passage a OWL 2 DL a un cout d'infrastructure (JVM) que la section 4 chiffre par les 6 axes.
 
 **Pour aller plus loin** : les exercices qui suivent font deriver a la main ce que la section 3 a fait raisonner, puis demandent la requete SPARQL qui voit les triplets inferez — la boucle ecrire / raisonner / interroger complete.",,,,,,,,7f7e2ca47328dff2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,1a1464b2,markdown,fr,2ad6aab229353cf0,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,1a1464b2,markdown,fr,c0932b8046163199,"***
 
 ## Exercices
 
@@ -9529,9 +9555,9 @@ Completez les squelettes ci-dessous (`result = null  // TODO`).
 
 **Indices par exercice** (les squelettes restent a completer — aucun `raise`, le notebook s'execute de bout en bout, regle C.1) :
 
-- **Exercice 1 — compter les inferez** : reproduisez le schema de la section 3 avec 3 sous-classes lineaires (`C1 subset C2 subset C3` toutes sous `Personne` si vous voulez reutiliser) et 2 instances typees par les feuilles. Derivez a la main : chaque instance herite du type de chaque ancetre (rdfs9, un triplet par classe ancetre), les domain/range s'ajoutent selon vos proprietes. **Indice** : sur la version minimale (3 chainons + 2 instances, aucune propriete), la reponse attendue est 6 — verifiez ensuite en executant le raisonneur et en soustrayant les compteurs, comme la cellule de la section 3.
+- **Exercice 1 — compter les inferez** : reproduisez le schema de la section 3 avec 3 sous-classes lineaires (`C1 subset C2 subset C3` toutes sous `Personne` si vous voulez reutiliser) et 2 instances typees par les feuilles. Derivez a la main : chaque instance herite du type de chaque ancetre (rdfs9, un triplet par classe ancetre), les domain/range s'ajoutent selon vos proprietes. **Indice** : sur la version minimale (3 chainons, 2 instances typees par la feuille, aucune propriete), comptez deux familles — 6 triplets d'heritage de type (3 ancetres x 2 instances, rdfs9) et 3 typages de classe (chaque classe **sujet** d'un `rdfs:subClassOf` est tapee `rdfs:Class` ; la classe finale, seulement objet, ne compte pas). Reponse attendue : 9. Verifiez ensuite en executant le raisonneur et en soustrayant les compteurs, comme la cellule de la section 3.
 - **Exercice 2 — predire avant d'executer** : avec `ex:connait rdfs:domain ex:Personne` et `Alice connait Bob`, la regle rdfs2 donne un triplet — mais attention : `Alice rdf:type Personne` est **deja** dans le graphe raisonne de la section 3 (materialise par rdfs9). Le graphe etant un ensemble, re-asserter un triplet existant ne change pas le compte. La bonne reponse prevoit donc soit 0 nouveau triplet (apres le raisonnement de la section 3), soit 1 (sur le graphe non raisonne) — a vous de dire lequel et pourquoi.
-- **Exercice 3 — SPARQL sur le graphe raisonne** : le graphe `g` courant contient les 15 triplets (10 + 5 inferez). La requete `SELECT ?x WHERE { ?x a ex:Personne }` (via `g.ExecuteQuery`) doit retourner Alice et Bob — y compris si l'on effaçait leurs types explicites, car les types inferez survivent dans le graphe materialise. **Indice** : c'est tout l'interet de la materialisation — la requete est triviale, le raisonneur a deja travaille.",,,,,,,,2ad6aab229353cf0,,,,,,,,,,,,,,,
+- **Exercice 3 — SPARQL sur le graphe raisonne** : le graphe `g` courant contient les 15 triplets (10 + 5 inferez). La requete `SELECT ?x WHERE { ?x a ex:Personne }` (via `g.ExecuteQuery`) doit retourner Alice et Bob — y compris si l'on effaçait leurs types explicites, car les types inferez survivent dans le graphe materialise. **Indice** : c'est tout l'interet de la materialisation — la requete est triviale, le raisonneur a deja travaille.",,,,,,,,c0932b8046163199,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb,dcd7c7f2,code,fr,ada626df90354af2,"// Exercice 1 : Compter combien de triples sont inferez pour une ontologie
 // avec 3 sous-classes lineaires et 2 instances (re-derive, puis verifiez avec le raisonneur).
 object exo1Result = null;  // TODO etudiant : int attendu
@@ -10413,7 +10439,7 @@ L'exemple guide 3 combine tous les concepts du notebook dans un graphe realiste 
 **La requête SPARQL** en bonus illustre comment interroger un graphe RDF : elle sélectionne les noms des auteurs d'articles scolaires, prouvant que les deux membres sont bien liés à la publication.
 
 > **Note** : La serialization Turtle exploite la notation `[ ... ]` pour les blank nodes, rendant le graphe compact et lisible. En JSON-LD, le même blank node reçoit un identifiant généré (`_:N...`).",,,,,,,,c7617fc111d369e6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,10e7f893,markdown,fr,2553eff4c72a2027,"# SW-2-RDFBasics
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,10e7f893,markdown,fr,e35868a5f5adc198,"# SW-2-RDFBasics
 
 **Navigation** : [<< 1-Setup](SW-01-Setup-CSharp.ipynb) | [Index](README.md) | [3-GraphOperations >>](SW-03-GraphOperations-CSharp.ipynb)
 
@@ -10443,14 +10469,14 @@ A la fin de ce notebook, vous saurez :
 ### Prerequis
 - Notebook SW-1-Setup complete
 
-### Duree estimee : 45 minutes",,,,,,,,2553eff4c72a2027,,,,,,,,,,,,,,,
+### Duree estimee : 45 minutes",,,,,,,,e35868a5f5adc198,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,f6459281,markdown,fr,57e2bf8677a6e95a,"***
 
 ## 0. Installation de dotNetRDF
 
 Comme dans le notebook précédent, nous commencons par charger la bibliotheque dotNetRDF et ses espaces de noms principaux.",,,,,,,,57e2bf8677a6e95a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,53133886,code,fr,8c64e41517140575,"// Installation du package dotNetRDF (version épinglée pour reproductibilité)
-#r ""nuget: dotNetRDF, 3.2.1""
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,53133886,code,fr,021e4370d8b048d9,"// Installation du package dotNetRDF (version épinglée pour reproductibilité)
+#r ""nuget: dotNetRDF, 3.4.1""
 
 using VDS.RDF;
 using VDS.RDF.Parsing;
@@ -10459,9 +10485,9 @@ using System;
 using System.IO;
 using StringWriter = System.IO.StringWriter;
 
-Console.WriteLine(""dotNetRDF 3.2.1 charge avec succes."");
-Console.WriteLine(""Espaces de noms disponibles : VDS.RDF, VDS.RDF.Parsing, VDS.RDF.Writing"");",,,,,,,,8c64e41517140575,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,9ba0527e,markdown,fr,e0261448694241e3,"### Interpretation
+Console.WriteLine(""dotNetRDF 3.4.1 charge avec succes."");
+Console.WriteLine(""Espaces de noms disponibles : VDS.RDF, VDS.RDF.Parsing, VDS.RDF.Writing"");",,,,,,,,021e4370d8b048d9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,9ba0527e,markdown,fr,660a2effcc81a645,"### Interpretation
 
 La cellule ci-dessus installe et importe les trois espaces de noms principaux de dotNetRDF :
 
@@ -10471,7 +10497,7 @@ La cellule ci-dessus installe et importe les trois espaces de noms principaux de
 | `VDS.RDF.Parsing` | Parsers (`TurtleParser`, `RdfXmlParser`) | Lecture de données RDF |
 | `VDS.RDF.Writing` | Writers (`NTriplesWriter`, `CompressingTurtleWriter`) | Serialisation de graphes |
 
-> **Note technique** : La version `3.2.1` est epinglee pour garantir la reproductibilite. L'alias `using StringWriter = System.IO.StringWriter` evite un conflit de noms avec `VDS.RDF.Writing.StringWriter`.",,,,,,,,e0261448694241e3,,,,,,,,,,,,,,,
+> **Note technique** : La version `3.4.1` est epinglee pour garantir la reproductibilite. L'alias `using StringWriter = System.IO.StringWriter` evite un conflit de noms avec `VDS.RDF.Writing.StringWriter`.",,,,,,,,660a2effcc81a645,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,92742223,markdown,fr,2f8d9e37d61716e8,"***
 
 ## 1. Les triplets RDF
@@ -11238,7 +11264,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,ffddcdbd,c
 
 Console.WriteLine(""Exercice a completer"");
 ",,,,,,,,e4b0effd2331bb12,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,d45f0265,markdown,fr,c9b0dfb30a216044,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-CSharp.ipynb,d45f0265,markdown,fr,dbb1971cc486a3e8,"***
 
 ## Resume
 
@@ -11276,7 +11302,7 @@ Dans le notebook suivant (**SW-3-GraphOperations**), nous apprendrons a :
 
 ***
 
-**Navigation** :  [<< 1-Setup](SW-01-Setup-CSharp.ipynb) | [Index](README.md) | [3-GraphOperations >>](SW-03-GraphOperations-CSharp.ipynb)",,,,,,,,c9b0dfb30a216044,,,,,,,,,,,,,,,
+**Navigation** :  [<< 1-Setup](SW-01-Setup-CSharp.ipynb) | [Index](README.md) | [3-GraphOperations >>](SW-03-GraphOperations-CSharp.ipynb)",,,,,,,,dbb1971cc486a3e8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03b-GraphOperations-Python.ipynb,cded4740e1d7,markdown,fr,0f053619497890ec,"# SW-03b-GraphOperations-Python
 
 **Navigation** : [Index](README.md) | [<< SW-3 C#](SW-03-GraphOperations-CSharp.ipynb) | [SW-4b Python >>](SW-04b-SPARQL-Python.ipynb)
@@ -11879,7 +11905,7 @@ Dans **[SW-04b-SPARQL-Python](SW-04b-SPARQL-Python.ipynb)**, nous apprendrons a 
 ***
 
 **Navigation** : [Index](README.md) | [<< SW-3 C#](SW-03-GraphOperations-CSharp.ipynb) | [SW-4b Python >>](SW-04b-SPARQL-Python.ipynb)",,,,,,,,420edf80c8bc65f7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,28b116ab,markdown,fr,d17e47f0b5f39c90,"# SW-3-GraphOperations
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,28b116ab,markdown,fr,47857c01492566f0,"# SW-3-GraphOperations
 
 **Navigation** : [<< 2-RDFBasics](SW-02-RDFBasics-CSharp.ipynb) | [Index](README.md) | [4-SPARQL >>](SW-04-SPARQL-CSharp.ipynb)
 
@@ -11925,12 +11951,12 @@ NTriples, RDF/XML, JSON-LD), graphes orientes, sémantique d'ensemble, listes ch
 ## Prérequis
 
 - Kernel `.net-csharp` (.NET Interactive 9.0, cf. `ML/ML.Net/ML-01-Introduction-Python.ipynb`).
-- Bibliothèque NuGet : `dotNetRDF, 3.2.1` (bibliothèque .NET de reference pour RDF/Semantic Web).
-  Le kernel télécharge cette dépendance à la volée via `#r ""nuget: dotNetRDF, 3.2.1""`.
-- Connaissances de RDF 1.1 et des formats sérialisés (cf. SW-1-RDFBasics et [SW-2-RDFBasics](SW-02-RDFBasics-CSharp.ipynb)).",,,,,,,,d17e47f0b5f39c90,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,8bfa1a93,code,fr,995bc9e54000e8a3,"#r ""nuget: dotNetRDF, 3.2.1""",,,,,,,,995bc9e54000e8a3,,,,,,,,,,,,,,,
+- Bibliothèque NuGet : `dotNetRDF, 3.4.1` (bibliothèque .NET de reference pour RDF/Semantic Web).
+  Le kernel télécharge cette dépendance à la volée via `#r ""nuget: dotNetRDF, 3.4.1""`.
+- Connaissances de RDF 1.1 et des formats sérialisés (cf. SW-1-RDFBasics et [SW-2-RDFBasics](SW-02-RDFBasics-CSharp.ipynb)).",,,,,,,,47857c01492566f0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,8bfa1a93,code,fr,10e77a30e06c5660,"#r ""nuget: dotNetRDF, 3.4.1""",,,,,,,,10e77a30e06c5660,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,fc43c63a,markdown,fr,50777fd19dc08fef,Importation des espaces de noms dotNetRDF et configuration de l'environnement de travail.,,,,,,,,50777fd19dc08fef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,79e88dc6,code,fr,49c48fa973a52223,"using VDS.RDF;
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,79e88dc6,code,fr,7aaeb62e53fcd8d8,"using VDS.RDF;
 using VDS.RDF.Parsing;
 using VDS.RDF.Writing;
 using VDS.RDF.Parsing.Handlers;
@@ -11939,8 +11965,8 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 
-Console.WriteLine(""dotNetRDF 3.2.1 pret."");",,,,,,,,49c48fa973a52223,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,f9a3946d,markdown,fr,a83ffafc007a153b,"## 1. Lecture de fichiers RDF
+Console.WriteLine(""dotNetRDF 3.4.1 pret."");",,,,,,,,7aaeb62e53fcd8d8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,f9a3946d,markdown,fr,cecdb2b4eca2c0d1,"## 1. Lecture de fichiers RDF
 
 Les parsers sont dans `VDS.RDF.Parsing`. Chacun implémente `IRdfReader` et supporte
 `Load(IGraph, ...)` avec un chemin de fichier, un `StreamReader` ou un `TextReader`. Formats
@@ -11970,8 +11996,8 @@ applications web.
 **Sortie attendue** (cellule code[2]) : un graphe `g` chargé depuis Turtle, avec ses triplets
 accessibles via `g.Triples`.
 
-**Coût** : ~1 seconde (téléchargement NuGet `dotNetRDF 3.2.1` la première fois + parsing d'un
-petit fichier Turtle).",,,,,,,,a83ffafc007a153b,,,,,,,,,,,,,,,
+**Coût** : ~1 seconde (téléchargement NuGet `dotNetRDF 3.4.1` la première fois + parsing d'un
+petit fichier Turtle).",,,,,,,,cecdb2b4eca2c0d1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,556deb53,code,fr,0cddab55e952d930,"// 1.1 Chargement depuis un fichier Turtle
 IGraph g = new Graph();
 IGraph h = new Graph();
@@ -12034,16 +12060,24 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,4ac4
 ## 2. Écriture de graphes RDF
 
 Les writers sont dans `VDS.RDF.Writing` et implementent `IRdfWriter`. Formats : NTriples, Turtle, RDF/XML, CompressingTurtle, RDF/JSON, CSV, TSV.",,,,,,,,204054736711acab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,b6d200e0,code,fr,d19ccccb2a6c26e5,"// 2.1 Comparaison de formats de sortie
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,b6d200e0,code,fr,fcda88502239c0c5,"// 2.1 Comparaison de formats de sortie
 IGraph g = new Graph();
 new TurtleParser().Load(g, ""data/Example.ttl"");
 
+string ntriples = VDS.RDF.Writing.StringWriter.Write(g, new NTriplesWriter());
+string turtle = VDS.RDF.Writing.StringWriter.Write(g, new CompressingTurtleWriter());
+
 Console.WriteLine(""=== NTriples ==="");
-Console.WriteLine(VDS.RDF.Writing.StringWriter.Write(g, new NTriplesWriter()));
+Console.WriteLine(ntriples);
 
 Console.WriteLine(""=== Turtle Compresse ==="");
-Console.WriteLine(VDS.RDF.Writing.StringWriter.Write(g, new CompressingTurtleWriter()));",,,,,,,,d19ccccb2a6c26e5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,a904fd5c,markdown,fr,67734b9267aec322,"#### Interpretation : Comparaison des formats de sortie
+Console.WriteLine(turtle);
+
+Console.WriteLine($""Taille NTriples : {ntriples.Length} caracteres"");
+Console.WriteLine($""Taille Turtle   : {turtle.Length} caracteres"");
+Console.WriteLine($""Rapport Turtle/NTriples : {(double)turtle.Length / ntriples.Length:F2}"");
+",,,,,,,,fcda88502239c0c5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,a904fd5c,markdown,fr,8bdae21e63c68438,"#### Interpretation : Comparaison des formats de sortie
 
 **NTriples** : format verbeux -- chaque triplet occupe une ligne complète avec les URIs en
 entier. Pas de préfixe, pas de compression. **Idéal pour** le debugging,
@@ -12053,6 +12087,12 @@ le piping UNIX, les tests automatises.
 noeuds blancs sont regroupés avec `;` (même sujet) et les propriétés sont imbriquees avec `[`
 (blanks). **Idéal pour** les fichiers de données volumineux, les graphes publiés sur le web.
 
+**Ce que montre l'exemple de ce carnet.** Sur le graphe lu dans `data/Example.ttl`, la
+compression ne se retourne pas encore : les cinq directives `@prefix` coûtent plus qu'elles
+n'économisent (cellule code[5] : 541 caractères en Turtle contre 453 en NTriples). Le gain
+apparaît sur les graphes volumineux, où chaque préfixe et chaque URI répétée est amorti des
+centaines de fois.
+
 **RDF/XML** : format ancien -- syntaxe XML stricte, namespaces obligatoires. **Idéal pour**
 l'interopérabilité avec les systèmes legac Java/Jena (Apache Jena, Sesame).
 
@@ -12061,7 +12101,7 @@ l'interopérabilité avec les systèmes legac Java/Jena (Apache Jena, Sesame).
 | Format | Compression | Lisibilité | Interopérabilité |
 |--------|-------------|------------|------------------|
 | NTriples | 1.0x (baseline) | Moyenne | Universelle |
-| Turtle compresse | ~3-5x | Élevée | Standard W3C |
+| Turtle compresse | 1.19x ici, donc plus long que NTriples (cellule code[5]) | Élevée | Standard W3C |
 | RDF/XML | ~2x | Faible | Legacy Java |
 | JSON-LD | ~2.5x | Moyenne | Web apps |
 
@@ -12069,12 +12109,12 @@ l'interopérabilité avec les systèmes legac Java/Jena (Apache Jena, Sesame).
 
 C'est le meilleur compromis compression/lisibilité, et il est standardisé W3C (Recommandation
 2014). Il génère automatiquement les préfixes pour les URIs partagees, ce qui réduit
-significativement la taille du fichier.
+la taille du fichier dès que les URIs se répètent.
 
 **Sortie attendue** (cellule code[5]) : les deux sérialisations commitees du même graphe de
 4 triplets (NTriples : une ligne par triplet ; Turtle compresse) ; le RDF/XML suit dans la cellule suivante.
 
-**Coût** : ~0.1 seconde (3 sérialisations d'un graphe de 5-10 triplets).",,,,,,,,67734b9267aec322,,,,,,,,,,,,,,,
+**Coût** : ~0.1 seconde (3 sérialisations d'un graphe de 5-10 triplets).",,,,,,,,8bdae21e63c68438,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,1e591449,markdown,fr,bf7785de9dbac92c,Sérialisation du graphe en RDF/XML via deux méthodes equivalentes : helper statique et StringWriter explicite.,,,,,,,,bf7785de9dbac92c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,2005646e,code,fr,e1a8a1740566f009,"// 2.2 RDF/XML : deux methodes pour obtenir une chaine
 var rdfxmlwriter = new RdfXmlWriter();
@@ -12827,7 +12867,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,sw3-
 - **RDFLib** (Python) : équivalente à dotNetRDF pour Python.
 - **Redland** (C) : bibliothèque C pour RDF, plus bas niveau.
 - **Blazegraph** : base de données RDF native, supporte les transactions et le scaling.",,,,,,,,648bef3e55c3aa4b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,cc69afcf,markdown,fr,106e421a53254d67,"## Résumé
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,cc69afcf,markdown,fr,b3cea10e368222f1,"## Résumé
 
 | Section | Concepts clés | APIs principales |
 |---------|---------------|------------------|
@@ -12873,7 +12913,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,cc69
 - **SKOS** : W3C Recommendation pour les vocabulaires simples (thesaurus, taxonomies).
 ***
 
-**Navigation** : [<< 2-RDFBasics](SW-02-RDFBasics-CSharp.ipynb) | [Index](README.md) | [4-SPARQL >>](SW-04-SPARQL-CSharp.ipynb)",,,,,,,,106e421a53254d67,,,,,,,,,,,,,,,
+**Navigation** : [<< 2-RDFBasics](SW-02-RDFBasics-CSharp.ipynb) | [Index](README.md) | [4-SPARQL >>](SW-04-SPARQL-CSharp.ipynb)",,,,,,,,b3cea10e368222f1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-04b-SPARQL-Python.ipynb,header-navigation,markdown,fr,d85ef6feea60b010,"# SW-04b-SPARQL-Python
 
 **Navigation** : [Index](README.md) | [<< SW-4 C#](SW-04-SPARQL-CSharp.ipynb) | [SW-5 C# >>](SW-05-LinkedData-CSharp.ipynb)
@@ -15021,7 +15061,7 @@ Ce sidetrack a presente l'interrogation de données liees du Web avec **SPARQLWr
 ***
 
 **Retour au sommaire** : [Index SemanticWeb](README.md)",,,,,,,,97b624f01b5c1cce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,cc1e41ca,markdown,fr,77532071de89b708,"# SW-5-LinkedData
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,cc1e41ca,markdown,fr,fda153beb248c4b5,"# SW-5-LinkedData
 
 **Navigation** : [<< 4-SPARQL](SW-04-SPARQL-CSharp.ipynb) | [Index](./README.md) | [6-RDFS >>](SW-06-RDFS-CSharp.ipynb)
 
@@ -15046,10 +15086,10 @@ Notebook C# / .NET Interactive sur les **Linked Data** dans dotNetRDF : requête
 - **SPARQL endpoints** : serveurs HTTP qui repondent aux requêtes SPARQL sur des graphes RDF distants.
 - **Federation** : combiner des données de plusieurs sources en une seule requête.
 
-**Prerequis** : SW-3 Graph Operations, SW-4 SPARQL. Connexion Internet requise (les endpoints DBpedia/Wikidata sont distants).",,,,,,,,77532071de89b708,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,989805da,markdown,fr,bbe34078408300bd,"## 1. Installation et imports
+**Prerequis** : SW-3 Graph Operations, SW-4 SPARQL. Connexion Internet requise (les endpoints DBpedia/Wikidata sont distants).",,,,,,,,fda153beb248c4b5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,989805da,markdown,fr,d4ed82bcbeb218dd,"## 1. Installation et imports
 
-Les imports utilisent `dotNetRDF 3.2.1` (le même package NuGet que pour les notebooks SW-1 a SW-4). Le namespace `VDS.RDF.Query` fournit `SparqlQueryClient` pour les requêtes distantes.
+Les imports utilisent `dotNetRDF 3.4.1` (le même package NuGet que pour les notebooks SW-1 a SW-4). Le namespace `VDS.RDF.Query` fournit `SparqlQueryClient` pour les requêtes distantes.
 
 **Note d'installation** : `dotnet interactive` resout automatiquement les packages NuGet avec `#r ""nuget: <package>, <version>""`. Pas de configuration manuelle.
 
@@ -15058,8 +15098,8 @@ Les imports utilisent `dotNetRDF 3.2.1` (le même package NuGet que pour les not
 - **Federation** : support du mot-cle `SERVICE` pour les requêtes distribuees.
 - **JSON Results** : serialisation native des résultats en JSON (utile pour les API REST).
 
-**Verification** : après l'import (cellule suivante), le noyau affiche `dotNetRDF charge avec succes.`.",,,,,,,,bbe34078408300bd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,ee1f12c2,code,fr,995bc9e54000e8a3,"#r ""nuget: dotNetRDF, 3.2.1""",,,,,,,,995bc9e54000e8a3,,,,,,,,,,,,,,,
+**Verification** : après l'import (cellule suivante), le noyau affiche `dotNetRDF charge avec succes.`.",,,,,,,,d4ed82bcbeb218dd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,ee1f12c2,code,fr,10e77a30e06c5660,"#r ""nuget: dotNetRDF, 3.4.1""",,,,,,,,10e77a30e06c5660,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,e9cc9978,markdown,fr,4f22eaf9810bbf9b,"La cellule confirme le chargement : `dotNetRDF charge avec succes.` — les espaces de noms sont prets.
 
 **Namespaces utilises dans ce notebook** :
@@ -15505,9 +15545,9 @@ catch (Exception ex)
 {
     Console.WriteLine($""Erreur Wikidata : {ex.Message}"");
 }",,,,,,,,80753568381ba0a0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,28057652,markdown,fr,c7d48d3cea24c23a,"### Interprétation : DBpedia vs Wikidata
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,28057652,markdown,fr,8782513c42107d89,"### Interprétation : DBpedia vs Wikidata
 
-La requête 3 illustre la difference de qualite : `?city wdt:P31 wd:Q515` (instance de city) + `wdt:P17 wd:Q142` (pays = France) + `FILTER(?population > 100000)` + `ORDER BY DESC(?population)` retourne exactement des grandes villes — `?cityLabel = Angers@fr , ?population = 159022`, une ligne par ville, sans artefact. La ou DBpedia retournait des divisions militaires et des series TV, Wikidata retourne des villes : la saisie humaine verifiee paie.
+La requête 3 illustre la difference de qualite : `?city wdt:P31 wd:Q515` (instance de city) + `wdt:P17 wd:Q142` (pays = France) + `FILTER(?population > 100000)` + `ORDER BY DESC(?population)` retourne bien des villes — mais la sortie n'en liste qu'une seule : `?cityLabel = Angers@fr , ?population = 159022`. Paris, Lyon ou Marseille échouent sur la première contrainte : `?city wdt:P31 wd:Q515` ne retient que les entités typées exactement « city », et dans Wikidata les grandes communes françaises portent des types plus précis que Q515 — le classement mesure donc « les entités typées Q515 de France avec une population », pas « les grandes villes de France » (le jumeau Python lit le même phénomène sur sa requête équivalente). Là où DBpedia retournait des divisions militaires et des séries TV, Wikidata retourne des villes sans bruit d'extraction : la saisie humaine vérifiée paie — à condition de vérifier le typage exact des entités que le pattern exige.
 
 DBpedia et Wikidata sont les deux plus grands graphes RDF publics. Voici les differences :
 
@@ -15532,7 +15572,7 @@ DBpedia et Wikidata sont les deux plus grands graphes RDF publics. Voici les dif
 - Alignement avec d'autres bases (VIAF, GND, etc.).
 
 **Federation DBpedia + Wikidata** : via `owl:sameAs` (cf. section suivante).
-",,,,,,,,c7d48d3cea24c23a,,,,,,,,,,,,,,,
+",,,,,,,,8782513c42107d89,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,4e3abc2d,markdown,fr,250452c472354659,"***
 
 ## 6. Requêtes fédérées avec SERVICE
@@ -15754,9 +15794,9 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,1e2449de,
 // ExecuteAndDisplaySparqlQuery(endpoint, exQuery, 20);
 
 Console.WriteLine(""Exercice a completer"");",,,,,,,,1c3aa416a2ee0b57,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,1c83c75e,markdown,fr,163a430bd5af7aac,"### Exercice 2 : Même personne sur Wikidata
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,1c83c75e,markdown,fr,53af93840cc800a2,"### Exercice 2 : Même personne sur Wikidata
 
-**Objectif** : En utilisant le Q-number (par exemple Q7186 pour Albert Einstein), interrogez Wikidata pour obtenir ses proprietes (date de naissance, occupation, pays de citoyennete).
+**Objectif** : En utilisant le Q-number (par exemple Q937 pour Albert Einstein), interrogez Wikidata pour obtenir ses proprietes (date de naissance, occupation, pays de citoyennete).
 
 **Sortie attendue** :
 ```
@@ -15767,13 +15807,13 @@ P27     | pays de citoyennete | Q183 | Allemagne
 ```
 
 **Indices** :
-- Utilisez `wd:Q7186` pour Albert Einstein.
+- Utilisez `wd:Q937` pour Albert Einstein.
 - `wdt:P569` pour la date de naissance.
 - `wdt:P106` pour l'occupation.
 - `wdt:P27` pour le pays.
 - `SERVICE wikibase:label { bd:serviceParam wikibase:language ""fr,en"" . }` pour les labels.
 
-**Difficulte** : moyenne. Combine préfixes Wikidata + SERVICE wikibase:label.",,,,,,,,163a430bd5af7aac,,,,,,,,,,,,,,,
+**Difficulte** : moyenne. Combine préfixes Wikidata + SERVICE wikibase:label.",,,,,,,,53af93840cc800a2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,8a441517,code,fr,e1b87d3c050ce6e0,"// Exercice 2 : Remplacez Q7186 par le QID de votre personne
 
 // string exWd = @""
@@ -15839,11 +15879,11 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,sw5-refs-
 - **DBpedia** : v2016-10 (données figees, mises a jour annuelles).
 - **Wikidata** : mises a jour continues (snapshot quotidien).
 - **SPARQL** : 1.1 (W3C Recommendation, 2013).",,,,,,,,f059c690e1290811,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,8aa46fad,markdown,fr,77cd4809e884b779,"## Résumé
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,8aa46fad,markdown,fr,139d646ca3030f71,"## Résumé
 
 | Section | Concepts cles | Endpoints utilises |
 |---------|--------------|-------------------|
-| Installation | dotNetRDF 3.2.1, NuGet | - |
+| Installation | dotNetRDF 3.4.1, NuGet | - |
 | Fonctions utilitaires | Async, try-catch, affichage borne | - |
 | DBpedia | Test de connexion | dbpedia.org/sparql |
 | Requêtes DBpedia | Films, relations, villes | dbpedia.org/sparql |
@@ -15870,7 +15910,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-05-LinkedData-CSharp.ipynb,8aa46fad,
 
 **Prochain notebook** : [SW-6-RDFS](SW-06-RDFS-CSharp.ipynb) - Vocabulaire RDFS, inference et hiérarchies de classes
 
-**Navigation** : [<< 4-SPARQL](SW-04-SPARQL-CSharp.ipynb) | [Index](README.md) | [6-RDFS >>](SW-06-RDFS-CSharp.ipynb)",,,,,,,,77cd4809e884b779,,,,,,,,,,,,,,,
+**Navigation** : [<< 4-SPARQL](SW-04-SPARQL-CSharp.ipynb) | [Index](README.md) | [6-RDFS >>](SW-06-RDFS-CSharp.ipynb)",,,,,,,,139d646ca3030f71,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06b-RDFS-Python.ipynb,611f0eb0,markdown,fr,6b495f953975d9a3,"# SW-06b-RDFS-Python
 
 **Navigation** : [Index](README.md) | [<< SW-6 C#](SW-06-RDFS-CSharp.ipynb) | [SW-7b Python OWL >>](SW-07b-OWL-Python.ipynb)
@@ -16677,7 +16717,7 @@ Pour ces fonctionnalites, il faut passer a **OWL** (notebook suivant).
 
 **Navigation** : [Index](README.md) | [<< SW-6 C#](SW-06-RDFS-CSharp.ipynb) | [SW-7b Python OWL >>](SW-07b-OWL-Python.ipynb)
 ",,,,,,,,43577cd9ffe1a921,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,d15fcd6d,markdown,fr,dac9517c27d06639,"# SW-6-RDFS
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,d15fcd6d,markdown,fr,e2d6f7b3e8ed40f0,"# SW-6-RDFS
 
 **Navigation** : [<< 5-LinkedData](SW-05-LinkedData-CSharp.ipynb) | [Index](README.md) | [7-OWL >>](SW-07-OWL-CSharp.ipynb)
 
@@ -16698,11 +16738,11 @@ A la fin de ce notebook, vous saurez :
 
 ### Duree estimee : 40 minutes
 
-***",,,,,,,,dac9517c27d06639,,,,,,,,,,,,,,,
+***",,,,,,,,e2d6f7b3e8ed40f0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,241c6590,markdown,fr,a6323234d61bee5d,"## Installation et imports
 
 Chargeons dotNetRDF et les espaces de noms necessaires pour travailler avec RDFS.",,,,,,,,a6323234d61bee5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,a1e702fa,code,fr,0a483d596ba51f98,"#r ""nuget: dotNetRDF, 3.2.1""
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,a1e702fa,code,fr,893c1263ed96253e,"#r ""nuget: dotNetRDF, 3.4.1""
 
 using System;
 using System.Linq;
@@ -16714,7 +16754,7 @@ using VDS.RDF.Ontology;
 using VDS.RDF.Query;
 using VDS.RDF.Query.Datasets;
 
-Console.WriteLine(""dotNetRDF charge avec succes."");",,,,,,,,0a483d596ba51f98,,,,,,,,,,,,,,,
+Console.WriteLine(""dotNetRDF charge avec succes."");",,,,,,,,893c1263ed96253e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,9c14d671,markdown,fr,42774d438959bf18,"***
 
 ## 1. Qu'est-ce que RDFS ?
@@ -17425,7 +17465,7 @@ taxonomyGraph.NamespaceMap.AddNamespace(""rdfs"", new Uri(""http://www.w3.org/20
 // TODO: Comparer le nombre de triplets avant/apres
 
 Console.WriteLine(""Exercice 2 : a completer"");",,,,,,,,374b19d4d9d1b4f0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,1b4a0eed,markdown,fr,3cb2363015f609e1,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-06-RDFS-CSharp.ipynb,1b4a0eed,markdown,fr,4740a84f83a4bdf2,"***
 
 ## Resume
 
@@ -17467,7 +17507,7 @@ Pour ces fonctionnalites, il faut passer a **OWL** (notebook suivant).
 
 ***
 
-**Navigation** :  [<< 5-LinkedData](SW-05-LinkedData-CSharp.ipynb) | [Index](README.md) | [7-OWL >>](SW-07-OWL-CSharp.ipynb)",,,,,,,,3cb2363015f609e1,,,,,,,,,,,,,,,
+**Navigation** :  [<< 5-LinkedData](SW-05-LinkedData-CSharp.ipynb) | [Index](README.md) | [7-OWL >>](SW-07-OWL-CSharp.ipynb)",,,,,,,,4740a84f83a4bdf2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb,header-navigation,markdown,fr,42a5529d1a63d43a,"# SW-07b-OWL-Python
 
 **Navigation** : [Index](README.md) | [<< SW-7 C#](SW-07-OWL-CSharp.ipynb) | [SW-8 SHACL >>](SW-08-SHACL-Python.ipynb)
@@ -18445,7 +18485,7 @@ Les points cles a retenir sont la puissance du raisonnement OWL 2 DL via `sync_r
 
 **Compétence visée.** Passer d'une ontologie décrite en français (classes, propriétés, restrictions) à une ontologie OWL exécutable en Python, puis lire les inférences du raisonneur : c'est le cœur du web sémantique computationnel.
 ",,,,,,,,8aa76893eda8bd85,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,129fd325,markdown,fr,9b40f75b5e4aee40,"# SW-7-OWL
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,129fd325,markdown,fr,0de5e10bc2cb5b7e,"# SW-7-OWL
 
 **Navigation** : [<< 6-RDFS](SW-06-RDFS-CSharp.ipynb) | [Index](README.md) | [8-SHACL C# >>](SW-08-SHACL-CSharp.ipynb)
 
@@ -18476,11 +18516,11 @@ A la fin de ce notebook, vous saurez :
 
 ### Duree estimee : 50 minutes
 
-***",,,,,,,,9b40f75b5e4aee40,,,,,,,,,,,,,,,
+***",,,,,,,,0de5e10bc2cb5b7e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,aa5a3547,markdown,fr,3ea3f62f112f1cff,"## Installation et imports
 
 Chargeons dotNetRDF avec les espaces de noms necessaires pour travailler avec OWL.",,,,,,,,3ea3f62f112f1cff,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,2db697a3,code,fr,a9c93445ddcd70b4,"#r ""nuget: dotNetRDF, 3.2.1""
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,2db697a3,code,fr,903c8107f4c460a0,"#r ""nuget: dotNetRDF, 3.4.1""
 
 using System;
 using System.Linq;
@@ -18494,7 +18534,7 @@ using VDS.RDF.Query.Datasets;
 using VDS.RDF.Query.Inference;
 
 Console.WriteLine(""dotNetRDF charge avec succes."");
-Console.WriteLine(""Espace de noms OWL disponible : VDS.RDF.Ontology"");",,,,,,,,a9c93445ddcd70b4,,,,,,,,,,,,,,,
+Console.WriteLine(""Espace de noms OWL disponible : VDS.RDF.Ontology"");",,,,,,,,903c8107f4c460a0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,aa9886b7,markdown,fr,8adefd72fe5f8e76,"### Interpretation
 
 L'espace de noms `VDS.RDF.Ontology` est la cle pour travailler avec OWL dans dotNetRDF. Il fournit :
@@ -18929,13 +18969,19 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,c2d6d291,markdow
 ## 6. Exemple guide avec `data/university.owl`
 
 Le fichier `data/university.owl` contient une petite ontologie OWL 2 au format RDF/XML. Chargeons-la avec `OntologyGraph` et explorons sa structure.",,,,,,,,47b2b0a18c91c0bb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,9aabd906,code,fr,b6ed9b3d96a7dfd2,"// Charger l'ontologie university.owl
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,9aabd906,code,fr,fba09fffbf37d5d7,"// Charger l'ontologie university.owl
 OntologyGraph uniOnto = new OntologyGraph();
 RdfXmlParser rdfXmlParser = new RdfXmlParser();
 rdfXmlParser.Load(uniOnto, ""data/university.owl"");
 
 Console.WriteLine($""Ontologie chargee : {uniOnto.Triples.Count} triplets"");
-Console.WriteLine($""Namespaces : {string.Join("", "", uniOnto.NamespaceMap.Prefixes)}"");
+// Le fichier declare un `xmlns` par defaut et aucun `xmlns:uni` : le prefixe
+// correspondant est vide, et l'afficher laissait « Namespaces : rdf, ..., xml, »
+// avec un element vide en fin de liste. On ne montre que les prefixes nommes.
+string[] namedPrefixes = uniOnto.NamespaceMap.Prefixes
+    .Where(p => !string.IsNullOrWhiteSpace(p))
+    .ToArray();
+Console.WriteLine($""Namespaces : {string.Join("", "", namedPrefixes)}"");
 Console.WriteLine();
 
 // Lister les classes OWL
@@ -18962,8 +19008,9 @@ foreach (OntologyClass cls in uniOnto.OwlClasses)
         .Select(sc => sc.Resource.ToString().Split('#').Last());
     if (superClasses.Any())
         Console.WriteLine($""    rdfs:subClassOf {string.Join("", "", superClasses)}"");
-}",,,,,,,,b6ed9b3d96a7dfd2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,3656e61d,markdown,fr,c608c101b7f716b8,"### Interpretation : Structure de university.owl
+}
+",,,,,,,,fba09fffbf37d5d7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,3656e61d,markdown,fr,316b1d77dc0dd28f,"### Interpretation : Structure de university.owl
 
 L'ontologie contient :
 
@@ -18973,12 +19020,15 @@ L'ontologie contient :
 | Hiérarchie | Student < Person, Professor < Person, GraduateStudent < Student |
 | Disjonction | Professor disjointWith Student |
 | ObjectProperties | enrolledIn, teaches, memberOf, advisedBy |
-| DatatypeProperties | name (fonctionnelle), credits |
-| Instances | prof_dupont, etud_martin, etud_bernard, course_ia, course_web_sem |",,,,,,,,c608c101b7f716b8,,,,,,,,,,,,,,,
+| DatatypeProperties | fullName, credits |
+| Instances | prof_dupont, etud_martin, etud_bernard, course_ia, course_web_sem |
+
+La seule propriété de datatype valorant un nom est `fullName` : le fichier ne définit **aucune** propriété `name`. Aucune de ces propriétés n'est marquée `owl:FunctionalProperty` — le fichier ne porte aucune restriction fonctionnelle — et aucune ne porte de `rdfs:label`.
+",,,,,,,,316b1d77dc0dd28f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,89d81bf5,markdown,fr,a7adb562ca161cd8,"### Interroger les proprietes et individus
 
 Explorons les proprietes de l'ontologie et les relations entre individus.",,,,,,,,a7adb562ca161cd8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,21e60ad5,code,fr,4b050188ffb79917,"// Explorer les proprietes et individus de university.owl
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,21e60ad5,code,fr,7fab0f2f980b9905,"// Explorer les proprietes et individus de university.owl
 IUriNode rdfTypeU = uniOnto.CreateUriNode(new Uri(""http://www.w3.org/1999/02/22-rdf-syntax-ns#type""));
 IUriNode owlObjPropU = uniOnto.CreateUriNode(new Uri(""http://www.w3.org/2002/07/owl#ObjectProperty""));
 IUriNode owlDtPropU = uniOnto.CreateUriNode(new Uri(""http://www.w3.org/2002/07/owl#DatatypeProperty""));
@@ -18996,7 +19046,7 @@ foreach (Triple t in uniOnto.GetTriplesWithPredicateObject(rdfTypeU, owlObjPropU
     string d = dom.Any() ? ((IUriNode)dom.First().Object).Uri.Fragment.TrimStart('#') : ""?"";
     string r = rng.Any() ? ((IUriNode)rng.First().Object).Uri.Fragment.TrimStart('#') : ""?"";
     string l = lbl.Any() ? ((ILiteralNode)lbl.First().Object).Value : """";
-    Console.WriteLine($""  {name} ({l}) : {d} -> {r}"");
+    Console.WriteLine(string.IsNullOrEmpty(l) ? $""  {name} : {d} -> {r}"" : $""  {name} ({l}) : {d} -> {r}"");
 }
 
 Console.WriteLine();
@@ -19009,8 +19059,8 @@ foreach (Triple t in uniOnto.GetTriplesWithPredicateObject(rdfTypeU, owlDtPropU)
     string d = dom.Any() ? ((IUriNode)dom.First().Object).Uri.Fragment.TrimStart('#') : ""?"";
     string r = rng.Any() ? ((IUriNode)rng.First().Object).Uri.Fragment.TrimStart('#') : ""?"";
     Console.WriteLine($""  {name} : {d} -> {r}"");
-}",,,,,,,,4b050188ffb79917,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,541bd226,markdown,fr,c2fa4dfff1b2d295,"### Interpretation : Proprietes de university.owl
+}",,,,,,,,7fab0f2f980b9905,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,541bd226,markdown,fr,a041593622e0801c,"### Interpretation : Proprietes de university.owl
 
 | Propriete | Type | Domaine | Portee | Description |
 |-----------|------|---------|--------|-------------|
@@ -19018,12 +19068,12 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,541bd226,markdow
 | `teaches` | ObjectProperty | Professor | Course | Enseignement |
 | `memberOf` | ObjectProperty | Person | Department | Appartenance |
 | `advisedBy` | ObjectProperty | GraduateStudent | Professor | Direction de these |
-| `name` | DatatypeProperty | Person | xsd:string | Nom de la personne |
-| `credits` | DatatypeProperty | Course | xsd:integer | Nombre de credits ECTS |",,,,,,,,c2fa4dfff1b2d295,,,,,,,,,,,,,,,
+| `fullName` | DatatypeProperty | Person | xsd:string | Nom de la personne |
+| `credits` | DatatypeProperty | Course | xsd:integer | Nombre de credits ECTS |",,,,,,,,a041593622e0801c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,3da3ef94,markdown,fr,1d7b1f1dada4d815,"### Requêtes SPARQL sur l'ontologie
 
 Utilisons SPARQL pour interroger les individus et croiser les informations.",,,,,,,,1d7b1f1dada4d815,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,a4a46f4c,code,fr,ccf941cb5705246a,"// Requetes SPARQL sur university.owl
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,a4a46f4c,code,fr,837f8871aecd0282,"// Requetes SPARQL sur university.owl
 var uniDataset = new InMemoryDataset(uniOnto);
 var uniProcessor = new LeviathanQueryProcessor(uniDataset);
 var sparqlParser = new SparqlQueryParser();
@@ -19038,7 +19088,7 @@ SELECT ?person ?name ?type
 WHERE {
     ?person rdf:type ?type .
     ?type rdfs:subClassOf* uni:Person .
-    ?person uni:name ?name .
+    ?person uni:fullName ?name .
 }
 ORDER BY ?name
 "";
@@ -19064,7 +19114,7 @@ PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 SELECT ?profName ?courseName ?credits
 WHERE {
     ?prof uni:teaches ?course .
-    ?prof uni:name ?profName .
+    ?prof uni:fullName ?profName .
     ?course rdfs:label ?courseName .
     OPTIONAL { ?course uni:credits ?credits . }
 }
@@ -19081,7 +19131,7 @@ foreach (SparqlResult r in r2)
     string course = ((ILiteralNode)r[""courseName""]).Value;
     string cred = r.HasBoundValue(""credits"") ? ((ILiteralNode)r[""credits""]).Value : ""?"";
     Console.WriteLine($""  {prof} enseigne '{course}' ({cred} credits)"");
-}",,,,,,,,ccf941cb5705246a,,,,,,,,,,,,,,,
+}",,,,,,,,837f8871aecd0282,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,b5aa5eb0,markdown,fr,2e985f9c267e56e8,"### Interpretation : Requêtes sur l'ontologie
 
 | Personne | Type | Cours | Rôle |
@@ -19313,7 +19363,7 @@ checkParser.Load(checkOnto, ""data/university.owl"");
 // TODO: Afficher un rapport de coherence
 
 Console.WriteLine(""Exercice 2 : a completer"");",,,,,,,,0e76e80604393590,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,2baa5a9a,markdown,fr,90847190b325305e,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,2baa5a9a,markdown,fr,c5ae672c3732bc68,"***
 
 ## Resume
 
@@ -19323,10 +19373,10 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb,2baa5a9a,markdow
 |-----------|------------|----------|
 | `owl:Class` | Declarer une classe | `uni:Person rdf:type owl:Class` |
 | `owl:ObjectProperty` | Propriete entre individus | `uni:teaches rdf:type owl:ObjectProperty` |
-| `owl:DatatypeProperty` | Propriete individu-valeur | `uni:name rdf:type owl:DatatypeProperty` |
+| `owl:DatatypeProperty` | Propriete individu-valeur | `uni:fullName rdf:type owl:DatatypeProperty` |
 | `owl:equivalentClass` | Synonymie de classes | `Voiture owl:equivalentClass Automobile` |
 | `owl:disjointWith` | Classes exclusives | `Professor owl:disjointWith Student` |
-| `owl:FunctionalProperty` | Au plus une valeur | `uni:name` (un seul nom par personne) |
+| `owl:FunctionalProperty` | Au plus une valeur | exemple generique : `ex:hasFather rdf:type owl:FunctionalProperty` — l'ontologie `university.owl` chargee ici n'en definit **aucune** |
 | `owl:inverseOf` | Propriete miroir | `taughtBy owl:inverseOf teaches` |
 
 ### Ce que nous avons appris
@@ -19378,8 +19428,9 @@ Dans le notebook suivant (**SW-8-PythonRDF**), nous decouvrirons :
 
 ***
 
-**Navigation** :  [<< 6-RDFS](SW-06-RDFS-CSharp.ipynb) | [Index](README.md) | [8-SHACL C# >>](SW-08-SHACL-CSharp.ipynb)",,,,,,,,90847190b325305e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-001,markdown,fr,3cd921913bc35069,"# SW-08-SHACL-CSharp
+**Navigation** :  [<< 6-RDFS](SW-06-RDFS-CSharp.ipynb) | [Index](README.md) | [8-SHACL C# >>](SW-08-SHACL-CSharp.ipynb)
+",,,,,,,,c5ae672c3732bc68,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-001,markdown,fr,8a47c5f18c14c1e5,"# SW-08-SHACL-CSharp
 
 **Navigation** : [<< 7-OWL](SW-07-OWL-CSharp.ipynb) | [Index](README.md) | [SW-8-Python >>](SW-08-SHACL-Python.ipynb)
 
@@ -19412,7 +19463,7 @@ A la fin de ce notebook, vous saurez :
 - Familiarite avec dotNetRDF (cf [SW-02-RDFBasics-CSharp](SW-02-RDFBasics-CSharp.ipynb))
 
 ### Duree estimee : 45 minutes
-",,,,,,,,3cd921913bc35069,,,,,,,,,,,,,,,
+",,,,,,,,8a47c5f18c14c1e5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-002,markdown,fr,68a2a4590ac00777,"***
 
 ## 0. Chargement de dotNetRDF
@@ -19698,9 +19749,9 @@ foreach (var r in report.Results.OrderBy(x => x.FocusNode.ToString()))
     Console.WriteLine($""{focus,-12} {path,-10} {component,-28} {severity,-12}"");
 }
 ",,,,,,,,9697d5819c764945,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-017,markdown,fr,f9a5f3e9209295f5,"### Interpretation : Les 5 erreurs detectees
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-017,markdown,fr,c97fb965650be769,"### Interpretation : Les 5 erreurs detectees
 
-Le fichier `person-data.ttl` contenait 5 erreurs volontaires, toutes detectees par le moteur SHACL de dotNetRDF. **Ces 5 violations correspondent exactement** aux 5 erreurs rapportedees par pySHACL dans le notebook Python ([SW-08-SHACL-Python](SW-08-SHACL-Python.ipynb), section 4) -- les deux moteurs s'accordent sur le même diagnostic.
+Le fichier `person-data.ttl` contenait 5 erreurs volontaires, toutes detectees par le moteur SHACL de dotNetRDF. **Ces 5 violations correspondent exactement** aux 5 erreurs rapportées par pySHACL dans le notebook Python ([SW-08-SHACL-Python](SW-08-SHACL-Python.ipynb), section 4) -- les deux moteurs s'accordent sur le même diagnostic.
 
 | Personne | Propriete | Composant de contrainte | Explication |
 |----------|-----------|-------------------------|-------------|
@@ -19717,7 +19768,7 @@ Le fichier `person-data.ttl` contenait 5 erreurs volontaires, toutes detectees p
 2. Bob n'a pas d'email mais c'est conforme : `foaf:mbox` n'a pas de `minCount`.
 3. Chaque violation est independante : un même noeud pourrait cumuler plusieurs violations.
 4. Les noms de composants (`MinCountConstraintComponent`, `MinInclusiveConstraintComponent`, etc.) sont les identifiants standardises du vocabulaire SHACL du W3C -- les mêmes que pySHACL.
-",,,,,,,,f9a5f3e9209295f5,,,,,,,,,,,,,,,
+",,,,,,,,c97fb965650be769,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-018,markdown,fr,f26367a97242bb9a,"***
 
 ## 5. Ecrire des shapes custom
@@ -19830,7 +19881,7 @@ foreach (var r in articleReport.Results.OrderBy(x => x.FocusNode.ToString()))
     Console.WriteLine($""  {focus} / {path} -> {component} : {r.Message}"");
 }
 ",,,,,,,,ae25a2e26172e09b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-020,markdown,fr,35689e508918fffe,"### Interpretation : Validation de la forme personnalisee
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-020,markdown,fr,ab1fd940a00527d8,"### Interpretation : Validation de la forme personnalisee
 
 | Article | Violations | Detail |
 |---------|-----------|--------|
@@ -19839,8 +19890,8 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-020,markd
 | **article3** | 2 | Pas de titre (minCount=1) + pas d'auteur (minCount=1) |
 | **article4** | 1 | wordCount=10 < minInclusive=100 |
 
-> **Bonne pratique** : ajoutz toujours des messages explicites (`sh:message`) pour faciliter le diagnostic. Les messages en francais sont plus utiles que les messages generiques du moteur.
-",,,,,,,,35689e508918fffe,,,,,,,,,,,,,,,
+> **Bonne pratique** : ajoutez toujours des messages explicites (`sh:message`) pour faciliter le diagnostic. Les messages en francais sont plus utiles que les messages generiques du moteur.
+",,,,,,,,ab1fd940a00527d8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-021,markdown,fr,233e29286d3736c9,"***
 
 ### Exercice 1 : MovieShape -- valider un dataset de films
@@ -19946,7 +19997,7 @@ foreach (var r in severityReport.Results)
     Console.WriteLine($""  [{sev,-10}] {r.Message}"");
 }
 ",,,,,,,,a1cc89c2778aaf30,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-025,markdown,fr,785a2eafeac3b0b3,"### Interpretation : Impact de la severite
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-025,markdown,fr,da24e91857179e29,"### Interpretation : Impact de la severite
 
 Bien que les 3 contraintes soient violees, le booléen `report.Conforms` ne depend que de `sh:Violation` :
 
@@ -19956,8 +20007,8 @@ Bien que les 3 contraintes soient violees, le booléen `report.Conforms` ne depe
 | `sh:Warning` | Pas d'email | Pas d'impact (avertissement seulement, mais present dans Results) |
 | `sh:Info` | Pas de telephone | Pas d'impact (information seulement, mais present dans Results) |
 
-> **Bonne pratique** : utilisz `sh:Warning` pour les proprietes recommandees (best practices) et `sh:Info` pour les suggestions. Reservez `sh:Violation` aux exigences absolues.
-",,,,,,,,785a2eafeac3b0b3,,,,,,,,,,,,,,,
+> **Bonne pratique** : utilisez `sh:Warning` pour les proprietes recommandees (best practices) et `sh:Info` pour les suggestions. Reservez `sh:Violation` aux exigences absolues.
+",,,,,,,,da24e91857179e29,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-026,markdown,fr,52b5067384271720,"***
 
 ### Exercice 2 : Une forme avec severites mixtes
@@ -20052,7 +20103,7 @@ foreach (var r in contactReport.Results)
     Console.WriteLine($""  {focus} -> {component} : {r.Message}"");
 }
 ",,,,,,,,7efb86f295a1add0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-030,markdown,fr,bf7c3b25bc69408b,"### Interpretation : Contraintes logiques
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-030,markdown,fr,e83a6279162a67ce,"### Interpretation : Contraintes logiques
 
 | Contact | Email | Telephone | Résultat | Raison |
 |---------|-------|-----------|----------|--------|
@@ -20061,9 +20112,9 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-030,markd
 | contact3 | Non | Non | **Violation OrConstraint** | `sh:or` non satisfait (aucune branche valide) |
 | contact4 | Oui | Oui | Conforme | `sh:or` satisfait par les deux (OU inclusif) |
 
-> **Point cle** : `sh:or` est un OU **inclusif** : avoir les deux options satisfaites est aussi valide. Pour exiger exactement une option, utilisz `sh:xone` (OU exclusif).
-",,,,,,,,bf7c3b25bc69408b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-031,markdown,fr,10cfd817338d42ca,"***
+> **Point cle** : `sh:or` est un OU **inclusif** : avoir les deux options satisfaites est aussi valide. Pour exiger exactement une option, utilisez `sh:xone` (OU exclusif).
+",,,,,,,,e83a6279162a67ce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-031,markdown,fr,ce45d477a5102649,"***
 
 ### Exercice 3 : Contrainte `sh:not` et enumeration `sh:in`
 
@@ -20076,12 +20127,12 @@ Construisez la forme et testez-la sur 3 comptes (1 valide, 2 invalides).
 
 **Indices** :
 - `sh:in (""active"" ""frozen"" ""closed"")` pour l'enumeration.
-- `sh:not` prend une sous-forme ; combinez avec `sh:and` pour exprimer ""ferme ET balance>0"" a interdire :
+- `sh:not` prend une sous-forme ; combinez avec `sh:and` pour exprimer ""ferme ET balance>0"" à interdire :
   ```
   sh:not [ sh:and ( [ sh:path ex:status ; sh:hasValue ""closed"" ] [ sh:path ex:balance ; sh:minExclusive 0 ] ) ]
   ```
-- Si votre version de SHACL/dotNetRDF rend `sh:not`+`sh:and` delicate, contentz-vous du `sh:in` seul (la structure de base). L'objectif est d'exprimer une contrainte negative.
-",,,,,,,,10cfd817338d42ca,,,,,,,,,,,,,,,
+- Si votre version de SHACL/dotNetRDF rend `sh:not`+`sh:and` delicate, contentez-vous du `sh:in` seul (la structure de base). L'objectif est d'exprimer une contrainte negative.
+",,,,,,,,ce45d477a5102649,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-032,code,fr,8a2e89160a2f81c7,"// Exercice 3 : AccountShape avec sh:in et sh:not
 // TODO etudiant : definissez AccountShape
 string accountShapesTtl = @""
@@ -20219,7 +20270,7 @@ La construction par `Assert`/`CreateBlankNode` est l'equivalent C# du `graph.add
 
 > **Quand utiliser Turtle inline vs API** : Turtle inline pour des formes fixes (lisibilite maximale, proche de la spec SHACL) ; API programmatique pour des formes generees par le code.
 ",,,,,,,,0d94942ba87498bd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-036,markdown,fr,7154cc2db05f3217,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-036,markdown,fr,66e86dd6287e0c50,"***
 
 ## 9. Comparaison : dotNetRDF SHACL vs pySHACL
 
@@ -20240,8 +20291,8 @@ Ce notebook et son jumeau [SW-08-SHACL-Python](SW-08-SHACL-Python.ipynb) appliqu
 **Concordance verifiee firsthand (G.1)** : sur `person-shape.ttl` + `person-data.ttl`, les deux moteurs rapportent **exactement les 5 mêmes violations** (charlie/MinCount, diana/MinInclusive, eve/Pattern, frank/MinLength, grace/Class), avec les mêmes composants de contrainte standardises. C'est la garantie que SHACL est un **vrai standard** : deux implementations independantes convergent.
 
 > **Différence notable** : pySHACL materialise l'inference RDFS option (`inference='rdfs'`) lors de la validation ; dotNetRDF delegue l'inference au `VDS.RDF.Inferencing` (a effectuer avant validation si besoin). Pour les formes cibles par `sh:targetClass`, il faut s'assurer que les types explicites (`a foaf:Person`) sont presents dans le graphe de données.
-",,,,,,,,7154cc2db05f3217,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-037,markdown,fr,2cb0bf8b64b1de20,"***
+",,,,,,,,66e86dd6287e0c50,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-CSharp.ipynb,sw8c-037,markdown,fr,7b91f6df8e446534,"***
 
 ## Resume
 
@@ -20306,7 +20357,7 @@ Ce notebook a permis d'explorer la validation SHACL en C# avec le **vrai moteur 
 ***
 
 **Navigation** : [<< 7-OWL](SW-07-OWL-CSharp.ipynb) | [Index](README.md) | [SW-8-Python >>](SW-08-SHACL-Python.ipynb)
-",,,,,,,,2cb0bf8b64b1de20,,,,,,,,,,,,,,,
+",,,,,,,,7b91f6df8e446534,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-08-SHACL-Python.ipynb,header-nav,markdown,fr,fecf7fb5e4caf0b6,"# SW-08-SHACL-Python
 **Navigation** : [<< 7-OWL](SW-07-OWL-Python.ipynb) | [Index](README.md) | [9-JSONLD >>](SW-09-JSONLD-Python.ipynb)
 
@@ -21651,11 +21702,11 @@ Ce notebook a couvert la validation de graphes RDF avec SHACL : la lecture d'un 
 ***
 
 **Navigation** : [<< 7-OWL](SW-07-OWL-Python.ipynb) | [Index](README.md) | [9-JSONLD >>](SW-09-JSONLD-Python.ipynb)",,,,,,,,8f2c03952b7e45e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,cb0fea89-87c9-42df-880c-4143c0b3e9b2,markdown,fr,bfbb644a929fc215,"# SW-09-JSONLD-CSharp -- JSON-LD avec dotNetRDF (twin C#)
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,cb0fea89-87c9-42df-880c-4143c0b3e9b2,markdown,fr,64b9925d5d05bc26,"# SW-09-JSONLD-CSharp -- JSON-LD avec dotNetRDF (twin C#)
 
 **Navigation** : [Index](./README.md) | [8-SHACL](SW-08-SHACL-CSharp.ipynb) | [9-Python](SW-09-JSONLD-Python.ipynb) | [10-RDFStar](SW-10-RDFStar-CSharp.ipynb)
 
-Notebook C# / .NET Interactive sur **JSON-LD** avec dotNetRDF 3.4.0 : `@context`, parsing, serialisation, Schema.org, `@graph`, round-trip.
+Notebook C# / .NET Interactive sur **JSON-LD** avec dotNetRDF 3.4.1 : `@context`, parsing, serialisation, Schema.org, `@graph`, round-trip.
 
 **Objectifs pedagogiques** :
 1. **Comprendre `@context`** : le dictionnaire de traduction entre termes JSON courts et IRIs RDF.
@@ -21668,21 +21719,21 @@ Notebook C# / .NET Interactive sur **JSON-LD** avec dotNetRDF 3.4.0 : `@context`
 **Pourquoi un twin C# ?** Ce notebook est le jumeau .NET de `SW-09-JSONLD-Python.ipynb` : il invoque le **vrai moteur dotNetRDF** (`VDS.RDF.Parsing.JsonLdParser`, `VDS.RDF.Writing.JsonLdWriter`) — pas de workaround, pas de reimplementation jouet — sur le même standard W3C JSON-LD 1.1 (Prong B, EPIC #4956). Subtilite API qui structure tout le notebook : JSON-LD etant un format de **dataset**, le parser/writer operent sur un `TripleStore`, pas un `Graph` unique (cf. helpers).
 
 **Prerequis** : SW-3 Graph Operations, SW-4 SPARQL. Pas de SPARQL dans ce notebook. .NET 9.0+ (kernel `csharp`), dotNetRDF 3.x restaure via la directive nuget.
-",,,,,,,,bfbb644a929fc215,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,1c2bacfd-ef33-4b3b-8734-1adfc6c1f289,markdown,fr,ddb07ad28e7436a6,"## Setup -- chargement de dotNetRDF
+",,,,,,,,64b9925d5d05bc26,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,1c2bacfd-ef33-4b3b-8734-1adfc6c1f289,markdown,fr,18ef6667fa493908,"## Setup -- chargement de dotNetRDF
 
-dotNetRDF 3.4.0 inclut `JsonLdParser` (interface `IStoreReader`) et `JsonLdWriter` (interface `IStoreWriter`). Ce sont les deux classes principales pour JSON-LD. La version est epinglee dans la cellule : la serie 3.5.x casse `JsonLdWriter.Save` sous .NET Interactive (voir le commentaire de la cellule).
+dotNetRDF 3.4.1 inclut `JsonLdParser` (interface `IStoreReader`) et `JsonLdWriter` (interface `IStoreWriter`). Ce sont les deux classes principales pour JSON-LD. La version est epinglee dans la cellule : la serie 3.5.x casse `JsonLdWriter.Save` sous .NET Interactive (voir le commentaire de la cellule).
 
 **Pourquoi dotNetRDF supporte JSON-LD** :
 - **Meta-package** : 3.x inclut tous les parsers/writers (Turtle, NTriples, RDF/XML, JSON-LD).
 - **Standard W3C** : conforme a JSON-LD 1.1 (2020) avec `@context`, `@graph`, `@id`, `@type`, `@value`.
 - **Performant** : utilise Newtonsoft.Json pour le parsing JSON rapide.
-",,,,,,,,ddb07ad28e7436a6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,31076692-b982-48cc-a2ae-9858ac01b4ba,code,fr,8a19000538feee3c,"// dotNetRDF 3.x : meta-package incluant JsonLdParser / JsonLdWriter
-#r ""nuget: dotNetRDF, 3.4.0""
-// Pin 3.4.0 (et non 3.5.2) : la serie 3.5.x casse JsonLdWriter.Save sous .NET Interactive
+",,,,,,,,18ef6667fa493908,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,31076692-b982-48cc-a2ae-9858ac01b4ba,code,fr,a3f0383878a5c958,"// dotNetRDF 3.x : meta-package incluant JsonLdParser / JsonLdWriter
+#r ""nuget: dotNetRDF, 3.4.1""
+// Pin 3.4.1 (et non 3.5.2) : la serie 3.5.x casse JsonLdWriter.Save sous .NET Interactive
 // face au Newtonsoft du hote (MissingMethodException JToken.ToString(Formatting), mesure 2026-09-19) ;
-// 3.4.0 execute de bout en bout et n emis plus aucun CS1701.
+// 3.4.1 execute de bout en bout (les CS1701 persistent : voir la note T0 apres).
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21696,8 +21747,8 @@ using VDS.RDF.Writing;
 using StringWriter = System.IO.StringWriter;
 static void Show(object o) { try { display(o); } catch { Console.WriteLine(o); } }
 static void Show(string label, object o) => Show($""{label}: {o}"");
-Show(""dotNetRDF"", ""3.4.0 charge — JsonLdParser (IStoreReader) / JsonLdWriter (IStoreWriter) disponibles."");
-",,,,,,,,8a19000538feee3c,,,,,,,,,,,,,,,
+Show(""dotNetRDF"", ""3.4.1 charge — JsonLdParser (IStoreReader) / JsonLdWriter (IStoreWriter) disponibles."");
+",,,,,,,,a3f0383878a5c958,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,e1de39cc-ed72-40e4-97c9-54fa3b8ea25f,markdown,fr,4de530a2e612fec5,"## Helpers de conversion RDF <-> JSON-LD
 
 Le notebook definit trois fonctions utilitaires pour les conversions courantes :
@@ -22065,11 +22116,11 @@ Console.WriteLine(""Exercice a completer : IsValidJsonLd"");
 Show(""JSON-LD valide (cas correct)"", IsValidJsonLd(""{\""@id\"":\""http://x.org/a\"",\""@type\"":\""http://x.org/T\"",\""http://x.org/name\"":\""foo\""}""));
 Show(""JSON-LD valide (cas casse)"", IsValidJsonLd(""{ce n'est pas du json}""));
 ",,,,,,,,f181d7cf6a7ee559,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,3fb0f730-1209-4f00-a4db-de4e9e81e84a,markdown,fr,ac7ec906345fdfc8,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,3fb0f730-1209-4f00-a4db-de4e9e81e84a,markdown,fr,aefee7ea2387a5e7,"***
 
-*Twin C# du notebook Python `SW-09-JSONLD-Python.ipynb`. Marathon parite .NET <-> Python (#4956, Prong B). dotNetRDF 3.4.0 (vrai moteur W3C JSON-LD 1.1).*
-",,,,,,,,ac7ec906345fdfc8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb,header-nav,markdown,fr,d688c3ed3c71eb65,"# SW-09-JSONLD-Python
+*Twin C# du notebook Python `SW-09-JSONLD-Python.ipynb`. Marathon parite .NET <-> Python (#4956, Prong B). dotNetRDF 3.4.1 (vrai moteur W3C JSON-LD 1.1).*
+",,,,,,,,aefee7ea2387a5e7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb,header-nav,markdown,fr,98abc54dba8dbff9,"# SW-09-JSONLD-Python
 
 **Navigation** : [<< 8-Python-SHACL](SW-08-SHACL-Python.ipynb) | [Index](README.md) | [10-Python-RDFStar >>](SW-10-RDFStar-Python.ipynb)
 
@@ -22089,7 +22140,7 @@ A la fin de ce notebook, vous saurez :
 - Python 3.10+
 - Notebook [SW-08-SHACL-Python](SW-08-SHACL-Python.ipynb) (bases rdflib, SPARQL et SHACL)
 
-***",,,,,,,,d688c3ed3c71eb65,,,,,,,,,,,,,,,
+***",,,,,,,,98abc54dba8dbff9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb,install-section,markdown,fr,c7402abcec729010,## Installation des dependances,,,,,,,,c7402abcec729010,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb,install-pip,code,fr,948dfd69d63b0c63,"# Dependances pre-provisionnees (rdflib) : voir SemanticWeb/requirements.txt ; imports dans les cellules suivantes.
 ",,,,,,,,948dfd69d63b0c63,,,,,,,,,,,,,,,
@@ -23711,13 +23762,13 @@ Ce notebook a couvert les aspects essentiels de JSON-LD et Schema.org.
 - [Schema.org](https://schema.org/) - documentation des types et proprietes
 - [Google Structured Data Testing Tool](https://search.google.com/test/rich-results)
 - [JSON-LD Best Practices (W3C)](https://www.w3.org/TR/json-ld11-api/)",,,,,,,,fd2dd0b157d83076,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb,footer-nav,markdown,fr,37f60962b008a38c,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb,footer-nav,markdown,fr,ca2a5810c399319a,"***
 
 Le notebook suivant explore RDF 1.2 (RDF-Star), une extension majeure de RDF permettant de faire des assertions sur des assertions.
 
 ***
 
-**Navigation** : [<< 8-Python-SHACL](SW-08-SHACL-Python.ipynb) | [Index](README.md) | [10-Python-RDFStar >>](SW-10-RDFStar-Python.ipynb)",,,,,,,,37f60962b008a38c,,,,,,,,,,,,,,,
+**Navigation** : [<< 8-Python-SHACL](SW-08-SHACL-Python.ipynb) | [Index](README.md) | [10-Python-RDFStar >>](SW-10-RDFStar-Python.ipynb)",,,,,,,,ca2a5810c399319a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-Python.ipynb,8ad12fbb,markdown,fr,1efa6d184ac0d2fd,"## Resume et perspectives
 
 Ce notebook a explore JSON-LD comme pont entre l'ecosysteme JSON du Web et le Linked Data du Web sémantique. Nous avons couvert la syntaxe fondamentale (`@context`, `@id`, `@type`, `@graph`), les trois formes de representation (compacte, etendue, aplatie), et le vocabulaire Schema.org avec ses 800+ types utilises par Google, Microsoft et Yahoo pour les données structurees. Les cas d'usage pratiques (Recipe, Event, FAQPage, BreadcrumbList) ont illustre comment JSON-LD alimente les rich snippets dans les résultats de recherche.
@@ -23810,8 +23861,8 @@ Construisons une application simple en utilisant RDF.Net.
 
 #### a) Ajout des packages nécessaires
 ",,,,,,,,b5dc5420c5dafbc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,a6fb499a,code,fr,0b62c0bb34d14207,"// Pour installer RDF.Net
-#r ""nuget: dotNetRDF""",,,,,,,,0b62c0bb34d14207,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,a6fb499a,code,fr,c24ce64741ca52ab,"// Pour installer RDF.Net (version epinglee : 3.5.2, derniere stable NuGet, arbitrage #23086)
+#r ""nuget: dotNetRDF,3.5.2""",,,,,,,,c24ce64741ca52ab,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,4f5a091e,markdown,fr,598a33ac540244e8,"#### Objectifs de cette section
 
 Dans cette première demonstration, nous allons :
@@ -23828,7 +23879,7 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,a9c4cffb,c
 
 IGraph g = new Graph();
 Console.WriteLine($""Graphe RDF crée : {g.GetHashCode()}, {g.Triples.Count} triplets"");",,,,,,,,47782953aa1dfa58,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,4b23066f,markdown,fr,9c0dcbaf24f4672a,"#### Interpretation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,4b23066f,markdown,fr,4de36a3c0b2e3604,"#### Interpretation
 
 A ce stade, nous avons créé un **graphe vide**. Un graphe RDF est une structure de données qui contiendra des triplets.
 
@@ -23838,14 +23889,12 @@ A ce stade, nous avons créé un **graphe vide**. Un graphe RDF est une structur
 | URI de base | null (par defaut) |
 | Espaces de noms | Predefinis (rdf, rdfs, xsd) |
 
-Le graphe est pret a recevoir des triplets que nous allons ajouter dans la cellule suivante.",,,,,,,,9c0dcbaf24f4672a,,,,,,,,,,,,,,,
+Le graphe est pret a recevoir des triplets que nous allons ajouter dans la prochaine cellule de code.",,,,,,,,4de36a3c0b2e3604,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,74be3266,markdown,fr,d54ada65d481480f,"Nous utilisons ici la classe `Graph` qui est l'implémentation la plus couramment utilisée de l'interface `IGraph`.
 
 Ensuite, nous voulons créer des nœuds et affirmer des triplets dans le graphe, comme ceci :",,,,,,,,d54ada65d481480f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,cd5622e7,code,fr,03508dbdeef09085,"using VDS.RDF;
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,cd5622e7,code,fr,1a5c0165930fa930,"using VDS.RDF;
 using System;
-
-IGraph g = new Graph();
 
 IUriNode dotNetRDF = g.CreateUriNode(UriFactory.Create(""http://www.dotnetrdf.org""));
 IUriNode says = g.CreateUriNode(UriFactory.Create(""http://example.org/says""));
@@ -23856,7 +23905,7 @@ g.Assert(new Triple(dotNetRDF, says, helloWorld));
 g.Assert(new Triple(dotNetRDF, says, bonjourMonde));
 Console.WriteLine($""Noeuds créés : dotNetRDF={dotNetRDF}, says={says}"");
 Console.WriteLine($""Littéraux : helloWorld={helloWorld}, bonjourMonde={bonjourMonde}"");
-Console.WriteLine($""Triplets ajoutés au graphe : {g.Triples.Count}"");",,,,,,,,03508dbdeef09085,,,,,,,,,,,,,,,
+Console.WriteLine($""Triplets ajoutés au graphe : {g.Triples.Count}"");",,,,,,,,1a5c0165930fa930,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,dc380130,markdown,fr,e2b218d1f64973bd,"#### Explication des types de noeuds
 
 Le code précédent illustre les **trois types de noeuds** RDF :
@@ -24321,7 +24370,7 @@ Voici les classes de parser standard contenues dans la bibliothèque :
 
 ***
 ",,,,,,,,1836f0122f9b2082,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,a55f2b49,markdown,fr,985de3cf6a66ed8e,"#### Handlers disponibles dans dotNetRDF
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,a55f2b49,markdown,fr,6737774a82fb4dd1,"#### Handlers disponibles dans dotNetRDF
 
 | Handler | Fonction | Usage |
 |---------|----------|-------|
@@ -24335,7 +24384,8 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,a55f2b49,m
 ```csharp
 // Lire Turtle -> Filtrer -> Ecrire NTriples
 var writer = new NTriplesWriter();
-var writeHandler = new WriteHandler(writer, output);
+StringWriter sw = new StringWriter();
+var writeHandler = new WriteHandler(writer, sw);
 var filterHandler = new FilterHandler(writeHandler, triple =>
     triple.Predicate.ToString().Contains(""name"")
 );
@@ -24343,7 +24393,7 @@ var ttlParser = new TurtleParser();
 ttlParser.Load(filterHandler, ""input.ttl"");
 ```
 
-Ce pipeline lit un fichier Turtle, ne conserve que les triplets avec predicat ""name"", et les ecrit en NTriples.",,,,,,,,985de3cf6a66ed8e,,,,,,,,,,,,,,,
+Ce pipeline lit un fichier Turtle, ne conserve que les triplets avec predicat ""name"", et les ecrit en NTriples.",,,,,,,,6737774a82fb4dd1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,743ca08a,markdown,fr,940e01c70ad7b1d8,"### 3. Écrire du RDF avec .NetRDF
 
 Une fois que vous avez créé un graphe RDF ou que vous l'avez récupéré à partir d'un fichier/URI, vous aurez souvent besoin de l'écrire dans un autre fichier/flux au format RDF de votre choix. Toutes les classes liées à cela sont contenues dans l'espace de noms `VDS.RDF.Writing`. Ainsi, lorsque vous souhaitez écrire du RDF, vous aurez besoin des déclarations suivantes au début de votre fichier de code :
@@ -24557,7 +24607,7 @@ Voici les classes Writer standard contenues dans la bibliothèque :
 De plus, il existe une classe d'aide, `SingleGraphWriter`, qui implémente l'interface `IRdfWriter` et permet d'écrire un graphe à l'aide d'un writer qui implémente l'interface `IStoreWriter`. Cela permet d'écrire un graphe en utilisant les formats de sérialisation décrits dans la section ""Travailler avec les Triple Stores"".
 
 ***",,,,,,,,5b8f4c82f97d36f2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,87d31d0e,markdown,fr,65f72b7eb616678c,"### Formateurs : Alternative aux Writers
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,87d31d0e,markdown,fr,65dc0b49098ab313,"### Formateurs : Alternative aux Writers
 
 Les **formateurs** sont des classes utilitaires pour **serialiser des éléments individuels** :
 
@@ -24572,7 +24622,8 @@ Les **formateurs** sont des classes utilitaires pour **serialiser des éléments
 ```csharp
 // Writer : serialise UN GRAPHE ENTIER
 RdfXmlWriter writer = new RdfXmlWriter();
-writer.Save(g, ""output.rdf"");  // Tout le graphe
+StringWriter sw = new StringWriter();
+writer.Save(g, sw);  // Tout le graphe
 
 // Formateur : serialise DES ÉLÉMENTS INDIVIDUELS
 NTriplesFormatter formatter = new NTriplesFormatter();
@@ -24586,7 +24637,7 @@ foreach (Triple t in g.Triples) {
 - Generation de logs
 - Affichage console selectif
 - Construction manuelle de fichiers
-- Integration dans templates",,,,,,,,65f72b7eb616678c,,,,,,,,,,,,,,,
+- Integration dans templates",,,,,,,,65dc0b49098ab313,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,62cbf72e,markdown,fr,d2c3eec213009ae7,"### 4. Travailler avec les graphes
 
 Comme présenté précédemment dans les concepts de base, le graphe est la représentation de base d'un ensemble de triples utilisés dans la bibliothèque. Toutes les classes de graphes sont basées sur l'interface `IGraph` et descendent principalement de la classe de base abstraite `BaseGraph` - la classe `Graph` de base étant la plus couramment utilisée.
@@ -25851,7 +25902,7 @@ Les points d'accès SPARQL à distance peuvent être interrogés à l'aide de la
 Un point d'accès à distance est une combinaison d'un URI de point d'accès et d'un URI de graphe par défaut facultatif. `SparqlRemoteEndpoint` propose des méthodes spécifiques fortement typées pour réaliser des requêtes, ce qui signifie que vous n'avez pas besoin de vérifier le type et de couler le résultat. La méthode `QueryWithResultGraph(String sparqlQuery)` peut être utilisée pour faire une requête `CONSTRUCT` ou `DESCRIBE`, tandis que la méthode `QueryWithResultSet(String sparqlQuery)` peut être utilisée pour faire des requêtes `SELECT` et `ASK`. Vous pouvez également utiliser la méthode `QueryRaw(String sparqlQuery, out String ctype)` si vous souhaitez obtenir le flux de réponse brut du point d'accès et le traiter vous-même.
 
 Un point d'accès à distance peut être utilisé comme suit :",,,,,,,,6a2567e64376686a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,c1956e1e,code,fr,ae8222abbb91d804,"using System;
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,c1956e1e,code,fr,5fcf13499444efa7,"using System;
 using VDS.RDF;
 using VDS.RDF.Query;
 
@@ -25926,7 +25977,11 @@ public static void DisplayGraphTriples(IGraph graph, int resultLimit = 10)
 }
 
 
-SparqlRemoteEndpoint endpoint = new SparqlRemoteEndpoint(new Uri(""http://dbpedia.org/sparql""), ""http://dbpedia.org"");
+// Entete Accept resserree sur le format SPARQL results : la liste large par defaut de
+// dotNetRDF (sans q-values) fait negocier a Virtuoso un serialiseur qui sert des litteraux
+// illegaux (xml:lang + datatype ensemble), refuses par le parseur -- mesure 2026-11-03, #23086
+SparqlRemoteEndpoint endpoint = new SparqlRemoteEndpoint(new Uri(""http://dbpedia.org/sparql""));
+endpoint.ResultsAcceptHeader = ""application/sparql-results+xml"";
 // Exemple de requête SELECT
 string selectQuery = ""SELECT DISTINCT ?Concept WHERE {[] a ?Concept}"";
 Console.WriteLine(""Résultats de la requête SELECT :"");
@@ -25950,7 +26005,7 @@ foreach (var query in interestingQueries)
     ExecuteAndDisplaySparqlQuery(endpoint, query);
 }
 
-",,,,,,,,ae8222abbb91d804,,,,,,,,,,,,,,,
+",,,,,,,,5fcf13499444efa7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,f271c7f1,markdown,fr,50876bed1c25ab45,"### Interrogation de DBpedia
 
 **DBpedia** est une base de connaissances extraite de Wikipedia, accessible via SPARQL.
@@ -26488,12 +26543,12 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,e13e40d8,m
 Trinity RDF offre une abstraction orientée objet pour les données RDF. Avec Trinity RDF, les développeurs peuvent travailler avec des données RDF comme s'ils travaillaient avec des objets .NET normaux. Trinity RDF automatise également certaines tâches courantes, comme la création de triples RDF et la sérialisation des données RDF.
 
 #### 2. Exemple d'application de Trinity RDF",,,,,,,,90102205969b3765,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,5f463e52,code,fr,76c1b02b75ed075a,"// #i ""nuget: https://api.nuget.org/v3/index.json""
-#r ""nuget: dotNetRDF""
-#r ""nuget: OpenLink.Data.Virtuoso""
-#r ""nuget: Semiodesk.Trinity""
-#r ""nuget: Semiodesk.Trinity.Virtuoso""
-",,,,,,,,76c1b02b75ed075a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,5f463e52,code,fr,7d7db335a59a121f,"// #i ""nuget: https://api.nuget.org/v3/index.json""
+// Versions epinglees le 2026-11-03 (dotNetRDF : derniere stable NuGet ; la casse DBpedia du jour est amont, identique sur 3.4.1/3.5.1/3.5.2 — arbitrage user #23086)
+#r ""nuget: dotNetRDF,3.5.2""
+#r ""nuget: OpenLink.Data.Virtuoso,7.20.3214.1""
+#r ""nuget: Semiodesk.Trinity,1.0.3.77""
+#r ""nuget: Semiodesk.Trinity.Virtuoso,1.0.3.77""",,,,,,,,7d7db335a59a121f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/RDF.Net-Legacy/RDF.Net.ipynb,b1749a4d,markdown,fr,bbeb1bcf3ccba414,"### Trinity RDF : Abstraction de haut niveau
 
 **Trinity RDF** est un ORM (Object-Relational Mapping) pour RDF :
@@ -27143,7 +27198,7 @@ var title = g.CreateUriNode(""ex:title"");
 ```
 
 ",,,,,,,,c69eb05ff0871976,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,sw11-arc-annexe-b,markdown,fr,8ee4a932bf76ba3e,"## Annexe B -- Patterns SPARQL et semantique d'evaluation
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,sw11-arc-annexe-b,markdown,fr,8f532bb0e9a628b4,"## Annexe B -- Patterns SPARQL et semantique d'evaluation
 
 Approfondissement de la section 3 : les patterns des deux requetes principales (avec leurs sorties verbatim), les cas d'usage et la performance de la requete par realisateur, puis les agregats disponibles et l'ordre d'evaluation du moteur.
 
@@ -27176,6 +27231,10 @@ Nombre de films par genre :
   Drama : 6
   SciFi : 3
   Action : 2
+  Crime : 2
+  War : 1
+  Western : 1
+  Thriller : 1
 ```
 
 La requete utilise `COUNT` et `GROUP BY` pour compter les films par genre.
@@ -27215,7 +27274,7 @@ ORDER BY DESC(?count)
 3. Agregats (calcul).
 4. HAVING (filtre post-agregat, optionnel).
 5. ORDER BY (tri final).
-6. SELECT (projection).",,,,,,,,8ee4a932bf76ba3e,,,,,,,,,,,,,,,
+6. SELECT (projection).",,,,,,,,8f532bb0e9a628b4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-CSharp-KnowledgeGraphs.ipynb,sw11-arc-annexe-c,markdown,fr,74c6d91f551fcbfe,"## Annexe C -- Implémentations C# des parcours
 
 Approfondissement de la section 4 : les implémentations complètes de la liste d'adjacence et du BFS, l'extrait de la visualisation ASCII, l'analyse de complexité et les familles d'algorithmes voisins.
@@ -28018,13 +28077,13 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,interp-foot
 La sortie confirme les trois proprietes que le pipeline devait transporter d'un domaine a l'autre. Le KG football compte 32 triplets pour 11 entites (ratio ~3, proche du cinema) : la structure RDF produit la meme densite quelle que soit la matiere premiere. Les trois chemins multi-hop affiches sont chacun une chaine coach -> club -> joueur -> pays, soit **quatre sauts d'arete** relies par un seul parcours — la ou un RAG vectoriel devrait esperer que les chunks ""Guardiola"", ""Manchester City"" et ""Haaland"" aient des embeddings proches, ce qu'aucune similarite semantique ne garantit.
 
 Enfin, la question de synthese (""De quels pays viennent les joueurs du club entraine par Guardiola ?"") repond ""Belgique, Norvege"" — une reponse qui n'existe **dans aucune phrase du texte source**. Elle est produite par la traversee du graphe : Guardiola -> Manchester City -> Haaland / De Bruyne -> Norvege / Belgique. C'est la signature du raisonnement multi-hop reussi : la reponse est **construite**, pas retrouvee.",,,,,,,,b87d5a6330dcaef8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,annexes-sw12-18703,markdown,fr,79df123b0456e727,"***
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,annexes-sw12-18703,markdown,fr,a6579b1622a99500,"***
 
 ## Annexes — approfondissements optionnels
 
-Les annexes rassemblent ce qui n'aide pas la premiere lecture : la genese du protocole de mesure et l'historique des corrections du juge. Le fil principal s'arrete a la section precedente ; ces pages se lisent en approfondissement, ou pas du tout.
-",,,,,,,,79df123b0456e727,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,annexe-a-sw12-18703,markdown,fr,74c1d7859efb8a7b,"### Annexe A — Protocole de mesure et genèse du verdict
+Les annexes rassemblent ce qui n'aide pas la premiere lecture : la genese du protocole de mesure, l'historique des corrections du juge et les perspectives au-dela du resume. Le fil principal s'arrete a la section precedente ; ces pages se lisent en approfondissement, ou pas du tout.
+",,,,,,,,a6579b1622a99500,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,annexe-a-sw12-18703,markdown,fr,c2210936fcae133a,"### Annexe A — Protocole de mesure et genèse du verdict
 
 La section 6 presente le protocole retenu. Cette annexe documente ce qu'il remplace, pourquoi il a change, et les corrections successives du juge.
 
@@ -28042,34 +28101,7 @@ La section 6 presente le protocole retenu. Cette annexe documente ce qu'il rempl
 
 * **Q6 avec distance BFS reelle = 4** : la question remplacee pour illustrer le hors-portee est McConaughey -> Interstellar -> Nolan -> Inception -> Warner Bros, BFS reel = 4 (le chemin via `directed` de Nolan a Inception ajoute un hop par rapport a la version precedente qui l'evaluait a 3). Q6 ne peut pas etre resolue a h=3, et reste donc dans la portee ""HORS h<=2"" meme au balayage max. **L'illustration pedagogique du hors-portee tient dans les outputs**, ce qui est l'objet du REPAIR.
 
-* **`max_hops` comme variable** : le balayage explicite h in {1, 2, 3} rend visible le role du parametre -- le verdict par classe depend du `max_hops` elu, et le tableau reporte les trois colonnes.
-
-**Limites methodologiques :**
-
-- **Corpus de 10 phrases / 3 paragraphes** : les resultats sont **indicatifs**, pas generalisables. Nolan-hub est sur-represente : 3 des 10 phrases contiennent son nom. Sur un corpus equilibrer (100+ documents, chaines reelles de 3-4 sauts), l'avantage GraphRAG sur multi-saut emergerait plus nettement.
-- **Top-k = 5 pour le RAG classique** : un top-k plus grand pourrait ameliorer le rappel RAG sur certains cas. La comparaison reste stable mais n'est pas une borne superieure du RAG.
-- **Juge alias-robuste** : un token du gold_fact qui est prefixe d'un token du contexte compte comme hit. Cela peut introduire de faux positifs si les gold facts sont courts (`Dr`, `M.`). Les gold facts choisis ici (noms propres, studio, film) ne presentent pas ce risque.
-- **Pas de LLM dans la boucle** : le juge evalue la *presence du gold fact dans le contexte*, pas la qualite de la reponse generee. C'est un test du *retriever*, pas du pipeline de bout en bout.
-
-**Le protocole atteint ici ce que la version precedente ne pouvait pas :**
-
-1. n=3 par classe : un verdict est une mesure, pas un plafond.
-2. Juge alias-robuste : pas de faux GRAPHRAG_BEATS sur alias-collision.
-3. Distance BFS reelle : pas de confusion entre chaine narrative et portee reelle.
-4. `max_hops` comme variable balayee : pas de portee implicite.
-5. Q6 reellement hors portee : l'illustration tient dans les outputs.
-
-***
-
-#### A.1 — Fermeture du second fail-open du juge
-
-L'execution de la section 6 utilise le juge `alias_robust_hit` dans sa version finale. Celle-ci ferme un second fail-open, ou un token court du contexte pouvait suffire a valider un gold fact. La fermeture est verifiee par :
-
-- **6 controles Bloc A** (fermeture du fail-open OR/AND initial) : tous OK, donc la fermeture initiale est preservee.
-- **4 controles Bloc B** (fermeture du prefixe court en contexte) : tous OK, donc le second fail-open est ferme.
-
-Aucun verdict des 9 questions n'est modifie par ce second durcissement (les tokens contexte de moins de 3 caracteres ne sont jamais le bon discriminant dans le corpus reel) ; seul le filet de securite est elargi. Les controles [B1] a [B4] documentent les cas qui auraient rougi avant le correctif et servent de detection de regression pour tout futur editeur du juge.
-",,,,,,,,74c1d7859efb8a7b,,,,,,,,,,,,,,,
+* **`max_hops` comme variable** : le balayage explicite h in {1, 2, 3} rend visible le role du parametre -- le verdict par classe depend du `max_hops` elu, et le tableau reporte les trois colonnes.",,,,,,,,c2210936fcae133a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb,049d2a95,markdown,fr,dbea824fbea0b7dd,"### Lecture de l'exemple 1 : le comportement à l'échelle
 
 La sortie committée mesure, sur la Pizza Ontology complète (1944 triplets
@@ -29044,7 +29076,7 @@ une affirmation sur le monde qu'à travers les choix de modélisation de la
 source — ici, ce qui compte comme « film » dans le typage DBpedia. Même
 mécanisme que le top villes de l'exemple 1 : la requête répond fidèlement à
 la question posée, pas nécessairement à celle qu'on croyait poser.",,,,,,,,c436539681ff2d5d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,a53f7762,markdown,fr,e9a0ccd34657cbc1,"> **Note T0 (#14122) -- les 7 `#pragma warning disable CS1701` sont sans effet mesure :**
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,a53f7762,markdown,fr,af976526480226fa,"> **Note T0 (#14122) -- les 7 `#pragma warning disable CS1701` sont sans effet mesure :**
 
 Toutes les cellules de code de ce carnet portent `#pragma warning disable CS1701` : c'est le
 levier (b) teste par le volet T0 de l'EPIC #14122. **Mesure : effet nul.** Les
@@ -29055,13 +29087,13 @@ subsistent a l'octet pres dans les sorties committeees de ce carnet.
 
 Les `#pragma` sont **conserves comme trace du spike**, pas comme un remede en vigueur :
 un lecteur qui les verrait seuls les prendrait pour un correctif actif, alors que le
-resultat livre est precisement qu'ils ne corrigent rien. La phrase de la cellule de
-setup (« 3.4.0 ... n emis plus aucun CS1701 ») est dementie par cette mesure.
+resultat livre est precisement qu'ils ne corrigent rien. L'affirmation que portait la cellule de
+setup (« n emis plus aucun CS1701 ») est dementie par cette mesure.
 
 Verdict T0 : hypothese (b) **falsifiee**. Piste de suite (hors perimetre de ce carnet) :
 agir sur la resolution des references (versions d'assemblies alignees) plutot que sur les
 directives du compilateur.
-",,,,,,,,e9a0ccd34657cbc1,,,,,,,,,,,,,,,
+",,,,,,,,af976526480226fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-09-JSONLD-CSharp.ipynb,8367dbab,markdown,fr,cb9926a1f583a2f6,"### Lecture : l'expansion en action — 6 triplets
 
 Le parser a produit **6 triplets RDF** depuis le document compact. La sortie Turtle révèle le mécanisme central de JSON-LD : **l'expansion**. Le terme court `""name""` (défini dans le `@context`) a été expansé en son IRI complet `http://schema.org/name`, `""Person""` en `http://schema.org/Person` : le document lisible par un humain (clés courtes) a été transformé en un graphe RDF canonique (IRIs globaux univoques) — **compatibilité Linked Data sans alourdir la syntaxe JSON**.
@@ -35221,3 +35253,194 @@ MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-16-ProofCarryingOntologies-Python.ip
 **Ce qui reste ouvert** — et c'est le programme : la provenance des assertions (issue #158 ouverte au tag : le certificat le plus juste ne prouve rien si le graphe asserté ment) ; la réfutation certifiée ; et pour ce dépôt, la déclinaison Lean du checker jouet — un compagnon à kernel Lean qui compilerait `horn_certificate_sound` sur notre mini-table de règles serait le prolongement naturel (la série [Lean](../Lean/README.md) en a tous les outils).
 
 **Ressources** : open-ontologies au tag [v1.4.0](https://github.com/fabio-rovai/open-ontologies/tree/v1.4.0) (moteur + `lean/OOCert` + `docs/decisions/`) ; Rovai, *Open Ontologies: Tool-Augmented Ontology Engineering with Stable Matching Alignment*, arXiv:2605.09184 (2026) ; Cuenca Grau, Horrocks, Kazakov et Sattler, *Modular Reuse of Ontologies: Theory and Practice*, JAIR 31, 2008 ; Necula, *Proof-Carrying Code*, POPL 1997.",,,,,,,,193f7afa7c638dfe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-10-RDFStar-Python.ipynb,exercices-intro,markdown,fr,d3762a821d579600,"## Exercices
+
+Les exemples guides 1 a 6 ci-dessus demontrent les briques (1 a 3 : mecanismes generiques ; 4 a 6 : les domaines memes des exercices qui suivent) ; les exercices 4 a 6 qui suivent reclament de les **transposer** a des domaines nouveaux :
+
+| Exercice | Domaine | Brique exercee | Guide correspondant |
+|----------|---------|----------------|---------------------|
+| 4 : Donnees sportives multi-sources | Scores de matchs | Reification + confiance par source | Exemple guide 1 |
+| 5 : Agregats SPARQL sur scores | Statistiques | Requetes sur annotations | Exemple guide 2 |
+| 6 : Annotations temporelles historiques | Evenements dates | Validite temporelle d'un fait | Section 5.2 |
+
+Chaque exercice a sa cellule guidee immédiatement au-dessus : en cas de blocage, etudiez le guide, puis revenez a la version a completer.
+
+La progression n'est pas décorative : chaque exercice reprend une brique *démontrée* dans le guide de même colonne et la déplace dans un domaine où les valeurs, les sources et les contraintes changent. Transposer, ici, veut dire : identifier ce qui est invariant (le motif `reify()` + annotations + requête) et ce qui est à réinventer (le vocabulaire du domaine, la politique de seuil, la clé de regroupement).
+
+En cas de blocage, la méthode donnée en fin de cellule vaut pour les trois : lire la solution guide *en entier* d'abord, la faire tourner, puis revenir à l'énoncé et n'en reprendre que la structure — pas les littéraux. Un exercice « résolu » en copiant les valeurs du guide n'a rien transposé.
+",,,,,,,,d3762a821d579600,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-1,markdown,fr,af08852a9786fa60,"### Interprétation — KG étudiants/cours : 41 triplets
+
+La sortie liste les 5 inscriptions avec leurs notes et annonce un graphe de 41 triplets : chaque ligne du DataFrame produit une famille de triplets (étudiant, cours, professeur, note), pas un seul.",,,,,,,,af08852a9786fa60,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-2,markdown,fr,2fd3a2b51293f983,"### Interprétation — sous-graphe de Tarantino
+
+Le sous-graphe filtré compte 13 nœuds et 12 arêtes, et rappelle les notes des trois films : Pulp Fiction 8.9, Django Unchained 8.4, Kill Bill Vol.1 8.2.",,,,,,,,2fd3a2b51293f983,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-5,markdown,fr,a059298dadf6c997,"### Interprétation — e-mails et moyennes
+
+Les trois adresses e-mail sont ajoutées aux étudiants, et les moyennes calculées classent Claire Leroy en tête (18.00/20), devant Alice Dupont (15.50/20) et Bob Martin (13.00/20).",,,,,,,,a059298dadf6c997,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-6,markdown,fr,4e94b3347a93ccaf,"### Interprétation — sous-graphe Science-Fiction
+
+Le filtre par genre produit un sous-graphe de 16 nœuds et 16 arêtes, avec les notes des quatre films du genre : Inception 8.8, Interstellar 8.7, The Matrix 8.7, Avatar 7.9.",,,,,,,,4e94b3347a93ccaf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-7,markdown,fr,608137e9245cd864,"### Interprétation — exploration de l'ontologie
+
+Trois étudiants sont recensés (dont `etudiant_lefevre`, ajouté dans l'exemple 3), `prof_dupont` enseigne à deux d'entre eux, et la disjonction Professor/Student est rappelée comme une incohérence attendue du raisonneur.",,,,,,,,608137e9245cd864,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-8,markdown,fr,6956ab26d72d66da,"### Interprétation — KG musique
+
+Le graphe musique compte 42 triplets ; les requêtes listent les cinq albums par année et calculent la note moyenne par genre (Electro 9.10, Rock 9.30, Pop 9.40).",,,,,,,,6956ab26d72d66da,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-9,markdown,fr,1e79bd1c1a361966,"### Interprétation — PageRank contre degré
+
+Le top 5 PageRank est mené par Pulp Fiction et Django Unchained (PR = 0.0443), tandis que la centralité de degré retient d'abord les films de Nolan (degré 0.0889) : seules 2 entités sur 5 sont communes aux deux classements.",,,,,,,,1e79bd1c1a361966,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb,interp-exemple-10,markdown,fr,285d165c2b64a01d,"### Interprétation — films récents en pyvis
+
+Le filtre sur les films récents produit un sous-graphe de 18 nœuds et 16 arêtes, exporté en HTML interactif dans `output_kg_recent.html`.",,,,,,,,285d165c2b64a01d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,annexe-a-limites-sw12-18703,markdown,fr,79736f4018556a37,"#### Limites methodologiques et ce que le protocole atteint
+
+**Limites methodologiques :**
+
+- **Corpus de 10 phrases / 3 paragraphes** : les resultats sont **indicatifs**, pas generalisables. Nolan-hub est sur-represente : 3 des 10 phrases contiennent son nom. Sur un corpus equilibrer (100+ documents, chaines reelles de 3-4 sauts), l'avantage GraphRAG sur multi-saut emergerait plus nettement.
+- **Top-k = 5 pour le RAG classique** : un top-k plus grand pourrait ameliorer le rappel RAG sur certains cas. La comparaison reste stable mais n'est pas une borne superieure du RAG.
+- **Juge alias-robuste** : un token du gold_fact qui est prefixe d'un token du contexte compte comme hit. Cela peut introduire de faux positifs si les gold facts sont courts (`Dr`, `M.`). Les gold facts choisis ici (noms propres, studio, film) ne presentent pas ce risque.
+- **Pas de LLM dans la boucle** : le juge evalue la *presence du gold fact dans le contexte*, pas la qualite de la reponse generee. C'est un test du *retriever*, pas du pipeline de bout en bout.
+
+**Le protocole atteint ici ce que la version precedente ne pouvait pas :**
+
+1. n=3 par classe : un verdict est une mesure, pas un plafond.
+2. Juge alias-robuste : pas de faux GRAPHRAG_BEATS sur alias-collision.
+3. Distance BFS reelle : pas de confusion entre chaine narrative et portee reelle.
+4. `max_hops` comme variable balayee : pas de portee implicite.
+5. Q6 reellement hors portee : l'illustration tient dans les outputs.",,,,,,,,79736f4018556a37,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,annexe-a-failopen-sw12-18703,markdown,fr,56746e4e9ab5013f,"***
+
+#### A.1 — Fermeture du second fail-open du juge
+
+L'execution de la section 6 utilise le juge `alias_robust_hit` dans sa version finale. Celle-ci ferme un second fail-open, ou un token court du contexte pouvait suffire a valider un gold fact. La fermeture est verifiee par :
+
+- **6 controles Bloc A** (fermeture du fail-open OR/AND initial) : tous OK, donc la fermeture initiale est preservee.
+- **4 controles Bloc B** (fermeture du prefixe court en contexte) : tous OK, donc le second fail-open est ferme.
+
+Aucun verdict des 9 questions n'est modifie par ce second durcissement (les tokens contexte de moins de 3 caracteres ne sont jamais le bon discriminant dans le corpus reel) ; seul le filet de securite est elargi. Les controles [B1] a [B4] documentent les cas qui auraient rougi avant le correctif et servent de detection de regression pour tout futur editeur du juge.",,,,,,,,56746e4e9ab5013f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb,annexe-b-sw12-18703,markdown,fr,6d82aff318fdd95a,"***
+
+### Annexe B — Lecture des mesures, perspectives et ressources
+
+Ce qui approfondit le resume : comment lire les compteurs produits par les cellules, ce que le pipeline local ne couvre pas, et ou poursuivre.
+
+**Lecture des mesures** : les compteurs d'entités, de relations et de triplets, la taille des sous-graphes, les communautés, le gain du cache et les scores d'évaluation sont produits par les cellules. Ils ne sont pas recopiés ici, car une nouvelle exécution peut les faire varier. Leur rôle architectural reste stable : l'expansion en triplets justifie un stockage dédié, les nœuds isolés éventuels motivent le filtrage, le cache évite les appels répétés, et les écarts avec le gold rappellent l'importance de l'accord d'annotation.
+
+**Perspectives au-delà du notebook** : le pipeline démontré ici est *local* (sous-graphe autour des entités de la question). Le mode *global* de Microsoft GraphRAG — résumer chaque communauté puis interroger la hiérarchie de résumés — devient rentable quand les questions portent sur le corpus entier (« quels sont les thèmes dominants ? »), précisément ce qu'aucun sous-graphe local ne peut assembler. Entre les deux, l'ingénierie réelle joue sur trois leviers que ce notebook n'a fait qu'effleurer : la qualité du liaison d'entités (un NER ou un LLM plutôt que le match exact de noms), la stratégie de `max_hops` selon la question, et l'hybridation avec le vectoriel — retrouver d'abord les entités candidates par similarité, puis les étendre par parcours de graphe.
+
+### Ressources pour approfondir
+
+- [Microsoft GraphRAG (GitHub)](https://github.com/microsoft/graphrag) - Implementation officielle
+- [From Local to Global: A Graph RAG Approach (paper)](https://arxiv.org/abs/2404.16130) - Article de recherche Microsoft
+- [LangChain GraphRAG](https://python.langchain.com/docs/use_cases/graph/) - Integration LangChain
+- [Neo4j GraphRAG](https://neo4j.com/developer-blog/graphrag/) - Approche Neo4j
+- [Leiden Algorithm (paper)](https://arxiv.org/abs/1810.08473) - Detection de communautes",,,,,,,,6d82aff318fdd95a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,41df8c43,markdown,fr,feee095732e596ef,"**Lecture de l'installation dotNetRDF** (cellule code[0]) :
+
+```csharp
+#r ""nuget: dotNetRDF, 3.4.1""
+```
+
+La commande magic `#r ""nuget: dotNetRDF, 3.4.1""` télécharge le package NuGet `dotNetRDF`
+version 3.4.1 depuis nuget.org, le compile, et l'attache au **contexte de session** du kernel
+`.net-csharp`. Tous les `using VDS.RDF.*;` suivants peuvent referencer ses types.
+
+**Pourquoi dotNetRDF plutot que alternatives** :
+
+| Bibliothèque | Langage | Avantage | Inconvénient |
+|--------------|---------|----------|--------------|
+| **dotNetRDF** | C#/.NET | Mature, complète, LINQ-friendly | Version épinglée 3.4.1 |
+| Apache Jena | Java | Ecosystem large, Fuseki + ARQ | Pas .NET |
+| RDFLib | Python | Standard Python, large | Pas .NET |
+| Redland | C | Bas niveau, très performant | API complexe |
+
+Pour une application .NET, dotNetRDF est le choix naturel. C'est l'équivalent de RDFLib en
+.NET ou de Jena en Java.
+
+**Le pattern `#r ""nuget: ...""`** :
+
+C'est une **commande magic** du kernel `.net-csharp` (cf. `Microsoft.DotNet.Interactive`).
+Le download prend ~10-30 secondes la première fois (mise en cache dans `~/.nuget/packages/`).
+Les executions ulterieures reutilisent le cache.
+
+**Sortie attendue** : chargement du package (pas de sortie directe visible, mais la cellule
+est marquée `exec_count=1` après compilation).
+
+**Coût** : ~15 secondes la première fois (download + compilation), < 1 ms en cache.",,,,,,,,feee095732e596ef,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,3dba2a6b,markdown,fr,08717eac41c90848,"**Lecture du chargement TurtleParser** (cellule code[2]) :
+
+```csharp
+// 1.1 Chargement depuis un fichier Turtle
+var g = new Graph();
+var parser = new TurtleParser();
+parser.Load(g, ""data/example.ttl"");
+Console.WriteLine($""Nombre de triplets : {g.Triples.Count}"");
+```
+
+**Trois étapes du chargement** :
+
+1. **`new Graph()`** : cree un graphe RDF vide en mémoire. Le graphe est un container pour les
+   triplets, avec une table de hachage interne pour la recherche rapide.
+2. **`new TurtleParser()`** : cree un parser pour le format Turtle (`.ttl`). Le parser
+   implémente `IRdfReader` avec une méthode `Load(IGraph, ...)` qui prend un chemin de fichier,
+   un `StreamReader`, ou un `TextReader`.
+3. **`parser.Load(g, ""data/example.ttl"")`** : charge le fichier dans le graphe. Après cette
+   ligne, `g.Triples` contient tous les triplets parses.
+
+**Pourquoi un graphe vide à l'initialisation** :
+
+C'est une convention de l'API : le graphe est cree vide, puis les triplets sont ajoutes par
+le parser. Cela permet de charger plusieurs fichiers dans le même graphe (via `Merge()`), ou
+de construire un graphe programme par programme.
+
+**Sortie attendue** : les lignes commitees ci-dessus -- « Fichier : 4 triplets / Stream : 4
+triplets / Identique: True » (le même example.ttl lu par les deux voies).
+
+**Coût** : ~0.1 seconde (parsing d'un fichier de 5-50 triplets).",,,,,,,,08717eac41c90848,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-03-GraphOperations-CSharp.ipynb,ee448de6,markdown,fr,eaf196e51fd816a7,"**Lecture de l'exemple 1 (charger et explorer)** (cellule code[14]) :
+
+```csharp
+// Chargement du graphe depuis animals.ttl avec TurtleParser
+Graph g = new Graph();
+new TurtleParser().Load(g, ""data/animals.ttl"");
+
+// Affichage du nombre total de triplets dans le graphe chargé
+Console.WriteLine($""Total triplets : {g.Triples.Count}"");
+
+// Sélection de tous les triplets dont le prédicat est rdf:type
+// rdf:type indique la classe d'appartenance d'une ressource (ex : rex est de type Dog)
+IUriNode rdfType = g.CreateUriNode(""rdf:type"");
+Console.WriteLine(""Triplets rdf:type :"");
+foreach (Triple t in g.GetTriplesWithPredicate(rdfType))
+    Console.WriteLine($""  {t}"");
+
+// Récupération du nœud URI de ex:rex par son IRI complet
+// GetTriplesWithSubject retourne toutes les propriétés dont rex est le sujet
+IUriNode rex = g.GetUriNode(new Uri(""http://example.org/animals#rex""));
+Console.WriteLine(""Proprietes de rex :"");
+foreach (Triple t in g.GetTriplesWithSubject(rex))
+    Console.WriteLine($""  {t}"");
+```
+
+**Trois opérations de l'exemple** :
+
+1. **Chargement** : `new TurtleParser().Load(g, ""data/animals.ttl"")` charge le fichier
+   animals.ttl dans le graphe `g`.
+2. **Comptage total** : `g.Triples.Count` donne le nombre total de triplets.
+3. **Sélection par prédicat** : `g.GetTriplesWithPredicate(rdfType)` filtre les triplets ayant
+   `rdf:type` comme prédicat.
+
+**Pourquoi cet exemple est le workflow de base** :
+
+C'est le **pattern standard** de toute application Semantic Web en .NET : charger un graphe
+sérialisé, l'interroger avec les méthodes de sélection, et afficher les résultats. La majorité
+des notebooks SW-* du depot commencent par ce pattern.
+
+**Trois extensions possibles** :
+
+1. **SPARQL** : remplacer les sélections par une requête SPARQL (cf. SW-4-SPARQL).
+2. **Inférence** : ajouter un moteur d'inférence (RDFS, OWL) pour déduire de nouveaux triplets.
+3. **Validation** : utiliser SHACL ou ShEx pour valider la conformité du graphe à un schéma.
+
+**Coût** : ~0.5 seconde (chargement + sélection + affichage).",,,,,,,,eaf196e51fd816a7,,,,,,,,,,,,,,,

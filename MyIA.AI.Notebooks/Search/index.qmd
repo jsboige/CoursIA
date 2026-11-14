@@ -38,7 +38,7 @@ La série Search comporte **19+ notebooks** répartis en **3 parties** compléme
 
 **Kernels** : python3 · **GPU** : non · **Prérequis** : AUCUN — série adaptée à un premier contact avec l'IA.
 
-**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 1
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) · niveau 1
 
 ## Foundations — Algorithmes fondamentaux
 

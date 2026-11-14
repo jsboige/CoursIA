@@ -573,3 +573,96 @@ def test_history_rejects_missing_ref_and_accepts_empty_valid_history(tmp_path):
     result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, env=env)
     assert result.returncode == 0, result.stderr
     assert "# findings: 0" in result.stderr
+
+
+def test_history_diff_tree_failure_is_not_clean_zero(monkeypatch, capsys):
+    """Un échec de lecture d'un commit ne signifie pas une liste vide."""
+    import check_output_collapse as module
+
+    def broken_git(*args, **kwargs):
+        if args[0] == "log":
+            return "abc123 2026-11-11 example\n"
+        if args[0] == "diff-tree":
+            return None
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "_git", broken_git)
+    assert module.main(["--history", "--json"]) == 1
+    captured = capsys.readouterr()
+    assert "abc123" in captured.err
+    assert "# findings: 0" not in captured.err
+
+
+def test_history_empty_diff_is_a_valid_zero(monkeypatch, capsys):
+    import check_output_collapse as module
+
+    def empty_git(*args, **kwargs):
+        if args[0] == "log":
+            return "abc123 2026-11-11 example\n"
+        if args[0] == "diff-tree":
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.setattr(module, "_git", empty_git)
+    assert module.main(["--history", "--json"]) == 0
+    assert "# findings: 0" in capsys.readouterr().err
+
+
+def test_history_preserves_good_finding_beside_corrupt_notebook(tmp_path):
+    """Un carnet invalide ne doit pas masquer les autres du même commit."""
+    import json
+    import subprocess
+
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=tmp_path, check=True,
+                              capture_output=True, text=True).stdout.strip()
+
+    def notebook(text):
+        return {"cells": [{"cell_type": "code", "id": "cell-a", "outputs": [
+            {"output_type": "stream", "name": "stdout", "text": [text]}
+        ]}]}
+
+    git("init", "-q")
+    git("config", "user.name", "Test")
+    git("config", "user.email", "test@example.invalid")
+    bad = tmp_path / "a-bad.ipynb"
+    good = tmp_path / "z-good.ipynb"
+    bad.write_text(json.dumps(notebook("normal")), encoding="utf-8")
+    good.write_text(json.dumps(notebook("x" * 1000)), encoding="utf-8")
+    git("add", ".")
+    git("commit", "-qm", "base")
+    bad.write_text(json.dumps({"cells": [None]}), encoding="utf-8")
+    good.write_text(json.dumps(notebook("skipped")), encoding="utf-8")
+    git("commit", "-qam", "two notebooks")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+    script = Path(__file__).resolve().parent.parent / "check_output_collapse.py"
+    run = subprocess.run([sys.executable, str(script), "--history", "--since",
+                          "2000-01-01", "--json"], cwd=tmp_path,
+                         capture_output=True, text=True)
+    assert run.returncode == 0, run.stderr
+    results = [json.loads(line) for line in run.stdout.splitlines()]
+    assert any(row["notebook"] == "z-good.ipynb" for row in results)
+    assert "a-bad.ipynb" in run.stderr
+
+
+def test_history_tolerant_compare_keeps_diff_scale_moved_exemption(monkeypatch, capsys):
+    import check_output_collapse as module
+    import pytest
+
+    data = {
+        ("base", "bad.ipynb"): {"cells": [None]},
+        ("head", "bad.ipynb"): {"cells": [None]},
+        ("base", "old.ipynb"): nb([("a", "x" * 1000)]),
+        ("head", "old.ipynb"): nb([("a", "x" * 10)]),
+        ("base", "new.ipynb"): None,
+        ("head", "new.ipynb"): nb([("b", "x" * 1000)]),
+    }
+    monkeypatch.setattr(module, "read_notebook_at", lambda ref, path, cwd=None: data[ref, path])
+    rows = module.compare("base", "head", ["bad.ipynb", "old.ipynb", "new.ipynb"],
+                          skip_invalid=True)
+    old = next(row for row in rows if row["notebook"] == "old.ipynb")
+    assert old["cells"][0]["kind"] == "exempt-moved"
+    assert not old["regressed"]
+    assert "bad.ipynb" in capsys.readouterr().err
+    with pytest.raises(AttributeError):
+        module.compare("base", "head", ["bad.ipynb"])

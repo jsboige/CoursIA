@@ -88,20 +88,50 @@ def test_min_value_len_28_un_placeholder_de_24_chars_passe():
     sample.unlink()
 
 
-def test_strict_lit_un_pathspec_separe_pour_py_cs_md(tmp_path: Path):
+def test_strict_lit_un_pathspec_separe_pour_py_cs_md(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     """--strict ouvre un second filtre py/cs/md distinct de json/ipynb.
 
     CR myia-ai-01 22:36Z sur PR #18835 : l'ancien code iterait sur la liste
     json/ipynb et re-filtrait sur py/cs/md -- structuralement vide.
     """
-    proc = _run(["--strict", "--json"], cwd=tmp_path)
-    assert proc.returncode in (0, 1), f"--strict doit reussir (0 ou 1), vu {proc.returncode}: {proc.stderr}"
-    payload = json.loads(proc.stdout)
-    # Le verdict est CLEAN ou DIRTY ; le seul invariant est que la sortie --strict
-    # n'echoue pas en structural-vide. Le test positif de la branche --strict
-    # elle-meme (un commentaire py qui mentionne Signature= est attrape) est
-    # couvert par le controle positif ci-dessous via un mock pathspec.
-    assert "verdict" in payload
+    # Un depot ambiant sale rend observable toute fuite de racine. Le helper
+    # doit remplacer cette variable plutot que l'heriter du processus parent.
+    ambient_dir = tmp_path / "ambient"
+    ambient_dir.mkdir()
+    ambient = _dirty_repo(ambient_dir, "outside.json", f'{{"url": "Signature={_FX_SIG_TOKEN}"}}')
+    monkeypatch.setenv("REPO_ROOT_OVERRIDE", str(ambient))
+
+    fixture_dir = tmp_path / "fixture"
+    fixture_dir.mkdir()
+    repo = _dirty_repo(fixture_dir, "clean.json", '{"url": "https://example.com"}')
+    for name, comment in [("example.py", "#"), ("example.cs", "//"), ("example.md", "#")]:
+        (repo / name).write_text(f"{comment} Signature={_FX_SIG_TOKEN}\n", encoding="utf-8")
+    subprocess.run(["git", "add", "example.py", "example.cs", "example.md"], cwd=repo, check=True)
+
+    default = _scan_payload(repo)
+    assert default.returncode == 0, default.stderr
+    default_payload = json.loads(default.stdout)
+    assert default_payload["verdict"] == "CLEAN"
+    assert default_payload["findings"] == []
+    assert default_payload["scanned_files"] == 1
+
+    strict = _scan_payload(repo, extra=["--strict"])
+    assert strict.returncode == 1, strict.stderr
+    strict_payload = json.loads(strict.stdout)
+    assert strict_payload["verdict"] == "DIRTY"
+    assert {(f["file"], f["surface"]) for f in strict_payload["findings"]} == {
+        ("example.py", "prose"), ("example.cs", "prose"), ("example.md", "prose"),
+    }
+    assert all(len(f["hits"]) == 1 and f["hits"][0]["line"] == 1 for f in strict_payload["findings"])
+
+    clean_dir = tmp_path / "clean"
+    clean_dir.mkdir()
+    clean_repo = _dirty_repo(clean_dir, "clean.json", '{"url": "https://example.com"}')
+    clean = _scan_payload(clean_repo, extra=["--strict"])
+    assert clean.returncode == 0, clean.stderr
+    clean_payload = json.loads(clean.stdout)
+    assert clean_payload["verdict"] == "CLEAN"
+    assert clean_payload["findings"] == []
 
 
 def test_docstring_module_ne_cite_aucun_token_en_clair():

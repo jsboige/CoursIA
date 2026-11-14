@@ -9492,7 +9492,7 @@ MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-00,ma
 
 **Navigation :** [<< 02-4 SVD](02-4-SVD-Image-to-Video.ipynb) | [Index](../README.md) | [Comparaison >>](../03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb)
 ",,,,,,,,c251f1ca6f2dbc65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-01,code,fr,faf01e5cd274f671,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-01,code,fr,80383da434048bba,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -9537,16 +9537,17 @@ audio = True                       # Generation audio conjoint (feature cle de L
 comfyui_host = ""http://127.0.0.1:8189""   # comfyui-video (GPU 3090), derriere ComfyUI-Login
 
 # Configuration
-run_generation = False             # Safety : passer a True apres avoir (a) telecharge les modeles GGUF
-                                   # (cf tableau Section 2b) et (b) valide le wiring du workflow contre
-                                   # /object_info. L'auth ComfyUI-Login FONCTIONNE (COMFYUI_VIDEO_PASSWORD +
-                                   # restart) ; le verrou est la presence des modeles, PAS l'auth.
+run_generation = True              # Wiring VALIDE sur le siege GenAI (RTX 3090, conteneur comfyui-video) :
+                                   # modeles GGUF + connecteurs presents et auth ComfyUI-Login OK -- les deux
+                                   # conditions du verrou d'origine (telechargement GGUF + validation du
+                                   # workflow) sont satisfaites, cf le run reel commite en Section ComfyUI+GGUF.
+                                   # Passer a False uniquement pour parcourir le carnet sans generer.
 save_as_mp4 = True
 save_results = True
 
 print(f""LTX-2 Audiovisual | runtime={runtime_path} | quant={quantization}"")
 print(f""  {num_frames}f @ {width}x{height} | audio={audio} | run_generation={run_generation}"")
-",,,,,,,,faf01e5cd274f671,,,,,,,,,,,,,,,
+",,,,,,,,80383da434048bba,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-02,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,,,,,,,,
@@ -9792,7 +9793,7 @@ LTX-2 prend un prompt textuel et produit un fichier MP4 contenant **la video ET 
 
 Le pipeline s'execute comme un sous-module (CLI Lightricks). On encapsule l'appel dans une fonction Python qui reconstruit la commande et capture le fichier de sortie.
 ",,,,,,,,abb9cbe92a14587d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-09,code,fr,c747b4f1db19a680,"# Generation text-to-audiovideo conjointe (chemin ltx_pipelines = REFERENCE officielle Lightricks)
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-09,code,fr,8ab2ca9850541ce8,"# Generation text-to-audiovideo conjointe (chemin ltx_pipelines = REFERENCE officielle Lightricks)
 def generate_ltx2_audiovideo(prompt: str, negative_prompt: str = """",
                               seed: int = 42, gen_audio: bool = True) -> Dict[str, Any]:
     '''
@@ -9891,11 +9892,12 @@ if run_generation and ltx2_ready:
     else:
         print(f""Erreur : {result_1['error']}"")
 else:
-    print(""Generation ltx_pipelines desactivee (run_generation=False)."")
+    print(f""Generation ltx_pipelines desactivee (run_generation={run_generation} | ltx2_ready={ltx2_ready})."")
+    print(f""  runtime_path = {runtime_path} | run_generation = {run_generation}"")
     print(""Le chemin recommande sur RTX 3090 est ComfyUI + GGUF Q4 (cf Section dediee)."")
     print(f""\nExemple d'appel (path reference) :"")
     print(f""  result = generate_ltx2_audiovideo('{prompt_1[:50]}...', seed=42)"")
-",,,,,,,,c747b4f1db19a680,,,,,,,,,,,,,,,
+",,,,,,,,8ab2ca9850541ce8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ace1f3fa,markdown,fr,4b21c0f034eb446a,"## Section 2b : Chemin production sur RTX 3090 — ComfyUI + GGUF Q4
 
 La section précédente (ltx-pipelines `fp8-cast`) est l'API officielle Lightricks, mais elle est **borderline sur 24 GB** : le transformer 22B en fp8 = ~22 GB de poids seuls, laissant ~2 GB pour les activations sur 97 frames => OOM probable. C'est exactement le point ou la **communaute** a construit une solution robuste pour les GPU consumers : **ComfyUI + format GGUF quantize Q4**.
@@ -9987,7 +9989,7 @@ flowchart LR
 > -- avant remux dans le MP4 final. Echantillonner un latent **joint** est ce qui
 > synchronise nativement l'image et le son.
 ",,,,,,,,df30bbb6d388149d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,f16f29a5,code,fr,d472e4d9d85e384c,"# Chemin ComfyUI + GGUF Q4 : appel API /prompt (audio+video conjoint) — VERIFIE sur RTX 3090.
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,f16f29a5,code,fr,a13a09059b2e7593,"# Chemin ComfyUI + GGUF Q4 : appel API /prompt (audio+video conjoint) — VERIFIE sur RTX 3090.
 #
 # Construit le graphe de workflow LTX-2 GGUF, l'envoie a ComfyUI (auth ComfyUI-Login),
 # poll /history puis recupere le MP4 audiovisuel via /view. Ce graphe a PRODUIT la sortie
@@ -10151,20 +10153,20 @@ if run_generation and runtime_path == ""comfyui_gguf"":
     except Exception as e:
         # Degradation gracieuse (meme contrat que les autres carnets Video de la serie) :
         # le stack comfyui-video est absent ou incomplet -> message explicite, pas d'exception.
-        print(f""GENERATION NON EXECUTEE - stack ComfyUI indisponible ({type(e).__name__} : {str(e)[:200]})."")
+        print(f""GENERATION NON EXECUTEE - stack ComfyUI non disponible ({type(e).__name__} : {str(e)[:200]})."")
         print(""  - Requis : conteneur comfyui-video demarre (GPU 3090, port 8189), auth ComfyUI-Login"")
         print(""    (COMFYUI_VIDEO_PASSWORD) et modeles GGUF presents dans comfyui-video/models."")
         print(""  - Verifie : ce graphe a produit une sortie video+audio reelle sur RTX 3090 (seed 42) ;"")
         print(""    duree et taille exactes : voir la sortie committée de cette cellule."")
 else:
-    print(""Generation ComfyUI+GGUF : graphe VERIFIE pret, execution desactivee (run_generation=False)."")
+    print(f""Generation ComfyUI+GGUF : graphe VERIFIE pret, execution desactivee (run_generation={run_generation})."")
     print(""  - Workflow : DualCLIPLoaderGGUF(gemma GGUF + connecteurs) -> latent A/V concat ->"")
     print(""    sampler -> decode video (tiled) + audio -> mux MP4 (19 nodes)."")
     print(""  - Params : 704x512x41 @ 24fps, distilled LoRA 0.6, CFG 1.0, 8 steps euler."")
     print(""  - Verifie : ce graphe a produit une sortie video+audio reelle sur RTX 3090 (seed 42) ;"")
     print(""    duree et taille exactes : voir la sortie committée de cette cellule."")
     print(""  - Activer : run_generation=True dans la cellule de parametres, apres (a) telechargement"")
-    print(""    des modeles GGUF et (b) demarrage du container comfyui-video (GPU 3090, port 8189)."")",,,,,,,,d472e4d9d85e384c,,,,,,,,,,,,,,,
+    print(""    des modeles GGUF et (b) demarrage du container comfyui-video (GPU 3090, port 8189)."")",,,,,,,,a13a09059b2e7593,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,ltx2-10,markdown,fr,53662ee79d820142,"## Interpretation : pourquoi la generation conjointe change tout
 
 ### Le pipeline traditionnel (video muette puis sonorisation)
@@ -19972,7 +19974,7 @@ Trois idees a retenir. **(1) L'API Sora comme contrat asynchrone** : le notebook
 
 Prochaines etapes dans la serie : `04-4-Production-Video-Pipeline` chaine ces briques en un pipeline reel, et `04-5`/`04-5b` repetent l'exercice de comparaison sur les API cloud MiniMax.
 ",,,,,,,,8fb74302000996dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,banner,markdown,fr,bb1faab22e31bce6,"# MiniMax H3 (Hailuo) — Génération vidéo par le service cloud
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,banner,markdown,fr,5d33590e1b3365de,"# MiniMax H3 (Hailuo) — Génération vidéo par le service cloud
 
 **Module :** 04-Applications
 **Niveau :** Applications
@@ -19996,9 +19998,9 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 - Clé `MINIMAX_GENAI_API_KEY` configurée dans l'environnement (optionnelle en mode squelette)
 - Packages : `httpx`, `matplotlib`, `Pillow`
 
-> **Verdict SOTA : service cloud Hailuo — voie OUVERTE en UE** (ToS du service lus firsthand, aucune exclusion UE, Outputs sans restriction territoriale). Nuance d'entitlement (probe 2026-08-10) : la **série H3** reste plan-gated (400 TokenPlan 2013) — la génération réelle livrée à ce jour vit sur [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (`video-01`, `/v1`). Auto-hébergement des poids reste **INTRINSIC** en UE — voir [02-6](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb).
+> **Verdict SOTA : service cloud Hailuo — voie OUVERTE en UE** (ToS du service lus firsthand, aucune exclusion UE, Outputs sans restriction territoriale). Nuance d'entitlement (probe 2026-08-10) : la **série H3** reste plan-gated (400 TokenPlan 2013) — une réponse HTTP 200 avec identifiant de tâche est conservée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (`video-01`, `/v1`). Auto-hébergement des poids reste **INTRINSIC** en UE — voir [02-6](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb).
 
-**Navigation** : [<< 04-3 Sora API Cloud Video](04-3-Sora-API-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [04-5b MiniMax video-01 v1 >>](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb)",,,,,,,,bb1faab22e31bce6,,,,,,,,,,,,,,,
+**Navigation** : [<< 04-3 Sora API Cloud Video](04-3-Sora-API-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [04-5b MiniMax video-01 v1 >>](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb)",,,,,,,,5d33590e1b3365de,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,params,code,fr,d5de0b60d8d647c5,"# Paramètres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -20071,7 +20073,7 @@ print(""httpx disponible :"", HTTPX_OK)
 # --- Point d'ancrage des artefacts (relatif au notebook, exécuté in-place) ---
 ARTIFACTS_PATH = (Path.cwd() / ARTIFACTS_DIR).resolve()
 print(""ARTIFACTS_DIR résolu :"", ARTIFACTS_PATH)",,,,,,,,d2b96c1bfd6dc3f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,intro,markdown,fr,cb2a91f33a884f27,"## Section 1 — Pourquoi invoquer le *service cloud* Hailuo ?
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,intro,markdown,fr,546c94624a5ecd8b,"## Section 1 — Pourquoi invoquer le *service cloud* Hailuo ?
 
 Le notebook [02-6 (Architecture & Licensing)](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) établit une **bifurcation juridique** décisive pour MiniMax H3 (Hailuo 3.0) :
 
@@ -20099,8 +20101,8 @@ Le service Hailuo limite à **5 générations par jour**. Une ré-exécution du 
 
 - `MINIMAX_SPEND_QUOTA = 0` (défaut) → on ne charge **que** les artefacts déjà commités (PNG + JSON). Zéro appel réseau.
 - `MINIMAX_SPEND_QUOTA = 1` + clé présente + artefact absent → **seulement alors** on invoque le service.
-- **Aucun `.mp4` n'est commité** : la preuve d'exécution, *lorsqu'une génération a eu lieu*, est faite du `task_id` (dans le JSON) + keyframes PNG + waveform audio PNG. Les originaux HD vont sur un GDrive privé (noté en prose, jamais dans le dépôt).
-- **Ce carnet ne commit aucun de ces artefacts** : `assets/h3-cloud/` ne contient que l'image de référence d'entrée du scénario image-to-video. Les deux scénarios s'exécutent donc en **mode squelette** (colonne `Artefact` = `non` du tableau de statut) : aucune génération n'a eu lieu sur ce carnet — la clé n'était pas présente au run, et le plan bloque de toute façon la série H3 (verdict SOTA en tête de carnet). La preuve d'exécution de la famille cloud : preuve embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (`video-01` sur `/v1`, sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).",,,,,,,,cb2a91f33a884f27,,,,,,,,,,,,,,,
+- **Aucun `.mp4` n'est commité** : la trace d'une génération, lorsqu'elle existe, peut réunir la réponse JSON avec son `task_id`, les images et la forme d'onde ; l'identifiant atteste une réponse du service, les fichiers permettent d'examiner le résultat. Les originaux HD vont sur un GDrive privé (noté en prose, jamais dans le dépôt).
+- **Ce carnet ne commit aucun de ces artefacts** : `assets/h3-cloud/` ne contient que l'image de référence d'entrée du scénario image-to-video. Les deux scénarios s'exécutent donc en **mode squelette** (colonne `Artefact` = `non` du tableau de statut) : aucune génération n'a eu lieu sur ce carnet — la clé n'était pas présente au run, et le plan bloque de toute façon la série H3 (verdict SOTA en tête de carnet). La trace d'une requête acceptée est embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (`video-01` sur `/v1`, sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).",,,,,,,,546c94624a5ecd8b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,functions,code,fr,43bc55eaea6cd157,"# Définition des scénarios + chargeur idempotent
 # Deux scénarios omni-modaux qui exercent la capacité DISTINCTIVE du service
 # (HD/2K + audio natif synchronisé), et NON cinq t2v triviaux (Prong B).
@@ -20450,7 +20452,7 @@ fig.tight_layout()
 plt.show()
 print(""Figure : le service cloud H3 maximise résolution/audio/omni-référence ; ""
       ""le score 'Légal UE auto-héberg.' est abaissé car les poids ne peuvent pas être hébergés localement."")",,,,,,,,ae6462af4ca29781,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,interpretation,markdown,fr,2b11fff2680163bf,"### Interprétation — Bifurcation licence-poids vs ToS-service
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,interpretation,markdown,fr,ccfb5c1e52a5dae1,"### Interprétation — Bifurcation licence-poids vs ToS-service
 
 **Sortie obtenue** : tableau de statut (2 scénarios omni-modaux) + comparatif visuel des trois voies UE-légales.
 
@@ -20465,23 +20467,23 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 1. Le service cloud est l'**unique voie légale en UE** pour la pleine capacité H3 (HD/2K + audio stéréo + omni-référence).
 2. L'idempotence (`MINIMAX_SPEND_QUOTA`) protège le quota quotidien de 5 générations — une ré-exécution sans artefact ne déclenche aucun appel réseau.
-3. La preuve d'exécution d'une génération est faite du couple **PNG + JSON `task_id`** (les `.mp4` HD restent sur GDrive privé) — mais **ce carnet n'en commit aucun** : la série H3 y est bloquée par le plan, et les deux scénarios tournent en mode squelette (colonne `Artefact` = `non`). Les preuves de la famille cloud : preuve embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
+3. La trace d'une génération peut associer **PNG + JSON `task_id`** : l'identifiant correspond à une tâche, tandis que les fichiers donnent accès au résultat (les `.mp4` HD restent sur GDrive privé) — mais **ce carnet n'en commit aucun** : la série H3 y est bloquée par le plan, et les deux scénarios tournent en mode squelette (colonne `Artefact` = `non`). Les traces de la famille cloud : réponse à une requête embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (sortie de cellule, sans metadata papermill) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
 
-> **Note technique** : le `task_id` dans `response.json` est la preuve cryptographique d'exécution côté service. Il est repris dans les exercices ci-dessous — qui rendront donc `None` tant qu'aucun `response.json` n'est commité pour ce carnet, ce qui est le cas aujourd'hui (cf. §1).",,,,,,,,2b11fff2680163bf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex1-md,markdown,fr,6826f6551725deb6,"## Section 2 — Exercices
+> **Note technique** : le `task_id` dans `response.json` est un identifiant de tâche renvoyé par le service. Il permet de retrouver la tâche mais, seul, ne prouve ni la fin de la génération ni l'intégrité du résultat. Il est repris dans les exercices ci-dessous — qui rendront donc `None` tant qu'aucun `response.json` n'est commité pour ce carnet, ce qui est le cas aujourd'hui (cf. §1).",,,,,,,,ccfb5c1e52a5dae1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex1-md,markdown,fr,051f8c607fadcdf4,"## Section 2 — Exercices
 
 ### Exercice 1 — Parser une réponse JSON Hailuo (extraire task_id + statut)
 
 **Objectif** : implémenter une fonction qui parse le `response.json` d'un scénario et en extrait les champs de preuve (`task_id`, `model`, `prompt`, `resolution`, `duration`, `date UTC`, `status`).
 
-**Contexte** : le fichier `response.json` est la preuve d'exécution d'une génération cloud. En extraire proprement les métadonnées permet de vérifier qu'une génération a bien eu lieu (sans avoir à recharger la vidéo HD).
+**Contexte** : le fichier `response.json` conserve la réponse du service à une requête. En extraire les métadonnées permet d'identifier la tâche et son statut ; la fin de la génération et son résultat se vérifient séparément.
 
-> **Pour ce carnet, `response.json` est absent** : la série H3 y est bloquée par le plan (cf. §1) et aucun artefact de génération n'est commité. L'exercice porte donc sur le contrat de parsing — il rend `None` tant que le fichier est absent, ce qui est le comportement attendu et non une panne. La trace d'exécution réelle de la famille cloud est dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb).
+> **Pour ce carnet, `response.json` est absent** : la série H3 y est bloquée par le plan (cf. §1) et aucun artefact de génération n'est commité. L'exercice porte donc sur le contrat de parsing — il rend `None` tant que le fichier est absent, ce qui est le comportement attendu et non une panne. Une réponse à une requête réelle de la famille cloud est dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb).
 
 **Indices** :
 - `# Étape 1` : ouvrir le JSON depuis `ARTIFACTS_PATH / name / ""response.json""`.
 - `# Étape 2` : extraire les 7 champs ci-dessus avec `.get()` (valeurs absentes -> `None`).
-- `# Étape 3` : retourner un dictionnaire typé ; retour `None` si le fichier est absent.",,,,,,,,6826f6551725deb6,,,,,,,,,,,,,,,
+- `# Étape 3` : retourner un dictionnaire typé ; retour `None` si le fichier est absent.",,,,,,,,051f8c607fadcdf4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex1-code,code,fr,20e0ba55f097aca2,"def parse_hailuo_response(name: str) -> dict:
     """"""Extrait les champs de preuve du response.json d'un scénario Hailuo.
 
@@ -20498,7 +20500,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 
 print(""Exercice 1 — parser response.json :"", parse_hailuo_response(""image_plus_prompt_orchestre""))",,,,,,,,20e0ba55f097aca2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex2-md,markdown,fr,3afe98d4c9e7cd84,"### Exercice 2 — Statistiques d'une piste audio (sur les échantillons, pas sur le dessin)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex2-md,markdown,fr,ae33de508fba3025,"### Exercice 2 — Statistiques d'une piste audio (sur les échantillons, pas sur le dessin)
 
 **Objectif** : calculer des statistiques d'amplitude (RMS, crête, dynamique) **sur les échantillons PCM de la piste audio** d'un scénario — jamais sur l'image de la forme d'onde. Ces nombres répondent à deux questions mesurables : la piste est-elle **présente**, et son énergie est-elle **non nulle**.
 
@@ -20513,10 +20515,10 @@ Le contrat de mesure est celui du corpus ([02-3-MusicGen](../../Audio/02-Advance
 4. Qualité **perçue** — hors de portée d'un RMS : un RMS non nul dit qu'il y a du son, pas qu'il est *natif* ni *généré*. La comparaison avec CogVideoX local (02-7) porte sur la **présence d'une piste**, fait vérifiable — pas sur une preuve de génération.
 
 **Indices** :
-- `# Étape 1` : localiser la piste audio du scénario sous `ARTIFACTS_PATH / name` ; si aucun fichier audio n'est présent, retourner `None` — quand il en existe un, l'artefact committé est une preuve d'exécution, pas un .mp4 ; quand il n'en existe pas (cas de ce carnet), `None` est la réponse correcte et distingue « absent » de « mesuré à zéro ».
+- `# Étape 1` : localiser la piste audio du scénario sous `ARTIFACTS_PATH / name` ; si aucun fichier audio n'est présent, retourner `None` — quand il en existe un, l'artefact committé permet d'examiner le résultat sans charger un .mp4 ; quand il n'en existe pas (cas de ce carnet), `None` est la réponse correcte et distingue « absent » de « mesuré à zéro ».
 - `# Étape 2` : décoder les échantillons en échelle [-1, 1] (par ex. `ffmpeg -i <piste> -ac 1 -f wav` vers un wav temporaire, puis le module `wave` + numpy : entiers 16 bits divisés par 32768.0).
 - `# Étape 3` : appliquer le contrat ci-dessus ; retourner `{""rms"": float, ""peak"": float, ""dynamic_range"": float}` ou `None` si la piste est absente (NON_TESTE — distinct d'un zéro mesuré).
-",,,,,,,,3afe98d4c9e7cd84,,,,,,,,,,,,,,,
+",,,,,,,,ae33de508fba3025,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,ex2-code,code,fr,8300acf81e452ff5,"def audio_track_stats(name: str) -> dict:
     """"""Statistiques d'amplitude sur la PISTE AUDIO DÉCODÉE (échantillons PCM) d'un scénario.
 
@@ -20563,7 +20565,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 
 
 print(""Exercice 3 — tableau comparatif :"", build_comparison_table())",,,,,,,,6fa3219fb83750b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,conclusion,markdown,fr,4095551105f34c6e,"## Section 3 — Conclusion
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,conclusion,markdown,fr,163e6761e1fefb78,"## Section 3 — Conclusion
 
 ### Verdict SOTA consolidé
 
@@ -20572,6 +20574,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 | [02-6](../02-Advanced/02-6-MiniMax-H3-Architecture-Licensing.ipynb) | H3 *poids* auto-hébergés | **INTRINSIC** | Rien (UE exclue par la Community License) |
 | [02-7](../02-Advanced/) | CogVideoX-2b local | Local libre | 480p, muet, Apache-2.0 |
 | **04-5 (ce notebook)** | **H3 service cloud** | **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)** | **HD/2K + audio stéréo + omni-référence** — capacité du service, non exerçable sur ce carnet : la série y est bloquée par le plan |
+| [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) | video-01 /v1 cloud | **SOTA-OK (plan-couvert)** | Vidéo muette ; une réponse HTTP 200 et un identifiant de tâche sont conservés dans la sortie du carnet |
 
 ### Réversibilité et souveraineté
 
@@ -20581,11 +20584,11 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,
 ### Points à retenir
 
 1. **Bifurcation juridique** : licence des poids (UE exclue, INTRINSIC) ≠ ToS du service (UE ouverte, SOTA-OK). L'**entitlement** est une troisième dimension, distincte des deux précédentes : la série H3 y est bloquée par le plan (400 TokenPlan 2013) → `RECOVERABLE-USER-HAND` sur ce carnet. Le verdict complet est identique à celui porté par [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb).
-2. **Idempotence** : `MINIMAX_SPEND_QUOTA=0` protège le quota de 5 générations/jour ; les artefacts commités (PNG + JSON `task_id`) **seraient** la preuve d'exécution — ici il n'y en a aucun (mode squelette, colonne `Artefact` = `non`).
-3. **Capacité distinctive** : HD/2K + audio stéréo natif synchronisé + entrées omni-références — exercée ici par 2 scénarios omni-modaux, pas 5 t2v triviaux.
-4. **Aucun `.mp4` commité** : les originaux HD vont sur GDrive privé. Sur ce carnet, le dépôt ne garde même pas de preuve légère (aucun artefact H3 commité) ; les preuves légères de la famille : preuve embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (sortie de cellule) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
+2. **Idempotence** : `MINIMAX_SPEND_QUOTA=0` protège le quota de 5 générations/jour ; une réponse JSON et des fichiers de résultat **permettraient** de documenter une génération — ici il n'y en a aucun (mode squelette, colonne `Artefact` = `non`).
+3. **Capacité distinctive** : HD/2K + audio stéréo natif synchronisé + entrées omni-références — illustrée par deux scénarios en mode squelette, sans résultat généré dans ce carnet.
+4. **Aucun `.mp4` commité** : les originaux HD vont sur GDrive privé. Sur ce carnet, le dépôt ne garde même pas de preuve légère (aucun artefact H3 commité) ; les traces de la famille : réponse à une requête embarquée dans [04-5b](04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb) (sortie de cellule) et preuve fichier dans [04-3](04-3-Sora-API-Cloud-Video.ipynb) (`assets/sora-real/`).
 
-> **Pour aller plus loin** : combiner ce notebook avec [02-5 (LTX-2)](../02-Advanced/02-5-LTX2-Audiovisual.ipynb) pour un pipeline hybride cloud-souverain (H3 cloud pour la qualité, LTX-2 local pour la réversibilité).",,,,,,,,4095551105f34c6e,,,,,,,,,,,,,,,
+> **Pour aller plus loin** : combiner ce notebook avec [02-5 (LTX-2)](../02-Advanced/02-5-LTX2-Audiovisual.ipynb) pour un pipeline hybride cloud-souverain (H3 cloud pour la qualité, LTX-2 local pour la réversibilité).",,,,,,,,163e6761e1fefb78,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5-MiniMax-H3-Cloud-Video.ipynb,footer,markdown,fr,91c4c6f9c6993707,"***
 
 **Navigation** : [<< 04-3 Sora API Cloud Video](04-3-Sora-API-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
@@ -20596,7 +20599,7 @@ MINIMAX_SPEND_QUOTA = 1
 notebook_mode = ""batch""
 skip_widgets = True
 ",,,,,,,,2b69304f3d382e6c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,05aa98a2,markdown,fr,56458d01d88d6454,"# MiniMax video-01 (v1) — Service cloud generation video via `/v1/video_generation`
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,05aa98a2,markdown,fr,4c4c1824966fda79,"# MiniMax video-01 (v1) — Service cloud generation video via `/v1/video_generation`
 
 **Module :** 04-Applications
 **Niveau :** Applications
@@ -20610,13 +20613,13 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
 L'audit serie × endpoint (realise en cycle 196) a produit un **verdict couple** :
 
 - `MiniMax-H3` sur `/v2/video_generation` — **400** « TokenPlan or Credit does not currently support MiniMax-H3 series models » (2013 TokenPlan-blocked). Entitlement bloque la serie H3.
-- `video-01` sur `/v1/video_generation` — **200** + `task_id` (task `429397735923998`, 1 generation reellement debitee, plafond=1 respecte ; c'est la generation de l'audit serie × endpoint, distincte de celle rejouee par la sonde de ce carnet, `431137218855159`). **L'org A un droit video reel sur `video-01`** ; le diagnostic initial « pas de droit video, upgrade user » etait une **inference trop large** (le 400 etait scope a la serie H3, pas au service).
+- `video-01` sur `/v1/video_generation` — **200** + `task_id` (task `429397735923998`, une requete acceptee lors de l'audit serie × endpoint, distincte de celle soumise par la sonde de ce carnet, `431137218855159`). **L'org A un droit video reel sur `video-01`** ; le diagnostic initial « pas de droit video, upgrade user » etait une **inference trop large** (le 400 etait scope a la serie H3, pas au service).
 
 Ce notebook documente le **chemin cloud V1** : endpoint `/v1`, modele `video-01` (Hailuo line, video muet — pas d'audio natif contrairement a H3). Architecture pedagogique en 4 sections : verdict table, sonde HTTP non-brulante, interpretation structurelle, exercices.
 
 **Statut cle** : `MINIMAX_GENAI_API_KEY` non livree au worker **au moment de la redaction** (cf. `Minimax-H3 verdict requalification`, PR #10312). Notebook **execut-able SANS cle** : la sonde HTTP et les fonctions de lecture sont des stubs type-checkes qui rendent un verdict structurel sur les payloads/responses (`DESCRIPTIF_STUB`), **sans POST reel**.
 
-La cle a neanmoins ete delivree depuis : la **sortie commitee** de la cellule de validation enregistre une generation reelle (`""sent"": true`, `""actual_status"": 200`, `task_id` `431137218855159`, plafond respecte a 1 generation). Le regime « sans POST reel » decrit donc le **mode par defaut sans cle**, pas la sortie de ce carnet — les deux regimes coexistent ici, et la section « Lecture chiffree » montre le second.",,,,,,,,56458d01d88d6454,,,,,,,,,,,,,,,
+La cle a neanmoins ete delivree depuis : la **sortie commitee** de la cellule de validation enregistre une requete reelle acceptee (`""sent"": true`, `""actual_status"": 200`, `task_id` `431137218855159`, plafond d'une requete annonce pour cette sonde). Le regime « sans POST reel » decrit donc le **mode par defaut sans cle**, pas la sortie de ce carnet — les deux regimes coexistent ici, et la section « Lecture chiffree » montre le second.",,,,,,,,4c4c1824966fda79,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,3356d140,code,fr,d448910f0d3d40c4,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -20681,9 +20684,9 @@ print(f""OutDir: assets/video01-v1-cloud/  ({_OUT_DIR.exists()})"")
 print(f""UTC   : {datetime.now(timezone.utc).isoformat(timespec='seconds')}"")
 print(""="" * 70)
 ",,,,,,,,16a2bce80eb394df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,530cdf98,markdown,fr,08ff284a04e65270,"## Section 1 — Verdict table serie × endpoint (pivot G.9)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,530cdf98,markdown,fr,bb84fab9d8769f09,"## Section 1 — Verdict table serie × endpoint (pivot G.9)
 
-Le reflexe a inculquer : **un refus scope a une serie ne se generalise PAS au service**. La sonde par-serie × par-endpoint tranche, pas un refus isole. Tableau ci-dessous recapitule les POST non-brulants envoyes en cycle 196 (plafond=1 genere reelement sur video-01/v1 ; tous les autres restaient a 0 debit) :
+Le reflexe a inculquer : **un refus scope a une serie ne se generalise PAS au service**. La sonde par-serie × par-endpoint tranche, pas un refus isole. Tableau ci-dessous recapitule les POST non-brulants envoyes en cycle 196 (une requete video-01/v1 acceptee ; les autres reponses sont des refus) :
 
 | Serie / Modele | Endpoint | HTTP | Message | Verdict |
 |----------------|----------|------|---------|---------|
@@ -20692,13 +20695,13 @@ Le reflexe a inculquer : **un refus scope a une serie ne se generalise PAS au se
 | `video-01` | `/v2/video_generation` | 400 | idem | idem |
 | `Hailuo-01` | `/v2/video_generation` | 400 | idem | idem |
 | `Text-to-Video` | `/v2/video_generation` | 400 | idem | idem |
-| **`video-01`** | **`/v1/video_generation`** | **200** | **`task_id` retourne** | **PASS — le plan COUVRE video-01** (1 generation reelle, task `429397735923998`, plafond=1 respecte) |
+| **`video-01`** | **`/v1/video_generation`** | **200** | **`task_id` retourne** | **PASS — le plan COUVRE video-01** (requete acceptee, task `429397735923998` ; resultat a verifier separement) |
 
 **Lecon G.9** : avant de conclure `RECOVERABLE-USER-HAND` (« pas de droit video, upgrade user »), sonder **(1)** les autres series ET **(2)** les autres endpoints. Un refus isole est une mesure ; sa portee est une inference a verifier, pas a extrapoler.
 
 **Lecon sur `/v1/models`** : cet endpoint enumere **uniquement les modeles texte** (chat-completions : `MiniMax-M3`, `M2.7`, `M2.5`, `M2.1`, `M2`). Surface **separée** pour les modeles video (`/v1/video_generation`, `/v2/video_generation`). Ne pas l'utiliser pour enumerer les candidats video.
 
-**Lecon sur les endpoints /v1 vs /v2** : `/v2/video_generation` est H3-only (la serie refusee) ; `/v1/video_generation` couvre `video-01`/`Hailuo` (la serie qui marche). Series differentes sur endpoints differents — POST `/v2` avec `video-01` renvoie « not supported by this endpoint », PAS un refus d'entitlement.",,,,,,,,08ff284a04e65270,,,,,,,,,,,,,,,
+**Lecon sur les endpoints /v1 vs /v2** : `/v2/video_generation` est H3-only (la serie refusee) ; `/v1/video_generation` couvre `video-01`/`Hailuo` (la serie qui marche). Series differentes sur endpoints differents — POST `/v2` avec `video-01` renvoie « not supported by this endpoint », PAS un refus d'entitlement.",,,,,,,,bb84fab9d8769f09,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,1e78d332,code,fr,cd3d77d7c29c84e3,"# Sonde POST non-brulante : definie pour reutilisation future (cle dispo + spend_quota=True)
 # IMPORTANT : par defaut NO_POST=True. La sonde ne brulera jamais de generation sans :
 #   (a) cle reellement disponible
@@ -20777,15 +20780,15 @@ def probe_minimax_video(
             ""verdict"": f""EXC_{type(e).__name__}"",
         }
 ",,,,,,,,cd3d77d7c29c84e3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,07a68054,markdown,fr,942915dbf02fdaa2,"## Section 2 — Methodologie de probe (le « comment »)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,07a68054,markdown,fr,57c30d4ccd4172c3,"## Section 2 — Methodologie de probe (le « comment »)
 
 Cinq regles enseignees par ce notebook :
 
-1. **POST-diagnostic par (serie, endpoint) en tableau** — pas un refus isole. Premier HTTP 200 = 1 generation debittee, **plafond atteint**. Tous les autres endpoints restes a 0 debit.
+1. **POST-diagnostic par (serie, endpoint) en tableau** — pas un refus isole. Un HTTP 200 indique une requete acceptee ; le debit effectif et le resultat exigent une verification distincte. Le plafond annonce est une consigne de session, pas un compteur applique par la fonction.
 2. **`/v1/models` n'enumere QUE le texte** — surface produit separee pour la video. Ne pas l'utiliser pour enumerer les candidats video.
 3. **Secrets-hygiene regle 2/3** : `os.getenv(""MINIMAX_GENAI_API_KEY"")` **SANS** default literal. Si manquant : mode descriptif explicite (pas de « absent » maquille en cle partielle).
-4. **Plafond=1 generation par session de probe** — pas une regle provider, mais un garde-fou user (evite le burn de quota en cycle d'audit). Verdict YES/NO sur la premiere 200, pas apres.
-5. **Refus scope serie × endpoint ≠ refus du service** — extrapoler un seul 400 a l'ensemble du service est une **erreur G.9** classique. Sonder les autres series + endpoints AVANT de remonter un verdict d'entitlement.",,,,,,,,942915dbf02fdaa2,,,,,,,,,,,,,,,
+4. **Plafond annonce pour la session de probe** — consigne de l'operateur pour limiter la depense, distincte de la regle du service. La fonction teste la cle et l'autorisation de POST, mais ne compte pas les appels : il faut suivre ce plafond separement.
+5. **Refus scope serie × endpoint ≠ refus du service** — extrapoler un seul 400 a l'ensemble du service est une **erreur G.9** classique. Sonder les autres series + endpoints AVANT de remonter un verdict d'entitlement.",,,,,,,,57c30d4ccd4172c3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,58232ace,code,fr,24fdfc933b555702,"# Validation : mode descriptif par defaut ; generation reelle si cle + MINIMAX_SPEND_QUOTA=1
 _spend_enabled = bool(MINIMAX_SPEND_QUOTA and _KEY_AVAILABLE)
 result = probe_minimax_video(
@@ -20849,13 +20852,13 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
     # TODO etudiant : implementer la table de verdit et la logique de lookup.
     return None  # placeholder
 ",,,,,,,,bb18a1a7eb5b8e8d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b79f8d7,markdown,fr,9f84bd107c134f94,"### Exercice 2 — Compteur de debit journalier (anti-burn-quota)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,5b79f8d7,markdown,fr,18fb851ff29e4710,"### Exercice 2 — Compteur de debit journalier (anti-burn-quota)
 
-**Objectif** : ecrire une fonction `daily_debit_count(log_path)` qui parse un fichier de log ligne-par-ligne (format `timestamp|status|model|task_id`) et renvoie le nombre de generations reussies (status=200) sur la journee courante (UTC).
+**Objectif** : ecrire une fonction `daily_debit_count(log_path)` qui parse un fichier de log ligne-par-ligne (format `timestamp|status|model|task_id`) et renvoie le nombre de requetes acceptees (status=200), sur la journee courante (UTC), sans etablir leur achevement.
 
 **Application** : c'est exactement le garde-fou qui empeche de bruler le quota 5/jour du provider en cycle d'audit — verifier AVANT chaque POST reel.
 
-**Hint** : utiliser `datetime.now(timezone.utc).date()` pour comparer au timestamp de chaque ligne.",,,,,,,,9f84bd107c134f94,,,,,,,,,,,,,,,
+**Hint** : utiliser `datetime.now(timezone.utc).date()` pour comparer au timestamp de chaque ligne.",,,,,,,,18fb851ff29e4710,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,c37f87eb,code,fr,0e39f1e6ec60de02,"def daily_debit_count(log_path: Path) -> int:
     """"""Compte les generations reussies (status=200) sur la journee courante (UTC).
 
@@ -20888,7 +20891,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
     # connues de la probe cycle 196.
     return None  # placeholder
 ",,,,,,,,2241abb3522d8dcd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,618f3667,markdown,fr,d42627956d033c3e,"## Section 4 — Verdict SOTA consolide (cross-series)
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,618f3667,markdown,fr,7e836182ec5a5e83,"## Section 4 — Verdict SOTA consolide (cross-series)
 
 | Notebook | Endpoint | Modele | Verdict | Audio | UE-licence | Cout indicatif |
 |----------|----------|--------|---------|-------|-----------|----------------|
@@ -20899,7 +20902,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
 
 **Verdict concentre** :
 
-- Pour la **video sans audio** en UE : **video-01/v1** est la voie cloud immediatement disponible avec le plan actuel (plafond 5 generations / jour, plafond respecte a 1 dans cette serie).
+- Pour la **video sans audio** en UE : **video-01/v1** est la voie cloud immediatement disponible avec le plan actuel (quota annonce de 5 generations / jour ; reponses acceptees dans l'audit et la sortie de ce carnet).
 - Pour la **video + audio natif** : seul **H3/v2** le permet (HD/2K + audio stereo). H3 est bloque par 2013 TokenPlan dans cette org — verdict **SOTA-OK (ToS UE) + RECOVERABLE-USER-HAND (serie H3 bloquee 2013)**, **identique** a celui porte par [04-5](04-5-MiniMax-H3-Cloud-Video.ipynb) ; l'escalade `RECOVERABLE-USER-HAND` est necessaire si le use-case exige l'audio.
 - Pour la **video offline / pas de cle API / GPU disponible** : `02-7` CogVideoX-2b local (Apache-2.0).
 
@@ -20909,7 +20912,7 @@ MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Vi
 
 **Navigation** : [<< 04-5 H3/v2 cloud](04-5-MiniMax-H3-Cloud-Video.ipynb) | [↑ Video Applications](README.md) | [↑ Video Series](../README.md)
 
-*MiniMax video-01 (v1) — Generation video par service cloud `/v1/video_generation`, modele `video-01` (Hailuo line, muet), plan-couvert UE.*",,,,,,,,d42627956d033c3e,,,,,,,,,,,,,,,
+*MiniMax video-01 (v1) — Generation video par service cloud `/v1/video_generation`, modele `video-01` (Hailuo line, muet), plan-couvert UE.*",,,,,,,,7e836182ec5a5e83,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/03-Orchestration/03-3-ComfyUI-Video-Workflows.ipynb,bec0f46c,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
@@ -22173,16 +22176,16 @@ for tag, figsize, dpi in ((""A"", (8, 2), 100), (""B"", (4, 1.2), 200)):
           f""  (statistique d'image : le dessin change)"")
 print(f""  mesures sur échantillons (source PCM) : {stats_pcm(sig)}"")
 print(""  -> identiques quel que soit le rendu : la mesure ne lit jamais le dessin."")",,,,,,,,e5e2a5ec99198876,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,6db27ef8,markdown,fr,9f26a30d5fa37e1a,"**Lecture chiffree — le verdict OK atteste une generation reelle, pas une extrapolation.** La sortie commitee de la cellule de validation rend `""actual_status"": 200`, un task_id `""431137218855159""`, `""status_code"": 0` et `""verdict"": ""OK""` : la sonde a debite exactement une generation sur le quota journalier consenti — la cle etait disponible au setup et le parametre de depense leve la garde no_post. La section precedente decrit le regime sans cle (verdict structurel, rien de debite) ; cette sortie-ci est l'autre regime, execute : le verdict est firsthand, c'est la reponse du service, pas une lecture de sa documentation.
+MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,6db27ef8,markdown,fr,97f21048b5293cda,"**Lecture chiffree — le verdict OK atteste une requete acceptee.** La sortie commitee de la cellule de validation rend `""actual_status"": 200`, un task_id `""431137218855159""`, `""status_code"": 0` et `""verdict"": ""OK""` : la sonde a soumis une requete avec le quota journalier autorise — la cle etait disponible au setup et le parametre de depense leve la garde no_post. La section precedente decrit le regime sans cle (verdict structurel, rien de debite) ; cette sortie-ci est l'autre regime, execute : cette reponse provient du service ; elle ne montre ni la fin de la generation ni un fichier video obtenu.
 
 **Et le mode descriptif ?** Tant que `MINIMAX_GENAI_API_KEY` n'est pas livree, le notebook reste **execut-able SANS cle** et rend un verdict structurel (`DESCRIPTIF_STUB`) sur la forme des requetes/responses. C'est la **meme posture cle que 04-5** : key-gated skeleton.
 
 Trois garanties portees par ce mode descriptif :
 
-- **0 generation reelle debit** — la sonde ne POST jamais sans `no_post=False` ET cle ET quota=1. Plafond=1 du cycle 196 preserve.
+- **0 generation reelle debit** — la sonde ne POST jamais sans `no_post=False` ET cle ET quota=1. La limite annoncee pour la session demande un suivi separe.
 - **Verdict structurel reproductible** — la sortie de la sonde est deterministe (meme payload, meme verdict). Permet de tester les exercices sans dependre d'un service externe.
 - **Migration vers mode generation triviale** : passer `MINIMAX_SPEND_QUOTA=1`, livrer `MINIMAX_GENAI_API_KEY`, appeler `probe_minimax_video(payload=..., no_post=False)`. La sonde bascule en mode reel sans autre changement de code.
-",,,,,,,,9f26a30d5fa37e1a,,,,,,,,,,,,,,,
+",,,,,,,,97f21048b5293cda,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,a9897507,markdown,fr,d48b9c35e4e9eacb,"# Bonus Slideshow Vidéo - Générateur de Slideshow (Optionnel)
 
 **Navigation** : [<< Précédent (01-1)](01-1-Video-Operations-Basics.ipynb) | [Index](../../README.md) | [Suivant >> (01-2)](01-2-GPT-5-Video-Understanding.ipynb)
@@ -22579,3 +22582,6 @@ Sur l'execution commise, les sept slides (4 a 8 s d'affichage) produisent chacun
 1. Les transitions sont generees frame par frame en memoire avant l'encodage
 2. La consommation memoire est proportionnelle au nombre total de frames
 3. Pour de longues videos, il faudrait un encodage en streaming plutot qu'en memoire",,,,,,,,7d427a6b259fe2f1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/02-Advanced/02-5-LTX2-Audiovisual.ipynb,c5c51543,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,

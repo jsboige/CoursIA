@@ -114,12 +114,18 @@ DELIVERED_MARKER_REVOKED_RE = re.compile(
 # poser en rendant la main -- « les criteres sont couverts, la main est
 # rendue », verifie first-hand par la lane.
 #
-# La forme `[DELIVERED] lane X -- PR #N` en est VOLONTAIREMENT absente : elle
-# dit « la lane X a livre SON GRAIN », ce qui sur une issue a plusieurs
-# tranches ne dit rien de l'issue elle-meme. Mesure #24461 (2026-11-03) :
-# #23778 porte `[DELIVERED] lane myia-po-2027:CoursIA-2 -- PR #23830` ET une
-# Concern du user -- l'issue n'etait pas livree. Un label arme sur cette
-# forme aurait efface du tapis une issue dont le travail restait A FAIRE.
+# #24461 residu (11/11) -- la forme `[DELIVERED] lane X -- PR #N` SANS clause
+# `paths:` arme desormais AUSSI le label (via `attestation_state`, qui lit la
+# meme machine d'etat que le tapis). L'exclusion historique (mesure 03/11 :
+# #23778 portait ce marqueur ET une Concern du user) protegeait moins qu'elle
+# ne coutait : le TAPIS traite deja cette forme comme une livraison vivante
+# (`delivery_state`), donc l'issue sortait quand meme du tirage -- mais par
+# une SONDE par issue, et le budget de sondes epuise rend fail-OPEN (mesure
+# 11/11 : 76 des 120 grains servis aux workers portaient un marqueur vivant,
+# dont ce marqueur). La protection REELLE d'un `[DELIVERED]` pose a tort est
+# la REVOCATION partagee (`[NOT-DELIVERED]`, rearmable) -- celle qu'utilise le
+# triage du secretariat (temoins #24393/#24461, 11/11). La forme AVEC clause
+# `paths:` reste une TRANCHE : elle n'arme ni le tapis ni le label.
 #
 # C'est aussi, mot pour mot, le marqueur de CONTENEUR du tapis : sur une
 # umbrella, `[INFO] candidate-delivered` dit « le CONTENEUR est livre ».
@@ -387,8 +393,9 @@ def delivery_state(bodies: list[str], *, lane_marker: bool = True,
 
     Evenements d'arming :
     - `[INFO] candidate-delivered` (et ses variantes de forme) ;
-    - `[DELIVERED] lane <machine:workspace> -- PR #N` -- **seulement si
-      ``lane_marker``** (c'est une livraison de GRAIN, pas d'issue) ;
+    - `[DELIVERED] lane <machine:workspace> -- PR #N` SANS clause `paths:`
+      (livraison epic-wide) -- gate ``lane_marker``, que le labeler ouvre
+      aussi depuis le residu #24461 (11/11) ;
     - un dossier `[CLOSURE PREFLIGHT]` de verdict CLOSE (``dossier=True``) ;
     - `[RELEASED] ... acceptance deja couverte`.
 
@@ -414,10 +421,12 @@ def delivery_state(bodies: list[str], *, lane_marker: bool = True,
             state = REVOKED
         elif DELIVERED_MARKER_RE.search(text):
             # La forme `[DELIVERED] lane ... -- PR #N` : « la lane X a livre
-            # SON grain ». Elle arme l'etat du TAPIS (qui ecarte l'issue de
-            # son tirage), mais elle n'arme PAS le label : sur une issue a
-            # plusieurs tranches, elle ne dit rien de l'issue (cf. #23778,
-            # mesure #24461).
+            # SON grain ». #24461 residu (11/11) : elle arme desormais le
+            # TAPIS **et** le LABEL quand elle est epic-wide (sans clause
+            # `paths:`) -- l'ancienne exclusion protegeait moins qu'elle ne
+            # coutait (le tapis ecartait deja l'issue par sonde budgetee ;
+            # fail-OPEN servait le grain quand meme, mesure 76/120). La
+            # protection d'un marqueur pose a tort est la REVOCATION partagee.
             #
             # Decision #24461 (c), point 3 : une livraison qui porte une
             # clause `paths:` ne livre qu'une TRANCHE -- elle n'arme NI le
@@ -447,11 +456,22 @@ def delivered_state(bodies: list[str], *, dossier: bool = True) -> bool:
 def attestation_state(bodies: list[str], *, dossier: bool = True) -> str:
     """L'etat du fil pour le POSEUR DE LABEL.
 
-    Grammaire ETROITE : seule la forme `[INFO] candidate-delivered` (et ses
-    variantes) arme l'etat. La forme `[DELIVERED] lane ... -- PR #N` en est
-    exclue : elle dit « la lane X a livre SON grain », pas « l'issue est
-    livree » (mesure #24461 : #23778 porte ce marqueur ET une Concern du
-    user).
+    #24461 residu (11/11) : meme grammaire d'arming que le TAPIS -- la forme
+    `[DELIVERED] lane X -- PR #N` SANS clause `paths:` (livraison epic-wide)
+    arme le label en plus des attestations `[INFO] candidate-delivered`. La
+    forme AVEC clause `paths:` reste une TRANCHE : elle n'arme ni le tapis ni
+    le label. Motif de l'elargissement : le tapis ecartait deja ces issues,
+    mais par une sonde par issue -- budget epuise, fail-OPEN servait le grain
+    quand meme (mesure 11/11 : 76/120). Le label, lui, est lu gratuitement
+    dans le payload du pool. La protection d'un `[DELIVERED]` pose a tort est
+    la REVOCATION partagee (`[NOT-DELIVERED]`, rearmable -- cf #24393/#24461).
+
+    Deux differences avec `delivery_state` subsistent, toutes deux deliberes :
+
+    - le parametre ``dossier`` : le labeler appelle avec ``dossier=False``
+      (l'organe qui parse le dossier n'est pas dans son sparse-checkout,
+      #23762) ; le tapis appelle avec ``dossier=True`` ;
+    - aucune : sur tout le reste, les deux organes lisent la meme machine.
 
     Le predicat `released_covers_acceptance` reste inclus : `[RELEASED] ...
     acceptance deja couverte` est un verdict de LIVRAISON (« les criteres
@@ -459,7 +479,7 @@ def attestation_state(bodies: list[str], *, dossier: bool = True) -> str:
 
     Rend `"attested"`, `"revoked"` ou `"none"`.
     """
-    return delivery_state(bodies, lane_marker=False, dossier=dossier)
+    return delivery_state(bodies, lane_marker=True, dossier=dossier)
 
 
 _FENCE_OPEN_RE = re.compile(r"^ {0,3}(`{3,}|~{3,})")

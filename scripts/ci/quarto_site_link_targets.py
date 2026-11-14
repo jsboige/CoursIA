@@ -25,13 +25,31 @@ Regles de reecriture (idempotentes)
 ------------------------------------
 Pour chaque ``href`` interne d'une page de ``_site/`` :
 
-1. la cible existe dans ``_site/``                                  -> intact ;
+1. la cible existe dans ``_site/`` ET n'est pas un chemin cache     -> intact ;
 2. chemin de repertoire ``X/`` avec ``X/README.html`` rendu         -> ``X/README.html`` ;
 3. chemin de repertoire ``X/`` existant dans le depot, sans rendu   -> URL absolue ``tree/main/X`` ;
 4. chemin de fichier existant dans le depot, hors render-list      -> URL absolue ``blob/main/<path>`` ;
 5. le reste (cible absente du depot ET du site)                     -> intact :
    le garde post-deploiement (check_site_links) le signale -- cette
    passe ne masque jamais un vrai lien mort.
+
+Cible cachee : un chemin dont un composant commence par un point
+(``.claude/``, ``.github/``, ``.env.example``) n'est JAMAIS servi par
+Pages -- l'artefact publie est produit par ``actions/upload-artifact@v4``
+dont l'option ``include-hidden-files`` est a ``false`` (defaut, mesure dans
+les logs de deploiement du 2026-11-11). La regle 1 ne doit donc pas
+declarer « servable » une cible cachee : ces cibles partent en
+``blob/main/`` (regle 4), qui resout sur github.com.
+
+Mesure du 2026-11-11 (organe ``check_site_links`` contre le site servi,
+1 833 liens sondes) : sans cette correction, **5 URL** (6 lignes de source)
+repondent 404 -- ``.claude/rules/catalog-pr-hygiene.md``,
+``.claude/rules/wsl-kernels.md``, ``.github/workflows/catalog-cron.yml``,
+``GenAI/.env.example`` et
+``ML/DataScienceWithAgents/07-Agent-Orchestration/.env.example``. La passe
+les croyait servables parce que Quarto copie dans ``_site/`` les fichiers
+locaux lies depuis les README rendus -- copie que l'artefact ne publie
+jamais.
 
 Les images (``![...](...)``) et les ``.ipynb`` sont hors perimetre :
 les ``.ipynb`` sont la forme de reference (github.com) et Quarto les
@@ -96,6 +114,20 @@ def _relative_href(from_dir: Path, target: Path) -> str:
     return rel
 
 
+def _is_hidden(rel: Path) -> bool:
+    """Vrai si un composant du chemin commence par un point.
+
+    Une cible cachee n'est jamais publiee par Pages : l'artefact sort de
+    ``actions/upload-artifact@v4`` avec ``include-hidden-files: false``
+    (defaut, mesure dans les logs de deploiement du 2026-11-11). La
+    presence d'une telle cible dans ``_site/`` -- Quarto y copie les
+    fichiers locaux lies depuis les README rendus -- ne dit donc rien de
+    sa servabilite sur le site publie.
+    """
+    return any(part.startswith(".") and part not in (".", "..")
+               for part in rel.parts)
+
+
 def rewrite_href(
     href: str,
     html_repo_dir: Path,
@@ -118,7 +150,13 @@ def rewrite_href(
         return None
     norm_href = rel.as_posix()
 
-    if (site_root / rel).is_file():
+    # Une cible cachee n'est jamais publiee (artefact upload-artifact@v4,
+    # include-hidden-files: false) : sa presence dans _site/ ne la rend pas
+    # servable. Elle part donc en blob/main (regle 4) comme tout fichier
+    # du depot hors render-list.
+    hidden = _is_hidden(rel)
+
+    if not hidden and (site_root / rel).is_file():
         return None  # servable tel quel (un repertoire dans _site/ n'est pas servable)
 
     # Dir-href : le test s'entend sur le chemin epuice de son fragment et de
@@ -131,7 +169,7 @@ def rewrite_href(
     is_dir_href = base_href.endswith("/")
     if is_dir_href:
         readme = rel / "README.html"
-        if (site_root / readme).exists():
+        if not hidden and (site_root / readme).exists():
             return _relative_href(html_repo_dir, readme) + suffix
         if (repo_root / rel).is_dir():
             return f"{GITHUB_BASE}/tree/main/{norm_href}{suffix}"

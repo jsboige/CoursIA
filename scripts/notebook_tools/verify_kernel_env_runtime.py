@@ -213,18 +213,19 @@ def main() -> int:
     # Acceptance 4 of #14908: sys.prefix should resolve into the expected
     # venv, not to a system Python prefix. We compare normalized strings.
     norm_pref = _normalize_venv(sys_pref)
-    if norm_pref == expected_venv:
-        print("VERDICT: PASS -- kernel booted into the expected venv.")
-        return 0
-    # if base == prefix, the kernel is in a SYSTEM
-    # Python, not a venv -- that is the original #14908 failure mode.
-    if sys_pref == sys_base:
+    norm_base = _normalize_venv(sys_base)
+    # Test this first: a caller can accidentally provide the system prefix as
+    # --venv. Equality with that argument alone does not establish a venv.
+    if norm_pref == norm_base:
         print(
             "VERDICT: FAIL -- kernel booted into a SYSTEM Python "
             "(sys.prefix == sys.base_prefix); the expected venv was "
             f"{expected_venv}, the kernel ran under {norm_pref}."
         )
         return 1
+    if norm_pref == expected_venv:
+        print("VERDICT: PASS -- kernel booted into the expected venv.")
+        return 0
     print(
         "VERDICT: FAIL -- kernel booted into a different venv "
         f"({norm_pref}) than expected ({expected_venv})."

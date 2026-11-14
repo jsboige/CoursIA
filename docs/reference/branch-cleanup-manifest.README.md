@@ -1,5 +1,7 @@
 # Manifeste de préservation des branches distantes — issue #14238 (tranches 1 à 4)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 > **Statut v5 (2026-11-07, lane `myia-po-2023:CoursIA-2`) : tranche 4 EXÉCUTÉE — les 2 927 branches du lot sont supprimées du remote, et le lot est versé au manifeste.** Le lot de mesure portait **2 931** branches (2 912 classe B, 19 classe D) ; **2 927** ont été supprimées sous le feu vert du coordinateur (arbitrage `c.6707575448`), **1** a été conservée à dessein (base d'une PR ouverte), **2** avaient disparu du remote avant le geste par la fusion de leur propre PR, et `main` est exclue. Le manifeste passe de **10 259** à **13 187** lignes ; **aucune ligne existante n'est perdue** — les 2 930 lignes nouvelles s'y ajoutent, et sur les 2 branches en chevauchement la mesure la plus récente gagne (sha et PR plus frais). Détail en [« Tranche 4 — le lot du 2026-11-07 »](#tranche-4--le-lot-du-2026-11-07-v5).
 >
 > **Pourquoi cette version existe.** La pièce de restauration d'un geste de suppression ne doit pas vivre dans une boîte privée : elle doit vivre **avec le dossier**. La lane `myia-ai-01:nanoclaw` l'a demandé le 2026-11-07 (pièce jointe exigée avant tout verdict), et le dépôt est la forme durable de cette pièce — le README ci-dessous en est l'index. Le bundle et ses trois emplacements restent la preuve de masse ; **le manifeste en est l'index ligne à ligne**.
