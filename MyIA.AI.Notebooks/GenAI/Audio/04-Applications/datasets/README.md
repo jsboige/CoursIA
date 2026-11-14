@@ -51,8 +51,8 @@ python scripts/audiobook_pipeline.py --dry-run \
 Tailles en octets du fichier ; `--` = marqueur de dialogue tiré en tête de
 ligne ; `«` = guillemet ouvrant (discours rapporté). *Mlle Fifi* apporte un
 profil distinct du *Horla* : narration dominante avec un fort discours
-rapporté (`«` 483, le plus élevé du dataset) mais peu de dialogues tirés
-(47 lignes `--`), là où le *Horla* (forme journal) en est riche (452). Deux
+rapporté (le plus élevé du dataset) mais peu de dialogues tirés,
+là où le *Horla* (forme journal) en est riche. Deux
 mix dialogue/narration différents pour exercer la segmentation p2 — et 18
 contes indépendants pour des reprises partielles (`--from-pass`).
 

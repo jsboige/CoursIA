@@ -34,13 +34,7 @@
       "ecosystem": "nuget",
       "canonical": "8.15.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "8.14.0",
-          "decision": "justified",
-          "reason": "Ecart justifie, NON convergent : meme motif que IKVM 8.14.0 -- l'artefact ombre (DLL + runtime IKVM) est compile et prepare en 8.14.0 ; IKVM.Image suit la meme version que IKVM dans la recette de build."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "pythonnet",
@@ -75,13 +69,7 @@
       "ecosystem": "nuget",
       "canonical": "3.119.4",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "2.88.3",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 2.88.3 a une contrainte de la serie, donc l'ecart est classe « a converger »."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "Microsoft.ML.AutoML",

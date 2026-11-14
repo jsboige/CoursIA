@@ -317,6 +317,238 @@ def load_declared_hosts(path: str | None, label: str) -> DeclaredHosts:
     return DeclaredHosts(hosts=hosts, source=path)
 
 
+# ---------------------------------------------------------------------------
+# MIROIR D'OBJETS (#26453) -- l'alerte `[WARN][mirror]` doit REMONTER ici.
+# ---------------------------------------------------------------------------
+# Incident mesure : le miroir d'ai-01 n'etait plus rafraichi depuis le
+# 26/10, et personne ne l'a vu pendant 19 jours. Le superviseur ecrivait bien
+# une ligne d'alerte, mais dans un journal que personne ne lisait : l'alerte
+# n'atteignait AUCUNE surface. Ce bloc la branche sur un organe qu'une lane
+# lit (le rapport de ce script, et son payload JSON).
+#
+# Les trois sources sont LOCALES a l'hote qui porte le miroir :
+#   - `<parent du miroir>/.objects-mirror.fails` : compteur d'echecs
+#     consecutifs (pose par `mirror_one_shot`, cf #26459) ;
+#   - `<parent du miroir>/.objects-mirror.ok` : horodatage du dernier fetch
+#     REUSSI (le meme PR) ;
+#   - `<state_dir>/objects-mirror.log` : journal du superviseur, d'ou la
+#     derniere ligne `[WARN][mirror]` VERBATIM (cause + compteur).
+#
+# Hors de l'hote du miroir (runner GitHub-hosted, machine qui ne porte pas le
+# parc), AUCUN de ces fichiers n'existe : le retour est `available=False` avec
+# une raison. C'est une NOTE, jamais un rouge -- l'absence du miroir ici ne
+# prouve pas qu'il est casse ailleurs.
+DEFAULT_MIRROR_FAIL_WARN = 3
+# Fraicheur maximale du compteur pour qu'une panne soit dite ACTIVE : au
+# dela, la boucle de rafraichissement est arretee (service desactive, hote
+# eteint) -- c'est un constat DIFFERENT d'un miroir qui echoue, et le
+# confondre produirait un rouge permanent sur un etat fige depuis des
+# semaines. La comparaison se fait sur la date de MODIFICATION du compteur,
+# qui est reecrite a chaque echec ET a chaque succes.
+DEFAULT_MIRROR_COUNTER_FRESH_S = 600.0
+DEFAULT_MIRROR_STATE_DIR = "/var/lib/coursia-runner"
+DEFAULT_MIRROR_PATH = "/opt/hostedtoolcache/coursia-mirror.git"
+MIRROR_WARN_MARKER = "[WARN][mirror]"
+# Taille de la queue de journal lue : la ligne d'alerte est en FIN de
+# journal (les echecs s'y accumulent), et le journal peut avoir grossi.
+MIRROR_LOG_TAIL_BYTES = 64 * 1024
+
+
+@dataclass
+class MirrorState:
+    """Etat du miroir d'objets, tel que l'hote qui le porte l'ecrit."""
+
+    available: bool = False
+    reason: str = ""
+    fails: int | None = None
+    counter_age_s: float | None = None
+    ok_age_s: float | None = None
+    warn_line: str = ""
+    log_path: str = ""
+    fails_path: str = ""
+    threshold: int = DEFAULT_MIRROR_FAIL_WARN
+
+
+def _read_int_file(path: str) -> tuple[int | None, float | None]:
+    """(valeur, age en secondes) d'un fichier d'entier ; (None, None) sinon."""
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as fh:
+            raw = fh.read().strip()
+    except OSError:
+        return None, None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None, None
+    try:
+        age = max(0.0, time.time() - os.path.getmtime(path))
+    except OSError:
+        age = None
+    return value, age
+
+
+def _tail_lines(path: str, max_bytes: int = MIRROR_LOG_TAIL_BYTES) -> list[str]:
+    """Dernieres lignes d'un journal, sans le charger entier en memoire."""
+    try:
+        with open(path, "rb") as fh:
+            fh.seek(0, os.SEEK_END)
+            size = fh.tell()
+            fh.seek(max(0, size - max_bytes))
+            raw = fh.read().decode("utf-8", "replace")
+    except OSError:
+        return []
+    return raw.splitlines()
+
+
+def read_mirror_state(state_dir: str, mirror_path: str,
+                      threshold: int = DEFAULT_MIRROR_FAIL_WARN) -> MirrorState:
+    """Lit l'etat du miroir d'objets sur l'hote qui le porte.
+
+    Aucun acces reseau : ce sont les fichiers que le superviseur ecrit deja
+    (#26459). La lecture est best-effort et LOCALE : hors de l'hote du
+    miroir, elle rend `available=False` avec une raison -- jamais une
+    erreur, jamais un rouge.
+    """
+    state = MirrorState(threshold=threshold)
+    parent = os.path.dirname(os.path.abspath(mirror_path)) or "/"
+    fails_path = os.path.join(parent, ".objects-mirror.fails")
+    ok_path = os.path.join(parent, ".objects-mirror.ok")
+    log_path = os.path.join(state_dir, "objects-mirror.log")
+    state.fails_path = fails_path
+    state.log_path = log_path
+
+    fails, age = _read_int_file(fails_path)
+    state.fails = fails
+    state.counter_age_s = age
+    if os.path.exists(ok_path):
+        try:
+            state.ok_age_s = max(0.0, time.time() - os.path.getmtime(ok_path))
+        except OSError:
+            state.ok_age_s = None
+
+    for line in reversed(_tail_lines(log_path)):
+        if MIRROR_WARN_MARKER in line:
+            state.warn_line = line.strip()
+            break
+
+    if state.fails is None and not state.warn_line:
+        state.reason = (
+            f"ni compteur d'echecs ({fails_path}) ni journal ({log_path}) "
+            f"lisibles -- ce passage tourne hors de l'hote qui porte le miroir")
+        return state
+    state.available = True
+    return state
+
+
+def mirror_verdict(state: MirrorState,
+                   counter_fresh_s: float = DEFAULT_MIRROR_COUNTER_FRESH_S,
+                   ) -> tuple[list[str], list[str], list[str]]:
+    """(errors, warnings, notes) de l'etat du miroir.
+
+    La panne ACTIVE (compteur d'echecs >= seuil ET compteur fraichement
+    reecrit) est un ROUGE : la boucle tourne et le miroir echoue -- c'est
+    exactement l'incident du 26/10, ou le miroir etait fige depuis 19 jours.
+    Un compteur fige (vieux) est une NOTE : la boucle est arretee ou l'etat
+    estancien, et la cause n'est pas la meme -- un rouge permanent sur un
+    etat fige apprendrait a etre ignore (cf la discipline anti-FP de cet
+    organe).
+    """
+    errors: list[str] = []
+    warnings: list[str] = []
+    notes: list[str] = []
+    if not state.available:
+        notes.append(f"miroir: etat non lisible ici ({state.reason}) -- "
+                     f"ce passage ne conclut rien sur le miroir")
+        return errors, warnings, notes
+
+    fails = state.fails
+    age = state.counter_age_s
+    if fails is None:
+        notes.append("miroir: compteur d'echecs illisible "
+                     f"({state.fails_path}) -- l'etat du miroir n'est pas "
+                     f"conclu")
+    else:
+        fresh = age is not None and age <= counter_fresh_s
+        if fails >= state.threshold and fresh:
+            line = state.warn_line or (f"{MIRROR_WARN_MARKER} refresh en echec "
+                                       f"{fails} fois de suite")
+            errors.append(
+                f"MIROIR FIGE: {line} -- {fails} echec(s) consecutifs "
+                f"(seuil {state.threshold}), compteur reecrit il y a "
+                f"{age:.0f}s. La boucle de rafraichissement tourne et echoue : "
+                f"chaque checkout retelecharge l'historique complet depuis le "
+                f"serveur. Verifier la propriete du miroir (chown) et le reseau."
+            )
+        elif fails >= state.threshold:
+            notes.append(
+                f"miroir: {fails} echec(s) consecutifs recorded(s) (seuil "
+                f"{state.threshold}) MAIS le compteur n'est plus reecrit "
+                f"(dernier ecrit il y a {age:.0f}s) : la boucle de "
+                f"rafraichissement est arretee ou l'etat est fige depuis "
+                f"longtemps -- cause differente d'un miroir qui echoue, donc "
+                f"pas un rouge."
+                if age is not None else
+                f"miroir: {fails} echec(s) consecutifs records (seuil "
+                f"{state.threshold}), age du compteur inconnu -- pas un rouge."
+            )
+        else:
+            notes.append(f"miroir: {fails} echec(s) consecutif(s) (seuil "
+                         f"{state.threshold}) -- aucun gel constate")
+    if state.ok_age_s is not None:
+        notes.append(f"miroir: dernier rafraichissement reussi il y a "
+                     f"{state.ok_age_s:.0f}s")
+    return errors, warnings, notes
+
+
+def run_mirror_only(args) -> int:
+    """Verdict du MIROIR SEUL : aucun appel API, aucun inventaire.
+
+    Ce mode sert le job de PR (#26465). Le job tourne sur le slot
+    auto-heberge qui **porte** le miroir : c'est la seule surface ou
+    l'etat est local, et la ou la conclusion peut atterrir sur la PR --
+    donc sur une surface qu'une lane lit sans y penser.
+
+    La lecture reste best-effort : hors de l'hote du miroir, l'etat est
+    illisible et le verdict est une NOTE, jamais un rouge (discipline
+    anti-FP : l'absence du miroir ici ne prouve rien sur le miroir
+    ailleurs).
+
+    Le cout est nul en quota : ce mode ne lit que des fichiers locaux.
+    """
+    state = read_mirror_state(args.mirror_state_dir, args.mirror_path,
+                               threshold=args.mirror_fail_warn)
+    errors, warnings, notes = mirror_verdict(state)
+    payload = {
+        "status": "ERROR" if errors else "OK",
+        "errors": errors,
+        "warnings": warnings,
+        "notes": notes,
+        "measurement": "mirror-only",
+        "gh_calls": 0,
+        "mirror": {
+            "available": state.available,
+            "reason": state.reason,
+            "fails": state.fails,
+            "threshold": state.threshold,
+            "counter_age_s": state.counter_age_s,
+            "ok_age_s": state.ok_age_s,
+            "warn_line": state.warn_line,
+            "log_path": state.log_path,
+            "fails_path": state.fails_path,
+        },
+    }
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        for n in notes:
+            print(f"[runner-starvation] {n}")
+        for w in warnings:
+            print(f"::warning::[runner-starvation] {w}")
+        for e in errors:
+            print(f"::error::[runner-starvation] {e}")
+    return 1 if errors else 0
+
+
 @dataclass
 class JobRow:
     workflow: str
@@ -1127,8 +1359,39 @@ def main() -> int:
                          "workflow_run, une mesure complete sur N passages ; "
                          "les autres ne paient que la lecture de la cadence "
                          "servie (1 appel). 0 ou 1 = porte inactive")
+    ap.add_argument("--mirror-state-dir",
+                    default=os.environ.get("COURSIA_RUNNER_STATE_DIR",
+                                           DEFAULT_MIRROR_STATE_DIR),
+                    help=" repertoire d'etat du superviseur des runners "
+                         "(journal `objects-mirror.log`) -- #26453")
+    ap.add_argument("--mirror-path",
+                    default=os.environ.get("COURSIA_RUNNER_MIRROR_PATH",
+                                           DEFAULT_MIRROR_PATH),
+                    help="chemin du miroir d'objets ; son parent porte le "
+                         "compteur `.objects-mirror.fails` et l'horodatage "
+                         "`.objects-mirror.ok` -- #26453")
+    ap.add_argument("--mirror-fail-warn", type=int,
+                    default=int(os.environ.get("COURSIA_RUNNER_MIRROR_FAIL_WARN",
+                                               DEFAULT_MIRROR_FAIL_WARN)),
+                    help="nombre d'echecs consecutifs du miroir au-dela "
+                         "duquel l'alerte `[WARN][mirror]` est attendue")
+    ap.add_argument("--mirror-off", action="store_true",
+                    help="desactive la lecture de l'etat du miroir")
+    ap.add_argument("--mirror-only", action="store_true",
+                    help="n'evalue QUE l'etat local du miroir : aucun appel "
+                         "API, aucune lecture de cadence, aucun inventaire. "
+                         "C'est le mode du job de PR (#26465) : il tourne sur "
+                         "le slot auto-heberge qui PORTE le miroir, donc la "
+                         "seule surface ou l'etat est local, et son verdict "
+                         "arrive sur la PR.")
     ap.add_argument("--json", action="store_true", help="sortie JSON du verdict")
     args = ap.parse_args()
+
+    # Le mode miroir seul court AVANT tout le reste : il ne doit payer aucun
+    # appel API. Le job de PR s'execute sur chaque PR du depot -- un appel
+    # par PR sur la quota partagee `jsboige` serait un cout reel.
+    if args.mirror_only:
+        return run_mirror_only(args)
 
     # La cadence servie est lue AVANT la porte de mesure : c'est elle qui
     # porte le rapport #15332, et elle ne doit jamais dependre du passage
@@ -1158,6 +1421,18 @@ def main() -> int:
 
     inv: RunnerInventory | None = None
     st: Starvation | None = None
+    # Le MIROIR est lu HORS de la porte de mesure : l'alerte `[WARN][mirror]`
+    # ne doit pas dependre du fait que le passage complet soit econome
+    # (4 runs sur 1). Un miroir fige fait tomber les checkouts, donc la
+    # famine qu'on cherche a mesurer -- c'est une CAUSE, pas une note.
+    mirror: MirrorState | None = None
+    if not args.mirror_off:
+        mirror = read_mirror_state(args.mirror_state_dir, args.mirror_path,
+                                   threshold=args.mirror_fail_warn)
+        m_errors, m_warnings, m_notes = mirror_verdict(mirror)
+        v.errors.extend(m_errors)
+        v.warnings.extend(m_warnings)
+        v.notes.extend(m_notes)
     # #15332 : le chemin cadence-only n'appelle pas load_declared_hosts, mais
     # le payload annonce toujours `declared_hosts`. Sans cette initialisation,
     # la porte de mesure economisait la lecture ET cassait le passage.
@@ -1212,6 +1487,20 @@ def main() -> int:
         "budget_unread_runs": len(st.budget_unread) if st is not None else None,
         "in_progress_unread_runs": st.in_progress_unread if st is not None else None,
         "listing_failed": sorted(st.listing_failed) if st is not None else [],
+        # L'etat du miroir d'objets (#26453) : la ligne `[WARN][mirror]` doit
+        # etre lisible par une machine, pas seulement par un oeil sur le
+        # rapport texte.
+        "mirror": ({
+            "available": mirror.available,
+            "reason": mirror.reason,
+            "fails": mirror.fails,
+            "threshold": mirror.threshold,
+            "counter_age_s": mirror.counter_age_s,
+            "ok_age_s": mirror.ok_age_s,
+            "warn_line": mirror.warn_line,
+            "log_path": mirror.log_path,
+            "fails_path": mirror.fails_path,
+        } if mirror is not None else None),
     }
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))

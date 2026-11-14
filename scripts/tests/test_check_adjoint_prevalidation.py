@@ -1052,17 +1052,25 @@ def test_any_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
-# --- #17437 : la voix du coordinateur sous l'identite de son App de lane -----
+# --- #26102/#26405 : l'App de la machine ai-01 n'est PAS la voix du coordinateur
 
 
-def test_coordinator_app_identity_does_not_expire_the_dossier():
-    """#17437: the coordinator's App identity is its own voice too.
+def test_coordinator_app_act_expires_the_dossier():
+    """#26102 (appliqué ici par #26405) : un acte de l'App EXPIRE le dossier.
 
-    The lane migration replaces the coordinator's PAT with an installation
-    token, so its post-dossier rows reach the API as
-    ``coursia-lane-ai-01[bot]``. Missing that spelling from the neutralised
-    set would make the coordinator's own lift (B.0 voie 1) expire its own
-    dossier -- #16840's defect, reproduced under the App identity.
+    L'App ``coursia-lane-ai-01`` n'est plus une voix du coordinateur : sa clé
+    privée vit sur la machine ai-01, que partagent les DEUX lanes
+    ``myia-ai-01:CoursIA`` (coordinateur) et ``myia-ai-01:CoursIA-2``
+    (worker soeur) -- la seconde forge le même jeton d'installation.
+    Neutraliser un acte de l'App, c'est neutraliser un acte qu'une lane NON
+    coordinatrice peut écrire : le dossier ne périmait alors pas sur un
+    commentaire post-dossier de CoursIA-2 sous l'App.
+
+    Inverse du comportement #17437 historique (l'acte de l'App était
+    neutralisé) : aligné sur ``merge_ready.COORDINATOR_VOICES`` et
+    ``check_unaddressed_nits.LIFT_OVERRIDE_LOGINS``, qui refusent toute
+    forme App. Le coordinateur lève toujours sous ses logins humains
+    (``myia-ai-01`` / ``jsboige``, cf #16883).
     """
     base = _stamped_snapshot("")
     base["comments"].pop()
@@ -1071,16 +1079,18 @@ def test_coordinator_app_identity_does_not_expire_the_dossier():
     own["createdAt"] = T1
     snapshot["comments"].append(own)
     verdict, errors = mod.evaluate(snapshot)
-    assert verdict == mod.VERDICT_READY, errors
+    assert verdict != mod.VERDICT_READY, (verdict, errors)
+    assert any("discussion changed after dossier" in e for e in errors), errors
 
 
 def test_worker_lane_app_still_expires_the_dossier():
-    """#17437 negative control: widening stops at the coordinator.
+    """#26405 negative control: NO App spelling is neutralised anymore.
 
     Neutralising ``ACCEPTED_DOSSIER_AUTHORS`` wholesale would let any worker
     lane's App write a blocking row after the dossier without expiring it --
-    that is the gate's entire control. Only the coordinator's own App is
-    neutralised, so these two must still refuse.
+    that is the gate's entire control. Since #26102 no App at all is
+    neutralised (the coordinator machine's App included, see
+    ``test_coordinator_app_act_expires_the_dossier``), so these must refuse.
     """
     for login in ("coursia-lane-po-2024[bot]", "coursia-lane-po-2026[bot]"):
         base = _stamped_snapshot("")
@@ -1099,7 +1109,9 @@ def test_coordinator_app_login_is_an_accepted_dossier_author():
     ``COORDINATOR_APP_LOGIN`` is a literal so this module imports without
     ``gh_identity``. If the App prefix or the lane list ever changes there,
     this fails instead of silently neutralising a login the dossier gate
-    would reject as an author.
+    would reject as an author. The App stays an accepted dossier AUTHOR
+    (signing a dossier is not a post-dossier act) -- since #26102 it just no
+    longer neutralises anything written after the dossier.
     """
     assert mod.COORDINATOR_APP_LOGIN in mod.gh_identity.ACCEPTED_DOSSIER_AUTHORS
 
@@ -3409,23 +3421,38 @@ def test_queue_non_coordinator_approval_does_not_qualify():
     assert entry.review_qualifying is False
 
 
-def test_queue_coordinator_app_approval_qualifies_on_exact_head():
-    """#17437: the review door recognizes the coordinator's App as well."""
+def test_queue_coordinator_app_approval_does_not_qualify():
+    """#26102 (appliqué ici par #26405) : la porte review refuse l'App aussi.
+
+    La queue expose la porte à titre d'information ; l'autorité de merge est
+    le 2ter de ``merge_ready`` (``COORDINATOR_VOICES``), qui refuse toute
+    forme App depuis #26102 : la clé de l'App vit sur la machine ai-01
+    partagée par la lane worker soeur CoursIA-2, donc son APPROVE n'est pas
+    une preuve d'identité coordinateur. Inverse du comportement #17437
+    historique (la porte reconnaissait l'App).
+    """
     snapshot = _queue_snapshot([_review(login=mod.COORDINATOR_APP_LOGIN)])
     entry = _classified(snapshot)
-    assert entry.verdict == mod.VERDICT_READY
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
     assert entry.review_disposition == "approved-exact-head"
-    assert entry.review_qualifying is True
+    assert entry.review_qualifying is False
 
 
-def test_queue_coordinator_graphql_bot_approval_qualifies_on_exact_head():
-    """#21818: GraphQL supplies the App login without its REST suffix."""
+def test_queue_coordinator_graphql_bot_approval_does_not_qualify():
+    """#21818 spelling, #26102 verdict: normalisation inchangée, refus aligné.
+
+    GraphQL fournit toujours le login de l'App sans son suffixe REST
+    (``coursia-lane-ai-01``, ``type: Bot``) et ``normalize_author_login`` le
+    replie toujours en ``coursia-lane-ai-01[bot]`` -- c'est la forme repliée
+    qui est comparée, et depuis #26102 elle n'est plus une voix du
+    coordinateur : la porte reste fermée.
+    """
     review = _review(login="coursia-lane-ai-01")
     review["author"]["type"] = "Bot"
     entry = _classified(_queue_snapshot([review]))
-    assert entry.verdict == mod.VERDICT_READY
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
     assert entry.review_disposition == "approved-exact-head"
-    assert entry.review_qualifying is True
+    assert entry.review_qualifying is False
 
 
 def test_queue_worker_app_approval_still_does_not_qualify():
@@ -5698,3 +5725,100 @@ def test_la_pile_mesure_sur_un_clone_complet(tmp_path, monkeypatch):
     index, incidents = mod.build_stack_index()
     assert incidents == []
     assert index == {}
+
+
+# ---------------------------------------------------------------------------
+# _fetch_pr_heads : les 3 tests de la branche fix/stack-door-tete-reecrite,
+# recables sur l'API courante (issue #26529). Le faux `git fetch` modele les
+# deux echecs de lot que la porte « pile » doit absorber.
+# ---------------------------------------------------------------------------
+
+
+class _GitFakeHeadFetch:
+    """Faux `git fetch` pour les tetes de PR.
+
+    Modele les deux echecs de lot que la porte « pile » doit absorber :
+    - refspec NON force sur une tete reecrite : git refuse la mise a jour
+      non-fast-forward et sort rc=1 ; le faux git rend alors un stderr vide
+      (l'etat reel d'avant le fix) ;
+    - ref de PR disparue : git sort rc=1 avec
+      `fatal: couldn't find remote ref pull/N/head`.
+    """
+
+    def __init__(self, rewritten=(), missing=()):
+        # Les numeros de PR sont compares en CHAINE : le code reel extrait les
+        # refs disparues par regex (str) puis les compare a `str(p)`.
+        self.rewritten = {str(p) for p in rewritten}
+        self.missing = {str(p) for p in missing}
+        self.calls = []
+
+    def __call__(self, args, check=True):
+        self.calls.append(list(args))
+        # API courante : `_git(["fetch", "--no-progress", "origin", *specs])`.
+        specs = (
+            args[3:]
+            if args[:3] == ["fetch", "--no-progress", "origin"]
+            else args[1:]
+        )
+        for spec in specs:
+            pr = None
+            if spec.startswith("+pull/"):
+                pr = spec.split("/")[1]
+            elif spec.startswith("pull/"):
+                pr = spec.split("/")[1]
+            if pr is None:
+                continue
+            if pr in self.missing:
+                return subprocess.CompletedProcess(
+                    ["git", *args], 1, "",
+                    f"fatal: couldn't find remote ref pull/{pr}/head\n",
+                )
+            if pr in self.rewritten and not spec.startswith("+"):
+                # refspec non force sur tete reecrite : rejection, stderr vide.
+                return subprocess.CompletedProcess(["git", *args], 1, "", "")
+        return subprocess.CompletedProcess(["git", *args], 0, "", "")
+
+
+def test_fetch_pr_heads_survive_a_tete_reecrite(monkeypatch):
+    """Controle positif : une tete de PR reecrite ne doit plus eteindre la porte.
+
+    La situation (ref locale `prh/N` sur un commit non-ancetre de la nouvelle
+    tete) est celle qui faisait echouer la passe entiere. Sur le code non
+    corrige, ce test ECHOUE (la passe rend un incident) ; avec le refspec
+    force, il passe.
+    """
+    fake = _GitFakeHeadFetch(rewritten={20720})
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([20720])
+    assert incidents == [], f"la porte « pile » s'eteint sur une tete reecrite : {incidents}"
+    assert remaining == [20720]
+
+
+def test_fetch_pr_heads_uses_forced_refspecs(monkeypatch):
+    """Le correctif est dans le refspec : `+` devant `pull/N/head`.
+
+    On l'assert sur la FORME de la commande, pas sur le comportement du
+    faux git : c'est le contrat qui doit tenir quand git est le vrai.
+    """
+    fake = _GitFakeHeadFetch()
+    monkeypatch.setattr(mod, "_git", fake)
+    mod._fetch_pr_heads([123])
+    assert fake.calls, "aucun fetch lance"
+    fetch_args = fake.calls[0]
+    assert any(
+        spec.startswith("+pull/123/head:") for spec in fetch_args
+    ), fetch_args
+
+
+def test_fetch_pr_heads_keeps_dropping_refs_disparues(monkeypatch):
+    """Controle NEGATIF : le repli des refs disparues doit survivre au correctif.
+
+    Une ref de PR disparue n'est pas un incident : elle est ecartee, et la
+    passe est relancee sur les autres. Le correctif du refspec ne doit pas
+    transformer ce cas en incident.
+    """
+    fake = _GitFakeHeadFetch(missing={456})
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([456, 789])
+    assert incidents == [], f"une ref disparue ne doit pas etre un incident : {incidents}"
+    assert remaining == [789], remaining

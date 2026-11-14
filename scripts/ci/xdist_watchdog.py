@@ -127,9 +127,13 @@ import argparse
 import os
 import re
 import signal
+import shutil
+import uuid
 import subprocess
 import sys
 import threading
+import tempfile
+from pathlib import Path
 import time
 
 # Marqueurs de mort xdist, tels qu'ils apparaissent dans le log du job
@@ -322,7 +326,7 @@ class _StreamState:
 PIPE_CHUNK_BYTES = 65536
 
 
-def _pump(stream, state: _StreamState, echo) -> None:
+def _pump(stream, state: _StreamState, echo, on_crash=None) -> None:
     """Recopie la sortie du fils en mesurant l'activite par OCTET.
 
     On lit le tube par chunks bruts (``os.read`` sur le fd) et on
@@ -351,7 +355,10 @@ def _pump(stream, state: _StreamState, echo) -> None:
         while b"\n" in pending:
             raw, pending = pending.split(b"\n", 1)
             line = raw.decode("utf-8", errors="replace") + "\n"
+            previous_deaths = len(state.dead_workers)
             state.record(line)
+            if on_crash and len(state.dead_workers) > previous_deaths:
+                on_crash()
             echo(line)
     if pending:
         line = pending.decode("utf-8", errors="replace")
@@ -390,6 +397,28 @@ class _TerminationRequested(BaseException):
     """Interruption SIGTERM du point d’entree CLI."""
 
 
+def _diagnostic_snapshot(directory, emit) -> None:
+    """Rapporte au mieux les tests actifs et les compteurs mémoire."""
+    if directory is None:
+        return
+    try:
+        for path in sorted(Path(directory.name).glob("gw[0-9]*")):
+            try:
+                value = path.read_text(encoding="utf-8", errors="replace")
+                emit(f"XDIST-DIAGNOSTIC {path.name}: {value}")
+            except Exception:
+                pass
+        try:
+            events = Path("/sys/fs/cgroup/memory.events").read_text(
+                encoding="ascii", errors="replace"
+            )
+            emit("XDIST-DIAGNOSTIC memory.events: " + ", ".join(events.splitlines()))
+        except Exception:
+            pass
+    except Exception:
+        pass  # La surveillance et son verdict priment sur le diagnostic.
+
+
 def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
     """Execute ``argv`` sous surveillance ; renvoie le code de sortie a propager.
 
@@ -407,6 +436,33 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
         emit = _emit
 
     state = _StreamState()
+    diagnostics = None
+    child_env = None
+    # La CI passe explicitement pytest au watchdog ; ne pas instrumenter les
+    # autres commandes qui utilisent aussi ce wrapper.
+    if argv and Path(argv[0]).name in {"pytest", "pytest.exe"}:
+        try:
+            diagnostics = tempfile.TemporaryDirectory(prefix="coursia-xdist-")
+            child_env = os.environ.copy()
+            child_env["COURSIA_XDIST_DIAGNOSTICS"] = diagnostics.name
+            # Nom unique par exécution : ne masque aucun plugin utilisateur,
+            # notamment celui qui s'appellerait xdist_diagnostics.
+            module_name = "_coursia_xdist_" + uuid.uuid4().hex
+            shutil.copyfile(Path(__file__).with_name("xdist_diagnostics.py"),
+                            Path(diagnostics.name) / (module_name + ".py"))
+            previous = child_env.get("PYTHONPATH")
+            child_env["PYTHONPATH"] = os.pathsep.join(
+                [previous, diagnostics.name] if previous is not None else [diagnostics.name]
+            )
+            argv = [argv[0], "-p", module_name, *argv[1:]]
+        except OSError:
+            if diagnostics is not None:
+                try:
+                    diagnostics.cleanup()
+                except OSError:
+                    pass
+            diagnostics = None
+            child_env = None
     kwargs: dict = {}
     if os.name == "posix":
         kwargs["start_new_session"] = True
@@ -418,12 +474,14 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             bufsize=-1,
+            env=child_env,
             **kwargs,
         )
         started = time.monotonic()
 
         reader = threading.Thread(
-            target=_pump, args=(proc.stdout, state, echo), daemon=True
+            target=_pump, args=(proc.stdout, state, echo,
+                                lambda: _diagnostic_snapshot(diagnostics, emit)), daemon=True
         )
         reader.start()
 
@@ -432,6 +490,7 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
                 break
             idle = state.idle_for()
             if idle > idle_limit:
+                _diagnostic_snapshot(diagnostics, emit)
                 _verdict_blocked(state, idle, idle_limit, started, emit)
                 _kill_tree(proc)
                 proc.wait(timeout=30)
@@ -466,6 +525,13 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
         # la sortie du wrapper sur un pipe theoriquement ouvert.
         if reader is not None and reader.ident is not None:
             reader.join(timeout=10)
+        if diagnostics:
+            if state.dead_workers:
+                _diagnostic_snapshot(diagnostics, emit)
+            try:
+                diagnostics.cleanup()
+            except OSError:
+                pass  # Un diagnostic ne modifie pas le verdict pytest.
 
     # La conjonction est re-testee UNE FOIS la boucle sortie. Sans ce
     # controle la course est ouverte : la boucle teste tous les 0,5 s et
