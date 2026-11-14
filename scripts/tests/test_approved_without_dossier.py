@@ -576,3 +576,51 @@ def test_classify_lean_verifie_ne_bloque_pas():
     probes = dict(GREEN_PROBES)
     probes["lean"] = {"reason": None}
     assert awd.classify(_pr(), probes) == ("CHAINABLE", [])
+
+
+# --- 8. mode --prs : verdict cible sans payer les probes du pool ------------
+
+
+def test_parse_prs_filter_numerotes_et_espaces():
+    assert awd.parse_prs_filter(" 12 , 34 ") == {12, 34}
+    assert awd.parse_prs_filter("7") == {7}
+    assert awd.parse_prs_filter("7,7,7") == {7}
+
+
+def test_parse_prs_filter_refuse_le_non_numerique():
+    for bogus in ("abc", "12,abc", ""):
+        try:
+            awd.parse_prs_filter(bogus)
+        except ValueError:
+            continue
+        raise AssertionError("filtre accepte: {!r}".format(bogus))
+
+
+def test_main_prs_ne_proble_que_les_numerotees(monkeypatch, capsys):
+    """Le filtre borne la PASSE : trois candidates a l'approbation, une
+    seule numerotee par --prs, la sonde ne tourne que pour elle (mesure
+    14/11 : une passe plein-pool coute ~6-8 min en REST pour rien)."""
+    pool = [
+        _pr(number=1, reviews=[_review()]),
+        _pr(number=2, reviews=[_review()]),
+        _pr(number=3, reviews=[_review()]),
+    ]
+    probed: list[int] = []
+    monkeypatch.setattr(awd, "fetch_prs", lambda repo, limit=None: list(pool))
+    monkeypatch.setattr(awd, "probe_b0",
+                        lambda pr: (probed.append(pr)
+                                    or {"blocked": False, "blocking": []}))
+    monkeypatch.setattr(
+        awd, "probe_checks",
+        lambda pr, head: (probed.append(pr)
+                          or {"green": True, "reds": []}))
+    monkeypatch.setattr(awd, "probe_dwell",
+                        lambda pr, head, repo: {"ok": True, "message": "ok"})
+    monkeypatch.setattr(awd, "probe_lean",
+                        lambda pr, head, runner, gh_env: {"reason": None})
+    rc = awd.main(["--prs", "2", "--json"])
+    assert rc == awd.EXIT_OK
+    assert sorted(probed) == [2, 2]  # b0 + checks, PR 2 uniquement
+    out = json.loads(capsys.readouterr().out)
+    assert [r["pr"] for r in out["rows"]] == [2]
+    assert out["rows"][0]["status"] == "CHAINABLE"

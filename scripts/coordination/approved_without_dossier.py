@@ -603,6 +603,28 @@ def render(repo: str, rows: list[dict], approver: str) -> str:
     return "\n".join(lines)
 
 
+def parse_prs_filter(text: str) -> set[int]:
+    """`"12,34"` -> {12, 34} ; leve ValueError sur un token non numerique.
+
+    Un verdict cible ne doit pas payer les probes du pool entier (mesure
+    14/11 : ~6-8 min en REST pour trois PRs) : le filtre borne la PASSE aux
+    numeros nommes, l'enumeration reste ce qu'elle est (3 points GraphQL).
+    """
+    wanted: set[int] = set()
+    for token in text.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        try:
+            wanted.add(int(token))
+        except ValueError:
+            raise ValueError(
+                "numero de PR non numerique: {!r}".format(token))
+    if not wanted:
+        raise ValueError("aucun numero de PR dans le filtre")
+    return wanted
+
+
 def main(argv: "list[str] | None" = None) -> int:
     parser = argparse.ArgumentParser(
         description="PRs approuvees (tete ou couvrante), vertes, chainables "
@@ -612,12 +634,24 @@ def main(argv: "list[str] | None" = None) -> int:
                         help="approbateur dont la review fait foi")
     parser.add_argument("--limit", type=int, default=None,
                         help="borne le nombre de PRs lues (diagnostic)")
+    parser.add_argument("--prs", default=None,
+                        help="borne la passe aux PRs numerotees, separees "
+                             "par des virgules (ex: 12,34) -- verdict cible "
+                             "sans payer les probes du pool entier")
     parser.add_argument("--rest", action="store_true",
                         help="enumere en REST seul (porte GraphQL videe)")
     parser.add_argument("--no-dwell", action="store_true",
                         help="saute la probe DWELL (plus rapide, moins sur)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+
+    prs_filter: "set[int] | None" = None
+    if args.prs:
+        try:
+            prs_filter = parse_prs_filter(args.prs)
+        except ValueError as exc:
+            print("ERROR: --prs: {}".format(exc), file=sys.stderr)
+            return EXIT_ERROR
 
     runner = _runner_for(args.repo)
     if args.rest and runner is None:
@@ -635,6 +669,9 @@ def main(argv: "list[str] | None" = None) -> int:
         print("ERROR: lecture des PRs impossible: {}".format(exc),
               file=sys.stderr)
         return EXIT_ERROR
+
+    if prs_filter is not None:
+        prs = [p for p in prs if p.get("number") in prs_filter]
 
     rows: list[dict] = []
     for item in screen(prs, args.login, runner, gh_env):
