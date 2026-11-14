@@ -127,7 +127,22 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    #
+    # T-L (#25510) : ce job est un job REQUIS -- tant qu'il n'a pas de verdict,
+    # `main` n'est pas verifie. Il etait route sur le meme pool que les PRs
+    # (`coursia-ephemeral`), donc il attendait derriere elles (mesure du
+    # 2026-11-12 : plus de 27 minutes en file, 31 runners sur 31 occupes).
+    # Il vise desormais le slot RESERVE (`coursia-main`) sur un push, et le
+    # pool PR sinon -- repli ENUMERE, exige par
+    # `scripts/ci/check_self_hosted_runner_policy.py` (forme auditee : jeu de
+    # labels + garde `push` + repli ; le jeu seul, ou le jeu sans garde, ou
+    # le jeu sans repli sont refuses).
+    # La garde same-repo ci-dessous reste obligatoire : le repli est
+    # auto-heberge, donc une PR de fork ne doit pas l'atteindre.
+    # Le merge de ce routage suppose le slot DEPLOYE (`--apply` du script de
+    # creation) : sans runner `coursia-main`, le job de `main` attendrait un
+    # runner inexistant. Ordre : deployer le slot, puis merger.
+    runs-on: ${{ (github.event_name == 'push') && fromJSON('["self-hosted","coursia-main","coursia-linux"]') || fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
     # mur du JOB (started_at -> completed_at du job nomme exactement
@@ -183,9 +198,65 @@ jobs:
     #                                     INCHANGEE : elle etait 45 -> 52)
     # La regle (enfant < aggregateur < runner) et ses marges sont donc
     # preservees a l'identique : seule la valeur du mur de l'enfant bouge.
-    # Re-mesurer sur les 70 prochains runs, une fois les 7 coupes reussies :
-    # c'est ce qui dira si 40 min suffit.
-    timeout-minutes: 40
+    #
+    # Mesure du 2026-11-14 -- LA REPONSE, CORRIGEE PAR L'ANNOTATION.
+    #
+    # Premier passage (organe `scripts/ci/measure_declared_ceiling.py`,
+    # meme grandeur : le mur du job "Scripts Tests (CPU)", 43,4 h
+    # reellement couvertes) :
+    #     plafond 30 min   29 candidats / 220 jobs  dont 25 CONFIRMEES (TIMEOUT)
+    #     plafond 40 min   14 candidats / 523 jobs  dont 12 CONFIRMEES (TIMEOUT)
+    # soit 2,3 % sous le plafond de 40 -- et la conclusion ecritte etait
+    # « ne pas relever ».
+    #
+    # CE CHIFFRE ETAIT MAL COMPTE, et la faute n'est pas dans l'annotation :
+    # elle est dans la POPULATION. L'endpoint `runs/<id>/jobs` ne renvoie,
+    # par defaut, que la DERNIERE tentative d'un run ; or un job coupe au
+    # mur est tres souvent REJOUE (rejeu automatique de la CI, ou re-run
+    # humain) -- et le run ne porte alors plus que la tentative rejouee, qui
+    # reussit. La coupe DISPARAIT de la population : elle est censuree par
+    # le rejeu. Mesure du controle croise du 2026-11-14 (meme organe natif
+    # `scripts/ci/classify_job_deaths.py`, classe `TIMEOUT` sur
+    # l'annotation « The job has exceeded the maximum execution time »,
+    # population collectee avec `filter=all`) : 26 des 40 coupes au mur du
+    # segment 40 min sont ABSENTES du cache collecte SANS `filter=all`.
+    # L'organe collecte donc desormais avec `filter=all`, et son cache
+    # porte une VERSION : un cache anterieur est ignore, pas relu.
+    #
+    # Ce que dit la mesure CORRIGEE (population entiere, chaque coupe
+    # CONFIRMEE par l'annotation de l'organe natif) :
+    #     plafond 30 min   60 coupes / 249 jobs executes   (24,1 %)
+    #     plafond 40 min   38 coupes / 582 jobs executes   ( 6,5 %)
+    # (`skipped` exclus : un job jamais demarre n'a pas de duree.)
+    # Le seuil de decision pose par la premiere mesure (>= 5 % des
+    # executions coupees au mur) est donc franchi APRES le releve : le
+    # plafond BINDE encore. Sur la fenetre mesuree, 42 PRs distinctes ont
+    # porte au moins un rouge de mur.
+    #
+    # Le releve, et ses trois valeurs (les marges de la chaine ne
+    # bougent pas) :
+    #     enfant   40        -> 44
+    #     gate     40 + 15   -> 59   (marge de 15 min INCHANGEE ; 59 reste
+    #                                  SOUS le plafond propre de Quarto (60),
+    #                                  donc la queue reelle de Quarto reste
+    #                                  sur le chemin STARVED -> auto-annulation
+    #                                  (#13510, #14412))
+    #     runner   59 + 7    -> 66   (marge de 7 min pour le verdict
+    #                              INCHANGEE)
+    # 44 est le maximum coherent : l'agregateur doit rester SOUS 60, donc
+    # l'enfant sous 45.
+    #
+    # Ce que le releve ne repare pas : les 8 coupes qui portent aussi un
+    # etape en echec (le test y echoue, il n'y finit pas) et les annulations
+    # par supersede. Le releve rend au succes les coupes AU MUR, pas la
+    # duree de la jambe -- celle-ci se gagne sur le plan a deux etages
+    # (#25510, etage 1) et sur le pool de runners (slot reserve pour
+    # `main`, tranche T-L).
+    #
+    # Re-mesurer : `python scripts/ci/measure_declared_ceiling.py
+    # --workflow scripts-tests.yml --hours 48 --jobs-cache
+    # .tmp/ceiling_jobs_v2.json --annotate --out .tmp/ceiling4.json`
+    timeout-minutes: 44
 
     steps:
       # ------------------------------------------------------------------
@@ -552,6 +623,7 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
+            MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_flagship_endpoint.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
