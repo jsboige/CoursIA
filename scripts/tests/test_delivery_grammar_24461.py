@@ -90,12 +90,53 @@ def test_une_tranche_ne_desarme_pas_une_livraison_anterieure():
 
 
 def test_la_tranche_n_arme_pas_le_label():
-    """Le label reste etroit : une attestation dediee seule l'arme."""
+    """Une livraison AVEC clause `paths:` reste une tranche : ni tapis ni label."""
     assert dg.attestation_state([TRANCHE]) == dg.NONE
 
 
 def test_l_attestation_arme_le_label():
     assert dg.attestation_state([ATTESTATION]) == dg.ATTESTED
+
+
+# --- 1 bis. residu #24461 (11/11) : la livraison epic-wide arme le LABEL ----
+# Le tapis ecartait deja ces issues (`delivery_state`), mais par une sonde
+# budgetee -- fail-OPEN, le tirage worker servait le grain quand meme
+# (mesure 76/120). Le label, lu gratuitement dans le payload du pool, exige
+# la meme grammaire d'arming. La protection d'un marqueur pose a tort reste
+# la REVOCATION partagee.
+
+def test_la_livraison_epic_wide_arme_le_label():
+    assert dg.attestation_state([EPIC_WIDE]) == dg.ATTESTED
+
+
+def test_la_livraison_epic_wide_revoquee_ne_l_arme_pas():
+    assert dg.attestation_state([EPIC_WIDE, "[NOT-DELIVERED]"]) == dg.REVOKED
+
+
+def test_la_livraison_epic_wide_rearmee_apres_revocation():
+    fil = [EPIC_WIDE, "[NOT-DELIVERED]", EPIC_WIDE]
+    assert dg.attestation_state(fil) == dg.ATTESTED
+
+
+def test_la_tranche_ne_desarme_pas_une_attestation_anterieure():
+    assert dg.attestation_state([ATTESTATION, TRANCHE]) == dg.ATTESTED
+
+
+def test_le_labeler_et_le_tapis_lisent_la_meme_grammaire_hors_dossier():
+    """Sur un fil sans dossier, les DEUX organes rendent le meme etat :
+    le critere 4 du residu (tirage worker 0 grain a marqueur vivant) exige
+    que tout marqueur vivant du tapis soit aussi un marqueur du label."""
+    fils = [
+        [ATTESTATION],
+        [EPIC_WIDE],
+        [TRANCHE],
+        [EPIC_WIDE, "[NOT-DELIVERED]"],
+        [ATTESTATION, TRANCHE],
+        ["commentaire ordinaire"],
+    ]
+    for fil in fils:
+        assert dg.attestation_state(fil, dossier=False) \
+            == dg.delivery_state(fil, dossier=False), fil
 
 
 # --- 2. le dossier `[CLOSURE PREFLIGHT]` VIVANT ----------------------------

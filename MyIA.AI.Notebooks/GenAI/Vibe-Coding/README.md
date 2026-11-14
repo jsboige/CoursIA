@@ -15,8 +15,8 @@ Cette série couvre les ateliers de **vibe-coding** : décrire ce que vous voule
 
 ```text
 Vibe-Coding/
-├── Claude-Code/          # Ateliers Claude Code (5 modules)
-├── Roo-Code/             # Ateliers Roo Code (5 modules + avances)
+├── Claude-Code/          # Ateliers Claude Code
+├── Roo-Code/             # Ateliers Roo Code et modules avancés
 ├── Claw-Systems/         # Agents IA autonomes (NanoClaw, OpenClaw)
 ├── Claudish/             # Proxy multi-provider (route assistants vers Anthropic/GLM/Qwen)
 ├── analyzers/            # Sous-série Roslyn : MyIA.AgentSafetyAnalyzer + carnet de démonstration

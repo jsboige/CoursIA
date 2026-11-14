@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-05
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Matrice coût/ressource par notebook
 
@@ -317,7 +317,7 @@ cost:
 ```
 
 ```yaml
-# 01-5-Qwen-Image-Edit.ipynb (GenAI/Image/01-Foundation)
+# 01-5-Edition-Image-Prompt.ipynb (GenAI/Image/01-Foundation)
 cost:
   api_usd_est: 0.0             # Modèle self-hosted po-2023 (pas de coût API direct)
   api_provider: local
@@ -328,7 +328,7 @@ cost:
   vram_tier: MID
   network: true                # Téléchargement modèle HuggingFace au premier run
   external_account: hf         # HF_TOKEN pour download gated
-  free_alternative: GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb
+  free_alternative: GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reproducibility: HIGH        # torch.manual_seed(42) + déterminisme sampler
   metadata_written: 2026-07-23T01:30Z
@@ -506,7 +506,7 @@ litmus correspondant dans `check_cost_metadata.py` signale tout quantbook
 ### GenAI/Image GPU lourd (référence HIGH tier)
 
 ```yaml
-# 01-5b-Qwen-Image-Edit-2509.ipynb (GenAI/Image/02-Advanced)
+# 01-5b-Edition-Image-Prompt-Iterations.ipynb (GenAI/Image/02-Advanced)
 cost:
   api_usd_est: 0.0
   api_provider: local
@@ -517,7 +517,7 @@ cost:
   vram_tier: HIGH
   network: true
   external_account: hf
-  free_alternative: GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb
+  free_alternative: GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb
   reduced_pedagogical: GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb
   reproducibility: HIGH
   metadata_written: 2026-07-23T01:30Z

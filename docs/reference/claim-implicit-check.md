@@ -1,6 +1,6 @@
 # Claim IMPLICIT — vérification cross-lane avant d'éditer
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 > Statut : **procédure** (HARD). Tout grain substantiel qui éditerait un chemin
 > potentiellement revendiqué par une autre lane applique cette procédure **avant
@@ -118,7 +118,7 @@ Si un worktree nommé pour le sujet existe :
 
 1. Identifier la branche : `git -C <worktree> branch --show-current`.
 2. Inspecter son dernier commit : `git -C <worktree> log -1 --oneline`.
-3. Vérifier qu'aucune PR n'est attachée : `gh pr list --state all --search "head:<branche>"`.
+3. Vérifier qu'aucune PR n'est attachée avec la [lecture PR par branche du runbook L576](orphan-branch-scan-l576.md#ancre-pr-par-branche), y compris son repli si REST ne permet pas de conclure.
 
 Si oui → **travail abandonné en cours de compaction** : reprendre le worktree
 ou fusionner avec l'auteur. Si non (la branche est orpheline) → créer le votre,
@@ -163,7 +163,7 @@ n'a pas eu le temps de répondre.
 |---|---|---|
 | `gh issue list --state open` seul | Ne voit pas les **PRs mergées** qui couvrent l'issue en rider. Tell fondateur #13562 (livrée en rider par #13608 sans `Closes`) | Étape 2 avec `--state all --search "<N>"` |
 | `git merge-base --is-ancestor` seul | Un squash-merge efface l'ascendance ; `is_ancestor` retourne `false` alors que la PR est MERGED | Étape 2 avec `gh pr list --state all` |
-| Croit qu'un worktree orphelin = travail abandonné | Le worker peut être en compaction, sa branche peut être attachée à une PR OPEN | Étape 3 + `gh pr list --state all --search "head:<br>"` |
+| Croit qu'un worktree orphelin = travail abandonné | Le worker peut être en compaction, sa branche peut être attachée à une PR OPEN | Étape 3 + [lecture PR par branche](orphan-branch-scan-l576.md#ancre-pr-par-branche) |
 | Édite puis pose `[CLAIMED]` | L'édition a déjà eu lieu ; si collision, retour arrière coûteux (commit revert + re-travail sur la bonne branche) | Appliquer cette procédure **avant** d'éditer |
 | Croit qu'un claim **explicite** sur une issue suffit | Une autre lane peut avoir une PR ouverte touchant le **chemin** sans claim d'issue | Étape 2 systématique — claim implicite ≠ claim explicite |
 

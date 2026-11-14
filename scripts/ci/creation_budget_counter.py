@@ -15,7 +15,7 @@ Trois mesures, toutes derivées d'une source primaire :
      (`gh issue list --state closed`) : le nombre de grains que la flotte a
      livres la semaine ecoulee, qui est le multiplicateur du budget.
   C. la part de creation du pool ouvert — mesuree par le module
-     `scripts/creation_budget.py` sur le meme pool que le tapis.
+     `scripts/ci/creation_budget.py` sur le meme pool que le tapis.
 
 Le budget n'est JAMAIS une constante posee a la main :
 

@@ -89,7 +89,7 @@ Le détail des tests est sur #24228.
 
 La version mesurée par le verdict lisait `start_date` et `end_date` avec des valeurs par défaut et ne traçait que la valeur du portefeuille, à l'ouverture de chaque séance. Elle ne tenait pas le contrat du rejeu en ombre : le graphique ne portait ni `fees` ni `turnover`, que l'ingestion exige, et la valeur prise à l'ouverture n'était pas celle de la clôture que demande le contrat.
 
-La version 2 lit `start` et `end` sans valeur par défaut et trace, à la clôture de chaque séance de SPY, la valeur du portefeuille, `fees` et `turnover`. La règle de trading ne change pas.
+La version 2 lit `start` et `end` sans valeur par défaut et trace, à la clôture de chaque séance de SPY, la valeur du portefeuille, `fees` et `turnover`. La règle de trading ne change pas. Elle est gelée au registre d'ombre le 2026-11-12, sous l'identifiant `short-intl-v2`, sur le projet QC 39243884, au SHA `fa1d63e`.
 
 Deux contrôles :
 
