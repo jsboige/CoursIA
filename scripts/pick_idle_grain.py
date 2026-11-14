@@ -6955,6 +6955,32 @@ def is_aggregator_check(name: str) -> bool:
             or name.startswith(AGGREGATOR_CHECK_PREFIXES))
 
 
+def _gate_verdicts():
+    """`ci/gate_verdicts`, ou None si l'import est impossible.
+
+    Import tardif et defensif : l'organe est optionnel, son absence rend les
+    verdicts d'etat illisibles -- donc le fail-closed de l'appelant.
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+        import gate_verdicts  # noqa: PLC0415 - import tardif
+        return gate_verdicts
+    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+        return None
+
+
+def _read_check_annotations(check_run_id: int) -> list | None:
+    """Annotations d'un check-run, ou None si illisibles.
+
+    La lecture est dans `ci/gate_verdicts` (cache du picker passe en
+    rappel) : un seul endroit lit les annotations (#26564).
+    """
+    gv = _gate_verdicts()
+    if gv is None:
+        return None
+    return gv.read_annotations(check_run_id, _repair_read_annotation, _repair_store_annotation)
+
+
 def fetch_check_organs(check_run_id: int) -> list[str]:
     """Organes nommes par la banniere d'annotation de l'agregateur.
 
@@ -6964,18 +6990,8 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
     annotation illisible rend [], et l'appelant exclut alors le check de la
     corroboration au lieu de le laisser corroborer par son nom.
     """
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+    annotations = _read_check_annotations(check_run_id)
+    if annotations is None:
         return []
     organs: list[str] = []
     for ann in annotations or []:
@@ -7052,18 +7068,8 @@ def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
     fail-closed comme ``fetch_check_organs`` : annotations illisibles ou
     verdict non-FAIL rendent ([], []), et SANS preuve la lane repare.
     """
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
+    annotations = _read_check_annotations(check_run_id)
+    if annotations is None:
         return [], []
     failed: list[str] = []
     cut: list[str] = []
@@ -7092,43 +7098,23 @@ def fetch_check_dwell(check_run_id: int) -> dict | None:
     Best-effort comme son voisin : annotation illisible -> ``None``, et
     l'appelant retombe sur le fail-closed (le rouge reste a la lane).
     """
-    parser = _dwell_message_parser()
-    if parser is None:
-        return None
-    try:
-        cached = _repair_read_annotation(check_run_id)
-        if cached is not None:
-            annotations = cached
-        else:
-            raw = subprocess.run(
-                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-            ).stdout
-            annotations = json.loads(raw)
-            _repair_store_annotation(check_run_id, annotations)
-    except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
-        return None
-    for ann in annotations or []:
-        parsed = parser(ann.get("message") or "")
-        if parsed:
-            return parsed
-    return None
+    verdict = fetch_check_unknown_verdict(check_run_id)
+    return verdict if (verdict or {}).get("state") == "dwell" else None
 
 
-def _dwell_message_parser():
-    """`merge_dwell.parse_pending_message`, ou None si l'import est impossible.
+def fetch_check_unknown_verdict(check_run_id: int) -> dict | None:
+    """Verdict d'etat NON REPARABLE porte par l'annotation, ou None.
 
-    Import tardif et defensif, comme `_is_adjacency_red` : l'organe est
-    optionnel, une `ImportError` ici ne doit pas casser le tirage -- elle doit
-    seulement rendre le DWELL illisible, c'est-a-dire retomber sur le
-    fail-closed d'avant #15910 (le rouge reste a la lane).
+    DWELL (#15910, un plancher a ecouler) ou INCONCLUSIVE du gate (#26564,
+    quota d'installation epuise : l'etat des checks est INCONNU, pas faux).
+    Aucun des deux ne nomme d'organe : ce sont des ETATS, pas des defauts de
+    la PR. La lecture est dans `ci/gate_verdicts` ; le format de chaque
+    message appartient a son emetteur (`merge_dwell`, `pr_gate`).
     """
-    try:
-        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
-        from merge_dwell import parse_pending_message  # noqa: PLC0415 - import tardif
-        return parse_pending_message
-    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+    gv = _gate_verdicts()
+    if gv is None:
         return None
+    return gv.unknown_verdict(check_run_id, _repair_read_annotation, _repair_store_annotation)
 
 
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
@@ -8847,6 +8833,7 @@ def red_backlog(lane: str, threshold_hours: float,
     for pr in mine + others:
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
+    # #26564 : cache des verdicts d'etat NON REPARABLE (DWELL, INCONCLUSIVE).
     dwell_cache: dict[int, dict] = {}
     # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
     # PRs de la lane dans ce passage, comme organ_cache.
@@ -8891,10 +8878,10 @@ def red_backlog(lane: str, threshold_hours: float,
                 ctx_name = ctx.get("name") or ctx.get("context") or "?"
                 keys_by_name.setdefault(ctx_name, set()).update(
                     failed_check_keys(ctx, organ_cache))
-        # #15910 : un agregateur rouge par DWELL n'a pas d'organe a lire. On ne
-        # paie la lecture d'annotation que pour les agregateurs dont AUCUN
-        # organe n'a pu etre resolu -- exactement le cas ambigu, jamais le cas
-        # nominal (un organe nomme tranche deja la question).
+        # #15910 / #26564 : un agregateur rouge par DWELL ou par verdict
+        # INCONCLUSIVE du gate n'a pas d'organe a lire. Une seule passe sur les
+        # agregateurs dont AUCUN organe n'a pu etre resolu -- le cas ambigu,
+        # jamais le nominal (un organe nomme tranche deja la question).
         dwell_by_name: dict[str, dict] = {}
         for ctx in _failed_contexts(state):
             ctx_name = ctx.get("name") or ctx.get("context") or "?"
@@ -8906,14 +8893,18 @@ def red_backlog(lane: str, threshold_hours: float,
             if ctx_run_id is None:
                 continue
             if ctx_run_id not in dwell_cache:
-                dwell_cache[ctx_run_id] = fetch_check_dwell(ctx_run_id) or {}
+                dwell_cache[ctx_run_id] = fetch_check_unknown_verdict(ctx_run_id) or {}
             dwell = dwell_cache[ctx_run_id]
             if dwell:
                 dwell_by_name[ctx_name] = dwell
         for ctx_name, info in sorted(dwell_by_name.items()):
-            dwell_waiting.append({"number": pr["number"], "check": ctx_name,
-                                  "lift_at": info.get("lift_at"),
-                                  "remaining_min": info.get("remaining_min")})
+            entry = {"number": pr["number"], "check": ctx_name,
+                     "state": info.get("state", "dwell"),
+                     "lift_at": info.get("lift_at"),
+                     "remaining_min": info.get("remaining_min")}
+            if info.get("detail"):
+                entry["detail"] = info["detail"]
+            dwell_waiting.append(entry)
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
                                  infra_rerun=set(infra_rerun),
@@ -9092,6 +9083,7 @@ def red_backlog(lane: str, threshold_hours: float,
             # #15910 : les agregateurs rouges par DWELL. Ni un defaut a
             # reparer, ni un rouge impute a la base : un minuteur qu'aucune
             # lane ne peut avancer en poussant (pousser le remet a zero).
+            # #26564 : meme categorie pour l'INCONCLUSIVE (`kind` distingue).
             "dwell_waiting": dwell_waiting,
             "nits_unavailable": nits_unavailable,
             # Q41 : plafond de WIP. wip_triggered porte le verdict (compte >=
@@ -9209,22 +9201,29 @@ def print_dwell_waiting(backlog: dict) -> None:
     items = backlog.get("dwell_waiting") or []
     if not items:
         return
-    print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
-    for item in items:
-        # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
-        # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
-        # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
-        # min). L'heure de levee absolue est la seule donnee qui ne vieillit
-        # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
-        reste = item.get("remaining_min")
-        reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
-        quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
-        print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
-    print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
-    print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
-    print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
-    print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
-    print("attend, pas la lane.")
+    dwell = [i for i in items if i.get("state", "dwell") == "dwell"]
+    unknown = [i for i in items if i.get("state") == "inconclusive"]
+    if dwell:
+        print("PLANCHER DE DWELL -- un minuteur, pas un defaut, rien a reparer :")
+        for item in dwell:
+            # « reste » est le chiffre du gate AU MOMENT DU CHECK : sur une PR dont
+            # le plancher est deja ecoule il est perime (mesure du 2026-09-13 :
+            # #15952 annoncait « reste ~23 min » pour une levee passee depuis 20
+            # min). L'heure de levee absolue est la seule donnee qui ne vieillit
+            # pas -- c'est elle qui decide, « reste » n'est qu'un contexte.
+            reste = item.get("remaining_min")
+            reste_txt = f" (reste ~{reste} min lu au moment du check)" if reste is not None else ""
+            quand = f" -- plancher ecoule a {item['lift_at']}" if item.get("lift_at") else ""
+            print(f"  - #{item['number']} {item['check']}{quand}{reste_txt}")
+        print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
+        print("base. NE PAS repousser : un push remet le plancher a zero. Apres")
+        print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
+        print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
+        print("attend, pas la lane.")
+    if unknown:
+        gv = _gate_verdicts()
+        if gv is not None:
+            gv.print_inconclusive_waiting(unknown)
     print()
 
 
