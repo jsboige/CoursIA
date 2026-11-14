@@ -238,9 +238,32 @@ import lean_build_attestation  # noqa: E402
 # remplace n'a pas repris le pli de la chaine v9).
 import pr_gate  # noqa: E402
 import check_run_state  # noqa: E402
+# #17437 : normalisation de l'auteur d'une review (orthographe REST des
+# identites App) -- source unique de la forme canonique, jamais recopiee.
+import gh_identity  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 COORDINATOR_USER = "myia-ai-01"
+# La voix du coordinateur : le login humain SEUL. L'App ``coursia-lane-ai-01``
+# n'en fait PAS partie (arbitrage ai-01 2026-11-13, portee par ce module).
+#
+# Sa cle privee vit sur la machine ai-01, dans le clone du depot
+# (``.secrets/github-apps/coursia-lane-ai-01.pem``, cf
+# ``scripts/secrets/github_app_manifest.KEY_DIR``). La machine porte DEUX
+# lanes : ``myia-ai-01:CoursIA`` (le coordinateur) et ``myia-ai-01:CoursIA-2``
+# (la lane worker sœur). La seconde lit le meme fichier et forge donc le meme
+# jeton d'installation : compter cette App comme voix du coordinateur
+# ouvrirait la porte Q131 a une lane non coordinatrice -- une APPROVE ou un
+# ``[OVERRIDE]`` de CoursIA-2 vaudrait ceux du coordinateur. Une App PROPRE a
+# la lane coordinateur est le prealable ; une App nommee par machine ne le
+# remplace pas.
+#
+# Le mecanisme de preuve d'identite reste en place (``_voice_login`` /
+# ``_typed_reviews``) : la preuve est le TYPE porte par la ligne, jamais une
+# sonde ``users/<login>[bot]``. Il sert la voix humaine et refuse toute forme
+# App ; le jour ou une App de lane coordinateur existe, elle s'ajoute ici par
+# une edition consciente, accompagnee de sa cle dediee.
+COORDINATOR_VOICES = frozenset((COORDINATOR_USER,))
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_CLAIMS_PATH = SCRIPTS_DIR / "notebook_tools" / "twin_open_claims.py"
@@ -256,6 +279,23 @@ SLOT_RESERVATIONS_PATH = SCRIPTS_DIR / "notebook_tools" / "slot_reservations.jso
 COMBINED_PATH = SCRIPTS_DIR / "coordination" / "premerge_combined_check.py"
 COMBINED_DISABLE_ENV = "MERGE_READY_COMBINED_CHECK"
 REPO_ROOT = SCRIPTS_DIR.parent
+
+
+def _repo_relative(path: Path) -> str:
+    """Chemin d'organe RELATIF au depot, pour l'argv des sous-processus.
+
+    #26102 (repro ai-01 2026-11-13) : les argv absolus embarquent le chemin
+    du worktree de la machine. Un worktree nomme pour une PR (p. ex.
+    ``CoursIA-26102``) fait alors tripper toute assertion qui cherche le
+    NUMERO d'une autre PR dans les commandes enregistrees, et le journal
+    d'un meme run differe d'une machine a l'autre. Le couplage est double :
+    argv relatifs ici + ``cwd=REPO_ROOT`` epingle dans
+    ``SubprocessRunner.run`` -- les organes appeles resolvent leurs propres
+    chemins depuis ``__file__`` ou le cwd, jamais depuis cet argv.
+    Forme canonique en barres obliques (``as_posix``) : l'argv est identique
+    sous Windows et POSIX -- Python accepte les deux sur les deux OS.
+    """
+    return path.relative_to(REPO_ROOT).as_posix()
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
 # redressements comprise : definition et historique portes par le module
@@ -387,6 +427,9 @@ class SubprocessRunner:
     """Runner reel : rc capture DIRECTEMENT (subprocess.returncode, jamais un pipe)."""
 
     def run(self, cmd: list[str], env: dict[str, str] | None = None) -> RunResult:
+        # cwd epingle a la racine du depot : les argv d'organes sont RELATIFS
+        # (cf. ``_repo_relative``) -- c'est ce qui les rend resolus ici, et le
+        # journal independant du chemin du worktree de la machine.
         proc = subprocess.run(
             cmd,
             capture_output=True,
@@ -394,6 +437,7 @@ class SubprocessRunner:
             encoding="utf-8",
             errors="replace",
             env=env,
+            cwd=REPO_ROOT,
         )
         return RunResult(proc.returncode, proc.stdout or "", proc.stderr or "")
 
@@ -494,6 +538,13 @@ MAIN_RED_INFRA_STEP_MARKERS = (
     "install dependencies",
     "purger un work dir",
     "[heal]",
+    # T-K (#25510) : les deux etapes du checkout borne tirees
+    # ("T-K : ascendance de la tete + la base, sans les 1 606 branches",
+    # "T-K : controle -- la base est visible, son historique est lu").
+    # Une panne de reseau sur le `git fetch --unshallow` est une panne
+    # d'infrastructure, pas un verdict de code : la sentinelle doit
+    # remonter au commit precedent, comme pour `actions/checkout`.
+    "t-k :",
 )
 
 
@@ -981,8 +1032,93 @@ def review_disposition(view: dict, head: str) -> str:
 # --- approbation du coordinateur (etape 2ter, Q67 option a) --------------------
 
 
-def coordinator_approval_oid(view: dict) -> str | None:
-    """Oid du commit que la DERNIERE voix de ``myia-ai-01`` approuve, ou None.
+def _voice_login(row: dict) -> str:
+    """Login d'auteur d'une ligne de review, TYPE PAR LA LIGNE elle-meme.
+
+    #17437, relecture ai-01 du 2026-11-12 : la preuve d'identite est le
+    champ de TYPE de la ligne (REST ``user.type`` / GraphQL
+    ``author.__typename``), JAMAIS une sonde globale -- ``gh api
+    users/<slug>[bot]`` prouve que l'App EXISTE, pas que l'AUTEUR de la
+    ligne est l'App : un compte UTILISATEUR homonyme du slug serait
+    confondu avec elle. Les lignes typees reconstruisent le suffixe par
+    ``gh_identity`` ; une ligne NON typee n'est une voix que pour
+    l'orthographe canonique EXACTE de l'humain (``myia-ai-01``, nu par
+    construction) : toute forme nue App est refusee, sans sonde ni
+    reconstruction -- fail-closed par construction, plus de cas muets.
+    """
+    author = row.get("author") or row.get("user") or {}
+    if not isinstance(author, dict):
+        return ""
+    if author.get("__typename") or author.get("type"):
+        return gh_identity.normalize_author_login(author)
+    login = str(author.get("login") or "")
+    if login == COORDINATOR_USER:
+        return login
+    return ""
+
+
+def _typed_reviews(runner: Runner, pr: int,
+                   gh_env: dict[str, str] | None = None) -> list[dict]:
+    """Reviews d'une PR sur la surface REST TYPEE, en forme canonique.
+
+    #17437 : ``gh pr view --json reviews`` rend l'auteur SANS champ de type ;
+    la preuve de type par ligne se prend sur une surface qui le transporte.
+    REST ``pulls/N/reviews`` rend chaque ligne avec ``user.login`` (deja
+    suffixe pour une App) ET ``user.type`` -- les deux ce dont
+    ``_voice_login`` a besoin. La ligne est mappee a la forme attendue par
+    ``_review_voice_state`` et le latest-wins (``submittedAt``,
+    ``commit.oid`` depuis ``commit_id``).
+
+    Echec de lecture : liste vide -- la preuve illisible vaut refus, le
+    verdict ``no-coordinator-approval`` en rend compte (fail-closed).
+    """
+    cmd = ["gh", "api", f"repos/{REPO}/pulls/{pr}/reviews",
+           "--paginate", "--slurp"]
+    res = runner.run(cmd, env=gh_env) if gh_env else runner.run(cmd)
+    if res.returncode != 0 or not (res.stdout or "").strip():
+        return []
+    try:
+        pages = json.loads(res.stdout)
+    except json.JSONDecodeError:
+        return []
+    flat: list = []
+    for page in pages if isinstance(pages, list) else [pages]:
+        if isinstance(page, list):
+            flat.extend(page)
+        elif isinstance(page, dict):
+            flat.append(page)
+    out: list[dict] = []
+    for row in flat:
+        if not isinstance(row, dict):
+            continue
+        user = row.get("user") or {}
+        out.append({
+            "author": {
+                "login": (user or {}).get("login") or "",
+                "type": (user or {}).get("type") or "",
+            },
+            "state": row.get("state") or "",
+            "body": row.get("body") or "",
+            "submittedAt": row.get("submitted_at") or "",
+            "commit": {"oid": row.get("commit_id") or ""},
+        })
+    return out
+
+
+def coordinator_approval_oid(view: dict, runner: Runner | None = None,
+                             gh_env: dict[str, str] | None = None) -> str | None:
+    """Oid du commit que la DERNIERE voix du coordinateur approuve, ou None.
+
+    #17437 : la voix du coordinateur est le login humain seul
+    (``COORDINATOR_VOICES``) -- toute forme App y est refusee : une App de
+    machine est forgeable par la lane soeur (bloc justificatif au-dessus de
+    sa definition). La preuve d'identite est TYPEE PAR LIGNE :
+    avec un runner, les reviews se relisent sur la surface REST typee
+    (``pulls/N/reviews``, ``user.type`` par ligne) ; sans runner (lecture
+    pure, tests), seules comptent les lignes deja typees du payload et
+    l'orthographe canonique exacte de l'humain -- une forme nue App n'est
+    JAMAIS resolue (relecture ai-01 2026-11-12 : la sonde prouve que
+    l'App existe, pas que l'auteur de la ligne est l'App).
 
     Latest-wins sur les seules voix du coordinateur, lues comme le canon (etat
     reel, puis verdict type en corps) : un ``CHANGES_REQUESTED`` ou un
@@ -991,11 +1127,19 @@ def coordinator_approval_oid(view: dict) -> str | None:
     l'etat REEL ``APPROVED`` vaut approbation : c'est le geste explicite de
     lecture, pas un jeton de corps.
     """
+    rows: list = []
+    if runner is not None and isinstance(view.get("number"), int):
+        rows = _typed_reviews(runner, view["number"], gh_env)
+    if not rows:
+        # Surface CLI non typee : l'humain nu canonique y est reconnu
+        # (orthographe exacte), toute forme App y est invisible -- les
+        # lignes typees du payload restent valables (tests, GraphQL).
+        rows = [row for row in view.get("reviews") or []
+                if isinstance(row, dict)]
     voices = [
         row
-        for row in view.get("reviews") or []
-        if isinstance(row, dict)
-        and ((row.get("author") or {}).get("login")) == COORDINATOR_USER
+        for row in rows
+        if _voice_login(row) in COORDINATOR_VOICES
         and _review_voice_state(row)
     ]
     if not voices:
@@ -1043,7 +1187,7 @@ def coordinator_approval_reason(
     commit de contenu. Toute autre difference perime la lecture ; une preuve
     illisible vaut refus.
     """
-    approved = coordinator_approval_oid(view)
+    approved = coordinator_approval_oid(view, runner, gh_env)
     if approved is None:
         return "no-coordinator-approval"
     if approved == head:
@@ -1128,7 +1272,7 @@ def lean_build_attestation_reason(
 
 def run_nits(runner: Runner, pr: int, gh_env: dict[str, str]) -> int:
     """Etape 4 : organe B.0. Retourne son rc (0 = clear), hors contrat -> arret."""
-    res = runner.run([sys.executable, str(NITS_PATH), str(pr)], env=gh_env)
+    res = runner.run([sys.executable, _repo_relative(NITS_PATH), str(pr)], env=gh_env)
     if res.returncode not in NITS_DOCUMENTED_RC:
         raise UnexpectedError(
             f"B.0 PR {pr} rc={res.returncode} hors contrat : "
@@ -1190,7 +1334,7 @@ def twin_collision_reason(
     # 0013) -- aucune n'etait visible de l'arbre de fusion, puisque aucune des
     # deux PRs n'etait mergee.
     claims_res = runner.run(
-        [sys.executable, str(TWIN_CLAIMS_PATH), "--json"]
+        [sys.executable, _repo_relative(TWIN_CLAIMS_PATH), "--json"]
     )
     if claims_res.returncode != 0:
         # « je n'ai pas pu lire » n'est pas « c'est propre » : skip dur, comme
@@ -1205,7 +1349,7 @@ def twin_collision_reason(
         return "twin-collision-unreadable:open-claims"
     try:
         res = runner.run(
-            [sys.executable, str(TWIN_PATH), "--repo", str(REPO_ROOT),
+            [sys.executable, _repo_relative(TWIN_PATH), "--repo", ".",
              "--base", "origin/main", "--head", head, "--merged", "--json",
              "--open-claims", claims_path, "--head-pr", str(pr)]
         )
@@ -1358,7 +1502,7 @@ def slot_reservation_reason(
     # pour la source `open_prs`. La voie rapide ne dispose pas de `gh`, ce
     # qui l'a forcee a `--offline` ; ici on en sert.
     res = runner.run(
-        [sys.executable, str(SLOT_PATH),
+        [sys.executable, _repo_relative(SLOT_PATH),
          "--base", "origin/main", "--head", head,
          "--exclude-pr", str(pr),
          "--json"],
@@ -1457,7 +1601,7 @@ def combined_tree_reason(
     if os.environ.get(COMBINED_DISABLE_ENV, "1").strip() == "0":
         return None
     res = runner.run(
-        [sys.executable, str(COMBINED_PATH), "--pr", str(pr), "--head", head,
+        [sys.executable, _repo_relative(COMBINED_PATH), "--pr", str(pr), "--head", head,
          "--json"],
         env=gh_env,
     )
