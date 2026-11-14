@@ -32,7 +32,7 @@ require mathlib from git
 -- `social_choice_lean/` (lakefile + toolchain + manifest) a été retirée en
 -- follow-up (#4365) : ce dossier n'est plus un lake, seuls ses 3 markdown
 -- (README/STATUS/LEAN_PREREQUISITES) subsistent comme tombstone ; la NOTICE
--- vit dans `game_theory_lean/SocialChoice/NOTICE.md` (#24183, T1).
+-- vit dans `SocialChoice/social_choice_core_lean/SocialChoice/NOTICE.md` (#24183, T1).
 -- Prochaine absorption prevue : `social_choice_lean_peters` (v4.27 -> v4.31,
 -- INTRINSIC documente si port depasse budget cf sota-not-workaround).
 --
