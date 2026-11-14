@@ -141,7 +141,7 @@ on:
 # `workflow_dispatch` : pas d'objet pull_request dans le contexte, un groupe
 # unique par run signifie "jamais d'annulation" pour la re-mesure manuelle.
 concurrency:
-  group: perimeter-review-guard-${{ github.event.pull_request.head.sha || github.run_id }}
+  group: perimeter-review-guard-${{ github.event.pull_request.head.sha || github.run_id }}-${{ github.event.action == 'edited' && github.event.changes.base == null && github.event.changes.body == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 # Moindre privilege (#16185, CodeQL `actions/missing-workflow-permissions`) :
@@ -171,7 +171,7 @@ jobs:
     # alors. Le ravivage de la surface le rend inadmissible -- et
     # check_self_hosted_runner_policy.py le refuse (FORK_REACHABLE_TRIGGER).
     runs-on: ubuntu-latest
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
     timeout-minutes: 10
 
     steps:

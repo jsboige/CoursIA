@@ -1,0 +1,9 @@
+- name: "NLP-06 TF-IDF BM25"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux côtés implémentent depuis zéro, sans moteur de recherche externe, le corpus pédagogique, TF brut, TF-IDF cosinus, BM25 avec idf=ln(N/df), les classements déterministes et Recall@k. La formule est une variante pédagogique explicite; ce n’est pas l’IDF RSJ de Lucene."
+  known_differences:
+    - "C# utilise uniquement les bibliothèques de base .NET et un SVG inline; Python utilise la bibliothèque standard, NumPy importé sans appel dans le calcul, et Matplotlib. Le corpus, les paramètres, les formules et les rangs repères sont les mêmes."
