@@ -897,6 +897,41 @@ def _catalogues_par_defaut(travaux: Path) -> list[Path]:
     return sorted(travaux.glob("IDENTIFIANTS-catalogue-*.csv"))
 
 
+def avertir_si_catalogues_vides(catalogues: list[Path], index: dict,
+                                source: str) -> str:
+    """Alerte quand le verdict `ABSENT` ne mesure plus rien.
+
+    Le verdict `absent_catalogue` signifie « l'identifiant ne figure dans
+    aucun catalogue charge ». Si **aucun catalogue n'est charge**, ce verdict
+    ne mesure plus la detention : il mesure l'absence de catalogue, et la
+    table sort 100 % `ABSENT` — la meme sortie qu'un gisement completement
+    vide. C'est un organe qui ne voit rien qui rend un vert qui ne mesure
+    rien.
+
+    Mesure fondatrice (2026-11-14, review Hermes sur #26493) : le defaut
+    `--travaux` est un chemin **Windows** (`G:/...`). Sur un siege sans ce
+    montage, le dossier est absent, la liste des catalogues est vide, et la
+    table produite est silencieusement 100 % `ABSENT_CATALOGUE`. Le defaut
+    est documente dans le docstring, mais un document ne se voit pas : seul
+    un avertissement sur stderr se voit.
+
+    Retourne le texte d'avertissement (vide s'il n'y a rien a dire), pour
+    que l'appelant l'ecrive sur stderr et que le test puisse l'examiner.
+    """
+    if not catalogues:
+        return ("AVERTISSEMENT : aucun catalogue A5 charge (source : %s). Le "
+                "verdict « absent_catalogue » ne mesure alors rien : il "
+                "signifie « aucun document trouve dans un catalogue vide ». "
+                "Passer --catalogue <fichier> ou --travaux <dossier> avant "
+                "de lire la table." % source)
+    if not index:
+        return ("AVERTISSEMENT : %d catalogue(s) charge(s) (%s), mais aucun "
+                "identifiant indexe. Le verdict « absent_catalogue » ne "
+                "mesure rien : verifier le format des fichiers charges."
+                % (len(catalogues), ", ".join(c.name for c in catalogues)))
+    return ""
+
+
 def _appliquer_resolution(lignes: list[dict], args) -> list[dict]:
     """Resout les identifiants de la table et statue leur detention.
 
@@ -966,6 +1001,15 @@ def main(argv: list[str] | None = None) -> int:
         catalogues = _catalogues_par_defaut(Path(args.travaux))
     index, repares, malformees = charger_catalogue(catalogues)
 
+    # Un catalogue absent ne se voit pas dans la table : la table sort 100 %
+    # `ABSENT_CATALOGUE`, la meme sortie qu'un gisement vide. L'avertissement
+    # est sur stderr, la ou l'operateur le voit (cf la fonction).
+    source = (", ".join(args.catalogue) if args.catalogue
+              else str(args.travaux))
+    avertissement = avertir_si_catalogues_vides(catalogues, index, source)
+    if avertissement:
+        sys.stderr.write(avertissement + "\n")
+
     lignes = table_du_gisement(entrees, index)
 
     if args.resoudre:
@@ -994,6 +1038,7 @@ def main(argv: list[str] | None = None) -> int:
         "absent_catalogue": len(absents),
         "non_resolu": len(non_resolus),
         "catalogues": [c.name for c in catalogues],
+        "avertissement": avertissement,
         "lignes_catalogue_reparees": repares,
         "lignes_catalogue_malformees": malformees,
         "table": lignes,
@@ -1010,6 +1055,9 @@ def main(argv: list[str] | None = None) -> int:
     print("formes : %s" % ", ".join("%s=%d" % kv for kv in sorted(formes.items())))
     print("gisement : %d DETENU (chemin connu), %d ABSENT du catalogue"
           % (len(tenus), len(absents)))
+    if avertissement:
+        print("ATTENTION : aucun catalogue charge — le verdict ABSENT ne "
+              "mesure rien (voir stderr)")
     if args.resoudre:
         print("resolution : %d DETENU, %d ABSENT, %d NON_RESOLU"
               % (len(tenus), len(absents), len(non_resolus)))

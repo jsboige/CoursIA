@@ -439,3 +439,35 @@ class TestSortiesRobustes:
         chemin = tmp_path / "cache.json"
         _ecrire_cache(chemin, {"arxiv": {"1.2": {"titre": "x"}}})
         assert _charger_cache(chemin)["arxiv"]["1.2"]["titre"] == "x"
+
+
+class TestCatalogueVide:
+    """Un catalogue absent ne doit pas se voir comme une detention vide.
+
+    Mesure fondatrice (2026-11-14, review Hermes sur #26493) : le defaut
+    `--travaux` est un chemin Windows. Sur un siege sans le montage, aucun
+    catalogue n'est charge, la table sort 100 % `ABSENT_CATALOGUE` — la meme
+    sortie qu'un gisement vide, en silence.
+    """
+
+    def test_aucun_catalogue_warnit(self):
+        from scan_cited_identifiers import avertir_si_catalogues_vides
+        message = avertir_si_catalogues_vides([], {}, "G:/Mon Drive/.../travaux")
+        assert message
+        assert "aucun catalogue" in message.lower()
+
+    def test_catalogue_charge_sans_index_warnit(self, tmp_path):
+        from scan_cited_identifiers import avertir_si_catalogues_vides
+        vide = tmp_path / "IDENTIFIANTS-catalogue-2026-10-25.csv"
+        vide.write_text("chemin_gisement,type_id,id\n", encoding="utf-8")
+        message = avertir_si_catalogues_vides([vide], {}, "explicite")
+        assert message
+        assert "aucun identifiant" in message.lower()
+
+    def test_catalogue_peuple_ne_warnit_pas(self, tmp_path):
+        from scan_cited_identifiers import avertir_si_catalogues_vides
+        plein = tmp_path / "IDENTIFIANTS-catalogue-2026-10-25.csv"
+        plein.write_text("chemin_gisement,type_id,id\nx.pdf,arxiv,2403.06629\n",
+                         encoding="utf-8")
+        index = {("arxiv", "2403.06629"): {"chemin_gisement": "x.pdf"}}
+        assert avertir_si_catalogues_vides([plein], index, "explicite") == ""
