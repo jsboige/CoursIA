@@ -339,20 +339,26 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
-# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
-# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
-# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
-# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
-# fichier et forge le meme jeton. Une App par machine ne peut donc pas
-# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
-# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
-# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+# #17437 : la voix App PROPRE a la lane coordinateur rejoint la voix humaine
+# (Q187, 2026-11-14). L'App existe desormais (App 5763709, slug
+# ``coursia-coord-ai01``, creee le 2026-11-14 sur le go du user, installee
+# sur jsboige/CoursIA seulement, cle dediee
+# ``.secrets/github-apps/coursia-coord-ai01.pem``), DISTINCTE de la cle de
+# l'App de machine ``coursia-lane-ai-01`` que la lane worker sœur
+# ``myia-ai-01:CoursIA-2`` lit aussi : seul le coordinateur forge le jeton
+# de l'App propre. L'App de MACHINE ``coursia-lane-ai-01[bot]`` reste
+# EXCLUE pour la raison d'origine (arbitrage ai-01 du 2026-11-13) : sa cle
+# vivant dans le clone partage, un ``[OVERRIDE]`` de CoursIA-2 sous cette
+# App vaudrait celui du coordinateur, exactement ce que la borne
+# #12737/#12836 interdit.
 #
 # La preuve d'identite reste typee par ligne (``_author_login`` +
-# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
-# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
-# existe, son login REST rejoint cet ensemble par une edition consciente.
-LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique. La forme
+# REST suffixee ``coursia-coord-ai01[bot]`` et la forme GraphQL typee
+# ``Bot`` (repliee par normalisation) levent ; une forme nue sans type ne
+# leve rien, et l'homonyme UTILISATEUR type ``User`` reste nu donc hors de
+# l'ensemble -- fail-closed.
+LIFT_OVERRIDE_LOGINS = {"myia-ai-01", "coursia-coord-ai01[bot]"}
 # Q185 (sign-off user 2026-11-13) -- l'ADJOINT coordonnateur, borne aux
 # reserves de BOT. La lane adjointe myia-po-2025:CoursIA-2 poste sous son
 # identite GitHub App propre (``coursia-lane-po-2025[bot]`` : forme REST
