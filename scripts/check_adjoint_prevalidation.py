@@ -233,20 +233,43 @@ SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
 COORDINATOR_LOGIN = "myia-ai-01"
-# #17437: the coordinator's GitHub App identity, once its lane signs with an
-# installation token instead of a PAT (the six lane Apps are created and
-# installed; the switch is the remaining operational step). Written as a
-# literal rather than derived from `gh_identity.APP_LOGIN_PREFIX` so this module
-# keeps importing when that organ is unavailable; a test pins the two together.
+# #17437: the coordinator machine's GitHub App identity, kept as a named
+# literal so the tests pin the exact REST spelling (``[bot]`` suffix). It is
+# NOT a coordinator voice -- see the COORDINATOR_IDENTITIES arbitration below
+# (#26102, applied here by #26405).
 COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
-# The coordinator's ONE voice, in every spelling it can reach the API under.
+# La voix du coordinateur : les logins HUMAINS seuls. L'App
+# ``coursia-lane-ai-01`` n'en fait PAS partie (arbitrage ai-01 2026-11-13,
+# porte par #26102 dans ``merge_ready.py`` ; ce module etait le troisieme
+# residue, mesure par #26405).
+#
+# Sa cle privee vit sur la machine ai-01, dans le clone du depot
+# (``.secrets/github-apps/coursia-lane-ai-01.pem``, cf
+# ``scripts/secrets/github_app_manifest.KEY_DIR``). La machine porte DEUX
+# lanes : ``myia-ai-01:CoursIA`` (le coordinateur) et ``myia-ai-01:CoursIA-2``
+# (la lane worker soeur). La seconde lit le meme fichier et forge donc le meme
+# jeton d'installation : compter cette App comme voix du coordinateur
+# neutraliserait des actes post-dossier qu'une lane NON coordinatrice peut
+# ecrire -- un commentaire ou une APPROVE de CoursIA-2 sous l'App vaudrait
+# celle du coordinateur, et le dossier ne perimerait pas. Une App PROPRE a la
+# lane coordinateur est le prealable ; une App nommee par machine ne le
+# remplace pas.
+#
+# Consequence voulue : un acte de l'App (commentaire ou review) EXPIRE
+# desormais le dossier (``_is_own_later_act`` refuse sa neutralisation), et
+# son APPROVE ne qualifie plus a la porte review
+# (``COORDINATOR_REVIEW_LOGINS``) -- aligne sur
+# ``merge_ready.COORDINATOR_VOICES`` et
+# ``check_unaddressed_nits.LIFT_OVERRIDE_LOGINS``, qui refusent toute forme
+# App. Le jour ou une App de lane coordinateur existe, elle s'ajoute ici par
+# une edition consciente, accompagnee de sa cle dediee.
+#
 # Deliberately NOT `gh_identity.ACCEPTED_DOSSIER_AUTHORS`: that set holds every
 # lane's App, and neutralising a worker lane's row would delete the control
-# `_is_own_later_act` exists to enforce. A worker's App must still expire the
-# dossier -- a negative-control test holds that line.
-COORDINATOR_IDENTITIES = frozenset(
-    (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN, COORDINATOR_APP_LOGIN)
-)
+# `_is_own_later_act` exists to enforce. The App of the ai-01 machine stays an
+# accepted dossier AUTHOR (signing a dossier is not a post-dossier act) -- it
+# just no longer neutralises anything after it.
+COORDINATOR_IDENTITIES = frozenset((COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN))
 
 VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
@@ -2449,6 +2472,8 @@ _PR_GATE_CONTRADICTION_PREFIX = (
 #: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
 #: expose cette porte a titre d'information : l'autorite de merge reste le
 #: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
+#: Heritee de COORDINATOR_IDENTITIES : toute forme App y est refusee, comme
+#: dans ``merge_ready.COORDINATOR_VOICES`` (#26102, aligne par #26405).
 COORDINATOR_REVIEW_LOGINS = COORDINATOR_IDENTITIES
 
 

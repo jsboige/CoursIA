@@ -105,7 +105,42 @@ _CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v4"
 _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
     "qwen_voicedesign": _QWEN_NARRATOR_REFERENCE_ID,
     "cosyvoice3": _CV3_NARRATOR_REFERENCE_ID,
+    "zonos3": "zonos3-zeroshot-narrator-fr-v1",
 }
+
+# ---------------------------------------------------------------------------
+# Phase A0 (#25835) — Narrator routing to ZONOS3 Mini (Zyphra)
+# ---------------------------------------------------------------------------
+# ZONOS3 Mini is the fifth engine on the narrator seam. What it adds over
+# the four others is **continuous prosodic control**: the runtime serves
+# measured *direction vectors* (the `mood` bundle folds them into
+# valence / arousal / dominance / loudness / tempo / clarity /
+# articulation) applied through the `controls` map of `POST /v2/generate`,
+# optionally scoped to a span of the text via `control_spans`. The four
+# existing engines are driven by discrete instructions (bracket tags for
+# FishAudio, a prompt for Qwen VoiceDesign) — a continuity the narrator
+# annotation layer cannot express.
+#
+# The steering vocabulary is *bundle dependent*: what can be steered is
+# read at runtime from `GET /v2/controls`, and an axis the served
+# checkpoint does not expose degrades to its FishAudio tag rather than
+# being silently dropped (`v4/zonos3_steering.py`).
+#
+# This branch stays OFF by default (NARRATOR_ZONOS3_ROUTING=0) until the
+# service is up and the bench run has produced the measured numbers the
+# issue asks for (WER / RTF / VRAM on `extract_C`). The no-silent-swap
+# contract of #15002 acceptance 6 carries over: any 4xx/5xx, an empty
+# render, or a degenerate short render raises NarratorZonos3Unavailable.
+_NARRATOR_ZONOS3_ROUTING: bool = os.getenv("NARRATOR_ZONOS3_ROUTING", "0") == "1"
+# Zero-shot cloning from a raw reference clip: the path to the reference
+# clip, or an empty string to use the registered embedding id instead.
+_ZONOS3_NARRATOR_REFERENCE_CLIP: str = os.getenv(
+    "NARRATOR_ZONOS3_REFERENCE_CLIP", ""
+)
+# Registered speaker embedding id, used when no raw clip is configured.
+_ZONOS3_NARRATOR_REFERENCE_ID: str = os.getenv(
+    "NARRATOR_ZONOS3_REFERENCE_ID", "zonos3-zeroshot-narrator-fr-v1"
+)
 
 # ---------------------------------------------------------------------------
 # Phase 2 (#17586 acceptance) — Narrator routing to Qwen3-TTS CustomVoice
@@ -1185,6 +1220,14 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
             seed=seed,
             text_hash=current_hash,
         )
+    if _should_route_narrator_to("zonos3", seg):
+        return _synthesize_narrator_zonos3(
+            seg=seg,
+            fishaudio_text=fishaudio_text,
+            mp3_path=mp3_path,
+            seed=seed,
+            text_hash=current_hash,
+        )
 
     return _synthesize_fishaudio_path(
         seg=seg,
@@ -1307,12 +1350,191 @@ def _synthesize_narrator_qwen(
     )
 
 
+# ---------------------------------------------------------------------------
+# Phase A0 (#25835) — Narrator routing to ZONOS3 Mini
+# ---------------------------------------------------------------------------
+
+class NarratorZonos3Unavailable(RuntimeError):
+    """Raised when ZONOS3 Mini cannot synthesize a narrator segment
+    (service unreachable, 4xx/5xx, an empty render, or a degenerate
+    short render). Same contract as the three other narrator engines
+    (#15002 acceptance 6): hard failure, never a silent fall back to
+    FishAudio.
+    """
+
+
+# Short-audio floor for ZONOS3 (same gross-backstop logic as the CV3 and
+# CustomVoice degenerate-render guards): legitimate French speech tops out
+# well under 40 chars/s, so a whole-segment render under this floor is a
+# degenerate render, not fast speech.
+_ZONOS3_MIN_CHARS_PER_SEC = 40.0
+_ZONOS3_MIN_ABS_S = 0.20
+
+
+def _zonos3_min_expected_s(text: str) -> float:
+    """Shortest audio that could plausibly hold `text` (ZONOS3)."""
+    return max(_ZONOS3_MIN_ABS_S, len(text) / _ZONOS3_MIN_CHARS_PER_SEC)
+
+
+def _synthesize_narrator_zonos3(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    mp3_path: Path,
+    seed: int,
+    text_hash: str,
+) -> TTSResult:
+    """Synthesize a narrator segment via ZONOS3 Mini (`POST /v2/generate`).
+
+    The segment's FishAudio bracket tags are stripped (ZONOS3 does not
+    read them — it would vocalize them); the continuous steering comes
+    from the annotation sidecar resolved by `v4.zonos3_steering` against
+    the directions the served checkpoint actually exposes. A render that
+    cannot be steered on an axis degrades that axis to its FishAudio tag
+    (honest degradation, never a silent drop). Any transport failure,
+    empty render, or degenerate short render raises
+    NarratorZonos3Unavailable.
+    """
+    plain_text = _strip_brackets_for_qwen(fishaudio_text)
+    if not plain_text:
+        raise NarratorZonos3Unavailable(
+            f"seg {seg.seg_index}: empty text after stripping brackets"
+        )
+
+    # Imported here (not at module top) so hermetic tests need neither the
+    # ZONOS3 service nor pydub — the guards above run network-free.
+    from .zonos3_client import (
+        audio_duration_wav,
+        zonos3_controls,
+        zonos3_tts,
+    )
+    from .zonos3_steering import fallback_text, resolve_steering
+
+    # Resolve the segment's steering against what the server serves. The
+    # controls index is read live so the request only steers directions
+    # the loaded bundle exposes.
+    from .schemas import Zonos3Annotation
+
+    annotations = _zonos3_annotations_for_segment(seg)
+    resolution = resolve_steering(annotations, zonos3_controls())
+
+    # An axis the bundle cannot steer degrades to its FishAudio tag: the
+    # intent is still expressed, in the vocabulary this path can carry.
+    degraded_prefix = fallback_text(resolution.fallback_tags)
+    text = f"{degraded_prefix} {plain_text}".strip() if degraded_prefix else plain_text
+
+    audio, seed_used = zonos3_tts(
+        text,
+        reference_id=_ZONOS3_NARRATOR_REFERENCE_ID,
+        reference_audio_path=_ZONOS3_NARRATOR_REFERENCE_CLIP,
+        seed=seed,
+        controls=resolution.controls or None,
+        control_spans=resolution.control_spans or None,
+    )
+    if not audio:
+        raise NarratorZonos3Unavailable(
+            f"seg {seg.seg_index}: ZONOS3 returned no audio (service "
+            f"unreachable, 4xx/5xx, or a render failure)"
+        )
+
+    # Duration is read from the WAV header (the M4B chaptering step
+    # consumes it); a render under the char-derived floor is degenerate.
+    duration_s = audio_duration_wav(audio)
+    floor_s = _zonos3_min_expected_s(plain_text)
+    # A 0s render is degenerate too: it must fail, not pass as "generated".
+    if duration_s < floor_s:
+        raise NarratorZonos3Unavailable(
+            f"seg {seg.seg_index}: ZONOS3 render {duration_s:.2f}s is under "
+            f"the plausibility floor {floor_s:.2f}s for {len(plain_text)} "
+            f"chars — degenerate render, not fast speech"
+        )
+
+    # Write the rendered audio: the narrator engine contract is an MP3 at
+    # 192 kbps (matching the other narrator paths). Convert when pydub is
+    # available, otherwise keep the WAV. `written_path` tracks the file that
+    # is actually on disk so the result never points at a .mp3 that was
+    # never written (a missing pydub writes a .wav, not the .mp3).
+    written_path = mp3_path
+    try:
+        from pydub import AudioSegment
+
+        audio_segment = AudioSegment.from_file(io.BytesIO(audio), format="wav")
+        buffer = io.BytesIO()
+        audio_segment.export(buffer, format="mp3", bitrate="192k")
+        written_path.write_bytes(buffer.getvalue())
+    except Exception:  # pragma: no cover — pydub/ffmpeg missing
+        written_path = mp3_path.with_suffix(".wav")
+        written_path.write_bytes(audio)
+
+    return TTSResult(
+        seg_index=seg.seg_index,
+        speaker=seg.speaker,
+        reference_id=_NARRATOR_ENGINE_REFERENCE_IDS["zonos3"],
+        mp3_path=str(written_path),
+        duration_s=duration_s,
+        # The seed the runtime reports in X-Seed is the one recorded in
+        # the manifest (acceptance #6: captured, never invented). When the
+        # header is absent the field stays None — substituting the requested
+        # seed here would record a value the runtime never reported.
+        seed=seed_used,
+        status="generated",
+        attempts=1,
+        text_hash=text_hash,
+    )
+
+
+def _zonos3_annotations_for_segment(seg: AnnotatedSegment) -> list:
+    """Derive ZONOS3 steering annotations for a segment.
+
+    The rich source is the annotation sidecar written by P4
+    (`p4_annotation.py`), which this reads when present. In the absence
+    of a sidecar entry, the segment's FishAudio tags seed a conservative,
+    rule-derived annotation so the engine is never left un-steered: the
+    mapping is the one declared in `zonos3_steering.AXIS_MAPPINGS`, and
+    the source is recorded as "rule" so a disputed render can be traced
+    back to a rule, not to a silent LLM call.
+    """
+    sidecar = _load_zonos3_sidecar()
+    # A sidecar hit means the LLM/human decided; use it verbatim.
+    sidecar_entries = sidecar.for_segment(seg.seg_index)
+    if sidecar_entries:
+        return sidecar_entries
+
+    # Rule fallback: map the segment's FishAudio tags to the nearest axis
+    # (the deterministic bridge shared with P4's sidecar writer).
+    from .zonos3_steering import annotations_from_tags
+
+    return annotations_from_tags(seg.seg_index, seg.tags_used)
+
+
+def _load_zonos3_sidecar():
+    """Load the P4 annotation sidecar, or an empty batch if absent.
+
+    The sidecar is written beside the FishAudio tag output by
+    `p4_annotation.py`; reading it here (rather than threading it
+    through the call stack) keeps the narrator branch self-contained.
+    A missing sidecar is not an error: the rule fallback then applies.
+    """
+    from .schemas import Zonos3AnnotationBatch
+
+    path = BASE_DIR / "outputs" / "zonos3_annotations_v4.json"
+    if not path.exists():
+        return Zonos3AnnotationBatch()
+    try:
+        import json as _json
+
+        return Zonos3AnnotationBatch.model_validate(_json.loads(path.read_text()))
+    except Exception as exc:
+        logger.warning("Could not read ZONOS3 sidecar at %s: %s", path, exc)
+        return Zonos3AnnotationBatch()
+
+
 def _narrator_engine_flags() -> dict[str, bool]:
     """Narrator engine activation flags, one entry per candidate engine."""
     return {
         "qwen_voicedesign": _NARRATOR_QWEN_ROUTING,
         "cosyvoice3": _NARRATOR_COSYVOICE3_ROUTING,
         "customvoice": _NARRATOR_CUSTOMVOICE_ROUTING,
+        "zonos3": _NARRATOR_ZONOS3_ROUTING,
     }
 
 
@@ -2002,7 +2224,11 @@ def _synthesize_batch(
             seg_idx = futures[future]
             try:
                 results[seg_idx] = future.result()
-            except (NarratorQwenUnavailable, NarratorCustomVoiceUnavailable):
+            except (
+                NarratorQwenUnavailable,
+                NarratorCustomVoiceUnavailable,
+                NarratorZonos3Unavailable,
+            ):
                 # Hard failure by contract (acceptance #6 of #15002, cf the
                 # class docstring): the narrator routing exists to SURFACE the
                 # Qwen regression #1028. Recording a missing narrator segment
@@ -2015,6 +2241,10 @@ def _synthesize_batch(
                 # NarratorCustomVoiceUnavailable joins the list: the
                 # CustomVoice route raises its own typed error, and the
                 # generic handler below would otherwise absorb it.
+                # NarratorZonos3Unavailable joins the list for the same
+                # reason (#25835): the ZONOS3 route raises its own typed
+                # error, and the generic handler below would otherwise
+                # absorb it and ship a segment as a survivable failure.
                 raise
             except Exception as exc:
                 # Surface the cause FIRST: a failure record that itself

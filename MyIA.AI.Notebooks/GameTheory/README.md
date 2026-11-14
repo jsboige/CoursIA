@@ -8,9 +8,9 @@ pagetitle: "Théorie des Jeux - Game Theory"
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 141
-breakdown: root=106, SocialChoice=16, Dynamics=13, Coalitions=5, gateway=1
-maturity: BETA=122, DRAFT=12, ALPHA=7
+pedagogical_count: 142
+breakdown: root=101, SocialChoice=16, Dynamics=13, Metajeux=6, Coalitions=5, gateway=1
+maturity: BETA=130, DRAFT=7, ALPHA=5
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -152,6 +152,8 @@ La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à
 
 Le palier 16 est l'un des cas réels mesurés par le [critère de frontière utilitaire-de-série / exposition MCP](../../docs/reference/ict-mcp-frontier-criterion.md) — verdict : rien dû, le palier reste notebook.
 
+Dans la même famille d'exposition, le palier 13 possède un service pendant : le dossier [gateway/](gateway/README.md) expose la résolution CFR du carnet 13 en microservice REST (`POST /gametheory/cfr`, Jupyter Kernel Gateway, pli 0 de l'Epic #19571 / issue #21104). Le carnet pédagogique n'est pas modifié — le service vit à côté, comme composant distinct.
+
 Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite, la stabilité coopérative, la convergence d'agents en auto-apprentissage.
 
 ![CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).](assets/readme/gt13-cfr.png)
@@ -196,6 +198,8 @@ Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller pl
 | 02c | Dilemme du voyageur — [Python](GameTheory-02c-Travelers-Dilemma-Python.ipynb) · [C#](GameTheory-02c-Travelers-Dilemma-CSharp.ipynb) | Basu (1994) : l'élimination itérée des stratégies dominées mène à (2, 2), que contredit le comportement humain ; le bonus r* = 1 où le paradoxe se dissout | Python · C# | Licence |
 | 02d | [Annexe épistémique — connaissance commune et croyances](GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) | Ce qu'un joueur *sait*, plutôt que ce qu'il joue : modèle à partitions et opérateur `K_i(E)`, vérification des axiomes S5, `CK(E)` comme plus grand point fixe, théorème d'Aumann (1976) sur l'accord impossible vérifié par énumération exhaustive, et l'élimination itérée relue comme conséquence de la connaissance commune de la rationalité | Python | Licence |
 | 02e | IESDS et rationalisabilité — [Python](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) · [C#](GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb) | L'élimination itérée des stratégies dominées : indépendance à l'ordre (mesurée sur 4096 jeux), contre-exemple en dominance faible, admissibilité et rationalisabilité ; le jumeau C# réimplémente les mêmes algorithmes from scratch, dont un simplex à deux phases qui remplace `scipy.linprog` | Python · C# | Licence |
+
+Le carnet 02d existe aussi en [C#](GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb) : les deux versions énumèrent les partitions, vérifient les propriétés S5 et explorent les priors communs ou distincts.
 
 ### Autour de 03 — géométrie ordinale des jeux
 
@@ -435,6 +439,7 @@ Leur numéro nu reste un héritage de leur livraison, pas une étape du parcours
 |---|----------|--------------------|-------|--------|
 | 19b | [Co-design bilevel](GameTheory-19b-Bilevel-PPO-Python.ipynb) | Stackelberg PPO (Dai et al., ICLR 2026) rejoué à l'échelle pédagogique : le leader apprend la morphologie d'un nageur jouet, le suiveur est un PPO — le co-design bat la morphologie fixée, l'ablation adapté-contre-figé reste non tranchée à cette échelle | Python | Recherche |
 | 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart entre valeur statique et valeur dynamique vaut 2γ sans mesurer à lui seul un gain de planification, et l'adversaire qui conteste la transition l'annule (ex-26, renum #14944) | Python | Recherche |
+| 23 | [Failles légales](GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb) | Les règles fiscales comme jeu formel (distillation de l'article Lexifina, 11/2026) : un BFS borné retrouve le backdoor Roth sans qu'on le lui décrive, et le compagnon Lean `LegalLoophole/Toy` du lake de la série prouve le plafond à toute profondeur et l'optimalité du témoin sans taxe — chaque coup du plan est légal, la faille est dans les règles (#25686) | Python | Recherche |
 | — | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
 | — | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
 | — | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
@@ -638,6 +643,7 @@ La série aligne simulation numérique et preuve formelle : les notebooks motive
 | `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03b | sans Mathlib (calcul fini) : `lake build Swaps` ne compile aucune dépendance |
 | `game_theory_lean` (module Abstraction) | Contre-exemple certifié au « raffiner ne peut qu'améliorer » : la dette retransportée augmente | 03e, 19 | sans Mathlib ; 19 l'importe et fait élaborer `raffinement_aggrave_la_dette` par le compilateur, 03e en lit la source et la mire en Python — le module n'est plus orphelin (#20380, clos) |
 | `game_theory_lean` (module StackelbergBilevel) | Forme close du duopole de Stackelberg et best-response du suiveur, adossés aux valeurs pytest | — | dernière cohorte `lean_lib` du package, Mathlib ; aucun carnet ne le consomme encore — c'est le seul lake de la carte qu'aucun carnet n'enseigne ; le package l'importe (`GameTheory.lean:25`) et le declare en `lean_lib`, mais rien ne l'execute |
+| `game_theory_lean` (module LegalLoophole) | Règles fiscales jouet : `wealth_conservation`, plafond `roth_ceiling` à toute profondeur, témoin backdoor optimal sans taxe (`backdoor_exists`/`backdoor_optimal`) | 23 | sans Mathlib (zéro dépendance, compilable en secondes) ; 10ᵉ cohorte `lean_lib` du package, copie pédagogique déclarée du modèle CC0 lexifina/global-law (#25686) |
 | `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b | tenu hors du hub par la clause anti-god-lake de #4365 ; Mathlib (Sion) |
 | `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d | couche introductive sans Mathlib et extension de preuve auto-contenue, mesurées disjointes (T2 de #24183) |
 | `conway_cgt_lean` | Visite de la théorie des jeux combinatoires de Conway (`vihdzp/combinatorial-games`) | 08d | toolchain divergente (`v4.33.0-rc1`) et amont vendorisé — INTRINSIC |
