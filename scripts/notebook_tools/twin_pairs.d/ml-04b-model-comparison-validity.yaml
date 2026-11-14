@@ -1,0 +1,10 @@
+- name: "ML-04b Model Comparison Validity"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Moindres carrés QR par MathNet et modèles d'arbres réellement entraînés avec ML.NET ; Python.NET sert aux données et indices scikit-learn."
+  known_differences:
+    - "Les arbres ML.NET FastForest et FastTree diffèrent des implémentations scikit-learn et de leurs paramètres ; leurs scores ne sont pas identiques."
+    - "Les générateurs bootstrap diffèrent ; la régression linéaire est vérifiée face à scikit-learn sur le split initial."

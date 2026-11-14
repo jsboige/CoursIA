@@ -1196,7 +1196,7 @@ class TestLegendEquation:
     """
 
     def test_perfectly_coherent_legend(self):
-        """Founding case verbatim: Diagnostic-Medical md[14]
+        """Founding case verbatim: Diagnostic-Medical-Python md[14]
         cites '1.0 = parfaitement cohérente, 0.0 = hors-sujet'.
         The 1.0 sits within ~20 chars of '='.
         """
@@ -1227,7 +1227,7 @@ class TestThresholdExpression:
     """
 
     def test_confiance_ge_08(self):
-        """Founding case verbatim: Diagnostic-Medical md[14]
+        """Founding case verbatim: Diagnostic-Medical-Python md[14]
         cites 'confiance >= 0.8'. The 0.8 sits adjacent to '>='.
         """
         src = "...confiance >= 0.8 ..."
@@ -1388,6 +1388,118 @@ class TestInputSpecificationFilter:
         end = pos + len("0.5")
         assert _is_labeled_enumeration_value(src, pos, end)
 
+    def test_configuration_value_in_prose_is_an_input(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('accuracy=0.6')", [_stream_output("accuracy=0.6")]),
+            _md_cell("La taille de lot est 1024 et le seuil fixé à 0.75."),
+        ])
+        path = tmp_path / "configuration.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+
+    def test_input_label_in_prior_clause_does_not_exempt_measurement(self, tmp_path: Path):
+        for src in (
+            "Le seuil est 0.5 ; la précision est 0.91.",
+            "Le seuil est 0.5, et la précision est 0.91.",
+        ):
+            pos = src.index("0.91")
+            assert not _is_input_specification(src, pos, pos + len("0.91"))
+        src = "Le seuil est 0.5 ; la précision est 0.91."
+        nb = _mk_nb([
+            _code_cell("print('precision=0.82')", [_stream_output("precision=0.82")]),
+            _md_cell(src),
+        ])
+        path = tmp_path / "prior_clause.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["0.91"]
+
+    def test_observed_metric_with_same_input_label_stays_checked(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('accuracy=0.6')", [_stream_output("accuracy=0.6")]),
+            _md_cell("Le taux d'apprentissage observé vaut 0.75 après l'essai."),
+        ])
+        path = tmp_path / "metric.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["0.75"]
+
+
+class TestDerivedClaims:
+    def test_same_row_ratio_is_proven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('6/50')", [_stream_output("succès=6 essais=50")]),
+            _md_cell("Le taux de succès dérivé de 6 succès sur 50 essais est 12 %."),
+        ])
+        path = tmp_path / "derived_ratio.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+        assert not result["derived_claims"]
+
+    def test_same_row_difference_is_proven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('1.25-0.75')", [_stream_output("avant=1.25 après=0.75")]),
+            _md_cell("L'écart entre 1.25 et 0.75 est 0.5."),
+        ])
+        path = tmp_path / "derived_difference.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["findings"]
+        assert not result["derived_claims"]
+
+    def test_derived_claim_without_bounded_proof_is_reported_unproven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('series')", [_stream_output("0.10\n0.20\n0.30\n0.40")]),
+            _md_cell("La moyenne dérivée de cette série est 0.75."),
+        ])
+        path = tmp_path / "derived_unproven.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [claim["normalized"] for claim in result["derived_claims"]] == ["0.75"]
+
+    def test_adjacent_output_numbers_without_named_operands_are_unproven(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('counters')", [_stream_output("Autres compteurs : gauche=3 droite=25")]),
+            _md_cell("Le pourcentage calculé est 12 %."),
+        ])
+        path = tmp_path / "unrelated_operands.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [claim["normalized"] for claim in result["derived_claims"]] == ["12"]
+
+    def test_derived_word_does_not_override_a_direct_match(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('mean=0.75')", [_stream_output("mean=0.75")]),
+            _md_cell("La moyenne dérivée est 0.75."),
+        ])
+        path = tmp_path / "derived_direct.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "CLEAN", result
+        assert not result["derived_claims"]
+
+    def test_unrelated_missing_result_remains_fabrication(self, tmp_path: Path):
+        nb = _mk_nb([
+            _code_cell("print('score=4.26')", [_stream_output("score=4.26")]),
+            _md_cell("Le score final mesuré est 4.267."),
+        ])
+        path = tmp_path / "measured_result.ipynb"
+        path.write_text(json.dumps(nb), encoding="utf-8")
+        result = check_notebook(path)
+        assert result["verdict"] == "FABRICATION_DETECTED", result
+        assert [finding["normalized"] for finding in result["findings"]] == ["4.267"]
+
     def test_bold_label(self):
         src = "**Bras 3=0.7** dans la spec de l'environnement."
         pos = src.find("0.7")
@@ -1525,7 +1637,7 @@ class TestFoundingFixtures:
         )
 
     def test_diagnostic_medical_legend_clean(self, tmp_path):
-        """Founding case 3a: Diagnostic-Medical md[14] '1.0 = parfaitement
+        """Founding case 3a: Diagnostic-Medical-Python md[14] '1.0 = parfaitement
         cohérente' -- axis legend.
         """
         cells = [
@@ -1542,7 +1654,7 @@ class TestFoundingFixtures:
         )
 
     def test_diagnostic_medical_threshold_clean(self, tmp_path):
-        """Founding case 3b: Diagnostic-Medical md[14] 'confiance >= 0.8'
+        """Founding case 3b: Diagnostic-Medical-Python md[14] 'confiance >= 0.8'
         -- decision threshold.
         """
         cells = [
@@ -2147,3 +2259,140 @@ class TestMonetaryProvenance15430:
                 if pos >= 0:
                     assert not _in_exception_code_span(
                         prose, pos, pos + len(needle)), prose
+
+
+class TestFpFamilies24289:
+    """#24289 -- trois familles de faux positifs mesurees sur GT-18c/GT-20c
+    (carnets SAINS), chacune avec son faux positif donne et son faux
+    negatif donne (contrat d'acceptance de l'issue : la calibration rend
+    18c 17->0 et 20c 3->0 SANS perdre les vrais positifs de la base)."""
+
+    def _scan_tmp(self, tmp_path, cells):
+        nb = _mk_nb(cells)
+        p = tmp_path / "fixture24289.ipynb"
+        p.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+        return check_notebook(p)
+
+    # --- famille 1 : fenetre trop etroite (recherche ascendante) ----------
+
+    def test_famille1_synthesis_recalls_earlier_measurement(self, tmp_path):
+        """FP donne (GT-20c c.31) : '15,0 %' imprimee par la cellule 13,
+        citee par une cellule de synthese 18 cellules plus bas -- la
+        fenetre de 3 cellules ne la voit pas, la recherche ascendante oui."""
+        cells = [
+            _code_cell("count()", [_stream_output("raccourcis : 77760  (15.0 %)\n")]),
+        ]
+        cells += [_code_cell(f"noise{i}()", [_stream_output(f"bruit {i}\n")])
+                  for i in range(6)]
+        cells.append(_md_cell(
+            "## Conclusion\n\nSur 518 400 paires, 15,0 % raccourcissent."))
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", result["findings"]
+
+    def test_famille1_value_printed_nowhere_stays_detected(self, tmp_path):
+        """Faux negatif donne : la meme prose sans la cellule qui imprimait
+        la valeur -- rien a trouver ni dans la fenetre ni au-dessus, le
+        finding reste (les 0,294/0,435 de la base GT-18c survivent)."""
+        cells = [
+            _code_cell("noise()", [_stream_output("bruit\n")]),
+            _md_cell(
+                "## Conclusion\n\nSur 518 400 paires, 15,0 % raccourcissent."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED"
+        assert any(f["normalized"] == "15.0" for f in result["findings"])
+
+    # --- famille 2 : nombre extrait d'un identifiant ----------------------
+
+    def test_famille2_model_slug_not_a_measurement(self, tmp_path):
+        """FP donne (GT-18c, 8 findings) : `anthropic/claude-haiku-4.5`
+        extrait '4.5' -- un slug de modele, pas une mesure."""
+        cells = [
+            _code_cell("call()", [_stream_output("done\n")]),
+            _md_cell(
+                "Le banc appelle `anthropic/claude-haiku-4.5` via OpenRouter."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", result["findings"]
+
+    def test_famille2_genuine_decimal_stays_detected(self, tmp_path):
+        """Faux negatif donne : 'F1 = 4,5' ecrit a la francaise, sans
+        appui dans les sorties -- pas de separateur de slug colle avant
+        le nombre, le finding reste."""
+        cells = [
+            _code_cell("call()", [_stream_output("done\n")]),
+            _md_cell("Le detecteur atteint F1 = 4,5 sur le corpus."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED"
+        assert any(f["normalized"] == "4.5" for f in result["findings"])
+
+    def test_famille2_rate_unit_not_an_identifier(self, tmp_path):
+        """Garde de non-regression (#15435) : '15 tokens/min' est un debit
+        a unite composee, PAS un identifiant -- le '/min' apres le nombre
+        ne declenche pas le filtre (le faux negatif mesure pendant le
+        developpement de la famille 2)."""
+        cells = [
+            _code_cell("count()", [_stream_output("done\n")]),
+            _md_cell("Le service traite 15 tokens/min en moyenne."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED", result["findings"]
+
+    # --- famille 3 : valeur derivee, derivation montree -------------------
+
+    def test_famille3_derivation_written_in_plain_sight(self, tmp_path):
+        """FP donne (GT-20c c.16) : '4 683² ≈ 21,9 millions' -- l'operande
+        4683 est imprimee par les sorties, la derivation est ecrite noir
+        sur blanc a cote de la valeur."""
+        cells = [
+            _code_cell("fubini()", [_stream_output("faibles = 4683\n")]),
+            _md_cell(
+                "## Lecture\n\nL'univers compte 4 683² ≈ 21,9 millions de sommets."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLEAN", result["findings"]
+
+    def test_famille3_derivation_without_operand_stays_detected(self, tmp_path):
+        """Faux negatif donne : le meme '≈ 21,9' sans l'operande imprimee
+        -- la derivation n'est pas auditable, le finding reste."""
+        cells = [
+            _code_cell("fubini()", [_stream_output("autre chose\n")]),
+            _md_cell("## Lecture\n\nL'univers compte ≈ 21,9 millions de sommets."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED"
+        assert any(f["normalized"] == "21.9" for f in result["findings"])
+
+    # --- famille 3, variante ratio : a/b = x % ----------------------------
+
+    def test_famille3_ratio_solvable_is_tracked_unproven(self, tmp_path):
+        """GT-18c c.34, forme substantielle, RECLASSE par la spec amont
+        (test_adjacent_output_numbers_without_named_operands) : ratio
+        solvable mais operands non nommes dans la prose = NON PREUVE, pas
+        CLEAN. '40,0 %' annonce,
+        la cellule 33 imprime 48 et 120 -- 48/120 = 40 %, exact, jamais
+        imprime tel quel. (Le bare '40 %' n'est PAS candidat dans cet
+        organe : '40' echoue au plancher _substantive et _unit_bearing ne
+        reconnait que les taux '/unite' -- la variante bare du FP vit dans
+        l'organe stale, marqueur %, teste dans test_check_stale_claims.py.)"""
+        cells = [
+            _code_cell("eval()", [_stream_output(
+                "humour_reussi : 48\ntotal : 120 instances\n")]),
+            _md_cell("## Lecture\n\nLe taux final est de 40,0 %."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "CLAIM_UNPROVEN", result
+        assert not result["findings"]
+        assert [c["normalized"] for c in result["derived_claims"]] == ["40.0"]
+
+    def test_famille3_ratio_without_operands_stays_detected(self, tmp_path):
+        """Faux negatif donne : '40,0 %' sans la paire d'entiers dans les
+        sorties -- le solveur ne trouve aucun ratio, le finding reste."""
+        cells = [
+            _code_cell("eval()", [_stream_output("rien d'utile\n")]),
+            _md_cell("## Lecture\n\nLe taux final est de 40,0 %."),
+        ]
+        result = self._scan_tmp(tmp_path, cells)
+        assert result["verdict"] == "FABRICATION_DETECTED"
+        assert any(f["normalized"] == "40.0" for f in result["findings"])

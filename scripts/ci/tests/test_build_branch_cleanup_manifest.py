@@ -22,13 +22,20 @@ Ce qui est mesure ici, et pourquoi :
    contenu n'est donc pas livre par ce merge. Mesure : 18 branches sur
    2 930 sont dans ce cas.
 
+6. **`main()` est exerce en bout a bout** (I/O de reseau mockees) : la note
+   de la classe B et la deuxieme passe C/E y passent par le code reel, pas
+   par une copie locale re-implementee dans le test.
+
 Aucun test ne requiert de reseau ni de jeton GH : les fonctions de
-classement sont pures et testees sur des tables construites a la main.
+classement sont pures et testees sur des tables construites a la main, et
+`main()` lui-meme est exerce avec ses appels de reseau mockees.
 """
 from __future__ import annotations
 
+import json
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -508,6 +515,133 @@ class TestSecurite(unittest.TestCase):
         source = self.source()
         self.assertIn('"ls-remote", "--heads"', source)
         self.assertIn("write_text", source)
+
+
+class TestMainEndToEnd(unittest.TestCase):
+    """`main()` exerce en bout a bout : notes B et deuxieme passe C/E reelles.
+
+    Les versions precedentes couvraient la note B par une copie locale
+    (`TestPreuveDeContenu.note`) et ne touchaient jamais la deuxieme passe
+    C/E (le second bloc de `main()`). Ici l'I/O de reseau est mockee et c'est
+    le code reel de `main()` qui construit la sortie : un test qui le
+    re-implementerait dans son propre corps passerait quoi que fasse le code.
+    """
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.tmpdir = Path(self._tmp.name)
+        self.out = self.tmpdir / "manifest.tsv"
+
+    def tearDown(self):
+        self._tmp.cleanup()
+
+    def _note_de(self, branche: str) -> str:
+        lignes = self.out.read_text(encoding="utf-8").splitlines()
+        for ligne in lignes[1:]:  # lignes[0] = entete
+            champs = ligne.split("\t")
+            if len(champs) == 6 and champs[0] == branche:
+                return champs[5]
+        self.fail(f"branche {branche!r} absente du manifeste")
+
+    def _executer(self, distant, prs, commits_main, tete):
+        with mock.patch.object(organ, "branches_distantes",
+                               return_value=distant), \
+                mock.patch.object(organ, "etats_par_branche",
+                                  return_value=prs), \
+                mock.patch.object(organ, "commits_de_main",
+                                  return_value=commits_main), \
+                mock.patch.object(organ, "branche_par_defaut",
+                                  return_value="main"), \
+                mock.patch.object(organ, "tete_sur_main", side_effect=tete), \
+                mock.patch.object(sys, "argv",
+                                   ["prog", "--out", str(self.out),
+                                    "--repo", str(self.tmpdir)]):
+            code = organ.main()
+        self.assertEqual(code, 0)
+
+    def test_note_b_contenu_prouve_sur_main(self):
+        b1 = "a" * 40
+        self._executer(
+            {"b-onmain": b1},
+            {"b-onmain": [pr("MERGED", 101, oid=b1, merge_oid="m" * 40,
+                              base="main")]},
+            {"m" * 40},
+            lambda repo, sha, main: False,
+        )
+        self.assertEqual(self._note_de("b-onmain"),
+                         "merged:1;merged;content_on_main")
+
+    def test_note_b_base_pilote_pas_sur_main(self):
+        b2 = "b" * 40
+        self._executer(
+            {"b-pilot": b2},
+            {"b-pilot": [pr("MERGED", 102, oid=b2, merge_oid="p" * 40,
+                             base="feature/pilot")]},
+            {"x" * 40},
+            lambda repo, sha, main: False,
+        )
+        self.assertEqual(self._note_de("b-pilot"),
+                         "merged:1;merged;merged_into_pilot_base:feature/pilot")
+
+    def test_note_b_merge_commit_inconnu(self):
+        b3 = "c" * 40
+        self._executer(
+            {"b-unknown": b3},
+            {"b-unknown": [pr("MERGED", 103, oid=b3, merge_oid="", base="main")]},
+            {"m" * 40},
+            lambda repo, sha, main: False,
+        )
+        self.assertEqual(self._note_de("b-unknown"),
+                         "merged:1;merged;merge_commit_unknown")
+
+    def test_deuxieme_passe_ce_remplit_la_note_de_contenu(self):
+        c1 = "d" * 40
+        self._executer(
+            {"c-branch": c1},
+            {"c-branch": [pr("CLOSED", 104, oid=c1, merge_oid="", base="main")]},
+            set(),
+            lambda repo, sha, main: sha == c1,  # ancetre -> ancestor_of_main
+        )
+        self.assertEqual(self._note_de("c-branch"),
+                         "closed:1;closed_unmerged;ancestor_of_main")
+
+    def test_le_manifeste_est_ordonne_par_sha(self):
+        """Le tri par SHA (contrat du README) passe par `main()` reellement."""
+        lo, hi = "a" * 40, "f" * 40
+        # Le nom inverse le sha : un tri par NOM donnerait [alpha, zeta],
+        # un tri par SHA donne [zeta, alpha].
+        self._executer(
+            {"zeta": lo, "alpha": hi},
+            {"zeta": [pr("CLOSED", 1, oid=lo)],
+             "alpha": [pr("CLOSED", 2, oid=hi)]},
+            set(),
+            lambda repo, sha, main: False,
+        )
+        noms = [l.split("\t")[0] for l in
+                self.out.read_text(encoding="utf-8").splitlines()[1:]]
+        self.assertEqual(noms, ["zeta", "alpha"])
+
+
+class TestPlafondPrsFailClosed(unittest.TestCase):
+    """La garde PLAFOND_PRS (l.167) est fail-closed.
+
+    Reserve Hermes #25257 : la garde etait sans test. Si la liste de PRs
+    atteint le plafond --limit, `gh pr list` la retourne TRONQUEE sans
+    avertissement, et le manifeste serait incomplet (fail-open).
+    `etats_par_branche` doit lever SystemExit au lieu de construire un
+    manifeste partiel.
+    """
+
+    def test_la_garde_leve_systemexit_a_plafond(self):
+        n = organ.PLAFOND_PRS
+        docs = json.dumps([
+            {"headRefName": "b%d" % i, "number": i, "state": "MERGED",
+             "headRefOid": "a" * 40, "baseRefName": "main",
+             "mergeCommit": {"oid": "b" * 40}} for i in range(n)
+        ])
+        with mock.patch.object(organ, "sh", return_value=docs):
+            with self.assertRaises(SystemExit):
+                organ.etats_par_branche(Path("/tmp"))
 
 
 if __name__ == "__main__":

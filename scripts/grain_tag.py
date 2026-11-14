@@ -466,7 +466,8 @@ def mask_fenced_blocks(text: str) -> str:
     return "".join(out)
 
 
-# Matches `<closing-keyword> #N` in free prose (#10101). The keyword set is
+# Matches `<closing-keyword> #N` (also `<keyword>: #N`) in free prose (#10101).
+# The keyword set is
 # exactly `CLOSING_KEYWORDS` (the 9 GitHub auto-close words); the `#N` tail is
 # what GitHub parses as an auto-close instruction when the text lands in a
 # PR description or a commit message. The 9 flexions are anchored with a
@@ -476,7 +477,7 @@ def mask_fenced_blocks(text: str) -> str:
 # (catalog-pr-hygiene HARD 4), closing a PR by keyword never is (one does not
 # "resolve" a PR -- one merges or closes it explicitly). #10101.
 CLOSE_KW_REF_RE = re.compile(
-    r"\b(close[ds]?|fix(?:es|ed)?|resolv(?:e|es|ed))\s+#(\d+)\b",
+    r"\b(close[ds]?|fix(?:es|ed)?|resolv(?:e|es|ed))\s*:?\s+#(\d+)\b",
     re.IGNORECASE,
 )
 
@@ -524,12 +525,13 @@ def find_close_keyword_pr_refs(text: str | None) -> list[dict]:
 
 # Matches NON-closing references in free prose: the "safe syntax" of
 # git-workflow.md (``See #N`` / ``Part of #N`` / ``Refs #N``) that links an
-# issue without auto-closing it. These are the references an EPIC carries while
+# issue without auto-closing it. ``References #N`` is accepted as a spelling
+# variant. These are the references an EPIC carries while
 # several lanes work it concurrently (#1454, #1027, #3801) -- multi-lane by
 # construction, which is why lane_claim_required blocks on CLOSING refs only and
 # surfaces a conflict here as an ADVISORY label, never a block (#10223 Tache 4).
 NON_CLOSING_REF_RE = re.compile(
-    r"\b(see|part\s+of|refs?)\s+#(\d+)\b",
+    r"\b(see|part\s+of|refs?|references?)\s*:?\s+#(\d+)\b",
     re.IGNORECASE,
 )
 

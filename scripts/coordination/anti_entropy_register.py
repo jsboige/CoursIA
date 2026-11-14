@@ -756,7 +756,11 @@ def arbre_aligne(commande, rayon: str = "") -> tuple[bool, str]:
     travail, commits non compris) : c'est exactement ce que l'instrument
     lit. Comparer les SHA de HEAD et de la revision serait trop grossier
     — une branche de travail qui ne touche que des scripts diverge
-    aussi, alors que les carnets qu'elle mesure sont identiques.
+    aussi, alors que les carnets qu'elle mesure sont identiques. Les
+    divergences qui sont des gitlinks (mode 160000) sont exclues : le
+    depot parent ne contient pas les fichiers de ces sous-modules, et
+    `git ls-tree -r`/`git cat-file` de la revision nommee n'y accedent pas.
+    Les changements dans les fichiers suivis du rayon restent bloquants.
 
     Mesure (2026-10-31, meme `origin/main` = 6135a06, deux checkouts) :
     un checkout aligne rend **38** carnets `ambigu`, un checkout en retard
@@ -774,13 +778,23 @@ def arbre_aligne(commande, rayon: str = "") -> tuple[bool, str]:
     if code != 0:
         return False, f"la revision nommee `{ref}` n'est pas lisible"
     divergents = [l.strip() for l in out.splitlines() if l.strip()]
-    if not divergents:
+    divergences_reelles = []
+    for chemin in divergents:
+        code, entree, _ = _run(("git", "ls-tree", ref, "--", chemin))
+        if code != 0:
+            return False, f"impossible de classifier la divergence `{chemin}` dans `{ref}`"
+        # ls-tree sans -r rend l'entree directe, dont le mode 160000
+        # distingue un gitlink du contenu versionne dans le depot parent.
+        if not any(l.split(maxsplit=1)[0] == "160000"
+                   for l in entree.splitlines() if l.strip()):
+            divergences_reelles.append(chemin)
+    if not divergences_reelles:
         return True, (f"l arbre local porte le meme contenu que `{ref}` "
-                      f"sur `{rayon}`")
+                      f"sur `{rayon}` (divergences de gitlinks exclues)")
     return False, (
         f"l arbre local ne porte pas le contenu de `{ref}` sur `{rayon}` "
-        f"({len(divergents)} fichier(s) divergent, dont "
-        f"`{divergents[0]}`) : l'instrument prend sa liste dans `{ref}` et "
+        f"({len(divergences_reelles)} fichier(s) divergent(s), dont "
+        f"`{divergences_reelles[0]}`) : l'instrument prend sa liste dans `{ref}` et "
         f"lit son contenu dans l'arbre local — les deux ne concordent "
         f"pas, et la valeur mesuree n'est pas celle de l'arbre nomme")
 

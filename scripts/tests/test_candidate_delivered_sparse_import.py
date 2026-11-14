@@ -68,20 +68,27 @@ def test_import_depuis_le_seul_sparse_checkout():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes((REPO / rel).read_bytes())
         # Aucun autre fichier du depot n'est visible : ni pick_idle_grain, ni
-        # series_saturation, ni grain_tag, ni gh_payload_cache. C'est la
-        # condition exacte du job CI.
+        # series_saturation, ni gh_payload_cache. `grain_tag` est bien dans le
+        # sparse-checkout : candidate_delivered s'appuie sur son parseur de
+        # references canonique pour separer close et tranche.
         sys.path.insert(0, str(root / "scripts"))
         try:
+            for module in ("candidate_delivered", "issue_containers",
+                           "grain_tag", "delivery_grammar", "released_covers"):
+                sys.modules.pop(module, None)
             for banned in ("pick_idle_grain", "series_saturation",
-                           "grain_tag", "gh_payload_cache"):
+                           "gh_payload_cache"):
                 sys.modules.pop(banned, None)
             import candidate_delivered  # noqa: F401
+            import grain_tag
 
             assert not any(
                 name in sys.modules
                 for name in ("pick_idle_grain", "series_saturation",
-                             "grain_tag", "gh_payload_cache")
+                             "gh_payload_cache")
             ), "candidate_delivered a tire un module hors sparse-checkout"
+            assert Path(candidate_delivered.__file__).resolve().is_relative_to(root)
+            assert Path(grain_tag.__file__).resolve().is_relative_to(root)
 
             verdict = candidate_delivered._released_covers_acceptance(
                 "[RELEASED] lane x -- acceptance deja couverte, rien a reparer"
@@ -91,4 +98,6 @@ def test_import_depuis_le_seul_sparse_checkout():
             sys.path.remove(str(root / "scripts"))
             sys.modules.pop("candidate_delivered", None)
             sys.modules.pop("issue_containers", None)
+            sys.modules.pop("grain_tag", None)
+            sys.modules.pop("delivery_grammar", None)
             sys.modules.pop("released_covers", None)

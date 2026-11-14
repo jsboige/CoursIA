@@ -1,0 +1,402 @@
+{
+  "version": 1,
+  "axes": {
+    "difficulte": {
+      "niveaux": [
+        "D1",
+        "D2",
+        "D3",
+        "D4"
+      ],
+      "criteres": [
+        "prerequis",
+        "outillage",
+        "autonomie"
+      ],
+      "regle_derivation": "niveau = max(prerequis, autonomie)",
+      "documentation": "docs/curriculum/qualification/echelle-difficulte.md"
+    },
+    "recherche": {
+      "niveaux": [
+        "R0",
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "documentation": "docs/curriculum/qualification/dimension-recherche.md"
+    }
+  },
+  "series": [
+    {
+      "id": "NLP",
+      "path": "MyIA.AI.Notebooks/NLP",
+      "statut": "pilote",
+      "notebooks": [
+        {
+          "path": "MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 1,
+            "outillage": 3,
+            "autonomie": 2
+          },
+          "justification": "Prérequis : aucun hors Python — le carnet est auto-contenu (P1). Outillage : spaCy + modèle français `fr_core_news_sm` téléchargé par l'étudiant, dont il doit lire les sorties (MORPH, ents, arcs) (O3). Autonomie : les trois exercices sont des analyses sur le corpus (lemme le plus polymorphe, sujets elliptiques, recherche par étiquette), pas des implémentations (A2). Niveau D2 = max(1, 2). Recherche R1 : le §7 « Analyse d'erreurs — mesurer contre un jeu d'or » construit un protocole d'évaluation annoté, réutilisable ; aucune question ouverte n'est posée.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 14,
+            "cellules_md": 33,
+            "prose_chars": 20671,
+            "densite": 1476,
+            "densite_plancher": 1200,
+            "kernel": "Python 3 (coursia-ml-training)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 3,
+            "autonomie": 2
+          },
+          "justification": "Prérequis : notions de probabilité (MLE, perplexité, lissage) — niveau licence (P2). Outillage : NLTK (`punkt`, `punkt_tab` téléchargés par l'étudiant) (O3). Autonomie : les exercices étendent le vocabulaire, comparent add-k et add-1, complètent la courbe de perplexité — adaptation de formule et vérification, pas d'implémentation complète (A2). Niveau D2 = max(2, 2). Recherche R1 : le §7 « Courbe de perplexité vs n » est un instrument de choix reproductible ; le verdict sur le lissage est connu d'avance, ce n'est pas une exploration.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 12,
+            "cellules_md": 33,
+            "prose_chars": 22374,
+            "densite": 1864,
+            "densite_plancher": 1200,
+            "kernel": "coursia-ml-training",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 3,
+            "outillage": 2,
+            "autonomie": 3
+          },
+          "justification": "Prérequis : le carnet déclare « Python 3.10+, NumPy, scikit-learn » et un prérequis hors série (TAL/entités nommées) ; le formalisme CRF, le forward-backward et la descente de gradient sont hors du programme de la série (P3). Outillage : sklearn-crfsuite et seqeval comme témoins, API à maîtriser (O2). Autonomie : le CRF linéaire de zéro (scores, forward/backward, Viterbi, NLL, gradient) est à implémenter et vérifié numériquement (A3). Niveau D3 = max(3, 3). Recherche R2 : le §8 « Ablation mesurée — quelle famille de caractéristiques porte le CRF ? » pose une question falsifiable dont le verdict n'est pas connu d'avance, et le témoin §7 (sklearn-crfsuite) fournit l'étalon externe.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 19,
+            "cellules_md": 34,
+            "prose_chars": 41302,
+            "densite": 2173,
+            "densite_plancher": 1200,
+            "kernel": "Python 3 (ipykernel)",
+            "exigences": {
+              "api": false,
+              "cloud": false,
+              "gpu": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb",
+          "difficulte": "D3",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 3,
+            "outillage": 2,
+            "autonomie": 3
+          },
+          "justification": "CFG, CNF, PCFG et treebank introduisent le formalisme grammatical hors série (P3). CYK, Viterbi et inside sont expliqués et les exercices lissent les productions, comptent les dérivations et construisent un protocole de réestimation sur la phrase ambiguë (A3). Le témoin NLTK et les probabilités rationnelles vérifient la concordance sur un corpus fixé ; ce contrôle est un instrument réutilisable (R1). NLTK PCFG et les parseurs de référence sont réellement configurés et interprétés (O2).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 17,
+            "cellules_md": 32,
+            "prose_chars": 29388,
+            "densite": 1728,
+            "densite_plancher": 1200,
+            "kernel": "Python 3 (coursia-ml-training)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 3,
+            "outillage": 3,
+            "autonomie": 3
+          },
+          "justification": "CFG, CNF, PCFG et treebank introduisent le formalisme grammatical hors série (P3). CYK, Viterbi et inside sont expliqués et les exercices lissent les productions, comptent les dérivations et construisent un protocole de réestimation sur la phrase ambiguë (A3). Le témoin NLTK et les probabilités rationnelles vérifient la concordance sur un corpus fixé ; ce contrôle est un instrument réutilisable (R1). Les trois calculs de parsing restent C# ; Python.NET/CPython et NLTK ajoutent l'outillage tiers nécessaire au vrai témoin (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 17,
+            "cellules_md": 33,
+            "prose_chars": 29874,
+            "densite": 1757,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 2,
+            "autonomie": 3
+          },
+          "justification": "Les probabilités, le lissage et le carnet 02 sont requis ; HMM et Viterbi sont enseignés ici (P2). L'exercice 'backward et décodage marginal' demande d'implémenter la récurrence et le décodage, puis les activités varient le lissage et étendent le train (A3). 'Le contexte renverse' et l'analyse d'erreurs confrontent le modèle à une baseline token indépendante sans imposer la direction de toutes les variations (R2). hmmlearn et NLTK sont réellement employés comme deux témoins (O2).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 16,
+            "cellules_md": 30,
+            "prose_chars": 29998,
+            "densite": 1874,
+            "densite_plancher": 1200,
+            "kernel": "Python 3 (ipykernel)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/05-HMM-Viterbi-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 3,
+            "autonomie": 3
+          },
+          "justification": "Les probabilités, le lissage et le carnet 02 sont requis ; HMM et Viterbi sont enseignés ici (P2). L'exercice 'backward et décodage marginal' demande d'implémenter la récurrence et le décodage, puis les activités varient le lissage et étendent le train (A3). 'Le contexte renverse' et l'analyse d'erreurs confrontent le modèle à une baseline token indépendante sans imposer la direction de toutes les variations (R2). Forward/Viterbi sont C# ; Python.NET et CPython donnent accès aux vrais témoins hmmlearn/NLTK et ajoutent une configuration tierce (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 16,
+            "cellules_md": 30,
+            "prose_chars": 29950,
+            "densite": 1871,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 1,
+            "outillage": 1,
+            "autonomie": 2
+          },
+          "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les calculs utilisent Python/NumPy et Matplotlib, sans paquet du domaine à configurer (O1).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 13,
+            "cellules_md": 18,
+            "prose_chars": 17035,
+            "densite": 1310,
+            "densite_plancher": 1200,
+            "kernel": "Python 3",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25-CSharp.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 1,
+            "outillage": 1,
+            "autonomie": 2
+          },
+          "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les comptages, pondérations, classements et métriques sont calculés avec les outils C# standard ; aucun moteur externe supplémentaire n'est requis (O1).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 16,
+            "cellules_md": 32,
+            "prose_chars": 12429,
+            "densite": 776,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 1,
+            "autonomie": 2
+          },
+          "justification": "Prérequis : algèbre linéaire (SVD, cosinus) et probabilités (PPMI) — notions de licence, non enseignées ailleurs dans la série (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : les exercices portent sur la co-occurrence, la valeur de PPMI et les plus proches voisins — adaptation, pas d'algorithme à réécrire (A2). Niveau D2 = max(2, 2). Recherche R1 : le §5 « Mesurer le gain » pose le test décisif (écart entre cosinus congénère et cosinus d'un autre domaine). Le carnet 08 confronte ses vecteurs appris à l'espace SVD du carnet 07, et le carnet 09 confronte à 08 ; aucun des deux ne rejoue ce test congénère contre un autre domaine — l'instrument discriminant reste propre au carnet 07.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 11,
+            "cellules_md": 11,
+            "prose_chars": 13553,
+            "densite": 1232,
+            "densite_plancher": 1200,
+            "kernel": "Python 3",
+            "exigences": {
+              "api": false,
+              "cloud": false,
+              "gpu": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 1,
+            "autonomie": 3
+          },
+          "justification": "Prérequis : le §7 confronte directement au carnet 07 (statistique) ; descente de gradient, softmax et échantillonnage négatif sont des notions de licence (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : CBOW et skip-gram sont écrits de zéro, y compris la perte, le gradient et l'échantillonnage négatif (A3). Niveau D3 = max(2, 3). Recherche R2 : le §5 « Les vecteurs ont-ils une structure ? » est une question de mesure falsifiable (similarité cosinus), et le §7 la confrontation paire par paire avec l'espace SVD du carnet 07 ; le verdict n'est pas connu d'avance.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 14,
+            "cellules_md": 24,
+            "prose_chars": 24138,
+            "densite": 1724,
+            "densite_plancher": 1200,
+            "kernel": "Python 3",
+            "exigences": {
+              "api": false,
+              "cloud": false,
+              "gpu": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 1,
+            "autonomie": 3
+          },
+          "justification": "Prérequis : dépend du carnet 08 (word2vec), dont il reprend le modèle et le protocole ; la décomposition en sous-mots est une notion nouvelle (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : le modèle fastText (table de sous-mots, somme, gradient) est écrit de zéro (A3). Niveau D3 = max(2, 3). Recherche R2 : le §4 « La capacité distinctive : généraliser aux mots OOV » et le §5 « Confrontation 08 vs 09 » posent la question falsifiable de la généralisation OOV ; le verdict (word2vec n'a aucun vecteur, fastText replacé) est mesuré, non supposé.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 10,
+            "cellules_md": 19,
+            "prose_chars": 12176,
+            "densite": 1217,
+            "densite_plancher": 1200,
+            "kernel": "Python 3",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 2,
+            "autonomie": 2
+          },
+          "justification": "Prérequis : probabilités — Bayes, MLE, espace log, lissage — notions de licence (P2). Outillage : scikit-learn (`CountVectorizer`, `MultinomialNB`) comme témoin, plus `token_pattern` à aligner explicitement (O2). Autonomie : l'implémentation est donnée ; les exercices demandent une variante (Bernoulli présence/absence, avec le dénominateur à changer), une explication de prédiction et un traitement des mots vides — adaptation et vérification (A2). Niveau D2 = max(2, 2). Recherche R1 : le §3 « Cross-check SOTA » et le §4 « l'effet de α, mesuré » sont des instruments de mesure réutilisables ; le carnet signale lui-même que sa résolution de 12,5 points ne permet pas de distinguer un plateau, ce qui en fait un contrôle et non une exploration.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 9,
+            "cellules_md": 14,
+            "prose_chars": 14069,
+            "densite": 1563,
+            "densite_plancher": 1200,
+            "kernel": "Python 3",
+            "exigences": {
+              "api": false,
+              "cloud": false,
+              "gpu": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch.ipynb",
+          "difficulte": "D4",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 3,
+            "outillage": 2,
+            "autonomie": 4
+          },
+          "justification": "Prérequis : le carnet se place explicitement après 10 et suppose optimisations convexe, entropie croisée et régularisation L2 — hors série (P3). Outillage : scikit-learn n'intervient que comme « juge extérieur » (O2). Autonomie : l'étudiant doit construire un banc dont le verdict n'est pas connu d'avance — le §1 montre que le corpus du carnet 10 est « un plafond », le §5 constate que « l'attendu n'est pas reproduit », et les trois exercices, « Chacun se juge sur une mesure, pas sur une impression » (A4). Niveau D4 = max(3, 4). Recherche R2 : la question « que fait la régularisation, et que ne fait-elle pas ? » est posée puis mesurée sur un banc construit pour l'occasion ; le carnet rapporte un résultat qui contredit l'attente théorique. Ce n'est pas du front (R3) : la question est tranchée à l'intérieur du carnet.",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 11,
+            "cellules_md": 16,
+            "prose_chars": 27667,
+            "densite": 2515,
+            "densite_plancher": 1200,
+            "kernel": "Python3",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

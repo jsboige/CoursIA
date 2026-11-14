@@ -89,6 +89,27 @@ CLAIM_CHECK_RE = re.compile(
 )
 RELATIONAL_OPERATORS = {"<", "<=", ">", ">=", "==", "!="}
 
+# #24289 famille 2 -- identifiers: "anthropic/claude-haiku-4.5" extracts
+# "4.5", which is a model-version component, never a measurement. The tell
+# is a word character glued to the number by a slug separator (-, /, _).
+_IDENTIFIER_TELL_RE = re.compile(r"[\w][-/_]$")
+
+# #24289 famille 3 -- derivation written in plain sight: the prose carries
+# BOTH the operand and the formula that produce the claimed value
+# ("4 683² ≈ 21,9 millions de sommets", GT-20c c.16). When the operand is
+# printed by the notebook's outputs, the claim is auditable by the reader
+# and is not a fabrication finding.
+_DERIVATION_SQUARE_RE = re.compile(
+    r"(?P<base>\d{1,3}(?:[   ]\d{3})+|\d+(?:[.,]\d+)?)"
+    r"\s*(?:²|\^2|\*\*2)\s*(?:≈|=|→)\s*"
+    r"(?P<val>\d+(?:[.,]\d+)?)"
+)
+_DERIVATION_SQUARE_INV_RE = re.compile(
+    r"(?P<val>\d+(?:[.,]\d+)?)\s*(?:≈|=|→)\s*"
+    r"(?P<base>\d{1,3}(?:[   ]\d{3})+|\d+(?:[.,]\d+)?)"
+    r"\s*(?:²|\^2|\*\*2)"
+)
+
 
 def _normalize_num(token: str) -> str:
     """Strip SI suffix, normalize comma->dot, drop trailing dots/zeros.
@@ -754,7 +775,138 @@ def _is_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
         _is_math_parameter_definition(prose, match_pos, match_end)
         or _is_numeric_list_literal(prose, match_pos, match_end)
         or _is_labeled_enumeration_value(prose, match_pos, match_end)
+        or _is_prose_input_specification(prose, match_pos, match_end)
     )
+
+
+_INPUT_LABEL_RE = re.compile(
+    r"(?i)\b(?:param[eè]tre(?:s)?(?:\s+de\s+configuration)?|"
+    r"hyperparam[eè]tre(?:s)?|taille\s+(?:de\s+grille|du\s+batch|de\s+lot)|"
+    r"valeur\s+(?:par\s+d[eé]faut|initiale)|seuil(?:\s+de\s+[\w-]+)?|"
+    r"taux\s+d['’]apprentissage|learning\s+rate|graine|seed|pas\s+de\s+temps)\b"
+)
+_INPUT_ASSIGNMENT_RE = re.compile(
+    r"(?i)(?:\b(?:fix[eé]e?s?|choisi[eé]s?|d[eé]fini[eé]s?|initialis[eé]s?|"
+    r"configur[eé]s?|vaut|est|sera|utilis[eé]s?)\s+(?:[àa]\s+|de\s+)?|"
+    r"\s*(?:=|:)\s*|\s+de\s+)\s*$"
+)
+_RESULT_CONTEXT_RE = re.compile(
+    r"(?i)\b(?:observ[eé]|mesur[eé]|calcul[eé]|obtenu[eé]s?|atteint[eé]s?|"
+    r"r[eé]sultat|sortie|essai|exp[eé]rience)\w*\b"
+)
+
+
+def _is_prose_input_specification(prose: str, match_pos: int, match_end: int) -> bool:
+    """Recognize a narrowly stated configuration value in ordinary prose.
+
+    Both a configuration label and an assignment/declaration immediately
+    before the number are required. This leaves measurements such as
+    « le taux d'apprentissage observé est 0.8 » eligible unless explicitly
+    described as a configured input.
+    """
+    # A configuration label must belong to the value's own clause. Bound the
+    # search at a semicolon, line break, or sentence boundary so a prior input
+    # cannot exempt a later measurement in the same paragraph.
+    boundaries = list(re.finditer(
+        r";|,\s+(?:(?:et|mais)\s+)?(?:la|le|les|un|une|ce|cette|ces|"
+        r"son|sa|ses|il|elle|on)\b|\n|[.!?](?=\s+[A-ZÀ-Þ])",
+        prose[:match_pos],
+    ))
+    clause_start = boundaries[-1].end() if boundaries else 0
+    prefix = prose[clause_start:match_pos]
+    if not _INPUT_LABEL_RE.search(prefix):
+        return False
+    if _RESULT_CONTEXT_RE.search(prefix):
+        return False
+    return bool(_INPUT_ASSIGNMENT_RE.search(prefix))
+
+
+_DERIVED_CONTEXT_RE = re.compile(
+    r"(?i)\b(?:\u00e9cart\s+entre|diff[eé]rence\s+entre|delta\s+entre|"
+    r"variation\s+entre|(?:ratio|proportion|pourcentage|taux|moyenne|"
+    r"m[eé]diane|arrondi|conversion)\w*.{0,40}\b(?:calcul[eé]|d[eé]riv[eé]|"
+    r"obtenu[eé]?|issu[eé]?|produit[eé]?)|d[eé]riv[eé]\w*\s+(?:de|du|des|"
+    r"[àa]\s+partir\s+de))\b"
+)
+_OUTPUT_NUMBER_RE = re.compile(r"(?<![\d.,])\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?(?![\d])")
+_DERIVED_RATE_OPERANDS_RE = re.compile(
+    r"(?i)(?:\bde\s+)?(?P<n>\d+(?:[.,]\d+)?)\s+"
+    r"(?:(?:succ[eè]s|r[eé]ussites?|cas|[\w-]+)\s+)?"
+    r"(?:sur|/)\s*(?P<d>\d+(?:[.,]\d+)?)"
+)
+_DERIVED_DIFFERENCE_OPERANDS_RE = re.compile(
+    r"(?i)\b(?:\u00e9cart|diff[eé]rence|delta|variation)\s+entre\s+"
+    r"(?P<a>\d+(?:[.,]\d+)?)\s+(?:et|à)\s+(?P<b>\d+(?:[.,]\d+)?)"
+)
+
+
+def _parse_decimal(token: str) -> Decimal | None:
+    """Parse one numeric token using the organ's French decimal convention."""
+    if "," in token and "." in token:
+        token = token.replace(",", "")
+    elif token.count(",") > 1 and all(len(part) == 3 for part in token.split(",")[1:]):
+        token = token.replace(",", "")
+    else:
+        token = token.replace(",", ".")
+    try:
+        return Decimal(token)
+    except Exception:
+        return None
+
+
+def _output_line_numbers(out_text: str) -> list[list[Decimal]]:
+    """Return finite numeric values grouped by output line for bounded proofs."""
+    rows: list[list[Decimal]] = []
+    for line in out_text.splitlines():
+        values: list[Decimal] = []
+        for match in _OUTPUT_NUMBER_RE.finditer(line):
+            value = _parse_decimal(match.group(0))
+            if value is not None:
+                values.append(value)
+        if len(values) >= 2:
+            rows.append(values[:20])
+    return rows
+
+
+def _derived_value_proven(norm: str, prose: str, match_pos: int, match_end: int, out_text: str) -> bool:
+    """Prove a simple rate or difference from numbers on the same output row.
+
+    The relation must be named in the same markdown line. Candidate operands
+    are limited to one output line, and only a named percentage/rate or
+    difference is evaluated; arbitrary arithmetic combinations are not tried.
+    """
+    line_start = prose.rfind("\n", 0, match_pos) + 1
+    line_end = prose.find("\n", match_end)
+    line = prose[line_start:line_end if line_end >= 0 else len(prose)]
+    if not _DERIVED_CONTEXT_RE.search(line):
+        return False
+    try:
+        claimed = Decimal(norm)
+    except Exception:
+        return False
+    places = len(norm.partition(".")[2]) if "." in norm else 0
+    tolerance = Decimal("0.5") * (Decimal(10) ** -places)
+    is_rate = bool(re.search(r"(?i)%|\b(?:ratio|proportion|pourcentage|taux)\w*\b", line))
+    rate_operands = _DERIVED_RATE_OPERANDS_RE.search(line) if is_rate else None
+    difference_operands = _DERIVED_DIFFERENCE_OPERANDS_RE.search(line)
+    rate_pair = (
+        (_parse_decimal(rate_operands.group("n")), _parse_decimal(rate_operands.group("d")))
+        if rate_operands else None
+    )
+    difference_pair = (
+        (_parse_decimal(difference_operands.group("a")), _parse_decimal(difference_operands.group("b")))
+        if difference_operands else None
+    )
+    for row in _output_line_numbers(out_text):
+        for left, right in zip(row, row[1:]):
+            candidates: list[Decimal] = []
+            if rate_pair == (left, right) and right != 0:
+                candidates.append(left / right * Decimal(100))
+            if difference_pair == (left, right):
+                candidates.append(abs(left - right))
+            if any(abs(value - claimed) <= tolerance for value in candidates):
+                return True
+    return False
 
 
 # ---------------------------------------------------------------------------
@@ -1096,6 +1248,63 @@ def _check_relational_claims(
     return results
 
 
+def _is_identifier_component(prose: str, match_pos: int, match_end: int) -> bool:
+    """#24289 famille 2: the match is a component of an adjacent identifier.
+
+    Measured on GT-18c (8 findings): `anthropic/claude-haiku-4.5` extracts
+    "4.5" -- a model slug, not a measurement. The tell is a word character
+    glued to the number by a slug separator BEFORE it. A genuine
+    measurement never carries one: French prose writes "4,5", keeps its
+    sign spaced ("- 4,5") and its relations symbolic ("P=0,40" keeps the
+    "=", which is not a slug separator).
+
+    The AFTER side deliberately carries NO symmetric check: "15
+    tokens/min" (#15435) is a compound-unit RATE, and "/min" would ride a
+    trailing-separator tell -- a measured regression, not a hypothetical.
+    """
+    before = prose[max(0, match_pos - 2):match_pos]
+    return bool(_IDENTIFIER_TELL_RE.search(before))
+
+
+def _ungroup_number(token: str) -> str:
+    """Collapse francophone digit grouping ("4 683" -> "4683") so a prose
+    operand can be compared to the flat tokens an output prints."""
+    t = token.replace(" ", "").replace(" ", "").replace("\xa0", "")
+    if t.count(",") == 1 and "." not in t:
+        t = t.replace(",", ".")
+    return t
+
+
+def _ratio_supported_percent(raw: str, norm: str, int_values: frozenset[int]) -> bool:
+    """#24289 famille 3, variante ratio : « 40 % » annoncé, les sorties
+    impriment les deux entiers du ratio (48 et 120 : 48/120 = 40 %).
+
+    Prescrit par l'issue (« résoudre les fractions a/b = x % contre les
+    entiers présents dans la fenêtre »), mesuré sur GT-18c c.34 : la
+    cellule de code 33 rend `humour_reussi : 48` et `total : 120
+    instances`, la prose annonce 40 % -- exact, jamais imprimé tel quel.
+    Restricted to PERCENT claims with integer operands only, so a plain
+    numeric coincidence on non-percent prose cannot ride the exemption.
+    """
+    if not raw.strip().endswith("%"):
+        return False
+    try:
+        pct = float(norm)
+    except ValueError:
+        return False
+    if not (0 < pct < 100) or not int_values:
+        return False
+    decimals = len(norm.split(".", 1)[1]) if "." in norm else 0
+    tol = 0.5 * 10 ** -decimals + 1e-9
+    for a in int_values:
+        for b in int_values:
+            if b <= a:
+                continue
+            if abs(100.0 * a / b - pct) <= tol:
+                return True
+    return False
+
+
 def check_notebook(path: Path) -> dict:
     """Scan a single notebook. Returns a structured dict compatible with
     JSON serialization (so the script can be consumed by CI gates)."""
@@ -1112,13 +1321,46 @@ def check_notebook(path: Path) -> dict:
 
     cells = nb.get("cells", []) or []
     findings: list[dict] = []
+    derived_claims: list[dict] = []
     relational_claims: list[dict] = []
     skipped_lit = 0
     skipped_no_prev = 0
     skipped_no_output = 0
+    # #24289 famille 1: outputs of EVERY code cell above the current one,
+    # not just the WINDOW's -- a synthesis cell legitimately recalls a
+    # value measured much earlier (GT-20c: 15,0 % printed by cell 13,
+    # cited by cell 31 whose window is [29, 27, 25]).
+    earlier_outputs: list[tuple[int, str]] = []
+    # Numeric tokens printed by ANY code cell of the notebook -- the
+    # operand gate of the famille-3 registry below ("4 683² ≈ 21,9" is
+    # auditable because 4683 is printed).
+    all_output_numbers: set[str] = set()
+    # #24289 famille 3: values whose DERIVATION is written in the prose of
+    # the current cell or a cell above, operand printed by the outputs.
+    derived_shown: set[str] = set()
+    # Integer values printed by any code cell -- the operand pool of the
+    # famille-3 ratio resolver below (48 and 120 resolve "40 %").
+    all_output_ints: set[int] = set()
 
     for idx, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
+            if cell.get("cell_type") == "code":
+                text = _output_text(cell.get("outputs") or [])
+                if text:
+                    earlier_outputs.append((idx, text))
+                    tokens = _NUM_TOKEN_RE.findall(text) + _NUM_TOKEN_RE.findall(
+                        _normalize_output_text(text)
+                    )
+                    all_output_numbers.update(tokens)
+                    for tok in tokens:
+                        try:
+                            v = float(tok)
+                        except ValueError:
+                            continue
+                        # float("7"*400) = inf ; is_integer() rend False sur
+                        # inf/nan, ce qui evite le int(inf) OverflowError.
+                        if v > 0 and v.is_integer():
+                            all_output_ints.add(int(v))
             continue
         src = "".join(cell.get("source", []) if isinstance(cell.get("source"), list) else [str(cell.get("source", ""))])
         if not src:
@@ -1165,6 +1407,16 @@ def check_notebook(path: Path) -> dict:
         # Drop heading lines + table-headers + code fences from the prose
         # we scan (structurals are not quantitative claims).
         prose = CLAIM_CHECK_RE.sub("", _strip_md_structure(scan_src))
+        # #24289 famille 3: register the values this cell DERIVES in plain
+        # sight (formula written next to the value, operand printed by the
+        # outputs). Values registered here and by the cells above stay
+        # auditable by the reader -- not fabrication findings.
+        for m in _DERIVATION_SQUARE_RE.finditer(scan_src):
+            if _ungroup_number(m.group("base")) in all_output_numbers:
+                derived_shown.add(_normalize_num(m.group("val")))
+        for m in _DERIVATION_SQUARE_INV_RE.finditer(scan_src):
+            if _ungroup_number(m.group("base")) in all_output_numbers:
+                derived_shown.add(_normalize_num(m.group("val")))
         if not prev_code_idxs:
             skipped_no_prev += 1
             continue
@@ -1185,13 +1437,24 @@ def check_notebook(path: Path) -> dict:
             match_pos = m.start()
             match_end = m.end()
             norm = _normalize_num(raw)
-            if not _substantive(norm) and not _unit_bearing(raw, prose, match_end):
+            derived_context = bool(_DERIVED_CONTEXT_RE.search(
+                _line_around(prose, match_pos, match_end)
+            ))
+            if (
+                not _substantive(norm)
+                and not _unit_bearing(raw, prose, match_end)
+                and not derived_context
+            ):
                 continue
             # FP filters (c.366): skip version-number citations and
             # numbers inside quoted exception/version/path spans.
             if _is_section_reference(prose, match_pos):
                 continue
             if _is_version_token(prose, match_pos):
+                continue
+            # #24289 famille 2: a number glued to a word by a slug
+            # separator is a component of an identifier, not a measurement.
+            if _is_identifier_component(prose, match_pos, match_end):
                 continue
             if _in_exception_code_span(prose, match_pos, match_end):
                 continue
@@ -1227,15 +1490,55 @@ def check_notebook(path: Path) -> dict:
                 continue
             # Search the normalized form in the output text (plus adjacent
             # variants: e.g. "0.24" present in "0.2385")
-            if norm not in out_text and not _fuzzy_present(norm, raw_out_text):
-                findings.append({
+            if norm in out_text or _fuzzy_present(norm, raw_out_text):
+                continue
+            # #24289 famille 1: the value may live in a code cell above
+            # the window -- a synthesis cell recalling an earlier
+            # measurement is supported prose, not fabrication.
+            if any(
+                norm in _normalize_output_text(text)
+                or _fuzzy_present(norm, text)
+                for _, text in earlier_outputs
+            ):
+                continue
+            # #24289 famille 3: the value is DERIVED in plain sight
+            # (formula written in the prose, operand printed) -- a proof
+            # whatever the context, so it is tested before the
+            # derived-context category below.
+            if norm in derived_shown:
+                continue
+            # #24289 famille 3, variante ratio : « x % » dont les deux
+            # entiers du ratio sont imprimés par les sorties. La spec
+            # amont l'arbitre NON PREUVE (operands non nommés dans la
+            # prose) : la variante ne blanchit plus le claim, elle
+            # l'achemine vers le suivi derived_claims -- verdict
+            # CLAIM_UNPROVEN -- même quand la prose ne porte pas de mot
+            # de contexte de dérivation (sinon il tomberait en finding
+            # FABRICATION).
+            ratio_solvable = _ratio_supported_percent(
+                raw, norm, frozenset(all_output_ints)
+            )
+            if derived_context or ratio_solvable:
+                if _derived_value_proven(norm, prose, match_pos, match_end, raw_out_text):
+                    continue
+                derived_claims.append({
                     "markdown_cell": idx,
                     "code_cell": prev_code_idxs[0],
                     "window": prev_code_idxs,
                     "raw": raw,
                     "normalized": norm,
                     "context": _excerpt(src, raw),
+                    "status": "UNPROVEN_DERIVATION",
                 })
+                continue
+            findings.append({
+                "markdown_cell": idx,
+                "code_cell": prev_code_idxs[0],
+                "window": prev_code_idxs,
+                "raw": raw,
+                "normalized": norm,
+                "context": _excerpt(src, raw),
+            })
 
     relational_counts = {
         status: sum(1 for claim in relational_claims if claim["status"] == status)
@@ -1245,7 +1548,7 @@ def check_notebook(path: Path) -> dict:
         verdict = "FABRICATION_DETECTED"
     elif relational_counts["CONTRADICTED"]:
         verdict = "CONTRADICTION_DETECTED"
-    elif relational_counts["UNPROVEN"]:
+    elif relational_counts["UNPROVEN"] or derived_claims:
         verdict = "CLAIM_UNPROVEN"
     else:
         verdict = "CLEAN"
@@ -1253,12 +1556,14 @@ def check_notebook(path: Path) -> dict:
         "path": str(path),
         "verdict": verdict,
         "findings": findings,
+        "derived_claims": derived_claims,
         "relational_claims": relational_claims,
         "stats": {
             "skipped_literature": skipped_lit,
             "skipped_no_prev_code": skipped_no_prev,
             "skipped_no_output": skipped_no_output,
             "relational_claims": relational_counts,
+            "derived_claims_unproven": len(derived_claims),
         },
     }
 

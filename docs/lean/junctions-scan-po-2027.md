@@ -7,7 +7,7 @@
 **Commande exécutée** : `pwsh scripts/lean/setup_shared_mathlib.ps1 -Mode Scan`
 
 Voir aussi :
-- `docs/lean/cluster-junctions-c857.md` (#14296, c.857 multi-machine)
+- `../transients/2026-09-02-cluster-junctions-c857.md` (#14296, c.857 multi-machine)
 - `docs/lean/junctions-scan-po-2026.md` (#14038, po-2026, 0 GB)
 - #15070 (po-2023, 0.64 GB)
 - #13962 (issue parente, ai-01 mesure 110 Go empreinte, 0 jonction active)
@@ -91,7 +91,7 @@ Note : l'alignement des manifests (#2611 etape 2) peut elargir les groupes.
 | Groupes mutualisables | 1 (15 lacs) | **2 (13 + 9 lacs)** | **2 (13 + 9 lacs)** | 1 (19 lacs) | **2 (13 + 9 lacs)** |
 | Économie jonction-cluster | ~90 Go | **0,64 Go** | 0 Go récupérable en l'état | 0 Go | **0 GB** |
 
-> **‡ Correction po-2024 (2026-09-13, lane `myia-po-2024:CoursIA`)** — la colonne po-2024 de ce tableau reprenait `docs/lean/cluster-junctions-c857.md` (#14296) **sans re-mesure**, comme le prévoyait l'acceptance 3 de #15568. Cette mesure-là avait été prise depuis un **worktree frais** (`C:/dev/CoursIA-c857-13962`), donc structurellement aveugle à tout checkout réel : son « 0 » n'était pas une absence, c'était un artefact de portée. Rejouée depuis le worktree **principal** de po-2024, elle rend **22 jonctions NTFS vivantes** vers un store partagé **vide**, et 11 de ces 22 visent une rev Mathlib qui ne correspond plus à leur manifest (dérive de toolchain). Détail, instruments et preuves : [`docs/lean/junctions-scan-po-2024.md`](junctions-scan-po-2024.md). Les deux mesures restent des mesures **de worktree** ; la seconde est simplement prise dans le bon.
+> **‡ Correction po-2024 (2026-09-13, lane `myia-po-2024:CoursIA`)** — la colonne po-2024 de ce tableau reprenait `../transients/2026-09-02-cluster-junctions-c857.md` (#14296) **sans re-mesure**, comme le prévoyait l'acceptance 3 de #15568. Cette mesure-là avait été prise depuis un **worktree frais** (`C:/dev/CoursIA-c857-13962`), donc structurellement aveugle à tout checkout réel : son « 0 » n'était pas une absence, c'était un artefact de portée. Rejouée depuis le worktree **principal** de po-2024, elle rend **22 jonctions NTFS vivantes** vers un store partagé **vide**, et 11 de ces 22 visent une rev Mathlib qui ne correspond plus à leur manifest (dérive de toolchain). Détail, instruments et preuves : [`docs/lean/junctions-scan-po-2024.md`](junctions-scan-po-2024.md). Les deux mesures restent des mesures **de worktree** ; la seconde est simplement prise dans le bon.
 
 > **Provenance des colonnes (#15568)** — po-2023 vient de #15070 (Scan du 2026-09-07, PR fermée). Sa mesure a été produite par sa lane avec le même instrument et ses chiffres sont repris **tels quels**, sans re-mesure (acceptance 3 de #15568) ; elle partage la borne de portée décrite plus haut : c'est une mesure **de worktree**, pas de machine.
 
@@ -141,6 +141,6 @@ Nuance de portée (#15568) : « vide » qualifie le worktree mesuré, pas la mac
 - Issue #2611 — alignement manifests (étape 2, hors scope)
 - Issue #14178 — Mathlib cache absent `learning_theory_lean` (bloqueur amorçage V2)
 - `scripts/lean/setup_shared_mathlib.ps1` — instrument de Scan/Apply/Rollback
-- `docs/lean/cluster-junctions-c857.md` — #14296 c.857 multi-machine (24 lacs, 19 + 5, 0 GB)
+- `../transients/2026-09-02-cluster-junctions-c857.md` — #14296 c.857 multi-machine (24 lacs, 19 + 5, 0 GB)
 - `docs/lean/junctions-scan-po-2026.md` — #14038 po-2026 (19 lacs, 0 GB)
 - PR #15070 — po-2023 (24 lacs, 0.64 GB, closed 2026-09-07)

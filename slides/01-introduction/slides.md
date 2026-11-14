@@ -748,38 +748,37 @@ layout: dense
 
 # Pour aller plus loin : Notebooks
 
-Le corpus de travaux pratiques (`MyIA.AI.Notebooks/`, mesuré au commit `f13b9aa73e7a`) couvre 12 familles, 902 notebooks au total (exclusion : `_output.ipynb` et `_archive/`). Chaque famille est introduite par un notebook d'entrée, les autres notebooks de la famille déclinant les variantes et exercices :
+Le corpus de travaux pratiques (`MyIA.AI.Notebooks/`) couvre les familles listees ci-dessous (exclusion : `_output.ipynb` et `_archive/`). Chaque famille est introduite par un notebook d'entrée, les autres notebooks de la famille déclinant les variantes et exercices :
 
-- **Exploration** (chapitre 2) : `Search/Part1-Foundations/` (40 notebooks, exploration informée), `Search/Part2-CSP/` (18 notebooks, satisfaction de contraintes), `Search/Applications/CSP/` (31 notebooks, cas d'usage), `Sudoku/` (38 notebooks, contexte ludique). Entrée : [Search-01-StateSpace](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb)
-- **Logique** (chapitre 3) : `SymbolicAI/` (263 notebooks, Z3 + Tweety + Lean 4 + Argumentum + smart-contracts). Entrée : [Z3-Python-01-Introduction](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb)
+- **Exploration** (chapitre 2) : `Search/Part1-Foundations/` (exploration informée), `Search/Part2-CSP/` (satisfaction de contraintes), `Search/Applications/CSP/` (cas d'usage), `Sudoku/` (contexte ludique). Entrée : [Search-01-StateSpace](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb)
+- **Logique** (chapitre 3) : `SymbolicAI/` (Z3 + Tweety + Lean 4 + Argumentum + smart-contracts). Entrée : [Z3-Python-01-Introduction](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb)
 - **Probabilités** (chapitre 4) : `Probas/Infer/` (inférence bayésienne, réseaux de décision, Infer.NET). Entrée : [Infer-01b-Premiers-Modeles](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb)
 - **Jeux** (chapitre 5) : `GameTheory/` (équilibres de Nash, jeux bayésiens, MARL, OpenSpiel). Entrée : [GameTheory-02-NormalForm-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb)
-- **Apprentissage** (chapitre 6) : `ML/` (81 notebooks, classification, régression, renforcement, ML.NET). Entrée : [ML-Cours-2.1-Workflow](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb)
-- **IA Générative** (chapitre 7) : `GenAI/` (20 Image + 31 Audio + 22 Video + 30 Texte = 103 notebooks, intégrations OpenAI/Anthropic/Semantic Kernel/Qwen). Entrée : [Texte-01_OpenAI_Intro](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb)
-- **Trading** : `QuantConnect/` (211 notebooks, cours partenaire `partner-course-quant-trading/` + pipelines de recherche `ML-Training-Pipeline/`, stratégies backtestées via QC Cloud). Entrée : [research-ML-RandomForest](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb)
+- **Apprentissage** (chapitre 6) : `ML/` (classification, régression, renforcement, ML.NET). Entrée : [ML-Cours-2.1-Workflow](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb)
+- **IA Générative** (chapitre 7) : `GenAI/` (sous-séries Image, Audio, Video et Texte ; intégrations OpenAI/Anthropic/Semantic Kernel/Qwen). Entrée : [Texte-01_OpenAI_Intro](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb)
+- **Trading** : `QuantConnect/` (cours partenaire `partner-course-quant-trading/` + pipelines de recherche `ML-Training-Pipeline/`, stratégies backtestées via QC Cloud). Entrée : [research-ML-RandomForest](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/01-ML-RandomForest/research.ipynb)
 
 ---
 
-# Métriques du corpus au 2026-09-08
+# Familles du corpus et notebooks d'entrée
 
-Mesures `git ls-files` sur `main` à `f13b9aa73e7a` (commit de la PR #15051 amendée) — chiffres vérifiés, pas récités de mémoire :
+Le catalogue généré du dépôt (`COURSE_CATALOG.generated.*`) fait foi pour les comptes actualisés ; le tableau ci-dessous donne, pour chaque famille, son notebook d'entrée et ses domaines principaux :
 
-| Famille | Notebooks | Notebooks d'entrée | Domaines principaux |
-|---|---:|---|---|
-| Search/Part1-Foundations | 40 | Search-01-StateSpace | exploration informée/non informée |
-| Search/Part2-CSP | 18 | CSP-1-Fundamentals | satisfaction de contraintes |
-| Search/Applications/CSP | 31 | App-1-NQueens | cas d'usage (N-Queens, Send+More=Money, planification) |
-| Sudoku | 38 | Sudoku-01-Backtracking-Python | backtracking, propagation, OR-Tools |
-| SymbolicAI | 263 | Z3-Python-01-Introduction | SMT, argumentation, Lean 4, smart-contracts |
-| Probas/Infer | 21 | Infer-01b-Premiers-Modeles | inférence bayésienne, réseaux de décision |
-| GameTheory | 96 | GameTheory-02-NormalForm-Python | équilibres, MARL, OpenSpiel |
-| ML | 81 | ML-Cours-2.1-Workflow | classification, régression, RL, ML.NET |
-| GenAI/Image | 20 | GenAI-Image-01-Foundation | diffusion, ComfyUI, Qwen |
-| GenAI/Audio | 31 | GenAI-Audio-01-Foundation | TTS, narration, VoiceDesign |
-| GenAI/Video | 22 | GenAI-Video-01-Foundation | génération vidéo, animation |
-| GenAI/Texte | 30 | Texte-01_OpenAI_Intro | OpenAI, Anthropic, Semantic Kernel |
-| QuantConnect | 211 | research-ML-RandomForest | backtests QC Cloud, ML trading |
-| **Total** | **902** | — | — |
+| Famille | Notebook d'entrée | Domaines principaux |
+|---|---|---|
+| Search/Part1-Foundations | Search-01-StateSpace | exploration informée/non informée |
+| Search/Part2-CSP | CSP-1-Fundamentals | satisfaction de contraintes |
+| Search/Applications/CSP | App-1-NQueens | cas d'usage (N-Queens, Send+More=Money, planification) |
+| Sudoku | Sudoku-01-Backtracking-Python | backtracking, propagation, OR-Tools |
+| SymbolicAI | Z3-Python-01-Introduction | SMT, argumentation, Lean 4, smart-contracts |
+| Probas/Infer | Infer-01b-Premiers-Modeles | inférence bayésienne, réseaux de décision |
+| GameTheory | GameTheory-02-NormalForm-Python | équilibres, MARL, OpenSpiel |
+| ML | ML-Cours-2.1-Workflow | classification, régression, RL, ML.NET |
+| GenAI/Image | GenAI-Image-01-Foundation | diffusion, ComfyUI, Qwen |
+| GenAI/Audio | GenAI-Audio-01-Foundation | TTS, narration, VoiceDesign |
+| GenAI/Video | GenAI-Video-01-Foundation | génération vidéo, animation |
+| GenAI/Texte | Texte-01_OpenAI_Intro | OpenAI, Anthropic, Semantic Kernel |
+| QuantConnect | research-ML-RandomForest | backtests QC Cloud, ML trading |
 
 Le corpus n'est pas une collection passive : il porte des **mesures vérifiées** (sorties de cellules), des **académiques cités** (papiers SOTA, manuels de référence) et des **exercices étudiants** structurés autour de la règle `C.1` (pas d'erreur volontaire, stubs `pass`/`print`/`return None`). Chaque notebook est commité avec ses `outputs` (règle `C.2`) — la sortie n'est jamais inventée.
 

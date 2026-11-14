@@ -75,6 +75,49 @@ def test_consistent_counts_pass(tmp_path):
     assert rc == 0 and out["anomaly_count"] == 0
 
 
+def test_thousands_grouping_matches_as_single_integer(tmp_path):
+    """Les espaces de groupement ne doivent pas fabriquer un sous-compte."""
+    for grouped in ("6 912", "6\u00a0912", "6\u202f912"):
+        rc, out = _run(
+            [_code("Variables : 6912\n"), _md(f"L'encodage porte {grouped} variables.")],
+            tmp_path,
+        )
+        assert rc == 0 and out["anomaly_count"] == 0, (grouped, out)
+
+
+def test_thousands_grouping_still_detects_real_mismatch(tmp_path):
+    """Un compte réellement différent reste un finding avec formats groupés."""
+    rc, out = _run(
+        [_code("Variables : 6 912\n"), _md("L'encodage porte 6\u202f911 variables.")],
+        tmp_path,
+    )
+    assert rc == 1
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["claimed"] == "6911" and f["stream"] == [6912] for f in units), out
+
+
+def test_thousands_grouping_in_aligned_stream_table(tmp_path):
+    """Les colonnes tabulaires alignees du carnet portent aussi des comptes."""
+    rc, out = _run(
+        [_code("Variables    6 912\n"), _md("L'encodage porte 6 912 variables.")],
+        tmp_path,
+    )
+    assert rc == 0 and out["anomaly_count"] == 0, out
+
+
+def test_thousands_grouping_in_broad_noun_stream(tmp_path):
+    """La forme optionnelle « N unite » normalise aussi le nombre stream."""
+    rc, out = _run(
+        [_code("6\u202f912 carnets dans le corpus\n"), _md("Les deux carnets testés.")],
+        tmp_path,
+        units="extended",
+        forms="broad",
+    )
+    assert rc == 1
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["claimed"] == "2" and f["stream"] == [6912] for f in units), out
+
+
 def test_subcount_not_contradiction(tmp_path):
     # « Dupont enseigne 2 cours » : sous-compte par entite, le total 8
     # du stream ne le contredit pas (3 faux positifs tues par cette
@@ -612,3 +655,10 @@ def test_20035_forms_strict_is_the_default(tmp_path):
         f"le defaut DOIT etre `strict` (forme « N unite » non vue) : "
         f"rc={rc}, out={out!r}")
     assert out["anomaly_count"] == 0
+
+
+def test_three_decimal_digits_remain_a_fractional_value(tmp_path):
+    # La precision de la moyenne ne transforme pas la virgule FR en milliers.
+    rc, out = _run([_code("Variables : 465\n"),
+                    _md("La moyenne est de 10,500 variables.")], tmp_path)
+    assert rc == 0 and out["anomaly_count"] == 0, out

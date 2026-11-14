@@ -2,7 +2,7 @@
 
 La jonction Tweety (section 8sexies du carnet) valide l'instrument de la
 serie contre TweetyProject brut, ponte directement. Celle-ci valide le
-MEME instrument contre la pile que la serie Argument_Analysis consomme :
+MEME instrument contre la pile que la serie ArgumentAnalysis consomme :
 l'organe EPITA ``argumentation_lib`` (couche shim vendored, voir #4960) --
 ``TweetyInitializer`` + ``AFHandler`` + raisonneurs Tweety. L'organe
 routant lui-meme vers Tweety par jpype, la parite mesuree ici est
@@ -34,7 +34,7 @@ class ArgumentumUnavailable(RuntimeError):
 def _argument_analysis_dir() -> Path:
     """Repertoire de l'organe dans l'arbre du depot (ICT-Series -> ...)."""
     # argumentum_bridge.py -> ict -> ICT-Series -> IIT -> MyIA.AI.Notebooks
-    return Path(__file__).resolve().parents[3] / "SymbolicAI" / "Argument_Analysis"
+    return Path(__file__).resolve().parents[3] / "SymbolicAI" / "ArgumentAnalysis"
 
 
 def availability() -> Tuple[bool, str]:
@@ -48,7 +48,7 @@ def availability() -> Tuple[bool, str]:
 
     arg = _argument_analysis_dir()
     if not (arg / "argumentation_lib" / "__init__.py").is_file():
-        return False, "organe introuvable dans l'arbre (Argument_Analysis absent)"
+        return False, "organe introuvable dans l'arbre (ArgumentAnalysis absent)"
     if str(arg) not in sys.path:
         sys.path.insert(0, str(arg))
     try:

@@ -243,6 +243,34 @@ def test_no_conflict_without_a_base_version():
     assert "version_conflict" not in hint
 
 
+def test_pinned_env_table_beats_the_install_floor(tmp_path):
+    """#25381 : coeur leger installable (plancher project.requires-python)
+    ET env de serie strict (extra [iit], pyphi <= 3.9) coexistent dans le
+    meme pyproject. Le hint nomme l'ENV DE SERIE pour les notebooks de la
+    serie -- la table [tool.coursia.pinned_env] prime sur le plancher
+    d'installation, sinon une lane re-executerait ICT-40a sous 3.13 et
+    decouvrirait l'incompatibilite pyphi a la prochaine cellule Phi.
+    """
+    serie = tmp_path / "Serie"
+    _write(serie / "pyproject.toml",
+           '[project]\nrequires-python = ">=3.9"\n'
+           'dependencies = ["numpy>=1.21"]\n'
+           '\n[tool.coursia.pinned_env]\n'
+           'requires-python = ">=3.9,<3.10"\n'
+           'numpy = ">=1.21,<2.0"\n')
+    hint = ckd.canonical_env_hint("Serie/nb.ipynb", root=str(tmp_path))
+    assert hint is not None
+    assert hint["requires_python"] == ">=3.9,<3.10", hint
+    assert "<2.0" in hint["numpy_pin"], hint
+    # Le plancher d'installation ne signale aucun faux conflit 3.13 : c'est
+    # l'env de serie qui doit le nommer, pas le champ project.
+    conflit = ckd.canonical_env_hint(
+        "Serie/nb.ipynb", root=str(tmp_path), base_language_version="3.13.14")
+    assert conflit is not None
+    assert "version_conflict" in conflit, (
+        "une base 3.13 face a l'env de serie <=3.9 doit etre signalee")
+
+
 def test_a_compatible_pin_raises_no_conflict(tmp_path):
     """Controle negatif : un pin qui heberge la base ne doit pas crier au loup."""
     serie = tmp_path / "Serie"

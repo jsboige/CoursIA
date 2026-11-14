@@ -5,7 +5,7 @@ Ce fichier est une copie verbatim du fichier amont d'Argumentum
 `Cards/Scenarii/Argumentum Scenarii - Cards.csv` au commit amont
 **80dccece49b06790b50947b217ec13328ffbb000** (HEAD de `master` au moment de la
 capture, 2026-10-07). Ce commit amont est **postérieur** au pin du sous-module
-`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` sur `main`
+`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum` sur `main`
 (`0ab05d66576a1007c3952a67e2dd1eaf8f9b502c`, la capture référencée par
 `GenAI/FallacyDetection/data/NOTICE-SCENARII`) : l'amont a bougé entre les
 deux, et la dérivation du banc humour exige l'état exact au jour de SA capture.
@@ -54,7 +54,7 @@ Même régime que la copie sœur FallacyDetection :
 1. Le dépôt amont est distribué sous **LGPL-3.0** (son fichier `LICENSE`).
    Conformément à la section 4 de la LGPL v3, les textes de la LGPL et de la
    GPL-3 sont attachés à ce dépôt dans
-   `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/` :
+   `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/` :
      - `LICENSE-LGPL-3.0.txt` — sha256 e3a994d82e644b03a792a930f574002658412f62407f5fee083f2555c5f23118
      - `LICENSE-GPL-3.0.txt`  — sha256 3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986
 2. Les cartes Scénarii imprimées portent aussi une marque **Creative Commons

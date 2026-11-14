@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-09
 
 # Reproductibilité des socles 3D — mesure sur deux postes
 
@@ -23,7 +23,7 @@ Ce document enregistre la mesure de reproductibilité faite depuis le poste **`m
 
 ---
 
-## 2. Socle A1 — NeRF from scratch (`3D-01-NeRF-From-Scratch.ipynb`)
+## 2. Socle A1 — NeRF from scratch (`3D-01-NeRF-Depuis-Zero-Python.ipynb`)
 
 Fidélité de la reconstitution de la scène Lego (dataset officiel NeRF, 106 vues 100×100), en décibels PSNR — plus haut est plus fidèle.
 
@@ -118,7 +118,7 @@ pip install "torch==2.8.0" --index-url https://download.pytorch.org/whl/cu126 nu
 # Exécution (timeout par cellule : 2400 s — la cellule d'optimisation du socle
 # splats dépasse 300 s sur un portable, et le défaut de nbclient tue l'exécution)
 python scripts/notebook_tools/notebook_tools.py execute \
-    MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb --timeout 2400
+    MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-Depuis-Zero-Python.ipynb --timeout 2400
 ```
 
 Le dataset Lego est téléchargé automatiquement dans `data/` (hors dépôt, gitignoré) depuis la source des auteurs.

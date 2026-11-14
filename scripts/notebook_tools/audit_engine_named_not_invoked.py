@@ -9,7 +9,7 @@ s'execute. Defaut firsthand documente dans #13927 :
 
 * ``07-Agent-Orchestration`` : titres/objectifs parlent de Google ADK, mais 10
   labs sur 10 ont zero import/appel ``google.adk``.
-* ``SW-12-Python-GraphRAG.ipynb`` : objectifs "Extraction reelle avec
+* ``SW-12-GraphRAG-Python.ipynb`` : objectifs "Extraction reelle avec
   GPT/Claude" mais outputs "Reponse simulee".
 
 Ce scanner croise **quatre surfaces** par notebook :

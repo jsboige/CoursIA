@@ -33,11 +33,16 @@ testable sans reproduire la mort d'un vrai worker).
 
 from __future__ import annotations
 
+import os
 import re
+import signal
 import subprocess
 import sys
 import textwrap
+import time
 from pathlib import Path
+
+import pytest
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
@@ -310,26 +315,43 @@ def test_le_workflow_cable_le_garde_autour_de_pytest():
     # unique) ramenerait la classe #16288 -- 14 a 17 min de silence puis le
     # mur -- sans qu'aucun test ne rougisse. Precedent de la meme famille :
     # #16422 (une suite de tests ecrite par personne -- cablee nulle part).
+    #
+    # Revue ai-01 11/11 (job 130763938091) : la jambe a DEUX branches
+    # (restreinte sur une ligne, complete multi-lignes) et l'ancienne regex
+    # `[^\n]*--` etait gourmande -- sur la branche d'une ligne elle lisait le
+    # DERNIER `--` (`--tb=short`) et capture `tb=short`, pas `pytest`. Le
+    # garde enveloppait bien pytest ; c'est le test qui ne savait plus le
+    # voir. Ici CHAQUE invocation du garde est controlee (finditer), le
+    # separateur est un `--` ISOLE PAR DES BLANCS (jamais le `--` interne
+    # d'une option comme `--idle-limit`), la continuation `\` en fin de
+    # ligne est admise, et le premier jeton apres le separateur doit etre
+    # `pytest` en EGALITE STRICTE (un `"pytest" in ...` serait satisfait par
+    # `echo pas-pytest` -- mutation mesuree).
     racine = Path(__file__).resolve().parents[2]
     workflow = racine / ".github" / "workflows" / "scripts-tests.yml"
     texte = workflow.read_text(encoding="utf-8")
-    assert "scripts/ci/xdist_watchdog.py" in texte, (
+    invocations = list(re.finditer(r"xdist_watchdog\.py\b", texte))
+    assert invocations, (
         "le garde anti-blocage n'est plus invoque par scripts-tests.yml"
     )
-    # La commande surveillee : premier jeton suivant le '--' de l'enveloppe,
-    # la continuation de ligne shell (`\` en fin de ligne) autorisant le
-    # report sur la ligne suivante. Egalite STRICTE et non appartenance :
-    # un test ecrit avec `"pytest" in ...` est satisfait par `echo pas-pytest`
-    # -- mutation mesuree, le controle de non-vacuite l'a attrapee.
-    enveloppe = re.search(
-        r"xdist_watchdog\.py[^\n]*--\s*(?:\\\s*\n\s*)?(\S+)", texte
-    )
-    assert enveloppe, "invocation du garde introuvable dans scripts-tests.yml"
-    assert enveloppe.group(1) == "pytest", (
-        "le garde doit envelopper l'invocation pytest de la jambe, pas autre "
-        "chose : un garde qui surveille une commande d'un autre genre ne "
-        "protege pas la jambe ou le blocage a ete mesure"
-    )
+    for inv in invocations:
+        reste = texte[inv.end():]
+        separateur = re.search(r"(?<=\s)--(?=\s)", reste)
+        assert separateur, (
+            "invocation du garde sans separateur '--' isole par des blancs "
+            f"(offset {inv.start()})"
+        )
+        apres = reste[separateur.end():]
+        # Continuation shell : `\` en fin de ligne + indentation de suite.
+        apres = re.sub(r"\\\s*\n\s*", " ", apres)
+        jetons = apres.split()
+        premier = jetons[0] if jetons else ""
+        assert premier == "pytest", (
+            "le garde doit envelopper l'invocation pytest de la jambe, pas "
+            f"autre chose (trouve {premier!r} apres le '--' a l'offset "
+            f"{inv.start()}) : un garde qui surveille une commande d'un "
+            "autre genre ne protege pas la jambe ou le blocage a ete mesure"
+        )
 
 
 def test_regex_marqueurs():
@@ -579,3 +601,73 @@ def test_le_mode_1_garde_son_verdict_propre():
     assert "BLOQUE" in verdict
     assert "SYSTEMATIQUE" not in verdict
 
+
+@pytest.mark.skipif(sys.platform != "linux", reason="lecture des etats /proc Linux")
+def test_sigterm_arrete_le_groupe_et_le_wrapper(tmp_path):
+    pidfile = tmp_path / "pids"
+    child = textwrap.dedent("""
+        import os, subprocess, sys, time
+        grandchild = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
+        with open(sys.argv[1], "w") as f:
+            f.write(f"{os.getpid()} {grandchild.pid}")
+        time.sleep(60)
+    """)
+    wrapper = subprocess.Popen(
+        [sys.executable, str(CI_DIR / "xdist_watchdog.py"), "--idle-limit",
+         "30", "--", sys.executable, "-c", child, str(pidfile)],
+        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+    pids = []
+    try:
+        deadline = time.monotonic() + 5
+        while not pidfile.exists() or not pidfile.read_text():
+            assert wrapper.poll() is None
+            assert time.monotonic() < deadline
+            time.sleep(0.02)
+        pids = [int(pid) for pid in pidfile.read_text().split()]
+        wrapper.send_signal(signal.SIGTERM)
+        assert wrapper.wait(timeout=5) == -signal.SIGTERM
+        deadline = time.monotonic() + 5
+        while True:
+            # Un zombie a deja cesse de s'executer, meme s'il attend init.
+            alive = []
+            for pid in pids:
+                try:
+                    state = Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0]
+                    if state != "Z":
+                        alive.append(pid)
+                except FileNotFoundError:
+                    pass
+            if not alive:
+                break
+            assert time.monotonic() < deadline, f"processus encore actifs : {alive}"
+            time.sleep(0.02)
+    finally:
+        if wrapper.poll() is None:
+            wrapper.kill()
+            wrapper.wait()
+        if pids:
+            try:
+                os.killpg(pids[0], signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
+
+@pytest.mark.skipif(sys.platform != "linux", reason="signaux POSIX")
+def test_sigint_conserve_le_comportement_du_wrapper():
+    wrapper = subprocess.Popen(
+        [sys.executable, str(CI_DIR / "xdist_watchdog.py"), "--idle-limit",
+         "30", "--", sys.executable, "-u", "-c",
+         "import time; print('pret', flush=True); time.sleep(0.5)"],
+        stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True,
+        encoding="utf-8", errors="replace",
+    )
+    try:
+        assert wrapper.stdout.readline().strip() == "pret"
+        wrapper.send_signal(signal.SIGINT)
+        assert wrapper.wait(timeout=5) == -signal.SIGINT
+    finally:
+        if wrapper.poll() is None:
+            wrapper.kill()
+            wrapper.wait()
+        wrapper.stdout.close()

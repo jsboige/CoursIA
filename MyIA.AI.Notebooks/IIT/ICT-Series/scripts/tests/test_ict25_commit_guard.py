@@ -45,6 +45,7 @@ from ict25_commit_guard import (  # noqa: E402
     CommitGuardAbort,
     CommitStatus,
     CommitWatch,
+    _linux_status_from_text,
     commit_status,
 )
 
@@ -82,11 +83,55 @@ def test_status_measurable_on_this_platform():
     if statut is None:
         print("  (plateforme sans mesure de commit : contrat teste sur stubs)")
         return
-    assert statut.avail_bytes > 0, f"marge nulle : {statut}"
-    if statut.limit_bytes is not None:
-        assert statut.limit_bytes >= statut.avail_bytes, (
+    # La marge nulle est un ETAT REEL, pas un defaut de mesure : sous Linux la
+    # garde lit ``CommitLimit - Committed_AS`` et **clampe a 0** une valeur qui
+    # peut etre negative quand l'overcommit est autorise (``Committed_AS``
+    # depasse alors ``CommitLimit``). C'est precisement l'etat que la garde
+    # existe pour detecter -- l'exiger strictement positif faisait echouer la
+    # suite des qu'un runner heberge etait charge, et rougissait des PR qui ne
+    # touchaient pas ce module (#24457, #24640, mesure 2026-11-05).
+    #
+    # Ce qui reste verifie, et qui n'est pas vacant : le zero doit venir du
+    # clamp sur une comptabilite de commit reellement lue, jamais d'une lecture
+    # cassee qui rendrait 0 par accident.
+    if statut.avail_bytes == 0 and sys.platform.startswith("linux"):
+        meminfo = Path("/proc/meminfo")
+        if meminfo.is_file():
+            valeurs = {}
+            for ligne in meminfo.read_text(encoding="utf-8", errors="replace").splitlines():
+                cle, sep, reste = ligne.partition(":")
+                if sep:
+                    valeurs[cle] = reste.split()
+            assert "CommitLimit" in valeurs and "Committed_AS" in valeurs, (
+                "marge nulle alors que le noyau ne publie pas la comptabilite "
+                f"de commit : lecture cassee, pas un etat du siege -- {statut}"
+            )
+            limite = int(valeurs["CommitLimit"][0]) * 1024
+            engage = int(valeurs["Committed_AS"][0]) * 1024
+            assert engage >= limite, (
+                f"marge nulle sans sur-engagement : limite={limite} engage={engage}"
+            )
+            print(f"  (marge nulle assumee : engage {engage} >= limite {limite})")
+    if statut.avail_bytes > 0:
+        assert statut.limit_bytes is None or statut.limit_bytes >= statut.avail_bytes, (
             f"plafond {statut.limit_bytes} < marge {statut.avail_bytes}"
         )
+
+
+def test_linux_sur_engagement_clampe_a_zero():
+    """Sous-engagement depasse : la marge est nulle, pas negative ni inventee."""
+    texte = (
+        "MemTotal:       16000000 kB\n"
+        "CommitLimit:     8000000 kB\n"
+        "Committed_AS:   12000000 kB\n"
+    )
+    # Le clamp n'existe qu'en mode strict (#24801) : hors mode 2, la marge se
+    # lit par MemAvailable + SwapFree, absents de ce texte.
+    statut = _linux_status_from_text(texte, overcommit_mode=2)
+    assert statut is not None, "une comptabilite de commit presente doit se lire"
+    assert statut.avail_bytes == 0, f"marge attendue 0 (clamp), lu {statut}"
+    assert statut.limit_bytes == 8_000_000 * 1024, statut.limit_bytes
+    assert statut.used_pct == 100.0, statut.used_pct
 
 
 def test_describe_with_and_without_limit():

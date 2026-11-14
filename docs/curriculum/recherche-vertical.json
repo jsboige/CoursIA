@@ -1,0 +1,130 @@
+{
+  "description": "Le parcours du chercheur : reproduire un mecanisme publie, decouvrir une loi dans des donnees, prouver un theoreme, valider une experience, mesurer un systeme, explorer l'information emergente. Il traverse le depot en croisant les series (SymbolicLearning, GameTheory/IIT Lean, ML, GenAI, Complexity) sans creer de carnet : chaque etape est un carnet existant, execute avec ses sorties.",
+  "declared_kernel_transitions": [
+    ".NET",
+    "Lean"
+  ],
+  "branches": [
+    {
+      "id": "reproduire-un-mecanisme",
+      "description": "Reconstruire de zero le coeur d'un mecanisme publie, avant de le croire : embeddings et tokenisation recodees from-scratch, mecanique d'inference (KV-cache) instrumentee a la main, metriques d'evaluation (BLEU/ROUGE, juge LLM) reimplementees puis confrontees a leur comportement reel. C'est le geste de reproductibilite qui ouvre tout travail de recherche : mesurer l'ecart entre ce que dit le papier et ce que fait le code.",
+      "notebooks": [
+        "GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb",
+        "GenAI/Texte/10b_Inference_Mechanics.ipynb",
+        "GenAI/Texte/22_Evaluating_Generated_Text.ipynb"
+      ]
+    },
+    {
+      "id": "decouvrir-des-lois",
+      "description": "Extraire une loi d'une masse d'exemples : differentiable logic gates (DiffLogNet), reproduction de PavlovDLS, decouverte de tenseurs produit (TPR) par autoencodeurs creux, equations physiques retrouvees par AI Feynman, conjectures proposees par un solveur appris. La serie SymbolicLearning dans sa version recherche : non pas utiliser un modele, mais lui faire cracher la structure qu'il a trouvee.",
+      "notebooks": [
+        "SymbolicAI/SymbolicLearning/SL-12-DifferentiableLogicGateNetworks.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-12b-PavlovDLS-Reproduction.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-13-Discover-TPR.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-13b-TPR-SAE.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-14-AIFeynman-Discover-Equations.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-15-LearnedConjectures-Solver.ipynb"
+      ]
+    },
+    {
+      "id": "prouver-un-theoreme",
+      "description": "La preuve formelle comme pratique de recherche : existence de Nash par point fixe, minimax sur jeux a somme nulle, FairBot et le theoreme de Lob en theorie des jeux a l'epoque, integration par coupes et parite de bout en bout en IIT, transition de phase de percolation (sharpness). Lean 4 verifie ce que l'intuition ne suffit pas a etablir : un resultat prouve est un resultat qui ne disparaitra pas a la prochaine experience.",
+      "notebooks": [
+        "GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb",
+        "GameTheory/GameTheory-05b-Lean-Minimax-Lean.ipynb",
+        "GameTheory/Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb",
+        "IIT/IIT-07-Integration-Par-Coupes-Lean.ipynb",
+        "IIT/IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb",
+        "Probas/Applications/Percolation/Percolation-04-Sharpness-Lean.ipynb"
+      ]
+    },
+    {
+      "id": "valider-une-experience",
+      "description": "La methodologie qui decide si un resultat tient : biais-variance et validation croisee, calibration des probabilites predites, analyse d'erreurs par slice, optimisation d'hyperparametres sans fuite de test, explicabilite SHAP/LIME avec ses contrefactuels. Le socle partage avec le parcours ML Engineer, lu ici par le chercheur : une experience non validee n'est pas un resultat.",
+      "notebooks": [
+        "ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.13-Analyse-Erreurs.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.14-Explicabilite-SHAP-LIME-Contrefactuels.ipynb"
+      ]
+    },
+    {
+      "id": "mesurer-un-systeme",
+      "description": "Mesurer ce qu'un systeme coute reellement : decoding speculatif (acceleration reelle contre cout), modele roofline et bande passante memoire, quantization etudee bit a bit, debit-memoire-cout par materiel. Les benchmarks sont reproductibles sur notre propre station : un chiffre de performance sans protocole de mesure n'est pas de la recherche, c'est de la communication.",
+      "notebooks": [
+        "GenAI/Texte/10g_Speculative_Decoding.ipynb",
+        "GenAI/Texte/10h_Roofline_Memory_Bandwidth.ipynb",
+        "GenAI/Texte/11_Quantization.ipynb",
+        "GenAI/Texte/11b_Materiel_Debit_Cout.ipynb"
+      ]
+    },
+    {
+      "id": "information-et-emergence",
+      "description": "La serie la plus experimentale du depot, revue RESEARCH : trajectoires de Phi en IIT, MDL et code en deux parties, grokking lu comme progres de compression, trajectoires d'auto-expressions (SAE). Des carnets qui ne demontrent pas un resultat connu : ils explorent un phenomene emergent et documentent ce qui apparait.",
+      "notebooks": [
+        "IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+        "IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb",
+        "IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb",
+        "IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb",
+        "IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb"
+      ]
+    },
+    {
+      "id": "structure-et-transitions",
+      "description": "Ou la complexite devient un objet d'etude : transition de phase de SAT (le seuil ou les instances deviennent insolvables), XOR-SAT et seuil de 2-SAT vs 3-SAT, algorithmes online et competitivite. Les transitions de phase sont les lois emergentes les plus nettes de l'informatique : on les mesure, on les trace, on les prouve.",
+      "notebooks": [
+        "Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb",
+        "Complexity/Complexity-02c-XOR-SAT-Phase-Transition-Python.ipynb",
+        "Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb"
+      ]
+    }
+  ],
+  "accretions": [
+    {
+      "id": "socle-inductive-logic-programming",
+      "description": "Le socle historique de l'apprentissage symbolique : apprentissage logique, programmation logique inductive (Foil/Popper/Aleph), resolution inverse, ILP moderne et neuro-symbolique. Le detour de celui qui veut comprendre d'ou viennent les conjectures de la branche decouvrir-des-lois.",
+      "branch": "decouvrir-des-lois",
+      "notebooks": [
+        "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-4-InductiveLogicProgramming.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-5-InverseResolution.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-6-ModernILP.ipynb",
+        "SymbolicAI/SymbolicLearning/SL-7-NeuroSymbolic.ipynb"
+      ]
+    },
+    {
+      "id": "renforcement-depuis-zero",
+      "description": "Reimplementer PPO, SAC et GRPO depuis zero, puis les bandits manchots. Le detour de reproduction algorithmique : quand l'objectif n'est pas d'utiliser l'algorithme mais de verifier qu'on comprend chaque terme de sa mise a jour.",
+      "branch": "valider-une-experience",
+      "notebooks": [
+        "RL/RL-06c-PPO-Depuis-Zero-Python.ipynb",
+        "RL/RL-06d-SAC-Depuis-Zero-Python.ipynb",
+        "RL/RL-06e-GRPO-Depuis-Zero-Python.ipynb",
+        "RL/RL-04-Bandits-Manchots-Python.ipynb"
+      ]
+    },
+    {
+      "id": "causalite",
+      "description": "Pearl et le do-calculus : ponts entre correlation et intervention, estimands Dowhy, contrefactuels individuels, sensibilite aux confounders. Le detour de celui qui a compris qu'un pattern predictif n'est pas une explication.",
+      "branch": "valider-une-experience",
+      "notebooks": [
+        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb",
+        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
+        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb",
+        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb"
+      ]
+    },
+    {
+      "id": "inference-probabiliste-dotnet",
+      "description": "Le detour .NET de la probabilite : reseaux bayesiens, TrueSkill et filtrage de Kalman en Infer.NET. Une autre tradition de programmation probabiliste, pour l'apprenant qui vit en C#.",
+      "branch": "valider-une-experience",
+      "notebooks": [
+        "Probas/Infer/Infer-04-Bayesian-Networks.ipynb",
+        "Probas/Infer/Infer-08-TrueSkill.ipynb",
+        "Probas/Infer/Infer-17-Kalman-Filter.ipynb"
+      ]
+    }
+  ]
+}

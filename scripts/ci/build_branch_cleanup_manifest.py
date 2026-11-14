@@ -48,6 +48,12 @@ CLASSE_PROTEGEE = "P"
 CLASSES_CANDIDATES = ("B", "C", "D", "E")
 CLASSES_NON_CANDIDATES = ("A", CLASSE_PROTEGEE)
 
+# Plafond de la liste de PRs de `gh pr list` (voir `etats_par_branche`). Un
+# depot qui l'atteindrait rendrait une liste TRONQUEE sans avertissement :
+# la garde en bas de la fonction echoue alors plutot que de construire un
+# manifeste incomplet (fail-open).
+PLAFOND_PRS = 30000
+
 
 def sh(args, cwd=None, check=True):
     p = subprocess.run(args, cwd=cwd, capture_output=True, text=True, encoding="utf-8")
@@ -154,10 +160,15 @@ def etats_par_branche(repo: Path) -> dict[str, list[dict]]:
     """
     brut = sh([
         "gh", "pr", "list", "--repo", "jsboige/CoursIA", "--state", "all",
-        "--limit", "30000", "--json",
+        "--limit", str(PLAFOND_PRS), "--json",
         "headRefName,number,state,headRefOid,baseRefName,mergeCommit",
     ], cwd=str(repo))
     documents = json.loads(brut)
+    if len(documents) >= PLAFOND_PRS:
+        sys.exit(
+            f"ECHEC : {len(documents)} PRs, plafond --limit {PLAFOND_PRS} "
+            "atteint : la liste est TRONQUEE et le manifeste serait incomplet "
+            "(fail-open). Lever le plafond ou paginer, puis re-excuter.")
     par_branche = defaultdict(list)
     for pr in documents:
         oid = ((pr.get("mergeCommit") or {}).get("oid") or "").lower()
@@ -289,7 +300,10 @@ def main() -> int:
 
     lignes = []
     repliables = 0
-    for nom in sorted(classes):
+    # Ordonne par SHA (pas par nom) : c'est le contrat du README (« ordonnee
+    # par SHA pour faciliter les diffs entre passes successives ») et l'ordre
+    # que `sort -c` sur la colonne 2 re-verifie. Le nom fait le tie-break.
+    for nom in sorted(classes, key=lambda n: (classes[n][2], n)):
         classe, prs, sha, retenue, contenu = classes[nom]
         etats = Counter(p["state"] for p in prs)
         if classe == "E":
@@ -342,6 +356,8 @@ def main() -> int:
     for classe in ("A", "B", "C", "D", "E", CLASSE_PROTEGEE):
         if compteur.get(classe):
             print(f"  classe {classe} : {compteur[classe]}")
+    if repliables:
+        print(f"  classe B repliables (contenu prouve sur main) : {repliables}")
     if compteur.get(CLASSE_PROTEGEE):
         print(f"  branche par defaut protegee : {defaut}")
     if inconnus:

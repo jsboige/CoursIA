@@ -386,7 +386,7 @@ def find_libs_directory(tweety_dir: Path) -> Optional[Path]:
     possible_paths = [
         tweety_dir / "libs",
         tweety_dir.parent / "libs",  # SymbolicAI/libs
-        tweety_dir.parent / "Argument_Analysis" / "libs",
+        tweety_dir.parent / "ArgumentAnalysis" / "libs",
     ]
 
     for path in possible_paths:
@@ -430,7 +430,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     if not env.jdk_installed:
         portable_paths = [
             tweety_dir / "jdk-17-portable",
-            tweety_dir.parent / "Argument_Analysis" / "jdk-17-portable",
+            tweety_dir.parent / "ArgumentAnalysis" / "jdk-17-portable",
         ]
         for portable_path in portable_paths:
             if portable_path.exists():
@@ -478,7 +478,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     if not env.clingo_installed:
         local_clingo_paths = [
             tweety_dir / "ext_tools" / "clingo" / "clingo.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "clingo" / "clingo.exe",
+            tweety_dir.parent / "ArgumentAnalysis" / "ext_tools" / "clingo" / "clingo.exe",
         ]
         for clingo_path in local_clingo_paths:
             if clingo_path.exists():
@@ -493,7 +493,7 @@ def check_environment(tweety_dir: Path) -> EnvironmentCheck:
     else:
         local_spass_paths = [
             tweety_dir / "ext_tools" / "spass" / "SPASS.exe",
-            tweety_dir.parent / "Argument_Analysis" / "ext_tools" / "spass" / "SPASS.exe",
+            tweety_dir.parent / "ArgumentAnalysis" / "ext_tools" / "spass" / "SPASS.exe",
         ]
         for spass_path in local_spass_paths:
             if spass_path.exists():

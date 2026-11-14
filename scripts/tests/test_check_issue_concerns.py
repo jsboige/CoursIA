@@ -38,6 +38,7 @@ paquet importable, et deux organes peuvent partager un nom de module.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -256,6 +257,23 @@ class ResponseCandidateTests(unittest.TestCase):
         self.assertTrue(mod.cites_concern(concern, reply))
         self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
 
+    def test_lane_signature_contract_requires_utc_minute(self):
+        """Le format observé des lanes inclut heure et minute UTC (#2159)."""
+        concern = c(30, "2026-10-18T22:26:03Z", CONCERN_2159)
+        dated_reply = c(
+            31,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18T22:26Z — releve mesure.",
+        )
+        date_only_reply = c(
+            32,
+            "2026-10-19T03:56:43Z",
+            "[INFO] Reponse au Concern du 2026-10-18 — releve mesure.",
+        )
+
+        self.assertTrue(mod.cites_concern(concern, dated_reply))
+        self.assertFalse(mod.cites_concern(concern, date_only_reply))
+
     def test_gesture_that_does_not_cite_the_concern_stays_excluded(self):
         concern = c(32, "2026-10-18T22:26:03Z", CONCERN_2159)
         reply = c(33, "2026-10-19T03:56:43Z", "[INFO] Releve mesure — aucun fichier edite.")
@@ -302,6 +320,44 @@ class ResponseCandidateTests(unittest.TestCase):
         )
         self.assertTrue(mod.cites_concern(concern, reply))
         self.assertTrue(mod.is_response_candidate("gesture", reply, concern))
+
+    def test_long_quote_keeps_gesture_candidate_without_minute_signature(self):
+        """#24672 : l'extrait fort garde la voie ouverte sans HH:MMZ."""
+        body = (
+            "Le diagnostic mesure une derive persistante dans les quatre snapshots "
+            "et montre que les identifiants de suivi ne suffisent pas a expliquer "
+            "le changement observe dans les resultats."
+        )
+        concern = c(38, "2026-10-18T22:26:03Z", body)
+        signature = "[INFO] Reponse au Concern du 2026-10-18 — "
+
+        # L'absence de minutes ne neutralise pas une citation assez longue.
+        quoted_80 = c(39, "2026-10-19T03:56:43Z", signature + body[20:100])
+        self.assertNotIn("22:26Z", quoted_80.body)
+        self.assertTrue(mod.cites_concern(concern, quoted_80))
+        self.assertTrue(mod.is_response_candidate("gesture", quoted_80, concern))
+
+        # La date seule n'est pas une citation forte, et 40–79 caractères
+        # restent sous le seuil mesuré.
+        for length in (40, 79):
+            with self.subTest(length=length):
+                short_quote = c(
+                    40 + length,
+                    "2026-10-19T03:56:43Z",
+                    signature + body[:length],
+                )
+                self.assertFalse(mod.cites_concern(concern, short_quote))
+                self.assertFalse(
+                    mod.is_response_candidate("gesture", short_quote, concern)
+                )
+
+    def test_quote_strength_keeps_the_80_character_boundary(self):
+        concern = c(38, "2026-10-01T10:00:00Z", "x" * 80)
+        short_quote = c(39, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 79)
+        boundary_quote = c(40, "2026-10-02T10:00:00Z", "[INFO] " + "x" * 80)
+
+        self.assertFalse(mod.cites_concern(concern, short_quote))
+        self.assertTrue(mod.cites_concern(concern, boundary_quote))
 
     def test_ordinary_comment_is_a_response_candidate(self):
         self.assertTrue(mod.is_response_candidate("other", c(19, "2026-10-01T10:00:00Z", "Voici l'arbitrage.")))
@@ -471,6 +527,42 @@ class AnalyseTests(unittest.TestCase):
 
 class LaneSignatureTests(unittest.TestCase):
     """Classe 2 : les signatures mesurees qui ecartent un post de lane."""
+
+    def test_hors_flotte_closure_preflight_needs_manual_review(self):
+        body = (
+            "Hors flotte — clôture sur preuve, périmètre P1 de #25670.\n\n"
+            "[CLOSURE PREFLIGHT]\nschema: 1\nlane: astra:CoursIA\n"
+            "issue: 23793\nverdict: CLOSE\n"
+        )
+        report = mod.analyse_comments(
+            23793, [c(1, "2026-11-10T19:15:33Z", body)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_human_copying_header_keeps_the_remark(self):
+        body = (
+            "Hors flotte — clôture sur preuve.\n\n"
+            "[CLOSURE PREFLIGHT]\nschema: 1\nlane: astra:CoursIA\n"
+            "Je cite le dossier : il faut rouvrir car le test échoue."
+        )
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-10T19:15:33Z", body)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_closure_preflight_mention_is_not_a_lane_signature(self):
+        text = "Pourquoi ce dossier [CLOSURE PREFLIGHT] est-il clos ?"
+        self.assertEqual(mod.lane_signature(text), "")
+        report = mod.analyse_comments(
+            1, [c(1, "2026-11-10T19:15:33Z", text)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
 
     def test_lane_near_seat(self):
         self.assertEqual(
@@ -746,6 +838,681 @@ class Utf8OutputTests(unittest.TestCase):
         out = payload.decode("utf-8")
         self.assertIn("non resolu", out)
         self.assertIn("\U0001f680", out)
+
+
+RESERVE_HERMES = (
+    "[Hermes] COMMENT_WITH_CONCERNS : le claim « multi-seed » n'est tenu que "
+    "sur 2 graines — le body annonce 4 graines distinctes."
+)
+LIFT_WITH_TIMESTAMP = (
+    "[OVERRIDE] lane myia-ai-01 : je leve la reserve d'Hermes du 14:05Z — "
+    "les 4 graines sont livrees au commit 83ac846."
+)
+
+
+class ReserveMarkerTests(unittest.TestCase):
+    """Classe reviewer-reserve : position d'emission, grammaire restreinte."""
+
+    def test_verdict_prefix_posed_is_detected(self):
+        self.assertEqual(
+            mod.reserve_marker(RESERVE_HERMES), "COMMENT_WITH_CONCERNS"
+        )
+
+    def test_severity_glyph_posed_is_detected(self):
+        self.assertEqual(mod.reserve_marker("🟡 le gap 2 n'est pas couvert"), "🟡")
+
+    def test_decoration_before_marker_still_poses(self):
+        # Le gras de tete est neutralise, comme ``classify`` : l'emission
+        # degradee reste une emission.
+        self.assertIsNotNone(mod.reserve_marker("**CHANGES_REQUESTED** — scope"))
+
+    def test_marker_cited_mid_body_is_not_posed(self):
+        # #13030 : la mention du verdict (une reponse qui le reprend) n'est
+        # pas une reserve neuve.
+        body = "Reponse : ta reserve COMMENT_WITH_CONCERNS est traitee au commit."
+        self.assertIsNone(mod.reserve_marker(body))
+
+    def test_bare_concerns_word_is_not_a_reserve(self):
+        # Vocabulaire de la campagne elle-meme (« la liste [CONCERNS] postee
+        # par le coordinateur ») : la sous-chaine nue est exclue du cote issues.
+        self.assertIsNone(
+            mod.reserve_marker("La liste [CONCERNS] postee par le coordinateur.")
+        )
+
+    def test_prose_marker_is_not_a_reserve_on_issues(self):
+        # « avant merge » etc. sont des marqueurs PR-contextuels (B.0) ; sur
+        # les issues, la prose de lane en est saturee — exclus de cette classe.
+        self.assertIsNone(
+            mod.reserve_marker("Il reste un point a regler avant merge.")
+        )
+
+
+class ReserveAnalysisTests(unittest.TestCase):
+    """Classe reviewer-reserve : statut tri-eti et drapeau gesture-after."""
+
+    def test_reserve_without_answer_is_open(self):
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(len(report.reserves), 1)
+        finding = report.reserves[0]
+        self.assertEqual(finding.status, "NON REPONDU")
+        self.assertEqual(finding.marker, "COMMENT_WITH_CONCERNS")
+        self.assertEqual(finding.slug, "reviewer-reserve")
+        self.assertFalse(finding.gesture_after)
+
+    def test_reserve_detectable_regardless_of_author(self):
+        # La classe cible la reserve POSEE, pas un auteur : un bot reviewer
+        # (clusterManager-Myia) ou un siege de lane portent la meme forme.
+        for author in ("clusterManager-Myia", "myia-po-2025"):
+            report = mod.analyse_comments(
+                9,
+                [c(52, "2026-11-05T14:05:12Z", RESERVE_HERMES, author=author)],
+                classes=("reviewer-reserve",),
+            )
+            self.assertEqual(len(report.reserves), 1, f"auteur : {author}")
+
+    def test_lift_citing_timestamp_refermes(self):
+        # Convention mesuree des levees : « [OVERRIDE] ... reserve ... du
+        # 14:05Z » porte l'horodatage — citation forte, la reserve est REPONDU.
+        report = mod.analyse_comments(
+            9,
+            [
+                c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+                c(53, "2026-11-06T09:00:00Z", LIFT_WITH_TIMESTAMP),
+            ],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(len(report.reserves), 1)
+        self.assertEqual(report.reserves[0].status, "REPONDU")
+        self.assertEqual(report.reserves[0].proof, 53)
+
+    def test_plain_reply_without_citation_is_manual_review(self):
+        # Fail-closed : une reponse qui ne cite ni l'heure ni le texte laisse
+        # la reserve en MANUAL_REVIEW, pas en REPONDU.
+        report = mod.analyse_comments(
+            9,
+            [
+                c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+                c(54, "2026-11-06T09:00:00Z", "Vu, on regarde la question."),
+            ],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(report.reserves[0].status, "MANUAL_REVIEW")
+
+    def test_claim_after_reserve_raises_gesture_after(self):
+        # Le geste de lane qui ne referme pas aggrave : drapeau pose, la
+        # reserve reste ouverte.
+        report = mod.analyse_comments(
+            9,
+            [
+                c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+                c(55, "2026-11-05T15:00:00Z", CLAIM),
+            ],
+            classes=("reviewer-reserve",),
+        )
+        self.assertEqual(len(report.reserves), 1)
+        self.assertTrue(report.reserves[0].gesture_after)
+        self.assertTrue(report.gesture_after)
+        self.assertIn(report.reserves[0], report.unresolved)
+
+    def test_classes_scoping_leaves_reserves_out(self):
+        # Les tests scoping : sans la classe demandee, aucune reserve rendue.
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("user-concern",),
+        )
+        self.assertEqual(report.reserves, [])
+        self.assertEqual(report.unresolved, [])
+
+    def test_report_dict_carries_reserves(self):
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("reviewer-reserve",),
+        )
+        payload = report.as_dict()
+        self.assertIn("reserves", payload)
+        self.assertEqual(payload["reserves"][0]["marker"], "COMMENT_WITH_CONCERNS")
+        self.assertEqual(payload["reserves"][0]["status"], "NON REPONDU")
+
+    def test_render_counts_reserves_and_labels_marker(self):
+        report = mod.analyse_comments(
+            9,
+            [c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)],
+            classes=("reviewer-reserve",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 reserve(s) de relecteur", text)
+        self.assertIn("[reserve COMMENT_WITH_CONCERNS]", text)
+
+
+def test_cli_reserve_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    """Une issue sans Concern ni remark ne doit pas perdre sa réserve."""
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 1
+    assert payload["issues"][0]["reserves"][0]["comment_id"] == 51
+
+
+def test_cli_reserve_only_text_reports_the_open_reserve(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 reserve(s) de relecteur" in text
+    assert "COMMENT_WITH_CONCERNS" in text
+
+
+def test_cli_resolved_reserve_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+        c(53, "2026-11-06T09:00:00Z", LIFT_WITH_TIMESTAMP),
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 0
+
+
+EXTERNAL_REPORT = (
+    "Bonjour, je suis etudiant en L3 et le notebook 3.02 ne s'execute pas "
+    "en entier : la cellule 12 leve une erreur d'import sur seaborn. J'ai "
+    "suivi l'installation pas a pas. Merci pour ce cours formidable."
+)
+EXTERNAL_AUTHOR = "etudiant-l3-2026"
+
+
+class ExternalAnalysisTests(unittest.TestCase):
+    """Classe external-unanswered (#20185) : auteur hors flotte, tri-eti."""
+
+    def test_external_comment_without_answer_is_open(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(len(report.externals), 1)
+        finding = report.externals[0]
+        self.assertEqual(finding.status, "NON REPONDU")
+        self.assertEqual(finding.author, EXTERNAL_AUTHOR)
+        self.assertEqual(finding.slug, "external-unanswered")
+        self.assertFalse(finding.gesture_after)
+
+    def test_fleet_and_bot_authors_are_not_external(self):
+        # La classe cible l'AUTEUR hors flotte : logins de flotte (compte
+        # partage, sieges myia-*, sieges reels mesures, bot reviewer) et bots
+        # d'integration ne comptent jamais.
+        for author in ("jsboige", "myia-po-2025", "clusterManager-Myia",
+                       "jsboigeEpita", "jsboigeEPF",
+                       "dependabot[bot]", "github-actions[bot]"):
+            report = mod.analyse_comments(
+                21,
+                [c(71, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=author)],
+                classes=("external-unanswered",),
+            )
+            self.assertEqual(report.externals, [], f"auteur : {author}")
+
+    def test_seat_lane_posts_are_not_external(self):
+        # Controle positif mesure (#22267, c6811299399) : un [CLAIMED] pose
+        # par le siege reel jsboigeEpita est un post de lane, pas un constat
+        # externe — sans l'extension LANE_LOGIN, la classe inondait de posts
+        # de flotte.
+        report = mod.analyse_comments(
+            22267,
+            [
+                c(6811299399, "2026-11-12T01:05:36Z",
+                  "[CLAIMED] lane myia-po-2023:CoursIA -- audit de contenu "
+                  "des 21 paires en derive avant toute attestation.",
+                  author="jsboigeEpita"),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals, [])
+
+    def test_shared_seat_concern_is_user_concern(self):
+        # Controle mesure (#23983, cIC_kwDOH2Odns8AAAABhtf6Mw) : le siege
+        # jsboigeEPF sert AUSSI de plume au mainteneur — un « Concern: » poste
+        # sous ce login doit tomber dans le filet user-concern (il lui
+        # echappait avant l'extension LANE_LOGIN).
+        report = mod.analyse_comments(
+            23983,
+            [c(78, "2026-11-01T11:22:56Z",
+               "Concern: OK pour des carnets specifiques quand le veto sera "
+               "leve, mais sinon je pensais comme on l'a dit.",
+               author="jsboigeEPF")],
+            classes=("user-concern",),
+        )
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.concerns[0].status, "NON REPONDU")
+
+    def test_reply_citing_timestamp_refermes(self):
+        # Convention de la campagne (#20185) : la lane repond « en citant le
+        # commentaire oublie » — l'horodatage est la forme forte.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(72, "2026-11-11T09:00:00Z",
+                  "Reponse au signalement du 10:12Z : seaborn est passe en "
+                  "dependance optionnelle, le fix arrive au prochain merge."),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(len(report.externals), 1)
+        self.assertEqual(report.externals[0].status, "REPONDU")
+        self.assertEqual(report.externals[0].proof, 72)
+
+    def test_reply_quoting_excerpt_refermes(self):
+        long_excerpt = (
+            "la cellule 12 leve une erreur d'import sur seaborn. J'ai suivi "
+            "l'installation pas a pas."
+        )
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(73, "2026-11-11T09:00:00Z",
+                  f"Merci pour le rapport : « {long_excerpt} » — la cause "
+                  "est identifiee, la correction est en revue."),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "REPONDU")
+        self.assertEqual(report.externals[0].proof, 73)
+
+    def test_plain_fleet_reply_without_citation_is_manual_review(self):
+        # Fail-closed : une reponse de flotte qui ne cite ni l'heure ni le
+        # texte laisse le constat en MANUAL_REVIEW, pas en REPONDU.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(74, "2026-11-11T09:00:00Z",
+                   "Merci du signalement, on regarde la cellule concernee."),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "MANUAL_REVIEW")
+
+    def test_second_external_comment_is_not_a_response(self):
+        # Seule la flotte trier un commentaire externe : un second externe
+        # (« +1 ») ne fait meme pas passer le constat en MANUAL_REVIEW.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(75, "2026-11-10T11:00:00Z", "Meme probleme pour moi, +1.",
+                   author="autre-etudiant"),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "NON REPONDU")
+
+    def test_bot_after_external_is_not_a_candidate(self):
+        # Un bot d'integration qui passe apres le signalement (label, stale)
+        # n'est ni une reponse ni un geste : le constat reste NON REPONDU.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(76, "2026-11-10T12:00:00Z", "This issue is stale.",
+                   author="stale[bot]"),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "NON REPONDU")
+
+    def test_claim_after_external_raises_gesture_after(self):
+        # La lane travaille (claim) sans trier le contributeur : drapeau
+        # aggravant, le constat reste ouvert.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(77, "2026-11-10T14:00:00Z", CLAIM),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(len(report.externals), 1)
+        self.assertTrue(report.externals[0].gesture_after)
+        self.assertTrue(report.gesture_after)
+        self.assertIn(report.externals[0], report.unresolved)
+
+    def test_classes_scoping_leaves_externals_out(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("user-concern",),
+        )
+        self.assertEqual(report.externals, [])
+        self.assertEqual(report.unresolved, [])
+
+    def test_report_dict_carries_externals(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("external-unanswered",),
+        )
+        payload = report.as_dict()
+        self.assertIn("externals", payload)
+        self.assertEqual(payload["externals"][0]["author"], EXTERNAL_AUTHOR)
+        self.assertEqual(payload["externals"][0]["status"], "NON REPONDU")
+
+    def test_render_counts_externals_and_labels_author(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("external-unanswered",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 externe(s)", text)
+        self.assertIn(f"[ext {EXTERNAL_AUTHOR}]", text)
+
+
+def test_cli_external_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=EXTERNAL_AUTHOR)
+    ])
+    rc = mod.main(["--issues", "21", "--classes", "external-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["externals_total"] == 1
+    assert payload["externals_unresolved"] == 1
+    assert payload["issues"][0]["externals"][0]["comment_id"] == 70
+    assert payload["issues"][0]["externals"][0]["author"] == EXTERNAL_AUTHOR
+
+
+def test_cli_external_only_text_reports_the_open_constat(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=EXTERNAL_AUTHOR)
+    ])
+    rc = mod.main(["--issues", "21", "--classes", "external-unanswered",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 externe(s)" in text
+    assert EXTERNAL_AUTHOR in text
+
+
+def test_cli_resolved_external_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=EXTERNAL_AUTHOR),
+        c(72, "2026-11-11T09:00:00Z",
+          "Reponse au signalement du 10:12Z : seaborn est passe en "
+          "dependance optionnelle, le fix arrive au prochain merge."),
+    ])
+    rc = mod.main(["--issues", "21", "--classes", "external-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["externals_total"] == 1
+    assert payload["externals_unresolved"] == 0
+
+
+# --------------------------------------------------------------------------- #
+# Classe ``ask-unanswered`` (#20185, 5e classe) — formes mesurees le
+# 2026-11-14 sur le corpus (70 issues les plus recentes portant « [ASK » en
+# corps) : 7 tags POSES en emission, 63 citations de prose. Reels : #24357
+# NON REPONDU, #23384 NON REPONDU (claim partageant du vocabulaire = pas une
+# reponse), #25510/#18911 REPONDU (citation forte), #18285/#20386/#20697
+# MANUAL_REVIEW.
+# --------------------------------------------------------------------------- #
+
+ASK_BARE = "[ASK] Route au mainteneur — décision de modèle de données (point 3 de #24246)"
+
+ASK_ADDRESSEE = (
+    "[ASK c.138 ai-01:CoursIA-2] Arbitrage mainteneur requis — les 5 décisions "
+    "de contenu ne sont pas actionnables sans tranche"
+)
+
+ASK_QUOTE_SEED = (
+    "le regime des push sur main doit trancher entre assessment seul et "
+    "edition unilaterale par la lane, avec preuve et sans force push"
+)
+
+
+class AskTagTests(unittest.TestCase):
+    def test_bare_ask_posed_is_detected(self):
+        self.assertEqual(mod.ask_tag(ASK_BARE), "ASK")
+
+    def test_addressee_inside_bracket_is_kept(self):
+        # Forme mesuree #18285 : le destinataire vit DANS le crochet.
+        self.assertEqual(mod.ask_tag(ASK_ADDRESSEE), "ASK c.138 ai-01:CoursIA-2")
+
+    def test_double_bracket_group_with_decoration(self):
+        # Forme mesuree #18911 : « **[ASK][VIBE-SUPPLY] Lane Vibe… ».
+        self.assertEqual(
+            mod.ask_tag(f"**[ASK][VIBE-SUPPLY] Lane Vibe po-2025 — queue vide"),
+            "ASK",
+        )
+
+    def test_decoration_and_head_group_before_tag(self):
+        self.assertEqual(mod.ask_tag("**[DISPATCH] [ASK] choisir un grain**"), "ASK")
+
+    def test_prose_citation_is_not_posed(self):
+        # 63 des 70 issues du corpus citent « [ASK » en PROSE (regles,
+        # vocabulaire de campagne) sans jamais poser de question — mesure.
+        body = "Le mainteneur demande un tag [ASK USER] dans le registre des questions."
+        self.assertIsNone(mod.ask_tag(body))
+
+    def test_mid_body_ask_is_not_posed(self):
+        body = "Recapitulatif du cycle : la lane a pose un `[ASK]` hier, et la reponse est venue."
+        self.assertIsNone(mod.ask_tag(body))
+
+    def test_ask_user_tag_is_returned_for_caller_to_exclude(self):
+        # L'exclusion (registre user) se decide dans analyse_comments pour
+        # nourrir le compte publie — ask_tag rend le tag tel quel.
+        self.assertEqual(mod.ask_tag("[ASK USER] fermer ou garder le registre ?"), "ASK USER")
+
+
+class AskAnalysisTests(unittest.TestCase):
+    def test_ask_without_answer_is_open(self):
+        # Forme mesuree #24357 : dernier commentaire du fil, aucun candidat.
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_BARE)],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(len(report.asks), 1)
+        self.assertEqual(report.asks[0].status, "NON REPONDU")
+        self.assertFalse(report.asks[0].gesture_after)
+        self.assertIn(report.asks[0], report.unresolved)
+
+    def test_reply_citing_timestamp_refermes(self):
+        # Forme mesuree #25510 : un geste de lane ([DELIVERED]) qui porte
+        # l'horodatage de l'ASK referme (exception #2159 du candidat geste).
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-12T18:30:01Z", ASK_BARE),
+                c(81, "2026-11-13T09:00:00Z",
+                  "[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #26250 -- "
+                  "reponse au [ASK] du 18:30Z : assessment livre."),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "REPONDU")
+        self.assertEqual(report.asks[0].proof, 81)
+        self.assertNotIn(report.asks[0], report.unresolved)
+
+    def test_reply_quoting_excerpt_refermes(self):
+        ask_body = f"[ASK] {ASK_QUOTE_SEED} — arbitrage demande."
+        reply_body = (
+            "Reponse du coordinateur : je tranche pour l'assessment seul — "
+            f"« {ASK_QUOTE_SEED} » releve du cas mesure, pas de la regle."
+        )
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-12T18:30:01Z", ask_body),
+                c(81, "2026-11-13T09:00:00Z", reply_body),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "REPONDU")
+        self.assertEqual(report.asks[0].proof, 81)
+
+    def test_claim_sharing_vocabulary_is_not_an_answer(self):
+        # Forme mesuree #23384 : un [CLAIMED] qui reprend les chemins de l'ASK
+        # (vocabulaire partage, quote courte) ne repond pas a la question —
+        # la citation FORTE seule referme.
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-03T23:20:48Z",
+                  "[ASK] Arbitrage convention `metadata.papermill.input_path` "
+                  "demande a ai-01 -- souleve par la review Hermes de #23320."),
+                c(81, "2026-11-03T23:46:24Z",
+                  "[CLAIMED] lane myia-po-2028:CoursIA -- paths: "
+                  "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb"),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "NON REPONDU")
+        self.assertTrue(report.asks[0].gesture_after)
+
+    def test_plain_fleet_reply_without_citation_is_manual_review(self):
+        # Plancher fail-closed : une reponse existe mais ne prouve rien —
+        # ni tratee ni ignoree (#20186).
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-13T14:15:14Z", ASK_BARE),
+                c(81, "2026-11-14T08:00:00Z",
+                  "Vu sur le dashboard, la decision est en cours."),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "MANUAL_REVIEW")
+
+    def test_ask_user_is_excluded_to_the_user_registry(self):
+        # [ASK USER] vit dans le registre des questions user
+        # (user-blocker-signaling.md) — l'ecart est publie, jamais muet.
+        report = mod.analyse_comments(
+            31,
+            [c(80, "2026-11-13T14:15:14Z", "[ASK USER] fermer ou garder le registre ?")],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks, [])
+        self.assertEqual(report.excluded.get("ask-user-registry"), 1)
+
+    def test_bot_ask_is_ignored(self):
+        report = mod.analyse_comments(
+            31,
+            [c(80, "2026-11-13T14:15:14Z", ASK_BARE, author="github-actions[bot]")],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks, [])
+
+    def test_non_lane_ask_is_published_as_excluded(self):
+        # Un [ASK] sous un login externe releve de external-unanswered :
+        # ecart publie pour que le total ne passe pas pour exhaustif.
+        report = mod.analyse_comments(
+            31,
+            [c(80, "2026-11-13T14:15:14Z", ASK_BARE, author="unEtudiant42")],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks, [])
+        self.assertEqual(report.excluded.get("ask-non-lane"), 1)
+
+    def test_classes_scoping_leaves_asks_out(self):
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_BARE)],
+            classes=("user-concern",),
+        )
+        self.assertEqual(report.asks, [])
+        self.assertEqual(report.unresolved, [])
+
+    def test_report_dict_carries_asks_with_tag(self):
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_ADDRESSEE)],
+            classes=("ask-unanswered",),
+        )
+        payload = report.as_dict()
+        self.assertIn("asks", payload)
+        self.assertEqual(payload["asks"][0]["tag"], "ASK c.138 ai-01:CoursIA-2")
+        self.assertEqual(payload["asks"][0]["status"], "NON REPONDU")
+
+    def test_render_counts_asks_and_labels_tag(self):
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_BARE)],
+            classes=("ask-unanswered",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 ask(s)", text)
+        self.assertIn("[ASK]", text)
+
+
+def test_cli_ask_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(80, "2026-11-13T14:15:14Z", ASK_BARE)
+    ])
+    rc = mod.main(["--issues", "31", "--classes", "ask-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["asks_total"] == 1
+    assert payload["asks_unresolved"] == 1
+    assert payload["issues"][0]["asks"][0]["comment_id"] == 80
+    assert payload["issues"][0]["asks"][0]["tag"] == "ASK"
+
+
+def test_cli_ask_only_text_reports_the_open_ask(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(80, "2026-11-13T14:15:14Z", ASK_BARE)
+    ])
+    rc = mod.main(["--issues", "31", "--classes", "ask-unanswered",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 ask(s)" in text
+    assert "NON REPONDU" in text
+
+
+def test_cli_resolved_ask_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(80, "2026-11-12T18:30:01Z", ASK_BARE),
+        c(81, "2026-11-13T09:00:00Z",
+          "[DELIVERED] lane myia-ai-01:CoursIA-2 -- reponse au [ASK] du "
+          "18:30Z : assessment livre, pas d'edition unilaterale."),
+    ])
+    rc = mod.main(["--issues", "31", "--classes", "ask-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["asks_total"] == 1
+    assert payload["asks_unresolved"] == 0
 
 
 if __name__ == "__main__":
