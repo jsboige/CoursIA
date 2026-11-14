@@ -12,3 +12,8 @@ remappings = [
 
 # Use solc 0.8.28 to match py-solc-x
 solc_version = "0.8.28"
+
+# Optimizer : EntryPoint (account-abstraction 0.9) depasse la limite EIP-170
+# (24576 octets) sans optimisation — indéployable sur un anvil par defaut.
+optimizer = true
+optimizer_runs = 1000000
