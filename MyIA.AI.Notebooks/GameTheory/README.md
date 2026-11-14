@@ -315,9 +315,11 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 16e | [Populations Othman-Sandholm](GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb) | Généralisation du pilote 16d : un échantillon de N paires (row, col) tirées d'une distribution sur les politiques, quatre populations scriptées, multi-seed, modèle nul | Python | Recherche |
 | 16h | [Coopération LLM](GameTheory-16h-Cooperation-LLM-Python.ipynb) | Populations hétérogènes d'agents de langage au dilemme du prisonnier itéré : protocole multi-seed pré-enregistré (5 graines), politiques TFT scriptées, modèle nul uniforme, contrôle négatif `always_defect`, verdict H0/H1 par hétérogénéité (Vallinder–Hughes 2024, Payne–Alloui–Cros 2025) | Python | Recherche |
 | 16i | [Appariage stable & stratégie](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | Qui peut tricher dans Gale–Shapley : le côté proposeur est protégé, le côté répondant peut mentir — recherche exhaustive de déclarations profitables | Python | Licence |
-| 16k | Théorie des enchères — [Python](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) · [C#](GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb) | Vrais-facité de Vickrey, réserve optimale de Myerson et équivalence de revenu ; simulations NumPy / BCL (.NET) | Python, C# | Recherche |
+| 16k | [Théorie des enchères](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | Le prix mesuré de l'information : vrais-facité de Vickrey, réserve optimale de Myerson, saut de revenu et équivalence de revenu | Python | Recherche |
 
 16d a rejoint la [sous-série Coalitions](Coalitions/README.md) (carnet 03) : l'échange de reins est un mécanisme d'appariement — de la famille de Kuhn-Munkres, carnets 04 et 05 — et non un mécanisme de révélation.
+
+**Parité de 16k — enchères** : [Python](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) · [C#](GameTheory-16k-Theorie-des-Encheres-Myerson-CSharp.ipynb). Les simulations NumPy et BCL .NET conservent les mêmes budgets ; leurs générateurs pseudo-aléatoires et trajectoires diffèrent.
 
 L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la [sous-série SocialChoice](#sous-série-socialchoice).
 
