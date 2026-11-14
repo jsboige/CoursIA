@@ -4,6 +4,6 @@
   csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
-  bridge_verdict_reason: "Kuhn tabulaire et CFR sont explicitement les objets pédagogiques ; les deux carnets calculent les 64 meilleures réponses pures par joueur et les mêmes budgets. Aucun organe Ataraxos natif n'est revendiqué."
+  bridge_verdict_reason: "Kuhn tabulaire et CFR sont explicitement les objets pédagogiques ; les deux carnets énumèrent 64 stratégies pures par joueur pour calculer les meilleures réponses, avec les mêmes budgets. Aucun organe Ataraxos natif n'est revendiqué."
   known_differences:
-    - "Les écarts flottants amplifiés par le schéma multiplicatif peuvent modifier le quatrième chiffre du gap final sched."
+    - "Écart flottant observé sur le gap final sched : environ 0,03901 en Python et 0,03895 en C# ; aucune cause numérique particulière n’a été isolée."
