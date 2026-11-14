@@ -222,15 +222,16 @@ jobs:
     # path (#13510). Worth re-measuring once more uncensored data exists
     # under the 60-min ceiling.
     #
-    # 52 -> 62 (2026-11-12) : le budget de l'agregateur passe de 45 a 55
-    # (l'enfant "Scripts Tests (CPU)" passe de 30 a 40), et ce mur le suit
-    # de 7 min -- marge INCHANGEE (elle etait 45 -> 52), celle qui laisse
-    # au script le temps d'imprimer son verdict au lieu d'etre tue par le
-    # runner en plein poll. 55 reste sous le plafond propre de Quarto (60) :
+    # 52 -> 62 -> 66 (2026-11-14) : le budget de l'agregateur passe de 45
+    # a 55 (l'enfant "Scripts Tests (CPU)" passe de 30 a 40), puis de 55 a
+    # 59 (l'enfant passe de 40 a 44), et ce mur le suit de 7 min -- marge
+    # INCHANGEE (elle etait 45 -> 52, puis 52 -> 62), celle qui laisse au
+    # script le temps d'imprimer son verdict au lieu d'etre tue par le
+    # runner en plein poll. 59 reste sous le plafond propre de Quarto (60) :
     # la queue reelle de Quarto reste donc sur le chemin STARVED ->
     # auto-annulation, ce que #14412 avait choisi. Mesure, grandeur et
     # calcul : dans le bloc de commentaire de `scripts-tests.yml`.
-    timeout-minutes: 62
+    timeout-minutes: 66
     steps:
       # #15091 : sparse-checkout en mode cone. Ce job est le SEUL route sur le
       # label coursia-waiter, et ce pool n a deliberement aucun volume (ni
@@ -314,19 +315,19 @@ jobs:
           # waiters in flight while 400+ self-hosted jobs queue). Fail-closed
           # toward waiting: a single constituent flipping to in_progress
           # resets the streak.
-          # Budget de l'agregateur : 55 min (etait 45). Il doit depasser le
-          # mur de chaque enfant qu'il attend -- "Scripts Tests (CPU)" passe
-          # de 30 a 40 -- sinon l'agregateur s'annule avant de voir l'enfant
-          # conclure, et le verdict porte sur un constituent disparu. Marge
-          # de 15 min, INCHANGEE. Le mur du job qui porte cette commande
-          # (timeout-minutes) le suit de 7 min, marge elle aussi inchangee.
-          # Mesure, grandeur et calcul : bloc de commentaire de
-          # `scripts-tests.yml`.
+          # Budget de l'agregateur : 59 min (etait 55, avant 45). Il doit
+          # depasser le mur de chaque enfant qu'il attend -- "Scripts Tests
+          # (CPU)" passe de 30 a 40, puis de 40 a 44 -- sinon l'agregateur
+          # s'annule avant de voir l'enfant conclure, et le verdict porte
+          # sur un constituent disparu. Marge de 15 min, INCHANGEE. Le mur
+          # du job qui porte cette commande (timeout-minutes) le suit de
+          # 7 min, marge elle aussi inchangee. Mesure, grandeur et calcul :
+          # bloc de commentaire de `scripts-tests.yml`.
           python scripts/pr_gate.py \
             --repo "${{ github.repository }}" \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --self-name "PR gate" \
-            --timeout-min 55 \
+            --timeout-min 59 \
             --poll-sec 30 \
             --settle-polls 2 \
             --all-queued-polls 5 \
