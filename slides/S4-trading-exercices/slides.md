@@ -253,6 +253,12 @@ layout: default
 layout: default
 ---
 
+<style scoped>
+/* La derniere ligne des indices recouvrait le pied de page « Intelligence(s) »
+   (boite de layout a 577 px pour 552, EPIC #11508, L2). */
+.slidev-layout { font-size: 0.9em; }
+</style>
+
 # Ex03 - Consignes
 
 1. **Explorer le projet** `ML-RandomForest/main.py`
@@ -407,6 +413,12 @@ layout: default
 ---
 layout: default
 ---
+
+<style scoped>
+/* La derniere ligne des indices recouvrait le pied de page « Intelligence(s) »
+   (boite de layout a 577 px pour 552, EPIC #11508, L2). */
+.slidev-layout { font-size: 0.9em; }
+</style>
 
 # Ex05 - Consignes
 

@@ -19,6 +19,8 @@ Cette série s'adresse aux étudiants en informatique et aux enseignants chercha
 
 Vous apprendrez à implémenter un solveur, à modéliser ses contraintes, à distinguer une solution valide d'une prédiction plausible et à concevoir une comparaison expérimentale. Le Sudoku généralisé est NP-complet ; les grilles de taille fixée du cours permettent d'en examiner concrètement les stratégies, sans déduire leur difficulté de leur seul nombre d'indices.
 
+**Une série plate.** Tous les carnets vivent à la racine, sans dossier intermédiaire : le sujet commun — la même grille soumise à des représentations différentes — fait le fil, la numérotation continue ordonne la progression, et aucun sous-arc ne se dessine qui grouperait naturellement des carnets. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
+
 Une même case vide change de rôle selon la méthode. Pour le retour arrière, elle ouvre des branches à essayer. Pour la programmation par contraintes, elle possède un domaine de valeurs que les règles réduisent. Pour une métaheuristique, elle participe au score de conflits d'une grille candidate. Pour un réseau, elle reçoit des probabilités apprises. Cette différence de représentation détermine les opérations possibles, les erreurs à observer et les garanties que l'on peut demander au résultat.
 
 | Représentation | Ce que fait la méthode | Ce qu'il faut contrôler |
@@ -204,7 +206,7 @@ Sous Windows, activer l'environnement avec `.\.venv-sudoku\Scripts\Activate.ps1`
 
 ### Repères dans les dossiers
 
-- [Puzzles](Puzzles/) : grilles utilisées pour les expériences.
+- [Puzzles](Puzzles/) : grilles utilisées pour les expériences — corpus hérités (`Easy51`, `hardest`, `top95`) et corpus généré certifié (`Sudoku_gen_facile.txt`, `Sudoku_gen_moyen.txt`, `Sudoku_gen_difficile.txt`).
 - [CompiledModels](CompiledModels/) : artefacts compilés pour Infer.NET ; [sudoku_models](sudoku_models/) : checkpoints d'entraînement.
 - [scripts](scripts/) : scripts d'entraînement ; [tests](tests/) : tests associés.
 - [sudoku_lean](sudoku_lean/) : projet de formalisation Lean.
@@ -226,6 +228,8 @@ Dans 18b, les répétitions de chronométrage sont regroupées par puzzle : rép
 | `top95` | Aucune grille sur 95. | 446 décisions. |
 
 L'audit ne trouve pas de grille invalide ou non unique dans ces corpus. Leur difficulté dépend ici du solveur et de la mesure retenue : le nom « hardest » ne prédit pas le classement observé. Une expérience utile consiste à supprimer un indice d'une grille, puis à mesurer séparément l'unicité et l'effort de résolution. Une grille encore soluble peut avoir plusieurs solutions ; son nombre d'indices ne constitue pas à lui seul une échelle de difficulté.
+
+Les corpus hérités sont des ensembles reçus, non construits. Le script [`scripts/generate_certified_corpus.py`](scripts/generate_certified_corpus.py) génère à l'inverse un corpus **équilibré par construction** : chaque grille est creusée depuis une solution complète aléatoire, son unicité est **prouvée par dénombrement certifié** (le moteur DLX de la série, arrêt « exhausted » avec exactement une solution — jamais un plafond atteint), et son palier est fixé par la difficulté **mesurée** (décisions de retour arrière, propagation seule), pas par un compte de cases vides. La bande `facile` exige zéro décision, `moyen` se tient entre 1 et 9, `difficile` au-delà — bornes calibrées sur les corpus hérités : le palier `difficile` généré égale la bande de `hardest` (pire observé autour d'une vingtaine de décisions), il ne prétend pas aux sommets de `top95`, corpus trié à la main. La notation est homogène : 81 caractères par ligne, chiffre `0` pour une case vide. Le **cardinal d'irréductibilité** de chaque grille est documenté par le même organe que Sudoku-20 (`minimal_clue_set`, retrait glouton sous unicité) : sur la génération livrée, la médiane est de 25 indices conservés pour `facile` et `moyen`, 26 pour `difficile` — une grille sur trois environ est déjà irrédundante, le reste porte un à cinq indices redondants (le creusage s'arrête à sa cible de difficulté, pas à l'irréductibilité). La génération est déterministe sous sa graine (`--seed`), et rejouer `Sudoku-20` sur ces fichiers en vérifie chaque grille avec les mêmes instruments que le tableau ci-dessus.
 
 ### Réseaux relationnels récurrents
 

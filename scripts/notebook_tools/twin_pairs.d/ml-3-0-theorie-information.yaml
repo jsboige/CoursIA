@@ -1,0 +1,10 @@
+- name: "ML 3.0 Theorie Information"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Algorithmes pédagogiques from scratch des deux côtés ; sklearn make_classification est utilisé réellement par les deux, via Python.NET pour le seul jeu de données côté C#."
+  known_differences:
+    - "Python utilise NumPy et Matplotlib ; C# utilise la BCL et des SVG statiques. La perturbation aléatoire de q emploie des générateurs différents."
+    - "Les deux carnets corrigent les conventions des zéros, la demi-MSE et la conversion des nats en bits."
