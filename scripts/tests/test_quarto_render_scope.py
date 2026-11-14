@@ -204,8 +204,9 @@ def test_restrict_yaml_drops_the_original_comments_with_the_entries():
 # ---------------------------------------------------------------------------
 # glob entries
 #
-# The real list carries `*.qmd`, covering index.qmd and parcours.qmd -- the two
-# root landing pages. An exact-string intersection matched neither: a PR
+# The real list carries `*.qmd`, covering index.qmd -- the remaining root
+# landing page since parcours.qmd moved under docs/ (#13751, covered by its
+# explicit entry). An exact-string intersection matched neither: a PR
 # editing index.qmd fell through to `empty`, skipped the render step, and
 # reported success having built nothing. These pin the fix.
 # ---------------------------------------------------------------------------
