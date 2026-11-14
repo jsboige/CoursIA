@@ -312,6 +312,7 @@ def classify(pr: dict, probes: dict, runner=None, gh_env=None) -> tuple[str, lis
       b0        : {"blocked": bool, "blocking": [...]}
       checks    : {"green": bool, "reds": [...]}
       dwell     : {"ok": bool | None, "message": str}
+      lean      : {"reason": str | None} (mur Lean #24989)
       merge_state: str (deja dans `pr["merge_state"]`)
 
     `unstable` n'est pas un refus automatique (#25059) : la decision est
@@ -346,6 +347,13 @@ def classify(pr: dict, probes: dict, runner=None, gh_env=None) -> tuple[str, lis
     dwell = probes.get("dwell") or {}
     if dwell.get("ok") is False:
         causes.append("dwell")
+
+    # Le mur Lean (#24989) porte son propre prefixe `lean:` dans le motif
+    # rendu par le canon (`lean:no-local-build-attestation`,
+    # `lean:local-build-attestation-unverifiable`).
+    lean = probes.get("lean") or {}
+    if lean.get("reason"):
+        causes.append(str(lean["reason"]))
 
     return ("WAITING", causes) if causes else ("CHAINABLE", [])
 
@@ -453,6 +461,28 @@ def probe_dwell(pr: int, head: str, repo: str) -> dict:
     except Exception as exc:  # noqa: BLE001 -- un organe muet ne deroge pas
         return {"ok": None, "message": "merge_dwell: {}".format(exc)}
     return {"ok": ok, "message": message}
+
+
+def probe_lean(pr: int, head: str, runner, gh_env) -> dict:
+    """Etape 2bis du canon (#24989), par delegation au predicat de merge_ready.
+
+    Une PR qui touche du Lean (``.lean``, ``lakefile.*``, ``lean-toolchain``,
+    ``lake-manifest.json``) exige une attestation de ``lake build`` local
+    posee par le coordinateur et couvrant la tete -- le vert de la CI ne la
+    remplace pas (regle HARD ``lean-merge-discipline.md`` S1). Le verdict est
+    celui de ``merge_ready.lean_build_attestation_reason``, jamais une copie
+    locale ; une PR qui ne touche pas de Lean rend ``None`` et ne coute qu'un
+    ``gh pr view``. Sans runner, la vue n'est pas lisible : fail-closed nomme.
+    """
+    if runner is None:
+        return {"reason": "lean:not-measured"}
+    try:
+        view = merge_ready.fetch_pr_view(runner, pr, gh_env)
+        reason = merge_ready.lean_build_attestation_reason(
+            view, head, runner, gh_env)
+    except Exception:  # noqa: BLE001 -- un organe muet ne deroge pas
+        return {"reason": "lean:local-build-attestation-unreadable"}
+    return {"reason": reason}
 
 
 def probe_merge_state_rest(repo: str, pr: int) -> "str | None":
@@ -622,6 +652,7 @@ def main(argv: "list[str] | None" = None) -> int:
                           if args.no_dwell
                           else probe_dwell(pr["number"], pr["head"],
                                            args.repo)),
+                "lean": probe_lean(pr["number"], pr["head"], runner, gh_env),
             }
             status, causes = classify(pr, probes, runner, gh_env)
         rows.append({

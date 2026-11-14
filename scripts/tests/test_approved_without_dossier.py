@@ -513,3 +513,66 @@ def test_probe_checks_residual_rouge_au_pli_compte_une_fois(monkeypatch):
     monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
     result = awd.probe_checks(7, HEAD)
     assert result["reds"] == ["Tests"]
+
+
+# --- 7. mur Lean (#24989) : delegation au predicat canonique ---------------
+
+
+def test_probe_lean_sans_runner_est_fail_closed_nomme():
+    """Sans runner, la vue n'est pas lisible : la cause est nommee, jamais
+    supposee verte (mirror de `unstable-not-measured`)."""
+    assert awd.probe_lean(7, HEAD, None, None) == {
+        "reason": "lean:not-measured"}
+
+
+def test_probe_lean_delegue_au_predicat_canonique(monkeypatch):
+    """Le verdict est celui de merge_ready (jamais une copie locale) : la
+    sonde rend le motif du canon tel quel, prefixe `lean:` compris."""
+    seen = {}
+
+    def fake_view(runner, pr, gh_env):
+        seen["pr"] = pr
+        return {"number": pr, "files": [], "comments": []}
+
+    def fake_reason(view, head, runner, gh_env):
+        seen["head"] = head
+        return "lean:no-local-build-attestation"
+
+    monkeypatch.setattr(awd.merge_ready, "fetch_pr_view", fake_view)
+    monkeypatch.setattr(awd.merge_ready,
+                        "lean_build_attestation_reason", fake_reason)
+    result = awd.probe_lean(12, HEAD, object(), None)
+    assert result == {"reason": "lean:no-local-build-attestation"}
+    assert seen == {"pr": 12, "head": HEAD}
+
+
+def test_probe_lean_pr_sans_lean_ne_bloque_pas(monkeypatch):
+    monkeypatch.setattr(awd.merge_ready, "fetch_pr_view",
+                        lambda runner, pr, gh_env: {"number": pr})
+    monkeypatch.setattr(
+        awd.merge_ready, "lean_build_attestation_reason",
+        lambda view, head, runner, gh_env: None)
+    assert awd.probe_lean(12, HEAD, object(), None) == {"reason": None}
+
+
+def test_probe_lean_vue_illisible_rend_unreadable(monkeypatch):
+    def boom(runner, pr, gh_env):
+        raise RuntimeError("gh pr view rc=1")
+
+    monkeypatch.setattr(awd.merge_ready, "fetch_pr_view", boom)
+    assert awd.probe_lean(12, HEAD, object(), None) == {
+        "reason": "lean:local-build-attestation-unreadable"}
+
+
+def test_classify_lean_sans_attestation_rend_waiting_nomme():
+    probes = dict(GREEN_PROBES)
+    probes["lean"] = {"reason": "lean:no-local-build-attestation"}
+    status, causes = awd.classify(_pr(), probes)
+    assert status == "WAITING"
+    assert causes == ["lean:no-local-build-attestation"]
+
+
+def test_classify_lean_verifie_ne_bloque_pas():
+    probes = dict(GREEN_PROBES)
+    probes["lean"] = {"reason": None}
+    assert awd.classify(_pr(), probes) == ("CHAINABLE", [])
