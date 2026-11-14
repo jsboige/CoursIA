@@ -1,0 +1,12 @@
+- name: "Search-02d RRT"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02d-RRT-Recherche-Continue.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02d-RRT-Recherche-Continue-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Les deux carnets implémentent RRT et une variante pédagogique de RRT* à partir de zéro pour exposer steering, collisions, choix du parent, reparentage et propagation des coûts. Python utilise numpy et matplotlib pour les expériences et figures ; C# utilise System.* et SVG. Ce choix pédagogique commun n'est pas une comparaison de bibliothèques de planification de production. Les deux carnets indiquent les limites des hypothèses théoriques et ne déduisent pas le théorème d'optimalité asymptotique des mesures finies.
+  known_differences:
+    - "Les générateurs pseudo-aléatoires de Python et .NET diffèrent : les mêmes graines ne produisent pas les mêmes trajectoires ni ratios. Les budgets et graines sont identiques."
+    - "Python utilise matplotlib pour les figures ; C# produit des SVG statiques pour les chemins et la courbe des budgets."
+    - "Les contrôles C# reconstruisent indépendamment les coûts et vérifient les arêtes et cycles après chaque reparentage d'une exécution dédiée."

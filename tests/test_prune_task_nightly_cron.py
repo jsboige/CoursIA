@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""test_install_prune_task.py -- tests du cablage du travail nocturne de
+"""test_prune_task_nightly_cron.py -- tests du cablage du travail nocturne de
 prune_merged_worktrees.
 
 Ce que ces tests mesurent : l'ARGUMENTATION que la tache planifiee passe
