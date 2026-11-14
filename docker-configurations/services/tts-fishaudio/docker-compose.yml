@@ -57,6 +57,14 @@ services:
     ports:
       - "127.0.0.1:${FISHAUDIO_PORT:-8197}:8080"
 
+    # Maintenance#303 bounds: mem_limit = memswap_limit = 16g (swap disabled),
+    # pids_limit 256. 16g covers the fp16 path (an ~11 GB safetensors that is
+    # streamed to the GPU at warm-up -- 20.33 GiB VRAM measured 2026-10-06)
+    # and is ample for the int4 wrapper route, whose resident set is ~2.8 GiB.
+    mem_limit: 16g
+    memswap_limit: 16g
+    pids_limit: 256
+
     deploy:
       resources:
         reservations:
@@ -134,6 +142,11 @@ services:
     working_dir: /app
 
     command: ["python", "service_idle_monitor.py"]
+
+    # Maintenance#303 bounds (sidecar): tiny poller.
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

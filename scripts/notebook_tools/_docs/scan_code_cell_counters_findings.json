@@ -28,7 +28,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Argument_Analysis\\Argumentation-02-Fallacies-Detection-Python.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\ArgumentAnalysis\\Argumentation-02-Fallacies-Detection-Python.ipynb",
     "cell_index": 3,
     "line_no": 16,
     "text": "# La racine depth=0 est un meta-noeud (1 ligne) : on l'exclut.",
@@ -70,14 +70,14 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Argument_Analysis\\_archive\\Argument_Analysis_Agentic-0-init_agent.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\ArgumentAnalysis\\_archive\\Argument_Analysis_Agentic-0-init_agent.ipynb",
     "cell_index": 17,
     "line_no": 4,
     "text": "# inline (~190 lignes) est remplacée par un import. La shim est un SUR-ENSEMBLE",
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Argument_Analysis\\_archive\\Argument_Analysis_Agentic-0-init_agent.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\ArgumentAnalysis\\_archive\\Argument_Analysis_Agentic-0-init_agent.ipynb",
     "cell_index": 19,
     "line_no": 4,
     "text": "# définition inline (~150 lignes) est remplacée par un import. La shim est un",

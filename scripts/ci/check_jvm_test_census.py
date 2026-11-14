@@ -2,7 +2,7 @@
 """Plancher explicite des tests ``@requires_jvm`` — forme 2 de #23542.
 
 Constat mesure le 2026-10-30 a la tete de #23279 : le dossier
-``SymbolicAI/Argument_Analysis/tests/`` est collecte et execute par
+``SymbolicAI/ArgumentAnalysis/tests/`` est collecte et execute par
 ``Scripts Tests (CPU)``, mais **aucun workflow n'installe ``jpype``** et les
 jars Tweety sont gitignores. Tous les tests marques ``@requires_jvm`` sont donc
 **sautes en CI** : la collecte est verte, la couverture semantique des ADF est
@@ -33,7 +33,7 @@ import json
 import sys
 from pathlib import Path
 
-DEFAULT_TESTS_DIR = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests"
+DEFAULT_TESTS_DIR = "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/tests"
 
 #: Nom du marqueur compte. La definition (`requires_jvm = pytest.mark.skipif(...)`)
 #: est une affectation de module, pas un decorateur : elle n'est jamais comptee.

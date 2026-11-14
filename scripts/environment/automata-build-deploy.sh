@@ -97,7 +97,7 @@ REQUIRED_DLLS=("Microsoft.Automata.dll" "System.CodeDom.dll")
 if [[ -d "$DEPLOY_DIR" && $FORCE -eq 0 ]]; then
   missing=()
   for dll in "${REQUIRED_DLLS[@]}"; do
-    [[ -f "$DEPLOY_DIR/$dll" ]] || missing+=("$dll")
+    [[ -s "$DEPLOY_DIR/$dll" ]] || missing+=("$dll")
   done
   if [[ ${#missing[@]} -eq 0 ]]; then
     printf '%s.deploy/ already complete (2 DLLs present). Use --force to rebuild.%s\n' "$C_GREEN" "$C_RESET"
@@ -135,11 +135,28 @@ else
 fi
 
 # --- prepare .deploy/ ------------------------------------------------------------------
-rm -rf "$DEPLOY_DIR"
-mkdir -p "$DEPLOY_DIR"
+# Préparer sur le même système de fichiers avant de toucher au déploiement existant.
+STAGE_ROOT="$(mktemp -d "$SUBMODULE_DIR/.deploy-stage.XXXXXX")"
+BACKUP_DIR=""
+cleanup() {
+  # Ne jamais supprimer la sauvegarde avant confirmation de la publication.
+  if [[ -n "$BACKUP_DIR" && -e "$BACKUP_DIR" && ! -e "$DEPLOY_DIR" ]]; then
+    if mv "$BACKUP_DIR" "$DEPLOY_DIR"; then
+      BACKUP_DIR=""
+    else
+      printf '%sERROR: restore previous deployment from %s%s\n' "$C_RED" "$BACKUP_DIR" "$C_RESET" >&2
+    fi
+  fi
+  rm -rf "$STAGE_ROOT"
+}
+trap cleanup EXIT
+trap 'exit 143' TERM
+trap 'exit 130' INT
+STAGE_DIR="$STAGE_ROOT/deploy"
+mkdir "$STAGE_DIR"
 
 # 1. the fork assembly from the local build output
-cp -f "$BUILT_DLL" "$DEPLOY_DIR/"
+cp -f "$BUILT_DLL" "$STAGE_DIR/"
 
 # 2. managed dependency from the NuGet package cache.
 #    System.CodeDom is the single external managed dependency (see deps.json). A
@@ -155,7 +172,7 @@ fi
 
 CODEDOM="$NUGET_ROOT/system.codedom/8.0.0/lib/net8.0/System.CodeDom.dll"
 if [[ -f "$CODEDOM" ]]; then
-  cp -f "$CODEDOM" "$DEPLOY_DIR/System.CodeDom.dll"
+  cp -f "$CODEDOM" "$STAGE_DIR/System.CodeDom.dll"
 else
   printf '%sERROR: dependency not found in NuGet cache: %s%s\n' "$C_RED" "$CODEDOM" "$C_RESET"
   printf '  Run: dotnet restore %s  (then re-run this script)\n' "$CSPROJ"
@@ -164,7 +181,7 @@ fi
 
 # --- verify ----------------------------------------------------------------------------
 printf '\n%s=== .deploy/ contents ===%s\n' "$C_CYAN" "$C_RESET"
-for dll in "$DEPLOY_DIR"/*.dll; do
+for dll in "$STAGE_DIR"/*.dll; do
   [[ -f "$dll" ]] || continue
   size_kb=$(( $(stat -c %s "$dll" 2>/dev/null || stat -f %z "$dll") / 1024 ))
   printf '%s  %-24s %8s KB%s\n' "$C_GRAY" "$(basename "$dll")" "$size_kb" "$C_RESET"
@@ -172,11 +189,26 @@ done
 
 missing=()
 for dll in "${REQUIRED_DLLS[@]}"; do
-  [[ -f "$DEPLOY_DIR/$dll" ]] || missing+=("$dll")
+  [[ -s "$STAGE_DIR/$dll" ]] || missing+=("$dll")
 done
 if [[ ${#missing[@]} -gt 0 ]]; then
   printf '\n%sFAILED: missing DLLs: %s%s\n' "$C_RED" "${missing[*]}" "$C_RESET"
   exit 1
+fi
+
+# Publier le répertoire vérifié et restaurer le précédent si le déplacement échoue.
+if [[ -e "$DEPLOY_DIR" ]]; then
+  BACKUP_DIR="$(mktemp -d "$SUBMODULE_DIR/.deploy-backup.XXXXXX")"
+  rmdir "$BACKUP_DIR"
+  mv "$DEPLOY_DIR" "$BACKUP_DIR"
+fi
+if ! mv "$STAGE_DIR" "$DEPLOY_DIR"; then
+  printf '%sERROR: could not publish deployment.%s\n' "$C_RED" "$C_RESET"
+  exit 1
+fi
+if [[ -n "$BACKUP_DIR" ]]; then
+  rm -rf "$BACKUP_DIR"
+  BACKUP_DIR=""
 fi
 
 printf '\n%s=== Automata fork build complete ===%s\n' "$C_GREEN" "$C_RESET"

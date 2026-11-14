@@ -11,12 +11,21 @@ progressions vivent dans [`../Infer/`](../Infer/README.md),
 | Notebook | Kernel | Sujet |
 |---|---|---|
 | [`Pyro_RSA_Hyperbole.ipynb`](Pyro_RSA_Hyperbole.ipynb) | Python 3 | Rational Speech Acts bayésien en Pyro — pragmatique linguistique, implicatures scalaires, hyperboles |
+| [`Quotients-Fibres-Recollement-Python.ipynb`](Quotients-Fibres-Recollement-Python.ipynb) | Python 3 | Quotients, fibres et recollement : ce qui survit à la projection (ex-Infer-20) |
+| [`Probas-KLS-Concentration.ipynb`](Probas-KLS-Concentration.ipynb) | Python 3 | Gap spectral, constante de Cheeger et thin-shell en dimension croissante — contrepoint non-bayésien de la série |
 | [`Percolation/Percolation-01-Supercritique-Python.ipynb`](Percolation/Percolation-01-Supercritique-Python.ipynb) | Python 3 | Percolation de liens sur tore fini — simulation, trois régimes mesurés |
 | [`Percolation/Percolation-02-Lean.ipynb`](Percolation/Percolation-02-Lean.ipynb) | Lean 4 (WSL) | Compagnon exécutable du lake `percolation_lean` — noyau fini prouvé sans `sorry` |
 | [`Marches-01-Retour-Polya-Watson-Python.ipynb`](Marches-01-Retour-Polya-Watson-Python.ipynb) | Python 3 | Le retour de Pólya au « problème final » de Watson — série génératrice, intégrale de Watson contre forme fermée, anisotrope haute précision + Monte-Carlo |
 
 Le dossier [`Percolation/`](Percolation/README.md) a son README détaillé (duo
 simulation + formalisation, adossé à [l'issue #14871](https://github.com/jsboige/CoursIA/issues/14871)).
+
+Le carnet [`Probas-KLS-Concentration.ipynb`](Probas-KLS-Concentration.ipynb) —
+ex-carnet transverse de la racine de la série — s'est replié ici comme
+**application autonome de la géométrie log-concave** (section B de
+[#24197](https://github.com/jsboige/CoursIA/issues/24197)) : ses prérequis
+(`Infer-03`, `PyMC-14`) en font un carnet d'application, pas un socle. Sa
+documentation détaillée vit dans le [README de la série](../README.md#probas-kls-concentrationipynb).
 
 Le carnet [`Marches-01-Retour-Polya-Watson-Python.ipynb`](Marches-01-Retour-Polya-Watson-Python.ipynb)
 est la veine V1 de la distillation Schwartz/BootLoops

@@ -18,11 +18,7 @@
       "GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb",
       "GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb",
       "GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb",
-      "GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb",
-      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb",
-      "GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb",
-      "GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb",
-      "GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb"
+      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"
     ],
     "GameTheory/SocialChoice": [
       "GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb"
@@ -78,10 +74,10 @@
       "GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb"
     ],
     "IIT/ICT-Series": [
-      "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb",
-      "IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb",
-      "IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
-      "IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb",
+      "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb",
+      "IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb",
+      "IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb",
       "IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb",
       "IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb",
       "IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb",
@@ -139,18 +135,14 @@
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
       "ML/DataScienceWithAgents/05-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb"
     ],
-    "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star": [
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
-      "ML/DataScienceWithAgents/Track2-GoogleADK/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
+    "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star": [
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12b-Sequential-Orchestration.ipynb",
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12c-Agent-Handoff.ipynb",
+      "ML/DataScienceWithAgents/07-Agent-Orchestration/Day5-DS-Star/Lab12d-Token-Usage.ipynb"
     ],
     "ML/ML.Net": [
       "ML/ML.Net/ML-01-Introduction-Python.ipynb",
       "ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb"
-    ],
-    "Probas": [
-      "Probas/Probas-CLT-Theoreme-Central-Limite.ipynb",
-      "Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb"
     ],
     "Probas/Applications": [
       "Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb"
@@ -224,45 +216,43 @@
       "Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb"
     ],
     "Search/Part3-Cas-pratiques": [
-      "Search/Part3-Cas-pratiques/App-11b-Picross-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-17b-VRP-Logistics-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb",
-      "Search/Part3-Cas-pratiques/App-1b-NQueens-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "Search/Part3-Cas-pratiques/App-2b-GraphColoring-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-2-GraphColoring-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb"
     ],
     "Search/Part4-Metaheuristics/MGS-vs-mealpy": [
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb",
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb",
-      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb"
+      "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb"
     ],
     "Sudoku": [
       "Sudoku/Sudoku-14-BDD-Python.ipynb"
     ],
-    "SymbolicAI/Argument_Analysis": [
-      "SymbolicAI/Argument_Analysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb",
-      "SymbolicAI/Argument_Analysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-01b-Schemes-Walton-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-03c-Ranking-Semantics-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-04b-Knowledge-Base-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-07c-Orchestration-Modes-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-Obs-02-Initiation-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb",
-      "SymbolicAI/Argument_Analysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb"
+    "SymbolicAI/ArgumentAnalysis": [
+      "SymbolicAI/ArgumentAnalysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argument_Analysis_Gouvernance_Multi_Agents.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-01b-Schemes-Walton-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-03-Dung-AF-Semantics-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-04-Dialogues-Protocolises-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-04b-Knowledge-Base-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-05b-Multi-Backend-Routing-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-05c-Formal-Richness-Matrix-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-07c-Orchestration-Modes-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-08d-Restitution-3-Actes-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-09-Guardrails-AI-Shield-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-01-Graphes-Dates-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-02-Initiation-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-03-Recollement-Lectures-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-Obs-04-Recollement-Strate6-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-01-AIF-OWL2-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb",
+      "SymbolicAI/ArgumentAnalysis/Argumentation-Onto-03-Vertus-SKOS-Python.ipynb"
     ],
     "SymbolicAI/Lean/ANALYSE": [
       "SymbolicAI/Lean/ANALYSE/ANALYSE-13-Smoothing-Local-Kakeya.ipynb",
@@ -305,8 +295,8 @@
       "SymbolicAI/Lean/Serre100/30-fonction-partition-nombres-pentagonaux.ipynb"
     ],
     "SymbolicAI/Planners/02-Classical": [
-      "SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb",
-      "SymbolicAI/Planners/02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb"
+      "SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb",
+      "SymbolicAI/Planners/02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb"
     ],
     "SymbolicAI/SMT/Z3-Linq2Z3": [
       "SymbolicAI/SMT/Z3-Linq2Z3/08_Meal_Planner_Patient_Capstone.ipynb",
@@ -316,8 +306,8 @@
     ],
     "SymbolicAI/SemanticWeb": [
       "SymbolicAI/SemanticWeb/SW-13-Reasoners-CSharp.ipynb",
-      "SymbolicAI/SemanticWeb/SW-14-Python-Coup-Ontologique.ipynb",
-      "SymbolicAI/SemanticWeb/SW-15-Python-Coup-Argumentatif.ipynb"
+      "SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb",
+      "SymbolicAI/SemanticWeb/SW-15-Coup-Argumentatif-Python.ipynb"
     ],
     "SymbolicAI/SymbolicLearning": [
       "SymbolicAI/SymbolicLearning/SL-1-LogicalLearning-Csharp.ipynb",

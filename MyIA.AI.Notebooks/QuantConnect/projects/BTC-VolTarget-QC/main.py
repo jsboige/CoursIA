@@ -30,8 +30,23 @@ from AlgorithmImports import *
 # - sigma_etoile / vol_span / trade_band : parametres de la regle (defauts 30 / 30 /
 #   0,05), points de grille du protocole.
 # Graphique "shadow" : une valeur par barre journaliere, tracee avant toute decision
-# dans e0..e4 (valeur du portefeuille) et b0..b4 (cloture BTCUSD), contrat du rejeu
-# en ombre #18923.
+# dans e0..e4 (valeur du portefeuille), plus les couts `fees` (frais cumules / valeur
+# de depart) et `turnover` (montants executes cumules, en fraction du portefeuille) --
+# contrat du rejeu en ombre #18923. La premiere version tracait aussi la cloture
+# BTCUSD (b0..b4), qu'aucun lecteur n'utilise : QC ne garde que dix series tracees par
+# backtest, tous graphiques confondus, et les douze series faisaient perdre e0 et b0,
+# les dernieres creees (mesure du 2026-11-10, #24153).
+#
+# BTCUSD est souscrit sans remplissage vers l'avant : une barre recopiee n'apporte
+# aucune cloture, et le rejeu en ombre lance avant minuit UTC en recevait une pour la
+# date de passage elle-meme (cloture de la veille repetee, point refuse par le
+# harnais car il depasse `tradeableDates`, #24153).
+#
+# Prechauffage : les clotures recues pendant `set_warm_up` alimentent la fenetre de
+# l'EWMA, si bien que la regle s'applique des la premiere barre apres le depart. La
+# premiere version sortait de `on_data` avant de les ajouter : la candidate restait en
+# liquidites pendant ses 31 premieres barres apres CHAQUE depart -- a chaque passage
+# en ombre, qui repart de la date de gel (#24153).
 from collections import deque
 
 
@@ -74,12 +89,18 @@ MODES = ("base", "hold-btc", "spy", "sixty40")
 class BtcVolTargetAlgorithm(QCAlgorithm):
 
     def initialize(self):
-        start = self.get_parameter("start") or "2016-01-01"
-        end = self.get_parameter("end") or "2026-09-30"
+        # Dates sans valeur par défaut (règle 1 du contrat d'ombre #18923) : un
+        # backtest lancé sans elles échoue au lieu de tourner sur une période
+        # implicite. La fenêtre du verdict est 2016-01-01 -> 2026-09-30.
+        start = self.get_parameter("start")
+        end = self.get_parameter("end")
+        if not start or not end:
+            raise ValueError("parameters start and end are required (ISO dates)")
         self.set_start_date(*map(int, start.split("-")))
         self.set_end_date(*map(int, end.split("-")))
         self.set_account_currency("USD")
         self.set_cash(100000)
+        self.start_value = 100000.0
 
         self.mode = self.get_parameter("mode") or "base"
         if self.mode not in MODES:
@@ -104,7 +125,8 @@ class BtcVolTargetAlgorithm(QCAlgorithm):
         if self.vol_span < 2 or not (0.0 < self.sigma_etoile) or not (0.0 < self.trade_band <= 1.0):
             raise ValueError("parametres de regle invalides")
 
-        self.btc = self.add_crypto("BTCUSD", Resolution.DAILY, market=Market.BITFINEX).symbol
+        self.btc = self.add_crypto("BTCUSD", Resolution.DAILY, market=Market.BITFINEX,
+                                   fill_forward=False).symbol
         self.set_benchmark(self.btc)
 
         self.ref_symbols = {}
@@ -127,13 +149,23 @@ class BtcVolTargetAlgorithm(QCAlgorithm):
         self.last_month = None
         self.btc_bars = 0
         self.equity_bars = 0
+        self.traded = 0.0           # rotation cumulee, en fraction du portefeuille
 
-    def _plot_shadow(self, data):
+    def _plot_costs(self):
+        """Couts du contrat d'ombre, a la meme date que la valeur du portefeuille."""
+        self.plot("shadow", "fees", float(self.portfolio.total_fees) / self.start_value)
+        self.plot("shadow", "turnover", self.traded)
+
+    def _plot_shadow(self):
         """Trace le contrat d'ombre avant toute decision de la barre."""
         k = self.btc_bars % 5
         self.plot("shadow", f"e{k}", self.portfolio.total_portfolio_value)
-        if data.bars.contains_key(self.btc):
-            self.plot("shadow", f"b{k}", float(data.bars[self.btc].close))
+        self._plot_costs()
+
+    def on_order_event(self, event):
+        if event.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self.traded += (abs(float(event.fill_quantity) * float(event.fill_price))
+                            / float(self.portfolio.total_portfolio_value))
 
     def _ewma_vol(self):
         """Volatilite annualisee (racine de 365) des rendements journaliers BTC, EWMA span vol_span."""
@@ -184,17 +216,21 @@ class BtcVolTargetAlgorithm(QCAlgorithm):
                 self.orders_invalid += 1
 
     def on_data(self, data):
+        has_btc = data.bars.contains_key(self.btc)
+        # La fenetre de l'EWMA se remplit pendant le prechauffage (#24153).
+        if has_btc:
+            self._closes.append(data.bars[self.btc].close)
         if self.is_warming_up:
             return
 
-        if data.bars.contains_key(self.btc):
-            self._closes.append(data.bars[self.btc].close)
+        if has_btc:
             self.btc_bars += 1
-            self._plot_shadow(data)
+            self._plot_shadow()
         elif any(data.bars.contains_key(s) for s in self.ref_symbols.values()):
             self.equity_bars += 1
             k = self.equity_bars % 5
             self.plot("shadow", f"e{k}", self.portfolio.total_portfolio_value)
+            self._plot_costs()
 
         tpv = float(self.portfolio.total_portfolio_value)
 

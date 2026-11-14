@@ -35,7 +35,16 @@ Backtests : `a275a2974bce9f0503ae969ec3adc611` (stratégie), `d937f2dcbb0d88f931
 
 **Lecture** : le Sharpe de la stratégie (0,842) ne dépasse pas celui de la détention passive des mêmes titres (0,905), et la pire baisse est la même. Sur cette fenêtre, le résultat vient donc du choix des titres, et le double filtre de tendance (EMA puis SMA200) n'apporte rien de mesurable. La liste est faite de grandes capitalisations d'aujourd'hui : c'est un biais de survie que ce contrôle ne retire pas, puisque la stratégie et la détention utilisent la même liste.
 
-**Anciens chiffres** : la version précédente de cette section annonçait un Sharpe d'environ 0,61 sur 2020-2025, attribué au carnet `quantbook.ipynb` (attribution inscrite le 2026-10-07, #19570), et citait un run cloud à 0,512, relevé au registre `docs/qc/qc-strategies-status.md` le 2026-07-18 (tranche 8 de #1621). Le carnet ne calcule pas ce 0,61 : pour la configuration du dépôt (EMA20/50, rééquilibrage hebdomadaire), sa sortie donne 0,281, sur d'autres dates. Le run à 0,512 portait sur 2516 séances, comme la mesure ci-dessus qui donne 0,842 : il ne décrivait pas le code du dépôt.
+**Historique des chiffres antérieurs** : une version précédente du README annonçait un
+Sharpe d'environ 0,61 sur 2020-2025 et l'attribuait à `quantbook.ipynb` (attribution
+inscrite le 2026-10-07, #19570). Le carnet ne calcule pas ce 0,61 : pour les
+paramètres EMA20/50 et rebalancement hebdomadaire, sa sortie enregistrée donne
+0,281 sur les données du 2015-01-02 au 2025-12-31. Le registre
+`docs/qc/qc-strategies-status.md` rapporte aussi un Sharpe de 0,512 relevé le
+2026-07-18 (tranche 8 de #1621), sur 2 516 séances. La revue de #22703 n'a pas pu
+identifier le projet associé à ce run ; il n'est donc attribué ni au code du dépôt
+ni au QuantBook. Ces deux valeurs restent ici comme éléments de l'historique des
+annonces, distincts des backtests QC nommés et datés dans la table ci-dessus.
 
 ## Non-régression du module partagé (#20188)
 
@@ -57,7 +66,14 @@ A et B portent la même instrumentation, qui ne passe aucun ordre. Elle relève 
 
 Les empreintes annuelles sont égales : 10 sur 10 pour les ordres, 11 sur 11 pour les valeurs. Les 27 statistiques de QC sont égales, rotation comprise. La migration ne change donc pas le comportement du projet. Traces hors dépôt : `QC-traces/20188-nr/`.
 
-La section « Backtest Metrics » ci-dessus porte sur 2020-2025 et sur d'autres runs : ses chiffres ne se comparent pas directement à ceux-ci. Le projet cloud 28885507 porte un code différent de celui du dépôt (vérifié le 2026-10-26) ; la re-mesure est suivie par #22654.
+Le tableau « Métriques de backtest (2015-2024) » ci-dessus compare la stratégie du dépôt
+aux mêmes titres détenus passivement et à SPY. La présente non-régression porte sur la
+même fenêtre 2015-2024, mais compare deux implémentations du module PCM (module partagé
+et ancienne copie), sous les mêmes paramètres. Elle vérifie la conservation du
+comportement lors de la migration ; elle ne mesure pas l'apport de la stratégie face
+aux contrôles. L'ancienne mention « 2020-2025 » ne décrit donc pas le tableau actuel.
+Le projet cloud 28885507 porte un code différent de celui du dépôt (vérifié le
+2026-10-26) ; sa re-mesure est suivie par #22654.
 
 ## Files
 

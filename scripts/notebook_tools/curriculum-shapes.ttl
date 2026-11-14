@@ -1,0 +1,30 @@
+@prefix cursus: <https://github.com/jsboige/CoursIA/vocab/cursus#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+cursus:NotebookShape a sh:NodeShape ;
+    sh:targetClass cursus:Notebook ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
+    sh:property [ sh:path <http://purl.org/dc/terms/identifier> ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path cursus:inSeries ; sh:minCount 1 ; sh:maxCount 1 ; sh:class cursus:Series ] ;
+    sh:property [ sh:path cursus:inSubseries ; sh:maxCount 1 ; sh:class cursus:Subseries ] ;
+    sh:property [ sh:path cursus:requiresAPI ; sh:maxCount 1 ; sh:datatype xsd:boolean ] ;
+    sh:property [ sh:path cursus:requiresGPU ; sh:maxCount 1 ; sh:datatype xsd:boolean ] ;
+    sh:property [ sh:path cursus:requiresCloud ; sh:maxCount 1 ; sh:datatype xsd:boolean ] ;
+    sh:property [ sh:path cursus:requiresWSL ; sh:maxCount 1 ; sh:datatype xsd:boolean ] ;
+    sh:property [ sh:path cursus:estimatedDuration ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
+    sh:property [ sh:path cursus:status ; sh:maxCount 1 ; sh:datatype rdf:langString ] .
+
+cursus:SeriesShape a sh:NodeShape ;
+    sh:targetClass cursus:Series ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ] .
+
+cursus:SubseriesShape a sh:NodeShape ;
+    sh:targetClass cursus:Subseries ;
+    sh:property [ sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype rdf:langString ] ;
+    sh:property [ sh:path cursus:subseriesPath ; sh:minCount 1 ; sh:maxCount 1 ; sh:datatype xsd:string ] ;
+    sh:property [ sh:path cursus:partOfSeries ; sh:maxCount 1 ; sh:class cursus:Series ] ;
+    sh:property [ sh:path cursus:partOfSubseries ; sh:maxCount 1 ; sh:class cursus:Subseries ] ;
+    sh:or ( [ sh:path cursus:partOfSeries ] [ sh:path cursus:partOfSubseries ] ) .

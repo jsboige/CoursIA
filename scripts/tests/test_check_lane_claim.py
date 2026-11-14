@@ -2570,7 +2570,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
     fixture_paths = [
         "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb",
         "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-        "Planners-5-Heuristics-Csharp.ipynb",
+        "Planners-05-Heuristics-Csharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed-CSharp.ipynb",
         "MyIA.AI.Notebooks/Search/Part1-Foundations/"
         "Search-05-GeneticAlgorithms-CSharp.ipynb",
@@ -2591,7 +2591,7 @@ def test_check_claimed_10382_five_disjoint_claims(capsys):
                 "2026-08-11T04:02:00Z"),
         comment("[CLAIMED] lane myia-po-2024:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/"
-                "Planners-5-Heuristics-Csharp.ipynb",
+                "Planners-05-Heuristics-Csharp.ipynb",
                 "2026-08-11T04:03:00Z"),
         comment("[CLAIMED] lane myia-po-2025:CoursIA -- "
                 "paths: MyIA.AI.Notebooks/Search/Part1-Foundations/"
@@ -2980,11 +2980,197 @@ def test_paths_match_brace_in_paths_mode():
         "anywhere/search-8-mcts.yaml", ["search-{6,8,9}-*.yaml"])
 
 
+def test_scope_batch_matching_matches_path_predicate_exactly():
+    tracked = ["Root/Foo.py", "src/foo.py", "src/other.md", "foo.py"]
+    patterns = ["src/{foo,other}.*", "FOO.py"]
+    expected = {i for i, path in enumerate(tracked)
+                if clc._path_matches(path, patterns)}
+    assert clc._matching_tracked_indices(patterns, tracked) == expected
+
+
+def test_matching_indices_memo_bounded_by_cumulative_indices(monkeypatch):
+    # #25913 (reponse a la reserve Hermes #4) : le memo du croisement est
+    # borne en VOLUME (indices cumulés sur tous les frozensets), pas seulement
+    # en nombre d'entrees. La borne en nombre seule laissait 1024 entrees
+    # pleines (chacune jusqu'a la liste suivie entiere) tenir en memoire.
+    clc._MATCHING_INDICES_MEMO.clear()
+    clc._MATCHING_INDICES_MEMO_SIZE = 0
+    # Borne volontairement basse : test deterministe et rapide.
+    monkeypatch.setattr(clc, "_MATCHING_INDICES_MEMO_MAX_INDICES", 10)
+    tracked = object()  # forte reference ; la cle fournie fait la memo
+
+    # 1re entree : 6 indices, sous la borne (6 <= 10) -> conservee.
+    clc._matching_indices_store(("a", 1, 0), tracked, frozenset(range(6)))
+    assert len(clc._MATCHING_INDICES_MEMO) == 1
+    assert clc._MATCHING_INDICES_MEMO_SIZE == 6
+    # 2e entree : 6 + 6 = 12 > 10 -> clear, seule la courante survit.
+    clc._matching_indices_store(("b", 2, 0), tracked, frozenset(range(6, 12)))
+    assert len(clc._MATCHING_INDICES_MEMO) == 1
+    assert ("b", 2, 0) in clc._MATCHING_INDICES_MEMO
+    assert ("a", 1, 0) not in clc._MATCHING_INDICES_MEMO
+    assert clc._MATCHING_INDICES_MEMO_SIZE == 6
+    # Entree plus grosse que la borne : conservee seule (cache pure : un
+    # effacement ne change jamais un verdict), memo pas en surcap cumulative.
+    clc._matching_indices_store(("c", 3, 0), tracked, frozenset(range(20)))
+    assert len(clc._MATCHING_INDICES_MEMO) == 1
+    assert ("c", 3, 0) in clc._MATCHING_INDICES_MEMO
+    # Nettoyage : l'etat memo est module-level, partage entre tests.
+    clc._MATCHING_INDICES_MEMO.clear()
+    clc._MATCHING_INDICES_MEMO_SIZE = 0
+
+
+def test_path_matches_pair_memo_is_bounded():
+    # #25913 (reponse a la reserve Hermes) : le memo par paire est borne par
+    # un lru_cache a maxsize FINI. Un lru_cache() (maxsize=None) retiendrait
+    # chaque (chemin, motif) vu dans la fenetre sans eviction. Le plafond
+    # 262144 est un working set delibere (#24824) ; le test le pique pour
+    # qu'un maxsize=None ne reparte jamais silencieusement.
+    # Les lru_cache de matching sont module-level et partagees entre tests :
+    # on les nettoie avant ET apres (comme test_path_match_keeps_windows_*)
+    # pour ne pas polluer les tests de scope/lint qui courent apres.
+    clc._path_matches_pair.cache_clear()
+    clc._compiled_path_pattern.cache_clear()
+    clc._normcase_path.cache_clear()
+    try:
+        assert clc._path_matches_pair.cache_info().maxsize == 262144
+        # Le verdict reste correct a travers la memo (pure de ses deux args).
+        assert clc._path_matches_pair("knot_lean/Foo.lean", "*.lean") is True
+        assert clc._path_matches_pair("src/app.py", "*.lean") is False
+    finally:
+        clc._path_matches_pair.cache_clear()
+        clc._compiled_path_pattern.cache_clear()
+        clc._normcase_path.cache_clear()
+
+
+def test_path_match_keeps_windows_case_and_separator_rules(monkeypatch):
+    import fnmatch
+    import ntpath
+
+    cases = [
+        ("DIR/Foo.PY", "dir\\foo.py", True),
+        ("DIR/Foo.PY", "*.py", True),
+        ("DIR/Sub/Foo.PY", "sub\\*.py", False),
+    ]
+    with monkeypatch.context() as patch:
+        patch.setattr(clc.os.path, "normcase", ntpath.normcase)
+        clc._compiled_path_pattern.cache_clear()
+        clc._normcase_path.cache_clear()
+        for path, pattern, expected in cases:
+            basename = path.rsplit("/", 1)[-1]
+            reference = (fnmatch.fnmatch(path, pattern)
+                         or fnmatch.fnmatch(basename, pattern))
+            assert reference is expected
+            assert clc._path_matches(path, [pattern]) is expected
+    clc._compiled_path_pattern.cache_clear()
+    clc._normcase_path.cache_clear()
+
+
 def test_paths_match_brace_no_group_is_unchanged():
     # Patterns without braces are handled exactly as before.
     assert clc._path_matches("scripts/foo.py", ["scripts/*.py"])
     assert clc._expand_brace_groups("plain.py") == ["plain.py"]
     assert clc._expand_brace_groups("a{}.lean") == ["a{}.lean"]
+
+
+def test_cached_path_match_respects_mutated_caller_patterns():
+    # The cached unit is a pair of immutable strings, not the caller's list.
+    patterns = ["*.py"]
+    assert clc._path_matches("src/example.py", patterns)
+    patterns[:] = ["*.md"]
+    assert not clc._path_matches("src/example.py", patterns)
+    patterns.append("*.py")
+    assert clc._path_matches("src/example.py", patterns)
+
+
+def test_scope_intersection_reads_mutated_tracked_files():
+    # Scope verdicts depend on the current tracked tree, so the path-pair
+    # cache must not memoize a whole intersection against a mutable list.
+    tracked = ["src/a.py", "src/b.py"]
+    assert not clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+    tracked.append("src/ab.py")
+    assert clc._scopes_intersect(["src/a*.py"], ["src/*b.py"], tracked)
+
+
+def test_tracked_files_mutations_refresh_scope_results_and_caches():
+    tracked = clc._TrackedFiles(["src/a.py", "src/b.py"])
+    a, b = ["src/a*.py"], ["src/*b.py"]
+
+    def check(expected, intersects=None):
+        if intersects is None:
+            intersects = bool(expected)
+        assert clc._scopes_intersect(a, b, tracked) is intersects
+        assert clc._compute_scope_intersection_paths(a, b, tracked) == (expected, False)
+        assert tracked.exact_paths == {clc.os.path.normcase(p) for p in tracked}
+        assert tracked.exact_bases == {
+            clc.os.path.normcase(p.rsplit("/", 1)[-1]) for p in tracked
+        }
+        # An unchanged list reuses all three derived values.
+        assert tracked.norm_pairs is tracked.norm_pairs
+        assert tracked.exact_paths is tracked.exact_paths
+        assert tracked.exact_bases is tracked.exact_bases
+
+    check([])
+    tracked.append("src/ab.py")
+    check(["src/ab.py"])
+    tracked[2] = "src/ac.py"
+    check([])
+    tracked[1:3] = ["src/b.py", "src/ab.py", "src/aab.py"]
+    check(["src/ab.py", "src/aab.py"])
+    del tracked[2]
+    check(["src/aab.py"])
+    tracked.remove("src/aab.py")
+    check([])
+    tracked += ["src/ab.py"]
+    tracked *= 2
+    check(["src/ab.py", "src/ab.py"])
+    tracked.reverse()
+    check(["src/ab.py", "src/ab.py"])
+    tracked.sort()
+    check(["src/ab.py", "src/ab.py"])
+    tracked.pop()
+    tracked.insert(0, "src/abb.py")
+    check(["src/abb.py", "src/ab.py", "src/ab.py"])
+    tracked.clear()
+    check([])
+
+
+def test_lane_pr_reference_index_tracks_mutations_and_working_root(monkeypatch):
+    prs = [
+        {"number": 7, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #42"},
+        {"number": 8, "body": "[CLAIMED] lane myia-b:CoursIA -- Refs #43"},
+    ]
+    root = ["/repo-a"]
+    monkeypatch.setattr(clc.os, "getcwd", lambda: root[0])
+    original_extract = clc.extract_lane
+    extracted = []
+
+    def count_extract(body):
+        extracted.append(body)
+        return original_extract(body)
+
+    monkeypatch.setattr(clc, "extract_lane", count_extract)
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == [7]
+    assert len(extracted) == 2
+
+    # Same-length, in-place body/lane change invalidates the index.
+    prs[0]["body"] = "[CLAIMED] lane myia-b:CoursIA -- Refs #44"
+    assert clc._lane_open_prs_referencing(42, "myia-a:CoursIA", prs) == []
+    assert clc._lane_open_prs_referencing(44, "myia-b:CoursIA", prs) == [7]
+    assert len(extracted) == 4
+
+    # Replacement, append and deletion also change the indexed verdicts.
+    prs[0] = {"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #45"}
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    prs.append({"number": 10, "body": "[CLAIMED] lane myia-a:CoursIA -- Refs #46"})
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == [10]
+    prs.pop()
+    assert clc._lane_open_prs_referencing(46, "myia-a:CoursIA", prs) == []
+
+    # A root change invalidates the cache even when the list contents match.
+    before = len(extracted)
+    root[0] = "/repo-b"
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]
+    assert len(extracted) == before + len(prs)
 
 
 def test_paths_clause_brace_scope_disjoint_across_claims(capsys):
@@ -5945,7 +6131,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
             "MyIA.AI.Notebooks/Sudoku/SL-5-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-3-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7-test.ipynb",
-            "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre-test.ipynb",
+            "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre-test.ipynb",
             "MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama-test.ipynb",
         ],
     )
@@ -5972,7 +6158,7 @@ def test_lint_12327_run_check_11112_exact_scenario(capsys, monkeypatch):
          "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-7*.ipynb\n",
          "2026-08-22T14:12:00Z"),
         ("[CLAIMED] lane myia-po-2026:CoursIA-2 -- paths: "
-         "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/I2_Contre*.ipynb\n",
+         "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/I2_Contre*.ipynb\n",
          "2026-08-22T14:13:00Z"),
     ]
     events = _events_for(*bodies_and_dates)
@@ -6712,11 +6898,129 @@ def test_18341_pre_fix_code_renders_clear(monkeypatch, tmp_path, capsys):
     # Lecture directe du source, pas d'execution : assert que le mot
     # `my_paths` n'apparait PAS dans la condition de la jambe PR-ouverte.
     src = Path("scripts/check_lane_claim.py").read_text(encoding="utf-8")
-    # La jambe PR-ouverte (apres #18341) lit my_scope, pas my_paths
-    assert "if check_open_pr_paths and my_scope:" in src, \
-        "leg #16570 doit lire my_scope (et non my_paths) apres #18341"
+    # La jambe PR-ouverte (apres #18341) lit le perimetre d'intention
+    # (`--paths` U `paths:` du claim propre), pas `my_paths` seul. Depuis
+    # #25082 ce perimetre porte son nom, `open_pr_scope` : il ecarte la
+    # tranche deja livree et mergee, que `my_scope` garde.
+    assert "if check_open_pr_paths and open_pr_scope:" in src, \
+        "leg #16570 doit lire le perimetre d'intention (et non my_paths) " \
+        "apres #18341"
     assert "if check_open_pr_paths and my_paths:" not in src, \
         "leg #16570 lit my_paths = defaut #18341"
+
+
+# --- #25082 : un perimetre livre et merge n'est pas une intention -------------
+# Defaut mesure le 2026-11-13 sur #20298 (file ICT) : la lane porteuse
+# `myia-po-2024:CoursIA` avait livre le palier 05 (PR #25402 MERGEE, marqueur
+# `[DELIVERED] ... paths:`). Sous la semantique v2, ce marqueur reste son
+# « claim actif » (`locked`), et #18341 fusionnait ses chemins dans le
+# perimetre de la jambe PR-ouverte. Trois PRs ouvertes d'autres lanes touchant
+# des fichiers du palier 05 rendaient alors `BLOCKED` (rc 2) a la lane porteuse
+# sur son palier SUIVANT -- pour lequel elle n'avait rien declare. Le tapis ne
+# lui servait donc plus sa propre consolidation.
+
+_LIVRE = "scripts/notebook_tools/wsl_papermill.py"
+_SUIVANT = "scripts/notebook_tools/check_lean4_wsl_repl.py"
+_PORTEUSE = "myia-po-2024:CoursIA"
+
+
+def _fil_tranche_livree(pr: int = 25402):
+    return payload(
+        comment(f"[CLAIMED] lane {_PORTEUSE} -- paths: {_LIVRE}",
+                "2026-11-08T20:00:00Z"),
+        comment(f"[DELIVERED] lane {_PORTEUSE} -- PR #{pr} (palier 05) "
+                f"-- paths: {_LIVRE}",
+                "2026-11-09T02:22:17Z"),
+        number=20298,
+    )
+
+
+def test_25082_perimetre_livre_et_merge_ne_nourrit_pas_la_jambe_pr_ouverte(
+        monkeypatch, capsys):
+    """CONTROLE POSITIF -- le cas mesure sur #20298.
+
+    Tranche livree, PR MERGEE, et une PR ouverte d'une AUTRE lane qui touche
+    un fichier de cette tranche. L'appelant n'a rien declare pour la suite :
+    la jambe est sans objet, le verdict n'est pas `BLOCKED`.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE])])
+    rc = clc._run_check(_fil_tranche_livree(), _PORTEUSE,
+                        pr_states=_pr_states(25402, "MERGED"),
+                        check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert rc == 0, captured.err
+    assert out["open_pr_collisions"] == []
+    assert out["open_pr_scope"] is None
+    # le perimetre livre reste dans le rapport : les autres lanes le lisent
+    assert out["active_claims"][_PORTEUSE]["locked"] is True
+    assert out["active_claims"][_PORTEUSE]["paths"] == [_LIVRE]
+    # et la lane apprend pourquoi la jambe n'a pas tourne
+    assert "#25082" in captured.err and "PR #25402 MERGEE" in captured.err
+
+
+def test_25082_un_claim_ouvert_nourrit_toujours_la_jambe(monkeypatch, capsys):
+    """CONTROLE NEGATIF -- #18341 reste entier pour un claim OUVERT.
+
+    Meme PR ouverte, meme fichier, mais la lane n'a pas encore livre : son
+    `[CLAIMED] paths:` est une intention, la collision est reelle.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE])])
+    p = payload(comment(f"[CLAIMED] lane {_PORTEUSE} -- paths: {_LIVRE}",
+                        "2026-11-08T20:00:00Z"), number=20298)
+    rc = clc._run_check(p, _PORTEUSE, check_open_pr_paths=True)
+    out = _json_out(capsys.readouterr())
+    assert rc == 2
+    assert [c["number"] for c in out["open_pr_collisions"]] == [26051]
+    assert out["open_pr_scope"] == [_LIVRE]
+
+
+def test_25082_une_livraison_a_pr_ouverte_reste_confrontee(monkeypatch, capsys):
+    """CONTROLE NEGATIF -- tant que la PR de la tranche est OUVERTE, le
+    travail est en vol : le marqueur n'est pas `locked`, son perimetre reste
+    une intention et la jambe le confronte."""
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE])])
+    rc = clc._run_check(_fil_tranche_livree(), _PORTEUSE,
+                        pr_states=_pr_states(25402, "OPEN"),
+                        check_open_pr_paths=True)
+    out = _json_out(capsys.readouterr())
+    assert rc == 2
+    assert out["active_claims"][_PORTEUSE]["locked"] is False
+    assert [c["number"] for c in out["open_pr_collisions"]] == [26051]
+
+
+def test_25082_les_paths_de_l_appel_restent_confrontes(monkeypatch, capsys):
+    """La tranche SUIVANTE, declaree par `--paths`, passe toujours la jambe.
+
+    Deux PRs ouvertes d'autres lanes : l'une touche la tranche livree,
+    l'autre le fichier vise. Seule la seconde est une collision.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE]),
+        _collision_pr(26181, "myia-po-2027:CoursIA", [_SUIVANT]),
+    ])
+    rc = clc._run_check(_fil_tranche_livree(), _PORTEUSE,
+                        pr_states=_pr_states(25402, "MERGED"),
+                        my_paths=[_SUIVANT], check_open_pr_paths=True)
+    out = _json_out(capsys.readouterr())
+    assert rc == 2
+    assert out["open_pr_scope"] == [_SUIVANT]
+    assert [c["number"] for c in out["open_pr_collisions"]] == [26181]
+
+
+def test_25082_perimetre_de_la_jambe_table_de_verite():
+    """`_open_pr_leg_scope` -- les quatre cas, sans transport."""
+    ouvert = clc.ClaimEvent({"paths": [_LIVRE]})
+    livre = clc.ClaimEvent({"paths": [_LIVRE], "locked": True})
+    assert clc._open_pr_leg_scope(None, None) is None
+    assert clc._open_pr_leg_scope([_SUIVANT], None) == [_SUIVANT]
+    assert clc._open_pr_leg_scope(None, ouvert) == [_LIVRE]
+    assert clc._open_pr_leg_scope([_SUIVANT], ouvert) == [_SUIVANT, _LIVRE]
+    assert clc._open_pr_leg_scope(None, livre) is None
+    assert clc._open_pr_leg_scope([_SUIVANT], livre) == [_SUIVANT]
 
 
 # --- #12811 : gh/git émettent de l'UTF-8, l'encodage doit être épinglé --------
@@ -7220,6 +7524,158 @@ def test_implicit_positive_control_14259(monkeypatch, capsys):
     assert data["implicit_occupation"][0]["number"] == 14293
 
 
+def _local_pr_history(tmp_path: Path, *, own_files: int = 0) -> tuple[str, list[str]]:
+    """Build real Git history: stale base, main update, then stacked PR head."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+        ).stdout.strip()
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    (repo / "base.txt").write_text("base\n", encoding="utf-8")
+    git("add", "base.txt")
+    git("commit", "-m", "base")
+    stale = git("rev-parse", "HEAD")
+    git("branch", "stale", stale)
+
+    carried = repo / "inherited"
+    carried.mkdir()
+    for index in range(105):
+        (carried / f"main-{index:03}.txt").write_text("main\n", encoding="utf-8")
+    git("add", "inherited")
+    git("commit", "-m", "main update with more than 100 files")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    git("checkout", "-b", "pr", "stale")
+    git("merge", "--no-edit", "main")
+    # A no-tree-change commit models an open stacked PR whose only changed
+    # paths against its stale base are the files it inherited from main.
+    git("commit", "--allow-empty", "-m", "stacked PR metadata commit")
+    if own_files:
+        own = repo / "owned"
+        own.mkdir()
+        for index in range(own_files):
+            (own / f"pr-{index:03}.txt").write_text("PR work\n", encoding="utf-8")
+        git("add", "owned")
+        git("commit", "-m", "PR work")
+    return git("rev-parse", "HEAD"), [f"owned/pr-{i:03}.txt" for i in range(own_files)]
+
+
+def test_implicit_ignores_only_inherited_main_files_from_real_history(
+        tmp_path, monkeypatch):
+    head, _ = _local_pr_history(tmp_path)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24482, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    against_stale_base = subprocess.run(
+        ["git", "diff", "--name-only", "stale", head], check=True,
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    ).stdout.splitlines()
+    assert len(against_stale_base) == 105
+    assert len(pr["files"]) == 100  # API preview ceiling
+    assert clc._pr_files_against_main(pr) == []
+    assert clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr]) == []
+
+
+def test_implicit_keeps_own_collision_and_processes_more_than_100_paths(
+        tmp_path, monkeypatch):
+    head, own_paths = _local_pr_history(tmp_path, own_files=105)
+    monkeypatch.chdir(tmp_path / "repo")
+    pr = dict(_PR_14293, number=24483, headRefOid=head,
+              files=[{"path": f"inherited/main-{i:03}.txt"} for i in range(100)])
+
+    assert len(pr["files"]) == 100  # le Git local restitue les 105 chemins propres
+    assert set(clc._pr_files_against_main(pr)) == set(own_paths)
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == own_paths
+
+
+@pytest.mark.parametrize("resolution", ["PR merge resolution\n", "left side\n"])
+def test_implicit_keeps_content_introduced_only_by_merge_commit(
+        tmp_path, monkeypatch, resolution):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True,
+            text=True, encoding="utf-8", errors="replace",
+        ).stdout.strip()
+
+    def merge_conflict(branch: str) -> None:
+        proc = subprocess.run(
+            ["git", "merge", "--no-commit", branch], cwd=repo,
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+        )
+        assert proc.returncode == 1, proc.stdout + proc.stderr
+
+    git("init", "-b", "main")
+    git("config", "user.name", "Local test")
+    git("config", "user.email", "test@example.invalid")
+    shared = repo / "shared.txt"
+    shared.write_text("base\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "base")
+    base = git("rev-parse", "HEAD")
+
+    git("checkout", "-b", "right", base)
+    shared.write_text("right side\n", encoding="utf-8")
+    git("commit", "-am", "right side")
+    right = git("rev-parse", "HEAD")
+
+    git("checkout", "main")
+    shared.write_text("left side\n", encoding="utf-8")
+    git("commit", "-am", "left side")
+    left = git("rev-parse", "HEAD")
+    merge_conflict("right")
+    shared.write_text("main resolution\n", encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "main merge resolution")
+    git("update-ref", "refs/remotes/origin/main", "HEAD")
+
+    # Both non-merge parents are already reachable from main. This PR's only
+    # own tree content is its alternative conflict resolution in the merge.
+    git("checkout", "-b", "pr", left)
+    merge_conflict(right)
+    shared.write_text(resolution, encoding="utf-8")
+    git("add", "shared.txt")
+    git("commit", "-m", "PR merge resolution")
+    head = git("rev-parse", "HEAD")
+    monkeypatch.chdir(repo)
+    pr = dict(_PR_14293, number=24484, headRefOid=head,
+              files=[{"path": "shared.txt"}])
+
+    nonmerge_paths = subprocess.run(
+        ["git", "log", "--first-parent", "--no-merges", "--format=",
+         "--name-only", "-z", f"origin/main..{head}", "--"],
+        check=True, capture_output=True,
+    ).stdout
+    assert nonmerge_paths == b""
+    assert clc._pr_files_against_main(pr) == ["shared.txt"]
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["shared.txt"]
+
+
+def test_implicit_provenance_failure_keeps_legacy_occupation():
+    # Impossible SHA: provenance cannot be proved, so inherited-looking API
+    # paths remain a blocker instead of being released on an error.
+    pr = dict(_PR_14293, number=None, headRefOid="0" * 40,
+              files=[{"path": "inherited/main-only.md"}])
+    assert clc._pr_files_against_main(pr) is None
+    findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
+    assert len(findings) == 1
+    assert findings[0]["files"] == ["inherited/main-only.md"]
+
+
 def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     # Faux negatif de reference : une PR ouverte d'une autre lane qui ne
     # reference PAS l'issue ne doit PAS declencher IMPLICIT.
@@ -7332,6 +7788,165 @@ def test_implicit_multiple_prs_all_named(monkeypatch, capsys):
     brace = captured.out.find("{")
     data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
     assert [e["number"] for e in data["implicit_occupation"]] == [14293, 14301]
+
+
+# --- #24788 : « mentionner » n'est pas « travailler sur » --------------------
+#
+# La jambe IMPLICIT (#14300) correspond TEXTUELLEMENT sur le corps entier :
+# tout numero cite occupait l'issue. Une PR qui ENUMERE des numeros -- la
+# liste des issues ecartees du tapis, livrable legitime pour l'urne de
+# l'adjoint -- declarait donc occupees toutes les issues listees. Mesure du
+# 2026-11-05 sur le corps de #24482 : 172 numeros cites, 162 ouverts, soit
+# 27 % des issues ouvertes du depot declarees occupees par une PR qui n'y
+# travaille pas.
+#
+# Remede retenu = les DEUX formes que l'issue dit combinables, appliquees a
+# des populations de corps differentes : sous le seuil, predicat INCHANGE
+# (#14300 preserve sans cout) ; au-dessus, seules les references fortes
+# occupent. Les trois premiers tests sont le rejeu de l'instance, les deux
+# suivants sont la non-regression et la frontiere.
+
+def _enum_body(*numbers, trailer=""):
+    """Corps ENUMERATIF au gabarit de #24482 : une liste d'issues ecartees."""
+    lines = ["Grain: MED/tooling — lane myia-ai-01:CoursIA-2 — prev: LIGHT/docs #1",
+             "",
+             "## La liste, issue par issue (pour l'urne de l'adjoint)",
+             "",
+             "Ecartees pour livraison entiere :",
+             ""]
+    lines += [f"- #{n} -- ecartee, deja livree sur main" for n in numbers]
+    return "\n".join(lines) + ("\n\n" + trailer if trailer else "")
+
+
+_ENUM_NUMBERS = (23495,) + tuple(range(30001, 30015))  # 16 numeros, > seuil
+
+
+def test_implicit_enumeration_body_stops_occupying(monkeypatch, capsys):
+    # REJEU de l'instance #24788 : le corps de #24482 cite #23495 dans une
+    # liste, sans aucun verbe de livraison ni marqueur. Avant : IMPLICIT a
+    # exit 3. Attendu : CLEAR a exit 0, le grain est libre.
+    pr = dict(_PR_14293, number=24482, body=_enum_body(*_ENUM_NUMBERS))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    p = payload(number=23495)
+    rc = clc._run_check(p, "myia-po-2023:CoursIA-2", check_open_pr_paths=True)
+    assert rc == 0
+    captured = capsys.readouterr()
+    assert "IMPLICIT" not in captured.out
+    assert "CLEAR" in captured.out
+
+
+def test_implicit_enumeration_keeps_a_delivery_verb(monkeypatch, capsys):
+    # Forme 1 DANS une enumeration : le corps liste 16 issues ET ferme
+    # #23495. Une PR qui ferme une issue travaille dessus -- l'occupation
+    # est retenue, et le verdict dit pourquoi (corps enumeratif).
+    pr = dict(_PR_14293, number=24482,
+              body=_enum_body(*_ENUM_NUMBERS, trailer="Closes #23495"))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    rc = clc._run_check(payload(number=23495), "myia-po-2023:CoursIA-2",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "#24482" in captured.out
+    assert "corps enumeratif" in captured.out
+
+
+def test_implicit_enumeration_keeps_a_marker_line(monkeypatch, capsys):
+    # Forme 1, seconde branche : un marqueur de lane sur la MEME ligne que le
+    # numero affirme l'occupation, meme au milieu d'une liste.
+    pr = dict(_PR_14293, number=24482,
+              body=_enum_body(*_ENUM_NUMBERS,
+                              trailer="[DELIVERED] lane myia-ai-01:CoursIA-2 "
+                                      "-- PR #24490 traite #23495"))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    rc = clc._run_check(payload(number=23495), "myia-po-2023:CoursIA-2",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    assert "IMPLICIT" in capsys.readouterr().out
+
+
+def test_implicit_ordinary_body_keeps_the_lenient_mention(monkeypatch, capsys):
+    # NON-REGRESSION #14300, la contrainte que l'issue pose en toutes lettres :
+    # un corps ORDINAIRE (peu de numeros) garde le predicat d'origine. Une PR
+    # qui cite l'issue par `See #N` -- sans la fermer -- continue de la
+    # proteger. C'est ce que la forme 1 appliquee PARTOUT aurait casse.
+    pr = dict(_PR_14293, number=24482,
+              body=("Grain: x — lane myia-ai-01:CoursIA-2 — prev: x #1\n\n"
+                    "See #23495 et #23496"))
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [pr])
+    rc = clc._run_check(payload(number=23495), "myia-po-2023:CoursIA-2",
+                        check_open_pr_paths=True)
+    assert rc == 3
+    captured = capsys.readouterr()
+    assert "IMPLICIT" in captured.out
+    assert "corps enumeratif" not in captured.out
+
+
+def test_occupying_numbers_threshold_is_inclusive_and_pinned():
+    # La frontiere se lit sur la fonction, pas sur un corps de PR : exactement
+    # `seuil` numeros = corps ordinaire (tous occupent) ; un de plus = corps
+    # enumeratif (aucune reference forte, donc plus rien n'occupe).
+    ordinary = " ".join(f"#{n}" for n in range(100, 110))          # 10 numeros
+    over = ordinary + " #110"                                       # 11 numeros
+    assert clc._occupying_issue_numbers(ordinary, 10) == set(range(100, 110))
+    assert clc._occupying_issue_numbers(over, 10) == set()
+
+
+def test_occupying_numbers_strong_forms_only():
+    # Un `See #N` isole, un `Part of #N` et une enumeration nue restent des
+    # mentions ; le verbe de livraison et le marqueur de ligne occupent.
+    over = " ".join(f"#{n}" for n in range(100, 111))     # 11 numeros
+    assert clc._occupying_issue_numbers(over + "\nSee #200", 10) == set()
+    assert clc._occupying_issue_numbers(over + "\nRefs #200", 10) == set()
+    assert clc._occupying_issue_numbers(over + "\nPart of #200", 10) == set()
+    assert clc._occupying_issue_numbers(over + "\nFixes #200", 10) == {200}
+    assert clc._occupying_issue_numbers(over + "\nResolved #200", 10) == {200}
+    assert clc._occupying_issue_numbers(
+        over + "\n[CLAIMED] lane a:b -- paths: x/** sur #201", 10) == {201}
+
+
+def test_enumeration_threshold_residual_cost_is_pinned():
+    # Cout RESIDUEL du seuil, mesure sur une instance vivante (review Hermes du
+    # 2026-11-08 sur #24788, PR #25002 de la lane myia-ai-01:CoursIA-2).
+    #
+    # #25002 ne travaille qu'UNE issue (#24989) mais cite 20 numeros dans un
+    # tableau de mesure ; sa seule declaration de perimetre est un `See #24989`
+    # final. Sous le seuil elle occupait #24989, au-dessus elle ne l'occupe
+    # plus : c'est exactement le prix que #24788 decrit pour la forme « 1 seule
+    # reference », et il tombe sur le cas que #14300 existe pour attraper.
+    #
+    # Ce test PIN le cout plutot que de le laisser se decouvrir au hasard. Il
+    # n'exige pas la correction : passer `See` isole en reference forte est un
+    # arbitrage de #24788 (un `See #N` sert aussi de simple renvoi croise, et
+    # l'elargir rendrait la jambe sensible aux mentions). Si la semantique
+    # change, ce test tombe et le changement est vu.
+    table = "\n".join(f"| #{n} | mesure |" for n in range(300, 319))   # 19
+    body = "| PR | constat |\n|---|---|\n" + table + "\n\nSee #24989\n"  # 19+1 = 20
+    assert len(clc._referenced_issue_numbers(body)) == 20
+    assert clc._occupying_issue_numbers(body, 10) == set()
+    # Le predicat de base, lui, la voit toujours : les deux lecteurs de
+    # « reference » coexistent, ils ne repondent pas a la meme question.
+    assert clc._pr_body_references_issue(body, 24989) is True
+
+
+def test_enum_threshold_env_falls_back_on_garbage(monkeypatch):
+    # Un seuil de mesure ne change pas de verdict par accident de transport :
+    # une valeur illisible retombe sur le defaut, elle ne vaut pas 0.
+    monkeypatch.setenv("CHECK_LANE_CLAIM_ENUM_THRESHOLD", "pas-un-entier")
+    assert clc._enumeration_threshold() == clc._ENUM_DISTINCT_ISSUES_DEFAULT
+    monkeypatch.setenv("CHECK_LANE_CLAIM_ENUM_THRESHOLD", "0")
+    assert clc._enumeration_threshold() == clc._ENUM_DISTINCT_ISSUES_DEFAULT
+    monkeypatch.setenv("CHECK_LANE_CLAIM_ENUM_THRESHOLD", "3")
+    assert clc._enumeration_threshold() == 3
+
+
+def test_index_memo_is_keyed_by_threshold():
+    # L'index est memoise par (liste, seuil) : un index calcule sous un seuil
+    # ne se sert pas sous un autre, sinon le remede dependrait de l'ordre des
+    # appels dans le processus.
+    prs = [{"number": 1, "body": _enum_body(*_ENUM_NUMBERS)}]
+    assert clc._open_prs_by_referenced_issue(prs, 10).get(23495) is None
+    assert clc._open_prs_by_referenced_issue(prs, 100).get(23495) == [prs[0]]
+    assert clc._open_prs_by_referenced_issue(prs, 10).get(23495) is None
 
 
 # --- #19971 : payload JSON comme corps -- lecture defensive du transport ------
@@ -7626,7 +8241,7 @@ def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
     `test_open_prs_legacy_bare_list_cache_is_not_trusted`).
     """
     cached_prs = [{"number": 1, "title": "cached", "body": "",
-                   "headRefName": "x", "files": []}]
+                   "headRefName": "x", "files": [], "renames": []}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": "open-prs-v2",
@@ -7801,9 +8416,18 @@ def _graphql_page(nodes, has_next=False, cursor=None):
     }}}}
 
 
-def _graphql_node(number, files=(), total=None, title=None):
-    """Un noeud PR de la page GraphQL ; `total` simule le plafond a 100."""
-    paths = [{"path": p} for p in files]
+def _graphql_node(number, files=(), total=None, title=None, renamed=()):
+    """Un noeud PR de la page GraphQL ; `total` simule le plafond a 100.
+
+    `renamed` liste les chemins marques `changeType == "RENAMED"` (#25910) :
+    c'est le seul signal GraphQL d'un renommage -- l'ancien chemin, lui,
+    n'existe que cote REST (`previous_filename`).
+    """
+    renamed = set(renamed)
+    paths = [
+        {"path": p, "changeType": "RENAMED" if p in renamed else "MODIFIED"}
+        for p in files
+    ]
     return {
         "number": number,
         "title": title or f"PR {number}",
@@ -7867,7 +8491,7 @@ def test_open_prs_complete_refetches_overflowing_files(monkeypatch,
 
     def fake_rest(owner, name, number, expected):
         seen.append((owner, name, number, expected))
-        return first_hundred + [f"f/{i}.py" for i in range(100, 150)]
+        return (first_hundred + [f"f/{i}.py" for i in range(100, 150)], [])
 
     monkeypatch.setattr(clc, "_gh_pr_files_rest", fake_rest)
     prs = clc._gh_open_prs_complete()
@@ -7877,6 +8501,136 @@ def test_open_prs_complete_refetches_overflowing_files(monkeypatch,
     assert len(paths) == 150
     # La queue au-dela des 100 premiers chemins est bien presente.
     assert paths[-1] == "f/149.py"
+
+
+# --- #25910 -- un renommage pur ne doit jamais liberer l'ancien chemin ----
+#
+# Mesure (#25910) : l'index des fichiers d'une PR ouverte ne portait que le
+# nom NOUVEAU. Sur un renommage pur, l'ancien chemin paraissait donc
+# LIBRE alors qu'une PR ouverte d'une autre lane le renommait -- la
+# collision de fichiers passait inapercue (deux lanes editant le meme
+# carnet sous deux noms differents, puis un conflit muet a la fusion).
+#
+# Le remede : `changeType == "RENAMED"` (seul signal GraphQL d'un
+# renommage) declenche une seconde passe REST, ou l'ancien chemin
+# (`previous_filename`, absent du schema GraphQL) rejoint l'index des
+# chemins occupes. L'ensemble des chemins occupes s'ELARGIT : il ne se
+# restreint jamais (fail-CLOSED).
+
+
+def test_open_prs_complete_indexes_renamed_previous_paths(monkeypatch,
+                                                          _isolated_open_prs):
+    """#25910 -- l'ancien chemin d'un renommage rejoint l'index des chemins.
+
+    Le chemin nouveau ne disparait pas (l'index porte les DEUX noms) : une
+    PR qui renomme occupe l'ancien ET le nouveau chemin.
+    """
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    monkeypatch.setattr(clc, "_gh_graphql", lambda q, v=None: _graphql_page(
+        [_graphql_node(
+            25612,
+            files=["carnets/App-03-NurseScheduling-Python.ipynb",
+                   "carnets/App-05-Timetabling-CSharp.ipynb"],
+            renamed=["carnets/App-03-NurseScheduling-Python.ipynb"],
+        )]))
+
+    seen = []
+
+    def fake_rest(owner, name, number, expected):
+        seen.append((owner, name, number, expected))
+        return (
+            ["carnets/App-03-NurseScheduling-Python.ipynb",
+             "carnets/App-05-Timetabling-CSharp.ipynb"],
+            ["carnets/App-3-NurseScheduling.ipynb"],
+        )
+
+    monkeypatch.setattr(clc, "_gh_pr_files_rest", fake_rest)
+    prs = clc._gh_open_prs_complete()
+    # La PR porteuse d'un renommage est relise en REST, avec son total.
+    assert seen == [("jsboige", "CoursIA", 25612, 2)]
+    paths = [f["path"] for f in prs[0]["files"]]
+    assert "carnets/App-3-NurseScheduling.ipynb" in paths
+    assert "carnets/App-03-NurseScheduling-Python.ipynb" in paths
+    assert prs[0]["renames"] == ["carnets/App-3-NurseScheduling.ipynb"]
+
+
+def test_open_prs_complete_skips_rest_for_pr_without_rename(monkeypatch,
+                                                            _isolated_open_prs):
+    """#25910 -- une PR SANS renommage ne coute aucune passe REST.
+
+    La seconde passe est bornee aux PRs qui portent un renommage (et a
+    celles dont la liste de fichiers est plafonnee) : le cout de
+    l'enumeration reste celui d'avant.
+    """
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    monkeypatch.setattr(clc, "_gh_graphql", lambda q, v=None: _graphql_page(
+        [_graphql_node(1, files=["carnets/App-05-Timetabling-CSharp.ipynb"])]))
+
+    def boom(*args, **kwargs):
+        raise AssertionError("aucune passe REST attendue")
+
+    monkeypatch.setattr(clc, "_gh_pr_files_rest", boom)
+    prs = clc._gh_open_prs_complete()
+    assert [f["path"] for f in prs[0]["files"]] == [
+        "carnets/App-05-Timetabling-CSharp.ipynb"]
+    assert prs[0]["renames"] == []
+
+
+def test_renamed_previous_path_is_reported_as_collision():
+    """#25910 -- criteres d'acceptation 1 et 2 : l'ANCIEN chemin d'un
+    renommage bloque sur la PR qui renomme, et le chemin NOUVEAU reste
+    bloque (non-regression de l'existant).
+
+    C'est le coeur du defaut : avant, l'ancien chemin etait rapporte
+    LIBRE, ce qui laissait deux lanes editer le meme carnet sous deux
+    noms differents.
+    """
+    old = ("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
+           "App-3-NurseScheduling.ipynb")
+    new = ("MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/"
+           "App-03-NurseScheduling-Python.ipynb")
+    prs = [{
+        "number": 25612,
+        "title": "renommage de carnets",
+        "headRefName": "b25612",
+        "body": "Grain: DEEP/notebook-python -- lane myia-po-2023:CoursIA",
+        "files": [{"path": new}, {"path": old}],
+        "renames": [old],
+    }]
+    collisions, self_overlap = clc._compute_open_pr_collisions(
+        [old], "myia-po-2027:CoursIA-2", prs=prs)
+    assert [c.number for c in collisions] == [25612]
+    assert old in collisions[0].files
+    assert not self_overlap
+    # Le chemin nouveau reste bloque (l'existant ne regresse pas).
+    collisions_new, _ = clc._compute_open_pr_collisions(
+        [new], "myia-po-2027:CoursIA-2", prs=prs)
+    assert [c.number for c in collisions_new] == [25612]
+
+
+def test_open_prs_cache_without_renames_index_is_not_trusted(monkeypatch,
+                                                             tmp_path):
+    """#25910 -- un cache ecrit par une version anterieure (sans la cle
+    `renames`) n'est PAS une preuve : le lire rapporterait LIBRE un chemin
+    qu'une PR ouverte renomme. Il est traite comme absent -- le fetch
+    complet s'execute et REECRIT le cache au format courant."""
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps({
+        "format": "open-prs-v2", "complete": True, "count": 1,
+        "prs": [{"number": 1, "title": "ancien-cache", "headRefName": "b",
+                 "body": "", "files": [{"path": "a/b.ipynb"}]}],
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+    fresh = [{"number": 2, "title": "fetch-complet", "headRefName": "b",
+              "body": "", "files": [], "renames": []}]
+    monkeypatch.setattr(clc, "_gh_open_prs_complete", lambda: list(fresh))
+
+    prs = clc._gh_open_prs_with_files()
+    assert prs == fresh
+    written = json.loads(cache.read_text(encoding="utf-8"))
+    assert written["prs"] == fresh
 
 
 def test_open_prs_complete_raises_on_refetch_count_mismatch(monkeypatch,
@@ -7980,7 +8734,8 @@ def test_open_prs_legacy_bare_list_cache_is_not_trusted(monkeypatch, tmp_path,
                      encoding="utf-8")
     monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
     complete = [{"number": 2, "title": "from-complete-fetch",
-                 "headRefName": "b", "body": "", "files": []}]
+                 "headRefName": "b", "body": "", "files": [],
+                 "renames": []}]
     monkeypatch.setattr(clc, "_gh_open_prs_complete", lambda: list(complete))
 
     prs = clc._gh_open_prs_with_files()
@@ -7999,7 +8754,7 @@ def test_open_prs_v2_complete_cache_is_trusted(monkeypatch, tmp_path,
     servi sans aucun appel `gh` (c'est l'economie de session de #19643,
     conservee)."""
     cached = [{"number": 5, "title": "cached-v2", "headRefName": "b",
-               "body": "", "files": []}]
+               "body": "", "files": [], "renames": []}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": "open-prs-v2", "complete": True,
@@ -8461,3 +9216,8 @@ def test_backticked_scope_is_not_read_as_epic_wide():
     assert clc._empty_scope_in(ev.paths, tracked) == [], \
         "la portee normalisee n'est pas morte"
     assert not clc._claim_scope_effectively_epic_wide(ev)
+
+
+def test_lane_reference_index_deduplicates_repeated_issue():
+    prs = [{"number": 9, "body": "[CLAIMED] lane myia-a:CoursIA -- #45\nVoir #45"}]
+    assert clc._lane_open_prs_referencing(45, "myia-a:CoursIA", prs) == [9]

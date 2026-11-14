@@ -14,7 +14,7 @@ Les séries vivent sous `MyIA.AI.Notebooks/Probas/`. Le chemin est celui de l'ar
 | **PyMC** — corpus bayésien Python | [`Probas/PyMC/`](../../MyIA.AI.Notebooks/Probas/PyMC/README.md) | Python + PyMC v5 (échantillonnage MCMC / NUTS), ArviZ | miroir Python du corpus Infer sur les mêmes thèmes, plus l'observabilité OpenTelemetry |
 | **DecisionTheory** — décision sous incertitude | [`Probas/DecisionTheory/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/README.md) | DecInfer (C#) · DecPyMC (Python) · Causal-Bridges (Python, DoWhy) · Actuariat · `voi/` (comparateur Infer.NET ↔ PyMC) | utilité espérée, utilité de l'argent, multi-attribut, réseaux de décision, valeur de l'information, systèmes experts, décisions séquentielles / MDP / bandits / Thompson sampling ; actuariat (prime pure, fréquence-sévérité hiérarchique, crédibilité, ruine de Lundberg, valeur d'information) ; inférence causale (calcul *do*, contrefactuels, découverte de structure, analyse de sensibilité, variables instrumentales, quasi-expérimental, équité causale) |
 | **Applications** — modèles autonomes | [`Probas/Applications/`](../../MyIA.AI.Notebooks/Probas/Applications/README.md) | Pyro, Python, Lean 4 | modélisation cognitive bayésienne (RSA / Hyperbole), quotients-fibres-recollement, percolation (Supercritique + lake Lean) |
-| **Lakes Lean 4** | [`DecisionTheory/decision_theory_lean/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.md) et [`Applications/Percolation/percolation_lean/`](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/) | Lean 4 (Mathlib) | cohérence et utilité espérée (DecInfer-02, -02b), théorème de Gittins (DecInfer-08b), percolation (Basic, Boundary, Components, Connectivity) |
+| **Lakes Lean 4** | [`DecisionTheory/decision_theory_lean/`](../../MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean/README.md) et [`Applications/Percolation/percolation_lean/`](../../MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/) | Lean 4 (Mathlib) | cohérence et utilité espérée (DecInfer-01b, -02b), théorème de Gittins (DecInfer-07b), percolation (Basic, Boundary, Components, Connectivity) |
 
 Deux inventaires transverses vivent dans la série : [`Probas/LEAN_INVENTORY.md`](../../MyIA.AI.Notebooks/Probas/LEAN_INVENTORY.md) (projets Lean 4, comptes `sorry` tenus par la CI) et [`Probas/PARITY-INVENTORY.md`](../../MyIA.AI.Notebooks/Probas/PARITY-INVENTORY.md) (parité Infer ⇄ PyMC, tranche de l'EPIC #12933).
 
@@ -31,10 +31,10 @@ Un consommateur cross-série mérite d'être signalé : `ML/ML.Net/TP-Prevision-
 
 | Sous-série | Noyau | Version | Commande d'environnement |
 |---|---|---|---|
-| Infer / Infer-*  (C#/.NET) | .NET Interactive | .NET 9.0 + `Microsoft.SemanticKernel` optionnel | `dotnet tool install --global Microsoft.dotnet-interactive` |
+| Infer / Infer-*  (C#/.NET) | .NET Interactive | .NET 9.0 + `Microsoft.SemanticKernel` optionnel | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` |
 | PyMC / DecPyMC  | Python 3.12+ | PyMC v5+, ArviZ, NumPyro en option | kernel `python3` (conda env dédié) |
 | DecInfer / CSharp kernels | .NET Interactive | .NET 9.0 | même que Infer |
-| Lean 4 kernels (DecInfer-02, -09) | Lean 4 via WSL | `leanprover/lean4:stable` (résolution actuelle : v4.34.1 — voir [#18511](../../issues/18511) pour l'écart toolchain) | `wsl` + `elan toolchain install stable` |
+| Lean 4 kernels (DecInfer-01b, -09) | Lean 4 via WSL | `leanprover/lean4:stable` (résolution actuelle : v4.34.1 — voir [#18511](../../issues/18511) pour l'écart toolchain) | `wsl` + `elan toolchain install stable` |
 | Pont causal (`Causal-Bridges/`) | Python + ML-Training | Python 3.12+ + `dowhy`, `causal-learn` | kernel `coursia-ml-training` |
 
 Inventaire cluster complet, versions des kernels et commandes de réparation : [`docs/reference/kernels-runtime.md`](../reference/kernels-runtime.md). Volumes et maturité de la série : voir le marqueur `CATALOG-STATUS` dans `MyIA.AI.Notebooks/Probas/README.md` (autoritatif, régénéré chaque nuit par `catalog-cron.yml` à 03:37 UTC). Ce README documente l'**organisation thématique et les références** ; il ne duplique pas les compteurs que le catalogue tient à jour.
@@ -57,7 +57,7 @@ Inventaire cluster complet, versions des kernels et commandes de réparation : [
 | **Change-point / détection de rupture** | Infer-18, PyMC-18 | PyMC, Bayesian online change-point |
 | **Survie** | Infer-19, PyMC-19 | `lifelines`, PyMC |
 | **Recommanders** | Infer-15, PyMC-15 | PyMC, hiérarchique latent |
-| **Décision sous incertitude** (utilité, EVPI, MDP, bandits) | DecInfer-01..10 | Infer.NET, lake Lean `decision_theory_lean` (DecInfer-02, -09) |
+| **Décision sous incertitude** (utilité, EVPI, MDP, bandits) | DecInfer-01..10 | Infer.NET, lake Lean `decision_theory_lean` (DecInfer-01b, -09) |
 | **Crowdsourcing** | Infer-13, PyMC-13 | PyMC, modèles d'annotations bruitées |
 
 ## Pièges connus
@@ -66,7 +66,7 @@ Inventaire cluster complet, versions des kernels et commandes de réparation : [
 |---|---|
 | API PyMC bouge à chaque release mineure — un mapping non re-vérifié est *poison* | `probas-history.md` (cf. table d'API ligne-à-ligne marquée périssable) |
 | Le kernel `lean4` sur ai-01 a un écart toolchain (repl compilé v4.30.0, toolchain résout stable=v4.34.1) — sortie en erreur de parse sous `exit 0` | issue #18511, réparation voie A en suivi |
-| Carnet DecInfer-07, sortie d'exécution 34 : cwd Papermill vs dossier d'écriture `.gv` Infer.NET (sortie dégradée bannière HTML au lieu de SVG) | issue #18672, suivi de #18417 |
+| Carnet DecInfer-06, sortie d'exécution 34 : cwd Papermill vs dossier d'écriture `.gv` Infer.NET (sortie dégradée bannière HTML au lieu de SVG) | issue #18672, suivi de #18417 |
 
 ## Recherche et audits
 

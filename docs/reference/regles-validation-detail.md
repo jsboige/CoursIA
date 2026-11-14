@@ -1,5 +1,7 @@
 # Règles validation H.1-H.7 — pas de complaisance sur notebooks (detail)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Résumé opérationnel : CLAUDE.md section H.
 
 S'applique a TOUS les agents (exécutants, coordinateur, reviewers humains, bots). Aucune dérogation.

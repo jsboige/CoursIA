@@ -1,0 +1,449 @@
+{
+  "schema_version": 1,
+  "series": "Compression",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+    "MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+    "MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb",
+    "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+    "MyIA.AI.Notebooks/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+    "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb",
+    "MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb"
+  ],
+  "concepts": [
+    {
+      "id": "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+      "path": "compression/codes-prefixes",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Codes préfixes",
+      "label_en": "Prefix codes",
+      "definition_fr": "Codes binaires où aucun mot de code n'est le préfixe d'un autre, ce qui permet un décodage sans séparateur.",
+      "definition_en": "Binary codes in which no codeword is a prefix of another, allowing decoding without separators.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "6e98be9a"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "491fa9bc-13d7-4e31-b369-8696a5170786",
+      "path": "compression/codes-prefixes/kraft",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Inégalité de Kraft",
+      "label_en": "Kraft inequality",
+      "definition_fr": "Critère nécessaire et suffisant pour qu'un ensemble de longueurs de mots binaires soit réalisable par un code préfixe.",
+      "definition_en": "A necessary and sufficient condition for a set of binary codeword lengths to be realizable by a prefix code.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "a5be33fe"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1"
+      ]
+    },
+    {
+      "id": "be5e58c4-a73d-4c97-b075-e4c7a6d75a50",
+      "path": "compression/codes-prefixes/shannon-fano",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Codage de Shannon-Fano",
+      "label_en": "Shannon-Fano coding",
+      "definition_fr": "Construction descendante qui répartit récursivement les symboles en groupes de masses proches.",
+      "definition_en": "A top-down construction that recursively splits symbols into groups with similar probability mass.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "485c3452"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1"
+      ]
+    },
+    {
+      "id": "79a69cbd-3b2d-4695-90df-d825a407489d",
+      "path": "compression/codes-prefixes/huffman",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Codage de Huffman",
+      "label_en": "Huffman coding",
+      "definition_fr": "Construction ascendante qui fusionne les deux masses les plus faibles pour obtenir un code préfixe de longueur moyenne minimale.",
+      "definition_en": "A bottom-up construction that repeatedly merges the two lowest weights to obtain a prefix code with minimum average length.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "6b215306"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "491fa9bc-13d7-4e31-b369-8696a5170786"
+      ]
+    },
+    {
+      "id": "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+      "path": "compression/codes-prefixes/entropie",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Entropie de Shannon et longueur moyenne",
+      "label_en": "Shannon entropy and average code length",
+      "definition_fr": "L'entropie borne inférieurement la longueur moyenne d'un code préfixe ; Huffman reste à moins d'un bit de cette borne.",
+      "definition_en": "Entropy lower-bounds the average length of a prefix code; Huffman stays within one bit of this bound.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+          "cell_id": "ac0388d4"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1"
+      ]
+    },
+    {
+      "id": "8498b0e2-81d9-408f-8088-1d042b61490a",
+      "path": "compression/huffman-canonique",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Huffman canonique",
+      "label_en": "Canonical Huffman coding",
+      "definition_fr": "Forme déterministe d'un code de Huffman reconstruite à partir des seules longueurs de code.",
+      "definition_en": "A deterministic form of a Huffman code reconstructed from codeword lengths alone.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_canonique"
+        }
+      ],
+      "prerequisites": [
+        "79a69cbd-3b2d-4695-90df-d825a407489d"
+      ]
+    },
+    {
+      "id": "b36b8fab-b230-4bc4-9a78-106c1d507ac5",
+      "path": "compression/huffman-canonique/table-de-decodage",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "Décodage de Huffman par table",
+      "label_en": "Table-based Huffman decoding",
+      "definition_fr": "Décodage par indexation d'une table pré-calculée plutôt que par parcours de l'arbre symbole par symbole.",
+      "definition_en": "Decoding through a precomputed lookup table instead of traversing a tree one symbol at a time.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+          "cell_id": "sec_table"
+        }
+      ],
+      "prerequisites": [
+        "8498b0e2-81d9-408f-8088-1d042b61490a"
+      ]
+    },
+    {
+      "id": "40304728-50d8-424e-8bc2-25b38fb3d51d",
+      "path": "compression/lz77",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "LZ77 et fenêtre glissante",
+      "label_en": "LZ77 and sliding window",
+      "definition_fr": "Compression par références qui remplacent les répétitions par des couples de décalage et longueur dans les données déjà produites.",
+      "definition_en": "Reference-based compression that replaces repeated sequences with offset and length pairs pointing into previously produced data.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "c4bd9fe3"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb",
+          "cell_id": "54e7a29a"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f"
+      ]
+    },
+    {
+      "id": "037d04c5-8718-4e40-9ec7-719b20ad7542",
+      "path": "compression/ans",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Asymmetric Numeral Systems",
+      "label_en": "Asymmetric Numeral Systems",
+      "definition_fr": "Codage entropique à état arithmétique qui permet de partager les bits fractionnaires entre symboles.",
+      "definition_en": "Entropy coding with an arithmetic state that lets fractional bits be shared across symbols.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "c9f84e2a"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "b9ec4bd5"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+        "8498b0e2-81d9-408f-8088-1d042b61490a",
+        "40304728-50d8-424e-8bc2-25b38fb3d51d"
+      ]
+    },
+    {
+      "id": "955154c4-1265-48bd-829e-5587c12f60ae",
+      "path": "compression/ans/rans",
+      "decimal_path": "4.1",
+      "depth": 1,
+      "label_fr": "rANS en blocs",
+      "label_en": "Block rANS",
+      "definition_fr": "Variante ANS qui code les symboles dans un état entier et borne l'état pour produire un flux par blocs.",
+      "definition_en": "An ANS variant that codes symbols in an integer state and bounds the state to stream in blocks.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "b9ec4bd5"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "40bddafa"
+        }
+      ],
+      "prerequisites": [
+        "037d04c5-8718-4e40-9ec7-719b20ad7542"
+      ]
+    },
+    {
+      "id": "f2ca3aa7-9a97-4d45-b8a2-e0163e38a6a2",
+      "path": "compression/ans/tans",
+      "decimal_path": "4.2",
+      "depth": 1,
+      "label_fr": "tANS",
+      "label_en": "tANS",
+      "definition_fr": "Variante tabulée qui représente l'état rANS par une table finie de puissances de deux.",
+      "definition_en": "A table-based variant that represents the rANS state with a finite table of power-of-two size.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+          "cell_id": "42d90e6d"
+        }
+      ],
+      "prerequisites": [
+        "037d04c5-8718-4e40-9ec7-719b20ad7542"
+      ]
+    },
+    {
+      "id": "f802bf60-6304-4582-b8e3-1125a5aaf13a",
+      "path": "compression/ans/choix-de-codec",
+      "decimal_path": "4.3",
+      "depth": 1,
+      "label_fr": "Comparer des codecs par leur front de Pareto",
+      "label_en": "Comparing codecs with a Pareto frontier",
+      "definition_fr": "Évaluation conjointe du taux de compression et de la vitesse, dont le classement dépend du corpus et du niveau choisi.",
+      "definition_en": "Joint evaluation of compression ratio and speed, where ranking depends on the corpus and selected level.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b016"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+          "cell_id": "c04b013"
+        }
+      ],
+      "prerequisites": [
+        "40304728-50d8-424e-8bc2-25b38fb3d51d",
+        "037d04c5-8718-4e40-9ec7-719b20ad7542"
+      ]
+    },
+    {
+      "id": "b4b3dc36-c0d9-4a3c-909c-700fb295252e",
+      "path": "compression/modeles-neuronaux",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Compression des modèles neuronaux",
+      "label_en": "Neural network model compression",
+      "definition_fr": "Réduction de la taille d'un modèle entraîné en mesurant le compromis avec son exactitude.",
+      "definition_en": "Reducing the size of a trained model while measuring the trade-off with its accuracy.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "bbce893d"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "999da768-3977-4480-88d7-f6ab4ec8fdaa",
+      "path": "compression/modeles-neuronaux/quantification",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "Quantification des poids",
+      "label_en": "Weight quantization",
+      "definition_fr": "Réduction du nombre de bits utilisés pour représenter les poids, notamment par FP16 ou INT8.",
+      "definition_en": "Reducing the number of bits used to represent weights, for example with FP16 or INT8.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "aaed74aa"
+        }
+      ],
+      "prerequisites": [
+        "b4b3dc36-c0d9-4a3c-909c-700fb295252e"
+      ]
+    },
+    {
+      "id": "1fe562b1-b092-47db-9f34-3f53545dbb5c",
+      "path": "compression/modeles-neuronaux/elagage",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Élagage des poids",
+      "label_en": "Weight pruning",
+      "definition_fr": "Mise à zéro des poids jugés faibles, suivie de mesures du coût en exactitude et des possibilités de codage de la sparsité.",
+      "definition_en": "Zeroing low-magnitude weights, then measuring accuracy cost and the coding opportunities provided by sparsity.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "90b54ec2"
+        }
+      ],
+      "prerequisites": [
+        "b4b3dc36-c0d9-4a3c-909c-700fb295252e"
+      ]
+    },
+    {
+      "id": "9a60112c-01da-44a3-87cb-3fb824cc0942",
+      "path": "compression/modeles-neuronaux/distillation",
+      "decimal_path": "5.3",
+      "depth": 1,
+      "label_fr": "Distillation",
+      "label_en": "Knowledge distillation",
+      "definition_fr": "Entraînement d'un modèle élève plus petit à imiter les sorties adoucies d'un modèle maître.",
+      "definition_en": "Training a smaller student model to imitate the softened outputs of a teacher model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb",
+          "cell_id": "7c587764"
+        }
+      ],
+      "prerequisites": [
+        "b4b3dc36-c0d9-4a3c-909c-700fb295252e"
+      ]
+    },
+    {
+      "id": "4e9e363c-b184-4c88-bc6e-0474a62f3e2e",
+      "path": "compression/mdl",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Principe MDL",
+      "label_en": "Minimum Description Length principle",
+      "definition_fr": "Choix d'un modèle en minimisant la somme de son coût de description et du coût d'encodage des données sous ce modèle.",
+      "definition_en": "Model selection by minimizing the sum of the model description cost and the cost of encoding data under that model.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_03"
+        }
+      ],
+      "prerequisites": [
+        "2be8d188-2b9c-4dcc-a42d-cfdf567f84e1",
+        "a8cbe3ac-041a-4c34-a1e2-0c11f70e838f",
+        "8498b0e2-81d9-408f-8088-1d042b61490a"
+      ]
+    },
+    {
+      "id": "4eb0370b-d370-45db-aee0-7fd083012bad",
+      "path": "compression/mdl/complexite-de-kolmogorov",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Complexité de Kolmogorov",
+      "label_en": "Kolmogorov complexity",
+      "definition_fr": "Longueur du plus court programme qui produit une chaîne ; cette quantité n'est pas calculable en général.",
+      "definition_en": "Length of the shortest program that produces a string; this quantity is not computable in general.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+          "cell_id": "c06_09"
+        }
+      ],
+      "prerequisites": [
+        "4e9e363c-b184-4c88-bc6e-0474a62f3e2e"
+      ]
+    }
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "Compression",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Compression"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Compression-01 — Codes préfixes : de Shannon-Fano à Huffman",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-02-HuffmanCanonique-Python.ipynb",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Compression-02 — Huffman canonique : des longueurs aux tables de décodage",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-03-LZ77-Python.ipynb",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Compression-03 — LZ77 : compresser par références dans une fenêtre glissante",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-04-ANS-Python.ipynb",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Compression 04 — Codage entropique ANS (rANS et tANS)",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Compression 04b — Codecs SOTA : le front de Pareto vitesse x taux",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-04b-CodecsSOTA-Pareto-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-05-MLCompression-Python.ipynb",
+      "decimal_path": "1.6",
+      "depth": 1,
+      "label_fr": "Compression-05 — Compression des modèles : quantifier, élaguer, distiller",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Compression/Compression-06-MDL-Kolmogorov-Python.ipynb",
+      "decimal_path": "1.7",
+      "depth": 1,
+      "label_fr": "Compression-06 — MDL : décrire le modèle autant que les données",
+      "repository_path": "MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb"
+    }
+  ]
+}

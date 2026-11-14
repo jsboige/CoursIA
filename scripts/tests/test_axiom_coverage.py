@@ -185,13 +185,21 @@ class TestDeclarationFreeLakes:
         assert cov.main(["--require-covered"]) == 1
 
     def test_real_manifest_matches_the_written_decision(self):
-        """Controle positif sur l'arbre reel : les deux lakes declares « sans
-        gate » par #22519 §4.1 sont exactement ceux que le census mesure
-        NOT-APPLICABLE, et aucun autre."""
+        """Controle positif sur l'arbre reel.
+
+        Mesure du 2026-11-02 (#24092) : conway_cgt_lean et mathlib_examples
+        etaient les deux lakes « sans gate » de #22519 §4.1. La marche Axler
+        (#24871, LinearAlgebra(. _en).lean) a donne ~40 declarations nommees a
+        mathlib_examples : la decision « sans gate » est devenue fausse pour ce
+        lake, le census l'a mesure BARE (main rouge depuis), et le cablage
+        progressif (#18038) l'a recable en `axiom-target-modules: "*"` (#25138)
+        -- la mesure dit vrai, c'est l'ecrit qui a ete realigne. conway_cgt_lean
+        reste l'unique lake NOT-APPLICABLE, et aucun lake n'est BARE."""
         r = cov.coverage_report()
         by_name = {row["display-name"]: row for row in r["lakes"]}
         assert by_name["conway_cgt_lean"]["verdict"] == "NOT-APPLICABLE"
-        assert by_name["mathlib_examples"]["verdict"] == "NOT-APPLICABLE"
-        assert r["counts"].get("NOT-APPLICABLE") == 2
+        assert by_name["mathlib_examples"]["verdict"] == "WIRED"
+        assert by_name["mathlib_examples"]["wildcard"] is True
+        assert r["counts"].get("NOT-APPLICABLE") == 1
         assert r["counts"].get("BARE", 0) == 0
 

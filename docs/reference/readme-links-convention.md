@@ -1,5 +1,7 @@
 # Liens notebooks des READMEs — convention `.ipynb`, jamais `.html`
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 **Règle en vigueur (arbitrage user du 2026-10-08 — Concern sur [#19897](https://github.com/jsboige/CoursIA/pull/19897#issuecomment-6055971289), décision [`c.6076029168` sur #18911](https://github.com/jsboige/CoursIA/issues/18911)).** Un README lie toujours le notebook en **`.ipynb`**. La navigation de référence est celle de **github.com**, où un lien `.ipynb` s'ouvre dans la visionneuse intégrée (markdown, code, sorties rendus) ; un lien `.html` y produit un **404**, parce que les rendus Quarto ne sont pas committés dans le dépôt. C'est au **site** d'adapter les liens au moment du rendu (réécriture native de Quarto des cibles du projet), pas aux READMEs de s'adapter au site.
 
 ## Statut des liens (garde `readme-ipynb-links-guard.yml`)

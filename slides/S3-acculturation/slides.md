@@ -1001,7 +1001,7 @@ layout: default
   <img src="./images/img_041.jpg" class="max-h-[160px] w-auto object-contain" alt="Cartes à jouer disposées en spirale arc-en-ciel sur une table en bois" />
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb">Argumentation-02-Fallacies-Detection-Python.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb">Argumentation-02-Fallacies-Detection-Python.ipynb</a>.</p>
 ---
 
 
@@ -1033,7 +1033,7 @@ layout: default
 <img src="./images/img_046.png" class="max-h-[190px] w-full object-contain" alt="Plan d'actions logiques : Load(C1,P1,SFO), Fly(P1,SFO,JFK), Unload (transport aérien)" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb">Planners-2-PDDL-Basics.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb">Planners-4-Fast-Downward.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb">Planners-02-PDDL-Basics-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb">Planners-04-Fast-Downward-Python.ipynb</a>.</p>
 ---
 
 
@@ -1082,7 +1082,7 @@ layout: default
 
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb">SW-2b-Python-RDFBasics.ipynb</a> (triplets RDF).</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb">SW-02-RDFBasics-Python.ipynb</a> (triplets RDF).</p>
 ---
 
 # Zoom : la pile du Web sémantique (W3C)
@@ -1116,7 +1116,7 @@ layout: default
 
 
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb">Argumentation-06-JTMS-Python.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb">Tweety-04-Belief-Revision-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb">SC-03-Solidity-Basics-Python.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb">Argumentation-06-JTMS-Python.ipynb</a> (JTMS), <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb">Tweety-04-Belief-Revision-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb">SC-03-Solidity-Basics-Python.ipynb</a>.</p>
 ---
 layout: section
 ---
@@ -1309,7 +1309,7 @@ layout: section
 <img src="./images/img_064.png" class="max-h-[190px] w-full object-contain" alt="Grille 3x3 de navigation avec flèches de politique, cases +1/-1, piège, et inégalité sur R(s)" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Decision-Networks.ipynb">DecInfer-05-Decision-Networks.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-06-Value-Information.ipynb">DecInfer-06-Value-Information.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Decision-Networks.ipynb">DecInfer-04-Decision-Networks.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-05-Value-Information.ipynb">DecInfer-05-Value-Information.ipynb</a>.</p>
 ---
 
 
@@ -1960,7 +1960,7 @@ layout: section
 <img src="./images/img_119.png" class="max-h-[115px] w-[45%] object-contain" alt="Boucle agent-environnement : récompense, état, action" />
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-Python-GraphRAG.ipynb">SW-12-Python-GraphRAG.ipynb</a> (connaissances + apprentissage).</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb">SW-12-GraphRAG-Python.ipynb</a> (connaissances + apprentissage).</p>
 ---
 
 
@@ -2450,7 +2450,7 @@ graph TD
 
 
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5-Qwen-Image-Edit.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb">01-5-Edition-Image-Prompt.ipynb</a>.</p>
 ---
 
 

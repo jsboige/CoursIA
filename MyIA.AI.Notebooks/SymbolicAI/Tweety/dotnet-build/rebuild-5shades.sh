@@ -32,10 +32,14 @@
 # Verdict bytecode (Step 7): expected {52: N} only per shade.
 
 set -e
-export JAVA_HOME="/c/Program Files/Freeplane/runtime"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=resolve_java_home.sh
+source "$SCRIPT_DIR/resolve_java_home.sh"
+JAVA_HOME=$(coursia_resolve_java_home) || exit 1
+export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 
-cd "$(dirname "$0")"
+cd "$SCRIPT_DIR"
 WORK=$(pwd)
 
 BUILD_DIR="$WORK/.5shades-build"

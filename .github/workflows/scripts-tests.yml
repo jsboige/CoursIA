@@ -18,193 +18,10 @@ name: Scripts & Notebook-Tools Tests
 # subset is listed in the Known-flaky note below for the lane owners.
 
 on:
+  # #24828 : sans filtre paths, chaque commit de main obtient un verdict
+  # Scripts Tests (CPU), y compris les commits qui ne touchent pas scripts/.
   push:
     branches: [main]
-    paths:
-      - 'scripts/**'
-      - 'tests/**'
-      - 'pytest.ini'
-      - '.github/workflows/scripts-tests.yml'
-      # #17850 : test_real_registry_lives_against_main_repo relit ce registre a
-      # la racine ; sans cette entree, une PR qui ne touche que le registre
-      # n'est validee par aucune jambe (mesure : #17835, 25/09).
-      - 'arxiv_attributions_registry.yaml'
-      # test_workflow_branch_pattern.py (#10145) pins the SHELL TEXT of these
-      # two workflows, so editing them must run this suite. Without these two
-      # entries the pin is blind to its own subject: #10416 changed the push in
-      # catalog-cron.yml, no job ran, and the break only surfaced on the next
-      # unrelated PR that happened to touch scripts/**.
-      - '.github/workflows/catalog-cron.yml'
-      - '.github/workflows/translation-sync.yml'
-      # #6790 prover tree-lock: the offline lock-lifecycle tests + the two
-      # source files they guard (see the pytest step for why only this one
-      # agent_tests file is included, not the whole dir).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/tree_lock.py'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/run_prover_bg.py'
-      # #6790 prover forensic-guards: stdlib-only axiom-cheat + sorry-relocation
-      # detection (prover/forensic_guards.py), loaded by file path so its tests
-      # run hermetically without agent_framework (see pytest step).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/forensic_guards.py'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py'
-      # #18709 provider gate: the suite stubs the LLM stack at import (test
-      # file top) so it collects on a bare CPU runner -- wiring it here makes
-      # the credential gate an effective CI guard (finding Hermes PR #18722).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
-      # #21331 prover harness suites in CI: prover/__init__.py now resolves
-      # the stack-bound subpackages lazily (PEP 562) and tests/conftest.py
-      # reclassifies stack-absence as SKIP, so test_prover_guards.py +
-      # test_lean_utils.py run hermetically on this bare runner (164 pass /
-      # 163 skip measured under WSL with this job's exact pip set; 327/327
-      # on a full env). Trigger on the harness spine, the lean server, the
-      # suites and their conftest. Mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
-      # #11349 native_decide ratchet rewire: scripts/lean/tests/test_proof_integrity_audit_wiring.py
-      # pins the conway_lean proof-integrity-audit allow-list to the build-enumerated
-      # footprint (61 names after #11368). The test lives under scripts/** so its only
-      # trigger was an scripts/** push -- which means a PR adding a new native_decide
-      # to conway_lean could pass un-rattled and the rouge would land on the first
-      # next scripts/** pusher. Wire the lake path so the ratchet fires when its
-      # subject moves; mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lakefile.toml'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/conway_lean/lean-toolchain'
-      # #1028 melody verdict: scripts/tests/test_syllable_pitch_verdict.py pins
-      # classify_melody, which lives in the prosody_lab module below. Same shape
-      # as the conway entry just above -- a test under scripts/** whose SUBJECT
-      # is outside it only ever fired on an unrelated scripts/** push, so a
-      # change to the verdict policy could land un-rattled. Mirrored under
-      # pull_request: below.
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/syllable_pitch.py'
-      # #19695 banc de reference TTS : test_bake_bank.py (sous prosody_lab/) est
-      # collecte par la jambe pytest ci-dessous, mais ni ses sources
-      # (bake_append.py, bake_report.py, bank_schema_v1.json) ni lui-meme ne
-      # declenchaient cette jambe -- exactement l'angle mort de l'entree #1028
-      # ci-dessus (un test dont le SUJET vit hors scripts/**). Les fichiers cites
-      # portent l'objet du test ; la suite est stdlib-only (subprocess), donc
-      # aucun cout de dependance pour le runner. Miroir sous pull_request:
-      # ci-dessous.
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bake_*.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bootstrap_bank.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py'
-      # #17586 narrateur CustomVoice (Qwen3-TTS, opt-in, defaut OFF). Hermes
-      # Finding 1 (review sur 69de2cdf) : sans ces 3 entrees, une PR qui ne
-      # touche QUE le routage narrateur ne declenche aucun run CI (#10416
-      # pattern) -- les tests de routage invisibles jusqu'au prochain innocent
-      # qui touche scripts/**. Le fichier de tests est celui de la suite v4
-      # (v4/tests/) : c'est le seul qui portait deja le contrat Phase 2 sur
-      # main, et il n'etait pas collecte. Mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/qwen_tts_client.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
-      # P2 segmentation (v4) : la deduplication des segments perdait le contenu
-      # des paragraphes multi-segments -- un paragraphe n'en conservait qu'un,
-      # et le controle de couverture ne signalait la perte que par un
-      # WARNING. Le test vit dans la suite v4 (v4/tests/) et son SUJET
-      # (v4/p2_segmentation.py) n'est pas sous scripts/** : sans ces entrees,
-      # une PR qui ne touche QUE p2_segmentation.py ne declenche aucun run CI
-      # et le test reste invisible jusqu'au prochain innocent qui touche
-      # scripts/** (#10416 pattern). Mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p2_segmentation.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p2_segment_dedup.py'
-
-      # #22905 organe de narration partage : sans ces deux entrees, une PR qui ne
-      # touche QUE v4/narration.py ne declenche aucun run (pattern #10416), et son
-      # garde-fou n'etait collecte par aucune jambe. Mirrored under pull_request:
-      # below.
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/narration.py'
-      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py'
-      # #11835 no-op guard: scripts/tests/test_pr_gate_rerun_noop_guard.py pins
-      # the job-level if: of pr-gate-rerun.yml. Without this entry a PR touching
-      # ONLY the workflow fires no scripts-tests run -- the guard is blind to
-      # its own subject (#10416 pattern, flagged A2 by Hermes on #11845).
-      # Mirrored under pull_request: below.
-      - '.github/workflows/pr-gate-rerun.yml'
-      # #12704 self-hosted policy: fork PR tokens cannot publish the fast-lane
-      # check-runs. Keep one ordinary CI surface that executes the scanner for
-      # every workflow change, including workflow-only PRs from forks.
-      - '.github/workflows/**'
-      # #15058 ADK contracts: the 18 runtime-contract tests that #13572 makes
-      # its measuring organ (Track2-GoogleADK/utils/test_adk_runtime_contracts.py,
-      # C1-C7 on the REAL ADK runtime, scripted LLM, offline) never ran in any
-      # CI job -- the reading #13572 prescribes was unavailable. The
-      # adk-contracts job below runs them; this entry fires it when the track
-      # sources move. Mirrored under pull_request: below.
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
-      # #17580 fallacy-detection snapshot guard: resync des CSV/OWL sous
-      # Argument_Analysis/data/ doit declencher la garde d'integrite (le cas de
-      # #14578 ou la resync des CSV n'a pas touche le manifeste, et la garde a
-      # rougi 19 j en silence parce que scripts/** etait deja couvert mais pas
-      # le chemin des donnees). On inclut explicitement le chemin des donnees
-      # pour que la garde tire quand son sujet bouge, meme sans toucher a
-      # scripts/**. Mirrored under pull_request: ci-dessous.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
-      - 'scripts/fallacy_detection/**'
-      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
-      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
-      # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
-      # partie de scripts/**, donc une PR qui vendorise un module + ses tests
-      # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
-      # #13746 tranche 2 : les trois suites executees par le bloc pytest
-      # ci-dessous qui ne vivent PAS sous scripts/** -- GradeBookApp,
-      # QuantConnect/scripts/tests (imports : audit_readme,
-      # validate_qc_notebooks, test_algorithms) et 01-Python-For-Data-Science/
-      # tests (numpy/pandas purs, tests self-contenus sans reference aux
-      # notebooks) -- n'avaient aucun declencheur sur leurs propres arbres :
-      # elles ne s'executaient qu'en riders d'un push scripts/**, et une PR
-      # qui ne touchait qu'elles ne declenchait AUCUNE jambe pytest (#10416
-      # pattern, cf. #18392 ci-dessus pour la meme classe). Portee = le sujet
-      # reel de chaque suite : le repertoire scripts QC entier (modules
-      # importes par les tests), le seul repertoire tests pour la serie
-      # Python (tests self-contenus), et GradeBookApp/** qui est la cible
-      # pytest verbatim. Miroir push/pull_request.
-      - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
-      - 'GradeBookApp/**'
-      # #21104 pli 0 Origami : la suite du service Kernel Gateway CFR vit sous
-      # GameTheory/gateway/** et n'est PAS couverte par GameTheory/tests (chemin
-      # distinct) -- meme classe que #18392/#13746 : sans cette entree, une PR
-      # qui ne touche que le service n'executerait AUCUNE jambe pytest.
-      - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
-      # #21764 : le step bout-en-bout execute CE carnet en papermill ; sans
-      # cette entree, le garde ne declenche que sur les PR suivantes qui
-      # touchent scripts/** et jamais sur la PR du carnet lui-meme (angle mort
-      # mesure par la relecture tierce de #21783). Miroir sous pull_request:
-      # ci-dessous.
-      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb'
-      # #21886 : le job execute `MyIA.AI.Notebooks/GameTheory/tests` (voir la
-      # commande pytest plus bas) et ces tests importent `game_theory_utils`,
-      # `limit_sets` et `trust_simulation`, mais aucune de ces cibles n'etait
-      # dans `paths:` : une PR qui ne touchait que la suite GameTheory, un de
-      # ses modules ou ses dependances ne declenchait pas CETTE jambe (#10416
-      # pattern). La suite garde sa couverture dediee par
-      # `gametheory-tests.yml` (paths GameTheory/**, plancher de collecte 600) :
-      # ces entrees sont une redondance assumee, pas le seul filet. Le garde
-      # `check_testpaths_coverage.py` ne voit pas cette classe : il verifie
-      # qu'un testpath est execute quelque part, pas que le workflow se
-      # declenche quand ses propres cibles changent. Miroir sous pull_request:
-      # ci-dessous.
-      - 'MyIA.AI.Notebooks/GameTheory/tests/**'
-      - 'MyIA.AI.Notebooks/GameTheory/game_theory_utils.py'
-      - 'MyIA.AI.Notebooks/GameTheory/limit_sets.py'
-      - 'MyIA.AI.Notebooks/GameTheory/trust_simulation/**'
-      - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
-      # #21100 pli 0 Origami (Kernel Gateway) : le coeur du service Z3 Sudoku
-      # vit hors scripts/** (Z3-API/gateway/) ; sans entree, une PR qui ne
-      # touche que lui n'executerait AUCUNE jambe pytest (#10416 pattern, cf.
-      # #18392/#19695 ci-dessus). La suite est CPU-only : z3-solver est
-      # installe ci-dessous. Miroir sous pull_request: ci-dessous.
-      - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   pull_request:
     # #19426 option (b) : pas de branches: sur pull_request quand paths: scope
     # deja (precedent #19381) — le retarget d'une PR empilee reste capte.
@@ -214,7 +31,7 @@ on:
       - 'tests/**'
       - 'pytest.ini'
       - '.github/workflows/scripts-tests.yml'
-      # #17850 : voir le bloc push: ci-dessus.
+      # #17850 : ce registre est relu par la suite de scripts.
       - 'arxiv_attributions_registry.yaml'
       # See the push: block above for why these two are pinned here.
       - '.github/workflows/catalog-cron.yml'
@@ -263,21 +80,23 @@ on:
       - '.github/workflows/**'
       # #15058 ADK contracts (mirror of the push path above).
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/**'
+      # #25201 : le refactor ADK a déplacé une suite de contrat hors Track2.
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/**'
       # #17580 fallacy-detection snapshot guard (mirror of the push path above).
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/**'
       - 'scripts/fallacy_detection/**'
-      # #18392 texte->PL : la suite pytest de Argument_Analysis/tests (collectee
-      # par le job ci-dessous, cible Argument_Analysis entiere) n'avait AUCUN
+      # #18392 texte->PL : la suite pytest de ArgumentAnalysis/tests (collectee
+      # par le job ci-dessous, cible ArgumentAnalysis entiere) n'avait AUCUN
       # declencheur sur ses propres sources -- argumentation_lib/** ne fait pas
       # partie de scripts/**, donc une PR qui vendorise un module + ses tests
       # n'executait jamais la suite (#10416 pattern). Miroir push/pull_request.
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/argumentation_lib/**'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/argumentation_lib/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/tests/**'
       # #13746 tranche 2 (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
-      - 'GradeBookApp/**'
+      - 'dotnet/GradeBookApp/**'
       # #21104 pli 0 Origami (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
       # #21764 (mirror of the push path above).
@@ -290,13 +109,15 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
+      # #23423 (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.sh'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: scripts-tests-${{ github.ref }}
+  group: scripts-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -306,13 +127,28 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
-    # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
-    # (started_at -> completed_at du job nomme exactement "Scripts Tests
-    # (CPU)"), celle sur laquelle timeout-minutes agit -- jamais la duree
-    # du run (file d'attente comprise, et pour un rerun les deux
-    # tentatives : c'etait la faute de grandeur de la v1).
+    #
+    # T-L (#25510) : ce job est un job REQUIS -- tant qu'il n'a pas de verdict,
+    # `main` n'est pas verifie. Il etait route sur le meme pool que les PRs
+    # (`coursia-ephemeral`), donc il attendait derriere elles (mesure du
+    # 2026-11-12 : plus de 27 minutes en file, 31 runners sur 31 occupes).
+    # Il vise desormais le slot RESERVE (`coursia-main`) sur un push, et le
+    # pool PR sinon -- repli ENUMERE, exige par
+    # `scripts/ci/check_self_hosted_runner_policy.py` (forme auditee : jeu de
+    # labels + garde `push` + repli ; le jeu seul, ou le jeu sans garde, ou
+    # le jeu sans repli sont refuses).
+    # La garde same-repo ci-dessous reste obligatoire : le repli est
+    # auto-heberge, donc une PR de fork ne doit pas l'atteindre.
+    # Le merge de ce routage suppose le slot DEPLOYE (`--apply` du script de
+    # creation) : sans runner `coursia-main`, le job de `main` attendrait un
+    # runner inexistant. Ordre : deployer le slot, puis merger.
+    runs-on: ${{ (github.event_name == 'push') && fromJSON('["self-hosted","coursia-main","coursia-linux"]') || fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') }}
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
+    # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
+    # mur du JOB (started_at -> completed_at du job nomme exactement
+    # "Scripts Tests (CPU)"), celle sur laquelle timeout-minutes agit --
+    # jamais la duree du run (file d'attente comprise, et pour un rerun les
+    # deux tentatives : c'etait la faute de grandeur de la v1).
     #
     # Requete a rejouer telle quelle avant de citer ou de retirer ce
     # tableau (photographie datee, pas une verite) : runs du workflow
@@ -331,28 +167,117 @@ jobs:
     # Les 4 cancelled ont bien ete termines au mur de 20 min, mais les
     # logs montrent des workers xdist morts puis 14-15 min de silence : ce
     # sont des hangs que relever le plafond ne repare pas (suivi #16288),
-    # pas quatre cas de queue lente. Le relevement repose sur la marge
-    # preventive : le succes max a 17,4 min ne laisse que 2,6 min sous 20;
-    # 30 laisse ~12,6 min tout en restant sous les bornes 45/52 ci-dessous.
-    # (Retraction de la v1 run-level -- 26 runs, mediane 17,5 min, max
-    # 19,8 min, 16 annulations -- ecrite en tete du body de #16087.)
-    # 30 reste sous les deux plafonds qui l'englobent : l'agregateur
-    # pr_gate.py (--timeout-min 45) et le job pr-gate.yml
-    # (timeout-minutes: 52).
-    timeout-minutes: 30
+    # pas quatre cas de queue lente. (Retraction de la v1 run-level -- 26
+    # runs, mediane 17,5 min, max 19,8 min, 16 annulations -- ecrite en
+    # tete du body de #16087.)
+    #
+    # Mesure du 2026-11-12 (meme requete, meme grandeur) : 70 derniers runs
+    # termines, 53 jobs mesures (17 runs sans job) :
+    #     success    25   max 27,83 min
+    #     failure     4   max 25,42 min
+    #     cancelled 24   dont 7 a 30,65 / 31,02 / 31,03 / 31,05 / 31,13 /
+    #                        31,17 / 31,55 min : le mur de 30 min les a
+    #                        tranches. Les 17 autres sont plus courts
+    #                        (concurrence, supersession) : pas des coupes.
+    # Sous le plafond de 30, la marge du succes le plus long n'etait que
+    # de 2,17 min, et 7 jobs sur 53 (13 %) avaient deja ete coupes.
+    #
+    # Les 7 coupes sont CENSUREES A DROITE : leur duree reelle est > 30 min
+    # et inconnue. 40 est donc un plancher de decision, pas une borne
+    # mesuree :
+    #     enfant   27,83 x 1,44 -> 40   (12,17 min au-dessus du succes le
+    #                                     plus long ; 8,45-9,35 min au-dessus
+    #                                     de la bande des coupes)
+    #     gate     40 + 15       -> 55   (marge de 15 min INCHANGEE : elle
+    #                                     etait 30 -> 45) ; 55 reste sous
+    #                                     le plafond propre de Quarto (60),
+    #                                     donc la queue reelle de Quarto
+    #                                     reste sur le chemin STARVED ->
+    #                                     auto-annulation (#13510, #14412)
+    #     runner   55 + 7        -> 62   (marge de 7 min pour le verdict
+    #                                     INCHANGEE : elle etait 45 -> 52)
+    # La regle (enfant < aggregateur < runner) et ses marges sont donc
+    # preservees a l'identique : seule la valeur du mur de l'enfant bouge.
+    #
+    # Mesure du 2026-11-14 -- LA REPONSE, CORRIGEE PAR L'ANNOTATION.
+    #
+    # Premier passage (organe `scripts/ci/measure_declared_ceiling.py`,
+    # meme grandeur : le mur du job "Scripts Tests (CPU)", 43,4 h
+    # reellement couvertes) :
+    #     plafond 30 min   29 candidats / 220 jobs  dont 25 CONFIRMEES (TIMEOUT)
+    #     plafond 40 min   14 candidats / 523 jobs  dont 12 CONFIRMEES (TIMEOUT)
+    # soit 2,3 % sous le plafond de 40 -- et la conclusion ecritte etait
+    # « ne pas relever ».
+    #
+    # CE CHIFFRE ETAIT MAL COMPTE, et la faute n'est pas dans l'annotation :
+    # elle est dans la POPULATION. L'endpoint `runs/<id>/jobs` ne renvoie,
+    # par defaut, que la DERNIERE tentative d'un run ; or un job coupe au
+    # mur est tres souvent REJOUE (rejeu automatique de la CI, ou re-run
+    # humain) -- et le run ne porte alors plus que la tentative rejouee, qui
+    # reussit. La coupe DISPARAIT de la population : elle est censuree par
+    # le rejeu. Mesure du controle croise du 2026-11-14 (meme organe natif
+    # `scripts/ci/classify_job_deaths.py`, classe `TIMEOUT` sur
+    # l'annotation « The job has exceeded the maximum execution time »,
+    # population collectee avec `filter=all`) : 26 des 40 coupes au mur du
+    # segment 40 min sont ABSENTES du cache collecte SANS `filter=all`.
+    # L'organe collecte donc desormais avec `filter=all`, et son cache
+    # porte une VERSION : un cache anterieur est ignore, pas relu.
+    #
+    # Ce que dit la mesure CORRIGEE (population entiere, chaque coupe
+    # CONFIRMEE par l'annotation de l'organe natif) :
+    #     plafond 30 min   60 coupes / 249 jobs executes   (24,1 %)
+    #     plafond 40 min   38 coupes / 582 jobs executes   ( 6,5 %)
+    # (`skipped` exclus : un job jamais demarre n'a pas de duree.)
+    # Le seuil de decision pose par la premiere mesure (>= 5 % des
+    # executions coupees au mur) est donc franchi APRES le releve : le
+    # plafond BINDE encore. Sur la fenetre mesuree, 42 PRs distinctes ont
+    # porte au moins un rouge de mur.
+    #
+    # Le releve, et ses trois valeurs (les marges de la chaine ne
+    # bougent pas) :
+    #     enfant   40        -> 44
+    #     gate     40 + 15   -> 59   (marge de 15 min INCHANGEE ; 59 reste
+    #                                  SOUS le plafond propre de Quarto (60),
+    #                                  donc la queue reelle de Quarto reste
+    #                                  sur le chemin STARVED -> auto-annulation
+    #                                  (#13510, #14412))
+    #     runner   59 + 7    -> 66   (marge de 7 min pour le verdict
+    #                              INCHANGEE)
+    # 44 est le maximum coherent : l'agregateur doit rester SOUS 60, donc
+    # l'enfant sous 45.
+    #
+    # Ce que le releve ne repare pas : les 8 coupes qui portent aussi un
+    # etape en echec (le test y echoue, il n'y finit pas) et les annulations
+    # par supersede. Le releve rend au succes les coupes AU MUR, pas la
+    # duree de la jambe -- celle-ci se gagne sur le plan a deux etages
+    # (#25510, etage 1) et sur le pool de runners (slot reserve pour
+    # `main`, tranche T-L).
+    #
+    # Re-mesurer : `python scripts/ci/measure_declared_ceiling.py
+    # --workflow scripts-tests.yml --hours 48 --jobs-cache
+    # .tmp/ceiling_jobs_v2.json --annotate --out .tmp/ceiling4.json`
+    timeout-minutes: 44
 
     steps:
       # ------------------------------------------------------------------
       # HEAL (#15387) : le pool self-hosted REUTILISE le work dir entre jobs.
       # Un job a profondeur par defaut y laisse un clone SHALLOW ; le
-      # `fetch-depth: 0` ci-dessous declenche alors un `fetch --unshallow`
-      # dont l'echec est AVALE par actions/checkout -- mesure firsthand sur
-      # #15492 (run 34542167016, job 103087137418) : `error: Could not read
-      # 0102d652b3...` emis PENDANT le fetch, etape rendue verte malgre tout.
-      # Le depot reste alors ni shallow ni complet, et tout `git log --raw` /
-      # `git rev-list` ulterieur casse -- ce qui fait rougir un check REQUIS
-      # sur une panne d'infrastructure, jamais sur du fond. On repart d'un
-      # clone neuf des que l'etat est shallow ou le graphe troue.
+      # checkout ci-dessous (profondeur 1) declenche alors un fetch
+      # d'approfondissement dont l'echec est AVALE par actions/checkout --
+      # mesure firsthand sur #15492 (run 34542167016, job 103087137418) :
+      # `error: Could not read 0102d652b3...` emis PENDANT le fetch, etape
+      # rendue verte malgre tout. Le depot reste alors ni shallow ni
+      # complet, et tout `git log --raw` / `git rev-list` ulterieur casse --
+      # ce qui fait rougir un check REQUIS sur une panne d'infrastructure,
+      # jamais sur du fond.
+      #
+      # T-K (#25510) : le `fetch --unshallow origin` SANS refspec tire
+      # `+refs/heads/*` -- l'historique complet des 1 606 branches -- et c'est
+      # exactement le cout que la tranche supprime (19 min sur 75e21a7fac,
+      # job 131524893709, `curl 28` apres 22:12-22:31Z). L'historique utile
+      # (tete + base) est tire par l'etape T-K ci-dessous, bornee et
+      # VERIFIEE. Le work dir est donc conserve tel quel ; seule la purge
+      # d'un graphe reellement incomplet reste.
       # ------------------------------------------------------------------
       - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
         shell: bash
@@ -363,28 +288,91 @@ jobs:
             exit 0
           fi
           if [ -f .git/shallow ]; then
-            echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
-            rm -rf .git
-            exit 0
+            echo "::notice::[heal] work dir SHALLOW reutilise -- profondeur conservee ; l'historique utile (tete + base) sera tire par l'etape T-K, sans les 1 606 branches"
           fi
           if ! git rev-list --all --count >/dev/null 2>&1; then
             echo "::notice::[heal] graphe d'objets incomplet -- purge du work dir"
             rm -rf .git
             exit 0
           fi
-          echo "[heal] work dir complet -- reutilisation"
+          echo "[heal] work dir utilise -- graphe valide"
 
+      # T-K (#25510) : le checkout ne tire PLUS les 1 606 branches.
+      #
+      # `fetch-depth: 0` fait tirer `+refs/heads/*` + les tags : l'historique
+      # complet de TOUTES les branches. L'entree `refspec` de checkout v4 ne
+      # peut PAS resoudre cela -- elle est IGNOREE par le code de l'action
+      # (`src/git-source-provider.ts` appelle `getRefSpecForAllHistory`, qui
+      # construit `+refs/heads/*:refs/remotes/origin/*` + `tagsRefSpec` ;
+      # `settings.refspec` n'apparait nulle part). Mesure : 19 min de
+      # checkout sur 75e21a7fac (job 131524893709) et 2 425 s sur le run
+      # 43318043479.
+      #
+      # Le clone part a profondeur 1 (un commit + son arbre), puis UN fetch
+      # elargit l'historique a la TETE (son ascendance complete) et a la
+      # BASE (`origin/main`) -- rien d'autre.
       - uses: actions/checkout@v4
         with:
-          # Full history required by test_twin_registry_integrity.py::
-          # test_audit_shas_exist_in_file_history (#9399 volet b), which asserts
-          # each attested audit sha really existed as a file blob. A shallow
-          # clone exposes only the HEAD blob, so legitimate drifts (e.g. the
-          # ai-01 Sudoku-08/14-BDD/9 reserve) whose attested sha predates HEAD
-          # would false-fail. Consistent with the other git-aware gates
-          # (catalog-cron/catalog-drift/cell-order-gate/exercise-leak-ci).
-          fetch-depth: 0
+          # Full history of the HEAD and of the BASE is required by
+          # test_twin_registry_integrity.py::test_audit_shas_exist_in_file_history
+          # (#9399 volet b), which asserts each attested audit sha really
+          # existed as a file blob, and by the base resolution of that same
+          # test (`_resolve_base_commit` -> merge-base(base, HEAD)). T-K
+          # keeps that guarantee while dropping the 1 605 other branches:
+          # the depth-1 clone is deepened right after by a bounded fetch.
+          fetch-depth: 1
           filter: blob:none
+
+      - name: "T-K : ascendance de la tete + la base, sans les 1 606 branches"
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Le clone de checkout est superficiel (profondeur 1). On elargit
+          # l'historique a CE QUE la jambe lit :
+          #   - la tete : son ascendance complete (historique des carnets
+          #     jumeaux, merge-base du fast-lane) ;
+          #   - la base : `origin/main` (candidat de `_resolve_base_commit`).
+          #
+          # `--unshallow` porte sur les refs donnees : il fait disparaitre le
+          # bord du clone pour elles, sans toucher aux autres. Sur un work
+          # dir reutilise, les objets sont deja la : la negociation
+          # serveur ne renvoie rien et le cout est celui du reseau, pas
+          # celui du volume.
+          #
+          # La tete est tiree par son SHA et non par sa ref : c'est le
+          # precedence de checkout lui-meme (`getRefSpecForAllHistory` fait
+          # `+${commit}:refs/remotes/pull/<N>/merge` -- l'API accepte un
+          # SHA comme source), et la ref `refs/pull/<N>/merge` peut ne pas
+          # exister (PR en conflit).
+          deepen="--unshallow"
+          if [ ! -f .git/shallow ]; then
+            deepen=""
+          fi
+          git fetch --filter=blob:none --no-tags ${deepen} origin \
+            "+${GITHUB_SHA}:refs/remotes/origin/tete" \
+            "+refs/heads/main:refs/remotes/origin/main"
+
+      - name: "T-K : controle -- l'historique de la base est lu"
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Controle : l'historique est REELLEMENT lu, pas seulement
+          # present. Un historique tronque ferait classer `fabricated` les
+          # sha attestes du carnet jumeau -- le test jumeau rougirait sur
+          # un sha qui n'est pas absent, mais rendu absent par la
+          # troncature. Le plancher ci-dessous attrape la troncature avant
+          # lui, et nomme la mesure.
+          base=$(git merge-base origin/main HEAD || true)
+          if [ -z "${base}" ]; then
+            echo "::error::T-K : merge-base(origin/main, HEAD) introuvable -- l'historique n'a pas ete tire"
+            exit 1
+          fi
+          commits=$(git rev-list --count "${base}")
+          echo "T-K : base=${base} commits_dans_ascendance=${commits}"
+          if [ "${commits}" -lt 1000 ]; then
+            echo "::error::T-K : historique tronque (${commits} commits dans l'ascendance de la base)"
+            exit 1
+          fi
 
       - uses: actions/setup-python@v5
         with:
@@ -392,178 +380,14 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          # Core test deps imported across scripts/ + notebook_tools/ suites.
-          # Mirror the ML job's scientific stack where suites reuse it, and add
-          # the lightweight deps the scripts/ suites import that the ML job omits
-          # (requests, bcrypt, jupyter_client — see #2871 root-cause list).
-          # pyarrow >= 26 (#21764) : sous 26, le noyau ipykernel meurt
-          # (Unhandled SIGSEGV) au chargement de pyarrow, sur la chaine
-          # torch -> dask -> xarray -> pandas -> pyarrow. Mesure : 24.0.0
-          # crash, 26.0.0 OK ; l'image CI portait 25.0.1, non mesure. Sans
-          # plancher, `pip install pyarrow` est satisfait par la version
-          # deja presente dans l'image (25.0.1) et n'echange rien.
-          pip install numpy pandas scipy "pyarrow>=26" pytest
-          pip install requests bcrypt jupyter_client
-          # ipykernel (#18279) : ce job n'enregistrait AUCUN kernelspec
-          # `python3`, si bien que les deux tests d'integration de
-          # scripts/tests/test_papermill_meta_strip.py se SAUTAIENT en silence
-          # (skipif sur la presence du kernelspec). La panne « kernel mort au
-          # spawn » n'existait alors plus que sur les runners qui avaient le
-          # kernel : machine-specifique en apparence, FILTREE en realite -- et
-          # c'est ce filtrage qui a fait suivre pendant dix jours un axe de
-          # diagnostic .NET alors qu'aucun noyau .NET n'etait lance. Regle F :
-          # un environnement se repare, il ne se contourne pas par un skip.
-          # Le test de visibilite ajoute dans le meme commit rougit si ce
-          # kernelspec disparait a nouveau.
-          pip install ipykernel
-          pip install pyyaml tomli
-          # python-dotenv: scripts/whisper_int8_comparison.py (and several
-          # genai-stack modules) import `dotenv` at top level.
-          pip install python-dotenv
-          # matplotlib: MyIA.AI.Notebooks/GameTheory/trust_simulation/visualization.py
-          # imports it at module top level. Without it, pytest bails on
-          # collection errors for test_trust_simulation.py and skips the
-          # entire suite, masking every other test result. See #4937.
-          pip install matplotlib
-          # scikit-learn : DEPENDANCE HERITEE DU TOOLCACHE, desormais declaree.
-          # scripts/tests/test_golden_quantitative_claims.py l'importe deja, et
-          # scripts/tests/test_ws_probes_margin.py ajoute par #24073 l'importe
-          # via scripts/repro/ws_probes_margin.py. La suite ne collectait que
-          # parce que le pool `coursia-linux` porte scikit-learn en residu d'un
-          # job ML -- une dependance qui n'est declaree nulle part est une
-          # panne en attente (le jour ou le toolcache change, la collecte rend
-          # une erreur bruyante sur une PR innocente). Meme motif que
-          # `qc-mcp-lite` / `ModuleNotFoundError: mcp`. Regle F : l'environnement
-          # se repare, il ne se contourne pas par un skip.
-          pip install scikit-learn
-          # papermill + nbformat: genai-stack/commands/notebooks.py imports
-          # papermill at top level, so test_genai_notebooks.py needs it at
-          # collection time. Both are declared deps of genai-stack
-          # (scripts/genai-stack/requirements.txt). Lets us re-include the
-          # genai test suites that were excluded as missing-dep (#2871 part 2).
-          pip install papermill nbformat
-          # Version RESOLUE de pyarrow (#21764) : l'acceptance demande que le
-          # log affiche la version installee, pas seulement la contrainte.
-          # Un plancher non affiche est un plancher non prouve.
-          python -c "import pyarrow; print('pyarrow resolu:', pyarrow.__version__)"
-          # nbconvert: scripts/notebook_tools/render_oversized_nbconvert.py +
-          # scripts/tests/test_render_oversized_nbconvert.py (#10969). The
-          # fail_non_notebook test asserts the real nbformat NotJSONError text,
-          # so the env must have nbconvert installed (rule F, not a skipif).
-          pip install nbconvert
-          # pyjwt[crypto]: scripts/secrets/github_app_token.py signe le JWT d'App
-          # GitHub avec PyJWT, et ses deux controles positifs le verifient avec la
-          # cle publique (#17437). Declare ici plutot qu'un skip : sans lui, ces
-          # tests ne rendent jamais leur verdict dans l'organe qui les execute.
-          pip install "pyjwt[crypto]"
-          # torch (CPU) is needed at collection time by the Sudoku/RRN test
-          # modules under scripts/tests/ (they `import torch` at top level and
-          # skip themselves at runtime when CUDA is absent). Without it those
-          # modules fail to import = collection errors. Same index as ml-tests.yml.
-          pip install torch --index-url https://download.pytorch.org/whl/cpu
-          # arch (GARCH) for the scripts/tests/ml GARCH-baseline suite, which has
-          # no other CI home: ml-tests.yml is scoped to ML-Training-Pipeline
-          # (#2872), so without arch here those 9 tests are missing-dep failures.
-          # Pulls statsmodels/patsy — still CPU-light.
-          pip install arch
-          # rapidfuzz + unidecode + openpyxl: GradeBookApp/gradebook.py imports
-          # all three at module top level, so test_fuzzy_match_group.py needs
-          # them at collection time (famille 5 de #14615). The test guards with
-          # importorskip, but wiring it into this run means running it for real.
-          pip install rapidfuzz unidecode openpyxl
-          # pypdf: scripts/tests/test_check_bibliography_pdf_integrity.py
-          # builds a valid PDF with PdfWriter to feed the organ (#17980).
-          # Without it the 6 tests fail on ModuleNotFoundError instead of
-          # exercising the script.
-          pip install pypdf
-          # open_spiel: coeur du service Kernel Gateway CFR (GameTheory/gateway,
-          # #21104 / pli 0 de l'Epic #19571). La roue 2.0.2 manylinux_2_27
-          # x86_64 existe pour le python 3.11 de ce job ; sans le paquet, la
-          # cible pytest ci-dessous est une erreur de collecte au lieu
-          # d'exercer le service pour de vrai.
-          pip install open_spiel
-          # ortools: GameTheory/tests collecte aussi amd_synthesis.py (#22381),
-          # qui importe CP-SAT au niveau module. Reprendre le plancher declare
-          # dans GameTheory/requirements.txt pour eviter une erreur de collecte.
-          pip install "ortools>=9.11"
-          # z3-solver: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/
-          # test_z3_sudoku_core.py imports z3 at module level (#21100, pli 0
-          # Origami). Without it the suite fails on ModuleNotFoundError
-          # instead of exercising the service core.
-          pip install z3-solver
-          # python-sat (PySAT): Argument_Analysis/argumentation_lib/sat_handler.py
-          # branche l'entailement propositionnel sur l'organe du depot
-          # (SymbolicAI/ext_tools/sat_solver.py), qui importe `pysat` et pose
-          # PYSAT_AVAILABLE. Sans le paquet, l'organe retombe puis
-          # `_solve_with_pysat` leve ModuleNotFoundError : les 12 tests de
-          # tests/test_sat_handler.py echouent au lieu d'exercer le moteur
-          # (mesure du rouge : run 41002293693, job 123889255619, 2026-10-30).
-          # Regle F : on installe la dependance, on ne la saute pas -- un
-          # skipif aurait rendu la suite verte en n'executant rien.
-          # Plancher : `python-sat>=1.8.dev13`, la forme deja utilisee par
-          # Search/requirements.txt. TOUTES les publications PyPI de
-          # python-sat sont des pre-releases : un specifier qui nomme une
-          # pre-release (ici 1.8.dev13) est sans ambiguite pour pip, alors
-          # qu'une borne stable (>=0.1.8, forme de GameTheory/requirements.txt)
-          # n'en nomme aucune et reste ambigue. Le solveur
-          # 'cadical195' (defaut de sat_solver.solve_sat) est present dans
-          # les roues resolues, verifie sur 1.8.dev19 (cp311/manylinux) et
-          # 1.9.dev17.
-          pip install "python-sat>=1.8.dev13"
-          python -c "import pysat; from importlib.metadata import version; print('python-sat resolu:', version('python-sat'))"
-          # jupyter_kernel_gateway: son module s'importe `kernel_gateway` et
-          # `run_gateway.py` le sonde au preflight (#22439). Sans le paquet,
-          # test_run_gateway.py signalerait une dependance manquante au lieu
-          # d'exercer le lanceur.
-          pip install jupyter_kernel_gateway
-          # opentelemetry-sdk + pydantic + openai : trois paquets que ce job
-          # consomme a l'import mais n'installait pas -- il ne passait que sur
-          # les slots au toolcache chaud (residu d'installations d'autres
-          # jobs). Mesure du cas rouge : run 40182043367, job 121134940940,
-          # runner myia-po-2027-linux-docker-4 (toolcache neuf, 2026-10-25) :
-          # 157 x ModuleNotFoundError 'opentelemetry' (COLLECTE de
-          # test_provider_gate_18709.py -- provers.py:48 -> otel_setup.py:31
-          # `from opentelemetry.sdk.trace.export import ...` ; l'erreur de
-          # collecte n'est JAMAIS reclassee SKIP par le conftest #21331, qui
-          # ne voit que les tests collectes), 60 x 'pydantic' (suites Audio
-          # v4 : schemas.py:10 importe pydantic au niveau module, le job ADK
-          # qui l'epingle est un AUTRE job), 2 x 'openai' (config.py:401
-          # `from openai import AsyncOpenAI`, atteint dans la fenetre de stub
-          # #18709 ou agent_framework passe mais pas ses deps). Le plancher
-          # >=1.20.0 reprend agent_tests/requirements.txt l.26 -- le sdk
-          # n'arrive jamais transitivement via agent-framework. Pins pydantic
-          # et openai alignees sur le job ADK ci-dessous (2.12.5 / 2.24.0) :
-          # les versions mesurees vertes sur slot chaud. Contre-teste en venv
-          # vierge : sans les trois, "1 error during collection" sur
-          # opentelemetry ; avec, 36 passed + 1 skipped (le skip = coordinator
-          # reclasifie, comportement #21331).
-          pip install "opentelemetry-sdk>=1.20.0" "pydantic==2.12.5" "openai==2.24.0"
-          # nashpy: MyIA.AI.Notebooks/GameTheory/tests/test_bayesian_equilibria.py
-          # (#22382) imports it at module level. `gametheory-tests.yml` l'installe,
-          # mais CE job collecte aussi MyIA.AI.Notebooks/GameTheory/tests : sans
-          # le paquet, une seule erreur de collecte fait echouer les 21098 tests
-          # verts du run (mesure du 2026-10-27, run 40489527870 :
-          # "1 error in 750.75s" -> Scripts Tests rouge -> PR gate rouge).
-          pip install nashpy
-          # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
-          # Not a speed nicety -- the sequential run is what makes this job
-          # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
-          # the `myia-po-2024-linux-docker-*` runner class concluded 3 of 40
-          # (37 cancelled, 18.3 min average) while `myia-ai-01-wsl-*` concluded
-          # 24 of 25 (9.9 min average). A slower runner class against a
-          # sequential suite sitting near the cap is a scheduling lottery, not
-          # a timeout that wants raising. See #14598 / #15574.
-          # pytest >= 8 : l'option ini `consider_namespace_packages`, qui
-          # desambiguise les noms de modules pytest, n'existe pas avant 8.0.
-          # Sur un pytest plus ancien elle serait ignoree SANS BRUIT (simple
-          # `PytestConfigWarning`) et la collision `tests.conftest`
-          # reviendrait. Le runner porte 9.1.1 (mesure sur le log du run
-          # 40409945388) : ce pin est une garantie de non-regression, pas un
-          # upgrade.
-          pip install "pytest>=8" pytest-xdist
-
+        # L'environnement de cette suite est installe par un script PARTAGE :
+        # `scripts/ci/install_scripts_tests_deps.sh`. Le lot quotidien en
+        # ombre de la voie lente (P3, #25510) installe le meme script --
+        # c'est ce qui rend les durees du lot comparables a celles de la
+        # suite qu'on veut deplacer. Le bloc d'installation a ete extrait
+        # VERBATIM de cette etape le 2026-11-09 (PR #25521) : toute
+        # modification de l'un doit etre portee dans l'autre.
+        run: bash scripts/ci/install_scripts_tests_deps.sh
       - name: Epingler les pools de threads BLAS/OpenMP du job (#24696)
         # Le runner est un pool auto-heberge PARTAGE : quand plusieurs jobs se
         # partagent la machine, la creation de threads echoue et les
@@ -620,7 +444,35 @@ jobs:
         env:
           MPLBACKEND: Agg
 
+      # #22468 tranche 4 (revue ai-01 11/11, job 130763938091) : le jeton
+      # GitHub ne vit QUE dans ce pas, et le seul consommateur est l'organe
+      # de portee (repli API pour lire les chemins de la PR). Pose au niveau
+      # du pas `Run tests`, il faisait heriter TOUTE la suite pytest d'un
+      # jeton ambiant : deux tests le mesuraient (test_gh_identity.py
+      # restaurait `***` au lieu de None ; test_exec_sequence_ack_required
+      # .py::test_gh_comment_fetcher_no_repo_env_raises n'obtenait plus
+      # FetchError). Il ecrit scripts_scope.json, lu par le pas suivant.
+      # rc=2 (workflow illisible) = rouge bruyant volontaire ; tout le reste
+      # est fail-OPEN et ecrit une portee pleine avec sa raison nommee.
+      - name: Compute test scope (#22468)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/ci/changed_scripts_tests.py \
+            --event "${{ github.event_name }}" \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number || 0 }}" \
+            > scripts_scope.json
+
       - name: Run tests
+        # #22468 tranche 4 : la portee (organe scripts/ci/changed_scripts_tests
+        # .py -- suites liees aux chemins modifies, fail-OPEN) est ecrite par
+        # le pas precedent, qui porte seul le jeton GitHub. Ce pas joue la
+        # selection, ou la liste complete en cas de doute. Les planchers de
+        # collecte ci-dessous restent
+        # inconditionnels : un vert restreint ne doit pas pouvoir retrecir
+        # en silence.
+        #
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
         # The repo-wide pytest.ini testpaths also list GameTheory/tests,
         # QuantConnect/scripts/tests and DataScienceWithAgents/tests; those are
@@ -727,7 +579,29 @@ jobs:
             xdist_n=4
           fi
           echo "xdist workers: $xdist_n (cgroup memory limit: $mem_max)"
-          python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
+          # #22468 tranche 4 : la portee a ete calculee par le pas
+          # "Compute test scope" (seul porteur du jeton) -- suites liees aux
+          # chemins modifies (aire de veille = dossier parent de X/tests),
+          # fail-OPEN pleine suite avec raison nommee (stderr du pas dedie).
+          # La liste COMPLETE reste litterale dans le bloc pytest ci-dessous :
+          # c'est la source unique de guard_test_root (#18888) ET de l'organe.
+          # JSON absent ou illisible = fail-OPEN pleine suite ici aussi : un
+          # organe en panne ne doit jamais pouvoir retrecir la suite. La
+          # branche restreinte est volontairement sur UNE ligne (aucun '\' de
+          # continuation) pour que PYTEST_BLOCK_RE matche toujours le bloc
+          # litteral. rc=2 de l'organe = derive structurelle -> rouge bruyant
+          # au pas dedie, jamais une liste inventee.
+          SCOPE_MODE=full
+          SUITES=""
+          if [ -f scripts_scope.json ]; then
+            SCOPE_MODE=$(python -c "import json; print(json.load(open('scripts_scope.json'))['mode'])") || SCOPE_MODE=full
+            SUITES=$(python -c "import json; print(' '.join(json.load(open('scripts_scope.json'))['suites']))") || SUITES=""
+          fi
+          echo "portee: $SCOPE_MODE${SUITES:+ -- suites: $SUITES}"
+          if [ "$SCOPE_MODE" = "restricted" ]; then
+            python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest $SUITES -n "$xdist_n" --dist loadscope --tb=short -q
+          else
+            python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
             scripts/ci/tests \
@@ -749,6 +623,7 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
+            MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_flagship_endpoint.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
@@ -757,8 +632,8 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_narration.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
-            MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
-            GradeBookApp \
+            MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis \
+            dotnet/GradeBookApp \
             scripts/datasets/tests \
             scripts/genai-stack/tests \
             scripts/hashlife/tests \
@@ -767,6 +642,7 @@ jobs:
             scripts/sudoku/tests \
             scripts/validation/tests \
             -n "$xdist_n" --dist loadscope --tb=short -q
+          fi
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
         # cours -- la jambe reste muette 14 a 17 min apres `[99%]` jusqu'au mur
@@ -895,12 +771,12 @@ jobs:
         env:
           GRADEBOOK_TESTS_FLOOR: 15
         run: |
-          N=$(python -m pytest GradeBookApp --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest dotnet/GradeBookApp --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$GRADEBOOK_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$GRADEBOOK_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$GRADEBOOK_TESTS_FLOOR)."
 
-      - name: Argument_Analysis tests collection floor (174)
+      - name: ArgumentAnalysis tests collection floor (174)
         # Meme semantique a deux signaux que les floors audit (455), secrets
         # (148) et GradeBook (15) : une collection cassee (import manquant au
         # module level, crash de collection) rend 0 test collecte au lieu d'un
@@ -913,7 +789,7 @@ jobs:
         env:
           ARGUMENT_ANALYSIS_TESTS_FLOOR: 174
         run: |
-          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ARGUMENT_ANALYSIS_TESTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ARGUMENT_ANALYSIS_TESTS_FLOOR)."
@@ -933,7 +809,9 @@ jobs:
       # #18981 : garde anti-recidive #18888 -- un test_*.py pose a la racine
       # d'un module (scripts/notebook_tools/, scripts/lean/, etc.) n'est
       # execute par aucune des jambes ci-dessus. La garde lit la liste des
-      # chemins collectes depuis CE workflow (l.355-371) et verifie qu'aucun
+      # chemins collectes depuis CE workflow (le bloc pytest LITTERAL du pas
+      # Run tests -- la branche restreinte d'une ligne est invisible a
+      # PYTEST_BLOCK_RE, #22468 tranche 4) et verifie qu'aucun
       # test_*.py n'apparait dans un dossier parent d'un chemin collecte sans
       # etre dans le sous-dossier collecte lui-meme. Verifiee localement le
       # 2026-10-03 : rc=0 sur main, rc=1 sur une branche jetable ou un
@@ -995,7 +873,7 @@ jobs:
     # `mcp==1.30.0` + `pytest>=8` + `requests>=2.31`, la suite passe --
     # c'est le triplet exact du `pip install` ci-dessous.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     timeout-minutes: 15
 
     steps:
@@ -1014,7 +892,7 @@ jobs:
 
   adk-contracts:
     name: ADK runtime contracts (18)
-    # #15058: #13572 makes Track2-GoogleADK/utils/test_adk_runtime_contracts.py
+    # #15058: #13572 makes 07-Agent-Orchestration/utils/test_adk_runtime_contracts.py
     # (C1-C7, REAL ADK 2.8 runtime with a scripted LLM -- offline, no key, no
     # network) its measuring organ, but no CI job ran it: portage was
     # established by declaration, exactly what #13572's clause wanted to
@@ -1032,7 +910,7 @@ jobs:
     # Seul ce job est concerne : `scripts-tests` reste sur la jambe locale
     # STATIQUE (sa suite est couplee a la forme du runner, #22820).
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     timeout-minutes: 15
 
     steps:
@@ -1043,7 +921,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        # Exact pin chain of Track2-GoogleADK/requirements.txt (the verified
+        # Exact pin chain of 07-Agent-Orchestration/requirements.txt (the verified
         # compatibility chain, #13948): litellm 1.93.2 + openai 2.24.0 +
         # google-adk 2.8.0 + pydantic 2.12.5. Measured firsthand on a clean
         # venv with exactly these pins: 16/16 green in ~10 s, no conflicts.
@@ -1053,7 +931,7 @@ jobs:
 
       - name: Run ADK runtime contracts
         run: |
-          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --tb=short -q
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/test_adk_runtime_contracts.py" --tb=short -q
 
       - name: Contracts collection floor (18)
         # Same two-signal semantics as the audit (455) / secrets (148) /
@@ -1065,14 +943,14 @@ jobs:
         env:
           ADK_CONTRACTS_FLOOR: 18
         run: |
-          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/utils/test_adk_runtime_contracts.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ADK_CONTRACTS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_CONTRACTS_FLOOR. Removing a contract test is a contract change, not housekeeping."; exit 1; fi
           echo "OK: $N tests collected (floor=$ADK_CONTRACTS_FLOOR)."
 
       - name: Run provider default contracts
         # #20002: config/test_providers.py was run by NO CI leg -- the trigger
-        # above already fired on Track2-GoogleADK/**, so the surface existed
+        # above already fired on 07-Agent-Orchestration/**, so the surface existed
         # while the collection was silently missing. Host is this job, not the
         # shared scripts-tests list: test_providers.py imports only pytest +
         # pathlib + importlib.util, and config/providers.py only pydantic +
@@ -1086,7 +964,7 @@ jobs:
         # compared the two (get_provider_config resolves `settings.<p>_model or
         # defaults["model"]`, and the fallback only shows on an empty env var).
         run: |
-          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/config/test_providers.py" --tb=short -q
+          pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/config/test_providers.py" --tb=short -q
 
       - name: Providers collection floor (30)
         # Two-signal semantics, same as the contracts (18) floor above: 0
@@ -1102,7 +980,7 @@ jobs:
         env:
           ADK_PROVIDERS_FLOOR: 30
         run: |
-          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/config/test_providers.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
+          N=$(python -m pytest "MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/config/test_providers.py" --collect-only -q 2>/dev/null | tail -1 | grep -oE '[0-9]+ tests collected' | grep -oE '^[0-9]+')
           if [ -z "$N" ] || [ "$N" -eq 0 ]; then echo "::error::--collect-only returned no tests — the collection crashed (distinct from a coverage drop)."; exit 1; fi
           if [ "$N" -lt "$ADK_PROVIDERS_FLOOR" ]; then echo "::error::Coverage regression: $N tests collected, floor=$ADK_PROVIDERS_FLOOR."; exit 1; fi
           echo "OK: $N tests collected (floor=$ADK_PROVIDERS_FLOOR)."
