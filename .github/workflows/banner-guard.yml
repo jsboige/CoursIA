@@ -66,6 +66,16 @@ jobs:
     # surcout est le temps de slot d'un job lent, deja tenu jusqu'a la
     # coupe. Rejouer la mesure :
     #     python scripts/ci/measure_declared_ceiling.py --workflow banner-guard.yml --hours 96 --annotate
+    #
+    # La queue, elle, est mesuree par l'organe de variance du depot
+    # (`scripts/ci/characterize_runner_variance.py --workflow banner-guard.yml
+    # --days 7`), qui attribue la duree a son hote : 536 jobs, 161 "heavy",
+    # **medianes de 15 a 59 s** selon le runner, et un **p90 epingle a
+    # 606 s (= le plafond) sur 9 des 31 runners** (wsl-12, wsl-14,
+    # persist-1, persist-5, po-2025-docker-1/-2, po-2028-docker-1/-2/-3).
+    # La queue n'est donc pas propre a une famille de slots : c'est la queue
+    # de la distribution qui s'ecrase contre le plafond. Rejouer :
+    #     python scripts/ci/characterize_runner_variance.py --workflow banner-guard.yml --days 7 --json
     timeout-minutes: 20
 
     steps:
