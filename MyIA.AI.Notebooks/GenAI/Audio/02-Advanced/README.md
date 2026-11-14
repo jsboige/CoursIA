@@ -2,7 +2,7 @@
 
 [← Audio Foundation](../01-Foundation/) | [↑ Audio](../README.md) | [→ Audio Orchestration](../03-Orchestration/)
 
-Cette série intermédiaire explore trois façons de travailler le son : synthétiser une voix, générer de la musique et séparer les sources d'un enregistrement. Elle s'adresse aux personnes à l'aise avec Python et les bases du traitement audio ; la [série Foundation](../01-Foundation/) introduit notamment la synthèse vocale et l'écoute des résultats. Pour le fil rouge podcast, on peut produire une narration, créer un habillage musical, puis séparer ou remixer des pistes.
+Cette série intermédiaire explore quatre façons de travailler le son : synthétiser une voix, générer de la musique, créer des bruitages décrits en texte et séparer les sources d'un enregistrement. Elle s'adresse aux personnes à l'aise avec Python et les bases du traitement audio ; la [série Foundation](../01-Foundation/) introduit notamment la synthèse vocale et l'écoute des résultats. Pour le fil rouge podcast, on peut produire une narration, créer un habillage musical, ajouter des ambiances sonores, puis séparer ou remixer des pistes.
 
 ## Comment lire ce README — Découverte
 
@@ -23,6 +23,7 @@ Les numéros ci-dessous sont les étapes de cette sous-série. Elles présentent
 | 7 | [YuE2 : chansons complètes](02-7-YuE2-Song-Generation.ipynb) | Passer des paroles et d'un style à une chanson, puis explorer reprise et édition d'une partition. | Avancé | [Musique](#musique) |
 | 8 | [TTS expressif](02-8-Expressive-TTS.ipynb) | Expérimenter les tags de prosodie et comparer Fish S2 Pro et Dia TTS. | Avancé | [Voix](#voix) |
 | 9 | [ACE-Step](02-9-AceStep-Music-Generation.ipynb) | Générer une chanson à partir de paroles structurées et étudier les paramètres de génération. | Intermédiaire | [Musique](#musique) |
+| 10 | [AudioGen](02-10-AudioGen-Text-to-Audio.ipynb) | Générer des scènes sonores décrites en texte et comparer le paradigme autoregressif à la diffusion d'[AudioLDM](../06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb). | Intermédiaire | [Bruitages](#bruitages) |
 
 ## Approfondissements — Pratique
 
@@ -41,6 +42,10 @@ Pour ajouter des paroles, [ACE-Step](02-9-AceStep-Music-Generation.ipynb) introd
 ### Séparation
 
 [Demucs](02-4-Demucs-Source-Separation.ipynb) prend le chemin inverse de la génération : il extrait des pistes d'un mélange. L'exemple synthétique permet d'examiner les sources et la métrique SDR ; sur un enregistrement réel, l'absence de sources de référence complique cette évaluation. La séparation peut laisser des artefacts et ne donne pas automatiquement les pistes originales. Utilisez des enregistrements dont vous détenez les droits nécessaires.
+
+### Bruitages
+
+[AudioGen](02-10-AudioGen-Text-to-Audio.ipynb) génère des bruitages et des scènes sonores décrites en texte : un modèle autoregressif écrit l'audio comme une séquence de tokens de codec, conditionné par un encodeur de texte. Le carnet mesure le temps réel (RTF) et la mémoire occupée, chiffre l'effet de la température et du top-k sur la diversité, et compare le positionnement à la diffusion d'[AudioLDM](../06-Diffusion-SOTA/06-1-AudioLDM-SOTA-Comparison.ipynb) — textures rapides contre compositions multi-concepts — ainsi qu'à [MusicGen](02-3-MusicGen-Generation.ipynb), même moteur dédié à la musique. Les poids `audiogen-medium` sont soumis à leur propre licence sur Hugging Face.
 
 ## Installation et limites — Pratique
 
