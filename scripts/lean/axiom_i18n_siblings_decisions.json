@@ -1,7 +1,7 @@
 {
   "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
-  "generated-at": "2026-11-11T14:39:11Z",
-  "generated-by": "myia-ai-01:CoursIA",
+  "generated-at": "2026-11-14T18:47:29Z",
+  "generated-by": "myia-po-2023:CoursIA",
   "organ": "scripts/lean/axiom_i18n_siblings.py",
   "issue": 24107,
   "lakes": [
@@ -138,16 +138,16 @@
       "decision": "false",
       "reason": "liste de modules explicite : les modules `_en` qu'elle nomme sont deja inspectes par la porte (le filtre i18n ne vaut que pour la derivation '*') ; l'opt-in ne change rien",
       "mode": "EXPLICIT",
-      "i18n-modules": 10,
-      "i18n-declarations": 285
+      "i18n-modules": 24,
+      "i18n-declarations": 563
     },
     {
       "lake": "mathlibexamples",
       "decision": "true",
-      "reason": "opt-in sur : la surface `_en` (2 modules, 20 declarations) est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "reason": "opt-in sur : la surface `_en` (3 modules, 25 declarations) est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
       "mode": "WILDCARD",
-      "i18n-modules": 2,
-      "i18n-declarations": 20
+      "i18n-modules": 3,
+      "i18n-declarations": 25
     },
     {
       "lake": "socialchoicepeters",

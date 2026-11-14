@@ -1,5 +1,47 @@
 name: testpaths-coverage-guard
 
+# T1 volet A de #25366 (2026-11-14, lane po-2023:CoursIA) : les marqueurs
+# CI-EXCLUDED du tri des 25 repertoires non surveilles vivent ICI et non dans
+# scripts-tests.yml, tenu a ce moment par la PR ouverte #26366 (garde L898) ;
+# l'organe lit les marqueurs dans tous les workflows. Chaque raison est
+# mesuree firsthand (conda projet-is, un pytest par dossier, 2026-11-14).
+# Douze repertoires verts ont rejoint pytest.ini testpaths dans le meme
+# commit ; les marquer CI-EXCLUDED ne dit pas « jamais » mais « pas encore » :
+# lever la raison (installer la dep, demontrer l'hermeticite runner) puis
+# retirer la ligne et cabler le dossier dans le run pytest partage.
+#
+# --- verts locaux, hermeticite runner non demontree (12 testpaths) ---
+# CI-EXCLUDED: MyIA.AI.Notebooks/Compression/tests — 13 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/tests — 7 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests — 284 tests verts (projet-is) ; 5 fichiers deja joues par scripts-tests.yml (T1-B #25909), hermeticite runner a demontrer pour le reste (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/tests — 16 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/notebooks/examples/sample_project/tests — 13 tests verts, autonomes (projet-is) ; exemple pedagogique, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/ML/ML.Net/tests — 10 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/Probas/Infer/tests — 53 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/Probas/PyMC/tests — 13 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/Search/tests — 111 tests verts apres install d'ortools dans l'env de mesure (regle F) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/SymbolicAI/Lean/tests — 21 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/tests — 46 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/SymbolicAI/scripts/tests — 24 tests verts (projet-is) ; pas de cible workflow, hermeticite runner a demontrer (T1 #25366)
+#
+# --- dep absente ou Python requis : non cablables au tri (13) ---
+# CI-EXCLUDED: MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/tests — 6 fichiers sur 7 verts ; test_dowhy_organs.py exige dowhy, absent de l'env de mesure — installer dowhy puis cabler (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/Probas/DecisionTheory/voi/tests — 34/36 verts ; les 2 echecs executent pymc_voi.py en sous-processus, pymc absent de l'env — installer pymc puis cabler (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/tests — tests hypothesis verts (FuturesTrend temoin 94/94 sous PYTHONNOUSERSITE=1) mais l'overlay user-site pytest+hypothesis de la machine de mesure fait echouer le hook terminal_summary en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/BitcoinRegimeGate-QC/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/Crypto-MultiCanal/tests — test_visualize_channels.py exige yfinance, non resolvable dans l'env de mesure au moment du tri — installer yfinance dans l'env cible puis cabler (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/Filing-Language-Stability/tests — regex (?>...) (groupe atomique, Python >= 3.11) a l'import des tests ; env de mesure 3.10 — cabler avec un runner Python >= 3.11 (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/FuturesTrend/tests — 94/94 verts sous PYTHONNOUSERSITE=1 (hypothesis cote env) ; crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/LowBeta-Industries-QC/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/MacroFactorRotation-QC/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/MomentumStrategy/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/Paradox46Benchmarks/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/QuantConnect/projects/Portfolio-IBKR-Coinbase-Hybrid/paper_harness/tests — classe hypothesis : verts sous PYTHONNOUSERSITE=1, crash terminal_summary de l'overlay user-site local en mode defaut (T1 #25366)
+# CI-EXCLUDED: MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/tests — 126 passed / 2 failed / 2 errors ; les echecs exigent lean_dojo et les metadonnees lean-dojo-v2 — installer puis cabler (T1 #25366)
+#
+# --- fixture de demonstration (1) ---
+# CI-EXCLUDED: MyIA.AI.Notebooks/GenAI/Vibe-Coding/Claude-Code/01-decouverte/demo-2-references-contexte/ressources/projet-exemple/tests — projet de demonstration joue depuis sa racine (import src.*), pas depuis la racine du depot (T1 #25366)
+
 # #12567 tranche 5 : cette garde est absorbee par la voie rapide
 # (scripts/ci/fast_lane.py). Le declenchement `pull_request` est retire ici
 # pour eviter la double execution (lane + workflow dedie) ; `workflow_dispatch`
