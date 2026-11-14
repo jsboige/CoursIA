@@ -330,6 +330,10 @@ Les applications sont adaptées de projets étudiants. Les références spécifi
 
 ---
 
+## Recherche continue
+
+[Search-02d en Python](Part1-Foundations/Search-02d-RRT-Recherche-Continue.ipynb) et [son jumeau C#](Part1-Foundations/Search-02d-RRT-Recherche-Continue-CSharp.ipynb) explorent RRT, le reparentage et les effets du budget et des graines.
+
 ## Structure des fichiers
 
 ```text
@@ -343,6 +347,8 @@ Search/
 │   ├── Search-02b-NetworkX.ipynb
 │   ├── Search-02b-NetworkX-CSharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   ├── Search-02c-QuikGraph.ipynb
+│   ├── Search-02d-RRT-Recherche-Continue.ipynb # RRT et RRT*
+│   ├── Search-02d-RRT-Recherche-Continue-CSharp.ipynb # Port C#
 │   ├── Search-03-Informed.ipynb
 │   ├── Search-04-LocalSearch.ipynb
 │   ├── Search-05-GeneticAlgorithms.ipynb

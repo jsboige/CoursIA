@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-test_batch_reexecute.py — garde de vraisemblance et cwd explicite (#14356).
+test_batch_reexecute_degradation_guard.py — garde de vraisemblance et cwd explicite (#14356).
 
 Couvre :
   - _output_census : recensement outputs / image/png / volume par type MIME,
@@ -21,7 +21,7 @@ HAUSSE, ``text/html`` 194 409 -> 6 856). Ce sont les deux seuls cas ou le
 code de sortie ment sans qu'aucun autre signal ne bronche.
 
 Usage :
-    pytest tests/test_batch_reexecute.py -v
+    pytest tests/test_batch_reexecute_degradation_guard.py -v
 """
 
 from __future__ import annotations
