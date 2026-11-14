@@ -34,9 +34,9 @@
       ],
       "notebooks": [
         "GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
-        "GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb",
+        "GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
         "GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb",
-        "GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb",
+        "GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb",
         "GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb",
         "GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb",
         "GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb",
