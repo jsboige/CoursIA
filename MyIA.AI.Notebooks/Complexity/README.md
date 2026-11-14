@@ -80,10 +80,6 @@ principal de niveau licence qui en pose d'abord les notions.
 | 06 | [Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Licence | [06b — Aaronson–Gottesman](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb), [06c — Classical at heart](Complexity-06c-ClassicalAtHeart-Python.ipynb), [06d — Aaronson–Ambainis, la variable influente](Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) |
 | 07 | [Complexité de Kolmogorov bornée : séquences à mémoire limitée](Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Recherche | [07b — Le tour des grands nombres](Complexity-07b-LeTourDesGrandsNombres-Python.ipynb), [07c — Le bilan mathocalypse](Complexity-07c-LeBilanMathocalypse-Python.ipynb) |
 
-### Parité C# — word RAM
-
-[Complexity-03e : barrières d'exposants et word RAM (C#)](Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) accompagne la [version Python](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb). L'interpréteur utilise BigInteger pour les mots modulaires ; les générateurs et les chronomètres diffèrent.
-
 ## Position dans le dépôt
 
 La série rejoint le dialogue formel existant : les jumeaux Lean (`Search/discrepancy_lean/`,
@@ -157,6 +153,8 @@ par témoin fermé (compte de pas à la main contre interpréteur, chemin par ch
 point de départ quadratique et calcule pourquoi la borne 1,9992 ne se mesure à aucune taille
 atteignable — exactement ce que la source écrit de ses constantes. Aucun `lake build` n'est
 lancé : la preuve vit chez les auteurs, le carnet lit l'énoncé.
+
+[Complexity-03e : barrières d'exposants et word RAM (C#)](Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) accompagne la [version Python](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb). L'interpréteur utilise BigInteger pour les mots modulaires ; les générateurs et les chronomètres diffèrent.
 
 Les notebooks 07 et 07b ouvrent le **miroir descriptif** : 07 demande quelles
 séquences une mémoire bornée peut écrire court ; 07b retourne la question sur les
