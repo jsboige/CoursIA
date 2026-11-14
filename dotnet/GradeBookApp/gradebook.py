@@ -68,6 +68,20 @@ class AmbiguityJournal:
         })
         return True
 
+    def record_identity_ambiguity(self, evaluator_email, students, reason):
+        """Trace un conflit d'identité sans écrire d'adresse ni de nom en clair."""
+        self.entries.append({
+            "type": "identite_evaluateur_ambigue",
+            "evaluateur": _pseudonymize(evaluator_email),
+            "inscrits_candidats": sorted({
+                _pseudonymize(f"{student.nom}\0{student.prenom}")
+                for student in students
+            }),
+            "motif": reason,
+            "decision": "non_credite_arbitrage_requis",
+        })
+        return True
+
     @property
     def has_ambiguities(self):
         return bool(self.entries)
@@ -115,9 +129,11 @@ def reset_ambiguity_journal():
 # --- Structures de données ---
 
 class StudentRecord:
-    def __init__(self, prenom, nom, sujet_projet_1, sujet_projet_2=None):
+    def __init__(self, prenom, nom, sujet_projet_1, sujet_projet_2=None, email=None):
         self.prenom = prenom
         self.nom = nom
+        # Champ optionnel pour préserver tous les appels positionnels existants.
+        self.email = email
         self.sujets = [sujet_projet_1]
         if sujet_projet_2:
             self.sujets.append(sujet_projet_2)
@@ -233,6 +249,49 @@ class ProjectEvaluation:
         return (self.project_name(name1) == self.project_name(name2) and self.project_name(prenom1) == self.project_name(prenom2)) or \
                (self.project_name(prenom1) == self.project_name(name2) and self.project_name(name1) == self.project_name(prenom2))
 
+    @staticmethod
+    def normalize_email(email):
+        """Normalise une adresse présente ; les valeurs absentes ou typées sont inutilisables."""
+        if not isinstance(email, str):
+            return None
+        normalized = email.strip().lower()
+        return normalized or None
+
+    def is_registered_evaluator(self, evaluation):
+        """Règle 3 : nom historique, puis e-mail exact comme identité secondaire.
+
+        La règle nominale historique reste inchangée pour les étudiants sans e-mail.
+        L'e-mail n'est comparé que s'il s'agit de deux chaînes non vides. Une
+        collision de roster ou un désaccord entre l'identité nominale et l'adresse
+        échoue fermé et alimente le journal pseudonymisé déjà utilisé par le gate.
+        """
+        name_matches = [
+            student for student in self.student_records
+            if self.match_names(student, evaluation)
+        ]
+        evaluator_email = self.normalize_email(getattr(evaluation, "email", None))
+        if evaluator_email is None:
+            return bool(name_matches)
+
+        email_matches = [
+            student for student in self.student_records
+            if self.normalize_email(getattr(student, "email", None)) == evaluator_email
+        ]
+        if len(email_matches) > 1:
+            _DEFAULT_AMBIGUITY_JOURNAL.record_identity_ambiguity(
+                evaluator_email, email_matches, "adresse_partagee_par_plusieurs_inscrits"
+            )
+            return False
+
+        if email_matches and name_matches and email_matches[0] not in name_matches:
+            _DEFAULT_AMBIGUITY_JOURNAL.record_identity_ambiguity(
+                evaluator_email, name_matches + email_matches,
+                "nom_et_adresse_designent_des_inscrits_differents",
+            )
+            return False
+
+        return bool(name_matches or email_matches)
+
     def evaluator_key(self, evaluation):
         """Clé d'identité d'un évaluateur, utilisée par la règle 5 (évaluations doubles).
 
@@ -273,13 +332,19 @@ class ProjectEvaluation:
 
         # Règle 3: Rejeter les évaluateurs non-inscrits (sauf le professeur)
         if not eval_record.is_teacher:
-            is_registered = any(self.match_names(student, eval_record) for student in self.student_records)
+            is_registered = self.is_registered_evaluator(eval_record)
             if not is_registered:
                 print(f"AVERTISSEMENT: L'évaluateur {eval_record.prenom} {eval_record.nom} n'est pas inscrit au cours. Evaluation pour {group_evaluation.groupe} écartée.")
                 return False
 
-        # Règle 4: Rejeter les auto-évaluations
-        is_member = any(self.match_names(member, eval_record) for member in group_evaluation.group_members)
+        # Règle 4 : rejeter les auto-évaluations par nom ou adresse exacte.
+        evaluator_email = self.normalize_email(getattr(eval_record, "email", None))
+        is_member = any(
+            self.match_names(member, eval_record)
+            or (evaluator_email is not None and evaluator_email ==
+                self.normalize_email(getattr(member, "email", None)))
+            for member in group_evaluation.group_members
+        )
         if is_member:
             print(f"AVERTISSEMENT: Auto-évaluation par {eval_record.prenom} {eval_record.nom} pour son propre groupe {group_evaluation.groupe}. Evaluation écartée.")
             return False
@@ -343,11 +408,20 @@ def load_student_records(file_path, column_mapping=None):
             "Prenom": "prenom",
             # Variations pour le nom
             "Nom": "nom",
+            # Le roster peut fournir l'adresse pour l'identité secondaire exacte.
+            "Adresse e-mail": "email",
+            "Adresse de courriel": "email",
+            "Email": "email",
+            "Mail": "email",
+            "Login": "email",
             # Variations pour le sujet du projet
             "Sujet IA Symbolique": "sujet_projet_1",
             "Sujet Projet de Programmation par Contrainte": "sujet_projet_1"
         }
     
+    email_columns = [col for col in df.columns if column_mapping.get(col, col) == "email"]
+    if len(email_columns) > 1:
+        raise ValueError("Plusieurs colonnes email dans le roster : " + ", ".join(email_columns))
     df = df.rename(columns=column_mapping)
     
     students = []
@@ -370,7 +444,7 @@ def load_student_records(file_path, column_mapping=None):
         if pd.isna(projet) or not str(projet).strip():
             continue
             
-        students.append(StudentRecord(prenom, nom, projet))
+        students.append(StudentRecord(prenom, nom, projet, email=row.get('email')))
     return students
 
 
@@ -1165,7 +1239,9 @@ def load_students_with_multiple_groups(file_path, epreuves_config):
         'Nom': 'nom',
         'Adresse de courriel': 'email',
         'Adresse e-mail': 'email',
-        'Email': 'email'
+        'Email': 'email',
+        'Mail': 'email',
+        'Login': 'email'
     }
     
     # Ajouter le mapping pour chaque épreuve
@@ -1175,6 +1251,9 @@ def load_students_with_multiple_groups(file_path, epreuves_config):
         if original_col in df.columns:
             col_mapping[original_col] = target_col
     
+    email_columns = [col for col in df.columns if col_mapping.get(col, col) == "email"]
+    if len(email_columns) > 1:
+        raise ValueError("Plusieurs colonnes email dans le roster : " + ", ".join(email_columns))
     df = df.rename(columns=col_mapping)
     
     return df
@@ -1282,7 +1361,9 @@ def process_epreuve(students_df, evaluations, epreuve_config, professor_email_cf
             continue
         
         if pd.notna(groupe) and str(groupe).strip():
-            student = StudentRecord(str(prenom), str(nom), str(groupe))
+            student = StudentRecord(
+                str(prenom), str(nom), str(groupe), email=row.get('email')
+            )
             student_records.append(student)
     
     # Créer l'objet ProjectEvaluation
