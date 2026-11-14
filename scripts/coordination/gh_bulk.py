@@ -1,7 +1,8 @@
 """Lectures groupees de GitHub et de git pour le tapis rapide (#22983).
 
 Seul module de la voie legere qui lance un processus ; `run(argv, timeout)` est
-injecte, les tests en passent un faux. Le nombre d'appels ne depend pas des candidats.
+injecte, les tests en passent un faux. Le cache et le verrou sont dans
+`coordination.gh_cache` (#22630).
 """
 from __future__ import annotations
 
@@ -9,10 +10,9 @@ import json
 import os
 import re
 import subprocess
-import tempfile
 import time
 from collections.abc import Callable
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -205,16 +205,26 @@ def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jour
               dossier_cache: Path | None = None) -> Lecture:
     """Les trois lectures, ou le cache local de moins de `cache_s` s (0 : sans cache).
 
-    Un cache illisible se relit sur le reseau ; sans verrou, le dernier ecrivain gagne."""
+    **Une seule lecture reseau par machine et par instant** (#22630) : le cache est
+    relu apres le verrou partage -- si une autre lane a rafraichi pendant l'attente,
+    cette passe ne consomme aucun credit gh. Le verrou n'est jamais bloquant.
+    """
+    from coordination import gh_cache
+
     chemin = (dossier_cache or dossier_cache_defaut()) / f"lecture-{jours}j.json"
-    if cache_s > 0:
-        try:
-            brut = json.loads(chemin.read_text(encoding="utf-8"))
-            if time.time() - float(brut.pop("_epoch")) < cache_s:
-                brut["citations"] = {int(k): v for k, v in brut["citations"].items()}
-                return Lecture(**{**brut, "depuis_cache": True})
-        except (OSError, ValueError, KeyError, TypeError, AttributeError):
-            pass  # cache absent ou illisible : relu sur le reseau
+
+    def _depuis_cache(brut: dict) -> Lecture:
+        brut["citations"] = {int(k): v for k, v in brut["citations"].items()}
+        return Lecture(**{**brut, "depuis_cache": True})
+
+    def _reseau() -> Lecture:
+        return _lire_reseau(depot, cache_s, run, jours)
+
+    return gh_cache.lire_unique(chemin, cache_s, _reseau, _depuis_cache)
+
+
+def _lire_reseau(depot: str | Path, cache_s: int, run: Run, jours: int) -> Lecture:
+    """Les trois lectures reseau."""
     appels = [0]
 
     def compte(argv: list[str], timeout: int) -> str:
@@ -227,15 +237,6 @@ def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jour
                       citations=lire_citations_mergees(depot, jours, compte),
                       lu_a=datetime.now(UTC).strftime(_ISO), fetch_note=fetch_note)
     lecture.appels, lecture.secondes = appels[0], round(time.monotonic() - debut, 1)
-    if cache_s > 0:
-        try:
-            chemin.parent.mkdir(parents=True, exist_ok=True)
-            fd, tmp = tempfile.mkstemp(dir=chemin.parent, suffix=".tmp")
-            with os.fdopen(fd, "w", encoding="utf-8") as fh:
-                json.dump({**asdict(lecture), "_epoch": time.time()}, fh, ensure_ascii=False)
-            os.replace(tmp, chemin)
-        except OSError:
-            pass  # un cache non ecrit ne change pas le tirage
     return lecture
 
 

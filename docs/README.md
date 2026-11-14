@@ -51,6 +51,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [`2026-10-08-roster-machine-workspace.md`](transients/2026-10-08-roster-machine-workspace.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère, figé dans la lane transiente) |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
 | [reference/lib-versions.md](reference/lib-versions.md) | Organe des versions de bibliothèques des carnets (#23073) : manifeste canonique, recensement `--census`, garde advisory sur les carnets modifiés |
+| [reference/rust-ecosystem-map.md](reference/rust-ecosystem-map.md) | Carte de l'écosystème Rust (Pli 1 de l'Epic #26510) : correspondance bibliothèques Python/C# en usage → crate Rust, série par série ; socle mesuré par `rust_ecosystem_census.py` |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
@@ -486,6 +487,7 @@ Deltas runtime et digests de performance .NET, mesurés sur les bancs et les car
 | Fichier | Description |
 |---------|-------------|
 | [dotnet/net11-runtime-deltas.md](dotnet/net11-runtime-deltas.md) | .NET 9 → 10 → 11 — Deltas runtime mesurés sur les bancs et carnets types du dépôt |
+| [dotnet/banc4-regime-25644.md](dotnet/banc4-regime-25644.md) | Banc 4 — contrôle du régime d’invocation et du tiering sur .NET 9 et 10, avec profils par itération |
 | [dotnet/net11-async-ffi-deltas.md](dotnet/net11-async-ffi-deltas.md) | .NET 10 → 11 — Delta runtime mesuré sur l'axe 1 (awaits profonds) du carnet Aspire AsyncFFI — compatibilité .NET 11 établie, verdict à n=25 |
 | [dotnet/net11-toub-digest.md](dotnet/net11-toub-digest.md) | .NET 11 — Digest de performance |
 | [dotnet/net11-axis1-async.md](dotnet/net11-axis1-async.md) | .NET 10 vs 11 — axe 1 (awaits profonds / Runtime Async) : mesure rejouable sur un carnet, runtime prouvé par sonde et non déduit du nom de variante |

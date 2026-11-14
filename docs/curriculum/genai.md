@@ -20,10 +20,10 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 288 |
+| Notebooks | 293 |
 | PRODUCTION | 0 |
-| BETA | 258 |
-| ALPHA | 30 |
+| BETA | 262 |
+| ALPHA | 31 |
 
 ## GenAI/00-GenAI-Environment (7 notebooks)
 
@@ -37,7 +37,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 6 | [Deploiement Docker Local des Services GenAI](../../MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-6-Local-Docker-Deployment.ipynb) | BETA | Non |
 | 7 | [GenAI Environment — Terminal pour les longs…](../../MyIA.AI.Notebooks/GenAI/00-GenAI-Environment/00-7-Terminal-Long-Runs.ipynb) | BETA | Non |
 
-## GenAI/3D (4 notebooks)
+## GenAI/3D (5 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -45,6 +45,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 2 | [3D-03 — Gaussian Splats : la transition du volume…](../../MyIA.AI.Notebooks/GenAI/3D/3D-03-Gaussian-Splats-Concepts.ipynb) | ALPHA | Non |
 | 3 | [3D-04 — 3DGS avec gsplat : brancher le vrai moteur](../../MyIA.AI.Notebooks/GenAI/3D/3D-04-3DGS-From-Scratch-with-gsplat.ipynb) | ALPHA | Non |
 | 4 | [3D-05 — Tradeoffs d'optimisation 3DGS : densification,…](../../MyIA.AI.Notebooks/GenAI/3D/3D-05-3DGS-Optimization-Tradeoffs.ipynb) | ALPHA | Non |
+| 5 | [3D-08 — Rendu analytique contre radiance field : quand…](../../MyIA.AI.Notebooks/GenAI/3D/3D-08-Rendu-Analytique-vs-Radiance-Field-Python.ipynb) | ALPHA | Non |
 
 ## GenAI/Audio (41 notebooks)
 
@@ -150,8 +151,8 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 |---|----------|----------|------------|
 | 1 | [OpenAI DALL-E 3 - Generation d'Images](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb) | BETA | Non |
 | 2 | [OpenAI DALL-E 3 - Image Generation](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3_en.ipynb) | BETA | Non |
-| 3 | [GPT-5 Multimodal - Analyse et Génération d'Images](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb) | BETA | Non |
-| 4 | [GPT-5 Multimodal - Image Analysis and Generation](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API_en.ipynb) | BETA | Non |
+| 3 | [Génération et analyse d'images par API multimodale](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb) | BETA | Non |
+| 4 | [Image Generation and Analysis via Multimodal API](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API_en.ipynb) | BETA | Non |
 | 5 | [Opérations de Base sur les Images](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb) | BETA | Non |
 | 6 | [Stable Diffusion Forge - SD XL Turbo](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb) | BETA | Non |
 | 7 | [Qwen Image-Edit 2.5 - API ComfyUI](../../MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb) | BETA | Non |
@@ -225,7 +226,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 19 | [Module 06 — Tester les nouveautés v0.10 (« l'ère…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/06-nouveautes-v0.10/06-Nouveautes-v0.10-QA-OWUI.ipynb) | BETA | Non |
 | 20 | [Différencier plusieurs assistants — mesurer ce qu'un…](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/differencier-les-assistants.ipynb) | BETA | Non |
 
-## GenAI/PostTraining (22 notebooks)
+## GenAI/PostTraining (23 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -236,23 +237,24 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | [PT-05 — Reinforcement Learning with Verifiable Rewards…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_05_rlvr_verifiable_rewards.ipynb) | BETA | Non |
 | 6 | [PT-06 — Evaluation Comparative du Post-Training](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_06_eval_comparative.ipynb) | BETA | Non |
 | 7 | [PT-07 — Détecter le reward hacking avec rewardspy](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_07_rewardspy_reward_hacking.ipynb) | BETA | Oui |
-| 8 | [PT-08 — GRPO from scratch : la mécanique du signal de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb) | BETA | Non |
-| 9 | [PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb) | BETA | Oui |
-| 10 | [PT-10 — GAE from scratch : pourquoi un mini-critic ?…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb) | BETA | Non |
-| 11 | [PT-11a — GRPO + RLVR sur Qwen3.5-0.8B : la série…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb) | BETA | Non |
-| 12 | [PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) +…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | BETA | Non |
-| 13 | [PT-11c — RLVR sur Qwen3-1.7B/2B (cran au-dessus de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11c_grpo_qwen17_rlvr.ipynb) | ALPHA | Non |
-| 14 | [PT-11d — RLVR multi-seed sur Qwen3.5-0.8B](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb) | ALPHA | Non |
-| 15 | [PT-12 — Crédit différé multi-step : GAE-λ sur un…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb) | BETA | Oui |
-| 16 | [PT-13 — Les trois biais du loss GRPO et leurs…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_13_dapo_drgrpo_corrections.ipynb) | ALPHA | Oui |
-| 17 | [PT-14 — Lois thermodynamiques de l'entraînement :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_14_neural_thermodynamic_laws.ipynb) | BETA | Oui |
-| 18 | [PT-15 — Contrôle par interprétabilité : refusal…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb) | BETA | Non |
-| 19 | [PT-15b — Géométrie des features SAE : galaxy, atome,…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb) | BETA | Oui |
-| 20 | [PT-15c — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15c_crosscoder_distillation.ipynb) | BETA | Non |
-| 21 | [PT-16 — Vericoding : la preuve formelle comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb) | BETA | Oui |
-| 22 | [PT-17 — laya : la règle de score propre comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb) | BETA | Non |
+| 8 | [PT-08 — GRPO from scratch : signal de récompense dans…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env-CSharp.ipynb) | BETA | Oui |
+| 9 | [PT-08 — GRPO from scratch : la mécanique du signal de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb) | BETA | Non |
+| 10 | [PT-09 — RLOO (REINFORCE Leave-One-Out) from scratch :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_09_rloo_from_scratch_toy_env.ipynb) | BETA | Oui |
+| 11 | [PT-10 — GAE from scratch : pourquoi un mini-critic ?…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_10_gae_from_scratch_toy_env.ipynb) | BETA | Non |
+| 12 | [PT-11a — GRPO + RLVR sur Qwen3.5-0.8B : la série…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11a_grpo_qwen35_rlvr.ipynb) | BETA | Non |
+| 13 | [PT-11b — RLVR sur VRAI LLM (Qwen3.5-0.8B) +…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | BETA | Non |
+| 14 | [PT-11c — RLVR sur Qwen3-1.7B/2B (cran au-dessus de…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11c_grpo_qwen17_rlvr.ipynb) | ALPHA | Non |
+| 15 | [PT-11d — RLVR multi-seed sur Qwen3.5-0.8B](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_11d_multiseed_qwen35_4x100.ipynb) | ALPHA | Non |
+| 16 | [PT-12 — Crédit différé multi-step : GAE-λ sur un…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_12_multistep_delayed_credit.ipynb) | BETA | Oui |
+| 17 | [PT-13 — Les trois biais du loss GRPO et leurs…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_13_dapo_drgrpo_corrections.ipynb) | ALPHA | Oui |
+| 18 | [PT-14 — Lois thermodynamiques de l'entraînement :…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_14_neural_thermodynamic_laws.ipynb) | BETA | Oui |
+| 19 | [PT-15 — Contrôle par interprétabilité : refusal…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15_controle_interpretabilite.ipynb) | BETA | Non |
+| 20 | [PT-15b — Géométrie des features SAE : galaxy, atome,…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb) | BETA | Oui |
+| 21 | [PT-15c — Crosscoder : diffuser deux modèles, distilled…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_15c_crosscoder_distillation.ipynb) | BETA | Non |
+| 22 | [PT-16 — Vericoding : la preuve formelle comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_16_vericoding_formal_verification.ipynb) | BETA | Oui |
+| 23 | [PT-17 — laya : la règle de score propre comme…](../../MyIA.AI.Notebooks/GenAI/PostTraining/PT_17_laya_proper_rewards_toy.ipynb) | BETA | Non |
 
-## GenAI/RAG-et-Memoire-Semantique (14 notebooks)
+## GenAI/RAG-et-Memoire-Semantique (15 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -261,28 +263,30 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 3 | [Embeddings from scratch — word2vec skip-gram, la…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) | BETA | Oui |
 | 4 | [Espace des embeddings — voir la géométrie : réduction…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03b-Espace-Embeddings-Visualisation.ipynb) | ALPHA | Oui |
 | 5 | [Tokenisation from scratch — l'unité de compte de tout…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb) | ALPHA | Oui |
-| 6 | [Tokenisateurs comparés — WordPiece et Unigram, les deux…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares.ipynb) | ALPHA | Oui |
-| 7 | [Stockage vectoriel réel — persistance, index ANN (HNSW)…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb) | BETA | Oui |
-| 8 | [RAG 05b — Stockage vectoriel : le serveur Qdrant et les…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) | BETA | Non |
-| 9 | [06 — Kernel Memory in-process : la couche d'abstraction…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb) | BETA | Non |
-| 10 | [RAG 07 — Kernel Memory Python : ingestion, recherche et…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb) | BETA | Non |
-| 11 | [RAG 08 — Kernel Memory et la recherche hybride : BM25 +…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) | BETA | Non |
-| 12 | [RAG 09 — Au-delà du texte : le plafond multimodal du…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb) | BETA | Non |
-| 13 | [RAG 10 — Retrouver des pages par leur image :…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/10-RAG-Visuel-Embedding-Conjoint.ipynb) | BETA | Non |
-| 14 | [RAG 11 — Les représentations convergent-elles ? Mesurer…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/11-Alignement-Representationnel-Cross-Modal.ipynb) | BETA | Non |
+| 6 | [Tokenisateurs comparés — WordPiece et Unigram, les deux…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares-CSharp.ipynb) | BETA | Oui |
+| 7 | [Tokenisateurs comparés — WordPiece et Unigram, les deux…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04b-Tokenisateurs-Compares.ipynb) | ALPHA | Oui |
+| 8 | [Stockage vectoriel réel — persistance, index ANN (HNSW)…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb) | BETA | Oui |
+| 9 | [RAG 05b — Stockage vectoriel : le serveur Qdrant et les…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) | BETA | Non |
+| 10 | [06 — Kernel Memory in-process : la couche d'abstraction…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/06-KernelMemory-InProcess.ipynb) | BETA | Non |
+| 11 | [RAG 07 — Kernel Memory Python : ingestion, recherche et…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/07-KernelMemory-Python-Quickstart.ipynb) | BETA | Non |
+| 12 | [RAG 08 — Kernel Memory et la recherche hybride : BM25 +…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) | BETA | Non |
+| 13 | [RAG 09 — Au-delà du texte : le plafond multimodal du…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/09-KernelMemory-Multimodal.ipynb) | BETA | Non |
+| 14 | [RAG 10 — Retrouver des pages par leur image :…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/10-RAG-Visuel-Embedding-Conjoint.ipynb) | BETA | Non |
+| 15 | [RAG 11 — Les représentations convergent-elles ? Mesurer…](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/11-Alignement-Representationnel-Cross-Modal.ipynb) | BETA | Non |
 
-## GenAI/Security (8 notebooks)
+## GenAI/Security (9 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [Contrôle par interpretabilite — direction du refus,…](../../MyIA.AI.Notebooks/GenAI/Security/Control/Control-Refusal-Direction.ipynb) | BETA | Non |
 | 2 | [Backdoor Code — Houdini a trois etages contre un Guard…](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Backdoor-Code-From-Scratch.ipynb) | BETA | Oui |
-| 3 | [Oversight-Scaling-Laws-Analytics](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Analytics.ipynb) | BETA | Oui |
-| 4 | [Oversight — Scaling Laws sur le jeu de Nim (R12,…](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb) | BETA | Non |
-| 5 | [Oversight-Scaling-Laws-Statistics](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Statistics.ipynb) | BETA | Oui |
-| 6 | [Oversight-Scaling-Laws-Wargames](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Wargames.ipynb) | BETA | Oui |
-| 7 | [Red team au-delà de l'injection — jailbreaks,…](../../MyIA.AI.Notebooks/GenAI/Security/RedTeam/RedTeam-Beyond-Injection.ipynb) | BETA | Oui |
-| 8 | [Surface d'attaque des outils MCP — le piège de la…](../../MyIA.AI.Notebooks/GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb) | BETA | Non |
+| 3 | [Neurones dormants — reprogrammer un neurone endormi…](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Backdoor-Dormant-Neurons.ipynb) | BETA | Non |
+| 4 | [Oversight-Scaling-Laws-Analytics](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Analytics.ipynb) | BETA | Oui |
+| 5 | [Oversight — Scaling Laws sur le jeu de Nim (R12,…](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Nim.ipynb) | BETA | Non |
+| 6 | [Oversight-Scaling-Laws-Statistics](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Statistics.ipynb) | BETA | Oui |
+| 7 | [Oversight-Scaling-Laws-Wargames](../../MyIA.AI.Notebooks/GenAI/Security/Oversight/Oversight-Scaling-Laws-Wargames.ipynb) | BETA | Oui |
+| 8 | [Red team au-delà de l'injection — jailbreaks,…](../../MyIA.AI.Notebooks/GenAI/Security/RedTeam/RedTeam-Beyond-Injection.ipynb) | BETA | Oui |
+| 9 | [Surface d'attaque des outils MCP — le piège de la…](../../MyIA.AI.Notebooks/GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb) | BETA | Non |
 
 ## GenAI/SemanticKernel (19 notebooks)
 
@@ -308,7 +312,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 18 | [Notebook de conception de Notebook](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-kernel-AutoInteractive.ipynb) | BETA | Non |
 | 19 | [Jeu de devinette : Père Fouras vs Laurent Jalabert](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-python.ipynb) | BETA | Non |
 
-## GenAI/Texte (45 notebooks)
+## GenAI/Texte (46 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -340,23 +344,24 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 26 | [13. Orchestration agentique du test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) | BETA | Non |
 | 27 | [13b — Évaluation d'agents : succès, coût, ablation et…](../../MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb) | BETA | Non |
 | 28 | [14. Memoire persistante pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb) | BETA | Non |
-| 29 | [14b. Memoire paginee d'agent -- fenetre glissante,…](../../MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | BETA | Oui |
-| 30 | [15. Tree-of-Thoughts sur de vrais problemes de…](../../MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | BETA | Non |
-| 31 | [16. Scaling du test-time compute (Snell 2024)](../../MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | BETA | Non |
-| 32 | [17. Modèles a raisonnement natif vs scaling du…](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | BETA | Non |
-| 33 | [18. Plugins Semantic Kernel pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | BETA | Non |
-| 34 | [19. Orchestration et tâches planifiées avec Open WebUI…](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | BETA | Non |
-| 35 | [20. OWUI Native API v0.9.6 — introspection REST et…](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | BETA | Non |
-| 36 | [22 — Évaluer les sorties générées : BLEU, ROUGE,…](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | BETA | Non |
-| 37 | [22b — Profil cognitif d'un LLM : batterie CHC, profil «…](../../MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | BETA | Non |
-| 38 | [22c. DSPy — du prompt écrit au prompt compilé](../../MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | BETA | Non |
-| 39 | [23. Du notebook a l'application - servir le RAG de la…](../../MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb) | BETA | Non |
-| 40 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
-| 41 | [TV-00b — Variantes d’attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
-| 42 | [TV-00d — Encodeur seul et encodeur-décodeur : les deux…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb) | BETA | Oui |
-| 43 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
-| 44 | [TV-02 — MoE SOTA : le routage réel d’OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
-| 45 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
+| 29 | [14b — Mémoire paginée d’agent](../../MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-CSharp.ipynb) | BETA | Oui |
+| 30 | [14b. Memoire paginee d'agent -- fenetre glissante,…](../../MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | BETA | Oui |
+| 31 | [15. Tree-of-Thoughts sur de vrais problemes de…](../../MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | BETA | Non |
+| 32 | [16. Scaling du test-time compute (Snell 2024)](../../MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | BETA | Non |
+| 33 | [17. Modèles a raisonnement natif vs scaling du…](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | BETA | Non |
+| 34 | [18. Plugins Semantic Kernel pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | BETA | Non |
+| 35 | [19. Orchestration et tâches planifiées avec Open WebUI…](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | BETA | Non |
+| 36 | [20. OWUI Native API v0.9.6 — introspection REST et…](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | BETA | Non |
+| 37 | [22 — Évaluer les sorties générées : BLEU, ROUGE,…](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | BETA | Non |
+| 38 | [22b — Profil cognitif d'un LLM : batterie CHC, profil «…](../../MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | BETA | Non |
+| 39 | [22c. DSPy — du prompt écrit au prompt compilé](../../MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | BETA | Non |
+| 40 | [23. Du notebook a l'application - servir le RAG de la…](../../MyIA.AI.Notebooks/GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb) | BETA | Non |
+| 41 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
+| 42 | [TV-00b — Variantes d’attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
+| 43 | [TV-00d — Encodeur seul et encodeur-décodeur : les deux…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00d-Encodeurs-from-scratch.ipynb) | BETA | Oui |
+| 44 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
+| 45 | [TV-02 — MoE SOTA : le routage réel d’OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
+| 46 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
 
 ## GenAI/Vibe-Coding (8 notebooks)
 
