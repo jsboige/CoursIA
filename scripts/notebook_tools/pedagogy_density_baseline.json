@@ -1,7 +1,7 @@
 {
   "_comment": "Pedagogy-density baseline (#10479). Burn down, do not grow. One float per TRACKED pedagogical notebook: chars of markdown prose per code cell (continuous metric). Population: `git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS minus setup/out-of-corpus kinds. Regenerate with: python scripts/notebook_tools/pedagogy_density.py --update-baseline",
   "metric": "prose_chars / code_cells",
-  "count": 1453,
+  "count": 1452,
   "notebooks": {
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical-Python.ipynb": 1205.125,
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical-Python.ipynb": 1237.667,
@@ -1315,7 +1315,6 @@
     "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb": 1246.857,
     "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-18-Sudoku-Modes-Python.ipynb": 1180.286,
     "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-19-Optimization-Lexicographic-Python.ipynb": 1382.429,
-    "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/z3-sudoku-service.ipynb": 563.0,
     "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/01_Linq2Z3_Intro.ipynb": 1482.167,
     "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/02_Sudoku_Theorem_vs_Array.ipynb": 1454.357,
     "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-Linq2Z3/03_Sudoku_Modes_Comparison.ipynb": 1089.0,
