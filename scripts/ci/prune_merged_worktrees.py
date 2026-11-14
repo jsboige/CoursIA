@@ -147,6 +147,10 @@ disques dessus). Les refus sont donc un RAPPORT, pas un echec :
   chaque nuit ; le RELAIS dashboard reste aux agents de lane -- une
   tache planifiee n'a pas d'acces MCP (pattern heartbeat_sweep_emit,
   #12588).
+- `--progress` emet sur stderr une ligne par worktree, PENDANT la passe
+  (#23636) : sur un parc de ~98 worktrees (~15 min mesures), une passe
+  silencieuse est indistinguable d'une passe bloquee. OPT-IN, comme
+  `--warn-threshold` : le defaut muet est le contrat de #3895.
 
 ## Design rules that matter
 
@@ -3002,7 +3006,7 @@ def build_warn_line(statuses: list,
     return " — ".join(parts)
 
 
-def _progress(quiet: bool, message: str) -> None:
+def _progress(enabled: bool, message: str) -> None:
     """Emet une ligne de progression sur stderr, immediatement (#23636).
 
     La progression ne passe JAMAIS par stdout : stdout porte le rapport
@@ -3010,8 +3014,12 @@ def _progress(quiet: bool, message: str) -> None:
     programmatiquement. `flush=True` est indispensable -- sans lui, une
     sortie redirigee dans un fichier est bufferisee par blocs, et le
     defaut observe (silence de quart d'heure) revient.
+
+    L'emission est OPT-IN (`--progress`) : le defaut reste muet, parce que
+    le contrat de #3895 est « le dry-run interactif reste silencieux »
+    (le refus est un rapport, la ligne d'alerte est elle seule opt-in).
     """
-    if quiet:
+    if not enabled:
         return
     print(message, file=sys.stderr, flush=True)
 
@@ -3029,12 +3037,19 @@ def main() -> int:
         help="Sortie JSON structuree (parallele au mode texte).",
     )
     p.add_argument(
+        "--progress",
+        action="store_true",
+        help="Emet la progression au fil de l'eau sur stderr (#23636) : une "
+             "ligne par worktree, pendant la passe. OPT-IN : le defaut reste "
+             "muet (contrat #3895 -- le dry-run interactif ne parle que si "
+             "on le demande). Sur un parc de ~100 worktrees (~15 min "
+             "mesures), une passe silencieuse est indistinguable d'une passe "
+             "bloquee : c'est ce silence que --progress supprime.",
+    )
+    p.add_argument(
         "--quiet",
         action="store_true",
-        help="Supprime la progression au fil de l'eau sur stderr (#23636). "
-             "Par defaut, la progression EST emise : une passe silencieuse "
-             "sur un parc de ~100 worktrees est indistinguable d'une passe "
-             "bloquee.",
+        help="Force le silence, meme avec --progress (#23636).",
     )
     p.add_argument(
         "--path",
@@ -3185,19 +3200,27 @@ def main() -> int:
     # decrivent CETTE passe et pas la somme des appels du process.
     reset_remote_tip_memo()
 
-    # #23636 : la passe emet sa progression AU FIL DE L'EAU. La boucle de
-    # diagnostic ne sortait RIEN avant le rapport final : sur un parc de
-    # ~98 worktrees (mesure : ~15 min, ~9 s par worktree, l'essentiel
-    # dans l'ancre PR), l'exploitant voyait un silence de quart d'heure
-    # et ne pouvait distinguer "lent" de "bloque". La progression part sur
-    # STDERR -- stdout reste le JSON du rapport, qui doit rester
-    # analysable par un tiers (la tache planifiee #14473 y lit le
-    # compte de refus). `flush=True` : sans lui, stderr redirige dans un
-    # fichier est bufferise par blocs et le defaut revient.
+    # #23636 : la passe peut emettre sa progression AU FIL DE L'EAU
+    # (`--progress`). La boucle de diagnostic ne sortait RIEN avant le
+    # rapport final : sur un parc de ~98 worktrees (mesure : ~15 min,
+    # ~9 s par worktree, l'essentiel dans l'ancre PR), l'exploitant
+    # voyait un silence de quart d'heure et ne pouvait distinguer
+    # "lent" de "bloque". La progression part sur STDERR -- stdout reste
+    # le JSON du rapport, qui doit rester analysable par un tiers (la
+    # tache planifiee #14473 y lit le compte de refus). `flush=True` :
+    # sans lui, stderr redirige dans un fichier est bufferise par blocs et
+    # le defaut revient.
+    #
+    # L'emission est OPT-IN : le defaut muet est un contrat de #3895 (le
+    # dry-run interactif reste silencieux ; seule la ligne d'alerte est
+    # opt-in via --warn-threshold). Une progression par defaut cassait ce
+    # contrat -- mesure sur PR #26569 : `test_warn_absent_without_flag`
+    # exige stderr vide sans --warn-threshold.
+    progress_on = bool(args.progress) and not args.quiet
     statuses: list[WorktreeStatus] = []
     total = len(worktrees)
     for index, wt in enumerate(worktrees, start=1):
-        _progress(args.quiet, f"[{index}/{total}] diagnostic {wt['path']}")
+        _progress(progress_on, f"[{index}/{total}] diagnostic {wt['path']}")
         try:
             status = enforce_lock_policy(
                 diagnose_worktree(
@@ -3212,7 +3235,7 @@ def main() -> int:
             print(f"ERROR diagnosing {wt['path']}: {e}", file=sys.stderr)
             return 2
         statuses.append(status)
-        _progress(args.quiet, f"[{index}/{total}] {status.decision} {wt['path']}")
+        _progress(progress_on, f"[{index}/{total}] {status.decision} {wt['path']}")
 
     # Les verdicts MERGED etablis pendant la passe survivent a la passe :
     # persistance du cache de verdicts (#15369).
@@ -3278,7 +3301,7 @@ def main() -> int:
                 "cleaned_artifacts": cleaned,
                 "quarantine": quarantine_info,
             })
-            _progress(args.quiet, f"[apply] {'retrait' if ok else 'ECHEC'} {s.path}")
+            _progress(progress_on, f"[apply] {'retrait' if ok else 'ECHEC'} {s.path}")
             if ok:
                 removal_count += 1
             else:

@@ -4154,7 +4154,10 @@ class TestProgressStreaming:
     1. la progression est EMISE pendant la passe, pas seulement a la fin ;
     2. elle part sur STDERR : stdout porte le rapport JSON, que des tiers
        lisent programmatiquement -- il doit rester analysable ;
-    3. `--quiet` la supprime entierement (usage machine, journal propre).
+    3. elle est OPT-IN (`--progress`) : le defaut reste muet, comme le
+       veut le contrat de #3895 (`test_warn_absent_without_flag` exige
+       stderr vide sans `--warn-threshold` ; une progression par defaut
+       l'avait casse sur PR #26569) ; `--quiet` force le silence.
     """
 
     @staticmethod
@@ -4182,7 +4185,7 @@ class TestProgressStreaming:
         paths = ["D:/wt/one", "D:/wt/two"]
         self._farm(monkeypatch, tmp_path, paths)
         monkeypatch.setattr(
-            sys, "argv", ["prune_merged_worktrees.py", "--json"])
+            sys, "argv", ["prune_merged_worktrees.py", "--json", "--progress"])
 
         rc = pmw.main()
 
@@ -4214,7 +4217,8 @@ class TestProgressStreaming:
         paths = ["D:/wt/one", "D:/wt/two"]
         self._farm(monkeypatch, tmp_path, paths)
         monkeypatch.setattr(
-            sys, "argv", ["prune_merged_worktrees.py", "--json", "--quiet"])
+            sys, "argv",
+            ["prune_merged_worktrees.py", "--json", "--progress", "--quiet"])
 
         rc = pmw.main()
         captured = capsys.readouterr()
@@ -4224,4 +4228,23 @@ class TestProgressStreaming:
         assert "diagnostic" not in captured.err
         # Le rapport, lui, reste present : --quiet ne supprime que la
         # progression.
+        assert json.loads(captured.out)["scanned"] == 2
+
+    def test_default_stays_silent(self, tmp_path, monkeypatch, capsys):
+        """SANS `--progress`, stderr reste vide (#3895).
+
+        C'est le contrat que la progression par defaut avait casse : le
+        dry-run interactif ne parle que si on le demande. Regression
+        mesuree sur PR #26569 (`test_warn_absent_without_flag` rouge).
+        """
+        paths = ["D:/wt/one", "D:/wt/two"]
+        self._farm(monkeypatch, tmp_path, paths)
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", "--json"])
+
+        rc = pmw.main()
+        captured = capsys.readouterr()
+
+        assert rc == 0
+        assert captured.err == ""
         assert json.loads(captured.out)["scanned"] == 2
