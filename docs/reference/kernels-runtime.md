@@ -180,6 +180,102 @@ dotnet interactive jupyter install
 
 Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` confirmee, `#!import` minimal OK (`FORTY_TWO=42`), AutoML 0.22.3 OK (RSquared 0,996). **Epilogue (02/10/2026, #18766)** : le depin a eu lieu — le canon fleet passe a `1.0.712001`, exactement le build sur lequel po-2024 tournait lors de cette divergence. La divergence est fermee par montee du canon (po-2024 etait « en avance »), la reparation historique ci-dessus reste documentee pour la methode (uninstall + install pinne quand `dotnet tool update` refuse le downgrade). Mesures de conformite flotte : matrice tenue a jour dans [Conformite flotte au canon](#conformite-flotte-au-canon--matrice-machine-x-version) (au 2026-10-09 : `po-2023`/`po-2024`/`po-2025`/`po-2026`/`po-2027` conformes par mesure — `po-2027` l'a ete apres reparation, sa mesure ayant d'abord trouve l'ancien canon installe ; `ai-01` canon teste en isole mais outil global encore sur l'ancien pin. **Mise a jour 2026-10-19** : `ai-01` est desormais mesuree elle aussi — l'outil **global** porte le canon et l'execution reelle d'un carnet .NET via le kernelspec global passe : la derniere ligne non mesuree de la matrice est close).
 
+## Rust (notebooks Rust via evcxr)
+
+Notebooks de la série `Sudoku/` (pilote `Sudoku-02-DancingLinks-Rust`, jumeau des jumeaux `Python` et `CSharp`). Le moteur est **evcxr** — un kernel Jupyter qui compile et exécute du Rust en place, sans passer par un pont Python.
+
+| Prerequis | Version | Verification |
+|-----------|---------|-------------|
+| rustup + toolchain stable | rustc **1.100.0** (mesuré sur ce siège) | `rustc --version` |
+| composant `rust-src` | requis par evcxr (compilation incrémentale des crates dans le kernel) | `rustup component list --installed \| grep rust-src` |
+| **evcxr_jupyter** | **0.22.0** (épinglé — publication 2025-08-18) | `evcxr_jupyter --version` |
+| kernel Jupyter `rust` | auto-installé par `evcxr_jupyter --install` | `jupyter kernelspec list` |
+| **Windows uniquement** : `dlltool` (binutils MinGW) | **LLVM-MinGW** portable (`mstorsjo/llvm-mingw`) | `dlltool --version` (en PATH) |
+
+### Installation
+
+```bash
+rustup component add rust-src
+cargo install --locked evcxr_jupyter --version 0.22.0
+evcxr_jupyter --install
+```
+
+**Épingler la version** : `cargo install evcxr_jupyter` sans `--version` compile la dernière version publiée, qui peut dériver d'une machine à l'autre — toujours `--version 0.22.0` + `--locked` (le `Cargo.lock` de la crate est figé, reproductible).
+
+### Le blocage Windows : `dlltool` manquant (le piège à connaître)
+
+Sur Windows avec la toolchain **GNU** (`stable-x86_64-pc-windows-gnu`, choisie pour éviter l'élévation UAC du chemin MSVC), `cargo install evcxr_jupyter` **échoue** :
+
+```
+error: error calling dlltool 'dlltool.exe': program not found
+error: could not compile `windows-sys` (lib) due to 1 previous error
+error: could not compile `parking_lot_core` (lib) due to 1 previous error
+```
+
+**Cause** : la toolchain GNU de rustup **n'embarque pas** les binutils MinGW (`dlltool`, `windres`). Les crates C-interop (`windows-sys`, `parking_lot_core`) font appel à `dlltool` via le crate `cc` pour générer les import-libs de DLL, et il n'est nulle part sur la machine.
+
+**Remède sans UAC** : **LLVM-MinGW portable** (archives `mstorsjo/llvm-mingw`) — un simple **zip à extraire**, pas d'installeur, pas de fenêtre UAC, réversible :
+
+```powershell
+# 1. dernière release ucrt x86_64 (zip ~182 Mo ; Invoke-WebRequest peut timeout sur
+#    un lien lent — curl.exe, intégré à Windows 11, avec reprise `-C -` est plus robuste)
+curl.exe -L -C - --retry 5 --retry-delay 10 --max-time 1800 -o llvm-mingw.zip 'https://github.com/mstorsjo/llvm-mingw/releases/download/20261104/llvm-mingw-20261104-ucrt-x86_64.zip'
+Expand-Archive llvm-mingw.zip -DestinationPath .\llvm-mingw
+# 2. le crate `cc` attend `dlltool.exe`/`windres.exe` ; LLVM-MinGW les livre sous
+#    le préfixe `llvm-` → alias par copie :
+Copy-Item .\llvm-mingw\llvm-mingw-*\bin\llvm-dlltool.exe .\llvm-mingw\llvm-mingw-*\bin\dlltool.exe
+Copy-Item .\llvm-mingw\llvm-mingw-*\bin\llvm-windres.exe .\llvm-mingw\llvm-mingw-*\bin\windres.exe
+# 3. ajouter .\llvm-mingw\llvm-mingw-*\bin au PATH de la session, puis :
+$env:CARGO_NET_RETRY = '20'   # lien instable : refait chaque fetch crates.io jusqu'à 20 fois
+cargo install --locked evcxr_jupyter --version 0.22.0
+evcxr_jupyter --install
+```
+
+Version mesurée sur ce siège : `20261104` (archive `llvm-mingw-20261104-ucrt-x86_64.zip`). Le cache registry de cargo **persiste** entre les passes : si un fetch de crate échoue en cours de route, relancer la même commande ne re-télécharge que ce qui manque. Le chemin alternatif (VS Build Tools / MSVC toolchain) exige une fenêtre UAC — **évité** : on n'y recourt que si LLVM-MinGW échoue, et on annonce alors la fenêtre sur le dashboard avant.
+
+### Exécution
+
+`evcxr` compile **chaque cellule** (ou groupe de cellules) avec le compilateur Rust. Le kernel **conserve l'état** entre cellules. Commandes magiques principales :
+
+| Magic | Rôle |
+|-------|------|
+| `:dep <crate> <version>` | ajouter une dépendance cargo (équivalent `#r "nuget:"` du .NET) |
+| `:cache <Mo>` | activer le cache de compilation (taille en Mo) |
+| `:sccache 1` | activer sccache (cache de compilation distribué) |
+| `:opt <niveau>` | niveau d'optimisation (`0`..`3`) |
+| `:timing` | afficher les temps de compilation |
+
+**Deux pièges de persistance mesurés** : (1) un **type opaque** au niveau top-level (ex. `impl Choose<...>` du chooser dlx) échoue « cannot be persisted » — on l'enclose dans un **bloc d'accolades** `{ ... }` ; (2) les **fonctions** définies dans une cellule ne sont **pas** fiablement persistées dans les cellules suivantes — chaque cellule code est donc **autonome** (les variables concrètes `Vec`/`HashMap`/tableaux/`String` persistent, les fonctions non).
+
+**Bridage WSL (siège po-2027)** : le kernel `rust` natif evcxr n'existe que là où evcxr est compilé. Sur ce siège, Rust tourne sous **WSL Ubuntu** : un kernelspec **local** `rust-wsl` invoque `wsl.exe -d Ubuntu -- python3 <wrapper>.py {connection_file}`, et le wrapper reconstruit le chemin du fichier de connexion (dont `wsl.exe` **avale les backslashes**) avant d'exec `evcxr_jupyter` dans l'Ubuntu. Le carnet **committé** porte le kernelspec **canonique** `rust` ; `rust-wsl` est un pont d'exécution machine-local, **jamais commité**.
+
+### Figure SVG sans dépendance système (plotters)
+
+La figure du pilote est rendue par **plotters** (feature `evcxr`) en **SVG inline**. Deux écueils mesurés :
+- **pas de `Context`** (API 0.2) : 0.3.x utilise `ChartBuilder::on(&root)` + `build_cartesian_2d` + `draw_series` + `root.present()`, et l'idion inline est `evcxr_figure((w,h), |mut root| {...})`.
+- **le texte exige `fontconfig`** (via la feature `ttf`) : non installable sous WSL sans sudo. On **désactive le texte** — `default-features = false, features = ["evcxr", "line_series"]` + `configure_mesh().disable_axes()` : la grille reste, les axes/étiquettes disparaissent, la légende vit en markdown.
+
+**Verification visuelle** : le SVG est un XML valide (1 `svg`, 56 `line`, 1 `polyline`) ; le rendu (grille + courbe rouge à 9 points, 480×280) a été **vérifié à la vue** (rendu HTTP + capture), jamais validé text-only.
+
+### Timings & timeouts
+
+Mesuré sur ce siège (WSL, cache cargo **chaud**) : un run complet du pilote (7 cellules code, dlx + plotters) ≈ **15–20 s**. Le coût dominant est la **compilation par cellule** d'evcxr, pas la résolution (la crate `dlx` résout le puzzle en ~14 µs). Le premier run (cache **froid**, compilation des crates de zéro) est plus long. **Timeout recommandé papermill/nbclient : 300 s** (marge ×15 sur le chaud ; couvre le froid sans sccache). `:sccache 1` / `:cache <Mo>` réduiraient le froid si un run le justifie.
+
+### Papermill — pas de traducteur Rust (décision écrite)
+
+Papermill **n'a pas** de traducteur Rust (seuls `python`, `R`, `Julia`, `.NET` sont enregistrés ; pas de `papermill_translators["rust"]`). **Décision : NON** — on n'enregistre pas de traducteur maison. Le carnet s'exécute via le kernelspec evcxr (`--kernel rust`), **sans** injection de paramètres Papermill : les valeurs de passage vont par variable d'environnement, comme pour le .NET.
+
+### CI — validation structurelle seule (décision écrite)
+
+**Validation structurelle uniquement** en CI : compiler evcxr (et les crates du carnet) sur le runner GitHub Actions est trop lourd et non reproductible (pas de cache cargo chaud garanti). L'exécution réelle est portée par le **runner self-hosté** du siège avec cache cargo chaud + `:offline 1`. Avant commit, exécution **locale** obligatoire (règle F / §D) — même exigence que pour les notebooks .NET.
+
+### Suffixe de nommage & kernelspec
+
+- **Suffixe de fichier** : `-Rust` (ex. `Sudoku-02-DancingLinks-Rust.ipynb`), cohérent avec `-Python` / `-CSharp`.
+- **Canonnage** : `rust` était **absent** de `KERNEL_LANG_SUFFIXES` (`naming_canon.py`) — cette PR l'ajoute pour que le canon reconnaisse Rust comme **famille de noyau** (sinon un jumeau Rust dans une série *adoptée* par `kernel-suffix-canon-guard` porterait un suffixe fantôme dans la clé d'appariement). Précédent d'extension de la liste : `-lean` (arbitrage 25/09, #17784/#16231).
+- **Kernelspec canonique** : `rust` (le nom produit par `evcxr_jupyter --install`). Le pont `rust-wsl` est machine-local et n'est pas le canon.
+- **Gardes de la voie rapide** : un carnet `Sudoku-02-*-Rust.ipynb` **passe** les gardes de nommage tels quels — `kernel-suffix-canon-guard` (Sudoku non adoptée), `duplicate-notebook-index` + `slot-reservation` (`Sudoku-02` n'a pas d'index numérique en tête → `index_key()` = `None` → pas de collision avec les jumeaux Python/CSharp), `zero-pad` (Sudoku déclarée). Le seul câblage côté contenu : le **lien README→carnet** de la série (nav-chain / navlink).
+
 ## Relevé (python, numpy) par kernelspec — le nom ne dénote pas l'environnement (#24883)
 
 **Pourquoi cette table existe.** Un nom de kernelspec ne dénote pas un environnement : deux sièges peuvent déclarer le même nom pour des tuples `(python, numpy)` différents, et un même environnement peut répondre à plusieurs noms (mesuré dans les deux sens ci-dessous). Une consigne de re-exécution nomme donc toujours un **tuple mesuré et publié**, jamais un label seul — c'est le critère de fermeture de #24883 (suite de #23997, qui couvre les pointeurs morts sous `%TEMP%`, une classe distincte).
