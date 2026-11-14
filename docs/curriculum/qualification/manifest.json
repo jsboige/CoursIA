@@ -410,8 +410,8 @@
             "exercices": 3,
             "cellules_code": 11,
             "cellules_md": 20,
-            "prose_chars": 16488,
-            "densite": 1498,
+            "prose_chars": 16517,
+            "densite": 1501,
             "densite_plancher": 1200,
             "kernel": ".NET (C#)",
             "exigences": {
