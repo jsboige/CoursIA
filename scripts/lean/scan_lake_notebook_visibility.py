@@ -13,6 +13,12 @@ Deux bornes sont rendues, parce qu'un nom court et generique (`map`,
   cite_large  : tout nom trouve                     (borne haute)
   cite_strict : noms distinctifs (>=10 car. ou '_') (borne basse)
 
+Le classement "module invisible" (`dark_modules`) suit la borne LARGE : un
+module n'est invisible que si AUCUNE de ses declarations n'est citee dans
+aucun notebook. La borne stricte ne reduit PAS la visibilite -- un module
+dont toutes les declarations sont citees par des noms courts sans '_' est
+visible, pas noir (faux-noir de nom court, EPIC #11703).
+
 CONTROLE POSITIF : le script verifie dans la meme invocation que des noms
 connus-presents sont bien extraits ET bien trouves, et sort en erreur
 sinon. Un zero rendu par un instrument casse est indiscernable d'un zero
@@ -352,8 +358,14 @@ def main() -> int:
         distinct = {n for n in names if is_distinctive(n)}
         cite_large = sum(1 for n in names if n in seen)
         cite_strict = sum(1 for n in distinct if n in seen)
+        # "invisible" = non cite dans AUCUN notebook, a la borne LARGE (tout nom
+        # trouve) -- la semantique "module a 0" du docstring. La borne stricte
+        # (noms distinctifs) est une metrique de citation (cite_strict), pas un
+        # critere de visibilite : un module dont les declarations sont citees mais
+        # dont les noms sont courts sans '_' (Basic, G3, Ops, ...) reste visible.
+        # (faux-noir de nom court, EPIC #11703)
         dark = [m for m, v in sorted(lakes[lake].items())
-                if v and not any(n in seen and is_distinctive(n) for n in v)]
+                if v and not any(n in seen for n in v)]
         top = collections.Counter()
         for n in distinct & seen:
             top.update(per_nb.get(n, {}))
