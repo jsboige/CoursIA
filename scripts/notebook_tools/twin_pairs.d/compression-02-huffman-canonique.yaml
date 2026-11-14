@@ -1,0 +1,9 @@
+- name: "Compression-02 Huffman canonique"
+  family: Compression
+  python: MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux côtés implémentent Huffman, la canonisation et le décodage par table from-scratch pour enseigner l’algorithme ; aucun moteur externe n’est requis ou contourné. Le compagnon C# utilise uniquement la BCL .NET 9. Le même extrait binaire du Horla est vérifié par aller-retour octet pour octet et SHA-256."
+  known_differences:
+    - "C# utilise PriorityQueue, BigInteger, un tampon de bits compact et un SVG statique inline ; Python utilise heapq, des chaînes de bits et Matplotlib. Les départages d’ex æquo peuvent différer : on compare les fréquences, les longueurs et le coût optimal, pas l’identité de l’arbre."
