@@ -23,7 +23,7 @@ extension au-dessus de `SocialChoice.*`.
 depuis le **2026-10-20** (20 pages) ; les renvois « p. N » de ce document
 pointent dans ce PDF archivé.
 
-L'option A du périmètre — un carnet Jupyter `07-Committees-Core.ipynb` (PR
+L'option A du périmètre — un carnet Jupyter `ChoixSocial-07-Committees-Core-Python.ipynb` (PR
 `#16896`) — est déjà livrée. L'option B (cette PR) complète le volet
 formel et ferme `#16848` une fois Tranche 3 livrée.
 

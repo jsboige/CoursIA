@@ -72,7 +72,21 @@ PADDING_REFERENCE = 776.0
 # troisieme -- le correctif `_kernelspecs_at` ne change pas la grandeur
 # (26 avant et apres, mesure sur l'arbre a284df8293f) : pas de point de
 # serie neuf, seule l'identite de l'instrument change.
-PADDING_REFERENCE_REBASE = 26.0
+# Sixieme rebasage (2026-11-13, PR #26349) : le balayage de referents T8
+# touche l'instrument (cas de self-test + docstring), la logique de
+# classification ne change pas -- `ambigu` vaut 27 sur l'arbre de la PR
+# comme sur `origin/main` nu. L'ecart 26 -> 27 vient de l'arbre main
+# depuis le 2026-11-06, pas de l'instrument ; la mesure du 2026-11-06
+# (26, instrument 18c887da79d) rejoint l'historique comme point reel.
+#
+# Septieme rebasage (2026-11-13, PR #26349, review ai-01 point 2) :
+# l'organe APPREND l'index d'accretion des series a prefixe -- le correctif
+# change ce que l'instrument compte, comme le quatrieme rebasage. Six
+# carnets paddes a kernel non lu quittent le bucket (27 -> 21) ; 2 dettes
+# non paddes (SC-7b, SL-1b) deviennent visibles rename_proposed, hors de
+# cette grandeur. Mesure egale (21) sur l'arbre PR et origin/main nu ; le
+# point du sixieme (27, instrument 8434d7f3a8f) rejoint l'historique.
+PADDING_REFERENCE_REBASE = 21.0
 # Fixture de sha pour les tests qui simulent `git log` : ce n'est plus une
 # identite attendue du registre (c'etait le faux vert de #24678 -- la
 # constante de test et la donnee etaient la meme chaine, donc le test ne
@@ -396,13 +410,13 @@ def test_la_reference_du_padding_est_celle_de_l_issue():
     `comparables`), et c'est ce qui produisait le verdict « AVANCE »
     fabrique sur l'entree « padding et nommage »."""
     e = entree("padding-nommage")
-    assert e.reference.source.startswith("issue #23655")
-    assert e.reference.mesure_le == "2026-11-06"
+    assert e.reference.source.startswith("PR #26349")
+    assert e.reference.mesure_le == "2026-11-13"
     assert e.reference.valeur == PADDING_REFERENCE_REBASE
     # Le 4e rebasage change la grandeur : les points d'avant le correctif
     # restent dans la serie, ils ne servent plus de reference.
     assert e.reference.valeur not in {39.0, 40.0}
-    assert {r.valeur for r in e.historique} >= {39.0, 40.0}
+    assert {r.valeur for r in e.historique} >= {26.0, 39.0, 40.0}
     # Et la reference rebasee est comparable a l'instrument courant : par le
     # sha, par la SOURCE du script ou par la date -- quel que soit le chemin
     # que la fusion laissera (une fusion en squash reecrit le sha sans

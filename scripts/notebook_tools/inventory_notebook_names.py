@@ -49,13 +49,14 @@ try:
     from scripts.notebook_tools.naming_canon import (
         INDEX_RE,
         LANG_SUFFIXES,
+        SERIES_NUM_RE,
         index_key,
         strip_lang,
     )
 except ImportError as e:
     sys.stderr.write(
         "error: inventory_notebook_names.py depends on naming_canon "
-        "(INDEX_RE, LANG_SUFFIXES, index_key, strip_lang). "
+        "(INDEX_RE, LANG_SUFFIXES, SERIES_NUM_RE, index_key, strip_lang). "
         "Run from repo root. Original: %s\n" % e
     )
     sys.exit(2)
@@ -343,7 +344,7 @@ def _index_zero_padded(stem: str) -> bool | None:
     la tête reste zéro-padée. L'ancien motif exigeait un séparateur
     immédiatement après les chiffres et rendait donc `None` — classé
     `ambigu` — sur 14 carnets réels de `main` (`03b_Typed_Decisions_System1`,
-    `09e_Production_Exploitation`, `01b-Lean-SocialChoice-Formal`, ...).
+    `09e_Production_Exploitation`, ...).
     Mesure du 2026-11-05 (#24678) : le bucket `ambigu` passe de 40 à 26,
     sans qu'un seul nom du dépôt change.
 
@@ -359,6 +360,34 @@ def _index_zero_padded(stem: str) -> bool | None:
     if m:
         return False
     return None
+
+
+def _accr_index(basename: str) -> tuple[str | None, bool | None]:
+    """Index d'accrétion d'un nom de série à préfixe (`ChoixSocial-01b-…`).
+
+    `SERIES_NUM_RE` (naming_canon) capture déjà préfixe/numéro/lettre sans
+    qu'`index_key` ne le voie (INDEX_RE est leading-digits-only). Pour un nom
+    à préfixe PORTANT une lettre d'accrétion, numéro+lettre EST l'index au
+    sens de la grammaire d'accrétion (notebook-accretion-numbering §1 :
+    `01b` canonique, `1b` à renommer) — le suffixe de noyau `-Lean` /
+    `-Lean-Python` reste en dernière position et ne change rien ici.
+
+    Sans lettre (`CSP-1-…`, `GameTheory-22-…`), le nom reste la base
+    implicite de sa série : (None, None), doctrine inchangée.
+
+    Retourne (idx normalisé, zero_padded) — idx None hors cas accrétion.
+
+    Mesure 2026-11-13 (#20316 review) : sur `origin/main`, 53 bases
+    implicites sans lettre restent conformes, 160 noms paddés (`02b`, `01b`)
+    restent conformes, et 2 dettes réelles non paddées (`SC-7b-…`,
+    `SL-1b-…`) deviennent visibles `rename_proposed` — c'est la convention
+    appliquée, pas un effet de bord.
+    """
+    m = SERIES_NUM_RE.match(basename)
+    if not m or not m.group("accr"):
+        return None, None
+    idx = "%d%s" % (int(m.group("num")), m.group("accr"))
+    return idx, m.group("num").startswith("0")
 
 
 def notebooks_at(ref: str) -> list[str]:
@@ -436,6 +465,14 @@ def build_inventory(ref: str, baseline: int | None = None) -> dict:
         # zero-pad lu sur le stem (préfixe `0N_` vs `N_`),
         # pas sur l'idx (qui perd l'info).
         zero_padded = _index_zero_padded(basename)
+        # Série à préfixe + lettre d'accrétion : le numéro de série + lettre
+        # EST l'index (#20316) — `_index_zero_padded` rend None sur une tête
+        # alphabétique, le zero-pad se lit alors sur le numéro écrit.
+        if idx is None:
+            accr_idx, accr_zp = _accr_index(basename)
+            if accr_idx is not None:
+                idx = accr_idx
+                zero_padded = accr_zp
         classification = _classify(p, stem, idx, kernel, suf, zero_padded)
         family, sub = _subseries(p)
         by_class[classification] += 1
@@ -511,9 +548,9 @@ _CASES = [
     # 2026-10-29 : 475 noms réels de ce gabarit (`Complexity-02b-...-Python`)
     # étaient faux ambigu via l'ancien garde `not suffix`.
     ("GameTheory-04c-NashExistence-CSharp.ipynb", _CLASSIF_CONFORME,
-     ".net-csharp", None),
+     ".net-csharp", "4c"),
     ("Complexity-02b-SAT-PhaseTransition-Python.ipynb", _CLASSIF_CONFORME,
-     "python3", None),
+     "python3", "2b"),
     # Contrôle négatif : kernel LU et hors liste connue reste ambigu,
     # même avec un nom de forme canonique (exigence #15488 : le signal
     # « kernel inconnu » doit pouvoir tirer sur des données réelles).
@@ -558,7 +595,16 @@ _CASES = [
     # rendait None => ambigu sur 14 carnets reels (#24678).
     ("03b_Typed_Decisions_System1.ipynb", _CLASSIF_CONFORME, "python3", "3b"),
     ("09e_Production_Exploitation.ipynb", _CLASSIF_CONFORME, "python3", "9e"),
-    ("01b-Lean-SocialChoice-Formal.ipynb", _CLASSIF_CONFORME, "lean4", "1b"),
+    # Série à préfixe + lettre d'accrétion : le numéro+lettre EST l'index
+    # (#20316) — suffixe de noyau `-Lean` / `-Lean-Python` en dernière
+    # position, zéro-pad lu sur le numéro écrit. idx appris, conforme.
+    ("ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb", _CLASSIF_CONFORME, "lean4", "1b"),
+    ("ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb", _CLASSIF_CONFORME, "lean4", "6b"),
+    # Controle negatif, meme grammaire : accrétion à préfixe SANS zero-pad
+    # reste a renommer (dettes réelles mesurées sur main : SC-7b, SL-1b).
+    ("SC-7b-ERC20-Lean-Verification-Companion.ipynb", _CLASSIF_RENAME, "python3", "7b"),
+    # Base implicite SANS lettre d'accrétion : doctrine inchangée (#20316).
+    ("CSP-1-Fundamentals.ipynb", _CLASSIF_CONFORME, "python3", None),
     # Controle negatif : sans zero-pad, la meme forme reste a renommer.
     ("3b-Typed-Decisions.ipynb", _CLASSIF_RENAME, "python3", "3b"),
     # Controle negatif du lookahead : `3d-01` est un prefixe de serie mixte,
@@ -573,8 +619,16 @@ def self_test():
     for fname, want_class, want_kernel, want_idx in _CASES:
         stem = re.sub(r"\.ipynb$", "", fname, flags=re.I)
         got_idx = index_key(fname)
+        got_zp = _index_zero_padded(fname)
+        # Même dérivation d'accrétion que la boucle d'inventaire (#20316) :
+        # le self-test teste l'organe réel, pas le seul parseur partagé.
+        if got_idx is None:
+            accr_idx, accr_zp = _accr_index(fname)
+            if accr_idx is not None:
+                got_idx = accr_idx
+                got_zp = accr_zp
         got_class = _classify(fname, stem, got_idx, want_kernel,
-                              _suffix(stem), _index_zero_padded(fname))
+                              _suffix(stem), got_zp)
         ok_class = got_class == want_class
         ok_idx = got_idx == want_idx
         if not ok_class or not ok_idx:

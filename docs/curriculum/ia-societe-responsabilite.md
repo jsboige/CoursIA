@@ -39,10 +39,10 @@ L'agrégation de préférences est le cœur politique de tout système qui « tr
 
 | # | Étape | Durée | Ce qu'on y voit |
 |---|---|---|---|
-| 6 | [SC-01 : Théorème d'Arrow](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | 45 min | **Aucune règle d'agrégation à ≥ 3 options n'est simultanément non-dictatoriale, unanime et indépendante aux alternatives non pertinentes** — preuve formelle et simulation |
-| 7 | [SC-05 : Gibbard-Satterthwaite](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb) | 30 min | **Toute règle de vote non triviale est manipulable** — la manipulation comme témoin structurel, pas comme accident |
-| 8 | [SC-03 : Méthodes de vote](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) | 35 min | Condorcet, Borda, Copeland : **la même société élit des gagnants différents selon la règle** — le paradoxe devient un levier de conception |
-| 9 | [SC-06 : Möbius et pouvoir](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | 40 min | **Poids ≠ pouvoir** : dividendes de Harsanyi sur le treillis des coalitions, indice de pouvoir mesuré, manipulation pondérée |
+| 6 | [SC-01 : Théorème d'Arrow](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) | 45 min | **Aucune règle d'agrégation à ≥ 3 options n'est simultanément non-dictatoriale, unanime et indépendante aux alternatives non pertinentes** — preuve formelle et simulation |
+| 7 | [SC-05 : Gibbard-Satterthwaite](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) | 30 min | **Toute règle de vote non triviale est manipulable** — la manipulation comme témoin structurel, pas comme accident |
+| 8 | [SC-03 : Méthodes de vote](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) | 35 min | Condorcet, Borda, Copeland : **la même société élit des gagnants différents selon la règle** — le paradoxe devient un levier de conception |
+| 9 | [SC-06 : Möbius et pouvoir](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb) | 40 min | **Poids ≠ pouvoir** : dividendes de Harsanyi sur le treillis des coalitions, indice de pouvoir mesuré, manipulation pondérée |
 
 **Fil de l'acte** : il n'existe pas d'agrégation neutre — choisir une règle de vote est un choix politique, et cela se démontre.
 
@@ -74,7 +74,7 @@ Le déploiement n'est pas la fin de la responsabilité. La série [GenAI/Securit
 ## Prolongements (hors parcours)
 
 - [2.5d-Derive-Distribution-Deploiement](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb) — la responsabilité continue en production : trois dérives construites, trois détecteurs, deux corrections.
-- [SC-01b : Choix social formel en Lean](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) (80 min) — Arrow, Sen, électeur médian certifiés.
+- [SC-01b : Choix social formel en Lean](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb) (80 min) — Arrow, Sen, électeur médian certifiés.
 - [Argumentation-03b : AF à valeurs](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03b-Value-Based-AF-Python.ipynb) et [03c : ranking](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-03c-Ranking-Semantics-Python.ipynb) (35 min chacun) — l'audience et la force changent le verdict.
 - [FallacyDetection 02-05](../../MyIA.AI.Notebooks/GenAI/FallacyDetection/) — paysage des datasets, écart de couverture taxonomique, matrice N×M, construction de dataset équilibré.
 - [Argumentation-05 : vérification formelle avec Tweety](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb) (45 min) — le solveur réel JVM, mode fail-loud.

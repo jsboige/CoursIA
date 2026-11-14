@@ -96,7 +96,7 @@ prefixe numerique naif accusait **17** collisions dont **1** seule etait reelle.
    est `04-1`, pas `04`. Lire seulement le premier nombre transforme une serie bien
    formee de treize notebooks en treize collisions.
 2. Paires de langue. `GameTheory/SocialChoice` porte
-   `01-Arrow-Impossibility-Theorem.ipynb` et son frere `-Csharp`. Ce sont deux
+   `ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb` et son frere `-Csharp`. Ce sont deux
    rendus du meme item, par convention du depot -- pas deux items en conflit. Idem
    pour les siblings `_en` de la convention i18n #4980.
 
@@ -264,7 +264,7 @@ _CASES = [
     ("04-1-Educational-Audio-Content.ipynb", "4.1"),
     ("22_Evaluating_Generated_Text.ipynb", "22"),
     ("22_TensorSharp_DotNet_Inference.ipynb", "22"),
-    ("01-Arrow-Impossibility-Theorem.ipynb", "1"),
+    ("ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb", "1"),
     # Prefixe de serie mixte (chiffre + lettre) : `3D` est un prefixe, `01`/`02` le
     # vrai index. Le lookahead de INDEX_RE rend ces noms None (hors portee) au lieu
     # de les faire retomber sur une cle `3d` commune -- le faux positif #22118.
@@ -290,8 +290,8 @@ _SCENARIOS = [
      ["g/Audio/04-2-Transcription-Pipeline.ipynb"],
      ["g/Audio/04-1-Educational-Audio-Content.ipynb"], 0),
     ("FAUX POSITIF  paire de langue Csharp",
-     ["s/01-Arrow-Impossibility-Theorem-Csharp.ipynb"],
-     ["s/01-Arrow-Impossibility-Theorem.ipynb"], 0),
+     ["s/ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb"],
+     ["s/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb"], 0),
     ("FAUX POSITIF  sibling i18n _en",
      ["s/07-Shapley_en.ipynb"], ["s/07-Shapley.ipynb"], 0),
     ("FAUX POSITIF  meme index, repertoire different",

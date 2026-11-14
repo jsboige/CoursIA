@@ -168,22 +168,22 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [SocialChoice 01 : Théorème d'impossibilité d'Arrow…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem-Csharp.ipynb) | BETA | Oui |
-| 2 | [SocialChoice 01 - Theoreme d'Arrow : Preuve Formelle et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01-Arrow-Impossibility-Theorem.ipynb) | BETA | Oui |
-| 3 | [SocialChoice 01b - Choix Social Formel en Lean 4](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | ALPHA | Non |
-| 4 | [SocialChoice 02 : Mariage Stable — Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/02-Stable-Marriage-Gale-Shapley-Csharp.ipynb) | BETA | Oui |
-| 5 | [SocialChoice 02 - Mariage Stable : Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/02-Stable-Marriage-Gale-Shapley.ipynb) | BETA | Oui |
-| 6 | [SocialChoice 03 : Méthodes de Vote et Paradoxes (twin…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb) | ALPHA | Oui |
-| 7 | [SocialChoice 03 - Méthodes de Vote et Paradoxes](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) | BETA | Oui |
-| 8 | [SocialChoice 04 : Agregation Computationnelle - SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) | BETA | Oui |
-| 9 | [SocialChoice 04 - Agrégation Computationnelle : SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/04-Computational-Aggregation-SAT-Z3.ipynb) | BETA | Oui |
-| 10 | [SocialChoice-05 : Gibbard-Satterthwaite sans mystere -…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/05-Gibbard-Satterthwaite.ipynb) | BETA | Oui |
-| 11 | [SocialChoice-06 : Mobius sur le treillis des coalitions…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | BETA | Oui |
-| 12 | [SocialChoice 06b - La decomposition de Mobius sur le…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) | BETA | Non |
-| 13 | [07 - Élections de comité par approbation : le core…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/07-Committees-Core.ipynb) | BETA | Oui |
-| 14 | [SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson :…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/08-Kemeny-RankedPairs-Dodgson.ipynb) | ALPHA | Oui |
-| 15 | [09 - Comites multi-vainqueurs : STV, Monroe et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/09-Committees-STV-Monroe-ChamberlinCourant.ipynb) | BETA | Oui |
-| 16 | [10 — Manipulation stratégique et règles à comité](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/10-Manipulation-Strategique-MultiWinner.ipynb) | BETA | Oui |
+| 1 | [SocialChoice 01 : Théorème d'impossibilité d'Arrow…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-CSharp.ipynb) | BETA | Oui |
+| 2 | [SocialChoice 01 - Theoreme d'Arrow : Preuve Formelle et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01-Arrow-Impossibility-Theorem-Python.ipynb) | BETA | Oui |
+| 3 | [SocialChoice 01b - Choix Social Formel en Lean 4](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-01b-Lean-SocialChoice-Formal-Lean.ipynb) | ALPHA | Non |
+| 4 | [SocialChoice 02 : Mariage Stable — Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-CSharp.ipynb) | BETA | Oui |
+| 5 | [SocialChoice 02 - Mariage Stable : Algorithme de…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-02-Stable-Marriage-Gale-Shapley-Python.ipynb) | BETA | Oui |
+| 6 | [SocialChoice 03 : Méthodes de Vote et Paradoxes (twin…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-CSharp.ipynb) | ALPHA | Oui |
+| 7 | [SocialChoice 03 - Méthodes de Vote et Paradoxes](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-03-Voting-Methods-Python.ipynb) | BETA | Oui |
+| 8 | [SocialChoice 04 : Agregation Computationnelle - SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-CSharp.ipynb) | BETA | Oui |
+| 9 | [SocialChoice 04 - Agrégation Computationnelle : SAT et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-04-Computational-Aggregation-SAT-Z3-Python.ipynb) | BETA | Oui |
+| 10 | [SocialChoice-05 : Gibbard-Satterthwaite sans mystere -…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-05-Gibbard-Satterthwaite-Python.ipynb) | BETA | Oui |
+| 11 | [SocialChoice-06 : Mobius sur le treillis des coalitions…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06-Mobius-Aggregation-Pouvoir-Manipulation-Python.ipynb) | BETA | Oui |
+| 12 | [SocialChoice 06b - La decomposition de Mobius sur le…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-06b-Mobius-Coalitions-Lean-Python.ipynb) | BETA | Non |
+| 13 | [07 - Élections de comité par approbation : le core…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-07-Committees-Core-Python.ipynb) | BETA | Oui |
+| 14 | [SocialChoice 08 - Kemeny, Ranked Pairs et Dodgson :…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-08-Kemeny-RankedPairs-Dodgson-Python.ipynb) | ALPHA | Oui |
+| 15 | [09 - Comites multi-vainqueurs : STV, Monroe et…](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-09-Committees-STV-Monroe-ChamberlinCourant-Python.ipynb) | BETA | Oui |
+| 16 | [10 — Manipulation stratégique et règles à comité](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/ChoixSocial-10-Manipulation-Strategique-MultiWinner-Python.ipynb) | BETA | Oui |
 
 ## IIT (10 notebooks)
 
