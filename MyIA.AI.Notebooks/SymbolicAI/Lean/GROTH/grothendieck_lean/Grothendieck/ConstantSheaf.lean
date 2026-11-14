@@ -23,6 +23,17 @@ C'est un ingrédient clé pour comprendre la nature « localement constante » d
 faisceaux et pour connecter la théorie des faisceaux à la cohomologie (SGA 4 II, IV).
 
 Epic #1646, See #2159. Tous les `sorry` éliminés à la création.
+
+Convention i18n (EPIC #4980 ratifiée 2026-07-04, cf `code-style.md`
+§Lean i18n) : ce module est jumelé avec sa version anglaise canonique dans
+le fichier sibling `ConstantSheaf_en.lean` (modèle sibling pair, voir PR
+#6154 pour le pilote sur `Utility.lean`). Les énoncés de théorèmes, les noms
+de lemmes, les tactiques Lean et les références Mathlib restent en anglais
+(Mathlib 4, tactic DSL standard). Seules les docstrings `/-- ... -/` et les
+commentaires `-- ...` diffèrent entre les deux fichiers. Anti-§D
+byte-identity garanti : le namespace body est préservé bit-à-bit (énoncés et
+preuves byte-identiques entre `ConstantSheaf.lean` et
+`ConstantSheaf_en.lean`).
 -/
 
 import Mathlib.CategoryTheory.Sites.ConstantSheaf
