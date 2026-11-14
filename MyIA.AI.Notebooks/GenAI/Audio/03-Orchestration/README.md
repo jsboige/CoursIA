@@ -4,7 +4,7 @@
 
 Ce module couvre l'orchestration de plusieurs modèles audio, les pipelines complexes, et l'API temps réel d'OpenAI.
 
-**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles STT et TTS pour choisir le meilleur selon le budget et la qualité visés. [03-2](03-2-Audio-Pipeline-Orchestration.ipynb) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatisé. [03-3](03-3-Realtime-Voice-API.ipynb) montre l'alternative temps réel d'OpenAI pour les interactions live.
+**Dans le cadre du fil rouge podcast** : les briques existent, il faut les assembler. [03-1](03-1-Multi-Model-Audio-Comparison.ipynb) compare les modèles STT et TTS pour choisir le meilleur selon le budget et la qualité visés. [03-2](03-2-Audio-Pipeline-Orchestration.ipynb) construit le pipeline STT vers LLM vers TTS qui constitue le coeur du podcast automatisé. [03-3](03-3-Realtime-Voice-API.ipynb) montre l'alternative temps réel d'OpenAI pour les interactions live. [03-5](03-5-MCP-Audio.ipynb) expose la transcription, la synthèse et l'analyse audio comme outils du protocole MCP, et fait choisir ces outils par un agent réel.
 
 ## Vue d'ensemble
 
@@ -22,6 +22,7 @@ Ce module couvre l'orchestration de plusieurs modèles audio, les pipelines comp
 | 1 | [03-1-Multi-Model-Audio-Comparison](03-1-Multi-Model-Audio-Comparison.ipynb) | Benchmark STT et TTS | Mixed | ~12 GB |
 | 2 | [03-2-Audio-Pipeline-Orchestration](03-2-Audio-Pipeline-Orchestration.ipynb) | Pipelines STT→LLM→TTS, podcast | Mixed | ~14 GB |
 | 3 | [03-3-Realtime-Voice-API](03-3-Realtime-Voice-API.ipynb) | OpenAI Realtime API, WebSocket | OpenAI API | 0 |
+| 4 | [03-5-MCP-Audio](03-5-MCP-Audio.ipynb) | Serveur MCP audio (transcription, synthèse, analyse) et choix d'outils par un agent | Local (CPU) | 0 |
 
 ## Prérequis
 
@@ -43,6 +44,7 @@ pip install websockets  # Pour l'API temps réel
 1. **03-1-Multi-Model-Audio-Comparison** - Comparatif des modèles pour choisir le bon
 2. **03-2-Audio-Pipeline-Orchestration** - Création de pipelines audio complexes
 3. **03-3-Realtime-Voice-API** - Intégration temps réel en production
+4. **03-5-MCP-Audio** - Exposer les moteurs audio comme outils MCP et mesurer le choix d'un agent
 
 ## Concepts clés
 
