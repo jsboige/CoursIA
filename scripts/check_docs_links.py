@@ -2,8 +2,8 @@
 """Check for broken relative markdown links and orphan docs across the repository.
 
 Scans CLAUDE.md, index.md, PARCOURS.md, docs/, .claude/rules/, .claude/agents/,
-.claude/skills/, every ``slides/<deck>/slides.md`` deck, and all README.md files
-for relative links and verifies targets exist.
+.claude/skills/, every ``slides/<deck>/slides.md`` deck, all README.md files and
+Quarto ``.qmd`` pages for relative links and verifies targets exist.
 
 Also detects orphan .md files in docs/ (not referenced by any scanned file).
 
@@ -268,7 +268,13 @@ def find_scan_files() -> list[Path]:
         if p.is_file():
             files.append(p)
         elif p.is_dir():
-            for f in sorted(p.rglob("*.md")):
+            # Quarto ``.qmd`` pages in addition to ``.md`` (#26457): the site is
+            # built from .qmd sources (docs/index.qmd, docs/parcours.qmd, the
+            # series index.qmd), and globbing ``*.md`` alone never opened them --
+            # a move that left 19 dead links in a .qmd read as a clean scan
+            # (#26281). The union is de-duplicated, so a file matching neither
+            # pattern is simply absent, as before.
+            for f in sorted(set(p.rglob("*.md")) | set(p.rglob("*.qmd"))):
                 if not _should_skip(f):
                     files.append(f)
 

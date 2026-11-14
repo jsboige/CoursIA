@@ -1002,6 +1002,52 @@ class TestDeckScopeWiring:
         ), "the deck scope is scanned but the gate never watches it"
 
 
+class TestQuartoSourceScan:
+    """#26457: the site is built from ``.qmd``, which the scan must open.
+
+    Before the fix ``find_scan_files()`` globbed ``*.md`` only, so a ``.qmd``
+    was never opened and a broken link inside it read as a clean scan (#26281
+    moved parcours.qmd and left 19 dead links the organ reported as 0). Two
+    guarantees: ``.qmd`` reach the scan, and a broken ``.qmd`` link is a real
+    finding (rc=1), so "the .qmd are clean" is no longer indistinguishable from
+    "the .qmd are still not scanned".
+    """
+
+    def test_qmd_files_are_in_the_scan(self, tmp_path, monkeypatch):
+        """Guarantee 1: a .qmd under a scanned scope is enumerated."""
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "parcours.qmd").write_text(
+            "# Parcours\n", encoding="utf-8")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        rel = {f.relative_to(tmp_path).as_posix() for f in find_scan_files()}
+        assert "docs/parcours.qmd" in rel
+
+    def test_qmd_broken_link_is_detected(self, tmp_path, monkeypatch):
+        """Guarantee 2: a dead link written in a .qmd is found."""
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "index.qmd").write_text(
+            "[mort](../absent.md)\n", encoding="utf-8")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        result = run_scan()
+        assert [r.target for r in result.broken] == ["../absent.md"]
+
+    def test_qmd_broken_link_arms_the_positive_control(
+        self, tmp_path, monkeypatch
+    ):
+        """The .qmd finding is rc=1 (a real finding), not rc=2 (blind)."""
+        (tmp_path / "docs").mkdir()
+        (tmp_path / "docs" / "index.qmd").write_text(
+            "[mort](../absent.md)\n", encoding="utf-8")
+        monkeypatch.setattr("check_docs_links.REPO_ROOT", tmp_path)
+        monkeypatch.setattr("check_docs_links.BASELINE_PATH",
+                            tmp_path / "baseline.json")
+        monkeypatch.setattr("sys.argv",
+                            ["check_docs_links.py", "--expect-broken", "1"])
+        with pytest.raises(SystemExit) as exc:
+            check_docs_links.main()
+        assert exc.value.code == 1
+
+
 # ---------------------------------------------------------------------------
 # Code-comment citation pass (#24410)
 # ---------------------------------------------------------------------------
