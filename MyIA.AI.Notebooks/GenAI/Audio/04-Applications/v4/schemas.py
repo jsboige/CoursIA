@@ -232,6 +232,88 @@ class AnnotatedBatch(BaseModel):
     segments: list[AnnotatedSegment]
 
 
+# ── P4.5: ZONOS3 steering annotation sidecar (#25835) ──
+#
+# The FishAudio path expresses prosody as bracket tags carried in the
+# text.  ZONOS3 expresses it as measured *direction vectors* with a
+# continuous dose, applied per segment or per span of words.  The
+# sidecar records the intent in a structured form so the pipeline can
+# reason about it (and so a request can be re-generated with a
+# different seed) without re-deriving it from prose.
+#
+# The sidecar is written *in addition* to the FishAudio tag output:
+# the tag remains the fallback for every axis the served checkpoint
+# cannot steer.
+
+#: The semantic axes the pipeline reasons about.  Each maps to a
+#: measured ZONOS3 direction — see ``v4.zonos3_steering.AXIS_MAPPINGS``
+#: for the declared correspondence and its fallback tag.
+Zonos3Axis = Literal[
+    "arousal",
+    "valence",
+    "dominance",
+    "pace",
+    "projection",
+    "clarity",
+    "liveliness",
+]
+
+#: Who decided the annotation.  A rule-derived annotation and an
+#: LLM-derived one do not have the same authority when the render is
+#: disputed.
+AnnotationSource = Literal["llm", "rule", "human"]
+
+
+class Zonos3Annotation(BaseModel):
+    """One steering intent, on a segment or on a span of it.
+
+    Attributes
+    ----------
+    segment_id:
+        Index of the annotated segment this annotation belongs to.
+    span_start, span_end:
+        Character range inside the segment's text.  ``None`` on both
+        means the intent applies to the whole segment.
+    axis:
+        The semantic axis steered.
+    value:
+        The target value, normalized in ``[-1, 1]``.  A string form
+        (``"pace-2"``) is accepted and normalized by
+        ``v4.zonos3_steering.parse_axis_value``.
+    intent:
+        What the narrator is asked to do, in clear language.  Kept
+        beside the numeric value because the value is a *target*, not
+        a measurement — the reader of the manifest needs the intent.
+    confidence:
+        How sure the annotator is, in ``[0, 1]``.
+    source:
+        Who decided it.
+    fallback_tag:
+        The FishAudio tag equivalent, used when the served checkpoint
+        does not expose the axis' direction.
+    """
+
+    segment_id: int
+    span_start: int | None = None
+    span_end: int | None = None
+    axis: Zonos3Axis
+    value: float | str
+    intent: str = ""
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    source: AnnotationSource = "rule"
+    fallback_tag: str = ""
+
+
+class Zonos3AnnotationBatch(BaseModel):
+    """The sidecar written beside the FishAudio tag output."""
+
+    annotations: list[Zonos3Annotation] = Field(default_factory=list)
+
+    def for_segment(self, segment_id: int) -> list[Zonos3Annotation]:
+        """Every annotation targeting one segment."""
+        return [a for a in self.annotations if a.segment_id == segment_id]
+
+
 # ── P5: TTS Generation ──
 
 class TTSResult(BaseModel):
@@ -240,7 +322,9 @@ class TTSResult(BaseModel):
     reference_id: str
     mp3_path: str
     duration_s: float = 0.0
-    seed: int = 0
+    # The seed the runtime reports (e.g. the ZONOS3 X-Seed header); None when
+    # the engine reports none — never a substituted value (acceptance #6).
+    seed: int | None = None
     status: str = "pending"
     whisper_wer: float = -1.0
     attempts: int = 0

@@ -8,9 +8,9 @@ pagetitle: "Théorie des Jeux - Game Theory"
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 141
-breakdown: root=106, SocialChoice=16, Dynamics=13, Coalitions=5, gateway=1
-maturity: BETA=122, DRAFT=12, ALPHA=7
+pedagogical_count: 142
+breakdown: root=101, SocialChoice=16, Dynamics=13, Metajeux=6, Coalitions=5, gateway=1
+maturity: BETA=130, DRAFT=7, ALPHA=5
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -152,6 +152,8 @@ La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à
 
 Le palier 16 est l'un des cas réels mesurés par le [critère de frontière utilitaire-de-série / exposition MCP](../../docs/reference/ict-mcp-frontier-criterion.md) — verdict : rien dû, le palier reste notebook.
 
+Dans la même famille d'exposition, le palier 13 possède un service pendant : le dossier [gateway/](gateway/README.md) expose la résolution CFR du carnet 13 en microservice REST (`POST /gametheory/cfr`, Jupyter Kernel Gateway, pli 0 de l'Epic #19571 / issue #21104). Le carnet pédagogique n'est pas modifié — le service vit à côté, comme composant distinct.
+
 Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite, la stabilité coopérative, la convergence d'agents en auto-apprentissage.
 
 ![CFR sur le poker de Kuhn : à gauche la valeur du jeu converge vers le Nash −0,0556 en 10 000 itérations, à droite les probabilités de mise par carte (J/Q/K) rejoignent le Nash théorique (étoiles).](assets/readme/gt13-cfr.png)
@@ -196,6 +198,8 @@ Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller pl
 | 02c | Dilemme du voyageur — [Python](GameTheory-02c-Travelers-Dilemma-Python.ipynb) · [C#](GameTheory-02c-Travelers-Dilemma-CSharp.ipynb) | Basu (1994) : l'élimination itérée des stratégies dominées mène à (2, 2), que contredit le comportement humain ; le bonus r* = 1 où le paradoxe se dissout | Python · C# | Licence |
 | 02d | [Annexe épistémique — connaissance commune et croyances](GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) | Ce qu'un joueur *sait*, plutôt que ce qu'il joue : modèle à partitions et opérateur `K_i(E)`, vérification des axiomes S5, `CK(E)` comme plus grand point fixe, théorème d'Aumann (1976) sur l'accord impossible vérifié par énumération exhaustive, et l'élimination itérée relue comme conséquence de la connaissance commune de la rationalité | Python | Licence |
 | 02e | IESDS et rationalisabilité — [Python](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) · [C#](GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb) | L'élimination itérée des stratégies dominées : indépendance à l'ordre (mesurée sur 4096 jeux), contre-exemple en dominance faible, admissibilité et rationalisabilité ; le jumeau C# réimplémente les mêmes algorithmes from scratch, dont un simplex à deux phases qui remplace `scipy.linprog` | Python · C# | Licence |
+
+Le carnet 02d existe aussi en [C#](GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb) : les deux versions énumèrent les partitions, vérifient les propriétés S5 et explorent les priors communs ou distincts.
 
 ### Autour de 03 — géométrie ordinale des jeux
 
