@@ -183,8 +183,53 @@ jobs:
     #                                     INCHANGEE : elle etait 45 -> 52)
     # La regle (enfant < aggregateur < runner) et ses marges sont donc
     # preservees a l'identique : seule la valeur du mur de l'enfant bouge.
-    # Re-mesurer sur les 70 prochains runs, une fois les 7 coupes reussies :
-    # c'est ce qui dira si 40 min suffit.
+    #
+    # Mesure du 2026-11-14 -- LA REPONSE A LA QUESTION POSEE ICI.
+    # Organe : `scripts/ci/measure_declared_ceiling.py` (lecture seule) ;
+    # meme grandeur (le mur du job), population fenetree.
+    #     python scripts/ci/measure_declared_ceiling.py \
+    #         --workflow scripts-tests.yml --hours 48 --out .tmp/ceiling.json
+    #
+    #     fenetre reellement couverte : 2026-11-12T03:36Z -> 2026-11-13T23:20Z
+    #     (43,7 h -- l'API Actions plafonne a 1000 runs filtres, la fenetre
+    #     demandee etait de 48 h ; la couverture effective est ecrite par
+    #     l'organe, jamais supposee)
+    #     795 jobs mesures, repartis par le plafond EN VIGUEUR au demarrage
+    #     de chaque job (le plafond a change le 2026-11-12T19:29:58Z) :
+    #
+    #         plafond 30 min   32 coupes / 264 jobs   (12,1 %)
+    #         plafond 40 min   11 coupes / 531 jobs   ( 2,1 %)
+    #
+    #     Sous le plafond de 40 : 192 succes (mediane 17,1 min), succes le
+    #     plus long 39,43 min -- soit une marge de 0,57 min.
+    #
+    # Ce que la mesure dit, en clair :
+    #
+    #   * le taux de coupes est TOMBE de 12,1 % a 2,1 % apres le releve du
+    #     plafond. C'est ce qui tranche la controverse de po-2027 (des
+    #     annulations par saturation de runner) : si les coupes venaient de
+    #     la saturation, le taux serait reste le meme apres le releve --
+    #     une part importante etait du travail qui demandait reellement
+    #     plus de 30 min ;
+    #   * le plafond BIND ENCORE : 11 jobs ont ete coupes AU mur, et le
+    #     succes le plus long est a 99,4 % du plafond. La queue est
+    #     censuree a droite (duree reelle > 40 min, inconnue) ;
+    #   * mais la queue est MINCE : 7 jobs dans le seau 38-40 min, 3 succes
+    #     au-dela de 38 min. Un releve du plafond gagnerait peu.
+    #
+    # Pourquoi on ne releve pas quand meme : la chaine des plafonds est
+    # contrainte -- enfant < agregateur (le PR gate) < plafond propre de
+    # Quarto (60) < runner -- et l'agregateur doit rester SOUS 60, sinon la
+    # queue reelle de Quarto quitte le chemin STARVED -> auto-annulation
+    # (#13510, #14412). L'enfant peut donc monter au mieux a 44
+    # (agregateur 59). Le levier qui reste n'est pas le plafond : c'est la
+    # duree de la jambe -- ciblee par le plan a deux etages (#25510, etage 1)
+    # et par le pool de runners (slot reserve pour `main`).
+    #
+    # Re-mesurer : la fenetre, plus le nombre de runs. L'echantillon
+    # canonique « 70 derniers runs `main` » est devenu trop pauvre pour
+    # trancher : sur les 70 derniers runs `main` termines, seuls 21
+    # portaient un job demarre (49 runs supersedes avant demarrage).
     timeout-minutes: 40
 
     steps:
