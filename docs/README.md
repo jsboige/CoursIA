@@ -160,6 +160,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | Fichier | Description |
 |---------|-------------|
 | [qc/quantconnect.md](qc/quantconnect.md) | Backtests, structure, livre référence |
+| [qc/qc-pieges-mesures.md](qc/qc-pieges-mesures.md) | Pièges mesurés QuantConnect et Lean : lecture d'un backtest, ordres, données, framework, graphiques, outils, suivi en ombre ; chaque entrée sourcée par issue ou PR |
 | [qc/qc-comparative-backtests.md](qc/qc-comparative-backtests.md) | Baselines alignées + analyse comparative backtests (#1630) |
 | [qc/qc-batch-methodology-playbook.md](qc/qc-batch-methodology-playbook.md) | Playbook méthodologie batch QC (#1621) |
 | [qc/qc-strategies-status.md](qc/qc-strategies-status.md) | Statut des stratégies QuantConnect — source de vérité |

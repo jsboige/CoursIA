@@ -205,3 +205,5 @@ Ce fichier commite contient:
 8. **OptionsIncome** : Minute sur 1 an = ~4 min backtest. 2 ans = trop lent
 9. **BTC-MACD-ADX** : C# + Docker lean:latest (42.5 GB), chaque pull renomme le projet cloud
 10. **QC PEP8** : `Futures.Indices.SP_500_E_MINI`, `OptionRight.CALL`, `Resolution.DAILY`
+
+Pièges mesurés (lecture d'un backtest, ordres, données, framework, outils) : [docs/qc/qc-pieges-mesures.md](../../docs/qc/qc-pieges-mesures.md).

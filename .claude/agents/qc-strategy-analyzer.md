@@ -182,3 +182,5 @@ ne fassent pas rougir pour sa classe.
 - **"In Progress..." status** fait planter read_backtest (bug MCP Pydantic) -> attendre et reessayer
 - **Org partenaire = FREE** -> pas de backtest API, seulement org perso
 - **1 backtest a la fois** -> sequentiel uniquement
+
+Pièges mesurés (lecture d'un backtest, ordres, données, framework, outils) : [docs/qc/qc-pieges-mesures.md](../../docs/qc/qc-pieges-mesures.md).
