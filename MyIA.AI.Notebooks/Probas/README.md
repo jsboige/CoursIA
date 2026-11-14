@@ -230,6 +230,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
+├── Probas-Capstone-Percolation-Bayesienne-Python.ipynb # Capstone de la série mère : inversion bayésienne des mesures committées de Percolation (trois moteurs, EVSI)
 ├── Fondations/                  # Socle mathématique commun aux deux stacks (Python)
 │   ├── Probas-CLT-Theoreme-Central-Limite.ipynb # TCL mesuré, variance finie porteuse
 │   └── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Metropolis-Hastings + Gibbs from-scratch, diagnostics ESS/R-hat

@@ -696,6 +696,12 @@ imageClass: mid-right visible
 
 ---
 
+<style scoped>
+/* La 4e section (« Evolution du Marche ») sortait du canvas : bas a 562 px
+   pour 552 au scanner DOM, encre en bas d'export (EPIC #11508, L2). */
+.slidev-layout { font-size: 0.88em; }
+</style>
+
 # Stratégies Plausibles et leurs Pieges (1/2)
 
 - **Drawdowns** (la realite brutale de toute stratégie)
