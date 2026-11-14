@@ -1,0 +1,10 @@
+- name: "SW-14 Coup ontologique"
+  family: SemanticWeb/dotNetRDF-rdflib
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-14-Coup-Ontologique-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "dotNetRDF 3.5.2 pour RDF, SPARQL et SHACL ; Python.NET 3.0.5 appelle owlrl 7.1.4 pour la fermeture OWL-RL du meme moteur que le Python. Les deux cas SHACL, le delta productif et le coup nul sont executes."
+  known_differences:
+    - "Le C# utilise un pont Python.NET pour OWL-RL ; les fermetures sont comparees sous forme N-Triples textuelle, y compris les sujets litteraux produits par owlrl."
+    - "La provenance est une reification RDF 1.1, non une triple citee RDF-star."

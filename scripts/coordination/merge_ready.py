@@ -494,6 +494,13 @@ MAIN_RED_INFRA_STEP_MARKERS = (
     "install dependencies",
     "purger un work dir",
     "[heal]",
+    # T-K (#25510) : les deux etapes du checkout borne tirees
+    # ("T-K : ascendance de la tete + la base, sans les 1 606 branches",
+    # "T-K : controle -- la base est visible, son historique est lu").
+    # Une panne de reseau sur le `git fetch --unshallow` est une panne
+    # d'infrastructure, pas un verdict de code : la sentinelle doit
+    # remonter au commit precedent, comme pour `actions/checkout`.
+    "t-k :",
 )
 
 
