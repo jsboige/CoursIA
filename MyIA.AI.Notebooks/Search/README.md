@@ -128,27 +128,27 @@ Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaqu
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12b-ConnectFour](Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12c-ConnectFour](Part3-Cas-pratiques/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
-| 2 | [App-14-ConnectFour-Adversarial](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
+| 1 | [App-12b-ConnectFour-Python](Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-12c-ConnectFour-CSharp](Part3-Cas-pratiques/App-12c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2 | [App-14-ConnectFour-Adversarial-Python](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
 ### Cas pratiques CSP
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-1-NQueens](Part3-Cas-pratiques/App-1-NQueens.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
-| 2 | [App-2-GraphColoring](Part3-Cas-pratiques/App-2-GraphColoring.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
-| 3 | [App-3-NurseScheduling](Part3-Cas-pratiques/App-3-NurseScheduling.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
-| 4 | [App-4-JobShopScheduling](Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
-| 5 | [App-5-Timetabling](Part3-Cas-pratiques/App-5-Timetabling.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
-| 6 | [App-6-Minesweeper](Part3-Cas-pratiques/App-6-Minesweeper.ipynb) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
-| 7 | [App-7-Wordle](Part3-Cas-pratiques/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
-| 8 | [App-8-MiniZinc](Part3-Cas-pratiques/App-8-MiniZinc.ipynb) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
-| 9 | [App-11-Picross](Part3-Cas-pratiques/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup mesuré 17.4x (10x10) à 4.64e+24x (15x15, extrapolé) | Projet étudiant |
-| 10 | [App-15-SportsScheduling](Part3-Cas-pratiques/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
-| 11 | [App-16-Crossword-CSP](Part3-Cas-pratiques/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
-| 12 | [App-19-ProceduralGeneration-WFC](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
+| 1 | [App-01-NQueens-Python](Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
+| 2 | [App-02-GraphColoring-Python](Part3-Cas-pratiques/App-02-GraphColoring-Python.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
+| 3 | [App-03-NurseScheduling-Python](Part3-Cas-pratiques/App-03-NurseScheduling-Python.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
+| 4 | [App-04-JobShopScheduling-Python](Part3-Cas-pratiques/App-04-JobShopScheduling-Python.ipynb) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
+| 5 | [App-05-Timetabling-Python](Part3-Cas-pratiques/App-05-Timetabling-Python.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
+| 6 | [App-06-Minesweeper-Python](Part3-Cas-pratiques/App-06-Minesweeper-Python.ipynb) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
+| 7 | [App-07-Wordle-Python](Part3-Cas-pratiques/App-07-Wordle-Python.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
+| 8 | [App-08-MiniZinc-Python](Part3-Cas-pratiques/App-08-MiniZinc-Python.ipynb) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
+| 9 | [App-11-Picross-Python](Part3-Cas-pratiques/App-11-Picross-Python.ipynb) | ~40 min | Nonogrammes : speedup mesuré 17.4x (10x10) à 4.64e+24x (15x15, extrapolé) | Projet étudiant |
+| 10 | [App-15-SportsScheduling-Python](Part3-Cas-pratiques/App-15-SportsScheduling-Python.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
+| 11 | [App-16-Crossword-CSP-Python](Part3-Cas-pratiques/App-16-Crossword-CSP-Python.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
+| 12 | [App-19-ProceduralGeneration-WFC-Python](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Python.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
 | 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
 | 13 (C#) | [App-20-SudokuBenchmark-CSharp](Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
@@ -160,18 +160,18 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-9-EdgeDetection](Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
-| 2 | [App-9-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
-| 3 | [App-10-Portfolio](Part3-Cas-pratiques/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
+| 1 | [App-09-EdgeDetection-Python](Part3-Cas-pratiques/App-09-EdgeDetection-Python.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
+| 2 | [App-09-EdgeDetection-CSharp](Part3-Cas-pratiques/App-09-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
+| 3 | [App-10-Portfolio-Python](Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
 | 4 | [App-10-Portfolio-CSharp](Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
-| 5 | [App-13-TSP-Metaheuristics](Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
+| 5 | [App-13-TSP-Metaheuristics-Python](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-Python.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
 | 6 | [App-13-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
-| 7 | [App-17-VRP-Logistics](Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
+| 7 | [App-17-VRP-Logistics-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
 | 8 | [App-17-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
-| 8b | [App-17-VRP-Logistics-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
-| 9 | [App-18-HyperparameterTuning](Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
+| 8b | [App-17-VRP-Logistics-Metaheuristiques-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Metaheuristiques-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
+| 9 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
 | 10 | [App-18-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 11 | [App-18-HyperparameterTuning-Implementation-Manuelle-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ### Applications de recherche informée mono-agent (`Applications/Informed/`)
@@ -383,27 +383,27 @@ Search/
 │   └── CSP-9-Distributed.ipynb
 │
 ├── Part3-Cas-pratiques/                   # Partie 3 — cas pratiques en dossier plat (Python + jumeaux C#, sélection ci-dessous)
-│   ├── App-1-NQueens.ipynb
-│   ├── App-2-GraphColoring.ipynb
-│   ├── App-3-NurseScheduling.ipynb
-│   ├── App-4-JobShopScheduling.ipynb
-│   ├── App-5-Timetabling.ipynb
-│   ├── App-6-Minesweeper.ipynb
-│   ├── App-7-Wordle.ipynb
-│   ├── App-8-MiniZinc.ipynb
-│   ├── App-9-EdgeDetection.ipynb
-│   ├── App-10-Portfolio.ipynb
-│   ├── App-11-Picross.ipynb
-│   ├── App-12b-ConnectFour.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
-│   ├── App-13-TSP-Metaheuristics.ipynb
-│   ├── App-15-SportsScheduling.ipynb
-│   ├── App-16-Crossword-CSP.ipynb
-│   ├── App-17-VRP-Logistics.ipynb
-│   ├── App-18-HyperparameterTuning.ipynb
-│   ├── App-19-ProceduralGeneration-WFC.ipynb
+│   ├── App-01-NQueens-Python.ipynb
+│   ├── App-02-GraphColoring-Python.ipynb
+│   ├── App-03-NurseScheduling-Python.ipynb
+│   ├── App-04-JobShopScheduling-Python.ipynb
+│   ├── App-05-Timetabling-Python.ipynb
+│   ├── App-06-Minesweeper-Python.ipynb
+│   ├── App-07-Wordle-Python.ipynb
+│   ├── App-08-MiniZinc-Python.ipynb
+│   ├── App-09-EdgeDetection-Python.ipynb
+│   ├── App-10-Portfolio-Python.ipynb
+│   ├── App-11-Picross-Python.ipynb
+│   ├── App-12b-ConnectFour-Python.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
+│   ├── App-13-TSP-Metaheuristics-Python.ipynb
+│   ├── App-15-SportsScheduling-Python.ipynb
+│   ├── App-16-Crossword-CSP-Python.ipynb
+│   ├── App-17-VRP-Logistics-Python.ipynb
+│   ├── App-18-HyperparameterTuning-Python.ipynb
+│   ├── App-19-ProceduralGeneration-WFC-Python.ipynb
 │   ├── App-20-SudokuBenchmark-Python.ipynb          # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   ├── App-22-AlgorithmSelection-Python.ipynb       # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
-│   ├── App-27-Sparse-Index-Tracking-Walk-Forward.ipynb
+│   ├── App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb
 │   └── (+ jumeaux C# App-1-CSharp/2-CSharp/3-CSharp/4-CSharp/6-CSharp/7-CSharp/8-CSharp/11-CSharp/12c/15-CSharp/16-CSharp/19-CSharp/20-CSharp et jumeaux C#/Python App-9-CSharp/10-CSharp/13-CSharp/17-CSharp/18-CSharp, marathon #4956)
 │
 │
@@ -443,7 +443,7 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 - Vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`
 - Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`
 - Vérifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
-- Les jumeaux C# hybrides (App-9-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
+- Les jumeaux C# hybrides (App-09-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
 
 ### DEAP ou PyGAD provoquent des erreurs d'import
 

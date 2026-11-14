@@ -147,7 +147,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 | Notebook | Drainable |
 |---|---|
-| `MyIA.AI.Notebooks\Search\Applications\Search\App-14-ConnectFour-Adversarial.ipynb` | 58 |
+| `MyIA.AI.Notebooks\Search\Applications\Search\App-14-ConnectFour-Adversarial-Python.ipynb` | 58 |
 | `MyIA.AI.Notebooks\Search\Part2-CSP\CSP-5-Optimization-CSharp.ipynb` | 38 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-11-Metaheuristics.ipynb` | 34 |
 | `MyIA.AI.Notebooks\Search\Part1-Foundations\Search-09-LinearProgramming.ipynb` | 34 |
@@ -177,7 +177,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 
 - **SymmetricAI est la famille la plus drainable** (2165 valeurs, 8.2% du total) — cohérent avec la maturité de la veine #9434 (lean-10, lean-11, SW-13, sudoku-12/13/18, etc.).
 - **GenAI** (1776) reflète principalement `10_LocalLlama.ipynb` (75) et `9_Production_Patterns.ipynb` (66) — timings de modèles locaux documentés en prose.
-- **Search** (1464) est portée par `App-14-ConnectFour-Adversarial.ipynb` (58) — adversarial search timings machine-dep.
+- **Search** (1464) est portée par `App-14-ConnectFour-Adversarial-Python.ipynb` (58) — adversarial search timings machine-dep.
 - **QuantConnect** (1392) — timings de backtest/simulation, conformes à la classe MACHINE-DEP.
 - **Sudoku** (851) — notebooks comparison (18-Python, 18-Csharp, 3-Genetic, 13-SymbolicAutomata) avec timings de solveurs.
 - **Probas** (459) — Infer.NET + DecisionTheory, bien que veine drainage Probas CLOSED par po-2025 (commentaire de claim).

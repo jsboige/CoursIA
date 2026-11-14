@@ -750,7 +750,7 @@ layout: dense
 
 Le corpus de travaux pratiques (`MyIA.AI.Notebooks/`) couvre les familles listees ci-dessous (exclusion : `_output.ipynb` et `_archive/`). Chaque famille est introduite par un notebook d'entrée, les autres notebooks de la famille déclinant les variantes et exercices :
 
-- **Exploration** (chapitre 2) : `Search/Part1-Foundations/` (exploration informée), `Search/Part2-CSP/` (satisfaction de contraintes), `Search/Applications/CSP/` (cas d'usage), `Sudoku/` (contexte ludique). Entrée : [Search-01-StateSpace](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb)
+- **Exploration** (chapitre 2) : `Search/Part1-Foundations/` (exploration informée), `Search/Part2-CSP/` (satisfaction de contraintes), `Search/Part3-Cas-pratiques/` (cas d'usage), `Sudoku/` (contexte ludique). Entrée : [Search-01-StateSpace](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb)
 - **Logique** (chapitre 3) : `SymbolicAI/` (Z3 + Tweety + Lean 4 + Argumentum + smart-contracts). Entrée : [Z3-Python-01-Introduction](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-01-Introduction-Python.ipynb)
 - **Probabilités** (chapitre 4) : `Probas/Infer/` (inférence bayésienne, réseaux de décision, Infer.NET). Entrée : [Infer-01b-Premiers-Modeles](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb)
 - **Jeux** (chapitre 5) : `GameTheory/` (équilibres de Nash, jeux bayésiens, MARL, OpenSpiel). Entrée : [GameTheory-02-NormalForm-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Python.ipynb)
@@ -768,7 +768,7 @@ Le catalogue généré du dépôt (`COURSE_CATALOG.generated.*`) fait foi pour l
 |---|---|---|
 | Search/Part1-Foundations | Search-01-StateSpace | exploration informée/non informée |
 | Search/Part2-CSP | CSP-1-Fundamentals | satisfaction de contraintes |
-| Search/Applications/CSP | App-1-NQueens | cas d'usage (N-Queens, Send+More=Money, planification) |
+| Search/Part3-Cas-pratiques | App-01-NQueens-Python | cas d'usage (N-Queens, Send+More=Money, planification) |
 | Sudoku | Sudoku-01-Backtracking-Python | backtracking, propagation, OR-Tools |
 | SymbolicAI | Z3-Python-01-Introduction | SMT, argumentation, Lean 4, smart-contracts |
 | Probas/Infer | Infer-01b-Premiers-Modeles | inférence bayésienne, réseaux de décision |

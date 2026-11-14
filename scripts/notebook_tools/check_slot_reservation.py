@@ -843,7 +843,7 @@ def _strip_kernel_middle(stem: str) -> str:
     a jumeaux noyau (`SW-10/11/13`, `App-14`, `Tweety-03/04`). La
     comparaison retient le `prefix-rest` pour neutraliser la difference
     Python/CSharp. Echec du pattern (le token apres le slot n'est PAS un
-    noyau connu, ex. `App-14-ConnectFour-Adversarial`) : on rend le
+    noyau connu, ex. `App-14-ConnectFour-Adversarial-Python`) : on rend le
     stem inchange, et la collision est le SUJET different, pas un
     jumeau a exclure.
     """
@@ -871,7 +871,7 @@ def _same_item_scan(a: str, b: str) -> bool:
     #    le strip_lang ne le voit pas, on le retire a la main avant
     #    la comparaison. Echec du pattern (le token n'est pas un noyau
     #    connu) -> inchange, et la collision reste un vrai conflit de
-    #    sujet (ex. `App-14-ConnectFour-Adversarial` vs
+    #    sujet (ex. `App-14-ConnectFour-Adversarial-Python` vs
     #    `App-14-ConnectFour-CSharp` ne SONT PAS jumeaux).
     sa = _strip_kernel_middle(sa)
     sb = _strip_kernel_middle(sb)

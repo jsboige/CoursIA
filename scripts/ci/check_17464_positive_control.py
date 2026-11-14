@@ -32,8 +32,8 @@ SCRIPT = ROOT / "scripts/notebook_tools/check_split_reading_cells.py"
 # Chemins FIGES a l'epoque du couple de SHA par defaut (6d46b9c684~1 -> 6d46b9c684) :
 # ils ne designent pas l'arborescence courante et ne se realignent donc pas sur un
 # deplacement de carnets (#21770). Le controle materialise ces blobs par `git show`.
-NQ_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb"
-C4_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour.ipynb"
+NQ_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/CSP/App-01-NQueens-Python.ipynb"
+C4_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour-Python.ipynb"
 
 NQ_EXPECTED = 26
 C4_EXPECTED = 16
@@ -98,12 +98,12 @@ def main(argv: list[str] | None = None) -> int:
     n_c4, kinds_c4 = scan_against_base(head_c4, base_c4, "c4")
 
     if n_nq != NQ_EXPECTED:
-        fails.append(f"App-1-NQueens : attendu {NQ_EXPECTED}, trouve {n_nq} ({kinds_nq})")
+        fails.append(f"App-01-NQueens-Python : attendu {NQ_EXPECTED}, trouve {n_nq} ({kinds_nq})")
     if n_c4 != C4_EXPECTED:
-        fails.append(f"App-12b-ConnectFour : attendu {C4_EXPECTED}, trouve {n_c4} ({kinds_c4})")
+        fails.append(f"App-12b-ConnectFour-Python : attendu {C4_EXPECTED}, trouve {n_c4} ({kinds_c4})")
     if kinds_nq.get("EXERCISE_READING", 0) < NQUEENS_EXERCISE_READING_EXPECTED:
         fails.append(
-            f"App-1-NQueens : {NQUEENS_EXERCISE_READING_EXPECTED} EXERCISE_READING "
+            f"App-01-NQueens-Python : {NQUEENS_EXERCISE_READING_EXPECTED} EXERCISE_READING "
             f"attendu(s), trouve {kinds_nq.get('EXERCISE_READING', 0)}"
         )
 
@@ -114,8 +114,8 @@ def main(argv: list[str] | None = None) -> int:
             fails.append(f"bucket {required!r} jamais exprime dans les positifs")
 
     print(f"=== Controle positif #17464 (base {args.base_sha[:9]} -> head {args.head_sha[:9]}) ===")
-    print(f"App-1-NQueens        : {n_nq:3d} ({kinds_nq})  -- attendu {NQ_EXPECTED}")
-    print(f"App-12b-ConnectFour  : {n_c4:3d} ({kinds_c4})  -- attendu {C4_EXPECTED}")
+    print(f"App-01-NQueens-Python        : {n_nq:3d} ({kinds_nq})  -- attendu {NQ_EXPECTED}")
+    print(f"App-12b-ConnectFour-Python  : {n_c4:3d} ({kinds_c4})  -- attendu {C4_EXPECTED}")
     print()
     if fails:
         print("ECHEC :")

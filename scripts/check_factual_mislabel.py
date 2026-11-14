@@ -3,7 +3,7 @@
 
 Détecte une cellule markdown qui énonce un compte d'entité CONTREDIT par
 le stream text committé de la cellule code qu'elle décrit -- canon :
-App-5-Timetabling énonce « 3 salles » et « (3 × 20)^8 » alors que le
+App-05-Timetabling-Python énonce « 3 salles » et « (3 × 20)^8 » alors que le
 stream committé imprime « Salles : 4 » et « (4 x 20)^8 = 1.68e+15 ».
 
 Deux facettes, toutes deux des contradictions (un compte DIFFÉRENT du

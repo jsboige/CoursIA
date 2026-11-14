@@ -1375,7 +1375,7 @@ def test_cell_output_text_aggrege_les_sorties():
     assert "ligne1" in text and "ligne2" in text and "warn" in text
 
 
-# --- 5bis. Controle positif REEL : #17021 (App-1-NQueens + App-14b) -----------
+# --- 5bis. Controle positif REEL : #17021 (App-01-NQueens-Python + App-14b) -----------
 #
 # Le ticket #17464 exige le controle positif "les deux notebooks de #17021,
 # base 6d46b9c684~1 -> tete 6d46b9c684, doivent sortir en rouge".
@@ -2559,7 +2559,7 @@ def test_resume_apres_exercice_reste_signale():
 # Carve-out prose de transition (#24164)
 # =============================================================================
 #
-# Instance mesuree : PR #23840, `App-3-NurseScheduling.ipynb`, 10 SECOND_READING
+# Instance mesuree : PR #23840, `App-03-NurseScheduling-Python.ipynb`, 10 SECOND_READING
 # sur des cellules qui ANNONCENT le code suivant. 2 separateurs `***` devant un
 # titre de section, 8 libelles d'etape en gras. L'organe punissait le geste qu'il
 # prescrit (poser la lecture demandee par « une sortie = une lecture »).

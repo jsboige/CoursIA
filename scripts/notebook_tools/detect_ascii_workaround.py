@@ -5,11 +5,11 @@ Pourquoi cet outil existe
 -------------------------
 Le registre #3801 (SOTA axe-2, Prong-A) accumule des corrections manuelles de
 visualisations ASCII degenerees remplacees par le vrai outil (matplotlib/Plotly) :
-#6603 (App-7-Wordle bar), #6659 (PyMC-12 shrinkage bar), #6826 (App-8 MiniZinc
+#6603 (App-07-Wordle-Python bar), #6659 (PyMC-12 shrinkage bar), #6826 (App-8 MiniZinc
 bars), #6829 (GT-4c Nash simplex trajectory), #6834 (PyMC-17 Kalman trajectory),
 #6837 (Search-11b ABC limit-sweep). Chaque defaut est decouvert a la main, ad-hoc,
 par le worker qui tombe dessus. Plusieurs scans systematiques (po-2025 c.542/c.543)
-ont MANQUE des defauts connus (PyMC-12, App-7-Wordle) parce que les patterns de
+ont MANQUE des defauts connus (PyMC-12, App-07-Wordle-Python) parce que les patterns de
 commentaires varient. Ce tool formalise la moitie DETECTION du sweep Prong-A :
 il liste les cellules code qui dessinent des charts/bars/trajectoires en ASCII
 alors qu'un vrai outil de charting est invocable.

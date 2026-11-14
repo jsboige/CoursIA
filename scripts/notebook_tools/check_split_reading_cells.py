@@ -53,7 +53,7 @@ INSEREES dans une PR qui violent la regle user « une sortie = une lecture » :
 Le mode diff prend deux notebooks en argument (``--base``) et signale chaque
 cellule ajoutee (par multiset de sources) dont la **nouvelle** position viole
 la regle. La difference des en-tetes vides vient de la campagne #17021
-(26 lectures inserees sur App-1-NQueens, 16 sur App-14b-ConnectFour) qui
+(26 lectures inserees sur App-01-NQueens-Python, 16 sur App-14b-ConnectFour) qui
 passait sous l'organe consecutive d'origine -- le veto user dit pourtant la
 meme regle.
 
@@ -262,7 +262,7 @@ CLOSING_NAV_TITLE_RE = re.compile(
 )
 # Carve-out #24164 : une **prose de transition vers l'etape suivante** n'est pas
 # une lecture de la sortie qui la precede. Classes mesurees sur 10
-# signalements (PR #23840, `App-3-NurseScheduling.ipynb`) -- decomposition
+# signalements (PR #23840, `App-03-NurseScheduling-Python.ipynb`) -- decomposition
 # rejouee sur le head (revue Hermes #24309), l'issue melangeait gras et
 # non-gras dans son compte 8/2 :
 #   (a) une cellule de **separateur horizontal** (`***`) posee devant un titre
