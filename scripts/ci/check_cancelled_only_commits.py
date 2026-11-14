@@ -38,13 +38,29 @@ class while two instances of it were still on screen.
   INFRA_ONLY      FAILURE, and every non-green leg is a cancellation, at least
                   one of which RAN. A job killed at its timeout is a real red:
                   it is named, and it is NOT a borrowed one.
+  ADVISORY_ONLY   FAILURE, and every non-green leg declares itself consultative
+                  (`advisory` in the job name, or in its workflow's name). The
+                  only required check of `main` does not block on such a leg:
+                  the red is neither earned nor borrowed, it is consultative.
   PENDING         the rollup has not settled
   UNKNOWN         FAILURE with no readable leg, or a truncated leg list
 
-Truncation is fail-closed on the accusation: a commit whose leg list hit the
-100-context page limit is NEVER reported as an offender, because a real failure
-could be sitting just past the page. Silence from truncation is not a clean bill
-either -- UNKNOWN is counted and printed.
+Truncation is fail-closed on every claim that CLEARS a red, exactly as it is on
+the accusation: a commit whose leg list hit the 100-context page limit is never
+reported as an offender, nor as advisory-only, because a real failure could be
+sitting just past the page. Silence from truncation is not a clean bill either
+-- UNKNOWN is counted and printed.
+
+## Consultative legs (#26355)
+
+A leg whose name carries `advisory` is non-blocking for `scripts/pr_gate.py`
+(its `ADVISORY_MARKER`, rule 6). This organ used to count such a leg among the
+MERITED reds, so its report could name a consultative leg as an earned failure
+while the gate concluded the opposite on the same commit -- measured on #26336.
+The predicate is not re-implemented here: `pr_gate.is_advisory` and
+`pr_gate.derive_advisory_jobs` are imported, so the report and the gate cannot
+drift apart. A consultative leg never decides a verdict -- the required legs do
+-- and the consultative ones are listed as evidence.
 
 ## Two cancellations, one rendering
 
@@ -76,11 +92,31 @@ import json
 import subprocess
 import sys
 from datetime import datetime
+from pathlib import Path
+
+# The advisory predicate has exactly one source: the PR gate. Re-testing the
+# substring here would drift the day rule 6 changes, and the whole point of
+# #26355 is that the two organs agree on what "non-blocking" means.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 #: 0 = nothing to report, 1 = the report has findings (a borrowed red OR an
 #: infra death), 2 = the instrument itself failed. The two findings are counted
 #: and printed separately; they are not the same verdict and never were.
 EXIT_CLEAN, EXIT_OFFENDERS, EXIT_BROKEN = 0, 1, 2
+
+try:
+    import pr_gate  # noqa: E402  (scripts/ -- the only required check of main)
+except ImportError as exc:  # pragma: no cover -- provisioning, never logic
+    # A checkout without `scripts/pr_gate.py` cannot tell a consultative leg
+    # from a merited one, so it cannot measure. Saying so with rc=2 (instrument
+    # broken) is the only honest report available; degrading silently to "no
+    # advisory legs" would re-create exactly the contradiction #26355 removes.
+    print(
+        "[cancelled-only] instrument incomplet : scripts/pr_gate.py est requis "
+        f"pour le predicat consultatif ({exc})",
+        file=sys.stderr,
+    )
+    raise SystemExit(EXIT_BROKEN)
 
 # Conclusions that do not make a commit red on their own. `SKIPPED` is the
 # normal state of a leg gated by `if:`; `NEUTRAL` is an advisory that declined
@@ -97,6 +133,45 @@ CANCELLED = {"CANCELLED", "cancelled"}
 STARTED_GRACE_SECONDS = 120
 
 SUPERSEDED, KILLED = "SUPERSEDED", "KILLED"
+
+#: Verdict of a red whose every non-green leg is consultative (#26355). It is
+#: not an accusation and not a finding: nothing is owed to anyone.
+ADVISORY_ONLY = "ADVISORY_ONLY"
+
+#: Cache of the derived job names; None = not read yet (the read itself may
+#: legitimately yield an empty set, so an empty frozenset is not a "not read").
+_ADVISORY_JOBS = None
+
+
+def advisory_job_names():
+    """Job names emitted by workflows whose WORKFLOW-level name is advisory.
+
+    Read once per process, through the PR gate's own derivation: three
+    workflows carry the marker on the workflow name only, and their job names
+    would otherwise read as blocking (the defect that held PRs #12524 and
+    #12783 open 44h/9h). An unreadable directory yields an empty set -- this
+    organ must never fail because a YAML was mid-edit, and the name-marker path
+    still covers the ~30 workflows that carry it in the job name.
+    """
+    global _ADVISORY_JOBS
+    if _ADVISORY_JOBS is None:
+        try:
+            _ADVISORY_JOBS = frozenset(pr_gate.derive_advisory_jobs())
+        except Exception:  # noqa: BLE001 -- un instrument ne s'arme pas contre nous
+            _ADVISORY_JOBS = frozenset()
+    return _ADVISORY_JOBS
+
+
+def is_advisory_leg(name):
+    """True when the PR gate treats this leg as non-blocking (rule 6).
+
+    The two signals in the gate's own order: the marker anywhere in the job
+    name (`pr_gate.is_advisory`), then the derived job names of advisory
+    workflows.
+    """
+    name = name or ""
+    return pr_gate.is_advisory(name) or name in advisory_job_names()
+
 
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_REF = "refs/heads/main"
@@ -218,18 +293,25 @@ def _leg_evidence(name, started, completed):
     return f"{name}={kind}({seconds / 60:.0f} min)"
 
 
-def classify(rollup_state, legs, truncated=False):
+def classify(rollup_state, legs, truncated=False, advisory=None):
     """Verdict for one commit.
 
     `legs` yields `(name, conclusion)` or `(name, conclusion, started,
     completed)`; the timing fields carry the #25181 distinction between a job
     that never started and one that ran to its ceiling.
 
-    A red cross is EARNED when at least one non-green leg really failed. It is
-    BORROWED when every non-green leg is a supersession -- nothing measured,
-    nothing spent. It is INFRA when the only cancellations are jobs that ran:
-    a runner was held and the commit was never judged, which is a real red
-    wearing the same pixel as the borrowed one.
+    `advisory` decides whether a leg is consultative; it defaults to
+    `is_advisory_leg`, which IS the PR gate's rule (#26355). A consultative leg
+    never decides a verdict: it is not an earned failure, and its cancellation
+    is not a borrowed red either. The required legs decide, and a commit whose
+    legs are ALL consultative is ADVISORY_ONLY -- a fourth rendering, distinct
+    from the merited, the borrowed and the infra red.
+
+    A red cross is EARNED when at least one required non-green leg really
+    failed. It is BORROWED when every required non-green leg is a supersession
+    -- nothing measured, nothing spent. It is INFRA when the only required
+    cancellations are jobs that ran: a runner was held and the commit was never
+    judged, which is a real red wearing the same pixel as the borrowed one.
     """
     if rollup_state in (None, "", "SUCCESS"):
         return "OK"
@@ -238,13 +320,22 @@ def classify(rollup_state, legs, truncated=False):
     if rollup_state != "FAILURE":
         return "UNKNOWN"
 
+    advisory = advisory or is_advisory_leg
     non_green = [f for f in (leg_fields(leg) for leg in legs)
                  if f[1] not in NON_GREEN_IGNORED]
     if not non_green:
         # FAILURE with nothing readable: a conclusion we do not model, not a
         # clean commit. Never accused, never blessed.
         return "UNKNOWN"
-    if all(conclusion in CANCELLED for _, conclusion, _, _ in non_green):
+
+    blocking = [f for f in non_green if not advisory(f[0])]
+    if not blocking:
+        # Every non-green leg is consultative: the gate does not block on this
+        # commit. Clearing a red is as corruptible by truncation as accusing
+        # one, so the page limit keeps the doubt.
+        return "UNKNOWN" if truncated else ADVISORY_ONLY
+
+    if all(conclusion in CANCELLED for _, conclusion, _, _ in blocking):
         # The accusation is the only claim truncation can corrupt: a real
         # failure could be sitting past the page. An earned failure that is
         # already visible stays earned whatever the rest of the list holds.
@@ -252,12 +343,12 @@ def classify(rollup_state, legs, truncated=False):
             return "UNKNOWN"
         # #25181: a cancellation that held a runner is not an exoneration.
         kinds = {cancelled_kind(started, completed)
-                 for _, _, started, completed in non_green}
+                 for _, _, started, completed in blocking}
         return "INFRA_ONLY" if KILLED in kinds else "CANCELLED_ONLY"
     return "OK"
 
 
-def analyse(commit):
+def analyse(commit, advisory=None):
     """One row of the report, from a GraphQL history node."""
     rollup = commit.get("statusCheckRollup") or {}
     contexts = rollup.get("contexts") or {}
@@ -267,7 +358,9 @@ def analyse(commit):
         (leg_name(n), leg_conclusion(n), n.get("startedAt"), n.get("completedAt"))
         for n in nodes
     ]
-    verdict = classify(rollup.get("state"), legs, truncated=truncated)
+    advisory = advisory or is_advisory_leg
+    verdict = classify(rollup.get("state"), legs, truncated=truncated,
+                       advisory=advisory)
     return {
         "oid": commit.get("oid", ""),
         "date": commit.get("committedDate", ""),
@@ -279,6 +372,14 @@ def analyse(commit):
             f"{name}={conclusion}"
             for name, conclusion, _, _ in legs
             if conclusion not in NON_GREEN_IGNORED
+        ],
+        # #26355: the consultative legs, set apart from the required ones so a
+        # reader can see WHICH leg the gate does not block on. Without this,
+        # the same name reads as a merited red in a mixed commit.
+        "advisory_legs": [
+            f"{name}={conclusion}"
+            for name, conclusion, _, _ in legs
+            if conclusion not in NON_GREEN_IGNORED and advisory(name)
         ],
         # #25181: the fact behind each cancellation, so a KILLED leg cannot be
         # read as a supersession once it reaches the report.
@@ -411,6 +512,7 @@ def main(argv=None):
     rows = [analyse(n) for n in nodes]
     offenders = [r for r in rows if r["verdict"] == "CANCELLED_ONLY"]
     infra = [r for r in rows if r["verdict"] == "INFRA_ONLY"]
+    advisory_only = [r for r in rows if r["verdict"] == ADVISORY_ONLY]
     unknown = [r for r in rows if r["verdict"] == "UNKNOWN"]
     earned = [r for r in rows if r["verdict"] == "OK" and r["rollup"] == "FAILURE"]
 
@@ -422,6 +524,7 @@ def main(argv=None):
             "window": len(rows),
             "offenders": [r["oid"] for r in offenders],
             "infra_deaths": [r["oid"] for r in infra],
+            "advisory_only": [r["oid"] for r in advisory_only],
             "unknown": [r["oid"] for r in unknown],
             "earned_failure": [r["oid"] for r in earned],
             "commits": rows,
@@ -430,15 +533,22 @@ def main(argv=None):
         print(f"{args.repo} {args.ref} -- fenetre de {len(rows)} commits\n")
         print(f"{'date':20s} {'sha':11s} {'rollup':8s} {'verdict':15s} jambes non vertes")
         for r in rows:
+            # #26355: a consultative leg is flagged in the evidence column too,
+            # so a MIXED commit names which of its reds the gate ignores.
+            shown = [
+                entry + " [advisory]" if entry in r["advisory_legs"] else entry
+                for entry in r["non_green"][:3]
+            ]
             print(
                 f"{r['date'][:19]:20s} {r['oid'][:10]:11s} "
                 f"{str(r['rollup']):8s} {r['verdict']:15s} "
-                f"{', '.join(r['non_green'][:3]) or '-'}"
+                f"{', '.join(shown) or '-'}"
             )
         print()
         print(f"rouges MERITES (une jambe a vraiment echoue) : {len(earned)}")
         print(f"rouges EMPRUNTES (annule avant demarrage)    : {len(offenders)}")
         print(f"rouges INFRA (job demarre, tue avant fin)    : {len(infra)}")
+        print(f"rouges CONSULTATIFS (advisory, non bloquant) : {len(advisory_only)}")
         print(f"indetermines (troncature/illisible)          : {len(unknown)}")
         for r in offenders:
             print(f"  EMPRUNTE {r['oid'][:10]}  {r['headline'][:60]}")
@@ -446,6 +556,9 @@ def main(argv=None):
         for r in infra:
             print(f"  INFRA    {r['oid'][:10]}  {r['headline'][:60]}")
             print(f"            {', '.join(r['cancelled_evidence'][:5])}")
+        for r in advisory_only:
+            print(f"  CONSULT  {r['oid'][:10]}  {r['headline'][:60]}")
+            print(f"            {', '.join(r['advisory_legs'][:5])}")
 
     return EXIT_OFFENDERS if (offenders or infra) else EXIT_CLEAN
 
