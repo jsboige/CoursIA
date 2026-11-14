@@ -462,6 +462,23 @@ def probe_merge_state_rest(repo: str, pr: int) -> "str | None":
     return state or None
 
 
+def resolve_merge_state(repo: str, pr: dict) -> None:
+    """Remplace un `UNKNOWN` par la lecture unitaire, qui seule fait foi.
+
+    La liste GraphQL rend `mergeStateStatus: UNKNOWN` tant que GitHub n'a pas
+    calcule la fusionabilite de la PR ; l'API REST de liste a le meme defaut.
+    Sans cette re-mesure, une PR parfaitement `clean` sort en `WAITING` et la
+    liste nominative ne dit plus rien de son blocage reel. La lecture coute
+    un point `core` et ne se paie que sur une PR deja candidate. Illisible :
+    on garde `UNKNOWN`, qui sort en `WAITING` nomme (fail-closed).
+    """
+    if str(pr.get("merge_state") or "").upper() != "UNKNOWN":
+        return
+    state = probe_merge_state_rest(repo, pr.get("number"))
+    if state:
+        pr["merge_state"] = state
+
+
 def gh_graphql(query: str, variables: dict) -> dict:
     cmd = ["gh", "api", "graphql", "-f", "query=" + query]
     for key, value in variables.items():
@@ -587,13 +604,10 @@ def main(argv: "list[str] | None" = None) -> int:
         pr = item["pr"]
         status, causes = item["status"], item["causes"]
         if status is None:
-            if args.rest:
-                # La liste REST rend `unknown` : la lecture unitaire est la
-                # seule qui dise l'etat de merge, et elle ne se paie que sur
-                # les PRs candidates.
-                state = probe_merge_state_rest(args.repo, pr["number"])
-                if state:
-                    pr["merge_state"] = state
+            # Les deux listes rendent `unknown`/`UNKNOWN` : la lecture
+            # unitaire est la seule qui dise l'etat de merge, et elle ne se
+            # paie que sur les PRs deja candidates.
+            resolve_merge_state(args.repo, pr)
             probes = {
                 "b0": probe_b0(pr["number"]),
                 "checks": probe_checks(pr["number"], pr["head"]),

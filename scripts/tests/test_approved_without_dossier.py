@@ -347,6 +347,43 @@ def test_rest_sort_la_meme_chose_que_graphql(monkeypatch):
     assert [p["number"] for p in awd.candidates(graph)] == [5]
 
 
+# --- 5 bis. `UNKNOWN` n'est pas un verdict : on le re-mesure ---------------
+
+
+def test_merge_state_inconnu_est_remesure_par_la_lecture_unitaire(monkeypatch):
+    """Les deux listes (GraphQL et REST) rendent `unknown` tant que GitHub n'a
+    pas calcule la fusionabilite. Sans cette re-mesure, une PR `clean` sort en
+    `WAITING mergeStateStatus:UNKNOWN` et la liste nominative ne dit plus rien
+    de son blocage reel (mesure du 14/11 : 5 PRs sur 8 dans ce cas)."""
+    seen = []
+
+    def fake_probe(repo, pr):
+        seen.append((repo, pr))
+        return "CLEAN"
+
+    monkeypatch.setattr(awd, "probe_merge_state_rest", fake_probe)
+    pr = _pr(number=9, merge_state="UNKNOWN")
+    awd.resolve_merge_state("jsboige/CoursIA", pr)
+    assert pr["merge_state"] == "CLEAN"
+    assert seen == [("jsboige/CoursIA", 9)]
+
+
+def test_un_etat_deja_mesure_n_est_pas_repaye(monkeypatch):
+    monkeypatch.setattr(awd, "probe_merge_state_rest",
+                        lambda repo, pr: "DIRTY")
+    pr = _pr(number=10, merge_state="CLEAN")
+    awd.resolve_merge_state("jsboige/CoursIA", pr)
+    assert pr["merge_state"] == "CLEAN"
+
+
+def test_une_re_mesure_illisible_laisse_unknown(monkeypatch):
+    """Fail-closed : une mesure impossible ne devient pas une acceptation."""
+    monkeypatch.setattr(awd, "probe_merge_state_rest", lambda repo, pr: None)
+    pr = _pr(number=11, merge_state="UNKNOWN")
+    awd.resolve_merge_state("jsboige/CoursIA", pr)
+    assert pr["merge_state"] == "UNKNOWN"
+
+
 # --- _run_json contre les sorties REELLES des organes delegues (review #22102) ---
 #
 # Hermes a prouve que le scan « derniere ligne commencant par { » ne lit
