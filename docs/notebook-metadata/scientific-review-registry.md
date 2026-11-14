@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -428,13 +428,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-17-EpsilonMachine-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb
   confidence: research
   reviewed_code_sha: 9a0d29399fcf122f0955c8f2637f3e9771bbef13982d544f6ebeb5591023ba3b
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb
   confidence: research
   reviewed_code_sha: c801bbda3ebfa6ff09259ed216ff8ba429552cf556670433f565fb67a76281d0
   review_date: "2026-09-21"

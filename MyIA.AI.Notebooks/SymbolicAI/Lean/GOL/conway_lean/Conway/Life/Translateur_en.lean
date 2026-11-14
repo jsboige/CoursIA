@@ -50,12 +50,12 @@ two files; only the docstrings and comments differ.
 This module is fully proven (no `sorry`).
 -/
 
-import Conway.Life
+import Conway.Life_en
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 
 /-! ## The box and its family
 
