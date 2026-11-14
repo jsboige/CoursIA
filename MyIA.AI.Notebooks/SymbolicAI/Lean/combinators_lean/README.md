@@ -23,7 +23,7 @@ plus simple que le lambda-calcul :
 | Module | Contenu |
 |---|---|
 | `Combinators/Term.lean` | Syntaxe (`Term`, application infixe `⊙`), taille, réduction à un pas `step` (fermeture contextuelle de S/K/I) |
-| `Combinators/Parallel.lean` | Réduction parallèle `par`, lemmes de forme (`par_atom`, `par_head1`, `par_S2`), **lemme du losange** par induction forte sur la taille |
+| `Combinators/Parallel.lean` | Réduction parallèle `par`, lemmes de forme (`par_atom`, `par_Shead`, `par_Khead`, `par_S2`), **lemme du losange** par induction forte sur la taille |
 | `Combinators/Confluence.lean` | Ponts `step ⊆ par ⊆ step*`, théorème **`confluence`** (organe `church_rosser`), corollaire **`unique_normal_form`** |
 
 Le losange est prouvé par induction **forte sur la taille du terme** (pas
