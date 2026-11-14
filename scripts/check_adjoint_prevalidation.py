@@ -233,20 +233,43 @@ SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
 COORDINATOR_LOGIN = "myia-ai-01"
-# #17437: the coordinator's GitHub App identity, once its lane signs with an
-# installation token instead of a PAT (the six lane Apps are created and
-# installed; the switch is the remaining operational step). Written as a
-# literal rather than derived from `gh_identity.APP_LOGIN_PREFIX` so this module
-# keeps importing when that organ is unavailable; a test pins the two together.
+# #17437: the coordinator machine's GitHub App identity, kept as a named
+# literal so the tests pin the exact REST spelling (``[bot]`` suffix). It is
+# NOT a coordinator voice -- see the COORDINATOR_IDENTITIES arbitration below
+# (#26102, applied here by #26405).
 COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
-# The coordinator's ONE voice, in every spelling it can reach the API under.
+# La voix du coordinateur : les logins HUMAINS seuls. L'App
+# ``coursia-lane-ai-01`` n'en fait PAS partie (arbitrage ai-01 2026-11-13,
+# porte par #26102 dans ``merge_ready.py`` ; ce module etait le troisieme
+# residue, mesure par #26405).
+#
+# Sa cle privee vit sur la machine ai-01, dans le clone du depot
+# (``.secrets/github-apps/coursia-lane-ai-01.pem``, cf
+# ``scripts/secrets/github_app_manifest.KEY_DIR``). La machine porte DEUX
+# lanes : ``myia-ai-01:CoursIA`` (le coordinateur) et ``myia-ai-01:CoursIA-2``
+# (la lane worker soeur). La seconde lit le meme fichier et forge donc le meme
+# jeton d'installation : compter cette App comme voix du coordinateur
+# neutraliserait des actes post-dossier qu'une lane NON coordinatrice peut
+# ecrire -- un commentaire ou une APPROVE de CoursIA-2 sous l'App vaudrait
+# celle du coordinateur, et le dossier ne perimerait pas. Une App PROPRE a la
+# lane coordinateur est le prealable ; une App nommee par machine ne le
+# remplace pas.
+#
+# Consequence voulue : un acte de l'App (commentaire ou review) EXPIRE
+# desormais le dossier (``_is_own_later_act`` refuse sa neutralisation), et
+# son APPROVE ne qualifie plus a la porte review
+# (``COORDINATOR_REVIEW_LOGINS``) -- aligne sur
+# ``merge_ready.COORDINATOR_VOICES`` et
+# ``check_unaddressed_nits.LIFT_OVERRIDE_LOGINS``, qui refusent toute forme
+# App. Le jour ou une App de lane coordinateur existe, elle s'ajoute ici par
+# une edition consciente, accompagnee de sa cle dediee.
+#
 # Deliberately NOT `gh_identity.ACCEPTED_DOSSIER_AUTHORS`: that set holds every
 # lane's App, and neutralising a worker lane's row would delete the control
-# `_is_own_later_act` exists to enforce. A worker's App must still expire the
-# dossier -- a negative-control test holds that line.
-COORDINATOR_IDENTITIES = frozenset(
-    (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN, COORDINATOR_APP_LOGIN)
-)
+# `_is_own_later_act` exists to enforce. The App of the ai-01 machine stays an
+# accepted dossier AUTHOR (signing a dossier is not a post-dossier act) -- it
+# just no longer neutralises anything after it.
+COORDINATOR_IDENTITIES = frozenset((COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN))
 
 VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
@@ -904,6 +927,17 @@ def pre18637_surfaces_fingerprint(
     )
 
 
+def _is_skipped_run(run: dict[str, Any]) -> bool:
+    """Whether the check-run is a SKIPPED job.
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict (#25510, tranche T-C).
+    """
+    if str(run.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(run.get("status") or "").lower() == "skipped"
+
+
 def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
     """Last COMPLETED verdict per check name: group by name, latest ``started_at``
     (``id`` as tiebreak), keep that run.
@@ -912,15 +946,34 @@ def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str,
     back to its latest completed run, which is the last word actually said.
     Grouping by name -- not reading the rollup twin -- is what avoids painting
     a head red with the cancelled run of a superseded pair (#16957).
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C), shared with the two canonical
+    folds (``scripts/pr_gate.py::dedupe_latest`` and
+    ``scripts/check_run_state.py::fold_latest``): a ``skipped`` run measured
+    NOTHING about the code, so it never replaces an EARLIER non-skipped run of
+    the same name. ``skipped`` counts as a PASS here, so under a plain
+    latest-wins fold a job skipped by a guard (a title edit, a ``paths:``
+    filter) would WHITEN a red head -- and this dossier would certify
+    ``latest-wins-green`` on a head the gate itself reads as red. The three
+    organs must measure the same "latest".
     """
     verdicts: dict[str, tuple[tuple, dict[str, Any]]] = {}
-    for run in check_runs or []:
+    for index, run in enumerate(check_runs or []):
         if (run.get("status") or "").lower() != "completed":
             continue
         key = run.get("name") or ""
-        rank = (run.get("started_at") or "", run.get("id") or 0)
+        # La NATURE est en tete du rang (verdict reel > `skipped`) : le repli
+        # est ainsi independant de l'ordre d'arrivee, alors que l'API rend les
+        # check-runs du plus recent au plus ancien.
+        rank = (not _is_skipped_run(run),
+                run.get("started_at") or "",
+                run.get("id") or 0,
+                index)
         current = verdicts.get(key)
-        if current is None or rank > current[0]:
+        if current is None:
+            verdicts[key] = (rank, run)
+            continue
+        if rank >= current[0]:
             verdicts[key] = (rank, run)
     return {name: run for name, (rank, run) in verdicts.items()}
 
@@ -2419,6 +2472,8 @@ _PR_GATE_CONTRADICTION_PREFIX = (
 #: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
 #: expose cette porte a titre d'information : l'autorite de merge reste le
 #: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
+#: Heritee de COORDINATOR_IDENTITIES : toute forme App y est refusee, comme
+#: dans ``merge_ready.COORDINATOR_VOICES`` (#26102, aligne par #26405).
 COORDINATOR_REVIEW_LOGINS = COORDINATOR_IDENTITIES
 
 

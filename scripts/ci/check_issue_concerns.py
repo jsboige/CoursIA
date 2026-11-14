@@ -10,11 +10,16 @@ pas le fil), et la condensation du dashboard emporte le signalement.
 
 La premiere livraison couvrait la classe ``user-concern``, la deuxieme la
 classe ``user-remark`` : **tout autre commentaire du mainteneur** (question,
-consigne, arbitrage, constat) en attente de reponse. Cette tranche ajoute la
+consigne, arbitrage, constat) en attente de reponse. La troisieme a ajoute la
 classe ``reviewer-reserve`` : une **reserve de relecteur** (Hermes, NanoClaw,
 clusterManager-Myia, lane tierce) posee sur une **issue** avec un marqueur de
-verdict, et jamais levee (campagne #20185 ; les trois classes restantes
-viendront chacune par sa propre PR).
+verdict, et jamais levee. Cette tranche ajoute la classe
+``external-unanswered`` : un **commentaire d'un auteur hors flotte** (etudiant,
+contributeur public) reste sans triage de la flotte (campagne #20185 ; les
+deux classes restantes viendront chacune par sa propre PR). Seule la flotte
+trie : un second auteur externe ni un bot ne sont candidats de reponse, et la
+reponse attendue **cite le commentaire oublie** (machinerie de citation forte,
+comme une remarque).
 
 Le probleme propre a cette classe est le **login partage** : la flotte ecrit sous
 le compte du mainteneur, et l'auteur ne distingue donc plus un post de lane d'une
@@ -91,15 +96,40 @@ REPO = "jsboige/CoursIA"
 CONCERN_AUTHOR = "jsboige"
 
 #: Les comptes sous lesquels une lane de la flotte ecrit : le compte partage du
-#: mainteneur, les sieges de worker (``myia-*``) et les bots reviewers. Un post de
-#: lane se juge par la meme regle **quel que soit** le compte qui le porte
-#: (#20186) : indexer la garde sur le seul ``jsboige`` laissait un accuse de
-#: reception nu franchir le plancher de substance des qu'il etait ecrit sous un
-#: autre login, alors que la menace nommee par l'organe est precisement le compte
-#: partage.
+#: mainteneur, les sieges de worker (``myia-*``), les bots reviewers et les
+#: sieges reels mesures. Un post de lane se juge par la meme regle **quel que
+#: soit** le compte qui le porte (#20186) : indexer la garde sur le seul
+#: ``jsboige`` laissait un accuse de reception nu franchir le plancher de
+#: substance des qu'il etait ecrit sous un autre login, alors que la menace
+#: nommee par l'organe est precisement le compte partage.
+#:
+#: Sieges reels (mesure du 2026-11-13, corpus 1000 issues depuis le
+#: 2026-09-25) : ``jsboigeEpita`` (siege po-2023 — tous ses commentaires dans
+#: la fenetre sont des posts de lane) et ``jsboigeEPF`` (siege po-2025 **et**
+#: plume du mainteneur : 4 « Concern: » mesures sur #22844, #23778, #23983 x2,
+#: qui echappaient au filet user-concern sans cette extension — et dont les
+#: posts de lane auraient inonde la classe ``external-unanswered``). La liste
+#: reste FERMEE sur le mesure : un siege neuf (p. ex. ``jsboigeECE``, absent du
+#: corpus) s'ajoute par une ligne accompagnee de sa mesure.
 LANE_LOGIN = re.compile(
-    rf"^(?:{re.escape(CONCERN_AUTHOR)}|myia-[a-z0-9-]+|clusterManager-Myia)$"
+    r"^(?:jsboige|jsboigeEpita|jsboigeEPF|myia-[a-z0-9-]+|clusterManager-Myia)$"
 )
+
+#: Les comptes d'integration GitHub (App) : tout login d'app porte le suffixe
+#: ``[bot]``. Ils ne sont ni la flotte ni un externe a trier — leur activite
+#: (label, stale, resultat de workflow) n'attend pas de reponse de la flotte.
+#: Mesure du 2026-11-13 sur le corpus (1000 issues lues depuis le 2026-09-25,
+#: tous etats) : le seul bot present est ``github-actions[bot]`` ; la forme
+#: par suffixe couvre la famille entiere (dependabot, stale, imgbot...).
+BOT_LOGIN = re.compile(r"\[bot\]$")
+
+#: Classe ``external-unanswered`` (#20185) : un commentaire d'un auteur HORS
+#: flotte (etudiant, contributeur public — cf. ``public-contribution-triage.md``).
+#: La reponse attendue est portee par la flotte seule, « en citant le
+#: commentaire oublie » (#20185, phase 2) : la machinerie de citation forte
+#: (horodatage, extrait long) s'applique telle quelle. Un second externe ni
+#: un bot ne trient a la place de la flotte : seuls les commentaires d'un
+#: login de flotte comptent comme candidats de reponse.
 
 #: Forme mesuree du user (#19898, #16757, #17889, #18601).
 CONCERN_PREFIX = re.compile(r"^Concern\b", re.IGNORECASE)
@@ -338,11 +368,36 @@ class ReserveFinding:
 
 
 @dataclass
+class ExternalFinding:
+    comment_id: int
+    created_at: str
+    excerpt: str
+    status: str
+    proof: int | None
+    author: str
+    gesture_after: bool
+
+    slug = "external-unanswered"
+
+    def as_dict(self) -> dict:
+        return {
+            "comment_id": self.comment_id,
+            "created_at": self.created_at,
+            "excerpt": self.excerpt,
+            "status": self.status,
+            "proof": self.proof,
+            "author": self.author,
+            "gesture_after": self.gesture_after,
+        }
+
+
+@dataclass
 class IssueReport:
     number: int
     concerns: list[ConcernFinding]
     remarks: list[RemarkFinding] = field(default_factory=list)
     reserves: list[ReserveFinding] = field(default_factory=list)
+    externals: list[ExternalFinding] = field(default_factory=list)
     #: Commentaires ecartes par signature de lane, agreges par nom de signature
     #: (#21621). L'ecart est PUBLIE : un total de candidats ne doit jamais
     #: passer pour un recensement exhaustif du fil.
@@ -352,7 +407,9 @@ class IssueReport:
     def unresolved(self) -> list:
         return [c for c in self.concerns if c.status != "REPONDU"] + [
             r for r in self.remarks if r.status != "REPONDU"
-        ] + [r for r in self.reserves if r.status != "REPONDU"]
+        ] + [r for r in self.reserves if r.status != "REPONDU"] + [
+            e for e in self.externals if e.status != "REPONDU"
+        ]
 
     @property
     def gesture_after(self) -> bool:
@@ -360,6 +417,7 @@ class IssueReport:
             any(c.gesture_after for c in self.concerns)
             or any(r.gesture_after for r in self.remarks)
             or any(r.gesture_after for r in self.reserves)
+            or any(e.gesture_after for e in self.externals)
         )
 
     def as_dict(self) -> dict:
@@ -369,6 +427,7 @@ class IssueReport:
             "concerns": [c.as_dict() for c in self.concerns],
             "remarks": [r.as_dict() for r in self.remarks],
             "reserves": [r.as_dict() for r in self.reserves],
+            "externals": [e.as_dict() for e in self.externals],
             "excluded_by_signature": dict(self.excluded),
         }
 
@@ -594,10 +653,15 @@ def is_response_candidate(
     return True
 
 
-#: Classes livrees par l'organe (la campagne #20185 en compte six ; les trois
+#: Classes livrees par l'organe (la campagne #20185 en compte six ; les deux
 #: restantes viendront chacune par sa propre PR). ``analyse_comments`` accepte un
 #: sous-ensemble — les tests s'en servent pour scoper une classe a la fois.
-CLASSES = ("user-concern", "user-remark", "reviewer-reserve")
+CLASSES = (
+    "user-concern",
+    "user-remark",
+    "reviewer-reserve",
+    "external-unanswered",
+)
 
 
 def analyse_comments(
@@ -607,6 +671,7 @@ def analyse_comments(
     findings: list[ConcernFinding] = []
     remarks: list[RemarkFinding] = []
     reserves: list[ReserveFinding] = []
+    externals: list[ExternalFinding] = []
     excluded: dict[str, int] = {}
 
     if "user-concern" in classes:
@@ -742,11 +807,57 @@ def analyse_comments(
                 )
             )
 
+    if "external-unanswered" in classes:
+        for i, comment in enumerate(comments):
+            author = comment.author or ""
+            if LANE_LOGIN.match(author) or BOT_LOGIN.search(author):
+                continue
+            later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
+            # Seule la flotte trie un commentaire externe (#20185 : « une
+            # seule reponse publique porte le triage », par la flotte) : un
+            # second auteur externe ni un bot d'integration ne sont des
+            # candidats de reponse. La reponse attendue cite le commentaire
+            # oublie — la machinerie forte (horodatage, extrait long) tranche,
+            # comme pour une remarque.
+            candidates = [
+                (other, kind)
+                for other, kind in later
+                if LANE_LOGIN.match(other.author or "")
+                and is_response_candidate(kind, other, comment)
+            ]
+            proof = None
+            for other, kind in candidates:
+                if proves(comment, other, kind):
+                    proof = other.id
+                    break
+            if proof is not None:
+                status = "REPONDU"
+            elif candidates:
+                status = "MANUAL_REVIEW"
+            else:
+                status = "NON REPONDU"
+            externals.append(
+                ExternalFinding(
+                    comment_id=comment.id,
+                    created_at=comment.created_at,
+                    excerpt=excerpt(comment.body),
+                    status=status,
+                    proof=proof,
+                    author=comment.author,
+                    gesture_after=any(
+                        kind == "gesture" and other.id != proof
+                        for other, kind in later
+                        if LANE_LOGIN.match(other.author or "")
+                    ),
+                )
+            )
+
     return IssueReport(
         number=number,
         concerns=findings,
         remarks=remarks,
         reserves=reserves,
+        externals=externals,
         excluded=excluded,
     )
 
@@ -822,16 +933,21 @@ def excluded_by_signature(reports: list[IssueReport]) -> dict[str, int]:
 
 def render_text(reports: list[IssueReport], since: str, state: str, scanned: int) -> str:
     unresolved = [(r, c) for r in reports for c in r.unresolved]
-    total = sum(len(r.concerns) + len(r.remarks) + len(r.reserves) for r in reports)
+    total = sum(
+        len(r.concerns) + len(r.remarks) + len(r.reserves) + len(r.externals)
+        for r in reports
+    )
     n_conc = sum(1 for _, c in unresolved if c.slug == "user-concern")
     n_res = sum(1 for _, c in unresolved if c.slug == "reviewer-reserve")
-    n_rem = len(unresolved) - n_conc - n_res
+    n_ext = sum(1 for _, c in unresolved if c.slug == "external-unanswered")
+    n_rem = len(unresolved) - n_conc - n_res - n_ext
     excluded = excluded_by_signature(reports)
     by_sig = ", ".join(f"{name} {count}" for name, count in sorted(excluded.items()))
     lines = [
         f"=== Remarques user sans reponse (issues {state}, depuis {since}) ===",
         f"{len(unresolved)} non resolu(s) — {n_conc} concern(s), {n_rem} "
-        f"remarque(s), {n_res} reserve(s) de relecteur — sur {total} recense(s), dans "
+        f"remarque(s), {n_res} reserve(s) de relecteur, {n_ext} externe(s) — "
+        f"sur {total} recense(s), dans "
         f"{len({r.number for r, _ in unresolved})} issue(s) ; "
         f"{scanned} issue(s) lue(s) ; "
         f"{sum(excluded.values())} commentaire(s) ecarte(s) par signature de "
@@ -858,18 +974,22 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
             key=lambda r: (_ACT_ORDER.get(r.act, 9), r.created_at),
         )
         open_reserves = [r for r in report.reserves if r.status != "REPONDU"]
+        open_externals = [e for e in report.externals if e.status != "REPONDU"]
         lines.append("")
         lines.append(
             f"#{report.number} — {len(open_concerns)} concern(s), "
             f"{len(open_remarks)} remarque(s), "
-            f"{len(open_reserves)} reserve(s){flag}"
+            f"{len(open_reserves)} reserve(s), "
+            f"{len(open_externals)} externe(s){flag}"
         )
-        for finding in open_concerns + open_remarks + open_reserves:
+        for finding in open_concerns + open_remarks + open_reserves + open_externals:
             proof = f" (piste c{finding.proof})" if finding.proof else ""
             if finding.slug == "user-concern":
                 label = ""
             elif finding.slug == "reviewer-reserve":
                 label = f"  [reserve {finding.marker}]"
+            elif finding.slug == "external-unanswered":
+                label = f"  [ext {finding.author}]"
             else:
                 label = f"  [{finding.act}]"
             lines.append(
@@ -946,7 +1066,11 @@ def main(argv: list[str] | None = None) -> int:
 
     # Les rapports qui ne portent QUE des ecarts sont conserves (#21621) : les
     # retirer ferait disparaitre du total publie les commentaires qu'on ecarte.
-    reports = [r for r in reports if r.concerns or r.remarks or r.excluded]
+    reports = [
+        r
+        for r in reports
+        if r.concerns or r.remarks or r.reserves or r.externals or r.excluded
+    ]
     unresolved = sum(len(r.unresolved) for r in reports)
     excluded = excluded_by_signature(reports)
 
@@ -964,6 +1088,14 @@ def main(argv: list[str] | None = None) -> int:
             "remarks_total": sum(len(r.remarks) for r in reports),
             "remarks_unresolved": sum(
                 1 for r in reports for c in r.remarks if c.status != "REPONDU"
+            ),
+            "reserves_total": sum(len(r.reserves) for r in reports),
+            "reserves_unresolved": sum(
+                1 for r in reports for c in r.reserves if c.status != "REPONDU"
+            ),
+            "externals_total": sum(len(r.externals) for r in reports),
+            "externals_unresolved": sum(
+                1 for r in reports for c in r.externals if c.status != "REPONDU"
             ),
             "unresolved": unresolved,
             "excluded_total": sum(excluded.values()),

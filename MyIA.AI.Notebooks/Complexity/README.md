@@ -10,6 +10,12 @@ exacts, simulations Monte Carlo, chronos encadrés), puis confronté à l'état 
 [Mathlib](https://github.com/leanprover-community/mathlib4) — ce qui y existe, ce qui
 n'y existe pas encore, et pourquoi.
 
+**Une série plate.** Positions numérotées (03, 04, …) et approfondissements par lettres (02b, 02c, …) vivent côte à côte à la racine : chaque lettre creuse la position dont elle porte le numéro, et les séparer en dossiers couperait la paire qu'elles forment. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
+
+## Jumeau Python/C# — simulation classique d’une loi quantique connue
+
+[Complexity-06 Python](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) ⇄ [Complexity-06 C#](Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb). Le port BCL/Complex construit réellement les amplitudes et probabilités, puis compare 4096 tirages aux mêmes tailles avec un tirage direct uniforme. Le second n’est pas Gottesman–Knill ; ce banc ne démontre aucune séparation BQP/P. Les PRNG diffèrent, les budgets restent identiques.
+
 ## Objectifs d'apprentissage
 
 À l'issue de cette série, vous serez capable de :
@@ -48,6 +54,21 @@ n'y existe pas encore, et pourquoi.
 | [`Complexity-07b-LeTourDesGrandsNombres-Python.ipynb`](Complexity-07b-LeTourDesGrandsNombres-Python.ipynb) | Recherche | accrétion de **07 — Complexité de Kolmogorov bornée** : le miroir exact — écrire court un **nombre** plutôt qu'une séquence ; pli « grands nombres » de l'EPIC Origami Complexity [#20607](https://github.com/jsboige/CoursIA/issues/20607) | Tibor Radó (le castor affairé, 1962) — avec Ackermann (1928), Knuth (1976), Conway (1996), Graham (1971), Kruskal (1960)/Friedman, Rayo (2007) | Le tour des grands nombres comme hiérarchie à croissance rapide : googol/googolplex (longueurs mesurées), Ackermann-Péter exécutée (table mesurée, identité $2^{n+3}-3$ vérifiée), flèches de Knuth et chaînes de Conway (descripteurs mesurés, jamais les géants), Graham par la cascade des hauteurs, un jeu d'arbres de Kruskal **jouet déclaré** énuméré exhaustivement (1 et 9 coups ; à 3 étiquettes l'énumération sature son budget — l'explosion mesurée, les valeurs canoniques de Friedman citées), le castor affairé simulé (championnes de Σ n=2/3/4 exécutées et conformes à la source, la subtilité Σ-championne ≠ record S vue en n=3, Ketchersid 2026 BB(10) > Graham et BB(335) indépendant de ZFC cités), Rayo en clôture logique ; chaque fait **Mesuré** ou **Cité** ; trois exercices exécutables | Français |
 | [`Complexity-07c-LeBilanMathocalypse-Python.ipynb`](Complexity-07c-LeBilanMathocalypse-Python.ipynb) | Recherche | accrétion de **07 — Complexité de Kolmogorov bornée** : le miroir côté preuves — quel théorème accepte une description courte ; pli « mathocalypse » de l'EPIC Origami Complexity [#20607](https://github.com/jsboige/CoursIA/issues/20607) | Scott Aaronson (« The Mathocalypse », 7/10/2026) — avec Khot, Moshkovitz, Williams & Alman, Gowers & Witten (AGMAI), Ketchersid | Le bilan de la vague OpenAI du 6/10/2026, chaque fait vérifié contre le billet archivé : 372 résultats sur ~4 000 problèmes posés (taux mesuré 9,3 %, ~3 h GPT-Pro par problème résolu, la correction publique 8 000→4 000 conservée) ; UGC prouvée (le récit Moshkovitz « cooked »), L=BPL, parité ∉ QAC⁰, loi d'aire 2D — rendus en **mini-zoo par code**, lu contre le 03c ; les barrières d'exposants cassées : matmul n^(9/4+o(1)) rationnel **et non constructif** (Bram Cohen), entiers O(n·log^0.9999999999999 n) sous la barrière n log n des années 1960 (gain mesuré 1,0000000000004× — la victoire asymptotique exacte et invisible) ; le contrepoint Williams-Alman du lundi 5 octobre (3SUM O(n^1.9992), APSP O(n^2.9995), SETH intacte, l'idée cruciale venue d'un modèle Anthropic et les deux modèles de diffusion pesés) ; P≠NP absent de la liste ; pédagogie du crossover mesurée (n^0.123 = 30× à n=10¹² mais bascule à n~10^16,3 si surcoût 100× ; 3SUM quadratique exécuté, exposant empirique 2,03) ; épistémologie des preuves aliénées (certificats Lean pour certains résultats, pas tous) ; renvoi vers l'arbitrage formel [#19898](https://github.com/jsboige/CoursIA/issues/19898) — ces résultats y sont classés non-distillables sur nos lacs, la veille vit dans cette série ; trois exercices exécutables | Français |
 
+## Jumeau Python/C# — compter des pas
+
+- [Complexity-01 — version Python](Complexity-01-StepCounting-Python.ipynb)
+- [Complexity-01 — version C#](Complexity-01-StepCounting-CSharp.ipynb)
+
+Le port C# compte les mêmes opérations avec la BCL, simule les machines de Turing,
+mesure les boucles d’algorithmes et produit la figure en SVG. `System.Random` rend
+ses séquences reproductibles; elles diffèrent de celles de NumPy. Le facteur de
+paires est $4+2/(n-1)$ au doublement de la taille, donc il tend vers 4 sans lui
+être exactement égal.
+
+### Parité C# — transition SAT
+
+[Complexity-02b : seuil du 3-SAT (C#)](Complexity-02b-SAT-PhaseTransition-CSharp.ipynb) accompagne la [version Python](Complexity-02b-SAT-PhaseTransition-Python.ipynb). Les deux réalisent les balayages et le contrôle exhaustif avec DPLL pédagogique ; les générateurs aléatoires diffèrent et leurs mesures numériques ne coïncident pas nécessairement.
+
 ## Parcours
 
 La série se lit de haut en bas : chaque notebook principal ne suppose que ceux qui le
@@ -64,6 +85,10 @@ principal de niveau licence qui en pose d'abord les notions.
 | 05 | [Compter est plus dur que vérifier](Complexity-05-CountingHarder-Permanent-Python.ipynb) | Licence | [05b — La permanente, frontière quantique](Complexity-05b-AaronsonArkhipov-PermanenteBosonSampling-Python.ipynb) |
 | 06 | [Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Licence | [06b — Aaronson–Gottesman](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb), [06c — Classical at heart](Complexity-06c-ClassicalAtHeart-Python.ipynb), [06d — Aaronson–Ambainis, la variable influente](Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) |
 | 07 | [Complexité de Kolmogorov bornée : séquences à mémoire limitée](Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Recherche | [07b — Le tour des grands nombres](Complexity-07b-LeTourDesGrandsNombres-Python.ipynb), [07c — Le bilan mathocalypse](Complexity-07c-LeBilanMathocalypse-Python.ipynb) |
+
+## Jumeau C# — Complexity-02
+
+Le carnet de découverte **Vérifier ou trouver : P, NP et la réduction** est disponible en deux langages : [Python](Complexity-02-P-NP-Reduction-Python.ipynb) et [C#](Complexity-02-P-NP-Reduction-CSharp.ipynb). Le twin C# emploie la bibliothèque standard .NET, conformément au contenu du cours : Sudoku par backtracking et vérification de certificat, subset-sum par force brute et programmation dynamique, Partition par programmation dynamique, et extrapolations avec `BigInteger`. Les budgets et seeds sont conservés; les flux aléatoires de .NET et NumPy peuvent produire des instances différentes.
 
 ## Position dans le dépôt
 
@@ -118,6 +143,8 @@ chaque arête d'inclusion porte son témoin exécutable, chaque arête ouverte p
 raison visible (les mondes d'oracles de Baker–Gill–Solovay, construits et exécutés),
 et le gap Mathlib devient structurel : la calculabilité est formalisée, la complexité
 pas encore.
+
+[Complexity-03f : chaîne des réductions (C#)](Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb) accompagne la [version Python](Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb). Les corpus et intersections sont calculés en BCL ; les générateurs diffèrent et l'algorithme du papier reste cité, non exécuté.
 
 Le notebook 03d confronte la série à la position **annoncée** : deux preuves machine
 d'octobre 2026 (OpenAI, Anthropic) prétendent réfuter l'ETH. Le carnet lit leurs trois
@@ -174,3 +201,7 @@ les rangées minimales par programmation linéaire.
 Chaque notebook embarque au moins trois exercices (`TODO etudiant`) : étendre une machine,
 dériver un compte, déplacer un budget — les stubs s'exécutent sans erreur (règle C.1 du
 dépôt) et les corrigés restent la propriété de l'étudiant.
+
+## Jumeau C# et différences de portage
+
+- [Complexity-04 — Décider sans connaître la suite (C#)](Complexity-04-OnlineAlgorithms-CSharp.ipynb) : même couverture conceptuelle, implémentations idiomatiques avec la bibliothèque standard .NET ; espérances des skis calculées par sommes discrètes exactes, et permutations du secrétaire générées réellement par Fisher–Yates (`Random(42)`). Les résultats Monte Carlo peuvent différer de NumPy malgré la graine commune. Les exercices LFU et secrétaire fine vérifient leurs fixtures et leurs budgets.

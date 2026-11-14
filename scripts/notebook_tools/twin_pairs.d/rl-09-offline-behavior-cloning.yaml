@@ -1,0 +1,13 @@
+- name: "RL-09 Offline Behavior Cloning"
+  family: RL
+  python: MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb
+  csharp: MyIA.AI.Notebooks/RL/RL-09-RL-Offline-Behavior-Cloning-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Les deux carnets sont solver-free by design : l’objet pédagogique est l’implémentation tabulaire des algorithmes offline, et aucun moteur RL tiers n’est invoqué par le notebook Python ou C#. La version Python utilise NumPy et Matplotlib pour calcul et figures; la version C# utilise la bibliothèque standard .NET pour les calculs et un SVG statique pour les figures. Aucun appel moteur ou package NuGet n’a été omis.
+  known_differences:
+    - "Socle commun : labyrinthe 6x9, Q-learning online pour générer les comportements, datasets expert/medium/random, Behavior Cloning majoritaire, Q-learning offline naïf et contrainte de support BCQ-lite; trois exercices sur la taille des données, la pénalité conservatrice et le nombre de passes."
+    - "Différence d’implémentation : Python appelle NumPy/Matplotlib; C# code les algorithmes avec la BCL .NET et produit des SVG statiques. Aucun framework RL externe n’est appelé dans les deux versions."
+    - "Les trajectoires et résultats numériques ne sont pas copiés d’un côté à l’autre : les générateurs pseudo-aléatoires NumPy et .NET, l’ordre des départages à égalité et les permutations diffèrent. La version C# a été exécutée avec les budgets complets et affiche ses mesures propres."
+    - "La prose Python corrige deux généralités erronées sur les limites du Behavior Cloning et une phrase contradictoire dans la réponse repliée; seules des cellules Markdown Python changent, les cellules de code et leurs sorties sont strictement inchangées."

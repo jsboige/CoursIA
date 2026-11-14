@@ -15,7 +15,11 @@ Contrat verifie ici, dans cet ordre :
 5. **CLI** : --check rend rc 1 tant que des reecritures sont dues, 0 apres
    application, 2 si _site/ est introuvable ;
 6. **href relatifs cross-serie** : la cible se calcule depuis le dossier de
-   la page source (``../GenAI/Audio/`` depuis Search/).
+   la page source (``../GenAI/Audio/`` depuis Search/) ;
+7. **cible cachee** : une cible cachee (``.claude/``, ``.github/``,
+   ``.env.example``) copiee dans _site/ par Quarto n'est PAS servable --
+   l'artefact Pages exclut les fichiers caches -- elle part en blob/main
+   (fichier) ou tree/main (repertoire).
 """
 import importlib.util
 import sys
@@ -130,6 +134,57 @@ def test_regression_dir_href_with_fragment_is_still_a_dir(tmp_path):
         site, tmp_path, apply=False)
     assert n == 1
     assert page[0].endswith("Audio/#creer -> Audio/README.html#creer")
+
+
+def test_hidden_target_copied_in_site_is_not_servable(tmp_path):
+    """Regression du 2026-11-11 : Quarto copie dans ``_site/`` les fichiers
+    locaux lies depuis les README rendus -- y compris les chemins caches
+    (``.claude/``, ``.github/``, ``.env.example``). Or l'artefact Pages
+    exclut les fichiers caches (``upload-artifact@v4``,
+    ``include-hidden-files: false``) : une cible cachee n'est jamais
+    servable et part en ``blob/main``, comme tout fichier du depot hors
+    render-list."""
+    site = _tree(tmp_path)
+    copied = site / ".claude/rules/x.md"
+    copied.parent.mkdir(parents=True, exist_ok=True)
+    copied.write_text("regle", encoding="utf-8")
+    # la cible existe dans le depot ET dans _site/ (copie Quarto)
+    repo_env = tmp_path / "MyIA.AI.Notebooks/GenAI/.env.example"
+    repo_env.parent.mkdir(parents=True, exist_ok=True)
+    repo_env.write_text("X=1", encoding="utf-8")
+    (site / "MyIA.AI.Notebooks/GenAI/.env.example").write_text(
+        "X=1", encoding="utf-8")
+    _write(site, "MyIA.AI.Notebooks/GenAI/README.html", [
+        "../../.claude/rules/x.md",
+        ".env.example",
+    ])
+    n, page = mod.process_html(
+        site / "MyIA.AI.Notebooks/GenAI/README.html",
+        site, tmp_path, apply=False)
+    assert n == 2
+    changes = {c.split(" -> ")[0]: c.split(" -> ")[1] for c in page}
+    assert changes["../../.claude/rules/x.md"] == (
+        "https://github.com/jsboige/CoursIA/blob/main/.claude/rules/x.md")
+    assert changes[".env.example"] == (
+        "https://github.com/jsboige/CoursIA/blob/main/"
+        "MyIA.AI.Notebooks/GenAI/.env.example")
+
+
+def test_hidden_directory_with_rendered_readme_is_not_servable(tmp_path):
+    """Meme raison pour un repertoire cache : meme copie Quarto dans
+    ``_site/``, meme exclusion de l'artefact -- la cible part en
+    ``tree/main`` (le repertoire n'a pas de page servable)."""
+    site = _tree(tmp_path)
+    readme = site / ".claude/rules/README.html"
+    readme.parent.mkdir(parents=True, exist_ok=True)
+    readme.write_text("<html></html>", encoding="utf-8")
+    _write(site, "MyIA.AI.Notebooks/GenAI/README.html", ["../../.claude/rules/"])
+    n, page = mod.process_html(
+        site / "MyIA.AI.Notebooks/GenAI/README.html",
+        site, tmp_path, apply=False)
+    assert n == 1
+    assert page[0].endswith(
+        "https://github.com/jsboige/CoursIA/tree/main/.claude/rules")
 
 
 def test_idempotence_second_pass_rewrites_nothing(tmp_path):

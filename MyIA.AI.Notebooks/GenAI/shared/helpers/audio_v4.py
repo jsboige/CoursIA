@@ -62,12 +62,19 @@ def v4_candidates(start: Path | None = None) -> list[Path]:
         if path not in candidates:
             candidates.append(path)
 
-    # 1. remontee depuis le depart
+    # Ne pas franchir le depot Git le plus proche, y compris un worktree.
+    ancestors: list[Path] = []
     for parent in (origin, *origin.parents):
+        ancestors.append(parent)
+        if (parent / ".git").exists():
+            break
+
+    # 1. remontee depuis le depart
+    for parent in ancestors:
         _add(parent)
 
-    # 2. ancre GenAI : le premier ancetre qui porte ce nom
-    for parent in (origin, *origin.parents):
+    # 2. ancre GenAI dans le meme depot
+    for parent in ancestors:
         if parent.name == "GenAI":
             _add(parent.joinpath(*APPLICATIONS_RELATIVE))
             break
@@ -77,7 +84,7 @@ def v4_candidates(start: Path | None = None) -> list[Path]:
         _add(origin.joinpath(*relative))
 
     # 4. depart dans un dossier frere de GenAI, au sein d'un depot Git.
-    for parent in (origin, *origin.parents):
+    for parent in ancestors:
         if (parent / ".git").exists():
             _add(parent.joinpath(*DESCENT_PATHS[1]))
             break

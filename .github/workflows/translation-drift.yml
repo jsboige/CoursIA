@@ -15,11 +15,17 @@ name: Translation Drift Check
 # See #4957 (infra design) and #1650 (multilingual translation epic).
 
 on:
-  pull_request:
-    paths:
-      - 'MyIA.AI.Notebooks/**/*.ipynb'
-      - 'translations/**'
-      - 'scripts/translation/**'
+  # ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#25510, tranche T-A/3 du
+  # 2026-11-12) : le declencheur `pull_request` est retire et le garde est
+  # execute par `always-on-guards.yml` -> `scripts/ci/fast_lane.py --shadow`,
+  # dans le checkout partage (un checkout de moins, un `setup-python` de
+  # moins, un job de moins par PR de carnet). Le `name:` du job est
+  # INCHANGE : il est byte-identique au `guard.name` du registre
+  # ("Translation drift (read-only, advisory)"), et le mot `advisory` qu'il
+  # porte est ce que `pr_gate.py` lit pour classer un check non bloquant
+  # (cf l'en-tete de ce fichier et #15998) -- le renommer changerait le
+  # traitement du check cote porte. Le declencheur `workflow_dispatch` reste :
+  # la relance manuelle apres un re-translation continue de fonctionner.
   workflow_dispatch:
 
 permissions:

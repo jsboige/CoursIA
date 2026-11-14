@@ -65,6 +65,38 @@ WAITER_LABELS = {
     "self-hosted",
     "coursia-waiter",
 }
+# Dedicated label set for the RESERVED slot of the `main` verification
+# (#25510, tranche T-L, lane myia-ai-01:CoursIA-2). The slot is deployed by
+# `scripts/ci/docker/linux-runner/persist/ai-01/create-main-slot.sh` with
+# the labels `self-hosted,coursia-main,coursia-linux`, and it is DISJOINT
+# from the PR pool (`coursia-ephemeral`): a reserved slot that carried the
+# PR label would be one more client of the PR queue -- the very problem it
+# exists to solve (measured 2026-11-12: the CPU job of `main` waited more
+# than 27 minutes, 31 runners on 31 busy).
+#
+# This set is deliberately NOT in DEDICATED_LABEL_SETS: it is admitted only
+# in the audited HYBRID form (see MAIN_PUSH_GUARD / MAIN_PUSH_FALLBACK_LABELS
+# below) -- a push guard AND an enumerated fallback to the PR pool. A static
+# use of the set is refused: a reserved slot reachable by any trigger would
+# again serve the queue it was created to bypass.
+MAIN_RUNNER_LABELS = {
+    "self-hosted",
+    "coursia-main",
+    "coursia-linux",
+}
+# Enumerated guard: the reserved slot is reached ONLY on a push. The value is
+# a literal, not a pattern -- `github.event_name` distinguishes pull_request
+# from push, and a push carries only repository-owned refs.
+MAIN_PUSH_GUARD = "github.event_name == 'push'"
+# Enumerated fallback: the PR pool. A SELF-HOSTED fallback means the PR leg
+# must keep the SAME-REPO job guard -- a fork PR must never reach a local
+# runner through the fallback leg. The organ therefore requires the job-level
+# guard for this form (see `fallback_self_hosted`).
+MAIN_PUSH_FALLBACK_LABELS = {
+    "self-hosted",
+    "coursia-ephemeral",
+    "coursia-linux",
+}
 # RETIRED label set -- the specialised Lean pool (#14337, po-2024): elan +
 # toolchain baked in a dedicated image (Dockerfile.lean), .lake kept warm in
 # the per-slot work volume. A lean slot never carries coursia-linux -- the
@@ -221,6 +253,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (meme release, meme ${GITLEAKS_VERSION}), forme deja eprouvee sur ce
     #   pool par son job positive-controls. La jambe fork reste GitHub-hosted
     #   sous la forme docker : `gitleaks-fork`.
+    "secret-scan-controls.yml",
+    # secret-scan-controls.yml (#25510 tranche T-B, 2026-11-12, lane
+    #   myia-ai-01:CoursIA) : les jobs positive-controls et assert-egress
+    #   sortis de secret-scan.yml, a forme hybride inchangee (#22461) et
+    #   garde anti-fork conservee. Seul le declenchement change (paths:).
     # always-on-metadata-guards.yml : routable (triggers pull_request +
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
@@ -554,6 +591,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
     #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-plan-loss-gate.yml",
+    # #22209 TRANCHE45 : ABSORBE par la voie rapide -- vehicule
+    #   workflow_dispatch-ONLY servant de cible d'identite au check-run
+    #   absorbe par fast-lane (registre TRANCHE45) ; la jambe per-PR vit
+    #   dans le job fast-lane d'always-on-guards.yml. L'entree RESTE
+    #   (precedent TRANCHE39/cell-order) : la sortie d'allowlist vise les
+    #   workflows migres vers ubuntu-latest, pas les absorbes dormants.
     # #15322 (owner myia-po-2023:CoursIA) : vehicule workflow_dispatch-ONLY
     #   servant de cible d'identite au check-run absorbe par fast-lane
     #   (registre TRANCHE2) et de re-run manuel du self-test sur main.
@@ -1029,11 +1072,6 @@ DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workf
 # jobs changent de nom plus souvent que les workflows) sans fermer cette
 # limite sur le fond.
 HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
-    # --- famille (c) : conversion en vol dans la PR #23059 (ouverte) --------
-    "lean-ci-matrix.yml": (
-        "famille (c) : le dispatcher `changes` reste nu, sa conversion est "
-        "portee par la PR #23059 (ouverte au 2026-10-30)"
-    ),
     # --- jobs heberges pour une raison propre, mesuree dans le fichier -----
     "codeql.yml": (
         "CodeQL en advanced setup (#22548) : `analyze` telecharge le bundle "
@@ -1064,29 +1102,28 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
         "jambe self-hosted voisine couvre les runs du depot"
     ),
-    "slides-build-advisory.yml": (
-        "job `slides-build-advisory` heberge : offre GitHub d'abord (consigne "
-        "user #17397 du 2026-10-25) ; le fichier documente le nocturne "
-        "(#12817) et son runs-on statique"
-    ),
 }
 
 # Figee a la creation du cliquet (#23053, 2026-10-28) a 21 entrees, puis
 # reduite le 2026-10-30 aux 8 exceptions vivantes : les conversions #23016
 # (merge 2026-10-29) et #23058 famille (b) (merge 2026-10-30) sont arrivees
 # sur main et leurs entrees sont retirees avec elle, ainsi que celle de
-# lean-planning.yml, supprime par #23467. Elle NE S'ELARGIT PAS --
-# seule une decision de review peut le faire, et la PR qui nomme une nouvelle
-# exception retire au moins autant d'entrees dans le meme commit.
+# lean-planning.yml, supprime par #23467. Reduite a 6 le 2026-11-11 : les
+# entrees de lean-ci-matrix.yml (conversion #23059, merge 2026-10-31) et de
+# slides-build-advisory.yml (conversion de la vague (a), sur main) ne
+# couvraient plus aucun job nu -- verifie workflow par workflow sur
+# `origin/main` e2e736108c. Une exception perimee n'est pas neutre : elle
+# dispense a l'aveugle le jour ou un job nu revient dans le workflow. La
+# liste NE S'ELARGIT PAS -- seule une decision de review peut le faire, et la
+# PR qui nomme une nouvelle exception retire au moins autant d'entrees dans le
+# meme commit.
 HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
     "codeql.yml",
-    "lean-ci-matrix.yml",
     "ml-tests.yml",
     "notebook-execution-required.yml",
     "perimeter-review-guard.yml",
     "quarto-pages-deploy.yml",
     "secret-scan.yml",
-    "slides-build-advisory.yml",
 })
 
 # -- #22954: ratchet baseline for job-level timeout-minutes ------------------
@@ -1317,13 +1354,17 @@ _HYBRID_PATTERN = re.compile(
     r"^\s*\("
     r"(?P<guard>[^()]+)"
     r"\)\s*&&\s*fromJSON\(\s*(?P<q1>['\"])(?P<labels>.*?)(?P=q1)\s*\)"
-    r"\s*\|\|\s*(?P<q2>['\"])(?P<fallback>.*?)(?P=q2)\s*$"
+    r"\s*\|\|\s*(?:"
+    r"(?P<q2>['\"])(?P<fallback>.*?)(?P=q2)"
+    r"|fromJSON\(\s*(?P<q3>['\"])(?P<fallback_labels>.*?)(?P=q3)\s*\)"
+    r")\s*$"
 )
 
 
 def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     """Return the audited hybrid legs for ``runs_on``, or None if it is not
-    one of the enumerated forms (#13363, then the #22461 overflow guard).
+    one of the enumerated forms (#13363, then the #22461 overflow guard, then
+    the #25510 push guard for the reserved `main` slot).
     The caller keeps the DYNAMIC_RUNS_ON rejection for every other
     expression."""
     if not isinstance(runs_on, str):
@@ -1335,6 +1376,33 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     if match is None:
         return None
     guard = " ".join(match.group("guard").split())
+    fallback_labels: set[str] | None = None
+    if match.group("fallback_labels") is not None:
+        try:
+            fallback_labels = {
+                str(item) for item in json.loads(match.group("fallback_labels"))
+            }
+        except json.JSONDecodeError:
+            return None
+    if guard == MAIN_PUSH_GUARD:
+        # Slot reserve de `main` (#25510, T-L) : garde push ENUMEREE, jeu de
+        # labels ENUMERE, repli ENUMERE vers le pool PR. Les trois elements
+        # forment un ENSEMBLE : la forme n'est auditee que si les trois y
+        # sont. Toute autre combinaison reste hors audit (et donc refusee).
+        if fallback_labels != MAIN_PUSH_FALLBACK_LABELS:
+            return None
+        try:
+            labels = {str(item) for item in json.loads(match.group("labels"))}
+        except json.JSONDecodeError:
+            return None
+        if labels != MAIN_RUNNER_LABELS:
+            return None
+        return {
+            "labels": labels,
+            "guard": guard,
+            "fallback_labels": fallback_labels,
+            "fallback_self_hosted": True,
+        }
     allowed_label_sets = HYBRID_RUNS_ON_GUARD_LABEL_SETS.get(guard)
     if allowed_label_sets is None:
         return None
@@ -1350,7 +1418,57 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     # si la jambe locale est atteignable par un simple push de meme depot
     # (garde meme-depot) ou seulement apres un basculement d'operateur
     # (garde de debordement #22461).
-    return {"labels": labels, "guard": guard}
+    return {
+        "labels": labels,
+        "guard": guard,
+        "fallback_labels": fallback_labels,
+        "fallback_self_hosted": False,
+    }
+
+
+def _mentions_main_labels(runs_on: Any) -> bool:
+    """True si la selection nomme le jeu reserve a `main` (`coursia-main`).
+
+    Sert a distinguer deux refus : une expression qui porte le jeu reserve
+    et n'est PAS la forme auditee (MAIN_LABEL_SET_UNAUDITED, qui nomme
+    l'element manquant) d'une expression dynamique quelconque
+    (DYNAMIC_RUNS_ON).
+    """
+    if isinstance(runs_on, str):
+        return "coursia-main" in runs_on
+    if isinstance(runs_on, list):
+        return any(
+            isinstance(item, str) and "coursia-main" in item for item in runs_on
+        )
+    return False
+
+
+def _main_audit_defect(runs_on: Any) -> str:
+    """Nomme l'element manquant de la forme auditee du slot reserve.
+
+    La forme auditee est un ENSEMBLE de trois elements : le jeu de labels,
+    la garde `push`, et le repli enumere vers le pool PR. Nommer l'element
+    manquant vaut mieux qu'un refus generique : l'appelant sait ce qu'il doit
+    corriger.
+    """
+    base = (
+        "the reserved `main` label set {self-hosted, coursia-main, coursia-linux} "
+        "is admitted only in the audited hybrid form: the guard "
+        "`github.event_name == 'push'` and the enumerated fallback to the PR "
+        "pool {self-hosted, coursia-ephemeral, coursia-linux}"
+    )
+    if not _contains_expression(runs_on):
+        return (
+            base + "; a static selection of that set is refused -- it would let "
+            "any trigger reach the reserved slot"
+        )
+    text = " ".join(str(runs_on).split())
+    if MAIN_PUSH_GUARD not in text:
+        return base + "; the push guard is missing"
+    return (
+        base + "; the enumerated fallback to the PR pool is missing, or names "
+        "another pool"
+    )
 
 
 # --- Parc local mesure par le controleur de debordement (#22937 phase A) ----
@@ -1603,6 +1721,27 @@ def _is_naked_hosted_runner(runs_on: Any) -> bool:
     return False
 
 
+def _naked_hosted_pr_jobs(
+    triggers: set[str],
+    jobs: dict[str, Any],
+) -> list[str]:
+    """Noms des jobs figes sur un runner heberge NU dans un workflow PR.
+
+    Extrait du cliquet pour que les deux invariants lisent la MEME mesure :
+    l'invariant 1 refuse un job nu non excepte, l'invariant 3 refuse une
+    exception qui ne couvre plus aucun job nu. Deux copies de la condition
+    divergeraient au premier ajout de forme de `runs-on`."""
+    if "pull_request" not in triggers:
+        return []
+    found: list[str] = []
+    for job_name, job in jobs.items():
+        if not isinstance(job, dict) or "uses" in job:
+            continue
+        if _is_naked_hosted_runner(job.get("runs-on")):
+            found.append(str(job_name))
+    return found
+
+
 def _hosted_pr_job_violations(
     workflow: str,
     triggers: set[str],
@@ -1612,25 +1751,57 @@ def _hosted_pr_job_violations(
     """Cliquet #23053, invariant 1 : un job nu sur un workflow PR doit etre
     couvert par une exception nommee. La granularite est le workflow (cf. le
     bloc de commentaire de ``HOSTED_PR_JOB_EXCEPTIONS``)."""
-    if "pull_request" not in triggers:
+    if workflow in exceptions:
         return []
-    violations: list[Violation] = []
-    for job_name, job in jobs.items():
-        if not isinstance(job, dict) or "uses" in job:
-            continue
-        if not _is_naked_hosted_runner(job.get("runs-on")):
-            continue
-        if workflow in exceptions:
-            continue
-        violations.append(Violation(
+    return [
+        Violation(
             workflow,
-            str(job_name),
+            job_name,
             "HOSTED_PR_JOB_UNEXCEPTED",
             "job fige sur `ubuntu-latest` dans un workflow declenche par "
             "pull_request : adopter la forme hybride de debordement "
             "(#22944/#23016) avec un `timeout-minutes`, ou declarer une "
             "exception nommee dans HOSTED_PR_JOB_EXCEPTIONS avec son motif "
             "(#23053)",
+        )
+        for job_name in _naked_hosted_pr_jobs(triggers, jobs)
+    ]
+
+
+def _stale_exception_violations(
+    exceptions: dict[str, str],
+    workflows_with_naked_jobs: set[str],
+    audited_workflows: set[str],
+) -> list[Violation]:
+    """Cliquet #23053, invariant 3 : une exception qui ne couvre plus aucun
+    job nu est elle-meme une violation.
+
+    Motif mesure (2026-11-11) : deux exceptions sur huit etaient perimees --
+    `lean-ci-matrix.yml` apres la conversion #23059 (merge 2026-10-31) et
+    `slides-build-advisory.yml` apres la vague (a), sans qu'aucun invariant ne
+    le signale. Une exception perimee n'est pas neutre : elle dispense a
+    l'aveugle le jour ou un job nu revient dans ce workflow. Sans cet
+    invariant, la detection d'une exception morte reste un balayage manuel,
+    c'est-a-dire qu'elle n'a pas lieu.
+
+    ``audited_workflows`` borne la mesure aux fichiers effectivement lus : un
+    workflow absent du dossier ou illisible (YAML casse) n'est pas declare
+    perime sur une absence de mesure."""
+    violations: list[Violation] = []
+    for workflow in sorted(exceptions):
+        if workflow not in audited_workflows:
+            continue
+        if workflow in workflows_with_naked_jobs:
+            continue
+        violations.append(Violation(
+            workflow,
+            "*",
+            "HOSTED_PR_JOB_EXCEPTION_STALE",
+            "exception perimee : ce workflow ne porte plus aucun job fige sur "
+            "`ubuntu-latest` declenche par pull_request -- retirer l'entree de "
+            "HOSTED_PR_JOB_EXCEPTIONS et de HOSTED_PR_JOB_EXCEPTIONS_BASELINE "
+            "dans le meme commit (#23053). Une exception qui ne couvre rien "
+            "dispense a l'aveugle le jour ou un job nu revient",
         ))
     return violations
 
@@ -1719,6 +1890,9 @@ def scan_workflows(
     broken: list[str] = []
     jobs_scanned = 0
     self_hosted_jobs = 0
+    # Invariant 3 : on ne declare perime que ce qu'on a effectivement lu.
+    audited_workflows: set[str] = set()
+    workflows_with_naked_jobs: set[str] = set()
 
     for path in paths:
         try:
@@ -1776,16 +1950,27 @@ def scan_workflows(
 
             hybrid = _hybrid_runs_on(runs_on)
             if _contains_expression(runs_on) and hybrid is None:
-                violations.append(Violation(
-                    path.name,
-                    str(job_name),
-                    "DYNAMIC_RUNS_ON",
-                    "runs-on contains an expression other than the audited "
-                    "hybrid forms (same-repo guard, optionally && "
-                    "vars.CI_OVERFLOW_LOCAL == 'true', -> self-hosted pool, "
-                    "else ubuntu-latest; see #13363, #22461) and cannot be "
-                    "audited statically",
-                ))
+                if _mentions_main_labels(runs_on):
+                    # Le jeu reserve a `main` apparait dans une expression qui
+                    # n'est PAS la forme auditee : le refus nomme l'element
+                    # manquant (garde push / repli enumere).
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "MAIN_LABEL_SET_UNAUDITED",
+                        _main_audit_defect(runs_on),
+                    ))
+                else:
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "DYNAMIC_RUNS_ON",
+                        "runs-on contains an expression other than the audited "
+                        "hybrid forms (same-repo guard, optionally && "
+                        "vars.CI_OVERFLOW_LOCAL == 'true', -> self-hosted pool, "
+                        "else ubuntu-latest; see #13363, #22461) and cannot be "
+                        "audited statically",
+                    ))
                 continue
 
             if hybrid is not None:
@@ -1921,9 +2106,30 @@ def scan_workflows(
                 (retired for retired in RETIRED_LABEL_SETS if set(labels) == retired),
                 None,
             )
-            if any(set(labels) == allowed for allowed in DEDICATED_LABEL_SETS):
+            # Jeu reserve a `main` (#25510, T-L) : admis UNIQUEMENT dans la
+            # forme hybride auditee (garde push + repli enumere vers le pool
+            # PR). Une selection statique, ou une expression qui n'est pas
+            # cette forme, est refusee avec le nom de l'element manquant.
+            main_set = set(labels) == MAIN_RUNNER_LABELS
+            main_audited = (
+                hybrid is not None
+                and hybrid["guard"] == MAIN_PUSH_GUARD
+                and hybrid["labels"] == MAIN_RUNNER_LABELS
+                and hybrid.get("fallback_labels") == MAIN_PUSH_FALLBACK_LABELS
+            )
+            if main_set:
                 missing: list[str] = []
                 unexpected: list[str] = []
+                if not main_audited:
+                    violations.append(Violation(
+                        path.name,
+                        str(job_name),
+                        "MAIN_LABEL_SET_UNAUDITED",
+                        _main_audit_defect(runs_on),
+                    ))
+            elif any(set(labels) == allowed for allowed in DEDICATED_LABEL_SETS):
+                missing = []
+                unexpected = []
             elif retired_set is not None:
                 missing = []
                 unexpected = []
@@ -1952,8 +2158,18 @@ def scan_workflows(
                     "dedicated labels must match exactly (" + "; ".join(detail) + ")",
                 ))
 
-            if "pull_request" in triggers and not hybrid_leg:
-                # Hybrid legs carry the guard in their runs-on expression.
+            # Un repli AUTO-HEBERGE (la forme du slot reserve de `main`, dont
+            # le repli est le pool PR) impose la garde meme-depot AU NIVEAU
+            # DU JOB : la jambe de repli est atteinte par toute PR, y compris
+            # une PR de fork. Sans cette garde, un fork atterrirait sur le
+            # parc local par la branche de repli.
+            fallback_self_hosted = bool(
+                hybrid is not None and hybrid.get("fallback_self_hosted")
+            )
+            if "pull_request" in triggers and (not hybrid_leg or fallback_self_hosted):
+                # Hybrid legs carry the guard in their runs-on expression --
+                # sauf quand leur repli est auto-heberge, ou c'est la garde du
+                # job qui porte la protection.
                 condition = _normalise_condition(job.get("if"))
                 # Accept either the bare guard or the guard followed by a
                 # selection predicate (e.g. `&& inputs.target == '...'`)
@@ -1969,6 +2185,9 @@ def scan_workflows(
 
         # Cliquet #23053 (passe independante, apres l'isolation : elle ne lit
         # ni l'allowlist ni la forme hybride, seulement le `runs-on` nu).
+        audited_workflows.add(path.name)
+        if _naked_hosted_pr_jobs(triggers, jobs):
+            workflows_with_naked_jobs.add(path.name)
         violations.extend(
             _hosted_pr_job_violations(path.name, triggers, jobs, exceptions)
         )
@@ -1976,6 +2195,12 @@ def scan_workflows(
     # Invariant « la liste ne fait que retrecir » : une passe globale, elle ne
     # depend d'aucun workflow du dossier scanne.
     violations.extend(_exception_list_violations(exceptions, exceptions_baseline))
+
+    # Invariant 3 « une exception perimee est une violation » : passe globale,
+    # bornee aux workflows lus (cf. _stale_exception_violations).
+    violations.extend(_stale_exception_violations(
+        exceptions, workflows_with_naked_jobs, audited_workflows,
+    ))
 
     return ScanResult(
         len(paths),

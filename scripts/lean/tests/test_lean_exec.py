@@ -769,11 +769,15 @@ def test_measure_resources_commit_binding_through_real_path():
     tests T2 existants injectaient le drapeau directement, le chemin de
     decision n'etait jamais exerce. Headroom commit NEGATIF sur les quatre
     modes : seul None et 2 serrent l'admission."""
+    # Four granted jobs plus the two reserved cores must fit independently
+    # of the host CPU count: this test exercises the commit limit.
+    saved_cpu_count = le.os.cpu_count
     saved_mode = le._overcommit_mode
     saved_mi = le._proc_meminfo_mb
     saved_state = os.environ.get("LEAN_EXEC_STATE_DIR")
     saved = {k: os.environ.get(k) for k in _T2_KNOBS}
     try:
+        le.os.cpu_count = lambda: 8
         with tempfile.TemporaryDirectory() as td:
             os.environ["LEAN_EXEC_STATE_DIR"] = str(Path(td) / "s")
             os.environ["LEAN_EXEC_RESERVE_CORES"] = "2"
@@ -805,6 +809,7 @@ def test_measure_resources_commit_binding_through_real_path():
                 assert granted == 4 and detail["binding"] is None, (
                     mode, granted, detail)
     finally:
+        le.os.cpu_count = saved_cpu_count
         le._overcommit_mode = saved_mode
         le._proc_meminfo_mb = saved_mi
         for k, v in saved.items():

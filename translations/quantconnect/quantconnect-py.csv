@@ -7559,7 +7559,7 @@ Le DataFrame de drawdowns fournit une vision detaillee de la ""souffrance"" du c
 - Max DD > 30% : Eleve - necessite un fort appetit au risque
 
 **Lecture chiffree de ce backtest** : Max Drawdown **-16,63 %** (benchmark -16,96 % -- protection marginale de 0,33 point seulement : la stratégie ne protege pas des krachs), Mean Drawdown **-5,94 %** (le ""niveau de douleur"" habituel : le capital vit en moyenne ~6 % sous son dernier pic), et le chiffre le plus frappant du notebook : **451 jours en drawdown sur 504, soit 89,5 % du temps**. C'est statistiquement normal -- un capital en high-water mark perpetuel n'existe quasi jamais -- mais c'est l'information la plus utile AVANT de vivre la stratégie en vrai : la plupart des abandons d'investisseur se produisent dans ces 451 jours-la, pas dans le seul épisode du maximum.",,,,,,,,2e91f8f631fc1e11,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-12-Backtesting-Analysis.ipynb,cell-8ad4bc69,code,fr,3f9b9f7904225e59,"def calculate_drawdown_duration(drawdown_series: pd.Series) -> Tuple[int, pd.Timestamp, pd.Timestamp]:
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-12-Backtesting-Analysis.ipynb,cell-8ad4bc69,code,fr,83f1168d7ae5de25,"def calculate_drawdown_duration(drawdown_series: pd.Series) -> Tuple[int, pd.Timestamp, pd.Timestamp]:
     """"""
     Calcule la duree maximale de drawdown
     
@@ -7570,8 +7570,11 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-12-Backtesting-Analysis.ipynb,cell-8
     in_drawdown = drawdown_series < 0
     
     # Trouver les debuts et fins de drawdown
-    drawdown_starts = in_drawdown & ~in_drawdown.shift(1).fillna(False)
-    drawdown_ends = ~in_drawdown & in_drawdown.shift(1).fillna(False)
+    # fill_value=False garde le dtype bool : shift(1).fillna(False) laisse un dtype
+    # object sous pandas 3, et ~ y devient un NON bit a bit (-1, -2) au lieu d'un NON logique.
+    prev_in_drawdown = in_drawdown.shift(1, fill_value=False)
+    drawdown_starts = in_drawdown & ~prev_in_drawdown
+    drawdown_ends = ~in_drawdown & prev_in_drawdown
     
     # Calculer les durees
     max_duration = 0
@@ -7605,7 +7608,7 @@ max_dd_duration, dd_start, dd_end = calculate_drawdown_duration(dd_df['drawdown_
 
 print(f""\nDuree Max Drawdown: {max_dd_duration} jours"")
 if dd_start and dd_end:
-    print(f""Periode: {dd_start.date()} - {dd_end.date()}"")",,,,,,,,3f9b9f7904225e59,,,,,,,,,,,,,,,
+    print(f""Periode: {dd_start.date()} - {dd_end.date()}"")",,,,,,,,83f1168d7ae5de25,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-12-Backtesting-Analysis.ipynb,cell-4dca6126,markdown,fr,94b50f9a8ec750db,"### Interpretation Duree Max Drawdown
 
 La duree du drawdown est aussi importante que sa profondeur:
@@ -10622,7 +10625,7 @@ print(""  - Place des Limit Orders"")
 print(""  - Prix Limit = Price - N * StdDev (pour achats)"")
 print(""  - Attend des conditions favorables"")
 print(""  - Peut ne pas etre execute si le marche s'eloigne"")",,,,,,,,2c7ad06e02181130,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,cell-85e249da,markdown,fr,712293957295b316,"> **Résultat Backtest QC Cloud** (Cellule 42) -- *corrige #3367 : metriques reelles QC Cloud*
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,cell-85e249da,markdown,fr,e598978bd9b57988,"> **Résultat Backtest QC Cloud** (Cellule 41) -- *corrige #3367 : metriques reelles QC Cloud*
 >
 > | Metrique | Valeur |
 > |----------|-------|
@@ -10634,7 +10637,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.
 >
 > *Correctif #3367 : le bloc précédent affichait Sharpe 1.944 / CAGR 53.066% avec End Equity $111018.75 -- des valeurs **fabriquees et internement contradictoires** (une End Equity de $111018.75 sur 10 ans = +1.05% de CAGR, incompatible avec le CAGR de 53.066% affiche). Metriques reelles ci-dessus obtenues par redeploiement de l'algorithme verbatim sur QC Cloud (projet 33072217, 2015-2024, $100k). Les champs Sortino / Total Orders / Trades / Win Rate / Total Fees sont omis car non fournis de maniere fiable par l'API read_backtest (toujours 0 / ""-"").*
 >
-> *Backtest ID: 7208ae3f65e7bcfaf627a5b989e55d45*",,,,,,,,712293957295b316,,,,,,,,,,,,,,,
+> *Backtest ID: 7208ae3f65e7bcfaf627a5b989e55d45*",,,,,,,,e598978bd9b57988,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,cell-ce63d61d,markdown,fr,8949effa67e2ff19,"### Comparaison des Exécution Models
 
 | Modèle | Vitesse | Contrôle Prix | Impact Marche | Complexite |
@@ -10787,11 +10790,11 @@ print(""\nAvantages:"")
 print(""  - Adapte le type d'ordre au marche"")
 print(""  - Reduit les couts de transaction"")
 print(""  - Plus efficace sur actifs moins liquides"")",,,,,,,,9705eff3c8cce484,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,cell-d7a2d63a,markdown,fr,cf76f8fa7d29a93c,"**Résultats Backtest QC Cloud** - `SmartExecutionAlgorithm` (2015-2024, $100,000 initial)
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,cell-d7a2d63a,markdown,fr,11e6c9c0bf3a5ac7,"**Résultats Backtest QC Cloud** - `SmartExecutionAlgorithm` (2015-2024, $100,000 initial)
 
-> **Runtime Error (backtest QC Cloud, bt d068e02425474a84268c99d6fd989816).** La stratégie de reference utilise SmartExecutionModel (spread-aware) + EqualWeightingPCM + ConstantAlphaModel sur SPY/QQQ/IWM/VNQ/EEM en resolution Minute, puis Runtime Error a ~81% du backtest (vers 2022). Le caption d'origine (""120920 orders, 0 filled trades, Q1 2023"") n'est PAS reproduit par l'exécution verbatim : la fenêtre est 2015-2024 complete (2516 dates, non Q1 2023) et le backtest tombe en erreur avant la fin. La ligne/message d'erreur exact n'est pas remonte par l'API read_backtest pour cette erreur tardive (visible sur la page de résultats QC Cloud, bt d068e024). Note : le chiffre 120920 ordres du caption d'origine n'a pas pu etre reproduit - signale au coordinateur (ai-01) qui avait marque cell 63 comme nuance (120920 suppose reel).. Le backtest s'arrete prematurement ; les statistiques partielles sur la periode anterieure a l'erreur ne sont pas un résultat 10y significatif et ne sont pas committees (G.2 : aucune metrique non-verifiable). La table fabrique d'origine (""Q1 2023"", Sharpe 0, 0 trade) est supprimee.
+> **Runtime Error (backtest QC Cloud, bt d068e02425474a84268c99d6fd989816).** La stratégie de reference utilise SmartExecutionModel (spread-aware) + EqualWeightingPCM + ConstantAlphaModel sur SPY/QQQ/IWM/VNQ/EEM en resolution Minute, puis Runtime Error a ~81% du backtest (vers 2022). Le caption d'origine (""120920 orders, 0 filled trades, Q1 2023"") n'est PAS reproduit par l'exécution verbatim : la fenêtre est 2015-2024 complete (2516 dates, non Q1 2023) et le backtest tombe en erreur avant la fin. La ligne/message d'erreur exact n'est pas remonte par l'API read_backtest pour cette erreur tardive (visible sur la page de résultats QC Cloud, bt d068e024). Note : le chiffre 120920 ordres du caption d'origine n'a pas pu etre reproduit (120920 suppose reel, jamais reverifie). Le backtest s'arrete prematurement ; les statistiques partielles sur la periode anterieure a l'erreur ne sont pas un résultat 10y significatif et ne sont pas committees (G.2 : aucune metrique non-verifiable). La table fabrique d'origine (""Q1 2023"", Sharpe 0, 0 trade) est supprimee.
 
-*Backtest QC Cloud 2015-2024 (projet 33177683, bt d068e02425474a84268c99d6fd989816).*",,,,,,,,cf76f8fa7d29a93c,,,,,,,,,,,,,,,
+*Backtest QC Cloud 2015-2024 (projet 33177683, bt d068e02425474a84268c99d6fd989816).*",,,,,,,,11e6c9c0bf3a5ac7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,cell-342ccb6c,markdown,fr,b12f8889d2fd2da0,"### Interpretation : SmartExecutionModel
 
 Ce modèle d'exécution intelligent adapte le type d'ordre en fonction des conditions de marché :
@@ -31807,12 +31810,12 @@ for name, model in [(""PatchTST"", patchtst), (""iTransformer"", itransformer)]:
     ml = min(pred_ret.shape[1], actual_ret.shape[1])
     da = direction_accuracy(actual_ret[:, :ml].flatten(), pred_ret[:, :ml].flatten())
     print(f""{name:12s}: DirAcc={da:.4f}, Edge={da - majority_baseline:+.4f}"")",,,,,,,,541d480efff1b047,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23b-PatchTST-iTransformer.ipynb,dcecb329,markdown,fr,864d33dc960382f2,"**Interpretation** : La cellule deplace la perspective de la **MSE** (comment le modèle se trompe en amplitude, vue a la cellule précédente) vers la **direction accuracy** (predire correctement le sens du mouvement : hausse ou baisse). Une **majority-class baseline** predisant systematiquement la classe majoritaire atteindrait **0.6461** sur ce dataset — c'est la **base rate** a battre. Les deux modèles divergent ici : **iTransformer atteint 0.6561** (edge = **+0.0100**), tandis que **PatchTST tombe a 0.6426** (edge = **−0.0035** — sous la baseline). Un des deux modèles manque la base rate ; l'ecart entre les deux edges (0.0135) reste modeste face au bruit statistique de l'echantillon de test.
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23b-PatchTST-iTransformer.ipynb,dcecb329,markdown,fr,9658ab71a90d8029,"**Interpretation** : La cellule deplace la perspective de la **MSE** (comment le modèle se trompe en amplitude, vue a la cellule précédente) vers la **direction accuracy** (predire correctement le sens du mouvement : hausse ou baisse). Une **majority-class baseline** predisant systematiquement la classe majoritaire atteindrait **0.6461** sur ce dataset — c'est la **base rate** a battre. Les deux modèles divergent ici : **iTransformer atteint 0.6539** (edge = **+0.0078**), tandis que **PatchTST atteint 0.6530** (edge = **+0.0070**). Les deux modèles passent la base rate de peu ; l'ecart entre les deux edges (0.0008) reste modeste face au bruit statistique de l'echantillon de test.
 
-Trois choses a observer sur ces chiffres : (1) **iTransformer est le seul au-dessus de la baseline** (+0.0100), PatchTST tombant sous elle (−0.0035) ; l'ecart entre les deux (0.0135) reste statistiquement **non significatif** sur 500 echantillons — un test de Diebold-Mariano conclurait très probablement a l'**equivalence** des deux modèles sur cette métrique ; (2) l'edge **au-dessus de la baseline** — ici, celui du seul iTransformer — est **statistiquement realiste** mais **economiquement fragile** — après couts de transaction (5 a 10 bps par aller-retour), même un edge de quelques pourcents peut disparaitre ; (3) la **majority-class baseline a 0.6461** est elevee pour des rendements de marches financiers, ce qui reflete la **derive brownienne cumulee** : sur des series de rendements, la probabilite de signe positif est souvent proche de 55 a 60 % (effet drift), et sur des series cumulees, elle est encore plus haute (les rendements positifs ont un effet cumulatif).
+Trois choses a observer sur ces chiffres : (1) **les deux modèles sont au-dessus de la baseline** (+0.0078 pour iTransformer, +0.0070 pour PatchTST) ; l'ecart entre les deux (0.0008) reste statistiquement **non significatif** sur 500 echantillons — un test de Diebold-Mariano conclurait très probablement a l'**equivalence** des deux modèles sur cette métrique ; (2) l'edge **au-dessus de la baseline** — ici, celui des deux modèles, iTransformer menant d'une courte tete — est **statistiquement realiste** mais **economiquement fragile** — après couts de transaction (5 a 10 bps par aller-retour), même un edge de quelques pourcents peut disparaitre ; (3) la **majority-class baseline a 0.6461** est elevee pour des rendements de marches financiers, ce qui reflete la **derive brownienne cumulee** : sur des series de rendements, la probabilite de signe positif est souvent proche de 55 a 60 % (effet drift), et sur des series cumulees, elle est encore plus haute (les rendements positifs ont un effet cumulatif).
 
-L'envers du decor : la **vraie lecon** de cette cellule est la **prudence epistemique**. PatchTST et iTransformer sont tous deux des **modèles SOTA 2024-2026** sur les benchmarks academiques, et pourtant ici l'edge predictif est **mince**. Sur des données reelles avec bruit de regime, asymetries de volatilite, et couts de transaction, l'edge pourrait etre **negatif** en pratique — celui de PatchTST l'est déjà dans ce run. C'est pourquoi tout deploiement en trading necessite (a) un **backtest out-of-sample rigoureux** avec walk-forward, (b) une **analyse de couts de transaction** explicite, et (c) une **evaluation long terme** sur plusieurs periodes de marche (bull, bear, range). Les modèles SOTA ne sont pas une garantie de profitabilite.
-",,,,,,,,864d33dc960382f2,,,,,,,,,,,,,,,
+L'envers du decor : la **vraie lecon** de cette cellule est la **prudence epistemique**. PatchTST et iTransformer sont tous deux des **modèles SOTA 2024-2026** sur les benchmarks academiques, et pourtant ici l'edge predictif est **mince**. Sur des données reelles avec bruit de regime, asymetries de volatilite, et couts de transaction, l'edge pourrait etre **negatif** en pratique — a moins d'un point de pourcentage ici, il est deja sous le seuil de rentabilite une fois les couts de transaction appliques. C'est pourquoi tout deploiement en trading necessite (a) un **backtest out-of-sample rigoureux** avec walk-forward, (b) une **analyse de couts de transaction** explicite, et (c) une **evaluation long terme** sur plusieurs periodes de marche (bull, bear, range). Les modèles SOTA ne sont pas une garantie de profitabilite.
+",,,,,,,,9658ab71a90d8029,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23b-PatchTST-iTransformer.ipynb,def22705,markdown,fr,7d84e9d279bc35f4,"***
 
 ## Exercices
@@ -49309,12 +49312,12 @@ Les shapes confirment le format du dataset : `(32, 96, 7)` — batch de 32 séqu
 
 **Conséquence à retenir** : la validation ne porte que sur 31 séquences (150 - 96 - 24 + 1). Une remontée de val loss y est donc **bruitée** (peu d'échantillons) et doit être lue prudemment — c'est précisément ce que montrent les courbes des Parties 4-6.
 ",,,,,,,,c5a4bb617e369184,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23b-PatchTST-iTransformer.ipynb,847939f4,markdown,fr,ea814143973b4070,"**Interpretation** : Les **résultats comparatifs** montrent qu'a budget parametrique comparable, **iTransformer l'emporte** sur PatchTST en MSE test : **0.1091** vs **0.1793**, soit une reduction de l'ordre de **39 %** du MSE. La dynamique d'entraînement est instructive : PatchTST descend de **0.3170** (epoch 10) a **0.2110** (epoch 20), tandis qu'iTransformer descend de **0.3865** (epoch 10) a **0.1993** (epoch 20). Les deux modèles convergent, mais iTransformer demarre plus haut (loss initiale plus elevee) et atterrit plus bas — un pattern classique de modèles qui trouvent un meilleur minimum local en commencant par une **phase d'exploration** plus large.
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23b-PatchTST-iTransformer.ipynb,847939f4,markdown,fr,370351113bc2f4d0,"**Interpretation** : Les **résultats comparatifs** montrent qu'a budget parametrique comparable, **iTransformer l'emporte** sur PatchTST en MSE test : **0.1090** vs **0.1784**, soit une reduction de l'ordre de **39 %** du MSE. La dynamique d'entraînement est instructive : PatchTST descend de **0.3119** (epoch 10) a **0.2109** (epoch 20), tandis qu'iTransformer descend de **0.3870** (epoch 10) a **0.1989** (epoch 20). Les deux modèles convergent, mais iTransformer demarre plus haut (loss initiale plus elevee) et atterrit plus bas — un pattern classique de modèles qui trouvent un meilleur minimum local en commencant par une **phase d'exploration** plus large.
 
-Trois choses a observer sur ces chiffres : (1) **iTransformer a la loss epoch 20 la plus basse** (**0.1993** vs **0.2110**), mais le **MSE test** est le **verdict reel** (**0.1091** vs **0.1793**) — l'ecart entre loss train et MSE test nous dit que PatchTST a legerement surappris (train loss 0.2110 << test MSE 0.1793) tandis qu'iTransformer a mieux generalise ; (2) le **delta de 39 %** entre les deux architectures est **substantiel** mais **pas spectaculaire** — sur des données reelles avec bruit, un tel avantage pourrait facilement disparaitre ; (3) la **fenêtre d'entraînement (20 epochs)** est courte : un vrai entraînement en production utiliserait 100 a 500 epochs avec early stopping, et l'ecart pourrait se reduire ou s'inverser.
+Trois choses a observer sur ces chiffres : (1) **iTransformer a la loss epoch 20 la plus basse** (**0.1989** vs **0.2109**), mais le **MSE test** est le **verdict reel** (**0.1090** vs **0.1784**) — pour les deux modèles le MSE test reste **sous** la loss epoch 20 (0.1784 < 0.2109 et 0.1090 < 0.1989) : aucun des deux ne surapprend sur ce split court, l'avantage d'iTransformer tient a sa capacite de representation et non a un surapprentissage differentiel ; (2) le **delta de 39 %** entre les deux architectures est **substantiel** mais **pas spectaculaire** — sur des données reelles avec bruit, un tel avantage pourrait facilement disparaitre ; (3) la **fenêtre d'entraînement (20 epochs)** est courte : un vrai entraînement en production utiliserait 100 a 500 epochs avec early stopping, et l'ecart pourrait se reduire ou s'inverser.
 
-L'envers du decor : la cellule suivante introduit une **baseline de classe majoritaire** qui replace ces MSE dans une perspective de **verdict predictif operationnel**. Sans cette baseline, un MSE de 0.1091 n'a pas de sens — on ne sait pas si c'est un exploit ou un mediocre résultat. La cellule 21 revele que ce verdict est fragile : un des deux modèles ne bat la baseline que d'une **marge modeste**, l'autre la manque, ce qui rappelle la prudence epistemique des notebooks précédents (LSTM 11 ans SP500, etc.) : **les modèles SOTA brillent sur les benchmarks, mais l'edge predictif en production reste un problème statistiquement et economiquement dur**.
-",,,,,,,,ea814143973b4070,,,,,,,,,,,,,,,
+L'envers du decor : la cellule suivante introduit une **baseline de classe majoritaire** qui replace ces MSE dans une perspective de **verdict predictif operationnel**. Sans cette baseline, un MSE de 0.1090 n'a pas de sens — on ne sait pas si c'est un exploit ou un mediocre résultat. La cellule 21 revele que ce verdict est fragile : les deux modèles ne battent la baseline que d'une **marge modeste** (moins d'un point de pourcentage chacun), ce qui rappelle la prudence epistemique des notebooks précédents (LSTM 11 ans SP500, etc.) : **les modèles SOTA brillent sur les benchmarks, mais l'edge predictif en production reste un problème statistiquement et economiquement dur**.
+",,,,,,,,370351113bc2f4d0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-26-LLM-Trading-Signals.ipynb,6e284a3f,markdown,fr,8af9daf64ecd574a,"**Interpretation** : L'output confirme un pattern honnête : **OpenAI Key: configurée**, **Anthropic Key: Non configurée**. C'est une **conception defensive** intentionnelle : la cellule de configuration détecte la presence ou l'absence de chaque cle API et bascule **jambe par jambe** en mode simule plutot que de crasher. Cette approche suit la règle F (règle env/kernel : reparer, jamais contourner) — au lieu de cacher l'absence de cle derriere un fallback silencieux, le notebook **declare explicitement** l'etat de chaque cle et continue : ici la jambe OpenAI tourne **reellement** (cle lue depuis l'environnement, vrais appels dans les sorties commitées), la jambe Anthropic produit des sorties simulees etiquetees comme telles. Cote modèles, le defaut est **gpt-5.6-luna** (OpenAI) et **claude-sonnet-5-5** (Anthropic), deux modèles SOTA 2026 qui representent le compromis coût/qualité actuel du marche.
 
 Trois choses a observer sur la configuration : (1) la **detection automatique** des variables d'environnement (via `os.getenv`) distingue soigneusement entre cle absente, cle vide, et cle valide — c'est une pratique recommandee pour les notebooks partages (un etudiant qui re-execute ne doit pas voir le code crasher si un autre a oublie sa cle) ; (2) le **mode simule partiel** n'est pas un **workaround degrade** au sens sota-not-workaround.md (chaque jambe simulee est explicitement labellisee comme telle, et le notebook documente ses limites) — c'est une **graceful degradation** pedagogique, dont la jambe majoritaire (sentiment OpenAI) est ici **reelle** ; (3) les **modèles choisis** (gpt-5.6-luna et claude-sonnet-5-5, dans les modèles low-cost chacun chez son fournisseur) refletent la stratégie budget/qualité documentee plus loin dans la cellule 9 (cost tracking).
@@ -53683,18 +53686,25 @@ print(""Securities ajoutees:"")
 print(f""  SPY: {spy.Symbol}"")
 print(f""  QQQ: {qqq.Symbol}"")
 print(f""\nTotal securities: {len(qb.Securities)}"")",,,,,,,,152e77afc113a78b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-e2fe2877,markdown,fr,745beae3b8b805e2,"### Recuperer les Données Historiques
+MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-e2fe2877,markdown,fr,e86f2fdf270f496e,"### Recuperer les Données Historiques
 
 **Point cle** : `qb.History()` retourne directement un **DataFrame pandas** avec MultiIndex (symbol, time), contrairement a `self.History()` dans QCAlgorithm qui retourne un objet Slice.
 
-Cette API synchrone est ideale pour la recherche et le prototypage ML.",,,,,,,,745beae3b8b805e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-deb7df97,code,fr,02bdb22223892291,"# Recuperer 2 ans de donnees (504 jours de trading)
-history = qb.History(qb.Securities.Keys, 504, Resolution.Daily)
+Cette API synchrone est ideale pour la recherche et le prototypage ML.
+
+**Fenêtre fixe.** La cellule suivante écrit en dur la date de début et la date de fin (du 2024-06-05 au 2026-06-10, fin exclue), au lieu de demander un nombre de barres. Une re-exécution retrouve ainsi les mêmes séances, et les chiffres commentés plus bas restent valables. Les prix, eux, peuvent changer légèrement. Ils sont ajustés des dividendes et des splits, si bien qu'une mise à jour des données peut décaler leur échelle ou réviser les volumes. Les rendements et les ratios de prix, qui servent de features, n'en dépendent presque pas.",,,,,,,,e86f2fdf270f496e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-deb7df97,code,fr,538f17d8880ff71b,"# Recuperer 2 ans de donnees (504 jours de trading) sur une fenetre fixe.
+# Demander seulement un nombre de barres ferait finir la fenetre a la date
+# d'execution : les chiffres commentes plus bas changeraient a chaque re-execution.
+from datetime import datetime
+
+start, end = datetime(2024, 6, 5), datetime(2026, 6, 10)  # fin exclue
+history = qb.History(qb.Securities.Keys, start, end, Resolution.Daily)
 
 print(f""Type de history: {type(history)}"")
 print(f""Shape: {history.shape}"")
 print(f""\nPremieres lignes:"")
-history.head()",,,,,,,,02bdb22223892291,,,,,,,,,,,,,,,
+history.head()",,,,,,,,538f17d8880ff71b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-05125221,markdown,fr,77eb95b49aaf6fef,"### Extraire les Données SPY
 
 Pour simplifier l'analyse, concentrons-nous sur SPY dans un premier temps.",,,,,,,,77eb95b49aaf6fef,,,,,,,,,,,,,,,
@@ -53922,16 +53932,19 @@ print(f""  Vrais Negatifs (Baisse predite, Baisse reelle): {cm[0, 0]}"")
 print(f""  Faux Positifs (Hausse predite, Baisse reelle): {cm[0, 1]}"")
 print(f""  Faux Negatifs (Baisse predite, Hausse reelle): {cm[1, 0]}"")
 print(f""  Vrais Positifs (Hausse predite, Hausse reelle): {cm[1, 1]}"")",,,,,,,,ed13321393d4d2b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-d1164fc9,markdown,fr,ca14f3c4b6a5c5e3,"### Interpretation : Metriques de Classification
+MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-d1164fc9,markdown,fr,fc186a553ad586b2,"### Interpretation : Metriques de Classification
 
-| Metrique | Valeur | Signification |
-|----------|--------|---------------|
-| Accuracy | ~52-55% | Proportion de predictions correctes |
-| Precision (Hausse) | Variable | Parmi les hausses predites, combien sont reelles |
-| Recall (Hausse) | Variable | Parmi les hausses reelles, combien sont detectees |
-| F1-Score | Variable | Moyenne harmonique de Precision et Recall |
+| Métrique | Valeur mesurée | Signification |
+|----------|----------------|---------------|
+| Accuracy | 43.84 % | Part des jours de test correctement classés |
+| Part des hausses dans le test | 54.79 % | Accuracy de la règle naïve « toujours hausse » |
+| Précision (Hausse) | 0.49 | Parmi les hausses prédites, combien en sont vraiment |
+| Rappel (Hausse) | 0.64 | Parmi les jours de hausse du test, combien sont détectés |
+| Rappel (Baisse) | 0.20 | Parmi les jours de baisse du test, combien sont détectés |
 
-> **Realite du trading** : Une accuracy de 52-55% est typique pour la prediction de direction. Ce qui compte en trading, c'est le **ratio gain/perte** combine a l'accuracy. Un modèle avec 52% d'accuracy mais des gains 2x superieurs aux pertes peut etre très rentable.",,,,,,,,ca14f3c4b6a5c5e3,,,,,,,,,,,,,,,
+> **Lecture.** Le bon point de comparaison n'est pas 50 % mais la règle naïve qui prédit toujours la classe majoritaire du test : elle obtiendrait 54.79 %. Le modèle fait 43.84 %, près de 11 points de moins. Sa précision sur la classe Hausse (0.49) est même sous la part des hausses (0.548) : quand il annonce une hausse, il a moins souvent raison que la fréquence de base. La matrice de confusion montre d'où vient l'écart : sur 42 baisses prédites, 13 seulement sont des baisses.
+
+> **En trading**, l'accuracy ne suffit pas : un modèle juste un jour sur deux peut gagner si ses gains dépassent ses pertes, et l'inverse. Mais un modèle qui ne bat pas la règle naïve sur des données qu'il n'a pas vues n'a pas encore montré de signal : avant d'en parler en termes de gains, il faut changer de features ou valider sur plusieurs fenêtres (voir les exercices suggérés en fin de notebook).",,,,,,,,fc186a553ad586b2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-ea710a17,markdown,fr,c8b3c12888ec9cae,"### Feature Importance
 
 Le Random Forest nous donne l'importance de chaque feature pour la prediction.",,,,,,,,c8b3c12888ec9cae,,,,,,,,,,,,,,,
@@ -53959,7 +53972,7 @@ plt.show()
 
 print(""\nTop 5 features les plus importantes:"")
 print(importance_df.head().to_string(index=False))",,,,,,,,fdf7e6c4317b1540,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-f097cf06,markdown,fr,3747af2847d6487c,"### Interpretation : Feature Importance
+MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-f097cf06,markdown,fr,46f6327dbaf31b31,"### Interpretation : Feature Importance
 
 Les features les plus importantes revelent ce que le modèle a appris :
 
@@ -53967,7 +53980,9 @@ Les features les plus importantes revelent ce que le modèle a appris :
 2. **RSI** : Les niveaux de survente/surachat sont informatifs
 3. **Ratios prix/EMA** : La position relative par rapport aux moyennes indique la tendance
 
-> **Note** : L'importance des features ne signifie pas causalite. Le modèle peut capturer des correlations spurious.",,,,,,,,3747af2847d6487c,,,,,,,,,,,,,,,
+> **Note** : L'importance des features ne signifie pas causalite. Le modèle peut capturer des correlations spurious.
+
+> **À relier au test.** Le modèle ne bat pas la règle naïve sur le test : ces importances décrivent ce qu'il a ajusté sur l'entraînement, pas un signal qui tient hors échantillon. Les cinq premières sont d'ailleurs proches les unes des autres (entre 0.07 et 0.083), à peine au-dessus de la part uniforme de 1/15 ≈ 0.067 qu'aurait chacune des 15 features si aucune ne comptait plus que les autres.",,,,,,,,46f6327dbaf31b31,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-cdeaf4aa,markdown,fr,80717bc64e314f3a,"***
 
 ## 6. ObjectStore Pattern (5 min)
@@ -54092,7 +54107,7 @@ RESEARCH (ce notebook)           PRODUCTION (main.py)
 ```
 
 > **Important** : Les features calculees dans l'algorithme doivent etre **identiques** a celles du notebook. Toute différence entrainera des predictions incorrectes.",,,,,,,,6dcf8451a3f466ab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-e78e511b,markdown,fr,35aca42741969f14,"***
+MyIA.AI.Notebooks/QuantConnect/Python/research/research_classification.ipynb,cell-e78e511b,markdown,fr,ca7996640fb6e4dc,"***
 
 ## Conclusion et Prochaines Étapes
 
@@ -54115,7 +54130,7 @@ Dans ce notebook, nous avons :
 | Split temporel | Toujours respecter la chronologie, jamais de shuffle |
 | Variable cible | Utiliser `.shift(-1)` pour predire le futur |
 | ObjectStore | Mécanisme de persistance pour partager modèle Research -> Algorithm |
-| Accuracy ~52-55% | Typique pour la prediction de direction, le ratio gain/perte compte aussi |
+| Point de comparaison | L'accuracy se compare à la règle naïve « toujours la classe majoritaire » (ici 54.79 %), pas à 50 % ; le modèle de ce notebook (43.84 %) ne la bat pas |
 
 ### Prochaines Étapes
 
@@ -54138,7 +54153,7 @@ Dans ce notebook, nous avons :
 
 ***
 
-**Notebook complete. Modèle pret pour integration dans un algorithme.**",,,,,,,,35aca42741969f14,,,,,,,,,,,,,,,
+**Notebook complete.** Le workflow Research -> ObjectStore -> Algorithm est en place ; le modèle entraîné ici ne bat pas la règle naïve sur le test, il sert à montrer le circuit, pas à trader. Les exercices ci-dessus sont la suite pour chercher un signal.",,,,,,,,ca7996640fb6e4dc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/research/research_lstm.ipynb,cell-5d62108f,markdown,fr,5290f70918a3d54f,"# Notebook de Recherche : Deep Learning LSTM pour la Prediction de Prix
 Ce notebook accompagne **QC-Py-22-Deep-Learning-LSTM** et demontre le workflow complet
 d'entrainement d'un modèle LSTM avec PyTorch dans l'environnement QuantBook.
@@ -54189,10 +54204,12 @@ from torch.utils.data import DataLoader, TensorDataset
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f""PyTorch version: {torch.__version__}"")
 print(f""Device utilise: {device}"")",,,,,,,,1ac174773da3b597,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/research/research_lstm.ipynb,cell-85e3ac68,markdown,fr,e6b6c9bf4bf22886,"***
+MyIA.AI.Notebooks/QuantConnect/Python/research/research_lstm.ipynb,cell-85e3ac68,markdown,fr,991618f7a7eeb285,"***
 ## 2. Chargement des Données
 
-Utilisation de QuantBook pour recuperer l'historique des prix de SPY.",,,,,,,,e6b6c9bf4bf22886,,,,,,,,,,,,,,,
+Utilisation de QuantBook pour recuperer l'historique des prix de SPY.
+
+> **Fenêtre relative à la date d'exécution.** `qb.history(symbol, 252 * 3, Resolution.DAILY)` demande un nombre de barres, sans date de début ni de fin : il rend les 756 dernières séances avant le jour où la cellule tourne. Les dates, les prix, les pertes d'entraînement et les métriques affichées plus bas sont donc ceux de la dernière exécution, et changent à chaque ré-exécution ; seule la structure (nombre de séances, nombre de séquences) est stable. Pour figer un résultat, passer des bornes explicites : `qb.history(symbol, start, end, Resolution.DAILY)`, la fin étant exclue.",,,,,,,,991618f7a7eeb285,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/research/research_lstm.ipynb,cell-982cac5d,code,fr,b9b77b368d0cfc8e,"# Initialisation QuantBook
 qb = QuantBook()
 
@@ -56641,7 +56658,7 @@ Les cellules #12 (TextBlob) et #14 (VADER) exécutent les **mêmes cinq headline
 - TextBlob livre aussi `subjectivity` (0.000 à 1.000) mais sans pouvoir discriminant ici : 1.000 sur Tesla comme sur BofA.
 
 **Conséquence pratique** : aucun des deux lexiques standard n'est prêt pour le trading sur headlines — c'est exactement l'objet de l'**Exercice 1 (cellule #21)** : booster VADER avec un lexique financier custom.",,,,,,,,c77343df1f9a22d9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-17-Sentiment-Analysis.ipynb,a78ab46b,markdown,fr,1e59e40157efbfa2,"### Interprétation des Scores VADER
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-17-Sentiment-Analysis.ipynb,a78ab46b,markdown,fr,632e55fb3847a682,"### Les quatre scores VADER, et leur plage
 
 VADER retourne 4 scores pour chaque texte analysé :
 
@@ -56659,7 +56676,7 @@ VADER retourne 4 scores pour chaque texte analysé :
 4. **Gère les négations**: ""not good"" est correctement identifié comme négatif
 5. **Gère le slang**: ""killing it"", ""sick"" sont compris dans leur sens argotique
 
-**Lecture** : un texte ""excellent!"" a `pos=0.7, neu=0.3, neg=0,
+**Exemple** : un texte ""excellent!"" a `pos=0.7, neu=0.3, neg=0,
 compound=+0.6`. Un texte ""good but risky"" a `pos=0.4, neu=0.3,
 neg=0.3, compound=+0.2` (léger positif malgré la mention de
 risque).
@@ -56670,7 +56687,8 @@ risque).
 - `compound < -0.05` → négatif (SELL)
 
 Ces seuils sont *arbitraires* — un trader sérieux doit les
-calibrer sur historique (backtest).",,,,,,,,1e59e40157efbfa2,,,,,,,,,,,,,,,
+calibrer sur historique (backtest).
+",,,,,,,,632e55fb3847a682,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-17-Sentiment-Analysis.ipynb,43149970,markdown,fr,c309a8dbe6ed6b21,"### Interprétation de la Comparaison TextBlob vs VADER — les 6 textes à emphase (cellule #17)
 
 Cette fois les deux analyseurs s'affrontent sur des textes **courts et emphatiques** — le terrain que VADER revendique :
@@ -59427,7 +59445,7 @@ Cette cellule définit la **stratégie ML-Optimized complète** sous forme de ga
 ",,,,,,,,932e93ca7cb83590,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,nav-22-deep-learni,markdown,fr,4a7f46077e71febf,"[<< Sommaire QC](../README.md) | [Précédent : QC-Py-21-Portfolio-Optimization-ML <<](./QC-Py-21-Portfolio-Optimization-ML.ipynb) | [Suivant : QC-Py-23-State-Space-Models >>](./QC-Py-23-State-Space-Models.ipynb)
 ",,,,,,,,4a7f46077e71febf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,e93f60a0,markdown,fr,df7248e9981f59f2,"> **[REFERENCE QC Cloud]**
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,e93f60a0,markdown,fr,1f3cedf0318b968d,"> **[REFERENCE QC Cloud]**
 > Ce notebook illustre du code QuantConnect a executer dans l'IDE Cloud (https://www.quantconnect.com/research).
 > L'environnement local ne dispose pas de QuantBook ni de l'historical data feed.
 > Pour executer : cloner le projet QC associe, ouvrir `research.ipynb`, executer cellule par cellule.
@@ -59447,15 +59465,15 @@ disponible (sortie de la cellule 9 : `Device: cuda, GPU: NVIDIA GeForce RTX 3080
 
 **Sur QC Cloud** : la partie 8 génère `qc_code` qui doit être copié
 dans l'IDE Cloud. Le state_dict des modèles (DLinear ~140 KB, PatchTST
-~485 KB, iTransformer ~3 MB, TimeMixer ~96 KB — cellule #68) est
-sauvegardé dans ObjectStore. Le DLinearTradingStrategy (cellule #70)
+~485 KB, iTransformer ~3 MB, TimeMixer ~103 KB — cellule #70) est
+sauvegardé dans ObjectStore. Le DLinearTradingStrategy (cellule #72)
 charge les poids et applique les prédictions in-sample.
 
 **Hyperparamètres par défaut** : epochs=30, batch_size=32, lr=1e-3,
 seq_len=96 (4 jours × 24h intraday), pred_len=24 (1 jour). Ces
 valeurs sont des réglages de départ ; sur un GPU plus petit, réduire
 batch_size à 16.
-",,,,,,,,df7248e9981f59f2,,,,,,,,,,,,,,,
+",,,,,,,,1f3cedf0318b968d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,9f257e51,markdown,fr,f18ee8a82befb8b3,"***
 
 > **Mode d'emploi** : Ce notebook a **deux parties** :
@@ -59577,7 +59595,7 @@ uniquement pour `StandardScaler` (cellule #11) et `mean_squared_error`
 (évaluation). TensorFlow/Keras/JAX sont *exclus* — un seul framework
 DL pour tout le notebook, c'est la règle PyTorch du cours.
 ",,,,,,,,ac840ee816ffc26e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,ac062cc8,markdown,fr,1315d3330fb07603,"***
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,ac062cc8,markdown,fr,97de484eff15f16d,"***
 
 ### Interprétation
 
@@ -59599,15 +59617,14 @@ imprimés — la sortie commitée est la source unique, les valeurs exactes dér
 à chaque environnement. Configuration mesurée :
 
 - **PyTorch (build CUDA)** : la version exacte est celle imprimée par la
-  cellule #8 (kernel `coursia-ml-training`). Pour reproduire localement,
+  cellule 9 (kernel `python3` pour la sortie commitée). Pour reproduire localement,
   voir `docs/reference/kernels-runtime.md` §Python.
 - Les **deux modèles de ce carnet** (DLinear, TimeMixer) tiennent sans difficulté sur un GPU grand public avec batch_size=32 ; les Transformers (PatchTST, iTransformer) sont traités dans QC-Py-23b.
 
 **Si CUDA n'est pas disponible** : le notebook bascule sur CPU
 automatiquement (PyTorch `.to('cpu')`), mais l'entraînement prend
 ~5× plus de temps. Solution recommandée : activer le kernel
-dédié CUDA (`-k coursia-ml-training` dans Papermill).
-",,,,,,,,1315d3330fb07603,,,,,,,,,,,,,,,
+dédié CUDA (`-k coursia-ml-training` dans Papermill).",,,,,,,,97de484eff15f16d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,0d5caf5a,markdown,fr,5d1e3d3ebbf59ddb,"***
 
 ### Interprétation
@@ -59635,7 +59652,7 @@ Train: 700 samples`). Appliqué sur val/test : c'est l'erreur
 classique de data leakage. Sans cette discipline, les résultats
 sont optimistes de 20-30%.
 ",,,,,,,,5d1e3d3ebbf59ddb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,9017a3b1,markdown,fr,6b6a7880470ff300,"***
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,9017a3b1,markdown,fr,54f57dc00dc4bdbf,"***
 
 ### Lecture du résultat — jeu de données simulé
 
@@ -59673,8 +59690,8 @@ training avec données QC natives).
 
 **Branchement QC** : les 7 features simulées correspondent exactement
 aux 7 features qu'un `DLinearSymbolData` pourrait charger en QC Cloud
-(cf cellule #69 partie 8). La migration local → QC est directe.
-",,,,,,,,6b6a7880470ff300,,,,,,,,,,,,,,,
+(cf cellule #72 partie 8). La migration local → QC est directe.
+",,,,,,,,54f57dc00dc4bdbf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,622f7606,markdown,fr,655a93fd3bcc11ff,"***
 
 ### Interprétation
@@ -60136,13 +60153,13 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,ec1c4801
 
 Section détaillée dans QC-Py-23b Partie 3. La Partie 6 (TimeMixer) reste ici en attendant la création d'un side dédié aux MLP multiscale (cf suivi #5081).
 ",,,,,,,,ce100b13e19cce92,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,15d3aa6d,markdown,fr,f19c52e8867c6365,"***
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,15d3aa6d,markdown,fr,103364e1fd985987,"***
 
 ### Interprétation — ce que ce carnet mesure, et ce qu'il ne mesure pas
 
 Ce carnet n'entraîne et n'évalue que **DLinear** (cellules 29 à 31) et **TimeMixer** (cellules 52 à 54). Les architectures **PatchTST** et **iTransformer** ne sont plus implémentées ici : leur code et leurs mesures ont été déplacés vers [QC-Py-23b-PatchTST-iTransformer.ipynb](QC-Py-23b-PatchTST-iTransformer.ipynb) (cellule 12 pour iTransformer, cellules 18 et 22 pour la comparaison). Aucun chiffre de ces deux modèles n'est repris dans ce carnet.
 
-Sur le test set de ce carnet (cellules 31 et 54), **DLinear** atteint MSE 0.0917 et direction accuracy 61.24 %, **TimeMixer** MSE 1.9832 et direction accuracy 53.30 %. Le tableau de la cellule 59 réunit les deux modèles.
+Sur le test set de ce carnet (cellules 31 et 54), **DLinear** atteint MSE 0.0917 et direction accuracy 61.24 %, **TimeMixer** MSE 1.9832 et direction accuracy 53.30 %. Le tableau de la cellule 61 réunit les deux modèles.
 
 **Règle de métier** : en ML financier, on ne sélectionne jamais un modèle sur la seule val loss d'entraînement — la **validation croisée temporelle** et la performance **hors-échantillon** (walk-forward) sont les vrais arbitres. Ce carnet l'illustre avec ses propres sorties : DLinear atteint une meilleure val loss de 0.0040 (cellule 29) et un MSE test de 0.0917 ; TimeMixer une meilleure val loss de 0.0875 (cellule 52) et un MSE test de 1.9832. Dans les deux cas, le MSE test est environ 23 fois la meilleure val loss : la val loss seule ne suffit pas à juger un modèle.
 
@@ -60155,7 +60172,7 @@ Sur le test set de ce carnet (cellules 31 et 54), **DLinear** atteint MSE 0.0917
 - Electricity : 3 ans × 321 features → massivement multi-variable, iTransformer/PatchTST gagnent
 
 Ce jeu simulé (court, peu de variables) est un cas où la complexité n'apporte pas de gain dans ce carnet : la performance reste conditionnelle au régime de données.
-",,,,,,,,f19c52e8867c6365,,,,,,,,,,,,,,,
+",,,,,,,,103364e1fd985987,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,9a608760,markdown,fr,04cf5ca053cac6af,"***
 
 ## Partie 6 : TimeMixer - MLP Multiscale (ICLR 2024)
@@ -60278,13 +60295,13 @@ distinctes que le réseau doit apprendre à mixer.
 timesteps) où le multi-scale capture des dynamiques que DLinear
 manque — typiquement sur yearly data avec saisonnalité marquée.
 ",,,,,,,,bd4786ea2ff607d1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,ac15e683,markdown,fr,678652d30d239794,"***
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,ac15e683,markdown,fr,55ccced073fa9da5,"***
 
 ### Interprétation — résultats test de TimeMixer
 
 TimeMixer est évalué en cellule 54 : **MSE 1.9832**, **RMSE 1.4083**, **MAE 1.3277**, **Direction Accuracy 53.30 %**. C'est le modèle le moins précis des deux mesurés dans ce carnet ; DLinear obtient **61.24 %** de direction accuracy (cellule 31).
 
-Le tableau comparatif de la cellule 59 ne réunit que ces deux modèles :
+Le tableau comparatif de la cellule 61 ne réunit que ces deux modèles :
 
 | Modèle | MSE test | Dir Acc | Paramètres |
 |---|---|---|---|
@@ -60293,12 +60310,13 @@ Le tableau comparatif de la cellule 59 ne réunit que ces deux modèles :
 
 **Lecture** : sur ce régime de données (1000 jours, 7 features), le multi-scale ne bat pas DLinear. Le modèle le plus léger (TimeMixer, 24 987 paramètres) n'est pas le plus précis : le classement ne suit pas la complexité.
 
+**Note — dépendance au matériel.** Les métriques de TimeMixer ci-dessus viennent d'une exécution sur **GPU**. Le même carnet exécuté sur CPU rend d'autres valeurs : elles ne se comparent pas chiffre à chiffre. La cellule suivante mesure l'écart sur les deux matériels et en isole la cause, qui est le dropout de TimeMixer et non l'arithmétique. DLinear, sans dropout, n'est pas concerné. Le **classement** DLinear > TimeMixer ne dépend pas du matériel.
+
 **Hors de ce carnet** : PatchTST et iTransformer ne sont pas mesurés ici. Leurs résultats sont dans [QC-Py-23b-PatchTST-iTransformer.ipynb](QC-Py-23b-PatchTST-iTransformer.ipynb), sur un autre jeu de données : ne pas transposer ces chiffres à ce tableau.
 
 **Implication pour la production** : si vous avez 1000 jours et 7 features (small data), DLinear reste le point de départ le plus sûr *dans ce carnet*. Pour des données plus longues et multi-variables, la littérature suggère que les Transformers peuvent valoir leur coût ; à vérifier sur vos données. TimeMixer est présenté comme adapté aux séries très longues à saisonnalité forte ; ce carnet ne le teste pas.
 
-**Enseignement final** : sur des données simulées à structure linéaire dominante, l'ordre des modèles est inversé par rapport à leur sophistication. Le bon choix d'architecture se fait au regard de la structure du signal, pas du catalogue des modèles à la mode — c'est la thèse de Zeng et al. (AAAI 2023), illustrée ici sur données générées.
-",,,,,,,,678652d30d239794,,,,,,,,,,,,,,,
+**Enseignement final** : sur des données simulées à structure linéaire dominante, l'ordre des modèles est inversé par rapport à leur sophistication. Le bon choix d'architecture se fait au regard de la structure du signal, pas du catalogue des modèles à la mode — c'est la thèse de Zeng et al. (AAAI 2023), illustrée ici sur données générées.",,,,,,,,55ccced073fa9da5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,d4c31548,markdown,fr,1cd629018fa4dfe5,"***
 ### Exercice 3 : Regularisation par dropout et early stopping
 
@@ -60418,7 +60436,7 @@ strategie de momentum *serrée* peut être profitable.
 statistiquement significatif. Pour un verdict production,
 walk-forward 5-fold × 4 seeds (cf QC-Py-25).
 ",,,,,,,,d6a2bc8dcf77960d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,93703ebe,markdown,fr,da92b5c1a8027f03,"***
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,93703ebe,markdown,fr,90f271e585af9f78,"***
 
 ### Interprétation
 
@@ -60437,7 +60455,7 @@ Les contraintes QuantConnect sont également soulignées :
 
 ***
 
-**Recommandations extraites du benchmark** (valeurs des deux modèles mesurés dans ce carnet, cellule 59) :
+**Recommandations extraites du benchmark** (valeurs des deux modèles mesurés dans ce carnet, cellule 61) :
 
 - **DLinear** : `MSE 0.092, Dir Acc 61.24%, 32K params`. Choix par défaut pour *small data* (<5000 timesteps).
 - **TimeMixer** : `MSE 1.983, Dir Acc 53.30%, 24K params`. Choix si horizons *multi-échelle* explicites (intraday + daily + weekly) ; ce carnet ne montre pas d'avantage de TimeMixer sur ce jeu simulé, à confirmer sur vos données.
@@ -60445,7 +60463,7 @@ Les contraintes QuantConnect sont également soulignées :
 
 **Règle pratique** : commencer par DLinear comme baseline, *toujours*.
 Si DLinear échoue (MSE > 0.5 sur test), passer à un Transformer (voir QC-Py-23b), ou à TimeMixer si l'horizon est multi-échelle.
-",,,,,,,,da92b5c1a8027f03,,,,,,,,,,,,,,,
+",,,,,,,,90f271e585af9f78,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,5c4267be,markdown,fr,bf34463b39f04bb5,"***
 
 ## Partie 8 : Integration QuantConnect (15 min)
@@ -60454,13 +60472,13 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,5c4267be
 copier dans l'IDE Cloud pour backtest en production. Durée prévue :
 15 min. Étape finale du pipeline : du prototype PyTorch à la
 stratégie déployable.",,,,,,,,bf34463b39f04bb5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,b396e96c,markdown,fr,a8bbc9199c386829,"***
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,b396e96c,markdown,fr,8b345b2229fc08d7,"***
 
 ### Interprétation
 
 Cette cellule prépare les modèles PyTorch pour le stockage dans QuantConnect ObjectStore. Les points clés :
 
-- **state_dict** : Seuls les poids du modèle sont sauvegardés (~40 KB pour DLinear)
+- **state_dict** : Seuls les poids du modèle sont sauvegardés (~137 KB pour DLinear)
 - **scaler** : Le scaler sklearn est inclus pour la normalisation
 - **Limite ObjectStore** : ~9 MB par fichier (tous les modèles sont en dessous)
 
@@ -60474,17 +60492,17 @@ Le workflow pour QuantConnect est :
 
 **Sauvegarde ObjectStore** : les state_dict PyTorch sont sérialisés
 via `torch.save` puis uploadés sur ObjectStore (QC Cloud). Tailles
-mesurées (cellule #68) :
+mesurées (cellule #70) :
 
 - **DLinear** : 136.9 KB total (state_dict 139 599 bytes + scaler 584 bytes)
 - **PatchTST** : ~474 KB (state_dict seul)
 - **iTransformer** : ~3 MB (state_dict seul)
-- **TimeMixer** : ~96 KB (state_dict seul)
+- **TimeMixer** : ~103 KB (state_dict seul)
 
 **Limite ObjectStore** : 100 MB par objet. Tous les modèles du
 notebook tiennent largement. Pour des modèles plus gros (LLM,
 foundation models), voir QC-Py-Cloud-* séries.
-",,,,,,,,a8bbc9199c386829,,,,,,,,,,,,,,,
+",,,,,,,,8b345b2229fc08d7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,27ebca90,markdown,fr,7c13e2f8e04459a4,"***
 
 ### Interprétation
@@ -64762,3 +64780,445 @@ Deux paramètres sont laisses a l'exercice (`vol_threshold`, `reduction_factor`)
 Le point pedagogique : un filtre de volatilite **ne change pas le signal momentum, il redimensionne l'exposition**. Quand `spy_vol > vol_threshold`, on ne corrige pas la sélection, on reduit le nombre de positions ; quand `spy_vol <= vol_threshold`, on ne touche a rien. C'est exactement ce qui permet de repondre a la question 3 des questions de reflexion ci-dessous : le filtre ameliore le ratio de Sharpe **si et seulement si** le gain sur la queue (moins de pertes extremes) depasse la perte de participation (moins de hausse quand la vol est haute sans que le marche s'ecroule). C'est une question **empirique** que les trois paramètres optimises trancheront sur la periode mesuree — rappelons le MaxDD mesure de la section 3 (28.1%, la pire queue de la fenêtre 2018-2024), point exact que le filtre vise a amputer — pas une garantie a priori : l'equity curve avec et sans filtre, sur la même fenêtre, est le juge, et l'artefact JSON cote du notebook contient les series pour le refaire.",,,,,,,,f0a1497f9978f0b4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-41-PaperTrading-IBKR.ipynb,nav-qcpy43-footer,markdown,fr,e31f68b3856c3b1a,"**Navigation** | [<< Sommaire QC](../README.md) | [Suivant : QC-Py-43-Diffusion-Series-Synthetiques >>](./QC-Py-43-Diffusion-Series-Synthetiques.ipynb)
 ",,,,,,,,e31f68b3856c3b1a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,mur79-a,markdown,fr,0339bdf4f1e5b6af,"### Interpretation : FullFrameworkAlgorithm
+
+Cet exemple complet démontre une **stratégie Framework complète** utilisant les 5 composants modulaires de QuantConnect.
+
+**Vue d'ensemble de l'architecture** :
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     FULL FRAMEWORK ALGORITHM                    │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  1. UNIVERSE SÉLECTION                                          │
+│     ├─ CoarseFilter: Volume > $10M, Price > $10                 │
+│     └─ FineFilter: Market Cap > $5B → Top 30 stocks            │
+│                                                                   │
+│  2. ALPHA MODEL (MomentumAlphaModelFramework)                    │
+│     ├─ Lookback: 60 jours                                       │
+│     ├─ Direction: Signe du momentum                              │
+│     ├─ Magnitude: |momentum| × 10 (max 20%)                     │
+│     └─ Confidence: |Sharpe| / 3 (0.1 à 1.0)                     │
+│                                                                   │
+│  3. PORTFOLIO CONSTRUCTION (RiskParity)                          │
+│     ├─ Rebalancement: Mensuel (30 jours)                        │
+│     └─ Poids: 1/Volatilité (égalise le risque)                  │
+│                                                                   │
+│  4. EXÉCUTION (SmartExecutionModelFramework)                     │
+│     ├─ Max slippage: 0.1%                                       │
+│     ├─ Market Order: Si spread < 0.2%                           │
+│     └─ Limit Order: Sinon à prix amélioré                       │
+│                                                                   │
+│  5. RISK MANAGEMENT (Composite)                                  │
+│     ├─ MaxDrawdown: 5% par position                             │
+│     └─ MaxSectorExposure: 25% par secteur                        │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+",,,,,,,,0339bdf4f1e5b6af,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,mur79-b,markdown,fr,107d5c75e0953a44,"#### Flux de données complet
+
+```
+Universe (30 stocks)
+        │
+        ▼
+┌──────────────────┐
+│  Alpha Model     │ → Insights avec direction, magnitude, confidence
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Portfolio Const. │ → Targets pondérés par 1/volatilité (Risk Parity)
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│ Risk Management  │ → Targets ajustés (DD < 5%, Sector < 25%)
+└────────┬─────────┘
+         │
+         ▼
+┌──────────────────┐
+│    Exécution     │ → Market ou Limit ordres selon spread
+└──────────────────┘
+```
+
+",,,,,,,,107d5c75e0953a44,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,mur79-c,markdown,fr,3374e8ba485ee55f,"#### Points clés de l'implémentation
+
+1. **Universe Sélection dynamique**
+   - `CoarseFilter` : Réduit à 200 candidats liquides
+   - `FineFilter` : Sélectionne les 30 plus grandes capitalisations
+   - Actualisation mensuelle automatique
+
+2. **Alpha avec métadonnées riches**
+   - Les insights incluent magnitude et confidence
+   - Permet une pondération sophistiquée dans le PCM
+   - Le Sharpe ratio normalisé détermine la confiance
+
+3. **Risk Parity pour la construction**
+   - Calcule la volatilité de chaque actif sur 60 jours
+   - Poids inversement proportionnels à la volatilité
+   - Contribution au risque égale pour tous les actifs
+
+4. **Exécution adaptative**
+   - Vérifie le spread bid-ask avant chaque ordre
+   - Market Order sur marchés liquides
+   - Limit Order avec prix amélioré sinon
+
+5. **Protection multi-niveaux**
+   - Niveau position : Stop loss à 5%
+   - Niveau portefeuille : Max 25% par secteur
+
+",,,,,,,,3374e8ba485ee55f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,mur79-d,markdown,fr,4edc891737b214d5,"#### Paramètres optimisables
+
+| Paramètre | Valeur | Impact |
+|-----------|--------|--------|
+| `num_stocks` | 30 | Diversification vs concentration |
+| `lookback` | 60 jours | Stabilité des signaux |
+| `rebalance_period` | 30 jours | Coûts de transaction vs réactivité |
+| `max_slippage` | 0.1% | Tolérance au slippage |
+| `max_drawdown` | 5% | Niveau de stop loss |
+| `max_sector` | 25% | Concentration sectorielle |
+
+**Avantages de l'approche Framework** :
+- **Modularité** : Chaque composant peut être testé indépendamment
+- **Réutilisabilité** : Les modèles peuvent être combinés différemment
+- **Maintenabilité** : Facile de modifier un composant sans toucher aux autres
+- **Testabilité** : Backtesting granulaire par composant
+
+***",,,,,,,,4edc891737b214d5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-18-ML-Features-Engineering.ipynb,mur63-a,markdown,fr,46905b9f1c55e5f4,"***
+
+## Conclusion et Prochaines Étapes
+
+### Recapitulatif
+
+Dans ce notebook, nous avons couvert :
+
+1. **Introduction au Feature Engineering** :
+   - Importance du ""Garbage In, Garbage Out""
+   - Catégories de features (techniques, fondamentales, alternatives)
+
+2. **Features Techniques (Price-Based)** :
+   - Rendements multi-periodes
+   - Volatilite historique
+   - Range et distance from extremes
+
+3. **Features Techniques (Indicator-Based)** :
+   - RSI (Wilder, 1978), MACD, Bollinger Bands (Bollinger, 2002)
+   - ADX, Stochastic, CCI
+   - Normalisation des indicateurs pour ML
+
+4. **Features Fondamentales** :
+   - Valuation (P/E, P/B, P/S)
+   - Profitability (ROE, ROA, Margins)
+   - Growth et Debt ratios
+
+5. **Labeling** :
+   - Classification (binary, ternary, quantile)
+   - Regression (future returns)
+   - Triple Barrier method (Lopez de Prado, 2018)
+
+6. **Feature Sélection** :
+   - Random Forest importance (Breiman, 2001)
+   - Correlation filtering
+   - Mutual information (Shannon, 1948 ; Cover & Thomas, 1991)
+
+7. **Preprocessing** :
+   - StandardScaler, RobustScaler
+   - Rolling normalization (anti-lookahead)
+
+8. **Pipeline Complet** :
+   - Classe `FeatureEngineeringPipeline`
+   - Train/Test split temporel
+   - Export pour ML
+
+",,,,,,,,46905b9f1c55e5f4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-18-ML-Features-Engineering.ipynb,mur63-b,markdown,fr,6cab0688a717028a,"### Points Clés a Retenir
+
+| Concept | Point Cle |
+|---------|----------|
+| **Lookahead Bias** | Ne jamais utiliser de données futures dans les features |
+| **Normalisation** | Rolling stats pour eviter biais, pas mean/std global |
+| **Sélection** | Supprimer features correlees avant importance |
+| **Labeling** | Horizon et threshold impactent fortement les résultats |
+| **Split** | Toujours temporel en finance (pas random) |
+
+### Limitations
+
+- Les features techniques seules sont souvent insuffisantes
+- Le marche evolue, les features perdent leur pouvoir predictif (regime change)
+- Overfitting facile avec trop de features
+- Les données simulees ne capturent pas toute la complexite reelle
+
+",,,,,,,,6cab0688a717028a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-18-ML-Features-Engineering.ipynb,mur63-c,markdown,fr,be9ee28ad56051a3,"### Prochaines Étapes
+
+| Notebook | Contenu |
+|----------|--------|
+| **QC-Py-19** | Classification Models (Random Forest, XGBoost) |
+| **QC-Py-20** | Regression Models et prediction de rendements |
+| **QC-Py-21** | Deep Learning (LSTM, Transformers) |
+| **QC-Py-22** | Reinforcement Learning pour trading |
+
+",,,,,,,,be9ee28ad56051a3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-18-ML-Features-Engineering.ipynb,mur63-d,markdown,fr,0b4cc14bb812589d,"### Références académiques
+
+- **Appel, G.** (2005). *Technical Analysis: Power Tools for Active Investors*. MACD.
+- **Bollinger, J.** (2002). *Bollinger on Bollinger Bands*. McGraw-Hill. Bollinger Bands.
+- **Breiman, L.** (2001). *Random Forests*. Machine Learning. Feature importance (permutation / Gini).
+- **Cover, T. M. & Thomas, J. A.** (1991). *Éléments of Information Theory*. Wiley. Mutual information (feature sélection).
+- **Fama, E. F.** (1965). *The Behavior of Stock-Market Prices*. The Journal of Business 38(1):34-105.
+- **Guyon, I. & Elisseeff, A.** (2003). *An Introduction to Variable and Feature Sélection*. JMLR. RFE / sélection de features.
+- **Guyon, I., Weston, J., Barnhill, S. & Vapnik, V.** (2002). *Gene Sélection for Cancer Classification using Support Vector Machines*. Machine Learning 46(1-3):389-422. DOI 10.1023/A:1012487302797.
+- **Jegadeesh, N. & Titman, S.** (1993). *Returns to Buying Winners and Selling Losers: Implications for Stock Market Efficiency*. The Journal of Finance 48(1):65-91. DOI 10.1111/j.1540-6261.1993.tb04702.x.
+- **Lopez de Prado, M.** (2018). *Advances in Financial Machine Learning*. Wiley. Triple Barrier method, meta-labeling.
+- **Pearson, K.** (1901). *On Lines and Planes of Closest Fit to Systems of Points in Space*. Philosophical Magazine 2(11):559-572. DOI 10.1080/14786440109462720.
+- **Shannon, C. E.** (1948). *A Mathematical Theory of Communication*. Bell System Technical Journal 27(3):379-423. DOI 10.1002/j.1538-7305.1948.tb01338.x. Information entropy, mutual information.
+- **Sharpe, W. F.** (1966). *Mutual Fund Performance*. The Journal of Business 39(1):119-138. DOI 10.1086/294846.
+- **Wilder, J. W.** (1978). *New Concepts in Technical Trading Systems*. Trend Research, Greensboro, NC. ISBN 978-0-89459-027-6. RSI, ADX.
+",,,,,,,,0b4cc14bb812589d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-18-ML-Features-Engineering.ipynb,mur63-e,markdown,fr,a149bf166971c4bd,"### Ressources Complémentaires
+
+- **shared/features.py** - Bibliotheque de fonctions de feature engineering
+- **shared/ml_utils.py** - Utilitaires ML (train, evaluate, save)
+- [Advances in Financial ML](https://www.amazon.com/Advances-Financial-Machine-Learning-Marcos/dp/1119482089) - Lopez de Prado
+- [QuantConnect Data Documentation](https://www.quantconnect.com/docs/v2/writing-algorithms/datasets)
+
+***
+
+**Notebook complete. Pret pour QC-Py-19 (Classification Models).**
+",,,,,,,,a149bf166971c4bd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-19-ML-Supervised-Classification.ipynb,42fdbf4e,code,fr,63f3562dbc1c8f87,"# Environnement de reference -- versions epinglees (#20631)
+# Les metriques de ce carnet dependent des versions des librairies : xgboost
+# 3.2.0 vs 3.4.1 changent les scores XGBoost, et la derive du Random Forest
+# provient de scikit-learn/numpy. Les versions ci-dessous sont celles qui
+# produisent les sorties committees de ce carnet.
+import sys
+import sklearn
+print(""python       :"", sys.version.split()[0])
+print(""numpy        :"", np.__version__)
+print(""pandas       :"", pd.__version__)
+print(""scikit-learn :"", sklearn.__version__)
+print(""xgboost      :"", xgb.__version__)",,,,,,,,63f3562dbc1c8f87,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,d2d5f838,markdown,fr,5515fb75b44e0ce5,"***
+
+## Conclusion et Prochaines Étapes
+
+### Recapitulatif
+
+Dans ce notebook, nous avons couvert :
+
+1. **Regression vs Classification** :
+   - Classification predit la direction
+   - Regression predit la magnitude (rendement exact)
+   - Regression permet position sizing intelligent
+
+2. **Linear Regression Regularisee** :
+   - Ridge (L2) (Hoerl & Kennard, 1970): shrinkage uniforme
+   - Lasso (L1) (Tibshirani, 1996): feature sélection automatique
+   - ElasticNet (Zou & Hastie, 2005): combine L1 + L2
+   - Base polynomiale : deplacer la non-linearite dans les features, au prix du biais-variance
+
+3. **Ensemble Methods** :
+   - Random Forest (Breiman, 2001): robuste, peu d'overfitting
+   - Gradient Boosting (Friedman, 2001): plus précis mais risque d'overfitting
+   - XGBoost (Chen & Guestrin, 2016): optimise avec regularisation
+
+4. **Support Vector Regression** (Vapnik, 1995; Drucker et al., 1997) :
+   - Necessite imperativement le scaling
+   - Kernel RBF pour non-linearites
+   - Paramètres C, epsilon, gamma
+
+5. **Metriques** :
+   - RMSE, MAE, R2 (standard)
+   - Direction Accuracy (crucial pour trading)
+   - Correlation (qualite du ranking)
+
+6. **Integration Trading** :
+   - Conversion prediction -> signal
+   - Position sizing proportionnel
+   - Filtrage par seuil minimum
+   - Performance brute vs nette : turnover (entrées, sorties, retournements) et coûts en bps
+
+7. **Stratégie Complete** :
+   - Pipeline end-to-end
+   - Retraining periodique
+   - Risk management integre
+
+8. **Clustering non supervisé — OPTICS** (Ankerst et al., 1999) :
+   - Détection de régimes sur la matrice de features, sans nombre de groupes imposé
+   - Le bruit (`-1`) isole les journées qui n'appartiennent à aucun régime identifié
+   - Le réglage `min_samples` arbitre la frontière entre groupe peu dense et bruit
+
+9. **Ancrage canonique ML-factor** (Gu, Kelly & Xiu, 2020) :
+   - Un classement de modeles sans test de significativite est une impression, pas une mesure
+   - Diebold-Mariano compare des **differences de perte**, avec variance Newey-West
+   - Le verdict exige une conjonction : edge >= 2 sigma inter-graines **et** `p` DM < 0,05
+   - Un **controle negatif** qui doit echouer vaut autant qu'un controle positif
+   - Les couts de transaction reordonnent les modeles par leur turnover
+
+",,,,,,,,5515fb75b44e0ce5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,5ac36d2e,markdown,fr,f37783f962f246a3,"### Points Clés a Retenir
+
+| Concept | Point Cle |
+|---------|----------|
+| **Regression** | Predit la magnitude, pas juste la direction |
+| **Regularisation** | Essentielle pour eviter overfitting |
+| **Scaling** | Obligatoire pour SVR, recommande pour autres |
+| **Direction Accuracy** | Métrique la plus importante pour PnL |
+| **Seuil de signal** | Filtrer les petites predictions non rentables |
+| **Retraining** | Adapter le modèle aux changements de marche |
+| **Regimes de marche** | Le nombre de régimes est une sortie (OPTICS), pas une hypothèse |
+
+### Comparaison des Modèles
+
+| Modèle | Avantages | Inconvenients | Usage |
+|--------|-----------|---------------|-------|
+| **Ridge** | Simple, stable | Lineaire | Baseline |
+| **Lasso** | Feature sélection | Lineaire | Beaucoup de features |
+| **Random Forest** | Robuste, feature importance | Moins précis | General |
+| **Gradient Boosting** | Très précis | Overfitting | Production |
+| **XGBoost** | Rapide, regularise | Complexe | Production |
+| **SVR** | Non-lineaire | Lent, scaling | Petits datasets |
+| **OPTICS** | Nombre de groupes découvert, bruit explicite | Sensible à min_samples, coût O(n log n) | Détection de régimes |
+
+",,,,,,,,f37783f962f246a3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,0dd43880,markdown,fr,418c698920502ee4,"### Limitations
+
+- Les marches sont difficiles a predire (efficience)
+- Les modèles peuvent overfitter l'historique
+- Les regimes de marche changent
+- Les couts de transaction (5-10 bps par unite de turnover) peuvent effacer un edge brut : toujours juger sur le net
+
+### Prochaines Étapes
+
+| Notebook | Contenu |
+|----------|---------|
+| **QC-Py-21** | Deep Learning (LSTM, Transformers) |
+| **QC-Py-22** | Reinforcement Learning |
+| **QC-Py-23** | Model Ensembling et Stacking |
+| **QC-Py-24** | Hyperparameter Optimization |
+
+",,,,,,,,418c698920502ee4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,a2f418df,markdown,fr,a546c34a37496fe7,"### References academiques
+
+- **Hoerl, A. E. & Kennard, R. W.** (1970). *Ridge Regression: Biased Estimation for Nonorthogonal Problems*. Technometrics. Regression Ridge (L2).
+- **Tibshirani, R.** (1996). *Regression Shrinkage and Sélection via the Lasso*. JRSS-B. Lasso (L1), feature sélection.
+- **Zou, H. & Hastie, T.** (2005). *Regularization and Variable Sélection via the Elastic Net*. JRSS-B. ElasticNet (L1 + L2).
+- **Breiman, L.** (2001). *Random Forests*. Machine Learning. Random Forest (bagging).
+- **Friedman, J. H.** (2001). *Greedy Function Approximation: A Gradient Boosting Machine*. Annals of Statistics. Gradient Boosting.
+- **Chen, T. & Guestrin, C.** (2016). *XGBoost: A Scalable Tree Boosting System*. KDD. XGBoost.
+- **Vapnik, V.** (1995). *The Nature of Statistical Learning Theory*. Springer. SVM / SVR. SVR pour la regression formalise dans Drucker et al. (1997).
+- **Wolpert, D. H.** (1992). *Stacked Generalization*. Neural Networks. Stacking (exercice 3).
+- **Ankerst, M., Breunig, M. M., Kriegel, H.-P. & Sander, J.** (1999). *OPTICS: Ordering Points To Identify the Clustering Structure*. ACM SIGMOD. Clustering par densité ordonnée, détection de régimes (Partie 8).
+- **Grinold, R. C.** (1989). *The Fundamental Law of Active Management*. Financial Analysts Journal. Information Coefficient (IC).
+
+",,,,,,,,a546c34a37496fe7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-20-ML-Regression-Prediction.ipynb,3102a37c,markdown,fr,a8a9351287ddf498,"### Ressources Complémentaires
+
+- [scikit-learn Regression](https://scikit-learn.org/stable/supervised_learning.html#supervised-learning)
+- [XGBoost Documentation](https://xgboost.readthedocs.io/)
+- [Advances in Financial ML](https://www.amazon.com/Advances-Financial-Machine-Learning-Marcos/dp/1119482089) - Lopez de Prado
+- [QuantConnect ML Documentation](https://www.quantconnect.com/docs/v2/writing-algorithms/machine-learning)
+
+***
+
+**Notebook complete. Vous maitrisez maintenant la regression ML pour la prediction de prix.**",,,,,,,,a8a9351287ddf498,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,a7c3e1f0,code,fr,49fda944479ee1e7,"# Controle de sensibilite au materiel : TimeMixer entraine sur CPU et sur GPU
+#
+# Meme graine, memes poids initiaux (tires sur CPU puis copies vers le materiel),
+# meme ordre des lots (generateur dedie au DataLoader) : seule la machine qui calcule change.
+# Deux reglages : le dropout du carnet (0.1), puis sans dropout (0.0), pour separer
+# l'effet des tirages aleatoires de celui de l'arithmetique flottante.
+
+def entrainer_timemixer(nom_materiel, dropout, graine=42):
+    dev = torch.device(nom_materiel)
+    torch.manual_seed(graine)
+    modele = TimeMixer(seq_len=SEQ_LEN, pred_len=PRED_LEN, enc_in=n_features,
+                       d_model=64, n_scales=3, dropout=dropout).to(dev)
+    loader = DataLoader(train_dataset, batch_size=BATCH_SIZE, shuffle=True,
+                        generator=torch.Generator().manual_seed(graine))
+    opt = optim.Adam(modele.parameters(), lr=LR)
+    sched = optim.lr_scheduler.ReduceLROnPlateau(opt, patience=5, factor=0.5)
+    meilleure_val, meilleur_etat = float('inf'), None
+    for _ in range(EPOCHS):
+        train_epoch(modele, loader, criterion, opt, dev)
+        val_loss, _, _, _, _ = evaluate(modele, val_loader, criterion, dev)
+        sched.step(val_loss)
+        if val_loss < meilleure_val:
+            meilleure_val = val_loss
+            meilleur_etat = {k: v.detach().clone() for k, v in modele.state_dict().items()}
+    modele.load_state_dict(meilleur_etat)
+    _, mse, mae, preds, cibles = evaluate(modele, test_loader, criterion, dev)
+    direction = np.mean(np.sign(np.diff(cibles.flatten())) == np.sign(np.diff(preds.flatten())))
+    return {'dropout': f""{dropout:.1f}"", 'materiel': nom_materiel, 'val_loss': meilleure_val,
+            'MSE': mse, 'MAE': mae, 'Direction (%)': 100 * direction}
+
+# L'etat des generateurs est sauvegarde puis restaure : la suite du carnet n'est pas perturbee
+etat_cpu = torch.get_rng_state()
+etat_cuda = torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
+
+materiels = ['cpu'] + (['cuda'] if torch.cuda.is_available() else [])
+controle = pd.DataFrame([entrainer_timemixer(m, d) for d in (0.1, 0.0) for m in materiels])
+
+torch.set_rng_state(etat_cpu)
+if etat_cuda is not None:
+    torch.cuda.set_rng_state_all(etat_cuda)
+
+print(""="" * 72)
+print(""TIMEMIXER - MEME CODE, MEME GRAINE, CPU CONTRE GPU"")
+print(""="" * 72)
+print(controle.to_string(index=False, float_format=lambda v: f""{v:.6f}""))
+print()
+if len(materiels) == 2:
+    for d in (""0.1"", ""0.0""):
+        sous = controle[controle['dropout'] == d].set_index('materiel')
+        ecart = abs(sous.loc['cpu', 'MSE'] - sous.loc['cuda', 'MSE'])
+        print(f""dropout {d} : ecart de MSE test entre CPU et GPU = {ecart:.2e}"")
+else:
+    print(""Pas de GPU sur cette machine : seules les lignes CPU sont mesurees."")",,,,,,,,49fda944479ee1e7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,b8d4f2a1,markdown,fr,69cfea43282bd85c,"***
+
+### Interprétation — contrôle CPU contre GPU
+
+La cellule précédente entraîne TimeMixer à l'identique sur les deux matériels : même graine, mêmes poids initiaux, même ordre des lots. Elle sépare deux réglages du dropout.
+
+| Dropout | MSE test CPU | MSE test GPU | Direction CPU | Direction GPU |
+|---|---|---|---|---|
+| 0.1 (réglage du carnet) | 1.9209 | 2.0521 | 52.76 % | 51.82 % |
+| 0.0 | 2.7751 | 2.7751 | 52.09 % | 52.09 % |
+
+**Lecture** :
+
+- **Sans dropout, le CPU et le GPU produisent le même modèle.** L'écart de MSE test vaut 2.4e-07, l'ordre de grandeur de l'arrondi en virgule flottante. L'arithmétique des deux matériels n'explique donc pas l'écart.
+- **Avec le dropout du carnet, l'écart monte à 0.13 de MSE.** Le dropout tire un masque aléatoire à chaque lot, et ce tirage ne vient pas du même générateur : celui du processeur sur CPU, celui de CUDA sur GPU. Une même graine y produit deux suites de nombres différentes, donc deux entraînements différents.
+- **Dans l'exécution principale du carnet, un second effet s'ajoute.** Le DataLoader de la cellule 19 tire l'ordre des lots du générateur global du processeur. Sur CPU, le dropout consomme ce même générateur, et l'ordre des lots diverge dès la deuxième époque ; sur GPU, il n'y touche pas. C'est pourquoi les métriques de la cellule 54 ne correspondent à aucune ligne de ce tableau : le contrôle donne au DataLoader son propre générateur.
+- **DLinear n'a pas de dropout** : il est dans le cas du réglage 0.0, et ses métriques ne dépendent pas du matériel.
+- **Le classement tient** : sur les quatre entraînements, la MSE test de TimeMixer reste entre 1.92 et 2.78, loin des 0.0917 de DLinear.
+
+**À retenir** : un réseau qui contient du dropout n'est pas reproductible d'un matériel à l'autre, même entièrement seedé, parce que CPU et GPU n'ont pas le même générateur aléatoire. Pour comparer deux exécutions, on fixe le matériel. Pour comparer deux matériels, on compare des résultats sur plusieurs graines, pas une valeur unique.",,,,,,,,69cfea43282bd85c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb,49568986,markdown,fr,937547e8349c0f29,"## Partie 2 : Algorithme QuantConnect - MLP Forecasting v2.1
+
+L'algorithme implemente :
+- 7 ETFs diversifies : SPY, QQQ, IWM, EFA, TLT, GLD, IEF
+- MLPClassifier (64, 32) par symbole avec StandardScaler
+- Re-entrainement mensuel sur fenêtre glissante de 252 jours
+- Seuil de probabilite 0.52, max 4 positions, min 2 positions
+
+Trois de ces choix méritent d'être lus pour ce qu'ils sont — des compromis assumés :
+
+- **7 ETFs multi-classes** (actions US petites et grandes, internationales,
+  obligations, or) : un signal appris sur SPY seul sur-apprendrait son régime ;
+  la diversification inter-classes donne au classifieur des régimes variés.
+- **Fenêtre de 252 jours** (~1 an boursier) : assez longue pour couvrir plusieurs
+  régimes, assez courte pour que le re-entraînement mensuel suive les rotations.
+- **Un modèle par symbole** plutôt qu'un modèle global : chaque actif a sa propre
+  structure de rendement ; le coût — 7 entraînements mensuels — reste négligeable
+  sur Cloud.
+
+Le code source complet est presente dans la section ""Algorithme QuantConnect"", plus loin dans le notebook, apres l'exercice sur le seuil de probabilite.
+",,,,,,,,937547e8349c0f29,,,,,,,,,,,,,,,

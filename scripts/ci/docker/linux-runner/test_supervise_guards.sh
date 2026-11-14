@@ -272,6 +272,21 @@ run_supervise() {
   cat "$TEST_DIR/last.err"
 }
 
+# #26477 : le verdict de run_supervise se lit dans un FICHIER, jamais dans
+# une substitution de commande pipee. Sous Git Bash (diagnostic local
+# Windows), un petit-fils heritier du stdout de la fonction gardait le tube
+# ouvert APRES le timeout de la commande (8 s) : la lecture $( ... | head -1)
+# ne rendait jamais, le test restait sans verdict et la suite n'en finissait
+# pas (mesure lane : ~15 min pour 34 tests sur 70, run complet jamais rendu).
+# La commande est deja bornee par run_supervise ; c'est la LECTURE qu'il
+# faut fermer : un fichier rend sa premiere ligne immediatement, qu'un
+# petit-fils survive ou non. Sites appelants : supervise_rc (verdict rc) ou
+# ecriture directe dans last-supervise.out (sortie complete).
+supervise_rc() {
+  run_supervise "$@" >"$TEST_DIR/last-supervise.out" 2>&1
+  sed -n '1s/^rc=//p' "$TEST_DIR/last-supervise.out"
+}
+
 # Attente BORNEE plutot que `sleep <constante>`. Un `sleep 0.5` suivi d'une
 # assertion n'est pas un test, c'est une course : sur cette machine le prelude
 # de cmd_start met 680 a 924 ms (spawns de processus Git Bash + la sonde d'hote
@@ -312,7 +327,7 @@ echo "Test 1 : start quand un superviseur est deja actif (Defaut 1)"
 (
   cd "$SCRIPT_DIR"
   export PS_OUTPUT="jsboige  12345    1   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh start 4"
-  rc="$(run_supervise 'start 1' 'test-prefix-A' "$TEST_DIR/state-A" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-A' "$TEST_DIR/state-A")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "deja actif"; then
     ok "start refuse, message nomme PID (rc=$rc)"
@@ -339,7 +354,7 @@ echo "Test 2 : start apres stop AVEC superviseur vivant refuse, sentinel preserv
   cd "$SCRIPT_DIR"
   export PS_OUTPUT="jsboige  33594  9876   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh start 4"
   touch "$TEST_DIR/state-B/stop"
-  rc="$(run_supervise 'start 1' 'test-prefix-B' "$TEST_DIR/state-B" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-B' "$TEST_DIR/state-B")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "sentinel STOP_FILE present"; then
     ok "start apres stop refuse (rc=$rc)"
@@ -534,7 +549,7 @@ echo "Test 9 : start refuse si entrypoint de l'image != checkout (#14801)"
   mkdir -p "$TEST_DIR/state-9"
   STUB_IMG_ENTRYPOINT_SHA=f0000000000000000000000000000000000000000000000000000000000000f00
   export STUB_IMG_ENTRYPOINT_SHA
-  rc="$(run_supervise 'start 1' 'test-prefix-9' "$TEST_DIR/state-9" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-9' "$TEST_DIR/state-9")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "docker build -t"; then
     ok "image perimee refusee avec la commande de rebuild (rc=$rc)"
@@ -589,7 +604,7 @@ echo "Test 11 : start refuse sur une detresse soutenue sur les DEUX points (#150
   # pagewrites>0 ET pagesout>0 ET file>=1 ET idle<=50 -- sur les deux points.
   export COURSIA_RUNNER_HOST_PROBE="120 340 3 12 90000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="98 410 2 18 91000 49800"
-  rc="$(run_supervise 'start 1' 'test-prefix-11' "$TEST_DIR/state-11" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-11' "$TEST_DIR/state-11")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "DETRESSE"; then
     ok "detresse soutenue refusee (rc=$rc)"
@@ -622,7 +637,7 @@ echo "Test 11b : detresse retenue meme avec file=0 et disque inactif (#15091)"
   # les valeurs que ces deux compteurs rendent TOUJOURS sur cet hote.
   export COURSIA_RUNNER_HOST_PROBE="140 520 0 99 96000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="155 610 0 98 97000 49900"
-  rc="$(run_supervise 'start 1' 'test-prefix-11b' "$TEST_DIR/state-11b" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-11b' "$TEST_DIR/state-11b")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "DETRESSE SOUTENUE"; then
     if echo "$err" | grep -q "cote disque MUET"; then
@@ -649,7 +664,7 @@ echo "Test 12 : un pic isole ne declenche pas le refus (#15091)"
   mkdir -p "$TEST_DIR/state-12"
   export COURSIA_RUNNER_HOST_PROBE="120 340 3 12 90000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="0 0 0 97 40000 50000"
-  rc="$(run_supervise 'start 1' 'test-prefix-12' "$TEST_DIR/state-12" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-12' "$TEST_DIR/state-12")"
   err="$(cat "$TEST_DIR/last.err")"
   if ! echo "$err" | grep -q "DETRESSE"; then
     ok "pic isole non retenu comme detresse (rc=$rc)"
@@ -669,7 +684,7 @@ echo "Test 13 : start refuse quand Mapped chute au-dela du seuil (#15091)"
   # Machine par ailleurs calme : seul le mmap qdrant se fait evincer (-2000 Mo).
   export COURSIA_RUNNER_HOST_PROBE="0 0 0 95 40000 52000"
   export COURSIA_RUNNER_HOST_PROBE_2="0 0 0 95 40000 50000"
-  rc="$(run_supervise 'start 1' 'test-prefix-13' "$TEST_DIR/state-13" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-13' "$TEST_DIR/state-13")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "Mapped"; then
     ok "eviction du mmap qdrant refusee (rc=$rc)"
@@ -746,7 +761,7 @@ echo "Test 16 : une sonde tronquee refuse au lieu de rendre vert (#15091)"
   unset PS_OUTPUT
   mkdir -p "$TEST_DIR/state-16"
   export COURSIA_RUNNER_HOST_PROBE="0 0 0 95 40000"
-  rc="$(run_supervise 'start 1' 'test-prefix-16' "$TEST_DIR/state-16" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-16' "$TEST_DIR/state-16")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "ILLISIBLE"; then
     ok "sonde tronquee refusee (rc=$rc)"
@@ -2090,7 +2105,7 @@ echo "Test 41 : start refuse si work_cache_health.sh de l'image != checkout (#15
   mkdir -p "$TEST_DIR/state-29"
   STUB_IMG_HEALTH_SHA=e000000000000000000000000000000000000000000000000000000000000000e
   export STUB_IMG_HEALTH_SHA
-  rc="$(run_supervise 'start 1' 'test-prefix-29' "$TEST_DIR/state-29" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-29' "$TEST_DIR/state-29")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "work_cache_health.sh"; then
     ok "health script perime refuse, fichier FAUTIF nomme (rc=$rc)"
@@ -2114,7 +2129,7 @@ echo "Test 42 : bornes backoff invalides rejetees au demarrage (fail-closed)"
   mkdir -p "$TEST_DIR/state-30"
   neg_case() {
     local desc="$1" expect="$2"
-    rc="$(run_supervise 'start 1' 'test-prefix-30' "$TEST_DIR/state-30" 2>&1 | head -1 | sed 's/rc=//')"
+    rc="$(supervise_rc 'start 1' 'test-prefix-30' "$TEST_DIR/state-30")"
     err="$(cat "$TEST_DIR/last.err")"
     if [ "$rc" != "0" ] && [ "$rc" != "124" ] && echo "$err" | grep -q "$expect"; then
       ok "$desc : refuse (rc=$rc)"
@@ -2970,7 +2985,7 @@ echo "Test 46 : start sans epingle refuse en nommant le gesture manquant (#16134
   mkdir -p "$TEST_DIR/state-44"
   rm -rf "$TEST_DIR/pin-44-absente"
   export COURSIA_RUNNER_PINNED_CTX="$TEST_DIR/pin-44-absente"
-  rc="$(run_supervise 'start 1' 'test-prefix-44' "$TEST_DIR/state-44" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-44' "$TEST_DIR/state-44")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "absent du contexte epingle" && echo "$err" | grep -q "supervise.sh pin"; then
     ok "refus fail-closed, gesture nomme (rc=$rc)"
@@ -3072,7 +3087,8 @@ echo "Test 58 : budget memoire -- declare il gouverne, non declare il s'annonce"
   #     Un budget declare a 0 rend `used + want > 0` vrai des qu'un slot est
   #     demande : le message de refus nomme alors la valeur, en Mo et en Go.
   #     Avec le defaut 12, `start 1` passerait et le message n'existerait pas.
-  out="$(COURSIA_RUNNER_BUDGET_GB=0 run_supervise 'start 1' 'test-prefix-58b' "$TEST_DIR/state-58b" 2>&1)"
+  COURSIA_RUNNER_BUDGET_GB=0 run_supervise 'start 1' 'test-prefix-58b' "$TEST_DIR/state-58b" >"$TEST_DIR/last-supervise.out" 2>&1
+  out="$(cat "$TEST_DIR/last-supervise.out")"
   if echo "$out" | grep -q "COURSIA_RUNNER_BUDGET_GB=0"; then
     ok "budget declare : il gouverne -- un budget a 0 fait REFUSER le slot, et le refus nomme la valeur declaree"
   else

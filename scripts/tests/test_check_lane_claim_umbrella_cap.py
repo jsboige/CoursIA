@@ -6,17 +6,22 @@ Fichier NEUF, volontairement : #22457 et #22413 sont ouvertes sur
 cycle de rebase pour rien (le fichier source, lui, reste unique).
 
 Ce que ces tests tiennent, dans l'ordre de la demande (commentaire 6409466826
-de #22500) :
+de #22500) CORRIGEE par #26414 (decision ai-01 du 2026-11-13, option 1
+« filles existantes hors plafond, pas du tout ») :
 
-  - une fille d'EPIC dont une AUTRE fille a ete creee il y a moins de 7 jours
-    est BLOCKED, avec la cause `PLAFOND EPIC (#22500)` ;
+  - un claim pose directement sur l'EPIC obeit au plafond : la visite d'une
+    AUTRE lane de moins de 7 jours le bloque, avec la cause
+    `PLAFOND EPIC (#22500)` ;
+  - une fille d'EPIC n'est PLUS plafonnee -- servir un sous-grain DEJA OUVERT
+    est permis par #22500 point 2, la creation reste cappee cote picker ;
+    criteres de sortie : EPIC visite et fille creee il y a moins de 7 jours,
+    claim d'une autre lane sur la fille -> cause None ;
   - l'issue elle-meme ne compte pas comme sa propre visite (sinon le premier
     claim legitime de la semaine se bloquerait) ;
-  - un claim pose directement sur l'EPIC obeit a la meme regle ;
   - une classe `consolidation` est exemptee ;
-  - ZERO appel reseau quand l'issue n'a pas de parent (le cas courant) et
-    zero pool quand le parent n'est pas un EPIC -- la borne de cout du
-    coordinateur (274 s pour la commande des lanes) se mesure ici ;
+  - ZERO appel reseau pour toute issue qui n'est pas elle-meme un umbrella
+    (fille comprise) -- la borne de cout du coordinateur (274 s pour la
+    commande des lanes) se mesure ici ;
   - une lecture qui echoue ne bloque pas et se NOMME (pas de faux
     « plafond respecte ») ;
   - la cause rendue est le litteral de l'organe, pas une seconde ecriture.
@@ -76,12 +81,23 @@ def epic(number=SERRE100, *, labels=("EPIC",), comments=(), title=None):
                  labels=list(labels), comments=comments)
 
 
-def daughter(number=22617, *, parent=SERRE100, created_at=None):
-    """Une fille d'EPIC creee puis claimee dans la minute (forme #22609)."""
+def daughter(number=22617, *, parent=SERRE100, created_at=None,
+             claimed=True):
+    """Une fille d'EPIC creee puis claimee dans la minute (forme #22609).
+
+    ``claimed=False`` modelise le controle PRE-claim (le geste L898 qu'une
+    lane lance AVANT de poster son marqueur) : depuis l'arbitrage #22687 du
+    2026-11-08, la lane qui tient deja un claim actif sur N ne mesure plus le
+    plafond -- les controles negatifs « une NOUVELLE visite est bloquee » se
+    jouent donc sans claim preexistant.
+    """
+    comments = []
+    if claimed:
+        comments.append(comment("[CLAIMED] lane myia-ai-01:CoursIA-2 -- x",
+                                created_at or iso(hours=1)))
     return issue(number, title=f"[#{parent} - tranche {number}] sous-grain",
                  body=f"Part of #{parent}\n\nGrain: DEEP/lean -- lane x:y",
-                 comments=[comment("[CLAIMED] lane myia-ai-01:CoursIA-2 -- x",
-                                   created_at or iso(hours=1))])
+                 comments=comments)
 
 
 class Loaders:
@@ -135,16 +151,18 @@ def report(capsys) -> dict:
     return data
 
 
-# --- le scenario fondateur ---------------------------------------------------
+# --- le scenario fondateur, corrige par #26414 --------------------------------
 
-def test_daughter_of_epic_visited_this_week_is_blocked(capsys):
-    """#22609 (creee 01:45Z) visite #16334 -> le claim de #22617 est BLOCKED.
+def test_daughter_of_epic_visited_this_week_is_not_capped(capsys):
+    """#26414 (option 1, ai-01) : les filles existantes sont HORS plafond.
 
-    C'est le controle negatif exige par #22500 : cette assertion ECHOUE sur le
-    `check_lane_claim.py` d'avant le point 3 (le kwarg `epic_cap` n'existe pas,
-    et la fixture de fille n'a jamais ete plafonnee).
+    Avant #26414, une soeur creee il y a 2 jours bloquait le claim de #22617
+    avec la cause `PLAFOND EPIC (#22500)` -- c'etait le controle negatif exige
+    par #22500 point 3. Servir un sous-grain DEJA OUVERT est permis par #22500
+    point 2 : la cause est None et la mesure ne coute AUCUN appel (ni parent,
+    ni pool).
     """
-    payload = daughter(22617)
+    payload = daughter(22617, claimed=False)
     loaders = Loaders(
         parents={SERRE100: epic()},
         pool=[
@@ -153,52 +171,84 @@ def test_daughter_of_epic_visited_this_week_is_blocked(capsys):
         ],
     )
     rc = run(payload, loaders)
-    assert rc == 1
+    assert rc == 0
     data = report(capsys)
-    assert data["blocked"] is True
-    assert data["epic_visit_cap"].startswith(CAUSE_PREFIX)
-    assert "sous-issue creee il y a 2.0 j" in data["epic_visit_cap"]
-    assert data["epic_visit_cap_epic"] == SERRE100
+    assert data["blocked"] is False
+    assert data["epic_visit_cap"] is None
     assert data["epic_visit_cap_error"] is None
+    assert loaders.calls == []
+
+
+def test_exit_criterion_daughter_created_by_the_visit_claimed_elsewhere(capsys):
+    """Le critere de sortie de #26414 : meme le pire scenario ne plafonne plus.
+
+    EPIC visite il y a moins de 7 jours, fille creee PAR cette visite, et un
+    claim d'une AUTRE lane pose sur la fille : le controle de notre lane sur
+    la fille rend cause None. Le claim etranger est age de 3 jours (perime au
+    seuil de 48 h) pour que ce qui est verifie ici soit bien le plafond, pas
+    le blocage de lane.
+    """
+    payload = daughter(22617, claimed=False)
+    payload["comments"].append(comment(
+        f"[CLAIMED] lane {OTHER_LANE} -- tranche 22617", iso(days=3)))
+    loaders = Loaders(
+        parents={SERRE100: epic(comments=[comment(
+            f"[CLAIMED] lane {OTHER_LANE} -- visite de la semaine",
+            iso(days=2, hours=12))])},
+        pool=[pool_item(22609, f"[#{SERRE100} - tranche 22609] soeur",
+                        iso(days=2, hours=12))],
+    )
+    rc = run(payload, loaders, stale_threshold=48)
+    assert rc == 0
+    data = report(capsys)
+    assert data["epic_visit_cap"] is None
+    assert data["blocked"] is False
+    assert loaders.calls == []
 
 
 def test_cause_is_the_organ_literal_not_a_copy(capsys):
     """La cause est rendue par `umbrella_visit_cause`, pas re-ecrite ici.
 
     On la recalcule a la main avec l'organe, sur la charge que le gate lui a
-    passee : toute divergence (litteral change d'un cote seulement) rougit.
+    passee (depuis #26414, le seul sujet est l'EPIC N lui-meme) : toute
+    divergence (litteral change d'un cote seulement) rougit.
     """
-    loaders = Loaders(
-        parents={SERRE100: epic()},
-        pool=[pool_item(22609, f"[#{SERRE100} - a] a", iso(days=2))],
-    )
-    assert run(daughter(22617), loaders) == 1
+    payload = epic(comments=[comment(
+        f"[RELEASED] lane {OTHER_LANE} -- tranche rendue", iso(days=3))])
+    assert run(payload, Loaders(pool=[])) == 1
     got = report(capsys)["epic_visit_cap"]
     expected = pig.umbrella_visit_cause(
         {"number": SERRE100, "title": None, "labels": [{"name": "EPIC"}],
-         "klass": "umbrella", "last_claim_stamp": None,
-         "last_child_stamp": iso(days=2)},
+         "klass": "umbrella", "last_claim_stamp": iso(days=3),
+         "last_claim_marker": "RELEASED", "last_child_stamp": None},
         now=NOW,
     )
     assert got == expected
 
 
 def test_the_claimed_issue_is_not_its_own_visit(capsys):
-    """Sans cette exclusion, la 1re fille de la semaine se bloquerait elle-meme."""
-    payload = daughter(22617)
-    loaders = Loaders(
-        parents={SERRE100: epic()},
-        pool=[pool_item(22617, f"[#{SERRE100} - moi] moi", iso(minutes=1))],
-    )
+    """Sans cette exclusion, l'EPIC present dans son propre pool se bloquerait.
+
+    Depuis #26414 le sujet est N lui-meme : l'exclusion se joue sur le pool,
+    ou N apparait comme fille d'un EPIC plus grand creee il y a 1 minute.
+    """
+    payload = epic()
+    loaders = Loaders(pool=[pool_item(SERRE100, f"[#99000 - moi] moi",
+                                       iso(minutes=1))])
     rc = run(payload, loaders)
     assert rc == 0
     data = report(capsys)
     assert data["epic_visit_cap"] is None
     assert data["blocked"] is False
+    assert loaders.pool_calls == 1 and loaders.parent_calls == []
 
 
-def test_second_daughter_within_the_week_is_blocked_by_the_first(capsys):
-    """La deuxieme fille de la semaine voit la premiere : c'est tout le defaut."""
+def test_second_daughter_within_the_week_is_not_capped(capsys):
+    """Miroir du fondateur corrige : la deuxieme fille de la semaine passe.
+
+    Avant #26414 c'etait « la deuxieme fille voit la premiere : c'est tout le
+    defaut » ; la creation reste cappee cote PICKER, pas au claim des filles.
+    """
     loaders = Loaders(
         parents={SERRE100: epic()},
         pool=[
@@ -206,8 +256,71 @@ def test_second_daughter_within_the_week_is_blocked_by_the_first(capsys):
             pool_item(22620, f"[#{SERRE100} - b] b", iso(hours=2)),
         ],
     )
-    assert run(daughter(22620), loaders) == 1
-    assert report(capsys)["epic_visit_cap_epic"] == SERRE100
+    assert run(daughter(22620, claimed=False), loaders) == 0
+    data = report(capsys)
+    assert data["epic_visit_cap"] is None and data["blocked"] is False
+    assert loaders.calls == []
+
+
+def test_resume_of_own_active_claim_skips_the_cap(capsys):
+    """#22687 -- le cas mesure par ai-01 le 2026-11-08 sur #23499.
+
+    La lane tient un `[CLAIMED]` actif sur la fille depuis AVANT la visite qui
+    arme le plafond (claim 9 j, rendu de main sur l'EPIC 0,7 j) et repare sa
+    PR ouverte : le plafond SAUTE, cause nommee dans `epic_visit_cap_skipped`
+    -- la reprise d'un chantier ouvert n'est pas une NOUVELLE visite. Avant
+    l'arbitrage, ce cas rendait `BLOCKED: PLAFOND EPIC (#22500)` alors que le
+    rapport portait `my_active_claim: true`.
+    """
+    payload = daughter(23499, created_at=iso(days=9))
+    loaders = Loaders(
+        parents={SERRE100: epic(comments=[comment(
+            f"[RELEASED] lane {OTHER_LANE} -- tranche", iso(days=0.7))])},
+        pool=[],
+    )
+    rc = run(payload, loaders)
+    assert rc == 0
+    data = report(capsys)
+    assert data["blocked"] is False
+    assert data["my_active_claim"] is True
+    assert data["epic_visit_cap"] is None
+    assert "already holds an active claim" in data["epic_visit_cap_skipped"]
+    assert "not a new umbrella visit" in data["epic_visit_cap_skipped"]
+
+
+def test_picker_reducer_reads_the_cap_cause():
+    """#22687 constat 2 -- `_summarize_claim` (voie solo du picker).
+
+    Le producteur rend exit 1 avec la cause dans `epic_visit_cap` et RIEN
+    dans `blocking_lanes` (discipline de visite, pas collision de lane) :
+    sans lire la cle, le reducteur concluait FREE sur un rouge. La cause est
+    le litteral de l'organe, transmis tel quel derriere le prefixe.
+    """
+    out = json.dumps({
+        "issue": 22617, "blocking_lanes": [], "my_active_claim": False,
+        "stale_claims": [], "implicit_occupation": [],
+        "epic_visit_cap": "PLAFOND EPIC (#22500) : rendu de main sur "
+                          "l'EPIC il y a 0.7 j",
+    }) + "\nCLEAR-ish"
+    code, human = pig._summarize_claim(out, 1)
+    assert code == pig.CLAIM_CODE_BLOCKED
+    assert human.startswith("PLAFOND : PLAFOND EPIC (#22500)")
+    assert "0.7 j" in human
+
+
+def test_picker_reducer_stays_free_without_cap_cause():
+    """Miroir du precedent : sans cause de plafond, le verdict FREE tient.
+
+    La voie batch du picker reste `epic_cap=False` (#22630 possede le
+    tirage) : son resume ne porte jamais la cle, et ce cas doit rester FREE.
+    """
+    out = json.dumps({
+        "issue": 22617, "blocking_lanes": [], "my_active_claim": False,
+        "stale_claims": [], "implicit_occupation": [],
+        "epic_visit_cap": None,
+    }) + "\nCLEAR: no other lane claims #22617."
+    code, _ = pig._summarize_claim(out, 0)
+    assert code == pig.CLAIM_CODE_FREE
 
 
 # --- claim pose directement sur l'EPIC (demande explicite) -------------------
@@ -380,13 +493,15 @@ def test_claim_older_than_the_window_does_not_block(capsys):
 # --- exemptions --------------------------------------------------------------
 
 def test_consolidation_epic_is_exempt(capsys):
-    """Une consolidation REVIENT souvent : c'est son travail (#22500)."""
-    payload = daughter(22617, parent=13504)
-    loaders = Loaders(
-        parents={13504: epic(13504, labels=("EPIC", "consolidation"))},
-        pool=[pool_item(22609, "[#13504 - a] a", iso(hours=2))],
-    )
-    rc = run(payload, loaders)
+    """Une consolidation REVIENT souvent : c'est son travail (#22500).
+
+    Depuis #26414 le sujet est N lui-meme : l'exemption se joue sur un claim
+    pose directement sur l'EPIC de consolidation.
+    """
+    payload = epic(13504, labels=("EPIC", "consolidation"), comments=[comment(
+        f"[CLAIMED] lane {OTHER_LANE} -- retour de consolidation", iso(days=3))])
+    loaders = Loaders(pool=[])
+    rc = run(payload, loaders, stale_threshold=48)
     assert rc == 0
     data = report(capsys)
     assert data["epic_visit_cap"] is None
@@ -394,16 +509,20 @@ def test_consolidation_epic_is_exempt(capsys):
     assert loaders.pool_calls == 0
 
 
-def test_parent_that_is_not_an_epic_costs_no_pool(capsys):
-    payload = daughter(22617, parent=22000)
+def test_a_daughter_never_loads_its_parent(capsys):
+    """#26414 : plus AUCUN `gh issue view` de parent, meme pas pour verifier.
+
+    Le loader parent de la fixture LEVE s'il etait appele : `calls == []` est
+    la preuve que la fille ne paie rien du tout.
+    """
+    payload = daughter(22617, parent=22000, claimed=False)
     loaders = Loaders(parents={22000: issue(22000, title="une issue ordinaire")})
     rc = run(payload, loaders)
     assert rc == 0
     data = report(capsys)
     assert data["epic_visit_cap"] is None
-    assert loaders.parent_calls == [22000]
-    assert loaders.pool_calls == 0
-    assert data["epic_visit_cap_calls"] == {"parent_payloads": 1, "pool": 0}
+    assert loaders.calls == []
+    assert data["epic_visit_cap_calls"] == {"parent_payloads": 0, "pool": 0}
 
 
 # --- cout ------------------------------------------------------------------
@@ -420,13 +539,14 @@ def test_issue_without_parent_costs_zero_call(capsys):
 
 
 def test_cost_is_reported_for_the_capped_case(capsys):
-    """La borne publiee : 1 lecture de parent + 1 pool, pas davantage."""
-    loaders = Loaders(parents={SERRE100: epic()},
-                      pool=[pool_item(22609, f"[#{SERRE100} - a] a", iso(days=1))])
-    assert run(daughter(22617), loaders) == 1
+    """La borne publiee : 1 pool, aucun parent (#26414), pas davantage."""
+    loaders = Loaders(pool=[])
+    assert run(epic(comments=[comment(
+        f"[CLAIMED] lane {OTHER_LANE} -- tranche", iso(days=3))]), loaders,
+        stale_threshold=48) == 1
     assert report(capsys)["epic_visit_cap_calls"] == {
-        "parent_payloads": 1, "pool": 1}
-    assert loaders.parent_calls == [SERRE100]
+        "parent_payloads": 0, "pool": 1}
+    assert loaders.parent_calls == []
     assert loaders.pool_calls == 1
 
 
@@ -452,9 +572,11 @@ def test_another_lane_blocking_skips_the_cap_entirely(capsys):
 # --- echec de lecture : nomme, jamais un faux « respecte » ------------------
 
 def test_unreadable_pool_does_not_block_and_is_named(capsys):
-    loaders = Loaders(parents={SERRE100: epic()}, pool=[], pool_error=(
+    """L'EPIC n'a AUCUN marqueur : la seule visite possible viendrait du pool
+    (sous-issues creees) -- c'est elle qui est illisible, et elle ne bloque pas."""
+    loaders = Loaders(pool=[], pool_error=(
         "GraphQL indisponible (RuntimeError), REST egalement indisponible"))
-    rc = run(daughter(22617), loaders)
+    rc = run(epic(), loaders)
     assert rc == 0
     data = report(capsys)
     assert data["epic_visit_cap"] is None
@@ -462,16 +584,21 @@ def test_unreadable_pool_does_not_block_and_is_named(capsys):
     assert data["blocked"] is False
 
 
-def test_unreadable_parent_does_not_block_and_is_named(capsys):
+def test_parents_are_never_read_anymore(capsys):
+    """#26414 -- le legs « parent illisible » ne se produit plus : aucun parent
+    n'est charge, donc aucun echec de lecture parent n'existe."""
     class Broken(Loaders):
         def parent(self, number):
             raise RuntimeError("gh issue view 16334 exit 1")
 
-    rc = run(daughter(22617), Broken())
+    loaders = Broken()
+    rc = run(daughter(22617, claimed=False), loaders)
     data = report(capsys)
     assert rc == 0
     assert data["epic_visit_cap"] is None
-    assert "16334" in data["epic_visit_cap_error"]
+    assert data["epic_visit_cap_error"] is None
+    assert loaders.calls == []  # le loader parent n'est jamais appele
+    assert data["epic_visit_cap_calls"] == {"parent_payloads": 0, "pool": 0}
 
 
 # --- le gate est OFF par defaut, et la CLI l'allume -------------------------
@@ -487,19 +614,23 @@ def test_cap_is_off_by_default_so_direct_calls_stay_offline(capsys):
 
 
 def test_cli_check_mode_wires_the_cap(monkeypatch, capsys):
-    """Le geste L898 (`check_lane_claim.py N --lane L`) porte vraiment le gate."""
+    """Le geste L898 (`check_lane_claim.py N --lane L`) porte vraiment le gate.
+
+    Depuis #26414, le seul cas plafonne est un claim sur l'EPIC lui-meme : la
+    CLI est donc eprouvee SUR l'EPIC (visite d'une autre lane il y a 2 jours,
+    perimee au seuil de 48 h pour isoler le plafond).
+    """
     now = dt.datetime.now(dt.UTC)
     def stamp(**delta):
         return (now - dt.timedelta(**delta)).strftime("%Y-%m-%dT%H:%M:%SZ")
-    payload = issue(22617, title=f"[#{SERRE100} - tranche] sous-grain",
-                    body=f"Part of #{SERRE100}")
-    pool = [pool_item(22609, f"[#{SERRE100} - a] a", stamp(days=2))]
+    payload = epic(comments=[comment(
+        f"[CLAIMED] lane {OTHER_LANE} -- tranche", stamp(days=2))])
     monkeypatch.setattr(clc, "_gh_issue_comments", lambda issue: payload)
     monkeypatch.setattr(clc, "_epic_cap_parent_payload", lambda n: epic())
-    monkeypatch.setattr(clc, "_epic_cap_pool", lambda: (pool, None))
+    monkeypatch.setattr(clc, "_epic_cap_pool", lambda: ([], None))
     monkeypatch.setattr(clc, "_find_open_prs_referencing_issue",
                         lambda *a, **k: [])
-    rc = clc.main(["22617", "--lane", "myia-ai-01:CoursIA-2"])
+    rc = clc.main([str(SERRE100), "--lane", "myia-ai-01:CoursIA-2"])
     assert rc == 1
     data = report(capsys)
     assert data["epic_visit_cap"].startswith(CAUSE_PREFIX)

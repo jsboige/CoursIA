@@ -1,13 +1,13 @@
 name: Notebook Cell ID Ratchet
 
 on:
-  pull_request:
-    paths:
-      - '**.ipynb'
-      - 'scripts/notebook_tools/check_cell_id_invalid_ratchet.py'
-      - 'scripts/notebook_tools/fix_cell_ids.py'
-      - 'scripts/notebook_tools/tests/test_cell_id_schema.py'
-      - '.github/workflows/notebook-cell-id-ratchet.yml'
+  # ABSORBE PAR LA VOIE RAPIDE sur `pull_request` (#25510, tranche T-A du
+  # 2026-11-12) : le verdict est porte par `always-on-guards.yml` (job
+  # `always-on-guards`, garde anti-fork conservee), dans UN checkout partage.
+  # Le nom du job ("Cell ID ratchet (base vs PR)") est deja byte-identique au
+  # nom du garde du registre : le `check_absorbed_check_run_identity.py`
+  # VERIFIE donc ce garde au lieu de l'exempter. Les `paths:` d'origine
+  # vivent dans `scripts/ci/fast_lane_registry.py` (TRANCHE42).
   workflow_dispatch:
     inputs:
       base_ref:
@@ -29,9 +29,19 @@ jobs:
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
     steps:
+      # fetch-depth: 0 + blob:none : le ratchet compare la base a HEAD par
+      # un diff 3-points (`base...HEAD`), qui lit le merge-base -- l'historique
+      # COMPLET est donc requis, `fetch-depth: 1` casserait le job. Le filtre
+      # `blob:none` enleve le gros (les blobs de l'historique et les 50 blobs
+      # de plus de 5 Mio) sans toucher le graphe de commits ; les blobs
+      # concernes (carnets modifies) sont alors charges a la demande.
+      # Meme forme que les 89 autres gardes git-aware du depot
+      # (cf. `always-on-guards.yml` l. 238) ; dernier site sans filtre du
+      # depot (#26383).
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          filter: blob:none
 
       - name: Set up Python
         uses: actions/setup-python@v5

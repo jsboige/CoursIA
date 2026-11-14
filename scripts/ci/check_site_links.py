@@ -125,6 +125,23 @@ class CheckResult:
         }
 
 
+def _same_origin(left: urllib.parse.SplitResult,
+                 right: urllib.parse.SplitResult) -> bool:
+    """Compare les origines HTTP en normalisant hôte et port par défaut."""
+    if left.scheme.lower() not in ("http", "https"):
+        return False
+    if left.scheme.lower() != right.scheme.lower():
+        return False
+    try:
+        default_port = 443 if left.scheme.lower() == "https" else 80
+        left_port = default_port if left.port is None else left.port
+        right_port = default_port if right.port is None else right.port
+        return (left.hostname == right.hostname and left.hostname is not None
+                and left_port == right_port)
+    except ValueError:
+        return False
+
+
 def extract_internal_hrefs(html: str, page_url: str) -> list[str]:
     """Extrait les href internes d'une page, resolus en URLs absolues.
 
@@ -133,7 +150,6 @@ def extract_internal_hrefs(html: str, page_url: str) -> list[str]:
     est deduplique et trie pour un rapport stable.
     """
     origin = urllib.parse.urlsplit(page_url)
-    origin_root = f"{origin.scheme}://{origin.netloc}"
     found: set[str] = set()
     for raw in _HREF_RE.findall(html):
         href = raw.strip()
@@ -143,7 +159,7 @@ def extract_internal_hrefs(html: str, page_url: str) -> list[str]:
             continue
         absolute = urllib.parse.urljoin(page_url, href)
         split = urllib.parse.urlsplit(absolute)
-        if f"{split.scheme}://{split.netloc}" != origin_root:
+        if not _same_origin(split, origin):
             continue
         # Fragment et query retires : on teste la ressource, pas l'ancre.
         found.add(urllib.parse.urlunsplit(
@@ -231,18 +247,17 @@ def run_check(base_url: str = DEFAULT_BASE_URL,
         # passer la seconde moitie. Detectee hors plafond : aucun appel HTTP.
         for href in _HREF_RE.findall(html):
             href = href.strip()
-            if href.endswith(".ipynb") and not href.startswith(
-                    ("http://", "https://", "#")):
-                absolute = urllib.parse.urljoin(page_url, href)
-                split = urllib.parse.urlsplit(absolute)
-                origin = urllib.parse.urlsplit(page_url)
-                same_origin = (f"{split.scheme}://{split.netloc}"
-                               == f"{origin.scheme}://{origin.netloc}")
-                if same_origin:
-                    result.raw_ipynb.append({
-                        "href": href,
-                        "source_page": page_url,
-                    })
+            if not href or href.startswith("#"):
+                continue
+            absolute = urllib.parse.urljoin(page_url, href)
+            split = urllib.parse.urlsplit(absolute)
+            origin = urllib.parse.urlsplit(page_url)
+            if (_same_origin(split, origin)
+                    and urllib.parse.unquote(split.path).endswith(".ipynb")):
+                result.raw_ipynb.append({
+                    "href": href,
+                    "source_page": page_url,
+                })
         for url in extract_internal_hrefs(html, page_url):
             links.setdefault(url, set()).add(page_url)
 

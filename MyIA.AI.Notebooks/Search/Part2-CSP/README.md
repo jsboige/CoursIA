@@ -69,9 +69,9 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 
 ### Parité Python ⇄ .NET
 
-Les neuf notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. CSP-10 (SMT Z3) est en **Python seul** — c'est le pont CP↔SMT de la partie, sans jumeau .NET. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
+Les dix notebooks de cette partie existent en **binôme bilingue** : une version Python et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. CSP-10 utilise Z3 des deux côtés pour illustrer le pont CP↔SMT. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
 
-| # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
+| # | Python | .NET (C#) | Solveur .NET |
 |---|--------------------------|-----------|--------------|
 | 1 | [CSP-1-Fundamentals](CSP-1-Fundamentals.ipynb) | [CSP-1-Fundamentals-CSharp](CSP-1-Fundamentals-CSharp.ipynb) | Choco-solver via IKVM |
 | 2 | [CSP-2-Consistency](CSP-2-Consistency.ipynb) | [CSP-2-Consistency-CSharp](CSP-2-Consistency-CSharp.ipynb) | Choco-solver via IKVM (propagation native) |
@@ -82,6 +82,7 @@ Les neuf notebooks de cette partie existent en **binôme bilingue** : une versio
 | 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | [CSP-7-Soft-CSharp](CSP-7-Soft-CSharp.ipynb) | Choco-solver via IKVM (réification `reifyWith` / `ifThen`) |
 | 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | [CSP-8-Temporal-CSharp](CSP-8-Temporal-CSharp.ipynb) | OR-Tools CP-SAT natif (IntervalVar temporels) |
 | 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | [CSP-9-Distributed-CSharp](CSP-9-Distributed-CSharp.ipynb) | ABT multi-agent (port from scratch, Yokoo 1992) |
+| 10 | [CSP-10-Optimisation-Z3](CSP-10-Optimisation-Z3.ipynb) | [CSP-10-Optimisation-Z3-CSharp](CSP-10-Optimisation-Z3-CSharp.ipynb) | Microsoft.Z3 natif (Optimize et Solver) |
 
 > **Quel solveur .NET pour quel terrain ?** CSP-4 (ordonnancement `IntervalVar`, `NoOverlap`, `Cumulative`), CSP-6 (Lazy Clause Generation, CP+SAT) et CSP-8 (intervalles temporels) sont routés vers **OR-Tools CP-SAT natif** — le terrain où CP-SAT excelle, cf. *vrai outil SOTA pour le problème* (#3801). Les binômes 1, 2, 3, 5 et 7 illustrent **Choco via IKVM** comme levier de parité .NET pour une lib Java — y compris `binPacking`, contrainte globale dont la propagation surpasse la linéarisation BoolVar manuelle. CSP-9 (DisCSP) n'a pas de solveur off-the-shelf : l'algorithme ABT (Yokoo 1992) y est porté **from scratch** en C# multi-agent.
 
@@ -115,7 +116,7 @@ flowchart LR
 
 Les flèches du schéma indiquent des **prérequis conseillés**, pas la chaîne
 linéaire de navigation. Les versions C# correspondantes sont accessibles dans le
-tableau de parité ; CSP-10 existe uniquement en Python.
+tableau de parité, CSP-10 compris.
 
 Les carnets présupposent aussi les bases de la Partie 1 : formalisation en espace
 d'états ([Search-1](../Part1-Foundations/Search-01-StateSpace.ipynb)) et

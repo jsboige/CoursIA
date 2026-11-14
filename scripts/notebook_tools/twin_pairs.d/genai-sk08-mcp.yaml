@@ -1,0 +1,11 @@
+- name: "GenAI SK08 MCP"
+  family: GenAI/SemanticKernel
+  python: MyIA.AI.Notebooks/GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/SemanticKernel/08-SemanticKernel-MCP-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Python utilise FastMCP et ClientSession du SDK MCP avec Semantic Kernel MCPStdioPlugin ; C# utilise ModelContextProtocol et Microsoft.SemanticKernel natifs, McpClient et AsKernelFunction, avec vrai transport stdio."
+  known_differences:
+    - "Python utilise Pydantic pour les schémas contraints ; C# contrôle les bornes dans les fonctions et fournit outputSchema et structuredContent grâce aux records et à UseStructuredContent."
+    - "Le contrôle de chemin C# est lexical et ne résout pas les liens symboliques, contrairement à Path.resolve Python ; il ne constitue pas une frontière de sécurité."
+    - "Le Python montre un export SK et une invocation directe ; le C# ajoute un aller-retour MCP réel sur stdio via AsAIFunctions et McpServerTool.Create. La fonction SK prix_ttc conserve la formule source de prix après remise sans TVA. Aucun modèle n'est appelé ; routage déterministe."

@@ -1,0 +1,10 @@
+- name: "Search-05b NaturalEvolutionStrategies"
+  family: Search/Part1-Foundations
+  python: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part1-Foundations/Search-05b-NaturalEvolutionStrategies-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les démonstrations pédagogiques des gradients sont explicites dans les deux langages ; Python utilise NumPy/SciPy et cma, C# appelle les distributions natives xNES, SNES et CMA-ES de MetaGeneticSharp et GeneticSharp. Les variantes CMA-ES et les générateurs aléatoires diffèrent."
+  known_differences:
+    - "Les deux carnets couvrent gradients, rangs, transformation monotone, banc d'ellipsoïdes, lien au premier ordre et trois exercices. Le C# utilise un ellipsoïde translaté et une rotation .NET reproductible distincte de la matrice NumPy."
+    - "C# emploie les distributions MetaGeneticSharp épinglées par le sous-module et des SVG statiques ; Python utilise NumPy, SciPy, matplotlib et cma. Les résultats numériques ne sont pas identiques."
