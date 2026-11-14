@@ -33,7 +33,11 @@ class while two instances of it were still on screen.
 
   OK              the rollup is not FAILURE, or the failure is earned
                   (at least one non-green leg really failed)
-  CANCELLED_ONLY  FAILURE, and every non-green leg is a cancellation  <- offender
+  CANCELLED_ONLY  FAILURE, and every non-green leg is a cancellation of a job
+                  that NEVER STARTED                              <- offender
+  INFRA_ONLY      FAILURE, and every non-green leg is a cancellation, at least
+                  one of which RAN. A job killed at its timeout is a real red:
+                  it is named, and it is NOT a borrowed one.
   PENDING         the rollup has not settled
   UNKNOWN         FAILURE with no readable leg, or a truncated leg list
 
@@ -41,6 +45,26 @@ Truncation is fail-closed on the accusation: a commit whose leg list hit the
 100-context page limit is NEVER reported as an offender, because a real failure
 could be sitting just past the page. Silence from truncation is not a clean bill
 either -- UNKNOWN is counted and printed.
+
+## Two cancellations, one rendering
+
+`cancelled` covers two events the UI paints identically:
+
+* the job **never started** -- concurrency replaced it while it queued. It spent
+  no runner and measured nothing: the red cross is BORROWED, #22088's class;
+* the job **started**, held a runner, and was stopped before concluding. GitHub
+  renders `timeout-minutes` as `cancelled`, so a build that hangs to its ceiling
+  dies looking exactly like a queue supersession. That is an INFRA death -- a
+  real red -- and calling it borrowed EXONERATES it.
+
+Measured on 2026-11-13, on the two offenders of the day and on their
+successors: five `Build Quarto site` jobs were killed at exactly 60 min in the
+last 25 push runs of `.github/workflows/quarto-pages-deploy.yml`
+(`timeout-minutes: 60`), while the runs that DID conclude took 43 and 52 min of
+job time. The comment beside that ceiling still documents a render of 19-31
+min, which is the figure the ceiling was chosen on -- the render has since
+roughly doubled and now grazes it. Counting the kills as borrowed declared
+`main` clean while a job burned an hour of runner, five times.
 
 Run: python scripts/ci/check_cancelled_only_commits.py --commits 20
 """
@@ -51,7 +75,11 @@ import argparse
 import json
 import subprocess
 import sys
+from datetime import datetime
 
+#: 0 = nothing to report, 1 = the report has findings (a borrowed red OR an
+#: infra death), 2 = the instrument itself failed. The two findings are counted
+#: and printed separately; they are not the same verdict and never were.
 EXIT_CLEAN, EXIT_OFFENDERS, EXIT_BROKEN = 0, 1, 2
 
 # Conclusions that do not make a commit red on their own. `SKIPPED` is the
@@ -59,6 +87,16 @@ EXIT_CLEAN, EXIT_OFFENDERS, EXIT_BROKEN = 0, 1, 2
 # to vote. Both are legitimately `None` on a commit whose run never started.
 NON_GREEN_IGNORED = {"SUCCESS", "SKIPPED", "NEUTRAL", None, "None", ""}
 CANCELLED = {"CANCELLED", "cancelled"}
+
+#: A cancelled leg that held a runner at least this long did more than lose its
+#: place in the queue: it ran, and something stopped it. Below the threshold the
+#: job was still waiting when concurrency replaced it -- the borrowed red.
+#: Two minutes is two orders of magnitude below the measured kills (60 min) and
+#: above the seconds a checkout needs, so no plausible supersession lands above
+#: it while a hung build cannot land below.
+STARTED_GRACE_SECONDS = 120
+
+SUPERSEDED, KILLED = "SUPERSEDED", "KILLED"
 
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_REF = "refs/heads/main"
@@ -75,7 +113,7 @@ HISTORY_FIELDS = """
                   pageInfo { hasNextPage }
                   nodes {
                     __typename
-                    ... on CheckRun { name conclusion }
+                    ... on CheckRun { name conclusion startedAt completedAt }
                     ... on StatusContext { context state }
                   }
                 }
@@ -101,7 +139,7 @@ HISTORY_ONE = """
                   pageInfo { hasNextPage }
                   nodes {
                     __typename
-                    ... on CheckRun { name conclusion }
+                    ... on CheckRun { name conclusion startedAt completedAt }
                     ... on StatusContext { context state }
                   }
                 }
@@ -124,12 +162,74 @@ def leg_conclusion(node):
     return node.get("conclusion") or node.get("state")
 
 
-def classify(rollup_state, legs, truncated=False):
-    """Verdict for one commit. `legs` is an iterable of (name, conclusion).
+def leg_fields(leg):
+    """`(name, conclusion[, started[, completed]])` -> the four fields.
 
-    A red cross is EARNED when at least one non-green leg really failed; it is
-    BORROWED when every non-green leg is a cancellation. That distinction is the
-    whole point of the issue: the two are pixel-identical in the UI.
+    The two-field form is the historical one and stays accepted: a legacy
+    status context carries no timing, and a caller with nothing to say about
+    duration must still be able to classify. A leg without timing reads as a
+    queue supersession, which is the only reading available when the API is
+    silent.
+    """
+    name, conclusion = leg[0], leg[1]
+    started = leg[2] if len(leg) > 2 else None
+    completed = leg[3] if len(leg) > 3 else None
+    return name, conclusion, started, completed
+
+
+def _seconds_between(started, completed):
+    """Wall-clock seconds between two GitHub timestamps, or None."""
+
+    def parse(value):
+        if not value:
+            return None
+        try:
+            return datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    first, last = parse(started), parse(completed)
+    if first is None or last is None:
+        return None
+    return (last - first).total_seconds()
+
+
+def cancelled_kind(started, completed):
+    """SUPERSEDED (never got a runner) or KILLED (ran, then was stopped).
+
+    A leg that started and whose end is unreadable is KILLED: the doubt must
+    never clear a job that held a runner. Clearing it is exactly the
+    exoneration this split exists to stop.
+    """
+    if not started:
+        return SUPERSEDED
+    seconds = _seconds_between(started, completed)
+    if seconds is None:
+        return KILLED
+    return KILLED if seconds >= STARTED_GRACE_SECONDS else SUPERSEDED
+
+
+def _leg_evidence(name, started, completed):
+    """`Name=KILLED(60 min)` -- the fact behind the verdict, for the report."""
+    kind = cancelled_kind(started, completed)
+    seconds = _seconds_between(started, completed)
+    if seconds is None:
+        return f"{name}={kind}"
+    return f"{name}={kind}({seconds / 60:.0f} min)"
+
+
+def classify(rollup_state, legs, truncated=False):
+    """Verdict for one commit.
+
+    `legs` yields `(name, conclusion)` or `(name, conclusion, started,
+    completed)`; the timing fields carry the #25181 distinction between a job
+    that never started and one that ran to its ceiling.
+
+    A red cross is EARNED when at least one non-green leg really failed. It is
+    BORROWED when every non-green leg is a supersession -- nothing measured,
+    nothing spent. It is INFRA when the only cancellations are jobs that ran:
+    a runner was held and the commit was never judged, which is a real red
+    wearing the same pixel as the borrowed one.
     """
     if rollup_state in (None, "", "SUCCESS"):
         return "OK"
@@ -138,16 +238,22 @@ def classify(rollup_state, legs, truncated=False):
     if rollup_state != "FAILURE":
         return "UNKNOWN"
 
-    non_green = [(n, c) for n, c in legs if c not in NON_GREEN_IGNORED]
+    non_green = [f for f in (leg_fields(leg) for leg in legs)
+                 if f[1] not in NON_GREEN_IGNORED]
     if not non_green:
         # FAILURE with nothing readable: a conclusion we do not model, not a
         # clean commit. Never accused, never blessed.
         return "UNKNOWN"
-    if all(c in CANCELLED for _, c in non_green):
+    if all(conclusion in CANCELLED for _, conclusion, _, _ in non_green):
         # The accusation is the only claim truncation can corrupt: a real
         # failure could be sitting past the page. An earned failure that is
         # already visible stays earned whatever the rest of the list holds.
-        return "UNKNOWN" if truncated else "CANCELLED_ONLY"
+        if truncated:
+            return "UNKNOWN"
+        # #25181: a cancellation that held a runner is not an exoneration.
+        kinds = {cancelled_kind(started, completed)
+                 for _, _, started, completed in non_green}
+        return "INFRA_ONLY" if KILLED in kinds else "CANCELLED_ONLY"
     return "OK"
 
 
@@ -157,7 +263,10 @@ def analyse(commit):
     contexts = rollup.get("contexts") or {}
     nodes = contexts.get("nodes") or []
     truncated = bool((contexts.get("pageInfo") or {}).get("hasNextPage"))
-    legs = [(leg_name(n), leg_conclusion(n)) for n in nodes]
+    legs = [
+        (leg_name(n), leg_conclusion(n), n.get("startedAt"), n.get("completedAt"))
+        for n in nodes
+    ]
     verdict = classify(rollup.get("state"), legs, truncated=truncated)
     return {
         "oid": commit.get("oid", ""),
@@ -166,7 +275,18 @@ def analyse(commit):
         "rollup": rollup.get("state"),
         "verdict": verdict,
         "truncated": truncated,
-        "non_green": [f"{n}={c}" for n, c in legs if c not in NON_GREEN_IGNORED],
+        "non_green": [
+            f"{name}={conclusion}"
+            for name, conclusion, _, _ in legs
+            if conclusion not in NON_GREEN_IGNORED
+        ],
+        # #25181: the fact behind each cancellation, so a KILLED leg cannot be
+        # read as a supersession once it reaches the report.
+        "cancelled_evidence": [
+            _leg_evidence(name, started, completed)
+            for name, conclusion, started, completed in legs
+            if conclusion in CANCELLED
+        ],
     }
 
 
@@ -290,6 +410,7 @@ def main(argv=None):
 
     rows = [analyse(n) for n in nodes]
     offenders = [r for r in rows if r["verdict"] == "CANCELLED_ONLY"]
+    infra = [r for r in rows if r["verdict"] == "INFRA_ONLY"]
     unknown = [r for r in rows if r["verdict"] == "UNKNOWN"]
     earned = [r for r in rows if r["verdict"] == "OK" and r["rollup"] == "FAILURE"]
 
@@ -300,6 +421,7 @@ def main(argv=None):
             "after": args.after,
             "window": len(rows),
             "offenders": [r["oid"] for r in offenders],
+            "infra_deaths": [r["oid"] for r in infra],
             "unknown": [r["oid"] for r in unknown],
             "earned_failure": [r["oid"] for r in earned],
             "commits": rows,
@@ -315,13 +437,17 @@ def main(argv=None):
             )
         print()
         print(f"rouges MERITES (une jambe a vraiment echoue) : {len(earned)}")
-        print(f"rouges EMPRUNTES (annulation seule)          : {len(offenders)}")
+        print(f"rouges EMPRUNTES (annule avant demarrage)    : {len(offenders)}")
+        print(f"rouges INFRA (job demarre, tue avant fin)    : {len(infra)}")
         print(f"indetermines (troncature/illisible)          : {len(unknown)}")
         for r in offenders:
             print(f"  EMPRUNTE {r['oid'][:10]}  {r['headline'][:60]}")
             print(f"            {', '.join(r['non_green'][:5])}")
+        for r in infra:
+            print(f"  INFRA    {r['oid'][:10]}  {r['headline'][:60]}")
+            print(f"            {', '.join(r['cancelled_evidence'][:5])}")
 
-    return EXIT_OFFENDERS if offenders else EXIT_CLEAN
+    return EXIT_OFFENDERS if (offenders or infra) else EXIT_CLEAN
 
 
 if __name__ == "__main__":

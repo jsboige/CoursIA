@@ -110,7 +110,173 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
 
 REPO = "jsboige/CoursIA"
 
-BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
+# Les deux orthographes d'un meme bot : la lecture normalisee (voir
+# ``_author_login``) produit la forme suffixee ``[bot]`` des qu'elle dispose
+# du type de l'acteur (REST ``type`` / GraphQL ``__typename``) ; la forme nue
+# reste celle des payloads gh-json sans type. Les DEUX sont filtrees : sinon
+# la normalisation ferait passer un bot REST deja connu du filtre.
+BOT_LOGINS = {
+    "github-actions", "github-actions[bot]",
+    "codecov", "codecov[bot]",
+    "dependabot", "dependabot[bot]",
+    "copilot-pull-request-reviewer", "copilot-pull-request-reviewer[bot]",
+}
+
+
+# --- Identites App : extraction normalisee (#17437) ----------------------------
+#
+# ``gh pr view --json comments,reviews`` rend l'auteur SANS champ de type
+# (mesure 2026-11-12 : ``{"login": ...}`` seul). La preuve d'identite d'une
+# ligne est le TYPE DE LA LIGNE ELLE-MEME (relecture ai-01 du 2026-11-12 :
+# une sonde ``users/<login>[bot]`` prouve que l'App EXISTE, pas que
+# l'AUTEUR de la ligne est l'App — un compte UTILISATEUR homonyme du slug
+# serait confondu avec elle). Les surfaces typees — REST ``user.type``,
+# GraphQL ``author.__typename`` via ``_typed_author_surfaces`` — portent
+# cette preuve par ligne ; ``gh_identity.normalize_author_login`` en
+# reconstruit le suffixe. Une ligne nue reste nue : par simple inegalite de
+# chaine, elle echoue toute borne d'auteur App (LIFT_OVERRIDE_LOGINS,
+# BOT_LOGINS suffixe). Le login humain nu reste canonique : orthographe
+# exacte, aucune reconstruction.
+
+
+def _author_login(row: object, key: str = "author") -> str:
+    """Login d'auteur d'une ligne, en orthographe REST (App suffixee).
+
+    #17437 : LE point de passage des extractions d'auteur du module — la
+    forme canonique unique, celle de ``gh_identity`` (source unique, jamais
+    recopiee), SANS sonde : la preuve de type vit dans la ligne (type ou
+    ``__typename`` transporte par ``_typed_author_surfaces``), jamais dans
+    une resolution globale par login. Toute comparaison d'auteur
+    (LIFT_OVERRIDE_LOGINS, PERSONA_ALIAS_LOGINS, BOT_LOGINS, bornes
+    d'auteur #11145/#12836) se fait sur cette forme.
+    """
+    if not isinstance(row, dict):
+        return ""
+    author = row.get(key)
+    if not isinstance(author, dict):
+        return ""
+    return gh_identity.normalize_author_login(author)
+
+
+def _typed_author_surfaces(pr: int) -> dict[str, object]:
+    """Comments, reviews ET auteur de la PR, type par ligne.
+
+    #17437 (relecture ai-01 2026-11-12) : ``gh pr view --json
+    comments,reviews`` rend l'auteur sans champ de type. La preuve
+    d'identite se prend sur une surface qui transporte le type : UNE
+    requete GraphQL rend les deux connexions avec
+    ``author{__typename login}`` — le suffixe ``[bot]`` s'y reconstruit
+    par ``gh_identity``, et une forme nue typee ``User`` reste
+    distinguishable d'une App homonyme. Les clefs rendues remplacent les
+    surfaces correspondantes du payload ``pr view`` (memes champs :
+    ``author``/``body``/``createdAt``, ``author``/``body``/``submittedAt``/
+    ``state``).
+
+    #17437 (relecture ai-01 2026-11-13) : la requete PAGINE (``after`` +
+    ``pageInfo``). Sans pagination, ``first:100`` rendait les 100 lignes
+    les PLUS ANCIENNES et ``data.update`` remplacait la surface CLI
+    COMPLETE : sur une PR de plus de 100 commentaires, une reserve recente
+    sortait de l'analyse et B.0 rendait rc=0 — la porte s'ouvrait. Le
+    plafond dur (50 pages = 5000 lignes par surface) rend un dict vide
+    plutot qu'une surface partielle : on retombe alors sur les surfaces CLI
+    non typees, ou une forme nue App echoue les bornes d'auteur —
+    fail-closed dans tous les cas, jamais un rc=0 fabrique.
+
+    #17437 (relecture ai-01 2026-11-13, second point) : la PR porte aussi
+    son AUTEUR type (``pullRequest.author{__typename login}``, cle
+    ``author`` du dict rendu). Sans lui, ``pr_author`` se lisait sur la
+    surface CLI non typee, qui rend une App SANS suffixe ``[bot]`` : une PR
+    ouverte sous l'App et levee par la meme App ne voyaient jamais
+    l'egalite ``lift_author == pr_author``, et la trappe #13495 restait
+    ouverte. La cle ``author`` ecrase celle du payload CLI, et
+    ``_author_login`` en fait la forme canonique REST.
+
+    Echec (gh muet, payload inattendu, plafond atteint) : dict vide — les
+    surfaces CLI non typees restent alors lues telles quelles, ou toute
+    forme nue App echoue les bornes d'auteur : fail-closed, jamais un crash
+    du gate.
+    """
+    query = """
+    query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String){
+      repository(owner:$owner,name:$repo){
+        pullRequest(number:$n){
+          author{__typename login}
+          comments(first:100,after:$cAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{author{__typename login} body createdAt}}
+          reviews(first:100,after:$rAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{author{__typename login} body submittedAt state}}
+        }
+      }
+    }"""
+    owner, name = REPO.split("/")
+    comments: list[dict] = []
+    reviews: list[dict] = []
+    pr_author: dict = {}
+    c_after: str | None = None
+    r_after: str | None = None
+    for _ in range(50):
+        args = [
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+        ]
+        if c_after:
+            args += ["-F", f"cAfter={c_after}"]
+        if r_after:
+            args += ["-F", f"rAfter={r_after}"]
+        try:
+            data = gh_json(args)
+            node = data["data"]["repository"]["pullRequest"]
+            c_conn = node["comments"]
+            r_conn = node["reviews"]
+        except Exception:
+            return {}
+        if not pr_author and isinstance(node.get("author"), dict):
+            pr_author = node["author"]
+        c_nodes = c_conn.get("nodes")
+        r_nodes = r_conn.get("nodes")
+        if not isinstance(c_nodes, list) or not isinstance(r_nodes, list):
+            return {}
+        comments.extend(n for n in c_nodes if isinstance(n, dict))
+        reviews.extend(n for n in r_nodes if isinstance(n, dict))
+        c_info = c_conn.get("pageInfo") or {}
+        r_info = r_conn.get("pageInfo") or {}
+        c_more = bool(c_info.get("hasNextPage"))
+        r_more = bool(r_info.get("hasNextPage"))
+        if not c_more and not r_more:
+            break
+        next_c = c_info.get("endCursor") or c_after
+        next_r = r_info.get("endCursor") or r_after
+        # Curseur qui n'avance pas = page identique : on s'arrete plutot
+        # que de boucler, et on rend une surface vide (fail-closed).
+        if (c_more and next_c == c_after) or (r_more and next_r == r_after):
+            return {}
+        c_after, r_after = next_c, next_r
+    else:
+        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
+              "une surface typee (comments/reviews) — surface non remplacee, "
+              "fail-closed.", file=sys.stderr)
+        return {}
+    out: dict[str, object] = {}
+    if pr_author:
+        # L'auteur de la PR, type a la source : ecrase la forme CLI non
+        # typee, qui rend une App SANS suffixe (borne #13495 aveugle sinon).
+        out["author"] = pr_author
+    if comments:
+        out["comments"] = [
+            {"author": c.get("author") or {}, "body": c.get("body") or "",
+             "createdAt": c.get("createdAt")}
+            for c in comments
+        ]
+    if reviews:
+        out["reviews"] = [
+            {"author": r.get("author") or {}, "body": r.get("body") or "",
+             "submittedAt": r.get("submittedAt"),
+             "state": r.get("state")}
+            for r in reviews
+        ]
+    return out
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
 # Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
@@ -173,7 +339,36 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
+# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
+# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
+# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
+# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
+# fichier et forge le meme jeton. Une App par machine ne peut donc pas
+# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
+# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
+# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+#
+# La preuve d'identite reste typee par ligne (``_author_login`` +
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
+# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
+# existe, son login REST rejoint cet ensemble par une edition consciente.
 LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# Q185 (sign-off user 2026-11-13) -- l'ADJOINT coordonnateur, borne aux
+# reserves de BOT. La lane adjointe myia-po-2025:CoursIA-2 poste sous son
+# identite GitHub App propre (``coursia-lane-po-2025[bot]`` : forme REST
+# suffixee, preuve de type portee par la ligne #17437 -- une forme nue
+# typee ``User`` n'entre pas). Sa trappe reprend TOUTE la grammaire du
+# coordinateur (``[OVERRIDE] lane`` pose en tete #13030, phrase de levee
+# affirmative nommant la reserve #14216, bornes temporelles et trappe
+# #13495) avec UN resserrement : elle ne leve que les reserves emises par
+# un BOT -- persona Hermes (``clusterManager-Myia`` via
+# PERSONA_ALIAS_LOGINS, ou marqueur ``[Hermes]``/``[NanoClaw]`` pose par le
+# self-bot ``jsboige``) et bots automatises (BOT_LOGINS). Hors perimetre,
+# fail-closed : le coordinateur (myia-ai-01), les nits user voix nue de
+# jsboige, toute reserve d'une autre lane ou d'un humain, et la PR portee
+# par l'App elle-meme. Voir ``_adjoint_liftable_reserve`` et la trappe de
+# ``_lift_eligible`` ; les pouvoirs du coordinateur restent inchanges.
+ADJOINT_LIFT_LOGINS = {"coursia-lane-po-2025[bot]"}
 # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
 # reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
 # principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un
@@ -3994,7 +4189,7 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
                 continue  # condition 2
             if info.created_at is None or not info.created_at < cutoff:
                 continue  # condition 3
-            out.append((t, (c.get("author") or {}).get("login", ""), info))
+            out.append((t, _author_login(c), info))
             break
     return out
 
@@ -4559,7 +4754,7 @@ def can_lift(comment: dict) -> bool:
     donc encore un nit (faux negatif residuel). Auteur + protocole eliminent le
     gros du bruit sans pretendre lire le sens.
     """
-    login = (comment.get("author") or {}).get("login", "")
+    login = _author_login(comment)
     if login in BOT_LOGINS:
         return False
     body = (comment.get("body") or "").lstrip()
@@ -4888,32 +5083,55 @@ def classify(author: str, body: str) -> str | None:
 
 
 def review_threads(pr: int) -> list[dict]:
-    """Threads inline (3e surface, absente de `gh pr view --json`)."""
+    """Threads inline (3e surface, absente de `gh pr view --json`).
+
+    #17437 (relecture ai-01 2026-11-13, point non bloquant) : la connexion
+    PAGINE (`after` + `pageInfo`) comme les deux autres surfaces typees.
+    `first:100` seul rendait les 100 threads les PLUS ANCIENS et laissait
+    les suivants invisibles — un thread inline non resolu posterieur a la
+    100e position sortait de l'analyse. Meme plafond dur (50 pages = 5000
+    threads) ; un curseur fige arrete la boucle au lieu de boucler.
+    """
     query = """
-    query($owner:String!,$repo:String!,$n:Int!){
+    query($owner:String!,$repo:String!,$n:Int!,$tAfter:String){
       repository(owner:$owner,name:$repo){
         pullRequest(number:$n){
-          reviewThreads(first:100){nodes{
-            isResolved isOutdated path line
-            comments(first:1){nodes{author{login} body createdAt}}
-          }}
+          reviewThreads(first:100,after:$tAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{
+              isResolved isOutdated path line
+              comments(first:1){nodes{author{login __typename} body createdAt}}
+            }}
         }
       }
     }"""
     owner, name = REPO.split("/")
-    data = gh_json([
-        "api", "graphql", "-f", f"query={query}",
-        "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
-    ])
-    nodes = data["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"]
-    # Pas de pagination : au-dela de 100 threads inline, les suivants seraient
-    # invisibles. Plutot que de tronquer en silence — le mode d'echec que ce
-    # script existe pour combattre — on le DIT. Theorique sur ce depot ; si le
-    # message apparait, paginer devient necessaire, pas optionnel.
-    if len(nodes) == 100:
-        print(f"  [!] PR #{pr}: 100 threads inline retournes (plafond `first:100`) "
-              "— d'eventuels threads supplementaires ne sont PAS analyses.",
-              file=sys.stderr)
+    nodes: list[dict] = []
+    after: str | None = None
+    for _ in range(50):
+        args = [
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+        ]
+        if after:
+            args += ["-F", f"tAfter={after}"]
+        data = gh_json(args)
+        conn = data["data"]["repository"]["pullRequest"]["reviewThreads"]
+        nodes.extend(n for n in (conn.get("nodes") or [])
+                     if isinstance(n, dict))
+        info = conn.get("pageInfo") or {}
+        if not info.get("hasNextPage"):
+            break
+        nxt = info.get("endCursor")
+        if not nxt or nxt == after:
+            print(f"  [!] PR #{pr}: curseur de pagination fige sur "
+                  "reviewThreads — threads suivants non analyses.",
+                  file=sys.stderr)
+            break
+        after = nxt
+    else:
+        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
+              "reviewThreads — threads suivants non analyses.", file=sys.stderr)
     out = []
     for t in nodes:
         first = (t.get("comments") or {}).get("nodes") or [{}]
@@ -4923,7 +5141,7 @@ def review_threads(pr: int) -> list[dict]:
             "outdated": bool(t.get("isOutdated")),
             "path": t.get("path"),
             "line": t.get("line"),
-            "author": (c.get("author") or {}).get("login", "?"),
+            "author": _author_login(c) or "?",
             "body": c.get("body", ""),
             "createdAt": c.get("createdAt"),
         })
@@ -4959,14 +5177,14 @@ def improper_dismissals(pr: int) -> set[str]:
     if not isinstance(reviews, list) or not isinstance(events, list):
         return set()
     author_of = {
-        r.get("id"): ((r.get("user") or {}).get("login") or "")
+        r.get("id"): _author_login(r, "user")
         for r in reviews if isinstance(r, dict)
     }
     improper: set[str] = set()
     for e in events:
         if not isinstance(e, dict) or e.get("event") != "review_dismissed":
             continue
-        actor = ((e.get("actor") or {}).get("login") or "")
+        actor = _author_login(e, "actor")
         rid = (e.get("dismissed_review") or {}).get("review_id")
         emitter = author_of.get(rid)
         if not emitter:
@@ -5155,6 +5373,38 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     return False
 
 
+def _adjoint_liftable_reserve(nit_author: str, nit_body: str) -> bool:
+    """Q185 : la reserve est-elle emise par un BOT, seul perimetre de la
+    voix adjointe (``ADJOINT_LIFT_LOGINS``) ?
+
+    Bot au sens de Q185, par detection DEJA EN PLACE dans l'organe :
+
+    - ``BOT_LOGINS`` : bots automatises (github-actions, codecov, dependabot,
+      copilot-pull-request-reviewer -- la reserve d'un bot y vit surtout via
+      un etat natif CHANGES_REQUESTED, classify() rendant None sinon) ;
+    - ``PERSONA_ALIAS_LOGINS`` (clusterManager-Myia) : la persona Hermes,
+      reviewer principal ;
+    - ``jsboige`` + marqueur persona POSE dans le corps
+      (``_PERSONA_MARKERS_RE``, citation depouillee) : la review Hermes du
+      self-bot. Sans marqueur, un commentaire ``jsboige`` est le canal des
+      NITS USER (B.0 : les nits du user sont les commentaires jsboige qui
+      ne portent PAS la persona) -- hors perimetre.
+
+    Fail-closed : tout autre auteur (le coordinateur, une autre lane, un
+    humain, une classification inconnue) rend False -- la voix adjointe ne
+    leve pas.
+    """
+    if not nit_author:
+        return False
+    if nit_author in BOT_LOGINS:
+        return True
+    if nit_author in PERSONA_ALIAS_LOGINS:
+        return True
+    if nit_author == "jsboige":
+        return bool(_PERSONA_MARKERS_RE.search(_strip_quoted(nit_body or "")))
+    return False
+
+
 def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
     """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
 
@@ -5169,7 +5419,7 @@ def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
     """
     tagged = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         if login in BOT_LOGINS:
             continue
         body = (c.get("body") or "").strip()
@@ -5209,7 +5459,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
-    pr_author = (pr_data.get("author") or {}).get("login", "")
+    pr_author = _author_login(pr_data)
     pr_number = pr_data.get("number")
 
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
@@ -5229,11 +5479,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
     approved_rereviews = [
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+        (ts(r.get("submittedAt")), _author_login(r),
          r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
-        and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
+        and _author_login(r) not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
 
@@ -5542,8 +5792,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # declare le relais, la LEVEE revendique le siege en tete de ligne.
         siege = (_QUALIFYING_SEAT_BODY_RE.search(_strip_quoted(nit_body or ""))
                  and _QUALIFYING_SEAT_HEAD_RE.search(_strip_quoted(lift_body or "")))
-        if not (lift_author in LIFT_OVERRIDE_LOGINS
-                and (m is not None or siege)):
+        if lift_author in ADJOINT_LIFT_LOGINS:
+            # Q185 (sign-off user 2026-11-13) : la voix adjointe. Meme
+            # grammaire que le coordinateur -- ``[OVERRIDE] lane`` pose en
+            # tete (#13030), scope par reserve juge ci-dessous par
+            # ``_override_scopes_reserve`` (#14216) -- mais NI la voie siege
+            # qualifiant (#16764 : le siege est l'arbitre tiers, role
+            # coordinateur) NI un perimetre autre que BOT
+            # (``_adjoint_liftable_reserve``) : reserve du coordinateur,
+            # nit user, reserve d'une autre lane ou d'un humain ->
+            # fail-closed, pas levee.
+            if m is None or not _adjoint_liftable_reserve(nit_author,
+                                                          nit_body):
+                return False
+        elif not (lift_author in LIFT_OVERRIDE_LOGINS
+                  and (m is not None or siege)):
             return False
         if siege and m is None:
             # Le scope #14216 est porte par la DECLARATION du nit
@@ -5573,7 +5836,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     # de la lane eteignait la reserve de son propre reviewer. B.0 : ce qui
     # leve une remarque est une PHRASE, pas un commentaire de protocole.
     explicit_lifts = [
-        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
+        (ts(c["createdAt"]), _author_login(c),
          c.get("body", ""))
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
@@ -5583,7 +5846,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
-        and classify((c.get("author") or {}).get("login", ""),
+        and classify(_author_login(c),
                      c.get("body", "")) is None
     ] + [
         # #13399 point 2 — symetrie de la levee : une PHRASE de levee portee
@@ -5592,14 +5855,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # la levee un seul. Une review APPROVED est deja traitee par
         # approved_rereviews (etat natif) ; une review COMMENTED qui ecrit
         # « je leve ma CHANGES_REQUESTED » est une levee comme un commentaire.
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+        (ts(r.get("submittedAt")), _author_login(r),
          r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "COMMENTED"
         and can_lift(r)
         and has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
         and not _lift_cancelled(_strip_quoted(r.get("body", "")))
-        and classify((r.get("author") or {}).get("login", ""),
+        and classify(_author_login(r),
                      r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
@@ -5724,12 +5987,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         kind = classify(login, c.get("body", ""))
         if kind:
             signals.append((ts(c["createdAt"]), kind, login, c.get("body", ""), "comment"))
     for r in pr_data.get("reviews") or []:
-        login = (r.get("author") or {}).get("login", "")
+        login = _author_login(r)
         body = r.get("body", "")
         state = r.get("state")
         if state == "DISMISSED":
@@ -5960,6 +6223,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if t is not None
         and OVERRIDE_LANE.search(body or "") is not None
         and author not in LIFT_OVERRIDE_LOGINS
+        and author not in ADJOINT_LIFT_LOGINS
         and author not in nit_authors
     ] + [
         # #13495 — meme exigence de nomination pour la trappe fermee a
@@ -5995,6 +6259,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                              if b.get("author") not in ("", author)
                              and not _override_scopes_reserve(
                                  body or "", b.get("author") or "")})
+    ] + [
+        # Q185 — meme exigence de nomination pour la voix adjointe : un
+        # override adjoint qui laisse survivre une reserve est nomme avec sa
+        # cause (reserve hors perimetre bot, reserve non nommee nommement,
+        # ou PR portee par l'App elle-meme, #13495). Sans cette ligne, un
+        # gate rouge « malgre notre override adjoint » serait indistinguable
+        # d'un bug du detecteur (meme contrat que #13316/#14216 ci-dessus) ;
+        # et une levee adjointe REUSSIE ne produit aucune note.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré pour la réserve de « {b.get('author')} » — "
+                 f"la voix adjointe de « {author} » ne lève par phrase que "
+                 "les réserves de bot (Q185, sign-off 2026-11-13 : persona "
+                 "Hermes, clusterManager-Myia, bots automatisés), hors PR "
+                 "portée par l'App elle-même (#13495), et nommées "
+                 "nommément (#14216)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and author in ADJOINT_LIFT_LOGINS
+        and OVERRIDE_LANE.search(body or "") is not None
+        for b in blocking
+        if b.get("author") not in ("", author)
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
@@ -6023,7 +6308,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     lift_keys = {(t_, a) for (t_, a, _b) in explicit_lifts if t_}
     unevaluated: list[dict] = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         if login in BOT_LOGINS:
             continue
         body = (c.get("body") or "").strip()
@@ -6240,6 +6525,10 @@ def analyse_pr(pr: int) -> dict:
     """
     try:
         data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+        # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
+        # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
+        # remplace quand il repond.
+        data.update(_typed_author_surfaces(pr))
         # #13639 + #15556 : resolution serveur du contexte SHA (messages,
         # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
         _attach_absent_sha_context(data)
@@ -6274,6 +6563,10 @@ def _ensure_utf8_stdout() -> None:
 def gate(pr: int, as_json: bool) -> int:
     _ensure_utf8_stdout()
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+    # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
+    # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
+    # remplace quand il repond.
+    data.update(_typed_author_surfaces(pr))
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
     _attach_absent_sha_context(data)
@@ -6337,6 +6630,11 @@ def audit(limit: int, search: str | None = None) -> int:
             p["commits"] = _pr_commits_rest(p["number"])
         except subprocess.CalledProcessError:
             p["commits"] = []
+        # #17437 : preuve de TYPE d'auteur par ligne, payee uniquement sur
+        # les candidates (le pre-filtre ci-dessus lit la surface non typee
+        # de ``pr list`` : une levee sous App y est invisible — sur-approx
+        # conservatrice, l'overlay la reconnait avant le verdict rendu).
+        p.update(_typed_author_surfaces(p["number"]))
         # Ce 2e passage rend le MEME verdict `blocked` que le pre-filtre — un
         # commit ne leve rien (c'est le principe de B.0). Il n'est pas pour le
         # verdict : il renseigne `code_pushed_after`, dont la Phase 2 de #11044

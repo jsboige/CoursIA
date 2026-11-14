@@ -658,8 +658,8 @@
   },
   {
    "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb",
-   "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation_en.ipynb",
+   "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
+   "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API_en.ipynb",
    "sha1_fr": "2600da646d384effeb61e95f8e9bce7b7a0e3e3e",
    "sha1_en": "766287f0f712bb39c454f137f1659f9db67a7157",
    "sources_sha1_fr": "aae28e9ded0c9e3b466d6e122266d8f790a0e851",
@@ -1435,14 +1435,14 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/ML-RandomForest/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/ML-RandomForest/README.en.md",
-   "sha1_fr": "0ceda48d1f71fcd603ae34d969ca6f343d5c7ef7",
+   "sha1_fr": "6c534379455ae7bdb0243260767e8a1df90a5772",
    "sha1_en": "76494c4ba2e11ba322d0bc091928104bcdc3dced"
   },
   {
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/ML-Regression/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/ML-Regression/README.en.md",
-   "sha1_fr": "8aba3296b05810830e2550fdad9a4dcdb4321e68",
+   "sha1_fr": "9fd0f6e42d1301657e26965c4fc4c302f7dc0e8c",
    "sha1_en": "e4561f5bdbc73de2784c19653d9060ec2a5c2700"
   },
   {
@@ -1533,7 +1533,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Option-Wheel/README.en.md",
-   "sha1_fr": "e9a8efb5670956a9b10e76b585eef4f78bb89f4a",
+   "sha1_fr": "00ec4ff5b875d07d20f21858f5542bd6a5ebfbf6",
    "sha1_en": "b0585eceb4d3c6eb1db5d835834798892491e586"
   },
   {
