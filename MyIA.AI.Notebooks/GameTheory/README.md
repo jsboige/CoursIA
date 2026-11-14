@@ -700,6 +700,10 @@ Pour valider ou exécuter un notebook : `python scripts/notebook_tools/notebook_
 
 Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de notebooks et leur maturité. Il est régénéré automatiquement sur `main` ; le [catalogue](../../COURSE_CATALOG.generated.md) donne le détail notebook par notebook.
 
+## Engagement et retenue locale — jumeaux 09b
+
+[Python](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [C#](GameTheory-09b-Commitment-Stackelberg-CSharp.ipynb). Énumération et arbres BCL correspondent aux calculs standard du source : mêmes matrices, grilles de 21 probabilités et 9 cautions, horizon 10, trois exercices ouverts. Les égalités sont des correspondances de meilleures réponses ; la sélection du leader et celle de la promesse sont explicites. Le certificat de retenue lit les actions et sépare gain immédiat et cumulé. Aucun moteur externe ni figure requis par cette expérience tabulaire.
+
 ## Ressources
 
 ### Références académiques
