@@ -100,7 +100,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: notebook-plan-loss-gate-${{ github.ref }}
+  group: notebook-plan-loss-gate-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && github.event.changes.body == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -130,7 +130,7 @@ jobs:
     # deja) : c'est elle qui rend le pool local atteignable si la variable est
     # basculee.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
     # Borne de securite (incident du 15/10) : la forme hybride renvoie ce job
     # sur nos slots ephemeres, ou un run fige (checkout `filter: blob:none`
     # sans borne) tient un slot pendant 6 h -- le defaut d'Actions -- et le
