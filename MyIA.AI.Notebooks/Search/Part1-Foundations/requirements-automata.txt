@@ -1,7 +1,11 @@
 # Deps du service web de Search-10-SymbolicAutomata (pli 0 v2, #26511).
 # Le coeur (automata_core.py) ne depend que d'automata-lib ; le transport
 # (automata_service.py + test_automata_core.py) ajoute la pile FastAPI.
-automata-lib>=7.2.0
+# Plancher mesure : automata-lib 7.1.0 fait passer les 18 tests du service.
+# La valeur precedente (7.2.0) n'a jamais ete publiee sur PyPI -- la ligne 7.x
+# est 7.0.0, 7.0.1, 7.1.0 -- donc >=7.2.0 etait insatisfaisable la ou l'index
+# plafonne la majeure. 9.2.0 est la version de reference utilisee en CI.
+automata-lib>=7.1.0
 fastapi
 httpx
 uvicorn
