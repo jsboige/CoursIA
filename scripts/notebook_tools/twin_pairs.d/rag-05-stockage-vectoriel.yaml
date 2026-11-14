@@ -1,0 +1,10 @@
+- name: "RAG 05 Stockage vectoriel"
+  family: GenAI/RAG-et-Memoire-Semantique
+  python: MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Calculs de distances et graphe pedagogiques en NumPy et BCL ; store persistant et filtres confies au vrai client Qdrant local Python et au SDK Qdrant.Client 1.20.0 vers le serveur Rust Qdrant 1.20.0, respectivement."
+  known_differences:
+    - "Le client local Python est exact et distinct du serveur Rust. Le SDK C# exige Docker et force Exact=true ; il verifie aussi la persistance apres redemarrage du serveur."
+    - "Tirages aleatoires, donnees et temps propres aux runtimes ; meme budget experimental, comparaison semantique sans egalite numerique."
