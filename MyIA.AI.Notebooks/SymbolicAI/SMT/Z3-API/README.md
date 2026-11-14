@@ -355,4 +355,4 @@ La programmation par contraintes avec z3-py propose un changement de regard sur 
 
 ### Parité du compagnon 13b
 
-Le carnet [UNSAT cores et MUS en C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) reprend les deux modèles du [carnet Python](Z3-13b-UnsatCores-MUS-Python.ipynb) avec l'API native Microsoft.Z3 et vérifie l'irréductibilité par suppression. Les exercices C# fournissent des modèles à compléter par des étiquettes ; les exercices Python demandent aussi de construire les modèles.
+Le carnet [UNSAT cores et MUS en C#](Z3-13b-UnsatCores-MUS-CSharp.ipynb) reprend les deux modèles du [carnet Python](Z3-13b-UnsatCores-MUS-Python.ipynb) avec l'API native Microsoft.Z3 et vérifie l'irréductibilité par suppression. Les exercices dans les deux versions fournissent des modèles à compléter par des étiquettes et vérifient les réponses.

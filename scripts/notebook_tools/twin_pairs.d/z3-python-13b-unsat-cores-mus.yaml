@@ -6,4 +6,4 @@
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: Les deux carnets exécutent les mêmes modèles d'ordonnancement et l'algorithme de suppression sur les bindings natifs Z3 Python et Microsoft.Z3 .NET.
   known_differences:
-    - Les exercices C# fournissent des modèles étiquetés et contrôlent les réponses ; les exercices Python demandent de construire les modèles.
+    - Les deux versions fournissent des modèles étiquetés et contrôlent les réponses ; le binding NuGet 4.12.2 utilise le chargeur natif de la série.
