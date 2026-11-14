@@ -1,0 +1,87 @@
+# Miroir d'objets du pool de runners -- etat lu SUR LA PR (#26465)
+#
+# Pourquoi ce workflow existe (#26453, revue ai-01 du 2026-11-14)
+# -----------------------------------------------------------------
+# L'incident du 26/10 : le miroir d'objets d'ai-01 etait fige depuis 19 jours.
+# Le superviseur ecrivait bien une ligne `[WARN][mirror]`, mais dans un journal
+# que personne ne lisait. L'alerte existait, elle n'atteignait AUCUNE surface.
+#
+# Les trois advisories de starvation (`linux-runner-starvation-advisory.yml`,
+# `runner-starvation-advisory.yml`, `coursia-waiter-starvation-advisory.yml`)
+# lisaient l'etat du miroir depuis `runs-on: ubuntu-latest` : sur ces runners,
+# ni `.objects-mirror.fails` ni `objects-mirror.log` n'existent. L'organe
+# rendait donc toujours « ce passage ne conclut rien sur le miroir », et le
+# rouge `MIROIR FIGE` ne pouvait pas naitre. L'alerte etait dans un rapport
+# que personne ne produit sur l'hote qui porte le miroir.
+#
+# La surface retenue : LA PR.
+#
+# L'etat du miroir est LOCAL a l'hote qui le porte. Le job tourne donc sur un
+# runner **auto-heberge** : le slot `coursia-linux`, qui est precisement le
+# conteneur ou le volume `coursia-runner-toolcache` est monte. La lecture
+# y est possible, et surtout la **conclusion tombe sur la PR** -- une surface
+# qu'une lane lit sans y penser (les checks de sa propre PR).
+#
+# Cote cout :
+#   - ce job ne lit QUE des fichiers locaux : **zero appel API**, zero quota ;
+#   - le checkout passe par les **alternates** du miroir (#18225) : mesure du
+#     14/11 (#26468), meme commit, meme disque, 16 380 fichiers dans les trois
+#     bras -- promisor paresseux 296,5 s mediane, fetch bulk 132,1 s,
+#     alternates **12,1 s**. Le checkout est donc ~25x moins cher que le
+#     chemin paresseux, ce qui rend ce job par PR tenable ;
+#   - il n'est PAS dans la liste des checks requis : un pool sature ne doit
+#     pas pouvoir bloquer une PR (cf. le chemin STARVED, #13510/#14412).
+#     C'est un conseil qui se voit, pas une porte.
+#
+# Ce qui est decide, et par qui :
+#   - `MIROIR FIGE` rouge = le compteur d'echecs consecutifs atteint le seuil
+#     ET il vient d'etre reecrit : la boucle tourne et le miroir echoue
+#     (cause de l'incident du 26/10) ;
+#   - un compteur VIEUX au-dessus du seuil = NOTE, pas rouge : la boucle de
+#     rafraichissement est arretee, c'est une autre cause ;
+#   - etat illisible = NOTE, jamais rouge : l'absence du miroir ici ne prouve
+#     rien sur le miroir ailleurs (discipline anti-FP).
+name: Mirror state advisory (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    name: Miroir d'objets (hote)
+    # Anti-fork : sur une PR de fork, le job ne doit pas partir vers le parc
+    # auto-heberge (le compte qui l'execute n'est pas le proprietaire du
+    # depot). Meme discipline que les always-on (#22937, et le `if:` du job
+    # `starve` de `linux-runner-starvation-advisory.yml`).
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository
+    # Un seul job par PR : les pushes successifs annulent le precedent.
+    concurrency:
+      group: mirror-state-pr-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
+    # Le slot `coursia-linux` porte le miroir : c'est la seule surface ou
+    # l'etat est local (le volume `coursia-runner-toolcache` y est monte).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - name: Verdict de l'etat du miroir
+        run: |
+          set +e
+          python3 scripts/ci/check_runner_starvation.py --mirror-only --json > mirror.json
+          rc=$?
+          set -e
+          cat mirror.json
+          fails=$(jq -r '.mirror.fails // "inconnu"' mirror.json)
+          seuil=$(jq -r '.mirror.threshold // "?"' mirror.json)
+          if [ "$rc" -eq 1 ]; then
+            echo "::error::MIROIR FIGE -- le miroir d'objets du pool ne se rafraichit plus ($fails echec(s) consecutifs, seuil $seuil). Chaque checkout retelecharge l'historique complet depuis le serveur : les CI ralentissent d'un ordre de grandeur."
+            exit 1
+          fi
+          echo "miroir : aucun gel constate ($fails echec(s) consecutif(s), seuil $seuil)."

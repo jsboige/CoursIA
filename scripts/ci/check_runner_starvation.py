@@ -500,6 +500,55 @@ def mirror_verdict(state: MirrorState,
     return errors, warnings, notes
 
 
+def run_mirror_only(args) -> int:
+    """Verdict du MIROIR SEUL : aucun appel API, aucun inventaire.
+
+    Ce mode sert le job de PR (#26465). Le job tourne sur le slot
+    auto-heberge qui **porte** le miroir : c'est la seule surface ou
+    l'etat est local, et la ou la conclusion peut atterrir sur la PR --
+    donc sur une surface qu'une lane lit sans y penser.
+
+    La lecture reste best-effort : hors de l'hote du miroir, l'etat est
+    illisible et le verdict est une NOTE, jamais un rouge (discipline
+    anti-FP : l'absence du miroir ici ne prouve rien sur le miroir
+    ailleurs).
+
+    Le cout est nul en quota : ce mode ne lit que des fichiers locaux.
+    """
+    state = read_mirror_state(args.mirror_state_dir, args.mirror_path,
+                               threshold=args.mirror_fail_warn)
+    errors, warnings, notes = mirror_verdict(state)
+    payload = {
+        "status": "ERROR" if errors else "OK",
+        "errors": errors,
+        "warnings": warnings,
+        "notes": notes,
+        "measurement": "mirror-only",
+        "gh_calls": 0,
+        "mirror": {
+            "available": state.available,
+            "reason": state.reason,
+            "fails": state.fails,
+            "threshold": state.threshold,
+            "counter_age_s": state.counter_age_s,
+            "ok_age_s": state.ok_age_s,
+            "warn_line": state.warn_line,
+            "log_path": state.log_path,
+            "fails_path": state.fails_path,
+        },
+    }
+    if args.json:
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+    else:
+        for n in notes:
+            print(f"[runner-starvation] {n}")
+        for w in warnings:
+            print(f"::warning::[runner-starvation] {w}")
+        for e in errors:
+            print(f"::error::[runner-starvation] {e}")
+    return 1 if errors else 0
+
+
 @dataclass
 class JobRow:
     workflow: str
@@ -1328,8 +1377,21 @@ def main() -> int:
                          "duquel l'alerte `[WARN][mirror]` est attendue")
     ap.add_argument("--mirror-off", action="store_true",
                     help="desactive la lecture de l'etat du miroir")
+    ap.add_argument("--mirror-only", action="store_true",
+                    help="n'evalue QUE l'etat local du miroir : aucun appel "
+                         "API, aucune lecture de cadence, aucun inventaire. "
+                         "C'est le mode du job de PR (#26465) : il tourne sur "
+                         "le slot auto-heberge qui PORTE le miroir, donc la "
+                         "seule surface ou l'etat est local, et son verdict "
+                         "arrive sur la PR.")
     ap.add_argument("--json", action="store_true", help="sortie JSON du verdict")
     args = ap.parse_args()
+
+    # Le mode miroir seul court AVANT tout le reste : il ne doit payer aucun
+    # appel API. Le job de PR s'execute sur chaque PR du depot -- un appel
+    # par PR sur la quota partagee `jsboige` serait un cout reel.
+    if args.mirror_only:
+        return run_mirror_only(args)
 
     # La cadence servie est lue AVANT la porte de mesure : c'est elle qui
     # porte le rapport #15332, et elle ne doit jamais dependre du passage

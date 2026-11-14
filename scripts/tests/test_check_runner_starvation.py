@@ -1038,3 +1038,94 @@ def test_main_leaves_the_mirror_quiet_when_it_is_healthy(monkeypatch, capsys,
     assert payload["status"] == "OK"
     assert payload["mirror"]["fails"] == 0
     assert not any("MIROIR" in e for e in payload["errors"])
+
+
+# --- MODE MIROIR SEUL + SURFACE PR (#26465) --------------------------------
+# L'etat du miroir est LOCAL a l'hote qui le porte. Les trois advisories de
+# starvation le lisaient depuis `ubuntu-latest`, ou il n'existe pas : l'alerte
+# n'atteignait donc AUCUNE surface (revue ai-01 du 14/11, reserve 1). Le mode
+# `--mirror-only` est le mode du job de PR : il tourne sur le slot
+# auto-heberge qui porte le miroir, ne paie AUCUN appel API, et sa
+# conclusion tombe sur la PR.
+
+def test_mirror_only_mode_is_red_on_a_frozen_mirror(monkeypatch, capsys,
+                                                     tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+
+    def _interdit(*a, **k):
+        raise AssertionError("le mode miroir seul ne doit appeler aucune API")
+
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", _interdit)
+    monkeypatch.setattr(rs, "fetch_inventory", _interdit)
+    monkeypatch.setattr(rs, "fetch_starvation", _interdit)
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--mirror-only", "--json",
+        "--mirror-state-dir", state_dir,
+        "--mirror-path", mirror,
+    ])
+
+    assert rs.main() == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["measurement"] == "mirror-only"
+    assert payload["gh_calls"] == 0
+    assert payload["status"] == "ERROR"
+    assert any("MIROIR FIGE" in e for e in payload["errors"])
+    assert "[WARN][mirror]" in payload["mirror"]["warn_line"]
+
+
+def test_mirror_only_mode_is_a_note_when_the_state_is_unreadable(monkeypatch,
+                                                                  capsys,
+                                                                  tmp_path):
+    # Hors de l'hote du miroir, l'absence d'etat ne prouve rien : note,
+    # jamais rouge (anti-FP).
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--mirror-only", "--json",
+        "--mirror-state-dir", str(tmp_path / "absent"),
+        "--mirror-path", str(tmp_path / "absent" / "coursia-mirror.git"),
+    ])
+
+    assert rs.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "OK"
+    assert not payload["errors"]
+    assert any("ne conclut rien" in n for n in payload["notes"])
+
+
+def test_le_rouge_du_miroir_atteint_la_pr():
+    """TEMOIN : le rouge doit avoir une surface, et cette surface est la PR.
+
+    Ce test ne mesure pas le verdict -- les tests du dessus le font. Il
+    **pince le cablage**. Sans lui, on pourrait faire tourner le job sur
+    `ubuntu-latest` (ou l'enlever) : l'etat du miroir redeviendrait illisible
+    sur la seule surface ou l'alerte atterrissait, et le rouge mourrait en
+    silence -- exactement comme le 26/10.
+    """
+    workflow = CI_DIR.parents[1] / ".github/workflows/mirror-state-pr-advisory.yml"
+    assert workflow.exists(), "le job de PR du miroir doit exister"
+    texte = workflow.read_text(encoding="utf-8")
+
+    # 1. La surface : le job est declenche par une PR.
+    assert "pull_request:" in texte
+    # 2. Il tourne sur le slot qui PORTE le miroir (le volume y est monte).
+    assert "self-hosted" in texte and "coursia-linux" in texte
+    # 3. Il appelle l'organe en mode miroir seul -- le mode qui ne paie
+    #    aucun appel API.
+    assert "--mirror-only" in texte
+    # 4. Il ne consomme pas de quota : aucun appel `gh` dans le job.
+    assert "gh api" not in texte and "gh issue" not in texte
+
+    # 5. Structure : le job existe bien, avec le runner auto-heberge.
+    try:
+        import yaml  # type: ignore
+    except ImportError:  # pragma: no cover
+        return
+    data = yaml.safe_load(texte)
+    # YAML 1.1 : la cle `on:` se parse en booleen True.
+    triggers = data.get("on", data.get(True))
+    assert "pull_request" in triggers
+    job = data["jobs"]["mirror"]
+    runs_on = job["runs-on"]
+    assert isinstance(runs_on, list)
+    assert "self-hosted" in runs_on and "coursia-linux" in runs_on
+    etapes = "\n".join(str(s.get("run", "")) for s in job["steps"])
+    assert "--mirror-only" in etapes
