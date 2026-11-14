@@ -586,3 +586,7 @@ Les trajectoires et retours mesurés diffèrent entre langages, car NumPy et .NE
 ## Licence
 
 Voir la licence du dépôt principal.
+
+### Options hiérarchiques en C#
+
+[RL-14 Python](RL-14-RL-Hierarchique-Options-Python.ipynb) et [RL-14 C#](RL-14-RL-Hierarchique-Options-CSharp.ipynb) présentent FourRooms, les options BFS et le crédit SMDP. Le port C# utilise la BCL et un graphique SVG ; les générateurs aléatoires des deux langages produisent des mesures distinctes.
