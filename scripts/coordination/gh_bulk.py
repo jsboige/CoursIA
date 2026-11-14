@@ -13,7 +13,7 @@ import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 Run = Callable[[list[str], int], str]
@@ -23,6 +23,7 @@ TIMEOUT_S = 90
 # Un 502/504 se resorbe en relisant la meme page en plus petit.
 TAILLES_PAGE = (50, 25, 12)
 PAGES_PRS_MAX = 20  # au-dela : lecture incomplete plutot que tronquee
+FETCH_AGE_MAX_H = 6  # age max de la pointe locale d'origin/main sans fetch
 _TRANSITOIRE_RE = re.compile(r"\b50[24]\b|Bad Gateway|Gateway Time-?out", re.IGNORECASE)
 _CITATION_RE = re.compile(r"#(\d+)\b")
 # Un commit FERME #N s'il le nomme apres un mot de fermeture, ou dans la portee de son
@@ -60,6 +61,7 @@ class Lecture:
     appels: int = 0
     secondes: float = 0.0
     depuis_cache: bool = False
+    fetch_note: str | None = None  # fetch d'origin/main tente et echoue (sinon None)
 
     @property
     def origin_main_le(self) -> str | None:
@@ -149,7 +151,7 @@ def lire_prs_ouvertes(run: Run = run_defaut, depot: str = DEPOT_GH) -> list[dict
     raise LectureIncomplete("prs_ouvertes", PAGES_PRS_MAX, "plus de pages que le plafond")
 
 
-def lire_citations_mergees(depot: str | Path, jours: int = 14,
+def lire_citations_mergees(depot: str | Path, jours: int = 45,
                            run: Run = run_defaut) -> dict[int, list[dict]]:
     """Par numero cite, les commits `{sha, date, sujet, ferme}` d'`origin/main` sur `jours` jours.
 
@@ -182,7 +184,24 @@ def dossier_cache_defaut() -> Path:
     return (Path(local) / "CoursIA" if local else Path.home() / ".cache/coursia") / "tapis_rapide"
 
 
-def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jours: int = 14,
+def _rafraichir_origin_main(run: Run, depot: str | Path) -> str | None:
+    """`git fetch origin main` si la pointe locale d'origin/main a plus de
+    `FETCH_AGE_MAX_H` h ou est illisible : une panne se NOMME, ne leve pas."""
+    try:
+        argv = ["git", "-C", str(depot), "log", "-1", "--format=%ct", "origin/main"]
+        tip = datetime.fromtimestamp(int(run(argv, TIMEOUT_S).strip()), UTC)
+        if datetime.now(UTC) - tip <= timedelta(hours=FETCH_AGE_MAX_H):
+            return None
+    except (ValueError, subprocess.SubprocessError, OSError):
+        pass  # pointe illisible : le fetch se tente quand meme
+    try:
+        run(["git", "-C", str(depot), "fetch", "-q", "origin", "main"], TIMEOUT_S)
+        return None
+    except (subprocess.SubprocessError, OSError) as exc:
+        return f"fetch origin/main impossible ({str(exc)[:100]}), pointe locale gardee"
+
+
+def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jours: int = 45,
               dossier_cache: Path | None = None) -> Lecture:
     """Les trois lectures, ou le cache local de moins de `cache_s` s (0 : sans cache).
 
@@ -203,9 +222,10 @@ def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jour
         return run(argv, timeout)
 
     debut = time.monotonic()
+    fetch_note = _rafraichir_origin_main(compte, depot)  # AVANT les citations
     lecture = Lecture(issues=lire_issues_ouvertes(compte), prs=lire_prs_ouvertes(compte),
                       citations=lire_citations_mergees(depot, jours, compte),
-                      lu_a=datetime.now(UTC).strftime(_ISO))
+                      lu_a=datetime.now(UTC).strftime(_ISO), fetch_note=fetch_note)
     lecture.appels, lecture.secondes = appels[0], round(time.monotonic() - debut, 1)
     if cache_s > 0:
         try:
@@ -219,7 +239,7 @@ def lire_tout(depot: str | Path, cache_s: int = 300, run: Run = run_defaut, jour
     return lecture
 
 
-def charger_depuis(dossier: str | Path, depot: str | Path | None = None, jours: int = 14,
+def charger_depuis(dossier: str | Path, depot: str | Path | None = None, jours: int = 45,
                    run: Run = run_defaut) -> Lecture:
     """Rejoue `issues.json` et `prs_ouvertes.json` d'un dossier deja lu ; avec
     `depot`, les citations se lisent en plus sur son `origin/main` local."""
