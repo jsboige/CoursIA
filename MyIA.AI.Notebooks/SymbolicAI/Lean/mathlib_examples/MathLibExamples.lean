@@ -1,1 +1,3 @@
 import MathLibExamples.Basic
+import MathLibExamples.LinearAlgebra
+import MathLibExamples.LinearAlgebra_en

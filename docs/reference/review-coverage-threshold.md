@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-08
+
 # Review-coverage threshold — pourquoi 300, comment l'ajuster
 
 Document de support pour l'organe [`scripts/review_coverage.py`](../../scripts/review_coverage.py)
@@ -98,22 +100,11 @@ L'organe label et commente. Le commentaire nomme l'action (`obtenir une
 review`) et explique pourquoi close/reopen ne suffit pas. Le label est
 **retiré** dès qu'une review arrive (current-state flag, pas sticky).
 
-## Conformité
-
-- **G-VAR-1** : le grain est `MED/guard` (plancher **DEEP/MED CONTENU**
-  est satisfait par le pivot anterior — c.1331p241 = DEEP/notebook-python).
-- **claim-paths-verify** (c.1331p233 ★★★) : paths déclarés au claim :
-  `scripts/review_coverage.py`, `.github/workflows/review-coverage-advisory.yml`,
-  `docs/reference/review-coverage-threshold.md`. Tous créés dans la PR.
-- **catalog-pr-hygiene** : pas de marqueur `CATALOG-STATUS` touché.
-- **H.1** : script CLI testé end-to-end (12 cas pytest), dry-run vérifié
-  sur la fenêtre locale (no-PR-flagged run pour confirmer que le
-  classifier ne bronche pas sur une liste vide).
-
 ## Liens
 
-- Issue : https://github.com/jsboige/CoursIA/issues/11232
-- PR : https://github.com/jsboige/CoursIA/pull/XXXXX (à compléter)
-- Tests : `scripts/tests/test_review_coverage.py` (12/12 fixtures)
+- Issue : [#11232](https://github.com/jsboige/CoursIA/issues/11232) (CLOSED — l'organe est sur `main`)
+- Organe : [`scripts/review_coverage.py`](../../scripts/review_coverage.py)
+- Workflow : [`.github/workflows/review-coverage-advisory.yml`](../../.github/workflows/review-coverage-advisory.yml)
+- Tests : `scripts/tests/test_review_coverage.py`
 - Règle B.0 : [`.claude/rules/pr-review-discipline.md`](../../.claude/rules/pr-review-discipline.md)
 - Variation (G-VAR-1/2/3) : [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md)

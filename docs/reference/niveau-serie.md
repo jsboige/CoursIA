@@ -1,5 +1,7 @@
 # Règle de niveau de série — quand un dossier mérite d'exister
 
+> REFERENCE — vivante — dernière révision 2026-11-14
+
 **S'applique à** : toute création, suppression ou renommage d'un dossier porteur de carnets sous `MyIA.AI.Notebooks/`.
 **Origine** : issue #24197 (« Curriculum : consistance et clarté des séries », mandat direct du mainteneur du 2026-11-02), sections B et C. Son livrable 2 demande « une règle de niveau, courte et citable, pour B et pour C ».
 **Voisins** : [finition-de-serie.md](finition-de-serie.md) (quand une série cesse de grossir) · [catalog_markers.md](catalog_markers.md) (les marqueurs de catalogue ne se réécrivent pas à la main).
@@ -29,6 +31,8 @@ Le test est volontairement peu coûteux : trois phrases suffisent à garder un d
 Un carnet posé à la racine d'une série est **légitime** quand le README de cette série le cite dans son arborescence et l'inscrit dans un arc ; sinon il est replié dans la sous-série qui l'accueille.
 
 Une série **plate** — tous ses carnets à la racine, sans dossier intermédiaire — n'est pas un défaut : c'est un choix de niveau, et il se dit. Le README de la série annonce que la série est plate et dit pourquoi (le sujet est commun, la numérotation est continue, aucun sous-arc ne se dessine).
+
+> État (mesuré sur `origin/main` au 2026-11-13) : les séries plates sont **Sudoku** (39/39 carnets à la racine), **Complexity** (26/26) et **NLP** (12/12) ; les trois déclarent leur platitude dans leur README. RL (29/40 à la racine + sous-série PostTraining) et GameTheory (101/142 + sous-séries) ne sont pas plates — leur structure est déclarée par leurs sous-séries, la règle 2 ne leur demande rien.
 
 ## Règle 3 — la série jumelle
 
@@ -61,9 +65,9 @@ L'issue #24197 annonce « 35 répertoires feuilles à un carnet » avec cet inst
 
 | cas | décision | destination | raison de niveau | état |
 |---|---|---|---|---|
-| `Probas/Probas-CLT-Theoreme-Central-Limite.ipynb` | promouvoir | `Probas/Fondations/` | le théorème central limite est la base mathématique **commune** aux deux stacks ; il n'appartient ni à `Infer/` ni à `PyMC/` | bloqué : `Probas/README.md` et `_quarto.yml` sont portés par des PRs ouvertes d'autres lanes (#24259, #24338, #24283, #24158) |
-| `Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb` | promouvoir | `Probas/Fondations/` | l'échantillonnage est le socle commun des deux stacks, pas un carnet de moteur | bloqué : PRs #24327 et #23803 ouvertes sur le fichier |
-| `Probas/Probas-KLS-Concentration.ipynb` | replier | `Probas/Applications/` | application autonome de la géométrie log-concave, sœur de `Quotients-Fibres-Recollement-Python` ; ses prérequis (`Infer-03`, `PyMC-14`) en font un carnet d'application, pas un socle | bloqué : même conflit de surfaces |
+| `Probas/Probas-CLT-Theoreme-Central-Limite.ipynb` | promouvoir | `Probas/Fondations/` | le théorème central limite est la base mathématique **commune** aux deux stacks ; il n'appartient ni à `Infer/` ni à `PyMC/` | fait (PR section B #24197, 2026-11-07) |
+| `Probas/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb` | promouvoir | `Probas/Fondations/` | l'échantillonnage est le socle commun des deux stacks, pas un carnet de moteur | fait (PR section B #24197, 2026-11-07) |
+| `Probas/Probas-KLS-Concentration.ipynb` | replier | `Probas/Applications/` | application autonome de la géométrie log-concave, sœur de `Quotients-Fibres-Recollement-Python` ; ses prérequis (`Infer-03`, `PyMC-14`) en font un carnet d'application, pas un socle | fait (PR section B #24197, 2026-11-07) |
 | `Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb` | requalifier | reste à la racine d'`Applications/` | le README de `Probas/` le nomme déjà comme application autonome ; la règle 2 s'applique | sans blocker |
 | `Probas/Applications/Pyro_RSA_Hyperbole.ipynb` | requalifier | reste à la racine d'`Applications/` | idem ; l'absorption d'audit est en cours | PR #24328 ouverte |
 

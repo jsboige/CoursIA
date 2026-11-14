@@ -1,5 +1,5 @@
 import Mathlib.Tactic
-import RepeatedGames.Stage
+import RepeatedGames.Stage_en
 
 /-
   Program Equilibrium: bounded core L1 (EN sibling)
@@ -16,8 +16,8 @@ import RepeatedGames.Stage
   Namespace: `ProgramGames_en` (anti-collision with `ProgramGames` of
   the FR canonical `Basic.lean`). Like the higher-level EN siblings of
   `RepeatedGames` (Discounting_en, GrimTrigger_en), this mirror
-  references the FR base types of `RepeatedGames.Stage` (`PDAction`,
-  `PrisonersDilemma`, `stagePayoff`) via `open RepeatedGames`.
+  references the base types of `RepeatedGames.Stage_en` (`PDAction`,
+  `PrisonersDilemma`, `stagePayoff`) via `open RepeatedGames_en`.
 
   Methodological note: manual translation of the FR canonical (no
   historical pre-Option-A EN source to recover; FR-first file since
@@ -71,7 +71,7 @@ The module reuses the stage game of `RepeatedGames.Stage` (`PDAction`,
 
 namespace ProgramGames_en
 
-open RepeatedGames
+open RepeatedGames_en
 open PDAction
 
 /-! ## Bounded program agents -/

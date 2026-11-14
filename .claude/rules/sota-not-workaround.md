@@ -1,3 +1,7 @@
+---
+paths: MyIA.AI.Notebooks/**
+---
+
 # SOTA : vrai outil + probleme non-trivial — install/invoke/re-plug, faire valoir le moteur (HARD)
 
 S'applique a **tous les agents** (workers po-* + coordinateur ai-01) **ET a tous les reviewers (humains ET bots** clusterManager-Myia : Hermes primaire, NanoClaw audit). Source : mandat user 2026-06-21, 3 messages — verbatim en [detail §1](../../docs/reference/sota-verdicts-detail.md). Registre = [`docs/ledgers/3801-sota-axe2.md`](../../docs/ledgers/3801-sota-axe2.md) (l'EPIC #3801 est **close depuis le 2026-07-09** : elle reste la provenance doctrinale du mandat, elle n'est plus le tracker). Consolide CLAUDE.md section F (reparer, jamais contourner) + [repair-not-consecrate](../../docs/reference/regles-validation-detail.md) + l'audit a 2 axes (committed <-> achievable).

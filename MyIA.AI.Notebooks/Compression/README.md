@@ -1,134 +1,102 @@
-# Compression — sous-série pédagogique
+# Compression — représenter une information à moindre coût
 
-La compression de données **sans perte**, du premier principe (le code préfixe)
-jusqu'aux codecs réels et au compromis description/données (MDL). La série se
-déploie au format **Origami** : un pli à la fois, chaque pli s'ouvrant à la
-livraison du précédent ([EPIC #18706](https://github.com/jsboige/CoursIA/issues/18706)).
-Le pli 7 change d'objet : la compression des **modèles** entraînés
-(quantification, élagage, distillation), qui est, elle, une compression avec
-pertes contrôlées.
+[↑ Parcours de notebooks](../README.md) · [Complexity : coût du calcul](../Complexity/README.md)
 
-Chaque carnet porte le suffixe de son noyau (`-Python`, `-Lean`) — le jumeau
-Lean des définitions est prévu par les plis suivants.
+Comment transmettre un message avec moins de bits tout en permettant sa reconstruction ? La série part des codes préfixes, où les symboles fréquents reçoivent les mots les plus courts, puis exploite les répétitions, le codage entropique et les compromis des codecs réels. Elle aborde ensuite la compression avec pertes contrôlées des modèles appris et le principe de longueur de description minimale : il faut payer le modèle aussi bien que les données qu'il décrit.
 
-## Objectifs d'apprentissage
+Le point d'entrée est accessible avec les bases de Python et les probabilités discrètes. L'entropie et les codes préfixes sont introduits dans le carnet 01 ; le parcours apporte progressivement les outils nécessaires aux suivants. Le carnet 05 demande en plus les bases des réseaux de neurones et de PyTorch. Le compagnon Lean s'adresse aux lecteurs souhaitant étudier les preuves formelles.
 
-À l'issue de cette série, vous serez capable de :
+## Comment lire ce README — Découverte
 
-1. **Construire** un code préfixe optimal sur un alphabet de symboles à fréquences connues (algorithme de Huffman)
-2. **Vérifier** la condition de Kraft sur un code arbitraire et reconnaître les codes qui violent la borne
-3. **Comparer** les arbres Shannon-Fano et Huffman sur un même corpus pour comprendre l'origine du gain
-4. **Calculer** la longueur moyenne d'un code et la confronter à la borne entropique de Shannon sur une source discrète
-5. **Encoder et décoder** un message avec un code préfixe arbitraire, et détecter les codes ambigus
-6. **Canoniser et décoder par table** : réduire l'en-tête d'un code Huffman à ses seules longueurs (Schwartz-Kallick), puis décoder par table indexée à $2^L$ entrées plutôt que par parcours d'arbre
-7. **Parser et référencer** : remplacer la répétition par un couple (décalage, longueur) dans une fenêtre glissante (LZ77), séparer le parse en flux (littéraux, longueurs, décalages) et mesurer la double couche LZ + entropie
-8. **Coder des bits fractionnaires** : briser le plafond du bit entier de Huffman avec ANS — l'état rANS accumule $-\log_2 p$ bits par symbole, tANS fige la machine dans des tables de $2^L$ états, et le cas très déséquilibré (99 %/1 %) montre un facteur onze sur la longueur moyenne
-9. **Quantifier, élaguer et distiller** un modèle entraîné — et lire le prix en exactitude : comparer FP32/FP16/INT8, choisir entre per-tensor et per-channel, mesurer la falaise du pruning one-shot, puis montrer ce que la distillation transfère que l'étiquette seule ne dit pas
-10. **Arbitrer** entre le coût du modèle et celui des données (principe MDL) : chiffrer la description d'un modèle quantifié, localiser la précision optimale `b*` et vérifier qu'elle croît avec la taille du bloc ; reconnaître ensuite que la complexité de Kolmogorov n'est pas calculable et que trois compresseurs n'en fournissent que des bornes supérieures
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue le parcours principal et ses approfondissements.
 
-## Carnets
+- **Vous découvrez** : suivez les numéros nus, du code préfixe au coût total d'une description. Le palier 05 ouvre une application aux modèles appris ; 06 se lit aussi directement après 01–02.
+- **Vous creusez un palier** : 01b développe la preuve en Lean ; 04b compare les codecs disponibles selon leur taux et leur vitesse.
+- **Vous cherchez des prolongements** : « Pour aller plus loin » relie les expériences aux garanties formelles, à la complexité du calcul et à l'apprentissage par compression.
 
-| Carnet | Niveau | Contenu |
+Au fil du parcours, vous apprendrez à construire et décoder un code, à justifier ses bornes, à vérifier un aller-retour exact, puis à comparer des représentations en comptant ce qu'elles coûtent réellement : en-tête, tables, données et modèle. Pour la compression avec pertes, la qualité prédictive entre aussi dans la comparaison.
+
+## Parcours principal — Découverte et Licence
+
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 01 | [Codes préfixes : Shannon–Fano et Huffman](Compression-01-ShannonFano-Prefixe-Python.ipynb) | Construire un arbre de code, vérifier la condition de Kraft et confronter sa longueur moyenne à l'entropie. | Découverte ; Python et probabilités discrètes. | [01b — preuves Lean](#autour-de-01--codes-et-preuves-recherche). |
+| 02 | [Huffman canonique — Python](Compression-02-HuffmanCanonique-Python.ipynb) · [C#](Compression-02-HuffmanCanonique-CSharp.ipynb) | Reconstruire les mots de code à partir de leurs longueurs ; échanger du temps de décodage contre une table en mémoire. | Découverte ; après 01. | Coût de l'en-tête, de la table et du décodage dans le carnet. |
+| 03 | [LZ77](Compression-03-LZ77-Python.ipynb) | Remplacer une répétition par une référence dans une fenêtre glissante, gérer les copies chevauchantes et combiner références et codage entropique. | Licence ; codes préfixes et entropie. | Comparer recherche exhaustive et tableau de suffixes. |
+| 04 | [ANS : codage par l'état](Compression-04-ANS-Python.ipynb) | Comprendre comment rANS et tANS accumulent des contributions fractionnaires de bits ; vérifier l'inversion des transitions. | Licence ; après 01–02, arithmétique entière. | [04b — codecs et fronts de Pareto](#autour-de-04--choisir-un-codec-recherche). |
+| 05 | [Compression des modèles appris](Compression-05-MLCompression-Python.ipynb) | Quantifier les poids, les élaguer ou distiller un réseau ; mesurer taille et précision sur la même tâche. | Licence ; Python, PyTorch et apprentissage supervisé. | Distinguer poids nuls, stockage creux et taille du fichier. |
+| 06 | [MDL et complexité de Kolmogorov](Compression-06-MDL-Kolmogorov-Python.ipynb) | Minimiser la somme du coût du modèle et des données ; distinguer cette description calculable de la complexité algorithmique idéale. | Licence ; après 01–02 et leur modèle statistique. | Effet de la taille du bloc et limites des compresseurs. |
+
+### Parité des implémentations
+
+| Notebook | Python | C# | Parité | Moteur et vérifications |
+|---|---|---|---|---|
+| 02 — Huffman canonique | [Notebook Python](Compression-02-HuffmanCanonique-Python.ipynb) | [Notebook C#](Compression-02-HuffmanCanonique-CSharp.ipynb) | Sémantique ; SOTA-OK, algorithme from-scratch des deux côtés | BCL .NET 9 côté C# ; même extrait binaire du Horla, arbre de Huffman, canonisation, table directe, aller-retour octet/hash. |
+
+Les ex æquo de fréquence peuvent donner des arbres différents selon le départage ; la comparaison porte sur les fréquences, les longueurs et le coût optimal, pas sur une forme d’arbre imposée.
+
+### Pourquoi les représentations changent — Licence
+
+Huffman optimise un code symbole par symbole. Le carnet 02 montre que ses **longueurs** suffisent à reconstruire un code canonique : transmettre l'arbre entier devient inutile. Une table permet ensuite le décodage par accès indexé, au prix de mémoire. LZ77 change l'objet transmis : une répétition devient un couple décalage–longueur. Le code entropique s'applique alors aux éléments de cette représentation, ce qui explique qu'un codec puisse descendre sous l'entropie des octets calculée sans tenir compte de leur contexte.
+
+ANS répond à une autre limite : un code préfixe binaire non trivial paie au moins un bit pour chaque symbole, même si l'un d'eux est presque certain. Sur la source à probabilités 99 % et 1 % du carnet 04, la sortie de tANS est d'environ 0,09 bit par symbole, contre 1 pour Huffman. L'état du codeur porte l'information accumulée ; les vérifications d'aller-retour contrôlent que ce gain préserve le message.
+
+Le palier 05 change de contrat : le réseau comprimé doit conserver une qualité utile, sans devoir restituer exactement ses poids initiaux. Quantifier réduit leur précision ; élaguer introduit des zéros ; distiller apprend un autre réseau à partir des sorties du premier. Le palier 06 revient au coût de représentation : augmenter la précision du modèle peut raccourcir les données tout en allongeant excessivement le modèle. L'optimum porte sur leur somme.
+
+### LZ77 en Python et C#
+
+| Python | C# | Moteur et vérifications |
 |---|---|---|
-| [Compression-01 — Codes préfixes : de Shannon-Fano à Huffman](Compression-01-ShannonFano-Prefixe-Python.ipynb) | Découverte | codes préfixes, inégalité de Kraft, Shannon-Fano contre Huffman, l'entropie comme borne |
-| [Compression-02 — Huffman canonique : des longueurs aux tables de décodage](Compression-02-HuffmanCanonique-Python.ipynb) | Découverte | forme canonique de Schwartz-Kallick (l'en-tête réduit aux longueurs), table de décodage $2^L$ et son coût mémoire, aller-retour octet-exact sur un extrait réel, débits mesurés contre chiffres cités |
-| [Compression-03 — LZ77 : compresser par références dans une fenêtre glissante](Compression-03-LZ77-Python.ipynb) | Licence | parse LZ77 en littéraux et couples (décalage, longueur), copie chevauchante, structure `LZData` à trois flux sur le modèle zstd, coût d'un triplet et double couche LZ + entropie, débit de la recherche naïve contre un tableau de suffixes |
-| [Compression-04 — ANS : coder des bits fractionnaires par l'état (rANS, tANS)](Compression-04-ANS-Python.ipynb) | Licence | plafond Huffman sur source déséquilibrée, pas rANS et état porteur d'entropie, streaming par blocs avec retour prouvé à M, tables tANS par pavage dyadique et appariement tourné, validation exhaustive des transitions, banc de taux et débits contre Huffman et zlib |
-| [Compression-04b — Codecs SOTA : le front de Pareto vitesse × taux](Compression-04b-CodecsSOTA-Pareto-Python.ipynb) | Recherche | sondage honnête des codecs réellement présents (`zlib`, `bz2`, `lzma`, `zstd`, `brotli`, `lz4`) et des absents (`openzl`, codecs de la distribution 7-Zip), banc à deux axes sur trois corpus avec aller-retour octet-exact par empreinte, front de Pareto **calculé** et lu séparément sur la vitesse d'encodage et de décodage, quatre régimes croisant taux et vitesse, balayage des niveaux zstd montrant qu'un même codec traverse plusieurs régimes, témoin négatif sur l'incompressible |
-| [Compression-05 — Compression des modèles : quantifier, élaguer, distiller](Compression-05-MLCompression-Python.ipynb) | Licence | vue d'ensemble des trois familles appliquées à un réseau entraîné — quantification FP16/INT8, élagage par magnitude, distillation maître-élève — sur un terrain synthétique CPU ; cellules adaptées des `3.9-*` de la série ML, mesures avant/après sur une même référence et pont vers le compression-progress (ICT-17b) |
-| [Compression-06 — MDL : décrire le modèle autant que les données](Compression-06-MDL-Kolmogorov-Python.ipynb) | Licence | principe MDL en deux parties, précision optimale `b*` d'un modèle quantifié sur 16 Kio du *Horla*, coût du modèle amorti par `n` mesuré contre la loi en `0,5 log2(n)`, complexité de Kolmogorov non calculable et trois bornes supérieures mesurées |
+| [LZ77 Python](Compression-03-LZ77-Python.ipynb) | [LZ77 C#](Compression-03-LZ77-CSharp.ipynb) | Algorithmes pédagogiques, fenêtres et copies chevauchantes ; aller-retour octet/hash, tableau de suffixes et comparaison avec zlib ou ZLibStream. |
 
-Compression-02 en une phrase : le récepteur n'a jamais besoin de l'arbre ni
-des mots — les longueurs suffisent, et une table de $2^L$ entrées transforme
-chaque symbole décodé en une lecture indexée. Le carnet le démontre sur 128 Kio
-du *Horla* (aller-retour exact, 58,2 % de l'original, longueur moyenne 4,655
-bits/octet contre une entropie de 4,620) et confronte ses débits Python aux
-chiffres publiés des Huffman de production (Huff0, Oodle).
+Le compagnon C# utilise .NET Interactive `.net-csharp`, .NET 9 et la BCL. Les limites du parse borné, les champs sérialisés et le coût du cadre y sont explicites ; les bornes d'entropie restent distinctes des flux réellement encodés.
 
-Compression-03 en une phrase : la deuxième occurrence d'une suite d'octets ne se
-code pas, elle se référence par un couple (décalage, longueur) dans la fenêtre des
-octets déjà produits — et la copie qui se chevauche elle-même déroule les runs
-gratuitement. Le carnet parse 16 Kio du *Horla* en trois flux séparés (le modèle
-de zstd), chiffre la double couche LZ + entropie contre Huffman seul et contre
-zlib, puis mesure le débit de la recherche exhaustive face à un tableau de
-suffixes.
+## Approfondissements — Recherche
 
-Compression-04 en une phrase : là où chaque mot de code de Huffman paie un bit
-entier, ANS accumule les bits fractionnaires dans un seul état — rANS fait de
-chaque symbole une multiplication réversible d'un entier (le round-trip se
-prouve par le retour exact à l'état initial, par blocs pour borner la mémoire),
-tANS fige la machine dans des tables de $2^L$ états construites par pavage
-dyadique. Le carnet valide chaque codeur par round-trips aléatoires et une
-énumération exhaustive des transitions, puis mesure : sur 16 Kio du *Horla*
-tous les codeurs entropiques collent à l'entropie (écart de 2 à 5 centièmes),
-mais sur une source à 99 %/1 % tANS rend 0,09 bit/symbole là où Huffman rend
-1,0000.
+### Autour de 01 — codes et preuves (Recherche)
 
-Compression-04b en une phrase : un codec n'est pas un score, c'est un point
-dans le plan taux × vitesse, et le vainqueur change selon l'axe de vitesse
-qu'on regarde. Le carnet sonde les codecs réellement installés, mesure neuf
-d'entre eux sur trois corpus avec un aller-retour octet-exact vérifié par
-empreinte, puis **calcule** le front de Pareto : sur 128 Kio du *Horla*, `bz2
--9` reste le meilleur taux (2,5970 bits/octet, 2,02 bits sous l'entropie
-d'ordre 0) et bat sur ce corpus `brotli -11`, `lzma -6` et `zstd -19` en taux
-comme en vitesse d'encodage ; le front de décodage, lui, change de membres.
-Il établit aussi ce que le carnet 04 ne pouvait pas refermer : les codecs de
-production descendent **sous** l'entropie des octets parce qu'ils ne
-transmettent pas ces octets — et il montre qu'une grille de régimes se décide
-par son seuil, raison pour laquelle le front est calculé et non désigné.
+[01b — Kraft–McMillan et Huffman en Lean](Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb) accompagne les codes préfixes et le décodage de 01–02. Il expose les définitions, les théorèmes et leurs hypothèses, jusqu'à l'optimalité de Huffman. Il suppose la lecture d'arbres binaires, des raisonnements par induction et un noyau Lean préparé avec le projet [Compression_lean](Compression_lean/README.md).
 
-Compression-05 en une phrase : un réseau entraîné est un fichier de poids à
-4 octets qui se comprime de trois façons complémentaires — **quantifier**
-(÷2 en FP16, ÷4 en INT8, sans perte mesurable sur le terrain du carnet),
-**élaguer** (zéroer les petits poids, que le codage monétise : la sparsité est
-de la redondance), **distiller** (un petit réseau imite les sorties adoucies
-d'un grand). Le carnet mesure chaque famille avant/après sur une même
-référence CPU, puis relie la boucle au compression-progress de Schmidhuber :
-apprendre est déjà compresser.
+### Autour de 04 — choisir un codec (Recherche)
 
-Compression-06 en une phrase : la description d'une donnée se paie en deux fois —
-le modèle, puis les données sous ce modèle — et le bon modèle minimise la somme,
-pas l'un des deux termes. Le carnet mesure la précision optimale sur 16 Kio du
-*Horla* (`b* = 11` bits, 9 483,1 octets pour 16 384), montre qu'elle croît avec la
-taille du bloc sans suivre exactement la pente en `0,5 log2(n)`, puis établit le
-résultat le plus inconfortable de la série : 12 000 décimales de pi et 12 000
-chiffres tirés au hasard se compressent à 18 octets près, alors que la première a
-une description de vingt lignes. Un compresseur mesure l'entropie de l'alphabet et
-les répétitions locales, pas la complexité algorithmique.
+[04b — Codecs et front de Pareto](Compression-04b-CodecsSOTA-Pareto-Python.ipynb) compare les bibliothèques présentes sur des textes, des données structurées et des octets aléatoires. Après 03–04, on apprend à lire un front de Pareto : un codec est dominé si un autre est à la fois plus rapide et plus économe sur le banc choisi. Le front d'encodage peut différer de celui de décodage. Les niveaux d'un même codec déplacent aussi ce compromis.
 
-## Position dans le dépôt
+Les débits dépendent de la machine, des versions et des corpus. Le carnet vérifie la restitution par empreinte et distingue les bibliothèques mesurées des outils seulement cités. Les données aléatoires servent de contrôle : changer de codec ne crée pas une régularité absente de la source.
 
-La série est une voisine de
-[Complexity](../Complexity/README.md) : Complexity traite du coût de
-*calculer* une fonction, Compression du coût de *représenter* une information.
-Les deux questions se rejoignent dans le compromis temps de calcul contre
-taille de sortie — les renvois croisés se posent au fil des plis.
+## Installation — Découverte et pratique
 
-## Jumeau formel Lean
+Utiliser un noyau Python 3.10 ou ultérieur dans un environnement virtuel, avec NumPy et Matplotlib. Le compagnon C# du carnet 02 utilise le noyau .NET Interactive `.net-csharp` et .NET 9 ; il ne demande aucun paquet NuGet. Le carnet 05 utilise aussi PyTorch et Pandas. Le carnet 04b sonde les codecs installés : `zlib`, `bz2` et `lzma` viennent de Python ; `zstandard`, `brotli` et `lz4` sont des compléments selon les comparaisons souhaitées. Les instructions générales sont dans les [commandes de référence](../../docs/reference/common-commands.md).
 
-Le lake [`Compression_lean/`](Compression_lean/) formalise le cœur théorique
-des carnets, un module par pli de l'EPIC :
+Commencer par [01](Compression-01-ShannonFano-Prefixe-Python.ipynb), puis modifier la distribution de symboles et observer l'arbre obtenu. Les expériences Python du parcours utilisent le CPU. Pour 01b, suivre la toolchain déclarée dans [Compression_lean](Compression_lean/README.md), construire le projet avec `lake build` depuis ce dossier et utiliser le noyau Lean `lean4-wsl` indiqué par le carnet.
 
-| Module | Contenu |
-|---|---|
-| [`PrefixCodes.lean`](Compression_lean/PrefixCodes.lean) | codes préfixes sur arbres binaires, inégalité de Kraft (pli 1) |
-| [`Decode.lean`](Compression_lean/Decode.lean) | décodage préfixe pas à pas et round-trip (pli 2) |
-| [`McMillan.lean`](Compression_lean/McMillan.lean) | réciproque de Kraft : le code canonique réalise toute bande de longueurs admissible (pli 3) |
-| [`Huffman.lean`](Compression_lean/Huffman.lean) | le trie de Huffman depuis les fréquences : forêt triée, fusion des deux minima, Kraft sur les profondeurs, code canonique préfixe-libre (pli 4) |
-| [`Optimalite.lean`](Compression_lean/Optimalite.lean) | le coût d'un code préfixe : deux lectures du même nombre (poids × profondeurs, poids des fusions) unies par `costAt_eq`, ancre 14 vs 16 du carnet 02 (pli 5) |
-| [`Echange.lean`](Compression_lean/Echange.lean) | le lemme d'échange élémentaire : faire monter un poids fort ne augmente jamais le coût (`exchange_le`, écart exact `b - a`), descente 21 → 15 → 14 du carnet 02 (pli 5b) |
-| [`Appariement.lean`](Compression_lean/Appariement.lean) | le coût comme somme pondérée `costW t = Σ wᵢ·dᵢ` (`cost_dot`) et l'échange général par inégalité de réarrangement sur deux feuilles quelconques (pli 5c) |
-| [`Expansion.lean`](Compression_lean/Expansion.lean) | le pas inductif de l'optimalité : développer la feuille de masse `a + b` en ses deux constituants facture exactement la masse fusionnée (`costW_subst`), ancre 12 + 2 = 14 du carnet 02 (pli 5d) |
-| [`Feuilles.lean`](Compression_lean/Feuilles.lean) | les outils positionnels du théorème d'optimalité : profondeur d'une feuille (`depthOf`), hauteur (`maxDepth`), substitution d'un poids (`swapW`) et sa facture — l'écart de poids fois la profondeur (`costW_swapW_eq`), ancre 21 − 3·(4−1) = 12 du carnet 02 (pli 5e) |
-| [`Soeurs.lean`](Compression_lean/Soeurs.lean) | l'adressage positionnel (`subtreeAt`, `replaceAt`) et sa facture, l'existence d'une paire de feuilles sœurs exactement à la profondeur maximale (`sisterPath_spec`), et l'échange de deux poids en un parcours (`exchangeW`) strictement améliorant (`costW_exchangeW_lt`) — la descente 21 → 15 → 14 du carnet 02 (pli 5f) |
-| [`Descente.lean`](Compression_lean/Descente.lean) | l'échange positionnel de deux feuilles (`exchPos`, par chemins exacts — jamais par poids) et sa facture, l'infrastructure des chemins (prolongement, divergence, plafond de hauteur, multi-ensemble des feuilles conservé), et le théorème `min_to_bottom` : tout poids minimal descend dans la paire de sœurs à la profondeur maximale sans augmenter le coût — ancre 21 → 19 du carnet 02 (pli 5g) |
-| [`DeuxMinima.lean`](Compression_lean/DeuxMinima.lean) | le comptage positionnel (`count_two_positions` : deux positions d'un même poids forcent sa multiplicité, `exists_leafPos_ne` : la réciproque désigne une seconde occurrence divergente) et le théorème `both_mins_to_bottom` : les deux plus petits poids vivent ensemble dans la paire profonde sans augmenter le coût, multiplicités comprises — ancre 21 → 19 → 16 du carnet 02 (pli 5h) |
-| [`HuffmanOptimal.lean`](Compression_lean/HuffmanOptimal.lean) | le théorème d'optimalité complet : contraction de la paire de sœurs en une feuille mariée (`replaceAtW`), lecture en facture de la construction (`costW_build_charge` : coût interne + charge des fusions), unicité du tri (`sortedLe_perm_eq`), commutation `huffman_expand` (marier d'abord coûte le trie réduit plus la masse), et le théorème capital `huffman_optimal` : le trie de Huffman coûte moins que tout arbre des mêmes feuilles — l'ancre 14 du carnet 02 devient un minimum prouvé (pli 5i) |
+## Pour aller plus loin — Recherche
 
-`lake build` (depuis `Compression_lean/`) est la preuve d'exécution du lake ;
-les carnets Python restent le vecteur pédagogique.
+### Formalisations Lean
 
-## Environnement
+Le projet [Compression_lean](Compression_lean/) outille le [compagnon 01b](Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb). Les résultats se lisent en suivant leur dépendance conceptuelle :
 
-Python 3.10+ (kernel `python3`) : `numpy`, `matplotlib` — le socle standard du
-dépôt ([common-commands](../../docs/reference/common-commands.md)).
+- [PrefixCodes](Compression_lean/PrefixCodes.lean), [Decode](Compression_lean/Decode.lean) et [McMillan](Compression_lean/McMillan.lean) relient condition de Kraft, existence d'un code et restitution après encodage.
+- [Huffman](Compression_lean/Huffman.lean) construit l'arbre ; [Optimalite](Compression_lean/Optimalite.lean) relie son coût aux charges des fusions. [Echange](Compression_lean/Echange.lean) et [Appariement](Compression_lean/Appariement.lean) expliquent pourquoi placer les poids importants plus près de la racine ne peut augmenter le coût.
+- [SymbolCodec](Compression_lean/SymbolCodec.lean) relie le code étiqueté par symboles au modèle d'arbre pondéré utilisé dans la preuve d'optimalité.
+- [Expansion](Compression_lean/Expansion.lean), [Feuilles](Compression_lean/Feuilles.lean) et [Soeurs](Compression_lean/Soeurs.lean) préparent la transformation des arbres. [Descente](Compression_lean/Descente.lean) et [DeuxMinima](Compression_lean/DeuxMinima.lean) amènent les deux poids minimaux dans une paire de feuilles sœurs, en conservant leurs multiplicités. [HuffmanOptimal](Compression_lean/HuffmanOptimal.lean) conclut par `huffman_optimal` : l'arbre construit minimise le coût parmi les arbres portant les mêmes feuilles.
+
+### Mesurer la compression et comprendre ses limites
+
+Les taux de 02–04 doivent se lire avec le périmètre annoncé : plusieurs comparaisons isolent les flux sans compter tout l'en-tête d'un format de fichier. Dans 05, annuler un poids ne réduit pas à lui seul un stockage dense ; le mode de représentation compte autant que le taux de zéros. Le résultat sur le réseau synthétique ne préjuge pas du comportement d'un grand modèle.
+
+Dans 06, la comparaison des décimales de π et de chiffres aléatoires illustre la limite des régularités reconnues par les codecs choisis. Une courte description algorithmique peut leur échapper. La complexité de Kolmogorov est non calculable : un compresseur fournit une description possible, pas sa valeur exacte.
+
+### Liens avec les autres parcours
+
+[Complexity](../Complexity/README.md) étudie le coût de **calculer** ; les tables de Huffman et les recherches de références LZ77 montrent ici comment ce coût s'échange contre une représentation plus courte. Le [compression-progress d'ICT-17b](../IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) prolonge le palier 05 en examinant l'apprentissage comme progrès de compression : la question devient celle de l'évolution du modèle, au-delà de sa seule taille finale.
+
+## Ressources — tous niveaux
+
+Les carnets présentent les références auprès des constructions : Shannon, Fano, Huffman et Kraft en [01](Compression-01-ShannonFano-Prefixe-Python.ipynb), Schwartz–Kallick en [02](Compression-02-HuffmanCanonique-Python.ipynb), Ziv–Lempel en [03](Compression-03-LZ77-Python.ipynb), Duda et ANS en [04](Compression-04-ANS-Python.ipynb), puis MDL et Kolmogorov en [06](Compression-06-MDL-Kolmogorov-Python.ipynb). Les ressources des codecs comparés figurent dans [04b](Compression-04b-CodecsSOTA-Pareto-Python.ipynb).
+
+[Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md)
+
+
+## Twins de notebooks
+
+Le carnet [01 — codes préfixes en C#](Compression-01-ShannonFano-Prefixe-CSharp.ipynb) accompagne [sa version Python](Compression-01-ShannonFano-Prefixe-Python.ipynb). Les deux implémentent Shannon-Fano et Huffman à partir des primitives du langage ; le jumeau C# utilise uniquement la BCL, avec une génération gamma pour ses tirages Dirichlet et un SVG autonome pour le nuage. Les exercices restent ouverts dans les deux parcours.

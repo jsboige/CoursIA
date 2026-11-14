@@ -135,7 +135,7 @@ scripts/notebook_tools/twin_pairs.d/*/*.yaml text eol=lf
 
 # Snapshots verbatim des taxonomies Argumentum (amont : ArgumentumGames/Argumentum).
 # Ces deux CSV ne sont PAS edites ici : ils sont recopies octet pour octet depuis
-# l'amont, et tout le reste (notebooks Argument_Analysis, FallacyDetection,
+# l'amont, et tout le reste (notebooks ArgumentAnalysis, FallacyDetection,
 # scripts/fallacy_detection) les lit comme source de verite locale.
 #
 # Pourquoi `-text` et non `text eol=crlf` : la source porte 139 sauts de ligne
@@ -145,7 +145,7 @@ scripts/notebook_tools/twin_pairs.d/*/*.yaml text eol=lf
 # juillet (#5183), dont le message annoncait "verbatim" alors que le blob stocke
 # differait de l'amont. `-text` desactive toute conversion : le blob est l'amont.
 # Ne pas "corriger" en `text eol=...` : ce serait re-ouvrir la meme corruption.
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_*_taxonomy.csv -text
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_*_taxonomy.csv -text
 # Meme regle pour le paquet Scenarii, recopie octet pour octet (Phase 2 de
 # l'EPIC #10355) : il est en CRLF pur, mais sans `-text` le blob stocke serait
 # normalise en LF sous `core.autocrlf=true` et differerait de l'amont.
@@ -174,7 +174,7 @@ MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/MAFALDA/*.jsonl -text
 # `text eol=crlf` ne conviendrait pas davantage que pour les CSV : il ecraserait
 # les 41 LF nus. La preuve de verbatim est l'EGALITE DES SHA DE BLOB (consignee
 # dans argumentum_snapshot.json), et elle n'est atteignable qu'avec `-text`.
-MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_*.owl -text
+MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/ontologies/argumentum_*.owl -text
 
 # Banc Phase 2 de FallacyDetection : les deux CSV sont le PRODUIT du constructeur
 # (cartesian_dataset_builder), pas une recopie d'amont ; leur forme canonique est

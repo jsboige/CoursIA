@@ -41,7 +41,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 # Local imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from regime_detector import detect_regimes_hmm, HMMRegimeResult
+from regime_detector import detect_regimes_hmm_causal, HMMRegimeResult
 from graph_builder import load_crypto_panier, CRYPTO_PANIER_SYMBOLS
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / "outputs"
 
@@ -98,11 +98,13 @@ def generate_regime_labels(
     valid_index : pd.Index, dates corresponding to valid labels
     """
     mean_price = closes.mean(axis=1)
-    # CAUTION (#21054): default HMM decode is Viterbi = retrospective
-    # (label at t depends on observations after t) — training a classifier
-    # on these labels carries look-ahead into the training set; decode_mode
-    # ="filter" gives causal known-at-t labels.
-    result = detect_regimes_hmm(mean_price, n_states=n_states)
+    # CAUSAL (#21054): the labels are now produced by the expanding refit +
+    # forward-only decode, so the label at t is a function of the observations
+    # up to the close of t only. The legacy path (Viterbi on a fit over the
+    # whole window) put the look-ahead inside the training set: the decode
+    # flag alone did not fix it, because the Baum-Welch parameters themselves
+    # had seen the future — the fit had to move inside the fold.
+    result = detect_regimes_hmm_causal(mean_price, n_states=n_states)
 
     # Align: HMM labels may have leading zeros for warmup
     valid_mask = result.labels > 0  # 0 = warmup/unknown

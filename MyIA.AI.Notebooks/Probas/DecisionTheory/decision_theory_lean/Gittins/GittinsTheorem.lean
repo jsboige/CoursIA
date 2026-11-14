@@ -21,9 +21,12 @@ géométrique, divisé en deux couches :
 * **Optimalité INTRINSÈQUE (gâtée MDP, court-terme).** Le théorème central
   `gittins_optimality` — la politique de l'indice de Gittins maximise la
   récompense actualisée espérée — requiert la machinerie fonction de valeur /
-  Bellman / arrêt optimal, absente de Mathlib. Ses deux sites `sorry` (l'opérateur
-  de valeur espérée `V` et la preuve d'optimalité) sont enregistrés honnêtement
-  comme la barrière INTRINSÈQUE, non comme des rustines placeholder (voir #4039).
+  Bellman / arrêt optimal, absente de Mathlib. L'opérateur de valeur `V` n'est
+  plus un trou : `discountedValue` le définit sur ce que le modèle porte
+  réellement (des moyennes connues, donc une somme actualisée **sans espérance**),
+  et c'est cette définition qui rend l'énoncé vérifiable au lieu de circulaire.
+  Reste **un** site `sorry` — la preuve d'optimalité — enregistré honnêtement
+  comme la barrière INTRINSÈQUE, non comme une rustine placeholder (voir #4039).
 -/
 
 namespace Gittins
@@ -73,38 +76,60 @@ noncomputable def gittinsPolicy (inst : BanditInstance) (histories : Array Rewar
         if g > best.2 then (i, g) else best)
     (0, 0)).1
 
-/-- **Théorème de l'indice de Gittins** (Gittins 1979, Weber 1992) : la politique
-    de l'indice de Gittins maximise la récompense actualisée totale espérée pour
-    le bandit manchot multi-bras à actualisation géométrique.
+/-- La récompense moyenne du bras que la politique `π` joue au pas `n`, et `0`
+    quand cet indice ne désigne aucun bras de l'instance.
 
-    **INTRINSIC (gâtée MDP, court-terme, #4039).** C'est le résultat central de la
-    théorie et la véritable barrière de formalisation. Les deux sites `sorry`
-    ci-dessous ne sont PAS des rustines placeholder ; ils enregistrent précisément
-    ce qui manque à Mathlib :
+    C'est la seule récompense que ce modèle puisse nommer : `BanditArm` ne porte
+    que `trueMean`, il n'y a ici ni distribution à échantillonner ni espérance à
+    prendre. -/
+noncomputable def policyMeanAt (inst : BanditInstance) (π : Policy) (n : ℕ) : ℝ :=
+  match inst.arms[π n]? with
+  | some arm => arm.trueMean
+  | none => 0
 
-    * `V` (l'opérateur de valeur espérée) : formaliser `E[Σ γⁿ · r_{policy n}]`
-      requiert un type de processus de récompense de bandit, un opérateur de
-      couplage probabiliste / espérance sur les distributions de récompense, et
-      une somme actualisée à horizon infini sur `Float` (`Discount.lean` a le côté
-      `ℝ` via le `tsum` de Mathlib, pas le côté `Float` ni l'espérance).
-    * la preuve d'optimalité : requiert l'opérateur de Bellman / programmation
-      dynamique, la décomposabilité de l'indice à travers les bras, et une
-      récurrence sur l'horizon de planification — i.e. une formalisation MDP /
-      arrêt optimal complète.
+/-- **Valeur actualisée d'une politique** dans le modèle à moyennes connues :
+    `V π = Σₙ γⁿ · μ(π n)`.
 
-    `BanditArm` ne porte que `trueMean`, donc même énoncer `V` fidèlement
-    nécessite une infrastructure au-delà du modèle courant. Une preuve complète est
-    estimée à ~2000–5000 lignes de définitions supports ; ceci est laissé comme
-    cible INTRINSIC court-terme plutôt qu'une rustine dégradée.
--/
-theorem gittins_optimality {γ : ℝ} (hγ : 0 < γ ∧ γ < 1)
-    (inst : BanditInstance) :
+    C'est un `tsum` de `ℝ` et **non une espérance** : le régime que `BanditArm`
+    représente est celui des bras à moyennes connues, où la récompense de chaque
+    pas vaut sa moyenne réelle, sans aléa. Y écrire un `E[…]` mentirait sur ce que
+    le type porte ; la version probabiliste (posterior Beta–Bernoulli, terme
+    d'exploration) est la barrière INTRINSÈQUE documentée plus bas — ce n'est pas
+    cette définition, et c'est précisément pourquoi l'énoncé ci-dessous est
+    restreint à ce régime au lieu de promettre le théorème général.
+
+    Sous `0 < γ < 1` et des moyennes bornées, la série converge ;
+    `present_value_constant` en est le cas d'une récompense constante. -/
+noncomputable def discountedValue (inst : BanditInstance) (π : Policy) : ℝ :=
+  ∑' n : ℕ, inst.discount ^ n * policyMeanAt inst π n
+
+/-- **Théorème de l'indice de Gittins, dans le régime que ce lac formalise**
+    (Gittins 1979, Weber 1992 pour l'énoncé général) : à moyennes connues, la
+    politique de l'indice de Gittins maximise la valeur actualisée
+    `discountedValue` sur toutes les politiques.
+
+    **Ce que cet énoncé ne dit pas, et qu'il ne prétend pas dire.** Le théorème de
+    Gittins porte sur des bras *incertains*, où l'indice arbitre exploration et
+    exploitation ; c'est là qu'il diffère du glouton. Ici `gittinsIndex` égale
+    `trueMean` (`gittins_index_known_arm`) et la politique de l'indice **coïncide**
+    avec la gloutonne (`gittinsPolicy_eq_greedyPolicy`) : l'énoncé est donc
+    l'optimalité du glouton à moyennes connues, et il est vrai à ce titre. Le
+    régime incertain — donc le théorème dans sa portée réelle — reste la barrière
+    INTRINSÈQUE ci-dessous. Écrire l'inverse (faire passer ce cas pour le théorème
+    général) serait exactement la dégradation que ce fichier refuse.
+
+    **INTRINSIC (gâtée MDP, court-terme, #4039) — reste un site `sorry`, la
+    preuve.** Elle demande l'opérateur de Bellman / programmation dynamique, la
+    décomposabilité de l'indice à travers les bras et une récurrence sur l'horizon
+    de planification, c'est-à-dire une formalisation MDP / arrêt optimal complète.
+    L'énoncé, lui, n'est plus circulaire : `discountedValue` lui donne un sens
+    indépendant de ce qu'on cherche à prouver. -/
+theorem gittins_optimality (inst : BanditInstance)
+    (hγ_pos : 0 < inst.discount) (hγ_lt : inst.discount < 1)
+    (hmean : ∀ arm ∈ inst.arms, 0 ≤ arm.trueMean) :
     ∀ π : Policy,
-      let V (policy : Policy) : ℝ :=
-        sorry
-      V (fun _ => gittinsPolicy inst (Array.replicate inst.arms.size []))
-        ≥
-      V π := by
+      discountedValue inst (fun _ => gittinsPolicy inst (Array.replicate inst.arms.size []))
+        ≥ discountedValue inst π := by
   sorry
 
 /-!

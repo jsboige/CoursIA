@@ -17,11 +17,14 @@ Portfolio multi-asset inspiré de l'All-Weather de Ray Dalio (Bridgewater Associ
 Cette allocation fixe est le point de départ historique du projet. `main.py` ne
 l'implémente pas : sa docstring ne la cite que dans l'historique de conception
 (« v1.0 … Dalio static »), et le code ne porte que l'allocation v5.0 décrite plus bas.
-Elle reste la baseline du notebook de recherche (« Static Dalio », Sharpe 0,691 sur
-2015-01-02 → 2025-12-31). Dans ce carnet, la parité de risque (0,718) et l'overlay
-tactique SMA200 à 50 % (0,744) la dominent. Le Sharpe de 0,858 souvent cité est celui
-de l'overlay à 50 % appliqué aux poids « Gold Heavy » (SPY 30 %, TLT 35 %, IEF 15 %,
-GLD 20 %, rebalancement mensuel), pas aux poids Dalio.
+Elle reste la baseline du notebook de recherche (« Static Dalio », Sharpe 0,682 sur
+2015-01-02 → 2025-12-31). Dans ce carnet, la parité de risque (0,702) et l'overlay
+tactique SMA200 à 50 % (0,719) la dépassent de peu en Sharpe et nettement en perte
+maximale. Le meilleur Sharpe du carnet, 0,798, est celui des poids « Gold Heavy »
+(SPY 30 %, TLT 35 %, IEF 15 %, GLD 20 %, rebalancement trimestriel, sans overlay), pas
+des poids Dalio. Le Sharpe de 0,858 que citaient les versions précédentes de ce README
+(overlay à 50 % sur les poids Gold Heavy) venait d'une version antérieure du moteur du
+carnet, décrite plus bas.
 
 | Actif | Allocation | ETF | Rôle |
 |-------|------------|-----|------|
@@ -76,7 +79,7 @@ l'exploration H1-H4.
 
 Le notebook [`research.ipynb`](research.ipynb) (prix yfinance, 2015-01-02 → 2025-12-31) déroule l'analyse : rendement, volatilité et corrélations de chaque actif, puis quatre hypothèses (statique vs parité de risque vs tactique, remplacement de DBC, fréquence de rebalancement, overlay SMA200) et une synthèse qui compare l'allocation d'origine, la configuration optimisée et la combinaison parité de risque + tactique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).
 
-Le moteur `backtest_portfolio` du carnet applique les poids cibles aux rendements de chaque jour, sans les laisser dériver entre deux rebalancements : il revient à rebalancer chaque jour. La fréquence de rebalancement n'y change donc que les dates où une fonction de poids **variable** (parité de risque, overlay SMA200) est réévaluée ; pour des poids fixes, elle ne change rien.
+Le moteur `backtest_portfolio` du carnet laisse dériver les poids avec les prix entre deux rebalancements et ne rétablit les poids cibles qu'aux dates de rebalancement. Une cellule de contrôle le vérifie avant les hypothèses : sans rebalancement, il coïncide avec un achat-conservation calculé directement depuis les prix. Une version antérieure réappliquait les poids cibles chaque jour, ce qui revenait à rebalancer quotidiennement quelle que soit la fréquence demandée : elle rendait H3 sans objet et donnait des Sharpe plus élevés, dont le 0,858 de l'overlay à 50 %. Les valeurs ci-dessous sont celles du moteur à dérive.
 
 **Exploration.** L'analyse commence par le rendement annualisé, la volatilité, le Sharpe et le drawdown maximal de chaque actif, puis par la matrice de corrélation des cinq actifs de la baseline :
 
@@ -88,35 +91,35 @@ Le moteur `backtest_portfolio` du carnet applique les poids cibles aux rendement
 **H1 — Static vs Risk Parity vs Tactical.** Trois schémas sur les cinq actifs de la baseline : poids Dalio fixes, parité de risque par volatilité inverse sur 60 jours, et overlay SMA200 (le poids d'un actif passé sous sa moyenne à 200 jours est réduit de moitié, la part retirée reste en cash) :
 
 <p align="center">
-  <img src="assets/readme/aw-h1-parity.png" alt="Dual-panel « H1: Static vs Risk Parity vs Tactical » — panel haut = valeur normalisée 2015-2026 : Static Dalio S=0,691 DD=-23,37 % en bleu, qui finit le plus haut (CAGR 5,71 %) ; Risk Parity 60 j S=0,718 DD=-18,43 % en orange et Tactical SMA200 S=0,744 DD=-15,47 % en vert, qui finissent tous deux plus bas (CAGR 4,92 % et 4,89 %) — Tactical a le meilleur Sharpe et le drawdown le plus faible. Panel bas = drawdowns superposés, creux le plus profond fin 2022 pour les trois, vers -23 % pour Static Dalio." width="420"/><br>
+  <img src="assets/readme/aw-h1-parity.png" alt="Hypothèse H1 sur 2015-2026, deux graphiques empilés. En haut, la valeur du portefeuille pour 3 pondérations : Static Dalio (bleu, Sharpe 0,682, drawdown -23,59 %) finit le plus haut, vers 1,83 ; Risk Parity 60 j (orange, 0,702, -18,81 %) et Tactical SMA200 (vert, 0,719, -15,84 %) finissent vers 1,67-1,68. En bas, les drawdowns : celui de Static Dalio est le plus profond, vers -23 % en 2022. Le tactique a le meilleur Sharpe et le drawdown le plus contenu, au prix d'un rendement final plus bas." width="420"/><br>
   <em>H1 — Static vs Risk Parity vs Tactical.</em>
 </p>
 
-**H3 — Fréquence de rebalancement.** Mensuelle, trimestrielle et semestrielle, sur l'allocation retenue en H2 (« Gold Heavy »). Les trois courbes sont confondues : avec des poids fixes, le moteur décrit plus haut rend la fréquence sans effet par construction. H3 ne mesure donc pas l'effet de la fréquence sur la stratégie :
+**H3 — Fréquence de rebalancement.** Mensuelle, trimestrielle et semestrielle, sur l'allocation retenue en H2 (« Gold Heavy »), avec deux références : le rebalancement quotidien et l'achat-conservation sans rebalancement. Les trois fréquences restent à un centième de Sharpe les unes des autres (0,792, 0,798, 0,788), trop peu pour trancher sur une seule période ; le carnet retient le trimestriel. L'achat-conservation fait mieux que toutes (0,919) parce que SPY et GLD ont monté presque sans interruption sur 2015-2025 et ont pris du poids : le résultat tient à la période, et le portefeuille finit loin de l'allocation voulue :
 
 <p align="center">
-  <img src="assets/readme/aw-h3-rebalance.png" alt="Dual-panel « H3: Rebalancing Frequency Comparison » — panel haut = valeur normalisée 2015-2026 de l'allocation Gold Heavy rebalancée chaque mois, chaque trimestre et chaque semestre, toutes S=0,817 DD=-23,9 % : les trois courbes sont confondues, seule la verte (semestrielle) est visible. Panel bas = drawdowns confondus, creux vers -24 % fin 2022. Les poids étant fixes et appliqués chaque jour par le moteur du carnet, l'identité des trois courbes vient du moteur, pas de la stratégie." width="420"/><br>
-  <em>H3 — fréquence de rebalancement (courbes confondues par construction du moteur).</em>
+  <img src="assets/readme/aw-h3-rebalance.png" alt="Hypothèse H3 (fréquence de rebalancement) sur 2015-2026, deux graphiques empilés. En haut, 5 courbes de valeur : mensuel (bleu, Sharpe 0,792), trimestriel (orange, 0,798), semestriel (vert, 0,788), et deux références, quotidien (rouge, 0,817) et jamais rebalancé (violet, 0,919). Les courbes s'écartent après 2020 ; la référence « jamais rebalancé » se détache après 2023 et finit vers 2,4, les autres vers 2,05-2,1. En bas, des drawdowns quasi superposés, vers -24 % fin 2022." width="420"/><br>
+  <em>H3 — fréquence de rebalancement, avec les références quotidienne et sans rebalancement.</em>
 </p>
 
-**H4 — Overlay tactique SMA200.** Sur les poids Gold Heavy réévalués chaque mois, le poids d'un actif passé sous sa moyenne à 200 jours est réduit de 0 %, 25 %, 50 %, 75 % ou 100 %, la part retirée restant en cash :
+**H4 — Overlay tactique SMA200.** Sur les poids Gold Heavy réévalués chaque trimestre (la fréquence retenue en H3), le poids d'un actif passé sous sa moyenne à 200 jours est réduit de 0 %, 25 %, 50 %, 75 % ou 100 %, la part retirée restant en cash, à rendement nul. Chaque cran réduit la perte maximale et baisse aussi le Sharpe : aucun ne bat le portefeuille sans overlay en Sharpe :
 
 <p align="center">
-  <img src="assets/readme/aw-h4-sma200.png" alt="Dual-panel « H4: SMA200 Tactical Overlay – Reduction Factors » — panel haut = valeur normalisée 2015-2026 des poids Gold Heavy avec 5 niveaux de réduction (No overlay 0 % S=0,817 DD=-23,9 % en bleu ; red=25 % S=0,846 DD=-20,1 % en orange ; red=50 % S=0,858 DD=-16,2 % en vert, meilleur Sharpe ; red=75 % S=0,834 DD=-13,04 % en rouge ; red=100 % S=0,763 DD=-11,01 % en violet), panel bas = drawdowns. La réduction à 50 % maximise le Sharpe et ramène le drawdown maximal de -23,9 % à -16,2 %." width="420"/><br>
+  <img src="assets/readme/aw-h4-sma200.png" alt="Hypothèse H4 (overlay tactique SMA200) sur 2015-2026, deux graphiques empilés. En haut, 5 courbes de valeur étagées selon la part réduite quand un actif passe sous sa moyenne 200 jours : 0 % (bleu, Sharpe 0,798, drawdown -24,24 %) finit le plus haut, vers 2,07 ; 25 % (orange, 0,785, -21,07 %) ; 50 % (vert, 0,751, -18,08 %) ; 75 % (rouge, 0,689, -17,07 %) ; 100 % (violet, 0,597, -16,21 %) finit le plus bas, vers 1,53. En bas, des drawdowns d'autant moins profonds que la réduction est forte." width="420"/><br>
   <em>H4 — overlay tactique SMA200 sur les poids Gold Heavy.</em>
 </p>
 
 **Compromis Sharpe / drawdown (H4).** Le même résultat en nuage de points, un point par facteur de réduction :
 
 <p align="center">
-  <img src="assets/readme/aw-comparison.png" alt="Scatter Pareto « H4: Risk-Return Tradeoff by SMA200 Reduction Factor » — 5 points labellés axe X Max Drawdown % (axe inversé : better right = DD plus faible à droite) vs axe Y Sharpe Ratio : 100% violet (S=0,763 DD≈11%) bas-gauche, 75% rouge (S=0,834 DD≈13%) centre-gauche, 50% vert (S=0,858 DD≈16%) centre-haut OPTIMAL, 25% orange (S=0,846 DD≈20%) centre-droite, 0% bleu (S=0,817 DD≈24%) droite. Le 50% domine en Sharpe avec DD modéré — la réduction 100% minimise le DD mais avec Sharpe dégradé." width="420"/><br>
+  <img src="assets/readme/aw-comparison.png" alt="Synthèse H4 en nuage de points : drawdown maximal en abscisse (16 % à 24 %), Sharpe en ordonnée (0,60 à 0,80). Les 5 niveaux de réduction s'alignent sur une diagonale : 100 % (drawdown 16,21 %, Sharpe 0,597) en bas à gauche, 0 % (24,24 %, 0,798) en haut à droite, les paliers intermédiaires entre les deux. Il n'y a pas d'optimum intérieur : chaque palier de réduction baisse à la fois le drawdown et le Sharpe, le choix dépend du drawdown qu'on accepte." width="420"/><br>
   <em>H4 — Sharpe et drawdown maximal par facteur de réduction SMA200.</em>
 </p>
 
-**Synthèse — Sharpe glissant sur un an.** La synthèse du carnet compare l'allocation Dalio d'origine (Sharpe 0,691, drawdown maximal -23,37 %), la configuration optimisée Gold Heavy + overlay SMA200 à 50 % (0,858, -16,20 %) et la combinaison parité de risque + tactique (0,814, -13,88 %), puis trace leur Sharpe glissant sur 252 séances :
+**Synthèse — Sharpe glissant sur un an.** La synthèse du carnet combine le meilleur choix de chaque hypothèse. H4 retenant une réduction de 0 %, la configuration optimisée se réduit à l'allocation Gold Heavy rebalancée chaque trimestre, sans overlay, et la combinaison parité de risque + tactique à la parité de risque seule, rebalancée chaque mois. Le carnet compare l'allocation Dalio d'origine (Sharpe 0,682, drawdown maximal -23,59 %), la configuration optimisée (0,798, -24,24 %) et la combinaison (0,746, -20,83 %), puis trace leur Sharpe glissant sur 252 séances :
 
 <p align="center">
-  <img src="assets/readme/aw-grid-optimal.png" alt="Rolling 1-Year Sharpe Ratio 2016-2026 — 3 stratégies (Original Static Dalio trimestriel bleu ; Optimized Static+Tactical orange ; RP+Tactical Combo vert) : courbes fortement corrélées sur toute la période, pic commun ~3,5 en 2020, dip commun ~-2 en 2022-2023, recovery ~2,5 en 2025-2026, ligne pointillée horizontale Sharpe=0. Les 3 stratégies partagent les mêmes cycles macro (post-COVID recovery 2020, bear market 2022-2023) mais l'Optimized devance Original en fin de période post-2023." width="420"/><br>
+  <img src="assets/readme/aw-grid-optimal.png" alt="Sharpe glissant sur un an, 2016-2026 (axe Y de -2 à +3,5, ligne pointillée à 0), pour 3 configurations : Original (Static Dalio trimestriel, bleu), Optimized (allocation Gold Heavy trimestrielle, orange) et RP + Tactical Combo (vert). Les trois courbes oscillent ensemble : pic vers +3 début 2020, creux vers -2 fin 2022. L'Original fait mieux en 2021-2022, les deux autres en 2024-2025 : aucune configuration ne domine sur toute la période, et aucune n'évite le creux de 2022." width="420"/><br>
   <em>Synthèse — Sharpe glissant sur un an des trois configurations.</em>
 </p>
 
@@ -181,7 +184,7 @@ contre l'inflation à l'or seul et ajoute XLP comme actif défensif.
 
 ## Améliorations Possibles
 
-- Ajouter TIPS (Treasury Inflation-Protected Securities) — testé en H2 du carnet à la place de DBC : Sharpe 0,667, sous la baseline (0,691)
+- Ajouter TIPS (Treasury Inflation-Protected Securities) — testé en H2 du carnet à la place de DBC : Sharpe 0,650, sous la baseline (0,682)
 - Diversification géographique (VEA, VWO)
 - Dynamic risk targeting
 - Factor tilts (Value, Momentum)

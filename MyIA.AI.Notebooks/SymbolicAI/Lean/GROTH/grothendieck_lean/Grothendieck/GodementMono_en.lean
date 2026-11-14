@@ -2,7 +2,7 @@
 Copyright (c) 2026 CoursIA. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
-import Grothendieck.GodementFunctor
+import Grothendieck.GodementFunctor_en
 import Mathlib.Algebra.Category.Grp.EpiMono
 import Mathlib.Algebra.Category.Grp.Limits
 import Mathlib.CategoryTheory.Limits.FunctorCategory.EpiMono
@@ -57,6 +57,7 @@ byte-identical between `GodementMono.lean` and `GodementMono_en.lean`).
 universe u
 
 open CategoryTheory Category Limits TopCat TopologicalSpace Opposite
+open Grothendieck.GodementFunctor_en
 
 namespace Grothendieck.GodementMono_en
 

@@ -272,6 +272,21 @@ run_supervise() {
   cat "$TEST_DIR/last.err"
 }
 
+# #26477 : le verdict de run_supervise se lit dans un FICHIER, jamais dans
+# une substitution de commande pipee. Sous Git Bash (diagnostic local
+# Windows), un petit-fils heritier du stdout de la fonction gardait le tube
+# ouvert APRES le timeout de la commande (8 s) : la lecture $( ... | head -1)
+# ne rendait jamais, le test restait sans verdict et la suite n'en finissait
+# pas (mesure lane : ~15 min pour 34 tests sur 70, run complet jamais rendu).
+# La commande est deja bornee par run_supervise ; c'est la LECTURE qu'il
+# faut fermer : un fichier rend sa premiere ligne immediatement, qu'un
+# petit-fils survive ou non. Sites appelants : supervise_rc (verdict rc) ou
+# ecriture directe dans last-supervise.out (sortie complete).
+supervise_rc() {
+  run_supervise "$@" >"$TEST_DIR/last-supervise.out" 2>&1
+  sed -n '1s/^rc=//p' "$TEST_DIR/last-supervise.out"
+}
+
 # Attente BORNEE plutot que `sleep <constante>`. Un `sleep 0.5` suivi d'une
 # assertion n'est pas un test, c'est une course : sur cette machine le prelude
 # de cmd_start met 680 a 924 ms (spawns de processus Git Bash + la sonde d'hote
@@ -312,7 +327,7 @@ echo "Test 1 : start quand un superviseur est deja actif (Defaut 1)"
 (
   cd "$SCRIPT_DIR"
   export PS_OUTPUT="jsboige  12345    1   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh start 4"
-  rc="$(run_supervise 'start 1' 'test-prefix-A' "$TEST_DIR/state-A" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-A' "$TEST_DIR/state-A")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "deja actif"; then
     ok "start refuse, message nomme PID (rc=$rc)"
@@ -339,7 +354,7 @@ echo "Test 2 : start apres stop AVEC superviseur vivant refuse, sentinel preserv
   cd "$SCRIPT_DIR"
   export PS_OUTPUT="jsboige  33594  9876   10:28:11  bash scripts/ci/docker/linux-runner/supervise.sh start 4"
   touch "$TEST_DIR/state-B/stop"
-  rc="$(run_supervise 'start 1' 'test-prefix-B' "$TEST_DIR/state-B" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-B' "$TEST_DIR/state-B")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "sentinel STOP_FILE present"; then
     ok "start apres stop refuse (rc=$rc)"
@@ -534,7 +549,7 @@ echo "Test 9 : start refuse si entrypoint de l'image != checkout (#14801)"
   mkdir -p "$TEST_DIR/state-9"
   STUB_IMG_ENTRYPOINT_SHA=f0000000000000000000000000000000000000000000000000000000000000f00
   export STUB_IMG_ENTRYPOINT_SHA
-  rc="$(run_supervise 'start 1' 'test-prefix-9' "$TEST_DIR/state-9" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-9' "$TEST_DIR/state-9")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "docker build -t"; then
     ok "image perimee refusee avec la commande de rebuild (rc=$rc)"
@@ -589,7 +604,7 @@ echo "Test 11 : start refuse sur une detresse soutenue sur les DEUX points (#150
   # pagewrites>0 ET pagesout>0 ET file>=1 ET idle<=50 -- sur les deux points.
   export COURSIA_RUNNER_HOST_PROBE="120 340 3 12 90000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="98 410 2 18 91000 49800"
-  rc="$(run_supervise 'start 1' 'test-prefix-11' "$TEST_DIR/state-11" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-11' "$TEST_DIR/state-11")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "DETRESSE"; then
     ok "detresse soutenue refusee (rc=$rc)"
@@ -622,7 +637,7 @@ echo "Test 11b : detresse retenue meme avec file=0 et disque inactif (#15091)"
   # les valeurs que ces deux compteurs rendent TOUJOURS sur cet hote.
   export COURSIA_RUNNER_HOST_PROBE="140 520 0 99 96000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="155 610 0 98 97000 49900"
-  rc="$(run_supervise 'start 1' 'test-prefix-11b' "$TEST_DIR/state-11b" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-11b' "$TEST_DIR/state-11b")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "DETRESSE SOUTENUE"; then
     if echo "$err" | grep -q "cote disque MUET"; then
@@ -649,7 +664,7 @@ echo "Test 12 : un pic isole ne declenche pas le refus (#15091)"
   mkdir -p "$TEST_DIR/state-12"
   export COURSIA_RUNNER_HOST_PROBE="120 340 3 12 90000 50000"
   export COURSIA_RUNNER_HOST_PROBE_2="0 0 0 97 40000 50000"
-  rc="$(run_supervise 'start 1' 'test-prefix-12' "$TEST_DIR/state-12" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-12' "$TEST_DIR/state-12")"
   err="$(cat "$TEST_DIR/last.err")"
   if ! echo "$err" | grep -q "DETRESSE"; then
     ok "pic isole non retenu comme detresse (rc=$rc)"
@@ -669,7 +684,7 @@ echo "Test 13 : start refuse quand Mapped chute au-dela du seuil (#15091)"
   # Machine par ailleurs calme : seul le mmap qdrant se fait evincer (-2000 Mo).
   export COURSIA_RUNNER_HOST_PROBE="0 0 0 95 40000 52000"
   export COURSIA_RUNNER_HOST_PROBE_2="0 0 0 95 40000 50000"
-  rc="$(run_supervise 'start 1' 'test-prefix-13' "$TEST_DIR/state-13" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-13' "$TEST_DIR/state-13")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "Mapped"; then
     ok "eviction du mmap qdrant refusee (rc=$rc)"
@@ -746,7 +761,7 @@ echo "Test 16 : une sonde tronquee refuse au lieu de rendre vert (#15091)"
   unset PS_OUTPUT
   mkdir -p "$TEST_DIR/state-16"
   export COURSIA_RUNNER_HOST_PROBE="0 0 0 95 40000"
-  rc="$(run_supervise 'start 1' 'test-prefix-16' "$TEST_DIR/state-16" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-16' "$TEST_DIR/state-16")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "ILLISIBLE"; then
     ok "sonde tronquee refusee (rc=$rc)"
@@ -2090,7 +2105,7 @@ echo "Test 41 : start refuse si work_cache_health.sh de l'image != checkout (#15
   mkdir -p "$TEST_DIR/state-29"
   STUB_IMG_HEALTH_SHA=e000000000000000000000000000000000000000000000000000000000000000e
   export STUB_IMG_HEALTH_SHA
-  rc="$(run_supervise 'start 1' 'test-prefix-29' "$TEST_DIR/state-29" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-29' "$TEST_DIR/state-29")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "PERIMEE" && echo "$err" | grep -q "work_cache_health.sh"; then
     ok "health script perime refuse, fichier FAUTIF nomme (rc=$rc)"
@@ -2114,7 +2129,7 @@ echo "Test 42 : bornes backoff invalides rejetees au demarrage (fail-closed)"
   mkdir -p "$TEST_DIR/state-30"
   neg_case() {
     local desc="$1" expect="$2"
-    rc="$(run_supervise 'start 1' 'test-prefix-30' "$TEST_DIR/state-30" 2>&1 | head -1 | sed 's/rc=//')"
+    rc="$(supervise_rc 'start 1' 'test-prefix-30' "$TEST_DIR/state-30")"
     err="$(cat "$TEST_DIR/last.err")"
     if [ "$rc" != "0" ] && [ "$rc" != "124" ] && echo "$err" | grep -q "$expect"; then
       ok "$desc : refuse (rc=$rc)"
@@ -2970,7 +2985,7 @@ echo "Test 46 : start sans epingle refuse en nommant le gesture manquant (#16134
   mkdir -p "$TEST_DIR/state-44"
   rm -rf "$TEST_DIR/pin-44-absente"
   export COURSIA_RUNNER_PINNED_CTX="$TEST_DIR/pin-44-absente"
-  rc="$(run_supervise 'start 1' 'test-prefix-44' "$TEST_DIR/state-44" 2>&1 | head -1 | sed 's/rc=//')"
+  rc="$(supervise_rc 'start 1' 'test-prefix-44' "$TEST_DIR/state-44")"
   err="$(cat "$TEST_DIR/last.err")"
   if [ "$rc" != "0" ] && echo "$err" | grep -q "absent du contexte epingle" && echo "$err" | grep -q "supervise.sh pin"; then
     ok "refus fail-closed, gesture nomme (rc=$rc)"
@@ -3072,7 +3087,8 @@ echo "Test 58 : budget memoire -- declare il gouverne, non declare il s'annonce"
   #     Un budget declare a 0 rend `used + want > 0` vrai des qu'un slot est
   #     demande : le message de refus nomme alors la valeur, en Mo et en Go.
   #     Avec le defaut 12, `start 1` passerait et le message n'existerait pas.
-  out="$(COURSIA_RUNNER_BUDGET_GB=0 run_supervise 'start 1' 'test-prefix-58b' "$TEST_DIR/state-58b" 2>&1)"
+  COURSIA_RUNNER_BUDGET_GB=0 run_supervise 'start 1' 'test-prefix-58b' "$TEST_DIR/state-58b" >"$TEST_DIR/last-supervise.out" 2>&1
+  out="$(cat "$TEST_DIR/last-supervise.out")"
   if echo "$out" | grep -q "COURSIA_RUNNER_BUDGET_GB=0"; then
     ok "budget declare : il gouverne -- un budget a 0 fait REFUSER le slot, et le refus nomme la valeur declaree"
   else
@@ -4297,6 +4313,106 @@ myia-74-waiter-3 168.9MiB / 512MiB"
     ok "le docker run des waiters porte les DEUX labels (ci + waiter) sur lignes adjacentes"
   else
     ko "label coursia-waiter=1 absent ou isole du label ci dans supervise.sh (lbl='$lbl')"
+  fi
+)
+echo ""
+
+# --- Test 75 : un harnais interrompu ne laisse aucun processus (#21527) -----
+# Critere 4 de #21527. Mesure du 2026-10-20 : des restes de CE fichier (6 a 11 h,
+# parent /init, enfants relances en boucle) bloquaient le redemarrage du pool --
+# la sentinelle perimee n'etait jamais purgee, l'unite restait en failed, le
+# pool a zero. Le correctif est le `trap cleanup_launched EXIT INT TERM` du haut
+# de ce fichier. Ce test le MESURE au lieu de le lire.
+#
+# La sonde est une SECONDE instance de ce fichier dans son propre groupe de
+# processus (`set -m`, sans dependance a `setsid`), et le signal part au PARENT
+# SEUL. Envoyer TERM au groupe ne
+# prouverait rien : le signal atteindrait les enfants directement et le test
+# passerait meme sans trap. Sans le trap, les enfants survivent au parent et
+# sont reparentes a /init -- exactement la pathologie mesuree.
+echo "Test 75 : interruption du harnais -- aucun processus survivant (#21527)"
+(
+  # Membres vivants d'un groupe de processus, lus dans /proc. Pas de `pgrep` :
+  # la suite ne doit pas dependre d'un utilitaire absent d'un runner minimal, et
+  # `ps` est deja detourne par des stubs dans d'autres tests.
+  group_members() {
+    local want="$1" f line rest pid
+    local -a fields
+    for f in /proc/[0-9]*/stat; do
+      [ -r "$f" ] || continue
+      line=""
+      read -r line < "$f" 2>/dev/null
+      [ -n "$line" ] || continue
+      rest="${line##*)}"          # apres le dernier ')': state ppid pgrp session
+      fields=($rest)
+      [ "${fields[2]:-}" = "$want" ] || continue
+      [ "${fields[0]:-}" = "Z" ] && continue   # un zombie ne tourne plus
+      pid="${f#/proc/}"; echo "${pid%/stat}"
+    done
+  }
+
+  # La sonde relance CE fichier : sans ce garde, Test 75 s'y rejouerait a
+  # l'infini. Ce n'est pas une assertion, donc ni PASS ni FAIL.
+  if [ "${COURSIA_RUNNER_TEST75_PROBE:-0}" = "1" ]; then
+    echo "  SKIP: instance sonde de Test 75 (pas de recursion)"
+  elif [ ! -d /proc ]; then
+    ko "critere 4 non mesurable ici : /proc absent"
+  else
+    PROBE_ROOT="$TEST_DIR/interrupt-75"; mkdir -p "$PROBE_ROOT"
+    cat > "$PROBE_ROOT/run.sh" <<'PROBE'
+#!/usr/bin/env bash
+printf '%s\n' "$$" > "$PROBE_PID_FILE"
+exec bash "$PROBE_SUITE"
+PROBE
+    export PROBE_PID_FILE="$PROBE_ROOT/probe.pid"
+    export PROBE_SUITE="$SCRIPT_DIR/test_supervise_guards.sh"
+    export COURSIA_RUNNER_TEST75_PROBE=1
+    # `set -m` : controle de tache, donc un GROUPE DE PROCESSUS propre pour la
+    # sonde, sans `setsid` (absent d'un Git Bash MSYS, et la suite doit rester
+    # lancable sur les deux). Mesure : le fils recoit pgrp == son propre pid.
+    ( set -m; bash "$PROBE_ROOT/run.sh" >"$PROBE_ROOT/out.log" 2>&1 & )
+    probe_pid=""
+    for _ in $(seq 1 200); do
+      [ -s "$PROBE_ROOT/probe.pid" ] && { probe_pid="$(cat "$PROBE_ROOT/probe.pid")"; break; }
+      sleep 0.1
+    done
+    case "$probe_pid" in ''|*[!0-9]*) probe_pid="" ;; esac
+    # Anti-vacuite : l'interruption doit avoir un OBJET. Une sonde qui meurt
+    # avant d'avoir lance un seul enfant passerait le test sans rien mesurer --
+    # zero membre avant le signal n'est pas « aucun survivant », c'est un test
+    # qui n'a pas eu lieu.
+    members=0
+    if [ -n "$probe_pid" ]; then
+      for _ in $(seq 1 400); do
+        members=$(group_members "$probe_pid" | wc -l)
+        [ "$members" -ge 2 ] && break
+        sleep 0.1
+      done
+    fi
+    if [ -z "$probe_pid" ] || [ "$members" -lt 2 ]; then
+      ko "sonde jamais enfantee (pid='$probe_pid', membres=$members) : rien a mesurer"
+    else
+      # TERM au PARENT SEUL : seul le trap peut propager au groupe.
+      kill -TERM "$probe_pid" 2>/dev/null || true
+      survivors=1
+      for _ in $(seq 1 150); do
+        survivors=$(group_members "$probe_pid" | wc -l)
+        [ "$survivors" -eq 0 ] && break
+        sleep 0.1
+      done
+      if [ "$survivors" -eq 0 ]; then
+        ok "TERM au parent seul : le groupe entier est parti ($members processus au depart)"
+      else
+        ko "survivants apres TERM au parent : $(group_members "$probe_pid" | tr '\n' ' ')"
+      fi
+    fi
+    # Nettoyage inconditionnel : ni la sonde, ni son repertoire de travail ne
+    # doivent rester derriere un test rouge -- ce serait le defaut mesure.
+    if [ -n "$probe_pid" ]; then
+      kill -KILL -- "-$probe_pid" 2>/dev/null || true
+      rm -rf "/tmp/supervise-test-$probe_pid"
+    fi
+    rm -rf "$PROBE_ROOT"
   fi
 )
 echo ""

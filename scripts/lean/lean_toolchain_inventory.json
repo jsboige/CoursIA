@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "fleet_pin": "leanprover/lean4:v4.33.0",
+  "fleet_pin_source": "pin des lakes du depot : 35 des 42 fichiers lean-toolchain portent exactement leanprover/lean4:v4.33.0 (mesure 2026-11-10, origin/main)",
+  "environments": {
+    "myia-ai-01": {
+      "toolchain": "leanprover/lean4:v4.33.0",
+      "measured_at": "2026-11-10T14:22Z",
+      "elan_default": "leanprover/lean4:v4.11.0",
+      "note": "defaut elan du poste mesure a v4.11.0 ; le pin effectif est la declaration (v4.33.0), presente dans le parc local"
+    }
+  }
+}

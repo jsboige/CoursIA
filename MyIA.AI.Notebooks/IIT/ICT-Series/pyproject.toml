@@ -6,13 +6,14 @@
 #
 # Epingle PyPhi (IMPORTANT) :
 #   pyphi==1.2.0 exige Python <= 3.9 (collections.Iterable est retire en 3.10)
-#   et NumPy < 2.0 (compat pyemd). C'est ASSUMÉ pour la serie IIT/ICT cœur
-#   (les strates Φ-trajectoires sont le propos meme de la serie). Une migration
-#   vers Py3.11+/NumPy2 exigerait soit un port de PyPhi, soit d'isoler PyPhi
-#   dans un extra decorype (cf. issue de migration a ouvrir si besoin).
-#   Le package `ict/` lui-meme (simulations numpy/matplotlib) n'a pas besoin
-#   de PyPhi (cf. docstring ict/__init__.py) ; c'est le stricte calcul IIT
-#   (IIT-1/2/3, quelques cellules ICT) qui l'impose a tout l'env.
+#   et NumPy < 2.0 (compat pyemd). Depuis #25381, PyPhi et ses bornes derivees
+#   vivent dans l'extra [iit] : le coeur `pip install -e .` est installable sur
+#   tout Python >= 3.9 (c'est la voie contractuelle des consommateurs hors
+#   serie -- carnets GenAI/ML/SymbolicAI et scripts/hashlife), et l'env complet
+#   des strates Phi (IIT-1/2/3, ICT-36c/d) s'installe par `pip install -e ".[iit]"`
+#   sous Python 3.9 uniquement. Le package `ict/` lui-meme (simulations
+#   numpy/matplotlib) n'a pas besoin de PyPhi (cf. docstring ict/__init__.py,
+#   verifie par grep : aucun module ict/ n'importe pyphi).
 
 [build-system]
 requires = ["setuptools>=64", "wheel"]
@@ -23,26 +24,25 @@ name = "ict-series"
 version = "0.1.0"
 description = "ICT (Integrated Causal Trajectories) -- simulations, Φ-trajectoires, emergence causale, mesures scale-free (serie pedagogique IIT)"
 readme = "README.md"
-requires-python = ">=3.9,<3.10"   # pyphi==1.2.0 -> collections.Iterable (retire en 3.10)
+requires-python = ">=3.9"   # coeur leger : tout Python >= 3.9 (consommateurs hors serie
+                            # inclus, #25381). La contrainte <3.10 (pyphi) est portee
+                            # par l'extra [iit], pas par le package.
 license = { text = "MIT" }
 authors = [{ name = "CoursIA" }]
 keywords = ["IIT", "integrated-information", "causal-emergence", "pyphi", "morphogenesis"]
 
-# Dependances cœur : strates PyPhi + numpy/scipy + visualisation matplotlib.
+# Dependances cœur (legeres, #25381) : le package `ict/` ne depend que de la
+# pile scientifique -- AUCUN module ict/ n'importe pyphi (verifie par grep ;
+# pyphi n'est sollicite que par les carnets IIT-1/2/3 et quelques cellules ICT,
+# servis par l'extra [iit] ou par IIT/requirements.txt). numpy est laisse sans
+# borne haute : les modules consommes par les carnets hors serie tournent deja
+# sous NumPy 2.x sur le canon CPython 3.13 ; l'env 3.9 des strates Phi force
+# numpy<2 via [iit].
 # (matplotlib est massivement utilise par les notebooks : Φ-trajectoires,
 #  heatmaps, early-warning signals, cartes d'obstruction -- 47 imports.)
 dependencies = [
-    "pyphi==1.2.0",          # IIT computation -- epinglera l'env sur Py3.9 + NumPy<2
-    "numpy>=1.21,<2.0",      # numpy<2.0 (compat pyemd / pyphi)
+    "numpy>=1.21",           # >=1.21 partout ; <2.0 force par l'extra [iit] (pyphi/pyemd)
     "scipy>=0.13.3",         # calcul scientifique
-    "antropy<0.2",           # entropies non lineaires (Higuchi, Lempel-Ziv) :
-                             # importe par ICT-36c-FLens-HiguchiBridge et
-                             # ICT-36d-FLens-DecorrelationTemporelle
-                             # (ent.higuchi_fd, ent.lziv_complexity). Borne haute
-                             # 0.2 : cet env est epingle Python >=3.9,<3.10 (pyphi)
-                             # et antropy >=0.2.0 exige >=3.10 -- sans borne, pip
-                             # resout 0.1.9 et la version validee diverge (cf.
-                             # ../../requirements.txt, meme borne)
     "matplotlib",            # visualisation (notebooks)
     "pandas",                # ict.bridges.make_panel_did retourne un DataFrame
                              # (utilise par ict/tests/test_bridges.py et par
@@ -50,13 +50,35 @@ dependencies = [
                              # groupe x periode ; passage de extras a deps coeur
                              # pour que `pip install -e .` couvre la suite de
                              # tests CI sans modifier le workflow -- cf. c.296)
-    "cryptography>=3.4,<44", # port S6-B (#7742) : blob corpus .json.gz.enc
+    "cryptography>=3.4",     # port S6-B (#7742) : blob corpus .json.gz.enc
                              # (ict/extracts_tiers.py, Fernet + PBKDF2-HMAC-
-                             # SHA256 480k iters, contrat EPITA). Pin <44 :
-                             # dernier train supportant Python 3.9 (pin pyphi).
+                             # SHA256 480k iters, contrat EPITA). Sans borne haute
+                             # au coeur : les envs 3.13 veulent cryptography >=45
+                             # (joserfc, kglab) ; la borne <44 (dernier train
+                             # Python 3.9) vit dans l'extra [iit].
 ]
 
 [project.optional-dependencies]
+# Strates Phi / IIT strictes (#25381) : l'env historique de la serie, epingle
+# Python <3.10 par pyphi==1.2.0 (collections.Iterable retire en 3.10) et
+# numpy<2.0 (compat pyemd). C'est la voie des carnets IIT-1/2/3, des cellules
+# ICT de calcul Phi strict, et des carnets entropies non lineaires (antropy).
+# CI : ict-tests.yml installe `pip install -e ".[iit]"` dans son venv py3.9.
+iit = [
+    "pyphi==1.2.0",          # IIT computation -- epinglera l'env sur Py3.9 + NumPy<2
+    "numpy>=1.21,<2.0",      # numpy<2.0 (compat pyemd / pyphi)
+    "cryptography>=3.4,<44", # borne haute relocalisee ici (#25381) : dernier train
+                             # supportant Python 3.9 ; l'extra force un env <3.10
+                             # (pyphi), ou cryptography >=45 n'installe pas
+    "antropy<0.2",           # entropies non lineaires (Higuchi, Lempel-Ziv) :
+                             # importe par ICT-36c-FLens-HiguchiBridge et
+                             # ICT-36d-FLens-DecorrelationTemporelle
+                             # (ent.higuchi_fd, ent.lziv_complexity). Borne haute
+                             # 0.2 : cet env est epingle Python <3.10 (pyphi)
+                             # et antropy >=0.2.0 exige >=3.10 -- sans borne, pip
+                             # resout 0.1.9 et la version validee diverge (cf.
+                             # ../../requirements.txt, meme borne)
+]
 # Strates LLM/SAE (ICT-21/22/24, ICT-SAE-JLens) -- GPU requis, optionnelles.
 # Note : `sae_traces` et `jlens_traces` sont des modules INTERNES du package
 # `ict/` (ict/sae_traces.py, ict/jlens_traces.py), pas des deps pip.
@@ -82,3 +104,13 @@ include = ["ict*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.coursia.pinned_env]
+# Env de la SERIE pour canonical_env_hint (#25381) : les notebooks ICT
+# s'executent dans l'env historique des strates Phi (extra [iit],
+# pyphi==1.2.0 -> Python <= 3.9, numpy < 2.0 pour pyemd) -- PAS sous le
+# plancher d'installation du coeur (">=3.9", voie contractuelle des
+# consommateurs hors serie). Cette table prime sur project.requires-python
+# dans le hint de check_kernel_drift.
+requires-python = ">=3.9,<3.10"
+numpy = ">=1.21,<2.0"

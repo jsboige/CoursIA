@@ -167,16 +167,32 @@ def check_kernel_wrapper(kernel_name="lean4-wsl"):
 
 
 def check_social_choice_lean():
-    """Verifie que le projet Lake social_choice_lean existe"""
-    project_path = Path(__file__).parent.parent / "social_choice_lean"
-    lakefile = project_path / "lakefile.lean"
+    """Verifie l'etat canonique de social_choice_lean (plus un lake depuis #4365).
 
-    if lakefile.exists():
-        print_ok(f"social_choice_lean: Projet Lake trouve")
+    Depuis l'absorption #6058 (EPIC #4365), les modules vivent dans
+    game_theory_lean/SocialChoice/ et la coquille technique (lakefile.lean,
+    lean-toolchain, lake-manifest.json) a ete retiree. Etats canoniques :
+    dossier absent (sortie T3 de #24183) ou tombstone documentaire (markdown
+    seuls). Un lakefile* qui reaparait est une resurrection du 9e lake,
+    interdite par la consolidation #24183.
+    """
+    project_path = Path(__file__).parent.parent / "social_choice_lean"
+
+    if not project_path.exists():
+        print_ok("social_choice_lean: absent (canon post-T3, #24183)")
         return True
-    else:
-        print_error(f"social_choice_lean: Projet Lake manquant ({project_path})")
+
+    lakefiles = sorted(p.name for p in project_path.glob("lakefile*"))
+    if lakefiles:
+        print_error(
+            "social_choice_lean: lakefile ressuscite ("
+            + ", ".join(lakefiles)
+            + ") -- resurrection du 9e lake interdite (#24183)"
+        )
         return False
+
+    print_ok("social_choice_lean: tombstone documentaire sans lake (canon #4365/#24183)")
+    return True
 
 
 def check_lean_runner():

@@ -41,9 +41,19 @@ class TestPreflight(unittest.TestCase):
         self.assertEqual(preflight(core_dir()), [])
 
     def test_empty_directory_reports_missing_core_and_notebook(self):
-        """Sans coeur ni carnet, les deux manques sont nommes, pas devines."""
-        with tempfile.TemporaryDirectory() as vide:
-            problems = preflight(Path(vide))
+        """Sans coeur ni carnet, les deux manques sont nommes, pas devines.
+
+        Le nom du carnet est neutralise le temps du test : le vrai vit un
+        niveau au-dessus du dossier servi, et un ``../`` depuis un dossier
+        temporaire dependrait du contenu de son parent.
+        """
+        original = run_gateway.SERVICE_NOTEBOOK
+        run_gateway.SERVICE_NOTEBOOK = "carnet-de-service-absent.ipynb"
+        try:
+            with tempfile.TemporaryDirectory() as vide:
+                problems = preflight(Path(vide))
+        finally:
+            run_gateway.SERVICE_NOTEBOOK = original
         joined = " | ".join(problems)
         self.assertTrue(any("coeur absent" in p for p in problems), joined)
         self.assertTrue(any("carnet de service absent" in p for p in problems), joined)
@@ -53,7 +63,6 @@ class TestPreflight(unittest.TestCase):
         with tempfile.TemporaryDirectory() as dossier:
             base = Path(dossier)
             (base / "z3_sudoku_core.py").write_text("def solve_request(:\n", encoding="utf-8")
-            (base / "z3-sudoku-service.ipynb").write_text("{}", encoding="utf-8")
             problems = preflight(base)
         self.assertTrue(any("coeur non importable" in p for p in problems), problems)
 
@@ -62,16 +71,32 @@ class TestPreflight(unittest.TestCase):
         with tempfile.TemporaryDirectory() as dossier:
             base = Path(dossier)
             (base / "z3_sudoku_core.py").write_text("VALEUR = 1\n", encoding="utf-8")
-            (base / "z3-sudoku-service.ipynb").write_text("{}", encoding="utf-8")
             problems = preflight(base)
         self.assertTrue(any("solve_request" in p for p in problems), problems)
+
+    def test_service_notebook_is_the_flagship_notebook(self):
+        """Le carnet servi est le carnet phare : un seul fichier, deux usages."""
+        serves = (core_dir() / run_gateway.SERVICE_NOTEBOOK).resolve()
+        self.assertTrue(serves.is_file(), serves)
+        self.assertEqual(serves.name, "Z3-02-Sudoku-Python.ipynb")
+        self.assertEqual(serves.parent.name, "Z3-API")
+        # L'ancien carnet de service dedie est retire : sa fonction est portee
+        # par les cellules de la section 4 du carnet phare.
+        self.assertFalse((core_dir() / "z3-sudoku-service.ipynb").exists())
 
 
 class TestCommandLine(unittest.TestCase):
     def test_seed_uri_is_relative_to_the_served_directory(self):
-        """Le seed est relatif : le gateway se place lui-meme dans le dossier."""
+        """Le seed est relatif : le gateway se place lui-meme dans le dossier.
+
+        Le carnet servi vivant un niveau au-dessus du lanceur, le chemin porte
+        un ``../`` : il reste relatif au dossier ou le gateway se place, donc
+        ouvert par le kernel quel que soit le repertoire de lancement.
+        """
         arguments = build_arguments(core_dir(), 8900, [])
-        self.assertIn("--KernelGatewayApp.seed_uri=z3-sudoku-service.ipynb", arguments)
+        self.assertIn(
+            "--KernelGatewayApp.seed_uri=../Z3-02-Sudoku-Python.ipynb", arguments
+        )
         self.assertIn("--KernelGatewayApp.port=8900", arguments)
         self.assertIn("--JupyterWebsocketPersonality.list_kernels=True", arguments)
         self.assertNotIn(str(core_dir()), " ".join(arguments))

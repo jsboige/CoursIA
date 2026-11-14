@@ -97,6 +97,10 @@ ACTIONS = (
     "actions/cache/save@v4",
     "actions/checkout@v4",
     "actions/deploy-pages@v4",
+    # #11508 L5 : quarto-pages-deploy recupere l'archive des builds
+    # (download-artifact@v4) -- declaree ici sinon le garde #14853 A1 la
+    # signale et le job telecharge a la volee.
+    "actions/download-artifact@v4",
     "actions/github-script@v7",
     "actions/setup-dotnet@v4",
     "actions/setup-node@v4",

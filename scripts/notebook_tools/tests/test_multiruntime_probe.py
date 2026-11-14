@@ -79,6 +79,38 @@ def test_parse_provenance_lit_la_preuve_de_runtime():
     assert "dotnet-r11" in parsed["dir"]
 
 
+def test_validate_runtime_proof_accepte_le_runtime_sous_la_racine(tmp_path):
+    root = tmp_path / "dotnet"
+    runtime_dir = root / "shared" / "Microsoft.NETCore.App" / "10.0.14"
+    runtime_dir.mkdir(parents=True)
+    proof = {
+        "description": ".NET 10.0.14",
+        "version": "10.0.14",
+        "dir": str(runtime_dir),
+    }
+
+    probe.validate_runtime_proof(str(root), proof)
+
+
+def test_validate_runtime_proof_rejette_un_runtime_charge_depuis_une_autre_racine(tmp_path):
+    requested = tmp_path / "dotnet-10"
+    loaded = tmp_path / "dotnet-9" / "shared" / "Microsoft.NETCore.App" / "9.0.22"
+    loaded.mkdir(parents=True)
+    proof = {
+        "description": ".NET 9.0.22",
+        "version": "9.0.22",
+        "dir": str(loaded),
+    }
+
+    with pytest.raises(RuntimeError, match="hors de DOTNET_ROOT demande"):
+        probe.validate_runtime_proof(str(requested), proof)
+
+
+def test_validate_runtime_proof_rejette_une_preuve_incomplete(tmp_path):
+    with pytest.raises(RuntimeError, match="preuve du runtime incomplete"):
+        probe.validate_runtime_proof(str(tmp_path), {"description": ".NET 10.0.14"})
+
+
 # --- verdict ----------------------------------------------------------------
 
 def _mesure(median, min_, max_):

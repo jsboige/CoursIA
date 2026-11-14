@@ -42,9 +42,9 @@ réduit la question aux premiers `p ∈ {2, …, 306}` : pour chacun, il faut un
 idéal premier `P` au-dessus de `p` tel que `⌊M K⌋₊ < p ^ f` (où `f` est le
 degré d'inertie) **ou** `P` principal.
 
-1. **`p = 3`** (lemme `isPrincipal_of_liesOver_three`) : le corps `F₂₇ =
-   AdjoinRoot (X³ - X - 1)` sur `ZMod 3` fournit le morphisme `⸜ K → F₂₇`
-   envoyant `ζ₁₃` sur une racine de `X³ - X - 1` ; son noyau est
+1. **`p = 3`** (lemme `isPrincipal_of_liesOver_three`) : le corps `F27 =
+   AdjoinRoot (X³ - X - 1)` sur `ZMod 3` fournit le morphisme de `⸜ K`
+   vers `F27` envoyant `ζ₁₃` sur une racine de `X³ - X - 1` ; son noyau est
    `span {α}` avec `α = 1 + ζ - ζ³`, via l'identité `α * β = 3` et un
    argument galoisien (`exists_smul_eq_of_isGaloisGroup`) ;
 2. **`p ∈ {13, 53, 79, 131, 157}`** : le certificat générique
@@ -73,7 +73,7 @@ namespace M3dS11
 scoped instance fact_prime_thirteen : Fact (Nat.Prime 13) := ⟨by norm_num⟩
 
 /-- Le polynôme `X³ - X - 1` sur `ZMod 3` : irréductible, il définit le corps
-`F₂₇` dans lequel `ζ₁₃` s'envoie sur une racine. -/
+`F27` dans lequel `ζ₁₃` s'envoie sur une racine. -/
 noncomputable def g3 : Polynomial (ZMod 3) := X ^ 3 - X - 1
 
 theorem g3_natDegree : g3.natDegree = 3 := by
@@ -105,9 +105,9 @@ scoped instance F27_charP : CharP F27 3 :=
 
 variable {K : Type*} [Field K] [NumberField K] [hK : IsCyclotomicExtension {13} ℚ K]
 
-/-- Tout idéal premier de `⸜ K` au-dessus de `3` est principal : son
+/-- Tout idéal premier de `𝓞 K` au-dessus de `3` est principal : son
 générateur est l'image galoisienne de `α = 1 + ζ - ζ³`, qui engendre le noyau
-du morphisme `⸜ K → F₂₇` envoyant `ζ₁₃` sur la racine de `X³ - X - 1`. -/
+du morphisme `𝓞 K → F27` envoyant `ζ₁₃` sur la racine de `X³ - X - 1`. -/
 theorem isPrincipal_of_liesOver_three (P : Ideal (𝓞 K)) [hP : P.IsPrime]
     [hP3 : P.LiesOver (span {(3 : ℤ)})] : Submodule.IsPrincipal P := by
   have hζ := hK.zeta_spec
@@ -694,7 +694,7 @@ theorem dispatchD (N : ℕ) (hN : N < 307)
 
 /-- **`ℤ[ζ₁₃]` est un anneau principal.** Le critère de Marcus
 (`isPrincipalIdealRing_of_isPrincipal_of_lt_or_isPrincipal_...`) réduit la
-question aux premiers `p < 307` : `3` par le lemme `F₂₇`, `13` (le ramifié),
+question aux premiers `p < 307` : `3` par le lemme `F27`, `13` (le ramifié),
 `53`, `79`, `131` et `157` par certificats explicites
 (`span_mem_primesOver_of_cert`), tous les autres par degré d'inertie
 (`exists_primesOver_lt`, dispatch A-D). -/
