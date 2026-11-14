@@ -237,8 +237,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 31 | [ICT-15k — Recollement des macrocells : le quadtree de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15k-RecollementMacroCells-Python.ipynb) | BETA | Oui |
 | 32 | [ICT-15l — Indépendance au générateur de nouveauté : le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity/ICT-15l-IndependanceGenerateur-Python.ipynb) | BETA | Oui |
 | 33 | [ICT-16 — MDL / code en deux parties et bosse…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) | BETA | Oui |
-| 34 | [ICT-17b — Grokking et compression-progress : la jambe K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | BETA | Oui |
-| 35 | [ICT-17c — TorchLens : inspecter les représentations…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb) | BETA | Non |
+| 34 | [ICT-17b — Grokking et compression-progress : la jambe K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | BETA | Oui |
+| 35 | [ICT-17c — TorchLens : inspecter les représentations…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb) | BETA | Non |
 | 36 | [ICT-18 -- Fleche du temps et reversibilisation](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb) | BETA | Oui |
 | 37 | [ICT-18b — Budget de réversibilité : la jambe « fin » de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) | BETA | Oui |
 | 38 | [ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) | BETA | Oui |
