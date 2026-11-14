@@ -6,7 +6,7 @@ This directory contains archived one-shot fix and update scripts for Lean notebo
 
 These scripts were used during the initial development and debugging of Lean-8 and Lean-9 notebooks. They are preserved for reference but should not be run again as the fixes have already been applied.
 
-## fix_*.py Scripts (14 files)
+## fix_*.py Scripts
 
 Scripts that fixed specific issues in Lean-8-Agentic-Proving.ipynb:
 

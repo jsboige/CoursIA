@@ -11,7 +11,7 @@
 5. **RÈGLE F** — NTL absente (Python pur, pas de Lean build), `networkx` installé OK
 6. 4 smells — non-convergence BFS, dépassement mémoire `L=128`, ambiguïté seuil fini/infini, seed-fluctuation asymétrique
 7. Comparaison vs vanilla — `networkx.connected_components` BFS + log-bin histogram, pas de dépendance hors-`networkx`
-8. Livrable — `Percolation-03-Critique-Python.ipynb` (Carnet d'application), `docs/research/percolation-03-critique-results.md` (~250 l.), `example_results/p03_critique_validation.json`
+8. Livrable — `Percolation-03-Critique-Python.ipynb` (Carnet d'application), `docs/research/percolation-03-critique-results.md` (~250 l.), `MyIA.AI.Notebooks/Probas/Applications/Percolation/p03_critique_validation.json` (chemin série-local depuis #13751 — l'ancien `example_results/` racine n'existe plus ; la livraison effective a pris la forme de PNG série + rapport)
 9. Plan d'exécution 4 phases — A design cellules (15 min) + B exécution papermill (30 min) + C validation (10 min) + D rapport + PR (15 min). Total ~70 min wall-clock sur 1-2 cycles.
 10. Recommandation — auto-suffisant localement (networkx OK, pas de NTL requise), peut être livré sans routage cross-machine.
 
@@ -147,7 +147,7 @@ def sample_at_p_c(L, p, seed):
 |---------|-------------|--------|
 | `MyIA.AI.Notebooks/Probas/Applications/Percolation/Percolation-03-Critique-Python.ipynb` | Carnet d'application | ~700 l. |
 | `docs/research/percolation-03-critique-results.md` | Rapport ground truth : mesures, fits β/ν et τ', comparaison vs théorie | ~250 l. |
-| `example_results/p03_critique_validation.json` | JSON machine-readable (4 L × 5 p × 32 seeds) | ~600 l. |
+| `MyIA.AI.Notebooks/Probas/Applications/Percolation/p03_critique_validation.json` | JSON machine-readable (4 L × 5 p × 32 seeds) | ~600 l. |
 | `MyIA.AI.Notebooks/Probas/Applications/Percolation/README.md` | Update : ajouter ligne 03 dans le tableau | +5/-2 |
 
 ## 9. Plan d'exécution 4 phases

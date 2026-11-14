@@ -313,3 +313,23 @@ def test_input_validation_rejects_degenerate_inputs():
         mass_mean_probe(bons_X, np.array([0, 0, 0, 0]))
     with pytest.raises(ValueError):
         mass_mean_probe(bons_X, np.array([1, 1, 1, 1]))
+
+@pytest.mark.parametrize("bad", [np.nan, np.inf, -np.inf])
+def test_activations_non_finies_refusees(bad):
+    X = np.array([[0.0, 0.0], [1.0, 1.0]])
+    y = np.array([0, 1])
+    X[0, 0] = bad
+    with pytest.raises(ValueError, match="fin"):
+        mass_mean_probe(X, y)
+    with pytest.raises(ValueError, match="fin"):
+        probe_accuracy(np.ones(2), np.zeros(2), X, y)
+
+
+@pytest.mark.parametrize("field", ["theta", "mu"])
+def test_sonde_non_finie_refusee(field):
+    X = np.array([[0.0, 0.0], [1.0, 1.0]])
+    y = np.array([0, 1])
+    theta, mu = np.ones(2), np.zeros(2)
+    (theta if field == "theta" else mu)[0] = np.nan
+    with pytest.raises(ValueError, match="fin"):
+        probe_accuracy(theta, mu, X, y)

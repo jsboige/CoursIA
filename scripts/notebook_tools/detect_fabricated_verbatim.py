@@ -368,6 +368,17 @@ def _find_probes_in_fragment(fragment: str) -> list[str]:
         if len(cleaned) >= MIN_PROBE_CHARS and not cleaned.startswith("//"):
             probes.append(cleaned)
     if not probes:
+        # Le repli est une EMPREINTE insensible aux espaces. Il ne peut pas
+        # etre compare tel quel a la sortie normalisee : `_normalize` collapse
+        # les espaces et les CONSERVE, une empreinte qui les retire ne
+        # matchait donc jamais (temoignage `Gaussian(15,33,4,613)` contre une
+        # sortie `Gaussian(15,33, 4,613)` -- faux positif systematique sur
+        # toute citation contenant un espace, residue mesure de #24269).
+        # La correction est donc faite LA OU LA COMPARAISON SE FAIT : les
+        # deux cotes sont compares sans espace (cf. `squashed` dans le
+        # scanner). L'empreinte reste ce qu'elle etait, et la longueur
+        # d'eligibilite ne bouge pas -- un seuil qui dependait du nombre
+        # d'espaces retirés etait arbitraire.
         cleaned_all = re.sub(r"\s+", "", fragment)
         if len(cleaned_all) >= MIN_PROBE_CHARS:
             probes.append(cleaned_all[:60])
@@ -497,13 +508,26 @@ def _scan_notebook(path: Path, threshold: int = 1) -> dict:
                 if not normalized:
                     continue
                 # Voie 1 -- probe >= MIN_PROBE_CHARS (le gate anti-FP classique
-                # sur prose longue). Si elle donne un verdict de HITS < threshold,
-                # on declare la fabrication sans regarder les litteraux.
+                # sur prose longue). Un verdict HITS < threshold rend le fragment
+                # SUSPECT -- mais il ne decides pas seul : la voie litterale
+                # (voie 2) est consultee dans tous les cas, comme l'annonce le
+                # commentaire de la voie 2 (« en parallele de la voie probe,
+                # pas en fallback try-first »). Le `continue` d'avantcourtait
+                # cette consultation : le verdict probe partait sans seconde
+                # opinion (residue mesure de #24269).
                 probes = _find_probes_in_fragment(c["fragment"])
+                # La comparaison est INSENSIBLE AUX ESPACES des deux cotes :
+                # la sortie est normalisee (`_normalize` collapse les espaces
+                # et les conserve) tandis que l'empreinte de repli les retire
+                # -- les deux formes n'etaient donc pas comparables, et la
+                # probe ne matchait jamais (residue de #24269).
+                squashed = re.sub(r"\s+", "", normalized)
+                probe_finding = None
                 if probes:
-                    hits = sum(1 for p in probes if p in normalized)
+                    hits = sum(1 for p in probes
+                               if p in normalized or p in squashed)
                     if hits < threshold:
-                        findings.append({
+                        probe_finding = {
                             "kind": "fabricated_verbatim",
                             "notebook": str(path),
                             "markdown_cell_idx": idx,
@@ -517,8 +541,7 @@ def _scan_notebook(path: Path, threshold: int = 1) -> dict:
                                 if a["code_n"] is not None
                                 else a["direction"] or "raw_output"
                             ),
-                        })
-                        continue
+                        }
                 # Voie 2 -- litteral discriminant. Tournee en PARALLELE de la
                 # voie probe, pas en fallback try-first : un fragment de prose
                 # pedagogique peut partager un mot commun (ex. `operationnelle`)
@@ -546,9 +569,16 @@ def _scan_notebook(path: Path, threshold: int = 1) -> dict:
                     # Cas special : les fragments de la forme `key: value`
                     # (case A `JVM operationnelle : False`) n'ont pas de `=`,
                     # donc ce guard ne les affecte pas.
+                    # La voie 2 ne s'applique pas ici : le verdict probe tient.
+                    if probe_finding is not None:
+                        findings.append(probe_finding)
                     continue
                 literals = LITERAL_RE.findall(c["fragment"])
                 if not literals:
+                    # Aucun litteral discriminant : la voie 2 n'a rien a dire,
+                    # le verdict probe tient seul.
+                    if probe_finding is not None:
+                        findings.append(probe_finding)
                     continue
                 missing = [lit for lit in literals if lit not in normalized]
                 if missing:
@@ -569,6 +599,15 @@ def _scan_notebook(path: Path, threshold: int = 1) -> dict:
                             else a["direction"] or "raw_output"
                         ),
                     })
+                else:
+                    # Second opinion : tous les litteraux discriminants sont
+                    # presents dans la sortie, la citation est donc VERBATIM.
+                    # Un verdict probe concurrent etait un faux positif (le
+                    # repli qui retirait les espaces en produisait) : il est
+                    # ecarte, pas remonte. Un fragment dont la voie probe a
+                    # fired mais qui ne porte aucun litteral discriminant
+                    # reste traite plus haut (la voie 2 n'a rien a dire).
+                    pass
 
     return {
         "path": str(path),

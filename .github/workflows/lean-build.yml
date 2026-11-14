@@ -403,6 +403,18 @@ jobs:
         display-name: ${{ matrix.display-name }}
         sorry-baseline: ${{ matrix.sorry-baseline }}
         sorry-filter-mode: ${{ matrix.sorry-filter-mode }}
+        # #23247 (portage matriciel, conway 2026-11-08) : cap optionnel par
+        # lake, cle `build-threads` du manifeste, passee a l'input composite
+        # `build-jobs` (son nom declare -- un appel sous `build-threads` est
+        # IGNORE avec un simple warning, mesure au run 42475534833 : le cap
+        # "1" de conway ne posait pas LEAN_NUM_THREADS ; ce run s'est arrete
+        # avant le build. Absente = '' -> le composite garde son defaut (tous les
+        # coeurs) : comportement exact des 35 entrees sans la cle. conway_lean
+        # la pose a "1" : depuis le 26/10, chaque run main meurt par OOM
+        # d'elaboration sans -j1 (pics 13,3 GiB > plafond 16 Go
+        # d'ubuntu-latest, exit 143) -- la migrer sans le cap, c'est rougir
+        # chaque build du lake sans avoir touche une preuve.
+        build-jobs: ${{ matrix.build-threads || '' }}
     # Proof integrity (B.3) sur le chemin matriciel (#17336, template de
     # l'EPIC #17287) : opt-in par cle du manifeste -- une entree SANS
     # `axiom-target-modules` s'interpole en '' et le step est saute (les 19
@@ -422,6 +434,19 @@ jobs:
         allow-axioms: ${{ matrix.axiom-allow-axioms || '' }}
         fail-on-sorry: ${{ matrix.axiom-fail-on-sorry || 'true' }}
         include-i18n-siblings: ${{ matrix.axiom-include-i18n-siblings || 'false' }}
+    # Le wrapper lean-conway.yml portait aussi une seconde jambe, bloquante,
+    # sur les deux modules showcase. Les trois cles restent optionnelles :
+    # hors conway, une valeur matricielle absente interpole en '' et le step
+    # est saute, sans modifier le profil advisory existant.
+    - name: Proof integrity blocking (${{ matrix.display-name }})
+      if: matrix.axiom-blocking-target-modules != ''
+      uses: ./.github/actions/lean-axiom
+      with:
+        project-path: ${{ matrix.project-path }}
+        display-name: ${{ matrix.display-name }} (blocking)
+        target-modules: ${{ matrix.axiom-blocking-target-modules }}
+        allow-axioms: ${{ matrix.axiom-blocking-allow-axioms || '' }}
+        fail-on-sorry: ${{ matrix.axiom-blocking-fail-on-sorry || 'true' }}
     # Contrat certifie (#17374, herite du wrapper lean-social-choice.yml
     # supprime) : opt-in par cle `certified-subdir` du manifeste -- une entree
     # sans la cle saute le step (comportement exact des autres lakes). Porte

@@ -5,6 +5,7 @@ from universe import PiotroskiScoreUniverseSelectionModel
 # https://www.quantconnect.com/strategies/343
 # High Book-to-Market High F-Score Quality Value by Louis Szeto
 # OOS 1Y Sharpe 2.09, 5Y CAGR 18.44%, 5Y Drawdown 24.20%, 62% Win Rate
+# (fenetres glissantes de la fiche, lues le 2026-04-05 ; elles bougent a chaque lecture, voir README)
 # Systematic equity long-only value + quality screen using Piotroski F-Score anomaly
 # Top 20% book-to-market stocks filtered by F-Score >= 8, equal-weighted, monthly rebalance
 # Source: QC Strategy Library #343, cloned 2026-04-05, QC Project ID: 29687591
@@ -15,8 +16,17 @@ class PiotroskiScoreAlgorithm(QCAlgorithm):
     def initialize(self):
         self.set_cash(10_000_000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
-        self.set_start_date(self.end_date - timedelta(12*365))
-        self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
+        # Fenetre par defaut : fin au 2025-01-01, debut = date du run moins 12 ans (le debut
+        # glisse avec la date du run). Les parametres optionnels `start` et `end`
+        # (AAAA-MM-JJ) fixent une fenetre explicite, pour mesurer la strategie sur les
+        # fenetres de la fiche de bibliotheque (voir README).
+        start, end = self.get_parameter('start'), self.get_parameter('end')
+        if start and end:
+            self.set_start_date(datetime.strptime(start, '%Y-%m-%d'))
+            self.set_end_date(datetime.strptime(end, '%Y-%m-%d'))
+        else:
+            self.set_start_date(self.end_date - timedelta(12*365))
+            self.set_end_date(2025, 1, 1)  # Fixed end date for reproducibility
         # Configure settings to rebalance monthly.
         rebalance_date = self.date_rules.month_start('SPY')
         # Define the universe settings.

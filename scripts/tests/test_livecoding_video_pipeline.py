@@ -31,7 +31,7 @@ import pytest
 _FORBIDDEN_PERSONAL = "switchan" + "gel"
 _FORBIDDEN_VOICE_TOKEN = _FORBIDDEN_PERSONAL + "_voice"
 
-from scripts.livecoding_video_pipeline import (
+from scripts.slides.livecoding_video_pipeline import (
     NARRATION_FORBIDDEN_SUBSTRINGS,
     NARRATION_PLANS,
     NARRATION_SYSTEM_PROMPT,
@@ -63,7 +63,7 @@ from scripts.livecoding_video_pipeline import (
     tts_speed_for_intensity,
     validate_narration,
 )
-from scripts.livecoding_video_pipeline import main as pipeline_main
+from scripts.slides.livecoding_video_pipeline import main as pipeline_main
 
 
 class TestStrudelStyle:
@@ -677,7 +677,7 @@ class TestRunPipeline:
             "clone_pipeline",
             "xtts.clone",
         ]
-        src_file = "scripts/livecoding_video_pipeline.py"
+        src_file = "scripts/slides/livecoding_video_pipeline.py"
         with open(src_file, encoding="utf-8") as f:
             src = f.read()
         for token in forbidden:
@@ -704,7 +704,7 @@ class TestCLIInvocation:
     def test_cli_help_prints(self):
         """Le CLI doit au moins se charger et afficher l'aide sans crasher."""
         result = subprocess.run(
-            [sys.executable, "scripts/livecoding_video_pipeline.py", "--help"],
+            [sys.executable, "scripts/slides/livecoding_video_pipeline.py", "--help"],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -719,7 +719,7 @@ class TestCLIInvocation:
         result = subprocess.run(
             [
                 sys.executable,
-                "scripts/livecoding_video_pipeline.py",
+                "scripts/slides/livecoding_video_pipeline.py",
                 "--style",
                 "melancholy",
                 "--duration",
@@ -741,7 +741,7 @@ class TestCLIInvocation:
     def test_cli_help_documente_la_capture(self):
         """L'option --capture (etape 4) doit etre documentee dans l'aide."""
         result = subprocess.run(
-            [sys.executable, "scripts/livecoding_video_pipeline.py", "--help"],
+            [sys.executable, "scripts/slides/livecoding_video_pipeline.py", "--help"],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -753,7 +753,7 @@ class TestCLIInvocation:
         """Les options etape 2 (--narration-engine/--narration-json)
         doivent etre documentees dans l'aide."""
         result = subprocess.run(
-            [sys.executable, "scripts/livecoding_video_pipeline.py", "--help"],
+            [sys.executable, "scripts/slides/livecoding_video_pipeline.py", "--help"],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -767,7 +767,7 @@ class TestCLIInvocation:
         target = tmp_path / "segments.json"
         result = subprocess.run(
             [
-                sys.executable, "scripts/livecoding_video_pipeline.py",
+                sys.executable, "scripts/slides/livecoding_video_pipeline.py",
                 "--style", "techno",
                 "--duration", "120",
                 "--output", "out/cli_narr.mp4",
@@ -830,7 +830,7 @@ class TestCaptureMode:
         """La garde en entree de capture_repl_session echoue AVANT
         d'ouvrir un navigateur (echec explicite, pas de comportement
         implicite par defaut)."""
-        from scripts.livecoding_video_pipeline import capture_repl_session
+        from scripts.slides.livecoding_video_pipeline import capture_repl_session
 
         with pytest.raises(ValueError, match="capture_mode inconnu"):
             capture_repl_session(
@@ -850,14 +850,14 @@ class TestAudioProbeCritere2:
 
     def test_sonde_absente_n_est_pas_un_succes(self):
         """Sonde absente = rien n'a ete mesure : ce n'est pas un oui."""
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict({})
         assert ok is False
         assert "absente" in reason
 
     def test_none_n_est_pas_un_succes(self):
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict(None)
         assert ok is False
@@ -865,7 +865,7 @@ class TestAudioProbeCritere2:
 
     def test_aucun_contexte_audio(self):
         """Page chargee mais pattern jamais demarre : aucun AudioContext."""
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict({"hasProbe": True, "contexts": []})
         assert ok is False
@@ -875,7 +875,7 @@ class TestAudioProbeCritere2:
         """Le piege fondateur : contexte cree mais suspendu (play non
         effectif), horloge immobile. Un 'AudioContext existe' suffirait
         a tort."""
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict(
             {
@@ -891,7 +891,7 @@ class TestAudioProbeCritere2:
 
     def test_horloge_figee(self):
         """Contexte running mais horloge immobile : le moteur ne rend rien."""
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict(
             {
@@ -907,7 +907,7 @@ class TestAudioProbeCritere2:
     def test_sortie_quasi_silencieuse(self):
         """Horloge en marche et graphe branche, mais aucun signal : le
         niveau mesure rattrape ce que l'horloge seule laisserait passer."""
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict(
             {
@@ -921,7 +921,7 @@ class TestAudioProbeCritere2:
         assert "silencieuse" in reason
 
     def test_audio_produit(self):
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict(
             {
@@ -938,7 +938,7 @@ class TestAudioProbeCritere2:
         """Aucun noeud branche sur la destination (tap impossible) : la
         mesure retombe sur l'horloge seule, et le motif le DIT au lieu de
         laisser croire a une mesure de niveau."""
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, reason = audio_verdict(
             {
@@ -954,7 +954,7 @@ class TestAudioProbeCritere2:
     def test_meilleur_contexte_arbitre(self):
         """Strudel peut creer un contexte par evaluation : un contexte
         mort a cote d'un contexte vivant ne doit pas faire echouer."""
-        from scripts.livecoding_video_pipeline import audio_verdict
+        from scripts.slides.livecoding_video_pipeline import audio_verdict
 
         ok, _ = audio_verdict(
             {
@@ -974,7 +974,7 @@ class TestAudioProbeCritere2:
         WAV qui l'arrete."""
         import inspect
 
-        from scripts.livecoding_video_pipeline import capture_repl_session
+        from scripts.slides.livecoding_video_pipeline import capture_repl_session
 
         src = inspect.getsource(capture_repl_session)
         i_init = src.index("add_init_script(AUDIO_PROBE_INIT_JS)")
@@ -993,7 +993,7 @@ class TestAudioProbeCritere2:
         interdit."""
         import inspect
 
-        from scripts.livecoding_video_pipeline import capture_repl_session
+        from scripts.slides.livecoding_video_pipeline import capture_repl_session
 
         src = inspect.getsource(capture_repl_session)
         assert "audio_ok" in src and "RuntimeError" in src
@@ -1005,7 +1005,7 @@ class TestAudioProbeCritere2:
         --check` la voit sans navigateur."""
         import shutil
 
-        from scripts.livecoding_video_pipeline import (
+        from scripts.slides.livecoding_video_pipeline import (
             AUDIO_PROBE_INIT_JS,
             AUDIO_PROBE_JS,
         )
@@ -1034,7 +1034,7 @@ class TestAudioProbeCritere2:
         """Le tap doit viser le noeud `destination` uniquement : detourner
         `connect` en general reviendrait a inserer un noeud dans tous les
         chemins du graphe et changerait le son capture."""
-        from scripts.livecoding_video_pipeline import AUDIO_PROBE_INIT_JS
+        from scripts.slides.livecoding_video_pipeline import AUDIO_PROBE_INIT_JS
 
         assert "AudioDestinationNode" in AUDIO_PROBE_INIT_JS
         assert "createAnalyser" in AUDIO_PROBE_INIT_JS
@@ -1200,7 +1200,7 @@ class TestMixFinalFfmpeg:
     ]
 
     def test_filtergraph_complet(self, monkeypatch):
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
         monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 60.0)
         cmd = mix_final_ffmpeg(
             Path("video.webm"), Path("browser.wav"), self.TRACKS,
@@ -1221,7 +1221,7 @@ class TestMixFinalFfmpeg:
         assert str(Path("final.mp4")) == cmd[-1]
 
     def test_lufs_parametrable_et_zero_piste(self, monkeypatch):
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
         monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 90.0)
         cmd = mix_final_ffmpeg(
             Path("v.webm"), Path("b.wav"), [], Path("o.mp4"),
@@ -1232,7 +1232,7 @@ class TestMixFinalFfmpeg:
         assert "st=87.000" in fc  # fade sur les 3 dernieres secondes
 
     def test_video_courte_fade_depuis_zero(self, monkeypatch):
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
         monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 2.0)
         cmd = mix_final_ffmpeg(
             Path("v.webm"), Path("b.wav"), self.TRACKS[:1], Path("o.mp4"))
@@ -1244,7 +1244,7 @@ class TestMixFinalFfmpeg:
         # chargement/play/warmup) ; -ss extrait la fenetre utile AVANT
         # le premier -i (seek video seul, pas audio), et le fade se
         # cale sur la duree de la FENETRE pas de la webm brute.
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
         monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 185.2)
         cmd = mix_final_ffmpeg(
             Path("video.webm"), Path("browser.wav"), self.TRACKS,
@@ -1260,7 +1260,7 @@ class TestMixFinalFfmpeg:
     def test_sans_video_trim_start_comportement_historique(self, monkeypatch):
         # Mode canvas : aucun -ss, duree = probe webm (comportement
         # historique inchange).
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
         monkeypatch.setattr(pl, "probe_duration_ffprobe", lambda m: 60.0)
         cmd = mix_final_ffmpeg(
             Path("v.webm"), Path("b.wav"), self.TRACKS[:1], Path("o.mp4"))
@@ -1291,7 +1291,7 @@ class TestRunPipelineEtape3:
         assert "etape 6 (mix final) deferred" in result["verdict"]
 
     def test_avec_moteur_synthese_cablee(self, monkeypatch, tmp_path):
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
         monkeypatch.setattr(
             pl, "synthesize_narration_tts", self._fake_tracks)
         result = run_pipeline(
@@ -1307,7 +1307,7 @@ class TestRunPipelineEtape3:
 class TestCliEtapes36:
     def test_help_documente_le_tts(self):
         result = subprocess.run(
-            [sys.executable, "scripts/livecoding_video_pipeline.py", "--help"],
+            [sys.executable, "scripts/slides/livecoding_video_pipeline.py", "--help"],
             capture_output=True,
             text=True,
             encoding="utf-8",
@@ -1360,7 +1360,7 @@ class TestMixDurationOverride:
     navigateur quand le webm n'expose rien — aucun appel ffprobe."""
 
     def test_override_court_circuite_le_probe(self, monkeypatch):
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
 
         def _probe_fail(media):
             raise AssertionError("probe ne doit pas etre appele")
@@ -1402,7 +1402,7 @@ class TestCliCaptureSecondsDefault:
     def test_run_pipeline_transmet_duration_a_la_capture(self, tmp_path, monkeypatch):
         """Wiring : sans capture_seconds explicite, capture_repl_session
         recoit duration_seconds."""
-        import scripts.livecoding_video_pipeline as pl
+        import scripts.slides.livecoding_video_pipeline as pl
 
         seen = {}
 
@@ -1633,7 +1633,7 @@ class TestCliProgressive:
         assert _build_arg_parser().parse_args([]).progressive is False
 
     def test_progressive_sans_capture_rend_2(self, capsys):
-        from scripts.livecoding_video_pipeline import main
+        from scripts.slides.livecoding_video_pipeline import main
 
         assert main(["--progressive"]) == 2
         assert "requiert --capture" in capsys.readouterr().err

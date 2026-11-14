@@ -155,6 +155,7 @@ Run locally against any PR head:
 from __future__ import annotations
 
 import argparse
+import copy
 import json
 import os
 import re
@@ -537,7 +538,42 @@ class GateError(RuntimeError):
     """Raised when the check state cannot be established. Always fatal."""
 
 
+# --- quota verdicts: INCONCLUSIVE, replayable (2026-11-14) ----------------
+#
+# The installation-quota 403 is a shared, server-side exhaustion with an
+# hourly reset: the check state is unreadable because the API refuses to
+# answer, NOT because the PR carries a defect. Rule 1 still forbids a PASS,
+# but the verdict must not READ like a content verdict, and the chain must
+# be able to REPLAY it instead of hunting a defect that does not exist.
+#
+# The exit code is the contract: 1 is FAIL (a content verdict, rule 1),
+# 3 is INCONCLUSIVE (the answer is unknown, replay me). The chainer reads
+# the code to tell "fix the PR" from "replay the job".
+QUOTA_INCONCLUSIVE_CODE = 3
+
+
+class QuotaInconclusive(GateError):
+    """The installation-quota family at its bound: unreadable, replayable.
+
+    A subclass of `GateError`, so every existing `except GateError` still
+    catches it; `main` handles it FIRST, because its verdict differs from
+    the generic unreadable state.
+    """
+
+
 # --- pure decision layer (no network; this is what the unit tests pin) -------
+
+
+def _is_skipped(check: Mapping[str, object]) -> bool:
+    """Whether the entry is a SKIPPED job (a job-level guard, a `paths:` filter).
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict. It must therefore never be read as the newest
+    opinion about the name it carries (#25510, tranche T-C).
+    """
+    if str(check.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(check.get("status") or "").lower() == "skipped"
 
 
 def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
@@ -547,6 +583,27 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     all of them makes a benign concurrency cancellation indistinguishable from a
     real failure. Ordering key is `started_at` then `id`, both monotonic per name;
     entries missing both keep their input order as a last resort.
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C). A `skipped` entry never replaces
+    an EARLIER non-skipped entry of the same name, on the same head. A skipped
+    job says nothing about the code, and `skipped` counts as a PASS
+    (`CONCLUSION_OK`): under a plain latest-wins fold, a job skipped by a
+    guard -- a title edit, a `paths:` filter -- emits a `skipped` NEWER than
+    the real verdict and would WHITEN a red PR. The failure mode was already
+    documented from the other side in
+    `scripts/tests/test_pr_gate_edited_trigger.py` (#16624): a job-level guard
+    on `edited` emits a verdict-shaped check-run, and under latest-wins that
+    is the newest verdict for the name.
+
+    The accepted side effect is fail-closed: after a base change that takes
+    the job out of the diff, a red stays displayed until the next push.
+
+    ORDER. The nature of the entry heads the ordering key, so the fold does
+    not depend on the order in which the entries arrive: the REST endpoint
+    `commits/<sha>/check-runs` returns them from the MOST RECENT to the OLDEST
+    (measured on three heads: 31, 53 and 70 runs, decreasing ids), and no
+    caller re-sorts them. A fold that kept "the first seen" would therefore
+    have kept the skip.
 
     PREMISE -- the rendered check-run `name` identifies the job uniquely. This
     premise is enforced by `scripts/ci/check_unique_check_run_names.py` and its
@@ -569,9 +626,22 @@ def dedupe_latest(checks: Sequence[dict]) -> list[dict]:
     best: dict[str, tuple[tuple, dict]] = {}
     for index, check in enumerate(checks):
         name = check.get("name") or ""
-        key = (check.get("started_at") or "", check.get("id") or 0, index)
+        # THE SKIPPED FALLBACK (#25510, T-C) : la NATURE est en TETE de la cle.
+        # Un `skipped` mesure rien et compte comme un PASS : il ne doit donc
+        # jamais remplacer un verdict reel du meme nom. La nature en tete rend
+        # le repli INDEPENDANT DE L'ORDRE d'arrivee -- ce qui compte, parce que
+        # `commits/<sha>/check-runs` rend les entrees du PLUS RECENT au PLUS
+        # ANCIEN (mesure sur 3 tetes : 31, 53 et 70 runs, ids decroissants),
+        # alors que les tests historiques fournissaient l'ordre croissant.
+        key = (not _is_skipped(check),
+               check.get("started_at") or "",
+               check.get("id") or 0,
+               index)
         current = best.get(name)
-        if current is None or key >= current[0]:
+        if current is None:
+            best[name] = (key, check)
+            continue
+        if key >= current[0]:
             best[name] = (key, check)
     return [entry[1] for entry in best.values()]
 
@@ -984,13 +1054,83 @@ def verdict(
 
 
 # --- network layer ----------------------------------------------------------
+#
+# The shared installation token is capped at 1000 requests/hour (#25510), and
+# this gate is one of its largest consumers: `fetch_checks` polls `check-runs`
+# (one call per page) plus `/status` for every head every `--poll-sec` (30 s).
+# A 304 from the Checks API costs NO installation quota (measured: `remaining`
+# unchanged before and after a conditional re-read). So repeated reads of the
+# SAME path are made CONDITIONAL: the response's `Etag` is sent back as
+# `If-None-Match`, and a 304 re-uses the last body we read for that path.
+#
+# Two invariants from the #17262 / #15342 line stay intact:
+#   * a 304 is a SUCCESS -- it re-uses the last readable body;
+#   * an unreadable read -- a non-zero exit, OR a 200 whose body is not JSON --
+#     is a FAILURE (GateError), never a silent reuse of a stale body.
+# The two counters below make the per-run consumption measurable (T-I point 1)
+# instead of estimated; `_entry` prints them once at the end of every run.
+_GH_API_CALLS = 0
+_GH_API_304 = 0
+# path -> (etag, last readable body). Keyed by the FULL request path, so each
+# (sha, page) of `check-runs` and each `/status` / `actions/runs` is distinct:
+# a changed head is a new path and thus a fresh 200, never a stale 304.
+_GITHUB_READ_CACHE: dict[str, tuple[str, object]] = {}
+
+
+def _gh_http_status(header_block: str) -> int:
+    """Status code from a `gh api -i` header block (line 1: `HTTP/2.0 200 OK`)."""
+    parts = header_block.splitlines()[0].split() if header_block else []
+    return int(parts[1]) if len(parts) >= 2 else 0
+
+
+def _gh_etag(header_block: str) -> str | None:
+    for line in header_block.splitlines():
+        if line.lower().startswith("etag:"):
+            return line.split(":", 1)[1].strip()
+    return None
+
+
+def _gh_ratelimit_reset(header_block: str) -> float | None:
+    """The `x-ratelimit-reset` instant of a failed read, in epoch seconds.
+
+    `None` when the header is absent or unparsable -- the waiter then
+    keeps its own escalating schedule (#17681). The value is a
+    GitHub-provided timestamp, never computed here.
+    """
+    for line in header_block.splitlines():
+        if line.lower().startswith("x-ratelimit-reset:"):
+            try:
+                return float(line.split(":", 1)[1].strip())
+            except ValueError:
+                return None
+    return None
 
 
 def _gh_api(path: str) -> object:
-    """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1)."""
+    """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1).
+
+    Repeated reads of the same path are conditional (#25510 T-I): a stored
+    `Etag` is sent as `If-None-Match`, and a 304 re-uses the last body we read
+    for that path (a 304 costs no installation quota). The HTTP status is read
+    from the `-i` header block BEFORE the returncode is judged, because
+    `gh api` exits 1 on a 304 (measured) -- a 304 with a cached body is a
+    success on any rc. Any OTHER non-zero exit, or a 200 whose body is not
+    JSON, is a GateError: an unreadable state is a failure, never a pass, and
+    never a silent reuse of a stale body.
+    """
+    global _GH_API_CALLS, _GH_API_304
+    _GH_API_CALLS += 1
+
+    entry = _GITHUB_READ_CACHE.get(path)
+    etag = entry[0] if entry else None
+
     try:
+        cmd = ["gh", "api", "-i"]
+        if etag:
+            cmd += ["-H", f"If-None-Match: {etag}"]
+        cmd.append(path)
         completed = subprocess.run(
-            ["gh", "api", path],
+            cmd,
             capture_output=True,
             text=True, encoding="utf-8", errors="replace",
             check=False,
@@ -998,15 +1138,44 @@ def _gh_api(path: str) -> object:
     except FileNotFoundError as exc:  # pragma: no cover - environment problem
         raise GateError(f"gh CLI not available: {exc}") from exc
 
+    # `gh api -i` prints the status line + headers, a blank line, then body.
+    # The status is read from that header block BEFORE the returncode is judged:
+    # `gh api` exits 1 on a 304 (measured -- stdout `HTTP/2.0 304 Not Modified`,
+    # stderr `gh: HTTP 304`), so a 304 must be resolved as a success first.
+    header_block, _, body_text = completed.stdout.partition("\n\n")
+    status = _gh_http_status(header_block)
+
+    if status == 304:
+        # Unchanged since our stored Etag: re-use the last readable body, on
+        # any rc. (We only send If-None-Match when we have one, so `entry` is
+        # set here.) A deepcopy: the cache must not alias a caller's object.
+        _GH_API_304 += 1
+        if entry is None:
+            raise GateError(f"gh api {path} returned 304 with no cached body")
+        return copy.deepcopy(entry[1])
+
+    # Any OTHER non-zero exit is an unreadable read: fatal, never a cache-reuse.
     if completed.returncode != 0:
-        raise GateError(
-            f"gh api {path} failed (exit {completed.returncode}): "
+        exc = GateError(
+            f"gh api {path} failed (exit {completed.returncode}, HTTP {status}): "
             f"{completed.stderr.strip()[:400]}"
         )
+        # The reset instant of the installation quota, when the API told
+        # us (the `x-ratelimit-reset` header). Absent on some failures:
+        # the waiter then falls back on its own backoff schedule.
+        exc.reset_epoch = _gh_ratelimit_reset(header_block)
+        raise exc
+
+    new_etag = _gh_etag(header_block)
     try:
-        return json.loads(completed.stdout)
+        body = json.loads(body_text)
     except json.JSONDecodeError as exc:
         raise GateError(f"gh api {path} returned non-JSON: {exc}") from exc
+    if new_etag:
+        # Store a copy so a caller mutating the returned body can't corrupt the
+        # cache that a later 304 would re-use.
+        _GITHUB_READ_CACHE[path] = (new_etag, copy.deepcopy(body))
+    return body
 
 
 # --- transient vs permanent API failures (#17262) ---------------------------
@@ -1729,15 +1898,22 @@ def wait_and_decide(
                 # #17681 -- name the family so a quota-exhaustion FAIL is
                 # legible as infrastructure, never read as a check verdict.
                 # The verdict direction is unchanged: rule 1, never a pass.
+                quota = _is_installation_quota_error(exc)
                 family = (
                     "installation-quota read failure"
-                    if _is_installation_quota_error(exc)
+                    if quota
                     else "transient read failure"
                 )
-                raise GateError(
+                message = (
                     f"{exc} -- {transient_reads} {family}(s) in a row: "
                     "the check state stayed unreadable (rule 1)"
-                ) from exc
+                )
+                if quota:
+                    # An exhausted installation quota is not a content
+                    # verdict: it is an unreadable state with a KNOWN
+                    # replay gesture. `main` renders it INCONCLUSIVE.
+                    raise QuotaInconclusive(message) from exc
+                raise GateError(message) from exc
             if _is_installation_quota_error(exc):
                 # #17681 -- a shared hourly quota is not crossed by 30 s
                 # retries: escalate the spacing, but never sleep past the
@@ -1747,10 +1923,21 @@ def wait_and_decide(
                     transient_reads - 1,
                     len(INSTALLATION_QUOTA_BACKOFF_SEC) - 1,
                 )
-                wait_sec = min(
-                    INSTALLATION_QUOTA_BACKOFF_SEC[stage],
-                    max(deadline - now_ts, 0.0),
-                )
+                reset_at = getattr(exc, "reset_epoch", None)
+                if reset_at is not None and reset_at > now_ts:
+                    # The API told us when the quota resets: sleep until
+                    # then (bounded by the absolute deadline) instead of
+                    # spending the budget on short retries that cannot
+                    # cross an hourly reset.
+                    wait_sec = min(
+                        reset_at - now_ts,
+                        max(deadline - now_ts, 0.0),
+                    )
+                else:
+                    wait_sec = min(
+                        INSTALLATION_QUOTA_BACKOFF_SEC[stage],
+                        max(deadline - now_ts, 0.0),
+                    )
                 print(
                     f"[pr-gate] installation-quota 403 (GitHub App quota, "
                     "shared, hourly reset -- not a check verdict), backoff "
@@ -1986,6 +2173,17 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
     real one was already repaired 18 min earlier).
     """
     lines = [message]
+    if message.startswith("INCONCLUSIVE"):
+        lines += [
+            "",
+            "Panne d'infrastructure, pas un defaut de la PR : l'etat "
+            "des checks est INCONNU (quota d'installation GitHub App "
+            "epuise). Rien a reparer dans le code, et rien a chercher "
+            "dans la PR. Rejouer la jambe apres le reset horaire "
+            "(`gh run rerun <run_id> --job <job_id>`) ou attendre le "
+            "balayage `pr-gate-stale-sweep` : la chaine ne doit pas "
+            "traquer un defaut qui n'existe pas.",
+        ]
     if message.startswith("DWELL"):
         lines += [
             "",
@@ -2241,6 +2439,20 @@ def main(argv: Iterable[str] | None = None) -> int:
             detail=detail,
             all_queued_polls=args.all_queued_polls,
         )
+    except QuotaInconclusive as exc:
+        # The installation quota is exhausted: the state is UNKNOWN, not
+        # false. Rule 1 forbids a PASS; it does not forbid a verdict that
+        # says "unknown, replay me". The distinct exit code is the
+        # contract the chainer reads to replay the job instead of hunting
+        # a defect that does not exist.
+        code = QUOTA_INCONCLUSIVE_CODE
+        message = (
+            "INCONCLUSIVE -- quota d'installation GitHub App epuisee : "
+            "l'etat des checks est INCONNU, pas faux. REJOUABLE : "
+            "relancer la jambe (`gh run rerun <run_id> --job <job_id>`) "
+            "apres le reset horaire, ou attendre le balayage "
+            "`pr-gate-stale-sweep`. Source : {}".format(exc)
+        )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass. Fall
         # through to the single emission tail instead of returning here: the
@@ -2365,8 +2577,12 @@ def main(argv: Iterable[str] | None = None) -> int:
         # Le message peut porter %, CR ou LF (stderr gh multi-ligne) : un LF
         # brut tronque l'annotation, un % brut avale les octets suivants --
         # echappement protocolaire workflow-command, % EN PREMIER (#15472).
+        # An INCONCLUSIVE verdict is not a defect: it is rendered as a
+        # WARNING so the UI does not read it as a content failure. The
+        # step still exits non-zero -- the state is unknown (rule 1).
+        level = "warning" if code == QUOTA_INCONCLUSIVE_CODE else "error"
         print(
-            f"::error::[pr-gate] {_workflow_command_escape(message)}",
+            f"::{level}::[pr-gate] {_workflow_command_escape(message)}",
             file=sys.stderr,
             flush=True,
         )
@@ -2390,6 +2606,16 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     skipping the POST loses nothing.
     """
     if not args.post_check_run:
+        return
+    if code == QUOTA_INCONCLUSIVE_CODE:
+        # An INCONCLUSIVE verdict is a timer like DWELL, not a failure:
+        # POSTing it as `conclusion=failure` lands an unliftable red on
+        # the PR head (#21543). The job leg itself surfaces the message.
+        print(
+            "[pr-gate] INCONCLUSIVE verdict -- skipping check-run POST "
+            "(an unreadable state is not a failure; #21543)",
+            flush=True,
+        )
         return
     if message.startswith("DWELL"):
         print(
@@ -2448,6 +2674,24 @@ def _crash_fallback_publish(exc: BaseException) -> None:
         )
 
 
+def _print_api_quota_summary() -> None:
+    """(#25510 T-I) End-of-run tally of the gate's own `gh api` calls.
+
+    Printed once by `_entry`'s `finally`, so it lands no matter how the run
+    ends (success, GateError, crash, argparse exit). Pure reporting: it never
+    raises, so it cannot disturb the exit code. The second figure is the quota
+    saving made visible -- how many of the calls were served by a free 304.
+    """
+    try:
+        print(
+            f"[pr-gate] api-quota: {_GH_API_CALLS} gh api call(s), "
+            f"{_GH_API_304} served by a 304 (0 quota)",
+            flush=True,
+        )
+    except Exception:
+        pass
+
+
 def _entry(argv: "Iterable[str] | None" = None) -> int:
     """Mute-failure guard (#15825 criterion 1).
 
@@ -2498,6 +2742,9 @@ def _entry(argv: "Iterable[str] | None" = None) -> int:
             flush=True,
         )
         return 1
+    finally:
+        # (#25510 T-I) the per-run `gh api` tally, on every exit path.
+        _print_api_quota_summary()
 
 
 if __name__ == "__main__":

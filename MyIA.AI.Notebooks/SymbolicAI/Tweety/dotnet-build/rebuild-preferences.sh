@@ -27,10 +27,14 @@
 # (the cache is keyed on the jar hash and silently serves stale DLLs).
 
 set -e
-export JAVA_HOME="${JAVA_HOME:-/c/Users/jsboi/AppData/Local/Programs/Microsoft/jdk-17.0.10.7-hotspot}"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=resolve_java_home.sh
+source "$SCRIPT_DIR/resolve_java_home.sh"
+JAVA_HOME=$(coursia_resolve_java_home) || exit 1
+export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 
-cd "$(dirname "$0")"
+cd "$SCRIPT_DIR"
 WORK=$(pwd)
 
 mkdir -p jars sources-extracted sources-jar classes

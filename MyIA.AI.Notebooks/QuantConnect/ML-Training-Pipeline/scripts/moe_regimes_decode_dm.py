@@ -8,11 +8,12 @@ via the canonical ``dm_test.diebold_mariano_test``.
 
 Verdict convention (regle C, honest reporting):
 - "FILTER_BETTER"  : median DM p < 0.05 AND mean loss diff favors filter
-                     (filter strictly more precise under causal labels);
+                     (filter strictly more precise under forward-only
+                     decode);
 - "FILTER_WORSE"   : median DM p < 0.05 AND favors viterbi;
 - "INCONCLUSIVE"   : median DM p >= 0.05 -- the routing/precision of the
                      regime-routed MoE is statistically indistinguishable
-                     between retrospective and causal labels.
+                     between retrospective and forward-only decodes.
 
 Usage:
     python moe_regimes_decode_dm.py \
@@ -154,7 +155,7 @@ def compare(viterbi_path: Path, filter_path: Path) -> dict:
             "Paired DM on pooled per-observation OOS squared errors, per seed; "
             "verdict from the median p (regle C). INCONCLUSIVE means the "
             "regime-routed MoE's precision is indistinguishable between the "
-            "retrospective and causal decodes. mean_err_* is the signed OOS "
+            "retrospective and forward-only decodes. mean_err_* is the signed OOS "
             "bias mean(pred - y) of each arm; sign_bias_* is the same bias in "
             "sign space (sign(pred) - sign(y)), the scale on which the "
             "majority baseline -- a class predictor, not a value predictor -- "
