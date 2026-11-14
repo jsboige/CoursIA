@@ -1,5 +1,7 @@
 # Compteurs de notebooks — catalogue / outil / disque
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 **Date** : 2026-08-07
 **Issue** : [#9857](https://github.com/jsboige/CoursIA/issues/9857)
 **Lane** : po-2023 (CoursIA-2)

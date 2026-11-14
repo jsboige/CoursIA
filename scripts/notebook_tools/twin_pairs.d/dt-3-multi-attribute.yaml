@@ -1,10 +1,11 @@
 - name: "DT-3 Multi-Attribute"
   family: Probas/DecisionTheory-Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/DecisionTheory/DecPyMC/DecPyMC-03-Multi-Attribute.ipynb
-  csharp: MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb
+  csharp: MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Enregistrement initial (2026-10-26, lane myia-po-2023:CoursIA), tranche P0bis de l'EPIC #12933 (recommandation §5 de l'inventaire DecisionTheory). Lib-vs-lib : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, inference compilee EP/VMP), Python = PyMC (NUTS/HMC + ADVI) -- chacun le moteur SOTA de son ecosysteme probabiliste, meme configuration que la famille Probas/Infer.NET-PyMC. Verifie firsthand sur les 7 paires le 2026-10-26 : kernel .net-csharp + Microsoft.ML.Probabilistic/InferenceEngine cote C#, kernel python3 + pymc/pm.sample cote Python."
-  numbering_exception: "Decalage de compteur : les compagnons Lean DecInfer-02/02b occupent le compteur principal DecInfer, ce concept y porte N+1 (DecInfer-04 vs DecPyMC-03). Zero-pad des deux cotes depuis la migration zero-pad de la serie DecPyMC (2026-11-02) : l'asymetrie de zero-pad a disparu, le decalage de slot reste. Mesure initiale 2026-10-26, remesure 2026-11-02. Le realignement est la tranche gatee sur l'arbitrage §3 de l'inventaire (EPIC #12933)."
+  numbering_exception: "Decalage de compteur historique, resolu le 2026-11-05 par le re-flow voie (a) de l'EPIC #12933 : les compagnons Lean DecInfer-02/02b occupaient le compteur principal (ce concept y portait N+1, DecInfer-04 vs DecPyMC-03) ; devenus les accretions 01b/01c, le compteur DecInfer a ete re-flowe (DecInfer-03 = DecPyMC-03 depuis). Zero-pad des deux cotes depuis 2026-11-02. Mesures : initiale 2026-10-26, remesure 2026-11-02, realignement 2026-11-05. Numeros alignes, plus d'exception active."
   known_differences:
+    - "2026-11-09 : rebaseline apres retrait des filtres `warnings` aveugles et re-execution complete du cote Python (PR #25454, #14122). Le cote C# (Infer.NET) est inchange : seuls les SHA Python bougent."
     - "Paradigmes d'inference distincts (precedent famille Probas) : C# Infer.NET = inference deterministe approchee (Expectation Propagation, modele compile en code d'inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC) + ADVI sur PyTensor. Les ecarts numeriques attendus ne sont pas des defauts (doctrine #12933 : parite des identifiants, liberte des contenus)."

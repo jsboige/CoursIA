@@ -1,6 +1,6 @@
 # S7-lean — Deck Slidev Lean 4
 
-Deck de presentation pour la serie de 14 notebooks **Lean 4** (`SymbolicAI/Lean/`).
+Deck de presentation pour la serie **Lean 4** (`SymbolicAI/Lean/`).
 
 ## Contenu
 
@@ -23,7 +23,7 @@ Deck de presentation pour la serie de 14 notebooks **Lean 4** (`SymbolicAI/Lean/
 
 ## Notebooks correspondants
 
-`MyIA.AI.Notebooks/SymbolicAI/Lean/` — 14 notebooks, ~11h
+`MyIA.AI.Notebooks/SymbolicAI/Lean/` — serie complete, ~11h
 
 ### Partie 1 : Fondations
 

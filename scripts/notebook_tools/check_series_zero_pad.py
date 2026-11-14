@@ -11,7 +11,7 @@ Le motif vise exactement le chiffre unique : un premier chiffre NON suivi
 d'un second chiffre. Les formes valides ne matchent pas :
 
     GameTheory-03a-...  (zero-pade, le 0 est suivi de 3)
-    GameTheory-26-...   (deux chiffres)
+    GameTheory-22-...   (deux chiffres)
     GameTheory-04c-...  (deux chiffres + lettre de side-track)
 
 PORTEE : REGISTRE EXPLICITE, JAMAIS UN DEFAUT (#15489, defaut 5)
@@ -137,8 +137,8 @@ def scan(series_dir: Path, prefix: str = "GameTheory") -> tuple[list[dict], bool
     """Violations de la serie, ET disponibilite de la portee « ignoree ».
 
     Le chiffre unique se lit dans le numero rendu par le parseur du canon
-    (#15489) : ``GameTheory-3a`` livre ``number="3"`` (un chiffre), ``GameTheory-26``
-    livre ``"26"``, ``GameTheory-04c`` livre ``"04"``. La regle porte sur la
+    (#15489) : ``GameTheory-3a`` livre ``number="3"`` (un chiffre), ``GameTheory-22``
+    livre ``"22"``, ``GameTheory-04c`` livre ``"04"``. La regle porte sur la
     LONGUEUR du numero et non sur un motif du nom complet -- un motif local
     re-encode la grammaire du canon, et deux encodages divergent au premier cas
     limite (c'est ce que #15489 corrige).

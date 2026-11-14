@@ -46,6 +46,12 @@ jobs:
   freshness:
     name: Live-read freshness (committed output vs current source)
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Aucun run vert a mesurer. Le seul run
+    # non annule (39888975128) a tenu 204.2 min en ECHEC : c'est un fige
+    # de runner, pas un calcul -- le job est un garde Python pur
+    # (self-test, pytest, un diff git). Le defaut d'Actions est 6 h, et
+    # un job fige tient son slot tout ce temps.
+    timeout-minutes: 30
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4

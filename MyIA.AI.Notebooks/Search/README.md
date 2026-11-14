@@ -6,9 +6,9 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 165
-breakdown: Part3-Cas-pratiques=51, Part1-Foundations=49, Part4-Metaheuristics=35, Part2-CSP=19, Part5-Frontieres=11
-maturity: BETA=150, ALPHA=9, DRAFT=6
+pedagogical_count: 166
+breakdown: Part3-Cas-pratiques=51, Part1-Foundations=49, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=11
+maturity: BETA=159, ALPHA=7
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -151,7 +151,7 @@ Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaqu
 | 12 | [App-19-ProceduralGeneration-WFC](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
 | 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
 | 13 | [App-20-SudokuBenchmark-Python](Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
-| 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
+| 13 (C#) | [App-20-SudokuBenchmark-CSharp](Part3-Cas-pratiques/App-20-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
 | 16 | [Frontieres-05-CoveringArrays-Guarantee-Audit-Python](Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, Picross, SportsScheduling) suivent le même principe : ré-implémentation .NET du notebook Python de référence, solveurs from-scratch ou OR-Tools natif selon le sujet (marathon #4956).
@@ -161,17 +161,17 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
 | 1 | [App-9-EdgeDetection](Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
-| 2 | [App-9b-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
+| 2 | [App-9-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
 | 3 | [App-10-Portfolio](Part3-Cas-pratiques/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
-| 4 | [App-10b-Portfolio-CSharp](Part3-Cas-pratiques/App-10b-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
+| 4 | [App-10-Portfolio-CSharp](Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
 | 5 | [App-13-TSP-Metaheuristics](Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
-| 6 | [App-13b-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
+| 6 | [App-13-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
 | 7 | [App-17-VRP-Logistics](Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
-| 8 | [App-17b-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17b-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
-| 8b | [App-17b-VRP-Logistics-Python](Part3-Cas-pratiques/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
+| 8 | [App-17-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
+| 8b | [App-17-VRP-Logistics-Python](Part3-Cas-pratiques/App-17-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
 | 9 | [App-18-HyperparameterTuning](Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
-| 10 | [App-18b-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18b-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 10 | [App-18-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
+| 11 | [App-18-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ### Applications de recherche informée mono-agent (`Applications/Informed/`)
@@ -330,6 +330,10 @@ Les applications sont adaptées de projets étudiants. Les références spécifi
 
 ---
 
+## Recherche continue
+
+[Search-02d en Python](Part1-Foundations/Search-02d-RRT-Recherche-Continue.ipynb) et [son jumeau C#](Part1-Foundations/Search-02d-RRT-Recherche-Continue-CSharp.ipynb) explorent RRT, le reparentage et les effets du budget et des graines.
+
 ## Structure des fichiers
 
 ```text
@@ -343,6 +347,8 @@ Search/
 │   ├── Search-02b-NetworkX.ipynb
 │   ├── Search-02b-NetworkX-CSharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   ├── Search-02c-QuikGraph.ipynb
+│   ├── Search-02d-RRT-Recherche-Continue.ipynb # RRT et RRT*
+│   ├── Search-02d-RRT-Recherche-Continue-CSharp.ipynb # Port C#
 │   ├── Search-03-Informed.ipynb
 │   ├── Search-04-LocalSearch.ipynb
 │   ├── Search-05-GeneticAlgorithms.ipynb
@@ -398,7 +404,7 @@ Search/
 │   ├── App-20-SudokuBenchmark-Python.ipynb          # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   ├── App-22-AlgorithmSelection-Python.ipynb       # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │   ├── App-27-Sparse-Index-Tracking-Walk-Forward.ipynb
-│   └── (+ jumeaux C# App-1b/2b/3b/4b/6-CSharp/7b/8-CSharp/11b/12c/15b/16-CSharp/19-CSharp/20b et jumeaux C#/Python App-9b/10b/13b/17b/18b, marathon #4956)
+│   └── (+ jumeaux C# App-1-CSharp/2-CSharp/3-CSharp/4-CSharp/6-CSharp/7-CSharp/8-CSharp/11-CSharp/12c/15-CSharp/16-CSharp/19-CSharp/20-CSharp et jumeaux C#/Python App-9-CSharp/10-CSharp/13-CSharp/17-CSharp/18-CSharp, marathon #4956)
 │
 │
 ├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (Frontieres-01..10, carte #19253)
@@ -435,9 +441,9 @@ Le notebook App-8 utilise MiniZinc qui requiert l'installation de l'IDE :
 ### Les notebooks C# (.NET Interactive) ne s'exécutent pas
 
 - Vérifiez que .NET SDK 9.0+ est installé : `dotnet --version`
-- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`
+- Installez le kernel : `dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001 && dotnet interactive jupyter install`
 - Vérifiez : `jupyter kernelspec list` doit afficher `.net-csharp`
-- Les jumeaux C# hybrides (App-9b, App-10b) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
+- Les jumeaux C# hybrides (App-9-CSharp, App-10-CSharp) utilisent GeneticSharp et SkiaSharp ; les autres notebooks C# installent leurs packages (Google.OrTools, IKVM + Choco…) via `#r nuget` dans les cellules
 
 ### DEAP ou PyGAD provoquent des erreurs d'import
 

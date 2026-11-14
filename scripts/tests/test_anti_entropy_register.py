@@ -966,6 +966,39 @@ def test_le_garde_accepte_un_arbre_local_aligne(monkeypatch):
     assert "meme contenu" in motif
 
 
+def test_le_garde_ignore_les_gitlinks_mais_refuse_un_fichier_divergent(monkeypatch):
+    """Les gitlinks sont hors du contenu lu par ls-tree -r/cat-file de la racine.
+
+    Le test injecte les reponses des commandes git : un gitlink mode 160000
+    est ignore, mais un fichier ordinaire divergent garde le refus.
+    """
+    gitlink = "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+    notebook = "MyIA.AI.Notebooks/ML/Example.ipynb"
+    appels = []
+
+    def faux_run(cmd, timeout=600):
+        args = [str(m) for m in cmd]
+        appels.append(args)
+        if args[:2] == ["git", "diff"]:
+            return 0, gitlink + chr(10) + notebook + chr(10), ""
+        if args[:2] == ["git", "ls-tree"]:
+            chemin = args[-1]
+            if chemin == gitlink:
+                return 0, f"160000 commit abcdef1234567890\t{gitlink}" + chr(10), ""
+            if chemin == notebook:
+                return 0, f"100644 blob abcdef1234567890\t{notebook}" + chr(10), ""
+        return 1, "", "unexpected git command"
+
+    monkeypatch.setattr(aer, "_run", faux_run)
+    aligne, motif = aer.arbre_aligne(
+        ("python", "scripts/notebook_tools/inventory_notebook_names.py",
+         "--json", "--base", "origin/main"),
+        "MyIA.AI.Notebooks")
+    assert aligne is False
+    assert "Example.ipynb" in motif
+    assert gitlink in [args[-1] for args in appels if args[:2] == ["git", "ls-tree"]]
+
+
 def test_un_instrument_sans_rayon_declared_est_toujours_aligne(monkeypatch):
     """Un instrument qui ne lit que la revision qu'il nomme (un builtin git
     comme `git ls-tree`) declare un rayon vide : il n'y a rien a verifier.

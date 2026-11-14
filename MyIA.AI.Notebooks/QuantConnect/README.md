@@ -100,6 +100,8 @@ Sélection dynamique d'univers, comprendre les particularités de chaque classe 
 
 ---
 
+<a id="phase-3"></a>
+
 ### Phase 3 : Trading Avancé et Risk Management (~6.5h)
 
 Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie de backtests.
@@ -109,8 +111,7 @@ Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie 
 | 09 | [QC-Py-09-Order-Types](Python/QC-Py-09-Order-Types.ipynb) | 75 min | Market, Limit, Stop, Stop-Limit, combo orders |
 | 10 | [QC-Py-10-Risk-Portfolio-Management](Python/QC-Py-10-Risk-Portfolio-Management.ipynb) | 90 min | Position sizing (Kelly, fixed fractional), stop-loss, take-profit |
 | 11 | [QC-Py-11-Technical-Indicators](Python/QC-Py-11-Technical-Indicators.ipynb) | 75 min | Indicateurs intégrés, custom indicators, signal generation |
-| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve |
-| 12b | [QC-Py-12b-Backtest-Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) | 60 min | Erreur-type du Sharpe (Lo 2002), PSR (Bailey & López de Prado 2012) et ses pièges de saisie, signification statistique d'un backtest |
+| 12 | [QC-Py-12-Backtesting-Analysis](Python/QC-Py-12-Backtesting-Analysis.ipynb) | 75 min | Performance metrics (Sharpe, Sortino, max drawdown), equity curve — [approfondissement 12b](#approfondissement-du-palier-12) |
 
 **Objectifs** : Maîtriser gestion du risque, ordres avancés, analyse de backtests.
 
@@ -173,6 +174,8 @@ Appliquer ML classique au trading : classification directionnelle, régression p
 
 ---
 
+<a id="phase-7"></a>
+
 ### Phase 7 : Deep Learning (~6h)
 
 Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransformer, Autoencoders.
@@ -180,8 +183,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransform
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 22 | [QC-Py-22-Deep-Learning-LSTM](Python/QC-Py-22-Deep-Learning-LSTM.ipynb) | 90 min | LSTM time series, TensorFlow/Keras, CPU-first |
-| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | 90 min | State Space Models (S4, Mamba) pour séries temporelles |
-| 23b | [QC-Py-23b-PatchTST-iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) | 90 min | PatchTST patching, iTransformer inverted axes, prévision financière |
+| 23 | [QC-Py-23-State-Space-Models](Python/QC-Py-23-State-Space-Models.ipynb) | 90 min | State Space Models (S4, Mamba) pour séries temporelles — [approfondissement 23b](#approfondissement-du-palier-23) |
 | 24 | [QC-Py-24-Autoencoders-Anomaly](Python/QC-Py-24-Autoencoders-Anomaly.ipynb) | 75 min | Autoencoders pour détection anomalies, regime change |
 
 **Objectifs** : Maîtriser deep learning pour séries temporelles, design CPU-optimized.
@@ -202,6 +204,18 @@ Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransform
 **Objectifs** : IA state-of-the-art pour trading, déploiement production, détection régime.
 
 ---
+
+## Approfondissements
+
+Ces deux notebooks approfondissent un palier du parcours principal. Ils se lisent après le notebook numéroté auquel chacun renvoie ; ils ne constituent pas des étapes supplémentaires de la progression principale.
+
+### Approfondissement du palier 12
+
+Rattaché au [palier 12 de la phase 3](#phase-3), [QC-Py-12b — Backtest Validity](Python/QC-Py-12b-Backtest-Validity.ipynb) (60 min) — Erreur-type du Sharpe (Lo 2002), PSR (Bailey & López de Prado 2012) et ses pièges de saisie, signification statistique d'un backtest.
+
+### Approfondissement du palier 23
+
+Rattaché au [palier 23 de la phase 7](#phase-7), [QC-Py-23b — PatchTST-iTransformer](Python/QC-Py-23b-PatchTST-iTransformer.ipynb) (90 min) — PatchTST patching, iTransformer inverted axes, prévision financière.
 
 ### Compléments Reinforcement Learning Avancé (~4h)
 
@@ -256,7 +270,7 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : la séquence QC-Py-01 à QC-Py-28 (+ les 12b et 23b, ~34 heures de contenu) **plus les compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, foundation models QC-Py-23c, dataset workflow), plus la recherche standalone (`research_*.ipynb`, détaillée dans [research/README.md](research/README.md)).
+**Parcours principal** : la séquence QC-Py-01 à QC-Py-28 ; les approfondissements 12b et 23b ajoutent respectivement 60 min et 90 min aux paliers 12 et 23. Les compléments comprennent le RL avancé QC-Py-33..35, le paper trading QC-Py-40..41, les notebooks QC-Py-Cloud, le training QC-Py-30..32, les foundation models QC-Py-23c et le dataset workflow, ainsi que la recherche standalone (voir [research/README.md](research/README.md)). Pour les compteurs à jour des cours et des stratégies, consulter le [catalogue généré](../../COURSE_CATALOG.generated.md).
 
 **Répartition cours linéaire (Phases 1-8)** :
 - **Partie non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
@@ -531,7 +545,7 @@ Le **fil rouge** de la série : un Sharpe spectaculaire en backtest court est pr
 - **TrendFollowing** : Sharpe 1.072 publié (2018-2025, état cloud antérieur) — **non reproductible par le code repo actuel** qui donne 0.36 (2015-2024, PSR 6.3%). La tendance persiste conceptuellement, mais le chiffre exact dépend de la version du code et de la fenêtre (cf [diagnostic reproductibilité](../../docs/qc/qc-comparative-backtests.md), finding 18).
 - **EMA-Cross-Alpha** : Sharpe -0.010 en aligned (vs 0.996 en backtest court) = overfitting sever. Démonstration pédagogique du danger des backtests courts.
 - **Composites : tout dépend de l'architecture** : Framework_Composite_TrendWeather tient (0.948, PSR 56.6%) là où MomentumRegime (combinaison SectorMom + Regime) obtient seulement 0.185 ("double-defense").
-- **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) et HighBookToMarketFScore (2.09 → 0.411) s'effondrent sur 2018-2025 — leurs Sharpe catalogue venaient d'une fenêtre glissante non standardisée.
+- **Les stars du catalogue ne survivent pas toutes à l'alignement** : PuppiesOfTheDow (1.99 → 0.302) s'effondre sur 2018-2025 — son Sharpe catalogue venait d'une fenêtre glissante non standardisée. Pour HighBookToMarketFScore (2.09 → 0.411), les deux nombres ne portent pas sur la même fenêtre : 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, et sur les fenêtres de la fiche le code du dépôt retrouve l'ordre de grandeur publié (#25264).
 - **Crypto = diversification stable** : MaxDD maitrisé (~17%), rendement modéré.
 
 > Voir [docs/qc/qc-comparative-backtests.md](../../docs/qc/qc-comparative-backtests.md) pour les 36 baselines vérifiées, les comparaisons best-vs-aligned, et les diagnostics détaillés (See #1630).

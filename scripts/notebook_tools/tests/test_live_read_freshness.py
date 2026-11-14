@@ -400,15 +400,28 @@ def test_registry_entries_resolve_to_real_artifacts():
     reg = json.loads(REGISTRY.read_text(encoding="utf-8"))
     for entry in reg["cells"]:
         nb = REPO_ROOT / entry["notebook"]
-        src = REPO_ROOT / entry["source"]
+        # Le carnet et la cellule sont TOUJOURS reels, quelle que soit la
+        # source : seule la SOURCE peut vivre hors du depot (source externe
+        # epinglee, #23499).
         assert nb.is_file(), f"carnet introuvable : {entry['notebook']}"
-        assert src.is_file(), f"fichier lu introuvable : {entry['source']}"
         data = json.loads(nb.read_text(encoding="utf-8"))
         ids = {c.get("id") for c in data["cells"]}
         assert entry["cell_id"] in ids, (
             f"cellule {entry['cell_id']} introuvable dans {nb.name} -- "
             "la declaration est perimee"
         )
+        if entry.get("source_kind", "repo") == "external":
+            # Source externe : le fichier lu est dans un clone amont epingle,
+            # pas dans le depot -- is_file() y est structurellement faux. Le
+            # contrat de l'organe est le pin + l'empreinte (mirror de run(),
+            # #23499), pas l'existence locale du chemin.
+            assert str(entry.get("pin") or "").strip(), (
+                f"source externe sans pin : {entry['source']}")
+            assert str(entry.get("sha256") or "").strip(), (
+                f"source externe sans sha256 : {entry['source']}")
+        else:
+            src = REPO_ROOT / entry["source"]
+            assert src.is_file(), f"fichier lu introuvable : {entry['source']}"
 
 
 def test_self_test_passes():
@@ -581,6 +594,55 @@ def test_source_externe_empreinte_absente_de_la_sortie_rougit(tmp_path, monkeypa
                            "Poincare.lean -- 23 lignes\n", _external_entry())
     assert report["stale"] == 1
     assert report["rows"][0]["verdict"] == "EXTERNAL_EMPREINTE_ABSENTE"
+
+
+def test_registry_integrity_admet_une_source_externe(tmp_path, monkeypatch):
+    """Le contrat d'integrite du registre admet une source EXTERNE.
+
+    Controle par reinsertion (#23499) : la premiere entree externe REALE
+    (carnet + cellule reels, source epinglee par pin + empreinte) doit
+    satisfaire le test. Sans l'adaptation de
+    ``test_registry_entries_resolve_to_real_artifacts``, ``is_file()`` sur le
+    chemin AMONT -- absent du depot par construction -- la ferait rougir pour
+    un motif qu'elle ne porte pas.
+    """
+    import sys
+
+    mod = sys.modules[__name__]
+    nb = {"cells": [_cell("c1", "print(1)\n", f"sha256: {SHA}\n")],
+          "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": CHEMIN_AMONT,
+         "source_kind": "external", "pin": PIN, "sha256": SHA}]}),
+        encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", reg)
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    test_registry_entries_resolve_to_real_artifacts()  # ne doit pas lever
+
+
+def test_registry_integrity_exige_pin_et_empreinte_sur_source_externe(
+        tmp_path, monkeypatch):
+    """Controle negatif : une source externe SANS pin ne satisfait PAS le
+    contrat d'integrite -- le test la nomme, il ne la tolere pas."""
+    import sys
+
+    mod = sys.modules[__name__]
+    nb = {"cells": [_cell("c1", "print(1)\n", "Poincare.lean -- 23 lignes\n")],
+          "metadata": {}}
+    (tmp_path / "nb.ipynb").write_text(json.dumps(nb), encoding="utf-8")
+    reg = tmp_path / "reg.json"
+    reg.write_text(json.dumps({"version": 1, "cells": [
+        {"notebook": "nb.ipynb", "cell_id": "c1", "source": CHEMIN_AMONT,
+         "source_kind": "external", "sha256": SHA}]}),  # pin absent
+        encoding="utf-8")
+    monkeypatch.setattr(mod, "REGISTRY", reg)
+    monkeypatch.setattr(mod, "REPO_ROOT", tmp_path)
+
+    with pytest.raises(AssertionError):
+        test_registry_entries_resolve_to_real_artifacts()
 
 
 def test_une_entree_sans_source_kind_reste_repo(tmp_path, monkeypatch):

@@ -1,0 +1,366 @@
+edition,niveau,numero,titre,chapitre,page_pdf,phases,carnets,competences,couvert
+3e,chapter,1,Introduction,1,20,,,,non
+3e,section,1.1,What Is AI?,1,20,,,,non
+3e,section,1.2,The Foundations of Artificial Intelligence,1,24,,,,non
+3e,section,1.3,The History of Artificial Intelligence,1,35,,,,non
+3e,section,1.4,The State of the Art,1,47,,,,non
+3e,chapter,2,Intelligent Agents,2,53,,,,non
+3e,section,2.1,Agents and Environments,2,53,,,,non
+3e,section,2.2,Good Behavior: The Concept of Rationality,2,55,,,,non
+3e,section,2.3,The Nature of Environments,2,59,,,,non
+3e,section,2.4,The Structure of Agents,2,65,,,,non
+3e,chapter,3,Solving Problems by Searching,3,83,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+3e,section,3.1,Problem-Solving Agents,3,83,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+3e,section,3.2,Example Problems,3,88,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+3e,section,3.3,Searching for Solutions,3,94,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+3e,section,3.4,Uninformed Search Strategies,3,100,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+3e,section,3.5,Informed (Heuristic) Search Strategies,3,111,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+3e,section,3.6,Heuristic Functions,3,121,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+3e,chapter,4,Beyond Classical Search,4,139,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+3e,section,4.1,Local Search Algorithms and Optimization Problems,4,139,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+3e,section,4.2,Local Search in Continuous Spaces,4,148,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+3e,section,4.3,Searching with Nondeterministic Actions,4,152,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+3e,section,4.4,Searching with Partial Observations,4,157,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+3e,section,4.5,Online Search Agents and Unknown Environments,4,166,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+3e,chapter,5,Adversarial Search,5,180,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.1,Games,5,180,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.2,Optimal Decisions in Games,5,182,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.3,Alpha–Beta Pruning,5,186,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.4,Imperfect Real-Time Decisions,5,190,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.5,Stochastic Games,5,196,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.6,Partially Observable Games,5,199,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.7,State-of-the-Art Game Programs,5,204,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,section,5.8,Alternative Approaches,5,206,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+3e,chapter,6,Constraint Satisfaction Problems,6,221,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.1,Defining Constraint Satisfaction Problems,6,221,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.2,Constraint Propagation: Inference in CSPs,6,227,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.3,Backtracking Search for CSPs,6,233,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.4,Local Search for CSPs,6,239,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,section,6.5,The Structure of Problems,6,241,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+3e,chapter,7,Logical Agents,7,253,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,7.1,Knowledge-Based Agents,7,254,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,7.2,The Wumpus World,7,255,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,7.3,Logic,7,259,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,7.4,Propositional Logic: A Very Simple Logic,7,262,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,7.5,Propositional Theorem Proving,7,268,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,7.6,Effective Propositional Model Checking,7,278,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,7.7,Agents Based on Propositional Logic,7,284,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,chapter,8,First-Order Logic,8,304,,,,non
+3e,section,8.1,Representation Revisited,8,304,,,,non
+3e,section,8.2,Syntax and Semantics of First-Order Logic,8,309,,,,non
+3e,section,8.3,Using First-Order Logic,8,319,,,,non
+3e,section,8.4,Knowledge Engineering in First-Order Logic,8,326,,,,non
+3e,chapter,9,Inference in First-Order Logic,9,341,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,9.1,Propositional vs. First-Order Inference,9,341,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,9.2,Unification and Lifting,9,344,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,9.3,Forward Chaining,9,349,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,9.4,Backward Chaining,9,356,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,section,9.5,Resolution,9,364,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+3e,chapter,10,Classical Planning,10,385,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,10.1,Definition of Classical Planning,10,385,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,10.2,Algorithms for Planning as State-Space Search,10,392,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,10.3,Planning Graphs,10,398,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,10.4,Other Classical Planning Approaches,10,406,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,10.5,Analysis of Planning Approaches,10,411,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,chapter,11,Planning and Acting in the Real World,11,420,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,11.1,"Time, Schedules, and Resources",11,420,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,11.2,Hierarchical Planning,11,425,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,11.3,Planning and Acting in Nondeterministic Domains,11,434,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,11.4,Multiagent Planning,11,444,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,chapter,12,Knowledge Representation,12,456,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,12.1,Ontological Engineering,12,456,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,12.2,Categories and Objects,12,459,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,12.3,Events,12,465,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,12.4,Mental Events and Mental Objects,12,469,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,12.5,Reasoning Systems for Categories,12,472,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,12.6,Reasoning with Default Information,12,477,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,section,12.7,The Internet Shopping World,12,481,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+3e,chapter,13,Quantifying Uncertainty,13,499,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+3e,section,13.1,Acting under Uncertainty,13,499,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+3e,section,13.2,Basic Probability Notation,13,502,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+3e,section,13.3,Inference Using Full Joint Distributions,13,509,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+3e,section,13.4,Independence,13,513,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+3e,section,13.5,Bayes’ Rule and Its Use,13,514,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+3e,section,13.6,The Wumpus World Revisited,13,518,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+3e,chapter,14,Probabilistic Reasoning,14,529,,,,non
+3e,section,14.1,Representing Knowledge in an Uncertain Domain,14,529,,,,non
+3e,section,14.2,The Semantics of Bayesian Networks,14,532,,,,non
+3e,section,14.3,Efficient Representation of Conditional Distributions,14,537,,,,non
+3e,section,14.4,Exact Inference in Bayesian Networks,14,541,,,,non
+3e,section,14.5,Approximate Inference in Bayesian Networks,14,549,,,,non
+3e,section,14.6,Relational and First-Order Probability Models,14,558,,,,non
+3e,section,14.7,Other Approaches to Uncertain Reasoning,14,565,,,,non
+3e,chapter,15,Probabilistic Reasoning over Time,15,585,,,,non
+3e,section,15.1,Time and Uncertainty,15,585,,,,non
+3e,section,15.2,Inference in Temporal Models,15,589,,,,non
+3e,section,15.3,Hidden Markov Models,15,597,,,,non
+3e,section,15.4,Kalman Filters,15,603,,,,non
+3e,section,15.5,Dynamic Bayesian Networks,15,609,,,,non
+3e,section,15.6,Keeping Track of Many Objects,15,618,,,,non
+3e,chapter,16,Making Simple Decisions,16,629,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,section,16.1,Combining Beliefs and Desires under Uncertainty,16,629,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,section,16.2,The Basis of Utility Theory,16,630,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,section,16.3,Utility Functions,16,634,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,section,16.4,Multiattribute Utility Functions,16,641,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,section,16.5,Decision Networks,16,645,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,section,16.6,The Value of Information,16,647,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,section,16.7,Decision-Theoretic Expert Systems,16,652,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+3e,chapter,17,Making Complex Decisions,17,664,Phase 8; Phase 9,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential; GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3; RCA-4K,oui
+3e,section,17.1,Sequential Decision Problems,17,664,Phase 8; Phase 9,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential; GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3; RCA-4K,oui
+3e,section,17.2,Value Iteration,17,671,Phase 8; Phase 9,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential; GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3; RCA-4K,oui
+3e,section,17.3,Policy Iteration,17,675,Phase 8; Phase 9,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential; GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3; RCA-4K,oui
+3e,section,17.4,Partially Observable MDPs,17,677,Phase 8; Phase 9,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential; GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3; RCA-4K,oui
+3e,section,17.5,Decisions with Multiple Agents: Game Theory,17,685,Phase 8; Phase 9,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential; GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3; RCA-4K,oui
+3e,section,17.6,Mechanism Design,17,698,Phase 8; Phase 9,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential; GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3; RCA-4K,oui
+3e,chapter,18,Learning from Examples,18,712,,,,non
+3e,section,18.1,Forms of Learning,18,712,,,,non
+3e,section,18.2,Supervised Learning,18,714,,,,non
+3e,section,18.3,Learning Decision Trees,18,716,,,,non
+3e,section,18.4,Evaluating and Choosing the Best Hypothesis,18,727,,,,non
+3e,section,18.5,The Theory of Learning,18,732,,,,non
+3e,section,18.6,Regression and Classification with Linear Models,18,736,,,,non
+3e,section,18.7,Artificial Neural Networks,18,746,,,,non
+3e,section,18.8,Nonparametric Models,18,756,,,,non
+3e,section,18.9,Support Vector Machines,18,763,,,,non
+3e,section,18.10,Ensemble Learning,18,767,,,,non
+3e,section,18.11,Practical Machine Learning,18,772,,,,non
+3e,chapter,19,Knowledge in Learning,19,787,,,,non
+3e,section,19.1,ALogical Formulation of Learning,19,787,,,,non
+3e,section,19.2,Knowledge in Learning,19,796,,,,non
+3e,section,19.3,Explanation-Based Learning,19,799,,,,non
+3e,section,19.4,Learning Using Relevance Information,19,803,,,,non
+3e,section,19.5,Inductive Logic Programming,19,807,,,,non
+3e,chapter,20,Learning Probabilistic Models,20,821,,,,non
+3e,section,20.1,Statistical Learning,20,821,,,,non
+3e,section,20.2,Learning with Complete Data,20,825,,,,non
+3e,section,20.3,Learning with Hidden Variables: The EM Algorithm,20,835,,,,non
+3e,chapter,21,Reinforcement Learning,21,849,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+3e,section,21.1,Introduction,21,849,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+3e,section,21.2,Passive Reinforcement Learning,21,851,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+3e,section,21.3,Active Reinforcement Learning,21,858,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+3e,section,21.4,Generalization in Reinforcement Learning,21,864,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+3e,section,21.5,Policy Search,21,867,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+3e,section,21.6,Applications of Reinforcement Learning,21,869,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+3e,chapter,22,Natural Language Processing,22,879,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,22.1,Language Models,22,879,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,22.2,Text Classification,22,884,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,22.3,Information Retrieval,22,886,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,22.4,Information Extraction,22,892,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,chapter,23,Natural Language for Communication,23,907,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,23.1,Phrase Structure Grammars,23,907,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,23.2,Syntactic Analysis (Parsing),23,911,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,23.3,Augmented Grammars and Semantic Interpretation,23,916,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,23.4,Machine Translation,23,926,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,section,23.5,Speech Recognition,23,931,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+3e,chapter,24,Perception,24,947,,,,non
+3e,section,24.1,Image Formation,24,948,,,,non
+3e,section,24.2,Early Image-Processing Operations,24,954,,,,non
+3e,section,24.3,Object Recognition by Appearance,24,961,,,,non
+3e,section,24.4,Reconstructing the 3D World,24,966,,,,non
+3e,section,24.5,Object Recognition from Structural Information,24,976,,,,non
+3e,section,24.6,Using Vision,24,980,,,,non
+3e,chapter,25,Robotics,25,990,,,,non
+3e,section,25.1,Introduction,25,990,,,,non
+3e,section,25.2,Robot Hardware,25,992,,,,non
+3e,section,25.3,Robotic Perception,25,997,,,,non
+3e,section,25.4,Planning to Move,25,1005,,,,non
+3e,section,25.5,Planning Uncertain Movements,25,1012,,,,non
+3e,section,25.6,Moving,25,1016,,,,non
+3e,section,25.7,Robotic Software Architectures,25,1022,,,,non
+3e,section,25.8,Application Domains,25,1025,,,,non
+3e,chapter,26,Philosophical Foundations,26,1039,,,,non
+3e,section,26.1,Weak AI: Can Machines Act Intelligently?,26,1039,,,,non
+3e,section,26.2,Strong AI: Can Machines Really Think?,26,1045,,,,non
+3e,section,26.3,The Ethics and Risks of Developing Artificial Intelligence,26,1053,,,,non
+3e,chapter,27,AI: The Present and Future,27,1063,,,,non
+3e,section,27.1,Agent Components,27,1063,,,,non
+3e,section,27.2,Agent Architectures,27,1066,,,,non
+3e,section,27.3,Are We Going in the Right Direction?,27,1068,,,,non
+3e,section,27.4,What If AI Does Succeed?,27,1070,,,,non
+4e,chapter,1,Introduction,1,29,,,,non
+4e,section,1.1,What Is AI?,1,31,,,,non
+4e,section,1.2,The Foundations of Artificial Intelligence,1,41,,,,non
+4e,section,1.3,The History of Artificial Intelligence,1,63,,,,non
+4e,section,1.4,The State of the Art,1,80,,,,non
+4e,section,1.5,Risks and Benefits of AI,1,86,,,,non
+4e,chapter,2,Intelligent Agents,2,95,,,,non
+4e,section,2.1,Agents and Environments,2,96,,,,non
+4e,section,2.2,Good Behavior: The Concept of Rationality,2,101,,,,non
+4e,section,2.3,The Nature of Environments,2,107,,,,non
+4e,section,2.4,The Structure of Agents,2,118,,,,non
+4e,chapter,3,Solving Problems by Searching,3,145,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+4e,section,3.1,Problem-Solving Agents,3,145,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+4e,section,3.2,Example Problems,3,155,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+4e,section,3.3,Search Algorithms,3,160,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+4e,section,3.4,Uninformed Search Strategies,3,175,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+4e,section,3.5,Informed (Heuristic) Search Strategies,3,189,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+4e,section,3.6,Heuristic Functions,3,212,Phase 1,Search-01-StateSpace.ipynb; Search-02-Uninformed.ipynb; Search-02b-NetworkX.ipynb; Search-03-Informed.ipynb; Search-03e-AStar-Optimality.ipynb,RCA-4C; AI4K12-2; RCA-3C; RCA-3A,oui
+4e,chapter,4,Search in Complex Environments,4,233,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+4e,section,4.1,Local Search and Optimization Problems,4,234,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+4e,section,4.2,Local Search in Continuous Spaces,4,251,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+4e,section,4.3,Search with Nondeterministic Actions,4,257,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+4e,section,4.4,Search in Partially Observable Environments,4,264,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+4e,section,4.5,Online Search Agents and Unknown Environments,4,277,Phase 2,Search-04-LocalSearch.ipynb; Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb,RCA-3C; RCA-3A; RCA-4A; AI4K12-3,oui
+4e,chapter,5,Adversarial Search and Games,5,296,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,section,5.1,Game Theory,5,297,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,section,5.2,Optimal Decisions in Games,5,302,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,section,5.3,Heuristic Alpha–Beta Tree Search,5,315,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,section,5.4,Monte Carlo Tree Search,5,325,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,section,5.5,Stochastic Games,5,326,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,section,5.6,Partially Observable Games,5,338,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,section,5.7,Limitations of Game Search Algorithms,5,346,Phase 3,Search-06-AdversarialSearch.ipynb; Search-07-MCTS-And-Beyond.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3,oui
+4e,chapter,6,Constraint Satisfaction Problems,6,359,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.1,Defining Constraint Satisfaction Problems,6,360,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.2,Constraint Propagation: Inference in CSPs,6,371,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.3,Backtracking Search for CSPs,6,381,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.4,Local Search for CSPs,6,391,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,section,6.5,The Structure of Problems,6,394,Phase 4,CSP-1-Fundamentals.ipynb; CSP-2-Consistency.ipynb,RCA-4C; AI4K12-2; RCA-3A,oui
+4e,chapter,7,Logical Agents,7,410,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,7.1,Knowledge-Based Agents,7,410,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,7.2,The Wumpus World,7,411,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,7.3,Logic,7,422,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,7.4,Propositional Logic: A Very Simple Logic,7,429,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,7.5,Propositional Theorem Proving,7,438,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,7.6,Effective Propositional Model Checking,7,458,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,7.7,Agents Based on Propositional Logic,7,466,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,chapter,8,First-Order Logic,8,488,,,,non
+4e,section,8.1,Representation Revisited,8,490,,,,non
+4e,section,8.2,Syntax and Semantics of First-Order Logic,8,499,,,,non
+4e,section,8.3,Using First-Order Logic,8,517,,,,non
+4e,section,8.4,Knowledge Engineering in First-Order Logic,8,529,,,,non
+4e,chapter,9,Inference in First-Order Logic,9,542,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,9.1,Propositional vs. First-Order Inference,9,543,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,9.2,Unification and First-Order Inference,9,547,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,9.3,Forward Chaining,9,549,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,9.4,Backward Chaining,9,549,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,section,9.5,Resolution,9,576,Phase 5,Tweety-02-Basic-Logics-Python.ipynb; Tweety-02c-FOL-CSharp.ipynb; Tweety-03-Advanced-Logics-Python.ipynb; Tweety-11-Causal-Python.ipynb,RCA-3C; AI4K12-2; RCA-3A,oui
+4e,chapter,10,Knowledge Representation,10,602,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,10.1,Ontological Engineering,10,603,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,10.2,Categories and Objects,10,607,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,10.3,Events,10,618,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,10.4,Mental Objects and Modal Logic,10,624,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,10.5,Reasoning Systems for Categories,10,630,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,10.6,Reasoning with Default Information,10,638,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,chapter,11,Automated Planning,11,656,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,11.1,Definition of Classical Planning,11,657,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,11.2,Algorithms for Classical Planning,11,664,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,11.3,Heuristics for Planning,11,672,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,11.4,Hierarchical Planning,11,679,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,11.5,Planning and Acting in Nondeterministic Domains,11,693,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,11.6,"Time, Schedules, and Resources",11,708,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,section,11.7,Analysis of Planning Approaches,11,716,Phase 6,SymbolicAI/Planners/,RCA-4C; RCA-3A,oui
+4e,chapter,12,Quantifying Uncertainty,12,729,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,12.1,Acting under Uncertainty,12,730,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,12.2,Basic Probability Notation,12,737,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,12.3,Inference Using Full Joint Distributions,12,750,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,12.4,Independence,12,755,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,12.5,Bayes’ Rule and Its Use,12,758,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,12.6,Naive Bayes Models,12,765,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,12.7,The Wumpus World Revisited,12,768,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,chapter,13,Probabilistic Reasoning,13,778,,,,non
+4e,section,13.1,Representing Knowledge in an Uncertain Domain,13,781,,,,non
+4e,section,13.2,The Semantics of Bayesian Networks,13,786,,,,non
+4e,section,13.3,Exact Inference in Bayesian Networks,13,808,,,,non
+4e,section,13.4,Approximate Inference for Bayesian Networks,13,822,,,,non
+4e,section,13.5,Causal Networks,13,845,,,,non
+4e,chapter,14,Probabilistic Reasoning over Time,14,864,,,,non
+4e,section,14.1,Time and Uncertainty,14,865,,,,non
+4e,section,14.2,Inference in Temporal Models,14,872,,,,non
+4e,section,14.3,Hidden Markov Models,14,885,,,,non
+4e,section,14.4,Kalman Filters,14,894,,,,non
+4e,section,14.5,Dynamic Bayesian Networks,14,904,,,,non
+4e,chapter,15,Probabilistic Programming,15,927,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,15.1,Relational Probability Models,15,929,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,15.2,Open-Universe Probability Models,15,940,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,15.3,Keeping Track of a Complex World,15,952,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,section,15.4,Programs as Probability Models,15,959,Phase 7,PyMC-04-Bayesian-Networks.ipynb; PyMC-05-Causal-Inference.ipynb,RCA-3C; RCA-3A; AI4K12-2,oui
+4e,chapter,16,Making Simple Decisions,16,975,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,16.1,Combining Beliefs and Desires under Uncertainty,16,976,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,16.2,The Basis of Utility Theory,16,978,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,16.3,Utility Functions,16,984,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,16.4,Multiattribute Utility Functions,16,999,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,16.5,Decision Networks,16,1008,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,16.6,The Value of Information,16,1013,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,16.7,Unknown Preferences,16,1024,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,chapter,17,Making Complex Decisions,17,1037,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,17.1,Sequential Decision Problems,17,1037,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,17.2,Algorithms for MDPs,17,1056,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,17.3,Bandit Problems,17,1070,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,17.4,Partially Observable MDPs,17,1083,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,section,17.5,Algorithms for Solving POMDPs,17,1087,Phase 8,Probas/DecisionTheory/; DecInfer/; DecPyMC/; Actuariat/; Causal-Bridges/; decision_theory_lean/; DecPyMC-01-Utility-Foundations; DecPyMC-07-Sequential,RCA-3C; RCA-3A; AI4K12-2; AI4K12-3,oui
+4e,chapter,18,Multiagent Decision Making,18,1101,Phase 9,GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,18.1,Properties of Multiagent Environments,18,1102,Phase 9,GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,18.2,Non-Cooperative Game Theory,18,1106,Phase 9,GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,18.3,Cooperative Game Theory,18,1106,Phase 9,GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,18.4,Making Collective Decisions,18,1166,Phase 9,GameTheory-02-NormalForm-Python.ipynb; GameTheory-06-EvolutionTrust-Python.ipynb; GameTheory-13-ImperfectInfo-CFR-Python.ipynb; GameTheory-02b-Lean-Definitions-Lean.ipynb,RCA-3C; AI4K12-2; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,chapter,19,Learning from Examples,19,1201,,,,non
+4e,section,19.1,Forms of Learning,19,1203,,,,non
+4e,section,19.2,Supervised Learning,19,1205,,,,non
+4e,section,19.3,Learning Decision Trees,19,1215,,,,non
+4e,section,19.4,Model Selection and Optimization,19,1229,,,,non
+4e,section,19.5,The Theory of Learning,19,1243,,,,non
+4e,section,19.6,Linear Regression and Classification,19,1250,,,,non
+4e,section,19.7,Nonparametric Models,19,1269,,,,non
+4e,section,19.8,Ensemble Learning,19,1287,,,,non
+4e,section,19.9,Developing Machine Learning Systems,19,1302,,,,non
+4e,chapter,20,Learning Probabilistic Models,20,1329,,,,non
+4e,section,20.1,Statistical Learning,20,1330,,,,non
+4e,section,20.2,Learning with Complete Data,20,1336,,,,non
+4e,section,20.3,Learning with Hidden Variables: The EM Algorithm,20,1358,,,,non
+4e,chapter,21,Deep Learning,21,1378,,,,non
+4e,section,21.1,Simple Feedforward Networks,21,1380,,,,non
+4e,section,21.2,Computation Graphs for Deep Learning,21,1391,,,,non
+4e,section,21.3,Convolutional Networks,21,1396,,,,non
+4e,section,21.4,Learning Algorithms,21,1407,,,,non
+4e,section,21.5,Generalization,21,1413,,,,non
+4e,section,21.6,Recurrent Neural Networks,21,1420,,,,non
+4e,section,21.7,Unsupervised Learning and Transfer Learning,21,1426,,,,non
+4e,section,21.8,Applications,21,1438,,,,non
+4e,chapter,22,Reinforcement Learning,22,1446,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,22.1,Learning from Rewards,22,1450,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,22.2,Passive Reinforcement Learning,22,1453,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,22.3,Active Reinforcement Learning,22,1453,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,22.4,Generalization in Reinforcement Learning,22,1475,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,22.5,Policy Search,22,1488,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,22.6,Apprenticeship and Inverse Reinforcement Learning,22,1493,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,section,22.7,Applications of Reinforcement Learning,22,1499,Phase 10,RL-01-Premiers-Pas-Stable-Baselines3-Python.ipynb; RL-03-Experience-Replay-HER-Python.ipynb; RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb,RCA-3C; RCA-3A; AI4K12-3; RCA-4K,oui
+4e,chapter,23,Natural Language Processing,23,1512,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,23.1,Language Models,23,1514,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,23.2,Grammar,23,1532,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,23.3,Parsing,23,1536,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,23.4,Augmented Grammars,23,1546,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,23.5,Complications of Real Natural Language,23,1554,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,23.6,Natural Language Tasks,23,1561,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,chapter,24,Deep Learning for Natural Language Processing,24,1573,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,24.1,Word Embeddings,24,1574,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,24.2,Recurrent Neural Networks for NLP,24,1580,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,24.3,Sequence-to-Sequence Models,24,1586,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,24.4,The Transformer Architecture,24,1594,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,24.5,Pretraining and Transfer Learning,24,1600,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,section,24.6,State of the art,24,1606,Phase 11,01_OpenAI_Intro.ipynb; 02_PromptEngineering.ipynb; 05_RAG_Modern.ipynb; 08_Reasoning_Models.ipynb,RCA-3A; RCA-2A; RCA-2C; AI4K12-4; RCA-4A; RCA-3C,oui
+4e,chapter,25,Computer Vision,25,1616,,,,non
+4e,section,25.1,Introduction,25,1617,,,,non
+4e,section,25.2,Image Formation,25,1619,,,,non
+4e,section,25.3,Simple Image Features,25,1632,,,,non
+4e,section,25.4,Classifying Images,25,1644,,,,non
+4e,section,25.5,Detecting Objects,25,1650,,,,non
+4e,section,25.6,The 3D World,25,1654,,,,non
+4e,section,25.7,Using Computer Vision,25,1662,,,,non
+4e,chapter,26,Robotics,26,1689,,,,non
+4e,section,26.1,Robots,26,1690,,,,non
+4e,section,26.2,Robot Hardware,26,1692,,,,non
+4e,section,26.3,What kind of problem is robotics solving?,26,1702,,,,non
+4e,section,26.4,Robotic Perception,26,1705,,,,non
+4e,section,26.5,Planning and Control,26,1717,,,,non
+4e,section,26.6,Planning Uncertain Movements,26,1749,,,,non
+4e,section,26.7,Reinforcement Learning in Robotics,26,1754,,,,non
+4e,section,26.8,Humans and Robots,26,1758,,,,non
+4e,section,26.9,Alternative Robotic Frameworks,26,1770,,,,non
+4e,section,26.10,Application Domains,26,1775,,,,non
+4e,chapter,27,"Philosophy, Ethics, and Safety of AI",27,1791,,,,non
+4e,section,27.1,The Limits of AI,27,1792,,,,non
+4e,section,27.2,Can Machines Really Think?,27,1798,,,,non
+4e,section,27.3,The Ethics of AI,27,1802,,,,non
+4e,chapter,28,The Future of AI,28,1845,,,,non
+4e,section,28.1,AI Components,28,1846,,,,non
+4e,section,28.2,AI Architectures,28,1856,,,,non

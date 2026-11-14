@@ -1,7 +1,7 @@
 {
   "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
-  "generated-at": "2026-11-07T08:04:17Z",
-  "generated-by": "myia-po-2027:CoursIA-2",
+  "generated-at": "2026-11-11T14:39:11Z",
+  "generated-by": "myia-ai-01:CoursIA",
   "organ": "scripts/lean/axiom_i18n_siblings.py",
   "issue": 24107,
   "lakes": [
@@ -48,10 +48,10 @@
     {
       "lake": "discrepancy",
       "decision": "true",
-      "reason": "opt-in sur : la surface `_en` (25 modules, 235 declarations) est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "reason": "opt-in sur : la surface `_en` (26 modules, 240 declarations) est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
       "mode": "WILDCARD",
-      "i18n-modules": 25,
-      "i18n-declarations": 235
+      "i18n-modules": 26,
+      "i18n-declarations": 240
     },
     {
       "lake": "argumentation",
@@ -128,10 +128,10 @@
     {
       "lake": "decisiontheory",
       "decision": "true",
-      "reason": "opt-in sur : la surface `_en` (14 modules, 99 declarations) ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
+      "reason": "opt-in sur : la surface `_en` (14 modules, 101 declarations) ne porte aucun ancrage qui ferait rougir la porte ; les `sorry` y sont rapportes, non gates (la porte ne gate pas sur sorryAx pour ce lake)",
       "mode": "WILDCARD",
       "i18n-modules": 14,
-      "i18n-declarations": 99
+      "i18n-declarations": 101
     },
     {
       "lake": "gametheory",
@@ -143,11 +143,11 @@
     },
     {
       "lake": "mathlibexamples",
-      "decision": "false",
-      "reason": "pas de cle `axiom-target-modules` : la jambe Proof integrity est sautee pour ce lake (le workflow la conditionne a `matrix.axiom-target-modules != ''`) ; l'opt-in n'a aucune surface a couvrir",
-      "mode": "SKIPPED",
-      "i18n-modules": 0,
-      "i18n-declarations": 0
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` (2 modules, 20 declarations) est integralement auditable et sans ancre interdite ; la porte couvre desormais la surface bilingue entiere",
+      "mode": "WILDCARD",
+      "i18n-modules": 2,
+      "i18n-declarations": 20
     },
     {
       "lake": "socialchoicepeters",
@@ -284,6 +284,14 @@
       "mode": "WILDCARD",
       "i18n-modules": 24,
       "i18n-declarations": 810
+    },
+    {
+      "lake": "conway",
+      "decision": "true",
+      "reason": "opt-in sur : la surface `_en` (41 modules, 831 declarations) ; les ancres reportees (native_decide, sorry) sont gouvernees par la allow-list du lac (`axiom-allow-axioms`) -- la source ne dit pas si l'ancre resolue au build y est couverte, seule la CI le dit (le gate reel compare les noms resolus)",
+      "mode": "WILDCARD",
+      "i18n-modules": 41,
+      "i18n-declarations": 831
     }
   ]
 }

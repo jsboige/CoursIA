@@ -1,5 +1,7 @@
 # Claude Code Extension Points
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 ## Agents (`.claude/agents/`)
 
 Agents are auto-discovered by Claude Code. Each has YAML frontmatter with model, tools, memory, and skills configuration. **The roster below lists 9 representative agents** — the **full roster (21 agents)** with descriptions, mapping Epic → specialist, et mapping side-track est dans [subagents-reference.md](subagents-reference.md) (la source de vérité).
@@ -96,7 +98,7 @@ Table déportée de `CLAUDE.md` §Règles modulaires (tranche #11554, verdict de
 | Lean / GameTheory | `wsl-kernels` · `lean-merge-discipline` · `lean-i18n` | Docstrings FR par défaut, traduction en jumeau `_en` (paire `Foo`/`Foo_en`, byte-identité hors commentaires) — détail : [`lean-i18n.md`](../../.claude/rules/lean-i18n.md). |
 | Python | `codeql-suppressions-inertes` | Un commentaire `# codeql[rule-id]` est **inerte** sur ce dépôt (CodeQL en *default setup*) : ne pas en ajouter, ne pas en déplacer. |
 
-**Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** (celles qui portent un frontmatter `paths:`) ne se chargent que si la session touche les fichiers visés ; toutes les autres sont **auto-chargées** à chaque session. **La liste des path-gated ne se recopie pas ici** : elle se recalcule, et une copie en dur diverge au premier ajout/rétraction d'un frontmatter — `grep -l '^paths:' .claude/rules/*.md` (mesurée **14** au 2026-10-29) est la source, pas cette phrase.
+**Deux classes, et la distinction change ce qu'un agent a en contexte.** Les règles **path-gated** (celles qui portent un frontmatter `paths:`) ne se chargent que si la session touche les fichiers visés ; toutes les autres sont **auto-chargées** à chaque session. **La liste des path-gated ne se recopie pas ici** : elle se recalcule, et une copie en dur diverge au premier ajout/rétraction d'un frontmatter — `grep -l '^paths:' .claude/rules/*.md` est la source, pas cette phrase.
 
 ## Model Selection Strategy
 

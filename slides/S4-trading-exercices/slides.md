@@ -66,7 +66,7 @@ layout: default
 
 ### Notebooks d'accompagnement
 
-- 28 notebooks `QC-Py-01` a `QC-Py-28` couvrant toute la plateforme
+- Les notebooks `QC-Py-01` a `QC-Py-28` couvrant toute la plateforme
 - Chaque exercice reference les notebooks pertinents
 
 ---

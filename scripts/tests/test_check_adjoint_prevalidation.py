@@ -1,6 +1,7 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import itertools
 import json
 import os
 import subprocess
@@ -1051,17 +1052,25 @@ def test_any_other_author_still_expires_the_dossier():
         assert any("discussion changed after dossier" in e for e in errors), login
 
 
-# --- #17437 : la voix du coordinateur sous l'identite de son App de lane -----
+# --- #26102/#26405 : l'App de la machine ai-01 n'est PAS la voix du coordinateur
 
 
-def test_coordinator_app_identity_does_not_expire_the_dossier():
-    """#17437: the coordinator's App identity is its own voice too.
+def test_coordinator_app_act_expires_the_dossier():
+    """#26102 (appliqué ici par #26405) : un acte de l'App EXPIRE le dossier.
 
-    The lane migration replaces the coordinator's PAT with an installation
-    token, so its post-dossier rows reach the API as
-    ``coursia-lane-ai-01[bot]``. Missing that spelling from the neutralised
-    set would make the coordinator's own lift (B.0 voie 1) expire its own
-    dossier -- #16840's defect, reproduced under the App identity.
+    L'App ``coursia-lane-ai-01`` n'est plus une voix du coordinateur : sa clé
+    privée vit sur la machine ai-01, que partagent les DEUX lanes
+    ``myia-ai-01:CoursIA`` (coordinateur) et ``myia-ai-01:CoursIA-2``
+    (worker soeur) -- la seconde forge le même jeton d'installation.
+    Neutraliser un acte de l'App, c'est neutraliser un acte qu'une lane NON
+    coordinatrice peut écrire : le dossier ne périmait alors pas sur un
+    commentaire post-dossier de CoursIA-2 sous l'App.
+
+    Inverse du comportement #17437 historique (l'acte de l'App était
+    neutralisé) : aligné sur ``merge_ready.COORDINATOR_VOICES`` et
+    ``check_unaddressed_nits.LIFT_OVERRIDE_LOGINS``, qui refusent toute
+    forme App. Le coordinateur lève toujours sous ses logins humains
+    (``myia-ai-01`` / ``jsboige``, cf #16883).
     """
     base = _stamped_snapshot("")
     base["comments"].pop()
@@ -1070,16 +1079,18 @@ def test_coordinator_app_identity_does_not_expire_the_dossier():
     own["createdAt"] = T1
     snapshot["comments"].append(own)
     verdict, errors = mod.evaluate(snapshot)
-    assert verdict == mod.VERDICT_READY, errors
+    assert verdict != mod.VERDICT_READY, (verdict, errors)
+    assert any("discussion changed after dossier" in e for e in errors), errors
 
 
 def test_worker_lane_app_still_expires_the_dossier():
-    """#17437 negative control: widening stops at the coordinator.
+    """#26405 negative control: NO App spelling is neutralised anymore.
 
     Neutralising ``ACCEPTED_DOSSIER_AUTHORS`` wholesale would let any worker
     lane's App write a blocking row after the dossier without expiring it --
-    that is the gate's entire control. Only the coordinator's own App is
-    neutralised, so these two must still refuse.
+    that is the gate's entire control. Since #26102 no App at all is
+    neutralised (the coordinator machine's App included, see
+    ``test_coordinator_app_act_expires_the_dossier``), so these must refuse.
     """
     for login in ("coursia-lane-po-2024[bot]", "coursia-lane-po-2026[bot]"):
         base = _stamped_snapshot("")
@@ -1098,7 +1109,9 @@ def test_coordinator_app_login_is_an_accepted_dossier_author():
     ``COORDINATOR_APP_LOGIN`` is a literal so this module imports without
     ``gh_identity``. If the App prefix or the lane list ever changes there,
     this fails instead of silently neutralising a login the dossier gate
-    would reject as an author.
+    would reject as an author. The App stays an accepted dossier AUTHOR
+    (signing a dossier is not a post-dossier act) -- since #26102 it just no
+    longer neutralises anything written after the dossier.
     """
     assert mod.COORDINATOR_APP_LOGIN in mod.gh_identity.ACCEPTED_DOSSIER_AUTHORS
 
@@ -1365,6 +1378,83 @@ def test_latest_wins_picks_the_most_recent_completed_run_per_name():
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+def test_le_repli_sur_le_skip_garde_le_verdict_reel_anterieur():
+    """#25510 (T-C) : un check-run `skipped` plus RECENT ne remplace pas un
+    verdict reel anterieur du meme nom.
+
+    `skipped` compte comme VERT ici aussi : sous un repli latest-wins simple,
+    une edition de titre emettrait un `skipped` plus recent que le verdict
+    reel, et ce dossier certifierait `latest-wins-green` sur une tete que le
+    gate lit comme ROUGE. Les trois organes (gate, `check_run_state`,
+    dossier) doivent mesurer le meme « latest ».
+    """
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_un_skipped_seul_ne_contredit_pas_le_dossier():
+    """Le cas ordinaire n'est pas casse : un job saute sans verdict anterieur
+    (filtre `paths:`) reste VERT pour le dossier aussi."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : l'API rend les check-runs du PLUS RECENT au PLUS
+    ANCIEN. Le dossier doit mesurer le meme « latest » que le gate dans cet
+    ordre-la (skip d'abord, verdict reel ensuite)."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : toutes les permutations d'un meme lot rendent le meme
+    verdict -- le dossier, le gate et `check_run_state` doivent mesurer le
+    meme « latest », quel que soit l'ordre d'arrivee."""
+    lot = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    for permutation in itertools.permutations(lot):
+        snapshot = _snapshot(_body())
+        snapshot["checkRuns"] = list(permutation)
+        errors = _errors(snapshot)
+        assert any(
+            "checks claim 'latest-wins-green' is contradicted by live check "
+            "'PR gate' (failure)" in error
+            for error in errors
+        ), permutation
 
 
 def test_latest_wins_red_older_run_loses_to_newer_green():
@@ -1793,7 +1883,7 @@ def test_fingerprint_refusal_names_the_live_surface_landscape():
 # le gel se mesure sur #11601, seul parapluie gele en vie.
 FROZEN_TITLE = "enrich(qc,#11601): densite QC-Py-06b"
 REDRESSEMENT_TITLE = (
-    "fix(semanticweb,#17066): redressement critique de SW-4-CSharp-SPARQL "
+    "fix(semanticweb,#17066): redressement critique de SW-04-SPARQL-CSharp "
     "-- reference de campagne"
 )
 
@@ -3331,23 +3421,38 @@ def test_queue_non_coordinator_approval_does_not_qualify():
     assert entry.review_qualifying is False
 
 
-def test_queue_coordinator_app_approval_qualifies_on_exact_head():
-    """#17437: the review door recognizes the coordinator's App as well."""
+def test_queue_coordinator_app_approval_does_not_qualify():
+    """#26102 (appliqué ici par #26405) : la porte review refuse l'App aussi.
+
+    La queue expose la porte à titre d'information ; l'autorité de merge est
+    le 2ter de ``merge_ready`` (``COORDINATOR_VOICES``), qui refuse toute
+    forme App depuis #26102 : la clé de l'App vit sur la machine ai-01
+    partagée par la lane worker soeur CoursIA-2, donc son APPROVE n'est pas
+    une preuve d'identité coordinateur. Inverse du comportement #17437
+    historique (la porte reconnaissait l'App).
+    """
     snapshot = _queue_snapshot([_review(login=mod.COORDINATOR_APP_LOGIN)])
     entry = _classified(snapshot)
-    assert entry.verdict == mod.VERDICT_READY
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
     assert entry.review_disposition == "approved-exact-head"
-    assert entry.review_qualifying is True
+    assert entry.review_qualifying is False
 
 
-def test_queue_coordinator_graphql_bot_approval_qualifies_on_exact_head():
-    """#21818: GraphQL supplies the App login without its REST suffix."""
+def test_queue_coordinator_graphql_bot_approval_does_not_qualify():
+    """#21818 spelling, #26102 verdict: normalisation inchangée, refus aligné.
+
+    GraphQL fournit toujours le login de l'App sans son suffixe REST
+    (``coursia-lane-ai-01``, ``type: Bot``) et ``normalize_author_login`` le
+    replie toujours en ``coursia-lane-ai-01[bot]`` -- c'est la forme repliée
+    qui est comparée, et depuis #26102 elle n'est plus une voix du
+    coordinateur : la porte reste fermée.
+    """
     review = _review(login="coursia-lane-ai-01")
     review["author"]["type"] = "Bot"
     entry = _classified(_queue_snapshot([review]))
-    assert entry.verdict == mod.VERDICT_READY
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
     assert entry.review_disposition == "approved-exact-head"
-    assert entry.review_qualifying is True
+    assert entry.review_qualifying is False
 
 
 def test_queue_worker_app_approval_still_does_not_qualify():
@@ -4430,7 +4535,7 @@ def _synthetic_git(ancestor_pairs=()):
     return fake
 
 
-def _stack_entry(pr, subjects, head_name="", base_name=""):
+def _stack_entry(pr, subjects, head_name="", base_name="", mergeable=""):
     # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
     # tests qui n'ont pas besoin d'exercer le saut content-free
     # preservent l'ancien comportement sans modifier chaque call site.
@@ -4445,6 +4550,7 @@ def _stack_entry(pr, subjects, head_name="", base_name=""):
         author_ref=ref,
         head_name=head_name,
         base_name=base_name,
+        mergeable=mergeable,
     )
 
 
@@ -4601,6 +4707,98 @@ def test_stack_rebased_sister_with_names_still_blocked(monkeypatch):
     )
     assert verdict == mod.VERDICT_BLOCKED, reasons
     assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+# --- #23100 (seconde moitie) : un partenaire CONFLICTING ne bloque pas ----
+
+
+def test_stack_conflicting_partner_does_not_block(monkeypatch):
+    """#23100 (controle positif) -- la soeur en conflit ne bloque pas la cible.
+
+    La PR soeur est DIRTY contre `main` : son porteur doit la rebaser avant
+    qu'elle puisse atterrir. Exiger de la cible qu'elle attende cette PR-la
+    rend la cible inmergeable par une PR qui n'a pas d'aliance -- c'est le
+    fork de base commune dont la PR soeur ne peut pas atterrir, le titre de
+    l'issue.
+
+    L'exemption n'est armee que par un etat MESURE : `CONFLICTING` ici.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            22741, {"a": "A", "b": "B"},
+            head_name="feature/22733-theorem-rewriters",
+        ),
+        _stack_entry(
+            22811, {"a": "A", "b": "B", "c": "C: apport propre de la soeur"},
+            head_name="feature/22740-portage", base_name="main",
+            mergeable="CONFLICTING",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 22741
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_mergeable_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- une soeur MERGEABLE reste bloquante.
+
+    L'exemption ne porte que sur l'etat mesure : une soeur mergeable qui
+    porte des corrections absentes de la cible reste le sommet de pile que
+    la porte existe pour attraper.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            19548, {"a": "A", "b": "B"},
+            head_name="feature/19548-old-version",
+        ),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            head_name="feature/19556-rebuilt", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+def test_stack_unmeasured_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- mesure absente : comportement d'avant.
+
+    `mergeable` vide (mesure non faite) ou `UNKNOWN` : l'exemption est
+    INERTE. Une mesure absente ne deroge a rien -- le risque de la porte
+    reste du bon cote.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    for state in ("", "UNKNOWN"):
+        index = _stack_index(
+            _stack_entry(
+                19548, {"a": "A", "b": "B"},
+                head_name="feature/19548-old-version",
+            ),
+            _stack_entry(
+                19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+                head_name="feature/19556-rebuilt", base_name="main",
+                mergeable=state,
+            ),
+        )
+        snapshot = _base_snapshot()
+        snapshot["number"] = 19548
+        verdict, reasons = mod.derive_verdict(
+            snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+        )
+        assert verdict == mod.VERDICT_BLOCKED, (state, reasons)
+        assert any("stack top" in r and "#19556" in r for r in reasons), (state, reasons)
 
 
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------

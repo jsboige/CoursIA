@@ -48,6 +48,11 @@ from typing import Any
 
 SNAPSHOT_VERSION = 1
 
+# GitHub REST plafonne `per_page` a 100. Sans parametre, l'API sert 30
+# elements par defaut : les lectures paginees du fil complet paient alors
+# inutilement plus d'operations REST, sans gagner en fraicheur.
+REST_PER_PAGE = 100
+
 #: Duree de validite des payloads PAR ISSUE (issue + commentaires), en
 #: secondes. Arbitrage coordinateur du 2026-10-26 (PR #22684) : cache de
 #: CYCLE CRON -- les charges couteuses par element vivent au-dela de la
@@ -243,10 +248,71 @@ def _read_json(path: Path, default: Any) -> Any:
 def _write_json(path: Path, payload: Any) -> None:
     """Ecriture atomique : un lecteur concurrent ne voit jamais un fichier tronque."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    # #22983 volet 4 -- le tmp porte le pid : deux processus ecrivant le
+    # meme fichier (phase reseau hors verrou) ne se marchent pas dessus.
+    tmp = path.with_suffix(f"{path.suffix}.{os.getpid()}.tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=1),
                    encoding="utf-8")
     os.replace(tmp, path)
+
+
+def merge_snapshots(base: dict, fresh: dict, numbers: list[int]) -> dict:
+    """Fusion d'un instantane relu sous verrou avec des lectures fraiches.
+
+    #22983 volet 4 (arbitrage coordinateur, option 2) : la phase reseau est
+    HORS verrou ; sous verrou, on relit le disque puis on fusionne. La regle
+    est PAR NUMERO : pour chaque numero que `fresh` vient de lire, son entree
+    (commentaires + metadonnees + stamp) ne remplace celle du disque que si
+    son stamp est plus recent. Tout le reste vient du disque relu -- c'est ce
+    qui garantit qu'une entree fraiche ecrite par une AUTRE lane entre le
+    chargement initial et la relecture survit a notre ecriture (acceptance 3 :
+    aucune perte a la fusion).
+
+    Les echecs de lecture (``meta.fetch_failures``) fusionnent par union, la
+    plus recente gagnant par cle : ils sont diagnostiques, jamais tranches.
+    """
+    merged = {k: v for k, v in base.items()
+              if k not in ("comments", "issues", "meta")}
+    meta_b = dict(base.get("meta") or {})
+    meta_f = dict(fresh.get("meta") or {})
+    stamps_b = dict(meta_b.get("comment_stamps") or {})
+    stamps_f = dict(meta_f.get("comment_stamps") or {})
+    comments = dict(base.get("comments") or {})
+    issues = dict(base.get("issues") or {})
+    comments_f = fresh.get("comments") or {}
+    issues_f = fresh.get("issues") or {}
+    stamps = dict(stamps_b)
+    for n in numbers:
+        key = str(int(n))
+        stamp_f = stamps_f.get(key)
+        stamp_b = stamps_b.get(key)
+        if not isinstance(stamp_f, (int, float)):
+            continue  # rien de frais pour ce numero : le disque reste
+        if isinstance(stamp_b, (int, float)) and stamp_f < stamp_b:
+            continue  # le disque relu est PLUS RECENT (une autre lane a
+            # ecrit apres notre lecture) : son entree gagne
+        if key in comments_f:
+            comments[key] = comments_f[key]
+        if key in issues_f:
+            issues[key] = issues_f[key]
+        stamps[key] = stamp_f
+    meta = dict(meta_b)
+    meta["comment_stamps"] = stamps
+    fails_b = dict(meta_b.get("fetch_failures") or {})
+    fails_f = dict(meta_f.get("fetch_failures") or {})
+    fails = dict(fails_b)
+    for key, val in fails_f.items():
+        cur = fails.get(key)
+        if (not isinstance(cur, dict)
+                or (isinstance(val, dict)
+                    and val.get("at", 0) >= cur.get("at", 0))):
+            fails[key] = val
+    if fails:
+        meta["fetch_failures"] = fails
+    merged["comments"] = comments
+    merged["issues"] = issues
+    merged["meta"] = meta
+    return merged
 
 
 def load_snapshot(repo: str) -> dict:
@@ -363,8 +429,11 @@ def normalise_comment(raw: dict) -> dict:
 
 
 def fetch_issue_comments(repo: str, number: int) -> list[dict]:
-    """Commentaires d'une issue, en REST (rapide : ~0,3 s contre ~5 s en GraphQL)."""
-    raw = _gh_api(f"repos/{repo}/issues/{number}/comments", params="--paginate")
+    """Commentaires d'une issue, en REST, avec la taille de page maximale."""
+    raw = _gh_api(
+        f"repos/{repo}/issues/{number}/comments",
+        params=["--paginate", "-X", "GET", "-f", f"per_page={REST_PER_PAGE}"],
+    )
     if isinstance(raw, dict):
         raw = raw.get("comments") or []
     return [normalise_comment(c) for c in raw
@@ -450,7 +519,8 @@ def fetch_repo_comments_since(repo: str, since: str | None = None, *,
     # `-f` est present, et un POST sur un point d'entree de liste rend
     # `404 Not Found` (mesure du 27/10 : le balayage levait
     # `gh: Not Found (HTTP 404)` et tout le rafraichissement echouait).
-    params: list[str] = ["--paginate", "-X", "GET"]
+    params: list[str] = ["--paginate", "-X", "GET", "-f",
+                         f"per_page={REST_PER_PAGE}"]
     if since:
         # #22983 -- DEUX elements d'argv, jamais un seul. En un seul
         # element (`"-f since=..."`), `gh` lit le nom de champ ` since`
@@ -490,7 +560,8 @@ def fetch_open_issues(repo: str, *, timeout: float = 60.0) -> dict[int, dict]:
     (titre, labels).
     """
     raw = _gh_api(f"repos/{repo}/issues", params=["--paginate", "-X", "GET",
-                                                   "-f", "state=open"],
+                                                   "-f", "state=open", "-f",
+                                                   f"per_page={REST_PER_PAGE}"],
                    timeout=timeout)
     if isinstance(raw, dict):
         raw = raw.get("issues") or []
@@ -543,11 +614,13 @@ def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
 
     Rend `(snapshot, nb_appels_gh)`.
     """
+    # Borne conservative : un commentaire peut arriver pendant la lecture
+    # paginee, apres le passage de sa page. Le prochain balayage doit le revoir.
+    now = time.time()
     grouped = fetch_repo_comments_since(repo, since, timeout=timeout)
     comments = dict(snapshot.get("comments") or {})
     meta = dict(snapshot.get("meta") or {})
     stamps = dict(meta.get("comment_stamps") or {})
-    now = time.time()
     for number, items in grouped.items():
         key = str(number)
         existing = [c for c in (comments.get(key) or [])

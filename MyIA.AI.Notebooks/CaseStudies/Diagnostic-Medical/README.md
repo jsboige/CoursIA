@@ -36,9 +36,9 @@ flowchart LR
 ```
 Diagnostic-Medical/
 ├── student/
-│   └── Diagnostic-Medical.ipynb          # Template étudiant (à compléter)
+│   └── Diagnostic-Medical-Python.ipynb          # Template étudiant (à compléter)
 ├── solution/
-│   └── Diagnostic-Medical.ipynb          # Solution de référence
+│   └── Diagnostic-Medical-Python.ipynb          # Solution de référence
 ├── data/
 │   └── patients.csv                      # Données de test (10 patients)
 ├── subject.md                            # Sujet complet
@@ -102,7 +102,7 @@ pip install jupyter notebook numpy pandas matplotlib seaborn z3-solver
 jupyter notebook
 
 # Ouvrir le fichier
-student/Diagnostic-Medical.ipynb
+student/Diagnostic-Medical-Python.ipynb
 ```
 
 **Instructions** :
@@ -115,7 +115,7 @@ student/Diagnostic-Medical.ipynb
 
 ```bash
 # Ouvrir le notebook corrigé
-jupyter notebook solution/Diagnostic-Medical.ipynb
+jupyter notebook solution/Diagnostic-Medical-Python.ipynb
 ```
 
 **Actions** :

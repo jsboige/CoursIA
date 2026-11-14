@@ -9,8 +9,8 @@ pagetitle: "Théorie des Jeux - Game Theory"
 <!-- CATALOG-STATUS
 series: GameTheory
 pedagogical_count: 141
-breakdown: root=106, SocialChoice=16, Dynamics=13, Coalitions=5, gateway=1
-maturity: BETA=122, DRAFT=12, ALPHA=7
+breakdown: root=100, SocialChoice=16, Dynamics=13, Metajeux=6, Coalitions=5, gateway=1
+maturity: BETA=129, DRAFT=7, ALPHA=5
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -25,7 +25,7 @@ Ce README suit le principe des parcours à plusieurs vitesses du dépôt ([chois
 
 - **Vous découvrez le sujet** : lisez le [Parcours principal](#parcours-principal), les notebooks à numéro nu de 01 à 17, dans l'ordre. Il se suffit à lui-même.
 - **Vous voulez creuser un palier** : ouvrez la section de ce palier dans [Approfondissements](#approfondissements). Une lettre (`04b`, `04c`…) creuse le palier dont elle porte le numéro : formalisation Lean, variante, résultat plus récent. Elle ne fait pas avancer dans la série.
-- **Vous cherchez la matière de recherche** : la [sous-série SocialChoice](#sous-série-socialchoice), les [extensions](#extensions-au-delà-du-parcours) numérotées au-delà de 17, et [Pour aller plus loin](#pour-aller-plus-loin), qui regroupe les notes techniques et les formalisations Lean.
+- **Vous cherchez la matière de recherche** : la [sous-série SocialChoice](#sous-série-socialchoice), les [escaliers](#escaliers) et leurs extensions, et [Pour aller plus loin](#pour-aller-plus-loin), qui regroupe les notes techniques et les formalisations Lean.
 
 Chaque ligne des tables annonce son public : **Découverte**, **Licence** ou **Recherche**. Pour exécuter les notebooks, voir [Installation](#installation).
 
@@ -101,14 +101,14 @@ Les figures qui ponctuent le parcours sont extraites des sorties réelles des no
 
 On apprend à représenter un jeu sous forme normale, puis à le résoudre : dominance, meilleure réponse, équilibre de Nash pur et mixte, théorème minimax. La phase se termine sur l'évolution : comment la coopération émerge d'un tournoi itéré. À l'issue, les trois piliers sont en place : Nash, minimax et évolution.
 
-| # | Notebook | Ce qu'on y apprend | Durée | Public | Pour approfondir |
-|---|----------|--------------------|-------|--------|------------------|
-| 01 | Mise en route — [Python](GameTheory-01-Setup-Python.ipynb) | Installation de Nashpy et OpenSpiel, premier dilemme du prisonnier | 20 min | Découverte | — |
-| 02 | Forme normale — [Python](GameTheory-02-NormalForm-Python.ipynb) ([suite](GameTheory-02-NormalForm-Part2-Python.ipynb)) · [C#](GameTheory-02-NormalForm-CSharp.ipynb) ([suite](GameTheory-02-NormalForm-Part2-CSharp.ipynb)) | Matrices de gains, dominance, meilleure réponse ; la suite énumère les supports mixtes d'un jeu N×N | 45 min | Découverte | [02b](GameTheory-02b-Lean-Definitions-Lean.ipynb) · [02c](GameTheory-02c-Travelers-Dilemma-Python.ipynb) · [02d](GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) · [02e](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) |
-| 03 | Topologie des jeux 2×2 — [Python](GameTheory-03-Topology2x2-Python.ipynb) · [C#](GameTheory-03-Topology2x2-CSharp.ipynb) | La table périodique de Robinson-Goforth : classer tous les jeux 2×2 ordinaux et dériver leur quotient | 80 min | Licence | [03b](GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) · [03d](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [03e](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) |
-| 04 | Équilibre de Nash — [Python](GameTheory-04-NashEquilibrium-Python.ipynb) · [C#](GameTheory-04-NashEquilibrium-CSharp.ipynb) | Nash pur et mixte, Lemke-Howson, analyse paramétrique | 60 min | Découverte | [04b](GameTheory-04b-Lean-NashExistence-Lean.ipynb) · [04c](GameTheory-04c-NashExistence-Python.ipynb) · [04d](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) · [04e](GameTheory-04e-Reflective-Oracles-Python.ipynb) · [04g](GameTheory-04g-Supermodularite-Python.ipynb) · [04h](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) · [04h-Lean](GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) · [04i](GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) · [04j](GameTheory-04j-Rationalisabilite-Python.ipynb) · [04k](GameTheory-04k-Equilibre-Correle-Python.ipynb) |
-| 05 | Jeux à somme nulle — [Python](GameTheory-05-ZeroSum-Minimax-Python.ipynb) · [C#](GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | Théorème minimax de von Neumann, programmation linéaire primal/dual | 40 min | Découverte | [05b](GameTheory-05b-Lean-Minimax-Lean.ipynb) · [05c](GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) |
-| 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust-Python.ipynb) · [C#](GameTheory-06-EvolutionTrust-CSharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | 65 min | Découverte | [06b](Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) · [06c](Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) · [06d](Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) · [06e](Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) · [06f](Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [06f bis](Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) · [06g](Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) · [06g bis](Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) · [06h](Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) · [06k](Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|----------|--------------------|--------|------------------|
+| 01 | Mise en route — [Python](GameTheory-01-Setup-Python.ipynb) | Installation de Nashpy et OpenSpiel, premier dilemme du prisonnier | Découverte | — |
+| 02 | Forme normale — [Python](GameTheory-02-NormalForm-Python.ipynb) ([suite](GameTheory-02-NormalForm-Part2-Python.ipynb)) · [C#](GameTheory-02-NormalForm-CSharp.ipynb) ([suite](GameTheory-02-NormalForm-Part2-CSharp.ipynb)) | Matrices de gains, dominance, meilleure réponse ; la suite énumère les supports mixtes d'un jeu N×N | Découverte | [02b](GameTheory-02b-Lean-Definitions-Lean.ipynb) · [02c](GameTheory-02c-Travelers-Dilemma-Python.ipynb) · [02d](GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) · [02e](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) |
+| 03 | Topologie des jeux 2×2 — [Python](GameTheory-03-Topology2x2-Python.ipynb) · [C#](GameTheory-03-Topology2x2-CSharp.ipynb) | La table périodique de Robinson-Goforth : classer tous les jeux 2×2 ordinaux et dériver leur quotient | Licence | [03b](GameTheory-03b-Chambres-Murs-Chemins-Lean-Python.ipynb) · [03d](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) · [03e](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) |
+| 04 | Équilibre de Nash — [Python](GameTheory-04-NashEquilibrium-Python.ipynb) · [C#](GameTheory-04-NashEquilibrium-CSharp.ipynb) | Nash pur et mixte, Lemke-Howson, analyse paramétrique | Découverte | [04b](GameTheory-04b-Lean-NashExistence-Lean.ipynb) · [04c](GameTheory-04c-NashExistence-Python.ipynb) · [04d](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) · [04e](GameTheory-04e-Reflective-Oracles-Python.ipynb) · [04g](GameTheory-04g-Supermodularite-Python.ipynb) · [04h](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) · [04h-Lean](GameTheory-04h-Routing-PriceOfAnarchy-Lean.ipynb) · [04i](GameTheory-04i-Utilite-Esperee-Risque-Python.ipynb) · [04j](GameTheory-04j-Rationalisabilite-Python.ipynb) · [04k](GameTheory-04k-Equilibre-Correle-Python.ipynb) |
+| 05 | Jeux à somme nulle — [Python](GameTheory-05-ZeroSum-Minimax-Python.ipynb) · [C#](GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | Théorème minimax de von Neumann, programmation linéaire primal/dual | Découverte | [05b](GameTheory-05b-Lean-Minimax-Lean.ipynb) · [05c](GameTheory-05c-KKT-Dualite-Lagrangienne-Python.ipynb) |
+| 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust-Python.ipynb) · [C#](GameTheory-06-EvolutionTrust-CSharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | Découverte | [06b](Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) · [06c](Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) · [06d](Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) · [06e](Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) · [06f](Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [06f bis](Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) · [06g](Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) · [06g bis](Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) · [06h](Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) · [06k](Dynamics/Dynamics-04b-FairBot-Loeb-Lean.ipynb) |
 
 Les deux figures suivantes, bâties sur le Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
 
@@ -124,14 +124,14 @@ Les deux figures suivantes, bâties sur le Dilemme du Prisonnier, illustrent les
 
 Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles d'information, jeux combinatoires, induction arrière puis avant, jeux bayésiens et jeux de réputation. Cette phase présuppose la phase 1.
 
-| # | Notebook | Ce qu'on y apprend | Durée | Public | Pour approfondir |
-|---|----------|--------------------|-------|--------|------------------|
-| 07 | Forme extensive — [Python](GameTheory-07-ExtensiveForm-Python.ipynb) · [C#](GameTheory-07-ExtensiveForm-CSharp.ipynb) | Arbres de jeu, ensembles d'information, stratégies comportementales | 50 min | Licence | — |
-| 08 | Jeux combinatoires — [Python](GameTheory-08-CombinatorialGames-Python.ipynb) · [C#](GameTheory-08-CombinatorialGames-CSharp.ipynb) | Positions P/N, Nim, valeurs de Grundy, théorème de Sprague-Grundy | 55 min | Licence | [08b](GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) · [08c](GameTheory-08c-CombinatorialGames-Python.ipynb) · [08d](GameTheory-08d-Lean-CGT-Lean.ipynb) |
-| 09 | Induction arrière — [Python](GameTheory-09-BackwardInduction-Python.ipynb) · [C#](GameTheory-09-BackwardInduction-CSharp.ipynb) | Induction arrière, mille-pattes, escalade, engagement | 55 min | Licence | [09b](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [09c](GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) · [09d](GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) |
-| 10 | Induction avant et SPE — [Python](GameTheory-10-ForwardInduction-SPE-Python.ipynb) · [C#](GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | Équilibre parfait en sous-jeux, menaces crédibles, induction avant | 60 min | Licence | — |
-| 11 | Jeux bayésiens — [Python](GameTheory-11-BayesianGames-Python.ipynb) · [C#](GameTheory-11-BayesianGames-CSharp.ipynb) | Types privés, croyances, équilibre bayésien | 55 min | Licence | [11b](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) · [11c](GameTheory-11c-Global-Games-Python.ipynb) · [11d](GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) · [11e](GameTheory-11e-Global-Games-Python.ipynb) · [11f](GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb) |
-| 12 | Jeux de réputation — [Python](GameTheory-12-ReputationGames-Python.ipynb) · [C#](GameTheory-12-ReputationGames-CSharp.ipynb) | Signaling, cheap talk, réputation (Kreps-Wilson) | 50 min | Licence | — |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|----------|--------------------|--------|------------------|
+| 07 | Forme extensive — [Python](GameTheory-07-ExtensiveForm-Python.ipynb) · [C#](GameTheory-07-ExtensiveForm-CSharp.ipynb) | Arbres de jeu, ensembles d'information, stratégies comportementales | Licence | — |
+| 08 | Jeux combinatoires — [Python](GameTheory-08-CombinatorialGames-Python.ipynb) · [C#](GameTheory-08-CombinatorialGames-CSharp.ipynb) | Positions P/N, Nim, valeurs de Grundy, théorème de Sprague-Grundy | Licence | [08b](GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) · [08c](GameTheory-08c-CombinatorialGames-Python.ipynb) · [08d](GameTheory-08d-Lean-CGT-Lean.ipynb) |
+| 09 | Induction arrière — [Python](GameTheory-09-BackwardInduction-Python.ipynb) · [C#](GameTheory-09-BackwardInduction-CSharp.ipynb) | Induction arrière, mille-pattes, escalade, engagement | Licence | [09b](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [09c](GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) · [09d](GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) |
+| 10 | Induction avant et SPE — [Python](GameTheory-10-ForwardInduction-SPE-Python.ipynb) · [C#](GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | Équilibre parfait en sous-jeux, menaces crédibles, induction avant | Licence | — |
+| 11 | Jeux bayésiens — [Python](GameTheory-11-BayesianGames-Python.ipynb) · [C#](GameTheory-11-BayesianGames-CSharp.ipynb) | Types privés, croyances, équilibre bayésien | Licence | [11b](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) · [11c](GameTheory-11c-Global-Games-Python.ipynb) · [11d](GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) · [11e](GameTheory-11e-Global-Games-Python.ipynb) · [11f](GameTheory-11f-Jeux-Globaux-Selection-Equilibre-Python.ipynb) |
+| 12 | Jeux de réputation — [Python](GameTheory-12-ReputationGames-Python.ipynb) · [C#](GameTheory-12-ReputationGames-CSharp.ipynb) | Signaling, cheap talk, réputation (Kreps-Wilson) | Licence | — |
 
 ![Arbre d'un jeu séquentiel (choix Out/In puis Stag/Hare) et raisonnement d'induction avant menant au SPE (In, Stag, Stag) → (4, 4).](assets/readme/gt10-spe.png)
 
@@ -141,14 +141,18 @@ Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles 
 
 La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Les paliers 15 et 16 servent aussi d'escalier vers deux sous-séries — [Coalitions](#sous-série-coalitions), consacrée à la valeur d'un groupe, et [SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences ; le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) en est la porte d'entrée depuis la série mère.
 
-| # | Notebook | Ce qu'on y apprend | Durée | Public | Pour approfondir |
-|---|----------|--------------------|-------|--------|------------------|
-| 13 | Information imparfaite et CFR — [Python (WSL)](GameTheory-13-ImperfectInfo-CFR-Python.ipynb) · [C#](GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) | Counterfactual Regret Minimization, MCCFR, Deep CFR sur le poker | 70 min | Licence | [13b](GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [13c](GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb) · [13d](GameTheory-13d-Optimistic-CFR-Python.ipynb) · [13e](GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) · [13f](GameTheory-13f-Ataraxos-Patron-Python.ipynb) · [13g](GameTheory-13g-Ataraxos-Organe-Natif.ipynb) · [13h](GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb) |
-| 14 | Jeux différentiels — [Python](GameTheory-14-DifferentialGames-Python.ipynb) · [C#](GameTheory-14-DifferentialGames-CSharp.ipynb) | Jeux en temps continu, boucle ouverte et fermée, Stackelberg, poursuite-évasion | 60 min | Licence | [14b](GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) · [14c](GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb) |
-| 15 | Jeux coopératifs — [Python](GameTheory-15-CooperativeGames-Python.ipynb) · [C#](GameTheory-15-CooperativeGames-CSharp.ipynb) | Valeur de Shapley, Core, condition de Bondareva-Shapley | 65 min | Licence | [15b](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) · [15c](GameTheory-15c-CooperativeGames-Python.ipynb) · [15d](GameTheory-15d-Shapley-Groupes-Python.ipynb) · [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) · sous-série [Coalitions](Coalitions/README.md) |
-| 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign-Python.ipynb) · [C#](GameTheory-16-MechanismDesign-CSharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | 65 min | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [16d](GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) · [16h](GameTheory-16h-Cooperation-LLM-Python.ipynb) · [16i](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [16j](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) · sous-série [Coalitions](Coalitions/README.md) |
-| 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | 55 min | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) · [17f](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
-| 21 | Capstone choix social — [Python](GameTheory-21-Capstone-Choix-Social-Python.ipynb) | La sous-série SocialChoice depuis la série mère : témoins d'Arrow et cycle de Condorcet par le code, Gale-Shapley vérifié, lecture mesurée du lake | 30 min | Licence | sous-série [SocialChoice](SocialChoice/README.md) |
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|----------|--------------------|--------|------------------|
+| 13 | Information imparfaite et CFR — [Python (WSL)](GameTheory-13-ImperfectInfo-CFR-Python.ipynb) · [C#](GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) | Counterfactual Regret Minimization, MCCFR, Deep CFR sur le poker | Licence | [13b](GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [13b C#](GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) · [13d](GameTheory-13d-Optimistic-CFR-Python.ipynb) · [13e](GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) · [13f](GameTheory-13f-Ataraxos-Patron-Python.ipynb) · [13g](GameTheory-13g-Ataraxos-Organe-Natif.ipynb) · [13h](GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb) |
+| 14 | Jeux différentiels — [Python](GameTheory-14-DifferentialGames-Python.ipynb) · [C#](GameTheory-14-DifferentialGames-CSharp.ipynb) | Jeux en temps continu, boucle ouverte et fermée, Stackelberg, poursuite-évasion | Licence | [14b](GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) · [14c](GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb) |
+| 15 | Jeux coopératifs — [Python](GameTheory-15-CooperativeGames-Python.ipynb) · [C#](GameTheory-15-CooperativeGames-CSharp.ipynb) | Valeur de Shapley, Core, condition de Bondareva-Shapley | Licence | [15b](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) · [15c](GameTheory-15c-CooperativeGames-Python.ipynb) · [15d](GameTheory-15d-Shapley-Groupes-Python.ipynb) · [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) · sous-série [Coalitions](Coalitions/README.md) |
+| 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign-Python.ipynb) · [C#](GameTheory-16-MechanismDesign-CSharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [16d](GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) · [16h](GameTheory-16h-Cooperation-LLM-Python.ipynb) · [16i](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [16j](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) · sous-série [Coalitions](Coalitions/README.md) |
+| 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) · [17f](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
+| 21 | Capstone choix social — [Python](GameTheory-21-Capstone-Choix-Social-Python.ipynb) | La sous-série SocialChoice depuis la série mère : témoins d'Arrow et cycle de Condorcet par le code, Gale-Shapley vérifié, lecture mesurée du lake | Licence | sous-série [SocialChoice](SocialChoice/README.md) |
+
+Le palier 16 est l'un des cas réels mesurés par le [critère de frontière utilitaire-de-série / exposition MCP](../../docs/reference/ict-mcp-frontier-criterion.md) — verdict : rien dû, le palier reste notebook.
+
+Dans la même famille d'exposition, le palier 13 possède un service pendant : le dossier [gateway/](gateway/README.md) expose la résolution CFR du carnet 13 en microservice REST (`POST /gametheory/cfr`, Jupyter Kernel Gateway, pli 0 de l'Epic #19571 / issue #21104). Le carnet pédagogique n'est pas modifié — le service vit à côté, comme composant distinct.
 
 Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un équilibre en information imparfaite, la stabilité coopérative, la convergence d'agents en auto-apprentissage.
 
@@ -194,6 +198,8 @@ Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller pl
 | 02c | Dilemme du voyageur — [Python](GameTheory-02c-Travelers-Dilemma-Python.ipynb) · [C#](GameTheory-02c-Travelers-Dilemma-CSharp.ipynb) | Basu (1994) : l'élimination itérée des stratégies dominées mène à (2, 2), que contredit le comportement humain ; le bonus r* = 1 où le paradoxe se dissout | Python · C# | Licence |
 | 02d | [Annexe épistémique — connaissance commune et croyances](GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) | Ce qu'un joueur *sait*, plutôt que ce qu'il joue : modèle à partitions et opérateur `K_i(E)`, vérification des axiomes S5, `CK(E)` comme plus grand point fixe, théorème d'Aumann (1976) sur l'accord impossible vérifié par énumération exhaustive, et l'élimination itérée relue comme conséquence de la connaissance commune de la rationalité | Python | Licence |
 | 02e | IESDS et rationalisabilité — [Python](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) · [C#](GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb) | L'élimination itérée des stratégies dominées : indépendance à l'ordre (mesurée sur 4096 jeux), contre-exemple en dominance faible, admissibilité et rationalisabilité ; le jumeau C# réimplémente les mêmes algorithmes from scratch, dont un simplex à deux phases qui remplace `scipy.linprog` | Python · C# | Licence |
+
+Le carnet 02d existe aussi en [C#](GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb) : les deux versions énumèrent les partitions, vérifient les propriétés S5 et explorent les priors communs ou distincts.
 
 ### Autour de 03 — géométrie ordinale des jeux
 
@@ -275,7 +281,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 13b | [Résolution sûre de sous-jeux](GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) | Recoller un sous-jeu résolu à part : un mauvais recollement produit un témoin adversarial explicite | Python | Recherche |
-| 13c | [Résolution sûre, jumeau C#](GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb) | Jumeau C# du 13b : reproduction, audit des poids de chemin, meilleure réponse énumérée ; la loi survit, les valeurs absolues non | C# | Recherche |
+| 13b | [Résolution sûre, jumeau C#](GameTheory-13b-Safe-Subgame-Solving-CSharp.ipynb) | Jumeau C# du 13b : reproduction, audit des poids de chemin, meilleure réponse énumérée ; la loi survit, les valeurs absolues non | C# | Recherche |
 | 13d | [CFR optimiste](GameTheory-13d-Optimistic-CFR-Python.ipynb) | OFTRL stable-prédictif : la variante qui stabilise la convergence par prédiction | Python | Recherche |
 | 13e | [Réviser un modèle d'adversaire](GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) | Révision AGM à noyaux d'une base de croyances sur l'adversaire : Z3 décide la consistance, l'enracinement est mesuré, et le coût du refus d'évidence est payé en gain cumulé | Python | Recherche |
 | 13f | [Ataraxos, le patron en trois briques](GameTheory-13f-Ataraxos-Patron-Python.ipynb) | Distillation du patron de conception Ataraxos (apprendre par auto-jeu, chercher au temps de test) exécutée de bout en bout sur Kuhn Poker : les trois briques du moteur en Python autonome | Python | Recherche |
@@ -410,23 +416,30 @@ change de substrat en lisant le lake [`assignment_lean/`](assignment_lean/).
 | 04 | [Affectation de Kuhn-Munkres](Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb) | Python | Licence |
 | 05 | [Affectation en Lean](Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) | Lean | Recherche |
 
-## Extensions au-delà du parcours
+## Escaliers
 
-Les notebooks numérotés de 18 à 22 — hormis le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), escalier de la [sous-série SocialChoice](#sous-série-socialchoice) — ne prolongent pas le parcours principal. Ce sont des extensions autonomes : chacune isole un geste qui modifie l'espace des jeux (composition, abstraction, témoin d'impossibilité) plutôt qu'une solution dans un jeu donné. Leur numéro nu est un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
+Les extensions autonomes de la série vivent dans des **escaliers** : des sous-dossiers à parcours propre, dont le README porte l'ordre de lecture, les anciennes lettres et les compagnons formels. On y entre par les paliers du parcours principal, jamais à leur place.
+
+| Escalier | Vocation | Porte |
+|---|---|---|
+| [SocialChoice/](SocialChoice/README.md) | L'agrégation des préférences : Arrow, vote, appariement | [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), depuis la série mère |
+| [Dynamics/](Dynamics/README.md) | De la répétition aux institutions | [GT-06](GameTheory-06-EvolutionTrust-Python.ipynb) |
+| [Coalitions/](Coalitions/README.md) | La valeur d'un groupe | [GT-15](GameTheory-15-CooperativeGames-Python.ipynb) et [GT-16](GameTheory-16-MechanismDesign-Python.ipynb) |
+| [Metajeux/](Metajeux/README.md) | Modifier l'espace des jeux plutôt qu'y jouer — composer, abstraire, témoigner | après le parcours principal, voisin d'amont [GT-17](GameTheory-17-MultiAgent-RL-Python.ipynb) |
+
+Le dossier [Metajeux/](Metajeux/README.md) descend des extensions 18-20c de la racine (tranche T6 de la restructuration #20316) : open games et lentilles (ex-18), casser la composition (ex-18b), abstraction à dette (ex-19), chemin minimal Robinson-Goforth (ex-20), témoins d'impossibilité (ex-20b) et chemin minimal 3×2 (ex-20c) y forment les marches `Metajeux-01` à `Metajeux-06` ; la marche 03 consomme le lake `Abstraction`.
+
+**Descentes vers d'autres séries** : des extensions nées ici ont rejoint leur série d'organe — [DecInfer-11](../Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) (ex-04f, théories de la décision, série Probas), [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) (ex-15d, décomposition de Möbius, sous-série SocialChoice) et [GOL-08 / GOL-09](../SymbolicAI/Lean/GOL/README.md) (ex-20d/20e, sous-série GOL de la série Lean, réorg #20204).
+
+### Extensions restées en racine
+
+Leur numéro nu reste un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
 
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
-| 18 | [Open games et lentilles](GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) | Une représentation locale qui modifie le contexte global dont elle est issue | Python | Recherche |
-| 18b | [Casser la composition](GameTheory-18b-Casser-la-Composition-Python.ipynb) | Contre-exemples à la compositionnalité des équilibres d'open games | Python | Recherche |
-| 19 | [Abstraction à dette](GameTheory-19-Abstraction-a-Dette-Python.ipynb) | Mesurer ce que perd une représentation simplifiée | Python | Recherche |
 | 19b | [Co-design bilevel](GameTheory-19b-Bilevel-PPO-Python.ipynb) | Stackelberg PPO (Dai et al., ICLR 2026) rejoué à l'échelle pédagogique : le leader apprend la morphologie d'un nageur jouet, le suiveur est un PPO — le co-design bat la morphologie fixée, l'ablation adapté-contre-figé reste non tranchée à cette échelle | Python | Recherche |
-| 20 | [Chemin minimal](GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Un témoin de chemin minimal construit par un générateur, vérifié par un composant indépendant | Python | Recherche |
-| 20b | [Témoins d'impossibilité](GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | Le chemin minimal qui ne peut pas exister, exhibé par le code | Python | Recherche |
-| 20c | [Jeux ordinaux 3×2](GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Le même théorème testé sur un second substrat | Python | Recherche |
-| 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart au jeu myope vaut exactement 2γ, et l'adversaire qui conteste la transition le capte (ex-26, renum #14944) | Python | Recherche |
-| — | [GOL-08 / GOL-09 → sous-série GOL](../SymbolicAI/Lean/GOL/README.md) | Translateur Loi II (ex-20d) et perplexité structurelle Hashlife (ex-20e), déplacés vers la sous-série GOL de la série Lean (réorg #20204) | Python | Recherche |
+| 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart entre valeur statique et valeur dynamique vaut 2γ sans mesurer à lui seul un gain de planification, et l'adversaire qui conteste la transition l'annule (ex-26, renum #14944) | Python | Recherche |
 | — | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
-| — | [Affectation de Kuhn-Munkres → sous-série Coalitions](Coalitions/README.md) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et sa version Lean exécutée depuis le lake `assignment_lean` — carnets 04 et 05 du dossier (ex-23 et 23b, dont les numéros d'affichage ne désignaient aucune étape du parcours) | Python · Lean | Licence |
 | — | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
 | — | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
 
@@ -478,9 +491,13 @@ cd D:\CoursIA\MyIA.AI.Notebooks\GameTheory\scripts
 Les jumeaux C# s'exécutent avec .NET Interactive (.NET 9) :
 
 ```bash
-dotnet tool install --global Microsoft.dotnet-interactive
+dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
 ```
+
+#### Parité des jeux stochastiques (22)
+
+Le carnet [GameTheory-22 en Python](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) possède un [jumeau C#](GameTheory-22-Jeux-Stochastiques-Shapley-CSharp.ipynb). Les expériences à deux états gardent les mêmes gains, transitions et budgets : l’écart entre valeur statique et valeur dynamique vaut analytiquement 2γ à l’état 0 du modèle, et zéro à l’état absorbant ; évalués sur la même partie, les deux départages du joueur myope obtiennent 2 (il reste) et 3,8 (il saute). NumPy/Matplotlib deviennent des tableaux BCL et un SVG statique ; les exercices C# ajoutent des contrôles sur les appels et traces réellement observés. Les valeurs itérées restent des approximations numériques.
 
 ### Vérification et configuration
 

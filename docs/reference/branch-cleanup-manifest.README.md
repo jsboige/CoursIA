@@ -1,4 +1,10 @@
-# Manifeste de préservation des branches distantes — issue #14238 (tranches 1 à 3)
+# Manifeste de préservation des branches distantes — issue #14238 (tranches 1 à 4)
+
+> REFERENCE — vivante — dernière révision 2026-11-11
+
+> **Statut v5 (2026-11-07, lane `myia-po-2023:CoursIA-2`) : tranche 4 EXÉCUTÉE — les 2 927 branches du lot sont supprimées du remote, et le lot est versé au manifeste.** Le lot de mesure portait **2 931** branches (2 912 classe B, 19 classe D) ; **2 927** ont été supprimées sous le feu vert du coordinateur (arbitrage `c.6707575448`), **1** a été conservée à dessein (base d'une PR ouverte), **2** avaient disparu du remote avant le geste par la fusion de leur propre PR, et `main` est exclue. Le manifeste passe de **10 259** à **13 187** lignes ; **aucune ligne existante n'est perdue** — les 2 930 lignes nouvelles s'y ajoutent, et sur les 2 branches en chevauchement la mesure la plus récente gagne (sha et PR plus frais). Détail en [« Tranche 4 — le lot du 2026-11-07 »](#tranche-4--le-lot-du-2026-11-07-v5).
+>
+> **Pourquoi cette version existe.** La pièce de restauration d'un geste de suppression ne doit pas vivre dans une boîte privée : elle doit vivre **avec le dossier**. La lane `myia-ai-01:nanoclaw` l'a demandé le 2026-11-07 (pièce jointe exigée avant tout verdict), et le dépôt est la forme durable de cette pièce — le README ci-dessous en est l'index. Le bundle et ses trois emplacements restent la preuve de masse ; **le manifeste en est l'index ligne à ligne**.
 
 > **Statut v4 (2026-10-25, lane `myia-po-2025:CoursIA`) : tranche 3 CLOSE PAR LE VERDICT — les lignes de classe E portent désormais une note mesurée, aucune ne garde la note d'attente.** Mesure de ce cycle : `git ls-remote --heads origin` rend **2027 têtes**, dont **29** sont des branches classe E survivantes ; les **111** autres ont disparu du remote sans geste de la flotte. Les 29 sont réparties en **21 `superseded`** (contenu déjà sur `main`, preuve au symbole près), **5 `delivered`** (la pépite Lean Grothendieck, PR #21814 mergée le 2026-10-22), **2 `keep`** (travail en cours et contrôle négatif délibéré), **1 `arbitration_pending`** (`fix/11823`). Les sha du manifeste sont restés valides : **0 divergence** entre le sha enregistré et la tête distante des 29. Détail en [« Tranche 3 — verdicts »](#tranche-3--verdicts-des-lignes-de-classe-e-v4). **Aucune suppression n'est faite par cette version** : les 21 candidates attendaient le feu vert du coordinateur, et chaque ligne porte sa preuve pour que le geste soit relisible. *(Compteurs datés du 2026-10-25, donc périmés : le feu vert est venu, la suppression a été faite le 2026-10-25 sur bundle vérifié — voir les correctifs ci-dessous.)*
 >
@@ -36,7 +42,7 @@ Mesure **firsthand** du 2026-09-07 (`scripts/collect_branches_tranche1.py` + `gi
 
 ## Format du manifeste
 
-`branch-cleanup-manifest.tsv.gz` (compressé gzip, ~425 Ko, décompressé ~1.27 Mo) — 6 colonnes séparées par tabulation :
+`branch-cleanup-manifest.tsv.gz` (compressé gzip, 575 Ko, décompressé 1.65 Mo, **13 187 lignes**) — 6 colonnes séparées par tabulation :
 
 ```
 branch\tsha\tclass\tpr_number\tpr_state\tnote
@@ -58,6 +64,8 @@ Une note s'écrit `<jeton>_<date>_<tranche>[ -- <preuve>]`. Le jeton dit ce que 
 | `deleted_<date>_<tranche>` | rien : suppression effective, sha conservé | — |
 
 > **Une note d'attente n'est pas un verdict.** Jusqu'au 2026-10-25, les lignes de classe E portaient toutes la même note `tranche 3 (read content-first per L576 protocol)`, y compris les 111 branches qui avaient disparu du remote et n'avaient donc jamais été lues. La note annonçait une lecture accomplie là où il n'y avait qu'un travail planifié : c'est exactement le genre de mention que le protocole d'audit réévalué interdit de laisser passer pour un fait. Elles portent maintenant un jeton mesuré, et plus aucune ne dit « lu » sans preuve.
+>
+> **Deux formes cohabitent, et c'est volontaire.** Les lignes écrites par la **tranche 3** (classe E) et par la **tranche 4** (ce lot) portent la grammaire complète `<jeton>_<date>_<tranche>[ -- <preuve>]`. Les lignes plus anciennes — 9 292 au total, essentiellement les classes B des tranches 1 et 2 — portent encore la forme courte `delete candidate (delivery on main)`. Elles **ne sont pas réécrites** : leur note documente une décision de lecture prise en septembre, et la réécrire effacerait la trace de ce qui a été jugé. Une passe de notes ne change que ce qu'elle a le droit de changer (cf. [« Vérification du manifeste »](#vérification-du-manifeste)) : l'arity, les colonnes 1 à 5 des lignes modifiées et le sha de chaque ligne.
 
 ## Tranche 3 — verdicts des lignes de classe E (v4)
 
@@ -129,6 +137,74 @@ gunzip -c docs/reference/branch-cleanup-manifest.tsv.gz \
 
 **Aucune suppression.** Les 21 candidates (auxquelles s'ajoutent les 5 livrées) attendent le feu vert du coordinateur, comme les tranches précédentes l'ont fait. Le manifeste est ce qui rend le geste réversible ligne par ligne ; il ne le remplace pas. Le détail des lectures, branche par branche, reste sur l'issue #14238 (commentaires du 2026-10-21).
 
+## Tranche 4 — le lot du 2026-11-07 (v5)
+
+Fire vert du coordinateur : arbitrage `c.6707575448`. Geste exécuté par la lane
+`myia-po-2023:CoursIA-2` le 2026-11-07, entre 17:49Z et 18:15Z.
+
+### Ce que portait le lot
+
+| | valeur |
+|---|---|
+| branches du lot de mesure | **2 931** (2 912 classe B, 19 classe D) |
+| **supprimées du remote** | **2 927** |
+| conservées à dessein | 1 — `feature/ict25-artefacts-par-graine`, base de la PR ouverte #24485 |
+| disparues du remote avant le geste, par la fusion de leur propre PR | 2 — `chore/qc-research-state-pending` (#24229), `feature/8182-graziano-attention-schema` (#23570) |
+| exclue du lot | 1 — `main`, branche par défaut (voir plus bas) |
+| suppression hors lot | **0** |
+| tête distante déplacée pendant le geste | **0** |
+
+Les six tranches de suppression (500 / 500 / 500 / 500 / 500 / 422) ont été
+prégramées d'un **essai de 5 branches** (17:49Z), chacune re-mesurée après coup
+(`git ls-remote --heads origin`). Le stock distant est passé de **3 864** à
+**940** têtes.
+
+### La preuve de masse : le bundle
+
+| | valeur |
+|---|---|
+| bundle | `bundle-named-14238-20261107T175953Z.bundle` (2 974 Mo) |
+| sha256 | `7022c425923dd86a54c1fd88fe15ae456303b734d82d0247a56d4716c0fcd9c4` |
+| `git bundle verify` | OK |
+| emplacements | `C:\Backups\coursia-hygiene\`, `G:\Mon Drive\MyIA\Infra\coursia-hygiene\`, `D:\CoursIA-preservation\14238\` — hors dépôt |
+
+Le bundle porte les **2 931 têtes exactes** du lot. La comparaison exhaustive
+`git bundle list-heads` contre le manifeste rend **0 absente, 0 en trop, 0 sha
+divergent**. Il a été **publié sur l'issue #14238 avant la première suppression**
+(commentaire `6710378863`), jamais après.
+
+### Restaurer une branche de ce lot
+
+```bash
+# Ligne par ligne, depuis le manifeste (colonnes 1 et 2) :
+git push origin <sha>:refs/heads/<branch>
+
+# Ou depuis le bundle, qui porte toutes les têtes :
+git fetch bundle-named-14238-20261107T175953Z.bundle \
+  'refs/heads/*:refs/remotes/bundle14238/*'
+git push origin refs/remotes/bundle14238/<branch>:refs/heads/<branch>
+```
+
+Chaque ligne du lot porte son jeton : `deleted_2026-11-07_tranche4` (supprimée
+par ce geste, sha conservé), `delivered_2026-11-07_tranche4` (disparue par la
+fusion de sa propre PR — ni à supprimer, ni à rejouer), `keep_2026-11-07_tranche4`
+(conserve à dessein).
+
+### Pourquoi `main` est exclu du manifeste
+
+`main` figurait dans le lot de mesure en **classe D** — « sans PR, tip ancêtre de
+`main` » — ce qui est trivial pour `main` elle-même, et le script de tranche
+l'a refusée comme **branche par défaut**. La mettre dans un inventaire de
+branches supprimables serait une erreur de catégorie : c'est la branche
+courante, son sha n'a rien à restaurer. Son refus est consigné ici et dans le
+journal de tranche (`PROTEGE_BRANCHE_PAR_DEFAUT`).
+
+### Ce que cette tranche ne fait pas
+
+Elle ne touche pas aux **740 branches C/E** résiduelles (PR fermée sans merge,
+ou sans PR et tête absente de `main`) : elles demandent la lecture L576 branche
+par branche, que l'organe fournit en inventaire mais pas en verdict.
+
 ## Pourquoi versionner ce manifeste
 
 **CLAUDE.md global §"Consolider != Archiver"** : aucune suppression sans preuve de préservation. Sans manifeste, une branche supprimée par erreur devient irrécupérable dès le GC GitHub. Avec, elle se restaure par :
@@ -171,6 +247,14 @@ awk -F'\t' 'NR>1{c[$3]++} END{for(k in c) print k, c[k]}' docs/reference/branch-
 gunzip -c docs/reference/branch-cleanup-manifest.tsv.gz \
   | awk -F'\t' '$3=="E"{split($6,a," -- "); c[a[1]]++} END{for(k in c) print c[k], k}' | sort -rn
 
+# Compter les jetons de la tranche 4 (doit rendre 2927 deleted, 2 delivered, 1 keep) :
+gunzip -c docs/reference/branch-cleanup-manifest.tsv.gz \
+  | awk -F'\t' 'NR>1{split($6,a," -- "); c[a[1]]++} END{for(k in c) print c[k], k}' \
+  | grep -E 'tranche4' | sort -rn
+
+# Compter toutes les lignes (doit rendre 13 187) :
+gunzip -c docs/reference/branch-cleanup-manifest.tsv.gz | grep -c . | awk '{print $1-1}'
+
 # Ce qu'une passe sur les notes a le droit de changer, et rien d'autre :
 #  - l'arité reste celle d'origine (entête comprise) ;
 #  - seules les colonnes 1 à 5 des lignes modifiées sont byte-identiques ;
@@ -210,3 +294,14 @@ echo "présentes: $(comm -12 /tmp/e.txt /tmp/heads.txt | wc -l)"; echo "absentes
 - Branche de travail : `fix/14238-tranche2-classe-c`
 - Methode : 50 refspecs par push (5-6 sec par batch), throttling par taille de lot (push de 100+ timeout sur GitHub). Rate-limit observe sur les dernieres 60.
 - Hash au commit : a completer apres merge.
+
+### Tranche 4 (v5 du manifeste, 2026-11-07)
+- Lane : `myia-po-2023:CoursIA-2`
+- Arbitrage : `c.6707575448` (feu vert du coordinateur)
+- Preservation publiee AVANT le premier geste : https://github.com/jsboige/CoursIA/issues/14238#issuecomment-6710378863
+- Journal de tranche (6 tranches + l'essai de 5) : `D:\CoursIA-preservation\14238\tranche-*.log`
+- Selection reellement poussee (2 927 lignes) : `D:\CoursIA-preservation\14238\selected_*.tsv`
+- Refus motives (9 lignes) : `D:\CoursIA-preservation\14238\refused_*.tsv`
+- Bundle : `bundle-named-14238-20261107T175953Z.bundle`, sha256 `7022c425923dd86a54c1fd88fe15ae456303b734d82d0247a56d4716c0fcd9c4`
+- Demande de la piece de restauration sur l'issue : lane `myia-ai-01:nanoclaw`, 2026-11-07
+- Branche de travail : `chore/14238-manifest-tranche4`

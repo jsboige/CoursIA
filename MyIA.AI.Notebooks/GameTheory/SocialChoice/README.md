@@ -218,7 +218,7 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Tideman, "Independence of Clones as a Criterion for Voting Rules" (1987) | Ranked Pairs (SC-08) |
 | Caragiannis, Hemaspaandra & Hemaspaandra, "Dodgson's Rule and Young's Rule" (2016) | NP-dureté de la détermination du gagnant Dodgson (SC-08, Handbook ch. 5 §5.3) |
 
-> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
+> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Social Choice, Voting and Welfare\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
 
 ## Conclusion / Prochaines étapes
 

@@ -205,8 +205,24 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # SECOND_READING a tort.
 EXERCISE_STATEMENT_TITLE_RE = re.compile(
     r"^(?:#{1,6}\s*|\*+|_+)\s*exerci[cs]e\b", re.IGNORECASE)
+# Les DEUX titres canoniques de la spec « finition de serie » (#19297,
+# 2026-10-05) sont structurels au meme titre que « conclusion » ou « synthese »
+# : ce sont des blocs de CLOTURE de carnet (recapitulatif, questions de
+# comprehension), pas des lectures d'une sortie. La liste fermee ci-dessus
+# datait de la convention d'avant la spec (titres voisins « Points cles a
+# retenir », « Conclusion ») et ne portait pas les titres canoniques :
+# tout carnet dont le chemin se termine par un stub d'exercice ajoutait alors
+# « ## A retenir » juste apres ce stub, et le cliquet (mode DIFF, bucket
+# EXERCISE_READING) le classait « lecture deguisee en prose titre » — un
+# Faux positif mesure : PR #25720 (Search-09d, `## A retenir` ajoute apres le
+# stub de l'exercice 3) -> rouge du `PR gate` alors que la spec IMPOSE ce
+# placement (le carnet se termine par les trois blocs, dans cet ordre, et les
+# exercices sont du corps). Le carve-out #17777 pose deja le principe --
+# « le discriminant est le TITRE, pas la longueur du corps » -- : un titre de
+# section reste structurel, quelle que soit la taille de son corps.
 SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
-    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
+    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin"
+    r"|a retenir|verifiez votre comprehension)\b",
     re.IGNORECASE,
 )
 # Titres de TRANSITION de fin de carnet -- deuxieme famille structurelle.

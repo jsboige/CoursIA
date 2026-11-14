@@ -3,8 +3,9 @@
 ``validate_lean_setup.py`` (329L) is the **environment-validation CLI** for the
 GameTheory Lean series: it probes Python version, elan/lean/lake commands, Python
 packages (nashpy/numpy/sympy/lean4-jupyter), Jupyter kernels (lean4 / lean4-wsl),
-the canonical kernel wrapper (regression #1618), and the ``social_choice_lean``
-lake + ``lean_runner.py`` presence.
+the canonical kernel wrapper (regression #1618), the ``social_choice_lean``
+canonical state (tombstone doc-only or absent since #4365 — never a lakefile
+again, #24183), and ``lean_runner.py`` presence.
 
 It was a **0-test orphan** (0 importers, 18 sibling test files in
 ``GameTheory/tests/`` none targeting it, 0 PR history). These tests pin the
@@ -360,30 +361,48 @@ class TestCheckKernelWrapper:
 # --------------------------------------------------------------------------- #
 
 class TestCheckSocialChoiceLean:
-    """check_social_choice_lean : Path(__file__).parent.parent/social_choice_lean/lakefile.lean."""
+    """check_social_choice_lean : etat canonique post-#4365 (tombstone doc-seule ou absent).
 
-    def test_lakefile_present(self, tmp_path, monkeypatch, capsys):
+    L'ancienne semantique (lakefile.lean present -> OK, absent -> KO) epinglait un
+    etat mort : la coquille technique a ete retiree par #4365, le check echouait
+    donc sur main. Nouvelle semantique (#24183, prerequis T3) : absent ou tombstone
+    documentaire -> OK ; lakefile* ressuscite -> KO (9e lake interdit).
+    """
+
+    def _patch_file(self, tmp_path, monkeypatch):
         # __file__ = tmp/scripts/validate_lean_setup.py -> parent.parent = tmp.
         scripts = tmp_path / "scripts"
         scripts.mkdir()
         fake_file = scripts / "validate_lean_setup.py"
         fake_file.write_text("# stub")
-        (tmp_path / "social_choice_lean" / "lakefile.lean").parent.mkdir(parents=True)
-        (tmp_path / "social_choice_lean" / "lakefile.lean").write_text("{}")
         monkeypatch.setattr(v, "__file__", str(fake_file))
+
+    def test_tombstone_doc_only_ok(self, tmp_path, monkeypatch, capsys):
+        # Etat de main : 3 markdown, aucun lakefile -> canon.
+        self._patch_file(tmp_path, monkeypatch)
+        tombstone = tmp_path / "social_choice_lean"
+        tombstone.mkdir()
+        (tombstone / "README.md").write_text("# tombstone")
 
         assert v.check_social_choice_lean() is True
-        assert "Projet Lake trouve" in capsys.readouterr().out
+        assert "tombstone" in capsys.readouterr().out
 
-    def test_lakefile_absent(self, tmp_path, monkeypatch, capsys):
-        scripts = tmp_path / "scripts"
-        scripts.mkdir()
-        fake_file = scripts / "validate_lean_setup.py"
-        fake_file.write_text("# stub")
-        monkeypatch.setattr(v, "__file__", str(fake_file))
+    def test_directory_absent_ok(self, tmp_path, monkeypatch, capsys):
+        # Etat post-T3 : la coquille retiree -> canon.
+        self._patch_file(tmp_path, monkeypatch)
+
+        assert v.check_social_choice_lean() is True
+        assert "absent" in capsys.readouterr().out
+
+    def test_lakefile_resurrected_fails(self, tmp_path, monkeypatch, capsys):
+        # Regression interdite : un lakefile* reaparait -> 9e lake (#24183).
+        self._patch_file(tmp_path, monkeypatch)
+        resurrected = tmp_path / "social_choice_lean"
+        resurrected.mkdir()
+        (resurrected / "lakefile.lean").write_text("{}")
 
         assert v.check_social_choice_lean() is False
-        assert "Projet Lake manquant" in capsys.readouterr().out
+        assert "ressuscite" in capsys.readouterr().out
 
 
 # --------------------------------------------------------------------------- #

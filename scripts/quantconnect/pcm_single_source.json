@@ -1,0 +1,26 @@
+{
+  "issue": "#20188",
+  "criterion": "criterion 2 — garde de source unique avec controle positif",
+  "canonical": {
+    "path": "MyIA.AI.Notebooks/QuantConnect/projects/SharedPCM/pouches_pcm.py",
+    "classes": ["MultiStrategyPouchesPCM"],
+    "sha256": "5d0618bc480c2f7788196a86a98533ef4e2c03a028914a065509420fcaec4c5b",
+    "note": "Source canonique du modele de construction de portefeuille par poches, extraite de la consolidation des neuf copies (#21134). Les composites l'importent ; le correctif `additive` (#19740) et les diagnostics #20188 y vivent. Ne pas modifier sans re-declarer le manifeste (code CANONICAL_DRIFT)."
+  },
+  "declared_copies": [
+    {
+      "path": "MyIA.AI.Notebooks/QuantConnect/partner-course-quant-trading/kit-transitoire/03-Framework-Composite/main.py",
+      "classes": ["MultiStrategyPCM"],
+      "sha256": "f698ace1f2b62479bb437ef6370d1d994cfba8b63623eeae480a57af8ad04db9",
+      "reason": "Kit pedagogique autonome : le code est lu et modifie dans `main.py` par l'apprenant, sans bibliotheque QC attachee, donc le canonique ne peut pas etre importe. La copie porte deja le correctif `additive` (#19740) et les diagnostics #20188 (XLU present dans les deux tranches).",
+      "pinned_by": "exigence pedagogique d autonomie (kit-transitoire/03-Framework-Composite)"
+    },
+    {
+      "path": "MyIA.AI.Notebooks/QuantConnect/projects/TrendWeatherPointInTime/portfolio_construction.py",
+      "classes": ["MultiStrategyPCM"],
+      "sha256": "6c325cd73df05ca1d874b389c0a3ea629af392718109f756175ceb75b00ff7f5",
+      "reason": "Variante anterieure au correctif `additive` (#19740) : le modele n'a pas de parametre `additive` et lit `active_insights`, qui ne porte qu'une insight par symbole. Le correctif n'y est pas reporte parce que la candidate est gelee dans le registre de l'ombre et que #20188 interdit que l'extraction la touche.",
+      "pinned_by": "registre de l'ombre, entree `tw-pit` (gelee le 2026-10-06, code rejoue au SHA gele)"
+    }
+  ]
+}

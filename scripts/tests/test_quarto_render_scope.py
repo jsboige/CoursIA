@@ -299,6 +299,16 @@ def test_this_prs_own_change_set_is_not_a_full_render():
     assert files == ["index.qmd", "README.md"]
 
 
+@pytest.mark.parametrize("path", [
+    "scripts/ci/quarto_readme_titles.py",
+    "scripts/ci/tests/test_quarto_readme_titles.py",
+])
+def test_readme_title_machinery_selects_readme_smoke(path):
+    mode, files, _ = qrs.decide([("M", path)], ENTRIES)
+    assert mode == "scoped"
+    assert files == ["index.qmd", "README.md"]
+
+
 def test_smoke_yields_to_real_changed_documents():
     """The smoke set is a floor for an empty selection, never an addition."""
     rows = [("M", ".github/workflows/quarto-pages-deploy.yml"),

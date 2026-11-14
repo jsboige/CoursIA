@@ -11,3 +11,4 @@
     - "Python : pyz3 (z3-solver), `from z3 import *`, API fonctionnelle (Solver(), Int('x'), s.check() -> sat/unsat)."
     - "C# : Microsoft.Z3 .NET, `using Microsoft.Z3;`, API orientee Context (ctx.MkSolver(), ctx.MkConst(...), Status.TRUE)."
     - "Concept demontre (SMT de base, x>=10 & x<=2 -> unsat) verifie firsthand cote Python (NB-01 CLEAN)."
+    - "2026-11-06 (myia-ai-01:CoursIA-2) PR #25010 : reecriture du chemin de citation du gisement bibliographique (les rayons ranges portent desormais un second niveau nomme), cote Python (cellule 0) ; le cote C# ne cite pas ce chemin, il est inchange -- markdown seul, 0 cellule code, 0 sortie, 0 execution_count ; le texte hors chemin est identique a la base (comparaison positionnelle des cellules). Attestation 0013 (python_sha 9ec58419, csharp_sha 4b3c59f2) = blobs post-tranche, pas une reparation de parite. --update en DERNIERE operation (cf #8957)."

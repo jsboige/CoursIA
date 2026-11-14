@@ -69,11 +69,21 @@ def _redirige_gh_snapshot(monkeypatch, cible):
     non isolee) reprend alors la main, avec ses appels gh et son
     ``%LOCALAPPDATA%``. On patche donc les DEUX surfaces : l'entree
     ``sys.modules`` ET l'attribut du package.
+
+    Quand le package n'a pas encore ete importe dans ce worker, son
+    remplacant se pose PAR ``monkeypatch`` lui aussi. Pose par
+    ``sys.modules.setdefault``, il survivait au test avec un ``__path__``
+    vide : tout ``from coordination import gh_snapshot`` ulterieur du meme
+    worker levait alors ``ImportError ... (unknown location)``. L'echec
+    dependait de la repartition xdist (mesure le 2026-11-13 : 2 runs sur 5,
+    deux tests differents de ``test_pick_idle_grain_belt.py``).
     """
     monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", cible)
-    package = sys.modules.setdefault(
-        "coordination", types.ModuleType("coordination"))
-    package.__path__ = getattr(package, "__path__", [])
+    package = sys.modules.get("coordination")
+    if package is None:
+        package = types.ModuleType("coordination")
+        package.__path__ = []
+        monkeypatch.setitem(sys.modules, "coordination", package)
     monkeypatch.setattr(package, "gh_snapshot", cible, raising=False)
 
 
@@ -504,11 +514,126 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     assert verdicts[202][0] == solo[202][0]
 
 
-def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch):
+def test_voie_en_processus_rend_none_si_le_lecteur_manque(monkeypatch, capsys):
+    """#22983 -- le None n'est plus muet : sa cause est nommee sur stderr."""
     def _absent():
         raise RuntimeError("lecteur introuvable")
     monkeypatch.setattr(pig, "_claim_reader_module", _absent)
     assert pig._claims_in_process([1], "lane") is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "RuntimeError" in err
+    assert "lecteur introuvable" in err
+
+
+def test_voie_en_processus_nomme_une_exception_du_chemin_batch(
+        monkeypatch, capsys):
+    """#22983 -- une exception avalee dans la voie batch (hypothese (a) du
+    dispatch c2788) doit etre nommee, pas reduite a un None muet : le refus
+    fail-CLOSED intermittent du tapis devient diagnosticable."""
+    class _ClcQuiExplose:
+        def set_snapshot(self, _snap):
+            pass
+        def check_issues_batch(self, *_a, **_kw):
+            raise ValueError("cache des PRs ouvertes illisible")
+    class _SnapQuiMarche:
+        def refresh(self, _repo, issue_numbers=None):
+            return {"issues": {}, "prs": {}}
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: _ClcQuiExplose())
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: _SnapQuiMarche())
+    assert pig._claims_in_process([101, 202], "lane") is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "ValueError" in err
+    assert "cache des PRs ouvertes illisible" in err
+
+
+def test_voie_en_processus_nomme_linstantane_strict_perime(
+        monkeypatch, capsys):
+    """#22983 -- en mode STRICT, un stamp servi plus tot puis expire
+    (hypothese (b) : TTL 1800 s) doit etre nomme PERIME, distinct d'un
+    numero jamais lu (MANQUANT) : les deux ne se soignent pas pareil."""
+    n_frais, n_perime, n_manquant = 101, 202, 303
+    stamps = {str(n_frais): time.time(),
+              str(n_perime): time.time() - gs.DEFAULT_TTL_SECONDS - 60}
+    snap = {"issues": {str(n_frais): {"number": n_frais, "title": "T",
+                                      "labels": []}},
+            "prs": {},
+            "meta": {"comment_stamps": stamps}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.load_snapshot = lambda _repo: snap
+    fake.serves = gs.serves
+    fake.DEFAULT_TTL_SECONDS = gs.DEFAULT_TTL_SECONDS
+    _redirige_gh_snapshot(monkeypatch, fake)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snap)
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: clc)
+    assert pig._claims_in_process(
+        [n_frais, n_perime, n_manquant], "lane", local_only=True) is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "STRICT" in err
+    assert "manquants: 303" in err
+    assert "perimes: 202" in err
+
+
+def test_voie_en_processus_nomme_le_quota_rest_comme_cause(
+        monkeypatch, capsys):
+    """#22983 v2 -- manquant/perime est le SYMPTOME : quand la phase reseau
+    a echoue sur quota REST (mesure 08/11 : 209 fetch_failures « rate limit
+    exceeded »), la CAUSE doit etre nommee -- un quota ne se soigne pas
+    comme un TTL, et le refus fail-CLOSED du tapis devient auto-diagnosticable."""
+    n_perime = 202
+    stamps = {str(n_perime): time.time() - gs.DEFAULT_TTL_SECONDS - 60}
+    snap = {"issues": {}, "prs": {},
+            "meta": {"comment_stamps": stamps,
+                     "fetch_failures": {
+                         str(n_perime): {
+                             "at": time.time() - 600,
+                             "error": "gh api repos/jsboige/CoursIA/issues/"
+                                      "202/comments: gh: API rate limit "
+                                      "exceeded for user ID 3159389"}}}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.load_snapshot = lambda _repo: snap
+    fake.serves = gs.serves
+    fake.DEFAULT_TTL_SECONDS = gs.DEFAULT_TTL_SECONDS
+    _redirige_gh_snapshot(monkeypatch, fake)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snap)
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: clc)
+    assert pig._claims_in_process(
+        [n_perime], "lane", local_only=True) is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "echecs quota REST < 1 h : 1" in err
+    assert "#202" in err          # l'exemple cite le numero echoue
+
+
+def test_voie_en_processus_quota_ancien_ou_autre_erreur_non_cite(
+        monkeypatch, capsys):
+    """Borne de la releve : un echec quota de plus d'une heure, ou un echec
+    d'une AUTRE cause (404, reseau), n'est pas cite -- il ne dit rien de la
+    panne presente et polluerait le diagnostic."""
+    n_perime = 202
+    stamps = {str(n_perime): time.time() - gs.DEFAULT_TTL_SECONDS - 60}
+    snap = {"issues": {}, "prs": {},
+            "meta": {"comment_stamps": stamps,
+                     "fetch_failures": {
+                         "111": {"at": time.time() - 7200,
+                                 "error": "gh: API rate limit exceeded"},
+                         str(n_perime): {"at": time.time() - 300,
+                                         "error": "gh: Not Found (HTTP 404)"}}}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.load_snapshot = lambda _repo: snap
+    fake.serves = gs.serves
+    fake.DEFAULT_TTL_SECONDS = gs.DEFAULT_TTL_SECONDS
+    _redirige_gh_snapshot(monkeypatch, fake)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", snap)
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: clc)
+    assert pig._claims_in_process(
+        [n_perime], "lane", local_only=True) is None
+    err = capsys.readouterr().err
+    assert "[22983]" in err
+    assert "echecs quota REST < 1 h : 0" in err
+    assert "#111" not in err      # trop ancien : pas cite
 
 
 def test_check_claims_rend_error_si_la_voie_en_processus_echoue(monkeypatch):
@@ -1064,3 +1189,186 @@ def test_enumeration_claims_est_servie_par_l_instantane(monkeypatch):
     monkeypatch.setattr(pig, "_claim_reader_module",
                         lambda: pytest.fail("enumeration deja faite"))
     assert pig._complete_open_prs() == [{"number": 1}]
+
+
+# --- #22983 volet 4 (arbitrage option 2) : reseau hors verrou ---------------
+
+
+class TestMergeSnapshots:
+    """Acceptance 3 : aucune perte d'entree a la fusion."""
+
+    def _base(self):
+        return {
+            "issues": {"1": {"n": 1}, "2": {"n": 2}, "3": {"n": 3}},
+            "comments": {"1": ["a"], "2": ["b"], "3": ["c"]},
+            "meta": {"comment_stamps": {"1": 100.0, "2": 200.0, "3": 300.0}},
+        }
+
+    def test_fresh_entries_win_and_disk_survives(self):
+        # L'autre lane (A) a ecrit le numero 3 (stamp 300) ; mes lectures
+        # fraiches portent le numero 1 (stamp 500). La fusion garde les deux.
+        fresh = {
+            "issues": {"1": {"n": 1, "vu": True}},
+            "comments": {"1": ["a", "a2"]},
+            "meta": {"comment_stamps": {"1": 500.0}},
+        }
+        merged = gs.merge_snapshots(self._base(), fresh, [1])
+        assert merged["comments"]["1"] == ["a", "a2"]
+        assert merged["issues"]["1"] == {"n": 1, "vu": True}
+        assert merged["meta"]["comment_stamps"]["1"] == 500.0
+        # l'entree fraiche de A (numero 3, stamp 300) survit
+        assert merged["comments"]["3"] == ["c"]
+        assert merged["meta"]["comment_stamps"]["3"] == 300.0
+
+    def test_disk_newer_than_fresh_read_wins(self):
+        # Une autre lane a ecrit le numero 2 APRES ma lecture (disque 900 >
+        # ma lecture 400) : son entree gagne, la mienne est ecartee.
+        base = self._base()
+        base["meta"]["comment_stamps"]["2"] = 900.0
+        base["comments"]["2"] = ["b-par-autre-lane"]
+        fresh = {
+            "comments": {"2": ["b-ma-lecture"]},
+            "meta": {"comment_stamps": {"2": 400.0}},
+        }
+        merged = gs.merge_snapshots(base, fresh, [2])
+        assert merged["comments"]["2"] == ["b-par-autre-lane"]
+        assert merged["meta"]["comment_stamps"]["2"] == 900.0
+
+    def test_fetch_failures_union_recent_gagne(self):
+        base = self._base()
+        base["meta"]["fetch_failures"] = {"11": {"at": 100, "error": "x"}}
+        fresh = {
+            "comments": {},
+            "meta": {"comment_stamps": {},
+                     "fetch_failures": {"11": {"at": 200, "error": "y"},
+                                        "22": {"at": 150, "error": "z"}}},
+        }
+        merged = gs.merge_snapshots(base, fresh, [])
+        assert merged["meta"]["fetch_failures"]["11"] == {"at": 200, "error": "y"}
+        assert merged["meta"]["fetch_failures"]["22"] == {"at": 150, "error": "z"}
+
+
+def test_belt_snapshot_prime_reseau_hors_verrou_et_fusion(monkeypatch, capsys):
+    """Acceptance 1 (verrou simule tenu pendant la phase reseau de l'autre).
+
+    Le verrou de CE priming n est demande qu APRES la phase reseau : si une
+    autre lane l a tenu pendant nos lectures, nous obtenons quand meme nos
+    entrees fraiches (en memoire), et l ecriture fusionne avec le disque
+    relu -- l entree fraiche de l autre lane survit (acceptance 3).
+    """
+    import contextlib
+
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+
+    stale_base = {"issues": {"1": {"n": 1}}, "comments": {"1": ["vieux"]},
+                  "meta": {"comment_stamps": {"1": 100.0}}}
+    my_fresh = {"issues": {"2": {"n": 2}}, "comments": {"2": ["ma-lecture"]},
+                "meta": {"comment_stamps": {"2": 500.0}}}
+    # disque relu SOUS verrou : l autre lane a ecrit le numero 3 (stamp 300)
+    disk_under_lock = {"issues": {"1": {"n": 1}, "3": {"n": 3}},
+                       "comments": {"1": ["vieux"], "3": ["autre-lane"]},
+                       "meta": {"comment_stamps": {"1": 100.0, "3": 300.0}}}
+    saved = {}
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = type("_T", (TimeoutError,), {})
+
+        def __init__(self):
+            self.loads = 0
+
+        def load_snapshot(self, repo):
+            self.loads += 1
+            # 1er chargement (hors verrou, base perimee) puis relecture sous
+            # verrou (disque de l autre lane)
+            return stale_base if self.loads == 1 else disk_under_lock
+
+        @contextlib.contextmanager
+        def snapshot_lock(self, repo, timeout=120.0):
+            yield  # le verrou est obtenu : phase critique courte
+
+        def ensure_comments(self, repo, numbers, snapshot):
+            # la phase reseau s est faite SANS verrou : on rend nos lectures
+            # fraiches, construites sur la base perimee
+            out = dict(stale_base)
+            out["issues"] = {**stale_base["issues"], **my_fresh["issues"]}
+            out["comments"] = {**stale_base["comments"],
+                               **my_fresh["comments"]}
+            out["meta"] = {"comment_stamps": {
+                **stale_base["meta"]["comment_stamps"],
+                **my_fresh["meta"]["comment_stamps"]}}
+            return out, 3, {}
+
+        def merge_snapshots(self, base, fresh, numbers):
+            return gs.merge_snapshots(base, fresh, numbers)
+
+        def save_snapshot(self, repo, snapshot):
+            saved.update(snapshot)
+
+    fake = _FakeGhSnapshot()
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: fake)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [2])
+
+    # le tirage est servi depuis la fusion (nos lectures + le disque relu)
+    assert pig._BELT_SNAPSHOT["comments"]["2"] == ["ma-lecture"]
+    assert pig._BELT_SNAPSHOT["comments"]["3"] == ["autre-lane"]
+    # l ecriture a bien eu lieu avec la fusion, pas avec notre base perimee
+    assert saved["comments"]["3"] == ["autre-lane"]
+    assert saved["comments"]["2"] == ["ma-lecture"]
+    # aucun repli muet : le stderr reste silencieux quand le verrou passe
+    assert "[22983] priming ecarte" not in capsys.readouterr().err
+
+
+def test_belt_snapshot_prime_lock_timeout_garde_les_lectures_fraiches(
+        monkeypatch, capsys):
+    """Acceptance 1, second membre : verrou INTROUVABLE -- le tirage vit quand meme.
+
+    Avant le volet 4, le repli consommait le disque perime (fail-CLOSED muet).
+    La phase reseau etant hors verrou, nos lectures fraiches sont deja en
+    memoire : le tirage continue dessus, le repli se nomme (volet 3).
+    """
+    import contextlib
+
+    monkeypatch.delenv("PYTEST_CURRENT_TEST", raising=False)
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+
+    stale_base = {"issues": {"1": {"n": 1}}, "comments": {"1": ["vieux"]},
+                  "meta": {"comment_stamps": {"1": 100.0}}}
+    my_fresh = {"issues": {"2": {"n": 2}}, "comments": {"2": ["ma-lecture"]},
+                "meta": {"comment_stamps": {"2": 500.0}}}
+
+    class _FakeGhSnapshot:
+        SnapshotLockTimeout = type("_T2", (TimeoutError,), {})
+
+        def load_snapshot(self, repo):
+            return stale_base
+
+        @contextlib.contextmanager
+        def snapshot_lock(self, repo, timeout=120.0):
+            raise self.SnapshotLockTimeout(
+                f"verrou de l instantane non obtenu apres {timeout:g} s")
+            yield  # pragma: no cover
+
+        def ensure_comments(self, repo, numbers, snapshot):
+            out = dict(stale_base)
+            out["issues"] = {**stale_base["issues"], **my_fresh["issues"]}
+            out["comments"] = {**stale_base["comments"],
+                               **my_fresh["comments"]}
+            out["meta"] = {"comment_stamps": {
+                **stale_base["meta"]["comment_stamps"],
+                **my_fresh["meta"]["comment_stamps"]}}
+            return out, 3, {}
+
+        def save_snapshot(self, repo, snapshot):  # pragma: no cover
+            raise AssertionError("save atteint hors verrou")
+
+    fake = _FakeGhSnapshot()
+    monkeypatch.setattr(pig, "_gh_snapshot_module", lambda: fake)
+
+    pig._belt_snapshot_prime("jsboige/CoursIA", [2])
+
+    err = capsys.readouterr().err
+    assert "[22983] priming ecarte" in err
+    # le tirage est servi sur NOS lectures fraiches, pas le disque perime
+    assert pig._BELT_SNAPSHOT["comments"]["2"] == ["ma-lecture"]

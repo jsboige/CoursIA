@@ -14,8 +14,8 @@ Le verbatim user du 2026-07-19 diffère E2 « après absorption de la dette doc 
 
 | Module livré | Doc | Lignes | Contenu |
 |---|---|---|---|
-| `MyIA.AI.Shared/` (socle) | `README.md` | 169 | rôle équivalent-moderne d'`Aricie.Shared`, composants |
-| `MyIA.Trading.Converter/` (E1) | `README.md` | 123 | port, scope E1, source upstream (`612dddf9`), contournement Security Master |
+| `dotnet/MyIA.AI.Shared/` (socle) | `README.md` | 169 | rôle équivalent-moderne d'`Aricie.Shared`, composants |
+| `dotnet/MyIA.Trading.Converter/` (E1) | `README.md` | 123 | port, scope E1, source upstream (`612dddf9`), contournement Security Master |
 
 Ce sont les **deux seuls** modules du patrimoine atterris à ce jour ; tous deux sont documentés. La seconde moitié de la précondition (« E1 restructuré ») était déjà constatée atteinte par le body du 2026-08-20 (commit `ca71ae5c8`, PR #7425).
 
@@ -25,7 +25,7 @@ Ce sont les **deux seuls** modules du patrimoine atterris à ce jour ; tous deux
 
 ### 2.1 Ce que le fork consomme réellement (mesuré, pas supposé)
 
-Source : `MyIntelligenceAgency/Lean`, branche `MyIABacktesting_integration`, checkout sparse de `MyIA.Trading.Backtester/` — **75 fichiers `.cs`, 91 fichiers, 16 Mo** (les chiffres de la recon po-2024 c.708 sont exacts).
+Source : `MyIntelligenceAgency/Lean`, branche `MyIABacktesting_integration`, checkout sparse de `MyIA.Trading.Backtester/` — 16 Mo (les chiffres de la recon po-2024 c.708 sont exacts).
 
 | Dépendance | Empreinte mesurée |
 |---|---|

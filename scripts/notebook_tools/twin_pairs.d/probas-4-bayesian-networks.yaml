@@ -21,3 +21,12 @@
     serait l''echec de convergence ADVI (ou la sensibilite au point de depart de NUTS) sur un prior vague, non traite ici.'
   - '2026-10-24 (#17040 tranche Probas, lane myia-po-2025:CoursIA, PR #22194) : REBASELINE post-consolidation de densite. Audit de la paire avant attestation, mesure sur les blobs de tete : cote C# (Infer-04-Bayesian-Networks) 74 cellules -> 74, permutation de 4 cellules seulement -- la lecture "### Analyse des probabilites marginales" (gablmpih1m) remonte de l''index 16 a 13, juste apres la cellule code d''inference dont la sortie porte P(Cloudy) = 0,500 / P(Sprinkler) = 0,300 / P(Rain) = 0,500 / P(WetGrass) = 0,598 (sur main un bloc de visualisation de graphe de facteurs la separait de son code, regle cell-interpretation-ordering). Les 22 cellules code sont byte-identiques (source, sorties, execution_count). Cote Python (PyMC-04-Bayesian-Networks) byte-identique a main, ordre compris. Parite semantique inchangee : 0 source, 0 sortie, 0 execution_count touches.'
   - '2026-11-02 (myia-ai-01:CoursIA-2, PR #24133) : REBASELINE cote Python -- tranche daudit de la partition #17222 : 13 corrections markdown-only sur PyMC-04-Bayesian-Networks.ipynb (enumeration exacte des 16 configurations de la jointe, recoupement avec le carnet jumeau Infer-04 qui fait autorite sur la semantique Infer.NET). 12 cellules de code byte-identiques (source, sorties, execution_count) ; aucune re-execution due. Jumeau C# non touche. Aucun strip outille en attente.'
+  - '2026-11-03 (myia-po-2028:CoursIA, PR #24445, commit 8d45d8c4a4) : realignment markdown-only des lectures
+    de PyMC-04-Bayesian-Networks -- cellules 13/15/22 (22 s au lieu de 19 s pour 4 chains x 10 000 draws ; pire
+    r_hat 1.001 sur wetgrass au lieu de 1.000 sur cloudy, ess_bulk min 4270 inchange ; sortie verbatim took
+    18 seconds). 4 remplacements, code byte-identique, sorties et execution_count intacts (exception C.2
+    markdown). Jumeau C# Infer-4 non touche. --update en DERNIERE operation (cf #8957).'
+  - '2026-11-04 (myia-po-2028:CoursIA, PR #24445, commit ae515201ce) : complement markdown-only du commit
+    8d45d8c4a4 -- reference de la cellule "Pour aller plus loin" (47) PyMC 5.28.5 -> 6.3.2 documentation
+    avec URL. 1 ligne touchee, 0 cellule code, sorties et execution_count intacts (exception C.2
+    markdown). Jumeau C# Infer-4 non touche. --update en DERNIERE operation (cf #8957).'

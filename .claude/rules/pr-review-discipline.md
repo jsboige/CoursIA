@@ -20,7 +20,7 @@ Tout commentaire agent **de diagnostic** sur une PR porte, en **première ligne 
 
 ### Répondre à une réserve — la forme sûre (HARD, #17071)
 
-Une réponse d'auteur qui **cite** le token de verdict le redevient elle-même (régime absorbant) : la PR reste bloquée **à fond réparé**. La forme sûre : **encager le token lui-même** (backticks, `« »`, apostrophes, bloc de code) ou le nommer en position de **mention** (`suite à ta réserve`, `verdict X` sans deux-points) — jamais le gras (forme d'**émission**), jamais le token nu (muet par résidu assumé, pas par filet), et encager un mot **voisin** ne protège rien. Table de vérité mesurée, mécanique trois couches et instances fondatrices : [pr-review-context.md](../../docs/reference/pr-review-context.md).
+Une réponse d'auteur qui **cite** le token de verdict ou un marqueur de prose reconnu par `CONCERN_MARKERS` (p. ex. `avant merge`) peut elle-même devenir une réserve B.0 : la PR reste bloquée **à fond réparé**. Pour le marqueur de prose, encager **ce marqueur lui-même** avec des backticks ou `« »` (formes mesurées) le neutralise ; un bloc de citation `>` ne le protège pas. Pour le token de verdict, la forme sûre reste de l'encager (backticks, `« »`, apostrophes, bloc de code) ou de le nommer en position de **mention** (`suite à ta réserve`, `verdict X` sans deux-points) — jamais le gras (forme d'**émission**), jamais le token nu (muet par résidu assumé, pas par filet), et encager un mot **voisin** ne protège rien. Table de vérité mesurée, mécanique trois couches et instances fondatrices : [pr-review-context.md](../../docs/reference/pr-review-context.md).
 
 ## Lecture de l'état des checks — à la source, dans les DEUX sens (HARD, #16765)
 
@@ -50,18 +50,20 @@ Le coût d'une PR se paie **par PR**, pas par ligne (mesure du 2026-11-03 : [pr-
 
 Devant une PR fine, le reviewer ne commence pas par refuser. Il demande « **le geste peut-il être étendu ?** » et propose l'élargissement qui évite le saucissonnage : les fichiers voisins de la même série, les occurrences sœurs du même défaut. Le refus ne vient que si l'extension proposée est écartée sans motif.
 
+**Symptôme répété** (PRs fines d'une même classe, une issue de tranche par PR) : le reviewer écrit la fournée dans le body de l'issue de série, de famille ou d'Epic, sous un bloc d'état daté (mesure, commande, rafraîchi à chaque fournée mergée, 7 jours au plus) ; les PRs suivantes s'y renvoient ([détail](../../docs/reference/pr-review-context.md)).
+
 ### B. Lean : preuve de progrès vérifiable
 
 Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le body :
 
-1. Compte de `sorry` **réel** avant/après — `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry`. **Pas `grep -c sorry`** : il compte la prose, pas les preuves (mesure du 2026-08-14 : [pr-review-context.md](../../docs/reference/pr-review-context.md)). Le gate CI mesure déjà juste (`sorry-filter-mode: real`) : c'est le texte de cette règle qui pointait le mauvais instrument.
+1. Compte de `sorry` **réel** avant/après — `python scripts/lean/count_code_sorry.py --json`, champ `distinct_code_sorry`. **Pas `grep -c sorry`** : il compte la prose, pas les preuves (mesure du 2026-08-14 : [pr-review-context.md](../../docs/reference/pr-review-context.md)).
 2. Lien vers `Lake build SUCCESS` (CI ou commit local prouvable)
 3. Lien vers `Proof integrity SUCCESS` (job CI `proof-integrity` → `LeanVerifier.check_axioms(module, fail_on_sorry=True)`)
 4. Si refactor du prover Python : justifier pourquoi il est nécessaire au claim Lean (sinon split)
 
 **Trois classes d'axiomes sont `forbidden`**, pas seulement le `sorry` : `native_decide.*` (réduction par le noyau natif **sans preuve** — vide le théorème), `sorryAx` (`sorry` **transitif**, qu'un `grep -c sorry` ne verra jamais), `Classical.choice` (non-constructif, souvent légitime — se whiteliste **par nom explicite**, jamais par wildcard — [pr-review-context.md](../../docs/reference/pr-review-context.md)).
 
-**Un `proof-integrity SUCCESS` antérieur au 2026-07-28 ne prouve PAS l'absence de `native_decide`** ([pr-review-context.md](../../docs/reference/pr-review-context.md)). Ne pas ré-invoquer un vert plus ancien comme preuve.
+**Un `proof-integrity SUCCESS` antérieur au 2026-07-28 ne prouve PAS l'absence de `native_decide`** ([pr-review-context.md](../../docs/reference/pr-review-context.md)).
 
 **B.3 se lit « non applicable » — et s'ÉCRIT tel quel dans le body** dans deux cas, jamais sauté en silence : (a) le job n'est pas câblé sur le lake de la PR (#8677) ; (b) il l'est, mais ses `target-modules` n'atteignent pas le module modifié (#8782 — [pr-review-context.md](../../docs/reference/pr-review-context.md)). Câblage = **exactement** les workflows appelant `lean-axiom.yml` (`grep -ln 'lean-axiom' .github/workflows/*.yml`, moins le fichier lui-même). Triage : [lean-axiom-coverage.md](../../docs/reference/lean-axiom-coverage.md) ; incidents : [pr-review-context.md](../../docs/reference/pr-review-context.md).
 
@@ -69,7 +71,7 @@ Toute PR touchant `*.lean` ou `agent_tests/prover/` **DOIT** inclure dans le bod
 
 Toute PR claim « BEATS » / « improvement » sur métriques ML/trading **DOIT** inclure : (1) walk-forward 5-fold ; (2) **≥4 seeds** parmi 0/1/7/42/99 ; (3) **la conjonction** edge ≥ 2σ cross-seed **ET** Diebold-Mariano `dm_p_median < 0.05` — les deux, pas σ seul ([pr-review-context.md](../../docs/reference/pr-review-context.md)) — le DM portant sur une **perte de précision** (`loss_fn="mse"` ou `"mae"`) ; `loss_fn="linear"` est un **contrôle de biais**, jamais la jambe de la conjonction ; (4) comparaison à majority baseline + coûts de transaction (5bps SPY, 10bps crypto) ; (5) **pas de FAANG/Mag7** en training ; (6) verdict honnête « BEATS » / « NO BEATS » / « INCONCLUSIVE » — jamais « promising » ; (7) **rapport de biais par modèle** dans le body (`mean(e)` signé ou biais OOS, modèle ET baseline) — un edge porté par le biais (pas par la précision) se déclare comme tel.
 
-Les trois contre-exemples inscrits qui fondent (3) — `+19.97σ` avec `DM p = 0.236` ; `dm_stat` bit-identique sous `mse` pour `e` et `-e` ; et le modèle 11× plus précis « BEATEN » sous `linear` face à une baseline biaisée (#10961, CE1) — sont mesurés dans [pr-review-context.md §C](../../docs/reference/pr-review-context.md).
+Contre-exemples qui fondent (3) : [pr-review-context.md §C](../../docs/reference/pr-review-context.md).
 
 Single-seed ou single-fold = **CHANGES_REQUESTED** sauf flag explicite `[POC]` dans le titre.
 

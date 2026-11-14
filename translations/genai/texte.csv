@@ -1793,9 +1793,9 @@ def tokenize_text(endpoint_url, text):
 print(""Exercice a completer"")
 pass
 ",,,,,,,,0cea29966c6cc6b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,6232b9b5,markdown,fr,6a3c7bcc0c7e4e4f,"### Analyse des résultats logit_bias
+MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,6232b9b5,markdown,fr,857499308510eabf,"### Ce que le test `logit_bias` mesure — et ce que ce run n'a pas mesuré
 
-Le test `logit_bias_consistency` evalue **3 aspects critiques** :
+Le test `logit_bias_consistency` evalue **3 aspects critiques** (les limites evoquees ci-dessous valent pour le parcours **OpenRouter** ; le run committé plus bas, lui, tape l'API **OpenAI**) :
 
 **1. Impact du logit_bias**
 - Un `logit_bias` negatif (-100.0) sur les tokens de ""je"" devrait **fortement penaliser** leur apparition
@@ -1803,13 +1803,15 @@ Le test `logit_bias_consistency` evalue **3 aspects critiques** :
 
 **2. Coherence avec seed fixee**
 - Deux appels identiques (`temperature=1.0`, `seed=42`) SANS bias devraient donner des reponses identiques
-- **En pratique** : la reproductibilite depend du backend (vLLM avec random seed vs OpenRouter qui ne garantit pas le routing)
+- **En pratique (attendu, non mesuré dans ce run)** : la reproductibilite depend du backend (vLLM avec random seed vs OpenRouter qui ne garantit pas le routing)
 
 **3. Tokenizer mismatch (point pedagogique)**
 - OpenRouter utilise des modèles varies -- on ne peut pas utiliser tiktoken pour encoder les tokens
 - Les serveurs vLLM locaux exposent `/tokenize` qui utilise le **vrai tokenizer** du modèle
 - Ce decalage est une limitation reelle des APIs intermediaires (OpenRouter, LiteLLM)
-",,,,,,,,6a3c7bcc0c7e4e4f,,,,,,,,,,,,,,,
+
+> **Ce que ce run donne.** Les trois points ci-dessus decrivent **ce que le test mesure et ce qu'on en attend** — ce n'est pas un resultat observe dans ce carnet. L'execution commitee plus bas n'a produit **aucun verdict** : le cloud OpenAI a refuse la requete portant `logit_bias` (**HTTP 400**, reponse vide) et l'endpoint local `local-mini-v2` (127.0.0.1:8185) a refuse la connexion. Le code l'a lui-meme journalise : « ECHEC de la mesure sur 'OpenAI' : endpoint sans reponse pour avec logit_bias -- le test est inexploitable, aucun verdict de coherence ni d'effet n'est emis. » La lecture placee apres la cellule d'execution detaille ce que le run donne, et ce qu'il ne donne pas.
+",,,,,,,,857499308510eabf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,0703a397,markdown,fr,64f439ff353a9710,"### Test de requête avec des logit_bias
 
 Nous présentons à présent un **exemple de test** pour le paramètre [`logit_bias`](https://platform.openai.com/docs/api-reference/chat/create#chat-create-logit_bias). Le principe : envoyer deux requêtes identiques vers chaque endpoint :
@@ -1978,7 +1980,7 @@ finally:
     _h.close()
 print(_log_buf.getvalue())
 ",,,,,,,,063d5c47b78d3621,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,f47a3dfd,markdown,fr,5fc1d90635026473,"### Interprétation de la fonction combine_message
+MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,f47a3dfd,markdown,fr,ede86c442e8293bb,"### Interprétation de la fonction combine_message
 
 Cette fonction utilitaire **fusionne le contenu reasoning et content** :
 
@@ -2008,7 +2010,20 @@ combine_message(msg)  # Retourne: ""Calcul: 2+2=4\n\nLa réponse est 4""
 - DeepSeek R1 sans `--enable-reasoning` : Champ vide
 
 > **Note** : La fonction gère gracieusement le cas où `reasoning_content` est absent.
-",,,,,,,,5fc1d90635026473,,,,,,,,,,,,,,,
+
+La cellule d'execution a pousse le test sur deux endpoints et **aucun n'a rendu de couple comparable** :
+
+| Endpoint | Appel **avec** `logit_bias` | Appel **sans** | Verdict |
+|---|---|---|---|
+| `OpenAI` (`api.openai.com/v1`) | **HTTP 400**, reponse vide | HTTP 200 (deux reponses, textes differents) | **aucun** -- le code journalise « ECHEC de la mesure sur 'OpenAI' ... le test est inexploitable, aucun verdict de coherence ni d'effet n'est emis » |
+| `local-mini-v2` (127.0.0.1:8185) | serveur absent : connexion refusee sur `/tokenize` (aucune requete de chat emise) | inatteignable | **aucun** -- « Exception lors de l'appel a /tokenize ... Aucune connexion n'a pu etre etablie car l'ordinateur cible l'a expressement refusee » |
+
+Trois lectures, dans l'ordre :
+
+1. **Les trois points de la section « Ce que le test `logit_bias` mesure » (plus haut dans ce carnet) sont des attentes, pas des observations.** Sans reponse biasee, il n'y a pas de comparaison possible : ni l'effet du `logit_bias` sur l'occurrence de « je », ni la coherence a seed fixe ne sont etablis par ce run. Le titre de la section le dit desormais — elle decrit le protocole, pas un resultat.
+2. **L'echec est lui-meme instructif.** `logit_bias` n'est pas accepte par tous les backends : ici, c'est le cloud qui a refuse la requete biasee, et c'est le serveur local qui etait absent. C'est une raison de plus de **verifier qu'un endpoint repond** avant d'en tirer une conclusion — un `400` ou une connexion refusee ne dit rien du comportement du modele.
+3. **Relancer** : il faut un endpoint dont `/tokenize` repond (le serveur local du port 8185, ou un backend qui accepte `logit_bias`), puis re-executer la cellule. Les sorties se mettront a jour et la lecture ci-dessus sera celle du nouveau run.
+",,,,,,,,ede86c442e8293bb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb,27c5c7be,markdown,fr,85a53bdb4fc9abce,"## Test avec la librairie `openai`
 
 On reproduit un appel classique OpenAI, 
@@ -6112,13 +6127,12 @@ pilote du code"".
 > **Source primaire** : repo ICR (*Inference Compute Recipes*), 4 modes d'inférence dont ""Agentic"".
 > **Cross-références internes** : NB-04 (function calling), NB-05 (RAG / mémoire), NB-09 (production / garde-fou budget), NB-12 (moteurs hand-tuned) — série Epic #2926.
 ",,,,,,,,46473bc082cd9197,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,3cd4db0c,markdown,fr,d1b36ba5e8dff189,"# 14. Memoire persistante pour le test-time scaling
+MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,3cd4db0c,markdown,fr,2c9da588ae53d9f6,"# 14. Memoire persistante pour le test-time scaling
 
 **Navigation** : [Index](README.md) | [<< Précédent](13_Agentic_Orchestration.ipynb) | [Suivant >>](14b_Paginated_Memory-Python.ipynb)  
 [15. Tree of Thoughts >>](15_Tree_of_Thoughts_Search.ipynb)
 
-**Phase 2 de l'epic #2926** — pont entre **NB-12** (moteur Reflexion, memoire *in-memory*),
-**NB-13** (routeur agentique) et **NB-05** (RAG : embeddings + vector store).
+Ce notebook remplace la mémoire temporaire du moteur Reflexion de **NB-12** par une mémoire vectorielle persistante. Il relie le routeur agentique de **NB-13** au RAG de **NB-05** (embeddings et vector store).
 
 ## Le problème de la memoire volatile
 
@@ -6130,7 +6144,7 @@ ete resolu (et diagnostique) precedemment.
 Le projet de reference **ICR** (Iterative-Contextual-Refinements) dispose d'un agent
 **""Memory""** qui **persiste** les lecons d'une session a l'autre dans un **vector store**, et
 les **retrocede par similarite** quand un problème apparente se presente. C'est exactement ce
-que ce notebook implemente (Phase 2 de #2926).
+que ce notebook implemente.
 
 > Ide centrale : remplacer la liste Python volatile de NB-12 par une **memoire vectorielle
 > persistante**. Avant de lancer Reflexion sur un nouveau problème, on **retrocede** les
@@ -6143,7 +6157,8 @@ que ce notebook implemente (Phase 2 de #2926).
 3. **Memoire vectorielle persistante** (stockage JSON cross-run + retrieval cosinus top-k).
 4. **Reflexion avec memoire** : injection des lecons retrocede.
 5. Demonstration : la memoire accelere un problème similaire (transfer de lecon).
-6. Pont production (NB-05 embeddings, NB-09 cout) + limites honnetes.",,,,,,,,d1b36ba5e8dff189,,,,,,,,,,,,,,,
+6. Pont production (NB-05 embeddings, NB-09 cout) + limites honnetes.
+",,,,,,,,2c9da588ae53d9f6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,206cb565,markdown,fr,2926a16266d9d27f,"## 0. Setup — même infrastructure que NB-12 / NB-13
 
 Client **OpenRouter** (claudish-proof) + chargeur `.env` robuste. La couche memoire
@@ -6627,7 +6642,7 @@ MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,d619db9d,code,fr,be876e
     return None
 
 print(f""Exercice 3 - memoire multi-domaines : {'implemente' if False else 'a completer'}"")",,,,,,,,be876ea0f4158f76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,f046984d,markdown,fr,b3fa193555ac1492,"## 7. Conclusion et suite
+MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb,f046984d,markdown,fr,88f64032db31e4ba,"## 7. Conclusion et suite
 
 On a remplace la **memoire volatile** (liste Python) du moteur Reflexion de NB-12 par une
 **memoire vectorielle persistante** qui retrocede les lecons par similarite cosinus —
@@ -6654,13 +6669,15 @@ injectees dans le générateur quand un problème apparente se presente.
 - **Phase 6** — plugin Semantic Kernel (pont series SemanticKernel).
 
 **References :** ICR repo ; Shinn et al. 2023 (Reflexion) ; Snell et al. 2024 (scaling) ;
-NB-05 (RAG embeddings), NB-12 (moteurs), NB-13 (routeur agentique).",,,,,,,,b3fa193555ac1492,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,122864fa,markdown,fr,8e697122c6f2756d,"# 15. Tree-of-Thoughts sur de vrais problemes de recherche
+NB-05 (RAG embeddings), NB-12 (moteurs), NB-13 (routeur agentique).
+
+> **Provenance** : phase 2 de l’EPIC [#2926](https://github.com/jsboige/CoursIA/issues/2926).
+",,,,,,,,88f64032db31e4ba,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,122864fa,markdown,fr,382b7f5a942319a0,"# 15. Tree-of-Thoughts sur de vrais problemes de recherche
 
 **Navigation** : [Index](README.md) | [<< Précédent](14_Persistent_Memory.ipynb) | [Suivant >>](16_Scaling_Test_Time_Compute.ipynb)
 
-**Phase 3 de l'epic #2926** — pont entre **NB-12** (ToT demontre sur le 24-game), **NB-13/NB-14**
-(routeur + memoire agentiques) et les series **Search (CSP)** / **Sudoku**.
+Ce notebook adapte Tree-of-Thoughts aux problèmes de satisfaction de contraintes : il relie la démonstration sur le 24-game de **NB-12**, le routeur et la mémoire de **NB-13/NB-14**, ainsi que les séries **Search (CSP)** et **Sudoku**.
 
 ## Ou ToT bat le single-shot le plus nettement
 
@@ -6694,7 +6711,8 @@ il hallucine des chiffres, viole la règle ""chaque lettre = un chiffre distinct
 1. **Single-shot** : le LLM resout un cryptarithme en un appel -> on mesure sa fiabilite (basse).
 2. **ToT** : recherche structuree (DFS colonne par colonne + retenue) -> solution **garantie**.
 3. **Comparaison** ToT vs single-shot (le livrable Phase 3).
-4. **Pont** Search/Sudoku : c'est du CSP, les LLM sont faibles sur les CSP exacts -> solveurs formels.",,,,,,,,8e697122c6f2756d,,,,,,,,,,,,,,,
+4. **Pont** Search/Sudoku : c'est du CSP, les LLM sont faibles sur les CSP exacts -> solveurs formels.
+",,,,,,,,382b7f5a942319a0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,de8fabd7,markdown,fr,76291c0e66eb5680,## 0. Setup — même infrastructure que NB-12 a NB-14,,,,,,,,76291c0e66eb5680,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,c2afe112,code,fr,b41eed0a41531e93,"%pip install -q openai python-dotenv
 
@@ -6963,7 +6981,7 @@ MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,b4256356,code,fr,
     return None
 
 print(f""Exercice 3 - Sudoku : {'implemente' if False else 'a completer'}"")",,,,,,,,8630bd991e0b9080,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,278f5e96,markdown,fr,cf9c1f0aa19f8d3e,"## 6. Conclusion et suite
+MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb,278f5e96,markdown,fr,162ecb11dfcd0b0b,"## 6. Conclusion et suite
 
 On a etendu Tree-of-Thoughts (NB-12, 24-game) aux **vrais problemes de recherche** :
 **cryptarithmetic** (SEND+MORE=MONEY, CROSS+ROADS=DANGER) via DFS colonne-par-colonne avec
@@ -7000,13 +7018,15 @@ de la recherche structuree : sur un CSP exact, ToT **garantit** la solution, le 
   ch. 6. (Backtracking + propagation CSP.)
 
 **Ressources internes :** series Search (CSP) / Sudoku de ce depot ; NB-12 (moteurs ToT
-LLM-guide), NB-13 (routeur), NB-14 (memoire).",,,,,,,,cf9c1f0aa19f8d3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,eee91f89,markdown,fr,6285f333cdb711c9,"# 16. Scaling du test-time compute (Snell 2024)
+LLM-guide), NB-13 (routeur), NB-14 (memoire).
+
+> **Provenance** : phase 3 de l’EPIC [#2926](https://github.com/jsboige/CoursIA/issues/2926).
+",,,,,,,,162ecb11dfcd0b0b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,eee91f89,markdown,fr,8ae30be7d817a8a0,"# 16. Scaling du test-time compute (Snell 2024)
 
 **Navigation** : [Index](README.md) | [<< Précédent](15_Tree_of_Thoughts_Search.ipynb) | [Suivant >>](17_Native_Reasoning_vs_Scaling.ipynb)
 
-**Phase 4 de l'epic #2926** — suite de **NB-12** (moteurs), **NB-13** (routeur), **NB-14**
-(memoire), **NB-15** (ToT sur CSP).
+Ce notebook prolonge les moteurs de **NB-12**, le routeur de **NB-13**, la mémoire de **NB-14** et Tree-of-Thoughts sur CSP de **NB-15** par une mesure du scaling du calcul au moment de l’inférence.
 
 ## L'idee de Snell et al. 2024
 
@@ -7033,7 +7053,8 @@ maximise le taux de succes depend de la difficulte.
    asymptotiques ; ce notebook est **illustratif**, pas une replication a l'echelle.
 
 > Pont Phase 5 : comparer a un **modèle a raisonnement natif** (le raisonnement est alors
-> ""interne"" au modèle, compute decale dans les tokens de pensée).",,,,,,,,6285f333cdb711c9,,,,,,,,,,,,,,,
+> ""interne"" au modèle, compute decale dans les tokens de pensée).
+",,,,,,,,8ae30be7d817a8a0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,60591a16,markdown,fr,2a53f2549a4dc2c4,## 0. Setup — même infrastructure que NB-12 a NB-15,,,,,,,,2a53f2549a4dc2c4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,556b8f60,code,fr,46c984bb4666490c,"%pip install -q openai python-dotenv matplotlib numpy
 
@@ -7337,11 +7358,11 @@ transferable a un plus grand modèle et une suite plus difficile.
 **References :** Snell, Lee, Xu, Kumar, *""Scaling LLM Test-Time Compute Optimally""* (2024) ;
 Chen et al., *""Evaluating Large Language Models Trained on Code""* (HumanEval, pass@k, 2021) ;
 Yao et al., *""Tree of Thoughts""* (2023) ; NB-12/13/14/15 de cette serie.",,,,,,,,b4b8dcfdd8cd7851,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,9a460dd7,markdown,fr,96a3fff58d419810,"# 17. Modèles a raisonnement natif vs scaling du test-time compute
+MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,9a460dd7,markdown,fr,993be48ed4330e17,"# 17. Modèles a raisonnement natif vs scaling du test-time compute
 
 **Navigation** : [Index](README.md) | [<< Précédent](16_Scaling_Test_Time_Compute.ipynb) | [Suivant >>](18_Semantic_Kernel_Plugins.ipynb)
 
-**Phase 5 de l'epic #2926** — suite de **NB-12** (moteurs), **NB-16** (scaling pass@k).
+Ce notebook prolonge les moteurs de **NB-12** et le scaling pass@k de **NB-16** en comparant le calcul de test à l’extérieur et à l’intérieur du modèle.
 
 ## La question centrale de Snell (Phase 5)
 
@@ -7365,7 +7386,8 @@ on compare, sur la même suite graduee, le **BoN** d'un modèle standard (llama-
 2. **Baseline non-reasoning** : BoN pass@k sur llama-3.3-70b, **cout en tokens cumules**.
 3. **Raisonnement natif** : single-shot deepseek-r1, cout = prompt + completion + **reasoning tokens**.
 4. **Comparaison cost-normalisee** : courbe tokens-vs-pass du BoN + point du modèle a raisonnement.
-5. Limites honnetes (G.2) + pont Phase 6 (plugin Semantic Kernel).",,,,,,,,96a3fff58d419810,,,,,,,,,,,,,,,
+5. Limites honnetes (G.2) + pont Phase 6 (plugin Semantic Kernel).
+",,,,,,,,993be48ed4330e17,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,3ef08a82,markdown,fr,c70be7ae3e92d345,## 0. Setup,,,,,,,,c70be7ae3e92d345,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,0e45f46d,code,fr,6074ee2c874c2183,"%pip install -q openai python-dotenv matplotlib numpy
 
@@ -7651,7 +7673,7 @@ MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,b7eae56c,code
     return None
 
 print(f""Exercice 3 - cout en dollars : {'implemente' if False else 'a completer'}"")",,,,,,,,3728b4dfc37a2018,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,1ad6cadc,markdown,fr,055f774cef6413d6,"## 7. Conclusion et suite
+MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb,1ad6cadc,markdown,fr,75259df4c37c1abd,"## 7. Conclusion et suite
 
 On a compare, **a cout normalise en tokens (raisonnement inclus)**, le **scaling hand-rolled**
 (BoN pass@k sur un modèle standard) au **raisonnement natif** (single-shot deepseek-r1), sur la
@@ -7677,15 +7699,14 @@ lire avec prudence et l'etendre (exercices 1-3) avant de generaliser.
 - **Lightman et al. (2023)**, *Let's Verify Step by Step*, arXiv:2305.20050 (ICLR 2024). — Origine des **process reward models** (PRM) : le « vérificateur » à étapes qui sous-tend le scoring des réponses vérifiables.
 
 > **Cross-références internes** : NB-12 (moteurs d'inférence), NB-16 (pass@k / scaling hand-rolled), NB-13/14/15 (routeur, mémoire, ToT-CSP) — série Epic #2926.
-",,,,,,,,055f774cef6413d6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,f1fed449,markdown,fr,92c2a4614525c8cb,"# 18. Plugins Semantic Kernel pour le test-time scaling
+
+> **Provenance** : phase 5 de l’EPIC [#2926](https://github.com/jsboige/CoursIA/issues/2926).
+",,,,,,,,75259df4c37c1abd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,f1fed449,markdown,fr,d095c240ea397f66,"# 18. Plugins Semantic Kernel pour le test-time scaling
 
 **Navigation** : [Index](README.md) | [<< Précédent](17_Native_Reasoning_vs_Scaling.ipynb) | [Suivant >>](19_OWUI_Orchestration.ipynb)
 
-**Phase 6 (finale) de l'epic #2926** — suite de **NB-12** (moteurs) a **NB-17** (raisonnement natif).
-Ce notebook **clot #2926** en exposant les moteurs de test-time scaling (BoN, Reflexion, routeur)
-comme des **plugins [Semantic Kernel](https://github.com/microsoft/semantic-kernel)** (SK), faisant
-le **pont avec la serie SemanticKernel** du depot.
+Ce notebook expose les moteurs de calcul à l’inférence (Best-of-N, Reflexion et routeur) comme plugins [Semantic Kernel](https://github.com/microsoft/semantic-kernel). Il prolonge les moteurs de **NB-12** au raisonnement natif de **NB-17** et relie la série Texte à la série SemanticKernel.
 
 ## Pourquoi des plugins ?
 
@@ -7709,7 +7730,7 @@ exposer en **plugins SK** les rend :
 5. Composition via le kernel + pont auto-function-calling (exercice) vers la serie SemanticKernel.
 
 Ce notebook est le maillon *outillage* de la veine test-time scaling de la serie Texte : les techniques ont ete introduites sans framework (echantillonnage multiple dans le NB précédent), ici on les reformule en **plugins Semantic Kernel** pour qu'elles deviennent des briques composables. La différence est structurante : une fonction Python ordinaire n'est visible que du code qui l'appelle ; un plugin enregistre dans le Kernel expose **sa signature et sa docstring au LLM**, ce qui permet ensuite au modèle lui-même de choisir et d'invoquer la bonne stratégie (auto-function-calling, exercice 1) ou a un plugin d'en invoquer un autre (routeur, section 4). C'est exactement la frontiere entre *ecrire un script qui scale le test-time* et *construire une architecture ou le scaling du test-time est un service*.
-",,,,,,,,92c2a4614525c8cb,,,,,,,,,,,,,,,
+",,,,,,,,d095c240ea397f66,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,2b94a092,markdown,fr,4086dc4a4c56bf90,"## 0. Setup — Kernel Semantic Kernel + service OpenRouter
 
 Semantic Kernel (Python, v1.x) se connecte a OpenAI. On le branche sur **OpenRouter** (comme
@@ -7991,7 +8012,7 @@ MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,f9afd9da,code,fr,
     return None
 
 print(f""Exercice 3 - Process Framework : {'implemente' if False else 'a completer'}"")",,,,,,,,d1153ca54726b2c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,9ddf5ec2,markdown,fr,7d0599cd9fac947d,"## 8. Conclusion
+MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb,9ddf5ec2,markdown,fr,eae18c200d85eeb0,"## 8. Conclusion
 
 On a expos les moteurs de test-time scaling (BoN, Reflexion, routeur — herites de NB-12 a NB-17)
 comme des **plugins Semantic Kernel**, demontrant le **modèle de composition** de SK : plugins
@@ -8012,7 +8033,9 @@ plugins SK (NB-18, ce notebook).
 - **La composition est récursive et neutre** : le routeur est un plugin comme les autres, ce qui ouvre sur l'auto-function-calling (le LLM en routeur) et le Process Framework (le graphe en routeur).
 
 Prolongements naturels : mesurer ces profils de cout sur une tâche a faible taux de base (ou l'ecart BoN/Reflexion devient observable), croiser avec le NB 17 sur le raisonnement natif, et relire le chapitre test-time compute du dossier de reference de la serie.
-",,,,,,,,7d0599cd9fac947d,,,,,,,,,,,,,,,
+
+> **Provenance** : phase 6 de l’EPIC [#2926](https://github.com/jsboige/CoursIA/issues/2926).
+",,,,,,,,eae18c200d85eeb0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,043cdbc6,markdown,fr,285bab9b911bfd00,"# 19. Orchestration et tâches planifiées avec Open WebUI v0.9.0
 
 **Navigation** : [Index](README.md) | [<< Précédent](18_Semantic_Kernel_Plugins.ipynb) | [Suivant >>](20_OWUI_Native_API.ipynb)
@@ -8052,14 +8075,14 @@ donnent les frameworks code-level (**LangChain / LangGraph**, **CrewAI**).
 
 ### Durée estimée : 60 minutes
 ",,,,,,,,285bab9b911bfd00,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,2cb3e87a,markdown,fr,65a78403fe176159,"## 0. Setup - infrastructure et convention d'exécution
+MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,2cb3e87a,markdown,fr,e3aea53ab3ac3b05,"## 0. Setup - infrastructure et convention d'exécution
 
 On installe trois dépendances légères : `python-dateutil` (manipulation RRULE), `openai`
 (le client OpenAI-compatible qu'on pointera vers OWUI), et `python-dotenv` (chargement du
 `.env`). Le notebook est conçu pour **tourner de bout en bout même si la clé d'instance OWUI
-n'est pas provisionnée** : la section 6 (API skeleton) se met alors en
-`RECOVERABLE-USER-HAND` et affiche un message explicite plutot que de crasher (règle C.1 -
-aucune erreur volontaire).",,,,,,,,65a78403fe176159,,,,,,,,,,,,,,,
+n'est pas provisionnée** : la section 6 (API skeleton)
+affiche alors un message explicite plutot que de crasher (règle C.1 -
+aucune erreur volontaire).",,,,,,,,e3aea53ab3ac3b05,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,c6f8c21e,code,fr,507b5fed9f134259,"%pip install -q python-dateutil openai python-dotenv
 
 import os
@@ -8428,23 +8451,23 @@ produit documentée. À confirmer avant d'en faire un critère d'évaluation dé
 > exécutable et verifie. Sur les **appels API OWUI réels** (section suivante), l'exécution
 > est différée le temps que la clé d'instance soit provisionnée.
 ",,,,,,,,a7e7c2f35f384dfa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,fbaf126f,markdown,fr,80beae1514c36eec,"## 6. OWUI API — SOTA-OK ou RECOVERABLE-USER-HAND selon provisionnement
+MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,fbaf126f,markdown,fr,fecd18ad6f4340f3,"## 6. OWUI API — exécution réelle quand la clé est provisionnée
 
 Cette section instancie un **client OpenAI-compatible pointe vers l'instance OWUI** de
 cours (`OWUI_URL`) authentifié par `OWUI_API_KEY`. OWUI expose en effet une API compatible
 OpenAI (`/api/chat/completions`), ce qui permet de réutiliser le client `openai` standard.
 
-> **Statut SOTA — verdict conditionnel.** Le verdict dépend de l'état de `OWUI_API_KEY`
+> **Statut d'exécution — conditionnel.** Il dépend de l'état de `OWUI_API_KEY`
 > mesuré en cell[2] :
 >
 > - **`OWUI_READY = True`** (clé provisionnée dans le `.env` de la série `GenAI/Texte`)
 >   → les cells 17/18 s'exécutent **réellement** et les sorties committées
 >   (`Ping OWUI : 'OK'`, réponse chat authentifiée) sont les **vraies sorties OWUI**
->   → verdict **SOTA-OK** (Prong A).
+>   → les sorties committées sont les vraies sorties de l'instance.
 > - **`OWUI_READY = False`** (clé absente du `.env`) → les cells 17/18 affichent un
->   message `RECOVERABLE-USER-HAND` explicite ; le carnet reste invocable et le
->   squelette est complet → verdict **RECOVERABLE-USER-HAND** (action user one-time :
->   provisionner `OWUI_API_KEY` puis re-exécuter le carnet).
+>   message explicite ; le carnet reste invocable et le squelette est complet.
+>   L'action attendue est alors de provisionner `OWUI_API_KEY` puis de re-exécuter
+>   le carnet.
 >
 > Le code évite délibérément toute erreur volontaire (règle C.1) : pas de `raise`, pas de
 > `assert False` ; à la place, un message clair et un skip gracieux
@@ -8454,7 +8477,7 @@ OpenAI (`/api/chat/completions`), ce qui permet de réutiliser le client `openai
 Le `graceful skip` est volontairement **défensif** : sur la machine de cours la clé est
 provisionnée, mais le carnet reste lisible et exécutable sur toute machine sans `OWUI_API_KEY`,
 sans crasher ni afficher de fausses sorties OWUI.
-",,,,,,,,80beae1514c36eec,,,,,,,,,,,,,,,
+",,,,,,,,fecd18ad6f4340f3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,28876f3f,code,fr,1c643b1a205dc34b,"from openai import OpenAI
 
 def owui_client():
@@ -8629,7 +8652,7 @@ _note = justifier_choix(
 print(f""Exercice 3 - choix d'architecture : {'note renvoyee' if _note is not None else 'a completer'}"")
 print(""Exercice 3 a completer : choix d'architecture OWUI vs LangGraph vs CrewAI"")
 ",,,,,,,,37440ec46fe07839,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,40d4d630,markdown,fr,66f9f8e62d396d6f,"## 8. Conclusion et suite
+MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,40d4d630,markdown,fr,297c96908ca74474,"## 8. Conclusion et suite
 
 On a pose les **trois niveaux d abstraction** pour orchestrer des LLM : le **produit** OWUI
 v0.9.0 (Automations / Task Management / Calendar, **sans code**), la **librairie** de
@@ -8647,22 +8670,22 @@ code - avec un trade-off **facilite vs controle fin**.
 4. La migration 0.8 -> 0.9 est un **breaking change async** (`async def`, `AsyncSession`,
    `aiosqlite`).
 
-**Limites honnetes (G.2 + SOTA Prong A).**
+**Limites honnêtes.**
 - Les concepts (RRULE, async, comparatif, architecture) sont **verifies par execution
   reelle** dans ce notebook (sections 2.1 et 5).
 - Les **appels API OWUI reels** sont executes dans ce notebook (sections 6-7) si et
   seulement si la cle est provisionnee : `OWUI_READY` est evalue en cell[2]
   (`OWUI_API_KEY = os.getenv(""OWUI_API_KEY"")` sans default ; `OWUI_READY = key is not None`).
   - Si `OWUI_READY = True` → les sorties committées (`Ping OWUI : 'OK'`, reponse chat) sont
-    les vraies sorties OWUI → statut **`SOTA-OK`**.
+    les vraies sorties OWUI.
   - Si `OWUI_READY = False` → la cle n est pas provisionnee, les appels API sont **defensifs**
     (skip silencieux, message d information), et le notebook n a pas pu verifier les appels
-    reels → statut **`RECOVERABLE-USER-HAND`** (verdict signale en vscode au user pour
-    approvisionner `OWUI_API_KEY` dans `.secrets/master.env`).
+    reels → l'action attendue est de provisionner `OWUI_API_KEY` dans
+    `.secrets/master.env` puis de re-exécuter le carnet.
 - **Pas de redaction manuelle d une sortie de cellule** (regle 6 secrets-hygiene) : le carnet
   est execute en Papermill, et les sorties refletees sont les vraies sorties. Si l etat
-  reel diverge, c est la **cause** qu on corrige, pas la sortie (cf. c.1432 et #18124).
-",,,,,,,,66f9f8e62d396d6f,,,,,,,,,,,,,,,
+  reel diverge, c est la **cause** qu on corrige, pas la sortie.
+",,,,,,,,297c96908ca74474,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb,f72fd9b6,markdown,fr,15b4526131c1b92c,"## Références
 
 - **Open WebUI - Automations** : https://docs.openwebui.com/features/chat-conversations/chat-features/automations/
@@ -22173,7 +22196,7 @@ bucket. Affiche la stratégie gagnante en fonction de B et de la difficulte
 heatmap matplotlib (imshow) bucket (lignes) x B (colonnes) coloree par la
 stratégie gagnante.
 ",,,,,,,,4918c8c9142f6b3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,2a5615a0,markdown,fr,678aef6bcc950e29,"## 6. Conclusion et suite
+MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb,2a5615a0,markdown,fr,5a5ac00e3d330059,"## 6. Conclusion et suite
 
 On a mesure le **scaling du test-time compute** (Snell et al. 2024) sur notre
 infrastructure : pass@k par bucket de difficulte (estimateur non-biaise
@@ -22221,7 +22244,9 @@ comparaison a budget egal restent valides et reutilisables tels quels.
 Optimally""* (2024) ; Chen et al., *""Evaluating Large Language Models Trained on
 Code""* (HumanEval, pass@k, 2021) ; Yao et al., *""Tree of Thoughts""* (2023) ;
 NB-12/13/14/15 de cette serie.
-",,,,,,,,678aef6bcc950e29,,,,,,,,,,,,,,,
+
+> **Provenance** : phase 4 de l’EPIC [#2926](https://github.com/jsboige/CoursIA/issues/2926).
+",,,,,,,,5a5ac00e3d330059,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb,d1fd2a98,markdown,fr,2c2f911b2acca6d9,"### Lecture : le contrat d'accès déclaré dès la première cellule
 
 La sortie énonce les deux faits qui conditionnent tout le notebook :

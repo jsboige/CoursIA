@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-05
+> REFERENCE — vivante — dernière révision 2026-11-09
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -236,37 +236,37 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-02-SelfSortingMorphogenesis-Python.ipynb
   confidence: research
   reviewed_code_sha: 7b4e3a49f838065dcf6d6572c0099b5b6ba2ac7b99156d85adbd5ce293476c59
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-03-RobustnessDelayedGratification-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-03-RobustnessDelayedGratification-Python.ipynb
   confidence: research
   reviewed_code_sha: 78cd3757aa95961fddd352904b197475c656f8fe5b7bf48190dba4c4263b528a
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-04-ChimericArraysKinAggregation-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-02-SelfSortingMorphogenesis/ICT-04-ChimericArraysKinAggregation-Python.ipynb
   confidence: research
   reviewed_code_sha: b2056a868be85763d57d99177dcd82606319d2979b5936e3ce862c66eb314e33
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb
   confidence: research
   reviewed_code_sha: 18ed9781b681e3f5ff1f800dbda1894770cb7984a99da3da21f598c8d027b845
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb
   confidence: research
   reviewed_code_sha: b28200ac2decbbccf0aa9dda0934f34ecd159bd7b838f60d2bcb53a54c13c3dc
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-07-ScaleFreeSignatures-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb
   confidence: research
   reviewed_code_sha: e0ee9503aec8cf28f65ba4425eac82e50f7bf541405b88ebf313620f4361a8d0
   review_date: "2026-09-21"

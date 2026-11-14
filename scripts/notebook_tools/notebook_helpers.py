@@ -89,7 +89,7 @@ class NotebookHelper:
         defaut. Ce writer ne reexecute aucune cellule : il ne peut donc pas
         fabriquer de bloc perime (#12722), il ne peut que detruire la
         provenance d'un carnet deja execute. Mesure #24434 sur
-        ``SW-9-Python-JSONLD.ipynb`` : une edition d'une seule ligne de
+        ``SW-09-JSONLD-Python.ipynb`` : une edition d'une seule ligne de
         source via ``CellIterator`` donnait 1 insertion et 984
         suppressions -- 107 blocs ``metadata.papermill`` et 37 blocs
         ``metadata.execution`` tombaient a 0 **sans qu'un seul

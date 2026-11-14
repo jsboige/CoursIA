@@ -180,7 +180,7 @@ page ne traverse pas, nommément :
 - **Le bloc symbolique au-delà de Tweety et Planners.** La Phase 5 (logique) porte trois
   carnets Tweety et la Phase 6 (planification) renvoie au dossier Planners ; les autres
   familles symboliques du dépôt — **Lean** (161 carnets de preuves formelles), **SMT/Z3**
-  (52), **Argument_Analysis/Argumentum** (42), **SemanticWeb** (28), **SymbolicLearning**
+  (52), **ArgumentAnalysis/Argumentum** (42), **SemanticWeb** (28), **SymbolicLearning**
   (31), **SmartContracts** (32) — ne figurent pas dans ce parcours : chacune a sa série et
   son README. Le bloc symbolique du manuel (AIMA ch. 7-11) est donc couvert ici par la
   logique et la planification seules.

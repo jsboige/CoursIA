@@ -1,437 +1,285 @@
 ---
-pagetitle: "Sudoku - Résolution par Différentes Approches Algorithmiques"
+pagetitle: "Sudoku — comparer les méthodes de résolution"
 ---
 
-# Sudoku - Résolution par Différentes Approches Algorithmiques
+# Sudoku — comparer les méthodes de résolution
 
 <!-- CATALOG-STATUS
 series: Sudoku
 pedagogical_count: 39
 breakdown: root=39
-maturity: BETA=38, ALPHA=1
+maturity: BETA=39
 -->
 
-> **Note éditoriale (counts)** : les comptes de notebooks (agrégé, par langage ou par kernel) ne sont pas tenus à la main dans ce README : ils dérivent et relèvent de la régénération du catalogue. Le marqueur `CATALOG-STATUS` ci-dessus et le catalogue généré (`COURSE_CATALOG.generated.md`) sont autoritatifs.
->
-> Sudoku est un cas de **mixité JUMEAUX C#/Python dominante** (14 paires strictes 1-14 + 1 paradigme-comparable 15 Infer.NET/NumPyro + 1 benchmark 18, soit 16 entrées à 2 langages) avec **1 companion Lean natif intra-hub** (`Sudoku-19-Lean-Propagation-Lean.ipynb`, lake `sudoku_lean` 0-sorry). C'est une **variante L392 #4** : contrairement à QC (#5917) où Lean est isolé dans une sous-série dédiée `kelly_lean/`, et contrairement à ML (#5915) / Probas (#5916) où la mixité kernel est intra-série, ici la mixité jumeaux domine largement et le notebook tiers (Lean) est intra-hub sans sous-série dédiée.
->
-> **Régénération du marqueur** : `catalog-cron.yml` (cron quotidien 03:37 UTC sur `main`, commit `[skip ci]` par `github-actions[bot]`) — le bloc ci-dessus est régénéré automatiquement, ne pas le modifier manuellement sur une branche feature (catalog-pr-hygiene R1).
+[↑ Parcours de notebooks](../README.md) · [Search : recherche et contraintes](../Search/README.md)
 
-[← Notebooks](../README.md) | [→ Search](../Search/README.md)
+Comment résoudre la même grille par des méthodes aussi différentes que le retour arrière, la programmation par contraintes et un réseau de neurones ? Le Sudoku offre un problème commun pour étudier ce que chaque représentation rend possible : explorer des candidats, propager une déduction, déclarer les règles à un solveur ou apprendre à prédire les cases.
 
-## Découverte — ce qu'enseigne cette série
+Cette série s'adresse aux étudiants en informatique et aux enseignants cherchant un fil conducteur pour comparer les paradigmes de l'IA. Les bases de Python ou de C# suffisent pour commencer ; les notions de recherche et de contraintes sont introduites dans les premiers paliers. Les approches probabilistes, neuronales et formelles demandent ensuite les prérequis indiqués ci-dessous. Les variantes C# et Python permettent de choisir son langage ; elles présentent le même problème pédagogique avec des bibliothèques et parfois des expériences différentes.
 
-Comment résoudre un Sudoku ? Cette série explore les techniques de résolution, des algorithmes classiques (backtracking, contraintes) aux approches symboliques, probabilistes et neuronales. Elle repose sur des **paires miroir C#/Python** — mêmes algorithmes dans les deux langages, de la mise en place jusqu'au benchmark comparatif — plus des notebooks Python uniquement (réseau de neurones, LLM, méthodologie statistique, audit de corpus) et un companion Lean natif ([Sudoku-19](Sudoku-19-Lean-Propagation-Lean.ipynb), preuve formelle de la propagation de contraintes). Cette structure laisse à chaque étudiant le choix de son langage sur la quasi-totalité des algorithmes.
+Vous apprendrez à implémenter un solveur, à modéliser ses contraintes, à distinguer une solution valide d'une prédiction plausible et à concevoir une comparaison expérimentale. Le Sudoku généralisé est NP-complet ; les grilles de taille fixée du cours permettent d'en examiner concrètement les stratégies, sans déduire leur difficulté de leur seul nombre d'indices.
 
-**À qui s'adresse cette série** : étudiants en informatique (L2-M2) découvrant les paradigmes algorithmiques, candidats à des entretiens techniques, et enseignants cherchant un fil rouge pédagogique. Les notebooks Python ne nécessitent que Python 3.10+. Les notebooks C# requièrent .NET 9.0 + dotnet-interactive. Aucun prérequis en IA : les concepts sont introduits depuis le backtracking.
+**Une série plate.** Tous les carnets vivent à la racine, sans dossier intermédiaire : le sujet commun — la même grille soumise à des représentations différentes — fait le fil, la numérotation continue ordonne la progression, et aucun sous-arc ne se dessine qui grouperait naturellement des carnets. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
 
-**Objectifs d'apprentissage** — à l'issue de cette série, vous serez capable de :
+Une même case vide change de rôle selon la méthode. Pour le retour arrière, elle ouvre des branches à essayer. Pour la programmation par contraintes, elle possède un domaine de valeurs que les règles réduisent. Pour une métaheuristique, elle participe au score de conflits d'une grille candidate. Pour un réseau, elle reçoit des probabilités apprises. Cette différence de représentation détermine les opérations possibles, les erreurs à observer et les garanties que l'on peut demander au résultat.
 
-1. **Implémenter** un solveur de backtracking avec heuristiques (MRV, Forward Checking) et comprendre sa complexité
-2. **Comparer** les paradigmes algorithmiques (exhaustif, métaheuristique, CP, SMT, probabiliste, neuronal, LLM) sur un même problème NP-complet
-3. **Modéliser** le Sudoku comme un CSP (variables, domaines, contraintes) et utiliser des solveurs industriels (OR-Tools, Choco)
-4. **Evaluer** les compromis garantie vs performance vs généralisation pour choisir une stratégie de résolution
-5. **Mesurer** empiriquement les performances de chaque approche (temps, taux de succès, échelle de difficulté)
+| Représentation | Ce que fait la méthode | Ce qu'il faut contrôler |
+|---|---|---|
+| Affectations partielles | Explorer les candidats, abandonner une branche incompatible, revenir sur une décision. | Respect des indices et des règles ; exhaustivité de la recherche si l'on conclut à l'absence de solution. |
+| Variables et contraintes | Réduire les domaines puis brancher lorsque la propagation ne suffit plus. | Fidélité du modèle aux règles du Sudoku et statut retourné par le solveur. |
+| Grille candidate et conflits | Modifier une configuration pour améliorer son score. | Zéro conflit, conservation des indices et taux de réussite sur plusieurs essais. |
+| Distributions ou prédictions | Proposer des valeurs à partir d'un modèle probabiliste ou de données. | Validité de la grille entière, au-delà de la confiance ou de la précision par case. |
 
-**Pourquoi le Sudoku ?** Le Sudoku généralisé (n × n) est un problème **NP-complet** : aucune méthode polynomiale connue ne le résout dans tous les cas. C'est ce qui en fait un banc d'essai unique — des approches radicalement différentes (énumération, métaheuristiques, contraintes, apprentissage) s'y comparent sur le même terrain, et chaque approche reflète une époque de l'IA : recherche symbolique classique, métaheuristiques inspirées de la nature, solveurs SMT/CP industriels, puis IA connexionniste (réseaux de neurones, LLM).
+## Comment lire ce README — Découverte
 
-| Concept enseigné | Illustration dans le Sudoku | Application réelle |
-|---------|----------------------------|-------------------|
-| **Recherche dans un espace d'états** | Chaque grille est un état, les mouvements légaux définissent les transitions | Planification robotique, jeux |
-| **Propagation de contraintes** | Éliminer les candidats impossibles réduit l'espace de recherche | Calibration de capteurs, ordonnancement |
-| **Heuristiques de choix** | MRV (Minimum Remaining Values) guide vers les décisions les plus contraignantes | Diagnostic médical, détection de fraudes |
-| **Métaheuristiques d'optimisation** | Recuit simulé, algorithmes génétiques pour explorer intelligemment | Logistique, conception de circuits |
-| **Programmation par contraintes** | Déclarer les règles plutôt que l'algorithme de résolution | Emploi du temps, configuration produit |
-| **Satisfiabilité modulaire (SMT)** | Combinaison de théorie des ensembles et d'arithmétique | Vérification de programmes, preuve de théorèmes |
-| **Apprentissage automatique** | Entraînement sur des millions de grilles pour apprendre des patterns | Vision par ordinateur, traduction |
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue parcours, approfondissements et recherche.
 
-## Comment lire ce README
+- **Vous découvrez** : commencez par 01, ou par 00 pour le socle C#. La table principale suit les numéros nus ; chaque paire de langages partage une ligne.
+- **Vous creusez un palier** : 12b étudie l'interface LINQ de Z3 ; 18b développe la méthode statistique du benchmark.
+- **Vous cherchez des prolongements** : les résultats neuronaux, l'audit des corpus et les preuves de propagation se trouvent dans « Pour aller plus loin ».
 
-Ce README suit le principe des parcours à plusieurs vitesses du dépôt ([choisir sa vitesse de lecture](../../README.md#choisir-sa-vitesse-de-lecture)).
-
-- **Vous découvrez le sujet** : lisez le [Parcours principal](#parcours-principal) — les notebooks à numéro nu, de 00 à 19, dans l'ordre. Il se suffit à lui-même. Les niveaux 1 et 2 (recherche exhaustive) posent le socle ; le niveau 4 (contraintes) est le cœur pédagogique.
-- **Vous voulez creuser un palier** : ouvrez la section de ce palier dans [Approfondissements](#approfondissements). Une lettre (`12b`, `18b`…) creuse le palier dont elle porte le numéro — un binding alternatif, une méthodologie plus formelle. Elle ne fait pas avancer dans la série.
-- **Vous cherchez la matière de recherche** : [Pour aller plus loin](#pour-aller-plus-loin) regroupe les résultats d'entraînement RRN, les performances mesurées, la formalisation Lean et les notes techniques.
-
-Chaque ligne de la table du parcours annonce son **public** : **Découverte** (aucun bagage supposé au-delà des prérequis d'entrée), **Licence** (concept théorique enseigné dans le notebook), ou **Recherche** (formalisation, méthodologie expérimentale). Pour exécuter les notebooks, voir [Installation](#installation).
-
-### L'arc en sept niveaux
-
-La série suit une progression de complexité des approches IA, du garanti au généralisé :
+Les premiers paliers conduisent de l'exploration exacte aux recherches approchées. Les contraintes ramènent ensuite la question à la représentation des règles ; les modèles appris posent celle de la généralisation. La comparaison expérimentale et la formalisation donnent enfin des moyens différents de justifier une conclusion.
 
 ```mermaid
-flowchart TD
-    N1["<b>Niveau 1 · Recherche Exhaustive</b>"]
-    N2["<b>Niveau 2 · Exploration Optimisée</b>"]
-    N3["<b>Niveau 3 · Métaheuristiques</b><br/><i>exploration non exhaustive</i>"]
-    N4["<b>Niveau 4 · Programmation par Contraintes</b><br/><i>CSP</i>"]
-    N5["<b>Niveau 5 · IA Symbolique</b><br/><i>SMT, Automates</i>"]
-    N6["<b>Niveau 6 · IA Moderne / Data-Driven</b>"]
-    N7["<b>Niveau 7 · Synthèse</b>"]
-
-    N1 --> N2 --> N3 --> N4 --> N5 --> N6 --> N7
-
-    N1 -.-> BT["Backtracking<br/><i>DFS simple, garanti</i>"]
-    N2 -.-> DL["Dancing Links<br/><i>couverture exacte</i>"]
-    N3 -.-> GA["Algorithme Génétique"]
-    N3 -.-> SA["Recuit Simulé"]
-    N3 -.-> PSO["PSO"]
-    N4 -.-> AIMA["AIMA CSP<br/><i>référence académique</i>"]
-    N4 -.-> NOR["Propagation de Norvig<br/><i>MRV + Forward Checking</i>"]
-    N4 -.-> HUM["Stratégies Humaines<br/><i>13 techniques d'inférence</i>"]
-    N4 -.-> GC["Graph Coloring<br/><i>formulation graphe du CSP</i>"]
-    N4 -.-> OR["OR-Tools CP-SAT<br/><i>bibliothèque industrielle</i>"]
-    N4 -.-> CHO["Choco Solver<br/><i>autre bibliothèque CP</i>"]
-    N5 -.-> Z3["Z3 SMT Solver"]
-    N5 -.-> AUT["Automates Symboliques + Z3"]
-    N5 -.-> BDD["BDD/MDD<br/><i>diagrammes de décision</i>"]
-    N6 -.-> INF["Infer.NET<br/><i>probabiliste</i>"]
-    N6 -.-> CNN["Réseau de Neurones<br/><i>CNN</i>"]
-    N6 -.-> LLM["LLM Solver"]
-    N7 -.-> BENCH["Benchmark Comparatif"]
+flowchart LR
+    A["Retour arrière et couverture exacte"] --> B["Métaheuristiques"]
+    B --> C["Propagation et solveurs de contraintes"]
+    C --> D["Représentations symboliques"]
+    D --> E["Inférence et apprentissage"]
+    E --> F["Comparer, prouver, auditer"]
 ```
 
-Qui lit la table du parcours de haut en bas suit exactement cet arc.
+## Parcours principal — Découverte, Licence et lectures avancées
 
-## Parcours principal
-
-Les jumeaux C#/Python partagent une ligne : même algorithme, deux écosystèmes, à choisir selon votre bagage. Les numéros nus se suivent ; les lettres d'approfondissement (`12b`, `18b`) ne figurent qu'en lien court et se lisent dans [Approfondissements](#approfondissements). Le lake Lean de la série n'est pas une étape du parcours : il vit dans [Formalisations Lean](#formalisations-lean).
+Le public indiqué reprend la profondeur des contenus : les preuves du palier 19 et la méthodologie du 20 demandent une lecture avancée. Les bases de récursion de 01 préparent 02 et 06 ; les contraintes de 06–07 préparent les solveurs et la preuve de propagation. Les paliers 15–16 supposent probabilités et apprentissage, 19 une initiation à Lean.
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
-|---|----------|--------------------|--------|------------------|
-| 00 | Environment — [C#](Sudoku-00-Environment-CSharp.ipynb) | Structures de données Sudoku : grille, candidats, propagation de base ; socle des notebooks C# suivants | Découverte | — |
-| 01 | Backtracking — [C#](Sudoku-01-Backtracking-CSharp.ipynb) · [Python](Sudoku-01-Backtracking-Python.ipynb) | DFS avec retour arrière : l'algorithme fondamental, garantie de solution,heuristique de choix | Découverte | — |
-| 02 | Dancing Links — [C#](Sudoku-02-DancingLinks-CSharp.ipynb) · [Python](Sudoku-02-DancingLinks-Python.ipynb) | Couverture exacte de Knuth (Algorithm X) : une structure de données qui transforme le backtracking | Découverte | — |
-| 03 | Genetic — [C#](Sudoku-03-Genetic-CSharp.ipynb) · [Python](Sudoku-03-Genetic-Python.ipynb) | Algorithmes génétiques : population, croisement, mutation, fitness (GeneticSharp ↔ PyGAD) | Découverte | — |
-| 04 | Simulated Annealing — [C#](Sudoku-04-SimulatedAnnealing-CSharp.ipynb) · [Python](Sudoku-04-SimulatedAnnealing-Python.ipynb) | Recuit simulé : température, refroidissement, probabilité d'acceptation | Découverte | — |
-| 05 | PSO — [C#](Sudoku-05-PSO-CSharp.ipynb) · [Python](Sudoku-05-PSO-Python.ipynb) | Essaim de particules : convergence collective, vitesse, position | Découverte | — |
-| 06 | AIMA CSP — [C#](Sudoku-06-AIMA-CSP-CSharp.ipynb) · [Python](Sudoku-06-AIMA-CSP-Python.ipynb) | CSP académique (Russell & Norvig) : variables, domaines, contraintes, MRV, AC-3 | Licence | — |
-| 07 | Norvig — [C#](Sudoku-07-Norvig-CSharp.ipynb) · [Python](Sudoku-07-Norvig-Python.ipynb) | Propagation de Norvig : élimination des candidats + recherche — des gains de l'ordre de 100x sur le backtracking naïf | Licence | — |
-| 08 | Human Stratégies — [C#](Sudoku-08-HumanStrategies-CSharp.ipynb) · [Python](Sudoku-08-HumanStrategies-Python.ipynb) | 13 techniques de déduction humaine : naked/hidden singles, pairs, pointing, box/line | Licence | — |
-| 09 | Graph Coloring — [C#](Sudoku-09-GraphColoring-CSharp.ipynb) · [Python](Sudoku-09-GraphColoring-Python.ipynb) | Formulation graphe : `nx.sudoku_graph()`, coloration DSATUR | Licence | — |
-| 10 | OR-Tools — [C#](Sudoku-10-ORTools-CSharp.ipynb) · [Python](Sudoku-10-ORTools-Python.ipynb) | CP-SAT industriel : modèle déclaratif, contraintes globales, parallélisme — et optimisation `Maximize`/`Minimize` [#7588](https://github.com/jsboige/CoursIA/issues/7588) (carrés latins pondérés, statut `OPTIMAL`) | Licence | — |
-| 11 | Choco — [C#](Sudoku-11-Choco-CSharp.ipynb) · [Python](Sudoku-11-Choco-Python.ipynb) | Solveur CP Java vu des deux écosystèmes : IKVM côté C#, JPype côté Python, propagateurs | Licence | — |
-| 12 | Z3 SMT — [C#](Sudoku-12-Z3-CSharp.ipynb) · [Python](Sudoku-12-Z3-Python.ipynb) | Satisfiabilité modulaire : assertions logiques, théories combinées, garantie formelle — et optimisation `Optimize`/`maximize` (MaxSMT) [#7589](https://github.com/jsboige/CoursIA/issues/7589), port C# [#7622](https://github.com/jsboige/CoursIA/pull/7622) | Licence | [12b](#autour-de-12--le-binding-z3linq-12b) |
-| 13 | Symbolic Automata — [C#](Sudoku-13-SymbolicAutomata-CSharp.ipynb) · [Python](Sudoku-13-SymbolicAutomata-Python.ipynb) | Automates finis + Z3 : alphabets symboliques, transitions prédiquées, regex récursive `(?&rec)` côté Python | Licence | — |
-| 14 | BDD/MDD — [C#](Sudoku-14-BDD-CSharp.ipynb) · [Python](Sudoku-14-BDD-Python.ipynb) | Diagrammes de décision binaires : représentation compacte d'espaces de solutions, implémentation jumelle | Licence | — |
-| 15 | Infer ↔ NumPyro — [C#](Sudoku-15-Infer-CSharp.ipynb) · [Python](Sudoku-15-Infer-Python.ipynb) | Inférence probabiliste : distribution a posteriori sur les cases (Infer.NET côté C#, NumPyro + JAX côté Python) | Licence | — |
-| 16 | Neural Network — [Python](Sudoku-16-NeuralNetwork-Python.ipynb) | CNN PyTorch : apprentissage de patterns visuels sur grilles — et ses limites case-par-case | Licence | — |
-| 17 | LLM — [Python](Sudoku-17-LLM-Python.ipynb) | LLM Solver : prompt engineering pour la résolution logique, taux de succès 10-30 %, limites du raisonnement pur | Licence | — |
-| 18 | Comparison — [C#](Sudoku-18-Comparison-CSharp.ipynb) · [Python](Sudoku-18-Comparison-Python.ipynb) | Benchmark comparatif : toutes les approches sur Easy/Medium/Hard/Expert ; le notebook Python synthétise les solveurs C# **et** Python dans un même cadre | Licence | [18b](#autour-de-18--la-méthodologie-statistique-du-benchmark-18b) |
-| 19 | Lean Propagation — [Lean](Sudoku-19-Lean-Propagation-Lean.ipynb) | Preuve formelle de la soundness de la propagation (naked/hidden single, clé de voûte `peer_excludes_value`) — voir [#4055](https://github.com/jsboige/CoursIA/issues/4055) et [Formalisations Lean](#formalisations-lean) | Recherche | — |
-| 20 | Corpus Audit — [Python](Sudoku-20-CorpusAudit-Python.ipynb) | La hiérarchie de difficulté des trois corpus, **mesurée** par l'organe d'audit : unicité par dénombrement plafonné, part résolue par propagation seule, effort de recherche, irrédundance des indices — voir [#22715](https://github.com/jsboige/CoursIA/issues/22715) | Recherche | — |
+|---|---|---|---|---|
+| 00 | Environment — [C#](Sudoku-00-Environment-CSharp.ipynb) | Préparer les grilles, interfaces de solveur et outils de mesure utilisés dans les carnets C#. | Découverte | — |
+| 01 | Backtracking — [C#](Sudoku-01-Backtracking-CSharp.ipynb) · [Python](Sudoku-01-Backtracking-Python.ipynb) | Explorer une grille par retour arrière ; relier ordre des choix, validité et coût de recherche. | Découverte | — |
+| 02 | Dancing Links — [C#](Sudoku-02-DancingLinks-CSharp.ipynb) · [Python](Sudoku-02-DancingLinks-Python.ipynb) | Traduire le Sudoku en couverture exacte et organiser la recherche avec les Dancing Links de Knuth. | Découverte | — |
+| 03 | Genetic — [C#](Sudoku-03-Genetic-CSharp.ipynb) · [Python](Sudoku-03-Genetic-Python.ipynb) | Faire évoluer une population de grilles ; comparer les effets du codage, du croisement et de la mutation. | Découverte | — |
+| 04 | Simulated Annealing — [C#](Sudoku-04-SimulatedAnnealing-CSharp.ipynb) · [Python](Sudoku-04-SimulatedAnnealing-Python.ipynb) | Explorer un paysage de conflits par recuit simulé : voisinage, température et acceptation de dégradations. | Découverte | — |
+| 05 | PSO — [C#](Sudoku-05-PSO-CSharp.ipynb) · [Python](Sudoku-05-PSO-Python.ipynb) | Adapter l'essaim de particules à un problème discret et étudier ses paramètres. | Découverte | — |
+| 06 | AIMA CSP — [C#](Sudoku-06-AIMA-CSP-CSharp.ipynb) · [Python](Sudoku-06-AIMA-CSP-Python.ipynb) | Définir variables, domaines et contraintes ; combiner choix de variable, propagation et retour arrière. | Licence | — |
+| 07 | Norvig — [C#](Sudoku-07-Norvig-CSharp.ipynb) · [Python](Sudoku-07-Norvig-Python.ipynb) | Construire la propagation de Norvig par élimination des candidats, puis rechercher lorsque les déductions ne suffisent plus. | Licence | — |
+| 08 | Human Stratégies — [C#](Sudoku-08-HumanStrategies-CSharp.ipynb) · [Python](Sudoku-08-HumanStrategies-Python.ipynb) | Exprimer des stratégies humaines sur les candidats : singles, paires et interactions entre lignes, colonnes et blocs. | Licence | — |
+| 09 | Graph Coloring — [C#](Sudoku-09-GraphColoring-CSharp.ipynb) · [Python](Sudoku-09-GraphColoring-Python.ipynb) | Représenter les conflits entre cases par un graphe et résoudre une coloration sous contraintes. | Licence | — |
+| 10 | OR-Tools — [C#](Sudoku-10-ORTools-CSharp.ipynb) · [Python](Sudoku-10-ORTools-Python.ipynb) | Modéliser avec OR-Tools ; passer de la satisfaction des règles à l'optimisation d'un carré latin pondéré. | Licence | — |
+| 11 | Choco — [C#](Sudoku-11-Choco-CSharp.ipynb) · [Python](Sudoku-11-Choco-Python.ipynb) | Utiliser les contraintes et propagateurs de Choco depuis C# avec IKVM ou depuis Python avec JPype. | Licence | — |
+| 12 | Z3 SMT — [C#](Sudoku-12-Z3-CSharp.ipynb) · [Python](Sudoku-12-Z3-Python.ipynb) | Exprimer les contraintes avec Z3, combiner arithmétique et logique, puis utiliser une fonction objectif. | Licence | [12b](#autour-de-12--une-interface-linq-licence). |
+| 13 | Symbolic Automata — [C#](Sudoku-13-SymbolicAutomata-CSharp.ipynb) · [Python](Sudoku-13-SymbolicAutomata-Python.ipynb) | Distinguer reconnaissance d'une grille remplie et recherche d'une solution avec expressions régulières, automates et Z3. | Licence | — |
+| 14 | BDD/MDD — [C#](Sudoku-14-BDD-CSharp.ipynb) · [Python](Sudoku-14-BDD-Python.ipynb) | Construire des diagrammes de décision binaires et multi-valués pour représenter des contraintes symboliquement. | Licence | — |
+| 15 | Infer ↔ NumPyro — [C#](Sudoku-15-Infer-CSharp.ipynb) · [Python](Sudoku-15-Infer-Python.ipynb) | Modéliser une distribution sur les cases avec Infer.NET en C# ou NumPyro/JAX en Python ; examiner sa relation à la validité. | Licence | — |
+| 16 | Neural Network — [Python](Sudoku-16-NeuralNetwork-Python.ipynb) | Comparer réseaux directs et itératifs ; distinguer précision par case et résolution complète d'une grille. | Licence | — |
+| 17 | LLM — [Python](Sudoku-17-LLM-Python.ipynb) | Comparer résolution par prompt et utilisation de code ; vérifier les grilles produites par un modèle de langage. | Licence | — |
+| 18 | Comparison — [C#](Sudoku-18-Comparison-CSharp.ipynb) · [Python](Sudoku-18-Comparison-Python.ipynb) | Construire un protocole comparatif de solveurs et interpréter temps, succès et coût de recherche. | Licence | [18b](#autour-de-18--comparer-statistiquement-recherche). |
+| 19 | Lean Propagation — [Lean](Sudoku-19-Lean-Propagation-Lean.ipynb) | Lire des preuves Lean de correction de la propagation : une élimination justifiée conserve les solutions possibles. | Recherche | — |
+| 20 | Corpus Audit — [Python](Sudoku-20-CorpusAudit-Python.ipynb) | Auditer un corpus de puzzles : validité, unicité, propagation seule, effort de recherche et indices redondants. | Recherche | — |
 
-Les figures du dépôt illustrent les paliers : chaque figure est extraite du notebook correspondant, et la provenance détaillée (cellule source, poids, alt-text) figure dans [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
+## Approfondissements — Licence et Recherche
 
-## Approfondissements
+### Autour de 12 — une interface LINQ (Licence)
 
-Une lettre creuse le palier dont elle porte le numéro. Elle suppose le palier lu, et ne fait pas avancer dans la série.
+[12b — Z3.Linq](Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb) reprend la modélisation de 12 côté C# avec une interface déclarative : propriétés, collections et tableaux. Il permet de comparer l'expressivité du langage d'accès à Z3 avec l'API native, sur les exemples du carnet. Prérequis supplémentaires : C#, LINQ et lecture des contraintes de 12.
 
-### Autour de 12 — le binding Z3.Linq (12b)
+### Autour de 18 — comparer statistiquement (Recherche)
 
-**[Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb](Sudoku-12b-Z3-Linq2Z3-CSharp.ipynb)** (C# uniquement, sans jumeau Python) : le même SMT que le palier 12, exprimé par le binding `Z3.Linq` — la contrainte Sudoku en quatre barreaux (propriétés → collections → `int[][]` → rung `int[,]` attesté). Ce que ça ajoute par rapport au palier : une API déclarative LINQ au-dessus de Z3, et la question de ce qu'un binding gagne et perd face à l'API native. Prérequis : le notebook 12 côté C#.
+[18b — Comparaison statistique](Sudoku-18b-Statistical-Comparison-Python.ipynb) distingue bruit de chronométrage et variation entre puzzles. Il utilise médianes par puzzle, intervalles bootstrap, test apparié de Wilcoxon, taille d'effet et correction de comparaisons multiples. Prérequis : protocole de 18 et statistiques inférentielles élémentaires. Dans le banc facile affiché, le retour arrière naïf est plus rapide que MRV : le coût d'une heuristique peut dépasser son bénéfice sur les instances choisies.
 
-### Autour de 18 — la méthodologie statistique du benchmark (18b)
+## Ce que les représentations permettent — Licence
 
-**[Sudoku-18b-Statistical-Comparison-Python.ipynb](Sudoku-18b-Statistical-Comparison-Python.ipynb)** (Python uniquement) : le companion statistique du benchmark. Le palier 18 compare des solveurs ; ce notebook formalise **comment** comparer — variance inter-puzzles, intervalles de confiance bootstrap 95 %, test de Wilcoxon apparié, taille d'effet (rank-biserial), correction de Bonferroni. Ajouté par [#9805](https://github.com/jsboige/CoursIA/pull/9805) pour combler l'écart méthodologique du palier 18 (qui dit « significatif » au sens courant, pas statistique). Prérequis : le notebook 18 et des notions de statistiques inférentielles.
+### Explorer ou propager
 
-## Ce que chaque palier enseigne
+Le retour arrière de [01](Sudoku-01-Backtracking-Python.ipynb) choisit une case vide, essaie un candidat légal et poursuit sur la grille ainsi complétée. Si aucun candidat ne permet de continuer, il annule la dernière décision. Le résultat final ne montre pas les branches abandonnées : compter les appels récursifs rend ce travail visible et permet de comparer les ordres de choix sur une même grille.
 
-*Niveau de lecture : **Licence** — chaque bloc présuppose les paliers précédents du parcours.*
+[![Grille résolue par retour arrière, avec distinction des indices et des valeurs trouvées](assets/readme/sudoku1-backtracking.png)](Sudoku-01-Backtracking-Python.ipynb)
 
-### Niveau 1-2 : Recherche Exhaustive
+La couverture exacte de [02](Sudoku-02-DancingLinks-Python.ipynb) change l'objet exploré. Avant de tenir compte des indices, les **729 affectations** possibles « chiffre dans une case » forment les lignes d'une matrice. Ses **324 colonnes** expriment quatre familles d'exigences : un chiffre par case, une occurrence de chaque chiffre par ligne, par colonne et par bloc. Choisir une affectation couvre quatre exigences ; une solution couvre chaque colonne exactement une fois. Algorithm X organise ces choix et Dancing Links permet de retirer puis de restaurer les éléments de la matrice lors du retour arrière.
 
-**À retenir** :
-- Le backtracking est l'algorithme de base, comprendre sa récursion est fondamental
-- L'ordre d'exploration (heuristique de choix) impacte drastiquement les performances
-- Dancing Links montre que les structures de données peuvent transformer un algorithme
+Les paliers [06](Sudoku-06-AIMA-CSP-Python.ipynb) et [07](Sudoku-07-Norvig-Python.ipynb) ajoutent des déductions avant de poursuivre la recherche. **MRV**, pour *minimum remaining values*, choisit une variable dont le domaine restant est le plus petit. Le *forward checking* retire immédiatement chez ses voisins les valeurs devenues incompatibles avec une affectation. La propagation de Norvig enchaîne notamment l'élimination d'un chiffre chez les pairs et l'affectation forcée lorsqu'une unité n'offre plus qu'une place pour ce chiffre. Une case appartient à trois unités et possède vingt pairs : ces relations donnent une structure précise aux déductions.
 
-Le solveur exhaustif remplit la grille case par case en revenant sur ses pas à chaque impasse. La figure ci-dessous montre une grille **9×9** où un code couleur distingue les valeurs initiales (données du puzzle) des valeurs trouvées par le solveur — le backtracking parvient à compléter toute la grille.
+Les stratégies humaines de [08](Sudoku-08-HumanStrategies-Python.ipynb) rendent ces conséquences lisibles sous forme de singles, de paires et d'interactions entre unités. La coloration de [09](Sudoku-09-GraphColoring-Python.ipynb) les regarde autrement : les cases deviennent des sommets, les conflits des arêtes et les chiffres des couleurs. Ces formulations permettent de comparer des mécanismes de raisonnement sur un même problème.
 
-[![Backtracking : grille 9×9 résolue, valeurs initiales colorées différemment des valeurs trouvées](assets/readme/sudoku1-backtracking.png)](Sudoku-01-Backtracking-Python.ipynb)
+**À expérimenter :** partir d'une grille de 01, mesurer les appels du retour arrière simple, ajouter MRV, puis observer ce que la propagation résout avant tout branchement. Vérifier chaque grille obtenue et conserver le même puzzle pour cette comparaison. Les exercices de 01, 06 et 07 préparent cette démarche ; le benchmark 18b montrera pourquoi son résultat ne se généralise pas à tout corpus.
 
-**Pièges courants** :
-- Confondre complexité moyenne et pire cas
-- Négliger l'importance de l'heuristique de choix (MRV)
-- Sous-estimer l'impact de la propagation de contraintes
+### Déclarer les règles à un solveur
 
-### Niveau 3 : Métaheuristiques
+Dans le modèle Choco de [11](Sudoku-11-Choco-Python.ipynb), le Sudoku devient **81 variables de domaine 1 à 9**, des contraintes `allDifferent` pour chaque ligne, colonne et bloc, et des égalités pour les indices. La propagation réduit les domaines ; un branchement introduit un choix lorsque les règles ne suffisent plus. OR-Tools et Z3 proposent d'autres moteurs et interfaces pour exprimer ces conditions.
 
-**À retenir** :
-- Ces algorithmes s'inspirent de processus naturels
-- Ils ne garantissent pas la solution mais sont souvent très efficaces
-- Le paramétrage (taux de mutation, température, etc.) est crucial et délicat
+[![Grille résolue par le modèle de contraintes Choco](assets/readme/sudoku11-choco.png)](Sudoku-11-Choco-Python.ipynb)
 
-L'algorithme génétique fait évoluer une population de grilles par croisement et mutation, mesurant la qualité par le **nombre d'erreurs** (conflits de ligne/colonne/bloc). Les deux courbes ci-dessous comparent cette fitness au fil des générations pour deux représentations du génome : **Cellules** (chaque gène encode une case) et **Permutations** (les gènes sont des permutations valides par bloc). La courbe Cellules stagne vers 19 erreurs après 300 générations ; la courbe Permutations converge vers zéro en une trentaine de générations — l'encodage par permutations garantit une structure légale qui accélère dramatiquement la recherche.
+La figure montre une solution du modèle, pas les étapes internes communes à tous les moteurs. Un modèle incomplet peut accepter une grille qui viole une règle oubliée ; un modèle trop contraint peut exclure une solution légitime. Les exercices de 10 et 11 invitent à examiner les contraintes et les stratégies de recherche : la vérification du résultat reste utile même lorsque l'exploration est confiée à une bibliothèque.
 
-[![Algorithme génétique : deux courbes de convergence comparées — l'approche "Cellules" (rouge, 300 générations, plateau à 19 erreurs) et l'approche "Permutations" (bleu, ~30 générations, convergence vers 0 erreurs)](assets/readme/sudoku3-genetic.png)](Sudoku-03-Genetic-Python.ipynb)
+### Changer l'encodage d'une recherche approchée
 
-**Pièges courants** :
-- Attendre une garantie de solution
-- Mal régler les hyperparamètres
-- Utiliser une métaheuristique quand un algorithme exact suffirait
+Les métaheuristiques de 03–05 cherchent à réduire les conflits sans garantie de trouver une solution. Une grille peut être presque correcte tout en restant inutilisable. Le choix du génome, du voisinage et de la fonction de score détermine les configurations accessibles et les améliorations que l'algorithme peut détecter.
 
-### Niveau 4 : Programmation par Contraintes
+[![Évolution des conflits pour deux représentations génétiques, par cases et par permutations](assets/readme/sudoku3-genetic.png)](Sudoku-03-Genetic-Python.ipynb)
 
-**À retenir** :
-- On déclare les contraintes, le solveur fait le reste
-- OR-Tools et Choco sont des outils industriels très optimisés
-- La propagation de contraintes est la clé de l'efficacité
+Dans cette figure de [03](Sudoku-03-Genetic-Python.ipynb), le codage par cases conserve 19 erreurs après 300 générations, tandis que celui par permutations atteint zéro erreur autour de la trentième génération. Le codage par permutations de lignes respecte d'emblée les contraintes de ligne ; les conflits de colonnes et de blocs restent à réparer. Ce résultat concerne cet essai : il ne compare pas le coût d'une génération et n'établit pas une supériorité générale. Un autre essai conservé dans le carnet termine encore avec des conflits.
 
-Avec Choco, on modélise le Sudoku comme 81 variables d'un problème CSP (une par case, domaine 1-9) reliées par les contraintes « tous différents » sur chaque ligne, colonne et bloc. Le solveur propage ces contraintes puis branche jusqu'à la grille résolue ci-dessous — même résultat final que le backtracking, mais obtenu par déclaration plutôt que par énumération explicite.
+Le recuit de [04](Sudoku-04-SimulatedAnnealing-Python.ipynb) autorise parfois une dégradation du score suivant une probabilité liée à la température : cette possibilité aide à quitter un minimum local, puis diminue avec le refroidissement. Le PSO de [05](Sudoku-05-PSO-Python.ipynb) adapte des notions de position, de déplacement et de mémoire collective à des grilles discrètes ; sa représentation demande autant d'attention que ses paramètres.
 
-[![Programmation par contraintes : grille 9×9 résolue par le solveur Choco](assets/readme/sudoku11-choco.png)](Sudoku-11-Choco-Python.ipynb)
+**À expérimenter :** garder la grille et le budget fixés, puis changer une seule dimension — encodage, voisinage, température ou population. Rapporter les conflits restants et la proportion de grilles valides sur plusieurs essais. La meilleure courbe isolée ne décrit pas la fiabilité d'un solveur.
 
-**Pièges courants** :
-- Sur-contraindre (pas de solution) ou sous-contraindre (trop de solutions)
-- Ignorer les heuristiques de branchement du solveur
-- Ne pas profiter des capacités de parallélisation
+### Vérifier, résoudre et optimiser
 
-### Au-delà de la satisfaction : optimisation CP-SAT et SMT-MaxSMT
+En [13](Sudoku-13-SymbolicAutomata-Python.ipynb), un motif peut vérifier une ligne entièrement remplie ; des expressions régulières et des automates permettent ensuite de reconnaître des grilles satisfaisant les conditions encodées. Lorsqu'il reste des cases vides, chercher leurs valeurs exige une procédure supplémentaire. Le carnet utilise Z3 pour cette résolution. Demander ce que peut répondre chaque vérificateur à une grille partielle rend concrète la différence entre reconnaître et résoudre.
 
-*Niveau de lecture : **Recherche**.*
+Les diagrammes de décision de [14](Sudoku-14-BDD-Python.ipynb) partagent les sous-problèmes identiques : un BDD représente des décisions binaires, un MDD permet plusieurs valeurs par variable. Une formule contradictoire comme `x ∧ ¬x` se réduit à faux ; des sous-graphes communs évitent de répéter certaines décisions. Cette compression dépend de la formule et de l'ordre des variables. Les exercices proposent notamment de construire une contrainte « exactement une valeur parmi N » et de comparer les représentations obtenues.
 
-Les solveurs CP et SMT modernes ne se limitent pas à **trouver une solution faisable** : ils savent aussi **optimiser** un critère sous contraintes. La série l'illustre sur les deux moteurs phares des niveaux 4 et 5.
+Les paliers [10](Sudoku-10-ORTools-Python.ipynb) et [12](Sudoku-12-Z3-Python.ipynb) ajoutent un objectif aux contraintes. Une solution faisable satisfait les règles ; une fonction pondérée permet ensuite de préférer certaines solutions. CP-SAT exprime cette préférence avec `Maximize` ou `Minimize`, Z3 avec son interface `Optimize`. Un statut `OPTIMAL` de CP-SAT certifie qu'aucune solution admissible n'améliore l'objectif du modèle ; une simple solution faisable ne fournit pas ce certificat.
 
-- **[#7588](https://github.com/jsboige/CoursIA/issues/7588) — `Sudoku-10-ORTools-Python.ipynb`** : section « Optimisation CP-SAT » qui exerce `model.Maximize(...)` et `model.Minimize(...)` sur des carrés latins pondérés à 5×5 (récompense totale optimale 178, coût diagonal minimal 5). Le solveur passe du statut `FEASIBLE` au statut `OPTIMAL`, ce que la simple satisfaction ne montre jamais.
-- **[#7589](https://github.com/jsboige/CoursIA/issues/7589) — `Sudoku-12-Z3-Python.ipynb`** : contrepartie SMT avec `Optimize()` + `maximize(...)` (MaxSMT). Cohérence cross-moteur vérifiée : la même instance de carré latin 5×5 pondéré donne une récompense optimale identique (178) entre CP-SAT et Z3, ce qui valide la transcription entre paradigmes.
-- **[#7622](https://github.com/jsboige/CoursIA/pull/7622) — `Sudoku-12-Z3-CSharp.ipynb`** : port C# du même exemple côté `Microsoft.Z3` (`Context.MkOptimize()` + `MkMaximize(rewardTotal)`), `SATISFIABLE (optimum)` avec récompense 192 (variante du problème, source identique au twin Python modulo API binding).
+Sur leur même instance Python de carré latin pondéré, CP-SAT et Z3 obtiennent une récompense maximale de **178**. Le carnet 10 trouve aussi **73** en minimisation. La variante C# de 12 obtient **192** sur une autre instance : les valeurs ne se comparent donc pas comme des réponses au même problème. Pour prolonger l'expérience, modifier un poids, prédire si la grille optimale ou seulement sa valeur changera, puis vérifier avec le solveur.
 
-**Pourquoi cette section existait peu avant** : l'EPIC [#3801](https://github.com/jsboige/CoursIA/issues/3801) Prong-B (« problème non-trivial qui met le moteur en valeur ») avait diagnostiqué que les solveurs CP/SMT n'étaient présentés qu'en mode satisfaction, sans jamais exercer leur capacité d'optimisation — alors que c'est précisément ce qui distingue OR-Tools et Z3 d'un simple solveur SAT dans la pratique industrielle (MaxSMT, configuration sous contraintes, allocation).
+### Prédire une case ou résoudre une grille
 
-**À retenir** :
-- Un solveur qui répond `FEASIBLE` / `SAT` ne donne qu'un point dans l'espace des solutions ; `OPTIMAL` / `SATISFIABLE (optimum)` prouve qu'aucune meilleure solution n'existe pour le critère.
-- L'API diffère entre moteurs : `model.Maximize(expr)` (CP-SAT) vs `Optimize() + maximize(handle)` (Z3 SMT) — le concept de MaxSMT est commun, l'idiome de chaque écosystème doit être respecté.
-- Sur le même problème, deux moteurs convergent vers la même valeur optimale — un bon test de cohérence inter-paradigmes (cross-twin validation).
+L'inférence probabiliste de 15 attribue des distributions aux cases, avec Infer.NET en C# et NumPyro/JAX en Python. Une distribution peut guider l'ordre des candidats ; sa combinaison avec une validation déterministe donne un principe de solveur hybride. Une confiance élevée pour chaque case ne garantit pas que les valeurs retenues ensemble respectent toutes les contraintes.
 
-### Niveau 5 : IA Symbolique
+Le réseau de [16](Sudoku-16-NeuralNetwork-Python.ipynb) apprend ses prédictions à partir de données. Un MLP traite une représentation vectorielle de la grille ; les convolutions du CNN exploitent une structure spatiale ; les variantes itératives réinjectent des informations au fil des prédictions. Dans la figure du MLP, les pertes diminuent et la précision des cases vides progresse vers 0,53, mais la précision par grille reste à zéro. Réussir toutes les cases simultanément impose une exigence bien plus forte que réussir une case moyenne.
 
-**À retenir** :
-- Z3 combine théorie des ensembles, arithmétique et logique
-- Les BDD représentent compactement des ensembles de solutions
-- Ces outils sont utilisés en vérification de logiciels critiques
+[![Perte et précision du MLP pendant l'entraînement, mesurées par case et par grille](assets/readme/sudoku16-nn-training.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
 
-**Pièges courants** :
-- Écrire des contraintes inefficaces pour le solveur
-- Ignorer les théories intégrées (arithmétique linéaire vs non-linéaire)
-- Sous-estimer la puissance de la résolution SAT/SMT moderne
+| Expérience CPU conservée dans 16 | Grilles entièrement résolues | Lecture du résultat |
+|---|---|---|
+| MLP, CNN et ResCNN en prédiction directe | 0 sur 10 000 pour chaque modèle. | Une précision partielle ne suffit pas à résoudre la grille. |
+| ResCNN itératif | 31 sur 200. | L'itération réussit certaines grilles ; l'échantillon diffère de celui de l'évaluation directe. |
 
-### Niveau 6 : IA Data-Driven
+Ces sorties décrivent les modèles et protocoles du carnet, sans donner un plafond général à l'apprentissage du Sudoku. L'exercice « réseau + contraintes explicites » invite à construire une validation ou une recherche autour des prédictions.
 
-**À retenir** :
-- Les réseaux de neurones apprennent des patterns mais sans garantie
-- Les LLM utilisent des connaissances implicites du web
-- Ces approches sont complémentaires, non concurrentes, des méthodes symboliques
+La carte des erreurs du CNN itératif montre où les erreurs se répartissent sur le jeu évalué. Elle compte des erreurs par position ; sans rapporter ces comptes au nombre de cases à prédire, elle ne mesure pas à elle seule une difficulté intrinsèque de chaque position.
 
-Un MLP dense entraîné à prédire les chiffres des cases vides converge en quelques epochs mais plafonne : sur le graphe d'entraînement ci-dessous, la perte baisse mais la précision par grille (toutes les cases justes simultanément) reste quasi nulle — l'écart entre « deviner une case » et « résoudre toute la grille » capture la limite d'une approche case-par-case sans propagation de contraintes.
+[![Comptes d'erreurs par position de la grille pour le CNN itératif](assets/readme/sudoku16-nn-errors.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
 
-[![MLP : courbes de perte et de précision sur 20 epochs, précision par grille proche de zéro malgré une précision par case montante](assets/readme/sudoku16-nn-training.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
+En [17](Sudoku-17-LLM-Python.ipynb), la comparaison porte sur le rôle du modèle de langage : proposer directement des chiffres ou produire du code qui les recherche. La vérification doit contrôler le format de la grille, la conservation des indices et l'unicité des chiffres dans chaque unité. La sortie conservée porte sur **deux puzzles** : zéro réussite pour les prompts directs et avec exemples, deux réussites avec l'approche utilisant du code. Ce petit banc illustre un protocole et ne donne pas un taux général de réussite des LLM. L'exercice de prompt gagne à formuler une hypothèse d'amélioration puis à l'éprouver sur plusieurs puzzles avec le même validateur.
 
-En projetant les erreurs sur une grille 9×9 (ci-dessous), on voit que le modèle ne se trompe pas uniformément : certaines positions sont systématiquement plus difficiles. La carte de chaleur agrège les erreurs de prédiction par case sur tout le jeu de test.
+### Choisir une méthode et définir son critère de réussite
 
-[![Carte de chaleur 9×9 des erreurs de prédiction du CNN, avec le nombre d'erreurs par case et les séparateurs de bloc](assets/readme/sudoku16-nn-errors.png)](Sudoku-16-NeuralNetwork-Python.ipynb)
+| Objectif | Point de départ | Expérience à mener |
+|---|---|---|
+| Obtenir une solution respectant toutes les règles | Retour arrière, couverture exacte ou solveur de contraintes. | Valider la grille, vérifier le statut du solveur et observer l'effort de recherche. |
+| Comprendre le rôle de la représentation | Comparer les encodages de 02, 03, 06 ou 14. | Garder le problème fixé et mesurer ce que l'encodage élimine ou partage. |
+| Comparer des méthodes sur un ensemble de grilles | Protocole de 18, puis analyse de 18b. | Séparer taux de succès, coût par puzzle et bruit de mesure. |
+| Apprendre à proposer des valeurs ou guider la recherche | Modèles de 15–17. | Mesurer la validité complète et tester l'apport d'un contrôle sous contraintes. |
 
-**Pièges courants** :
-- Attendre 100% de succès des modèles appris
-- Ignorer le besoin de données d'entraînement massives
-- Confondre performance sur données connues vs inconnues
+Ces choix se retrouvent dans l'ordonnancement et l'allocation sous contraintes, la vérification de règles avec SMT ou la recherche d'une bonne configuration en optimisation. Le Sudoku permet d'en observer les mécanismes sur un problème dont le résultat se vérifie facilement.
 
-### Comparer les approches
+## Installation — pratique, tous niveaux
 
-| Critère | Approches Exhaustives | Approches Heuristiques |
-|---------|----------------------|------------------------|
-| **Garantie de solution** | Oui (si solution existe) | Non (peut échouer) |
-| **Complexité pire cas** | Exponentielle | Souvent polynomiale |
-| **Performance pratique** | Variable selon instance | Plus prévisible |
-| **Problèmes adressables** | Tous | Grands espaces, approximations acceptables |
+Commencer par le carnet de la méthode choisie dans un clone du dépôt, qui fournit les puzzles, les bibliothèques locales et les ressources voisines.
 
-**Arbitrages fondamentaux** : garantie vs vitesse (les solveurs exacts garantissent, les métaheuristiques parient), déclaratif vs impératif (CP déclare, backtracking énumère), symbolique vs appris (Z3 prouve, le réseau généralise sans garantie). Les applications réelles par technique : ordonnancement (CP), configuration produit (SAT), vérification de programmes (SMT), logistique (métaheuristiques), vision (CNN).
+| Parcours | Préparation |
+|---|---|
+| Python | Python 3.10 ou ultérieur ; environnement dédié et dépendances de [requirements.txt](requirements.txt). Les expériences classiques utilisent le CPU. |
+| C# | SDK .NET 9 et noyau .NET Interactive. Le carnet [00](Sudoku-00-Environment-CSharp.ipynb) définit le socle importé par les suivants ; les directives NuGet installent leurs bibliothèques. |
+| Choco en Python | JVM accessible et `jpype1` ; le carnet 11 télécharge le JAR Choco. |
+| Choco en C# | Runtime IKVM et DLL Choco partagée sous [Search/Part2-CSP](../Search/Part2-CSP/). Suivre la cellule de préparation de 11. |
+| Inférence probabiliste | Infer.NET pour 15 C# ; JAX et NumPyro pour 15 Python. |
+| Réseaux | PyTorch pour 16 ; le GPU accélère les entraînements, tandis que les démonstrations CPU et la lecture des résultats restent accessibles. |
+| Modèle de langage | Pour rejouer 17, service compatible avec l'API utilisée, endpoint et identifiants configurés dans l'environnement. |
+| Lean | Pour 19, noyau Lean et projet [sudoku_lean](sudoku_lean/) construit avec sa toolchain. |
 
-**Comment choisir** : exigez une garantie (planning critique) → solveurs exacts (DLX, Norvig, CP-SAT, Z3) ; espace énorme et solution acceptable → métaheuristiques ; données abondantes et généralisation utile → approches data-driven. Le notebook 18 mesure ces compromis sur quatre difficultés.
+Le paquet Python de Z3 est `z3-solver`. Les approches symboliques utilisent aussi `regex` et `dd` ; 17 utilise `python-dotenv` pour la configuration ; ce paquet doit être ajouté à l’environnement car il est absent du manifeste commun. En cas d'import manquant, vérifier que Jupyter emploie bien l'environnement où les paquets ont été installés. Côté C#, contrôler la présence du noyau avec `jupyter kernelspec list` et les imports du carnet 00.
 
-## Installation
-
-### C# (.NET Interactive)
+Pour installer le noyau C# après le SDK .NET et Jupyter :
 
 ```bash
-# .NET 9.0 requis
-dotnet --version
-
-# Les packages NuGet sont installés dans les notebooks :
-# - GeneticSharp          (Sudoku-03 Genetic)
-# - Google.OrTools        (Sudoku-10 OR-Tools CP-SAT)
-# - Microsoft.Z3          (Sudoku-12 Z3 SMT, Sudoku-13 Symbolic Automata)
-# - DlxLib                (Sudoku-02 Dancing Links)
-# - Microsoft.ML.Probabilistic  (Sudoku-15 Infer.NET)
-# - IKVM 8.15.0           (Sudoku-11 Choco — runtime Java-sur-.NET + DLL précompilée)
-# - Plotly.NET            (visualisations, notebooks 0-15)
+dotnet tool install -g Microsoft.dotnet-interactive --version 1.0.712001
+dotnet interactive jupyter install
+jupyter kernelspec list
 ```
 
-**Note sur les outputs** : les notebooks C# contiennent des outputs de cellule exécutées. Les notebooks avec dépendances `#!import` doivent être exécutés dans l'ordre (0 → 1 → 2…).
+Si l'outil est déjà installé, le mettre à jour avec `dotnet tool update -g Microsoft.dotnet-interactive --version 1.0.712001`. Choisir `.net-csharp` et exécuter [00](Sudoku-00-Environment-CSharp.ipynb) en premier : les carnets C# suivants importent son socle. Voir les [instructions des noyaux](../../docs/reference/kernels-runtime.md) en cas de difficulté.
 
-### Python
+Depuis la racine du dépôt, une préparation Python possible est :
 
 ```bash
-# Creer un environnement
-python -m venv venv
-
-# Installer les dépendances
-pip install numpy pandas scipy matplotlib ortools z3-solver pygad simanneal mealpy networkx torch jax numpyro jpype1 openai
+python -m venv .venv-sudoku
+source .venv-sudoku/bin/activate
+python -m pip install -r MyIA.AI.Notebooks/Sudoku/requirements.txt jupyterlab ipykernel
+python -m ipykernel install --user --name coursia-sudoku --display-name "Python — Sudoku"
+jupyter lab MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb
 ```
 
-La liste précise vit dans [`requirements.txt`](requirements.txt).
+Sous Windows, activer l'environnement avec `.\.venv-sudoku\Scripts\Activate.ps1`. Choisir ensuite le noyau « Python — Sudoku ». Pour le carnet 17, ajouter `python -m pip install python-dotenv` et renseigner la configuration du service avant les appels. Pour une première séance C#, ouvrir 00 puis 01 et conserver les chemins relatifs du dépôt.
 
-### Dépannage
+### Repères dans les dossiers
 
-**Les notebooks C# ne s'exécutent pas** — vérifiez `dotnet --version` (SDK 9.0+), installez le kernel (`dotnet tool install -g Microsoft.dotnet-interactive && dotnet interactive jupyter install`), et `jupyter kernelspec list` doit afficher `.net-csharp`. Le notebook 00 définit les classes de base utilisées par les notebooks C# suivants : exécutez-le en premier.
+- [Puzzles](Puzzles/) : grilles utilisées pour les expériences — corpus hérités (`Easy51`, `hardest`, `top95`) et corpus généré certifié (`Sudoku_gen_facile.txt`, `Sudoku_gen_moyen.txt`, `Sudoku_gen_difficile.txt`).
+- [CompiledModels](CompiledModels/) : artefacts compilés pour Infer.NET ; [sudoku_models](sudoku_models/) : checkpoints d'entraînement.
+- [scripts](scripts/) : scripts d'entraînement ; [tests](tests/) : tests associés.
+- [sudoku_lean](sudoku_lean/) : projet de formalisation Lean.
 
-**OR-Tools ou Z3 ne s'installent pas** — OR-Tools : `pip install ortools` (wheels précompilés ; sinon `conda install -c conda-forge ortools-python`). Z3 : le package s'appelle `z3-solver`, pas `z3`.
+## Pour aller plus loin — Recherche
 
-**PyGAD ou MEALPy causent des erreurs** — requièrent numpy compatible ; en cas de conflit : `pip install --upgrade numpy pygad mealpy`. MEALPy (notebook 05) a de nombreuses dépendances, préférez un env dédié.
+### Comparer des solveurs et auditer les puzzles
 
-**Configuration du solveur Choco (notebook 11)** — côté Python ([`Sudoku-11-Choco-Python`](Sudoku-11-Choco-Python.ipynb)), via JPype : `java -version` puis `pip install jpype1` ; le JAR Choco est téléchargé automatiquement par le notebook. Côté C# ([`Sudoku-11-Choco-CSharp`](Sudoku-11-Choco-CSharp.ipynb)), via **IKVM 8.15.0** et une DLL Choco précompilée (`org.chocosolver.solver.dll`, copie partagée dédupliquée dans `Search/Part2-CSP/`, See #13742) : la première exécution est lente (restauration NuGet + assemblage du home IKVM, 1 à 2 minutes), puis le notebook affiche `IKVM 8.15.0 prêt (tzdb=True) - Choco-solver chargé`. Alternative plus légère : le notebook Python (JPype) ou les solveurs C# natifs [10-ORTools](Sudoku-10-ORTools-CSharp.ipynb) / [12-Z3](Sudoku-12-Z3-CSharp.ipynb), sans runtime Java.
+Les temps dépendent du solveur, de ses paramètres, de la machine et surtout des instances. [18](Sudoku-18-Comparison-Python.ipynb) construit la comparaison ; [18b](Sudoku-18b-Statistical-Comparison-Python.ipynb) en examine la variabilité. Pour ajouter une méthode, conserver les puzzles et le protocole, puis vérifier les solutions produites avant de comparer les temps.
 
-**L'entraînement du réseau de neurones (notebook 16) est lent** — sans GPU, réduisez `num_epochs` et `hidden_size` dans les cellules de configuration ; avec CUDA, vérifiez `torch.cuda.is_available()`. Le modèle pré-entraîné `sudoku_solver_final.h5` est inclus pour l'inférence sans entraînement.
+Dans 18b, les répétitions de chronométrage sont regroupées par puzzle : répéter quinze fois une grille ne crée pas quinze problèmes indépendants. Le banc affiché porte sur huit puzzles faciles ; les médianes agrégées sont d'environ 1,21 ms pour le retour arrière naïf et 6,82 ms pour MRV, avec un test apparié de Wilcoxon à `p = 0,00781`. Ce résultat local montre que le coût de sélection d'une variable peut dépasser le travail économisé. L'exercice sur les comparaisons multiples et la correction de Bonferroni aide à interpréter plusieurs comparaisons dans un même banc.
 
-**Le LLM Solver (notebook 17) échoue souvent** — comportement attendu : les LLM atteignent généralement 10-30 % de succès sur les Sudokus. Le notebook illustre les **limites** des modèles de langage sur le raisonnement logique pur ; augmentez le nombre de tentatives pour observer la variabilité.
+[20 — Audit des corpus](Sudoku-20-CorpusAudit-Python.ipynb) examine les fichiers de [Puzzles](Puzzles/). Les sorties distinguent propagation seule et recherche, testent l'unicité par dénombrement plafonné à deux solutions et repèrent les indices redondants.
 
-**Quelle difficulté de puzzle utiliser ?** — **Easy** : 36-45 indices, tous les solveurs réussissent · **Medium** : 30-35, les métaheuristiques peinent · **Hard** : 25-29, seuls les solveurs exacts garantissent · **Expert** : 17-24, benchmark extrême, certaines instances NP-difficiles.
+| Corpus évalué dans 20 | Résolution par propagation seule | Plus grand effort de recherche observé |
+|---|---|---|
+| `Easy51` | 41 grilles sur 51. | 7 décisions. |
+| `hardest` | 1 grille sur 11. | 21 décisions. |
+| `top95` | Aucune grille sur 95. | 446 décisions. |
 
-## Pour aller plus loin
+L'audit ne trouve pas de grille invalide ou non unique dans ces corpus. Leur difficulté dépend ici du solveur et de la mesure retenue : le nom « hardest » ne prédit pas le classement observé. Une expérience utile consiste à supprimer un indice d'une grille, puis à mesurer séparément l'unicité et l'effort de résolution. Une grille encore soluble peut avoir plusieurs solutions ; son nombre d'indices ne constitue pas à lui seul une échelle de difficulté.
 
-*Niveau de lecture : **Recherche** — mesures, formalisation et notes techniques.*
+Les corpus hérités sont des ensembles reçus, non construits. Le script [`scripts/generate_certified_corpus.py`](scripts/generate_certified_corpus.py) génère à l'inverse un corpus **équilibré par construction** : chaque grille est creusée depuis une solution complète aléatoire, son unicité est **prouvée par dénombrement certifié** (le moteur DLX de la série, arrêt « exhausted » avec exactement une solution — jamais un plafond atteint), et son palier est fixé par la difficulté **mesurée** (décisions de retour arrière, propagation seule), pas par un compte de cases vides. La bande `facile` exige zéro décision, `moyen` se tient entre 1 et 9, `difficile` au-delà — bornes calibrées sur les corpus hérités : le palier `difficile` généré égale la bande de `hardest` (pire observé autour d'une vingtaine de décisions), il ne prétend pas aux sommets de `top95`, corpus trié à la main. La notation est homogène : 81 caractères par ligne, chiffre `0` pour une case vide. Le **cardinal d'irréductibilité** de chaque grille est documenté par le même organe que Sudoku-20 (`minimal_clue_set`, retrait glouton sous unicité) : sur la génération livrée, la médiane est de 25 indices conservés pour `facile` et `moyen`, 26 pour `difficile` — une grille sur trois environ est déjà irrédundante, le reste porte un à cinq indices redondants (le creusage s'arrête à sa cible de difficulté, pas à l'irréductibilité). La génération est déterministe sous sa graine (`--seed`), et rejouer `Sudoku-20` sur ces fichiers en vérifie chaque grille avec les mêmes instruments que le tableau ci-dessus.
 
-### Performances attendues
+### Réseaux relationnels récurrents
 
-Ordres de grandeur indicatifs (machine-dépendants ; les notebooks de mesure font foi, en particulier le benchmark 18 et son companion 18b) :
+Le réseau relationnel récurrent (RRN) de Palm et ses coauteurs propage des messages sur le graphe de contraintes : les cases échangent des informations avec leurs voisines au cours d'itérations internes. Le carnet [16](Sudoku-16-NeuralNetwork-Python.ipynb) compare cette approche aux réseaux directs et à des procédures qui réemploient leurs prédictions. Une passe du RRN peut donc déjà contenir plusieurs étapes de propagation apprise.
 
-| Solveur | Easy | Medium | Hard | Expert |
-|---------|------|--------|------|--------|
-| Backtracking | <10ms | ~100ms | ~1s | Variable |
-| Dancing Links | <2ms | <5ms | <15ms | <50ms |
-| Norvig | <2ms | <5ms | <10ms | <30ms |
-| OR-Tools | <1ms | <5ms | <10ms | <50ms |
-| Z3 | <5ms | ~10ms | ~20ms | ~100ms |
-| Genetic | ~1s | ~10s | Non garanti | Non garanti |
-| Simulated Annealing | ~2s | ~5s | Variable | Variable |
-| PSO | ~1s | ~5s | Variable | Variable |
-| Human Stratégies | <10ms | ~100ms | Variable | Variable |
-| Choco | <5ms | ~10ms | ~20ms | ~100ms |
-| Graph Coloring | ~10ms | ~50ms | ~100ms | Variable |
-| Neural Network | ~10ms | ~50ms | ~100ms | Approx. |
-| LLM | Variable | Variable | ~10-30% succès | ~10-30% succès |
-| Infer.NET | ~1s | ~5s | Variable | Variable |
+La sortie de synthèse conservée dans le carnet permet de comparer largeur cachée, nombre d'étapes et phase d'entraînement. La précision par case mesure les prédictions individuelles ; la précision par grille exige que la grille entière soit correcte.
 
-### Résultats d'entraînement RRN (Recurrent Relational Network)
+| Phase archivée | Largeur cachée | Étapes internes | Précision par case | Précision par grille |
+|---|---|---|---|---|
+| Banc initial | 128 | 16 | 62,49 % | 33,50 % |
+| Banc initial | 192 | 16 | 62,47 % | 33,50 % |
+| Banc initial | 256 | 16 | 62,55 % | 33,52 % |
+| Banc initial | 128 | 24 | 62,50 % | 33,50 % |
+| Entraînement complémentaire v2 | 192 | 16 | 89,74 % | 83,48 % |
+| Entraînement complémentaire v2 | 256 | 16 | 89,81 % | 83,47 % |
+| Entraînement complémentaire v2 | 192 | 24 | 89,62 % | 83,51 % |
 
-Expériences conduites sur GPU (RTX 3070 Laptop 8GB et RTX 4090 24GB) pour tester des architectures RRN sur la résolution de Sudoku. Le modèle RRN (Palm et al., 2018) utilise un graphe de contraintes avec passage de messages itératifs entre les cellules de la grille.
+Les largeurs donnent des résultats proches au sein de chaque phase, tandis que l'écart entre phases est marqué. Comme les expériences changent plusieurs conditions, elles n'isolent pas l'effet causal du volume de données, du curriculum ou de l'architecture. Les fichiers JSON d'entraînement lus pour produire cette synthèse sont absents du dépôt : la sortie conservée documente ces expériences, mais ne suffit pas à les régénérer. Une reproduction devrait conserver les jeux de données, les poids, les paramètres et les définitions des métriques avec chaque résultat.
 
-**Architecture sweep** (diverse_200k, 106K puzzles, RTX 3070) :
-
-| Architecture | Hidden | Steps | Paramètres | Cell Acc | Grid Acc | Test Grids | Temps |
-| ------------- | ------ | ----- | ---------- | -------- | -------- | ---------- | ----- |
-| h128_s16 | 128 | 16 | 162K | 62.5% | 33.5% | 5,351/15,974 | 2.3h |
-| h192_s16 | 192 | 16 | 353K | 62.5% | 33.5% | 5,352/15,974 | 3.2h |
-| h256_s16 | 256 | 16 | 619K | 62.6% | 33.5% | 5,354/15,974 | 5.4h |
-| h128_s24 | 128 | 24 | 162K | 62.5% | 33.5% | 5,352/15,974 | 6.4h |
-| h192_s24 | 192 | 24 | 353K | - | OOM | - | - |
-
-Constat : avec 106K puzzles d'entraînement, toutes les architectures plafonnent à ~33.5% de grilles complètes. Augmenter la taille du modèle n'apporte pas de gain — le goulot d'étranglement est le volume de données.
-
-**Fine-tuning avec dataset augmenté** (400K puzzles, RTX 3070), à partir des modèles pré-entraînés sur diverse_200k, stratégie curriculum progressive sur les niveaux de difficulté :
-
-| Architecture | Source | Epochs | Cell Acc | Grid Acc | Test Grids |
-|-------------|--------|--------|----------|----------|------------|
-| **h192_s16** | sweep_h192_s16 | 19 (ES) | **89.7%** | **83.5%** | 50,087/60,000 |
-| h256_s16 | sweep_h256_s16 | 17 (ES) | 89.8% | 83.5% | 50,084/60,000 |
-| h192_s24 | - | OOM | - | - | - |
-
-Meilleur modèle : h192_s16 fine-tune atteint **83.5% de grilles complètes** (50,087/60,000) sur le jeu de test. Le h256_s16 obtient des résultats quasi-identiques pour 75% de paramètres en plus — h192_s16 est le meilleur compromis taille/performance.
-
-**Entraînement complet RTX 4090** (24GB VRAM) :
-
-| Modèle | Dataset | Epochs | Grid Acc | Remarque |
-|--------|---------|--------|----------|----------|
-| track_a_h256_s24 | diversifié, 1M+ | 2/60 | **99.7%** | Convergence quasi-totale en 2 epochs |
-| curriculum_h256_s24 | curriculum 400K | 14/80 | 53.8% | Stagne, oscillations de loss |
-
-**Enseignements pédagogiques** :
-1. **Volume de données > taille du modèle** : passer de 106K à 400K puzzles fait sauter la précision de 33.5% à 83.5%, alors qu'augmenter les paramètres de 162K à 619K n'apporte rien sur petit dataset
-2. **Curriculum learning** : pas de bénéfice démontré ici. La stratégie progressive ralentit l'apprentissage et provoque des oscillations
-3. **RRN vs solveurs classiques** : même à 99.7% de succès, le RRN reste un approximateur — les solveurs exacts (OR-Tools, Norvig) garantissent 100% et sont plus rapides en inférence
+Un taux élevé reste une mesure sur un jeu d'évaluation. Pour une application exigeant une grille valide, contrôler les contraintes demeure nécessaire après une prédiction neuronale.
 
 ### Formalisations Lean
 
-Le notebook [Sudoku-19](Sudoku-19-Lean-Propagation-Lean.ipynb) (parcours principal, public Recherche) prouve la **soundness de la propagation des contraintes** — naked/hidden single, avec la clé de voûte `peer_excludes_value` — dans le lake Lean 4 [`sudoku_lean/`](sudoku_lean/) : preuve **0-sorry**, vérifiée in-kernel par `#check` + `#print axioms`, modules FR canoniques + siblings `_en` (convention i18n [#4980](https://github.com/jsboige/CoursIA/issues/4980)).
+[19 — Propagation en Lean](Sudoku-19-Lean-Propagation-Lean.ipynb) étudie la correction des déductions de type *naked single* et *hidden single*, notamment via `peer_excludes_value`. Le projet [sudoku_lean](sudoku_lean/) fournit les définitions et preuves : on examine ce que les hypothèses permettent de conclure, ainsi que les dépendances affichées par `#print axioms`. La correction d'une règle de propagation ne constitue pas une preuve de complétude d'un solveur entier.
 
-Un lake est l'outillage formel du notebook, pas une étape du parcours. L'inventaire complet des modules,targets et statuts de build vit dans [`LEAN_INVENTORY.md`](LEAN_INVENTORY.md) — ce README ne le recopie pas.
+L'inventaire des modules et des toolchains figure dans [LEAN_INVENTORY.md](LEAN_INVENTORY.md).
 
-### Sources des projets étudiants
+### Prolonger le problème commun
 
-Les notebooks sont adaptés de projets étudiants :
+- La propagation de 06–07 ouvre sur [Search/Part2-CSP](../Search/Part2-CSP/README.md), où variables, domaines et contraintes s'appliquent à d'autres problèmes.
+- L'encodage Z3 de 12 prépare la [série SMT](../SymbolicAI/SMT/README.md), qui utilise la satisfiabilité pour explorer et vérifier d'autres modèles.
+- Le palier 15 donne un point de départ vers [Probas/Infer](../Probas/Infer/README.md) pour approfondir la modélisation et l'inférence probabilistes.
 
-| Technique | Contenu | Répertoire |
-|-----------|---------|------------|
-| **Norvig** | Solveur Norvig + variante BitArray | `Sudoku.Norvig` + `Sudoku.NorvigBitArray` |
-| **Simulated Annealing** | Recuit simulé | `Sudoku.SimulatedAnnealing` |
-| **Human Stratégies** | Stratégies humaines | `Sudoku.Human` (23 fichiers, 13 techniques) |
-| **Neural Network** | 4 architectures de réseaux de neurones | `Sudoku.NeuralNetwork` |
-| **PSO** | Optimisation par essaim de particules | `Sudoku.PSO` (7 fichiers) |
-| **AIMA CSP** | CSP inspiré de AIMA | `Sudoku.CspAima` |
-| **Graph Coloring** | Coloration de graphe | `Sudoku.GraphColoring` (11 fichiers) |
-| **Choco** | 5 implémentations Choco | `Sudoku.ChocoSolvers` |
-| **LLM** | Résolution par LLM | `Sudoku.LLM-ChatGPTenzin` |
+Une application possible est de reprendre le benchmark 18 avec un solveur hybride : utiliser un réseau pour proposer un ordre de variables, puis une recherche sous contraintes pour contrôler les solutions.
 
-### Structure des fichiers
+## Ressources — tous niveaux
 
-```
-Sudoku/
-├── README.md                              # Ce fichier
-├── LEAN_INVENTORY.md                      # Inventaire transverse des lakes Lean de la série
-├── index.qmd                              # Listing Quarto (sous-ensembles C# / Python)
-├── requirements.txt                       # Dépendances Python
-├── Sudoku-00 … Sudoku-20                  # Carnets numérotés (voir Parcours principal ;
-│                                          #   inventaire exhaustif dans le catalogue généré)
-├── Puzzles/                               # Fichiers de puzzles (Easy51, hardest, top95)
-├── assets/                                # Ressources statiques (regex de validation, figures readme/)
-├── sudoku_models/                         # Checkpoints d'entraînement comparatif
-├── sudoku_lean/                           # Lake Lean 4 (preuve de propagation, 0 sorry)
-├── scripts/                               # Scripts Python (entraînement thermal-safe)
-├── tests/                                 # Tests du script d'entraînement thermal-safe
-├── CompiledModels/                        # Artefacts C# compilés (Infer.NET)
-└── (JAR Choco non commité, téléchargé à l'exécution du nb-11 Python via JPype ;
-     DLL Choco précompilée partagée : ../Search/Part2-CSP/org.chocosolver.solver.dll, See #13742)
-```
+### Livres, articles et figures
 
-## Ressources
-
-### Livres et articles
-
-- [Peter Norvig - Solving Every Sudoku Puzzle (2006)](http://norvig.com/sudoku.html)
-- [Donald Knuth - Dancing Links (2000)](https://arxiv.org/abs/cs/0011047)
-- [Russell & Norvig - Artificial Intelligence: A Modern Approach (CSP Chapter)](https://aima.cs.berkeley.edu/)
+- [Peter Norvig — Solving Every Sudoku Puzzle](http://norvig.com/sudoku.html).
+- [Donald Knuth — Dancing Links](https://arxiv.org/abs/cs/0011047).
+- [Russell et Norvig — Artificial Intelligence: A Modern Approach](https://aima.cs.berkeley.edu/), chapitres de recherche et de contraintes.
+- Les figures ci-dessus sont liées à leur carnet source ; le [manifeste des figures](assets/readme/MANIFEST.md) en consigne la provenance.
 
 ### Bibliothèques
 
-- [OR-Tools Documentation](https://developers.google.com/optimization)
-- [Z3 Python API](https://z3prover.github.io/api/html/namespacez3py.html)
-- [NetworkX](https://networkx.org/) - Graphes et algorithmes de coloration
-- [GeneticSharp](https://github.com/giacomelli/GeneticSharp)
-- [Choco Solver](https://choco-solver.org/)
-- [Infer.NET Documentation](https://dotnet.github.io/infer/)
-- [OpenAI Python SDK](https://github.com/openai/openai-python) (utilisé par Sudoku-17 LLM Solver)
-- [PyTorch](https://pytorch.org/)
+[OR-Tools](https://developers.google.com/optimization) · [Z3](https://z3prover.github.io/api/html/namespacez3py.html) · [NetworkX](https://networkx.org/) · [GeneticSharp](https://github.com/giacomelli/GeneticSharp) · [Choco](https://choco-solver.org/) · [Infer.NET](https://dotnet.github.io/infer/) · [PyTorch](https://pytorch.org/) · [client Python OpenAI](https://github.com/openai/openai-python).
 
-### Aller plus loin dans le dépôt
+### Provenance pédagogique
 
-La résolution du Sudoku illustre une leçon centrale : face à un problème NP-complet, **la question n'est pas de trouver le bon algorithme mais de comprendre quels compromis on est prêt à accepter** — garantie, performance, généralisation. Trois suites naturelles :
+Les carnets reprennent notamment des projets étudiants consacrés à Norvig et sa variante BitArray (`Sudoku.Norvig`, `Sudoku.NorvigBitArray`), au recuit (`Sudoku.SimulatedAnnealing`), aux stratégies humaines (`Sudoku.Human`), aux réseaux (`Sudoku.NeuralNetwork`), au PSO (`Sudoku.PSO`), aux CSP (`Sudoku.CspAima`), à la coloration (`Sudoku.GraphColoring`), à Choco (`Sudoku.ChocoSolvers`) et aux LLM (`Sudoku.LLM-ChatGPTenzin`). Les carnets explicitent les adaptations et les outils utilisés.
 
-- **Programmation par contraintes généralisée** : la série [Search](../Search/README.md) étend propagation, CSP et MRV à une famille large de problèmes d'optimisation et de satisfaction.
-- **Résolution symbolique formelle** : Z3, introduit ici comme un solveur, devient un outil de **vérification formelle** dans [SymbolicAI](../SymbolicAI/README.md) — preuve de théorèmes, vérification de programmes, contrats intelligents.
-- **Inférence probabiliste** : les solveurs NumPyro et Infer.NET du palier 15 annoncent [Probas](../Probas/README.md), où la modélisation probabiliste devient un langage à part entière.
-
-Pour la pratique : reprenez le notebook 18 (Comparison) et ajoutez votre propre solveur hybride — par exemple une approche CP-guided qui utilise un réseau de neurones pour ordonner les variables.
-
-## Licence
-
-Voir la licence du repository principal.
+[Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md) · [Licence](../../LICENSE)

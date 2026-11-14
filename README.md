@@ -217,7 +217,7 @@ La progression suit cette logique : formaliser le raisonnement (Tweety), représ
 
 **[Smart Contracts](MyIA.AI.Notebooks/SymbolicAI/SmartContracts/README.md) -- quand le code fait foi, le rendre digne de confiance** -- Un contrat déployé transfère de la valeur sans laisser la possibilité d'un correctif immédiat : sécurité et développement doivent donc avancer ensemble. Le parcours remonte des primitives cryptographiques à Solidity et aux standards applicatifs, puis ajoute tests, fuzzing, invariants et vérification formelle avec Foundry. Il aborde aussi la confidentialité sur une chaîne transparente, la gouvernance et plusieurs écosystèmes non-EVM avant le déploiement. Le lien avec Lean et SMT est direct : dans les trois cas, il s'agit de transformer une confiance intuitive dans le programme en propriétés que la machine peut vérifier.
 
-**[Argument Analysis](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md) -- où s'arrête le LLM, où commence le vérificateur** -- Distinguer un argument valide d'un sophisme devient un acte critique dans une société saturée de discours générés à la chaîne : quand un LLM produit à la demande un texte plausible, la frontière entre persuasion légitime et manipulation rhétorique se brouille. Cette sous-série, la plus fournie de SymbolicAI, pose une question concrète : peut-on prendre un texte argumentatif en entrée et en restituer une carte logique formelle, vérifiée par un solveur, avec détection systématique des sophismes connus ?
+**[Argument Analysis](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/README.md) -- où s'arrête le LLM, où commence le vérificateur** -- Distinguer un argument valide d'un sophisme devient un acte critique dans une société saturée de discours générés à la chaîne : quand un LLM produit à la demande un texte plausible, la frontière entre persuasion légitime et manipulation rhétorique se brouille. Cette sous-série, la plus fournie de SymbolicAI, pose une question concrète : peut-on prendre un texte argumentatif en entrée et en restituer une carte logique formelle, vérifiée par un solveur, avec détection systématique des sophismes connus ?
 
 L'arc principal est un **pipeline agentique en six temps** (`0-init` → `1-informal` → `2-formal` → `3-orchestration` → `4-capstone` → `5-jtms`), chaque étape existant en version pédagogique et en version *agent* exécutable. Un agent LLM orchestré par Semantic Kernel extrait le tissu informel -- prémisses, conclusions, transitions ; un solveur logique (TweetyProject, via le même pont JPype que la sous-série Tweety) vérifie la cohérence des formalisations propositionnelles ; la dernière étape ajoute un **JTMS** (*justification-based truth maintenance system*), qui garde trace de *pourquoi* chaque croyance tient et sait la rétracter quand son support tombe -- exactement ce qui manque à un LLM qui change d'avis sans savoir qu'il l'a fait.
 
@@ -227,7 +227,7 @@ Cette sous-série est le point d'atterrissage de **deux projets vivants**, dont 
 
 Le plus mûr des deux est [2025-Epita-Intelligence-Symbolique](https://github.com/jsboigeEpita/2025-Epita-Intelligence-Symbolique), le *moteur* : plusieurs dizaines d'agents spécialistes -- chacun tenant un axe d'analyse, un formalisme ou une étape de vérification -- répartis sur plusieurs systèmes d'orchestration concurrents et protégés par une vaste suite d'intégration. La difficulté propre à ce projet n'est pas d'ajouter un agent de plus : c'est de **consolider en vol** cette diversité d'orchestrateurs sans perdre ce que chacun sait faire -- un problème d'architecture agentique à part entière. C'est de là que vient `argumentation_lib`.
 
-L'autre est [Argumentum](https://www.argumentum.games), le *corpus et le produit* : un jeu de cartes dont la taxonomie compte **1 408 sophismes et 223 vertus** argumentatives, déjà traduite en **huit langues** (français, anglais, russe, arabe, farsi, chinois, espagnol, portugais), avec sa chaîne d'impression et son site. À la taxonomie s'ajoutent **167 cartes Scénarii** -- des situations de discours -- et c'est leur produit cartésien avec les sophismes qui ouvre la voie la plus prometteuse : un corpus d'entraînement *synthétique* de grande taille, engendré par construction plutôt que collecté. Le dépôt CoursIA est ce qui relie les deux -- le notebook [Argumentum Cards](MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02b-Argumentum-Cards-Python.ipynb) travaille directement cette taxonomie, et le sous-module `Argumentum` en embarque la source.
+L'autre est [Argumentum](https://www.argumentum.games), le *corpus et le produit* : un jeu de cartes dont la taxonomie compte **1 408 sophismes et 223 vertus** argumentatives, déjà traduite en **huit langues** (français, anglais, russe, arabe, farsi, chinois, espagnol, portugais), avec sa chaîne d'impression et son site. À la taxonomie s'ajoutent **167 cartes Scénarii** -- des situations de discours -- et c'est leur produit cartésien avec les sophismes qui ouvre la voie la plus prometteuse : un corpus d'entraînement *synthétique* de grande taille, engendré par construction plutôt que collecté. Le dépôt CoursIA est ce qui relie les deux -- le notebook [Argumentum Cards](MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02b-Argumentum-Cards-Python.ipynb) travaille directement cette taxonomie, et le sous-module `Argumentum` en embarque la source.
 
 Tout l'enjeu pédagogique tient dans la jointure -- où le LLM, fiable pour extraire mais faible pour prouver, passe la main au vérificateur formel, et comment une boucle informel/formel converge vers un verdict. C'est l'incarnation appliquée du fil de la série : le symbolique comme garde-fou du neuronal, mis au service de la pensée critique, du fact-checking et de l'audit de contenus générés par IA.
 
@@ -381,7 +381,7 @@ Python | [README détaillé](MyIA.AI.Notebooks/IIT/README.md)
 
 Que se passe-t-il quand on cesse d'étudier les techniques en silos ? L'IA réelle ne fonctionne presque jamais avec un seul paradigme : un assistant de diagnostic combine des règles symboliques, des modèles probabilistes, de la recherche heuristique et des contraintes formelles. Cette série, conçue comme un devoir intégrateur de fin de cycle, prend trois problèmes métier -- un diagnostic médical, une planification oncologique et un dispatch énergétique -- et y compose plusieurs solveurs en un seul système décisionnel cohérent. Son fil conducteur est l'architecture hybride en couches, et l'idée que l'**ordre de composition** importe autant que les briques elles-mêmes.
 
-**Composer les paradigmes en cascade -- l'architecture hybride** -- Chaque projet empile cinq couches : des connaissances métier (ontologies OWL, règles), un filtre de contraintes dures (CSP, SMT, OR-Tools), une modélisation de l'incertitude (bayésien, Pyro, Infer.NET), une optimisation (recherche A-star, algorithme génétique, et au-delà le renforcement) et une décision finale expliquée. On filtre avant d'optimiser, on modélise l'aléatoire avant de valider sous contraintes : le [Diagnostic Medical](MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/README.md) articule recherche informée, algorithme génétique et validation par solveur Z3 ; l'[Oncology Planning](MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/README.md) marie ontologie, planification CP-SAT et inférence probabiliste ; le [SmartGrid Energy](MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/README.md) traite l'*unit commitment / dispatch* (CC3 EPF) en combinant optimisation CP-SAT (centrales pilotables, mix renouvelable incertain), raisonnement bayésien (risque de défaillance) et arbitrage multi-objectif (coût vs émissions). Aucune couche ne suffit seule, et c'est tout l'enseignement.
+**Composer les paradigmes en cascade -- l'architecture hybride** -- Chaque projet empile cinq couches : des connaissances métier (ontologies OWL, règles), un filtre de contraintes dures (CSP, SMT, OR-Tools), une modélisation de l'incertitude (bayésien, Pyro, Infer.NET), une optimisation (recherche A-star, algorithme génétique, et au-delà le renforcement) et une décision finale expliquée. On filtre avant d'optimiser, on modélise l'aléatoire avant de valider sous contraintes : le [Diagnostic Medical](MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/README.md) articule recherche informée, algorithme génétique et validation par solveur Z3 ; l'[Planification Oncologie](MyIA.AI.Notebooks/CaseStudies/Planification-Oncologie/README.md) marie ontologie, planification CP-SAT et inférence probabiliste ; le [SmartGrid Energy](MyIA.AI.Notebooks/CaseStudies/Reseau-Electrique-Intelligent/README.md) traite l'*unit commitment / dispatch* (CC3 EPF) en combinant optimisation CP-SAT (centrales pilotables, mix renouvelable incertain), raisonnement bayésien (risque de défaillance) et arbitrage multi-objectif (coût vs émissions). Aucune couche ne suffit seule, et c'est tout l'enseignement.
 
 **Le jumeau numérique -- un patient simulé pour décider sans risque** -- Les deux projets reposent sur un modèle de patient simulé : un objet logiciel qui représente un état clinique et réagit aux interventions proposées. Ce pattern de jumeau numérique, devenu central en santé numérique comme en industrie, permet de tester des scénarios de traitement sans toucher au patient réel. La pédagogie privilégie l'autonomie : chaque projet fournit un template étudiant exécutable de bout en bout -- y compris lorsque les exercices ne sont pas complétés -- et une solution de référence pour s'autoévaluer.
 
@@ -395,9 +395,9 @@ Et après le notebook ? Le répertoire `cross-series/` rassemble ce qui ne tient
 
 **[`matching-cv`](MyIA.AI.Notebooks/cross-series/matching-cv/README.md) -- un problème, trois lectures** -- Une application web Flask qui confronte trois façons d'apparier un CV à une offre d'emploi : le comptage de mots-clés comme référence transparente, la similarité sémantique par plongements avec cache vectoriel (issue de **GenAI**), et l'appariement stable de Gale-Shapley (rencontré en **GameTheory** et prouvé en Lean dans `game_theory_lean`). La leçon n'est pas qu'un algorithme gagne : c'est que **le « meilleur » appariement dépend du critère**, le meilleur score individuel n'étant pas l'affectation globalement stable -- la différence, rendue visible sur les mêmes données, entre optimum local et stabilité collective. La même démarche que le banc d'essai du **Sudoku**, transposée à une application déployable avec ses tests et son interface.
 
-**[`socle-metadata-driven`](MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) -- ce que toutes les familles .NET partagent** -- Là où `matching-cv` *combine* des séries, ce notebook C# expose ce qu'elles ont en *commun* : la bibliothèque [`MyIA.AI.Shared`](MyIA.AI.Shared/), qui factorise trois besoins qu'autrement chaque série réécrirait -- découverte de types par décoration (des attributs suffisent, aucun enregistrement explicite), sérialisation JSON/XML aller-retour d'un graphe d'entités, et surtout la règle métier *low-code* : un prédicat qui arrive sous forme de chaîne -- d'un fichier, d'un CSV, d'un utilisateur non-développeur -- compilé une fois puis appliqué à N instances. C'est la différence entre coder N branches conditionnelles et piloter la logique par les données.
+**[`socle-metadata-driven`](MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb) -- ce que toutes les familles .NET partagent** -- Là où `matching-cv` *combine* des séries, ce notebook C# expose ce qu'elles ont en *commun* : la bibliothèque [`MyIA.AI.Shared`](dotnet/MyIA.AI.Shared/), qui factorise trois besoins qu'autrement chaque série réécrirait -- découverte de types par décoration (des attributs suffisent, aucun enregistrement explicite), sérialisation JSON/XML aller-retour d'un graphe d'entités, et surtout la règle métier *low-code* : un prédicat qui arrive sous forme de chaîne -- d'un fichier, d'un CSV, d'un utilisateur non-développeur -- compilé une fois puis appliqué à N instances. C'est la différence entre coder N branches conditionnelles et piloter la logique par les données.
 
-**`i18n` -- traduire une collection sans la casser** -- Un pilote du mécanisme de traduction appliqué à la documentation : un README découpé en segments repérés par clé stable, colonne source française remplie, colonne cible vide, et le rendu qui reconstruit le document à l'identique. C'est le pendant markdown du corpus `translations/` (33 CSV, 24 470 cellules de notebooks) ; l'un et l'autre attendent le même feu vert éditorial avant de lancer les huit langues. Le mécanisme, lui, est déjà là et vérifiable -- ce qui manque est une décision, pas une technique.
+**`i18n` -- traduire une collection sans la casser** -- Un pilote du mécanisme de traduction appliqué à la documentation : un README découpé en segments repérés par clé stable, colonne source française remplie, colonne cible vide, et le rendu qui reconstruit le document à l'identique. C'est le pendant markdown du corpus `translations/` ; l'un et l'autre attendent le même feu vert éditorial avant de lancer les huit langues. Le mécanisme, lui, est déjà là et vérifiable -- ce qui manque est une décision, pas une technique.
 
 [README détaillé](MyIA.AI.Notebooks/cross-series/README.md)
 
@@ -411,7 +411,7 @@ CoursIA/
     Search/                    Algorithmes de recherche (Python, C#)
     Sudoku/                    Résolution multi-paradigme (Python, C#)
     SymbolicAI/                IA symbolique (Python, Lean 4, C#)
-      Tweety/ SemanticWeb/ Lean/ SMT/ Planners/ SmartContracts/ Argument_Analysis/ SymbolicLearning/
+      Tweety/ SemanticWeb/ Lean/ SMT/ Planners/ SmartContracts/ ArgumentAnalysis/ SymbolicLearning/
     Probas/                    Programmation probabiliste (C#, Python)
     GameTheory/                Théorie des jeux (Python, Lean 4)
     ML/                        Machine Learning (C#, Python)
@@ -435,15 +435,19 @@ CoursIA/
     Config/                    Configuration API
 
   scripts/                     Validation, exécution, analyse
+    notebook_tools/            CLI multi-série : validate, execute, analyze, skeleton, check-env
+    genai-stack/               Pile GenAI Docker (CLI genai.py) et sa validation
+  .claude/                     Harnais des agents : agents/, skills/, rules/
   docs/                        Documentation pérenne (procédures, inventaires, leçons consolidées)
   translations/                Corpus de traduction des notebooks (inventaire et statut dans son README)
   slides/                      Présentations pédagogiques
   docker-configurations/       Infrastructure Docker GPU
-  GradeBookApp/                Notation étudiants
-  GradeBookApp.Tests/          Tests du moteur de notation
-  MyIA.AI.Shared/              Bibliothèque C# partagée
-  MyIA.AI.Shared.Tests/        Tests de la bibliothèque partagée
-  MyIA.Trading.Converter/      Conversion de formats de données de trading
+  dotnet/                      Projets .NET (moteur de notation, bibliothèque partagée, trading)
+    GradeBookApp/              Notation étudiants (pipelines et données privés sur GDrive)
+    GradeBookApp.Tests/        Tests du moteur de notation
+    MyIA.AI.Shared/            Bibliothèque C# partagée
+    MyIA.AI.Shared.Tests/      Tests de la bibliothèque partagée
+    MyIA.Trading.Converter/    Conversion de formats de données de trading
   THIRD_PARTY_NOTICES.md       Attributions des sources et composants tiers
 ```
 
@@ -454,7 +458,7 @@ CoursIA/
 ### Prérequis
 
 - Python 3.10+ avec pip
-- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
+- .NET 9.0 SDK (notebooks C#) **et** .NET 10 SDK : `dotnet restore dotnet/MyIA.CoursIA.sln` échoue sans le SDK 10, cinq projets de la solution ciblant `net10.0` (Aspire, démo Vibe-Coding)
 - VS Code avec extensions Python, Jupyter, .NET Interactive
 - WSL sous Windows uniquement (pour Lean et certains outils SymbolicAI) ; sous Linux ou macOS, voir [setup-linux-macos.md](docs/reference/setup-linux-macos.md)
 - Docker + GPU (optionnel, pour GenAI avancé)
@@ -479,7 +483,7 @@ python -m ipykernel install --user --name=coursia --display-name "Python (CoursI
 # (cf docs/reference/kernels-runtime.md) ; ce build tourne sur .NET 10.
 dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001
 dotnet interactive jupyter install
-dotnet restore MyIA.CoursIA.sln
+dotnet restore dotnet/MyIA.CoursIA.sln
 
 # 5. Dépendances de la série visée (chaque série porte son requirements.txt)
 pip install -r MyIA.AI.Notebooks/<Serie>/requirements.txt
@@ -495,7 +499,7 @@ Certains notebooks s'appuient sur un **sous-module** que `git clone` ne récupè
 | Search/Part4 (MGS-\*), Search-05 et Sudoku-05 en C# | `MyIA.AI.Notebooks/Search/MetaGeneticSharp` | dans ce dossier : `dotnet build`, puis `dotnet build -c Release` pour Search-05 |
 | SMT/Z3-Linq2Z3, Sudoku-12b et Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` | `bash scripts/environment/z3-build-deploy.sh` (Windows : le `.ps1` voisin) |
 | Z3-Linq2Z3 n° 10, Sudoku-13 en C# | `MyIA.AI.Notebooks/SymbolicAI/SMT/Automata` | `bash scripts/environment/automata-build-deploy.sh` (Windows : le `.ps1` voisin) ; pas encore exécutable sous Linux ([#17654](https://github.com/jsboige/CoursIA/issues/17654)) |
-| Argument_Analysis (Ontology AIF, Ontology CrossLinks, Agentic-1), GameTheory-24b | `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` | aucune |
+| ArgumentAnalysis (Ontology AIF, Ontology CrossLinks, Agentic-1), GameTheory-24b | `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum` | aucune |
 
 Les clés API éventuelles se posent via les `.env.example` (section Configuration). Pour valider
 ou exécuter un notebook, ne pas écrire de script ad-hoc : le dépôt fournit une CLI dédiée
@@ -511,17 +515,17 @@ s'installent directement via leur `requirements.txt`.
 
 | Série | Notebook de mise en route | Préparation dédiée |
 |-------|---------------------------|--------------------|
-| GenAI | `GenAI/00-GenAI-Environment/` (6 notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
+| GenAI | `GenAI/00-GenAI-Environment/` (notebooks : environment, services Docker, endpoints API, validation, test ComfyUI local, déploiement Docker local) | `requirements.txt` (+ `-audio` / `-video`) ; `00-GenAI-Environment/validate_auth.py` |
 | GameTheory | `GameTheory/GameTheory-01-Setup-Python.ipynb` | `GameTheory/scripts/setup_wsl_openspiel.sh`, `GameTheory/scripts/setup_wsl_lean4.sh`, `GameTheory/scripts/setup_lean4_kernel.ps1` |
 | Sudoku | `Sudoku/Sudoku-00-Environment-CSharp.ipynb` | kernel .NET Interactive |
 | Probas | `Probas/Infer/Infer-01-Setup.ipynb`, `Probas/PyMC/PyMC-01-Setup.ipynb` | `Probas/Infer/scripts/setup_environment.ps1` |
 | QuantConnect | `QuantConnect/Python/QC-Py-01-Setup.ipynb` | `requirements.txt` |
 | Lean | `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb` | `SymbolicAI/Lean/scripts/setup_wsl_python.sh`, `SymbolicAI/Lean/scripts/validate_lean_setup.py` |
-| Planners | `SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
-| SemanticWeb | `SymbolicAI/SemanticWeb/SW-1-CSharp-Setup.ipynb` | kernel .NET Interactive |
+| Planners | `SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb` | `requirements.txt` ; `SymbolicAI/scripts/install_clingo.py` |
+| SemanticWeb | `SymbolicAI/SemanticWeb/SW-01-Setup-CSharp.ipynb` | kernel .NET Interactive |
 | SmartContracts | `SymbolicAI/SmartContracts/00-Foundations/SC-01-Setup-Foundry-Python.ipynb`, `SC-02-Setup-Web3py-Python.ipynb` | `SymbolicAI/SmartContracts/setup_env.py`, `SymbolicAI/SmartContracts/scripts/setup_wsl_smartcontracts.sh` |
 | Tweety | `SymbolicAI/Tweety/Tweety-01-Setup-Python.ipynb` | `tweety_init.py` (JDK auto-télécharge) |
-| Argument Analysis | `SymbolicAI/Argument_Analysis/Argumentation-08c-UI-Configuration-Python.ipynb` | `install_jdk_portable.py` |
+| Argument Analysis | `SymbolicAI/ArgumentAnalysis/Argumentation-08c-UI-Configuration-Python.ipynb` | `install_jdk_portable.py` |
 | IIT | `requirements.txt` | `IIT/scripts/setup_pyphi_env.ps1` |
 | GenAI / Aspire | `GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb` | SDK .NET 10 + CLI Aspire (`dotnet tool install -g Aspire.Cli`) ; Docker démarré |
 | GenAI / FallacyDetection | -- (kernel Python de base) | `scripts/fallacy_detection/extract_jessynoo_fallacy.py` (stdlib seule) |
@@ -548,7 +552,7 @@ Les séries Search, Sudoku, ML.Net, Probas (Infer.NET), Tweety, SemanticWeb et P
 | GenAI | `GenAI/.env` | `OPENAI_API_KEY`, `ANTHROPIC_API_KEY` |
 | GameTheory (optionnel) | `GameTheory/.env` | fournisseurs LLM et paramètres d'exécution documentés dans `.env.example` |
 | Lean | `SymbolicAI/Lean/.env` | `OPENAI_API_KEY`, `GITHUB_TOKEN` |
-| Argument Analysis | `SymbolicAI/Argument_Analysis/.env` | `OPENAI_API_KEY` |
+| Argument Analysis | `SymbolicAI/ArgumentAnalysis/.env` | `OPENAI_API_KEY` |
 | QuantConnect | `QuantConnect/.env` | `QC_API_USER_ID`, `QC_API_ACCESS_TOKEN` |
 | C# Notebooks | `Config/settings.json` (exemples : `settings.json.openai-example`, `settings.json.azure-example`) | `apikey`, `model` |
 | Docker ComfyUI | `docker-configurations/services/comfyui-qwen/.env` | `CIVITAI_TOKEN`, `HF_TOKEN` |
@@ -570,7 +574,7 @@ cp MyIA.AI.Notebooks/GenAI/.env.example MyIA.AI.Notebooks/GenAI/.env
 |---------|-------------------------------|-------------------|----------------------|
 | **Python** | `python3`, `python3-wsl`, `mcp-jupyter`, `mcp-jupyter-py310`, `coursia-ml-training`, `coursia-sae`, `epita_symbolic_ai`, `pyphi`, `smartcontracts` | GenAI, QuantConnect, Search, ML, IIT | `pip install ipykernel` + `python -m ipykernel install --user --name=<kernel>` (kernel de base) ; voir `docs/reference/kernels-runtime.md` pour les envs conda dédiés |
 | **.NET Interactive** | `.net-csharp`, `.net-fsharp`, `.net-powershell` | Sudoku, Search, Probas, ML.NET, SemanticWeb | `dotnet tool install --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` |
-| **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_kernel.ps1` + `setup_lean4_native.sh` (elan) |
+| **Lean 4** | `lean4`, `lean4-wsl` | Lean, GameTheory (notebooks Lean) | `MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh` (Linux/macOS natif ou WSL) ; `setup_lean4_kernel.ps1` pour l'enregistrement Windows |
 
 Pour la **liste exhaustive et à jour** (versions épinglées, historique, dépendances conda), consulter [`docs/reference/kernels-runtime.md`](docs/reference/kernels-runtime.md), qui prime sur tout inventaire figé. Pour vérifier l'état local à tout moment : `jupyter kernelspec list`.
 
@@ -581,6 +585,8 @@ Limitations connues : les notebooks C# avec `#!import` nécessitent une exécuti
 ## Infrastructure Docker
 
 Pour les notebooks GenAI avancés utilisant des modèles locaux (Qwen Image Edit, ComfyUI Video, etc.), une infrastructure Docker avec support GPU est fournie.
+
+La pile applicative des carnets : APIs OpenAI et Anthropic, Qwen Image Edit 2509 (encodeur Qwen 2.5-VL 7B) et Qwen3-VL 4B, Semantic Kernel, Python 3.10+ et .NET 9.0 Interactive, Papermill + MCP Jupyter, ComfyUI GPU (RTX 3080 Ti 16 Go, po-2023). Modèles, quantification et ventilation GPU par service : [docs/genai/genai-services.md](docs/genai/genai-services.md).
 
 Services disponibles (sous `docker-configurations/services/`, 19 dossiers) : Qwen Image Edit (~29 Go VRAM), ComfyUI Video (~12 Go), Stable Diffusion Forge (~10 Go), Whisper (STT, 2 services), MusicGen, TTS (multi-engine : Kokoro, FishAudio, autres, via `tts-api`), Demucs.
 
@@ -647,7 +653,7 @@ Les dépendances principales par série (vérifiées contre les `requirements.tx
 | Z3 SMT Solver | Sudoku, Search, SymbolicAI (Tweety, Z3-API, SMT), GameTheory | `z3-solver>=4.13` dans `requirements.txt` |
 | OR-Tools (CP-SAT) | Sudoku, Search, Planners | `ortools>=9.8` dans `requirements.txt` |
 | Unified Planning | Planners | `unified-planning>=1.1` ; Fast-Downward via WSL/Docker |
-| Tweety + JDK | Tweety, Argument_Analysis | `jpype1>=1.4` ; JARs auto-téléchargés via `download_tweety_tools.py` |
+| Tweety + JDK | Tweety, ArgumentAnalysis | `jpype1>=1.4` ; JARs auto-téléchargés via `download_tweety_tools.py` |
 | Lean 4 + Mathlib | Lean, GameTheory (`game_theory_lean/`) | `elan` (WSL) ; diagnostic via `validate_lean_setup.py` |
 | Lean 7-9 multi-agent (Semantic Kernel + LLM) | Lean | `semantic-kernel>=1.39.0`, `openai>=1.0.0`, `anthropic>=0.20.0` |
 | OpenSpiel | GameTheory | `open_spiel>=1.4` dans `requirements.txt` GameTheory |
@@ -677,6 +683,8 @@ Vous pouvez contribuer de deux façons :
 
 Le [guide de contribution](CONTRIBUTING.md) détaille le processus, les validations et l'accompagnement proposé par les mainteneurs et leurs agents.
 
+La documentation (README, `docs/`) est écrite en français ; les commentaires de code peuvent être en français ou en anglais.
+
 ## Licence
 
 Ce projet est sous licence MIT - voir [LICENSE](LICENSE).
@@ -688,7 +696,7 @@ ni données personnelles issues des processus privés d'enseignement ou de notat
 (listes de classe, adresses e-mail, identifiants scolaires).
 
 Les pipelines et données de notation vivent sur un stockage privé hors dépôt ; seul le
-[moteur de notation générique](GradeBookApp/) est public, vide de données. Détails et
+[moteur de notation générique](dotnet/GradeBookApp/) est public, vide de données. Détails et
 posture PII : [PRIVACY.md](PRIVACY.md).
 
 ---

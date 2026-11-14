@@ -207,7 +207,7 @@ Conséquence en chaîne mesurée : `machine` reste `null` → `machine.Decide(xT
 | **XOR bruité spread 1.1 (n=120)** | **706.88** | **0.0001** |
 | XOR bruité spread 1.1 (n=240) | 15.79 | 0.0001 |
 
-Sur XOR net les deux coïncident, mais pour une raison sans rapport : `C=0.0001` y classe déjà parfaitement (erreur 0 à tous les C testés), donc conserver l'amorce y est le bon résultat. La divergence n'apparaît que sur les jeux où la calibration doit effectivement explorer. C'est précisément la mesure rendue par le commentaire détaillé de la méthode `CalibrateComplexity` côté CoursIA (en-tête du fichier `MyIA.Trading.Backtester/TradingSvmModelConfig.cs`, écart 3/3 délibéré).
+Sur XOR net les deux coïncident, mais pour une raison sans rapport : `C=0.0001` y classe déjà parfaitement (erreur 0 à tous les C testés), donc conserver l'amorce y est le bon résultat. La divergence n'apparaît que sur les jeux où la calibration doit effectivement explorer. C'est précisément la mesure rendue par le commentaire détaillé de la méthode `CalibrateComplexity` côté CoursIA (en-tête du fichier `dotnet/MyIA.Trading.Backtester/TradingSvmModelConfig.cs`, écart 3/3 délibéré).
 
 ### Décision : signalement upstream vaut la peine — et il est fait
 

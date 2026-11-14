@@ -104,6 +104,7 @@ import sys
 import tempfile
 import time
 from datetime import datetime, timezone
+from functools import lru_cache
 from pathlib import Path
 
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
@@ -177,7 +178,16 @@ _OPEN_PRS_MEMO: list[dict] | None = None
 # memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
 # tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
 # pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
-_OPEN_PRS_INDEX_MEMO: tuple[list[dict], dict[int, list[dict]]] | None = None
+_OPEN_PRS_INDEX_MEMO: tuple[list[dict], int, dict[int, list[dict]]] | None = None
+# Index local des PRs par couple (issue citee, lane). Contrairement a la
+# simple index d'issues ci-dessus, celui-ci evite aussi de re-parser la lane
+# de chaque PR a chaque issue du batch. Le fingerprint de valeur est recalcule
+# a chaque lecture: l'identite d'une liste ne suffit pas si son contenu change
+# en place (body, numero, remplacement, ajout ou retrait d'une PR).
+_OPEN_PRS_LANE_INDEX_MEMO: tuple[
+    list[dict], str, tuple[tuple[int, str, str], ...],
+    dict[tuple[int, str | None], list[dict]],
+] | None = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -681,6 +691,10 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
+# #24824 -- la memo est trop petille (8192) pour le volume de corps d'une
+# fenetre de claims : elle evictait et recalcule. Elargie pour tenir le
+# working set ; le verdict est une fonction pure du corps.
+@lru_cache(maxsize=65536)
 def _unwrap_trapped_body(body: str) -> str:
     """Le corps REEL quand la publication a piege son propre payload (#19971).
 
@@ -1136,6 +1150,31 @@ def _claim_scope_effectively_epic_wide(ev: ClaimEvent) -> bool:
     if empty is None:
         return False  # reducer-direct / no witness -> no lift
     return len(empty) >= len(paths)
+
+
+def _claim_live_paths(ev: ClaimEvent) -> list[str] | None:
+    """#25873 -- the LIVE paths a claim occupies, or None when it is
+    effectively epic-wide (no live scope).
+
+    A bounded claim (a `paths:` clause with at least one live glob) occupies
+    exactly the files it names: it must NOT freeze the whole issue, so the
+    belt serves the issue and hands the caller those paths to work outside.
+    A plain `[CLAIMED]` (no `paths:`), an unparseable scope (#10597) or an
+    entirely-dead non-creation scope (#10958 / #11098) has no live scope and
+    is epic-wide: it keeps the fail-CLOSED block.
+
+    This is the read-side mirror of the epic-wide lift in
+    `_filter_by_claim_scope`, so the two can never disagree about which
+    other-lane claims are bounded.
+    """
+    scope = ev.get("paths")
+    if not scope:
+        return None  # no `paths:` clause -> epic-wide
+    if ev.get("unparseable_scope"):
+        return None  # #10597 -- parse residue, not a live scope
+    if _claim_scope_effectively_epic_wide(ev):
+        return None  # #10958/#11098 -- every glob dead -> epic-wide
+    return scope
 
 
 def compute_active_claims(
@@ -1965,7 +2004,8 @@ query {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
-        files(first:100) { totalCount nodes { path } }
+        headRefOid
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -1979,7 +2019,8 @@ query($cursor: String) {
       pageInfo { hasNextPage endCursor }
       nodes {
         number title headRefName body additions deletions
-        files(first:100) { totalCount nodes { path } }
+        headRefOid
+        files(first:100) { totalCount nodes { path changeType } }
       }
     }
   }
@@ -2060,13 +2101,14 @@ def _gh_graphql(query: str, variables: dict[str, str] | None = None) -> dict:
 
 
 def _gh_pr_files_rest(owner: str, name: str, number: int,
-                       expected: int) -> list[str]:
-    """Liste COMPLETE des fichiers d'une PR (REST, paginee).
+                       expected: int) -> tuple[list[str], list[str]]:
+    """Liste COMPLETE des fichiers d'une PR (REST, paginee) + ANCIENS CHEMINS.
 
-    Utilisee pour les seules PRs dont la liste de fichiers est plafonnee par
+    Utilisee pour les PRs dont la liste de fichiers est plafonnee par
     GraphQL (`files(first:100)`) -- mesure : 3 PRs ouvertes au 2026-10-21,
-    jusqu'a 1070 fichiers. L'endpoint REST `/pulls/{n}/files` n'a pas ce
-    plafond ; `--paginate` suit toutes les pages.
+    jusqu'a 1070 fichiers -- et, depuis #25910, pour les PRs qui portent un
+    RENOMMAGE. L'endpoint REST `/pulls/{n}/files` n'a pas ce plafond ;
+    `--paginate` suit toutes les pages.
 
     Le champ REST est `filename` (pas `path`). On NE passe PAS `--jq` : mesure
     du 2026-10-21, `gh api --paginate ... --jq '.[].path'` rend un tableau de
@@ -2074,8 +2116,17 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     applique a une entree vide. On parse donc le JSON et on extrait
     `filename` nous-memes.
 
-    Le nombre de chemins lus est compare a `expected` (le `totalCount`
-    GraphQL) : un ecart rend l'enumeration incomplete.
+    Rend `(chemins_de_tete, chemins_de_base_des_renommages)`. Le second
+    membre lit `previous_filename`, que REST expose SEULEMENT pour un
+    fichier renomme (le schema GraphQL `PullRequestChangedFile` ne porte
+    que `additions, changeType, deletions, path, viewerViewedState` -- pas
+    d'ancien chemin, cf. #25910). Motif deja eprouve dans le depot :
+    `scripts/notebook_tools/credited_examples_sweep.py::_previous_filenames`.
+
+    Le nombre de chemins de tete lus est compare a `expected` (le
+    `totalCount` GraphQL) : un ecart rend l'enumeration incomplete. Les
+    ANCIENS chemins ne sont pas comptes dans ce total -- ce sont des
+    chemins supplementaires, pas des fichiers de la PR.
     """
     try:
         proc = subprocess.run(
@@ -2118,12 +2169,22 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
         entry.get("filename") for entry in payload
         if isinstance(entry, dict) and entry.get("filename")
     ]
+    # #25910 -- l'ancien chemin d'un renommage. Il n'est PAS un fichier de
+    # la PR : il ne compte donc pas dans le total compare a `expected`.
+    previous: list[str] = []
+    for entry in payload:
+        if not isinstance(entry, dict):
+            continue
+        old = entry.get("previous_filename")
+        new = entry.get("filename")
+        if old and old != new and old not in previous:
+            previous.append(old)
     if len(paths) != expected:
         raise OpenPrsIncompleteError(
             f"liste de fichiers incomplete pour la PR #{number}",
             f"{len(paths)} chemins lus pour {expected} attendus",
         )
-    return paths
+    return paths, previous
 
 
 def _gh_open_prs_complete() -> list[dict]:
@@ -2135,7 +2196,13 @@ def _gh_open_prs_complete() -> list[dict]:
         aucune borne `--limit` susceptible de tronquer en silence) ;
       - les FICHIERS de chaque PR : `files(first:100).totalCount` dit
         exactement si la liste de chemins est plafonnee ; les PRs concernees
-        sont refetches en REST (pagination sans plafond), en parallele.
+        sont refetches en REST (pagination sans plafond), en parallele ;
+      - les ANCIENS CHEMINS des renommages (#25910) : GraphQL expose
+        `changeType == "RENAMED"` mais PAS l'ancien chemin ; la seule source
+        est le champ REST `previous_filename`. Les PRs qui portent un
+        renommage (et celles dont la liste de fichiers est plafonnee, ou le
+        renommage peut se cacher au-dela du 100e noeud) sont donc refetches
+        en REST, et l'ancien chemin rejoint l'index des chemins occupes.
 
     Leve `OpenPrsIncompleteError` si l'une des deux completudes ne peut pas
     etre etablie (plafond de securite, delai, reponse GraphQL en erreur).
@@ -2166,22 +2233,34 @@ def _gh_open_prs_complete() -> list[dict]:
             raise OpenPrsIncompleteError(
                 "depot introuvable dans la reponse GraphQL", repo)
         connection = repository.get("pullRequests") or {}
-        overflow: list[tuple[int, int]] = []
+        # PRs a relire en REST : plafonnees (liste de fichiers tronquee) ou
+        # porteuses d'un renommage (ancien chemin invisible cote GraphQL).
+        rest_needed: list[tuple[int, int]] = []
         for node in connection.get("nodes") or []:
             files = node.get("files") or {}
-            paths = [f["path"] for f in (files.get("nodes") or [])]
+            file_nodes = files.get("nodes") or []
+            paths = [f["path"] for f in file_nodes if f.get("path")]
             total = int(files.get("totalCount") or 0)
             number = int(node["number"])
-            if total > len(paths):
-                overflow.append((number, total))
+            has_rename = any(
+                f.get("changeType") == "RENAMED" for f in file_nodes
+            )
+            if total > len(paths) or has_rename:
+                rest_needed.append((number, total))
             entry = {
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                "headRefOid": node.get("headRefOid"),
                 "body": node.get("body"),
                 "additions": node.get("additions"),
                 "deletions": node.get("deletions"),
                 "files": [{"path": p} for p in paths],
+                # #25910 -- anciens chemins des renommages (liste vide si la
+                # PR n'en porte pas). La cle est aussi la preuve que cette
+                # enumeration a ete produite par la version qui indexe les
+                # renommages (cf. `_read_open_prs_cache`).
+                "renames": [],
             }
             prs.append(entry)
             by_number[number] = entry
@@ -2190,18 +2269,28 @@ def _gh_open_prs_complete() -> list[dict]:
                 "enumeration des PRs ouvertes au-dela du plafond de securite",
                 f"{len(prs)} > {_OPEN_PRS_HARD_CAP}",
             )
-        if overflow:
-            # Refetch des seules PRs plafonnees, en parallele : les 3 PRs
+        if rest_needed:
+            # Refetch des seules PRs concernees, en parallele : les 3 PRs
             # mesurees coutent ~11s en serie, ~7s en parallele.
             with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
                 futures = {
                     pool.submit(_gh_pr_files_rest, owner, name, num, tot): num
-                    for num, tot in overflow
+                    for num, tot in rest_needed
                 }
                 for future in concurrent.futures.as_completed(futures):
                     num = futures[future]
-                    paths = future.result()
-                    by_number[num]["files"] = [{"path": p} for p in paths]
+                    paths, previous = future.result()
+                    entry = by_number[num]
+                    entry["files"] = [{"path": p} for p in paths]
+                    entry["renames"] = previous
+                    # #25910 -- l'ancien chemin d'un renommage est OCCUPE :
+                    # il rejoint l'index (fail-CLOSED -- l'ensemble des
+                    # chemins occupes s'elargit, il ne se restreint jamais).
+                    known = {f["path"] for f in entry["files"]}
+                    for old in previous:
+                        if old not in known:
+                            entry["files"].append({"path": old})
+                            known.add(old)
         page_info = connection.get("pageInfo") or {}
         if not page_info.get("hasNextPage"):
             break
@@ -2235,7 +2324,16 @@ def _read_open_prs_cache() -> list[dict] | None:
     if isinstance(cached, dict) and cached.get("format") == _OPEN_PRS_CACHE_FORMAT:
         if cached.get("complete") is True:
             prs = cached.get("prs")
-            return prs if isinstance(prs, list) else None
+            if not isinstance(prs, list):
+                return None
+            # #25910 -- un cache ecrit par une version ANTERIEURE ne porte
+            # pas l'index des renommages (`renames`) : le lire reviendrait a
+            # rapporter LIBRE un chemin qu'une PR ouverte est en train de
+            # renommer. Il est donc traite comme absent -- le fetch complet
+            # qui suit le REECRIT au format courant.
+            if any("renames" not in pr for pr in prs if isinstance(pr, dict)):
+                return None
+            return prs
         raise OpenPrsIncompleteError(
             "cache des PRs ouvertes marque incomplet",
             str(cached.get("reason") or "")[:200],
@@ -2326,9 +2424,68 @@ _PR_ISSUE_REF_RE = re.compile(
     r"#(\d+)\b|\B#(\d+)\b"
 )
 
+# --- #24788 -- « mentionner » n'est pas « travailler sur » ---------------------
+#
+# La jambe IMPLICIT (#14300) lit une correspondance TEXTUELLE sur le corps
+# ENTIER de la PR : tout numero cite occupe l'issue. Une PR qui ENUMERE des
+# numeros -- la liste des issues ecartees du tapis, livrable legitime destine
+# a l'urne de l'adjoint -- declarait donc occupees TOUTES les issues listees.
+# Mesure du 2026-11-05 (corps de #24482) : 172 numeros cites, 162 encore
+# ouverts, soit 162 des 595 issues ouvertes du depot (27 %) declarees occupees
+# par une PR qui n'y travaille pas.
+#
+# Remede = les DEUX formes que l'issue dit combinables. Elles ne se compensent
+# pas : elles s'appliquent a des populations de corps differentes.
+#
+#   - corps ORDINAIRE (<= seuil de numeros DISTINCTS cites) : predicat
+#     inchange. C'est ce qui preserve #14300 SANS cout -- une PR qui travaille
+#     une issue sans la fermer continue de la proteger (le corps de l'incident
+#     fondateur #14259 ne portait qu'un `See #14259`, un seul numero).
+#   - corps ENUMERATIF (> seuil) : seules les references FORTES occupent --
+#     verbe de livraison (`Closes`/`Fixes`/`Resolves`, qui ferment l'issue) ou
+#     marqueur de lane sur la MEME ligne que le numero. La forme 1 appliquee
+#     partout aurait le cout que l'issue decrit ; appliquee aux seuls corps
+#     enumeratifs, elle rend la jambe exacte la ou l'enumeration l'aveuglait.
+#
+# Le seuil est un parametre, pas une observation : `--enum-threshold` ou
+# `CHECK_LANE_CLAIM_ENUM_THRESHOLD`. Il ne change RIEN a un corps ordinaire.
+_ENUM_DISTINCT_ISSUES_DEFAULT = 10
+
+# Le verbe de livraison doit preceder IMMEDIATEMENT la reference (regle de
+# syntaxe sure de `git-workflow.md` : tout ce qui s'intercale entre les deux
+# fait de la phrase du texte). D'ou `[ \t]+` et non `\s+` : meme ligne, rien
+# d'autre que des espaces.
+_STRONG_DELIVERY_REF_RE = re.compile(
+    r"(?i)\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)[ \t]+#(\d+)\b"
+)
+
+# Marqueurs qui affirment une occupation ou une livraison. Volontairement plus
+# etroit que `_MARKER_RE` : `[DONE]` ferme un cycle, il ne dit pas « cette PR
+# travaille cette issue ». Non ancre en debut de ligne -- dans un corps de PR
+# le marqueur vit souvent au milieu d'une phrase (`[DELIVERED] lane X -- PR #N`).
+_STRONG_MARKER_RE = re.compile(
+    r"(?i)\[\s*(CLAIMED-AMEND|CLAIMED|DELIVERED|RELEASED)\s*\]"
+)
+
 
 def _pr_body_references_issue(body: str, issue_number: int) -> bool:
-    """True when `body` carries any reference form of `issue_number`."""
+    """True when `body` carries any reference form of `issue_number`.
+
+    ATTENTION -- deux lecteurs de « reference » coexistent, et ils ne sont PAS
+    interchangeables :
+
+    - ce predicat : « le corps mentionne l'issue », sans seuil. Il reste appele
+      par `_lane_open_prs_referencing` (« la lane bouge-t-elle encore ? », ou
+      un faux positif ne coute rien) et par l'appariement `--release` /
+      `[DELIVERED]` (#24788, review Hermes du 2026-11-08) ;
+    - `_occupying_issue_numbers` : « la PR travaille cette issue », avec le
+      seuil d'enumeration. C'est lui qui decide d'une OCCUPATION, donc d'un
+      BLOCKED pour une autre lane.
+
+    Sur un corps enumeratif, le premier rend `True` pour CHACUN des numeros
+    cites : l'employer la ou l'on veut « cette PR occupe-t-elle cette issue »
+    rouvrirait exactement le defaut que #24788 ferme.
+    """
     for m in _PR_ISSUE_REF_RE.finditer(body):
         captured = m.group(1) or m.group(2)
         if captured is None:
@@ -2341,14 +2498,87 @@ def _pr_body_references_issue(body: str, issue_number: int) -> bool:
     return False
 
 
+def _enumeration_threshold() -> int:
+    """Seuil de numeros DISTINCTS au-dela duquel un corps est une enumeration.
+
+    Env `CHECK_LANE_CLAIM_ENUM_THRESHOLD` pour le diagnostic et les tests ; le
+    defaut est la valeur que #24788 propose (« N a fixer, 10 par exemple »).
+    Une valeur illisible retombe sur le defaut : un seuil de mesure ne doit
+    jamais changer le verdict par accident de transport.
+    """
+    raw = os.environ.get("CHECK_LANE_CLAIM_ENUM_THRESHOLD")
+    if raw is None or not raw.strip():
+        return _ENUM_DISTINCT_ISSUES_DEFAULT
+    try:
+        value = int(raw.strip())
+    except ValueError:
+        return _ENUM_DISTINCT_ISSUES_DEFAULT
+    return value if value > 0 else _ENUM_DISTINCT_ISSUES_DEFAULT
+
+
+def _referenced_issue_numbers(body: str) -> set[int]:
+    """Tous les numeros cites par `body` -- le predicat de #14300, inchange."""
+    out: set[int] = set()
+    for m in _PR_ISSUE_REF_RE.finditer(body):
+        captured = m.group(1) or m.group(2)
+        if captured is None:
+            continue
+        try:
+            out.add(int(captured))
+        except ValueError:
+            continue
+    return out
+
+
+def _strong_reference_numbers(body: str) -> set[int]:
+    """Numeros portes par une reference FORTE (#24788, forme 1).
+
+    Forte = verbe de livraison immediatement devant le numero, ou numero sur
+    une ligne qui porte un marqueur d'occupation/livraison de lane. Un
+    `See #N` isole, un `Part of #N` et une enumeration nue restent des
+    mentions : ils ne prouvent pas que la PR travaille l'issue.
+    """
+    out: set[int] = set()
+    for m in _STRONG_DELIVERY_REF_RE.finditer(body):
+        try:
+            out.add(int(m.group(1)))
+        except ValueError:
+            continue
+    for line in body.splitlines():
+        if _STRONG_MARKER_RE.search(line) is None:
+            continue
+        out |= _referenced_issue_numbers(line)
+    return out
+
+
+def _occupying_issue_numbers(
+    body: str, threshold: int | None = None,
+) -> set[int]:
+    """Les numeros que ce corps OCCUPE, apres la garde d'enumeration.
+
+    Sous le seuil (corps ordinaire) : tout numero cite occupe -- #14300 est
+    preserve sans cout. Au-dessus : seules les references fortes occupent, la
+    ou l'enumeration rendait la jambe aveugle. La frontiere est INCLUSIVE
+    (exactement `threshold` numeros = corps ordinaire) : un corps n'est pas
+    declare enumeratif pour etre tombe pile sur la valeur.
+    """
+    cited = _referenced_issue_numbers(body)
+    limit = _ENUM_DISTINCT_ISSUES_DEFAULT if threshold is None else threshold
+    if len(cited) <= limit:
+        return cited
+    return cited & _strong_reference_numbers(body)
+
+
 # #14300 -- the implicit-occupation finder (issue mode, no --paths). The
 # claim record only sees [CLAIMED] markers; the incident the issue documents
 # (#14259, 2026-09-02) had two lanes converging on one file with ZERO
 # markers posted -- the organ said CLEAR and was "right": nobody had
 # claimed. The strongest signal of occupation -- an OPEN PR of another lane
 # already referencing the issue -- lived one `gh pr list` away.
-def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
-    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue cite.
+def _open_prs_by_referenced_issue(
+    prs: list[dict], threshold: int | None = None,
+) -> dict[int, list[dict]]:
+    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue OCCUPEE.
 
     #22983 -- la jambe IMPLICIT (#14300) demandait, pour CHAQUE candidat, un
     balayage de TOUS les bodies de PRs ouvertes : mesure du 27/10, ~0,6 s par
@@ -2357,34 +2587,175 @@ def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
     tapis. L'index remplace N balayages par UN : on extrait tous les numeros
     cites une seule fois, puis on consulte un dict.
 
-    Le predicat reste le meme (`_PR_ISSUE_REF_RE`), donc la correspondance
-    des numeros est identique : c'est le meme regex, sur le meme corps, au
-    meme moment. Seule la repetitions change.
+    #24788 -- l'index porte desormais les numeros **occupes**, pas les numeros
+    **cites** : pour un corps ordininaire c'est le meme ensemble, pour un
+    corps enumeratif seules les references fortes restent (cf
+    `_occupying_issue_numbers`). Le predicat de lecture (`_PR_ISSUE_REF_RE`)
+    est inchange ; c'est le SEUIL qui decide de la forme retenue.
     """
     global _OPEN_PRS_INDEX_MEMO
     index: dict[int, list[dict]] = {}
+    limit = _enumeration_threshold() if threshold is None else threshold
     memo = _OPEN_PRS_INDEX_MEMO
-    # La memo porte la LISTE elle-meme (pas son `id()`) : la liste reste
-    # vivante, donc l'identite ne peut pas etre reattribuee par le
-    # collecteur a une autre liste.
-    if memo is not None and memo[0] is prs:
-        return memo[1]
+    # La memo porte la LISTE elle-meme (pas son `id()`) et le SEUIL : la liste
+    # reste vivante, donc l'identite ne peut pas etre reattribuee par le
+    # collecteur a une autre liste, et un index calcule sous un seuil ne se
+    # sert pas sous un autre.
+    if memo is not None and memo[0] is prs and memo[1] == limit:
+        return memo[2]
     for pr in prs:
         # #19971 -- meme lecture defensive du transport qu'a l'entree des
         # commentaires : un body de PR piege en payload JSON cache le `lane`
         # et la reference `#N` exactement de la meme facon (instance fondatrice
         # #17270, mesuree sur un body de PR).
         body = _unwrap_trapped_body(pr.get("body") or "")
-        for m in _PR_ISSUE_REF_RE.finditer(body):
-            captured = m.group(1) or m.group(2)
-            if captured is None:
-                continue
-            try:
-                number = int(captured)
-            except ValueError:
-                continue
+        for number in _occupying_issue_numbers(body, limit):
             index.setdefault(number, []).append(pr)
-    _OPEN_PRS_INDEX_MEMO = (prs, index)
+    _OPEN_PRS_INDEX_MEMO = (prs, limit, index)
+    return index
+
+
+def _pr_files_against_main(pr: dict) -> list[str] | None:
+    """Return paths touched by first-parent PR commits absent from main.
+
+    The PR-files API describes the branch diff against its declared base. For a
+    stacked branch that has absorbed main, this can include files changed only
+    by main. The head commit is supplied by GraphQL; a missing local object is
+    fetched by its pull ref. The first-parent, non-merge log lists ordinary PR
+    commits absent from main; merge commits are compared with a main ancestor
+    parent so their conflict resolutions and additions are retained without
+    counting files simply imported from main. Git has no 100-file API ceiling.
+
+    ``None`` means provenance could not be established. Callers then retain
+    the API paths (fail-closed); an unavailable ref or Git error must never
+    release an implicit occupation. An empty list means there is no path
+    touched by an ordinary first-parent commit or contributed by a merge.
+    """
+    head = pr.get("headRefOid")
+    number = pr.get("number")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+        return None
+
+    def git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args], capture_output=True, check=False,
+            encoding="utf-8", errors="strict",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+
+    try:
+        has_head = git("cat-file", "-e", f"{head}^{{commit}}")
+        if has_head.returncode != 0:
+            if not isinstance(number, int) or number <= 0:
+                return None
+            fetched = git("fetch", "--no-tags", "origin",
+                          f"refs/pull/{number}/head")
+            if fetched.returncode != 0:
+                return None
+            fetched_head = git("rev-parse", "--verify", "FETCH_HEAD")
+            if (fetched_head.returncode != 0
+                    or fetched_head.stdout.strip().lower() != head.lower()):
+                return None
+        main = git("rev-parse", "--verify", "origin/main")
+        if main.returncode != 0:
+            return None
+        main_oid = main.stdout.strip()
+        commits = subprocess.run(
+            ["git", "log", "--first-parent", "--no-merges", "--format=",
+             "--name-only", "-z", f"origin/main..{head}", "--"],
+            capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+        if commits.returncode != 0:
+            return None
+        paths = {path.decode("utf-8") for path in commits.stdout.split(b"\0") if path}
+
+        # A merge commit can carry the PR's only change (conflict resolution,
+        # an `ours` choice, or a file created during resolution). For each
+        # first-parent merge outside main, diff its tree against a parent that
+        # is already on main. This includes the merge's own tree contribution
+        # while ignoring files merely imported from that main parent.
+        merges = git("rev-list", "--first-parent", "--merges",
+                     f"origin/main..{head}")
+        if merges.returncode != 0:
+            return None
+        for merge in merges.stdout.splitlines():
+            ancestry = git("rev-list", "--parents", "-n", "1", merge)
+            if ancestry.returncode != 0:
+                return None
+            commits_and_parents = ancestry.stdout.split()
+            parents = commits_and_parents[1:]
+            if len(parents) < 2 or commits_and_parents[0] != merge:
+                return None
+            main_parents = []
+            for parent in parents:
+                is_main_ancestor = git("merge-base", "--is-ancestor", parent, main_oid)
+                if is_main_ancestor.returncode == 0:
+                    main_parents.append(parent)
+                elif is_main_ancestor.returncode != 1:
+                    return None
+            # Several parents can already be on main while this merge
+            # deliberately chooses an older parent's content (e.g. ours).
+            # Matching one ancestor is not proof of inheriting main's tree.
+            # Compare with current main in this ambiguous case; this can
+            # conservatively retain later main paths, never release work.
+            comparison_parents = (
+                [main_oid] if len(main_parents) > 1
+                else main_parents or [parents[0]]
+            )
+            merge_contribution: set[str] | None = None
+            for parent in comparison_parents:
+                merge_diff = subprocess.run(
+                    ["git", "diff", "--name-only", "-z", parent, merge, "--"],
+                    capture_output=True, check=False, timeout=_GH_OPEN_PRS_TIMEOUT_S,
+                )
+                if merge_diff.returncode != 0:
+                    return None
+                changed_from_parent = {
+                    path.decode("utf-8")
+                    for path in merge_diff.stdout.split(b"\0") if path
+                }
+                # Compare against the selected main reference; a merge
+                # resolution matching an old ancestor still occupies a path
+                # when current main carries another resolution.
+                merge_contribution = (
+                    changed_from_parent if merge_contribution is None
+                    else merge_contribution & changed_from_parent
+                )
+            paths.update(merge_contribution or set())
+        return sorted(paths)
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
+def _open_prs_by_issue_and_lane(
+    prs: list[dict],
+) -> dict[tuple[int, str | None], list[dict]]:
+    """Indexe references et lanes, en invalidant sur tout changement visible.
+
+    La liste de PRs est mutable. Le fingerprint capture l'ordre, l'identite
+    de chaque dictionnaire, son numero et la valeur du body; il est recalcule
+    a chaque lecture pour voir aussi les modifications en place. La racine
+    courante fait partie de la cle, car le cache ouvert peut changer avec le
+    depot de travail.
+    """
+    global _OPEN_PRS_LANE_INDEX_MEMO
+    fingerprint = tuple(
+        (id(pr), repr(pr.get("number")), repr(pr.get("body") or ""))
+        for pr in prs
+    )
+    root = os.getcwd()
+    memo = _OPEN_PRS_LANE_INDEX_MEMO
+    if (memo is not None and memo[0] is prs and memo[1] == root
+            and memo[2] == fingerprint):
+        return memo[3]
+
+    index: dict[tuple[int, str | None], list[dict]] = {}
+    for pr in prs:
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        lane = extract_lane(body)
+        for issue_number in _referenced_issue_numbers(body):
+            index.setdefault((issue_number, lane), []).append(pr)
+    _OPEN_PRS_LANE_INDEX_MEMO = (prs, root, fingerprint, index)
     return index
 
 
@@ -2392,27 +2763,48 @@ def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
     prs: list[dict] | None = None,
+    threshold: int | None = None,
 ) -> list[dict]:
     """Open PRs of OTHER lanes whose body references `issue_number`.
 
     Own-lane PRs are omitted (a lane does not collide with itself -- the
-    same exclusion the `--paths` leg applies). A PR whose lane tag is
-    unreadable counts as another lane (`extract_lane` returns None,
-    None != my_lane): fail-closed, mirroring `--paths`, where an
-    unreadable lane tag also counts as a collision. Sorted by PR number
+    same exclusion the `--paths` leg applies). When Git can establish the
+    head's non-merge first-parent commits absent from `origin/main`, an empty
+    path set is omitted and the reported paths are complete (not the API's
+    100-path preview). Unresolvable provenance keeps API paths and occupation.
+    A PR whose lane tag is unreadable counts as another lane
+    (`extract_lane` returns None, None != my_lane): fail-closed, mirroring
+    `--paths`, where an unreadable lane tag also counts as a collision.
+    Sorted by PR number
     (deterministic verdict order). Test injection: pass `prs` to avoid the
-    `gh` round-trip.
+    `gh` round-trip; pass `threshold` to pin the enumeration guard (#24788).
+
+    #24788 -- the index now answers « quelles PRs OCCUPENT ce numero », not
+    « lesquelles le citent ». `enumerative`/`cited_issues` travel with the
+    finding so the verdict can say WHY a delivery-verb reference inside a long
+    list still occupies, instead of leaving the reader to guess.
     """
+    limit = _enumeration_threshold() if threshold is None else threshold
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
-    for pr in _open_prs_by_referenced_issue(prs).get(issue_number, []):
+    for pr in _open_prs_by_referenced_issue(prs, limit).get(issue_number, []):
         body = _unwrap_trapped_body(pr.get("body") or "")
         lane = extract_lane(body)
         if lane == my_lane:
             continue
-        files = [f.get("path") for f in (pr.get("files") or [])
-                 if f.get("path")]
+        files = _pr_files_against_main(pr)
+        if files is None:
+            # Transport, SHA, or local object failure: preserve legacy paths
+            # and therefore the conservative occupation verdict.
+            files = [f.get("path") for f in (pr.get("files") or [])
+                     if f.get("path")]
+        elif not files:
+            # No file changed by a PR-line commit absent from main: inherited
+            # main changes cannot occupy this grain. The fallback above is
+            # intentionally unavailable once Git proved the empty diff.
+            continue
+        cited = len(_referenced_issue_numbers(body))
         out.append({
             "number": pr.get("number"),
             "lane": lane,
@@ -2420,6 +2812,8 @@ def _find_open_prs_referencing_issue(
             "files": files,
             "additions": pr.get("additions"),
             "deletions": pr.get("deletions"),
+            "enumerative": cited > limit,
+            "cited_issues": cited,
         })
     out.sort(key=lambda d: d["number"] or 0)
     return out
@@ -2473,12 +2867,9 @@ def _lane_open_prs_referencing(
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[int] = []
-    for pr in prs:
-        body = _unwrap_trapped_body(pr.get("body") or "")
-        if extract_lane(body) != lane:
-            continue
-        if not _pr_body_references_issue(body, issue_number):
-            continue
+    candidates = _open_prs_by_issue_and_lane(prs).get(
+        (issue_number, lane), [])
+    for pr in candidates:
         try:
             out.append(int(pr["number"]))
         except (KeyError, ValueError, TypeError):
@@ -2838,6 +3229,43 @@ def _find_open_pr_for_issue_by_lane(
     return matches[0]
 
 
+@lru_cache(maxsize=8192)
+def _compiled_path_pattern(pattern: str) -> re.Pattern[str]:
+    """fnmatch regex for one raw pattern under the current platform rules."""
+    from fnmatch import translate
+    return re.compile(translate(os.path.normcase(pattern)))
+
+
+@lru_cache(maxsize=65536)
+def _normcase_path(path: str) -> str:
+    return os.path.normcase(path)
+
+
+@lru_cache(maxsize=262144)
+def _path_matches_pair(path: str, pattern: str) -> bool:
+    """Match one immutable (path, pattern) pair, memoized above.
+
+    The glob is compiled to a regex by ``_compiled_path_pattern`` and matched
+    with ``re.match`` against the ``os.path.normcase``-normalized FULL path
+    AND against the normalized BASENAME, so ``*.lean`` matches both
+    ``knot_lean/Foo.lean`` and a bare ``Foo.lean``. The verdict is a pure
+    function of its two immutable ``str`` arguments, so the (bounded,
+    ``maxsize=262144``) memo can never change it; the compiled-regex and
+    normcase helpers are cached separately. Windows normcase and separator
+    behavior are retained.
+    """
+    basename = path.rsplit("/", 1)[-1]
+    regex = _compiled_path_pattern(pattern)
+    return (regex.match(_normcase_path(path)) is not None
+            or regex.match(_normcase_path(basename)) is not None)
+
+
+@lru_cache(maxsize=8192)
+def _expanded_path_pattern(pattern: str) -> tuple[str, ...]:
+    """Brace expansion for one immutable caller pattern."""
+    return tuple(_expand_brace_groups(pattern))
+
+
 def _path_matches(path: str, patterns: list[str]) -> bool:
     """Return True if `path` matches any of the caller-provided patterns.
 
@@ -2857,13 +3285,104 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     existing `grep`/git commands used in the cluster for "where does this
     file live" queries.
     """
-    from fnmatch import fnmatch
-    basename = path.rsplit("/", 1)[-1]
+    return _path_matches_cached(path, tuple(patterns))
+
+
+@lru_cache(maxsize=262144)
+def _path_matches_cached(path: str, patterns: tuple[str, ...]) -> bool:
+    """#24824 -- memoise le verdict par (chemin, motifs) : les deux sont
+    invariants d'une issue a l'autre dans le batch, seule la liste suivie
+    change (memoisee par racine). Fonction pure de ses deux arguments, donc
+    la memoisation ne peut changer aucun verdict."""
     for pat in patterns:
-        for p in _expand_brace_groups(pat):
-            if fnmatch(path, p) or fnmatch(basename, p):
+        for p in _expanded_path_pattern(pat):
+            if _path_matches_pair(path, p):
                 return True
     return False
+
+
+# #24824 -- memoise le croisement par (motifs, identite + generation de la
+# liste suivie). La liste est l'objet _TrackedFiles memoise par racine dans
+# _TRACKED_FILES_MEMO (jamais mute en place en production). La cle porte la
+# generation _gen, que _TrackedFiles._invalidate() incrémente a chaque
+# mutation : un resultat ne peut donc jamais etre servi stale contre une
+# liste mutee (contrat test 3031/3040). On garde une reference FORTe vers la
+# liste dans la valeur : son id() n'est pas reutilise tant que l'entree vit.
+# Seules les listes _TrackedFiles sont memoisees ; une liste brute (mutable)
+# ne l'est pas. Le bornage efface (re-calcule) : jamais un verdict faux.
+_MATCHING_INDICES_MEMO: dict[tuple, tuple[object, frozenset[int]]] = {}
+# #25913 (reponse a la reserve Hermes #4) -- double borne : en NOMBRE d'entrees
+# (MAX) et en VOLUME (MAX_INDICES, somme des indices sur tous les frozensets).
+# La borne en nombre seule laissait 1024 entrees pleines (chacune jusqu'a la
+# liste suivie entiere, ~16k indices) tenir en memoire (~44 Mo de frozensets
+# mesurés) ; la borne en indices cumulés plafonne le volume. _SIZE est le
+# compteur correspondant, réinitialisé a chaque clear.
+_MATCHING_INDICES_MEMO_MAX = 1024
+_MATCHING_INDICES_MEMO_MAX_INDICES = 131072  # ~8 listes suivies completes
+_MATCHING_INDICES_MEMO_SIZE = 0
+
+
+def _matching_indices_store(
+    key: tuple, tracked: object, indices: frozenset[int]
+) -> None:
+    """Insère dans ``_MATCHING_INDICES_MEMO`` sous double borne.
+
+    #25913 (reponse a la reserve Hermes #4) : au-dela de la borne en nombre
+    d'entrees, la borne en indices cumulés plafonne le volume de frozensets.
+    A la limite, la memo entiere est effacée ; c'est une cache pure, l'effacement
+    force un re-calcul mais ne change aucun verdict.
+    """
+    global _MATCHING_INDICES_MEMO_SIZE
+    if (len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX
+            or _MATCHING_INDICES_MEMO_SIZE + len(indices)
+            > _MATCHING_INDICES_MEMO_MAX_INDICES):
+        _MATCHING_INDICES_MEMO.clear()
+        _MATCHING_INDICES_MEMO_SIZE = 0
+    _MATCHING_INDICES_MEMO[key] = (tracked, indices)
+    _MATCHING_INDICES_MEMO_SIZE += len(indices)
+
+
+def _matching_tracked_indices(
+    patterns: list[str], tracked: list[str]
+) -> set[int]:
+    """Indices des chemins suivis qui correspondent aux motifs.
+
+    Cette forme en lot est utilisee par `_scopes_intersect`: les motifs
+    sont developpes/normalises/compiles une fois par scope, puis chaque
+    chemin est normalise une seule fois (par `_TrackedFiles`) et teste
+    contre ces regex. La separation du basename se fait toujours sur le
+    chemin brut, avant `normcase`, comme dans `fnmatch(path, pattern)` sous
+    Windows.
+
+    #24824 -- memoise par (motifs, identite de la liste suivie) : dans le
+    batch, les memes perimetres sont recroises a chaque issue sur la meme
+    liste suivie. La reference forte vers `tracked` rend l'`id()` stable,
+    donc la memoisation ne change aucun verdict (fonction pure).
+    """
+    # #24824 -- la memo ne porte que sur les listes _TrackedFiles ; la cle
+    # porte leur generation _gen, donc toute mutation force le re-calcule
+    # (jamais un verdict stale). Une liste brute n'est pas memoisee.
+    is_tf = isinstance(tracked, _TrackedFiles)
+    if is_tf:
+        key = (tuple(patterns), id(tracked), tracked._gen)
+        hit = _MATCHING_INDICES_MEMO.get(key)
+        if hit is not None:
+            return set(hit[1])
+    expanded = [p for pattern in patterns
+                for p in _expanded_path_pattern(pattern)]
+    regexes = [_compiled_path_pattern(p) for p in expanded]
+    if not regexes:
+        if is_tf:
+            _matching_indices_store(key, tracked, frozenset())
+        return set()
+    pairs = _norm_pairs(tracked)
+    result = {
+        index for index, (path, basename) in enumerate(pairs)
+        if any(rx.match(path) or rx.match(basename) for rx in regexes)
+    }
+    if is_tf:
+        _matching_indices_store(key, tracked, frozenset(result))
+    return result
 
 
 def _compute_scope_intersection_paths(
@@ -2903,9 +3422,11 @@ def _compute_scope_intersection_paths(
         # The claim (or the caller) is wildcards-free, so the BLOCKED
         # verdict stays binary from the file-list perspective.
         return [], False
+    common = (_matching_tracked_indices(my_scope, tracked)
+              & _matching_tracked_indices(claim_scope, tracked))
     matches: list[str] = []
-    for path in tracked:
-        if _path_matches(path, my_scope) and _path_matches(path, claim_scope):
+    for index, path in enumerate(tracked):
+        if index in common:
             matches.append(path)
             if len(matches) > limit:
                 return matches[:-1], True
@@ -2947,19 +3468,15 @@ def _compute_free_paths(
     # collect the matches. This is the disjoint case the lane-claim
     # guard relies on: rc=0 (clear), free_paths = the whole caller scope.
     if not scoped_claims:
-        free: list[str] = []
-        for path in tracked:
-            if not _path_matches(path, my_scope):
-                continue
-            free.append(path)
-            if len(free) > limit:
-                return free[:-1], True
-        return free, False
+        blockers: set[int] = set()
+    else:
+        blockers = set()
+        for scopes in scoped_claims:
+            blockers.update(_matching_tracked_indices(scopes, tracked))
+    in_scope = _matching_tracked_indices(my_scope, tracked)
     free: list[str] = []
-    for path in tracked:
-        if not _path_matches(path, my_scope):
-            continue
-        if any(_path_matches(path, scopes) for scopes in scoped_claims):
+    for index, path in enumerate(tracked):
+        if index not in in_scope or index in blockers:
             continue
         free.append(path)
         if len(free) > limit:
@@ -3104,13 +3621,76 @@ class _TrackedFiles(list):
     Les formes normalisees sont calculees ici, UNE FOIS par liste.
     """
 
-    __slots__ = ("_norm", "_exact", "_bases")
+    __slots__ = ("_norm", "_exact", "_bases", "_gen")
 
     def __init__(self, items):
         super().__init__(items)
         self._norm = None
         self._exact = None
         self._bases = None
+        self._gen = 0
+
+    def _invalidate(self):
+        self._norm = self._exact = self._bases = None
+        # #24824 -- toute mutation change la generation : la memo de
+        # _matching_tracked_indices (clee sur _gen) ne sert donc jamais un
+        # resultat stale contre une liste mutee (contrat test 3031/3040).
+        self._gen += 1
+
+    def __setitem__(self, key, value):
+        super().__setitem__(key, value)
+        self._invalidate()
+
+    def __delitem__(self, key):
+        super().__delitem__(key)
+        self._invalidate()
+
+    def append(self, item):
+        super().append(item)
+        self._invalidate()
+
+    def extend(self, items):
+        # An iterator can fail after partially extending the list.
+        try:
+            super().extend(items)
+        finally:
+            self._invalidate()
+
+    def insert(self, index, item):
+        super().insert(index, item)
+        self._invalidate()
+
+    def pop(self, index=-1):
+        item = super().pop(index)
+        self._invalidate()
+        return item
+
+    def remove(self, item):
+        super().remove(item)
+        self._invalidate()
+
+    def clear(self):
+        super().clear()
+        self._invalidate()
+
+    def reverse(self):
+        super().reverse()
+        self._invalidate()
+
+    def sort(self, *args, **kwargs):
+        try:
+            super().sort(*args, **kwargs)
+        finally:
+            self._invalidate()
+
+    def __iadd__(self, items):
+        self.extend(items)
+        return self
+
+    def __imul__(self, count):
+        super().__imul__(count)
+        self._invalidate()
+        return self
 
     @property
     def norm_pairs(self) -> list[tuple[str, str]]:
@@ -3201,6 +3781,46 @@ def _norm_pairs(tracked) -> list[tuple[str, str]]:
             for p in tracked]
 
 
+# #24824 -- memo par (charge, identite + generation de la liste suivie) pour
+# les fonctions pures de (charge, tracked). `tracked` est l'objet
+# _TrackedFiles memoise par racine (_TRACKED_FILES_MEMO), jamais mute en
+# place en production ; la cle porte _gen, que _TrackedFiles._invalidate()
+# incremente a chaque mutation, donc un resultat ne peut jamais etre servi
+# stale contre une liste mutee (contrat test 3031/3040). Reference FORTe vers
+# la liste dans la valeur : son id() n'est pas reutilise tant que l'entree
+# vit. Une liste brute (mutable) n'est jamais memoisee ; le bornage efface
+# (re-calcule). Jamais un verdict faux.
+_MISS = object()
+
+
+class _TrackedScopedMemo:
+    """Memo bornee des fonctions pures de (charge, liste suivie)."""
+
+    __slots__ = ("_d", "_max")
+
+    def __init__(self, maxsize: int) -> None:
+        self._d: dict = {}
+        self._max = maxsize
+
+    def get(self, payload, tracked):
+        if isinstance(tracked, _TrackedFiles):
+            hit = self._d.get((payload, id(tracked), tracked._gen), _MISS)
+            if hit is not _MISS:
+                return hit[1]
+        return _MISS
+
+    def put(self, payload, tracked, value) -> None:
+        if not isinstance(tracked, _TrackedFiles):
+            return
+        if len(self._d) >= self._max:
+            self._d.clear()
+        self._d[(payload, id(tracked), tracked._gen)] = (tracked, value)
+
+
+_GLOB_TRACKED_MEMO = _TrackedScopedMemo(16384)
+_CORRECTION_MEMO = _TrackedScopedMemo(16384)
+
+
 def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     """True when at least one tracked file matches the glob (fnmatch, basename-or-full).
 
@@ -3219,6 +3839,16 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     les separateurs de chemin en antislash et le nom de base ne serait
     plus extrait.
     """
+    cached = _GLOB_TRACKED_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _glob_matches_tracked_uncached(glob, tracked)
+    _GLOB_TRACKED_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _glob_matches_tracked_uncached(glob: str, tracked: list[str]) -> bool:
+    """Corps de `_glob_matches_tracked`, sans memo (balayage par glob)."""
     from fnmatch import translate
     patterns = _expand_brace_groups(glob)
     if not patterns:
@@ -3277,6 +3907,16 @@ def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
     between 1 and 5 times IS likely a typo (the writer meant one specific
     file and the regex did not pick the right one).
     """
+    cached = _CORRECTION_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _suggest_path_correction_uncached(glob, tracked)
+    _CORRECTION_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _suggest_path_correction_uncached(glob: str, tracked: list[str]) -> str | None:
+    """Corps de `_suggest_path_correction`, sans memo (balayage des chemins)."""
     if not glob or "/" not in glob:
         return None
     basename = glob.rsplit("/", 1)[-1]
@@ -3952,6 +4592,16 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #     semaine se bloquerait. Meme regle pour un claim pose directement sur
 #     l'EPIC. »
 #
+# #26414 (decision ai-01 du 2026-11-13, option 1 « filles existantes hors
+# plafond, pas du tout ») : la demande ci-dessus est CORRIGEE sur un point --
+# les parents de N ne sont plus des sujets. Une claim sur une fille DEJA
+# OUVERTE est le SERVICE d'un sous-grain existant, permis par #22500 point 2
+# et par `.claude/rules/proactive-coordination.md` (« piocher un sous-grain
+# ouvert, ou en creer un seul par visite ») ; le plafond gate la CREATION
+# (cote picker, `umbrella_visit_cause` au tirage), pas le service. Reste
+# sujet : N lui-meme quand c'est un umbrella (claim pose directement sur
+# l'EPIC, demande explicite conservee).
+#
 # ORGANE-FIRST : la semantique du plafond n'est PAS re-ecrite ici. Tout vient de
 # `scripts/pick_idle_grain.py`, importe a la demande (`_epic_cap_picker`) :
 #   - `parent_refs(it)` (l. 5904) : la definition d'un parent (prefixe de titre
@@ -3972,13 +4622,12 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #
 # COUT -- la contrainte du coordinateur est explicite (274 s pour la commande
 # des lanes, dont 45 s pour 8 sondes de claims) :
-#   - issue sans parent ET pas elle-meme un umbrella : **zero appel, zero
-#     seconde** (c'est le cas le plus frequent, et `parent_refs` se lit sur la
-#     charge deja telechargee) ;
-#   - issue avec parent(s) : 1 appel `gh issue view` par parent, et le pool
-#     (1 appel, 8,6 s mesure le 2026-10-26 sur 555 issues ouvertes) UNIQUEMENT
-#     si au moins un parent est un umbrella hors consolidation -- un parent
-#     ordinaire ne coute donc pas le pool ;
+#   - toute issue qui n'est pas elle-meme un umbrella (grain ordinaire, fille
+#     d'EPIC comprise depuis #26414) : **zero appel, zero seconde** -- c'est
+#     le cas le plus frequent ;
+#   - N umbrella hors consolidation : le pool seul (1 appel, 8,6 s mesure le
+#     2026-10-26 sur 555 issues ouvertes) ; depuis #26414 plus AUCUN
+#     `gh issue view` de parent ;
 #   - le pool est memoise par processus (`_EPIC_CAP_POOL_MEMO`) : le mode batch
 #     le paie une fois pour N issues ;
 #   - si une autre lane bloque deja (verdict exit 1 acquis), le plafond n'est
@@ -3994,10 +4643,21 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 # une sonde `check_claims([n])` sur une fille plafonnee rend encore FREE tant
 # qu'un suivi n'enseigne pas au picker la cle `epic_visit_cap`. Le gate de la
 # lane, lui, est rendu.
+# #22687 -- deux corrections depuis cette annonce : (a) le plafond SAUTE quand
+# la lane appelante tient deja un claim actif sur une FILLE N (arbitrage ai-01
+# du 2026-11-08, cas #23499 : la reprise d'un chantier ouvert n'est pas une
+# nouvelle visite ; depuis #26414 les filles ne sont de toute facon plus
+# sujet du plafond -- le saut reste, il evite la mesure) ;
+# JAMAIS sur l'EPIC lui-meme, la demande du 09/11 reste entiere) ;
+# (b) la voie unitaire EN PROCESSUS du picker cable desormais `epic_cap=True`
+# et son reducteur lit la cle : la sonde solitaire d'une fille plafonnee rend
+# BLOCKED, alignee sur le gate L898 et sur le plafond bulk que le tapis mesure
+# deja lui-meme. Le mode batch reste `epic_cap=False` (#22630 possede le
+# tirage).
 #
 # ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
 # anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
-# Un parent ou un pool illisible ne bloque donc PAS : il est NOMME dans
+# Un pool illisible ne bloque donc PAS : il est NOMME dans
 # `epic_visit_cap_error` et sur stderr. Un plafond non mesurable ne doit jamais
 # se lire comme un plafond respecte, ni fermer la voie a une lane sur une panne
 # de transport.
@@ -4057,9 +4717,94 @@ def _epic_cap_pool() -> tuple[list[dict], str | None]:
     return pool, read_error
 
 
+def _without_in_progress_visit(events: list, lane: str) -> list:
+    """Retire de `events` la visite EN COURS de `lane`.
+
+    Une visite est **close** par un marqueur de cloture -- `_CLOSE` du module
+    (`[DELIVERED]`, `[RELEASED]`, `[CANCELLED]`, `[ABANDONED]`, `[DONE]`) :
+    c'est le vocabulaire que l'organe des claims lit deja pour reduire une
+    prise en une absence de prise.
+
+    Ce qui est retire : les evenements de `lane` posterieurs a son dernier
+    marqueur de cloture -- le `[CLAIMED]` de la minute, l'`[OVERRIDE]` que le
+    coordinateur vient de lui rendre. Ce qui reste : tout ce qui precede ou
+    coincide avec la cloture, y compris la cloture elle-meme -- une visite
+    passee et close continue d'armer le plafond, datee par son marqueur.
+
+    Sans marqueur de cloture, toute la visite de la lane est en cours : rien
+    n'est retire pour elle, et le filtre n'a plus rien a dire.
+    """
+    closes = [ev.created_at for ev in events
+              if ev.lane == lane
+              and (ev.get("marker") or "").upper() in _CLOSE]
+    if not closes:
+        # Pas de cloture : toute la visite de la lane est en cours.
+        return [ev for ev in events if ev.lane != lane]
+    last_close = max(closes)
+    return [ev for ev in events
+            if not (ev.lane == lane and ev.created_at > last_close)]
+
+
+def _claim_visit_excluding(comments: list[dict],
+                            exclude_lane: str | None,
+                            ) -> tuple[str | None, str | None]:
+    """Paire ``(date, marqueur)`` de la visite la plus recente, HORS la visite en cours d'une lane.
+
+    #25443 : le plafond hebdomadaire des EPICs se lisait sur le dernier
+    marqueur du fil, **y compris ceux de la lane qui interroge** et ceux du
+    coordinateur qui arbitre. Deux self-bloquages en decoulaient :
+
+      - une lane qui pose son ``[CLAIMED]`` sur l'EPIC puis relance le
+        controle AVANT d'editier (sequence permise par le protocole : le
+        controle precede l'edition, pas le claim) se bloquait sur son propre
+        marqueur -- instance mesuree : po-2027 sur #12051, claim de 06:42:59Z,
+        verdict ``PLAFOND EPIC (#22500) ... il y a 0.0 j`` trois minutes
+        plus tard ;
+      - l'``[OVERRIDE] lane <m:w>`` du coordinateur, qui rend le grain a
+        cette lane, rearme le plafond de la meme facon -- relu a 07:52Z, le
+        meme controle rendait ``override sur l'EPIC il y a 0.0 j`` et seul
+        ``--force`` passait.
+
+    Ce qui est ecarte n'est donc que la visite **en cours** de la lane qui
+    interroge : ses evenements posterieurs a son dernier marqueur de
+    cloture, et l'``[OVERRIDE] lane <lane>`` qui lui rend le grain s'il est
+    posterieur lui aussi. Le filtre porte sur le champ ``lane`` de
+    l'evenement : un ``[OVERRIDE] lane <lane>`` nomme la lane a qui le
+    coordinateur rend le grain, il est donc ecarte pour cette lane-la et
+    compte pour les autres.
+
+    #25443 tranche 2 : la premiere version ecartait **tous** les evenements
+    de la lane qui interroge, ses visites passees et closes comprise. Le
+    plafond devenait « une visite par semaine et par AUTRE lane » au lieu de
+    « un EPIC hors consolidation se visite au plus une fois par semaine »
+    (`docs/reference/variation-protocol-detail.md`, #22500) : une lane seule
+    sur un EPIC pouvait le reprendre chaque jour -- livrer une tranche le
+    lundi, en claimer une autre le mardi, et lire ``CLEAR``. Une visite
+    passee et close de la meme lane continue donc d'armer le plafond, datee
+    par son marqueur de cloture.
+
+    Grammaire : celle de l'organe des claims (`_sort_events` -- decorations
+    markdown et non-ASCII tolerees, blocs fence neutralises, mentions en
+    milieu de ligne ignorees), jamais une regex propre. Date ET marqueur
+    sortent du MEME evenement : la cause nomme ce que la lane a fait (prise,
+    rendu de main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
+    (#22687 constat 1).
+    """
+    events = [ev for ev in _sort_events(
+        {"comments": [c for c in comments if isinstance(c, dict)]})
+        if ev.lane and ev.created_at]
+    if exclude_lane:
+        events = _without_in_progress_visit(events, exclude_lane)
+    if not events:
+        return None, None
+    ev = max(events, key=lambda e: e.created_at)
+    return ev.created_at, ((ev.get("marker") or "").upper() or None)
+
+
 def epic_visit_cap(payload: dict, *, now: datetime | None = None,
                    parent_loader=None,
-                   pool_loader=None) -> dict:
+                   pool_loader=None,
+                   my_lane: str | None = None) -> dict:
     """#22500 point 3 -- verdict du plafond hebdomadaire pour un claim sur N.
 
     Rend un dict a quatre cles, toutes serialisables dans le rapport JSON :
@@ -4071,14 +4816,31 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         CETTE mesure, pour que la borne se verifie au lieu de se croire ;
       - ``error`` : les lectures qui ont echoue (``None`` si tout a ete lu).
 
-    Sujets examines, dans l'ordre : l'issue N elle-meme si c'est un umbrella
-    (demande explicite : « Meme regle pour un claim pose directement sur
-    l'EPIC »), puis chaque parent de N au sens de `parent_refs`. Un sujet est
-    retenu s'il est un umbrella ET hors classe `consolidation`.
+    Sujets examines : l'issue N elle-meme, et elle seule, quand c'est un
+    umbrella (demande explicite : « Meme regle pour un claim pose directement
+    sur l'EPIC »), hors classe `consolidation`. Les parents de N ne sont plus
+    des sujets (#26414, decision ai-01 du 2026-11-13, option 1 « filles
+    existantes hors plafond, pas du tout ») : une claim sur une fille DEJA
+    OUVERTE est le SERVICE d'un sous-grain existant -- permis par #22500
+    point 2 et par `.claude/rules/proactive-coordination.md` (« piocher un
+    sous-grain ouvert, ou en creer un seul par visite ») -- pas une nouvelle
+    visite de l'EPIC. Le plafond porte la CREATION, qui reste cappee cote
+    picker (`umbrella_visit_cause` au tirage) ; les filles existantes se
+    servent librement ici.
 
     L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
     recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
     -- le scenario fondateur de #22500 -- bloquerait son propre premier claim.
+
+    #25443 : quand N est lui-meme l'EPIC, la visite qui arme le plafond est
+    celle d'une **autre** lane que `my_lane`. Sans cette exclusion, une lane
+    qui pose son `[CLAIMED]` sur l'EPIC puis relance le controle (sequence
+    permise par le protocole : le controle precede l'edition, pas le claim) se
+    bloquait sur son propre marqueur, et l'`[OVERRIDE]` du coordinateur qui
+    rend le grain a cette lane rearmait le plafond de la meme facon. Le filtre
+    est porte par l'organe (`_claim_visit_excluding`), jamais reecrit ici ; il
+    s'applique au sujet N lui-meme, pas aux parents -- la semantique du
+    plafond pour les filles, qui est juste, reste hors scope.
 
     `parent_loader`/`pool_loader` sont injectables (tests hors reseau) ; par
     defaut ils lisent GitHub et memoisent par processus.
@@ -4094,20 +4856,19 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     number = payload.get("number")
     number = int(number) if isinstance(number, int) else None
 
-    # (1) les sujets candidats, sans reseau : N si c'est un umbrella, puis ses
-    # parents (`parent_refs` lit titre/corps de la charge DEJA telechargee).
+    # (1) le sujet candidat, sans reseau : N lui-meme si c'est un umbrella.
+    # #26414 : les parents ne sont plus sujets -- servir une fille DEJA
+    # OUVERTE n'est pas une nouvelle visite de l'EPIC (#22500 point 2) ; la
+    # creation reste cappee cote picker.
     subjects: list[tuple[int, dict | None]] = []
     if number is not None and _is_umbrella_issue(payload):
         subjects.append((number, payload))
-    for parent in sorted(picker.parent_refs(payload)):
-        if parent == number:
-            continue  # une issue ne se visite pas elle-meme
-        subjects.append((parent, None))
     if not subjects:
-        return verdict  # zero appel : le cas le plus frequent
+        return verdict  # zero appel : le cas le plus frequent (fille ou grain)
 
-    # (2) resoudre les charges parent (1 appel chacune) et ne garder que les
-    # EPICs hors consolidation. AUCUN pool tant qu'aucun sujet n'est retenu.
+    # (2) ne garder que les EPICs hors consolidation (le sujet N est deja
+    # charge ; `parent_loader` ne sert plus qu'aux sondes injectees).
+    # AUCUN pool tant qu'aucun sujet n'est retenu.
     capped: list[tuple[int, dict]] = []
     for epic, body in subjects:
         if body is None:
@@ -4143,7 +4904,13 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         # main, livraison...) au lieu d'appeler « claim » un `[RELEASED]`
         # (#22687 constat 1). Deux appels separes pourraient designer deux
         # evenements differents.
-        stamp, marker = picker.claim_visit(comments)
+        if my_lane and epic == number:
+            # #25443 : le sujet est N lui-meme -- la visite qui arme le
+            # plafond exclut la lane qui interroge (son propre claim, et
+            # l'override qui lui rend le grain).
+            stamp, marker = _claim_visit_excluding(comments, my_lane)
+        else:
+            stamp, marker = picker.claim_visit(comments)
         targets.append({
             "number": epic,
             "title": body.get("title"),
@@ -4179,7 +4946,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                pr_states: dict[int, str] | None = None,
                check_open_pr_paths: bool = False,
                epic_cap: bool = False,
-               epic_cap_probe=None) -> int:
+               epic_cap_probe=None,
+               serve_bounded: bool = False) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
@@ -4221,7 +4989,10 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             it on the two unitary paths (`check`, `--claim`), never on batch
             (see the region comment above `epic_visit_cap` for why).
         epic_cap_probe: injectable `(payload) -> verdict dict` seam (tests).
-            Defaults to `epic_visit_cap`, which reads GitHub.
+            Defaults to `epic_visit_cap`, which reads GitHub. A probe injectee
+            est responsable de sa propre lane : `epic_visit_cap` prend
+            `my_lane` (#25443) pour exclure du plafond le propre marqueur de
+            la lane qui interroge.
     """
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
@@ -4342,14 +5113,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # (`check_lane_claim.py N --lane L --paths p`) silently skipped the guard
     # and printed `free_paths` -- a list that describes the CLAIM scope, never
     # the open-PR space -- reading as an all-clear on an occupied file.
-    # #18341 -- the leg now uses `my_scope` (--paths U paths: du claim propre)
-    # so a lane that has already declared `paths:` on its active claim gets
-    # the OPEN-PR check without having to pass `--paths` on the call.
+    # #18341 -- the leg reads `--paths` U `paths:` du claim propre, so a lane
+    # that has already declared `paths:` on its active claim gets the OPEN-PR
+    # check without having to pass `--paths` on the call.
+    # #25082 -- SAUF quand ce « claim propre » est un perimetre deja LIVRE et
+    # MERGE : ce n'est plus une intention d'editer (`_open_pr_leg_scope`).
+    # `my_scope` garde le perimetre livre pour la confrontation aux claims des
+    # autres lanes : seule la jambe PR-ouverte change de perimetre.
+    open_pr_scope = _open_pr_leg_scope(my_paths, mine)
+    if (check_open_pr_paths and mine is not None and mine.get("locked")
+            and mine.get("paths")):
+        print(
+            f"INFO: le perimetre livre de {my_lane} (PR "
+            f"#{mine.get('pr_ref')} MERGEE) n'est pas confronte aux PRs "
+            f"ouvertes : une tranche mergee n'est pas une intention d'editer "
+            f"(#25082). Pour la tranche suivante, passer `--paths` ou poser "
+            f"un nouveau [CLAIMED] a perimetre etroit.",
+            file=sys.stderr,
+        )
     open_pr_collisions: list[PathCollision] = []
-    if check_open_pr_paths and my_scope:
+    if check_open_pr_paths and open_pr_scope:
         try:
             open_pr_collisions, _own = _compute_open_pr_collisions(
-                my_scope, my_lane)
+                open_pr_scope, my_lane)
         except OpenPrsIncompleteError as exc:
             # #21742 -- l'enumeration des PRs ouvertes n'a pas pu etre
             # completee : ce CLEAR ne dit rien des PRs OUVERTES, comme le
@@ -4544,7 +5330,35 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # of #12345's acceptance) lives at the verdict-emission point below --
     # a scope that is entirely dead does NOT clear to `exit 0`, it changes
     # verdict and acquires an explanation.
-    if others and my_scope is None:
+    occupied_paths: dict[str, list[str]] = {}
+    if others and my_scope is None and serve_bounded:
+        # #25873 -- the BELT calls the probe WITHOUT --paths (my_scope None)
+        # and opts in to `serve_bounded`. A bounded claim (a live `paths:`)
+        # from another lane occupies only the files it names; it must NOT
+        # freeze the whole issue. Only an epic-wide claim (no live scope)
+        # keeps the fail-CLOSED block. `occupied_paths` is empty outside this
+        # branch, so a PATH_SCOPED / BLOCKED verdict never carries a stale
+        # occupied list.
+        # #25873 + CR #25906 -- servir UNIQUEMENT si TOUS les claims d'autrui
+        # sont bornes (len(borne) == len(others)). Une seule claim epic-wide
+        # dans le mix re-verrouille toute l'issue : le cas mixte borne +
+        # epic-wide ne doit PAS clairer en SCOPED_OCCUPIED, sinon le verrou
+        # epic-wide d'une lane est silencieusement droppe (l'issue serait
+        # servie malgre le verrou de la lane epic-wide).
+        bounded = {
+            ln: ev.get("paths") for ln, ev in others.items()
+            if _claim_live_paths(ev)
+        }
+        if len(bounded) == len(others):
+            occupied_paths = bounded
+            query_scope = "SCOPED_OCCUPIED"
+        else:
+            occupied_paths = {}
+            query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
+    elif others and my_scope is None:
+        # #25873 -- a non-belt no-`--paths` call: keep the fail-CLOSED
+        # NOT_SCOPED. A manual probe that declared no scope cannot prove
+        # disjointness from a bounded claim; the belt fix does not relax it.
         query_scope = "EPIC_WIDE_NO_PATHS_DECLARED"
     elif caller_empty_scope and my_scope and len(caller_empty_scope) >= len(my_scope):
         # #12345 -- every glob in `my_scope` is dead: the caller declared a
@@ -4627,10 +5441,36 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             epic_cap_verdict["skipped"] = (
                 "another lane already blocks -- verdict is exit 1 without the cap"
             )
+        elif mine and not _is_umbrella_issue(payload):
+            # #22687 (arbitrage ai-01, cas mesure 2026-11-08 sur #23499) : la
+            # lane qui interroge tient DEJA un claim actif sur la FILLE N --
+            # elle repare un travail en vol (PR ouverte), elle ne fait pas une
+            # NOUVELLE visite de l'umbrella. Le plafond gate l'ENTREE d'une
+            # fille, pas la reprise du claim qui la porte : sans ce saut, un
+            # [RELEASED] pose sur l'EPIC par une autre lane 0,7 j avant
+            # bloquait la lane sur son propre chantier ouvert depuis 9 j.
+            # JAMAIS sur l'EPIC lui-meme : la demande coordinateur du 09/11
+            # (une visite PASSEE ET CLOSE de la lane arme le plafond, claim en
+            # cours compris) reste entiere -- les regles #25443 (marqueur
+            # propre exclut) et 09/11 (visite close arme) gouvernent seules
+            # les marqueurs propres sur l'EPIC ; ce saut ne les touche pas.
+            # (#26414 : les filles ne sont de toute facon plus sujet du
+            # plafond -- le saut reste, il evite de payer la mesure.)
+            epic_cap_verdict["skipped"] = (
+                "calling lane already holds an active claim on this issue "
+                "-- resuming an open claim is not a new umbrella visit"
+            )
         else:
-            probe = epic_cap_probe or epic_visit_cap
+            probe = epic_cap_probe
             try:
-                epic_cap_verdict = probe(payload) or epic_cap_verdict
+                if probe is None:
+                    # La lane qui interroge est passee a l'organe : #25443
+                    # exclut son propre marqueur de la visite qui arme le
+                    # plafond quand N est l'EPIC lui-meme.
+                    epic_cap_verdict = epic_visit_cap(
+                        payload, my_lane=my_lane) or epic_cap_verdict
+                else:
+                    epic_cap_verdict = probe(payload) or epic_cap_verdict
             except Exception as exc:  # noqa: BLE001 -- mesure best-effort, nommee
                 epic_cap_verdict["error"] = f"{type(exc).__name__}: {exc}"
 
@@ -4640,6 +5480,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_lane": my_lane,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
+        # #25873 -- the belt's no-`--paths` call: when every other-lane claim is
+        # bounded, the issue is SERVED (SCOPED_OCCUPIED, exit 0) and this carries
+        # the files those bounded claims occupy, so the caller works OUTSIDE that
+        # perimeter. Empty outside the SCOPED_OCCUPIED verdict.
+        "occupied_paths": occupied_paths,
         "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
         # #22408 -- les claims dont l'age depassait le seuil mais dont la lane
         # livrait encore : ils BLOQUENT (ils sont dans `others`, donc dans
@@ -4879,6 +5724,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # `exit 2`, matching the contract `--paths` already carries (#9959).
         "open_pr_collisions": [
             _serialise_path_collision(c) for c in open_pr_collisions],
+        # #25082 -- le perimetre que la jambe PR-ouverte a reellement
+        # confronte (null = jambe sans objet). Il differe de `my_scope` quand
+        # le claim propre est une tranche livree et mergee : sans cette cle,
+        # un `open_pr_collisions: []` ne dit pas sur quels chemins il porte.
+        "open_pr_scope": open_pr_scope,
         # #14300 -- the IMPLICIT leg's finding, same single-report contract
         # as open_pr_collisions above. Non-empty routes the verdict below
         # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
@@ -4962,6 +5812,22 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         and ev.get("pr_state") is None
     ]
 
+    # #25873 -- the belt called without --paths and every other-lane claim is
+    # bounded (live paths:). The issue is SERVABLE: serve it (exit 0) and hand
+    # the caller the occupied paths so it works OUTSIDE that perimeter. An
+    # epic-wide claim routes to NOT_SCOPED (exit 2) below -- unchanged.
+    if query_scope == "SCOPED_OCCUPIED":
+        lines = [
+            f"SCOPED_OCCUPIED: #{payload.get('number')} est servable -- les "
+            f"claims des autres lanes sont bornes a des chemins."
+        ]
+        for ln in sorted(occupied_paths):
+            lines.append(
+                f"chemins occupés par {ln} : {', '.join(occupied_paths[ln])}"
+                f" -- travailler hors de ce périmètre"
+            )
+        print("\n".join(lines))
+        return 0
     # Human verdict after the JSON.
     if others:
         who = ", ".join(
@@ -5136,22 +6002,25 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # BLOCKED. Il passe AVANT la branche `NOT_SCOPED` ci-dessous : celle-ci
     # invite a re-executer avec `--paths`, et re-scoper ne leve PAS un plafond
     # de visite -- le conseil serait faux. La cause imprimee est le litteral de
-    # l'organe (`umbrella_visit_cause`), inchange.
+    # l'organe (`umbrella_visit_cause`), inchange. Depuis #26414, la cause ne
+    # peut plus venir que d'un claim sur l'EPIC N lui-meme : les filles
+    # existantes ne sont plus plafonnees.
     if epic_cap_verdict.get("cause"):
         epic_number = epic_cap_verdict.get("epic")
         where = (f"#{epic_number}" if epic_number is not None
                  else "un EPIC parent")
         print(
             f"\nBLOCKED: {epic_cap_verdict['cause']}\n"
-            f"  #{payload.get('number')} appartient a l'EPIC {where}, deja "
-            f"visite cette semaine : une sous-issue y a ete creee, ou un "
-            f"claim y a ete pose, il y a moins de 7 jours (#22500 point 3). "
+            f"  #{payload.get('number')} EST l'EPIC {where}, deja visite "
+            f"cette semaine : une sous-issue y a ete creee, ou un marqueur "
+            f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC "
-            f"{where}, ou prendre un autre grain du pool. Re-scoper avec "
-            f"`--paths` ne leve pas ce plafond ; `--force` reste reserve a "
-            f"l'arbitrage coordinateur.",
+            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
+            f"(#26414 : une fille existante se sert librement, seul le claim "
+            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
+            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
+            f"`--force` reste reserve a l'arbitrage coordinateur.",
             file=sys.stderr,
         )
         return 1
@@ -5242,10 +6111,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             if pr.get("additions") is not None:
                 delta = f"{pr['additions']}+/{pr['deletions'] or 0}-, "
             lane = pr.get("lane") or "lane ILLISIBLE"
+            # #24788 -- un corps enumeratif ne retient que les references
+            # fortes ; le dire evite de lire l'occupation comme un simple
+            # `#N` perdu dans une liste.
+            why = ""
+            if pr.get("enumerative"):
+                why = (f" (corps enumeratif : {pr.get('cited_issues')} "
+                       f"numeros cites, reference forte retenue)")
             lines.append(
                 f"IMPLICIT: lane {lane} a une PR ouverte "
                 f"(#{pr.get('number')}, {delta}sur {shown or 'fichiers inconnus'}) "
-                f"sans [CLAIMED] pose."
+                f"sans [CLAIMED] pose.{why}"
             )
         print("\n" + "\n".join(lines))
         print(
@@ -5321,6 +6197,31 @@ def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
     return [str(b) for b in blocking]
 
 
+def _occupied_paths_from_summary(stdout_text: str) -> dict[str, list[str]]:
+    """#25873 -- the `occupied_paths` field of a `_run_check` resume JSON.
+
+    Sibling of `_blocking_lanes_from_summary`: the batch path reads the two
+    flux (stdout JSON + stderr verdict) and the belt needs the occupied paths
+    to tell the lane to work OUTSIDE that perimeter. Same `raw_decode` (the
+    stdout carries a human phrase after the object). Empty when the JSON is
+    absent, is not a dict, or the verdict is not SCOPED_OCCUPIED.
+    """
+    text = stdout_text or ""
+    brace = text.find("{")
+    if brace == -1:
+        return {}
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[brace:])
+    except json.JSONDecodeError:
+        return {}
+    if not isinstance(data, dict):
+        return {}
+    occ = data.get("occupied_paths")
+    if not isinstance(occ, dict):
+        return {}
+    return {str(k): [str(p) for p in v] for k, v in occ.items() if v}
+
+
 def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
     """Court libelle machine-consommable issu de la sortie d'un `_run_check`.
 
@@ -5384,7 +6285,7 @@ def _summarize_run_check_output(verdict_text: str, returncode: int) -> str:
 # diagnostic faux sans jamais echouer.
 _VERDICT_LINE_PREFIXES = (
     "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
-    "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+    "DEAD-SCOPE", "NOT_SCOPED", "SCOPED_OCCUPIED", "DUMP",
 )
 
 
@@ -5494,6 +6395,7 @@ def check_issues_batch(
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
+    serve_bounded: bool = False,
 ) -> dict:
     """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
@@ -5613,6 +6515,7 @@ def check_issues_batch(
                     # Batch = read path only (L898), pas de posting
                     # leg.
                     check_open_pr_paths=True,
+                    serve_bounded=serve_bounded,
                 )
             result["exit"] = rc
             captured = buf_out.getvalue()
@@ -5630,6 +6533,11 @@ def check_issues_batch(
             # `ERROR` qui nomme un bloquant ne l'est plus.
             result["blocker_named"] = _names_a_blocker(
                 evidence, stdout_json=captured)
+            # #25873 -- SCOPED_OCCUPIED: le belt lit les chemins occupés par les
+            # claims bornes des autres lanes pour servir l'issue AVEC cette liste
+            # (travailler hors de ce périmètre) au lieu de l'écarter. Vide hors
+            # du verdict SCOPED_OCCUPIED.
+            result["occupied_paths"] = _occupied_paths_from_summary(captured)
             # #22983 -- la voie batch doit rendre le MEME verdict que le
             # reduiteur historique du picker : `exit 2` + un resume JSON qui
             # nomme des lanes bloquantes = BLOCKED. Ce cas est distinct de
@@ -6006,9 +6914,9 @@ def _scopes_intersect(
     if not a or not b:
         return False
     if tracked is not None:
-        for path in tracked:
-            if _path_matches(path, a) and _path_matches(path, b):
-                return True
+        if (_matching_tracked_indices(a, tracked)
+                & _matching_tracked_indices(b, tracked)):
+            return True
         if _scope_is_creation(a, tracked) or _scope_is_creation(b, tracked):
             return _scopes_may_overlap_by_pattern(a, b)
         return False
@@ -6054,6 +6962,38 @@ def _serialise_path_collision(c: PathCollision) -> dict:
         "lane": c.lane,
         "files_intersecting": c.files,
     }
+
+
+def _open_pr_leg_scope(
+    my_paths: list[str] | None,
+    mine: ClaimEvent | None,
+) -> list[str] | None:
+    """Perimetre que la jambe PR-ouverte (#16570) confronte aux PRs ouvertes.
+
+    C'est le perimetre d'INTENTION de l'appelant : les `--paths` de l'appel,
+    plus la clause `paths:` de son propre claim actif (#18341).
+
+    #25082 -- une exception, mesuree le 2026-11-13 sur #20298. Sous la
+    semantique v2 (#12386, #22445), un `[DELIVERED] ... paths:` dont la PR est
+    MERGEE reste « actif » (`locked`) : il dit aux AUTRES lanes que ce
+    perimetre est livre. Lu comme l'intention de sa propre lane, il faisait
+    tourner la jambe sur des fichiers deja merges, et toute PR ouverte d'une
+    autre lane qui les touchait rendait `BLOCKED` a la lane porteuse -- sur sa
+    tranche SUIVANTE, pour laquelle elle n'avait encore rien declare. Sur un
+    chantier multi-tranches (classe `consolidation`), la lane porteuse ne
+    revenait donc jamais.
+
+    Un perimetre livre et merge n'est pas une intention d'editer : il sort du
+    perimetre de la jambe. Les `--paths` de l'appel, eux, restent toujours
+    confrontes. Un `[DELIVERED]` dont la PR est encore OUVERTE n'est pas
+    `locked` : le travail est en vol, son perimetre reste confronte.
+
+    Rend None quand il ne reste aucun chemin : la jambe est alors sans objet.
+    """
+    mine_paths = (mine.get("paths") if mine else None) or []
+    if mine is not None and mine.get("locked"):
+        mine_paths = []
+    return list(dict.fromkeys((my_paths or []) + list(mine_paths))) or None
 
 
 def _compute_open_pr_collisions(

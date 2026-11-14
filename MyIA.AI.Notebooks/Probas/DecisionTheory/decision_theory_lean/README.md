@@ -35,7 +35,7 @@ Trois modules livrés :
   reste un **jalon ouvert** (délibérément non `sorry`-backed).
 
 Notebook compagnon Lean :
-[`DecInfer/DecInfer-08b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-08b-Lean-Gittins.ipynb).
+[`DecInfer/DecInfer-07b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-07b-Lean-Gittins.ipynb).
 
 ## Statut
 
@@ -286,7 +286,7 @@ lake build Gittins Utility Coherence
 
 ## Notebook compagnon
 
-[`DecInfer/DecInfer-08b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-08b-Lean-Gittins.ipynb) — présentation
+[`DecInfer/DecInfer-07b-Lean-Gittins.ipynb`](../DecInfer/DecInfer-07b-Lean-Gittins.ipynb) — présentation
 pédagogique du problème du bandit et de l'indice de Gittins, reliant le matériel de
 programmation probabiliste Infer.NET à la formalisation Lean.
 
