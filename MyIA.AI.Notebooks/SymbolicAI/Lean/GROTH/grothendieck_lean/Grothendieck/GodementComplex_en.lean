@@ -187,5 +187,89 @@ variable {X : TopCat.{u}}
 -- sections at one open); it needs the flabby lifting
 -- (`epi_of_shortExact_of_isFlasqueSieves`, Part 94) or the separatedness
 -- ladder — tranche 2, feeding Part 99 (long exact sequence assembly).
+--
+-- **Part 99, the pointwise exactness bridge and rank 0 landed in the FR
+-- twin**: Mathlib (at the pin) does not provide "a short complex of
+-- presheaves is exact iff its evaluated sequence of abelian groups is exact
+-- at every open" — evaluation is not faithful (it cannot see the other
+-- opens), so no reflection argument applies. The bridge
+-- (`shortComplex_exact_iff_app`) is built by **homology**, without
+-- transporting a diagram inside a `limit.π`: exactness is null homology
+-- (`ShortComplex.exact_iff_isZero_homology`); `mapHomologyIso` identifies
+-- the homology of `S.map (eval U)` with the evaluation of `S.homology`,
+-- using preservation of finite (co)limits by evaluation; and
+-- `Functor.isZero_iff` detects a zero functor object by object.
+-- `IsZero.of_iso` transports nullity in both directions, avoiding dependent
+-- rewrites of `parallelPair` diagrams. On top of it, **rank 0 of the iteration**
+-- (`shortExact_map_godementFunctor`): a short exact sequence of presheaves
+-- `S` yields a short exact sequence `S.map godementFunctor` — at the level
+-- of natural transformations, not only open by open (Part 98); mono from
+-- Part 86, epi and pointwise exactness from Part 98.
+-- **Part 100 — rank `n + 1`: the short exact sequence of cokernels, the
+-- separatedness ladder.** Iterating rank 0 requires the SES of cokernels
+-- `0 → coker dⁿ_A → coker dⁿ_B → coker dⁿ_C → 0`, whose snake connector
+-- `δ : ker dⁿ_C → coker dⁿ_A` must vanish. The mathematical point: the
+-- seeding step is NOT free, and it fixes the hypothesis of the statement.
+-- For `n ≥ 1`, `δ = 0` follows from the exactness of the canonical
+-- resolution of the right term (`ker dⁿ = im d^{n-1}`): a cocycle of `C`
+-- lifts one degree down through the epi of the SES at step `n - 1`, the
+-- lift composed with `dⁿ` is zero, and the connector representative
+-- cancels — a purely abelian argument. For `n = 0` one needs
+-- `ker d⁰_{X₃} = 0`, i.e. **separatedness of the right term**: a
+-- non-separated presheaf carries sections with zero stalks that keep `δ`
+-- alive, and the general iteration is a **separatedness ladder** — seeded
+-- by `Mono (toGodement S.X₃)` (separated in Godement's sense: stalks
+-- separate sections; `IsSheaf` implies it via `mono_toGodement_of_isSheaf`,
+-- Part 93 — Mathlib at the lake pin declares no
+-- `TopCat.Presheaf.IsSeparated` class), carried on by the unconditional
+-- exactness of the resolution (hypothesis `hres`, Part 93 stalk side).
+-- The execution organ is Mathlib's snake lemma
+-- (`Mathlib.Algebra.Homology.ShortComplex.SnakeLemma`, verified present at
+-- the lake pin): a `SnakeInput (X.Presheaf AddCommGrpCat)` instance on the
+-- stage SES's of steps `n` and `n + 1`, connector `S.δ` killed by
+-- `cancel_epi` along `im d^{n-1}`, then `L₃_exact` closes the cokernel SES
+-- and rank 0 iterates it into the stage SES of step `n + 1` — the stage
+-- arrow `godementCanonicalMap (n + 2)` being `godementMapHom (cokernel.map …)`
+-- by `godementDChainMap_succ_right` (an `rfl`). Posed as a maquette with
+-- documented prover targets (`godementCanonicalMap_comp_zero`, easy — PROVED
+-- in the follow-up tranche below; `shortExact_godementCanonicalObj`, hard —
+-- the only remaining `sorry` of the module).
+--
+-- **Follow-up tranche**: the degree-0 case of the easy target is PROVED
+-- (`godementCanonicalMap_comp_zero_zero` — `C⁰` of a null composite via
+-- `godementMapHom_comp`); the two-time recursion is named
+-- (`godementCanonicalMap_one`, shape `μ` at degree 1;
+-- `godementCanonicalMap_succ_two`, shape `dⁿ` at degrees ≥ 2; carrier
+-- `godementCokernelMap`); and the **generic successor link is PROVED,
+-- hypothesis-free** (`godementCokernelMap_comp`): the earlier diagnosis
+-- (domain-side vs codomain-side verticals, `cokernel.map_zero` route) is
+-- RESORBED — killing by domain-side vertical was the wrong route, not a
+-- missing hypothesis. The working route is `cancel_epi` along `cokernel.π`
+-- (an epimorphism by construction of the cokernel, no assumption), the two
+-- transport squares `e₁ e₂` being `cokernel.π_desc` at the
+-- definitionally-unfolded successor arrow (`godementDChainMap_succ_left`:
+-- the right vertical of the degree-`n` square IS the left vertical — i.e.
+-- the stage arrow — of the degree-`n + 1` one). The induction runs
+-- `P (n+1) → Q n → P (n+2)` for every `n ≥ 0` without any hypothesis,
+-- covering all degrees ≥ 2.
+--
+-- **The rank-1 base case is CLOSED, also hypothesis-free — and it does NOT
+-- go through the snake.** `P 1` reduces (`godementCanonicalMap_one` on both
+-- factors, then `← godementMapHom_comp`) to the nullity of the composite of
+-- the two unit-cokernel arrows `c₁μ ≫ c₂μ`, and that nullity is
+-- **computational** (`godementCokernelMap_comp_rank_one`): the canonical
+-- projection of the unit cokernel transports each cokernel arrow into the
+-- right vertical of the unit square (`cokernel.π_desc`), giving
+-- `π₁ ≫ c₁μ ≫ c₂μ = C⁰(S.f) ≫ C⁰(S.g) ≫ π₃ = C⁰(S.f ≫ S.g) ≫ π₃ = C⁰ 0 ≫ π₃ = 0`
+-- by `godementMapHom_comp`, `S.zero` and `godementMapHom_zero`; `cancel_epi`
+-- on the projection (an epimorphism by construction) concludes. The full
+-- induction `n = 0 | 1 | m + 2` (`godementCanonicalMap_comp_zero`) then
+-- closes the easy target at **every degree**, with no hypothesis at all.
+-- Discarded routes, for the record: (a) `cokernel.map_zero` read backwards
+-- (domain-side vs codomain-side vertical) — a wrong route, not a missing
+-- hypothesis; (b) deriving rank 1 from the rank-0 snake connector
+-- (`L₃_exact` of `SnakeInput`) — needless: the snake remains the organ of
+-- the **hard** target (mono/epi of the stages and annihilation of the
+-- connector `δ` by `hsep`/`hres`), not of the nullity of the composite.
 
 end Grothendieck_en
