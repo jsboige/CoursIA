@@ -709,23 +709,30 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     # Resolution du body PR (mem politique que detect_md_content_loss.main).
+    # Precedence : une option EXPLICITE prime toujours sur une variable
+    # d'environnement (convention argparse). L'env est un DEFAUT pour la CI,
+    # jamais un override : `--pr-body-file` est le canal des tests unitaires
+    # (cf. body_consuming_guards.py, « canal d'appel local »), et le job
+    # fast-lane exporte `PLAN_LOSS_PR_BODY` pour TOUTES ses jambes, y compris
+    # le pre-controle pytest. Quand l'env primait, le pre-controle lisait le
+    # body de la PR au lieu de sa fixture et rougissait (#26254, mesure CI du
+    # 2026-11-13 : rc=1 sur test_justified_by_body_exits_zero).
     pr_body: str | None = None
+    pr_body_file: Path | None = None
     if args.pr_body is not None:
         pr_body = args.pr_body
+    elif args.pr_body_file is not None:
+        pr_body_file = args.pr_body_file
     elif env_body := os.environ.get("PLAN_LOSS_PR_BODY"):
         pr_body = env_body
-    else:
-        pr_body_file: Path | None = args.pr_body_file
-        if pr_body_file is None:
-            env_file = os.environ.get("PLAN_LOSS_PR_BODY_FILE")
-            if env_file:
-                pr_body_file = Path(env_file)
-        if pr_body_file is not None:
-            try:
-                pr_body = pr_body_file.read_text(encoding="utf-8", errors="replace")
-            except (OSError, UnicodeDecodeError) as e:
-                print(f"ERROR: --pr-body-file illisible: {e}", file=sys.stderr)
-                return 2
+    elif env_file := os.environ.get("PLAN_LOSS_PR_BODY_FILE"):
+        pr_body_file = Path(env_file)
+    if pr_body is None and pr_body_file is not None:
+        try:
+            pr_body = pr_body_file.read_text(encoding="utf-8", errors="replace")
+        except (OSError, UnicodeDecodeError) as e:
+            print(f"ERROR: --pr-body-file illisible: {e}", file=sys.stderr)
+            return 2
 
     result = scan_notebook(args.notebook, args.base, args.head)
 

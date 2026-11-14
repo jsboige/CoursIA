@@ -292,7 +292,7 @@ def test_variete_trente_familles_huit_grains():
     assert len(file) == 8 and len({e.famille for e in file}) == 8
 
 
-def test_une_seule_famille_dans_l_ordre_de_visite():
+def test_une_seule_famille_garde_ses_invariants():
     lec = lecture([
         issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z"),
         issue(2, body="Part of #1", cree="2026-01-01T00:00:00Z"),
@@ -301,8 +301,41 @@ def test_une_seule_famille_dans_l_ordre_de_visite():
         issue(5, body="Part of #1", comments=[com(300, f"[CLAIMED] lane {AUTRE} -- paths: b")]),
     ])
     file = tr.ordonner(tr.etats(lec, LANE, NOW), LANE, NOW, 8)
-    # jamais visitees (la plus ancienne, le grain avant son conteneur), puis la moins recente
-    assert [e.numero for e in file] == [2, 1, 3, 5, 4]
+    ordre = [e.numero for e in file]
+    # jamais visitees devant les visitees
+    assert set(ordre[:3]) == {1, 2, 3}
+    # le grain avant son conteneur
+    assert ordre.index(2) < ordre.index(1) and ordre.index(3) < ordre.index(1)
+    # puis la visite la plus ancienne
+    assert ordre.index(5) < ordre.index(4)
+
+
+def test_deux_lanes_ne_prennent_pas_la_meme_tete_de_famille():
+    """Mesure du 14/11 : deux sieges ont recu les memes grains, parce que
+    l'ordre des membres d'une famille ne dependait pas de la lane."""
+    lec = lecture([issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z")]
+                  + [issue(k, body="Part of #1", cree=f"2026-02-0{k - 1}T00:00:00Z")
+                     for k in (2, 3, 4, 5)])
+    etats_ = tr.etats(lec, LANE, NOW)
+    tetes = {lane: tr.ordonner(etats_, lane, NOW, 8)[0].numero
+             for lane in (LANE, AUTRE)}
+    assert len(set(tetes.values())) == 2, tetes
+
+
+def test_le_decalage_est_deterministe_pour_une_lane_et_une_tranche():
+    lec = lecture([issue(1, titre="[EPIC] Racine", cree="2026-01-01T00:00:00Z")]
+                  + [issue(k, body="Part of #1", cree=f"2026-02-0{k - 1}T00:00:00Z")
+                     for k in (2, 3, 4, 5)])
+    etats_ = tr.etats(lec, LANE, NOW)
+    debut = NOW.replace(hour=12, minute=0)
+    premier = [e.numero for e in tr.ordonner(etats_, LANE, debut, 8)]
+    # la meme lane, la meme tranche de quatre heures : la meme tete
+    assert premier == [e.numero for e in tr.ordonner(etats_, LANE,
+                                                     debut.replace(hour=15, minute=59), 8)]
+    # la tranche suivante change le tirage, jamais les invariants
+    autre = [e.numero for e in tr.ordonner(etats_, LANE, debut.replace(hour=16), 8)]
+    assert set(autre[:4]) == {2, 3, 4, 5}
+    assert autre.index(1) > max(autre.index(k) for k in (2, 3, 4, 5))
 
 
 def test_quota_de_conteneurs_puis_complement():
@@ -431,7 +464,8 @@ def _violations(source: str) -> list[str]:
 
 
 def test_tapis_rapide_ne_lance_aucun_processus():
-    for nom in ("tapis_rapide.py", "tapis_marqueurs.py"):
+    for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "gh_cache.py",
+                "gh_cache_fichier.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -439,9 +473,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 
 # Plafonds releves une fois a la livraison (ecart MERGEE corrige, quota de conteneurs) ;
 # un depassement se paie en extrayant un module, pas en relevant le plafond.
-# tapis_marqueurs.py est la premiere extraction (lecture des marqueurs, 14/11).
+# tapis_marqueurs.py est la premiere extraction (lecture des marqueurs, 14/11) ;
+# gh_cache.py la seconde (cache et verrou de la lecture, #22630, 14/11) ;
+# gh_cache_fichier.py la troisieme (le fichier de cache : lire si frais, ecrire
+# atomiquement -- extraction demandee par les replis de la review Hermes,
+# #22630, 14/11 : le protocole a grandi de 41 lignes).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
-                                              ("tapis_marqueurs.py", 130)])
+                                              ("tapis_marqueurs.py", 130),
+                                              ("gh_cache.py", 130),
+                                              ("gh_cache_fichier.py", 60)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond
