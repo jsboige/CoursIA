@@ -132,10 +132,60 @@ def test_fetch_comments_paginates(monkeypatch):
         page = int(url.rsplit("page=", 1)[1])
         return pages.get(page, [])
 
-    out = orc.fetch_comments([19309], gh=fake_gh)
+    out, unreadable = orc.fetch_comments([19309], gh=fake_gh)
     assert len(out[19309]) == 103
+    assert unreadable == []
     assert any("page=2" in a[-1] for a in seen)
 
 
 def test_unreadable_pool_is_not_a_zero():
     assert orc.fetch_pool(gh=lambda *a: None) is None
+
+
+def test_fetch_comments_page_2_failure_marks_the_epic_unreadable():
+    """Un echec de lecture en page 2 tronque la FIN du fil -- celle qui porte
+    les evenements posterieurs a l'instant. L'EPIC doit etre declare illisible,
+    jamais compte avec la seule page 1."""
+    pages = {1: [{"created_at": "2026-11-01T00:00:00Z", "body": "x"}] * 100}
+
+    def fake_gh(*args):
+        page = int(args[-1].rsplit("page=", 1)[1])
+        return pages.get(page)
+
+    out, unreadable = orc.fetch_comments([19309, 19310], gh=fake_gh)
+    assert 19309 in unreadable
+    assert 19309 not in out
+
+
+def test_fetch_comments_page_1_failure_is_not_zero_released():
+    """Un echec des la page 1 ne doit pas produire ``out[n] = []`` : un fil
+    vide et un fil illisible sont deux etats distincts."""
+    out, unreadable = orc.fetch_comments([19309], gh=lambda *a: None)
+    assert out == {}
+    assert unreadable == [19309]
+    counts = orc.count_events(out, INSTANT)
+    assert counts["released_before"] == 0
+    assert counts["epics"] == []
+
+
+def test_unreadable_epic_makes_main_return_3(monkeypatch, capsys):
+    """rc 3 = lecture incomplete, distinct de rc 0 (mesure) et rc 2 (pool
+    illisible) : l'appelant ne peut pas lire un trou comme une mesure."""
+    pool = [{"number": 19309, "title": "[Epic Origami] Exemple", "body": ""}]
+    monkeypatch.setattr(orc, "fetch_pool", lambda: pool)
+    monkeypatch.setattr(orc, "fetch_comments",
+                        lambda numbers, gh=None: ({}, [19309]))
+    monkeypatch.setattr(orc, "parked_epics", lambda pool: set())
+    assert orc.main([]) == 3
+    out = capsys.readouterr().out
+    assert "LECTURE INCOMPLETE" in out
+    assert "#19309" in out
+
+
+def test_all_readable_epics_keep_rc_zero(monkeypatch):
+    pool = [{"number": 19309, "title": "[Epic Origami] Exemple", "body": ""}]
+    monkeypatch.setattr(orc, "fetch_pool", lambda: pool)
+    monkeypatch.setattr(orc, "fetch_comments",
+                        lambda numbers, gh=None: ({19309: []}, []))
+    monkeypatch.setattr(orc, "parked_epics", lambda pool: set())
+    assert orc.main([]) == 0

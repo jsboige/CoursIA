@@ -110,31 +110,44 @@ def origami_epics(pool: list[dict]) -> list[dict]:
     return [it for it in pool if is_origami_epic(it)]
 
 
-def fetch_comments(numbers: list[int], gh=_gh_json) -> dict[int, list[dict]]:
+def fetch_comments(numbers: list[int], gh=_gh_json
+                   ) -> tuple[dict[int, list[dict]], list[int]]:
     """Tous les commentaires d'une liste d'issues, pagines.
 
     L'organe de parcage lit ``comments(first:100)`` : sur un fil de plusieurs
     centaines de commentaires, les **100 plus anciens** suffisent a son
     besoin (il cherche un marqueur de depliage) mais pas au compteur, qui doit
     voir la fin du fil. D'ou la pagination REST ici.
+
+    Rend ``(commentaires_par_epic, epics_illisibles)``. Une page qui n'a pas
+    pu etre lue rend l'EPIC **illisible**, elle ne le rend pas vide : ``gh``
+    rend ``None`` aussi bien pour un reseau coupe que pour un fil sans
+    commentaire, et confondre les deux ferait passer un echec de lecture pour
+    une absence de ``[RELEASED]`` -- le span que l'organe doit refuser. Un
+    echec en page 2 ou plus tronque la fin du fil, qui porte justement les
+    evenements posterieurs a l'instant : il rend l'EPIC illisible aussi.
     """
     out: dict[int, list[dict]] = {}
+    unreadable: list[int] = []
     for n in numbers:
         comments: list[dict] = []
         page = 1
+        complete = True
         while True:
             payload = gh("api", f"repos/{REPO}/issues/{n}/comments"
                                f"?per_page=100&page={page}")
-            if payload is None:
-                break
             if not isinstance(payload, list):
+                complete = False
                 break
             comments.extend(payload)
             if len(payload) < 100:
                 break
             page += 1
-        out[n] = comments
-    return out
+        if complete:
+            out[n] = comments
+        else:
+            unreadable.append(n)
+    return out, unreadable
 
 
 def classify_comment(body: str) -> dict:
@@ -210,7 +223,9 @@ def parked_epics(pool: list[dict]) -> set[int] | None:
 
 def render(report: dict) -> None:
     print(f"Parcage Origami -- instant : {report['since']}")
-    print(f"  EPICs Origami servis par le compteur : {report['epics_count']}")
+    print(f"  EPICs Origami servis par le compteur : "
+          f"{report.get('epics_readable', report['epics_count'])}"
+          f"/{report['epics_count']}")
     print(f"  [RELEASED] avant l'instant : {report['released_before']}")
     print(f"  [RELEASED] APRES l'instant : {report['released_after']}")
     print(f"  marqueurs [PLI n DEPLIE] apres l'instant : {report['deplie_after']}")
@@ -268,10 +283,10 @@ def main(argv: list[str] | None = None) -> int:
         wanted = set(args.epic)
         epics = [e for e in epics if e["number"] in wanted]
     numbers = [e["number"] for e in epics]
-    comments = fetch_comments(numbers)
     if not numbers:
         print("UNKNOWN: aucun EPIC Origami trouve")
         return 2
+    comments, unreadable = fetch_comments(numbers)
 
     counts = count_events(comments, instant)
     now = datetime.now(timezone.utc)
@@ -311,6 +326,8 @@ def main(argv: list[str] | None = None) -> int:
         "since": args.since,
         "measured_at": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "epics_count": len(numbers),
+        "epics_readable": len(numbers) - len(unreadable),
+        "unreadable_epics": sorted(unreadable),
         "released_before": counts["released_before"],
         "released_after": counts["released_after"],
         "deplie_after": counts["deplie_after"],
@@ -326,15 +343,23 @@ def main(argv: list[str] | None = None) -> int:
         "days_after": round(days_after, 2),
         "rate_before_per_day": round(rate, 2),
         "avoided_estimate": avoided,
-        "avoided_basis": "rythme mesure avant l'instant x duree apres -- "
-                         "EXTRAPOLATION, pas un compte",
+        "avoided_basis": "rythme = [RELEASED] avant l'instant / jours ecoules "
+                         "depuis le PREMIER [RELEASED] jamais observe (toute "
+                         "l'histoire du fil, pas une fenetre de 7 jours) ; "
+                         "x duree apres l'instant -- EXTRAPOLATION, pas un "
+                         "compte",
+        "rate_basis": "premier [RELEASED] observe -> instant",
         "per_epic": counts["epics"],
     }
     if args.json:
         print(json.dumps(report, ensure_ascii=False, indent=1))
     else:
         render(report)
-    return 0
+        if unreadable:
+            print(f"  LECTURE INCOMPLETE : {len(unreadable)} EPIC(s) "
+                  f"illisible(s), exclus du compte -- "
+                  + ", ".join(f"#{n}" for n in sorted(unreadable)))
+    return 3 if unreadable else 0
 
 
 if __name__ == "__main__":
