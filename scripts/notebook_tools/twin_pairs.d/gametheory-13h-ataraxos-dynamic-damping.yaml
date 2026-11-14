@@ -1,0 +1,9 @@
+- name: "GameTheory-13h Ataraxos Dynamic Damping"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-13h-Ataraxos-DynamicDamping-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Kuhn tabulaire et CFR sont explicitement les objets pédagogiques ; les deux carnets calculent les 64 meilleures réponses pures par joueur et les mêmes budgets. Aucun organe Ataraxos natif n'est revendiqué."
+  known_differences:
+    - "Les écarts flottants amplifiés par le schéma multiplicatif peuvent modifier le quatrième chiffre du gap final sched."
