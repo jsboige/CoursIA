@@ -80,6 +80,10 @@ principal de niveau licence qui en pose d'abord les notions.
 | 06 | [Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Licence | [06b — Aaronson–Gottesman](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb), [06c — Classical at heart](Complexity-06c-ClassicalAtHeart-Python.ipynb), [06d — Aaronson–Ambainis, la variable influente](Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) |
 | 07 | [Complexité de Kolmogorov bornée : séquences à mémoire limitée](Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Recherche | [07b — Le tour des grands nombres](Complexity-07b-LeTourDesGrandsNombres-Python.ipynb), [07c — Le bilan mathocalypse](Complexity-07c-LeBilanMathocalypse-Python.ipynb) |
 
+### Parité C# — word RAM
+
+[Complexity-03e : barrières d'exposants et word RAM (C#)](Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) accompagne la [version Python](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb). L'interpréteur utilise BigInteger pour les mots modulaires ; les générateurs et les chronomètres diffèrent.
+
 ## Position dans le dépôt
 
 La série rejoint le dialogue formel existant : les jumeaux Lean (`Search/discrepancy_lean/`,
@@ -167,10 +171,6 @@ d'énoncés lourds — la rareté n'est plus d'écrire court, mais de **vérifie
 est écrit court ; l'arbitrage formel de ces preuves est rendu dans l'EPIC
 [#19898](https://github.com/jsboige/CoursIA/issues/19898) (non-distillation écrite :
 aucun lac ne porte la théorie — la veille vit dans cette série).
-
-### Parité C# — word RAM
-
-[Complexity-03e : barrières d'exposants et word RAM (C#)](Complexity-03e-Barrieres-Exposants-WordRAM-CSharp.ipynb) accompagne la [version Python](Complexity-03e-Barrieres-Exposants-WordRAM-Python.ipynb). L'interpréteur utilise BigInteger pour les mots modulaires ; les générateurs et les chronomètres diffèrent.
 
 ## Prérequis
 
