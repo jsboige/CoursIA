@@ -237,8 +237,8 @@ def test_19638_six_image_carnets_no_longer_rougied():
     from pathlib import Path as _Path
     REPO = _Path(__file__).resolve().parent.parent.parent.parent
     listed = (
-        "GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb",
-        "GenAI/Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb",
+        "GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
+        "GenAI/Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb",
         "GenAI/Image/02-Advanced/02-5-Bonsai-Image-Ternary.ipynb",
         "GenAI/Image/03-Orchestration/03-3-Performance-Optimization.ipynb",
     )
