@@ -383,10 +383,10 @@ def test_audit_allowlists_native_decide_axioms():
     # `_resolve_allow` resout le "@chemin" ET la forme inline ; on garde donc
     # la liste resolue plus haut (la reparse comma-separated de main
     # s'appliquerait a la chaine "@scripts/lean/allow_axioms_conway.txt" et
-    # compterait 1 element). Le compte suit `main` : 79 ancres (77 mesurees
-    # au move #21905 + les 2 ancres du temoin de machine de Turing #17465).
-    assert len(names) == 79, (
-        f"audit allow-list must carry the 79 native_decide axioms of the whole "
+    # compterait 1 element). Le compte suit le fichier : 83 ancres (77 mesurees
+    # au move #21905 + 2 ancres Turing #17465 + 4 OTCA/UnitCell negatives).
+    assert len(names) == 83, (
+        f"audit allow-list must carry the 83 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
@@ -397,7 +397,8 @@ def test_audit_allowlists_native_decide_axioms():
         f"by #21833, "
         f"+ 2 Turing-machine entries from #17465 (the FR + _en twins of "
         f"turingmachine_facts, the single anchor of the Turing-machine "
-        f"witness), "
+        f"witness) + 4 OTCA/UnitCell negative-dynamics entries from #25188 "
+        f"(FR + _en twins of otca_facts and unitcell_facts), "
         f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one

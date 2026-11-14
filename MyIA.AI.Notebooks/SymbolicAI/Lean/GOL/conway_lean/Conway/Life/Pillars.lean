@@ -101,6 +101,11 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   question est **ouverte** (confinement observé sur la fenêtre mesurée
   — le positif reste une hypothèse, cf. ci-dessus) ; pour Gemini/CPU les grilles
   sont encore vides, où un négatif ne mesurerait rien de réel.
+  Les OTCA et UnitCell reçoivent **en revanche** un témoin négatif de
+  **dynamisme** — `otca_not_stilllife` et `unitcell_not_stilllife`
+  (`step g ≠ g` par un site de naissance) : c'est une propriété
+  différente de la période, qui ne demande pas de positif apparié, et
+  son témoin négatif est la grille vide (`emptyGridIsStillLife`).
 - **Futur** : le CPU (une fois son RLE chargé par le même mécanisme) — sa
   question du bord reste à trancher par la même méthode de mesure.
 
@@ -115,11 +120,13 @@ les liste **par nom**, jamais par un joker.
 | `Conway.Life.Pillars` | 7 | 5 | `otca_initial_nonempty`, `unitcell_initial_nonempty` |
 | `Conway.Life.Pillars_en` | 7 | 5 | les deux siblings `_en` |
 
-Les 5 ancres **retenues** par fichier sont les certifications **indépendantes**
+Les 8 ancres **retenues** par fichier sont les certifications **indépendantes**
 du noyau : `pulsar_period3` (positif — période 3), `pulsar_period1_negative`
 et `pulsar_period2_negative` (négatifs appariés), `otca_initial_population`
-(64 691 cellules) et `unitcell_initial_population` (4 761 cellules) — chacune
-porte une affirmation que rien d'autre ne porte.
+(64 691 cellules), `unitcell_initial_population` (4 761 cellules), les deux
+bundles de site de naissance `otca_facts` / `unitcell_facts` (témoin négatif de
+dynamisme, ce PR), et `turingmachine_facts` (le témoin de la machine de Turing,
+#17465) — chacune porte une affirmation que rien d'autre ne porte.
 
 Les 2 déclarations retirées ne perdent rien : `otca_initial_nonempty` et
 `unitcell_initial_nonempty` se **déduisent** de la population mesurée
@@ -127,10 +134,14 @@ Les 2 déclarations retirées ne perdent rien : `otca_initial_nonempty` et
 crée pas de nouveau — c'est `#print axioms` qui fait foi, pas la présence
 d'un `native_decide` dans le texte.
 
-Mesure : 7 déclarations par fichier avant, **5 ancres mesurées par
-`#print axioms`** après (14 → 10 pour la paire FR/`_en`), build
+Mesure du slimming #21833 : 7 déclarations par fichier avant, **5 ancres
+mesurées par `#print axioms`** après (14 → 10 pour la paire FR/`_en`), build
 `Build completed successfully (3014 jobs)` (`Conway.Life.Pillars` : 804 s,
-`Conway.Life.Pillars_en` : 803 s), toolchain épinglé `v4.33.0`.
+`Conway.Life.Pillars_en` : 803 s), toolchain épinglé `v4.33.0`. Depuis, #17465
+a ajouté l'ancre `turingmachine_facts` (6 par fichier) ; les deux bundles de
+site de naissance ajoutés par ce PR portent le total à **8 ancres par fichier**
+(16 pour la paire FR/`_en`) — à re-confirmer par le gate `#print axioms` de
+la CI.
 
 ### Pourquoi un fichier séparé ?
 
@@ -332,6 +343,69 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
   simp only [List.length_nil] at hl
   omega
 
+/-! ## Témoin négatif de l'OTCA
+
+La période 35 328 n'est pas prouvable ici : il faudrait faire tourner
+l'évolution complète sur 64 691 cellules, hors de portée du moteur de
+référence (cf. ci-dessus). Ce que cette formalisation prouve en
+contrepartie — et c'est le **témoin négatif** que le critère 2 de
+#17465 demande — c'est que la grille chargée n'est **pas** une vie
+immobile.
+
+Le témoin est un **site de naissance** : une cellule morte ayant
+exactement trois voisins de Moore vivants. La règle B3 la fait naître,
+donc `step g ≠ g`. La preuve est **locale** (aucune évolution complète),
+d'où son applicabilité à un motif de 64 691 cellules. Le site `(4, 169)`
+est mesuré par comptage Python direct du RLE source ; la convention
+`(row, col)` de `RLE.parseRLE!` est validée sur la machine de Turing
+(site `(9, 256)`, ci-dessous), qui reproduit les trois faits au byte près. -/
+
+/-- **Faits mesurés** sur le site de naissance de l'OTCA, établis par
+    **une seule** évaluation `native_decide`.
+
+    Le regroupement n'est pas cosmétique : chaque site `native_decide`
+    réévalue `RLE.parseRLE!`, donc reparse la source RLE et retrieve les
+    64 691 cellules de la grille. Un seul passage suffit à établir les
+    trois faits du site ; les théorèmes ci-dessous n'en sont que des
+    projections, gratuites au niveau du noyau. La population (64 691)
+    n'est pas regroupée ici : elle porte déjà son ancrage propre dans
+    `otca_initial_population`. -/
+theorem otca_facts :
+    (4, 169) ∉ otcaInitial ∧
+    (4, 169) ∈ otcaInitial.flatMap mooreNeighbors ∧
+    liveNeighborCount otcaInitial (4, 169) = 3 := by
+  native_decide
+
+/-- La cellule `(4, 169)` est **morte** dans la grille OTCA chargée. -/
+theorem otca_birth_site_absent : (4, 169) ∉ otcaInitial :=
+  otca_facts.1
+
+/-- La cellule `(4, 169)` est voisine de Moore d'au moins une cellule
+    vivante de la grille OTCA : elle est donc **candidate** pour
+    l'étape suivante. -/
+theorem otca_birth_site_adjacent :
+    (4, 169) ∈ otcaInitial.flatMap mooreNeighbors :=
+  otca_facts.2.1
+
+/-- La cellule `(4, 169)` a **exactement trois** voisins de Moore vivants
+    dans la grille OTCA : c'est un **site de naissance** (règle B3). -/
+theorem otca_birth_site_count :
+    liveNeighborCount otcaInitial (4, 169) = 3 :=
+  otca_facts.2.2
+
+/-- **Témoin négatif de l'OTCA** : la grille chargée n'est **pas** un
+    point fixe de l'évolution — une cellule naît en `(4, 169)`.
+
+    **Témoin négatif** au sens de #17465 : le motif voisin qui ne vérifie
+    PAS la propriété est la grille vide — `Conway.Life.emptyGridIsStillLife`
+    montre que `step [] = []`, donc le placeholder vide EST un point fixe.
+    Ce contrôle montre que le témoin ci-dessus **mord** : sans lui, rien ne
+    distinguerait l'OTCA chargé d'une grille vide. -/
+theorem otca_not_stilllife :
+    step otcaInitial ≠ otcaInitial :=
+  birthSiteNotFixed otca_birth_site_absent
+    otca_birth_site_adjacent otca_birth_site_count
+
 /-- **UnitCell** — Nicolay Beluchenko 2011.
 
     Une métacellule OTCA-style plus petite, de période **5 760**, environ 9× la
@@ -383,6 +457,56 @@ theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
   have hl := congrArg List.length h
   simp only [List.length_nil] at hl
   omega
+
+/-! ## Témoin négatif de l'UnitCell
+
+Comme pour l'OTCA, la période 5 760 n'est pas prouvable ici (5 760
+générations sur 4 761 cellules, hors de portée du moteur de référence),
+et le motif est en outre un **système ouvert** (planeurs en fuite). Le
+témoin négatif prouvé est le même : la grille chargée n'est **pas** une
+vie immobile. Le site de naissance `(14, 176)` est mesuré par comptage
+Python direct du RLE source, à la même convention `(row, col)` validée
+sur la machine de Turing. -/
+
+/-- **Faits mesurés** sur le site de naissance de l'UnitCell, établis par
+    **une seule** évaluation `native_decide`. Un seul passage suffit à
+    établir les trois faits du site ; les théorèmes ci-dessous n'en sont
+    que des projections, gratuites au niveau du noyau. La population
+    (4 761) porte déjà son ancrage propre dans
+    `unitcell_initial_population`. -/
+theorem unitcell_facts :
+    (14, 176) ∉ unitcellInitial ∧
+    (14, 176) ∈ unitcellInitial.flatMap mooreNeighbors ∧
+    liveNeighborCount unitcellInitial (14, 176) = 3 := by
+  native_decide
+
+/-- La cellule `(14, 176)` est **morte** dans la grille UnitCell chargée. -/
+theorem unitcell_birth_site_absent : (14, 176) ∉ unitcellInitial :=
+  unitcell_facts.1
+
+/-- La cellule `(14, 176)` est voisine de Moore d'au moins une cellule
+    vivante de la grille UnitCell : elle est donc **candidate** pour
+    l'étape suivante. -/
+theorem unitcell_birth_site_adjacent :
+    (14, 176) ∈ unitcellInitial.flatMap mooreNeighbors :=
+  unitcell_facts.2.1
+
+/-- La cellule `(14, 176)` a **exactement trois** voisins de Moore vivants
+    dans la grille UnitCell : c'est un **site de naissance** (règle B3). -/
+theorem unitcell_birth_site_count :
+    liveNeighborCount unitcellInitial (14, 176) = 3 :=
+  unitcell_facts.2.2
+
+/-- **Témoin négatif de l'UnitCell** : la grille chargée n'est **pas** un
+    point fixe de l'évolution — une cellule naît en `(14, 176)`.
+
+    **Témoin négatif** au sens de #17465 : la grille vide est, elle, un
+    point fixe (`Conway.Life.emptyGridIsStillLife`) — le témoin ci-dessus
+    la distingue de l'UnitCell chargé. -/
+theorem unitcell_not_stilllife :
+    step unitcellInitial ≠ unitcellInitial :=
+  birthSiteNotFixed unitcell_birth_site_absent
+    unitcell_birth_site_adjacent unitcell_birth_site_count
 
 /-! ## Témoin de la machine de Turing
 
