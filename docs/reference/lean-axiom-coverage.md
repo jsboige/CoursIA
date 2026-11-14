@@ -1,6 +1,6 @@
 # Lean axiom coverage — proof-integrity gate triage (per #8738 step 3)
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 **Issue de référence** : [#8738](https://github.com/jsboige/CoursIA/issues/8738) (proof-integrity gate multiline parse, parser fix livré via PR #8740 c.947 MERGED 2026-07-28).
 **Cycle-id de production** : c.948 (worker po-2023, lane `myia-po-2023:CoursIA-2`).
@@ -380,7 +380,7 @@ Le port de sa preuve s'est fait **par étages**, et l'axiome est resté déclar�
 
 **Ce qui reste** : la **récupération** — en itérant `decisive_split` sur un ensemble fini d'agents on obtient une coalition décisive minimale, dont la minimalité force un dictateur, et c'est cet assemblage final qui retirera `arrow_impossibility`. Les trois étages livrés fournissent les deux hypothèses qu'il consomme (décision lisible sur toute paire, coalitions strictement décroissantes) ; la marche restante est l'itération jusqu'au point fixe sur `Finset`, c'est-à-dire précisément la dépendance que ce lac évite encore. **Quand** l'axiome tombera, la whitelist `axiom-allow-axioms` de ce lac se videra ; tant qu'il est là, c'est son nom explicite dans le manifeste (#22519, §4.1) qui l'autorise à passer le gate — jamais un wildcard.
 
-**Où la preuve d'Arrow est déjà complète** : `game_theory_lean/SocialChoice/Arrow.lean` (`0` `sorry`, `CERTIFIED.txt`) porte la chaîne achevée `pivot_exists` → `pivot_is_dictator_except_b` → `partial_dictator_is_full_dictator`. Les deux lacs sont **distincts par construction** — celui-ci est zéro-dépendance (`Int`-utilitaires, aucune bibliothèque), l'autre s'appuie sur `Finset` — et ce port ne prétend pas le remplacer : il construit la même preuve dans le fragment de Lean qui n'a aucune dépendance. Ce renvoi est ici pour que le lecteur du registre sache que la preuve complète existe à côté, plutôt que de conclure d'un axiome encore en place que le dépôt n'a rien.
+**Où la preuve d'Arrow est déjà complète** : `SocialChoice/social_choice_core_lean/SocialChoice/Arrow.lean` (`0` `sorry`, `CERTIFIED.txt`) porte la chaîne achevée `pivot_exists` → `pivot_is_dictator_except_b` → `partial_dictator_is_full_dictator`. Les deux lacs sont **distincts par construction** — celui-ci est zéro-dépendance (`Int`-utilitaires, aucune bibliothèque), l'autre s'appuie sur `Finset` — et ce port ne prétend pas le remplacer : il construit la même preuve dans le fragment de Lean qui n'a aucune dépendance. Ce renvoi est ici pour que le lecteur du registre sache que la preuve complète existe à côté, plutôt que de conclure d'un axiome encore en place que le dépôt n'a rien.
 
 #### 4.1.1. L'axiome est tombé — mesure du 2026-10-28
 

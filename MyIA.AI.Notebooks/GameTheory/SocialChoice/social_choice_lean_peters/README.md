@@ -102,11 +102,11 @@ Ce lake est **explicitement hors du périmètre d'absorption** dans
 2. **Cadre sémantique distinct (toujours actif)** : ce lake expose un
    `LinearOrder` strict (Mathlib) qui **n'est pas** compatible avec l'API
    `PrefOrder` réflexif-total-transitive utilisée par
-   `game_theory_lean/SocialChoice/`. Une fusion forcerait soit (a) un
+   `social_choice_core_lean/SocialChoice/`. Une fusion forcerait soit (a) un
    double-port linéaire/préf-ordre, soit (b) une ré-écriture des preuves de
    Peters. **C'est le motif d'autonomie qui demeure** après la convergence de
    toolchain : ce lake est un *port externe* (les preuves sont celles de
-   Peters) quand `game_theory_lean/` porte nos preuves.
+   Peters) quand `social_choice_core_lean/` porte nos preuves.
 
 **Conséquence** : `social_choice_lean_peters/` reste un **lake autonome
 auto-suffisant** avec son propre `lake build`, son propre `lean-toolchain`
@@ -149,19 +149,20 @@ choix social en Lean 4.
 
 ### Complémentaire, pas doublon
 
-Ce projet et les preuves au `PrefOrder` — [`game_theory_lean/SocialChoice/`](../../game_theory_lean/SocialChoice/) —
+Ce projet et les preuves au `PrefOrder` — [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) —
 couvrent la même théorie au travers de **cadres différents** : Peters utilise le `LinearOrder`
 strict de Mathlib, tandis que le `PrefOrder` réflexif-total-transitif (plus proche de la
 tradition d'économie du bien-être) y porte Arrow / Sen / l'électeur médian. Lire les deux montre
 comment le choix du cadre modèle les définitions et les preuves.
 
 L'ancien dossier `social_choice_lean/` n'en garde plus qu'une coquille documentaire : ses
-fichiers Lean ont été absorbés dans `game_theory_lean/SocialChoice/` (#6058).
+fichiers Lean ont été absorbés dans `game_theory_lean/SocialChoice/` (#6058), puis descendus
+dans le lake autonome `social_choice_core_lean/` (#24183, T3).
 
 ### Où aller ensuite
 
 - **Notebook compagnon** : prévu (pas encore créé) — un tour pédagogique des résultats
   de Peters, auquel ce projet servirait de backend.
 - **Amont** : [`DominikPeters/SocialChoiceLean`](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Nos preuves** : [`game_theory_lean/SocialChoice/`](../../game_theory_lean/SocialChoice/) — Arrow / Sen /
+- **Nos preuves** : [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) — Arrow / Sen /
   électeur médian dans le cadre `PrefOrder`.

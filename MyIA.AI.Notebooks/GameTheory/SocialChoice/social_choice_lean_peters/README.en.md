@@ -55,11 +55,11 @@ cohesive post-convergence lakes). History of the status:
 2. **Distinct semantic framework (still active)**: this lake exposes a Mathlib
    strict `LinearOrder` which **does not** line up with the
    reflexive-total-transitive `PrefOrder` API used by
-   `game_theory_lean/SocialChoice/`. A merge would force either (a) a dual
+   `social_choice_core_lean/SocialChoice/`. A merge would force either (a) a dual
    linear/preorder port or (b) a rewrite of Peters' proofs. **This is the
    autonomy rationale that remains** after the toolchain convergence: this
    lake is an *external port* (the proofs are Peters') while
-   `game_theory_lean/` carries our own proofs.
+   `social_choice_core_lean/` carries our own proofs.
 
 **Consequence**: `social_choice_lean_peters/` stays a **self-contained
 autonomous lake** with its own `lake build`, its own `lean-toolchain`
@@ -100,19 +100,20 @@ results, the current reference implementation of social-choice theory in Lean 4.
 
 ### Complementary, not duplicate
 
-This project and the `PrefOrder` proofs — [`game_theory_lean/SocialChoice/`](../../game_theory_lean/SocialChoice/) —
+This project and the `PrefOrder` proofs — [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) —
 cover the same theory through **different frameworks**: Peters uses Mathlib's strict
 `LinearOrder`, while the reflexive-total-transitive `PrefOrder` (closer to the welfare-economics
 tradition) carries Arrow / Sen / the median voter. Reading both shows how the framework choice
 shapes the definitions and proofs.
 
 The former `social_choice_lean/` folder now only keeps a documentary shell: its Lean files were
-absorbed into `game_theory_lean/SocialChoice/` (#6058).
+absorbed into `game_theory_lean/SocialChoice/` (#6058), then descended into the autonomous
+lake `social_choice_core_lean/` (#24183, T3).
 
 ### Where to go next
 
 - **Companion notebook**: planned (not yet created) — a teaching tour of Peters'
   results, which this project would back.
 - **Upstream**: [DominikPeters/SocialChoiceLean](https://github.com/DominikPeters/SocialChoiceLean) (MIT).
-- **Our proofs**: [`game_theory_lean/SocialChoice/`](../../game_theory_lean/SocialChoice/) — Arrow / Sen /
+- **Our proofs**: [`social_choice_core_lean/SocialChoice/`](../social_choice_core_lean/SocialChoice/) — Arrow / Sen /
   median voter in the `PrefOrder` framework.

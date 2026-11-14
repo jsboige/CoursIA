@@ -681,10 +681,10 @@ Les notebooks GameTheory side tracks (16b-16f) formalisent en Lean 4 des résult
 
 | résultat | Fichier Lean | Notebook GameTheory | Statut |
 |----------|-------------|---------------------|--------|
-| théorème d'Arrow (impossibilité) | `game_theory_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
-| théorème de Sen (libéralisme) | `game_theory_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
+| théorème d'Arrow (impossibilité) | `GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/Arrow.lean` | 16d | 0 sorry (Geanakoplos 2005) |
+| théorème de Sen (libéralisme) | `GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/Sen.lean` | 16e | 0 sorry (bidirectionnel) |
 | Valeur de Shapley | `game_theory_lean/CooperativeGames/Shapley.lean` | 16b | 0 sorry (caractérisation + unicité ; Banzhaf #4011/#4037/#4130 ; lake `cooperative_games_lean/` supprimé post-#4365, contenu absorbé) |
-| Modèles de vote (Banks, STV) | `game_theory_lean/SocialChoice/Voting.lean` | 16f | 0 sorry |
+| Modèles de vote (Banks, STV) | `GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/Voting.lean` | 16f | 0 sorry |
 | Gale-Shapley (stable marriage) | `game_theory_lean/StableMarriage/GaleShapley.lean` | (pas de notebook dédié) | 0 sorry. `gale_shapley_stable`, `gale_shapley_man_optimal` (via `exists_isManOptimal`, `Lattice.lean`) et `gale_shapley_woman_pessimal` prouvés. |
 
 Le notebook Lean-5 (tactiques) et Lean-6 (Mathlib) sont des prérequis directs pour les side tracks Lean de GameTheory.

@@ -170,7 +170,7 @@ def check_social_choice_lean():
     """Verifie l'etat canonique de social_choice_lean (plus un lake depuis #4365).
 
     Depuis l'absorption #6058 (EPIC #4365), les modules vivent dans
-    game_theory_lean/SocialChoice/ et la coquille technique (lakefile.lean,
+    SocialChoice/social_choice_core_lean/SocialChoice/ et la coquille technique (lakefile.lean,
     lean-toolchain, lake-manifest.json) a ete retiree. Etats canoniques :
     dossier absent (sortie T3 de #24183) ou tombstone documentaire (markdown
     seuls). Un lakefile* qui reaparait est une resurrection du 9e lake,

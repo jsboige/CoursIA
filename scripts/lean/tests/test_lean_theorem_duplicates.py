@@ -42,14 +42,16 @@ def _load_module():
 mod = _load_module()
 
 # Les deux doublons attendus : (lac A, nom A) x (lac B, nom B).
+# Le lac A suit la descente #24183 (#25262) : Arrow/Sen vivent dans le lac
+# autonome social_choice_core_lean, plus dans game_theory_lean.
 ARROW = (
-    "MyIA.AI.Notebooks/GameTheory/game_theory_lean",
+    "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean",
     "arrow",
     "MyIA.AI.Notebooks/GameTheory/lean_game_defs",
     "arrow_impossibility",
 )
 SEN = (
-    "MyIA.AI.Notebooks/GameTheory/game_theory_lean",
+    "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean",
     "sen_impossibility",
     "MyIA.AI.Notebooks/GameTheory/lean_game_defs",
     "sen_impossibility",

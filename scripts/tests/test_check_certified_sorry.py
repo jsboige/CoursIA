@@ -149,25 +149,28 @@ def test_inline_comments_in_manifest_do_not_break_names(tmp_path):
 # --- the real contract, pinned -------------------------------------------------
 
 REAL_LAKE = Path(__file__).resolve().parents[2] / (
-    "MyIA.AI.Notebooks/GameTheory/game_theory_lean")
+    "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean")
 
 
 def test_real_socialchoice_contract_holds():
     # The committed manifest must hold against the committed tree: this is
-    # what CI runs on every PR touching the lake.
+    # what CI runs on every PR touching the lake. Since the descent of #24183
+    # (#25262), the SocialChoice contract lives in the autonomous lake under
+    # the SC notebooks, not in game_theory_lean anymore.
     if not REAL_LAKE.is_dir():  # pragma: no cover - repo layout guarantee
-        pytest.skip("game_theory_lean not found")
+        pytest.skip("social_choice_core_lean not found")
     failures, report = ccs.check_subtree(REAL_LAKE, "SocialChoice")
     assert failures == [], failures
-    assert len(report["certified"]) >= 14  # 7 FR + 7 EN on main
+    assert len(report["certified"]) >= 17  # 9 FR + 8 EN in the autonomous lake
 
 
 def test_workflow_targets_match_manifest():
     # Criterion 5, second surface: the B.3 target list is ALSO a list — pin it
     # to the manifest so the two cannot drift apart silently (same class as
     # the STALE-LIST check). Depuis #17374 la liste vit dans le manifeste
-    # matriciel (ci_lakes.json, gametheory.axiom-target-modules), le wrapper
-    # lean-social-choice.yml etant supprime.
+    # matriciel (ci_lakes.json) ; depuis la descente #24183 (#25262) le lac
+    # SocialChoice est autonome sous les carnets SC — l'entree pinee est
+    # « socialchoicecore », et gametheory ne porte plus que ses compagnons.
     import json
     repo = Path(__file__).resolve().parents[2]
     manifest = (REAL_LAKE / "SocialChoice" / ccs.MANIFEST_NAME).read_text(
@@ -176,17 +179,43 @@ def test_workflow_targets_match_manifest():
     expected = sorted("SocialChoice." + f[:-len(".lean")] for f in certified)
     lakes = json.loads(
         (repo / "scripts/lean/ci_lakes.json").read_text(encoding="utf-8"))
-    entry = next(e for e in lakes["lakes"] if e["lake"] == "gametheory")
+    entry = next(e for e in lakes["lakes"] if e["lake"] == "socialchoicecore")
     raw = entry["axiom-target-modules"]
     actual = {m.strip() for m in raw.split(",")}
     expected_set = set(expected)
-    # Companion targets are gated modules living OUTSIDE SocialChoice/ in the
-    # same lake (une exception : SocialChoice._SmokeTest, qui vit dans le
-    # dossier mais ne figure pas au CERTIFIED.txt). ProgramGames.Basic/_en
-    # joined via the B.3 wiring (#15221
-    # follow-up): same review status as Abstraction, pinned here so a future
-    # addition to target-modules is an explicit test change, never a silent
-    # drift.
+    # The root SocialChoice.lean is a docstring-only aggregator listed as a
+    # matrix target (it roots the import graph) but not a certified module:
+    # the only allowed extra. A future addition to target-modules is an
+    # explicit test change, never a silent drift.
+    # SocialChoice._SmokeTest vit dans le dossier et ne figure pas au
+    # CERTIFIED.txt ; main l'auditait comme compagnon du lake gametheory,
+    # il a demenage avec le lac et garde sa cible (aucune perte de
+    # couverture au merge).
+    allowed_extras = {"SocialChoice", "SocialChoice._SmokeTest"}
+    assert expected_set <= actual, (
+        f"ci_lakes.json socialchoicecore axiom-target-modules omitted entries "
+        f"from SocialChoice/CERTIFIED.txt: matrix={sorted(actual)} "
+        f"manifest={expected}")
+    assert actual - expected_set == allowed_extras, (
+        f"socialchoicecore matrix entry has unreviewed targets: "
+        f"extras={sorted(actual - expected_set)} "
+        f"allowed={sorted(allowed_extras)}")
+
+    # La descente doit etre complete : gametheory ne porte plus AUCUNE cible
+    # SocialChoice.* — ses compagnons legitimes (Abstraction, ProgramGames)
+    # restent seuls dans son entree.
+    gametheory = next(e for e in lakes["lakes"] if e["lake"] == "gametheory")
+    gt = {m.strip() for m in gametheory["axiom-target-modules"].split(",")}
+    assert not any(m.startswith("SocialChoice.") for m in gt), (
+        f"gametheory still carries SocialChoice targets after the descent: "
+        f"{sorted(m for m in gt if m.startswith('SocialChoice.'))}")
+
+    # Compagnons du lac gametheory : la descente ne les touche pas, et
+    # leur liste reste epinglee ici pour qu'un ajout de cible soit un
+    # changement de test explicite, jamais une derive silencieuse
+    # (#25858, #25686/#26022). Les deux cibles SocialChoice.* en sont
+    # retirees : elles vivent dans le lac autonome, et l'assertion
+    # ci-dessus verifie qu'elles ne sont pas revenues.
     allowed_companions = {
         "Abstraction", "Abstraction.Basic",
         "ProgramGames.Basic", "ProgramGames.Basic_en",
@@ -206,7 +235,6 @@ def test_workflow_targets_match_manifest():
         "RepeatedGames.GrimTrigger", "RepeatedGames.GrimTrigger_en",
         "RepeatedGames.Stage", "RepeatedGames.Stage_en",
         "RepeatedGames_en",
-        "SocialChoice._SmokeTest",
         "StableMarriage.Definitions", "StableMarriage.Definitions_en",
         "StableMarriage.GSState", "StableMarriage.GSState_en",
         "StableMarriage.GaleShapley", "StableMarriage.GaleShapley_en",
@@ -214,7 +242,7 @@ def test_workflow_targets_match_manifest():
         "StableMarriage.Lemmas", "StableMarriage.Lemmas_en",
         "StableMarriage_en",
         "Swaps.Basic", "Swaps.Parite",
-        # #25858 (reserve du 11/11) : les 8 RACINES de lib compilees par
+        # #25858 (reserve du 11/11) : les RACINES de lib compilees par
         # `X.*` (Lake les compile : « including itself »). Chacune est un
         # simple aggregateur d'imports, 0 declaration -- l'instrument du
         # gate les classe `declaration_free_module`, donc NOTE non
@@ -223,9 +251,11 @@ def test_workflow_targets_match_manifest():
         # de couverture alors qu'il n'y avait rien a auditer : la racine
         # est desormais une cible explicite, comme les trois racines
         # declaration-free deja presentes (Abstraction, RepeatedGames_en,
-        # StableMarriage_en).
+        # StableMarriage_en). Elles sont 7 ici et non 8 : la racine
+        # SocialChoice a suivi la descente #24183 (#25262) dans le lac
+        # autonome, ou elle figure parmi les `allowed_extras`.
         "CongestionGames", "CooperativeGames", "ProgramGames",
-        "RepeatedGames", "SocialChoice", "StableMarriage",
+        "RepeatedGames", "StableMarriage",
         "StackelbergBilevel", "Swaps",
         # #25686/#26022 : LegalLoophole (racine aggregatrice, sans
         # declaration) + LegalLoophole.Toy (module reel, 0 sorry / 0 axiome
@@ -233,18 +263,14 @@ def test_workflow_targets_match_manifest():
         # la revendication d'axiomes de la PR devient mesuree par l'organe.
         "LegalLoophole", "LegalLoophole.Toy",
     }
-    assert expected_set <= actual, (
-        f"ci_lakes.json gametheory axiom-target-modules omitted entries "
-        f"from SocialChoice/CERTIFIED.txt: matrix={sorted(actual)} "
-        f"manifest={expected}")
-    assert actual - expected_set == allowed_companions, (
+    assert gt == allowed_companions, (
         f"gametheory matrix entry has unreviewed companion targets: "
-        f"extras={sorted(actual - expected_set)} "
-        f"allowed={sorted(allowed_companions)}")
+        f"extras={sorted(gt - allowed_companions)} "
+        f"missing={sorted(allowed_companions - gt)}")
 
-    # Les sous-dossiers compagnons (Abstraction, ProgramGames) declenchent la
-    # jambe matricielle par le glob lake-entier — strictement plus large que
-    # les sous-chemins explicites de l'ancien wrapper (#17374).
-    assert any(p.endswith("game_theory_lean/**.lean")
+    # Le declencheur lake-entier suit le lac autonome : glob **.lean du
+    # nouveau repertoire, strictement plus large que les sous-chemins
+    # explicites (#17374).
+    assert any(p.endswith("social_choice_core_lean/**.lean")
                for p in entry["paths"]), (
-        "gametheory manifest entry lost its whole-lake .lean trigger")
+        "socialchoicecore manifest entry lost its whole-lake .lean trigger")

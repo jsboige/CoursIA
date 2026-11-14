@@ -26,10 +26,11 @@ est une decision humaine (la tranche T1 de #24183) ; cet organe ne touche a
 aucun fichier de preuve.
 
 Controle positif obligatoire : la paire Arrow
-(`MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Arrow.lean`
+(`MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/Arrow.lean`
 contre `MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean`) et la
-paire Sen (`.../game_theory_lean/SocialChoice/Sen.lean` contre le meme
-fichier) doivent apparaitre.
+paire Sen (`.../social_choice_core_lean/SocialChoice/Sen.lean` contre le meme
+fichier) doivent apparaitre. Le temoin suit le lac : depuis la descente
+#24183, Arrow et Sen vivent dans le lac autonome social_choice_core_lean.
 
 Usage :
     python scripts/lean/lean_theorem_duplicates.py             # candidats (texte)
@@ -778,14 +779,16 @@ def render_page(pairs: list[dict], df_max: int, min_containment: float) -> str:
     lines.append("")
     lines.append(
         "**Controle positif** : la paire Arrow"
-        " (`MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/Arrow.lean`"
+        " (`MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/Arrow.lean`"
         " contre `MyIA.AI.Notebooks/GameTheory/lean_game_defs/SocialChoice.lean`)"
         " et la paire Sen"
-        " (`.../game_theory_lean/SocialChoice/Sen.lean` contre le meme fichier)"
+        " (`.../social_choice_core_lean/SocialChoice/Sen.lean` contre le meme fichier)"
         " doivent apparaitre parmi les paires fortes -- ce sont les deux"
         " doublons que #23097 avait conclut absents en comparant les noms de"
         " modules. Le test qui verifie ce point est"
         " `scripts/lean/tests/test_lean_theorem_duplicates.py`."
+        " (Le temoin suit le lac : depuis la descente #24183, Arrow et Sen"
+        " vivent dans le lac autonome `social_choice_core_lean`.)"
     )
     lines.append("")
     return "\n".join(lines)

@@ -383,7 +383,7 @@ Quatre itinéraires qui traversent paliers et lettres pour un public précis.
 
 Le dossier [SocialChoice/](SocialChoice/README.md) traite l'agrégation des préférences : Arrow, Sen, méthodes de vote, encodage SAT/Z3, manipulation, comités. Son README porte son propre parcours et ses propres approfondissements.
 
-Depuis le parcours principal, on y entre après le palier 16 : le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) présente la sous-série depuis la série mère — témoins d'Arrow et cycle de Condorcet par le code, appariement stable de Gale-Shapley vérifié, lecture mesurée du lake. Ses formalisations vivent pour l'instant dans `game_theory_lean/SocialChoice` et le lake de référence `SocialChoice/social_choice_lean_peters` (descendu au sein de la sous-série, #4362).
+Depuis le parcours principal, on y entre après le palier 16 : le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) présente la sous-série depuis la série mère — témoins d'Arrow et cycle de Condorcet par le code, appariement stable de Gale-Shapley vérifié, lecture mesurée du lake. Ses formalisations vivent pour l'instant dans le lake autonome `SocialChoice/social_choice_core_lean` (descendu au sein de la sous-série, #24183 T3) et le lake de référence `SocialChoice/social_choice_lean_peters` (descendu au sein de la sous-série, #4362).
 
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|

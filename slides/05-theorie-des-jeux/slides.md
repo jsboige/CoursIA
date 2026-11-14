@@ -450,7 +450,7 @@ layout: default
 
 <img src="./images/img_031.png" alt="Loi de Hotelling : les deux vendeurs se placent au milieu" style="display:block; margin:4px auto; width:100%; max-height:28px; object-fit:contain;">
 
-*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans game_theory_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
+*Notebook : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (electeur median) ; preuve Lean `median_voter_theorem` dans SocialChoice/social_choice_core_lean/SocialChoice/Voting.lean. Loi de Hotelling : pas de notebook dedie.*
 
 ---
 layout: section
@@ -739,7 +739,7 @@ layout: dense
 
 <img src="./images/img_041.png" alt="Methodes Minimax et Schulze en l'absence de vainqueur de Condorcet" style="display:block; margin:4px auto; width:100%; max-height:36px; object-fit:contain;">
 
-*Notebooks : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (game_theory_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV (0 sorry).*
+*Notebooks : [SocialChoice/03-Voting-Methods](../../MyIA.AI.Notebooks/GameTheory/SocialChoice/03-Voting-Methods.ipynb) (Condorcet, Minimax, Schulze) ; `median_voter_theorem` prouve en Lean (SocialChoice/social_choice_core_lean/SocialChoice/Voting.lean) ; tour Peters : Schulze, Split Cycle, Borda, IRV (0 sorry).*
 
 ---
 layout: dense

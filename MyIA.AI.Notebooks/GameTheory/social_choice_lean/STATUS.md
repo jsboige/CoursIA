@@ -1,16 +1,18 @@
 # Social Choice Lean - Status
 
 > **⚑ Archive (PR [#6058](https://github.com/jsboige/CoursIA/pull/6058)).** Sources déplacées
-> byte-identique vers [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/)
-> (home canonique). Statut figé à la date d'absorption ; voir `game_theory_lean/` pour le statut
-> actif. La CI qui le porte est `.github/workflows/lean-ci-matrix.yml` : le wrapper
+> byte-identique vers `game_theory_lean/SocialChoice/` (home canonique de 2026-07-11 au
+> 2026-11-08), puis **descendues le 2026-11-08** (#24183, T3, 21 renommages R100) vers le lake
+> autonome [`SocialChoice/social_choice_core_lean/`](../SocialChoice/social_choice_core_lean/)
+> (home canonique actuel). Statut figé à la date d'absorption ; voir le lake autonome pour le
+> statut actif. La CI qui le porte est `.github/workflows/lean-ci-matrix.yml` : le wrapper
 > `lean-social-choice.yml` a été absorbé dans la matrice par #17374, et le pin Lean a avancé
-> depuis (voir [`game_theory_lean/lean-toolchain`](../game_theory_lean/lean-toolchain)). Les
-> valeurs du tableau ci-dessous sont donc un **instantané historique**, pas l'état courant.
+> depuis (voir [`lean-toolchain`](../SocialChoice/social_choice_core_lean/lean-toolchain) du
+> lake). Les valeurs du tableau ci-dessous sont donc un **instantané historique**, pas l'état courant.
 >
 > **⚑ Sortie programmée — tranche T3 de [#24183](https://github.com/jsboige/CoursIA/issues/24183).**
 > Ce document est un **instantané historique absorbable** : l'état actif du lake est tenu par
-> `game_theory_lean/`. La preuve de préservation des documents de cette coquille — dont la
+> le lake autonome `SocialChoice/social_choice_core_lean/`. La preuve de préservation des documents de cette coquille — dont la
 > disposition du présent fichier — est livrée dans le [README de la coquille](README.md), section
 > « Preuve de préservation ».
 
@@ -42,8 +44,9 @@
 
 GitHub Actions workflow: `.github/workflows/lean-ci-matrix.yml` — le wrapper
 `lean-social-choice.yml` a été absorbé dans la matrice (#17374) ; le fichier n'existe plus.
-Trigger: push/PR touching `game_theory_lean/**` ou
-`game_theory_lean/SocialChoice/CERTIFIED.txt`. **Plus** `social_choice_lean/**` : ce répertoire
+Trigger: push/PR touching `game_theory_lean/**` ou (depuis #24183, T3)
+`SocialChoice/social_choice_core_lean/**` et son `SocialChoice/CERTIFIED.txt`. **Plus**
+`social_choice_lean/**` : ce répertoire
 ne porte plus aucune source Lean, donc il ne déclenche plus rien.
 Steps: elan install, Mathlib cache, `lake build`, sorry detection.
 

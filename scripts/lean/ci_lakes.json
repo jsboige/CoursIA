@@ -233,14 +233,33 @@
       "display-name": "game_theory_lean",
       "sorry-baseline": "4",
       "sorry-filter-mode": "real",
-      "axiom-target-modules": "SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,SocialChoice,Abstraction,Abstraction.Basic,ProgramGames,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en,CongestionGames,CongestionGames.PoA,CooperativeGames,CooperativeGames.Basic,CooperativeGames.Basic_en,CooperativeGames.ConeKernel,CooperativeGames.ConeKernel_en,CooperativeGames.Shapley,CooperativeGames.Shapley_en,ProgramGames.FairBot,ProgramGames.FairBot_en,RepeatedGames,RepeatedGames.Discounting,RepeatedGames.Discounting_en,RepeatedGames.GrimTrigger,RepeatedGames.GrimTrigger_en,RepeatedGames.Stage,RepeatedGames.Stage_en,RepeatedGames_en,SocialChoice._SmokeTest,StableMarriage,StableMarriage.Definitions,StableMarriage.Definitions_en,StableMarriage.GSState,StableMarriage.GSState_en,StableMarriage.GaleShapley,StableMarriage.GaleShapley_en,StableMarriage.Lattice,StableMarriage.Lattice_en,StableMarriage.Lemmas,StableMarriage.Lemmas_en,StableMarriage_en,Swaps,Swaps.Basic,Swaps.Parite,StackelbergBilevel,LegalLoophole,LegalLoophole.Toy",
+      "axiom-target-modules": "Abstraction,Abstraction.Basic,ProgramGames,ProgramGames.Basic,ProgramGames.Basic_en,ProgramGames.Bounded,ProgramGames.Bounded_en,CongestionGames,CongestionGames.PoA,CooperativeGames,CooperativeGames.Basic,CooperativeGames.Basic_en,CooperativeGames.ConeKernel,CooperativeGames.ConeKernel_en,CooperativeGames.Shapley,CooperativeGames.Shapley_en,ProgramGames.FairBot,ProgramGames.FairBot_en,RepeatedGames,RepeatedGames.Discounting,RepeatedGames.Discounting_en,RepeatedGames.GrimTrigger,RepeatedGames.GrimTrigger_en,RepeatedGames.Stage,RepeatedGames.Stage_en,RepeatedGames_en,StableMarriage,StableMarriage.Definitions,StableMarriage.Definitions_en,StableMarriage.GSState,StableMarriage.GSState_en,StableMarriage.GaleShapley,StableMarriage.GaleShapley_en,StableMarriage.Lattice,StableMarriage.Lattice_en,StableMarriage.Lemmas,StableMarriage.Lemmas_en,StableMarriage_en,Swaps,Swaps.Basic,Swaps.Parite,StackelbergBilevel,LegalLoophole,LegalLoophole.Toy",
       "axiom-fail-on-sorry": "true",
-      "certified-subdir": "SocialChoice",
       "paths": [
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lakefile.lean",
         "MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain",
-        "MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt",
+        "scripts/lean/check_certified_sorry.py",
+        "scripts/lean/count_code_sorry.py",
+        "scripts/tests/test_check_certified_sorry.py"
+      ],
+      "axiom-include-i18n-siblings": "false"
+    },
+    {
+      "lake": "socialchoicecore",
+      "project-path": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean",
+      "display-name": "social_choice_core_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "SocialChoice,SocialChoice.AMD,SocialChoice.Arrow,SocialChoice.Arrow_en,SocialChoice.Basic,SocialChoice.Basic_en,SocialChoice.Framework,SocialChoice.Framework_en,SocialChoice.Groves,SocialChoice.Groves_en,SocialChoice.MechanismDesign,SocialChoice.MechanismDesign_en,SocialChoice.Sen,SocialChoice.Sen_en,SocialChoice.SortedListCounting,SocialChoice.SortedListCounting_en,SocialChoice.Voting,SocialChoice.Voting_en,SocialChoice._SmokeTest",
+      "axiom-fail-on-sorry": "true",
+      "certified-subdir": "SocialChoice",
+      "paths": [
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/**.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lake-manifest.json",
+        "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/CERTIFIED.txt",
         "scripts/lean/check_certified_sorry.py",
         "scripts/lean/count_code_sorry.py",
         "scripts/tests/test_check_certified_sorry.py"

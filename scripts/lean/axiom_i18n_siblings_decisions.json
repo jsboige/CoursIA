@@ -138,8 +138,16 @@
       "decision": "false",
       "reason": "liste de modules explicite : les modules `_en` qu'elle nomme sont deja inspectes par la porte (le filtre i18n ne vaut que pour la derivation '*') ; l'opt-in ne change rien",
       "mode": "EXPLICIT",
-      "i18n-modules": 10,
-      "i18n-declarations": 285
+      "i18n-modules": 2,
+      "i18n-declarations": 58
+    },
+    {
+      "lake": "socialchoicecore",
+      "decision": "false",
+      "reason": "liste de modules explicite : les modules `_en` qu'elle nomme sont deja inspectes par la porte (le filtre i18n ne vaut que pour la derivation '*') ; l'opt-in ne change rien",
+      "mode": "EXPLICIT",
+      "i18n-modules": 8,
+      "i18n-declarations": 227
     },
     {
       "lake": "mathlibexamples",

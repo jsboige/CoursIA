@@ -896,7 +896,7 @@ The hypothesis `nI ≥ 2` is the one of the historical statement, kept for fidel
 to the literature; the proof below holds for any `nI`, hence the `_hI` name of
 the parameter.
 
-**Declared alternative proof.** `game_theory_lean/SocialChoice/Arrow_en.lean`
+**Declared alternative proof.** `SocialChoice/social_choice_core_lean/SocialChoice/Arrow_en.lean`
 establishes the same theorem by the pivot method (Geanakoplos), over arbitrary
 types and a local agenda (`Finset σ`); the comparison of the two lives in this
 module's README. -/
@@ -994,7 +994,7 @@ everyone else `z ≻ y ≻ x` — and it remains transitive for each of them. Th
 private decisions give `x ≻s y` and `y ≻s z`, Pareto gives `z ≻s x`, and
 social transitivity yields `x ≻s z` against `z ≻s x`.
 
-**Declared alternative proof.** `game_theory_lean/SocialChoice/Sen_en.lean`
+**Declared alternative proof.** `SocialChoice/social_choice_core_lean/SocialChoice/Sen_en.lean`
 states the paradox counter-existentially (`∃ prof, ¬∃ best`) under
 `minimal_liberal`, a strictly weaker notion than `SenLiberalism` — it does
 not require the two pairs to cross. -/

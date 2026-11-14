@@ -111,7 +111,13 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
       # supprime, #17374) : le manifeste certifie est un declencheur du lake.
-      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
+      # T3 #24183 : lib descendue vers SocialChoice/social_choice_core_lean.
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/CERTIFIED.txt'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/NOTICE.md'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain'
@@ -372,7 +378,13 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/lean-toolchain'
       # Contrat certifie SocialChoice (herite du wrapper lean-social-choice.yml
       # supprime, #17374) : le manifeste certifie est un declencheur du lake.
-      - 'MyIA.AI.Notebooks/GameTheory/game_theory_lean/SocialChoice/CERTIFIED.txt'
+      # T3 #24183 : lib descendue vers SocialChoice/social_choice_core_lean.
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/**.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/lake-manifest.json'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/CERTIFIED.txt'
+      - 'MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_core_lean/SocialChoice/NOTICE.md'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lean-toolchain'
