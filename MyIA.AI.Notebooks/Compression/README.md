@@ -88,7 +88,7 @@ Dans 06, la comparaison des décimales de π et de chiffres aléatoires illustre
 
 ### Liens avec les autres parcours
 
-[Complexity](../Complexity/README.md) étudie le coût de **calculer** ; les tables de Huffman et les recherches de références LZ77 montrent ici comment ce coût s'échange contre une représentation plus courte. Le [compression-progress d'ICT-17b](../IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) prolonge le palier 05 en examinant l'apprentissage comme progrès de compression : la question devient celle de l'évolution du modèle, au-delà de sa seule taille finale.
+[Complexity](../Complexity/README.md) étudie le coût de **calculer** ; les tables de Huffman et les recherches de références LZ77 montrent ici comment ce coût s'échange contre une représentation plus courte. Le [compression-progress d'ICT-17b](../IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) prolonge le palier 05 en examinant l'apprentissage comme progrès de compression : la question devient celle de l'évolution du modèle, au-delà de sa seule taille finale.
 
 ## Ressources — tous niveaux
 

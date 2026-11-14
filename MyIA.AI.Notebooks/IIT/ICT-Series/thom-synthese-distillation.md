@@ -1114,9 +1114,9 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
 
 1. **Discret observé, continu sous-jacent.** Le principe thomien (« tout
    être discret est réalisé par une figure continue ») offre un cadre de
-   lecture pour [ICT-17](ICT-17-EpsilonMachine-Python.ipynb)
+   lecture pour [ICT-17](ICT-17-EpsilonMachine/ICT-17-EpsilonMachine-Python.ipynb)
    (machine-ε : un automate discret extrait d'un processus continu) et
-   [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
+   [ICT-17b](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb)
    (grokking = compression progressive) : la **mesure discrète** (tokens,
    classes, états-ε) est toujours une section d'un **champ continu**
    sous-jacent. Un verdict de dissociation peut se relire comme l'écart
@@ -1368,7 +1368,7 @@ extension, pas une redite.
   — préprogrammes morphologiques du dilemme itéré.
 - [ICT-14](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb)
   — jambe représentationnelle (surprise, free energy).
-- [ICT-17b](ICT-17b-Grokking-CompressionProgress-Python.ipynb)
+- [ICT-17b](ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb)
   — compression progressive et dissociations.
 - [ICT-18b](ICT-18b-ReversibilityBudget-Python.ipynb)
   — triade moyen / fin / enjeu, dissociation $\sigma$ / Levin.

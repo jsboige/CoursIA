@@ -405,7 +405,7 @@
           }
         },
         {
-          "path": "IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb",
+          "path": "IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb",
           "title": "ICT-17b — Grokking et compression-progress : la jambe K à l'épreuve de l'entraînement",
           "duration_minutes": 45,
           "kernel": "Python 3",

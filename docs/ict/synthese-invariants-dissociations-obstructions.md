@@ -62,10 +62,10 @@ Les trois régimes se soutiennent d'un triptyque qui traverse la série :
 | Régime | Père théorique | Geste | Point d'ancrage dépôt |
 |---|---|---|---|
 | Invariants | **Grothendieck** (recollement) | Le local qui se globalise sans reste | [`SheafCohomology`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/Grothendieck/SheafCohomology/Basic.lean), `H⁰` |
-| Dissociations | **Schmidhuber** (compression / grokking) | Deux proxys se séparent quand l'un comprime mieux que l'autre | [ICT-17b-Grokking](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) |
+| Dissociations | **Schmidhuber** (compression / grokking) | Deux proxys se séparent quand l'un comprime mieux que l'autre | [ICT-17b-Grokking](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) |
 | Obstructions | **Thom** (catastrophe) + **Grothendieck** (cohomologie) | Le refus du recollement comme structure informative | Arrow, Kochen-Specker, scalaire falsifié |
 
-Le lien Schmidhuber/dissociations mérite d'être dit : [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) lit l'apprentissage comme une compression progressive (transition de phase représentationnelle). Quand deux proxys divergent, c'est souvent que l'un a franchi le seuil de compression et l'autre pas — la dissociation *est* la signature d'un grokking partiel. Thom, lui, nomme la bifurcation du mode de représentation (catastrophe), et Grothendieck dit si le nouveau mode se recolle à l'ancien — l'obstruction mesurant ce qui ne se recolle pas.
+Le lien Schmidhuber/dissociations mérite d'être dit : [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) lit l'apprentissage comme une compression progressive (transition de phase représentationnelle). Quand deux proxys divergent, c'est souvent que l'un a franchi le seuil de compression et l'autre pas — la dissociation *est* la signature d'un grokking partiel. Thom, lui, nomme la bifurcation du mode de représentation (catastrophe), et Grothendieck dit si le nouveau mode se recolle à l'ancien — l'obstruction mesurant ce qui ne se recolle pas.
 
 ## Le quatrième fil — orthogonal à la grille
 

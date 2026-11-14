@@ -503,7 +503,7 @@ d'un notebook principal à un nouveau cas. Quelques exemples représentatifs :
 (sensibilité du verdict Φ/F/K d'ICT-15 aux perturbations contrôlées du substrat, re-mesure multi-graines),
 [ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15-IntegratedComplexity/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
 de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
-[ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
+[ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17-EpsilonMachine/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
 cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
 et al. 2022), et [ICT-Argumentation-BeliefTrajectories-Python](ICT-Series/ICT-Argumentation-BeliefTrajectories-Python.ipynb)
 (Phase B du zoo ICT — application de l'instrumentation Φ-trajectoires d'ICT-1 aux trajectoires de croyances
