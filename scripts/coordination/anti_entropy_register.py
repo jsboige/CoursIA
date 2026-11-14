@@ -395,16 +395,23 @@ REGISTRE: tuple[Entree, ...] = (
             # Mesure du 2026-11-13 (sixieme rebasage, #5081, sur main) :
             # 25 -- l'instrument reconnait le prefixe `coursia-py313`, la
             # grandeur change (26 -> 25), la comparaison transverse est
-            # refusee. Identite resolvable sur main (e7c3de1b, arbre
-            # 9f2ffff292b9). La valeur 27 mesuree les 09/11 et 12/11
-            # documentait deux carnets arrives sur main ; le correctif les
-            # reconnait, ils ne comptent plus.
-            Reference(25.0, "2026-11-13",
+            # refusee. La valeur 27 mesuree les 09/11 et 12/11 documentait
+            # deux carnets arrives sur main ; le correctif les reconnait,
+            # ils ne comptent plus. Le producteur vivait sur la branche
+            # #5081 (e7c3de1b, arbre 9f2ffff292b9) : comme pour le point
+            # #23655, la serie declare l'identite RESOLVABLE de main -- le
+            # squash #26304 (dfa29e000a1, 2026-11-14T23:52+01:00, meme
+            # contenu de l'instrument) -- et date le point du jour ou
+            # cette identite est devenue derivable. Un sha de branche
+            # mort n'est l'ancetre de rien : le declarer ferait rougir le
+            # controle d'ancetre sur tout arbre qui ne porte pas la
+            # branche.
+            Reference(25.0, "2026-11-14",
                       "issue #5081, re-mesure du 2026-11-13 sur "
                       "l'arbre 9f2ffff292b9",
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
-                                  "@e7c3de1b80d0e6b40422307f52929d6af7b977b3")),
+                                  "@dfa29e000a1cb77d13b825b90f0d5a2165214ab6")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
