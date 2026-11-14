@@ -511,6 +511,14 @@ REFERENCE: dict[str, dict[str, dict]] = {
             },
         },
     },
+    "scripts/audit/measure_delivery_classes.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": "le census lit lui-même les corps courants des PR via gh pr view ; aucun workflow ne lui passe le body."
+            }
+        }
+    },
     "scripts/candidate_delivered.py": {
         "channels": {
             "api-gh": {
