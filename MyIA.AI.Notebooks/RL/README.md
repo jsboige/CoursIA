@@ -382,6 +382,10 @@ Chaque carnet se termine sur des exercices à compléter dans les cellules prév
 
 Dans `RL-15`, les exercices prolongent le comparatif multi-graines : ils invitent à examiner l'avantage relatif au groupe, le choix du nombre de graines et l'effet de la taille du groupe.
 
+## Reward model Bradley–Terry : Python et C#
+
+[RLPT-00 en Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) et [en C#](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-CSharp.ipynb) entraînent le même type de modèle de reward sur des préférences synthétiques, avec PyTorch et TorchSharp CPU. Le pooling moyen reste insensible à l'ordre : les deux versions exposent cette limite et distinguent la référence Bayes en espérance des mesures réalisées.
+
 ## Ponts vers les autres séries
 
 ### Où atterrit le « pont RLHF »
