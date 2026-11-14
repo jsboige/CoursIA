@@ -9,7 +9,16 @@ maturity:
 
 [← SMT](../README.md) | [Z3 C# (Z3.Linq) →](../Z3-Linq2Z3/README.md)
 
-Le [service REST gateway pour le Sudoku](gateway/README.md) complète le parcours de notebooks comme composant distinct.
+## Le carnet 02, à la fois cours et service web
+
+Le carnet [Sudoku](Z3-02-Sudoku-Python.ipynb) se lit et s'exécute comme les autres : les sections 1 à 3 posent le modèle déclaratif (`Int`, domaine 1-9, `Distinct` par ligne, colonne et bloc) et les exercices. Sa **section 4** place ce même modèle derrière une API HTTP — c'est le fichier que sert le [gateway Kernel Gateway](gateway/README.md), et non un second carnet à maintenir en phase.
+
+| Usage | Commande | Ce qu'on obtient |
+|---|---|---|
+| Cours | Jupyter sur le carnet, ou `papermill Z3-02-Sudoku-Python.ipynb` | le carnet exécuté avec ses sorties ; la cellule d'endpoint affiche la démonstration locale et la compare au solveur de la section 2 |
+| Service | `pip install -r gateway/requirements.txt`, puis `python gateway/run_gateway.py` | `POST http://localhost:8899/sudoku/solve` avec `{"puzzle": "<81 caractères, 0 ou . pour vide>"}` |
+
+Contrat complet (`sat` / `unsat` / `invalid`, `time_ms`, cas d'erreur), démarrage manuel et rejeu des cas de panne : [`gateway/README.md`](gateway/README.md).
 
 ## Ouverture — ce que cette série enseigne (Découverte)
 
