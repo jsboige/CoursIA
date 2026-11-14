@@ -28,7 +28,10 @@ from .schemas import (
     AnnotatedSegment,
     AnnotatedBatch,
     ALL_PROSODY_TAGS,
+    Zonos3Annotation,
+    Zonos3AnnotationBatch,
 )
+from .zonos3_steering import annotations_from_tags
 from .llm_client import call_structured
 from .context_injector import build_context_block
 
@@ -44,6 +47,10 @@ MAX_TAGS_PER_SEGMENT = 5
 INPUT_SEGMENTS = OUTPUTS / "segments_v4.json"
 INPUT_DRAMATIC = OUTPUTS / "dramatic_context.json"
 OUTPUT_ANNOTATED = OUTPUTS / "annotated_v4.json"
+# ZONOS3 steering sidecar (#25835): written alongside the FishAudio tag
+# output, not in place of it. The P5 narrator branch reads it when the
+# ZONOS3 engine is routed.
+OUTPUT_ZONOS3_SIDECAR = OUTPUTS / "zonos3_annotations_v4.json"
 
 # ── FishAudio S2-Pro tag system ──
 # S2-Pro accepts [brackets] with 15,000+ free-form natural language tags.
@@ -475,6 +482,25 @@ def convert_tags_for_fishaudio(annotated_text: str) -> str:
     return text
 
 
+def build_zonos3_sidecar(
+    annotated: list[AnnotatedSegment],
+) -> Zonos3AnnotationBatch:
+    """Derive the ZONOS3 steering sidecar from the annotated segments.
+
+    Written *alongside* the FishAudio tag output, never in place of it:
+    the bracket tags remain the fallback for every axis the served
+    checkpoint cannot steer. Each segment's tags seed a rule-derived
+    annotation via ``annotations_from_tags`` (the deterministic bridge
+    shared with the P5 rule fallback). A richer LLM-driven sidecar can
+    be layered on top later; the deterministic bridge is what makes the
+    steering seam testable without a live LLM.
+    """
+    annotations: list[Zonos3Annotation] = []
+    for seg in annotated:
+        annotations.extend(annotations_from_tags(seg.seg_index, seg.tags_used))
+    return Zonos3AnnotationBatch(annotations=annotations)
+
+
 # ── Quality check: tag diversity ──
 
 
@@ -579,6 +605,15 @@ def run(force: bool = False) -> Path:
 
     OUTPUT_ANNOTATED.write_text(
         batch_result.model_dump_json(indent=2),
+        encoding="utf-8",
+    )
+
+    # P4.5 (#25835): write the ZONOS3 steering sidecar alongside the
+    # FishAudio tag output. The tags are the fallback; the sidecar is the
+    # continuous steering the ZONOS3 narrator engine consumes.
+    zonos3_sidecar = build_zonos3_sidecar(all_annotated)
+    OUTPUT_ZONOS3_SIDECAR.write_text(
+        zonos3_sidecar.model_dump_json(indent=2),
         encoding="utf-8",
     )
 
