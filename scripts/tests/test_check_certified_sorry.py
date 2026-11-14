@@ -227,6 +227,11 @@ def test_workflow_targets_match_manifest():
         "CongestionGames", "CooperativeGames", "ProgramGames",
         "RepeatedGames", "SocialChoice", "StableMarriage",
         "StackelbergBilevel", "Swaps",
+        # #25686/#26022 : LegalLoophole (racine aggregatrice, sans
+        # declaration) + LegalLoophole.Toy (module reel, 0 sorry / 0 axiome
+        # ad hoc) ajoutes a axiom-target-modules avec le default_target --
+        # la revendication d'axiomes de la PR devient mesuree par l'organe.
+        "LegalLoophole", "LegalLoophole.Toy",
     }
     assert expected_set <= actual, (
         f"ci_lakes.json gametheory axiom-target-modules omitted entries "

@@ -23,9 +23,9 @@ merge :
   * `DWELL_HOURS_DEFAULT = 24.0` (`scripts/pick_idle_grain.py`) refuse de
     *proposer* une issue creee il y a moins de 24 h -- c'est un picker, pas
     un gate ;
-  * l'attente bornee du `PR gate` (`--timeout-min 55` depuis le 2026-11-12,
-    45 avant) attend que les constituants concluent -- elle ne differe rien
-    une fois qu'ils sont verts.
+  * l'attente bornee du `PR gate` (`--timeout-min 59` depuis le 2026-11-14,
+    55 avant, 45 avant cela) attend que les constituants concluent -- elle ne
+    differe rien une fois qu'ils sont verts.
 
 D'ou l'attachement retenu : le plancher est evalue par le gate lui-meme,
 **apres** que les constituants ont conclu verts, et **hors** de la boucle

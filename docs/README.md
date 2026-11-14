@@ -60,6 +60,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
 | [reference/ws-probes-repro.md](reference/ws-probes-repro.md) | Reproduction hors carnet des sondes wavelet scattering (WS-00c, WS-03) — graine fixe, valeurs citées vs mesurées, écart 1 item (#21823) |
 | [reference/gorard-lanyonai-etape3.md](reference/gorard-lanyonai-etape3.md) | Dépôts lanyonai mesurés sur l'amont — licences, absence de `lean-toolchain`, ce que leurs preuves Lean établissent exactement (et ce qu'elles n'établissent pas) ; support de la décision de consommation par la série Gorard (#19741, étape 3) |
+| [reference/epita2025-argumentation-capacites.md](reference/epita2025-argumentation-capacites.md) | Traçabilité par capacité de l'Argumentation EPITA 2025 (sujet → implémentation réelle → portabilité) — 1re charte de distillation-outil, Axe 2 de #16457 ; registre `CapabilityRegistry` sans champ provenance, blocage licence des prouveurs `ext_tools/`, friction de notation des numéros de projet |
 
 ### Règles détaillées (docs/reference/)
 

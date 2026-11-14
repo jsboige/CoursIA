@@ -1,0 +1,8 @@
+date: '2026-11-13'
+by: 're-attestation apres les fournees de blocs de fin #25843/#25844 : derive verifiee
+  contre le commit de fusion (sha enregistre = contenu d avant fusion), aucun carnet
+  modifie'
+python_sha: dff31b8fd73905d51fc5456c1eb172dfe7d2ee01
+csharp_sha: caa70caffc7b7e79da2e46262701caf5b909a5dc
+content_python_sha: 503876e00336717457431dc517da5ecdb6d804c134f52f971a7d92e7819e5e31
+content_csharp_sha: 5008e40d85ab6da1d5f2356e8d3a49ef868dfed4b78c5a14b444dcaa171da609
