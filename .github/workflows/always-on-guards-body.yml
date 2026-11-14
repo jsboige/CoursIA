@@ -62,7 +62,7 @@ permissions:
 # Les editions de body se supplantent entre elles, et seulement entre elles :
 # ce groupe ne touche jamais celui du workflow de contenu.
 concurrency:
-  group: always-on-guards-body-${{ github.event.pull_request.number || github.ref }}
+  group: always-on-guards-body-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && github.event.changes.body == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -90,10 +90,28 @@ jobs:
     # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null || github.event.changes.body != null)
     # Les cinq organes de body coutent quelques secondes : le plafond n'est
     # qu'un garde-fou contre un blocage de `gh`.
-    timeout-minutes: 10
+    #
+    # 2026-11-06 (mesure po-2024, #24959) : ces quelques secondes ne sont pas
+    # ce que la borne doit couvrir. Le job paie D'ABORD un checkout sur le parc
+    # local, et ce checkout a consomme la totalite du budget deux fois de
+    # suite, sur deux runners differents (myia-ai-01-wsl-2 : 9 min 55 s ;
+    # myia-po-2024-linux-persist-6 : 9 min 49 s), dans l'unique commande
+    # `git checkout --force refs/pull/<N>/merge` qui suit un
+    # `git sparse-checkout disable` -- 8 min 57 s sans une ligne de log, puis
+    # annulation : les cinq organes sont restes `skipped` et la jambe a rougi
+    # sans avoir lu le body. Controle : sur le meme workflow et la meme
+    # fenetre, les runs dont le work dir n'est pas en etat sparse concluent
+    # leur checkout en 30 s (run 42251363137).
+    #
+    # 15 min = meme borne que #24122 (5 -> 15 sur deux workflows, mesure
+    # « checkout seul = 286 s sur 300 »). La cause structurelle -- un work dir
+    # laisse en etat sparse force la materialisation de l'arbre entier -- est
+    # du ressort de l'ombrelle CI #22937 ; cette borne ne fait que donner au
+    # checkout de quoi aboutir pendant qu'elle est tranchee.
+    timeout-minutes: 15
 
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -114,6 +132,33 @@ jobs:
           if [ ! -d .git ]; then
             echo "[heal] aucun work dir preexistant -- checkout fera un clone neuf"
             exit 0
+          fi
+          # --- Etat sparse herite du job precedent (#24959) ------------------
+          # Le pool de runners reutilise son work dir. Un work dir laisse en
+          # etat sparse ARME (core.sparseCheckout a vrai) fait materialiser
+          # l'ARBRE ENTIER par le checkout suivant : avec `filter: blob:none`,
+          # le desarmement du sparse telecharge les blobs -- mesure po-2024 du
+          # 2026-11-06 (consignee dans always-on-guards-body.yml) : 8 min 57 s
+          # sur la seule commande `git checkout --force refs/pull/<N>/merge`,
+          # sans une ligne de log, puis annulation ; sur deux runners
+          # differents (myia-ai-01-wsl-2 : 9 min 55 s ; myia-po-2024-linux-
+          # persist-6 : 9 min 49 s). Un clone frais `blob:none` laisse les
+          # blobs paresseux : il est moins cher que la materialisation.
+          # Meme arbitrage que le hook job-started de l'entrypoint du runner
+          # conteneurise (scripts/ci/docker/linux-runner/entrypoint.sh) : le
+          # FLAG ARME est le seul etat cassant (purge du clone) ; le fichier
+          # de motifs seul est inerte (il est retire, le cache est conserve).
+          sparse=$(git config --local --get core.sparseCheckout 2>/dev/null || true)
+          case "$sparse" in
+            true|1|on)
+              echo "::notice::[heal] work dir SPARSE arme -- purge du work dir"
+              rm -rf .git
+              exit 0
+              ;;
+          esac
+          if [ -f .git/info/sparse-checkout ]; then
+            echo "[heal] motifs sparse inertes -- retrait du fichier, work dir conserve"
+            rm -f .git/info/sparse-checkout
           fi
           if [ -f .git/shallow ]; then
             echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
@@ -144,17 +189,16 @@ jobs:
         env:
           PAYLOAD_BODY: ${{ github.event.pull_request.body }}
         run: |
-          LIVE=""
-          if [ -n "${PR_NUMBER:-}" ]; then
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
-          fi
-          if [ -n "$LIVE" ]; then
+          # Une reponse vide reussie est un corps vide, pas une panne.
+          # En cas d'echec, gh peut ecrire une erreur sur stdout ; le repli ci-dessous
+          # remplace LIVE par le payload avant son utilisation.
+          if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
-            BODY="$LIVE"
           else
-            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement (photographie)"
-            BODY="${PAYLOAD_BODY:-}"
+            echo "::warning::[body-live] lecture API echouee -- repli sur le payload de l'evenement (photographie)"
+            LIVE="${PAYLOAD_BODY:-}"
           fi
+          BODY="$LIVE"
           delim="BODY_LIVE_EOF_$$"
           printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
 

@@ -248,7 +248,7 @@ def test_only_restreint_le_plan_au_sous_repertoire(monkeypatch):
     plan, errors = migration.build_plan(SUB_WS)
 
     assert [old for old, _ in plan] == [f"{migration.HUB_OLD}/{NB_WS}"]
-    assert plan[0][1] == f"{migration.HUB_NEW}/05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb"
+    assert plan[0][1] == f"{migration.HUB_NEW}/05-Scattering-par-Ondelettes/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb"
     assert errors == []
 
 
@@ -262,7 +262,7 @@ def test_only_ne_reecrit_pas_le_hub_entier(monkeypatch):
     rules = dict(reps)
 
     # la regle du sous-repertoire vise EST presente
-    assert rules[f"DataScienceWithAgents/{SUB_WS}"] == "ML.Python/05-Wavelet-Scattering"
+    assert rules[f"DataScienceWithAgents/{SUB_WS}"] == "ML.Python/05-Scattering-par-Ondelettes"
     # ... et les regles globales sont ABSENTES
     assert ("DataScienceWithAgents/", "ML.Python/") not in reps
     assert (migration.HUB_OLD, migration.HUB_NEW) not in reps
@@ -291,12 +291,13 @@ def test_only_inconnu_est_refuse():
 def test_only_accepte_le_nom_cible():
     """Le nom cible designe la meme tranche que le nom courant."""
     # Le mecanisme d'alias (valeur -> cle) se temoigne sur une tranche ou
-    # courant et cible different encore : Track1-LangChain -> 06-Agents-LangChain.
-    assert migration.resolve_only("06-Agents-LangChain") == "Track1-LangChain"
-    assert migration.resolve_only("Track1-LangChain") == "Track1-LangChain"
-    # Depuis le renommage in-place (#23541), 05-Wavelet-Scattering est cle ET
-    # valeur : les deux faces designent la meme tranche.
-    assert migration.resolve_only("05-Wavelet-Scattering") == SUB_WS
+    # courant et cible different encore : 06-Data-Agents -> 06-Agents-de-Donnees.
+    assert migration.resolve_only("06-Agents-de-Donnees") == "06-Data-Agents"
+    assert migration.resolve_only("06-Data-Agents") == "06-Data-Agents"
+    # Depuis l'arbitrage Q10 (c.6740035569), la destination 05 est francaise :
+    # cle reelle du hub et cible different de nouveau -- les deux faces
+    # designent la meme tranche.
+    assert migration.resolve_only("05-Scattering-par-Ondelettes") == SUB_WS
     assert migration.resolve_only(SUB_WS) == SUB_WS
 
 
@@ -405,7 +406,7 @@ def test_apply_procede_quand_la_fermeture_est_libre(monkeypatch, capsys):
 def test_nom_nu_d_un_carnet_renomme_est_reecrit():
     """`[WS-00a](WS-00a-...ipynb)` est relatif au dossier : le renommage le cassait."""
     plan = [(f"{migration.HUB_OLD}/{NB_WS}",
-             f"{migration.HUB_NEW}/05-Wavelet-Scattering/"
+             f"{migration.HUB_NEW}/05-Scattering-par-Ondelettes/"
              "WS-00a-Ondelettes-1D-from-scratch-Python.ipynb")]
 
     reps = migration.build_replacements(plan, SUB_WS)
@@ -499,7 +500,7 @@ def test_carnet_archive_ne_declenche_pas_le_fail_closed(monkeypatch):
 
     assert errors == [], errors
     deplaces = dict(plan)
-    assert deplaces[arch] == f"{migration.HUB_NEW}/03-Deep-Learning/_archive/3.9f-Pruning.ipynb"
+    assert deplaces[arch] == f"{migration.HUB_NEW}/03-Apprentissage-Profond/_archive/3.9f-Pruning.ipynb"
     # temoin positif : le carnet vivant, lui, est bien renomme par la table
     assert deplaces[vivant].endswith("DL-09e-Compression-SOTA-Python.ipynb")
 

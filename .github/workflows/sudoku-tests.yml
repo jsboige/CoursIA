@@ -43,12 +43,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: sudoku-tests-${{ github.ref }}
+  group: sudoku-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   sudoku-dlx-tests:
     name: Sudoku DLX certificates pytest (17 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 10
     env:
@@ -62,7 +63,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.11.18'
           cache: pip
 
       # Deps : pytest uniquement. `dlx_certificates.py` n'importe que la

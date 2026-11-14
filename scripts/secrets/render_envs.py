@@ -118,7 +118,7 @@ TARGET_ENVS = [
     # AgenticDataScience (ML/DataScienceWithAgents series). ECE TP uses
     # OPENAI_API_KEY + OPENAI_BASE_URL; OPENROUTER is a duplicate alias.
     REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "AgenticDataScience" / ".env",
-    # Track2-GoogleADK (ML/DataScienceWithAgents series, #13955). Lab11 reads
+    # 07-Agent-Orchestration (ML/DataScienceWithAgents series, #13955). Lab11 reads
     # OPENAI_API_KEY + OPENROUTER_API_KEY + OPENAI_BASE_URL via
     # config/providers.py (Path(__file__).parent.parent / ".env"). Without
     # this entry, --check sees [OK] on machines that have NOT provisioned the
@@ -126,7 +126,7 @@ TARGET_ENVS = [
     # from before master.env was canonical, the drift is invisible. Adding
     # the path closes that blind spot for the series that PR #13933
     # introduced.
-    REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "Track2-GoogleADK" / ".env",
+    REPO_ROOT / "MyIA.AI.Notebooks" / "ML" / "DataScienceWithAgents" / "07-Agent-Orchestration" / ".env",
     # SemanticKernel notebooks (.NET Interactive). 0-AI-settings.ipynb +
     # 09-SemanticKernel-Building-CLR consume this via Settings.LoadFromFile
     # (config/settings.json is gitignored and derived from this key -- see

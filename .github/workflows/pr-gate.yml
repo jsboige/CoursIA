@@ -215,13 +215,23 @@ jobs:
     # worked (under the old 30-min cut that run would have been killed), and
     # the aggregator threw the PR away 3m47s before the evidence arrived,
     # because the gate that waits for Quarto carried the same stale ceiling
-    # as the job it waits on. 45 covers the censored mass that sat just above
+    # as the job it waits on. 45 covered the censored mass that sat just above
     # the old 30-min cut -- and the one uncensored post-fix observation we
     # have, 33m10s, sits ~12 min inside it -- without widening the budget to
     # Quarto's full 60; the genuine tail stays on the STARVED -> self-cancel
     # path (#13510). Worth re-measuring once more uncensored data exists
     # under the 60-min ceiling.
-    timeout-minutes: 52
+    #
+    # 52 -> 62 -> 66 (2026-11-14) : le budget de l'agregateur passe de 45
+    # a 55 (l'enfant "Scripts Tests (CPU)" passe de 30 a 40), puis de 55 a
+    # 59 (l'enfant passe de 40 a 44), et ce mur le suit de 7 min -- marge
+    # INCHANGEE (elle etait 45 -> 52, puis 52 -> 62), celle qui laisse au
+    # script le temps d'imprimer son verdict au lieu d'etre tue par le
+    # runner en plein poll. 59 reste sous le plafond propre de Quarto (60) :
+    # la queue reelle de Quarto reste donc sur le chemin STARVED ->
+    # auto-annulation, ce que #14412 avait choisi. Mesure, grandeur et
+    # calcul : dans le bloc de commentaire de `scripts-tests.yml`.
+    timeout-minutes: 66
     steps:
       # #15091 : sparse-checkout en mode cone. Ce job est le SEUL route sur le
       # label coursia-waiter, et ce pool n a deliberement aucun volume (ni
@@ -300,16 +310,24 @@ jobs:
           # leg), the verdict cannot change by waiting -- a queued job has not
           # started. The gate then prints a STARVED message, self-cancels
           # (#13510), and the stale sweep re-drives the leg when runners free
-          # up -- instead of holding a hosted slot for the full 45-min budget
+          # up -- instead of holding a hosted slot for the full 55-min budget
           # polling a parked queue (measured 2026-10-07/09: up to 24 gate
           # waiters in flight while 400+ self-hosted jobs queue). Fail-closed
           # toward waiting: a single constituent flipping to in_progress
           # resets the streak.
+          # Budget de l'agregateur : 59 min (etait 55, avant 45). Il doit
+          # depasser le mur de chaque enfant qu'il attend -- "Scripts Tests
+          # (CPU)" passe de 30 a 40, puis de 40 a 44 -- sinon l'agregateur
+          # s'annule avant de voir l'enfant conclure, et le verdict porte
+          # sur un constituent disparu. Marge de 15 min, INCHANGEE. Le mur
+          # du job qui porte cette commande (timeout-minutes) le suit de
+          # 7 min, marge elle aussi inchangee. Mesure, grandeur et calcul :
+          # bloc de commentaire de `scripts-tests.yml`.
           python scripts/pr_gate.py \
             --repo "${{ github.repository }}" \
             --sha "${{ github.event.pull_request.head.sha || github.sha }}" \
             --self-name "PR gate" \
-            --timeout-min 45 \
+            --timeout-min 59 \
             --poll-sec 30 \
             --settle-polls 2 \
             --all-queued-polls 5 \

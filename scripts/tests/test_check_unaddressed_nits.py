@@ -1073,14 +1073,24 @@ def test_persona_alias_only_when_reserve_author_is_in_alias_set():
 
 
 def test_persona_alias_lift_override_logins_unchanged():
-    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste inchange.
+    """#13609 controle structurel : `LIFT_OVERRIDE_LOGINS` reste borne au siege.
     L'alias de persona NE confere PAS un droit d'override coordinateur : un
     `[OVERRIDE] lane` sous jsboige ne leve pas (cf ligne de garde dans
     `_lift_eligible`). La composition des deux decisions #11145 (borne
     d'auteur) et #13316 (exclusion jsboige) tient, l'alias est strictement
-    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot."""
+    une troisieme voie pour le dialogue Hermes <-> Hermes self-bot.
+
+    #17437 : la voix du siege reste l'humain ``myia-ai-01`` SEUL (arbitrage
+    ai-01 du 2026-11-13). L'App ``coursia-lane-ai-01`` est nommee par
+    MACHINE, et ai-01 porte deux lanes : sa cle privee, dans le clone
+    (``.secrets/github-apps/coursia-lane-ai-01.pem``), est lisible par la
+    lane worker soeur ``myia-ai-01:CoursIA-2``, qui forge donc le meme
+    jeton. Une App de machine ne peut pas porter la voix du coordinateur ;
+    seul un login humain, ou une App propre a la lane coordinatrice, leve.
+    Aucun autre login ne s'ajoute : l'App d'une lane worker ne leve jamais."""
     assert "jsboige" not in mod.LIFT_OVERRIDE_LOGINS
     assert mod.LIFT_OVERRIDE_LOGINS == {"myia-ai-01"}
+    assert "coursia-lane-ai-01[bot]" not in mod.LIFT_OVERRIDE_LOGINS
 
 
 # --- #11201 : le faux negatif « corrige X et je merge ». Le test LIFT_MARKERS
@@ -4306,6 +4316,78 @@ def test_15973_artefact_rebase_ne_masque_pas_un_vrai_refus():
     assert res["rewind_artifacts"] == []
 
 
+# --- #20066 piste 2 complete : survie des symboles au-dela du blob ---------
+#
+# Instance fondatrice de l'issue : le commit rembobine introduit
+# `fetch_latest_claim_stamps_bulk` + ses tests, la PR CONTINUE de travailler
+# le meme fichier (blob differ), mais la substance citee par la levee est
+# intacte a la tete. La survie complete des symboles transforme le refus en
+# artefact non bloquant ; un symbole disparu garde le refus, NOMME.
+
+def test_20066_symboles_survivants_conservent_la_levee():
+    """Blob different (la PR a continue) mais tous les symboles introduits
+    par le commit rembobine existent a la tete : artefact symbols_survive,
+    levee conservée, non bloquant."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2},
+              _absent_sha_symbols={
+                  "2d6e4c3642": {"verdict": "all_survive", "checked": 4,
+                                 "files": 2}})
+    assert res["blocked"] is False
+    assert res["voided_lifts"] == []
+    assert [(a["sha"], a["reason"]) for a in res["rewind_artifacts"]] == \
+        [("2d6e4c3642", "symbols_survive")]
+
+
+def test_20066_symbole_disparu_garde_le_refus_en_le_nommant():
+    """Le commit rembobine a introduit un symbole qui n'existe plus a la
+    tete : le fond a VRAIMENT disparu, le refus reste et le resultat porte
+    le nom du symbole disparu."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2},
+              _absent_sha_symbols={
+                  "2d6e4c3642": {"verdict": "missing",
+                                 "missing": ["fetch_latest_claim_stamps_bulk"],
+                                 "checked": 4}})
+    assert res["blocked"] is True
+    assert [v["sha"] for v in res["voided_lifts"]] == ["2d6e4c3642"]
+    assert res["voided_lifts"][0]["symbols"]["missing"] == \
+        ["fetch_latest_claim_stamps_bulk"]
+    assert res["rewind_artifacts"] == []
+
+
+def test_20066_sans_carte_de_symboles_comportement_inchange():
+    """Compatibilite : sans `_absent_sha_symbols` (audit retro, resolution
+    impossible), le refus `differs` de la piste 1 reste exactement le
+    meme -- fail-closed, la piste 2 ne desserre rien par defaut."""
+    res = run([USER_NIT, lift_citant_sha()],
+              commits=[{"oid": NIT_OID, "committedDate": at(19)}],
+              _absent_sha_messages={"2d6e4c3642": "fix(x,#0): typo"},
+              _absent_sha_trees={"2d6e4c3642": TREE_B},
+              _head_tree=TREE_A,
+              _absent_sha_files={
+                  "2d6e4c3642": [("scripts/pick_idle_grain.py",
+                                  BLOB_NB, "modified", "")]},
+              _head_blobs={"scripts/pick_idle_grain.py": BLOB_NB2})
+    assert res["blocked"] is True
+    assert res["voided_lifts"][0]["blob_state"] == mod._BLOB_DIFFERS
+    assert res["voided_lifts"][0].get("symbols") is None
+
+
 def test_13641_ref_par_prefixe_ne_compte_pas():
     """NanoClaw c.702 sur #13641 : le substring check `any(f"#{n}" in message)`
     matchait `#13639` dans un message contenant `#136390` (ticket adjacent
@@ -7375,3 +7457,65 @@ def test_21882_analyse_pr_rend_absent_quand_budget_depasse(monkeypatch):
     # Contrat picker : absente, non bloquee.
     assert (res.get("blocking") or []) == []
     assert bool(res.get("blocked")) is False
+
+
+# --- #17315 : compteur REST/GraphQL et lecture REST des commits -------------
+
+
+def test_17315_classement_des_appels_gh(monkeypatch):
+    """`api graphql`, `pr view --json` et `pr list --json` paient le BUCKET
+    PARTAGE (GraphQL) ; les endpoints `api repos/...` paient le bucket core.
+
+    Compter les `--json` comme du REST sous-reportait la consommation du
+    bucket que le levier 4 cherche a reduire : le compte etait faux.
+    """
+    monkeypatch.setattr(mod, "API_USAGE", {"rest": 0, "graphql": 0})
+    for args in (
+        ["api", "graphql", "-f", "query={...}"],
+        ["pr", "view", "1", "--json", "state"],
+        ["pr", "list", "--json", "number"],
+        ["issue", "view", "1", "--json", "title"],
+    ):
+        mod._count_api_call(args)
+    for args in (
+        ["api", "repos/o/r/pulls/1"],
+        ["api", "repos/o/r/commits/deadbeef/check-runs"],
+    ):
+        mod._count_api_call(args)
+    assert mod.API_USAGE == {"rest": 2, "graphql": 4}
+
+
+def test_17315_commits_rest_normalises_a_la_forme_attendue(monkeypatch):
+    """La lecture REST des commits rend la forme que `analyse` attendait :
+    `oid` (sha) et `committedDate` (commit.committer.date).
+
+    L'equivalence avec la forme GraphQL (`gh pr view --json commits`) est
+    mesuree sur des commits reels : sur le commit dont l'heure d'auteur
+    differe de l'heure de commit, `committedDate` suit bien l'heure de
+    COMMIT, pas celle d'auteur.
+    """
+    page = [{
+        "sha": "aaaa1111",
+        "commit": {
+            "author": {"date": "2026-11-05T09:15:12Z"},
+            "committer": {"date": "2026-11-05T09:16:37Z"},
+        },
+    }]
+    monkeypatch.setattr(mod, "gh_json", lambda args: [page])
+    out = mod._pr_commits_rest(24803)
+    assert out == [{
+        "oid": "aaaa1111",
+        "committedDate": "2026-11-05T09:16:37Z",
+        "authoredDate": "2026-11-05T09:15:12Z",
+    }]
+
+
+def test_17315_commits_rest_aplati_les_pages(monkeypatch):
+    """`--paginate --slurp` rend une liste de pages : l'aplatissement garde
+    tous les commits, sans troncature silencieuse au-dela de 100."""
+    pages = [[{"sha": "a", "commit": {"committer": {"date": "1"}}},
+              {"sha": "b", "commit": {"committer": {"date": "2"}}}],
+             [{"sha": "c", "commit": {"committer": {"date": "3"}}}]]
+    monkeypatch.setattr(mod, "gh_json", lambda args: pages)
+    out = mod._pr_commits_rest(1)
+    assert [c["oid"] for c in out] == ["a", "b", "c"]

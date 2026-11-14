@@ -1145,7 +1145,7 @@ print(f"Coût total session: ${report['total_cost']:.4f}")
 - [WCAG 2.1 Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
 
 ### Notebooks CoursIA
-- `01-2-GPT-5-Image-Generation.ipynb` : Introduction GPT-5
+- `01-2-Generation-Image-API.ipynb` : Introduction GPT-5
 - `04-1-Educational-Content-Generation.ipynb` : Applications pédagogiques
 - `04-2-Creative-Workflows.ipynb` : Workflows avancés
 

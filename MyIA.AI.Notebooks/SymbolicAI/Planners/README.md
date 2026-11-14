@@ -26,7 +26,7 @@ La planification répond à une question différente de celle de l'apprentissage
 | Langage | Python 3.9+ |
 | Kernel | Python 3 |
 | Solveurs | Fast Downward, OR-Tools CP-SAT, unified-planning |
-| Environnement | Docker (Fast Downward), pip (Python packages) |
+| Environnement | pip (`requirements.txt`, Fast Downward compris par `up-fast-downward`), Docker en option (service Fast Downward) |
 
 La progression pédagogique suit l'**évolution des paradigmes** de planification : chaque phase répond aux limites de la précédente, du modèle formel jusqu'à la frontière neuro-symbolique.
 
@@ -51,27 +51,27 @@ Chaque phase de la série rend visible un concept distinct, dans une figure extr
 
 La série débute par le notebook Setup (0) qui configure automatiquement l'environnement : installation de `unified-planning`, OR-Tools, vérification de Docker et lancement du conteneur Fast Downward. Le notebook 1 (Introduction) présente le triptyque fondamental État-Action-But, le modèle STRIPS (1971) avec ses hypothèses — statique, déterministe, observable, discret, instantané — et le contexte historique depuis Fikes & Nilsson jusqu'aux LLMs modernes. Le notebook 2 (PDDL-Basics) plonge dans la syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions et effets. Le notebook 3 (State-Space) explore l'explosion combinatoire ($O(2^n)$ prédicats) et la nécessité des heuristiques pour guider la recherche dans l'espace d'états. À l'issue de cette phase, vous savez modéliser un problème en PDDL et comprendre pourquoi la recherche aveugle ne suffit pas.
 
-<p align="center"><a href="01-Foundation/Planners-3-State-Space.ipynb"><img src="assets/readme/planners3-statespace.png" width="540" alt="Espace d'états : explosion combinatoire de la recherche aveugle dans un graphe d'états PDDL, motivant le recours aux heuristiques."></a></p>
+<p align="center"><a href="01-Foundation/Planners-03-State-Space-Python.ipynb"><img src="assets/readme/planners3-statespace.png" width="540" alt="Espace d'états : explosion combinatoire de la recherche aveugle dans un graphe d'états PDDL, motivant le recours aux heuristiques."></a></p>
 
-<p align="center"><a href="01-Foundation/Planners-3-State-Space.ipynb"><img src="assets/readme/planners3-searchtree.png" width="540" alt="Arbre de recherche : parcours de l'espace d'états et illustration du facteur de branchement et de la profondeur de but."></a></p>
+<p align="center"><a href="01-Foundation/Planners-03-State-Space-Python.ipynb"><img src="assets/readme/planners3-searchtree.png" width="540" alt="Arbre de recherche : parcours de l'espace d'états et illustration du facteur de branchement et de la profondeur de but."></a></p>
 
 ### Phase 2 : Planification Classique (Notebooks 4-6, ~3h)
 
-Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter via Docker et unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Le notebook **5b** (Lean-Relaxation) est un **companion natif** au kernel Lean 4 : il prouve formellement, sans `sorry`, l'admissibilité de la relaxation $h^{+} \leq h^{*}$ dans le lake `planning_lean` — la certification mathématique de la propriété que le notebook 5 constate empiriquement. Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. Le notebook **5c** (Différentiel d'atteignabilité, strate 7) retourne au moteur STRIPS minimal pour poser la question inverse : non plus « quel plan pour ce but ? » mais « **quelle nouvelle classe de plans devient atteignable quand on ajoute une primitive ?** » — un protocole en quatre pas (inatteignabilité prouvée, contrôle d'effort, primitive nommée et payante, delta mesuré) qui consomme les garanties du lake `planning_lean` au lieu de les rejouer. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, modéliser n'importe quel domaine IPC — et mesurer ce qu'un élargissement de vocabulaire vaut face à un approfondissement de recherche.
+Les notebooks 4 à 6 constituent le cœur technique de la série. Le notebook 4 (Fast-Downward) présente l'architecture en trois étapes de Fast Downward (translator PDDL→SAS+, preprocessor C++, search C++) et montre comment l'exécuter, par le service Docker ou par le plugin local `up-fast-downward`, puis via unified-planning. Les algorithmes de recherche (A*, Greedy, EHC) y sont testés sur Blocks World et Logistics. Le notebook 5 (Heuristics) approfondit la théorie : classification admissible/non-admissible ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), comparaison expérimentale des heuristiques sur le nombre de nœuds expansés, et guide de sélection. Ses approfondissements 5b et 5c sont regroupés [sous le palier 5](#approfondissements-du-palier-5). Le notebook 6 (Domains) couvre les domaines standards de l'IPC (Blocks World, Logistics, Gripper, Satellite) avec des problèmes de complexité croissante. À l'issue, vous pouvez configurer un planificateur optimal, choisir l'heuristique adéquate, modéliser n'importe quel domaine IPC — et mesurer ce qu'un élargissement de vocabulaire vaut face à un approfondissement de recherche.
 
-<p align="center"><a href="02-Classical/Planners-5-Heuristics.ipynb"><img src="assets/readme/planners5-heuristics.png" width="540" alt="Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration."></a></p>
+<p align="center"><a href="02-Classical/Planners-05-Heuristics-Python.ipynb"><img src="assets/readme/planners5-heuristics.png" width="540" alt="Heuristiques de recherche : comparaison de A* et de ses variantes guidant l'exploration vers le but pour réduire l'exploration."></a></p>
 
 ### Phase 3 : Approches Avancées (Notebooks 7-9, ~3h)
 
 La planification classique épuise ses limites dès que les problèmes deviennent trop grands pour l'exploration d'états. Les notebooks 7 à 9 proposent des alternatives. Le notebook 7 (OR-Tools) introduit la programmation par contraintes avec CP-SAT de Google OR-Tools : modélisation de contraintes (all-different, cumulative, table), scheduling, et optimisation multi-objectif. Le notebook 8 (Temporal) étend au domaine temporel avec PDDL 2.1 : durées d'actions, parallélisme, contraintes temporelles simples et denses, ordonnancement de tâches. Le notebook 9 (HTN) présente la planification hiérarchique (Task Networks) : tâches primitives vs abstraites, méthodes de décomposition, langage HDDL, solveur inspiré de SHOP2, et comparaison avec STRIPS. À l'issue, vous disposez de trois paradigmes complémentaires pour les problèmes qui dépassent la planification classique. Le notebook 13 (Mesure-Qualite-Plans) **mesure la qualité des plans** : sur une tour de 4 blocs, cinq configurations de Fast Downward sont comparées à plan égal — les quatre recherches A* trouvent le plan optimal de 6 actions en évaluant de 22 à 121 états selon l'heuristique, la recherche greedy s'en écarte (10 actions) en n'évaluant que 20 états — et une recherche naïve (BFS) en Python explore 95 états pour ce même plan optimal : le contrepoint qui fait de l'heuristique un choix d'efficience.
 
-<p align="center"><a href="03-Advanced/Planners-7-OR-Tools.ipynb"><img src="assets/readme/planners7-ortools.png" width="540" alt="OR-Tools CP-SAT : diagramme de Gantt d'un ordonnancement job-shop (makespan minimisé) produit par le solveur."></a></p>
+<p align="center"><a href="03-Advanced/Planners-07-OR-Tools-Python.ipynb"><img src="assets/readme/planners7-ortools.png" width="540" alt="OR-Tools CP-SAT : diagramme de Gantt d'un ordonnancement job-shop (makespan minimisé) produit par le solveur."></a></p>
 
-<p align="center"><a href="03-Advanced/Planners-8-Temporal.ipynb"><img src="assets/readme/planners8-temporal.png" width="560" alt="Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel."></a></p>
+<p align="center"><a href="03-Advanced/Planners-08-Temporal-Python.ipynb"><img src="assets/readme/planners8-temporal.png" width="560" alt="Planification temporelle : chronologie d'actions avec durées et contraintes de scheduling sur un réseau temporel."></a></p>
 
 ### Phase 4 : Neuro-Symbolique (Notebooks 10, 11, 12, 14 ; ~3h)
 
-La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, portabilité du modèle PDDL entre moteurs, **et le saut qualitatif satisfaction → optimisation** via `MinimizeActionCosts` (un moteur *optimal* comme `fast-downward-opt` certifie le plan de coût minimal là où un moteur *satisficing* comme `fast-downward` s'arrête au premier plan trouvé — voir [la section dédiée ci-dessous](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)). Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Le notebook 14 (LLM-Space-Reducer) teste la **position inverse** : le LLM non plus solveur mais réducteur d'espace de recherche (position du moteur [aicpp](https://github.com/Julien-Livet/aicpp)) — mini-DSL de primitives typées sur grilles ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur), la correction restant toujours au solveur déterministe. C'est lui qui conclut la série sur les tendances : foundation models, meta-learning, inverse reinforcement learning.
+La dernière partie explore la frontière entre IA symbolique et apprentissage profond. Le notebook 10 (LLM-Planning) montre comment les Large Language Models peuvent générer des plans à partir de descriptions en langage naturel, le prompting pour la planification, et le plan repair. Le notebook 11 (Unified-Planning) détaille l'interface unifiée `unified-planning` : connexion à plusieurs solveurs en quelques lignes, comparaison croisée des performances, portabilité du modèle PDDL entre moteurs, **et le saut qualitatif satisfaction → optimisation** via `MinimizeActionCosts` (un moteur *optimal* comme `fast-downward-opt` certifie le plan de coût minimal là où un moteur *satisficing* comme `fast-downward` s'arrête au premier plan trouvé — voir [la section dédiée ci-dessous](#au-delà-de-la-satisfaction--optimisation-pddl-cout-minimal-planners-11)). Le notebook 12 (LOOP) introduit le paradigme **Learning to Plan** : architecture LOOP (state encoder, policy network, value network), encodage PDDL en tenseurs (one-hot, GNN), entraînement par imitation et renforcement, résultats sur benchmarks IPC (85.8% coverage), et comparaison avec KRCL. Le palier 10 propose également [un approfondissement, 10b](#approfondissement-du-palier-10), consacré au LLM comme réducteur d'espace de recherche. C'est lui qui conclut la série sur les tendances : foundation models, meta-learning, inverse reinforcement learning.
 
 ### Au-delà de la satisfaction : optimisation PDDL (coût minimal, Planners-11)
 
@@ -137,16 +137,16 @@ Pour les approches combinées apprentissage profond + symbolique :
 
 | Critère | Recommandation |
 |---------|----------------|
-| Juste découvrir la planification | **Planners-0-Setup** + **Planners-1-Introduction** |
-| Un premier planificateur qui marche | **Planners-4-Fast-Downward** (Docker + Blocks World) |
-| Optimisation de scheduling | **Planners-7-OR-Tools** |
-| Planification hiérarchique | **Planners-9-HTN** (SHOP2, decomposition) |
-| Frontière LLM + IA | **Planners-10-LLM-Planning** |
-| LLM qui réduit l'espace de recherche | **Planners-10b-LLM-Space-Reducer** |
-| Approche neuro-symbolique avancée | **Planners-12-LOOP** (85.8% IPC coverage) |
-| Comparer tous les solveurs (satisfaction) | **Planners-11-Unified-Planning** |
-| Comparer satisfaction **vs** optimisation (`MinimizeActionCosts`) | **Planners-11-Unified-Planning** ([#7592](https://github.com/jsboige/CoursIA/pull/7592)) |
-| Mesurer ce qu'une **nouvelle primitive** rend possible (strate 7) | **Planners-5c-Differentiel-Atteignabilite** (protocole 4 pas, stdlib pur) |
+| Juste découvrir la planification | **Planners-00-Setup-Python** + **Planners-01-Introduction-Python** |
+| Un premier planificateur qui marche | **Planners-04-Fast-Downward-Python** (Fast Downward + Blocks World) |
+| Optimisation de scheduling | **Planners-07-OR-Tools-Python** |
+| Planification hiérarchique | **Planners-09-HTN-Python** (SHOP2, decomposition) |
+| Frontière LLM + IA | **Planners-10-LLM-Planning-Python** |
+| LLM qui réduit l'espace de recherche | **Planners-10-LLM-Planning-Python**, puis son [approfondissement 10b](#approfondissement-du-palier-10) |
+| Approche neuro-symbolique avancée | **Planners-12-LOOP-Python** (85.8% IPC coverage) |
+| Comparer tous les solveurs (satisfaction) | **Planners-11-Unified-Planning-Python** |
+| Comparer satisfaction **vs** optimisation (`MinimizeActionCosts`) | **Planners-11-Unified-Planning-Python** ([#7592](https://github.com/jsboige/CoursIA/pull/7592)) |
+| Mesurer ce qu'une **nouvelle primitive** rend possible (strate 7) | **Planners-05-Heuristics-Python**, puis son [approfondissement 5c](#approfondissements-du-palier-5) (protocole 4 pas, stdlib pur) |
 
 ## Objectifs d'apprentissage
 
@@ -171,36 +171,36 @@ A l'issue de cette série, vous saurez :
 SymbolicAI/Planners/
 ├── README.md
 ├── 00-Environment/
-│   └── Planners-0-Setup.ipynb           # Configuration environnement
+│   └── Planners-00-Setup-Python.ipynb           # Configuration environnement
 ├── 01-Foundation/
-│   ├── Planners-1-Introduction.ipynb    # Concepts, STRIPS
-│   ├── Planners-2-PDDL-Basics.ipynb     # Syntaxe PDDL
-│   ├── Planners-2-PDDL-Basics-Csharp.ipynb # Twin C# STRIPS+grounding+BFS (See #4956)
-│   ├── Planners-3-State-Space.ipynb     # Espaces d'états
-│   └── Planners-3-State-Space-Csharp.ipynb # Twin C# BFS/DFS/Greedy/A* (See #4956)
+│   ├── Planners-01-Introduction-Python.ipynb    # Concepts, STRIPS
+│   ├── Planners-02-PDDL-Basics-Python.ipynb     # Syntaxe PDDL
+│   ├── Planners-02-PDDL-Basics-Csharp.ipynb # Twin C# STRIPS+grounding+BFS (See #4956)
+│   ├── Planners-03-State-Space-Python.ipynb     # Espaces d'états
+│   └── Planners-03-State-Space-Csharp.ipynb # Twin C# BFS/DFS/Greedy/A* (See #4956)
 ├── 02-Classical/
-│   ├── Planners-4-Fast-Downward.ipynb   # A*, heuristiques
-│   ├── Planners-4-Fast-Downward-Csharp.ipynb # Twin C# SAS+/A*/GBFS/EHC from-scratch (See #4956)
-│   ├── Planners-5-Heuristics.ipynb      # h-add, h-max, h-FF
-│   ├── Planners-5-Heuristics-Csharp.ipynb # Twin C# h-max/h-add/h-FF/landmarks (See #4956)
-│   ├── Planners-5b-Lean-Relaxation.ipynb # Companion Lean 4 : preuve h+ <= h*
-│   ├── Planners-6-Domains.ipynb         # Domaines classiques
-│   ├── Planners-6-Domains-Csharp.ipynb  # Twin C# STRIPS from-scratch (BFS, Block World/Hanoi/Gripper) (See #4956)
-│   └── Planners-5c-Differentiel-Atteignabilite.ipynb # Differentiel d'atteignabilite : primitive ajoutee, delta mesure (strate 7, #12233)
+│   ├── Planners-04-Fast-Downward-Python.ipynb   # A*, heuristiques
+│   ├── Planners-04-Fast-Downward-Csharp.ipynb # Twin C# SAS+/A*/GBFS/EHC from-scratch (See #4956)
+│   ├── Planners-05-Heuristics-Python.ipynb      # h-add, h-max, h-FF
+│   ├── Planners-05-Heuristics-Csharp.ipynb # Twin C# h-max/h-add/h-FF/landmarks (See #4956)
+│   ├── Planners-05b-Lean-Relaxation-Lean.ipynb # Companion Lean 4 : preuve h+ <= h*
+│   ├── Planners-06-Domains-Python.ipynb         # Domaines classiques
+│   ├── Planners-06-Domains-Csharp.ipynb  # Twin C# STRIPS from-scratch (BFS, Block World/Hanoi/Gripper) (See #4956)
+│   └── Planners-05c-Differentiel-Atteignabilite-Python.ipynb # Differentiel d'atteignabilite : primitive ajoutee, delta mesure (strate 7, #12233)
 ├── 03-Advanced/
-│   ├── Planners-7-OR-Tools.ipynb        # CP-SAT
-│   ├── Planners-7-OR-Tools-Csharp.ipynb # Twin C# Job-Shop CP solver from-scratch (propagation + backtracking) (See #4956)
-│   ├── Planners-8-Temporal.ipynb        # Planification temporelle
-│   ├── Planners-8-Temporal-Csharp.ipynb # Twin C# Allen + STN + RCPSP-lite from-scratch (See #4956)
-│   ├── Planners-9-HTN.ipynb             # Planification hiérarchique
-│   ├── Planners-9-HTN-Csharp.ipynb      # Twin C# SHOP2 HTN solver from-scratch (See #4956)
+│   ├── Planners-07-OR-Tools-Python.ipynb        # CP-SAT
+│   ├── Planners-07-OR-Tools-Csharp.ipynb # Twin C# Job-Shop CP solver from-scratch (propagation + backtracking) (See #4956)
+│   ├── Planners-08-Temporal-Python.ipynb        # Planification temporelle
+│   ├── Planners-08-Temporal-Csharp.ipynb # Twin C# Allen + STN + RCPSP-lite from-scratch (See #4956)
+│   ├── Planners-09-HTN-Python.ipynb             # Planification hiérarchique
+│   ├── Planners-09-HTN-Csharp.ipynb      # Twin C# SHOP2 HTN solver from-scratch (See #4956)
 │   └── Planners-13-Mesure-Qualite-Plans-Python.ipynb # Benchmark qualité des plans : 5 configs FD + BFS naïve (tour 4 blocs)
 ├── 04-NeuroSymbolic/
-│   ├── Planners-10-LLM-Planning.ipynb   # LLM + Planning
-│   ├── Planners-11-Unified-Planning.ipynb # Interface unifiée
-│   ├── Planners-12-LOOP.ipynb           # Learning to Plan
-│   ├── Planners-10-LLM-Planning.ipynb (pre-requis)
-│   └── Planners-10b-LLM-Space-Reducer.ipynb # LLM reducteur d'espace (position aicpp)
+│   ├── Planners-10-LLM-Planning-Python.ipynb   # LLM + Planning
+│   ├── Planners-11-Unified-Planning-Python.ipynb # Interface unifiée
+│   ├── Planners-12-LOOP-Python.ipynb           # Learning to Plan
+│   ├── Planners-10-LLM-Planning-Python.ipynb (pre-requis)
+│   └── Planners-10b-LLM-Space-Reducer-Python.ipynb # LLM reducteur d'espace (position aicpp)
 ├── planning_lean/                        # Projet Lake Lean 4 (preuve formelle 0-sorry de l'admissibilité de la relaxation h+ <= h*, cf Planners-5b)
 │   ├── README.md                          # Documentation du lake (FR)
 │   ├── Planning.en.md                     # Companion EN (i18n, #5013)
@@ -226,14 +226,13 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 | 1 | Introduction | Triptyque État-Action-But, hypothèses STRIPS (1971), taxonomie des paradigmes |
 | 2 | PDDL-Basics | Syntaxe PDDL : domaines, problèmes, types, prédicats, actions, préconditions, effets |
 | 3 | State-Space | Explosion combinatoire $O(2^n)$, nécessité des heuristiques, graphe d'états |
-| 4 | Fast-Downward | Architecture 3 étapes (translator/preprocessor/search), A* vs Greedy vs EHC via Docker |
-| 5 | Heuristics | Classification admissible/non-admissible : $h^{add}$, $h^{max}$, $h^{FF}$, LM-cut, comparaison expérimentale |
-| 5b | Lean-Relaxation | Companion **natif** (kernel Lean 4) : preuve formelle 0-sorry de l'admissibilité de la relaxation ($h^{+} \leq h^{*}$) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel ; lemmes de monotonie `step_mono`/`run_mono` démontrés sur un domaine jouet exécutable (§4bis) |
+| 4 | Fast-Downward | Architecture 3 étapes (translator/preprocessor/search), A* vs Greedy vs EHC (Fast Downward, Docker ou plugin local) |
+| 5 | Heuristics | Classification admissible/non-admissible : $h^{add}$, $h^{max}$, $h^{FF}$, LM-cut, comparaison expérimentale — [approfondissements 5b et 5c](#approfondissements-du-palier-5) |
 | 6 | Domains | Domaines IPC standards (Blocks, Logistics, Gripper, Satellite), complexité croissante |
 | 7 | OR-Tools | CP-SAT, programmation par contraintes, modélisation de scheduling, contraintes alldifferent |
 | 8 | Temporal | PDDL 2.1, durées d'actions, parallélisme, contraintes temporelles, ordonnancement |
 | 9 | HTN | Planification hiérarchique : tâches primitives/abstraites, méthodes, HDDL, SHOP2 |
-| 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages |
+| 10 | LLM-Planning | Planification avec LLMs, prompting, plan repair, limites et avantages — [approfondissement 10b](#approfondissement-du-palier-10) |
 | 11 | Unified-Planning | Interface multi-solveurs, comparaison croisée, portabilité du modèle — + optimisation `MinimizeActionCosts` (optimal bat satisficing de 7 unités) [#7592] |
 | 12 | LOOP | Learning to Plan : state encoder, policy network, value network, 85.8% IPC coverage |
 | 13 | Mesure-Qualite-Plans | **Mesurer la qualité des plans** : 5 configurations Fast Downward sur une tour de 4 blocs — A* avec heuristiques blind, hmax, lmcut et fast-forward (les quatre trouvent le plan optimal de 6 actions, en évaluant de 22 à 121 états selon l'heuristique), plus une recherche greedy qui s'en écarte (10 actions, 20 états) ; recherche naïve BFS en Python en contrepoint |
@@ -247,54 +246,70 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 0 | [Planners-0-Setup](00-Environment/Planners-0-Setup.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min |
+| 0 | [Planners-00-Setup-Python](00-Environment/Planners-00-Setup-Python.ipynb) | Python | Installation unified-planning, OR-Tools, Docker Fast Downward | 20 min |
 
 ### Partie 1 : Fondations ([01-Foundation/](01-Foundation/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 1 | [Planners-1-Introduction](01-Foundation/Planners-1-Introduction.ipynb) | Python | Concepts, modèle STRIPS, triptyque État-Action-But | 30 min |
-| 1 (C#) | [Planners-1-Introduction-Csharp](01-Foundation/Planners-1-Introduction-Csharp.ipynb) | .NET (C#) | Twin C# du 1 : Partie 1 from-scratch (triptyque État-Action-But, BFS), Partie 2 Fast Downward via l'API Docker (See #4956) | 30 min |
-| 2 | [Planners-2-PDDL-Basics](01-Foundation/Planners-2-PDDL-Basics.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
-| 2 (C#) | [Planners-2-PDDL-Basics-Csharp](01-Foundation/Planners-2-PDDL-Basics-Csharp.ipynb) | .NET (C#) | Twin C# du 2 : Partie 1 from-scratch (STRIPS : modèle typé, grounding, BFS forward) sur Logistics + Gripper ; Partie 2 : Fast Downward 24.06.1 via l'API Docker, port 8200 (See #4956) | 40 min |
-| 3 | [Planners-3-State-Space](01-Foundation/Planners-3-State-Space.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
-| 3 (C#) | [Planners-3-State-Space-Csharp](01-Foundation/Planners-3-State-Space-Csharp.ipynb) | .NET (C#) | Twin C# du 3 : Partie 1 from-scratch (BFS/DFS/Greedy/A*, terrain uniforme et pondéré) ; Partie 2 : QuikGraph (NuGet) sur la grille 11x11, puis Fast Downward en processus local via `up_fast_downward`, sans Docker (See #4956) | 35 min |
+| 1 | [Planners-01-Introduction-Python](01-Foundation/Planners-01-Introduction-Python.ipynb) | Python | Concepts, modèle STRIPS, triptyque État-Action-But | 30 min |
+| 1 (C#) | [Planners-01-Introduction-Csharp](01-Foundation/Planners-01-Introduction-Csharp.ipynb) | .NET (C#) | Twin C# du 1 : Partie 1 from-scratch (triptyque État-Action-But, BFS), Partie 2 Fast Downward, service Docker ou plugin local, par `FastDownwardBackend.cs` (See #4956) | 30 min |
+| 2 | [Planners-02-PDDL-Basics-Python](01-Foundation/Planners-02-PDDL-Basics-Python.ipynb) | Python | Syntaxe PDDL, domaines, problèmes, prédicats, actions | 40 min |
+| 2 (C#) | [Planners-02-PDDL-Basics-Csharp](01-Foundation/Planners-02-PDDL-Basics-Csharp.ipynb) | .NET (C#) | Twin C# du 2 : Partie 1 from-scratch (STRIPS : modèle typé, grounding, BFS forward) sur Logistics + Gripper ; Partie 2 : Fast Downward, service Docker ou plugin local, par `FastDownwardBackend.cs` (See #4956) | 40 min |
+| 3 | [Planners-03-State-Space-Python](01-Foundation/Planners-03-State-Space-Python.ipynb) | Python | Espaces d'états, graphes de recherche, explosion combinatoire | 35 min |
+| 3 (C#) | [Planners-03-State-Space-Csharp](01-Foundation/Planners-03-State-Space-Csharp.ipynb) | .NET (C#) | Twin C# du 3 : Partie 1 from-scratch (BFS/DFS/Greedy/A*, terrain uniforme et pondéré) ; Partie 2 : QuikGraph (NuGet) sur la grille 11x11, puis Fast Downward par `FastDownwardBackend.cs` (service Docker ou plugin local `up_fast_downward`) (See #4956) | 35 min |
 
 ### Partie 2 : Planification Classique ([02-Classical/](02-Classical/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 4 | [Planners-4-Fast-Downward](02-Classical/Planners-4-Fast-Downward.ipynb) | Python | Architecture FD, Docker, A*, GBFS, EHC, heuristiques | 45 min |
-| 4 (C#) | [Planners-4-Fast-Downward-Csharp](02-Classical/Planners-4-Fast-Downward-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : Partie 1 from-scratch, sans Docker (planificateur SAS+ prevail/pre/eff, A\*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics) ; Partie 2 : Fast Downward via l'API Docker, port 8200 (See #4956) | 45 min |
-| 5 | [Planners-5-Heuristics](02-Classical/Planners-5-Heuristics.ipynb) | Python | h-add, h-max, h-FF, landmarks | 40 min |
-| 5 (C#) | [Planners-5-Heuristics-Csharp](02-Classical/Planners-5-Heuristics-Csharp.ipynb) | .NET (C#) | Twin C# du 5 : Partie 1 from-scratch (h-max/h-add/h-FF/landmarks, démo non-admissibilité h^add) ; Partie 2 : h* = 4 validé sur Blocks World par Fast Downward via l'API Docker, port 8200, avec la comparaison LM-cut (See #4956) | 40 min |
-| 5b | [Planners-5b-Lean-Relaxation](02-Classical/Planners-5b-Lean-Relaxation.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel, lemmes de monotonie `step_mono`/`run_mono` sur domaine jouet exécutable (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
-| 5c | [Planners-5c-Differentiel-Atteignabilite](02-Classical/Planners-5c-Differentiel-Atteignabilite.ipynb) | Python | **Différentiel d'atteignabilité** (strate 7) : protocole en 4 pas — inatteignabilité **prouvée** par énumération exhaustive (36 états), contrôle d'effort (BFS/A\*+h_max/IDDFS échouent sur le même espace, budgets rapportés), primitive **nommée et payante** (`raft-across`, planchette consommée + détour), delta mesuré (Δ={g1,g2}, h\* 7 et 6, espace 36→60). Consomme les théorèmes du lake `planning_lean` (h_max ≤ h⁺ ≤ h\*, `Admissibility.lean:41`) — chaîne h_max(3) ≤ h\*(8) strict vérifiée, rive droite invisible même au monde relaxé. Stdlib pur, déterministe (See #12233) | 45 min |
-| 6 | [Planners-6-Domains](02-Classical/Planners-6-Domains.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
-| 6 (C#) | [Planners-6-Domains-Csharp](02-Classical/Planners-6-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : Partie 1 from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle) sur Block World, Hanoï et Gripper ; Partie 2 : Fast Downward 24.06.1 via l'API Docker, port 8200, sur ces domaines (See #4956) | 45 min |
+| 4 | [Planners-04-Fast-Downward-Python](02-Classical/Planners-04-Fast-Downward-Python.ipynb) | Python | Architecture FD, service Docker ou plugin local, A*, GBFS, EHC, heuristiques | 45 min |
+| 4 (C#) | [Planners-04-Fast-Downward-Csharp](02-Classical/Planners-04-Fast-Downward-Csharp.ipynb) | .NET (C#) | Twin C# du 4 : Partie 1 from-scratch, sans Docker (planificateur SAS+ prevail/pre/eff, A\*/GBFS/EHC, h^max/h^FF par RPG, domaines Ferry + Logistics) ; Partie 2 : Fast Downward, service Docker ou plugin local, par `FastDownwardBackend.cs` (See #4956) | 45 min |
+| 5 | [Planners-05-Heuristics-Python](02-Classical/Planners-05-Heuristics-Python.ipynb) · [Planners-05-Heuristics-Csharp](02-Classical/Planners-05-Heuristics-Csharp.ipynb) | Python · .NET (C#) | h-add, h-max, h-FF, landmarks ; jumeau C# : Partie 1 from-scratch (h-max/h-add/h-FF/landmarks, démo non-admissibilité h^add) ; Partie 2 : h* = 4 validé sur Blocks World par Fast Downward (service Docker ou plugin local, par `FastDownwardBackend.cs`), avec la comparaison LM-cut (See #4956) — [approfondissements 5b et 5c](#approfondissements-du-palier-5) | 40 min |
+| 6 | [Planners-06-Domains-Python](02-Classical/Planners-06-Domains-Python.ipynb) | Python | Blocks World, Logistics, Gripper, Ferry, Hanoi | 50 min |
+| 6 (C#) | [Planners-06-Domains-Csharp](02-Classical/Planners-06-Domains-Csharp.ipynb) | .NET (C#) | Twin C# du 6 : Partie 1 from-scratch (modèle Atom/Action/State, BFS forward + anti-cycle) sur Block World, Hanoï et Gripper ; Partie 2 : Fast Downward (service Docker ou plugin local, par `FastDownwardBackend.cs`) sur ces domaines (See #4956) | 45 min |
 
 ### Partie 3 : Approches Avancées ([03-Advanced/](03-Advanced/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 7 | [Planners-7-OR-Tools](03-Advanced/Planners-7-OR-Tools.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
-| 7 (C#) | [Planners-7-OR-Tools-Csharp](03-Advanced/Planners-7-OR-Tools-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : Partie 1 solveur CP Job-Shop from-scratch, sans OR-Tools (propagation au plus tôt + backtracking disjonctif) sur un exemple 3x3 qui n'est pas l'instance ft3 de la littérature (makespan optimal 11, trouvé par OR-Tools) ; N-Reines et Gantt ASCII ; Partie 2 : même exemple via Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | 45 min |
-| 8 | [Planners-8-Temporal](03-Advanced/Planners-8-Temporal.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
-| 8 (C#) | [Planners-8-Temporal-Csharp](03-Advanced/Planners-8-Temporal-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : Partie 1 from-scratch (PDDL 2.1 actions duratives, algèbre d'Allen à 13 relations, STN Floyd-Warshall, RCPSP-lite glouton, Gantt ASCII) ; Partie 2 : RCPSP résolu par Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | 40 min |
-| 9 | [Planners-9-HTN](03-Advanced/Planners-9-HTN.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
-| 9 (C#) | [Planners-9-HTN-Csharp](03-Advanced/Planners-9-HTN-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : Partie 1 solveur HTN SHOP2 from-scratch (State/Pred, Methods, backtracking) sur Logistics + Cafe ; Partie 2 : le même problème via unified_planning + aries, par pont .NET vers CPython (paquet NuGet `pythonnet` 3.0.5, paquets Python `unified-planning` et `up-aries`) (See #4956) | 40 min |
+| 7 | [Planners-07-OR-Tools-Python](03-Advanced/Planners-07-OR-Tools-Python.ipynb) | Python | CP-SAT, programmation par contraintes, scheduling | 45 min |
+| 7 (C#) | [Planners-07-OR-Tools-Csharp](03-Advanced/Planners-07-OR-Tools-Csharp.ipynb) | .NET (C#) | Twin C# du 7 : Partie 1 solveur CP Job-Shop from-scratch, sans OR-Tools (propagation au plus tôt + backtracking disjonctif) sur un exemple 3x3 qui n'est pas l'instance ft3 de la littérature (makespan optimal 11, trouvé par OR-Tools) ; N-Reines et Gantt ASCII ; Partie 2 : même exemple via Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | 45 min |
+| 8 | [Planners-08-Temporal-Python](03-Advanced/Planners-08-Temporal-Python.ipynb) | Python | PDDL 2.1, durées, parallélisme, ordonnancement | 40 min |
+| 8 (C#) | [Planners-08-Temporal-Csharp](03-Advanced/Planners-08-Temporal-Csharp.ipynb) | .NET (C#) | Twin C# du 8 : Partie 1 from-scratch (PDDL 2.1 actions duratives, algèbre d'Allen à 13 relations, STN Floyd-Warshall, RCPSP-lite glouton, Gantt ASCII) ; Partie 2 : RCPSP résolu par Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) | 40 min |
+| 9 | [Planners-09-HTN-Python](03-Advanced/Planners-09-HTN-Python.ipynb) | Python | Hierarchical Task Networks, méthodes, décomposition | 45 min |
+| 9 (C#) | [Planners-09-HTN-Csharp](03-Advanced/Planners-09-HTN-Csharp.ipynb) | .NET (C#) | Twin C# du 9 : Partie 1 solveur HTN SHOP2 from-scratch (State/Pred, Methods, backtracking) sur Logistics + Cafe ; Partie 2 : le même problème via unified_planning + aries, par pont .NET vers CPython (paquet NuGet `pythonnet` 3.0.5, paquets Python `unified-planning` et `up-aries`) (See #4956) | 40 min |
 | 13 | [Planners-13-Mesure-Qualite-Plans](03-Advanced/Planners-13-Mesure-Qualite-Plans-Python.ipynb) | Python | **Mesurer la qualité des plans** : 5 configurations Fast Downward sur une tour de 4 blocs — A* avec heuristiques blind, hmax, lmcut et fast-forward (les quatre trouvent le plan optimal de 6 actions, en évaluant de 22 à 121 états selon l'heuristique), plus une recherche greedy qui s'en écarte (10 actions, 20 états) ; recherche naïve BFS en Python en contrepoint | 40 min |
 
 ### Partie 4 : Neuro-Symbolique ([04-NeuroSymbolic/](04-NeuroSymbolic/README.md))
 
 | # | Notebook | Kernel | Contenu | Durée |
 |---|----------|--------|---------|-------|
-| 10 | [Planners-10-LLM-Planning](04-NeuroSymbolic/Planners-10-LLM-Planning.ipynb) | Python | LLMs pour la planification, prompting, plan repair | 50 min |
-| 11 | [Planners-11-Unified-Planning](04-NeuroSymbolic/Planners-11-Unified-Planning.ipynb) | Python | Interface unifiée, multi-solveurs, comparaisons | 40 min |
-| 12 | [Planners-12-LOOP](04-NeuroSymbolic/Planners-12-LOOP.ipynb) | Python | Learning to Plan, modèles neuronaux pour heuristiques | 45 min |
-| 10b | [Planners-10b-LLM-Space-Reducer](04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer.ipynb) | Python | Le LLM comme réducteur d'espace de recherche : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur, position aicpp) | 40 min |
+| 10 | [Planners-10-LLM-Planning-Python](04-NeuroSymbolic/Planners-10-LLM-Planning-Python.ipynb) | Python | LLMs pour la planification, prompting, plan repair — [approfondissement 10b](#approfondissement-du-palier-10) | 50 min |
+| 11 | [Planners-11-Unified-Planning-Python](04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb) | Python | Interface unifiée, multi-solveurs, comparaisons | 40 min |
+| 12 | [Planners-12-LOOP-Python](04-NeuroSymbolic/Planners-12-LOOP-Python.ipynb) | Python | Learning to Plan, modèles neuronaux pour heuristiques | 45 min |
 
 ---
+
+### Approfondissements du palier 5
+
+Ces notebooks complètent le notebook 5 (Heuristics) : 5b formalise une propriété de son cadre heuristique, et 5c étudie l'effet d'une primitive sur l'atteignabilité.
+
+Pour 5b : Companion **natif** (kernel Lean 4) : preuve formelle 0-sorry de l'admissibilité de la relaxation ($h^{+} \leq h^{*}$) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel ; lemmes de monotonie `step_mono`/`run_mono` démontrés sur un domaine jouet exécutable (§4bis).
+
+| # | Notebook | Kernel | Apport | Durée |
+|---|---|---|---|---|
+| 5b | [Planners-05b-Lean-Relaxation-Lean](02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) | Lean 4 | Companion **natif** (kernel Lean) : preuve formelle 0-sorry de l'admissibilité de la relaxation (h⁺ ≤ h\*) dans le lake `planning_lean`, `#check` + `#print axioms` in-kernel, lemmes de monotonie `step_mono`/`run_mono` sur domaine jouet exécutable (cf [#4053](https://github.com/jsboige/CoursIA/issues/4053) création du lake / PR #4168, companion natif) | 45 min |
+| 5c | [Planners-05c-Differentiel-Atteignabilite-Python](02-Classical/Planners-05c-Differentiel-Atteignabilite-Python.ipynb) | Python | **Différentiel d'atteignabilité** (strate 7) : protocole en 4 pas — inatteignabilité **prouvée** par énumération exhaustive (36 états), contrôle d'effort (BFS/A\*+h_max/IDDFS échouent sur le même espace, budgets rapportés), primitive **nommée et payante** (`raft-across`, planchette consommée + détour), delta mesuré (Δ={g1,g2}, h\* 7 et 6, espace 36→60). Consomme les théorèmes du lake `planning_lean` (h_max ≤ h⁺ ≤ h\*, `Admissibility.lean:41`) — chaîne h_max(3) ≤ h\*(8) strict vérifiée, rive droite invisible même au monde relaxé. Stdlib pur, déterministe (See #12233) | 45 min |
+
+### Approfondissement du palier 10
+
+Le notebook 10b prolonge le notebook 10 en déplaçant le LLM du rôle de solveur vers celui de réducteur d'espace ; la correction reste au solveur déterministe.
+Le notebook 10b (LLM-Space-Reducer) teste la **position inverse** : le LLM non plus solveur mais réducteur d'espace de recherche (position du moteur [aicpp](https://github.com/Julien-Livet/aicpp)) — mini-DSL de primitives typées sur grilles ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur), la correction restant toujours au solveur déterministe.
+
+| # | Notebook | Kernel | Apport | Durée |
+|---|---|---|---|---|
+| 10b | [Planners-10b-LLM-Space-Reducer-Python](04-NeuroSymbolic/Planners-10b-LLM-Space-Reducer-Python.ipynb) | Python | Le LLM comme réducteur d'espace de recherche : mini-DSL ARC, trois bras mesurés (exhaustif borné, LLM-direct, LLM-réducteur, position aicpp) | 40 min |
 
 ## Qu'est-ce que la planification ?
 
@@ -322,7 +337,7 @@ Chaque notebook introduit un concept ou modèle spécifique. Le tableau ci-desso
 
 ### Pour les notebooks pratiques
 
-- **Docker** (notebooks 4-6) : exécution du conteneur Fast Downward sur le port 8200
+- **Fast Downward** (notebooks 4 et 13, jumeaux C# 1 à 6) : le paquet Python `up-fast-downward` de `requirements.txt` suffit ; le conteneur Docker sur le port 8200 reste une option
 - **OR-Tools** (notebook 7) : modélisation de contraintes, solveur CP-SAT
 
 ### Prérequis techniques
@@ -335,24 +350,27 @@ python -m venv venv
 source venv/bin/activate  # Linux/Mac
 # ou venv\Scripts\activate  # Windows
 
-# Installer les dépendances
-pip install unified-planning ortools numpy matplotlib networkx
+# Installer les dépendances, moteurs de planification compris
+# (up-fast-downward, up-pyperplan, up-aries)
+pip install -r requirements.txt
 ```
 
-#### 2. Docker pour Fast Downward (recommandé)
+#### 2. Fast Downward : plugin local ou Docker
+
+Le paquet `up-fast-downward`, installé à l'étape 1, embarque Fast Downward compilé (wheels pour Linux x86_64, macOS Intel et Apple Silicon, Windows x64). Quand aucun service ne répond sur le port 8200, les carnets lancent ce moteur en local : Docker n'est pas nécessaire. Le conteneur reste possible, et les carnets le préfèrent quand il tourne (version figée du moteur) :
 
 ```bash
 # Télécharger l'image Docker Fast Downward (serveur HTTP port 8200)
 docker pull jsboige/coursia-fast-downward:latest
 ```
 
-L'image fournit un serveur API HTTP sur le port 8200. Les notebooks appellent l'endpoint `/plan` avec un payload JSON `{domain, problem, search}` et reçoivent le plan optimal.
+L'image fournit un serveur API HTTP sur le port 8200 : l'endpoint `/plan` reçoit un payload JSON `{domain, problem, search}` et rend `{returncode, stdout, stderr}`. Le choix entre service et plugin vit dans `fast_downward_backend.py` (carnets Python) et `FastDownwardBackend.cs` (jumeaux C#), dont la première ligne de sortie nomme le moteur retenu.
 
 #### 3. Vérification
 
 ```bash
-python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
-# Vérifier le serveur Fast Downward (port 8200)
+python -c "import unified_planning, up_fast_downward; from ortools.sat.python import cp_model; print('OK')"
+# Avec Docker seulement : vérifier le serveur Fast Downward (port 8200)
 curl -s http://localhost:8200/health
 ```
 
@@ -472,6 +490,17 @@ curl -X POST http://localhost:8200/plan \
   -d '{"domain": "<domain.pddl>", "problem": "<problem.pddl>", "search": "astar(lmcut())"}'
 ```
 
+### Utilisation sans Docker (plugin local)
+
+Le module de la série rend le même contrat que l'API HTTP, que le moteur soit le service ou le pilote `fast-downward.py` du paquet `up-fast-downward` :
+
+```python
+import fast_downward_backend as fdb   # dossier Planners/
+
+print(fdb.description())                # moteur retenu pour la session
+result = fdb.plan(domain_pddl, problem_pddl, "astar(lmcut())")   # {returncode, stdout, stderr}
+```
+
 ### Utilisation via unified-planning
 
 ```python
@@ -521,23 +550,23 @@ SHOP2 (Simple Hierarchical Ordered Planner 2) utilise la décomposition ordonné
 ## Quick Start
 
 ```bash
-# 1. Installer les dépendances Python
-pip install unified-planning ortools numpy matplotlib networkx
+# 1. Installer les dépendances Python (moteurs de planification compris)
+pip install -r requirements.txt
 
 # 2. Vérifier l'installation
-python -c "import unified_planning; from ortools.sat.python import cp_model; print('OK')"
+python -c "import unified_planning, up_fast_downward; from ortools.sat.python import cp_model; print('OK')"
 
 # 3. Premier notebook (introduction aux concepts)
-jupyter notebook 01-Foundation/Planners-1-Introduction.ipynb
+jupyter notebook 01-Foundation/Planners-01-Introduction-Python.ipynb
 ```
 
-Pour les notebooks 4-6 (Fast Downward), l'image Docker `jsboige/coursia-fast-downward` fournit un serveur API HTTP sur le port 8200 : `docker pull jsboige/coursia-fast-downward:latest`. Les notebooks théoriques (1-3, 7-13) ne nécessitent que Python.
+Fast Downward vient du paquet `up-fast-downward` : sans Docker, les carnets le lancent en local. L'image Docker `jsboige/coursia-fast-downward` reste une option (serveur API HTTP sur le port 8200) : `docker pull jsboige/coursia-fast-downward:latest`. Aucun carnet de la série n'exige Docker.
 
 ## Navigation guide
 
 ### Progression recommandée
 
-1. **Débutants** : Commencer par `00-Environment/Planners-0-Setup.ipynb`
+1. **Débutants** : Commencer par `00-Environment/Planners-00-Setup-Python.ipynb`
 2. **Fondations** : Suivre `01-Foundation/` dans l'ordre
 3. **Pratique** : Explorer `02-Classical/` pour les outils
 4. **Avancé** : `03-Advanced/` et `04-NeuroSymbolic/` selon intérêts
@@ -620,7 +649,7 @@ La planification automatique est une branche de l'IA symbolique :
 
 ### 1. Le conteneur Docker Fast Downward ne répond pas sur le port 8200
 
-**Symptôme** : `ConnectionRefusedError` ou timeout dans les notebooks 4-6.
+**Symptôme** : la première ligne de sortie annonce le plugin local (ou « aucun ») alors qu'un conteneur devait tourner. Sans conteneur, les carnets utilisent le plugin local : ce cas ne bloque que si `up-fast-downward` manque aussi.
 
 **Causes et solutions** :
 
@@ -639,20 +668,22 @@ Si le port 8200 est déjà pris par un autre service, utiliser un port différen
 ```bash
 docker run -d --name coursia-fast-downward -p 8201:8200 jsboige/coursia-fast-downward:latest
 ```
-Dans ce cas, adapter l'URL dans les notebooks de `localhost:8200` vers `localhost:8201`.
+Dans ce cas, adapter `SERVICE_URL` dans `fast_downward_backend.py` et `ServiceUrl` dans `FastDownwardBackend.cs` de `localhost:8200` vers `localhost:8201`.
 
 ### 2. unified-planning ne détecte pas Fast Downward
 
-**Symptôme** : `up_fast_downward` importé mais `FastDownwardPDDLPlanner()` échoue avec une erreur de chemin.
+**Symptôme** : `FastDownwardPDDLPlanner().solve(problem)` rend le statut `INTERNAL_ERROR`.
 
-**Cause** : `unified-planning` attend l'exécutable `downward` dans le PATH ou dans le répertoire configuré. Avec Docker, ce n'est pas nécessaire — les notebooks utilisent l'API HTTP à la place.
+**Causes** :
 
-**Solution** : Les notebooks 4-6 utilisent le serveur Docker (endpoint `/plan`), pas l'exécutable local. Vérifier que les appels HTTP fonctionnent :
+1. **Paquet absent** : `pip install up-fast-downward`. Le moteur compilé est dans la wheel : rien à mettre dans le PATH.
+2. **Fluents non déclarés** : un problème qui ne passe pas par `problem.add_fluent(...)` produit un PDDL sans section `(:predicates)`, que le traducteur de Fast Downward rejette. C'est le cas que corrige le notebook 4.
+
+**Diagnostic** : l'erreur du traducteur est dans les messages du résultat.
 ```python
-import requests
-resp = requests.post("http://localhost:8200/plan",
-    json={"domain": domain_pddl, "problem": problem_pddl, "search": "astar(lmcut())"})
-print(resp.status_code, resp.json())
+result = FastDownwardPDDLPlanner().solve(problem)
+for message in result.log_messages:
+    print(message.message[-1500:])
 ```
 
 ### 3. Erreurs PDDL "undeclared variable" ou "type mismatch"
@@ -715,15 +746,9 @@ if status == cp_model.INFEASIBLE:
 
 1. Vérifier que Docker Desktop est lancé (icône dans la barre des tâches).
 2. Sur Windows, utiliser PowerShell en mode Administrateur si nécessaire.
-3. Alternative sans Docker : installer Fast Downward nativement (Linux/WSL uniquement) :
-   ```bash
-   # Dans WSL
-   git clone https://github.com/aibasel/downward.git
-   cd downward && ./build.py
-   # Puis pointer unified-planning vers le binaire
-   ```
+3. Alternative sans Docker, sur toutes les plateformes : `pip install up-fast-downward`. Les carnets lancent alors Fast Downward en local.
 
-Les notebooks théoriques (1-3, 7-13) ne nécessitent **pas** Docker et fonctionnent avec uniquement `pip install unified-planning ortools`.
+Aucun carnet de la série n'exige Docker : `pip install -r requirements.txt` installe les moteurs.
 
 ## Contribution
 
@@ -770,11 +795,11 @@ Le décompte exact ci-dessous est synchronisé avec le bloc `<!-- CATALOG-STATUS
 | **02-Classical** | 5 | PRODUCTION=3, BETA=2 | Fast Downward (translator→preprocessor→search), heuristiques admissibles ($h^{add}$, $h^{max}$, $h^{FF}$, LM-cut), domaines IPC (Blocks World, Logistics, Gripper, Satellite), companion Lean `5b-Lean-Relaxation`, différentiel d'atteignabilité (`5c-Differentiel-Atteignabilite`, strate 7) |
 | **03-Advanced** | 3 | PRODUCTION=3, BETA=0 | CP-SAT (OR-Tools), planification temporelle PDDL 2.1 (durées, parallélisme), HTN/SHOP2 (décomposition hiérarchique, HDDL) |
 | **04-NeuroSymbolic** | 4 | PRODUCTION=4, BETA=0 | LLM-Planning (génération plans depuis langage naturel, plan repair), `unified-planning` (portabilité cross-solveur), LOOP — *Learning to Plan* (state encoder + policy + value nets, 85.8% IPC coverage), LLM-Space-Reducer (LLM réducteur d'espace, position aicpp, trois bras mesurés) |
-| **Total** | **16** | **PRODUCTION=14, BETA=2** | Python 3.9+, kernel Python 3, solveurs : Fast Downward (Docker) + OR-Tools 9.8+ + unified-planning 1.1+ |
+| **Total** | **16** | **PRODUCTION=14, BETA=2** | Python 3.9+, kernel Python 3, solveurs : Fast Downward (`up-fast-downward`, ou Docker) + OR-Tools 9.8+ + unified-planning 1.1+ |
 
-> **Note sur la maturité.** Les notebooks `BETA=2` correspondent à `Planners-5b-Lean-Relaxation.ipynb` (companion natif du lake `planning_lean/` : la **preuve formelle 0-sorry** de l'admissibilité $h^{+} \leq h^{*}$ y est certifiée par `lake build`) et à `Planners-5c-Differentiel-Atteignabilite.ipynb` (nouveau, strate 7). Le statut `BETA` reflète la phase de relecture pédagogique (intégration au parcours d'apprentissage) plutôt qu'un défaut technique. Le déploiement industriel est validé.
+> **Note sur la maturité.** Les notebooks `BETA=2` correspondent à `Planners-05b-Lean-Relaxation-Lean.ipynb` (companion natif du lake `planning_lean/` : la **preuve formelle 0-sorry** de l'admissibilité $h^{+} \leq h^{*}$ y est certifiée par `lake build`) et à `Planners-05c-Differentiel-Atteignabilite-Python.ipynb` (nouveau, strate 7). Le statut `BETA` reflète la phase de relecture pédagogique (intégration au parcours d'apprentissage) plutôt qu'un défaut technique. Le déploiement industriel est validé.
 
-**Conformité C.1 — stubs d'exercice.** Les cellules de chaque notebook suivent les patterns conformes (jamais `raise NotImplementedError`) : `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`. Chaque notebook s'exécute end-to-end même avant résolution des exercices. Dépendances Python (cf `requirements.txt` racine) : `unified-planning>=1.1`, `networkx>=3.1`, `matplotlib>=3.7`, `numpy>=1.24`, `ortools>=9.8`, `torch>=2.0` (LOOP uniquement) ; optionnels LLM : `openai>=1.0`, `anthropic>=0.30`, `python-dotenv`, `pandas>=2.0`. **Docker** requis pour Fast Downward (port 8200). **Lean 4** (`elan`) requis pour `5b-Lean-Relaxation` via le sous-lake `planning_lean/` (toolchain `lean-toolchain` local). Côté pratique : `pip install -r requirements.txt` puis exécution kernel Python 3 standard. **Note : Planners ne contient pas de variante `student/` dédiée** (à la différence de Tweety ou Sudoku) ; les exercices sont intégrés directement dans les notebooks de la série, sous les labels `# Exercice` / `# Exemple guide` conformément à la convention contenu-based.
+**Conformité C.1 — stubs d'exercice.** Les cellules de chaque notebook suivent les patterns conformes (jamais `raise NotImplementedError`) : `pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`. Chaque notebook s'exécute end-to-end même avant résolution des exercices. Dépendances Python (cf `requirements.txt` de la série) : `unified-planning>=1.1`, `up-fast-downward>=1.0`, `up-pyperplan>=1.1`, `up-aries>=0.5`, `networkx>=3.1`, `matplotlib>=3.7`, `numpy>=1.24`, `ortools>=9.8`, `torch>=2.0` (LOOP uniquement) ; optionnels LLM : `openai>=1.0`, `anthropic>=0.30`, `python-dotenv`, `pandas>=2.0`. Fast Downward vient du paquet `up-fast-downward` ; le conteneur Docker (port 8200) est facultatif. **Lean 4** (`elan`) requis pour `5b-Lean-Relaxation` via le sous-lake `planning_lean/` (toolchain `lean-toolchain` local). Côté pratique : `pip install -r requirements.txt` puis exécution kernel Python 3 standard. **Note : Planners ne contient pas de variante `student/` dédiée** (à la différence de Tweety ou Sudoku) ; les exercices sont intégrés directement dans les notebooks de la série, sous les labels `# Exercice` / `# Exemple guide` conformément à la convention contenu-based.
 
 ---
 
@@ -784,18 +809,18 @@ L'infrastructure du dépôt fournit trois familles d'outils MCP qui soutiennent 
 
 1. **MCP Jupyter (`mcp__jupyter-papermill__*`)** — exécution programmée de notebooks dans un kernel Jupyter géré. **Note bug** : le mode async (`mode: "async"`) ignore `kernel_name` et bascule sur `python3` par défaut — re-exécution via `nbconvert --execute --ExecutePreprocessor.kernel_name=python3 --timeout=600` en contournement (cf issue #5211). Planners utilise Python 3 exclusivement (kernel dédié, pas d'IKVM).
 2. **Validation pre-commit** (`.pre-commit-config.yaml`) — `gitleaks` détecte les secrets inline ; le validateur notebook `validate_pr_notebooks.py` enforce C.1 (stubs sans `NotImplementedError`) et C.2 (notebooks commités AVEC outputs, `execution_count != null`). Toute PR Planners qui dégraderait l'un de ces contrats est bloquée en CI avant review.
-3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé inter-agents. Planners n'utilise pas QC Cloud directement, mais le notebook `Planners-12-LOOP.ipynb` (Learning to Plan) partage avec QC le même besoin de reproductibilité déterministe : un seed fixe, un benchmark reproductible, une mesure de couverture sur des jeux d'instances standardisés (IPC vs historique SPY).
+3. **MCP QC Cloud (`mcp__qc-mcp-lite__*`)** — backtest QuantConnect partagé inter-agents. Planners n'utilise pas QC Cloud directement, mais le notebook `Planners-12-LOOP-Python.ipynb` (Learning to Plan) partage avec QC le même besoin de reproductibilité déterministe : un seed fixe, un benchmark reproductible, une mesure de couverture sur des jeux d'instances standardisés (IPC vs historique SPY).
 
 **Parenté cross-lane** (5 colonnes) — Planners se situe au croisement de plusieurs séries du dépôt, chacune capturant un aspect différent du « transformer un but en action » :
 
 | Notebook Planners | Série parente | Pont conceptuel |
 |-------------------|---------------|-----------------|
-| `Planners-5b-Lean-Relaxation` | [Lean math](../Lean/) (et `planning_lean/` local) | Admissibilité $h^{+}$ prouvée formellement (lake 0-sorry) ; companion natif = pont intra-série simulation/proof |
-| `Planners-7-OR-Tools` | [Search](../../Search/) (CSP-1/2/6/8/9 marathon #4956) | CP-SAT = même moteur que CSP ; planification = CSP avec variables = actions |
-| `Planners-9-HTN` | [SmartContracts](../SmartContracts/) (planification déterministe d'opérations) | HTN/SHOP2 = décomposition hiérarchique ; Smart Contracts = décomposition vérifiable de transactions |
-| `Planners-10-LLM-Planning` | [Argument_Analysis](../Argument_Analysis/) (Semantic Kernel orchestration) | LLM-Planning via SK : prompting structuré → génération de plan → validation par solveur |
-| `Planners-11-Unified-Planning` | [Lean](../Lean/) + [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle PDDL ↔ ontologie OWL/SHACL : un domaine PDDL peut être annoté sémantiquement |
-| `Planners-12-LOOP` | [Probas](../../Probas/) (PyMC, Infer.NET) + [ML](../../ML/) (parité Python/.NET #4956) | Apprentissage par renforcement / imitation sur politiques de planification |
+| `Planners-05b-Lean-Relaxation-Lean` | [Lean math](../Lean/) (et `planning_lean/` local) | Admissibilité $h^{+}$ prouvée formellement (lake 0-sorry) ; companion natif = pont intra-série simulation/proof |
+| `Planners-07-OR-Tools-Python` | [Search](../../Search/) (CSP-1/2/6/8/9 marathon #4956) | CP-SAT = même moteur que CSP ; planification = CSP avec variables = actions |
+| `Planners-09-HTN-Python` | [SmartContracts](../SmartContracts/) (planification déterministe d'opérations) | HTN/SHOP2 = décomposition hiérarchique ; Smart Contracts = décomposition vérifiable de transactions |
+| `Planners-10-LLM-Planning-Python` | [ArgumentAnalysis](../ArgumentAnalysis/) (Semantic Kernel orchestration) | LLM-Planning via SK : prompting structuré → génération de plan → validation par solveur |
+| `Planners-11-Unified-Planning-Python` | [Lean](../Lean/) + [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle PDDL ↔ ontologie OWL/SHACL : un domaine PDDL peut être annoté sémantiquement |
+| `Planners-12-LOOP-Python` | [Probas](../../Probas/) (PyMC, Infer.NET) + [ML](../../ML/) (parité Python/.NET #4956) | Apprentissage par renforcement / imitation sur politiques de planification |
 
 **Effet de composition — Planners = carrefour action/représentation.** Là où GameTheory est le carrefour **simulation/proof inter-séries** (Python ⇄ Lean 4 sur des théorèmes économiques), Planners est le carrefour **simulation/proof intra-série** : le notebook `5b-Lean-Relaxation` et son lake `planning_lean/` natif démontrent qu'une même propriété (ici l'admissibilité d'une heuristique) peut être **observée empiriquement** dans le kernel Python 3 (notebook `5-Heuristics.ipynb`) ET **prouvée formellement** dans le kernel Lean 4 (`Admissibility.lean`). C'est le pattern de dualité rendu **interne à la série**, là où GameTheory le déploie **entre séries distinctes**. La séquence pédagogique : STRIPS → PDDL → Fast Downward → heuristiques → **preuve de l'admissibilité de la relaxation** → CP-SAT → temporel → HTN → LLM-Planning → LOOP. Le pipeline de la série aligne l'évolution paradigmatique du domaine (1971 STRIPS → 2024 Learning to Plan) sur la **frontière de preuve** (informelle → formelle).
 

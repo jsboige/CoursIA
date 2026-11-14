@@ -26,7 +26,7 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 
 | Document | Sujet |
 |---|---|
-| [life-sat-cost-frontier.md](life-sat-cost-frontier.md) | Frontière de coût reproductible du synthétiseur SAT de motifs Life : `FOUND`, `IMPOSSIBLE` borné et `TIMEOUT` honnête. |
+| [life-sat-cost-frontier.md → transients/2026-09-11-…](../transients/2026-09-11-life-sat-cost-frontier.md) | Frontière de coût du synthétiseur SAT de motifs Life (`FOUND`, `IMPOSSIBLE` borné, `TIMEOUT` honnête), campagne du 2026-09-11 — déplacé en lane transiente ; les règles de lecture durables vivent dans [life-components-schema.md](life-components-schema.md), section « Frontière de la synthèse bornée — trois verdicts, jamais deux » (vague 4 #14623) |
 
 ## i18n FR/EN (EPIC #4980)
 
@@ -42,8 +42,8 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 | [origami-reconnaissance.md](origami-reconnaissance.md) | Pli 1, sub-grains 3 (sources tierces, conformité) et 4 (emplacement) — reconnaissance préalable. |
 | [origami-pli1-mesures.md](origami-pli1-mesures.md) | Pli 1, sub-grain 1 — journal du build **hors CI** de l'enveloppe `differential_lean` : les trois petites fermetures, le témoin `#print axioms`, temps, mémoire et pièges de mesure (relevé du 2026-10-08). |
 | [darksnail/pli1-2-occlusion-triad-verif.md](darksnail/pli1-2-occlusion-triad-verif.md) | Pli 1.2, DarkSnail (EPIC #21310) — vérification du fichier `OcclusionTriad.lean` tel que publié : comptage sorry first-hand, verdict `INSUFFISANT`. |
-| [darksnail/pli2-lake-enveloppe-verdict.md](darksnail/pli2-lake-enveloppe-verdict.md) | Pli 2, DarkSnail (EPIC #21310) — reconstruction du lake d'enveloppe `OcclusionTriad` et verdict first-hand `INSUFFISANT_BLOQUANT` : le code reference des modules absents du depot upstream, donc la badge « 0 sorry » n'est pas falsifiable. Recommandation : arret du Pli 2 et pivot `so(M)`. **Prémisse falsifiée le 2026-10-29** (imports réparés upstream) — voir la ligne suivante. |
-| [darksnail/concern-2026-10-29-build-verification.md](darksnail/concern-2026-10-29-build-verification.md) | Réponse au Concern user du 2026-10-18 sur l'EPIC #21310 — build first-hand du contenu Lean amont à la tête du 2026-10-29 : **SUCCESS** (Mathlib v4.33.0, 0 sorry, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes), inventaire Python (41 357 lignes), assessment d'extension. La décision de rouvrir Pli 2 reste au coordinateur. |
+| [darksnail/pli2-lake-enveloppe-verdict.md](darksnail/pli2-lake-enveloppe-verdict.md) | Pli 2, DarkSnail (EPIC #21310) — reconstruction du lake d'enveloppe `OcclusionTriad` et verdict first-hand `INSUFFISANT_BLOQUANT` : le code reference des modules absents du depot upstream, donc la badge « 0 sorry » n'est pas falsifiable. Recommandation : arret du Pli 2 et pivot `so(M)`. **Prémisse falsifiée le 2026-10-29** (imports réparés upstream) — voir la ligne suivante. **Arbitrage 2026-11-08** : verdict caduc, Pli 2 rouvert borné — 2.1 livré (#23302), plis suivants repliés (reprise : issues ouvertes < 400). |
+| [darksnail/concern-2026-10-29-build-verification.md](darksnail/concern-2026-10-29-build-verification.md) | Réponse au Concern user du 2026-10-18 sur l'EPIC #21310 — build first-hand du contenu Lean amont à la tête du 2026-10-29 : **SUCCESS** (Mathlib v4.33.0, 0 sorry, 0 `sorryAx`, 0 `native_decide`, 67 théorèmes), inventaire Python (41 357 lignes), assessment d'extension. Pli 2 rouvert borné par l'arbitrage du 2026-11-08 (c.6725327653) : 2.1 livré, plis suivants repliés tant que issues ouvertes ≥ 400. |
 
 ## Organisation des lakes
 

@@ -76,8 +76,8 @@ layout: default
 | Embeddings (skip-gram) · vectoriel serveur (HNSW) | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) · [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
 | Automates finis, transducteurs | sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) (C#) |
 | CRF / structured prediction · parsing CFG/PCFG, CYK | [03_CRF_Etiquetage_Sequentiel](../../MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb) · [04_PCFG_CYK_Parsing](../../MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb) — gaps comblés (#16252/#16253) |
-| Sémantique, graphes de connaissances | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) |
-| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) |
+| Sémantique, graphes de connaissances | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) |
+| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) |
 | Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) |
 | Attention (MHA, MQA, GQA, SWA) | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) |
 | Agents conversationnels | [03-Chat-Streaming-QA-OWUI](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb) · [configurer-chatbots](../../MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb) |
@@ -395,7 +395,7 @@ de ses parties.
 
 **Entraînement** : à partir d'exemples annotés (parallélisme syntaxe-sémantique).
 
-*Notebooks : [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) (représenter le sens en graphe de connaissances RDF) · [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) (raisonner dessus : les raisonneurs de logiques de description)*
+*Notebooks : [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) (représenter le sens en graphe de connaissances RDF) · [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) (raisonner dessus : les raisonneurs de logiques de description)*
 
 *Figure historique (sémantique compositionnelle)* : extrait du PPTX original 2018.
 
@@ -434,7 +434,7 @@ image: ./images/slide_24_img_765dfaa8.png
 
 **Applications** : détection de sophismes, journalisme automatisé, aide à la décision.
 
-*Notebooks : [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (détection de sophismes par taxonomie : 7 familles, descente dans la ramification) · [AA-2-formal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-05-Formal-Verification-Python.ipynb) (l'analyse formelle : graphes d'arguments et acceptabilité) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) (Truth Maintenance System : rétractation et cascade non-monotone sur les justifications IN/OUT)*
+*Notebooks : [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) (détection de sophismes par taxonomie : 7 familles, descente dans la ramification) · [AA-2-formal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-05-Formal-Verification-Python.ipynb) (l'analyse formelle : graphes d'arguments et acceptabilité) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) (Truth Maintenance System : rétractation et cascade non-monotone sur les justifications IN/OUT)*
 
 *Figure historique (AIF / RDF)* : extrait du PPTX original 2018.
 
@@ -621,8 +621,8 @@ layout: section
 | Automates finis, transducteurs | sous-module [SMT/Automata](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Automata/) |
 | IR : métriques, reranking | [02-Retrieval-Avance](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb) · [08-KernelMemory-Hybrid-Search](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb) |
 | Embeddings, sémantique vectorielle | [03-Embeddings-From-Scratch](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb) · [05b-Stockage-Vectoriel-Serveur](../../MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/05b-Stockage-Vectoriel-Serveur.ipynb) |
-| Sémantique, graphes | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Python-Reasoners](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Python-Reasoners.ipynb) |
-| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentation-06-JTMS-Python.ipynb) |
+| Sémantique, graphes | [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-13-Reasoners-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-13-Reasoners-Python.ipynb) |
+| Fouille d'arguments, sophismes | [AA-1-informal](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-02-Fallacies-Detection-Python.ipynb) · [AA-5-jtms](../../MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentation-06-JTMS-Python.ipynb) |
 | Reconnaissance de la parole | [01-2-OpenAI-Whisper-STT](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) · [01-4-Whisper-Local](../../MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb) · [04-2-Transcription-Pipeline](../../MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-2-Transcription-Pipeline.ipynb) |
 | RNN, LSTM, seq2seq, attention | [TV-00b-Attention-Variants](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) · [10b_Inference_Mechanics](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) |
 | Transformers, LLMs | [11_Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) · [13_Agentic_Orchestration](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) |
@@ -652,7 +652,7 @@ layout: section
 - Bitcoin, DN/Encog, machine learning
 
 > Ces projets sont **historiques** (2018). Pour les projets modernes équivalents,
-> voir le syllabus courant (`GradeBookApp/`, racine du dépôt — moteur de notation, pas le syllabus).
+> voir le syllabus courant (`dotnet/GradeBookApp/`, racine du dépôt — moteur de notation, pas le syllabus).
 
 ---
 

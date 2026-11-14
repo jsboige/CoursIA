@@ -1,5 +1,7 @@
 # Versions de bibliotheques chargees par les carnets
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Organe : `scripts/notebook_tools/check_lib_versions.py` — manifeste :
 `scripts/notebook_tools/lib_versions_manifest.json` — issue : #23073.
 
@@ -48,6 +50,7 @@ Trois classes, sur les **cellules code** des carnets :
 | version locale | un carnet qui **redeclare** un symbole que l'organe de serie possede (`TWEETY_VERSION = "1.28"`) |
 | provisionnement etranger | une URL de telechargement hors de l'organe de serie (ici `tweetyproject.org/builds/`) |
 | epinglage flottant | `#r "nuget: Google.OrTools"` ou `pip install mealpy` — la version n'est pas fixee (cf #23086) |
+| version **chargeee** | la version reellement chargee, lue dans les **sorties commitees** (`torch 2.13.0+cu126`) — pour les bibliotheques qu'aucune cellule n'epingle (cf la section suivante) |
 
 ## Les deux modes, et pourquoi ils diffèrent
 
@@ -99,6 +102,67 @@ l'allowlist est ce qui eteint le constat, pour les carnets nommes, et elle
 porte elle aussi un motif. Une entree d'allowlist **sans motif ecrit** est
 refusee au chargement du manifeste : une allowlist sans motif n'est pas une
 justification.
+
+## Version **chargeee** : quand l'epinglage n'existe pas
+
+Toutes les bibliotheques du manifeste ne sont pas epinglees dans le corpus.
+`torch` et `numpy` en sont l'exemple : la serie RL declare `torch>=2.0` dans
+son `requirements.txt`, jamais dans une cellule, et la version reellement
+chargee ne se lit que dans les **sorties commitees**.
+
+Une bibliotheque declaree `observe_outputs: true` (ecosysteme `observed`) est
+donc relevee dans les sorties, et non dans les lignes d'epinglage :
+
+```json
+{
+  "id": "torch",
+  "ecosystem": "observed",
+  "observe_outputs": true,
+  "canonical_by_series": [
+    { "series": "RL", "canonical": "2.13.0" },
+    {
+      "series": "ML/DataScienceWithAgents/04-Vision",
+      "canonical_source": "artifact",
+      "organ_path": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt"
+    }
+  ]
+}
+```
+
+Deux mecanismes cohabitent :
+
+- **`canonical_by_series`** — la version attendue peut differer d'une serie a
+  l'autre. Le **prefixe le plus long** gagne (`RL/PostTraining` decrit une
+  sous-serie plus fine que `RL`), et la frontiere d'un prefixe est un
+  **segment** : `RL` ne couvre pas `RLance`. Une serie non couverte retombe
+  sur la canonique unique de la bibliotheque.
+- **`canonical_source: "artifact"`** — la version est lue dans un artefact de
+  la serie au moment de l'execution (`torch==2.14.0` dans le `requirements.txt`
+  de `04-Vision`). Le manifeste **pointe**, il ne recopie pas. Un `>=` est
+  lu comme un plancher.
+
+Pour une bibliotheque **observee**, la canonique d'une serie est un
+**plancher de convergence**, pas une version exacte : la serie tourne
+legitimement sous plusieurs versions voisines (2.13 et 2.14 dans la serie RL,
+2.13 a 2.14.1 dans `04-Vision`), et elle converge vers le haut. Seul un
+version **inferieure** au plancher est un recul ; une version superieure n'est
+pas un defaut. C'est ce qui distingue cette semantique de celle des
+epinglages, ou un ecart dans les deux sens est signale.
+
+Le tag de construction local (`+cu126`) est **retire** avant la comparaison :
+`2.14.0+cu126` est la meme release que `2.14.0`. Sans cette normalisation, le
+comparateur de versions traiterait le suffixe `+` comme un marqueur de
+pre-publication et classerait la quasi-totalite des carnets en recul.
+
+La version relevee doit avoir **trois composantes numeriques** : la notation
+scientifique (`2.22e-16`) et les metriques (`numpy=0.4014 | torch=0.4007`)
+ne sont pas des versions.
+
+Le recensement sort une section **« Carnets en dessous de la canonique de leur
+serie »**, qui nomme le carnet, la serie, la version chargee et la canonique
+applicable. C'est la liste que la convergence traite ; la garde de PR, elle,
+ne signale que ce qu'une PR **introduit** (cf #23941 : un carnet re-execute
+sous 2.9.0 alors que la base portait 2.14.0).
 
 Les **decompils ne sont jamais recopies** dans le manifeste ni dans cette
 page : le nombre de carnets par version, les epinglages flottants et le
@@ -233,6 +297,7 @@ bloque rien par lui-meme, il dit que la mesure est a refaire.
 ## Voir aussi
 
 - #23073 — l'issue de cadrage (constat, table de dispersion, criteres).
+- #23941 — le recul que l'organe laissait passer (RL-01c re-execute sous torch 2.9.0) : la cause est que torch n'etait pas au manifeste.
 - #23047 — le cas declencheur (re-execution de l'archive Tweety).
 - #12789 — le passage de `builds/` (404) vers Maven Central.
 - #19673 — l'alignement IKVM 8.14.0 -> 8.15.0, incomplet sur six carnets.

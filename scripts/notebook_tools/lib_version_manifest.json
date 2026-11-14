@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "measured_at": {
+    "commit": "4006d171a053ef411f2b1ff468615b7a73dd95ba",
+    "date": "2026-11-12",
+    "corpus": "1772 carnets suivis par git, 217 litteraux de version"
+  },
+  "comment": [
+    "Versions canoniques des bibliotheques chargees par les carnets (#23073, tranche 1).",
+    "Lue par scripts/notebook_tools/notebook_lib_versions.py, qui recense les litteraux",
+    "de version des cellules de code et classe chaque site contre cette table.",
+    "",
+    "`canonical` porte la valeur quand aucune autre surface ne la fixe deja.",
+    "`canonical_from` pointe vers l'organe de serie qui la fixe (fichier + regex) :",
+    "la valeur n'est PAS recopiee ici, sinon les deux surfaces divergent (exigence 1",
+    "de l'issue).",
+    "`basis` dit d'ou vient le choix. Regle appliquee dans cette tranche : la canonique",
+    "n'est fixee que lorsque la version MAJORITAIRE est aussi la plus RECENTE (la",
+    "convergence monte alors le minoritaire, sans arbitrage de direction). Quand la",
+    "majorite est plus ancienne, ou qu'il y a egalite, `canonical` reste null : choisir",
+    "la direction est un arbitrage, pas une deduction.",
+    "",
+    "Le manifeste ne recense PAS les 62 paquets du corpus : un paquet absent est",
+    "classe UNKNOWN, ce qui dit exactement ce qu'il faut savoir -- il n'est pas encore",
+    "gouverne. Ajouter une entree sans canonique mesuree ne gouvernerait rien.",
+    "`allowlist` porte les ecarts arbitres. Chaque entree exige un motif ecrit et le",
+    "perimetre exact (notebooks) ; sans motif, l'ecart reste CONVERGE."
+  ],
+  "libraries": {
+    "IKVM": {
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "basis": "precedent : #19673 (fermee) a aligne 8.14.0 -> 8.15.0 ; 8.15.0 est aussi majoritaire (20 carnets) et plus recent que 8.14.0 (6 carnets)"
+    },
+    "IKVM.Image": {
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "basis": "suit IKVM : 8.15.0 majoritaire (18 carnets) contre 8.14.0 (5 carnets), meme precedent #19673"
+    },
+    "pythonnet": {
+      "ecosystem": "nuget",
+      "canonical": "3.1.0",
+      "basis": "seule version sur main au 4006d171a05 (21 carnets) ; les 7 sites en 3.0.5 mesures le 2026-10-28 ont converge"
+    },
+    "Microsoft.ML": {
+      "ecosystem": "nuget",
+      "canonical": "5.0.0",
+      "basis": "majoritaire (11 carnets) et plus recent que 3.0.0 (1 carnet)"
+    },
+    "SkiaSharp": {
+      "ecosystem": "nuget",
+      "canonical": "3.119.4",
+      "basis": "majoritaire (10 carnets) et plus recent que 2.88.3 (1 carnet)"
+    },
+    "SkiaSharp.NativeAssets.Linux.NoDependencies": {
+      "ecosystem": "nuget",
+      "canonical": "3.119.4",
+      "basis": "paquet compagnon de SkiaSharp : meme version, majoritaire (10 carnets) et plus recente que 2.88.3 (1 carnet)"
+    },
+    "Google.OrTools": {
+      "ecosystem": "nuget",
+      "canonical": "9.15.6755",
+      "basis": "seule version sur main au 4006d171a05 (13 carnets) ; la dispersion 9.11.4210 (11) / 9.15.6755 (2) mesuree le 2026-10-28 a converge vers la plus recente"
+    },
+    "Microsoft.ML.AutoML": {
+      "ecosystem": "nuget",
+      "canonical": "0.23.0",
+      "basis": "seule version sur main au 4006d171a05 (3 carnets) ; la dispersion 0.22.3 / 0.23.0 du 2026-10-28 a converge"
+    },
+    "dotNetRDF": {
+      "ecosystem": "nuget",
+      "canonical": null,
+      "basis": "ARBITRAGE REQUIS : la majorite est la plus ANCIENNE (3.4.1, 13 carnets) contre 3.5.2 (1 carnet, plus recent). Fixer la canonique, c'est choisir entre converger vers le bas et monter la serie -- decision de l'exigence 4, pas de la tranche 1."
+    },
+    "CsvHelper": {
+      "ecosystem": "nuget",
+      "canonical": null,
+      "basis": "ARBITRAGE REQUIS : 27.1.1 et 33.0.1 a egalite (1 carnet chacune)"
+    },
+    "Microsoft.Extensions.DependencyInjection": {
+      "ecosystem": "nuget",
+      "canonical": null,
+      "basis": "ARBITRAGE REQUIS : 10.0.0 et 9.0.3 a egalite (1 carnet chacune) ; dispersion absente de la mesure du 2026-10-28"
+    },
+    "torch": {
+      "ecosystem": "pip",
+      "canonical": "2.5.1",
+      "basis": "seule valeur epinglee sur main au 4006d171a05 (1 carnet)"
+    },
+    "lean-dojo": {
+      "ecosystem": "pip",
+      "canonical": "2.2.0",
+      "basis": "seule valeur epinglee sur main au 4006d171a05 (1 carnet)"
+    },
+    "Tweety": {
+      "ecosystem": "tweety",
+      "canonical_from": {
+        "file": "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/download_tweety_tools.py",
+        "regex": "TWEETY_VERSION\\s*=\\s*\"([^\"]+)\""
+      },
+      "basis": "l'organe de serie fixe deja la version ; le manifeste ne la recopie pas (exigence 1 de #23073)"
+    }
+  },
+  "allowlist": [
+    {
+      "package": "Tweety",
+      "version": "1.28",
+      "notebooks": [
+        "MyIA.AI.Notebooks/SymbolicAI/_archive/Tweety.ipynb"
+      ],
+      "reason": "mention documentaire, pas un provisionnement : la ligne est un COMMENTAIRE de la cellule 6 qui rappelle l'URL morte `tweetyproject.org/builds/1.28/` pour expliquer pourquoi le carnet ne l'utilise plus. Aucun telechargement n'est emis."
+    }
+  ]
+}

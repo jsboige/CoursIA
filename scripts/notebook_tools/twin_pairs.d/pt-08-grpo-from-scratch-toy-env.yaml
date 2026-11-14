@@ -1,0 +1,11 @@
+- name: "PT 08 GRPO from scratch toy env"
+  family: GenAI/PostTraining
+  python: MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/PostTraining/PT_08_grpo_from_scratch_toy_env-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Calculs de reseaux, gradients et Adam effectues par PyTorch et TorchSharp/libtorch natifs ; vrai solveur Z3 des deux cotes. Les objectifs REINFORCE, PPO et GRPO sont depliés pedagogiquement from scratch."
+  known_differences:
+    - "Les generateurs NumPy et System.Random et les kernels peuvent produire des trajectoires et recompenses differentes ; budgets conserves, aucune egalite numerique exigee."
+    - "Le code C# utilise Z3 4.12.2 via son binaire Linux issu de z3-solver et Z3_NATIVE_LIBRARY ; la recompense tensorielle d'entrainement est verifiee par 2400 checks SMT distincts."
+    - "GRPO est un jouet sans critic, reference ni KL, avec 96 prompts one-hot et sans holdout ; aucune generalisation ou economie memoire LLM universelle n'est conclue."

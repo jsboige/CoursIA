@@ -1360,7 +1360,7 @@ class TestCorpusScope:
             ("Argument_Analysis_Agentic-0-init_agent", "setup"),
             ("Lean-03-Propositions-Proofs-Lean", "lean"),
             ("GameTheory-11b-Lean-BayesianGamesExt-Lean", "lean"),
-            ("DecInfer-09-Lean-Gittins", "lean"),
+            ("DecInfer-07b-Lean-Gittins", "lean"),
         ]:
             kind, threshold = _classify(tmp_path / "Course" / f"{stem}.ipynb", standard_threshold=3, root=tmp_path)
             assert kind == expect, stem

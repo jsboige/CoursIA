@@ -7,13 +7,13 @@ name: dotnet-Shared-Tests
 #
 # Bornes mesurées firsthand (worktree origin/main 3881b766a, 2026-09-04,
 # SDK 9.0.317 local) :
-#   - `dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj` =
+#   - `dotnet test dotnet/MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj` =
 #     **56 tests, 0 échec** (482 ms) — baseline verte avant câblage.
 #   - Dépendances : xunit 2.9.2 + Microsoft.NET.Test.Sdk 17.12.0 +
 #     ProjectReference ../MyIA.AI.Shared — zéro service externe, zéro
 #     secret, exécutable sur runner éphémère.
 #   - Le projet est déjà référencé dans MyIA.AI.Shared.sln ET
-#     MyIA.CoursIA.sln (vérifié grep : 1 occurrence chacun) — aucune
+#     dotnet/MyIA.CoursIA.sln (vérifié grep : 1 occurrence chacun) — aucune
 #     adaptation .sln nécessaire malgré la mention #5214.
 #
 # Linux + Windows dès le premier câblage : exigence explicite du dispatch
@@ -34,14 +34,14 @@ on:
   push:
     branches: [main]
     paths:
-      - 'MyIA.AI.Shared/**'
-      - 'MyIA.AI.Shared.Tests/**'
+      - 'dotnet/MyIA.AI.Shared/**'
+      - 'dotnet/MyIA.AI.Shared.Tests/**'
       - '.github/workflows/dotnet-Shared.Tests.yml'
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
-      - 'MyIA.AI.Shared/**'
-      - 'MyIA.AI.Shared.Tests/**'
+      - 'dotnet/MyIA.AI.Shared/**'
+      - 'dotnet/MyIA.AI.Shared.Tests/**'
       - '.github/workflows/dotnet-Shared.Tests.yml'
   workflow_dispatch:
 
@@ -49,12 +49,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: dotnet-shared-tests-${{ github.ref }}
+  group: dotnet-shared-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   dotnet-shared-tests-linux:
     name: Shared.Tests dotnet (ubuntu-latest, 56 floor)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
     # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
@@ -121,10 +122,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
           cache: true
-          cache-dependency-path: MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj
+          cache-dependency-path: dotnet/MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj
 
       - name: Run Shared.Tests
-        run: dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --nologo
+        run: dotnet test dotnet/MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --nologo
 
       # Compteur floor-guard (sémantique ict/gametheory-tests.yml : éviter
       # le run vert alors que N tests ont silencieusement disparu du chemin
@@ -144,7 +145,7 @@ jobs:
         env:
           DOTNET_CLI_UI_LANGUAGE: en
         run: |
-          LISTED=$(dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
+          LISTED=$(dotnet test dotnet/MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
           if [ -z "$LISTED" ] || [ "$LISTED" -eq 0 ]; then
             echo "::error::--list-tests n'a renvoyé aucun test — la collecte a planté (à distinguer d'une baisse de couverture)."
             exit 1
@@ -158,6 +159,7 @@ jobs:
 
   dotnet-shared-tests-windows:
     name: Shared.Tests dotnet (windows-latest, 56 floor)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: windows-latest
     timeout-minutes: 15
     env:
@@ -177,10 +179,10 @@ jobs:
         with:
           dotnet-version: '9.0.x'
           cache: true
-          cache-dependency-path: MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj
+          cache-dependency-path: dotnet/MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj
 
       - name: Run Shared.Tests
-        run: dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --nologo
+        run: dotnet test dotnet/MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --nologo
 
       - name: Collection floor-guard (56)
         if: always()
@@ -188,7 +190,7 @@ jobs:
         env:
           DOTNET_CLI_UI_LANGUAGE: en
         run: |
-          LISTED=$(dotnet test MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
+          LISTED=$(dotnet test dotnet/MyIA.AI.Shared.Tests/MyIA.AI.Shared.Tests.csproj --list-tests --nologo 2>/dev/null | grep -cE '^    [A-Za-z_]')
           if [ -z "$LISTED" ] || [ "$LISTED" -eq 0 ]; then
             echo "::error::--list-tests n'a renvoyé aucun test — la collecte a planté (à distinguer d'une baisse de couverture)."
             exit 1

@@ -12,6 +12,10 @@
 set -e
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+ELAN_HOME="${ELAN_HOME:-$HOME/.elan}"
+VENV_PATH="${LEAN4_VENV:-$HOME/.lean4-venv}"
+REPL_DIR="${LEAN4_REPL_DIR:-$HOME/repl}"
+WRAPPER_PATH="${LEAN4_WRAPPER_PATH:-$HOME/.lean4-kernel-wrapper.py}"
 
 # Version de Lean des lakes du depot, lue dans game_theory_lean/lean-toolchain
 # (la version epinglee par la grande majorite des lakes). Le REPL doit etre
@@ -52,19 +56,24 @@ fi
 # 2. Install elan (Lean version manager)
 log_info "Installation de elan (gestionnaire de versions Lean)..."
 
-if [ -d "$HOME/.elan" ]; then
+if [ -x "$ELAN_HOME/bin/elan" ]; then
     log_warn "elan est deja installe. Mise a jour..."
-    source "$HOME/.elan/env"
+    [ ! -f "$ELAN_HOME/env" ] || source "$ELAN_HOME/env"
     elan self update || true
 else
+    export ELAN_HOME
     curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
-    source "$HOME/.elan/env"
+    [ ! -f "$ELAN_HOME/env" ] || source "$ELAN_HOME/env"
 fi
+export ELAN_HOME
+export PATH="$ELAN_HOME/bin:$PATH"
 
 # Add to .bashrc if not already there
-if ! grep -q "elan/env" ~/.bashrc 2>/dev/null; then
-    echo 'source ~/.elan/env' >> ~/.bashrc
+if [ "$ELAN_HOME" = "$HOME/.elan" ] && ! grep -q "elan/env" ~/.bashrc 2>/dev/null; then
+    echo 'source "$HOME/.elan/env"' >> ~/.bashrc
     log_info "elan ajoute au .bashrc"
+elif [ "$ELAN_HOME" != "$HOME/.elan" ]; then
+    log_info "ELAN_HOME personnalise: sourcez $ELAN_HOME/env dans votre shell si besoin"
 fi
 
 # 3. Install Lean 4 (version des lakes du depot)
@@ -76,7 +85,6 @@ LEAN_VERSION=$(lean --version)
 log_info "Lean installe: $LEAN_VERSION"
 
 # 4. Create Python virtual environment for lean4_jupyter
-VENV_PATH="$HOME/.lean4-venv"
 log_info "Creation de l'environnement Python: $VENV_PATH"
 
 if [ -d "$VENV_PATH" ]; then
@@ -93,21 +101,25 @@ source "$VENV_PATH/bin/activate"
 # fork lance le REPL directement avec le LEAN_PATH du lake, ce qui permet
 # d'importer ses modules. Source de verite de l'URL et du tag :
 # FORK_URL / FORK_TAG dans scripts/lean/setup_native_lean4_import.py.
-LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+https://github.com/jsboige/lean4_jupyter.git@v0.0.1-native-import"
+LEAN4_JUPYTER_SPEC="lean4_jupyter @ git+https://github.com/jsboige/lean4_jupyter.git@v0.0.3-launch-errors"
 log_info "Installation de lean4_jupyter (fork du depot) et dependances..."
 pip install --upgrade pip
 pip install ipykernel pyyaml "$LEAN4_JUPYTER_SPEC"
+# pip remplace un fork deja installe quand sa version change, mais pas quand
+# seul le tag change a version egale : il le tient alors pour satisfait
+# (mesure, pip 24). --force-reinstall couvre ce cas ; --no-deps laisse en
+# place les dependances que la ligne precedente a installees.
+pip install --force-reinstall --no-deps "$LEAN4_JUPYTER_SPEC"
 
 # 6. Install REPL (required by lean4_jupyter)
 log_info "Installation du REPL Lean..."
 
-REPL_DIR="$HOME/repl"
 if [ -d "$REPL_DIR" ]; then
     log_warn "REPL existe deja. Mise a jour..."
     cd "$REPL_DIR"
 else
-    cd "$HOME"
-    git clone https://github.com/leanprover-community/repl.git
+    mkdir -p "$(dirname -- "$REPL_DIR")"
+    git clone https://github.com/leanprover-community/repl.git "$REPL_DIR"
     cd "$REPL_DIR"
 fi
 # Tag du REPL aligne sur la version des lakes (voir LEAN_TOOLCHAIN plus haut)
@@ -125,9 +137,9 @@ lake build
 # Copy to PATH
 REPL_BIN="$REPL_DIR/.lake/build/bin/repl"
 if [ -f "$REPL_BIN" ]; then
-    mkdir -p "$HOME/.elan/bin"
-    cp "$REPL_BIN" "$HOME/.elan/bin/"
-    log_info "REPL copie vers ~/.elan/bin/"
+    mkdir -p "$ELAN_HOME/bin"
+    cp "$REPL_BIN" "$ELAN_HOME/bin/"
+    log_info "REPL copie vers $ELAN_HOME/bin/"
 else
     log_error "REPL non trouve apres compilation"
     exit 1
@@ -145,11 +157,12 @@ fi
 # Le wrapper est canonique : copie directe depuis le depot. Aucun heredoc
 # mort ne doit reintroduire de logique obsolete ; le source est versionne
 # et revu dans MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/lean4-kernel-wrapper.py.
-cp "$CANONICAL_WRAPPER" "$HOME/.lean4-kernel-wrapper.py"
+mkdir -p "$(dirname -- "$WRAPPER_PATH")"
+cp "$CANONICAL_WRAPPER" "$WRAPPER_PATH"
 log_info "Wrapper canonique copie depuis le depot"
 
-chmod +x "$HOME/.lean4-kernel-wrapper.py"
-log_info "Wrapper cree: ~/.lean4-kernel-wrapper.py"
+chmod +x "$WRAPPER_PATH"
+log_info "Wrapper cree: $WRAPPER_PATH"
 
 # 8. Hors WSL : enregistrer le kernel Jupyter `lean4-wsl` pointant vers le venv
 #    et le wrapper (sous WSL, c'est setup_lean4_kernel.ps1 qui l'enregistre cote Windows)
@@ -164,9 +177,13 @@ if [ "$IS_WSL" -eq 0 ]; then
 {
   "argv": [
     "$VENV_PATH/bin/python3",
-    "$HOME/.lean4-kernel-wrapper.py",
+    "$WRAPPER_PATH",
     "-f", "{connection_file}"
   ],
+  "env": {
+    "ELAN_HOME": "$ELAN_HOME",
+    "LEAN4_VENV": "$VENV_PATH"
+  },
   "display_name": "Lean 4",
   "language": "lean4"
 }
@@ -181,11 +198,11 @@ log_info "Verification de l'installation..."
 
 echo ""
 echo "--- Test REPL ---"
-echo '{"cmd": "#eval 2 + 2"}' | repl
+echo '{"cmd": "#eval 2 + 2"}' | "$ELAN_HOME/bin/repl"
 
 echo ""
 echo "--- Test lean4_jupyter ---"
-python3 -c "import lean4_jupyter; print(f'lean4_jupyter OK')"
+"$VENV_PATH/bin/python3" -c "import lean4_jupyter; print('lean4_jupyter OK')"
 
 echo ""
 echo "=============================================="

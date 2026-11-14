@@ -4,7 +4,7 @@ NOTICE — CoursIA `data/argumentum_scenarii_cards.csv`
 Ce fichier est une copie verbatim du fichier amont d'Argumentum
 `Cards/Scenarii/Argumentum Scenarii - Cards.csv` au commit de sous-module
 **9038690dd8a329dadfc2fdea587f1b87130cf861** (le pin de
-`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum` sur `main` au
+`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum` sur `main` au
 moment de la resynchronisation, 2026-11-03).
 
 Dépôt source      : https://github.com/ArgumentumGames/Argumentum
@@ -35,7 +35,7 @@ produit cartésien Scénarii × taxonomies Argumentum, sur décision owner du
 2026-08-22 : « CoursIA a besoin de tout le matériel, toute les taxonomies en
 entier (pas juste les cartes), ainsi que tous les scenarii pour faire le
 produit cartésien ». Les deux taxonomies sont déjà copiées dans
-`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/` avec leurs propres
+`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/` avec leurs propres
 NOTICE ; ce fichier est la troisième source.
 
 Licence — CC BY-SA 4.0, marque tranchée par l'owner le 2026-09-21
@@ -49,7 +49,7 @@ Licence — CC BY-SA 4.0, marque tranchée par l'owner le 2026-09-21
    énuméré (5 fichiers de texte des cartes + 2 ontologies OWL) ;
    `Cards/Scenarii/Argumentum Scenarii - Cards.csv` en fait partie. Le code
    du dépôt reste sous **LGPL-3.0** (fichier `LICENSE` ; textes LGPL-3.0 et
-   GPL-3 attachés dans `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/`
+   GPL-3 attachés dans `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/`
    conformément à la section 4 de la LGPL v3).
 2. Les icônes cc/by/$/sa du pied des cartes imprimées — qui se lisaient
    **BY-NC-SA** et motivaient la lecture prudente antérieure de ce NOTICE —

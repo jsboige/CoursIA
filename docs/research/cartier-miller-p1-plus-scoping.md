@@ -175,8 +175,8 @@ Aucune divergence ⇒ **P1+ GROUND TRUTH 92 ATTEINT** (les 92 cross-checks ont �
 | `scripts/cartier_miller/generate_p1_plus_truth.py` | Vendor verbatim `pilot.py` + `elliptic_prefix.py`, exécute Cornacchia+quarter sur les 92 premiers, produit JSON+CSV |
 | `scripts/cartier_miller/compare_to_upstream.py` | Diff vs `harvey_validation.json` upstream, sortie structurée |
 | `docs/research/cartier-miller-p1-plus-results.md` | Rapport ground truth 92 — colonne PASS/PARTI par premier, durée par backend, smells |
-| `example_results/p1_plus_python_validation.json` | Sortie du runner Python, format compatible upstream |
-| `example_results/p1_plus_python_truth.csv` | Tableau (p, L_max, stopping_indices, exact_binomial, quarter_applicable) |
+| `scripts/cartier_miller/example_results/p1_plus_python_validation.json` | Sortie du runner Python, format compatible upstream |
+| `scripts/cartier_miller/example_results/p1_plus_python_truth.csv` | Tableau (p, L_max, stopping_indices, exact_binomial, quarter_applicable) |
 
 **Hors scope P1+** (à P2+) : formalisation Lean/Mathlib des théorèmes (P2.c), comparaison vs Sage 10.8 natif (P4 cross-validation externe), extension à 500 premiers via `make_primes(count=500)` (P5 stress).
 

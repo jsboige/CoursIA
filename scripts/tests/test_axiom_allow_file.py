@@ -26,7 +26,9 @@ sys.path.insert(0, str(REPO / "scripts" / "lean"))
 from allow_list import parse_allow  # noqa: E402
 
 CONWAY_FILE = REPO / "scripts" / "lean" / "allow_axioms_conway.txt"
-CONWAY_WF = REPO / ".github" / "workflows" / "lean-conway.yml"
+CONWAY_WF = REPO / ".github" / "workflows" / "lean-conway.yml"  # supprime (PR #25256)
+CONWAY_MANIFEST = REPO / "scripts" / "lean" / "ci_lakes.json"
+MATRIX_WF = REPO / ".github" / "workflows" / "lean-ci-matrix.yml"
 ANCHOR_DOC = REPO / "docs" / "lean" / "lean-anchor-naming.md"
 DOCS_README = REPO / "docs" / "README.md"
 LEAN_SERVER = (
@@ -250,31 +252,41 @@ def test_doc_count_matches_allow_file():
 
 
 def test_workflow_count_matches_allow_file():
-    """Le compte du commentaire workflow est mesuré contre le même fichier."""
-    text = CONWAY_WF.read_text(encoding="utf-8")
+    """Le compte du commentaire matrix (porteur depuis la migration conway,
+    PR #25256) est mesuré contre le même fichier."""
+    text = MATRIX_WF.read_text(encoding="utf-8")
     matches = WORKFLOW_COUNT_RE.findall(text)
-    assert len(matches) == 1
-    assert int(matches[0]) == len(_conway_file_names())
+    assert matches, (
+        "le bloc commentaire conway de lean-ci-matrix.yml doit porter le "
+        "compte '# allow-axioms: N native_decide axioms' mesure contre le "
+        "fichier -- porteur migre depuis lean-conway.yml supprime")
+    assert all(int(m) == len(_conway_file_names()) for m in matches), (
+        "un compte de commentaire matrix derive du fichier parsé")
 
 
-# ------------------------------------------------- le cablage du workflow
+# ------------------------------------------- le cablage (porteur matriciel)
+
+
+def _conway_manifest_entry() -> dict:
+    import json
+    manifest = json.loads(CONWAY_MANIFEST.read_text(encoding="utf-8"))
+    return next(e for e in manifest["lakes"] if e["lake"] == "conway")
 
 
 def test_workflow_audit_job_points_at_the_file():
-    text = CONWAY_WF.read_text(encoding="utf-8")
-    refs = re.findall(r'allow-axioms:\s*"([^"]+)"', text)
-    assert "@scripts/lean/allow_axioms_conway.txt" in refs
-    # le bloc proof-integrity-audit (le job des 79 noms) pointe au fichier
-    m = re.search(
-        r"proof-integrity-audit:.*?allow-axioms:\s*\"([^\"]+)\"",
-        text,
-        re.DOTALL,
-    )
-    assert m is not None
-    assert m.group(1) == "@scripts/lean/allow_axioms_conway.txt"
+    """Le job des 79 noms vit desormais dans l'entree manifeste conway : la
+    cle `axiom-allow-axioms` pointe au fichier source de verite."""
+    entry = _conway_manifest_entry()
+    assert entry.get("axiom-allow-axioms") == "@scripts/lean/allow_axioms_conway.txt"
 
 
 def test_workflow_no_longer_carries_an_inline_native_decide_list():
-    text = CONWAY_WF.read_text(encoding="utf-8")
-    inline = [s for s in re.findall(r'allow-axioms:\s*"([^"]+)"', text) if "native_decide" in s]
-    assert inline == []
+    """Aucune liste inline native_decide ne revient, ni au manifeste ni au
+    dispatcher matriciel : la source de verite reste le fichier."""
+    manifest_text = CONWAY_MANIFEST.read_text(encoding="utf-8")
+    matrix_text = MATRIX_WF.read_text(encoding="utf-8")
+    for label, text in (("ci_lakes.json", manifest_text),
+                        ("lean-ci-matrix.yml", matrix_text)):
+        inline = [s for s in re.findall(r'allow-axioms:\s*"([^"]+)"', text)
+                  if "native_decide" in s]
+        assert inline == [], f"{label}: liste inline native_decide interdite"

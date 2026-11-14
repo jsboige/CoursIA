@@ -320,6 +320,42 @@ def test_task_install_never_asks_schtasks_to_change_the_run_level(prof, monkeypa
     assert [c for c in schtasks if "/Create" in c and "/XML" in c], schtasks
 
 
+def test_task_install_cli_dry_run_outputs_validated_xml_without_side_effects(
+    prof, monkeypatch, capsys,
+):
+    """Le dry-run doit montrer le document qui sera inscrit, après validation,
+    sans demander l'élévation, écrire de fichier ni appeler schtasks."""
+    validations: list[str] = []
+    commands: list[tuple] = []
+    original_validate = ctl._validate_task_xml
+
+    def validate(xml: str) -> None:
+        original_validate(xml)
+        validations.append(xml)
+
+    monkeypatch.setattr(ctl, "load_profile", lambda name, profiles: prof)
+    monkeypatch.setattr(ctl, "_validate_task_xml", validate)
+    monkeypatch.setattr(
+        ctl, "_is_elevated",
+        lambda: pytest.fail("le dry-run ne doit pas sonder l'élévation"),
+    )
+    monkeypatch.setattr(
+        ctl.subprocess, "run",
+        lambda *args, **kwargs: commands.append(args) or pytest.fail(
+            "le dry-run ne doit lancer aucune commande système"
+        ),
+    )
+
+    assert ctl.main(["task-install", "--profile", prof.name]) == ctl.EXIT_OK
+    output = json.loads(capsys.readouterr().out)
+    assert output["planned_actions"] == ["create-scheduled-task"]
+    xml = output["xml"]
+    ET.fromstring(xml)
+    assert validations == [xml]
+    assert commands == []
+    assert not (prof.root.parent / "logs" / "controller-task.xml").exists()
+
+
 def test_task_xml_malformed_is_caught_before_elevation(prof, monkeypatch):
     """La garde d'elevation passait AVANT la construction de l'XML : un dry-run
     non-eleve ne pouvait donc structurellement pas voir un document malforme.

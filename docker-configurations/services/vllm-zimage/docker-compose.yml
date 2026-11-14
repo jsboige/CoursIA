@@ -50,11 +50,19 @@ services:
       - "--api-key"
       - "${VLLM_API_KEY:-}"
       - "--enable-sleep-mode"
+    # Maintenance#303 bounds: the limits moved from deploy.resources.limits to
+    # the service-level spellings, because compose v5 refuses to mix the two
+    # ("can't set distinct values on 'pids_limit' and
+    # 'deploy.resources.limits.pids'") and deploy limits cannot express
+    # memory-swap at all. Result on the container: --cpus=4 --memory=8g
+    # --memory-swap=8g --pids-limit=512. The 8g ceiling is unchanged.
+    cpus: '4'
+    mem_limit: 8g
+    memswap_limit: 8g
+    pids_limit: 512
+
     deploy:
       resources:
-        limits:
-          cpus: '4'
-          memory: 8G
         reservations:
           devices:
             - driver: nvidia
@@ -95,6 +103,11 @@ services:
     working_dir: /app
 
     command: ["python", "service_idle_monitor.py"]
+
+    # Maintenance#303 bounds (sidecar): measured 36 MiB / 1 PID.
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
 
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro

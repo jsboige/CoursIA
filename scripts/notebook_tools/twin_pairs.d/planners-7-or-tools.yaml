@@ -1,7 +1,7 @@
 - name: "Planners-7 OR-Tools"
   family: SymbolicAI/Planners
-  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb
-  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools-Csharp.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb
+  csharp: MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Csharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: |
@@ -19,9 +19,10 @@
     equivalent, asymetrie mineure de lib viz n'impactant pas le semantisme). `parity_level: native-both`
     preserve : parite engine.
   known_differences:
+    - "Re-baseline 2026-11-08 (myia-po-2028:CoursIA, PR #25255) : tranche Planners du chantier B #16231 -- renommage canonique des deux jumeaux (03-Advanced) et sweep des referents : anciens noms vers noms canoniques dans navlinks et prose, edition octets (I1), aucune cellule de code ni sortie touchee ; aucun contenu pedagogique touche. Parite declaree inchangee : attestation, pas reparation. --update en DERNIERE operation (cf #8957)."
     - "Re-baseline 2026-11-03 (myia-po-2028:CoursIA, PR #24385) : deuxieme fournee du registre d'accents #21277 (outil canonique restore_accents_canonical.py) -- promotions d'accents markdown seul, les deux jumeaux (Python et C#) ; 0 cellule de code, 0 sortie, 0 execution_count touches (310/310 cellules de code byte-identiques base -> head, verif NanoClaw LGTM sur la fournee entiere). Attestation, pas reparation : le blob SHA se deplace, la parite declaree de la paire est inchangee. --update en DERNIERE operation (cf #8957)."
     - "Re-baseline 2026-10-14 (hors-flotte:claude-session-16638, #16638) : restauration des accents de la prose markdown (tranche planners #16638, outil canonique restore_accents_canonical.py, invariance strip_accents a 0 finding), sur les deux jumeaux. Aucune cellule de code, sortie ni execution_count touchee. Parite inchangee : attestation (le blob SHA se deplace), pas reparation. --update en DERNIERE operation (cf #8957)."
-    - "#navfix 03-Advanced (PR a venir) : le twin C# n'avait AUCUNE ligne Navigation (orphelin -- 6-C# pointait >> vers lui, il ne pointait nulle part). Ligne posee en miroir du twin Python, cibles chaine C# : << ../02-Classical/Planners-6-Domains-Csharp.ipynb | Index | Planners-8-Temporal-Csharp.ipynb >>. Divergence de liens nav VOLONTAIRE, hors perimetre de comparaison contenu."
+    - "#navfix 03-Advanced (PR a venir) : le twin C# n'avait AUCUNE ligne Navigation (orphelin -- 6-C# pointait >> vers lui, il ne pointait nulle part). Ligne posee en miroir du twin Python, cibles chaine C# : << ../02-Classical/Planners-06-Domains-Csharp.ipynb | Index | Planners-08-Temporal-Csharp.ipynb >>. Divergence de liens nav VOLONTAIRE, hors perimetre de comparaison contenu."
     - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
     - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : deux tranches — Tranche 1 from-scratch BCL .NET (0 NuGet, backtracking + propagation, enseigne les mecanismes) + Tranche 2 Google.OrTools CP-SAT natif .NET (moteur de production, depuis 2026-08-11)."
     - "Parite engine (native-both depuis 2026-08-11) : les deux cotes atteignent un moteur CP-SAT de production (Python OR-Tools, C# Google.OrTools). Le from-scratch C# reste EN PLUS (jamais a la place), critere owner #10382. Meme exemple de reference : exemple OR-Tools \"a simple example of a job shop problem\" (3 jobs / 3 machines, 8 operations, makespan OPTIMAL = 11 des deux cotes)."

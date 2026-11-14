@@ -1,0 +1,10 @@
+- name: "App-33 Rush Hour admissible"
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-33-RushHour-Admissible-Astar-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "BFS, A* et glouton sont les algorithmes pedagogiques etudies. Python utilise la bibliotheque standard ; C# utilise la BCL sans solveur externe."
+  known_differences:
+    - "Les generateurs pseudo-aleatoires Python et C# differencient les six scrambles ; les memes bornes de generation et de filtrage sont preservees."
+    - "Les deux variantes comptent chaque glissement entier comme un coup ; le C# controle les chemins et un echantillon de la composante."

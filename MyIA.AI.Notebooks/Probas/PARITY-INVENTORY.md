@@ -104,7 +104,7 @@ La reconciliation naturelle padding la série **Infer** sur la série **PyMC** :
 - **Tranche C — `Infer-08b-TrueSkill-Formules-Fermees-CSharp`** : après Tranche A, le
   zero-pad devient cohérent ; reste à retirer le suffixe `-CSharp` redondant →
   `Infer-08b-TrueSkill-Formules-Fermees`. Décider en même temps si l'accrétion `08b` doit
-  être rapprochée de la paire 8 (companion formel de TrueSkill, comme `DecInfer-02-Lean-…`
+  être rapprochée de la paire 8 (companion formel de TrueSkill, comme `DecInfer-01b-Lean-…`
   dans DecisionTheory) et enregistrée comme extension unilatérale.
 - **Tranche D — `Infer-1b-Premiers-Modeles`** : zero-paddé par la Tranche A (`01b`) ;
   statut (extension unilatérale C# vs future paire `PyMC-01b`) à trancher au moment de la
