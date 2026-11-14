@@ -20,6 +20,7 @@ Contrat verifie ici, dans cet ordre :
    n'est pas lisible et la segmentation par plafond en vigueur est fausse.
 """
 import importlib.util
+import json
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -314,3 +315,61 @@ def test_le_cache_de_jobs_evite_de_refrapper_lapi(monkeypatch, tmp_path, fausse_
     monkeypatch.setattr(mod, "api", _api_interdite)
     rapport = mod.measure("scripts-tests.yml", 48, 1, str(cache), False)
     assert rapport["jobs_mesures"] == 1
+
+
+# --- 7. la population ne doit pas etre censuree par les rejeux -------------
+# Un job coupe au mur est tres souvent REJOUE (rejeu automatique de la CI, ou
+# re-run humain). L'endpoint `runs/<id>/jobs` ne renvoie, par defaut, que la
+# DERNIERE tentative : le run ne porte alors plus que la tentative rejouee,
+# qui reussit -- et la coupe DISPARAIT de la population. Mesure du 2026-11-14 :
+# 26 des 40 coupes au mur du segment 40 min etaient absentes de la
+# population collectee sans `filter=all` ; le taux annonce etait alors de
+# 2,3 % au lieu de 6,5 %.
+
+
+def test_la_collecte_prend_toutes_les_tentatives_du_run(monkeypatch, tmp_path, fausse_annotations):
+    """La collecte demande `filter=all` : les rejets des coupes ne doivent
+    pas pouvoir disparaitre de la population."""
+    run = {"id": 903, "created_at": "2026-11-13T10:00:00Z", "head_branch": "main"}
+    jobs = [_job(41, "success", "2026-11-13T10:00:00Z", "2026-11-13T10:05:00Z")]
+    vues = []
+
+    def _api(path):
+        vues.append(path)
+        return {"jobs": jobs}
+
+    monkeypatch.setattr(mod, "list_runs", lambda *a, **k: [run])
+    monkeypatch.setattr(mod, "api", _api)
+    mod.measure("scripts-tests.yml", 48, 1, str(tmp_path / "c.json"), False)
+    assert any("filter=all" in p for p in vues), vues
+
+
+def test_un_cache_d_une_version_anterieure_est_ignore(monkeypatch, tmp_path, fausse_annotations):
+    """Un cache collecte sans `filter=all` ne doit pas etre relu tel quel.
+
+    Le relu rendrait le chiffre d'avant le correctif avec l'apparence d'une
+    mesure a jour -- c'est precisement la faute qui a produit 2,3 % au lieu
+    de 6,5 %. Un cache d'une version anterieure est ignore et recollecte.
+    """
+    cache = tmp_path / "jobs.json"
+    cache.write_text(json.dumps({
+        "cache_version": 1,
+        "jobs": [_job(51, "success", "2026-11-13T10:00:00Z", "2026-11-13T10:05:00Z")],
+        "runs": [{"id": 904, "created_at": "2026-11-13T10:00:00Z",
+                  "head_branch": "main"}],
+        "runs_sans_jobs": 0,
+    }), encoding="utf-8")
+    run = {"id": 904, "created_at": "2026-11-13T10:00:00Z", "head_branch": "main"}
+    jobs = [_job(52, "success", "2026-11-13T11:00:00Z", "2026-11-13T11:05:00Z")]
+    appels = []
+
+    def _api(path):
+        appels.append(path)
+        return {"jobs": jobs}
+
+    monkeypatch.setattr(mod, "list_runs", lambda *a, **k: [run])
+    monkeypatch.setattr(mod, "api", _api)
+    mod.measure("scripts-tests.yml", 48, 1, str(cache), False)
+    assert appels, "un cache d'une version anterieure doit etre ignore, pas relu"
+    relu = json.loads(cache.read_text(encoding="utf-8"))
+    assert relu["cache_version"] == mod.CACHE_VERSION

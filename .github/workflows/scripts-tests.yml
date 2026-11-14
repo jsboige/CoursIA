@@ -184,84 +184,64 @@ jobs:
     # La regle (enfant < aggregateur < runner) et ses marges sont donc
     # preservees a l'identique : seule la valeur du mur de l'enfant bouge.
     #
-    # Mesure du 2026-11-14 -- LA REPONSE A LA QUESTION POSEE ICI.
-    # Organe : `scripts/ci/measure_declared_ceiling.py` (lecture seule) ;
-    # meme grandeur (le mur du job), population fenetree, et chaque coupe
-    # CONFIRMEE PAR L'ANNOTATION -- l'organe natif de la mort des jobs,
-    # `scripts/ci/classify_job_deaths.py`, classe `TIMEOUT` quand le
-    # check-run porte « The job has exceeded the maximum execution time ».
-    #     python scripts/ci/measure_declared_ceiling.py \
-    #         --workflow scripts-tests.yml --hours 48 \
-    #         --jobs-cache .tmp/ceiling_jobs.json --annotate \
-    #         --out .tmp/ceiling2.json
+    # Mesure du 2026-11-14 -- LA REPONSE, CORRIGEE PAR L'ANNOTATION.
     #
-    #     fenetre reellement couverte : 2026-11-12T05:11:15Z ->
-    #     2026-11-14T00:36:55Z (43,4 h -- l'API Actions plafonne a 1000
-    #     runs filtres, la fenetre demandee etait de 48 h ; la couverture
-    #     effective est ecrite par l'organe, jamais supposee)
-    #     1000 runs, 2772 jobs mesures, repartis par le plafond EN VIGUEUR
-    #     au demarrage de chaque job (le plafond a change le
-    #     2026-11-12T19:29:58Z) :
+    # Premier passage (organe `scripts/ci/measure_declared_ceiling.py`,
+    # meme grandeur : le mur du job "Scripts Tests (CPU)", 43,4 h
+    # reellement couvertes) :
+    #     plafond 30 min   29 candidats / 220 jobs  dont 25 CONFIRMEES (TIMEOUT)
+    #     plafond 40 min   14 candidats / 523 jobs  dont 12 CONFIRMEES (TIMEOUT)
+    # soit 2,3 % sous le plafond de 40 -- et la conclusion ecritte etait
+    # « ne pas relever ».
     #
-    #         plafond 30 min   29 candidates / 220 jobs  (13,2 % fenetre)
-    #                          dont 25 CONFIRMEES (TIMEOUT)
-    #         plafond 40 min   14 candidates / 523 jobs  ( 2,7 % fenetre)
-    #                          dont 12 CONFIRMEES (TIMEOUT)
+    # CE CHIFFRE ETAIT MAL COMPTE, et la faute n'est pas dans l'annotation :
+    # elle est dans la POPULATION. L'endpoint `runs/<id>/jobs` ne renvoie,
+    # par defaut, que la DERNIERE tentative d'un run ; or un job coupe au
+    # mur est tres souvent REJOUE (rejeu automatique de la CI, ou re-run
+    # humain) -- et le run ne porte alors plus que la tentative rejouee, qui
+    # reussit. La coupe DISPARAIT de la population : elle est censuree par
+    # le rejeu. Mesure du controle croise du 2026-11-14 (meme organe natif
+    # `scripts/ci/classify_job_deaths.py`, classe `TIMEOUT` sur
+    # l'annotation « The job has exceeded the maximum execution time »,
+    # population collectee avec `filter=all`) : 26 des 40 coupes au mur du
+    # segment 40 min sont ABSENTES du cache collecte SANS `filter=all`.
+    # L'organe collecte donc desormais avec `filter=all`, et son cache
+    # porte une VERSION : un cache anterieur est ignore, pas relu.
     #
-    #     Sous le plafond de 40 : succes le plus long 39,43 min (marge
-    #     0,57 min) ; 30 jobs dans le seau 38-40 min, dont 3 succes.
+    # Ce que dit la mesure CORRIGEE (population entiere, chaque coupe
+    # CONFIRMEE par l'annotation de l'organe natif) :
+    #     plafond 30 min   60 coupes / 249 jobs executes   (24,1 %)
+    #     plafond 40 min   38 coupes / 582 jobs executes   ( 6,5 %)
+    # (`skipped` exclus : un job jamais demarre n'a pas de duree.)
+    # Le seuil de decision pose par la premiere mesure (>= 5 % des
+    # executions coupees au mur) est donc franchi APRES le releve : le
+    # plafond BINDE encore. Sur la fenetre mesuree, 42 PRs distinctes ont
+    # porte au moins un rouge de mur.
     #
-    # LA FENETRE EST UN PROXY, L'ANNOTATION EST LA PREUVE
-    # ------------------------------------------------------
-    # Une fenetre de duree autour du plafond designe les CANDIDATS (un job
-    # annule a dure assez longtemps pour avoir touche son mur). Elle se
-    # trompe : sur cette population, 4 des 29 candidats du segment 30 min
-    # et 2 des 14 du segment 40 min n'etaient pas des coupes -- soit 6
-    # faux positifs sur 43, une precision de 86 %. (Sur un echantillon
-    # enrichi de jobs coupes, la precision tombe a 60 % : l'enrichissement
-    # sur-represente les coupes et gonfle le taux -- c'est la population
-    # entiere qui fait foi.)
+    # Le releve, et ses trois valeurs (les marges de la chaine ne
+    # bougent pas) :
+    #     enfant   40        -> 44
+    #     gate     40 + 15   -> 59   (marge de 15 min INCHANGEE ; 59 reste
+    #                                  SOUS le plafond propre de Quarto (60),
+    #                                  donc la queue reelle de Quarto reste
+    #                                  sur le chemin STARVED -> auto-annulation
+    #                                  (#13510, #14412))
+    #     runner   59 + 7    -> 66   (marge de 7 min pour le verdict
+    #                              INCHANGEE)
+    # 44 est le maximum coherent : l'agregateur doit rester SOUS 60, donc
+    # l'enfant sous 45.
     #
-    # Les classes, lues par l'organe natif sur le segment 40 min :
-    #     TIMEOUT 12        -- le mur, la preuve
-    #     REAL_STEP_FAILURE 10 -- le test a echoue, le plafond n'y est pour rien
-    #     CANCELLED_OTHER 97 -- supersede (un push suivant annule le job)
+    # Ce que le releve ne repare pas : les 8 coupes qui portent aussi un
+    # etape en echec (le test y echoue, il n'y finit pas) et les annulations
+    # par supersede. Le releve rend au succes les coupes AU MUR, pas la
+    # duree de la jambe -- celle-ci se gagne sur le plan a deux etages
+    # (#25510, etage 1) et sur le pool de runners (slot reserve pour
+    # `main`, tranche T-L).
     #
-    # Ce que la mesure dit, en clair :
-    #
-    #   * le taux de coupes CONFIRMEES est TOMBE de 11,4 % (25/220) a
-    #     2,3 % (12/523) apres le releve du plafond. C'est ce qui tranche
-    #     la controverse de po-2027 (des annulations par saturation de
-    #     runner) : si les coupes venaient de la saturation, le taux serait
-    #     reste le meme apres le releve -- une part importante etait du
-    #     travail qui demandait reellement plus de 30 min ;
-    #   * le plafond BIND ENCORE : 12 jobs ont ete coupes AU mur, et le
-    #     succes le plus long est a 98,6 % du plafond. La queue est
-    #     censuree a droite (duree reelle > 40 min, inconnue) ;
-    #   * mais la queue est MINCE, et surtout elle n'est pas AU MUR : sur
-    #     les 30 jobs du seau 38-40 min, 3 seulement ont reussi. Les 27
-    #     autres se repartissent en 12 coupes au mur et 15 annulations
-    #     d'une autre cause (supersede, ou `REAL_STEP_FAILURE` -- au plus
-    #     10 dans tout le segment). Relever le plafond ne changerait rien
-    #     a ces 15-la : le test y echoue, il n'y finit pas. Au mieux, un
-    #     releve convertit 12 echecs de mur en echecs de test.
-    #
-    # Pourquoi on ne releve pas : la chaine des plafonds est contrainte --
-    # enfant < agregateur (le PR gate) < plafond propre de Quarto (60) <
-    # runner -- et l'agregateur doit rester SOUS 60, sinon la queue reelle
-    # de Quarto quitte le chemin STARVED -> auto-annulation (#13510,
-    # #14412). L'enfant peut donc monter au mieux a 44 (agregateur 59).
-    # Le levier qui reste n'est pas le plafond : c'est la duree de la
-    # jambe -- ciblee par le plan a deux etages (#25510, etage 1) et par
-    # le pool de runners (slot reserve pour `main`, T-L).
-    #
-    # Re-mesurer : `--jobs-cache` evite de repayer la collecte (un appel
-    # API par run, ~1000 appels), et `--annotate` ajoute la passe de
-    # confirmation. Sans la confirmation, la mesure ne publie qu'un
-    # PROXY : sur cette population, 6 des 43 candidats n'etaient pas des
-    # coupes -- et une annonce de coupes sans preuve est un chiffre que
-    # personne ne peut contester.
-    timeout-minutes: 40
+    # Re-mesurer : `python scripts/ci/measure_declared_ceiling.py
+    # --workflow scripts-tests.yml --hours 48 --jobs-cache
+    # .tmp/ceiling_jobs_v2.json --annotate --out .tmp/ceiling4.json`
+    timeout-minutes: 44
 
     steps:
       # ------------------------------------------------------------------

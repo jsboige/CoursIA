@@ -116,6 +116,14 @@ TOL_HI_S = 120
 #: a quelque chose.
 NEAR_CEILING_MIN = 2
 
+#: Version du cache de collecte. Un cache d'une version anterieure est
+#: IGNORE (il est recollecte) : la version 1 ne portait que la derniere
+#: tentative de chaque run, ce qui censurait la population par les rejeux
+#: (mesure du 2026-11-14 : 26 des 40 coupes au mur du segment 40 min
+#: etaient absentes de ce cache). Un cache reutilise tel quel rendrait un
+#: chiffre faux avec l'apparence d'une mesure.
+CACHE_VERSION = 2
+
 
 def limits_from_yaml(text: str) -> dict[str, int]:
     """Plafonds declares d'un workflow, par **nom de job**.
@@ -284,14 +292,35 @@ def measure(
     # paie qu'une fois la collecte.
     if jobs_cache and Path(jobs_cache).exists():
         cached = json.loads(Path(jobs_cache).read_text(encoding="utf-8"))
-        jobs = cached.get("jobs", [])
-        runs = cached.get("runs") or runs
-        runs_sans_jobs = cached.get("runs_sans_jobs", 0)
-    else:
+        if cached.get("cache_version") == CACHE_VERSION:
+            jobs = cached.get("jobs", [])
+            runs = cached.get("runs") or runs
+            runs_sans_jobs = cached.get("runs_sans_jobs", 0)
+        else:
+            # Cache d'une version anterieure : il est IGNORE, pas relu.
+            # Reutiliser sa population ferait rendre le chiffre d'avant le
+            # correctif, avec l'apparence d'une mesure a jour.
+            print(
+                f"cache ignore : version {cached.get('cache_version')} != "
+                f"{CACHE_VERSION} -- recollecte"
+            )
+    if not jobs:
         for run in runs:
             try:
                 listed = api(
-                    f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100"
+                    # `filter=all` : TOUTES les tentatives du run, pas
+                    # seulement la derniere. SANS lui, la population est
+                    # CENSOREE par les rejeux : un job coupe au mur puis
+                    # rejoue (rejeu automatique de la CI ou re-run humain)
+                    # disparait de la population -- le run ne porte plus que
+                    # la tentative rejouee, qui reussit. Mesure du 2026-11-14
+                    # (controle croise, meme organe natif
+                    # `classify_job_deaths.py`, population collectee par
+                    # ailleurs avec `filter=all`) : 26 des 40 coupes au mur
+                    # du segment 40 min sont ABSENTES de la population
+                    # collecte SANS `filter=all`. C'est ce qui faisait
+                    # annoncer 2,3 % (12/523) au lieu de 6,5 % (38/582).
+                    f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100&filter=all"
                 ).get("jobs", [])
             except Exception:  # noqa: BLE001 - une page illisible ne doit pas
                 # faire tomber la mesure entiere ; le run compte pour rien.
@@ -313,10 +342,12 @@ def measure(
                     "started_at": job.get("started_at"),
                     "execution_min": execution,
                     "branch": run.get("head_branch"),
+                    "run_attempt": job.get("run_attempt"),
                     "steps": job.get("steps") or [],
                 })
         if jobs_cache:
             Path(jobs_cache).write_text(json.dumps({
+                "cache_version": CACHE_VERSION,
                 "jobs": jobs,
                 "runs": [{"id": r["id"], "created_at": r.get("created_at"),
                           "head_branch": r.get("head_branch")}
@@ -486,7 +517,11 @@ def cross_check(workflow: str, sample: int, job_name: str,
     for run in picked:
         try:
             listed = api(
-                f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100"
+                # `filter=all` : meme raison que dans la collecte -- sans
+                # lui, les rejets des jobs coupes puis rejoues disparaissent
+                # de la population, et le controle croise sous-estime les
+                # coupes au lieu de les confirmer.
+                f"/repos/{REPO}/actions/runs/{run['id']}/jobs?per_page=100&filter=all"
             ).get("jobs", [])
         except Exception:  # noqa: BLE001 - un run illisible ne fait pas
             # tomber le controle croise ; il compte pour rien.
