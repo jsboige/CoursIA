@@ -36,6 +36,8 @@ Il sait **ce qu'un composant fournit** (`capabilities`) et **ce qu'il exige** (`
 
 Portabilité : **Portable** = Python pur, pas de binaire vendoré, pas de risque licence à la distillation. **Non portable** = blocage licence/redistribution mesuré. **À décider** = dépend d'un choix de stack.
 
+**Base des chemins** : `core/`, `services/`, `plugins/`, `orchestration/`, `agents/`, `evaluation/` sont **relatifs à `argumentation_analysis/`** ; les **surfaces** (`interface_web/`, `api/`, `apps/`, `CaseAI/`) sont **à la racine** du repo. Il existe **deux** `api/` distincts : `api/` (racine, FastAPI, `openapi.snapshot.json`) et `argumentation_analysis/api/` (endpoints JTMS).
+
 | Capacité | Implémentation réelle (mesurée) | Origine projet (correspondance structurelle) | Portabilité |
 |---|---|---|---|
 | Registre de compétences (composition dynamique) | `core/capability_registry.py` | plateforme | Portable — **sans provenance** (décision A) |
@@ -50,7 +52,7 @@ Portabilité : **Portable** = Python pur, pas de binaire vendoré, pas de risque
 | Harness d'évaluation falsifiable | `evaluation/` (`benchmark_runner.py`, `fallacy_benchmark.py`, `multi_model_benchmark.py`, `model_registry.py`, `judge.py`, `designate_contract.py`, `leak_patterns.py`, `corpus/`, `env_manifest.py`) | plateforme | Portable (à fort rendement : contrats désignés + détection de leak) |
 | Vérification factuelle | `orchestration/fact_checking_orchestrator.py`, `services/fact_verification_service.py` | plateforme | Portable |
 | Logique formelle (Tweety via JPype) | `plugins/kb_to_tweety_plugin.py`, `plugins/coordinated_logic_plugin.py`, `plugins/logic_agent_plugin.py` | 1.1.x | À décider (dépend JVM/JPype) |
-| Surfaces d'interaction | `interface_web/` (Starlette+React), `api/` (FastAPI, 25+ routes, `openapi.snapshot.json`), `apps/gradio_demo/`, `CaseAI/` (SPA), `3.1.5_Interface_Mobile/` (Expo) | 3.1.5 mobile | À décider (choisir UNE surface) |
+| Surfaces d'interaction | **à la racine** : `interface_web/` (Starlette+React), `api/` (FastAPI, 25+ routes, `openapi.snapshot.json` — **distinct** de `argumentation_analysis/api/`), `apps/gradio_demo/`, `CaseAI/` (SPA) ; + `3.1.5_Interface_Mobile/` (Expo) | 3.1.5 mobile | À décider (choisir UNE surface) |
 | LLM local | `2.3.6_local_llm/` (`local_llm/`, `benchmarks.csv`) | 2.3.6 | À décider (dépend de la stack locale) |
 | Qualité d'argument | `2.3.5_argument_quality/src/` | 2.3.5 | À décider |
 
@@ -58,7 +60,7 @@ Portabilité : **Portable** = Python pur, pas de binaire vendoré, pas de risque
 
 ## 4. Contrainte de portabilité mesurée (blocage licence)
 
-`ext_tools/` ne contient **que** :
+Deux arbres vendorisent des binaires. `ext_tools/` :
 
 ```
 ext_tools/EProver/eprover.exe
@@ -67,7 +69,15 @@ ext_tools/spass/SPASS.exe
 ext_tools/spass/spass_eml_adapter.bat
 ```
 
-**Aucun fichier de licence, aucun source, aucune README** dans cet arbre — des exécutable Windows PE vendus tels quels. EProver et SPASS sont sous licence GPL : les re-vendrer dans le repo public CoursIA est un **blocage de redistribution** et une charge de license-incompatibility.
+`libs/` porte une **troisième chaîne de prouveurs** (Prover9), des **solveurs SAT** et un **gros JAR** :
+
+```
+libs/prover9/bin/   prover9.exe, mace4.exe, prooftrans.exe, isofilter*.exe, interpformat.exe, cygwin1.dll
+libs/native/        lingeling.dll, minisat.dll, picosat.dll
+libs/java/          org.tweetyproject.tweety-full-1.28-with-dependencies.jar
+```
+
+**16 binaires au total, aucun accompagné d'un fichier de licence, aucun source, aucune README** — des exécutables Windows PE / un JAR fat vendus tels quels. EProver, SPASS et Prover9 sont sous licence GPL/académique : les re-vendrer dans le repo public CoursIA est un **blocage de redistribution** et une charge de license-incompatibility. Le recensement complet est produit par l'organe [`scripts/research/argumentation_capacity_dedup.py`](../../scripts/research/argumentation_capacity_dedup.py) (`dedup`, § exposition licence).
 
 > **Décision de charter B — Prouveurs externes.** Les capacités de prouvé FOL ne sont **pas** distillées en binaire. CoursIA les expose comme **dépendances externes optionnelles** : `eprover_runner.py` appelle l'exécutable si présent sur le `PATH`, sinon le notebook documente et route vers une machine qui l'a (règle F, exception GPU/outil — pas un « workaround dégradé »). Le runner reste portable ; le binaire, non.
 
