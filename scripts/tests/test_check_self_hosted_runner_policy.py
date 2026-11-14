@@ -1928,3 +1928,166 @@ def test_un_repertoire_absent_fait_echouer_la_derivation(tmp_path):
     paths, reason = policy.local_capable_workflows(tmp_path / "absent")
     assert paths == set()
     assert "absent" in reason
+
+
+# --- T-L (#25510) : le slot RESERVE de la verification de `main` ----------
+#
+# Le job CPU de `main` est un job REQUIS : tant qu'il n'a pas de verdict,
+# `main` n'est pas verifie. Il etait route sur le meme pool que les PRs
+# (`coursia-ephemeral`), donc il attendait derriere elles (mesure du
+# 2026-11-12 : plus de 27 minutes en file, 31 runners sur 31 occupes par
+# des PRs). Le slot reserve porte des labels DISJOINTS du pool PR
+# (`coursia-main`), et l'organe de politique l'admet UNIQUEMENT dans une
+# forme auditee : jeu de labels + garde `push` + repli enumere vers le pool
+# PR.
+#
+# Les deux controles negatifs demandes par le coordinateur (13/11) sont
+# ci-dessous : le meme jeu de labels SANS la garde `push`, et le jeu SANS
+# le repli. Les deux doivent rester refuses.
+
+MAIN_HYBRID_AUDITE = (
+    "${{ (github.event_name == 'push')"
+    " && fromJSON('[\"self-hosted\",\"coursia-main\",\"coursia-linux\"]')"
+    " || fromJSON('[\"self-hosted\",\"coursia-ephemeral\",\"coursia-linux\"]') }}"
+)
+MAIN_HYBRID_SANS_GARDE_PUSH = (
+    "${{ (github.event.pull_request.head.repo.full_name == github.repository)"
+    " && fromJSON('[\"self-hosted\",\"coursia-main\",\"coursia-linux\"]')"
+    " || fromJSON('[\"self-hosted\",\"coursia-ephemeral\",\"coursia-linux\"]') }}"
+)
+MAIN_HYBRID_SANS_REPLI = (
+    "${{ (github.event_name == 'push')"
+    " && fromJSON('[\"self-hosted\",\"coursia-main\",\"coursia-linux\"]')"
+    " || 'ubuntu-latest' }}"
+)
+#: La garde meme-depot du job, telle que `scripts-tests.yml` la porte.
+GARDE_MEME_DEPOT = (
+    "(github.event.pull_request.head.repo.full_name == null"
+    " || github.event.pull_request.head.repo.full_name == github.repository)"
+)
+
+
+def _ecrire_forme_main(tmp_path, runs_on: str, declencheurs: str, job_if: str = "") -> None:
+    """Ecrit un workflow allowliste (`scripts-tests.yml`) portant la forme donnee.
+
+    Le corps est assemble ligne a ligne : un dedent sur un bloc injecte
+    laisserait les lignes de continuation du declencheur des-indentees, et
+    le YAML serait invalide.
+    """
+    lignes = [
+        "name: scripts-tests",
+        "on:",
+        declencheurs.rstrip("\n"),
+        "jobs:",
+        "  cpu:",
+        "    name: Scripts Tests (CPU)",
+        f"    runs-on: {runs_on}",
+    ]
+    if job_if:
+        lignes.append(f"    if: {job_if}")
+    lignes.extend([
+        "    steps:",
+        "      - run: echo cpu",
+    ])
+    (tmp_path / "scripts-tests.yml").write_text(
+        "\n".join(lignes) + "\n", encoding="utf-8"
+    )
+
+
+def test_le_slot_reserve_de_main_est_admis_dans_la_forme_auditee(tmp_path):
+    """CONTROLE POSITIF : jeu de labels + garde `push` + repli enumere vers
+    le pool PR = la forme auditee. Elle passe, et le job compte comme
+    auto-heberge."""
+    _ecrire_forme_main(tmp_path, MAIN_HYBRID_AUDITE, "  push:\n    branches: [main]")
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_le_jeu_reserve_sans_la_garde_push_est_refuse(tmp_path):
+    """CONTROLE NEGATIF (demande par le coordinateur, 13/11) : le MEME jeu
+    de labels, sous une autre garde, reste refuse. Le jeu de labels n'est
+    jamais une autorisation a lui seul : c'est l'ensemble des trois elements
+    qui l'est."""
+    _ecrire_forme_main(
+        tmp_path,
+        MAIN_HYBRID_SANS_GARDE_PUSH,
+        "  push:\n    branches: [main]",
+        GARDE_MEME_DEPOT,
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"MAIN_LABEL_SET_UNAUDITED"}
+    assert "push guard is missing" in result.violations[0].message
+
+
+def test_le_jeu_reserve_sans_le_repli_est_refuse(tmp_path):
+    """CONTROLE NEGATIF (demande par le coordinateur, 13/11) : le jeu de
+    labels avec la garde `push` mais SANS le repli enumere vers le pool PR
+    reste refuse. Un repli heberge (`ubuntu-latest`) changerait la nature
+    du repli ; son absence laisserait le job de `main` sans issue."""
+    _ecrire_forme_main(tmp_path, MAIN_HYBRID_SANS_REPLI, "  push:\n    branches: [main]")
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"MAIN_LABEL_SET_UNAUDITED"}
+    assert "fallback" in result.violations[0].message
+
+
+def test_le_jeu_reserve_en_selection_statique_est_refuse(tmp_path):
+    """CONTROLE NEGATIF : une selection STATIQUE du jeu reserve serait
+    atteinte par n'importe quel declencheur -- elle n'est pas auditee."""
+    _ecrire_forme_main(
+        tmp_path,
+        "[self-hosted, coursia-main, coursia-linux]",
+        "  push:\n    branches: [main]",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"MAIN_LABEL_SET_UNAUDITED"}
+    assert "static" in result.violations[0].message
+
+
+def test_la_forme_auditee_exige_la_garde_meme_depot_du_job(tmp_path):
+    """Le repli de la forme auditee est AUTO-HEBERGE (le pool PR) : la jambe
+    de repli est atteinte par toute PR, y compris une PR de fork. Sans la
+    garde meme-depot au niveau du JOB, un fork atterrirait sur le parc
+    local par la branche de repli."""
+    _ecrire_forme_main(
+        tmp_path,
+        MAIN_HYBRID_AUDITE,
+        "  pull_request:\n    branches: [main]",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"SAME_REPO_GUARD"}
+
+
+def test_la_forme_auditee_avec_la_garde_meme_depot_du_job_est_admise(tmp_path):
+    """CONTROLE POSITIF de la jambe PR : avec la garde meme-depot du job,
+    la forme auditee passe en workflow declenche par pull_request."""
+    _ecrire_forme_main(
+        tmp_path,
+        MAIN_HYBRID_AUDITE,
+        "  pull_request:\n    branches: [main]",
+        GARDE_MEME_DEPOT,
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_le_slot_reserve_exige_un_workflow_allowliste(tmp_path):
+    """L'audit porte la FORME et le SUPPORT : le jeu reserve dans un
+    workflow qui n'est pas sur l'allowlist est refuse comme tout autre
+    job auto-heberge."""
+    write_workflow(tmp_path, "ad-hoc", f"""
+        name: ad-hoc
+        on:
+          push:
+            branches: [main]
+        jobs:
+          cpu:
+            runs-on: {MAIN_HYBRID_AUDITE}
+            steps:
+              - run: echo cpu
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"WORKFLOW_NOT_ALLOWED"}

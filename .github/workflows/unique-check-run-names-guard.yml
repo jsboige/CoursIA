@@ -46,7 +46,7 @@ permissions:
 # tout workflow touche sans bloc `concurrency:` en recoit un, `cancel-in-progress`
 # vrai en `pull_request` -- un `workflow_dispatch` manuel n'annule pas un run de PR.
 concurrency:
-  group: unique-check-run-names-guard-${{ github.ref }}
+  group: unique-check-run-names-guard-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -78,7 +78,7 @@ jobs:
     # runs verts de ce job : max 0.2 min. Marge large (le defaut
     # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
     timeout-minutes: 10
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     steps:
       # Le work dir de ce runner n'est PAS froid dans sa voie hebergee : le pool
       # `coursia-ephemeral` monte un volume nomme PERSISTANT par slot
