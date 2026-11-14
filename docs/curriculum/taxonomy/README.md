@@ -69,3 +69,19 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 ```
 
 Les tranches suivantes étendront la série à la série **ICT** (`ICT-Series/`, 102 carnets, Epic #4588) — extension distincte documentée dans son propre README, ajoutée au même `iit.json` ou dans un `ict.json` dédié, une PR par tranche, sur ce même modèle.
+
+## Série Z3-Linq2Z3 — tranche 1 (la série entière : DSL déclaratif → théorie des tableaux → capstone du planificateur → applications SMT)
+
+`z3-linq2z3.json` étend le même format à la série **Z3-Linq2Z3** (`SymbolicAI/SMT/Z3-Linq2Z3/`), sur ses vingt carnets (`01_Linq2Z3_Intro` à `20_Theorem_Rewriters`) et 21 concepts. Le même `schema.json` et le même validateur `curriculum_taxonomy.py` s'appliquent. Les **prérequis** dessinent un tronc et un éventail : la programmation déclarative avant le DSL `Theorem` de Z3.Linq ; le DSL avant la théorie des tableaux, puis les grilles 2D, la modélisation du planificateur de repas, la jointure de données réelles, le capstone patient et l'encodage à l'échelle ; le DSL, encore, avant chacune des applications indépendantes (ordonnancement, coloration, cryptarithmes, MaxSAT, bit-vectors, arithmétique réelle, cores UNSAT, énigme d'Einstein, tactiques, réécritures). Chaque concept cite les cellules de carnet où il est enseigné ; **aucun ne nomme de chapitre AIMA**, la série enseignant un outil SMT et son DSL C# plutôt qu'un chapitre du livre.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py   --data docs/curriculum/taxonomy/z3-linq2z3.json   --skos-output /tmp/z3-linq2z3.ttl   --owl-output /tmp/z3-linq2z3.owl
+```
+
+## Valider toutes les taxonomies d'un coup
+
+`--all` valide chaque `*.json` du dossier (hors `schema.json`) et nomme le fichier fautif ; il n'écrit aucun export, et `--skos-output` / `--owl-output` y sont sans effet :
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py --all
+```

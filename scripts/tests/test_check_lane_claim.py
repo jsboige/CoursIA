@@ -6898,11 +6898,129 @@ def test_18341_pre_fix_code_renders_clear(monkeypatch, tmp_path, capsys):
     # Lecture directe du source, pas d'execution : assert que le mot
     # `my_paths` n'apparait PAS dans la condition de la jambe PR-ouverte.
     src = Path("scripts/check_lane_claim.py").read_text(encoding="utf-8")
-    # La jambe PR-ouverte (apres #18341) lit my_scope, pas my_paths
-    assert "if check_open_pr_paths and my_scope:" in src, \
-        "leg #16570 doit lire my_scope (et non my_paths) apres #18341"
+    # La jambe PR-ouverte (apres #18341) lit le perimetre d'intention
+    # (`--paths` U `paths:` du claim propre), pas `my_paths` seul. Depuis
+    # #25082 ce perimetre porte son nom, `open_pr_scope` : il ecarte la
+    # tranche deja livree et mergee, que `my_scope` garde.
+    assert "if check_open_pr_paths and open_pr_scope:" in src, \
+        "leg #16570 doit lire le perimetre d'intention (et non my_paths) " \
+        "apres #18341"
     assert "if check_open_pr_paths and my_paths:" not in src, \
         "leg #16570 lit my_paths = defaut #18341"
+
+
+# --- #25082 : un perimetre livre et merge n'est pas une intention -------------
+# Defaut mesure le 2026-11-13 sur #20298 (file ICT) : la lane porteuse
+# `myia-po-2024:CoursIA` avait livre le palier 05 (PR #25402 MERGEE, marqueur
+# `[DELIVERED] ... paths:`). Sous la semantique v2, ce marqueur reste son
+# « claim actif » (`locked`), et #18341 fusionnait ses chemins dans le
+# perimetre de la jambe PR-ouverte. Trois PRs ouvertes d'autres lanes touchant
+# des fichiers du palier 05 rendaient alors `BLOCKED` (rc 2) a la lane porteuse
+# sur son palier SUIVANT -- pour lequel elle n'avait rien declare. Le tapis ne
+# lui servait donc plus sa propre consolidation.
+
+_LIVRE = "scripts/notebook_tools/wsl_papermill.py"
+_SUIVANT = "scripts/notebook_tools/check_lean4_wsl_repl.py"
+_PORTEUSE = "myia-po-2024:CoursIA"
+
+
+def _fil_tranche_livree(pr: int = 25402):
+    return payload(
+        comment(f"[CLAIMED] lane {_PORTEUSE} -- paths: {_LIVRE}",
+                "2026-11-08T20:00:00Z"),
+        comment(f"[DELIVERED] lane {_PORTEUSE} -- PR #{pr} (palier 05) "
+                f"-- paths: {_LIVRE}",
+                "2026-11-09T02:22:17Z"),
+        number=20298,
+    )
+
+
+def test_25082_perimetre_livre_et_merge_ne_nourrit_pas_la_jambe_pr_ouverte(
+        monkeypatch, capsys):
+    """CONTROLE POSITIF -- le cas mesure sur #20298.
+
+    Tranche livree, PR MERGEE, et une PR ouverte d'une AUTRE lane qui touche
+    un fichier de cette tranche. L'appelant n'a rien declare pour la suite :
+    la jambe est sans objet, le verdict n'est pas `BLOCKED`.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE])])
+    rc = clc._run_check(_fil_tranche_livree(), _PORTEUSE,
+                        pr_states=_pr_states(25402, "MERGED"),
+                        check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    out = _json_out(captured)
+    assert rc == 0, captured.err
+    assert out["open_pr_collisions"] == []
+    assert out["open_pr_scope"] is None
+    # le perimetre livre reste dans le rapport : les autres lanes le lisent
+    assert out["active_claims"][_PORTEUSE]["locked"] is True
+    assert out["active_claims"][_PORTEUSE]["paths"] == [_LIVRE]
+    # et la lane apprend pourquoi la jambe n'a pas tourne
+    assert "#25082" in captured.err and "PR #25402 MERGEE" in captured.err
+
+
+def test_25082_un_claim_ouvert_nourrit_toujours_la_jambe(monkeypatch, capsys):
+    """CONTROLE NEGATIF -- #18341 reste entier pour un claim OUVERT.
+
+    Meme PR ouverte, meme fichier, mais la lane n'a pas encore livre : son
+    `[CLAIMED] paths:` est une intention, la collision est reelle.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE])])
+    p = payload(comment(f"[CLAIMED] lane {_PORTEUSE} -- paths: {_LIVRE}",
+                        "2026-11-08T20:00:00Z"), number=20298)
+    rc = clc._run_check(p, _PORTEUSE, check_open_pr_paths=True)
+    out = _json_out(capsys.readouterr())
+    assert rc == 2
+    assert [c["number"] for c in out["open_pr_collisions"]] == [26051]
+    assert out["open_pr_scope"] == [_LIVRE]
+
+
+def test_25082_une_livraison_a_pr_ouverte_reste_confrontee(monkeypatch, capsys):
+    """CONTROLE NEGATIF -- tant que la PR de la tranche est OUVERTE, le
+    travail est en vol : le marqueur n'est pas `locked`, son perimetre reste
+    une intention et la jambe le confronte."""
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE])])
+    rc = clc._run_check(_fil_tranche_livree(), _PORTEUSE,
+                        pr_states=_pr_states(25402, "OPEN"),
+                        check_open_pr_paths=True)
+    out = _json_out(capsys.readouterr())
+    assert rc == 2
+    assert out["active_claims"][_PORTEUSE]["locked"] is False
+    assert [c["number"] for c in out["open_pr_collisions"]] == [26051]
+
+
+def test_25082_les_paths_de_l_appel_restent_confrontes(monkeypatch, capsys):
+    """La tranche SUIVANTE, declaree par `--paths`, passe toujours la jambe.
+
+    Deux PRs ouvertes d'autres lanes : l'une touche la tranche livree,
+    l'autre le fichier vise. Seule la seconde est une collision.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [
+        _collision_pr(26051, "myia-po-2023:CoursIA", [_LIVRE]),
+        _collision_pr(26181, "myia-po-2027:CoursIA", [_SUIVANT]),
+    ])
+    rc = clc._run_check(_fil_tranche_livree(), _PORTEUSE,
+                        pr_states=_pr_states(25402, "MERGED"),
+                        my_paths=[_SUIVANT], check_open_pr_paths=True)
+    out = _json_out(capsys.readouterr())
+    assert rc == 2
+    assert out["open_pr_scope"] == [_SUIVANT]
+    assert [c["number"] for c in out["open_pr_collisions"]] == [26181]
+
+
+def test_25082_perimetre_de_la_jambe_table_de_verite():
+    """`_open_pr_leg_scope` -- les quatre cas, sans transport."""
+    ouvert = clc.ClaimEvent({"paths": [_LIVRE]})
+    livre = clc.ClaimEvent({"paths": [_LIVRE], "locked": True})
+    assert clc._open_pr_leg_scope(None, None) is None
+    assert clc._open_pr_leg_scope([_SUIVANT], None) == [_SUIVANT]
+    assert clc._open_pr_leg_scope(None, ouvert) == [_LIVRE]
+    assert clc._open_pr_leg_scope([_SUIVANT], ouvert) == [_SUIVANT, _LIVRE]
+    assert clc._open_pr_leg_scope(None, livre) is None
+    assert clc._open_pr_leg_scope([_SUIVANT], livre) == [_SUIVANT]
 
 
 # --- #12811 : gh/git émettent de l'UTF-8, l'encodage doit être épinglé --------
