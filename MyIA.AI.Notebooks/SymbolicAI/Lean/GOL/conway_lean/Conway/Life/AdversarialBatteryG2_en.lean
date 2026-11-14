@@ -64,13 +64,14 @@ compile budget (`j ≤ 1`). EPIC #3846 / #6724 / #9568. Sorry-free.
   two files.
 -/
 
+import Conway.Life_en
 import Conway.Life.AdversarialBattery_en
 import Conway.Life.HashlifeCorrectness
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 
 /-! ## Ingredient (H) — the `centralCorrect` hypothesis is INTRINSIC
 

@@ -171,3 +171,67 @@ def test_multiple_exports_are_merged_and_skos_blank_node_labels_are_read(
     assert result == 0
     assert "Graphe de connaissances" in output
     assert "SW-11-KnowledgeGraphs.ipynb" in output
+
+
+def _hierarchy_graph(levels):
+    return build_graph([{
+        "path": "GenAI/LLM/RAG/Advanced/Demo.ipynb",
+        "title": "Démo", "serie": "GenAI",
+        "sous_serie": levels[-1] if levels else "",
+        "sous_serie_levels": levels,
+    }])
+
+
+@pytest.mark.parametrize("levels", [[], ["LLM"], ["LLM", "RAG", "Advanced"]])
+def test_path_uses_all_exported_subseries_in_order(levels):
+    graph = _hierarchy_graph(levels)
+    assert path_for(graph, "GenAI/LLM/RAG/Advanced/Demo.ipynb") == [
+        "GenAI", *levels, "Démo"
+    ]
+
+
+def test_nested_path_and_show_through_turtle_cli(tmp_path, capsys):
+    graph_path = tmp_path / "nested.ttl"
+    _hierarchy_graph(["LLM", "RAG", "Advanced"]).serialize(graph_path, format="turtle")
+    path = "GenAI/LLM/RAG/Advanced/Demo.ipynb"
+    expected = "GenAI > LLM > RAG > Advanced > Démo"
+    assert main(["--graph", str(graph_path), "path", path]) == 0
+    assert capsys.readouterr().out.strip() == expected
+    assert main(["--graph", str(graph_path), "show", path]) == 0
+    assert "Parcours : " + expected in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("cycle_kind", ["self", "ancestor"])
+def test_subseries_cycle_is_rejected_in_reader_and_cli(cycle_kind, tmp_path, capsys):
+    graph = _hierarchy_graph(["LLM", "RAG", "Advanced"])
+    path = "GenAI/LLM/RAG/Advanced/Demo.ipynb"
+    notebook = find_notebook(graph, path)
+    leaf = graph.value(notebook, VOCAB.inSubseries)
+    root = graph.value(graph.value(leaf, VOCAB.partOfSubseries), VOCAB.partOfSubseries)
+    if cycle_kind == "self":
+        graph.remove((leaf, VOCAB.partOfSubseries, None))
+        graph.add((leaf, VOCAB.partOfSubseries, leaf))
+    else:
+        graph.add((root, VOCAB.partOfSubseries, leaf))
+    with pytest.raises(ValueError, match="cycle de sous-séries"):
+        path_for(graph, path)
+    graph_path = tmp_path / "cycle.ttl"
+    graph.serialize(graph_path, format="turtle")
+    assert main(["--graph", str(graph_path), "path", path]) == 2
+    assert "cycle de sous-séries" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("relation", ["inSubseries", "partOfSubseries"])
+def test_multiple_subseries_parents_are_rejected(relation, tmp_path, capsys):
+    graph = _hierarchy_graph(["LLM", "RAG", "Advanced"])
+    path = "GenAI/LLM/RAG/Advanced/Demo.ipynb"
+    notebook = find_notebook(graph, path)
+    leaf = graph.value(notebook, VOCAB.inSubseries)
+    subject = notebook if relation == "inSubseries" else leaf
+    graph.add((subject, VOCAB[relation], URIRef("https://example.test/other")))
+    with pytest.raises(ValueError, match="plusieurs.*sous-série"):
+        path_for(graph, path)
+    graph_path = tmp_path / "ambiguous.ttl"
+    graph.serialize(graph_path, format="turtle")
+    assert main(["--graph", str(graph_path), "show", path]) == 2
+    assert "plusieurs" in capsys.readouterr().err
