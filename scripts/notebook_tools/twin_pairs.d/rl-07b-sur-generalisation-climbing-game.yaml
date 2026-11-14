@@ -7,4 +7,4 @@
   bridge_verdict_reason: "Agent tabulaire et statistiques from scratch dans le source ; la BCL calcule ces memes objets sans moteur RL externe omis."
   known_differences:
     - "PRNG NumPy et System.Random distincts ; les resultats stochastiques sont mesures independamment, pas forces identiques."
-    - "Matplotlib Python et SVG opaque C# ; toutes les11701positions de la courbe et ses quantiles sont conserves."
+    - "Matplotlib Python et SVG opaque C# ; toutes les 11701 positions de la courbe et ses quantiles sont conserves."
