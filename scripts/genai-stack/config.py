@@ -198,15 +198,15 @@ NOTEBOOK_SERVICE_MAP = {
         "00-4-Environment-Validation.ipynb",
         "00-5-ComfyUI-Local-Test.ipynb",
         "01-1-OpenAI-DALL-E-3.ipynb",
-        "01-2-GPT-5-Image-Generation.ipynb",
+        "01-2-Generation-Image-API.ipynb",
         "01-3-Basic-Image-Operations.ipynb",
     ],
     "forge": [
         "01-4-Forge-SD-XL-Turbo.ipynb",
     ],
     "qwen": [
-        "01-5-Qwen-Image-Edit.ipynb",
-        "01-5b-Qwen-Image-Edit-2509.ipynb",
+        "01-5-Edition-Image-Prompt.ipynb",
+        "01-5b-Edition-Image-Prompt-Iterations.ipynb",
     ],
     "zimage": [
         "02-4-Z-Image-Lumina2.ipynb",

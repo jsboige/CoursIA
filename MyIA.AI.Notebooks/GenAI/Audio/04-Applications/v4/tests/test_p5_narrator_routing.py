@@ -561,16 +561,19 @@ def test_customvoice_default_speaker_is_supported():
     )
 
 
-def test_narrator_engine_reference_ids_covers_exactly_three_engines():
-    """La table engine -> sentinelle couvre les trois moteurs, et rien de
-    plus : un alias surnumeraire (une cle que le routeur ne selectionne
-    jamais) ferait servir un cache d'un moteur pour un autre."""
+def test_narrator_engine_reference_ids_covers_exactly_the_narrator_engines():
+    """La table engine -> sentinelle couvre exactement les moteurs
+    narrateur (Qwen VoiceDesign, CosyVoice3, CustomVoice et ZONOS3 depuis
+    #25835), et rien de plus : un alias surnumeraire (une cle que le
+    routeur ne selectionne jamais) ferait servir un cache d'un moteur pour
+    un autre."""
     from v4 import p5_tts
 
     assert set(p5_tts._NARRATOR_ENGINE_REFERENCE_IDS) == {
         "qwen_voicedesign",
         "cosyvoice3",
         "customvoice",
+        "zonos3",
     }
     # La table et le routeur doivent decrire le meme ensemble de moteurs.
     assert set(p5_tts._narrator_engine_flags()) == set(
