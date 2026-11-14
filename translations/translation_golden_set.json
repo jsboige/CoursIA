@@ -658,8 +658,8 @@
   },
   {
    "kind": "notebook",
-   "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb",
-   "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation_en.ipynb",
+   "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
+   "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API_en.ipynb",
    "sha1_fr": "2600da646d384effeb61e95f8e9bce7b7a0e3e3e",
    "sha1_en": "766287f0f712bb39c454f137f1659f9db67a7157",
    "sources_sha1_fr": "aae28e9ded0c9e3b466d6e122266d8f790a0e851",
