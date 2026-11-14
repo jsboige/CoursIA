@@ -1,6 +1,6 @@
 # Kernels & Runtime — Cluster CoursIA
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-14
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
@@ -237,15 +237,34 @@ Verifications post-reparation sur po-2024 : version `1.0.617701+fb2fd802...` con
 
 **Canon de re-exécution po-2028** : `python3` → **(3.13.16, numpy 2.2.6)**, env `mcp-jupyter`.
 
-### Ce que les deux rangées mesurées établissent
+### MYIA-PO-2024 (mesuré 2026-11-14T02:30Z — rangée d'origine : #24883, commentaire `6870260888`)
 
-1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023) contre **2.2.6** (po-2028). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
+| Kernelspec | Python | numpy | Executable |
+|---|---|---|---|
+| `.net-csharp{,-r9,-r10,-r10-canon,-r11,-stdio}` / `.net-fsharp` / `.net-powershell` | non-Python (dotnet-interactive) | - | dotnet-interactive |
+| `python3` / `python3-lean` / `mcp-jupyter` / `global-3.13` / `coursia-py313-argu` | 3.13.16 | 2.4.2 | `C:/Users/jsboi/AppData/Local/Programs/Python/Python313/python.exe` |
+| `py31315` | 3.13.16 | 2.5.4 | `C:/Users/jsboi/.venvs/py31315/Scripts/python.exe` |
+| `sheetsage2-gpu` | 3.13.16 | 2.5.3 | `D:/Dev/venvs/sheetsage2-gpu/Scripts/python.exe` |
+| `ict-py313` | 3.13.7 | 2.5.4 | `D:/Dev/venvs/ict-py3137/Scripts/python.exe` |
+| `coursia-ml-training` | 3.11.15 | 2.4.6 | `C:/Users/jsboi/.conda/envs/coursia-ml-training/python.exe` |
+| `coursia-drift` | 3.11.16 | 1.26.4 | `C:/Users/jsboi/.conda/envs/coursia-drift/python.exe` |
+| `python3119` | 3.11.9 | 2.4.6 | `C:/Users/jsboi/AppData/Local/CoursIA/venvs/py3119/Scripts/python.exe` |
+| `pyphi` / `pyphi-iit` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/pyphi/python.exe` |
+| `ict-py39` | 3.9.23 | 1.26.4 | `C:/Users/jsboi/.conda/envs/ict-py39/python.exe` — **réparé le 14/11** (numpy 2.0.2 → 1.26.4 + `antropy` + `cryptography` ; `pyemd` re-importable, `pip check` clean) |
+| `cb09-ass` / `difflogic-sl12` / `ft03-gpu` / `mert2-gpu` / `pymc311` | **MORT** (argv[0] absent) | - | 5 pointeurs vers des worktrees/venvs supprimés, **hors `%TEMP%`** ; 3 référencés par des carnets de `main` (cf. commentaire #24883) |
+| `lean4-wsl` / `python3-wsl` / `python3-wsl-swipl` / `python3-sc16-concrete-wsl` | non-Python (wsl) | - | `wsl.exe` |
+
+**Canon de re-exécution po-2024** : `python3` → **(3.13.16, numpy 2.4.2)**, `C:/Users/jsboi/AppData/Local/Programs/Python/Python313`.
+
+### Ce que les trois rangées mesurées établissent
+
+1. **Même nom, même Python, numpy différent** : `python3` → numpy **2.5.2** (po-2023), **2.2.6** (po-2028), **2.4.2** (po-2024). Le cas fondateur de #24883 en version mineure — une re-exécution « python3 » produit des sorties non interchangeables dès que le carnet dépend de numpy.
 2. **Plusieurs noms, un seul environnement** (dual du cas fondateur) : po-2028 `python3` == `coursia-canonical` == `coursia-pymc` (même exécutable) ; po-2023 `python3` == `coursia-py313-argu`, `python3-lean` == `smartcontracts`, `argu-reexec-310` == `mcp-jupyter-py310`. Dans les deux sens, le nom ne dénote pas l'artefact.
-3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
+3. **`coursia-ml-training` lui-même diverge** : (3.11.16, 2.4.6) sur po-2023, (3.12.15, 2.5.4) sur po-2028, **(3.11.15, 2.4.6)** sur po-2024 — le nom le plus « canonique » du dépôt n'est pas plus dénotatif que les autres.
 
 ### Sièges restants
 
-Non mesurés à la date de cette section : `ai-01`, `po-2024`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
+Non mesurés à la date de cette section : `ai-01`, `po-2025`, `po-2026`, `po-2027`. La même sonde (ci-dessus) y produit la rangée manquante ; chaque rangée publiée cite sa date de mesure et son commentaire d'origine sur #24883.
 
 ## Python 3.10+ (notebooks Python)
 
