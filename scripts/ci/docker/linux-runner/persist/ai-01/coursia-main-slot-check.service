@@ -1,0 +1,36 @@
+# Verification PERIODIQUE du slot reserve a la verification de `main`
+# (ai-01, WSL Ubuntu). Copie de REFERENCE : l'original vit sous
+# /etc/systemd/system/.
+#
+# CE QUE CETTE UNITE AJOUTE A L'UNITE DE BOOT
+# ---------------------------------------------
+# `coursia-main-slot.service` fait l'etat AU BOOT : le slot est cree s'il
+# est absent. Elle ne voit pas ce qui se passe APRES.
+#
+# Or le slot peut disparaitre en cours de vie : conteneur supprime a la
+# main, daemon docker reinitialise, `docker system prune`. Le job CPU de
+# `main` -- job REQUIS -- attend alors derriere les PRs, et la garantie du
+# slot reserve redevient illusoire. C'est le meme defaut que celui que T-L
+# a corrige, mais dans l'autre sens du temps.
+#
+# Cette unite VERIFIE (le `--check` de l'organe, qui est l'organe de la
+# conformance) et REPARE ce qui se repare : absent -> creation, arrete ->
+# redemarrage. Ce qui ne se repare pas (derive de labels, image, cgroup)
+# reste signale : une derive non signalee est une panne muette.
+#
+# Le declenchement est un timer (`coursia-main-slot-check.timer`), pas une
+# boucle : une boucle dans l'unite serait un watchdog qui ne dort jamais.
+[Unit]
+Description=Verification du slot reserve a la verification de `main` (CoursIA, ai-01)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/reference/cluster-agents.md
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+Environment=HOME=/root
+Environment=COURSIA_REPO_DIR=/mnt/d/CoursIA
+Environment=COURSIA_MASTER_ENV=/mnt/d/CoursIA/.secrets/master.env
+ExecStart=/usr/local/bin/coursia-main-slot-start.sh check
+# Le `--check` de l'organe lit l'etat VIVANT : il lui faut le daemon.
+TimeoutStartSec=300

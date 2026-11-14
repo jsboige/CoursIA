@@ -1,0 +1,81 @@
+# Unite systemd du SLOT RESERVE a la verification de `main` (ai-01, WSL Ubuntu).
+# Copie de REFERENCE : l'original vit sous /etc/systemd/system/ dans la distro
+# Ubuntu de l'hote. Meme patron que `coursia-runner.service` -- voir
+# persist/README.md pour la table de correspondance.
+#
+# CE QUE CETTE UNITE GARANTIT
+# ---------------------------
+# Le job CPU de `main` (push) est un job REQUIS : tant qu'il n'a pas de
+# verdict, `main` n'est pas verifie. Le slot reserve (`coursia-main`) est sa
+# seule place propre -- mesure du 2026-11-12 : le job est reste en file plus
+# de 27 minutes, avec 31 runners sur 31 occupes par des PRs.
+#
+# Cette unite rend ce slot PERSISTANT :
+#   * au boot, elle le CREE s'il est absent ;
+#   * si le demarrage echoue (docker pas encore pret, jeton non lu), elle
+#     REDEMMARRE -- `Restart=on-failure`, borne par StartLimit* ;
+#   * une unite `oneshot` qui a abouti reste active (RemainAfterExit) : le
+#     slot, lui, vit dans le conteneur, pas dans l'unite.
+#
+# La surveillance PERIODIQUE (le slot disparait en cours de vie) est une
+# autre unite : `coursia-main-slot-check.service`, declenchee par
+# `coursia-main-slot-check.timer`. Deux unites, deux gestes : celle-ci fait
+# l'etat au BOOT, le timer fait l'etat COURANT.
+#
+# LE SLOT N'EST JAMAIS SUPPRIME
+# -----------------------------
+# `ExecStop` appelle le wrapper en mode `stop`, qui ne fait QUE le dire.
+# Un slot reserve n'est pas un artefact ephemere : le supprimer sur un
+# arret d'unite rendrait le service destructif. `create-main-slot.sh`
+# refuse lui-meme de supprimer un slot -- la regle est donc portee par les
+# deux bouts.
+#
+# LE PATRON DE L'UNITE VIVANTE DU SUPERVISEUR
+# --------------------------------------------
+# Wants= et NON Requires= (#14347 item 2) : un docker.service en echec au
+# boot doit retarder cette unite et la laisser retenter sous Restart=, pas
+# la faire sortir de la liste des unites -- une unite sortie ne revient qu'a
+# la main, et personne ne va la chercher.
+#
+# Les cles StartLimit* sont dans [Unit] ET NON dans [Service] : mesure du
+# 2026-09-07, `systemd-analyze verify` a rendu « Unknown key name
+# 'StartLimitIntervalSec' in section 'Service', ignoring ». Une clause
+# ignoree ne refuse rien : le service aurait redemarre toutes les 30 s
+# indefiniment, en presentant l'apparence exacte d'un garde
+# anti-emballement. Depuis systemd v229 ces cles appartiennent a [Unit].
+#
+# Le depot est dans l'ENVIRONNEMENT, pas dans le chemin du wrapper : le
+# wrapper est PINLE sous /usr/local/bin, et c'est lui qui resout
+# l'organe dans le checkout partage.
+[Unit]
+Description=Slot runner reserve a la verification de main (CoursIA, ai-01)
+Documentation=https://github.com/jsboige/CoursIA/blob/main/docs/ci/self-hosted-runners.md
+After=docker.service
+Wants=docker.service
+StartLimitIntervalSec=600
+StartLimitBurst=5
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# HOME est pose explicitement : l'organe (`create-main-slot.sh`) compose
+# son repertoire de base a partir de `$HOME`, et `set -u` le ferait
+# echouer sous systemd, ou HOME n'est pas garanti.
+Environment=HOME=/root
+Environment=COURSIA_REPO_DIR=/mnt/d/CoursIA
+Environment=COURSIA_MASTER_ENV=/mnt/d/CoursIA/.secrets/master.env
+ExecStart=/usr/local/bin/coursia-main-slot-start.sh start
+ExecStop=/usr/local/bin/coursia-main-slot-start.sh stop
+# Le mint du jeton d'enregistrement et le `docker run` doivent avoir le
+# temps de repondre ; au-dela, l'unite passe en echec et Restart= la
+# reprend.
+TimeoutStartSec=600
+TimeoutStopSec=120
+# Restart= n'est PAS autorise avec `always` sur une unite `oneshot`, mais
+# `on-failure` l'est : c'est lui qui rejoue une creation qui a echoue
+# (docker pas encore pret au boot).
+Restart=on-failure
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

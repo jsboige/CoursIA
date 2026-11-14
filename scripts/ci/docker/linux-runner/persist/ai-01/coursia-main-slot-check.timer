@@ -1,0 +1,34 @@
+# Timer de verification du slot reserve a la verification de `main`
+# (ai-01, WSL Ubuntu). Copie de REFERENCE : l'original vit sous
+# /etc/systemd/system/.
+#
+# LA CADENCE
+# ----------
+# 15 minutes. C'est un compromis mesure, pas un choix de gout :
+#
+#   * en dessous, la surveillance coute plus qu'elle ne rend : le slot ne
+#     disparait pas par lui-meme, et une disparition est presque toujours
+#     consecutrice d'un geste humain ou d'un `docker system prune` ;
+#   * au-dessus, un job REQUIS de `main` peut attendre 15 minutes dans la
+#     file des PRs avant que le slot ne soit recree -- soit la mesure du
+#     2026-11-12 (27 minutes de file) qu'il faut eviter de reproduire.
+#
+# `OnBootSec=10min` laisse le daemon docker monter avant la premiere
+# verification ; `Persistent=true` rattrape une verification MANQUEE apres
+# une arreture de la machine -- sinon le premier trou apres un reboot
+# serait justement celui qu'on voulait couvrir.
+#
+# `AccuracySec=1min` etale les declenchements : plusieurs machines du parc
+# ne doivent pas toutes interroger GitHub au meme instant.
+[Unit]
+Description=Timer de verification du slot reserve de `main` (CoursIA, ai-01)
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=15min
+AccuracySec=1min
+Unit=coursia-main-slot-check.service
+Persistent=true
+
+[Install]
+WantedBy=timers.target
