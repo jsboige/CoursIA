@@ -1,6 +1,6 @@
 """Repair corrupted GenAI notebooks - fix missing newline terminators.
 
-The corruption was caused by scripts/fix_robust_dotenv.py which used
+The corruption was caused by scripts/notebook_tools/fix_robust_dotenv.py which used
 ROBUST_PATTERN.split('\n') producing strings WITHOUT trailing '\n'.
 When these were stored in cell['source'] and then ''.join(source)
 was called, lines collapsed into single mega-lines (500+ chars).
@@ -147,7 +147,7 @@ def main():
     if dry_run:
         print("\n(dry run - no files modified)")
     else:
-        print("\nRun 'python scripts/audit_genai_corruption.py' to verify repairs.")
+        print("\nRun 'python scripts/audit/audit_genai_corruption.py' to verify repairs.")
 
     return total_fixed
 

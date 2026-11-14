@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-SemanticKernel
-pedagogical_count: 23
-breakdown: SemanticKernel=23
-maturity: BETA=18, TEMPLATE=3, DRAFT=2
+pedagogical_count: 24
+breakdown: SemanticKernel=24
+maturity: BETA=19, TEMPLATE=3, DRAFT=2
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Génération de texte](../Texte/README.md)
@@ -40,6 +40,12 @@ Le parcours commence par les fondations Python, puis va des agents et de leurs o
 | 09 | [SK-9-Building-CLR](09-SemanticKernel-Building-CLR.ipynb) | Interop Python/C# via pythonnet, chargement DLL .NET | 40 min | — |
 | 10 | [SK-10-NotebookMaker](10-SemanticKernel-NotebookMaker.ipynb) | **Système 3-agents** interactif (Admin, Coder, Reviewer) avec function calling | 60 min | [10a](10a-SemanticKernel-NotebookMaker-batch.ipynb) · [10b](10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) |
 | 11 | [SK-11-A2A](11-SemanticKernel-A2A.ipynb) | Le protocole Agent2Agent à côté de MCP : AgentCard, serveur FastAPI local, cycle de vie des tâches, échange client réel | 40 min | — |
+
+## Parité Python / C#
+
+| Sujet | Python | C# | Particularités |
+|---|---|---|---|
+| MCP et Semantic Kernel | [SK-8](08-SemanticKernel-MCP.ipynb) | [SK-8 C#](08-SemanticKernel-MCP-CSharp.ipynb) | SDK MCP et SK natifs ; C# adapte les `AIFunction`, et teste aussi l’export SK sur stdio. Le contrôle de chemin C# est lexical et ne résout pas les liens symboliques. |
 
 ## Approfondissements
 
