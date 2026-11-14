@@ -189,3 +189,19 @@ Les sources des paliers avancés complètent les références du début du parco
 La série modern-llm de JohnEnev offre un retour d’expérience externe : [préentraînement](https://johne.substack.com/p/modern-llm-part-1-building-a-350m-transformer-from), [architecture](https://johne.substack.com/p/modern-llm-part-2-modernizing-the-architecture), [SFT et GRPO](https://johne.substack.com/p/modern-llm-part-3-post-training-sft-and-grpo), [inférence et service](https://johne.substack.com/p/modern-llm-part-4-v3-inference-and-serving-models). Lire ses coûts et performances dans leur protocole propre.
 
 [Retour à GenAI](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md) · [Licence](../../../LICENSE)
+
+### Compagnon C# de PT-08
+
+[PT-08 C#](PT_08_grpo_from_scratch_toy_env-CSharp.ipynb) reprend [PT-08 Python](PT_08_grpo_from_scratch_toy_env.ipynb) avec TorchSharp-cpu 0.107.0/libtorch CPU 2.10.0 pour les réseaux et Microsoft.Z3 4.12.2 pour les vérifications. La fast-path tensorielle d'entraînement est contrôlée contre 2400 vrais checks SMT ; elle ne lance pas Z3 à chaque action. Les générateurs et trajectoires diffèrent entre langages. Le jouet a 96 prompts sans jeu séparé et n'inclut ni séquence ni pénalité KL.
+
+Sous Linux, préparer le binaire Z3 4.12.2 dans un environnement Python isolé, puis exporter son chemin **avant de démarrer le noyau .NET** :
+
+```bash
+python3 -m venv .venv-pt08
+.venv-pt08/bin/pip install z3-solver==4.12.2.0
+export Z3_NATIVE_LIBRARY="$(.venv-pt08/bin/python -c 'import pathlib,z3; print(pathlib.Path(z3.__file__).parent / "lib" / "libz3.so")')"
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+# Lancer ici Jupyter avec le noyau .NET Interactive.
+```
+
+Le paquet Python fournit ici uniquement la bibliothèque native du solveur, appelée depuis C# ; il n'exécute pas la leçon. Les paquets NuGet sont restaurés à l'exécution. Le Python jumeau requiert PyTorch CPU, NumPy, Matplotlib et z3-solver ; aucune clé ni GPU n'est nécessaire.
