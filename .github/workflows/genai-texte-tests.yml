@@ -36,12 +36,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: genai-texte-tests-${{ github.ref }}
+  group: genai-texte-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   genai-texte-tests:
     name: GenAI Texte pytest (24 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # Forme hybride de débordement (#22461 phase A) -- PR même-dépôt ET
     # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; sinon ubuntu-latest.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}

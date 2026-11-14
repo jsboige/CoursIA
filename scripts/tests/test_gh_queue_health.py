@@ -11,6 +11,12 @@ All tests use the `--input` snapshot mode so they are hermetic -- no live
 5. The pr-closed ghost class (#18215): a queued pull_request run whose PR
    is closed is a permanent ghost regardless of age, and a prior-analysis
    snapshot replays its ghost class through `_ghost_reason`.
+6. The no-job class (#26357): a queued comment/review-triggered run whose
+   job list is EMPTY was never admitted to a runner, so it carries no
+   check-run and can be cancelled without turning any check red. The class
+   requires a positive proof (an empty job list): a failed probe excludes
+   the run, and a run that gained a job before the cancellation is dropped
+   from the batch.
 
 Plus direct CLI tests asserting EXIT_GHOST / EXIT_OK on CoursIA-shaped
 snapshots.
@@ -1203,3 +1209,204 @@ def test_17397_cli_cancel_rejects_input_mode(tmp_path: Path) -> None:
         f"expected EXIT_BROKEN=2, got {proc.returncode}; stderr={proc.stderr}"
     )
     assert "stale-runs-on requires --repo" in proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# no-job class (#26357): queued runs with no job created
+# ---------------------------------------------------------------------------
+
+def test_26357_fetch_run_jobs_returns_none_on_bad_payload(monkeypatch) -> None:
+    """A failed probe returns None -- never an empty list.
+
+    None means "unknown"; an empty list means "proved job-less". The
+    distinction is the whole safety argument of the class, so a broken
+    payload must never masquerade as a proof.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    class _Proc:
+        def __init__(self, payload):
+            self.returncode, self.stdout, self.stderr = 0, json.dumps(payload), ""
+
+    def fake_run(cmd, **kwargs):
+        endpoint = cmd[-1] if cmd else ""
+        if "not-a-dict" in endpoint:
+            return _Proc(["nope"])
+        if "no-jobs-key" in endpoint:
+            return _Proc({"total_count": 0})
+        if "bad-jobs" in endpoint:
+            return _Proc({"jobs": "not-a-list"})
+        if "failed" in endpoint:
+            class _Fail:
+                returncode, stdout, stderr = 1, "", "HTTP 404"
+            return _Fail()
+        return _Proc({"jobs": []})
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.fetch_run_jobs("o/r", 1) == []
+    assert mod.fetch_run_jobs("o/r", "not-a-dict") is None
+    assert mod.fetch_run_jobs("o/r", "no-jobs-key") is None
+    assert mod.fetch_run_jobs("o/r", "bad-jobs") is None
+    assert mod.fetch_run_jobs("o/r", "failed") is None
+
+
+def test_26357_detect_no_job_runs_requires_an_empty_job_list(monkeypatch) -> None:
+    """Only a PROVED empty job list enters the class.
+
+    A run with a job is excluded (it carries a live check-run), and a
+    failed probe is excluded too (unknown, never a proof).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    probed: list[int] = []
+
+    def fake_jobs(repo: str, run_id: int):
+        probed.append(run_id)
+        if run_id == 11:
+            return []           # proved job-less
+        if run_id == 22:
+            return [{"name": "build"}]  # has a job -> carries a check-run
+        return None            # unknown -> excluded
+
+    monkeypatch.setattr(mod, "fetch_run_jobs", fake_jobs)
+    now = dt.datetime(2026, 11, 14, 6, 0, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 11, "event": "issue_comment", "created_at": "2026-11-11T10:00:00Z"},
+        {"id": 22, "event": "issue_comment", "created_at": "2026-11-11T10:00:00Z"},
+        {"id": 33, "event": "issue_comment", "created_at": "2026-11-11T10:00:00Z"},
+    ]
+    out = mod.detect_no_job_runs("jsboige/CoursIA", runs,
+                                 events=mod.NO_JOB_EVENTS,
+                                 min_age_hours=24.0, now=now)
+    assert out["ids"] == {11}
+    assert out["checked"] == 3
+    assert out["unknown"] == 2
+    assert sorted(probed) == [11, 22, 33]
+
+
+def test_26357_detect_no_job_runs_skips_other_events_and_fresh_runs(monkeypatch) -> None:
+    """Only comment/review events older than the threshold are probed.
+
+    A `pull_request` run is never eligible: admitting it would create a
+    real check-run on the head SHA, and cancelling it could suppress a
+    gate the branch protection expects. A fresh run is ordinary backlog.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    probed: list[int] = []
+
+    def fake_jobs(repo: str, run_id: int):
+        probed.append(run_id)
+        return []
+
+    monkeypatch.setattr(mod, "fetch_run_jobs", fake_jobs)
+    now = dt.datetime(2026, 11, 14, 6, 0, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 41, "event": "pull_request", "created_at": "2026-11-01T10:00:00Z"},
+        {"id": 42, "event": "push", "created_at": "2026-11-01T10:00:00Z"},
+        {"id": 43, "event": "issue_comment", "created_at": "2026-11-14T04:00:00Z"},
+        {"id": 44, "event": "issue_comment", "created_at": "2026-11-01T10:00:00Z"},
+    ]
+    out = mod.detect_no_job_runs("jsboige/CoursIA", runs,
+                                 events=mod.NO_JOB_EVENTS,
+                                 min_age_hours=24.0, now=now)
+    assert probed == [44]
+    assert out["ids"] == {44}
+    assert out["checked"] == 1
+
+
+def test_26357_classify_routes_no_job_to_ghosts() -> None:
+    """The no_job set moves runs from `live` to `ghosts`.
+
+    The permanent classes keep their precedence: a pre-cutoff run stays
+    `pre-cutoff` even when it also carries no job.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 2, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 3, "created_at": "2026-08-19T03:00:00Z"},  # pre-cutoff
+    ]
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    out = mod.classify_runs(runs, cutoff, no_job={1, 2})
+    reasons = {g["id"]: g["reason"] for g in out["ghosts"]}
+    assert reasons == {1: "no-job", 2: "no-job", 3: "pre-cutoff"}
+    assert out["live"] == []
+
+
+def test_26357_verify_no_job_before_cancel_drops_admitted_runs(monkeypatch) -> None:
+    """A run that gained a job between detection and cancellation is dropped.
+
+    Cancelling an admitted run would cancel its live job, and a CANCELLED
+    check-run blocks the merge like a failure (c.925). The re-probe is the
+    guard that keeps the class safe.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def fake_jobs(repo: str, run_id: int):
+        if run_id == 22:
+            return [{"name": "check-variation-adjacency-comment"}]
+        return []
+
+    monkeypatch.setattr(mod, "fetch_run_jobs", fake_jobs)
+    keep, dropped = mod.verify_no_job_before_cancel("jsboige/CoursIA", [11, 22])
+    assert keep == [11]
+    assert dropped == [22]
+
+
+def test_26357_cli_cancel_no_job_rejects_input_mode(tmp_path: Path) -> None:
+    """--cancel no-job on a snapshot is rejected -- the job state is live-only.
+
+    The proof that a run carries no job comes from the API, not from the
+    snapshot: a snapshot cannot answer it, so the option refuses rather
+    than guessing.
+    """
+    snapshot = tmp_path / "snap.json"
+    snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
+    proc = _run("--cancel", "no-job", "--input", str(snapshot))
+    assert proc.returncode == 2, (
+        f"expected EXIT_BROKEN=2, got {proc.returncode}; stderr={proc.stderr}"
+    )
+    assert "no-job requires --repo" in proc.stderr
+
+
+def test_26357_no_job_events_exclude_pr_and_push() -> None:
+    """The eligible events carry no PR head by construction.
+
+    A `pull_request` or `push` run decides something on a head SHA: if it
+    is admitted it creates a real check-run, and cancelling it could
+    suppress a gate the branch protection expects to see. Comment- and
+    review-triggered runs do not.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert "issue_comment" in mod.NO_JOB_EVENTS
+    assert "pull_request" not in mod.NO_JOB_EVENTS
+    assert "push" not in mod.NO_JOB_EVENTS
+
+
+def test_26357_count_by_event_sorts_and_labels_unknown() -> None:
+    """The free proxy: the live queue's share per event.
+
+    No API call, so the scheduled watch can always afford it. The
+    comment- and review-triggered share is the padding signal (#26357).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "event": "pull_request"},
+        {"id": 2, "event": "issue_comment"},
+        {"id": 3, "event": "issue_comment"},
+        {"id": 4, "event": None},
+    ]
+    assert mod._count_by_event(runs) == {
+        "issue_comment": 2, "pull_request": 1, "unknown": 1,
+    }
