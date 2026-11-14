@@ -538,6 +538,44 @@ class GateError(RuntimeError):
     """Raised when the check state cannot be established. Always fatal."""
 
 
+#: Code de sortie du verdict INCONCLUSIVE (famille quota d'installation).
+#:
+#: Il est DISTINCT de 1 (FAIL) pour que le chainer puisse le reconnaitre et
+#: rejouer la jambe : un FAIL de contenu ne se rejoue pas, une lecture
+#: impossible parce que le quota partage est epuise se rejoue. Le code reste
+#: non nul -- la regle 1 ("jamais un PASS sur un etat inconnu") n'est pas
+#: touchee : 3 dit "je ne sais pas", pas "c'est vert".
+INSTALLATION_QUOTA_EXIT = 3
+
+
+def _conclusion_for(code: int) -> str:
+    """La conclusion de check-run qui correspond a un code de sortie.
+
+    0 -> `success` ; 1 -> `failure` (un vrai rouge de contenu) ;
+    3 -> `neutral` (la famille quota : ni vert ni rouge, la jambe se rejoue).
+    """
+    if code == 0:
+        return "success"
+    if code == INSTALLATION_QUOTA_EXIT:
+        return "neutral"
+    return "failure"
+
+
+class GateInconclusive(RuntimeError):
+    """Le verdict n'a pas pu etre etabli POUR UNE RAISON D'INFRASTRUCTURE.
+
+    Distinct de `GateError` : `GateError` signifie « etat illisible », ce qui
+    reste un FAIL au sens de la regle 1 ; `GateInconclusive` signifie « etat
+    illisible PARCE QUE LE QUOTA PARTAGE DE L'INSTALLATION EST EPUISE ».
+
+    La distinction n'est pas cosmetique : mesuree sur la fenetre du
+    2026-11-14 12:00Z-14:00Z, **6 des 35 echecs du PR gate** sur cette
+    fenetre etaient de cette famille -- des rouges que la lane lisait comme
+    des defauts de code, et qui ne l'etaient pas. Le verdict doit etre
+    REJOUABLE, jamais un FAIL.
+    """
+
+
 # --- pure decision layer (no network; this is what the unit tests pin) -------
 
 
@@ -1067,6 +1105,50 @@ def _gh_etag(header_block: str) -> str | None:
     return None
 
 
+def _gh_rate_limit_reset(header_block: str) -> int | None:
+    """Epoch (secondes) de la reinitialisation du quota, si l'en-tete est la.
+
+    L'en-tete `x-ratelimit-reset` porte l'heure de reinitialisation du quota
+    PARTAGE de l'installation. C'est la seule donnee qui distingue « ce 403
+    va se resorber dans N secondes » de « ce 403 est permanent » : sans elle,
+    un quota epuise se subit (FAIL) au lieu de s'attendre.
+
+    `None` quand l'en-tete est absent ou illisible -- l'appelant treat alors
+    l'erreur comme une erreur transitoire ordinaire.
+    """
+    for line in (header_block or "").splitlines():
+        name, sep, value = line.partition(":")
+        if not sep or name.strip().lower() != "x-ratelimit-reset":
+            continue
+        try:
+            return int(value.strip())
+        except ValueError:
+            return None
+    return None
+
+
+#: L'epoch de reinitialisation du quota, tel qu'il est porte par le message
+#: d'un `GateError` construit par `_gh_api`.
+_QUOTA_RESET_RE = re.compile(r"quota reset (\d+)")
+
+
+def _quota_reset_epoch(exc: BaseException) -> int | None:
+    """L'epoch de reinitialisation du quota porte par `exc`, s'il y en a un.
+
+    Le message est la surface de transport : `_gh_api` y ecrit l'en-tete, et
+    cette fonction le relit. Un `GateError` construit ailleurs (un test, un
+    appel direct) ne porte pas d'epoch -- c'est le contrat, pas une
+    approximation.
+    """
+    match = _QUOTA_RESET_RE.search(str(exc))
+    if not match:
+        return None
+    try:
+        return int(match.group(1))
+    except ValueError:
+        return None
+
+
 def _gh_api(path: str) -> object:
     """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1).
 
@@ -1117,8 +1199,16 @@ def _gh_api(path: str) -> object:
 
     # Any OTHER non-zero exit is an unreadable read: fatal, never a cache-reuse.
     if completed.returncode != 0:
+        # #26551 -- l'heure de reinitialisation du quota est portee par le
+        # message : c'est elle qui permet a l'appelant d'ATTENDRE la fin du
+        # quota au lieu de le subir. Absente de l'en-tete -> absente du
+        # message -> l'appelant retombe sur le traitement transitoire
+        # ordinaire.
+        reset = _gh_rate_limit_reset(header_block)
+        reset_suffix = "" if reset is None else f", quota reset {reset}"
         raise GateError(
-            f"gh api {path} failed (exit {completed.returncode}, HTTP {status}): "
+            f"gh api {path} failed (exit {completed.returncode}, HTTP {status}"
+            f"{reset_suffix}): "
             f"{completed.stderr.strip()[:400]}"
         )
 
@@ -1507,7 +1597,11 @@ def post_check_run(
         "name": name,
         "head_sha": sha,
         "status": "completed",
-        "conclusion": "success" if code == 0 else "failure",
+        # #26551 -- la famille QUOTA ne se POSTE pas en `failure` : ce serait
+        # un rouge inamovible (meme mecanique que le DWELL de #21543) pour un
+        # verdict qui n'est pas un verdict. `neutral` dit "rien a signaler sur
+        # ce contenu", et le balayage rejoue la jambe.
+        "conclusion": _conclusion_for(code),
         "output[title]": f"{name}: {title}"[:255],
         "output[summary]": message or title,
     }
@@ -1785,6 +1879,7 @@ def wait_and_decide(
     sleep=time.sleep,
     fetch=fetch_checks,
     now=time.monotonic,
+    wall_now=time.time,
     detail: "dict | None" = None,
     fetch_job=None,
     all_queued_polls: int = 0,
@@ -1821,6 +1916,11 @@ def wait_and_decide(
     streak only accumulates under real starvation. The message starts with
     "STARVED" so `main`'s self-cancel (#13510) and the stale sweep's
     cancelled-leg remedy apply unchanged.
+
+    `wall_now` is the HORLOGE MURALE (default `time.time`), distinct de `now`
+    (monotone). Elle n'est la que pour une seule chose : comparer l'epoch de
+    reinitialisation du quota (`x-ratelimit-reset`, un temps murau) au budget
+    restant. Injectee pour que le test puisse fixer l'heure sans attendre.
     """
     deadline = now() + timeout_min * 60.0
     quiet_streak = 0
@@ -1859,11 +1959,60 @@ def wait_and_decide(
                     if _is_installation_quota_error(exc)
                     else "transient read failure"
                 )
+                # #26551 -- la famille QUOTA est traitee A PART. Un quota
+                # epuise n'est pas un defaut de contenu : le verdict doit
+                # etre REJOUABLE (code 3), jamais un FAIL que la lane lit
+                # comme un rouge de code. La regle 1 reste intacte : 3 dit
+                # « je ne sais pas », pas « c'est vert ».
+                if _is_installation_quota_error(exc):
+                    reset_at = _quota_reset_epoch(exc)
+                    raise GateInconclusive(
+                        f"{exc} -- {transient_reads} {family}(s) in a row: "
+                        "le quota partage de l'installation est epuise, "
+                        "l'etat des checks n'a pas pu etre lu"
+                        + (
+                            f" (reinitialisation a l'epoch {reset_at})"
+                            if reset_at is not None
+                            else " (heure de reinitialisation inconnue)"
+                        )
+                    ) from exc
                 raise GateError(
                     f"{exc} -- {transient_reads} {family}(s) in a row: "
                     "the check state stayed unreadable (rule 1)"
                 ) from exc
             if _is_installation_quota_error(exc):
+                # #26551 -- le repli BORNÉ. L'en-tete `x-ratelimit-reset`
+                # donne l'heure de reinitialisation du quota partage : si
+                # cette heure tient dans le budget RESTANT du job, on
+                # attend la reinitialisation plutot que de conclure en FAIL
+                # sur une infra qui redeviendra lisible dans une minute.
+                # Au-dela du budget : le verdict INCONCLUSIVE prend le
+                # relais (code 3, rejouable), jamais un FAIL de contenu.
+                reset_at = _quota_reset_epoch(exc)
+                remaining = max(deadline - now_ts, 0.0)
+                if reset_at is not None:
+                    wait_reset = reset_at - wall_now()
+                    if 0 < wait_reset <= remaining:
+                        print(
+                            f"[pr-gate] installation-quota 403 (GitHub App "
+                            "quota, shared, hourly reset -- not a check "
+                            f"verdict): le quota se reinitialise dans "
+                            f"{wait_reset:.0f}s, budget restant "
+                            f"{remaining:.0f}s -- on attend la "
+                            "reinitialisation au lieu de conclure en FAIL",
+                            flush=True,
+                        )
+                        sleep(wait_reset)
+                        continue
+                    if wait_reset > remaining:
+                        print(
+                            f"[pr-gate] installation-quota 403 -- le quota se "
+                            f"reinitialise dans {wait_reset:.0f}s, budget "
+                            f"restant {remaining:.0f}s : le verdict sera "
+                            "INCONCLUSIVE (code 3), rejouable, jamais un "
+                            "FAIL de contenu",
+                            flush=True,
+                        )
                 # #17681 -- a shared hourly quota is not crossed by 30 s
                 # retries: escalate the spacing, but never sleep past the
                 # absolute deadline. An unreadable state at the deadline
@@ -2366,6 +2515,16 @@ def main(argv: Iterable[str] | None = None) -> int:
             detail=detail,
             all_queued_polls=args.all_queued_polls,
         )
+    except GateInconclusive as exc:
+        # #26551 -- le quota partage de l'installation est epuise : ce n'est
+        # pas un defaut de contenu. Le verdict est INCONCLUSIVE (code 3),
+        # rejouable, et la jambe s'annule elle-meme (comme STARVED) pour que
+        # la PR reste BLOQUEE sans rouge de code. La regle 1 n'est pas
+        # touchee : 3 dit « je ne sais pas », jamais « c'est vert ».
+        code, message = INSTALLATION_QUOTA_EXIT, (
+            f"INCONCLUSIVE -- {exc} -- verdict REJOUABLE : ni PASS ni FAIL de "
+            "contenu, la jambe se rejoue apres reinitialisation du quota"
+        )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass. Fall
         # through to the single emission tail instead of returning here: the
@@ -2452,30 +2611,40 @@ def main(argv: Iterable[str] | None = None) -> int:
     # only: --post-check-run runs on the default branch as an operator
     # harness whose own run is NOT the PR's gate leg, so it keeps POSTing
     # the verdict instead of cancelling itself.
+    #
+    # #26551 -- meme remede pour la famille QUOTA : une jambe dont l'etat
+    # n'a pas pu etre lu parce que le quota partage est epuise ne doit pas
+    # laisser un rouge de code derriere elle. Elle s'annule comme STARVED, et
+    # le sweep la rejoue (son ensemble RED contient `cancelled` ET
+    # `failure`).
+    _self_cancel_kind = (
+        "STARVED" if message.startswith("STARVED")
+        else ("INCONCLUSIVE" if message.startswith("INCONCLUSIVE") else None)
+    )
     if (
-        code == 1
-        and message.startswith("STARVED")
+        code in (1, INSTALLATION_QUOTA_EXIT)
+        and _self_cancel_kind is not None
         and not args.no_self_cancel
         and not args.post_check_run
     ):
         run_id = args.run_id or os.environ.get("GITHUB_RUN_ID")
         if run_id:
             print(
-                f"[pr-gate] STARVED -- constituents still pending, nothing "
-                f"red; cancelling own run {run_id} so the leg concludes "
-                "CANCELLED, not FAILURE (#13510). The PR stays blocked; "
-                "pr-gate-stale-sweep will re-aggregate.",
+                f"[pr-gate] {_self_cancel_kind} -- cancelling own run "
+                f"{run_id} so the leg concludes CANCELLED, not FAILURE "
+                "(#13510, #26551). The PR stays blocked; pr-gate-stale-sweep "
+                "will re-aggregate.",
                 flush=True,
             )
             if cancel_own_run(args.repo, run_id):
                 # Hold the step open so the cancel signal lands before we
-                # exit (see CANCEL_GRACE_SEC). Exit code stays 1: if the
-                # cancel lost the race, rule 1 still holds.
+                # exit (see CANCEL_GRACE_SEC). The exit code is unchanged: if
+                # the cancel lost the race, rule 1 still holds.
                 time.sleep(CANCEL_GRACE_SEC)
         else:
             print(
-                "[pr-gate] STARVED but no run id resolvable (local run) -- "
-                "FAIL per rule 1",
+                f"[pr-gate] {_self_cancel_kind} but no run id resolvable "
+                "(local run) -- the verdict keeps its own code",
                 flush=True,
             )
 
@@ -2490,8 +2659,15 @@ def main(argv: Iterable[str] | None = None) -> int:
         # Le message peut porter %, CR ou LF (stderr gh multi-ligne) : un LF
         # brut tronque l'annotation, un % brut avale les octets suivants --
         # echappement protocolaire workflow-command, % EN PREMIER (#15472).
+        #
+        # #26551 -- la famille QUOTA sort en `::warning::` et non en
+        # `::error::` : ce n'est pas une erreur du code de la PR, c'est un
+        # quota d'infrastructure. L'annotation doit dire ce qu'elle est.
+        annotation = (
+            "::warning::" if code == INSTALLATION_QUOTA_EXIT else "::error::"
+        )
         print(
-            f"::error::[pr-gate] {_workflow_command_escape(message)}",
+            f"{annotation}[pr-gate] {_workflow_command_escape(message)}",
             file=sys.stderr,
             flush=True,
         )
@@ -2531,9 +2707,9 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
             file=sys.stderr,
         )
         return
-    conclusion = "success" if code == 0 else "failure"
     print(
-        f"[pr-gate] posted check-run on {args.sha[:7]} (conclusion={conclusion})",
+        f"[pr-gate] posted check-run on {args.sha[:7]} "
+        f"(conclusion={_conclusion_for(code)})",
         flush=True,
     )
 
