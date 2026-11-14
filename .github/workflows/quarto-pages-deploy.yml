@@ -37,6 +37,8 @@ on:
       # deploy : un fix du transform doit re-servir le site pour s'appliquer,
       # exactement comme yaml_safe ci-dessus.
       - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
       # La page catalogue est un document rendu (_quarto.yml render list), mais
       # son refresh arrive par la PR long-lived catalog-cron -- dont le merge
       # ne touche AUCUN autre path de cette liste : sans ce filtre, la page
@@ -69,6 +71,8 @@ on:
       # une PR qui ne touche QUE le transform doit exercer le pipeline sur
       # le smoke set, pas sauter le rendu.
       - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
   workflow_dispatch:
 
 # Concurrence par evenement : une PR repoussee n'a pas besoin de l'ancien
@@ -190,6 +194,11 @@ jobs:
         # exclues (cf. scripts/regen_quarto_render.py).
         run: python3 scripts/regen_quarto_render.py
 
+      - name: Préparer et vérifier les titres README
+        run: |
+          python3 scripts/ci/quarto_readme_titles.py apply --backup "$RUNNER_TEMP/readme-titles.json"
+          python3 scripts/ci/quarto_readme_titles.py check
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         # Quarto derive la classe pandoc du code-block depuis kernelspec.language.
         # Le kernel .NET Interactive ecrit "C#", que Quarto emet comme classe
@@ -240,6 +249,13 @@ jobs:
         # --runner-name implicite via $RUNNER_NAME. Imprime aussi la ligne
         # greppable "#14597-covariates:" pour la moisson multi-runs.
         run: python3 scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+
+      - name: Restaurer les README
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python3 scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
 
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
@@ -582,6 +598,9 @@ jobs:
       - name: Regenerate render list
         run: python scripts/regen_quarto_render.py
 
+      - name: Conserver la liste complète des README
+        run: cp _quarto.yml "$RUNNER_TEMP/readme-render-list.yml"
+
       - name: Scope render list to this PR's changed documents
         # #14429 : la jambe PR rendait le site ENTIER (1192 entrees, sans cache
         # -- `_freeze/` n'est pas tracke) alors que son objet declare est etroit
@@ -625,6 +644,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
 
+      - name: Préparer et vérifier les titres README
+        if: steps.scope.outputs.mode != 'empty'
+        run: |
+          python scripts/ci/quarto_readme_titles.py apply --config "$RUNNER_TEMP/readme-render-list.yml" --backup "$RUNNER_TEMP/readme-titles.json"
+          python scripts/ci/quarto_readme_titles.py check --config "$RUNNER_TEMP/readme-render-list.yml"
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py apply
@@ -655,6 +680,13 @@ jobs:
         # phase post-rendu n'est pas representative et le rapport resterait muet.
         if: steps.scope.outputs.mode == 'full'
         run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+
+      - name: Restaurer les README
+        if: always() && steps.scope.outputs.mode != 'empty'
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'

@@ -154,7 +154,7 @@
           }
         },
         {
-          "path": "GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb",
+          "path": "GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
           "title": "GPT-5 Multimodal - Analyse et Génération d'Images",
           "duration_minutes": 45,
           "kernel": "Python 3",
@@ -180,7 +180,7 @@
           }
         },
         {
-          "path": "GenAI/Image/01-Foundation/01-5c-Qwen-Image-21-Workflows.ipynb",
+          "path": "GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb",
           "title": "Qwen-Image 2.1 : workflows de reference et execution hebergee",
           "duration_minutes": 45,
           "kernel": "Python 3",

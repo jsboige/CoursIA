@@ -2450,7 +2450,7 @@ graph TD
 
 
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb">01-5-Qwen-Image-Edit.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb">01-5-Edition-Image-Prompt.ipynb</a>.</p>
 ---
 
 

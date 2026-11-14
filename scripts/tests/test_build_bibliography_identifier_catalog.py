@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-MODULE_PATH = REPO_ROOT / "scripts" / "build_bibliography_identifier_catalog.py"
+MODULE_PATH = REPO_ROOT / "scripts" / "bibliography" / "build_bibliography_identifier_catalog.py"
 
 
 def _load_module():

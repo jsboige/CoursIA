@@ -4,7 +4,7 @@ subtitle: "Série pédagogique — 19 approches + 1 companion statistique, en C#
 description: "La série Sudoku de CoursIA : un seul problème (la grille 9×9) résolu par 19 paradigmes complémentaires — backtracking, dancing links, métaheuristiques, CSP, solveurs (OR-Tools, Choco, Z3), automates symboliques, BDD, Infer.NET, réseaux de neurones, LLM, et une preuve Lean 4 de propagation. Dual-track C# .NET Interactive + Python."
 listing:
   - id: dotnet
-    contents: "Sudoku-*-Csharp.ipynb"
+    contents: "Sudoku-*-CSharp.ipynb"
     type: grid
     sort: "filename"
     page-size: 18

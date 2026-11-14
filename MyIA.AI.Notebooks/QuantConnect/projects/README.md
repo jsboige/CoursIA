@@ -43,7 +43,7 @@
 
 ### Exploratoire (Sharpe < 0) — 4 stratégies
 
-[TrendFilteredMeanReversion](TrendFilteredMeanReversion/) (-0.016) · [ForexCarry](ForexCarry/) (-0.324) · [PairsTrading](PairsTrading/) (-0.361) · [ETF-Pairs](ETF-Pairs/) (-0.706)
+[TrendFilteredMeanReversion](TrendFilteredMeanReversion/) (-0.000) · [ForexCarry](ForexCarry/) (-0.324) · [PairsTrading](PairsTrading/) (-0.361) · [ETF-Pairs](ETF-Pairs/) (-0.706)
 
 ### ML / DL / RL — 35+ stratégies
 

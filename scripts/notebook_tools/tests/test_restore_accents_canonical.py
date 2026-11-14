@@ -991,3 +991,21 @@ class Test21277CitationMask:
         assert '[la reference](notes/model.md "The Selection Model")' in src
         # la prose FR avoisinante reste curee
         assert "modèle" in src
+
+
+class TestNestedMaskRestoration:
+    def test_citation_with_inline_code_from_pymc_15(self):
+        # Extrait réel de PyMC-15-Recommenders, cellule 15.
+        text = 'Le warning dit : « Increase `target_accept` or reparameterize ».'
+        assert rac._cure_line(text, fr_context=True) == (text, 0)
+
+    def test_modal_code_not_corrupted(self):
+        # Extrait réel de Argumentation-05, cellule 15.
+        text = '- `[](phi)` : **necessairement** `phi`'
+        result, _ = rac._cure_line(text, fr_context=True)
+        assert '`[](phi)`' in result
+        assert '\x00MS' not in result
+
+    def test_citation_with_bare_url(self):
+        text = 'La citation dit "the element https://example.org/x is central".'
+        assert rac._cure_line(text, fr_context=True) == (text, 0)

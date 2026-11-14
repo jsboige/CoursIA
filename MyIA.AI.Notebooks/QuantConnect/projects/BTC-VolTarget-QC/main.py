@@ -89,8 +89,13 @@ MODES = ("base", "hold-btc", "spy", "sixty40")
 class BtcVolTargetAlgorithm(QCAlgorithm):
 
     def initialize(self):
-        start = self.get_parameter("start") or "2016-01-01"
-        end = self.get_parameter("end") or "2026-09-30"
+        # Dates sans valeur par défaut (règle 1 du contrat d'ombre #18923) : un
+        # backtest lancé sans elles échoue au lieu de tourner sur une période
+        # implicite. La fenêtre du verdict est 2016-01-01 -> 2026-09-30.
+        start = self.get_parameter("start")
+        end = self.get_parameter("end")
+        if not start or not end:
+            raise ValueError("parameters start and end are required (ISO dates)")
         self.set_start_date(*map(int, start.split("-")))
         self.set_end_date(*map(int, end.split("-")))
         self.set_account_currency("USD")

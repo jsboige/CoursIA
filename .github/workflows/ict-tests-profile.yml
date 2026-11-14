@@ -65,14 +65,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: ict-tests-profile
+  group: ict-tests-profile-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: false
 
 jobs:
   ict-tests-profile:
     name: ICT tests/ (55) uncensored probe (#14598)
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond de securite 90 min : la borne de production (30) censure a
     # droite ; 90 min laisse la distribution respirer sans ouvrir la porte a
     # un job enlise pour toujours (#15698 : un plafond est la seule protection

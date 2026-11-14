@@ -578,6 +578,56 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "tranche 4 (2026-11-07), pas un compteur du depot."
         ),
     ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"exactement \d{1,6} cellules passent le seuil"),
+        raison=(
+            "« 8 cellules » = cellules de niveau 0 (grille 4^3) dont la "
+            "probabilite predite passe 0,5, sur le jouet de generation de "
+            "voxels du carnet. Mesure du domaine, reproductible (graines "
+            "fixees) et recalculee a chaque execution : ce n'est pas un "
+            "compteur d'artefact du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"une médiane de \d{1,6} cellules"),
+        raison=(
+            "« mediane de 6 cellules » = nombre de cellules fines connues dans "
+            "le voisinage 3x3x3 d'une decision de niveau 0 : quantite mesuree "
+            "par l'experience, pas un etat du depot."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"\d{1,6} cellules en joint et \d{1,6} en séquentiel"),
+        raison=(
+            "« 95 cellules en joint » = voxels generes par l'echantillonneur "
+            "joint, compares au sequentiel et aux formes reelles ; compte "
+            "produit par l'execution du carnet, pas un compteur de carnets."
+        ),
+    ),
+    ArtifactExemption(
+        path=(
+            "MyIA.AI.Notebooks/GenAI/3D/"
+            "3D-07-Flow-Matching-Voxel-Joint-Python.ipynb"
+        ),
+        motif=re.compile(r"\(\d{1,6} à \d{1,6} cellules contre \d{1,6}\)"),
+        raison=(
+            "« 95 a 104 cellules contre 68 » = reprise du meme compte de "
+            "voxels generes dans la conclusion du carnet. La phrase nomme "
+            "l'experience, pas un artefact du depot."
+        ),
+    ),
 )
 
 # ----------------------------------------------------------------------------

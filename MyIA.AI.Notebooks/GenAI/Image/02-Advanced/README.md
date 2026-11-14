@@ -4,7 +4,7 @@
 
 Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5, Z-Image/Lumina, la quantification extrême (Bonsai ternaire 1.58-bit) et les modèles *few-step* (IMM, TVM).
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : un visuel de qualité demande des outils précis. [01-5b](../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) édite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) génère des images haute qualité. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage itératif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B dont le transformer ternaire pèse ~1.21 GB on-disk (0.74 GB en strict 1.58-bit) et se génère en ~2s, parfait pour déployer la génération d'images sur du matériel modeste (formation, demos) sans sacrifier la qualité. [02-6](02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) ferme le module par l'autre extrême de la contrainte : non plus réduire la précision ni le nombre de codes, mais **le nombre d'évaluations du réseau** — avec le code et les poids officiels de deux modèles *few-step* (IMM, TVM), et une mesure du compromis qualité / latence plutôt qu'une citation.
+**Dans le cadre du fil rouge contenu visuel éducatif** : un visuel de qualité demande des outils précis. [01-5b](../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) édite une image existante pour corriger ou enrichir un diagramme. [02-2](02-2-FLUX-1-Advanced-Generation.ipynb) génère des images haute qualité. [02-4](02-4-Z-Image-Lumina2.ipynb) offre une génération rapide pour le prototypage itératif. [02-5](02-5-Bonsai-Image-Ternary.ipynb) aborde la quantification ternaire 1.58-bit : un modèle 4B dont le transformer ternaire pèse ~1.21 GB on-disk (0.74 GB en strict 1.58-bit) et se génère en ~2s, parfait pour déployer la génération d'images sur du matériel modeste (formation, demos) sans sacrifier la qualité. [02-6](02-6-Few-Step-Generative-Models-IMM-TVM.ipynb) ferme le module par l'autre extrême de la contrainte : non plus réduire la précision ni le nombre de codes, mais **le nombre d'évaluations du réseau** — avec le code et les poids officiels de deux modèles *few-step* (IMM, TVM), et une mesure du compromis qualité / latence plutôt qu'une citation.
 
 ## Vue d'overview
 
@@ -20,7 +20,7 @@ Ce module explore les modèles de pointe : Qwen Image Edit avancé, FLUX, SD 3.5
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
-| 1 | [01-5b-Qwen-Image-Edit-2509](../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen | ComfyUI | ~29GB |
+| 1 | [01-5b-Edition-Image-Prompt-Iterations](../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb) | Édition itérative par prompt (Qwen Image Edit 2509) | ComfyUI | ~29GB |
 | 2 | [02-2-FLUX-1-Advanced-Generation](02-2-FLUX-1-Advanced-Generation.ipynb) | Génération FLUX | ComfyUI | Variable |
 | 3 | [02-3-Stable-Diffusion-3-5](02-3-Stable-Diffusion-3-5.ipynb) | SD 3.5 | ComfyUI | Variable |
 | 4 | [02-4-Z-Image-Lumina2](02-4-Z-Image-Lumina2.ipynb) | Z-Image/Lumina | ComfyUI | ~10GB |
@@ -46,7 +46,7 @@ Le notebook **02-6** a ses propres dépendances Python (`diffusers`, `transforme
 
 ## Progression recommandée
 
-1. **01-5b-Qwen-Image-Edit-2509** - Édition multimodale avancée
+1. **01-5b-Edition-Image-Prompt-Iterations** - Édition multimodale avancée
 2. **02-2-FLUX-1-Advanced-Generation** - Génération de haute qualité
 3. **02-3-Stable-Diffusion-3.5** - SD 3.5 pour contrôle fin
 4. **02-4-Z-Image-Lumina2** - Modèle léger et rapide
@@ -61,13 +61,13 @@ Le notebook **02-6** a ses propres dépendances Python (`diffusers`, `transforme
 - **VRAM** : ~29GB (VAE 16 canaux)
 
 <p align="center">
-  <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit.png" alt="Triptyque d'édition Qwen Image Edit — image originale d'intérieur de café (gauche), masque blanc flou (centre), zone d'édition marquée en rouge (droite)" width="460"/></a><br>
-  <em>Sortie du notebook <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb">01-5b</a> (cellule 22) : triptyque d'édition Qwen Image Edit — image originale d'intérieur de café / masque blanc / zone d'édition marquée en rouge (workflow image-to-image avec masque d'inpainting).</em>
+  <a href="../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb"><img src="assets/readme/img2-qwen-edit.png" alt="Triptyque d'édition Qwen Image Edit — image originale d'intérieur de café (gauche), masque blanc flou (centre), zone d'édition marquée en rouge (droite)" width="460"/></a><br>
+  <em>Sortie du notebook <a href="../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb">01-5b</a> (cellule 22) : triptyque d'édition Qwen Image Edit — image originale d'intérieur de café / masque blanc / zone d'édition marquée en rouge (workflow image-to-image avec masque d'inpainting).</em>
 </p>
 
 <p align="center">
-  <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb"><img src="assets/readme/img2-qwen-edit2.webp" alt="Batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape futuriste au coucher de soleil / temple japonais en automne / récif corallien sous-marin / bibliothèque cosy avec chat)" width="320"/></a><br>
-  <em>Sortie du notebook <a href="../01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb">01-5b</a> (cellule 30) : batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape / temple / récif / bibliothèque) sur 4 domaines visuels distincts.</em>
+  <a href="../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb"><img src="assets/readme/img2-qwen-edit2.webp" alt="Batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape futuriste au coucher de soleil / temple japonais en automne / récif corallien sous-marin / bibliothèque cosy avec chat)" width="320"/></a><br>
+  <em>Sortie du notebook <a href="../01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb">01-5b</a> (cellule 30) : batch generation Qwen Image Edit — mosaïque 4 variations thématiques (cityscape / temple / récif / bibliothèque) sur 4 domaines visuels distincts.</em>
 </p>
 
 ### FLUX 1

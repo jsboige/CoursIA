@@ -21,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ml-tests-${{ github.ref }}
+  group: ml-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -39,7 +39,7 @@ jobs:
     # Le job voisin `prover-tests` reste sur `ubuntu-latest` : il est desactive
     # (`if: ... && false`) et n'a donc aucune duree mesurable a borner.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Budget de 45 min, pas 30 (#16139, mesure 2026-09-14). Le 30 pose par
     # #15531 sur une extrapolation (~21 min) a ete ATTEINT quatre fois : la
     # premiere sur la branche de #15531 elle-meme (elle declarait deja 30), les
@@ -132,6 +132,6 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
     runs-on: ubuntu-latest
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && false  # Enable when tests/prover/ has tests
+    if: ((github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && false) && (github.event.action != 'edited' || github.event.changes.base != null)  # Enable when tests/prover/ has tests
     steps:
       - run: echo "Prover tests not yet available"

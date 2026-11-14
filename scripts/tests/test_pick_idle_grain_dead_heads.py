@@ -77,8 +77,12 @@ def test_un_quota_partiel_etend_la_fenetre_jusqu_aux_grains_libres():
                     (pig.CLAIM_CODE_BLOCKED, "claim d'une autre lane"))
                 for n in numbers}
 
+    # c2817 : le plafond de sondes gate desormais le SERVICE (un candidat
+    # dont la livraison n'a pas ete lue est ecarte « a sonder », pas servi).
+    # Un plafond etroit viderait la fenetre et MASQUERAIT la logique de
+    # quota testee ici : le budget couvre donc toute la fenetre.
     picks, _withheld, state = pig.belt_pick_with_replacements(
-        pool, claims, _args(grains=4), probe_budget=8,
+        pool, claims, _args(grains=4), probe_budget=1000,
         delivered_probe=_no_probe, merged_pr_probe=_no_probe,
         claims_probe=claims_probe)
     assert sorted(p["number"] for p in picks) == sorted(free)
@@ -91,8 +95,11 @@ def test_un_quota_rempli_dans_la_fenetre_ne_l_etend_pas():
     """Controle NEGATIF : 4 grains libres dans la fenetre -> pas d'extension."""
     pool = [_item(4000 + i) for i in range(150)]
     claims = {it["number"]: (pig.CLAIM_CODE_FREE, "libre") for it in pool[:70]}
+    # c2817 : meme raison que le controle positif -- le plafond de sondes
+    # doit couvrir la fenetre, sinon la fenetre est videe par le plafond
+    # et le test mesurerait le plafond, pas le quota.
     picks, _withheld, state = pig.belt_pick_with_replacements(
-        pool, claims, _args(grains=4), probe_budget=8,
+        pool, claims, _args(grains=4), probe_budget=1000,
         delivered_probe=_no_probe, merged_pr_probe=_no_probe,
         claims_probe=lambda numbers: {
             n: (pig.CLAIM_CODE_FREE, "libre") for n in numbers})

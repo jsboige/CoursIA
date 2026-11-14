@@ -21,11 +21,19 @@ Au fil du parcours, vous apprendrez à construire et décoder un code, à justif
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|---|---|---|---|
 | 01 | [Codes préfixes : Shannon–Fano et Huffman](Compression-01-ShannonFano-Prefixe-Python.ipynb) | Construire un arbre de code, vérifier la condition de Kraft et confronter sa longueur moyenne à l'entropie. | Découverte ; Python et probabilités discrètes. | [01b — preuves Lean](#autour-de-01--codes-et-preuves-recherche). |
-| 02 | [Huffman canonique](Compression-02-HuffmanCanonique-Python.ipynb) | Reconstruire les mots de code à partir de leurs longueurs ; échanger du temps de décodage contre une table en mémoire. | Découverte ; après 01. | Coût de l'en-tête, de la table et du décodage dans le carnet. |
+| 02 | [Huffman canonique — Python](Compression-02-HuffmanCanonique-Python.ipynb) · [C#](Compression-02-HuffmanCanonique-CSharp.ipynb) | Reconstruire les mots de code à partir de leurs longueurs ; échanger du temps de décodage contre une table en mémoire. | Découverte ; après 01. | Coût de l'en-tête, de la table et du décodage dans le carnet. |
 | 03 | [LZ77](Compression-03-LZ77-Python.ipynb) | Remplacer une répétition par une référence dans une fenêtre glissante, gérer les copies chevauchantes et combiner références et codage entropique. | Licence ; codes préfixes et entropie. | Comparer recherche exhaustive et tableau de suffixes. |
 | 04 | [ANS : codage par l'état](Compression-04-ANS-Python.ipynb) | Comprendre comment rANS et tANS accumulent des contributions fractionnaires de bits ; vérifier l'inversion des transitions. | Licence ; après 01–02, arithmétique entière. | [04b — codecs et fronts de Pareto](#autour-de-04--choisir-un-codec-recherche). |
 | 05 | [Compression des modèles appris](Compression-05-MLCompression-Python.ipynb) | Quantifier les poids, les élaguer ou distiller un réseau ; mesurer taille et précision sur la même tâche. | Licence ; Python, PyTorch et apprentissage supervisé. | Distinguer poids nuls, stockage creux et taille du fichier. |
 | 06 | [MDL et complexité de Kolmogorov](Compression-06-MDL-Kolmogorov-Python.ipynb) | Minimiser la somme du coût du modèle et des données ; distinguer cette description calculable de la complexité algorithmique idéale. | Licence ; après 01–02 et leur modèle statistique. | Effet de la taille du bloc et limites des compresseurs. |
+
+### Parité des implémentations
+
+| Notebook | Python | C# | Parité | Moteur et vérifications |
+|---|---|---|---|---|
+| 02 — Huffman canonique | [Notebook Python](Compression-02-HuffmanCanonique-Python.ipynb) | [Notebook C#](Compression-02-HuffmanCanonique-CSharp.ipynb) | Sémantique ; SOTA-OK, algorithme from-scratch des deux côtés | BCL .NET 9 côté C# ; même extrait binaire du Horla, arbre de Huffman, canonisation, table directe, aller-retour octet/hash. |
+
+Les ex æquo de fréquence peuvent donner des arbres différents selon le départage ; la comparaison porte sur les fréquences, les longueurs et le coût optimal, pas sur une forme d’arbre imposée.
 
 ### Pourquoi les représentations changent — Licence
 
@@ -34,6 +42,14 @@ Huffman optimise un code symbole par symbole. Le carnet 02 montre que ses **long
 ANS répond à une autre limite : un code préfixe binaire non trivial paie au moins un bit pour chaque symbole, même si l'un d'eux est presque certain. Sur la source à probabilités 99 % et 1 % du carnet 04, la sortie de tANS est d'environ 0,09 bit par symbole, contre 1 pour Huffman. L'état du codeur porte l'information accumulée ; les vérifications d'aller-retour contrôlent que ce gain préserve le message.
 
 Le palier 05 change de contrat : le réseau comprimé doit conserver une qualité utile, sans devoir restituer exactement ses poids initiaux. Quantifier réduit leur précision ; élaguer introduit des zéros ; distiller apprend un autre réseau à partir des sorties du premier. Le palier 06 revient au coût de représentation : augmenter la précision du modèle peut raccourcir les données tout en allongeant excessivement le modèle. L'optimum porte sur leur somme.
+
+### LZ77 en Python et C#
+
+| Python | C# | Moteur et vérifications |
+|---|---|---|
+| [LZ77 Python](Compression-03-LZ77-Python.ipynb) | [LZ77 C#](Compression-03-LZ77-CSharp.ipynb) | Algorithmes pédagogiques, fenêtres et copies chevauchantes ; aller-retour octet/hash, tableau de suffixes et comparaison avec zlib ou ZLibStream. |
+
+Le compagnon C# utilise .NET Interactive `.net-csharp`, .NET 9 et la BCL. Les limites du parse borné, les champs sérialisés et le coût du cadre y sont explicites ; les bornes d'entropie restent distinctes des flux réellement encodés.
 
 ## Approfondissements — Recherche
 
@@ -49,7 +65,7 @@ Les débits dépendent de la machine, des versions et des corpus. Le carnet vér
 
 ## Installation — Découverte et pratique
 
-Utiliser un noyau Python 3.10 ou ultérieur dans un environnement virtuel, avec NumPy et Matplotlib. Le carnet 05 utilise aussi PyTorch et Pandas. Le carnet 04b sonde les codecs installés : `zlib`, `bz2` et `lzma` viennent de Python ; `zstandard`, `brotli` et `lz4` sont des compléments selon les comparaisons souhaitées. Les instructions générales sont dans les [commandes de référence](../../docs/reference/common-commands.md).
+Utiliser un noyau Python 3.10 ou ultérieur dans un environnement virtuel, avec NumPy et Matplotlib. Le compagnon C# du carnet 02 utilise le noyau .NET Interactive `.net-csharp` et .NET 9 ; il ne demande aucun paquet NuGet. Le carnet 05 utilise aussi PyTorch et Pandas. Le carnet 04b sonde les codecs installés : `zlib`, `bz2` et `lzma` viennent de Python ; `zstandard`, `brotli` et `lz4` sont des compléments selon les comparaisons souhaitées. Les instructions générales sont dans les [commandes de référence](../../docs/reference/common-commands.md).
 
 Commencer par [01](Compression-01-ShannonFano-Prefixe-Python.ipynb), puis modifier la distribution de symboles et observer l'arbre obtenu. Les expériences Python du parcours utilisent le CPU. Pour 01b, suivre la toolchain déclarée dans [Compression_lean](Compression_lean/README.md), construire le projet avec `lake build` depuis ce dossier et utiliser le noyau Lean `lean4-wsl` indiqué par le carnet.
 
@@ -79,3 +95,8 @@ Dans 06, la comparaison des décimales de π et de chiffres aléatoires illustre
 Les carnets présentent les références auprès des constructions : Shannon, Fano, Huffman et Kraft en [01](Compression-01-ShannonFano-Prefixe-Python.ipynb), Schwartz–Kallick en [02](Compression-02-HuffmanCanonique-Python.ipynb), Ziv–Lempel en [03](Compression-03-LZ77-Python.ipynb), Duda et ANS en [04](Compression-04-ANS-Python.ipynb), puis MDL et Kolmogorov en [06](Compression-06-MDL-Kolmogorov-Python.ipynb). Les ressources des codecs comparés figurent dans [04b](Compression-04b-CodecsSOTA-Pareto-Python.ipynb).
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md)
+
+
+## Twins de notebooks
+
+Le carnet [01 — codes préfixes en C#](Compression-01-ShannonFano-Prefixe-CSharp.ipynb) accompagne [sa version Python](Compression-01-ShannonFano-Prefixe-Python.ipynb). Les deux implémentent Shannon-Fano et Huffman à partir des primitives du langage ; le jumeau C# utilise uniquement la BCL, avec une génération gamma pour ses tirages Dirichlet et un SVG autonome pour le nuage. Les exercices restent ouverts dans les deux parcours.

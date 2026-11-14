@@ -52,12 +52,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: geometry-tests-${{ github.ref }}
+  group: geometry-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   geometry-tests:
     name: SymbolicAI Geometry pytest (13 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # Forme hybride de débordement (#22944/#23016) — identique à celle du
     # workflow frère `gametheory-tests.yml` (même classe de défaut, même
     # conversion) : PR même-depot ET `vars.CI_OVERFLOW_LOCAL == 'true'` ->

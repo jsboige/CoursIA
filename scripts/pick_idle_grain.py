@@ -279,6 +279,26 @@ except ImportError:
     except ImportError:
         origami_parking = None  # type: ignore[assignment]
 
+# Les campagnes GELES par un veto USER (#17040). La definition PARTAGEE vit
+# dans `scripts/coordination/frozen_campaigns.py` : elle est deja lue par
+# `merge_ready` (skip de perimetre) et par le gate d'entree
+# `check_adjoint_prevalidation.py`. Le tapis, lui, ne lisait que des
+# marqueurs `[FROZEN]` poses dans un corps ou un fil -- donc une campagne
+# definie comme gelee pouvait etre servie tant que personne n'avait pose le
+# marqueur a la main (constate le 11/11 : #11601, dont la densification a
+# ete servie sous un parapluie gele, et refusee ensuite au merge).
+# Import best-effort, comme `origami_parking` : sans module, le tapis
+# tourne sans cette lecture (fail-OPEN), jamais l'inverse.
+try:
+    import frozen_campaigns
+except ImportError:
+    try:
+        sys.path.insert(0, os.path.join(
+            os.path.dirname(os.path.abspath(__file__)), "coordination"))
+        import frozen_campaigns
+    except ImportError:
+        frozen_campaigns = None  # type: ignore[assignment]
+
 REPO = "jsboige/CoursIA"
 
 # c.1115 voie 1 (msg-20260912T165428-k6rbfc, ai-01 spec) : klass `delivered`
@@ -754,7 +774,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
 
 
 # Saturation par zone d atterrissage (#13420) : l axe partition-proof que
-# le compteur par issue ne peut pas porter. Voir scripts/series_saturation.py
+# le compteur par issue ne peut pas porter. Voir scripts/coordination/series_saturation.py
 # pour le diagnostic complet (EPIC decoupe en 9 filles = 9 veines invisibles).
 from series_saturation import (  # noqa: E402
     BELT_WINDOW_DAYS,
@@ -2932,6 +2952,11 @@ def _recent_marker_verdict(issue_number: int) -> bool | None:
     plus** -- et le filet des commentaires dans la requete qu'il fait de
     toute facon.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        # Un parapluie gele par un veto USER est ecarte SANS lecture du
+        # fil : le gel ne depend d'aucun marqueur pose a la main.
+        return True
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         return None
@@ -3076,12 +3101,40 @@ def _issue_comments(issue_number: int) -> tuple[list[dict] | None, str | None]:
     return comments, body
 
 
+def frozen_umbrella_veto(issue_number: int) -> str | None:
+    """L'item est-il un parapluie GEL par un veto user ?
+
+    Rend le numero du veto (``"17040"``) si l'issue est une cle de
+    `FROZEN_UMBRELLAS`, ``None`` sinon.
+
+    La definition est PARTAGEE (`scripts/coordination/frozen_campaigns.py`) :
+    c'est elle que lisent deja `merge_ready` et le gate d'entree. Le tapis
+    la lisait pas : un parapluie defini comme gele n'etait vu gel que si
+    un marqueur `[FROZEN]` avait ete pose a la main dans son corps ou son
+    fil -- et la main posee oublie, la densification repartait sous un
+    parapluie gele (mesure du 11/11 : #11601, parapluie gele par le veto
+    #17040, dont la densification a ete servie puis refusee au merge).
+
+    Un veto USER ne se leve pas par un `[UNFROZEN]` de lane : il se leve
+    quand la definition change. C'est pourquoi cette lecture passe AVANT
+    la lecture des marqueurs, et qu'elle ne demande aucun acces reseau.
+    """
+    if frozen_campaigns is None:
+        return None
+    try:
+        return frozen_campaigns.FROZEN_UMBRELLAS.get(str(issue_number))
+    except Exception:  # noqa: BLE001 - une definition illisible gele personne
+        return None
+
+
 def has_frozen_marker(issue_number: int) -> str | None:
     """L'item est-il GEL ? Renvoie la SOURCE du gel, ou l'absence de gel.
 
     TRI-ETAT :
     - ``"body"``    -- regle A : le corps porte la ligne `[FROZEN] ...` ;
     - ``"comment"`` -- regle B : un en-tete `[FROZEN]` dans le fil ;
+    - ``"veto #N"`` -- le parapluie est gele par un veto USER (la
+      definition partagee `FROZEN_UMBRELLAS`) ;
     - ``False``     -- l'item n'est pas gel ;
     - ``None``      -- la LECTURE a echoue (fail-OPEN).
 
@@ -3099,8 +3152,13 @@ def has_frozen_marker(issue_number: int) -> str | None:
 
     Cout : la MEME lecture que `has_recent_delivery_marker` (une requete,
     ou ZERO quand l'instantane de la passe sert le fil), et le corps vient
-    du cache du pool (`_POOL_BODIES`), que le pool paie deja.
+    du cache du pool (`_POOL_BODIES`), que le pool paie deja. La lecture
+    du veto USER, elle, ne coute **rien** : elle precede la lecture du
+    fil, et n'atteint jamais le reseau.
     """
+    veto = frozen_umbrella_veto(issue_number)
+    if veto is not None:
+        return f"veto #{veto}"
     comments, fetched_body = _issue_comments(issue_number)
     if comments is None:
         # Lecture en echec : fail-OPEN. L'appelant distingue « pas gele »
@@ -3129,6 +3187,12 @@ def gel_cause_text(gel: str | None) -> str | None:
     if gel is None:
         return ("GEL NON MESURE : la lecture du gel a echoue -- fail-OPEN "
                 "assume, l'item n'est pas ecarte pour autant")
+    if isinstance(gel, str) and gel.startswith("veto #"):
+        return (f"GEL ({gel}) : le parapluie est gele par un VETO USER. Le "
+                f"gel se leve quand la definition partagee "
+                f"(`scripts/coordination/frozen_campaigns.py::FROZEN_UMBRELLAS`) "
+                f"change -- ni un `[UNFROZEN]` de lane, ni un `[RELEASED]`, "
+                f"ni un marqueur pose a la main dans le corps ne le leve.")
     return (f"GEL ({gel}) : l'item est gele. Regle A = ligne `[FROZEN] ...` "
             f"dans le corps ; regle B = en-tete `[FROZEN]` dans le fil. Le "
             f"degel consiste a retirer la ligne du corps, ou a poster "
@@ -4669,13 +4733,16 @@ def print_frozen_unread_report(unread, lane: str | None = None) -> None:
 def print_belt_budget_report(budget_hit: bool) -> None:
     """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
 
-    Le fail-OPEN du budget est assume : au-dela du plafond, la sonde de
-    livraison rend UNPROBED et le candidat est servi sans avoir ete verifie.
-    Ce qui n'est PAS assume, c'est le **silence** : une mesure qui echoue
-    doit se dire, sinon la lane lit un « pas de signal » la ou la sonde n'a
-    simplement pas eu lieu. L'issue #19969 demande explicitement que la
-    banniere reste imprimee quand le budget tombe -- « la mesure ne doit
-    pas devenir silencieuse en se repariant ».
+    Le plafond de sondes reste un plafond de COUT : au-dela, la sonde de
+    livraison rend UNPROBED. Mais un candidat dont la livraison n'a pas ete
+    lue n'est plus SERVI (c2817) : il est ecarte comme « a sonder », car la
+    lane y porterait un ordre de claim sur un travail jamais lu (mesure
+    c3128 : #23500 et #25375, deja livres). Ce qui n'est PAS assume, c'est le
+    **silence** : une mesure qui echoue doit se dire, sinon la lane lit un
+    « pas de signal » la ou la sonde n'a simplement pas eu lieu. L'issue
+    #19969 demande explicitement que la banniere reste imprimee quand le
+    budget tombe -- « la mesure ne doit pas devenir silencieuse en se
+    repariant ».
 
     La banniere est un helper (comme `print_claim_unread_report`) pour que
     ce contrat soit **verifiable sans reseau** : un test appelle la fonction
@@ -4683,14 +4750,15 @@ def print_belt_budget_report(budget_hit: bool) -> None:
     appellerait `main()` de bout en bout payerait une minute de reseau
     pour verifier trois lignes de `print`.
 
-    Texte inchange depuis l'origine du contrat (#19969) : le comparatif de
-    chaine est un test de non-regression sur la banniere elle-meme.
+    Le texte a change avec c2817 (le candidat au-dela du plafond n'est plus
+    servi) ; le comparatif de chaine reste un test de non-regression sur la
+    banniere elle-meme.
     """
     if not budget_hit:
         return
     print("   Plafond de sondes de livraison atteint : les candidats")
-    print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
-    print("   de livraison leur revient, cf check_unaddressed_nits.")
+    print("   au-dela ne sont pas sondes et ne sont donc PAS servis")
+    print("   (a sonder) -- cf c2817 et check_unaddressed_nits.")
 
 
 def draw_verdict(pool_error: str | None) -> str:
@@ -5105,6 +5173,13 @@ CLAIM_CODE_IMPLICIT = "IMPLICIT"
 # fail-OPEN du transport `subprocess` sur timeout (#21436). Ni le transport
 # ni le fail-OPEN par mur de temps ne subsistent.
 CLAIM_CODE_ERROR = "ERROR"
+# #25873 -- occupation BORNÉE : le belt appelle la sonde SANS --paths, et un
+# claim d'une autre lane qui porte des chemins (paths:) n'occupe que LES
+# fichiers qu'il nomme, jamais l'issue entière. Ce grain est SERVI (pas retenu
+# comme BLOCKED) avec la liste des chemins occupés : la lane y travaille HORS
+# de ce périmètre. Ne confond pas avec BLOCKED : le claim borné est le
+# mécanisme de partage par périmètre du protocole.
+CLAIM_CODE_FREE_OCCUPIED = "FREE_OCCUPIED"
 # #23500 (remede 1, copie jumeale livree en roo-extensions PR #4472) -- le
 # verdict FREE mesure l'ABSENCE DE CLAIM, pas l'absence d'activite. La phrase
 # « libre » se lit « personne ne travaille dessus », alors que le contrat
@@ -5146,9 +5221,32 @@ def _summarize_claim(out: str, returncode: int) -> tuple[str, str]:
         except json.JSONDecodeError:
             data = None
         if isinstance(data, dict):
+            # #25873 -- SCOPED_OCCUPIED: le belt a appelé la sonde SANS --paths
+            # et TOUS les claims des autres lanes sont bornés (chemins vivants).
+            # Le grain est SERVI avec ces chemins occupés, PAS retenu : `blocking`
+            # est non vide ici (ce sont les lanes bornées), donc ce test doit
+            # précéder le `blocking` ci-dessous, sinon le grain serait à tort
+            # classé BLOCKED.
+            occupied = data.get("occupied_paths") or {}
+            if occupied:
+                refs = "; ".join(
+                    f"{ln} : {', '.join(paths)}"
+                    for ln, paths in sorted(occupied.items()))
+                return (CLAIM_CODE_FREE_OCCUPIED,
+                        f"servable -- chemins occupés : {refs} "
+                        f"(travailler hors de ce périmètre)")
             blocking = data.get("blocking_lanes") or []
             if blocking:
                 return CLAIM_CODE_BLOCKED, "BLOQUE par " + ", ".join(blocking)
+            # #22687 constat 2 -- le plafond #22500 rend exit 1 cote producteur
+            # mais n'ecrit RIEN dans blocking_lanes (une discipline de visite
+            # n'est pas une collision de lane) : sans lire la cle, la sonde
+            # solitaire d'une fille plafonnee concluait FREE en ignorant le
+            # rouge. La cause est le LITTERAL de l'organe (prefixe
+            # ``PLAFOND EPIC (#22500)``), jamais reformulee ici.
+            cap_cause = data.get("epic_visit_cap")
+            if cap_cause:
+                return CLAIM_CODE_BLOCKED, "PLAFOND : " + str(cap_cause)
             # review 5429946072 : le claim de l'APPELANT est teste AVANT
             # l'occupation implicite -- un grain deja marque par la lane qui
             # tire est OWNED_BY_ME, une PR tierce citee en passant ne doit
@@ -5216,6 +5314,18 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
         return CLAIM_CODE_ERROR, f"(batch: pas de verdict pour #{n})"
     code = res.get("code", "ERROR")
     human = res.get("human", code) or code
+    # #25873 -- SCOPED_OCCUPIED (sortie 0, code FREE) avec chemins occupés :
+    # SERVI avec la liste des chemins (travailler hors de ce périmètre), pas
+    # retenu. Doit précéder le remap FREE ci-dessous, sinon le grain perdrait
+    # la liste d'occupation.
+    occupied = res.get("occupied_paths") or {}
+    if occupied:
+        refs = "; ".join(
+            f"{ln} : {', '.join(paths)}"
+            for ln, paths in sorted(occupied.items()))
+        return (CLAIM_CODE_FREE_OCCUPIED,
+                f"servable -- chemins occupés : {refs} "
+                f"(travailler hors de ce périmètre)")
     if code == "FREE":
         return CLAIM_CODE_FREE, CLAIM_HUMAN_FREE
     if code == "BLOCKED":
@@ -5416,6 +5526,11 @@ def _claims_in_process(
             payload = clc.check_issues_batch(
                 [str(n) for n in _servables], lane,
                 stale_threshold=48.0, from_json=None, my_paths=None,
+                # #25873 -- le belt sert une issue dont les claims d'autres
+                # lanes sont TOUS bornes (avec leurs chemins occupés), au lieu
+                # de l'ecarter en NOT_SCOPED. C'est la seule voie qui opte
+                # pour ce comportement ; la CLI mono-issue reste fail-CLOSED.
+                serve_bounded=True,
             )
             verdicts = {n: _summarize_claim_from_batch(payload, n)
                         for n in _servables}
@@ -5438,6 +5553,17 @@ def _claims_in_process(
                 rc = clc._run_check(
                     issue_payload, lane, stale_threshold=48.0,
                     my_paths=None, check_open_pr_paths=True,
+                    # #25873 -- meme opt-in que la voie batch : servir une
+                    # issue dont les claims d'autres lanes sont tous bornes.
+                    serve_bounded=True,
+                    # #22687 constat 2 -- la voie solitaire du picker cable le
+                    # plafond #22500 : la sonde d'une fille plafonnee rend
+                    # BLOCKED (le reducteur lit ``epic_visit_cap``), alignee
+                    # sur le gate L898 et sur le plafond bulk du tapis. Le
+                    # pool est memoise par processus cote LECTEUR : la sonde
+                    # paie 1 requete par passe, pas par candidat. Le mode
+                    # batch reste cap-free (#22630 possede le tirage).
+                    epic_cap=True,
                 )
             verdicts = {n: _summarize_claim(buf_out.getvalue(), rc)}
         # Les refus nominatifs s'ajoutent aux verdicts servis : un numero
@@ -10529,7 +10655,9 @@ DELIVERED_URN_PRIOR = 2.5
 AUDIT_17073_PRIOR = 2.0
 AUDIT_17073_MARKER = "[Audit #17073]"
 #: Le seuil du veto de creation : au-dessus, le grain d'expansion (carnet
-#: neuf) est d'autant plus streme que le pool s'en eloigne.
+#: neuf) est d'autant plus streme que le pool s'en eloigne. Le veto dur
+#: (`creation_budget.VETO_ACTIF`) est leve depuis le 12/11 ; ce seuil reste
+#: le pivot de la ponderation douce, qui ne refuse jamais.
 EXPANSION_VETO_THRESHOLD = 400
 #: Plancher du poids d'expansion : un poids nul serait un REFUS, et le
 #: mandat du 12/10 l'interdit.
@@ -12625,8 +12753,10 @@ def belt_probe_budget(belt_check_window: int) -> int:
     defaut), toute tete portant plus de huit candidats deja livres faisait
     rendre ``DELIVERED_SIGNAL_UNPROBED`` au-dela, et le tapis les servait
     comme des grains neufs : mesure firsthand, huit candidats d'un seul
-    tirage, tous deja livres. Le plafond remonte, la doctrine ne change pas --
-    l'epuisement reste fail-OPEN et rapporte (``budget_hit``).
+    tirage, tous deja livres. Le plafond remonte (c2817) et le fail-OPEN du
+    plafond est abroge : un candidat non lu est ecarte « a sonder », il
+    n'est plus servi. Le plafond reste un plafond de cout -- il ne change
+    pas le nombre de lectures autorisees.
     """
     return belt_check_window * 3 + 12
 
@@ -12705,7 +12835,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivery_event_probe=None,
                                 time_budget_s=None,
                                 gpu_probe=None,
-                                frozen_probe=None):
+                                frozen_probe=None,
+                                service_window=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -12718,9 +12849,11 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     doctrine que ``check_claims`` : le tapis ne paie une requete commentaire
     que pour les candidats qu'il considere reellement. Le caller lui passe
     ``belt_probe_budget(belt_check_window)`` -- la valeur doit couvrir la tete
-    que la boucle peut servir, sinon les candidats au-dela sont servis sans
-    lecture (#19969). Epuisement = fail-OPEN (``DELIVERED_SIGNAL_UNPROBED``),
-    rapporte dans l'etat de retour. ``delivered_probe`` et ``merged_pr_probe``
+    que la boucle peut servir, sinon les candidats au-dela ne sont pas lus.
+    Epuisement = ``DELIVERED_SIGNAL_UNPROBED`` ; le candidat concerne est
+    alors ECARTE (« a sonder », c2817) et l'etat de retour le nomme dans
+    ``budget_unprobed``. Avant c2817, il etait servi en fail-OPEN -- le
+    tapis remettait alors un grain neuf sur un travail jamais lu (#19969). ``delivered_probe`` et ``merged_pr_probe``
     (tests) remplacent les sondes reseau ; ``claims_probe`` (tests) remplace
     la verification au fil de l'eau des items hors fenetre ;
     ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
@@ -12793,12 +12926,35 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     son budget de run (echeance absolue, pas duree par appel) : c'est ce qui
     rend le mur du tapis deterministe au lieu de dependre du nombre de
     candidats bloques. ``None`` (defaut) = pas de mur, comportement d'avant.
+
+    ``service_window`` (#25920) est la fenetre que la boucle va parcourir
+    (`belt_service_window`). Quand il est fourni, le PLAFOND de sondes est
+    elargi pour COUVRIR cette fenetre : le plafond etait calcule sur la
+    fenetre de TETE (36 sondes pour `grains=4`), alors que la boucle parcourt
+    70 positions et que chaque candidat livre en coute 3 (livraison + PR
+    mergee + couverture). Sur une tete de tapis saturee de livraisons, le
+    plafond etait donc atteint bien avant la fin de la fenetre parcourue :
+    le tapis rendait 0 grain alors que des grains LIBRES existaient plus
+    loin dans la meme fenetre (mesure Hermes, review du 2026-11-12 sur
+    #25920). Le plafond est un PLAFOND, pas une depense -- la boucle
+    s'arrete des que `grains` grains sont servis -- l'elargissement ne
+    coute donc rien quand la tete est libre, et il reste borne par le mur
+    de temps de la boucle. ``None`` (defaut) = le plafond du caller est
+    respecte a la lettre (les tests du contrat c2817 s'appuient dessus).
     """
     budget = [int(probe_budget)]
+    if service_window is not None:
+        # Le plafond doit couvrir la fenetre PARCOURUE : trois sondes par
+        # position (livraison, PR mergee, couverture) plus la marge.
+        _cover = int(service_window) * 3 + 12
+        if _cover > budget[0]:
+            budget[0] = _cover
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
              "cover_failures": [], "time_budget_hit": False,
-             "frozen_unread": [], "frozen_filtered": 0}
+             "frozen_unread": [], "frozen_filtered": 0,
+             "probe_budget_ceiling": budget[0],
+             "probe_budget_requested": int(probe_budget)}
     # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
@@ -12905,10 +13061,19 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
         # #22983 -- candidats dont une sonde n'a pas pu etre emise PARCE
         # QUE LE MUR DE TEMPS EST ATTEINT : ils seront ECARTES, pas
-        # servis (le fail-OPEN par mur de temps est retire). Le plafond
-        # de SONDES (`budget_hit`) reste fail-OPEN : plafond de cout, pas
-        # echeance -- les deux se distinguent devant la lane.
+        # servis (le fail-OPEN par mur de temps est retire).
         deadline_unprobed: set[int] = set()
+
+        # c2817 (dispatch du coordinateur, 11/11) -- candidats dont la SONDE
+        # DE LIVRAISON n'a pas pu etre emise PARCE QUE LE PLAFOND DE SONDES
+        # EST ATTEINT. Le mur de temps ecarte deja le candidat
+        # (`deadline_unprobed`) ; le plafond, lui, le SERVAIT jusqu'ici en
+        # fail-OPEN -- et la lane recevait alors « ACTION REQUISE : poser
+        # [CLAIMED] » sur un travail jamais lu (mesure c3128 : #23500 et
+        # #25375, deja livres). Le plafond reste un plafond de COUT, mais il
+        # ne peut plus produire un candidat NON VERIFIE portant un ordre de
+        # claim : un candidat non sonde est « a sonder », pas « a servir ».
+        budget_unprobed: set[int] = set()
 
         # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
         # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
@@ -12976,14 +13141,16 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                         or _closure_announced_close(body))
 
         def counted_probe(number, lane_name):
-            # L'echeance passe AVANT le plafond de sondes : l'echeance
-            # est fail-CLOSED (#22983, candidat marque puis ecarte), le
-            # plafond reste fail-OPEN et reste dit a la lane.
+            # L'echeance passe AVANT le plafond de sondes : les deux sont
+            # fail-CLOSED (#22983 pour l'echeance, c2817 pour le plafond)
+            # -- un candidat non lu n'est jamais servi. Le plafond reste
+            # dit a la lane (« a sonder »).
             if expired():
                 deadline_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_probe(number, lane_name)
@@ -12994,6 +13161,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_merged_pr_probe(number, lane_name)
@@ -13007,6 +13175,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_revocation_probe(number, lane_name, merged_at)
@@ -13025,6 +13194,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 return DELIVERED_SIGNAL_UNPROBED
             if budget[0] <= 0:
                 state["budget_hit"] = True
+                budget_unprobed.add(number)
                 return DELIVERED_SIGNAL_UNPROBED
             budget[0] -= 1
             return user_cover_probe(number)
@@ -13465,6 +13635,23 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 belt_withheld.append((it, "mur de temps atteint : sonde non "
                                       "emise -- candidat ecarte, pas servi"))
                 continue
+            if n in budget_unprobed:
+                # c2817 -- le PLAFOND DE SONDES ne peut plus servir un
+                # candidat NON VERIFIE. Le mur de temps ecarte deja le
+                # candidat (#22983) ; le plafond le servait en fail-OPEN, et
+                # la lane recevait alors « ACTION REQUISE : poser [CLAIMED] »
+                # sur un travail dont la livraison n'avait pas ete lue
+                # (mesure c3128 : #23500, #25375, deja livres -- un claim
+                # pose dessus relockait l'issue pour toute la flotte).
+                # Ici le candidat est ECARTE comme le mur, avec un motif
+                # nomme : « a sonder ». Le tapis ne refuse pas de grain --
+                # il le remplace dans la meme urne, comme les autres
+                # ecartements.
+                state.setdefault("budget_unprobed", []).append(n)
+                belt_withheld.append((it, "a sonder : plafond de sondes de "
+                                      "livraison atteint -- livraison NON "
+                                      "verifiee, candidat ecarte, pas servi"))
+                continue
             belt_picks.append(it)
         # #25522 point 4 : la sortie doit dire CE QUE la boucle a couvert,
         # pas seulement ce qu'elle a rendu. Deux nombres : les positions
@@ -13490,6 +13677,74 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         _BELT_DEADLINE[0] = _previous_belt_deadline
 
 
+# --- le compte REEL des issues ouvertes (#23174) -----------------------------
+
+# `len(pool)` n'est PAS le compte des issues ouvertes : le pool est une VUE
+# (filtres d'admission, urnes, troncature de la voie REST). Le mandat user
+# du 30/10 porte sur les issues OUVERTES, pas sur la vue du tapis : un veto
+# compare a la vue peut se lever alors que le depot est encore au-dessus du
+# seuil. Le compte se mesure donc A PART -- une seule requete, sur le quota
+# de RECHERCHE (distinct du quota core du listing), et un seul resultat par
+# process.
+_OPEN_COUNT_CACHE: dict[str, object] = {"done": False, "value": None}
+
+# Le plafond de `total_count` cote GitHub : au-dela, la reponse plafonne et
+# ne dit plus le compte exact. Un compte plafonne est traite comme
+# « au moins 1000 » -- c'est au-dessus du seuil du veto, donc la seule
+# lecture qui ne change pas la decision.
+_OPEN_COUNT_CAP = 1000
+
+
+def measure_open_issue_count() -> int | None:
+    """Le nombre d'issues ouvertes du depot, MESURE.
+
+    Rend ``None`` quand la mesure est impossible (quota, reseau, reponse
+    inattendue) : l'appelant retombe alors sur la taille du pool et le dit.
+    Une mesure impossible ne vaut jamais ZERO -- zero ecarterait tout.
+    """
+    if _OPEN_COUNT_CACHE.get("done"):
+        return _OPEN_COUNT_CACHE.get("value")  # type: ignore[return-value]
+    count: int | None = None
+    try:
+        out = subprocess.run(
+            ["gh", "api",
+             f"search/issues?q=repo:{REPO}+type:issue+state:open&per_page=1"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(30),
+        ).stdout
+        payload = json.loads(out)
+        if isinstance(payload, dict):
+            total = payload.get("total_count")
+            if isinstance(total, int) and not isinstance(total, bool):
+                count = min(total, _OPEN_COUNT_CAP)
+    except Exception:  # noqa: BLE001 - une mesure impossible ne vaut pas zero
+        count = None
+    _OPEN_COUNT_CACHE["done"] = True
+    _OPEN_COUNT_CACHE["value"] = count
+    return count
+
+
+def open_count_for_gates(pool_size: int) -> tuple[int, str]:
+    """Le compte a comparer au seuil, et sa source.
+
+    Le compte mesure est le compte REEL des issues ouvertes ; a defaut de
+    mesure, on retombe sur la taille du pool (fail-OPEN sur le veto : une
+    mesure impossible ne doit pas ecarter un grain que la mesure reelle
+    ecarterait, ni en servir un que la mesure reelle servirait).
+
+    Sous pytest, la mesure n'est PAS tentee : la surface reseau du tapis
+    est stubee par les tests, et une requete reelle depuis un test est une
+    panne de la suite, pas une mesure (cf `forbid_shell_escape` et le meme
+    garde pour le cache des PRs ouvertes).
+    """
+    n = None
+    if "PYTEST_CURRENT_TEST" not in os.environ:
+        n = measure_open_issue_count()
+    if n is None:
+        return pool_size, "pool (compte reel indisponible)"
+    return n, "mesure"
+
+
 def _belt_delivery_status(item: dict) -> str:
     """Statut court affiche sur chaque ligne servie par le tapis."""
     klass = item.get("klass", "grain")
@@ -13500,7 +13755,8 @@ def _belt_delivery_status(item: dict) -> str:
     return "servable"
 
 
-def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
+def creation_budget_gate(pool: list[dict], *,
+                         open_count: int | None = None) -> dict[int, str]:
     """#23174 -- les grains de creation a ecarter, avec la cause nommee.
 
     Rend ``{numero: cause}``. Vide quand rien n'est ecarte.
@@ -13512,13 +13768,24 @@ def creation_budget_gate(pool: list[dict]) -> dict[int, str]:
 
     La cause nommee est `BUDGET CRÉATION` (accent compris) : elle doit se
     retrouver telle quelle dans le journal de tirage et dans la sortie JSON.
+
+    `open_count` est le compte des issues ouvertes a comparer au seuil du
+    veto : par defaut la porte prend la taille du pool, mais l'appelant lui
+    passe le compte REEL mesure (cf `open_count_for_gates`).
     """
     try:
         import creation_budget as cb
     except Exception:  # noqa: BLE001 - module absent = porte inactive
-        return {}
+        # T3-d (#26104) : le module vit dans scripts/ci/ -- amorcage du
+        # repertoire de famille, meme motif que tirage_journal/origami_parking.
+        try:
+            sys.path.insert(0, os.path.join(
+                os.path.dirname(os.path.abspath(__file__)), "ci"))
+            import creation_budget as cb  # type: ignore[no-redef]
+        except Exception:  # noqa: BLE001 - module absent = porte inactive
+            return {}
     try:
-        return cb.creation_gate(pool)
+        return cb.creation_gate(pool, open_count=open_count)
     except Exception:  # noqa: BLE001 - une porte qui leve n'ecarte personne
         return {}
 
@@ -14399,6 +14666,11 @@ def main(argv: list[str] | None = None) -> int:
                 lambda issue_number, lane=None, _idx=merged_prs_local:
                     merged_pr_signal(issue_number, lane, index=_idx)
             )
+            # Le bandeau part sur STDERR : en mode `--json`, stdout ne doit
+            # porter QUE le document JSON -- sinon `json.load` echoue sur la
+            # sortie (#c2818, mesure du coordinateur). La branche d'echec
+            # ci-dessous ecrivant deja sur stderr, les deux messages sont
+            # desormais sur le meme flux.
             print(f"(index local des PRs mergees : {len(merged_prs_local)} "
                   f"PRs sur {MERGED_PR_WINDOW_DAYS} j -- la sonde par "
                   f"candidat ne sort plus sur le reseau, #24823)",
@@ -14461,8 +14733,14 @@ def main(argv: list[str] | None = None) -> int:
     # (module absent, etat absent, catalogue du depot inconnu) et elle ne
     # s'active QUE sur un depassement de budget MESURE -- le regime ralentit
     # la creation, il ne l'arrete pas.
+    # Le compte compare au seuil du veto est le compte REEL des issues
+    # ouvertes, mesure a part (action myia-ai-01 du 11/11) : la taille du
+    # pool est une vue, et un veto compare a une vue se leve trop tot.
+    open_count, open_count_source = open_count_for_gates(len(pool))
+    print(f"issues ouvertes: {open_count} ({open_count_source})",
+          file=sys.stderr)
     budget_gate = ({} if args.ignore_creation_budget
-                   else creation_budget_gate(pool))
+                   else creation_budget_gate(pool, open_count=open_count))
     creation_withheld: list[tuple[dict, str]] = []
     for it in pool:
         if it["klass"] == "delivered":
@@ -14793,7 +15071,7 @@ def main(argv: list[str] | None = None) -> int:
             merged_prs=delivery_prs,
             closed_issues=closed_issues,
             closed_error=closed_error,
-            open_count=len(pool),
+            open_count=open_count,
             series=series,
             issue_to_family=issue_to_family,
             zones=series,
@@ -14904,7 +15182,12 @@ def main(argv: list[str] | None = None) -> int:
                     merged_prs=delivery_prs,
                     closed_issues=closed_issues,
                     closed_error=closed_error,
-                    open_count=len(pool),
+                    # L'invariant du rejeu : `open_count` ne peut pas etre
+                    # inferieur au pool exporte. Le compte REEL y est mis,
+                    # borne par la taille du pool exporte -- une fermeture
+                    # survenue entre la lecture du pool et la mesure ne doit
+                    # pas rendre l'export illegible.
+                    open_count=max(open_count, len(belt_replay_pool)),
                     seed_source=seed_source,
                     snapshot=source_snapshot,
                     computed_at=NOW,
@@ -14972,7 +15255,16 @@ def main(argv: list[str] | None = None) -> int:
                                         delivery_event_probe=delivery_event,
                                         time_budget_s=belt_time_remaining,
                                         gpu_probe=gpu_gate_probe,
-                                        frozen_probe=frozen_probe))
+                                        frozen_probe=frozen_probe,
+                                        # #25920 -- le plafond doit couvrir la
+                                        # fenetre PARCOURUE, pas seulement la
+                                        # tete : sinon une tete saturee de
+                                        # livraisons epuise le plafond avant
+                                        # la fin de la fenetre et le tapis rend
+                                        # 0 grain alors que des grains libres
+                                        # existent plus loin (mesure Hermes du
+                                        # 2026-11-12).
+                                        service_window=belt_claim_window))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
@@ -15050,6 +15342,14 @@ def main(argv: list[str] | None = None) -> int:
                       f"{_svc_extended} ; "
                       f"{belt_pick_state.get('pending_deliveries', 0)} "
                       f"livraison(s) en attente.")
+            # #25920 -- le plafond elargi est DIT : une lane qui lit
+            # « plafond atteint » doit pouvoir distinguer « la tete est
+            # saturee » de « la fenetre parcourue n'a pas ete couverte ».
+            _ceil = belt_pick_state.get("probe_budget_ceiling")
+            _req = belt_pick_state.get("probe_budget_requested")
+            if _ceil and _req and _ceil > _req:
+                print(f"   plafond de sondes : {_req} -> {_ceil} "
+                      f"(couvre la fenetre de service parcourue)")
             if belt_dead_signal.get("applied"):
                 print(f"   tetes mortes : {belt_dead_signal['moved']} issue(s) "
                       f"deja servie(s) a cette lane sans visite, passee(s) en "
@@ -15151,6 +15451,32 @@ def main(argv: list[str] | None = None) -> int:
             print_frozen_unread_report(
                 belt_pick_state.get("frozen_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
+            # c2817 -- les candidats dont la livraison n'a pas pu etre lue
+            # (plafond de sondes) sont nommes comme « a sonder » : ils ne
+            # portent AUCUN ordre de claim, et la lane ne doit pas les
+            # traiter comme des grains libres.
+            unprobed_budget = belt_pick_state.get("budget_unprobed") or []
+            if unprobed_budget:
+                numbers = ", ".join(f"#{n}"
+                                    for n in sorted(set(unprobed_budget)))
+                print(f"   A SONDER : {len(set(unprobed_budget))} "
+                      "candidat(s) NON VERIFIE(S) -- plafond de sondes "
+                      f"atteint avant la lecture de livraison : {numbers}.")
+                print("   Aucun de ces candidats ne porte d'ordre de claim : "
+                      "les sonder avant de les servir (c2817).")
+                if not belt_picks:
+                    # Le mandat du 11/11 (11:45Z) : « le tapis doit servir
+                    # toutes les issues, repare ce qui doit etre repare ».
+                    # Le plafond vide la fenetre lue : le tapis ne rend
+                    # alors AUCUN grain -- il ne le doit pas (un grain non
+                    # lu = un claim sur un travail deja livre), mais il doit
+                    # DIRE comment rouvrir la fenetre.
+                    print("   AUCUN GRAIN SERVI : le plafond de sondes a "
+                          "vide la fenetre lue.")
+                    print("   Pour elargir la fenetre lue, relancer avec un "
+                          "quota plus grand")
+                    print("   (--grains N : la fenetre vaut max(N + 4, 8) et "
+                          "le plafond 3 x fenetre + 12).")
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436, #22983) : la")
                 print("   boucle a cesse de sonder a l'echeance, et les sondes")
@@ -15174,23 +15500,18 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   ACTION REQUISE : poser [CLAIMED] lane {args.lane} sur "
                       f"#{top['number']} avant edition -- cf lane-claim-protocol.")
                 if belt_probe_budget_hit[0]:
-                    # Une tete servie au-dela du PLAFOND DE SONDES n'est pas
-                    # verifiee : la ligne ci-dessus est une INJONCTION, elle
-                    # doit donc dire a cote d'elle que son objet n'a pas ete
-                    # lu. Mesure du 2026-11-03 : le tirage a servi 4
-                    # candidats sur 4 portant chacun un marqueur de
-                    # livraison, et la lane recevait une injunction de
-                    # claimer SANS reserve.
-                    #
-                    # #22983 -- c'est le PLAFOND DE SONDES (cout) qui reste
-                    # fail-OPEN, pas le MUR DE TEMPS : le mur ecarte le
-                    # candidat, il ne le sert pas. L'avertissement suit donc
-                    # le plafond, et non le mur.
-                    print("   CANDIDAT NON VERIFIE (#19969) : le plafond de")
-                    print("   sondes a ete atteint avant les lectures de livraison")
-                    print("   et de claim. Lire le dernier commentaire AVANT de")
-                    print("   claimer. (Le mur de temps, lui, ecarte le candidat :")
-                    print("   il ne rend aucun grain non verifie.)")
+                    # c2817 -- le plafond de sondes n'est PLUS fail-OPEN : un
+                    # candidat dont la livraison n'a pas ete lue est ecarte
+                    # (« a sonder », liste nommee plus haut) et n'atteint donc
+                    # jamais cette ligne. La tete servie ici a ETE lue. Ce qui
+                    # reste a dire, c'est que le plafond a touche la fenetre
+                    # servie : d'autres candidats ont ete laisses non lus, et
+                    # ils sont nommes dans le rapport « A SONDER ».
+                    print("   Plafond de sondes atteint sur la fenetre servie :")
+                    print("   la tete ci-dessus a ETE lue ; les candidats dont la")
+                    print("   livraison n'a pas pu etre lue sont nommes « A")
+                    print("   SONDER » plus haut et ne portent AUCUN ordre de")
+                    print("   claim (c2817).")
             # #17038 (residu du 2026-10-09) -- contrat de verdict : un pick
             # dont le claim est ERROR n'est PAS un candidat libre, c'est un
             # candidat NON MESURE. Le servir reste le comportement (le tapis

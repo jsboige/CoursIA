@@ -274,7 +274,7 @@ First-level digestion of the lake against the mandatory grid of [#13106](https:/
 | 6 | Natural friction (obstacles, failed tries, debt) | **ABSENT→filled below** | §Scope, honestly + `Classifier.lean:190` (`ElementaryTopos` "not yet available"), `#11286` (pending umbrella import of `ExceptionalDirect`), phases #2159/#10357 |
 | 7 | Discovery path vs reconstruction | **ABSENT→filled below** | the arc is pedagogical but doesn't spell out "why this order / what was discarded" |
 | 8 | Limits, unestablished claims, review reservations | **PRESENT** | §Scope, honestly: "foundation, not ceiling", Mathlib boundary exposed |
-| 9 | Corpus connection + prerequisites | **PRESENT** | navlinks `Lean-15-Grothendieck-Tribute.ipynb` / `Lean-15b-Lean-Grothendieck.ipynb` / `Lean-15c-Lean-Grothendieck-Companion.ipynb` (re-link the lake) ; §See also |
+| 9 | Corpus connection + prerequisites | **PRESENT** | navlinks `GROTH-02-Tribut-Python.ipynb` / `GROTH-03-Atelier-Python.ipynb` / `GROTH-04-Companion-Lean.ipynb` (re-link the lake) ; §See also |
 
 ### Point 6 — natural friction (fill)
 
@@ -287,4 +287,4 @@ Four real frictions, documented at source:
 
 ### Point 7 — discovery path (fill)
 
-The path is not a reconstruction — it is an **indexed tour**, and this fact is the central discovery: "the Grothendieckian language already lives in Mathlib 4". The pedagogical order (sites → sieves/topologies → sheaves → sheafification → cohomology, anchored by Spec/Zariski and by the `#check` index) is a **reading path**, not the trace of a development. A learner's entry point: README → companions (`Lean-15*`) → modules, with Mac Lane–Moerdijk and SGA 4 as background reading. What was **discarded** and why (the "hommage, not an EGA/SGA formalisation" choice) is explicit in §The spirit of the tour and §Scope, honestly — but the trace of the real development (which attempts were abandoned) is not recorded per `Partie`; that is this digestion's limit, to be completed by a grain that interviews the authors.
+The path is not a reconstruction — it is an **indexed tour**, and this fact is the central discovery: "the Grothendieckian language already lives in Mathlib 4". The pedagogical order (sites → sieves/topologies → sheaves → sheafification → cohomology, anchored by Spec/Zariski and by the `#check` index) is a **reading path**, not the trace of a development. A learner's entry point: README → companions (`GROTH-02` to `GROTH-04`) → modules, with Mac Lane–Moerdijk and SGA 4 as background reading. What was **discarded** and why (the "hommage, not an EGA/SGA formalisation" choice) is explicit in §The spirit of the tour and §Scope, honestly — but the trace of the real development (which attempts were abandoned) is not recorded per `Partie`; that is this digestion's limit, to be completed by a grain that interviews the authors.

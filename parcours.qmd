@@ -26,21 +26,6 @@ Trois parcours certifiés selon votre niveau, vos prérequis, et votre matériel
 - [RL](MyIA.AI.Notebooks/RL/README.md) — Reinforcement Learning (Stable Baselines3)
 - [GenAI/Audio/01-Foundation](MyIA.AI.Notebooks/GenAI/Audio/01-Foundation/README.md) — audio via librosa + transformers
 
-**Démarrage rapide :**
-
-```bash
-git clone https://github.com/jsboige/CoursIA.git
-cd CoursIA
-python -m venv .venv
-source .venv/bin/activate   # ou .venv\Scripts\activate sous Windows
-pip install jupyter papermill
-
-# Vérifier que la machine satisfait le profil avant d'ouvrir le 1er notebook
-python scripts/notebook_tools/learner_preflight.py --parcours local
-
-jupyter notebook MyIA.AI.Notebooks/
-```
-
 [Commencer le parcours 1 →](MyIA.AI.Notebooks/Search/Part1-Foundations/README.md){.btn .btn-primary .parcours-cta}
 :::
 
@@ -84,6 +69,34 @@ jupyter notebook MyIA.AI.Notebooks/
 :::
 
 :::
+
+::: {#demarrage-rapide}
+
+**Démarrage rapide :**
+
+```bash
+git clone https://github.com/jsboige/CoursIA.git
+cd CoursIA
+python -m venv .venv
+source .venv/bin/activate   # ou .venv\Scripts\activate sous Windows
+pip install jupyter papermill
+
+# Vérifier que la machine satisfait le profil avant d'ouvrir le 1er notebook
+python scripts/notebook_tools/learner_preflight.py --parcours local
+
+jupyter notebook MyIA.AI.Notebooks/
+```
+
+:::
+
+<style>
+@media (max-width: 767px) {
+  #demarrage-rapide pre > code.sourceCode > span {
+    display: inline;
+    overflow-wrap: anywhere;
+  }
+}
+</style>
 
 ## Passerelles entre parcours
 
