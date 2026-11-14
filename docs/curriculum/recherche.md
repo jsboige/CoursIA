@@ -239,8 +239,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 33 | [ICT-16 — MDL / code en deux parties et bosse…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) | BETA | Oui |
 | 34 | [ICT-17b — Grokking et compression-progress : la jambe K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | BETA | Oui |
 | 35 | [ICT-17c — TorchLens : inspecter les représentations…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17c-TorchLens-InspectionRepresentations-Python.ipynb) | BETA | Non |
-| 36 | [ICT-18 -- Fleche du temps et reversibilisation](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb) | BETA | Oui |
-| 37 | [ICT-18b — Budget de réversibilité : la jambe « fin » de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb) | BETA | Oui |
+| 36 | [ICT-18 -- Fleche du temps et reversibilisation](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb) | BETA | Oui |
+| 37 | [ICT-18b — Budget de réversibilité : la jambe « fin » de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb) | BETA | Oui |
 | 38 | [ICT-19 — La batterie de l'ENJEU : auto-maintien vs pur…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) | BETA | Oui |
 | 39 | [ICT-19b — Raffinement et résolution des stubs (tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-19-EnjeuBattery/ICT-19b-EnjeuBattery-Raffinement-Python.ipynb) | BETA | Non |
 | 40 | [ICT-20 — FeatureCatastrophes : *calibration de méthode*](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb) | BETA | Non |
@@ -281,7 +281,7 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 75 | [ICT-46b — Le banc unique de la strate 7 : six proxys,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-46b-BancUnique-Strate7-Python.ipynb) | BETA | Oui |
 | 76 | [ICT-47 — L'axe douleur : une direction linéaire dans…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-47-PainAxisDistillation-Python.ipynb) | BETA | Non |
 | 77 | [ICT-48 — Onset/SAE Qwen3.5-9B-Base, agrégat de quatre…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-Onset9B-Aggregate-Python.ipynb) | BETA | Oui |
-| 78 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
+| 78 | [ICT-48 — Origami Wolfram, pli 2 : quatre classes, six…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-48-WolframClasses-ThermoSignature-Python.ipynb) | BETA | Oui |
 | 79 | [ICT-49 — Machines de Gödel : l'auto-amélioration…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-49-MachinesDeGoedel-Python.ipynb) | BETA | Oui |
 | 80 | [ICT-50 -- Origami Wolfram pli 2 : la regle 30 comme…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-50-WolframRule30Aleatoire-Rule110Universelle-Python.ipynb) | BETA | Oui |
 | 81 | [ICT-51 -- Origami Wolfram pli 4 : les combinateurs…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-51-CombinateursSKI-TagDePost-Python.ipynb) | BETA | Oui |

@@ -393,7 +393,7 @@ def p0_gate() -> Dict[str, object]:
 
     # --- P0.b : ICT-18b cellule [5], rng=0 -------------------------------- #
     nb18 = _json.loads(
-        (here.parent / "ICT-18b-ReversibilityBudget-Python.ipynb").read_text(encoding="utf-8")
+        (here.parent / "ICT-18-ArrowOfTimeReversibilization" / "ICT-18b-ReversibilityBudget-Python.ipynb").read_text(encoding="utf-8")
     )
     rng = np.random.default_rng(0)
     b_stable = rb.state_space_budget(

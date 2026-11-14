@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-14
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -440,13 +440,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18-ArrowOfTimeReversibilization-Python.ipynb
   confidence: research
   reviewed_code_sha: b57dff7ce2e74f362852464d172bddfad7de6a82b6cf2290a3bcd68565df7985
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization/ICT-18b-ReversibilityBudget-Python.ipynb
   confidence: research
   reviewed_code_sha: 40468c55eed3e0c657dc077242a7dc71ff97d50640805246e41ab2dac27992ab
   review_date: "2026-09-21"
