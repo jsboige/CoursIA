@@ -6,6 +6,7 @@ Aucun test ne touche le reseau ni le vrai depot : chaque lecture recoit un faux
 import json
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -158,6 +159,8 @@ def test_citations_git_en_panne():
 def _run_complet(compteur: list[int]):
     def run(argv, timeout):
         compteur[0] += 1
+        if argv[0] == "git" and "--format=%ct" in argv:
+            return str(int(time.time()))  # pointe locale fraiche : pas de fetch
         if argv[0] == "git":
             return GIT_LOG
         if "graphql" in argv:
@@ -166,10 +169,66 @@ def _run_complet(compteur: list[int]):
     return run
 
 
+# --- fetch d'origin/main avant les citations -----------------------------------
+
+def _run_fetch(compteur: list[list[str]], age_pointe: int | str, fetch_ecart=None):
+    """Faux `run` : pointe locale d'origin/main d'age donne (s ou illisible),
+    fetch qui reussit ou qui echoue avec `fetch_ecart`, reste complet."""
+    def run(argv, timeout):
+        compteur.append(list(argv))
+        if "--format=%ct" in argv:
+            return str(int(time.time()) - age_pointe) if isinstance(age_pointe, int) \
+                else age_pointe
+        if "fetch" in argv:
+            if fetch_ecart is not None:
+                raise fetch_ecart(argv, stderr="fatal: réseau injoignable")
+            return ""
+        if argv[0] == "git":
+            return GIT_LOG
+        if "graphql" in argv:
+            return _page([1], None)
+        return "[]"
+    return run
+
+
+def test_pointe_fraiche_ne_fetch_pas(tmp_path):
+    appels: list[list[str]] = []
+    lecture = gh_bulk.lire_tout(".", 0, _run_fetch(appels, 3600), dossier_cache=tmp_path)
+    assert not any("fetch" in a for a in appels)
+    assert lecture.fetch_note is None and 1234 in lecture.citations
+
+
+def test_pointe_perimee_fetch_puis_lit(tmp_path):
+    appels: list[list[str]] = []
+    lecture = gh_bulk.lire_tout(".", 0, _run_fetch(appels, 7 * 86400),
+                                dossier_cache=tmp_path)
+    assert ["git", "-C", ".", "fetch", "-q", "origin", "main"] in appels
+    # le fetch precede la lecture des citations
+    assert appels.index(["git", "-C", ".", "fetch", "-q", "origin", "main"]) < next(
+        i for i, a in enumerate(appels) if "--since" in " ".join(a))
+    assert lecture.fetch_note is None and 1234 in lecture.citations
+
+
+def test_pointe_illisible_tente_le_fetch(tmp_path):
+    appels: list[list[str]] = []
+    lecture = gh_bulk.lire_tout(".", 0, _run_fetch(appels, "pas un entier"),
+                                dossier_cache=tmp_path)
+    assert ["git", "-C", ".", "fetch", "-q", "origin", "main"] in appels
+    assert lecture.fetch_note is None
+
+
+def test_fetch_en_echec_ne_leve_pas_et_se_nomme(tmp_path):
+    appels: list[list[str]] = []
+    lecture = gh_bulk.lire_tout(".", 0, _run_fetch(appels, 7 * 86400, _erreur),
+                                dossier_cache=tmp_path)
+    assert "fetch origin/main impossible" in (lecture.fetch_note or "")
+    assert 1234 in lecture.citations  # la lecture continue sur la pointe locale
+
+
 def test_cache_relu_puis_cache_corrompu_ignore(tmp_path):
     compteur = [0]
     premiere = gh_bulk.lire_tout(".", 300, _run_complet(compteur), dossier_cache=tmp_path)
-    assert compteur[0] == 3 and premiere.appels == 3 and not premiere.depuis_cache
+    assert compteur[0] == 4 and premiere.appels == 4 and not premiere.depuis_cache
 
     def interdit(argv, timeout):
         raise AssertionError("le cache frais devait servir")
@@ -182,14 +241,14 @@ def test_cache_relu_puis_cache_corrompu_ignore(tmp_path):
         fichier.write_text("{ pas du json", encoding="utf-8")
     compteur[0] = 0
     rejouee = gh_bulk.lire_tout(".", 300, _run_complet(compteur), dossier_cache=tmp_path)
-    assert compteur[0] == 3 and not rejouee.depuis_cache
+    assert compteur[0] == 4 and not rejouee.depuis_cache
 
 
 def test_cache_desactive(tmp_path):
     compteur = [0]
     gh_bulk.lire_tout(".", 0, _run_complet(compteur), dossier_cache=tmp_path)
     gh_bulk.lire_tout(".", 0, _run_complet(compteur), dossier_cache=tmp_path)
-    assert compteur[0] == 6 and not list(tmp_path.iterdir())
+    assert compteur[0] == 8 and not list(tmp_path.iterdir())
 
 
 def test_charger_depuis_un_dossier(tmp_path):
@@ -199,8 +258,16 @@ def test_charger_depuis_un_dossier(tmp_path):
                                         encoding="utf-8")
     lecture = gh_bulk.charger_depuis(tmp_path)
     assert lecture.issues == [{"number": 5}] and lecture.lu_a == "2026-11-13T12:57:46Z"
-    avec_git = gh_bulk.charger_depuis(tmp_path, ".", 14, lambda argv, timeout: GIT_LOG)
+    vus: list[list[str]] = []
+
+    def run(argv, timeout):
+        vus.append(list(argv))
+        return GIT_LOG
+
+    avec_git = gh_bulk.charger_depuis(tmp_path, ".", 14, run)
     assert 1234 in avec_git.citations and avec_git.appels == 1
+    # un rejeu de dossier ne fetch jamais, meme pointe perimee
+    assert not any("fetch" in a for a in vus)
     (tmp_path / "prs_ouvertes.json").unlink()
     with pytest.raises(gh_bulk.LectureIncomplete):
         gh_bulk.charger_depuis(tmp_path)
