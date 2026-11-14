@@ -65,6 +65,10 @@ ses séquences reproductibles; elles diffèrent de celles de NumPy. Le facteur d
 paires est $4+2/(n-1)$ au doublement de la taille, donc il tend vers 4 sans lui
 être exactement égal.
 
+### Parité C# — transition SAT
+
+[Complexity-02b : seuil du 3-SAT (C#)](Complexity-02b-SAT-PhaseTransition-CSharp.ipynb) accompagne la [version Python](Complexity-02b-SAT-PhaseTransition-Python.ipynb). Les deux réalisent les balayages et le contrôle exhaustif avec DPLL pédagogique ; les générateurs aléatoires diffèrent et leurs mesures numériques ne coïncident pas nécessairement.
+
 ## Parcours
 
 La série se lit de haut en bas : chaque notebook principal ne suppose que ceux qui le
