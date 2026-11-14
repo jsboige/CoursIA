@@ -4138,3 +4138,90 @@ class TestLockPolicyEndToEnd:
         assert s.refusal_reason == "lane_optout_lock"
         assert called == [], "un opt-out ne mesure jamais le pid"
         assert wt.exists()
+
+
+class TestProgressStreaming:
+    """#23636 : la passe parle AU FIL DE L'EAU, pendant qu'elle travaille.
+
+    Le defaut mesure : la boucle de diagnostic n'emettait RIENT avant le
+    rapport final. Sur un parc de ~98 worktrees (~15 min mesures sur la
+    ferme, ~9 s par worktree, l'essentiel dans l'ancre PR), l'exploitant
+    -- et la tache planifiee #14473 -- voyaient un silence de quart
+    d'heure, indistinguable d'une passe bloquee.
+
+    Le contrat fixe ici est triple :
+
+    1. la progression est EMISE pendant la passe, pas seulement a la fin ;
+    2. elle part sur STDERR : stdout porte le rapport JSON, que des tiers
+       lisent programmatiquement -- il doit rester analysable ;
+    3. `--quiet` la supprime entierement (usage machine, journal propre).
+    """
+
+    @staticmethod
+    def _farm(monkeypatch, tmp_path, paths):
+        """Bouche les dependances de la passe : 2 worktrees, verdicts REMOVE."""
+        monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
+        monkeypatch.setattr(
+            pmw, "list_worktrees",
+            lambda: [{"path": p, "head_sha": None, "branch": "fix/X"}
+                     for p in paths],
+        )
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None),
+        )
+        monkeypatch.setattr(
+            pmw, "diagnose_worktree",
+            lambda path, *a, **k: _make_status(path=path, decision="REMOVE"),
+        )
+        monkeypatch.chdir(tmp_path)
+
+    def test_progress_is_emitted_during_the_pass(self, tmp_path, monkeypatch,
+                                                 capsys):
+        paths = ["D:/wt/one", "D:/wt/two"]
+        self._farm(monkeypatch, tmp_path, paths)
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", "--json"])
+
+        rc = pmw.main()
+
+        err = capsys.readouterr().err
+        assert rc == 0
+        # Une ligne par worktree, AVANT le diagnostic et son verdict.
+        assert "[1/2] diagnostic D:/wt/one" in err
+        assert "[2/2] diagnostic D:/wt/two" in err
+        assert "[1/2] REMOVE D:/wt/one" in err
+        assert "[2/2] REMOVE D:/wt/two" in err
+
+    def test_stdout_stays_machine_readable(self, tmp_path, monkeypatch,
+                                           capsys):
+        """La progression ne doit JAMAIS polluer le rapport JSON."""
+        paths = ["D:/wt/one", "D:/wt/two"]
+        self._farm(monkeypatch, tmp_path, paths)
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", "--json"])
+
+        rc = pmw.main()
+        captured = capsys.readouterr()
+
+        assert rc == 0
+        report = json.loads(captured.out)  # leve si la sortie est polluee
+        assert report["scanned"] == 2
+        assert report["removable"] == 2
+
+    def test_quiet_silences_the_progress(self, tmp_path, monkeypatch, capsys):
+        paths = ["D:/wt/one", "D:/wt/two"]
+        self._farm(monkeypatch, tmp_path, paths)
+        monkeypatch.setattr(
+            sys, "argv", ["prune_merged_worktrees.py", "--json", "--quiet"])
+
+        rc = pmw.main()
+        captured = capsys.readouterr()
+
+        assert rc == 0
+        assert "[1/2]" not in captured.err
+        assert "diagnostic" not in captured.err
+        # Le rapport, lui, reste present : --quiet ne supprime que la
+        # progression.
+        assert json.loads(captured.out)["scanned"] == 2

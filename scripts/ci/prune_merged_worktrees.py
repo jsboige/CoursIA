@@ -3002,6 +3002,20 @@ def build_warn_line(statuses: list,
     return " — ".join(parts)
 
 
+def _progress(quiet: bool, message: str) -> None:
+    """Emet une ligne de progression sur stderr, immediatement (#23636).
+
+    La progression ne passe JAMAIS par stdout : stdout porte le rapport
+    JSON (mode `--json`) ou le rapport texte, que des tiers lisent
+    programmatiquement. `flush=True` est indispensable -- sans lui, une
+    sortie redirigee dans un fichier est bufferisee par blocs, et le
+    defaut observe (silence de quart d'heure) revient.
+    """
+    if quiet:
+        return
+    print(message, file=sys.stderr, flush=True)
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument(
@@ -3013,6 +3027,14 @@ def main() -> int:
         "--json",
         action="store_true",
         help="Sortie JSON structuree (parallele au mode texte).",
+    )
+    p.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Supprime la progression au fil de l'eau sur stderr (#23636). "
+             "Par defaut, la progression EST emise : une passe silencieuse "
+             "sur un parc de ~100 worktrees est indistinguable d'une passe "
+             "bloquee.",
     )
     p.add_argument(
         "--path",
@@ -3163,23 +3185,34 @@ def main() -> int:
     # decrivent CETTE passe et pas la somme des appels du process.
     reset_remote_tip_memo()
 
+    # #23636 : la passe emet sa progression AU FIL DE L'EAU. La boucle de
+    # diagnostic ne sortait RIEN avant le rapport final : sur un parc de
+    # ~98 worktrees (mesure : ~15 min, ~9 s par worktree, l'essentiel
+    # dans l'ancre PR), l'exploitant voyait un silence de quart d'heure
+    # et ne pouvait distinguer "lent" de "bloque". La progression part sur
+    # STDERR -- stdout reste le JSON du rapport, qui doit rester
+    # analysable par un tiers (la tache planifiee #14473 y lit le
+    # compte de refus). `flush=True` : sans lui, stderr redirige dans un
+    # fichier est bufferise par blocs et le defaut revient.
     statuses: list[WorktreeStatus] = []
-    for wt in worktrees:
+    total = len(worktrees)
+    for index, wt in enumerate(worktrees, start=1):
+        _progress(args.quiet, f"[{index}/{total}] diagnostic {wt['path']}")
         try:
-            statuses.append(
-                enforce_lock_policy(
-                    diagnose_worktree(
-                        wt["path"], current_path, head_sha=wt.get("head_sha"),
-                        activity_window_h=args.activity_window_h,
-                        gh_unavailable_reason=gh_unavailable_reason,
-                        quarantine_submodules=args.quarantine_submodules,
-                    ),
-                    wt.get("locked_reason"),
-                )
+            status = enforce_lock_policy(
+                diagnose_worktree(
+                    wt["path"], current_path, head_sha=wt.get("head_sha"),
+                    activity_window_h=args.activity_window_h,
+                    gh_unavailable_reason=gh_unavailable_reason,
+                    quarantine_submodules=args.quarantine_submodules,
+                ),
+                wt.get("locked_reason"),
             )
         except RuntimeError as e:
             print(f"ERROR diagnosing {wt['path']}: {e}", file=sys.stderr)
             return 2
+        statuses.append(status)
+        _progress(args.quiet, f"[{index}/{total}] {status.decision} {wt['path']}")
 
     # Les verdicts MERGED etablis pendant la passe survivent a la passe :
     # persistance du cache de verdicts (#15369).
@@ -3245,6 +3278,7 @@ def main() -> int:
                 "cleaned_artifacts": cleaned,
                 "quarantine": quarantine_info,
             })
+            _progress(args.quiet, f"[apply] {'retrait' if ok else 'ECHEC'} {s.path}")
             if ok:
                 removal_count += 1
             else:
