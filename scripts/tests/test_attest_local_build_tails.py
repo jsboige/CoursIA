@@ -27,7 +27,7 @@ def test_run_lake_build_tails_survive_the_tempdir(monkeypatch, tmp_path):
     stdout_tail/stderr_tail reviennent vides et ce test rougit."""
     written: dict[str, Path] = {}
 
-    def fake_argv(payload, *, lake_dir, timeout, stdout_file, stderr_file):
+    def fake_argv(payload, *, lake_dir, timeout, stdout_file, stderr_file, **kwargs):
         written["out"] = Path(stdout_file)
         written["err"] = Path(stderr_file)
         return [sys.executable, "-c",
