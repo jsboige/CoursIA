@@ -1293,7 +1293,12 @@ def test_json_output_names_violations_and_denominators(tmp_path, capsys):
             steps:
               - run: echo unsafe
         """)
-    rc = policy.main(["--json", "--workflows-dir", str(tmp_path)])
+    # --no-check-timeouts (#23349) : ce test eprouve la DENOMINATION des
+    # violations d'isolation, pas le cliquet des bornes (depuis la tranche
+    # finale, le cliquet est le defaut du CLI -- sans l'opt-out, le job
+    # synthetique sans timeout-minutes ajouterait MISSING_TIMEOUT a l'ensemble).
+    rc = policy.main(["--json", "--no-check-timeouts",
+                      "--workflows-dir", str(tmp_path)])
     payload = json.loads(capsys.readouterr().out)
     assert rc == policy.EXIT_VIOLATION
     assert payload["workflows_scanned"] == 1
@@ -1434,6 +1439,83 @@ def test_hosted_pr_job_exception_without_motive_is_a_violation(tmp_path):
     assert "HOSTED_PR_JOB_EXCEPTION_NO_MOTIVE" in codes(result)
 
 
+def test_hosted_pr_job_exception_covering_no_naked_job_is_stale(tmp_path):
+    """Cliquet #23053, invariant 3 : une exception dont le workflow a ete
+    converti ne couvre plus rien et rougit.
+
+    Controle negatif du defaut mesure le 2026-11-11 : `lean-ci-matrix.yml`
+    (conversion #23059) et `slides-build-advisory.yml` sont restes exceptes
+    des semaines sans qu'aucun invariant ne le signale -- la liste ne
+    retrecissait que par balayage manuel, donc pas du tout."""
+    write_workflow(tmp_path, "converted", """
+        name: converted
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo hybrid
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={"converted.yml": "conversion #23059, devenue inutile"},
+        hosted_pr_exceptions_baseline=frozenset({"converted.yml"}),
+    )
+    assert result.broken == []
+    assert codes(result) == {"HOSTED_PR_JOB_EXCEPTION_STALE"}
+    assert result.violations[0].workflow == "converted.yml"
+
+
+def test_hosted_pr_job_exception_on_workflow_without_pr_trigger_is_stale(tmp_path):
+    """Une exception ne sert qu'a un workflow `pull_request` : sur un workflow
+    cron-only, elle ne couvre rien et rougit (meme invariant 3)."""
+    write_workflow(tmp_path, "cron-only", """
+        name: cron-only
+        on:
+          schedule:
+            - cron: "0 4 * * *"
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo scheduled
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={"cron-only.yml": "motif historique"},
+        hosted_pr_exceptions_baseline=frozenset({"cron-only.yml"}),
+    )
+    assert codes(result) == {"HOSTED_PR_JOB_EXCEPTION_STALE"}
+
+
+def test_hosted_pr_job_exception_for_unread_workflow_is_not_declared_stale(tmp_path):
+    """Borne de mesure : un workflow absent du dossier scanne (ou dont le YAML
+    est casse) n'est pas declare perime sur une absence de lecture. Le dossier
+    par defaut est le vrai `workflows/`, donc un fichier supprime sort de la
+    mesure -- limite assumee, ecrite dans la docstring de l'invariant."""
+    write_workflow(tmp_path, "pr-guard", """
+        name: pr-guard
+        on: [pull_request]
+        jobs:
+          check:
+            runs-on: ubuntu-latest
+            steps:
+              - run: echo excepted
+        """)
+    result = policy.scan_workflows(
+        tmp_path,
+        hosted_pr_exceptions={
+            "pr-guard.yml": "job nu vivant",
+            "never-scanned.yml": "workflow absent du dossier",
+        },
+        hosted_pr_exceptions_baseline=frozenset(
+            {"pr-guard.yml", "never-scanned.yml"}
+        ),
+    )
+    assert result.broken == []
+    assert result.violations == []
+
+
 def test_non_pull_request_workflow_on_naked_hosted_runner_is_ignored(tmp_path):
     """Le cliquet ne vise que les workflows declenches par `pull_request` : un
     balayage cron heberge n'a aucune raison de deborder sur le parc local."""
@@ -1566,14 +1648,56 @@ def test_22954_baselined_job_is_tolerated_but_named_in_the_report(tmp_path):
     assert result.timeout_baselined == 1
 
 
+def test_23349_stale_timeout_baseline_diagnostic_is_read_only(tmp_path, capsys):
+    """Le diagnostic repere les cles mortes sans muter la baseline."""
+    write_workflow(tmp_path, "pr-gate-stale-sweep", """
+        name: safe scheduled workflow
+        on:
+          schedule:
+            - cron: '0 0 * * *'
+        jobs:
+          current-debt:
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo still unbounded
+          already-bounded:
+            timeout-minutes: 10
+            runs-on: [self-hosted, coursia-ephemeral, coursia-fast-guards]
+            steps:
+              - run: echo bounded
+        """)
+    baseline = tmp_path / "baseline.txt"
+    original = (
+        "pr-gate-stale-sweep.yml:current-debt\n"
+        "pr-gate-stale-sweep.yml:already-bounded\n"
+        "removed-workflow.yml:old-job\n"
+    )
+    baseline.write_text(original, encoding="utf-8")
+
+    rc = policy.main([
+        "--show-stale-baseline",
+        "--workflows-dir", str(tmp_path),
+        "--baseline", str(baseline),
+    ])
+
+    assert rc == policy.EXIT_OK
+    output = capsys.readouterr().out
+    assert "cles obsoletes dans la baseline: 2" in output
+    assert "ORPHELINE pr-gate-stale-sweep.yml:already-bounded" in output
+    assert "ORPHELINE removed-workflow.yml:old-job" in output
+    assert "current-debt" not in output
+    assert baseline.read_text(encoding="utf-8") == original
+
+
 def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_path):
-    """#22954 : sans le drapeau, le cliquet ne parle pas.
+    """#22954 : sans le drapeau, le cliquet ne parle pas (cote API).
 
     Les tests de ce fichier construisent des workflows synthetiques pour
     eprouver UN invariant a la fois (garde meme-depot, jeu de labels, ...). Le
-    cliquet est donc opt-in cote API, et engage cote garde bloquant : c'est
-    `scripts/ci/fast_lane_registry.py` qui passe le drapeau, et le test suivant
-    l'y verifie.
+    cliquet reste donc opt-in cote API (``scan_workflows``). Depuis la tranche
+    finale de #23349, il est en revanche le DEFAUT du CLI (et le garde
+    bloquant n'a plus de drapeau a passer) : le test suivant verifie ce defaut
+    au lieu de l'argv.
     """
     _hybrid_workflow(tmp_path)
     result = policy.scan_workflows(tmp_path)
@@ -1582,21 +1706,29 @@ def test_22954_ratchet_is_opt_in_so_synthetic_workflows_stay_single_purpose(tmp_
 
 
 def test_22954_repository_passes_the_ratchet_with_zero_new_jobs():
-    """#22954 : `main` passe le cliquet -- 0 nouveau, la dette en baseline."""
+    """#22954/#23349 : `main` passe le cliquet -- 0 nouveau, 0 en baseline.
+
+    Depuis la tranche finale de #23349, la baseline est eteinte (fichier
+    supprime, `load_baseline` rend l'ensemble vide) : le ratchet est passe
+    sans tolerance nommee.
+    """
     result = policy.scan_workflows(check_timeouts=True)
     assert result.broken == []
     assert [v for v in result.violations if v.code == "MISSING_TIMEOUT"] == []
     assert result.timeouts_checked is True
+    assert result.timeout_baselined == 0
     assert policy.main(["--check", "--check-timeouts"]) == policy.EXIT_OK
 
 
-def test_22954_fast_lane_entry_actually_enforces_the_ratchet():
-    """#22954 : le garde BLOQUANT passe le drapeau, et surveille sa baseline.
+def test_22954_fast_lane_entry_actually_enforces_the_ratchet(tmp_path):
+    """#22954/#23349 : le garde BLOQUANT engage le cliquet, devenu defaut.
 
-    Un cliquet opt-in ne vaut que si l'appel bloquant passe le drapeau. Ce test
-    est le garde du garde : retirer `--check-timeouts` de l'entree fast-lane, ou
-    oublier la baseline dans ses `paths`, rougit ici au lieu de desactiver le
-    cliquet en silence.
+    Un cliquet ne vaut que si l'appel bloquant l'engage. Depuis la tranche
+    finale de #23349, le cliquet est le DEFAUT du CLI du garde : l'entree
+    fast-lane n'a plus de drapeau a porter, et la seule sortie serait
+    ``--no-check-timeouts`` -- visible dans ce test (egalite stricte de
+    l'argv) ET controle positif : le CLI sans aucun drapeau rougit bien sur
+    un job auto-heberge sans borne.
     """
     import fast_lane_registry as registry
 
@@ -1615,15 +1747,31 @@ def test_22954_fast_lane_entry_actually_enforces_the_ratchet():
         f"trouve {len(entries)}"
     )
     entry = entries[0]
-    assert "--check-timeouts" in entry.argv, (
-        "l'entree fast-lane doit passer --check-timeouts : sans le drapeau, "
-        "MISSING_TIMEOUT n'est jamais evalue (#22954)"
+    assert entry.argv == [
+        "python",
+        "scripts/ci/check_self_hosted_runner_policy.py",
+        "--check",
+    ], (
+        "l'entree fast-lane appelle le garde sans opt-out : le seul retrait du "
+        "cliquet serait un --no-check-timeouts explicite dans cet argv (#23349)"
     )
     assert entry.blocking is True
-    assert "scripts/ci/self_hosted_timeout_baseline.txt" in entry.paths, (
-        "la baseline doit etre dans les paths du garde : sinon une PR qui la "
-        "reecrit ne relance pas le cliquet (#22954)"
+
+    # Controle positif du defaut : sans AUCUN drapeau, le CLI engage le
+    # cliquet -- la forme hybride sans borne (allowlistee par ailleurs, sa
+    # seule violation possible est MISSING_TIMEOUT) rougit, et l'opt-out
+    # l'eteint. Baseline explicite absente : le test ne depend pas de l'etat
+    # du checkout.
+    _hybrid_workflow(tmp_path)
+    absent = str(tmp_path / "absent.txt")
+    assert policy.main(["--check", "--workflows-dir", str(tmp_path),
+                        "--baseline", absent]) == policy.EXIT_VIOLATION, (
+        "le cliquet doit etre le defaut du CLI depuis #23349 : sans drapeau, "
+        "un job sans borne doit rougir"
     )
+    assert policy.main(["--check", "--no-check-timeouts",
+                        "--workflows-dir", str(tmp_path),
+                        "--baseline", absent]) == policy.EXIT_OK
 
 
 # #13960 : garde anti-regression sur les doublons de def dans ce fichier.

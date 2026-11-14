@@ -1,5 +1,7 @@
 # Setup macOS / Linux — équivalents cross-OS du cluster CoursIA
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Le dépôt CoursIA a été développé sous Windows (WSL pour Lean/GameTheory). Un contributeur macOS ou Linux peut exécuter la majorité des notebooks sans modification — les kernels .NET Interactive, Python et Lean 4 sont cross-OS. Ce document donne les **équivalents Mac/Linux** des instructions d'installation Windows (`winget`/`choco`/`Set-ExecutionPolicy`) référencées dans [kernels-runtime.md](kernels-runtime.md), [env-python-reparation.md](env-python-reparation.md) et les READMEs de séries.
 
 Pour les commandes spécifiques aux machines du cluster (paths `C:\Users\MYIA\...`, envs Conda dédiés, GPU topology), cf [kernels-runtime.md](kernels-runtime.md) — ce document-ci couvre le **setup d'un poste contributeur Mac/Linux**.
@@ -16,7 +18,7 @@ Le SDK .NET et `dotnet-interactive` sont cross-OS : les notebooks `.net-csharp` 
 # `sudo apt install dotnet-sdk-9.0` y échoue (« Couldn't find any package »).
 curl -sSL https://dot.net/v1/dotnet-install.sh -o dotnet-install.sh
 bash dotnet-install.sh --channel 9.0
-bash dotnet-install.sh --channel 10.0   # requis par `dotnet restore MyIA.CoursIA.sln` (projets net10.0)
+bash dotnet-install.sh --channel 10.0   # requis par `dotnet restore dotnet/MyIA.CoursIA.sln` (projets net10.0)
 export DOTNET_ROOT="$HOME/.dotnet"
 export PATH="$DOTNET_ROOT:$DOTNET_ROOT/tools:$PATH"   # à reporter dans ~/.bashrc
 # macOS : Homebrew Cask
@@ -53,15 +55,18 @@ Sur Mac, préférer **Miniforge** à Miniconda : les wheels conda-forge sont nat
 
 Lean 4 s'installe via `elan` (cross-OS), équivalent de `rustup` pour Lean. **Pas besoin de WSL sur Mac/Linux** (WSL n'est qu'un contournement Windows).
 
-Le script d'installation est le même que sous WSL. Il pose elan, la toolchain épinglée par les lakes du dépôt (lue dans `game_theory_lean/lean-toolchain`), le REPL au tag de même version, le venv `~/.lean4-venv` avec `lean4_jupyter` et le wrapper `~/.lean4-kernel-wrapper.py`. Hors WSL, il enregistre aussi le kernel Jupyter :
+Le script canonique est le même que sous WSL. Il pose elan, la toolchain épinglée par les lakes du dépôt (lue dans `game_theory_lean/lean-toolchain`), le REPL au tag de même version, le venv `~/.lean4-venv` avec `lean4_jupyter` et le wrapper `~/.lean4-kernel-wrapper.py`. Hors WSL, il enregistre aussi le kernel Jupyter :
 
 ```bash
 bash MyIA.AI.Notebooks/GameTheory/scripts/setup_wsl_lean4.sh
-source $HOME/.elan/env        # ou relancer le shell
+# setup_lean4_native.sh reste un alias de compatibilité sur macOS/Linux.
+source "${ELAN_HOME:-$HOME/.elan}/env"  # ou relancer le shell
 jupyter kernelspec list        # doit afficher lean4-wsl
 ```
 
-Le kernel s'appelle `lean4-wsl` sur toutes les plateformes, parce que c'est le nom que déclarent les notebooks Lean ; son nom d'affichage est « Lean 4 ». Le wrapper démarre le REPL depuis la racine du lake (répertoire qui contient `lakefile.lean` ou `lakefile.toml`) : un notebook compagnon rangé hors de son lake s'exécute avec `--cwd <lake>`, et un lake qui dépend de Mathlib demande `lake exe cache get` dans ce lake avant la première exécution.
+Le kernel s'appelle `lean4-wsl` sur toutes les plateformes, parce que c'est le nom que déclarent les notebooks Lean ; son nom d'affichage est « Lean 4 ». Son `language=lean4` et son `argv` pointent vers le wrapper Python Lean, pas vers `ipykernel`. Le wrapper démarre le REPL depuis la racine du lake (répertoire qui contient `lakefile.lean` ou `lakefile.toml`) : un notebook compagnon rangé hors de son lake s'exécute avec `--cwd <lake>`, et un lake qui dépend de Mathlib demande `lake exe cache get` dans ce lake avant la première exécution.
+
+Les variables `ELAN_HOME`, `LEAN4_VENV`, `LEAN4_REPL_DIR` et `LEAN4_WRAPPER_PATH` permettent de placer les artefacts ailleurs sans modifier `HOME`; le kernelspec transmet `ELAN_HOME` et `LEAN4_VENV` au wrapper. Limite mesurée : le fork `lean4_jupyter` garde des chemins `~/.elan` codés en dur dans son lanceur. Avec un `ELAN_HOME` distinct, `kernel_info` répond mais une cellule `#eval 2 + 2` échoue sur une sortie REPL vide (`JSONDecodeError`), alors que l'appel direct au REPL rend `4`. Ces préfixes personnalisés ne valent donc pas validation d'exécution complète tant que le lanceur n'est pas corrigé séparément.
 
 ```bash
 python scripts/notebook_tools/notebook_tools.py execute <notebook.ipynb> --cwd <lake>

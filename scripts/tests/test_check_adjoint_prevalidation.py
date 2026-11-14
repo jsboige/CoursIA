@@ -1,6 +1,7 @@
 """Causal tests for the adjoint prevalidation entry gate (#16442)."""
 
 import importlib.util
+import itertools
 import json
 import os
 import subprocess
@@ -1365,6 +1366,83 @@ def test_latest_wins_picks_the_most_recent_completed_run_per_name():
     ]
     verdict, errors = mod.evaluate(snapshot)
     assert verdict == mod.VERDICT_READY, errors
+
+
+def test_le_repli_sur_le_skip_garde_le_verdict_reel_anterieur():
+    """#25510 (T-C) : un check-run `skipped` plus RECENT ne remplace pas un
+    verdict reel anterieur du meme nom.
+
+    `skipped` compte comme VERT ici aussi : sous un repli latest-wins simple,
+    une edition de titre emettrait un `skipped` plus recent que le verdict
+    reel, et ce dossier certifierait `latest-wins-green` sur une tete que le
+    gate lit comme ROUGE. Les trois organes (gate, `check_run_state`,
+    dossier) doivent mesurer le meme « latest ».
+    """
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_un_skipped_seul_ne_contredit_pas_le_dossier():
+    """Le cas ordinaire n'est pas casse : un job saute sans verdict anterieur
+    (filtre `paths:`) reste VERT pour le dossier aussi."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    verdict, errors = mod.evaluate(snapshot)
+    assert verdict == mod.VERDICT_READY, errors
+
+
+def test_le_repli_tient_dans_l_ordre_reel_de_l_api():
+    """L'ORDRE REEL : l'API rend les check-runs du PLUS RECENT au PLUS
+    ANCIEN. Le dossier doit mesurer le meme « latest » que le gate dans cet
+    ordre-la (skip d'abord, verdict reel ensuite)."""
+    snapshot = _snapshot(_body())
+    snapshot["checkRuns"] = [
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+    ]
+    errors = _errors(snapshot)
+    assert any(
+        "checks claim 'latest-wins-green' is contradicted by live check "
+        "'PR gate' (failure)" in error
+        for error in errors
+    )
+
+
+def test_le_repli_est_independant_de_l_ordre():
+    """PROPRIETE : toutes les permutations d'un meme lot rendent le meme
+    verdict -- le dossier, le gate et `check_run_state` doivent mesurer le
+    meme « latest », quel que soit l'ordre d'arrivee."""
+    lot = [
+        {"id": 1, "name": "PR gate", "status": "completed",
+         "conclusion": "failure", "started_at": "2026-09-20T10:00:00Z"},
+        {"id": 2, "name": "PR gate", "status": "completed",
+         "conclusion": "skipped", "started_at": "2026-09-20T10:05:00Z"},
+    ]
+    for permutation in itertools.permutations(lot):
+        snapshot = _snapshot(_body())
+        snapshot["checkRuns"] = list(permutation)
+        errors = _errors(snapshot)
+        assert any(
+            "checks claim 'latest-wins-green' is contradicted by live check "
+            "'PR gate' (failure)" in error
+            for error in errors
+        ), permutation
 
 
 def test_latest_wins_red_older_run_loses_to_newer_green():
@@ -4430,7 +4508,7 @@ def _synthetic_git(ancestor_pairs=()):
     return fake
 
 
-def _stack_entry(pr, subjects, head_name="", base_name=""):
+def _stack_entry(pr, subjects, head_name="", base_name="", mergeable=""):
     # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
     # tests qui n'ont pas besoin d'exercer le saut content-free
     # preservent l'ancien comportement sans modifier chaque call site.
@@ -4445,6 +4523,7 @@ def _stack_entry(pr, subjects, head_name="", base_name=""):
         author_ref=ref,
         head_name=head_name,
         base_name=base_name,
+        mergeable=mergeable,
     )
 
 
@@ -4601,6 +4680,98 @@ def test_stack_rebased_sister_with_names_still_blocked(monkeypatch):
     )
     assert verdict == mod.VERDICT_BLOCKED, reasons
     assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+# --- #23100 (seconde moitie) : un partenaire CONFLICTING ne bloque pas ----
+
+
+def test_stack_conflicting_partner_does_not_block(monkeypatch):
+    """#23100 (controle positif) -- la soeur en conflit ne bloque pas la cible.
+
+    La PR soeur est DIRTY contre `main` : son porteur doit la rebaser avant
+    qu'elle puisse atterrir. Exiger de la cible qu'elle attende cette PR-la
+    rend la cible inmergeable par une PR qui n'a pas d'aliance -- c'est le
+    fork de base commune dont la PR soeur ne peut pas atterrir, le titre de
+    l'issue.
+
+    L'exemption n'est armee que par un etat MESURE : `CONFLICTING` ici.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            22741, {"a": "A", "b": "B"},
+            head_name="feature/22733-theorem-rewriters",
+        ),
+        _stack_entry(
+            22811, {"a": "A", "b": "B", "c": "C: apport propre de la soeur"},
+            head_name="feature/22740-portage", base_name="main",
+            mergeable="CONFLICTING",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 22741
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_mergeable_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- une soeur MERGEABLE reste bloquante.
+
+    L'exemption ne porte que sur l'etat mesure : une soeur mergeable qui
+    porte des corrections absentes de la cible reste le sommet de pile que
+    la porte existe pour attraper.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(
+            19548, {"a": "A", "b": "B"},
+            head_name="feature/19548-old-version",
+        ),
+        _stack_entry(
+            19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+            head_name="feature/19556-rebuilt", base_name="main",
+            mergeable="MERGEABLE",
+        ),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+def test_stack_unmeasured_partner_still_blocks(monkeypatch):
+    """#23100 (controle negatif) -- mesure absente : comportement d'avant.
+
+    `mergeable` vide (mesure non faite) ou `UNKNOWN` : l'exemption est
+    INERTE. Une mesure absente ne deroge a rien -- le risque de la porte
+    reste du bon cote.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    for state in ("", "UNKNOWN"):
+        index = _stack_index(
+            _stack_entry(
+                19548, {"a": "A", "b": "B"},
+                head_name="feature/19548-old-version",
+            ),
+            _stack_entry(
+                19556, {"a": "A", "b": "B", "d": "D: correctif absent du bas"},
+                head_name="feature/19556-rebuilt", base_name="main",
+                mergeable=state,
+            ),
+        )
+        snapshot = _base_snapshot()
+        snapshot["number"] = 19548
+        verdict, reasons = mod.derive_verdict(
+            snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+        )
+        assert verdict == mod.VERDICT_BLOCKED, (state, reasons)
+        assert any("stack top" in r and "#19556" in r for r in reasons), (state, reasons)
 
 
 # --- #20641 : rafraichissement content-free de la base d'une pile ----------

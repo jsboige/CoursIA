@@ -208,7 +208,7 @@ Cette catégorie regroupe les **plateformes GenAI réelles** qui apportent une c
 
 ### CaseStudies - Projets étudiants
 
-Projets réalisés par les étudiants : génération d'images style Barbie/Shrek, générateur de recettes, chatbot médical éducatif, challenges style Fort Boyard. Ces notebooks illustrent la diversité des applications possibles après le parcours. Le détail des 4 cas canoniques est dans [`CaseStudies/README.md`](CaseStudies/README.md). À ne pas confondre avec la série interdisciplinaire [`MyIA.AI.Notebooks/CaseStudies/`](../CaseStudies/README.md) (Diagnostic-Medical, Oncology-Planning, SmartGrid-Energy) — voir [la note de clarification](CaseStudies/README.md#clarification-du-cran-genaicasestudies-vs-myiaainotebookscasestudies).
+Projets réalisés par les étudiants : génération d'images style Barbie/Shrek, générateur de recettes, chatbot médical éducatif, challenges style Fort Boyard. Ces notebooks illustrent la diversité des applications possibles après le parcours. Le détail des 4 cas canoniques est dans [`CaseStudies/README.md`](CaseStudies/README.md). À ne pas confondre avec la série interdisciplinaire [`MyIA.AI.Notebooks/CaseStudies/`](../CaseStudies/README.md) (Diagnostic-Medical-Python, Planification-Oncologie-Python, Reseau-Electrique-Intelligent) — voir [la note de clarification](CaseStudies/README.md#clarification-du-cran-genaicasestudies-vs-myiaainotebookscasestudies).
 
 ### FallacyDetection - Taxonomie et couverture des fallacies
 
@@ -423,7 +423,7 @@ Trois sous-dossiers complètent la série sans être des notebooks :
 
 <!-- CATALOG-STATUS
 series: GenAI
-pedagogical_count: 307
-breakdown: Texte=49, Audio=42, Image=31, Plateformes-Conversationnelles=28, PostTraining=23, SemanticKernel=23, Video=22, Integrations-DotNet=18, FineTuning=17, RAG-et-Memoire-Semantique=14, Security=8, Vibe-Coding=8, 00-GenAI-Environment=7, CaseStudies=6, 3D=5, FallacyDetection=5, HumorDetection=1
-maturity: BETA=254, DRAFT=26, ALPHA=24, TEMPLATE=3
+pedagogical_count: 311
+breakdown: Texte=49, Audio=42, Image=31, Plateformes-Conversationnelles=28, SemanticKernel=24, PostTraining=23, Video=22, FineTuning=20, Integrations-DotNet=18, RAG-et-Memoire-Semantique=14, Security=8, Vibe-Coding=8, 00-GenAI-Environment=7, CaseStudies=6, 3D=5, FallacyDetection=5, HumorDetection=1
+maturity: BETA=258, ALPHA=30, DRAFT=20, TEMPLATE=3
 -->

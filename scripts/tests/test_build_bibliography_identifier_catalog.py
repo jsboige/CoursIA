@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-MODULE_PATH = REPO_ROOT / "scripts" / "build_bibliography_identifier_catalog.py"
+MODULE_PATH = REPO_ROOT / "scripts" / "bibliography" / "build_bibliography_identifier_catalog.py"
 
 
 def _load_module():
@@ -294,3 +294,32 @@ def test_a1_join_types_by_value_like_the_crosswalk(tmp_path):
     assert jointure["total"] == 1
     assert jointure["resolus"] == 1
     assert jointure["non_resolus"] == 0
+
+
+def test_default_output_is_written_outside_the_gisement_root(tmp_path):
+    """CONTROLE POSITIF : le catalogue par defaut ne doit PAS atterrir dans la
+    racine du gisement.
+
+    La racine ne porte que des publications ; un catalogue d'identifiants est un
+    fichier de travail. Il part donc dans le dossier des travaux, frere du
+    gisement.
+    """
+    root = tmp_path / "Bibliographie IA"
+    root.mkdir(parents=True)
+
+    sortie = bcc.chemin_sortie(root, jour="2026-11-06")
+
+    assert sortie.parent.name == "Bibliographie-travaux"
+    assert sortie.parent.parent == tmp_path
+    assert sortie.name == "IDENTIFIANTS-catalogue-2026-11-06.csv"
+    # la racine du gisement reste hors du chemin de sortie
+    assert root not in sortie.parents
+
+
+def test_explicit_out_wins_over_the_default(tmp_path):
+    root = tmp_path / "Bibliographie IA"
+    root.mkdir(parents=True)
+
+    sortie = bcc.chemin_sortie(root, out=str(tmp_path / "catalogue.csv"))
+
+    assert sortie == tmp_path / "catalogue.csv"

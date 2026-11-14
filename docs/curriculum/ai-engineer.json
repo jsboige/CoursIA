@@ -1,0 +1,178 @@
+{
+  "description": "Parcours AI Engineer : de la stack GenAI self-hosted a l'application en production, en passant par l'appel de modele, la generation multimodale (image, audio, video), l'orchestration multi-modeles, les agents applicatifs, les copilots sur plateforme et la securite applicative. La difference avec le parcours LLM Engineer (#19544, arc profond du texte modele) et ML Engineer (#19545, apprentissage classique) : ici l'ingenieur construit un produit qui appelle des modeles qu'il ne re-entraine pas. Le socle des branches 2, 7 et 8 reutilise les carnets du parcours LLM Engineer ; c'est le principe du pli 1 de l'EPIC #19543 : les verticaux se traversent, ils ne se dupliquent pas. Les carnets .NET sont en detour, pas en branche principale : la branche SemanticKernel s'enseigne en Python, son jumeau C# (`fort-boyard-csharp`), Aspire et Orleans sont dans les detours.",
+  "declared_kernel_transitions": [".NET"],
+  "branches": [
+    {
+      "id": "environnement-stack",
+      "description": "La stack GenAI self-hosted comme poste de travail : environnement, services Docker, endpoints d'API et validation. L'AI Engineer de ce depot ne consomme pas un cloud abstrait : il fait tourner sa propre stack (vLLM, ComfyUI, Whisper, TTS) et doit savoir la monter, la configurer et la diagnostiquer avant d'ecrire la premiere ligne d'application. Reproductibilite de l'environnement d'abord, application ensuite.",
+      "notebooks": [
+        "GenAI/00-GenAI-Environment/00-1-Environment-Setup.ipynb",
+        "GenAI/00-GenAI-Environment/00-2-Docker-Services-Management.ipynb",
+        "GenAI/00-GenAI-Environment/00-3-API-Endpoints-Configuration.ipynb",
+        "GenAI/00-GenAI-Environment/00-4-Environment-Validation.ipynb",
+        "GenAI/00-GenAI-Environment/00-7-Terminal-Long-Runs.ipynb"
+      ]
+    },
+    {
+      "id": "appel-et-controle",
+      "description": "Appel de modele et controle de la sortie au niveau application : requete, prompt, sorties structurees, function calling. Sous-ensemble du socle LLM Engineer (branches 01-04 de la serie Texte) : l'AI Engineer a besoin du contrat d'appel, pas de la mecanique interne du modele. Ce qu'il apprend ici, il le reutilise dans chaque branche suivante.",
+      "prerequisites": [
+        "environnement-stack"
+      ],
+      "notebooks": [
+        "GenAI/Texte/01_OpenAI_Intro.ipynb",
+        "GenAI/Texte/02_PromptEngineering.ipynb",
+        "GenAI/Texte/03_Structured_Outputs.ipynb",
+        "GenAI/Texte/04_Function_Calling.ipynb"
+      ]
+    },
+    {
+      "id": "generation-multimodale",
+      "description": "Generation image, audio et video sur la stack : APIs distantes (DALL-E, GPT-5 Image, TTS OpenAI) puis modeles self-hosted (Forge SDXL Turbo, Qwen-Image, Whisper local, Kokoro, AnimateDiff). L'AI Engineer choisit ses moteurs par cout et par contrainte d'exploitation, pas par effet de mode ; la bascule API distante vers service local est le geste structurant de la branche.",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        "GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
+        "GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
+        "GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb",
+        "GenAI/Image/01-Foundation/01-5c-Edition-Image-Prompt-Workflows.ipynb",
+        "GenAI/Audio/01-Foundation/01-1-OpenAI-TTS-Intro.ipynb",
+        "GenAI/Audio/01-Foundation/01-2-OpenAI-Whisper-STT.ipynb",
+        "GenAI/Audio/01-Foundation/01-4-Whisper-Local.ipynb",
+        "GenAI/Audio/01-Foundation/01-5-Kokoro-TTS-Local.ipynb",
+        "GenAI/Video/01-Foundation/01-1-Video-Operations-Basics.ipynb",
+        "GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb"
+      ]
+    },
+    {
+      "id": "orchestration-multi-modeles",
+      "description": "Composer plusieurs moteurs dans une meme application : comparaisons multi-modeles et workflows d'orchestration, par modalite puis transverses. C'est la signature AI Engineer : le produit appelle plusieurs modeles avec des roles differents, compare leurs sorties a budget egal, et enchaîne les etapes (generer, transcrire, analyser) dans un pipeline reproductible.",
+      "prerequisites": [
+        "generation-multimodale"
+      ],
+      "notebooks": [
+        "GenAI/Image/03-Orchestration/03-1-Multi-Model-Comparison.ipynb",
+        "GenAI/Image/03-Orchestration/03-2-Workflow-Orchestration.ipynb",
+        "GenAI/Audio/03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb",
+        "GenAI/Audio/03-Orchestration/03-2-Audio-Pipeline-Orchestration.ipynb",
+        "GenAI/Video/03-Orchestration/03-1-Multi-Model-Video-Comparison.ipynb",
+        "GenAI/Video/03-Orchestration/03-2-Video-Workflow-Orchestration.ipynb"
+      ]
+    },
+    {
+      "id": "agents-et-applications",
+      "description": "De l'agent a l'application : orchestration agentique, agents generatifs en monde simule, passage du notebook a l'application, puis trois etudes de cas bout-en-bout (medical, jeu, creation de recettes). La branche produit un livrable : une application qui tient debout, avec ses modeles, son UI et ses donnees ; les etudes de cas sont les modeles de reference de ce que l'apprenant doit savoir livrer.",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        "GenAI/Texte/13_Agentic_Orchestration.ipynb",
+        "GenAI/Texte/23_Du_Notebook_A_L_Application.ipynb",
+        "GenAI/Texte/24_Generative_Agents_MiniMonde.ipynb",
+        "GenAI/SemanticKernel/fort-boyard-python.ipynb",
+        "GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb",
+        "GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb",
+        "GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb"
+      ]
+    },
+    {
+      "id": "plateformes-copilots",
+      "description": "Deployer un copilot sur une plateforme reelle (AI Engine) : configuration par API, memoire ephemere, donnees structurees, et mesure de la derive du copilot. La production commence ici : un copilot en ligne derive, et l'ingenieur qui ne la mesure pas ne le sait pas. La branche se termine sur la taxonomie des assistants pour nommer ce qu'on deploie.",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/configurer-chatbots-par-l-api.ipynb",
+        "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/donner-une-memoire-ephemere-au-chatbot-par-l-api.ipynb",
+        "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/obtenir-des-donnees-structurees-par-l-api.ipynb",
+        "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-1-Chatbots/mesurer-la-derive-dun-copilot.ipynb",
+        "GenAI/Plateformes-Conversationnelles/differencier-les-assistants.ipynb"
+      ]
+    },
+    {
+      "id": "production-exploitation",
+      "description": "Patterns de production, routage et repli entre providers, caches, exploitation (observabilite, couts, quotas), puis budget materiel : debit et cout par geste d'inference. La difference entre un prototype et un service se joue sur ces carnets : latence, disponibilite, cout par requete. Repris du socle LLM Engineer car la discipline est la meme, l'echelle change.",
+      "prerequisites": [
+        "appel-et-controle"
+      ],
+      "notebooks": [
+        "GenAI/Texte/09_Production_Patterns.ipynb",
+        "GenAI/Texte/09c_Production_Routage_Repli.ipynb",
+        "GenAI/Texte/09d_Production_Caches.ipynb",
+        "GenAI/Texte/09e_Production_Exploitation.ipynb",
+        "GenAI/Texte/11b_Materiel_Debit_Cout.ipynb"
+      ]
+    },
+    {
+      "id": "securite-applicative",
+      "description": "Surface d'attaque de l'application : injection de prompt (red team), outils MCP exposes et consommes, audit d'un serveur MCP. L'AI Engineer securise l'application, pas le modele : ce qu'il expose (endpoints, tools, consentements OAuth) est son perimetre, apres avoir deploye sa plateforme, sinon il securise du vide.",
+      "prerequisites": [
+        "plateformes-copilots"
+      ],
+      "notebooks": [
+        "GenAI/Texte/09b_Prompt_Security_RedTeam.ipynb",
+        "GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb",
+        "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-4-MCP-Server/auditer-un-serveur-mcp.ipynb",
+        "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/03-Functional/03-4-MCP-Server/consommer-vs-exposer-le-mcp.ipynb"
+      ]
+    }
+  ],
+  "accretions": [
+    {
+      "id": "semantic-kernel",
+      "description": "Detour SemanticKernel : la meme API d'orchestration dans ses deux implementations. Quatre carnets Python (`semantic_kernel`) menent l'introduction, les agents, les filtres et l'observabilite, puis le MCP ; `fort-boyard-csharp` reprend le jeu en C# (`#r`/`nuget:`), la ou l'apprenant .NET branche reellement l'orchestrateur dans un projet. Jamais une branche principale (convention du pli 1).",
+      "branch": "agents-et-applications",
+      "notebooks": [
+        "GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb",
+        "GenAI/SemanticKernel/03-SemanticKernel-Agents.ipynb",
+        "GenAI/SemanticKernel/04-SemanticKernel-Filters-Observability.ipynb",
+        "GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb",
+        "GenAI/SemanticKernel/fort-boyard-csharp.ipynb"
+      ]
+    },
+    {
+      "id": "aspire-orleans",
+      "description": "Detour .NET distribue : Aspire pour orchestrer la stack GenAI et l'observer, Orleans pour des agents en grains persistants. L'echelle au-dela du processus unique ; le detour montre ce que l'orchestration applicative devient quand l'application est distribuee.",
+      "branch": "production-exploitation",
+      "notebooks": [
+        "GenAI/Integrations-DotNet/Aspire/01-Aspire-Orchestration-GenAi.ipynb",
+        "GenAI/Integrations-DotNet/Aspire/03-Aspire-Observabilite.ipynb",
+        "GenAI/Integrations-DotNet/Orleans/01-Orleans-Grains-Agents.ipynb"
+      ]
+    },
+    {
+      "id": "qa-plateformes",
+      "description": "Detour QA : parcours Playwright sur AI Engine et Open WebUI. Tester une application conversationnelle n'est pas tester une API : le detour montre la methode d'audit d'une plateforme deploiee, viewport par viewport.",
+      "branch": "plateformes-copilots",
+      "notebooks": [
+        "GenAI/Plateformes-Conversationnelles/AI-Engine-WordPress/05-Playwright-AI-Engine/00-Parcours-QA-AI-Engine.ipynb",
+        "GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/01-decouverte/01-Decouverte-QA-OWUI.ipynb",
+        "GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI/03-chat-streaming/03-Chat-Streaming-QA-OWUI.ipynb"
+      ]
+    },
+    {
+      "id": "vibe-coding",
+      "description": "Detour vibe coding : l'AI Engineer se construit avec ses propres outils. Bases, agents et automatisation en CLI (Claude Code via Claudish) : la boucle agentique appliquee au developpement lui-meme, avec ses garde-fous.",
+      "branch": "agents-et-applications",
+      "notebooks": [
+        "GenAI/Vibe-Coding/Claude-Code/notebooks/01-Claude-CLI-Bases.ipynb",
+        "GenAI/Vibe-Coding/Claude-Code/notebooks/04-Claude-CLI-Agents.ipynb",
+        "GenAI/Vibe-Coding/Claude-Code/notebooks/05-Claude-CLI-Automatisation.ipynb"
+      ]
+    },
+    {
+      "id": "multimodal-avance",
+      "description": "Detour generation avancee : FLUX et Z-Image en image, clonage de voix et generation musicale en audio, LTX et SVD en video. Pour l'apprenant qui veut peser les modeles de pointe par lui-meme avant de choisir ceux de son application.",
+      "branch": "generation-multimodale",
+      "notebooks": [
+        "GenAI/Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb",
+        "GenAI/Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb",
+        "GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb",
+        "GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb",
+        "GenAI/Video/02-Advanced/02-2-LTX-Video-Lightweight.ipynb",
+        "GenAI/Video/02-Advanced/02-4-SVD-Image-to-Video.ipynb"
+      ]
+    }
+  ]
+}

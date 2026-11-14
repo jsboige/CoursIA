@@ -71,14 +71,17 @@ Le point d'entrée s'écrit `chemin/du/projet:identifiant`, où le chemin est le
 L'algorithme respecte trois règles ; `qc_example/main.py` les montre sur un 60/40 rebalancé chaque mois :
 
 1. **Dates en paramètres.** `start` et `end` (ISO) viennent de `get_parameter`, sans valeur par défaut : un backtest lancé sans eux échoue au lieu de tourner sur une période implicite. Les deux noms sont réservés : un paramètre de registre qui les porte est refusé.
-2. **Une clôture par séance, à sa date.** À chaque clôture, la valeur du portefeuille va dans le graphique `shadow`, séries `e0` à `e4` à tour de rôle. Une série unique serait rééchantillonnée par QC sur sa propre grille ; cinq séries entrelacées gardent chaque point à sa séance (#18939).
-3. **Les coûts, tracés par la candidate.** Au même moment, `fees` (frais cumulés / valeur de départ) et `turnover` (somme des montants exécutés / valeur du portefeuille au moment de l'exécution). La sortie de `read_backtest` ne porte ni l'un ni l'autre.
+2. **Une clôture par séance, à sa date.** À chaque clôture, la valeur du portefeuille va dans le graphique `shadow`, séries `e0` à `e4` à tour de rôle. Une série unique serait rééchantillonnée par QC sur sa propre grille ; cinq séries entrelacées gardent chaque point à sa séance (#18939). Une candidate crypto souscrit sans remplissage vers l'avant (`fill_forward=False`) : un passage lancé avant minuit UTC recevrait sinon, à la date du passage, une barre qui répète la clôture de la veille (#24153).
+3. **Les coûts, tracés par la candidate.** Au même moment, `fees` (frais cumulés / valeur de départ) et `turnover` (somme des montants exécutés / valeur du portefeuille au moment de l'exécution). `read_backtest` ne rend que les totaux de fin de backtest, pas une valeur par séance.
+
+QC ne garde que dix séries tracées par backtest, tous graphiques confondus, et perd les dernières créées sans erreur. Le contrat en prend sept (`e0..e4`, `fees`, `turnover`) et laisse trois séries libres pour des contrôles ; au-delà, des séries du contrat peuvent disparaître (mesure du 2026-11-10, #24153 : douze séries, `e0` perdue).
 
 `ingest-qc` refuse le passage quand :
 
 - le backtest n'est pas terminé (`completed` différent de `true`), a échoué, ou ne porte pas le nom prévu par le plan ;
 - les points d'équité, rangés par date, ne se succèdent pas `e0`, `e1`, … `e4`, `e0` : un point perdu ou en trop casse ce cycle. C'est aussi ce qui arrive si QC tronque ou rééchantillonne une série trop longue ; le passage est alors refusé, jamais calculé sur une courbe incomplète ;
 - deux points tombent sur la même séance, ou l'équité sort de [D, date du passage] ;
+- le graphique porte plus de points d'équité que le backtest n'a de dates de données (`tradeableDates`) : une barre recopiée par remplissage vers l'avant en est une cause mesurée (#24153) ;
 - le dernier point de `fees` ou de `turnover` n'est pas sur la dernière séance.
 
 Les rendements journaliers sont ceux de la courbe d'équité, frais déjà déduits par QC ; la rotation journalière est la rotation cumulée divisée par le nombre de séances. Les définitions de Sharpe, CAGR et pire baisse sont celles du rejeu local. Le Sharpe de QC, lui, retranche un taux sans risque : les deux ne se comparent pas directement.
@@ -163,7 +166,7 @@ Un passage par mois, à la première séance du mois. Chaque passage est une PR 
 
 ## Ce qui n'est pas encore là
 
-- **Le premier passage de `btc-voltarget-base`** (étape 2 de #18923) : `ingest-qc` refuse son graphique, dont la première valeur est tracée dans `e1` et non dans `e0`, parce que le compteur de barres est incrémenté avant le tracé. Le cycle est complet mais décalé d'un cran ; la candidate reste due tant que le harnais n'admet pas ce décalage (#24153). Un passage QC demande le MCP QuantConnect, absent de plusieurs sièges : sur un siège sans MCP, les candidates QC restent dues.
+- **Le premier passage de `btc-voltarget-base`** (étape 2 de #18923) : le décalage d'un cran de son cycle est admis depuis #24288, mais le passage du 2026-11-10 a été refusé, et sa lecture a mis au jour trois défauts de la version gelée : ni `fees` ni `turnover`, des liquidités pendant les 31 barres qui suivent chaque départ, une barre recopiée à la date du passage (#24153). Gelée telle quelle, elle ne peut produire aucun passage accepté. La version corrigée, qui ne lit plus de dates par défaut, est gelée le 2026-11-12 comme une nouvelle candidate, `btc-voltarget-v2`, en même temps que la version 2 de `ShortUnprofitableIntl-QC`, `short-intl-v2`, qui tient le même contrat, au SHA de leur correction sur `main` (`fa1d63e`). Leur premier passage accepté reste à venir. Un passage QC demande le MCP QuantConnect, absent de plusieurs sièges : sur un siège sans MCP, les candidates QC restent dues.
 - **Le rythme automatique** (étape 3 de #18923) : le décideur existe (`scripts/shadow_schedule.py`), aucun déclencheur planifié ne l'appelle — la cadence est encore tenue à la main.
 
 Un passage pris en cours de mois plutôt qu'à la première séance ne fausse pas la lecture : la fenêtre hors échantillon ne fait que s'allonger de D à la date du passage, et `due` ne l'ouvre qu'une fois par mois et par candidate.

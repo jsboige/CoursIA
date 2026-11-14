@@ -20,7 +20,7 @@ autres langues sont vides (remplies par le moteur Argumentum lors de la resync, 
 
 Usage :
     python scripts/translation/extract_cells_to_csv.py <notebook.ipynb | dir/> [-o CSV]
-    python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/
+    python scripts/translation/extract_cells_to_csv.py MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/
 
     # Mode --update : met à jour un CSV EXISTANT pour les notebooks donnés, sans
     # écraser les autres entrées ni perdre les colonnes remplies par T3 (moteur

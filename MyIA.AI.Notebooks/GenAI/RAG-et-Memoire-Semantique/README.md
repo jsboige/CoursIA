@@ -25,7 +25,7 @@ Un assistant de codage sans mémoire externe ré-explore le même terrain à cha
 
 - **Opérateurs d'agents** qui veulent comprendre comment leurs outils sont *ancrés* dans un historique vérifié.
 - **Curieux d'infrastructure ML / vectorielle** qui cherchent un récit honnête de mise en production (Docker, WSL2, quantization, anti-split-brain).
-- **Lecteurs des notebooks pratiques** `01-Hands-On-Grounding.ipynb` (le contexte de l'infrastructure avant de manipuler Qdrant), `02-Retrieval-Avance.ipynb` (mesurer HyDE et le reranking sur un gold français), `03-Embeddings-From-Scratch.ipynb` (ce qu'un embedding *est*, avant de s'en servir), `03b-Espace-Embeddings-Visualisation.ipynb` (voir l'espace : PCA à la main et t-SNE pour projeter les embeddings en deux axes, et un banc de trois modèles mesuré sur le même corpus français), `04-Tokenisation-From-Scratch.ipynb` (ce qu'un token *est*, l'unité de compte que tout le dépôt consomme), `04b-Tokenisateurs-Compares.ipynb` (WordPiece et Unigram construits à la main et comparés au BPE, à budget de vocabulaire égal, avec l'effet multilingue), `05-Stockage-Vectoriel.ipynb` (la persistance sur disque et le compromis exact/ANN quand le corpus ne tient plus en RAM), `05b-Stockage-Vectoriel-Serveur.ipynb` (le même compromis sur un serveur Qdrant réel, puis FAISS, pgvector et le SDK Qdrant mesurés à côté de lui sur le même corpus — rappel, latence, mémoire, et où passe le filtre métadonnées) et `06-KernelMemory-InProcess.ipynb` (la couche d'abstraction Kernel Memory par-dessus l'infrastructure), `07-KernelMemory-Python-Quickstart.ipynb` (le jumeau Python en mode service : ingestion HTTP, citations, mesure), `08-KernelMemory-Hybrid-Search.ipynb` (la seconde jambe : BM25 + dense fusionnés en RRF sur l'index KM projeté, et la mesure honnête du gain sur petit corpus), `09-KernelMemory-Multimodal.ipynb` (le plafond multimodal du service OSS, constaté puis franchi par le pont vision, avec mesure avant/après) et `10-RAG-Visuel-Embedding-Conjoint.ipynb` (le RAG visuel sans OCR : l'embedding joint SigLIP interroge les pages par leur apparence, l'écart mesuré par classe de requête).
+- **Lecteurs des notebooks pratiques** `01-Hands-On-Grounding.ipynb` (le contexte de l'infrastructure avant de manipuler Qdrant), `02-Retrieval-Avance.ipynb` (mesurer HyDE et le reranking sur un gold français), `03-Embeddings-From-Scratch.ipynb` (ce qu'un embedding *est*, avant de s'en servir), `03b-Espace-Embeddings-Visualisation.ipynb` (voir l'espace : PCA à la main et t-SNE pour projeter les embeddings en deux axes, et un banc de trois modèles mesuré sur le même corpus français), `04-Tokenisation-From-Scratch.ipynb` (ce qu'un token *est*, l'unité de compte que tout le dépôt consomme), `04b-Tokenisateurs-Compares.ipynb` (WordPiece et Unigram construits à la main et comparés au BPE, à budget de vocabulaire égal, avec l'effet multilingue), `05-Stockage-Vectoriel.ipynb` (la persistance sur disque et le compromis exact/ANN quand le corpus ne tient plus en RAM), `05b-Stockage-Vectoriel-Serveur.ipynb` (le même compromis sur un serveur Qdrant réel, puis FAISS, pgvector et le SDK Qdrant mesurés à côté de lui sur le même corpus — rappel, latence, mémoire, et où passe le filtre métadonnées) et `06-KernelMemory-InProcess.ipynb` (la couche d'abstraction Kernel Memory par-dessus l'infrastructure), `07-KernelMemory-Python-Quickstart.ipynb` (le jumeau Python en mode service : ingestion HTTP, citations, mesure), `08-KernelMemory-Hybrid-Search.ipynb` (la seconde jambe : BM25 + dense fusionnés en RRF sur l'index KM projeté, et la mesure honnête du gain sur petit corpus), `09-KernelMemory-Multimodal.ipynb` (le plafond multimodal du service OSS, constaté puis franchi par le pont vision, avec mesure avant/après), `10-RAG-Visuel-Embedding-Conjoint.ipynb` (le RAG visuel sans OCR : l'embedding joint SigLIP interroge les pages par leur apparence, l'écart mesuré par classe de requête) et `11-Alignement-Representationnel-Cross-Modal.ipynb` (comparer récupération et géométrie des représentations image-texte, sans supposer leur convergence).
 - **Personnes ayant vécu un incident** (perte de données, dérive de montage disque, sauvegardes à moitié câblées) et cherchant des leçons partageables.
 
 ## Objectifs d'apprentissage
@@ -36,10 +36,11 @@ Un assistant de codage sans mémoire externe ré-explore le même terrain à cha
 2. **Comment** déployer Qdrant en Docker, sur WSL2, avec quantization (TurboQuant) et durcissement anti-split-brain.
 3. **Comment** brancher un agent via MCP, indexer du code et des conversations, requêter par le sens (pas par mots-clés).
 4. **Quelles pannes réelles** peuvent survenir en production (dérive de montage disque, perte de données, sauvegardes mal câblées) et comment durcir l'infrastructure.
+5. **Comment mesurer** un alignement image-texte et distinguer la récupération de paires de la similarité géométrique des représentations.
 
 ## Notebooks et documents
 
-Cette section regroupe les notebooks pratiques énumérés ci-dessous (Qdrant en mémoire, retrieval avancé mesuré, embeddings from scratch puis leur espace visualisé et mis en banc de modèles, tokenisation BPE à la main puis ses familles concurrentes, stockage vectoriel persistant puis son variant serveur, qui compare quatre moteurs côte à côte sur un seul corpus, la couche d'abstraction Kernel Memory en .NET in-process comme en service Python, la recherche hybride BM25+dense mesurée, et le plafond multimodal du service OSS franchi par le pont vision) et les documents de cadrage du dossier `docs/` :
+Cette section regroupe les notebooks pratiques énumérés ci-dessous (Qdrant en mémoire, retrieval avancé mesuré, embeddings from scratch puis leur espace visualisé et mis en banc de modèles, tokenisation BPE à la main puis ses familles concurrentes, stockage vectoriel persistant puis son variant serveur, qui compare quatre moteurs côte à côte sur un seul corpus, la couche d'abstraction Kernel Memory en .NET in-process comme en service Python, la recherche hybride BM25+dense mesurée, le plafond multimodal du service OSS franchi par le pont vision, puis le RAG visuel et la mesure de l'alignement image-texte) et les documents de cadrage du dossier `docs/` :
 
 | Support | Type | Vous y trouverez |
 |---------|------|------------------|
@@ -56,6 +57,7 @@ Cette section regroupe les notebooks pratiques énumérés ci-dessous (Qdrant en
 | [`08-KernelMemory-Hybrid-Search.ipynb`](08-KernelMemory-Hybrid-Search.ipynb) | Notebook pratique (Python) | La recherche hybride par-dessus l'index KM : corpus français ingéré par le service Kernel Memory, constat des deux verrous (KM dense-only, Qdrant refuse d'étendre une collection existante), projection vers une collection hybride (dense + BM25 `Qdrant/bm25` via fastembed), puis mesure contrôlée dense vs BM25 vs fusion RRF — recall@3/@5 et MRR@10 sur un gold à deux classes (terme exact rare vs paraphrase sémantique) |
 | [`09-KernelMemory-Multimodal.ipynb`](09-KernelMemory-Multimodal.ipynb) | Notebook pratique (Python) | La frontière modale du service KM OSS, mesurée : corpus polarisé par modalité (PDF réel, textes, schéma PNG) — le PNG est accepté (202) mais son pipeline **stand silencieusement** à l'extraction (zéro record), plafond documenté ; puis le pont vision : un modèle de vision décrit l'image, la description est ingérée, et la mesure avant/après montre les termes propres à l'image (`capteur impairfaux`) passant de miss à hit avec citations |
 | [`10-RAG-Visuel-Embedding-Conjoint.ipynb`](10-RAG-Visuel-Embedding-Conjoint.ipynb) | Notebook pratique (Python) | Le RAG visuel **sans OCR ni description intermédiaire** : les 446 pages des decks de slides du dépôt embeddées par SigLIP multilingue dans un espace joint image-texte, interrogées en français, recall@k et MRR mesurés par classe de requête contre une baseline couche-texte — l'écart des requêtes visuelles rendu visible |
+| [`11-Alignement-Representationnel-Cross-Modal.ipynb`](11-Alignement-Representationnel-Cross-Modal.ipynb) | Notebook pratique (Python) | Sur 72 paires synthétiques image-légende, comparer voisins mutuels de SigLIP et CKA entre encodeurs, avec contrôle brouillé et plafond lié au contenu des légendes ; la pente de convergence attendue ne se manifeste pas sur ce corpus hors distribution |
 | [`01-Pourquoi-Memoire-Semantique.md`](docs/01-Pourquoi-Memoire-Semantique.md) | Document de cadrage | Le besoin : grounding, SDDD, RAG |
 | [`02-Infrastructure-Qdrant.md`](docs/02-Infrastructure-Qdrant.md) | Document de déploiement | Docker, WSL2, quantization, anti-split-brain |
 | [`03-Utilisation-MCP-Indexation.md`](docs/03-Utilisation-MCP-Indexation.md) | Document d'usage | Brancher un agent via MCP, indexer, rechercher |
@@ -68,6 +70,7 @@ Cette section regroupe les notebooks pratiques énumérés ci-dessous (Qdrant en
 | **Vous découvrez la mémoire sémantique** | [01 - Pourquoi](docs/01-Pourquoi-Memoire-Semantique.md) → [Notebook Hands-On](01-Hands-On-Grounding.ipynb) → [03 - Utilisation](docs/03-Utilisation-MCP-Indexation.md) |
 | **Vous voulez déployer Qdrant** | [02 - Infrastructure](docs/02-Infrastructure-Qdrant.md) → [04 - Incidents](docs/04-Incidents-et-Lecons.md) |
 | **Vous voulez brancher un agent MCP** | [03 - Utilisation](docs/03-Utilisation-MCP-Indexation.md) → [Notebook Hands-On](01-Hands-On-Grounding.ipynb) |
+| **Vous explorez les représentations multimodales** | [RAG visuel SigLIP](10-RAG-Visuel-Embedding-Conjoint.ipynb) → [Alignement cross-modal](11-Alignement-Representationnel-Cross-Modal.ipynb) : voisins mutuels, CKA et limites de transfert |
 | **Vous avez vécu un incident** | [04 - Incidents](docs/04-Incidents-et-Lecons.md) en priorité, puis [02 - Infrastructure](docs/02-Infrastructure-Qdrant.md) |
 
 ## Prérequis
@@ -142,6 +145,7 @@ RAG-et-Memoire-Semantique/
 ├── 08-KernelMemory-Hybrid-Search.ipynb    # Notebook pratique (Python) — hybride BM25+dense RRF sur index KM projeté, mesure
 ├── 09-KernelMemory-Multimodal.ipynb        # Notebook pratique (Python) — plafond multimodal OSS + pont vision, mesure avant/après
 ├── 10-RAG-Visuel-Embedding-Conjoint.ipynb  # Notebook pratique (Python) — embedding joint SigLIP sur pages de slides, requêtes FR, mesure par classe
+├── 11-Alignement-Representationnel-Cross-Modal.ipynb  # Notebook pratique — voisins mutuels, CKA et limites cross-modales
 ├── docs/
 │   ├── 01-Pourquoi-Memoire-Semantique.md  # Le besoin : grounding, SDDD, RAG
 │   ├── 02-Infrastructure-Qdrant.md        # Le déploiement : Docker, WSL2, quantization
@@ -173,9 +177,9 @@ Le notebook pratique de cette section, [`01-Hands-On-Grounding.ipynb`](01-Hands-
 
 ## Portée scientifique
 
-- Le contenu est un récit d'**infrastructure opérationnelle** : ce qui a été déployé, ce qui a marché, ce qui a cassé.
+- Les documents relatent l'**infrastructure opérationnelle** ; les notebooks explorent aussi les embeddings, la recherche et l'alignement multimodal par des mesures contrôlées.
 - Les passages « théorie » (méthode SDDD, RAG, grounding) renvoient à des sources externes (Qdrant docs, articles RAG, méthode SDDD) plutôt que de ré-exposer des mathématiques ou algorithmes.
-- Cette section complète — sans la dupliquer — la littérature RAG classique : on y lit *comment ça tourne en production*, pas *comment un transformer encode du texte*.
+- Cette section complète la littérature RAG classique par le retour de production et des expériences sur la représentation et la recherche ; elle ne prétend pas démontrer une convergence générale des modèles.
 
 ## FAQ
 
@@ -200,6 +204,7 @@ R : La mémoire sémantique est *indexée par le sens* (embeddings + recherche v
 
 - **Lire les incidents.** Le document [04 - Incidents et leçons](docs/04-Incidents-et-Lecons.md) est la matière pédagogique la plus utile de cette section — il documente des pannes *réelles* et leurs *solutions*.
 - **Faire tourner les notebooks.** [`01-Hands-On-Grounding.ipynb`](01-Hands-On-Grounding.ipynb) fonctionne en mémoire, sans Docker, en quelques minutes ; [`02-Retrieval-Avance.ipynb`](02-Retrieval-Avance.ipynb) mesure réellement HyDE et un cross-encoder multilingue sur CPU ; [`03-Embeddings-From-Scratch.ipynb`](03-Embeddings-From-Scratch.ipynb) construit un word2vec en NumPy, puis le compare à un transformer contextuel ; [`04-Tokenisation-From-Scratch.ipynb`](04-Tokenisation-From-Scratch.ipynb) construit un BPE à la main et mesure le coût du choix de tokenizer ; [`04b-Tokenisateurs-Compares.ipynb`](04b-Tokenisateurs-Compares.ipynb) construit WordPiece et Unigram sur le même corpus et mesure l'effet multilingue du choix de tokenizer ; [`05-Stockage-Vectoriel.ipynb`](05-Stockage-Vectoriel.ipynb) déplie un HNSW à la main et mesure le compromis rappel-exact vs ANN ; [`05b-Stockage-Vectoriel-Serveur.ipynb`](05b-Stockage-Vectoriel-Serveur.ipynb) rejoue le compromis sur un serveur Qdrant réel ; [`06-KernelMemory-InProcess.ipynb`](06-KernelMemory-InProcess.ipynb) (.NET 10 ou .NET 9 + `DOTNET_ROLL_FORWARD=LatestMajor`, modèle GGUF d'embeddings mis en cache, inférence llama.cpp CPU) délègue le pipeline à Kernel Memory et mesure le compromis granularité/rappel — sans service ni conteneur ; [`07-KernelMemory-Python-Quickstart.ipynb`](07-KernelMemory-Python-Quickstart.ipynb) en est le jumeau Python en mode service : le conteneur `kernelmemory/service` piloté en HTTP, ingestion d'un corpus hétérogène (textes français, PDF réel, code source), citations, réponse sourcée et épreuve de persistance ; [`08-KernelMemory-Hybrid-Search.ipynb`](08-KernelMemory-Hybrid-Search.ipynb) projette l'index vers une collection hybride dense + BM25 et mesure honnêtement ce que la fusion RRF ajoute ; [`09-KernelMemory-Multimodal.ipynb`](09-KernelMemory-Multimodal.ipynb) pousse jusqu'à la frontière modale : le schéma PNG accepté mais jamais indexé (plafond OCR du service OSS), puis rendu cherchable par le pont vision, mesure avant/après à l'appui ; [`10-RAG-Visuel-Embedding-Conjoint.ipynb`](10-RAG-Visuel-Embedding-Conjoint.ipynb) referme la boucle sans OCR : l'embedding joint SigLIP interroge les pages par leur apparence, l'écart rendu visible par classe de requête.
+- **Comparer les représentations.** Après le RAG visuel du 10, le [carnet 11](11-Alignement-Representationnel-Cross-Modal.ipynb) met à l’épreuve l’[hypothèse platonicienne des représentations](https://arxiv.org/abs/2405.07987) sur 72 paires de formes et légendes synthétiques. Il emploie un voisin mutuel strict en top-1, distinct du recouvrement à k = 10 du papier, et une CKA linéaire pour comparer les géométries. SigLIP retrouve les paires au niveau du hasard ; la pente attendue entre `e5-small` et `e5-base` ne se lit pas ici. La CKA de DINOv2 et e5 compare leurs géométries, sans mesurer leur récupération mutuelle. Ces résultats sur un petit corpus hors distribution ne tranchent pas la convergence générale. Les modèles publics sont téléchargés au premier usage.
 - **Brancher un agent.** Le document [03 - Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md) montre comment relier Claude Code ou Roo Code à Qdrant via MCP.
 
 Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`5_RAG_Modern.ipynb`](../Texte/05_RAG_Modern.ipynb) et [`14_Persistent_Memory.ipynb`](../Texte/14_Persistent_Memory.ipynb) de la section Texte.
@@ -220,6 +225,7 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 - [Notebook pratique — Kernel Memory hybride BM25+dense](08-KernelMemory-Hybrid-Search.ipynb)
 - [Notebook pratique — Kernel Memory multimodal, pont vision](09-KernelMemory-Multimodal.ipynb)
 - [Notebook pratique — RAG visuel par embedding joint](10-RAG-Visuel-Embedding-Conjoint.ipynb)
+- [Notebook pratique — Alignement représentationnel cross-modal](11-Alignement-Representationnel-Cross-Modal.ipynb)
 - [Pourquoi la mémoire sémantique](docs/01-Pourquoi-Memoire-Semantique.md)
 - [Infrastructure Qdrant](docs/02-Infrastructure-Qdrant.md)
 - [Utilisation et indexation](docs/03-Utilisation-MCP-Indexation.md)
@@ -249,6 +255,49 @@ Pour le versant *application* du RAG (pas infrastructure), voir les notebooks [`
 | [Notebook — Kernel Memory hybride BM25+dense](08-KernelMemory-Hybrid-Search.ipynb) | Projeter l'index KM vers une collection hybride (dense + BM25 fastembed) et mesurer honnêtement ce que la fusion RRF ajoute — y compris quand elle n'ajoute rien — gold à deux classes, recall@k et MRR | Pratique |
 | [Notebook — Kernel Memory multimodal, pont vision](09-KernelMemory-Multimodal.ipynb) | Constater le plafond OCR du service OSS (PNG accepté, pipeline figé), le franchir par le pont vision, mesurer avant/après | Pratique |
 | [Notebook — RAG visuel, embedding joint](10-RAG-Visuel-Embedding-Conjoint.ipynb) | Retrouver des pages par leur apparence sans OCR : SigLIP multilingue embedde requête et image dans un même espace, recall@k et MRR mesurés par classe contre une baseline couche-texte | Pratique |
+| [Notebook — Alignement représentationnel cross-modal](11-Alignement-Representationnel-Cross-Modal.ipynb) | Distinguer récupération par voisins mutuels et géométrie CKA, examiner la pente et les limites sur 72 paires synthétiques | Avancé |
+
+
+### Compagnon C# des tokenisateurs comparés
+
+Le [carnet C# 04b](04b-Tokenisateurs-Compares-CSharp.ipynb) reprend les algorithmes pédagogiques, les exercices et les mesures du [carnet Python](04b-Tokenisateurs-Compares.ipynb). La BCL réalise les jouets ; `Microsoft.ML.Tokenizers` 3.0.0 calcule Qwen, tandis que Python.NET 3.0.5 appelle les vrais entraîneurs Rust et le pipeline DistilBERT. Le SDK BERT .NET et la référence diffèrent pour certains caractères (par exemple `🙂`).
+
+Préparer sous Linux un Python partagé 3.13 et un environnement isolé, puis **lancer Jupyter depuis le même terminal** après avoir positionné les variables suivantes :
+
+```bash
+python3.13 -m venv .venv-tokenizers
+.venv-tokenizers/bin/pip install tokenizers==0.23.3 huggingface-hub==2.4.0
+TOKEN_VENV="$PWD/.venv-tokenizers"
+TOKEN_BASE="$("$TOKEN_VENV/bin/python" -c 'import sys; print(sys.base_prefix)')"
+TOKEN_PYDLL="$("$TOKEN_VENV/bin/python" - <<'PYLIB'
+import sys
+import sysconfig
+from pathlib import Path
+
+library = sysconfig.get_config_var("LDLIBRARY")
+if not library or not sysconfig.get_config_var("Py_ENABLE_SHARED"):
+    raise SystemExit("Une distribution CPython 3.13 partagée est requise.")
+base_lib = Path(sys.base_prefix) / "lib"
+folders = [base_lib, Path(sysconfig.get_config_var("LIBDIR") or base_lib)]
+if sysconfig.get_config_var("MULTIARCH"):
+    folders.append(base_lib / sysconfig.get_config_var("MULTIARCH"))
+for folder in folders:
+    candidate = folder / library
+    if candidate.is_file():
+        print(candidate.resolve())
+        break
+else:
+    raise SystemExit("libpython introuvable dans les chemins de cette installation.")
+PYLIB
+)" || exit 1
+TOKEN_SITE="$("$TOKEN_VENV/bin/python" -c 'import sysconfig; print(sysconfig.get_path("purelib"))')"
+export PYTHONHOME="$TOKEN_BASE"
+export PYTHONNET_PYDLL="$TOKEN_PYDLL"
+export PYTHONPATH="$TOKEN_SITE"
+# Lancer ici Jupyter avec le noyau .NET Interactive.
+```
+
+La bibliothèque `libpython` doit exister au chemin calculé ; installer une distribution Python partagée si nécessaire. Les paquets NuGet sont restaurés par le carnet. Au premier lancement, Hugging Face télécharge les petits fichiers de tokenisation publics (sans poids de modèle ni clé) ; les révisions sont épinglées et leurs empreintes vérifiées. Ensuite le cache peut être réutilisé. Aucun service GenAI ni GPU n'est requis.
 
 ---
 

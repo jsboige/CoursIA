@@ -132,6 +132,18 @@ python scripts/ci/measure_runner_demand.py --repo jsboige/CoursIA \
 
 Les deux nombres étant versés et datés ci-dessus, la caractérisation est complète ; reste ouverte la décision de capacité (plafond de concurrence par hôte, retrait ou renfort documenté des slots), qui relève du coordinateur et n'est pas prise dans ce document.
 
+### Ce que l'OS local peut dire d'une topologie — et ce qu'il ne peut pas
+
+La mesure d'un hôte depuis son propre système d'exploitation (`scripts/ci/measure_po2024_topology.py`) répond à une autre question que l'inventaire API ci-dessus, et les deux ne se substituent pas. Ce qu'elle établit durablement :
+
+1. **Deux des nombres qui bornent la concurrence ne sont pas des propriétés de la machine.** Le plafond de jobs d'un hôte et le nombre de slots qui le partagent vivent dans l'enregistrement `self-hosted runner` côté GitHub et dans `actions/runners` — jamais dans l'OS. Un rapport qui les déclare « restant à mesurer » depuis la machine ne signale donc pas une lacune de mesure : il signale que **la machine n'est pas l'instrument**. Ces deux-là se lisent par l'API (bloc `runners_inventory` ci-dessus), ou ne se lisent pas.
+2. **La borne Docker/WSL2 n'est un plafond que sous hypothèse.** Le daemon local plafonne vCPU et mémoire de la VM qui le porte ; ce plafond borne réellement la concurrence **si** les conteneurs éphémères de GitHub s'exécutent dans cette VM. Sur un hôte où Actions monte une VM dédiée, le chiffre mesuré localement ne dit rien de la CI. Il s'écrit donc comme une **borne supérieure conditionnelle**, jamais comme la capacité de l'hôte.
+3. **Une propriété stable et une lecture instantanée ne se mélangent pas sans être nommées.** Modèle, cœurs, RAM installée et plafond du daemon sont reproductibles ; charge CPU et mémoire libre changent à chaque relecture. L'instrument suffixe les seconds d'`instant` dans son JSON pour qu'un re-run qui les voit bouger ne se lise pas comme une dérive de la mesure.
+
+Une absence de ce type n'est pas un zéro (cf. §« Exhaustivité et zéros ») : « non mesurable depuis l'OS » et « mesuré à zéro » sont deux verdicts distincts, et les confondre est l'erreur que cette section existe pour empêcher.
+
+Le relevé de topologie de l'hôte po-2024 — propriétés stables, lectures instantanées, complémentarité avec les deux nombres côté API — est un rapport figé : [`2026-09-15-po2024-topology-baseline.md`](../transients/2026-09-15-po2024-topology-baseline.md).
+
 ## Topologie retenue
 
 `jsboige/CoursIA` appartient à un compte GitHub personnel. Les groupes de runners personnalisés sont réservés aux organisations et ne constituent donc pas une barrière disponible ici. La frontière activable repose sur deux contrôles complémentaires :

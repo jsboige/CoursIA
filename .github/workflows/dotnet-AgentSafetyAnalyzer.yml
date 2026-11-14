@@ -3,7 +3,7 @@ name: dotnet-AgentSafetyAnalyzer
 # Tranche 2 de #14696 (orphelins .sln) : la paire Vibe-Coding/analyzers —
 # CoursIA.AgentSafetyAnalyzer (netstandard2.0, analyzer Roslyn) + son projet
 # de tests xunit (net8.0) — exclue du glob parent par #14695, absente de
-# MyIA.CoursIA.sln, donc sans CI avant cette PR.
+# dotnet/MyIA.CoursIA.sln, donc sans CI avant cette PR.
 #
 # Bornes mesurees firsthand (worktree origin/main c04ec58df, 2026-09-05,
 # DOTNET_ROLL_FORWARD=Major faute de runtime 8 local — le comptage
@@ -15,7 +15,7 @@ name: dotnet-AgentSafetyAnalyzer
 # Deux jobs STATIQUES (pas de matrix runs-on dynamique — garde #13363,
 # meme forme que dotnet-ArgumentAnalysis.yml / dotnet-Shared.Tests.yml).
 # setup-dotnet 8.0.x : les tests ciblent net8.0 (distinct du trio
-# Argument_Analysis en 9.0.x).
+# ArgumentAnalysis en 9.0.x).
 
 on:
   push:
@@ -23,20 +23,20 @@ on:
     paths:
       - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**'
       - '.github/workflows/dotnet-AgentSafetyAnalyzer.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   pull_request:
     types: [opened, synchronize, edited, reopened]
     paths:
       - 'MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**'
       - '.github/workflows/dotnet-AgentSafetyAnalyzer.yml'
-      - 'MyIA.CoursIA.sln'
+      - 'dotnet/MyIA.CoursIA.sln'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: dotnet-agentsafetyanalyzer-${{ github.ref }}
+  group: dotnet-agentsafetyanalyzer-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
@@ -45,6 +45,7 @@ env:
 jobs:
   dotnet-agentsafetyanalyzer-linux:
     name: AgentSafetyAnalyzer dotnet (ubuntu-latest, floor 26)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
     # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
@@ -98,6 +99,7 @@ jobs:
 
   dotnet-agentsafetyanalyzer-windows:
     name: AgentSafetyAnalyzer dotnet (windows-latest, floor 26)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: windows-latest
     timeout-minutes: 15
 

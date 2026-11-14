@@ -110,7 +110,173 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
 
 REPO = "jsboige/CoursIA"
 
-BOT_LOGINS = {"github-actions", "codecov", "dependabot", "copilot-pull-request-reviewer"}
+# Les deux orthographes d'un meme bot : la lecture normalisee (voir
+# ``_author_login``) produit la forme suffixee ``[bot]`` des qu'elle dispose
+# du type de l'acteur (REST ``type`` / GraphQL ``__typename``) ; la forme nue
+# reste celle des payloads gh-json sans type. Les DEUX sont filtrees : sinon
+# la normalisation ferait passer un bot REST deja connu du filtre.
+BOT_LOGINS = {
+    "github-actions", "github-actions[bot]",
+    "codecov", "codecov[bot]",
+    "dependabot", "dependabot[bot]",
+    "copilot-pull-request-reviewer", "copilot-pull-request-reviewer[bot]",
+}
+
+
+# --- Identites App : extraction normalisee (#17437) ----------------------------
+#
+# ``gh pr view --json comments,reviews`` rend l'auteur SANS champ de type
+# (mesure 2026-11-12 : ``{"login": ...}`` seul). La preuve d'identite d'une
+# ligne est le TYPE DE LA LIGNE ELLE-MEME (relecture ai-01 du 2026-11-12 :
+# une sonde ``users/<login>[bot]`` prouve que l'App EXISTE, pas que
+# l'AUTEUR de la ligne est l'App — un compte UTILISATEUR homonyme du slug
+# serait confondu avec elle). Les surfaces typees — REST ``user.type``,
+# GraphQL ``author.__typename`` via ``_typed_author_surfaces`` — portent
+# cette preuve par ligne ; ``gh_identity.normalize_author_login`` en
+# reconstruit le suffixe. Une ligne nue reste nue : par simple inegalite de
+# chaine, elle echoue toute borne d'auteur App (LIFT_OVERRIDE_LOGINS,
+# BOT_LOGINS suffixe). Le login humain nu reste canonique : orthographe
+# exacte, aucune reconstruction.
+
+
+def _author_login(row: object, key: str = "author") -> str:
+    """Login d'auteur d'une ligne, en orthographe REST (App suffixee).
+
+    #17437 : LE point de passage des extractions d'auteur du module — la
+    forme canonique unique, celle de ``gh_identity`` (source unique, jamais
+    recopiee), SANS sonde : la preuve de type vit dans la ligne (type ou
+    ``__typename`` transporte par ``_typed_author_surfaces``), jamais dans
+    une resolution globale par login. Toute comparaison d'auteur
+    (LIFT_OVERRIDE_LOGINS, PERSONA_ALIAS_LOGINS, BOT_LOGINS, bornes
+    d'auteur #11145/#12836) se fait sur cette forme.
+    """
+    if not isinstance(row, dict):
+        return ""
+    author = row.get(key)
+    if not isinstance(author, dict):
+        return ""
+    return gh_identity.normalize_author_login(author)
+
+
+def _typed_author_surfaces(pr: int) -> dict[str, object]:
+    """Comments, reviews ET auteur de la PR, type par ligne.
+
+    #17437 (relecture ai-01 2026-11-12) : ``gh pr view --json
+    comments,reviews`` rend l'auteur sans champ de type. La preuve
+    d'identite se prend sur une surface qui transporte le type : UNE
+    requete GraphQL rend les deux connexions avec
+    ``author{__typename login}`` — le suffixe ``[bot]`` s'y reconstruit
+    par ``gh_identity``, et une forme nue typee ``User`` reste
+    distinguishable d'une App homonyme. Les clefs rendues remplacent les
+    surfaces correspondantes du payload ``pr view`` (memes champs :
+    ``author``/``body``/``createdAt``, ``author``/``body``/``submittedAt``/
+    ``state``).
+
+    #17437 (relecture ai-01 2026-11-13) : la requete PAGINE (``after`` +
+    ``pageInfo``). Sans pagination, ``first:100`` rendait les 100 lignes
+    les PLUS ANCIENNES et ``data.update`` remplacait la surface CLI
+    COMPLETE : sur une PR de plus de 100 commentaires, une reserve recente
+    sortait de l'analyse et B.0 rendait rc=0 — la porte s'ouvrait. Le
+    plafond dur (50 pages = 5000 lignes par surface) rend un dict vide
+    plutot qu'une surface partielle : on retombe alors sur les surfaces CLI
+    non typees, ou une forme nue App echoue les bornes d'auteur —
+    fail-closed dans tous les cas, jamais un rc=0 fabrique.
+
+    #17437 (relecture ai-01 2026-11-13, second point) : la PR porte aussi
+    son AUTEUR type (``pullRequest.author{__typename login}``, cle
+    ``author`` du dict rendu). Sans lui, ``pr_author`` se lisait sur la
+    surface CLI non typee, qui rend une App SANS suffixe ``[bot]`` : une PR
+    ouverte sous l'App et levee par la meme App ne voyaient jamais
+    l'egalite ``lift_author == pr_author``, et la trappe #13495 restait
+    ouverte. La cle ``author`` ecrase celle du payload CLI, et
+    ``_author_login`` en fait la forme canonique REST.
+
+    Echec (gh muet, payload inattendu, plafond atteint) : dict vide — les
+    surfaces CLI non typees restent alors lues telles quelles, ou toute
+    forme nue App echoue les bornes d'auteur : fail-closed, jamais un crash
+    du gate.
+    """
+    query = """
+    query($owner:String!,$repo:String!,$n:Int!,$cAfter:String,$rAfter:String){
+      repository(owner:$owner,name:$repo){
+        pullRequest(number:$n){
+          author{__typename login}
+          comments(first:100,after:$cAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{author{__typename login} body createdAt}}
+          reviews(first:100,after:$rAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{author{__typename login} body submittedAt state}}
+        }
+      }
+    }"""
+    owner, name = REPO.split("/")
+    comments: list[dict] = []
+    reviews: list[dict] = []
+    pr_author: dict = {}
+    c_after: str | None = None
+    r_after: str | None = None
+    for _ in range(50):
+        args = [
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+        ]
+        if c_after:
+            args += ["-F", f"cAfter={c_after}"]
+        if r_after:
+            args += ["-F", f"rAfter={r_after}"]
+        try:
+            data = gh_json(args)
+            node = data["data"]["repository"]["pullRequest"]
+            c_conn = node["comments"]
+            r_conn = node["reviews"]
+        except Exception:
+            return {}
+        if not pr_author and isinstance(node.get("author"), dict):
+            pr_author = node["author"]
+        c_nodes = c_conn.get("nodes")
+        r_nodes = r_conn.get("nodes")
+        if not isinstance(c_nodes, list) or not isinstance(r_nodes, list):
+            return {}
+        comments.extend(n for n in c_nodes if isinstance(n, dict))
+        reviews.extend(n for n in r_nodes if isinstance(n, dict))
+        c_info = c_conn.get("pageInfo") or {}
+        r_info = r_conn.get("pageInfo") or {}
+        c_more = bool(c_info.get("hasNextPage"))
+        r_more = bool(r_info.get("hasNextPage"))
+        if not c_more and not r_more:
+            break
+        next_c = c_info.get("endCursor") or c_after
+        next_r = r_info.get("endCursor") or r_after
+        # Curseur qui n'avance pas = page identique : on s'arrete plutot
+        # que de boucler, et on rend une surface vide (fail-closed).
+        if (c_more and next_c == c_after) or (r_more and next_r == r_after):
+            return {}
+        c_after, r_after = next_c, next_r
+    else:
+        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
+              "une surface typee (comments/reviews) — surface non remplacee, "
+              "fail-closed.", file=sys.stderr)
+        return {}
+    out: dict[str, object] = {}
+    if pr_author:
+        # L'auteur de la PR, type a la source : ecrase la forme CLI non
+        # typee, qui rend une App SANS suffixe (borne #13495 aveugle sinon).
+        out["author"] = pr_author
+    if comments:
+        out["comments"] = [
+            {"author": c.get("author") or {}, "body": c.get("body") or "",
+             "createdAt": c.get("createdAt")}
+            for c in comments
+        ]
+    if reviews:
+        out["reviews"] = [
+            {"author": r.get("author") or {}, "body": r.get("body") or "",
+             "submittedAt": r.get("submittedAt"),
+             "state": r.get("state")}
+            for r in reviews
+        ]
+    return out
 
 # Prefixes de tags utilises par les agents du cluster (protocole dashboard/PR).
 # Consommee par classify (exemption) ET can_lift (voie 3 de B.0) : la
@@ -173,6 +339,19 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # propre PR et eteint la reserve d'un tiers (#12737 : reserve ai-01 02:37:04Z,
 # « overrides » jsboige 02:40/02:41 ; classe #12798, l'auto-levee). L'arbitre
 # tiers de B.0 est la lane coordinateur dediee, et elle seule.
+# #17437 : la voix App n'est PAS jointe a la voix du coordinateur (arbitrage
+# ai-01 du 2026-11-13). La cle privee de ``coursia-lane-ai-01`` vit sur la
+# machine ai-01 (``.secrets/github-apps/coursia-lane-ai-01.pem``), ou tourne
+# aussi la lane worker sœur ``myia-ai-01:CoursIA-2`` : elle lit le meme
+# fichier et forge le meme jeton. Une App par machine ne peut donc pas
+# representer la lane coordinateur seule -- un ``[OVERRIDE]`` de CoursIA-2
+# vaudrait celui du coordinateur, exactement ce que la borne #12737/#12836
+# interdit. Une App PROPRE a la lane coordinateur est le prealable.
+#
+# La preuve d'identite reste typee par ligne (``_author_login`` +
+# ``_typed_author_surfaces``) : la doctrine gh_identity s'applique, et une
+# forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
+# existe, son login REST rejoint cet ensemble par une edition consciente.
 LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
 # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
 # reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
@@ -3574,7 +3753,189 @@ def gh_json(args: list[str]) -> object:
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
     ).stdout
-    return json.loads(out)
+    return _project_gh_payload(args, json.loads(out))
+
+
+def _project_added_symbol_patch(patch: str) -> str:
+    """Garder exactement les lignes que #20066 lit dans un diff de commit."""
+    symbols = []
+    for line in patch.splitlines():
+        if line.startswith("+++"):
+            continue
+        if _SYM_ADDED_RE.match(line):
+            symbols.append(line)
+            if len(symbols) >= _SYMBOLS_PER_FILE_CAP:
+                break
+    return "\n".join(symbols)
+
+
+def _project_gh_payload(args: list[str], payload: object) -> object:
+    """Reduire les reponses au contrat consomme par B.0 avant leur cache.
+
+    Le tapis intercepte ``gh_json`` pour memoiser ses resultats. Les appels
+    `pr view` et REST transportaient beaucoup de champs de presentation,
+    d'identite ou de statistiques que l'organe ne lit jamais ; leur taille
+    faisait echouer le plafond de memoisation, meme si leur verdict etait
+    petit. Cette projection est donc faite dans le funnel, avant le cache.
+    Les champs qui portent une preuve B.0 (corps/date/auteur, SHA, arbres,
+    blobs) restent intacts. Le patch d'un commit ne sert qu'a extraire les
+    ``def``/``class`` ajoutes par #20066 : seuls ces ajouts, avec le meme
+    plafond, sont conserves.
+
+    #22757 piste 1, verification a la source : les ``files`` de
+    ``commits/<sha>`` NE PEUVENT PAS etre droppes -- le verdict B.0 en
+    depend. ``_resolve_absent_sha_state`` lit ``filename``/``sha``/
+    ``status``/``previous_filename`` (#15973 : identite de blobs par chemin
+    qui distingue un rebase preserve d'un rembobinage destructeur) et le
+    ``patch`` (#20066 : symboles ajoutes par le commit rembobine). La
+    projection garde donc le contrat MINIMAL (ces cinq champs, patch reduit
+    aux lignes ajoutees), pas une suppression.
+
+    #22757, transporteurs restants projetes ici : ``pulls/{n}/commits``
+    (pages ``--paginate --slurp`` d'objets commit complets dont
+    ``_pr_commits_rest`` ne lit que ``sha`` et deux dates -- une PR a ~35
+    commits depassait le plafond et etait relue a chaque passe) et
+    ``issues/{n}`` (``_gh_fetch_issue`` ne lit que le discriminant
+    ``pull_request`` #13725 et les quatre champs d'``IssueInfo`` ; le corps
+    reste INTACT car la voie 3 le lit #14218).
+    """
+    if not isinstance(payload, (dict, list)):
+        return payload
+
+    def project_rows(value: object, fields: tuple[str, ...],
+                     nested: dict[str, tuple[str, ...]] | None = None) -> object:
+        if not isinstance(value, list):
+            return value
+        rows = []
+        for row in value:
+            if not isinstance(row, dict):
+                rows.append(row)
+                continue
+            item = {key: row[key] for key in fields if key in row}
+            for key, child_fields in (nested or {}).items():
+                child = row.get(key)
+                if isinstance(child, dict):
+                    item[key] = {name: child[name] for name in child_fields
+                                 if name in child}
+            rows.append(item)
+        return rows
+
+    if len(args) >= 2 and args[:2] == ["pr", "view"]:
+        if not isinstance(payload, dict):
+            return payload
+        projected = dict(payload)
+        projected["comments"] = project_rows(
+            payload.get("comments"), ("author", "body", "createdAt"),
+            {"author": ("login",)})
+        projected["reviews"] = project_rows(
+            payload.get("reviews"),
+            ("author", "body", "submittedAt", "state"),
+            {"author": ("login",)})
+        projected["commits"] = project_rows(
+            payload.get("commits"), ("oid", "committedDate"))
+        return projected
+
+    if len(args) < 2 or args[0] != "api":
+        return payload
+    endpoint = args[1].split("?", 1)[0].rstrip("/")
+    prefix = f"repos/{REPO}/"
+    if endpoint.startswith(prefix + "commits/"):
+        if not isinstance(payload, dict):
+            return payload
+        commit = payload.get("commit")
+        projected = {}
+        if isinstance(commit, dict):
+            message = commit.get("message")
+            projected["commit"] = {
+                "message": message.split("\n")[0] if isinstance(message, str) else message,
+                "tree": ({"sha": commit["tree"]["sha"]}
+                         if isinstance(commit.get("tree"), dict)
+                         and "sha" in commit["tree"] else commit.get("tree")),
+            }
+        files = project_rows(
+            payload.get("files"),
+            ("filename", "sha", "status", "previous_filename", "patch"))
+        if isinstance(files, list):
+            for item in files:
+                if isinstance(item, dict) and isinstance(item.get("patch"), str):
+                    item["patch"] = _project_added_symbol_patch(item["patch"])
+        projected["files"] = files
+        return projected
+
+    if endpoint.startswith(prefix + "git/trees/"):
+        if not isinstance(payload, dict):
+            return payload
+        return {
+            key: payload[key] for key in ("truncated", "tree") if key in payload
+        } | {"tree": project_rows(payload.get("tree"), ("path", "sha", "type"))}
+
+    if "/pulls/" in endpoint and endpoint.endswith("/reviews"):
+        return project_rows(payload, ("id", "user"), {"user": ("login",)})
+
+    if "/pulls/" in endpoint and endpoint.endswith("/commits"):
+        # #17315/#22757 : `--paginate --slurp` rend des pages d'objets
+        # commit complets (~2 Ko chacun : identite, verification, parents)
+        # dont `_pr_commits_rest` ne lit que `sha` et les deux dates.
+        def project_commit_page(page: object) -> object:
+            if not isinstance(page, list):
+                return page
+            rows = []
+            for c in page:
+                if not isinstance(c, dict):
+                    rows.append(c)
+                    continue
+                commit = c.get("commit") or {}
+                rows.append({
+                    "sha": c.get("sha"),
+                    "commit": {
+                        "author": {"date": (commit.get("author") or {}).get("date")},
+                        "committer": {"date": (commit.get("committer") or {}).get("date")},
+                    },
+                })
+            return rows
+
+        if isinstance(payload, list):  # slurp : une liste de pages
+            return [project_commit_page(p) for p in payload]
+        return project_commit_page(payload)
+
+    if "/issues/" in endpoint and endpoint.endswith("/timeline"):
+        if not isinstance(payload, list):
+            return payload
+        projected = []
+        for event in payload:
+            if not isinstance(event, dict):
+                projected.append(event)
+                continue
+            row = {
+                key: event[key] for key in ("event", "actor", "dismissed_review")
+                if key in event
+            }
+            for key, child_fields in (
+                    ("actor", ("login",)),
+                    ("dismissed_review", ("review_id",))):
+                child = event.get(key)
+                if isinstance(child, dict):
+                    row[key] = {name: child[name] for name in child_fields
+                                if name in child}
+            projected.append(row)
+        return projected
+
+    # `issues/{n}` strict (pas /timeline ni /comments) : #13725/#14218/#22757.
+    tail = (endpoint[len(prefix + "issues/"):]
+            if endpoint.startswith(prefix + "issues/") else "")
+    if tail.isdigit():
+        if not isinstance(payload, dict):
+            return payload
+        projected = {key: payload[key] for key in
+                     ("state", "created_at", "title", "body") if key in payload}
+        pr_key = payload.get("pull_request")
+        if isinstance(pr_key, dict):
+            # Discriminant PR-vs-issue : seule la PRESENCE compte (#13725).
+            projected["pull_request"] = {"url": pr_key.get("url")}
+        elif "pull_request" in payload:
+            projected["pull_request"] = pr_key
+        return projected
+    return payload
 
 
 def _pr_commits_rest(pr: int) -> list[dict]:
@@ -3812,7 +4173,7 @@ def collect_followup_lifts(pr_data: dict, cutoff: datetime,
                 continue  # condition 2
             if info.created_at is None or not info.created_at < cutoff:
                 continue  # condition 3
-            out.append((t, (c.get("author") or {}).get("login", ""), info))
+            out.append((t, _author_login(c), info))
             break
     return out
 
@@ -4377,7 +4738,7 @@ def can_lift(comment: dict) -> bool:
     donc encore un nit (faux negatif residuel). Auteur + protocole eliminent le
     gros du bruit sans pretendre lire le sens.
     """
-    login = (comment.get("author") or {}).get("login", "")
+    login = _author_login(comment)
     if login in BOT_LOGINS:
         return False
     body = (comment.get("body") or "").lstrip()
@@ -4706,32 +5067,55 @@ def classify(author: str, body: str) -> str | None:
 
 
 def review_threads(pr: int) -> list[dict]:
-    """Threads inline (3e surface, absente de `gh pr view --json`)."""
+    """Threads inline (3e surface, absente de `gh pr view --json`).
+
+    #17437 (relecture ai-01 2026-11-13, point non bloquant) : la connexion
+    PAGINE (`after` + `pageInfo`) comme les deux autres surfaces typees.
+    `first:100` seul rendait les 100 threads les PLUS ANCIENS et laissait
+    les suivants invisibles — un thread inline non resolu posterieur a la
+    100e position sortait de l'analyse. Meme plafond dur (50 pages = 5000
+    threads) ; un curseur fige arrete la boucle au lieu de boucler.
+    """
     query = """
-    query($owner:String!,$repo:String!,$n:Int!){
+    query($owner:String!,$repo:String!,$n:Int!,$tAfter:String){
       repository(owner:$owner,name:$repo){
         pullRequest(number:$n){
-          reviewThreads(first:100){nodes{
-            isResolved isOutdated path line
-            comments(first:1){nodes{author{login} body createdAt}}
-          }}
+          reviewThreads(first:100,after:$tAfter){
+            pageInfo{hasNextPage endCursor}
+            nodes{
+              isResolved isOutdated path line
+              comments(first:1){nodes{author{login __typename} body createdAt}}
+            }}
         }
       }
     }"""
     owner, name = REPO.split("/")
-    data = gh_json([
-        "api", "graphql", "-f", f"query={query}",
-        "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
-    ])
-    nodes = data["data"]["repository"]["pullRequest"]["reviewThreads"]["nodes"]
-    # Pas de pagination : au-dela de 100 threads inline, les suivants seraient
-    # invisibles. Plutot que de tronquer en silence — le mode d'echec que ce
-    # script existe pour combattre — on le DIT. Theorique sur ce depot ; si le
-    # message apparait, paginer devient necessaire, pas optionnel.
-    if len(nodes) == 100:
-        print(f"  [!] PR #{pr}: 100 threads inline retournes (plafond `first:100`) "
-              "— d'eventuels threads supplementaires ne sont PAS analyses.",
-              file=sys.stderr)
+    nodes: list[dict] = []
+    after: str | None = None
+    for _ in range(50):
+        args = [
+            "api", "graphql", "-f", f"query={query}",
+            "-F", f"owner={owner}", "-F", f"repo={name}", "-F", f"n={pr}",
+        ]
+        if after:
+            args += ["-F", f"tAfter={after}"]
+        data = gh_json(args)
+        conn = data["data"]["repository"]["pullRequest"]["reviewThreads"]
+        nodes.extend(n for n in (conn.get("nodes") or [])
+                     if isinstance(n, dict))
+        info = conn.get("pageInfo") or {}
+        if not info.get("hasNextPage"):
+            break
+        nxt = info.get("endCursor")
+        if not nxt or nxt == after:
+            print(f"  [!] PR #{pr}: curseur de pagination fige sur "
+                  "reviewThreads — threads suivants non analyses.",
+                  file=sys.stderr)
+            break
+        after = nxt
+    else:
+        print(f"  [!] PR #{pr}: plafond de pagination atteint (50 pages) sur "
+              "reviewThreads — threads suivants non analyses.", file=sys.stderr)
     out = []
     for t in nodes:
         first = (t.get("comments") or {}).get("nodes") or [{}]
@@ -4741,7 +5125,7 @@ def review_threads(pr: int) -> list[dict]:
             "outdated": bool(t.get("isOutdated")),
             "path": t.get("path"),
             "line": t.get("line"),
-            "author": (c.get("author") or {}).get("login", "?"),
+            "author": _author_login(c) or "?",
             "body": c.get("body", ""),
             "createdAt": c.get("createdAt"),
         })
@@ -4777,14 +5161,14 @@ def improper_dismissals(pr: int) -> set[str]:
     if not isinstance(reviews, list) or not isinstance(events, list):
         return set()
     author_of = {
-        r.get("id"): ((r.get("user") or {}).get("login") or "")
+        r.get("id"): _author_login(r, "user")
         for r in reviews if isinstance(r, dict)
     }
     improper: set[str] = set()
     for e in events:
         if not isinstance(e, dict) or e.get("event") != "review_dismissed":
             continue
-        actor = ((e.get("actor") or {}).get("login") or "")
+        actor = _author_login(e, "actor")
         rid = (e.get("dismissed_review") or {}).get("review_id")
         emitter = author_of.get(rid)
         if not emitter:
@@ -4987,7 +5371,7 @@ def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
     """
     tagged = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         if login in BOT_LOGINS:
             continue
         body = (c.get("body") or "").strip()
@@ -5027,7 +5411,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     commits = [ts(c.get("committedDate")) for c in (pr_data.get("commits") or [])]
     commits = [c for c in commits if c]
     last_commit = max(commits) if commits else None
-    pr_author = (pr_data.get("author") or {}).get("login", "")
+    pr_author = _author_login(pr_data)
     pr_number = pr_data.get("number")
 
     # #11145 — borne d'auteur, durcie par #12836 : seule une levee de l'auteur
@@ -5047,11 +5431,11 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     # d'exclusion can_lift ne s'applique pas — un state APPROVED n'est pas du
     # bruit de protocole, meme depuis un reviewer bot.
     approved_rereviews = [
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+        (ts(r.get("submittedAt")), _author_login(r),
          r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "APPROVED"
-        and (r.get("author") or {}).get("login", "") not in BOT_LOGINS
+        and _author_login(r) not in BOT_LOGINS
     ]
     approved_rereviews = [x for x in approved_rereviews if x[0] is not None]
 
@@ -5391,7 +5775,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     # de la lane eteignait la reserve de son propre reviewer. B.0 : ce qui
     # leve une remarque est une PHRASE, pas un commentaire de protocole.
     explicit_lifts = [
-        (ts(c["createdAt"]), (c.get("author") or {}).get("login", ""),
+        (ts(c["createdAt"]), _author_login(c),
          c.get("body", ""))
         for c in (pr_data.get("comments") or [])
         if can_lift(c)
@@ -5401,7 +5785,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         and not _lift_cancelled(_strip_quoted(c.get("body", "")))
         # #12836 / #12798 : une reserve qui narre une ancienne levee reste
         # une reserve, pas un evenement de levee du signal precedent.
-        and classify((c.get("author") or {}).get("login", ""),
+        and classify(_author_login(c),
                      c.get("body", "")) is None
     ] + [
         # #13399 point 2 — symetrie de la levee : une PHRASE de levee portee
@@ -5410,14 +5794,14 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # la levee un seul. Une review APPROVED est deja traitee par
         # approved_rereviews (etat natif) ; une review COMMENTED qui ecrit
         # « je leve ma CHANGES_REQUESTED » est une levee comme un commentaire.
-        (ts(r.get("submittedAt")), (r.get("author") or {}).get("login", ""),
+        (ts(r.get("submittedAt")), _author_login(r),
          r.get("body", ""))
         for r in (pr_data.get("reviews") or [])
         if r.get("state") == "COMMENTED"
         and can_lift(r)
         and has_live_lift(_strip_adjoint_dossier(r.get("body", "")))
         and not _lift_cancelled(_strip_quoted(r.get("body", "")))
-        and classify((r.get("author") or {}).get("login", ""),
+        and classify(_author_login(r),
                      r.get("body", "")) is None
     ]
     explicit_lifts = [x for x in explicit_lifts if x[0] is not None]
@@ -5542,12 +5926,12 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
 
     signals: list[tuple] = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         kind = classify(login, c.get("body", ""))
         if kind:
             signals.append((ts(c["createdAt"]), kind, login, c.get("body", ""), "comment"))
     for r in pr_data.get("reviews") or []:
-        login = (r.get("author") or {}).get("login", "")
+        login = _author_login(r)
         body = r.get("body", "")
         state = r.get("state")
         if state == "DISMISSED":
@@ -5841,7 +6225,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
     lift_keys = {(t_, a) for (t_, a, _b) in explicit_lifts if t_}
     unevaluated: list[dict] = []
     for c in pr_data.get("comments") or []:
-        login = (c.get("author") or {}).get("login", "")
+        login = _author_login(c)
         if login in BOT_LOGINS:
             continue
         body = (c.get("body") or "").strip()
@@ -6058,6 +6442,10 @@ def analyse_pr(pr: int) -> dict:
     """
     try:
         data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+        # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
+        # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
+        # remplace quand il repond.
+        data.update(_typed_author_surfaces(pr))
         # #13639 + #15556 : resolution serveur du contexte SHA (messages,
         # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
         _attach_absent_sha_context(data)
@@ -6092,6 +6480,10 @@ def _ensure_utf8_stdout() -> None:
 def gate(pr: int, as_json: bool) -> int:
     _ensure_utf8_stdout()
     data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+    # #17437 : preuve de TYPE d'auteur par ligne (relecture ai-01
+    # 2026-11-12) — la surface CLI est non typee, l'overlay GraphQL la
+    # remplace quand il repond.
+    data.update(_typed_author_surfaces(pr))
     # #13639 + #15556 : resolution serveur du contexte SHA (messages,
     # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
     _attach_absent_sha_context(data)
@@ -6155,6 +6547,11 @@ def audit(limit: int, search: str | None = None) -> int:
             p["commits"] = _pr_commits_rest(p["number"])
         except subprocess.CalledProcessError:
             p["commits"] = []
+        # #17437 : preuve de TYPE d'auteur par ligne, payee uniquement sur
+        # les candidates (le pre-filtre ci-dessus lit la surface non typee
+        # de ``pr list`` : une levee sous App y est invisible — sur-approx
+        # conservatrice, l'overlay la reconnait avant le verdict rendu).
+        p.update(_typed_author_surfaces(p["number"]))
         # Ce 2e passage rend le MEME verdict `blocked` que le pre-filtre — un
         # commit ne leve rien (c'est le principe de B.0). Il n'est pas pour le
         # verdict : il renseigne `code_pushed_after`, dont la Phase 2 de #11044

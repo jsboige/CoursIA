@@ -1,5 +1,7 @@
 # Convention `_archive/` — modèle ML-Training-Pipeline généralisé
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 **S'applique à :** tout dossier `_archive/` du dépôt. Le recensement est une **mesure**, pas un littéral : il se recalcule avec la commande du §« Recenser, ne pas recopier ».
 **Référence :** `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/_archive/` (consolidation #1409, 2026-06-12).
 **Discipline parente :** CLAUDE.md global — « Consolider != Archiver » (préserver avant de réduire, citer la cible comme preuve).
@@ -77,7 +79,7 @@ git ls-tree -r -d --name-only origin/main | grep '/_archive$' | wc -l
 git ls-tree -r --name-only origin/main | grep '/_archive/' | wc -l
 ```
 
-Un emplacement contient plusieurs fichiers, donc comparer les deux totaux n'a pas de sens — et un écart entre eux n'est pas un défaut. Le prédicat de la première commande est `/_archive$`, pas `/_archive` : ce dernier ramasse aussi les sous-dossiers internes aux archives (`scripts/_archive/one_shot_fixes/`, `Argument_Analysis/_archive/…`) et les répertoires de `docker-configurations/_archive-20251125/`, dont le nom ne finit pas par `_archive` — trois populations distinctes qu'un total unique confondrait.
+Un emplacement contient plusieurs fichiers, donc comparer les deux totaux n'a pas de sens — et un écart entre eux n'est pas un défaut. Le prédicat de la première commande est `/_archive$`, pas `/_archive` : ce dernier ramasse aussi les sous-dossiers internes aux archives (`scripts/_archive/one_shot_fixes/`, `ArgumentAnalysis/_archive/…`) et les répertoires de `docker-configurations/_archive-20251125/`, dont le nom ne finit pas par `_archive` — trois populations distinctes qu'un total unique confondrait.
 
 **Cette règle est déclarative** : aucun organe ne vérifie ce prédicat en CI — ni la liste des emplacements, ni la concordance de la table avec `main`. Elle vit dans la relecture et dans les commandes ci-dessus ; la porter en gate serait une tranche à part, pas un effet de bord de cette page.
 
@@ -89,7 +91,7 @@ Une phrase de prose qui cite un total doit porter **sa date**. Une règle, une d
 depuis le recensement de 2026-08 : `GenAI/Audio`, `docker-configurations` et
 `notebook_tools` n'y figuraient pas. Depuis celui du 2026-10-04, trois
 emplacements existaient sur `main` sans ligne dans la table —
-`SymbolicAI/Argument_Analysis/_archive/`, `SymbolicAI/SmartContracts/_archive/`
+`SymbolicAI/ArgumentAnalysis/_archive/`, `SymbolicAI/SmartContracts/_archive/`
 et `scripts/smartcontracts/_archive/` — et y sont ajoutés ci-dessous, **non
 audités** : la ligne dit qu'ils existent, pas qu'ils sont conformes.
 La table ci-dessous est l'inventaire courant — chaque tranche de l'umbrella en
@@ -101,7 +103,7 @@ déplace une ligne, elle ne réécrit pas un total :
 | `MyIA.AI.Notebooks/GenAI/Audio/_archive/` | ✅ | ✅ (registre README, disposition **par section** — modèle `Planners/` ; tranche #13749 du 2026-09-25) |
 | `MyIA.AI.Notebooks/Search/_archive/` | ✅ | partiel (registre sans en-tête de disposition par notebook) |
 | `MyIA.AI.Notebooks/SymbolicAI/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le notebook) |
-| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/` | ✅ | non audité (recensé le 2026-10-24) |
+| `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/_archive/` | ✅ | non audité (recensé le 2026-10-24) |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/_archive/` | ❌ | non audité (recensé le 2026-10-24 ; ne contient qu'un `STATUS-audit-consolidation-2026-05-26.md`) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/_archive/` | ✅ | ✅ (registre — une ligne par script archivé) |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ✅ | ✅ (registre README, disposition **par section**) |

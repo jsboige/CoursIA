@@ -26,11 +26,16 @@ Usage (two modes):
         filenames). For .ipynb inputs, every Python code cell whose source
         contains a violating call is reported as ``path:cell_NN:line``.
         A file staged as a pure rename is skipped, like CI mode does: the
-        sites it carries predate the move (#24039).
+        sites it carries predate the move (#24039). A file staged as a
+        rename WITH edits (R<100) is compared to its previous blob and only
+        the calls whose normalized text did not exist before are reported --
+        the lane sees its own sites, not the ones it inherited (#24066).
 
     python check_subprocess_encoding.py --base origin/main
         Scan every .py/.ipynb file changed between merge-base(REF, HEAD)
         and HEAD, reading the working tree (in CI the checkout IS the head).
+        CI already drops every rename status via ``--diff-filter=AM``, so
+        neither rename arm fires there.
 
 Exit code 1 iff at least one violation is reported. Vendored / external
 subtrees (see EXCLUDE_MARKERS) are out of scope in both modes.
@@ -66,6 +71,11 @@ import subprocess
 import sys
 import tokenize
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+# T3-c (#25366) : le probe a ete reloge dans scripts/audit/.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "audit"))
+import git_index_renames  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -211,38 +221,31 @@ def changed_python_files(base: str) -> list[str]:
 
 
 def staged_pure_renames() -> set[str]:
-    """Paths arriving in the index as a *pure* rename (similarity 100%).
+    """Backward-compatible shim: the shared probe (scripts/audit/git_index_renames.py,
+    extracted from this file by #24068 so four sibling hooks reuse it)."""
+    return git_index_renames.staged_pure_renames()
 
-    A pure rename moves content without touching it, so it cannot introduce a
-    defect site: the sites it carries predate the move. CI mode already sees
-    this (``--diff-filter=AM`` drops status ``R``); pre-commit receives only
-    the new filename and could not tell the two apart, so a moved file
-    re-exposed its inherited sites as NEW -- and the only visible way out was
-    ``SKIP=``, i.e. disabling the gate rather than making it just (#24039).
 
-    Returns an empty set when git cannot answer (not a repository, no index),
-    which keeps both modes and the unit tests' synthetic paths unchanged.
+def inherited_sites(old_path: str) -> set[str]:
+    """Normalized call texts present in the rename source's blob (HEAD).
+
+    The #24066 delta half: for a rename WITH edits (R<100), the file still
+    carries every site it inherited from its previous location; reporting
+    them as NEW re-exposes the lane to five sites it did not write. The
+    comparison key is the call's normalized snippet -- exactly what
+    ``scan_source`` already reports (whitespace collapsed, one line) -- so
+    the comparison is text-based, robust to the edit shifting lines, and a
+    call moved verbatim counts as inherited, the wanted behaviour per the
+    issue. The source blob is read from HEAD at the old path (the index
+    already holds the moved content; HEAD is the last committed state of
+    the source). An unreadable blob (orphan rename, non-repo call) yields
+    an empty set: nothing is proven inherited, everything stays reportable
+    -- fail-open.
     """
-    out = git_out("diff", "--cached", "--find-renames", "--name-status", "-z")
-    if out is None:
+    blob = git_out("show", f"HEAD:{old_path}")
+    if blob is None:
         return set()
-    parts = out.split("\0")
-    dest: set[str] = set()
-    i = 0
-    while i < len(parts):
-        status = parts[i]
-        if not status:
-            i += 1
-            continue
-        if status[0] in ("R", "C"):
-            if i + 2 >= len(parts):
-                break
-            if status.startswith("R100"):
-                dest.add(parts[i + 2])
-            i += 3
-        else:
-            i += 2
-    return dest
+    return {snippet for _line, snippet in scan_source(blob)}
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -255,15 +258,23 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.base:
         targets = changed_python_files(args.base)
+        inherited: dict[str, set[str]] = {}
     else:
-        renamed = staged_pure_renames()
-        skipped = [f for f in args.files if Path(f).as_posix() in renamed]
-        targets = [
-            f for f in args.files
-            if (f.endswith(".py") or f.endswith(".ipynb"))
-            and not excluded(f)
-            and f not in skipped
-        ]
+        renames = git_index_renames.staged_renames_with_old()
+        pure = git_index_renames.staged_pure_renames()
+        skipped: list[str] = []
+        inherited = {}
+        targets = []
+        for f in args.files:
+            key = git_index_renames.repo_relative(f)
+            if key in pure:
+                skipped.append(f)
+                continue  # pure rename: skip like CI does (#24039)
+            if not (f.endswith(".py") or f.endswith(".ipynb")) or excluded(f):
+                continue
+            if key in renames:
+                inherited[f] = inherited_sites(renames[key])
+            targets.append(f)
         if skipped:
             print(f"subprocess-encoding ratchet: {len(skipped)} pure rename(s) "
                   "ignored -- their sites predate the move (#24039)")
@@ -279,15 +290,20 @@ def main(argv: list[str] | None = None) -> int:
             text = path.read_text(encoding="utf-8")
         except (OSError, UnicodeDecodeError):
             continue
+        old_sites = inherited.get(f, set())
         if f.endswith(".ipynb"):
             ipynb_count += 1
             for cell_idx, line, snippet in scan_ipynb(f):
+                if snippet in old_sites:
+                    continue  # inherited from the rename source (#24066)
                 violations += 1
                 print(f"{f}:cell_{cell_idx:02d}:{line}: "
                       f"text=True without encoding= :: {snippet}")
         else:
             py_count += 1
             for line, snippet in scan_source(text):
+                if snippet in old_sites:
+                    continue  # inherited from the rename source (#24066)
                 violations += 1
                 print(f"{f}:{line}: text=True without encoding= :: {snippet}")
 

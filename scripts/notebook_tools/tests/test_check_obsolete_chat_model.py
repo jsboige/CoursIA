@@ -120,6 +120,104 @@ def test_env_default_flagged():
     assert "getenv" in report["findings"][0]["via"]
 
 
+@pytest.mark.parametrize("client_call", [
+    'requests.post(f"{base}/chat/completions", json=payload)',
+    'httpx.post("https://example.test/v1/chat/completions", json=payload)',
+    ('urllib.request.urlopen(urllib.request.Request('
+     'f"{base}/chat/completions", '
+     'data=json.dumps(payload)))'),
+    ('urllib.request.urlopen(urllib.request.Request('
+     'url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8")))'),
+    ('urllib.request.urlopen(url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8"))'),
+    ('urllib.request.urlopen(url=urllib.request.Request('
+     'url=f"{base}/chat/completions", '
+     'data=json.dumps(payload).encode("utf-8")))'),
+    ('urllib.request.urlopen("https://example.test/v1/chat/completions", '
+     'payload)'),
+    ('requests.post(url=f"{base}/chat/completions", json=payload)'),
+    ('httpx.post(url="https://example.test/v1/chat/completions", '
+     'json=payload)'),
+])
+def test_raw_http_chat_payload_alias_and_env_default_flagged(client_call):
+    """Les clients HTTP bruts consomment le champ model du payload JSON."""
+    report = _analyze(nb(code(
+        'import json\n'
+        'm = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")\n'
+        'payload = {"model": m, "messages": []}\n'
+        f'{client_call}')))
+    assert len(report["findings"]) == 1
+    finding = report["findings"][0]
+    assert finding["model"] == "gpt-4o-mini"
+    assert finding["site"] == "http.chat.completions"
+    assert "OPENAI_CHAT_MODEL_ID" in finding["via"]
+
+
+def test_raw_http_inline_payload_and_literal_model_flagged():
+    report = _analyze(nb(code(
+        'requests.post("https://example.test/v1/chat/completions", '
+        'json={"model": "gpt-4o-mini", "messages": []})')))
+    assert len(report["findings"]) == 1
+    assert report["findings"][0]["model"] == "gpt-4o-mini"
+
+
+@pytest.mark.parametrize("source", [
+    'requests.post("https://example.test/v1/models", '
+    'json={"model": "gpt-4o-mini"})',
+    'httpx.post("https://example.test/v1/chat/completions", '
+    'json={"model": "gpt-5.6-luna"})',
+    'urllib.request.urlopen("https://example.test/v1/models")',
+    'requests.get("https://example.test/v1/chat/completions", '
+    'json={"model": "gpt-4o-mini"})',
+    'requests.post("https://[invalid/chat/completions", '
+    'json={"model": "gpt-4o-mini"})',
+])
+def test_raw_http_nonchat_or_current_calls_are_silent(source):
+    report = _analyze(nb(code(source)))
+    assert report["findings"] == []
+    assert report["unresolved"] == []
+
+
+def test_raw_http_query_and_unrelated_payload_do_not_create_chat_finding():
+    report = _analyze(nb(code(
+        'unused = {"model": "gpt-4o-mini"}\n'
+        'requests.post("https://example.test/v1/models?next="'
+        '"/chat/completions", json={"model": "gpt-4o-mini"})')))
+    assert report["findings"] == []
+    assert report["unresolved"] == []
+    assert report["stats"]["chat_sites"] == 0
+
+
+def test_raw_http_query_fstring_nest_pas_un_chemin_chat():
+    report = _analyze(nb(code(
+        'requests.post(f"https://example.test/v1/models?next={base}'
+        '/chat/completions", json={"model": "gpt-4o-mini"})')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 0
+
+
+def test_urllib_payload_encode_modele_courant():
+    report = _analyze(nb(code(
+        'payload = {"model": "gpt-5.6-luna"}\n'
+        'urllib.request.urlopen(url=urllib.request.Request('
+        'url="https://example.test/v1/chat/completions", '
+        'data=json.dumps(payload).encode("utf-8")))')))
+    assert report["findings"] == []
+    assert report["unresolved"] == []
+    assert report["stats"]["chat_sites"] == 1
+
+
+def test_urllib_non_string_encode_argument_stays_unresolved():
+    report = _analyze(nb(code(
+        'payload = {"model": "gpt-4o-mini"}\n'
+        'urllib.request.urlopen(urllib.request.Request('
+        '"https://example.test/v1/chat/completions", '
+        'data=json.dumps(payload).encode(123)))')))
+    assert report["findings"] == []
+    assert len(report["unresolved"]) == 1
+
+
 def test_function_default_param_flagged():
     """04-1 : defaut de parametre consomme par l'appel chat."""
     report = _analyze(nb(code(
@@ -302,6 +400,56 @@ def test_reassignment_to_current_silent():
         code('m = "gpt-5.6-luna"'),
         code('client.chat.completions.create(model=m, messages=[])')))
     assert report["findings"] == []
+
+
+# ---------------------------------------------------------------------------
+# HTTP brut (forme non-SDK, #25072) : le "model" vit dans le corps json=/data=
+# ---------------------------------------------------------------------------
+
+def test_http_raw_inline_dict_flagged():
+    """HTTP brut : json={"model": ...} inline, URL cible /chat/completions."""
+    report = _analyze(nb(code(
+        'import requests\n'
+        'resp = requests.post("https://api.openai.com/v1/chat/completions",\n'
+        '                    json={"model": "gpt-4o-mini", "messages": []})')))
+    assert len(report["findings"]) == 1
+    f = report["findings"][0]
+    assert f["site"] == "http.chat.completions"
+    assert f["model"] == "gpt-4o-mini"
+
+
+def test_http_raw_named_dict_flagged():
+    """HTTP brut : le "model" est dans un dict lié à un nom (json=payload),
+    dont la valeur est un défaut d'env — la forme du client v4 mesuré."""
+    report = _analyze(nb(
+        code('import os\n'
+             'import requests\n'
+             '_MODEL = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4o-mini")'),
+        code('payload = {"model": _MODEL, "messages": []}\n'
+             'resp = requests.post(f"{base}/chat/completions", json=payload)')))
+    assert len(report["findings"]) == 1
+    f = report["findings"][0]
+    assert f["site"] == "http.chat.completions"
+    assert f["model"] == "gpt-4o-mini"
+    assert "getenv" in f["via"]
+
+
+def test_http_raw_current_model_silent():
+    """HTTP brut : un modèle courant dans le corps ne rougit pas."""
+    report = _analyze(nb(code(
+        'import requests\n'
+        'resp = requests.post("https://api.openai.com/v1/chat/completions",\n'
+        '                    json={"model": "gpt-5.6-luna", "messages": []})')))
+    assert report["findings"] == []
+
+
+def test_http_raw_non_chat_url_silent():
+    """HTTP brut : une URL non-chat (/models) n'est pas un site chat."""
+    report = _analyze(nb(code(
+        'import requests\n'
+        'r = requests.get("https://api.openai.com/v1/models")')))
+    assert report["findings"] == []
+    assert report["stats"]["chat_sites"] == 0
 
 
 # ---------------------------------------------------------------------------
@@ -701,7 +849,7 @@ def test_corpus_scan_migration_compatible(path):
 #
 # Un appel chat ne vit pas seulement dans un carnet : des modules consommes
 # par les carnets portent des replis litteraux. Mesure firsthand (31/10) :
-# ``scripts/livecoding_video_pipeline.py`` repliait sur ``gpt-4o-mini`` via
+# ``scripts/slides/livecoding_video_pipeline.py`` repliait sur ``gpt-4o-mini`` via
 # ``os.environ.get("OPENAI_MODEL", ...)`` -- invisible d'un scan borne aux
 # carnets, et invisible aussi d'un scan .py avant le cas ``or`` ci-dessous.
 # ---------------------------------------------------------------------------
@@ -774,6 +922,44 @@ def test_python_module_repli_or_sans_litteral_reste_unresolved(tmp_path):
     assert main([str(p)]) == 0
 
 
+LLM_CLIENT_SHAPE = (
+    "import os\n"
+    "import requests\n"
+    "\n"
+    "_API_BASE: str = os.getenv('OPENAI_API_BASE', 'https://api.openai.com/v1')\n"
+    "_MODEL: str = os.getenv('OPENAI_CHAT_MODEL_ID', 'gpt-4o-mini')\n"
+    "\n"
+    "\n"
+    "def complete(messages, timeout=30):\n"
+    "    payload: dict = {'model': _MODEL, 'messages': messages}\n"
+    "    resp = requests.post(f'{_API_BASE}/chat/completions',\n"
+    "                         json=payload, timeout=timeout)\n"
+    "    return resp\n"
+)
+
+
+def test_python_module_http_raw_named_dict_flagged(tmp_path):
+    """Forme du client v4 mesurée (AnnAssign + dict nommé + f-string URL, le
+    tout dans une fonction) : le scan .py la ROUGIT (#25072)."""
+    p = tmp_path / "llm_client.py"
+    p.write_text(LLM_CLIENT_SHAPE, encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert [f["model"] for f in report["findings"]] == ["gpt-4o-mini"], report
+    assert report["findings"][0]["site"] == "http.chat.completions"
+    assert main([str(p)]) == 1
+
+
+def test_python_module_http_raw_current_silent(tmp_path):
+    """Témoin négatif : le même client avec un modèle courant reste vert."""
+    p = tmp_path / "llm_client_ok.py"
+    p.write_text(
+        LLM_CLIENT_SHAPE.replace("gpt-4o-mini", "gpt-5.6-luna"),
+        encoding="utf-8")
+    report = analyze_python_module(str(p))
+    assert report["findings"] == []
+    assert main([str(p)]) == 0
+
+
 def test_python_module_sain_reste_silencieux(tmp_path):
     """Temoin negatif : un module sans appel chat ne produit rien, et une
     mention en chaine non consommee reste advisory."""
@@ -797,3 +983,39 @@ def test_suffixe_inconnu_refuse(tmp_path):
     p.write_text("gpt-4o-mini", encoding="utf-8")
     with pytest.raises(FileNotFoundError):
         collect_sources([str(p)])
+
+
+def test_collect_sources_skips_build_and_dep_dirs(tmp_path):
+    """La descente d'un dossier ecart les dossiers de build/dependance
+    (``.lake``, ``__pycache__``, ...) : de la sortie de build, pas une source a
+    scanner. Regression #14755 : .lake/packages/mathlib crashait la passe."""
+    (tmp_path / "top.py").write_text("x = 1\n", encoding="utf-8")
+    lake = tmp_path / ".lake" / "packages" / "mathlib"
+    lake.mkdir(parents=True)
+    (lake / "deep.py").write_text("y = 2\n", encoding="utf-8")
+    cache = tmp_path / "__pycache__"
+    cache.mkdir()
+    (cache / "cached.py").write_text("z = 3\n", encoding="utf-8")
+
+    collected = collect_sources([str(tmp_path)])
+    names = {q.name for q, _kind in collected}
+    assert names == {"top.py"}
+
+
+def test_analyze_python_module_unstatable_degrades_to_skip(
+        tmp_path, monkeypatch, capsys):
+    """Un fichier dont ``exists()`` leve (chemin long / verrou, WinError 1920)
+    degrade en skip rapporte, jamais en crash de la passe entiere.
+    Regression #14755 : le .lake de SymbolicAI tuait le scan."""
+    p = tmp_path / "module.py"
+    p.write_text("x = 1\n", encoding="utf-8")
+
+    def boom(self):
+        raise OSError(1920, "chemin injoignable")
+
+    monkeypatch.setattr(Path, "exists", boom)
+    report = analyze_python_module(str(p))
+    assert report["kind"] == "python"
+    assert report["findings"] == []
+    assert report["stats"]["skipped"] == 1
+    assert "injoignable" in capsys.readouterr().err
