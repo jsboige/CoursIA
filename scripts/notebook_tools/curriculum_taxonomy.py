@@ -13,7 +13,9 @@ from rdflib.namespace import DCTERMS, OWL, SKOS, XSD
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DATA = REPO_ROOT / "docs/curriculum/taxonomy/compression.json"
+TAXONOMY_DIR = "docs/curriculum/taxonomy"
+SCHEMA_FILENAME = "schema.json"
+DEFAULT_DATA = REPO_ROOT / TAXONOMY_DIR / "compression.json"
 VOCAB = Namespace("https://github.com/jsboige/CoursIA/vocab/cursus#")
 BASE = "https://github.com/jsboige/CoursIA/cursus/"
 ONTOLOGY = URIRef(BASE + "ontology")
@@ -192,6 +194,38 @@ def load_taxonomy(data_path: Path = DEFAULT_DATA, repo_root: Path = REPO_ROOT) -
     return data
 
 
+def discover_taxonomies(repo_root: Path = REPO_ROOT) -> list[Path]:
+    """Liste les taxonomies de séries du dossier, hors schéma JSON."""
+    directory = repo_root / TAXONOMY_DIR
+    if not directory.is_dir():
+        _fail(f"dossier de taxonomies introuvable : {directory}")
+    discovered = sorted(path for path in directory.glob("*.json") if path.name != SCHEMA_FILENAME)
+    if not discovered:
+        _fail(f"aucune taxonomie de série dans {directory}")
+    return discovered
+
+
+def validate_all(repo_root: Path = REPO_ROOT) -> list[dict]:
+    """Valide chaque taxonomie du dossier : la couverture devient structurelle.
+
+    Un JSON de série ajouté au dossier entre automatiquement dans la passe —
+    plus de lien « 1 JSON ↔ 1 test » à maintenir à la main (suivi #25441).
+    """
+    results: list[dict] = []
+    failures: list[str] = []
+    for data_path in discover_taxonomies(repo_root):
+        try:
+            data = json.loads(data_path.read_text(encoding="utf-8"))
+            validate_taxonomy(data, repo_root)
+        except (OSError, json.JSONDecodeError, ValueError) as error:
+            failures.append(f"{data_path.name} : {error}")
+        else:
+            results.append({"file": data_path.name, "series": data["series"], "concepts": len(data["concepts"])})
+    if failures:
+        _fail("taxonomies invalides -- " + " | ".join(failures))
+    return results
+
+
 def build_graph(data: dict) -> Graph:
     """Construit un graphe SKOS/OWL ; les identifiants restent indépendants des chemins."""
     graph = Graph()
@@ -290,11 +324,19 @@ def generate(data_path: Path, skos_output: Path, owl_output: Path, repo_root: Pa
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", type=Path, default=DEFAULT_DATA)
-    parser.add_argument("--skos-output", type=Path, required=True)
-    parser.add_argument("--owl-output", type=Path, required=True)
+    parser.add_argument("--all", action="store_true",
+                        help="valider toutes les taxonomies du dossier (couverture structurelle, sans export)")
+    parser.add_argument("--skos-output", type=Path)
+    parser.add_argument("--owl-output", type=Path)
     parser.add_argument("--repo-root", type=Path, default=REPO_ROOT)
     args = parser.parse_args()
+    if not args.all and (args.skos_output is None or args.owl_output is None):
+        parser.error("--skos-output et --owl-output sont requis (sauf avec --all)")
     try:
+        if args.all:
+            for entry in validate_all(args.repo_root):
+                print(f"Taxonomie valide : {entry['series']} ({entry['file']}) -- {entry['concepts']} concepts")
+            return 0
         return generate(args.data, args.skos_output, args.owl_output, args.repo_root)
     except (OSError, json.JSONDecodeError, ValueError) as error:
         print(f"Erreur de taxonomie : {error}", file=sys.stderr)

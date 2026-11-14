@@ -197,19 +197,45 @@
             "outillage": 1,
             "autonomie": 2
           },
-          "justification": "Prérequis : aucun hors Python/NumPy — le carnet construit TF-IDF et BM25 devant le lecteur sur un corpus auto-contenu de huit documents (P1). Outillage : aucun outil du domaine ; NumPy et matplotlib seuls (O1). Autonomie : les exercices réimplémentent l'idf, la contribution BM25 d'un terme et le Recall@k — adaptation de formules données, avec vérification chiffrée (A2). Niveau D2 = max(1, 2). Recherche R1 : le §4 « Classer, puis mesurer la qualité » construit un jeu de requêtes annotées et une métrique (Recall@3) réutilisables ; le verdict sur BM25 vs TF-IDF est connu d'avance.",
+          "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les calculs utilisent Python/NumPy et Matplotlib, sans paquet du domaine à configurer (O1).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 13,
             "cellules_md": 18,
-            "prose_chars": 16791,
-            "densite": 1291,
+            "prose_chars": 17035,
+            "densite": 1310,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25-CSharp.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 1,
+            "outillage": 1,
+            "autonomie": 2
+          },
+          "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les comptages, pondérations, classements et métriques sont calculés avec les outils C# standard ; aucun moteur externe supplémentaire n'est requis (O1).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 16,
+            "cellules_md": 32,
+            "prose_chars": 12429,
+            "densite": 776,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
