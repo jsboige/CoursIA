@@ -621,7 +621,7 @@ def test_check_nav_chain_argv_carries_the_pr_diff_scope_issue_20303():
     de la PR, rougissait la PR. La portee passe par `{base_ref}` (comme
     split-reading, prose-counts, md-content-loss) : le checker calcule le diff.
     Un finding NEW hors diff ne bloque pas ; dans le diff, il bloque (controle
-    positif et negatif de bout en bout : test_check_notebook_nav_chain.py).
+    positif et negatif de bout en bout : test_notebook_tools_check_notebook_nav_chain.py).
     """
     by_name = {g.name: g for g in PILOT}
     guard = by_name["check-nav-chain"]
@@ -644,7 +644,7 @@ def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
     split-reading, prose-counts, md-content-loss, nav-chain) : le checker
     calcule le diff lui-meme. Un finding NEW hors diff ne bloque pas ; dans
     le diff, il bloque (controle positif et negatif de bout en bout :
-    test_check_notebook_navlinks.py).
+    test_notebook_tools_check_notebook_navlinks.py).
     """
     by_name = {g.name: g for g in PILOT}
     guard = by_name["check-navlinks"]
