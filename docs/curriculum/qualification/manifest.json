@@ -249,19 +249,45 @@
             "outillage": 1,
             "autonomie": 2
           },
-          "justification": "Prérequis : algèbre linéaire (SVD, cosinus) et probabilités (PPMI) — notions de licence, non enseignées ailleurs dans la série (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : les exercices portent sur la co-occurrence, la valeur de PPMI et les plus proches voisins — adaptation, pas d'algorithme à réécrire (A2). Niveau D2 = max(2, 2). Recherche R1 : le §5 « Mesurer le gain » pose le test décisif (écart entre cosinus congénère et cosinus d'un autre domaine). Le carnet 08 confronte ses vecteurs appris à l'espace SVD du carnet 07, et le carnet 09 confronte à 08 ; aucun des deux ne rejoue ce test congénère contre un autre domaine — l'instrument discriminant reste propre au carnet 07.",
+          "justification": "Les matrices, la SVD, PPMI et le cosinus requièrent l'algèbre linéaire et les probabilités de licence (P2). Les exercices 'une co-occurrence', 'une valeur de PPMI' et 'les plus proches' adaptent des comptages et formules fournis avec vérifications (A2). La section 'Mesurer le gain' constitue un instrument de similarité réutilisable sur un corpus fixé (R1). NumPy fournit la SVD ; aucun paquet du domaine ne doit être configuré (O1).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 11,
             "cellules_md": 11,
-            "prose_chars": 13553,
-            "densite": 1232,
+            "prose_chars": 14024,
+            "densite": 1274,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD-CSharp.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 2,
+            "autonomie": 2
+          },
+          "justification": "Les matrices, la SVD, PPMI et le cosinus requièrent l'algèbre linéaire et les probabilités de licence (P2). Les exercices 'une co-occurrence', 'une valeur de PPMI' et 'les plus proches' adaptent des comptages et formules fournis avec vérifications (A2). La section 'Mesurer le gain' constitue un instrument de similarité réutilisable sur un corpus fixé (R1). MathNet.Numerics réalise la vraie SVD et doit être appelé puis interprété, les autres calculs restant pédagogiques C# (O2).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 11,
+            "cellules_md": 18,
+            "prose_chars": 9556,
+            "densite": 868,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
