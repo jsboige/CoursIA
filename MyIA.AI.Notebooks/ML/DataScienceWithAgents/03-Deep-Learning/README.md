@@ -133,3 +133,12 @@ pip install diffusers
 ```
 
 Tous les notebooks tournent sur CPU — la plupart en moins de dix minutes. Exceptions : la famille compression ([3.9](3.9-Compression-Quantization-FP.ipynb), [3.9b](3.9b-Compression-Pruning-from-scratch.ipynb), [3.9e](3.9e-Compression-SOTA.ipynb), [3.9f](_archive/3.9f-Compression-Pruning-SOTA.ipynb), [3.9g](3.9g-Compression-Comparatif-A-vs-B.ipynb)) entraîne ResNet-20 sur CIFAR-10 — la recette complète (40 époques, ~8 min sur RTX 3090 ; ~30 min pour 3.9b, bras de réentraînement compris) exige un GPU ; sur CPU ces notebooks tournent une recette réduite de 6 époques (3 pour les bras de 3.9b ; ~9-15 min), le témoin GPU de 3.9 (0,8993) servant de référence croisée. Et [3.6c](3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb) demande ~19 min CPU pour ses 16 entraînements.
+
+
+### 3.0b — Parité Python / C# et contrats de stockage
+
+[Python — Tenseurs, strides et vues](3.0b-Tenseurs-Strides-Vues-Python.ipynb) · [C# — TorchSharp et témoin NumPy](3.0b-Tenseurs-Strides-Vues-CSharp.ipynb). Le jumeau utilise TorchSharp pour le stockage et l’autograd, et le vrai NumPy via Python.NET pour les témoins et le benchmark.
+
+**Correction de la ligne historique 3.0b du tableau ci-dessus.** Les formulations « `view` sur non contigu → `RuntimeError` » et « buffer 128 Mo > cache » y sont trop générales. Les contrats vérifiés dans les deux carnets les remplacent : `view` exige des strides compatibles avec la forme demandée ; certains sous-échantillons non contigus acceptent une vue, tandis que la transposée testée la refuse. Le buffer de 128 Mo ne garantit pas un dépassement du cache L3. Les débits utiles et leur rapport sont mesurés sur cinq essais, avec sommes consommées ; les durées C# incluent Python.NET et dépendent de la machine.
+
+Les alias sont contrôlés par mutation/restauration, la diffusion stocke 32 octets contre 96 pour `repeat`, et les quatre exercices vérifient indices, vues, contiguïté et patchs 2D.
