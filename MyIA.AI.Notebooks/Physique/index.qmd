@@ -23,6 +23,11 @@ listing:
     type: grid
     sort: "filename"
     page-size: 24
+  - id: informationquantique
+    contents: "InformationQuantique/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
 ---
 
 ::: {.series-banner}
@@ -37,7 +42,7 @@ connue indépendamment, calcule, puis compare.
 
 ## Vue d'ensemble
 
-Quatre sous-séries, un même principe de vérification.
+Cinq sous-séries, un même principe de vérification.
 
 | Sous-série | Objet | Ce qui sert de vérité |
 |------------|-------|-----------------------|
@@ -45,6 +50,7 @@ Quatre sous-séries, un même principe de vérification.
 | **Numerique** | Équations aux dérivées partielles par volumes finis, solveur de Riemann | La vitesse de propagation du choc de Burgers, connue analytiquement |
 | **Integrales** | Intégrales définies et impropres, calcul exact | La valeur close obtenue symboliquement, recroisée numériquement |
 | **Chaines** | Physique de l'information : distillation de programmes à axiome unique (Chain Theory) | Le calcul de la source, rejoué indépendamment ; les déterminations expérimentales citées — avec le statut épistémique de chaque affirmation posé avant le calcul |
+| **InformationQuantique** | Information quantique : états mixtes, séparabilité, distillabilité, canaux brisant l'intrication | Les bornes annoncées dans la littérature, mesurées par bissection sur le critère de la transposition partielle |
 
 **Kernels** : `python3` · **GPU** : non requis · **Prérequis** : analyse (dérivées
 partielles, intégrales multiples), algèbre linéaire, Python scientifique. La théorie des
@@ -93,6 +99,20 @@ de structure fine issu de l'axiome d'intrication de Chain Theory, dont l'énumé
 des 172 enregistrements est rejouée et comparée au script amont.
 
 ::: {#chaines}
+:::
+
+## Information quantique
+
+Quand l'état n'est plus pur, la question « est-ce intriqué ? » cesse d'avoir une
+réponse directe : elle passe par un critère. La sous-série construit ces critères
+— page réduite, témoin, transposition partielle — puis en mesure les bornes sur
+des familles d'états dont la séparabilité est connue, et les prolonge par la
+distillation et par l'étude des canaux qui détruisent l'intrication. Le patron
+**Mesuré / Cité / Ouvert** s'y applique comme ailleurs : la question de la
+distillabilité des états non séparables par transposition partielle reste
+ouverte, et le carnet le dit.
+
+::: {#informationquantique}
 :::
 
 ## Démarrage rapide

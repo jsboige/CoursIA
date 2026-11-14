@@ -16,7 +16,7 @@ Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/Cou
 
 - **Vous découvrez** : choisissez une question dans la table ci-dessous. Numérique offre une première expérience concrète avec une équation, un choc et des schémas à comparer.
 - **Vous approfondissez** : suivez les paliers de Jauge ou d'Intégrales et leurs exercices. Les liens entre conservation, discrétisation et contrôles numériques sont développés ensuite.
-- **Vous explorez des fondements** : Constructeur et Chaînes interrogent la formulation des lois et le statut de leurs conséquences. Leur lecture demande de séparer modèle illustratif, résultat démontré et conjecture.
+- **Vous explorez des fondements** : Constructeur, Chaînes et InformationQuantique interrogent la formulation des lois et le statut de leurs conséquences. Leur lecture demande de séparer modèle illustratif, résultat démontré et conjecture.
 
 Il n'y a pas de séquence unique imposée entre ces branches. Les numéros des carnets décrivent une progression à l'intérieur de chaque sous-série ; les README locaux portent les inventaires et les approfondissements.
 
@@ -29,6 +29,7 @@ Il n'y a pas de séquence unique imposée entre ces branches. Les numéros des c
 | Comment calculer et contrôler une intégrale de Feynman ? | [Intégrales](Integrales/README.md) → [Triangle scalaire](Integrales/Integrales-01-Triangle-Scalaire-Python.ipynb) | Représentations paramétriques, quadratures, valeurs spéciales, divergence ultraviolette et structure elliptique. | Licence avancée puis Master : intégration et fonctions spéciales ; la première amplitude est construite dans le carnet. | Relier le sunrise à ses périodes elliptiques. |
 | Peut-on formuler une loi comme une tâche impossible ? | [Constructeur](Constructeur/README.md) → [Lois comme tâches](Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb) | Tâches, constructeurs, conservation, non-clonage et témoin de non-classicité dans un modèle jouet. | Lecture conceptuelle avancée : algèbre linéaire et notions quantiques pour les calculs. | Discuter ce que l'exemple de médiateur permet d'inférer. |
 | Comment examiner un programme physique fondé sur un axiome informationnel ? | [Chaînes](Chaines/README.md) → [Intrication et constante de structure fine](Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb) | Reproduire une énumération, examiner une valeur candidate et distinguer résultats mesurés, cités et ouverts. | Recherche : algèbre linéaire, notions d'intrication et lecture critique d'une prépublication. | Vérifier les étapes de la dérivation et leurs hypothèses. |
+| Peut-on décider si un état quantique mixte est intriqué ? | [InformationQuantique](InformationQuantique/README.md) → [États mixtes, intrication, PPT et distillabilité](InformationQuantique/InfoQuant-01-Etats-Mixtures-Intrication-PPT-Distillabilite-Python.ipynb) | Pages réduites et purification, témoins d'intrication, critère de la transposition partielle, distillabilité et canaux brisant l'intrication. | Licence avancée puis Master : algèbre linéaire, probabilités et bases de mécanique quantique. | Mesurer les bornes d'une famille d'états et discuter ce que le critère ne dit pas. |
 
 ## Comprendre les liens entre les branches — Licence et Master
 
@@ -63,6 +64,12 @@ Les contre-tests sont aussi instructifs que les accords. Le carnet sur la bulle 
 [Constructeur-01](Constructeur/Constructeur-01-Lois-Comme-Taches-Python.ipynb) reformule certaines lois en termes de tâches possibles ou impossibles. Conservation et non-clonage deviennent des contraintes sur les transformations réalisables. Le modèle de médiateur quantique illustre une production d'intrication, mesurée par une négativité de `0,5`, là où le témoin classique du carnet donne zéro. Il s'agit d'un exemple calculable de non-classicité, pas d'une expérience de gravité.
 
 [Chaînes-01](Chaines/Chaines-01-Axiome-Intrication-Constante-Structure-Fine-Python.ipynb) étudie une proposition informationnelle récente de Wissner-Gross. Il reproduit une énumération et examine la valeur candidate obtenue pour la constante de structure fine. Retrouver le calcul de la source permet d'en contrôler l'exécution ; cela ne valide pas l'axiome physique de départ ni les conjectures qui relient les objets combinatoires aux particules. La distinction **Mesuré / Cité / Ouvert** accompagne cette lecture d'une prépublication non relue.
+
+### Information quantique : décider si un état mixte est intriqué
+
+[InfoQuant-01](InformationQuantique/InfoQuant-01-Etats-Mixtures-Intrication-PPT-Distillabilite-Python.ipynb) change d'objet : l'état n'est plus pur, et les questions deviennent des questions de critère. Le critère de la page réduite, complet pour un état pur, échoue sur un état mixte ; un témoin d'intrication, lui, ne dit rien lorsqu'il reste muet. Le critère de la transposition partielle prend le relais, et le carnet en mesure les bornes par bissection sur les familles de Werner et isotrope — les valeurs obtenues rejoignent les seuils annoncés dans la littérature.
+
+La même frontière de séparabilité réapparaît ensuite comme seuil de distillation : pour l'état de Werner en dimension 2, la fraction de singlet vaut exactement le paramètre de mélange, et le seuil mesuré par la récurrence de Bennett coïncide avec la borne PPT. Enfin, la matrice de Choi d'un canal permet de décider s'il brise l'intrication, et le carnet mesure le nombre d'itérations qu'exige un canal de qualité donnée. La question « tous les états non distillables sont-ils séparables ? » reste ouverte, et le carnet le dit plutôt que de le contourner.
 
 ## Activités transversales — approfondir un contrôle
 
@@ -117,5 +124,6 @@ Les branches [Constructeur](Constructeur/README.md) et [Chaînes](Chaines/README
 - [Intégrales](Integrales/README.md) : normalisations, fonctions spéciales et bibliographie des amplitudes étudiées.
 - [Constructeur](Constructeur/README.md) : textes sur les tâches possibles et impossibles en physique.
 - [Chaînes](Chaines/README.md) : source étudiée, reproduction et statut des propositions.
+- [InformationQuantique](InformationQuantique/README.md) : états mixtes, séparabilité, distillabilité et canaux brisant l'intrication.
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md) · [Licence](../../LICENSE)
