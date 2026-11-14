@@ -285,7 +285,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-mapping/README.md](curriculum/aima-mapping/README.md) | AIMA : tables des matières 3e et 4e en données (ancre PDF par ligne), correspondance section → phase → carnets → compétences, sections sans couverture, ce qui dépasse le livre, et écarts de découpage entre les deux éditions |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
-| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + IIT (cœur), avec export SKOS/OWL |
+| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + IIT (cœur) + Z3-Linq2Z3, avec export SKOS/OWL et validation globale `--all` |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
@@ -320,6 +320,7 @@ Infrastructure de synchronisation et moteur de traduction du dépôt (EPIC #4957
 | [translation/argumentum-fork-mapping.md](translation/argumentum-fork-mapping.md) | Référence pérenne couche T3 (moteur `translate_csv.py`, #6949/#6976) |
 | [transients/2026-07-19-epic-4957-status.md](transients/2026-07-19-epic-4957-status.md) | État de clôture Phase 1 infra traduction (#4957 → #1650) |
 | [translation/translations-root-diagnostic.md](translation/translations-root-diagnostic.md) | Diagnostic du répertoire `translations/` à la racine : état des lieux et options de disposition. **Doc-only, sans action destructive** — le diagnostic est écrit et arbitrable avant qu'une ligne ne soit supprimée |
+| [translation/translation-override-protocol.md](translation/translation-override-protocol.md) | Voie normale du double-clé `translation-override` : quand resynchroniser un CSV par `T1 --update`, à qui le demander, motif type. Transpose l'arbitrage ai-01 du dispatch `c2760` (#20232) |
 
 ## Recherche (docs/research/)
 
