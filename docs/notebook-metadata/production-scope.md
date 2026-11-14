@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-13
+> REFERENCE — vivante — dernière révision 2026-11-14
 
 # Périmètre PRODUCTION — dérivation mécanique v1
 
