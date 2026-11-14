@@ -95,7 +95,68 @@ Les ordres comptent aussi les stops annulés : chaque rééquilibrage annule le 
 
 Ici, un stop ne vide qu'une ligne, et au plus jusqu'au lundi suivant. Une hypothèse, non mesurée, expliquerait le coût intermédiaire : le rendement de la stratégie est faible (3,5 % par an), si bien que chaque semaine perdue par une ligne stoppée en emporte une part plus grande.
 
-Suites possibles, non mesurées : refaire l'ablation une fois le défaut d'échelle corrigé (#26329), tester un stop plus large ou une re-entrée dans la semaine, et mesurer la fenêtre 2025-2026.
+### Mesure de ligue (#26329)
+
+La stratégie est mesurée au protocole de la ligue (#21594, gabarit #22828) : cinq modes dans un seul code (paramètre `mode`), une passe continue 2015-01-01 → 2026-07-01 par mode. Fenêtre F1 = 2015-01-01 → 2024-12-31 (la période codée), fenêtre F2 = 2025-01-01 → 2026-06-30, hors période codée. Le graphique `shadow` (e0..e4) trace les séances d'avant 2025, le graphique `shadow2` les suivantes, chaque compteur repartant de e0. La stratégie est causale : sa trace F1 dans la passe continue est celle d'une passe arrêtée fin 2024, et l'année de liquidités initiale (préchauffage de 500 variances réalisées) entre dans la mesure, telle que le code la vit.
+
+Backtests du 2026-11-14, projet QC 31456164, compile `9ddf80f4c8379d0f5e78e21114f45ca0-2829b9bff149def10e9b688c3ce39622` (`BuildSuccess`, empreinte du `main.py` mesuré : sha256 `59654a6121d06c4d…`).
+
+| `mode` | Backtest | Ordres | Sharpe (QC) | CAGR | Drawdown max | Profit net | PSR |
+|---|---|---|---|---|---|---|---|
+| `strategy` | `4ba35090f1e841fe6ccb820520b55c6a` | 1642 | 0,153 | 4,706 % | 15,700 % | 69,736 % | 0,025 % |
+| `spy` | `35760d7e05958612ddb3022f1d4861be` | 2 | 0,557 | 13,891 % | 33,700 % | 346,619 % | 2,620 % |
+| `6040` | `426393e633ce4a28eadd0f7e34e0bcb6` | 698 | 0,468 | 9,183 % | 21,700 % | 174,790 % | 1,233 % |
+| `ew6` | `2ce5cab10334be61d06565a18ffb4aaf` | 1512 | 0,379 | 7,984 % | 21,500 % | 142,007 % | 0,481 % |
+| `naivevol` | `4f0cfe9d245c282e5a0318bd02937f24` | 1642 | 0,153 | 4,706 % | 15,700 % | 69,736 % | 0,025 % |
+
+**Témoin d'innocuité.** La `main.py` nue de `0ddc1e46fd` (compile `a8567b86…5a12c2c2991872db58f69a7accbee`, empreinte sha256 `c80afa6189cd5638…`, run `e5937392d62a1fb2c6a4277b81ac37df`) et le code instrumenté en mode `strategy`, lancés le même jour, rendent les mêmes 1358 ordres (date, titre, quantité) sur la fenêtre codée : le code de mesure ne change pas la stratégie. Le run nu reproduit aussi la mesure de #24698 (Sharpe QC 0,065, CAGR 3,470 %, drawdown 15,700 %).
+
+Par fenêtre, depuis les traces `shadow` (taux sans risque nul, 252 jours par an) :
+
+| Mode | F1 CAGR | F1 drawdown | F1 Sharpe | F2 CAGR | F2 drawdown | F2 Sharpe |
+|---|---|---|---|---|---|---|
+| `strategy` | 3,479 % | 15,731 % | 0,491 | 13,487 % | 6,823 % | 1,224 |
+| `spy` | 13,216 % | 33,668 % | 0,794 | 19,385 % | 18,741 % | 1,080 |
+| `6040` | 8,593 % | 21,694 % | 0,810 | 13,800 % | 11,247 % | 1,217 |
+| `ew6` | 5,835 % | 21,480 % | 0,580 | 24,416 % | 9,176 % | 1,849 |
+| `naivevol` | 3,479 % | 15,731 % | 0,491 | 13,487 % | 6,823 % | 1,224 |
+
+**Test apparié.** `Paradox46Benchmarks/significance.py` (écart de Sharpe Ledoit-Wolf, Newey-West, bootstrap stationnaire, Holm) sur les rendements journaliers des traces, fenêtre par fenêtre, candidate contre `spy` et `6040` pour le verdict, contre `ew6` et `naivevol` pour le diagnostic :
+
+| F1 (2516 séances) | Écart | Corrélation | p Ledoit-Wolf | IC 95 % bootstrap | p Holm |
+|---|---|---|---|---|---|
+| contre `spy` | −0,303 | 0,294 | 0,365 | [−0,952 ; +0,335] | 1,0 |
+| contre `6040` | −0,318 | 0,330 | 0,345 | [−0,975 ; +0,313] | 1,0 |
+| contre `ew6` | −0,089 | 0,501 | 0,764 | [−0,637 ; +0,469] | 1,0 |
+
+| F2 (373 séances) | Écart | Corrélation | p Ledoit-Wolf | IC 95 % bootstrap | p Holm |
+|---|---|---|---|---|---|
+| contre `spy` | +0,144 | 0,374 | 0,868 | [−1,671 ; +1,725] | 1,0 |
+| contre `6040` | +0,007 | 0,384 | 0,994 | [−1,745 ; +1,520] | 1,0 |
+| contre `ew6` | −0,625 | 0,679 | 0,298 | [−1,777 ; +0,381] | 1,0 |
+
+**Verdict : NO BEATS sur F1** (Sharpe 0,491 sous les 0,794 de SPY détenu) ; **INCONCLUSIVE sur F2** (+0,144 contre `spy`, non significatif, p Holm 1,0). Sur la passe continue, le Sharpe QC (0,153 contre 0,557) confirme le NO BEATS.
+
+**Propriétés publiées (protocole #26329).** Poids bornés à 0,30 avant renormalisation : 1213 sur 1215 poids positifs (99,8 %). Rééquilibrages renormalisés (somme des poids > 1) : 145 sur 492 (29 %). Premier rééquilibrage effectif : 2016-01-04. Ordres envoyés le lundi 30 minutes après l'ouverture, remplissage moyen 21 534 s (environ 6 heures) plus tard, soit la clôture de la même séance (#20264). Séances à plat : 532 sur 2890 (18 %).
+
+**Lecture.**
+
+- **Le modèle HAR n'entre jamais dans le dimensionnement.** Le mode `naivevol` — même code, prévision HAR remplacée par la moyenne géométrique des 22 dernières variances réalisées — reproduit la stratégie **à l'identique** : 0 séance différente sur 2889, statistiques QC égales à l'octet près (mêmes ordres, mêmes frais, même volume). Gonflé par le défaut d'échelle (variance annuelle divisée par 5, cf #26329), le Kelly dépasse le plafond de 0,30 sur presque tous les poids ; après renormalisation, le portefeuille est l'équipondéré des lignes à momentum 5 jours positif. La corrélation avec `ew6`, la plus haute des bancs (0,50 en F1, 0,68 en F2), le confirme. Corriger l'échelle (une autre issue) est la seule voie pour que la prévision compte.
+- **F2 ne sauve pas la stratégie.** La fenêtre 2025-2026 lui donne 13,5 % par an pour 6,8 % de drawdown, mais l'univers détenu à poids égal en fait 24,4 % : la fenêtre favorise l'univers, pas le modèle.
+- **SPY détenu domine F1 en Sharpe ponctuel** (0,794 contre 0,491) avec un drawdown deux fois plus profond (33,7 % contre 15,7 %) : la stratégie paie son rendement faible, pas sa protection.
+
+**Prédictions écrites avant les runs** (body de #26329) :
+
+1. Innocuité tenue : **tenue**.
+2. F1 : NO BEATS ou INCONCLUSIVE, pas de BEATS : **tenue** (NO BEATS).
+3. Plus de la moitié des poids non nuls bornés à 0,30 : **tenue** (99,8 %).
+4. `naivevol` : écart non significatif face à `strategy`, le plafond dominant : **tenue au-delà** — l'écart est nul, identité parfaite.
+5. `ew6` : écart non significatif : **tenue**.
+6. F2 : sans prédiction (INCONCLUSIVE).
+
+**Traces et panier (brique 4).** Dépôt : `G:\Mon Drive\MyIA\IA\QC-traces\26329-har-rv-kelly-held-references\` — un dossier par run (`backtest.json` relecture verbatim, `backtest_id.txt`, `chart.json` trace F1, `chart-f2.json` trace F2, `plan.json` avec empreinte du `main.py` mesuré), le témoin nu dans `control/`, `significance-f1/f2.json` (sorties de l'organe), `innocuite.txt` et les journaux d'ordres (`orders-nu.json`, `orders-strategy.json`). La trace F1 de `strategy` est inscrite au panier (`ML-Training-Pipeline/shadow/league_members.json`, entrée `har-rv-kelly`).
+
+Suites possibles, non mesurées : corriger le défaut d'échelle (autre issue, autre stratégie), refaire l'ablation du noyau une fois corrigé, tester un stop plus large ou une re-entrée dans la semaine.
 
 ## Fichiers
 

@@ -3,6 +3,7 @@ from AlgorithmImports import *
 # endregion
 import numpy as np
 from collections import deque
+from datetime import date
 
 # Noyau de risque deterministe (#24698), parametre `kernel` : (plafond, stop, coupe-circuit).
 # `off` (defaut) laisse le code inchange.
@@ -11,6 +12,17 @@ KERNEL_MODES = {"off": (False, False, False), "cap90": (True, False, False),
 KERNEL_EXPOSURE_CAP = 0.90    # exposition brute maximale, sans levier
 KERNEL_STOP_ATR = 2.0         # stop a 2 ATR(14) sous le prix de l'ordre, ligne par ligne
 KERNEL_CB_THRESHOLD = -0.03   # coupe-circuit apres une seance a -3 % ou pire
+
+# Mesure ligue (#26329, protocole #21594) : parametre `mode`.
+# `strategy` (defaut) = code inchange (chemin d'origine, ordre pour ordre) ;
+# `naivevol` = meme code, prevision HAR remplacee par exp(moyenne des log RV des
+# 22 dernieres seances) ; `spy` / `6040` / `ew6` = references detenues,
+# reequilibrees le meme lundi. Passe continue 2015-01-01 -> 2026-07-01 :
+# chart `shadow` (e0..e4) pour les seances d'avant 2025-01-01 (fenetre F1),
+# chart `shadow2` (e0..e4) pour les suivantes (fenetre F2), chaque compteur
+# repartant de e0. Le noyau `kernel` ne s'applique qu'au chemin strategie.
+MODES = ("strategy", "naivevol", "spy", "6040", "ew6")
+F1_END = date(2025, 1, 1)
 
 
 class HarrvKellyAlgorithm(QCAlgorithm):
@@ -34,11 +46,15 @@ class HarrvKellyAlgorithm(QCAlgorithm):
     next Monday rebalance); `kernel` adds a circuit breaker (after a session
     at -3 % or worse, liquidate at the next open, re-enter the session after).
     `off` (default) leaves the strategy unchanged.
+
+    Measurement modes (#26329): `mode=naivevol` swaps the HAR forecast for
+    exp(mean of last 22 log RV); `mode=spy|6040|ew6` are held references
+    rebalanced on the same Mondays (6040 adds BND to the universe).
     """
 
     def initialize(self):
         self.set_start_date(2015, 1, 1)
-        self.set_end_date(2025, 1, 1)
+        self.set_end_date(2026, 7, 1)
         self.set_cash(100000)
 
         self.set_brokerage_model(
@@ -50,6 +66,8 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         for ticker in self.tickers:
             equity = self.add_equity(ticker, Resolution.DAILY)
             self.symbols[ticker] = equity.symbol
+        if self.get_parameter("mode", "strategy") == "6040":
+            self.symbols["BND"] = self.add_equity("BND", Resolution.DAILY).symbol
 
         self.set_benchmark(self.symbols["SPY"])
 
@@ -76,6 +94,21 @@ class HarrvKellyAlgorithm(QCAlgorithm):
 
         self.set_warm_up(250, Resolution.DAILY)
 
+        # --- Mesure ligue (#26329) -------------------------------------------
+        self.mode = self.get_parameter("mode", "strategy")
+        if self.mode not in MODES:
+            raise ValueError(f"unknown mode {self.mode}")
+        self.shadow_bars = 0
+        self.shadow2_bars = 0
+        # Proprietes publiees avec le verdict (protocole #26329).
+        self.n_rebalances = 0          # lundis passes avec au moins un poids
+        self.n_renormalized = 0        # reequilibrages renormalises (total > 1)
+        self.n_weights = 0             # poids non nuls emis
+        self.n_capped = 0              # poids bornes a 0,30 avant renormalisation
+        self.first_rebalance = None    # date du premier reequilibrage effectif
+        self.n_fills = 0               # ordres remplis (mode strategie)
+        self.fill_lag_sum = 0.0        # somme envoye -> remplacement, secondes
+
         # --- Noyau de risque deterministe (#24698) ---------------------------
         self.kernel = self.get_parameter("kernel", "off")
         if self.kernel not in KERNEL_MODES:
@@ -94,7 +127,6 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         self.k_exposure_max = 0.0
         self.k_sessions = 0
         self.k_flat_sessions = 0
-        self.shadow_bars = 0
         if self.use_stop:
             self.k_atr = {t: self.atr(self.symbols[t], 14, MovingAverageType.SIMPLE,
                                       Resolution.DAILY) for t in self.tickers}
@@ -108,6 +140,8 @@ class HarrvKellyAlgorithm(QCAlgorithm):
 
     def on_data(self, data: Slice):
         for ticker, sym in self.symbols.items():
+            if ticker == "BND":
+                continue
             if not data.ContainsKey(sym):
                 continue
             bar = data[sym]
@@ -124,12 +158,34 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         self.day_count += 1
         if not self.is_warming_up and data.bars.contains_key(self.symbols["SPY"]):
             # Trace en ombre (#18923) : une cloture par seance, seance k dans e{k % 5}.
-            self.plot("shadow", f"e{self.shadow_bars % 5}",
-                      self.portfolio.total_portfolio_value)
-            self.shadow_bars += 1
+            # Fenetres F1/F2 (#26329) : shadow avant 2025-01-01, shadow2 ensuite.
+            if self.time.date() < F1_END:
+                self.plot("shadow", f"e{self.shadow_bars % 5}",
+                          self.portfolio.total_portfolio_value)
+                self.shadow_bars += 1
+            else:
+                self.plot("shadow2", f"e{self.shadow2_bars % 5}",
+                          self.portfolio.total_portfolio_value)
+                self.shadow2_bars += 1
             self._kernel_close()
 
     def rebalance(self):
+        # --- References detenues (#26329) : reequilibrees le meme lundi, ------
+        # sans porte d'estimation : detenues des le premier lundi trace.
+        if self.mode == "spy":
+            weights = {"SPY": 1.0}
+        elif self.mode == "6040":
+            weights = {"SPY": 0.6, "BND": 0.4}
+        elif self.mode == "ew6":
+            weights = {t: 1.0 / 6.0 for t in self.tickers}
+        else:
+            weights = None
+
+        if weights is not None:
+            for ticker, w in weights.items():
+                self.set_holdings(self.symbols[ticker], w)
+            return
+
         if self.is_warming_up:
             return
 
@@ -139,7 +195,12 @@ class HarrvKellyAlgorithm(QCAlgorithm):
             if len(self.daily_rv[ticker]) < self.train_window:
                 continue
 
-            var_forecast = self._har_forecast(ticker)
+            if self.mode == "naivevol":
+                rv = np.array(self.daily_rv[ticker])
+                var_forecast = float(np.exp(np.mean(
+                    np.log(np.maximum(rv[-22:], 1e-12))))) if len(rv) >= 22 else None
+            else:
+                var_forecast = self._har_forecast(ticker)
             if var_forecast is None or var_forecast <= 0:
                 continue
 
@@ -161,11 +222,21 @@ class HarrvKellyAlgorithm(QCAlgorithm):
                 kelly_full = mu_ann / var_ann
                 kelly_adj = max(0, kelly_full * self.kelly_fraction)
                 w = min(kelly_adj, 0.30) * direction
+                if kelly_adj > 0.30 and direction > 0:
+                    self.n_capped += 1
+                if w > 0:
+                    self.n_weights += 1
             else:
                 w = 0.0
             weights[ticker] = w
 
         total = sum(weights.values())
+        if weights:
+            self.n_rebalances += 1
+            if self.first_rebalance is None:
+                self.first_rebalance = self.time.date()
+            if total > 1.0:
+                self.n_renormalized += 1
         if total > 1.0:
             weights = {t: w / total for t, w in weights.items()}
 
@@ -341,6 +412,17 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         self.k_stop_ticket[ticker] = None
 
     def on_order_event(self, order_event):
+        # Propriete #20264 : delai envoye -> remplacement (observation pure,
+        # gardee : un attribut absent de l'API n'arrete jamais le run).
+        if order_event.status == OrderStatus.FILLED:
+            try:
+                order = self.transactions.get_order_by_id(order_event.order_id)
+                lag = (order_event.utc_time - order.time).total_seconds()
+                if lag >= 0:
+                    self.n_fills += 1
+                    self.fill_lag_sum += lag
+            except AttributeError:
+                pass
         if self.kernel == "off":
             return
         if order_event.status == OrderStatus.INVALID:
@@ -360,6 +442,7 @@ class HarrvKellyAlgorithm(QCAlgorithm):
             self._kernel_place_stop(ticker)
 
     def on_end_of_algorithm(self):
+        self.set_runtime_statistic("Mode", self.mode)
         self.set_runtime_statistic("Noyau", self.kernel)
         self.set_runtime_statistic("Stops", str(self.k_stops))
         self.set_runtime_statistic("Coupures", str(self.k_cuts))
@@ -367,3 +450,13 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         self.set_runtime_statistic("Exposition max", f"{self.k_exposure_max:.4f}")
         self.set_runtime_statistic(
             "Seances a plat", f"{self.k_flat_sessions}/{self.k_sessions}")
+        if self.n_rebalances:
+            self.set_runtime_statistic(
+                "Poids bornes 0,30", f"{self.n_capped}/{self.n_weights}")
+            self.set_runtime_statistic(
+                "Renormalisations", f"{self.n_renormalized}/{self.n_rebalances}")
+            self.set_runtime_statistic(
+                "Premier reequilibrage", str(self.first_rebalance))
+        if self.n_fills:
+            self.set_runtime_statistic(
+                "Remplissage moyen (s)", f"{self.fill_lag_sum / self.n_fills:.1f}")
