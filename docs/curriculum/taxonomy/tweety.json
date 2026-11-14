@@ -1,0 +1,465 @@
+{
+  "schema_version": 1,
+  "series": "SymbolicAI",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb",
+    "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "SymbolicAI",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Intelligence artificielle symbolique"
+    },
+    {
+      "level": "subseries",
+      "path": "SymbolicAI/Tweety",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Tweety"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/Tweety/02",
+      "decimal_path": "1.1.1",
+      "depth": 2,
+      "label_fr": "Logiques de base",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/Tweety/03",
+      "decimal_path": "1.1.2",
+      "depth": 2,
+      "label_fr": "Logiques avancées",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/Tweety/04",
+      "decimal_path": "1.1.3",
+      "depth": 2,
+      "label_fr": "Révision de croyances",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/Tweety/05",
+      "decimal_path": "1.1.4",
+      "depth": 2,
+      "label_fr": "Argumentation abstraite",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "SymbolicAI/Tweety/06",
+      "decimal_path": "1.1.5",
+      "depth": 2,
+      "label_fr": "Argumentation structurée",
+      "repository_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "1bb584d1-6383-435d-9c6a-80e08c4a0c70",
+      "path": "symbolicai/pl",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Logique propositionnelle",
+      "label_en": "Propositional logic",
+      "definition_fr": "Formules construites à partir de propositions et de connecteurs pour représenter des faits et leurs relations.",
+      "definition_en": "Formulas built from propositions and connectives to represent facts and their relationships.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb",
+          "cell_id": "cd3ec64f"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "77418884-ef1c-48bb-9312-7fa614ace5c7",
+      "path": "symbolicai/mondes",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Mondes possibles et satisfaction",
+      "label_en": "Possible worlds and satisfaction",
+      "definition_fr": "Une interprétation affecte une valeur de vérité aux propositions ; elle satisfait une formule lorsque celle-ci est vraie dans ce monde.",
+      "definition_en": "An interpretation assigns truth values to propositions; it satisfies a formula when that formula is true in the world.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb",
+          "cell_id": "3de93456"
+        }
+      ],
+      "prerequisites": [
+        "1bb584d1-6383-435d-9c6a-80e08c4a0c70"
+      ]
+    },
+    {
+      "id": "cec77fda-3494-4baa-9b08-18e0bca09bdb",
+      "path": "symbolicai/sat",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Satisfiabilité propositionnelle",
+      "label_en": "Propositional satisfiability",
+      "definition_fr": "Une base est satisfiable si elle admet un modèle qui rend toutes ses formules vraies.",
+      "definition_en": "A knowledge base is satisfiable if it has a model that makes all its formulas true.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb",
+          "cell_id": "044f5ef1"
+        }
+      ],
+      "prerequisites": [
+        "77418884-ef1c-48bb-9312-7fa614ace5c7"
+      ]
+    },
+    {
+      "id": "0a62ebd8-445b-4cf8-a82e-e75ddda7829d",
+      "path": "symbolicai/fol",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Logique du premier ordre",
+      "label_en": "First-order logic",
+      "definition_fr": "Extension de la logique propositionnelle avec prédicats, constantes, variables et quantificateurs.",
+      "definition_en": "An extension of propositional logic with predicates, constants, variables and quantifiers.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-02-Basic-Logics-Python.ipynb",
+          "cell_id": "cfcbe2ff"
+        }
+      ],
+      "prerequisites": [
+        "1bb584d1-6383-435d-9c6a-80e08c4a0c70"
+      ]
+    },
+    {
+      "id": "d521f2cd-8071-4d48-be5d-123e110f82f7",
+      "path": "symbolicai/dl",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Logique de description",
+      "label_en": "Description logic",
+      "definition_fr": "Formalismes de connaissances structurées par concepts, rôles et individus, avec axiomes terminologiques et assertions.",
+      "definition_en": "Knowledge representation formalisms using concepts, roles and individuals, with terminological axioms and assertions.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb",
+          "cell_id": "f1d9d39c"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "647db870-710e-44f0-ad99-9d29dead4af5",
+      "path": "symbolicai/modal",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Logique modale",
+      "label_en": "Modal logic",
+      "definition_fr": "Logique de nécessité et de possibilité évaluée sur des mondes reliés par une relation d’accessibilité.",
+      "definition_en": "Logic of necessity and possibility evaluated over worlds linked by an accessibility relation.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb",
+          "cell_id": "a86b50c4"
+        }
+      ],
+      "prerequisites": [
+        "77418884-ef1c-48bb-9312-7fa614ace5c7"
+      ]
+    },
+    {
+      "id": "06e12ad9-d101-4d4d-aef2-6376ceeeb28b",
+      "path": "symbolicai/qbf",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "Formules booléennes quantifiées",
+      "label_en": "Quantified Boolean formulas",
+      "definition_fr": "Formules booléennes qui ajoutent des quantificateurs sur les variables au problème SAT.",
+      "definition_en": "Boolean formulas that add quantifiers over variables to the SAT problem.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb",
+          "cell_id": "zcsjedqgqsn"
+        }
+      ],
+      "prerequisites": [
+        "cec77fda-3494-4baa-9b08-18e0bca09bdb"
+      ]
+    },
+    {
+      "id": "bb92b853-ac49-4b0e-99ae-66d57382f5f7",
+      "path": "symbolicai/cl",
+      "decimal_path": "8",
+      "depth": 0,
+      "label_fr": "Logique conditionnelle",
+      "label_en": "Conditional logic",
+      "definition_fr": "Logique qui représente des conditionnels normalement vrais et permet de raisonner avec des exceptions.",
+      "definition_en": "Logic representing normally true conditionals and reasoning with exceptions.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-03-Advanced-Logics-Python.ipynb",
+          "cell_id": "bd272720"
+        }
+      ],
+      "prerequisites": [
+        "1bb584d1-6383-435d-9c6a-80e08c4a0c70"
+      ]
+    },
+    {
+      "id": "20a5c550-7e1c-4f0e-af8e-b947f4f5aaed",
+      "path": "symbolicai/agm",
+      "decimal_path": "9",
+      "depth": 0,
+      "label_fr": "Changement de croyances AGM",
+      "label_en": "AGM belief change",
+      "definition_fr": "La théorie AGM encadre expansion, contraction et révision de croyances par des postulats de rationalité.",
+      "definition_en": "AGM theory constrains belief expansion, contraction and revision through rationality postulates.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb",
+          "cell_id": "3d22ebda"
+        }
+      ],
+      "prerequisites": [
+        "1bb584d1-6383-435d-9c6a-80e08c4a0c70"
+      ]
+    },
+    {
+      "id": "87dd3f37-2068-42ff-b2fa-f44750b4e96d",
+      "path": "symbolicai/mus",
+      "decimal_path": "10",
+      "depth": 0,
+      "label_fr": "Sous-ensemble inconsistant minimal",
+      "label_en": "Minimal unsatisfiable subset",
+      "definition_fr": "Sous-ensemble inconsistant d’une base dont chaque sous-ensemble propre est consistant ; il aide à diagnostiquer l’incohérence.",
+      "definition_en": "An inconsistent subset of a knowledge base whose every proper subset is consistent; it helps diagnose inconsistency.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb",
+          "cell_id": "e41e9a0b"
+        }
+      ],
+      "prerequisites": [
+        "cec77fda-3494-4baa-9b08-18e0bca09bdb"
+      ]
+    },
+    {
+      "id": "bacad34d-718f-44dc-895d-4401877eb78d",
+      "path": "symbolicai/maxsat",
+      "decimal_path": "11",
+      "depth": 0,
+      "label_fr": "MaxSAT",
+      "label_en": "MaxSAT",
+      "definition_fr": "Généralisation de SAT qui satisfait les clauses dures tout en minimisant le coût des clauses molles violées.",
+      "definition_en": "A generalization of SAT that satisfies hard clauses while minimizing the cost of violated soft clauses.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-04-Belief-Revision-Python.ipynb",
+          "cell_id": "a35f77eb"
+        }
+      ],
+      "prerequisites": [
+        "cec77fda-3494-4baa-9b08-18e0bca09bdb"
+      ]
+    },
+    {
+      "id": "73fcfc4c-db82-4c36-9576-c814a75909f3",
+      "path": "symbolicai/dung",
+      "decimal_path": "12",
+      "depth": 0,
+      "label_fr": "Cadre d’argumentation de Dung",
+      "label_en": "Dung argumentation framework",
+      "definition_fr": "Cadre de Dung formé d’un ensemble d’arguments et d’une relation d’attaque dirigée entre eux.",
+      "definition_en": "A Dung framework consisting of arguments and a directed attack relation between them.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb",
+          "cell_id": "0772b0f0"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "6b5ae72c-f5f9-4ba5-8964-70d8ccbcbc45",
+      "path": "symbolicai/admissibilite",
+      "decimal_path": "13",
+      "depth": 0,
+      "label_fr": "Admissibilité",
+      "label_en": "Admissibility",
+      "definition_fr": "Un ensemble admissible est sans conflit et défend chacun de ses arguments contre les attaques.",
+      "definition_en": "An admissible set is conflict-free and defends each of its arguments against attacks.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb",
+          "cell_id": "0772b0f0"
+        }
+      ],
+      "prerequisites": [
+        "73fcfc4c-db82-4c36-9576-c814a75909f3"
+      ]
+    },
+    {
+      "id": "8477b8d4-dc46-44f1-9705-317e17fbb919",
+      "path": "symbolicai/grounded",
+      "decimal_path": "14",
+      "depth": 0,
+      "label_fr": "Fonction caractéristique et grounded",
+      "label_en": "Characteristic function and grounded semantics",
+      "definition_fr": "La fonction caractéristique associe à un ensemble les arguments qu’il défend ; son plus petit point fixe donne l’extension grounded.",
+      "definition_en": "The characteristic function maps a set to the arguments it defends; its least fixed point gives the grounded extension.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb",
+          "cell_id": "039ebaef"
+        }
+      ],
+      "prerequisites": [
+        "6b5ae72c-f5f9-4ba5-8964-70d8ccbcbc45"
+      ]
+    },
+    {
+      "id": "f80f5707-76fe-46c0-a099-2d8eace1b1b4",
+      "path": "symbolicai/cf2",
+      "decimal_path": "15",
+      "depth": 0,
+      "label_fr": "Sémantique CF2",
+      "label_en": "CF2 semantics",
+      "definition_fr": "Sémantique fondée sur la décomposition en composantes fortement connexes, illustrée sur des cycles impairs.",
+      "definition_en": "A semantics based on decomposition into strongly connected components, illustrated on odd cycles.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb",
+          "cell_id": "6fd9e2eb"
+        }
+      ],
+      "prerequisites": [
+        "10a8a360-50a7-4a67-9b7e-ffe2ea180839"
+      ]
+    },
+    {
+      "id": "b148be75-2e31-454a-84d0-5410b8119f14",
+      "path": "symbolicai/aspic",
+      "decimal_path": "16",
+      "depth": 0,
+      "label_fr": "Argumentation structurée ASPIC+",
+      "label_en": "ASPIC+ structured argumentation",
+      "definition_fr": "ASPIC+ construit des arguments à partir d’axiomes et de règles strictes ou défaisables, puis les convertit en cadre de Dung.",
+      "definition_en": "ASPIC+ builds arguments from axioms and strict or defeasible rules, then converts them into a Dung framework.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb",
+          "cell_id": "675ee0f8"
+        }
+      ],
+      "prerequisites": [
+        "6b5ae72c-f5f9-4ba5-8964-70d8ccbcbc45"
+      ]
+    },
+    {
+      "id": "1f5d6883-8913-483f-b181-e9a1591a726a",
+      "path": "symbolicai/delp",
+      "decimal_path": "17",
+      "depth": 0,
+      "label_fr": "Programmation logique défaisable",
+      "label_en": "Defeasible logic programming",
+      "definition_fr": "DeLP combine règles strictes et défaisables et évalue les conclusions par une procédure dialectique.",
+      "definition_en": "DeLP combines strict and defeasible rules and evaluates conclusions through a dialectical procedure.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb",
+          "cell_id": "06220aec"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "9bce0d5d-406f-459d-b12c-75016130c9eb",
+      "path": "symbolicai/aba",
+      "decimal_path": "18",
+      "depth": 0,
+      "label_fr": "Argumentation fondée sur les hypothèses",
+      "label_en": "Assumption-based argumentation",
+      "definition_fr": "ABA dérive des arguments à partir d’hypothèses et de règles ; un argument attaque un autre en concluant le contraire d’une de ses hypothèses. Le raisonnement utilise notamment une conversion en cadre de Dung.",
+      "definition_en": "ABA derives arguments from assumptions and rules; an argument attacks another by concluding the contrary of one of its assumptions. Reasoning uses, in particular, a conversion to a Dung framework.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb",
+          "cell_id": "44e355de"
+        }
+      ],
+      "prerequisites": [
+        "6b5ae72c-f5f9-4ba5-8964-70d8ccbcbc45"
+      ]
+    },
+    {
+      "id": "11b850d8-7993-4631-9a86-d0216286d01d",
+      "path": "symbolicai/asp",
+      "decimal_path": "19",
+      "depth": 0,
+      "label_fr": "Programmation par ensembles réponses",
+      "label_en": "Answer set programming",
+      "definition_fr": "La programmation par ensembles réponses modélise des problèmes par des règles et calcule des modèles stables avec négation par défaut.",
+      "definition_en": "Answer set programming models problems with rules and computes stable models with default negation.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-06-Structured-Argumentation-Python.ipynb",
+          "cell_id": "57d237ec"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "10a8a360-50a7-4a67-9b7e-ffe2ea180839",
+      "path": "symbolicai/stable",
+      "decimal_path": "20",
+      "depth": 0,
+      "label_fr": "Sémantique stable",
+      "label_en": "Stable semantics",
+      "definition_fr": "Une extension stable est sans conflit et attaque tous les arguments extérieurs.",
+      "definition_en": "A stable extension is conflict-free and attacks every argument outside it.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb",
+          "cell_id": "0772b0f0"
+        }
+      ],
+      "prerequisites": [
+        "73fcfc4c-db82-4c36-9576-c814a75909f3"
+      ]
+    },
+    {
+      "id": "2c26ac06-2721-4044-ba8d-d0508753bbc3",
+      "path": "symbolicai/preferred",
+      "decimal_path": "21",
+      "depth": 0,
+      "label_fr": "Sémantique préférée",
+      "label_en": "Preferred semantics",
+      "definition_fr": "Une extension préférée est un ensemble admissible maximal par inclusion.",
+      "definition_en": "A preferred extension is an inclusion-maximal admissible set.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05-Abstract-Argumentation-Python.ipynb",
+          "cell_id": "0772b0f0"
+        }
+      ],
+      "prerequisites": [
+        "6b5ae72c-f5f9-4ba5-8964-70d8ccbcbc45"
+      ]
+    }
+  ]
+}
