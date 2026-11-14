@@ -1279,5 +1279,241 @@ def test_cli_resolved_external_is_counted_but_not_open(monkeypatch, capsys):
     assert payload["externals_unresolved"] == 0
 
 
+# --------------------------------------------------------------------------- #
+# Classe ``ask-unanswered`` (#20185, 5e classe) — formes mesurees le
+# 2026-11-14 sur le corpus (70 issues les plus recentes portant « [ASK » en
+# corps) : 7 tags POSES en emission, 63 citations de prose. Reels : #24357
+# NON REPONDU, #23384 NON REPONDU (claim partageant du vocabulaire = pas une
+# reponse), #25510/#18911 REPONDU (citation forte), #18285/#20386/#20697
+# MANUAL_REVIEW.
+# --------------------------------------------------------------------------- #
+
+ASK_BARE = "[ASK] Route au mainteneur — décision de modèle de données (point 3 de #24246)"
+
+ASK_ADDRESSEE = (
+    "[ASK c.138 ai-01:CoursIA-2] Arbitrage mainteneur requis — les 5 décisions "
+    "de contenu ne sont pas actionnables sans tranche"
+)
+
+ASK_QUOTE_SEED = (
+    "le regime des push sur main doit trancher entre assessment seul et "
+    "edition unilaterale par la lane, avec preuve et sans force push"
+)
+
+
+class AskTagTests(unittest.TestCase):
+    def test_bare_ask_posed_is_detected(self):
+        self.assertEqual(mod.ask_tag(ASK_BARE), "ASK")
+
+    def test_addressee_inside_bracket_is_kept(self):
+        # Forme mesuree #18285 : le destinataire vit DANS le crochet.
+        self.assertEqual(mod.ask_tag(ASK_ADDRESSEE), "ASK c.138 ai-01:CoursIA-2")
+
+    def test_double_bracket_group_with_decoration(self):
+        # Forme mesuree #18911 : « **[ASK][VIBE-SUPPLY] Lane Vibe… ».
+        self.assertEqual(
+            mod.ask_tag(f"**[ASK][VIBE-SUPPLY] Lane Vibe po-2025 — queue vide"),
+            "ASK",
+        )
+
+    def test_decoration_and_head_group_before_tag(self):
+        self.assertEqual(mod.ask_tag("**[DISPATCH] [ASK] choisir un grain**"), "ASK")
+
+    def test_prose_citation_is_not_posed(self):
+        # 63 des 70 issues du corpus citent « [ASK » en PROSE (regles,
+        # vocabulaire de campagne) sans jamais poser de question — mesure.
+        body = "Le mainteneur demande un tag [ASK USER] dans le registre des questions."
+        self.assertIsNone(mod.ask_tag(body))
+
+    def test_mid_body_ask_is_not_posed(self):
+        body = "Recapitulatif du cycle : la lane a pose un `[ASK]` hier, et la reponse est venue."
+        self.assertIsNone(mod.ask_tag(body))
+
+    def test_ask_user_tag_is_returned_for_caller_to_exclude(self):
+        # L'exclusion (registre user) se decide dans analyse_comments pour
+        # nourrir le compte publie — ask_tag rend le tag tel quel.
+        self.assertEqual(mod.ask_tag("[ASK USER] fermer ou garder le registre ?"), "ASK USER")
+
+
+class AskAnalysisTests(unittest.TestCase):
+    def test_ask_without_answer_is_open(self):
+        # Forme mesuree #24357 : dernier commentaire du fil, aucun candidat.
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_BARE)],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(len(report.asks), 1)
+        self.assertEqual(report.asks[0].status, "NON REPONDU")
+        self.assertFalse(report.asks[0].gesture_after)
+        self.assertIn(report.asks[0], report.unresolved)
+
+    def test_reply_citing_timestamp_refermes(self):
+        # Forme mesuree #25510 : un geste de lane ([DELIVERED]) qui porte
+        # l'horodatage de l'ASK referme (exception #2159 du candidat geste).
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-12T18:30:01Z", ASK_BARE),
+                c(81, "2026-11-13T09:00:00Z",
+                  "[DELIVERED] lane myia-ai-01:CoursIA-2 -- PR #26250 -- "
+                  "reponse au [ASK] du 18:30Z : assessment livre."),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "REPONDU")
+        self.assertEqual(report.asks[0].proof, 81)
+        self.assertNotIn(report.asks[0], report.unresolved)
+
+    def test_reply_quoting_excerpt_refermes(self):
+        ask_body = f"[ASK] {ASK_QUOTE_SEED} — arbitrage demande."
+        reply_body = (
+            "Reponse du coordinateur : je tranche pour l'assessment seul — "
+            f"« {ASK_QUOTE_SEED} » releve du cas mesure, pas de la regle."
+        )
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-12T18:30:01Z", ask_body),
+                c(81, "2026-11-13T09:00:00Z", reply_body),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "REPONDU")
+        self.assertEqual(report.asks[0].proof, 81)
+
+    def test_claim_sharing_vocabulary_is_not_an_answer(self):
+        # Forme mesuree #23384 : un [CLAIMED] qui reprend les chemins de l'ASK
+        # (vocabulaire partage, quote courte) ne repond pas a la question —
+        # la citation FORTE seule referme.
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-03T23:20:48Z",
+                  "[ASK] Arbitrage convention `metadata.papermill.input_path` "
+                  "demande a ai-01 -- souleve par la review Hermes de #23320."),
+                c(81, "2026-11-03T23:46:24Z",
+                  "[CLAIMED] lane myia-po-2028:CoursIA -- paths: "
+                  "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/08-KernelMemory-Hybrid-Search.ipynb"),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "NON REPONDU")
+        self.assertTrue(report.asks[0].gesture_after)
+
+    def test_plain_fleet_reply_without_citation_is_manual_review(self):
+        # Plancher fail-closed : une reponse existe mais ne prouve rien —
+        # ni tratee ni ignoree (#20186).
+        report = mod.analyse_comments(
+            31,
+            [
+                c(80, "2026-11-13T14:15:14Z", ASK_BARE),
+                c(81, "2026-11-14T08:00:00Z",
+                  "Vu sur le dashboard, la decision est en cours."),
+            ],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks[0].status, "MANUAL_REVIEW")
+
+    def test_ask_user_is_excluded_to_the_user_registry(self):
+        # [ASK USER] vit dans le registre des questions user
+        # (user-blocker-signaling.md) — l'ecart est publie, jamais muet.
+        report = mod.analyse_comments(
+            31,
+            [c(80, "2026-11-13T14:15:14Z", "[ASK USER] fermer ou garder le registre ?")],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks, [])
+        self.assertEqual(report.excluded.get("ask-user-registry"), 1)
+
+    def test_bot_ask_is_ignored(self):
+        report = mod.analyse_comments(
+            31,
+            [c(80, "2026-11-13T14:15:14Z", ASK_BARE, author="github-actions[bot]")],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks, [])
+
+    def test_non_lane_ask_is_published_as_excluded(self):
+        # Un [ASK] sous un login externe releve de external-unanswered :
+        # ecart publie pour que le total ne passe pas pour exhaustif.
+        report = mod.analyse_comments(
+            31,
+            [c(80, "2026-11-13T14:15:14Z", ASK_BARE, author="unEtudiant42")],
+            classes=("ask-unanswered",),
+        )
+        self.assertEqual(report.asks, [])
+        self.assertEqual(report.excluded.get("ask-non-lane"), 1)
+
+    def test_classes_scoping_leaves_asks_out(self):
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_BARE)],
+            classes=("user-concern",),
+        )
+        self.assertEqual(report.asks, [])
+        self.assertEqual(report.unresolved, [])
+
+    def test_report_dict_carries_asks_with_tag(self):
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_ADDRESSEE)],
+            classes=("ask-unanswered",),
+        )
+        payload = report.as_dict()
+        self.assertIn("asks", payload)
+        self.assertEqual(payload["asks"][0]["tag"], "ASK c.138 ai-01:CoursIA-2")
+        self.assertEqual(payload["asks"][0]["status"], "NON REPONDU")
+
+    def test_render_counts_asks_and_labels_tag(self):
+        report = mod.analyse_comments(
+            31, [c(80, "2026-11-13T14:15:14Z", ASK_BARE)],
+            classes=("ask-unanswered",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 ask(s)", text)
+        self.assertIn("[ASK]", text)
+
+
+def test_cli_ask_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(80, "2026-11-13T14:15:14Z", ASK_BARE)
+    ])
+    rc = mod.main(["--issues", "31", "--classes", "ask-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["asks_total"] == 1
+    assert payload["asks_unresolved"] == 1
+    assert payload["issues"][0]["asks"][0]["comment_id"] == 80
+    assert payload["issues"][0]["asks"][0]["tag"] == "ASK"
+
+
+def test_cli_ask_only_text_reports_the_open_ask(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(80, "2026-11-13T14:15:14Z", ASK_BARE)
+    ])
+    rc = mod.main(["--issues", "31", "--classes", "ask-unanswered",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 ask(s)" in text
+    assert "NON REPONDU" in text
+
+
+def test_cli_resolved_ask_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(80, "2026-11-12T18:30:01Z", ASK_BARE),
+        c(81, "2026-11-13T09:00:00Z",
+          "[DELIVERED] lane myia-ai-01:CoursIA-2 -- reponse au [ASK] du "
+          "18:30Z : assessment livre, pas d'edition unilaterale."),
+    ])
+    rc = mod.main(["--issues", "31", "--classes", "ask-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["asks_total"] == 1
+    assert payload["asks_unresolved"] == 0
+
+
 if __name__ == "__main__":
     unittest.main()
