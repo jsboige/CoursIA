@@ -4801,6 +4801,53 @@ def _claim_visit_excluding(comments: list[dict],
     return ev.created_at, ((ev.get("marker") or "").upper() or None)
 
 
+# --- #22500 point 3 -- exemption du grain DISPATCHE par le coordinateur ---
+#
+# Le plafond hebdomadaire des EPICs refuse une lane que le coordinateur a
+# dispatchee PAR SON NOM : le claim de dispatch est pose au moment du
+# dispatch (lane-claim-protocol, point 5), et la lane servie se trouve ensuite
+# refusee par le plafond qu'arme la visite d'une AUTRE lane. Le coordinateur a
+# tranche ; le plafond ne peut pas le contredire.
+#
+# Ce qui distingue le claim de dispatch du claim ordinaire : l'AUTEUR. Le
+# coordinateur poste sous SON login (`myia-ai-01`) ; une lane poste sous le
+# login partage (`jsboige`). Le marqueur (`[CLAIMED]`) et le champ `lane` sont
+# identiques dans les deux cas -- l'auteur est le seul discriminant.
+#
+# L'exemption est PERSONNELLE : elle vaut pour la lane NOMMEE par le claim de
+# dispatch, jamais pour les autres. Et elle ne se donne pas : une lane qui
+# pose elle-meme son `[CLAIMED]` ne s'exempte pas du plafond.
+
+DISPATCH_CLAIM_AUTHORS = frozenset({"myia-ai-01"})
+DISPATCH_CLAIM_MARKERS = frozenset({"CLAIMED", "CLAIMED-AMEND"})
+
+
+def _coordinator_dispatch_claim(comments: list[dict] | None,
+                                 my_lane: str | None,
+                                 tracked: list[str] | None = None) -> dict | None:
+    """Le claim de dispatch du coordinateur qui nomme `my_lane`, sinon None.
+
+    Un claim de dispatch = un marqueur `[CLAIMED]` / `[CLAIMED-AMEND]` dont la
+    ligne nomme la lane servie, pose par le coordinateur (login dans
+    `DISPATCH_CLAIM_AUTHORS`). La grammaire est celle de l'organe
+    (`_sort_events`), jamais une regex propre : un claim de lane pose par la
+    lane elle-meme sous le login partage n'est pas un claim de dispatch.
+    """
+    if not my_lane:
+        return None
+    payload = {"comments": [c for c in (comments or []) if isinstance(c, dict)]}
+    for ev in _sort_events(payload, tracked=tracked):
+        if (ev.get("marker") or "").upper() not in DISPATCH_CLAIM_MARKERS:
+            continue
+        if ev.get("lane") != my_lane:
+            continue
+        if (ev.get("author") or "") not in DISPATCH_CLAIM_AUTHORS:
+            continue
+        return {"author": ev.get("author"), "created_at": ev.get("created_at"),
+                "url": ev.get("url"), "marker": ev.get("marker")}
+    return None
+
+
 def epic_visit_cap(payload: dict, *, now: datetime | None = None,
                    parent_loader=None,
                    pool_loader=None,
@@ -4887,6 +4934,27 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
             continue  # exemption : une consolidation REVIENT souvent, c'est son travail
         capped.append((epic, body))
     if not capped:
+        verdict["error"] = "; ".join(errors) or None
+        return verdict
+
+    # (2 bis) Le grain a ete DISPATCHE par le coordinateur a CETTE lane : le
+    # plafond hebdomadaire ne s'y applique pas. La dispense est PERSONNELLE
+    # (la lane nommee par le claim de dispatch) et elle se LIT dans le
+    # rapport -- le plafond n'est pas « respecte », il est ecarte par un
+    # arbitrage. Elle est posee AVANT le pool : une dispense connue ne se
+    # paie pas.
+    dispatch = None
+    for _epic, _body in capped:
+        dispatch = _coordinator_dispatch_claim(
+            _body.get("comments"), my_lane)
+        if dispatch:
+            break
+    if dispatch:
+        verdict["dispatch"] = dispatch
+        verdict["skipped"] = (
+            "the coordinator dispatched this grain to the calling lane "
+            "-- the weekly EPIC cap does not apply to it"
+        )
         verdict["error"] = "; ".join(errors) or None
         return verdict
 
@@ -5657,6 +5725,10 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "epic_visit_cap_calls": epic_cap_verdict.get("calls"),
         "epic_visit_cap_error": epic_cap_verdict.get("error"),
         "epic_visit_cap_skipped": epic_cap_verdict.get("skipped"),
+        # La dispense de plafond eventuelle (grain dispatche par le
+        # coordinateur a la lane qui interroge) : elle se lit dans le
+        # rapport, comme le reste du verdict.
+        "epic_visit_cap_dispatch": epic_cap_verdict.get("dispatch"),
         # #14187 -- free-paths counter: files in the caller's `--paths`
         # that intersect NO blocker. A lane with `--paths 'knot_lean/**'`
         # blocked by 3 lanes whose scopes intersect 3 of 12 sub-files can
