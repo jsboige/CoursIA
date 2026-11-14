@@ -20,9 +20,9 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 287 |
+| Notebooks | 288 |
 | PRODUCTION | 0 |
-| BETA | 257 |
+| BETA | 258 |
 | ALPHA | 30 |
 
 ## GenAI/00-GenAI-Environment (7 notebooks)
@@ -284,7 +284,7 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 7 | [Red team au-delà de l'injection — jailbreaks,…](../../MyIA.AI.Notebooks/GenAI/Security/RedTeam/RedTeam-Beyond-Injection.ipynb) | BETA | Oui |
 | 8 | [Surface d'attaque des outils MCP — le piège de la…](../../MyIA.AI.Notebooks/GenAI/Security/Tooling/Tooling-MCP-Attack-Surface.ipynb) | BETA | Non |
 
-## GenAI/SemanticKernel (18 notebooks)
+## GenAI/SemanticKernel (19 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -295,17 +295,18 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 5 | [SK-5-VectorStores : RAG avec Qdrant](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/05-SemanticKernel-VectorStores.ipynb) | BETA | Non |
 | 6 | [SK-6-ProcessFramework : Workflows et Orchestration](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/06-SemanticKernel-ProcessFramework.ipynb) | BETA | Non |
 | 7 | [SK-7-MultiModal : Images, Audio et Vision](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/07-SemanticKernel-MultiModal.ipynb) | BETA | Non |
-| 8 | [SK-8-MCP : Model Context Protocol et Integration](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb) | BETA | Non |
-| 9 | [SK-9-Building-CLR : Interoperabilite Python/.NET via…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/09-SemanticKernel-Building-CLR.ipynb) | BETA | Non |
-| 10 | [SK-10-NotebookMaker : Système Multi-Agents pour…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/10-SemanticKernel-NotebookMaker.ipynb) | BETA | Non |
-| 11 | [Conception Automatique de Notebook par Agents IA](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | BETA | Non |
-| 12 | [SK-11-A2A : le protocole Agent2Agent à côté de MCP](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/11-SemanticKernel-A2A.ipynb) | BETA | Oui |
-| 13 | [Projet Createur de Mail personnalise](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Cr%C3%A9ateur%20de%20mail%20personnalis%C3%A9.ipynb) | BETA | Non |
-| 14 | [Notebook de travail — Titanic: exploration, préparation…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Generated.ipynb) | BETA | Oui |
-| 15 | [Semantic-fleet MultiConnector : router les prompts…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-MultiConnector-Routing.ipynb) | BETA | Non |
-| 16 | [Semantic-fleet : router les prompts par préfixe — le…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-Radix-PromptMatcher.ipynb) | BETA | Oui |
-| 17 | [Notebook de conception de Notebook](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-kernel-AutoInteractive.ipynb) | BETA | Non |
-| 18 | [Jeu de devinette : Père Fouras vs Laurent Jalabert](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-python.ipynb) | BETA | Non |
+| 8 | [SK-8-MCP : Model Context Protocol et Semantic Kernel en…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/08-SemanticKernel-MCP-CSharp.ipynb) | BETA | Non |
+| 9 | [SK-8-MCP : Model Context Protocol et Integration](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/08-SemanticKernel-MCP.ipynb) | BETA | Non |
+| 10 | [SK-9-Building-CLR : Interoperabilite Python/.NET via…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/09-SemanticKernel-Building-CLR.ipynb) | BETA | Non |
+| 11 | [SK-10-NotebookMaker : Système Multi-Agents pour…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/10-SemanticKernel-NotebookMaker.ipynb) | BETA | Non |
+| 12 | [Conception Automatique de Notebook par Agents IA](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/10b-SemanticKernel-NotebookMaker-batch-parameterized.ipynb) | BETA | Non |
+| 13 | [SK-11-A2A : le protocole Agent2Agent à côté de MCP](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/11-SemanticKernel-A2A.ipynb) | BETA | Oui |
+| 14 | [Projet Createur de Mail personnalise](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Cr%C3%A9ateur%20de%20mail%20personnalis%C3%A9.ipynb) | BETA | Non |
+| 15 | [Notebook de travail — Titanic: exploration, préparation…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Generated.ipynb) | BETA | Oui |
+| 16 | [Semantic-fleet MultiConnector : router les prompts…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-MultiConnector-Routing.ipynb) | BETA | Non |
+| 17 | [Semantic-fleet : router les prompts par préfixe — le…](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-fleet-Radix-PromptMatcher.ipynb) | BETA | Oui |
+| 18 | [Notebook de conception de Notebook](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/Semantic-kernel-AutoInteractive.ipynb) | BETA | Non |
+| 19 | [Jeu de devinette : Père Fouras vs Laurent Jalabert](../../MyIA.AI.Notebooks/GenAI/SemanticKernel/fort-boyard-python.ipynb) | BETA | Non |
 
 ## GenAI/Texte (45 notebooks)
 
