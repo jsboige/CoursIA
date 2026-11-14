@@ -199,6 +199,8 @@ Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller pl
 | 02d | [Annexe épistémique — connaissance commune et croyances](GameTheory-02d-Epistemique-Connaissance-Commune-Python.ipynb) | Ce qu'un joueur *sait*, plutôt que ce qu'il joue : modèle à partitions et opérateur `K_i(E)`, vérification des axiomes S5, `CK(E)` comme plus grand point fixe, théorème d'Aumann (1976) sur l'accord impossible vérifié par énumération exhaustive, et l'élimination itérée relue comme conséquence de la connaissance commune de la rationalité | Python | Licence |
 | 02e | IESDS et rationalisabilité — [Python](GameTheory-02e-IESDS-Rationalisation-Python.ipynb) · [C#](GameTheory-02e-IESDS-Rationalisation-CSharp.ipynb) | L'élimination itérée des stratégies dominées : indépendance à l'ordre (mesurée sur 4096 jeux), contre-exemple en dominance faible, admissibilité et rationalisabilité ; le jumeau C# réimplémente les mêmes algorithmes from scratch, dont un simplex à deux phases qui remplace `scipy.linprog` | Python · C# | Licence |
 
+Le carnet 02d existe aussi en [C#](GameTheory-02d-Epistemique-Connaissance-Commune-CSharp.ipynb) : les deux versions énumèrent les partitions, vérifient les propriétés S5 et explorent les priors communs ou distincts.
+
 ### Autour de 03 — géométrie ordinale des jeux
 
 Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace des jeux : murs, distances, déformations, méta-actions. Lire 03c avant 03b et 03f, qui s'appuient sur ses murs ; 03e fait la synthèse.
