@@ -20,12 +20,12 @@ recursion can be argued cell by cell. The level-2 namespace `Conway > Life` is m
 as `Conway_en > Life_en` (level-2 sibling pattern, see `LightCone_en.lean` c.421).
 -/
 
-import Conway.Life
+import Conway.Life_en
 
 namespace Conway_en
-open Conway
+open Conway_en
 namespace Life_en
-open Life
+open Life_en
 
 /-! ## The lexicographic comparator: order axioms -/
 
