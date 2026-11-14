@@ -23,12 +23,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: trading-backtester-tests-${{ github.ref }}
+  group: trading-backtester-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   backtester-tests:
     name: Backtester.Tests (windows-latest, 115 floor)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     runs-on: windows-latest
     timeout-minutes: 20
     env:

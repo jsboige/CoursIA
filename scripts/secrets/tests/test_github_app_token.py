@@ -103,6 +103,36 @@ def test_un_fichier_absent_est_refuse(mod, tmp_path):
         mod._read_private_key(tmp_path / "jamais-cree.pem")
 
 
+# --- cle injectee par le coffre (--key-env) ---------------------------------
+
+def test_une_cle_pem_en_variable_est_acceptee(mod, keypair):
+    """CONTROLE POSITIF : le PEM injecte par `agent_keyring.py run` passe.
+
+    Le coffre rend la valeur sans le saut de ligne final (`set` le retire) :
+    le controle porte sur cette forme-la, pas sur celle du fichier.
+    """
+    pem, _ = keypair
+    env = {"APP_PEM": pem.rstrip("\r\n")}
+    assert "PRIVATE KEY" in mod._read_private_key_env("APP_PEM", env)
+
+
+def test_une_variable_absente_est_refusee(mod):
+    with pytest.raises(mod.ForgeError):
+        mod._read_private_key_env("APP_PEM", {})
+
+
+def test_une_variable_non_pem_est_refusee_sans_recopie(mod):
+    secret = "ghp_ceciEstUnSecretQuiNeDoitPasFuir"
+    with pytest.raises(mod.ForgeError) as err:
+        mod._read_private_key_env("APP_PEM", {"APP_PEM": secret})
+    assert secret not in str(err.value)
+
+
+def test_cle_fichier_et_cle_variable_s_excluent(mod):
+    with pytest.raises(SystemExit):
+        mod.main(["--app-id", "1", "--key", "a.pem", "--key-env", "APP_PEM"])
+
+
 def test_sans_installation_ni_repo_ni_owner_c_est_un_refus(mod):
     with pytest.raises(mod.ForgeError):
         mod.resolve_installation("jwt", None, None)
@@ -189,7 +219,18 @@ def test_le_credential_ne_touche_jamais_argv(mod):
         for alias in getattr(n, "names", [])
     }
     assert "subprocess" not in importes
-    assert "os" not in importes, "plus besoin de l'environnement : plus de sous-processus"
+    # `os` est importe depuis --key-env (#17437) pour LIRE une variable que le
+    # coffre injecte ; la propriete gardee reste « aucun sous-processus ». Elle
+    # se teste directement sur les appels, plus par l'absence de l'import.
+    lanceurs = {
+        n.attr
+        for n in ast.walk(arbre)
+        if isinstance(n, ast.Attribute)
+        and isinstance(n.value, ast.Name) and n.value.id == "os"
+        and (n.attr in {"system", "popen", "startfile"}
+             or n.attr.startswith(("exec", "spawn", "posix_spawn", "fork")))
+    }
+    assert not lanceurs, f"lancement de processus via os : {sorted(lanceurs)}"
 
 
 def test_une_panne_reseau_rend_unreachable_pas_defect(mod, monkeypatch):

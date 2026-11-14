@@ -261,7 +261,19 @@ for proc in "${INTERFERING[@]}"; do
       count="$pgrep_output"
     else
       pgrep_output="$(pgrep -c "$proc" 2>/dev/null || true)"
-      [[ "$pgrep_output" =~ ^[0-9]+$ ]] && count="$pgrep_output"
+      if [[ "$pgrep_output" =~ ^[0-9]+$ ]]; then
+        count="$pgrep_output"
+      else
+        # Le pgrep BSD de macOS ne fournit pas -c : compter ses PID exacts.
+        # Une erreur de commande ne doit pas être interprétée comme un PID.
+        if pgrep_output="$(pgrep -x "$proc" 2>/dev/null)"; then
+          count="$(printf '%s\n' "$pgrep_output" | awk '
+            /^[0-9]+$/ { n++; next }
+            { invalid=1 }
+            END { if (!invalid) print n+0 }
+          ')"
+        fi
+      fi
     fi
   fi
   if [[ "$count" =~ ^[0-9]+$ ]] && (( count > 0 )); then

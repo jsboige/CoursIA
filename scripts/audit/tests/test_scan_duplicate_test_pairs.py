@@ -293,6 +293,8 @@ def test_retroactive_control_sees_third_pair_pre_consolidation(tmp_path):
     result = scanner.scan(tmp_path)
     pairs = _pairs_by_module(result)
     for module in (
+        # T3-c (#25366) : l arbre HISTORIQUE extrait ci-dessous porte le module
+        # a la racine de scripts/ -- chemin d epoque, pas chemin courant.
         "scripts/extract_pptx_titles.py",
         "scripts/extract_slidev_titles.py",
     ):
@@ -314,7 +316,7 @@ def test_current_tree_extract_pair_stays_consolidated():
     """
     result = scanner.scan(REPO_ROOT)
     modules_in_pairs = {pair["module"] for pair in result["pairs"]}
-    assert "scripts/extract_pptx_titles.py" not in modules_in_pairs
+    assert "scripts/notebook_tools/extract_pptx_titles.py" not in modules_in_pairs
     assert "scripts/extract_slidev_titles.py" not in modules_in_pairs
 
 
