@@ -127,7 +127,22 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    #
+    # T-L (#25510) : ce job est un job REQUIS -- tant qu'il n'a pas de verdict,
+    # `main` n'est pas verifie. Il etait route sur le meme pool que les PRs
+    # (`coursia-ephemeral`), donc il attendait derriere elles (mesure du
+    # 2026-11-12 : plus de 27 minutes en file, 31 runners sur 31 occupes).
+    # Il vise desormais le slot RESERVE (`coursia-main`) sur un push, et le
+    # pool PR sinon -- repli ENUMERE, exige par
+    # `scripts/ci/check_self_hosted_runner_policy.py` (forme auditee : jeu de
+    # labels + garde `push` + repli ; le jeu seul, ou le jeu sans garde, ou
+    # le jeu sans repli sont refuses).
+    # La garde same-repo ci-dessous reste obligatoire : le repli est
+    # auto-heberge, donc une PR de fork ne doit pas l'atteindre.
+    # Le merge de ce routage suppose le slot DEPLOYE (`--apply` du script de
+    # creation) : sans runner `coursia-main`, le job de `main` attendrait un
+    # runner inexistant. Ordre : deployer le slot, puis merger.
+    runs-on: ${{ (github.event_name == 'push') && fromJSON('["self-hosted","coursia-main","coursia-linux"]') || fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
     # mur du JOB (started_at -> completed_at du job nomme exactement
