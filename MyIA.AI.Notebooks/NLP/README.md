@@ -6,6 +6,8 @@ Comment transformer un texte en objets que l'on peut analyser, comparer ou class
 
 Le parcours s'adresse aux étudiants et enseignants connaissant Python et les probabilités élémentaires. Le calcul matriciel et les gradients deviennent utiles pour les représentations et les modèles appris ; les carnets en explicitent les opérations. Les expériences fonctionnent sur CPU, sans clé d'API. Le [support de cours TAL](../../slides/09-traitement-automatique-langues/slides.md) situe ces fondations dans le passage aux modèles de langage modernes.
 
+**Une série plate.** Tous les carnets vivent à la racine, sans dossier intermédiaire : ils tracent un seul arc du mot aux modèles de langage, la numérotation continue ordonne la progression, et les approfondissements vivent dans les carnets eux-mêmes plutôt que dans des compagnons séparés. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
+
 ## Comment lire ce README — Découverte
 
 Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) permet de choisir sa profondeur de lecture.
