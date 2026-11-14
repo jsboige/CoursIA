@@ -93,10 +93,23 @@ def validate_prerequisite_acyclicity(graph: Graph) -> None:
 
 def _path_labels(graph: Graph, notebook: URIRef) -> list[str]:
     series = graph.value(notebook, VOCAB.inSeries)
-    subsection = graph.value(notebook, VOCAB.inSubseries)
+    subsections = list(graph.objects(notebook, VOCAB.inSubseries))
+    if len(subsections) > 1:
+        raise ValueError(f"plusieurs sous-séries pour le carnet {notebook}")
+    subsection = subsections[0] if subsections else None
     labels = [_label(graph, series)] if series is not None else []
-    if subsection is not None:
-        labels.append(_label(graph, subsection))
+    ancestors = []
+    visited = set()
+    while subsection is not None:
+        if subsection in visited:
+            raise ValueError(f"cycle de sous-séries : {subsection}")
+        visited.add(subsection)
+        ancestors.append(_label(graph, subsection))
+        parents = list(graph.objects(subsection, VOCAB.partOfSubseries))
+        if len(parents) > 1:
+            raise ValueError(f"plusieurs parents de sous-série pour {subsection}")
+        subsection = parents[0] if parents else None
+    labels.extend(reversed(ancestors))
     labels.append(_label(graph, notebook))
     return labels
 

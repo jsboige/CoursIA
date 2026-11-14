@@ -283,3 +283,7 @@ Une application possible est de reprendre le benchmark 18 avec un solveur hybrid
 Les carnets reprennent notamment des projets étudiants consacrés à Norvig et sa variante BitArray (`Sudoku.Norvig`, `Sudoku.NorvigBitArray`), au recuit (`Sudoku.SimulatedAnnealing`), aux stratégies humaines (`Sudoku.Human`), aux réseaux (`Sudoku.NeuralNetwork`), au PSO (`Sudoku.PSO`), aux CSP (`Sudoku.CspAima`), à la coloration (`Sudoku.GraphColoring`), à Choco (`Sudoku.ChocoSolvers`) et aux LLM (`Sudoku.LLM-ChatGPTenzin`). Les carnets explicitent les adaptations et les outils utilisés.
 
 [Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md) · [Licence](../../LICENSE)
+
+### Audit des corpus en C#
+
+[Sudoku-20 — Audit des corpus en C#](Sudoku-20-CorpusAudit-CSharp.ipynb) accompagne la [version Python](Sudoku-20-CorpusAudit-Python.ipynb) : il porte en BCL la propagation de Norvig et le comptage plafonné, sur les mêmes trois corpus.
