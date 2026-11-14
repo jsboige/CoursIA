@@ -30,6 +30,7 @@ formalisées ici.
 |---------|---------|
 | `Discrepancy/Basic.lean` | définitions (`IsColoring`, `discrepancy`, `degree`, `maxDegree`), 3 lemmes élémentaires, `BeckFialaConjecture` (`O(√k)`), cible `BeckFialaClassic` (`disc ≤ 2k − 1`) |
 | `Discrepancy/Komlos.lean` | `KomlosConjecture` (`O(1)`, colonnes unitaires), `BansalJiangLargeDegree` (`k ≥ log² n`), `KomlosBansalJiangWeak` (forme concrète affaiblie), `komlos_oracle_imp_beck_fiala_regular` (probe #15944 **PROUVÉ** : oracle Komlós réel ⇒ Beck–Fiala cas régulier, `disc ≤ 2⌈C⌉₊√k`) ; voie élémentaire découpée en boutes `k1..k5` |
+| `Discrepancy/Komlos/GridApproximation.lean` | Pont k5 : toute borne uniforme hypothétique sur les grilles à dénominateur commun et colonnes de norme au plus 1 s'étend aux matrices réelles avec la même constante ; le corollaire fournit une coloration. La borne sur grille elle-même reste à démontrer. |
 | `Discrepancy/Kernel.lean` | brique b1 — double comptage dimensionnel `card_dangerous_lt_card_floating` + direction de noyau `exists_dangerous_kernel_vec` |
 | `Discrepancy/Partial.lean` | brique b2 — invariant de coloration partielle `frozen_line_sum_le` (lignes figées ≤ 2k−1) |
 | `Discrepancy/Progress.lean` | brique b3 — lemme de progrès `exists_step_hits_boundary` (≥ 1 flottant se fige par phase) |
