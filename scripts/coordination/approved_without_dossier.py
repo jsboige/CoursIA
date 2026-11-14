@@ -312,6 +312,7 @@ def classify(pr: dict, probes: dict, runner=None, gh_env=None) -> tuple[str, lis
       b0        : {"blocked": bool, "blocking": [...]}
       checks    : {"green": bool, "reds": [...]}
       dwell     : {"ok": bool | None, "message": str}
+      lean      : {"reason": str | None} (mur Lean #24989)
       merge_state: str (deja dans `pr["merge_state"]`)
 
     `unstable` n'est pas un refus automatique (#25059) : la decision est
@@ -346,6 +347,13 @@ def classify(pr: dict, probes: dict, runner=None, gh_env=None) -> tuple[str, lis
     dwell = probes.get("dwell") or {}
     if dwell.get("ok") is False:
         causes.append("dwell")
+
+    # Le mur Lean (#24989) porte son propre prefixe `lean:` dans le motif
+    # rendu par le canon (`lean:no-local-build-attestation`,
+    # `lean:local-build-attestation-unverifiable`).
+    lean = probes.get("lean") or {}
+    if lean.get("reason"):
+        causes.append(str(lean["reason"]))
 
     return ("WAITING", causes) if causes else ("CHAINABLE", [])
 
@@ -428,10 +436,17 @@ def probe_checks(pr: int, head: str) -> dict:
         name for name, leg in latest.items()
         if (leg or {}).get("conclusion") in RED_CONCLUSIONS
     )
-    residual = data.get("residual_reds") or []
-    reds += sorted(
-        r.get("name") or "?" for r in residual if isinstance(r, dict)
-    )
+    # Un rouge residuel ne compte que si sa jambe est ABSENTE du pli
+    # latest-wins : une tentative plus recente du meme nom la supersede --
+    # verte, le rouge est perime (#24743 : deux rouges des 10-11/11 etaient
+    # des tentatives supersedees de jambes repassees vertes ensuite, et la
+    # sonde rendait rouge une PR dont le pli etait 100 % vert) ; rouge, la
+    # jambe est deja comptee par la boucle ci-dessus.
+    residual_only = sorted({
+        (r.get("name") or "?")
+        for r in (data.get("residual_reds") or []) if isinstance(r, dict)
+    } - set(latest))
+    reds += residual_only
     return {"green": not reds, "reds": reds}
 
 
@@ -446,6 +461,28 @@ def probe_dwell(pr: int, head: str, repo: str) -> dict:
     except Exception as exc:  # noqa: BLE001 -- un organe muet ne deroge pas
         return {"ok": None, "message": "merge_dwell: {}".format(exc)}
     return {"ok": ok, "message": message}
+
+
+def probe_lean(pr: int, head: str, runner, gh_env) -> dict:
+    """Etape 2bis du canon (#24989), par delegation au predicat de merge_ready.
+
+    Une PR qui touche du Lean (``.lean``, ``lakefile.*``, ``lean-toolchain``,
+    ``lake-manifest.json``) exige une attestation de ``lake build`` local
+    posee par le coordinateur et couvrant la tete -- le vert de la CI ne la
+    remplace pas (regle HARD ``lean-merge-discipline.md`` S1). Le verdict est
+    celui de ``merge_ready.lean_build_attestation_reason``, jamais une copie
+    locale ; une PR qui ne touche pas de Lean rend ``None`` et ne coute qu'un
+    ``gh pr view``. Sans runner, la vue n'est pas lisible : fail-closed nomme.
+    """
+    if runner is None:
+        return {"reason": "lean:not-measured"}
+    try:
+        view = merge_ready.fetch_pr_view(runner, pr, gh_env)
+        reason = merge_ready.lean_build_attestation_reason(
+            view, head, runner, gh_env)
+    except Exception:  # noqa: BLE001 -- un organe muet ne deroge pas
+        return {"reason": "lean:local-build-attestation-unreadable"}
+    return {"reason": reason}
 
 
 def probe_merge_state_rest(repo: str, pr: int) -> "str | None":
@@ -566,6 +603,28 @@ def render(repo: str, rows: list[dict], approver: str) -> str:
     return "\n".join(lines)
 
 
+def parse_prs_filter(text: str) -> set[int]:
+    """`"12,34"` -> {12, 34} ; leve ValueError sur un token non numerique.
+
+    Un verdict cible ne doit pas payer les probes du pool entier (mesure
+    14/11 : ~6-8 min en REST pour trois PRs) : le filtre borne la PASSE aux
+    numeros nommes, l'enumeration reste ce qu'elle est (3 points GraphQL).
+    """
+    wanted: set[int] = set()
+    for token in text.split(","):
+        token = token.strip()
+        if not token:
+            continue
+        try:
+            wanted.add(int(token))
+        except ValueError:
+            raise ValueError(
+                "numero de PR non numerique: {!r}".format(token))
+    if not wanted:
+        raise ValueError("aucun numero de PR dans le filtre")
+    return wanted
+
+
 def main(argv: "list[str] | None" = None) -> int:
     parser = argparse.ArgumentParser(
         description="PRs approuvees (tete ou couvrante), vertes, chainables "
@@ -575,12 +634,24 @@ def main(argv: "list[str] | None" = None) -> int:
                         help="approbateur dont la review fait foi")
     parser.add_argument("--limit", type=int, default=None,
                         help="borne le nombre de PRs lues (diagnostic)")
+    parser.add_argument("--prs", default=None,
+                        help="borne la passe aux PRs numerotees, separees "
+                             "par des virgules (ex: 12,34) -- verdict cible "
+                             "sans payer les probes du pool entier")
     parser.add_argument("--rest", action="store_true",
                         help="enumere en REST seul (porte GraphQL videe)")
     parser.add_argument("--no-dwell", action="store_true",
                         help="saute la probe DWELL (plus rapide, moins sur)")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+
+    prs_filter: "set[int] | None" = None
+    if args.prs:
+        try:
+            prs_filter = parse_prs_filter(args.prs)
+        except ValueError as exc:
+            print("ERROR: --prs: {}".format(exc), file=sys.stderr)
+            return EXIT_ERROR
 
     runner = _runner_for(args.repo)
     if args.rest and runner is None:
@@ -599,6 +670,9 @@ def main(argv: "list[str] | None" = None) -> int:
               file=sys.stderr)
         return EXIT_ERROR
 
+    if prs_filter is not None:
+        prs = [p for p in prs if p.get("number") in prs_filter]
+
     rows: list[dict] = []
     for item in screen(prs, args.login, runner, gh_env):
         pr = item["pr"]
@@ -615,6 +689,7 @@ def main(argv: "list[str] | None" = None) -> int:
                           if args.no_dwell
                           else probe_dwell(pr["number"], pr["head"],
                                            args.repo)),
+                "lean": probe_lean(pr["number"], pr["head"], runner, gh_env),
             }
             status, causes = classify(pr, probes, runner, gh_env)
         rows.append({

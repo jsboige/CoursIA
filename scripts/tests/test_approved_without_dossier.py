@@ -459,3 +459,168 @@ def test_probe_checks_ne_compte_pas_skipped_neutral_rouges(monkeypatch):
     result = awd.probe_checks(7, HEAD)
     assert result["green"] is False
     assert result["reds"] == ["Slow", "Tests"]
+
+
+# --- 6bis. probe_checks : un rouge residuel supersede ne compte pas (#24743) ---
+
+def test_probe_checks_residual_supersede_par_vert_ne_compte_pas(monkeypatch):
+    """Un rouge RESIDUEL dont la jambe est VERTE au pli latest-wins ne
+    compte pas : c'est le faux rouge #24743 -- la sonde rendait rouge une
+    PR dont les deux plis (latest et residual) etaient verts, parce que
+    `residual_reds` etait somme sans regarder l'etat de la jambe au pli."""
+    payload = {
+        "head": HEAD,
+        "latest": {
+            "Always-on guards": {"conclusion": "success"},
+            "PR gate": {"conclusion": "success"},
+        },
+        "residual_reds": [
+            {"name": "Always-on guards", "conclusion": "failure"},
+            {"name": "PR gate", "conclusion": "failure"},
+        ],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    result = awd.probe_checks(7, HEAD)
+    assert result["green"] is True
+    assert result["reds"] == []
+
+
+def test_probe_checks_residual_sans_jambe_au_pli_compte(monkeypatch):
+    """Un rouge residuel dont le nom est ABSENT du pli latest-wins reste un
+    rouge : le pli n'a aucune tentative plus recente qui le supersede."""
+    payload = {
+        "head": HEAD,
+        "latest": {"Build": {"conclusion": "success"}},
+        "residual_reds": [{"name": "Legacy leg", "conclusion": "failure"}],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    result = awd.probe_checks(7, HEAD)
+    assert result["green"] is False
+    assert result["reds"] == ["Legacy leg"]
+
+
+def test_probe_checks_residual_rouge_au_pli_compte_une_fois(monkeypatch):
+    """Une jambe rouge au pli ET presente en residuel est comptee une seule
+    fois : le residuel ne double pas le rouge vivant."""
+    payload = {
+        "head": HEAD,
+        "latest": {"Tests": {"conclusion": "failure"}},
+        "residual_reds": [{"name": "Tests", "conclusion": "failure"}],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    result = awd.probe_checks(7, HEAD)
+    assert result["reds"] == ["Tests"]
+
+
+# --- 7. mur Lean (#24989) : delegation au predicat canonique ---------------
+
+
+def test_probe_lean_sans_runner_est_fail_closed_nomme():
+    """Sans runner, la vue n'est pas lisible : la cause est nommee, jamais
+    supposee verte (mirror de `unstable-not-measured`)."""
+    assert awd.probe_lean(7, HEAD, None, None) == {
+        "reason": "lean:not-measured"}
+
+
+def test_probe_lean_delegue_au_predicat_canonique(monkeypatch):
+    """Le verdict est celui de merge_ready (jamais une copie locale) : la
+    sonde rend le motif du canon tel quel, prefixe `lean:` compris."""
+    seen = {}
+
+    def fake_view(runner, pr, gh_env):
+        seen["pr"] = pr
+        return {"number": pr, "files": [], "comments": []}
+
+    def fake_reason(view, head, runner, gh_env):
+        seen["head"] = head
+        return "lean:no-local-build-attestation"
+
+    monkeypatch.setattr(awd.merge_ready, "fetch_pr_view", fake_view)
+    monkeypatch.setattr(awd.merge_ready,
+                        "lean_build_attestation_reason", fake_reason)
+    result = awd.probe_lean(12, HEAD, object(), None)
+    assert result == {"reason": "lean:no-local-build-attestation"}
+    assert seen == {"pr": 12, "head": HEAD}
+
+
+def test_probe_lean_pr_sans_lean_ne_bloque_pas(monkeypatch):
+    monkeypatch.setattr(awd.merge_ready, "fetch_pr_view",
+                        lambda runner, pr, gh_env: {"number": pr})
+    monkeypatch.setattr(
+        awd.merge_ready, "lean_build_attestation_reason",
+        lambda view, head, runner, gh_env: None)
+    assert awd.probe_lean(12, HEAD, object(), None) == {"reason": None}
+
+
+def test_probe_lean_vue_illisible_rend_unreadable(monkeypatch):
+    def boom(runner, pr, gh_env):
+        raise RuntimeError("gh pr view rc=1")
+
+    monkeypatch.setattr(awd.merge_ready, "fetch_pr_view", boom)
+    assert awd.probe_lean(12, HEAD, object(), None) == {
+        "reason": "lean:local-build-attestation-unreadable"}
+
+
+def test_classify_lean_sans_attestation_rend_waiting_nomme():
+    probes = dict(GREEN_PROBES)
+    probes["lean"] = {"reason": "lean:no-local-build-attestation"}
+    status, causes = awd.classify(_pr(), probes)
+    assert status == "WAITING"
+    assert causes == ["lean:no-local-build-attestation"]
+
+
+def test_classify_lean_verifie_ne_bloque_pas():
+    probes = dict(GREEN_PROBES)
+    probes["lean"] = {"reason": None}
+    assert awd.classify(_pr(), probes) == ("CHAINABLE", [])
+
+
+# --- 8. mode --prs : verdict cible sans payer les probes du pool ------------
+
+
+def test_parse_prs_filter_numerotes_et_espaces():
+    assert awd.parse_prs_filter(" 12 , 34 ") == {12, 34}
+    assert awd.parse_prs_filter("7") == {7}
+    assert awd.parse_prs_filter("7,7,7") == {7}
+
+
+def test_parse_prs_filter_refuse_le_non_numerique():
+    for bogus in ("abc", "12,abc", ""):
+        try:
+            awd.parse_prs_filter(bogus)
+        except ValueError:
+            continue
+        raise AssertionError("filtre accepte: {!r}".format(bogus))
+
+
+def test_main_prs_ne_proble_que_les_numerotees(monkeypatch, capsys):
+    """Le filtre borne la PASSE : trois candidates a l'approbation, une
+    seule numerotee par --prs, la sonde ne tourne que pour elle (mesure
+    14/11 : une passe plein-pool coute ~6-8 min en REST pour rien)."""
+    pool = [
+        _pr(number=1, reviews=[_review()]),
+        _pr(number=2, reviews=[_review()]),
+        _pr(number=3, reviews=[_review()]),
+    ]
+    probed: list[int] = []
+    monkeypatch.setattr(awd, "fetch_prs", lambda repo, limit=None: list(pool))
+    monkeypatch.setattr(awd, "probe_b0",
+                        lambda pr: (probed.append(pr)
+                                    or {"blocked": False, "blocking": []}))
+    monkeypatch.setattr(
+        awd, "probe_checks",
+        lambda pr, head: (probed.append(pr)
+                          or {"green": True, "reds": []}))
+    monkeypatch.setattr(awd, "probe_dwell",
+                        lambda pr, head, repo: {"ok": True, "message": "ok"})
+    monkeypatch.setattr(awd, "probe_lean",
+                        lambda pr, head, runner, gh_env: {"reason": None})
+    rc = awd.main(["--prs", "2", "--json"])
+    assert rc == awd.EXIT_OK
+    assert sorted(probed) == [2, 2]  # b0 + checks, PR 2 uniquement
+    out = json.loads(capsys.readouterr().out)
+    assert [r["pr"] for r in out["rows"]] == [2]
+    assert out["rows"][0]["status"] == "CHAINABLE"
