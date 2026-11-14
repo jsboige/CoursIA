@@ -1,0 +1,88 @@
+name: GenAI-Texte-Tests
+
+# Câblage CI du test du cœur Structured Outputs (#25018, point 4 de
+# l'acceptance pli 0 v2) : test_structured_outputs_core.py (livré sur main
+# par #25248) n'était référencé par aucun workflow — grep
+# `test_structured_outputs` dans .github/workflows/ et scripts/ci/ : 0 hit
+# (mesuré par le secrétariat le 2026-11-11).
+#
+# Pattern famille #13746 (même sémantique que genai-helpers-tests.yml /
+# gametheory-tests.yml / ict-tests.yml) : trigger path-réactif propre à la
+# famille, floor de collecte, une famille par PR.
+#
+# Bornes mesurées firsthand (worktree f2611e3239d, 2026-11-12) :
+#   - `pytest --collect-only -q MyIA.AI.Notebooks/GenAI/Texte` =
+#     **24 tests collected** (test_structured_outputs_core.py seul fichier
+#     de test du répertoire).
+#   - Deps réelles du test : httpx, uvicorn (serveur loopback), pytest,
+#     pydantic ; via structured_outputs_core : openai, jsonschema ; via
+#     structured_outputs_service : fastapi. Aucun appel réseau externe —
+#     le loopback et les clients injectés couvrent tout (SimpleNamespace).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/Texte/**'
+      - '.github/workflows/genai-texte-tests.yml'
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.AI.Notebooks/GenAI/Texte/**'
+      - '.github/workflows/genai-texte-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: genai-texte-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  genai-texte-tests:
+    name: GenAI Texte pytest (24 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
+    # Forme hybride de débordement (#22461 phase A) -- PR même-dépôt ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; sinon ubuntu-latest.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    env:
+      # Floor mesuré firsthand -- worktree f2611e3239d, 2026-11-12.
+      # Quand des tests sont retirés INTENTIONNELLEMENT, ajuster cette valeur
+      # dans la même PR (le message d'erreur du guard la nomme).
+      GENAI_TEXTE_TEST_FLOOR: 24
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.18'
+          cache: pip
+
+      - name: Install deps (pytest httpx uvicorn pydantic openai jsonschema fastapi)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest httpx uvicorn pydantic openai jsonschema fastapi
+
+      - name: Run GenAI Texte tests
+        run: |
+          pytest MyIA.AI.Notebooks/GenAI/Texte --tb=short -v
+
+      # Collection floor-guard (même sémantique que genai-helpers-tests.yml :
+      # détecter pytest vert avec N tests silencieusement disparus du chemin
+      # de collecte). Pas de `|| true` : le grep doit pouvoir échouer.
+      - name: Collection floor-guard (24)
+        if: always()
+        run: |
+          COLLECTED=$(pytest MyIA.AI.Notebooks/GenAI/Texte --collect-only -q 2>&1 | grep -oE '[0-9]+ tests? collected' | grep -oE '[0-9]+' | head -1)
+          if [ -z "$COLLECTED" ]; then
+            echo "::error::Le collect-only n'a renvoyé aucune ligne 'N tests collected' -- la collecte a planté, c'est probablement une panne d'infra (cf #9387)."
+            exit 1
+          fi
+          if [ "$COLLECTED" -lt "$GENAI_TEXTE_TEST_FLOOR" ]; then
+            echo "::error::Collecte en recul : $COLLECTED < floor $GENAI_TEXTE_TEST_FLOOR -- des tests ont disparu du chemin de collecte."
+            exit 1
+          fi
+          echo "Collecte OK : $COLLECTED >= floor $GENAI_TEXTE_TEST_FLOOR"

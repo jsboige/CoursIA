@@ -88,6 +88,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/lane-claim-detail.md](reference/lane-claim-detail.md) | Lane claim protocol — détail (référencé depuis .claude/rules/lane-claim-protocol.md) |
 | [reference/notebook-quantitative-prose.md](reference/notebook-quantitative-prose.md) | Valeurs quantitatives en prose de notebook — détail de la règle C.5 |
 | [reference/picker-delaisse-detail.md](reference/picker-delaisse-detail.md) | Picker delaisse — verification FIRSTHAND (detail) |
+| [reference/tapis-rapide.md](reference/tapis-rapide.md) | Tapis rapide (#22983) — voie légère du tirage des grains : la commande, les écarts, les poids, les non-reprises de l'ancienne voie |
 | [reference/prevalidation-dossier-order-detail.md](reference/prevalidation-dossier-order-detail.md) | Prévalidation — pourquoi l'ordre compte, et ce que la tête vient périmer |
 | [reference/sota-verdicts-detail.md](reference/sota-verdicts-detail.md) | SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication |
 | [reference/submodule-maintenance-detail.md](reference/submodule-maintenance-detail.md) | Sous-modules — détail : état vérifié, incidents et mesures datées |
@@ -118,7 +119,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/backtester-e2-cadrage.md → transients/2026-08-23-…](transients/2026-08-23-backtester-e2-cadrage.md) | Cadrage Option C du port E2 — décision consommée (port livré, PR #15510, #7357 fermée CLOSE_OK 2026-09-18) — déplacé en lane transiente ; les choix de libs vivent dans le README `MyIA.Trading.Backtester` (vague 4 #14623) |
 | [reference/backtester-e2-svm-kernel.md → transients/2026-08-23-…](transients/2026-08-23-backtester-e2-svm-kernel.md) | Substitution du SVM à noyau dans le port E2 — verdict SOTA-OK consommé (#12545, cadrage #12541) — déplacé en lane transiente ; le verdict et la disposition upstream `CalibrateComplexity` (Lean#40, divergence codifiée #14370) vivent dans le README `MyIA.Trading.Backtester` (vague 4 #14623) |
 | [reference/adk-migration-2-eval.md → transients/2026-09-13-…](transients/2026-09-13-adk-migration-2-eval.md) | Audit migration ADK 2.0 (verdict historique, #14498/#13925 closes) — déplacé en lane transiente ; le noyau durable (lignée google-adk, APIs consommées par `adk_runtime.py`) vit dans le README 07-Agent-Orchestration (vague 4 #14623) |
-| [reference/agent-cloud-agnosticisme.md](reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme — rôle et circulation |
+| [reference/agent-cloud-agnosticisme.md](reference/agent-cloud-agnosticisme.md) | Session cloud d'agnosticisme — rôle et circulation ; protocole commun des contributions cloud hors flotte (agnosticisme, marathon de parité, audit) : lots, une classe par lot, coût CI, reprise et relecture par la flotte (#25510) |
 | [reference/bot-review-harness.md](reference/bot-review-harness.md) | Bot Review Harness — pointer externe |
 | [reference/branch-cleanup-manifest.README.md](reference/branch-cleanup-manifest.README.md) | Manifeste de préservation des branches distantes — issue #14238 |
 | [reference/shared-keyring-myia-keys.md](reference/shared-keyring-myia-keys.md) | Trousseau partagé MyIA-Keys — organe d'accès, bootstrap par machine, empreinte de preuve |
@@ -284,7 +285,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-mapping/README.md](curriculum/aima-mapping/README.md) | AIMA : tables des matières 3e et 4e en données (ancre PDF par ligne), correspondance section → phase → carnets → compétences, sections sans couverture, ce qui dépasse le livre, et écarts de découpage entre les deux éditions |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
-| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + IIT (cœur), avec export SKOS/OWL |
+| [curriculum/taxonomy/README.md](curriculum/taxonomy/README.md) | Schéma de taxonomie pédagogique et tranches Compression + Probas (Infer) + GameTheory (cœur) + Search (Part1-Foundations) + IIT (cœur) + Z3-Linq2Z3, avec export SKOS/OWL et validation globale `--all` |
 | [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
 | [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 | [curriculum/qualification/README.md](curriculum/qualification/README.md) | Qualification des carnets — échelle de difficulté et dimension recherche, séries pilotes qualifiées valeur par valeur (#24996) |
