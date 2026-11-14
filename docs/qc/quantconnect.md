@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 # QuantConnect (QC) - Configuration et règles
 
@@ -273,7 +273,7 @@ Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 
 - Groupe les insights par `source_model`
 - Alloue une poche de capital par strategie via dict `alpha_allocations`
-- Mode intent par defaut (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759)
+- Mode intent **opt-in** (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759). Le défaut est `additive=False` (#20188) : chaque consommateur écrit son mode explicitement, donc le défaut du canonique n'est atteint par aucun d'eux et le remettre ne change le comportement d'aucun projet
 - Supporte branches weight-hint ET equal-weight
 - Utilise `set_rebalancing_func` pour le rebalance timing
 
@@ -288,7 +288,7 @@ Le modèle par poches a longtemps existé en plusieurs copies, en plusieurs vari
 | `partner-course-quant-trading/kit-transitoire/03-Framework-Composite/main.py` | kit pédagogique **autonome** : le code est lu et modifié par l'apprenant dans un seul fichier, sans bibliothèque QC attachée — le canonique ne peut pas y être importé | le correctif `additive` et les diagnostics XLU de #20188 |
 | `projects/TrendWeatherPointInTime/portfolio_construction.py` | candidate **gelée** du registre de l'ombre (entrée `tw-pit`, code rejoué au SHA gelé) : #20188 interdit que l'extraction la touche | la variante antérieure au correctif `additive` — une seule insight par symbole, pas de reconstruction par `(symbole, source_model)` |
 
-La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une **nouvelle** copie apparaisse sans déclaration, et qu'une copie **déclarée** soit modifiée sans re-déclaration.
+La garde ne pretend donc pas supprimer ces copies : elle refuse qu'une **nouvelle** copie apparaisse sans déclaration, et qu'une copie **déclarée** soit modifiée sans re-déclaration. Elle refuse aussi deux dérives de l'invariant du **défaut** (#20188) : un défaut `additive=True` sur le canonique (`CANONICAL_DEFAULT_UNSAFE`), et un consommateur qui instancie le canonique sans écrire `additive` (`CONSUMER_IMPLICIT_DEFAULT`) — il hériterait du défaut, et son comportement changerait si le défaut change. Les deux contrôles sont syntaxiques (AST) : le défaut est lu dans la signature du canonique, la présence du mot-clé dans l'appel du consommateur.
 
 ```bash
 python scripts/quantconnect/check_pcm_single_source.py          # verdict humain
