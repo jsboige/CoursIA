@@ -48,12 +48,16 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import validate_pr_notebooks as v
 
+# Ex-`Lean-15c-Lean-Grothendieck-Companion.ipynb` : la descente #17545 (T3) a
+# renomme le carnet en `GROTH/GROTH-04-Companion-Lean.ipynb`. Le canary #11822
+# suit le renommage au lieu de skipper en silence sur l'ancien chemin.
 LEAN15C_PATH = (
     REPO_ROOT
     / "MyIA.AI.Notebooks"
     / "SymbolicAI"
     / "Lean"
-    / "Lean-15c-Lean-Grothendieck-Companion.ipynb"
+    / "GROTH"
+    / "GROTH-04-Companion-Lean.ipynb"
 )
 
 
