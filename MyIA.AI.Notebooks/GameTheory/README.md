@@ -8,9 +8,9 @@ pagetitle: "Théorie des Jeux - Game Theory"
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 141
-breakdown: root=100, SocialChoice=16, Dynamics=13, Metajeux=6, Coalitions=5, gateway=1
-maturity: BETA=129, DRAFT=7, ALPHA=5
+pedagogical_count: 142
+breakdown: root=101, SocialChoice=16, Dynamics=13, Metajeux=6, Coalitions=5, gateway=1
+maturity: BETA=130, DRAFT=7, ALPHA=5
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -439,6 +439,7 @@ Leur numéro nu reste un héritage de leur livraison, pas une étape du parcours
 |---|----------|--------------------|-------|--------|
 | 19b | [Co-design bilevel](GameTheory-19b-Bilevel-PPO-Python.ipynb) | Stackelberg PPO (Dai et al., ICLR 2026) rejoué à l'échelle pédagogique : le leader apprend la morphologie d'un nageur jouet, le suiveur est un PPO — le co-design bat la morphologie fixée, l'ablation adapté-contre-figé reste non tranchée à cette échelle | Python | Recherche |
 | 22 | [Jeux stochastiques](GameTheory-22-Jeux-Stochastiques-Shapley-Python.ipynb) | La valeur d'un jeu à états, calculée par itération de valeur (théorème de Shapley, 1953) : l'écart entre valeur statique et valeur dynamique vaut 2γ sans mesurer à lui seul un gain de planification, et l'adversaire qui conteste la transition l'annule (ex-26, renum #14944) | Python | Recherche |
+| 23 | [Failles légales](GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb) | Les règles fiscales comme jeu formel (distillation de l'article Lexifina, 11/2026) : un BFS borné retrouve le backdoor Roth sans qu'on le lui décrive, et le compagnon Lean `LegalLoophole/Toy` du lake de la série prouve le plafond à toute profondeur et l'optimalité du témoin sans taxe — chaque coup du plan est légal, la faille est dans les règles (#25686) | Python | Recherche |
 | — | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
 | — | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
 | — | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
@@ -642,6 +643,7 @@ La série aligne simulation numérique et preuve formelle : les notebooks motive
 | `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03b | sans Mathlib (calcul fini) : `lake build Swaps` ne compile aucune dépendance |
 | `game_theory_lean` (module Abstraction) | Contre-exemple certifié au « raffiner ne peut qu'améliorer » : la dette retransportée augmente | 03e, 19 | sans Mathlib ; 19 l'importe et fait élaborer `raffinement_aggrave_la_dette` par le compilateur, 03e en lit la source et la mire en Python — le module n'est plus orphelin (#20380, clos) |
 | `game_theory_lean` (module StackelbergBilevel) | Forme close du duopole de Stackelberg et best-response du suiveur, adossés aux valeurs pytest | — | dernière cohorte `lean_lib` du package, Mathlib ; aucun carnet ne le consomme encore — c'est le seul lake de la carte qu'aucun carnet n'enseigne ; le package l'importe (`GameTheory.lean:25`) et le declare en `lean_lib`, mais rien ne l'execute |
+| `game_theory_lean` (module LegalLoophole) | Règles fiscales jouet : `wealth_conservation`, plafond `roth_ceiling` à toute profondeur, témoin backdoor optimal sans taxe (`backdoor_exists`/`backdoor_optimal`) | 23 | sans Mathlib (zéro dépendance, compilable en secondes) ; 10ᵉ cohorte `lean_lib` du package, copie pédagogique déclarée du modèle CC0 lexifina/global-law (#25686) |
 | `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b | tenu hors du hub par la clause anti-god-lake de #4365 ; Mathlib (Sion) |
 | `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d | couche introductive sans Mathlib et extension de preuve auto-contenue, mesurées disjointes (T2 de #24183) |
 | `conway_cgt_lean` | Visite de la théorie des jeux combinatoires de Conway (`vihdzp/combinatorial-games`) | 08d | toolchain divergente (`v4.33.0-rc1`) et amont vendorisé — INTRINSIC |
