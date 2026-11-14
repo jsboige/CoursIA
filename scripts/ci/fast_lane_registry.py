@@ -4303,3 +4303,160 @@ TRANCHE44: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# TRANCHE 45 (#22209, garde bloquant) -- renumérotée à la fusion de main : 42, 43 et 44 sont pris par #25510 (voie rapide/lente).
+# Absorption du Notebook plan-loss gate (#14532).
+# gate (#14532, workflow notebook-plan-loss-gate.yml). Complement
+# structurel de TRANCHE4 md-content-loss : axe PLAN (disparition de
+# sections) vs axe VOLUME (perte de prose intra-cellulaire). Semantique
+# conservee EXACTE (boucle d'origine du workflow) :
+#   - rc=1 par carnet (LOST_SECTION / STRUCTURE_DRIFT non arbitres) =
+#     finding bloquant, le moteur rend 1 ;
+#   - rc=2 par carnet (illisible) = WARNING (warn_rc), pas un rouge -- la
+#     boucle d'origine les comptait sans echouer ;
+#   - anti-auto-desarmement AGREGE (reserve ai-01 c.28 sur #8656,
+#     transposee #14532) : si CHAQUE carnet tente etait illisible, le gate
+#     n'a rien analyse et ne peut pas certifier l'integrite du plan ->
+#     `fail_on_all_warn` rend 1, exactement comme le `exit 1` du workflow ;
+#   - carnet supprime par la PR : le moteur filtre les chemins inexistants
+#     avant l'iteration, meme skip que `[ -f "$nb" ] || continue` ;
+#   - marqueur d'arbitrage `plan-loss: section assumee -- ...` : le body
+#     vivant de la PR est promu dans l'env PLAN_LOSS_PR_BODY par l'etape
+#     « Body live » d'always-on-guards.yml (meme canal que
+#     MD_CONTENT_LOSS_PR_BODY, cf. la promotion X="${PR_BODY:-$X}") ; le
+#     detecteur le lit nativement (priorite --pr-body > env).
+# `--base {base_ref}` = origin/<branche>, comme BASE="origin/$base_ref"
+# de la boucle d'origine (le workflow faisait git diff --name-only
+# "$BASE"...HEAD puis appelait le detecteur par carnet avec --base "$BASE").
+# `pre_argv` : la suite pytest du detecteur (28 tests) est le controle par
+# faux negatif (lecon #11685/#12817, meme convention que TRANCHE39) -- un
+# detecteur qui ne prouve pas qu'il tire est indiscernable d'un detecteur
+# debranche.
+# Limite documentee (meme limite que TRANCHE4, #22331/#22333) : `edited`
+# est deliberement absent des types pull_request d'always-on-guards.yml.
+# Le declencheur d'origine n'etait pas decoratif -- #20260
+# (`e43677ef895`) l'avait ajoute expres pour #20256, ou l'auteur qui
+# posait son marqueur apres le dernier push laissait le check rouge
+# jusqu'a un push sans rapport. La voie de levee SANS push reste le REJEU
+# du job : l'etape « Body live » relit le corps par API a l'execution, et
+# ce PR_BODY-la alimente PLAN_LOSS_PR_BODY a l'export. Un marqueur ajoute
+# apres le dernier push est donc pris en compte des le rejeu, sans commit
+# ni push ; seule la reevaluation AUTOMATIQUE sur edition seule est
+# perdue.
+# ---------------------------------------------------------------------------
+TRANCHE45: list[Guard] = [
+    Guard(
+        name="No notebook plan loss in changed notebooks",
+        source="notebook-plan-loss-gate.yml",
+        # Sans filtre, comme le declencheur d'origine (contrat
+        # check_absorbed_path_parity : un `pull_request` sans filtre exige un
+        # registre sans filtre). C'est aussi le choix de conception du
+        # workflow absorbe : « PAS de paths: ici : un seul evenement manquant
+        # = la garde ne protege rien » (auto-couverture #14391/#14429 -- une
+        # PR qui ne touche que le workflow ou le detecteur re-evalue la
+        # garde). La PORTEE de l'analyse reste le perimetre notebooks via
+        # `iterate_paths` ; une PR sans carnet change rend le no-op rc=0 du
+        # moteur (« iterates_paths vide »), equivalent exact du « No
+        # notebooks changed -- clean. » de la boucle d'origine.
+        paths=[],
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_detect_notebook_plan_loss.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_notebook_plan_loss.py",
+            "--base", "{base_ref}", "--check", "{changed_paths}",
+        ],
+        blocking=True,
+        needs_base=True,
+        iterates_paths=True,
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        absorbed=True,
+        warn_rc=(2,),
+        fail_on_all_warn=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 46 d'absorption (#25510, T-A/3) -- perte de volume de RENDU d'un
+# carnet (#11656).
+#
+# LE NOM EST CELUI DU CHECK-RUN RENDU. Le job source porte
+# `name: "Render volume delta (#11656 advisory)"` : le registre adopte ce
+# nom mot pour mot, comme l'exige le controle positif d'identite
+# (`check_absorbed_check_run_identity.py`).
+#
+# LE SOURCE N'A PLUS DE DECLENCHEUR `pull_request`. Le workflow
+# `render-volume-delta-advisory.yml` ne Declenche plus que sur `schedule`
+# (18 03 * * *, balayage nocturne) et `workflow_dispatch` (#12817 a retire
+# le declencheur PR, trop lourd : un clone par PR). L'absorption n'ajoute
+# donc rien au couverture de la source -- elle porte la MESURE a l'instant
+# ou la PR est ouverte, la ou le balayage nocturne ne verrait la perte
+# qu'apres le merge. Il n'y a donc RIEN a comparer pour l'organe de parite
+# de couverture (`check_absorbed_path_parity.py`) : la source n'a plus de
+# `pull_request` a retirer.
+#
+# SEMANTIQUE CONSERVEE, point par point :
+#   - base : le MERGE-BASE (`git merge-base origin/main HEAD`), jamais
+#     `origin/main` deux-points -- sur une branche en retard, le
+#     deux-points inclut les evolutions de main hors PR et fait signaler
+#     des pertes que la PR n'a pas causees (c.357-L1) ;
+#   - abstention : merge-base introuvable -> on s'abstient EN LE DISAIT,
+#     jamais de repli silencieux ;
+#   - perimetre : les carnets modifies ou renommes entre la base et la
+#     tete (`--diff-filter=MR -M50%`), plafond 50.
+#
+# CE QUE CETTE TRANCHE AJOUTE (ecarts assumes, declares) :
+#   - le VERDICT CIBLE est un finding `LOST_MIME` de famille `image` (le
+#     cas #26032 : une PNG de 40 Ko disparue de la cellule 10, PR gate
+#     vert). Les autres kinds sont rapportes sans faire echouer la garde ;
+#   - l'abstention et l'erreur structurelle rendent rc=2, classe en
+#     `warn_rc` : le check-run est NEUTRE (« incident »), donc visible et
+#     non bloquant. La source sortait en 0 avec un simple `::warning` --
+#     un abstention lu « OK » dans un check-run est un vert muet ;
+#   - le cas multi-carnets : la source passait la liste des carnets a un
+#     outil dont l'argument positionnel est UNIQUE -- argparse echouait
+#     des le second carnet, le JSON restait illisible, et le commentaire
+#     affichait « rien de perdu » sur une PR qui en avait change
+#     plusieurs. L'adaptateur mesure chaque carnet dans le meme
+#     processus.
+#
+# `blocking=False` : la source est un ADVISORY (elle ecrit un commentaire
+# PR et ne gate rien). L'etape 3 du plan (#25510) fera passer ce finding
+# en bloquant, sur la mesure de l'etape 2 (census des PRs de carnet
+# ouvertes qui portent un `LOST_MIME` image).
+# ---------------------------------------------------------------------------
+TRANCHE46: list[Guard] = [
+    Guard(
+        name="Render volume delta (#11656 advisory)",
+        source="render-volume-delta-advisory.yml",
+        paths=[
+            # Les actifs d'abord : la mesure porte sur les carnets.
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            # L'organe de la mesure (appele, jamais reecrit) et
+            # l'adaptateur qui l'appelle.
+            "scripts/notebook_tools/check_render_volume_delta.py",
+            "scripts/ci/run_render_volume_guard.py",
+            # Le workflow source : une revision qui le touche rejoue le
+            # garde (convention des gardes voisins).
+            ".github/workflows/render-volume-delta-advisory.yml",
+        ],
+        argv=[
+            # `--base-ref {base_ref}` porte le BORNAGE : l'organe de
+            # bornage des gardes absorbées (`check_absorbed_argv_scope.py`)
+            # voit le jeton explicite et la valeur `{base_ref}` -- la base
+            # vient de la lane, elle n'est pas en dur.
+            "python", "scripts/ci/run_render_volume_guard.py",
+            "--base-ref", "{base_ref}",
+        ],
+        blocking=False,          # ADVISORY (etape 1) : signale, jamais bloque
+        needs_base=True,         # le runner garantit origin/<base_ref>
+        diff_bounded=True,       # verdict base vs tete : bornage par la PR
+        absorbed=True,
+        # rc=2 : abstention (merge-base introuvable) ou erreur
+        # structurelle. Classe NEUTRE (« incident »), jamais un vert.
+        warn_rc=(2,),
+    ),
+]

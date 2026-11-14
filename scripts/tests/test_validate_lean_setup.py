@@ -209,8 +209,12 @@ def test_python_dotenv_is_checked_under_its_module_name(validator, tmp_path, mon
     try:
         assert validator.check_python_package("python-dotenv") is True
     finally:
-        # L'import charge le faux module : le retirer avant la restauration
-        # de l'eventuel module initial par monkeypatch.
+        # #26481 : delitem(raising=False) n'enregistre AUCUN undo quand
+        # "dotenv" etait absent de sys.modules au debut du test -- sans ce
+        # pop, le FAUX module reste cache et tout import ulterieur de
+        # dotenv sur le meme worker xdist importe le faux (mesure CI :
+        # prover/config.py:6 `from dotenv import load_dotenv` en
+        # ImportError nommant .../test_python_dotenv_is_checked_0/dotenv.py).
         sys.modules.pop("dotenv", None)
 
 
