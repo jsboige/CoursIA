@@ -148,7 +148,12 @@ jobs:
     # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
     # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
     # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
-    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # #21978 (routage par label) : la jambe LOURDE (`coursia-persistent`,
+    # 4 Gio) passe AVANT la jambe de debordement, et n'est atteinte que si
+    # l'operateur pose `CI_HEAVY_PERSISTENT` (ABSENTE PAR DEFAUT) sur une PR
+    # du meme depot. La forme devient une CHAINE de routage auditee jambe par
+    # jambe (`scripts/ci/check_self_hosted_runner_policy.py`).
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_HEAVY_PERSISTENT == 'true') && fromJSON('["self-hosted","coursia-persistent","coursia-linux"]') || (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # Plafond 15 -> 30 (#14598 Option A) -> 60 min. Le passage a 30 avait
     # DEPLACE le mur, pas mesure sa position : trois PRs de CONTENU sont mortes
