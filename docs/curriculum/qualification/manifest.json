@@ -275,19 +275,45 @@
             "outillage": 1,
             "autonomie": 3
           },
-          "justification": "Prérequis : le §7 confronte directement au carnet 07 (statistique) ; descente de gradient, softmax et échantillonnage négatif sont des notions de licence (P2). Outillage : aucun outil du domaine ; NumPy seul (O1). Autonomie : CBOW et skip-gram sont écrits de zéro, y compris la perte, le gradient et l'échantillonnage négatif (A3). Niveau D3 = max(2, 3). Recherche R2 : le §5 « Les vecteurs ont-ils une structure ? » est une question de mesure falsifiable (similarité cosinus), et le §7 la confrontation paire par paire avec l'espace SVD du carnet 07 ; le verdict n'est pas connu d'avance.",
+          "justification": "Le carnet 07, l'algèbre linéaire et la descente de gradient sont les prérequis (P2). Les exercices 'Vérifier le gradient skip-gram', 'Échantillonnage pondéré' et 'Rareté et stabilité' construisent une vérification numérique, un sampler et une mesure de stabilité (A3). Les voisinages appris et leur confrontation à l'espace SVD font l'objet de mesures, avec prudence sur les rotations et les graines (R2). NumPy et Matplotlib suffisent aux calculs pédagogiques et aux figures (O1).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 14,
             "cellules_md": 24,
-            "prose_chars": 24138,
-            "densite": 1724,
+            "prose_chars": 14543,
+            "densite": 1038,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 2,
+            "autonomie": 3
+          },
+          "justification": "Le carnet 07, l'algèbre linéaire et la descente de gradient sont les prérequis (P2). Les exercices 'Vérifier le gradient skip-gram', 'Échantillonnage pondéré' et 'Rareté et stabilité' construisent une vérification numérique, un sampler et une mesure de stabilité (A3). Les voisinages appris et leur confrontation à l'espace SVD font l'objet de mesures, avec prudence sur les rotations et les graines (R2). Les modèles, gradients et sampler sont C# ; MathNet.Numerics fournit les primitives numériques et la SVD de comparaison (O2).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 14,
+            "cellules_md": 24,
+            "prose_chars": 14291,
+            "densite": 1020,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
