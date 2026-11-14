@@ -18,6 +18,15 @@ BASH = shutil.which("bash")
 
 STUBS = {
     "pgrep": r'''#!/usr/bin/env bash
+if [[ "$PGREP_MODE" == bsd-* ]]; then
+  if [[ "$1" != "-x" ]]; then echo "illegal option -- c" >&2; exit 2; fi
+  case "$PGREP_MODE" in
+    bsd-positive) printf '101\n202\n'; exit 0 ;;
+    bsd-empty) exit 1 ;;
+    bsd-error) echo "échec pgrep" >&2; exit 2 ;;
+    bsd-invalid) printf '101\nPID invalide\n'; exit 0 ;;
+  esac
+fi
 if [[ "$1" == "-xc" ]]; then
   case "$PGREP_MODE" in
     empty) printf '0\n'; exit 1 ;;
@@ -180,3 +189,20 @@ def test_seuil_disque_est_lu_avec_df_k_sur_linux_et_darwin(
     calls = calls_file.read_text(encoding="utf-8").splitlines()
     assert "-k ." in calls
     assert not any(call.startswith("-BG") for call in calls)
+
+
+@pytest.mark.parametrize(
+    "mode,count",
+    [("bsd-positive", 2), ("bsd-empty", 0), ("bsd-error", 0), ("bsd-invalid", 0)],
+)
+def test_pgrep_bsd_sans_option_count(audit_runner, mode: str, count: int) -> None:
+    """Le pgrep macOS fournit des PID, sans prendre en charge -c."""
+    run, _ = audit_runner
+    result = run(mode, os_name="Darwin")
+    assert result.returncode == 2
+    assert "syntax error" not in result.stderr
+    warning = "[WARNING] Processus jupyter"
+    if count:
+        assert f"{warning} {count} instance(s) en cours" in result.stdout
+    else:
+        assert warning not in result.stdout
