@@ -93,9 +93,9 @@ reçoivent donc pas le même grain. Mesuré le 14/11 : deux sièges (même préf
 différents) avaient reçu les mêmes deux grains, parce que l'ordre des *familles* était semé par lane mais
 celui des *membres* d'une famille était le même pour toutes les lanes. Le décalage porte sur le **rang**,
 pas sur le contenu : l'ancienneté reste le critère à l'intérieur du décalage, et les grains jamais visités
-passent devant les conteneurs et devant les grains déjà visités. Résidu mesuré : sur une famille de
-*n* grains, deux lanes ont 1/*n* chance de partager le même rang — le taux de chevauchement porte sur la
-liste entière (8 familles servies), pas sur une famille isolée.
+passent devant les conteneurs et devant les grains déjà visités. Résidu **calculé** (ce n'est pas une
+mesure) : sur une famille de *n* grains, deux lanes ont 1/*n* chance de partager le même rang — le taux de
+chevauchement porte sur la liste entière (8 familles servies), pas sur une famille isolée.
 
 ## Ce qui n'est pas repris de l'ancienne voie (délibéré)
 
