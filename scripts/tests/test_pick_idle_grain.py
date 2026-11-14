@@ -736,6 +736,11 @@ def _neutralize_organs(monkeypatch, states, nits=None):
     # echec -- indistinguable d'un « aucun plancher a lever ». Les tests qui
     # veulent un plancher precis la re-patchent (`_patch_dwell`).
     monkeypatch.setattr(pig, "fetch_check_dwell", lambda rid: None)
+    # #26551 : meme raison pour la lecture du verdict INCONCLUSIVE (autre
+    # `gh api .../annotations` par run rouge). Neutralisee par defaut (None =
+    # non mesure) ; les tests qui veulent un verdict precis la re-patchent
+    # (`_patch_inconclusive`).
+    monkeypatch.setattr(pig, "fetch_check_inconclusive", lambda rid: None)
     # #25522 : le classement des PRs rouges lit le FIL de chaque PR (une
     # requete REST) pour y trouver le marqueur `[FROZEN]` et la declaration
     # `[ASK]`. Les tests qui n'en dependent pas neutralisent la source ;
@@ -2046,6 +2051,146 @@ def test_print_dwell_waiting_says_the_only_gesture_is_waiting(capsys):
     assert "balayage horaire" not in out
     # Silence total quand il n'y a rien : pas de section vide a lire.
     assert pig.print_dwell_waiting({"dwell_waiting": []}) is None
+    assert capsys.readouterr().out == ""
+
+
+# --- #26551 : le verdict INCONCLUSIVE (quota d'installation epuisee) -------
+#
+# Message REEL emis par `pr_gate.py` (emetteur : `QuotaInconclusive`), rendu
+# en `::warning::[pr-gate] ...` sur le check-run. L'etat des checks est
+# INCONNU, pas faux : le rendre comme un rouge sans cause a reparer
+# envoyait la lane chercher dans son diff un defaut inexistant.
+
+INCONCLUSIVE_ANN = (
+    "[pr-gate] INCONCLUSIVE -- quota d'installation GitHub App epuisee : "
+    "l'etat des checks est INCONNU, pas faux. REJOUABLE : relancer la jambe "
+    "(`gh run rerun <run_id> --job <job_id>`) apres le reset horaire, ou "
+    "attendre le balayage `pr-gate-stale-sweep`. Source : HTTP 403 "
+    "installation quota exhausted"
+)
+
+
+def _inconclusive_state(run_id):
+    """Etat rouge dont l'agregateur porte un check-run id (annotation lisible)."""
+    st = _state(checks=[("PR gate", "FAILURE", True)])
+    st["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"][
+        "nodes"][0]["databaseId"] = run_id
+    return st
+
+
+def _patch_inconclusive(monkeypatch, inconclusive_by_run):
+    """Remplace la lecture d'annotation INCONCLUSIVE : id -> dict, ou None."""
+    monkeypatch.setattr(pig, "fetch_check_inconclusive",
+                        lambda rid: inconclusive_by_run.get(rid))
+
+
+def test_inconclusive_verdict_is_parsed_from_the_check_run_annotation(monkeypatch):
+    """La surface existe et porte le verdict + son motif.
+
+    Sans cette lecture, « il n'y a rien a reparer » et « je n'ai pas pu lire »
+    rendent le meme `[]` -- et c'est le second que la lane subit (elle reçoit
+    un rouge sans cause). Message de reference = emission reelle du gate.
+    """
+    _patch_gh_annotations(monkeypatch, [INCONCLUSIVE_ANN])
+    info = pig.fetch_check_inconclusive(123456789)
+    assert info is not None
+    assert info["kind"] == "quota-installation"
+    assert "quota d'installation" in info["detail"]
+
+
+def test_inconclusive_control_negative_fail_and_unreadable(monkeypatch):
+    """Controle NEGATIF : un FAIL nomme et une panne ne sont pas INCONCLUSIVE.
+
+    Sans ce controle, un detecteur qui rendrait un dict sur n'importe quelle
+    annotation ferait passer le test precedent avec un motif faux -- et
+    l'annulation de cause emporterait les vrais rouges avec elle.
+    """
+    _patch_gh_annotations(monkeypatch, [FAIL_ANN])
+    assert pig.fetch_check_inconclusive(1) is None
+    # Annotation d'organe : ce n'est pas un etat inconclusif non plus.
+    _patch_gh_annotations(monkeypatch, ["Organes bloquants en echec : perimeter"])
+    assert pig.fetch_check_inconclusive(2) is None
+    # Lecture impossible : None, et l'appelant retombe sur le fail-closed.
+    def _raise_gh(cmd, **kwargs):
+        raise OSError("gh indisponible")
+    monkeypatch.setattr(pig.subprocess, "run", _raise_gh)
+    assert pig.fetch_check_inconclusive(3) is None
+
+
+def test_inconclusive_red_is_not_a_repairable_cause():
+    """Le fond de #26551 : la lane ne recoit PLUS de cause a reparer.
+
+    Le verdict INCONCLUSIVE ne nomme aucun organe : sans la lecture, le
+    fail-closed le rendait a la lane, qui partait chercher dans son diff une
+    cause inexistante (quota epuise n'est pas un defaut de diff).
+    """
+    state = _inconclusive_state(123456789)
+    info = {"kind": "quota-installation", "detail": "quota epuise"}
+    assert pig.blocking_causes(state, inconclusive_by_name={"PR gate": info}) == []
+    # Controle POSITIF : sans la lecture, le meme etat est bien un rouge.
+    assert pig.blocking_causes(state) == ["check requis en echec : PR gate"]
+
+
+def test_inconclusive_does_not_swallow_the_other_reds_of_the_same_pr():
+    """Un INCONCLUSIVE n'absout pas les vrais rouges qui l'accompagnent."""
+    state = _state(checks=[("PR gate", "FAILURE", True),
+                           ("Scripts Tests (CPU)", "FAILURE", True)])
+    causes = pig.blocking_causes(
+        state, inconclusive_by_name={"PR gate": {"kind": "quota-installation",
+                                                  "detail": "quota epuise"}})
+    assert causes == ["check requis en echec : Scripts Tests (CPU)"]
+
+
+def test_inconclusive_pr_leaves_the_red_backlog_and_is_reported(monkeypatch):
+    """Bout en bout : la PR au seul rouge INCONCLUSIVE sort du refus, et est DITE."""
+    _patch_organs(monkeypatch, {})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _inconclusive_state(111)})
+    _patch_dwell(monkeypatch, {111: {}})
+    _patch_inconclusive(monkeypatch, {111: {"kind": "quota-installation",
+                                            "detail": "quota epuise"}})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert out["red"] == []
+    assert out["triggers"] == []
+    assert out["inconclusive_waiting"] == [
+        {"number": 1, "check": "PR gate", "kind": "quota-installation",
+         "detail": "quota epuise"}]
+
+
+def test_unreadable_inconclusive_still_falls_back_to_the_lane(monkeypatch):
+    """Controle negatif : sans INCONCLUSIVE lisible, le rouge RESTE.
+
+    Une panne reseau n'est pas un etat inconclusif : la confondre
+    acquitterait la lane d'un rouge qu'elle doit reparer.
+    """
+    _patch_organs(monkeypatch, {})
+    _patch_dwell(monkeypatch, {111: {}})
+    _patch_inconclusive(monkeypatch, {111: None})
+    _patch_backlog(monkeypatch, [
+        _pr_with_author(1, "myia-po-2026:CoursIA", 30, "jsboige"),
+    ], {1: _inconclusive_state(111)})
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=3)
+    assert [r["number"] for r in out["red"]] == [1]
+    assert out["inconclusive_waiting"] == []
+
+
+def test_print_inconclusive_waiting_says_the_only_gesture_is_the_replay(capsys):
+    """La sortie humaine doit porter le geste : rejouer, ne pas pousser.
+
+    Un push ne rejoue pas un quota epuise : il consomme un cycle et laisse le
+    rouge en place.
+    """
+    pig.print_inconclusive_waiting({"inconclusive_waiting": [
+        {"number": 26551, "check": "PR gate", "kind": "quota-installation",
+         "detail": "quota d'installation epuisee"}]})
+    out = capsys.readouterr().out
+    assert "#26551" in out
+    assert "INCONNU" in out
+    assert "gh run rerun" in out
+    assert "NE PAS pousser" in out
+    # Silence total quand il n'y a rien : pas de section vide a lire.
+    assert pig.print_inconclusive_waiting({"inconclusive_waiting": []}) is None
     assert capsys.readouterr().out == ""
 
 

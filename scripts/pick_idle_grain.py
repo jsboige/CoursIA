@@ -7131,6 +7131,62 @@ def _dwell_message_parser():
         return None
 
 
+def fetch_check_inconclusive(check_run_id: int) -> dict | None:
+    """Verdict INCONCLUSIVE porte par l'annotation du check-run, ou None.
+
+    #26551 (point 1) : le gate emet `INCONCLUSIVE -- ...` quand le quota
+    d'installation GitHub App est epuise -- l'etat des checks est
+    **INCONNU, pas faux**. Le verdict est rendu en `::warning::` et ne
+    nomme aucun organe : cote picker, l'agregateur rouge tombait donc sur
+    le fail-closed (« aucun organe lisible ») et la lane recevait un rouge
+    SANS cause a reparer -- elle partait chercher dans son diff une
+    defaut qui n'existait pas.
+
+    Meme forme que `fetch_check_dwell` : le format du message appartient a
+    l'emetteur (`pr_gate.parse_inconclusive_message`), jamais a ce lecteur.
+
+    Best-effort comme son voisin : annotation illisible -> ``None``, et
+    l'appelant retombe sur le fail-closed (le rouge reste a la lane).
+    """
+    parser = _inconclusive_message_parser()
+    if parser is None:
+        return None
+    try:
+        cached = _repair_read_annotation(check_run_id)
+        if cached is not None:
+            annotations = cached
+        else:
+            raw = subprocess.run(
+                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+            ).stdout
+            annotations = json.loads(raw)
+            _repair_store_annotation(check_run_id, annotations)
+    except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
+        return None
+    for ann in annotations or []:
+        parsed = parser(ann.get("message") or "")
+        if parsed:
+            return parsed
+    return None
+
+
+def _inconclusive_message_parser():
+    """`pr_gate.parse_inconclusive_message`, ou None si l'import est impossible.
+
+    Import tardif et defensif, comme `_dwell_message_parser` : le gate est un
+    organe optionnel pour le picker, son absence ne doit pas casser le
+    tirage -- elle doit seulement rendre l'INCONCLUSIVE illisible, donc
+    retomber sur le fail-closed (le rouge reste a la lane).
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+        from pr_gate import parse_inconclusive_message  # noqa: PLC0415 - import tardif
+        return parse_inconclusive_message
+    except Exception:  # noqa: BLE001 - organe optionnel, picker robuste
+        return None
+
+
 def failed_check_keys(ctx: dict, organ_cache: dict) -> list[str]:
     """Cles de CAUSE d'un check rouge, pas de son nom de job (#14537, #14567).
 
@@ -7403,6 +7459,7 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                     infra_rerun: set[str] | None = None,
                     resolved_keys_by_name: dict[str, set[str]] | None = None,
                     dwell_by_name: dict[str, dict] | None = None,
+                    inconclusive_by_name: dict[str, dict] | None = None,
                     gate_evidence: dict[str, tuple[list[str], list[str]]] | None = None,
                     review_points_clear: bool = False,
                     ) -> list[str]:
@@ -7470,6 +7527,17 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
             # cause qui n'existe pas. Le seul geste correct est l'attente -- on
             # ne fabrique donc aucune cause, et le declencheur `count` ne peut
             # plus basculer tout le cycle sur une reparation inexistante.
+            continue
+        if inconclusive_by_name and name in inconclusive_by_name:
+            # #26551 : ce rouge est un ETAT INCONNU, pas un defaut. Le gate le
+            # dit dans son texte (quota d'installation epuisee : l'etat des
+            # checks est INCONNU, pas faux) et le rend en `::warning::`, sans
+            # nommer d'organe. Le compter comme « check requis en echec »
+            # envoyait la lane chercher dans son diff une cause inexistante --
+            # exactement le defaut que le DWELL avait deja corrige (#15910),
+            # reproduit sur le verdict INCONCLUSIVE. Le geste est le rejeu de
+            # la jambe apres le reset du quota : rien a reparer, donc aucune
+            # cause n'est fabriquee.
             continue
         if infra_rerun:
             # #17154 : rouge corrobore par >=2 lanes mais VERT sur la tete de
@@ -8848,6 +8916,9 @@ def red_backlog(lane: str, threshold_hours: float,
         lane_by[pr["number"]] = (parse_grain_tag(pr.get("body") or "") or {}).get("lane")
     organ_cache: dict[int, list[str]] = {}
     dwell_cache: dict[int, dict] = {}
+    # #26551 : cache des verdicts INCONCLUSIVE lus sur l'annotation -- partage
+    # entre PRs de la lane dans ce passage, comme dwell_cache.
+    inconclusive_cache: dict[int, dict | None] = {}
     # #15764 : cache des verdicts FAIL parsés par check-run -- partage entre
     # PRs de la lane dans ce passage, comme organ_cache.
     gate_cache: dict[int, tuple[list[str], list[str]]] = {}
@@ -8872,6 +8943,9 @@ def red_backlog(lane: str, threshold_hours: float,
             diff_bounded=_diff_bounded_check_names())
     red = []
     dwell_waiting: list[dict] = []
+    # #26551 : les agregateurs rouges dont le verdict est INCONCLUSIVE (quota
+    # d'installation epuisee) -- un etat inconnu, pas un defaut a reparer.
+    inconclusive_waiting: list[dict] = []
     for pr in mine:
         state = states.get(pr["number"])
         if state is None:
@@ -8914,11 +8988,39 @@ def red_backlog(lane: str, threshold_hours: float,
             dwell_waiting.append({"number": pr["number"], "check": ctx_name,
                                   "lift_at": info.get("lift_at"),
                                   "remaining_min": info.get("remaining_min")})
+        # #26551 : meme lecture pour le verdict INCONCLUSIVE (quota
+        # d'installation epuisee). Il ne nomme aucun organe non plus, et son
+        # etat est INCONNU -- pas faux. On ne paie la lecture que pour les
+        # agregateurs sans organe resolu ET sans DWELL deja identifie : un
+        # minuteur ne se relit pas, et un organe nomme tranche deja la
+        # question.
+        inconclusive_by_name: dict[str, dict] = {}
+        for ctx in _failed_contexts(state):
+            ctx_name = ctx.get("name") or ctx.get("context") or "?"
+            if not is_aggregator_check(ctx_name):
+                continue
+            if keys_by_name and keys_by_name.get(ctx_name):
+                continue
+            if ctx_name in dwell_by_name:
+                continue
+            ctx_run_id = ctx.get("databaseId")
+            if ctx_run_id is None:
+                continue
+            if ctx_run_id not in inconclusive_cache:
+                inconclusive_cache[ctx_run_id] = fetch_check_inconclusive(ctx_run_id)
+            info = inconclusive_cache[ctx_run_id]
+            if info:
+                inconclusive_by_name[ctx_name] = info
+        for ctx_name, info in sorted(inconclusive_by_name.items()):
+            inconclusive_waiting.append({"number": pr["number"], "check": ctx_name,
+                                         "kind": info.get("kind"),
+                                         "detail": info.get("detail")})
         causes = blocking_causes(state, age_hours=age, saturation_hours=threshold_hours,
                                  inherited=set(inherited),
                                  infra_rerun=set(infra_rerun),
                                  resolved_keys_by_name=keys_by_name,
                                  dwell_by_name=dwell_by_name,
+                                 inconclusive_by_name=inconclusive_by_name,
                                  gate_evidence=gate_evidence_for(state, gate_cache),
                                  # `count == 0` et non `not info` : une PR
                                  # ABSENTE du dict n'a pas ete evaluee par
@@ -9093,6 +9195,10 @@ def red_backlog(lane: str, threshold_hours: float,
             # reparer, ni un rouge impute a la base : un minuteur qu'aucune
             # lane ne peut avancer en poussant (pousser le remet a zero).
             "dwell_waiting": dwell_waiting,
+            # #26551 : les agregateurs rouges par verdict INCONCLUSIVE. Ni un
+            # defaut a reparer, ni un rouge impute a la base : un etat INCONNU
+            # que seul un rejeu de la jambe (apres le reset du quota) leve.
+            "inconclusive_waiting": inconclusive_waiting,
             "nits_unavailable": nits_unavailable,
             # Q41 : plafond de WIP. wip_triggered porte le verdict (compte >=
             # plafond, plafond 0 = desactive) ; le refus lui-meme reste a
@@ -9225,6 +9331,35 @@ def print_dwell_waiting(backlog: dict) -> None:
     print("l'echeance, rejouer la jambe soi-meme (`gh run rerun <run_id> --job")
     print("<job_id>`) ou enchainer un autre grain -- c'est la candidate qui")
     print("attend, pas la lane.")
+    print()
+
+
+def print_inconclusive_waiting(backlog: dict) -> None:
+    """Agregateurs rouges par verdict INCONCLUSIVE : un etat inconnu (#26551).
+
+    Le gate rend `INCONCLUSIVE -- ...` quand le quota d'installation GitHub
+    App est epuise : l'etat des checks est **INCONNU, pas faux**. Ce verdict
+    est rendu en `::warning::` et ne nomme aucun organe -- sans cette lecture,
+    l'agregateur tombait sur le fail-closed et la lane recevait un rouge SANS
+    cause a reparer (le defaut que le DWELL avait deja corrige, #15910).
+
+    Le geste est le rejeu de la jambe apres le reset du quota : rien a
+    reparer dans le diff.
+    """
+    items = backlog.get("inconclusive_waiting") or []
+    if not items:
+        return
+    print("VERDICT INCONCLUSIVE -- l'etat des checks est INCONNU, pas faux :")
+    for item in items:
+        print(f"  - #{item['number']} {item['check']} ({item.get('kind')})")
+        detail = (item.get("detail") or "").strip()
+        if detail:
+            print(f"      {detail[:200]}")
+    print("Ces rouges ne comptent pas dans le refus et ne sont PAS imputes a la")
+    print("base. NE PAS pousser pour les lever : le quota se rejoue. Apres le")
+    print("reset, rejouer la jambe (`gh run rerun <run_id> --job <job_id>`) ou")
+    print("laisser le balayage `pr-gate-stale-sweep` s'en charger, puis")
+    print("enchainer un autre grain -- c'est la candidate qui attend.")
     print()
 
 
@@ -12117,6 +12252,7 @@ def print_red_assignment(lane: str, backlog: dict, threshold_hours: float) -> No
     print_base_inherited(backlog)
     print_infra_rerun(backlog)
     print_dwell_waiting(backlog)
+    print_inconclusive_waiting(backlog)
     print("Si un rouge n'est PAS reparable par cette lane (garde casse sur main,")
     print("dependance d'une autre PR), l'ECRIRE en commentaire sur la PR concernee,")
     print("puis relancer avec --ignore-red. L'echappatoire se justifie par ecrit,")
@@ -14548,6 +14684,7 @@ def main(argv: list[str] | None = None) -> int:
         print_base_inherited(backlog)
         print_infra_rerun(backlog)
         print_dwell_waiting(backlog)
+        print_inconclusive_waiting(backlog)
     if backlog.get("unavailable") and not args.json:
         print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)",
               file=sys.stderr)

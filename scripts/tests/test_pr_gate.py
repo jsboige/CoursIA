@@ -3289,6 +3289,42 @@ def test_the_published_body_names_the_replay_gesture():
     assert "pr-gate-stale-sweep" in body
 
 
+def test_parse_inconclusive_message_recognizes_the_emitted_verdict():
+    """L'inverse de l'emetteur : le format appartient a l'emetteur.
+
+    Le message porte le prefixe de l'annotation (`[pr-gate] `) et le motif
+    apres le separateur -- c'est ce que le lecteur (le picker) doit
+    retrouver sans re-ecrire le format.
+    """
+    message = (
+        "[pr-gate] INCONCLUSIVE -- quota d'installation GitHub App epuisee : "
+        "l'etat des checks est INCONNU, pas faux. Source : HTTP 403"
+    )
+    parsed = pr_gate.parse_inconclusive_message(message)
+    assert parsed is not None
+    assert parsed["kind"] == "quota-installation"
+    assert parsed["detail"].startswith("quota d'installation")
+
+
+def test_parse_inconclusive_message_rejects_the_other_verdicts():
+    """Controle NEGATIF : un FAIL, un DWELL ou une annotation d'organe ne
+    sont pas des etats inconclusifs.
+
+    Un detecteur trop large acquitterait la lane d'un rouge qu'elle doit
+    reparer.
+    """
+    assert pr_gate.parse_inconclusive_message(
+        "[pr-gate] FAIL -- failing checks: Scripts Tests (CPU)") is None
+    assert pr_gate.parse_inconclusive_message(
+        "[pr-gate] DWELL -- plancher de merge 120 min") is None
+    assert pr_gate.parse_inconclusive_message("Organes bloquants : perimeter") is None
+    assert pr_gate.parse_inconclusive_message("") is None
+    assert pr_gate.parse_inconclusive_message(None) is None
+    # Un marqueur sans motif ne porte aucun verdict : il ne doit pas
+    # fabriquer une entree.
+    assert pr_gate.parse_inconclusive_message("INCONCLUSIVE -- ") is None
+
+
 def test_ratelimit_reset_header_is_parsed():
     block = (
         "HTTP/2.0 403 Forbidden\n"
