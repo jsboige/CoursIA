@@ -60,6 +60,23 @@ Ce module NE decide pas si une PR peut merger : il produit la MATIERE. La
 porte (`check_twin_index_collisions.py --open-claims`) en tire le verdict, et
 c'est elle qui reste l'organe unique du verdict.
 
+La fenetre residuelle -- et pourquoi elle est INTRINSIQUE (#26464, limite 2)
+-----------------------------------------------------------------------------
+Lire les revendications des PRs ouvertes **restreint** la course, ne la
+**ferme pas**. La fenetre qui reste : deux branches qui partent du meme `main`
+au meme instant, **avant que l'une ne soit ouverte et visible par l'index de
+recherche** -- chacune calcule le meme plancher et emet le meme `NNNN`. Le
+module ne peut pas la refermer : il faudrait une **reservation atomique cote
+serveur** (une seule branche obtient l'ordinal), hors de portee d'un fix local.
+Defaut **INTRINSIQUE cote depot** (#25742), pas un oubli du module.
+
+La remediation est au garde, pas ici : le doublon ainsi produit est attrape
+APRES coup par l'integrite
+`test_audit_index_unique_and_no_identical_duplicates_per_pair`
+(`tests/test_twin_registry_integrity.py`), et la renumeration de la paire est
+le redecollage connu (pass #24518). Ce module ne la previent pas ; il
+documente la fenetre et renvoie au garde.
+
 Contrat de restitution : stdout ne porte QUE le JSON -- la ligne de verdict
 part sur stderr. Un rapport machine melange a une ligne de texte n'est plus un
 JSON, et le parseur du consumer echoue sur un fichier casse.
