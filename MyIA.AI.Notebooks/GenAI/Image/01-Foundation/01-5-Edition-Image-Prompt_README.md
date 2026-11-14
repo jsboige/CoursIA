@@ -77,7 +77,7 @@ jupyter notebook
 ```
 
 Naviguez vers:  
-`MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb`
+`MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb`
 
 ### 2. Exécuter Séquentiellement
 
