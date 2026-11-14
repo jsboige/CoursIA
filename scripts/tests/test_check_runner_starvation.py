@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -902,3 +904,137 @@ def test_main_cadence_only_pass_still_reports_the_scheduler_silence(
     assert payload["gh_calls"] == 1
     assert seen == {"inventory": 0, "starvation": 0}
     assert any("SCHEDULER MUET" in w for w in payload["warnings"])
+
+
+# --- MIROIR D'OBJETS (#26453) ----------------------------------------------
+# L'alerte `[WARN][mirror]` du superviseur ne vaut que si elle REMONTE sur une
+# surface qu'une lane lit. Ces tests mesurent ce branchement -- et ses
+# limites : hors de l'hote qui porte le miroir, l'etat est illisible, et
+# l'organe doit le dire sans rougir (un rouge sur une absence de preuve
+# apprendrait a etre ignore).
+
+def _mirror_fixture(tmp_path, fails=None, warn=False, age_s=0.0):
+    """Ecrit l'etat du miroir comme le superviseur l'ecrit (#26459).
+
+    Le compteur `.objects-mirror.fails` et l'horodatage `.objects-mirror.ok`
+    vivent dans le PARENT du miroir (le volume toolcache) ; le journal
+    `objects-mirror.log` vit dans le repertoire d'etat du superviseur.
+    """
+    state_dir = tmp_path / "state"
+    volume = tmp_path / "toolcache"
+    state_dir.mkdir(parents=True, exist_ok=True)
+    volume.mkdir(parents=True, exist_ok=True)
+    mirror = volume / "coursia-mirror.git"
+    if fails is not None:
+        path = volume / ".objects-mirror.fails"
+        path.write_text(str(fails), encoding="utf-8")
+        if age_s:
+            old = time.time() - age_s
+            os.utime(path, (old, old))
+    if warn:
+        (state_dir / "objects-mirror.log").write_text(
+            "miroir: rafraichi (2026-11-14T01:02:35+00:00)\n"
+            "[WARN][mirror] refresh en echec 3 fois de suite (~15 min) "
+            "-- cause : le fetch a echoue (voir la sortie du fetch ci-dessus)\n",
+            encoding="utf-8")
+    return str(state_dir), str(mirror)
+
+
+def test_mirror_absent_is_a_note_and_never_an_error(tmp_path):
+    # Hors de l'hote du miroir (runner GitHub-hosted), aucun fichier n'existe.
+    # L'organe ne peut rien conclure sur le miroir : c'est une NOTE.
+    state = rs.read_mirror_state(str(tmp_path / "nope"), str(tmp_path / "no-mirror"))
+    assert state.available is False
+    errors, warnings, notes = rs.mirror_verdict(state)
+    assert errors == []
+    assert warnings == []
+    assert any("ne conclut rien" in n for n in notes)
+
+
+def test_mirror_counter_below_threshold_is_not_an_error(tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=1)
+    state = rs.read_mirror_state(state_dir, mirror)
+    assert state.available is True
+    assert state.fails == 1
+    errors, _warnings, notes = rs.mirror_verdict(state)
+    assert errors == []
+    assert any("aucun gel" in n for n in notes)
+
+
+def test_mirror_fresh_counter_at_threshold_is_an_error_with_the_verbatim_line(
+        tmp_path):
+    # Le cas fondateur : la boucle tourne et le miroir echoue. C'est un
+    # ROUGE, et la ligne `[WARN][mirror]` du superviseur est reprise VERBATIM
+    # (c'est elle qui nomme la cause).
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+    state = rs.read_mirror_state(state_dir, mirror)
+    errors, _warnings, _notes = rs.mirror_verdict(state)
+    assert len(errors) == 1
+    assert "MIROIR FIGE" in errors[0]
+    assert "[WARN][mirror] refresh en echec 3 fois de suite" in errors[0]
+    assert "le fetch a echoue" in errors[0]
+
+
+def test_mirror_stale_counter_is_a_note_not_a_permanent_red(tmp_path):
+    # Un compteur VIEUX ne prouve pas que le miroir echoue : il prouve que la
+    # boucle de rafraichissement est arretee (service desactive, hote eteint).
+    # Confondre les deux produirait un rouge permanent sur un etat fige depuis
+    # des semaines -- et un rouge permanent s'apprend a etre ignore.
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True, age_s=7200.0)
+    state = rs.read_mirror_state(state_dir, mirror)
+    errors, _warnings, notes = rs.mirror_verdict(state)
+    assert errors == []
+    assert any("n'est plus reecrit" in n for n in notes)
+
+
+def test_mirror_warn_line_is_read_from_the_tail_of_the_log(tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+    state = rs.read_mirror_state(state_dir, mirror)
+    assert state.warn_line.startswith("[WARN][mirror]")
+    assert state.counter_age_s is not None
+    assert state.counter_age_s < 60.0
+
+
+def test_main_surfaces_the_mirror_alert_in_its_payload(monkeypatch, capsys,
+                                                         tmp_path):
+    # La branche qui compte : l'alerte du miroir doit changer le VERDICT de
+    # l'organe (rc 1) et apparaitre dans le payload JSON -- c'est ce que lit
+    # une machine, pas seulement un oeil.
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=3, warn=True)
+
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", lambda *a, **k: [])
+    monkeypatch.setattr(rs, "fetch_inventory", lambda *a, **k: rs.RunnerInventory())
+    monkeypatch.setattr(rs, "fetch_starvation", lambda *a, **k: rs.Starvation())
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json",
+        "--mirror-state-dir", state_dir,
+        "--mirror-path", mirror,
+    ])
+
+    assert rs.main() == 1
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "ERROR"
+    assert payload["mirror"]["available"] is True
+    assert payload["mirror"]["fails"] == 3
+    assert payload["mirror"]["threshold"] == 3
+    assert "[WARN][mirror]" in payload["mirror"]["warn_line"]
+    assert any("MIROIR FIGE" in e for e in payload["errors"])
+
+
+def test_main_leaves_the_mirror_quiet_when_it_is_healthy(monkeypatch, capsys,
+                                                          tmp_path):
+    state_dir, mirror = _mirror_fixture(tmp_path, fails=0)
+    monkeypatch.setattr(rs, "fetch_scheduled_runs", lambda *a, **k: [])
+    monkeypatch.setattr(rs, "fetch_inventory", lambda *a, **k: rs.RunnerInventory())
+    monkeypatch.setattr(rs, "fetch_starvation", lambda *a, **k: rs.Starvation())
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json",
+        "--mirror-state-dir", state_dir,
+        "--mirror-path", mirror,
+    ])
+
+    assert rs.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "OK"
+    assert payload["mirror"]["fails"] == 0
+    assert not any("MIROIR" in e for e in payload["errors"])

@@ -518,6 +518,77 @@ echo "Test 14 : refresh reussi -- horodatage de succes pose, compteur a zero"
 )
 echo ""
 
+# --- Test 15 : la mesure en direct du miroir est BORDEE EN TEMPS ---------
+# Un `git ls-remote` qui pend (reseau coupe, DNS qui ne repond pas) ne doit
+# pas pendre le tick : le tick qui ne rend pas ne rafraichit rien, et le
+# miroir finit par figer SANS que personne ne le voie -- exactement la panne
+# muette de #26453 (19 jours de miroir fige, 2 700 lignes de journal lues
+# par personne).
+#
+# Le test est HERMETIQUE : pas de reseau, pas d'attente. Un faux `git` --
+# place AVANT le vrai dans le PATH -- pend sur `ls-remote` et delegue tout
+# le reste. Le `timeout` doit couper la mesure en quelques secondes.
+echo "Test 15 : ls-remote borne -- un reseau qui pend ne pend pas le tick"
+(
+  REAL_GIT="$(command -v git)"
+  mkdir -p "$TEST_DIR/bin"
+  cat > "$TEST_DIR/bin/git" <<'FAKEGIT'
+#!/usr/bin/env bash
+if [ "$1" = "ls-remote" ]; then
+  sleep 60
+  exit 0
+fi
+exec "@REAL_GIT@" "$@"
+FAKEGIT
+  sed -i "s|@REAL_GIT@|$REAL_GIT|" "$TEST_DIR/bin/git"
+  chmod +x "$TEST_DIR/bin/git"
+
+  # CONTROLE NEGATIF : sans faux `git`, la mesure ne doit PAS annoncer un
+  # delai depasse. Sans ce controle, un test qui annonce toujours
+  # « delai depasse » passerait quand meme.
+  out_ok="$(run_mirror status)"
+  echo "$out_ok" >> "$LOG"
+  if echo "$out_ok" | grep -qi "delai depasse"; then
+    ko "T15 controle negatif : un delai depasse est annonce alors que le reseau repond"
+  else
+    ok "T15 controle negatif : aucune mention de delai depasse quand la mesure repond"
+  fi
+  if echo "$out_ok" | grep -q "mesure distante: ls-remote borne a"; then
+    ok "T15 la mesure en direct annonce sa borne"
+  else
+    ko "T15 la borne de la mesure en direct n'est pas annoncee : $out_ok"
+  fi
+
+  if ! command -v timeout >/dev/null 2>&1; then
+    ok "T15 environnement sans \`timeout\` : la mesure ne peut pas etre bornee ici (controle non applicable)"
+  else
+    t0="$(date +%s)"
+    out="$(PATH="$TEST_DIR/bin:$PATH" COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S=2 run_mirror status)"; rc=$?
+    t1="$(date +%s)"
+    echo "$out" >> "$LOG"
+    if [ "$rc" -eq 0 ]; then ok "T15 rc=0 -- le statut rend la main"; else ko "T15 rc=$rc"; fi
+    dur=$(( t1 - t0 ))
+    if [ "$dur" -le 30 ]; then
+      ok "T15 le tick n'a pas pendu (${dur}s pour une mesure bornee a 2s)"
+    else
+      ko "T15 le tick a pendu ${dur}s : la mesure en direct n'est pas bornee"
+    fi
+    if echo "$out" | grep -qi "delai depasse"; then
+      ok "T15 le delai depasse est annonce (cause et non pas un silence)"
+    else
+      ko "T15 le delai depasse n'est pas annonce : $out"
+    fi
+    # La note doit SURVIVRE a la reconduction vers la reference hors-ligne :
+    # sinon le tick suivant ne sait plus pourquoi la source a change.
+    if echo "$out" | grep -q "mesure distante:"; then
+      ok "T15 la note de la mesure distante est dans le statut"
+    else
+      ko "T15 la note de la mesure distante est absente : $out"
+    fi
+  fi
+)
+echo ""
+
 # --- Verdict agrege --------------------------------------------------------
 n_pass="$(grep -c '^PASS' "$RESULTS" || true)"
 n_fail="$(grep -c '^FAIL' "$RESULTS" || true)"

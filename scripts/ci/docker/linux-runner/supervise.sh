@@ -213,6 +213,12 @@ MIRROR_MIN_FREE_MB="${COURSIA_RUNNER_MIRROR_MIN_FREE_MB:-8192}"
 # defaut, soit la moitie d'un `timeout-minutes: 10` -- le job garde sa marge
 # pour ses propres etapes apres le checkout.
 MIRROR_PROBE_MAX_S="${COURSIA_RUNNER_MIRROR_PROBE_MAX_S:-300}"
+# Delai de la MESURE EN DIRECT de l'ecart du miroir (`git ls-remote`).
+# Un reseau qui pend ne doit pas pendre le tick : le tick qui ne rend pas
+# ne rafraichit rien, et le miroir finit par figer SANS que personne ne le
+# voie -- exactement la panne muette de #26453. 20 s : un `ls-remote` vers
+# GitHub repond en quelques secondes ; au-dela, c'est un reseau pendu.
+MIRROR_LS_REMOTE_TIMEOUT_S="${COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S:-20}"
 # Le conteneur du miroir ne porte PAS le label coursia-ci=1 : il ne doit pas
 # entrer dans l'arithmetique memoire des slots (assert_memory_budget), qui
 # dimensionne une flotte de jobs. Il porte son propre plafond a la place.
@@ -2276,8 +2282,36 @@ if [ "$ACTION" = "status" ]; then
   # commits quand l'objet distant est deja dans le miroir ; sinon l'ecart est
   # annonce sans nombre plutot que devine.
   mirror_head="$(git --git-dir="$MIRROR" rev-parse "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null || echo '')"
-  remote_head="$(git ls-remote "$REMOTE" "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null | awk 'NR==1{print $1}')"
+  # MESURE EN DIRECT, BORDEE EN TEMPS (#26453) : le `git ls-remote` mesure
+  # l'ecart du miroir a origin/main. Un reseau qui PEND ne doit pas pendre
+  # le tick : le tick qui ne rend pas ne rafraichit rien, et le miroir finit
+  # par figer sans que personne ne le voie -- c'est la panne muette qu'on
+  # supprime. Le delai depasse est DISTINGUE de l'echec : les deux
+  # reconduisent vers la reference hors-ligne, mais ils ne se ressemblent
+  # pas dans le journal.
+  LSR_TIMEOUT="${COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S:-20}"
+  lsr_out=""
+  lsr_rc=0
+  if command -v timeout >/dev/null 2>&1; then
+    lsr_out="$(timeout "$LSR_TIMEOUT" git ls-remote "$REMOTE" "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null)"
+    lsr_rc=$?
+    lsr_note="ls-remote borne a ${LSR_TIMEOUT}s"
+  else
+    # `timeout` absent (image minimale) : la mesure n'est pas bornee, et le
+    # journal doit le dire plutot que de laisser croire a une mesure sure.
+    lsr_out="$(git ls-remote "$REMOTE" "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null)"
+    lsr_rc=$?
+    lsr_note="ls-remote NON borne (timeout absent de l'image)"
+  fi
+  remote_head="$(printf '%s\n' "$lsr_out" | awk 'NR==1{print $1}')"
   remote_src="ls-remote"
+  if [ "$lsr_rc" -eq 124 ]; then
+    lsr_note="$lsr_note -- DELAI DEPASSE (le reseau a pendu)"
+    remote_src="ls-remote (delai depasse : ${LSR_TIMEOUT}s)"
+  elif [ "$lsr_rc" -ne 0 ]; then
+    lsr_note="$lsr_note -- echec (rc=$lsr_rc)"
+    remote_src="ls-remote (echec rc=$lsr_rc)"
+  fi
   if [ -z "$remote_head" ] && [ -d "$REMOTE" ]; then
     # Remote local : lecture directe du depot (le `ls-remote` peut echouer
     # quand le repertoire courant est lui-meme un depot illisible).
@@ -2291,6 +2325,11 @@ if [ "$ACTION" = "status" ]; then
   fi
   echo "  main du miroir: ${mirror_head:-inconnue} ($(git --git-dir="$MIRROR" log -1 --format=%cI "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>/dev/null || echo 'date inconnue'))"
   echo "  origin/main: ${remote_head:-injoignable (reseau indisponible)} [$remote_src]"
+  # La note du `ls-remote` est rappelee MEME quand la reference a ete
+  # reconduite hors-ligne : sinon le delai depasse disparaitrait du journal
+  # et le tick suivant ne saurait pas dire pourquoi la mesure a change de
+  # source.
+  [ -n "$lsr_note" ] && echo "  mesure distante: $lsr_note"
   if [ -n "$mirror_head" ] && [ -n "$remote_head" ]; then
     if [ "$mirror_head" = "$remote_head" ]; then
       echo "  etat: a jour"
@@ -2370,6 +2409,7 @@ MIRROR_SH
     -e COURSIA_RUNNER_MIRROR_PROBE_MAX_S="$MIRROR_PROBE_MAX_S" \
     -e COURSIA_RUNNER_MIRROR_BOOTSTRAP="$MIRROR_BOOTSTRAP" \
     -e COURSIA_RUNNER_MIRROR_FAIL_WARN="$MIRROR_FAIL_WARN" \
+    -e COURSIA_RUNNER_MIRROR_LS_REMOTE_TIMEOUT_S="$MIRROR_LS_REMOTE_TIMEOUT_S" \
     "${GIT_NET_ARGS[@]}" \
     --entrypoint bash "$IMAGE" -c "$script" >>"$STATE_DIR/objects-mirror.log" 2>&1
 }

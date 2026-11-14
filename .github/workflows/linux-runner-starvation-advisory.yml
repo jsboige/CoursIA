@@ -146,10 +146,17 @@ jobs:
     # cron declare `23,53 * * * *` -- les creneaux sans runner ne sont pas des
     # runs en echec, ce sont des runs qui n'existent pas.
     #
-    # L'organe est sans dependance a l'hote : `check_runner_starvation.py` ne
+    # LA MESURE est sans dependance a l'hote : `check_runner_starvation.py` ne
     # lit aucun chemin local, aucun socket, aucun `systemctl` -- tout passe par
     # l'API GitHub. Il n'a jamais eu besoin du parc. Depot public : les minutes
     # GitHub-hosted sont gratuites, l'argument de cout ne s'applique pas.
+    #
+    # Exception bornee (#26453) : l'organe lit EN PLUS l'etat du miroir
+    # d'objets quand il est la, pour remonter l'alerte `[WARN][mirror]` (le
+    # miroir fige faisait tomber les checkouts -- c'est une CAUSE de famine,
+    # pas une note). Cette lecture est best-effort et LOCALE : sur ce runner
+    # GitHub-hosted elle ne trouve rien et rend une NOTE, jamais un rouge, et
+    # elle ne pese sur AUCUNE mesure. Le predicat de famine reste entier.
     #
     # La garde same-repo qui vivait ici a ete retiree avec le routage : ce
     # workflow n'a pas de declencheur pull_request, donc
