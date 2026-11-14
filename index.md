@@ -48,7 +48,7 @@ Chaque série est introduite par son thème central, ses prérequis et un pointe
 
 ## 🚀 Comment choisir son point d'entrée
 
-Pour un plan d'apprentissage guidé par niveau (débutant, intermédiaire, avancé), consultez la section **[Parcours recommandés](README.md#parcours-recommandés)** du `README.md` racine. Pour un parcours narratif précis (public, durée, sortie concrète), consultez la section *Parcours narratifs* de **[`PARCOURS.md`](PARCOURS.md)**. Pour un choix par contraintes d'infrastructure, voir **[`parcours.qmd`](parcours.qmd)**.
+Pour un plan d'apprentissage guidé par niveau (débutant, intermédiaire, avancé), consultez la section **[Parcours recommandés](README.md#parcours-recommandés)** du `README.md` racine. Pour un parcours narratif précis (public, durée, sortie concrète), consultez la section *Parcours narratifs* de **[`PARCOURS.md`](PARCOURS.md)**. Pour un choix par contraintes d'infrastructure, voir **[`parcours.qmd`](docs/parcours.qmd)**.
 
 Pour un inventaire technique exhaustif (notebook par notebook, statuts d'exécution, owners), consultez **[`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md)**.
 
