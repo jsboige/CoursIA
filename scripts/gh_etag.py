@@ -63,7 +63,11 @@ from pathlib import Path
 #: Plafond d'entrees : borne la taille du fichier (une entree = un chemin).
 #: Au-dela, la plus ancienne insertion part (les dictionnaires Python gardent
 #: l'ordre d'insertion). Une entree evictee ne coute qu'un 200 a la prochaine
-#: lecture -- jamais un verdict.
+#: lecture -- jamais un verdict. L'eviction est FIFO A LA PREMIERE insertion :
+#: une re-inscription (nouvel etag du meme chemin) NE DEPLACE PAS l'entree --
+#: un chemin chaud revalide souvent peut donc partir avant un chemin froid
+#: recent. Choisi (CR #26631, non bloquant) : pour un cache de revalidation,
+#: une eviction ne coute qu'un 200, jamais un verdict.
 MAX_ENTRIES = 200
 
 #: Plafond par entree : `git/blobs/<sha>` rend le contenu ENTIER en base64 --
@@ -174,7 +178,18 @@ def etag_applicable(args: list[str]) -> str | None:
     `If-None-Match` par page injectable via la CLI), `--jq` transforme le
     corps, `graphql` n'a pas d'ETag. Conservateur par construction : tout
     argv douteux reste sur le chemin non conditionnel d'origine.
+
+    #26631 (CR coordinateur) : sans dossier de cache (`cache_dir()` None --
+    desactive, ou machine sans LOCALAPPDATA/APPDATA comme un runner Linux),
+    rend None AUSSI : l'appelant reste alors sur son chemin d'origine OCTET
+    POUR OCTET. Un faux `subprocess.run` de test sert le stdout sans bloc
+    d'en-tetes de `gh api -i` ; le chemin conditionnel y lirait un corps
+    vide (incident : test_gh_json_porte_une_borne_par_appel, run 43651006619).
+    Sans cache, il n'y a de toute facon rien a revalider : le conditionnel
+    ne doit jamais changer la forme de l'appel.
     """
+    if cache_dir() is None:
+        return None
     if len(args) < 2 or args[0] != "api":
         return None
     path = args[1]

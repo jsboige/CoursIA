@@ -56,7 +56,13 @@ class FauxGh:
 
 @pytest.fixture(autouse=True)
 def cache_isole(tmp_path, monkeypatch):
-    """Cache dans tmp_path, store memoire et compteurs remis a zero."""
+    """Cache dans tmp_path, store memoire et compteurs remis a zero.
+
+    Re-active EXPLICITEMENT l'ETag : le conftest de scripts/tests le
+    desactive pour tout test (filet #26631), et ce fichier teste precisement
+    le chemin conditionnel -- son autouse conftest court avant celui-ci.
+    """
+    monkeypatch.setenv("COURSIA_GH_ETAG", "1")
     monkeypatch.setenv("COURSIA_GH_ETAG_DIR", str(tmp_path / "etag"))
     gh_etag.reset_for_tests()
     yield
@@ -187,6 +193,26 @@ def test_corps_trop_gros_servi_mais_non_stocke(tmp_path, monkeypatch):
     _lancer(monkeypatch, faux)
     assert not any(str(a).startswith("If-None-Match:")
                    for a in faux.argv_emis[1])
+
+
+def test_sans_cache_le_chemin_d_origine_est_pris(monkeypatch):
+    """#26631 (CR coordinateur), geste 1 : sans dossier de cache --
+    COURSIA_GH_ETAG=0, ou machine sans LOCALAPPDATA/APPDATA (runner Linux)
+    -- `etag_applicable` rend None et l'appelant reste sur son chemin
+    d'origine OCTET POUR OCTET. Le conditionnel ne doit jamais changer la
+    forme de l'appel quand il n'y a rien a revalider."""
+    ok = ["api", "repos/jsboige/CoursIA/issues/42"]
+    monkeypatch.setenv("COURSIA_GH_ETAG", "0")
+    assert gh_etag.cache_dir() is None
+    assert gh_etag.etag_applicable(ok) is None
+    # Meme verdict sans variable de desactivation, base locale absente
+    # (le cas du runner Linux du run 43651006619).
+    monkeypatch.delenv("COURSIA_GH_ETAG")
+    monkeypatch.delenv("COURSIA_GH_ETAG_DIR")
+    monkeypatch.delenv("LOCALAPPDATA", raising=False)
+    monkeypatch.delenv("APPDATA", raising=False)
+    assert gh_etag.cache_dir() is None
+    assert gh_etag.etag_applicable(ok) is None
 
 
 def test_etag_applicable_filtre_les_argv():
