@@ -11,6 +11,7 @@ project:
     - "MyIA.AI.Notebooks/Probas/index.qmd"
     - "MyIA.AI.Notebooks/Physique/index.qmd"
     - "docs/index.qmd"
+    - "docs/parcours.qmd"
     - "COURSE_CATALOG.generated.md"
     # README.md rendus en HTML (Axe C #4211). Liste explicite
     # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7
@@ -2722,7 +2723,7 @@ site:
         text: "Probas"
       - href: docs/index.qmd
         text: "Documentation"
-      - href: parcours.qmd
+      - href: docs/parcours.qmd
         text: "Parcours"
     right:
       - icon: github
