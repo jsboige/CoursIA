@@ -924,6 +924,59 @@ class TestRebaseHelper(unittest.TestCase):
             self.assertIn(NEW, body)
             self.assertNotIn(OLD, body)
 
+    def test_repeated_header_is_not_read_as_a_rename(self):
+        """#16231 : l'en-tete REPETE du registre ne doit pas devenir un
+        renommage « ancien » -> « nouveau ».
+
+        Le registre est appendu par plusieurs branches en parallele : deux
+        branches qui le creent chacune ecrivent l'en-tete, et la fusion peut
+        en laisser deux dans le meme fichier. Un lecteur qui saute seulement
+        la premiere ligne prend l'en-tete repete pour une entree : le motif
+        construit sur `ancien`/`nouveau` reconnait alors le mot « ancien »
+        dans toute ligne de prose ajoutee, et `--apply` la reecrit en
+        « nouveau » sans le signaler.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            self._setup(repo)
+            ledger = repo / rn.LEDGER_RELPATH
+            ledger.write_text(
+                ledger.read_text(encoding="utf-8") + "ancien\tnouveau\tdate\tlane\n",
+                encoding="utf-8", newline="")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "en-tete repete")
+            _write(repo, "docs/prose.md", "Le mot ancien reste intact dans la prose.\n")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "prose")
+            cwd = os.getcwd()
+            os.chdir(repo)
+            try:
+                rc = rn.main(["--rebase-helper", "--apply"])
+            finally:
+                os.chdir(cwd)
+            self.assertEqual(rc, 0)
+            body = (repo / "docs/prose.md").read_text(encoding="utf-8")
+            self.assertIn("ancien", body)
+            self.assertNotIn("nouveau", body)
+
+    def test_append_ledger_repares_a_missing_trailing_newline(self):
+        """#16231 : une entree ajoutee a un registre qui ne finit pas par un
+        saut de ligne serait concatenee a la derniere, qui deviendrait
+        illisible pour tout lecteur."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            _init_repo(repo)
+            ledger = repo / rn.LEDGER_RELPATH
+            ledger.parent.mkdir(parents=True, exist_ok=True)
+            ledger.write_text(
+                "ancien\tnouveau\tdate\tlane\nA\tB\t2026-11-11\tlane",
+                encoding="utf-8", newline="")
+            rn.append_ledger([("C", "D")], "lane-x", repo)
+            lines = ledger.read_text(encoding="utf-8").splitlines()
+            self.assertEqual(len(lines), 3)
+            self.assertEqual(lines[1], "A\tB\t2026-11-11\tlane")
+            self.assertTrue(lines[2].startswith("C\tD\t"))
+
 
 class TestPropose(unittest.TestCase):
     """--propose : table canonique, noyaux lus, preuve -Lean-Python citee,
