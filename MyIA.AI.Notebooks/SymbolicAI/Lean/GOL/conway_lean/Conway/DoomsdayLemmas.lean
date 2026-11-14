@@ -45,7 +45,15 @@ theorem dayOfWeek_conway_death : dayOfWeek 2020 4 11 = DayOfWeek.saturday := by
   decide
 
 /-- CALIBRATION (décomposition par cas) : ajouter une semaine complète est l'identité.
-    Un `decide` naïf échoue (`d` est libre) ; nécessite `cases d`. -/
+    Un `decide` naïf échoue (`d` est libre) ; nécessite `cases d`.
+    Preuve alternative déclarée : `calibration_lean/Calibration/Doomsday.lean`
+    porte le même énoncé sur un `DayOfWeek` autonome (sans import) et le prouve
+    par arithmétique modulaire explicite (`unfold` puis `decide`, une branche
+    par jour). Maison canonique de l'énoncé : ce lac `conway_lean`, où vit
+    l'algorithme de Doomsday. Comparaison : ici la fermeture est
+    définitionnelle (`cases d <;> rfl`, une tactique) — `add` est l'identité
+    au niveau des constructeurs ; là, le dépliage sur `Fin 7` enseigne le
+    calcul modulaire 7 ≡ 0 à la main. Axiomes atteints : propext, Quot.sound. -/
 theorem dayOfWeek_add_seven (d : DayOfWeek) : DayOfWeek.add d 7 = d := by
   cases d <;> rfl
 

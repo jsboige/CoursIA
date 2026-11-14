@@ -123,7 +123,14 @@ theorem sep11_day : dayOfWeek 2001 9 11 = DayOfWeek.tuesday := by
     Cela exerce le raisonnement d'arithmétique modulaire.
     Le prouveur doit comprendre que Fin 7 + 7 % 7 = l'original.
     Itérations attendues : 4-7 (unfold add → arithmétique modulaire → omega/decide).
-    Note : DayOfWeek autonome ici, sans import depuis Conway/Doomsday. -/
+    Note : DayOfWeek autonome ici, sans import depuis Conway/Doomsday.
+    Preuve alternative déclarée : `conway_lean` (`Conway/DoomsdayLemmas.lean`,
+    maison canonique de l'énoncé — l'algorithme de Doomsday y vit) déclare le
+    même théorème et le ferme en une tactique (`cases d <;> rfl`), car son
+    `DayOfWeek.add` est l'identité au niveau des constructeurs. Comparaison :
+    ici sept branches `unfold` + `decide` déplient le calcul `Fin 7` — la
+    cible de calibration EST ce dépliage modulaire, absent du côté conway où
+    la fermeture est définitionnelle. Axiomes atteints : propext, Quot.sound. -/
 theorem dayOfWeek_add_seven (d : DayOfWeek) : DayOfWeek.add d 7 = d := by
   cases d
   · unfold DayOfWeek.add DayOfWeek.toFin DayOfWeek.ofFin; decide

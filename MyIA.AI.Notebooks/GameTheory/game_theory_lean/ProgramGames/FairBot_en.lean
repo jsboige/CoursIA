@@ -246,7 +246,18 @@ theorem fairBot_not_sucker (d : FairBotDuel box)
   exact hr (soundCol (d.rowClause.1 hq))
 
 /-- "Action" version of `fairBot_not_sucker`: the sucker profile (C, D)
-is excluded under the same local soundness hypothesis. -/
+is excluded under the same local soundness hypothesis.
+Declared alternative proof (different formulation):
+`formal_logic_lean/FormalLogic/FairBotLoeb.lean` declares a theorem of the
+same name in syntactic reading — `T₀ ⊢ p 🡘 𝔅 q` and `T ⊢ p` yield `T ⊢ q`
+under `[𝔅.Kreisel]`. Canonical home of the FairBot agent: this lake
+(`game_theory_lean`), where the operational duel lives; the
+`formal_logic_lean` version is its Löb generalization. Comparison: here the
+hypothesis is the local soundness `box r → r` bearing on the opponent's
+clause of a concrete duel, and the conclusion excludes an action profile;
+there, the Kreisel hypothesis governs any theory `T` and the conclusion is a
+provability — frameworks not transportable term by term, each proof is
+canonical in its own. Axioms used: propext, Classical.choice, Quot.sound. -/
 theorem fairBot_unexploitable (d : FairBotDuel box)
     (soundCol : box d.colCooperates → d.colCooperates) :
     (modalAction d.rowCooperates, modalAction d.colCooperates)
@@ -288,7 +299,16 @@ theorem fairBot_vs_coopBot :
 consistency of the system (`¬ box False`). Without consistency, an
 inconsistent system "proves" everything, including DefectBot's
 cooperation: the hypothesis is not cosmetic, it is exactly what
-separates mutual defection from illusory cooperation. -/
+separates mutual defection from illusory cooperation.
+Declared alternative proof (different formulation):
+`formal_logic_lean/FormalLogic/FairBotLoeb.lean` declares a theorem of the
+same name under `[Consistent T] [𝔅.Kreisel]` and concludes `T ⊬ p`: the
+cooperation is not provable. Canonical home of the FairBot agent: this lake
+(`game_theory_lean`); the `formal_logic_lean` version is its syntactic
+reading. Comparison: here the conclusion is an action equality
+(`fairBotAction box False = defect`) — the duel behavior is determined;
+there, a non-provability — the epistemic information missing on this side.
+Two distinct strengths, neither contains the other. Axioms used: propext, Classical.choice, Quot.sound. -/
 theorem fairBot_vs_defectBot (hconsis : ¬ box False) :
     fairBotAction box False = defect :=
   modalAction_false hconsis

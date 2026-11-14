@@ -50,7 +50,17 @@ theorem nimSum_nil : nimSum [] = 0 := rfl
 theorem isWinningNim_345 : isWinningNim [3, 4, 5] = true := by
   decide
 
-/-- CALIBRATION (unfold + zero_xor): a single heap has nim-sum equal to its size. -/
+/-- CALIBRATION (unfold + zero_xor): a single heap has nim-sum equal to its size.
+    Declared alternative proof: `calibration_lean/Calibration/Nim_en.lean`
+    declares the same theorem and proves it by structural unfolding of the
+    `foldl` (`List.foldl_cons`, `List.foldl_nil`) rather than by pivot lemma.
+    Canonical home of the statement: this lake (`conway_lean`), where the
+    theory of Nim lives (Bouton 1901). Comparison: here
+    `simp [nimSum, Nat.zero_xor]` — one tactic, the pivot lemma does all the
+    work; there, two tactics expose the fold mechanics to the naked eye. Same
+    statement, same generality (`n : Nat` universal); what each strategy
+    teaches: the `Nat.zero_xor` reflex on one side, the reading of the fold on
+    the other. Axioms used: propext, Quot.sound. -/
 theorem nimSum_single (n : Nat) : nimSum [n] = n := by
   simp [nimSum, Nat.zero_xor]
 
