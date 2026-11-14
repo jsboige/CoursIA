@@ -521,7 +521,7 @@ REFERENCE: dict[str, dict[str, dict]] = {
             },
         },
     },
-    "scripts/check_already_delivered.py": {
+    "scripts/coordination/check_already_delivered.py": {
         "channels": {
             "api-gh": {
                 "cabled_in": [],
@@ -741,7 +741,14 @@ REFERENCE: dict[str, dict[str, dict]] = {
                 ),
             },
             "env:PLAN_LOSS_PR_BODY": {
-                "cabled_in": ["notebook-plan-loss-gate.yml"],
+                # #22209 TRANCHE45 : la jambe absorbee vit dans le job
+                # fast-lane d'always-on-guards.yml (promotion « Body live »,
+                # meme canal que MD_CONTENT_LOSS_PR_BODY) ; le workflow
+                # dormant reste cible pour sa jambe manuelle.
+                "cabled_in": [
+                    "always-on-guards.yml",
+                    "notebook-plan-loss-gate.yml",
+                ],
             },
         },
     },

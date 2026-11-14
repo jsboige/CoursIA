@@ -1,4 +1,4 @@
-"""Tests for scripts/check_docs_index.py — docs index reachability (#13748).
+"""Tests for scripts/ci/check_docs_index.py — docs index reachability (#13748).
 
 Covers the acceptance of issue #13748 (item « Index docs/ reference 100 % des
 live ») and the positive control that keeps the organ honest:
@@ -20,7 +20,7 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "ci"))
 
 import check_docs_index
 from check_docs_index import find_unreachable

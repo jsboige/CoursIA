@@ -19,9 +19,18 @@ pleine suite annulerait le gain sans laisser de trace lisible.
 ## Contrat : fail-OPEN vers la pleine suite
 
 Toute incertitude rend la **pleine suite** : lecteur de diff en echec, PR
-introuvable, chemin modifie hors table, portee restreinte vide. Se tromper
-dans ce sens coute du calcul ; se tromper dans l'autre valide moins que
-declenche.
+introuvable, portee restreinte vide, delegation hors table en echec. Se
+tromper dans ce sens coute du calcul ; se tromper dans l'autre valide moins
+que declenche.
+
+## Chemins hors table : delegation a l'organe natif (#25510)
+
+Un chemin hors de toute aire de veille ne rend plus la pleine suite : la
+selection est deleguee a ``select_tests.select`` (P2, #25520), dont la regle
+R4 (portee depot) couvre par construction tout changement. Le filet qui
+borne les trous de la delegation est le lot quatre fois par jour (P3,
+``slow-lane.yml``), qui joue la liste complete sur l'arbre d'integration --
+le controle positif #25510 en est le temoin.
 
 Seule exception, assumee bruyante (rc 2, meme semantique que guard_test_root
 #19026) : le bloc pytest du workflow illisible -- l'organe ne peut meme plus
@@ -75,6 +84,7 @@ try:
         _local_diff_paths,
     )
     from guard_test_root import parse_collected_paths
+    from select_tests import select as _select_native
 except ImportError:  # chargement par spec_from_file_location (tests)
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from codeql_changed_languages import (  # noqa: E402
@@ -83,6 +93,7 @@ except ImportError:  # chargement par spec_from_file_location (tests)
         _local_diff_paths,
     )
     from guard_test_root import parse_collected_paths  # noqa: E402
+    from select_tests import select as _select_native  # noqa: E402
 
 Reader = Callable[[str], list[str]]
 
@@ -98,6 +109,7 @@ FULL_TRIGGERS: tuple[str, ...] = (
     "scripts/ci/xdist_watchdog.py",             # le chien de garde du run
     "scripts/ci/changed_scripts_tests.py",      # cet organe (auto-veille)
     "scripts/ci/guard_test_root.py",            # lit ce workflow : derive = verdict derive
+    "scripts/ci/select_tests.py",               # organe de la delegation hors table (#25510)
 )
 FULL_BASENAMES: frozenset[str] = frozenset({"conftest.py", "pytest.ini"})
 
@@ -205,6 +217,31 @@ def suites_for_paths(
     return [s for s in suite_list if s in selected], unmapped
 
 
+def _suites_via_native(
+    unmapped: list[str], suite_list: list[str], repo_root: Path | None = None
+) -> list[str]:
+    """Suites du lot couvrant les chemins hors table, par l'organe natif.
+
+    select_tests.py (P2, #25520) selectionne, pour les chemins donnes, les
+    tests que le depot rattache a ces chemins : la regle R4 (portee depot)
+    couvre par construction tout changement, les regles R1-R3 les citations
+    et conventions de nom. Les fichiers selectionnes sont rabattus sur les
+    entrees du lot par contenance : une suite dossier couvre son sous-arbre
+    (``X`` couvre ``X/tests/t.py``), une suite fichier ne couvre qu'elle-meme.
+    Une seconde table de correspondance serait une derive de plus -- ici la
+    carte vient du depot, pas d'une ecriture a la main.
+    """
+    root = (repo_root or REPO_ROOT).resolve()
+    selection = _select_native(root, unmapped)
+    picked: set[str] = set()
+    for test_rel in selection.selected:
+        for entry in suite_list:
+            trimmed = entry.rstrip("/")
+            if test_rel == entry or test_rel.startswith(trimmed + "/"):
+                picked.add(entry)
+    return [s for s in suite_list if s in picked]
+
+
 def _is_full_trigger(path: str) -> bool:
     if any(path.startswith(prefix) or path == prefix.rstrip("/")
            for prefix in FULL_TRIGGERS):
@@ -219,11 +256,14 @@ def scope(
     pr_number: int = 0,
     token: str | None = None,
     readers: list[tuple[str, Reader]] | None = None,
+    repo_root: Path | None = None,
 ) -> tuple[str, list[str], str]:
     """Rend (mode, suites, raison). Fail-OPEN : pleine suite en cas de doute.
 
     ``readers`` chaine les lecteurs de diff (etiquette, lecteur) pour les
     tests ; en production, PR = diff local puis API, push = diff HEAD~1.
+    ``repo_root`` surcharge la racine de la delegation hors table (#25510)
+    pour les tests sur depot synthetique.
     """
     if event == "workflow_dispatch":
         return "full", list(suite_list), (
@@ -280,14 +320,39 @@ def scope(
         )
 
     suites, unmapped = suites_for_paths(paths, suite_list)
+    if unmapped:
+        # #25510 : un chemin hors table ne rend PLUS la pleine suite. La
+        # selection est deleguee a l'organe natif P2 (select_tests.py, #25520) :
+        # ses regles R1-R6 derivent du depot (noms, citations, parcours
+        # d'arborescence), donc un chemin que rien ne cite tombe sous la
+        # regle R4 (portee depot) -- le plancher de selection, pas la totalite.
+        # Mesure #25510 : les PRs du marathon II (carnets + twin_pairs.d/)
+        # rendaient 37/37 suites par ce repli ; la delegation en retient 13
+        # a 14, et la pleine suite reste au lot quatre fois par jour (P3,
+        # slow-lane.yml). Fail-OPEN preserve : si l'organe natif est
+        # indisponible (import, race de checkout) la pleine suite revient.
+        try:
+            delegated = _suites_via_native(unmapped, suite_list, repo_root)
+        except Exception as exc:  # noqa: BLE001 - fail-open documente en tete
+            return "full", list(suite_list), (
+                f"chemins hors table ({', '.join(unmapped[:3])}"
+                + ("..." if len(unmapped) > 3 else "")
+                + f") : pleine suite (delegation en echec : {_describe(exc)})"
+            )
+        suites = [s for s in suite_list if s in set(suites) | set(delegated)]
+        if delegated:
+            return "restricted", suites, (
+                f"{len(suites)} suite(s) sur {len(suite_list)} [source {source}"
+                f" + R4 native sur {len(unmapped)} chemin(s) hors table]"
+            )
+        return "full", list(suite_list), (
+            f"chemins hors table ({', '.join(unmapped[:3])}"
+            + ("..." if len(unmapped) > 3 else "")
+            + ") : aucune suite native couvrante : pleine suite"
+        )
     if not suites:
         return "full", list(suite_list), (
             "aucune suite correspond aux chemins modifies : pleine suite"
-        )
-    if unmapped:
-        return "full", list(suite_list), (
-            f"chemins hors table ({', '.join(unmapped[:3])}"
-            + ("..." if len(unmapped) > 3 else "") + ") : pleine suite"
         )
     return "restricted", suites, (
         f"{len(suites)} suite(s) sur {len(suite_list)} [source {source}]"

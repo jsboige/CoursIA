@@ -93,7 +93,7 @@ Le numero libre le plus haut pris par disponibilite est le tell « numero d'oppo
 
 ## 6. Ce qu'une renum casse — et l'organe qui le rattrape
 
-Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq ont leur organe :
+Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, chacune a son organe, et le sixieme se lance contre un clone du depot consommateur :
 
 | Surface | Organe |
 |---|---|
@@ -102,11 +102,11 @@ Le sweep n'est pas « chercher l'ancien nom ». Six surfaces cassent, et cinq on
 | Accents perdus dans les cibles | `scripts/notebook_tools/detect_link_target_regression.py` |
 | Rendu des liens de README de serie | `scripts/notebook_tools/check_notebook_link_render.py` |
 | **Libelle qui ment sur sa cible** | `scripts/notebook_tools/check_link_label_agreement.py` — **sur `main` depuis la PR #14625** (#14624) |
-| **Referents hors depot** | **aucun organe possible** — le catalogue du depot projets etudiant `jsboigeEPF/2026-MSMIN5IN52-GenAI` (`docs/CATALOGUE.md`), consommateur connu des chemins `MyIA.AI.Notebooks/GenAI/**` (#15289) |
+| **Referents hors depot** | `scripts/notebook_tools/check_external_consumer_links.py --consumer <clone>` — hors CI, a lancer contre un clone du consommateur ; consommateur connu : le catalogue du depot projets etudiant `jsboigeEPF/2026-MSMIN5IN52-GenAI` (`docs/CATALOGUE.md`), qui cite les chemins `MyIA.AI.Notebooks/GenAI/**` (#15289) |
 
 **La cinquieme est celle que le sweep rate**, et c'est la sequelle propre a la renumerotation : les quatre premiers organes verifient que la cible **existe**, aucun ne verifie que le **libelle dit la verite**. Un `[Search-12](.../Search-03b-....ipynb)` passe les quatre. Mesure du 2026-09-04 : **32 desaccords sur 2194 fichiers**, dont la sequelle directe de #13770.
 
-**La sixieme sort du depot — et c'est la seule sans organe.** Le catalogue etudiant reference les notebooks par des liens absolus `github.com/jsboige/CoursIA/blob/main/...` ; aucun balayage du depot ne traverse la frontiere de depot, le vert d'un rollup ne dit donc rien de ces referents. Instance fondatrice : **#15289** — la renumerotation #15085 (zero-pad `GenAI/Texte` 1..9 -> 01..09) y casse **9 liens sur 7 chemins**, invisible au rollup vert. Aide-memoire : avant toute renum sous `GenAI/**`, grep ce catalogue dans la meme tranche (mise a jour embarquee ou report coordonne, jamais un renommage muet des deux cotes).
+**La sixieme sort du depot — son organe ne tourne donc pas en CI.** Le catalogue etudiant reference les notebooks par des liens absolus `github.com/jsboige/CoursIA/blob/main/...` ; aucun balayage du depot ne traverse la frontiere de depot, le vert d'un rollup ne dit donc rien de ces referents. Instance fondatrice : **#15289** — la renumerotation #15085 (zero-pad `GenAI/Texte` 1..9 -> 01..09) y casse **9 liens sur 7 chemins**, invisible au rollup vert. Seconde mesure, 2026-11-13 : 3 liens casses sur les 121 du meme catalogue, deux par la descente vers `GenAI/Audio/04-Applications/04-Voix/` (cible retrouvee par l'organe), un par la fusion de `10f` dans `10d` (#22525, cible disparue). Geste : avant toute renum sous `GenAI/**`, lancer `check_external_consumer_links.py --consumer <clone du depot consommateur> --ref <tete de la PR>` dans la meme tranche ; les cibles deplacees se reecrivent avec `--apply` dans le clone, les cibles disparues se tranchent a la main (mise a jour embarquee ou report coordonne, jamais un renommage muet des deux cotes).
 
 Deux residus supplementaires se traitent dans la meme tranche : les cles orphelines de `pedagogy_density_baseline.json` (#13815) et la liste de rendu Quarto (#13931).
 

@@ -1,0 +1,10 @@
+- name: "Complexity-04 OnlineAlgorithms"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-04-OnlineAlgorithms-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Solver-free by design des deux côtés : les stratégies en ligne et leurs oracles de contrôle sont codés explicitement pour l'enseignement. Python utilise NumPy pour le générateur seedé ; C# conserve le travail avec Random/Fisher–Yates de la BCL et calcule les espérances par sommes discrètes. Aucun solveur ou outil externe de référence n'est omis."
+  known_differences:
+    - "Randomisation des permutations : seed 42 dans chaque langage, mais le générateur Python NumPy et System.Random n'ont pas le même flux ; les fréquences mesurées diffèrent légèrement. Le budget reste 20 000 permutations par couple (gamma,n), Fisher–Yates côté C#."
+    - "Les espérances des skis sont calculées exactement à partir de la loi discrète dans les deux versions. La valeur e/(e-1) est la limite asymptotique de la distribution donnée, pas une borne inférieure de chaque rapport fini ; à B=10 la valeur est 1,56471."

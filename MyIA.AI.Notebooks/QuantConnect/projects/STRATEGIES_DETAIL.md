@@ -63,7 +63,7 @@ Leaders vérifiés alignés (backbone no-ML) : **EMATrend 0.611** / **composite-
 ## Mean Reversion & Pairs (Intermédiaire)
 
 - **MeanReversion** : Signaux RSI multi-asset, achat en survente, vente en surachat.
-- **TrendFilteredMeanReversion** : RSI(2) pullback sur SPY conditionné par régime bull (SMA200). Time stop 5 jours. Signal réel (73% win) mais trop rare (~9 trades/an).
+- **TrendFilteredMeanReversion** : RSI(2) pullback sur SPY conditionné par régime bull (SMA200). Time stop 5 jours. Signal valide (70 % de trades gagnants) mais trop rare (8,4 trades/an sur 2015-2024).
 - **PairsTrading** : Arbitrage statistique sur paires d'actions cointégrées. Paires non cointégrées 2010-2026.
 - **ETF-Pairs** : Cointegration-based pairs trading sur ETFs. Cointégration instable.
 
