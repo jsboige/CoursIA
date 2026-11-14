@@ -67,15 +67,41 @@
             "outillage": 3,
             "autonomie": 2
           },
-          "justification": "Prérequis : notions de probabilité (MLE, perplexité, lissage) — niveau licence (P2). Outillage : NLTK (`punkt`, `punkt_tab` téléchargés par l'étudiant) (O3). Autonomie : les exercices étendent le vocabulaire, comparent add-k et add-1, complètent la courbe de perplexité — adaptation de formule et vérification, pas d'implémentation complète (A2). Niveau D2 = max(2, 2). Recherche R1 : le §7 « Courbe de perplexité vs n » est un instrument de choix reproductible ; le verdict sur le lissage est connu d'avance, ce n'est pas une exploration.",
+          "justification": "Les probabilités conditionnelles, MLE et perplexité sont des notions de licence (P2). Les exercices 'Vocabulaire et OOV', 'Lissage add-k' et 'Courbe de perplexité jusqu’à n=4' adaptent des formules et orchestrent les modèles sur un protocole fourni (A2). La courbe de perplexité et les comptes de zéros construisent un instrument de mesure réutilisable ; le test ne sélectionne pas un hyperparamètre de généralisation (R1). Les vraies API NLTK MLE/Laplace/KneserNey et la ressource française punkt_tab doivent être installées et interprétées (O3).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 12,
-            "cellules_md": 33,
-            "prose_chars": 22374,
-            "densite": 1864,
+            "cellules_md": 34,
+            "prose_chars": 11503,
+            "densite": 958,
             "densite_plancher": 1200,
             "kernel": "coursia-ml-training",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue-CSharp.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 3,
+            "autonomie": 2
+          },
+          "justification": "Les probabilités conditionnelles, MLE et perplexité sont des notions de licence (P2). Les exercices 'Vocabulaire et OOV', 'Lissage add-k' et 'Courbe de perplexité jusqu’à n=4' adaptent des formules et orchestrent les modèles sur un protocole fourni (A2). La courbe de perplexité et les comptes de zéros construisent un instrument de mesure réutilisable ; le test ne sélectionne pas un hyperparamètre de généralisation (R1). Les calculs pédagogiques sont C# et les vraies API NLTK sont invoquées via Python.NET ; CPython/NLTK et la ressource française constituent un outillage tiers (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 12,
+            "cellules_md": 34,
+            "prose_chars": 11869,
+            "densite": 989,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
             "exigences": {
               "api": false,
               "gpu": false,
