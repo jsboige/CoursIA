@@ -46,7 +46,7 @@ Enfin, 10 et 11 relient représentation et décision. Naive Bayes estime un mod�
 
 Les exercices prolongent chaque palier : modifier le lissage ou le vocabulaire de 02, contrôler les gradients et les transitions de 03, explorer l'ambiguïté de 04, puis comparer les décodages de 05. Dans l'arc vectoriel, 08 définit la perte et le gradient de skip-gram ; son entraînement et sa vérification sont laissés à l'exercice. Le passage à 09 demande de comprendre cette représentation et la somme des vecteurs de sous-mots.
 
-Pour l'évaluation, reprendre les mêmes données et les mêmes paramètres est essentiel. Le témoin `hmmlearn` de 05 utilise les paramètres du modèle étudié ; le témoin NLTK n'utilise pas le même lissage. Leur comparaison ne répond donc pas à la même question. En 11, une même précision finale ne signifie pas que les modèles prédisent la même classe pour chaque document.
+Pour l'évaluation, reprendre les mêmes données et les mêmes paramètres est essentiel. Le témoin `hmmlearn` de 05 utilise les paramètres du modèle étudié ; le témoin NLTK n'utilise pas le même lissage. Leur comparaison ne répond donc pas à la même question. En 11 ([Python](11-Classement-Texte-RegressionLogistique-FromScratch.ipynb) · [C#](11-Classement-Texte-RegressionLogistique-FromScratch-CSharp.ipynb)), une même précision finale ne signifie pas que les modèles prédisent la même classe pour chaque document ; le témoin scikit-learn reçoit les mêmes données mais une régularisation et un budget différents, et le C# l’appelle via Python.NET.
 
 ## Installation — Découverte et pratique
 

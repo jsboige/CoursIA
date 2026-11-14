@@ -353,15 +353,41 @@
             "outillage": 2,
             "autonomie": 4
           },
-          "justification": "Prérequis : le carnet se place explicitement après 10 et suppose optimisations convexe, entropie croisée et régularisation L2 — hors série (P3). Outillage : scikit-learn n'intervient que comme « juge extérieur » (O2). Autonomie : l'étudiant doit construire un banc dont le verdict n'est pas connu d'avance — le §1 montre que le corpus du carnet 10 est « un plafond », le §5 constate que « l'attendu n'est pas reproduit », et les trois exercices, « Chacun se juge sur une mesure, pas sur une impression » (A4). Niveau D4 = max(3, 4). Recherche R2 : la question « que fait la régularisation, et que ne fait-elle pas ? » est posée puis mesurée sur un banc construit pour l'occasion ; le carnet rapporte un résultat qui contredit l'attente théorique. Ce n'est pas du front (R3) : la question est tranchée à l'intérieur du carnet.",
+          "justification": "Le softmax, la cross-entropy et l'optimisation régularisée mobilisent un formalisme avancé (P3). Les exercices 'Mini-lots', 'Banc déséquilibré' et 'Bigrammes et régularisation' demandent de construire puis mesurer des variantes dont l'effet sur les rappels et la courbe L2 n'est pas fixé d'avance (A4). Le balayage sur le banc synthétique pose une question falsifiable ; la comparaison sklearn n'établit pas un optimum commun (R2). NumPy effectue l'optimisation manuelle ; scikit-learn est le juge extérieur à configurer (O2).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 11,
-            "cellules_md": 16,
-            "prose_chars": 27667,
-            "densite": 2515,
+            "cellules_md": 20,
+            "prose_chars": 16870,
+            "densite": 1533,
             "densite_plancher": 1200,
             "kernel": "Python3",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch-CSharp.ipynb",
+          "difficulte": "D4",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 3,
+            "outillage": 3,
+            "autonomie": 4
+          },
+          "justification": "Le softmax, la cross-entropy et l'optimisation régularisée mobilisent un formalisme avancé (P3). Les exercices 'Mini-lots', 'Banc déséquilibré' et 'Bigrammes et régularisation' demandent de construire puis mesurer des variantes dont l'effet sur les rappels et la courbe L2 n'est pas fixé d'avance (A4). Le balayage sur le banc synthétique pose une question falsifiable ; la comparaison sklearn n'établit pas un optimum commun (R2). MathNet fournit les primitives ; le modèle et les gradients sont C#. Python.NET/CPython/scikit-learn forment un outillage tiers supplémentaire pour le juge extérieur (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 11,
+            "cellules_md": 20,
+            "prose_chars": 16488,
+            "densite": 1498,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
             "exigences": {
               "api": false,
               "gpu": false,
