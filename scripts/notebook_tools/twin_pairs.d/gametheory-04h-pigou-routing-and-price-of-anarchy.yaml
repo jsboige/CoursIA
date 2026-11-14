@@ -1,0 +1,10 @@
+- name: "GameTheory-04h Pigou routing and Price of Anarchy"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-04h-Routing-PriceOfAnarchy-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux sources sont des calculs analytiques pédagogiques from-scratch et n'appellent aucun solveur externe ; le C# utilise le BCL .NET. Le twin préserve la même instance de Pigou, Wardrop, l'optimum social, le PoA, la sensibilité et les exercices. L'optimum est borné au flux faisable [0,D] des deux côtés ; la PoA utilise la variable normalisée t=alpha*D pour rester finie aux limites de flottants ; les flux, coûts et réponses sont mesurés dans chaque runtime. Le C# ajoute un contrôle indépendant par balayage de grille. SOTA-OK signifie ici que les deux carnets remplissent leur objectif analytique sans remplacer un moteur requis."
+  known_differences:
+    - "2026-11-12 : correction commune de l'optimum borné x_A*=min(D,0.5/alpha), de la stabilité de PoA via t=alpha*D et du rejet des paramètres non finis/non positifs ; fixtures extrêmes et exécution E2E des deux carnets."
+    - "Python conserve son style de présentation d'origine ; C# utilise des sorties console .NET et inclut un oracle de minimisation par grille comme contrôle indépendant. Les chemins de calcul restent les mêmes formules analytiques."
