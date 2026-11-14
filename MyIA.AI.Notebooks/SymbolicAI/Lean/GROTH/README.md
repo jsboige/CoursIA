@@ -21,3 +21,26 @@ par la clôture des PRs [#21223](https://github.com/jsboige/CoursIA/pull/21223),
 Le companion complet du parcours (adjonctions, topologies, cribles) vit dans le lake
 [`grothendieck_lean/`](grothendieck_lean/README.md) — modules `Grothendieck/CategoryAndSites.lean`
 et `Grothendieck/Adjunction.lean`.
+
+## Deux repères de provenance Stacks
+
+Ces lignes relient deux tags présents dans le code Axiom à des déclarations déjà
+présentes dans le module GROTH sur les adjonctions. Elles documentent une
+provenance déclarative ; elles ne prétendent pas établir une égalité formelle
+entre les énoncés. La source Axiom est épinglée au commit
+`5ed82d14634e8d9576bb844c7bd4e3da66d450e7` (lecture du 2026-11-08), fichier
+[`StacksCore/CategoryTheory/AdjointFunctors.lean`](https://github.com/AxiomMath/Stacks/blob/5ed82d14634e8d9576bb844c7bd4e3da66d450e7/StacksCore/CategoryTheory/AdjointFunctors.lean#L16).
+Un extrait partiel, limité aux lignes utiles à ces deux repères, est conservé dans
+[`scripts/lean/fixtures/stacks_adjoint_tags_excerpt.txt`](../../../../scripts/lean/fixtures/stacks_adjoint_tags_excerpt.txt) ;
+il provient du dépôt sous licence Apache-2.0
+([texte de licence](https://github.com/AxiomMath/Stacks/blob/5ed82d14634e8d9576bb844c7bd4e3da66d450e7/LICENSE)).
+
+| Tag Stacks | Déclaration taguée chez Axiom | Déclaration GROTH existante | Portée du rapprochement |
+|---|---|---|---|
+| 0037 | [`Adjunction.mkOfHomEquiv`](https://github.com/AxiomMath/Stacks/blob/5ed82d14634e8d9576bb844c7bd4e3da66d450e7/StacksCore/CategoryTheory/AdjointFunctors.lean#L16) | [`Grothendieck/Adjunction.lean`](grothendieck_lean/Grothendieck/Adjunction.lean) : `homEquiv_family` | Le commentaire Axiom décrit le constructeur à partir de l'isomorphisme Hom ; GROTH expose la famille des équivalences Hom portée par `Adjunction`. |
+| 0039 | [`Adjunction.leftAdjoint_preservesColimits`](https://github.com/AxiomMath/Stacks/blob/5ed82d14634e8d9576bb844c7bd4e3da66d450e7/StacksCore/CategoryTheory/AdjointFunctors.lean#L51) et [`Adjunction.rightAdjoint_preservesLimits`](https://github.com/AxiomMath/Stacks/blob/5ed82d14634e8d9576bb844c7bd4e3da66d450e7/StacksCore/CategoryTheory/AdjointFunctors.lean#L53) | [`Grothendieck/Adjunction.lean`](grothendieck_lean/Grothendieck/Adjunction.lean) : `leftAdjoint_preserves_colimits` et `rightAdjoint_preserves_limits` | Axiom rattache ces déclarations au tag 0039 et précise les cas de préservation finie ; GROTH expose les formes générales de préservation. |
+
+Le contrôle réutilise le parseur de déclarations Lean de
+`scripts/lean/lean_material_map.py` et vérifie les deux témoins depuis ce README,
+l'extrait amont et les fichiers réellement suivis dans le lake. Il ne lance aucun
+build d'AxiomMath/Stacks et ne change pas le périmètre du lake GROTH.
