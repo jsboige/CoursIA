@@ -102,7 +102,7 @@ fonctions.
 References
 ----------
 
-- Notebook consommateur : ``CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb``.
+- Notebook consommateur : ``Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb``.
 - Robustness value : Cinelli & Hazlett, « Making Sense of Sensitivity :
   Extending Omitted-Variable Bias », JRSS-B 82 (2020).
 - E-value : VanderWeele & Ding, « Sensitivity Analysis in Observational

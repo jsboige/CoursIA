@@ -1,4 +1,4 @@
-"""Test anti-derive : la sortie du notebook CausalBridges-07-Quasi-Experimental.ipynb = sortie de causal_organs.
+"""Test anti-derive : la sortie du notebook Causalite-07-Quasi-Experimentales-Python.ipynb = sortie de causal_organs.
 
 Issue #14051 tranche 2/2 acceptance 4 :
 > Un test anti-derive : si le module canonique change sa sortie, le pont rougit.
@@ -40,7 +40,7 @@ if str(_PARENT_DIR) not in sys.path:
 import causal_organs as co  # noqa: E402
 
 # Chemin du notebook source (relatif a ce test)
-NB_PATH = _PARENT_DIR / "CausalBridges-07-Quasi-Experimental.ipynb"
+NB_PATH = _PARENT_DIR / "Causalite-07-Quasi-Experimentales-Python.ipynb"
 
 
 def _extract_cell_source(nb_path: Path, cell_index: int) -> str:

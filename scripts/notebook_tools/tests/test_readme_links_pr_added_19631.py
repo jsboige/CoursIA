@@ -2,8 +2,8 @@
 
 Founding case (cf. issue body) : PR #19368 (Origami causal CB-00 README) voit
 son check-run ``Audit README -> .ipynb links`` rapporter STALE_LINK: 1 NOUVELLE
-pour ``MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/README.md ->
-CausalBridges-00-PearlLadder-Intro-Python.ipynb``. Le carnet est ajoute dans la
+pour ``MyIA.AI.Notebooks/Probas/Causalite/README.md ->
+Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb``. Le carnet est ajoute dans la
 meme PR (commit 59ea252dd, branche ``feature/19310-cb00-pearl-ladder-intro``)
 et le lien README est intentionnel (le carnet ET son entree README arrivent
 ensemble).
@@ -43,8 +43,8 @@ RGQR = REPO_ROOT / "scripts" / "regen_quarto_render.py"
 # non mergee). On l'utilise comme cible de reference pour les temoins qui ont
 # besoin d'un fichier effectivement tracked.
 CB01 = (
-    "MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/"
-    "CausalBridges-01-Do-Calculus.ipynb"
+    "MyIA.AI.Notebooks/Probas/Causalite/"
+    "Causalite-01-Calcul-Do-Python.ipynb"
 )
 
 

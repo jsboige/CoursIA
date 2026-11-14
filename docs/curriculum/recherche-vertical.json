@@ -110,10 +110,10 @@
       "description": "Pearl et le do-calculus : ponts entre correlation et intervention, estimands Dowhy, contrefactuels individuels, sensibilite aux confounders. Le detour de celui qui a compris qu'un pattern predictif n'est pas une explication.",
       "branch": "valider-une-experience",
       "notebooks": [
-        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb",
-        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb",
-        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb",
-        "Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb"
+        "Probas/Causalite/Causalite-01-Calcul-Do-Python.ipynb",
+        "Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb",
+        "Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb",
+        "Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb"
       ]
     },
     {

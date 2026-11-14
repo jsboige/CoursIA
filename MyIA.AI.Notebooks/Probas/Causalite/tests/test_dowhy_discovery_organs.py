@@ -47,7 +47,7 @@ import pandas as pd
 import pytest
 
 # Import direct sans packaging : on ajoute le dossier parent
-# (Probas/DecisionTheory/Causal-Bridges/) au sys.path.
+# (Probas/Causalite/) au sys.path.
 _PARENT_DIR = Path(__file__).resolve().parent.parent
 if str(_PARENT_DIR) not in sys.path:
     sys.path.insert(0, str(_PARENT_DIR))
@@ -55,7 +55,7 @@ if str(_PARENT_DIR) not in sys.path:
 import dowhy_discovery_organs as ddo
 
 # Chemin du notebook consommateur (relatif a ce test).
-NB_PATH = _PARENT_DIR / "CausalBridges-04-Dowhy-Decouverte-Structure.ipynb"
+NB_PATH = _PARENT_DIR / "Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb"
 
 # Le CPDAG canonique du monde par defaut (mesure, 20/20 seeds a alpha=0.01).
 # Convention du module : les aretes non orientees sont rendues en tuple TRIE.

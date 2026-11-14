@@ -1,6 +1,6 @@
-"""Organes canoniques de la ligne causal-fairness (Causal-Fairness).
+"""Organes canoniques de la ligne causal-fairness (Équité causale).
 
-Ce module expose l'API importable du notebook Causal-Fairness : le monde
+Ce module expose l'API importable du notebook Équité causale : le monde
 génératif (SCM d'embauche à attribut protégé), la batterie de mesures
 d'équité de la famille TV (Plecko-Bareinboim, FnT R-90, ch. 3-4) et la
 règle des 80 % (EEOC four-fifths rule) pour le disparate impact concret.

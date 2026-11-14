@@ -1,0 +1,8 @@
+date: '2026-11-13'
+by: 'renommage Causal-Bridges -> Probas/Causalite #25827 : recalage du lien du notebook-pont
+  (markdown uniquement, 0 cellule code, 0 sortie), cote Python et cote C# symetriques,
+  relus firsthand'
+python_sha: a687f163ca01b4d9684f7efd2c15cea5f3b3ea0a
+csharp_sha: ade3bcd0df70bdc74bd129fb966f732665e9e7f6
+content_python_sha: 4acde79950d551bd409656c26505afbd932b147cad8a36276bdbeb06b74e9135
+content_csharp_sha: 1c1aa3bd0cf3d6a7e26e9f1702826f9412d18d6bff77676d53bc60c1220aa202
