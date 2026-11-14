@@ -14,7 +14,7 @@ surfaces ``.ipynb .md .py .cs``, répertoires hors périmètre exclus :
 
 | forme capturée | identifiants arXiv distincts |
 |---|---:|
-| URL seule (méthode EPIC) | 175 |
+| URL seule (``ARXIV_URL_RE``, le motif de cet organe) | 175 |
 | tampon seule | 321 |
 | legacy seule | 9 |
 | **union des trois** | **352** |
@@ -24,11 +24,14 @@ ne voit aucun des identifiants que les carnets citent sous forme tampon.
 L'union des formes n'est pas un détail de forme : c'est la population réelle
 que A1 doit résoudre.
 
-Le compte de la forme URL dépend de trois conventions explicites, qu'il faut
-nommer pour que le chiffre soit comparable : l'alternance de chemin
-``abs|pdf`` (la commande de l'EPIC) rend **175**, ``abs`` seul rend **173**,
-``abs|pdf|html|format`` rend **176**. L'écart entre ces trois valeurs est une
-convention de motif, pas un désaccord sur la population.
+Le compte de la forme URL dépend de la convention de motif, et il faut la
+nommer pour que le chiffre soit comparable. Au périmètre de cet organe
+(``tests/`` exclu, comme partout ici), ``abs`` seul rend **172**, l'alternance
+``abs|pdf`` (la commande de l'EPIC) rend **174**, et ``abs|pdf|html|format`` —
+le motif de cet organe, ``ARXIV_URL_RE`` — rend **175**. Réintégrer les
+fixtures de ``tests/`` donne 173, 175 et 176 : l'écart entre les deux séries
+est une convention de périmètre, et l'écart à l'intérieur d'une série une
+convention de motif — dans les deux cas, pas un désaccord sur la population.
 
 La forme **nue** (``NNNN.NNNNN`` sans marqueur) est, elle, exclue par
 défaut : elle sur-compte massivement (mesuré par une tranche de la famille
@@ -1056,8 +1059,13 @@ def main(argv: list[str] | None = None) -> int:
     print("gisement : %d DETENU (chemin connu), %d ABSENT du catalogue"
           % (len(tenus), len(absents)))
     if avertissement:
-        print("ATTENTION : aucun catalogue charge — le verdict ABSENT ne "
-              "mesure rien (voir stderr)")
+        if catalogues:
+            print("ATTENTION : %d catalogue(s) charge(s) mais aucun identifiant "
+                  "indexe — le verdict ABSENT ne mesure rien (voir stderr)"
+                  % len(catalogues))
+        else:
+            print("ATTENTION : aucun catalogue charge — le verdict ABSENT ne "
+                  "mesure rien (voir stderr)")
     if args.resoudre:
         print("resolution : %d DETENU, %d ABSENT, %d NON_RESOLU"
               % (len(tenus), len(absents), len(non_resolus)))
