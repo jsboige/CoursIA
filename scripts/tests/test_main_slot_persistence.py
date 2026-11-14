@@ -187,6 +187,35 @@ def test_les_defauts_du_wrapper_sont_ceux_de_l_organe(variable):
         _defaut(ORGANE.read_text(encoding="utf-8"), variable)
 
 
+def test_les_deux_fichiers_epinglent_le_meme_daemon_docker():
+    """Le daemon du slot est celui de la distro (`unix:///var/run/
+    docker-ce.sock`, mesure ai-01 du 2026-11-14) : c'est le seul qui porte
+    l'image `coursia-linux-runner:2.338.0`. Le daemon du contexte par
+    defaut (Docker Desktop) ne la porte pas.
+
+    Le wrapper exporte deja `DOCKER_HOST` ; l'organe doit faire pareil.
+    Sinon un `--apply` lance DIRECTEMENT (hors wrapper) vise le mauvais
+    daemon -- et l'echec survient APRES le mint du jeton
+    d'enregistrement, qui est a usage unique : le slot ne peut plus etre
+    cree sur le bon daemon."""
+    assert _defaut(WRAPPER.read_text(encoding="utf-8"), "COURSIA_MAIN_DOCKER_HOST") == \
+        _defaut(ORGANE.read_text(encoding="utf-8"), "COURSIA_MAIN_DOCKER_HOST")
+    assert _defaut(ORGANE.read_text(encoding="utf-8"), "COURSIA_MAIN_DOCKER_HOST") == \
+        "unix:///var/run/docker-ce.sock"
+    assert "export DOCKER_HOST" in _corps(ORGANE), \
+        "l'organe doit exporter DOCKER_HOST (le pin n'est pas dans un commentaire)"
+
+
+def test_la_racine_des_volumes_ne_depend_pas_de_home():
+    """Sous systemd, l'unite pose `HOME=/root` ; a la main, `$HOME` est le
+    home de l'operateur. Deux racines = deux jeux de volumes = l'etat du
+    runner (son registre) n'est pas le meme selon qui a cree le slot."""
+    defaut = _defaut(ORGANE.read_text(encoding="utf-8"), "COURSIA_MAIN_BASE")
+    assert defaut.startswith("/"), f"la racine des volumes doit etre absolue : {defaut}"
+    assert "$HOME" not in defaut, \
+        f"la racine des volumes ne doit pas dependre de HOME : {defaut}"
+
+
 # --- 4. les invariants de securite du wrapper ------------------------------
 
 

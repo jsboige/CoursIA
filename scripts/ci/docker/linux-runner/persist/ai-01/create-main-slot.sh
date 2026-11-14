@@ -65,6 +65,34 @@
 # declaree. Une entree morte (comme le `runner_override` qui a ete
 # ecrit ici par erreur) fait rougir le test.
 #
+# LE DAEMON DOCKER EST EPINGLE (mesure du 2026-11-14, ai-01)
+# ---------------------------------------------------------
+# Les slots du pool de CETTE machine (`myia-ai-01-wsl-3`, ...) tournent sur
+# le daemon **CE** de la distro WSL (`unix:///var/run/docker-ce.sock`), et
+# c'est ce daemon qui porte l'image `coursia-linux-runner:2.338.0`. Le
+# daemon du contexte par defaut (Docker Desktop) ne la porte pas :
+# `docker images` de ce daemon-la ne liste pas l'image.
+#
+# Sans epinglage, un `--apply` lance DIRECTEMENT (hors wrapper) vise le
+# mauvais daemon -- et l'echec survient APRES le mint du jeton
+# d'enregistrement, qui est a usage unique : le slot ne peut plus etre
+# cree sur le bon daemon. La variable est DEDICEE
+# (`COURSIA_MAIN_DOCKER_HOST`) et n'est pas reprise de l'environnement :
+# un `DOCKER_HOST` deja pose par un contexte arbitraire ne doit pas
+# pouvoir detourner la creation. C'est la meme regle que
+# `coursia-main-slot-start.sh` (le wrapper l'exporte deja, avec la meme
+# valeur par defaut).
+#
+# LA RACINE DES VOLUMES EST ABSOLUE ET INDEPENDANTE DE L'UTILISATEUR
+# -------------------------------------------------------------------
+# Les volumes du slot (`<slot>-work`, `<slot>-config`) sont montes sous
+# une racine unique. Elle ne peut pas dependre de `$HOME` : l'unite
+# systemd pose `HOME=/root`, donc une creation par l'unite et une
+# creation a la main ne regarderaient pas le meme endroit -- et l'etat du
+# runner (son registre) se perdrait d'un cote comme de l'autre. La
+# convention de la machine est `/var/lib/coursia-runner*` (l'etat du pool
+# y vit deja : `/var/lib/coursia-runner/stop`).
+#
 # EXEMPLE
 # -------
 #   ./create-main-slot.sh --check
@@ -98,7 +126,15 @@ CPUS="${COURSIA_MAIN_CPUS:-2}"
 IMAGE="${COURSIA_MAIN_IMAGE:-${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.338.0}}"
 LABELS="${COURSIA_MAIN_LABELS:-self-hosted,coursia-main,coursia-linux}"
 CGROUP_PARENT="${COURSIA_CGROUP_PARENT:-coursia-ci.slice}"
-BASE="${COURSIA_MAIN_BASE:-$HOME/CoursIA-runners-main}"
+# Le daemon est celui de la distro (mesure du 2026-11-14) : c'est le seul
+# qui porte l'image du pool. Variable dediee, comme dans le wrapper.
+DOCKER_HOST="${COURSIA_MAIN_DOCKER_HOST:-unix:///var/run/docker-ce.sock}"
+export DOCKER_HOST
+# La racine des volumes ne depend pas de `$HOME` : l'unite systemd pose
+# `HOME=/root`, une creation a la main part du home de l'operateur. Deux
+# racines -> deux jeux de volumes -> l'etat du runner n'est pas le meme
+# selon qui a cree le slot (voir le bandeau).
+BASE="${COURSIA_MAIN_BASE:-/var/lib/coursia-runner-main}"
 WORK_MOUNT="/home/runner/_work"
 TOOLCACHE_MOUNT="/opt/hostedtoolcache"
 
