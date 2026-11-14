@@ -5097,14 +5097,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # (`check_lane_claim.py N --lane L --paths p`) silently skipped the guard
     # and printed `free_paths` -- a list that describes the CLAIM scope, never
     # the open-PR space -- reading as an all-clear on an occupied file.
-    # #18341 -- the leg now uses `my_scope` (--paths U paths: du claim propre)
-    # so a lane that has already declared `paths:` on its active claim gets
-    # the OPEN-PR check without having to pass `--paths` on the call.
+    # #18341 -- the leg reads `--paths` U `paths:` du claim propre, so a lane
+    # that has already declared `paths:` on its active claim gets the OPEN-PR
+    # check without having to pass `--paths` on the call.
+    # #25082 -- SAUF quand ce « claim propre » est un perimetre deja LIVRE et
+    # MERGE : ce n'est plus une intention d'editer (`_open_pr_leg_scope`).
+    # `my_scope` garde le perimetre livre pour la confrontation aux claims des
+    # autres lanes : seule la jambe PR-ouverte change de perimetre.
+    open_pr_scope = _open_pr_leg_scope(my_paths, mine)
+    if (check_open_pr_paths and mine is not None and mine.get("locked")
+            and mine.get("paths")):
+        print(
+            f"INFO: le perimetre livre de {my_lane} (PR "
+            f"#{mine.get('pr_ref')} MERGEE) n'est pas confronte aux PRs "
+            f"ouvertes : une tranche mergee n'est pas une intention d'editer "
+            f"(#25082). Pour la tranche suivante, passer `--paths` ou poser "
+            f"un nouveau [CLAIMED] a perimetre etroit.",
+            file=sys.stderr,
+        )
     open_pr_collisions: list[PathCollision] = []
-    if check_open_pr_paths and my_scope:
+    if check_open_pr_paths and open_pr_scope:
         try:
             open_pr_collisions, _own = _compute_open_pr_collisions(
-                my_scope, my_lane)
+                open_pr_scope, my_lane)
         except OpenPrsIncompleteError as exc:
             # #21742 -- l'enumeration des PRs ouvertes n'a pas pu etre
             # completee : ce CLEAR ne dit rien des PRs OUVERTES, comme le
@@ -5692,6 +5707,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # `exit 2`, matching the contract `--paths` already carries (#9959).
         "open_pr_collisions": [
             _serialise_path_collision(c) for c in open_pr_collisions],
+        # #25082 -- le perimetre que la jambe PR-ouverte a reellement
+        # confronte (null = jambe sans objet). Il differe de `my_scope` quand
+        # le claim propre est une tranche livree et mergee : sans cette cle,
+        # un `open_pr_collisions: []` ne dit pas sur quels chemins il porte.
+        "open_pr_scope": open_pr_scope,
         # #14300 -- the IMPLICIT leg's finding, same single-report contract
         # as open_pr_collisions above. Non-empty routes the verdict below
         # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
@@ -6922,6 +6942,38 @@ def _serialise_path_collision(c: PathCollision) -> dict:
         "lane": c.lane,
         "files_intersecting": c.files,
     }
+
+
+def _open_pr_leg_scope(
+    my_paths: list[str] | None,
+    mine: ClaimEvent | None,
+) -> list[str] | None:
+    """Perimetre que la jambe PR-ouverte (#16570) confronte aux PRs ouvertes.
+
+    C'est le perimetre d'INTENTION de l'appelant : les `--paths` de l'appel,
+    plus la clause `paths:` de son propre claim actif (#18341).
+
+    #25082 -- une exception, mesuree le 2026-11-13 sur #20298. Sous la
+    semantique v2 (#12386, #22445), un `[DELIVERED] ... paths:` dont la PR est
+    MERGEE reste « actif » (`locked`) : il dit aux AUTRES lanes que ce
+    perimetre est livre. Lu comme l'intention de sa propre lane, il faisait
+    tourner la jambe sur des fichiers deja merges, et toute PR ouverte d'une
+    autre lane qui les touchait rendait `BLOCKED` a la lane porteuse -- sur sa
+    tranche SUIVANTE, pour laquelle elle n'avait encore rien declare. Sur un
+    chantier multi-tranches (classe `consolidation`), la lane porteuse ne
+    revenait donc jamais.
+
+    Un perimetre livre et merge n'est pas une intention d'editer : il sort du
+    perimetre de la jambe. Les `--paths` de l'appel, eux, restent toujours
+    confrontes. Un `[DELIVERED]` dont la PR est encore OUVERTE n'est pas
+    `locked` : le travail est en vol, son perimetre reste confronte.
+
+    Rend None quand il ne reste aucun chemin : la jambe est alors sans objet.
+    """
+    mine_paths = (mine.get("paths") if mine else None) or []
+    if mine is not None and mine.get("locked"):
+        mine_paths = []
+    return list(dict.fromkeys((my_paths or []) + list(mine_paths))) or None
 
 
 def _compute_open_pr_collisions(
