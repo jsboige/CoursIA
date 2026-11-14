@@ -12072,7 +12072,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-Pregnanc
 #  1. ObjectSpec(idx=3, intrinsic_valence=-1.0) (prédateur).
 #  2. Mesurer avoidance = 1 - approach_fraction(pred_idx) ; vérifier qu'elle est haute.
 print(""Exercice 3 à compléter : abstention face à un signal répulsif."")",,,,,,,,372395eb5ed72d87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,7025fc1e,markdown,fr,18519165b6a4508d,"## Conclusion
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,7025fc1e,markdown,fr,7e4038ec4ba968c4,"## À retenir
 
 L'incarnation ne recolle pas valence et prédiction — elle les **dissocie** plus nettement encore. Sur le régime erratique, le modèle interne $\hat p$ est fortement dégradé (ratio erreur vs persistance ×4.1 relativement au balistique) mais l'investissement thomien — la valence apprise $\pi$, transférée par co-occurrence, réversible par extinction, mobilisant l'action — tient. C'est la réponse à la question #7740 : **prégnance et représentation sont deux grandeurs distinctes**, même chez un animat incarné.
 
@@ -12080,7 +12080,7 @@ Cette dissociation **survit à l'analyse multi-graines** : sur les cinq graines 
 
 *Portée honnête* : ce notebook couvre les **six mesures** 1, 2, 3, 4, 5, 6 + la matrice de dissociation. Les mesures 4 (énergie-libre adaptive) et 5 (information prédictive), différées en PR-A comme recherche, sont désormais livrées (§7) : `free_energy` mode `fixed` n'est qu'un habillage du MSE (gate 1), mais la précision *adaptive* amortit l'explosion erratique (gate 2), et l'information mutuelle $I(\hat q;o)$ y est *anti-corrélée* au MSE (plafond épistémique). Trois lecteurs orthogonaux de $\hat q$.
 
-> **Voir aussi.** [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (valence programmée, champ spatial), [ICT-12b](ICT-12b-LearnedValence-Python.ipynb) (valence apprise désincarnée, le banc algorithmique que cet animat incarne), [ICT-0-Framing](../ICT-0-Framing.md) (jambe C1, #7740).",,,,,,,,18519165b6a4508d,,,,,,,,,,,,,,,
+> **Voir aussi.** [ICT-12](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) (valence programmée, champ spatial), [ICT-12b](ICT-12b-LearnedValence-Python.ipynb) (valence apprise désincarnée, le banc algorithmique que cet animat incarne), [ICT-0-Framing](../ICT-0-Framing.md) (jambe C1, #7740).",,,,,,,,7e4038ec4ba968c4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12d-InhibitedActionAnimat-Python.ipynb,905617e2,markdown,fr,1dc12a36798198d0,"# ICT-12d — Animat inhibé (Laborit) : contrôlabilité, rigidification, dette d'irréversibilité
 
 **Sous-série ICT — trajectoires intégrées.** Ce carnet consomme le module [`ict.inhibited_action`](../ict/inhibited_action.py). Il présente la **jambe C2** de la tresse transverse, parallèle à [C1 — ICT-12c](ICT-12c-PregnanceAnimat-Python.ipynb) (prégnance/valence incarnée) et distincte d'[ICT-30](../ICT-30-InhibitedInvention-Python.ipynb) (inhibition de l'**innovation**, strate 7 collective) : ici, l'inhibition porte sur l'**action** d'un animat individuel (strates 3/5).
@@ -21762,7 +21762,7 @@ La Phase B soumet le substrat argumentation au zoo ICT et confirme (ou infirme, 
 Ce substrat (S-arg) prépare la **strate 6** (horizon collaboration agentique et altérité, #7291) : la thèse unificatrice — la réversibilisation comme maintien d'agents autres capables de coopérer — y sera soumise à un **contrat de falsifiabilité** écrit avant tout run.
 
 > **Garde-fou** (issue #7289) : les verdicts ci-dessus portent sur des **topologies** (symétrique vs asymétrique), jamais sur le contenu d'un discours réel. Toute transposition à un corpus réel (Argumentum, `argumentation_analysis`) devra reconduire les mêmes mesures structurelles — et accepter qu'un discours « de son camp » puisse être classé irréversibiliste si la topologie le mesure ainsi.",,,,,,,,f98bf74ab5397b7b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,90e840be,markdown,fr,769da2fa579ad7d4,"# Boucle auto-referentielle p_hat (case 2 / Epic #9533)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,90e840be,markdown,fr,56b69a806df02d9a,"# Boucle auto-referentielle p_hat (case 2 / Epic #9533)
 
 ## Contexte et ancrage
 
@@ -21770,7 +21770,7 @@ Cette 2eme case de la matrice inversee (`docs/ict/dissociations-matrix.md`,
 PR #9546 MERGED 2026-08-06) teste la prediction auto-referentielle :
 
 > *Une boucle fermee `p_hat -> action -> p_hat` est stable sur un regime
- borne mais diverge (oscillation amplifiee) hors de ce regime.*
+borne mais diverge (oscillation amplifiee) hors de ce regime.*
 
 La matrice ICT factorise la serie en 4 objets `(s, q, pi, W)` ; la matrice
 inversee (depuis #9533, chantier 3/3) designe chaque case vide comme une
@@ -21823,8 +21823,8 @@ these : le verdict experimental reste independant du temoin.
 9. Synthese + verdict honnete a 2 niveaux
 10. Verdict agrege + credit temoin
 11+. Exercices (>=3) et conclusion
-*Famille **dissociations** de la serie ICT : Precedent : [case 1 -- s ⟂ π](ICT-Dissociation-SaillancePregnance-Python.ipynb) | Suivant : [case F2 -- self-model et store etendu](ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb).*
-",,,,,,,,769da2fa579ad7d4,,,,,,,,,,,,,,,
+*Famille **dissociations** de la serie ICT : Precedent : [case 1 -- s ⟂ π](ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb) (dissociation saillance / pregnance, descendu dans la sous-série ICT-12 au palier 07) | Suivant : [case F2 -- self-model et store etendu](ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb).*
+",,,,,,,,56b69a806df02d9a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,06f9926b,code,fr,3652fcb9fa0888f2,"import sys, os
 # Le notebook vit dans ICT-Series/ ; le package ict est juste a cote.
 sys.path.insert(0, os.getcwd())
@@ -22054,7 +22054,7 @@ selon la meme discipline (1 case = 1 notebook = 1 PR).
 - `#9533` -- issue source (chantier 3/3, matrice inversee)
 - `#8182` -- tracker de veille grade C (jalon 2 reactivation post-test)
 - `#9553` -- case 1 (`s ⟂ pi`) testee par po-2023, MERGED 2026-08-05",,,,,,,,7591202565890e6e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,efd04e0d,markdown,fr,1a91673b3219e9e0,"# ICT -- Dissociation saillance / pregnance (case `s ⟂ π`)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,efd04e0d,markdown,fr,1a91673b3219e9e0,"# ICT -- Dissociation saillance / pregnance (case `s ⟂ π`)
 
 *See [#9533](https://github.com/jsboige/CoursIA/issues/9533) (chantier 3/3 : inverser la matrice des dissociations -- registre vers générateur d'expériences) et [#8077](https://github.com/jsboige/CoursIA/issues/8077) (les 5 ponts falsifiables). Part of Epic #4588 (strate 5 : théorie fondatrice cross-substrat).*
 
@@ -22068,10 +22068,10 @@ La matrice des dissociations ICT ([`docs/ict/dissociations-matrix.md`](https://g
 
 > **Verdict honnête (après le test).** La prédiction stricte ci-dessus (sur l'engagement *total* = détecter × décider) est **falsifiée** : `s` gate la détection, donc `s` prédit l'engagement total même pour l'animat à valence. La dissociation tient en revanche au niveau **décision sachant détection**, et le null réactif y inverse le motif. Résultat nuancé : **la saillance compte pour VOIR, la pregnance pour AGIR.**
 ",,,,,,,,1a91673b3219e9e0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,1c43b29a,code,fr,1a63e9fe2aa984cc,"# Imports : le package ict/ est installe via `pip install -e .` depuis ICT-Series/.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,1c43b29a,code,fr,58937f4af1254932,"# Imports : le package ict/ est installe via `pip install -e .` depuis ICT-Series/.
 import numpy as np
 import sys, os
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.dirname(os.path.abspath(""."")))  # acces au package ict pose a cote des notebooks (un niveau au-dessus)
 
 from ict.salience_valence_dissociation import (
     stimulus_battery, learn_valences,
@@ -22081,40 +22081,40 @@ from ict.salience_valence_dissociation import (
     case_verdict, verdict_robust_across_seeds,
 )
 np.set_printoptions(precision=3, suppress=True)
-print(""Module ict.salience_valence_dissociation charge."")",,,,,,,,1a63e9fe2aa984cc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,4e577696,markdown,fr,c8cbc2883124887e,"## 1. Substrat -- une batterie de stimuli aux attributs *indépendants*
+print(""Module ict.salience_valence_dissociation charge."")",,,,,,,,58937f4af1254932,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,4e577696,markdown,fr,c8cbc2883124887e,"## 1. Substrat -- une batterie de stimuli aux attributs *indépendants*
 
 La saillance `s_i` d'un stimulus est sa conspicuité perceptuelle (contraste, amplitude) dans `[0, 1]`. La pregnance cible `λ_i` est sa vraie valeur de récompense dans `[-1, +1]`. Les deux sont tirées **indépendamment** -> `corr(s, λ) ≈ 0` par construction. C'est le **pré-requis** de la dissociation : si `s` et `π` étaient couplées, on ne pourrait pas distinguer leurs rôles.",,,,,,,,c8cbc2883124887e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,bbfdc753,code,fr,2e7b3ebf393bfe6c,"rng = np.random.default_rng(0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,bbfdc753,code,fr,2e7b3ebf393bfe6c,"rng = np.random.default_rng(0)
 s, lam = stimulus_battery(n_stimuli=120, rng=rng)
 print(f""Batterie : {s.size} stimuli"")
 print(f""  s   (conspicuite) dans [{s.min():.2f}, {s.max():.2f}]"")
 print(f""  lam (recompense)   dans [{lam.min():.2f}, {lam.max():.2f}]"")
 rho = _pearson(_rank(s), _rank(lam))
 print(f""  corr(s, lam) = {rho:+.3f}  (~0 : decorrelation par construction, prerequis de la dissociation)"")",,,,,,,,2e7b3ebf393bfe6c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,0a563714,markdown,fr,b3aa60572b601ec0,"## 2. Apprentissage Rescorla-Wagner de la valence
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,0a563714,markdown,fr,b3aa60572b601ec0,"## 2. Apprentissage Rescorla-Wagner de la valence
 
 L'animat à valence apprend `V_i` (estimation de la pregnance) par la règle de Rescorla-Wagner : `V_i ← V_i + α(λ_i − V_i)`, exposé par exposé récompensé. Crucialement, la conspicuité `s_i` **n'entre pas** dans l'apprentissage -- seule la récompense observée (bruitée) `λ_i + noise` importe. Donc `V` converge vers `λ`, indépendamment de `s`.",,,,,,,,b3aa60572b601ec0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,25d8d5e2,code,fr,c7f609d004747d68,"V = learn_valences(lam, n_epochs=200, alpha=0.15, rng=rng)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,25d8d5e2,code,fr,c7f609d004747d68,"V = learn_valences(lam, n_epochs=200, alpha=0.15, rng=rng)
 rmse = float(np.sqrt(np.mean((V - lam) ** 2)))
 print(f""Valence apprise V : convergence vers lam"")
 print(f""  RMSE(V, lam) = {rmse:.3f}  (fidelite de l'apprentissage)"")
 print(f""  corr(V, lam) = {_pearson(_rank(V), _rank(lam)):+.3f}  (~+1 : V a appris lam)"")
 print(f""  corr(V, s)   = {_pearson(_rank(V), _rank(s)):+.3f}  (~0 : V n'a PAS appris s -- s est hors-canal)"")",,,,,,,,c7f609d004747d68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,fe78fdf8,markdown,fr,5607af3fdea25ca6,"## 3. Deux animats -- valence (cible) vs réactif (null adversarial)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,fe78fdf8,markdown,fr,5607af3fdea25ca6,"## 3. Deux animats -- valence (cible) vs réactif (null adversarial)
 
 - **Animat à valence** : la *décision* d'approche est gouvernée par la pregnance apprise : `P(approach | détecté) = σ(gain · V)`. Il ignore `s` à la décision (mais `s` entre dans la détection, cf. §4).
 - **Animat réactif (null)** : `π ≡ s`, pas d'apprentissage. La décision suit la conspicuité : `P(approach | détecté) = σ(gain · s)`.
 
 Si le protocole est sain, le null doit **inverser** le motif : ce que `V` prédisait chez l'animat à valence doit être prédit par `s` chez le réactif, et vice-versa.",,,,,,,,5607af3fdea25ca6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,7860ee43,code,fr,2ab9e840b641275c,"gain = 3.0
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,7860ee43,code,fr,2ab9e840b641275c,"gain = 3.0
 p_valence = approach_probability_valence(V, gain=gain)
 p_reactive = approach_probability_reactive(s, gain=gain)
 print(""Animat a valence : P(approach|detecte) gouvernee par V (pregnance apprise)"")
 print(""Animat reactif   : P(approach|detecte) gouvernee par s (conspicuite, null)"")
 print(f""  ex. stimulus V=+0.9 -> P_valence={approach_probability_valence(np.array([0.9]), gain)[0]:.2f}, ""
       f""P_reactive={approach_probability_reactive(np.array([0.9]), gain)[0]:.2f}"")",,,,,,,,2ab9e840b641275c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,4f389202,markdown,fr,ff1f4bf5a3396b9e,"## 4. Mesure comportementale -- engagement total vs décision sachant détection
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,4f389202,markdown,fr,ff1f4bf5a3396b9e,"## 4. Mesure comportementale -- engagement total vs décision sachant détection
 
 La mesure est **non déterministe** (Bernoulli sur `n_trials` essais, détection gatee par `s`), ce qui rend le test **non trivial** (SOTA Prong B) : la saillance a un effet (gating de détection) même pour l'animat à valence.
 
@@ -22122,7 +22122,7 @@ On distingue deux niveaux de mesure :
 
 - **Engagement total** : `E[eng_i] = s_i · P(approach|détecté)_i` (détecter × décider). C'est ce que prédit strictement la prédiction pré-enregistrée.
 - **Décision sachant détection** : `P(approach | détecté)_i`. Isole la *décision* du gating perceptuel. C'est la « vraie » dissociation (leurre : un stimulus saillant est détecté mais, s'il est neutre `V ≈ 0`, n'est **pas** approché).",,,,,,,,ff1f4bf5a3396b9e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,b9e6610e,code,fr,4d69edc0ca390571,"rng = np.random.default_rng(0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,b9e6610e,code,fr,4d69edc0ca390571,"rng = np.random.default_rng(0)
 s2, lam2 = stimulus_battery(n_stimuli=120, rng=rng)
 V2 = learn_valences(lam2, n_epochs=200, alpha=0.15, rng=rng)
 p_v = approach_probability_valence(V2, gain=gain)
@@ -22133,12 +22133,12 @@ print(f""Engagement total     : E[eng_i] = s_i * P(approach|detecte)_i"")
 print(f""  corr(eng, s) = {_pearson(_rank(eng_total), _rank(s2)):+.3f}  <- s predit (gating de detection)"")
 print(f""Decision | detecte   : P(approach|detecte), isole la decision du gating"")
 print(f""  corr(dec, s) = {_pearson(_rank(dec_cond), _rank(s2)):+.3f}  <- s n'a plus d'effet propre une fois la detection controlee"")",,,,,,,,4d69edc0ca390571,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,8c511ef7,markdown,fr,0dd5ed377b79864d,"## 5. Statistique -- corrélation partielle de Spearman (FWL sur les rangs)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,8c511ef7,markdown,fr,0dd5ed377b79864d,"## 5. Statistique -- corrélation partielle de Spearman (FWL sur les rangs)
 
 Pour mesurer le *pouvoir prédictif propre* de chaque canal (π vs s), on calcule la **corrélation partielle** : `corr(y, x | cov)` = corrélation de Pearson entre les résidus de la régression de `y` sur `cov` et de `x` sur `cov` (théorème Frisch-Waugh-Lovell), appliquée sur les **rangs** (Spearman). On contrôle ainsi la covariable pour isoler l'effet propre de chaque canal.
 
 **Démonstration** : si `x` et `y` ne se corrèlent *que* via `cov`, la corrélation partielle s'effondre vers 0.",,,,,,,,0dd5ed377b79864d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,55171967,code,fr,b6e9920f31957af9,"rng = np.random.default_rng(0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,55171967,code,fr,b6e9920f31957af9,"rng = np.random.default_rng(0)
 cov = rng.uniform(size=400)
 x = cov + 0.2 * rng.standard_normal(400)
 y = cov + 0.2 * rng.standard_normal(400)   # x _|_ y | cov
@@ -22147,13 +22147,13 @@ partial = partial_spearman(x, y, [cov])
 print(f""Demo FWL : x et y correles uniquement via cov"")
 print(f""  corr(x, y)      naive    = {naive:+.3f}  (>0 : corrélation indirecte via cov)"")
 print(f""  corr(x, y | cov) partiel = {partial:+.3f}  (~0 : cov contrôlée, plus de lien propre)"")",,,,,,,,b6e9920f31957af9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,bff5eacf,markdown,fr,ca8b263d879ea8b5,"## 6. Le verdict honnête à deux niveaux
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,bff5eacf,markdown,fr,ca8b263d879ea8b5,"## 6. Le verdict honnête à deux niveaux
 
 On applique le protocole complet (batterie décorrelée → apprentissage → mesure comportementale → corrélations partielles) et on lit le verdict. La fonction `case_verdict` mesure **les deux niveaux** :
 
 - **Niveau engagement total** : la prédiction stricte pré-enregistrée y est **falsifiée** (`|partial_s|π| > 0.5` car `s` gate la détection).
 - **Niveau décision sachant détection** : la dissociation **tient** (`|partial_π|s| > 0.5` ET `|partial_s|π| < 0.2`).",,,,,,,,ca8b263d879ea8b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,f435f90c,code,fr,a423103c08e73c47,"v = case_verdict(seed=0)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,f435f90c,code,fr,a423103c08e73c47,"v = case_verdict(seed=0)
 print(""=== Seed 0 ==="")
 print(f""[TOTAL]     pi|s = {v['total_partial_pi_given_s_valence']:+.3f}   s|pi = {v['total_partial_s_given_pi_valence']:+.3f}   -> dissocie = {v['total_dissociated']}"")
 print(f""[DECISION]  pi|s = {v['decision_partial_pi_given_s_valence']:+.3f}   s|pi = {v['decision_partial_s_given_pi_valence']:+.3f}   -> dissocie = {v['decision_dissociated']}"")
@@ -22163,27 +22163,27 @@ print(f""  - Engagement TOTAL : s predit (partial_s|pi={v['total_partial_s_given
 print(f""    (s gate la detection : on n'approche pas ce qu'on ne detecte pas.)"")
 print(f""  - DECISION | detecte : pi gouverne (partial_pi|s={v['decision_partial_pi_given_s_valence']:+.2f}), s inerte (partial_s|pi={v['decision_partial_s_given_pi_valence']:+.2f})."")
 print(f""  -> VERDICT : {v['verdict']}"")",,,,,,,,a423103c08e73c47,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,ce308b0c,markdown,fr,e7e24344e6511f4e,"## 7. Null adversarial -- le réactif inverse le motif
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,ce308b0c,markdown,fr,e7e24344e6511f4e,"## 7. Null adversarial -- le réactif inverse le motif
 
 L'animat réactif (`π ≡ s`) doit **inverser** la dissociation au niveau décision : `s` prédit la décision, `V` ne prédit plus. C'est le témoin que le signal observé chez l'animat à valence vient bien de l'apprentissage de `π`, pas d'un artefact de mesure.",,,,,,,,e7e24344e6511f4e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,88b87daa,code,fr,20ae78dfa4b06f88,"print(""Null reactif (pi == s) au niveau decision :"")
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,88b87daa,code,fr,20ae78dfa4b06f88,"print(""Null reactif (pi == s) au niveau decision :"")
 print(f""  partial_s|pi = {v['null_decision_partial_s_given_pi_reactive']:+.3f}  (s predit la decision)"")
 print(f""  partial_pi|s = {v['null_decision_partial_pi_given_s_reactive']:+.3f}  (pi ne predit plus)"")
 print(f""  null inverse le motif : {v['null_inverts']}"")
 print()
 print(""Interpretation : sans apprentissage de la valence, la saillance reprend le controle de la decision."")",,,,,,,,20ae78dfa4b06f88,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,df384c1e,markdown,fr,d585fce852c3ad54,"## 8. Robustesse multi-seed (≥ 4)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,df384c1e,markdown,fr,d585fce852c3ad54,"## 8. Robustesse multi-seed (≥ 4)
 
 La valence est *apprise* -> le seed traverse l'apprentissage, ce qui rend la robustesse multi-seed une **vraie** mesure de stabilité (pas un replay déterministe). On exige ≥ 3/4 seeds dissociées.",,,,,,,,d585fce852c3ad54,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,e3aefb22,code,fr,1b53c56f34f75878,"r = verdict_robust_across_seeds(seeds=(0, 1, 7, 42))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,e3aefb22,code,fr,1b53c56f34f75878,"r = verdict_robust_across_seeds(seeds=(0, 1, 7, 42))
 print(f""Seeds : {r['seeds']}"")
 print(f""Verdicts : {r['verdicts']}"")
 print(f""Fraction dissociee : {r['frac_dissociated']:.2f}"")
 print(f""Robuste (>=3/4) : {r['robust']}"")",,,,,,,,1b53c56f34f75878,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,21b698c4,markdown,fr,ab9d2efa7ed64336,"## 9. Non-trivialité -- analyse de puissance (SOTA Prong B)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,21b698c4,markdown,fr,ab9d2efa7ed64336,"## 9. Non-trivialité -- analyse de puissance (SOTA Prong B)
 
 La mesure étant non déterministe (Bernoulli), le verdict dépend de la **puissance statistique**. À faible `n`, l'effet propre (proche de zéro) de `s` à la décision est noyé dans le bruit d'échantillonnage -> verdict instable. À puissance adéquate (`n_stimuli ≥ 120`), l'effet se résout et la dissociation tient sur toutes les seeds. Cette *sensibilité à la puissance* est elle-même la preuve que le test n'est pas trivial.",,,,,,,,ab9d2efa7ed64336,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,d1552f8b,code,fr,457309246744dac2,"print(""=== Sensibilite a la puissance ==="")
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,d1552f8b,code,fr,457309246744dac2,"print(""=== Sensibilite a la puissance ==="")
 for (ns, nt) in [(40, 80), (120, 300), (160, 400)]:
     r = verdict_robust_across_seeds(seeds=(0, 1, 7, 42), n_stimuli=ns, n_trials=nt)
     print(f""  n_stimuli={ns:3d}, n_trials={nt:3d} -> robuste={str(r['robust']):5s}  ""
@@ -22191,14 +22191,14 @@ for (ns, nt) in [(40, 80), (120, 300), (160, 400)]:
 print()
 print(""A faible n (40/80), l'effet propre proche-de-zero de s a la decision est bruite ;"")
 print(""a puissance adequate (>=120 stimuli), la dissociation decision se resolve sur toute seed."")",,,,,,,,457309246744dac2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,2081499f,markdown,fr,602a65faf2b11929,"## 10. Exercices
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,2081499f,markdown,fr,602a65faf2b11929,"## 10. Exercices
 
 Trois extensions pour approfondir. Chaque exercice ouvre une question falsifiable sur la dissociation. *(Convention : `pass`/`return None`, le notebook s'exécute de bout en bout même exercices non complétés.)*
 
 ### Exercice 1 -- Null recouplé : que se passe-t-il si `s` et `π` sont *couplées* ?
 
 Le pré-requis de la dissociation est la décorrélation `corr(s, λ) ≈ 0`. Construisez une batterie **recouplée** (par ex. `lam = 0.9 * s + bruit`, `corr > 0.8`) et mesurez si la dissociation au niveau décision tient. *Prédiction falsifiable : si `s` et `π` sont couplées, l'effet propre de `s` ne peut plus être isolé -> la dissociation s'effondre.*",,,,,,,,602a65faf2b11929,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,5341f484,code,fr,113bc689c6fa1e2c,"def null_recouple_verdict(seed=0, coupling=0.9, n_stimuli=120):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,5341f484,code,fr,113bc689c6fa1e2c,"def null_recouple_verdict(seed=0, coupling=0.9, n_stimuli=120):
     """"""Null recouple : s et lam sont CORRELEES (coupling eleve).
 
     TODO etudiant :
@@ -22215,10 +22215,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipyn
 
 print(""Exercice 1 : null_recouple_verdict() defini -- deverrouiller l'appel pour tester."")
 # null_recouple_verdict(seed=0)  # deverrouiller apres completion",,,,,,,,113bc689c6fa1e2c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,a251869a,markdown,fr,6af5d7653a8197db,"### Exercice 2 -- Effet du taux d'apprentissage `α` sur la gouvernance par `π`
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,a251869a,markdown,fr,6af5d7653a8197db,"### Exercice 2 -- Effet du taux d'apprentissage `α` sur la gouvernance par `π`
 
 La valence est *apprise* : un `α` trop faible sous-entraîne `V` (V reste proche de 0), un `α` trop élevé surestime le bruit. Balaiez `α ∈ {0.01, 0.05, 0.15, 0.5}` et mesurez comment `|partial_π|s|` (le pouvoir prédictif propre de la pregnance à la décision) évolue. *Prédiction falsifiable : il existe une fenêtre d'α où la gouvernance par π est maximale ; hors de cette fenêtre, π perd son pouvoir prédictif.*",,,,,,,,6af5d7653a8197db,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,089c3d9b,code,fr,43e45bd56d3a1aec,"def alpha_sweep(alphas=(0.01, 0.05, 0.15, 0.5), seed=0, n_stimuli=120):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,089c3d9b,code,fr,43e45bd56d3a1aec,"def alpha_sweep(alphas=(0.01, 0.05, 0.15, 0.5), seed=0, n_stimuli=120):
     """"""Balaie le taux d'apprentissage alpha et mesure le pouvoir predictif propre de pi.
 
     TODO etudiant :
@@ -22235,10 +22235,10 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipyn
 
 print(""Exercice 2 : alpha_sweep() defini -- deverrouiller l'appel pour tester."")
 # alpha_sweep()  # deverrouiller apres completion",,,,,,,,43e45bd56d3a1aec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,820cd312,markdown,fr,0a07b972736ca7ed,"### Exercice 3 -- Ajouter un canal « habitude » (approche indépendante de `π`)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,820cd312,markdown,fr,0a07b972736ca7ed,"### Exercice 3 -- Ajouter un canal « habitude » (approche indépendante de `π`)
 
 Ajoutez un troisième canal : une *habitude* où l'animat approche les stimuli déjà rencontrés souvent, indépendamment de leur `V`. Mesurez comment ce canal dégrade la dissociation au niveau décision. *Prédiction falsifiable : plus le poids d'habitude grandit, plus `|partial_s|π|` augmente (la décision fuit vers d'autres déterminants que π) et la dissociation s'affaiblit.*",,,,,,,,0a07b972736ca7ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,02de088c,code,fr,eadae963ad8d801c,"def habit_channel_effect(habit_weights=(0.0, 0.3, 0.6), seed=0, n_stimuli=120):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,02de088c,code,fr,eadae963ad8d801c,"def habit_channel_effect(habit_weights=(0.0, 0.3, 0.6), seed=0, n_stimuli=120):
     """"""Canal habitude : P(approach) = (1-w)*sigma(V) + w*habit_i.
 
     TODO etudiant :
@@ -22255,7 +22255,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipyn
 
 print(""Exercice 3 : habit_channel_effect() defini -- deverrouiller l'appel pour tester."")
 # habit_channel_effect()  # deverrouiller apres completion",,,,,,,,eadae963ad8d801c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,67f74a7b,markdown,fr,10f419e19878ea55,"## 11. Conclusion -- la saillance compte pour VOIR, la pregnance pour AGIR
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,67f74a7b,markdown,fr,10f419e19878ea55,"## 11. Conclusion -- la saillance compte pour VOIR, la pregnance pour AGIR
 
 La première case de la matrice inversée (`s ⟂ π`) livre un résultat **nuancé et honnête**, plus riche qu'un simple « oui/non » :
 
@@ -23050,7 +23050,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,7e7ae71a
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb,9b3ff6b4,markdown,fr,7f194f536cf48c86,> **Statut épistémique** — **Spéculatif** : L'échelle méso-émergente est l'échelle privilégiée pour l'agence. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,7f194f536cf48c86,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb,d4db96e5,markdown,fr,56c47bd06e262dc8,"> **Statut épistémique** — **Établi** : `p̂` est régime-dépendant (capture x4 sur balistique rapide, perd sur erratique). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,56c47bd06e262dc8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12b-LearnedValence-Python.ipynb,e924314d,markdown,fr,32a3d2ae7a1d31ab,"> **Statut épistémique** — **Établi** : La valence est **apprise** (Rescorla-Wagner), transférable et **distincte** de la prédiction `p̂` (banc désincarné). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,32a3d2ae7a1d31ab,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,a84f6b88,markdown,fr,0a677750f244aa85,"> **Statut épistémique** — **Établi** : Incarné, `p̂` et `π` se **dissocient** : erratique détruit `p̂` mais le conditionnement tient. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,0a677750f244aa85,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,a84f6b88,markdown,fr,13ceffdcb8923619,"> **Statut épistémique** — **reproduit dans le modèle** : Incarné, `p̂` et `π` se **dissocient** : erratique détruit `p̂` mais le conditionnement tient. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,13ceffdcb8923619,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,57bd8c84,markdown,fr,b0e08d156d14c765,"### Lecture du résultat : la dissociation survit aux cinq graines
 
 **Sortie obtenue** : ratio $\hat p$/persistance, moyenne ± écart-type sur les graines 0, 1, 7, 42, 99 — balistique **0.20 ± 0.04**, erratique **0.82 ± 0.12**, bruité **2.70 ± 0.11** ; verdicts T/C/R à **5/5** dans les trois régimes ; `dissociation_observed` **5/5**.
@@ -38004,8 +38004,7 @@ Ce carnet a distille la couche **revision** de l'argumentation : un moteur JTMS 
 
 **Suivant — tête de la strate 6** : [→ ICT-Argumentation-Capstone](ICT-Argumentation-Capstone-Python.ipynb) — le capstone de la strate qui consume les trois graines (BeliefTrajectories, QBFAcceptance, TruthMaintenance) sur un corpus réel codé argument par argument.",,,,,,,,92667269c5e73b66,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,statut-epistemique,markdown,fr,7bef78e611f7124c,"> **Statut épistémique** — **Testé (confirmé)**, case « p̂ auto-référent » : la boucle fermée `p̂ → action → p̂` diverge au-delà d'une frontière de couplage κ_c, sur 5/5 graines. L'écart initial à la prédiction linéaire (0.080 mesuré contre ≈ 0.053) est diagnostiqué `ARTEFACT_DE_MESURE` : critère fini et arrondi de maille. Ce diagnostic n'est pas produit par les sorties de ce carnet, qui n'exécute que la grille de maille 0.02 ; il vient de la grille fine du module `ict/phat_causal_unlink.py` (`FINE_GRID` sur l'intervalle [0.050, 0.080]), où la frontière retombe à 0.062, au voisinage de `KAPPA_STAR_FINITE` ≈ 0.06113. Ce biais n'est donc pas une propriété de la boucle. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,7bef78e611f7124c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,acquis-renvoi,markdown,fr,218adf502a3594d1,"> **Acquis et parenté** : second cas produit par le générateur de dissociations [#9533](https://github.com/jsboige/CoursIA/issues/9533) — se lit après le premier cas du même générateur, [ICT-Dissociation-SaillancePregnance-Python](ICT-Dissociation-SaillancePregnance-Python.ipynb).
-",,,,,,,,218adf502a3594d1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,acquis-renvoi,markdown,fr,1d198662bfee12d7,"> **Acquis et parenté** : second cas produit par le générateur de dissociations [#9533](https://github.com/jsboige/CoursIA/issues/9533) — se lit après le premier cas du même générateur, [ICT-Dissociation-SaillancePregnance-Python](ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb), descendu dans la sous-série ICT-12 (palier 07).",,,,,,,,1d198662bfee12d7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb,PHAT-sa-d2-d03,markdown,fr,0d61d7cb95fff89f,"### Lecture du sanity check -- deux regimes, 39 ordres de grandeur d'ecart
 
 Le delieur (kappa = 0) reste confine : ratio median 0.251, max 0.251 -- huit fois sous le seuil
@@ -38068,8 +38067,8 @@ horizon T = 200. Ce qu'il ne dit pas : la robustesse au predicteur imparfait, au
 lourdes, a la dimension superieure -- exactement les trois exercices ci-dessous. La nuance est le
 contrat de la case 2 : la prediction pre-enregistree (PR #9546) est confirmee DANS son domaine, pas
 universellement.",,,,,,,,ac762a0490ea557f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,statut-epistemique,markdown,fr,320013cb59677ed0,"> **Statut épistémique** — **Établi (nuancé)** : prédiction pré-enregistrée **falsifiée** sur l'engagement total, **confirmée** sur décision sachant détection — la saillance pour VOIR, la prégnance pour AGIR. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,320013cb59677ed0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-pr-51-d03,markdown,fr,2527ff5ebee578ac,"### Lecture de la batterie -- décorrélation constructive, résidu d'échantillon
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,statut-epistemique,markdown,fr,a6909e31e86d13e5,"> **Statut épistémique** — **reproduit dans le modèle (nuancé)** : prédiction pré-enregistrée **falsifiée** sur l'engagement total, **confirmée** sur décision sachant détection — la saillance pour VOIR, la prégnance pour AGIR. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,a6909e31e86d13e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-pr-51-d03,markdown,fr,2527ff5ebee578ac,"### Lecture de la batterie -- décorrélation constructive, résidu d'échantillon
 
 Les 120 stimuli couvrent la conspicuité s dans [0.10, 1.00] et la récompense lambda dans
 [-0.99, +0.99]. La corrélation mesurée corr(s, lam) = -0.216 n'est pas exactement nulle : les deux
@@ -38079,7 +38078,7 @@ nulle sur 120 points (écart-type ~0.09 = 1/sqrt(120), calcul standard, pas une 
 Ce résidu n'invalide pas le pré-requis : aucune causale s -> lam n'est construite, seul le hasard de
 l'échantillon subsiste. Mais il faut le suivre -- l'apprentissage de V cible lam, donc toute
 corrélation résiduelle s/lam traverse l'apprentissage et reparaîtra plus bas dans corr(V, s).",,,,,,,,2527ff5ebee578ac,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-s-61-d06,markdown,fr,97f2b5449929296f,"### Lecture de l'apprentissage -- V a appris lam, pas s
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-s-61-d06,markdown,fr,97f2b5449929296f,"### Lecture de l'apprentissage -- V a appris lam, pas s
 
 Trois nombres résument le canal : RMSE(V, lam) = 0.026 sur une étendue de récompense de 1.98
 (de -0.99 à +0.99), soit ~1.3 % de l'étendue ; corr(V, lam) = +0.999 -- le classement des stimuli
@@ -38090,7 +38089,7 @@ alpha = 0.15, 200 époques) ne fabrique aucune information sur s -- la conspicui
 dans la règle de mise à jour -- il laisse simplement traverser celle qui existe. Le substrat de la
 dissociation est en place : deux canaux V et s quasi orthogonaux, dont seul V porte un pouvoir
 prédictif sur la récompense.",,,,,,,,97f2b5449929296f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-is-2e-d11,markdown,fr,232cbf9a129ea178,"### Lecture des deux niveaux -- le même s change de rôle
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-is-2e-d11,markdown,fr,232cbf9a129ea178,"### Lecture des deux niveaux -- le même s change de rôle
 
 Sur l'engagement total, corr(eng, s) = +0.369 : la saillance aide, via le gating de détection. Sur
 la décision sachant détection, corr(dec, s) = -0.228 : le signe s'inverse et la magnitude reste
@@ -38100,7 +38099,7 @@ corrélation résiduelle s/lam qui traverse V, cf. batterie). Cette double lectu
 notebook : une même variable observable peut porter deux rôles causaux distincts selon le niveau auquel
 on la mesure. Conclure « s n'a aucun effet » au niveau décision serait aussi faux que conclure
 « s gouverne » au niveau total -- les deux énoncés sont vrais, chacun à leur niveau.",,,,,,,,232cbf9a129ea178,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-pl-28-d14,markdown,fr,89b1f2568ea375fb,"### Lecture de la démonstration FWL -- l'outil isole l'effet propre
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-pl-28-d14,markdown,fr,89b1f2568ea375fb,"### Lecture de la démonstration FWL -- l'outil isole l'effet propre
 
 La paire de nombres parle d'elle-même : corrélation naïve corr(x, y) = +0.707, corrélation partielle
 corr(x, y | cov) = +0.004. Les deux variables sont construites pour ne se lier QUE via cov
@@ -38110,7 +38109,7 @@ l'outil avant son usage : si la dissociation observée plus bas était un artefa
 indirecte (s relié à la décision seulement via V), la corrélation partielle l'éliminerait de la même
 façon. Inversement, une corrélation partielle qui RESTE élevée (pi sachant s, au niveau décision)
 témoigne d'un lien propre, non médiatisé par le canal contrôlé.",,,,,,,,89b1f2568ea375fb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-le-7c-d17,markdown,fr,9fd1b90d70d900b8,"### Lecture du verdict -- une falsification qui localise, pas qui invalide
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-le-7c-d17,markdown,fr,9fd1b90d70d900b8,"### Lecture du verdict -- une falsification qui localise, pas qui invalide
 
 Les deux lignes du verdict racontent la même expérience à deux étages. Niveau TOTAL :
 pi\|s = +0.898 ET s\|pi = +0.799 -- les deux canaux prédisent l'engagement total, dissociation False.
@@ -38121,7 +38120,7 @@ informative : elle identifie le mécanisme (s gate la détection -- on n'approch
 détecte pas) et isole le niveau où la thèse tient (la décision). Le verdict DISSOCIATED-AT-DECISION
 n'est pas une consolation : c'est un résultat plus fin que la prédiction initiale -- la saillance
 compte pour VOIR, la pregnance pour AGIR.",,,,,,,,9fd1b90d70d900b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-nu-22-d20,markdown,fr,7eed63261cd377c1,"### Lecture du null -- l'inversion miroir
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-nu-22-d20,markdown,fr,7eed63261cd377c1,"### Lecture du null -- l'inversion miroir
 
 Chez l'animat réactif (pi = s, pas d'apprentissage), le motif s'inverse : partial_s\|pi = +0.961 (la
 saillance prédit la décision), partial_pi\|s = -0.122 (la « pregnance » ne prédit plus). Comparer à
@@ -38131,7 +38130,7 @@ supérieure à 0.95, l'autre reste sous 0.15 en valeur absolue. C'est précisém
 adversarial devait produire pour valider le protocole : si le motif ne s'inversait pas -- le réactif
 gouverné par V, ou l'animat à valence gouverné par s --, le signal observé ne pourrait pas être
 attribué à l'apprentissage de la valence. null_inverts = True clôt ce témoin.",,,,,,,,7eed63261cd377c1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-ro-b2-d23,markdown,fr,b937e1278c728852,"### Lecture multi-seed -- 4 verdicts, un seul affaibli, aucun renversement
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-ro-b2-d23,markdown,fr,b937e1278c728852,"### Lecture multi-seed -- 4 verdicts, un seul affaibli, aucun renversement
 
 Sur les 4 graines (0, 1, 7, 42) : trois verdicts DISSOCIATED-AT-DECISION et un
 DISSOCIATED-DECISION-NULL-WEAK (graine 7). La fraction dissociée affichée est 1.00 -- les deux
@@ -38143,7 +38142,7 @@ l'échantillonnage Bernoulli et les corrélations résiduelles de la batterie --
 déterministe du même calcul. La sensibilité du null à la graine est cohérente avec sa nature : le
 null repose sur un seul canal (pi = s), plus exposé au bruit d'échantillonnage que le double canal
 de la cible.",,,,,,,,b937e1278c728852,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-se-49-d26,markdown,fr,81e47a3aa42a797d,"### Lecture de puissance -- la dissociation a un prix statistique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,SAIL-se-49-d26,markdown,fr,81e47a3aa42a797d,"### Lecture de puissance -- la dissociation a un prix statistique
 
 A (40 stimuli, 80 essais) : robuste = False, fraction dissociée 0.25 -- une graine sur quatre
 seulement. A (120, 300) : robuste = True, fraction 1.00. A (160, 400) : identique, fraction 1.00.
@@ -40052,7 +40051,7 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d6e38376,co
 table_robustesse = None  # TODO etudiant : dict {lentille: nb de seeds OUI sur 20}
 print('Exercice 3 a completer : tableau lentille -> OUI sur N/20 seeds')
 ",,,,,,,,89b3d45bd323dec1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,25f9a9c3,markdown,fr,812e7c20745e0e53,"## Conclusion -- les lentilles comme instruments de dissociation, pas comme theories unifiees
+MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,25f9a9c3,markdown,fr,03665af3dba824e6,"## Conclusion -- les lentilles comme instruments de dissociation, pas comme theories unifiees
 
 **Ce que ce notebook a etabli** :
 
@@ -40065,12 +40064,12 @@ MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,25f9a9c3,ma
 - Pretendre que l'une des six lentilles est 'la bonne' ;
 - Trancher si la conscience est 'accessible', 'meta-representational', 'predictive', ou autre.
 
-**Ce que la discipline des cinq champs a rendu possible** : chaque lentille porte un contre-claim explicit, donc chaque mesure a une **frontiere de validite** mesurable. La galerie de portraits devient un banc d'instruments -- chacun avec son predicat, sa mesure, et son domaine de validite.
+**Ce que la discipline des cinq champs a rendu possible** : chaque lentille porte un contre-claim explicite, donc chaque mesure a une **frontiere de validite** mesurable. La galerie de portraits devient un banc d'instruments -- chacun avec son predicat, sa mesure, et son domaine de validite.
 
 **Suite logique (hors scope ce grain)** :
 - Lecture firsthand de Solms (affect, valence) et Joscha Bach (world-model, self-model) -- **dette explicite** mentionnee dans le grain #12215.
 - Six autres lentilles (IIT au sens strict, Integrated Information, Phenomenal Consciousness theories) pour completer le panorama.
-- Vers la serie ICT -- la question posee par ce grain (""l'angle dissociation merite-t-il une serie dediee ?"") a depuis une reponse partielle : les carnets  [ICT-Dissociation-DehaeneF2-SelfReport-Python](./ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) (self-model vs vidage du store etendu),  [ICT-Dissociation-SaillancePregnance-Python](./ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb) (dissociation saillance / pregnance) et  [ICT-Dissociation-PhatSelfReference-Python](./ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) (boucle auto-referentielle p_hat) ; le pont IIT-GWT falsifiable est  [ICT-24](./ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb). Carte complete de la serie : [README ICT](./ICT-Series/README.md).",,,,,,,,812e7c20745e0e53,,,,,,,,,,,,,,,
+- Vers la serie ICT -- la question posee par ce grain (""l'angle dissociation merite-t-il une serie dediee ?"") a depuis une reponse partielle : les carnets  [ICT-Dissociation-DehaeneF2-SelfReport-Python](./ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb) (self-model vs vidage du store etendu),  [ICT-Dissociation-SaillancePregnance-Python](./ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb) (dissociation saillance / pregnance, sous-série ICT-12) et  [ICT-Dissociation-PhatSelfReference-Python](./ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb) (boucle auto-referentielle p_hat) ; le pont IIT-GWT falsifiable est  [ICT-24](./ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb). Carte complete de la serie : [README ICT](./ICT-Series/README.md).",,,,,,,,03665af3dba824e6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb,d046143c,markdown,fr,c4efe5a0bfe80968,"## Références
 
 - Baars, B. J. (1988). *A Cognitive Theory of Consciousness*. Cambridge University Press. **RAPORTE**.
@@ -47403,3 +47402,288 @@ Deux résultats à retenir :
 - Gibbard (1973) / Satterthwaite (1975) — le théorème d'impossibilité de la manipulation.
 - SC-13 — Fuzz & Invariants : la paire naïf/corrigé dont `BordaVote`/`BordaVoteBroken` est la continuation directe.
 - Greffe 2 — [Espace atteignable](ICT-Greffe2-EspaceAtteignable-Python.ipynb) : la greffe précédente de la strate 7.",,,,,,,,f7bd9176cb395447,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb,37fbc37b,markdown,fr,00a7b17e61f947e0,"***
+
+> **Marchepied de l'escalier** — ce carnet est l'étape de l'escalier ICT-12 qui suit [ICT-12c — Animat prégnance/valence incarné](ICT-12c-PregnanceAnimat-Python.ipynb) : 12c établit que prégnance et représentation sont deux grandeurs dissociables, ce carnet en mesure la première case (`s ⟂ π`). Étape suivante : [ICT-12d — Animat inhibé (Laborit)](ICT-12d-InhibitedActionAnimat-Python.ipynb).
+>
+> [↑ Sous-série ICT-12 — Valence Fields & Animats](ICT-12-ValenceFieldsAndAnimats-Python.ipynb) · [↑ Index ICT-Series](../README.md)",,,,,,,,00a7b17e61f947e0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,3f9f3459,markdown,fr,a41bd1c5c4024b46,"## Vérifiez votre compréhension
+
+Trois exercices jalonnent ce carnet — retournez-y avant de refermer :
+
+1. **Conditionnement de second ordre** : le transfert $B \to A \to source$ survit-il à
+   l'incarnation — que vaut l'approche du signal $B$ seul ?
+2. **Sensibilité au drive `hunger`** : en divisant `hunger_rate` par dix, le verdict
+   `transferred` tient-il — `approach_gain` vs `hunger_rate` dit-il « seuil » ou « pente » ?
+3. **Abstention** : face à un signal à valence négative, proposez `avoidance_fraction` —
+   l'animat investit-il symétriquement dans la fuite ?",,,,,,,,a41bd1c5c4024b46,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,31b4f7d2,markdown,fr,db2dabf093d40aaf,"## Pour aller plus loin
+
+- [ICT-12d — Action inhibée](ICT-12d-InhibitedActionAnimat-Python.ipynb) : le parallèle C2 du conditionnement — le signal qui pousse à ne pas agir.
+- [ICT-12e — Valeur de l'information](ICT-12e-Value-of-Information-Animat-Python.ipynb) : la valence rencontre la décision — combien payer pour observer avant d'agir.
+- [ICT-13 — Morphodynamique stratégique d'Axelrod](../ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) : la pregnance devient tournoi — les rencontres répétées like-to-like.
+- [Le document de cadrage de la série](../ICT-0-Framing.md) pour situer ce carnet dans le parcours ICT.",,,,,,,,db2dabf093d40aaf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12c-PregnanceAnimat-Python.ipynb,0cb06a28,markdown,fr,42f991876fd675c7,"## Pour aller plus loin — la dissociation saillance / prégnance, mesurée
+
+La conclusion ci-dessus est la question, pas encore la mesure : si prégnance et représentation sont deux grandeurs distinctes, que voit-on quand on les dissocie proprement ? C'est l'étape suivante de l'escalier, [ICT-Dissociation-SaillancePregnance](ICT-Dissociation-SaillancePregnance-Python.ipynb) — la case `s ⟂ π` de la [matrice des dissociations](../../../../docs/ict/dissociations-matrix.md) : la prédiction pré-enregistrée est **falsifiée** sur l'engagement total (la saillance *gate* la détection), **confirmée** sur la décision sachant détection — *la saillance compte pour VOIR, la prégnance pour AGIR*. L'escalier continue ensuite vers [ICT-12d — Animat inhibé (Laborit)](ICT-12d-InhibitedActionAnimat-Python.ipynb).",,,,,,,,42f991876fd675c7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c00,markdown,fr,8e374fe7d872adb7,"# ICT -- Dissociation F2 Dehaene : le self-model survit-il au vidage du store etendu ?
+
+*See [#19343](https://github.com/jsboige/CoursIA/issues/19343) (T3 Dehaene F2 -- self-model minimal sans `extended_mind_store`), volet direct du test F2. Part of [#8182](https://github.com/jsboige/CoursIA/issues/8182) (carrefour iceberg x socle topos). Le volet **proxy** de la meme issue a ete livre par [#19345](https://github.com/jsboige/CoursIA/pull/19345) ; ce carnet porte le volet **direct** restant.*
+
+***
+
+Le F2 de Dehaene (Global Neuronal Workspace) pose que le **self-model est une SORTIE** du workspace : il depend causalement de l'etat etendu du workspace. La question falsifiable de ce carnet : si on **vide** le store etendu, le self-model reconnait-il encore sa propre trajectoire ?
+
+Mesure sur substrat **synthetique numpy-only** (aucune trace GPU requise), sur les quatre graines pre-enregistrees `{0, 1, 7, 42}`.
+
+*Famille **dissociations** de la serie ICT : [case 1 -- s ⟂ π](ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb) | [case 2 -- p̂ auto-referentiel](ICT-Dissociation-PhatSelfReference-Python.ipynb).*",,,,,,,,8e374fe7d872adb7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c01,markdown,fr,2a469eb0412d3326,"> **Statut epistemique** -- **Mesure** (substrat synthetique). Verdict `F2_CONFIRMED_EXTENDED_REQUIRED` : le store etendu apporte une contribution **marginale significative** a la reconnaissance du self-model (delta = +0,289 contre un seuil pre-enregistre de 2*sigma_B = 0,073 ; 4 graines sur 4 dans le sens attendu). **Nuance mesuree, non masquee** : le regime B garde une reconnaissance **significative** (p < 0,02) -- le self-model **persiste** sans le store, plus faiblement. La conclusion porte sur ce modele synthetique, **pas** sur un LLM. Details : [matrice des dissociations](../../../docs/ict/dissociations-matrix.md) et `ict/results/dehaene_f2_abc_results.json`.
+",,,,,,,,2a469eb0412d3326,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c02,markdown,fr,d6a53778cac9cceb,"## 1. Le probleme -- F2, prediction et falsification
+
+**F2 (Dehaene)** : la conscience est l'acces a l'information via le workspace global ; le self-model (le rapport de soi) est une **sortie** de ce workspace. Consequence testable : le self-model depend causalement de l'etat **etendu** du workspace.
+
+**Test de dissociation.** On compare la reconnaissance self-sur-self du self-model dans trois regimes :
+
+| Regime | Store etendu | Self-model | Role |
+|---|---|---|---|
+| **A** | plein (5 variables, re-injectees dans la dynamique) | entraine sur sa propre trajectoire | condition F2 |
+| **B** | **vide partout** (lesion : le canal est coupe du monde *et* du modele) | entraine sur ses entrees minimales (proprio) | dissociation |
+| **C** | plein | **ablate** (non entraine) | controle de non-degenerescence |
+
+**F2 predit** `score_A >> score_B`. **Falsification pre-enregistree** : `|score_A - score_B| < 2 * sigma(score_B)` sur les graines `{0, 1, 7, 42}`.
+
+Trois garde-fous sont poses **avant** la mesure (§2), et deux d'entre eux ont effectivement **rejete** une premiere version du protocole (mesure : le controle C y valait -0,99 au lieu de ~0, ce qui a revele un confond d'amplitude).
+",,,,,,,,d6a53778cac9cceb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c03,markdown,fr,16313fd8cf7e1453,"## 2. Garde-fous d'honnetete (a lire avant les resultats)
+
+1. **Substrat synthetique.** Les agents sont des systemes dynamiques jouets, pas des LLM. La conclusion porte sur ce modele ; elle **ne se transporte pas** telle quelle a un substrat reel. Le volet sur traces reelles (case 4, bras `self_model_minimal`) reste GPU-only (verdict [`RECOVERABLE-MACHINE`](../../../.claude/rules/sota-not-workaround.md)).
+2. **Le regime B est une LESION, pas un aveuglement.** Le store est vide **partout** : il ne pilote plus la dynamique et n'est plus lu. C'est la lettre de l'issue (`extended_mind_store = 0` partout). La variante complementaire -- store actif dans le monde, modele prive de sa lecture -- est laissee en exercice 1 : les deux ablations ne repondent pas a la meme question.
+3. **Le controle C est un controle de degenerescence, pas un temoin nul empirique.** Avec des predicteurs non entraines, le score est **exactement 0 par construction** (les deux cotes recoivent la meme erreur). Il valide l'absence d'artefact trivial (amplitude, cadre) ; il ne mesure pas une distribution nulle.
+4. **Le self-model est operationnalise**, pas attribue : c'est un predicteur ridge a un pas, entraine sur la trajectoire propre de chaque agent. Le pre-enregistrement H_b de la lane (`docs/ict/bach-self-model-pre-enregistrement.md`) distingue self-model **causal** et **cache descriptif** ; ce carnet mesure la **reconnaissance**, pas le pouvoir differentiel sur l'action.
+",,,,,,,,16313fd8cf7e1453,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c04,code,fr,f7939097ccc614d2,"# Imports : le package ict/ est a cote du carnet (meme convention que ICT-24).
+import os
+import sys
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+sys.path.insert(0, os.path.abspath("".""))
+from ict import dehaene_f2_dissociation as f2
+
+print(""store etendu :"", f2.STORE_VARS)
+print(""graines pre-enregistrees :"", f2.ABC_SEED_BASES)
+print(""duree T par defaut :"", f2.run_abc_regimes.__defaults__[1])",,,,,,,,f7939097ccc614d2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c05,markdown,fr,592923cf1def8c7a,"## 3. Le substrat -- deux agents apparies a spectre partage
+
+Deux agents de meme architecture, dont l'identite est la matrice de dynamique `A`. Pour que la comparaison ait un sens, ils doivent etre **a capacite egale** (exigence de l'issue) : le **spectre** de `A` est partage par la paire (memes valeurs propres, donc meme horizon de memoire), seule la **base propre** differe.
+
+Sans cet appariement, l'ecart mesure signalerait la memoire de l'un des deux agents plutot que la reconnaissance du self-model -- defaut mesure puis corrige dans ce cycle.
+",,,,,,,,592923cf1def8c7a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c06,code,fr,7743e909886d8d9c,"d = 8
+scales = 0.65 + 0.25 * np.random.default_rng(1001).random(d)
+p_self = f2._agent_params(1002, d, scales=scales)
+p_other = f2._agent_params(1003, d, scales=scales)
+
+ev_self = np.sort(np.linalg.eigvals(p_self.A).real)
+ev_other = np.sort(np.linalg.eigvals(p_other.A).real)
+print(f""spectre partage  self  : {np.round(ev_self, 3)}"")
+print(f""spectre partage  other : {np.round(ev_other, 3)}"")
+print(f""ecart spectral max = {np.abs(ev_self - ev_other).max():.2e} (appariement exact)"")
+print(f""rayon spectral = {ev_self.max():.3f} < 1 -> processus stable"")
+print(f""ecart d'identite ||A_self - A_other|| = {np.linalg.norm(p_self.A - p_other.A):.3f} (identites distinctes)"")",,,,,,,,7743e909886d8d9c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c07,markdown,fr,4983e98ef8c6dede,"### Lecture de l'appariement -- meme capacite, identites distinctes
+
+Les deux spectres sont **identiques a la precision machine** (ecart maximal 2,2e-15) : les deux agents oublient leur passe au meme rythme. Le rayon spectral est `0,864 < 1`, donc le processus est stable et stationnaire. Pourtant les matrices different (`||A_self - A_other|| = 0,297`) : les deux agents melangent l'information dans des bases propres differentes. C'est exactement la condition requise -- un ecart de reconnaissance ne peut venir que de cette difference d'identite, pas d'un avantage de memoire.
+",,,,,,,,4983e98ef8c6dede,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c08,markdown,fr,1aab61bafce17d64,"## 4. Le store etendu -- un integrateur lent de la dynamique propre
+
+Le store porte les cinq variables de l'issue, chacune **derivee de la dynamique propre** de l'agent (il est donc *self-specific* par construction) :
+
+| Variable | Lecture |
+|---|---|
+| `workspace_state` | concentration globale de l'etat |
+| `ignition_flag` | evenement d'ignition (excursion de concentration au-dessus de 1,10x la moyenne courante) |
+| `report_counter` | integrale fuyante des ignitions (memoire ~20 pas) |
+| `attention_index` | entropie normalisee du profil d'activation |
+| `basin_width` | EMA de la vitesse (largeur de bassin locale) |
+
+Le seuil d'ignition est **relatif a la concentration courante**, donc le cycle de service d'ignition est stable par construction. Un seuil absolu rendait la trajectoire multimodale -- mesure : le train et le test tombaient dans deux regimes differents et le R2 de test devenait **negatif** (le modele ne predisait plus rien). Le store est re-injecte dans la dynamique par le couplage `G`.
+",,,,,,,,1aab61bafce17d64,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c09,code,fr,b88bd10de5105cce,"T = 2000
+x_s, h_s = f2._simulate(p_self, T, np.random.default_rng(7))
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.2))
+axes[0].plot(x_s[:400])
+axes[0].set_title(""Agent -- 3 premieres dimensions (regime A)"")
+axes[0].set_xlabel(""pas de temps"")
+for k, name in enumerate(f2.STORE_VARS):
+    axes[1].plot(h_s[:400, k], label=name, alpha=0.85)
+axes[1].legend(fontsize=7)
+axes[1].set_title(""Store etendu -- 5 variables"")
+axes[1].set_xlabel(""pas de temps"")
+plt.tight_layout()
+plt.show()
+
+print(f""cycle de service d'ignition = {float((h_s[:-1, 1] > 0).mean()):.3f}"")
+print(f""report_counter final = {h_s[-1, 2]:.3f}  (integre les ignitions passees)"")
+print(f""part de variance du terme G.h dans la dynamique A = ""
+      f""{float((p_self.G @ h_s[1:].T).T.var() / ((p_self.G @ h_s[1:].T).T.var() + (p_self.A @ x_s[:-1].T).T.var())):.3f}"")",,,,,,,,b88bd10de5105cce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c10,markdown,fr,0a83af527c7fb657,"### Lecture du store -- un canal actif, pas un decor
+
+Le cycle de service d'ignition vaut **0,136** : les ignitions sont des excursions, pas un etat permanent -- c'est le comportement attendu d'un signal de broadcast. Le terme `G.h` porte **0,43** de la variance de la dynamique : **vider le store n'est donc pas un geste cosmetique**, c'est couper un canal qui compte. C'est la verification de manipulation du regime B : sans elle, un `score_A = score_B` n'aurait rien falsifie (on aurait vide un canal deja muet).
+",,,,,,,,0a83af527c7fb657,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c11,markdown,fr,1466d21c5903e817,"## 5. Le self-model et le score de reconnaissance symetrique
+
+Chaque agent recoit **son** self-model : un predicteur ridge a un pas `x_{t+1} = W f(x_t)`, entraine sur les 60 % premiers de sa propre trajectoire (20 % de burn-in ecartes, pour ne pas mesurer le transitoire). Les entrees et les cibles sont standardisees par l'echelle **globale** (scalaire) du train de chaque agent : la dynamique est isotrope, donc une echelle par feature n'apporterait rien et amplifierait une coordonnee saturee.
+
+**Score de reconnaissance -- forme symetrique appariee.** L'erreur est agregee par **appariement**, pas par trajectoire :
+
+- cote *propre* : chaque predicteur sur **sa** trajectoire (`PE(self|W_self)`, `PE(other|W_other)`) ;
+- cote *croise* : chaque predicteur sur **l'autre** (`PE(other|W_self)`, `PE(self|W_other)`).
+
+`score = (moyenne croisee - moyenne propre) / moyenne propre`, par blocs de temps. `score > 0` : chaque self-model predit mieux sa propre suite que celle de l'agent apparie.
+
+La forme **symetrique** est ce qui rend la mesure robuste : c'est une difference de differences, donc les biais de cadre (derive, amplitude) s'annulent au lieu de s'ajouter. La forme asymetrique -- un seul sens -- mesurait ces biais : erreurs croisees jusqu'a **635** et score **negatif sur 4 graines sur 4**, avec un controle C non nul. Le temoin nul permute les etiquettes des blocs (n >= 50).
+",,,,,,,,1466d21c5903e817,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c12,code,fr,31f04a7604e6c6ce,"x_o, h_o = f2._simulate(p_other, T, np.random.default_rng(8))
+
+score, nulls = f2._regime_score(x_s, h_s, x_o, h_o,
+                                np.random.default_rng(1), use_store=True,
+                                n_shuffles=50)
+score_c, nulls_c = f2._regime_score(x_s, h_s, x_o, h_o,
+                                    np.random.default_rng(1), use_store=True,
+                                    untrained=True, n_shuffles=50)
+nulls = np.array(nulls)
+print(f""score regime A (store plein)      = {score:+.3f}"")
+print(f""  temoin nul : moyenne {nulls.mean():+.3f}, ecart-type {nulls.std():.3f}, ""
+      f""p = {f2._p_value(list(nulls), score):.2f}"")
+print(f""score regime C (self-model ablate) = {score_c:+.3f}"")
+print(f""  temoin nul : moyenne {np.mean(nulls_c):+.3f}, ""
+      f""p = {f2._p_value(nulls_c, score_c):.2f}"")",,,,,,,,31f04a7604e6c6ce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c13,markdown,fr,6d24d7b0a3d1ddc5,"### Lecture de la mesure -- le score discrimine, le controle s'annule
+
+Le score du regime A est **positif et net** (`+0,27` sur cette graine) : le self-model erre davantage sur l'agent apparie que sur lui-meme. Le temoin nul, qui efface l'identite des blocs, est **centre sur zero** (moyenne -0,006, ecart-type 0,056) -- le score observe se situe donc hors du bruit de permutation.
+
+Le controle C rend **0,000** : sans entrainement, les deux cotes recoivent la meme erreur et le score s'annule exactement. C'est le controle qui a invalide la premiere version du protocole (ou il valait -0,99, signe d'un artefact d'amplitude) : sa valeur nulle est ici la **preuve de non-degenerescence** de la mesure.
+",,,,,,,,6d24d7b0a3d1ddc5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c14,markdown,fr,9b6f0138fcd9a79a,"## 6. Mesure sur les quatre graines pre-enregistrees
+
+Le protocole complet : graines `{0, 1, 7, 42}` (les memes que #19225), `n_shuffles = 50` par regime et par graine (herite de #19335), `T = 8000`.
+",,,,,,,,9b6f0138fcd9a79a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c15,code,fr,ea90021e1b5d02a4,"res = f2.run_abc_regimes(n_shuffles=50)
+
+print(f""{'graine':>7} | {'A':>7} | {'B':>7} | {'C':>7} | {'p_A':>5} | {'p_B':>5} | {'p_C':>5}"")
+print(""-"" * 62)
+for r in res[""scores_by_seed""]:
+    print(f""{r['seed']:>7} | {r['A']:>+7.3f} | {r['B']:>+7.3f} | {r['C']:>+7.3f} | ""
+          f""{r['p_A']:>5.2f} | {r['p_B']:>5.2f} | {r['p_C']:>5.2f}"")
+print(""-"" * 62)
+print(f""{'moyenne':>7} | {res['mean_A']:>+7.3f} | {res['mean_B']:>+7.3f} | {res['mean_C']:>+7.3f}"")
+print(f""{'ecart-t':>7} | {res['std_A']:>7.3f} | {res['std_B']:>7.3f} | {res['std_C']:>7.3f}"")
+print()
+print(f""delta = score_A - score_B = {res['delta']:+.3f} ; 2*sigma_B = {2 * res['std_B']:.3f}"")
+print(f""graines dans le sens attendu (A > B) : {res['seeds_positive_delta']}/{len(res['seed_bases'])}"")
+print(f""controle C proche de zero : {res['sanity_C_near_zero']}"")
+print(f""VERDICT : {res['verdict']}"")",,,,,,,,ea90021e1b5d02a4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c16,code,fr,c272a1dc5389e04b,"seeds = [r[""seed""] for r in res[""scores_by_seed""]]
+idx = np.arange(len(seeds))
+width = 0.26
+
+fig, axes = plt.subplots(1, 2, figsize=(11, 3.6))
+axes[0].bar(idx - width, [r[""A""] for r in res[""scores_by_seed""]], width, label=""A -- store plein"")
+axes[0].bar(idx, [r[""B""] for r in res[""scores_by_seed""]], width, label=""B -- store vide (lesion)"")
+axes[0].bar(idx + width, [r[""C""] for r in res[""scores_by_seed""]], width, label=""C -- self-model ablate"")
+axes[0].axhline(0, color=""black"", lw=0.8)
+axes[0].set_xticks(idx, [str(s) for s in seeds])
+axes[0].set_xlabel(""graine"")
+axes[0].set_ylabel(""score de reconnaissance"")
+axes[0].set_title(""Par graine"")
+axes[0].legend(fontsize=7)
+
+axes[1].bar([0, 1, 2], [res[""mean_A""], res[""mean_B""], res[""mean_C""]],
+            yerr=[res[""std_A""], res[""std_B""], res[""std_C""]], capsize=5,
+            color=[""tab:blue"", ""tab:orange"", ""tab:green""])
+axes[1].axhline(0, color=""black"", lw=0.8)
+axes[1].set_xticks([0, 1, 2], [""A"", ""B"", ""C""])
+axes[1].set_title(""Moyenne +/- ecart-type (4 graines)"")
+plt.tight_layout()
+plt.show()",,,,,,,,c272a1dc5389e04b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c17,markdown,fr,cdc6bdc26fcf1e09,"### Lecture des resultats -- delta, dispersion, verdict
+
+**Le fait principal.** `score_A = +0,384 +/- 0,308` contre `score_B = +0,095 +/- 0,037` : le regime A reconnait environ **quatre fois** mieux que le regime B. Le delta (`+0,289`) depasse largement le seuil pre-enregistre (`2*sigma_B = 0,073`), et les **4 graines sur 4** vont dans le sens predit par F2. Les deux regimes sont significatifs contre leur propre temoin de permutation (`p < 0,02` pour A et B sur toutes les graines), et le controle C est nul partout.
+
+**La dispersion, et pourquoi elle compte.** Le seuil pre-enregistre est `2*sigma_B`, mais la dispersion **entre graines de A** (`sigma_A = 0,308`) est **huit fois** celle de B. Contre `2*sigma_A` (0,616), le delta (0,289) ne passerait **pas**. La conclusion est donc **sensible au choix de la dispersion de reference** : elle tient a la lettre du pre-enregistrement, pas a une marge confortable. Le dire fait partie du resultat.
+
+**Ce que F2 gagne, et ce qu'il ne gagne pas.** F2 est **confirme sur ce substrat** dans sa lettre : le store etendu apporte une contribution marginale large et significative. Mais le regime B **ne tombe pas a zero** : la reconnaissance **persiste** sans le store, a un niveau faible mais significatif. Le self-model n'est donc pas *seulement* une sortie du workspace etendu -- il porte aussi une composante proprioceptive. Un self-model qui s'effondrerait entierement avec le store serait une confirmation plus forte ; ce n'est pas ce qui est mesure.
+",,,,,,,,cdc6bdc26fcf1e09,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c18,markdown,fr,bb7c31e3bdebf60c,"## 7. Ou la reconnaissance persiste -- et ce que cela implique
+
+Le fait que le regime B reste significatif n'est pas un detail : c'est la partie du resultat qui **survivrait** a un test plus severe. Deux lectures sont compatibles avec la mesure, et ce carnet ne tranche pas entre elles :
+
+1. **Redondance.** Le store est derive de la trajectoire propre de l'agent : il resynthetise une information deja presente dans l'etat proprioceptif. Sa contribution serait un **rappel** utile (le predicteur a un pas ne voit pas la memoire longue), pas une source d'identite.
+2. **Deux composantes.** Le self-model aurait une part **proprioceptive** (l'identite de la matrice de transition, lisible dans une seule observation) et une part **etendue** (l'historique agrege). Le vidage du store n'enleve que la seconde.
+
+Deux mesures discriminent ces lectures sans nouveau protocole : (a) garder le store **actif dans le monde** (il pilote la dynamique) tout en retirant au self-model la lecture de son contenu (exercice 1) ; (b) faire varier la memoire du store (exercice 2) -- si `score_A` suit la memoire, la composante etendue est bien celle de l'historique agrege.
+
+La dette theorique ouverte par cette mesure -- *d'ou vient un self-model qui persiste hors du workspace ?* -- est une **question ouverte**, pas une conclusion : elle n'est pas enregistree comme issue tant que le protocole d'exercice 1 ne l'a pas tranchee.
+",,,,,,,,bb7c31e3bdebf60c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c19,markdown,fr,6f3469ecdfd97779,"## 8. Exercices
+
+Les trois exercices prolongent la mesure sur ses deux points faibles identifies au §6 : la nature du regime B, et la dependance du verdict a la dispersion entre graines.
+",,,,,,,,6f3469ecdfd97779,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c20,markdown,fr,b7619434b7185675,"### Exercice 1 -- lesion contre aveuglement
+
+Le regime B **vide le store partout** (lesion). Construisez le regime **B2** : le store reste actif **dans le monde** (il pilote la dynamique), mais le self-model n'en lit pas le contenu. Utilisez `f2._regime_score` en lui passant `h_self = None` tout en gardant la dynamique simulee **avec** store.
+
+**Question** : `score_B2` se rapproche-t-il de `score_A` (le modele n'avait besoin que de la lecture) ou de `score_B` (c'est la dynamique qui portait l'identite) ? Repondez par la mesure, pas par l'intuition.
+",,,,,,,,b7619434b7185675,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c21,code,fr,492a1d6aed3e176b,"# Exercice 1 : lesion (B) contre aveuglement (B2)
+# Etape 1 : simuler l'agent avec le store ACTIF (comme le regime A).
+# Etape 2 : appeler f2._regime_score(..., h_self=None, h_other=None, use_store=False)
+#           sur ces trajectoires -> le self-model est prive de sa lecture.
+score_b2 = None  # TODO etudiant
+print(""score_B2 ="", score_b2)",,,,,,,,492a1d6aed3e176b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c22,markdown,fr,12ea19379bd960ff,"### Exercice 2 -- la memoire du store porte-t-elle la composante etendue ?
+
+La variable `report_counter` integre les ignitions passees (memoire ~20 pas) et `basin_width` a une memoire encore plus longue. Faites varier ces deux constantes de decroissance dans `f2._simulate` et mesurez `score_A` a memoire courte puis a memoire longue.
+
+**Question** : `score_A` suit-il la memoire du store ? Si oui, la composante etendue est bien celle de l'**historique agrege** (lecture 2 du §7) ; si non, le store n'apporte qu'une redondance instantanee (lecture 1).
+",,,,,,,,12ea19379bd960ff,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c23,code,fr,ab030058cc34bc6e,"# Exercice 2 : sensibilite de score_A a la memoire du store
+# Piste : parametrer les constantes 0.95 (report_counter) et 0.98 (basin_width)
+# dans f2._simulate, puis comparer score_A entre memoire courte et longue.
+scores = {}  # TODO etudiant
+print(""scores par regime de memoire :"", scores)",,,,,,,,ab030058cc34bc6e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c24,markdown,fr,e58111f86ea588ac,"### Exercice 3 -- le verdict tient-il a la dispersion entre graines ?
+
+Le §6 signale que le verdict depend de la dispersion de reference : `2*sigma_B` (pre-enregistre) est franchi, `2*sigma_A` ne l'est pas. Rejouez la mesure avec un jeu de graines **elargi** (par exemple `{0, 1, 7, 42, 99, 123, 2024}`) et recalculez `sigma_A`, `sigma_B` et le verdict.
+
+**Question** : la dispersion de A est-elle un artefact des quatre graines, ou une propriete du protocole ? Un verdict qui bascule selon le jeu de graines doit etre rapporte comme tel.
+",,,,,,,,e58111f86ea588ac,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c25,code,fr,3378946e228eb905,"# Exercice 3 : le verdict tient-il a la dispersion entre graines ?
+seeds_elargi = (0, 1, 7, 42, 99, 123, 2024)
+res_elargi = None  # TODO etudiant
+print(""verdict sur le jeu elargi :"", res_elargi)",,,,,,,,3378946e228eb905,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c26,markdown,fr,ee84b86d61f689a1,"## 9. Conclusion
+
+Sur ce substrat synthetique, et sur les quatre graines pre-enregistrees, **F2 est confirme dans sa lettre** : vider le store etendu **reduit fortement** la reconnaissance du self-model (`+0,384 -> +0,095`, delta `+0,289` contre un seuil de `0,073`, 4 graines sur 4 dans le sens predit). Le store est un **canal actif** (part de variance substantielle dans la dynamique), pas un decor.
+
+Trois reserves, mesurees et non masquees :
+
+1. le regime B **ne tombe pas a zero** -- le self-model **persiste** hors du store, faiblement mais significativement. F2 n'est donc pas confirme dans sa version forte (« le self-model *est* une sortie du workspace ») ;
+2. la dispersion de `score_A` entre graines est **huit fois** celle de B : le verdict tient au seuil pre-enregistre, pas a une marge confortable ;
+3. la conclusion porte sur un **modele jouet**. Le volet sur traces reelles reste GPU-only.
+
+Ce carnet livre la **mesure et son instrumentation** -- deux faux departs de protocole sont documentes (controle C non nul, appariement spectral absent), et c'est le controle de degenerescence qui les a attrapes tous les deux.
+",,,,,,,,ee84b86d61f689a1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Dissociation-DehaeneF2-SelfReport-Python.ipynb,c27,markdown,fr,2bb1b8aaedae8154,"## References
+
+- **F2** -- S. Dehaene, *Consciousness and the Brain*, Johns Hopkins University Press 2014 (le self-model comme sortie du workspace global).
+- **GWT** -- B. Baars, *A Cognitive Theory of Consciousness*, Cambridge University Press 1988 (le workspace global) ; Dehaene, Naccache, Changeux sur l'ignition.
+- **Pre-enregistrement de la lane** -- `docs/ict/bach-self-model-pre-enregistrement.md` (self-model **causal** vs **cache descriptif**, hypothese H_b ; dette IIT-05 ouverte).
+- **Matrice des dissociations** -- `docs/ict/dissociations-matrix.md` (registre des cases ; ce carnet y ajoute la case F2, test direct).
+- **Code** -- `ict/dehaene_f2_dissociation.py` (`run_abc_regimes`) ; resultats : `ict/results/dehaene_f2_abc_results.json`.
+- **Issues** -- [#19343](https://github.com/jsboige/CoursIA/issues/19343) (ce test), [#19345](https://github.com/jsboige/CoursIA/pull/19345) (volet proxy), [#19225](https://github.com/jsboige/CoursIA/issues/19225) (graines), [#19335](https://github.com/jsboige/CoursIA/issues/19335) (n_shuffles), [#8182](https://github.com/jsboige/CoursIA/issues/8182) (EPIC).
+",,,,,,,,2bb1b8aaedae8154,,,,,,,,,,,,,,,

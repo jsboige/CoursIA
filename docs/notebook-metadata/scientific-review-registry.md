@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -650,7 +650,7 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Dissociation-SaillancePregnance-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-Dissociation-SaillancePregnance-Python.ipynb
   confidence: research
   reviewed_code_sha: 717102fc0849f9d5bea93677e1c231d24aa9558ff606770b175a8affcd587477
   review_date: "2026-09-21"
