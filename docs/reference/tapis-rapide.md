@@ -4,8 +4,8 @@
 
 Issue : [#22983](https://github.com/jsboige/CoursIA/issues/22983). Code : `scripts/coordination/tapis_rapide.py`
 (fonctions pures et CLI), `scripts/coordination/tapis_marqueurs.py` (lecture des marqueurs de fil, extraite
-le 2026-11-14 pour tenir le plafond de lignes) et `scripts/coordination/gh_bulk.py` (seul module qui lance
-`gh` ou `git`).
+le 2026-11-14 pour tenir le plafond de lignes), `scripts/coordination/tapis_origami.py` (parcage Origami,
+#26523) et `scripts/coordination/gh_bulk.py` (seul module qui lance `gh` ou `git`).
 Elle vit **à côté** de `scripts/pick_idle_grain.py --belt`, qui reste la voie de repli.
 
 ## La commande
@@ -41,6 +41,9 @@ temps ni budget de sondes : le nombre d'appels est fixé par construction. Mesur
 (15 depuis la lecture de la pointe `origin/main`, plus un `git fetch` quand elle dépasse 6 h),
 lecture réseau de 25 à 101 s selon GitHub, rejeu d'un instantané en ~1 s (l'ancienne voie : 295 à 382 s).
 
+Le `3` couvre aussi la **mesure Origami** impossible (voir plus bas) : c'est une lecture incomplète au même
+titre que la lecture groupée. Un **rejeu** (`--lecture`) ne la refait pas et n'est jamais invalidé par elle.
+
 ## Ce qui écarte un candidat
 
 Chaque issue ouverte reçoit au plus un code ; le premier qui s'applique gagne. Tout se décide sur la lecture
@@ -56,6 +59,7 @@ groupée, sans sonde par issue.
 | `RELACHEE` | le **dernier** marqueur du fil est un `[RELEASED]` de moins de 3 jours (`RELACHE_J`), quelle que soit la lane, la vôtre comprise. Son motif (barrière mesurée, siège trop petit) vaut encore : sans cet écart, chaque lane re-mesurait la même barrière (mesure po-2023 du 13/11 : 38 cycles sans grain servable, 23 issues concernées). Un `[CLAIMED]` ou un `[NOT-DELIVERED]` postérieur lève l'écart |
 | `PLAFOND` | conteneur hors `consolidation` : une visite d'une **autre** lane de moins de 7 jours (`PLAFOND_EPIC_J`, même fenêtre que l'organe `check_lane_claim.py epic_visit_cap`, #22500) — un marqueur `[CLAIMED]`/`[CLAIMED-AMEND]`/`[DELIVERED]` dans son fil ou la création d'une de ses filles ouvertes. Le tapis ne sert pas un EPIC que le gate L898 refuserait ; les visites de **votre** lane n'arment rien (#25443) |
 | `RECLAMEE` | claim ouvert d'une autre lane de moins de 48 h ; sur un conteneur, un claim récent d'une autre lane écarte déjà via `PLAFOND` (une remise de main `[OVERRIDE]` bornée `paths:` reste une note) |
+| `ORIGAMI` | EPIC Origami dont **tous les plis matérialisés sont terminés** et dont le pli suivant n'est pas annoncé : le dépliage est réservé au coordinateur, aucune lane worker ne peut le lever. Le motif dit quel pli attend. Comme sur le tapis lourd, l'écart est appliqué **après** les autres : un EPIC déjà livré reste `LIVREE` |
 
 Les marqueurs se lisent en tête de **n'importe quelle ligne** d'un commentaire (souvent après `Grain: …`),
 décor de citation ou de gras toléré, blocs de code ignorés. Par lane, `[CLAIMED]`/`[CLAIMED-AMEND]` ouvre ;
@@ -66,6 +70,38 @@ l'issue à la lane qui le pose. Un claim de **votre** lane n'écarte pas : l'iss
 Un **conteneur** (issue nommée comme parent par une autre issue ouverte, label `epic`/`umbrella`, ou titre
 `[EPIC` sans parent) se sert : la lane y prend une tranche. C'est pourquoi ni une PR, ni un commit, ni un
 `[DELIVERED]` de tranche ne l'écartent.
+
+## Le parcage Origami (#26523, parité de #24373)
+
+Le tapis lourd (`pick_idle_grain.py --belt`) parque les EPICs Origami dont le pli suivant n'est pas encore
+déplié : c'est le geste du coordinateur, qu'aucune lane worker ne peut lever. Le tapis rapide l'applique
+aujourd'hui aussi, faute de quoi un EPIC Origami au long cours revenait à chaque tirage comme un grain
+ordinaire.
+
+Ce que la mesure lit, et où :
+
+- **les plis** (sous-issues `Part of #N`, y compris fermées) et **les déclarations de dépliage** du fil de
+  l'EPIC : lus par `origami_parking.measure`, dont le résultat est mis en cache **par la machine**
+  (`%LOCALAPPDATA%/CoursIA/origami_parking/`, 30 min — la cadence du tapis). Un depliage fait dans la
+  demi-heure est vu au cycle suivant ;
+- **la livraison d'un pli** — un pli est terminé quand il est fermé *ou* livré par un commit de fusion : la
+  sonde est fondée sur les **citations de la lecture groupée** (`gh_bulk`), donc **aucune lecture par issue**.
+
+C'est le seul point de la voie qui sorte de la lecture groupée : deux appels groupés, au plus une fois toutes
+les 30 min et par machine. Mesure du 2026-11-14, sur le siège `myia-ai-01:CoursIA-2` : lecture à froid
+**39,2 s → 48,2 s** (+9,0 s, la mesure Origami), lecture **chaude** (caches frais) **0,57 s → 0,82 s**. Le
+tirage reste du même ordre.
+
+Trois états, jamais mélangés — le bloc `origami_parking` du `--json` les porte :
+
+| État | Ce que ça veut dire |
+| --- | --- |
+| `measured: true` | la mesure est faite ; les EPICs parqués sont écartés du tirage et listés dans `details` (le tableau du coordinateur les lit sans changement) |
+| `measured: false` + `reason` | la mesure est **impossible** ; rien n'est parqué et **la cause est nommée** — jamais une liste vide, qui se lirait « rien à parquer ». En direct, c'est une lecture incomplète : sortie `3`, rien n'est servi |
+| `measured: true`, `epics: 0` | le pool ne porte aucun EPIC Origami : la mesure est faite, et vide |
+
+Le parcage est **fail-OPEN**, comme celui du tapis lourd : une mesure absente ne supprime jamais un grain.
+Ce qui change, c'est que la mesure est faite — l'absence de mesure se voit au lieu de passer inaperçue.
 
 ## L'ordre et les poids
 
@@ -91,5 +127,4 @@ une famille : votre claim, puis les jamais visitées (la plus ancienne d'abord),
 
 - Le **bandit de fermeture par zone** : la variété vient du tour de rôle par famille et du tirage semé par lane.
 - Les **plafonds par EPIC côté tirage pondéré** : le tour de rôle borne déjà la part d'une famille à un grain par tour. Le plafond hebdomadaire #22500 lui **est** repris, sous la forme de l'écart `PLAFOND` ci-dessus, pour ne pas servir ce que le gate de claim refuse ; il ne pèse que les conteneurs, jamais les filles existantes (#26414).
-- Le **parcage Origami** : une campagne à mettre de côté se gèle par `[FROZEN]`, que la voie lit.
 - La **file de réparation** : une réparation due passe par une issue ordinaire, servie comme les autres.
