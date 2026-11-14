@@ -1129,3 +1129,25 @@ def test_le_rouge_du_miroir_atteint_la_pr():
     assert "self-hosted" in runs_on and "coursia-linux" in runs_on
     etapes = "\n".join(str(s.get("run", "")) for s in job["steps"])
     assert "--mirror-only" in etapes
+
+    # 6. Le job ne fait PAS de checkout. Mesure du 14/11 : sur la tete
+    #    `13a27f53ced7a`, le checkout a consomme les 5 minutes du job
+    #    (`git fetch --depth=1 origin +<sha>:refs/remotes/pull/26465/merge`
+    #    de 05:51:19 a 05:56:16, puis `##[error]The operation was canceled.`)
+    #    et le job a ete tue SANS produire de verdict. C'est structurel : le
+    #    checkout est precisement ce qui se degrade quand le miroir est fige
+    #    (A/B #26468 : 296,5 s mediane par la voie paresseuse, 132,1 s en
+    #    fetch bulk, 12,1 s par les alternates). Un observateur qui meurt de
+    #    la panne qu'il observe n'alerte personne.
+    assert not any("actions/checkout" in str(s.get("uses", ""))
+                   for s in job["steps"]), (
+        "le job du miroir ne doit PAS faire de checkout : c'est la panne "
+        "qu'il observe qui le tuerait (mesure du 14/11, job annule a 5 min)"
+    )
+    # 7. L'organe est recupere par URL brute, epinglee sur la tete de la PR :
+    #    c'est le contenu du checkout (le code de la PR a sa tete), sans le
+    #    fetch. Un organe deplace est un ROUGE nomme, pas une disparition
+    #    silencieuse -- c'est l'incident du 26/10 qu'on ne rejoue pas.
+    assert "raw.githubusercontent.com" in texte
+    assert "github.event.pull_request.head.sha" in texte
+    assert "::error::" in etapes
