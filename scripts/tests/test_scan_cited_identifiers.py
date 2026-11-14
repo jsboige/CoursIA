@@ -270,12 +270,64 @@ class TestResolutionDoi:
         assert fiche["titre"] == "Deep Residual Learning"
         assert fiche["auteur"] == "Kaiming He"
         assert fiche["annee"] == "2015"
+        assert fiche["source_api"] == "CROSSREF"
 
-    def test_doi_absent_de_crossref_nest_pas_resolu(self):
+    def test_doi_absent_des_deux_registres_nest_pas_resolu(self):
         def fetcher(url):
             raise OSError("404")
 
         assert resoudre_dois(["10.9999/inexistant"], fetcher=fetcher) == {}
+
+    def test_doi_absent_de_crossref_est_relance_chez_datacite(self):
+        # Mesure du 2026-11-14 : 12 des 46 DOI non resolus par Crossref
+        # (Zenodo, DBLP, Dagstuhl, Dataverse) se resolvent chez DataCite.
+        def fetcher(url):
+            if "crossref" in url:
+                raise OSError("404")
+            return (b'{"data": {"attributes": {"titles": [{"title": "Un Depot Zenodo"}],'
+                    b'"creators": [{"name": "Un Auteur"}], "published": "2026-01-28",'
+                    b'"container": {"title": "Zenodo"}}}}')
+
+        resolus = resoudre_dois(["10.5281/zenodo.22737750"], fetcher=fetcher)
+        fiche = resolus["10.5281/zenodo.22737750"]
+        assert fiche["titre"] == "Un Depot Zenodo"
+        assert fiche["auteur"] == "Un Auteur"
+        assert fiche["annee"] == "2026"
+        assert fiche["source_api"] == "DATACITE"
+
+    def test_doi_avec_residu_markdown_est_nettoye_avant_requete(self):
+        # Mesure du 2026-11-14 : 33 des 46 DOI `NON_RESOLU` portaient le
+        # residu `](https://doi.org/...)` capture par la regex.
+        vues = []
+
+        def fetcher(url):
+            vues.append(url)
+            return (b'{"message": {"title": ["Dagstuhl"], "author": [],'
+                    b'"issued": {"date-parts": [[2015, 1, 1]]}}}')
+
+        brut = "10.4230/dagrep.9.2.27](https://doi.org/10.4230/dagrep.9.2.27)"
+        resolus = resoudre_dois([brut], fetcher=fetcher)
+        assert "10.4230/dagrep.9.2.27" in resolus
+        assert "](https" not in vues[0]
+
+
+class TestNettoyageDoi:
+    def test_residu_markdown_tronque(self):
+        from scan_cited_identifiers import _nettoyer_doi
+        assert _nettoyer_doi(
+            "10.4230/dagrep.9.2.27](https://doi.org/10.4230/dagrep.9.2.27)"
+        ) == "10.4230/dagrep.9.2.27"
+
+    def test_parenthese_interne_conservee(self):
+        # DOI Elsevier : la parenthese appartient a l'identifiant.
+        from scan_cited_identifiers import _nettoyer_doi
+        assert _nettoyer_doi("10.1016/0304-4068(74)90217-3") == \
+            "10.1016/0304-4068(74)90217-3"
+
+    def test_asterisque_de_markdown_retire(self):
+        from scan_cited_identifiers import _nettoyer_doi
+        assert _nettoyer_doi("10.64898/2026.01.28.702361*") == \
+            "10.64898/2026.01.28.702361"
 
 
 class TestGisement:

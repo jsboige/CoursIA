@@ -96,6 +96,10 @@ from pathlib import Path
 EXCLUS_DIRS = frozenset({
     ".git", ".lake", "node_modules", ".ipynb_checkpoints",
     "_archives", "foundry-lib", ".tmp", "scratchpad",
+    # Les fixtures de tests portent des identifiants synthetiques
+    # (`9999.99999`, `8888.88888`) : ce ne sont pas des citations, et les
+    # compter gonflerait la population de references a resoudre.
+    "tests",
 })
 
 #: Extensions balayees par defaut : la surface de citation du depot telle que
@@ -141,8 +145,20 @@ def _nettoyer_doi(brut: str) -> str:
     une parenthese fermante non ouvrante appartient a la ponctuation de la
     citation, une parenthese interne (`0304-4068(74)90217-3`) appartient au
     DOI.
+
+    Les **liens markdown** sont également tronques : le DOI d'un lien
+    `[texte](https://doi.org/10.4230/dagrep.9.2.27)` est capture avec son
+    residu `](https://doi.org/...)`. Mesure du 2026-11-14 : 33 des 46 DOI
+    declares `NON_RESOLU` portaient ce residu, qui les rendait
+    introuvables alors qu'ils se resolvent.
     """
-    doi = brut.rstrip(".,;:").strip().strip("`\"'")
+    doi = brut.strip()
+    # Residu d'un lien markdown : `10.x/y](https://doi.org/10.x/y)`.
+    if "](" in doi:
+        doi = doi.split("](", 1)[0]
+    doi = doi.rstrip(".,;:").strip().strip("`\"'")
+    # Emphasis markdown : `10.x/y*`.
+    doi = doi.rstrip("*").strip()
     while doi.endswith(")") and doi.count(")") > doi.count("("):
         doi = doi[:-1].rstrip(".,;:").strip()
     return doi.lower()
@@ -447,6 +463,11 @@ GISTEMENT_PAR_DEFAUT = "G:/Mon Drive/MyIA/IA/Bibliographie IA"
 
 ARXIV_API = "https://export.arxiv.org/api/query?id_list={ids}&max_results={n}"
 CROSSREF_API = "https://api.crossref.org/works/{doi}"
+#: Repli DataCite : Crossref ne couvre ni Zenodo, ni DBLP, ni Dagstuhl, ni
+#: Dataverse. Mesure du 2026-11-14 : 12 des 46 DOI declares `NON_RESOLU` par
+#: Crossref se resolvent chez DataCite -- les declarer non resolus aurait
+#: route a #11168 des references parfaitement valides.
+DATACITE_API = "https://api.datacite.org/dois/{doi}"
 
 #:/arXiv demande au plus une requete toutes les trois secondes.
 PAUSE_ARXIV_S = 3.0
@@ -485,24 +506,46 @@ def resoudre_arxiv(identifiants: list[str], fetcher=None,
     le catalogue A5 ne portait pas -- le **DOI de la version publiee** : c'est
     le crosswalk arXiv <-> DOI qui manquait au catalogue (#21631).
 
+    Deux pieges mesures :
+
+    - l'API **rejette un lot qui melange identifiants modernes et legacy**
+      (`HTTP 400`) : les deux formes sont donc interrogees separement ;
+    - un lot qui echoue ne doit pas condamner les identifiants qu'il porte :
+      le lot est alors scinde et rejoue, et un echec unitaire laisse son
+      identifiant en `NON_RESOLU` plutot que de contaminer le lot.
+
     Un identifiant absent de la reponse n'est pas une erreur : il est
     `NON_RESOLU` (l'API ne le connait pas).
     """
     fetcher = fetcher or _fetcher_par_defaut
     resolus: dict[str, dict] = {}
-    restants = sorted({i for i in identifiants})
-    for debut in range(0, len(restants), LOT_ARXIV):
-        lot = restants[debut:debut + LOT_ARXIV]
-        if debut and pause:
-            time.sleep(pause)
-        url = ARXIV_API.format(ids=",".join(lot), n=len(lot))
-        try:
-            contenu = fetcher(url)
-        except Exception:  # reseau indisponible : l'identifiant reste non resolu
-            continue
-        for identifiant, fiche in _parser_arxiv(contenu):
-            resolus[identifiant] = fiche
+    uniques = sorted({i for i in identifiants})
+    modernes = [i for i in uniques if "/" not in i]
+    legacy = [i for i in uniques if "/" in i]
+    for index, restants in enumerate((modernes, legacy)):
+        for debut in range(0, len(restants), LOT_ARXIV):
+            lot = restants[debut:debut + LOT_ARXIV]
+            if debut and pause:
+                time.sleep(pause)
+            for identifiant, fiche in _lot_arxiv(lot, fetcher):
+                resolus[identifiant] = fiche
     return resolus
+
+
+def _lot_arxiv(lot: list[str], fetcher) -> list[tuple[str, dict]]:
+    """Interroge un lot d'identifiants arXiv, avec repli par scission."""
+    if not lot:
+        return []
+    url = ARXIV_API.format(ids=",".join(lot), n=len(lot))
+    try:
+        contenu = fetcher(url)
+    except Exception:
+        if len(lot) == 1:
+            return []
+        milieu = len(lot) // 2
+        return (_lot_arxiv(lot[:milieu], fetcher)
+                + _lot_arxiv(lot[milieu:], fetcher))
+    return _parser_arxiv(contenu)
 
 
 def _parser_arxiv(contenu: bytes) -> list[tuple[str, dict]]:
@@ -532,45 +575,105 @@ def _parser_arxiv(contenu: bytes) -> list[tuple[str, dict]]:
 
 
 def resoudre_dois(identifiants: list[str], fetcher=None) -> dict[str, dict]:
-    """Resout des DOI en `(auteur, titre, annee)` via l'API Crossref.
+    """Resout des DOI en `(auteur, titre, annee)`.
 
-    Un DOI absent de Crossref est `NON_RESOLU` : c'est le signal que
+    Crossref est interroge en premier ; **DataCite est le repli** : Crossref
+    ne couvre ni Zenodo, ni DBLP, ni Dagstuhl, ni Dataverse. Mesure du
+    2026-11-14 : 12 des 46 DOI que Crossref ne connaisait pas se resolvent
+    chez DataCite. Les declarer `NON_RESOLU` aurait route a #11168 des
+    references parfaitement valides.
+
+    Un DOI absent des deux registres est `NON_RESOLU` : c'est le signal que
     l'EPIC route vers #11168 (une reference irresolvable est un candidat
     citation fabriquee).
     """
     fetcher = fetcher or _fetcher_par_defaut
     resolus: dict[str, dict] = {}
     for identifiant in sorted({i for i in identifiants}):
-        url = CROSSREF_API.format(doi=urllib.parse.quote(identifiant, safe=""))
-        try:
-            contenu = fetcher(url)
-        except Exception:
-            continue
-        try:
-            message = json.loads(contenu.decode("utf-8"))["message"]
-        except (ValueError, KeyError, TypeError):
-            continue
-        titres = message.get("title") or []
-        auteurs = []
-        for auteur in message.get("author") or []:
-            nom = " ".join(part for part in (auteur.get("given"), auteur.get("family"))
-                            if part)
-            if nom:
-                auteurs.append(nom.strip())
-        annee = ""
-        for cle in ("published-print", "published-online", "issued", "created"):
-            parties = (message.get(cle) or {}).get("date-parts") or []
-            if parties and parties[0]:
-                annee = str(parties[0][0])
-                break
-        resolus[identifiant.lower()] = {
-            "titre": " ".join((titres[0] if titres else "").split()),
-            "auteurs": auteurs,
-            "auteur": auteurs[0] if auteurs else "",
-            "annee": annee,
-            "revue": (message.get("container-title") or [""])[0],
-        }
+        propre = _nettoyer_doi(identifiant)
+        quote = urllib.parse.quote(propre, safe="")
+        fiche = _fiche_crossref(fetcher, quote)
+        if fiche is None:
+            fiche = _fiche_datacite(fetcher, quote)
+        if fiche is not None:
+            resolus[propre] = fiche
     return resolus
+
+
+def _fiche_crossref(fetcher, doi_quote: str) -> dict | None:
+    """Fiche `(auteur, titre, annee)` depuis Crossref, ou `None`."""
+    try:
+        contenu = fetcher(CROSSREF_API.format(doi=doi_quote))
+    except Exception:
+        return None
+    try:
+        message = json.loads(contenu.decode("utf-8"))["message"]
+    except (ValueError, KeyError, TypeError):
+        return None
+    titres = message.get("title") or []
+    auteurs = []
+    for auteur in message.get("author") or []:
+        nom = " ".join(part for part in (auteur.get("given"), auteur.get("family"))
+                        if part)
+        if nom:
+            auteurs.append(nom.strip())
+    annee = ""
+    for cle in ("published-print", "published-online", "issued", "created"):
+        parties = (message.get(cle) or {}).get("date-parts") or []
+        if parties and parties[0]:
+            annee = str(parties[0][0])
+            break
+    return {
+        "titre": " ".join((titres[0] if titres else "").split()),
+        "auteurs": auteurs,
+        "auteur": auteurs[0] if auteurs else "",
+        "annee": annee,
+        "revue": (message.get("container-title") or [""])[0],
+        "source_api": "CROSSREF",
+    }
+
+
+def _fiche_datacite(fetcher, doi_quote: str) -> dict | None:
+    """Fiche `(auteur, titre, annee)` depuis DataCite, ou `None`.
+
+    DataCite rend une structure differente de Crossref : les attributs sont
+    dans `data.attributes`, les auteurs dans `creators`, l'annee de
+    publication dans `published`.
+    """
+    try:
+        contenu = fetcher(DATACITE_API.format(doi=doi_quote))
+    except Exception:
+        return None
+    try:
+        attributs = json.loads(contenu.decode("utf-8"))["data"]["attributes"]
+    except (ValueError, KeyError, TypeError):
+        return None
+    titres = attributs.get("titles") or []
+    titre = ""
+    if titres:
+        titre = " ".join((titres[0].get("title") or "").split())
+    auteurs = []
+    for createur in attributs.get("creators") or []:
+        nom = (createur.get("name") or "").strip()
+        if nom:
+            auteurs.append(nom)
+    annee = ""
+    for cle in ("published", "created", "registered"):
+        valeur = attributs.get(cle) or ""
+        if isinstance(valeur, str) and len(valeur) >= 4 and valeur[:4].isdigit():
+            annee = valeur[:4]
+            break
+    if not titre and not auteurs:
+        return None
+    conteneur = attributs.get("container") or {}
+    return {
+        "titre": titre,
+        "auteurs": auteurs,
+        "auteur": auteurs[0] if auteurs else "",
+        "annee": annee,
+        "revue": (conteneur.get("title") or "").strip(),
+        "source_api": "DATACITE",
+    }
 
 
 def _titre_du_fichier(nom: str) -> tuple[str, str, str]:
@@ -652,13 +755,14 @@ def statuts_resolus(lignes: list[dict], resolus_arxiv: dict[str, dict],
             if fiche is None:
                 fiche = resolus_arxiv.get(cle_arxiv(identifiant))
         else:
-            fiche = resolus_dois.get(identifiant.lower())
+            fiche = resolus_dois.get(_nettoyer_doi(identifiant))
         copie = dict(ligne)
         copie["auteur"] = fiche["auteur"] if fiche else ""
         copie["titre"] = fiche["titre"] if fiche else ""
         copie["annee"] = fiche["annee"] if fiche else ""
         copie["revue"] = fiche.get("revue", "") if fiche else ""
         copie["doi_publie"] = fiche.get("doi_publie", "") if fiche else ""
+        copie["source_api"] = fiche.get("source_api", "") if fiche else ""
         if ligne["statut"] == "DETENU_CATALOGUE":
             copie["statut"] = "DETENU"
             copie["preuve"] = "CATALOGUE_ID"
@@ -733,7 +837,7 @@ def _ecrire_table_csv(chemin: Path | None, lignes: list[dict]) -> None:
                 "exemple_contexte"]
     if lignes and "auteur" in lignes[0]:
         colonnes += ["auteur", "titre", "annee", "revue", "doi_publie",
-                     "preuve", "confiance"]
+                     "source_api", "preuve", "confiance"]
     table = []
     for ligne in lignes:
         copie = dict(ligne)
@@ -784,6 +888,31 @@ def _catalogues_par_defaut(travaux: Path) -> list[Path]:
     return sorted(travaux.glob("IDENTIFIANTS-catalogue-*.csv"))
 
 
+def _appliquer_resolution(lignes: list[dict], args) -> list[dict]:
+    """Resout les identifiants de la table et statue leur detention.
+
+    Le cache est relu d'abord : une resolution deja faite n'est pas refaite,
+    et une execution interrompue ne perd pas le travail deja mesure.
+    """
+    cache = _charger_cache(Path(args.cache)) if args.cache else {}
+    ids_arxiv = sorted({l["id"] for l in lignes if l["type_id"] == "arxiv"})
+    ids_doi = sorted({l["id"] for l in lignes if l["type_id"] == "doi"})
+    resolus_arxiv = dict(cache.get("arxiv", {}))
+    resolus_dois = dict(cache.get("doi", {}))
+    if not args.sans_reseau:
+        manquants_arxiv = [i for i in ids_arxiv if i not in resolus_arxiv]
+        if manquants_arxiv:
+            resolus_arxiv.update(resoudre_arxiv(manquants_arxiv))
+        manquants_doi = [i for i in ids_doi if i.lower() not in resolus_dois]
+        if manquants_doi:
+            resolus_dois.update(resoudre_dois(manquants_doi))
+        if args.cache:
+            _ecrire_cache(Path(args.cache), {"arxiv": resolus_arxiv,
+                                             "doi": resolus_dois})
+    inventaire = inventaire_gisement(Path(args.gisement))
+    return statuts_resolus(lignes, resolus_arxiv, resolus_dois, inventaire)
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--root", default=str(_racine_depot()))
@@ -813,7 +942,11 @@ def main(argv: list[str] | None = None) -> int:
         rapport_precedent = json.loads(
             Path(args.depuis_json).read_text(encoding="utf-8"))
         lignes = rapport_precedent.get("table", [])
+        if args.resoudre:
+            lignes = _appliquer_resolution(lignes, args)
         _ecrire_table_csv(Path(args.sortie_csv) if args.sortie_csv else None, lignes)
+        if args.sortie_json:
+            _ecrire_cache(Path(args.sortie_json), {"table": lignes})
         print("table reprise : %d lignes" % len(lignes))
         return 0
 
@@ -827,23 +960,7 @@ def main(argv: list[str] | None = None) -> int:
     lignes = table_du_gisement(entrees, index)
 
     if args.resoudre:
-        cache = _charger_cache(Path(args.cache)) if args.cache else {}
-        ids_arxiv = sorted({i for (t, i) in entrees if t == "arxiv"})
-        ids_doi = sorted({i for (t, i) in entrees if t == "doi"})
-        resolus_arxiv = dict(cache.get("arxiv", {}))
-        resolus_dois = dict(cache.get("doi", {}))
-        if not args.sans_reseau:
-            manquants_arxiv = [i for i in ids_arxiv if i not in resolus_arxiv]
-            if manquants_arxiv:
-                resolus_arxiv.update(resoudre_arxiv(manquants_arxiv))
-            manquants_doi = [i for i in ids_doi if i.lower() not in resolus_dois]
-            if manquants_doi:
-                resolus_dois.update(resoudre_dois(manquants_doi))
-            if args.cache:
-                _ecrire_cache(Path(args.cache), {"arxiv": resolus_arxiv,
-                                                 "doi": resolus_dois})
-        inventaire = inventaire_gisement(Path(args.gisement))
-        lignes = statuts_resolus(lignes, resolus_arxiv, resolus_dois, inventaire)
+        lignes = _appliquer_resolution(lignes, args)
 
     arxiv = [e for (t, _), e in entrees.items() if t == "arxiv"]
     doi = [e for (t, _), e in entrees.items() if t == "doi"]
