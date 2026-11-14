@@ -42,10 +42,24 @@ Sur echec (build en echec, timeout, orphelins, cache incompatible), l'organe
 ne poste **rien** : une attestation absente vaut mieux qu'une attestation
 fausse. Le refus est explicite dans la sortie et dans le code de retour.
 
+Budget et parallélisme
+----------------------
+`lean_exec` distingue deux grandeurs qu'il ne faut pas confondre : le
+**budget** (les places reservees dans le cap machine-wide, qui compte des
+PROCESSUS) et la **parallelisme accordee** (les compilations concurrentes,
+qui borne `LEAN_NUM_THREADS` -- le seul levier mesure qui agit sur la
+concurrence reelle, cf. #26480). Ses defauts se contredisent : `budget = 2`
+places reservees, `jobs = cpu // 4` (8 sur un hote a 32 coeurs). L'organe
+passe donc les deux explicitement et les aligne : le budget couvre les
+compilations **et** le scheduler `lake`, sinon il sous-compte l'occupation
+reelle et la supervision tue un run qui utilise exactement le parallélisme
+qu'on lui a accorde.
+
 Usage
 -----
     python scripts/lean/attest_local_build.py <PR> [--repo jsboige/CoursIA]
                                               [--dry-run] [--json]
+                                              [--jobs N] [--budget N]
 
 Sortie : JSON sur stdout avec le verdict, les lakes, la duree, le SHA atteste
 et l'identifiant du commentaire poste (vide si rien n'a ete poste).
@@ -95,12 +109,25 @@ DEFAULT_TIMEOUT = 1800.0
 #: Timeout du `lake build` par lake.
 DEFAULT_LAKE_TIMEOUT = 900.0
 
+#: Parallélisme accordé a `lake build` : nombre de compilations concurrentes.
+#: La valeur implicite de `lean_exec` est `cpu // 4` (8 sur un hote a 32
+#: coeurs), ce qui contredit son budget implicite (2 places) : les deux
+#: grandeurs sont passees explicitement par l'organe (#26480).
+DEFAULT_BUILD_JOBS = 3
+
+#: Places reservees dans le cap machine-wide. Le cap compte des PROCESSUS :
+#: un run qui heberge `jobs` compilations concurrentes heberge en plus le
+#: scheduler `lake`. Le budget doit donc couvrir les deux, sans quoi il
+#: sous-compte l'occupation reelle (#26480).
+DEFAULT_BUILD_BUDGET = DEFAULT_BUILD_JOBS + 1
+
 
 class OrganError(RuntimeError):
     """L'organe n'a pas pu produire d'attestation."""
 
 
-def _run(cmd: list[str], *, cwd: Path | None = None, timeout: float | None = None) -> subprocess.CompletedProcess:
+def _run(cmd: list[str], *, cwd: Path | None = None, timeout: float | None = None,
+         env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
         cmd,
         cwd=str(cwd) if cwd else None,
@@ -109,7 +136,42 @@ def _run(cmd: list[str], *, cwd: Path | None = None, timeout: float | None = Non
         encoding="utf-8",
         errors="replace",
         timeout=timeout,
+        env=env,
     )
+
+
+def raison_alignement_budget(jobs: int, budget: int) -> str:
+    """Raison pour laquelle le couple (jobs, budget) est incoherent.
+
+    Vide = couple aligne. Deux fautes distinctes sont nommees :
+
+    - **budget < jobs + 1** : le cap machine-wide compte des processus, et un
+      run qui heberge `jobs` compilations heberge en plus le scheduler
+      `lake`. Un budget inferieur sous-compte l'occupation reelle -- et la
+      supervision compare le seuil a la **parallelisme accordee**
+      (`effective_granted`), pas au budget : un budget trop petit tue le run
+      qui utilise exactement le parallélisme qu'on lui a accorde (#26480) ;
+    - **budget > jobs + 1** : le cap reserve des places que le run
+      n'occupera pas, ce qui refuse des runs a tort sous un cap serre.
+
+    Fonction **pure** : elle se teste sans Windows, sans Lake, sans
+    toolchain.
+    """
+    if jobs < 1:
+        return "parallélisme accordé {} : il doit valoir au moins 1".format(jobs)
+    if budget < jobs + 1:
+        return (
+            "budget {} : il doit couvrir les {} compilations ET le scheduler "
+            "`lake` (soit au moins {})".format(budget, jobs, jobs + 1)
+        )
+    if budget > jobs + 1:
+        return (
+            "budget {} : il reserve {} places pour un run qui n'occupe que "
+            "{} compilations et un scheduler (soit {})".format(
+                budget, budget, jobs, jobs + 1
+            )
+        )
+    return ""
 
 
 def gh_json(repo: str, path: str) -> object:
@@ -419,7 +481,8 @@ def prepare_lake(lake_dir: Path, cache_root: Path) -> dict:
 
 
 def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
-                    stdout_file: Path, stderr_file: Path) -> list[str]:
+                    stdout_file: Path, stderr_file: Path,
+                    budget: int = DEFAULT_BUILD_BUDGET) -> list[str]:
     """Charge de l'organe canonique `lean_exec.py`, avec la commande en payload.
 
     Le `payload` est ce que l'ORGANE lancera sous le budget commun
@@ -428,6 +491,11 @@ def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
     le garde `check_lake_direct_invocation.py` -- un conducteur de l'organe
     peut nommer sa commande de charge dans un payload, jamais dans un argv
     qu'il execute.
+
+    Le `budget` (places reservees dans le cap machine-wide) est passe
+    EXPLICITEMENT : la valeur implicite de `lean_exec` (2) ne couvre pas le
+    parallélisme qu'il accorde par defaut (`cpu // 4`), et c'est cette
+    contradiction qui a fait tuer des lake builds multi-modules (#26480).
     """
     organ = "lean_exec.py"
     return [
@@ -438,6 +506,8 @@ def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
         "native",
         "--timeout",
         str(timeout),
+        "--budget",
+        str(budget),
         "--caller",
         "attest_local_build",
         "--cwd",
@@ -451,12 +521,59 @@ def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
     ] + list(payload)
 
 
-def run_lake_build(lake_dir: Path, timeout: float) -> dict:
+#: Une ligne d'erreur Lean (`error: 'x' has type ...`).
+ERROR_MARKER = "error:"
+#: Nombre de lignes de contexte conservees apres chaque ligne d'erreur : le
+#: detail du diagnostic Lean est sur les lignes SUIVANTES, pas sur la ligne
+#: `error:` elle-meme.
+ERROR_CONTEXT_LINES = 3
+#: Plafond du nombre d'erreurs extraites (une sortie de build peut en contenir
+#: des centaines ; le champ doit rester lisible).
+ERROR_MAX = 50
+
+
+def extract_errors(text: str, *, context_lines: int = ERROR_CONTEXT_LINES,
+                   limit: int = ERROR_MAX) -> list[dict]:
+    """Les lignes d'erreur d'une sortie de build, avec leur contexte.
+
+    `lake build` ecrit ses diagnostics sur stderr, et l'organe ne capture
+    qu'une QUEUE de 4000 caracteres : une erreur nommee y etait noyee, et
+    l'organe ne pouvait dire QUE « le build a echoue ». Ici chaque ligne
+    `error:` est extraite avec les lignes qui la completent, et le champ
+    `errors[]` porte la liste.
+
+    L'extraction est une LECTURE : le texte n'est jamais reecrit.
+    """
+    lines = (text or "").splitlines()
+    found: list[dict] = []
+    for index, line in enumerate(lines):
+        if ERROR_MARKER not in line:
+            continue
+        found.append({
+            "text": line.strip(),
+            "line_number": index + 1,
+            "context": [item.rstrip() for item in
+                        lines[index + 1: index + 1 + context_lines]],
+        })
+        if len(found) >= limit:
+            break
+    return found
+
+
+def run_lake_build(lake_dir: Path, timeout: float,
+                   jobs: int = DEFAULT_BUILD_JOBS,
+                   budget: int = DEFAULT_BUILD_BUDGET) -> dict:
     """`lake build` borne via `lean_exec.py` (l'organe de build existant).
 
     Le payload `lake build` est un **PAYLOAD** : il est passe a l'organe
     canonique, qui le lance sous le budget commun. Ce fichier ne lance
     aucun processus lake lui-meme.
+
+    Le parallélisme demande (`LEAN_EXEC_JOBS`) est pose dans l'environnement
+    de l'enfant : `lean_exec` le lit de la, et sa valeur implicite
+    (`cpu // 4`) contredit son budget implicite (2). `lean_exec` reborne
+    encore ce parallelisme par les ressources mesurees (RAM, commit, CPU) :
+    la valeur demandee ici est un plafond, pas une consommation forcee.
     """
     with tempfile.TemporaryDirectory(prefix="attest-lean-") as tmp:
         stdout_file = Path(tmp) / "stdout.txt"
@@ -467,8 +584,10 @@ def run_lake_build(lake_dir: Path, timeout: float) -> dict:
             timeout=timeout,
             stdout_file=stdout_file,
             stderr_file=stderr_file,
+            budget=budget,
         )
-        proc = _run(cmd, timeout=timeout + 120.0)
+        env = {**os.environ, "LEAN_EXEC_JOBS": str(jobs)}
+        proc = _run(cmd, timeout=timeout + 120.0, env=env)
         # Review #25002 (Hermes, 2026-11-06, prouve par execution) : les deux
         # fichiers doivent etre lus DANS le bloc `with` -- _read_if_present en
         # dehors lisait un dossier temporaire deja detruit et rendait des
@@ -484,11 +603,18 @@ def run_lake_build(lake_dir: Path, timeout: float) -> dict:
         payload = {}
     payload["stdout_tail"] = stdout_text[-4000:]
     payload["stderr_tail"] = stderr_text[-4000:]
+    # Les erreurs nommees, hors de la queue : c'est ce que l'organe peut
+    # dire du build qui a echoue, au-dela de « le build a echoue ».
+    payload["errors"] = (
+        extract_errors(stdout_text) + extract_errors(stderr_text)
+    )[:ERROR_MAX]
     payload["organ_rc"] = proc.returncode
     return payload
 
 
-def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float) -> dict:
+def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
+               jobs: int = DEFAULT_BUILD_JOBS,
+               budget: int = DEFAULT_BUILD_BUDGET) -> dict:
     """Prepare + build d'un lake dans le worktree. Ne leve pas : le verdict
     est rendu dans le resultat."""
     lake_dir = worktree / lake["project-path"]
@@ -499,7 +625,7 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float) -> 
         return {"lake": lake["lake"], "ok": False, "reason": prepared["reason"]}
     result = {"lake": lake["lake"], "ok": False}
     try:
-        payload = run_lake_build(lake_dir, timeout)
+        payload = run_lake_build(lake_dir, timeout, jobs=jobs, budget=budget)
     finally:
         if prepared.get("junction"):
             try:
@@ -515,10 +641,23 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float) -> 
             "orphans": payload.get("orphans") or [],
             "stdout_tail": payload.get("stdout_tail", "")[-2000:],
             "stderr_tail": payload.get("stderr_tail", "")[-2000:],
+            # Les erreurs nommees du build (3a du dispatch) : elles voyagent
+            # avec le verdict du lake, pas seulement avec la queue.
+            "errors": payload.get("errors") or [],
+            # La violation de budget est la **cause** d'un echec que
+            # `lean_exec` presente comme un `timeout` : la propager, sinon le
+            # diagnostic se perd et l'echec se lit comme un probleme de
+            # temps (#26480, dispatch coordinateur du 14/11).
+            "budget_violation": payload.get("budget_violation"),
+            "granted_jobs": payload.get("granted_jobs"),
+            "budget": payload.get("budget"),
         }
     )
     result["ok"] = payload.get("exit_code") == 0
-    if not result["ok"]:
+    violation = payload.get("budget_violation")
+    if violation:
+        result["reason"] = "violation du budget de concurrence : {}".format(violation)
+    elif not result["ok"]:
         result["reason"] = "lake build a echoue (exit_code={})".format(
             payload.get("exit_code")
         )
@@ -580,7 +719,9 @@ def cleanup_worktree(worktree: Path) -> None:
             )
 
 
-def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
+def attest(pr: int, repo: str, timeout: float, dry_run: bool,
+            jobs: int = DEFAULT_BUILD_JOBS,
+            budget: int = DEFAULT_BUILD_BUDGET) -> dict:
     """Certifie la PR : worktree, builds bornes, attestation postee sur
     SUCCESS."""
     started = time.time()
@@ -589,6 +730,16 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
         raise OrganError(
             "l'attestation n'est valable que sous {} (login courant : {})".format(
                 attestation.ATTESTATION_AUTHOR, login
+            )
+        )
+    # Couple (jobs, budget) aligne AVANT toute construction : le budget
+    # reserve doit couvrir le parallelisme accorde et le scheduler `lake`
+    # (#26480). Un couple incoherent est refuse, pas corrige en silence.
+    incoherence = raison_alignement_budget(jobs, budget)
+    if incoherence:
+        raise OrganError(
+            "couple (jobs={}, budget={}) incoherent : {}".format(
+                jobs, budget, incoherence
             )
         )
     head = pr_head(repo, pr)
@@ -602,6 +753,8 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
         "lakes": [lake["lake"] for lake in lakes],
         "posted": False,
         "comment_id": "",
+        "jobs": jobs,
+        "budget": budget,
     }
     if not lakes:
         raise OrganError(
@@ -627,6 +780,24 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
                     "reason": verdict.get("reason", ""),
                     "checks": verdict.get("checks", []),
                 }
+            )
+        # Le verdict est explicite : `ok` et `reason` sont TOUJOURS poses.
+        # Sans eux, `main()` ne pouvait qu'afficher « raison inconnue » et
+        # rendre rc=1 -- un dry-run reussi se lisait comme un echec
+        # (dispatch coordinateur du 14/11).
+        mauvais = [c for c in result["cache_check"] if not c["ok"]]
+        if mauvais:
+            result["ok"] = False
+            result["reason"] = "cache chaud non applicable : {}".format(
+                ", ".join(
+                    "{} ({})".format(c["lake"], c["reason"] or "raison non nommee")
+                    for c in mauvais
+                )
+            )
+        else:
+            result["ok"] = True
+            result["reason"] = "cache chaud applicable : {}".format(
+                ", ".join(c["lake"] for c in result["cache_check"])
             )
         return result
 
@@ -658,14 +829,36 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
         created = True
         builds = []
         for lake in lakes:
-            builds.append(build_lake(lake, worktree, CACHE_PIVOT, timeout))
+            builds.append(
+                build_lake(lake, worktree, CACHE_PIVOT, timeout, jobs=jobs, budget=budget)
+            )
         result["builds"] = builds
+        # Les erreurs nommees de tous les builds : le diagnostic du build
+        # qui a echoue, hors de la queue de 4000 caracteres.
+        result["errors"] = [e for b in builds for e in (b.get("errors") or [])]
         failed = [b for b in builds if not b.get("ok")]
         if failed:
             result["ok"] = False
-            result["reason"] = "build en echec : {}".format(
-                ", ".join(str(b.get("lake")) for b in failed)
-            )
+            violations = [
+                "{} : {}".format(b.get("lake"), b.get("budget_violation"))
+                for b in failed
+                if b.get("budget_violation")
+            ]
+            if violations:
+                # La cause est un depassement de concurrence, pas un
+                # depassement de temps : le nommer evite qu'un diagnostic
+                # conclue « lent » (#26480).
+                result["reason"] = "violation du budget de concurrence : {}".format(
+                    " ; ".join(violations)
+                )
+            else:
+                # La raison nomme la PREMIERE erreur : « le build a echoue »
+                # sans elle ne dit pas quoi corriger.
+                first = (result["errors"] or [{}])[0].get("text", "")
+                result["reason"] = "build en echec : {}{}".format(
+                    ", ".join(str(b.get("lake")) for b in failed),
+                    " -- {}".format(first[:160]) if first else "",
+                )
             return result
         jobs = 0
         for build in builds:
@@ -718,11 +911,30 @@ def main(argv: list[str] | None = None) -> int:
         help="timeout du lake build, en secondes",
     )
     ap.add_argument("--dry-run", action="store_true", help="ne construit rien")
+    ap.add_argument(
+        "--jobs",
+        type=int,
+        default=DEFAULT_BUILD_JOBS,
+        help="parallélisme accordé à lake build (compilations concurrentes)",
+    )
+    ap.add_argument(
+        "--budget",
+        type=int,
+        default=DEFAULT_BUILD_BUDGET,
+        help="places réservées dans le cap machine-wide (jobs + scheduler lake)",
+    )
     ap.add_argument("--json", action="store_true", help="sortie JSON")
     args = ap.parse_args(argv)
 
     try:
-        result = attest(args.pr, args.repo, args.timeout, args.dry_run)
+        result = attest(
+            args.pr,
+            args.repo,
+            args.timeout,
+            args.dry_run,
+            jobs=args.jobs,
+            budget=args.budget,
+        )
     except OrganError as exc:
         payload = {"pr": args.pr, "ok": False, "posted": False, "reason": str(exc)}
         if args.json:
@@ -735,7 +947,13 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(result, sys.stdout, ensure_ascii=False, indent=1)
         sys.stdout.write("\n")
     else:
-        if result.get("posted"):
+        if result.get("dry_run"):
+            print(
+                "[ATTEST] #{} dry-run (rien n'a ete construit) : {}".format(
+                    result["pr"], result.get("reason", "verdict non rendu")
+                )
+            )
+        elif result.get("posted"):
             print(
                 "[ATTEST] #{} atteste (tete {}) -- lakes {} -- jobs {}".format(
                     result["pr"],

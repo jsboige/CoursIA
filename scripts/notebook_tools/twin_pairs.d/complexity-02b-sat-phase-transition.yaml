@@ -1,0 +1,10 @@
+- name: "Complexity-02b SAT Phase Transition"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-02b-SAT-PhaseTransition-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-02b-SAT-PhaseTransition-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "DPLL et la propagation unitaire sont les objets pedagogiques du source, sans moteur externe ; C# utilise la BCL."
+  known_differences:
+    - "System.Random et Python random produisent des instances distinctes pour une meme graine."
+    - "Matplotlib en Python et SVG statique opaque en C#."
