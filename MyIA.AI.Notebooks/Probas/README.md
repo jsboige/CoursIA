@@ -230,9 +230,10 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 
 ```
 Probas/
-├── Fondations/                  # Socle mathématique commun aux deux stacks (Python)
+├── Fondations/                  # Socle mathématique commun aux deux stacks (Python et C#)
 │   ├── Probas-CLT-Theoreme-Central-Limite.ipynb # TCL mesuré, variance finie porteuse
-│   └── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Metropolis-Hastings + Gibbs from-scratch, diagnostics ESS/R-hat
+│   ├── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Metropolis-Hastings + Gibbs, diagnostics
+│   └── Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb # Même expérience en C#
 ├── Applications/                # Applications standalone
 │   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
 │   ├── Probas-KLS-Concentration.ipynb # Cheeger, hit-and-run, thin-shell (Python)
@@ -482,18 +483,16 @@ Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Fondations/Probas-CLT-The
 - **L'hypothèse de variance finie est porteuse** : une loi à queue lourde à variance infinie (Lomax, `α = 1.5`) ne se normalise pas en gaussienne — l'échelle robuste des fluctuations de sa somme normalisée par `√n` **croît** avec `n` (en `n^{1/α − 1/2}`) au lieu de se stabiliser.
 - 3 exercices (distance de Kolmogorov, courbe de convergence, reproduction du contre-exemple à queue lourde) ; sorties réelles committées, exécution `papermill --kernel python3`.
 
-### Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb
+### Metropolis–Hastings et Gibbs : Python et C#
 
-Descend **sous le capot** de l'échantillonneur que la série PyMC emploie en boîte noire (NUTS) : un **Metropolis–Hastings** à marche aléatoire et un **Gibbs** construits **from-scratch** (stdlib + numpy), puis **diagnostiqués** avec les instruments qu'on applique aux sorties PyMC — auto-corrélation intégrable → effectif de samples indépendants (`ESS = N/τ`), et `R-hat` de Gelman–Rubin sur quatre chaînes (graines `0, 1, 7, 42`). L'algorithme ne compare que des **ratios** de densités, donc la constante de normalisation `Z` s'annule : c'est précisément ce qui rend l'échantillonnage praticable là où l'intégrale n'a pas de forme fermée.
+Les carnets [Python](Fondations/Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb) et [C#](Fondations/Probas-MCMC-Echantillonnage-Metropolis-CSharp.ipynb) construisent Metropolis–Hastings et Gibbs, puis comparent une gaussienne corrélée et un mélange bimodal à des approximations simples. Ils utilisent quatre chaînes de 10 000 échantillons après 1 000 pas de chauffe. Le générateur aléatoire diffère entre les langages : les trajectoires et mesures fluctuent. Le tableau reprend les sorties committées actuelles du jumeau Python.
 
-Le carnet mesure là où l'approximation naïve — **factoriser** la posterior (mean-field) ou la **ramener à une gaussienne au mode** — **échoue**, sur deux cibles à vérité connue :
+| Cible | Grandeur | MCMC Python | Approximation naïve | Vérité | R-hat classique Python |
+|---|---|---|---|---|---|
+| T1 — gaussienne corrélée (ρ = 0,8) | Corrélation | **0,801** (MH) · 0,799 (Gibbs) | −0,014 (mean-field) | 0,800 | **1,0030** (MH) |
+| T2 — mélange bimodal (modes ±2,5) | Variance | **6,359** | 0,249 (un seul mode) | 6,500 | **2,272** |
 
-| Cible | Grandeur | MCMC (from-scratch) | Approximation naïve | Vérité |
-|---|---|---|---|---|
-| T1 — gaussienne 2D corrélée (`ρ = 0.8`) | corrélation | **0,801** (MH) · 0,799 (Gibbs) | −0,014 (mean-field) | 0,800 |
-| T2 — mélange bimodal (`±2,5`, `σ = 0,5`) | variance | **6,359** | 0,249 (un seul mode) | 6,500 |
-
-Sur T1, les diagnostics confirment un sampleur sain (`ESS/ch ≈ 426`, `R-hat = 1,0000`) ; le mean-field rend des **marges correctes** mais **remet la corrélation à zéro par construction** — factoriser, c'est *supposer* l'indépendance. Sur T2, l'approximation à un mode ne se contente pas d'être imprécise : sa moyenne (`2,50`) tombe **dans la vallée** où la posterior n'a pas de masse, et l'écart mesuré `≈ 57/43` entre les deux modes illustre au passage la leçon d'initialisation (les quatre chaînes démarrent au même mode — sur une cible multimodale, on disperse les points de départ). 3 exercices (probabilité d'acceptation, `ESS` à partir de l'ACF, taux d'acceptation vs taille de pas) ; sorties réelles committées, exécution `papermill --kernel python3`.
+Le R-hat classique non scindé et l'ESS heuristique ne sont pas les variantes modernes normalisées par rangs et scindées. Sur T1, la sortie Python donne R-hat=1,0030 : proche de 1 est un signal de cohérence, pas une preuve de convergence. Sur T2, le R-hat=2,272 et les moyennes par chaîne révèlent la métastabilité malgré une variance agrégée relativement proche de 6,500. Les traces et les diagnostics par chaîne sont nécessaires. Les trois exercices portent sur l'acceptation, l'ESS et le taux d'acceptation.
 
 ## Prerequisites
 
@@ -641,7 +640,7 @@ La visualisation des factor graphs nécessite **Graphviz installé**. Si `dot` n
 
 ### Kernels : un par sous-série, jamais mélangés
 
-Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Fondations/` (CLT et MCMC), `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `DecisionTheory/Actuariat/`, `Applications/Probas-KLS-Concentration`, `Applications/Percolation/Percolation-01-Supercritique-Python` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-02-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
+Chaque notebook de la série Probas utilise un **unique kernel** : `.NET (C#)` pour le corpus `Infer/` et l'arc `DecisionTheory/DecInfer/` (arc C#) ; `Python 3` pour `PyMC/`, `Fondations/` (CLT et MCMC Python ; MCMC dispose aussi d’un jumeau C#), `Pyro_RSA`, `DecisionTheory/DecPyMC/`, `DecisionTheory/Actuariat/`, `Applications/Probas-KLS-Concentration`, `Applications/Percolation/Percolation-01-Supercritique-Python` et `Applications/Quotients-Fibres-Recollement-Python` ; `coursia-ml-training` pour les notebooks du pont causal qui l'exigent ; **Lean 4** (WSL) pour `DecInfer-02`, `DecInfer-02b`, `DecInfer-08b` et `Percolation-02-Lean`. Aucun notebook ne mélange les kernels. (Historiquement, `Infer-1b` avait été rédigé en mode polyglot .NET Interactive avec des cellules `#kernel` par langage ; ce n'est plus le cas — il est aujourd'hui un notebook C#/.NET.)
 
 ### PyMC : échantillonnage très lent ou divergence NUTS
 
