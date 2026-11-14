@@ -247,6 +247,7 @@ from __future__ import annotations
 import argparse
 import csv
 import dataclasses
+import errno
 import hashlib
 import json
 import os
@@ -778,10 +779,45 @@ def quarantine_root_refusal(root: Path, repo_root: Optional[str],
 
 
 def _submodule_gitdirs(modules_dir: Path) -> list[Path]:
-    """Les gitdirs de sous-modules contenus dans `modules/`."""
+    """Les gitdirs de sous-modules contenus dans `modules/`.
+
+    La disposition reelle est IMBRIQUEE : un worktree enregistre ses
+    sous-modules sous `modules/<chemin-du-sous-module>`, par exemple
+    `modules/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq` (mesure,
+    #25838). Un seul niveau de profondeur ne voyait que
+    `MyIA.AI.Notebooks`, qui n'est pas un gitdir -- la preuve de
+    preservation concluait alors `objects-absent` sur la disposition
+    reelle, meme apres un deplacement reussi. On descend donc jusqu'aux
+    repertoires qui portent un magasin d'objets (et un `HEAD`).
+    """
     if not modules_dir.is_dir():
         return []
-    return sorted(p for p in modules_dir.iterdir() if p.is_dir())
+    found: list[Path] = []
+    stack: list[Path] = [modules_dir]
+    while stack:
+        current = stack.pop()
+        try:
+            children = sorted(p for p in current.iterdir() if p.is_dir())
+        except OSError:
+            continue
+        for child in children:
+            if child.name == "objects":
+                continue
+            if (child / "objects").is_dir() and (child / "HEAD").is_file():
+                found.append(child)
+                # Un gitdir peut en contenir un autre (sous-module
+                # imbrique) : on descend aussi, mais jamais dans son
+                # magasin d'objets.
+                try:
+                    stack.extend(
+                        p for p in child.iterdir()
+                        if p.is_dir() and p.name != "objects"
+                    )
+                except OSError:
+                    pass
+                continue
+            stack.append(child)
+    return sorted(found)
 
 
 def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
@@ -791,6 +827,14 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     directe de « les objets sont encore lisibles ». Un magasin vide (0
     objet) n'est pas une preservation : la deplacement aurait vide la
     copie, c'est exactement ce qu'on cherche a empecher.
+
+    `GIT_WORK_TREE` est impose au gitdir lui-meme : le `core.worktree`
+    d'un gitdir de sous-module est un chemin RELATIF vers l'arborescence
+    de travail d'origine, qui ne resout plus une fois le gitdir deplace
+    en quarantaine -- `count-objects` echouait alors sur `fatal: cannot
+    chdir` (mesure, #25838) et la preuve devenait impossible a produire.
+    On ne MODIFIE donc pas la charge utile : on neutralise le pointeur
+    par l'environnement.
     """
     if not (gitdir / "objects").is_dir():
         return False, "objects-absent"
@@ -798,9 +842,12 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     # deplacement : sa chaine de resolution pointe ailleurs. On refuse.
     if (gitdir / "objects" / "info" / "alternates").exists():
         return False, "objects-alternates"
+    env = dict(os.environ)
+    env["GIT_WORK_TREE"] = str(gitdir)
     proc = subprocess.run(
         ["git", "--git-dir", str(gitdir), "count-objects", "-v"],
         capture_output=True, text=True, encoding="utf-8", errors="replace",
+        env=env,
     )
     if proc.returncode != 0:
         return False, f"count-objects-rc{proc.returncode}"
@@ -814,6 +861,106 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     if in_pack + loose == 0:
         return False, "objects-empty"
     return True, ""
+
+
+def _make_parent_writable(target) -> None:
+    """Rend ecrivant le repertoire qui contient `target` (best effort).
+
+    Sous POSIX, l'unlink d'un fichier en lecture seule (444) **reussit** :
+    c'est le mode du **repertoire parent** qui decide. La simulation
+    d'un depot git en lecture seule rend donc les deux, et une
+    correction qui rend ecrivant le seul fichier ne change rien sous
+    Linux : l'echec est `PermissionError [Errno 13]` sur l'entree, avec
+    le message du FICHIER alors que le bloqueur est son repertoire
+    (mesure : 4 tests en echec sur le runner Linux du 14/11, PR #26561).
+    Sous Windows, c'est l'inverse : l'attribut du fichier bloque, le
+    mode du repertoire ne compte pas.
+    """
+    parent = os.path.dirname(os.fspath(target))
+    if not parent:
+        return
+    try:
+        mode = os.stat(parent).st_mode
+        os.chmod(parent, mode | stat.S_IWRITE | stat.S_IXUSR)
+    except OSError:
+        # Le repertoire parent peut disparaitre entre-temps : ce n'est
+        # pas une raison d'abandonner, l'appelant reessaiera.
+        pass
+
+
+def _rmtree_readonly_tolerant(path: Path) -> None:
+    """Supprime un arbre en supportant les fichiers en lecture seule.
+
+    Les objets git sont ecrits en lecture seule (mode 444). Les
+    supprimer tels quels echoue en `[WinError 5] Acces refuse`
+    (mesure, #25838) : la charge utile de la quarantaine ne peut ni
+    etre remplie ni etre purgee. On rend l'attribut ecrivant, puis on
+    reessaye l'operation qui avait echoue.
+
+    Sous POSIX, il faut en outre rendre ecrivant le **repertoire**
+    qui contient l'entree (voir `_make_parent_writable`) : c'est lui,
+    et non le mode du fichier, qui bloque l'unlink.
+    """
+    def _repair(func, target, exc_info):
+        try:
+            # On AJOUTE le bit ecrivant au lieu de le poser seul : poser
+            # `S_IWRITE` seul retirerait le bit d'execution d'un
+            # repertoire, que rmtree doit pouvoir parcourir ensuite.
+            os.chmod(target, os.stat(target).st_mode | stat.S_IWRITE)
+        except OSError:
+            raise exc_info[1]
+        _make_parent_writable(target)
+        func(target)
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=_repair)
+    else:
+        shutil.rmtree(path, onerror=_repair)
+
+
+def _unlink_readonly_tolerant(path: Path) -> None:
+    """Supprime un fichier, meme en lecture seule.
+
+    Le message d'erreur qui remonte alors Designne le FICHIER, mais le
+    bloqueur peut etre son repertoire parent (POSIX) : on traite les
+    deux, sinon la purge de la quarantaine echoue sur Linux la ou elle
+    reussit sous Windows.
+    """
+    try:
+        path.unlink()
+    except PermissionError:
+        os.chmod(path, os.stat(path).st_mode | stat.S_IWRITE)
+        try:
+            path.unlink()
+        except PermissionError:
+            _make_parent_writable(path)
+            path.unlink()
+
+
+def _move_tree_readonly_safe(src: Path, dst: Path) -> None:
+    """Deplace un repertoire, y compris entre deux volumes distincts.
+
+    `shutil.move` tente d'abord un renommage, puis retombe sur
+    `copytree` + `rmtree` quand les volumes different (`EXDEV`). Le
+    `rmtree` echoue alors sur les objets git en lecture seule
+    (`[WinError 5]`) : la copie aboutit, la source reste, et chaque
+    passe duplique la charge utile en quarantaine (4,8 Go mesures sur
+    deux passes, #25838). On fait donc le renommage nous-memes --
+    atomique si le volume est le meme -- et, entre volumes, une copie
+    suivie d'une suppression qui tolere le lecture-seule.
+    """
+    try:
+        os.replace(src, dst)
+        return
+    except OSError as exc:
+        cross_volume = (
+            exc.errno == errno.EXDEV
+            or getattr(exc, "winerror", None) == 17
+        )
+        if not cross_volume:
+            raise
+    shutil.copytree(src, dst, symlinks=True)
+    _rmtree_readonly_tolerant(src)
 
 
 def _restore_modules_from_quarantine(
@@ -835,7 +982,7 @@ def _restore_modules_from_quarantine(
     if modules_dir.exists():
         return False, "restore-target-exists"
     try:
-        shutil.move(str(dest_modules), str(modules_dir))
+        _move_tree_readonly_safe(dest_modules, modules_dir)
     except (OSError, shutil.Error) as exc:
         return False, f"restore-move-failed:{exc}"
     # Deplacement inverse VERIFIE : le repertoire est de retour et rien ne
@@ -895,10 +1042,11 @@ def quarantine_worktree_modules(
         return False, f"quarantine-create-failed:{exc}", None
 
     # Deplacement (pas de copie, pas de suppression) : c'est ce qui leve le
-    # garde de git ET preserve les objets.
+    # garde de git ET preserve les objets. Le deplacement tolere le
+    # lecture-seule ET le changement de volume (#25838).
     dest_modules = dest_root / "modules"
     try:
-        shutil.move(str(modules_dir), str(dest_modules))
+        _move_tree_readonly_safe(modules_dir, dest_modules)
     except (OSError, shutil.Error) as exc:
         # Un deplacement echoue peut laisser une copie partielle en
         # quarantaine : si le modules/ source n'est plus la, on rend ce qui
@@ -971,9 +1119,9 @@ def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
             total += size
             removed.append(str(child))
             if child.is_dir():
-                shutil.rmtree(child)
+                _rmtree_readonly_tolerant(child)
             else:
-                child.unlink()
+                _unlink_readonly_tolerant(child)
     except OSError as exc:
         return False, f"quarantine-purge-failed:{exc}", {
             "root": str(root), "removed": removed, "bytes": total,

@@ -18,8 +18,10 @@ Run : python -m pytest scripts/tests/test_prune_quarantine.py
 """
 from __future__ import annotations
 
+import errno
 import json
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -83,6 +85,82 @@ def _count_objects(gitdir: Path) -> int:
         if line.startswith(("count:", "in-pack:")):
             total += int(line.split(":", 1)[1].strip() or 0)
     return total
+
+
+def _count_objects_with_work_tree(gitdir: Path) -> int:
+    """`count-objects` en neutralisant le `core.worktree` par
+    l'environnement -- c'est ce que fait l'organe pour sa preuve."""
+    proc = subprocess.run(
+        ["git", "--git-dir", str(gitdir), "count-objects", "-v"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+        env={**os.environ, "GIT_WORK_TREE": str(gitdir)},
+    )
+    assert proc.returncode == 0, proc.stderr
+    total = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith(("count:", "in-pack:")):
+            total += int(line.split(":", 1)[1].strip() or 0)
+    return total
+
+
+def _fake_exdev_on(monkeypatch, target: Path):
+    """Force le code de chemin « volumes differents » (`EXDEV`) pour un
+    deplacement donne -- c'est le cas mesur sur cette machine (la
+    quarantaine est sur C:, le depot sur D:)."""
+    real_replace = os.replace
+
+    def _replace(src, dst, *args, **kwargs):
+        if Path(src) == target:
+            raise OSError(errno.EXDEV, "EXDEV simule")
+        return real_replace(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr(pmw.os, "replace", _replace)
+
+
+def _nested_submodule(wt: Path, rel: str) -> Path:
+    """Cree `<gitdir>/modules/<rel>` avec de VRAIS objets.
+
+    C'est la disposition REELLE d'un worktree lie : le sous-module est
+    enregistre sous `modules/<chemin-du-sous-module>`, donc imbrique
+    (`modules/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq`), et son
+    `config` porte un `core.worktree` RELATIF vers l'arborescence de
+    travail d'origine (mesure, #25838).
+    """
+    modules = pmw.worktree_gitdir(str(wt)) / "modules"
+    sub = modules / rel
+    sub.mkdir(parents=True, exist_ok=True)
+    proc = _git("init", "-q", "--bare", str(sub))
+    assert proc.returncode == 0, proc.stderr
+    seed = wt.parent / "seed.txt"
+    seed.write_text("contenu a objectiver\n", encoding="utf-8")
+    proc = _git("--git-dir", str(sub), "hash-object", "-w", str(seed))
+    assert proc.returncode == 0, proc.stderr
+    (sub / "config").write_text(
+        "[core]\n"
+        "\trepositoryformatversion = 0\n"
+        "\tfilemode = false\n"
+        "\tbare = false\n"
+        "\tsymlinks = false\n"
+        "\tignorecase = true\n"
+        "\tworktree = ../../../../../../../../../CoursIA-2-wt/absent/"
+        "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq\n",
+        encoding="utf-8",
+    )
+    return sub
+
+
+def _readonly_tree(root: Path) -> Path:
+    """Un arbre dont les fichiers sont en lecture seule (mode 444)."""
+    root.mkdir(parents=True, exist_ok=True)
+    payload = root / "objects" / "ab"
+    payload.mkdir(parents=True, exist_ok=True)
+    blob = payload / "cdef0123"
+    blob.write_bytes(b"objet git")
+    os.chmod(blob, 0o444)
+    os.chmod(payload, 0o555)
+    os.chmod(root / "objects", 0o555)
+    os.chmod(root, 0o555)
+    return blob
 
 
 # ---------------------------------------------------------------------------
@@ -477,3 +555,204 @@ class TestCliWiring:
         assert "--quarantine-submodules" in proc.stdout
         assert "--quarantine-root" in proc.stdout
         assert "--purge-quarantine" in proc.stdout
+
+
+# ---------------------------------------------------------------------------
+# #25838 : le deplacement entre volumes et les objets git en lecture seule
+#
+# Cause mesuree : `shutil.move` entre volumes distincts (D: -> C:) retombe
+# sur `copytree` + `rmtree` ; le `rmtree` echoue sur les objets git en
+# lecture seule (mode 444) -> `[WinError 5]`. La copie aboutit, la source
+# reste : la charge utile est dupliquee a chaque passe (4,8 Go mesures).
+#
+# Asymetrie des plateformes, mesuree sur le runner Linux du 14/11 :
+# sous Windows, l'attribut du FICHIER bloque l'unlink ; sous POSIX, le
+# mode du fichier est sans effet et c'est le REPERTOIRE parent (555)
+# qui bloque. Un correctif qui rend ecrivant le seul fichier passe donc
+# sous Windows et echoue sous Linux (`PermissionError [Errno 13]`) --
+# c'est ce qui a rendu la PR #26561 rouge sur la CI.
+# ---------------------------------------------------------------------------
+
+
+class TestPosixReadonlyDirectory:
+    """Le cas POSIX pur : le repertoire est 555, le fichier est ecritable."""
+
+    def test_repertoire_lecture_seule_bloque_l_unlink_natif(self, tmp_path):
+        """Le symptome isole : sous POSIX, c'est le repertoire qui bloque."""
+        if os.name == "nt":
+            pytest.skip("Windows ignore le mode du repertoire")
+        payload = tmp_path / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        with pytest.raises(PermissionError):
+            blob.unlink()
+
+    def test_suppression_tolerant_quand_seul_le_repertoire_est_lecture_seule(
+            self, tmp_path):
+        """Le correctif doit rendre ecrivant le repertoire, pas le fichier."""
+        payload = tmp_path / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        pmw._rmtree_readonly_tolerant(tmp_path / "objects")
+        assert not (tmp_path / "objects").exists()
+
+    def test_unlink_tolerant_quand_seul_le_repertoire_est_lecture_seule(
+            self, tmp_path):
+        payload = tmp_path / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        pmw._unlink_readonly_tolerant(blob)
+        assert not blob.exists()
+
+    def test_purge_tolerant_quand_seul_le_repertoire_est_lecture_seule(
+            self, tmp_path):
+        """Le chemin de purge de la quarantaine (voie nommee #21743)."""
+        root = tmp_path / "q"
+        root.mkdir()
+        (root / pmw.QUARANTINE_MARKER).write_text("x", encoding="utf-8")
+        payload = root / "dest" / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef0123"
+        blob.write_bytes(b"objet git")
+        os.chmod(payload, 0o555)
+        ok, why, _info = pmw.purge_quarantine(root)
+        assert (ok, why) == (True, "")
+
+
+class TestMoveReadonlySafe:
+    def test_renommage_atomique_meme_volume(self, tmp_path):
+        src = tmp_path / "src"
+        (src / "a").mkdir(parents=True)
+        (src / "a" / "f.txt").write_text("x", encoding="utf-8")
+        dst = tmp_path / "dst"
+        pmw._move_tree_readonly_safe(src, dst)
+        assert (dst / "a" / "f.txt").read_text(encoding="utf-8") == "x"
+        assert not src.exists()
+
+    def test_shutil_rmtree_echoue_sur_un_objet_en_lecture_seule(self, tmp_path):
+        """Le symptome mesure, isole : sans traitement, la suppression
+        echoue en `[WinError 5]`."""
+        root = tmp_path / "ro"
+        _readonly_tree(root)
+        try:
+            with pytest.raises(PermissionError):
+                shutil.rmtree(root)
+        finally:
+            pmw._rmtree_readonly_tolerant(root)
+
+    def test_suppression_tolerant_au_lecture_seule(self, tmp_path):
+        root = tmp_path / "ro"
+        _readonly_tree(root)
+        pmw._rmtree_readonly_tolerant(root)
+        assert not root.exists()
+
+    def test_volume_different_copie_puis_supprime_la_source(
+            self, tmp_path, monkeypatch):
+        """EXDEV : la copie aboutit, la suppression doit aboutir aussi --
+        sinon la source reste et la charge utile est dupliquee."""
+        src = tmp_path / "src"
+        _readonly_tree(src)
+        dst = tmp_path / "dst"
+        _fake_exdev_on(monkeypatch, src)
+        pmw._move_tree_readonly_safe(src, dst)
+        assert not src.exists(), "la source doit avoir ete supprimee"
+        assert (dst / "objects" / "ab" / "cdef0123").exists()
+
+    def test_restauration_entre_volumes_et_lecture_seule(
+            self, tmp_path, monkeypatch):
+        """La restauration est un deplacement lui aussi : elle doit
+        tolerer le changement de volume ET les objets en lecture seule."""
+        wt = _real_worktree(tmp_path)
+        modules_dir = pmw.worktree_gitdir(str(wt)) / "modules"
+        root = tmp_path / "q"
+        root.mkdir()
+        (root / pmw.QUARANTINE_MARKER).write_text("x", encoding="utf-8")
+        dest_root = root / "dest"
+        dest_root.mkdir()
+        dest_modules = dest_root / "modules"
+        payload = dest_modules / "A" / "objects" / "ab"
+        payload.mkdir(parents=True)
+        blob = payload / "cdef"
+        blob.write_bytes(b"objet git")
+        os.chmod(blob, 0o444)
+        _fake_exdev_on(monkeypatch, dest_modules)
+        ok, why = pmw._restore_modules_from_quarantine(dest_root, modules_dir)
+        assert (ok, why) == (True, "")
+        assert (modules_dir / "A" / "objects" / "ab" / "cdef").exists()
+
+
+class TestRealNestedLayout:
+    """La disposition reelle d'un worktree lie est IMBRIQUEE : le
+    sous-module vit sous `modules/<chemin-du-sous-module>`."""
+
+    def test_gitdir_imbrique_trouve(self, tmp_path):
+        wt = _real_worktree(tmp_path)
+        sub = _nested_submodule(
+            wt, "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq")
+        found = pmw._submodule_gitdirs(
+            pmw.worktree_gitdir(str(wt)) / "modules")
+        assert found == [sub]
+
+    def test_quarantaine_imbriquee_preserve_les_objets(self, tmp_path):
+        wt = _real_worktree(tmp_path)
+        sub = _nested_submodule(
+            wt, "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq")
+        before = _count_objects_with_work_tree(sub)
+        assert before > 0
+        ok, msg, info = pmw.quarantine_worktree_modules(
+            str(wt), tmp_path / "q", "dest", repo_root=str(tmp_path / "wt"))
+        assert ok is True, msg
+        assert info["preserved"] is True
+        assert [m["readable"] for m in info["modules"]] == [True]
+        moved = (Path(info["quarantine"]) / "modules"
+                 / "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq")
+        assert moved.is_dir(), "le gitdir est DEPLACE, pas supprime"
+        assert _count_objects_with_work_tree(moved) == before
+
+
+class TestStaleCoreWorktree:
+    """Le `core.worktree` d'un gitdir de sous-module est un chemin
+    RELATIF vers l'arborescence de travail d'origine : deplace en
+    quarantaine, il ne resout plus et `count-objects` echoue sur
+    `fatal: cannot chdir`. La preuve doit survivre a ce pointeur
+    perime -- SANS reecrire la charge utile."""
+
+    def test_pointeur_relatif_perime_ne_bloque_plus_la_preuve(
+            self, tmp_path):
+        wt = _real_worktree(tmp_path)
+        sub = _nested_submodule(
+            wt, "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq")
+        # Sans neutralisation, git echoue sur le pointeur perime.
+        proc = _git("--git-dir", str(sub), "count-objects", "-v")
+        assert proc.returncode != 0, "le pointeur perime doit echouer"
+        # L'organe, lui, produit la preuve.
+        assert pmw._gitdir_is_readable(sub) == (True, "")
+
+    def test_la_charge_utile_n_est_pas_reecrite(self, tmp_path):
+        wt = _real_worktree(tmp_path)
+        sub = _nested_submodule(
+            wt, "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq")
+        config = (sub / "config").read_text(encoding="utf-8")
+        pmw._gitdir_is_readable(sub)
+        assert (sub / "config").read_text(encoding="utf-8") == config, (
+            "la preuve ne doit pas reecrire le config du depot preserve")
+
+
+class TestPurgeReadonly:
+    def test_purge_dune_entree_en_lecture_seule(self, tmp_path):
+        """La purge est bloquee par le meme obstacle que le deplacement :
+        sans traitement, les 4,8 Go de quarantaine restent intouchables."""
+        root = tmp_path / "q"
+        root.mkdir()
+        (root / pmw.QUARANTINE_MARKER).write_text("x", encoding="utf-8")
+        _readonly_tree(root / "d1")
+        ok, msg, info = pmw.purge_quarantine(root)
+        assert (ok, msg) == (True, "")
+        assert not (root / "d1").exists()
+        assert (root / pmw.QUARANTINE_MARKER).exists()
