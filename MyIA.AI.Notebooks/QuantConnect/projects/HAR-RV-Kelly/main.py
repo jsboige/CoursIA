@@ -95,6 +95,17 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         self.kernel = self.get_parameter("kernel", "off")
         if self.kernel not in KERNEL_MODES:
             raise ValueError(f"unknown kernel {self.kernel}")
+        # Un noyau de risque n'a de sens que sur la strategie. Sur un mode de
+        # reference, le coupe-circuit `_kernel_close` liquiderait le
+        # portefeuille de reference et la re-entree lirait des `k_targets`
+        # vides : la reference resterait a plat jusqu'au lundi suivant. On
+        # refuse la combinaison des que les deux sont actives.
+        if self.mode != "strategy" and self.kernel != "off":
+            raise ValueError(
+                f"mode={self.mode!r} est un portefeuille de reference : le "
+                f"noyau de risque (kernel={self.kernel!r}) le liquiderait et "
+                "le laisserait a plat. Mettre kernel='off' (ou mode='strategy')."
+            )
         self.use_cap, self.use_stop, self.use_cb = KERNEL_MODES[self.kernel]
         self.k_targets = {}
         self.k_stopped = {t: False for t in self.tickers}
