@@ -20,11 +20,46 @@ stays unbiased and the ghost floor is auditable. A queued run that is
 neither pre-cutoff nor pr-closed stays live: a live queue that never drains
 is the drift signal the watch exists to surface.
 
+A fourth class is available but OFF by default -- "no-job" (issue #26357,
+measured 2026-11-14): a queued run whose `jobs` list is EMPTY. The run was
+never admitted to a runner, so no job was created and therefore NO check-run
+exists for it. Such a run occupies a queue slot while doing nothing, and
+cancelling it cannot turn any check red -- there is no check-run to cancel.
+That is the opposite of a run that carries a live check-run on a PR head,
+whose cancellation yields a CANCELLED leg that blocks the merge (c.925).
+The class costs one API call per queued run to detect, so it is never
+computed by the scheduled watch; it is opt-in via `--cancel no-job`.
+
+## Les runs sans job ne sont PAS annulables (mesure du 14/11)
+
+La classe `no-job` est un etat PERMANENT, pas une file a vider : un run qui
+n'a jamais ete admis en file ne peut pas etre annule par l'API. Sur
+`cancel` ET sur `force-cancel`, la reponse est un 409 « Cannot cancel a
+workflow run that has not been queued yet ».
+
+Mesure du 14/11 sur `jsboige/CoursIA` : 91 runs de plus de 24 h (76
+`issue_comment` + 15 `pull_request_review`), tous sans job, tous refuses en
+409 sur les deux endpoints. Le leveur « annuler les runs qui paddingent la
+file » n'existe donc pas : ces runs ne sont pas annulables, ils sont
+simplement morts.
+
+L'instrument le dit desormais :
+
+- le 409 est RECONNU comme une classe a part entiere -- « phantom non
+  annulable » -- et non plus comme un echec ordinaire (`rc=1`) ;
+- le rapport SEPARE ces runs des runs vivants, dans un seau dedie ;
+- `--apply` n'est PAS recommande pour eux : la classe ne propose plus de
+  les annuler, elle mesure une file morte.
+
 Examples:
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
       --cutoff 2026-08-25 --output queue-health.json
   python scripts/ci/gh_queue_health.py --input queue-health.json
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
+      --cancel no-job               # dry run: lists the no-job class
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
+      --cancel no-job --apply       # opt-in: PROVES the 409 (not a repair)
 """
 from __future__ import annotations
 
@@ -82,6 +117,44 @@ DEFAULT_STALE_HOURS = 24.0
 # live and the watch alarms on it as a candidate new zombie.
 SCHEDULED_ORPHAN_EVENTS = frozenset({"schedule", "workflow_run"})
 SCHEDULED_ORPHAN_HOURS = 168.0
+
+# Fourth class, opt-in (issue #26357, measured 2026-11-14 on CoursIA):
+# a queued run whose `jobs` list is empty. The run never reached a runner,
+# so no job was created and no check-run exists for it -- the run holds a
+# queue slot while producing nothing. Measured on that day: 75 such runs on
+# `variation-tag-guard.yml` (event `issue_comment`), the oldest 63 days old,
+# plus 19 `perimeter-review-guard` runs on `pull_request_review`; together
+# 93 of the 269 runs queued for more than 24 h. The repair organs are
+# themselves queue-bound (`pr-gate-stale-sweep.yml` waited over an hour for
+# its runner), so a queue padded with job-less runs starves the organs that
+# clear stale PR gate legs.
+#
+# Only events that carry no PR by construction are eligible: a
+# comment- or review-triggered run decides nothing on its own, and the
+# `if:` conditions of those workflows skip their jobs on such events. A
+# `pull_request` or `push` run is NOT eligible: admitting it would create a
+# real check-run on the head SHA, and cancelling it could suppress a gate
+# that the branch protection expects to see.
+NO_JOB_EVENTS = frozenset({
+    "issue_comment", "pull_request_review", "pull_request_review_comment",
+})
+# A run queued for less than this is ordinary backlog, not a stuck run.
+DEFAULT_NO_JOB_MIN_AGE_HOURS = 24.0
+
+# Classe des runs NON ANNULABLES (mesure du 14/11, 91 runs sur 91).
+#
+# Un run qui n'a jamais ete admis en file (aucun job cree) n'est pas dans la
+# file des runners : l'API refuse de l'annuler. Le refus porte le MEME
+# libelle sur les deux endpoints (mesure en direct du 14/11) :
+#   - `cancel`       -> 409 "Cannot cancel a workflow run that has not been queued yet."
+#   - `force-cancel` -> 409 "Cannot cancel a workflow run that has not been queued yet."
+#
+# Le marquage se fait sur la PHRASE, pas sur le code HTTP : un 409 d'une autre
+# nature (verrou, conflit) ne porte pas la phrase et reste une erreur
+# ordinaire.
+NOT_QUEUED_REFUSAL_MARKERS = ("has not been queued yet", "not been queued yet")
+#: Le `reason` porte par les ghosts de cette classe.
+PHANTOM_REASON = "phantom-non-annulable"
 
 
 class InstrumentError(RuntimeError):
@@ -190,7 +263,9 @@ def fetch_pr_states(repo: str, branches: list[str]) -> dict[str, str]:
 def classify_runs(runs: list[dict], cutoff: datetime,
                   pr_states: dict[str, str] | None = None,
                   now: datetime | None = None,
-                  stale_runs_on: set[int] | None = None) -> dict:
+                  stale_runs_on: set[int] | None = None,
+                  no_job: set[int] | None = None,
+                  phantom_non_annulable: set[int] | None = None) -> dict:
     """Split queued runs into explained ghosts and live runs.
 
     A run is a ghost when its class is measured and permanent:
@@ -224,6 +299,18 @@ def classify_runs(runs: list[dict], cutoff: datetime,
       future re-migration back to self-hosted would re-admit them. The
       watch only counts them when they coexist with a non-draining live
       queue, and `--cancel` opts in explicitly.
+    * `no-job` -- a queued run with NO job created (opt-in, #26357): the
+      run was never admitted to a runner, so it carries no check-run and
+      cannot gate anything. The class is supplied by the caller (detecting
+      it costs one API call per queued run, so the scheduled watch never
+      computes it) and is honoured only when the caller provides it.
+    * `phantom-non-annulable` -- a run the API REFUSES to cancel, on
+      `cancel` as on `force-cancel`, with the 409 "has not been queued
+      yet": it was never admitted to a runner, so no mutation can free it
+      (measured 2026-11-14: 91 runs on 91 answered 409 on both endpoints).
+      The class is supplied by the caller -- it is PROVEN by the API
+      answer, never guessed -- and separates the dead padding from the
+      runs that are really waiting for a runner.
 
     Anything else is live: an undrained live queue is the drift signal, not
     a classification failure. Entries carry `reason` (ghosts only), `event`
@@ -233,6 +320,8 @@ def classify_runs(runs: list[dict], cutoff: datetime,
     """
     pr_states = pr_states or {}
     stale_runs_on = stale_runs_on or set()
+    no_job = no_job or set()
+    phantom_non_annulable = phantom_non_annulable or set()
     ghosts: list[dict] = []
     live: list[dict] = []
     parse_failures: list[dict] = []
@@ -271,6 +360,15 @@ def classify_runs(runs: list[dict], cutoff: datetime,
             ghosts.append(entry(run, "scheduled-orphan"))
         elif run.get("id") in stale_runs_on:
             ghosts.append(entry(run, "stale-runs-on"))
+        elif run.get("id") in phantom_non_annulable:
+            # Preuve par l'API (409 sur cancel ET force-cancel) : le run n'a
+            # jamais ete admis, il n'occupe donc pas la file des runners.
+            # On le garde hors du seau `live` : c'est de la file morte.
+            # La preuve par l'API prime sur la detection structurelle
+            # `no-job` : elle est plus forte, et elle nomme la classe exacte.
+            ghosts.append(entry(run, PHANTOM_REASON))
+        elif run.get("id") in no_job:
+            ghosts.append(entry(run, "no-job"))
         else:
             live.append(entry(run))
     return {"ghosts": ghosts, "live": live, "parse_failures": parse_failures}
@@ -337,6 +435,16 @@ def watch_verdict(ghosts: int, live: int, parse_failures: int) -> str:
     if v == "INCOMPLETE":
         return "BROKEN"
     return "DRIFT"
+
+
+def _count_by_event(runs: list[dict]) -> dict[str, int]:
+    """Count runs per event, sorted by name for a stable rendering."""
+    counts: dict[str, int] = {}
+    for run in runs:
+        event = run.get("event")
+        key = event if isinstance(event, str) and event else "unknown"
+        counts[key] = counts.get(key, 0) + 1
+    return dict(sorted(counts.items()))
 
 
 def split_live(live: list[dict], now: datetime, stale_hours: float) -> dict:
@@ -588,31 +696,168 @@ def detect_stale_runs_on(runs: list[dict],
     return stale
 
 
-def cancel_run(repo: str, run_id: int) -> dict:
+def fetch_run_jobs(repo: str, run_id: int) -> list[dict] | None:
+    """Return the jobs of a workflow run, or None when the lookup is unknown.
+
+    An EMPTY list means the run has no job: it was never admitted to a
+    runner, so it carries no check-run. None means the lookup failed (a run
+    that vanished, a transport error) -- the caller treats it as unknown and
+    never guesses (fail-CLOSED, the same contract as
+    `fetch_workflow_runs_on_at_ref`).
+    """
+    endpoint = f"repos/{repo}/actions/runs/{run_id}/jobs?per_page={PER_PAGE}"
+    try:
+        payload = _gh_api_json(endpoint, attempts=1)
+    except InstrumentError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    jobs = payload.get("jobs")
+    if not isinstance(jobs, list):
+        return None
+    return jobs
+
+
+def detect_no_job_runs(repo: str, runs: list[dict], *, events: frozenset[str],
+                       min_age_hours: float, now: datetime,
+                       max_workers: int = 8) -> dict:
+    """Return the queued runs that have NO job created.
+
+    Candidates are the queued runs whose event is in `events` and whose age
+    exceeds `min_age_hours`. Each candidate is then probed with
+    `GET /runs/{id}/jobs`: an empty job list PROVES the run was never
+    admitted, hence carries no check-run, hence can be cancelled without
+    turning any check red. A failed probe (None) excludes the run -- the
+    class requires a positive proof, never an absence of evidence.
+
+    Returns {"ids": set[int], "checked": int, "probed": int, "unknown": int}.
+    """
+    candidates: list[int] = []
+    for run in runs:
+        if run.get("event") not in events:
+            continue
+        created_raw = run.get("created_at")
+        run_id = run.get("id")
+        if not isinstance(created_raw, str) or not isinstance(run_id, int):
+            continue
+        try:
+            created = datetime.fromisoformat(created_raw.replace("Z", "+00:00"))
+        except ValueError:
+            continue
+        if (now - created).total_seconds() / 3600.0 <= min_age_hours:
+            continue
+        candidates.append(run_id)
+
+    found: set[int] = set()
+    unknown = 0
+
+    def _probe(run_id: int) -> tuple[int, bool]:
+        jobs = fetch_run_jobs(repo, run_id)
+        if jobs is None:
+            return run_id, False
+        return run_id, not jobs
+
+    if candidates:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+            for run_id, is_empty in ex.map(_probe, candidates):
+                if is_empty:
+                    found.add(run_id)
+                else:
+                    unknown += 1
+    return {"ids": found, "checked": len(candidates), "probed": len(candidates),
+            "unknown": unknown}
+
+
+def verify_no_job_before_cancel(repo: str, run_ids: list[int],
+                                max_workers: int = 8) -> tuple[list[int], list[int]]:
+    """Re-probe the job lists right before cancelling.
+
+    A run can be admitted between the detection pass and the cancellation,
+    and an admitted run creates its jobs -- cancelling it then would produce
+    a CANCELLED check-run on a head SHA, which blocks the merge like a
+    failure (c.925). The re-probe narrows that window to the milliseconds
+    between the probe and the POST; a run that gained a job in the meantime
+    is dropped from the batch and reported, never cancelled.
+
+    Returns (ids_to_cancel, ids_dropped).
+    """
+    keep: list[int] = []
+    dropped: list[int] = []
+
+    def _probe(run_id: int) -> tuple[int, bool]:
+        jobs = fetch_run_jobs(repo, run_id)
+        return run_id, (jobs is not None and not jobs)
+
+    if not run_ids:
+        return keep, dropped
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+        for run_id, still_empty in ex.map(_probe, run_ids):
+            (keep if still_empty else dropped).append(run_id)
+    return keep, dropped
+
+
+def is_not_queued_refusal(text: str) -> bool:
+    """True si la reponse de l'API est le refus « run pas encore en file ».
+
+    Le marquage est sur la PHRASE, pas sur le code HTTP : le meme refus revient
+    sur `cancel` et sur `force-cancel` (seul le verbe change dans le message),
+    et un 409 d'une autre nature (verrou, conflit) ne porte pas la phrase.
+    """
+    lowered = (text or "").lower()
+    return any(marker in lowered for marker in NOT_QUEUED_REFUSAL_MARKERS)
+
+
+def cancel_run(repo: str, run_id: int, *, force: bool = False) -> dict:
     """Cancel a single queued run via the API. Returns a per-run verdict.
 
-    The API answers 202 on a successful cancellation and 409 on a run
-    that "has not been queued yet" (the pre-cutoff / pr-closed classes
-    also see this 409 -- the 202 vs 409 split is the only signal the
-    script has to know whether the cancellation was applied). The result
-    is reported, never interpreted: the caller decides what to do.
+    Three verdicts, told apart by the API's own answer:
+
+    * `cancelled` (rc 0, HTTP 202) -- the cancellation was accepted;
+    * `phantom-non-annulable` -- the API REFUSES: "a workflow run that has
+      not been queued yet". The run was never admitted to a runner (no job
+      was ever created for it), so neither `cancel` nor `force-cancel` can
+      free it. This is a permanent state, not an error to retry -- measured
+      2026-11-14: 91 runs on 91 answered 409 on both endpoints;
+    * `rc=<n>` -- any other failure, ordinary.
+
+    The result is reported, never interpreted: the caller decides what to do.
     """
-    endpoint = f"repos/{repo}/actions/runs/{run_id}/cancel"
+    action = "force-cancel" if force else "cancel"
+    endpoint = f"repos/{repo}/actions/runs/{run_id}/{action}"
     try:
         proc = subprocess.run(
             ["gh", "api", "-X", "POST", endpoint, "--silent"],
             capture_output=True, text=True, encoding="utf-8", check=False,
         )
     except FileNotFoundError:
-        return {"ok": False, "status": "gh-missing", "error": "gh CLI not on PATH"}
+        return {"ok": False, "status": "gh-missing", "class": "error",
+                "cancellable": True, "error": "gh CLI not on PATH"}
     if proc.returncode == 0:
-        return {"ok": True, "status": "cancelled"}
+        return {"ok": True, "status": "cancelled", "class": "cancelled",
+                "cancellable": True}
     snippet = (proc.stderr or proc.stdout).strip()
-    return {"ok": False, "status": f"rc={proc.returncode}", "error": snippet[:200]}
+    if is_not_queued_refusal(snippet):
+        return {"ok": False, "status": PHANTOM_REASON, "class": "phantom",
+                "cancellable": False, "error": snippet[:200]}
+    return {"ok": False, "status": f"rc={proc.returncode}", "class": "error",
+            "cancellable": True, "error": snippet[:200]}
+
+
+def force_cancel_run(repo: str, run_id: int) -> dict:
+    """Force-cancel a queued run -- same verdict vocabulary as `cancel_run`.
+
+    Measured in direct contact on 2026-11-14: the `force-cancel` endpoint
+    answers the SAME refusal as `cancel` ("Cannot cancel a workflow run that
+    has not been queued yet.", HTTP 409). The classification is therefore
+    shared -- a run refused by one is refused by the other, and the report
+    says so instead of retrying forever.
+    """
+    return cancel_run(repo, run_id, force=True)
 
 
 def cancel_runs_parallel(repo: str, run_ids: list[int],
-                         max_workers: int = 8) -> list[dict]:
+                         max_workers: int = 8,
+                         force: bool = False) -> list[dict]:
     """Cancel multiple runs concurrently. Returns per-run verdicts.
 
     The 2026-10-15 measurement was ~2 s per cancellation sequentially; 8
@@ -621,18 +866,30 @@ def cancel_runs_parallel(repo: str, run_ids: list[int],
     shuffled lightly in spirit (as_completed order is non-deterministic by
     design) -- no fairness guarantee, only that the slowest run bounds
     the batch.
+
+    `force=True` hits the `force-cancel` endpoint instead of `cancel`; the
+    verdict vocabulary is identical.
     """
     if not run_ids:
         return []
     out: list[dict] = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
-        future_to_id = {ex.submit(cancel_run, repo, rid): rid for rid in run_ids}
+        def _submit(rid: int):
+            # The default path keeps the historical two-argument call, so a
+            # caller that patches `cancel_run` with the old signature keeps
+            # working; `force` is only passed when it is asked for.
+            if force:
+                return ex.submit(cancel_run, repo, rid, force=True)
+            return ex.submit(cancel_run, repo, rid)
+
+        future_to_id = {_submit(rid): rid for rid in run_ids}
         for fut in concurrent.futures.as_completed(future_to_id):
             rid = future_to_id[fut]
             try:
                 res = fut.result()
             except Exception as exc:  # pragma: no cover -- defensive
-                res = {"ok": False, "status": "exception", "error": str(exc)}
+                res = {"ok": False, "status": "exception", "class": "error",
+                       "cancellable": True, "error": str(exc)}
             res["id"] = rid
             out.append(res)
     return out
@@ -660,23 +917,46 @@ def main(argv: list[str] | None = None) -> int:
                              "the measurement verdict to actionable buckets -- see "
                              "watch_verdict(). Without --watch, the original four-"
                              "bucket measurement verdict is returned.")
-    parser.add_argument("--cancel", choices=["stale-runs-on"], default=None,
+    parser.add_argument("--cancel", choices=["stale-runs-on", "no-job"], default=None,
                         help="detect-and-optionally-cancel a ghost class. "
                              "`stale-runs-on` finds queued runs whose workflow "
                              "no longer requests the runner pool they were "
-                             "queued against (a tranche of #17397). Requires "
-                             "--repo (live API), and is a no-op on --input "
-                             "snapshots that lack the embedded fingerprint. "
-                             "Dry-run by default; pass --apply to cancel.")
+                             "queued against (a tranche of #17397). "
+                             "`no-job` finds queued runs that have NO job "
+                             "created -- never admitted to a runner, hence no "
+                             "check-run (#26357). Requires --repo (live "
+                             "API). Dry-run by default; pass --apply to cancel.")
     parser.add_argument("--apply", action="store_true",
                         help="with --cancel: actually POST cancel requests "
                              "(8 parallel workers, ~2 s/cancellation). "
                              "Default is dry-run -- the affected IDs are "
-                             "reported, not touched.")
+                             "reported, not touched. NOT recommended on the "
+                             "no-job class: those runs were never admitted, "
+                             "so the API refuses to cancel them (409).")
+    parser.add_argument("--force-cancel", action="store_true",
+                        help="with --cancel --apply: use the `force-cancel` "
+                             "endpoint instead of `cancel`. Both answer the "
+                             "same refusal for a run that was never admitted "
+                             "('has not been queued yet'), so this is the way "
+                             "to PROVE the non-annulability on the second "
+                             "endpoint rather than to obtain a cancellation.")
     parser.add_argument("--cancel-workers", type=int, default=8,
                         help="parallel workers for --apply (default 8). "
                              "8 is below the API secondary rate limits and "
                              "keeps the batch wall-clock bounded.")
+    parser.add_argument("--no-job-min-age-hours", type=float,
+                        default=DEFAULT_NO_JOB_MIN_AGE_HOURS,
+                        help="with --cancel no-job: minimum age (hours) a "
+                             "queued run must exceed to be a candidate. "
+                             "Below it, a queued run is ordinary backlog, "
+                             f"not a stuck one (default {DEFAULT_NO_JOB_MIN_AGE_HOURS:g}h).")
+    parser.add_argument("--no-job-events", default=",".join(sorted(NO_JOB_EVENTS)),
+                        help="with --cancel no-job: the comma-separated events "
+                             "whose queued runs may enter the class. Only "
+                             "comment- and review-triggered events are "
+                             "eligible by default: a pull_request or push run "
+                             "can gate a head SHA, and cancelling it could "
+                             "suppress a check the branch protection expects.")
     args = parser.parse_args(argv)
 
     try:
@@ -722,6 +1002,9 @@ def main(argv: list[str] | None = None) -> int:
         # (dry-run by default).
         stale_runs_on: set[int] = set()
         cancel_report: list[dict] = []
+        # Runs dont l'API a refuse l'annulation (409 « pas encore en file »).
+        # La preuve vient de la REPONSE de l'API, jamais d'une supposition.
+        phantom_ids: set[int] = set()
         if args.cancel == "stale-runs-on":
             if args.input:
                 raise InstrumentError(
@@ -742,9 +1025,112 @@ def main(argv: list[str] | None = None) -> int:
                 cancel_report = cancel_runs_parallel(
                     args.repo, sorted(stale_runs_on),
                     max_workers=max(1, args.cancel_workers),
+                    force=args.force_cancel,
                 )
+                # Un 409 « pas encore en file » prouve la non-annulabilite :
+                # le run n'entrait pas dans la file des runners, il etait donc
+                # classe a tort comme annulable.
+                phantom_ids = {
+                    r["id"] for r in cancel_report
+                    if r.get("class") == "phantom"
+                }
+        # no-job class (opt-in, #26357): queued runs that were never
+        # admitted to a runner, hence carry no job and no check-run. The
+        # detection costs one API call per queued run, so it runs ONLY when
+        # the class is asked for -- the scheduled watch never pays for it.
+        #
+        # Measured 2026-11-14: these runs are NOT cancellable. The API
+        # refuses them with a 409 "has not been queued yet" on `cancel` as on
+        # `force-cancel` (91 runs on 91). The class is therefore a MEASUREMENT
+        # of dead padding, not a lever: the report separates them from the
+        # live runs and does NOT recommend `--apply` for them.
+        no_job_ids: set[int] = set()
+        no_job_report: dict = {}
+        no_job_events = frozenset(
+            e.strip() for e in args.no_job_events.split(",") if e.strip()
+        )
+        if args.cancel == "no-job":
+            if args.input:
+                raise InstrumentError(
+                    "--cancel no-job requires --repo (live API); snapshot "
+                    "mode cannot prove the job state of a run"
+                )
+            detection = detect_no_job_runs(
+                args.repo, raw_runs, events=no_job_events,
+                min_age_hours=args.no_job_min_age_hours,
+                now=now or datetime.now(timezone.utc),
+                max_workers=max(1, args.cancel_workers),
+            )
+            no_job_ids = detection["ids"]
+            no_job_report = {
+                "detected": sorted(no_job_ids),
+                "checked": detection["checked"],
+                "unknown": detection["unknown"],
+                "events": sorted(no_job_events),
+                # Sans job = jamais admis = l'API refuse l'annulation
+                # (409 sur cancel ET force-cancel, mesure du 14/11 : 91 sur
+                # 91). La classe est donc une file MORTE, pas une file a
+                # vider : `--apply` n'est pas recommande pour elle.
+                "phantoms": sorted(no_job_ids),
+                "phantom_evidence": (
+                    "aucun job cree : le run n'a jamais ete admis en file, "
+                    "donc l'API refuse son annulation (409) -- mesure du "
+                    "14/11 : 91 runs sur 91 refuses, sur cancel comme sur "
+                    "force-cancel"
+                ),
+                "cancellable": [],
+                "apply_recommended": False,
+                "apply_refusal": (
+                    "ces runs n'ont jamais ete admis en file (aucun job "
+                    "cree) : l'API refuse leur annulation en 409 "
+                    "'has not been queued yet', sur cancel comme sur "
+                    "force-cancel -- mesure du 14/11 : 91 sur 91"
+                ),
+                "applied": False,
+                "results": [],
+                "dropped": [],
+            }
+            if args.apply and no_job_ids:
+                to_cancel, dropped = verify_no_job_before_cancel(
+                    args.repo, sorted(no_job_ids),
+                    max_workers=max(1, args.cancel_workers),
+                )
+                results = cancel_runs_parallel(
+                    args.repo, to_cancel,
+                    max_workers=max(1, args.cancel_workers),
+                    force=args.force_cancel,
+                )
+                no_job_report["results"] = results
+                no_job_report["dropped"] = dropped
+                no_job_report["applied"] = True
+                # Le verdict de l'API fait la loi : un 409 « pas encore en
+                # file » PROUVE la non-annulabilite, un 202 prouve
+                # l'annulation. Les deux seaux sont separes.
+                no_job_phantoms = {
+                    r["id"] for r in results if r.get("class") == "phantom"
+                }
+                cancelled_ids = {
+                    r["id"] for r in results if r.get("class") == "cancelled"
+                }
+                error_ids = {
+                    r["id"] for r in results
+                    if r.get("class") not in ("phantom", "cancelled")
+                }
+                phantom_ids = phantom_ids | no_job_phantoms
+                no_job_report["phantoms"] = sorted(no_job_phantoms)
+                no_job_report["phantom_evidence"] = (
+                    "409 'has not been queued yet' sur "
+                    + ("force-cancel" if args.force_cancel else "cancel")
+                )
+                no_job_report["cancelled"] = sorted(cancelled_ids)
+                no_job_report["errors"] = sorted(error_ids)
+                # Seuls les echecs ordinaires restent annuables : un run
+                # refuse par l'API ne se retente pas.
+                no_job_report["cancellable"] = sorted(error_ids)
         classification = classify_runs(raw_runs, cutoff, pr_states, now=now,
-                                        stale_runs_on=stale_runs_on)
+                                        stale_runs_on=stale_runs_on,
+                                        no_job=no_job_ids,
+                                        phantom_non_annulable=phantom_ids)
         # When the input was a prior analysis output, `classify_runs` cannot
         # re-derive the parse_failures from the synthesized runs -- they were
         # never serialized into the synthesized list. Merge the preserved
@@ -782,6 +1168,13 @@ def main(argv: list[str] | None = None) -> int:
                 "results": cancel_report,
             }
             rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+        if args.cancel == "no-job":
+            # Same contract as the stale-runs-on block: the verdict is
+            # surfaced whether or not --apply was passed. A dry run already
+            # carries the whole answer (which IDs carry no job), and the
+            # applied run carries the per-run API answer on top of it.
+            result["no_job"] = no_job_report
+            rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
         if args.watch:
             # Watch mode replaces the four-bucket verdict with three
             # actionable buckets (OK / DRIFT / BROKEN) and corresponding
@@ -805,6 +1198,14 @@ def main(argv: list[str] | None = None) -> int:
                 "fresh_live": len(parts["fresh_live"]),
             })
             result["stale_live"] = parts["stale_live"]
+            # Cheap diagnostic (no extra API call): the share of the live
+            # queue carried by COMMENT- and REVIEW-triggered runs. Those
+            # events create no PR leg of their own, so a queue padded with
+            # them is padding, not work. The no-job class (opt-in) proves
+            # how many of them were never even admitted to a runner; this
+            # counter is the free proxy that the scheduled watch can always
+            # afford (#26357).
+            result["live_by_event"] = _count_by_event(classification["live"])
             watch = watch_verdict(gh_count, len(parts["stale_live"]), pf_count)
             result["verdict_watch"] = watch
             result["verdict_measurement"] = v

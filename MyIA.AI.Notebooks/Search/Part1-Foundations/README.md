@@ -68,7 +68,7 @@ La boîte à outils de graphes et la recherche continue, trois accrétions de Se
 
 - **[2b NetworkX](Search-02b-NetworkX.ipynb)** (+ [jumeau C#](Search-02b-NetworkX-CSharp.ipynb)) — **Boîte à outils de graphes** : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, MST, Floyd-Warshall ; matière optionnelle, utile dès la fin de Search-2, en parité structurelle avec QuikGraph (2c). Le jumeau C# refait la théorie from-scratch (`Dictionary` / listes d'adjacence pondérées) et ajoute le flot maximum (Ford-Fulkerson) plus une tranche 2 QuikGraph (parité lib-vs-lib sur la même instance) — distinct de 2c, parité #4956.
 - **[2c QuikGraph](Search-02c-QuikGraph.ipynb)** — Bibliothèque de graphes .NET **QuikGraph 2.5.0** (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités, composantes connexes, Edmonds-Karp (flot max), en parité avec NetworkX. Suppose .NET Interactive.
-- **[2d RRT](Search-02d-RRT-Recherche-Continue.ipynb)** — **Recherche continue** (from scratch : stdlib, numpy, matplotlib) : RRT (LaValle 1998) et RRT\* (Karaman & Rus 2010) — croissance par échantillonnage aléatoire, biais vers le but, contrôle de collision, rewiring. **Optimalité asymptotique mesurée** : ratio longueur/borne inférieure contre budget N (médiane de 5 graines) — RRT plat à 1,27 contre RRT\* 1,08 → 1,02.
+- **[2d RRT en Python](Search-02d-RRT-Recherche-Continue.ipynb)** et **[C#](Search-02d-RRT-Recherche-Continue-CSharp.ipynb)** — recherche continue, collisions exactes, RRT et reparentage RRT* ; comparaison à budget fini sur cinq graines, sans preuve expérimentale d’optimalité asymptotique.
 
 ### Autour de 03
 
