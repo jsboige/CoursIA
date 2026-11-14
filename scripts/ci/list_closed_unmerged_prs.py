@@ -310,9 +310,11 @@ def force_push_to_close_seconds(events: list[dict], closed_at: datetime) -> floa
 def closing_evidence(body: str, comments_: list[dict], closed_at: datetime) -> tuple[int | None, bool]:
     """``(successeur, raison_d_abandon)`` depuis le body et les commentaires proches.
 
-    Seuls les commentaires dans :data:`CLOSING_COMMENT_WINDOW_S` autour de la
-    fermeture comptent : un ``superseded by #N`` poste trois semaines plus tot
-    parlait d'autre chose.
+    Les commentaires dans :data:`CLOSING_COMMENT_WINDOW_S` autour de la
+    fermeture comptent. Hors de cette fenetre, seuls les commentaires dont
+    le corps commence par ``[TRI]`` sont retenus : ils consignent une decision
+    explicite de triage, meme postee apres coup. Un commentaire ordinaire tel
+    que ``superseded by #N`` poste trois semaines plus tot ne compte pas.
     """
     successor: int | None = None
     reason = False
