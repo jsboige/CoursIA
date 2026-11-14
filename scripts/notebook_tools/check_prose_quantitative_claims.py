@@ -578,6 +578,115 @@ ARTIFACT_EXEMPTIONS: tuple[ArtifactExemption, ...] = (
             "tranche 4 (2026-11-07), pas un compteur du depot."
         ),
     ),
+    # Cartographie de la soumission externe yang-mills-group/OpenAI-YM-20261028
+    # (PR #25826) : chaque nombre mesure le depot externe tel que fige au pin
+    # audite (main 2026-11-05, clone verifie par scripts/ym_openai_20261028/
+    # inventory.py contre SOURCES.sha256). Meme classe que HopfProblem et
+    # DarkSnail ci-dessus : upstream peut bouger, la tete mesuree reste
+    # celle du blob -- ces nombres ne derivent pas avec CoursIA.
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"\(9 508 fichiers, commit unique\)"),
+        raison=(
+            "Taille du clone externe audite (pin main du 2026-11-05) : fait "
+            "du depot externe OpenAI-YM-20261028, pas un etat de CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"réélaboration des 9 457 modules"),
+        raison=(
+            "Table d'obstacles de la synthese : compte des modules du depot "
+            "externe, marque RAPORTE (journaux de la soumission, section 6)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"Architecture : 613 lignes de spécification, ~988 000 lignes"
+        ),
+        raison=(
+            "Titre de section : tailles de l'enonce et de l'implementation "
+            "du depot externe, mesurees par l'inventaire rejouable."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(l'énoncé complet, en 190 lignes|réseau de Wilson, loi, limite \(92 lignes\)"
+            r"|Wightman W0–W3 \(325 lignes\))"
+        ),
+        raison=(
+            "Arbre d'architecture (section 3) : tailles des fichiers de "
+            "specification du depot externe, mesurees au pin audite."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"\*\*9 477\*\* fichiers `\.lean` pour \*\*987 586\*\* lignes"
+        ),
+        raison=(
+            "Comptes du manifeste SOURCES.sha256 du depot externe : le pin "
+            "fige les nombres, pas le depot CoursIA."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(closure = 4 module\(s\) de specification"
+            r"|\+ 1 externe\(s\) ; 0 module\(s\) d'implementation atteint)"
+        ),
+        raison=(
+            "Inventaire de la closure de Challenge.lean : decomposition "
+            "spec/implementation du depot externe (section 3)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(atteint \*\*9 467\*\* modules du projet"
+            r"|263 modules externes : le travail)"
+        ),
+        raison=(
+            "Closure de Solution.lean du depot externe : portee mesuree au "
+            "pin, temoin du cloisonnement spec/implementation."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(compilation des 9 457 modules YM"
+            r"|outside=149891 modules=9457"
+            r"|\*\*2 950 modules\*\* ne contribuent"
+            r"|laquelle « 9 477 fichiers)"
+        ),
+        raison=(
+            "Journaux verification/*.log de la soumission cites verbatim "
+            "(section 4) : mesures rapportees du depot externe, non "
+            "rejouees ici (section 6)."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(r"\*\*9 506 fichiers sur 9 507\*\*"),
+        raison=(
+            "Obstacle CRLF du checkout (section 6) : ecarts de hachage "
+            "constates sur le clone externe, fait du run d'inventaire."
+        ),
+    ),
+    ArtifactExemption(
+        path="docs/research/yang-mills-openai-20261028-analyse.md",
+        motif=re.compile(
+            r"(integrite_manifeste +9507 fichiers"
+            r"|cloisonnement_reference +0 module\(s\) d'implementation"
+            r"|travail_dans_la_solution +9467 module\(s\) projet)"
+        ),
+        raison=(
+            "Sortie verbatim de l'outil rejouable inventory.py sur le pin "
+            "audite (section 7) : preuve du run, pas un etat de CoursIA."
+        ),
+    ),
     ArtifactExemption(
         path=(
             "MyIA.AI.Notebooks/GenAI/3D/"
