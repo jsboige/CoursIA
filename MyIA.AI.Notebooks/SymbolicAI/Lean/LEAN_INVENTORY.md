@@ -33,7 +33,11 @@ zéro `sorry`, sibling EN), sans refresh du tableau ni des comptes de la ligne
 `hecke_lean` (périmés depuis #18723 — au prochain refresh complet).
 Déplacement 2026-10-22 (#20649) : `iit_lean` a quitté `SymbolicAI/Lean/` pour
 `MyIA.AI.Notebooks/IIT/iit_lean/`, sa série consommatrice ; la ligne du tableau
-reste l'état mesuré au 2026-09-30 et ne décrit plus l'arbre courant.
+reste l'état mesuré au 2026-09-30 et ne décrit plus l'arbre courant. Ajout
+ponctuel 2026-11-13 : ligne `combinators_lean` (#25061, grain B du pli 4 de
+l'Epic Origami #19742 — confluence du système S/K/I par invocation de l'organe
+Mathlib `Relation.church_rosser`, pin `db584cd` v4.33.0, 0 sorry, témoin ICT-51),
+sans refresh complet des autres lignes.
 
 ## Résumé
 
@@ -51,6 +55,7 @@ reste l'état mesuré au 2026-09-30 et ne décrit plus l'arbre courant.
 | `hecke_lean` | v4.33.0 | 0 | 4 | 0 | PEDA/REF | #14784, #14771 |
 | `formal_groups_lean` | v4.33.0 | 0 | 10 | 0 | PEDA/REF | #14785, #14771 |
 | `iit_lean` | v4.33.0 | 0 | 3 | 2 | REF | #18599, #16781, #20414 |
+| `combinators_lean` | v4.33.0 | 0 | 4 | 1 | PEDA/REF | #25061, #19742 |
 | **Total** | — | **9** | **263** | — | — | — |
 
 ¹ `conway_lean` : **1 distinct** sorry (cible de prover intentionnelle dans
