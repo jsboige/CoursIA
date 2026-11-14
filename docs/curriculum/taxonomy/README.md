@@ -69,3 +69,16 @@ python scripts/notebook_tools/curriculum_taxonomy.py \
 ```
 
 Les tranches suivantes étendront la série à la série **ICT** (`ICT-Series/`, 102 carnets, Epic #4588) — extension distincte documentée dans son propre README, ajoutée au même `iit.json` ou dans un `ict.json` dédié, une PR par tranche, sur ce même modèle.
+
+## Série Tweety — tranche 1 (logiques → révision de croyances → argumentation)
+
+[`tweety.json`](tweety.json) décrit le cœur Python de la sous-série **SymbolicAI/Tweety** : `Tweety-02-Basic-Logics`, `Tweety-03-Advanced-Logics`, `Tweety-04-Belief-Revision`, `Tweety-05-Abstract-Argumentation` et `Tweety-06-Structured-Argumentation`. Le même `schema.json` et le validateur `curriculum_taxonomy.py` s'appliquent. Les prérequis relient notamment la satisfiabilité à MaxSAT et aux sous-ensembles inconsistants minimaux, puis le cadre de Dung à l'admissibilité et aux sémantiques d'argumentation. Cette tranche ne prétend pas couvrir toute la série Tweety.
+
+Les définitions françaises et anglaises citent les **cellules sources des carnets** par chemin et identifiant stable. Aucun chapitre AIMA n'est indiqué dans cette tranche : le choix est de sourcer les formulations effectivement enseignées avec Tweety, notamment AGM, CF2, ASPIC+, DeLP et ABA, plutôt que de leur attribuer un chapitre généraliste sans correspondance établie. Cela ne signifie pas que les fondements de logique propositionnelle ou du premier ordre sont absents d'AIMA ; un rattachement bibliographique supplémentaire demanderait une vérification explicite, distincte des citations de cellules présentes ici.
+
+```bash
+python scripts/notebook_tools/curriculum_taxonomy.py \
+  --data docs/curriculum/taxonomy/tweety.json \
+  --skos-output /tmp/tweety.ttl \
+  --owl-output /tmp/tweety.owl
+```
