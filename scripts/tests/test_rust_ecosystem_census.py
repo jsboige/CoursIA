@@ -67,6 +67,15 @@ def test_python_imports_skips_comments():
     assert rec.python_imports("") == set()
 
 
+def test_python_imports_jpype_java_roots_kernel_provided():
+    """Racines de paquets Java exposées par jpype (``import org`` / ``import
+    java``, organe l. 122-140) : le parse rend la racine, et celle-ci est dans
+    ``_KERNEL_PROVIDED`` — donc exclue du tiers par ``census``."""
+    assert rec.python_imports("import org.jblas") == {"org"}
+    assert rec.python_imports("import java.util.List") == {"java"}
+    assert {"org", "java"} <= rec._KERNEL_PROVIDED
+
+
 # --- nuget_packages --------------------------------------------------------
 
 def test_nuget_packages_basic():
@@ -78,6 +87,12 @@ def test_nuget_packages_basic():
 def test_nuget_packages_strips_version():
     """la classe de caractères s'arrête à l'espace : la version ne compte pas."""
     assert rec.nuget_packages("#r 'nuget: Some.Pkg 1.2.3'") == {"Some.Pkg"}
+
+
+def test_nuget_packages_comma_form():
+    """Forme à virgule ``#r "nuget: X, 9.4"`` : la classe de caractères s'arrête
+    à la virgule, seul le NOM du paquet est rendu (pas la version)."""
+    assert rec.nuget_packages('#r "nuget: Some.Pkg, 9.4"') == {"Some.Pkg"}
 
 
 def test_nuget_packages_none_and_case_insensitive():

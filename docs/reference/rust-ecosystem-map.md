@@ -25,7 +25,7 @@ python scripts/notebook_tools/rust_ecosystem_census.py --json     # sortie machi
 
 L'organe [rust_ecosystem_census.py](../../scripts/notebook_tools/rust_ecosystem_census.py) :
 
-- prend le corpus des carnets **suivis par git** sous `MyIA.AI.Notebooks/`, hors sorties `_output` et jumeaux de traduction `_en` (la même base que l'inventaire de l'Epic : 1 768 carnets) ;
+- prend le corpus des carnets **suivis par git** sous `MyIA.AI.Notebooks/`, hors sorties `_output` et jumeaux de traduction `_en` (la même sélection que l'inventaire de l'Epic, comptée en chemins bruts : 1 770 carnets) ;
 - extrait, par cellule de code, les modules Python de niveau supérieur importés (`import X`, `from X import …`) et les paquets NuGet chargés (`#r "nuget: Paquet"`);
 - **sépare les imports en quatre bacs** : stdlib (via `sys.stdlib_module_names`, la liste du langage), **tiers** (ce qui a un équivalent crate à envisager), **helpers du dépôt** (tiges des `.py`/`.lean` suivis par git — jamais une liste en dur), et **imports Lean** (`Mathlib` et modules de série dans les carnets Python/Lean mixtes) ;
 - compte **par carnet distinct** (un module compté une fois par carnet, même importé dans plusieurs cellules), **par série** (répertoire de premier niveau).
