@@ -55,10 +55,10 @@ jobs:
           python-version: '3.11.18'
           cache: pip
 
-      - name: Install deps (pytest automata-lib fastapi httpx uvicorn)
+      - name: Install deps (requirements-automata.txt)
         run: |
           python -m pip install --upgrade pip
-          pip install pytest automata-lib fastapi httpx uvicorn
+          pip install -r MyIA.AI.Notebooks/Search/Part1-Foundations/requirements-automata.txt
 
       - name: Run Search Automata tests
         run: |
