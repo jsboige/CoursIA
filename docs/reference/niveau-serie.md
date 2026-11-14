@@ -1,6 +1,6 @@
 # Règle de niveau de série — quand un dossier mérite d'exister
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-14
 
 **S'applique à** : toute création, suppression ou renommage d'un dossier porteur de carnets sous `MyIA.AI.Notebooks/`.
 **Origine** : issue #24197 (« Curriculum : consistance et clarté des séries », mandat direct du mainteneur du 2026-11-02), sections B et C. Son livrable 2 demande « une règle de niveau, courte et citable, pour B et pour C ».
@@ -31,6 +31,8 @@ Le test est volontairement peu coûteux : trois phrases suffisent à garder un d
 Un carnet posé à la racine d'une série est **légitime** quand le README de cette série le cite dans son arborescence et l'inscrit dans un arc ; sinon il est replié dans la sous-série qui l'accueille.
 
 Une série **plate** — tous ses carnets à la racine, sans dossier intermédiaire — n'est pas un défaut : c'est un choix de niveau, et il se dit. Le README de la série annonce que la série est plate et dit pourquoi (le sujet est commun, la numérotation est continue, aucun sous-arc ne se dessine).
+
+> État (mesuré sur `origin/main` au 2026-11-13) : les séries plates sont **Sudoku** (39/39 carnets à la racine), **Complexity** (26/26) et **NLP** (12/12) ; les trois déclarent leur platitude dans leur README. RL (29/40 à la racine + sous-série PostTraining) et GameTheory (101/142 + sous-séries) ne sont pas plates — leur structure est déclarée par leurs sous-séries, la règle 2 ne leur demande rien.
 
 ## Règle 3 — la série jumelle
 
