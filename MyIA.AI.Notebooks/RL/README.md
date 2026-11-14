@@ -528,6 +528,10 @@ Par l'espace d'actions et la contrainte d'échantillonnage. Espace discret et pe
 | Dyna Maze / Blocking Maze | Grilles déterministes et changeantes (numpy pur) | 8, 9 |
 | Portefeuille synthétique | Allocation d'actifs, auto-contenu (PyTorch pur, aucune donnée externe) | 6e |
 
+## Climbing Game — jumeaux 07b
+
+[Python](RL-07b-Sur-Generalisation-Climbing-Game-Python.ipynb) · [C#](RL-07b-Sur-Generalisation-Climbing-Game-CSharp.ipynb). Agent tabulaire et statistiques BCL, même protocole 120 runs × 12 000 épisodes et bootstrap 2 000 réplications. C/C n’est pas Nash de la matrice non symétrique ; les destinations finies et les intervalles sont distingués des garanties asymptotiques. Trois exercices ouverts ajoutent traces numériques, rééchantillonnage de runs et contre-exemple paramétrable. RNG/figures diffèrent (NumPy/Matplotlib contre .NET/SVG), sans moteur RL externe omis.
+
 ## Concepts clés
 
 | Concept | Description | Notebook |
