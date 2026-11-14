@@ -734,7 +734,7 @@ Deuxième tranche de la partition ai-01 (DM 13:41Z : A 01-09, **B 10-17b**, C 20
 6. **L'instrument de mesure reste la fragilité principale — les exos silencieux sont le moule dominant.** Sur les 25 carnets, la quasi-totalité porte des exercices en squelette **silencieux** (C.1-conformes, mais sans sortie de rappel) — l'inverse du moule de la tranche A (01-09, où les exos émettent). Deux dettes de lecture recoupent (écarts par graine non commentés : 14b seed 1, 15 taus par graine, 17b graines discordantes) et deux dettes de protocole (4 seeds au lieu de 5 dans 15f/15h ; fenêtrage non balayé dans 17b). Toutes LIGHT.
 7. **Famille d'accrétions ICT-15 = la plus large de la série (11 siblings : 15b→15l)** — signalée pour #7260 (renumérotation) : c'est un **candidat** à examiner (argument pédagogique à écrire, jamais un renommage reflexe, cf `notebook-accretion-numbering`). La plage 10→17b ne porte par ailleurs aucun candidat fusion ; 17b est une accrétion de 17 (MDL, K statique) vers l'entraînement (K dynamique) — la séparation porte le sens.
 
-### `ICT-10-CatastropheGrammar-Python.ipynb` — toutes les cellules code exécutées
+### `ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb` — toutes les cellules code exécutées
 
 | Colonne | Contenu |
 |---|---|

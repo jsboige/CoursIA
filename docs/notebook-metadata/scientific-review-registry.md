@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -284,7 +284,7 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-10-CatastropheGrammar-Python.ipynb
   confidence: research
   reviewed_code_sha: 4c33852fe79b84797c4a3b2d91f26f24a9d80e3e42ecf0ba8541073ea5b7d0ac
   review_date: "2026-09-21"
@@ -644,7 +644,7 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-Dissociation-PhatSelfReference-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-10-CatastropheGrammar/ICT-Dissociation-PhatSelfReference-Python.ipynb
   confidence: research
   reviewed_code_sha: f3217c1a39de4952490d31779116c66a52fed1cabeb967eb13623761e0c4b918
   review_date: "2026-09-21"
