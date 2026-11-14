@@ -304,12 +304,28 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   prouve que le rouge y arrive »).
     #   Job unique `mirror`, statique [self-hosted, coursia-ephemeral,
     #   coursia-linux], `timeout-minutes: 5`, `concurrency` par PR avec
-    #   annulation du precedent, permissions `contents: read` seule, garde
-    #   same-repo au niveau job (`if: head.repo.full_name == repository`),
-    #   mode `--mirror-only` de `check_runner_starvation.py` (ZERO appel API,
-    #   zero lecture de cadence, zero inventaire). Aucun secret lu, aucun
-    #   GITHUB_TOKEN cote job, code de PR non execute (l'appelee lit l'etat
-    #   LOCAL, elle ne lit pas le diff).
+    #   annulation du precedent, permissions `contents: read` seule (au
+    #   niveau du workflow), garde same-repo au niveau job (`if:
+    #   head.repo.full_name == repository`), mode `--mirror-only` de
+    #   `check_runner_starvation.py` (ZERO appel API, zero lecture de
+    #   cadence, zero inventaire).
+    #   Le code de la PR **est** execute : l'organe est recupere par URL
+    #   brute a la tete epinglee de la PR (`head.sha`), puis lance par
+    #   `python3`. L'ancienne justification disait « code de PR non
+    #   execute » : c'etait faux, et une justification fausse dans une
+    #   allowlist fail-closed est un paveOuvert. Ce qui borne reellement le
+    #   risque :
+    #     - **same-repo** : la garde `head.repo.full_name == repository`
+    #       exclut toute PR de fork -- un contributeur externe ne peut pas
+    #       faire executer son code sur le parc ;
+    #     - **runner ephemere** (`coursia-ephemeral`) et **job plafonne a
+    #       5 minutes** : ce qui s'execute disparait avec le conteneur ;
+    #     - **permissions `contents: read` seule** : le code ne peut ni
+    #       ecrire dans le depot, ni obtenir une autre permission (actions,
+    #       packages, id-token) ;
+    #     - **aucun secret lu**, aucun `GITHUB_TOKEN` cote job : l'appelee
+    #       lit l'etat LOCAL (compteur d'echecs consecutifs + volume) et
+    #       n'appelle aucune API.
     #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte
     #   par `Scripts Tests (CPU)` (run 43560273660, 14/11) : la PR routait
     #   le job self-hosted sans toucher cette allowlist fail-closed -- meme

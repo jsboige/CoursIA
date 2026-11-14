@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from urllib.parse import urlsplit
 
 CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 sys.path.insert(0, str(CI_DIR))
@@ -1148,6 +1150,25 @@ def test_le_rouge_du_miroir_atteint_la_pr():
     #    c'est le contenu du checkout (le code de la PR a sa tete), sans le
     #    fetch. Un organe deplace est un ROUGE nomme, pas une disparition
     #    silencieuse -- c'est l'incident du 26/10 qu'on ne rejoue pas.
-    assert "raw.githubusercontent.com" in texte
-    assert "github.event.pull_request.head.sha" in texte
+    #    Le controle passe par le **netloc** PARSE : comparer une
+    #    sous-chaine a une URL est le patron que CodeQL signale comme
+    #    assainissement incomplet (`Incomplete URL substring
+    #    sanitization`), et le signalement tombait sur le *test* lui-meme
+    #    (annotation CodeQL du 14/11 sur cette ligne). On compare donc le
+    #    host PARSE, puis le chemin -- l'URL complete etant epinglee sur la
+    #    tete de la PR.
+    urls = [urlsplit(m) for m in re.findall(r"https://[^'\"\n]+", texte)]
+    miroirs = [u for u in urls if u.netloc == "raw.githubusercontent.com"]
+    assert miroirs, (
+        "l'organe du miroir doit etre recupere par URL brute, epinglee sur "
+        "la tete de la PR"
+    )
+    assert any(
+        u.path.endswith("/scripts/ci/check_runner_starvation.py")
+        and "github.event.pull_request.head.sha" in u.path
+        for u in miroirs
+    ), (
+        "l'URL de l'organe doit pointer sur scripts/ci/"
+        "check_runner_starvation.py, a la tete epinglee de la PR"
+    )
     assert "::error::" in etapes
