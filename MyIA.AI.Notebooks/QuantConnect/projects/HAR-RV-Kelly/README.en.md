@@ -95,7 +95,68 @@ The order count includes cancelled stops: every rebalance cancels a line's stop 
 
 Here, a stop empties a single line, and at most until the next Monday. One hypothesis, not measured, would explain the intermediate cost: the strategy's return is low (3.5 % a year), so each week a stopped line loses takes a larger share of it.
 
-Possible follow-ups, not measured: rerun the ablation once the scale defect is fixed (#26329), try a wider stop or a re-entry within the week, and measure the 2025-2026 window.
+### League measurement (#26329)
+
+The strategy is measured under the league protocol (#21594, template #22828): five modes in one code (`mode` parameter), one continuous pass 2015-01-01 → 2026-07-01 per mode. Window F1 = 2015-01-01 → 2024-12-31 (the coded period), window F2 = 2025-01-01 → 2026-06-30, outside the coded period. The `shadow` chart (e0..e4) plots the sessions before 2025, the `shadow2` chart the following ones, each counter restarting at e0. The strategy is causal: its F1 trace in the continuous pass is that of a pass stopped at the end of 2024, and the initial year in cash (warmup of 500 realized variances) is part of the measurement, as the code lives it.
+
+Backtests of 2026-11-14, QC project 31456164, compile `9ddf80f4c8379d0f5e78e21114f45ca0-2829b9bff149def10e9b688c3ce39622` (`BuildSuccess`, fingerprint of the measured `main.py`: sha256 `59654a6121d06c4d…`).
+
+| `mode` | Backtest | Orders | Sharpe (QC) | CAGR | Max drawdown | Net profit | PSR |
+|---|---|---|---|---|---|---|---|
+| `strategy` | `4ba35090f1e841fe6ccb820520b55c6a` | 1642 | 0.153 | 4.706 % | 15.700 % | 69.736 % | 0.025 % |
+| `spy` | `35760d7e05958612ddb3022f1d4861be` | 2 | 0.557 | 13.891 % | 33.700 % | 346.619 % | 2.620 % |
+| `6040` | `426393e633ce4a28eadd0f7e34e0bcb6` | 698 | 0.468 | 9.183 % | 21.700 % | 174.790 % | 1.233 % |
+| `ew6` | `2ce5cab10334be61d06565a18ffb4aaf` | 1512 | 0.379 | 7.984 % | 21.500 % | 142.007 % | 0.481 % |
+| `naivevol` | `4f0cfe9d245c282e5a0318bd02937f24` | 1642 | 0.153 | 4.706 % | 15.700 % | 69.736 % | 0.025 % |
+
+**Innocuity witness.** The bare `main.py` of `0ddc1e46fd` (compile `a8567b86…5a12c2c2991872db58f69a7accbee`, fingerprint sha256 `c80afa6189cd5638…`, run `e5937392d62a1fb2c6a4277b81ac37df`) and the instrumented code in `strategy` mode, launched the same day, return the same 1358 orders (date, ticker, quantity) over the coded window: the measurement code does not change the strategy. The bare run also reproduces the #24698 measurement (QC Sharpe 0.065, CAGR 3.470 %, drawdown 15.700 %).
+
+Per window, from the `shadow` traces (zero risk-free rate, 252 days a year):
+
+| Mode | F1 CAGR | F1 drawdown | F1 Sharpe | F2 CAGR | F2 drawdown | F2 Sharpe |
+|---|---|---|---|---|---|---|
+| `strategy` | 3.479 % | 15.731 % | 0.491 | 13.487 % | 6.823 % | 1.224 |
+| `spy` | 13.216 % | 33.668 % | 0.794 | 19.385 % | 18.741 % | 1.080 |
+| `6040` | 8.593 % | 21.694 % | 0.810 | 13.800 % | 11.247 % | 1.217 |
+| `ew6` | 5.835 % | 21.480 % | 0.580 | 24.416 % | 9.176 % | 1.849 |
+| `naivevol` | 3.479 % | 15.731 % | 0.491 | 13.487 % | 6.823 % | 1.224 |
+
+**Paired test.** `Paradox46Benchmarks/significance.py` (Ledoit-Wolf Sharpe diff, Newey-West, stationary bootstrap, Holm) on the daily returns of the traces, window by window, candidate against `spy` and `6040` for the verdict, against `ew6` and `naivevol` for the diagnosis:
+
+| F1 (2516 sessions) | Diff | Correlation | p Ledoit-Wolf | 95 % bootstrap CI | p Holm |
+|---|---|---|---|---|---|
+| vs `spy` | −0.303 | 0.294 | 0.365 | [−0.952, +0.335] | 1.0 |
+| vs `6040` | −0.318 | 0.330 | 0.345 | [−0.975, +0.313] | 1.0 |
+| vs `ew6` | −0.089 | 0.501 | 0.764 | [−0.637, +0.469] | 1.0 |
+
+| F2 (373 sessions) | Diff | Correlation | p Ledoit-Wolf | 95 % bootstrap CI | p Holm |
+|---|---|---|---|---|---|
+| vs `spy` | +0.144 | 0.374 | 0.868 | [−1.671, +1.725] | 1.0 |
+| vs `6040` | +0.007 | 0.384 | 0.994 | [−1.745, +1.520] | 1.0 |
+| vs `ew6` | −0.625 | 0.679 | 0.298 | [−1.777, +0.381] | 1.0 |
+
+**Verdict: NO BEATS on F1** (Sharpe 0.491 below the 0.794 of held SPY); **INCONCLUSIVE on F2** (+0.144 against `spy`, not significant, Holm p 1.0). Over the continuous pass, the QC Sharpe (0.153 against 0.557) confirms the NO BEATS.
+
+**Published properties (protocol #26329).** Weights capped at 0.30 before renormalisation: 1213 of 1215 positive weights (99.8 %). Renormalised rebalances (weight sum > 1): 145 of 492 (29 %). First effective rebalance: 2016-01-04. Orders sent on Monday 30 minutes after the open, average fill 21,534 s (about 6 hours) later, i.e. the close of the same session (#20264). Flat sessions: 532 of 2890 (18 %).
+
+**Reading.**
+
+- **The HAR model never enters the sizing.** The `naivevol` mode — same code, HAR forecast replaced by the geometric mean of the last 22 realized variances — reproduces the strategy **identically**: 0 differing sessions out of 2889, QC statistics equal to the byte (same orders, same fees, same volume). Inflated by the scale defect (annual variance divided by 5, cf #26329), the Kelly exceeds the 0.30 cap on almost every weight; after renormalisation, the portfolio is the equal-weight of the lines with positive 5-day momentum. The correlation with `ew6`, the highest of the benches (0.50 on F1, 0.68 on F2), confirms it. Fixing the scale (a separate issue) is the only path for the forecast to matter.
+- **F2 does not save the strategy.** The 2025-2026 window gives it 13.5 % a year for a 6.8 % drawdown, but the equal-weight held universe makes 24.4 %: the window favours the universe, not the model.
+- **Held SPY dominates F1 in point Sharpe** (0.794 against 0.491) with a drawdown twice as deep (33.7 % against 15.7 %): the strategy pays for its low return, not for its protection.
+
+**Predictions written before the runs** (#26329 body):
+
+1. Innocuity held: **held**.
+2. F1: NO BEATS or INCONCLUSIVE, no BEATS: **held** (NO BEATS).
+3. More than half of the non-zero weights capped at 0.30: **held** (99.8 %).
+4. `naivevol`: non-significant diff against `strategy`, the cap dominating: **held beyond** — the diff is zero, perfect identity.
+5. `ew6`: non-significant diff: **held**.
+6. F2: no prediction (INCONCLUSIVE).
+
+**Traces and basket (item 4).** Deposit: `G:\Mon Drive\MyIA\IA\QC-traces\26329-har-rv-kelly-held-references\` — one folder per run (`backtest.json` verbatim re-read, `backtest_id.txt`, `chart.json` F1 trace, `chart-f2.json` F2 trace, `plan.json` with fingerprint of the measured `main.py`), the bare witness in `control/`, `significance-f1/f2.json` (organ outputs), `innocuite.txt` and the order journals (`orders-nu.json`, `orders-strategy.json`). The F1 trace of `strategy` joins the basket (`ML-Training-Pipeline/shadow/league_members.json`, entry `har-rv-kelly`).
+
+Possible follow-ups, not measured: fix the scale defect (separate issue, separate strategy), rerun the kernel ablation once fixed, try a wider stop or a re-entry within the week.
 
 ## Files
 
