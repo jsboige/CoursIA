@@ -264,8 +264,13 @@ def test_record_is_informational_pure_and_ungated(capsys):
     # gate : le plafond qu'elle alimente vit dans `belt_filter`, et son
     # activation reste explicite (`--epic-delivery-cap`, 0 = inactif). Le
     # contrat de cette ardoise -- purete, aucun verdict bloquant -- tient.
+    # `epic_load` (#21067 tranche 1) est la charge EN VOL (PRs ouvertes +
+    # livraisons mergees) que le plafond lit desormais, et
+    # `open_prs_measured` dit si la partie « ouvertes » a ete mesuree : un
+    # garde sous-informe se dit sous-informe, il ne se tait pas.
     assert set(rec) == {"lane", "measured", "error", "truncated",
-                        "windows", "undated", "epic_deliveries"}
+                        "windows", "undated", "epic_deliveries",
+                        "epic_load", "open_prs_measured"}
     pig.print_lane_record(rec)
     out = capsys.readouterr().out
     assert "REFUS" not in out.upper()

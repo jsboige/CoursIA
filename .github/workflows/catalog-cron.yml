@@ -104,6 +104,10 @@ jobs:
     # same-repo n'est requise (cf en-tete de check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 3 derniers runs
+    # verts de ce job : max 23.80 min. Marge x2 -- le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 50
     steps:
       - name: Checkout main (history only)
         uses: actions/checkout@v4
@@ -140,8 +144,11 @@ jobs:
       # PyYAML is required by generate_catalog.py's editorial-review registry
       # loader (_load_editorial_registry, added in #8345). Without it the
       # generator crashes: ModuleNotFoundError: No module named 'yaml'.
-      - name: Install PyYAML
-        run: pip install pyyaml
+      # rdflib/pyshacl: same bounds as scripts-tests.yml and the SemanticWeb
+      # series requirements -- an unpinned major bump would rewrite the
+      # exported Turtle and churn every catalogue-refresh PR.
+      - name: Install catalogue dependencies
+        run: pip install pyyaml "rdflib>=7.0.0,<8.0.0" "pyshacl>=0.27.0"
 
       - name: Regenerate catalog (.json + .md) + README markers
         run: |
@@ -171,12 +178,19 @@ jobs:
           # ADVISORY (TRANCHE26), freshness is owned here.
           python scripts/translation/build_golden_set.py
 
+      # Le graphe du cursus est un artefact dérivé du catalogue, validé par
+      # SHACL. Étape à part : un export refusé par les formes est nommé dans
+      # le journal du job et n'interrompt pas la génération des autres
+      # artefacts de l'étape précédente.
+      - name: Export the curriculum graph (Turtle, SHACL-validated)
+        run: python scripts/notebook_tools/generate_curriculum_rdf.py --output CURRICULUM.generated.ttl
+
       - name: Commit + push to chore/catalog-refresh-pending if the catalog drifted
         id: drift
         run: |
           set -euo pipefail
           BRANCH="chore/catalog-refresh-pending"
-          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml translations/translation_golden_set.json
+          git add COURSE_CATALOG.generated.json COURSE_CATALOG.generated.md CURRICULUM.generated.ttl docs/archive/reference/HEALTH_DASHBOARD.md _quarto.yml translations/translation_golden_set.json
           # Stage the 5 generated curriculum (parcours) pages if they drifted.
           mapfile -t changed_parcours < <(git ls-files -m -- 'docs/curriculum/*.md')
           if [ "${#changed_parcours[@]}" -gt 0 ]; then

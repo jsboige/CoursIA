@@ -4,7 +4,7 @@
 > jamais, où vivent les données sensibles, et ce qui est publiquement exposé — pour qu'un
 > lecteur externe n'ait pas à le deviner.
 >
-> Il complète la notice RGPD du moteur de notation, [`GradeBookApp/PRIVACY.md`](GradeBookApp/PRIVACY.md),
+> Il complète la notice RGPD du moteur de notation, [`dotnet/GradeBookApp/PRIVACY.md`](dotnet/GradeBookApp/PRIVACY.md),
 > qui détaille le traitement des données étudiantes par l'application elle-même.
 
 ## 1. Ce qui n'est jamais dans ce dépôt
@@ -35,18 +35,18 @@ reste consultable.
 Les pipelines de notation et les **données par cohorte** vivent sur un **stockage privé,
 hors dépôt**, accessible aux seuls enseignants concernés. Le chemin est résolu localement
 par le moteur via la variable `COURSIA_ROOT` (voir
-[`GradeBookApp/configs/README.md`](GradeBookApp/configs/README.md)). **Ce fichier ne cite
+[`dotnet/GradeBookApp/configs/README.md`](dotnet/GradeBookApp/configs/README.md)). **Ce fichier ne cite
 ni le chemin exact, ni les noms de cohortes** : la posture se décrit sans exposer la
 topologie de stockage.
 
 ## 3. Ce qui est public, et pourquoi
 
 Le composant public du système de notation est **uniquement son moteur générique**
-([`GradeBookApp/`](GradeBookApp/)) : configuration, barèmes-types, code de calcul. Il est
+([`dotnet/GradeBookApp/`](dotnet/GradeBookApp/)) : configuration, barèmes-types, code de calcul. Il est
 vide de copies, notes et données de cohorte — utile pédagogiquement (reproductibilité,
 transparence de la méthode), sans exposer les personnes évaluées. La notice de traitement
 de ce moteur est documentée séparément dans
-[`GradeBookApp/PRIVACY.md`](GradeBookApp/PRIVACY.md).
+[`dotnet/GradeBookApp/PRIVACY.md`](dotnet/GradeBookApp/PRIVACY.md).
 
 Le reste du dépôt (notebooks, scripts, documentation) est du matériel pédagogique public.
 Il peut porter les attributions nécessaires à ses sources et contributions publiques, mais
@@ -65,7 +65,7 @@ Pour une demande d'accès, de rectification ou d'effacement relative à des donn
 dans le cadre d'un cours, contacter l'enseignant responsable du dépôt (le propriétaire du
 compte `jsboige` sur GitHub). Le moteur étant exécuté localement par l'enseignant sur ses
 propres données, c'est ce dernier qui est responsable du traitement
-(cf. [`GradeBookApp/PRIVACY.md`](GradeBookApp/PRIVACY.md) §2).
+(cf. [`dotnet/GradeBookApp/PRIVACY.md`](dotnet/GradeBookApp/PRIVACY.md) §2).
 
 ---
 

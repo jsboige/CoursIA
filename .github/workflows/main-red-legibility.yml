@@ -1,0 +1,161 @@
+name: Main Red Legibility
+
+# La moitie « lisible » de #22088, rendue durable et recurrente, repointee
+# depuis le 2026-11-08 sur #25181 (la famille Quarto est depuis eteinte).
+#
+# #22088 a mesure que le `statusCheckRollup` de `main` lisait FAILURE sur la
+# moitie des commits, et que, sur la grande majorite, les seules jambes
+# non vertes etaient CANCELLED -- une annulation, pas un echec. L'organe
+# `scripts/ci/check_cancelled_only_commits.py` (#24079) nomme deja, commit par
+# commit, si un rouge est MERITE (une jambe a vraiment echoue) ou EMPRUNTE
+# (annulation seule). Rien ne mettait ce verdict a l'endroit ou un humain lit
+# reellement `main` -- c'est precisement « la rendre lisible comme telle ».
+#
+# Ce balayage planifie lance l'organe sur une fenetre glissante de `main` et
+# poste la separation merite/emprunte en commentaire ROULEUR (find-or-update,
+# un seul commentaire, marque d'un sentinelle) sur l'issue #25181 -- celle ou
+# vit la discussion. Le mainteneur qui ouvre #25181 voit, mis a jour chaque
+# jour, quels rouges de `main` sont merites et quels rouges n'en sont qu'un
+# emprunt : les cohortes (Scripts Tests, gardes notebook) annulees sous
+# saturation de runners, pas des echecs.
+#
+# Advisory, jamais bloquant (memes contrat que candidate-delivered-advisory) :
+#   - Le job sort TOUJOURS 0. Le payload est le commentaire, PAS la conclusion.
+#   - Il ne FAIT QUE lire le rollup et ecrire UN commentaire ; il ne touche
+#     aucun code.
+#   - L'organe est la source UNIQUE du verdict (pas re-implimente ici) ; ce
+#     workflow n'est que la surface de lecture.
+#   - Un echec de post est loggue, jamais fatal : une note de lisibilite ne
+#     doit pas rougir l'advisory.
+
+on:
+  schedule:
+    # Quotidien, minute hors :00 (anti-stampede). 06:43 UTC.
+    - cron: '43 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: main-red-legibility
+  cancel-in-progress: false
+
+jobs:
+  legibility:
+    name: "Poster la separation rouge merite/emprunte de main (advisory)"
+    # Runner HEBERGE, pas auto-heberge : le job n'a besoin de RIEN qui n'existe
+    # que sur le parc local (il lit le rollup via `gh` et ecrit UN commentaire ;
+    # aucun outil natif, aucun cache, aucun artefact volumineux). C'est la
+    # doctrine Q35 etape 2 / #17397 : un workflow sans besoin local n'a pas a
+    # occuper un slot du parc, dont la congestion etait mesuree.
+    #
+    # Deux contraintes de `scripts/ci/check_self_hosted_runner_policy.py` (#12704)
+    # sont donc retirees au passage : une jambe auto-hebergee doit (a) figurer
+    # dans `SELF_HOSTED_WORKFLOW_ALLOWLIST` -- une liste d'approbation
+    # proprietaire, que cette lane n'a pas a elargir -- et (b) porter un
+    # `timeout-minutes` au niveau du job (#22954), sans quoi elle peut retenir
+    # son slot six heures. Sur un runner heberge, les deux sont hors sujet.
+    runs-on: ubuntu-latest
+    # Garde-fou de duree : le job lit l'API et ecrit un commentaire ; dix
+    # minutes suffisent largement, et un job gele sur un runner heberge est
+    # bien moins grave qu'un slot local retente.
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            .github/workflows/main-red-legibility.yml
+            scripts/ci/check_cancelled_only_commits.py
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Lancer l'organe puis poster le commentaire rouleau
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -u
+          # 1) le verdict, depuis l'organe (source unique de la mesure).
+          # #25181 : l'organe sort 1 quand il A des findings -- un rouge
+          # emprunte ou une mort d'infra. Ce n'est PAS une panne de l'organe :
+          # c'est precisement le jour ou le commentaire a quelque chose a dire.
+          # Mesure du 2026-11-13 : les cinq runs precedents ont tous pris la
+          # branche « non concluant » (annotation « organe non concluant : »
+          # suivie d'un stderr vide, rc=1), et le commentaire rouleau n'a
+          # jamais ete poste sur #25181. Seul rc>=2 prive le releve de contenu.
+          rc=0
+          python scripts/ci/check_cancelled_only_commits.py --commits 20 \
+               > legibility.txt 2> legibility.err || rc=$?
+          if [ "$rc" -ge 2 ]; then
+            echo "::warning::organe non concluant (rc=$rc) : $(head -3 legibility.err)"
+            exit 0
+          fi
+          # 2) le rendre lisible : commentaire rouleau sur #25181 (find-or-update)
+          python - <<'PY'
+          import json, os, subprocess, datetime, tempfile
+          issue, repo = 25181, "jsboige/CoursIA"
+          sentinel = "<!-- main-red-legibility:rolling -->"
+          try:
+              report = open("legibility.txt", encoding="utf-8").read().strip()
+          except Exception as e:
+              print("::warning::legibility.txt illisible:", e); raise SystemExit(0)
+          when = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+          body = (f"{sentinel}\n\n"
+                  f"**Main red legibility** — auto, {when}\n\n"
+                  f"Deux choses portent la meme croix rouge sur `main` sans "
+                  f"qu'aucun test n'ait echoue : une annulation **avant "
+                  f"demarrage** (le job n'a jamais eu de runner -- rien de "
+                  f"mesure, rien de depense) et une annulation **apres "
+                  f"demarrage** (le job a tenu un runner et a ete arrete avant "
+                  f"de conclure ; GitHub rend un `timeout-minutes` en "
+                  f"`cancelled`). La premiere est un rouge emprunte ; la "
+                  f"seconde est une mort d'infrastructure, et l'appeler "
+                  f"empruntee l'exonere. Separation sur la fenetre glissante "
+                  f":\n\n```\n{report}\n```\n")
+          def gh(*a):
+              return subprocess.run(["gh", *a], capture_output=True, text=True)
+          def post():
+              try:
+                  lst = gh("api", f"repos/{repo}/issues/{issue}/comments?per_page=100")
+                  comments = json.loads(lst.stdout or "[]")
+              except Exception as e:
+                  print("::warning::lecture des commentaires en echec:", e); return
+              # #25181 : `gh api` rend un OBJET quand il refuse (401/403/404) ; iterer
+              # un dict rend ses CLES, et le `.get` suivant echoue sur une chaine.
+              # Mesure : run 43041203361, « post en echec: 'str' object has no
+              # attribute 'get' » -- une annotation qui ne dit ni le refus ni son
+              # code, donc indiscernable d'un bug du workflow.
+              if lst.returncode != 0 or not isinstance(comments, list):
+                  print("::warning::commentaires illisibles (rc=%s): %s"
+                        % (lst.returncode, (lst.stderr or lst.stdout or "")[:200]))
+                  return
+              hit = next((c for c in comments if sentinel in c.get("body", "")), None)
+              with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False,
+                                               encoding="utf-8") as tf:
+                  json.dump({"body": body}, tf, ensure_ascii=False)
+                  payload = tf.name
+              try:
+                  if hit:
+                      r = gh("api", f"repos/{repo}/issues/comments/{hit['id']}",
+                             "-X", "PATCH", "--input", payload)
+                      print("commentaire rouleau mis a jour", hit["id"])
+                  else:
+                      r = gh("api", f"repos/{repo}/issues/{issue}/comments",
+                             "-X", "POST", "--input", payload)
+                      print("commentaire rouleau cree")
+                  if r.returncode != 0:
+                      print("::warning::post en echec:", (r.stderr or "").strip()[:300])
+              finally:
+                  os.unlink(payload)
+          try:
+              post()
+          except Exception as e:
+              print("::warning::post en echec:", e)
+          # advisory : le code de sortie est toujours 0
+          PY

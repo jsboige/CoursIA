@@ -3,7 +3,7 @@
 
 POURQUOI CE SCRIPT EXISTE
 -------------------------
-Le snapshot `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_snapshot.json`
+Le snapshot `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_snapshot.json`
 est la **reference** que la garde d'integrite
 (`scripts/fallacy_detection/tests/test_argumentum_snapshot_integrity.py`) utilise pour
 detecter toute derive des CSV/OWL par rapport a leur version amont. Si le manifeste
@@ -67,8 +67,8 @@ REPO = next(
     (p for p in HERE.parents if (p / "MyIA.AI.Notebooks").is_dir()),
     HERE.parent.parent.parent,
 )
-DATA = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Argument_Analysis" / "data"
-ONTOLOGIES = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Argument_Analysis" / "ontologies"
+DATA = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "ArgumentAnalysis" / "data"
+ONTOLOGIES = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "ArgumentAnalysis" / "ontologies"
 MANIFEST = DATA / "argumentum_snapshot.json"
 
 # Colonnes consommees en aval (miroir de test_argumentum_snapshot_integrity.py).

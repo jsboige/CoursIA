@@ -141,3 +141,81 @@ def test_availability_reason_is_path_free():
     if not _AVAILABLE:
         assert reason, "une indisponibilite doit porter sa raison"
     assert ":\\" not in reason and ":/" not in reason, reason
+
+
+# --------------------------------------------------------------------------- #
+#  Gate 6 : parite du labelling complet (212 cas)                             #
+# --------------------------------------------------------------------------- #
+
+
+def test_labelling_parity_212():
+    """Le labelling COMPLET de l'instrument egale le labelling derive du natif.
+
+    La parite de l'extension IN (gates 1-2) est aveugle a la separation
+    ``out`` / ``undec`` -- c'est pourtant celle que les trajectoires de
+    croyance consomment. Ce gate confronte, sur les 212 cas du banc
+    (12 canoniques + 200 aleatoires), le labelling de l'instrument au
+    labelling derive de l'extension native
+    (:func:`ict.tweety_bridge.labelling_from_extension`) : zero desaccord
+    attendu, compte deplace comme au gate 2.
+    """
+    cases = bridge.canonical_cases() + bridge.random_cases(seed=42, count=200)
+    result = bridge.parity(cases)
+    assert result["n"] == 212, f"banc incomplet : {result['n']} cas"
+    assert result["label_desaccord"] == 0, (
+        f"{result['label_desaccord']} desaccord(s) de labelling : "
+        + ", ".join(
+            str(row["name"])
+            for row in result["rows"]
+            if not row["label_accord"]
+        )
+    )
+    assert result["label_accord"] == 212
+
+
+# --------------------------------------------------------------------------- #
+#  Gate 7 : la jambe labelling attrape le mutant que la parite IN laisse passer#
+# --------------------------------------------------------------------------- #
+
+
+def test_mutant_all_out_is_caught_by_labelling_parity():
+    """Un mutant « tout non-IN = out » passe la parite IN et MORT au gate 6.
+
+    Temoin negatif volontairement faux (proposition consultant du 24/10,
+    #7742 c.6381512618 §1) : le mutant respecte les ensembles IN mais
+    n'emet jamais ``undec``. Mesures attendues, ecrites en dur comme au
+    gate 3, independamment de l'implementation testee :
+
+    - la parite IN le laisse passer sur les 212 cas ;
+    - la comparaison de labelling l'attrape sur **chaque** cas portant au
+      moins un ``undec`` reel -- et seulement ceux-la : sans ``undec``, le
+      mutant est indistinguable du vrai labelling ;
+    - 147 des 212 cas portent au moins un ``undec`` (decompte re-mesure
+      le 2026-11-10 depuis l'instrument pur Python, = mesure consultant).
+    """
+    cases = bridge.canonical_cases() + bridge.random_cases(seed=42, count=200)
+    with_undec = 0
+    caught = 0
+    for name, af in cases:
+        native = bridge.native_grounded(af)
+        true_label = bridge.labelling_from_extension(af, native)
+        mutant_in = frozenset(a for a, v in true_label.items() if v == "in")
+        mutant_label = {
+            a: ("in" if a in mutant_in else "out") for a in af.arguments
+        }
+        # La parite IN (gates 1-2) ne peut pas le voir : memes ensembles IN.
+        assert mutant_in == native, f"{name} : le mutant doit garder l'extension"
+        if any(v == "undec" for v in true_label.values()):
+            with_undec += 1
+            caught += int(mutant_label != true_label)
+            assert mutant_label != true_label, (
+                f"{name} : cas a undec reel, le mutant doit etre attrape"
+            )
+        else:
+            assert mutant_label == true_label, (
+                f"{name} : sans undec le mutant est indistinguable"
+            )
+    assert with_undec == 147, (
+        f"decompte undec={with_undec}, attendu 147 (banc 212 cas, seed 42)"
+    )
+    assert caught == with_undec, "un cas a undec a echappe a la jambe labelling"

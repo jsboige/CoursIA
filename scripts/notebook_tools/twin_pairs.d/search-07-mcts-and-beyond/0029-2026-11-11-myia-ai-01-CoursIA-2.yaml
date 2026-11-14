@@ -1,0 +1,7 @@
+date: '2026-11-11'
+by: myia-ai-01:CoursIA-2
+python_sha: b451c0db6e82d5de7b28a4a62cb56aa677bfa4d6
+csharp_sha: b1fc5f66b2fb21147ed1c5307ae521636d245875
+content_python_sha: d2a536637df29df1205fb75739b35f222b404885dc1771f7b08408304a523d2a
+content_csharp_sha: 857b9c712e411631bab1bfd1e1bae9936004a789467c50c7b17353e0b10d210f
+reason: 'PR de la tranche T2 de la finition de serie : Search-07 recoit ses blocs de fin canoniques (A retenir et Verifiez votre comprehension absents ; le bloc Pour aller plus loin existant a ete complete avec le carnet suivant, un carnet de la meme famille, un carnet d une serie voisine et une lecture deja referencee). Markdown seul -- aucune cellule de code touchee, execution_count et outputs inchanges, donc pas de re-execution due (C.2). Le cote C# est inchange et la parite reste celle declaree dans la fiche de la paire : les DEUX cotes invoquent reellement OpenSpiel (pyspiel 2.0.1 en direct côté Python, pont pythonnet côté C#, meme graine 42, 1000 simulations, c racine de 2, meme action 4) ; idiomes RNG differents mais seeds fixes, donc parite conceptuelle et non bitwise ; divergence de metrique de convergence ( cote Python compare a l ensemble des coups optimaux, cote C# a une action de reference) inchangee. Ni l algorithme, ni les instances, ni les sorties des deux cotes ne bougent : l ecart est documentaire (bloc de fin pedagogique) ; il sera comble par la tranche des jumeaux .NET, qui porte le genre notebook-dotnet.'

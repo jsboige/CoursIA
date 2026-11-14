@@ -7,7 +7,7 @@ name: Geometry-Tests
 # n'exécute n'est pas une preuve : il est vert par absence.
 #
 # Même classe de défaut et même traitement que GameTheory (#13746,
-# tranche 1 : gametheory-tests.yml) et SymbolicAI/Argument_Analysis
+# tranche 1 : gametheory-tests.yml) et SymbolicAI/ArgumentAnalysis
 # (#17248) : workflow dédié à paths: serrés, le testpath entre dans
 # pytest.ini, et la cible est déclarée dans WORKFLOW_COVERAGE de
 # scripts/check_testpaths_coverage.py (source de vérité du guard).
@@ -52,12 +52,13 @@ permissions:
   contents: read
 
 concurrency:
-  group: geometry-tests-${{ github.ref }}
+  group: geometry-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   geometry-tests:
     name: SymbolicAI Geometry pytest (13 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
     # Forme hybride de débordement (#22944/#23016) — identique à celle du
     # workflow frère `gametheory-tests.yml` (même classe de défaut, même
     # conversion) : PR même-depot ET `vars.CI_OVERFLOW_LOCAL == 'true'` ->

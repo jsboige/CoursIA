@@ -1,0 +1,5 @@
+phase,titre_phase,etape,nature,marqueur,carnets
+Phase 2,"Au-delà du classique : recherche locale  — Search-04→05, ~2 h 15",5,hors_livre,ouverture du dépôt **au-delà d'AIMA** : métaheuristiques composées (série MetaGeneticSharp).,Search-05-GeneticAlgorithms.ipynb; MGS-01-Introduction.ipynb
+Épilogue,"Où le corpus dépasse AIMA, ~45 min",26,hors_livre,"théorie de l'information intégrée : hors AIMA, propre au dépôt.",IIT-01-IntroToPyPhi-Python.ipynb; Search-09e-Komlos-Lean.ipynb; GameTheory/README.md; Search/README.md
+Phase 7,"Raisonnement probabiliste et modèles graphiques  — PyMC, ~1 h",15,jonction,la jonction moderne d'AIMA ch. 16.,PyMC-05-Causal-Inference.ipynb
+Phase 11,"Langage et LLM  — GenAI/Texte, ~2 h 30",25,jonction,"ce qu'AIMA appelait « agents logiques », relu en 2026.",08_Reasoning_Models.ipynb

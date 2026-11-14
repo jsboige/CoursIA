@@ -1,5 +1,7 @@
 # Regles vigilance G.1-G.9 — anti-complaisance (detail)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Résumé opérationnel : CLAUDE.md section G.
 
 S'applique a **tous les agents** (exécutants, coordinateur, reviewers humains et bots). Ces regles sont permanentes : elles ne se relâchent ni avec la pression deadline, ni avec la confiance accumulée, ni avec un APPROVED bot.

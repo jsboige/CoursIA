@@ -1,0 +1,9 @@
+date: '2026-11-09'
+by: myia-po-2028:CoursIA
+python_sha: d269779b1b53c9337c9cdba0ac0d3f9f60cb2d0a
+csharp_sha: 185a2179c04a516f19da3cfa598cfd1d1a5f16bb
+content_python_sha: d44cd36019da73b7aa73975ae0c737e68754c3b9eb4939b51d1eca1bf5c7d1b2
+content_csharp_sha: 998ebe0dab81d73dcf0d5ed7bc1d7ae03697459e3edbc0839d6a677c4da8bbda
+reason: 'PR #24465 (#23384), re-ancrage markdown-only de la lecture de la cellule 2 :
+  la sortie commise dit PyMC 6.3.2, la prose citait 6.0.1.
+  Aucune cellule de code, aucune sortie, aucun execution_count touche (C.2 non due).'

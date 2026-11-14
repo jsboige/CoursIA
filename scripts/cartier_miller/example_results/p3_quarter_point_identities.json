@@ -1,0 +1,59 @@
+{
+  "utc_started": "2026-11-10T16:57:08.493109+00:00",
+  "python": "3.13.16",
+  "upstream_pin": "37a9b72",
+  "manuscript": "Cartier-Miller, section 'Application to the original quarter point sum'",
+  "primes_checked": 92,
+  "primes_quarter_applicable": 43,
+  "identities": {
+    "def_a_binomial": {
+      "checks": 10809,
+      "statement": "(32) a_i = C(2i,i) 8^-i"
+    },
+    "eq33": {
+      "checks": 10809,
+      "statement": "(33) t_i = (2i+1) a_i"
+    },
+    "eq34": {
+      "checks": 10717,
+      "statement": "(34) certificat de telescopage"
+    },
+    "eq35": {
+      "checks": 10809,
+      "statement": "(35) U_p(L) = 4 B_L - 2L(2L+5) a_L"
+    },
+    "eq36": {
+      "checks": 43,
+      "statement": "(36) U_p(n) = 4 B_n + (9/4) a_n"
+    }
+  },
+  "controls": {
+    "positive_paper_example": {
+      "case": {
+        "p": 97,
+        "n": 24,
+        "a_n": 79,
+        "B_n": 33,
+        "U_p_n": 43
+      },
+      "passed": true
+    },
+    "negative_mutations": {
+      "eq35_without_correction": {
+        "holds": 184,
+        "checked": 10809,
+        "refuted": true
+      },
+      "eq33_with_2i_plus_2": {
+        "holds": 0,
+        "checked": 10809,
+        "refuted": true
+      }
+    },
+    "instrument_discriminates": true
+  },
+  "failures_count": 0,
+  "failures": [],
+  "status": "passed",
+  "scope": "Verifie que l'execution exhibe (32)-(36) sur les 92 premiers du ground truth P1+. Ne prouve pas (35) : la preuve reste la brique Lean P3. Oracle numerique independant, jamais preuve."
+}

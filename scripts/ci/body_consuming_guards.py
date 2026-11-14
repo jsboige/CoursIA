@@ -521,7 +521,7 @@ REFERENCE: dict[str, dict[str, dict]] = {
             },
         },
     },
-    "scripts/check_already_delivered.py": {
+    "scripts/coordination/check_already_delivered.py": {
         "channels": {
             "api-gh": {
                 "cabled_in": [],
@@ -741,7 +741,14 @@ REFERENCE: dict[str, dict[str, dict]] = {
                 ),
             },
             "env:PLAN_LOSS_PR_BODY": {
-                "cabled_in": ["notebook-plan-loss-gate.yml"],
+                # #22209 TRANCHE45 : la jambe absorbee vit dans le job
+                # fast-lane d'always-on-guards.yml (promotion « Body live »,
+                # meme canal que MD_CONTENT_LOSS_PR_BODY) ; le workflow
+                # dormant reste cible pour sa jambe manuelle.
+                "cabled_in": [
+                    "always-on-guards.yml",
+                    "notebook-plan-loss-gate.yml",
+                ],
             },
         },
     },
@@ -759,6 +766,18 @@ REFERENCE: dict[str, dict[str, dict]] = {
             },
             "env:ENRICH_QUALITY_PR_BODY": {
                 "cabled_in": ["enrich-quality-gate.yml"],
+            },
+        },
+    },
+    "scripts/verifier_cleanup.py": {
+        "channels": {
+            "api-gh": {
+                "cabled_in": [],
+                "uncabled_reason": (
+                    "va chercher le body lui-meme (`gh pr view --json body`, "
+                    "l.171-181) pour distinguer une tranche d'une livraison "
+                    "complete (#23815) ; aucun workflow ne le lui passe."
+                ),
             },
         },
     },

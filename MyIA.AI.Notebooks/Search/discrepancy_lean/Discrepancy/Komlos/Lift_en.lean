@@ -56,7 +56,7 @@ on a genuinely different type. The options measured:
   height zero stays embedded at height zero. Its consumer is measured:
   `Komlos/SignedSums.lean` l.54 (`rw [mean_split, sum_smul_inl, ...]`);
 - `toReal_liftUp` — the commutation `toReal ∘ liftUp = snoc ∘ (toReal ×
-  height)`: the diagram square with k2.4's `toRealProd` closes, which is
+  (if · then 1 else 0))`: the diagram square with k2.4's `toRealProd` closes, which is
   how the k2.6 assembly will feed `pullback` (k2.4) from the induction
   hypothesis stated at the grown dimension.
 
@@ -114,9 +114,9 @@ the integer `{0, 1}`. -/
 @[simp] lemma liftUp_apply_last {d : ℕ} (y : (Fin d → ℤ) × Bool) :
     liftUp y (Fin.last d) = if y.2 then 1 else 0 := by simp [liftUp]
 
-/-- The level embedding is **injective**: equal `snoc`s have equal tails
-and equal bodies, and the height coordinate separates `false` from `true`
-by `0 ≠ 1`. This is the glue of the `Finset.map`s of pushed supports. -/
+/-- The level embedding is **injective**: the spatial part is read back
+`Fin.init`-wise (two equal `snoc`s have equal tails and equal bodies), and
+the height coordinate separates `false` from `true` by `0 ≠ 1`. This is the glue of the `Finset.map`s of pushed supports. -/
 lemma liftUp_injective {d : ℕ} : Function.Injective (liftUp (d := d)) := by
   rintro ⟨x₁, b₁⟩ ⟨x₂, b₂⟩ h
   simp only [liftUp, Fin.snoc_inj] at h
@@ -282,12 +282,13 @@ lemma sum_smul_snoc {d : ℕ} {ι : Type*} (s : Finset ι)
       simp only [Fin.snoc_castSucc, Finset.sum_apply, Pi.smul_apply]
 
 /-- **Commutation of the transport with the embedding**: `toReal ∘ liftUp
-= snoc ∘ (toReal × height)` — the spatial part is transported by `toReal`
+= snoc ∘ (toReal × (if · then 1 else 0))` — the spatial part is transported by `toReal`
 (k2.3), the `Bool` height becomes the real `{0, 1}`.
 
 This closes the square with `toRealProd` (k2.4): the transported image of
-the pushed support in `Fin (d+1) → ℝ` is the `(y.1, height y.2)` reading
-of the product embedding — the exact place where the dimension-`d+1`
+the pushed support in `Fin (d+1) → ℝ` is the `(toReal y.1, if y.2 then
+(1 : ℝ) else 0)` reading of the product embedding `toRealProd`
+(Pullback.lean) — the exact place where the dimension-`d+1`
 induction conclusion feeds k2.4's `pullback`, stated in
 `(Fin d → ℝ) × ℝ`. -/
 lemma toReal_liftUp {d : ℕ} (y : (Fin d → ℤ) × Bool) :

@@ -1,5 +1,7 @@
 # WSL Kernels — Diagnostic et workarounds
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Document de référence détaillant les règles auto-loaded de [.claude/rules/wsl-kernels.md](../../.claude/rules/wsl-kernels.md).
 
 S'applique aux notebooks `MyIA.AI.Notebooks/GameTheory/**/*` et `MyIA.AI.Notebooks/SymbolicAI/Lean/**/*`.
@@ -115,17 +117,17 @@ Le wrapper Python v7 `~/.lean4-kernel-wrapper.py` (source dans le dépôt : `MyI
 - `#check Sensitivity.f_squared` → `(f n) ((f n) v) = ↑n • v`
 - `#print axioms Sensitivity.huang_degree_theorem` → **depends on axioms: [propext, Classical.choice, Quot.sound]** (0 sorry, pas de `sorryAx`)
 
-**Prérequis** : (1) le wrapper v7 (`find_lake_root` chdir vers le lakefile ancêtre) pour que le kernel hérite le cwd du lake, (2) un repl binaire matchant la toolchain du lake (`~/.elan/bin/repl` est stable-locked ; rc1/rc2 lakes ont besoin d'un repl matché), (3) le fork `jsboige/lean4_jupyter@v0.0.1-native-import` qui intègre le patch `lean4_jupyter/repl.py` `launch()` (direct-launch REPL + `LEAN_PATH`). Le script `scripts/lean/setup_native_lean4_import.py` automatise l'install du fork + le build de repl par toolchain (`build-repl v4.30.0-rc2` / `v4.31.0-rc1`).
+**Prérequis** : (1) le wrapper v7 (`find_lake_root` chdir vers le lakefile ancêtre) pour que le kernel hérite le cwd du lake, (2) un repl binaire matchant la toolchain du lake (`~/.elan/bin/repl` est stable-locked ; rc1/rc2 lakes ont besoin d'un repl matché), (3) le fork `jsboige/lean4_jupyter` au tag `FORK_TAG` de `setup_native_lean4_import.py` (`v0.0.2-paired-repl` depuis #24913), qui intègre le patch `lean4_jupyter/repl.py` `launch()` (direct-launch REPL + `LEAN_PATH`). Le script `scripts/lean/setup_native_lean4_import.py` automatise l'install du fork + le build de repl par toolchain (`build-repl v4.30.0-rc2` / `v4.31.0-rc1`).
 
 **Setup** :
 
 ```powershell
-python scripts/lean/setup_native_lean4_import.py install      # install fork jsboige/lean4_jupyter@v0.0.1-native-import (durable — remplace patch)
+python scripts/lean/setup_native_lean4_import.py install      # install fork jsboige/lean4_jupyter@<FORK_TAG> (durable — remplace patch)
 python scripts/lean/setup_native_lean4_import.py status        # état patch + repl toolchains
 python scripts/lean/setup_native_lean4_import.py build-repl v4.30.0-rc2   # build+install repl matché (~2 min)
 ```
 
-**Note durabilité — RÉSOLU (fork `jsboige/lean4_jupyter@v0.0.1-native-import`, #4394)** : le fork intègre le patch direct-launch directement dans `lean4_jupyter/repl.py`, donc il **survit à un `pip install`/reinstall propre** (le gap de durabilité antérieur est fermé). Le sous-script `install` fait `pip install --force-reinstall --no-deps git+https://github.com/jsboige/lean4_jupyter.git@v0.0.1-native-import` dans le venv `~/.lean4-venv`. Le sous-script `patch` (in-place, idempotent + backup `.bak.native`) reste disponible comme **fallback offline** (machine sans accès GitHub), mais n'est plus le chemin canonique. Source unique du patch : les constantes `REPL_PY_ORIGINAL` / `REPL_PY_PATCH` du setup script, reflétées dans le fork — `status` détecte le patch par le marqueur `_find_lake_root` quelle que soit la voie d'install.
+**Note durabilité — RÉSOLU (fork `jsboige/lean4_jupyter`, #4394)** : le fork intègre le patch direct-launch directement dans `lean4_jupyter/repl.py`, donc il **survit à un `pip install`/reinstall propre** (le gap de durabilité antérieur est fermé). Le sous-script `install` fait `pip install --force-reinstall --no-deps git+https://github.com/jsboige/lean4_jupyter.git@<FORK_TAG>` dans le venv `~/.lean4-venv`. Le sous-script `patch` (in-place, idempotent + backup `.bak.native`) reste disponible comme **fallback offline** (machine sans accès GitHub), mais n'est plus le chemin canonique. Source unique du patch : les constantes `REPL_PY_ORIGINAL` / `REPL_PY_PATCH` du setup script, reflétées dans le fork — `status` détecte le patch par le marqueur `_find_lake_root` quelle que soit la voie d'install.
 
 ### Diagnostic manuel (commandes)
 
@@ -181,35 +183,54 @@ sorties sont **identiques octet pour octet** à celles commitées. La sonde de
 divergence (un `lean-toolchain` en v4.33.0 dans un arbre temporaire) rend
 `exit 3` avec le message nommant v4.33.0 et 4.30.0.
 
+**Le binaire apparié est celui qui tourne (#24913)** : choisir le bon REPL ne
+suffit pas, il faut que ce soit lui que le noyau lance. Hors lake, la fourche
+lançait `lake env repl` ; or `lake env` place `~/.elan/bin` en tête du `PATH`,
+si bien que `repl` y désigne le REPL par défaut, pas le binaire apparié ni le
+shim du wrapper. Sur une machine qui porte plusieurs REPL, c'est donc le REPL
+d'une autre version qui tournait, et les cellules échouaient sous `exit 0`
+(mesuré sous Linux : REPL 4.33.0 sur un arbre ancré en v4.30.0). Depuis la v9
+du wrapper et le tag `v0.0.2-paired-repl` de la fourche :
+
+- le wrapper exporte le binaire apparié dans `LEAN4_JUPYTER_REPL` ;
+- la fourche le lance directement, dans un lake (avec le `LEAN_PATH` du lake)
+  comme hors lake ;
+- face à une fourche plus ancienne, qui lancerait un REPL d'une autre version,
+  le wrapper refuse de démarrer (`exit 3`) et renvoie à
+  `setup_native_lean4_import.py install`.
+
+Depuis le tag `v0.0.3-launch-errors`, la fourche ne retombe plus en silence sur
+`lake env repl`. Dans un lake, trois cas faisaient tourner le REPL par défaut :
+un `lake env` en échec (délai dépassé, `lake` absent), un `LEAN_PATH` vide, ou
+un binaire choisi mais absent du disque. Ils lèvent désormais `ReplLaunchError`,
+avec le chemin du lake et l'erreur de `lake env`. `lake env repl` ne sert plus
+que hors lake, sans binaire apparié, c'est-à-dire pour un lancement hors
+wrapper. De son côté, `install` lit le code de retour de `pip` et ne déclare la
+fourche installée que si son `repl.py` porte les marqueurs du lancement apparié
+(`PAIRED_LAUNCH_MARKERS`) : une fourche antérieure y apparaît `STALE`.
+
+La table de la fourche compare désormais le tag exact : la sous-chaîne
+servait `repl-4.33.0` à un lake en `v4.33.0-rc1`. La version embarquée se lit
+avec son suffixe : une toolchain rc embarque `.../reference/4.33.0-rc1/`
+(mesuré), que l'ancienne lecture réduisait à `4.33.0`. Un `repl-4.33.0-rc1`
+correctement construit était alors refusé, et un REPL rc passait pour la
+release.
+
 **Conséquence assumée** : un lake **sans** `lean-toolchain` (et sans ancrage
 parent) ne démarre plus le kernel — il échoue au lieu de suivre `stable`.
 Remède : écrire `lean-toolchain` dans le lake.
 
-**Ré-application sur une machine déjà installée** : le correctif côté fourche
-vit dans le template `REPL_PY_PATCH`, mais `PATCH_MARKER` reste
-`"_find_lake_root"`, marqueur que la fourche épinglée `v0.0.1-native-import`
-porte **déjà**. Conséquences mesurées :
-
-- `setup_native_lean4_import.py install` réinstalle la fourche puis teste le
-  marqueur : il affiche `PATCHED` **sans avoir appliqué le nouveau template** ;
-- `setup_native_lean4_import.py patch` est idempotent sur ce même marqueur et
-  répond « already patched — nothing to do ».
-
-Le `ReplPairingError` du template ne s'applique donc pas au seul `install`.
-Sur une machine déjà installée, restaurer la sauvegarde puis rejouer le patch :
-
-```bash
-cp <chemin>/lean4_jupyter/repl.py.bak.native <chemin>/lean4_jupyter/repl.py
-python scripts/lean/setup_native_lean4_import.py patch
-```
-
-C'est la mécanique déjà décrite dans le commentaire du code pour le précédent
-`REPL_PY_PATCH` évolué (#12061), pas un défaut de cette correction. La moitié
-**wrapper**, elle, est redéployée par `setup_wsl_lean4.sh` (`cp` de la source
-canonique vers `~/.lean4-kernel-wrapper.py`, comparaison octet-à-octet par
-`lean_kernel_check.py`) : seule la moitié fourche demande le geste manuel.
-Sans lui, un opérateur croit la protection active alors que **seule la moitié
-wrapper l'est**.
+**Ré-application sur une machine déjà installée** : jusqu'au tag
+`v0.0.1-native-import`, le gabarit `REPL_PY_PATCH` avait évolué sans la
+fourche, et ni `install` ni `patch` ne l'appliquaient (tous deux s'arrêtent au
+marqueur `_find_lake_root`, que la fourche porte déjà). Depuis
+`v0.0.2-paired-repl`, le `repl.py` de la fourche **est** le gabarit appliqué au
+`repl.py` amont : `setup_native_lean4_import.py install` (ou `setup_wsl_lean4.sh`)
+suffit à le mettre à jour. La moitié **wrapper** est redéployée par
+`setup_wsl_lean4.sh` (`cp` de la source canonique vers
+`~/.lean4-kernel-wrapper.py`, comparaison octet-à-octet par
+`lean_kernel_check.py`). Toute évolution future du gabarit se reporte dans la
+fourche sous un nouveau tag, puis dans `FORK_TAG`.
 
 ## Notes complémentaires
 

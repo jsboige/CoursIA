@@ -1,385 +1,207 @@
-# PostTraining - Techniques de post-training des Language Models (SOTA 2024-2025)
+# PostTraining — apprendre des démonstrations, des préférences et des récompenses
 
-[← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ SemanticKernel](../SemanticKernel/README.md)
+[↑ GenAI](../README.md) · [FineTuning](../FineTuning/README.md)
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 23
-breakdown: PostTraining=23
-maturity: BETA=16, ALPHA=6, DRAFT=1
+pedagogical_count: 24
+breakdown: PostTraining=24
+maturity: BETA=18, ALPHA=5, DRAFT=1
 -->
 
-> **Place dans GenAI** : cette série est le pendant *théorique et SOTA 2024-2025* de la série [FineTuning](../FineTuning/README.md). FineTuning couvre la boîte à outils pratique (LoRA, QLoRA, SFT, DPO, model merging) ; PostTraining remonte la chaîne conceptuelle complète SFT → RLHF → DPO → GRPO → RLVR → **GAE** et reproduit les techniques récentes (Deepseek-R1) sur petits modèles, complétée par un notebook d'évaluation comparative, un détecteur de reward hacking, et un notebook d'implémentation from-scratch de la famille "no critic" (GRPO/RLOO/GAE) sur toy env CPU, par un **notebook multi-step à crédit différé causal** (PT-12 : les cinq estimateurs re-mesurés, GAE-λ devient discriminant, verdict BEATS 5/5 seeds — le "1-step collapse" était une propriété du banc), et de **trois notebooks appliqués Qwen + GRPO + reward vérifiable + rewardspy en ligne** (PT-11a Z3 CSP arithmétique sur Qwen3.5-0.8B + PT-11b SymPy arithmétique + Z3 N-queens, plus leur validation multi-seed, **plus PT-11c sur le cran au-dessus Qwen3-1.7B/2B** qui qualifie l'étage GPU moyen 16 Go et oppose 0.8B vs 1.7B/2B à budget steps égal) qui font sortir la série du toy env vers un vrai LLM, et **PT-13 sur les corrections 2025 de la loss GRPO** (`Dr. GRPO` : retrait de `÷|o_i|` et `÷std` ; `clip-higher` de `DAPO` : ε_high=0.28 > ε_low=0.2), dont le biais de longueur est mesuré au **niveau gradient**, et **PT-14 sur les lois thermodynamiques de l'entraînement** (R08 : T ∼ η, équipartition ℓf = C·η, schedule 1/t optimal avec discontinuité η/2, force entropique — la physique des learning-rate schedules utilisés en PT-11), et **PT-15 sur le contrôle par interprétabilité** (R14 §3.2 / R11 §1.1 : refusal direction d'Arditi — extraction diffmoy, ablation par projection toutes-couches, steering additif ; machine unlearning et son évaluation white-box ; finetuning shallow « ~10 exemples rouvrent un modèle aligné » de Gade/Lermen ; evaluation awareness Claude 4.6/Apollo, et **PT-16 sur le vericoding** (Bursuc et al. 2025 : la preuve formelle comme récompense — pipeline spec → LLM local 7B → `Dafny verify`/`lean` réels → boucle de réparation 5 tentatives, avec le cas d'école LC0033 « liste vide prouvée conforme à une spec incomplète »), et **PT-17 sur les règles de score propres comme récompense (laya, Nandakishor M., Apache-2.0)** — récompense qui note une probabilité plutôt qu'une réponse ; étude étagée d'un modèle de décision non autorégressif (encodeur bidirectionnel + tête transformer, primitives `choice`/`score`/`noul`). Étage 1 (CPU from-scratch) : la famille des récompenses (binaire, linéaire, log, Brier, sphérique) sur tâche jouet où p(y|x) est connue — les propres **calibrent 7,6× mieux** que les impropres (ECE 0,011 vs 0,088) à exactitude comparable. Estimateur perturbation (GRPO-like G=8) vs gradient direct (MLE) : direct gagne en calibration. Question tranchée : la sur-confiance vient de **toute récompense qui ne note que l'argmax**, pas de la cross-entropie. Étage 2 (GPU 24 Go, ≥ 4 graines, bras CE / RL / RL+CE) reporté en PR séparée. Les deux se complèment : commencer par FineTuning pour la pratique, PostTraining pour la profondeur méthodologique.
+Comment adapter un modèle de langage préentraîné à une tâche, et comment savoir si cette adaptation l'améliore ? Ce parcours relie supervision, optimisation de préférences, apprentissage par récompense et vérification. Les expériences à petite échelle rendent les mécanismes inspectables ; les carnets sur modèles de langage montrent leurs conditions d'exécution et les difficultés d'évaluation.
 
-Deux approfondissements sont descendus de la série ICT (redescente Tegmark, [#16741](https://github.com/jsboige/CoursIA/issues/16741)) : **PT-15b** — géométrie des features SAE : galaxy, atome, dense (R04 × R09) — et **PT-15c** — crosscoder de distillation (R05). Ils mûrissent ici aux côtés de PT-15 ; les deux statuts diffèrent : **PT-15b consomme l'organe `ict/`** de sa série d'origine (`sae_dictionary`, `scale_free`, traces npz du harnais #10355), **PT-15c est autonome** — aucun import de `ict/` (stdlib, numpy, torch, datasets, transformers, matplotlib), le lien à ICT est thématique (R05 prolonge ICT-41) ; chaque carnet déclare son statut dans son en-tête.
+Le point d'entrée suppose Python, les bases de PyTorch, la rétropropagation et l’entropie croisée. Le [parcours FineTuning](../FineTuning/) apporte une entrée pratique complémentaire. Ici, l'accent porte sur le signal d'apprentissage, les avantages utilisés pour mettre à jour une politique et les preuves nécessaires avant d'annoncer un gain.
 
-Série pédagogique dédiée aux techniques de **post-training** des LMs ouverts : SFT, DPO, GRPO, RLVR. L'objectif est de comprendre pourquoi 2024-2025 marque une rupture pédagogique dans la façon dont les modèles de langue passent du pre-training brut à un assistant utile, et comment cette chaîne s'est simplifiée depuis la cascade RLHF historique jusqu'aux méthodes "direct" récentes.
+## Comment lire ce README — découverte
 
-## Pourquoi cette série
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) distingue les paliers principaux de leurs variantes.
 
-Le post-training est le maillon qui transforme un modèle pré-entraîné — au mieux un excellent statisticien du langage — en assistant aligné sur des préférences humaines ou des objectifs vérifiables. Pendant longtemps, la chaîne canonique était RLHF : Supervised Fine-Tuning, puis Reward Model, puis PPO. Trois étapes, trois bugs potentiels, beaucoup d'instabilité. Les techniques récentes (DPO en 2023, GRPO en 2024, RLVR en 2024-2025) ont réduit cette chaîne en s'attaquant aux deux maillons faibles : la dépendance au Reward Model appris (DPO le supprime) et la lourdeur mémoire de PPO (GRPO la divise).
+- **Vous découvrez** : suivez les numéros nus, en choisissant les étapes CPU ou GPU selon votre environnement.
+- **Vous creusez un palier** : les variantes 11a–11d et 15b–15c sont regroupées sous « Approfondissements ». Elles se lisent après les paliers dont elles reprennent les mécanismes.
+- **Vous cherchez des prolongements** : consultez les limites des résultats, les liens avec RL et ICT, puis les références.
 
-En janvier 2025, Deepseek-R1 a publiquement validé cette progression en montrant qu'un modèle moyen entraîné avec GRPO sur des tâches à récompense vérifiable (math, code) peut atteindre un niveau de raisonnement compétitif avec des modèles bien plus gros entraînés de façon classique. Cette série didactise cette chaîne de techniques avec des reproductions concrètes sur **petits modèles** (Qwen3.5-0.8B en QLoRA 4-bit ; Qwen2.5-0.5B/1.5B historiquement) déployables sur **GPU 8 Go** (RTX 3070), conformément à l'esprit "po-2024 pionnier parcimonieux" de l'Epic #1454.
+L'ajustement supervisé (**SFT**) apprend à reproduire des réponses choisies ; l'optimisation directe des préférences (**DPO**) exploite des paires de réponses préférées et rejetées. L'optimisation relative à un groupe (**GRPO**) construit un avantage par comparaison entre les réponses produites, tandis que l'apprentissage par renforcement à récompense vérifiable (**RLVR**) utilise un vérificateur pour calculer la récompense. Ces choix répondent à des données et des objectifs différents : disposer d'une récompense calculable ne garantit ni qu'elle mesure correctement la tâche, ni qu'elle fournisse un signal d'apprentissage suffisant.
 
-L'angle pédagogique est d'expliquer la **math du loss** avant le code pour chaque technique. Trop de tutoriels existants montrent une cellule `trainer.train()` qui converge sans donner l'intuition de pourquoi DPO marche, pourquoi GRPO économise la mémoire, ou pourquoi RLVR contourne le besoin d'un Reward Model. Cette série inverse l'ordre : d'abord la formule, puis l'intuition, puis l'implémentation TRL/HuggingFace, puis les outputs réels d'entraînement.
+## Parcours principal — lecture guidée et prérequis
 
-**À qui s'adresse cette série** : ingénieurs ML curieux de comprendre la chaîne post-training au-delà des annonces de presse, étudiants en NLP voulant reproduire les techniques Deepseek-R1 sans cluster H100, et formateurs ayant besoin de notebooks pédagogiques sur des modèles que leurs étudiants peuvent réellement faire tourner. Prérequis : Python intermediate, PyTorch élémentaire, familiarité avec `transformers`, intuition de la backprop et de la cross-entropy. Le notebook PT-01 établit le contexte théorique sans code exécuté ; PT-02 reprend les bases SFT ; les notebooks PT-03 à PT-06 ajoutent une technique par étape.
+Les variantes du palier 11 sont présentées sous [Approfondissements](#autour-de-11--modèles-de-langage-et-répétition-des-expériences) : il n'existe pas de fichier PT-11 sans lettre, d'où le passage de 10 à 12 dans la table. Les prérequis indiquent la profondeur de lecture ; les expériences sur modèles de langage et les interventions causales demandent un bagage avancé.
 
-## Notebooks
-
-| # | Notebook | Sujet | Technique | Modèle cible | PR |
-|---|----------|-------|-----------|--------------|----|
-| PT-01 | `PT_01_intro_post_training.ipynb` | Vue d'ensemble historique : SFT → RLHF → DPO → GRPO → RLVR | Théorique (markdown + figures) | N/A | — |
-| PT-02 | `PT_02_sft_baseline.ipynb` | Supervised Fine-Tuning baseline | `trl.SFTTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289 |
-| PT-03 | `PT_03_dpo_direct_preference.ipynb` | Direct Preference Optimization (Rafailov 2023) | `trl.DPOTrainer` | Qwen3.5-0.8B (QLoRA 4-bit) | #5078 |
-| PT-04 | `PT_04_grpo_deepseek_r1.ipynb` | Group Relative Policy Optimization (livrable clé) — correctness reward (normalisation $/milliers/unités, crédit partiel) + harness d'éval 4 métriques | `trl.GRPOTrainer` + QLoRA 4-bit | Qwen3.5-0.8B | See #10289, #12438 |
-| PT-05 | `PT_05_rlvr_verifiable_rewards.ipynb` | RL with Verifiable Rewards (math/code) — vérifieur robuste (tolérance abs/rel, crédit partiel) + harness accuracy/format_rate/think_length/backtrack_rate | `trl.GRPOTrainer` + verifier SymPy | Qwen3.5-0.8B (QLoRA 4-bit) | #10487, #10504, #12438 (orig. #1771) |
-| PT-06 | `PT_06_eval_comparative.ipynb` | Évaluation comparative SFT vs DPO vs GRPO vs RLVR | Tableaux, chart, framework décision | tous | #1772, #10819 |
-| PT-07 | `PT_07_rewardspy_reward_hacking.ipynb` | Détecter le reward hacking (Goodhart) — observabilité reward | `rewardspy.watch`/`audit` (offline, sans GPU) | N/A (offline) | #4538 |
-| PT-08 | `PT_08_grpo_from_scratch_toy_env.ipynb` | GRPO **from scratch** (toy env CPU) — mécanique du group-relative advantage, écart PPO↔GRPO, comparaison « avec vs sans critic » | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
-| PT-09 | `PT_09_rloo_from_scratch_toy_env.ipynb` | RLOO **from scratch** (toy env CPU) — leave-one-out baseline, **biais-variance** vs GRPO, sibling de PT-08 | `torch` from-scratch (no `trl`) | MLP jouet (CPU, ~1.5k params) | See #1454 |
-| PT-10 | `PT_10_gae_from_scratch_toy_env.ipynb` | GAE **from scratch** (toy env CPU) — mini-critic + λ-bias/variance, **1-step collapse** diagnostique empirique, justifie le choix no-critic de DeepSeek R1 | `torch` from-scratch (no `trl`) | MLP jouet + value head (CPU, ~5.7k params) | See #1454 |
-| PT-11a | `PT_11a_grpo_qwen35_rlvr.ipynb` | GRPO + RLVR sur **vrai LLM** (Qwen3.5-0.8B QLoRA 4-bit) — reward vérifiable Z3 (CSP arithmétique), rewardspy **en ligne**, sortie du toy env | `trl.GRPOTrainer` + Z3 + `rewardspy.watch_trl` | Qwen3.5-0.8B (QLoRA 4-bit, GPU 8 Go) | See #10289 (#10302) |
-| PT-11b | `PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb` | GRPO + RLVR + rewardspy **en ligne** — la pile complète sur petit modèle Qwen3.5-0.8B QLoRA, **Tier 1 SymPy (arithmétique) + Tier 2 Z3 (N-queens)**, détecteur Goodhart live, 100 steps réels — variante à verifiers complémentaires (sibling de PT-11a) | `trl.GRPOTrainer` + `rewardspy.watch_trl` (integration trl 1.9.2) | Qwen3.5-0.8B (QLoRA 4-bit) | See #10289 |
-| PT-11d multi-seed | `PT_11d_multiseed_qwen35_4x100.ipynb` | RLVR **multi-seed** 4 seeds × 100 steps — reproductibilité du run PT-11a (Qwen3.5-0.8B QLoRA 4-bit), opposition au run mono-seed, métrique informative de groupe (`num_generations`, #10603), verdict MECANISME_REPRO | `trl.GRPOTrainer` + verifiers SymPy/Z3 | Qwen3.5-0.8B (QLoRA 4-bit) | See #10289 |
-| PT-11c | `PT_11c_grpo_qwen17_rlvr.ipynb` | RLVR sur **cran au-dessus** (Qwen3-1.7B ou Qwen3-2B QLoRA 4-bit) — extension directe de PT-11b au cran supérieur, 4 seeds × 100 steps, **verdict mémoire** (pic VRAM RTX 3080 Ti 16GB) + **comparaison honnête** 0.8B vs 1.7B/2B à budget steps égal. Architecture compatible `trl.GRPOTrainer`, peft 0.20.0 (vs 0.13.2 de PT-11b). Reward SymPy Tier-1 + Z3 N-queens Tier-2 + informative-group métrique #10603. **Verdict mesuré (4 seeds × 100 steps chacun, RTX 3070 8 Go)** : MECANISME_REPRO sur les DEUX crans — 1.7B mean 0.1148 ± 0.0059 (edge 19.33σ), 2B mean 0.1653 ± 0.0051 (edge 32.44σ), VRAM peak 3.67/4.98 Go, ~31/~43 min/seed ; le decideur intra-seed reste non-exécutable à 20 pts/seed (fix : `logging_steps=4`). **Note env** : `rewardspy` (GitHub-only, absent de PyPI) peut être non installé — wrapper no-op gracieux | `trl.GRPOTrainer` + verifiers SymPy/Z3 + `rewardspy.watch_trl` (optionnel) | Qwen3-1.7B ou Qwen3-2B (QLoRA 4-bit, GPU 16 Go cible) | See #12653 |
-| PT-12 | `PT_12_multistep_delayed_credit.ipynb` | GAE-λ sur env **multi-step à crédit différé causal** (`count_ones`, terminal dépendant de toute la séquence) — re-mesure des 5 estimateurs REINFORCE/GRPO/RLOO/GAE-λ=0/GAE-λ=0.95, **5 seeds**, vérificateur terminal Z3 | `torch` from-scratch (no `trl`) + Z3 (RLVR) | MLP jouet acteur-critique (CPU, ~5.5k params) | See #1454 |
-| PT-13 | `PT_13_dapo_drgrpo_corrections.ipynb` | **Corrections de la loss GRPO** — `Dr. GRPO` (retire `÷\|o_i\|` et `÷std`) et `clip-higher` de `DAPO` (ε_high=0.28 > ε_low=0.2) — **biais de longueur mesuré au niveau gradient** (norme par bucket : vanille dilue long-faux à ~0.32× vs dr ~0.81×, 5 seeds), amplification `÷std` (jusqu'à ×3.0), taux de climb sous clip (ε=0.2→21.5 pas, 0.28→15.8, 0.40→11.6), verdict comportemental honnête (aucun coût, banc non discriminant), Z3 vérificateur RLVR | `torch` from-scratch (no `trl`) + Z3 (RLVR) | MLP jouet (CPU, ~1.5k params) | See #1454 |
-| PT-14 | `PT_14_neural_thermodynamic_laws.ipynb` | **Lois thermodynamiques de l'entraînement** (R08 Liu et al. 2025) — perte = énergie, η = température, bruit minibatch = bain thermique : largeur stationnaire σ(a) SGD/SignGD (edge of stability, plancher √(2π)/4·η), **équipartition** ℓf = (σg²η/4)/(1−aη/2) indépendant de la sharpness, T ∼ η, **confrontation mini-GPT 106k au plateau** (bruit d'étiquette q=0.15 : terme thermique BORNÉ C < 0.1, sous résolution du banc toy — verdict honnête, le GPT-2 rapporté 3.145+110·η_min le résout à son échelle ; écart SGD/Adam(0,0) qui s'inverse entre progrès et plateau), **schedule 1/t optimal** (discontinuité η/2, diagramme de phase (b, t_h) à optimum théorique exact 6.03e-06 vs 6.10e-06), **loi de Fourier** (relaxation de taux 2aη_B après switch de lr, 4 répliques), **force entropique** (piégeage vers les zones plates E.1, seuil de blocage η* = 4c/(ασg²) E.2) | `numpy` + `torch` from-scratch (toy + mini-GPT CPU) | toy river-valley + mini-GPT (CPU) | See #16741 |
-| PT-15 | `PT_15_controle_interpretabilite.ipynb` | **Contrôle par interprétabilité** (R14 §3.2 / R11 §1.1) — refusal direction d'Arditi (**diffmoy** sur residual stream au dernier token, validation split-half, **ablation par projection toutes-couches toutes-positions**, taux de refus mesuré avant/après + side effects bénins), **activation steering** (courbe refus/α), **machine unlearning** (édition par activation : réversible par construction, non compétitive vs poids — Farrell 2024, verdict honnête), **finetuning shallow** (Gade/Lermen « ~10 exemples rouvrent un modèle aligné », proxy comportemental), **evaluation awareness** (Claude 4.6/Apollo : « les évals ne prouvent plus l'alignement », worst case = lower bound) | hooks `transformers` natifs (no `transformer_lens`), compatible transformers v5 (sortie decoder layer = tenseur direct) | Qwen2.5-0.5B-Instruct (fp16, GPU 8 Go) | See #16758, #16741 |
-| PT-15b | `PT_15b_geometrie_features_sae.ipynb` | **Géométrie des features SAE : galaxy, atome, dense** (R04 × R09, descendu d'ICT-41) — les trois axes de la géométrie latente mesurés trained vs contrôle sur deux lentilles (SAE Qwen-Scope et J-Lens, couche 16) : spectre en loi de puissance répliqué via l'astuce Gram, cristaux absents à cette couche, thèse « dense = features, not bugs » répliquée par deux méthodes indépendantes. Banc numpy-only (GPU-free) ; consomme l'**organe `ict/`** de la série ICT — `sae_dictionary`, `scale_free` et les traces npz du harnais #10355 | See #16747 |
-| PT-15c | `PT_15c_crosscoder_distillation.ipynb` | **Crosscoder : diffuser deux modèles, distilled reasoning vs base** (R05 Baek-Tegmark, descendu d'ICT-41b) — un dictionnaire de features partagé entre `DeepSeek-R1-Distill-Qwen-1.5B` et sa base `Qwen2.5-Math-1.5B` ; la *statistique* du papier (NRN médian 0,498) se reproduit, pas sa *lecture sémantique* — enrichissement mixte des marqueurs, ablation causale sensible au seuil, leçon des trois jambes de preuve. GPU (~4 Go, modèles chargés séquentiellement), déterminisme strict | See #16749 |
-| PT-16 | `PT_16_vericoding_formal_verification.ipynb` | **Vericoding** (Bursuc et al. 2025, R15) — la preuve formelle comme récompense : pipeline spec → LLM local (Ollama Qwen2.5-7B) → `Dafny verify` / `lean` réels → boucle de réparation 5 tentatives (protocole papier), échantillon stratifié du benchmark public (30 Dafny + 12 Lean sans Mathlib), garde anti-contournement (`assume`/`sorry`/`native_decide`, parallèle du gate `proof-integrity`), cas d'école **LC0033** : liste vide *prouvée* conforme à une spec incomplète, rejetée par la spec réparée — taux mesurés honnêtes d'un 7B local vs 82,2 %/26,8 % (cités) des modèles de frontière | Ollama local + `Dafny verify` + `lean` (toolchain elan) | Qwen2.5-7B-Instruct (local, GPU 8 Go) | See #16751 |
-| PT-17 | `PT_17_laya_proper_rewards_toy.ipynb` | **laya : règle de score propre comme récompense** (Nandakishor M., Apache-2.0) — étude étagée d'un modèle de décision non autorégressif. **Étage 1 CPU from-scratch** : la famille des récompenses (binaire, linéaire, log, Brier, sphérique) entraînées sur une tâche jouet binaire où p(y|x) est connue — verdict mesuré : les récompenses propres **calibrent 7,6× mieux** que les impropres (ECE 0,011 vs 0,088) à exactitude comparable ; estimateur perturbation (GRPO-like G=8) vs gradient direct : direct gagne en calibration (ECE 0,011 vs 0,050) ; cas ordinal 4-classes (RPS, sphérique). Étage 2 (GPU 24 Go, ≥ 4 graines, bras CE / RL / RL+CE) reporté en PR séparée. Question tranchée : la cross-entropie **n'est pas** la source de la sur-confiance — c'est toute récompense qui ne note que l'argmax. | CPU toy env, `torch`+`numpy` (kernel `coursia-ml-training`) | — (CPU jouet) | See #17878 |
-| PT-18 | `PT_18_laya_ablation_distillation.ipynb` | **laya étage 2 : l'ablation à trois bras** — entraîne le vrai checkpoint `convaiinnovations/laya-multilingual` sur `LocalLLaMA/typed-decisions` et décompose la recette publiée : bras `ce` / `rl` / `rl_ce` (la recette `loss_rl + 1.0 * loss_ce`), quatre graines, calibration sur slice tenu à part, verdict §C par conjonction écart 2σ cross-seed **et** Diebold-Mariano apparié par décision (perte MSE des distributions rapportées). Réponse mesurée à la question ouverte de PT-17 : **aucune part mesurable** — NLL 0,876–0,878 pour les trois bras (σ inter-graines 0,002–0,005), NO BEATS sur `rl_ce` vs `ce` et `rl` vs `ce`, INCONCLUSIVE sur `rl_ce` vs `rl` (jambe DM seule, p_median 0,036) : l'exactitude de la recette publiée revient à sa jambe de cross-entropie. | grille CLI `_measurements/` (`laya` + `torch` CUDA, checkpoints 614 Mo hors dépôt) ; carnet d'analyse kernel `python3` sur agrégats committés | GPU 8 Go (grille 3×4 runs) | See #17878 |
-
-> **Migration vers Qwen3.5 (complète sur les notebooks GPU).** Qwen2.5 est *superseded* par [Qwen3.5](https://huggingface.co/Qwen/Qwen3.5-0.8B) (modèle vision-langage unifié, multimodal). **PT-03 est migré** vers Qwen3.5-0.8B (#5078) : l'évaluation DPO est désormais une vraie *forward pass* (accuracy mesurée 40 % sur 10 préférences *held-out*, vs 50 % aléatoire — le DPO n'a pas convergé sur 50 exemples, verdict honnête documenté dans le notebook) qui remplace l'ancienne accuracy *hardcodée* à 72 %. **PT-02 est migré** vers Qwen3.5-0.8B (#10289, #10813) : le SFT s'exécute sur le vrai petit modèle SOTA (architecture hybride 18×linear_attn + 6×self_attn, LoRA ciblant les deux types + MLP) — verdict honnête documenté : sur 50 exemples (3 steps), le loss oscille (1.92→2.17→1.76) et la génération se dégrade (SFT sous-alimenté sur modèle déjà instruct-tuned, pas un bug). **PT-04 est migré** vers Qwen3.5-0.8B (#10817, re-exec #11442) : le GRPO s'exécute sur le vrai petit modèle SOTA (vrai GRPO GPU, QLoRA 4-bit, récompense basée sur le score). **PT-06 est migré** vers Qwen3.5-0.8B (#10819) : l'évaluation comparative porte désormais sur le modèle migré. **PT-05 est migré** vers Qwen3.5-0.8B (#10487 : re-ciblage + run GPU réel commité — delta honnête documenté 12.5 % → 0.0 %, et #10504 : reward branché sur le ground truth). Architecture Qwen3.5 multimodale (`Qwen3_5ForConditionalGeneration`) chargée via `AutoModelForImageTextToText` (et non `AutoModelForCausalLM`). **PT-15 reste sur Qwen2.5-0.5B-Instruct par choix délibéré** : la refusal direction a été caractérisée par la littérature (Arditi et al. 2024) sur cette famille — le 0.5B suffit à rendre l'effet visible et mesurable, et l'exécution tient sur tout GPU 8 Go.
-
-## Progression pédagogique
-
-Les notebooks s'enchaînent **dans l'ordre**. Sauter PT-02 (SFT) avant PT-03 (DPO) est techniquement possible mais perd l'intuition clé de DPO : pourquoi la formule contient un terme implicite de reward model est évident après avoir vu un SFT classique converger. De même, GRPO (PT-04) s'éclaire après avoir compris la limite mémoire de PPO. RLVR (PT-05) réutilise l'infrastructure GRPO mais remplace le reward appris par un vérificateur exact (sympy pour les expressions, sandbox pour le code). PT-16 (vericoding) est le cran au-dessus de PT-05 : le vérificateur n'est plus un oracle partiel mais une preuve formelle complète — il se lit en connaissance de la notion de récompense vérifiable.
-
-PT-01 (intro) peut être lu **en parallèle** des autres notebooks ; c'est un compagnon théorique.
-
-## Comprendre les techniques en profondeur
-
-Cette section développe le fond de chaque technique au-delà du simple nom dans le tableau. Les détails mathématiques précis vivent dans les notebooks ; ce qui suit est la **carte mentale** que la série cherche à installer chez l'apprenant.
-
-### SFT — Supervised Fine-Tuning
-
-La technique la plus simple du post-training : un dataset de paires (prompt, réponse_souhaitée), un loss de cross-entropy classique, un optimiseur Adam. Du point de vue formel, c'est un MLE sur une distribution conditionnelle. Toute la subtilité réside dans la qualité du dataset : un SFT sur des réponses moyennes produit un assistant moyen. Les datasets de référence (OpenAssistant, Dolly, Tulu, Open-Hermes) sont devenus des assets à part entière de la communauté. Le piège majeur pour l'apprenant est de penser que SFT "aligne" le modèle : il l'imite seulement. L'alignement vient des étapes suivantes ou de la composition du dataset (curation, refus, ton).
-
-### DPO — Direct Preference Optimization (Rafailov 2023)
-
-Le bond conceptuel clé de 2023. Plutôt que d'apprendre un Reward Model (RM) puis de l'utiliser dans PPO, DPO dérive une formule de loss qui consomme directement les paires de préférences (réponse_préférée, réponse_rejetée) et entraîne la policy directement. La dérivation passe par la solution analytique de l'optimum de PPO régularisé par KL : on montre que `r(x, y) = β log(π_θ(y|x) / π_ref(y|x)) + Z(x)`, ce qui permet d'éliminer `r` du loss au profit d'une expression ne dépendant que de `π_θ` et `π_ref`. Bénéfice : un seul modèle à entraîner au lieu de deux, pas de critic, training stable. Inconvénients : suppose un BTL (Bradley-Terry-Luce) sous-jacent valide, sensible à la qualité des préférences (bruit dans le dataset = perturbation directe du gradient).
-
-### GRPO — Group Relative Policy Optimization (Deepseek 2024)
-
-La rupture mémoire de 2024. PPO classique nécessite (1) la policy, (2) une copie référence de la policy pour le KL penalty, (3) un value head (critic) entraîné en parallèle. Sur un modèle 7B, c'est ~30 Go de VRAM pour les seuls poids. GRPO supprime le critic en estimant l'avantage par **comparaison intra-groupe** : pour chaque prompt, générer N completions (typiquement 8-16), évaluer chacune via la reward, calculer l'avantage relatif normalisé dans le groupe. Le baseline implicite du groupe remplace le critic. Bénéfice : ~40% de VRAM gagnée, même performance qu'PPO sur les benchmarks math/code. Inconvénients : sensibilité à N (trop petit = baseline bruitée, trop grand = coûteux), couplage fort à une reward de qualité.
-
-### RLVR — RL with Verifiable Rewards (Deepseek-R1 2025)
-
-L'innovation méthodologique de 2025. Au lieu d'apprendre un Reward Model sur des préférences (cycle long, biaisé par les annotateurs), on utilise des tâches dont la réponse est vérifiable **algorithmiquement** : équations math (`sympy.simplify(answer - target) == 0`), code (`exec(code); assert tests`), traduction (`bleu_score(translation, reference) > seuil`). Le RM devient un vérificateur exact, ce qui élimine toute la complexité RLHF en aval. C'est ce qui a rendu possible Deepseek-R1 : combiné avec GRPO, on entraîne sur des prompts math/code sans aucune annotation humaine, et le modèle développe spontanément des chains-of-thought longs. Limite : applicable uniquement aux tâches vérifiables (math, code, logique formelle), pas aux tâches subjectives (écriture créative, conseil).
-
-#### Corpus de vérificateurs RLVR (issue #10289)
-
-Notre corpus RLVR séquence les vérificateurs mécaniques par coût de rollout. Chaque vérificateur est un module Python testable sur CPU, consommable par `trl.GRPOTrainer` via un adapteur de signature `reward(prompts, completions, **kwargs) -> list[float]`.
-
-| Tier | Vérificateur | Coût / rollout | Livrable | PR |
+| # | Notebook | Ce qu'on y apprend | Public et prérequis | Pour approfondir |
 |---|---|---|---|---|
-| **1** | SymPy (arithmétique) | µs-ms | `PT_05` (inline) | #10487 |
-| **1** | Z3 / CSP (arithmétique, N-queens) | µs-ms | `PT_11a`/`PT_11b` (inline) | #10317 |
-| **2** | **Lean** : élaboration `lake env lean` + oracle d'axiomes `#print axioms` | ~s | **`verifiers/lean_rlvr_verifier.py`** | #10539 |
+| 01 | [Introduction au post-training](PT_01_intro_post_training.ipynb) | Choisir un signal de supervision et lire une estimation de coût ou de mémoire. | Entrée du parcours ; CPU. | Arbre de décision et hypothèses des estimations. |
+| 02 | [Référence SFT](PT_02_sft_baseline.ipynb) | Préparer données et template, construire la loss supervisée et entraîner un adaptateur LoRA. | PyTorch et Transformers ; entraînement GPU optionnel. | Qualité des données, rang LoRA, contrôle du run. |
+| 03 | [Optimisation directe de préférences](PT_03_dpo_direct_preference.ipynb) | Relier Bradley–Terry, modèle de référence et loss DPO ; évaluer des paires choisies/rejetées. | Après 02 ; GPU pour le run. | Sensibilité à beta et séparation des données. |
+| 04 | [GRPO et raisonnement](PT_04_grpo_deepseek_r1.ipynb) | Construire avantages de groupe, clipping et pénalité KL, puis un dispositif d'évaluation. | Après 02–03 ; tests CPU, entraînement conditionnel GPU. | Palier 08, [variantes 11](#autour-de-11--modèles-de-langage-et-répétition-des-expériences) et palier 13. |
+| 05 | [Récompenses vérifiables](PT_05_rlvr_verifiable_rewards.ipynb) | Extraire une réponse, la confronter à la cible et distinguer exactitude et crédit partiel. | Après 04 ; SymPy, entraînement conditionnel GPU. | Limites du parseur et qualité du vérificateur. |
+| 06 | [Comparaison des méthodes](PT_06_eval_comparative.ipynb) | Organiser un choix de méthode et un protocole comparatif à partir de scénarios de coût. | Après 02–05 ; CPU. | Les valeurs GSM8K de cette synthèse sont estimatives. |
+| 07 | [Détecter le détournement de récompense](PT_07_rewardspy_reward_hacking.ipynb) | Instrumenter une récompense, lire un journal et repérer des comportements de Goodhart. | Notion de récompense ; `rewardspy`. | Trajectoire synthétique et analyse hors ligne. |
+| 08 | [GRPO écrit à la main](PT_08_grpo_from_scratch_toy_env.ipynb) | Comparer REINFORCE, PPO et GRPO sur une tâche vérifiée par Z3. | PyTorch et probabilités ; CPU. | Taille du groupe et définition de la récompense. |
+| 09 | [Baseline leave-one-out](PT_09_rloo_from_scratch_toy_env.ipynb) | Comparer RLOO, REINFORCE et GRPO, puis discuter biais et variance. | Après 08 ; CPU. | Sensibilité au groupe et aux graines. |
+| 10 | [Modèle de valeur et GAE](PT_10_gae_from_scratch_toy_env.ipynb) | Construire un modèle de valeur (*critic*) qui estime le retour attendu, puis un avantage ; comprendre le rôle de lambda. | Après 08–09 ; CPU. | Le palier 12 traite le crédit réellement différé. |
+| 12 | [Crédit différé multi-étapes](PT_12_multistep_delayed_credit.ipynb) | Construire une récompense terminale causale et mesurer l'effet de GAE sur un horizon étendu. | Après 10 ; CPU. | Ablation du façonnage de récompense et variation de l'horizon. |
+| 13 | [Corrections DAPO et Dr.GRPO](PT_13_dapo_drgrpo_corrections.ipynb) | Isoler biais de longueur, normalisation par l'écart-type et clipping asymétrique. | Après 08 ; gradients PyTorch, CPU. | Distinguer effet sur le gradient et gain comportemental. |
+| 14 | [Thermodynamique de l'entraînement](PT_14_neural_thermodynamic_laws.ipynb) | Examiner des relations entre taux d'apprentissage, fluctuations et relaxation sur des modèles contrôlés. | Optimisation et statistiques ; CPU. | Résolution de la mesure et limites du mini-GPT. |
+| 15 | [Contrôle et interprétabilité](PT_15_controle_interpretabilite.ipynb) | Extraire une direction du refus, intervenir sur les activations et comparer retrait d'une composante et ajout dirigé (*steering*) aux activations. | Transformers et interception des activations (*hooks*) ; GPU pour les expériences. | [15b — SAE](PT_15b_geometrie_features_sae.ipynb), [15c — crosscoder](PT_15c_crosscoder_distillation.ipynb). |
+| 16 | [Vérification formelle du code généré](PT_16_vericoding_formal_verification.ipynb) | Boucler spécification, génération, vérification et réparation ; éprouver la spécification elle-même. | Ollama, Dafny et Lean. | Gardes anti-contournement et spécifications incomplètes. |
+| 17 | [Récompenses propres et calibration](PT_17_laya_proper_rewards_toy.ipynb) | Comparer règles de score, calibration et optimisation directe ou par perturbation. | Probabilités et gradients ; CPU. | Comparer calibration et exactitude prédictive. |
+| 18 | [Ablation de distillation](PT_18_laya_ablation_distillation.ipynb) | Analyser des agrégats de distillation et éprouver un gain avec des comparaisons statistiques. | Après 17 ; analyse CPU de mesures enregistrées. | La grille d'entraînement vit dans les scripts associés. |
 
-Le vérificateur **Lean** (Tier 2, `verifiers/lean_rlvr_verifier.py`) est le composant *distinctif* du corpus : un modèle qui apprend à émettre `by sorry` pour toucher la récompense est le cas d'école de Goodhart, et nos règles Lean (`lean-axiom.yml`) énumèrent *déjà* les exploits (`sorry`, `sorryAx` transitif, `native_decide`/`Lean.ofReduceBool`, axiomes hors whitelist). Le vérificateur les **détecte** (oracle de reward hacking) plutôt que les récompenser — récompense binaire 1.0 ssi la preuve compile sans sorry ni axiome interdit. Il réutilise le mécanisme `LeanVerifier.check_axioms` de `agent_tests/lean_server.py` (#8680), aucune logique de détection réécrite. Prérequis : `elan` (règle F, vrai moteur). Tests : `pytest verifiers/test_lean_rlvr_verifier.py` (10 contrôles positifs/négatifs/oracle sur le vrai Lean 4).
+### Du signal d'apprentissage à la preuve d'un gain
 
-### GAE — Generalized Advantage Estimation (Schulman 2015, retour pédagogique)
+Les premières étapes comparent des façons de dire au modèle ce qu'on attend de lui. Une démonstration fournit une réponse cible ; une préférence ordonne des réponses ; un vérificateur donne un score selon une règle. Les bancs 08–10 rendent ensuite visibles les calculs qui transforment ces signaux en mise à jour des paramètres. RLOO (*REINFORCE Leave-One-Out*) soustrait aux récompenses une référence calculée sur les autres réponses du groupe ; GAE (*Generalized Advantage Estimation*, estimation généralisée de l'avantage) combine des estimations pour répartir le crédit dans le temps.
 
-Le **3ᵉ pilier** du post-training moderne, et souvent le **seul utilisé en pratique dans PPO** : Generalized Advantage Estimation (Schulman et al., 2015) interpole entre TD(0) (λ=0, bas biais, haute variance) et Monte-Carlo (λ=1, haut biais, basse variance) via une moyenne géométrique des n-step TD-errors pondérée par λ. La formule canonique : $A_t^{GAE} = \sum_{l=0}^{T-t} (\gamma\lambda)^l \delta_{t+l}$ avec $\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$. Le mini-critic (1 value head) est entraîné via MSE sur les **returns** bootstrappés. La série PT-08/09/10 montre empiriquement que sur un env **1-step sparse-reward** (cas typique du LLM génération courte), GAE collapse en TD(0) et n'apporte **aucun bénéfice mesurable** par rapport à REINFORCE+baseline, justifiant *a posteriori* la décision de Deepseek-R1 de remplacer le critic par une baseline intra-groupe. Sur du **multi-step** (chain-of-thought long), GAE retrouve son intérêt car λ-bootstrapping réduit la variance du gradient. PT-10 (CPU toy env) illustre la symétrie : no-critic GRPO/RLOO dominent en 1-step, GAE redevient discriminant en multi-step. **PT-12 confirme empiriquement cette dernière phrase** : sur un env multi-step à crédit différé causal (`count_ones`), GAE-λ=0.95 bat GAE-λ=0 sur 5/5 seeds (moyenne ≈ 0.92 vs ≈ 0.20), et REINFORCE/GRPO/RLOO résolvent la tâche sans critic — le "1-step collapse" était une propriété du banc, pas des méthodes.
+Le passage de 10 à 12 illustre pourquoi le problème d'essai compte : sur un horizon immédiat, le paramètre lambda de GAE ne peut montrer son rôle dans le crédit différé. Le carnet 12 construit précisément un environnement où les actions précédentes affectent une récompense ultérieure. De même, une modification du gradient en 13 peut être réelle sans produire une différence de réussite sur un banc trop facile.
 
-## Architecture conceptuelle
+Les derniers paliers changent l'objet du contrôle : comportement récompensé, représentations internes, correction d'un programme ou calibration d'une distribution. Ils apprennent à choisir une observation adaptée à la conclusion recherchée. Une baisse de perte, une sortie acceptée par un vérificateur et une amélioration hors échantillon sont des résultats distincts.
 
-```
-                  ┌──────────────────────┐
-                  │  Base LM (pretrained)│
-                  │  Qwen3.5-0.8B-Base   │
-                  └──────────┬───────────┘
-                             │
-                  ┌──────────▼───────────┐
-                  │  SFT (PT-02)         │
-                  │  trl.SFTTrainer      │
-                  │  → Qwen3.5-0.8B-SFT  │
-                  └──────────┬───────────┘
-                             │
-              ┌──────────────┼──────────────┐
-              │              │              │
-       ┌──────▼──────┐ ┌─────▼──────┐ ┌────▼─────────┐
-       │ DPO (PT-03) │ │GRPO (PT-04)│ │ RLVR (PT-05) │
-       │ pair-based  │ │ group-based│ │ exact reward │
-       │ no RM       │ │ no critic  │ │ no RM appris │
-       └─────────────┘ └────────────┘ └──────────────┘
-              │              │              │
-              └──────────────┼──────────────┘
-                             │
-                  ┌──────────▼───────────┐
-                  │  Eval (PT-06)        │
-                  │  GSM8K, IFEval       │
-                  │  comparaison métriques│
-                  └──────────────────────┘
-```
+### Comprendre les choix de méthode — Licence
 
-## Contraintes RTX 3070 8 Go (parcimonie po-2024)
+En SFT, la perte d'entropie croisée augmente la vraisemblance des réponses de démonstration conditionnellement aux prompts. Le choix des données détermine donc ce que le modèle apprend à imiter : format, contenu, refus ou ton. L'objectif d'entraînement ne suffit pas à établir la qualité de ces comportements sur d'autres entrées.
 
-- **Modèles ≤ 1.5B params**, modèle de référence Qwen3.5-0.8B en QLoRA 4-bit (pic VRAM mesuré ~2,5 Go, PT-05)
-- **Quantization 4-bit** (`bitsandbytes`) obligatoire pour modèles > 0.5B
-- **LoRA** rank ≤ 16, alpha ≤ 32, adapters sur attention + MLP
-- **Batch size** ≤ 4, gradient accumulation jusqu'à 16 pour batch effectif 64
-- **Training time cible** : < 60 min par notebook
-- **Datasets HF publics** : `HuggingFaceH4/ultrafeedback_binarized` subset, `openai/gsm8k`, `HuggingFaceH4/MATH-500`
+DPO utilise des paires de préférences et un modèle de référence. Sa dérivation relie une récompense implicite au logarithme du rapport entre politique entraînée et politique de référence, avec un coefficient `beta`. Sous le modèle de préférences de Bradley–Terry, on obtient ainsi une perte sur les paires sans entraîner séparément un modèle de récompense. La qualité des préférences et le choix de la référence restent déterminants ; DPO n'est pas un SFT sur les seules réponses préférées.
 
-## Attentes tailles-dépendantes (leçon ICT-25, #15639)
+GRPO remplace l'estimation d'avantage par un modèle de valeur par une comparaison au sein du groupe de réponses. Agrandir ce groupe peut changer la qualité du signal, mais augmente aussi le coût des générations. Si toutes les réponses reçoivent la même récompense, le groupe ne permet pas de les départager. RLVR désigne, lui, la provenance du score : un calcul ou un vérificateur. Il peut donc être combiné à GRPO. La fiabilité du score dépend de l'extraction de réponse, des tests ou de la spécification effectivement vérifiée.
 
-La section précédente est la contrainte de la **petite carte** ; elle ne dit pas ce qu'on peut *attendre* d'un run selon la taille. Leçon ICT-25 (concern user sur #15634) : on ne peut pas attendre la même chose d'un 2B et d'un 9B+. **Toute PR de training comparant des tailles déclare sa classe d'attente par taille** — sur le modèle d'ICT-25, qui sépare ses runs par taille ; une comparaison inter-tailles sans ce calibrage produit des verdicts non comparables.
+GAE utilise les erreurs de différence temporelle
+$\delta_t = r_t + \gamma V(s_{t+1}) - V(s_t)$
+et les combine en
+$A_t = \sum_{l=0}^{T-t-1}(\gamma\lambda)^l\delta_{t+l}$.
+Le modèle de valeur $V$ estime le retour attendu ; $\gamma$ actualise les récompenses et $\lambda$ règle la profondeur de la combinaison. Faire davantage appel à $V$ peut réduire la variance, mais transmet aussi son erreur d'estimation. Les carnets 10 et 12 donnent des contextes différents pour examiner ce compromis.
 
-| Classe | Tailles | Attente légitime |
+### Choisir entre DPO et GRPO
+
+| Critère | DPO | GRPO |
 |---|---|---|
-| Routing / actions simples | ≤ 2B | GRPO-RLVR calibrable sur tâches courtes vérifiables |
-| Étage moyen | 4B-8B | FT/PT de tâches structurées ; enveloppe VRAM selon carte (mesurée, pas estimée) |
-| Tâches ambitieuses FT/PT | 9B+ | runs séparés par taille, cartes 24 Go+ (4090/3090), fenêtres réservées |
+| Signal | Paires de réponses choisies et rejetées | Prompts, réponses groupées et fonction de récompense |
+| Modèles auxiliaires | Référence pour la perte ; pas de modèle de récompense séparé | Comparaison au sein du groupe ; pas de modèle de valeur séparé |
+| Usages | Préférences de style ou de conversation | Raisonnement avec récompense calculable, par exemple mathématiques ou code |
+| Coût et limites | Dépend de la qualité des préférences et de la référence | Générations multiples coûteuses ; signal sensible à la taille du groupe et à la récompense |
 
-La sonde du mur vit dans `_measurements/vram_wall_probe.py` (recipe PT_11d exacte, instrument inchangé depuis #15633) ; ses mesures par **taille × carte** sont consignées dans `_measurements/vram_probe_results_*.jsonl` — c'est l'artefact qui fait foi pour les enveloppes, jamais une estimation en prose. Voir #1454 (nomination étage moyen) et #15639 (échelle de la sonde).
+Ces méthodes peuvent se compléter : choisir selon les données disponibles et la fiabilité du signal, puis évaluer sur des données distinctes.
 
-## Quick Start
+### Idées reçues à éprouver
 
-```bash
-# 1. Activer l'environnement
-conda activate coursia-ml-training
+- **« Plus de réponses par groupe améliore toujours GRPO »** : un groupe plus grand coûte davantage et ne garantit pas un meilleur signal ; si toutes les récompenses sont identiques, il ne départage pas les réponses.
+- **« LoRA implique toujours une qualité inférieure »** : sa restriction des paramètres entraînés économise de la mémoire ; le compromis de qualité dépend du modèle, de la tâche et du budget, et doit être mesuré.
+- **« RLVR remplace toutes les autres méthodes »** : il faut un vérificateur fiable ; les préférences subjectives peuvent appeler un autre signal.
+- **« Le post-entraînement supprime les hallucinations »** : une amélioration des réponses ou des refus ne garantit pas la factualité ; il faut l'évaluer sur des exemples distincts.
 
-# 2. Installer dependances post-training (a faire une fois)
-pip install --upgrade transformers trl peft accelerate datasets bitsandbytes
+## Approfondissements — Recherche et prérequis
 
-# 3. Verifier la VRAM
-python -c "import torch; print(f'CUDA: {torch.cuda.is_available()}, {torch.cuda.get_device_name(0)}, {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB')"
+### Autour de 11 — modèles de langage et répétition des expériences
 
-# 4. Lancer le premier notebook
-jupyter notebook PT_01_intro_post_training.ipynb
-```
-
-## Pièges pédagogiques courants
-
-Les notebooks anticipent et adressent explicitement plusieurs **erreurs d'interprétation** que les apprenants développent typiquement face à ces techniques :
-
-- **"DPO est juste un SFT sur les préférences"** — faux. DPO contient un terme de divergence par rapport au modèle de référence (`π_ref`) qui empêche le drift catastrophique. Un SFT sur paires préférées seules effondrerait la diversité. PT-03 isole expérimentalement ce terme via un ablation (`β = 0` vs `β = 0.1`) pour rendre visible son effet.
-- **"Plus de seeds GRPO = mieux"** — faux jusqu'à un seuil. Au-delà de N ≈ 16, le baseline intra-groupe devient stable mais le coût VRAM explose. PT-04 exécute G = 4 et renvoie le dimensionnement en N à l'exercice `estimer_memoire_grpo` (coût VRAM par taille de groupe) — l'arbitrage rendement/coût est posé, pas pré-calculé.
-- **"RLVR remplace toutes les autres méthodes"** — faux. RLVR est restreint aux tâches vérifiables. Pour écriture créative, conversation ouverte, assistance, DPO reste l'approche dominante. PT-05 expose cette limite via un contre-exemple : appliquer RLVR à une tâche subjective produit un modèle dégénéré qui exploite la fonction de reward exacte.
-- **"LoRA = moins de qualité que full fine-tuning"** — vrai marginalement, faux pratiquement. Sur un budget GPU 8 Go, LoRA atteint 95-98% de la qualité d'un full FT à 5% du coût mémoire. PT-02 documente ce trade-off explicitement.
-- **"Le post-training résout les hallucinations"** — faux. Les hallucinations viennent du pre-training (sous-représentation factuelle) ; le post-training les masque parfois en augmentant la confiance des refus, mais ne les supprime pas. PT-06 illustre via TruthfulQA : SFT/DPO/GRPO améliorent surface, pas substance.
-
-Ces points sont signalés en encarts `> **Piège :**` au fil des notebooks, avec exercices de vérification.
-
-## Méthodologie d'évaluation
-
-Comparer SFT vs DPO vs GRPO vs RLVR de façon honnête requiert une discipline expérimentale stricte. La série applique les règles suivantes, alignées sur la règle CoursIA **Multi-seed ≥ 4** :
-
-- **Seeds fixées** : `{0, 1, 7, 42}` (au minimum). Résultats single-seed = signal bruit, jamais une "victoire".
-- **Held-out separation** : datasets HF splittés via `seed=42` réservé évaluation. Aucune training data ne fuit dans l'eval.
-- **Benchmarks distincts** : aucune métrique unique ne suffit. La série évalue sur :
-  - **GSM8K** (math reasoning, 1.3k test) — cible RLVR
-  - **MMLU subset** (knowledge, 5k test) — non-cible, contrôle de régression
-  - **IFEval** (instruction following, 541 test) — cible DPO/SFT
-  - **HumanEval** (code, 164 test) — cible RLVR
-- **Verdict honnête** : BEATS / NO BEATS / INCONCLUSIVE selon écart ≥ 2σ cross-seed. Pas de "promising", pas de "trending positive".
-- **Budget compute fixe** : chaque technique reçoit le même budget GPU-hour pour la comparaison finale (typiquement 30 min RTX 3070).
-- **Coût cache** : on rapporte VRAM peak, training time, et nombre de tokens vus pour rendre les trade-offs visibles. "DPO bat GRPO de 2%" est inutile si DPO consomme 3x plus de VRAM.
-
-PT-06 documente le pipeline d'évaluation complet et produit un tableau comparatif final reproductible.
-
-## Qualité pédagogique
-
-| Aspect | Application |
-|--------|-------------|
-| Exercices | Stubs sans erreur (`pass`, `print(...)`, `return None`) : le notebook s'exécute de bout en bout même exercices non complétés |
-| Outputs | Tous les notebooks committés avec outputs réels d'exécution |
-| Environnement | `coursia-ml-training` requis (TRL + bitsandbytes + datasets) |
-| Méthodologie | Toute claim comparative ("GRPO > DPO") vérifiée sur >= 4 seeds avec écart >= 2 sigma |
-
-## Ponts avec les autres séries
-
-| Série | Connection | Details |
-|-------|------------|---------|
-| **[RL](../../RL/)** | RL classique fondamentaux + sous-série `rlpt_*` | Les notebooks RL ([RL-05 MDP/Q-Learning](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) et [RL-06c PPO from scratch](../../RL/RL-06c-PPO-Depuis-Zero-Python.ipynb)) établissent l'intuition policy/value que PPO/GRPO réutilisent. Recommandés comme prérequis pour PT-04. |
-| **[RL — RLPT-02 GRPO](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb)** | GRPO *naked* (sans `trl`) | La mécanique de GRPO (group rollouts, avantage intra-groupe, no critic) écrite à la main sur Qwen3.5-0.8B. Bon prérequis conceptuel pour PT-11a/PT-11b. |
-| **[RL — RLPT-03 reward hacking](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb)** | Cas clinique d'inoculation | Mini-cas : 3 voies pour déclencher le hack sur récompense vérifiable, inoculation comme variable. PT-07 est l'outil (catalogue de détecteurs), RLPT-03 le cas d'usage. |
-| **[RL — RLPT-04 DPO vs PPO](../../RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb)** | Comparaison offline vs online | DPO/ORPO offline vs GRPO online à budget 40 steps — prérequis empirique pour PT-06 (évaluation comparative). |
-| **[RL — RL-09 offline](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb)** | DPO = preference learning offline | Le Behavior Cloning y est l'analogue tabulaire du SFT, et la contrainte de support de BCQ celle de la pénalité KL de DPO (PT-03). Le meilleur prérequis conceptuel pour DPO. |
-| **[RL — RL-10 reward shaping](../../RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb)** | Reward model = shaping appris | Le reward shaping (Ng 1999) et son biais (shaping naïf → reward hacking) préfigurent le reward model appris et le Goodhart traité en [PT-07](PT_07_rewardspy_reward_hacking.ipynb). |
-| **[GenAI/FineTuning](../FineTuning/)** | Boîte à outils fine-tuning | Série sœur dans GenAI : LoRA/QLoRA/SFT/DPO en pratique. PostTraining = profondeur méthodologique (voir [`COURSE_CATALOG.generated.md`](../../../COURSE_CATALOG.generated.md) pour le décompte canonique), FineTuning = recettes exécutables. |
-
-## Frontière avec RL/rlpt_* — où ouvre `PT_*`, où ouvre `rlpt_*`
-
-Les sous-séries [RL/rlpt_*](../../RL/) et cette série PostTraining couvrent **le même terrain** (post-training d'un LM) à des niveaux de pile différents. La frontière est posée explicitement pour qu'un lecteur sache **quel notebook ouvrir pour quelle question**.
-
-**Une phrase à retenir** : `PT_*` = *la chaîne réelle, à l'échelle* (`trl.GRPOTrainer` + `trl.DPOTrainer` + Qwen3.5-0.8B QLoRA 4-bit + vérificateur Z3/SymPy + détecteurs Goodhart en ligne + multi-seed) ; `rlpt_*` = *la mécanique, en petit, sans framework* (boucle d'entraînement écrite à la main, on voit chaque rollout et chaque gradient).
-
-| Question pédagogique | Ouvrir | Pourquoi |
+| Variante | Apport | Prérequis et limite à lire |
 |---|---|---|
-| « Comment SFT/DPO/GRPO sont-ils *câblés* dans `trl` ? Comment lire une loss ? » | [PT-02](PT_02_sft_baseline.ipynb), [PT-03](PT_03_dpo_direct_preference.ipynb), [PT-04](PT_04_grpo_deepseek_r1.ipynb) | `trl.SFTTrainer`/`DPOTrainer`/`GRPOTrainer` sur vrai LLM Qwen3.5-0.8B QLoRA, vraies losses, vrais gradients via la pile HuggingFace. |
-| « Comment GRPO *fonctionne* intérieurement — group rollouts, avantage intra-groupe, no critic ? » | [PT-08](PT_08_grpo_from_scratch_toy_env.ipynb) (toy env) ou [RL/RLPT-02](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) (vrai LM sans `trl`) | La mécanique écrite à la main — on voit chaque rollout, chaque reward, chaque log-prob ratio. |
-| « GRPO + RLVR sur vrai LLM, avec détecteur Goodhart en ligne, multi-seed ? » | [PT-11a](PT_11a_grpo_qwen35_rlvr.ipynb), [PT-11b](PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | La pile SOTA 2025 : `trl.GRPOTrainer` + Z3/SymPy + `rewardspy.watch_trl` (Goodhart live), 4 seeds dans PT-11b-multi-seed. |
-| « Quels sont les détecteurs statistiques du reward hacking ? » | [PT-07](PT_07_rewardspy_reward_hacking.ipynb) | Catalogue `rewardspy.detectors` (6 classes : Component Dominance, Length Drift, etc.) — l'**outil**. |
-| « Le reward hacking est-il un attracteur spontané sur petit modèle ? Cas clinique. » | [RL/RLPT-03](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) | Mini-cas : 3 voies pour déclencher le hack, inoculation comme variable — le **cas d'usage** de `rewardspy`. |
-| « InoculationRL complet, panel persona × reward hackable, capstone ? » | [#5105 ICT-25](https://github.com/jsboige/CoursIA/issues/5105) | Capstone final — **distinct** de `RLPT-03` (qui en est la version compacte). |
+| [11a — Qwen et Z3](PT_11a_grpo_qwen35_rlvr.ipynb) | Relier QLoRA, GRPO, vérificateur de contraintes et instrumentation de récompense pendant un entraînement. | Paliers 04–08 ; GPU. Le fonctionnement du mécanisme n'établit pas à lui seul une amélioration comparative. |
+| [11b — Variantes de vérificateur](PT_11b_grpo_qwen_rlvr_on_verifiers.ipynb) | Comparer arithmétique SymPy et contraintes Z3 ; mesurer les groupes dont les réponses reçoivent des récompenses différentes. | Après 11a ; GPU. L'évaluation enregistrée est post-entraînement seulement. |
+| [11c — Changement d'échelle](PT_11c_grpo_qwen17_rlvr.ipynb) | Lire des journaux de modèles de tailles différentes et comparer les variations entre graines. | Après 11a ; l'analyse sauvegardée est accessible sur CPU. Le verdict de reproductibilité du mécanisme n'est pas un gain d'apprentissage. |
+| [11d — Répétition du protocole](PT_11d_multiseed_qwen35_4x100.ipynb) | Distinguer journal d'un run, jeu uniforme de mesures et décision statistique au sein d'une graine. | Après 11a–11c. Le nom du fichier ne décrit pas à lui seul la boucle effectivement exécutée. |
 
-Le constat d'éventuelle duplication `RLPT-02 ↔ PT-11a` et `RLPT-03 ↔ PT-07` est traité en [#11460](https://github.com/jsboige/CoursIA/issues/11460) : les deux séries *se complètent* par l'angle du regard (mécanique vs déploiement outillé), pas par duplication.
+### Autour de 15 — représentation et distillation
 
-## Contexte industriel et historique 2017-2025
+| Variante | Apport | Prérequis et limite à lire |
+|---|---|---|
+| [15b — Géométrie des features SAE](PT_15b_geometrie_features_sae.ipynb) | Comparer structures spectrales, axes denses et contrôles de dictionnaires d'autoencodeurs parcimonieux. | Algèbre linéaire ; modules et traces ICT accessibles. Certaines analyses restent partielles ou non concluantes. |
+| [15c — Crosscoder de distillation](PT_15c_crosscoder_distillation.ipynb) | Construire un dictionnaire partagé entre modèle de base et modèle distillé, puis tester une ablation causale. | Après 15 ; GPU et chargement de modèles. Une ressemblance statistique n'établit pas une interprétation sémantique stable. |
 
-La chaîne SFT → RLHF → DPO → GRPO → RLVR n'est pas une succession linéaire d'améliorations techniques : c'est une succession d'**adaptations à des contraintes économiques et infrastructurelles** changeantes. Comprendre ces contraintes aide à anticiper la prochaine étape.
+## Installation et exécution — pratique, tous niveaux
 
-**2017-2020 : l'ère du Reward Model** — Christiano et al. (NeurIPS 2017) introduisent le concept de "deep RL from human preferences" sur des tâches Atari. Stiennon et al. (NeurIPS 2020) l'appliquent au résumé de texte. À cette époque, le calcul est abondant et le bottleneck est la qualité des annotations. L'industrie investit massivement dans des équipes d'annotateurs (OpenAI/Surge, Anthropic/Surge, Scale AI, Mechanical Turk rénové). PPO domine.
+Partir d'un environnement isolé et des cellules de configuration du carnet choisi. Le fichier [requirements.txt](requirements.txt) décrit la pile commune ; les versions effectivement utilisées et les conditions CUDA doivent être confrontées au carnet. Une mise à jour globale de TRL, Transformers et PEFT peut modifier leurs interfaces.
 
-**2022 : InstructGPT canonise RLHF** — Ouyang et al. (NeurIPS 2022) publient la "recipe" complète (SFT + RM + PPO) qui devient le standard de facto chez OpenAI, Anthropic, Meta. Cette recipe est chère : ~6 mois d'annotation, 3 modèles à entraîner en parallèle, infrastructure RL maison.
+- **Parcours CPU** : cartographie et scénarios 01/06, audit synthétique 07, bancs 08–10/12–14/17 et analyse des agrégats en 18. Certaines analyses de 11c/11d relisent également des mesures sauvegardées.
+- **Entraînement et interventions sur modèles** : prévoir CUDA et les dépendances de quantification indiquées dans les carnets concernés. Les pics mémoire enregistrés caractérisent leurs configurations ; ils ne garantissent pas la faisabilité de toute la série sur une carte donnée.
+- **Commutateurs** : `LOAD_MODEL_AND_TRAIN` existe dans 02–05. Vérifier chaque carnet avant de l'utiliser : il n'y a pas de commutateur CPU universel pour le dossier.
+- **Dépendances particulières** : `rewardspy` est utilisé par certains carnets et son installation depuis GitHub est précisée dans le fichier de dépendances ; sa ligne non publiée sur PyPI peut empêcher un simple `pip install -r requirements.txt` d'aboutir. Le carnet 15b utilise les modules et traces ICT ; 16 demande Ollama et les outils Dafny/Lean. La reproduction de la grille de 18 requiert les ressources de ses scripts, au-delà de la lecture des agrégats committés.
 
-**2023 : DPO redistribue les cartes** — Rafailov et al. (NeurIPS 2023) montrent que la moitié de la stack peut être supprimée. Stanford, Allen AI, et la communauté open source (Tulu 2) démontrent rapidement que DPO atteint des performances proches de PPO pour 10x moins de complexité. Résultat : les labos avec budget moyen peuvent enfin entraîner des assistants compétitifs (Mistral, Yi, Qwen).
+En cas de mémoire CUDA insuffisante, examiner quantification, taille des lots, accumulation de gradients, longueur des séquences et nombre de réponses par groupe. Ces réglages modifient aussi le protocole : consigner leur effet avant de comparer les résultats. La [sonde mémoire](_measurements/vram_wall_probe.py) et ses [résultats archivés](_measurements/) donnent un autre point d’entrée pour examiner les configurations par modèle et par carte ; ils ne dispensent pas de vérifier l’environnement courant. Les cartes et checkpoints [Qwen](https://huggingface.co/Qwen/Qwen3.5-0.8B), la documentation [TRL](https://huggingface.co/docs/trl/index), [PEFT](https://huggingface.co/docs/peft/index) et les optimisations [Unsloth](https://github.com/unslothai/unsloth) complètent les instructions des carnets.
 
-**2024 : Deepseek change la perspective mémoire** — Shao et al. publient le papier GRPO. La motivation est explicitement industrielle : entraîner des modèles math/code sans louer des clusters H100 à $10/h. La méthode permet de faire tenir l'entraînement RL d'un 7B sur 8x A100, ou d'un 1.5B sur 1x A100. C'est le moment où le RL post-training redevient accessible aux laboratoires académiques.
+### Dépannage des imports
 
-**2025 : Deepseek-R1 et la disparition de l'annotateur** — Deepseek-AI (janvier 2025) publie R1 et R1-Zero. R1-Zero est entraîné **sans aucun SFT humain**, uniquement GRPO + RLVR sur des prompts math/code. Le modèle développe spontanément des chains-of-thought longs, des comportements de re-vérification, des phases de "wait, let me reconsider". C'est le moment où la communauté réalise que pour les domaines vérifiables, le post-training peut se passer d'annotation humaine. L'industrie commence à explorer le RLVR pour les agents (le succès étant vérifiable par exécution du plan), pour la traduction (BLEU/chrF comme reward), pour la génération SQL (test sur DB de validation).
+Si `trl`, `peft` ou `bitsandbytes` ne s'importe pas, vérifier que le noyau Jupyter utilise l'environnement où les dépendances de [requirements.txt](requirements.txt) ont été installées. Tester `python -c "import trl, peft, bitsandbytes"` dans cet environnement, puis consulter les versions et contraintes CUDA du carnet et du manifeste avant de réinstaller. Pour une erreur de bibliothèque CUDA ou de DLL, vérifier la compatibilité entre pilote, PyTorch et bitsandbytes ; consulter la documentation du paquet pour la plateforme utilisée.
 
-**Vers 2026 et au-delà** — les directions actives à la date de cette série : (1) **synthetic preferences** (modèles juges au lieu d'annotateurs), (2) **on-policy distillation** (GRPO + distillation simultanée), (3) **process reward models** (PRM : récompenser les étapes intermédiaires, pas seulement le résultat final), (4) **multi-turn RL** (entraîner la cohérence sur plusieurs tours, pas tour par tour). La série ne couvre pas ces directions mais les notebooks de tête les référencent en "Pour aller plus loin".
+## Pour aller plus loin — recherche
 
-## Compatibilité matérielle et choix d'implémentation
+### Lire les résultats et leurs limites
 
-Le choix initial Qwen2.5-0.5B / 1.5B / Math-1.5B n'était pas anodin, et l'arbitrage vaut toujours pour le modèle de référence actuel (Qwen3.5-0.8B, migration #10289). Il résulte d'un arbitrage explicite entre :
+Les sorties committées permettent de distinguer ce qui a été exécuté, ce qui est estimé et ce qui reste à tester :
 
-- **Petite taille pour itération rapide** : un GRPO sur 0.5B converge en ~30 min sur RTX 3070, ce qui rend les exercices réalisables en TP. Un même exercice sur 7B prendrait 6-8h et nécessiterait du gradient checkpointing agressif.
-- **Qualité suffisante pour observer les effets** : un modèle trop petit (< 0.5B) montre des effets de régularisation rendant l'observation des techniques bruitée. 0.5B-1.5B est la zone Goldilocks pour observer **clairement** les effets de SFT/DPO/GRPO.
-- **Licence permissive Qwen** : Apache 2.0, utilisable en cours sans friction.
-- **Famille cohérente** : même tokenizer, même architecture, ce qui permet de comparer techniques sans confondre effets de modèle et effets de méthode.
-- **Variante Math-1.5B pour RLVR** : Qwen propose une variante pré-entraînée sur math, ce qui évite de devoir partir de zéro pour observer un comportement RLVR concret.
+- Les entraînements et évaluations GPU de **04 et 05 sont sautés dans les sorties enregistrées** ; leurs tests CPU ne prouvent pas un gain sur modèle de langage. Les valeurs comparatives GSM8K de 06 sont des estimations pédagogiques.
+- Le run SFT de 02 est court. DPO en 03 évalue des paires disjointes, mais répéter l'analyse d'un même sous-ensemble fixe ne démontre pas une généralisation à d'autres données.
+- Les succès des bancs 08–12 décrivent leurs environnements synthétiques. En 10, un horizon immédiat neutralise le rôle de lambda ; 12 construit un problème où le crédit différé permet de l'étudier.
+- Les analyses 11c/11d attestent un mécanisme reproductible sans établir l'amélioration intra-graine recherchée. L'absence d'alerte de `rewardspy` ne remplace pas une comparaison avant/après.
+- En 13, des différences de gradients coexistent avec un banc comportemental qui ne départage pas les variantes. En 14, certains effets thermiques du mini-GPT restent sous la résolution de mesure.
+- Les interventions de 15 portent sur les activations : les expériences de désapprentissage des poids et de fine-tuning évoquées ne sont pas toutes exécutées. Le steering trop fort peut dégrader la génération.
+- En 16, un programme peut satisfaire une spécification incomplète. Les résultats publiés par un article et ceux du banc local restent distincts ; la vérification de l'outil ne valide pas automatiquement l'intention de la tâche.
+- En 17, la comparaison ordinale utilise un substitut logarithmique partagé. En 18, les agrégats ne concluent pas à un avantage établi de la combinaison RL et cross-entropie.
 
-Alternatives écartées et raisons : Llama-3.2-1B (gated, friction d'inscription HF), Phi-3-mini (architecture custom mal supportée par TRL au moment de la série), Gemma-2-2B (licence restrictive sur usage commercial, compliqué pour les apprenants en formation pro).
+Pour une nouvelle expérience, séparer les données d'apprentissage et d'évaluation, conserver une méthode de référence, comparer plusieurs graines et vérifier le signal de récompense. Choisir la métrique avant d'interpréter un gain : perte, calibration, exactitude et succès d'un vérificateur répondent à des questions différentes.
 
-Pour les apprenants disposant de plus de VRAM (RTX 4090 24Go, A100 40Go), la série indique en encart les hyperparamètres à modifier pour scaler à Qwen2.5-7B sans changer la structure pédagogique.
+### Vérificateurs et spécifications
 
-## Références académiques
+Les vérificateurs de récompense ont des contrats différents : SymPy compare des expressions en 05 ; Z3 contrôle les contraintes des tâches de 11a/11b ; le [vérificateur Lean](verifiers/lean_rlvr_verifier.py) vérifie une preuve et examine ses dépendances axiomatiques. Une preuve qui compile avec `sorry` ne remplit pas ce dernier contrat. Le module réutilise le contrôle des axiomes de l'outillage Lean et applique sa liste d'axiomes autorisés.
 
-Les références sont cliquables (arXiv / publisher). Les chiffres que la série cite d'articles externes sont toujours préfixés « rapporte par » ou « selon [source] » — jamais confondus avec nos mesures locales.
+Pour utiliser ce vérificateur, installer la toolchain requise et examiner son choix de version : `ELAN_TOOLCHAIN` si défini, sinon le fichier `lean-toolchain` du projet, puis la version par défaut résolue par elan. Définir la variable ne télécharge pas à lui seul le moteur. En 16, la boucle de génération et de réparation ajoute une question distincte : même une preuve acceptée peut porter sur une spécification qui ne décrit pas correctement la tâche souhaitée.
+
+### Parcours voisins
+
+- **Préparer les modèles** : [FT-02 — QLoRA](../FineTuning/FT-02-QLoRA-Quantization-Python.ipynb) étudie quantification et budget mémoire avant PT-02/11. [FT-03 — SFT](../FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb) et [FT-04 — Préférences](../FineTuning/FT-04-RLHF-DPO-Python.ipynb) apportent les recettes pratiques auxquelles PT-02/03 ajoutent l'étude du signal d'apprentissage.
+- **Revenir aux politiques et valeurs** : [RL-05 — Décision séquentielle](../../RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb) puis [RL-06c — PPO](../../RL/RL-06c-PPO-Depuis-Zero-Python.ipynb) préparent les estimateurs des paliers 08–10.
+- **Passer du banc synthétique à un modèle de langage** : [RLPT-02 — GRPO minimal](../../RL/PostTraining/RLPT-02-GRPO-Minimal-Python.ipynb) construit une boucle manuelle sur un petit modèle Qwen ; PT-11a/11b utilisent la pile d'entraînement outillée. [RLPT-04 — DPO contre GRPO](../../RL/PostTraining/RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb) offre un protocole comparatif complémentaire aux scénarios estimatifs de PT-06.
+- **Comparer apprentissage hors ligne et objectifs de substitution** : [RL-09 — Apprentissage hors ligne](../../RL/RL-09-RL-Offline-Behavior-Cloning-Python.ipynb) prépare la réflexion sur les données et la politique de référence de PT-03. [RL-10 — Façonnage de récompense](../../RL/RL-10-Reward-Shaping-Curriculum-Python.ipynb) prépare l'analyse de l'objectif récompensé en PT-05/07.
+- **Examiner une récompense détournée** : après l'instrumentation de PT-07, [RLPT-03 — Reward hacking](../../RL/PostTraining/RLPT-03-Reward-Hacking-Python.ipynb) étudie le comportement induit par un objectif de substitution imparfait.
+- **Retrouver les données de représentation** : PT-15b utilise les modules et traces d'[ICT-21 — Trajectoires SAE](../../IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb) et d'[ICT-24 — Workspace](../../IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb). PT-15c compare, lui, deux modèles avec un dictionnaire partagé ; il ne dépend pas des traces ICT consommées par 15b.
+
+## Ressources — tous niveaux
+
+Les références suivantes sont celles mobilisées par les carnets et leur contexte bibliographique. Les résultats des publications ne sont pas des mesures locales de cette série.
 
 | Référence | Lien | Couverture |
 |-----------|------|------------|
 | Christiano et al., "Deep reinforcement learning from human preferences" (NeurIPS 2017) | [arXiv:1706.03741](https://arxiv.org/abs/1706.03741) | Origine RLHF |
 | Stiennon et al., "Learning to summarize with human feedback" (NeurIPS 2020) | [arXiv:2009.01325](https://arxiv.org/abs/2009.01325) | RLHF appliquée aux LMs |
 | Ouyang et al., "Training language models to follow instructions" (InstructGPT, NeurIPS 2022) | [arXiv:2203.02155](https://arxiv.org/abs/2203.02155) | SFT + RM + PPO canonique |
-| Rafailov et al., "Direct Preference Optimization" (NeurIPS 2023) | [arXiv:2305.18290](https://arxiv.org/abs/2305.18290) | DPO origin |
-| Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning" (2024) | [arXiv:2402.03300](https://arxiv.org/abs/2402.03300) | GRPO origin |
-| Deepseek-AI, "Deepseek-R1: Incentivizing Reasoning Capability via RL" (2025) | [rapport technique](https://github.com/deepseek-ai/DeepSeek-R1) | RLVR + GRPO at scale |
-| Lambert et al., "Tulu 3" (2024) | [arXiv:2411.15124](https://arxiv.org/abs/2411.15124) | Survey post-training methods |
-| Hoffmann et al., "Chinchilla" (NeurIPS 2022) | [arXiv:2203.15556](https://arxiv.org/abs/2203.15556) | Scaling laws compute-optimal (référencé dans la narration coût/token) |
-| Penedo et al., "FineWeb-Edu" (2024) | [arXiv:2406.17557](https://arxiv.org/abs/2406.17557) | Dataset de pré-entraînement éducatif (barème coût/token) |
-| Liu / Su et al., "Moonlight / Muon" (2025) | [arXiv:2502.16982](https://arxiv.org/abs/2502.16982) | Optimizer Muon (vérifié firsthand) — note prospective architecture from-scratch |
-| Liu et al., "Neural Thermodynamic Laws for Large Language Model Training" (2025) — **R08** | [arXiv:2505.10559](https://arxiv.org/abs/2505.10559) | Thermodynamique de l'entraînement : T ∼ η, équipartition, 1/t, force entropique (source de PT-14) |
-| Zhai, "XSA: X-only Sparse Attention" (2026) | [arXiv:2603.09078](https://arxiv.org/abs/2603.09078) | Architecture XSA remplaçant DiffAttn (vérifié firsthand) — note prospective |
+| Rafailov et al., "Direct Preference Optimization" (NeurIPS 2023) | [arXiv:2305.18290](https://arxiv.org/abs/2305.18290) | Origine de DPO |
+| Shao et al., "DeepSeekMath: Pushing the Limits of Mathematical Reasoning" (2024) | [arXiv:2402.03300](https://arxiv.org/abs/2402.03300) | Origine de GRPO |
+| Deepseek-AI, "Deepseek-R1: Incentivizing Reasoning Capability via RL" (2025) | [rapport technique](https://github.com/deepseek-ai/DeepSeek-R1) | RLVR et GRPO à grande échelle |
+| Lambert et al., "Tulu 3" (2024) | [arXiv:2411.15124](https://arxiv.org/abs/2411.15124) | Panorama des méthodes de post-training |
+| Hoffmann et al., "Chinchilla" (NeurIPS 2022) | [arXiv:2203.15556](https://arxiv.org/abs/2203.15556) | Lois d’échelle et allocation du calcul |
+| Penedo et al., "FineWeb-Edu" (2024) | [arXiv:2406.17557](https://arxiv.org/abs/2406.17557) | Corpus de préentraînement éducatif et coût des données |
+| Liu / Su et al., "Moonlight / Muon" (2025) | [arXiv:2502.16982](https://arxiv.org/abs/2502.16982) | Optimiseur Muon ; contexte des architectures étudiées |
+| Liu et al., "Neural Thermodynamic Laws for Large Language Model Training" (2025) | [arXiv:2505.10559](https://arxiv.org/abs/2505.10559) | Thermodynamique de l'entraînement : T ∼ η, équipartition, 1/t, force entropique (source de PT-14) |
+| Zhai, "XSA: X-only Sparse Attention" (2026) | [arXiv:2603.09078](https://arxiv.org/abs/2603.09078) | Architecture XSA ; lecture complémentaire |
 | Ye et al., "Differential Attention" (Microsoft, 2024) | [arXiv:2410.05258](https://arxiv.org/abs/2410.05258) | Attention différentielle (citée par la série Substack) |
-| Ainslie et al., "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints" (Google, 2023) | [arXiv:2305.13245](https://arxiv.org/abs/2305.13245) | Grouped-Query Attention (citée par la série Substack) |
+| Ainslie et al., "GQA: Training Generalized Multi-Query Transformer Models from Multi-Head Checkpoints" (Google, 2023) | [arXiv:2305.13245](https://arxiv.org/abs/2305.13245) | Attention à requêtes groupées, citée par la série Substack |
 
-## Éclairage externe — série Substack "modern-llm" (JohnEnev)
 
-Première citation Substack du dépôt. La série de 4 posts (juillet→août 2026) + 1 bonus documente en open un from-scratch 350–672M paramètres avec post-training. Les chiffres externes sont toujours cités "selon JohnEnev Part N" — pas confondus avec nos mesures locales.
+### Interprétabilité, vérification et calibration
 
-| Post | Date | Lien | Couverture / leçon mobilisée |
-|------|------|------|-------------------------------|
-| **Part 1** — *Building a 350M transformer from scratch* | 2026-07-03 | [johne.substack.com/p/modern-llm-part-1](https://johne.substack.com/p/modern-llm-part-1-building-a-350m-transformer-from) | V1 = 353M, 10B tok FineWeb-Edu, $101 — barème coût/token (29 tok/param, sous Chinchilla 20 ⇒ pré-entraînement sous-optimal assumé pour aller vite). Base model "qui parle anglais couramment mais ne suit pas les instructions" — doctrine **SFT obligatoire** (PT_02). |
-| **Part 2** — *Modernizing the architecture* | 2026-07-08 | [johne.substack.com/p/modern-llm-part-2](https://johne.substack.com/p/modern-llm-part-2-modernizing-the-architecture) | V2 = 315M, GQA 4:1 + DiffAttn + QK-Norm + **Muon** retenu + EMA. **mHC rejetée** sur mesure throughput (−41% à 2 streams, −49% à 4, ~$93→$155→$175 sans gain de loss) — parallèle direct avec le trade-off critic/no-critic de PT_08 (coût ×4.0). |
-| **Part 3** — *Post-training: SFT and GRPO* | 2026-07-21 | [johne.substack.com/p/modern-llm-part-3](https://johne.substack.com/p/modern-llm-part-3-post-training-sft-and-grpo) | **Cœur du sujet.** SFT OK, GRPO dégradant. V2 ppl 46.81 → 71.06 post-GRPO ; −4/6 accuracy. Modes d'échec : *group no-signal* (std=0 → avantage=0), *easy stage unlearnable*, KL 0.01–0.03 peu informatif. Verbatim canonique : "RL ne peut amplifier que ce que le modèle fait déjà parfois, pas créer ce qu'il ne fait jamais" — fonde notre narration GRPO fragile (PT_08, PT_11, PT_11b, RLPT-02, RLPT-04, ICT-25). |
-| **Part 4** — *V3: Inference and serving models* | 2026-08-13 | [johne.substack.com/p/modern-llm-part-4](https://johne.substack.com/p/modern-llm-part-4-v3-inference-and-serving-models) | V3 = 672M, 30B tok, 2×B200 DDP, $315, 26.7h. ppl wikitext base 22.30 → SFT 32.11 → GRPO 33.65 (GRPO dégrade même SFT) ; GSM8K ~0. **XSA remplace DiffAttn** (<1% throughput vs 28%). FastAPI + SSE streaming. Convergence triple (V2 + V3 + notre PT_11b) sur "GRPO ne crée pas le signal qu'il prétend créer". |
-| **Bonus** — *Distilling reasoning into a 14B model (NYT Connections)* | 2026-02-XX | [johne.substack.com](https://johne.substack.com/) — voir bonus "NYT Connections" dans la série modern-llm | SFT-distillation de traces GPT-4o fait passer Qwen2.5-14B de 9.3% → 30.0% sur NYT Connections, vs GPT-4o 22.7% — **sans RL**. Coût rapporté ~$10 total / ~20 min/modèle sur A100 80GB. Mise en regard directe avec notre POC GRPO Qwen3.5-0.8B INCONCLUSIVE (PT_11) : le pattern "SFT > RL" traverse les échelles (0.8B ↔ 14B). |
+Les sources des paliers avancés complètent les références du début du parcours :
 
-**Citations académiques principales de la série Substack** (vérifiées firsthand) :
+- Pour 15, [Arditi et al. — Refusal in Language Models Is Mediated by a Single Direction](https://arxiv.org/abs/2406.11717), [Sharkey et al. — Open Problems in Mechanistic Interpretability](https://arxiv.org/abs/2501.16496) et [Casper et al. — The 2026 Singapore Consensus on Global AI Safety Research Priorities](https://arxiv.org/abs/2608.14611) situent interventions causales et questions d'interprétabilité.
+- Pour 15b, les travaux de [Li et ses coauteurs](https://arxiv.org/abs/2410.19750) et de [Sun et ses coauteurs](https://arxiv.org/abs/2506.15679) fondent les analyses des représentations ; la bibliographie du carnet précise leur rôle.
+- Pour 15c, [Baek et Tegmark — Towards Understanding Distilled Reasoning Models: A Representational Approach](https://arxiv.org/abs/2503.03730) développe la comparaison des représentations de modèles distillés.
+- Pour 16, [Bursuc et al. — A Benchmark for Vericoding: Formally Verified Program Synthesis](https://arxiv.org/abs/2509.22908) présente le problème de synthèse vérifiée et son banc d'évaluation.
+- Pour 17–18, le [projet laya](https://github.com/NandhaKishorM/laya) fournit la recette étudiée ; les carnets séparent l'effet de ses composantes et discutent les règles de score propres.
 
-- XSA — Zhai 2026, arXiv:2603.09078 (vérifié 2026-08-20)
-- Muon / Moonlight — Liu / Su et al. 2025, arXiv:2502.16982 (vérifié 2026-08-20)
-- Differential Attention — Ye et al. 2024, arXiv:2410.05258
-- GQA — Ainslie et al. 2023, arXiv:2305.13245
+### Lectures complémentaires
 
-Ces 4 entrées sont incluses dans le tableau principal ci-dessus avec liens cliquables.
+La série modern-llm de JohnEnev offre un retour d’expérience externe : [préentraînement](https://johne.substack.com/p/modern-llm-part-1-building-a-350m-transformer-from), [architecture](https://johne.substack.com/p/modern-llm-part-2-modernizing-the-architecture), [SFT et GRPO](https://johne.substack.com/p/modern-llm-part-3-post-training-sft-and-grpo), [inférence et service](https://johne.substack.com/p/modern-llm-part-4-v3-inference-and-serving-models). Lire ses coûts et performances dans leur protocole propre.
 
-## Ressources en ligne
+[Retour à GenAI](../README.md) · [Catalogue du dépôt](../../../COURSE_CATALOG.generated.md) · [Licence](../../../LICENSE)
 
-- [HuggingFace TRL documentation](https://huggingface.co/docs/trl/index) — librairie principale (SFT, DPO, GRPO trainers)
-- [HuggingFace PEFT documentation](https://huggingface.co/docs/peft/index) — LoRA et adapters
-- [Unsloth](https://github.com/unslothai/unsloth) — optimisations mémoire pour RTX 3070 (optionnel)
+### Compagnon C# de PT-08
 
-## Statut
+[PT-08 C#](PT_08_grpo_from_scratch_toy_env-CSharp.ipynb) reprend [PT-08 Python](PT_08_grpo_from_scratch_toy_env.ipynb) avec TorchSharp-cpu 0.107.0/libtorch CPU 2.10.0 pour les réseaux et Microsoft.Z3 4.12.2 pour les vérifications. La fast-path tensorielle d'entraînement est contrôlée contre 2400 vrais checks SMT ; elle ne lance pas Z3 à chaque action. Les générateurs et trajectoires diffèrent entre langages. Le jouet a 96 prompts sans jeu séparé et n'inclut ni séquence ni pénalité KL.
 
-Série complète : tous les notebooks sont exécutés avec outputs réels.
-
-Suivi : [Issue #1742](https://github.com/jsboige/CoursIA/issues/1742).
-
-## FAQ
-
-### OOM CUDA pendant GRPO ou DPO
-
-Les notebooks PT-03 à PT-05 sont conçus pour RTX 3070 (8 Go) avec Qwen3.5-0.8B QLoRA 4-bit (pic mesuré ~2,5 Go), mais OOM reste possible si l'environnement n'est pas optimal. Stratégies :
-
-- Vérifier que `bitsandbytes` est installé et que la quantization 4-bit est activée (`load_in_4bit=True`).
-- Réduire `per_device_train_batch_size` à 1 et augmenter `gradient_accumulation_steps` pour garder un batch effectif correct.
-- Le paramètre N (nombre de completions par prompt) dans GRPO est le principal consommateur VRAM : utiliser `N=4` ou `N=8` plutôt que `N=16` sur GPU limité.
-- Fermer tous les autres processus GPU avant l'entraînement (`nvidia-smi` pour vérifier).
-
-Si votre GPU à 4 Go ou moins, passer `LOAD_MODEL_AND_TRAIN=False` dans les notebooks pour exécuter en mode démo (chargement des outputs pré-calculés sans entraînement réel).
-
-### Quelle série faire en premier : FineTuning ou PostTraining ?
-
-Les deux séries sont complémentaires :
-
-- **FineTuning d'abord** si vous voulez rapidement fine-tuner un modèle pour votre cas d'usage (LoRA, SFT pratique, DPO pratique). Approche "boîte à outils".
-- **PostTraining d'abord** si vous voulez comprendre la théorie derrière les techniques avant de les appliquer. Approche "fondamentaux".
-
-Le parcours optimal est FineTuning (pratique) puis PostTraining (profondeur), mais l'inverse fonctionne aussi pour les profils théoriciens.
-
-### DPO vs GRPO : quand utiliser quoi ?
-
-| Critère | DPO | GRPO |
-|---------|-----|------|
-| **Données requises** | Paires de préférences (choisi/rejeté) | Prompts + fonction de reward |
-| **Reward Model** | Non (implicitement éliminé) | Non (baseline intra-groupe) |
-| **Critic** | Non | Non |
-| **VRAM** | Plus faible (1 modèle) | Plus élevée (N completions en mémoire) |
-| **Tâches cibles** | Préférences subjectives, style, ton | Math, code, tâches vérifiables |
-| **Stabilité** | Bonne (BTL assumption) | Variable (sensible à N et à la reward) |
-| **Data annotation** | Nécessaire (préférences humaines) | Optionnelle (reward vérifiable) |
-
-En pratique : DPO pour l'alignement conversationnel, GRPO+RLVR pour le raisonnement mathématique et code.
-
-### Les métriques d'évaluation ne s'améliorent pas après training
-
-Si SFT, DPO ou GRPO ne produisent pas d'amélioration mesurable sur GSM8K ou MMLU :
-
-- Vérifier que le dataset d'évaluation est bien séparé du dataset d'entraînement (`seed=42` pour le split, pas de fuite).
-- S'assurer que le nombre de steps d'entraînement est suffisant (minimum 100 steps pour observer un signal sur Qwen3.5-0.8B).
-- Un seul seed ne suffit pas : les résultats sont bruités. Utiliser au minimum 4 seeds (`{0, 1, 7, 42}`) et vérifier que l'écart est >= 2 sigma (cf règle multi-seed CoursIA).
-- Le notebook PT-06 (`PT_06_eval_comparative.ipynb`) automatise cette comparaison avec verdict BEATS/NO BEATS/INCONCLUSIVE.
-
-### ImportError avec trl, peft ou bitsandbytes
-
-L'environnement `coursia-ml-training` doit contenir les dépendances post-training :
+Sous Linux, préparer le binaire Z3 4.12.2 dans un environnement Python isolé, puis exporter son chemin **avant de démarrer le noyau .NET** :
 
 ```bash
-conda activate coursia-ml-training
-pip install --upgrade transformers trl peft accelerate datasets bitsandbytes
-
-# Verifier
-python -c "import trl; print(f'TRL {trl.__version__}')"
-python -c "import bitsandbytes; print('bitsandbytes OK')"
+python3 -m venv .venv-pt08
+.venv-pt08/bin/pip install z3-solver==4.12.2.0
+export Z3_NATIVE_LIBRARY="$(.venv-pt08/bin/python -c 'import pathlib,z3; print(pathlib.Path(z3.__file__).parent / "lib" / "libz3.so")')"
+export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1
+# Lancer ici Jupyter avec le noyau .NET Interactive.
 ```
 
-Sur Windows, `bitsandbytes` peut nécessiter CUDA 12.x. Si erreur DLL not found, vérifier que `CUDA_HOME` pointe vers le bon toolkit et que `bitsandbytes` est à jour (`>= 0.45`).
-
-### Peut-on reproduire Deepseek-R1 avec cette serie ?
-
-Non directement, mais les briques conceptuelles sont les mêmes. Deepseek-R1 utilise GRPO + RLVR sur des modèles 671B (architecture MoE) avec une infrastructure distribuée massive. Les notebooks GPU de la série (PT-04, PT-05) reproduisent ces mêmes techniques sur Qwen3.5-0.8B (QLoRA 4-bit) pour rendre les concepts accessibles sur GPU 8 Go. Les formules de loss, les mécanismes de reward, et les stratégies d'évaluation sont identiques — seule l'échelle change. PT-04 (GRPO) et PT-05 (RLVR) reproduisent fidèlement le pipeline Deepseek-R1 en miniature.
-
-## Licence
-
-Voir la licence du dépôt principal.
+Le paquet Python fournit ici uniquement la bibliothèque native du solveur, appelée depuis C# ; il n'exécute pas la leçon. Les paquets NuGet sont restaurés à l'exécution. Le Python jumeau requiert PyTorch CPU, NumPy, Matplotlib et z3-solver ; aucune clé ni GPU n'est nécessaire.

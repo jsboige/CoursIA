@@ -34,7 +34,7 @@ The detailed state lives in `FORMAL_STATUS.md` (« Distillation
 Karingula–Lovett, briques k1..k5 »).
 -/
 
-import Discrepancy.Basic
+import Discrepancy.Basic_en
 
 /-!
 # The discrete tent function

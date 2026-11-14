@@ -111,7 +111,7 @@ GenAI student projects stay under GenAI but move to a neutral `CaseStudies/` sub
 
 | Path | Reason |
 |------|--------|
-| `GradeBookApp/` | EPF grading configs are grading-specific, not notebook paths |
+| `dotnet/GradeBookApp/` | EPF grading configs are grading-specific, not notebook paths |
 | `slides/` | EPF school mentions in slide attributions are contextual |
 | `QuantConnect/partner-course-quant-trading/` | Active session, user directive: never touch |
 | `MyIA.AI.Notebooks/Search/` | EPF references in README are attributions ("adapted from EPF 2025"), not path references |
@@ -141,8 +141,8 @@ GenAI student projects stay under GenAI but move to a neutral `CaseStudies/` sub
 
 | File | Reason |
 |------|--------|
-| `GradeBookApp/README.md` | Grading system references EPF as school, not path |
-| `GradeBookApp/configs/README.md` | Same |
+| `dotnet/GradeBookApp/README.md` | Grading system references EPF as school, not path |
+| `dotnet/GradeBookApp/configs/README.md` | Same |
 | `slides/README.md` | School attributions in pedagogical slides |
 | `MyIA.AI.Notebooks/Search/README.md` | Attribution ("EPF 2025"), not path references |
 

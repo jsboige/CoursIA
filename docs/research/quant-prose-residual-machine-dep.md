@@ -42,10 +42,10 @@
 | `Infer-01b-Premiers-Modeles.ipynb` | 0 | 0 | 4 | 10 |
 | `QC-Py-26-LLM-Trading-Signals.ipynb` | 0 | 0 | 4 | 0 |
 | `Sudoku-10-ORTools-CSharp.ipynb` | 0 | 0 | 4 | 0 |
-| `App-2b-GraphColoring-CSharp.ipynb` | 0 | 0 | 3 | 0 |
+| `App-2-GraphColoring-CSharp.ipynb` | 0 | 0 | 3 | 0 |
 | `Sudoku-18b-Statistical-Comparison-Python.ipynb` | 0 | 0 | 3 | 0 |
 | `Lean-07b-Examples-Python.ipynb` | 3 | 0 | 0 | 0 |
-| `Planners-8-Temporal.ipynb` | 0 | 0 | 3 | 0 |
+| `Planners-08-Temporal-Python.ipynb` | 0 | 0 | 3 | 0 |
 | `00-3-API-Endpoints-Configuration.ipynb` | 0 | 2 | 0 | 0 |
 | `03-1-Multi-Model-Audio-Comparison.ipynb` | 0 | 0 | 2 | 1 |
 | `04-3-Music-Composition-Workflow.ipynb` | 1 | 1 | 0 | 4 |

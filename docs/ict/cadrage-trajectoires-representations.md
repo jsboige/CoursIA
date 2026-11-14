@@ -66,8 +66,8 @@ du grokking (catastrophe de la représentation, #7259).
 
 ### Jambe B — ICT-21 / ICT-22 : le représentant à l'échelle LLM (SAE)
 
-[`ICT-21-SAETrajectoires-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb)
-(#5101) fait entrer le substrat S4 au banc, et [`ICT-22-LLMSubstrat-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb)
+[`ICT-21-SAETrajectoires-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb)
+(#5101) fait entrer le substrat S4 au banc, et [`ICT-22-LLMSubstrat-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22-LLMSubstrat-Python.ipynb)
 (#5102) pose le transformer comme **quatrième substrat** du banc cross-substrat. Le
 représentant n'est plus lu sur la TPM d'un signal jouet : il est extrait comme **features
 SAE** (sparse autoencoder) d'un LLM. L'objet mesuré change d'espèce : d'un scalaire ou d'un
@@ -164,6 +164,6 @@ sur la *production* du représentant, non sur sa *forme*).
 - Généalogie backward (maillons 1–6, ICT-10 → ICT-17) : [`genealogy-representation-interne.md`](genealogy-representation-interne.md) (issue-source #7735).
 - Grille 3-régimes (transversale, orthogonale au fil diachronique) : [`synthese-invariants-dissociations-obstructions.md`](synthese-invariants-dissociations-obstructions.md).
 - Matrice de dissociations (colonne `q_t` indexée par la généalogie, `W_t` distinct) : [`dissociations-matrix.md`](dissociations-matrix.md).
-- Jambes strate 5 : [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking, #7258) · [ICT-21](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21-SAETrajectoires-Python.ipynb) (SAE, #5101) · [ICT-22](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb) (substrat LLM, #5102) · [ICT-23](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb) (persona, #5104) · [ICT-24](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (workspace, #5635) · [ICT-25](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb) (inoculation, #5105).
+- Jambes strate 5 : [ICT-17b](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking, #7258) · [ICT-21](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-21-SAETrajectoires-Python.ipynb) (SAE, #5101) · [ICT-22](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-22-LLMSubstrat-Python.ipynb) (substrat LLM, #5102) · [ICT-23](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb) (persona, #5104) · [ICT-24](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) (workspace, #5635) · [ICT-25](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb) (inoculation, #5105).
 - Cadrage `p̂`/`q_t` vs prégnance thomienne : [`docs/cadrage/grothendieckian-lens.md`](../cadrage/grothendieckian-lens.md) §3 (post-rectification A1, PR #7889).
 - Issue-source : [#7396](https://github.com/jsboige/CoursIA/issues/7396) · Epic umbrella [#4588](https://github.com/jsboige/CoursIA/issues/4588).

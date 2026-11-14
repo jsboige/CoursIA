@@ -1,0 +1,63 @@
+# dotnet-FactorGraphSelection.Tests.yml
+#
+# Harness de selection des graphes de facteurs Infer.NET (FactorGraphHelper).
+# Console Exe versionne : le job passe si le processus rend 0 ET que la sortie
+# porte le sentinel de succes "FactorGraphHelper selection checks passed."
+#
+# Defaut #25276 (portee par carnet + SVG etranger), remede #25293.
+# Job linux en forme hybride de debordement (garde #13363 / cliquet #23053),
+# job windows statique : pas de matrix runs-on dynamique.
+
+name: .NET FactorGraph Selection Tests
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - 'MyIA.AI.Notebooks/Probas/Infer/FactorGraphHelper.cs'
+      - 'MyIA.AI.Notebooks/Probas/Infer/tests/**'
+      - '.github/workflows/dotnet-FactorGraphSelection.Tests.yml'
+
+jobs:
+  linux:
+    # 2026-11-10 (#25276, lane myia-po-2023:CoursIA-2) : forme hybride de
+    # debordement (#22461) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat par defaut).
+    # Retire le rouge HOSTED_PR_JOB_UNEXCEPTED du cliquet #23053 sans changer
+    # le routage par defaut. Meme forme que dotnet-Shared.Tests.yml.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      # Le pool auto-heberge tourne en uid 1001 sans sudo : setup-dotnet
+      # echoue sur /usr/share/dotnet par defaut. Redirige vers le tool-cache
+      # du runner (meme remede que dotnet-Shared.Tests.yml).
+      - name: Route dotnet installs to the runner tool cache
+        if: github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true'
+        run: echo "DOTNET_INSTALL_DIR=$RUNNER_TOOL_CACHE/dotnet" >> "$GITHUB_ENV"
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Run selection harness
+        shell: bash
+        run: dotnet run --project MyIA.AI.Notebooks/Probas/Infer/tests/FactorGraphHelper.Selection.Tests.csproj | tee selection-tests.log
+      - name: Success floor guard
+        shell: bash
+        run: grep -q "FactorGraphHelper selection checks passed." selection-tests.log
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+      - name: Run selection harness
+        shell: bash
+        run: dotnet run --project MyIA.AI.Notebooks/Probas/Infer/tests/FactorGraphHelper.Selection.Tests.csproj | tee selection-tests.log
+      - name: Success floor guard
+        shell: bash
+        run: grep -q "FactorGraphHelper selection checks passed." selection-tests.log

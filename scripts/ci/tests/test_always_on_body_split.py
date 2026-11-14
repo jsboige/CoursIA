@@ -361,10 +361,14 @@ def test_commenters_writes_live_at_job_level_only():
     doc = _load(COMMENTERS_WF)
     assert doc.get("permissions") == {"contents": "read"}
     job = doc["jobs"][COMMENTERS_JOB]
+    # `issues: write` depuis #24514 : le verrou d'ecriture de l'organe partage
+    # `advisory_sticky` pose une ETIQUETTE sur la PR, et les etiquettes d'une
+    # PR vivent cote issues.
     assert job["permissions"] == {
         "contents": "read",
         "pull-requests": "write",
         "checks": "write",
+        "issues": "write",
     }
 
 

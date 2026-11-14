@@ -1,7 +1,7 @@
 """Tests de la jonction Argumentum -- organe EPITA argumentation_lib (#7742, jambe C3).
 
 La jonction 8sexies validait l'instrument de la serie contre TweetyProject
-brut ; celle-ci le valide contre la pile que la serie Argument_Analysis
+brut ; celle-ci le valide contre la pile que la serie ArgumentAnalysis
 consomme : ``TweetyInitializer`` + ``AFHandler`` (organe EPITA vendored,
 #4960). La parite est inter-organes, sur la MEME JVM que la jonction Tweety
 (un processus, une seule JVM -- le pont n'en lance jamais une deuxieme).

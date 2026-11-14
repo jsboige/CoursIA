@@ -17,7 +17,7 @@ complet). Ces tests sont **unitaires** : ils utilisent un repertoire tmp
 isolé pour les chemins.
 
 Contexte : cycle 75 (PR #13999) a fixe un drift DATASET_REGISTRY sur 2 CSV
-Argument_Analysis. Le validateur a fait son travail, mais n'avait aucun
+ArgumentAnalysis. Le validateur a fait son travail, mais n'avait aucun
 test pytest ; un patch ulterieur (refactor parse_registry, ajustement
 categorie sensible, etc.) pourrait casser silencieusement. Ce fichier
 ferme ce trou.

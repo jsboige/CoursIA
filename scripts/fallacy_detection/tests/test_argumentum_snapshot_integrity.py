@@ -3,8 +3,8 @@
 
 POURQUOI CET ORGANE EXISTE
 --------------------------
-Les deux CSV de ``Argument_Analysis/data/`` sont des copies verbatim de l'amont
-``ArgumentumGames/Argumentum``. Ils alimentent les notebooks Argument_Analysis,
+Les deux CSV de ``ArgumentAnalysis/data/`` sont des copies verbatim de l'amont
+``ArgumentumGames/Argumentum``. Ils alimentent les notebooks ArgumentAnalysis,
 FallacyDetection (02/03) et ``scripts/fallacy_detection/``. Ils ont pourri
 **sept semaines en silence** (import du 03/07 -> constat du 30/08) et rien n'a
 rougi, parce qu'un CSV perime parse parfaitement : meme nombre de lignes, meme
@@ -53,7 +53,7 @@ rend obligatoire au lieu de le laisser filer en silence.
 
 LES ONTOLOGIES SONT COUVERTES PAR LES MEMES GARDES
 --------------------------------------------------
-``Argument_Analysis/ontologies/`` recoit les deux OWL du meme amont, avec en
+``ArgumentAnalysis/ontologies/`` recoit les deux OWL du meme amont, avec en
 plus un invariant qui leur est propre : les aretes du graphe argumentatif
 doivent etre RAISONNABLES. Jusqu'au 30/08 elles etaient emises uniquement en
 ``AnnotationAssertion`` -- hors semantique logique d'OWL : SPARQL les voit,
@@ -77,7 +77,7 @@ import pytest
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent.parent.parent
-DATA = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Argument_Analysis" / "data"
+DATA = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "ArgumentAnalysis" / "data"
 MANIFEST = DATA / "argumentum_snapshot.json"
 
 
@@ -191,7 +191,7 @@ def test_legacy_copy_removed():
     )
 
 
-ONTOLOGIES_DIR = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Argument_Analysis" / "ontologies"
+ONTOLOGIES_DIR = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "ArgumentAnalysis" / "ontologies"
 
 ONTOLOGIES = ["argumentum_fallacies.owl", "argumentum_virtues.owl"]
 

@@ -6,13 +6,14 @@
     Patrick Massot
 
   Port of mathlib4/Archive/Sensitivity.lean to standalone Lake workspace.
-
-  EN sibling of `Sensitivity/MainTheorem.lean` (FR-first canonical).
-  Convention i18n Lean ratifiée par ai-01 (2026-07-04, #4980 comment-4881909354) :
+-/
+/-
+  English mirror of `Sensitivity/MainTheorem.lean` (FR-first canonical).
+  Convention i18n Lean ratified by ai-01 (2026-07-04, #4980 comment-4881909354) :
   distinct `.lean` files FR + EN siblings in the same lake, both compile.
   Drift-CI detectable: non-docstring content byte-identical between siblings.
 
-  Note méthodologique : traduction manuelle du FR canonique. Imports the EN
+  Methodological note: manual translation of the FR canonical. Imports the EN
   module `Sensitivity.Operator_en` (transitively VectorSpace_en, Hypercube_en).
   Self-contained within the EN namespace: proves the flagship Huang sensitivity
   theorem (huang_degree_theorem) and exists_eigenvalue. No cross-namespace

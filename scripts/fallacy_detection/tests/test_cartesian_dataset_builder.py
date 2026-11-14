@@ -321,9 +321,22 @@ def test_build_gitlink_matches_repo_commit_tree():
     if probe.returncode != 0:
         pytest.skip("commit du build absent du clone (shallow ?)")
     ls = subprocess.run(
-        ["git", "ls-tree", B.BUILD_REPO_COMMIT, "--", B.ARGUMENTUM_SUBMODULE_PATH],
+        ["git", "ls-tree", B.BUILD_REPO_COMMIT, "--", B.BUILD_GITLINK_TREE_PATH],
         cwd=B._REPO_ROOT, capture_output=True, text=True,
         encoding="utf-8", errors="replace")
     assert ls.returncode == 0
     assert B.BUILD_GITLINK_COMMIT in ls.stdout, (
         "le gitlink du manifeste n'est pas celui de l'arbre au commit du build")
+    # Le chemin historique et le chemin vivant ne se confondent pas : sans cette
+    # borne, une "resynchronisation" de la constante de provenance sur le chemin
+    # courant rendrait un ls-tree VIDE (rc=0) et l'echec ci-dessus ne dirait pas
+    # pourquoi. Ici on verifie que le chemin vivant designe bien le sous-module
+    # dans l'arbre COURANT.
+    live = subprocess.run(
+        ["git", "ls-tree", "HEAD", "--", B.ARGUMENTUM_SUBMODULE_PATH],
+        cwd=B._REPO_ROOT, capture_output=True, text=True,
+        encoding="utf-8", errors="replace")
+    assert live.returncode == 0
+    assert live.stdout.startswith("160000"), (
+        "le chemin vivant du sous-module ne designe pas un gitlink dans HEAD : %r"
+        % (live.stdout,))
