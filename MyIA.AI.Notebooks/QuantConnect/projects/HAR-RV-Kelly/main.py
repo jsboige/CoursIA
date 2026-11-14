@@ -12,6 +12,11 @@ KERNEL_EXPOSURE_CAP = 0.90    # exposition brute maximale, sans levier
 KERNEL_STOP_ATR = 2.0         # stop a 2 ATR(14) sous le prix de l'ordre, ligne par ligne
 KERNEL_CB_THRESHOLD = -0.03   # coupe-circuit apres une seance a -3 % ou pire
 
+# League de reference (#26329), parametre `mode` : `strategy` (defaut) = HAR-RV
+# Kelly intact ; `spy` / `6040` / `ew6` / `naivevol` = portefeuilles references
+# mesures sur le MEME historique, cote a cote, par les organes de la league.
+LEAGUE_MODES = ("strategy", "spy", "6040", "ew6", "naivevol")
+
 
 class HarrvKellyAlgorithm(QCAlgorithm):
     """HAR-RV Kelly 1/4 strategy on a multi-asset portfolio.
@@ -45,7 +50,17 @@ class HarrvKellyAlgorithm(QCAlgorithm):
             BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN
         )
 
+        # League de reference (#26329) : `mode` selectionne la strategie ou un
+        # portefeuille reference mesure sur le meme historique.
+        self.mode = self.get_parameter("mode", "strategy")
+        if self.mode not in LEAGUE_MODES:
+            raise ValueError(f"unknown mode {self.mode}")
+
         self.tickers = ["SPY", "EFA", "EEM", "TLT", "GLD", "DBC"]
+        if self.mode == "6040":
+            # Le 60/40 classique tient 40 % en obligations agregat (AGG) :
+            # 7e actif, ajoute seulement pour ce mode de reference.
+            self.tickers.append("AGG")
         self.symbols = {}
         for ticker in self.tickers:
             equity = self.add_equity(ticker, Resolution.DAILY)
@@ -133,6 +148,10 @@ class HarrvKellyAlgorithm(QCAlgorithm):
         if self.is_warming_up:
             return
 
+        if self.mode != "strategy":
+            self._rebalance_reference()
+            return
+
         weights = {}
         for ticker in self.tickers:
             sym = self.symbols[ticker]
@@ -190,6 +209,51 @@ class HarrvKellyAlgorithm(QCAlgorithm):
                 self.set_holdings(sym, w)
             else:
                 self.liquidate(sym)
+
+    # --- League de reference (#26329) ----------------------------------------
+
+    def _rebalance_reference(self):
+        """Portefeuilles references de la league : memes donnees et meme
+        calendrier que la strategie, sans la logique HAR-RV Kelly. Mesure cote
+        a cote sur le meme historique pour le verdict BEATS / NO BEATS."""
+        if self.mode == "spy":
+            targets = {"SPY": 1.0}
+        elif self.mode == "6040":
+            targets = {"SPY": 0.60, "AGG": 0.40}
+        elif self.mode == "ew6":
+            base = [t for t in self.tickers if t != "AGG"]
+            targets = {t: 1.0 / len(base) for t in base}
+        elif self.mode == "naivevol":
+            targets = self._naive_vol_weights()
+        else:
+            targets = {}
+
+        for ticker in self.tickers:
+            sym = self.symbols[ticker]
+            w = targets.get(ticker, 0.0)
+            if w > 0.001:
+                self.set_holdings(sym, w)
+            else:
+                self.liquidate(sym)
+
+    def _naive_vol_weights(self):
+        """Pondération inverse-volatilité naive : w_i ∝ 1/σ_i sur les 6 actifs,
+        σ_i = écart-type des logs-retours des 20 derniers jours (collectés dans
+        `daily_rv`). Référence de volatilité simple, cote a cote de la strategy."""
+        inv = {}
+        for ticker in self.tickers:
+            if ticker == "AGG":
+                continue
+            rv = list(self.daily_rv[ticker])[-20:]
+            if len(rv) < 5:
+                continue
+            var = sum(rv) / len(rv)
+            vol = np.sqrt(max(var, 1e-12))
+            inv[ticker] = 1.0 / vol
+        total = sum(inv.values())
+        if total <= 0:
+            return {}
+        return {t: w / total for t, w in inv.items()}
 
     def _har_forecast(self, ticker):
         rv = np.array(self.daily_rv[ticker])
@@ -360,6 +424,7 @@ class HarrvKellyAlgorithm(QCAlgorithm):
             self._kernel_place_stop(ticker)
 
     def on_end_of_algorithm(self):
+        self.set_runtime_statistic("Mode", self.mode)
         self.set_runtime_statistic("Noyau", self.kernel)
         self.set_runtime_statistic("Stops", str(self.k_stops))
         self.set_runtime_statistic("Coupures", str(self.k_cuts))
