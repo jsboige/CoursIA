@@ -253,12 +253,24 @@ REGISTRE: tuple[Entree, ...] = (
         # branche (18c887da79d) ne survivra pas au squash, la comparaison
         # tiendra par la SOURCE du script puis par l'identite derivee a la
         # fin du jour de la reference.
-        reference=Reference(26.0, "2026-11-06",
-                            "issue #23655, re-mesure du 2026-11-06 sur "
-                            "l'arbre a284df8293f",
+        #
+        # SIXIEME rebasage (2026-11-13, #5081) -- et le deuxieme qui change
+        # la GRANDEUR : l'instrument reconnait desormais le prefixe de
+        # kernel d'env `coursia-py313` (publie dans la table des kernels du
+        # depot : `coursia-py313-argu`, meme mecanique que le bloc #23193).
+        # Deux carnets au nom canonique sortent du bucket (`Argumentation-
+        # 08b-Executor-Python`, nomme le 09/11 dans la visite du registre,
+        # et `Complexity-02c-XOR-SAT-Phase-Transition-Python`, meme famille
+        # de nommage). Comparer 25 a 26 fabriquerait un AVANCE qui ne dit
+        # rien du depot : l'entree repart d'une reference NEUVE, comme le
+        # demande le critere 2 de l'issue. Le point d'avant le correctif
+        # reste dans la serie (`historique`, valeur 27).
+        reference=Reference(25.0, "2026-11-13",
+                            "issue #5081, re-mesure du 2026-11-13 sur "
+                            "l'arbre 9f2ffff292b9",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@18c887da79de8dcb3f59e7c62800e8c8c242e957")),
+                                        "@e7c3de1b80d0e6b40422307f52929d6af7b977b3")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -315,6 +327,25 @@ REGISTRE: tuple[Entree, ...] = (
                       instrument=("scripts/notebook_tools/"
                                   "inventory_notebook_names.py"
                                   "@30c90b42b6b19ead9d2872495cba9547d6bf1c58")),
+            # Reference precedente (26), mesuree le 2026-11-06 sur l'arbre
+            # a284df8293f. Point AVANT le sixieme rebasage (#5081,
+            # 2026-11-13) : l'instrument du correctif reconnait le prefixe
+            # `coursia-py313`, la grandeur change (26 -> 25), la comparaison
+            # transverse est refusee. La valeur 27 mesuree les 09/11 et
+            # 12/11 sur ce meme instrument documentait deux carnets arrives
+            # sur main (dont `Argumentation-08b-Executor-Python`, nomme dans
+            # la visite du 09/11) ; le correctif les reconnait, ils ne
+            # comptent plus. Identite : le correctif #23655 declarait le sha
+            # de branche (18c887da79d), mort au squash -- comme le 3e
+            # rebasage, la serie declare l'identite RESOLVABLE de main
+            # (400799b0f4, meme contenu, mesurant 26 puis 27 sur les arbres
+            # de l'epoque).
+            Reference(26.0, "2026-11-06",
+                      "issue #23655, reference precedente (arbre "
+                      "a284df8293f, contenu = 400799b0f4 sur main)",
+                      instrument=("scripts/notebook_tools/"
+                                  "inventory_notebook_names.py"
+                                  "@400799b0f4362e2c87982cd5631f6a745d0b3ab4")),
         ),
         note="`ambigu` = nom non parsé ou kernel non verifie.",
         # L'instrument prend sa LISTE de carnets dans `origin/main` et lit
