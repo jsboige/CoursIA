@@ -651,19 +651,19 @@
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb",
    "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3_en.ipynb",
-   "sha1_fr": "b7e9dabbc4b8fbc37cd882b31892b30495220715",
-   "sha1_en": "378acf4f91b90697b734ce30652924dacf9a24fa",
-   "sources_sha1_fr": "d1789a5b13a244c9cb5bc2f796328a7d7db10fd1",
-   "sources_sha1_en": "87ca187590d5830a72af61f5c35bc782e683eaf6"
+   "sha1_fr": "fa6bd0ccbbc6b25c411638d5b2c7111219e12e0a",
+   "sha1_en": "b572e005c40335abb5d70dea4de9733baaf3045b",
+   "sources_sha1_fr": "c5a74afd61ee0ccce325ff0a8a9107cab2b61d54",
+   "sources_sha1_en": "ae97376ba5e13e587488bd7e25485a8ff7d7d066"
   },
   {
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API.ipynb",
    "en": "MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-Generation-Image-API_en.ipynb",
-   "sha1_fr": "2600da646d384effeb61e95f8e9bce7b7a0e3e3e",
-   "sha1_en": "766287f0f712bb39c454f137f1659f9db67a7157",
-   "sources_sha1_fr": "aae28e9ded0c9e3b466d6e122266d8f790a0e851",
-   "sources_sha1_en": "e3a276ee3c80f820f58bbb2536b1c3a5024bc5c4"
+   "sha1_fr": "ad6c1e99062f5658e42fcf5dea9e45c34f36e8ec",
+   "sha1_en": "c2c94b5e6884f520107a11bbb6c99c0d8f7dd2f0",
+   "sources_sha1_fr": "5d887c3e1a00f0d263e6b15ed8612a54f3f6709c",
+   "sources_sha1_en": "83fa41b1f13dd3cb436605b2aef536adea2700f0"
   },
   {
    "kind": "lean",
@@ -1351,8 +1351,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/HAR-RV-Kelly/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/HAR-RV-Kelly/README.en.md",
-   "sha1_fr": "56792316946c8323f04bdb4e388eda2e29e7e2ba",
-   "sha1_en": "b031a14f5c5b7a19fbb396154f8257719a25cb53"
+   "sha1_fr": "a38a7f852235ae235bdebe0a2077cf17f74c9673",
+   "sha1_en": "8592d346138cf4eb93c2749f9faff202bf8a33e8"
   },
   {
    "kind": "readme",
@@ -1603,8 +1603,15 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/TrendFilteredMeanReversion/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/TrendFilteredMeanReversion/README.en.md",
-   "sha1_fr": "1a5f59c574a53591e621a048446d1e80141ee56b",
+   "sha1_fr": "7d2ae1d1858521265b049766548c8d20d88e47d3",
    "sha1_en": "8d286869af3c8a4713aceb9c95cbfcd56ed82dae"
+  },
+  {
+   "kind": "readme",
+   "fr": "MyIA.AI.Notebooks/QuantConnect/projects/TurnOfMonth/README.md",
+   "en": "MyIA.AI.Notebooks/QuantConnect/projects/TurnOfMonth/README.en.md",
+   "sha1_fr": "76da3802df9f0d489de7426cda95ea192d9b4068",
+   "sha1_en": "66c2cd00b4824677ad8c227d48fe8c795033ab3c"
   },
   {
    "kind": "readme",
@@ -1617,8 +1624,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Vol-Ensemble-Conservative/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Vol-Ensemble-Conservative/README.en.md",
-   "sha1_fr": "360d1307b2b63f8fe67fc000d89c394a513ab6f6",
-   "sha1_en": "314365496b17c820b2593d728b45b23e77164ffa"
+   "sha1_fr": "1e615eac61ab58c800684cc8d19e30b98c25db36",
+   "sha1_en": "41629afbce07b4185eddfab35659806a3a877201"
   },
   {
    "kind": "readme",
@@ -2959,8 +2966,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/GROTH/grothendieck_lean/README.en.md",
-   "sha1_fr": "bf547dd0628a2ba7df3c8f8591aaf70418fb82aa",
-   "sha1_en": "9b7e9884683341af082a9a1e86a595a33b83a431"
+   "sha1_fr": "6aac4f6d9525fe8c338cafe04d85c09830a76f04",
+   "sha1_en": "d9186700330c73706e664e0b7803642555207ca4"
   },
   {
    "kind": "lean",
@@ -3637,7 +3644,7 @@
  ],
  "counts": {
   "notebook": 25,
-  "readme": 93,
+  "readme": 94,
   "lean": 394
  },
  "orphans_en": [

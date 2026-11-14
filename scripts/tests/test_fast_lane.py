@@ -2305,6 +2305,40 @@ def test_tranche39_cell_order_gate_est_absorbe_avec_sa_semantique():
         "pre_argv doit prouver que le scanner tire (lecon #11685/#12817)")
 
 
+def test_tranche42_plan_loss_gate_est_absorbe_avec_sa_semantique():
+    """#22209 : le Notebook plan-loss gate (#14532, complement PLAN de
+    TRANCHE4 md-content-loss) rejoint la voie rapide. La semantique
+    rc=1/rc=2 + anti-auto-desarmement AGREGE de la boucle d'origine doit
+    etre portee par le moteur, pas perdue a l'absorption."""
+    from fast_lane_registry import TRANCHE45
+
+    assert len(TRANCHE45) == 1, "la tranche 42 porte le seul plan-loss gate"
+    g = TRANCHE45[0]
+    assert g.absorbed, "le garde doit porter absorbed=True (blocage reel)"
+    assert g.blocking, "le gate source est bloquant : ne pas le bloquer changerait sa semantique"
+    assert g.needs_base, "le gate compare base vs tete : sans base, pas de perte mesurable"
+    assert g.iterates_paths, "le gate source boucle par carnet change"
+    assert g.iterate_paths == ["MyIA.AI.Notebooks/**/*.ipynb"], (
+        "l'iteration doit etre restreinte au glob d'actifs de la boucle "
+        "d'origine (le detecteur .py du declencheur ne doit pas y passer, #13220)")
+    assert g.paths == [], (
+        "le declencheur d'origine etait SANS filtre (« PAS de paths: ici : un "
+        "seul evenement manquant = la garde ne protege rien ») : le registre "
+        "reste sans filtre (contrat check_absorbed_path_parity)")
+    assert "--base" in g.argv and "{base_ref}" in g.argv
+    assert "--check" in g.argv and "{changed_paths}" in g.argv
+    assert g.warn_rc == (2,), (
+        "rc=2 par carnet = illisible = WARNING dans la boucle d'origine, pas "
+        "un rouge : l'agreger en echec rendrait la lane plus stricte que ce "
+        "qu'elle absorbe")
+    assert g.fail_on_all_warn, (
+        "anti-auto-desarmement AGREGE (reserve ai-01 c.28 sur #8656, "
+        "transposee #14532) : si CHAQUE carnet tente etait illisible, le "
+        "workflow d'origine exit 1 -- le moteur doit rendre 1 aussi")
+    assert any("test_detect_notebook_plan_loss.py" in tok for tok in g.pre_argv), (
+        "pre_argv doit prouver que le detecteur tire (lecon #11685/#12817)")
+
+
 def test_every_commenter_header_is_a_known_bot_sticky():
     """Le marqueur doit etre reconnu par le dossier de prevalidation.
 
