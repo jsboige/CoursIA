@@ -1,0 +1,10 @@
+- name: "ML-2.2 Descente de gradient"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb
+  csharp: MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Descente et gradients manuels dans les deux langages ; le twin C# appelle les vraies API scikit-learn pour les données, le solveur et StandardScaler via Python.NET."
+  known_differences:
+    - "Python utilise NumPy et Matplotlib ; C# calcule la descente en tableaux .NET et affiche des SVG statiques."
+    - "Le twin C# appelle scikit-learn via Python.NET ; les exercices restent ouverts et vérifiés dans les deux versions."

@@ -241,3 +241,7 @@ La série s'ouvrait sur une thèse : *on ne peut juger ce qu'un agent LLM produi
 ## Licence
 
 Voir la licence du repository principal.
+
+## Descente de gradient en C#
+
+[2.2 — Descente de gradient C#](2.2-Descente-de-gradient-CSharp.ipynb) accompagne la [version Python](2.2-Descente-de-gradient.ipynb). Les gradients et mises à jour sont calculés en C# ; Python.NET appelle les vrais générateurs et estimateurs scikit-learn. Les figures SVG montrent les mêmes expériences et seuils.
