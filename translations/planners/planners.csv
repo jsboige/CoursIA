@@ -3003,6 +3003,17 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Pyth
   - Effets: vehicule au lieu d'arrivee, plus au lieu de départ
 
 > **Note technique** : Le domaine est reutilisable pour tous les problèmes de logistique (nombre de colis, lieux, véhicules variable).",,,,,,,,de00c742682bbf43,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,43748612,markdown,fr,1ae1dc2cc13b5df8,"### Interpretation du domaine Logistics
+
+| Élément | Description |
+|---------|-------------|
+| **Types** | `location`, `package`, `vehicle`, `truck` (sous-type de vehicle) |
+| **Predicats** | `at-loc`, `at-veh`, `in`, `empty` |
+| **load** | Charge un colis dans un vehicule (même lieu, vehicule vide) |
+| **unload** | Decharge un colis d'un vehicule |
+| **drive** | Deplace un vehicule entre deux lieux |
+
+> **Note** : Chaque action a des **preconditions** (conditions necessaires) et des **effets** (changements appliques).",,,,,,,,1ae1dc2cc13b5df8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,5bd3f42f,markdown,fr,5d137315a7630c57,"***
 
 ## 4. Structure d'un fichier problème PDDL
@@ -3597,6 +3608,23 @@ de pièce au moins une fois : aucune solution ne peut avoir moins de 5 actions.
 > pinces. Un planificateur qui ignorerait cette capacité ferait 7 actions au lieu
 > de 5 (prendre, déplacer, poser, revenir, reprendre, déplacer, poser).
 ",,,,,,,,d9b450b824665c6a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,aa5c31a3,markdown,fr,5c85b37cb093ec42,"### Analyse du problème Gripper
+
+| Élément | Valeur |
+|---------|--------|
+| **Objets** | 2 rooms, 2 balls, 2 grippers |
+| **Etat initial** | Robot + balles dans rooma |
+| **But** | Balles dans roomb |
+| **Actions possibles** | move, pick (x2), drop (x2) |
+
+Une solution optimale :
+1. `pick(ball1, rooma, left)`
+2. `pick(ball2, rooma, right)`
+3. `move(rooma, roomb)`
+4. `drop(ball1, roomb, left)`
+5. `drop(ball2, roomb, right)`
+
+> **Observation** : Le robot peut porter deux balles simultanement car il a deux pinces !",,,,,,,,5c85b37cb093ec42,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb,85acd2ba,markdown,fr,e9256b940778e759,"***
 
 ## 9. Exercices",,,,,,,,e9256b940778e759,,,,,,,,,,,,,,,
@@ -14845,6 +14873,25 @@ Le solveur HTN a trouvé un plan de 3 actions pour livrer pkg1 du dépôt au sto
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb,w1f1kl7d2eh,markdown,fr,48f2dc0ad82c197b,"### 5.1 Definition du domaine HTN Logistics
 
 Nous definissons maintenant les actions primitives (`load`, `unload`, `drive`) et les méthodes de décomposition pour la tâche abstraite `deliver`.",,,,,,,,48f2dc0ad82c197b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb,cell-20,markdown,fr,3bb28320853f8dc0,"### Interpretation du plan HTN
+
+Le solveur HTN a decompose la tache abstraite en actions primitives :
+
+| Etape | Action | Etat resultat |
+|-------|--------|---------------|
+| 1 | `load(pkg1, truck1, depot)` | pkg1 est dans truck1 |
+| 2 | `drive(truck1, depot, store)` | truck1 est maintenant au store |
+| 3 | `unload(pkg1, truck1, store)` | pkg1 est au store |
+
+**Analyse de la decomposition** :
+1. La methode `m_deliver_direct` a ete choisie (preconditions satisfaites)
+2. Les sous-taches ont ete executees sequentiellement
+3. Chaque action primitive verifie ses preconditions avant execution
+
+**Limitation de ce solveur simplifie** :
+- Le solveur ne gere pas le repositionnement automatique du vehicule
+- Pour livrer pkg2 (depuis warehouse), il faudrait que le camion y soit deja
+- Un solveur HTN complet aurait une methode `reposition_vehicle` pour gerer ce cas",,,,,,,,3bb28320853f8dc0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-09-HTN-Python.ipynb,htn-aries-intro,markdown,fr,07da7e2fc8144262,"### 5.2 Le même problème avec un vrai planificateur HTN SOTA (`unified_planning` + aries)
 
 Le solveur des sections 4 et 5 est volontairement **pédagogique** : il code a la
@@ -17005,6 +17052,26 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Plann
 
 Les temps exacts sont ceux **imprimes par la cellule de comparaison ci-dessus**. Ils dependent de la machine et de son démarrage a froid : les recopier ici les figerait sur une exécution alors que la cellule les reimprime a chaque passage — c'est pourquoi la colonne `Temps` n'est pas reproduite dans ce tableau. Ce qui reste stable d'une exécution a l'autre, et qui porte la lecture, c'est l'**ordre** des solveurs et la longueur des plans.",,,,,,,,9bc0c49f0840a4dd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,a40w8be6wev,markdown,fr,ca8f3bf2e7d4f362,"Affichage formate sous forme de tableau des résultats de la comparaison entre solveurs, incluant le statut, le temps de resolution et la longueur du plan produit.",,,,,,,,ca8f3bf2e7d4f362,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,db874126,markdown,fr,4b84ef542f885770,"### Interpretation : Affichage formate de la comparaison
+
+**Sortie obtenue** : Le tableau comparatif affiche les metriques reelles des deux solveurs :
+
+```
+Solveur              | Statut              | Temps      | Longueur Plan
+------------------------------------------------------------------------
+pyperplan            | SOLVED_SATISFICING  | 0.018s     | 6
+fast-downward        | SOLVED_SATISFICING  | 0.972s     | 6
+```
+
+- **Plus rapide** : pyperplan (0.018s)
+- **Plan le plus court** : ex aequo (6 actions pour les deux)
+
+**Metriques cles** :
+- **Temps** : Latence de resolution (critique pour applications interactives). Ici dominee par le startup du moteur, pas par la recherche.
+- **Statut** : `SOLVED_OPTIMALLY` (optimal), `SOLVED_SATISFICING` (plan trouve, optimalite non garantie), `UNSATISFIABLE` (insoluble prouve).
+- **Longueur Plan** : Nombre d'actions (plus court = mieux). Les deux moteurs convergent ici vers le chemin optimal de 6 moves.
+
+> **Note technique** : Pour des problemes plus riches (gros graphe, objectifs multiples, couts variables), la longueur du plan peut varier significativement entre solveurs. Un solveur satisficing (GBFS) peut trouver un plan 2x plus long qu'un solveur optimal (A*), mais beaucoup plus rapidement. C'est sur ce type de probleme que fast-downward, avec ses heuristiques puissantes, prendrait l'avantage sur pyperplan.",,,,,,,,4b84ef542f885770,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,cell-display-comparison,code,fr,cfb268d19d0c0e13,"# Affichage formate de la comparaison
 def display_comparison_table(results):
     """"""Affiche un tableau de comparaison des resultats.""""""
@@ -17091,6 +17158,29 @@ que fast-downward (heuristiques configurables) resterait efficace.
 > C'est tout l'intérêt d'unified-planning : tester facilement plusieurs solveurs et
 > laisser les métriques (temps, longueur de plan) décider.
 ",,,,,,,,0dbd248ef2419b8f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,57676fdc,markdown,fr,d3fcaf5dbea05d41,"### Interpretation : Qui gagne, et quand ?
+
+**Sortie obtenue** : Sur ce labyrinthe de 15 noeuds, **pyperplan est le plus rapide** (0.018s vs 0.972s), mais les deux solveurs produisent le **meme plan optimal de 6 actions**. Il n'y a pas de ""vainqueur"" absolu : chaque moteur a son domaine de predilection.
+
+**Comparaison theorique des solveurs unified-planning** :
+
+| Solveur | Optimalite | Vitesse | Specialites |
+|---------|------------|---------|-------------|
+| **Pyperplan** | Satisficing | Tres rapide (start leger) | Problemes simples, prototypage |
+| **Fast Downward** | Optimal/Satisficing | Moyenne (start lourd) | Heuristiques puissantes (LM-cut, FF, merge-and-shrink) |
+| **Tamer** | Satisficing | Rapide | Preferences, plans avec qualite |
+| **ENHSP** | Optimal | Lent | Fluents numeriques, PDDL 2.1 |
+| **LPG** | Satisficing | Moyenne | Planification temporelle |
+
+**Quand utiliser chaque solveur** :
+- **Pyperplan** : Tests rapides, petits problemes (<100 objets) -- comme ici, ou sa legerete l'emporte.
+- **Fast Downward** : Production, problemes complexes -- ses heuristiques dominent des que l'espace de recherche devient grand (le startup fixe devient negligeable face au cout de recherche).
+- **ENHSP** : Problemes numeriques (couts, ressources).
+- **LPG** : Planification temporelle (PDDL 2.1).
+
+**Lecon de cette instance** : le labyrinthe a 15 noeuds et 7 impasses, ce qui est assez riche pour qu'**aucun des deux moteurs ne degeneres** (tous deux trouvent un plan non trivial de 6 actions en evitant les dead-ends), mais assez petit pour que le **temps soit domine par le startup**. Pour voir fast-downward prendre l'avantage, il faudrait un graphe beaucoup plus large ou pyperplan (satisficing, heuristique limitee) ralentirait alors que fast-downward (heuristiques configurables) resterait efficace.
+
+> **Note importante** : Le choix du solveur depend fortement du type de probleme ET de sa taille. Un solveur excellent sur Block World peut etre mediocre sur Logistics. C'est tout l'interet d'unified-planning : tester facilement plusieurs solveurs et laisser les metriques (temps, longueur de plan) decider.",,,,,,,,d3fcaf5dbea05d41,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic/Planners-11-Unified-Planning-Python.ipynb,cell-temporal-intro,markdown,fr,e10a97e6f1cbdff7,"***
 
 ## 4. Fonctionnalites Avancees
