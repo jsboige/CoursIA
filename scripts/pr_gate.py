@@ -538,6 +538,29 @@ class GateError(RuntimeError):
     """Raised when the check state cannot be established. Always fatal."""
 
 
+# --- quota verdicts: INCONCLUSIVE, replayable (2026-11-14) ----------------
+#
+# The installation-quota 403 is a shared, server-side exhaustion with an
+# hourly reset: the check state is unreadable because the API refuses to
+# answer, NOT because the PR carries a defect. Rule 1 still forbids a PASS,
+# but the verdict must not READ like a content verdict, and the chain must
+# be able to REPLAY it instead of hunting a defect that does not exist.
+#
+# The exit code is the contract: 1 is FAIL (a content verdict, rule 1),
+# 3 is INCONCLUSIVE (the answer is unknown, replay me). The chainer reads
+# the code to tell "fix the PR" from "replay the job".
+QUOTA_INCONCLUSIVE_CODE = 3
+
+
+class QuotaInconclusive(GateError):
+    """The installation-quota family at its bound: unreadable, replayable.
+
+    A subclass of `GateError`, so every existing `except GateError` still
+    catches it; `main` handles it FIRST, because its verdict differs from
+    the generic unreadable state.
+    """
+
+
 # --- pure decision layer (no network; this is what the unit tests pin) -------
 
 
@@ -1067,6 +1090,22 @@ def _gh_etag(header_block: str) -> str | None:
     return None
 
 
+def _gh_ratelimit_reset(header_block: str) -> float | None:
+    """The `x-ratelimit-reset` instant of a failed read, in epoch seconds.
+
+    `None` when the header is absent or unparsable -- the waiter then
+    keeps its own escalating schedule (#17681). The value is a
+    GitHub-provided timestamp, never computed here.
+    """
+    for line in header_block.splitlines():
+        if line.lower().startswith("x-ratelimit-reset:"):
+            try:
+                return float(line.split(":", 1)[1].strip())
+            except ValueError:
+                return None
+    return None
+
+
 def _gh_api(path: str) -> object:
     """Call `gh api <path>` and parse JSON. Any failure is fatal (rule 1).
 
@@ -1117,10 +1156,15 @@ def _gh_api(path: str) -> object:
 
     # Any OTHER non-zero exit is an unreadable read: fatal, never a cache-reuse.
     if completed.returncode != 0:
-        raise GateError(
+        exc = GateError(
             f"gh api {path} failed (exit {completed.returncode}, HTTP {status}): "
             f"{completed.stderr.strip()[:400]}"
         )
+        # The reset instant of the installation quota, when the API told
+        # us (the `x-ratelimit-reset` header). Absent on some failures:
+        # the waiter then falls back on its own backoff schedule.
+        exc.reset_epoch = _gh_ratelimit_reset(header_block)
+        raise exc
 
     new_etag = _gh_etag(header_block)
     try:
@@ -1854,15 +1898,22 @@ def wait_and_decide(
                 # #17681 -- name the family so a quota-exhaustion FAIL is
                 # legible as infrastructure, never read as a check verdict.
                 # The verdict direction is unchanged: rule 1, never a pass.
+                quota = _is_installation_quota_error(exc)
                 family = (
                     "installation-quota read failure"
-                    if _is_installation_quota_error(exc)
+                    if quota
                     else "transient read failure"
                 )
-                raise GateError(
+                message = (
                     f"{exc} -- {transient_reads} {family}(s) in a row: "
                     "the check state stayed unreadable (rule 1)"
-                ) from exc
+                )
+                if quota:
+                    # An exhausted installation quota is not a content
+                    # verdict: it is an unreadable state with a KNOWN
+                    # replay gesture. `main` renders it INCONCLUSIVE.
+                    raise QuotaInconclusive(message) from exc
+                raise GateError(message) from exc
             if _is_installation_quota_error(exc):
                 # #17681 -- a shared hourly quota is not crossed by 30 s
                 # retries: escalate the spacing, but never sleep past the
@@ -1872,10 +1923,21 @@ def wait_and_decide(
                     transient_reads - 1,
                     len(INSTALLATION_QUOTA_BACKOFF_SEC) - 1,
                 )
-                wait_sec = min(
-                    INSTALLATION_QUOTA_BACKOFF_SEC[stage],
-                    max(deadline - now_ts, 0.0),
-                )
+                reset_at = getattr(exc, "reset_epoch", None)
+                if reset_at is not None and reset_at > now_ts:
+                    # The API told us when the quota resets: sleep until
+                    # then (bounded by the absolute deadline) instead of
+                    # spending the budget on short retries that cannot
+                    # cross an hourly reset.
+                    wait_sec = min(
+                        reset_at - now_ts,
+                        max(deadline - now_ts, 0.0),
+                    )
+                else:
+                    wait_sec = min(
+                        INSTALLATION_QUOTA_BACKOFF_SEC[stage],
+                        max(deadline - now_ts, 0.0),
+                    )
                 print(
                     f"[pr-gate] installation-quota 403 (GitHub App quota, "
                     "shared, hourly reset -- not a check verdict), backoff "
@@ -2111,6 +2173,17 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
     real one was already repaired 18 min earlier).
     """
     lines = [message]
+    if message.startswith("INCONCLUSIVE"):
+        lines += [
+            "",
+            "Panne d'infrastructure, pas un defaut de la PR : l'etat "
+            "des checks est INCONNU (quota d'installation GitHub App "
+            "epuise). Rien a reparer dans le code, et rien a chercher "
+            "dans la PR. Rejouer la jambe apres le reset horaire "
+            "(`gh run rerun <run_id> --job <job_id>`) ou attendre le "
+            "balayage `pr-gate-stale-sweep` : la chaine ne doit pas "
+            "traquer un defaut qui n'existe pas.",
+        ]
     if message.startswith("DWELL"):
         lines += [
             "",
@@ -2366,6 +2439,20 @@ def main(argv: Iterable[str] | None = None) -> int:
             detail=detail,
             all_queued_polls=args.all_queued_polls,
         )
+    except QuotaInconclusive as exc:
+        # The installation quota is exhausted: the state is UNKNOWN, not
+        # false. Rule 1 forbids a PASS; it does not forbid a verdict that
+        # says "unknown, replay me". The distinct exit code is the
+        # contract the chainer reads to replay the job instead of hunting
+        # a defect that does not exist.
+        code = QUOTA_INCONCLUSIVE_CODE
+        message = (
+            "INCONCLUSIVE -- quota d'installation GitHub App epuisee : "
+            "l'etat des checks est INCONNU, pas faux. REJOUABLE : "
+            "relancer la jambe (`gh run rerun <run_id> --job <job_id>`) "
+            "apres le reset horaire, ou attendre le balayage "
+            "`pr-gate-stale-sweep`. Source : {}".format(exc)
+        )
     except GateError as exc:
         # Rule 1: an unreadable state is a failure, never a pass. Fall
         # through to the single emission tail instead of returning here: the
@@ -2490,8 +2577,12 @@ def main(argv: Iterable[str] | None = None) -> int:
         # Le message peut porter %, CR ou LF (stderr gh multi-ligne) : un LF
         # brut tronque l'annotation, un % brut avale les octets suivants --
         # echappement protocolaire workflow-command, % EN PREMIER (#15472).
+        # An INCONCLUSIVE verdict is not a defect: it is rendered as a
+        # WARNING so the UI does not read it as a content failure. The
+        # step still exits non-zero -- the state is unknown (rule 1).
+        level = "warning" if code == QUOTA_INCONCLUSIVE_CODE else "error"
         print(
-            f"::error::[pr-gate] {_workflow_command_escape(message)}",
+            f"::{level}::[pr-gate] {_workflow_command_escape(message)}",
             file=sys.stderr,
             flush=True,
         )
@@ -2515,6 +2606,16 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     skipping the POST loses nothing.
     """
     if not args.post_check_run:
+        return
+    if code == QUOTA_INCONCLUSIVE_CODE:
+        # An INCONCLUSIVE verdict is a timer like DWELL, not a failure:
+        # POSTing it as `conclusion=failure` lands an unliftable red on
+        # the PR head (#21543). The job leg itself surfaces the message.
+        print(
+            "[pr-gate] INCONCLUSIVE verdict -- skipping check-run POST "
+            "(an unreadable state is not a failure; #21543)",
+            flush=True,
+        )
         return
     if message.startswith("DWELL"):
         print(
