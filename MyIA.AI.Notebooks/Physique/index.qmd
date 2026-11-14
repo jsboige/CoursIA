@@ -1,7 +1,7 @@
 ---
 title: "Physique — Physique numérique et théorie des champs"
 subtitle: "Série pédagogique — vérifier un calcul contre une vérité exacte : théorème de Noether, invariance de jauge, Yang-Mills sur réseau, volumes finis"
-description: "Série Physique du dépôt CoursIA — théorème de Noether dérivé symboliquement, invariance de jauge U(1) et SU(2), Yang-Mills bidimensionnel sur réseau comparé à sa solution exacte, équation de Burgers par volumes finis avec solveur de Riemann, intégrales vérifiées, distillations de physique de l'information."
+description: "Série Physique du dépôt CoursIA — théorème de Noether dérivé symboliquement, invariance de jauge U(1) et SU(2), Yang-Mills bidimensionnel sur réseau comparé à sa solution exacte, équation de Burgers par volumes finis avec solveur de Riemann, intégrales vérifiées, distillations de physique de l'information, intrication des états mixtes (Werner, PPT, distillabilité, canaux à rupture d'intrication)."
 listing:
   - id: jauge
     contents: "Jauge/*.ipynb"
@@ -23,6 +23,11 @@ listing:
     type: grid
     sort: "filename"
     page-size: 24
+  - id: infoquant
+    contents: "InformationQuantique/*.ipynb"
+    type: grid
+    sort: "filename"
+    page-size: 24
 ---
 
 ::: {.series-banner}
@@ -37,7 +42,7 @@ connue indépendamment, calcule, puis compare.
 
 ## Vue d'ensemble
 
-Quatre sous-séries, un même principe de vérification.
+Cinq sous-séries, un même principe de vérification.
 
 | Sous-série | Objet | Ce qui sert de vérité |
 |------------|-------|-----------------------|
@@ -45,6 +50,7 @@ Quatre sous-séries, un même principe de vérification.
 | **Numerique** | Équations aux dérivées partielles par volumes finis, solveur de Riemann | La vitesse de propagation du choc de Burgers, connue analytiquement |
 | **Integrales** | Intégrales définies et impropres, calcul exact | La valeur close obtenue symboliquement, recroisée numériquement |
 | **Chaines** | Physique de l'information : distillation de programmes à axiome unique (Chain Theory) | Le calcul de la source, rejoué indépendamment ; les déterminations expérimentales citées — avec le statut épistémique de chaque affirmation posé avant le calcul |
+| **InformationQuantique** | Intrication des états mixtes : Werner, critère PPT, distillabilité, canaux à rupture d'intrication | Les seuils publiés (transposition partielle, $3(d-1)/(2(2d-1))$, $d/(d+1)$), retrouvés numériquement sur des matrices explicites avant d'être confrontés à leur énoncé |
 
 **Kernels** : `python3` · **GPU** : non requis · **Prérequis** : analyse (dérivées
 partielles, intégrales multiples), algèbre linéaire, Python scientifique. La théorie des
@@ -93,6 +99,18 @@ de structure fine issu de l'axiome d'intrication de Chain Theory, dont l'énumé
 des 172 enregistrements est rejouée et comparée au script amont.
 
 ::: {#chaines}
+:::
+
+## Information quantique : l'intrication des états mixtes
+
+Le second versant informationnel de la série. Là où les Chaînes partent d'un axiome
+combinatoire sur des réseaux de paires, cette sous-série travaille l'objet quantique
+lui-même — matrices de densité bipartites, transposition partielle, témoins de Schmidt,
+canaux quantiques — et soumet chacun de ses seuils à un calcul de matrices. La vérité y
+est double : le théorème publié, cité depuis sa copie archivée, et le nombre que le
+carnet imprime. Les deux doivent coïncider, et l'écart est montré plutôt que lissé.
+
+::: {#infoquant}
 :::
 
 ## Démarrage rapide
