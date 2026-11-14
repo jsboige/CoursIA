@@ -324,6 +324,46 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "machine-dep-timing-advisory.yml",
     "machine-dep-timing-inventory.yml",
     "mermaid-fill-color-advisory.yml",
+    # #26459/#26465 (owner myia-ai-01:CoursIA-2, PR #26465) : advisory de
+    #   l'etat du MIROIR D'OBJETS du pool de runners. L'etat (le compteur
+    #   d'echecs consecutifs `.objects-mirror.fails` et le miroir lui-meme)
+    #   vit sur l'HOTE du parc, dans un volume que seul un runner
+    #   auto-heberge voit : une jambe GitHub-hosted ne peut pas le lire, et
+    #   son verdict serait un « OK » de deaf. C'est la raison d'etre du
+    #   workflow : porter l'alerte sur la PR elle-meme, la surface que les
+    #   lanes lisent (la reserve 1 de la revue du 14/11 demandait
+    #   exactement cela : « nomme la surface choisie, et ajoute un test qui
+    #   prouve que le rouge y arrive »).
+    #   Job unique `mirror`, statique [self-hosted, coursia-ephemeral,
+    #   coursia-linux], `timeout-minutes: 5`, `concurrency` par PR avec
+    #   annulation du precedent, permissions `contents: read` seule (au
+    #   niveau du workflow), garde same-repo au niveau job (`if:
+    #   head.repo.full_name == repository`), mode `--mirror-only` de
+    #   `check_runner_starvation.py` (ZERO appel API, zero lecture de
+    #   cadence, zero inventaire).
+    #   Le code de la PR **est** execute : l'organe est recupere par URL
+    #   brute a la tete epinglee de la PR (`head.sha`), puis lance par
+    #   `python3`. L'ancienne justification disait « code de PR non
+    #   execute » : c'etait faux, et une justification fausse dans une
+    #   allowlist fail-closed est un paveOuvert. Ce qui borne reellement le
+    #   risque :
+    #     - **same-repo** : la garde `head.repo.full_name == repository`
+    #       exclut toute PR de fork -- un contributeur externe ne peut pas
+    #       faire executer son code sur le parc ;
+    #     - **runner ephemere** (`coursia-ephemeral`) et **job plafonne a
+    #       5 minutes** : ce qui s'execute disparait avec le conteneur ;
+    #     - **permissions `contents: read` seule** : le code ne peut ni
+    #       ecrire dans le depot, ni obtenir une autre permission (actions,
+    #       packages, id-token) ;
+    #     - **aucun secret lu**, aucun `GITHUB_TOKEN` cote job : l'appelee
+    #       lit l'etat LOCAL (compteur d'echecs consecutifs + volume) et
+    #       n'appelle aucune API.
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte
+    #   par `Scripts Tests (CPU)` (run 43560273660, 14/11) : la PR routait
+    #   le job self-hosted sans toucher cette allowlist fail-closed -- meme
+    #   classe que organ-duplication-advisory.yml et live-read-freshness.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "mirror-state-pr-advisory.yml",
     "orphan-branch-scan.yml",
     "outputs-text-fragmentation-advisory.yml",
     "pedagogy-density-advisory.yml",
@@ -591,6 +631,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que md-content-loss-gate tranche 5
     #   #13378). Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-plan-loss-gate.yml",
+    # #22209 TRANCHE45 : ABSORBE par la voie rapide -- vehicule
+    #   workflow_dispatch-ONLY servant de cible d'identite au check-run
+    #   absorbe par fast-lane (registre TRANCHE45) ; la jambe per-PR vit
+    #   dans le job fast-lane d'always-on-guards.yml. L'entree RESTE
+    #   (precedent TRANCHE39/cell-order) : la sortie d'allowlist vise les
+    #   workflows migres vers ubuntu-latest, pas les absorbes dormants.
     # #15322 (owner myia-po-2023:CoursIA) : vehicule workflow_dispatch-ONLY
     #   servant de cible d'identite au check-run absorbe par fast-lane
     #   (registre TRANCHE2) et de re-run manuel du self-test sur main.
