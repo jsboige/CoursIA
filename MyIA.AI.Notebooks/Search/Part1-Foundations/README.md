@@ -105,6 +105,10 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 
 - **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (19/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 24 vs 75 expansions). Suppose Search-3.
 
+### Paysage SDP factorisé en deux langages
+
+[Search-09b en Python](Search-09b-SpuriousMinima.ipynb) et [son compagnon C#](Search-09b-SpuriousMinima-CSharp.ipynb) comparent coupes exhaustives et relaxation SDP numérique, puis recensent des départs de l'ascension factorisée. Le C# pilote les calculs et appelle CVXPY/CLARABEL et NumPy via Python.NET. Les perturbations échantillonnées ne certifient pas un maximum local.
+
 ## Progression
 
 Les trois premiers notebooks forment le socle commun — on y apprend à poser un problème, puis à l'explorer systématiquement — et tout le reste s'y greffe. Au-delà, le parcours n'est pas linéaire : cinq branches indépendantes s'ouvrent, à prendre dans l'ordre de vos curiosités :
