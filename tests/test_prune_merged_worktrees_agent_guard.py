@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""test_prune_merged_worktrees.py -- tests unitaires pour la garde
+"""test_prune_merged_worktrees_agent_guard.py -- tests unitaires pour la garde
 « agent vivant » de prune_merged_worktrees.py (#18494).
 
 Deux niveaux :

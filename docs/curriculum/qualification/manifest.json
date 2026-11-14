@@ -145,19 +145,45 @@
             "outillage": 2,
             "autonomie": 3
           },
-          "justification": "Prérequis : le carnet déclare explicitement « avoir parcouru 02 (MLE, lissage, perplexité) » ; le HMM et le décodage de Viterbi y sont enseignés (P2). Outillage : hmmlearn et NLTK exécutés comme deux témoins (O2). Autonomie : forward en log-espace et Viterbi avec backpointers sont à implémenter (A3). Niveau D3 = max(2, 3). Recherche R2 : le §5 « Le cas non dégénéré — là où le contexte renverse la décision » pose une question falsifiable (le contexte change-t-il vraiment la décision ?) et la mesure ; le §6 fixe le plancher à battre, le §9 analyse les six tokens qui résistent.",
+          "justification": "Les probabilités, le lissage et le carnet 02 sont requis ; HMM et Viterbi sont enseignés ici (P2). L'exercice 'backward et décodage marginal' demande d'implémenter la récurrence et le décodage, puis les activités varient le lissage et étendent le train (A3). 'Le contexte renverse' et l'analyse d'erreurs confrontent le modèle à une baseline token indépendante sans imposer la direction de toutes les variations (R2). hmmlearn et NLTK sont réellement employés comme deux témoins (O2).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 16,
             "cellules_md": 30,
-            "prose_chars": 29323,
-            "densite": 1832,
+            "prose_chars": 29998,
+            "densite": 1874,
             "densite_plancher": 1200,
             "kernel": "Python 3 (ipykernel)",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/05-HMM-Viterbi-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R2",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 3,
+            "autonomie": 3
+          },
+          "justification": "Les probabilités, le lissage et le carnet 02 sont requis ; HMM et Viterbi sont enseignés ici (P2). L'exercice 'backward et décodage marginal' demande d'implémenter la récurrence et le décodage, puis les activités varient le lissage et étendent le train (A3). 'Le contexte renverse' et l'analyse d'erreurs confrontent le modèle à une baseline token indépendante sans imposer la direction de toutes les variations (R2). Forward/Viterbi sont C# ; Python.NET et CPython donnent accès aux vrais témoins hmmlearn/NLTK et ajoutent une configuration tierce (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 16,
+            "cellules_md": 30,
+            "prose_chars": 29950,
+            "densite": 1871,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
@@ -171,19 +197,45 @@
             "outillage": 1,
             "autonomie": 2
           },
-          "justification": "Prérequis : aucun hors Python/NumPy — le carnet construit TF-IDF et BM25 devant le lecteur sur un corpus auto-contenu de huit documents (P1). Outillage : aucun outil du domaine ; NumPy et matplotlib seuls (O1). Autonomie : les exercices réimplémentent l'idf, la contribution BM25 d'un terme et le Recall@k — adaptation de formules données, avec vérification chiffrée (A2). Niveau D2 = max(1, 2). Recherche R1 : le §4 « Classer, puis mesurer la qualité » construit un jeu de requêtes annotées et une métrique (Recall@3) réutilisables ; le verdict sur BM25 vs TF-IDF est connu d'avance.",
+          "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les calculs utilisent Python/NumPy et Matplotlib, sans paquet du domaine à configurer (O1).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 13,
             "cellules_md": 18,
-            "prose_chars": 16791,
-            "densite": 1291,
+            "prose_chars": 17035,
+            "densite": 1310,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25-CSharp.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 1,
+            "outillage": 1,
+            "autonomie": 2
+          },
+          "justification": "Le corpus de huit documents est auto-contenu ; TF-IDF, BM25 et Recall@k sont construits devant le lecteur (P1). Les exercices adaptent l'idf, la contribution BM25 et le calcul du rappel, avec vérification sur des cas chiffrés (A2). Les requêtes annotées et Recall@3 forment un instrument réutilisable pour comparer les classements sur ce corpus ; aucune question ouverte n'est revendiquée (R1). Les comptages, pondérations, classements et métriques sont calculés avec les outils C# standard ; aucun moteur externe supplémentaire n'est requis (O1).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 16,
+            "cellules_md": 32,
+            "prose_chars": 12429,
+            "densite": 776,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
