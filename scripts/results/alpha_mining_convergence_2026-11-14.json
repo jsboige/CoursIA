@@ -25,11 +25,93 @@
       "ic_train_recomputed": 0.050949050949050945
     }
   },
+  "basket_inputs": [
+    {
+      "asset": "ADA-USD",
+      "csv": "ADA-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "f70664c04669e2b2",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "AVAX-USD",
+      "csv": "AVAX-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "e5716babbb7ece63",
+      "first_date": "2020-07-13",
+      "last_date": "2026-04-30",
+      "rows": 2049
+    },
+    {
+      "asset": "BTC-USD",
+      "csv": "BTC-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "c6c467d124e7c964",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "DOT-USD",
+      "csv": "DOT-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "4aa599bd0ce35b54",
+      "first_date": "2020-08-20",
+      "last_date": "2026-04-30",
+      "rows": 2080
+    },
+    {
+      "asset": "ETH-USD",
+      "csv": "ETH-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "d22fd39a165929fd",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "LINK-USD",
+      "csv": "LINK-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "69622363f1f6b88e",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "LTC-USD",
+      "csv": "LTC-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "43fc20b080624012",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "MATIC-USD",
+      "csv": "MATIC-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "6918b231234118af",
+      "first_date": "2019-04-28",
+      "last_date": "2025-03-24",
+      "rows": 2158
+    },
+    {
+      "asset": "SOL-USD",
+      "csv": "SOL-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "531b6ac12d88da71",
+      "first_date": "2020-04-10",
+      "last_date": "2026-04-30",
+      "rows": 2212
+    },
+    {
+      "asset": "XRP-USD",
+      "csv": "XRP-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "09875e2086efd78a",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    }
+  ],
   "best_fixed_factor": {
     "ic_train": 0.058574128813014006,
     "name": "lowvol"
   },
-  "duration_s": 27.5,
+  "duration_s": 57.5,
   "fixed_factors_ic_train": {
     "lowvol": 0.058574128813014006,
     "momentum": 0.010216739974104156,
@@ -39,7 +121,7 @@
   "generations": 9,
   "ic_tolerance": 0.005,
   "issue": "#26430",
-  "measured_at": "2026-11-14T05:38:27Z",
+  "measured_at": "2026-11-14T09:49:04Z",
   "notebook": "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-42-Alpha-Mining-Evolution.ipynb",
   "per_seed": {
     "0": {

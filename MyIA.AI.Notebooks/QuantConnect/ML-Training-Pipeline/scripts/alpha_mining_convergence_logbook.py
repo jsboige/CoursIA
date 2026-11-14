@@ -271,6 +271,37 @@ def _json_default(obj):
     return str(obj)
 
 
+def basket_fingerprints(namespace: dict) -> list:
+    """Empreinte des CSV du panier sur lesquels repose la mesure.
+
+    L'equivalence de cette mesure est conditionnee par le **contenu** des
+    fichiers du panier : si le panier est regenere un jour (fenetre etendue,
+    donnees revisees), les IC publies par le carnet divergent et le verdict
+    d'equivalence tombe sans dire pourquoi. L'empreinte (empreinte du fichier
+    et bornes temporelles) permet de le dire, et de distinguer une derive de
+    donnees d'une derive de l'organe.
+    """
+    import hashlib
+
+    panier = Path(namespace["PANIER"])
+    out = []
+    for asset, frame in sorted(namespace["frames"].items()):
+        candidates = sorted(panier.glob("%s_*.csv" % asset))
+        digest = None
+        if candidates:
+            digest = hashlib.sha256(candidates[0].read_bytes()).hexdigest()[:16]
+        index = frame.index
+        out.append({
+            "asset": asset,
+            "csv": candidates[0].name if candidates else None,
+            "csv_sha256_16": digest,
+            "rows": int(len(frame)),
+            "first_date": str(index.min().date()),
+            "last_date": str(index.max().date()),
+        })
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", default=None,
@@ -391,6 +422,7 @@ def main() -> int:
         "duration_s": round(duration, 1),
         "seeds": seeds,
         "training_window": {"tr0": tr0, "tr1": tr1},
+        "basket_inputs": basket_fingerprints(namespace),
         "generations": len(next(iter(aligned.values()))[0].select("max")),
         "ic_tolerance": IC_TOLERANCE,
         "fixed_factors_ic_train": fixed,
