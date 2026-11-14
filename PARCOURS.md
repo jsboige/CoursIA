@@ -59,7 +59,7 @@ faire partie, et il faut savoir où ils se traitent :
 
 ### Parcours par contraintes d'infrastructure
 
-`[parcours.qmd](parcours.qmd)` répond à une question différente : *« avec quel
+`[parcours.qmd](docs/parcours.qmd)` répond à une question différente : *« avec quel
 matériel puis-je avancer ? »*. Trois profils y sont documentés :
 
 1. **Local sobre** — Python + Jupyter, sans GPU, sans Docker.
@@ -149,5 +149,5 @@ n'appartiennent **pas** au catalogue et ne sont jamais écrasées par
 
 - [`README.md`](README.md) — racine du dépôt, section *Parcours recommandés*.
 - [`index.md`](index.md) — index des thématiques, *« quelles thématiques ? »*.
-- [`parcours.qmd`](parcours.qmd) — choix par contraintes d'infrastructure, *« avec quel matériel ? »*.
+- [`parcours.qmd`](docs/parcours.qmd) — choix par contraintes d'infrastructure, *« avec quel matériel ? »*.
 - [`COURSE_CATALOG.generated.md`](COURSE_CATALOG.generated.md) — catalogue vivant, *« quel notebook précis dans quelle série ? »*.

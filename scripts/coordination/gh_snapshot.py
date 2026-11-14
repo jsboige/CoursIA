@@ -153,8 +153,8 @@ def _pid_alive(pid: int) -> bool:
 
 
 @contextmanager
-def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
-    """Verrou de rafraichissement, partage entre lanes de la meme machine.
+def lock_directory(directory: Path, timeout: float = 120.0) -> Iterator[Path]:
+    """Verrou de rafraichissement sur un REPERTOIRE, partage entre lanes de la meme machine.
 
     `O_CREAT|O_EXCL` est atomique sur tous les OS vises : le createur gagne,
     les autres attendent. Un verrou abandonne est casse dans deux cas :
@@ -171,8 +171,11 @@ def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
 
     Sans le cas d'age, un processus mort bloquerait la machine jusqu'au
     redemarrage.
+
+    Le verrou est **par repertoire**, pas par depot : l'instantane du depot
+    (`snapshot_lock`) et le cache du tapis rapide (`gh_bulk`) sont deux
+    repertoires distincts, et chacun protege le sien (#22630).
     """
-    directory = snapshot_dir(repo)
     directory.mkdir(parents=True, exist_ok=True)
     lock_path = directory / "refresh.lock"
     deadline = time.monotonic() + timeout
@@ -228,6 +231,17 @@ def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
             lock_path.unlink()
         except OSError:
             pass
+
+
+@contextmanager
+def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
+    """Verrou de rafraichissement de l'instantane d'un depot.
+
+    Le verrou lui-meme est `lock_directory` : un seul organe, deux
+    repertoires proteges (l'instantane du depot et le cache du tapis rapide).
+    """
+    with lock_directory(snapshot_dir(repo), timeout) as lock_path:
+        yield lock_path
 
 
 # --- lecture / ecriture --------------------------------------------------------
@@ -614,11 +628,13 @@ def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
 
     Rend `(snapshot, nb_appels_gh)`.
     """
+    # Borne conservative : un commentaire peut arriver pendant la lecture
+    # paginee, apres le passage de sa page. Le prochain balayage doit le revoir.
+    now = time.time()
     grouped = fetch_repo_comments_since(repo, since, timeout=timeout)
     comments = dict(snapshot.get("comments") or {})
     meta = dict(snapshot.get("meta") or {})
     stamps = dict(meta.get("comment_stamps") or {})
-    now = time.time()
     for number, items in grouped.items():
         key = str(number)
         existing = [c for c in (comments.get(key) or [])
@@ -946,6 +962,7 @@ __all__ = [
     "install",
     "is_fresh",
     "load_snapshot",
+    "lock_directory",
     "normalise_comment",
     "refresh",
     "reset_call_count",
