@@ -25,9 +25,9 @@ python scripts/notebook_tools/rust_ecosystem_census.py --json     # sortie machi
 
 L'organe [rust_ecosystem_census.py](../../scripts/notebook_tools/rust_ecosystem_census.py) :
 
-- prend le corpus des carnets **suivis par git** sous `MyIA.AI.Notebooks/`, hors sorties `_output` et jumeaux de traduction `_en` (la même base que l'inventaire de l'Epic : 1 795 carnets) ;
+- prend le corpus des carnets **suivis par git** sous `MyIA.AI.Notebooks/`, hors sorties `_output` et jumeaux de traduction `_en` (la même base que l'inventaire de l'Epic : 1 768 carnets) ;
 - extrait, par cellule de code, les modules Python de niveau supérieur importés (`import X`, `from X import …`) et les paquets NuGet chargés (`#r "nuget: Paquet"`);
-- **sépae les imports en quatre bacs** : stdlib (via `sys.stdlib_module_names`, la liste du langage), **tiers** (ce qui a un équivalent crate à envisager), **helpers du dépôt** (tiges des `.py`/`.lean` suivis par git — jamais une liste en dur), et **imports Lean** (`Mathlib` et modules de série dans les carnets Python/Lean mixtes) ;
+- **sépare les imports en quatre bacs** : stdlib (via `sys.stdlib_module_names`, la liste du langage), **tiers** (ce qui a un équivalent crate à envisager), **helpers du dépôt** (tiges des `.py`/`.lean` suivis par git — jamais une liste en dur), et **imports Lean** (`Mathlib` et modules de série dans les carnets Python/Lean mixtes) ;
 - compte **par carnet distinct** (un module compté une fois par carnet, même importé dans plusieurs cellules), **par série** (répertoire de premier niveau).
 
 > **Reserve de lecture** : la séparation tiers / local est structurelle. Un package PyPI qui porterait le **même nom** qu'un module local du dépôt serait compté local (faux négatif tiers). C'est le seul angle mort connu de l'organe ; il est négligeable au corpus (aucun tel conflit mesuré sur les bibliothèques significatives) et se verifie série par serie au pli 2.
@@ -58,7 +58,7 @@ Synthèse par série (corpus du 2026-11-14, `origin/main` = `24e8257832c`). Les 
 
 **Statut du pli (honnête).** La colonne « bibliothèque en usage » est **mesurée** par l'organe (ci-dessus). Les colonnes « crate Rust », « verdict » et, dans la suite, « version / date / licence / maturité » sont des **verdicts provisoires** issus du relevé préliminaire de l'Epic (14/11, crates.io / docs.rs / dépôts amont) : ils **orientent** le travail, ils ne le remplacent pas. Chaque ligne se **revérifie à la source** (version + date de publication + licence lues au jour du relevé) **famille par famille, au pli 2** — c'est le travail de suivi de cette table, et la raison pour laquelle elle part en plusieurs PRs (une par grande famille).
 
-Le noyau commun à tous les carnets Rust : **evcxr** v0.22.0 (publié 2025-08-18, MIT/Apache-2.0) — le seul noyau Jupyter Rust maintenu. `:dep crate = "x.y"` en tête de carnet (un `:dep` ajouté plus bas recompile tout et efface les variables typées). Affichage riche via `evcxr_display` (HTML/SVG) ; `plotters` a une feature `evcxr`. **Papermill n'a pas de traducteur Rust** (pli 0 tranche le paramétrage).
+Le noyau commun à tous les carnets Rust : **evcxr** v0.22.0 (publié 2025-08-18, MIT/Apache-2.0) — le noyau Jupyter Rust de référence. `:dep crate = "x.y"` en tête de carnet (un `:dep` ajouté plus bas recompile tout et efface les variables typées). Affichage riche via `evcxr_display` (HTML/SVG) ; `plotters` a une feature `evcxr`. **Papermill n'a pas de traducteur Rust** (pli 0 tranche le paramétrage).
 
 ### Search
 

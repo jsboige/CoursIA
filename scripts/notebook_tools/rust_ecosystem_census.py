@@ -146,11 +146,14 @@ _KERNEL_PROVIDED = {
 # bibliotheque tierce. Detection STRUCTURELLE, calculee en une passe — jamais
 # une liste en dur a maintenir.
 def local_module_names() -> set[str]:
-    out = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "ls-files", "-z", "*.py", "*.lean"],
-        capture_output=True,
-        check=True,
-    ).stdout
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(REPO_ROOT), "ls-files", "-z", "*.py", "*.lean"],
+            capture_output=True,
+            check=True,
+        ).stdout
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return set()
     prefix = "MyIA.AI.Notebooks/"
     names: set[str] = set()
     for n in out.decode("utf-8", "replace").split("\0"):
