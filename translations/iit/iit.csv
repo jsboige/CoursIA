@@ -451,8 +451,8 @@ precede a ete **calcule par le vrai PyPhi**, puis narre tel quel.
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,420be610,markdown,fr,6bb8db1024d3bac6,"# ICT-10 — Grammaire des catastrophes : *l'obstacle qui engendre les formes, le verbe qui les fait basculer*
 
 > **Serie ICT** (Integrated Causal Trajectories) — **charniere strate 2 -> strate 3**.
-> Prerequis conseilles : [ICT-0-Framing](ICT-0-Framing.md), [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb)
-> (paysages d'attracteurs, pli, ralentissement critique) et [ICT-9](ICT-09-AgencyRegeneration-Python.ipynb)
+> Prerequis conseilles : [ICT-0-Framing](ICT-0-Framing.md), [ICT-8](ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb)
+> (paysages d'attracteurs, pli, ralentissement critique) et [ICT-9](ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb)
 > (agence comme reparation mesuree).
 
 ## Un prelude a Rene Thom — mais *sans complaisance*
@@ -4953,7 +4953,7 @@ Ce carnet est le **producteur** du jouet `SelfSortingArray`, consommé par une d
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb,febd299a,markdown,fr,4f8c08062af7b522,"# ICT-20 — FeatureCatastrophes : *calibration de méthode*
 
 > **Serie ICT** (Integrated Causal Trajectories, Epic #4588) -- strate 5 : *calibration*.
-> Prerequis : [ICT-0-Framing](../ICT-0-Framing.md), [ICT-08-AttractorLandscapesEWS-Python](../ICT-08-AttractorLandscapesEWS-Python.ipynb) (EWS), [ICT-10-CatastropheGrammar-Python](../ICT-10-CatastropheGrammar-Python.ipynb) (pli / lacet).
+> Prerequis : [ICT-0-Framing](../ICT-0-Framing.md), [ICT-08-AttractorLandscapesEWS-Python](../ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb) (EWS), [ICT-10-CatastropheGrammar-Python](../ICT-10-CatastropheGrammar-Python.ipynb) (pli / lacet).
 > Prerequis numériques : numpy ; ce notebook n'utilise aucun modèle GPU.
 **Navigation** : [Index](../README.md) | [ICT-21 — SAE Trajectoires >>](ICT-21-SAETrajectoires-Python.ipynb)
 
@@ -8356,7 +8356,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatur
   59, 1987 — criticalite et signatures sans echelle.
 - T. E. Harris, *The Theory of Branching Processes*, 1963 — loi de Borel, exposant
   $3/2$ a la criticalite.",,,,,,,,db3fcfbff7aa6669,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,de10a093,markdown,fr,eaa23f031f48a251,"# ICT-8 — Paysages d'attracteurs & signaux precurseurs : *les deux tressees*
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,de10a093,markdown,fr,eaa23f031f48a251,"# ICT-8 — Paysages d'attracteurs & signaux precurseurs : *les deux tressees*
 
 > **Serie ICT** (Integrated Causal Trajectories) — strate 2 : *morphogenese dynamique*.
 > Prerequis conseilles : [ICT-0-Framing](ICT-0-Framing.md), et les notebooks de causal emergence
@@ -8390,7 +8390,7 @@ La metaphore n'est creditee qu'au vu de ce qu'une mesure explicite en montre —
 directe de la these de Levin : *les revendications cognitives sont des revendications de protocole*.
 On verra même, sans complaisance, qu'une **mesure naive fabrique ou masque** le signal : la credibilite
 de la metaphore tient entierement a la **rigueur du protocole**.",,,,,,,,eaa23f031f48a251,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,bb51677c,code,fr,261b19568135b300,"import os, sys
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,bb51677c,code,fr,261b19568135b300,"import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -8405,7 +8405,7 @@ modele = GrazingModel(r=1.0, K=10.0, h=1.0)
 c_fold = modele.find_fold(1.5, 3.5, n=4000)
 print(f""Modele de paturage de May (1977) : r={modele.r}, K={modele.K}, h={modele.h}"")
 print(f""Bifurcation pli localisee a  c_fold ~= {c_fold:.3f}"")",,,,,,,,261b19568135b300,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,603bc061,markdown,fr,cbf52bf13ed665a9,"## 1. Le modèle — paturage de May (1977)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,603bc061,markdown,fr,cbf52bf13ed665a9,"## 1. Le modèle — paturage de May (1977)
 
 On etudie une biomasse de vegetation $x$ broutee a une pression $c$ :
 
@@ -8424,7 +8424,7 @@ disparaissent** (le *pli*) : le système bascule **catastrophiquement** vers l'e
 *changement de regime*, pas une extinction — et c'est exactement le genre de transition qu'on aimerait
 **voir venir**.
 ",,,,,,,,cbf52bf13ed665a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,41f9c465,code,fr,1ec4e005f96dab57,"fig, ax = plt.subplots(figsize=(8.5, 4.5))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,41f9c465,code,fr,1ec4e005f96dab57,"fig, ax = plt.subplots(figsize=(8.5, 4.5))
 xs = np.linspace(0, 10, 400)
 for c in [1.6, 2.2, c_fold, 2.9]:
     ax.plot(xs, modele.rate(xs, c), label=f""c = {c:.2f}"")
@@ -8438,7 +8438,7 @@ for c in (1.8, c_fold, 3.2):
     eqs = modele.equilibria(c)
     desc = "", "".join(f""{x:.2f}{'(s)' if st else '(i)'}"" for x, st in eqs)
     print(f""c={c:.2f} : equilibres [{desc}]   (s=stable, i=instable)"")",,,,,,,,1ec4e005f96dab57,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,a425799d,markdown,fr,cfa5d6c5600d7ff3,"## 2. Le paysage d'attracteurs
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,a425799d,markdown,fr,cfa5d6c5600d7ff3,"## 2. Le paysage d'attracteurs
 
 Le modèle derive d'un **potentiel effectif** $V(x)$ tel que $\dfrac{dx}{dt} = -\dfrac{dV}{dx}$ :
 
@@ -8449,7 +8449,7 @@ les attracteurs** (les vallees ou la bille se repose), son **maximum local est l
 A gauche, on voit le **puits haut s'aplatir** a mesure que $c$ augmente ; a droite, le **diagramme de
 bifurcation** montre les branches stables et instable se rejoindre au pli.
 ",,,,,,,,cfa5d6c5600d7ff3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,0e12f895,code,fr,18900aefb63ed1b1,"fig, (axL, axR) = plt.subplots(1, 2, figsize=(13, 5))
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,0e12f895,code,fr,18900aefb63ed1b1,"fig, (axL, axR) = plt.subplots(1, 2, figsize=(13, 5))
 
 # -- gauche : potentiel effectif V(x), recale a min=0 ; le puits haut s'aplatit --
 xs = np.linspace(0.05, 10, 500)
@@ -8470,7 +8470,7 @@ axR.set_xlabel(""c  (pression de broutage)""); axR.set_ylabel(""x*  (equilibres)
 axR.set_title(""Diagramme de bifurcation : le pli"")
 axR.legend(); axR.grid(alpha=0.3)
 plt.tight_layout(); plt.show()",,,,,,,,18900aefb63ed1b1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,83b05284,markdown,fr,afffa4996db1b022,"### Exercice 1 — la hauteur de la barriere
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,83b05284,markdown,fr,afffa4996db1b022,"### Exercice 1 — la hauteur de la barriere
 
 Le **col** qui protege l'etat haut a une hauteur $\Delta V = V(x_\text{instable}) - V(x_\text{haut})$.
 *Fil metaphorique* : c'est la profondeur de la vallee haute — combien d'energie il faudrait pour en
@@ -8480,7 +8480,7 @@ sortir. *Fil de la mesure* : completez la fonction ci-dessous et **verifiez qu'e
 *Indices :* `modèle.equilibria(c)` renvoie `[(x, stable), ...]` ; l'etat haut est la plus grande racine
 stable, le col est la racine instable ($x>0$) ; `modèle.potential(x, c)` evalue $V$.
 ",,,,,,,,afffa4996db1b022,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,dae7d60c,code,fr,55110f99cef05400,"def hauteur_de_barriere(c):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,dae7d60c,code,fr,55110f99cef05400,"def hauteur_de_barriere(c):
     """"""Renvoie V(x_instable) - V(x_haut) : la hauteur du col protegeant l'etat haut.
     Doit tendre vers 0 au pli. Renvoyer None tant que l'exercice n'est pas complete.""""""
     # TODO etudiant : recuperer x_haut (plus grande racine stable) et x_instable (racine instable >0),
@@ -8495,14 +8495,14 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,dae7
 # for c in [1.8, 2.2, 2.4, 2.55]:
 #     print(f""c={c:.2f} : barriere = {hauteur_de_barriere(c):.4f}"")
 print(""Exercice 1 a completer : la barriere du col doit decroitre vers 0 au pli."")",,,,,,,,55110f99cef05400,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,6e2fa9e3,markdown,fr,a0a8624c152934f9,"## 3. Le ralentissement critique
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,6e2fa9e3,markdown,fr,a0a8624c152934f9,"## 3. Le ralentissement critique
 
 Pres du pli, la **valeur propre** de l'equilibre haut (la pente $f'(x^*)$, force de rappel) tend vers
 **zero** : le système **recupere de plus en plus lentement** de ses perturbations. C'est le mécanisme
 physique qui *produit* les signaux precurseurs. On le voit de deux facons : (a) directement, $|f'(x^*)|
 \to 0$ ; (b) une même perturbation met plus longtemps a se resorber pres du pli.
 ",,,,,,,,a0a8624c152934f9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,54ea4f46,code,fr,456e3fad1288d80d,"# (a) valeur propre locale au puits haut -> 0 au pli
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,54ea4f46,code,fr,456e3fad1288d80d,"# (a) valeur propre locale au puits haut -> 0 au pli
 cs_loc = np.linspace(1.6, c_fold - 0.01, 30)
 lam = np.array([modele.rate_prime(max(x for x, st in modele.equilibria(c) if st), c) for c in cs_loc])
 
@@ -8523,7 +8523,7 @@ for c, col in [(1.7, ""C0""), (c_fold - 0.05, ""C3"")]:
 a2.set_xlabel(""temps""); a2.set_ylabel(""x"")
 a2.set_title(""(b) Recuperation plus lente pres du pli""); a2.legend(); a2.grid(alpha=0.3)
 plt.tight_layout(); plt.show()",,,,,,,,456e3fad1288d80d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,cc9369b9,markdown,fr,91734cbe46a387b3,"## 4. Les signaux precurseurs — variance et autocorrelation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,cc9369b9,markdown,fr,91734cbe46a387b3,"## 4. Les signaux precurseurs — variance et autocorrelation
 
 Le ralentissement critique laisse **deux empreintes statistiques** dans les fluctuations d'un système
 bruite, **avant** la bascule :
@@ -8535,7 +8535,7 @@ On applique le protocole canonique (Dakos/Scheffer) : a chaque $c$ **fixe** appr
 simulation stochastique stationnaire, puis variance et AR1 des fluctuations (après amincissement et
 detrendage — on y revient juste après). On attend que **les deux montent** vers le pli.
 ",,,,,,,,91734cbe46a387b3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,bd5793f0,code,fr,cd974092d4d3b959,"c_values = [1.7, 2.0, 2.3, 2.5, 2.57]
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,bd5793f0,code,fr,cd974092d4d3b959,"c_values = [1.7, 2.0, 2.3, 2.5, 2.57]
 variances, ar1s = [], []
 for c in c_values:
     xhigh = max(x for x, st in modele.equilibria(c) if st)
@@ -8560,7 +8560,7 @@ a2.plot(c_values, ar1s, ""o-"", color=""C1""); a2.axvline(c_fold, ls=""--"", col
 a2.set_xlabel(""c""); a2.set_ylabel(""autocorrelation (retard 1)"")
 a2.set_title(""L'autocorrelation monte vers le pli""); a2.grid(alpha=0.3)
 plt.tight_layout(); plt.show()",,,,,,,,cd974092d4d3b959,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,de352925,markdown,fr,58b19f1414b9cb0d,"## 5. *Sans complaisance* : la lecon de protocole
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,de352925,markdown,fr,58b19f1414b9cb0d,"## 5. *Sans complaisance* : la lecon de protocole
 
 Voici le fil le plus important du notebook. Les deux indicateurs ci-dessus **ne se mesurent pas
 naivement**. Sur **la même serie** pres du pli :
@@ -8575,7 +8575,7 @@ Autrement dit : la metaphore « le système ralentit » n'est creditee que parce
 correctement**. Une première mesure naive de ce notebook avait d'ailleurs echoue — c'est le protocole,
 pas le substrat, qui etait en cause.
 ",,,,,,,,58b19f1414b9cb0d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,1a1572ae,code,fr,f2e5de5d3e1a76e4,"c = 2.55
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,1a1572ae,code,fr,f2e5de5d3e1a76e4,"c = 2.55
 xhigh = max(x for x, st in modele.equilibria(c) if st)
 serie = modele.simulate_sde(c=c, x0=xhigh, sigma=0.06, dt=0.01, T=300000, seed=GRAINE)[50000:]
 
@@ -8589,7 +8589,7 @@ print(f""AR1 apres amincissement (x50)  = {ar1_thin:.4f}   <- le vrai signal se 
 print(f""variance brute (tendance incluse)    = {var_brute:.5f}"")
 print(f""variance des fluctuations (detrendee) = {var_detrend:.5f}"")
 print(""\nMeme systeme, meme instant : la mesure naive masque, le protocole correct revele."")",,,,,,,,f2e5de5d3e1a76e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,870aaea9,markdown,fr,069f1ac125a7023f,"### Exercice 2 — les indicateurs stationnaires
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,870aaea9,markdown,fr,069f1ac125a7023f,"### Exercice 2 — les indicateurs stationnaires
 
 Completez la fonction qui mesure les deux precurseurs a une pression $c$ **fixe**, par le protocole
 stationnaire (simuler → retirer le *burn-in* → **amincir** → **detrendre** → variance & AR1). Vous
@@ -8598,7 +8598,7 @@ reproduirez ainsi, point par point, la courbe de la section 4.
 *Indices :* l'etat de depart est l'etat haut ; `modèle.simulate_sde(...)` ; pretraitement avec
 `ew.thin(...)` puis `ew.detrend(...)` ; puis `.var()` et `ew.lag1_autocorr(...)`.
 ",,,,,,,,069f1ac125a7023f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,cedca8a6,code,fr,47cc83b92e79de61,"def indicateurs_a(c, sigma=0.06, T=200000, seed=0):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,cedca8a6,code,fr,47cc83b92e79de61,"def indicateurs_a(c, sigma=0.06, T=200000, seed=0):
     """"""Renvoie (variance, AR1) des fluctuations a la pression c, protocole stationnaire.
     Renvoyer None tant que l'exercice n'est pas complete.""""""
     # TODO etudiant :
@@ -8612,13 +8612,13 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,cedc
 # for c in [1.8, 2.3, 2.55]:
 #     print(c, indicateurs_a(c))
 print(""Exercice 2 a completer : indicateurs stationnaires (variance, AR1) a c fixe."")",,,,,,,,47cc83b92e79de61,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,82cc744f,markdown,fr,170bb681868b6175,"## 6. Le scénario reel — une rampe non-stationnaire
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,82cc744f,markdown,fr,170bb681868b6175,"## 6. Le scénario reel — une rampe non-stationnaire
 
 Dans la nature, $c$ ne saute pas : il **derive lentement**. On fait donc glisser $c$ de 1.7 a 2.9
 (la rampe traverse le pli) et on demande : **les precurseurs montent-ils AVANT la bascule** ? C'est tout
 l'enjeu pratique des EWS — donner l'alerte pendant qu'il est encore temps.
 ",,,,,,,,170bb681868b6175,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,d8dab665,code,fr,49c2601c3a36335c,"xs_ramp, cs_ramp = modele.simulate_ramp(c0=1.7, c1=2.9, x0=7.5, sigma=0.05,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,d8dab665,code,fr,49c2601c3a36335c,"xs_ramp, cs_ramp = modele.simulate_ramp(c0=1.7, c1=2.9, x0=7.5, sigma=0.05,
                                         dt=0.01, T=240000, seed=GRAINE)
 seuil = 0.5 * xs_ramp[:2000].mean()
 tip = int(np.argmax(xs_ramp < seuil))
@@ -8639,7 +8639,7 @@ ax[1].set_xlabel(""indice (serie amincie, AVANT bascule)"")
 ax[1].set_ylabel(""variance""); axb.set_ylabel(""AR1 (orange)"")
 ax[1].set_title(""Les deux precurseurs montent AVANT la bascule"")
 plt.tight_layout(); plt.show()",,,,,,,,49c2601c3a36335c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,01c651cf,markdown,fr,72c74fe6f0c665dd,"### Exercice 3 — avertissement contre vitesse de derive
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,01c651cf,markdown,fr,72c74fe6f0c665dd,"### Exercice 3 — avertissement contre vitesse de derive
 
 Un système qui derive **vite** laisse **moins de temps** au precurseur pour s'etablir : l'alerte est plus
 faible, ou arrive trop tard. Completez la fonction qui renvoie la tendance `tau_var` mesuree avant la
@@ -8649,7 +8649,7 @@ bascule pour une rampe de duree $T$, et **comparez une rampe lente (T grand) a u
 *Indices :* `modèle.simulate_ramp(c0=1.7, c1=2.9, x0=7.5, sigma=0.05, dt=0.01, T=T, seed=GRAINE)` ;
 detecter la bascule (seuil = moitie de la moyenne initiale) ; `ew.ews_summary(pre, ...)`.
 ",,,,,,,,72c74fe6f0c665dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,95699774,code,fr,e8e6002479baf26d,"def avertissement_vs_vitesse(T):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,95699774,code,fr,e8e6002479baf26d,"def avertissement_vs_vitesse(T):
     """"""Renvoie le tau_var mesure AVANT la bascule pour une rampe de duree T.
     Renvoyer None tant que l'exercice n'est pas complete.""""""
     # TODO etudiant :
@@ -8664,7 +8664,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,9569
 # print(""lente  (T=240000):"", avertissement_vs_vitesse(240000))
 # print(""rapide (T= 60000):"", avertissement_vs_vitesse(60000))
 print(""Exercice 3 a completer : comparer l'avertissement pour une rampe lente vs rapide."")",,,,,,,,e8e6002479baf26d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,5881337d,markdown,fr,02bca4cb36122888,"## 7. Pont vers la causal emergence (ICT-5/6) et vers ICT-9
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,5881337d,markdown,fr,02bca4cb36122888,"## 7. Pont vers la causal emergence (ICT-5/6) et vers ICT-9
 
 Les deux vallees du paysage forment un **gros-grain** naturel a deux macro-etats — *bas* (surpature) et
 *haut* (vegetalise) — separes par le col instable. C'est exactement le type de **coarse-graining** que
@@ -8683,7 +8683,7 @@ prochain notebook leve la limite restante du marche-pied — le **but extrinsequ
 consigne intrinseque* après ablation. L'agence s'y demontrera **par contraste** (la reaction repare la
 ou la simple diffusion dissout), comme le « sans liberte, pas d'agregation » d'ICT-4.
 ",,,,,,,,02bca4cb36122888,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,aa3b2367,markdown,fr,e9f76195aa577083,"## Conclusion — la metaphore tenue par la mesure
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,aa3b2367,markdown,fr,e9f76195aa577083,"## Conclusion — la metaphore tenue par la mesure
 
 On a tresse deux fils tout du long :
 
@@ -8712,10 +8712,10 @@ puits, ou si les précurseurs ne suivaient pas le ralentissement.
 **Ce que ce notebook a apporte par rapport au tri** : un **vrai paysage d'attracteurs** (plusieurs
 bassins, une bifurcation) la ou le tri n'avait qu'un attracteur unique a but impose. Il reste a faire
 emerger l'**agence** — un système qui maintient *lui-même* sa forme. C'est l'objet d'**ICT-9**.",,,,,,,,e9f76195aa577083,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,05c9aa6a,markdown,fr,556bb0745357337b,"# ICT-9 — Agence & regeneration : *reparer sa forme, ou seulement deriver ?*
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,05c9aa6a,markdown,fr,556bb0745357337b,"# ICT-9 — Agence & regeneration : *reparer sa forme, ou seulement deriver ?*
 
 > **Serie ICT** (Integrated Causal Trajectories) — strate 2 : *morphogenese dynamique*.
-> Prerequis conseilles : [ICT-0-Framing](ICT-0-Framing.md) et [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb).
+> Prerequis conseilles : [ICT-0-Framing](ICT-0-Framing.md) et [ICT-8](ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb).
 
 ## La limite que ce notebook leve
 
@@ -8757,7 +8757,7 @@ C'est une *vraie* morphogenese generative — l'attracteur n'est pas une image f
 (les tâches se divisent), ce qui aura des consequences sur *quelles mesures* sont honnetes (section 5).
 Voir aussi Mordvintsev et al., *Growing Neural Cellular Automata* (Distill 2020), et les travaux de
 M. Levin sur la regeneration et le « setpoint » morphologique.",,,,,,,,556bb0745357337b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,74846141,code,fr,489e2e8af23ff060,"import os, sys
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,74846141,code,fr,489e2e8af23ff060,"import os, sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
@@ -8773,7 +8773,7 @@ N = 96                     # cote de la grille (regime ""taches"" stable a cette
 modele = GrayScott()       # F=0.0367, k=0.0649 : taches mitotiques de Pearson
 print(f""Gray-Scott : F={modele.F}, k={modele.k}, Du={modele.Du}, Dv={modele.Dv}, dt={modele.dt}"")
 print(f""Grille {N}x{N}, bords periodiques."")",,,,,,,,489e2e8af23ff060,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,e2179c20,markdown,fr,d7d74ebe30d229b9,"## 1. La morphogenese generative — un attracteur de forme
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,e2179c20,markdown,fr,d7d74ebe30d229b9,"## 1. La morphogenese generative — un attracteur de forme
 
 A partir d'un simple germe central, la reaction-diffusion **engendre** un motif spatial structure et
 auto-entretenu. La quantite de structure est mesuree par la **variance spatiale** du champ d'activateur
@@ -8786,7 +8786,7 @@ morphologique* (tâches de telle taille, telle densite, telle texture). « Repar
 ici *retrouver une organisation structuree du même type*, pas reproduire l'image exacte. C'est
 exactement pourquoi (section 5) les mesures de ressemblance pixel-a-pixel trompent, et pourquoi la
 structure restauree — contrastee au contrôle passif — reste la seule mesure fiable.",,,,,,,,d7d74ebe30d229b9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,5d882040,code,fr,20624aba92ff317c,"rng = np.random.default_rng(GRAINE)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,5d882040,code,fr,20624aba92ff317c,"rng = np.random.default_rng(GRAINE)
 U0, V0 = modele.seed(n=N, rng=rng)
 U_form, V_form, _ = modele.run(U0, V0, steps=6000)   # morphogenese
 S_cible = agency.structure(V_form)                   # consigne intrinseque
@@ -8798,12 +8798,12 @@ a1.set_title(f""t=6000 : motif auto-entretenu (structure={S_cible:.4f})""); a1.a
 plt.suptitle(""Morphogenese generative : la reaction-diffusion engendre un attracteur de forme"")
 plt.tight_layout(); plt.show()
 print(f""Structure (variance spatiale de V) du motif forme : {S_cible:.5f}"")",,,,,,,,20624aba92ff317c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,106c4422,markdown,fr,c10f74530d13b356,"## 2. L'ablation comme intervention `do(.)`
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,106c4422,markdown,fr,c10f74530d13b356,"## 2. L'ablation comme intervention `do(.)`
 
 On **detruit** un quart du motif en le ramenant a l'etat nu du substrat ($U=1$, $V=0$ : « pas de motif
 ici »). Au sens de Pearl, c'est une **intervention** `do(ablation)` : on force une partie de l'etat, puis
 on observe la trajectoire qui en decoule. La question d'agence devient : *que se passe-t-il ensuite ?*",,,,,,,,c10f74530d13b356,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,9104876a,code,fr,14e7a4473d21f928,"mask = agency.quadrant_mask(N, quadrant=3)            # quart bas-droit
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,9104876a,code,fr,14e7a4473d21f928,"mask = agency.quadrant_mask(N, quadrant=3)            # quart bas-droit
 U_abl, V_abl = agency.ablate(U_form, V_form, mask)   # do(ablation)
 
 fig, (a0, a1) = plt.subplots(1, 2, figsize=(11, 5))
@@ -8814,7 +8814,7 @@ for ax in (a0, a1):
 plt.suptitle(""L'ablation comme intervention do(.) au sens de Pearl"")
 plt.tight_layout(); plt.show()
 print(f""Structure dans le quart ablate : {agency.structure(V_abl[mask]):.6f}  (~0 : motif efface)"")",,,,,,,,14e7a4473d21f928,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,7d0000ea,markdown,fr,020f63cd087f520d,"### Exercice 1 — quantifier le dommage
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,7d0000ea,markdown,fr,020f63cd087f520d,"### Exercice 1 — quantifier le dommage
 
 Avant de mesurer une *reparation*, il faut mesurer le *dommage*. Completez `dommage_inflige` : la perte
 de structure (variance regionale) dans la zone ablatee. *Fil de la mesure* : c'est la grandeur que la
@@ -8822,7 +8822,7 @@ reparation devra regagner.
 
 *Indices :* `agency.structure(champ)` calcule la variance ; `V[mask]` selectionne la zone ; comparer
 la structure regionale avant et après ablation.",,,,,,,,020f63cd087f520d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,f81d6d40,code,fr,04b5b349c7cc0bcb,"def dommage_inflige(V_reference, V_ablate, mask):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,f81d6d40,code,fr,04b5b349c7cc0bcb,"def dommage_inflige(V_reference, V_ablate, mask):
     """"""Perte de structure dans la zone ablatee : structure(reference|zone) - structure(ablate|zone).
     Renvoyer None tant que l'exercice n'est pas complete.""""""
     # TODO etudiant : comparer la variance regionale avant / apres l'ablation
@@ -8834,13 +8834,13 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,f81d6d40
 # Verification (a decommenter une fois l'exercice complete) :
 # print(""dommage inflige :"", dommage_inflige(V_form, V_abl, mask))
 print(""Exercice 1 a completer : quantifier le motif detruit par l'ablation."")",,,,,,,,04b5b349c7cc0bcb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,0c108507,markdown,fr,bb79054dd5e5bb10,"## 3. Deux mondes contrefactuels : reaction-diffusion vs diffusion pure
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,0c108507,markdown,fr,bb79054dd5e5bb10,"## 3. Deux mondes contrefactuels : reaction-diffusion vs diffusion pure
 
 Depuis **le même** etat ablate, on laisse evoluer deux dynamiques. Le **monde A** garde la reaction-
 diffusion complete ; le **monde B** ne garde que la diffusion (même opérateur diffusif, terme reactif
 retire) — le **contrôle passif**. On enregistre la trajectoire de structure *dans la zone ablatee* pour
 les deux mondes, afin de comparer non seulement l'etat final mais toute la dynamique de recuperation.",,,,,,,,bb79054dd5e5bb10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,13ee5519,code,fr,7043230304e644e9,"REPAIR_STEPS = 8000
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,13ee5519,code,fr,7043230304e644e9,"REPAIR_STEPS = 8000
 REC_EVERY = 200
 
 # --- Monde A : do(ablation) + reaction-diffusion (mecanisme reparateur complet) ---
@@ -8870,7 +8870,7 @@ for ax, (img, ttl) in zip(axes, panneaux):
 plt.suptitle(""Deux mondes contrefactuels issus de la MEME intervention do(ablation)"")
 plt.tight_layout(); plt.show()
 print(f""structure zone (fin) : monde A = {agency.structure(V_rd[mask]):.5f} | monde B = {agency.structure(V_diff[mask]):.5f}"")",,,,,,,,7043230304e644e9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,f7371420,markdown,fr,f6610890587d2d07,"## 4. L'agence mesuree : le gain de reparation
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,f7371420,markdown,fr,f6610890587d2d07,"## 4. L'agence mesuree : le gain de reparation
 
 Le **score de recuperation** rapporte la structure regagnee dans la zone a la structure perdue ($\approx 1$
 = zone integralement reconstituee, $\approx 0$ = rien ne repousse). Le **gain de reparation** est la
@@ -8880,7 +8880,7 @@ $$\text{gain} = \text{recuperation}_{\text{reaction-diffusion}} - \text{recupera
 
 Strictement positif et substantiel, il signe une trajectoire qui *repare activement*. C'est la mesure
 d'agence — et le **temps de recuperation** dit *a quelle vitesse* la forme revient vers sa consigne.",,,,,,,,f6610890587d2d07,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,fd198636,code,fr,ca221a47114009a5,"rec_rd   = agency.recovery_score(V_form, V_abl, V_rd, mask)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,fd198636,code,fr,ca221a47114009a5,"rec_rd   = agency.recovery_score(V_form, V_abl, V_rd, mask)
 rec_diff = agency.recovery_score(V_form, V_abl, V_diff, mask)
 gain     = agency.repair_gain(rec_rd, rec_diff)
 S_zone   = agency.local_structure(V_form, mask)   # reference LOCALE : la trajectoire tracee est celle de la zone
@@ -8903,7 +8903,7 @@ plt.tight_layout(); plt.show()
 
 print(f""recuperation A (RD) = {rec_rd:.2f} | recuperation B (diffusion) = {rec_diff:.2f} | GAIN = {gain:.2f}"")
 print(f""temps de recuperation (monde A, a 20% pres, consigne locale {S_zone:.5f}) = {ttr} pas"")",,,,,,,,ca221a47114009a5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,08660f9c,markdown,fr,a14770fc537d365f,"### Exercice 2 — l'agence est-elle locale ou générale ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,08660f9c,markdown,fr,a14770fc537d365f,"### Exercice 2 — l'agence est-elle locale ou générale ?
 
 On a mesure la reparation d'**un** quart. Une vraie regeneration devrait reparer **n'importe quelle**
 zone. Completez `gain_reparation_ailleurs(quadrant)` pour ablater puis mesurer le gain sur un autre
@@ -8911,7 +8911,7 @@ quadrant, et verifiez que l'agence n'est pas un artefact de l'endroit choisi.
 
 *Indices :* reproduire la logique des sections 3-4 en changeant le masque ; `pure_diffusion_step(champ, modèle.Dv)`
 pour le contrôle passif ; `agency.recovery_score(...)` puis `agency.repair_gain(...)`.",,,,,,,,a14770fc537d365f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,a42f45b3,code,fr,d635020be6b8bed6,"def gain_reparation_ailleurs(quadrant):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,a42f45b3,code,fr,d635020be6b8bed6,"def gain_reparation_ailleurs(quadrant):
     """"""Ablate un AUTRE quadrant puis renvoie le gain de reparation (RD vs diffusion) pour cette zone.
     Teste si l'agence est locale a une zone ou generale. Renvoyer None tant que non complete.""""""
     # TODO etudiant :
@@ -8930,7 +8930,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,a42f45b3
 # for q in range(4):
 #     print(f""quadrant {q} : gain = {gain_reparation_ailleurs(q)}"")
 print(""Exercice 2 a completer : l'agence repare-t-elle aussi bien partout ?"")",,,,,,,,d635020be6b8bed6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,0870343f,markdown,fr,9bebc85ac262fb1c,"## 5. *Sans complaisance* : la ressemblance trompe, le contraste tient
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,0870343f,markdown,fr,9bebc85ac262fb1c,"## 5. *Sans complaisance* : la ressemblance trompe, le contraste tient
 
 La tentation serait de juger la reparation par la **ressemblance a l'image d'origine**. Deux mesures
 naives le proposent — et **toutes deux trompent** :
@@ -8945,7 +8945,7 @@ naives le proposent — et **toutes deux trompent** :
 La seule mesure fiable est celle qu'on a retenue : **la structure restauree, contrastee au contrôle
 passif**. L'agence se mesure comme *restauration sous intervention*, pas comme *ressemblance a un gabarit
 fige*.",,,,,,,,9bebc85ac262fb1c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,5d99b18c,code,fr,2661081bc86c5e39,"def crop(field):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,5d99b18c,code,fr,2661081bc86c5e39,"def crop(field):
     h = N // 2
     return field[h:N, h:N]            # la zone ablatee (quart bas-droit)
 
@@ -8975,7 +8975,7 @@ print(f""   RD = {spec_rd_g:.3f}   |   diffusion = {spec_diff_g:.3f}"")
 print(""   -> la zone diffusee tombe SOUS le seuil : la ressemblance fantome est annulee (0)."")
 print()
 print(f""Seule mesure fiable : structure restauree contrastee au controle passif -> GAIN = {gain:.2f}"")",,,,,,,,2661081bc86c5e39,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,0dc8a2b2,markdown,fr,4c7d8bc66b81279d,"## 6. Le contrôle « bruit apparie en variance » — la variance ne suffit pas
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,0dc8a2b2,markdown,fr,4c7d8bc66b81279d,"## 6. Le contrôle « bruit apparie en variance » — la variance ne suffit pas
 
 La mesure de structure est la **variance spatiale** : simple et honnete pour dire « il y a de l'energie
 ici ». Mais l'energie n'est pas l'organisation. Un champ de **bruit blanc** peut avoir *exactement la
@@ -8987,7 +8987,7 @@ une mesure d'**organisation**. L'auto-correlation spatiale au decalage 1 (`spati
 ce rôle : proche de 1 pour un champ lisse et organise, proche de 0 pour du bruit. Elle confirme que la
 variance regagnee par la reaction-diffusion est une **vraie forme**, pas du bruit de même energie.
 ",,,,,,,,4c7d8bc66b81279d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,876d5d07,code,fr,65f5f1466ba663dd,"rng_ctrl = np.random.default_rng(GRAINE)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,876d5d07,code,fr,65f5f1466ba663dd,"rng_ctrl = np.random.default_rng(GRAINE)
 zone_rd = crop(V_rd)                                       # la zone reparee par reaction-diffusion
 bruit   = agency.variance_matched_noise(zone_rd, rng_ctrl)  # meme moyenne/variance, aucune organisation
 
@@ -9006,7 +9006,7 @@ print(f""structure (variance)      : RD = {s_rd:.5f}  |  bruit apparie = {s_brui
 print(f""auto-correlation spatiale : RD = {ac_rd:.2f}     |  bruit apparie = {ac_bruit:.2f}      (le discriminant)"")
 print(""-> la variance regagnee par la RD est une VRAIE forme (voisins correles), pas du bruit de meme energie."")
 ",,,,,,,,65f5f1466ba663dd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,f1562b59,markdown,fr,d219c8d015a9abf8,"### Exercice 3 — robustesse : la probabilite de retour au bassin
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,f1562b59,markdown,fr,d219c8d015a9abf8,"### Exercice 3 — robustesse : la probabilite de retour au bassin
 
 Mesure plus exigeante : sur plusieurs ablations **aleatoires**, quelle fraction revient a la consigne ?
 Completez `proba_retour_bassin`. *Avertissement d'honnetete* : chaque essai est une simulation complete
@@ -9015,7 +9015,7 @@ forte variance. Documentez cette limite plutot que de sur-interpreter le chiffre
 
 *Indices :* `agency.basin_return_probability(modèle, U_form, V_form, make_mask, steps, target_structure, ...)` ;
 `make_mask(rng)` doit renvoyer un `agency.disk_mask(N, cx, cy, rayon)` de centre aleatoire.",,,,,,,,d219c8d015a9abf8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,7021945f,code,fr,e54a103e205ac74b,"def proba_retour_bassin(n_essais=5, rayon=14):
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,7021945f,code,fr,e54a103e205ac74b,"def proba_retour_bassin(n_essais=5, rayon=14):
     """"""Fraction d'ablations aleatoires (disques) dont la structure finale revient a la cible.
     Renvoyer None tant que non complete.
     ATTENTION : couteux (chaque essai = une simulation complete) et stochastique (forte variance
@@ -9033,7 +9033,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,7021945f
 # Verification (a decommenter -- patienter, c'est plusieurs simulations completes) :
 # print(""proba de retour au bassin :"", proba_retour_bassin(n_essais=5))
 print(""Exercice 3 a completer : robustesse de l'agence sous ablations aleatoires (mesure couteuse)."")",,,,,,,,e54a103e205ac74b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,ce4f22bc,markdown,fr,8727b4d4837d2177,"## 7. Au-dela du cas unique : un balayage de robustesse
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,ce4f22bc,markdown,fr,8727b4d4837d2177,"## 7. Au-dela du cas unique : un balayage de robustesse
 
 Une seule demonstration ne fait pas une loi. On repete donc la mesure d'agence sur un petit **balayage** :
 plusieurs graines (motifs différents), plusieurs **tailles** et **formes** d'ablation (quadrant, disques
@@ -9041,7 +9041,7 @@ de rayons varies). Le balayage est volontairement **borne** (3 graines x 3 masqu
 temps de calcul raisonnable — il vise a sortir du cas unique, pas a etre exhaustif. Le critere : le gain
 de reparation reste-t-il **positif** sur l'ensemble des conditions ?
 ",,,,,,,,8727b4d4837d2177,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,16b6c846,code,fr,ede20a0bb5335084,"FORM_S, REPAIR_S = 5000, 5000
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,16b6c846,code,fr,ede20a0bb5335084,"FORM_S, REPAIR_S = 5000, 5000
 graines_sweep = [1, 7, 42]
 
 def masques_sweep(n):
@@ -9079,7 +9079,7 @@ ax.set_ylabel(""gain de reparation"")
 ax.set_title(""Agence mesuree sur 3 graines x 3 masques : le gain reste positif"")
 plt.tight_layout(); plt.show()
 ",,,,,,,,ede20a0bb5335084,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,7cdf821c,markdown,fr,339bc21c7c3b59cf,"## 8. Pont vers la suite : ICT-10/11/12 et la synthese
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,7cdf821c,markdown,fr,339bc21c7c3b59cf,"## 8. Pont vers la suite : ICT-10/11/12 et la synthese
 
 ICT-9 a ajoute la piece manquante du marche-pied : un **point de consigne intrinseque**, defendu
 activement. La feuille de route de la strate 2 poursuit, **chaque metaphore restant attachee a une
@@ -9102,7 +9102,7 @@ lorsqu'elle est **attachee a une mesure**.
 (section 7) — avant d'etendre. Elle fige la grammaire commune* dynamique -> intervention do(.) ->
 contrôle passif -> recuperation -> profil multi-echelle -> test d'invariance *sur laquelle ICT-11
 (profils d'agence multi-echelle) et ICT-12 (renormalisation) s'appuieront.*",,,,,,,,339bc21c7c3b59cf,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,09e956b4,markdown,fr,7bfd5e942e53f556,"## Conclusion — l'agence tenue par la mesure
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,09e956b4,markdown,fr,7bfd5e942e53f556,"## Conclusion — l'agence tenue par la mesure
 
 On a tressé les deux fils jusqu'au bout :
 
@@ -9181,8 +9181,8 @@ verdict est, de plus en plus, **régime-dépendant** (ICT-10 → ICT-13).
 | **[ICT-5](ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb)** | L'émergence causale ($\Phi_\text{macro} > \Phi_\text{micro}$) est-elle réelle et systématique ? | **Discriminante**, pas systématique : absente sur des systèmes déjà micro-intégrés | Hoel 0.114 → 0.597 (**+0.483**) ; XOR **−1.375** ; basic\_network **−1.792** |
 | **[ICT-6](ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb)** | Peut-on porter l'émergence au tri au-delà de PyPhi (CE 2.0) ? | OUI ; le macro *intuitif* (niveau de tri) **échoue**, seul l'apportionnement glouton trouve l'échelle | micro EI 3.29 bits ; macro-tri gain **−0.034** (NON) ; glouton effectiveness 0.717 → 0.826 (**+0.109**) |
 | **[ICT-7](ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb)** | Le tri auto-organisé est-il scale-free ? | **NON** : échelle caractéristique (la taille $n$, révélée par effondrement d'échelle) ; le scale-free est rare et réglé | branchement critique $\mu$=1 : $\alpha$=1.58, KS=0.017, $p$=0.625 ($\tau$=3/2) ; tri **rejeté** $p$-GoF=0.0 |
-| **[ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb)** | Les *early-warning signals* montent-ils **avant** la bascule ? | OUI (variance ↑, AR1 ↑) ; une mesure naïve **fabrique ou masque** le signal | $c_\text{fold}$≈2.604 ; stationnaire $\tau$=+1.00 ; AR1 brute 0.9987 (saturée) vs amincie 0.939 |
-| **[ICT-9](ICT-09-AgencyRegeneration-Python.ipynb)** | Quand un système répare-t-il *sa propre* forme (agence) ? | Agence = **gain de réparation > 0** (réaction-diffusion vs diffusion pure) ; mesure naïve = signal fantôme | gain=1.22 ; cosinus spectral RD 0.631 **<** diffusion 0.735 (fantôme) ; sweep 9/9 positif (moy 1.26) |
+| **[ICT-8](ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb)** | Les *early-warning signals* montent-ils **avant** la bascule ? | OUI (variance ↑, AR1 ↑) ; une mesure naïve **fabrique ou masque** le signal | $c_\text{fold}$≈2.604 ; stationnaire $\tau$=+1.00 ; AR1 brute 0.9987 (saturée) vs amincie 0.939 |
+| **[ICT-9](ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb)** | Quand un système répare-t-il *sa propre* forme (agence) ? | Agence = **gain de réparation > 0** (réaction-diffusion vs diffusion pure) ; mesure naïve = signal fantôme | gain=1.22 ; cosinus spectral RD 0.631 **<** diffusion 0.735 (fantôme) ; sweep 9/9 positif (moy 1.26) |
 | **[ICT-10](ICT-10-CatastropheGrammar-Python.ipynb)** | La grammaire des catastrophes est-elle mesurable ? $\hat p$ anticipe-t-il ? | OUI en régime non dégénéré ($a<0$) ; hors régime = **fantôme**. $\hat p$ : avantage **régime-dépendant** | comptage [1,3], 2 transitions ; lacet aire signée +1.633 ; $\hat p$ horizon-4 0.055 vs persistance 0.101 ; $a$=+0.5 → 0 saut |
 | **[ICT-11](ICT-11-CausalAgencyProfiles-Python.ipynb)** | À quelle échelle l'agence est-elle la plus lisible ? | **Résultat négatif robuste** : pas de granularité privilégiée | 2 mesures se contredisent ; effectiveness↔repair\_gain $r$=+0.50 mais ↔basin\_return $r$=−0.14 ; effectiveness sans sommet (0.71/0.50/0.79/0.63) |
 | **[ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)** | Dans quels environnements le modèle interne $\hat p$ paie-t-il son coût ? | **Régime-dépendant** : $\hat p$ paie **où la source échappe au réactif ET reste prévisible** | balistique rapide capture $\hat p$ 0.072 vs réactif 0.018 ; anticipation $\hat p$ 2.44 vs persistance 14.95 (balist.) mais **perd** en bruité (0.62 vs 0.23) |
@@ -9327,7 +9327,7 @@ print(f""S1 (tri)          longueur={len(s1):5d}  etats distincts={len(set(s1)):
       f""(min={min(s1)}, max={max(s1)})"")",,,,,,,,581be4af90de1d90,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb,7070c73b,markdown,fr,ec659dfbbf74bb88,"### S2 — le paysage bistable (strate 2)
 
-Le modèle de pâturage de May ([ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb)), simulé en **SDE juste
+Le modèle de pâturage de May ([ICT-8](ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb)), simulé en **SDE juste
 sous le pli** ($c = 0.92\,c_\text{fold}$) : deux bassins coexistent et le bruit provoque des
 bascules occasionnelles. L'état est le **décile** de la biomasse.
 ",,,,,,,,ec659dfbbf74bb88,,,,,,,,,,,,,,,
@@ -9613,7 +9613,7 @@ complété. Chaque exercice est une **extension falsifiable** de la synthèse.
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Synthese-CrossSubstrat-Python.ipynb,fee11470,markdown,fr,b5c7fda496cfdd7f,"### Exercice 1 — un cinquième substrat
 
 Ajoutez un substrat issu d'une **autre strate** — par exemple le champ de réaction-diffusion
-d'[ICT-9](ICT-09-AgencyRegeneration-Python.ipynb) résumé par une statistique scalaire discrétisée, ou une
+d'[ICT-9](ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb) résumé par une statistique scalaire discrétisée, ou une
 trajectoire de $\Phi$ d'[ICT-1](ICT-01-PhiTrajectories-Python.ipynb). Rejoint-il l'ensemble crédité ?
 Déplace-t-il le classement (gate 2) ?
 
@@ -16111,7 +16111,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipy
   l'addition modulaire (`weight_decay=1`), avec la visualisation PCA « horloge » des embeddings.",,,,,,,,eeb7f3fd4e6c8d70,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18b-ReversibilityBudget-Python.ipynb,header,markdown,fr,9532324ed6f37bef,"# ICT-18b — Budget de réversibilité : la jambe « fin » de la réversibilisation
 
-> *Integrated Causal Trajectories*. Pont avec [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (le *moyen*), [ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) (l'*enjeu*), [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb) / [ICT-9](ICT-09-AgencyRegeneration-Python.ipynb) / [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
+> *Integrated Causal Trajectories*. Pont avec [ICT-18](ICT-18-ArrowOfTimeReversibilization-Python.ipynb) (le *moyen*), [ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) (l'*enjeu*), [ICT-8](ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb) / [ICT-9](ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb) / [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb).
 
 **Navigation** : [README](README.md) | [ICT-0-Framing](ICT-0-Framing.md) | [sous-serie ICT-19](ICT-19-EnjeuBattery/ICT-19-EnjeuBattery-Python.ipynb) -> [ICT-20](ICT-20-FeatureCatastrophes/ICT-20-FeatureCatastrophes-Python.ipynb)
 
@@ -20302,7 +20302,7 @@ Ce notebook a exécuté **le même protocole** sur les trois substrats de la bat
 2. **GOL est le seul non-réparateur** — une cellule retirée détruit le glider, sans régénération ; S5 recolle partiellement, S2 relaxe (axe R) ;
 3. **L'instrument d'enjeu `I_stake` voit S2 et S5, pas GOL** — l'invariant du glider est translationnel ; la mesure honnête de cet axe est la *déclaration* de cet aveugle (axe S).
 
-Ce que ce notebook ne fait pas : l'**émergence causale** (TPM coarse-grainée, information effective) sur ces trajectoires — c'est l'objet de la tranche en cours sur les trajectoires certifiées (issue #5726), à laquelle ce contraste fournit le socle des trois régimes. Les mono-substrats se creusent dans leurs notebooks respectifs : [ICT-8](ICT-08-AttractorLandscapesEWS-Python.ipynb) (paysages et early-warning du bistable), ICT-9 (morphogenèse Gray-Scott), [ICT-Life](ICT-Life-SubstratCertifie-Python.ipynb) (calibration GOL + pont Lean `hashlife_correct`).
+Ce que ce notebook ne fait pas : l'**émergence causale** (TPM coarse-grainée, information effective) sur ces trajectoires — c'est l'objet de la tranche en cours sur les trajectoires certifiées (issue #5726), à laquelle ce contraste fournit le socle des trois régimes. Les mono-substrats se creusent dans leurs notebooks respectifs : [ICT-8](ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb) (paysages et early-warning du bistable), ICT-9 (morphogenèse Gray-Scott), [ICT-Life](ICT-Life-SubstratCertifie-Python.ipynb) (calibration GOL + pont Lean `hashlife_correct`).
 
 *Suite naturelle : un instrument d'enjeu translationnel (distance entre distributions de formes), et le croisement de cette table avec l'information effective des trajectoires certifiées.*",,,,,,,,1d84c556d45310b7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-32-StratificationCausaleLife-Python.ipynb,8c949b6b,markdown,fr,c958f81ef0c5f300,"# ICT-32 — Stratification causale du Jeu de la Vie : l'apportionment de Hoel sur substrat certifié
@@ -20759,7 +20759,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-33-SoupCollisions-Python.ipynb,0d240a73,mar
 ICT-33 complète la triade des ensembles du substrat Life : **fermé-saturé** (le cycle canonique d'ICT-32), **fermé-exhaustif** (le tore de ICT-32), et désormais **ouvert-conditionné** (la soupe de ce notebook). Le résultat central tient en une phrase : sur un moteur déterministe certifié (`hashlife_correct`), l'ouverture de l'ensemble ne crée pas de bruit — la **projection** en crée. La TPM empirique de l'observable population est stochastique parce que des configurations micro au destin certain partagent le même état macro, et la batterie de collisions en est la démonstration contrôlée : même masse, même moteur, trois classes de destin qui basculent au décalage d'une colonne.
 
 Instruments posés dans `ict/life.py` : `random_soup`, `empirical_tpm_live_count`, `glider_collision`, `collision_outcome` (avec `connected_components`, `is_glider`). Suite naturelle : la recherche d'une macro qui code le destin sur l'ensemble ouvert — la partition de l'espace des soupes par observables d'émergence (gliders émis, blocs stables formés), dont l'effectiveness restaurée mesurerait exactement l'information causale que la population jette.",,,,,,,,417aa810e552122e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,433203eea764d721,markdown,fr,f7a29b7f71764f5c,"## 8. Le pont TESTÉ : stabilité → recouvrabilité (falsifiable)
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,433203eea764d721,markdown,fr,f7a29b7f71764f5c,"## 8. Le pont TESTÉ : stabilité → recouvrabilité (falsifiable)
 
 La §7 a posé les ponts *narrativement*. Mais un pont implicite — « un système plus stable se répare mieux » — n'est crédible que **testé avec un modèle nul** (recommandation P5 du retour externe, issue #8077). Ce paragraphe rend ce lien explicite et falsifiable, et l'inscrit dans la matrice de dissociations (#7734).
 
@@ -20769,7 +20769,7 @@ La §7 a posé les ponts *narrativement*. Mais un pont implicite — « un syst�
 - la **recouvrabilité globale** (retour au bassin après une *forte* perturbation, ou résistance au bruit) est, par hypothèse, gouvernée par la **profondeur du bassin** $\Delta V = V(\text{col}) - V(\text{puits})$.
 
 Ces deux quantités co-varient près du pli (toutes deux $\to 0$). Le pont *barrière → recouvrabilité globale* n'est donc testable qu'en **découplant** barrière et courbure. On procède en deux temps : (1) sur le modèle de May, mesurer le lien opérationnel avec un **nul de permutation** ; (2) sur un double-puits paramétrique $V=ax^4-bx^2$, **varier la barrière à courbure fixée** puis **la courbure à barrière fixée** pour identifier lequel des deux gouverne réellement la recouvrabilité globale.",,,,,,,,f7a29b7f71764f5c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,b4cf145730da34b1,code,fr,ce756ee45909b134,"# Pont sur le modele de May : recouvrabilite globale vs profondeur de bassin, avec nul de permutation.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,b4cf145730da34b1,code,fr,ce756ee45909b134,"# Pont sur le modele de May : recouvrabilite globale vs profondeur de bassin, avec nul de permutation.
 # (Le col interieur protegeant le bassin haut n'existe qu'en c>=~2.0 : on demarre la.)
 from scipy.stats import spearmanr
 
@@ -20821,8 +20821,8 @@ g2.set_title(""Nul : recouvrabilite permutee a travers les c"")
 plt.tight_layout(); plt.show()
 print(f""Spearman(recouvrabilite, profondeur) = {rho_obs:.3f}   p (permutation, N={N}) = {pval:.4f}"")
 print(f""Spearman(recouvrabilite, courbure)   = {spearmanr(recov, courb)[0]:.3f}   <-- confondu pres du pli (co-varient)"")",,,,,,,,ce756ee45909b134,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,135fcc97824de5a1,markdown,fr,c48d00b1962a7415,"Le lien est **significatif sous le nul** ($\rho\approx 0{,}65$, $p\approx 0{,}014$) : la recouvrabilité globale chute bien à mesure que le bassin s'amincit. **Mais** le coefficient est identique pour la profondeur et la courbure ($\approx 0{,}65$), parce que les deux co-varient à l'approche du pli. Sur le seul axe $c$ du modèle de May, on ne peut donc pas attribuer la perte de recouvrabilité à la *barrière* plutôt qu'à la *courbure* — le test est opérationnel (il confirme « recouvrabilité ↔ approche du pli ») mais **pas discriminant**. Pour trancher, il faut découpler les deux — ce que fait le double-puits suivant.",,,,,,,,c48d00b1962a7415,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,790dfc4cd194c42d,code,fr,c7f72be8d488612a,"# Double-puits V = a x^4 - b x^2 : courbure au puits = 4b (b seul), barriere = b^2/(4a) (a et b).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,135fcc97824de5a1,markdown,fr,c48d00b1962a7415,"Le lien est **significatif sous le nul** ($\rho\approx 0{,}65$, $p\approx 0{,}014$) : la recouvrabilité globale chute bien à mesure que le bassin s'amincit. **Mais** le coefficient est identique pour la profondeur et la courbure ($\approx 0{,}65$), parce que les deux co-varient à l'approche du pli. Sur le seul axe $c$ du modèle de May, on ne peut donc pas attribuer la perte de recouvrabilité à la *barrière* plutôt qu'à la *courbure* — le test est opérationnel (il confirme « recouvrabilité ↔ approche du pli ») mais **pas discriminant**. Pour trancher, il faut découpler les deux — ce que fait le double-puits suivant.",,,,,,,,c48d00b1962a7415,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,790dfc4cd194c42d,code,fr,c7f72be8d488612a,"# Double-puits V = a x^4 - b x^2 : courbure au puits = 4b (b seul), barriere = b^2/(4a) (a et b).
 # -> Scan A : courbure FIXEE (b=1), barriere varie (a). Scan B : barriere FIXEE (a=b^2), courbure varie (b).
 def Vdw(x, a, b): return a*x**4 - b*x**2
 def dVdw(x, a, b): return 4*a*x**3 - 2*b*x
@@ -20852,7 +20852,7 @@ h2.set_title(f""Scan B : courbure varie -> $\\rho$={rho_B:.2f}""); h2.grid(alpha
 plt.tight_layout(); plt.show()
 print(f""Scan A (courbure fixe) : Spearman(recouvrabilite, barriere) = {rho_A:.3f}"")
 print(f""Scan B (barriere fixe) : Spearman(recouvrabilite, courbure) = {rho_B:.3f}"")",,,,,,,,c7f72be8d488612a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,735fae8016b2eb40,markdown,fr,79e80762ff52a8eb,"### Verdict — le pont est tenu par la *barrière*, pas par la courbure
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,735fae8016b2eb40,markdown,fr,79e80762ff52a8eb,"### Verdict — le pont est tenu par la *barrière*, pas par la courbure
 
 - **Scan A** (courbure fixée, barrière varie) : recouvrabilité monotone croissante avec la barrière, $\rho=+1{,}0$. **Plus le bassin est profond, mieux le système recouvre** — c'est le pont.
 - **Scan B** (barrière fixée, courbure varie) : recouvrabilité *décroît* quand la courbure augmente, $\rho=-1{,}0$. La courbure locale (l'intuition naïve de « raideur du puits ») **ne gouverne pas** la recouvrabilité globale — l'effet négatif est géométrique (puits étroit = moins d'amplitude absorbable à hauteur de barrière constante).
@@ -23027,21 +23027,21 @@ La leçon dépasse le tri : une organisation causale **secondaire** peut s'insta
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb,b97177fd,markdown,fr,b6fb01ae0c581080,> **Statut épistémique** — **Établi** : L'émergence causale (Hoel) est discriminante entre échelles. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,b6fb01ae0c581080,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb,f02d68bd,markdown,fr,4526cdb954fa1d7b,> **Statut épistémique** — **Établi** : La TPM estimée depuis les trajectoires de tri permet l'émergence causale multi-échelles. Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).,,,,,,,,4526cdb954fa1d7b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb,bc900db5,markdown,fr,c87553bfd49559f2,"> **Statut épistémique** — **Établi** : Le tri *paraît* scale-free mais possède une taille caractéristique, falsification mesurée par la chaîne complète Clauset-Shalizi-Newman (Hill MLE, KS, comparaison exponentielle, bootstrap GoF). Portée et détail dans la [matrice de dissociations](../../../../docs/ict/dissociations-matrix.md).",,,,,,,,c87553bfd49559f2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,statut-epistemique,markdown,fr,98e610156e95f343,"> **Statut épistémique** — **Établi** : Les *early-warning signals* (Scheffer 2009) précèdent la bifurcation pli — signal local, pas déterminisme. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,98e610156e95f343,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,c2b6848b,markdown,fr,ad7d6ed7641ea6fa,"**Lecture chiffree - l'anatomie du pli en trois instantanes.** La sortie imprime les equilibres pour trois pressions. A $c=1{,}80$ : quatre equilibres, dont le col instable a $1{,}30$ et le puits haut stable a $7{,}70$ -- un ecart col-puits de $6{,}4$ (les deux etats stables, $1{,}00$ et $7{,}70$, sont eux separes de $6{,}70$). A $c=2{,}60$ : le col ($4{,}75$) et le puits haut ($4{,}81$) sont a $0{,}06$ l'un de l'autre -- la fusion est en train de s'accomplir, et c'est exactement la pression que les mesures EWS de la section 4 retiendront comme seuil nominal. A $c=3{,}20$ : il ne reste que l'equilibre bas $0{,}34$ ; le paysage a deux puits a cesse d'exister. L'ecart col-puits se comprime de $6{,}4$ a $0{,}06$ sur la meme plage de $c$ qui fait monter les precurseurs -- la figure de gauche montre l'aplatissement du puits, la sortie en donne la geometrie exacte.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,statut-epistemique,markdown,fr,98e610156e95f343,"> **Statut épistémique** — **Établi** : Les *early-warning signals* (Scheffer 2009) précèdent la bifurcation pli — signal local, pas déterminisme. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).",,,,,,,,98e610156e95f343,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,c2b6848b,markdown,fr,ad7d6ed7641ea6fa,"**Lecture chiffree - l'anatomie du pli en trois instantanes.** La sortie imprime les equilibres pour trois pressions. A $c=1{,}80$ : quatre equilibres, dont le col instable a $1{,}30$ et le puits haut stable a $7{,}70$ -- un ecart col-puits de $6{,}4$ (les deux etats stables, $1{,}00$ et $7{,}70$, sont eux separes de $6{,}70$). A $c=2{,}60$ : le col ($4{,}75$) et le puits haut ($4{,}81$) sont a $0{,}06$ l'un de l'autre -- la fusion est en train de s'accomplir, et c'est exactement la pression que les mesures EWS de la section 4 retiendront comme seuil nominal. A $c=3{,}20$ : il ne reste que l'equilibre bas $0{,}34$ ; le paysage a deux puits a cesse d'exister. L'ecart col-puits se comprime de $6{,}4$ a $0{,}06$ sur la meme plage de $c$ qui fait monter les precurseurs -- la figure de gauche montre l'aplatissement du puits, la sortie en donne la geometrie exacte.
 ",,,,,,,,ad7d6ed7641ea6fa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,401a78dd,markdown,fr,85ee59f62f15718c,"**Lecture chiffree - la montee des deux precurseurs.** Les cinq lignes vont de $c=1{,}70$ (+0,90 du pli) a $c=2{,}57$ (+0,03 du pli) : la variance passe de $0{,}00291$ a $0{,}01256$ (multiplication par $4{,}3$) et l'AR1 de $0{,}7370$ a $0{,}9315$ : l'AR1 gagne $0{,}19$ sur la table, et il lui reste une marge de $0{,}07$ avant saturation ($1 - \mathrm{AR1}$, la definition reprise en section 5). Les deux colonnes montent donc de conserve -- c'est la co-signature du ralentissement critique : le systeme s'ecarte plus loin (variance) et oublie plus lentement (AR1). Le test de tendance conclut sur les deux a $\tau = +1{,}00$ ($p = 1{,}4\times10^{-2}$) : monotonie parfaite sur 5 points, mais la significativite qui restera *modeste* -- c'est le prix d'un echantillonnage stationnaire rare ; la valeur de la table n'est pas la certitude, c'est la direction.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,401a78dd,markdown,fr,85ee59f62f15718c,"**Lecture chiffree - la montee des deux precurseurs.** Les cinq lignes vont de $c=1{,}70$ (+0,90 du pli) a $c=2{,}57$ (+0,03 du pli) : la variance passe de $0{,}00291$ a $0{,}01256$ (multiplication par $4{,}3$) et l'AR1 de $0{,}7370$ a $0{,}9315$ : l'AR1 gagne $0{,}19$ sur la table, et il lui reste une marge de $0{,}07$ avant saturation ($1 - \mathrm{AR1}$, la definition reprise en section 5). Les deux colonnes montent donc de conserve -- c'est la co-signature du ralentissement critique : le systeme s'ecarte plus loin (variance) et oublie plus lentement (AR1). Le test de tendance conclut sur les deux a $\tau = +1{,}00$ ($p = 1{,}4\times10^{-2}$) : monotonie parfaite sur 5 points, mais la significativite qui restera *modeste* -- c'est le prix d'un echantillonnage stationnaire rare ; la valeur de la table n'est pas la certitude, c'est la direction.
 ",,,,,,,,85ee59f62f15718c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,3615ddc8,markdown,fr,e50ed1ecbfa0b65b,"**Lecture chiffree - les deux pollutions de la mesure.** La meme serie, pres du pli, donne deux verdicts qui ne se ressemblent pas. AR1 : la mesure brute (sur-echantillonnee) rend $0{,}9987$ -- collee a 1, sa marge avant saturation n'est que de $0{,}0013$ et aucun signal ne peut y grimper. Apres amincissement x50, la meme serie rend $0{,}9386$ : une marge de $0{,}06$ au lieu de $0{,}0013$ (environ 47 fois plus large), et le signal redevient lisible. Variance : la mesure brute (tendance incluse) rend $0{,}01427$, contre $0{,}00980$ une fois les fluctuations detrendees -- la derive deterministe de l'equilibre represente donc $0{,}00447$, soit ~31 % de la variance brute. Mesurer sans detrendre, ce n'est pas mesurer les fluctuations du puits, c'est mesurer la pente du puits lui-meme. Les deux lignes de la sortie le disent sans detour : *la mesure naive masque, le protocole correct revele.*
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,3615ddc8,markdown,fr,e50ed1ecbfa0b65b,"**Lecture chiffree - les deux pollutions de la mesure.** La meme serie, pres du pli, donne deux verdicts qui ne se ressemblent pas. AR1 : la mesure brute (sur-echantillonnee) rend $0{,}9987$ -- collee a 1, sa marge avant saturation n'est que de $0{,}0013$ et aucun signal ne peut y grimper. Apres amincissement x50, la meme serie rend $0{,}9386$ : une marge de $0{,}06$ au lieu de $0{,}0013$ (environ 47 fois plus large), et le signal redevient lisible. Variance : la mesure brute (tendance incluse) rend $0{,}01427$, contre $0{,}00980$ une fois les fluctuations detrendees -- la derive deterministe de l'equilibre represente donc $0{,}00447$, soit ~31 % de la variance brute. Mesurer sans detrendre, ce n'est pas mesurer les fluctuations du puits, c'est mesurer la pente du puits lui-meme. Les deux lignes de la sortie le disent sans detour : *la mesure naive masque, le protocole correct revele.*
 ",,,,,,,,e50ed1ecbfa0b65b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,0c32a5ac,markdown,fr,868c89e668fbd537,"## Lecture -- La rampe réelle : les précurseurs montent avant la bascule
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,0c32a5ac,markdown,fr,868c89e668fbd537,"## Lecture -- La rampe réelle : les précurseurs montent avant la bascule
 
 La simulation de rampe (c dérive lentement de 1.7 à 2.9 le long de la trajectoire) bascule effectivement à t = 184 446, avec c_tip = 2.622 -- presque au pli localisé en tête de carnet par la configuration du modèle (c_fold ≈ 2.604) : la transition survient au franchissement du pli, comme attendu pour ce modèle de pâturage de May.
 
 Dans la fenêtre d'avant-bascule, les deux précurseurs EWS montent sans ambiguïté : variance, Kendall tau = **+0.347** (p = 1.9e-237) ; AR1, tau = **+0.303** (p = 5.8e-182) -- des p astronomiquement faibles. Le chapitre 6 répond donc oui à sa propre question : sur une rampe non-stationnaire réelle, le signal précède la bascule -- d'autant plus lisible que la section 5 (« Sans complaisance ») avait montré l'AR1 brute saturée sur le régime plateau (0.9987 brut, 0.9386 après amincissement x50).
 
 **Lecture derivee -- l'ecart et l'echelle.** Le pli disparait a $c = 2{,}604$, la trajectoire retombe a $2{,}622$ : $0{,}018$ de retard, l'ordre de grandeur de l'inertie du bruit dans un puits qui vient de s'evanouir. Compares aux $\tau = 1{,}00$ de la table stationnaire, ces coefficients de rampe sont modestes -- mais une p-valeur a $10^{-180}$ ou en dessous, mesuree sur la fenetre qui precede la bascule, ne dit plus « effet peut-etre » : elle dimensionne l'evidence.",,,,,,,,868c89e668fbd537,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,bf43f43c,markdown,fr,3618c3a4b98ee011,> **Statut épistémique** — **Établi** : L'agence est mesurable comme *gain de réparation* (RD − diffusion) après `do(·)`. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,3618c3a4b98ee011,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,bf43f43c,markdown,fr,3618c3a4b98ee011,> **Statut épistémique** — **Établi** : L'agence est mesurable comme *gain de réparation* (RD − diffusion) après `do(·)`. Portée et détail dans la [matrice de dissociations](../../../docs/ict/dissociations-matrix.md).,,,,,,,,3618c3a4b98ee011,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb,7e7ae71a,markdown,fr,32fd122c42530481,"> **Statut épistémique** — 3 claims, verdicts distingués :
 > - **Établi** : Le métathéorème (comptage d'équilibres ne change qu'aux plis) clôt la strate 2.
 > - **Fortement soutenu** : `p̂` *gagne* en anticipation sur trajectoire lisse, *perd* sur dérive/créneau.
@@ -44399,7 +44399,7 @@ Les quatre portes sont **PASSED** sur cette exécution — chacune en rendant de
 - **G4** : les CCDF collent à leurs formes fermées (écarts ≤ 0,008) et l'estimateur suit l'exposant injecté (écarts ≤ 0,07 sur alpha = 2,0 / 2,5 / 3,0) : la chaîne mesure une quantité, elle ne raconte pas une histoire.
 
 L'échantillon `mystere` de l'exercice 2 reste volontairement hors de ces portes : le classer ici fermerait l'exercice. L'automate complaisant — celui qui dirait « scale-free » de toute queue lourde — aurait rendu le même verdict aux portes 2 et 3. Ce n'est pas ce qui se passe : le diagnostic échoue quand il doit échouer. **C'est un témoin.**",,,,,,,,3dbf018eb680a477,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,cell-gates-intro,markdown,fr,30c20dc899dbef56,"## 9. Gates de dégénérescence — les précurseurs forment-ils un *témoin* ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,cell-gates-intro,markdown,fr,30c20dc899dbef56,"## 9. Gates de dégénérescence — les précurseurs forment-ils un *témoin* ?
 
 Le principe d'ICT-01 s'applique ici aussi : **un témoin qui ne peut pas échouer n'est pas un témoin**. Le §8 a testé le *pont* (stabilité → recouvrabilité) ; cette section teste la **chaîne de mesure elle-même** — `ict.bistable` pour le paysage, `ict.early_warning` pour les indicateurs — sur quatre questions distinctes. Un détecteur complaisant montrerait un « paysage à deux vallées » et des « précurseurs qui montent » sur n'importe quel système à un seul puits, avec des indicateurs qui montent par construction. Les quatre portes ci-dessous vérifient qu'il rend des réponses *différentes* selon le régime, et que la montée attendue est **mesurée**, pas illustrée. Chaque porte imprime son propre verdict ; il n'y a **pas de verdict agrégé**.
 
@@ -44411,7 +44411,7 @@ Le principe d'ICT-01 s'applique ici aussi : **un témoin qui ne peut pas échoue
 | **G4 — mécanisme dynamique** | Le temps de retour **déterministe** après une perturbation fixe croît-il strictement vers le pli ($\tau=+1$), d'un facteur $\ge 2$ entre loin et près, **et** les quatre retours entrent-ils effectivement dans la bande à 5 % ? | un temps de retour constant — le « ralentissement » resterait une métaphore — ou une intégration qui s'épuise sans converger et imprime quand même un nombre |
 
 **Ce que la clause statistique ajoute, et ce qu'elle n'ajoute pas.** À $n=4$ (G2, G4) et $n=5$ (G3) points sans ex æquo, $p<0{,}05$ équivaut **exactement** à un ordre parfaitement monotone : la condition testée est donc $\tau=\pm1$, et la valeur de $p$ n'est imprimée qu'à titre descriptif. C'est la forme honnête du critère — une clause qui ne peut pas être fausse indépendamment de la première donne l'illusion d'un test à deux jambes. G4 porte en plus une **sentinelle de convergence** : si l'un des quatre retours n'entre jamais dans la bande à 5 %, la porte échoue au lieu d'imprimer un temps de retour arbitrairement grand qui laisserait passer le verdict.",,,,,,,,30c20dc899dbef56,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,cell-gates-code,code,fr,b61b0eb0b4bb574b,"# --- Gates de degenerescence : les precurseurs forment-ils un temoin ? ---
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,cell-gates-code,code,fr,b61b0eb0b4bb574b,"# --- Gates de degenerescence : les precurseurs forment-ils un temoin ? ---
 # Principe ICT-01 : un temoin qui ne peut pas echouer n'est pas un temoin.
 # Chaque porte imprime son verdict ; aucun agregat, aucun assert bloquant.
 # Reutilise le modele et c_fold de la section 1 ; G3/G4 prennent des graines propres.
@@ -44498,7 +44498,7 @@ print(f""  convergence dans la bande a 5 % : {converge} (un point non converge i
 print(f""  pres/lointain = {ratio_r:.2f} (>= 2 attendu)"")
 c4 = monotone(tau_rg, 1.0) and (ratio_r >= 2.0) and all(converge)
 print(f""G4 : {'PASSED' if c4 else 'FAILED'}"")",,,,,,,,b61b0eb0b4bb574b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb,cell-gates-lecture,markdown,fr,2f575f7a33b4866d,"### Lecture du résultat
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb,cell-gates-lecture,markdown,fr,2f575f7a33b4866d,"### Lecture du résultat
 
 Les quatre portes sont **PASSED** sur cette exécution — chacune en rendant des réponses *différentes* selon le régime :
 
@@ -44508,22 +44508,22 @@ Les quatre portes sont **PASSED** sur cette exécution — chacune en rendant de
 - **G4** : le mécanisme est confirmé indépendamment de la statistique : une perturbation **fixe** (mi-chemin vers le col) est résorbée en 5,69 unités de temps à $c=2{,}00$, mais en 11,81 à $c=2{,}57$ — ×2,08, tendance parfaite ($\tau=+1{,}00$, $p=0{,}042$ descriptif) — et les quatre retours **convergent** dans la bande à 5 % avant l'épuisement du budget d'intégration, ce que la sentinelle vérifie au lieu de le supposer. Le « ralentissement critique » n'est pas une lecture des indicateurs : c'est le retour au puits qui ralentit, et la variance comme l'AR1 n'en sont que l'empreinte.
 
 Honnêtement : ces quatre portes prouvent que **la chaîne de mesure du notebook discrimine les régimes**, pas qu'un système réel se comporte comme le modèle de May. Le facteur 2,08 de G4 est à comparer au seuil de porte fixé à 2 : la marge est mince, mais elle est **déterministe** (aucun bruit dans G4), donc reproduite à l'identique à chaque exécution — ce n'est pas une constante universelle. Les valeurs de $p$ sont imprimées pour mémoire et ne servent pas de critère : à quatre ou cinq points sans ex æquo, $p<0{,}05$ redit seulement que l'ordre est strictement monotone. La revendication reste **REPRODUCED_IN_MODEL**, comme au §8.",,,,,,,,2f575f7a33b4866d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,53f08fd1,markdown,fr,4d1b37be2e56dfe9,"La cellule configure le modèle Gray-Scott avec les paramètres F=0.0367, k=0.0649, Du=0.16, Dv=0.08, sur une grille 96×96 à bords périodiques, garantissant la reproductibilité avec la graine 8.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,53f08fd1,markdown,fr,4d1b37be2e56dfe9,"La cellule configure le modèle Gray-Scott avec les paramètres F=0.0367, k=0.0649, Du=0.16, Dv=0.08, sur une grille 96×96 à bords périodiques, garantissant la reproductibilité avec la graine 8.
 ",,,,,,,,4d1b37be2e56dfe9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,919b6037,markdown,fr,d192dc8c3968750e,"Le résultat montre le motif auto-entretenu généré après 6000 pas : à t=0 on observe un germe localisé, à t=6000 un motif structuré avec une structure (variance spatiale de V) de 0.00950.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,919b6037,markdown,fr,d192dc8c3968750e,"Le résultat montre le motif auto-entretenu généré après 6000 pas : à t=0 on observe un germe localisé, à t=6000 un motif structuré avec une structure (variance spatiale de V) de 0.00950.
 ",,,,,,,,d192dc8c3968750e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,f6c3760f,markdown,fr,a7983ddc78f1107d,"Les images montrent le motif intact comparé au motif après ablation du quart bas-droit. La structure dans la zone ablatée est de 0.000000, confirmant l'effacement complet du motif dans cette région.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,f6c3760f,markdown,fr,a7983ddc78f1107d,"Les images montrent le motif intact comparé au motif après ablation du quart bas-droit. La structure dans la zone ablatée est de 0.000000, confirmant l'effacement complet du motif dans cette région.
 ",,,,,,,,a7983ddc78f1107d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,26dc7b08,markdown,fr,a644cfcd550aa4ba,"La trajectoire montre l'évolution de la structure dans la zone ablatée pour deux mondes contrefactuels. À la fin de la simulation, la structure de la zone est de 0.01330 pour le monde A (réaction-diffusion) contre 0.00000 pour le monde B (diffusion pure).
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,26dc7b08,markdown,fr,a644cfcd550aa4ba,"La trajectoire montre l'évolution de la structure dans la zone ablatée pour deux mondes contrefactuels. À la fin de la simulation, la structure de la zone est de 0.01330 pour le monde A (réaction-diffusion) contre 0.00000 pour le monde B (diffusion pure).
 ",,,,,,,,a644cfcd550aa4ba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,383bcdb1,markdown,fr,3abb4287d9782cfa,"Les scores de récupération révèlent que le monde A (réaction-diffusion) atteint une récupération de 1.22 contre 0.00 pour le monde B (diffusion), ce qui donne un gain d'agence de 1.22. Le temps de récupération pour le monde A est de 2800 pas — mesuré contre la structure de référence **de la zone ablatée** : la trajectoire tracée est celle de la zone, sa consigne l'est aussi.",,,,,,,,3abb4287d9782cfa,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,2e4e3cc6,markdown,fr,2612ed5b3992db9a,"Les mesures de ressemblance montrent que la distance pixel à pixel est de 0.1688 pour la RD contre 0.1063 pour la diffusion, tandis que la similarité spectrale protégée par l'énergie révèle 0.631 pour la RD et 0.000 pour la diffusion — seule la mesure de structure restaurée contrastée au contrôle passif donne le gain fiable de 1.22.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,383bcdb1,markdown,fr,3abb4287d9782cfa,"Les scores de récupération révèlent que le monde A (réaction-diffusion) atteint une récupération de 1.22 contre 0.00 pour le monde B (diffusion), ce qui donne un gain d'agence de 1.22. Le temps de récupération pour le monde A est de 2800 pas — mesuré contre la structure de référence **de la zone ablatée** : la trajectoire tracée est celle de la zone, sa consigne l'est aussi.",,,,,,,,3abb4287d9782cfa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,2e4e3cc6,markdown,fr,2612ed5b3992db9a,"Les mesures de ressemblance montrent que la distance pixel à pixel est de 0.1688 pour la RD contre 0.1063 pour la diffusion, tandis que la similarité spectrale protégée par l'énergie révèle 0.631 pour la RD et 0.000 pour la diffusion — seule la mesure de structure restaurée contrastée au contrôle passif donne le gain fiable de 1.22.
 ",,,,,,,,2612ed5b3992db9a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,7b1dd154,markdown,fr,f9e6d549d41c9774,"La structure (variance) de la zone réparée par réaction-diffusion est de 0.01330, identique à celle du bruit apparié, mais l'auto-corrélation spatiale est de 0.91 pour la RD contre 0.00 pour le bruit — démontrant que la variance regagnée est une vraie forme avec voisins corrélés, pas du bruit.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,7b1dd154,markdown,fr,f9e6d549d41c9774,"La structure (variance) de la zone réparée par réaction-diffusion est de 0.01330, identique à celle du bruit apparié, mais l'auto-corrélation spatiale est de 0.91 pour la RD contre 0.00 pour le bruit — démontrant que la variance regagnée est une vraie forme avec voisins corrélés, pas du bruit.
 ",,,,,,,,f9e6d549d41c9774,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,3ee0ca51,markdown,fr,d18431f95e74146b,"Le balayage sur 9 conditions (3 graines × 3 masques) montre un gain de réparation moyen de 1.26, avec un minimum de 0.83 et un maximum de 1.71. Le gain est positif sur les 9 cas, confirmant que l'agence n'est pas un artefact d'un cas unique.
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,3ee0ca51,markdown,fr,d18431f95e74146b,"Le balayage sur 9 conditions (3 graines × 3 masques) montre un gain de réparation moyen de 1.26, avec un minimum de 0.83 et un maximum de 1.71. Le gain est positif sur les 9 cas, confirmant que l'agence n'est pas un artefact d'un cas unique.
 ",,,,,,,,d18431f95e74146b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,cell-gates-intro,markdown,fr,05c1b9d6ccef7287,"## 7bis. Gates de dégénérescence — quatre façons dont l'agence mesurée pourrait être vacante
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,cell-gates-intro,markdown,fr,05c1b9d6ccef7287,"## 7bis. Gates de dégénérescence — quatre façons dont l'agence mesurée pourrait être vacante
 
 Tout ce qui précède repose sur un contraste : une zone ablatée que la réaction-diffusion **reconstruit**, contre la même zone laissée à la **diffusion pure**. Un tel contraste peut être vide de quatre manières différentes, et chacune se teste séparément. Le principe est celui de la série : *un témoin qui ne peut pas échouer n'est pas un témoin*. Chaque porte imprime son propre verdict — aucun agrégat, aucune assertion : le carnet ne déclare pas « tout est bon », il rend chaque contrôle falsifiable.
 
@@ -44534,7 +44534,7 @@ Tout ce qui précède repose sur un contraste : une zone ablatée que la réacti
 | **G3** | la moyenne du balayage pourrait être portée par une seule des neuf conditions | minimum des neuf gains > 0 · médiane ≥ 0,5 × la moyenne · moyenne **privée de sa meilleure condition** ≥ 0,5 |
 | **G4** | `recovery_score` pourrait être saturé, ou le « temps de récupération » n'être qu'un artefact du seuil de tolérance | score dans ]0 ; 2] (la sur-reconstruction reste bornée) · dénominateur > 0 · temps défini aux trois tolérances et **ordonné** (0,40 ≤ 0,20 ≤ 0,10) |
 ",,,,,,,,05c1b9d6ccef7287,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,cell-gates-code,code,fr,0e719067644be8f9,"# --- Porte G1 : l'intervention mord-elle vraiment ? ---------------------------
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,cell-gates-code,code,fr,0e719067644be8f9,"# --- Porte G1 : l'intervention mord-elle vraiment ? ---------------------------
 # Trois clauses sont des INVARIANTS de la construction, pas des mesures :
 # agency.ablate() remplace le masque par l'etat nu (U=1, V=0) sans toucher au
 # reste du domaine, et agency.quadrant_mask() rend exactement un quart de la
@@ -44617,7 +44617,7 @@ print(f""     score > 1 : la zone reparee finit PLUS contrastee que la reference
 print(f""     cas prevu par la docstring de recovery_score : la porte le borne au lieu de le taire)."")
 print(f""  denominateur (reference - ablate) : {s_ref_in - s_abl_in:.6f}   (attendu > 0 : {denom})"")
 print(f""VERDICT G4 : {'PASSED' if g4 else 'FAILED'}"")",,,,,,,,0e719067644be8f9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb,cell-gates-lecture,markdown,fr,84f6668cd73ac09f,"### Lecture du résultat — quatre portes, quatre verdicts, aucune conclusion agrégée
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb,cell-gates-lecture,markdown,fr,84f6668cd73ac09f,"### Lecture du résultat — quatre portes, quatre verdicts, aucune conclusion agrégée
 
 | Porte | Mesuré sur le modèle réel | Verdict |
 |---|---|---|

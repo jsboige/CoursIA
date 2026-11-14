@@ -210,8 +210,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 5 | [ICT-5 : Émergence causale — quelle échelle décrit le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) | BETA | Oui |
 | 6 | [ICT-6 — Du tri a la chaîne de Markov : emergence…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | BETA | Oui |
 | 7 | [ICT-7 — Signatures *scale-free* & criticalite](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-05-CausalEmergence/ICT-07-ScaleFreeSignatures-Python.ipynb) | BETA | Oui |
-| 8 | [ICT-8 — Paysages d'attracteurs & signaux precurseurs :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS-Python.ipynb) | BETA | Oui |
-| 9 | [ICT-9 — Agence & regeneration : *reparer sa forme, ou…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-09-AgencyRegeneration-Python.ipynb) | BETA | Oui |
+| 8 | [ICT-8 — Paysages d'attracteurs & signaux precurseurs :…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb) | BETA | Oui |
+| 9 | [ICT-9 — Agence & regeneration : *reparer sa forme, ou…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb) | BETA | Oui |
 | 10 | [ICT-10 — Grammaire des catastrophes : *l'obstacle qui…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-10-CatastropheGrammar-Python.ipynb) | BETA | Oui |
 | 11 | [ICT-11 — Profils d'agence causale : à quelle échelle…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-11-CausalAgencyProfiles-Python.ipynb) | BETA | Oui |
 | 12 | [ICT-12 — Champs de valence et animats : rôles mesures,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb) | BETA | Oui |

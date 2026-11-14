@@ -314,8 +314,8 @@ IIT/
 ├── ICT-05-CausalEmergence-Python.ipynb            # ✅ émergence causale micro/macro (vrai pyphi.macro)
 ├── ICT-06-SortingToTPM-CausalEmergence-Python.ipynb  # ✅ pont tri → TPM → émergence causale (CE 2.0)
 ├── ICT-07-ScaleFreeSignatures-Python.ipynb        # ✅ signatures scale-free & criticalité (loi de Borel τ=3/2)
-├── ICT-08-AttractorLandscapesEWS-Python.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
-├── ICT-09-AgencyRegeneration-Python.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
+├── ICT-08-AttractorLandscapesEWS/ICT-08-AttractorLandscapesEWS-Python.ipynb     # ✅ strate 2 : paysages d'attracteurs + early-warning signals
+├── ICT-08-AttractorLandscapesEWS/ICT-09-AgencyRegeneration-Python.ipynb         # ✅ strate 2 : agence = régénération réaction-diffusion (Gray-Scott)
 ├── ICT-10-CatastropheGrammar-Python.ipynb        # ✅ charnière strate 2→3 : grammaire des catastrophes (fronce, pli, lacet de prédation)
 ├── ICT-20-FeatureCatastrophes/ICT-22b-CausalInterventionEngine-Python.ipynb # ✅ moteur d'intervention causal — 5 ops, contrôles appariés, format Gate 24 (accrétion du palier 22, #15479)
 └── ict/
