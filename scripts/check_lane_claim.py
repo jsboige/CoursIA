@@ -691,7 +691,10 @@ def _intent_from_line(line: str | None) -> str | None:
     return text
 
 
-@lru_cache(maxsize=8192)
+# #24824 -- la memo est trop petille (8192) pour le volume de corps d'une
+# fenetre de claims : elle evictait et recalcule. Elargie pour tenir le
+# working set ; le verdict est une fonction pure du corps.
+@lru_cache(maxsize=65536)
 def _unwrap_trapped_body(body: str) -> str:
     """Le corps REEL quand la publication a piege son propre payload (#19971).
 
@@ -3238,12 +3241,18 @@ def _normcase_path(path: str) -> str:
     return os.path.normcase(path)
 
 
+@lru_cache(maxsize=262144)
 def _path_matches_pair(path: str, pattern: str) -> bool:
-    """Match one immutable path/pattern pair with fnmatch's platform rules.
+    """Match one immutable (path, pattern) pair, memoized above.
 
-    Only the normalized regex and path strings are cached; the pair verdict
-    is recomputed. This keeps the cache independent of mutable caller lists
-    and retains Windows normcase and separator behavior.
+    The glob is compiled to a regex by ``_compiled_path_pattern`` and matched
+    with ``re.match`` against the ``os.path.normcase``-normalized FULL path
+    AND against the normalized BASENAME, so ``*.lean`` matches both
+    ``knot_lean/Foo.lean`` and a bare ``Foo.lean``. The verdict is a pure
+    function of its two immutable ``str`` arguments, so the (bounded,
+    ``maxsize=262144``) memo can never change it; the compiled-regex and
+    normcase helpers are cached separately. Windows normcase and separator
+    behavior are retained.
     """
     basename = path.rsplit("/", 1)[-1]
     regex = _compiled_path_pattern(pattern)
@@ -3276,11 +3285,61 @@ def _path_matches(path: str, patterns: list[str]) -> bool:
     existing `grep`/git commands used in the cluster for "where does this
     file live" queries.
     """
+    return _path_matches_cached(path, tuple(patterns))
+
+
+@lru_cache(maxsize=262144)
+def _path_matches_cached(path: str, patterns: tuple[str, ...]) -> bool:
+    """#24824 -- memoise le verdict par (chemin, motifs) : les deux sont
+    invariants d'une issue a l'autre dans le batch, seule la liste suivie
+    change (memoisee par racine). Fonction pure de ses deux arguments, donc
+    la memoisation ne peut changer aucun verdict."""
     for pat in patterns:
         for p in _expanded_path_pattern(pat):
             if _path_matches_pair(path, p):
                 return True
     return False
+
+
+# #24824 -- memoise le croisement par (motifs, identite + generation de la
+# liste suivie). La liste est l'objet _TrackedFiles memoise par racine dans
+# _TRACKED_FILES_MEMO (jamais mute en place en production). La cle porte la
+# generation _gen, que _TrackedFiles._invalidate() incrémente a chaque
+# mutation : un resultat ne peut donc jamais etre servi stale contre une
+# liste mutee (contrat test 3031/3040). On garde une reference FORTe vers la
+# liste dans la valeur : son id() n'est pas reutilise tant que l'entree vit.
+# Seules les listes _TrackedFiles sont memoisees ; une liste brute (mutable)
+# ne l'est pas. Le bornage efface (re-calcule) : jamais un verdict faux.
+_MATCHING_INDICES_MEMO: dict[tuple, tuple[object, frozenset[int]]] = {}
+# #25913 (reponse a la reserve Hermes #4) -- double borne : en NOMBRE d'entrees
+# (MAX) et en VOLUME (MAX_INDICES, somme des indices sur tous les frozensets).
+# La borne en nombre seule laissait 1024 entrees pleines (chacune jusqu'a la
+# liste suivie entiere, ~16k indices) tenir en memoire (~44 Mo de frozensets
+# mesurés) ; la borne en indices cumulés plafonne le volume. _SIZE est le
+# compteur correspondant, réinitialisé a chaque clear.
+_MATCHING_INDICES_MEMO_MAX = 1024
+_MATCHING_INDICES_MEMO_MAX_INDICES = 131072  # ~8 listes suivies completes
+_MATCHING_INDICES_MEMO_SIZE = 0
+
+
+def _matching_indices_store(
+    key: tuple, tracked: object, indices: frozenset[int]
+) -> None:
+    """Insère dans ``_MATCHING_INDICES_MEMO`` sous double borne.
+
+    #25913 (reponse a la reserve Hermes #4) : au-dela de la borne en nombre
+    d'entrees, la borne en indices cumulés plafonne le volume de frozensets.
+    A la limite, la memo entiere est effacée ; c'est une cache pure, l'effacement
+    force un re-calcul mais ne change aucun verdict.
+    """
+    global _MATCHING_INDICES_MEMO_SIZE
+    if (len(_MATCHING_INDICES_MEMO) >= _MATCHING_INDICES_MEMO_MAX
+            or _MATCHING_INDICES_MEMO_SIZE + len(indices)
+            > _MATCHING_INDICES_MEMO_MAX_INDICES):
+        _MATCHING_INDICES_MEMO.clear()
+        _MATCHING_INDICES_MEMO_SIZE = 0
+    _MATCHING_INDICES_MEMO[key] = (tracked, indices)
+    _MATCHING_INDICES_MEMO_SIZE += len(indices)
 
 
 def _matching_tracked_indices(
@@ -3294,17 +3353,36 @@ def _matching_tracked_indices(
     contre ces regex. La separation du basename se fait toujours sur le
     chemin brut, avant `normcase`, comme dans `fnmatch(path, pattern)` sous
     Windows.
+
+    #24824 -- memoise par (motifs, identite de la liste suivie) : dans le
+    batch, les memes perimetres sont recroises a chaque issue sur la meme
+    liste suivie. La reference forte vers `tracked` rend l'`id()` stable,
+    donc la memoisation ne change aucun verdict (fonction pure).
     """
+    # #24824 -- la memo ne porte que sur les listes _TrackedFiles ; la cle
+    # porte leur generation _gen, donc toute mutation force le re-calcule
+    # (jamais un verdict stale). Une liste brute n'est pas memoisee.
+    is_tf = isinstance(tracked, _TrackedFiles)
+    if is_tf:
+        key = (tuple(patterns), id(tracked), tracked._gen)
+        hit = _MATCHING_INDICES_MEMO.get(key)
+        if hit is not None:
+            return set(hit[1])
     expanded = [p for pattern in patterns
                 for p in _expanded_path_pattern(pattern)]
     regexes = [_compiled_path_pattern(p) for p in expanded]
     if not regexes:
+        if is_tf:
+            _matching_indices_store(key, tracked, frozenset())
         return set()
     pairs = _norm_pairs(tracked)
-    return {
+    result = {
         index for index, (path, basename) in enumerate(pairs)
         if any(rx.match(path) or rx.match(basename) for rx in regexes)
     }
+    if is_tf:
+        _matching_indices_store(key, tracked, frozenset(result))
+    return result
 
 
 def _compute_scope_intersection_paths(
@@ -3543,16 +3621,21 @@ class _TrackedFiles(list):
     Les formes normalisees sont calculees ici, UNE FOIS par liste.
     """
 
-    __slots__ = ("_norm", "_exact", "_bases")
+    __slots__ = ("_norm", "_exact", "_bases", "_gen")
 
     def __init__(self, items):
         super().__init__(items)
         self._norm = None
         self._exact = None
         self._bases = None
+        self._gen = 0
 
     def _invalidate(self):
         self._norm = self._exact = self._bases = None
+        # #24824 -- toute mutation change la generation : la memo de
+        # _matching_tracked_indices (clee sur _gen) ne sert donc jamais un
+        # resultat stale contre une liste mutee (contrat test 3031/3040).
+        self._gen += 1
 
     def __setitem__(self, key, value):
         super().__setitem__(key, value)
@@ -3698,6 +3781,46 @@ def _norm_pairs(tracked) -> list[tuple[str, str]]:
             for p in tracked]
 
 
+# #24824 -- memo par (charge, identite + generation de la liste suivie) pour
+# les fonctions pures de (charge, tracked). `tracked` est l'objet
+# _TrackedFiles memoise par racine (_TRACKED_FILES_MEMO), jamais mute en
+# place en production ; la cle porte _gen, que _TrackedFiles._invalidate()
+# incremente a chaque mutation, donc un resultat ne peut jamais etre servi
+# stale contre une liste mutee (contrat test 3031/3040). Reference FORTe vers
+# la liste dans la valeur : son id() n'est pas reutilise tant que l'entree
+# vit. Une liste brute (mutable) n'est jamais memoisee ; le bornage efface
+# (re-calcule). Jamais un verdict faux.
+_MISS = object()
+
+
+class _TrackedScopedMemo:
+    """Memo bornee des fonctions pures de (charge, liste suivie)."""
+
+    __slots__ = ("_d", "_max")
+
+    def __init__(self, maxsize: int) -> None:
+        self._d: dict = {}
+        self._max = maxsize
+
+    def get(self, payload, tracked):
+        if isinstance(tracked, _TrackedFiles):
+            hit = self._d.get((payload, id(tracked), tracked._gen), _MISS)
+            if hit is not _MISS:
+                return hit[1]
+        return _MISS
+
+    def put(self, payload, tracked, value) -> None:
+        if not isinstance(tracked, _TrackedFiles):
+            return
+        if len(self._d) >= self._max:
+            self._d.clear()
+        self._d[(payload, id(tracked), tracked._gen)] = (tracked, value)
+
+
+_GLOB_TRACKED_MEMO = _TrackedScopedMemo(16384)
+_CORRECTION_MEMO = _TrackedScopedMemo(16384)
+
+
 def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     """True when at least one tracked file matches the glob (fnmatch, basename-or-full).
 
@@ -3716,6 +3839,16 @@ def _glob_matches_tracked(glob: str, tracked: list[str]) -> bool:
     les separateurs de chemin en antislash et le nom de base ne serait
     plus extrait.
     """
+    cached = _GLOB_TRACKED_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _glob_matches_tracked_uncached(glob, tracked)
+    _GLOB_TRACKED_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _glob_matches_tracked_uncached(glob: str, tracked: list[str]) -> bool:
+    """Corps de `_glob_matches_tracked`, sans memo (balayage par glob)."""
     from fnmatch import translate
     patterns = _expand_brace_groups(glob)
     if not patterns:
@@ -3774,6 +3907,16 @@ def _suggest_path_correction(glob: str, tracked: list[str]) -> str | None:
     between 1 and 5 times IS likely a typo (the writer meant one specific
     file and the regex did not pick the right one).
     """
+    cached = _CORRECTION_MEMO.get(glob, tracked)
+    if cached is not _MISS:
+        return cached
+    result = _suggest_path_correction_uncached(glob, tracked)
+    _CORRECTION_MEMO.put(glob, tracked, result)
+    return result
+
+
+def _suggest_path_correction_uncached(glob: str, tracked: list[str]) -> str | None:
+    """Corps de `_suggest_path_correction`, sans memo (balayage des chemins)."""
     if not glob or "/" not in glob:
         return None
     basename = glob.rsplit("/", 1)[-1]
@@ -4449,6 +4592,16 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #     semaine se bloquerait. Meme regle pour un claim pose directement sur
 #     l'EPIC. »
 #
+# #26414 (decision ai-01 du 2026-11-13, option 1 « filles existantes hors
+# plafond, pas du tout ») : la demande ci-dessus est CORRIGEE sur un point --
+# les parents de N ne sont plus des sujets. Une claim sur une fille DEJA
+# OUVERTE est le SERVICE d'un sous-grain existant, permis par #22500 point 2
+# et par `.claude/rules/proactive-coordination.md` (« piocher un sous-grain
+# ouvert, ou en creer un seul par visite ») ; le plafond gate la CREATION
+# (cote picker, `umbrella_visit_cause` au tirage), pas le service. Reste
+# sujet : N lui-meme quand c'est un umbrella (claim pose directement sur
+# l'EPIC, demande explicite conservee).
+#
 # ORGANE-FIRST : la semantique du plafond n'est PAS re-ecrite ici. Tout vient de
 # `scripts/pick_idle_grain.py`, importe a la demande (`_epic_cap_picker`) :
 #   - `parent_refs(it)` (l. 5904) : la definition d'un parent (prefixe de titre
@@ -4469,13 +4622,12 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #
 # COUT -- la contrainte du coordinateur est explicite (274 s pour la commande
 # des lanes, dont 45 s pour 8 sondes de claims) :
-#   - issue sans parent ET pas elle-meme un umbrella : **zero appel, zero
-#     seconde** (c'est le cas le plus frequent, et `parent_refs` se lit sur la
-#     charge deja telechargee) ;
-#   - issue avec parent(s) : 1 appel `gh issue view` par parent, et le pool
-#     (1 appel, 8,6 s mesure le 2026-10-26 sur 555 issues ouvertes) UNIQUEMENT
-#     si au moins un parent est un umbrella hors consolidation -- un parent
-#     ordinaire ne coute donc pas le pool ;
+#   - toute issue qui n'est pas elle-meme un umbrella (grain ordinaire, fille
+#     d'EPIC comprise depuis #26414) : **zero appel, zero seconde** -- c'est
+#     le cas le plus frequent ;
+#   - N umbrella hors consolidation : le pool seul (1 appel, 8,6 s mesure le
+#     2026-10-26 sur 555 issues ouvertes) ; depuis #26414 plus AUCUN
+#     `gh issue view` de parent ;
 #   - le pool est memoise par processus (`_EPIC_CAP_POOL_MEMO`) : le mode batch
 #     le paie une fois pour N issues ;
 #   - si une autre lane bloque deja (verdict exit 1 acquis), le plafond n'est
@@ -4494,7 +4646,8 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 # #22687 -- deux corrections depuis cette annonce : (a) le plafond SAUTE quand
 # la lane appelante tient deja un claim actif sur une FILLE N (arbitrage ai-01
 # du 2026-11-08, cas #23499 : la reprise d'un chantier ouvert n'est pas une
-# nouvelle visite -- le plafond gate l'ENTREE d'une fille, pas sa reprise ;
+# nouvelle visite ; depuis #26414 les filles ne sont de toute facon plus
+# sujet du plafond -- le saut reste, il evite la mesure) ;
 # JAMAIS sur l'EPIC lui-meme, la demande du 09/11 reste entiere) ;
 # (b) la voie unitaire EN PROCESSUS du picker cable desormais `epic_cap=True`
 # et son reducteur lit la cle : la sonde solitaire d'une fille plafonnee rend
@@ -4504,7 +4657,7 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #
 # ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
 # anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
-# Un parent ou un pool illisible ne bloque donc PAS : il est NOMME dans
+# Un pool illisible ne bloque donc PAS : il est NOMME dans
 # `epic_visit_cap_error` et sur stderr. Un plafond non mesurable ne doit jamais
 # se lire comme un plafond respecte, ni fermer la voie a une lane sur une panne
 # de transport.
@@ -4663,10 +4816,17 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         CETTE mesure, pour que la borne se verifie au lieu de se croire ;
       - ``error`` : les lectures qui ont echoue (``None`` si tout a ete lu).
 
-    Sujets examines, dans l'ordre : l'issue N elle-meme si c'est un umbrella
-    (demande explicite : « Meme regle pour un claim pose directement sur
-    l'EPIC »), puis chaque parent de N au sens de `parent_refs`. Un sujet est
-    retenu s'il est un umbrella ET hors classe `consolidation`.
+    Sujets examines : l'issue N elle-meme, et elle seule, quand c'est un
+    umbrella (demande explicite : « Meme regle pour un claim pose directement
+    sur l'EPIC »), hors classe `consolidation`. Les parents de N ne sont plus
+    des sujets (#26414, decision ai-01 du 2026-11-13, option 1 « filles
+    existantes hors plafond, pas du tout ») : une claim sur une fille DEJA
+    OUVERTE est le SERVICE d'un sous-grain existant -- permis par #22500
+    point 2 et par `.claude/rules/proactive-coordination.md` (« piocher un
+    sous-grain ouvert, ou en creer un seul par visite ») -- pas une nouvelle
+    visite de l'EPIC. Le plafond porte la CREATION, qui reste cappee cote
+    picker (`umbrella_visit_cause` au tirage) ; les filles existantes se
+    servent librement ici.
 
     L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
     recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
@@ -4696,20 +4856,19 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     number = payload.get("number")
     number = int(number) if isinstance(number, int) else None
 
-    # (1) les sujets candidats, sans reseau : N si c'est un umbrella, puis ses
-    # parents (`parent_refs` lit titre/corps de la charge DEJA telechargee).
+    # (1) le sujet candidat, sans reseau : N lui-meme si c'est un umbrella.
+    # #26414 : les parents ne sont plus sujets -- servir une fille DEJA
+    # OUVERTE n'est pas une nouvelle visite de l'EPIC (#22500 point 2) ; la
+    # creation reste cappee cote picker.
     subjects: list[tuple[int, dict | None]] = []
     if number is not None and _is_umbrella_issue(payload):
         subjects.append((number, payload))
-    for parent in sorted(picker.parent_refs(payload)):
-        if parent == number:
-            continue  # une issue ne se visite pas elle-meme
-        subjects.append((parent, None))
     if not subjects:
-        return verdict  # zero appel : le cas le plus frequent
+        return verdict  # zero appel : le cas le plus frequent (fille ou grain)
 
-    # (2) resoudre les charges parent (1 appel chacune) et ne garder que les
-    # EPICs hors consolidation. AUCUN pool tant qu'aucun sujet n'est retenu.
+    # (2) ne garder que les EPICs hors consolidation (le sujet N est deja
+    # charge ; `parent_loader` ne sert plus qu'aux sondes injectees).
+    # AUCUN pool tant qu'aucun sujet n'est retenu.
     capped: list[tuple[int, dict]] = []
     for epic, body in subjects:
         if body is None:
@@ -4954,14 +5113,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # (`check_lane_claim.py N --lane L --paths p`) silently skipped the guard
     # and printed `free_paths` -- a list that describes the CLAIM scope, never
     # the open-PR space -- reading as an all-clear on an occupied file.
-    # #18341 -- the leg now uses `my_scope` (--paths U paths: du claim propre)
-    # so a lane that has already declared `paths:` on its active claim gets
-    # the OPEN-PR check without having to pass `--paths` on the call.
+    # #18341 -- the leg reads `--paths` U `paths:` du claim propre, so a lane
+    # that has already declared `paths:` on its active claim gets the OPEN-PR
+    # check without having to pass `--paths` on the call.
+    # #25082 -- SAUF quand ce « claim propre » est un perimetre deja LIVRE et
+    # MERGE : ce n'est plus une intention d'editer (`_open_pr_leg_scope`).
+    # `my_scope` garde le perimetre livre pour la confrontation aux claims des
+    # autres lanes : seule la jambe PR-ouverte change de perimetre.
+    open_pr_scope = _open_pr_leg_scope(my_paths, mine)
+    if (check_open_pr_paths and mine is not None and mine.get("locked")
+            and mine.get("paths")):
+        print(
+            f"INFO: le perimetre livre de {my_lane} (PR "
+            f"#{mine.get('pr_ref')} MERGEE) n'est pas confronte aux PRs "
+            f"ouvertes : une tranche mergee n'est pas une intention d'editer "
+            f"(#25082). Pour la tranche suivante, passer `--paths` ou poser "
+            f"un nouveau [CLAIMED] a perimetre etroit.",
+            file=sys.stderr,
+        )
     open_pr_collisions: list[PathCollision] = []
-    if check_open_pr_paths and my_scope:
+    if check_open_pr_paths and open_pr_scope:
         try:
             open_pr_collisions, _own = _compute_open_pr_collisions(
-                my_scope, my_lane)
+                open_pr_scope, my_lane)
         except OpenPrsIncompleteError as exc:
             # #21742 -- l'enumeration des PRs ouvertes n'a pas pu etre
             # completee : ce CLEAR ne dit rien des PRs OUVERTES, comme le
@@ -5280,7 +5454,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             # cours compris) reste entiere -- les regles #25443 (marqueur
             # propre exclut) et 09/11 (visite close arme) gouvernent seules
             # les marqueurs propres sur l'EPIC ; ce saut ne les touche pas.
-            # les marqueurs propres sur l'EPIC, ce saut ne les touche pas.
+            # (#26414 : les filles ne sont de toute facon plus sujet du
+            # plafond -- le saut reste, il evite de payer la mesure.)
             epic_cap_verdict["skipped"] = (
                 "calling lane already holds an active claim on this issue "
                 "-- resuming an open claim is not a new umbrella visit"
@@ -5549,6 +5724,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # `exit 2`, matching the contract `--paths` already carries (#9959).
         "open_pr_collisions": [
             _serialise_path_collision(c) for c in open_pr_collisions],
+        # #25082 -- le perimetre que la jambe PR-ouverte a reellement
+        # confronte (null = jambe sans objet). Il differe de `my_scope` quand
+        # le claim propre est une tranche livree et mergee : sans cette cle,
+        # un `open_pr_collisions: []` ne dit pas sur quels chemins il porte.
+        "open_pr_scope": open_pr_scope,
         # #14300 -- the IMPLICIT leg's finding, same single-report contract
         # as open_pr_collisions above. Non-empty routes the verdict below
         # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
@@ -5822,22 +6002,25 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # BLOCKED. Il passe AVANT la branche `NOT_SCOPED` ci-dessous : celle-ci
     # invite a re-executer avec `--paths`, et re-scoper ne leve PAS un plafond
     # de visite -- le conseil serait faux. La cause imprimee est le litteral de
-    # l'organe (`umbrella_visit_cause`), inchange.
+    # l'organe (`umbrella_visit_cause`), inchange. Depuis #26414, la cause ne
+    # peut plus venir que d'un claim sur l'EPIC N lui-meme : les filles
+    # existantes ne sont plus plafonnees.
     if epic_cap_verdict.get("cause"):
         epic_number = epic_cap_verdict.get("epic")
         where = (f"#{epic_number}" if epic_number is not None
                  else "un EPIC parent")
         print(
             f"\nBLOCKED: {epic_cap_verdict['cause']}\n"
-            f"  #{payload.get('number')} appartient a l'EPIC {where}, deja "
-            f"visite cette semaine : une sous-issue y a ete creee, ou un "
-            f"claim y a ete pose, il y a moins de 7 jours (#22500 point 3). "
+            f"  #{payload.get('number')} EST l'EPIC {where}, deja visite "
+            f"cette semaine : une sous-issue y a ete creee, ou un marqueur "
+            f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC "
-            f"{where}, ou prendre un autre grain du pool. Re-scoper avec "
-            f"`--paths` ne leve pas ce plafond ; `--force` reste reserve a "
-            f"l'arbitrage coordinateur.",
+            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
+            f"(#26414 : une fille existante se sert librement, seul le claim "
+            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
+            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
+            f"`--force` reste reserve a l'arbitrage coordinateur.",
             file=sys.stderr,
         )
         return 1
@@ -6779,6 +6962,38 @@ def _serialise_path_collision(c: PathCollision) -> dict:
         "lane": c.lane,
         "files_intersecting": c.files,
     }
+
+
+def _open_pr_leg_scope(
+    my_paths: list[str] | None,
+    mine: ClaimEvent | None,
+) -> list[str] | None:
+    """Perimetre que la jambe PR-ouverte (#16570) confronte aux PRs ouvertes.
+
+    C'est le perimetre d'INTENTION de l'appelant : les `--paths` de l'appel,
+    plus la clause `paths:` de son propre claim actif (#18341).
+
+    #25082 -- une exception, mesuree le 2026-11-13 sur #20298. Sous la
+    semantique v2 (#12386, #22445), un `[DELIVERED] ... paths:` dont la PR est
+    MERGEE reste « actif » (`locked`) : il dit aux AUTRES lanes que ce
+    perimetre est livre. Lu comme l'intention de sa propre lane, il faisait
+    tourner la jambe sur des fichiers deja merges, et toute PR ouverte d'une
+    autre lane qui les touchait rendait `BLOCKED` a la lane porteuse -- sur sa
+    tranche SUIVANTE, pour laquelle elle n'avait encore rien declare. Sur un
+    chantier multi-tranches (classe `consolidation`), la lane porteuse ne
+    revenait donc jamais.
+
+    Un perimetre livre et merge n'est pas une intention d'editer : il sort du
+    perimetre de la jambe. Les `--paths` de l'appel, eux, restent toujours
+    confrontes. Un `[DELIVERED]` dont la PR est encore OUVERTE n'est pas
+    `locked` : le travail est en vol, son perimetre reste confronte.
+
+    Rend None quand il ne reste aucun chemin : la jambe est alors sans objet.
+    """
+    mine_paths = (mine.get("paths") if mine else None) or []
+    if mine is not None and mine.get("locked"):
+        mine_paths = []
+    return list(dict.fromkeys((my_paths or []) + list(mine_paths))) or None
 
 
 def _compute_open_pr_collisions(

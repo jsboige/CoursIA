@@ -1,6 +1,6 @@
 # Scan de branche orpheline (L576) — les deux ancres `pulls` peuvent mentir
 
-> REFERENCE — vivante — dernière révision 2026-11-11
+> REFERENCE — vivante — dernière révision 2026-11-12
 
 Détail de référence de la section « Orphan-branch scan (L576) » de
 [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md).
@@ -20,7 +20,44 @@ ancres doivent être passées :
 
 1. `git merge-base --is-ancestor <sha> origin/main` — intégrée en amont ?
 2. `gh api repos/jsboige/CoursIA/commits/<sha>/pulls` — endpoint REST (peut être faux négatif)
-3. `gh pr list --state all --search "head:<branche>"` — **gate présenté comme autoritatif**
+3. [Lister les PR par branche avec REST](#ancre-pr-par-branche) — ancre PR par branche
+
+## Ancre PR par branche
+
+Le script `scripts/ci/prune_merged_worktrees.py` utilise le listing REST des PR
+par branche comme première voie. Pour une branche de tête du dépôt :
+
+```bash
+gh api --method GET repos/jsboige/CoursIA/pulls \
+  -f state=all -f 'head=jsboige:<branche>' -f per_page=5 \
+  --jq '.[] | {number, state, merged_at, head: .head.ref, sha: .head.sha}'
+```
+
+Remplacer `<branche>` par son nom exact. Les paramètres `-f` sont envoyés avec
+`--method GET` ; le séparateur `:` du filtre est ainsi transmis dans un paramètre,
+pas interpolé dans le chemin de l'API. Comparer `head` au nom exact demandé :
+le script vérifie aussi `head.ref` après la réponse et écarte les lignes dont
+les dépôts de tête et de base sont connus et différents.
+
+Dans la réponse REST, `state` vaut `open` ou `closed`, et non `MERGED` :
+`closed` avec `merged_at` non nul désigne une PR fusionnée ; `closed` avec
+`merged_at` nul désigne une PR fermée sans fusion. `sha` est le commit de tête.
+Si plusieurs PR ont porté ce nom, le script retient le plus grand numéro.
+
+Si REST ne permet pas de conclure, notamment pour une tête de fork dont le
+propriétaire est inconnu, le repli GraphQL existant est :
+
+```bash
+gh pr list --state all --search "head:<branche>" --json number,state,headRefName,headRefOid
+```
+
+Comparer `headRefName` au nom exact : la recherche peut aussi rendre des noms
+ayant ce préfixe. Une erreur de transport ou des réponses non concluantes ne
+prouvent pas qu'une branche est orpheline. La vérification de l'identité de
+contenu ci-dessous reste nécessaire, notamment après un squash.
+
+Ce listing REST par branche est distinct de `commits/<sha>/pulls`, l'ancre 2,
+dont les faux négatifs restent documentés dans l'incident ci-dessous.
 
 ## Incident fondateur (c.576) — RAPPORTÉ
 

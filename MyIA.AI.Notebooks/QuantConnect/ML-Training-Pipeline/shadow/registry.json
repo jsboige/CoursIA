@@ -127,6 +127,26 @@
       "params": {},
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier (IBKR Margin)",
       "fingerprint": "fe065b8d6de5b9a8"
+    },
+    {
+      "id": "btc-voltarget-v2",
+      "kind": "qc",
+      "sha": "fa1d63e7071faed29bb2c048f04c9b0feaa1a8b7",
+      "frozen_on": "2026-11-12",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/BTC-VolTarget-QC:39243885",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (Bitfinex crypto, IBKR equity)",
+      "fingerprint": "4bc1ddf75eba4227"
+    },
+    {
+      "id": "short-intl-v2",
+      "kind": "qc",
+      "sha": "fa1d63e7071faed29bb2c048f04c9b0feaa1a8b7",
+      "frozen_on": "2026-11-12",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/ShortUnprofitableIntl-QC:39243884",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean, sans courtier déclaré (frais IBKR sur les actions)",
+      "fingerprint": "7d02080d7db3635f"
     }
   ]
 }

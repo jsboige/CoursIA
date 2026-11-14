@@ -289,7 +289,8 @@ analyses per-PR continuent de tirer** et le compte ne baisse pas.
 Une part de la hausse est en outre une **granularité**, pas du travail
 supplémentaire : la voie rapide est passée d'un check agrégé
 (`Fast lane (ombre) -- 21 gardes, 1 checkout`) à un check **par garde**
-(`fast-lane (ombre): perimeter-review-guard`, `… : solution-leak-guard`,
+(`fast-lane (ombre): perimeter-review-guard`,
+`… : Solution-leak HIGH delta (advisory, WARN phase, #8053)`,
 `… : notebook-navlink-check`, …). Le même travail se compte sous plus de
 noms. Le reste — les ratchets `Output-collapse`, `Source-collapse`,
 `Split-reading`, `Output-flood`, les advisories de markdown, le bundle
@@ -449,17 +450,29 @@ chemins de la jambe, avec les mêmes options pytest (`-n 4 --dist loadscope
 
 ### La cadence — quatre créneaux par jour
 
-| Créneau (UTC) | Échéance de fin |
-|---|---|
-| 04:30 | 10:00 |
-| 10:30 | 13:00 |
-| 16:30 | 21:30 |
-| 21:30 | 00:00 (le lendemain) |
+| Créneau (UTC) | Secours (UTC) | Échéance de fin |
+|---|---|---|
+| 04:17 | 04:47 | 10:00 |
+| 10:17 | 10:47 | 13:00 |
+| 16:17 | 16:47 | 21:30 |
+| 21:17 | 21:47 | 00:00 (le lendemain) |
 
 Les créneaux sont placés **hors des deux pics mesurés** de la file CI
 (13:00-15:00Z et 00:00-02:00Z) : le lot occupe le parc quand celui-ci
 respire. Le créneau du mardi 02:30 reste celui du pilote — les deux
 n'empruntent pas la même nuit.
+
+**Pourquoi un cron de secours.** Sous la charge de la flotte, GitHub retarde
+ou abandonne des événements `schedule`. Sur les anciens crons (minute :30),
+le lot a démarré à 10:16, 12:49, 21:51, 01:19, 11:58, 22:51, 02:20 et 12:59
+entre le 10/11 et le 12/11 : deux lots par jour au lieu de quatre, avec 1,5 à
+5 h de retard, et aucun lot parti des créneaux 04:30 et 16:30. Chaque créneau
+est donc doublé d'un cron trente minutes plus tard. Le job `lot-gate` saute ce
+secours quand un lot planifié a déjà été servi depuis moins de 150 min : son
+job `lot` a réussi, ou tourne encore. Un `workflow_dispatch`, l'avance du
+coordinateur, n'est jamais dédoublonné. Si l'API ne répond pas, la garde
+laisse passer : un lot en double coûte un runner hébergé, un lot perdu coûte
+une journée.
 
 ### Un seul lot à la fois
 

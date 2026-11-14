@@ -38,6 +38,7 @@ paquet importable, et deux organes peuvent partager un nom de module.
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -987,6 +988,295 @@ class ReserveAnalysisTests(unittest.TestCase):
         text = mod.render_text([report], "2026-09-25", "open", 1)
         self.assertIn("1 reserve(s) de relecteur", text)
         self.assertIn("[reserve COMMENT_WITH_CONCERNS]", text)
+
+
+def test_cli_reserve_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    """Une issue sans Concern ni remark ne doit pas perdre sa réserve."""
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 1
+    assert payload["issues"][0]["reserves"][0]["comment_id"] == 51
+
+
+def test_cli_reserve_only_text_reports_the_open_reserve(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES)
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 reserve(s) de relecteur" in text
+    assert "COMMENT_WITH_CONCERNS" in text
+
+
+def test_cli_resolved_reserve_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(51, "2026-11-05T14:05:12Z", RESERVE_HERMES),
+        c(53, "2026-11-06T09:00:00Z", LIFT_WITH_TIMESTAMP),
+    ])
+    rc = mod.main(["--issues", "9", "--classes", "reviewer-reserve",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["reserves_total"] == 1
+    assert payload["reserves_unresolved"] == 0
+
+
+EXTERNAL_REPORT = (
+    "Bonjour, je suis etudiant en L3 et le notebook 3.02 ne s'execute pas "
+    "en entier : la cellule 12 leve une erreur d'import sur seaborn. J'ai "
+    "suivi l'installation pas a pas. Merci pour ce cours formidable."
+)
+EXTERNAL_AUTHOR = "etudiant-l3-2026"
+
+
+class ExternalAnalysisTests(unittest.TestCase):
+    """Classe external-unanswered (#20185) : auteur hors flotte, tri-eti."""
+
+    def test_external_comment_without_answer_is_open(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(len(report.externals), 1)
+        finding = report.externals[0]
+        self.assertEqual(finding.status, "NON REPONDU")
+        self.assertEqual(finding.author, EXTERNAL_AUTHOR)
+        self.assertEqual(finding.slug, "external-unanswered")
+        self.assertFalse(finding.gesture_after)
+
+    def test_fleet_and_bot_authors_are_not_external(self):
+        # La classe cible l'AUTEUR hors flotte : logins de flotte (compte
+        # partage, sieges myia-*, sieges reels mesures, bot reviewer) et bots
+        # d'integration ne comptent jamais.
+        for author in ("jsboige", "myia-po-2025", "clusterManager-Myia",
+                       "jsboigeEpita", "jsboigeEPF",
+                       "dependabot[bot]", "github-actions[bot]"):
+            report = mod.analyse_comments(
+                21,
+                [c(71, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=author)],
+                classes=("external-unanswered",),
+            )
+            self.assertEqual(report.externals, [], f"auteur : {author}")
+
+    def test_seat_lane_posts_are_not_external(self):
+        # Controle positif mesure (#22267, c6811299399) : un [CLAIMED] pose
+        # par le siege reel jsboigeEpita est un post de lane, pas un constat
+        # externe — sans l'extension LANE_LOGIN, la classe inondait de posts
+        # de flotte.
+        report = mod.analyse_comments(
+            22267,
+            [
+                c(6811299399, "2026-11-12T01:05:36Z",
+                  "[CLAIMED] lane myia-po-2023:CoursIA -- audit de contenu "
+                  "des 21 paires en derive avant toute attestation.",
+                  author="jsboigeEpita"),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals, [])
+
+    def test_shared_seat_concern_is_user_concern(self):
+        # Controle mesure (#23983, cIC_kwDOH2Odns8AAAABhtf6Mw) : le siege
+        # jsboigeEPF sert AUSSI de plume au mainteneur — un « Concern: » poste
+        # sous ce login doit tomber dans le filet user-concern (il lui
+        # echappait avant l'extension LANE_LOGIN).
+        report = mod.analyse_comments(
+            23983,
+            [c(78, "2026-11-01T11:22:56Z",
+               "Concern: OK pour des carnets specifiques quand le veto sera "
+               "leve, mais sinon je pensais comme on l'a dit.",
+               author="jsboigeEPF")],
+            classes=("user-concern",),
+        )
+        self.assertEqual(len(report.concerns), 1)
+        self.assertEqual(report.concerns[0].status, "NON REPONDU")
+
+    def test_reply_citing_timestamp_refermes(self):
+        # Convention de la campagne (#20185) : la lane repond « en citant le
+        # commentaire oublie » — l'horodatage est la forme forte.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(72, "2026-11-11T09:00:00Z",
+                  "Reponse au signalement du 10:12Z : seaborn est passe en "
+                  "dependance optionnelle, le fix arrive au prochain merge."),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(len(report.externals), 1)
+        self.assertEqual(report.externals[0].status, "REPONDU")
+        self.assertEqual(report.externals[0].proof, 72)
+
+    def test_reply_quoting_excerpt_refermes(self):
+        long_excerpt = (
+            "la cellule 12 leve une erreur d'import sur seaborn. J'ai suivi "
+            "l'installation pas a pas."
+        )
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(73, "2026-11-11T09:00:00Z",
+                  f"Merci pour le rapport : « {long_excerpt} » — la cause "
+                  "est identifiee, la correction est en revue."),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "REPONDU")
+        self.assertEqual(report.externals[0].proof, 73)
+
+    def test_plain_fleet_reply_without_citation_is_manual_review(self):
+        # Fail-closed : une reponse de flotte qui ne cite ni l'heure ni le
+        # texte laisse le constat en MANUAL_REVIEW, pas en REPONDU.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(74, "2026-11-11T09:00:00Z",
+                   "Merci du signalement, on regarde la cellule concernee."),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "MANUAL_REVIEW")
+
+    def test_second_external_comment_is_not_a_response(self):
+        # Seule la flotte trier un commentaire externe : un second externe
+        # (« +1 ») ne fait meme pas passer le constat en MANUAL_REVIEW.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(75, "2026-11-10T11:00:00Z", "Meme probleme pour moi, +1.",
+                   author="autre-etudiant"),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "NON REPONDU")
+
+    def test_bot_after_external_is_not_a_candidate(self):
+        # Un bot d'integration qui passe apres le signalement (label, stale)
+        # n'est ni une reponse ni un geste : le constat reste NON REPONDU.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(76, "2026-11-10T12:00:00Z", "This issue is stale.",
+                   author="stale[bot]"),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(report.externals[0].status, "NON REPONDU")
+
+    def test_claim_after_external_raises_gesture_after(self):
+        # La lane travaille (claim) sans trier le contributeur : drapeau
+        # aggravant, le constat reste ouvert.
+        report = mod.analyse_comments(
+            21,
+            [
+                c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+                   author=EXTERNAL_AUTHOR),
+                c(77, "2026-11-10T14:00:00Z", CLAIM),
+            ],
+            classes=("external-unanswered",),
+        )
+        self.assertEqual(len(report.externals), 1)
+        self.assertTrue(report.externals[0].gesture_after)
+        self.assertTrue(report.gesture_after)
+        self.assertIn(report.externals[0], report.unresolved)
+
+    def test_classes_scoping_leaves_externals_out(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("user-concern",),
+        )
+        self.assertEqual(report.externals, [])
+        self.assertEqual(report.unresolved, [])
+
+    def test_report_dict_carries_externals(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("external-unanswered",),
+        )
+        payload = report.as_dict()
+        self.assertIn("externals", payload)
+        self.assertEqual(payload["externals"][0]["author"], EXTERNAL_AUTHOR)
+        self.assertEqual(payload["externals"][0]["status"], "NON REPONDU")
+
+    def test_render_counts_externals_and_labels_author(self):
+        report = mod.analyse_comments(
+            21,
+            [c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT,
+               author=EXTERNAL_AUTHOR)],
+            classes=("external-unanswered",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 externe(s)", text)
+        self.assertIn(f"[ext {EXTERNAL_AUTHOR}]", text)
+
+
+def test_cli_external_only_is_visible_and_fail_on_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=EXTERNAL_AUTHOR)
+    ])
+    rc = mod.main(["--issues", "21", "--classes", "external-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["unresolved"] == 1
+    assert payload["externals_total"] == 1
+    assert payload["externals_unresolved"] == 1
+    assert payload["issues"][0]["externals"][0]["comment_id"] == 70
+    assert payload["issues"][0]["externals"][0]["author"] == EXTERNAL_AUTHOR
+
+
+def test_cli_external_only_text_reports_the_open_constat(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=EXTERNAL_AUTHOR)
+    ])
+    rc = mod.main(["--issues", "21", "--classes", "external-unanswered",
+                   "--fail-on-open"])
+    text = capsys.readouterr().out
+    assert rc == 1
+    assert "1 externe(s)" in text
+    assert EXTERNAL_AUTHOR in text
+
+
+def test_cli_resolved_external_is_counted_but_not_open(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "fetch_comments", lambda number: [
+        c(70, "2026-11-10T10:12:00Z", EXTERNAL_REPORT, author=EXTERNAL_AUTHOR),
+        c(72, "2026-11-11T09:00:00Z",
+          "Reponse au signalement du 10:12Z : seaborn est passe en "
+          "dependance optionnelle, le fix arrive au prochain merge."),
+    ])
+    rc = mod.main(["--issues", "21", "--classes", "external-unanswered",
+                   "--json", "--fail-on-open"])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["unresolved"] == 0
+    assert payload["externals_total"] == 1
+    assert payload["externals_unresolved"] == 0
 
 
 if __name__ == "__main__":

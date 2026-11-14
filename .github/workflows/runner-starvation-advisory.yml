@@ -55,26 +55,84 @@ name: Runner starvation advisory (ephemeral)
 # Acceptance A3 (verification systemctl is-enabled po-2024) -> DM coord,
 # hors scope worker.
 #
-# ADVISORY PAR CONSTRUCTION : schedule + workflow_dispatch uniquement, jamais
-# pull_request/push -- un run rouge ne peut jamais bloquer une PR. Le nom
+# ADVISORY PAR CONSTRUCTION : schedule + workflow_dispatch + un heartbeat
+# workflow_run, jamais pull_request/push -- un run rouge ne peut jamais
+# bloquer une PR (workflow_run ne cree pas de check-run sur une PR). Le nom
 # porte "advisory" (ADVISORY_MARKER, cf pr-gate-sweep-health-advisory.yml).
+#
+# #15332 : le scheduler GitHub a cesse de livrer l'evenement schedule le
+# 2026-09-09 (4 h sans AUCUN declenchement planifie, depot entier, 159
+# workflows) -- un organe porte par schedule seul meurt de la panne qu'il
+# observe. Cette sonde etait le seul des trois advisories de starvation
+# sans jambe `workflow_run` : mesure du 2026-11-12 sur son propre historique
+# (API `runs?event=schedule`), la jambe `schedule` n'est livree que toutes
+# les ~8 h -- 18:28Z, 10:22Z, 02:33Z, 21:36Z, 14:44Z, 06:47Z -- alors que le
+# cron declare `23,53 * * * *` (30 min). C'est le meme phenomene que chez
+# ses deux freres (linux : 13:19Z, 04:23Z, 23:43Z ; waiter : 16:13Z,
+# 07:39Z, 00:33Z) -- EUX survivent parce que leur heartbeat workflow_run les
+# relance ; elle, non. Le pool `coursia-ephemeral` sert les jobs Lean : une
+# observation arrive avec 8 h de retard quand le scheduler se tait.
+#
+# Le heartbeat s'ancre sur « Secret Scan » et « Enrich-quality gate », qui se
+# declenchent sur CHAQUE push et CHAQUE pull_request du depot :
+#   - jambe « pull_request » : elle se declenche sur l'activite PR, qui
+#     continue quand le scheduler se tait -- c'est cette jambe qui compte le
+#     plus : un pool eteint bloque les jobs de PR, donc les merges s'arretent ;
+#   - jambe « Enrich-quality gate » : job unique ubuntu-latest, declenche par
+#     pull_request sur MyIA.AI.Notebooks/**/*.ipynb -- evenement que GitHub
+#     delivre sans le parc (#23195). C'est la SEULE jambe hebergee des deux
+#     ancres (mesure du 2026-10-29 : Secret Scan a 25 % en pull_request et
+#     100 % en push ; Enrich-quality gate a 100 % en pull_request).
+# L'organe scripts/ci/check_heartbeat_anchor_independence.py re-mesure ce
+# fait a chaque passage et rougit si l'ancre cesse de l'etre -- une jambe
+# declaree redevient ainsi une jambe prouvee.
+# La cadence SERVIE est mesuree par le script lui-meme (runs event=schedule
+# uniquement -- les runs workflow_run ne faussent pas la mesure).
+#
+# PORTE DE MESURE (#22937) : le heartbeat se declenche sur chaque fin
+# d'ancre. Chaque passage complet paie ~9 appels API (compteur `gh_calls` du
+# script ; l'inventaire des runners en ajoute 1, volontairement non compte)
+# sur le jeton de depot (budget 1000 req/h) : la paire de sondes a sature le
+# jeton le 2026-10-28 22:04Z (« API rate limit exceeded for installation ») ->
+# 18 rouges sur main en 10 min. La porte (MEASURE_EVERY_N_RUNS) borne la
+# MESURE : un passage complet sur 4, les autres ne paient que la lecture de
+# la cadence servie (1 appel). Le RUN existe toujours et son rapport de
+# cadence servie (#15332) est emis a chaque passage -- c'est la SURVIVANCE de
+# l'observateur qui est la garantie, pas la frequence de la lecture
+# complete. La jambe `schedule` n'est jamais gatee : elle est la cadence de
+# reference de l'advisory.
 
 on:
   schedule:
     - cron: '23,53 * * * *'  # lean (offset distinct du cron linux 19,49)
   workflow_dispatch:
+  workflow_run:
+    workflows: ["Secret Scan", "Enrich-quality gate"]
+    types: [completed]
 
 permissions:
   contents: read   # checkout du script
   actions: read    # lecture des runs/jobs (predicat STARVATION)
 
-concurrency:
-  group: runner-starvation-advisory
-  cancel-in-progress: false
-
 jobs:
   starve:
     name: Runner starvation advisory (${{ matrix.label }})
+    # Heartbeat workflow_run declenche par une PR de fork : job saute (mesure
+    # du 2026-10-16, cf linux-runner-starvation-advisory.yml) -- GitHub
+    # attribue ce run a l'auteur de la PR de fork (triggering_actor) ; quand
+    # un run plus recent le remplace dans le groupe de concurrence, il passe
+    # « cancelled » et GitHub envoie a cette personne un email « Run
+    # cancelled » (des eleves de l'APP3 en ont recu plusieurs dans la nuit
+    # du 15 au 16/10 pour leurs PRs de TP). Les runs internes, le schedule et
+    # le dispatch continuent d'alimenter l'observateur.
+    #
+    # La concurrence vit au niveau du JOB, plus du workflow : au niveau
+    # workflow, un run en attente est annule AVANT l'evaluation de ce `if`,
+    # et l'email part quand meme. Un job saute n'entre pas dans le groupe.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
+    concurrency:
+      group: runner-starvation-advisory
+      cancel-in-progress: false
     # ubuntu-latest (#16134, 2026-09-14).
     #
     # Ce job portait ce commentaire : « un observateur qui tourne sur le label
@@ -104,12 +162,37 @@ jobs:
             warn_floor: 2
             starve_minutes: "15"
     steps:
+      # PORTE DE MESURE (#22937), borne corrigee : le calcul se fait dans le
+      # SHELL. L'operateur `%` n'existe pas dans les expressions GitHub --
+      # une porte ecrit `github.run_number % 12 == 0` ne s'evalue pas, et le
+      # job ne part jamais (ou part toujours) : la porte serait un decor.
+      # Ici le reste se fait en arithmetique bash, et les etapes qui paient
+      # (checkout + mesure complete) ne s'executent que sur les runs
+      # mesurants : les autres ne font aucun checkout et aucun appel.
+      #
+      # La jambe `schedule` n'est JAMAIS gatee : elle est la cadence de
+      # reference de l'advisory, et elle porte le rapport de cadence servie
+      # (#15332) qui prouve la survie de l'observateur.
+      - name: Porte de mesure
+        id: gate
+        env:
+          RUN_NUMBER: ${{ github.run_number }}
+          EVENT_NAME: ${{ github.event_name }}
+          MEASURE_EVERY_N: "12"
+        run: |
+          if [ "$EVENT_NAME" != "workflow_run" ] || [ $((RUN_NUMBER % MEASURE_EVERY_N)) -eq 0 ]; then
+            echo "measure=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "measure=false" >> "$GITHUB_OUTPUT"
+          fi
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.measure == 'true'
         with:
           sparse-checkout: |
             .github/workflows/runner-starvation-advisory.yml
             scripts/ci/check_runner_starvation.py
       - name: Measure starvation on ${{ matrix.label }}
+        if: steps.gate.outputs.measure == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
@@ -117,6 +200,16 @@ jobs:
           STARVE_MINUTES: ${{ matrix.starve_minutes }}
           WARN_FLOOR: ${{ matrix.warn_floor }}
           WINDOW_MAX_MINUTES: "360"
+          # #15332 : mesurer la cadence SERVIE (runs event=schedule de CE
+          # workflow uniquement) contre la cadence declaree du cron.
+          SELF_WORKFLOW: runner-starvation-advisory.yml
+          DECLARED_CADENCE_MINUTES: "30"
+          CADENCE_WARN_MINUTES: "360"
+          # #22937 : borne la MESURE complete. La porte vit au niveau du JOB
+          # (etape « Porte de mesure », calcul en shell) : les runs non
+          # mesurants ne checkoutent pas et n'appellent pas l'API. Le
+          # compteur reste aligne sur la porte du shell (12).
+          MEASURE_EVERY_N_RUNS: "12"
         # `python3`, pas `python` : le job est declare `ubuntu-latest`, mais le
         # detecteur de #17444 classe TOUT job a `python` nu sans
         # `actions/setup-python` comme vulnerable a un routage self-hosted (les
