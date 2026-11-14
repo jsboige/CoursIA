@@ -78,16 +78,74 @@ def test_manifeste_livre_est_valide():
     assert errors == [], "\n".join(f"{f.kind} {f.path}: {f.message}" for f in errors)
 
 
+# Les onze sources du pilote restent obligatoires. Les compagnons C# sont
+# admis individuellement ; leur qualification et la couverture de l'arbre
+# restent controlees par check_manifest, sans compteur global fige.
+_NLP_PILOT_SOURCES = frozenset({
+    'MyIA.AI.Notebooks/NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb',
+    'MyIA.AI.Notebooks/NLP/02_NGrammes_Modeles_De_Langue.ipynb',
+    'MyIA.AI.Notebooks/NLP/03_CRF_Etiquetage_Sequentiel.ipynb',
+    'MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing.ipynb',
+    'MyIA.AI.Notebooks/NLP/05-HMM-Viterbi.ipynb',
+    'MyIA.AI.Notebooks/NLP/06-Recherche-Information-TFIDF-BM25.ipynb',
+    'MyIA.AI.Notebooks/NLP/07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb',
+    'MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram.ipynb',
+    'MyIA.AI.Notebooks/NLP/09-FastText-Subword-Vectors.ipynb',
+    'MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch.ipynb',
+    'MyIA.AI.Notebooks/NLP/11-Classement-Texte-RegressionLogistique-FromScratch.ipynb',
+})
+_NLP_PILOT_COMPANIONS = frozenset(
+    path.removesuffix(".ipynb") + "-CSharp.ipynb" for path in _NLP_PILOT_SOURCES
+)
+
+
+def _assert_nlp_pilot_inventory(notebooks):
+    paths = [entry["path"] for entry in notebooks]
+    assert len(paths) == len(set(paths)), "entree NLP dupliquee"
+    assert _NLP_PILOT_SOURCES <= set(paths), "source du pilote NLP absente"
+    assert set(paths) <= _NLP_PILOT_SOURCES | _NLP_PILOT_COMPANIONS, (
+        "carnet hors du pilote NLP ou compagnon sans source reconnue"
+    )
+
+
 def test_manifeste_livre_couvre_la_serie_pilote():
     manifest = cq.load_manifest()
     series = {s["id"]: s for s in manifest["series"]}
     assert "NLP" in series
     notebooks = series["NLP"]["notebooks"]
-    assert len(notebooks) == 11
+    # La couverture carnet par carnet est portee par check_manifest (deux sens) :
+    # un compte fige casserait a chaque jumeau ajoute a la serie. Le controle
+    # ci-dessous verifie donc l'inventaire (sources du pilote + compagnons
+    # admis individuellement) sans figer un total.
+    _assert_nlp_pilot_inventory(notebooks)
     for entry in notebooks:
         assert entry["difficulte"] in cq.DIFFICULTY_LEVELS
         assert entry["recherche"] in cq.RESEARCH_LEVELS
         assert len(entry["justification"].strip()) >= cq.MIN_JUSTIFICATION_CHARS
+
+
+@pytest.mark.parametrize("companions", [0, 1, 3, 11])
+def test_pilote_accepte_des_compagnons_sans_figer_le_total(companions):
+    sources = [_entry(path) for path in sorted(_NLP_PILOT_SOURCES)]
+    twins = [_entry(path) for path in sorted(_NLP_PILOT_COMPANIONS)[:companions]]
+    _assert_nlp_pilot_inventory(sources + twins)
+
+
+def test_pilote_refuse_source_omise_meme_si_le_total_reste_onze():
+    sources = [_entry(path) for path in sorted(_NLP_PILOT_SOURCES)[1:]]
+    sources.append(_entry(sorted(_NLP_PILOT_COMPANIONS)[0]))
+    with pytest.raises(AssertionError, match="source du pilote NLP absente"):
+        _assert_nlp_pilot_inventory(sources)
+
+
+@pytest.mark.parametrize("extra_path", [
+    "MyIA.AI.Notebooks/NLP/99-Sans-Source-CSharp.ipynb",
+    sorted(_NLP_PILOT_SOURCES)[0],
+])
+def test_pilote_refuse_orphelin_et_doublon(extra_path):
+    sources = [_entry(path) for path in sorted(_NLP_PILOT_SOURCES)]
+    with pytest.raises(AssertionError):
+        _assert_nlp_pilot_inventory(sources + [_entry(extra_path)])
 
 
 def test_champ_difficulte_expose_pour_le_generateur():

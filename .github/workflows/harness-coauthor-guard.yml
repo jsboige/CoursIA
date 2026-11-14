@@ -46,7 +46,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: harness-coauthor-guard-${{ github.ref }}
+  group: harness-coauthor-guard-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -80,7 +80,7 @@ jobs:
 
     # Same-repo PRs only (agents/staff). Fork PRs are student submissions
     # under student-pr-reviews.md -- benevolent review, no content gate.
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
 
     steps:
       # Le detecteur ne lit que `.claude/**/*.md` (stdlib seule). L'ancien

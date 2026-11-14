@@ -16,6 +16,7 @@ Ce README présente l'organisation et l'usage des outils de `notebook_tools`.
 | **Scanners structurels** | `scan_cell_ordering.py`, `scan_md_hierarchy.py`, `scan_figure_visual_signature.py` | Audit hierarchie markdown + ordre cellules pedagogiques + **signature visuelle des figures PNG (consolidation L777-L1/L778-L1/L2/L779-L1/L2/L780-L1/L2/L3/L781-L1/L2/L3 du rollout MANIFEST c.754-c.781, EPIC #5780)** |
 | **Execution kernels** | `dotnet_executor.py`, `exec_dotnet_persist.py`, `exec_single_cell.py`, `batch_reexecute.py`, `wsl_papermill.py` | .NET Interactive + Python Papermill via WSL |
 | **Relevé runtime kernels** | `measure_kernels_runtime.py` | Lance les kernelspecs Jupyter et exporte les versions Python/numpy effectives en JSON |
+| **Versions de bibliothèques** | `notebook_lib_versions.py`, `lib_version_manifest.json` | Recense les littéraux de version des cellules de code (`#r "nuget: X, v"`, `pip install x==v`, URL de build Tweety) et classe chaque site contre les canoniques du manifeste (#23073) |
 | **QC quantbooks** | `qc_quantbook_execute.py`, `qc_classify.py`, `execute_qcpy_docker.py`, `fix_qc_notebooks.py` | Subset QuantConnect (QuantBook non-executable via MCP) |
 | **Anti-banner / hygiene** | `strip_probe_banner.py`, `strip_machine_paths.py`, `scrub_papermill_paths.py`, `audit_pip_install_cells.py`, `pip_leak_delta.py` | Stop & Repair (secrets-hygiene §6) + banner #6309 + pip leaks |
 | **Catalogue & dashboards** | `generate_catalog.py`, `generate_curriculum_rdf.py`, `query_curriculum.py`, `verify_catalog_readme.py`, `catalog_coverage.py`, `fix_catalog_drift.py`, `generate_health_dashboard.py`, `weekly_digest.py`, `extract_readme_figures.py` | Catalogue, export RDF interrogeable du cursus, figures README + dashboards |
@@ -27,6 +28,33 @@ Ce README présente l'organisation et l'usage des outils de `notebook_tools`.
 | **Rendu pédagogique** | `knot_diagram.py` | Diagrammes de nœuds 2D depuis un PD-code SnapPy — Python pur (faces par système de rotation, plongement de Tutte, arcs Bezier, halo sur/sous), substitut portable au rendu POSIX `draw`+`mpost` de Spherogram (#21908) |
 
 Tests unitaires dans `scripts/notebook_tools/tests/`.
+
+## Recenser les versions de bibliothèques chargées par les carnets
+
+`notebook_lib_versions.py` lit `lib_version_manifest.json` (versions canoniques et
+écarts arbitrés, avec motif écrit) et recense, dans les **cellules de code** des
+carnets suivis par git, chaque littéral de version : directive
+`#r "nuget: X, v"`, `pip install x==v`, URL de build Tweety. Un `#r` sans version
+n'est pas un littéral ; une mention en markdown non plus.
+
+Chaque site est classé : `OK` (version canonique), `CONVERGE` (écart non arbitré),
+`ALLOWED` (écart arbitré au manifeste), `NO_CANONICAL` (le manifeste ne fixe pas
+encore de canonique — arbitrage non tranché), `UNKNOWN` (paquet absent du
+manifeste), `CANONICAL_UNRESOLVED` (la source pointée par `canonical_from` n'a pas
+pu être lue).
+
+```bash
+python scripts/notebook_tools/notebook_lib_versions.py                 # recensement complet
+python scripts/notebook_tools/notebook_lib_versions.py --only-dispersed
+python scripts/notebook_tools/notebook_lib_versions.py --json
+python scripts/notebook_tools/notebook_lib_versions.py --strict        # rc=1 s'il reste un CONVERGE
+```
+
+Le recensement sort **0 même quand des écarts existent** : c'est un instrument de
+mesure, pas un gate. `--strict` donne au câblage CI son point d'appui, il n'est pas
+encore branché sur la fast lane. Une canonique n'est fixée au manifeste que lorsque
+la version **majoritaire est aussi la plus récente** ; sinon `canonical: null`, car
+choisir la direction est un arbitrage et non une déduction.
 
 ## Lancer un service Kernel Gateway depuis un notebook existant
 
