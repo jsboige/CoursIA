@@ -262,6 +262,10 @@ Le [App-27-Sparse-Index-Tracking-Walk-Forward](App-27-Sparse-Index-Tracking-Walk
 | [Sudoku](../../Sudoku/) | App-11 (Picross), App-1 (NQueens) | Problèmes combinatoires similaires |
 | [GameTheory](../../GameTheory/) | App-12/App-14 (ConnectFour) | Jeux à deux joueurs, MCTS |
 
+### Rush Hour en Python et C#
+
+[Python](App-33-RushHour-Admissible-Astar-Python.ipynb) et [C#](App-33-RushHour-Admissible-Astar-CSharp.ipynb) comparent BFS, A* et glouton sur six variantes. Les générateurs aléatoires diffèrent, tandis que les règles de glissement et les budgets de sélection sont communs.
+
 ## Références
 
 Couverture par application des sources fondatrices mobilisées dans cette sous-série. Les références transversales (formalisation en espace d'états, backtracking, A*, recherche locale, métaheuristiques) sont reprises dans les READMEs des [Parties 1](../Part1-Foundations/README.md), [2](../Part2-CSP/README.md) et [4](../Part4-Metaheuristics/README.md) : ce tableau ne couvre que les sources spécifiques aux applications.
