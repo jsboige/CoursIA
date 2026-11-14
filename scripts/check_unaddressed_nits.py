@@ -353,6 +353,22 @@ DIAG_LOOP_LIMIT = 3  # > 3 [DIAG] consecutifs sans [ACTION] = PR bloquee
 # forme nue sans type ne leve rien. Le jour ou une App de lane coordinateur
 # existe, son login REST rejoint cet ensemble par une edition consciente.
 LIFT_OVERRIDE_LOGINS = {"myia-ai-01"}
+# Q185 (sign-off user 2026-11-13) -- l'ADJOINT coordonnateur, borne aux
+# reserves de BOT. La lane adjointe myia-po-2025:CoursIA-2 poste sous son
+# identite GitHub App propre (``coursia-lane-po-2025[bot]`` : forme REST
+# suffixee, preuve de type portee par la ligne #17437 -- une forme nue
+# typee ``User`` n'entre pas). Sa trappe reprend TOUTE la grammaire du
+# coordinateur (``[OVERRIDE] lane`` pose en tete #13030, phrase de levee
+# affirmative nommant la reserve #14216, bornes temporelles et trappe
+# #13495) avec UN resserrement : elle ne leve que les reserves emises par
+# un BOT -- persona Hermes (``clusterManager-Myia`` via
+# PERSONA_ALIAS_LOGINS, ou marqueur ``[Hermes]``/``[NanoClaw]`` pose par le
+# self-bot ``jsboige``) et bots automatises (BOT_LOGINS). Hors perimetre,
+# fail-closed : le coordinateur (myia-ai-01), les nits user voix nue de
+# jsboige, toute reserve d'une autre lane ou d'un humain, et la PR portee
+# par l'App elle-meme. Voir ``_adjoint_liftable_reserve`` et la trappe de
+# ``_lift_eligible`` ; les pouvoirs du coordinateur restent inchanges.
+ADJOINT_LIFT_LOGINS = {"coursia-lane-po-2025[bot]"}
 # #13609 -- alias de persona Hermes/NanoClaw cross-login. La persona de
 # reviewer Hermes parle sous DEUX logins -- clusterManager-Myia (reviewer
 # principal) et jsboige (self-bot). Quand elle pose une reserve sous l'un
@@ -5357,6 +5373,38 @@ def _override_scopes_reserve(lift_body: str, nit_author: str) -> bool:
     return False
 
 
+def _adjoint_liftable_reserve(nit_author: str, nit_body: str) -> bool:
+    """Q185 : la reserve est-elle emise par un BOT, seul perimetre de la
+    voix adjointe (``ADJOINT_LIFT_LOGINS``) ?
+
+    Bot au sens de Q185, par detection DEJA EN PLACE dans l'organe :
+
+    - ``BOT_LOGINS`` : bots automatises (github-actions, codecov, dependabot,
+      copilot-pull-request-reviewer -- la reserve d'un bot y vit surtout via
+      un etat natif CHANGES_REQUESTED, classify() rendant None sinon) ;
+    - ``PERSONA_ALIAS_LOGINS`` (clusterManager-Myia) : la persona Hermes,
+      reviewer principal ;
+    - ``jsboige`` + marqueur persona POSE dans le corps
+      (``_PERSONA_MARKERS_RE``, citation depouillee) : la review Hermes du
+      self-bot. Sans marqueur, un commentaire ``jsboige`` est le canal des
+      NITS USER (B.0 : les nits du user sont les commentaires jsboige qui
+      ne portent PAS la persona) -- hors perimetre.
+
+    Fail-closed : tout autre auteur (le coordinateur, une autre lane, un
+    humain, une classification inconnue) rend False -- la voix adjointe ne
+    leve pas.
+    """
+    if not nit_author:
+        return False
+    if nit_author in BOT_LOGINS:
+        return True
+    if nit_author in PERSONA_ALIAS_LOGINS:
+        return True
+    if nit_author == "jsboige":
+        return bool(_PERSONA_MARKERS_RE.search(_strip_quoted(nit_body or "")))
+    return False
+
+
 def _diag_loop(pr_data: dict, cutoff: datetime) -> dict:
     """#15511 (P1) : plus longue serie de [DIAG] sans [ACTION] intercale.
 
@@ -5744,8 +5792,21 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         # declare le relais, la LEVEE revendique le siege en tete de ligne.
         siege = (_QUALIFYING_SEAT_BODY_RE.search(_strip_quoted(nit_body or ""))
                  and _QUALIFYING_SEAT_HEAD_RE.search(_strip_quoted(lift_body or "")))
-        if not (lift_author in LIFT_OVERRIDE_LOGINS
-                and (m is not None or siege)):
+        if lift_author in ADJOINT_LIFT_LOGINS:
+            # Q185 (sign-off user 2026-11-13) : la voix adjointe. Meme
+            # grammaire que le coordinateur -- ``[OVERRIDE] lane`` pose en
+            # tete (#13030), scope par reserve juge ci-dessous par
+            # ``_override_scopes_reserve`` (#14216) -- mais NI la voie siege
+            # qualifiant (#16764 : le siege est l'arbitre tiers, role
+            # coordinateur) NI un perimetre autre que BOT
+            # (``_adjoint_liftable_reserve``) : reserve du coordinateur,
+            # nit user, reserve d'une autre lane ou d'un humain ->
+            # fail-closed, pas levee.
+            if m is None or not _adjoint_liftable_reserve(nit_author,
+                                                          nit_body):
+                return False
+        elif not (lift_author in LIFT_OVERRIDE_LOGINS
+                  and (m is not None or siege)):
             return False
         if siege and m is None:
             # Le scope #14216 est porte par la DECLARATION du nit
@@ -6162,6 +6223,7 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
         if t is not None
         and OVERRIDE_LANE.search(body or "") is not None
         and author not in LIFT_OVERRIDE_LOGINS
+        and author not in ADJOINT_LIFT_LOGINS
         and author not in nit_authors
     ] + [
         # #13495 — meme exigence de nomination pour la trappe fermee a
@@ -6197,6 +6259,27 @@ def analyse(pr_data: dict, threads: list[dict], cutoff: datetime,
                              if b.get("author") not in ("", author)
                              and not _override_scopes_reserve(
                                  body or "", b.get("author") or "")})
+    ] + [
+        # Q185 — meme exigence de nomination pour la voix adjointe : un
+        # override adjoint qui laisse survivre une reserve est nomme avec sa
+        # cause (reserve hors perimetre bot, reserve non nommee nommement,
+        # ou PR portee par l'App elle-meme, #13495). Sans cette ligne, un
+        # gate rouge « malgre notre override adjoint » serait indistinguable
+        # d'un bug du detecteur (meme contrat que #13316/#14216 ci-dessus) ;
+        # et une levee adjointe REUSSIE ne produit aucune note.
+        {"author": author, "at": t.isoformat(),
+         "why": (f"override ignoré pour la réserve de « {b.get('author')} » — "
+                 f"la voix adjointe de « {author} » ne lève par phrase que "
+                 "les réserves de bot (Q185, sign-off 2026-11-13 : persona "
+                 "Hermes, clusterManager-Myia, bots automatisés), hors PR "
+                 "portée par l'App elle-même (#13495), et nommées "
+                 "nommément (#14216)")}
+        for (t, author, body) in explicit_lifts
+        if t is not None
+        and author in ADJOINT_LIFT_LOGINS
+        and OVERRIDE_LANE.search(body or "") is not None
+        for b in blocking
+        if b.get("author") not in ("", author)
     ]
 
     # #13512 -- CE QUE L'ORGANE N'A PAS EVALUE.
