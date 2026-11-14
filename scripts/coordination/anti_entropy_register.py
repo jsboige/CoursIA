@@ -308,7 +308,7 @@ REGISTRE: tuple[Entree, ...] = (
                             "re-mesure du 2026-11-15 sur l'arbre fusionne",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@MERGE_SHA_PLACEHOLDER")),
+                                        "@0ed9229a6b579541747f106ef93d405a7c377eb3")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
