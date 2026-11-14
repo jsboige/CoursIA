@@ -327,19 +327,45 @@
             "outillage": 2,
             "autonomie": 2
           },
-          "justification": "Prérequis : probabilités — Bayes, MLE, espace log, lissage — notions de licence (P2). Outillage : scikit-learn (`CountVectorizer`, `MultinomialNB`) comme témoin, plus `token_pattern` à aligner explicitement (O2). Autonomie : l'implémentation est donnée ; les exercices demandent une variante (Bernoulli présence/absence, avec le dénominateur à changer), une explication de prédiction et un traitement des mots vides — adaptation et vérification (A2). Niveau D2 = max(2, 2). Recherche R1 : le §3 « Cross-check SOTA » et le §4 « l'effet de α, mesuré » sont des instruments de mesure réutilisables ; le carnet signale lui-même que sa résolution de 12,5 points ne permet pas de distinguer un plateau, ce qui en fait un contrôle et non une exploration.",
+          "justification": "Les trois exercices 'Bernoulli', 'expliquer un score' et 'mots vides' adaptent des formules données et les vérifient sur des fixtures (A2). Bayes, MLE, logarithmes et le carnet 02 forment les prérequis de licence (P2). Le contrôle scikit-learn et le balayage d'alpha construisent un instrument de vérification sur huit documents ; ils ne constituent pas une question ouverte (R1). scikit-learn CountVectorizer et MultinomialNB sont réellement invoqués comme témoins (O2).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 9,
-            "cellules_md": 14,
-            "prose_chars": 14069,
-            "densite": 1563,
+            "cellules_md": 18,
+            "prose_chars": 14992,
+            "densite": 1665,
             "densite_plancher": 1200,
             "kernel": "Python 3",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/10-Classement-Texte-NaiveBayes-FromScratch-CSharp.ipynb",
+          "difficulte": "D2",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 2,
+            "outillage": 3,
+            "autonomie": 2
+          },
+          "justification": "Les trois exercices 'Bernoulli', 'expliquer un score' et 'mots vides' adaptent des formules données et les vérifient sur des fixtures (A2). Bayes, MLE, logarithmes et le carnet 02 forment les prérequis de licence (P2). Le contrôle scikit-learn et le balayage d'alpha construisent un instrument de vérification sur huit documents ; ils ne constituent pas une question ouverte (R1). Les comptages et scores sont calculés en C# ; Python.NET et CPython/scikit-learn sont à configurer pour le témoin externe (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 9,
+            "cellules_md": 18,
+            "prose_chars": 15395,
+            "densite": 1710,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
