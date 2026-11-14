@@ -1,7 +1,7 @@
 /-
   # Abstraction.Basic — la dette d'abstraction peut croître en raffinant
 
-  Grain #12204 (opération 2), jeu `GameTheory-19-Abstraction-a-Dette-Python.ipynb`.
+  Grain #12204 (opération 2), jeu `Metajeux-03-Abstraction-a-Dette-Python.ipynb`.
 
   ## Ce que le notebook mesure
 

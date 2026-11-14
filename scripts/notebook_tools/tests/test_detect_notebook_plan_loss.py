@@ -562,6 +562,56 @@ class TestMain:
         # correspondant est JUSTIFIED -> pas bloquant -> rc=0.
         assert rc == 0, f"rc={rc}, expected 0 (justified)"
 
+    def test_explicit_pr_body_file_beats_env(self, tmp_path: Path, monkeypatch):
+        # Le job fast-lane exporte PLAN_LOSS_PR_BODY pour TOUTES ses jambes,
+        # y compris le pre-controle pytest de la jambe absorbee (#22209). Une
+        # option EXPLICITE doit donc primer sur l'env : sans ca, le
+        # pre-controle lit le body de la PR au lieu de sa fixture et rougit
+        # (#26254, mesure CI du 2026-11-13, test_justified_by_body_exits_zero).
+        import subprocess
+        p = tmp_path / "j.ipynb"
+        nb_base = _nb(_md("# Plan\n\n### Duree est longue\n\n"))
+        nb_head = _nb(_md("# Plan\n\n"))
+        _write_nb(p, nb_base)
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "j.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+        _write_nb(p, nb_head)
+
+        body_path = tmp_path / "pr_body.md"
+        body_path.write_text(
+            "plan-loss: section assumee -- j.ipynb section: Duree est longue : assumee\n",
+            encoding="utf-8",
+        )
+        monkeypatch.setenv("PLAN_LOSS_PR_BODY", "## Un body de PR sans aucun marqueur\n")
+        rc = dpl.main([str(p), "--base", "HEAD", "--check", "--pr-body-file", str(body_path)])
+        assert rc == 0, f"rc={rc}, expected 0 (explicit --pr-body-file must beat the env)"
+
+    def test_env_body_still_used_without_cli_option(self, tmp_path: Path, monkeypatch):
+        # Contrepartie : sans option explicite, l'env reste le canal CI
+        # (le workflow passe le body par PLAN_LOSS_PR_BODY, jamais par un
+        # fichier). La correction de precedence ne doit pas debrancher ce canal.
+        import subprocess
+        p = tmp_path / "j.ipynb"
+        nb_base = _nb(_md("# Plan\n\n### Duree est longue\n\n"))
+        nb_head = _nb(_md("# Plan\n\n"))
+        _write_nb(p, nb_base)
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "j.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+        _write_nb(p, nb_head)
+
+        monkeypatch.setenv(
+            "PLAN_LOSS_PR_BODY",
+            "plan-loss: section assumee -- j.ipynb section: Duree est longue : assumee\n",
+        )
+        rc = dpl.main([str(p), "--base", "HEAD", "--check"])
+        assert rc == 0, f"rc={rc}, expected 0 (env PLAN_LOSS_PR_BODY is the CI channel)"
+
     def test_pure_addition_exits_zero(self, tmp_path: Path, capsys):
         # Enrichissement qui AJOUTE une cellule markdown, aucun titre perdu
         # (cas #15403) : STRUCTURE_DRIFT informatif, rc=0.
