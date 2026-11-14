@@ -1,0 +1,334 @@
+{
+  "source": {
+    "repo": "jsboigeEpita/2025-Epita-Intelligence-Symbolique",
+    "ref": "e52042303d3adbe2d719924ce5537bc4da32b775",
+    "measured_at": "2026-11-14",
+    "path_base": "chemins absolus depuis la racine du repo etudiant"
+  },
+  "vendorisees": [
+    {
+      "id": "jtms",
+      "label": "JTMS / revision de croyances",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/api",
+        "argumentation_analysis/plugins",
+        "argumentation_analysis/services"
+      ],
+      "project_origins": [
+        "1.4.1-JTMS"
+      ]
+    },
+    {
+      "id": "sophismes",
+      "label": "Detection de sophismes (symbolique + ML)",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/core",
+        "argumentation_analysis/plugins",
+        "argumentation_analysis/services"
+      ],
+      "project_origins": [
+        "2.3.2-detection-sophismes"
+      ]
+    },
+    {
+      "id": "debat",
+      "label": "Contre-argument / debat dialogique",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/orchestration",
+        "argumentation_analysis/plugins"
+      ],
+      "project_origins": [
+        "2.3.3-generation-contre-argument",
+        "1_2_7_argumentation_dialogique"
+      ]
+    },
+    {
+      "id": "gouvernance",
+      "label": "Gouvernance multi-agents",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/evaluation",
+        "argumentation_analysis/plugins"
+      ],
+      "project_origins": [
+        "2.1.6_multiagent_governance_prototype"
+      ]
+    },
+    {
+      "id": "tweety",
+      "label": "Logique formelle (Tweety via JPype)",
+      "portability": "a-decider",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/plugins"
+      ],
+      "project_origins": [
+        "2.3.3-generation-contre-argument"
+      ]
+    }
+  ],
+  "ecarteles": [
+    {
+      "id": "jtms",
+      "label": "JTMS / revision de croyances",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/api",
+        "argumentation_analysis/plugins",
+        "argumentation_analysis/services"
+      ],
+      "project_origins": [
+        "1.4.1-JTMS"
+      ]
+    },
+    {
+      "id": "dung",
+      "label": "Argumentation Dung / AIF",
+      "portability": "portable",
+      "platform_subtrees": [
+        "abs_arg_dung/agent.py",
+        "abs_arg_dung/aif_adapter.py",
+        "argumentation_analysis/orchestration",
+        "argumentation_analysis/plugins"
+      ],
+      "project_origins": []
+    },
+    {
+      "id": "sophismes",
+      "label": "Detection de sophismes (symbolique + ML)",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/core",
+        "argumentation_analysis/plugins",
+        "argumentation_analysis/services"
+      ],
+      "project_origins": [
+        "2.3.2-detection-sophismes"
+      ]
+    },
+    {
+      "id": "debat",
+      "label": "Contre-argument / debat dialogique",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/orchestration",
+        "argumentation_analysis/plugins"
+      ],
+      "project_origins": [
+        "2.3.3-generation-contre-argument",
+        "1_2_7_argumentation_dialogique"
+      ]
+    },
+    {
+      "id": "gouvernance",
+      "label": "Gouvernance multi-agents",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/evaluation",
+        "argumentation_analysis/plugins"
+      ],
+      "project_origins": [
+        "2.1.6_multiagent_governance_prototype"
+      ]
+    },
+    {
+      "id": "surfaces",
+      "label": "Surfaces d'interaction",
+      "portability": "a-decider",
+      "platform_subtrees": [
+        "CaseAI/index.html",
+        "api/agent_routes.py",
+        "api/auth.py",
+        "api/openapi.snapshot.json",
+        "apps/gradio_demo",
+        "interface_web/api",
+        "interface_web/app.py"
+      ],
+      "project_origins": []
+    }
+  ],
+  "multi_origines": [
+    {
+      "id": "debat",
+      "label": "Contre-argument / debat dialogique",
+      "portability": "portable",
+      "platform_subtrees": [
+        "argumentation_analysis/agents",
+        "argumentation_analysis/orchestration",
+        "argumentation_analysis/plugins"
+      ],
+      "project_origins": [
+        "2.3.3-generation-contre-argument",
+        "1_2_7_argumentation_dialogique"
+      ]
+    }
+  ],
+  "modules_dupliques": {
+    "conflict_resolution.py": [
+      "2.1.6_multiagent_governance_prototype/governance",
+      "argumentation_analysis/agents/core/governance",
+      "argumentation_analysis/services/jtms"
+    ],
+    "app.py": [
+      "2.3.6_local_llm",
+      "apps/gradio_demo",
+      "argumentation_analysis/services/web_api",
+      "argumentation_analysis/ui",
+      "interface_web"
+    ],
+    "models.py": [
+      "1_2_7_argumentation_dialogique/local_db_arg/src/core",
+      "api",
+      "argumentation_analysis/orchestration",
+      "argumentation_analysis/reporting",
+      "libs/mcp/client"
+    ],
+    "agent.py": [
+      "2.3.5_argument_quality/src",
+      "abs_arg_dung",
+      "argumentation_analysis/agents/templates/student_template"
+    ],
+    "main.py": [
+      "1.4.1-JTMS",
+      "1_2_7_argumentation_dialogique/local_db_arg",
+      "api",
+      "argumentation_analysis/api",
+      "argumentation_analysis/services/mcp_server"
+    ],
+    "cli.py": [
+      "1_2_7_argumentation_dialogique/local_db_arg/src/interfaces",
+      "2.1.6_multiagent_governance_prototype",
+      "abs_arg_dung"
+    ],
+    "utils.py": [
+      "2.3.6_local_llm/local_llm",
+      "argumentation_analysis",
+      "argumentation_analysis/ui"
+    ],
+    "manager.py": [
+      "argumentation_analysis/orchestration/hierarchical/operational",
+      "argumentation_analysis/orchestration/hierarchical/strategic",
+      "argumentation_analysis/orchestration/hierarchical/tactical"
+    ],
+    "unified_pipeline.py": [
+      "argumentation_analysis/orchestration",
+      "argumentation_analysis/pipelines",
+      "argumentation_analysis/utils"
+    ],
+    "plugin.py": [
+      "argumentation_analysis/plugin_framework/core/plugins/standard/external_verification",
+      "argumentation_analysis/plugin_framework/core/plugins/standard/taxonomy_explorer",
+      "argumentation_analysis/plugins/analysis_tools"
+    ],
+    "config.py": [
+      "1_2_7_argumentation_dialogique/local_db_arg/src/interfaces",
+      "abs_arg_dung",
+      "argumentation_analysis/core",
+      "argumentation_analysis/ui"
+    ],
+    "metrics.py": [
+      "2.1.6_multiagent_governance_prototype/metrics",
+      "2.3.3-generation-contre-argument/counter_agent/evaluation",
+      "argumentation_analysis/agents/core/governance"
+    ],
+    "strategies.py": [
+      "2.3.3-generation-contre-argument/counter_agent/agent",
+      "argumentation_analysis/agents/core/counter_argument",
+      "argumentation_analysis/core",
+      "argumentation_analysis/orchestration",
+      "argumentation_analysis/pipelines/orchestration/execution"
+    ],
+    "reporting_utils.py": [
+      "argumentation_analysis/core/utils",
+      "argumentation_analysis/utils",
+      "argumentation_analysis/utils/dev_tools"
+    ],
+    "prompts.py": [
+      "2.3.3-generation-contre-argument/counter_agent/llm",
+      "argumentation_analysis/agents/core/extract",
+      "argumentation_analysis/agents/core/informal",
+      "argumentation_analysis/agents/core/pl",
+      "argumentation_analysis/agents/templates/student_template"
+    ],
+    "definitions.py": [
+      "2.3.3-generation-contre-argument/counter_agent/agent",
+      "argumentation_analysis/agents/core/counter_argument",
+      "argumentation_analysis/agents/templates/student_template"
+    ],
+    "state.py": [
+      "argumentation_analysis/orchestration/hierarchical/operational",
+      "argumentation_analysis/orchestration/hierarchical/strategic",
+      "argumentation_analysis/orchestration/hierarchical/tactical"
+    ],
+    "orchestrator.py": [
+      "argumentation_analysis/orchestration/hierarchical",
+      "argumentation_analysis/reporting",
+      "argumentation_analysis/webapp"
+    ]
+  },
+  "exposition_licence": {
+    "FOL prover": {
+      "count": 8,
+      "with_license": 0,
+      "paths": [
+        "ext_tools/EProver/eprover.exe",
+        "ext_tools/spass/SPASS.exe",
+        "libs/prover9/bin/prover9.exe",
+        "libs/prover9/bin/prover9.exe.original",
+        "libs/prover9/bin/prooftrans.exe",
+        "libs/prover9/bin/isofilter.exe",
+        "libs/prover9/bin/isofilter2.exe",
+        "libs/prover9/bin/interpformat.exe"
+      ]
+    },
+    "runtime": {
+      "count": 2,
+      "with_license": 0,
+      "paths": [
+        "ext_tools/EProver/cygwin1.dll",
+        "libs/prover9/bin/cygwin1.dll"
+      ]
+    },
+    "adaptateur": {
+      "count": 1,
+      "with_license": 0,
+      "paths": [
+        "ext_tools/spass/spass_eml_adapter.bat"
+      ]
+    },
+    "model finder": {
+      "count": 1,
+      "with_license": 0,
+      "paths": [
+        "libs/prover9/bin/mace4.exe"
+      ]
+    },
+    "SAT solver": {
+      "count": 3,
+      "with_license": 0,
+      "paths": [
+        "libs/native/lingeling.dll",
+        "libs/native/minisat.dll",
+        "libs/native/picosat.dll"
+      ]
+    },
+    "Java fat JAR": {
+      "count": 1,
+      "with_license": 0,
+      "paths": [
+        "libs/java/org.tweetyproject.tweety-full-1.28-with-dependencies.jar"
+      ]
+    }
+  }
+}

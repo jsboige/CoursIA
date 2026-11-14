@@ -1,0 +1,412 @@
+{
+  "schema_version": 1,
+  "source": {
+    "repo": "jsboigeEpita/2025-Epita-Intelligence-Symbolique",
+    "ref": "e52042303d3adbe2d719924ce5537bc4da32b775",
+    "measured_at": "2026-11-14",
+    "path_base": "chemins absolus depuis la racine du repo etudiant"
+  },
+  "project_dirs": [
+    "1.4.1-JTMS",
+    "1_2_7_argumentation_dialogique",
+    "2.1.6_multiagent_governance_prototype",
+    "2.3.2-detection-sophismes",
+    "2.3.3-generation-contre-argument",
+    "2.3.5_argument_quality",
+    "2.3.6_local_llm",
+    "3.1.5_Interface_Mobile"
+  ],
+  "capabilities": [
+    {
+      "id": "registre",
+      "label": "Registre de competences (composition dynamique)",
+      "portability": "portable",
+      "origin_subjects": [
+        "plateforme"
+      ],
+      "platform": [
+        "argumentation_analysis/core/capability_registry.py"
+      ],
+      "projects": {},
+      "note": "Aucun champ de provenance sur ComponentRegistration (decision A du catalogue)."
+    },
+    {
+      "id": "jtms",
+      "label": "JTMS / revision de croyances",
+      "portability": "portable",
+      "origin_subjects": [
+        "1.4.1"
+      ],
+      "platform": [
+        "argumentation_analysis/agents/jtms_agent_base.py",
+        "argumentation_analysis/agents/sherlock_jtms_agent.py",
+        "argumentation_analysis/services/jtms_service.py",
+        "argumentation_analysis/plugins/atms_plugin.py",
+        "argumentation_analysis/plugins/belief_revision_plugin.py",
+        "argumentation_analysis/api/jtms_endpoints.py",
+        "argumentation_analysis/api/jtms_models.py",
+        "argumentation_analysis/services/jtms/conflict_resolution.py"
+      ],
+      "projects": {
+        "1.4.1-JTMS": [
+          "1.4.1-JTMS/jtms.py",
+          "1.4.1-JTMS/atms.py",
+          "1.4.1-JTMS/belifs_loader.py"
+        ]
+      },
+      "note": "Vendorise: 4 sous-arbres plateforme (agents, services, plugins, api)."
+    },
+    {
+      "id": "dung",
+      "label": "Argumentation Dung / AIF",
+      "portability": "portable",
+      "origin_subjects": [
+        "1.2.1 (sujet sans dossier)"
+      ],
+      "platform": [
+        "abs_arg_dung/agent.py",
+        "abs_arg_dung/aif_adapter.py",
+        "argumentation_analysis/plugins/aspic_plugin.py",
+        "argumentation_analysis/orchestration/dung_labelling_trajectory.py"
+      ],
+      "projects": {},
+      "note": "Le sujet 1.2.1 n'a pas de dossier numerote; la plateforme l'abrite dans abs_arg_dung/."
+    },
+    {
+      "id": "fol",
+      "label": "Prouveurs FOL / automatiques",
+      "portability": "non-portable",
+      "origin_subjects": [
+        "1.1.x"
+      ],
+      "platform": [
+        "argumentation_analysis/core/eprover_runner.py"
+      ],
+      "projects": {},
+      "note": "Binaire GPL; voir vendored_binaries. Runner portable, binaire non redistribuable."
+    },
+    {
+      "id": "sophismes",
+      "label": "Detection de sophismes (symbolique + ML)",
+      "portability": "portable",
+      "origin_subjects": [
+        "2.3.2"
+      ],
+      "platform": [
+        "argumentation_analysis/plugins/french_fallacy_plugin.py",
+        "argumentation_analysis/plugins/fallacy_workflow_plugin.py",
+        "argumentation_analysis/services/fallacy_taxonomy_service.py",
+        "argumentation_analysis/services/fallacy_family_definitions.py",
+        "argumentation_analysis/core/fallacy_attribution.py",
+        "argumentation_analysis/agents/concrete_agents/informal_fallacy_agent.py"
+      ],
+      "projects": {
+        "2.3.2-detection-sophismes": [
+          "2.3.2-detection-sophismes/symbolic_rules.py",
+          "2.3.2-detection-sophismes/fallacy_pipeline.py",
+          "2.3.2-detection-sophismes/train_camembert.py"
+        ]
+      },
+      "note": "Pipeline hybride vendorise (symbolic_rules -> plugins)."
+    },
+    {
+      "id": "debat",
+      "label": "Contre-argument / debat dialogique",
+      "portability": "portable",
+      "origin_subjects": [
+        "2.3.3",
+        "1.2.7"
+      ],
+      "platform": [
+        "argumentation_analysis/orchestration/collaborative_debate.py",
+        "argumentation_analysis/orchestration/group_chat.py",
+        "argumentation_analysis/orchestration/conversation_orchestrator.py",
+        "argumentation_analysis/plugins/narrative_synthesis_plugin.py",
+        "argumentation_analysis/agents/core/counter_argument/counter_agent.py"
+      ],
+      "projects": {
+        "2.3.3-generation-contre-argument": [
+          "2.3.3-generation-contre-argument/counter_agent/agent/counter_agent.py"
+        ],
+        "1_2_7_argumentation_dialogique": [
+          "1_2_7_argumentation_dialogique/local_db_arg/src/core/argumentation_engine.py"
+        ]
+      },
+      "note": "Multi-origine: 2 projets etudiants; counter_agent.py vendorise dans agents/core/."
+    },
+    {
+      "id": "gouvernance",
+      "label": "Gouvernance multi-agents",
+      "portability": "portable",
+      "origin_subjects": [
+        "2.1.6"
+      ],
+      "platform": [
+        "argumentation_analysis/plugins/governance_plugin.py",
+        "argumentation_analysis/evaluation/capability_eval.py",
+        "argumentation_analysis/agents/core/governance/conflict_resolution.py"
+      ],
+      "projects": {
+        "2.1.6_multiagent_governance_prototype": [
+          "2.1.6_multiagent_governance_prototype/agents/agent_factory.py",
+          "2.1.6_multiagent_governance_prototype/agents/base_agent.py",
+          "2.1.6_multiagent_governance_prototype/governance/conflict_resolution.py"
+        ]
+      },
+      "note": "conflict_resolution.py presente en 3 exemplaires (cf. duplication de modules)."
+    },
+    {
+      "id": "canaux",
+      "label": "Canaux de communication agentique",
+      "portability": "portable",
+      "origin_subjects": [
+        "plateforme"
+      ],
+      "platform": [
+        "argumentation_analysis/core/communication/channel_interface.py",
+        "argumentation_analysis/core/communication/collaboration_channel.py",
+        "argumentation_analysis/core/communication/data_channel.py",
+        "argumentation_analysis/core/communication/hierarchical_channel.py",
+        "argumentation_analysis/core/communication/pub_sub.py",
+        "argumentation_analysis/core/communication/request_response.py",
+        "argumentation_analysis/core/communication/middleware.py",
+        "argumentation_analysis/core/communication/message.py"
+      ],
+      "projects": {},
+      "note": "Abstraction a fort rendement, propre a la plateforme."
+    },
+    {
+      "id": "kb",
+      "label": "Indexation semantique / KB",
+      "portability": "portable",
+      "origin_subjects": [
+        "plateforme"
+      ],
+      "platform": [
+        "Arg_Semantic_Index/UI_streamlit.py",
+        "argumentation_analysis/services/extract_service.py",
+        "argumentation_analysis/services/argument_ids.py"
+      ],
+      "projects": {},
+      "note": "Arg_Semantic_Index/ porte le noyau kernel_memory (dossier)."
+    },
+    {
+      "id": "evaluation",
+      "label": "Harness d'evaluation falsifiable",
+      "portability": "portable",
+      "origin_subjects": [
+        "plateforme"
+      ],
+      "platform": [
+        "argumentation_analysis/evaluation/benchmark_runner.py",
+        "argumentation_analysis/evaluation/fallacy_benchmark.py",
+        "argumentation_analysis/evaluation/multi_model_benchmark.py",
+        "argumentation_analysis/evaluation/model_registry.py",
+        "argumentation_analysis/evaluation/judge.py",
+        "argumentation_analysis/evaluation/designate_contract.py",
+        "argumentation_analysis/evaluation/leak_patterns.py",
+        "argumentation_analysis/evaluation/env_manifest.py"
+      ],
+      "projects": {},
+      "note": "Contrats designes + detection de leak; a fort rendement."
+    },
+    {
+      "id": "factuel",
+      "label": "Verification factuelle",
+      "portability": "portable",
+      "origin_subjects": [
+        "plateforme"
+      ],
+      "platform": [
+        "argumentation_analysis/orchestration/fact_checking_orchestrator.py",
+        "argumentation_analysis/services/fact_verification_service.py"
+      ],
+      "projects": {}
+    },
+    {
+      "id": "tweety",
+      "label": "Logique formelle (Tweety via JPype)",
+      "portability": "a-decider",
+      "origin_subjects": [
+        "1.1.x"
+      ],
+      "platform": [
+        "argumentation_analysis/plugins/kb_to_tweety_plugin.py",
+        "argumentation_analysis/plugins/coordinated_logic_plugin.py",
+        "argumentation_analysis/plugins/logic_agent_plugin.py",
+        "argumentation_analysis/agents/core/logic/tweety_bridge.py"
+      ],
+      "projects": {
+        "2.3.3-generation-contre-argument": [
+          "2.3.3-generation-contre-argument/counter_agent/logic/tweety_bridge.py"
+        ]
+      },
+      "note": "Depend JVM/JPype + gros JAR vendorise (libs/java/)."
+    },
+    {
+      "id": "surfaces",
+      "label": "Surfaces d'interaction",
+      "portability": "a-decider",
+      "origin_subjects": [
+        "3.1.5"
+      ],
+      "platform": [
+        "interface_web/app.py",
+        "interface_web/api/jtms_integration.py",
+        "api/agent_routes.py",
+        "api/auth.py",
+        "api/openapi.snapshot.json",
+        "apps/gradio_demo/app.py",
+        "CaseAI/index.html"
+      ],
+      "projects": {
+        "3.1.5_Interface_Mobile": []
+      },
+      "note": "ARACINE: api/ (FastAPI) est DISTINCT de argumentation_analysis/api/ (JTMS)."
+    },
+    {
+      "id": "llm_local",
+      "label": "LLM local",
+      "portability": "a-decider",
+      "origin_subjects": [
+        "2.3.6"
+      ],
+      "platform": [],
+      "projects": {
+        "2.3.6_local_llm": [
+          "2.3.6_local_llm/local_llm/local_llm.py",
+          "2.3.6_local_llm/local_llm/constants.py",
+          "2.3.6_local_llm/benchmarks.csv"
+        ]
+      }
+    },
+    {
+      "id": "qualite",
+      "label": "Qualite d'argument",
+      "portability": "a-decider",
+      "origin_subjects": [
+        "2.3.5"
+      ],
+      "platform": [],
+      "projects": {
+        "2.3.5_argument_quality": [
+          "2.3.5_argument_quality/src/arguments.py"
+        ]
+      }
+    }
+  ],
+  "vendored_binaries": [
+    {
+      "path": "ext_tools/EProver/eprover.exe",
+      "tool": "EProver",
+      "family": "FOL prover",
+      "license_attributed": "GPLv3",
+      "license_file_present": false
+    },
+    {
+      "path": "ext_tools/EProver/cygwin1.dll",
+      "tool": "cygwin",
+      "family": "runtime",
+      "license_attributed": "GPL",
+      "license_file_present": false
+    },
+    {
+      "path": "ext_tools/spass/SPASS.exe",
+      "tool": "SPASS",
+      "family": "FOL prover",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "ext_tools/spass/spass_eml_adapter.bat",
+      "tool": "SPASS",
+      "family": "adaptateur",
+      "license_attributed": "n/a",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/prover9.exe",
+      "tool": "Prover9",
+      "family": "FOL prover",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/prover9.exe.original",
+      "tool": "Prover9",
+      "family": "FOL prover",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/mace4.exe",
+      "tool": "Mace4",
+      "family": "model finder",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/prooftrans.exe",
+      "tool": "Prover9",
+      "family": "FOL prover",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/isofilter.exe",
+      "tool": "Prover9",
+      "family": "FOL prover",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/isofilter2.exe",
+      "tool": "Prover9",
+      "family": "FOL prover",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/interpformat.exe",
+      "tool": "Prover9",
+      "family": "FOL prover",
+      "license_attributed": "academique",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/prover9/bin/cygwin1.dll",
+      "tool": "cygwin",
+      "family": "runtime",
+      "license_attributed": "GPL",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/native/lingeling.dll",
+      "tool": "Lingeling",
+      "family": "SAT solver",
+      "license_attributed": "MIT (a verifier)",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/native/minisat.dll",
+      "tool": "MiniSAT",
+      "family": "SAT solver",
+      "license_attributed": "MIT (a verifier)",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/native/picosat.dll",
+      "tool": "Picosat",
+      "family": "SAT solver",
+      "license_attributed": "MIT (a verifier)",
+      "license_file_present": false
+    },
+    {
+      "path": "libs/java/org.tweetyproject.tweety-full-1.28-with-dependencies.jar",
+      "tool": "Tweety",
+      "family": "Java fat JAR",
+      "license_attributed": "LGPL + deps bundlees",
+      "license_file_present": false
+    }
+  ]
+}
