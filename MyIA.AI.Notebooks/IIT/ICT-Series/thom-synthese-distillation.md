@@ -971,7 +971,7 @@ $h(Z)$ est une courbe du plan BP.
    opérationnellement la notion de **préprogramme** centrale en strate 7
    (§Ch.8 §B (bis) *Genres = préprogramme*) : le génome « canalise
    l'attracteur » du métabolisme sans codage précis. La lecture
-   [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)
+   [ICT-13](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)
    (préprogrammes morphologiques du dilemme itéré) et l'opposition
    discret/champ s'enracinent ici : un **préprogramme est un profil
    d'amplitudes d'oscillateurs**, non une suite d'instructions.
@@ -1135,7 +1135,7 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
    capture et oriente le substrat, **modifiable par accident local**, et
    créant des **στερητικὰς διαθέσεις** (dispositions privatives) chez
    ses actants. Pont
-   [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) :
+   [ICT-13](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) :
    les préprogrammes morphologiques du dilemme itéré sont des
    **genres** au sens thomien — des obstacles-crible qui sélectionnent
    quelles stratégies (substrat) peuvent s'exprimer, laissant des
@@ -1364,7 +1364,7 @@ extension, pas une redite.
   — catastrophe fronce + lacet de prédation + `p̂`.
 - [ICT-12](ICT-12-ValenceFieldsAndAnimats/ICT-12-ValenceFieldsAndAnimats-Python.ipynb)
   — animats actantiels, mesure de la valence.
-- [ICT-13](ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)
+- [ICT-13](ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb)
   — préprogrammes morphologiques du dilemme itéré.
 - [ICT-14](ICT-14-FreeEnergySurprise/ICT-14-FreeEnergySurprise-Python.ipynb)
   — jambe représentationnelle (surprise, free energy).

@@ -73,7 +73,7 @@ La grille 3-régimes est **transversale** : elle dit, pour une même trajectoire
 
 ## Un substrat vu sous les trois régimes : Axelrod
 
-[ICT-13-AxelrodStrategicMorphodynamics-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) se laisse traverser par les trois régimes pour montrer que la grille est opératoire, pas décorative.
+[ICT-13-AxelrodStrategicMorphodynamics-Python](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) se laisse traverser par les trois régimes pour montrer que la grille est opératoire, pas décorative.
 
 - **Invariants.** Qu'est-ce qui se transporte d'un tournoi Axelrod à l'autre, indépendamment des stratégies seed ? Une structure de morphodynamique stratégique — la *forme* du paysage de coopération, pas son contenu.
 - **Dissociations.** Deux proxys du « succès » d'une stratégie (score cumulé vs robustesse face à l'invasion) se séparent : une stratégie peut dominer le score et perdre à l'invasion. Le motif de la séparation révèle que « succès » portait deux sens confondus.

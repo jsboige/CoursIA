@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-09
+> REFERENCE — vivante — dernière révision 2026-11-13
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
@@ -326,13 +326,13 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb
   confidence: research
   reviewed_code_sha: 58e7aed69da7a3420d286898f809008774c6e82f94104fa8ce1a45260103a856
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb
   confidence: research
   reviewed_code_sha: 2469bf57512603953c28722423fed7cc4bc08d01cca1e5ac241fee7ee5fd5af0
   review_date: "2026-09-21"
