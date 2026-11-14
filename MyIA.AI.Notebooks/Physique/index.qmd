@@ -41,7 +41,7 @@ Quatre sous-séries, un même principe de vérification.
 
 | Sous-série | Objet | Ce qui sert de vérité |
 |------------|-------|-----------------------|
-| **Jauge** | Symétries continues et théories de jauge : Noether, U(1) → SU(2), Yang-Mills sur réseau | La quantité conservée prédite par la symétrie ; la covariance du tenseur de champ ; la solution exacte du modèle bidimensionnel |
+| **Jauge** | Symétries continues et théories de jauge : Noether, U(1) → SU(2), Yang-Mills sur réseau, spineurs et twisteurs | La quantité conservée prédite par la symétrie ; la covariance du tenseur de champ ; la solution exacte du modèle bidimensionnel ; le résidu d'incidence au plancher numérique |
 | **Numerique** | Équations aux dérivées partielles par volumes finis, solveur de Riemann | La vitesse de propagation du choc de Burgers, connue analytiquement |
 | **Integrales** | Intégrales définies et impropres, calcul exact | La valeur close obtenue symboliquement, recroisée numériquement |
 | **Chaines** | Physique de l'information : distillation de programmes à axiome unique (Chain Theory) | Le calcul de la source, rejoué indépendamment ; les déterminations expérimentales citées — avec le statut épistémique de chaque affirmation posé avant le calcul |
