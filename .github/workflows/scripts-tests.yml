@@ -839,7 +839,7 @@ jobs:
           python scripts/ci/check_absorbed_path_parity.py --base origin/main
 
   qc-mcp-lite-tests:
-    name: qc-mcp-lite suite (58)
+    name: qc-mcp-lite suite (94)
     # #22735 : `scripts/qc-mcp-lite/tests` (58 tests, verts en local) etait
     # verte mais jouee par AUCUN workflow -- le defaut qu'elle refute
     # (rate limiting, extraction de stats, auth) redev Invisible. Premier

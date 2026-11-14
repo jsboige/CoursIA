@@ -33,6 +33,39 @@ Replaces the heavy `quantconnect/mcp-server` Docker container (~40k tokens) for 
 
 Les fichiers JSON écrits restent hors dépôt quand ils portent des séries complètes (cf. `.claude/rules/results-artifact-policy.md`).
 
+## Mesure de stratégies — `qc_measure.py`
+
+CLI générique de mesure d'une stratégie sur QC Cloud. Comparer une stratégie à des témoins sur plusieurs jeux de paramètres recompilait chaque fois la même plomberie (création du projet, envoi des fichiers, compilation, un backtest par passe, attente, lecture, tableau) et y commettait toujours les mêmes erreurs : statistiques lues avant la fin du backtest, clés cherchées sous le mauvais nom, backtests relancés en double après une coupure de session, limite de débit dépassée. `qc_measure.py` factorise cette plomberie à côté du serveur et réutilise son client REST et sa lecture d'identifiants **par import** : pas de second client HTTP, pas d'autre façon de lire le jeton, jeton jamais affiché (variables `QC_API_USER_ID` / `QC_API_ACCESS_TOKEN`).
+
+Sous-commandes :
+
+- `plan` — écrit le squelette `<workdir>/<label>/plan.json` : nom de projet, langage, fichiers à envoyer (empreinte sha256 mesurée à l'écriture), passes nommées avec leur dictionnaire de paramètres, organisation optionnelle ;
+- `run` — idempotent et reprenable : crée le projet s'il n'est pas noté dans l'état (sinon le retrouve par nom), envoie les fichiers avec relecture de contrôle, compile et attend `BuildSuccess`, lance les backtests des passes non encore lancées (un à la fois par défaut, `--parallel N` optionnel), attend leur fin. Chaque étape faite est écrite aussitôt dans `<workdir>/<label>/state.json` (écriture atomique) : une relance après coupure ne recrée ni projet ni backtest déjà noté — un backtest du bon nom déjà présent est **adopté**, pas relancé ;
+- `status` — état de chaque passe (`--refresh` interroge l'API pour actualiser les passes lancées) ;
+- `read` — attend la fin de chaque backtest (champ `completed` de l'API), **refuse** de rendre des statistiques tant que le backtest n'est pas terminé (un backtest en cours affiche `totalOrders: 0` et des statistiques à `"-"`, indiscernables d'un run terminé sans ordre), relit un nombre borné de fois si un backtest terminé a les statistiques vides (il le dit, il n'affiche pas de tirets), normalise les clés des trois formes observées (`statistics` « Sharpe Ratio » / `runtimeStatistics` « CAGR » / forme camelCase du serveur) et sort un tableau Markdown — colonnes : passe, Sharpe, CAGR, MaxDD, PSR, bêta, ordres, taux de réussite, identifiant du backtest, identifiant du projet — ou `--json`.
+
+Débit : cadenceur commun à **tous** les appels — 6 appels/min au plus par défaut (`--max-calls-per-min`, plafonné à 10, la limite flotte), intervalle de sondage d'au moins 20 s.
+
+Exemple complet à deux passes :
+
+```bash
+export QC_API_USER_ID=... QC_API_ACCESS_TOKEN=...
+python scripts/qc-mcp-lite/qc_measure.py plan mesures/vol --label volt-2026-11 \
+    --project-name "Mesure-Volt-2026-11" \
+    --file strategie/main.py --file strategie/indicateurs.py \
+    --passe base --passe 'rapide:{"lookback": 10}'
+python scripts/qc-mcp-lite/qc_measure.py run mesures/vol/volt-2026-11
+python scripts/qc-mcp-lite/qc_measure.py status mesures/vol/volt-2026-11 --refresh
+python scripts/qc-mcp-lite/qc_measure.py read mesures/vol/volt-2026-11
+```
+
+Précisions :
+
+- les chemins de fichiers du plan se résolvent depuis le dossier du plan, puis depuis le répertoire courant ;
+- un fichier modifié alors que des backtests sont déjà notés est refusé (« repartez sur un nouveau label ») : les noms de backtest sont uniques par projet sur QC, un backtest noté correspond à un code gelé — re-mesurer un code changé exige de nouvelles passes ;
+- codes de sortie : `0` succès ; `1` au moins une passe sans statistiques exploitables (non terminée, en erreur, statistiques vides) ; `2` blocage (plan invalide, compilation en échec, identifiants absents) ;
+- tests (faux client en mémoire, aucun réseau) : `python -m pytest scripts/qc-mcp-lite/tests/test_qc_measure.py`.
+
 ## Setup
 
 ### 1. Set environment variables

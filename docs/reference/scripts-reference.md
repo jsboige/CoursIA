@@ -258,6 +258,7 @@ Pipeline d'audit qualité et de **matrice de coût** (EPIC #8056) + audit séman
 | `scripts/scan_student_forks.py` | Scan des forks étudiants |
 | `scripts/series_progress_manager.py` | Suivi de progression des séries |
 | `scripts/validate_qc_projects.py` | Validation projets QuantConnect |
+| `scripts/qc-mcp-lite/qc_measure.py` | **Mesure générique de stratégies QC Cloud** : CLI `plan`/`run`/`status`/`read` — plan de passes nommées, exécution idempotente et reprenable (projet retrouvé par nom, backtest adopté par son nom, `state.json` écrit à chaque étape), lecture refusée tant que le backtest n'est pas terminé (champ `completed`), normalisation des clés de statistiques (`statistics`/`runtimeStatistics`/camelCase), tableau Markdown ou `--json` ; cadenceur 6 appels/min (plafond flotte 10), sondage ≥ 20 s ; réutilise le client REST de `scripts/qc-mcp-lite/server.py` par import — usage : [README qc-mcp-lite](../../scripts/qc-mcp-lite/README.md) |
 | `scripts/update_navigation.py` | Mise à jour navigation README |
 | `scripts/notebook_tools/extract_pptx_titles.py`, `scripts/extract_slidev_titles.py` | Extraction titres slides (PPTX / Slidev) |
 | `scripts/execute_with_env.py`, `scripts/execute_dotnet_notebook.py`, `scripts/execute_sudoku_python.py` | Wrappers d'exécution avec env |
