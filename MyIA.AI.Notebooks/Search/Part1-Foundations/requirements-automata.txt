@@ -1,0 +1,8 @@
+# Deps du service web de Search-10-SymbolicAutomata (pli 0 v2, #26511).
+# Le coeur (automata_core.py) ne depend que d'automata-lib ; le transport
+# (automata_service.py + test_automata_core.py) ajoute la pile FastAPI.
+automata-lib>=7.2.0
+fastapi
+httpx
+uvicorn
+pytest

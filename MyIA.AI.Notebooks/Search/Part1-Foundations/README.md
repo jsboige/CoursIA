@@ -95,6 +95,10 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 - **[9e Komlos-Lean](Search-09e-Komlos-Lean.ipynb)** — **Compagnon formel de 9c** sur kernel `lean4-wsl` : `#check` des conjectures (Komlós ∃C universel, Beck–Fiala 2k−1, régimes Bansal–Jiang 2025), témoins coloriés ±1 énumérés exhaustivement sur instances jouet (Hadamard ½n en particulier). Suppose le miroir local du lake `discrepancy_lean`.
 - **[9f ConvexOptimisation](Search-09f-ConvexOptimisation-Python.ipynb)** — **Du linéaire au convexe** : l'escalier LP → QP → SOCP nommé et démontré — le LP de Search-9 relu comme QP dégénérée, Markowitz en QP exacte sur l'instance App-10 (tangence Sharpe identique à son génétique), mesure échantillonnage vs QP, plafond de risque SOCP. Copie pédagogique déclarée d'App-10.
 
+### Autour de 10
+
+- **Service web de Search-10** (pli 0 v2, [#26511](https://github.com/jsboige/CoursIA/issues/26511)) — Le carnet de cours devient cours + TP + **service web** : le cœur d'exécution vit dans [`automata_core.py`](automata_core.py) (construction, validation, parcours, opérations — tout délégué à `automata-lib`, jamais réimplémenté) et sert deux frontends : le service FastAPI [`automata_service.py`](automata_service.py) (`POST /automata/run`, contrat `ok`/`invalid`/`error` ↔ 200/422/502) et une cellule d'endpoint Kernel Gateway dans le carnet lui-même. Le DFA pair de « a » de la section 2.3 rejoué en JSON par le cœur du service valide la sérialisation de bout en bout. Tests du cœur **et** du transport TCP réel dans [`test_automata_core.py`](test_automata_core.py) (18 tests, câblés dans la CI via `search-automata-tests.yml`), dépendances dans [`requirements-automata.txt`](requirements-automata.txt).
+
 ### Autour de 11
 
 - **[11b Metaheuristiques-Deep](Search-11b-Metaheuristiques-Deep.ipynb)** (4 volets .NET : [T2 PSO](Search-11b-Metaheuristiques-Deep-Part2.ipynb), [T3 ABC](Search-11b-Metaheuristiques-Deep-Part3.ipynb), [T4 Benchmark](Search-11b-Metaheuristiques-Deep-Part4.ipynb)) — **Déclinaison deep-dive** : un algorithme from-scratch approfondi par tranche (recuit T1, PSO T2, ABC T3, benchmark capstone T4). Complète le jumeau 11 (.NET) par un traitement détaillé algorithme par algorithme.
@@ -141,6 +145,7 @@ Les fondamentaux de cette partie (formalisation, backtracking, heuristiques) son
 | `deap` | Search-5 (Genetic Algorithms) |
 | `mealpy` | Search-11 (Métaheuristiques) |
 | `z3-solver` | Search-10 (Symbolic Automata), Search-11c (SMT) |
+| [`requirements-automata.txt`](requirements-automata.txt) | Search-10, service web pli 0 v2 : `automata-lib` (cœur), `fastapi` + `uvicorn` (service `POST /automata/run`), `httpx` (tests loopback) |
 | OpenSpiel | Search-7 (MCTS) : requiert WSL ou Linux |
 | `cvxpy` | Search-09b (relaxation SDP, solveur CLARABEL embarqué), Search-09f (QP Markowitz et SOCP, même solveur CLARABEL) |
 | Kernel `lean4-wsl` | Search-09e : kernel Jupyter Lean 4 + miroir local du lake [`discrepancy_lean`](../discrepancy_lean/README.md) (Mathlib 4 via les packages du dépôt) — cf. [`docs/reference/wsl-kernels-detail.md`](../../../docs/reference/wsl-kernels-detail.md) |

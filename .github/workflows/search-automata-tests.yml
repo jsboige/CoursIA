@@ -1,0 +1,82 @@
+name: Search-Automata-Tests
+
+# Cablage CI du test du coeur/service automata (pli 0 v2, #26511, point 4 de
+# l'acceptance) : test_automata_core.py doit etre referenced par un workflow,
+# meme pattern famille que genai-texte-tests.yml (#13746 / #25018) --
+# trigger path-reactif propre a la serie, floor de collecte, une famille par PR.
+#
+# Bornes mesurees firsthand (worktree origami-automata, 2026-11-14) :
+#   - `pytest --collect-only -q MyIA.AI.Notebooks/Search/Part1-Foundations` =
+#     **18 tests collected** (test_automata_core.py seul fichier de test du
+#     repertoire).
+#   - Deps reelles du test : automata-lib (coeur), fastapi, httpx, uvicorn
+#     (serveur loopback), pytest, pydantic (via fastapi). Aucun appel reseau
+#     externe -- le loopback couvre tout.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Search/Part1-Foundations/**'
+      - '.github/workflows/search-automata-tests.yml'
+  pull_request:
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.AI.Notebooks/Search/Part1-Foundations/**'
+      - '.github/workflows/search-automata-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: search-automata-tests-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  search-automata-tests:
+    name: Search Automata pytest (18 collected)
+    if: (github.event.action != 'edited' || github.event.changes.base != null)
+    # Forme hybride de debordement (#22461 phase A) -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; sinon ubuntu-latest.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    env:
+      # Floor mesure firsthand -- worktree origami-automata, 2026-11-14.
+      # Quand des tests sont retires INTENTIONNELLEMENT, ajuster cette valeur
+      # dans la meme PR (le message d'erreur du guard la nomme).
+      SEARCH_AUTOMATA_TEST_FLOOR: 18
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11.18'
+          cache: pip
+
+      - name: Install deps (pytest automata-lib fastapi httpx uvicorn)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest automata-lib fastapi httpx uvicorn
+
+      - name: Run Search Automata tests
+        run: |
+          pytest MyIA.AI.Notebooks/Search/Part1-Foundations --tb=short -v
+
+      # Collection floor-guard (meme semantique que genai-texte-tests.yml :
+      # detecter pytest vert avec N tests silencieusement disparus du chemin
+      # de collecte). Pas de `|| true` : le grep doit pouvoir echouer.
+      - name: Collection floor-guard (18)
+        if: always()
+        run: |
+          COLLECTED=$(pytest MyIA.AI.Notebooks/Search/Part1-Foundations --collect-only -q 2>&1 | grep -oE '[0-9]+ tests? collected' | grep -oE '[0-9]+' | head -1)
+          if [ -z "$COLLECTED" ]; then
+            echo "::error::Le collect-only n'a renvoye aucune ligne 'N tests collected' -- la collecte a plante, c'est probablement une panne d'infra (cf #9387)."
+            exit 1
+          fi
+          if [ "$COLLECTED" -lt "$SEARCH_AUTOMATA_TEST_FLOOR" ]; then
+            echo "::error::Collecte en recul : $COLLECTED < floor $SEARCH_AUTOMATA_TEST_FLOOR -- des tests ont disparu du chemin de collecte."
+            exit 1
+          fi
+          echo "Collecte OK : $COLLECTED >= floor $SEARCH_AUTOMATA_TEST_FLOOR"
