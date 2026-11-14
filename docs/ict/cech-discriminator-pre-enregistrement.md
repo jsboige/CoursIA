@@ -78,7 +78,7 @@ Les trois critères sont **re-pré-enregistrés** sur les grandeurs de la filtra
 
 ## Ce que ce grain **n'est PAS**
 
-- **Pas** une redéclaration du verdict ICT-15d tel qu'il est écrit dans la matrice. La rangée 96 reste `Spéculatif (réserve de non-discrimination)` jusqu'à livraison du verdict discriminateur **mesuré** — pas avant.
+- **Pas** une redéclaration du verdict ICT-15d tel qu'il est écrit dans la matrice. La rangée 96 reste `hypothèse (réserve de non-discrimination)` jusqu'à livraison du verdict discriminateur **mesuré** — pas avant.
 - **Pas** une généralisation à ICT-15c, ICT-15e, ni aux bridges. La discrimination Čech est d'abord testée là où la question est ouverte (ICT-15d), puis étendue si elle porte.
 - **Pas** une dépendance GPU. `gudhi` tourne sur CPU ; l'échelle 4 substrats × 30 fenêtres est triviale.
 - **Pas** une modification du notebook ICT-15d. Le présent document décrit un **module frère** qui consomme la sortie d'ICT-15c et propose un verdict complémentaire. ICT-15d reste à 4/4 NON_TRIVIAL par SVD ; la question traitée ici est : *« cette lecture Čech discrimine-t-elle vraiment, ou est-ce un proxy redondant ? »*

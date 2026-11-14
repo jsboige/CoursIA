@@ -1,0 +1,346 @@
+{
+  "baseline_equivalence": {
+    "lowvol": {
+      "ic_abs_delta": 2.587118698599289e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.0586,
+      "ic_train_recomputed": 0.058574128813014006
+    },
+    "momentum": {
+      "ic_abs_delta": 1.6739974104154967e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.0102,
+      "ic_train_recomputed": 0.010216739974104156
+    },
+    "reversal": {
+      "ic_abs_delta": 3.111511359686278e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.0199,
+      "ic_train_recomputed": 0.019931115113596864
+    },
+    "volume": {
+      "ic_abs_delta": 4.905094905094387e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.0509,
+      "ic_train_recomputed": 0.050949050949050945
+    }
+  },
+  "basket_inputs": [
+    {
+      "asset": "ADA-USD",
+      "csv": "ADA-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "f70664c04669e2b2",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "AVAX-USD",
+      "csv": "AVAX-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "e5716babbb7ece63",
+      "first_date": "2020-07-13",
+      "last_date": "2026-04-30",
+      "rows": 2049
+    },
+    {
+      "asset": "BTC-USD",
+      "csv": "BTC-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "c6c467d124e7c964",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "DOT-USD",
+      "csv": "DOT-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "4aa599bd0ce35b54",
+      "first_date": "2020-08-20",
+      "last_date": "2026-04-30",
+      "rows": 2080
+    },
+    {
+      "asset": "ETH-USD",
+      "csv": "ETH-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "d22fd39a165929fd",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "LINK-USD",
+      "csv": "LINK-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "69622363f1f6b88e",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "LTC-USD",
+      "csv": "LTC-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "43fc20b080624012",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    },
+    {
+      "asset": "MATIC-USD",
+      "csv": "MATIC-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "6918b231234118af",
+      "first_date": "2019-04-28",
+      "last_date": "2025-03-24",
+      "rows": 2158
+    },
+    {
+      "asset": "SOL-USD",
+      "csv": "SOL-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "531b6ac12d88da71",
+      "first_date": "2020-04-10",
+      "last_date": "2026-04-30",
+      "rows": 2212
+    },
+    {
+      "asset": "XRP-USD",
+      "csv": "XRP-USD_2018-01-01_2026-05-01.csv",
+      "csv_sha256_16": "09875e2086efd78a",
+      "first_date": "2018-01-01",
+      "last_date": "2026-04-30",
+      "rows": 3042
+    }
+  ],
+  "best_fixed_factor": {
+    "ic_train": 0.058574128813014006,
+    "name": "lowvol"
+  },
+  "duration_s": 57.5,
+  "fixed_factors_ic_train": {
+    "lowvol": 0.058574128813014006,
+    "momentum": 0.010216739974104156,
+    "reversal": 0.019931115113596864,
+    "volume": 0.050949050949050945
+  },
+  "generations": 9,
+  "ic_tolerance": 0.005,
+  "issue": "#26430",
+  "measured_at": "2026-11-14T09:49:04Z",
+  "notebook": "MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-42-Alpha-Mining-Evolution.ipynb",
+  "per_seed": {
+    "0": {
+      "champion": "(zscore (mean20 (div (tsrank20 ret) (rank logclose))))",
+      "champion_fitness_by_generation": [
+        0.058027861027861026,
+        0.059283350106228316,
+        0.05964646464646465,
+        0.05964646464646465,
+        0.10009090909090915,
+        0.10009090909090915,
+        0.10009090909090915,
+        0.10009090909090915,
+        0.12027272727272731
+      ],
+      "champion_size": 7,
+      "fitness_gain": 0.06224486624486628,
+      "fitness_gen0": 0.058027861027861026,
+      "fitness_gen_final": 0.12027272727272731,
+      "generation_reaching_90pct_of_gain": 8,
+      "generations_where_population_max_decreased": 0,
+      "generations_with_population_below_champion": 4,
+      "ic_abs_delta": 2.7272727272681374e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.1273,
+      "ic_train_recomputed": 0.12727272727272732,
+      "n_evaluations_last_generation": 60,
+      "n_evaluations_total": 540,
+      "population_max_by_generation": [
+        0.058027861027861026,
+        0.059283350106228316,
+        0.05964646464646465,
+        0.05964646464646465,
+        0.06262486525332375,
+        0.06262486525332375,
+        0.06634979718444284,
+        0.08105234159779612,
+        0.12027272727272731
+      ],
+      "population_max_monotone": true,
+      "population_mean_by_generation": [
+        -0.0450269827356457,
+        0.021817754032673834,
+        0.0409911643612701,
+        0.04950622067938099,
+        0.05141212449599506,
+        0.05636600816501344,
+        0.056131303817117825,
+        0.05903439355900588,
+        0.06078220800718126
+      ]
+    },
+    "1": {
+      "champion": "(div (div (rank logclose) (std20 ret)) (tsrank20 (std20 vol)))",
+      "champion_fitness_by_generation": [
+        0.05880586080586081,
+        0.05880586080586081,
+        0.05993706293706293,
+        0.05993706293706293,
+        0.06214624505928853,
+        0.06214624505928853,
+        0.06214624505928853,
+        0.06214624505928853,
+        0.06214624505928853
+      ],
+      "champion_size": 9,
+      "fitness_gain": 0.003340384253427718,
+      "fitness_gen0": 0.05880586080586081,
+      "fitness_gen_final": 0.06214624505928853,
+      "generation_reaching_90pct_of_gain": 4,
+      "generations_where_population_max_decreased": 1,
+      "generations_with_population_below_champion": 4,
+      "ic_abs_delta": 4.624505928853273e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.0711,
+      "ic_train_recomputed": 0.07114624505928853,
+      "n_evaluations_last_generation": 60,
+      "n_evaluations_total": 540,
+      "population_max_by_generation": [
+        0.05880586080586081,
+        0.05880586080586081,
+        0.05993706293706293,
+        0.05993706293706293,
+        0.06214624505928853,
+        0.05993706293706293,
+        0.05993706293706293,
+        0.05993706293706293,
+        0.05993706293706293
+      ],
+      "population_max_monotone": false,
+      "population_mean_by_generation": [
+        -0.02487816981313784,
+        0.03627708924122668,
+        0.04473670380221857,
+        0.05236006547664762,
+        0.05499458688575016,
+        0.054447930146627306,
+        0.05515530296124043,
+        0.05816400250113888,
+        0.05870119469374477
+      ]
+    },
+    "42": {
+      "champion": "(zscore (mul vol (div vol (std20 ret))))",
+      "champion_fitness_by_generation": [
+        0.054805860805860813,
+        0.054805860805860813,
+        0.05880586080586081,
+        0.059165415624131225,
+        0.0598792549739392,
+        0.0598792549739392,
+        0.07647107438016527,
+        0.07647107438016527,
+        0.07647107438016527
+      ],
+      "champion_size": 7,
+      "fitness_gain": 0.02166521357430446,
+      "fitness_gen0": 0.054805860805860813,
+      "fitness_gen_final": 0.07647107438016527,
+      "generation_reaching_90pct_of_gain": 6,
+      "generations_where_population_max_decreased": 0,
+      "generations_with_population_below_champion": 5,
+      "ic_abs_delta": 2.8925619834724303e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.0835,
+      "ic_train_recomputed": 0.08347107438016528,
+      "n_evaluations_last_generation": 60,
+      "n_evaluations_total": 540,
+      "population_max_by_generation": [
+        0.054805860805860813,
+        0.054805860805860813,
+        0.05880586080586081,
+        0.059165415624131225,
+        0.059283350106228316,
+        0.059283350106228316,
+        0.059283350106228316,
+        0.059283350106228316,
+        0.059283350106228316
+      ],
+      "population_max_monotone": true,
+      "population_mean_by_generation": [
+        -0.027069914351811428,
+        0.018209393491981606,
+        0.040400901870117904,
+        0.04797633462004591,
+        0.05188624058552501,
+        0.052651352665013286,
+        0.05581600871359776,
+        0.05475913391981873,
+        0.0549713841093914
+      ]
+    },
+    "7": {
+      "champion": "(mean20 (neg (std20 ret)))",
+      "champion_fitness_by_generation": [
+        0.05880586080586081,
+        0.05880586080586081,
+        0.05880586080586081,
+        0.059864527629233506,
+        0.06344689264417379,
+        0.06344689264417379,
+        0.0786089411222491,
+        0.0786089411222491,
+        0.09156743909685085
+      ],
+      "champion_size": 4,
+      "fitness_gain": 0.03276157829099004,
+      "fitness_gen0": 0.05880586080586081,
+      "fitness_gen_final": 0.09156743909685085,
+      "generation_reaching_90pct_of_gain": 8,
+      "generations_where_population_max_decreased": 1,
+      "generations_with_population_below_champion": 3,
+      "ic_abs_delta": 3.256090314915361e-05,
+      "ic_equivalent": true,
+      "ic_train_published": 0.0956,
+      "ic_train_recomputed": 0.09556743909685085,
+      "n_evaluations_last_generation": 60,
+      "n_evaluations_total": 540,
+      "population_max_by_generation": [
+        0.05880586080586081,
+        0.05880586080586081,
+        0.05880586080586081,
+        0.059864527629233506,
+        0.059864527629233506,
+        0.059864527629233506,
+        0.0786089411222491,
+        0.0786089411222491,
+        0.059864527629233506
+      ],
+      "population_max_monotone": false,
+      "population_mean_by_generation": [
+        -0.043921060138690494,
+        0.03677958403827074,
+        0.047900501344128266,
+        0.05431762084320986,
+        0.056390045154189855,
+        0.056736211349008386,
+        0.05487358311720555,
+        0.05705193270448923,
+        0.05617344023179627
+      ]
+    }
+  },
+  "seeds": [
+    0,
+    1,
+    7,
+    42
+  ],
+  "training_window": {
+    "tr0": 0,
+    "tr1": 273
+  },
+  "verdict": {
+    "all_champions_above_best_fixed_factor": true,
+    "baseline_equivalence_with_published_notebook_outputs": true,
+    "convergence_measured": true,
+    "equivalence_with_published_notebook_outputs": true,
+    "generations_with_selected_population_below_champion": 16,
+    "population_max_monotone_for_all_seeds": false
+  }
+}

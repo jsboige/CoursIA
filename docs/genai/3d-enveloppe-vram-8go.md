@@ -1,10 +1,10 @@
-> REFERENCE — vivante — dernière révision 2026-10-31
+> REFERENCE — vivante — dernière révision 2026-11-09
 
 # Enveloppe GPU de la famille NeRF sur l'étage pionnier 8 Go
 
 **Question.** L'EPIC Origami #18605 répartit le travail GPU en trois étages. Le premier — *pionnier*, petite carte 8 Go — est le rôle où l'on **défriche** : c'est là qu'on vérifie qu'un pipeline tient, avant de le passer à l'étage moyen. Pour la famille **0,8 B en GRPO+QLoRA**, l'enveloppe est mesurée : **pic 7 844 Mio sur 8 192 (95,7 %)** — 4 % de marge, donc rien de plus lourd n'y passe (mesure #21620, PR #21624).
 
-Ce document mesure **l'autre moitié** de l'EPIC : la famille **NeRF**, dont le Pli 2 est livré et dont la mesure d'enveloppe n'existait pas. Les **deux volets** de la famille y sont mesurés : l'entraînement (`3D-01-NeRF-From-Scratch`) et l'évaluation (`3D-02-NeRF-Critic`). Le **Pli 1** (`3.4d-Fourier-Features`) y est mesuré aussi, pour la comparaison que l'issue demande entre les deux plis.
+Ce document mesure **l'autre moitié** de l'EPIC : la famille **NeRF**, dont le Pli 2 est livré et dont la mesure d'enveloppe n'existait pas. Les **deux volets** de la famille y sont mesurés : l'entraînement (`3D-01-NeRF-Depuis-Zero-Python`) et l'évaluation (`3D-02-NeRF-Critique-Python`). Le **Pli 1** (`3.4d-Fourier-Features`) y est mesuré aussi, pour la comparaison que l'issue demande entre les deux plis.
 
 **Mesure.** Poste `myia-po-2028`, **NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8 192 Mio**, `torch 2.8.0+cu126`, Python 3.13.16, kernel `python3`. Exécution par `scripts/notebook_tools/notebook_tools.py execute` (Papermill). Sortie `nvidia-smi` échantillonnée **toutes les 5 s** (42 échantillons sur le run). Le notebook a été exécuté **sur une copie hors dépôt** : `3D-01` et `3D-02` sont dans le scope de claims d'autres lanes (PR #21413, #20544) et n'ont pas été touchés. Le volet évaluatif (`3D-02`) a été rejoué sur la même carte avec `torch 2.14.1+cu126`, 242 échantillons à 5 s. Le Pli 1 (`3.4d`) a été rejoué sur le même siège, en NumPy pur, avec un échantillonnage à 2 s de la carte **et** de la RAM hôte.
 
@@ -26,7 +26,7 @@ Ce document mesure **l'autre moitié** de l'EPIC : la famille **NeRF**, dont le 
 | Pipeline | Pic VRAM sur 8 Go | Marge restante | Verdict |
 |---|---:|---:|---|
 | **NeRF** (`3D-01`, 2 000 it. + éval, réseau dense 5D) | 4 318 Mio (52,7 %) | 47 % | **tient largement** — l'étage pionnier peut défricher le socle A1 |
-| **NeRF — volet évaluatif** (`3D-02-NeRF-Critic` : critic, bruit de pose, focales, comptage de points) | **7 740 Mio (94,5 %)** | 5,5 % | **au bord** — et le pic n'est pas dans l'entraînement |
+| **NeRF — volet évaluatif** (`3D-02-NeRF-Critique-Python` : critic, bruit de pose, focales, comptage de points) | **7 740 Mio (94,5 %)** | 5,5 % | **au bord** — et le pic n'est pas dans l'entraînement |
 | **Fourier features** (`3.4d`, Pli 1, NumPy pur) | 0 Mio attribuable (carte au repos) | — | **hors GPU** — harnais CPU, 288 Mio de RAM hôte, 64 s |
 | **0,8 B GRPO + QLoRA** (0,8 B, GRPO, budget 384 tok) | 7 844 Mio (95,7 %) | 4 % | **au bord** — rien de plus lourd ne passe |
 
@@ -34,7 +34,7 @@ La conséquence opérationnelle est nette : **le premier étage n'est pas un « 
 
 **Ce que cette mesure ne couvre pas** : le pipeline **3DGS/gsplat** du Pli 3 (`3D-04`, `3D-05`), qui exige le moteur CUDA `gsplat` — absent de ce poste (cf. #21614 : `nvcc` non installé, chaîne CUDA à construire). L'enveloppe du 3DGS reste donc à mesurer sur l'eGPU 24 Go désigné par l'EPIC.
 
-## Le volet évaluatif (`3D-02-NeRF-Critic`) : l'enveloppe change de nature
+## Le volet évaluatif (`3D-02-NeRF-Critique-Python`) : l'enveloppe change de nature
 
 Le second volet de la famille NeRF — celui qui **évalue** (pénalité critic, sensibilité au bruit de pose, transfert entre focales, comptage de points) — a été rejoué en entier sur la même carte, le 20/10 de 23:17Z à 23:38Z.
 

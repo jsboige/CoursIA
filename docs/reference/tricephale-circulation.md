@@ -1,5 +1,7 @@
 # Tricéphalie — coordinateur, titulaire, secrétaire
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 La coordination CoursIA a **trois têtes**, chacune avec sa lane, sa skill et son artefact. Ce document dit **qui est qui** et **comment l'information circule** entre elles. La règle de lecture elle-même (inbox d'abord, puis énumération des dashboards) est portée par `CLAUDE.md` §A et par la skill `coordinate-adjoint` ; elle n'est pas redéfinie ici.
 
 | Tête | Lane | Skill | Rôle | Artefact |

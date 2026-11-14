@@ -1,0 +1,12 @@
+# Les deux carnets utilisent Out=3,5 avec gains maximum Stag=4, Hare=3 ;
+# pour le brûlage de coût 0,5, les maxima 2,5 et 1,5 sont comparés à 2.
+# L'inférence est conditionnelle aux croyances et à la continuation Foot sans
+# brûlage ; aucun solveur de tous les raffinements n'est revendiqué.
+# Python : 13 cellules exécutées, deux figures. C# : 14 cellules exécutées,
+# Gambit réel, puis strip natif des sorties de bootstrap avant attestation.
+date: '2026-11-12'
+by: codex:work
+python_sha: 01ebcca80e77b32f364bbca434293b15b2801a31
+csharp_sha: 0b4815befb84de9c9633a49388a501da0b98c120
+content_python_sha: 087022719d6da659fb695739285b2899021183ff8027d64bd63b32522d587233
+content_csharp_sha: b7ef27a5fec3eafa43c6f0b507e5efc84117aabba1301870692cc889b99ac007

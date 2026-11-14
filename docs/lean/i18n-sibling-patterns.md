@@ -14,7 +14,7 @@ Ce fichier **complète** [`i18n-inventory-cycle-38.md`](../transients/2026-07-04
 
 ## Les trois formes légitimes d'une paire sibling
 
-Une paire « conforme » n'est pas nécessairement un miroir texte-à-texte. Trois formes existent, **toutes valides**, chacune reconnue par une classification distincte du checker :
+Une paire « conforme » n'est pas nécessairement un miroir texte-à-texte. Trois formes existent, **toutes valides**, chacune reconnue par une classification distincte du checker — plus une **exception documentée** (miroirs prose-seuls, section dédiée ci-dessous) :
 
 ### Forme 1 — Miroir auto-contenu (`OK`)
 
@@ -40,6 +40,52 @@ Quand une entité existe **au top-level** côté FR mais **dans un namespace** c
 - EN : la def vit dans `namespace SocialChoice_en` → `_root_.` **ne résout pas**, il **faut** écrire `SocialChoice_en.is_strictly_best`.
 
 Les deux qualifieurs **doivent** différer pour que **chacun** compile. Un checker byte-identité naïf voit un « drift » là où la divergence est obligatoire (la résolution de nom scope-dépendante est **invisible textuellement**). Le checker #6718 normalise les self-qualifiers (`_root_.X` ↔ `<Ns_en>.X` du namespace local) : verdict **`OK`** — c'est le faux positif qui avait cassé **#6716** (fermé comme FP après l'errata).
+
+### Exception documentée — miroirs `_en` prose-seuls (amas Godement)
+
+Une **quatrième situation** n'est pas une forme de paire : c'est un **cas particulier** du lake `grothendieck_lean`, où le sibling `_en` est un **miroir de la prose** — docstring et commentaires traduits — **sans aucune déclaration Lean**. Le checker classe ces fichiers `OK` / `OK-CONSUMER` : il ne signale **aucun** drift, et c'est le comportement correct.
+
+Le cas a été ouvert par [#23676](https://github.com/jsboige/CoursIA/issues/23676) (« sept jumeaux `_en` sans contenu formel »), qui demandait de trancher entre **formaliser** (du Lean dupliqué) et **documenter l'exception**. La question est tranchée ici en faveur de la documentation, pour trois raisons mesurées.
+
+**1. Ce que sont réellement ces fichiers** (mesure sur `origin/main` `d073b073e6`, `scripts/lean/check_i18n_siblings.py` sur le lake) :
+
+| Fichier `_en` | Lignes EN | Décls EN | Imports EN (dont sibling FR) | Lignes FR | Décls FR | Verdict checker |
+|---|---|---|---|---|---|---|
+| `GodementAcyclicity_en.lean` | 92 | 0 | 1 (dont 1 sibling FR) | 102 | 2 | `OK-CONSUMER` (3 blocs FR réutilisés) |
+| `GodementCanonicalDiff_en.lean` | 82 | 0 | 1 (dont 1 sibling FR) | 109 | 2 | `OK-CONSUMER` (4 blocs FR réutilisés) |
+| `GodementResolution_en.lean` | 110 | 0 | 1 (dont 1 sibling FR) | 122 | 2 | `OK-CONSUMER` (3 blocs FR réutilisés) |
+| `GodementComplex_en.lean` | 170 | 0 | 1 (dont 1 sibling FR) | 504 | 24 | `OK-CONSUMER` (31 blocs FR réutilisés) |
+| `GodementExactness_en.lean` | 209 | 0 | 1 (dont 1 sibling FR) | 859 | 17 | `OK-CONSUMER` (30 blocs FR réutilisés) |
+| `SheafCohomology/Godement_en.lean` | 123 | 0 | 1 (dont 1 sibling FR) | 270 | 5 | `OK-CONSUMER` (9 blocs FR réutilisés) |
+| `ExceptionalTriple_en.lean` | 166 | 0 | 6 (Mathlib + `Grothendieck.ExceptionalDirect_en`) | 170 | 0 | `OK` |
+| `MathlibMap_en.lean` | 134 | 0 | 7 (Mathlib seul) | 140 | 0 | `OK` |
+
+Total mesuré : le volume EN est **bien moindre** que le FR, **0 déclaration** de part et d'autre sur deux des paires, et **80 blocs de déclaration FR** réutilisés par import sur les six autres.
+
+> **Correction de périmètre.** L'issue #23676 liste **sept** fichiers ; la mesure en trouve **huit** : `SheafCohomology/Godement_en.lean` (0 déclaration, `import Grothendieck.SheafCohomology.Godement`) est le même cas, classé `OK-CONSUMER` par le checker (9 blocs FR réutilisés). Il est de la même classe et relève de la même règle.
+
+**2. Formaliser les six miroirs `OK-CONSUMER` casserait le build.** Ces six fichiers importent leur jumeau FR et réutilisent ses définitions ; les **redéclarer** côté EN les *shadow* face aux définitions importées → `lake build` **FAIL**. C'est exactement l'incident fondateur [#6717](https://github.com/jsboige/CoursIA/issues/6717) (`StableMarriage/Lattice_en.lean`), dont la règle est écrite plus haut : « un jumeau consommateur qui compile est déjà conforme » ; la parade était de **ne rien réintroduire**. L'option « formaliser » n'est donc pas seulement coûteuse sur ces six fichiers — elle est **fausse**.
+
+**3. Formaliser les deux miroirs `OK` (`ExceptionalTriple_en`, `MathlibMap_en`) reviendrait à écrire de la mathématique neuve**, pas à traduire : leur jumeau FR ne déclare rien non plus (de la prose seulement). Ce n'est pas un travail d'i18n, c'est un travail de recherche — hors périmètre d'un miroir de traduction.
+
+**Règle de report.** Un sibling `_en` **sans aucune déclaration** n'est pas un « gap i18n » à combler : c'est un miroir de prose. Il se formalise **au moment où un consommateur EN apparaît** — c'est-à-dire quand un module EN importe `Grothendieck.<X>_en` et a besoin de `Grothendieck_en.<X>` : à cet instant la redéclaration devient *portante* et l'invariant `OK-CONSUMER` doit céder la place à la Forme 1 (miroir auto-contenu), Parts de l'amas qui touchent cette Part.
+
+**État mesuré au 2026-11-07 : aucun consommateur EN externe.** Aucun module du dépôt n'importe l'un des huit `Grothendieck.<X>_en` (grep exhaustif sur les `*.lean` suivis) : le seul importeur de ces siblings est le cluster lui-même ; côté FR, `Grothendieck.lean` (root aggregator, Inline Option B) et les modules FR de l'amas importent les **jumeaux FR**. La formalisation serait donc aujourd'hui **du code mort compilé pour rien**. État du lake au même commit : `91/98 pairs byte-identical | 7 consumer-pattern | 0 drift | 0 orphan | 0 half-done`.
+
+> **Portée du `7 consumer-pattern`** : les sept verdicts `OK-CONSUMER` du lake sont les six fichiers ci-dessus **plus** `LeftExact_en.lean`, qui n'appartient **pas** à la classe « prose-seule » (5 déclarations EN). Son classement mérite une note : le checker reconnaît le motif consommateur par le **dernier segment** du chemin importé (`imports_fr_sibling`, `check_i18n_siblings.py:344`), et `LeftExact_en.lean` importe `Mathlib.CategoryTheory.Sites.LeftExact` — dont le dernier segment `LeftExact` coïncide avec le nom de son jumeau FR. La classification tient donc à une **collision de nom fortuite**, pas à un import du sibling FR. Sans effet ici (les blocs EN énoncés matchent bien des blocs FR), mais c'est le genre de coïncidence qu'il faut savoir lire avant d'en tirer une règle.
+
+**Conséquence de lecture.** Une signature `def`/`theorem` absente côté `_en` n'est un signal de drift que si le jumeau FR **en déclare** une. `: 0 declaration` des deux côtés = prose pure = conforme. Le checker le dit déjà (`OK`) : une lecture à l'œil du fichier ne remplace pas son verdict.
+
+**Pourquoi le checker ne signale rien — le mécanisme exact.** `normalize_body` (`scripts/lean/check_i18n_siblings.py:298`) **retire les commentaires et les docstrings**, supprime les lignes structurelles (`import` / `open` / `namespace` / `end`) et les lignes vides, puis efface le suffixe `_en`. Sur un fichier dont la prose vit **dans** la docstring, il ne reste que le squelette Lean. Mesuré :
+
+| Paire | Lignes de corps FR après normalisation | Lignes de corps EN | Verdict |
+|---|---|---|---|
+| `ExceptionalTriple` | 31 | 31 | `OK` (corps **byte-identique**) |
+| `MathlibMap` | 21 | 21 | `OK` (corps **byte-identique**) |
+| `GodementAcyclicity` | 14 | 2 | `OK-CONSUMER` (l'EN importe le FR et réutilise ses 3 blocs) |
+| `SheafCohomology/Godement` | 116 | 1 | `OK-CONSUMER` (l'EN importe le FR et réutilise ses 9 blocs) |
+
+Les deux `OK` sont donc **plus forts** qu'un simple « aucun drift » : le code Lean des deux côtés est **strictement identique**, la traduction portant **entièrement** sur la docstring. Les deux `OK-CONSUMER` de la même classe ont un corps EN plus court que le FR parce que le sibling **importe** son jumeau au lieu de le recopier. Dans les quatre cas, la docstring traduite est le **seul** contenu réellement changeant — ce qui est exactement la définition d'un miroir i18n.
 
 ## Roots aggregators sans sibling `_en` — classification des faux positifs
 

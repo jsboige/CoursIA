@@ -255,7 +255,7 @@ def collect_runners(repo: str, fetch: Callable[[str], object] = gh_api) -> list[
 
     Le nombre de slots par hote se lit directement ici -- c'est le chiffre que
     les distributions par label ou par runner ne peuvent pas rendre, et que
-    `docs/ci/po2024-topology-baseline.md` classe « non mesurable OS-localement ».
+    `docs/transients/2026-09-15-po2024-topology-baseline.md` classe « non mesurable OS-localement ».
     Il l'est, mais cote API, pas cote machine.
 
     L'appel exige un droit d'administration sur le depot. L'echec remonte comme

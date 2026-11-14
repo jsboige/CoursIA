@@ -1,5 +1,7 @@
 # Quand la vérification est verte et le système est cassé
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Étude de cas — huit incidents datés, un seul motif.
 
 Cette note ne raconte pas des bugs. Elle raconte huit occasions où **un agent a déclaré un état de système sur la foi d'une vérification qui passait**, alors que cet état était faux. Les quatre premiers viennent d'un projet client (avril 2026) ; les quatre derniers sont survenus dans ce dépôt, en août 2026, et sont vérifiables ligne par ligne.

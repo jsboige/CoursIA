@@ -26,10 +26,30 @@ d'autre : cet outil ne remplace aucun des quatre, il comble leur angle mort comm
 
 Ce que l'outil signale
 ----------------------
-Uniquement le cas non ambigu : le libelle contient un identifiant de notebook
-**de la meme famille** que la cible, et il **differe**. Un libelle en prose
-(« voir le notebook sur les faisceaux ») ne declenche rien : l'absence
-d'identifiant n'est pas un desaccord.
+Le cas non ambigu : le libelle porte un identifiant de notebook et il **differe**
+de celui de la cible. Un libelle en prose (« voir le notebook sur les faisceaux »)
+ne declenche rien : l'absence d'identifiant n'est pas un desaccord.
+
+Deux chemins, depuis #23684 :
+
+- **meme famille** que la cible : l'identifiant est cherche **partout** dans le
+  libelle, et l'ordinal doit concorder (comportement d'origine, #13645) ;
+- **famille differente** : c'est le cas du **reclass** -- un carnet change de
+  famille, le href suit, le libelle reste a l'ancien nom (`GameTheory-6c` vers
+  `Dynamics-01-...`). Deux bornes le rendent exploitable plutot que bruyant :
+  la famille citee doit exister dans le corpus (`corpus_families`), et
+  l'identifiant doit **ouvrir** le libelle (`leading_label_id`). Sans elles,
+  le vocabulaire du domaine (standard `ERC-20`, modele `Qwen3.5-0.8B`,
+  bibliotheque `DoWhy-2`) et les alias propres a un deck (`AA-1-informal`)
+  entrent dans la comparaison : mesure du 2026-11-06, 169 findings en lecture
+  libre contre 84 avec les deux bornes.
+
+La population mesuree au 2026-11-06 sur `origin/main` est de **84** findings
+(contre 1 avant l'elargissement) : la classe dominante est celle du reclass
+(`Lean-17a`->`KNOTS-01`, `Lean-22`->`GALOIS-01`, `GameTheory-06x`->`Dynamics-0x`).
+Le correctif de **contenu** de ces libelles ne releve pas de cet organe
+(#22291, #20442) ; celui-ci ne fait que rendre le desaccord visible. Le
+check-run CI est **advisory**, donc l'elargissement ne rougit aucune PR.
 
 Usage
 -----
@@ -80,6 +100,13 @@ DECK_GLOB = "slides/**/slides.md"
 LINK_RE = re.compile(r"\[([^\]\n]{1,200})\]\(([^)\s]+?\.ipynb)(?:#[^)\s]*)?\)", re.I)
 # <Prefixe>-<num><lettre?>- : la convention du depot (le tiret precede le titre)
 ID_IN_NAME_RE = re.compile(r"^(?P<pre>.+?)[-_](?P<num>\d{1,3})(?P<let>[a-z])?[-_]", re.I)
+# <famille>-<num><lettre?> : identifiant cite DANS un libelle, quelle que soit
+# la famille (#23684). La famille n'est pas ancree a celle de la cible : c'est
+# ce qui rend visible un libelle qui nomme une AUTRE famille.
+ID_IN_LABEL_RE = re.compile(
+    r"\b(?P<fam>[A-Za-z][A-Za-z0-9]*(?:[._][A-Za-z0-9]+)*)[-_](?P<num>\d{1,3})(?P<let>[a-z])?\b",
+    re.I,
+)
 
 
 def target_id(filename: str):
@@ -90,30 +117,83 @@ def target_id(filename: str):
     return (m.group("pre").lower(), int(m.group("num")), (m.group("let") or "").lower())
 
 
-def labels_in_text(text: str, prefix: str):
-    """Identifiants de la meme famille cites dans le libelle."""
-    pat = re.compile(rf"\b{re.escape(prefix)}[-_](\d{{1,3}})([a-z])?\b", re.I)
-    return [(int(n), (l or "").lower()) for n, l in pat.findall(text)]
+def labels_in_text(text: str, families=None):
+    """Identifiants `famille-NN[l]` cites dans le libelle.
+
+    `families=None` n'impose aucune restriction (self-test, mesure) ; sinon seuls
+    les prefixes presents dans le corpus sont retenus (#23684). La restriction
+    n'est pas cosmetique : sans elle, une date (`2024-01`), une version ou un
+    numero d'issue ressemblant a un identifiant entreraient dans la comparaison.
+    """
+    out = []
+    for fam, n, l in ID_IN_LABEL_RE.findall(text):
+        fam = fam.lower()
+        if families is not None and fam not in families:
+            continue
+        out.append((fam, int(n), (l or "").lower()))
+    return out
 
 
-def check_text(source: str, path: str):
+# Decoration de tete toleree devant un identifiant de libelle (nav, gras, citation).
+LEAD_STRIP = " \t\r\n*_`\"'«»()[]|#>~-–—:,.←→↑↓<>/\\"
+
+
+def leading_label_id(text: str, families=None):
+    """Identifiant qui OUVRE le libelle, ou None (#23684).
+
+    Le reclass se lit en tete : `<famille>-<NN>` puis un separateur puis le
+    titre. Chercher l'identifiant n'importe ou dans le libelle ramene la
+    prose -- une glose `(Qwen3.5-0.8B)`, un standard `(Solidity ERC-20)`, un
+    nom de modele `Z-Image (Lumina-2)` -- et rougit 87 fois a tort sur le
+    corpus mesure le 2026-11-06. La tete seule separe la citation d'identifiant
+    du vocabulaire du domaine.
+    """
+    s = text.lstrip(LEAD_STRIP)
+    m = ID_IN_LABEL_RE.match(s)
+    if not m:
+        return None
+    fam = m.group("fam").lower()
+    if families is not None and fam not in families:
+        return None
+    return (fam, int(m.group("num")), (m.group("let") or "").lower())
+
+
+def check_text(source: str, path: str, families=None):
     out = []
     for label, target in LINK_RE.findall(source):
         tid = target_id(target)
         if not tid:
             continue
         prefix, tnum, tlet = tid
-        for lnum, llet in labels_in_text(label, prefix):
+        lead = leading_label_id(label, families)
+        for lfam, lnum, llet in labels_in_text(label, families):
+            # Famille de la cible : comportement inchange (toute position).
+            # Autre famille (#23684) : seule la tete du libelle compte, sinon
+            # le vocabulaire du domaine rentre dans la comparaison.
+            if lfam != prefix and (lfam, lnum, llet) != lead:
+                continue
             if (lnum, llet) != (tnum, tlet):
                 out.append({
                     "file": path,
                     "label": label.strip()[:80],
                     "target": target,
-                    "says": f"{prefix}-{lnum}{llet}",
+                    "says": f"{lfam}-{lnum}{llet}",
                     "points_to": f"{prefix}-{tnum}{tlet}",
                 })
                 break
     return out
+
+
+def corpus_families(root: Path) -> set:
+    """Prefixes de famille presents dans le corpus de notebooks (#23684)."""
+    fams = set()
+    for p in root.glob("MyIA.AI.Notebooks/**/*.ipynb"):
+        if EXCLUDE_PARTS & set(p.parts):
+            continue
+        tid = target_id(p.name)
+        if tid:
+            fams.add(tid[0])
+    return fams
 
 
 def cell_sources(nb_path: Path):
@@ -162,6 +242,10 @@ def iter_scan_files(root: Path, globs, unreadable: list):
             yield p
 
 
+# Univers de familles fige pour le self-test : il doit rendre le meme verdict
+# quelle que soit la machine, y compris sur un corpus partiel (#23684).
+SELF_TEST_FAMILIES = {"ict", "lean", "gametheory", "search", "dynamics", "analyse", "pt"}
+
 SELF_TEST_CASES = [
     # (source, nb_findings_attendus, intitule)
     ("L'erreur du premier Cech affine ([ICT-15d](../../IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb)) "
@@ -172,13 +256,22 @@ SELF_TEST_CASES = [
     ("[Lean-16](../Lean/Lean-16e-Something.ipynb)", 1, "lettre perdue au libelle -- doit ROUGIR"),
     ("[GameTheory-03e](GameTheory-03e-Chambers.ipynb)", 0, "accretion coherente -- doit passer"),
     ("[voir Search-9](Search-11c-Advanced.ipynb)", 1, "numero different -- doit ROUGIR"),
+    # #23684 -- le predicat comparait le libelle a la famille de la CIBLE, donc un
+    # libelle nommant une AUTRE famille n'etait jamais lu (0 finding, quel que
+    # soit l'ordinal affiche).
+    ("[GameTheory-6c](../IIT/Dynamics/Dynamics-01-Bifurcations.ipynb)", 1,
+     "#23684 controle POSITIF : famille differente + ordinal different -- doit ROUGIR"),
+    ("[PT-06b](../Analyse/ANALYSE-06b-Etude.ipynb)", 0,
+     "#23684 controle NEGATIF : famille differente + ordinal CORRECT -- doit passer"),
+    ("[ANALYSE-06](../Analyse/ANALYSE-06b-Etude.ipynb)", 1,
+     "#23684 meme famille, lettre perdue -- doit ROUGIR"),
 ]
 
 
 def self_test() -> int:
     ok = True
     for src, expected, title in SELF_TEST_CASES:
-        got = len(check_text(src, "<self-test>"))
+        got = len(check_text(src, "<self-test>", SELF_TEST_FAMILIES))
         status = "OK " if got == expected else "ECHEC"
         if got != expected:
             ok = False
@@ -197,16 +290,18 @@ def main() -> int:
     if args.self_test:
         return self_test()
 
+    families = corpus_families(REPO_ROOT)
+
     findings, scanned, unreadable = [], 0, []
     for p in iter_scan_files(REPO_ROOT, SCAN_GLOBS + (DECK_GLOB,), unreadable):
         scanned += 1
         rel = p.relative_to(REPO_ROOT).as_posix()
         if p.suffix == ".ipynb":
             for src in cell_sources(p):
-                findings += check_text(src, rel)
+                findings += check_text(src, rel, families)
         else:
             try:
-                findings += check_text(p.read_text(encoding="utf-8"), rel)
+                findings += check_text(p.read_text(encoding="utf-8"), rel, families)
             except Exception:
                 pass
 

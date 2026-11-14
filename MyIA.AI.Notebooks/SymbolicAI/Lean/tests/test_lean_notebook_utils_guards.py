@@ -11,7 +11,7 @@ than crash deeper in the pipeline with an opaque ``AttributeError``
 that points at an implementation line instead of the caller's bad argument.
 
 The module is consumed by 5 Lean notebooks (Lean-7b, Lean-13 Kochen-Specker,
-Lean-16a/16b/16f Conway) which call these functions with values derived from
+Lean-16/16b/13e Conway) which call these functions with values derived from
 notebook parameters; a bad parameter deserves an actionable error, not an
 opaque traceback.
 """

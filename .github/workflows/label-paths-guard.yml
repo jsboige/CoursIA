@@ -35,7 +35,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: label-paths-guard-${{ github.ref }}
+  group: label-paths-guard-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: true
 
 jobs:
@@ -65,7 +65,7 @@ jobs:
     # runs verts de ce job : max 4.5 min. Marge large (le defaut
     # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
     timeout-minutes: 15
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     steps:
       - name: Checkout
         uses: actions/checkout@v4

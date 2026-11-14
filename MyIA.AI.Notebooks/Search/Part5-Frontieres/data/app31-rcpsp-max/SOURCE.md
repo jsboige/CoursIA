@@ -17,7 +17,7 @@ stratégies de branchement, une section RCPSP/max et une section multi-mode. Cet
 est le geste central de l'hommage.
 
 **Ce projet traite une question que CoursIA laisse explicitement ouverte.** Le notebook
-`Planners-8-Temporal-Csharp` conclut sa section RCPSP par : « la comparaison avec l'optimum
+`Planners-08-Temporal-Csharp` conclut sa section RCPSP par : « la comparaison avec l'optimum
 known d'un benchmark (ex: PSPLIB) est laissée en exercice ». B4 a fait cet exercice.
 
 ## Vérification indépendante des résultats source

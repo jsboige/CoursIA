@@ -238,12 +238,27 @@ REGISTRE: tuple[Entree, ...] = (
         # `reference_comparable` retombe sur l'identite derivee a la fin du
         # jour de la reference. C'est ce qui manquait aux trois rebasages
         # precedents, chacun n'ayant tenu que jusqu'a la fusion suivante.
-        reference=Reference(26.0, "2026-11-05",
-                            "issue #24678, mesure du 2026-11-05 sur "
-                            "l'arbre 536cf434700",
+        #
+        # CINQUIEME rebasage (2026-11-06, #23655) : le correctif du protocole
+        # `_kernelspecs_at` (compter les blobs lus, pas les kernelspec
+        # trouves) touche l'instrument LUI-MEME, meme raison que le
+        # troisieme -- l'identite portee par la reference (687bb25856a)
+        # n'est plus celle de l'instrument courant, et la comparaison
+        # tomberait sur « reference transverse refusee ». Correctif de
+        # protocole seul, sans effet sur la grandeur : `ambigu` vaut 26
+        # avant et apres sur le meme arbre aligne (`origin/main` a
+        # a284df8293f). Il ne produit donc pas un point de serie distinct :
+        # sa mesure reste celle du 2026-11-05 (26, instrument 687bb25856a).
+        # Meme mecanique d'instrument declare que le quatrieme : le sha de
+        # branche (18c887da79d) ne survivra pas au squash, la comparaison
+        # tiendra par la SOURCE du script puis par l'identite derivee a la
+        # fin du jour de la reference.
+        reference=Reference(26.0, "2026-11-06",
+                            "issue #23655, re-mesure du 2026-11-06 sur "
+                            "l'arbre a284df8293f",
                             instrument=("scripts/notebook_tools/"
                                         "inventory_notebook_names.py"
-                                        "@687bb25856abdae7a4b5053e609e23493f97c59c")),
+                                        "@18c887da79de8dcb3f59e7c62800e8c8c242e957")),
         # Les points anterieurs de la serie, avec leur SOURCE et
         # l'IDENTITE de l'instrument qui les a produits. L'identite
         # declaree est celle du PRODUISANT : c'est elle qui fait le
@@ -741,7 +756,11 @@ def arbre_aligne(commande, rayon: str = "") -> tuple[bool, str]:
     travail, commits non compris) : c'est exactement ce que l'instrument
     lit. Comparer les SHA de HEAD et de la revision serait trop grossier
     — une branche de travail qui ne touche que des scripts diverge
-    aussi, alors que les carnets qu'elle mesure sont identiques.
+    aussi, alors que les carnets qu'elle mesure sont identiques. Les
+    divergences qui sont des gitlinks (mode 160000) sont exclues : le
+    depot parent ne contient pas les fichiers de ces sous-modules, et
+    `git ls-tree -r`/`git cat-file` de la revision nommee n'y accedent pas.
+    Les changements dans les fichiers suivis du rayon restent bloquants.
 
     Mesure (2026-10-31, meme `origin/main` = 6135a06, deux checkouts) :
     un checkout aligne rend **38** carnets `ambigu`, un checkout en retard
@@ -759,13 +778,23 @@ def arbre_aligne(commande, rayon: str = "") -> tuple[bool, str]:
     if code != 0:
         return False, f"la revision nommee `{ref}` n'est pas lisible"
     divergents = [l.strip() for l in out.splitlines() if l.strip()]
-    if not divergents:
+    divergences_reelles = []
+    for chemin in divergents:
+        code, entree, _ = _run(("git", "ls-tree", ref, "--", chemin))
+        if code != 0:
+            return False, f"impossible de classifier la divergence `{chemin}` dans `{ref}`"
+        # ls-tree sans -r rend l'entree directe, dont le mode 160000
+        # distingue un gitlink du contenu versionne dans le depot parent.
+        if not any(l.split(maxsplit=1)[0] == "160000"
+                   for l in entree.splitlines() if l.strip()):
+            divergences_reelles.append(chemin)
+    if not divergences_reelles:
         return True, (f"l arbre local porte le meme contenu que `{ref}` "
-                      f"sur `{rayon}`")
+                      f"sur `{rayon}` (divergences de gitlinks exclues)")
     return False, (
         f"l arbre local ne porte pas le contenu de `{ref}` sur `{rayon}` "
-        f"({len(divergents)} fichier(s) divergent, dont "
-        f"`{divergents[0]}`) : l'instrument prend sa liste dans `{ref}` et "
+        f"({len(divergences_reelles)} fichier(s) divergent(s), dont "
+        f"`{divergences_reelles[0]}`) : l'instrument prend sa liste dans `{ref}` et "
         f"lit son contenu dans l'arbre local — les deux ne concordent "
         f"pas, et la valeur mesuree n'est pas celle de l'arbre nomme")
 

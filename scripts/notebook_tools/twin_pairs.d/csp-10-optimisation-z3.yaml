@@ -1,0 +1,9 @@
+- name: CSP-10 Optimisation Z3
+  family: Search/Part2-CSP
+  python: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation-Z3-CSharp.ipynb
+  parity_level: native-both
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux notebooks appellent réellement Z3 : z3-solver Python et Microsoft.Z3 4.12.2 avec runtime natif en C#. Les deux optimisent la couverture de grilles 4x3 et 10x6 et vérifient la borne inférieure par insatisfaisabilité."
+  known_differences:
+    - "Le Python utilise Optimize pour la preuve, le C# un Solver distinct ; le C# contrôle aussi la couverture géométriquement. Python affiche matplotlib, C# SVG statique. Les versions Z3 et les placements optimaux peuvent différer."

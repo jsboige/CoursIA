@@ -17,7 +17,7 @@ projets plus ambitieux (`calibration_lean`, `GOL/conway_lean`, `sensitivity_lean
 - **Compte de sorry** : 0
 - **Build** : `lake build MathLibExamples` -- SUCCESS
 - **Dépendances** : Mathlib4
-- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — **1 module .lean FR canonique** + **1 sibling `Basic_en.lean` miroir sur `main`** (PR #6664, 2026-07-15). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques — vérifié par `scripts/lean/check_i18n_siblings.py` : **6/6 paires byte-identical, 0 drift, 0 orphan** (les 6 incluent `examples/` siblings et ce module).
+- **Couverture i18n (EPIC #4980)** : lake entièrement bilingue FR/EN — `Basic.lean` FR canonique + sibling `Basic_en.lean` miroir sur `main` (PR #6664, 2026-07-15). Convention EPIC #4980 Option A : docstrings `/-- ... -/` et commentaires `-- ...` diffèrent entre FR et EN, signatures et preuves byte-identiques — vérifié par `scripts/lean/check_i18n_siblings.py` : **toutes les paires byte-identical, 0 drift, 0 orphan** (y compris les siblings d'`examples/` et ce module).
 
 ## Modules
 

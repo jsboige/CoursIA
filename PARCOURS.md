@@ -1,7 +1,8 @@
 # Parcours d'apprentissage CoursIA
 
 Cinq parcours narratifs — objectif, public, durée et sortie concrète — sont
-livrés par l'équipe `docs/curriculum/`. Cinq autres pages listent les notebooks
+livrés par l'équipe `docs/curriculum/`, rejoints par quatre **parcours verticaux**
+organisés par métier (section suivante). Cinq autres pages listent les notebooks
 par domaine thématique ; ce sont des **vues du catalogue**, pas des parcours
 d'apprentissage, et elles sont régénérées chaque jour par `catalog-cron.yml`.
 
@@ -21,6 +22,40 @@ liste numérotée, clause de prérequis qui dit ce qui est supposé **et ce qui 
 l'est pas**. La matière première est l'inventaire des embryons de parcours
 ([`docs/transients/2026-09-02-curriculum-inventory.md`](docs/transients/2026-09-02-curriculum-inventory.md), EPIC
 [#13844](https://github.com/jsboige/CoursIA/issues/13844)).
+
+### Parcours verticaux (par métier)
+
+Quatre parcours **verticaux** complètent les cinq parcours narratifs : là où ceux-ci
+traversent le dépôt en suivant un fil, les verticaux le traversent en suivant un
+**métier**. Ils sont déclarés en JSON — chaque branche énumère des carnets **existants**,
+exécutés avec leurs sorties, et ne crée aucun carnet nouveau :
+
+| Parcours | Manifeste | Branches | Carnets | Question à laquelle il répond |
+|----------|-----------|----------|---------|-------------------------------|
+| AI Engineer | [`ai-engineer.json`](docs/curriculum/ai-engineer.json) | 8 | 46 | construire un produit qui **appelle** des modèles sans les ré-entraîner |
+| LLM Engineer | [`llm-engineer.json`](docs/curriculum/llm-engineer.json) | 8 | 39 | l'arc profond du texte-modèle : tokenisation, RAG, inférence, agents, adaptation |
+| ML Engineer | [`ml-engineer.json`](docs/curriculum/ml-engineer.json) | 7 | 25 | apprentissage classique, de la donnée à la mise en service |
+| Recherche | [`recherche-vertical.json`](docs/curriculum/recherche-vertical.json) | 7 | 33 | reproduire un mécanisme publié, découvrir une loi, prouver un théorème |
+
+Chaque manifeste a son jumeau compilé (`*.compiled.json`), qui fige les transitions de
+noyau déclarées et sert aux tests de cohérence du parcours.
+
+**Articulation avec le reste du dépôt.** Deux volets prolongent ces parcours sans en
+faire partie, et il faut savoir où ils se traitent :
+
+- **Entraîner plutôt qu'utiliser.** Les verticaux partent de modèles existants ; le
+  ré-entraînement, le fine-tuning et le post-entraînement (PPO, distillations,
+  comparaisons multi-graines) relèvent de l'EPIC
+  [#1454 — Training & Post-Training](https://github.com/jsboige/CoursIA/issues/1454).
+  Le parcours **Recherche** est son principal débouché : reproduire un mécanisme, puis
+  conduire des ablations et des entraînements mesurés, c'est exactement l'aller-retour
+  que cet EPIC organise.
+- **Lire ces parcours sur le site.** Les pages de `docs/curriculum/` rendues sur
+  `jsboige.github.io/CoursIA` sont listées dans [`_quarto.yml`](_quarto.yml). Les quatre
+  manifestes verticaux n'y figurent **pas encore** : ils sont lisibles dans le dépôt, pas
+  sur le site. Leur rendu — navigation, mise en page des parcours, affichage des carnets —
+  relève de l'EPIC [#10921 — Site GitHub Pages](https://github.com/jsboige/CoursIA/issues/10921),
+  et non de cette page.
 
 ### Parcours par contraintes d'infrastructure
 

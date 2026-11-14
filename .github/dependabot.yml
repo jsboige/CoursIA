@@ -10,7 +10,7 @@ updates:
       interval: "daily"
     allow:
       - dependency-name: "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq"
-      - dependency-name: "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum"
+      - dependency-name: "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum"
     commit-message:
       prefix: "chore(submodule)"
     open-pull-requests-limit: 2

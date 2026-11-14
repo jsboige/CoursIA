@@ -62,7 +62,7 @@ Ces critères sont **publics** (ce document) : l'évaluation vérifie ce qui est
 
 ## 6. Barème et garde anti-arbitraire
 
-Cette grille définit les **critères vérifiables** ; la traduction en note — collective pour le projet, individuelle pour la vérification §4 — vit dans le pipeline de notation par cohorte : moteur générique [GradeBookApp](../../../GradeBookApp/configs/README.md), configurations privées par cohorte. La garde anti-arbitraire tient en une ligne : **un critère qui n'est pas vérifiable au sens de §1 n'entre pas au barème**. Si un correcteur veut noter quelque chose que cette grille ne permet pas de vérifier, la grille doit d'abord être amendée (et versionnée) — pas contournée.
+Cette grille définit les **critères vérifiables** ; la traduction en note — collective pour le projet, individuelle pour la vérification §4 — vit dans le pipeline de notation par cohorte : moteur générique [GradeBookApp](../../../dotnet/GradeBookApp/configs/README.md), configurations privées par cohorte. La garde anti-arbitraire tient en une ligne : **un critère qui n'est pas vérifiable au sens de §1 n'entre pas au barème**. Si un correcteur veut noter quelque chose que cette grille ne permet pas de vérifier, la grille doit d'abord être amendée (et versionnée) — pas contournée.
 
 ## 7. Anti-patterns de l'évaluateur
 
