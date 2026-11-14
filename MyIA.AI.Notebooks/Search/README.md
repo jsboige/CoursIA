@@ -6,9 +6,9 @@ pagetitle: "Search - Algorithmes de Recherche et Programmation par Contraintes"
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 165
-breakdown: Part3-Cas-pratiques=51, Part1-Foundations=49, Part4-Metaheuristics=35, Part2-CSP=19, Part5-Frontieres=11
-maturity: BETA=158, ALPHA=7
+pedagogical_count: 166
+breakdown: Part3-Cas-pratiques=51, Part1-Foundations=49, Part4-Metaheuristics=35, Part2-CSP=20, Part5-Frontieres=11
+maturity: BETA=159, ALPHA=7
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -330,6 +330,10 @@ Les applications sont adaptées de projets étudiants. Les références spécifi
 
 ---
 
+## Recherche continue
+
+[Search-02d en Python](Part1-Foundations/Search-02d-RRT-Recherche-Continue.ipynb) et [son jumeau C#](Part1-Foundations/Search-02d-RRT-Recherche-Continue-CSharp.ipynb) explorent RRT, le reparentage et les effets du budget et des graines.
+
 ## Structure des fichiers
 
 ```text
@@ -343,6 +347,8 @@ Search/
 │   ├── Search-02b-NetworkX.ipynb
 │   ├── Search-02b-NetworkX-CSharp.ipynb   # Twin C# graphes from-scratch (BFS/DFS, Dijkstra, centralités, Ford-Fulkerson) (See #4956)
 │   ├── Search-02c-QuikGraph.ipynb
+│   ├── Search-02d-RRT-Recherche-Continue.ipynb # RRT et RRT*
+│   ├── Search-02d-RRT-Recherche-Continue-CSharp.ipynb # Port C#
 │   ├── Search-03-Informed.ipynb
 │   ├── Search-04-LocalSearch.ipynb
 │   ├── Search-05-GeneticAlgorithms.ipynb
