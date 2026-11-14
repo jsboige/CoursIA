@@ -1,0 +1,88 @@
+{
+  "first_session": "2025-01-02",
+  "last_session": "2026-08-31",
+  "comparisons": {
+    "spy": {
+      "sessions": 416,
+      "sharpe_a": 0.42843139658565393,
+      "sharpe_b": 1.1000588193275749,
+      "sharpe_diff": -0.6716274227419209,
+      "correlation": -0.300651258700278,
+      "ledoit_wolf": {
+        "se": 1.1754574492365333,
+        "z": -0.5713753595914057,
+        "lag": 4,
+        "p_two_sided": 0.5677452281879598
+      },
+      "bootstrap": {
+        "n_boot": 2000,
+        "mean_block": 10.0,
+        "seed": 0,
+        "ci95": [
+          -3.1673875844057813,
+          1.6303470448192017
+        ],
+        "ci95_contains_zero": true,
+        "p_one_sided": 0.7205,
+        "obs": -0.6716274227419209
+      },
+      "mean_diff": {
+        "mean_diff_daily": -0.0006520603922395033,
+        "se": 0.0005564970593254372,
+        "t": -1.1717229791472825,
+        "lag": 4,
+        "p_two_sided": 0.24130829411943513
+      }
+    },
+    "6040": {
+      "sessions": 416,
+      "sharpe_a": 0.42843139658565393,
+      "sharpe_b": 1.2205907432421006,
+      "sharpe_diff": -0.7921593466564466,
+      "correlation": -0.2825095125653279,
+      "ledoit_wolf": {
+        "se": 1.1769403113820944,
+        "z": -0.6730667128957498,
+        "lag": 4,
+        "p_two_sided": 0.5009048497056816
+      },
+      "bootstrap": {
+        "n_boot": 2000,
+        "mean_block": 10.0,
+        "seed": 0,
+        "ci95": [
+          -3.26160846472421,
+          1.5209626025060248
+        ],
+        "ci95_contains_zero": true,
+        "p_one_sided": 0.7515,
+        "obs": -0.7921593466564466
+      },
+      "mean_diff": {
+        "mean_diff_daily": -0.0004066309646818255,
+        "se": 0.00038258813425539413,
+        "t": -1.0628425930491137,
+        "lag": 4,
+        "p_two_sided": 0.2878533402306241
+      }
+    }
+  },
+  "p_raw": {
+    "spy/ledoit_wolf": 0.5677452281879598,
+    "spy/mean_diff": 0.24130829411943513,
+    "spy/bootstrap": 0.5589999999999999,
+    "6040/ledoit_wolf": 0.5009048497056816,
+    "6040/mean_diff": 0.2878533402306241,
+    "6040/bootstrap": 0.4970000000000001
+  },
+  "p_holm": {
+    "spy/mean_diff": 1.0,
+    "6040/mean_diff": 1.0,
+    "6040/bootstrap": 1.0,
+    "6040/ledoit_wolf": 1.0,
+    "spy/bootstrap": 1.0,
+    "spy/ledoit_wolf": 1.0
+  },
+  "any_reject_5pct_raw": false,
+  "any_reject_5pct_holm": false
+}

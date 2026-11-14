@@ -89,7 +89,7 @@ NOTEBOOK_FAMILIES = {
     "SymbolicAI": {
         "path": "MyIA.AI.Notebooks/SymbolicAI",
         "kernel": "mixed",
-        "exclude_subdirs": ["Argument_Analysis", "Lean", "Tweety"]
+        "exclude_subdirs": ["ArgumentAnalysis", "Lean", "Tweety"]
     },
     "Tweety": {
         "path": "MyIA.AI.Notebooks/SymbolicAI/Tweety",
@@ -103,8 +103,8 @@ NOTEBOOK_FAMILIES = {
         "notes": "Requires lean4_jupyter kernel and elan",
         "expected_notebooks": [f"Lean-{i}-*.ipynb" for i in range(1, 10)]
     },
-    "Argument_Analysis": {
-        "path": "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis",
+    "ArgumentAnalysis": {
+        "path": "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis",
         "kernel": "python",
         "requires_env": True,
         "batch_mode": True
@@ -995,7 +995,7 @@ class EnvironmentChecker:
             if nashpy_ok:
                 env.versions['nashpy'] = nashpy_ver
 
-        elif self.family in ['GenAI', 'Argument_Analysis']:
+        elif self.family in ['GenAI', 'ArgumentAnalysis']:
             openai_ok, _ = self.check_python_package("openai")
             env.components['openai'] = openai_ok
 

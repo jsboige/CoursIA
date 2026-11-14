@@ -24,7 +24,9 @@ Usage :
   python scripts/notebook_tools/check_encoding_corruption.py <chemin> [...]
 
   # Garde CI bloquante : artefacts sur les LIGNES AJOUTÉES des carnets changés
-  # par rapport à une référence (formule du fast-lane `{base_ref}`) :
+  # par rapport à une référence (formule du fast-lane `{base_ref}`). Un carnet
+  # simplement DÉPLACÉ entre la base et la tête est un renommage pur : il
+  # n'ajoute aucune ligne et n'est pas signalé (#24068) :
   python scripts/notebook_tools/check_encoding_corruption.py --base origin/main
 
   # Auto-test interne (fil de fumée du garde) :
@@ -45,9 +47,18 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
 from pathlib import Path
+
+# Shared rename probe (#24068): a notebook staged as a pure rename was only
+# MOVED, so the double-encoding artifacts it carries pre-date the move -- a
+# consolidation-by-move must not be reported for a corruption it did not
+# introduce. Same family as #24039 (scripts/check_subprocess_encoding.py).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+# T3-c (#25366) : probe git_index_renames reloge dans scripts/audit/.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "audit"))
+import git_index_renames  # noqa: E402
+from git_index_renames import skip_pure_renames  # noqa: E402
 
 # Bigrammes de la famille de corruption (cf. docstring).
 MOJIBAKE = re.compile(
@@ -93,11 +104,38 @@ def _is_exempt(rel: str) -> bool:
     return rel in EXEMPT or rel.replace("\\", "/") in EXEMPT
 
 
+def _resolve(path: str) -> Path:
+    """Résout un chemin d'entrée contre la racine du dépôt.
+
+    Le hook pré-commit passe des chemins relatifs au dépôt ; les résoudre
+    contre la racine unique du dépôt (celle de la sonde partagée) garantit
+    que la lecture du fichier et la clé affichée portent sur le même objet,
+    quel que soit le répertoire courant du processus.
+    """
+    p = Path(path)
+    return p if p.is_absolute() else git_index_renames.repo_root() / p
+
+
+def _rel_key(nb: Path) -> str:
+    """Clé repo-relative POSIX d'un carnet (identique aux chemins de git).
+
+    La clé sert à la fois à l'exemption et à l'affichage : elle doit donc
+    être la forme que git rapporte, sinon un carnet serait compté sous deux
+    noms différents selon le mode (chemin absolu au pré-commit, relatif en
+    CI).
+    """
+    try:
+        return nb.resolve().relative_to(
+            git_index_renames.repo_root().resolve()).as_posix()
+    except (ValueError, OSError):
+        return nb.as_posix()
+
+
 def check_paths(paths: list[Path]) -> dict[str, int]:
     """Pleine vérification : {chemin relatif: compte} pour les carnets sales."""
     dirty: dict[str, int] = {}
     for nb in iter_notebooks(paths):
-        rel = str(nb).replace("\\", "/")
+        rel = _rel_key(nb)
         if _is_exempt(rel):
             continue
         n = count_in_notebook(nb)
@@ -107,39 +145,53 @@ def check_paths(paths: list[Path]) -> dict[str, int]:
 
 
 def changed_notebooks(base: str) -> list[str]:
-    """Carnets modifiés entre <base>...HEAD (chemins repo-relatifs)."""
-    out = subprocess.run(
-        ["git", "diff", "--name-only", f"{base}...HEAD", "--", "*.ipynb"],
-        capture_output=True,
-    )
-    if out.returncode != 0:
-        err = out.stderr.decode("utf-8", errors="replace").strip()
-        print(f"ERREUR: git diff {base}...HEAD a échoué : {err}", file=sys.stderr)
+    """Carnets modifiés entre <base>...HEAD (chemins repo-relatifs).
+
+    Le diff est pris **sans pathspec** : un pathspec restreint à `*.ipynb`
+    ferait perdre à git la source d'un renommage (il ne verrait que la
+    destination), et la carte des renommages -- qui doit connaître cette
+    source -- deviendrait incomputable. Le filtrage des `.ipynb` se fait
+    donc ici, en Python, sur une liste qui reste complète.
+    """
+    out = git_index_renames.git_out(
+        "diff", "--name-only", f"{base}...HEAD")
+    if out is None:
+        print(f"ERREUR: git diff {base}...HEAD a échoué", file=sys.stderr)
         sys.exit(2)
-    # Décodage explicite UTF-8 : text=True decoderait en cp1252 sous Windows et
-    # fabriquerait la corruption même que ce détecteur doit mesurer.
-    return [l for l in out.stdout.decode("utf-8", errors="replace").splitlines() if l.strip()]
+    # Décodage explicite UTF-8 (fait par git_out) : text=True decoderait en
+    # cp1252 sous Windows et fabriquerait la corruption même que ce
+    # détecteur doit mesurer.
+    return [l.strip() for l in out.splitlines()
+            if l.strip().endswith(".ipynb")]
 
 
-def added_lines_artifacts(repo_root: Path, nb_rel: str, base: str) -> int:
+def added_lines_artifacts(repo_root: Path, nb_rel: str, base: str,
+                          source_rel: str | None = None) -> int:
     """Artéfacts sur les LIGNES AJOUTÉES du carnet par rapport à <base>.
 
     Un carnet ajouté en entier compte toutes ses lignes ; un carnet absent de la
     base (nouveau) est lu en plein.
+
+    ``source_rel`` est le chemin d'origine quand le carnet est un renommage :
+    les DEUX chemins sont alors passés au pathspec, ce qui **restaure
+    l'appariement** du renommage côté git (mesuré, #24068). Sans le chemin
+    source, le pathspec ne contient que la destination, git ne peut plus
+    l'apparier à son origine et présente le fichier comme neuf -- toutes ses
+    lignes sont alors comptées comme ajoutées, et un carnet simplement
+    déplacé ressuscite ses artefacts hérités.
     """
     nb = repo_root / nb_rel
     if not nb.exists():
         return 0
-    out = subprocess.run(
-        ["git", "diff", f"{base}...HEAD", "--", nb_rel],
-        capture_output=True,
-    )
-    if out.returncode != 0:
-        err = out.stderr.decode("utf-8", errors="replace").strip()
-        print(f"ERREUR: git diff {base}...HEAD -- {nb_rel} : {err}", file=sys.stderr)
+    pathspec = [nb_rel] if source_rel is None else [source_rel, nb_rel]
+    out = git_index_renames.git_out(
+        "diff", f"{base}...HEAD", "--", *pathspec)
+    if out is None:
+        print(f"ERREUR: git diff {base}...HEAD -- {nb_rel} a échoué",
+              file=sys.stderr)
         sys.exit(2)
     # UTF-8 explicite (cf. changed_notebooks) : jamais text=True ici.
-    lines = out.stdout.decode("utf-8", errors="replace").splitlines()
+    lines = out.splitlines()
     added = [l[1:] for l in lines if l.startswith("+") and not l.startswith("+++")]
     if not added:
         # Pas de ligne ajoutée lisible (binaire ?) → repli sur la lecture pleine.
@@ -158,15 +210,42 @@ def added_lines_artifacts(repo_root: Path, nb_rel: str, base: str) -> int:
 
 
 def check_base(base: str) -> dict[str, int]:
-    """Garde CI : artefacts sur les lignes ajoutées des carnets changés."""
-    repo_root = Path.cwd()
+    """Garde CI : artefacts sur les lignes ajoutées des carnets changés.
+
+    Cas du renommage (#24068, mesuré) : un carnet simplement *déplacé* entre
+    la base et la tête est un renommage pur (R100) -- il n'ajoute aucune
+    ligne, donc il ne peut introduire aucun artefact. Le chemin de la
+    destination seul dans le pathspec cassait l'appariement de git, qui
+    présentait alors le carnet comme un fichier neuf : tous ses artefacts
+    hérités étaient comptés comme ajoutés (rc=1 sur un simple déplacement).
+    Deux corrections, mesurées sur un dépôt témoin :
+
+    - renommage pur (R100) : le carnet est écarté de la cible ;
+    - renommage AVEC retouche (R<100) : le chemin source est remis dans le
+      pathspec, ce qui restaure l'appariement -- seules les lignes
+      réellement ajoutées sont alors comptées.
+    """
+    repo_root = git_index_renames.repo_root()
     dirty: dict[str, int] = {}
+    renames = git_index_renames.renames_between(base)
+    skipped = 0
     for nb_rel in changed_notebooks(base):
         if _is_exempt(nb_rel):
             continue
-        n = added_lines_artifacts(repo_root, nb_rel, base)
+        info = renames.get(nb_rel)
+        if info is not None:
+            source_rel, score = info
+            if score == "100":
+                skipped += 1
+                continue  # pur déplacement : aucune ligne ajoutée (#24068)
+            n = added_lines_artifacts(repo_root, nb_rel, base, source_rel)
+        else:
+            n = added_lines_artifacts(repo_root, nb_rel, base)
         if n:
             dirty[nb_rel] = n
+    if skipped:
+        print(f"encoding-corruption: {skipped} pure rename(s) ignored -- "
+              "their artifacts pre-date the move (#24068)", file=sys.stderr)
     return dirty
 
 
@@ -193,7 +272,18 @@ def main(argv: list[str] | None = None) -> int:
     if args.base:
         dirty = check_base(args.base)
     elif args.paths:
-        dirty = check_paths([Path(p) for p in args.paths])
+        # A notebook staged as a pure rename was only MOVED (#24068): the
+        # double-encoding artifacts it carries pre-date the move. This
+        # pre-commit half scans the WHOLE file, so it would re-report the
+        # inherited artifacts and leave the lane with only SKIP=, i.e.
+        # disabling the guard. (The CI half, --base, needed the same
+        # treatment: measured, it re-reported them too -- see check_base.)
+        kept, skipped = skip_pure_renames(args.paths)
+        if skipped:
+            print(f"encoding-corruption: {len(skipped)} pure rename(s) "
+                  "ignored -- their artifacts pre-date the move (#24068)",
+                  file=sys.stderr)
+        dirty = check_paths([_resolve(p) for p in kept])
     else:
         ap.error("aucun chemin (ou --base / --self-test)")
         return 2

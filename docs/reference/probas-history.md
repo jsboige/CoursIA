@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-11-08
+
 # Portage Infer.NET → Python — `MyIA.AI.Notebooks/Probas/`
 
 > Référence pérenne. Ce document porte le **périmètre intentionnel** et la **recommandation de bibliothèques** d'un portage de la série Infer.NET (.NET Interactive, C#) vers des notebooks Python (PyMC, NumPyro, pgmpy, hmmlearn, Pyro). Il ne porte **PAS** le mapping d'API détaillé (daté PyMC v5, 2026-05-11) — voir section *« Mapping d'API = à re-dériver »*.
@@ -115,3 +117,4 @@ Ces dépendances **ne sont pas figées** : les notebooks trackés utilisent prob
 ## Historique
 
 - **2026-08-07** — Création (c.1285), portée depuis `PORT_PYTHON_PLAN.md` (sha `48428c7e3d2fd20c682a2f4e49cec4b9894f4f30`) suite à la note de préservation user 2026-08-07T18:56:55Z sur #9911 (comment #5220921176) : *« la suppression sans que la substance ait été portée ailleurs d'abord »* est l'interdit, pas la suppression elle-même.
+- **2026-11-08** — Trancher du cas laissé *borderline* par le tri de la vague 4 (#14623, `docs/transients/2026-11-02-tri-perennel-stale-56.md`) : le document **reste dans la lane pérenne** et n'est pas déplacé en transiente. Motif, à la lecture : il porte des décisions de conception durables (périmètre intentionnel, recommandation de bibliothèque par concept, convention de nommage) et il **exclut explicitement** de son périmètre ce qui se périme (mapping d'API à re-dériver, estimation d'effort datée, statut au 2026-08-07) — ces parties sont déjà balisées comme datées dans le corps, ce qui est précisément la séparation que la lane cherche à rendre visible. Son en-tête reçoit le marqueur de référence vivante pour qu'il participe au contrat de la lane perenne et non plus seulement par son emplacement.

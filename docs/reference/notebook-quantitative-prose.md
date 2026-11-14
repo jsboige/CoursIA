@@ -1,5 +1,7 @@
 # Valeurs quantitatives en prose de notebook — détail de la règle C.5
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Détail déporté de [`.claude/rules/notebook-conventions.md`](../../.claude/rules/notebook-conventions.md) §C.5, qui garde la règle et la table de classification. Ce fichier porte les arbitrages et les cas-limites — utiles quand on tranche une PR, inutiles à charger à chaque session.
 
 Source : mandat user **#9377** — « les données quantitatives doivent être tenues par le CI, pas dans la prose manuelle ». Appliqué aux README (comptes de notebooks #9377, tailles #9425, comptes de cellules #9432), il vaut **à l'intérieur des notebooks**, où la même pathologie rouvre un ticket #8052 à chaque re-exécution.

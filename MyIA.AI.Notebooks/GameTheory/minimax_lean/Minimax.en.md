@@ -304,7 +304,7 @@ Sion's 5 topological prerequisites on `E = m → ℝ` (and `F = n → ℝ`) are
 `TopologicalSpace`, `AddCommGroup`, `Module ℝ`, `IsTopologicalAddGroup`,
 `ContinuousSMul ℝ`: they synthesize from Mathlib's `Pi` instances
 (`Pi.topologicalSpace`, `Pi.instAddCommGroup`, `Pi.instModule`, etc.). This
-**iteration 3** module delivers the auxiliary fact of **non-emptiness of the
+module of the **third iteration** delivers the auxiliary fact of **non-emptiness of the
 simplex** then the **final application**.
 
 `IsSaddlePointOn` lives at the top level (`Mathlib/Order/SaddlePoint.lean`), while

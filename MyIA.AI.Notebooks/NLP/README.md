@@ -1,56 +1,89 @@
-# NLP — Traitement automatique des langues
+# NLP — du mot aux modèles du langage
 
-Série dédiée aux **fondations du traitement automatique des langues** : du modèle symbolique et probabiliste classique (mots, morphologie, dépendances, n-grammes, CRF, grammaires probabilistes) jusqu'aux témoins modernes. Elle est distincte de la série [`GenAI/Texte`](../GenAI/Texte/README.md), centrée sur l'ingénierie des LLM (prompts, RAG, fine-tuning, scaling au moment du test) — les deux traditions se citent mutuellement.
+[↑ Parcours de notebooks](../README.md) · [GenAI/Texte](../GenAI/Texte/README.md)
 
-Point d'entrée transversal : le deck Slidev [`slides/09-traitement-automatique-langues/`](../../slides/09-traitement-automatique-langues/slides.md) (progression classique → moderne, carte des notebooks du dépôt par sujet).
+Comment transformer un texte en objets que l'on peut analyser, comparer ou classer ? Cette série de traitement automatique des langues part des mots, des étiquettes grammaticales et des dépendances. Elle construit ensuite des modèles probabilistes de séquences, des représentations vectorielles et des classifieurs. Les petits corpus permettent de suivre les calculs et d'examiner les erreurs au niveau d'une phrase ou d'une prédiction.
 
-Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — migration des notebooks TAL depuis `GenAI/Texte` vers une série à owner propre.
+Le parcours s'adresse aux étudiants et enseignants connaissant Python et les probabilités élémentaires. Le calcul matriciel et les gradients deviennent utiles pour les représentations et les modèles appris ; les carnets en explicitent les opérations. Les expériences fonctionnent sur CPU, sans clé d'API. Le [support de cours TAL](../../slides/09-traitement-automatique-langues/slides.md) situe ces fondations dans le passage aux modèles de langage modernes.
 
-## Objectifs d'apprentissage
+**Une série plate.** Tous les carnets vivent à la racine, sans dossier intermédiaire : ils tracent un seul arc du mot aux modèles de langage, la numérotation continue ordonne la progression, et les approfondissements vivent dans les carnets eux-mêmes plutôt que dans des compagnons séparés. C'est un choix de niveau déclaré (règle 2 de [niveau-serie.md](../../docs/reference/niveau-serie.md)), pas un oubli.
 
-À l'issue de cette série, vous serez capable de :
+## Comment lire ce README — Découverte
 
-1. **Construire** un pipeline linguistique de bout en bout (tokenisation → lemmes → POS → dépendances → NER) et mesurer ses erreurs contre un gold
-2. **Estimer** un modèle de langue n-gramme par MLE puis par lissage (Laplace add-1, Kneser-Ney), et tracer la courbe de perplexité en fonction de n
-3. **Implémenter** un CRF linéaire from scratch (forward/backward log-space, gradient, Viterbi) et vérifier l'écart nul avec `sklearn-crfsuite`
-4. **Convertir** une CFG en CNF puis appliquer l'algorithme CYK avec backpointers, et mesurer l'ambiguïté sur des phrases de référence
-5. **Décoder** par Viterbi un HMM markovien, mesurer le renversement de décision par rapport à un classifieur token par token, et confronter à `hmmlearn`/`nltk`
-6. **Représenter** un mot comme un vecteur (07) : la représentation distributionnelle par co-occurrence, PPMI et SVD tronquée — séparer le signal d'association du bruit de fréquence, et mesurer la similarité de sens par cosinus
-7. **Décomposer** un mot en n-grammes de caractères (subwords) pour généraliser aux mots inconnus (OOV), et mesurer l'écart de robustesse par rapport à une représentation de mot atomique
+Le principe [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture) permet de choisir sa profondeur de lecture.
 
-## Notebooks
+- **Vous découvrez** : suivez les numéros nus. Le premier carnet donne des observations linguistiques concrètes ; les suivants construisent les modèles qui permettent de les interpréter.
+- **Vous creusez un palier** : reprenez ses exercices, ses contrôles de calcul et ses comparaisons avec une bibliothèque. Les approfondissements de ce parcours sont dans les carnets eux-mêmes.
+- **Vous cherchez des prolongements** : « Pour aller plus loin » précise ce que permettent les expériences et donne les points de passage vers tokenisation, recherche documentaire et LLM.
 
-| # | Notebook | Description | Durée |
-|---|----------|-------------|-------|
-| 01 | [`01_TAL_Du_Mot_Aux_Dependances.ipynb`](01_TAL_Du_Mot_Aux_Dependances.ipynb) | Pipeline **spaCy** `fr_core_news_sm` (CPU) : lemmes/POS/morphologie, arcs de dépendance + tripleaux SVO (displacy), NER avec rendu surligné, comparaison mots/lemmes/BPE sur le corpus exact du NB-04 (`GenAI/RAG-et-Memoire-Semantique`), analyse d'erreurs contre gold (lemmes 8/8, NER 2/5 : dates manquées, ORG/PER instables), recherche lemmatisée vs surface | 60 min |
-| 02 | [`02_NGrammes_Modeles_De_Langue.ipynb`](02_NGrammes_Modeles_De_Langue.ipynb) | **Modèles de langue n-grammes from scratch** (CPU) : unigramme/bigramme/trigramme MLE, perplexité, explosion des zéros, lissage **Laplace add-1**, **Kneser-Ney interpolé**, courbe perplexité vs n sur corpus borné, 3 exercices C.1 | 45 min |
-| 03 | [`03_CRF_Etiquetage_Sequentiel.ipynb`](03_CRF_Etiquetage_Sequentiel.ipynb) | **CRF linéaire from scratch** sur corpus NER français BIO : émissions, transitions, log-partition forward/backward, NLL et Viterbi ; gradient vérifié numériquement, baseline token-wise, témoin `sklearn-crfsuite`, métriques token/entité, ablation et analyse d'erreurs | 75 min |
-| 04 | [`04_PCFG_CYK_Parsing.ipynb`](04_PCFG_CYK_Parsing.ipynb) | **Parsing PCFG/CYK from scratch** (CPU) : CFG française explicite convertie en CNF bornée avec préservation des probabilités, recognizer CYK en table triangulaire visualisée, probabilités MLE sur mini-treebank embarqué (biais d'attachement mesuré), Viterbi + backpointers avec reconstruction de l'arbre, ambiguïté mesurée (2 dérivations, 89,7 %/10,3 %), témoin **NLTK** en concordance exacte, 3 exercices C.1 | 55 min |
-| 05 | [`05-HMM-Viterbi.ipynb`](05-HMM-Viterbi.ipynb) | **HMM et décodage Viterbi from scratch** (CPU) : corpus POS français miniature **synthétique à provenance explicite** (5 mots ambigus NOM/VER, 3 clitiques DET/PRON, phrase à double lecture *le matelot voile la voile*), estimation MLE + lissage add-1 avec `<UNK>`, forward log-espace, Viterbi/backpointers avec treillis visualisé, **17 renversements mesurés** du contexte de séquence (12 vers l'or, accuracy 0,717 → 0,887), baseline majoritaire par mot, témoin **hmmlearn** en concordance exacte (7·10⁻¹⁵ sur le forward, 0 divergence de chemin), contre-témoin **NLTK** sans lissage (0,491 — ce que le add-1 achète), 3 exercices C.1 | 55 min |
-| 06 | [`06-Recherche-Information-TFIDF-BM25.ipynb`](06-Recherche-Information-TFIDF-BM25.ipynb) | **Recherche d'information from scratch** (CPU) : bag-of-words et classement brut par fréquence, **TF-IDF** (`idf = log(N/df)`) et **BM25** de Robertson (saturation du terme `k1`, normalisation de longueur `b`) ; corpus embarqué de 8 documents à terme omniprésent, **`Recall@3` mesuré** sur 3 requêtes étiquetées — le terme omniprésent est le discriminateur (classement brut 0,889 vs TF-IDF = BM25 = 1,000), 3 exercices C.1 | 45 min |
-| 07 | [`07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb`](07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb) | **Vecteurs de mots from scratch** (CPU) : matrice de co-occurrence (fenêtre ±3) sur corpus embarqué de 13 phrases / 3 domaines, **PPMI** (correction par l'attente au hasard, `max(0, log(coo·N/(row·col)))`), **SVD tronquée** (centrage + 2 premières valeurs singulières) ; **séparation des domaines mesurée** — écart de cosinus congener/autre-domaine ≈ 1,24–1,74 après PPMI+SVD contre ≈ 0,07–0,24 au comptage brut, 3 exercices C.1 | 45 min |
-| 08 | [`08-Word2Vec-CBOW-SkipGram.ipynb`](08-Word2Vec-CBOW-SkipGram.ipynb) | **word2vec from scratch** (CPU, déterministe) : **CBOW** entraîné par descente de gradient, forward + gradient analytique **vérifié numériquement** ; **skip-gram** (forward + gradient implémentés, **entraînement et vérification laissés à l'exercice 1**) et **échantillonnage négatif** en sigmoïdes (coût constant par pas au lieu de `O(V)`), plus proches voisins par cosinus + analogie `a − b + c`, **confrontation** avec les vecteurs de co-occurrence factorisés (PPMI + SVD) du carnet 07 — même structure de similarité, deux méthodes, 3 exercices C.1 | 60 min |
-| 09 | [`09-FastText-Subword-Vectors.ipynb`](09-FastText-Subword-Vectors.ipynb) | **fastText from scratch** (CPU) : la même mécanique skip-gram que le carnet 08, mais l'entrée d'un mot est la somme des vecteurs de ses n-grammes de caractères (subwords) — gradient analytique vérifié numériquement, et la capacité distinctive mesurée : 4/4 dérivés jamais vus (OOV) replacés près de leur radical (le repli est morphologique, mesuré avec un contrôle sans radical qui retombe dans le bruit), là où word2vec n'a aucun vecteur ; confrontation 08 vs 09, 3 exercices C.1 | 45 min |
-| 10 | [`10-Classement-Texte-NaiveBayes-FromScratch.ipynb`](10-Classement-Texte-NaiveBayes-FromScratch.ipynb) | **Classification de texte Naive Bayes from scratch** (CPU) : sac-de-mots, priors de classe + probabilités de mot par **MLE + lissage Laplace** en log-espace ; corpus embarqué de 32 documents (4 catégories × 8), **précision out-of-sample mesurée** 7/8, **cross-check `sklearn`** (`CountVectorizer` + `MultinomialNB`) sur le même split — précision identique 7/8 et **accord 8/8** des prédictions, mesure du lissage α (sans lissage : 3 documents indéterminés, 4 corrects, 1 mal classé (`finance` → `science`), soit 4/8 = 50 % ; précision 87,5 % pour α > 0, sur 8 documents), 3 exercices C.1 | 45 min |
-| 11 | [`11-Classement-Texte-RegressionLogistique-FromScratch.ipynb`](11-Classement-Texte-RegressionLogistique-FromScratch.ipynb) | **Classification de texte discriminative from scratch** (CPU) : sac de mots en fréquences relatives, **softmax stable**, entropie croisée et descente de gradient sous forme fermée `(P − Y)/n` ; banc à classes **chevauchantes** (240 documents, 31,2 % ambigus) pour que la tâche ne se résolve pas d'elle-même ; **75,00 % de précision hors échantillon** contre **21,88 %** de baseline majoritaire, cross-check `scikit-learn` en juge extérieur (même précision, accord des prédictions 81,25 %, cosinus des poids 0,7419) ; le balayage de `lambda` mesure que **L2 dégrade** ici, conséquence rapportée et expliquée plutôt que masquée, 3 exercices C.1 | 45 min |
+À l'issue du parcours, vous pourrez analyser les sorties d'un pipeline linguistique, construire un modèle de séquence ou de classification, comparer des représentations de mots et concevoir une évaluation qui distingue calcul correct et généralisation.
 
-## Progression
+## Parcours principal — Découverte et Licence
 
-1. **Le mot et ses dépendances** (01) : le pipeline linguistique observé — lemmes, morphosyntaxe, entités — avec analyse d'erreurs mesurée.
-2. **La phrase et sa probabilité** (02) : le modèle de langue n-gramme, du MLE au lissage — la tradition probabiliste avant les réseaux.
-3. **La séquence et ses étiquettes** (03) : la structured prediction par CRF linéaire — du local au global par la log-partition.
-4. **La syntaxe et ses arbres** (04) : grammaires probabilistes et parsing CYK — l'ambiguïté quantifiée, la dérivation la plus probable.
-5. **La chaîne d'états cachés** (05) : le HMM génératif et le décodage de Viterbi — le contexte de séquence qui renverse la décision, pont historique du n-gramme (02) vers le CRF discriminatif (03).
-6. **La question inversée** (06) : TF-IDF et BM25 — de « quelle est la probabilité de ce texte ? » à « quel document répond à cette requête ? », la pondération par rareté qui fait tomber le terme omniprésent.
-7. **Le mot comme un vecteur** (07) : la représentation distributionnelle par co-occurrence, PPMI et SVD tronquée — séparer le signal d'association du bruit de fréquence, et rendre la similarité de sens mesurable par cosinus.
-8. **Le mot et ses vecteurs** (08) : les vecteurs de mots **appris par optimisation** (word2vec, CBOW + skip-gram + échantillonnage négatif) — le passage de la factorisation statistique du carnet 07 à l'apprentissage par gradient, où la même structure lexicale se révèle par deux méthodes distinctes.
-9. **Le mot et ses subwords** (09) : fastText — la représentation d'entrée passe du mot atomique à la somme des n-grammes de caractères, et la généralisation aux mots inconnus (OOV) devient mesurable.
-10. **La classification et l'hypothèse naïve** (10) : le Naive Bayes génératif — sac-de-mots, MLE et lissage Laplace en log-espace, la précision hors échantillon mesurée et le cross-check `sklearn` à l'accord exact des prédictions.
-11. **La frontière apprise** (11) : la régression logistique discriminative — softmax et entropie croisée en numpy pur, la précision hors échantillon mesurée contre une baseline, et une régularisation qui, sur ce banc précis, dégrade au lieu d'améliorer.
+| # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
+|---|---|---|---|---|
+| 01 | [Du mot aux dépendances](01_TAL_Du_Mot_Aux_Dependances.ipynb) | Observer tokens, lemmes, catégories grammaticales, dépendances et entités avec spaCy ; examiner leurs erreurs sur de courts textes français. | Découverte ; Python. | Comparer mots, lemmes et unités de tokenisation. |
+| 02 | [N-grammes et modèles de langue](02_NGrammes_Modeles_De_Langue.ipynb) | Estimer les probabilités de suites de mots, comprendre les probabilités nulles et comparer les lissages par la perplexité. | Licence ; probabilités conditionnelles. | Distinguer perplexité d'entraînement et de test. |
+| 03 | [CRF et étiquetage séquentiel](03_CRF_Etiquetage_Sequentiel.ipynb) | Apprendre conjointement les étiquettes d'une séquence ; calculer la normalisation et décoder avec Viterbi. | Licence ; étiquettes de 01, probabilités et gradients. | Contrôle numérique du gradient, ablation et comparaison à CRFsuite. |
+| 04 | [Grammaires probabilistes et CYK](04_PCFG_CYK_Parsing.ipynb) | Convertir une grammaire en forme normale de Chomsky, reconstruire un arbre syntaxique et quantifier une ambiguïté. | Licence ; grammaires et programmation dynamique. | Comparaison à NLTK et effet des règles non observées. |
+| 05 | [HMM et Viterbi](05-HMM-Viterbi.ipynb) · [C#](05-HMM-Viterbi-CSharp.ipynb) | Modéliser des étiquettes cachées et leurs observations ; voir comment le contexte change une décision locale. | Licence ; probabilités de 02 et décodage de séquences. | Comparer des implémentations à paramètres identiques. |
+| 06 | [Recherche d'information : TF-IDF et BM25](06-Recherche-Information-TFIDF-BM25.ipynb) · [C#](06-Recherche-Information-TFIDF-BM25-CSharp.ipynb) | Classer des documents pour une requête en pondérant rareté des termes, répétition et longueur. | Licence ; fréquences et logarithmes. | Interpréter la mesure de rappel choisie. |
+| 07 | [Cooccurrences, PPMI et SVD](07-Vecteurs-de-Mots-Coocc-PPMI-SVD.ipynb) | Construire des vecteurs de mots à partir de leurs contextes, corriger l'effet des fréquences et réduire la dimension. | Licence ; matrices et produit scalaire. | Passage aux vecteurs appris en 08. |
+| 08 | [Word2vec : CBOW et skip-gram](08-Word2Vec-CBOW-SkipGram.ipynb) | Apprendre des vecteurs par prédiction du contexte ; entraîner CBOW et comprendre le coût de l'échantillonnage négatif. | Licence ; après 07, dérivation et gradient. | Entraînement de skip-gram proposé en exercice. |
+| 09 | [FastText et sous-mots](09-FastText-Subword-Vectors.ipynb) | Composer un vecteur à partir de fragments de caractères pour représenter un mot absent de l'entraînement. | Licence ; après 08. | Distinguer régularité morphologique et proximité de sens. |
+| 10 | [Classification Naive Bayes](10-Classement-Texte-NaiveBayes-FromScratch.ipynb) | Classer un document à partir des probabilités de ses mots ; mesurer l'effet du lissage et vérifier les prédictions avec scikit-learn. | Licence ; estimation et lissage de 02. | Contrôler la séparation entraînement/test. |
+| 11 | [Classification par régression logistique](11-Classement-Texte-RegressionLogistique-FromScratch.ipynb) | Apprendre directement une frontière de décision avec softmax et entropie croisée ; tester la régularisation. | Licence ; après 10, matrices et gradient. | Comparer précision, prédictions et paramètres séparément. |
 
-## Prérequis
+### Le fil du parcours — Licence
 
-- Python 3.10+ (les notebooks de la série sont **CPU-only**)
-- `spaCy` + modèle `fr_core_news_sm` (notebook 01)
-- `sklearn-crfsuite` (témoin du notebook 03), `nltk` (témoin des notebooks 04 et 05), `hmmlearn` (témoin du notebook 05)
-- Aucune clé API requise
+Le premier changement de perspective est celui du **contexte**. Une étiquette attribuée mot par mot peut être plausible localement et incohérente dans la phrase. Les CRF de 03 et les HMM de 05 ([Python](05-HMM-Viterbi.ipynb) · [C#](05-HMM-Viterbi-CSharp.ipynb)) modélisent des relations entre étiquettes ; le jumeau C# utilise Python.NET pour les témoins hmmlearn et NLTK ; CYK, en 04, représente plutôt une structure d'arbre. Le HMM fournit aussi une relecture générative du problème traité par le CRF discriminatif : on peut revenir de 05 à 03 pour comparer les hypothèses.
+
+Le second changement porte sur la **représentation**. Une fréquence brute favorise les mots omniprésents, souvent peu utiles à une recherche. TF-IDF et BM25 corrigent cette pondération en 06. Les cooccurrences de 07 font du contexte un vecteur ; 08 apprend ces vecteurs par optimisation ; 09 partage des fragments entre mots pour traiter des formes jamais vues. Une proximité calculée peut ainsi venir d'un contexte commun ou d'une ressemblance morphologique : le contrôle choisi doit permettre de les distinguer.
+
+Enfin, 10 et 11 relient représentation et décision. Naive Bayes estime un modèle des mots dans chaque classe ; la régression logistique apprend directement les probabilités des classes. Les implémentations explicites et leurs témoins de bibliothèque permettent d'examiner la vraisemblance, le lissage, l'optimisation et les erreurs sans les confondre.
+
+## Approfondissements — Licence
+
+Les exercices prolongent chaque palier : modifier le lissage ou le vocabulaire de 02, contrôler les gradients et les transitions de 03, explorer l'ambiguïté de 04, puis comparer les décodages de 05. Dans l'arc vectoriel, 08 définit la perte et le gradient de skip-gram ; son entraînement et sa vérification sont laissés à l'exercice. Le passage à 09 demande de comprendre cette représentation et la somme des vecteurs de sous-mots.
+
+Pour l'évaluation, reprendre les mêmes données et les mêmes paramètres est essentiel. Le témoin `hmmlearn` de 05 utilise les paramètres du modèle étudié ; le témoin NLTK n'utilise pas le même lissage. Leur comparaison ne répond donc pas à la même question. En 11, une même précision finale ne signifie pas que les modèles prédisent la même classe pour chaque document.
+
+## Installation — Découverte et pratique
+
+Créer un environnement Python 3.10 ou ultérieur et le sélectionner comme noyau du notebook. Les besoins dépendent du palier :
+
+| Usage | Dépendances |
+|---|---|
+| Calculs et figures | `numpy`, `pandas`, `matplotlib`, IPython/Jupyter |
+| Pipeline français de 01 | `spacy` et modèle `fr_core_news_sm` |
+| Probabilités et grammaires | `nltk` pour 02, 04 et 05 ; `hmmlearn` pour le témoin de 05 |
+| Étiquetage de 03 | `scikit-learn`, `sklearn-crfsuite`, `seqeval` |
+| Classification de 10–11 | `scikit-learn` |
+
+Installer le modèle français dans l'environnement du noyau avec `python -m spacy download fr_core_news_sm`. Commencer par [01](01_TAL_Du_Mot_Aux_Dependances.ipynb), lire les annotations d'une phrase, puis comparer aux annotations attendues. Les téléchargements de paquets et du modèle nécessitent un accès réseau ; les expériences linguistiques utilisent ensuite les corpus embarqués.
+
+## Pour aller plus loin — Recherche
+
+### Lire une expérience au bon niveau
+
+Les petits corpus servent à isoler un mécanisme. En 02, le lissage évite des probabilités nulles, mais Kneser–Ney n'obtient pas une meilleure perplexité de test que Laplace sur le corpus affiché. La diminution de perplexité à l'entraînement ne suffit pas à choisir un modèle.
+
+En 03, le CRF pédagogique obtient un F1 par entité de 0,947 sur le petit test, contre 1,000 pour CRFsuite. L'accord avec `seqeval` porte sur le **calcul de la métrique appliqué aux mêmes prédictions**, pas sur l'identité des prédictions de ces modèles. C'est un exemple utile de deux validations différentes : contrôler l'évaluation et comparer les systèmes.
+
+De même, le rappel `Recall@3` de 06 mesure les documents pertinents retrouvés parmi les premiers résultats, sans distinguer leur ordre interne. La précision@k à k fixé compte les pertinents du préfixe sans départager leur ordre ; MRR et nDCG binaires ne différencient pas deux documents ayant le même grade positif. Les voisins et analogies de 07–09 sont observés sur des corpus construits ; les bons résultats sur des dérivés morphologiques ne constituent pas une évaluation sémantique générale. Les classifieurs de 10–11 montrent comment bâtir un protocole hors échantillon, avec des conclusions limitées à leurs bancs.
+
+### Passer aux systèmes de recherche et aux LLM
+
+La comparaison des unités textuelles de 01 se prolonge dans [RAG-04 — Tokenisation](../GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb). La recherche lexicale de 06 prépare [RAG-02 — Recherche avancée](../GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb), tandis que les vecteurs de 07–09 donnent des repères pour [RAG-03 — Embeddings](../GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb).
+
+La série [GenAI/Texte](../GenAI/Texte/README.md) étudie ensuite l'usage des LLM : prompts, génération, outils et évaluation. [Texte-22 — Évaluer le texte généré](../GenAI/Texte/22_Evaluating_Generated_Text.ipynb) prolonge la question commune de ce parcours : quelle observation autorise réellement la conclusion annoncée ?
+
+## Ressources — tous niveaux
+
+- [Support de cours TAL](../../slides/09-traitement-automatique-langues/slides.md) : carte des concepts classiques et modernes, avec les parcours associés.
+- [spaCy](https://spacy.io/usage/linguistic-features) : annotations linguistiques utilisées en 01.
+- [NLTK](https://www.nltk.org/) : grammaires et modèles probabilistes ; témoins de 04–05.
+- [scikit-learn](https://scikit-learn.org/stable/) : représentations et classifieurs de référence, à comparer sur un protocole commun.
+- Les références fondatrices et les détails de calcul accompagnent chaque modèle dans son carnet.
+
+[Retour aux notebooks](../README.md) · [Catalogue du dépôt](../../COURSE_CATALOG.generated.md)

@@ -34,13 +34,7 @@
       "ecosystem": "nuget",
       "canonical": "8.15.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "8.14.0",
-          "decision": "justified",
-          "reason": "Ecart justifie, NON convergent : meme motif que IKVM 8.14.0 -- l'artefact ombre (DLL + runtime IKVM) est compile et prepare en 8.14.0 ; IKVM.Image suit la meme version que IKVM dans la recette de build."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "pythonnet",
@@ -68,13 +62,7 @@
       "ecosystem": "nuget",
       "canonical": "5.0.0",
       "canonical_source": "manifest",
-      "divergences": [
-        {
-          "version": "3.0.0",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 3.0.0 a une contrainte de la serie, donc l'ecart est classe « a converger »."
-        }
-      ]
+      "divergences": []
     },
     {
       "id": "SkiaSharp",
@@ -115,6 +103,41 @@
       "canonical": "3.0.2",
       "canonical_source": "manifest",
       "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Depuis #23104 l'organe lit aussi les lignes-commandes des cellules MARKDOWN : le corpus declare mealpy sur deux d'entre elles, et sur aucune avec une version (`pip install mealpy>=3.0` dans Search-11-Metaheuristics, `pip install mealpy numpy matplotlib` dans Sudoku-05-PSO-Python) -- ce sont des epinglages flottants, signales comme tels. Les deux occurrences de 3.0.2 en cellule code restent de la prose (un `print` et un commentaire C#), donc pas des epinglages. L'entree de manifeste ne pretend pas que le corpus declare la version exacte : c'est un contrat d'environnement."
+    },
+    {
+      "id": "torch",
+      "ecosystem": "observed",
+      "observe_outputs": true,
+      "canonical_source": "manifest",
+      "canonical_by_series": [
+        {
+          "series": "RL",
+          "canonical": "2.13.0",
+          "note": "Plancher de convergence de la serie RL. La serie tourne sous 2.13/2.14 sur main (mesure du coordinateur du 06/11, #23073) ; les versions 2.6/2.8/2.9/2.11 relevees dans ses sorties commitees sont des reculs, dont la 2.6 qui a traverse les gardes le 01/11 (#23941). Le `requirements.txt` de la serie ne porte qu'un plancher (`torch>=2.0`), trop bas pour servir de cible : c'est la declaration du manifeste qui fixe le seuil a converger."
+        },
+        {
+          "series": "ML/DataScienceWithAgents/04-Vision",
+          "canonical_source": "artifact",
+          "organ_path": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/requirements.txt",
+          "note": "Version lue dans le `requirements.txt` de la serie (`torch==2.14.0`) -- le seul epinglage dur de torch du depot. Le manifeste POINTE vers l'artefact, il ne recopie pas la valeur."
+        }
+      ],
+      "note": "Version **chargeee**, relevee dans les sorties commitees (ecosysteme `observed`) : torch n'est epingle dans aucune cellule du corpus, et le `requirements.txt` de la serie RL ne porte qu'un plancher. Sans cette entree, une re-execution sous torch 2.9.0 (#23941) traversait toutes les gardes. Pour une serie observee, la canonique est un **plancher** : la serie tourne legitimement sous plusieurs versions voisines, et seule une version inferieure est un recul."
+    },
+    {
+      "id": "numpy",
+      "ecosystem": "observed",
+      "observe_outputs": true,
+      "canonical_source": "manifest",
+      "canonical_by_series": [
+        {
+          "series": "RL",
+          "canonical_source": "artifact",
+          "organ_path": "MyIA.AI.Notebooks/RL/requirements.txt",
+          "note": "Plancher de convergence lu dans le `requirements.txt` de la serie (`numpy>=1.24`). Le depot n'ecrit aucun epinglage dur de numpy : seule une contrainte de version existe, et c'est elle qui fait foi."
+        }
+      ],
+      "note": "Version **chargeee**, relevee dans les sorties commitees (ecosysteme `observed`). Le depot n'ecrit aucun pin dur de numpy -- seulement des planchers (`numpy>=1.24`) et deux plafonds (`IIT/requirements.txt` : `numpy<2.0`, `SymbolicLearning/requirements.txt` : `numpy<2.5`) : la dispersion se lit donc dans le recensement, la convergence se decide serie par serie."
     }
   ],
   "allowlist": [

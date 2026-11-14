@@ -4,28 +4,40 @@
 
 Ce module couvre les fondamentaux de la génération d'images par IA : modèles cloud, ComfyUI, et opérations de base.
 
-**Dans le cadre du fil rouge contenu visuel éducatif** : avant de produire des visuels, il faut savoir générer une image à partir d'un texte. [01-1](01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-2-GPT-5-Image-Generation.ipynb) couvrent les API cloud (simples et immédiates). [01-4](01-4-Forge-SD-XL-Turbo.ipynb) passe en local via Forge (SD XL Turbo) et [01-5](01-5-Qwen-Image-Edit.ipynb) via ComfyUI, pour le contrôle fin. [01-3](01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation (PIL, OpenCV) utiles pour comprendre ce que font les modèles.
+**Dans le cadre du fil rouge contenu visuel éducatif** : avant de produire des visuels, il faut savoir générer une image à partir d'un texte. [01-1](01-1-OpenAI-DALL-E-3.ipynb) et [01-2](01-2-Generation-Image-API.ipynb) couvrent les API cloud (simples et immédiates). [01-4](01-4-Forge-SD-XL-Turbo.ipynb) passe en local via Forge (SD XL Turbo) et [01-5](01-5-Edition-Image-Prompt.ipynb) via ComfyUI, pour le contrôle fin. [01-3](01-3-Basic-Image-Operations.ipynb) donne les bases de manipulation (PIL, OpenCV) utiles pour comprendre ce que font les modèles.
+
+## Convention de titre
+
+Le **nom d'un carnet nomme la technique, jamais le modèle** : le modèle est un paramètre d'exécution, pas une notion. Le modèle réellement utilisé reste traçable dans la prose du carnet et ses sorties commises, et son état de référence (OBS/CUR/PED) vit dans [docs/genai/model-mapping.md](../../../../docs/genai/model-mapping.md). Suivre le SOTA = mettre à jour la ligne du modèle et ré-exécuter, sans toucher au titre. Une présentation ciblée d'un nouveau modèle se range dans l'étage de gradation correspondant (fondations, approfondissements d'un palier, workflows). Un carnet peut nommer des modèles dans son titre quand son sujet **est** la comparaison (bake-off, onboarding d'un modèle précis).
+
+Cette série applique la convention depuis #25845 : les carnets ci-dessus portent des titres de technique (« génération d'image par API », « édition d'image par prompt »), et les modèles exécutés (GPT-5, Qwen Image Edit) restent cités en prose, dans les paramètres et dans les sorties.
 
 ## Vue d'overview
 
 | Statistique | Valeur |
 |-------------|--------|
-| Notebooks | 5 |
 | Kernel | Python 3 |
 | Durée estimée | ~3-4h |
 | GPU requis | 0-29GB |
 
+Le catalogue du dépôt (`COURSE_CATALOG.generated.md`) est la source des décomptes — ce README présente les carnets, il ne les compte pas.
+
 ## Notebooks
 
+| # | Notebook | Contenu | Service | VRAM | Approfondir |
+|---|----------|---------|---------|------ |--------------|
+| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 | — |
+| 2 | [01-2-Generation-Image-API](01-2-Generation-Image-API.ipynb) | Génération et analyse d'images via API (GPT-5) | OpenAI API | 0 | — |
+| 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 | — |
+| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable | — |
+| 5 | [01-5-Edition-Image-Prompt](01-5-Edition-Image-Prompt.ipynb) | Édition d'images par prompt (Qwen Image Edit) | ComfyUI | ~29GB | [Approfondissements du palier 5](#approfondissements-du-palier-5) |
+
+### Approfondissements du palier 5
+
 | # | Notebook | Contenu | Service | VRAM |
-|---|----------|---------|---------|------ |
-| 1 | [01-1-OpenAI-DALL-E-3](01-1-OpenAI-DALL-E-3.ipynb) | Génération avec gpt-image-1 (DALL-E 3 retiré) | OpenAI API | 0 |
-| 2 | [01-2-GPT-5-Image-Generation](01-2-GPT-5-Image-Generation.ipynb) | Génération avec GPT-5 | OpenAI API | 0 |
-| 3 | [01-3-Basic-Image-Operations](01-3-Basic-Image-Operations.ipynb) | Opérations de base | PIL/OpenCV | 0 |
-| 4 | [01-4-Forge-SD-XL-Turbo](01-4-Forge-SD-XL-Turbo.ipynb) | Stable Diffusion XL Turbo | Forge (API REST) | Variable |
-| 5 | [01-5-Qwen-Image-Edit](01-5-Qwen-Image-Edit.ipynb) | Introduction Qwen | ComfyUI | ~29GB |
-| 5b | [01-5b-Qwen-Image-Edit-2509](01-5b-Qwen-Image-Edit-2509.ipynb) | Édition avancée Qwen Image Edit 2509 | ComfyUI | ~29GB |
-| 5c | [01-5c-Qwen-Image-21-Workflows](01-5c-Qwen-Image-21-Workflows.ipynb) | Workflows de référence Qwen-Image 2.1 (nomadoor) sur instance hébergée | ComfyUI 0.37.2 (hébergée) | palier INT8 #17266 |
+|---|----------|---------|---------|------|
+| 5b | [01-5b-Edition-Image-Prompt-Iterations](01-5b-Edition-Image-Prompt-Iterations.ipynb) | Édition itérative par prompt (Qwen Image Edit 2509) | ComfyUI | ~29GB |
+| 5c | [01-5c-Edition-Image-Prompt-Workflows](01-5c-Edition-Image-Prompt-Workflows.ipynb) | Workflows d'édition par prompt (Qwen-Image 2.1, nomadoor) sur instance hébergée | ComfyUI 0.37.2 (hébergée) | Hébergée (INT8, #17266) |
 
 **[01-1](01-1-OpenAI-DALL-E-3.ipynb) — API cloud.** Le point d'entrée le plus immédiat : un prompt, une clé, et gpt-image-1 renvoie un visuel en ~19 s :
 
@@ -47,11 +59,11 @@ Ce module couvre les fondamentaux de la génération d'images par IA : modèles 
   <em>SDXL Turbo : forêt brumeuse reproductible (seed fixe 42) — la seed garantit le même résultat à chaque exécution.</em>
 </p>
 
-**[01-5](01-5-Qwen-Image-Edit.ipynb) — Édition via ComfyUI.** Qwen Image Edit (workflow Phase 29 : VAE 16 canaux + CLIP sd3 + UNET fp8 + ModelSamplingAuraFlow shift=3.0 + CFGNorm 1.0) : le hello-world atteste que le service est joignable (~277 s, ~29 GB VRAM), puis le workflow image-to-image édite un visuel existant (~170 s) :
+**[01-5](01-5-Edition-Image-Prompt.ipynb) — Édition via ComfyUI.** Qwen Image Edit (workflow Phase 29 : VAE 16 canaux + CLIP sd3 + UNET fp8 + ModelSamplingAuraFlow shift=3.0 + CFGNorm 1.0) : le hello-world atteste que le service est joignable (~277 s, ~29 GB VRAM), puis le workflow image-to-image édite un visuel existant (~170 s) :
 
 <p align="center">
-  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit.png" alt="Chat tigré domestique sur appui de fenêtre en bois — première génération hello-world du workflow ComfyUI Qwen Image Edit 2509 (~277 s, ~29 GB VRAM)" width="320"/></a>
-  <a href="01-5-Qwen-Image-Edit.ipynb"><img src="assets/readme/img1-qwen-edit2.png" alt="Panneau avant/après Qwen Image Edit Phase 29 : à gauche le chat tigré original, à droite son édition watercolor (denoise=0.5, seed=42) — l'input pédagogique est maintenant une vraie photo, l'édition Qwen est visible" width="320"/></a><br>
+  <a href="01-5-Edition-Image-Prompt.ipynb"><img src="assets/readme/img1-qwen-edit.png" alt="Chat tigré domestique sur appui de fenêtre en bois — première génération hello-world du workflow ComfyUI Qwen Image Edit 2509 (~277 s, ~29 GB VRAM)" width="320"/></a>
+  <a href="01-5-Edition-Image-Prompt.ipynb"><img src="assets/readme/img1-qwen-edit2.png" alt="Panneau avant/après Qwen Image Edit Phase 29 : à gauche le chat tigré original, à droite son édition watercolor (denoise=0.5, seed=42) — l'input pédagogique est maintenant une vraie photo, l'édition Qwen est visible" width="320"/></a><br>
   <em>Qwen Image Edit : hello-world chat tigré (gauche, ~277 s) puis workflow image-to-image Phase 29 (droite, ~277 s) — édition watercolor sur photo naturelle (denoise=0.5). L'input pédagogique a été enrichi : une vraie photo remplace l'ancien aplat bleu de test (cf. MANIFEST, issue #9344).</em>
 </p>
 
@@ -75,10 +87,10 @@ Accès : http://localhost:8188
 ## Progression recommandée
 
 1. **01-1-OpenAI-DALL-E-3** - Introduction rapide à la génération d'images
-2. **01-2-GPT-5-Image-Generation** - Génération multimodale avec texte
+2. **01-2-Generation-Image-API** - Génération et analyse d'images via API multimodale
 3. **01-3-Basic-Image-Operations** - Manipulation d'images locale
 4. **01-4-Forge-SD-XL-Turbo** - Modèle open source via Forge (SD XL Turbo)
-5. **01-5-Qwen-Image-Edit** - Édition d'images avancée
+5. **[01-5-Edition-Image-Prompt](01-5-Edition-Image-Prompt.ipynb)** - Édition d'images avancée ([approfondissements 5b et 5c](#approfondissements-du-palier-5))
 
 ## Points clés
 

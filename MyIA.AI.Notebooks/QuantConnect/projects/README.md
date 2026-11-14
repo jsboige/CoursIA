@@ -43,7 +43,7 @@
 
 ### Exploratoire (Sharpe < 0) — 4 stratégies
 
-[TrendFilteredMeanReversion](TrendFilteredMeanReversion/) (-0.016) · [ForexCarry](ForexCarry/) (-0.324) · [PairsTrading](PairsTrading/) (-0.361) · [ETF-Pairs](ETF-Pairs/) (-0.706)
+[TrendFilteredMeanReversion](TrendFilteredMeanReversion/) (-0.000) · [ForexCarry](ForexCarry/) (-0.324) · [PairsTrading](PairsTrading/) (-0.361) · [ETF-Pairs](ETF-Pairs/) (-0.706)
 
 ### ML / DL / RL — 35+ stratégies
 
@@ -97,10 +97,11 @@ Dossiers de `projects/` livrés par les lanes de recherche mais **sans verdict d
 
 | Stratégie | Sharpe catalogue | Sharpe aligné | Delta | Cause |
 |-----------|------------------|---------------|-------|-------|
-| HighBookToMarketFScore | 2.09 | **0.41** | -80% | Value/factor écrasé par les frais réels, MaxDD -60% |
 | PuppiesOfTheDow | 1.99 | **0.30** | -85% | Value/factor + frais réels |
 | ML-Trend-Scanning | 0.66 | **0.33** | -50% | Rebalancement quotidien SPY/TLT/GLD multi-actifs = turnover écrasé |
 | AllWeather | 0.67 | **0.47** | -30% | Sleeve bonds/gold multi-actifs = friction de panier |
+
+> HighBookToMarketFScore (2.09 → 0.41) figurait dans ce tableau. Son 2.09 est le Sharpe OOS d'un an de la fiche de bibliothèque, mesuré sur une autre fenêtre, et sa copie de juin ne déclare pas de modèle de courtier. Mesures et verdict (historique, perte de 64 % entre 2018 et 2020) : [README du projet](HighBookToMarketFScore-QC/README.md) (#25264).
 
 ### Leaders vérifiés alignés (backbone no-ML)
 

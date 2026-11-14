@@ -1,0 +1,539 @@
+{
+  "schema_version": 1,
+  "series": "Search",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb",
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "Search",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Recherche (Search)"
+    },
+    {
+      "level": "subseries",
+      "path": "Search/Part1-Foundations",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Fondations de la recherche"
+    },
+    {
+      "level": "notebook",
+      "path": "Search/Part1-Foundations/01",
+      "decimal_path": "1.1.1",
+      "depth": 2,
+      "label_fr": "Espaces d'états et formulation",
+      "repository_path": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Search/Part1-Foundations/02",
+      "decimal_path": "1.1.2",
+      "depth": 2,
+      "label_fr": "Recherche non informée",
+      "repository_path": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Search/Part1-Foundations/03",
+      "decimal_path": "1.1.3",
+      "depth": 2,
+      "label_fr": "Recherche informée (A*)",
+      "repository_path": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Search/Part1-Foundations/04",
+      "decimal_path": "1.1.4",
+      "depth": 2,
+      "label_fr": "Recherche locale et métaheuristiques",
+      "repository_path": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Search/Part1-Foundations/06",
+      "decimal_path": "1.1.5",
+      "depth": 2,
+      "label_fr": "Recherche adversariale (minimax)",
+      "repository_path": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "Search/Part1-Foundations/07",
+      "decimal_path": "1.1.6",
+      "depth": 2,
+      "label_fr": "Monte Carlo Tree Search",
+      "repository_path": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "755147e0-e506-4850-b62a-f52513f49810",
+      "path": "search/espaces-etats",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Espace d'états et formulation de problème",
+      "label_en": "State space and problem formulation",
+      "definition_fr": "Formalisation d'un problème de recherche comme graphe d'états : état initial, actions, modèle de transition, test d'objectif et coût de chemin. Cf. AIMA ch. 3.",
+      "definition_en": "Formalizing a search problem as a state graph: initial state, actions, transition model, goal test, and path cost. See AIMA ch. 3.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb",
+          "cell_id": "formal-section"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "cceeb7e5-2921-4d8a-a4ec-ab3564b274cd",
+      "path": "search/espaces-etats/probleme-recherche",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Problème de recherche (5 composantes)",
+      "label_en": "Search problem (5 components)",
+      "definition_fr": "Cinq composantes d'un problème de recherche : état initial, ensemble d'actions, modèle de transition, test d'objectif et fonction de coût de chemin ; portées par une classe abstraite.",
+      "definition_en": "The five components of a search problem: initial state, action set, transition model, goal test, and path-cost function; carried by an abstract class.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb",
+          "cell_id": "abstract-class"
+        }
+      ],
+      "prerequisites": [
+        "755147e0-e506-4850-b62a-f52513f49810"
+      ]
+    },
+    {
+      "id": "ee929a60-8f08-4010-99ba-b4efc54c9b88",
+      "path": "search/espaces-etats/taquin",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Taquin (8/15-puzzle) comme espace d'états",
+      "label_en": "Sliding puzzle (8/15-puzzle) as a state space",
+      "definition_fr": "Le taquin comme problème de recherche canonique : état = configuration des tuiles, actions = déplacements, avec un invariant de parité qui borne les états atteignables.",
+      "definition_en": "The sliding puzzle as a canonical search problem: state = tile configuration, actions = moves, with a parity invariant bounding the reachable states.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb",
+          "cell_id": "puzzle-impl"
+        }
+      ],
+      "prerequisites": [
+        "cceeb7e5-2921-4d8a-a4ec-ab3564b274cd"
+      ]
+    },
+    {
+      "id": "6d84ffac-0823-4304-a360-e3198f4677f6",
+      "path": "search/recherche-non-informee",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Recherche non informée",
+      "label_en": "Uninformed search",
+      "definition_fr": "Algorithmes de recherche qui n'utilisent aucune connaissance du but au-delà de la définition du problème : BFS, DFS, UCS, IDDFS. Cf. AIMA ch. 3.",
+      "definition_en": "Search algorithms using no knowledge of the goal beyond the problem definition: BFS, DFS, UCS, IDDFS. See AIMA ch. 3.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
+          "cell_id": "e29ffacd"
+        }
+      ],
+      "prerequisites": [
+        "cceeb7e5-2921-4d8a-a4ec-ab3564b274cd"
+      ]
+    },
+    {
+      "id": "a40b3351-6571-49e4-9f27-c6165158dedf",
+      "path": "search/recherche-non-informee/bfs",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "Recherche en largeur (BFS)",
+      "label_en": "Breadth-first search (BFS)",
+      "definition_fr": "Explore le graphe par profondeur croissante ; optimal en nombre de pas à coût uniforme, complet, mais avec une forte consommation mémoire en espace.",
+      "definition_en": "Explores the graph by increasing depth; optimal in step count at uniform cost, complete, but with high space memory.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
+          "cell_id": "a11be67e"
+        }
+      ],
+      "prerequisites": [
+        "6d84ffac-0823-4304-a360-e3198f4677f6"
+      ]
+    },
+    {
+      "id": "f5112120-6584-4b55-b261-c28eb4865fd1",
+      "path": "search/recherche-non-informee/dfs",
+      "decimal_path": "2.2",
+      "depth": 1,
+      "label_fr": "Recherche en profondeur (DFS)",
+      "label_en": "Depth-first search (DFS)",
+      "definition_fr": "Explore une branche avant de revenir en arrière ; faible consommation mémoire (profondeur), non optimal, incomplet en présence de boucles.",
+      "definition_en": "Explores one branch before backtracking; low space memory (depth), not optimal, incomplete on loops.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
+          "cell_id": "f77a0545"
+        }
+      ],
+      "prerequisites": [
+        "6d84ffac-0823-4304-a360-e3198f4677f6"
+      ]
+    },
+    {
+      "id": "2a4c60bc-1d3c-4352-9fad-65843d2e6911",
+      "path": "search/recherche-non-informee/ucs",
+      "decimal_path": "2.3",
+      "depth": 1,
+      "label_fr": "Recherche à coût uniforme (UCS)",
+      "label_en": "Uniform-cost search (UCS)",
+      "definition_fr": "Généralisation de BFS aux coûts non uniformes : expand le noeud de moindre coût de chemin ; optimal en coût.",
+      "definition_en": "BFS generalized to non-uniform costs: expands the lowest path-cost node; optimal in cost.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
+          "cell_id": "22e34d1b"
+        }
+      ],
+      "prerequisites": [
+        "6d84ffac-0823-4304-a360-e3198f4677f6"
+      ]
+    },
+    {
+      "id": "1d4fe47e-ac03-479c-af6a-25b4f43f3063",
+      "path": "search/recherche-non-informee/iddfs",
+      "decimal_path": "2.4",
+      "depth": 1,
+      "label_fr": "Recherche en profondeur itérée (IDDFS)",
+      "label_en": "Iterative deepening DFS (IDDFS)",
+      "definition_fr": "Relance un DFS à profondeur croissante ; combine l'optimalité de BFS et la sobriété mémoire de DFS, au prix d'un surcoût de re-exploration.",
+      "definition_en": "Re-runs DFS at increasing depth; combines BFS optimality with DFS's memory frugality, at the price of re-exploration overhead.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed.ipynb",
+          "cell_id": "d70d0737"
+        }
+      ],
+      "prerequisites": [
+        "f5112120-6584-4b55-b261-c28eb4865fd1"
+      ]
+    },
+    {
+      "id": "afd3b74a-f1dd-443b-abd9-064217a34a95",
+      "path": "search/recherche-informee",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Recherche informée",
+      "label_en": "Informed search",
+      "definition_fr": "Recherche guidée par une heuristique h estimant la distance au but ; inclut la recherche gloutonne et A*. Cf. AIMA ch. 3.",
+      "definition_en": "Search guided by a heuristic h estimating the distance to the goal; includes greedy search and A*. See AIMA ch. 3.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb",
+          "cell_id": "intro-section"
+        }
+      ],
+      "prerequisites": [
+        "6d84ffac-0823-4304-a360-e3198f4677f6"
+      ]
+    },
+    {
+      "id": "31c60797-84b2-4c28-beb8-f83af7dce7e0",
+      "path": "search/recherche-informee/greedy",
+      "decimal_path": "3.1",
+      "depth": 1,
+      "label_fr": "Recherche gloutonne (Best-First)",
+      "label_en": "Greedy best-first search",
+      "definition_fr": "Expand le noeud qui minimise l'heuristique h ; rapide mais ni optimale ni complète en général.",
+      "definition_en": "Expands the node minimizing the heuristic h; fast but generally neither optimal nor complete.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb",
+          "cell_id": "greedy-section"
+        }
+      ],
+      "prerequisites": [
+        "afd3b74a-f1dd-443b-abd9-064217a34a95"
+      ]
+    },
+    {
+      "id": "f0d143ec-b541-4ac9-81a5-97d3bf6eb03f",
+      "path": "search/recherche-informee/astar",
+      "decimal_path": "3.2",
+      "depth": 1,
+      "label_fr": "A* Search",
+      "label_en": "A* search",
+      "definition_fr": "Expand le noeud qui minimise f(n) = g(n) + h(n) ; optimal si h est admissible, complet sur les espaces finis. Cf. AIMA ch. 3.",
+      "definition_en": "Expands the node minimizing f(n) = g(n) + h(n); optimal if h is admissible, complete on finite spaces. See AIMA ch. 3.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb",
+          "cell_id": "astar-section"
+        }
+      ],
+      "prerequisites": [
+        "afd3b74a-f1dd-443b-abd9-064217a34a95"
+      ]
+    },
+    {
+      "id": "1043f8ae-ae52-48c5-9cf2-bdc68042fbdb",
+      "path": "search/recherche-informee/ida-star",
+      "decimal_path": "3.3",
+      "depth": 1,
+      "label_fr": "IDA* (Iterative Deepening A*)",
+      "label_en": "IDA* (iterative deepening A*)",
+      "definition_fr": "Version à mémoire bornée de A* : itérations par borne croissante de f, pour les espaces trop larges pour la file d'attente.",
+      "definition_en": "Bounded-memory version of A*: iterations by increasing f-bound, for spaces too wide for the open list.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb",
+          "cell_id": "ida-section"
+        }
+      ],
+      "prerequisites": [
+        "f0d143ec-b541-4ac9-81a5-97d3bf6eb03f"
+      ]
+    },
+    {
+      "id": "fdaf1cad-6b10-4a0a-90a4-eb1266f204b9",
+      "path": "search/recherche-informee/admissibilite",
+      "decimal_path": "3.4",
+      "depth": 1,
+      "label_fr": "Admissibilité et consistance des heuristiques",
+      "label_en": "Admissibility and consistency of heuristics",
+      "definition_fr": "Une heuristique admissible ne surestime jamais le vrai coût ; consistante (monotone), elle garantit l'optimalité de A* sans ré-ouverture de noeuds.",
+      "definition_en": "An admissible heuristic never overestimates the true cost; a consistent (monotone) one guarantees A* optimality without re-opening nodes.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03-Informed.ipynb",
+          "cell_id": "heuristic-design-section"
+        }
+      ],
+      "prerequisites": [
+        "f0d143ec-b541-4ac9-81a5-97d3bf6eb03f"
+      ]
+    },
+    {
+      "id": "8c23bf01-2598-48a0-a062-f39a581de0f6",
+      "path": "search/recherche-locale",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Recherche locale et métaheuristiques",
+      "label_en": "Local search and metaheuristics",
+      "definition_fr": "Paradigme qui explore l'espace des états par mutations successives d'une seule solution, sans arbre : hill climbing, recuit, tabou. Cf. AIMA 3e ch. 4.",
+      "definition_en": "Paradigm that explores the state space by successive mutations of a single solution, no tree: hill climbing, annealing, tabu. See AIMA 3e ch. 4.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb",
+          "cell_id": "section-1-intro"
+        }
+      ],
+      "prerequisites": [
+        "cceeb7e5-2921-4d8a-a4ec-ab3564b274cd"
+      ]
+    },
+    {
+      "id": "ae68d147-4810-4d72-ae3e-0e7c6ef180be",
+      "path": "search/recherche-locale/hill-climbing",
+      "decimal_path": "4.1",
+      "depth": 1,
+      "label_fr": "Hill climbing",
+      "label_en": "Hill climbing",
+      "definition_fr": "Monte vers le voisin le meilleur ; bloqué par les maxima locaux, d'où les variantes stochastique et à redémarrages aléatoires.",
+      "definition_en": "Climbs to the best neighbor; stuck by local maxima, hence stochastic and random-restart variants.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb",
+          "cell_id": "hill-climbing-1d"
+        }
+      ],
+      "prerequisites": [
+        "8c23bf01-2598-48a0-a062-f39a581de0f6"
+      ]
+    },
+    {
+      "id": "396ee58f-0c81-4653-8cc7-dbaf034dab17",
+      "path": "search/recherche-locale/recuit",
+      "decimal_path": "4.2",
+      "depth": 1,
+      "label_fr": "Recuit simulé",
+      "label_en": "Simulated annealing",
+      "definition_fr": "Accepte probabilistiquement des dégradations selon une température décroissante pour franchir les maxima locaux ; le programme de refroidissement pilote la convergence.",
+      "definition_en": "Probabilistically accepts degradations according to a decreasing temperature to cross local maxima; the cooling schedule drives convergence.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb",
+          "cell_id": "sa-1d"
+        }
+      ],
+      "prerequisites": [
+        "ae68d147-4810-4d72-ae3e-0e7c6ef180be"
+      ]
+    },
+    {
+      "id": "6cc21607-3c6d-4e26-9e07-515e92f3801f",
+      "path": "search/recherche-locale/tabu",
+      "decimal_path": "4.3",
+      "depth": 1,
+      "label_fr": "Recherche taboue",
+      "label_en": "Tabu search",
+      "definition_fr": "Interdit temporairement les retours sur les états récemment visités (mémoire taboue) pour échapper aux cycles et aux maxima locaux.",
+      "definition_en": "Temporarily forbids returning to recently visited states (tabu memory) to escape cycles and local maxima.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb",
+          "cell_id": "tabu-search-nqueens"
+        }
+      ],
+      "prerequisites": [
+        "ae68d147-4810-4d72-ae3e-0e7c6ef180be"
+      ]
+    },
+    {
+      "id": "3a2bd2c2-5d88-4f02-8ac3-4fa753b291ed",
+      "path": "search/recherche-adversariale",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Recherche adversariale",
+      "label_en": "Adversarial search",
+      "definition_fr": "Recherche dans un jeu à deux joueurs à somme nulle : un agent maximise, l'autre minimise. Cf. AIMA 3e ch. 5 / 4e ch. 4.",
+      "definition_en": "Search in a two-player zero-sum game: one agent maximizes, the other minimizes. See AIMA 3e ch. 5 / 4e ch. 4.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb",
+          "cell_id": "intro-section"
+        }
+      ],
+      "prerequisites": [
+        "6d84ffac-0823-4304-a360-e3198f4677f6"
+      ]
+    },
+    {
+      "id": "b1d6b899-eed2-4f46-be86-ff65923c7cfa",
+      "path": "search/recherche-adversariale/minimax",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "Algorithme Minimax",
+      "label_en": "Minimax algorithm",
+      "definition_fr": "Évalue récursivement chaque position en supposant l'optimalité des deux côtés ; donne la stratégie sûre d'un jeu à somme nulle.",
+      "definition_en": "Recursively evaluates each position assuming optimal play on both sides; gives the safe strategy of a zero-sum game.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb",
+          "cell_id": "minimax-section"
+        }
+      ],
+      "prerequisites": [
+        "3a2bd2c2-5d88-4f02-8ac3-4fa753b291ed"
+      ]
+    },
+    {
+      "id": "5f540c9c-17a4-4712-977b-53cb0f15f4cd",
+      "path": "search/recherche-adversariale/alpha-beta",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Élagage Alpha-Bêta",
+      "label_en": "Alpha-beta pruning",
+      "definition_fr": "Élague l'arbre minimax des branches qui ne peuvent influencer la décision ; même résultat, moins de noeuds, sensible à l'ordonnancement des coups.",
+      "definition_en": "Prunes the minimax tree of branches that cannot affect the decision; same result, fewer nodes, sensitive to move ordering.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb",
+          "cell_id": "alphabeta-section"
+        }
+      ],
+      "prerequisites": [
+        "b1d6b899-eed2-4f46-be86-ff65923c7cfa"
+      ]
+    },
+    {
+      "id": "e5e53e0b-abad-440e-ac9c-940ede523d06",
+      "path": "search/recherche-adversariale/transposition",
+      "decimal_path": "5.3",
+      "depth": 1,
+      "label_fr": "Tables de transposition",
+      "label_en": "Transposition tables",
+      "definition_fr": "Mémorise les positions déjà évaluées (hash de Zobrist) pour éviter de recomputer les mêmes sous-jeux atteints par des ordres de coups différents.",
+      "definition_en": "Caches already-evaluated positions (Zobrist hash) to avoid recomputing the same subgames reached by different move orders.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb",
+          "cell_id": "transposition-section"
+        }
+      ],
+      "prerequisites": [
+        "5f540c9c-17a4-4712-977b-53cb0f15f4cd"
+      ]
+    },
+    {
+      "id": "2dd3301b-12c8-4632-beb6-f26d561365b6",
+      "path": "search/mcts",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Monte Carlo Tree Search (MCTS)",
+      "label_en": "Monte Carlo Tree Search (MCTS)",
+      "definition_fr": "Construit sélectivement un arbre de recherche par quatre phases (sélection, expansion, simulation, rétropropagation), sans évaluation exhaustive ; adapté aux grands espaces de jeu.",
+      "definition_en": "Selectively builds a search tree through four phases (selection, expansion, simulation, backpropagation), without exhaustive evaluation; suited to large game spaces.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb",
+          "cell_id": "mcts-intro-section"
+        }
+      ],
+      "prerequisites": [
+        "3a2bd2c2-5d88-4f02-8ac3-4fa753b291ed"
+      ]
+    },
+    {
+      "id": "a8d81ccd-2300-4ada-9ff3-063494b3db1d",
+      "path": "search/mcts/ucb1",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Sélection UCB1",
+      "label_en": "UCB1 selection",
+      "definition_fr": "Règle d'exploration/exploitation qui guide la sélection MCTS vers les branches prometteuses ou peu visitées.",
+      "definition_en": "Exploration/exploitation rule that guides MCTS selection toward promising or under-visited branches.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb",
+          "cell_id": "79692fea"
+        }
+      ],
+      "prerequisites": [
+        "2dd3301b-12c8-4632-beb6-f26d561365b6"
+      ]
+    },
+    {
+      "id": "b4f16845-d9ea-4dcc-acbb-77cc10dd2201",
+      "path": "search/mcts/alphazero",
+      "decimal_path": "6.2",
+      "depth": 1,
+      "label_fr": "AlphaZero (MCTS + réseau)",
+      "label_en": "AlphaZero (MCTS + network)",
+      "definition_fr": "Associe un réseau de neurones (politique + valeur) au MCTS pour guider la recherche et évaluer les positions ; lignée AlphaGo/AlphaZero.",
+      "definition_en": "Pairs a neural network (policy + value) with MCTS to guide search and evaluate positions; the AlphaGo/AlphaZero lineage.",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb",
+          "cell_id": "alphago-section"
+        }
+      ],
+      "prerequisites": [
+        "2dd3301b-12c8-4632-beb6-f26d561365b6"
+      ]
+    }
+  ]
+}

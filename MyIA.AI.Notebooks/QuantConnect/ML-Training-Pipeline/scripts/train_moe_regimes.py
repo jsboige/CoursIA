@@ -507,9 +507,11 @@ def train_moe_regimes_pipeline(
 
     ``regime_decode`` selects the HMM label decode (``regime_method="hmm"``
     only): "viterbi" (default, retrospective -- the label at t depends on
-    observations after t) or "filter" (forward-only, causal). The default is
-    unchanged so existing datasets/results stay reproducible (#21054 case 4,
-    same opt-in pattern as build_dataset_v2 -- #22557).
+    observations after t) or "filter" (forward-only decode; the HMM
+    parameters are still fit on the whole window, so the labels are not
+    known-at-t -- CAUTION in regime_detector.py). The default is unchanged
+    so existing datasets/results stay reproducible (#21054 case 4, same
+    opt-in pattern as build_dataset_v2 -- #22557).
 
     ``regime_lookback``/``regime_n_states`` expose the detector window and
     state count. CAUTION: the default ``lookback=400`` means the detector
@@ -614,7 +616,8 @@ def train_moe_regimes_pipeline(
         "lookahead_note": (
             "HMM labels decoded one-pass over the full series; viterbi is "
             "retrospective (label at t sees observations after t), filter is "
-            "forward-only/causal (#21054)."
+            "forward-only on the decode side only -- the HMM parameters "
+            "are still fit on the whole window (#21054)."
             if regime_method == "hmm" else
             "price-based regime labels are causal by construction."
         ),
@@ -774,7 +777,8 @@ def main():
         help=(
             "HMM label decode (regime-method=hmm only): 'viterbi' = "
             "retrospective (default, reproducibility of existing results), "
-            "'filter' = forward-only causal decode (#21054)."
+            "'filter' = forward-only decode; parameters still fit on the "
+            "whole window (#21054)."
         ),
     )
     parser.add_argument(

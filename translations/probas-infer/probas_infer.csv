@@ -12370,7 +12370,7 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,1a12413d2cab,mark
 |-----------|---------|
 | [Infer-04-Bayesian-Networks](Infer-04-Bayesian-Networks.ipynb) | [Infer-07-Skills-IRT](Infer-07-Skills-IRT.ipynb) |
 
-> **Pont inter-series (constellation causale)** : le do-calculus de Pearl se decline en **plusieurs paradigmes** dans ce depot, et ce notebook en est le versant **probabiliste distributionnel** (.NET/Infer.NET) -- les effets causaux y sont **calcules** par mutilation de graphe. Le jumeau **Python/PyMC** porte les mêmes exemples (barometre, Sprinkler) via l'opérateur natif `pm.do` : voir [PyMC-05-Causal-Inference](../PyMC/PyMC-05-Causal-Inference.ipynb), ainsi que la demo historique `P(Cloudy|do(Rain))` dans [PyMC-04-Bayesian-Networks](../PyMC/PyMC-04-Bayesian-Networks.ipynb). Enfin, le traitement **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb). La section **Constellation causale** en fin de notebook cartographie ces quatre implementations (y compris l'emergence causale a l'echelle, [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb)).
+> **Pont inter-series (constellation causale)** : le do-calculus de Pearl se decline en **plusieurs paradigmes** dans ce depot, et ce notebook en est le versant **probabiliste distributionnel** (.NET/Infer.NET) -- les effets causaux y sont **calcules** par mutilation de graphe. Le jumeau **Python/PyMC** porte les mêmes exemples (barometre, Sprinkler) via l'opérateur natif `pm.do` : voir [PyMC-05-Causal-Inference](../PyMC/PyMC-05-Causal-Inference.ipynb), ainsi que la demo historique `P(Cloudy|do(Rain))` dans [PyMC-04-Bayesian-Networks](../PyMC/PyMC-04-Bayesian-Networks.ipynb). Enfin, le traitement **symbolique** (Java/Tweety, raisonneur contrefactuel propositionnel) est dans [Tweety-11-Causal-Python](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb). La section **Constellation causale** en fin de notebook cartographie ces quatre implementations (y compris l'emergence causale a l'echelle, [ICT-5](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb)).
 ",,,,,,,,07e7583915f2efe6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,1a5627132eb9,markdown,fr,6d91f8b9d1da974b,"## 1. Pourquoi la causalite ? — L'echelle de Pearl
 
@@ -12392,9 +12392,10 @@ La probabilite seule repond aux questions d'**association**. Mais de nombreuses 
 
 > **Références** : Pearl, J. (1995), *Causal diagrams for empirical research*, JRSS B 57(3) ; Pearl, J. (2000), *Causality : Models, Reasoning, and Inference*, Cambridge University Press ; Pearl, J., Glymour, M. & Jewell, N. P. (2016), *Causal Inference in Statistics : A Primer*, Wiley.
 ",,,,,,,,6d91f8b9d1da974b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,1eed3e2cb1b5,markdown,fr,fd0f0089ae94af63,"## 2. Configuration d'Infer.NET
+MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,1eed3e2cb1b5,markdown,fr,7eb3196ba5b090d6,"## 2. Configuration d'Infer.NET
 
-Chargement du moteur d'inference probabiliste et du helper de visualisation des graphes de facteurs (même `#load` que toute la serie, cf [Infer-3](Infer-03-Factor-Graphs.ipynb), [Infer-4](../DecisionTheory/DecInfer/DecInfer-04-Multi-Attribute.ipynb)).",,,,,,,,fd0f0089ae94af63,,,,,,,,,,,,,,,
+Chargement du moteur d'inference probabiliste et du helper de visualisation des graphes de facteurs (même `#load` que toute la série, cf [Infer-03](Infer-03-Factor-Graphs.ipynb), [DecInfer-03](../DecisionTheory/DecInfer/DecInfer-03-Multi-Attribute.ipynb)).
+",,,,,,,,7eb3196ba5b090d6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,884c6902f5a2,code,fr,689b05d791f6b1cf,"// Installation Infer.NET
 #r ""nuget: Microsoft.ML.Probabilistic""
 #r ""nuget: Microsoft.ML.Probabilistic.Compiler""
@@ -12873,7 +12874,7 @@ Le do-calculus de Pearl (1995, 2000) est un **calcul formel indépendant du lang
 | **Probabiliste distributionnel** | Infer.NET (C#) | **Mutilation de graphe** : `Variable.Bernoulli(1.0)` force la valeur et coupe l'arc parent | ce notebook | Effet causal **calcule** par message passing déterministe (EP/VMP) sur le graphe mutile |
 | **Probabiliste (transformation)** | PyMC (Python) | Opérateur natif `pm.do` : l'intervention est une **transformation de modèle de première classe** | [PyMC-5](../PyMC/PyMC-05-Causal-Inference.ipynb) | `do` rebranche comme un opérateur du langage probabiliste |
 | **Symbolique propositionnel** | Tweety (Java) | **Raisonneur contrefactuel** : logique classique, preuves argumentatives (pas de probabilites) | [Tweety-11](../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Raisonnement **qualitatif** : ""X cause-t-il Y ?"" sans chiffres |
-| **Emergence causale (echelle)** | PyPhi (Python) | **Intervention sur la partition** : `do_coarse_grain` / `do_blackbox` force une echelle macro et mesure l'information effective (EI) | [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb) | Le `do` s'applique a l'**echelle** : quelle description (micro vs macro) est causalement la plus forte (Hoel 2013, Jansma & Hoel 2025) |
+| **Emergence causale (echelle)** | PyPhi (Python) | **Intervention sur la partition** : `do_coarse_grain` / `do_blackbox` force une echelle macro et mesure l'information effective (EI) | [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb) | Le `do` s'applique a l'**echelle** : quelle description (micro vs macro) est causalement la plus forte (Hoel 2013, Jansma & Hoel 2025) |
 
 **Valeurs croisees (verification inter-paradigme).** Sur le **même** exemple du barometre (confondeur `BassePression -> {Barometre, Storm}`), les deux versants probabilistes **recoupent** exactement :
 
@@ -12884,10 +12885,10 @@ Le do-calculus de Pearl (1995, 2000) est un **calcul formel indépendant du lang
 
 L'effondrement de la correlation (`0,656 -> 0,310`) lorsqu'on passe de l'observation a l'intervention est le **signal que le moteur fait un vrai travail causal** (mutilation, pas une simple lecture de CPT) -- et les deux moteurs, malgre leurs idiomes différents (mutilation Infer.NET vs `pm.do` PyMC), convergent vers les mêmes valeurs. Sur le reseau Sprinkler, `P(Cloudy|Rain)=0,800` vs `P(Cloudy|do(Rain))=0,500` (sec 4 ici, et [PyMC-4](../PyMC/PyMC-04-Bayesian-Networks.ipynb) sec 8).
 
-**L'angle ICT (emergence causale).** Le quatrieme paradigme, [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), deplace la question : au lieu d'intervenir sur une **variable** (`do(X=x)`), il intervient sur l'**echelle de description** (`do_coarse_grain`) et mesure quelle partition (micro vs macro) maximise l'**information effective**. C'est le même opérateur d'intervention de Pearl, applique a la granularite du modèle plutot qu'a la valeur d'un noeud -- d'ou l'expression *emergence causale* (la macro peut être causalement plus forte que la micro).
+**L'angle ICT (emergence causale).** Le quatrieme paradigme, [ICT-05-CausalEmergence-Python](../../IIT/ICT-Series/ICT-05-CausalEmergence/ICT-05-CausalEmergence-Python.ipynb), deplace la question : au lieu d'intervenir sur une **variable** (`do(X=x)`), il intervient sur l'**echelle de description** (`do_coarse_grain`) et mesure quelle partition (micro vs macro) maximise l'**information effective**. C'est le même opérateur d'intervention de Pearl, applique a la granularite du modèle plutot qu'a la valeur d'un noeud -- d'ou l'expression *emergence causale* (la macro peut être causalement plus forte que la micro).
 
 **Ce qu'il faut retenir.** Quatre implementations, **un seul do-calculus**. Le paradigme Infer.NET met l'accent sur la **structure** (mutiler le graphe = une opération que le moteur d'inference execute) ; PyMC met l'accent sur la **composabilite** (`do` comme transformation de modèle) ; Tweety met l'accent sur le **raisonnement** (causalite sans nombres) ; ICT (PyPhi) met l'accent sur l'**echelle** (intervenir sur la partition, pas sur la variable). Choisir l'un ou l'autre, c'est choisir ce que l'on veut : des probabilites déterministes (message passing), du sampling flexible, des preuves qualitatives, ou identifier la bonne echelle de description.",,,,,,,,daf0cdd2f626af04,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,41d4daeba16c,markdown,fr,87d3b5021ded0abf,"## 12. Synthese
+MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,41d4daeba16c,markdown,fr,306f0d86af3880dc,"## 12. Synthese
 
 | Niveau | Question | Opérateur | Méthode Infer.NET |
 |--------|----------|-----------|-------------------|
@@ -12898,11 +12899,11 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,41d4daeba16c,mark
 | Adjustment | Quand | Formule |
 |------------|-------|---------|
 | **Backdoor** | Confondeur `U` **observe** | `P(Y\|do(X)) = Somme_u P(Y\|X,u)P(u)` |
-| **Front-door** | Confondeur non observe, medicateur `M` observe | `P(Y\|do(X)) = Somme_m P(M=m\|X) Somme_x' P(Y\|M=m,x')P(x')` |
+| **Front-door** | Confondeur non observe, médiateur `M` observe | `P(Y\|do(X)) = Somme_m P(M=m\|X) Somme_x' P(Y\|M=m,x')P(x')` |
 
 ### Ce qu'il faut retenir
 
-- **`P(Y|X) != P(Y|do(X))`** : l'observation est biaisee par les confondeurs. Un reseau bayesien observationnel ne sait **pas** calculer `do(X)` seul — il faut **mutiler le graphe**.
+- **`P(Y|X) != P(Y|do(X))`** : l'observation est biaisee par les confondeurs. Un réseau bayesien observationnel ne sait **pas** calculer `do(X)` seul — il faut **mutiler le graphe**.
 - **La mutilation n'est pas une lecture de CPT** : couper les arcs entrants de `X` est une opération structurelle que le moteur d'inference Infer.NET execute après qu'on a redefini `X` sans parent. La différence visible entre observation et intervention prouve que le `do()` fait un travail reel (Prong-B).
 - **Backdoor et front-door rendent l'effet causal identifiable** a partir de données observationnelles, sous conditions graphiques — formalisees par le do-calculus (Pearl 1995), complet (Shpitser & Pearl 2006).
 
@@ -12915,7 +12916,8 @@ MyIA.AI.Notebooks/Probas/Infer/Infer-05-Causal-Inference.ipynb,41d4daeba16c,mark
 
 ***
 
-[← Infer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | [Retour a la serie](README.md)",,,,,,,,87d3b5021ded0abf,,,,,,,,,,,,,,,
+[← DecInfer-10-Thompson-Sampling](../DecisionTheory/DecInfer/DecInfer-10-Thompson-Sampling.ipynb) | [Retour a la serie](README.md)
+",,,,,,,,306f0d86af3880dc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Probas/Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb,ac9ac32a,markdown,fr,829f5c30595f375d,"# Infer-02b-Debugging-Bonnes-Pratiques : Troubleshooting et Bonnes Pratiques
 
 **Serie** : Programmation Probabiliste avec Infer.NET (2b/19)  

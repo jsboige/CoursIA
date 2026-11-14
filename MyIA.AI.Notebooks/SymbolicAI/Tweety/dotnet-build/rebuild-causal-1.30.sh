@@ -21,14 +21,17 @@
 # Pre-requisites: JDK 17+ (javac --release 8), bash, curl, unzip, jar (all
 # present in JDK), python (for Step 7 bytecode audit).
 #
-# Rebuild after this commit if /c/Program Files/Freeplane/runtime/bin/javac
-# resolves to javac 17+: the shade is reproducible from the same recipe.
+# Rebuild with any JDK 17+ selected by JAVA_HOME or found on PATH.
 
 set -e
-export JAVA_HOME="/c/Program Files/Microsoft/jdk-17.0.18.8-hotspot"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=resolve_java_home.sh
+source "$SCRIPT_DIR/resolve_java_home.sh"
+JAVA_HOME=$(coursia_resolve_java_home) || exit 1
+export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 
-cd "$(dirname "$0")"
+cd "$SCRIPT_DIR"
 WORK=$(pwd)
 
 # Bootstrap into a sibling build dir so we don't pollute dotnet-build/.

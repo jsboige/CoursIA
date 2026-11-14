@@ -18,6 +18,9 @@ Usage :
     python scripts/coordination/measure_consolidation_density.py --replay fixture.json
 
 Le replay accepte ``{"before": [...], "after": [...], "issues": [...]}``.
+Une fenetre de plus de 1000 PRs mergees est decoupee recursivement (bissection
+temporelle, union dedupliquee par numero) ; si le decoupage ne converge pas,
+l'organe echoue plutot que de mesurer sur une fenetre tronquee.
 La sortie est advisory : 0 pour une mesure complete, 2 pour une panne ou une
 donnee tronquee. Une fenetre sans service rend INCONCLUSIVE, jamais 100 %.
 """
@@ -83,21 +86,46 @@ def run_json(argv: list[str], *, stdin: str | None = None) -> Any:
         raise RuntimeError(f"JSON illisible depuis {argv!r}: {exc}") from exc
 
 
+MAX_SPLIT_DEPTH = 20
+
+
 def fetch_merged_prs(repo: str, start: datetime, end: datetime) -> list[dict[str, Any]]:
-    """Fetch one window and fail rather than silently accepting a 1000-hit cap."""
+    """Fetch [start, end), splitting recursively when gh caps at 1000 hits."""
+    return _fetch_window(repo, start, end, depth=0)
+
+
+def _fetch_window(repo: str, start: datetime, end: datetime, depth: int) -> list[dict[str, Any]]:
+    """Fetch one window; bissect on the 1000-hit cap instead of failing.
+
+    ``gh pr list`` plafonne a 1000 resultats par requete : au-dela, la fenetre
+    est tronquee silencieusement. On decoupe alors [start, end) en deux moities
+    semi-ouvertes disjointes et on deduplique l'union par numero -- la reunion
+    des moities couvre la mere sans double comptage. Fail-closed : si la
+    recursion ne converge pas (sous-fenetre d'une seconde encore saturee ou
+    profondeur maximale atteinte), on raise plutot que de mesurer sur une partie.
+    """
     query = f"merged:{iso_z(start)}..{iso_z(end)}"
     prs = run_json([
         "gh", "pr", "list", "--repo", repo, "--state", "merged",
         "--search", query, "--limit", "1000", "--json", PR_FIELDS,
     ])
-    if len(prs) >= 1000:
-        raise RuntimeError(f"fenetre tronquee a 1000 PRs : {query}; la decouper avant de mesurer")
-    selected = []
-    for pr in prs:
-        merged_at = pr.get("mergedAt")
-        if merged_at and start <= parse_iso(merged_at) < end:
-            selected.append(pr)
-    return selected
+    if len(prs) < 1000:
+        selected = []
+        for pr in prs:
+            merged_at = pr.get("mergedAt")
+            if merged_at and start <= parse_iso(merged_at) < end:
+                selected.append(pr)
+        return selected
+    if depth >= MAX_SPLIT_DEPTH or (end - start) < timedelta(seconds=1):
+        raise RuntimeError(
+            f"fenetre encore tronquee a 1000 PRs apres decoupage : {query} "
+            f"(profondeur {depth}) ; la decouper davantage avant de mesurer"
+        )
+    mid = start + (end - start) / 2
+    merged: dict[int, dict[str, Any]] = {}
+    for pr in _fetch_window(repo, start, mid, depth + 1) + _fetch_window(repo, mid, end, depth + 1):
+        merged[pr["number"]] = pr
+    return list(merged.values())
 
 
 def fetch_issues(repo: str, prs: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:

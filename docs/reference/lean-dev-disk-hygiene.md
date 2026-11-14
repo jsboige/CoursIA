@@ -1,5 +1,7 @@
 # Lean dev-machine disk hygiene
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Structural note (perennial). Source: #8924 cluster disk-hygiene grain, measured
 2026-08-05 on `myia-po-2026`. Records the *normal* Lean disk footprint on a dev
 machine, the experiment-worktree accumulation pattern, and the safe-removal
@@ -93,6 +95,44 @@ If your measurement contradicts the premise that sent you, **report the
 measurement and follow it** rather than acting on the stale figure. The
 acceptance criterion for a disk grain is: measure-before → recover-preserving →
 measure-after → perennial-note (this file).
+
+## Mutualisation Mathlib — la clé de groupe et la portée du scan
+
+*(Section ajoutée en français, règle `readme-french-first` — le reste du fichier est en anglais.)*
+
+`scripts/lean/setup_shared_mathlib.ps1 -Mode Scan` groupe les lacs par **identité de
+manifest**, pas par rev Mathlib : la clé est le `toolchain` plus la liste triée des
+couples `(name, rev)` de **toutes** les dépendances transitives. Cette borne est
+délibérée — un replay Lake exige l'identité du graphe de packages entier, pas
+seulement celle de Mathlib (précondition durcie le 2026-06-10, commentée dans le
+script). Des lacs qui partagent exactement `toolchain + rev Mathlib` restent donc
+**isolés dès que leurs dépendances transitives diffèrent** : c'est le contrôle de
+discrimination de l'instrument, pas un défaut de mesure.
+
+Deux conséquences de portée, à vérifier avant d'interpréter un chiffre :
+
+1. **Le scanner est worktree-local, pas machine-global.** Il lit les fichiers suivis
+   de la racine courante, donc un checkout vivant dans un autre worktree lui est
+   structurellement invisible. Un « 0 » obtenu depuis un worktree frais n'est pas une
+   absence, c'est un **artefact de portée** : c'est ainsi qu'un scan a conclu à zéro
+   économie sur un groupe entièrement mutualisable, alors que des jonctions NTFS
+   vivantes existaient dans le worktree principal (mesure rejouée dans
+   [`../lean/junctions-scan-po-2024.md`](../lean/junctions-scan-po-2024.md)).
+2. **L'économie calculée n'est matérialisée que par les membres qui portent un
+   checkout.** Le calcul d'économie agrège les tailles des `MathlibDir` des membres
+   `HasCheckout` ; si aucun n'en a, la somme est vide et le gain vaut zéro — sans que
+   cela dise quoi que ce soit du potentiel du groupe.
+
+Un `Apply` réel exige donc trois prérequis, tous nécessaires : **(a)** au moins un
+membre du groupe porte un checkout initial (le donneur) ; **(b)** les autres membres
+sont configurés en jonctions vers ce donneur ; **(c)** les manifests de tous les
+membres sont alignés — ce que le regroupement par identité de manifest garantit par
+construction. L'alignement des manifests (#2611 étape 2) est la voie pour faire
+entrer dans un groupe des lacs qui n'en partagent que la rev Mathlib ; ce n'est jamais
+un raccourci vers un `Apply` bâclé.
+
+Scan daté, composition du groupe et bornes du grain : rapport figé
+[`2026-09-02-cluster-junctions-c857.md`](../transients/2026-09-02-cluster-junctions-c857.md).
 
 ## See also
 
