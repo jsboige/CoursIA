@@ -532,3 +532,9 @@ Le fil rouge de cette série est le **paradoxe résolu** du ML en .NET : faire d
 ### Parité ML-04b
 
 Le [jumeau C#](ML-04b-ModelComparison-Validity-CSharp.ipynb) utilise MathNet pour les moindres carrés et les statistiques, ML.NET FastForest et FastTree pour les arbres, et Python.NET pour les données diabetes et les indices scikit-learn. Les scores des arbres peuvent différer des modèles scikit-learn.
+
+### Parité ML-07b
+
+Les identifiants sémantiques ont leur parcours [Python](ML-07b-SemanticIDs-Recommandation-Python.ipynb) et leur [jumeau C#](ML-07b-SemanticIDs-Recommandation-CSharp.ipynb). Le C# construit le corpus et calcule profils, scores PMI, classements et bootstrap ; il appelle les vrais SVD/KMeans scikit-learn via Python.NET, et confronte McNemar MathNet à SciPy. Les paramètres et budgets sont communs ; les générateurs aléatoires diffèrent, donc les scores aussi. La SVD collaborative est calculée en float32, puis son produit est accumulé en double C#. Les bits affichés mesurent les codes idéaux, hors livres et stockage réel.
+
+Le C# requiert CPython accessible à Python.NET (`PYTHONNET_PYDLL`, et si nécessaire `PYTHONHOME`/`PYTHONPATH`) avec NumPy, SciPy et scikit-learn ; le Python utilise aussi pandas. Environnement exécuté : CPython 3.13.16, NumPy 2.4.4, SciPy 1.17.0, scikit-learn 1.9.1, pandas 3.0.2 ; packages NuGet MathNet.Numerics 5.0.0 et PythonNet 3.0.5. Les exercices restent ouverts et leurs réponses sont contrôlées ; un score froid nul n'implique pas une impossibilité générale de hit.
