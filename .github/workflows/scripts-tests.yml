@@ -129,7 +129,8 @@ jobs:
     # fork n'atteint le runner. Retour arriere = revert de la PR.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
-    # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12). Grandeur mesuree : le
+    # Plafond 20 -> 30 (#15853) -> 40 (2026-11-12) -> 45 (2026-11-14).
+    # Grandeur mesuree : le
     # mur du JOB (started_at -> completed_at du job nomme exactement
     # "Scripts Tests (CPU)"), celle sur laquelle timeout-minutes agit --
     # jamais la duree du run (file d'attente comprise, et pour un rerun les
@@ -185,7 +186,49 @@ jobs:
     # preservees a l'identique : seule la valeur du mur de l'enfant bouge.
     # Re-mesurer sur les 70 prochains runs, une fois les 7 coupes reussies :
     # c'est ce qui dira si 40 min suffit.
-    timeout-minutes: 40
+    #
+    # --- Releve du 2026-11-14T04:00Z : 40 min ne suffisent pas -----------
+    #
+    # Population : meme requete, meme grandeur, fenetre
+    # 2026-11-12T19:29:58Z (le releve du mur a 40) -> 2026-11-14T03:55Z,
+    # soit 32,4 h et 592 jobs du perimetre :
+    #     436 jobs EXECUTES (156 n'ont jamais demarre : file d'attente ou
+    #         supersession, hors discussion de plafond)
+    #         success   196   max 39,43 min   mediane 17,12 min
+    #         failure   185   max 39,83 min
+    #         cancelled  55   dont 18 a 40,13-41,25 min : le mur de 40 min
+    #                           les a tranchees -> 4,1 % des jobs executes
+    # La marge sous le mur n'est plus que de 0,57 min (succes le plus long) et
+    # l'echec le plus long finit a 39,83 min : la QUEUE de la distribution
+    # suit le mur. Le releve du 2026-11-12 (mur a 30) mesurait 24 coupes sur
+    # 163 jobs executes (14,7 %) : le passage 30 -> 40 a divise la part par
+    # 3,6, mais n'a pas cree de marge -- la queue a suivi.
+    #
+    # Origine mesuree des 18 coupes : le `checkout`, pas la lenteur des
+    # tests (job median 17-18 min, checkout median 0,07 min).
+    #     - 12 des 18 ont un `checkout` de plus de 10 min (max 38,93 min) ;
+    #     - 6 ont l'etape de tests interrompue entre 1,13 et 7,98 min : le
+    #       reste de leur temps de test est INCONNU, donc un plafond a 45 ne
+    #       peut pas les sauver tous ; leur besoin cumule d'etapes
+    #       (<= 41,08 min) ne dit rien du temps de test restant ;
+    #     - 6 ont l'etape de tests interrompue entre 15,98 et 36,50 min, alors
+    #       que la duree habituelle de cette etape est de l'ordre de 15-16 min
+    #       : elles etaient a quelques minutes du terme.
+    # Le p90 du `checkout` est passe de 1,6 min a 17,2 min au passage de
+    # #26330 (T-K, 2026-11-13T17:55Z) : fenetres appariees de 10 h, jambes
+    # `pull_request` seules (165 jobs avant, 85 apres), meme population de
+    # runs. Dans un job lent (#132242740421), le fetch dure 2,7 s et la
+    # premiere ecriture de fichier arrive 28 min 35 s apres la commande de
+    # `git checkout` (l'ecriture des 16 330 fichiers, elle, prend 24 s) :
+    # le temps passe dans la resolution d'objets, pas dans le disque.
+    #
+    # 40 -> 45 est donc un FILET COURT, pas une course au plafond : la piste
+    # durable est le chemin du `checkout` (T-K), pas la valeur du mur. La
+    # regle (enfant < aggregateur < runner) reste respectee : 45 < 55
+    # (budget de l'agregateur, marge 10 min) et 55 < 60 (plafond propre de
+    # Quarto) ; le mur de l'agregateur (62) et son budget (55) ne bougent
+    # pas.
+    timeout-minutes: 45
 
     steps:
       # ------------------------------------------------------------------

@@ -230,6 +230,17 @@ jobs:
     # la queue reelle de Quarto reste donc sur le chemin STARVED ->
     # auto-annulation, ce que #14412 avait choisi. Mesure, grandeur et
     # calcul : dans le bloc de commentaire de `scripts-tests.yml`.
+    #
+    # 40 -> 45 (2026-11-14) : SEUL le mur de l'enfant bouge. Le budget de
+    # l'agregateur (55) et son propre mur (62) sont inchanges : ils restent
+    # au-dessus du mur de l'enfant (45, marge 10 min) et sous le plafond
+    # propre de Quarto (60), donc la queue reelle de Quarto reste sur le
+    # chemin STARVED -> auto-annulation (#13510, #14412). Releve du
+    # 2026-11-14T04:00Z : 18 coupes au mur de 40 min sur 436 jobs executes
+    # (4,1 %), dont 12 portees par un `checkout` de plus de 10 min -- la
+    # piste durable est le chemin du `checkout` (T-K, #26330), pas la
+    # valeur du plafond. Mesure, distribution et limite : dans le bloc de
+    # commentaire de `scripts-tests.yml`.
     timeout-minutes: 62
     steps:
       # #15091 : sparse-checkout en mode cone. Ce job est le SEUL route sur le
