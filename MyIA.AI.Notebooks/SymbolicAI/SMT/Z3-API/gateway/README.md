@@ -21,8 +21,8 @@ plusieurs lignes est acceptée.
 
 ## Démarrage
 
-La forme recommandée passe par le lanceur, qui fait un pré-vol puis sonde
-l'endpoint avant de déclarer le service disponible (voir « Rejeu des deux cas ») :
+La forme recommandée passe par le lanceur, qui fait un **pré-vol** et refuse de
+démarrer si le cœur ou le carnet manque (voir « Rejeu des deux cas ») :
 
 ```bash
 pip install -r requirements.txt
@@ -49,7 +49,7 @@ répertoire **sans rapport avec le dépôt**, se placer dans le dossier ou poser
 cd MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway
 python -m kernel_gateway \
   --KernelGatewayApp.api=kernel_gateway.notebook_http \
-  --KernelGatewayApp.seed_uri=z3-sudoku-service.ipynb \
+  --KernelGatewayApp.seed_uri=../Z3-02-Sudoku-Python.ipynb \
   --KernelGatewayApp.port=8899 \
   --JupyterWebsocketPersonality.list_kernels=True
 ```
@@ -69,14 +69,19 @@ Le paquet PyPI s'appelle `jupyter_kernel_gateway`, mais **son module s'importe
 que `import jupyter_kernel_gateway` échoue ne signale aucune installation
 manquante.
 
-Journal de démarrage mesuré (2026-10-16) :
+Journal de démarrage mesuré (2026-11-13, carnet phare servi) :
 
 ```
-[I 2026-10-16 12:37:50.453 KernelGatewayApp] Registering resource: /sudoku/solve, methods: (['POST'])
-[I 2026-10-16 12:37:50.453 KernelGatewayApp] Registering resource: /_api/spec/swagger.json, methods: (GET)
-[I 2026-10-16 12:37:50.454 KernelGatewayApp] Jupyter Kernel Gateway 3.0.1 is available at http://127.0.0.1:8899
-[I 2026-10-16 12:37:50.893 KernelGatewayApp] Kernel started: 52ddee1d-c49f-4c47-ba5b-71660dc91fc8
+[gateway] dossier servi : <dossier gateway>
+[gateway] endpoint      : http://127.0.0.1:8901/sudoku/solve
+[I 2026-11-13 10:10:30.878 KernelGatewayApp] Registering resource: /sudoku/solve, methods: (['POST'])
+[I 2026-11-13 10:10:30.878 KernelGatewayApp] Registering resource: /_api/spec/swagger.json, methods: (GET)
+[I 2026-11-13 10:10:30.891 KernelGatewayApp] Jupyter Kernel Gateway 3.0.1 is available at http://127.0.0.1:8901
+[I 2026-11-13 10:10:31.086 KernelGatewayApp] Kernel started: ccfc535e-6688-4067-b131-374a369706e5
 ```
+
+Le noyau exécute le carnet phare en entier au *seed* (~3 s) : la première requête
+attend la fin du seed (647 ms mesurés), les suivantes répondent en 21–50 ms.
 
 ## Échec de démarrage — ce que voit l'opérateur
 
@@ -138,7 +143,7 @@ le cœur, la recherche continue et un avertissement l'indique dans la sortie de
 la cellule de préparation — l'opérateur sait alors que sa variable a été
 ignorée.
 
-## Usage (exemples réellement exécutés le 2026-10-16)
+## Usage (exemples réellement exécutés le 2026-11-13, sur le carnet phare servi)
 
 Les `time_ms` viennent d'une exécution sur une machine donnée : ils varient d'une
 machine à l'autre, et le contrat ne porte que sur `status` et `solution`.
@@ -152,19 +157,19 @@ curl -X POST -H "Content-Type: application/json" \
 ```
 
 ```json
-{"status": "sat", "solution": "534678912672195348198342567859761423426853791713924856961537284287419635345286179", "time_ms": 77.37}
+{"status": "sat", "solution": "534678912672195348198342567859761423426853791713924856961537284287419635345286179", "time_ms": 58.65}
 ```
 
 Puzzle contradictoire — deux 5 sur la première ligne :
 
 ```json
-{"status": "unsat", "solution": null, "time_ms": 130.38}
+{"status": "unsat", "solution": null, "time_ms": 26.426}
 ```
 
 Entrée invalide — `{"puzzle": "trop court"}` :
 
 ```json
-{"status": "invalid", "solution": null, "time_ms": 0.046}
+{"status": "invalid", "solution": null, "time_ms": 0.01}
 ```
 
 ## OpenAPI
@@ -173,7 +178,7 @@ Le descripteur est servi sur `/_api/spec/swagger.json` (chemin de la v3 ;
 `/api` rend 404 dans cette version) :
 
 ```json
-{"swagger": "2.0", "paths": {"/sudoku/solve": {"post": {"responses": {"200": {"description": "Success"}}}}}, "info": {"version": "0.0.0", "title": "z3-sudoku-service"}}
+{"swagger": "2.0", "paths": {"/sudoku/solve": {"post": {"responses": {"200": {"description": "Success"}}}}}, "info": {"version": "0.0.0", "title": "Z3-02-Sudoku-Python"}}
 ```
 
 ## Tests
@@ -181,14 +186,20 @@ Le descripteur est servi sur `/_api/spec/swagger.json` (chemin de la v3 ;
 ```bash
 python test_z3_sudoku_core.py
 python test_run_gateway.py
+python test_flagship_endpoint.py
 ```
 
 `test_z3_sudoku_core.py` : 12 tests (validation d'entrée, résolution,
 insatisfiable, respect des indices), sans réseau ni service.
-`test_run_gateway.py` : 9 tests du lanceur (résolution du dossier indépendante
+`test_run_gateway.py` : 10 tests du lanceur (résolution du dossier indépendante
 du répertoire courant, cœur absent ou cassé refusé avant démarrage, `--check-only`
-qui sort 0 sur le dossier livré et 2 sur un dossier vide).
-Les deux fichiers sont câblés dans `.github/workflows/scripts-tests.yml`
+qui sort 0 sur le dossier livré et 2 sur un dossier vide, et le carnet servi qui
+est bien le carnet phare).
+`test_flagship_endpoint.py` : 11 tests de la cellule d'endpoint du carnet servi
+(structure — une seule annotation HTTP, placée avant le récapitulatif — et
+comportement dans les quatre formes de `REQUEST` que la gateway injecte, plus
+l'entrée invalide et le cœur indisponible), sans réseau ni service.
+Les trois fichiers sont câblés dans `.github/workflows/scripts-tests.yml`
 (job pytest, avec `z3-solver`).
 
 ## Fichiers
@@ -196,17 +207,27 @@ Les deux fichiers sont câblés dans `.github/workflows/scripts-tests.yml`
 | Fichier | Rôle |
 |---|---|
 | `z3_sudoku_core.py` | Cœur : validation, modèle Z3, contrat JSON (repris du carnet phare) |
-| `z3-sudoku-service.ipynb` | Carnet de service `notebook-http` (endpoint `# POST /sudoku/solve`) |
+| [`../Z3-02-Sudoku-Python.ipynb`](../Z3-02-Sudoku-Python.ipynb) | **Carnet servi** : cours, exercices et cellule `notebook-http` (`# POST /sudoku/solve`, section 4) |
 | `run_gateway.py` | Lanceur : preflight, dossier servi, démarrage (#22439) |
 | `test_z3_sudoku_core.py` | Tests unitaires du cœur (CI) |
 | `test_run_gateway.py` | Tests du lanceur (CI) |
+| `test_flagship_endpoint.py` | Tests de la cellule d'endpoint du carnet servi (CI) |
 | `requirements.txt` | `z3-solver`, `jupyter_kernel_gateway` |
 
 ## Notes d'implémentation
 
+- **Un seul fichier, deux usages.** Le carnet servi est
+  [`Z3-02-Sudoku-Python.ipynb`](../Z3-02-Sudoku-Python.ipynb) (acceptation v2 de
+  #21100) : les sections 1 à 3 restent le cours, la section 4 porte les deux
+  cellules de service (préparation et endpoint). L'ancien carnet dédié
+  `z3-sudoku-service.ipynb` est retiré — son contenu a été fusionné dans la
+  section 4, et son comportement est couvert par `test_flagship_endpoint.py`.
+  Une correction du modèle profite donc aux deux usages, et il n'y a plus deux
+  fichiers à maintenir en phase.
 - Le carnet s'exécute aussi **hors gateway** (mode local) : l'endpoint retombe
-  alors sur le puzzle de démonstration du carnet phare — c'est ce que montrent
-  les sorties enregistrées dans le carnet.
+  alors sur le puzzle de démonstration de la section 1, et la cellule compare la
+  réponse du service à celle de `resoudre_sudoku` — c'est ce que montrent les
+  sorties enregistrées dans le carnet.
 - Le cœur n'est plus cherché dans `os.getcwd()` seul : la cellule de préparation
   essaie `Z3_GATEWAY_CORE_DIR`, puis le répertoire courant, puis le chemin du
   cœur relativement à chaque répertoire parent. Un import qui échoue **ne tue

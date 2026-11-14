@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-PostTraining
-pedagogical_count: 23
-breakdown: PostTraining=23
-maturity: BETA=17, ALPHA=5, DRAFT=1
+pedagogical_count: 24
+breakdown: PostTraining=24
+maturity: BETA=18, ALPHA=5, DRAFT=1
 -->
 
 Comment adapter un modèle de langage préentraîné à une tâche, et comment savoir si cette adaptation l'améliore ? Ce parcours relie supervision, optimisation de préférences, apprentissage par récompense et vérification. Les expériences à petite échelle rendent les mécanismes inspectables ; les carnets sur modèles de langage montrent leurs conditions d'exécution et les difficultés d'évaluation.

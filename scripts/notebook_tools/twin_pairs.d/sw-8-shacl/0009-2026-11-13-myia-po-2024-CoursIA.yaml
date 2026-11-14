@@ -1,0 +1,8 @@
+date: '2026-11-13'
+by: myia-po-2024:CoursIA
+python_sha: b154060fd872c6f384b190dc0c6d134e36160c95
+csharp_sha: be4ac2d5445b7a7b3168bb1b3782ed1ec46f18c4
+content_python_sha: 2f17d6de0039a913dd8e7549979709cc8d8ea96c6a642c66c0ebf84bccdefad8
+content_csharp_sha: 672c2e623de2a3dc98cc23957da68588321772c4b708d1da0a799d5df22a3915
+reason: "Deprocessualisation #20844 (PR #26332) : cote CSharp seul avance (markdown-only, cell[0] : 'Verdict SOTA (EPIC #3801)' -> 'Verdict SOTA' -- retrait de la reference de gouvernance, le verdict et sa justification restent). Cote Python intact. Cellules code byte-identiques, aucune re-execution due (C.2 exception markdown). Drift parite-preserving : l'axe native-both (dotNetRDF SHACL vs pyshacl) est intact."
+
