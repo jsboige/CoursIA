@@ -1,0 +1,10 @@
+- name: Complexity-05 Permanente
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-05-CountingHarder-Permanent-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: 'NumPy et MathNet.Numerics effectuent les factorisations LU réelles ; la permanente par définition est volontairement pédagogique dans les deux langages.'
+  known_differences:
+  - 'MathNet.Numerics 5.0.0 utilise son fournisseur Managed pour LU ; NumPy utilise son propre moteur. Les temps ne sont pas directement comparables.'
+  - 'La figure C# est un SVG statique ; les exercices sont répartis dans le parcours et le harnais chronomètre réellement la réponse étudiante.'

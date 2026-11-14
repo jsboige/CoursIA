@@ -196,6 +196,10 @@ qu'il construit — le banc affiche alors sa colonne vide et le dit.
 Le notebook 06d ajoute `scipy` (`scipy.optimize.linprog`, solveur HiGHS), qui calcule
 les rangées minimales par programmation linéaire.
 
+## Jumeau de la permanente
+
+[Complexity-05 — Python](Complexity-05-CountingHarder-Permanent-Python.ipynb) et [sa version C#](Complexity-05-CountingHarder-Permanent-CSharp.ipynb) confrontent la définition factorielle de la permanente au calcul LU du déterminant. NumPy et MathNet.Numerics utilisent des moteurs différents ; les temps sont propres à chaque environnement.
+
 ## Exercices
 
 Chaque notebook embarque au moins trois exercices (`TODO etudiant`) : étendre une machine,
