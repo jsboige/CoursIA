@@ -1,0 +1,10 @@
+- name: "Complexity-03f Reductions Triangle Lopsided"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-03f-ReductionsTriangle-Lopsided-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les oracles et intersections naifs sont les objets experimentaux du source ; aucun moteur du papier n'est appele."
+  known_differences:
+    - "System.Random et Python random engendrent des corpus differents."
+    - "Les mesures de temps dependent du runtime et de la machine."
