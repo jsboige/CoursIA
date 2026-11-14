@@ -41,6 +41,6 @@ Per `sota-not-workaround` : refaire une échelle de petits groupes à côté d'u
 
 ## Voir aussi
 
-- [Lean-15-Grothendieck-Tribute](../../Lean-15-Grothendieck-Tribute.ipynb) — hommage comparable (prouve ce qu'il annonce)
+- [GROTH-02-Tribut-Python](../../GROTH/GROTH-02-Tribut-Python.ipynb) — hommage comparable (prouve ce qu'il annonce)
 - `grothendieck_lean` — angle SGA1 (π₁ étale, existence de Riemann) pour le chaînon-pont vers la réalisation galoisienne
 - EPIC i18n #4980 : siblings `_en` **livrés** pour la couche adic-complétion (`AdicCompletionLocalRing_en`, `LowerRamificationGroup_en`) ; le module vendu `M23Lean4Web` en est exclu par la règle (lib tierce).
