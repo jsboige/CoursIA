@@ -113,11 +113,11 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 | 5 | [App-11-CSharp : Picross (Nonogrammes) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross-CSharp.ipynb) | BETA | Oui |
 | 6 | [App-11 - Picross (Nonogrammes)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross.ipynb) | BETA | Oui |
 | 7 | [App-12b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) | BETA | Oui |
-| 8 | [App-12c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12c-ConnectFour.ipynb) | BETA | Oui |
+| 8 | [App-12b (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb) | BETA | Oui |
 | 9 | [App-13-CSharp : TSP (Voyageur de Commerce) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb) | BETA | Oui |
 | 10 | [App-13 : Le Problème du Voyageur de Commerce (TSP)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | BETA | Oui |
 | 11 | [App-14 - Connect Four : Benchmark Adversarial Search](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) | BETA | Oui |
-| 12 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb) | BETA | Oui |
+| 12 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb) | BETA | Oui |
 | 13 | [App-15-CSharp : Planification de Calendrier Sportif --…](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling-CSharp.ipynb) | BETA | Oui |
 | 14 | [App-15 : Planification de Calendrier Sportif (CSP)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling.ipynb) | BETA | Oui |
 | 15 | [App-16-Crossword-CSP (C#)](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP-CSharp.ipynb) | BETA | Oui |

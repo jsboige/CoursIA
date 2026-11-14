@@ -871,8 +871,10 @@ def _same_item_scan(a: str, b: str) -> bool:
     #    le strip_lang ne le voit pas, on le retire a la main avant
     #    la comparaison. Echec du pattern (le token n'est pas un noyau
     #    connu) -> inchange, et la collision reste un vrai conflit de
-    #    sujet (ex. `App-14-ConnectFour-Adversarial` vs
-    #    `App-14-ConnectFour-CSharp` ne SONT PAS jumeaux).
+    #    sujet (cas historique : `App-14-ConnectFour-Adversarial` vs
+    #    `App-14-ConnectFour-CSharp` avant le renommage #12933 ne
+    #    SONT PAS jumeaux ; depuis, le jumeau C# porte
+    #    `-Adversarial-CSharp` en suffixe et le stem matche).
     sa = _strip_kernel_middle(sa)
     sb = _strip_kernel_middle(sb)
     return sa.lower() == sb.lower()
