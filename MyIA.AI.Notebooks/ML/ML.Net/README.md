@@ -80,7 +80,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 
 | # | Notebook | Contenu | Écosystème | Durée |
 |---|----------|---------|------------|-------|
-| 09b | [ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | **Introspection des benchmarks** : pourquoi un détecteur de 1924 (SPC `M+3σ`) bat un auto-encodeur, les 4 pièges de Wu & Keogh, UCR Archive | *standalone Python (scikit-learn — anti-dote aux benchmarks triviaux)* | 45-60 min |
+| 09b | [ML-09b Python](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) · [C#](ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) | **Évaluer des détecteurs** : SPC, vrai MLP de prévision, AUC/seuil/densité/annotations/position sur cinq séries UCR | Python.NET + scikit-learn ; mêmes données et budgets | 90 min |
 | 09c | [ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb) | **Matrix Profile multidimensionnel** : détection sans apprentissage (`stumpy`), condensation `min`/`max`, mSTAMP, l'anomalie répétée que `k=1` cesse de voir | *Python + C# (STUMPY via Python.NET)* | 45-60 min |
 
 ### TP Pratique
@@ -125,7 +125,7 @@ Le notebook 6 présente l'interopérabilité ONNX — le pont entre l'écosystè
 
 Le notebook 7 explore les systèmes de recommandation — un domaine où ML.NET brille vraiment en production. Vous implémenterez la factorisation matricielle (collaborative filtering), apprendrez à générer des recommendations Top-N, à mesurer la qualité avec Precision@K et NDCG, et à gérer le "cold start problem" (nouveaux utilisateurs ou items sans historique). Deux exemples concrets : recommandation de films et recommandation e-commerce.
 
-Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-03) ni en clustering (ML-08). Le notebook 10 ([ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb)) pousse la critique plus loin : il montre qu'un détecteur de **1924** (Statistical Process Control, `M+3σ`) bat un auto-encodeur sur un benchmark trivial, identifie les **4 pièges** que Wu & Keogh (2020) imputent aux benchmarks de détection d'anomalies, puis bascule sur l'**UCR Archive** — le benchmark honnête où les méthodes simples échouent enfin. C'est le chaînon entre ML-09 et le Matrix Profile. Le notebook 11 ([ML-09c-MatrixProfile-Multidim](ML-09c-MatrixProfile-Multidim-Python.ipynb)) ferme ce chaînon par une réponse constructive : le Matrix Profile compare des fenêtres sans phase d'entraînement ; dans cette expérience synthétique, le choix de la condensation lui permet de classer l'anomalie conjointe au premier rang, tandis que les scores ponctuels la classent moins bien. Les choix de fenêtre et de validation restent importants.
+Les notebooks 8 et 9 couvrent l'apprentissage **non-supervisé**. Le notebook 8 (K-Means) partitionne les clients en segments naturels sans étiquettes, via la distance euclidienne — il illustre pourquoi la normalisation y est indispensable. Le notebook 9 (Randomized PCA) répond à une question différente : étant donné un régime de fonctionnement normal, quels points s'en écartent assez pour être des anomalies ? Le cas d'usage est la **maintenance prédictive** (capteurs industriels), et l'accent est mis sur le choix du **seuil de décision** (compromis détection / fausse alarme) — une problématique opérationnelle qui n'apparaît ni en classification (ML-03) ni en clustering (ML-08). Le prolongement [ML-09b](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) compare SPC et un MLP de prévision sur des séries UCR réelles et distingue les effets de densité, annotations et position. [ML-09c](ML-09c-MatrixProfile-Multidim-Python.ipynb) compare ensuite profils univariés, condensations et voisins communs. L'absence d'ajustement paramétrique n'empêche pas le surajustement du protocole ; les résultats restent propres aux séries et aux métriques présentées.
 
 ![Clustering K-Means sur données RFM — vérité terrain (Dormants/Réguliers/VIP) à gauche, clusters retrouvés par K-Means à droite](assets/readme/ml-clustering.png)
 *Figure extraite du jumeau Python ML-08-Clustering-Python (cellule 12, output 0). Deux panneaux côte-à-côte : à gauche la vérité terrain (générée par mixture gaussienne puis cachée à l'algorithme), à droite les clusters retrouvés par K-Means (K=3). Les axes sont Frequency (achats/mois, 0-30) × Monetary (EUR, 0-700). Les trois segments Dormants (rouge, <5 achats/mois, <100 EUR), Réguliers (vert, 5-15 achats, 100-300 EUR), VIP (bleu, 15+ achats, 300+ EUR) sont correctement identifiés — limitation illustrative assumée : la figure documente la capacité distinctive de K-Means à retrouver une partition linéairement séparable dans l'espace RFM normalisé, pas les cas réels où les segments se chevauchent ou ne sont pas gaussiens (voir cellules 13-18 du notebook pour les limites et les métriques Davies-Bouldin / silhouette).*
@@ -300,15 +300,19 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 
 ### ML-09b-TSAD-Benchmark-Flaws-Python
 
+[Jumeau C#](ML-09b-TSAD-Benchmark-Flaws-CSharp.ipynb) : C# charge et prépare les données, construit les fenêtres et cibles, mesure les métriques et trace les figures ; le vrai StandardScaler/MLPRegressor est appelé via Python.NET. Les cinq membres UCR sont vérifiés contre le manifeste versionné puis cachés localement sans redistribution.
+
 | Section | Contenu |
 |---------|---------|
-| SPC (1924) | Baseline Statistical Process Control : `\\|x - mean\\| > 3*std` en une ligne |
-| Auto-encodeur | Reconstruction de fenêtres (`MLPRegressor`) — perd face à SPC sur un benchmark trivial |
-| Piège 1 — trivialité | Un algorithme centenaire résout le benchmark → rien de difficile |
-| Piège 2 — densité | Anomalie < 1 % (réaliste) vs > 50 % (benchmarks défaillants, Wu & Keogh) |
-| Piège 3 — étiquettes | Décaler la GT fait chuter l'AUC du même détecteur |
-| Piège 4 — run-to-failure | « Prédire la fin » gagne sans détecter si l'anomalie est tardive |
-| UCR Archive | Benchmark honnête (anomalies variées, densité réaliste) où SPC échoue enfin |
+| SPC | Score global descriptif et décision >3 distingués de l'AUC |
+| MLP de prévision | Fenêtres de 20 points, horizon de 2 pas conservé, 32 neurones, maximum 1200 itérations ; scaler et réseau ajustés sur première moitié uniquement |
+| Baseline simple | Comparaison mesurée, sans preuve de trivialité générale |
+| Densité | Prévalence et accuracy de règles constantes ; AUC constante 0.5 avec les deux classes |
+| Étiquettes | Décalages artificiels 0/30/120, sans preuve d'une erreur réelle d'annotation |
+| Position | Baseline croissante indépendante du signal |
+| Trois séries entraînées | Résultats propres aux séries/étiquettes/protocole, pas certification d'un benchmark « honnête » |
+
+Les trois exercices ouverts sont répartis, avec gardes multi-fixtures : diagnostic SPC, densité/métriques constantes et effet de position. L'AUC globale inclut train et préfixe sans prévision ; SPC reste transductif. Les figures gardent les alertes SPC aux coordonnées réelles sur le signal.
 
 ### ML-09c-MatrixProfile-Multidim-Python
 
