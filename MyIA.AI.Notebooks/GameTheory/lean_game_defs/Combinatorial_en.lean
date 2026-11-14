@@ -63,7 +63,7 @@ def NimPosition := List Nat
 def nimSum (pos : NimPosition) : Nat :=
   pos.foldl (· ^^^ ·) 0
 
-/-- A Nim position is winning for the player to move iff nimSum ≠ 0. -/
+/-- A Nim position is winning for the player to move iff `nimSum ≠ 0`. -/
 def isWinningNim (pos : NimPosition) : Bool :=
   nimSum pos != 0
 

@@ -9,7 +9,7 @@
 
 Ce document répond à la question qu'un établissement se pose en premier devant un parcours :
 **quelles compétences de mon programme ce parcours couvre-t-il, et lesquelles laisse-t-il de côté ?**
-Il cartographie le parcours narratif [aima-walk.md](aima-walk.md) (25 étapes, 10 phases, ~25-30 h)
+Il cartographie le parcours narratif [aima-walk.md](aima-walk.md) (26 étapes, 11 phases, ~25-30 h)
 sur trois référentiels externes reconnus, puis mesure la couverture — les trous sont nommés
 comme trous, pas lissés.
 
@@ -36,7 +36,7 @@ Représentation et raisonnement · Apprentissage · Interaction naturelle · Imp
 
 ## Cartographie étape par étape
 
-Chaque justification cite **ce que le notebook fait faire**, jamais son titre. « P1 » à « P10 »
+Chaque justification cite **ce que le notebook fait faire**, jamais son titre. « P1 » à « P11 »
 référencent les phases de [aima-walk.md](aima-walk.md).
 
 | Étape | Notebook(s) | Compétences | Justification (ce que le notebook fait faire) |
@@ -53,19 +53,20 @@ référencent les phases de [aima-walk.md](aima-walk.md).
 | 10 (P5) | Tweety-2-Basic-Logics | RCA-3C, AI4K12-2 | Il représente des énoncés en logique propositionnelle et fait répondre un solveur Tweety : la représentation symbolique comme fondement vérifié par la machine. |
 | 11 (P5) | Tweety-2c-FOL-Csharp | RCA-3A, AI4K12-2 | Il transpose les mêmes requêtes en logique du premier ordre sur le twin .NET : transférer une représentation d'un formalisme à une API sœur. |
 | 12 (P5) | Tweety-03-Advanced-Logics-Python | RCA-3C | Il exécute des inférences en logiques par défaut et modales : comprendre que « raisonner » se décline en sémantiques différentes selon ce qu'on veut capturer. |
-| 13 (P6) | PyMC-04-Bayesian-Networks | RCA-3C, RCA-3A, AI4K12-2 | Il code un réseau bayésien, en lance l'inférence exacte puis MCMC, et voit la distribution posterieure se construire : raisonnement probabiliste représenté ET appliqué. |
-| 14 (P6) | PyMC-05-Causal-Inference | RCA-3A, AI4K12-2 | Il intervient sur un graphe causal (`do`, contre-factuels) et compare à l'observation simple : appliquer la distinction corrélation/causalité sur des calculs qu'il exécute. |
-| 15 (P7) | GameTheory-02-NormalForm | RCA-3C, AI4K12-2 | Il calcule des équilibres purs et mixtes de jeux sous forme normale : représenter une interaction stratégique et raisonner jusqu'à ses points fixes. |
-| 16 (P7) | GameTheory-06-EvolutionTrust | RCA-3A, AI4K12-3 | Il programme des stratégies et les affronte dans un tournoi d'Axelrod où la coopération émerge des scores cumulés : appliquer l'apprentissage par répétition à la dynamique de confiance. |
-| 17 (P7) | GameTheory-13-ImperfectInfo-CFR (+ 02b-Lean) | RCA-3A, RCA-4K | Il minimise le regret contrefactuel sur un poker à information imparfaite, boucle d'apprentissage itérative complète — et le compagnon Lean lui fait vérifier les définitions sous-jacentes. |
-| 18 (P8) | Série Planners (PDDL/STRIPS) | RCA-4C, RCA-3A | Il décrit des domaines et problèmes en PDDL puis enchaîne les plans d'un solveur STRIPS : la planification comme CSP séquencé, délimitée puis résolue. |
-| 19 (P9) | RL-01-Premiers-Pas-Stable-Baselines3-Python | RCA-3C, RCA-3A, AI4K12-3 | Il pose un MDP et entraîne un Q-learning sur Gymnasium jusqu'à stabiliser le pendule : le paradigme apprentissage-par-renforcement, des équations à la courbe de récompense. |
-| 20 (P9) | RL-03-Experience-Replay-HER-Python | RCA-4K | Il stabilise l'entraînement par replay buffer et redéfinit les buts (HER), réglant la boucle de rétroaction expérience→mise à jour : itérer sur l'architecture d'apprentissage elle-même. |
-| 21 (P9) | RL-15-GRPO-Comparatif-Multi-Graines-Python | RCA-3A, RCA-4K, AI4K12-3 | Il applique les policy gradients modernes (GRPO) — la même famille d'algorithmes qui aligne les LLM — et referme la boucle vers la phase 10. |
-| 22 (P10) | 01_OpenAI_Intro + 02_PromptEngineering | RCA-3A, RCA-2A, RCA-2C, AI4K12-4 | Il appelle l'API, construit des prompts, et le notebook l'oblige explicitement à identifier les hallucinations et à situer les enjeux éthiques et de responsabilité (objectifs et section dédiés du carnet) : interaction naturelle doublée d'une première intériorisation de l'éthique. |
-| 23 (P10) | 05_RAG_Modern | RCA-4A, RCA-2A, AI4K12-4 | Il assemble retriever et générateur — conception d'architecture de système IA — pour réduire les hallucinations via des sources vérifiables par l'utilisateur : usage sécuritaire comme critère de design. |
-| 24 (P10) | 08_Reasoning_Models | RCA-3C, AI4K12-4 | Il fait raisonner des modèles en chaîne et en compare les échecs : comprendre ce que « raisonnement » veut dire pour un LLM, en le faisant interagir. |
-| 25 (Épilogue) | IIT-01-IntroToPyPhi | RCA-3C | Il calcule des mesures d'information intégrée avec PyPhi : comprendre une théorie de la conscience artificielle propre au corpus, hors manuel — l'exercice même de lecture critique d'un cadre théorique. |
+| 13 (P6) | Série Planners (PDDL/STRIPS) | RCA-4C, RCA-3A | Il décrit des domaines et problèmes en PDDL puis enchaîne les plans d'un solveur STRIPS : la planification comme CSP séquencé, délimitée puis résolue. |
+| 14 (P7) | PyMC-04-Bayesian-Networks | RCA-3C, RCA-3A, AI4K12-2 | Il code un réseau bayésien, en lance l'inférence exacte puis MCMC, et voit la distribution posterieure se construire : raisonnement probabiliste représenté ET appliqué. |
+| 15 (P7) | PyMC-05-Causal-Inference | RCA-3A, AI4K12-2 | Il intervient sur un graphe causal (`do`, contre-factuels) et compare à l'observation simple : appliquer la distinction corrélation/causalité sur des calculs qu'il exécute. |
+| 16 (P8) | Probas/DecisionTheory (DecPyMC-01 + 07) | RCA-3C, RCA-3A, AI4K12-2, AI4K12-3 | Il combine un posterior (Phase 7) avec une fonction d'utilité pour choisir l'action à utilité espérée maximale, évalue la valeur de l'information d'une observation avant de l'acquérir, et pose un MDP à Bellman (bandits) : la décision sous incertitude, représentée et exécutée. |
+| 17 (P9) | GameTheory-02-NormalForm | RCA-3C, AI4K12-2 | Il calcule des équilibres purs et mixtes de jeux sous forme normale : représenter une interaction stratégique et raisonner jusqu'à ses points fixes. |
+| 18 (P9) | GameTheory-06-EvolutionTrust | RCA-3A, AI4K12-3 | Il programme des stratégies et les affronte dans un tournoi d'Axelrod où la coopération émerge des scores cumulés : appliquer l'apprentissage par répétition à la dynamique de confiance. |
+| 19 (P9) | GameTheory-13-ImperfectInfo-CFR (+ 02b-Lean) | RCA-3A, RCA-4K | Il minimise le regret contrefactuel sur un poker à information imparfaite, boucle d'apprentissage itérative complète — et le compagnon Lean lui fait vérifier les définitions sous-jacentes. |
+| 20 (P10) | RL-01-Premiers-Pas-Stable-Baselines3-Python | RCA-3C, RCA-3A, AI4K12-3 | Il pose un MDP et entraîne un Q-learning sur Gymnasium jusqu'à stabiliser le pendule : le paradigme apprentissage-par-renforcement, des équations à la courbe de récompense. |
+| 21 (P10) | RL-03-Experience-Replay-HER-Python | RCA-4K | Il stabilise l'entraînement par replay buffer et redéfinit les buts (HER), réglant la boucle de rétroaction expérience→mise à jour : itérer sur l'architecture d'apprentissage elle-même. |
+| 22 (P10) | RL-15-GRPO-Comparatif-Multi-Graines-Python | RCA-3A, RCA-4K, AI4K12-3 | Il applique les policy gradients modernes (GRPO) — la même famille d'algorithmes qui aligne les LLM — et referme la boucle vers la phase 11. |
+| 23 (P11) | 01_OpenAI_Intro + 02_PromptEngineering | RCA-3A, RCA-2A, RCA-2C, AI4K12-4 | Il appelle l'API, construit des prompts, et le notebook l'oblige explicitement à identifier les hallucinations et à situer les enjeux éthiques et de responsabilité (objectifs et section dédiés du carnet) : interaction naturelle doublée d'une première intériorisation de l'éthique. |
+| 24 (P11) | 05_RAG_Modern | RCA-4A, RCA-2A, AI4K12-4 | Il assemble retriever et générateur — conception d'architecture de système IA — pour réduire les hallucinations via des sources vérifiables par l'utilisateur : usage sécuritaire comme critère de design. |
+| 25 (P11) | 08_Reasoning_Models | RCA-3C, AI4K12-4 | Il fait raisonner des modèles en chaîne et en compare les échecs : comprendre ce que « raisonnement » veut dire pour un LLM, en le faisant interagir. |
+| 26 (Épilogue) | IIT-01-IntroToPyPhi | RCA-3C | Il calcule des mesures d'information intégrée avec PyPhi : comprendre une théorie de la conscience artificielle propre au corpus, hors manuel — l'exercice même de lecture critique d'un cadre théorique. |
 
 ## Rapport de couverture mesuré
 
@@ -79,9 +80,9 @@ pas une règle de comptage implicite (relève Hermes #18829, 4 écarts corrigés
 | Aspect \ Niveau | Comprendre | Appliquer | Créer |
 |---|---|---|---|
 | 1. Perspective centrée sur l'humain | — | — | — |
-| 2. Éthique de l'IA | partiel (ét. 22) | partiel (ét. 22, 23) | — |
-| 3. Techniques et applications | **ét. 2, 3, 4, 6, 10, 12, 13, 15, 19, 24, 25** | **ét. 3, 4, 5, 7, 9, 11, 13, 14, 16, 17, 18, 19, 21, 22** | — |
-| 4. Conception de systèmes d'IA | ét. 1, 8, 18 | ét. 5, 23 | ét. 17, 20, 21 |
+| 2. Éthique de l'IA | partiel (ét. 23) | partiel (ét. 23, 24) | — |
+| 3. Techniques et applications | **ét. 2, 3, 4, 6, 10, 12, 14, 16, 17, 20, 25, 26** | **ét. 3, 4, 5, 7, 9, 11, 13, 14, 15, 16, 18, 19, 20, 22, 23** | — |
+| 4. Conception de systèmes d'IA | ét. 1, 8, 13 | ét. 5, 24 | ét. 19, 21, 22 |
 
 Lecture : le parcours est **massivement un parcours « Techniques » (aspect 3) aux niveaux
 Comprendre et Appliquer** — c'est cohérent avec sa nature de re-traversée d'AIMA. L'aspect 4
@@ -93,12 +94,12 @@ composés, pipeline RAG), boucles de rétroaction (HER, GRPO, CFR).
   réfléchir l'apprenant sur l'agentivité, la responsabilité humaine ou la citoyenneté à l'ère de
   l'IA. L'hypothèse de l'issue #17982 (« état d'esprit centré sur l'humain : trou probable »)
   est **confirmée par la mesure**.
-- **Aspect 2 (éthique) : partiel et tardif.** Deux étapes sur 25 (22 et 23) touchent l'usage
+- **Aspect 2 (éthique) : partiel et tardif.** Deux étapes sur 26 (23 et 24) touchent l'usage
   sécuritaire — parce que les carnets correspondants traitent nommément hallucinations et
   vérifiabilité des sources (vérifié dans leurs sources, cellules d'objectifs). Aucune étape ne
   pratique l'« éthique dès la conception » (niveau Créer) : nulle part l'apprenant ne conçoit un
   système en intégrant un critère éthique comme contrainte de conception.
-- **Niveau Créer (vertical) : 1 bloc sur 12 (RCA-4K), couvert par 3 étapes (17, 20, 21).** Le
+- **Niveau Créer (vertical) : 1 bloc sur 12 (RCA-4K), couvert par 3 étapes (19, 21, 22).** Le
   parcours fait exécuter et comprendre ; il ne fait presque jamais **cocréer** un outil d'IA.
   Seule exception réelle : la famille HER/GRPO/CFR, où l'apprenant règle la boucle
   d'apprentissage elle-même.
@@ -108,9 +109,9 @@ composés, pipeline RAG), boucles de rétroaction (HER, GRPO, CFR).
 | Aspect | Contribution du parcours |
 |---|---|
 | 1. Perspective centrée sur l'humain | nulle — même trou que côté apprenants |
-| 2. Éthique de l'IA | marginale (les encadrés hallucinations/vérifiabilité des ét. 22-23) |
+| 2. Éthique de l'IA | marginale (les encadrés hallucinations/vérifiabilité des ét. 23-24) |
 | 3. Fondements et applications de l'IA | **substantielle aux niveaux Acquérir-Approfondir** : c'est le cœur du parcours — un enseignant qui le suit maîtrise les techniques fondamentales et leur mise en œuvre |
-| 4. Pédagogie de l'IA | nulle en direct ; indirecte : le parcours est lui-même un exemple documenté de séquençage curriculaire spirale (phases 1→10), réutilisable comme patron |
+| 4. Pédagogie de l'IA | nulle en direct ; indirecte : le parcours est lui-même un exemple documenté de séquençage curriculaire spirale (phases 1→11), réutilisable comme patron |
 | 5. IA pour le développement professionnel | nulle |
 
 ### AI4K12 — les cinq grandes idées
@@ -118,10 +119,10 @@ composés, pipeline RAG), boucles de rétroaction (HER, GRPO, CFR).
 | Idée | Couverture |
 |---|---|
 | 1. Perception | **absente** — aucun carnet du parcours ne traite capteurs, vision ni parole |
-| 2. Représentation et raisonnement | **ét. 1-3, 6, 8, 10, 11, 13-15** — l'ossature du parcours |
-| 3. Apprentissage | **ét. 5, 7, 16, 19, 21** — GA, MCTS, Axelrod, RL |
-| 4. Interaction naturelle | **ét. 22-24** — LLM : prompting, RAG, modèles de raisonnement |
-| 5. Impact social | **marginale** : uniquement la section enjeux éthiques de l'ét. 22 — un encadré, pas une pratique |
+| 2. Représentation et raisonnement | **ét. 1-3, 6, 8, 10, 11, 14-17** — l'ossature du parcours |
+| 3. Apprentissage | **ét. 5, 7, 16, 18, 20, 22** — GA, MCTS, Axelrod, MDP/bandits, RL |
+| 4. Interaction naturelle | **ét. 23-25** — LLM : prompting, RAG, modèles de raisonnement |
+| 5. Impact social | **marginale** : uniquement la section enjeux éthiques de l'ét. 23 — un encadré, pas une pratique |
 
 ## Ce que le pilote dit à l'étape 3 (décision d'outillage)
 

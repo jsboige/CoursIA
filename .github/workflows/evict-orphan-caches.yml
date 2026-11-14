@@ -45,14 +45,16 @@ name: Evict orphan Actions caches
 # non-CodeQL et le residu des analyses echouees.
 
 on:
-  push:
-    branches: [main]
-  workflow_run:
-    workflows: [CodeQL]
-    types: [completed]
-    branches: [main]
+  # #25510 T-G elargi (mesure quota 12/11) : le push + le workflow_run CodeQL
+  # (96 runs/6,3h, ~15/h) tiraient sur le quota d'installation a chaque merge
+  # alors que l'eviction n'a pas besoin d'etre plus frequente qu'horaire.
+  # Cron horaire, minute hors :00 (convention anti-stampede) ; le weekly est
+  # supprime (l'horaire le domine). La justification #18309 du workflow_run
+  # (borner les overlays par run CodeQL) tient a l'horaire : l'echec #16088
+  # etait le weekly (33 overlays/5h, quota 10,14/10 Go), pas l'absence d'un
+  # per-push.
   schedule:
-    - cron: "0 3 * * 1"
+    - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
       max_age_hours:

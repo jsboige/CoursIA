@@ -19,11 +19,12 @@ from check_i18n_siblings import (  # noqa: E402
     check_pair,
     enclosing_lake,
     find_en_files,
+    fr_import_siblings,
     fr_sibling,
     imports_fr_sibling,
     is_half_done,
     is_repo_boilerplate,
-    lake_targets,
+    main,
     normalize_body,
     split_decls,
     strip_comments,
@@ -111,6 +112,80 @@ def test_normalize_en_suffix_does_not_mask_real_drift():
     fr = "def f (G : TUGame N) : Nat := 42\n"
     en = "def f (G : TUGame_en N) : Nat := 43\n"
     assert normalize_body(fr) != normalize_body(en)
+
+
+def test_fr_import_advisory_detects_only_declaring_same_lake_imports(tmp_path):
+    lake = tmp_path / "fixture_lean"
+    base = lake / "Alpha" / "Base.lean"
+    base.parent.mkdir(parents=True)
+    (lake / "lakefile.toml").write_text('name = "fixture"\n', encoding="utf-8")
+    base.write_text("namespace Alpha.Base\ndef value := 1\n", encoding="utf-8")
+    base.with_name("Base_en.lean").write_text(
+        "namespace Alpha.Base_en\ndef value := 1\n", encoding="utf-8")
+    alias_target = lake / "Alias.lean"
+    alias_target.write_text("namespace Alias\ndef value := 1\n", encoding="utf-8")
+    alias_target.with_name("Alias_en.lean").write_text(
+        "namespace Alias_en\ndef value := 1\n", encoding="utf-8")
+
+    hybrid = lake / "Alpha" / "Hybrid_en.lean"
+    hybrid.write_text(
+        "import Alpha.Base as Alias Mathlib.Data.Nat.Basic\n"
+        "namespace Alpha.Hybrid_en\ndef own := Alpha.Base.value\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(hybrid) == ["Alpha.Base"]
+
+    # A prose-only mirror remains an exempt consumer, even with the same import.
+    prose = lake / "Alpha" / "Prose_en.lean"
+    prose.write_text(
+        "import Alpha.Base\nnamespace Alpha.Prose_en\nend Alpha.Prose_en\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(prose) == []
+
+    # Declarations under an unsuffixed namespace do not meet the predicate.
+    unsuffixed = lake / "Alpha" / "Unsuffixed_en.lean"
+    unsuffixed.write_text(
+        "import Alpha.Base\nnamespace Alpha.Unsuffixed\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(unsuffixed) == []
+
+    # External Mathlib modules and same-lake modules without twins are ignored.
+    no_twin = lake / "Alpha" / "NoTwin.lean"
+    no_twin.write_text("namespace Alpha.NoTwin\ndef value := 1\n", encoding="utf-8")
+    no_twin_user = lake / "Alpha" / "NoTwinUser_en.lean"
+    no_twin_user.write_text(
+        "import Alpha.NoTwin Mathlib.Data.Nat.Basic\n"
+        "namespace Alpha.NoTwinUser_en\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(no_twin_user) == []
+
+
+def test_fr_import_advisory_is_opt_in_and_non_gating(tmp_path, capsys):
+    lake = tmp_path / "fixture_lean"
+    module = lake / "Alpha" / "Hybrid_en.lean"
+    module.parent.mkdir(parents=True)
+    (lake / "lakefile.toml").write_text(
+        'name = "fixture"\n[[lean_lib]]\nname = "Alpha"\nglobs = ["Alpha.*"]\n',
+        encoding="utf-8",
+    )
+    (module.parent / "Base.lean").write_text("namespace Alpha.Base\ndef x := 1\n")
+    (module.parent / "Base_en.lean").write_text("namespace Alpha.Base_en\ndef x := 1\n")
+    (module.parent / "Hybrid.lean").write_text(
+        "namespace Alpha.Hybrid\ndef x := 2\n", encoding="utf-8")
+    module.write_text(
+        "import Alpha.Base\nnamespace Alpha.Hybrid_en\ndef x := 2\n",
+        encoding="utf-8",
+    )
+
+    assert main([str(module)]) == 0
+    assert "FR-IMPORT" not in capsys.readouterr().out
+    assert main([str(module), "--fr-import-advisory"]) == 0
+    output = capsys.readouterr().out
+    assert "FR-IMPORT" in output and "Alpha.Base" in output
+    assert "advisory" in output
 
 
 def test_check_pair_matching(tmp_path):
@@ -397,40 +472,6 @@ def test_real_conway_pairs_are_byte_identical():
 # --- Orphan-trap guard (#6749): an `_en` mirror `lake build` never compiles ---
 
 
-def test_lake_targets_toml_roots(tmp_path):
-    """`.toml` `roots = [...]` → exact names; a `"Foo.*"` entry → glob prefix."""
-    lf = tmp_path / "lakefile.toml"
-    lf.write_text(
-        '# comment with roots = ["ignored"] in prose\n'
-        '[[lean_lib]]\nname = "L"\n'
-        'roots = [\n  "Basic", "Nash",\n  "Nash_en",\n]\n'
-        'globs = ["Extra.*"]\n',
-        encoding="utf-8",
-    )
-    exact, globs = lake_targets(lf)
-    assert exact == {"Basic", "Nash", "Nash_en"}
-    assert globs == {"Extra"}
-
-
-def test_lake_targets_lean_globs(tmp_path):
-    """`.lean` backtick tokens: bare → exact, `.*` / `.submodules` → glob-prefix;
-    doc-comment example globs are stripped and must not leak into the sets."""
-    lf = tmp_path / "lakefile.lean"
-    lf.write_text(
-        "import Lake\nopen Lake DSL\n"
-        "-- doc: `globs := #[`Ghost, `Ghost_en]` appears only in prose\n"
-        "lean_lib «Foo» where\n"
-        "  globs := #[.submodules `Foo, `Foo_en]\n"
-        "lean_lib «Bar» where\n"
-        "  globs := #[`Bar.*]\n",
-        encoding="utf-8",
-    )
-    exact, globs = lake_targets(lf)
-    assert "Foo_en" in exact and "Foo" in exact and "Bar" in exact
-    assert "Foo" in globs and "Bar" in globs
-    assert "Ghost" not in exact and "Ghost_en" not in exact  # comment stripped
-
-
 def test_check_en_built_flags_orphan_toml(tmp_path):
     """The #6749 trap: a root-level `_en` absent from `roots` is UNBUILT."""
     lake = tmp_path / "mylake"
@@ -555,9 +596,12 @@ def test_real_grothendieck_godement_pairs_are_not_half_done():
     They must no longer be reported."""
     groth = (REPO_ROOT / "MyIA.AI.Notebooks" / "SymbolicAI" / "Lean" / "GROTH"
              / "grothendieck_lean" / "Grothendieck")
+    # Nine pairs, two of them nested: the ninth lives in the SheafCohomology
+    # sub-folder, so entries carry their relative path when it differs (#24161).
     names = ["Godement", "GodementAcyclicity", "GodementCanonicalDiff",
              "GodementComplex", "GodementExactness", "GodementFunctor",
-             "GodementMono", "GodementResolution"]
+             "GodementMono", "GodementResolution",
+             "SheafCohomology/Godement"]
     for name in names:
         fr = groth / f"{name}.lean"
         en = groth / f"{name}_en.lean"
@@ -591,3 +635,154 @@ def _run_direct() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(_run_direct())
+
+
+@pytest.mark.parametrize("namespace,expected", [
+    ("Knots_en.AnyMoves", ["Knots.Basic"]),
+    ("Outer.Inner_en.More", ["Knots.Basic"]),
+    ("Knots_en", ["Knots.Basic"]),
+    ("Knots_enriched.AnyMoves", []),
+    ("Knots.AnyMoves", []),
+])
+def test_fr_import_advisory_reconnait_namespace_qualifie(tmp_path, namespace, expected):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    (knots / "Basic.lean").write_text("", encoding="utf-8")
+    (knots / "Basic_en.lean").write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        f"import Knots.Basic\nnamespace {namespace}\ndef own := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(hybrid) == expected
+
+
+@pytest.mark.parametrize("literal", [
+    '"un texte\nnamespace Knots_en.AnyMoves\nfin"',
+    'r#"un texte avec "guillemets" et /- commentaire fictif\nnamespace Knots_en.AnyMoves\nfin"#',
+    'r##"un texte avec "# et -- faux commentaire\nnamespace Knots_en.AnyMoves\nfin"##',
+])
+def test_fr_import_ignore_namespace_dans_chaine(tmp_path, literal):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        f'import Knots.Basic\ndef message := {literal}\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == []
+
+
+def test_fr_import_reste_visible_apres_chaine_raw_et_commentaires(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        'import Knots.Basic -- import reel\n'
+        'def message := r#"guillemet " puis /- jamais ouvert"#\n'
+        '/- namespace Faux_en.Foo /- nested -/ -/\n'
+        'namespace Knots_en.AnyMoves\ndef own := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+@pytest.mark.parametrize("content", [
+    'def text := r#"\nimport Knots.Basic\n"#\nnamespace Knots_en.AnyMoves\n',
+    'import Knots.Basic\nnamespace Knots_en.AnyMoves\n#eval r#"\ndef fictif := 1\n"#\n',
+    'import Knots.Basic\n/- namespace Knots_en.AnyMoves /- def faux := 1 -/ -/\n',
+])
+def test_fr_import_ignore_code_fictif_dans_chaines_et_commentaires(tmp_path, content):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(content, encoding="utf-8")
+    assert fr_import_siblings(hybrid) == []
+
+
+@pytest.mark.parametrize("literal", ["'\"'", "'\\\"'", "'\\x22'", "'\\u0022'", "'\\\\'"])
+def test_fr_import_survit_aux_caracteres_lean(tmp_path, literal):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        f'import Knots.Basic\ndef quote : Char := {literal}\n'
+        'namespace Knots_en.AnyMoves\ndef own := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+def test_fr_import_ignore_chaine_raw_sans_diese(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        'import Knots.Basic\ndef text := r"texte\\"\n'
+        'namespace Knots_en.AnyMoves\ndef own := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+def test_fr_import_preserve_identifiant_avec_apostrophe(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        "import Knots.Basic\nnamespace Knots_en.AnyMoves\ndef value' := 1\n",
+        encoding="utf-8",
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+def test_fr_import_survit_aux_identifiants_lean_echappes(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        'import Knots.Basic\ndef «x"y» := 1\n'
+        'namespace Knots_en.AnyMoves\ndef own := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == ["Knots.Basic"]
+
+
+def test_fr_import_ignore_identifiant_echappe_multiligne(tmp_path):
+    lake = tmp_path / "lake"
+    knots = lake / "Knots"
+    knots.mkdir(parents=True)
+    (lake / "lakefile.lean").write_text("", encoding="utf-8")
+    for name in ("Basic.lean", "Basic_en.lean"):
+        (knots / name).write_text("", encoding="utf-8")
+    hybrid = knots / "Hybrid_en.lean"
+    hybrid.write_text(
+        'import Knots.Basic\ndef «x\nnamespace Knots_en.AnyMoves\n'
+        'def fictif := 1» := 1\n', encoding="utf-8"
+    )
+    assert fr_import_siblings(hybrid) == []

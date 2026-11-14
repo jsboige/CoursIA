@@ -74,6 +74,10 @@ jobs:
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 3 derniers runs
+    # verts de ce job : max 3.12 min. Marge x2 -- le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps.
+    timeout-minutes: 10
     steps:
       # 2026-10-27 (#22722) : la commande qui echoue est le `git checkout --force -B`
       # final d'actions/checkout, pas son clean/reset interne (run 40476005592 :

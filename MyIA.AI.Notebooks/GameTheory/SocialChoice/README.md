@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 15
-breakdown: SocialChoice=15
-maturity: BETA=12, ALPHA=3
+pedagogical_count: 16
+breakdown: SocialChoice=16
+maturity: BETA=13, ALPHA=3
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
@@ -218,7 +218,7 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Tideman, "Independence of Clones as a Criterion for Voting Rules" (1987) | Ranked Pairs (SC-08) |
 | Caragiannis, Hemaspaandra & Hemaspaandra, "Dodgson's Rule and Young's Rule" (2016) | NP-dureté de la détermination du gagnant Dodgson (SC-08, Handbook ch. 5 §5.3) |
 
-> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
+> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\Social Choice, Voting and Welfare\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
 
 ## Conclusion / Prochaines étapes
 

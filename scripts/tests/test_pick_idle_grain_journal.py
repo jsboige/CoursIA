@@ -240,8 +240,8 @@ def test_belt_path_journals_head_of_queue(monkeypatch, tmp_path, capsys):
     ]
     monkeypatch.setattr(pig, "fetch_pool", lambda **k: (pool, None))
     monkeypatch.setattr(pig, "check_claims",
-                        lambda nums, lane: {n: (pig.CLAIM_CODE_FREE, "libre")
-                                            for n in nums})
+                        lambda nums, lane, **kwargs: {
+                            n: (pig.CLAIM_CODE_FREE, "libre") for n in nums})
     monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
 
     rc = pig.main(["--lane", LANE, "--belt", "--json"])
@@ -284,8 +284,8 @@ def test_belt_with_red_guard_journals_once(monkeypatch, tmp_path):
     pool = [_make_item(7011, "2025-01-01T00:00:00Z")]
     monkeypatch.setattr(pig, "fetch_pool", lambda **k: (pool, None))
     monkeypatch.setattr(pig, "check_claims",
-                        lambda nums, lane: {n: (pig.CLAIM_CODE_FREE, "libre")
-                                            for n in nums})
+                        lambda nums, lane, **kwargs: {
+                            n: (pig.CLAIM_CODE_FREE, "libre") for n in nums})
     monkeypatch.setattr(pig, "latest_claim_stamp", lambda n: None)
 
     rc = pig.main(["--lane", LANE, "--belt", "--json"])

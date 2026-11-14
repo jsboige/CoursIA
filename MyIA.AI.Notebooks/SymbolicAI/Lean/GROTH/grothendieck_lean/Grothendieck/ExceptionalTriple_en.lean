@@ -44,13 +44,13 @@ Epic #1646, See #2159. All `sorry` eliminated at creation.
 ### i18n — convention #4980 ratified 2026-07-04
 
 This module is the English canonical sibling of `ExceptionalTriple.lean`
-(**consumer-twin** model: the `_en` imports the FR module
-`Grothendieck.ExceptionalDirect` and does not re-declare its definitions —
-cf `CoversLattice_en.lean`). Theorem/lemma statements, lemma names, Lean
-tactics and Mathlib references remain in English (Mathlib 4, standard tactic
-DSL); the namespace carries the `_en` suffix. Only the **docstrings `/-- ... -/`**
-and **comments `-- ...`** differ between the two files. Anti-§D byte-identity
-guaranteed on signatures, proofs and tactics (verifiable by diff).
+(**auto-contained mirror** model). It imports `Grothendieck.ExceptionalDirect_en`,
+the English sibling that declares its dependencies; it does not import the FR
+modules. Theorem/lemma statements, lemma names, Lean tactics and Mathlib
+references remain in English (Mathlib 4, standard tactic DSL); the namespace
+carries the `_en` suffix. Only the **docstrings `/-- ... -/`** and **comments
+`-- ...`** differ between the two files. Anti-§D byte-identity is guaranteed on
+signatures, proofs and tactics (verifiable by diff).
 -/
 
 import Mathlib.CategoryTheory.Functor.KanExtension.Basic
@@ -58,13 +58,14 @@ import Mathlib.CategoryTheory.Functor.KanExtension.Adjunction
 import Mathlib.CategoryTheory.Adjunction.Triple
 import Mathlib.CategoryTheory.Adjunction.Unique
 import Mathlib.CategoryTheory.Whiskering
-import Grothendieck.ExceptionalDirect
+import Grothendieck.ExceptionalDirect_en
 
 universe v₁ v₂ v₃ u₁ u₂ u₃
 
 namespace Grothendieck.ExceptionalTriple_en
 
 open CategoryTheory
+open Grothendieck.ExceptionalDirect_en
 
 variable {C : Type u₁} [Category.{v₁} C] {D : Type u₂} [Category.{v₂} D]
   {H : Type u₃} [Category.{v₃} H]
@@ -94,7 +95,7 @@ noncomputable def directImagePresheaf (f : C ⥤ D)
     exactly `f^* ⊣ f_*`. -/
 noncomputable def directImagePresheafAdjunction (f : C ⥤ D)
     [∀ (G : Cᵒᵖ ⥤ H), f.op.HasRightKanExtension G] :
-    ExceptionalDirect.pullbackPresheaf (H := H) f ⊣ directImagePresheaf (H := H) f :=
+    ExceptionalDirect_en.pullbackPresheaf (H := H) f ⊣ directImagePresheaf (H := H) f :=
   f.op.ranAdjunction H
 
 /-!
@@ -114,9 +115,9 @@ noncomputable def presheafSixOpsTriple (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F]
     [∀ (G : Cᵒᵖ ⥤ H), f.op.HasRightKanExtension G] :
     CategoryTheory.Adjunction.Triple
-      (ExceptionalDirect.exceptionalDirectImage (H := H) f)
-      (ExceptionalDirect.pullbackPresheaf (H := H) f) (directImagePresheaf (H := H) f) where
-  adj₁ := ExceptionalDirect.exceptionalDirectImageAdjunction (H := H) f
+      (ExceptionalDirect_en.exceptionalDirectImage (H := H) f)
+      (ExceptionalDirect_en.pullbackPresheaf (H := H) f) (directImagePresheaf (H := H) f) where
+  adj₁ := ExceptionalDirect_en.exceptionalDirectImageAdjunction (H := H) f
   adj₂ := directImagePresheafAdjunction (H := H) f
 
 /-!
@@ -135,7 +136,7 @@ relates the two ends of the triple.
 noncomputable def exceptionalDirectImage_fullyFaithful_iff_directImage (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F]
     [∀ (G : Cᵒᵖ ⥤ H), f.op.HasRightKanExtension G] :
-    (ExceptionalDirect.exceptionalDirectImage (H := H) f).FullyFaithful ≃
+    (ExceptionalDirect_en.exceptionalDirectImage (H := H) f).FullyFaithful ≃
       (directImagePresheaf (H := H) f).FullyFaithful :=
   (presheafSixOpsTriple (H := H) f).fullyFaithfulEquiv
 
@@ -157,9 +158,9 @@ durably documents why the lake will only have a `f^!` with Verdier duality.
 noncomputable def exceptionalInverse_collapses_to_pullback (f : C ⥤ D)
     [∀ (F : Cᵒᵖ ⥤ H), f.op.HasLeftKanExtension F]
     (G : (Dᵒᵖ ⥤ H) ⥤ (Cᵒᵖ ⥤ H))
-    (adj : ExceptionalDirect.exceptionalDirectImage (H := H) f ⊣ G) :
-    G ≅ ExceptionalDirect.pullbackPresheaf (H := H) f :=
+    (adj : ExceptionalDirect_en.exceptionalDirectImage (H := H) f ⊣ G) :
+    G ≅ ExceptionalDirect_en.pullbackPresheaf (H := H) f :=
   (CategoryTheory.Adjunction.rightAdjointUniq
-    (ExceptionalDirect.exceptionalDirectImageAdjunction (H := H) f) adj).symm
+    (ExceptionalDirect_en.exceptionalDirectImageAdjunction (H := H) f) adj).symm
 
 end Grothendieck.ExceptionalTriple_en

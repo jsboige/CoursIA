@@ -65,7 +65,7 @@ Le run `y2015` commence le 2015-01-01 pour comparer l'année civile 2015 à l'ar
 ## Sources
 
 - **Article** : Jing Wu, *CAPM Alpha Ranking Strategy On Dow 30 Companies*, QuantConnect Research 15345 (brouillon), <https://www.quantconnect.com/research/15345/capm-alpha-ranking-strategy-on-dow-30-companies/>
-- **Théorie du CAPM** : William F. Sharpe, *Capital Asset Prices with and without Negative Holdings*, Nobel Lecture, 7 décembre 1990. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\1990 - Sharpe - Capital Asset Prices with and without Negative Holdings (Nobel Lecture).pdf`.
+- **Théorie du CAPM** : William F. Sharpe, *Capital Asset Prices with and without Negative Holdings*, Nobel Lecture, 7 décembre 1990. Copie : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Trading\Asset Pricing, Factors and Anomalies\1990 - Sharpe - Capital Asset Prices with and without Negative Holdings (Nobel Lecture).pdf`.
 - **Aucune source primaire ne teste le signal.** Sharpe fonde le modèle, pas cette règle de sélection. L'article ne cite aucune étude du classement mensuel par alpha sur 21 séances. L'horizon d'un mois va plutôt à l'encontre de la littérature : le momentum classique sur actions se mesure sur 12 mois en sautant le dernier, et le dernier mois tend à s'inverser.
 
 ## Mesure (#19680)

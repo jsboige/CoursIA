@@ -27,12 +27,12 @@ Modules delivered:
   **open milestone** (deliberately not `sorry`-backed).
 
 Lean companion notebook:
-[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb).
+[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb).
 
 ## Status
 
 - **Toolchain**: `leanprover/lean4:v4.31.0-rc1`
-- **Sorry**: **2** — both in `gittins_optimality` (`Gittins/GittinsTheorem.lean`).
+- **Sorry**: **1** — the proof of `gittins_optimality` (`Gittins/GittinsTheorem.lean`).
   `Gittins/Discount.lean` = **0 sorry** (fully proven), `Gittins/Basic.lean` = 0.
   `gittins_index_known_arm` and `gittins_index_monotone_discount` = **0 sorry** (proven,
   the latter via the `Float→ℝ` port PR #5272). The **entire `Utility` and `Coherence`
@@ -59,9 +59,11 @@ The formalization is split into a **proven** layer and a **stated** layer:
   `one_div_le_one_div_of_le`, sidestepping the missing `tsum_le_tsum` on bare `ℝ`
   in Mathlib v4.31.0-rc1.
 - **Stated, intractable** (`GittinsTheorem.lean`): `gittinsIndex` (optimal
-  stopping), `gittins_optimality` (the central theorem — the index policy maximizes
-  expected discounted reward). The **2 residual `sorry`** are in the assembly of
-  `gittins_optimality` (optimal-stopping fixed point + limit passage over the horizon);
+  stopping), `discountedValue` (the expected-value operator `V` — **defined**, not
+  `sorry`: `∑' γⁿ·r` via Mathlib's `tsum`, so the theorem statement is no longer
+  circular), `gittins_optimality` (the central theorem — the index policy maximizes
+  the `discountedValue`). The **residual `sorry`** is the proof of
+  `gittins_optimality` (Bellman operator / recursion over the horizon);
   this is **barrier A** (MDP/Bellman), research-level.
 - **Proven** (`GittinsTheorem.lean`): `gittins_index_known_arm` (index of a known arm)
   and `gittins_index_monotone_discount` (γ-monotonicity of the index, PR #5272 via the
@@ -73,7 +75,7 @@ The formalization is split into a **proven** layer and a **stated** layer:
 |------|-------|---------|
 | `Gittins/Basic.lean` | 0 | Core types — `BanditArm`, `BanditInstance` (arms + discount γ), `Policy := Nat → Nat`, `RewardHistory`, `pullCount`, `empiricalMean`. Pure Lean 4, no Mathlib. |
 | `Gittins/Discount.lean` | 0 | Geometric discounting **proven** via Mathlib real analysis: `geometric_series_converges`, `one_minus_gamma_pos`, `present_value_constant`, `discount_monotone`. **Finite partial-sum companion** (PR #4252): `geometricPartialSum γ n` with `_zero`/`_succ` (telescoping recurrence) and `_closed` (closed form `(1−γ^n)/(1−γ)`). |
-| `Gittins/GittinsTheorem.lean` | 2 | The marquee theorem **partially proven**: `gittinsIndex` (def proven = `trueMean` in the known-mean model), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**proven** `rfl`), `gittins_index_monotone_discount` (**proven** PR #5272 — `Float→ℝ` port, barrier B closed), `gittins_optimality` (sorry — MDP-intrinsic). (`gittins_beats_greedy` is a `: True := trivial` placeholder, not a sorry.) |
+| `Gittins/GittinsTheorem.lean` | 1 | The marquee theorem **partially proven**: `gittinsIndex` (def proven = `trueMean` in the known-mean model), `gittinsPolicy` (argmax), `gittins_index_known_arm` (**proven** `rfl`), `gittins_index_monotone_discount` (**proven** PR #5272 — `Float→ℝ` port, barrier B closed), `discountedValue` (the value operator `V`, **def** — non-circular statement), `gittins_optimality` (sorry — MDP-intrinsic). (`gittins_beats_greedy` is a `: True := trivial` placeholder, not a sorry.) |
 | `Gittins.lean` | 0 | Umbrella imports |
 | `Utility/Basic.lean` | 0 | vNM primitives — `Lottery` (lottery on `Fintype`), `expectation`, convex `mix`, affine expectation identities (`expectation_mix`, `expectation_add`, `expectation_smul`, `expectation_const`, `expectation_affine`). |
 | `Utility/Axioms.lean` | 0 | The **four vNM axioms** — `IsComplete`, `IsTransitive`, `IsIndependent`, `IsContinuous` (mixture solvability), `IsRational`, plus `StrictPref`. |
@@ -108,12 +110,13 @@ lake build Gittins
 
 ## Notebook companion
 
-[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-08b-Lean-Gittins.ipynb) — pedagogical
+[`Infer/Infer-9-Lean-Gittins.ipynb`](../DecisionTheory/DecInfer/DecInfer-07b-Lean-Gittins.ipynb) — pedagogical
 presentation of the bandit problem and the Gittins index, bridging the Infer.NET
 probabilistic-programming material to the Lean formalization.
 
 ## See also
 
 - **PR #2911** — `discount_monotone` proven closed-form (sorry 1→0)
+- **PR #24705** — `V` defined as `discountedValue` (value operator, `tsum`): the `V` sorry disappears, the `gittins_optimality` statement is no longer circular (sorry 2→1, lake 4→2 with the EN sibling)
 - **`Probas/Infer/`** — Infer.NET probabilistic series (Bayesian inference, conjugate priors)
 - **Epic #2651** — README/structure audit (Lean-series)

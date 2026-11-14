@@ -26,10 +26,19 @@ on:
       - "MyIA.AI.Notebooks/**/_output.ipynb"
       - "MyIA.AI.Notebooks/**/README.md"
       - "docs/**"
+      # L5 #11508 : un deck Slidev modifie doit etre republie -- les decks sont
+      # servis par ce site sous /slides/ (jobs build-slides + assemble-pages).
+      - "slides/**"
       - "favicon.ico"
       - "styles.css"
       - ".github/workflows/quarto-pages-deploy.yml"
       - "scripts/quarto_yaml_safe.py"
+      # La passe post-rendu des liens (#10921) transforme _site/ a CHAQUE
+      # deploy : un fix du transform doit re-servir le site pour s'appliquer,
+      # exactement comme yaml_safe ci-dessus.
+      - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
       # La page catalogue est un document rendu (_quarto.yml render list), mais
       # son refresh arrive par la PR long-lived catalog-cron -- dont le merge
       # ne touche AUCUN autre path de cette liste : sans ce filtre, la page
@@ -58,6 +67,12 @@ on:
       # qui ne touche que ces deux fichiers sauterait le rendu et rendrait
       # l'auto-couverture de #14391 creuse.
       - "scripts/quarto_render_scope.py"
+      # Meme auto-couverture pour la passe post-rendu des liens (#10921) :
+      # une PR qui ne touche QUE le transform doit exercer le pipeline sur
+      # le smoke set, pas sauter le rendu.
+      - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
   workflow_dispatch:
 
 # Concurrence par evenement : une PR repoussee n'a pas besoin de l'ancien
@@ -100,7 +115,10 @@ jobs:
     # non autorise). #11616 rouge 1.
     # La garde same-repo MENE (forme universelle #13874, exigee par
     # check_self_hosted_runner_policy) ; la selection push-only suit en &&.
-    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'push'
+    # L5 #11508 : workflow_dispatch s'ajoute -- le trigger existait mais ne
+    # faisait RIEN tourner (tous les jobs push/PR-only) ; il permet desormais
+    # de tester la chaine complete (rendu + decks + assemble) SANS deploy.
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     name: Build Quarto site
     # RETOUR ARRIERE du routage #14283 pour CE job seulement (#15202).
     # Le chemin de retour etait deja documente ici ; il est emprunte parce que
@@ -176,6 +194,11 @@ jobs:
         # exclues (cf. scripts/regen_quarto_render.py).
         run: python3 scripts/regen_quarto_render.py
 
+      - name: Préparer et vérifier les titres README
+        run: |
+          python3 scripts/ci/quarto_readme_titles.py apply --backup "$RUNNER_TEMP/readme-titles.json"
+          python3 scripts/ci/quarto_readme_titles.py check
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         # Quarto derive la classe pandoc du code-block depuis kernelspec.language.
         # Le kernel .NET Interactive ecrit "C#", que Quarto emet comme classe
@@ -227,6 +250,13 @@ jobs:
         # greppable "#14597-covariates:" pour la moisson multi-runs.
         run: python3 scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
+      - name: Restaurer les README
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python3 scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
+
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
@@ -247,6 +277,237 @@ jobs:
           test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
           echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
 
+      - name: Rewrite unservable site links (#10921)
+        # Post-rendu, pre-upload : les liens que Pages ne peut pas servir
+        # (repertoires sans index -- le README rendu vit a X/README.html ;
+        # fichiers hors render-list comme .claude/ ou .env.example) sont
+        # reecrits dans _site/ vers une cible servable : le README.html
+        # rendu s'il existe, sinon une URL absolue github.com (tree/ pour
+        # un repertoire, blob/ pour un fichier). Les SOURCES restent
+        # byte-identiques : la navigation de reference est celle de
+        # github.com (arbitrage user 2026-10-08, c.6076029168 sur #18911)
+        # -- c'est au site d'adapter au rendu, pas aux READMEs de s'adapter
+        # au site. Mesure fondatrice 2026-11-10 : 54 liens casses sur 674
+        # dans les 16 README de series, tous corrects sur github.com.
+        # rc 2 = instrument casse -> pas de deploy sur un site non verifie.
+        run: python3 scripts/ci/quarto_site_link_targets.py --site-dir _site --repo-root .
+
+      - name: Upload Quarto site artifact
+        # L5 #11508 : le Pages artifact ne se compose plus ici. Le site final est
+        # le site Quarto + les decks Slidev sous /slides/ -- assembles par le job
+        # `assemble-pages` (needs build + build-slides). Ce job n'uploade plus
+        # qu'un artifact intermediaire; l'upload-pages-artifact demenage en aval.
+        # La garde evenementielle du job passe aussi par workflow_dispatch : le
+        # trigger existait deja mais ne faisait rien tourner (tous les jobs
+        # push/PR-only) -- il permet desormais de tester la chaine sans deploy.
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: quarto-site
+          path: _site
+          retention-days: 3
+
+  build-slides:
+    # L5 #11508 : construire les decks Slidev pour le site Pages. Job SEPARE du
+    # rendu Quarto : 19 builds (~2-3 min chacun, npm ci a froid ~12 min) ne
+    # tiennent pas dans le meme plafond que le rendu (19-24 min seul, cap 60).
+    # Les deux jobs tournent en parallele; assemble-pages les fusionne.
+    #
+    # La decouverte des cibles est la MEME boucle que slides-build-advisory.yml
+    # (convention NN/SN, slides.md sinon deck-*.md, fixture _composition-control
+    # exclue PAR NOM, meta-faillite si decouverte vide) -- un drift de
+    # convention se voit dans les deux organes. La difference est le verdict :
+    # fail-soft PAR DECK (un deck casse ne doit pas tenir le site en otage --
+    # warning + deck absent de l'artifact), fail-FORT sur la decouverte elle-meme
+    # (un organe qui enumere zero cible ne mesure rien, #8807 trap 1).
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: Build Slidev decks
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    permissions:
+      contents: read
+    env:
+      # Deck volumineux 03-logique : OOM mesure au plafond par defaut (~790 MB),
+      # build propre a 2048 -- meme bump que slides-build-advisory.yml (#17721).
+      NODE_OPTIONS: "--max-old-space-size=2048"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          # Lockfile dans slides/, pas a la racine -- sans cache-dependency-path
+          # le lookup ne trouve rien et ne cache rien, silencieusement (#15835).
+          cache: npm
+          cache-dependency-path: slides/package-lock.json
+
+      - name: Cache slides node_modules
+        id: cache-nm
+        uses: actions/cache@v4
+        with:
+          path: slides/node_modules
+          # Meme cle que slides-build-advisory.yml : les deux workflows
+          # partagent le cache, un hit de l'un rechauffe l'autre.
+          key: slides-node_modules-${{ runner.os }}-${{ hashFiles('slides/package-lock.json') }}
+
+      - name: Install Slidev deps
+        working-directory: slides
+        run: |
+          if [ "${{ steps.cache-nm.outputs.cache-hit }}" = "true" ] && [ -d node_modules/@slidev ]; then
+            echo "node_modules cache hit -- skipping install"
+          else
+            npm ci --no-audit --no-fund
+          fi
+
+      - name: Discover decks, build all, emit index
+        run: |
+          set -uo pipefail
+
+          # ---- Decouverte (copiee de slides-build-advisory.yml) ----
+          TARGETS=()
+          N_DECK_DIRS=0
+          for d in slides/*/; do
+            [ -d "$d" ] || continue
+            base="$(basename "$d")"
+            # Fixture de controle positif, pas un deck de cours (#15545).
+            [ "$base" = "_composition-control" ] && continue
+            printf '%s' "$base" | grep -qE '^(S)?[0-9]' || continue
+            N_DECK_DIRS=$((N_DECK_DIRS + 1))
+            if [ -f "${d}slides.md" ]; then
+              TARGETS+=("${d}slides.md")
+            else
+              for deck in "${d}"deck-*.md; do
+                [ -f "$deck" ] || continue
+                TARGETS+=("$deck")
+              done
+            fi
+          done
+
+          echo "===== DENOMINATOR (discovery sanity) ====="
+          echo "Deck dirs tracked (M): $N_DECK_DIRS"
+          echo "Build targets discovered (N): ${#TARGETS[@]}"
+          printf '  target: %s\n' "${TARGETS[@]}"
+
+          # META-FAILURE : decouverte vide = l'organe ne mesure rien (#8807).
+          if [ "$N_DECK_DIRS" -eq 0 ] || [ "${#TARGETS[@]}" -eq 0 ]; then
+            echo "::error::Discovery empty (M=$N_DECK_DIRS decks, N=${#TARGETS[@]} targets) -- refusing to publish from an empty measure."
+            exit 1
+          fi
+
+          # ---- Build fail-soft par deck ----
+          # GitHub Pages = UN site par repo, servi sous /<repo>/ : le --base de
+          # la SPA doit PREFIXER le nom du repository, sinon les assets
+          # resolvent a la racine du domaine (404 sur jsboige.github.io).
+          BASE_PREFIX="/${GITHUB_REPOSITORY#*/}"
+          FAILURES=0
+          OK_LIST=""
+          for t in "${TARGETS[@]}"; do
+            rel="${t#slides/}"
+            dir="$(dirname "$rel")"
+            stem="$(basename "$rel" .md)"
+            if [ "$stem" = "slides" ]; then
+              SUBDIR="$dir"
+            else
+              SUBDIR="$dir/$stem"
+            fi
+            echo "----- slidev build: $rel -> /slides/$SUBDIR/ -----"
+            # --out ABSOLU : slidev resout un --out relatif au PROJECT ROOT
+            # (slides/), pas au cwd -- un "../site-slides" y reste sous slides/
+            # (mesure run 42318273926 : 19/19 builds OK, tous ecrits dans
+            # slides/site-slides/, site-slides/ du worktree jamais cree).
+            if ( cd slides && npx slidev build "$rel" --base "${BASE_PREFIX}/slides/${SUBDIR}/" --out "${GITHUB_WORKSPACE}/site-slides/${SUBDIR}" ); then
+              echo "OK: $rel -> site-slides/$SUBDIR"
+              OK_LIST="${OK_LIST}${SUBDIR}\n"
+            else
+              echo "::warning::BUILD FAILED: $rel -- deck absent du site, les autres se deploient (fail-soft)."
+              FAILURES=$((FAILURES + 1))
+            fi
+          done
+
+          echo "===== VERDICT ====="
+          echo "Built: $(( ${#TARGETS[@]} - FAILURES ))/${#TARGETS[@]} decks ($FAILURES failed, see warnings)."
+
+          # ---- Index /slides/ : liste des decks reellement construits ----
+          # mkdir defensif : l'index doit exister meme a 19/19 fail-soft
+          # (0 deck construit -> assemble publie le site Quarto + index honnete).
+          mkdir -p site-slides
+          {
+            echo '<!DOCTYPE html>'
+            echo '<html lang="fr"><head><meta charset="utf-8">'
+            echo '<title>CoursIA -- Decks Slidev</title>'
+            echo '<style>body{font-family:system-ui,sans-serif;max-width:720px;margin:2rem auto;padding:0 1rem;line-height:1.5}li{margin:.4rem 0}</style>'
+            echo '</head><body>'
+            echo '<h1>Decks Slidev</h1>'
+            echo "<p>$(find site-slides -mindepth 2 -name index.html 2>/dev/null | wc -l) deck(s) construit(s) sur ${#TARGETS[@]} cibles decouvertes.</p>"
+            echo '<ul>'
+            find site-slides -mindepth 2 -name index.html 2>/dev/null | sort | while IFS= read -r idx; do
+              sub="${idx#site-slides/}"; sub="${sub%/index.html}"
+              echo "<li><a href=\"${BASE_PREFIX}/slides/${sub}/\">${sub}</a></li>"
+              # (libelle = chemin : stable, sans transformation fragile du nom)
+            done
+            echo '</ul>'
+            echo "<p>Un deck manquant est un deck dont le build a echoue -- voir les warnings du job.</p>"
+            echo '</body></html>'
+          } > site-slides/index.html
+
+          test -f site-slides/index.html || (echo "::error::index /slides/ non genere" && exit 1)
+          echo "site-slides/ : $(find site-slides -type f | wc -l) fichiers."
+
+      - name: Upload decks artifact
+        # Pas upload-pages-artifact : cet artifact est un INGREDIENT du site,
+        # pas le site -- c'est assemble-pages qui compose l'artifact Pages.
+        uses: actions/upload-artifact@v4
+        with:
+          name: slides-dist
+          path: site-slides
+          retention-days: 3
+
+  assemble-pages:
+    # L5 #11508 : composer le site final (Quarto + decks) en UN artifact Pages.
+    # Un second workflow deploy-pages deploierait un artifact decks-seul qui
+    # REMPLACERAIT le site Quarto entier (Pages = un site par depot, chaque
+    # deploiement ecrase le precedent) -- d'ou la fusion ici, en aval des deux
+    # builds paralleles.
+    #
+    # if: always() + build success : un echec du job decks (deck casse, npm
+    # down) ne tient pas le SITE en otage -- le deploy part avec les decks
+    # construits, ou sans /slides/ si l'artifact manque (warning dans le log).
+    # Le site Quarto reste deploye quoi qu'il arrive : regression impossible
+    # par ce chemin.
+    if: always() && (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.build.result == 'success' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    name: Assemble Pages artifact
+    needs: [build, build-slides]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - name: Download Quarto site
+        uses: actions/download-artifact@v4
+        with:
+          name: quarto-site
+          path: _site
+
+      - name: Download Slidev decks
+        # Fail-soft : l'artifact peut manquer (job decks en echec total) -- le
+        # site part alors sans /slides/, le warning du step Check le dit.
+        uses: actions/download-artifact@v4
+        with:
+          name: slides-dist
+          path: _site/slides
+        continue-on-error: true
+
+      - name: Check output
+        run: |
+          test -f _site/index.html || (echo "::error::_site/index.html absent -- artifact Quarto incomplet" && exit 1)
+          N_SLIDES=$(find _site/slides -mindepth 2 -name index.html 2>/dev/null | wc -l)
+          echo "Site final : $(find _site -type f | wc -l) fichiers dont $N_SLIDES deck(s) Slidev sous /slides/."
+          if [ "$N_SLIDES" -eq 0 ]; then
+            echo "::warning::Aucun deck Slidev dans l'artifact (job build-slides en echec ou 0 deck construit) -- deploiement SANS /slides/."
+          fi
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -256,11 +517,16 @@ jobs:
   deploy:
     # Garde explicite : actions/deploy-pages ne doit PAS tourner sur PR
     # (refs/pull/.../merge rejete par la protection env github-pages).
-    # Boucle avec `if: github.event_name == 'push'` sur `build` : deploy
-    # herite par needs, mais la garde ici est defensive. #11616 rouge 1.
-    if: github.event_name == 'push'
+    # `always()` casse le success() implicite de la chaine needs : sans lui,
+    # un echec du job build-slides (npm, decouverte vide, timeout) fait
+    # SAUTER deploy et le site Quarto n'est plus deploie -- le site reste
+    # donc servi meme si les decks echouent, assemble-pages restant exigee.
+    # Correctif ai-01 08/11 (reserve #25021). #11616 rouge 1.
+    if: always() && github.event_name == 'push' && needs.assemble-pages.result == 'success'
     name: Deploy to GitHub Pages
-    needs: build
+    # L5 #11508 : deploy suit desormais assemble-pages (qui herite de build et
+    # build-slides) -- le site deploye est le site COMPOSE, Quarto + decks.
+    needs: assemble-pages
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -332,6 +598,9 @@ jobs:
       - name: Regenerate render list
         run: python scripts/regen_quarto_render.py
 
+      - name: Conserver la liste complète des README
+        run: cp _quarto.yml "$RUNNER_TEMP/readme-render-list.yml"
+
       - name: Scope render list to this PR's changed documents
         # #14429 : la jambe PR rendait le site ENTIER (1192 entrees, sans cache
         # -- `_freeze/` n'est pas tracke) alors que son objet declare est etroit
@@ -375,6 +644,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
 
+      - name: Préparer et vérifier les titres README
+        if: steps.scope.outputs.mode != 'empty'
+        run: |
+          python scripts/ci/quarto_readme_titles.py apply --config "$RUNNER_TEMP/readme-render-list.yml" --backup "$RUNNER_TEMP/readme-titles.json"
+          python scripts/ci/quarto_readme_titles.py check --config "$RUNNER_TEMP/readme-render-list.yml"
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py apply
@@ -405,6 +680,13 @@ jobs:
         # phase post-rendu n'est pas representative et le rapport resterait muet.
         if: steps.scope.outputs.mode == 'full'
         run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+
+      - name: Restaurer les README
+        if: always() && steps.scope.outputs.mode != 'empty'
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'
@@ -442,6 +724,18 @@ jobs:
             test "$RENDERED" -le "$CEIL" || (echo "::error::rendu scope=${{ steps.scope.outputs.count }} document(s) mais $RENDERED pages produites (plafond $CEIL) : la restriction n'a pas pris" && exit 1)
           fi
           echo "_site/ présent avec $(find _site -type f | wc -l) fichiers ($RENDERED .html, mode=$MODE)"
+
+      - name: Rewrite unservable site links (#10921)
+        # Meme passe que le job build, jambe PR : exercer le transform sur
+        # le rendu disponible (smoke ou complet). Sur un rendu SCOPE, l'arbre
+        # _site/ ne porte que les documents rendus : les cibles absentes de
+        # l'arbre partent en URL absolue github.com -- decisions differentes
+        # du rendu complet, mais le code chemin (extraction, resolution,
+        # ecriture) est l'objet de la verification ici ; la correction reelle
+        # vit sur la jambe deploy. Gated mode != 'empty' : sans rendu, il
+        # n'y a pas de _site/ a transformer.
+        if: steps.scope.outputs.mode != 'empty'
+        run: python3 scripts/ci/quarto_site_link_targets.py --site-dir _site --repo-root .
 
       - name: Comment PR with summary
         # Resumé court : nombre de fichiers + diff notebooks si pertinent.

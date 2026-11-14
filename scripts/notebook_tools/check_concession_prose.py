@@ -78,6 +78,9 @@ NON_CONCESSION_CONTEXT_RE = re.compile(
 
 # Controle positif reel (#21433 attendu 2) : ce commit ajoute EXACTEMENT une
 # ligne de prose de concession (cellule 39, « le cote honnete du verdict »).
+# Le chemin est celui PORTE PAR LE COMMIT (avant le renommage #25195
+# Argument_Analysis -> ArgumentAnalysis) : commit_hits rend le chemin du
+# commit, pas le chemin courant.
 SELF_TEST_COMMIT = "6eb23754b7ee88856cc96a42bcd6fe2a5a5b8550"
 SELF_TEST_NOTEBOOK = ("MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/"
                       "Argumentation-Obs-04-Recollement-Strate6-Python.ipynb")

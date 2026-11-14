@@ -4,7 +4,7 @@ subtitle: "Série pédagogique niveau 2 — Nash, Lemke-Howson, Folk, Shapley, A
 description: "Série GameTheory du dépôt CoursIA — équilibre de Nash, théorème minimax, dynamiques d'apprentissage, jeux coopératifs (Shapley, Core), mécanismes (VCG, Gale-Shapley), choix social (Arrow), formalisation Lean 4."
 listing:
   - id: phase1
-    contents: "GameTheory-01-Setup.ipynb"
+    contents: "GameTheory-01-Setup-Python.ipynb"
     type: grid
     sort: "filename"
     page-size: 24

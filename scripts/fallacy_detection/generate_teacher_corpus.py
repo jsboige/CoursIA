@@ -85,6 +85,25 @@ _MARKER = re.compile(r"(?:r[eé]ponse|option|choix|letter|answer)\s*:?\s*([A-H])
 # en silence.
 _WORD_TOKENS = {"a"}
 
+# Cadre de la question de reclassement, par langue de consigne : (ouverture,
+# question, consigne de reponse, separateur titre/definition). Le francais est
+# celui qui a produit le corpus committe (``data/teacher/val_fr.jsonl``) : il
+# reste octet pour octet identique, pour que les mesures FR restent comparables.
+# Toute autre langue recoit le cadre anglais, la convention de ``render_prompt``
+# (consigne en anglais, seul le contenu dans ``lang``). Avant ce cadre, une
+# generation ``--lang en`` etait reclassee par une question francaise portant des
+# candidats anglais.
+_CHOICE_FRAMES = {
+    "fr": ("Voici un texte :",
+           "Quel sophisme/caractere argumentatif illustre-t-il le mieux ?",
+           "Reponds uniquement par la lettre.",
+           " : "),
+    "en": ("Here is a text:",
+           "Which fallacy or argumentative virtue does it illustrate best?",
+           "Answer with the letter only.",
+           ": "),
+}
+
 
 # --------------------------------------------------------------------------
 # Client enseignant
@@ -266,16 +285,19 @@ def build_choice_question(text: str, candidates: Sequence[str], texts: dict,
 
     Le libelle et la definition sont tronques : le controle porte sur le
     **choix**, pas sur une lecture exhaustive de la taxonomie.
+
+    Les candidats sont dans ``lang`` ; le cadre de la question est en francais
+    pour ``fr``, en anglais pour toute autre langue (voir ``_CHOICE_FRAMES``).
     """
+    intro, question, instruction, sep = _CHOICE_FRAMES.get(lang, _CHOICE_FRAMES["en"])
     lines = []
     for index, key in enumerate(candidates):
         title, definition, _ = texts["nodes"][key][lang]
-        lines.append(f"{_ALPHABET[index]}. {title} : {definition[:140]}")
+        lines.append(f"{_ALPHABET[index]}. {title}{sep}{definition[:140]}")
     return (
-        f"Voici un texte :\n\n{text}\n\n"
-        "Quel sophisme/caractere argumentatif illustre-t-il le mieux ?\n"
+        f"{intro}\n\n{text}\n\n{question}\n"
         + "\n".join(lines)
-        + "\n\nReponds uniquement par la lettre."
+        + f"\n\n{instruction}"
     )
 
 

@@ -71,11 +71,12 @@ on:
   # evenement : perimeter-review-guard.yml, ravive sur `pull_request_review`
   # (ubuntu-latest). Aucune double execution -- les deux fichiers se
   # partagent les evenements, ils ne les dupliquent pas :
-  #   pull_request        -> always-on-guards (organe perimeter inclus)
+  #   pull_request        -> always-on-guards (hors perimeter) + perimeter-review-guard :: perimeter
   #   pull_request_review -> perimeter-review-guard uniquement
-  # C'est exactement la condition posee par l'en-tete de ce fichier-la
-  # ("NE PAS reinscrire ... sans retirer l'organe perimeter d'always-on-guards") :
-  # ici l'organe n'est pas retire, il est RESTREINT a `pull_request`.
+  # Depuis #24231, `perimeter` n'est plus porte par cet umbrella : le check
+  # `perimeter review guard (#11268)` est publie par perimeter-review-guard.yml
+  # seul, qui ré-évalue les éditions du body. Une copie ici ferait survivre
+  # son ancien verdict dans l'umbrella.
   workflow_dispatch:
 
 permissions:
@@ -95,7 +96,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 19 organes, 1 checkout"
+    name: "Always-on guards -- 18 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
@@ -195,6 +196,33 @@ jobs:
             echo "[heal] aucun work dir preexistant -- checkout fera un clone neuf"
             exit 0
           fi
+          # --- Etat sparse herite du job precedent (#24959) ------------------
+          # Le pool de runners reutilise son work dir. Un work dir laisse en
+          # etat sparse ARME (core.sparseCheckout a vrai) fait materialiser
+          # l'ARBRE ENTIER par le checkout suivant : avec `filter: blob:none`,
+          # le desarmement du sparse telecharge les blobs -- mesure po-2024 du
+          # 2026-11-06 (consignee dans always-on-guards-body.yml) : 8 min 57 s
+          # sur la seule commande `git checkout --force refs/pull/<N>/merge`,
+          # sans une ligne de log, puis annulation ; sur deux runners
+          # differents (myia-ai-01-wsl-2 : 9 min 55 s ; myia-po-2024-linux-
+          # persist-6 : 9 min 49 s). Un clone frais `blob:none` laisse les
+          # blobs paresseux : il est moins cher que la materialisation.
+          # Meme arbitrage que le hook job-started de l'entrypoint du runner
+          # conteneurise (scripts/ci/docker/linux-runner/entrypoint.sh) : le
+          # FLAG ARME est le seul etat cassant (purge du clone) ; le fichier
+          # de motifs seul est inerte (il est retire, le cache est conserve).
+          sparse=$(git config --local --get core.sparseCheckout 2>/dev/null || true)
+          case "$sparse" in
+            true|1|on)
+              echo "::notice::[heal] work dir SPARSE arme -- purge du work dir"
+              rm -rf .git
+              exit 0
+              ;;
+          esac
+          if [ -f .git/info/sparse-checkout ]; then
+            echo "[heal] motifs sparse inertes -- retrait du fichier, work dir conserve"
+            rm -f .git/info/sparse-checkout
+          fi
           if [ -f .git/shallow ]; then
             echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
             rm -rf .git
@@ -228,6 +256,9 @@ jobs:
       - name: "Installer dependances detecteurs (pyyaml, Pillow, pytest)"
         run: pip install --quiet pyyaml Pillow pytest
 
+      - name: "Vérifier les motifs des listings Quarto (#25680)"
+        run: python scripts/check_quarto_listings.py
+
       # -----------------------------------------------------------------
       # BODY LIVE (#15697) : les organes qui lisent le corps (tag Grain:,
       # prev:, [CLAIMED], mots-cles de fermeture) le lisent A L'EXECUTION,
@@ -238,7 +269,7 @@ jobs:
       # 72 h sur #15303, 15 h sur #15587, les deux sans faute de lane.
       # Une seule lecture en tete de job, exportee dans PR_BODY : les
       # neuf sites ecrivant /tmp/pr_body.txt sont inchanges.
-      # Repli : appel API vide/echoue -> payload de l'evenement (photo-
+      # Repli : appel API echoue -> payload de l'evenement (photo-
       # graphie au declenchement). Jamais bloquant sur une panne de
       # lecture. `// empty` : un corps null rendrait le literal "null".
       # -----------------------------------------------------------------
@@ -246,28 +277,21 @@ jobs:
         env:
           PAYLOAD_BODY: ${{ github.event.pull_request.body }}
         run: |
-          LIVE=""
-          if [ -n "${PR_NUMBER:-}" ]; then
-            # Le CODE DE SORTIE distingue panne et corps vide (#17197) --
-            # PAS la vacuite de la sortie. `gh api` ecrit le DOCUMENT
-            # D'ERREUR sur stdout en rc=1 (mesure 2026-09-21) :
-            #   {"message":"API rate limit exceeded for installation.","status":"403"}
-            # et `--jq` n'y est PAS applique. Tester `-n "$LIVE"` prenait
-            # donc ce document pour le corps de la PR : le repli ci-dessous
-            # ne se declenchait JAMAIS sur panne d'API -- exactement le cas
-            # pour lequel il est ecrit -- et les organes bloquants en
-            # tiraient un verdict de contenu (« Grain tag absent »,
-            # « perimeter assertion contradictoire ») sur un simple quota
-            # epuise. Quatre PRs bloquees ainsi le 2026-09-21.
-            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
-          fi
-          if [ -n "$LIVE" ]; then
+          # Le CODE DE SORTIE distingue panne et corps vide (#17197) :
+          # `gh api` ecrit le DOCUMENT D'ERREUR sur stdout en rc=1
+          # (mesure 2026-09-21), sans appliquer `--jq` :
+          #   {"message":"API rate limit exceeded for installation.","status":"403"}
+          # Un test de sortie non vide prenait ce document pour le corps,
+          # et les organes bloquants rendaient un verdict de contenu sur un
+          # simple quota epuise. Quatre PRs bloquees ainsi le 2026-09-21.
+          # Une reponse vide reussie est un corps vide, pas une panne.
+          if [ -n "${PR_NUMBER:-}" ] && LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null); then
             echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
-            BODY="$LIVE"
           else
-            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement (photographie)"
-            BODY="${PAYLOAD_BODY:-}"
+            echo "::warning::[body-live] lecture API echouee -- repli sur le payload de l'evenement (photographie)"
+            LIVE="${PAYLOAD_BODY:-}"
           fi
+          BODY="$LIVE"
           delim="BODY_LIVE_EOF_$$"
           printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
 
@@ -863,43 +887,6 @@ jobs:
       # correction du corps jusqu'au push suivant -- coordinateur, review
       # #22333) et doublait chaque poste bloquant sur `opened`/`reopened`.
 
-      # Porte de perimeter-review-guard.yml :: perimeter, sur `pull_request`
-      # SEULEMENT. La surface `pull_request_review` est revenue au fichier
-      # d'origine (declencheur fork-reachable, incompatible avec le pool
-      # auto-heberge) : voir le bloc `on:` ci-dessus.
-      - name: "perimeter review guard (#11268)"
-        id: perimeter
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        run: |
-          PR="${{ github.event.pull_request.number }}"
-          # Meme correctif que perimeter-review-guard.yml (#17273) : le script
-          # a TROIS issues, et `||` les ecrasait toutes dans le message de
-          # contradiction. Un `exit 2` (« je n'ai pas pu mesurer ») etait donc
-          # rendu comme un verdict de contenu -- quatre runs, quatre tetes,
-          # tous refuses par `API rate limit exceeded`, le 2026-09-21. Une
-          # lecture refusee est une NON-MESURE (#14292), pas une contradiction.
-          #
-          #   0 -> mesure faite (ou PERIMETRE NON MESURABLE nomme)
-          #   1 -> contradiction reelle : message et rouge inchanges
-          #   2 -> mesure impossible (echec non reconnu) : fail-closed conserve,
-          #        mais on dit ce qui s'est passe. Une signature transitoire
-          #        RECONNUE sort en 0 depuis l'organe et n'arrive pas ici.
-          #
-          # `continue-on-error: true` absorbe le code, PAS l'annotation : le
-          # message reste ce que lisent le picker et les humains.
-          if python scripts/check_pr_perimeter.py "$PR" --scan-thread; then
-            exit 0
-          else
-            rc=$?
-          fi
-          if [ "$rc" -eq 1 ]; then
-            echo "::error::A perimeter assertion on this PR (body or review) contradicts the effective file list, or an exclusivity claim does not name a touched .github/workflows/** file. Truth source: gh pr view $PR --json files (#11268). Fix the assertion to enumerate the real files."
-            exit 1
-          fi
-          echo "::error::le garde n'a PAS pu mesurer le perimetre de la PR $PR (rc=$rc) -- verdict UNKNOWN, ce n'est PAS une contradiction de perimetre. Aucune assertion n'a ete confrontee. Relancer ce job ; si l'echec se repete, la cause est amont (quota d'API partage par compte, cf #17229)."
-          exit 1
-
       # Porte de fast-lane-shadow.yml :: fast-lane. Le moteur emet un
       # check-run nomme par garde absorbe (API Checks) : la granularite
       # visible sur la PR est preservee, seule l'infrastructure etait
@@ -935,8 +922,16 @@ jobs:
           # legitime (squelette `sorry`, `native_decide` documente) restait
           # rouge faute de moyen de la declarer.
           LEAN_CLIQUET_PR_BODY: ${{ github.event.pull_request.body }}
+          # #22209 (TRANCHE45) : meme canal in-memory pour les marqueurs
+          # `plan-loss: section assumee -- <notebook> section: <titre> : <raison>`
+          # du detecteur de perte de plan (#14532) -- l'arbitrage
+          # par-section que le garde prescrit lui-meme. Sans lui, un
+          # marqueur pose dans le body restait invisible a la jambe absorbee
+          # (le detecteur lit PLAN_LOSS_PR_BODY nativement, priorite
+          # --pr-body > env, meme politique que MD_CONTENT_LOSS_PR_BODY).
+          PLAN_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
-          # #23146 : les trois canaux ci-dessus portent la PHOTOGRAPHIE du
+          # #23146 : les canaux ci-dessus portent la PHOTOGRAPHIE du
           # payload, figee a l'evenement declencheur. Une PR dont le body est
           # edite APRES le dernier push -- justification `## Output-collapse
           # justification` ecrite, `Grain:` corrige, `[LEAN-ANCHOR-DECLARED]`
@@ -961,7 +956,8 @@ jobs:
           MD_CONTENT_LOSS_PR_BODY="${PR_BODY:-$MD_CONTENT_LOSS_PR_BODY}"
           COLLAPSE_PR_BODY="${PR_BODY:-$COLLAPSE_PR_BODY}"
           LEAN_CLIQUET_PR_BODY="${PR_BODY:-$LEAN_CLIQUET_PR_BODY}"
-          export MD_CONTENT_LOSS_PR_BODY COLLAPSE_PR_BODY LEAN_CLIQUET_PR_BODY
+          PLAN_LOSS_PR_BODY="${PR_BODY:-$PLAN_LOSS_PR_BODY}"
+          export MD_CONTENT_LOSS_PR_BODY COLLAPSE_PR_BODY LEAN_CLIQUET_PR_BODY PLAN_LOSS_PR_BODY
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
 
@@ -1255,7 +1251,7 @@ jobs:
       # *.env.sample / *.env.template. gitleaks reconnait les formats de cles
       # connus (sk-..., ghp_..., AIza...), il ne voit pas une phrase secrete
       # faite d'un mot ordinaire (cas fondateur 'Propaganda' sur
-      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/Argument_Analysis/.env.example).
+      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/ArgumentAnalysis/.env.example).
       # L'organe verifie 32 fichiers traces git : pour chaque cle dont le nom
       # matche (?i)(PASS|SECRET|TOKEN|KEY|PWD), la valeur doit etre un marqueur
       # (vide, your_..._here, <...>, hf_..., sk-..., 0x<...>, URL, chemin,
@@ -1444,7 +1440,6 @@ jobs:
               FAILED="$FAILED $1"
             fi
           }
-          check perimeter    "${{ steps.perimeter.outcome }}"
           check fastlane     "${{ steps.fastlane.outcome }}"
           check identity     "${{ steps.identity.outcome }}"
           check hot_subset   "${{ steps.hot_subset.outcome }}"

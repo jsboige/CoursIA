@@ -207,7 +207,9 @@ def findings(base: str) -> tuple[list[str], list[str], dict]:
         # qui n'est pas absorbe est double par son workflow, lequel declenche
         # toujours sur `pull_request` : rien n'est perdu, et comparer ses
         # `paths` au declencheur produirait un faux rouge sur chaque garde
-        # jamais absorbe (mesure : `solution-leak-guard`, non absorbe).
+        # jamais absorbe (mesure : `perimeter-review-guard`, non absorbe ; le
+        # 2026-11-12, `solution-leak-guard` est passe de non-absorbe a
+        # absorbe -- T-A/2 de #25510 -- et n'est donc plus un exemple).
         if not guard.absorbed:
             continue
         rel = WORKFLOW_PREFIX + guard.source

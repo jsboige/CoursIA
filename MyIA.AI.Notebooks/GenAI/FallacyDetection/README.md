@@ -44,7 +44,7 @@ Corpus r/fallacy extrait et anonymisé depuis le Data Export Reddit du compte `u
 
 Le corpus Jessynoo r/fallacy est en **anglais** (0 mot-clé français sur 69 items), mais ce corpus n'est **pas** un jeu d'entraînement — c'est un **bootstrap de câblage** du pipeline (extraction reproductible, anonymisation PII, format CSV stable). Il a toujours eu cette vocation, et le README l'annonçait sans la nommer. Le jeu d'entraînement viendra de la Phase 2.
 
-La **taxonomie Argumentum** (sous-module `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum`, fichier `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) est **déjà traduite en 8 langues** : `fr` (4 colonnes), `en` (6), `ru` (7), `ar` (7), `fa` (7), `zh` (7), `es` (7), `pt` (7). Mesure firsthand sur `origin/main` du sous-module :
+La **taxonomie Argumentum** (sous-module `MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/Argumentum`, fichier `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`) est **déjà traduite en 8 langues** : `fr` (4 colonnes), `en` (6), `ru` (7), `ar` (7), `fa` (7), `zh` (7), `es` (7), `pt` (7). Mesure firsthand sur `origin/main` du sous-module :
 
 ```bash
 head -1 "Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv" | tr ',' '\n' \
@@ -79,4 +79,4 @@ Produits par [05_dataset_builder.ipynb](05_dataset_builder.ipynb) (ou `python sc
 | `is_leaf` | 1 si le nœud n'a pas d'enfant |
 | `scenario_path` | chemin décimal du scénario (`catégorie.sous-catégorie.rang`) |
 
-Les textes ne sont pas dans les splits : ils se relisent dans les trois sources au moment du rendu du prompt, ce qui garde les CSV petits et fait porter toute la traçabilité par les SHA1 de blob épinglés dans `manifest.json`. `val.csv` (1 629 lignes, un couple par nœud) et `test.csv` (3 258 lignes, deux par nœud) sont committés ; `train.csv` (14 000 lignes) se régénère à l'identique et n'est épinglé que par son SHA-256 dans le manifeste. Les trois splits utilisent des scénarii disjoints (117 / 25 / 25).
+Les textes ne sont pas dans les splits : ils se relisent dans les trois sources au moment du rendu du prompt, ce qui garde les CSV petits et fait porter toute la traçabilité par les SHA1 de blob épinglés dans `manifest.json`. `val.csv` (un couple par nœud) et `test.csv` (deux par nœud) sont committés ; `train.csv` se régénère à l'identique et n'est épinglé que par son SHA-256 dans le manifeste. Les trois splits utilisent des scénarii disjoints (117 / 25 / 25).

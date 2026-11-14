@@ -4,8 +4,8 @@
 POURQUOI CE SCRIPT EXISTE
 -------------------------
 La taxonomie des sophismes vendoree
-(`MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv`)
-est consommee par plusieurs carnets de la serie `Argument_Analysis` : la
+(`MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv`)
+est consommee par plusieurs carnets de la serie `ArgumentAnalysis` : la
 construction des traces SFT (`argumentum_taxonomy_explorer.py`), les liens
 croises du carnet `Argumentation-Onto-02-CrossLinks-CSV-Python.ipynb`, le
 constructeur du dataset cartesien (`cartesian_dataset_builder.py`).
@@ -75,7 +75,7 @@ REPO = next(
     (p for p in HERE.parents if (p / "MyIA.AI.Notebooks").is_dir()),
     HERE.parent.parent.parent,
 )
-DATA_DIR = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "Argument_Analysis" / "data"
+DATA_DIR = REPO / "MyIA.AI.Notebooks" / "SymbolicAI" / "ArgumentAnalysis" / "data"
 
 #: Copie locale de la taxonomie des sophismes (verifie par le pin du manifeste).
 FALLACIES_CSV = DATA_DIR / "argumentum_fallacies_taxonomy.csv"
