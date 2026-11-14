@@ -97,7 +97,7 @@
   - All stubs use `None` / `pass` pattern with `# Etape N` and `# Indice` comments
   - Each exercise preceded by markdown cell with objective + indices
   - No `raise NotImplementedError` / `assert False` / `1/0` used
-  - Path correction: NumPy/Pandas notebooks are under `01-Python-For-Data-Science/` not `06-Data-Agents/`
+  - Path correction: NumPy/Pandas notebooks are under `01-Python-For-Data-Science/` not `06-Agents-de-Donnees/`
 
 
 

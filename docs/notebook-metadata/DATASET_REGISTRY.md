@@ -76,9 +76,9 @@ Chaque ligne du registre respecte le schéma :
 
 | Chemin | Taille (B) | SHA256 (16 hex) | Licence | Catégorie | Usage | Card |
 |--------|----------:|-----------------|---------|-----------|-------|------|
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day1-Foundations/Labs/sales_data.csv` | 163 | `fdfddb0640d83ef1…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Track1 LangChain Day 1 foundations | — |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Data-Agents/Day3-Data-Agents/Labs/Lab4-DataWrangling/transactions.csv` | 280 | `ac49b1635d071a89…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Track1 LangChain Lab4 DataWrangling | — |
-| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Agent-Orchestration/Day4-Foundations/sales_data.csv` | 4 466 | `727a7ff0eface02…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Google ADK Day 4 foundations | — |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Agents-de-Donnees/Day1-Foundations/Labs/sales_data.csv` | 163 | `fdfddb0640d83ef1…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Track1 LangChain Day 1 foundations | — |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/06-Agents-de-Donnees/Day3-Data-Agents/Labs/Lab4-DataWrangling/transactions.csv` | 280 | `ac49b1635d071a89…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Track1 LangChain Lab4 DataWrangling | — |
+| `MyIA.AI.Notebooks/ML/DataScienceWithAgents/07-Orchestration-d-Agents/Day4-Foundations/sales_data.csv` | 4 466 | `727a7ff0eface02…` | SYNTHETIQUE-COURS | pedagogique-synthetique | Google ADK Day 4 foundations | — |
 
 ### Probas / Infer.NET (5)
 
@@ -207,6 +207,6 @@ Acceptance partiel (5/6 vérifiables firsthand maintenant, 1/6 attend rollout ca
 | Cycle | Cible |
 |-------|-------|
 | c.796 | Peuplement Probas/PyMC (datasets bayésiens additionnels) + 7 fichiers QC yfinance restants |
-| c.797 | Peuplement ML/DataScienceWithAgents complet (06-Data-Agents + 07-Agent-Orchestration) |
+| c.797 | Peuplement ML/DataScienceWithAgents complet (06-Agents-de-Donnees + 07-Orchestration-d-Agents) |
 | c.798 | Peuplement QuantConnect (datasets supplémentaires si matérialisés) + génération colonne `dataset` catalogue |
 | c.799+ | Roulement famille par famille jusqu'à ~80% de couverture des datasets référencés |
