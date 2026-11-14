@@ -1,0 +1,10 @@
+- name: Compression-04-ANS
+  family: Compression
+  python: MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Compression/Compression-04-ANS-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux carnets construisent les machines rANS et tANS pédagogiques depuis leurs transitions ; zlib Python et ZLibStream .NET sont réellement invoqués pour la comparaison de production."
+  known_differences:
+    - "Le flot Python stocke une liste de bits et le C# les empaquette ; les coûts logiques et physiques sont distingués. Les générateurs aléatoires sont propres à chaque runtime."
+    - "Le cadre version 1 ajoute une version et le total de symboles au format précédent ; le modèle reste externe. Les deux implémentations valident le cadre et le retour à l'état initial."
