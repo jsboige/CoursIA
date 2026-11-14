@@ -211,6 +211,8 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 03d | [Deux espèces de flèches](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
 | 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
 
+Le carnet 03d existe aussi en [C#](GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb) : les deux versions énumèrent les jeux et comparent les swaps adjacents et la préservation des équilibres purs.
+
 ### Autour de 04 — existence et nature de l'équilibre
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
