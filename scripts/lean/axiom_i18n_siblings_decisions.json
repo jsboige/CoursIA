@@ -1,7 +1,7 @@
 {
   "_comment": "Decision par lake de l'opt-in i18n de la porte d'axiomes (#24107). Genere par `scripts/lean/axiom_i18n_siblings.py --update` ; le registre du manifeste fait foi sur la valeur, ce fichier porte la RAISON et la MESURE. Une cle du manifeste qui diverge de ce fichier fait rougir `--check`.",
-  "generated-at": "2026-11-11T14:39:11Z",
-  "generated-by": "myia-ai-01:CoursIA",
+  "generated-at": "2026-11-14T17:07:43Z",
+  "generated-by": "myia-po-2024:CoursIA-2",
   "organ": "scripts/lean/axiom_i18n_siblings.py",
   "issue": 24107,
   "lakes": [
@@ -138,8 +138,8 @@
       "decision": "false",
       "reason": "liste de modules explicite : les modules `_en` qu'elle nomme sont deja inspectes par la porte (le filtre i18n ne vaut que pour la derivation '*') ; l'opt-in ne change rien",
       "mode": "EXPLICIT",
-      "i18n-modules": 10,
-      "i18n-declarations": 285
+      "i18n-modules": 24,
+      "i18n-declarations": 563
     },
     {
       "lake": "mathlibexamples",
@@ -288,10 +288,10 @@
     {
       "lake": "conway",
       "decision": "true",
-      "reason": "opt-in sur : la surface `_en` (41 modules, 838 declarations) ; les ancres reportees (native_decide, sorry) sont gouvernees par la allow-list du lac (`axiom-allow-axioms`) -- la source ne dit pas si l'ancre resolue au build y est couverte, seule la CI le dit (le gate reel compare les noms resolus)",
+      "reason": "opt-in sur : la surface `_en` (41 modules, 833 declarations) ; les ancres reportees (native_decide, sorry) sont gouvernees par la allow-list du lac (`axiom-allow-axioms`) -- la source ne dit pas si l'ancre resolue au build y est couverte, seule la CI le dit (le gate reel compare les noms resolus)",
       "mode": "WILDCARD",
       "i18n-modules": 41,
-      "i18n-declarations": 838
+      "i18n-declarations": 833
     }
   ]
 }
