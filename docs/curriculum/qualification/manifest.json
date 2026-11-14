@@ -119,19 +119,45 @@
             "outillage": 2,
             "autonomie": 3
           },
-          "justification": "Prérequis : grammaires formelles, forme normale de Chomsky, PCFG et treebank — formalisme hors série, non enseigné ailleurs dans le corpus (P3). Outillage : NLTK (`PCFG`, `ChartParser`) comme témoin de concordance (O2). Autonomie : le recognizer CYK en programmation dynamique, puis Viterbi et inside, sont à implémenter (A3). Niveau D3 = max(3, 3). Recherche R1 : le §6 « Ambiguïté mesurée » et le §7 « Témoin NLTK » forment un instrument de vérification, mais la concordance attendue est connue d'avance — ce n'est pas une exploration, c'est un contrôle.",
+          "justification": "CFG, CNF, PCFG et treebank introduisent le formalisme grammatical hors série (P3). CYK, Viterbi et inside sont expliqués et les exercices lissent les productions, comptent les dérivations et construisent un protocole de réestimation sur la phrase ambiguë (A3). Le témoin NLTK et les probabilités rationnelles vérifient la concordance sur un corpus fixé ; ce contrôle est un instrument réutilisable (R1). NLTK PCFG et les parseurs de référence sont réellement configurés et interprétés (O2).",
           "mesures": {
             "exercices": 3,
             "cellules_code": 17,
             "cellules_md": 32,
-            "prose_chars": 29764,
-            "densite": 1750,
+            "prose_chars": 29388,
+            "densite": 1728,
             "densite_plancher": 1200,
             "kernel": "Python 3 (coursia-ml-training)",
             "exigences": {
               "api": false,
-              "cloud": false,
               "gpu": false,
+              "cloud": false,
+              "wsl": false
+            }
+          }
+        },
+        {
+          "path": "MyIA.AI.Notebooks/NLP/04_PCFG_CYK_Parsing-CSharp.ipynb",
+          "difficulte": "D3",
+          "recherche": "R1",
+          "criteres": {
+            "prerequis": 3,
+            "outillage": 3,
+            "autonomie": 3
+          },
+          "justification": "CFG, CNF, PCFG et treebank introduisent le formalisme grammatical hors série (P3). CYK, Viterbi et inside sont expliqués et les exercices lissent les productions, comptent les dérivations et construisent un protocole de réestimation sur la phrase ambiguë (A3). Le témoin NLTK et les probabilités rationnelles vérifient la concordance sur un corpus fixé ; ce contrôle est un instrument réutilisable (R1). Les trois calculs de parsing restent C# ; Python.NET/CPython et NLTK ajoutent l'outillage tiers nécessaire au vrai témoin (O3).",
+          "mesures": {
+            "exercices": 3,
+            "cellules_code": 17,
+            "cellules_md": 33,
+            "prose_chars": 29874,
+            "densite": 1757,
+            "densite_plancher": 1200,
+            "kernel": ".NET (C#)",
+            "exigences": {
+              "api": false,
+              "gpu": false,
+              "cloud": false,
               "wsl": false
             }
           }
