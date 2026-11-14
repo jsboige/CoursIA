@@ -428,10 +428,17 @@ def probe_checks(pr: int, head: str) -> dict:
         name for name, leg in latest.items()
         if (leg or {}).get("conclusion") in RED_CONCLUSIONS
     )
-    residual = data.get("residual_reds") or []
-    reds += sorted(
-        r.get("name") or "?" for r in residual if isinstance(r, dict)
-    )
+    # Un rouge residuel ne compte que si sa jambe est ABSENTE du pli
+    # latest-wins : une tentative plus recente du meme nom la supersede --
+    # verte, le rouge est perime (#24743 : deux rouges des 10-11/11 etaient
+    # des tentatives supersedees de jambes repassees vertes ensuite, et la
+    # sonde rendait rouge une PR dont le pli etait 100 % vert) ; rouge, la
+    # jambe est deja comptee par la boucle ci-dessus.
+    residual_only = sorted({
+        (r.get("name") or "?")
+        for r in (data.get("residual_reds") or []) if isinstance(r, dict)
+    } - set(latest))
+    reds += residual_only
     return {"green": not reds, "reds": reds}
 
 

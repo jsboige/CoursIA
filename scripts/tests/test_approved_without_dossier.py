@@ -459,3 +459,57 @@ def test_probe_checks_ne_compte_pas_skipped_neutral_rouges(monkeypatch):
     result = awd.probe_checks(7, HEAD)
     assert result["green"] is False
     assert result["reds"] == ["Slow", "Tests"]
+
+
+# --- 6bis. probe_checks : un rouge residuel supersede ne compte pas (#24743) ---
+
+def test_probe_checks_residual_supersede_par_vert_ne_compte_pas(monkeypatch):
+    """Un rouge RESIDUEL dont la jambe est VERTE au pli latest-wins ne
+    compte pas : c'est le faux rouge #24743 -- la sonde rendait rouge une
+    PR dont les deux plis (latest et residual) etaient verts, parce que
+    `residual_reds` etait somme sans regarder l'etat de la jambe au pli."""
+    payload = {
+        "head": HEAD,
+        "latest": {
+            "Always-on guards": {"conclusion": "success"},
+            "PR gate": {"conclusion": "success"},
+        },
+        "residual_reds": [
+            {"name": "Always-on guards", "conclusion": "failure"},
+            {"name": "PR gate", "conclusion": "failure"},
+        ],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    result = awd.probe_checks(7, HEAD)
+    assert result["green"] is True
+    assert result["reds"] == []
+
+
+def test_probe_checks_residual_sans_jambe_au_pli_compte(monkeypatch):
+    """Un rouge residuel dont le nom est ABSENT du pli latest-wins reste un
+    rouge : le pli n'a aucune tentative plus recente qui le supersede."""
+    payload = {
+        "head": HEAD,
+        "latest": {"Build": {"conclusion": "success"}},
+        "residual_reds": [{"name": "Legacy leg", "conclusion": "failure"}],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    result = awd.probe_checks(7, HEAD)
+    assert result["green"] is False
+    assert result["reds"] == ["Legacy leg"]
+
+
+def test_probe_checks_residual_rouge_au_pli_compte_une_fois(monkeypatch):
+    """Une jambe rouge au pli ET presente en residuel est comptee une seule
+    fois : le residuel ne double pas le rouge vivant."""
+    payload = {
+        "head": HEAD,
+        "latest": {"Tests": {"conclusion": "failure"}},
+        "residual_reds": [{"name": "Tests", "conclusion": "failure"}],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    result = awd.probe_checks(7, HEAD)
+    assert result["reds"] == ["Tests"]
