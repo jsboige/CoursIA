@@ -100,7 +100,7 @@ La série Probas comporte **4 sous-séries principales + applications standalone
 
 **Kernels** : `dotnet-csharp` · `python3` · `lean4` (side tracks Lean via WSL, cf [`decision_theory_lean/install_wsl_kernel.md`](decision_theory_lean/README.md)) · **GPU** : non (Infer.NET/PyMC CPU-only) · **Prérequis** : algèbre linéaire, probabilités de base (variables aléatoires, Bayes), Python intermédiaire.
 
-**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 2
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) · niveau 2
 
 ## Corpus bayésien — Infer.NET (C#/.NET Interactive)
 
