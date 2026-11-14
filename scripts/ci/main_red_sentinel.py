@@ -339,8 +339,9 @@ def find_first_red(commits: list, states: dict) -> dict:
     1. on note le commit de tete et son etat ;
     2. on descend jusqu'a trouver le **premier** commit rouge de la serie
        (le plus ancien de la zone rouge) ;
-    3. la reponse n'est exacte que si le commit immediatement plus ancien
-       est connu VERT. Sinon elle est **bornee** : on declare au plus tot et
+    3. la reponse n'est exacte que si la chaine premier-parent de la tete
+       jusqu'au vert est prouvee et que le parent du rouge est ce vert.
+       Sinon elle est **bornee** : on declare au plus tot et
        au plus tard, plutot que de nommer un coupables qui peut etre innocent.
 
     Exemple de borne : un commit sans run entre le vert et le rouge laisse
@@ -360,14 +361,16 @@ def find_first_red(commits: list, states: dict) -> dict:
     latest_green = None
     unknown_between = []
     infra_between = []
-    red_zone_started = False
     for commit, info in entries:
         state = info["state"]
         if state == RED:
-            red_zone_started = True
-            # le bloc rouge est parcouru du plus recent au plus ancien : le
-            # DERNIER rouge vu est le plus ancien du bloc, c'est-a-dire le
-            # commit qui a INTRODUIT le rouge.
+            # Garder seulement les trous situés entre ce rouge et le vert
+            # suivant dans la liste. Leur portée historique ne sera affirmée
+            # qu'après vérification de la chaîne premier-parent.
+            unknown_between.clear()
+            infra_between.clear()
+            # Le dernier rouge vu est le plus ancien dans la liste ; sans
+            # filiation prouvée il reste seulement un candidat observé.
             first_red = (commit, info)
             continue
         if state == GREEN:
@@ -395,8 +398,30 @@ def find_first_red(commits: list, states: dict) -> dict:
             "conclusion": run.get("conclusion"),
         }
 
+    # L'API REST des commits peut inclure des branches latérales ; l'ordre de
+    # retour n'est pas une preuve de filiation. Exiger chaque premier parent
+    # entre la tête et le vert, y compris le bord rouge -> vert.
+    first_parent_chain_verified = False
+    if first_red is not None and latest_green is not None:
+        green_idx = next(i for i, entry in enumerate(entries) if entry[0] is latest_green[0])
+        chain = [entry[0] for entry in entries[:green_idx + 1]]
+        def is_first_parent(child, parent):
+            parents = child.get("parents")
+            parent_sha = parent.get("sha")
+            return bool(isinstance(parents, list) and parents
+                        and isinstance(parents[0], dict) and parent_sha
+                        and parents[0].get("sha") == parent_sha)
+        first_parent_chain_verified = all(
+            is_first_parent(child, parent) for child, parent in zip(chain, chain[1:])
+        )
+
     verdict = head[1]["state"]
     bounds = {
+        "portee_first_red_commit_exact": (
+            "Exactitude de la borne historique du premier rouge observé ; "
+            "consulter verdict pour l’état de la tête, qui peut rester unknown."
+        ),
+        "chaine_first_parent_verifiee": first_parent_chain_verified,
         "dernier_commit_vert_connu": describe(latest_green),
         "commits_sans_verdict_entre_les_deux": [
             {"sha": c.get("sha"), "subject": (c.get("commit", {})
@@ -408,6 +433,7 @@ def find_first_red(commits: list, states: dict) -> dict:
              .splitlines()[0][:120]} for c in infra_between],
     }
     exact = bool(latest_green is not None and first_red is not None
+                 and first_parent_chain_verified
                  and not unknown_between and not infra_between)
     return {
         "verdict": verdict,
@@ -471,13 +497,17 @@ def main(argv=None) -> int:
             print("[main {}] aucun commit rouge prouve (etat de tete : {})".format(
                 args.branch, report.get("verdict")))
         else:
-            print("[main {}] premier commit rouge : {} {}".format(
-                args.branch, first["sha"][:12], first["subject"]))
+            label = ("candidat rouge observé" if report.get("bounds", {}).get(
+                "chaine_first_parent_verifiee") is False else "premier commit rouge")
+            print("[main {}] {} : {} {}".format(
+                args.branch, label, first["sha"][:12], first["subject"]))
             print("  exact : {}".format(report.get("first_red_commit_exact")))
             green = report.get("bounds", {}).get("dernier_commit_vert_connu")
             if green:
                 print("  dernier vert connu : {} {}".format(
                     green["sha"][:12], green["subject"]))
+            if report.get("bounds", {}).get("chaine_first_parent_verifiee") is False:
+                print("  filiation premier-parent non verifiee : attribution bornee")
             for gap in report.get("bounds", {}).get(
                     "commits_sans_verdict_entre_les_deux", []):
                 print("  sans verdict : {} {}".format(gap["sha"][:12],
@@ -499,8 +529,10 @@ def main(argv=None) -> int:
             lat.get("mediane"), lat.get("p90"), lat.get("max")))
         first = report.get("first_red_commit")
         if first:
-            print("premier commit rouge : {} {}".format(
-                first["sha"][:12], first["subject"]))
+            label = ("candidat rouge observé (filiation non vérifiée)"
+                     if report.get("bounds", {}).get("chaine_first_parent_verifiee") is False
+                     else "premier commit rouge")
+            print("{} : {} {}".format(label, first["sha"][:12], first["subject"]))
 
     return 1 if report.get("verdict") == RED else 0
 
