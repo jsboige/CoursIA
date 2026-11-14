@@ -80,6 +80,10 @@ principal de niveau licence qui en pose d'abord les notions.
 | 06 | [Simuler un circuit quantique classiquement](Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb) | Licence | [06b — Aaronson–Gottesman](Complexity-06b-AaronsonGottesman-Dequantification-Python.ipynb), [06c — Classical at heart](Complexity-06c-ClassicalAtHeart-Python.ipynb), [06d — Aaronson–Ambainis, la variable influente](Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb) |
 | 07 | [Complexité de Kolmogorov bornée : séquences à mémoire limitée](Complexity-07-KolmogorovBornee-Sequences-Python.ipynb) | Recherche | [07b — Le tour des grands nombres](Complexity-07b-LeTourDesGrandsNombres-Python.ipynb), [07c — Le bilan mathocalypse](Complexity-07c-LeBilanMathocalypse-Python.ipynb) |
 
+## Jumeau C# — Complexity-02
+
+Le carnet de découverte **Vérifier ou trouver : P, NP et la réduction** est disponible en deux langages : [Python](Complexity-02-P-NP-Reduction-Python.ipynb) et [C#](Complexity-02-P-NP-Reduction-CSharp.ipynb). Le twin C# emploie la bibliothèque standard .NET, conformément au contenu du cours : Sudoku par backtracking et vérification de certificat, subset-sum par force brute et programmation dynamique, Partition par programmation dynamique, et extrapolations avec `BigInteger`. Les budgets et seeds sont conservés; les flux aléatoires de .NET et NumPy peuvent produire des instances différentes.
+
 ## Position dans le dépôt
 
 La série rejoint le dialogue formel existant : les jumeaux Lean (`Search/discrepancy_lean/`,
@@ -191,3 +195,7 @@ les rangées minimales par programmation linéaire.
 Chaque notebook embarque au moins trois exercices (`TODO etudiant`) : étendre une machine,
 dériver un compte, déplacer un budget — les stubs s'exécutent sans erreur (règle C.1 du
 dépôt) et les corrigés restent la propriété de l'étudiant.
+
+## Jumeau C# et différences de portage
+
+- [Complexity-04 — Décider sans connaître la suite (C#)](Complexity-04-OnlineAlgorithms-CSharp.ipynb) : même couverture conceptuelle, implémentations idiomatiques avec la bibliothèque standard .NET ; espérances des skis calculées par sommes discrètes exactes, et permutations du secrétaire générées réellement par Fisher–Yates (`Random(42)`). Les résultats Monte Carlo peuvent différer de NumPy malgré la graine commune. Les exercices LFU et secrétaire fine vérifient leurs fixtures et leurs budgets.

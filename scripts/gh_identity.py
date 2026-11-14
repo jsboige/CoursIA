@@ -95,6 +95,7 @@ APP_DOSSIER_LANES = (
     "po-2025",
     "po-2026",
     "po-2027",
+    "po-2028",
     "web1",
     "ai-01",
 )
