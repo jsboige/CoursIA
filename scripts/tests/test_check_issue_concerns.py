@@ -822,18 +822,26 @@ class Utf8OutputTests(unittest.TestCase):
         emoji_concern = "Concern: le rendu casse \U0001f680 partout"
         original = sys.stdout
         original_fetch = mod.fetch_comments
+        original_state = mod.fetch_issue_state
         raw = _io.BytesIO()
         sys.stdout = _io.TextIOWrapper(raw, encoding="cp1252")
         try:
             mod.fetch_comments = lambda number: [
                 c(60, "2026-10-19T09:00:00Z", emoji_concern)
             ]
+            # CI sans GH_TOKEN : l'etat d'issue ne part jamais en vrai gh api
+            # (le defaut de --classes inclut la classe 6, closed-over-remark).
+            mod.fetch_issue_state = lambda number: {
+                "state": "open",
+                "closed_at": None,
+            }
             rc = mod.main(["--issues", "15"])
             sys.stdout.flush()
             payload = raw.getvalue()
         finally:
             sys.stdout = original
             mod.fetch_comments = original_fetch
+            mod.fetch_issue_state = original_state
         self.assertEqual(rc, 0)
         out = payload.decode("utf-8")
         self.assertIn("non resolu", out)
