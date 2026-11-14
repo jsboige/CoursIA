@@ -31,7 +31,7 @@ and the trivial identities (zero, null source, non-negativity) are
 closed.
 -/
 
-import Discrepancy.Basic
+import Discrepancy.Basic_en
 
 /-!
 # Shift distance Δ (Def 1.3, Karingula–Lovett)

@@ -99,6 +99,32 @@ flowchart TD
   le théorème du degré.
 - Infrastructure complète hypercube + espace vectoriel + opérateurs (0 sorry).
 
+## Croisement — Aaronson–Ambainis, le chaînon inverse
+
+La conjecture d'**Aaronson–Ambainis** (2014), prouvée formellement et publiée le
+06/11/2026 dans le dépôt
+[`physical-superintelligence/aaronson-ambainis`](https://github.com/physical-superintelligence/aaronson-ambainis)
+(Apache-2.0, commit `2a6ceae`), traite le **même objet** — une fonction bornée
+sur le cube `{0,1}^N` — et referme la boucle dans l'autre sens : là où Huang
+borne le degré par la sensibilité (`deg(f) ≤ s(f)²`), Aaronson–Ambainis impose
+qu'un polynôme borné `0 ≤ p ≤ 1` de degré `d` et de variance `≥ ε` possède une
+**variable influente** :
+
+> `Inf_i[p] ≥ (8√15 / (125 π⁴)) · ε^{5/2} / d⁶ ≥ (ε/d)⁷`
+
+Influences contre sensibilité, même cube, même vocabulaire Fourier.
+
+Statut : **cité, non vendu** — la formalisation amont (`Conjecture.lean`, qui
+n'importe que Mathlib, 0 sorry, vérifiée par deux noyaux indépendants et un
+comparateur) n'est pas portée dans notre lac ; notre grain est la pédagogie et
+la comparaison. Les pins coïncident (`v4.33.0`, Mathlib v4.33.0), ce qui rend
+la lecture croisée des déclarations possible sans builder le dépôt amont.
+
+Le carnet compagnon qui enseigne l'énoncé et la chaîne en 4 maillons à l'échelle
+exécutable, avec le contrepoint Huang relu depuis ce lac :
+`Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`, dans la série
+[Complexity](../../../Complexity/README.md) (#25004).
+
 ## Notes
 
 - La conjecture de sensibilité a été posée par Nisan et Szegedy (1992) et résolue
@@ -116,6 +142,10 @@ lake build Sensitivity
 ## Voir aussi
 
 - **[`SymbolicAI/Lean`](../README.md)** — index de la série parente
+- **Carnet compagnon AA** :
+  `Complexity-06d-AaronsonAmbainis-VariableInfluente-Python.ipynb`, dans la série
+  [Complexity](../../../Complexity/README.md) —
+  la conjecture d'Aaronson–Ambainis enseignée à l'échelle exécutable (#25004)
 - Huang (2019), *Induced subgraphs of hypercubes and a proof of the Sensitivity
   Conjecture*, Ann. Math. 190(3).
 - Nisan & Szegedy (1992), *On the degree of Boolean functions as real

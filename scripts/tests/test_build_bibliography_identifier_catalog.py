@@ -19,7 +19,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-MODULE_PATH = REPO_ROOT / "scripts" / "build_bibliography_identifier_catalog.py"
+MODULE_PATH = REPO_ROOT / "scripts" / "bibliography" / "build_bibliography_identifier_catalog.py"
 
 
 def _load_module():
@@ -294,3 +294,109 @@ def test_a1_join_types_by_value_like_the_crosswalk(tmp_path):
     assert jointure["total"] == 1
     assert jointure["resolus"] == 1
     assert jointure["non_resolus"] == 0
+
+
+def test_default_output_is_written_outside_the_gisement_root(tmp_path):
+    """CONTROLE POSITIF : le catalogue par defaut ne doit PAS atterrir dans la
+    racine du gisement.
+
+    La racine ne porte que des publications ; un catalogue d'identifiants est un
+    fichier de travail. Il part donc dans le dossier des travaux, frere du
+    gisement.
+    """
+    root = tmp_path / "Bibliographie IA"
+    root.mkdir(parents=True)
+
+    sortie = bcc.chemin_sortie(root, jour="2026-11-06")
+
+    assert sortie.parent.name == "Bibliographie-travaux"
+    assert sortie.parent.parent == tmp_path
+    assert sortie.name == "IDENTIFIANTS-catalogue-2026-11-06.csv"
+    # la racine du gisement reste hors du chemin de sortie
+    assert root not in sortie.parents
+
+
+def test_explicit_out_wins_over_the_default(tmp_path):
+    root = tmp_path / "Bibliographie IA"
+    root.mkdir(parents=True)
+
+    sortie = bcc.chemin_sortie(root, out=str(tmp_path / "catalogue.csv"))
+
+    assert sortie == tmp_path / "catalogue.csv"
+
+
+# === #22537 : DOI underscore du nommage maison + faux arXiv de suffixe DOI --
+#
+# Mesure sur le rayon Consciousness (regen du 2026-11-14) :
+#   - `... (Acta Biotheoretica 69(3) 319-341, DOI 10.1007_s10441-020-09400-0,
+#     copie preprint UCI 2017-07-30).pdf` -> AUCUNE ligne au catalogue (le
+#     nommage maison remplace le `/` par un `_`, forme que ni le motif nu slash
+#     ni la premiere page -- copie preprint sans tampon DOI -- ne couvraient) ;
+#   - `... (Front Robot AI 4-60, DOI 10.3389_frobt.2017.00060, OA).pdf` ->
+#     ligne `arxiv 2017.00060` de confiance ELEVEE : le suffixe du DOI matche
+#     le motif arXiv nu -- un faux positif.
+
+
+NOM_PRAKASH = ("2021 - Prakash, Stephens, Hoffman, Singh, Fields - Fitness Beats"
+               " Truth in the Evolution of Perception (Acta Biotheoretica 69(3)"
+               " 319-341, DOI 10.1007_s10441-020-09400-0, copie preprint UCI"
+               " 2017-07-30).pdf")
+NOM_GRAZIANO = ("2017 - Graziano - The Attention Schema Theory, A Foundation for"
+                " Engineering Artificial Consciousness (Front Robot AI 4-60, DOI"
+                " 10.3389_frobt.2017.00060, OA).pdf")
+
+
+def test_filename_doi_underscore_form_is_extracted_and_normalised():
+    """Le cas mesure #22537 : le DOI underscore du nommage maison rejoint le
+    catalogue, normalise en forme slash."""
+    lignes = bcc.extraire_du_nom(NOM_PRAKASH)
+
+    dois = [l for l in lignes if l["type_id"] == "doi"]
+    assert len(dois) == 1
+    assert dois[0]["id"] == "10.1007/s10441-020-09400-0"
+    assert dois[0]["confiance"] == "elevee"
+    assert dois[0]["source"] == "nom_fichier"
+
+
+def test_filename_doi_suffix_does_not_become_a_false_arxiv():
+    """Le suffixe `frobt.2017.00060` ne produit plus l'arXiv fantome
+    `2017.00060` : une seule ligne, le DOI normalise."""
+    lignes = bcc.extraire_du_nom(NOM_GRAZIANO)
+
+    assert [l["type_id"] for l in lignes] == ["doi"]
+    assert lignes[0]["id"] == "10.3389/frobt.2017.00060"
+
+
+def test_filename_plain_arxiv_is_still_extracted():
+    """CONTROLE POSITIF : l'arXiv cite en clair dans un nom reste trouve."""
+    nom = ("2011 - Aaronson - Why Philosophers Should Care About Computational"
+           " Complexity (arXiv 1108.1791, OA).pdf")
+
+    lignes = bcc.extraire_du_nom(nom)
+
+    assert [(l["type_id"], l["id"]) for l in lignes] == [("arxiv", "1108.1791")]
+
+
+def test_filename_doi_underscore_at_end_strips_pdf_suffix():
+    """DOI underscore en fin de nom : l'extension `.pdf` et la parenthese
+    fermante ne font pas partie de l'identifiant."""
+    nom = "2020 - Quelqu-un - Titre (DOI 10.1234_abc-def).pdf"
+
+    lignes = bcc.extraire_du_nom(nom)
+
+    assert [(l["type_id"], l["id"]) for l in lignes] == [("doi", "10.1234/abc-def")]
+
+
+def test_first_page_doi_suffix_does_not_become_a_false_arxiv():
+    """Meme garde sur la premiere page : un DOI imprime dans une reference ne
+    produit pas d'arXiv fantome en confiance standard."""
+    texte = ("Voir doi.org/10.3389/frobt.2017.00060 pour la version publiee."
+             " Preprint anterieur : arXiv:1610.04222.")
+
+    lignes = bcc.extraire_du_texte(texte)
+
+    arxiv = [l["id"] for l in lignes if l["type_id"] == "arxiv"]
+    assert "2017.00060" not in arxiv
+    assert "1610.04222" in arxiv  # le vrai stamp arXiv survit
+    assert any(l["type_id"] == "doi" and l["id"] == "10.3389/frobt.2017.00060"
+               for l in lignes)

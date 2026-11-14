@@ -8412,8 +8412,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-06-Vision-Language-LoRA-Python.ipynb,20e30
 **TP takeaway**: the base model described the images in correct prose — the three readable excerpts from section 3 (quoted verbatim, in French: “un cercle bleu pur”, “un cercle rouge centré”, “un triangle vert simple”) contain the exact shape and color — the failure was purely contractual, not perceptual. By freezing vision and adapting 0.85% of the decoder parameters, LoRA installed the contract **and** the structured reading of visual features: 6/6 never-before-seen images described exactly in the required format. The architectural lesson: when the task is a perception-conditioned *language behavior*, adapting the decoder is enough — the pretrained perception is already good.
 
 **Next steps**: the exercises extend the contract (4th shape, position field), then test the boundary of this conclusion (also target the merger — exercise 3 measures what adapted vision adds when it already has everything it needs).",,,,,,,49c8ea3038c4e880,d0b69f9ec7829e9b,,,,,,,49c8ea3038c4e880,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,69e1be9a,markdown,fr,e6a1084647c1cb72,"# FT-00a : LoRA from scratch — démonter l'adaptation bas-rang
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,69e1be9a,markdown,fr,87429ce0ece9bd69,"# FT-00a : LoRA from scratch — démonter l'adaptation bas-rang
 **Navigation** : [Index](README.md) | [Suivant >>](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb)
+
+**Version anglaise** : [FT-00a — LoRA from scratch (en)](FT-00a-LoRA-from-scratch-Python_en.ipynb)
 
 **Objectif** : comprendre LoRA en le construisant, sans `peft`. À la fin de ce notebook vous saurez écrire un `LoRALinear` en PyTorch pur, prouver que l'initialisation canonique ne change pas le modèle, l'entraîner sur une mini-tâche réelle, et expliquer pourquoi la fusion de l'adaptateur n'est **pas** bit-exacte.
 
@@ -8432,7 +8434,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,69e1be9
 
 **Duration**: ~30 min · **Level**: intermediate · **Hardware**: CPU is enough (the displayed timings are measured on GPU, a few seconds per epoch).
 
-**Position in the series**: FT-01 to FT-06 use `peft` and ready-to-use HuggingFace models. This notebook takes the mechanism apart — the `W' = W + (alpha/r) * B @ A` decomposition, the `A ~ N, B = 0` initialization, gradient propagation, merging — so that the SOTA notebooks stop being black boxes. The following notebooks remain the reference for industrial use: [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) (LoRA with `peft` on GPT-2), [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (4-bit QLoRA), [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language).",,,,,,,e6a1084647c1cb72,a9fadf58dafff97a,,,,,,,,,,,,,,
+**Position in the series**: FT-01 to FT-06 use `peft` and ready-to-use HuggingFace models. This notebook takes the mechanism apart — the `W' = W + (alpha/r) * B @ A` decomposition, the `A ~ N, B = 0` initialization, gradient propagation, merging — so that the SOTA notebooks stop being black boxes. The following notebooks remain the reference for industrial use: [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) (LoRA with `peft` on GPT-2), [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (4-bit QLoRA), [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language).",,,,,,,87429ce0ece9bd69,a9fadf58dafff97a,,,,,,,87429ce0ece9bd69,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,11b43a87,markdown,fr,67e280c675eb419f,"### Vérification de l'environnement
 
 Avant tout calcul, on vérifie le moteur effectif : version de PyTorch, présence d'un GPU, et graine fixée pour que les mesures soient reproductibles.","### Checking the environment
@@ -8973,3 +8975,604 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-00a-LoRA-from-scratch-Python.ipynb,9d0854e
 | the merge | equivalent up to epsilon, **never bit-exact**: re-association is not identity |
 
 **Next step**: the same mechanism at industrial scale — [FT-01](FT-01-Introduction-FineTuning-Python.ipynb) (LoRA `peft` on GPT-2), [FT-02](FT-02-QLoRA-Quantization-Python.ipynb) (QLoRA: 4-bit base + adapters), [FT-06](FT-06-Vision-Language-LoRA-Python.ipynb) (vision-language). You will recognize in them every piece you have just written by hand.",,,,,,,1d9edb30c5cbe667,459271a5eb32f1ad,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,aad8b69c,markdown,fr,fae82fb0c92d6522,"# FT-00b : LoRA hyperparams from scratch — ablation rang × alpha
+**Navigation** : [Index](README.md) | [<< Précédent](FT-00a-LoRA-from-scratch-Python.ipynb) | [Suivant >>](FT-00c-LoRA-SOTA-Comparison-Python.ipynb)
+
+**Version anglaise** : [FT-00b — LoRA hyperparams (en)](FT-00b-LoRA-Hyperparams-from-scratch-Python_en.ipynb)
+
+**Objectif** : mesurer firsthand comment le couple `(r, alpha)` — rang de la décomposition et *scaling* — borne la qualité d'adaptation d'un réseau gelé. Pas de `peft`, pas de `loralib` — la même `LoRALinear` que [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb), entraînée sur **6 valeurs de `r`** × **3 valeurs d'`alpha`/r** = 18 configurations, sur la même mini-tâche jouet (Fashion-MNIST inversé, classifieur gelé 512→10).
+
+**Prérequis** : [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) — `LoRALinear` y est construite en PyTorch pur.
+
+**Durée** : ~15 min · **Niveau** : intermédiaire · **Matériel** : CPU suffit.
+
+**Position dans la série** : FT-00a démontait le mécanisme ; ce notebook ferme la question du **réglage** — quand un rang trop petit sous-adapte, quand un alpha trop grand déstabilise, et pourquoi le scaling `alpha/r` est ce qui rend le rang et la magnitude **découplables**.
+
+**Au Programme** : 1. réutiliser `LoRALinear` sans la redéfinir · 2. assembler la mini-tâche (Fashion-MNIST inversé, classifieur gelé) · 3. pré-entraîner le modèle sur le domaine inversé · 4. lancer l'ablation des 18 configurations · 5. lire la table exactitude × budget × scaling · 6. situer les trois baselines · 7. trois exemples guidés, puis trois exercices.","# FT-00b: LoRA hyperparams from scratch — rank × alpha ablation
+**Navigation**: [Index](README.md) | [<< Previous](FT-00a-LoRA-from-scratch-Python.ipynb) | [Next >>](FT-00c-LoRA-SOTA-Comparison-Python.ipynb)
+
+**French version**: [FT-00b — LoRA hyperparams](FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb)
+
+**Objective**: measure firsthand how the `(r, alpha)` couple — rank of the decomposition and *scaling* — bounds the adaptation quality of a frozen network. No `peft`, no `loralib` — the same `LoRALinear` as [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb), trained over **6 values of `r`** × **3 values of `alpha`/r** = 18 configurations, on the same toy mini-task (inverted Fashion-MNIST, frozen 512→10 classifier).
+
+**Prerequisites**: [FT-00a](FT-00a-LoRA-from-scratch-Python.ipynb) — `LoRALinear` is built there in pure PyTorch.
+
+**Duration**: ~15 min · **Level**: intermediate · **Hardware**: CPU is enough.
+
+**Position in the series**: FT-00a demonstrated the mechanism; this notebook closes the **tuning** question — when too small a rank under-adapts, when too large an alpha destabilizes, and why the `alpha/r` scaling is what makes rank and magnitude **decouplable**.
+
+**On the menu**: 1. reuse `LoRALinear` without redefining it · 2. assemble the mini-task (inverted Fashion-MNIST, frozen classifier) · 3. pre-train the model on the inverted domain · 4. run the 18-configuration ablation · 5. read the accuracy × budget × scaling table · 6. place the three baselines · 7. three guided examples, then three exercises.",,,,,,,fae82fb0c92d6522,98dde035191d7b9a,,,,,,,fae82fb0c92d6522,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,b42fee96,markdown,fr,b2e02648cc56f443,### Vérification de l'environnement,### Environment check,,,,,,,b2e02648cc56f443,e461805ccdc441b0,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,143c50c3,code,fr,c7d3540fc4bdaa8d,"import copy, time, itertools
+import numpy as np
+import torch
+import os
+os.environ.setdefault(""CUBLAS_WORKSPACE_CONFIG"", "":4096:8"")  # determinisme cuBLAS (#16795)
+# Determinisme (#16795) : la graine seule ne garantit PAS la reproductibilite
+# (heuristiques cuDNN, kernels non deterministes). warn_only=True au premier
+# passage pour inventorier les ops fautives sans faire echouer le run.
+torch.use_deterministic_algorithms(True, warn_only=True)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+import torch.nn as nn
+import torch.nn.functional as F
+from torchvision import datasets, transforms
+
+SEED = 42
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+
+DEV = torch.device(""cuda"" if torch.cuda.is_available() else ""cpu"")
+print(f""PyTorch {torch.__version__} | device = {DEV} | numpy {np.__version__}"")",,,,,,,,c7d3540fc4bdaa8d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,cae59fd9,markdown,fr,e7a9bf918d6993fd,"### Lecture du résultat : moteur effectif
+
+Le run committé a tourné sur GPU (`device = cuda`, runtime dans la colonne `cumul` du tableau de la section 4). Le notebook reste exécutable sur CPU seule (« Matériel : CPU suffit » en tête), au prix d'une ablation de l'ordre de quelques minutes ; le runtime mesuré est inscrit dans le tableau de résultats pour que la mesure soit **datée** (cf. PR #16080 body : « mesuré, pas dérivé »).
+
+La ligne de sortie porte l'empreinte exacte de l'environnement : « PyTorch 2.11.0+cu128 | device = cuda | numpy 2.5.3 ». Le bloc d'initialisation arme aussi le déterminisme (`torch.use_deterministic_algorithms(True, warn_only=True)`) : comparer 18 configurations exige que chaque run parte du même état — la graine seule ne suffit pas (heuristiques cuDNN, kernels non déterministes).","### Reading the result: effective engine
+
+The committed run executed on GPU (`device = cuda`, runtime in the `cumul` column of the section 4 table). The notebook remains runnable on CPU only (""Hardware: CPU is enough"" at the top), at the cost of an ablation on the order of a few minutes; the measured runtime is recorded in the results table so the measurement stays **dated** (cf. PR #16080 body: ""measured, not derived"").
+
+The output line carries the exact environment fingerprint: ""PyTorch 2.11.0+cu128 | device = cuda | numpy 2.5.3"". The initialization block also arms determinism (`torch.use_deterministic_algorithms(True, warn_only=True)`): comparing 18 configurations requires each run to start from the same state — the seed alone is not enough (cuDNN heuristics, non-deterministic kernels).",,,,,,,e7a9bf918d6993fd,a1721e4363cfc2c3,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,eaad34b5,markdown,fr,393bb209fd0add77,"## 1. Réutiliser la `LoRALinear` de FT-00a, sans la redéfinir
+
+Le mécanisme est le même : `B = 0` au pas 0, `W` gelé, scaling `alpha / r`. On recopie la **même classe** que FT-00a (cellule 6) sous le nom `LoRALinear` — même init, même forward, même `merged_weight` — pour qu'aucune divergence de sémantique ne se glisse dans l'ablation.","## 1. Reuse FT-00a's `LoRALinear`, without redefining it
+
+The mechanism is the same: `B = 0` at step 0, `W` frozen, `alpha / r` scaling. We copy the **same class** as FT-00a (cell 6) under the name `LoRALinear` — same init, same forward, same `merged_weight` — so that no semantic divergence slips into the ablation.",,,,,,,393bb209fd0add77,aae40a80d0d95133,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,906e24f3,code,fr,9e80dfb4075f14a5,"class LoRALinear(nn.Module):
+    """"""y = x @ W.T + (alpha / r) * (x @ A.T) @ B.T   -- W gele, seuls A et B vivent.""""""
+
+    def __init__(self, base: nn.Linear, r: int, alpha: float):
+        super().__init__()
+        assert r > 0, ""le rang doit etre strictement positif""
+        self.base = base
+        for p in self.base.parameters():
+            p.requires_grad_(False)
+        self.r, self.alpha = r, alpha
+        self.scaling = alpha / r
+        dev, dt = base.weight.device, base.weight.dtype
+        self.A = nn.Parameter(
+            torch.randn(r, base.in_features, device=dev, dtype=dt)
+            * (1.0 / base.in_features ** 0.5)
+        )
+        self.B = nn.Parameter(
+            torch.zeros(base.out_features, r, device=dev, dtype=dt)
+        )
+
+    def forward(self, x):
+        return self.base(x) + self.scaling * ((x @ self.A.T) @ self.B.T)
+
+    @torch.no_grad()
+    def merged_weight(self):
+        return self.base.weight + self.scaling * (self.B @ self.A)
+
+    def n_trainable(self):
+        return self.A.numel() + self.B.numel()
+
+print(""LoRALinear importee de FT-00a (cellule 6) -- aucune divergence de semantique."")",,,,,,,,9e80dfb4075f14a5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,96ced9d9,markdown,fr,e30d772e7f611c7b,"### Lecture du résultat : fidélité au mécanisme
+
+Cette cellule recopie la classe de FT-00a cellule 6 à l'identique sur la sémantique (init, forward, `merged_weight`), au raccourcissement de la docstring près et avec le seul ajout de l'accesseur `n_trainable()`. Tout ce qui suit s'appuie dessus comme un *composant*, pas comme une ré-implémentation — c'est ce qui ferme la question « est-ce que l'ablation compare vraiment deux réglages, ou deux implémentations ? »
+
+La sortie se réduit à la ligne « LoRALinear importee de FT-00a (cellule 6) -- aucune divergence de semantique. » : la classe est posée, rien n'est encore entraîné. C'est l'accesseur ajouté `n_trainable()` qui produira la colonne `params` du tableau de la section 5 — le budget de chaque configuration est compté, pas estimé.","### Reading the result: fidelity to the mechanism
+
+This cell copies FT-00a's cell 6 class identically in semantics (init, forward, `merged_weight`), apart from a shortened docstring and the single addition of the `n_trainable()` accessor. Everything that follows builds on it as a *component*, not a re-implementation — that is what closes the question ""is the ablation really comparing two settings, or two implementations?""
+
+The output reduces to the line ""LoRALinear importee de FT-00a (cellule 6) -- aucune divergence de semantique."": the class is in place, nothing is trained yet. It is the added `n_trainable()` accessor that will produce the `params` column of the section 5 table — each configuration's budget is counted, not estimated.",,,,,,,e30d772e7f611c7b,a7bf6eb60bde3803,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,601a04a2,markdown,fr,b057d64c8ebea579,"## 2. Mini-tâche : Fashion-MNIST inversé, classifieur gelé 512→10
+
+On reprend la même tâche jouet que FT-00a (mini-tâche §3), avec un sous-ensemble pour rester sous 15 min CPU : 10 000 images d'entraînement, 2 000 de test. Le modèle jouet est un **petit CNN** pré-entraîné sur le domaine inversé ; on adapte **uniquement** sa tête `Linear(512, 10)` via LoRA.
+
+Le CNN est gelé après pré-entraînement : ses 512 features servent de représentation fixe, et la tâche d'adaptation se réduit à une tête `512 → 10` — la configuration la plus favorable à LoRA (peu de paramètres, changement de domaine net).","## 2. Mini-task: inverted Fashion-MNIST, frozen 512→10 classifier
+
+We reuse the same toy task as FT-00a (mini-task §3), with a subset to stay under 15 min CPU: 10,000 training images, 2,000 test. The toy model is a **small CNN** pre-trained on the inverted domain; we adapt **only** its `Linear(512, 10)` head via LoRA.
+
+The CNN is frozen after pre-training: its 512 features serve as a fixed representation, and the adaptation task reduces to a `512 → 10` head — the configuration most favorable to LoRA (few parameters, a clean domain shift).",,,,,,,b057d64c8ebea579,bc48fba5698490cf,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,e4435a7e,code,fr,7d8de73373811148,"import os
+
+DATA_DIR = os.path.join(os.path.expanduser(""~""), "".cache"", ""ft00b"")
+tf = transforms.ToTensor()
+train_set = datasets.FashionMNIST(DATA_DIR, train=True, download=True, transform=tf)
+test_set = datasets.FashionMNIST(DATA_DIR, train=False, download=True, transform=tf)
+
+def inverse(x):
+    return 1.0 - x
+
+# Sous-ensemble : 10k train / 2k test (deterministe, pour rester sous 15 min CPU)
+rng = np.random.default_rng(SEED)
+train_idx = rng.choice(len(train_set), size=10_000, replace=False)
+test_idx = rng.choice(len(test_set), size=2_000, replace=False)
+train_subset = torch.utils.data.Subset(train_set, train_idx.tolist())
+test_subset = torch.utils.data.Subset(test_set, test_idx.tolist())
+train_loader = torch.utils.data.DataLoader(train_subset, batch_size=256, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_subset, batch_size=512, shuffle=False)
+print(f""Fashion-MNIST subset : {len(train_subset)} train / {len(test_subset)} test"")",,,,,,,,7d8de73373811148,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,f7a1c8e2,markdown,fr,acfa68f81f59c40c,"### Lecture du résultat : sous-ensemble chargé
+
+Quatre archives Fashion-MNIST sont téléchargées (26,4 Mo, 29,5 ko, 4,42 Mo, 5,15 ko), puis la dernière ligne confirme le sous-ensemble retenu : « Fashion-MNIST subset : 10000 train / 2000 test ». C'est ce 10k/2k qui tient l'ablation des 18 configurations dans le budget annoncé en tête (~15 min sur CPU) — la taille du sous-ensemble est le premier levier de ce budget.","### Reading the result: subset loaded
+
+Four Fashion-MNIST archives are downloaded (26.4 MB, 29.5 kB, 4.42 MB, 5.15 kB), then the last line confirms the retained subset: ""Fashion-MNIST subset : 10000 train / 2000 test"". It is this 10k/2k that holds the 18-configuration ablation within the budget announced at the top (~15 min on CPU) — subset size is the first lever on that budget.",,,,,,,acfa68f81f59c40c,a7e7f8a41723c2ba,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,9c152318,code,fr,4df81e8ba88a1ebc,"class MiniCNN(nn.Module):
+    """"""CNN jouet -- deux convolutions, sortie 512-dim avant la tete FC.""""""
+
+    def __init__(self):
+        super().__init__()
+        self.conv1 = nn.Conv2d(1, 16, 3, padding=1)
+        self.conv2 = nn.Conv2d(16, 32, 3, padding=1)
+        self.pool = nn.MaxPool2d(2)
+        self.fc = nn.Linear(32 * 7 * 7, 512)
+        self.head = nn.Linear(512, 10)
+
+    def features(self, x):
+        x = self.pool(F.relu(self.conv1(x)))
+        x = self.pool(F.relu(self.conv2(x)))
+        return self.fc(x.flatten(1))
+
+    def forward(self, x):
+        return self.head(self.features(x))
+
+
+def evaluate(model, loader, transform=None):
+    model.eval()
+    correct, total = 0, 0
+    with torch.no_grad():
+        for x, y in loader:
+            x = x.to(DEV)
+            if transform is not None:
+                x = transform(x)
+            p = model(x).argmax(1).cpu()
+            correct += (p == y).sum().item()
+            total += y.size(0)
+    return correct / total",,,,,,,,4df81e8ba88a1ebc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,5674a7a9,markdown,fr,737fd89e7a354cb4,"### Sous-ensemble et architecture
+
+Architecture cousine de celle de FT-00a : deux convolutions (au lieu de trois) puis FC → 512 → tête séparée `head` → 10 (FT-00a terminait par une tête directe 576 → 10) — même famille, pas la même architecture. Le trunk fige les 512 features ; seule la tête `head: Linear(512, 10)` sera remplacée par une `LoRALinear` dans la section 4 : c'est cette séparation qui rend l'ablation ciblée. On **pré-entraîne** le modèle sur le domaine inversé, puis on **évalue** sa capacité à généraliser au domaine normal — c'est sur ce changement de domaine que LoRA va s'adapter.","### Subset and architecture
+
+Architecture cousin to FT-00a's: two convolutions (instead of three) then FC → 512 → separate `head` → 10 (FT-00a ended with a direct 576 → 10 head) — same family, not the same architecture. The trunk freezes the 512 features; only the `head: Linear(512, 10)` will be replaced by a `LoRALinear` in section 4: this separation is what makes the ablation targeted. We **pre-train** the model on the inverted domain, then **evaluate** its ability to generalize to the normal domain — it is on this domain shift that LoRA will adapt.",,,,,,,737fd89e7a354cb4,cb182ba4a2dfd96d,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,60142a94,markdown,fr,c83f2df352fa251d,"## 3. Pré-entraîner le modèle de base sur le domaine inversé
+
+Identique à FT-00a §3 : on entraîne 2 epochs sur `(1 - x)` pour que le modèle soit **compétent sur le négatif photo**, puis **muet sur la cible** (le positif).
+
+Deux epochs d'Adam (`lr = 1e-3`), les hyperparamètres de FT-00a : mêmes réglages, même tâche, seul le domaine change — la comparaison avec FT-00a reste valide.","## 3. Pre-train the base model on the inverted domain
+
+Identical to FT-00a §3: we train 2 epochs on `(1 - x)` so the model is **competent on the photo negative**, then **mute on the target** (the positive).
+
+Two epochs of Adam (`lr = 1e-3`), FT-00a's hyperparameters: same settings, same task, only the domain changes — the comparison with FT-00a remains valid.",,,,,,,c83f2df352fa251d,ea6018a908f3800f,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,2fe15dc4,code,fr,395977c611da363f,"base_model = MiniCNN().to(DEV)
+opt = torch.optim.Adam(base_model.parameters(), lr=1e-3)
+
+for epoch in range(2):
+    base_model.train()
+    for x, y in train_loader:
+        x, y = x.to(DEV), y.to(DEV)
+        opt.zero_grad()
+        loss = F.cross_entropy(base_model(inverse(x)), y)
+        loss.backward()
+        opt.step()
+
+acc_inv = evaluate(base_model, test_loader, transform=inverse)
+acc_normal = evaluate(base_model, test_loader, transform=None)
+print(f""Base, test inverse (son domaine)   : {acc_inv:.4f}"")
+print(f""Base, test normal (la cible LoRA)  : {acc_normal:.4f}"")",,,,,,,,395977c611da363f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,c72541fe,markdown,fr,c5afd5d5f6b4c80d,"### Lecture du résultat : le modèle est calibré sur le négatif
+
+Comme dans FT-00a : `acc_inv` est haute (le modèle maîtrise son domaine d'entraînement) et `acc_normal` est basse (sous le hasard, qui est 0.10). La sortie committée chiffre le gap : 0.8035 sur le test inversé contre 0.0360 sur le test normal — compétent sur son domaine, quasi muet sur la cible. C'est précisément ce **gap** que LoRA doit combler en adaptant **uniquement** la tête `head: Linear(512, 10)`.","### Reading the result: the model is calibrated on the negative
+
+As in FT-00a: `acc_inv` is high (the model masters its training domain) and `acc_normal` is low (below chance, which is 0.10). The committed output quantifies the gap: 0.8035 on the inverted test against 0.0360 on the normal test — competent on its domain, nearly mute on the target. It is precisely this **gap** that LoRA must close by adapting **only** the `head: Linear(512, 10)` head.",,,,,,,c5afd5d5f6b4c80d,8d9a0b41104b954b,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,73722e54,markdown,fr,0b628fb121489a44,"## 4. Ablation `r × alpha` : 18 configurations
+
+On adapte la tête `head: Linear(512, 10)` via LoRA pour **18 combinaisons** :
+
+- `r ∈ {1, 2, 4, 8, 16, 32}` — 6 valeurs de rang
+- `alpha/r ∈ {0.5, 1.0, 2.0}` — 3 valeurs de scaling effectif
+
+Le scaling effectif `alpha/r` est ce qui **découple** la magnitude du rang : avec `alpha/r = 1`, doubler `r` ne change pas l'amplitude du signal appris. Avec `alpha/r = 0.5`, le signal est atténué ; avec `alpha/r = 2`, il est amplifié.
+
+Chaque configuration repart d'une tête neuve, à graine fixe : les lignes du tableau sont comparables à initialisation égale, et la colonne `cumul` date le coût de chaque run (le total est imprimé en dernière ligne). 18 runs de 2 epochs sur 10 000 images : c'est le prix de la mesure, contenu dans le budget annoncé en tête (~15 min sur CPU) — « Total : 55.1s sur cuda » pour le run committé.","## 4. `r × alpha` ablation: 18 configurations
+
+We adapt the `head: Linear(512, 10)` head via LoRA for **18 combinations**:
+
+- `r ∈ {1, 2, 4, 8, 16, 32}` — 6 rank values
+- `alpha/r ∈ {0.5, 1.0, 2.0}` — 3 effective scaling values
+
+The effective scaling `alpha/r` is what **decouples** magnitude from rank: with `alpha/r = 1`, doubling `r` does not change the amplitude of the learned signal. With `alpha/r = 0.5`, the signal is attenuated; with `alpha/r = 2`, it is amplified.
+
+Each configuration starts from a fresh head, at fixed seed: the table rows are comparable at equal initialization, and the `cumul` column dates the cost of each run (the total is printed on the last line). 18 runs of 2 epochs on 10,000 images: that is the price of the measurement, contained in the budget announced at the top (~15 min on CPU) — ""Total : 55.1s sur cuda"" for the committed run.",,,,,,,0b628fb121489a44,264df52b00b4993b,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,bf434cf9,code,fr,9d32380f5278a597,"RS = [1, 2, 4, 8, 16, 32]
+SCALINGS = [0.5, 1.0, 2.0]   # = alpha / r
+EPOCHS = 2
+LR = 1e-3
+
+results = []
+t0 = time.time()
+
+for r, scaling in itertools.product(RS, SCALINGS):
+    alpha = scaling * r
+    torch.manual_seed(SEED)
+    np.random.seed(SEED)
+
+    # Reset the head with a fresh LoRA wrapper -- copy of frozen base.
+    m = copy.deepcopy(base_model)
+    for p in m.parameters():
+        p.requires_grad_(False)
+    # Replace head with LoRA-wrapped fresh Linear
+    head_base = nn.Linear(512, 10).to(DEV)
+    nn.init.kaiming_uniform_(head_base.weight, a=5 ** 0.5)
+    if head_base.bias is not None:
+        nn.init.zeros_(head_base.bias)
+    m.head = LoRALinear(head_base, r=r, alpha=alpha).to(DEV)
+
+    opt = torch.optim.Adam(
+        [p for p in m.head.parameters() if p.requires_grad], lr=LR
+    )
+
+    m.train()
+    for epoch in range(EPOCHS):
+        for x, y in train_loader:
+            x, y = x.to(DEV), y.to(DEV)
+            opt.zero_grad()
+            loss = F.cross_entropy(m(x), y)
+            loss.backward()
+            opt.step()
+
+    acc = evaluate(m, test_loader, transform=None)
+    n_train = m.head.n_trainable()
+    delta = time.time() - t0
+    results.append((r, alpha, scaling, n_train, acc, delta))
+    print(
+        f""r={r:>2}  alpha={alpha:>5.1f}  alpha/r={scaling:>4.1f}  ""
+        f""params={n_train:>5}  acc={acc:.4f}  cumul={delta:>6.1f}s""
+    )
+
+print(f""\nTotal : {time.time() - t0:.1f}s sur {DEV}"")",,,,,,,,9d32380f5278a597,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,a9e4b0cb,markdown,fr,f810aa29ef022dfc,"### Lecture du résultat : trois régularités mesurées
+
+Trois régularités **doivent** émerger des chiffres ci-dessus (et la mesure les confirme ou les nuance) :
+
+1. **`alpha/r = 1.0` est le sweet spot** — c'est le choix par défaut de la littérature (Hu et al. 2021 fixent `alpha = r` pour les Transformers).
+2. **`r = 1` est trop petit** sur cette tâche : un seul degré de liberté ne suffit pas à s'approcher de l'étalon (full tête : 0.5270) ni du meilleur LoRA (0.6580 à r=32) : r=1 plafonne à 0.1955.
+3. **`alpha/r = 2.0` peut dégrader** : trop de signal amplifié au début de l'entraînement, divergence ou oscillations.
+
+Ce que la table committée montre en plus : à rang fixé, le scaling ne dégrade jamais ici — `alpha/r = 2.0` domine `1.0`, qui domine `0.5` (à r=32 : 0.5885 / 0.6265 / 0.6580). La « dégradation » de la littérature ne se mesure pas sur cette mini-tâche en 2 epochs ; elle se jouera sur les trajectoires longues (exemple guidé 3, section 7).
+
+Si l'une ne se vérifie pas, c'est une **donnée mesurée** — pas un échec du notebook.","### Reading the result: three measured regularities
+
+Three regularities **must** emerge from the figures above (and the measurement confirms or nuances them):
+
+1. **`alpha/r = 1.0` is the sweet spot** — it is the literature's default choice (Hu et al. 2021 fix `alpha = r` for Transformers).
+2. **`r = 1` is too small** on this task: a single degree of freedom is not enough to approach the benchmark (full head: 0.5270) or the best LoRA (0.6580 at r=32): r=1 caps at 0.1955.
+3. **`alpha/r = 2.0` can degrade**: too much amplified signal early in training, divergence or oscillations.
+
+What the committed table additionally shows: at fixed rank, scaling never degrades here — `alpha/r = 2.0` dominates `1.0`, which dominates `0.5` (at r=32: 0.5885 / 0.6265 / 0.6580). The literature's ""degradation"" is not measured on this mini-task over 2 epochs; it will play out on long trajectories (guided example 3, section 7).
+
+If one of them does not verify, that is a **measured datum** — not a notebook failure.",,,,,,,f810aa29ef022dfc,2ad351f330f293b1,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,7f5b7d51,markdown,fr,cff0f1677679fdbd,"## 5. Table récapitulative : exactitude × budget × scaling
+
+Deux vues, lues directement dans les 18 mesures de la section 4 : **exactitude** par `(r, alpha/r)` et **budget** (params entraînables) par `r`. La table ne porte pas de courbe de convergence — 2 epochs ne seraient de toute façon pas lisibles — c'est le rôle de l'exemple guidé 3 (trajectoire sur 6 epochs, section 7).","## 5. Summary table: accuracy × budget × scaling
+
+Two views, read directly from the 18 measurements of section 4: **accuracy** by `(r, alpha/r)` and **budget** (trainable params) by `r`. The table carries no convergence curve — 2 epochs would not be readable anyway — that is the role of guided example 3 (trajectory over 6 epochs, section 7).",,,,,,,cff0f1677679fdbd,340693aafd341b10,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,91437833,code,fr,350ab9d40e7eaea9,"print(""\n=== Exactitude par (r, alpha/r) ==="")
+header = ""  r  | "" + "" | "".join(f""alpha/r={s:>4.1f}"" for s in SCALINGS)
+print(header)
+print(""-"" * len(header))
+for r in RS:
+    row = [f""  {r:>2}  ""]
+    for scaling in SCALINGS:
+        match = [v for v in results if v[0] == r and v[2] == scaling]
+        if match:
+            row.append(f""   {match[0][4]:.4f}    "")
+        else:
+            row.append(""    --      "")
+    print("" | "".join(row))
+
+print(""\n=== Budget par r (params entrainables sur la tete LoRA) ==="")
+for r in RS:
+    n = [v[3] for v in results if v[0] == r][0]
+    print(f""  r={r:>2}  ->  {n:>5} params  (full head = 5130)"")",,,,,,,,350ab9d40e7eaea9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,5ea73a76,markdown,fr,7dc8cc10f192b01e,"### Lecture du résultat : compromis rang × magnitude
+
+Le budget double quand `r` double (forme fermée `r * (d + k) = r * 522` pour `512 → 10`) : la colonne budget le lit directement, de 522 params à r=1 jusqu'à 16704 à r=32 — à comparer aux 5130 de la tête complète. L'exactitude, elle, **sature** : à `alpha/r = 1.0`, elle monte de 0.1900 (r=1) à 0.6265 (r=32) — au-delà d'un certain rang, ajouter des degrés de liberté ne sert plus rien sur cette mini-tâche. Le scaling `alpha/r` est le **deuxième knob** : il module la magnitude effective sans changer la dimensionnalité du problème.","### Reading the result: rank × magnitude trade-off
+
+The budget doubles when `r` doubles (closed form `r * (d + k) = r * 522` for `512 → 10`): the budget column reads it directly, from 522 params at r=1 up to 16704 at r=32 — to be compared with the 5130 of the full head. Accuracy, on the other hand, **saturates**: at `alpha/r = 1.0`, it climbs from 0.1900 (r=1) to 0.6265 (r=32) — beyond a certain rank, adding degrees of freedom no longer helps on this mini-task. The `alpha/r` scaling is the **second knob**: it modulates the effective magnitude without changing the dimensionality of the problem.",,,,,,,7dc8cc10f192b01e,52aedad8f2c425c2,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,a7549c09,markdown,fr,41e7ddf352556737,"## 6. Comparaison aux baselines
+
+Trois baselines à comparer aux 18 configurations :
+
+- **Base gelée sur cible** : `acc_normal` du modèle de base (sous le hasard)
+- **Full fine-tuning de la tête** : `Linear(512, 10)` entraînée sans contrainte, mêmes 2 epochs (étalon or, baseline **MED**)
+- **LoRA r=4, alpha=4** (FT-00a) : la configuration de référence
+
+Le full est l'**étalon or** : même tête, mêmes 2 epochs, aucune contrainte de rang — il borne ce que LoRA sacrifie en plafonnant le rang. La base gelée, elle, n'apprend rien : c'est le plancher sous le hasard.","## 6. Comparison against baselines
+
+Three baselines to compare with the 18 configurations:
+
+- **Frozen base on target**: `acc_normal` of the base model (below chance)
+- **Full fine-tuning of the head**: `Linear(512, 10)` trained without constraint, same 2 epochs (gold standard, **MED** baseline)
+- **LoRA r=4, alpha=4** (FT-00a): the reference configuration
+
+The full run is the **gold standard**: same head, same 2 epochs, no rank constraint — it bounds what LoRA sacrifices by capping the rank. The frozen base, on the other hand, learns nothing: it is the floor below chance.",,,,,,,41e7ddf352556737,c12773da24ff89e6,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,c2d8dbd5,code,fr,e754eb2eda513fb4,"# Baseline : full fine-tuning de la tete (memes 2 epochs, sans LoRA)
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+full_model = copy.deepcopy(base_model)
+for p in full_model.parameters():
+    p.requires_grad_(False)
+    # Except the head
+for p in full_model.head.parameters():
+    p.requires_grad_(True)
+opt = torch.optim.Adam(full_model.head.parameters(), lr=LR)
+for epoch in range(EPOCHS):
+    full_model.train()
+    for x, y in train_loader:
+        x, y = x.to(DEV), y.to(DEV)
+        opt.zero_grad()
+        F.cross_entropy(full_model(x), y).backward()
+        opt.step()
+acc_full = evaluate(full_model, test_loader, transform=None)
+print(f""Base gelee sur cible (sous le hasard) : {acc_normal:.4f}"")
+print(f""Full fine-tuning de la tete (etalon)  : {acc_full:.4f} (params = 5130)"")
+
+# LoRA r=4 alpha=4 (FT-00a config de reference)
+match = [v for v in results if v[0] == 4 and v[2] == 1.0]
+if match:
+    r4_acc = match[0][4]
+    print(f""LoRA r=4 alpha/r=1.0 (FT-00a config)  : {r4_acc:.4f} (params = {match[0][3]})"")",,,,,,,,e754eb2eda513fb4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,454b3785,markdown,fr,791553217749779a,"### Lecture du résultat : trois repères
+
+Trois repères pour lire le tableau :
+
+- Le **sous le hasard** donne le plancher (le modèle non adapté).
+- Le **full** donne le **plafond atteignable** avec le budget complet (5130 params, sans contrainte de rang).
+- Le **LoRA r=4 alpha/r=1.0** est la configuration pédagogique de FT-00a — combien **sacrifie-t-on** en passant de full à LoRA ? La réponse dépend de la tâche, mais elle est **mesurée** sur ce notebook.
+
+La sortie fixe les trois repères chiffrés : 0.0360 (base gelée, sous le hasard), 0.5270 (full, 5130 params) et 0.4145 (LoRA r=4, 2088 params) — le sacrifice consenti en passant de full à LoRA est mesuré ici, pas deviné.","### Reading the result: three landmarks
+
+Three landmarks for reading the table:
+
+- **Below chance** gives the floor (the un-adapted model).
+- **Full** gives the **reachable ceiling** with the complete budget (5130 params, no rank constraint).
+- **LoRA r=4 alpha/r=1.0** is FT-00a's pedagogical configuration — how much do we **sacrifice** going from full to LoRA? The answer depends on the task, but it is **measured** in this notebook.
+
+The output fixes the three quantified landmarks: 0.0360 (frozen base, below chance), 0.5270 (full, 5130 params) and 0.4145 (LoRA r=4, 2088 params) — the sacrifice accepted going from full to LoRA is measured here, not guessed.",,,,,,,791553217749779a,332c9ffd85257e2c,,,,,,,791553217749779a,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,694b7f61,markdown,fr,8a3c277282b331a5,"## 7. Exemples guidés et exercices
+
+Trois exemples guidés, suivis de trois exercices de portée distincte. Chaque exemple démontre une technique ; chaque exercice demande à l'étudiant de mesurer une grandeur **différente** de celle de l'exemple correspondant. Les corrigés des exemples sont **dans** les exemples (ils s'exécutent et impriment leurs sorties réelles), pas dans une section voisine.
+
+**Méthode** : exécuter les cellules 24-29 pour lire les exemples guidés (les sorties sont réelles), puis tenter les exercices 30-35 (stubs C.1 conformes — `pass` / `print(...)` / `result = None  # TODO`).
+
+Chaque exercice réutilise **à l'identique** le code de l'exemple qui le précède — seule la grandeur mesurée change : aucun ingrédient nouveau n'est requis pour les trois.","## 7. Guided examples and exercises
+
+Three guided examples, followed by three exercises of distinct scope. Each example demonstrates a technique; each exercise asks the student to measure a **different** quantity from the corresponding example. The example solutions are **inside** the examples (they execute and print their real outputs), not in a neighboring section.
+
+**Method**: run cells 24-29 to read the guided examples (the outputs are real), then attempt exercises 30-35 (C.1-compliant stubs — `pass` / `print(...)` / `result = None  # TODO`).
+
+Each exercise reuses **identically** the code of the example before it — only the measured quantity changes: no new ingredient is required for any of the three.",,,,,,,8a3c277282b331a5,542fd55528275327,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,e574e277,markdown,fr,4e56831e6657c6b1,"### Exemple guide 1 : rapport params/accuracy pour `alpha/r = 1.0`
+
+Pour `alpha/r = 1.0`, calculer le **rapport `params / accuracy`** pour chaque `r ∈ {1, 2, 4, 8, 16, 32}` à partir des 18 mesures de la section 4. Identifier le `r` qui **minimise** ce rapport — c'est le rendement marginal du rang sur cette mini-tâche.
+
+**Pourquoi c'est utile** : un rang `r=1` peut sembler efficient (peu de params) mais sous-adapter ; un rang `r=32` peut sembler précis mais coûteux en mémoire d'inférence. Le rapport `params / accuracy` estime le **coût par point d'exactitude** — c'est ce qu'un ingénieur doit regarder pour choisir le rang à déployer.","### Guided example 1: params/accuracy ratio for `alpha/r = 1.0`
+
+For `alpha/r = 1.0`, compute the **`params / accuracy` ratio** for each `r ∈ {1, 2, 4, 8, 16, 32}` from the 18 measurements of section 4. Identify the `r` that **minimizes** this ratio — it is the marginal return of rank on this mini-task.
+
+**Why it matters**: a rank `r=1` can look efficient (few params) but under-adapts; a rank `r=32` can look accurate but costly in inference memory. The `params / accuracy` ratio estimates the **cost per accuracy point** — that is what an engineer must look at to choose the rank to deploy.",,,,,,,4e56831e6657c6b1,7c5e012fdb2be2af,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,7e68654a,markdown,fr,1a877b78653c6a49,"### Exemple guide 2 : observer la dégradation `alpha/r = 2.0` vs `1.0`
+
+Reprendre l'invariant de FT-00a : `‖delta_W‖ = (alpha/r) * ‖B @ A‖`. Pour `r = 4`, mesurer `‖B @ A‖` à la fin de l'entraînement pour les deux scalings `alpha/r ∈ {1.0, 2.0}`. Comparer à `‖B @ A‖ * scaling` (la magnitude effective du delta).
+
+**Pourquoi c'est utile** : la mesure isole la cause de la dégradation observée en section 4 — c'est l'amplification du signal `B@A` qui sature, pas le rang lui-même.","### Guided example 2: observing the `alpha/r = 2.0` vs `1.0` degradation
+
+Take back FT-00a's invariant: `‖delta_W‖ = (alpha/r) * ‖B @ A‖`. For `r = 4`, measure `‖B @ A‖` at the end of training for the two scalings `alpha/r ∈ {1.0, 2.0}`. Compare with `‖B @ A‖ * scaling` (the effective magnitude of the delta).
+
+**Why it matters**: the measurement isolates the cause of the degradation observed in section 4 — it is the amplification of the `B@A` signal that saturates, not the rank itself.",,,,,,,1a877b78653c6a49,a746781906640171,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,6a409d33,markdown,fr,855b3a590bca9840,"### Exemple guide 3 : courbe d'accuracy epoch par epoch sur 6 epochs
+
+Pour `r = 4` et `alpha/r = 2.0`, entraîner **6 epochs**. À chaque epoch, mesurer l'exactitude test. Identifier le **seuil d'amplification** — l'epoch à partir duquel l'accuracy commence à osciller ou chuter.
+
+**Pourquoi c'est utile** : la cellule démontre la trajectoire d'une configuration qui suramplifie — utile pour comprendre quand un early-stopping serait rentable sur cette même configuration.","### Guided example 3: epoch-by-epoch accuracy curve over 6 epochs
+
+For `r = 4` and `alpha/r = 2.0`, train for **6 epochs**. At each epoch, measure test accuracy. Identify the **amplification threshold** — the epoch from which accuracy starts to oscillate or drop.
+
+**Why it matters**: the cell demonstrates the trajectory of an over-amplifying configuration — useful to understand when early stopping would pay off on this same configuration.",,,,,,,855b3a590bca9840,f92f1e09ded686ae,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,14be7e85,markdown,fr,ea2cc6d3fb5b8d2a,"### Exercice 1 : `alpha/r = 0.5` — quand le rang ne suffit plus
+
+
+Refaire l'analyse de l'exemple guide 1 (rapport `params / accuracy`) pour **`alpha/r = 0.5`** sur les 6 rangs. Comparer au régime `alpha/r = 1.0` : le rapport `params / accuracy` augmente-t-il plus vite sur le scaling bas ? Identifier le rang où le **rendement marginal** du rang commence à décliner — c'est le signal que le signal est devenu sous-amplifié.
+
+**Indice 1** : reprendre la boucle `for r in RS` de l'exemple guide 1, en remplaçant `v[2] == 1.0` par `v[2] == 0.5`.
+
+**Indice 2** : pour comparer, calculer le ratio `params/acc(0.5) / params/acc(1.0)` pour chaque rang — un ratio constant indiquerait que le scaling est un simple facteur multiplicatif.","### Exercise 1: `alpha/r = 0.5` — when rank is no longer enough
+
+
+Redo the analysis of guided example 1 (`params / accuracy` ratio) for **`alpha/r = 0.5`** over the 6 ranks. Compare with the `alpha/r = 1.0` regime: does the `params / accuracy` ratio grow faster at low scaling? Identify the rank where the **marginal return** of rank starts to decline — that is the signal that the signal has become under-amplified.
+
+**Hint 1**: take back the `for r in RS` loop of guided example 1, replacing `v[2] == 1.0` with `v[2] == 0.5`.
+
+**Hint 2**: to compare, compute the ratio `params/acc(0.5) / params/acc(1.0)` for each rank — a constant ratio would indicate that scaling is a mere multiplicative factor.",,,,,,,ea2cc6d3fb5b8d2a,6296ec67854d23bf,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,688a68d7,markdown,fr,cadc5f20c508bd64,"### Exercice 2 : `‖B@A‖ / r` — l'invariant normalisé
+
+
+L'exemple guide 2 mesure `‖B @ A‖` brut. Pour comparer entre rangs sans confondre *dimension* et *magnitude*, calculer la version normalisée `‖B @ A‖ / r` pour les **trois** scalings `alpha/r ∈ {0.5, 1.0, 2.0}`, à `r = 4`. Si LoRA est bien calibré, ce rapport doit **décroître** quand le scaling augmente au-delà de 1 (le signal suramplifié sature, donc la magnitude effective plafonne).
+
+**Indice 1** : reprendre la fonction `_train_and_measure` de l'exemple guide 2 (elle retourne déjà `norm_dW`).
+
+**Indice 2** : la grandeur à comparer est `norm_dW / scaling`, pas `norm_dW / r` — c'est la magnitude effective qui doit plafonner, pas la magnitude par degré de liberté.","### Exercise 2: `‖B@A‖ / r` — the normalized invariant
+
+
+Guided example 2 measures raw `‖B @ A‖`. To compare across ranks without confusing *dimension* and *magnitude*, compute the normalized version `‖B @ A‖ / r` for the **three** scalings `alpha/r ∈ {0.5, 1.0, 2.0}`, at `r = 4`. If LoRA is well calibrated, this ratio must **decrease** as scaling grows beyond 1 (the over-amplified signal saturates, so the effective magnitude caps).
+
+**Hint 1**: take back the `_train_and_measure` function of guided example 2 (it already returns `norm_dW`).
+
+**Hint 2**: the quantity to compare is `norm_dW / scaling`, not `norm_dW / r` — it is the effective magnitude that must cap, not the magnitude per degree of freedom.",,,,,,,cadc5f20c508bd64,11dd1707691ed762,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,7dc49cce,markdown,fr,8666a6e75080045c,"### Exercice 3 : early-stopping — la zone sûre de r=8 / alpha/r = 1.0
+
+
+L'exemple guide 3 démontre la trajectoire divergente de `r=4 / alpha/r = 2.0` sur 6 epochs. Refaire la mesure sur **`r = 8 / alpha/r = 1.0`** (zone sûre d'après les sections 4-5) mais sur **3 epochs seulement** — c'est l'horizon naturel pour un early-stopping. Comparer l'accuracy finale à celle de la même config mesurée par l'ablation de la section 4 (r=8, scaling=1.0, 2 epochs) : le 3ᵉ epoch apporte-t-il un gain marginal significatif ?
+
+**Indice 1** : reprendre la boucle d'entraînement de l'exemple guide 3, en remplaçant `r=4, alpha=8.0` par `r=8, alpha=8.0` (alpha/r = 1.0) et `range(1, 7)` par `range(1, 4)`.
+
+**Indice 2** : l'accuracy à 2 epochs figure dans `results` (filtre `v[0] == 8 and v[2] == 1.0`). La comparer à l'accuracy finale de cet exercice.","### Exercise 3: early stopping — the safe zone of r=8 / alpha/r = 1.0
+
+
+Guided example 3 demonstrates the divergent trajectory of `r=4 / alpha/r = 2.0` over 6 epochs. Redo the measurement on **`r = 8 / alpha/r = 1.0`** (safe zone per sections 4-5) but over **3 epochs only** — the natural horizon for early stopping. Compare the final accuracy with that of the same config measured by the section 4 ablation (r=8, scaling=1.0, 2 epochs): does the 3rd epoch bring a significant marginal gain?
+
+**Hint 1**: take back the training loop of guided example 3, replacing `r=4, alpha=8.0` with `r=8, alpha=8.0` (alpha/r = 1.0) and `range(1, 7)` with `range(1, 4)`.
+
+**Hint 2**: the 2-epoch accuracy appears in `results` (filter `v[0] == 8 and v[2] == 1.0`). Compare it with the final accuracy of this exercise.",,,,,,,8666a6e75080045c,f23f0a40703a6027,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,08103431,code,fr,bb001d0df88800b9,"# Exemple guide 1 : ratio params / accuracy sur alpha/r = 1.0
+# Grandeur mesuree : cout marginal par point d'exactitude.
+print(""=== ratio params / accuracy (alpha/r = 1.0) ==="")
+ratios = []
+for r in RS:
+    match = [v for v in results if v[0] == r and v[2] == 1.0]
+    if match:
+        n, acc = match[0][3], match[0][4]
+        ratio = n / max(acc, 1e-6)
+        ratios.append((r, n, acc, ratio))
+        print(f""  r={r:>2}  params={n:>5}  acc={acc:.4f}  params/acc={ratio:>8.1f}"")
+
+best = min(ratios, key=lambda x: x[3]) if ratios else None
+if best:
+    print(f""\nJuste rang (min params/acc) : r={best[0]}, acc={best[2]:.4f}, ratio={best[3]:.1f}"")
+else:
+    print(""Aucune donnee pour ce scaling."")",,,,,,,,bb001d0df88800b9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,f7a1c8e3,markdown,fr,dd685e4f120bd76b,"### Lecture du résultat : le rendement marginal se dégrade
+
+Le rapport `params/acc` croît avec le rang : de 2747,4 à r=1 (acc 0.1900) jusqu'à 26662,4 à r=32 (acc 0.6265), et la sortie identifie r=1 comme « Juste rang (min params/acc) ». Ce minimum est trompeur : il minimise le coût par point d'exactitude, pas la qualité — le rang le plus sobre est aussi le moins précis (0.1900, contre 0.6265 à r=32).","### Reading the result: marginal return degrades
+
+The `params/acc` ratio grows with rank: from 2747.4 at r=1 (acc 0.1900) up to 26662.4 at r=32 (acc 0.6265), and the output identifies r=1 as ""Juste rang (min params/acc)"". This minimum is misleading: it minimizes cost per accuracy point, not quality — the most frugal rank is also the least accurate (0.1900, against 0.6265 at r=32).",,,,,,,dd685e4f120bd76b,6d1bd67ba51005de,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,0b6161f6,code,fr,5763d4217dd74390,"# Exemple guide 2 : ||B @ A|| a la fin de l'entrainement pour les deux scalings
+# Grandeur mesuree : amplification du produit B @ A par le scaling.
+def _train_and_measure(r, scaling, epochs=2):
+    alpha = scaling * r
+    torch.manual_seed(SEED)
+    m = copy.deepcopy(base_model)
+    for p in m.parameters():
+        p.requires_grad_(False)
+    head_base = nn.Linear(512, 10).to(DEV)
+    nn.init.kaiming_uniform_(head_base.weight, a=5 ** 0.5)
+    if head_base.bias is not None:
+        nn.init.zeros_(head_base.bias)
+    m.head = LoRALinear(head_base, r=r, alpha=alpha).to(DEV)
+    opt = torch.optim.Adam(
+        [p for p in m.head.parameters() if p.requires_grad], lr=LR
+    )
+    for _ in range(epochs):
+        m.train()
+        for x, y in train_loader:
+            x, y = x.to(DEV), y.to(DEV)
+            opt.zero_grad()
+            F.cross_entropy(m(x), y).backward()
+            opt.step()
+    delta_W = m.head.scaling * (m.head.B @ m.head.A)
+    return delta_W.norm().item(), m.head.A.norm().item(), m.head.B.norm().item()
+
+for scaling in [1.0, 2.0]:
+    norm_dW, norm_A, norm_B = _train_and_measure(r=4, scaling=scaling)
+    print(
+        f""alpha/r={scaling}  ||delta_W||={norm_dW:.4f}  ||A||={norm_A:.4f}  ||B||={norm_B:.4f}""
+    )",,,,,,,,5763d4217dd74390,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,f7a1c8e4,markdown,fr,d228816337a61d44,"### Lecture du résultat : amplification du delta effectif
+
+À r=4, passer de `alpha/r = 1.0` à `alpha/r = 2.0` porte la norme du delta effectif `‖delta_W‖` de 1.1712 à 1.8837 : le scaling amplifie le signal appris, sans le doubler. Les normes intermédiaires le montrent : `‖A‖` varie peu (3.9894 → 3.6879) et `‖B‖` diminue (0.4746 → 0.4275) — la compensation vient des deux facteurs, pas d'un seul.","### Reading the result: amplification of the effective delta
+
+At r=4, going from `alpha/r = 1.0` to `alpha/r = 2.0` takes the norm of the effective delta `‖delta_W‖` from 1.1712 to 1.8837: scaling amplifies the learned signal, without doubling it. The intermediate norms show it: `‖A‖` varies little (3.9894 → 3.6879) and `‖B‖` decreases (0.4746 → 0.4275) — the compensation comes from both factors, not just one.",,,,,,,d228816337a61d44,bfb4dbdbe4bc3707,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,ccacb9fd,code,fr,ffbc6dcef03f6899,"# Exemple guide 3 : seuil d'amplification sur 6 epochs (r=4, alpha/r = 2.0)
+# Grandeur mesuree : trajectoire d'accuracy epoch-par-epoch en regime suramplifie.
+torch.manual_seed(SEED)
+m = copy.deepcopy(base_model)
+for p in m.parameters():
+    p.requires_grad_(False)
+head_base = nn.Linear(512, 10).to(DEV)
+nn.init.kaiming_uniform_(head_base.weight, a=5 ** 0.5)
+if head_base.bias is not None:
+    nn.init.zeros_(head_base.bias)
+m.head = LoRALinear(head_base, r=4, alpha=8.0).to(DEV)  # alpha/r = 2.0
+opt = torch.optim.Adam(
+    [p for p in m.head.parameters() if p.requires_grad], lr=LR
+)
+print(""epoch | acc test"")
+print(""------|----------"")
+for epoch in range(1, 7):
+    m.train()
+    for x, y in train_loader:
+        x, y = x.to(DEV), y.to(DEV)
+        opt.zero_grad()
+        F.cross_entropy(m(x), y).backward()
+        opt.step()
+    acc = evaluate(m, test_loader, transform=None)
+    print(f""  {epoch}  | {acc:.4f}"")",,,,,,,,ffbc6dcef03f6899,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,f7a1c8e5,markdown,fr,901cf98ad326a243,"### Lecture du résultat : trajectoire sur 6 epochs
+
+La trajectoire committée monte de 0.2095 (epoch 1) à 0.5980 (epoch 6) sans oscillation ni chute : 0.4720, 0.5170, 0.5705, 0.5945, 0.5980 — les gains se tassent visiblement sur la fin. Sur ce run, aucun « seuil d'amplification » n'apparaît : la mesure nuance l'hypothèse de départ plutôt qu'elle ne la confirme.","### Reading the result: trajectory over 6 epochs
+
+The committed trajectory climbs from 0.2095 (epoch 1) to 0.5980 (epoch 6) with no oscillation or drop: 0.4720, 0.5170, 0.5705, 0.5945, 0.5980 — the gains visibly flatten at the end. On this run, no ""amplification threshold"" appears: the measurement nuances the starting hypothesis rather than confirming it.",,,,,,,901cf98ad326a243,5110512041a68174,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,be020ce3,code,fr,b78823bde90414c1,"# Exercice 1 : ratio params / accuracy sur alpha/r = 0.5
+#
+# Indice 1 : 'results' est une liste de tuples (r, scaling, alpha, n_params, acc_test)
+#             deja construite par les cellules precedentes (section 4).
+# Indice 2 : pour comparer a alpha/r = 1.0, utiliser les donnees de l'exemple guide 1.
+ratios_low = []
+result = None  # TODO etudiant : construire ratios_low
+print(""=== ratio params / accuracy (alpha/r = 0.5) ==="")
+print(""TODO : completer la construction de ratios_low"")
+print(""TODO : comparer a alpha/r = 1.0 via le ratio ratios_low / ratios"")",,,,,,,,b78823bde90414c1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,9682dfad,code,fr,d3149c8cec2b3336,"# Exercice 2 : ||B @ A|| normalise par r, sur les 3 scalings a r=4
+#
+# Indice 1 : reprendre _train_and_measure (defini a l'exemple guide 2) pour chaque scaling.
+# Indice 2 : la grandeur pertinente est norm_dW / scaling -- c'est l'invariant de magnitude.
+result = None  # TODO etudiant : pour scaling in [0.5, 1.0, 2.0], calculer norm_dW / scaling
+print(""=== ||B@A|| / scaling (r=4) ==="")
+print(""TODO : completer la mesure de l'invariant normalise"")",,,,,,,,d3149c8cec2b3336,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,022f6ddc,code,fr,f994776eb5d4e23c,"# Exercice 3 : trajectoire 3 epochs en r=8 / alpha/r = 1.0 (zone sure)
+#
+# Indice 1 : reprendre la structure de l'exemple guide 3 en changeant r=4 -> r=8, alpha=8.0,
+#             et range(1, 7) -> range(1, 4).
+# Indice 2 : comparer l'accuracy finale a celle stockee dans 'results' pour r=8, scaling=1.0.
+result = None  # TODO etudiant : entrainer 3 epochs, mesurer accuracy a chaque epoch, comparer a results
+print(""=== early-stopping r=8 / alpha/r = 1.0 (3 epochs) ==="")
+print(""TODO : completer la trajectoire 3-epochs"")",,,,,,,,f994776eb5d4e23c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-00b-LoRA-Hyperparams-from-scratch-Python.ipynb,11a7d134,markdown,fr,7ec60fb204a8f0c3,"## Résumé
+
+Trois régularités mesurées sur la même mini-tâche, six valeurs de rang, trois scalings :
+
+- **`alpha/r = 1.0`** est le choix de référence : la magnitude effective du signal est neutre, et le rang commande seul la dimensionnalité.
+- **`r = 1` est trop petit** sur Fashion-MNIST inversé : un seul degré de liberté sous-adapte. Au-delà de `r = 4`, les gains saturent.
+- **`alpha/r = 2.0`** peut dégrader : trop de signal amplifié, oscillations ou divergence sur les grands modèles.
+
+Le découplage `alpha / r` est ce qui rend les deux knobs **réglables indépendamment** : augmenter `r` ne change pas la magnitude du signal, et changer `alpha` sans toucher `r` ne change pas la dimensionnalité. C'est l'ingrédient qui rend LoRA **praticable** sur des modèles 7B+ — où le rang reste petit (`r = 8` typique) mais le scaling devient un hyperparamètre de calibration fin.
+
+**Branchement** : FT-00a (mécanisme) → FT-00b (réglage) → FT-01 (LoRA avec `peft` sur GPT-2) → FT-02 (QLoRA 4-bit) → FT-06 (vision-langage).
+
+**Prochaine étape** : [FT-00c](FT-00c-LoRA-SOTA-Comparison-Python.ipynb) confronte ce réglage manuel à l'état de l'art sur une tâche réelle.","## Summary
+
+Three regularities measured on the same mini-task, six rank values, three scalings:
+
+- **`alpha/r = 1.0`** is the reference choice: the effective magnitude of the signal is neutral, and rank alone commands dimensionality.
+- **`r = 1` is too small** on inverted Fashion-MNIST: a single degree of freedom under-adapts. Beyond `r = 4`, gains saturate.
+- **`alpha/r = 2.0`** can degrade: too much amplified signal, oscillations or divergence on large models.
+
+The `alpha / r` decoupling is what makes the two knobs **independently tunable**: increasing `r` does not change the signal magnitude, and changing `alpha` without touching `r` does not change dimensionality. That is the ingredient that makes LoRA **practical** on 7B+ models — where rank stays small (`r = 8` typical) but scaling becomes a fine-calibration hyperparameter.
+
+**Wiring**: FT-00a (mechanism) → FT-00b (tuning) → FT-01 (LoRA with `peft` on GPT-2) → FT-02 (QLoRA 4-bit) → FT-06 (vision-language).
+
+**Next step**: [FT-00c](FT-00c-LoRA-SOTA-Comparison-Python.ipynb) pits this manual tuning against the state of the art on a real task.",,,,,,,7ec60fb204a8f0c3,6aec0d6c2007635d,,,,,,,,,,,,,,

@@ -73,6 +73,8 @@ import tokenize
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+# T3-c (#25366) : le probe a ete reloge dans scripts/audit/.
+sys.path.insert(0, str(Path(__file__).resolve().parent / "audit"))
 import git_index_renames  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -219,7 +221,7 @@ def changed_python_files(base: str) -> list[str]:
 
 
 def staged_pure_renames() -> set[str]:
-    """Backward-compatible shim: the shared probe (scripts/git_index_renames.py,
+    """Backward-compatible shim: the shared probe (scripts/audit/git_index_renames.py,
     extracted from this file by #24068 so four sibling hooks reuse it)."""
     return git_index_renames.staged_pure_renames()
 

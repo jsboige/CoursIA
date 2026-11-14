@@ -1601,7 +1601,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 - Representation des actions et des etats
 - Raisonnement sur les plans
 
-*Notebooks : [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) (RDF, SPARQL) · [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) (planification).*
+*Notebooks : [SW-02-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb) (RDF, SPARQL) · [Planners-01-Introduction-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-01-Introduction-Python.ipynb) (planification).*
 
 ---
 layout: section
@@ -2129,7 +2129,7 @@ h2 { margin-top: 0.3em !important; margin-bottom: 0.1em !important; }
 
 <img src="./images/img_041.png" style="position:absolute; bottom:14px; left:405px; width:170px;" alt="BrightstarDB, base de donnees RDF native pour la plateforme .NET" />
 
-*Notebooks : [SW-02b-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02b-RDFBasics-Python.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-GraphRAG-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb) (du graphe au RAG).*
+*Notebooks : [SW-02-RDFBasics-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-02-RDFBasics-Python.ipynb) (triples et SPARQL) · [SW-11-Python-KnowledgeGraphs](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-11-Python-KnowledgeGraphs.ipynb) · [SW-12-GraphRAG-Python](../../MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-12-GraphRAG-Python.ipynb) (du graphe au RAG).*
 
 ---
 layout: default

@@ -45,7 +45,7 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: bash-syntax-advisory-${{ github.ref }}
+  group: bash-syntax-advisory-${{ github.ref }}-${{ github.event.action == 'edited' && github.event.changes.base == null && 'meta-edit' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
@@ -56,7 +56,7 @@ jobs:
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
     # runs verts de ce job : max 0.15 min. Marge large (le defaut
     # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
@@ -88,7 +88,7 @@ jobs:
     # (routing #14283 tranche 3c, do not revert independently); it is queued
     # while that runner is starved, exactly like syntax-check.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
     # runs verts de ce job : max 3.85 min. Marge large (le defaut
     # d'Actions est 6 h, et un job fige tient son slot tout ce temps).
@@ -118,7 +118,7 @@ jobs:
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
-    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && (github.event.action != 'edited' || github.event.changes.base != null)
     continue-on-error: true
     # #23349 : borne explicite. Mesure du 2026-11-04 sur les 3 derniers
     # runs verts de ce job : max 1.07 min. Marge large (le defaut

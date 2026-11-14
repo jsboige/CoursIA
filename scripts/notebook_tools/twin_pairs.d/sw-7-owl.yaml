@@ -1,6 +1,6 @@
 - name: "SW-7 OWL"
   family: SemanticWeb/dotNetRDF-rdflib
-  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07b-OWL-Python.ipynb
+  python: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-Python.ipynb
   csharp: MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-07-OWL-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK

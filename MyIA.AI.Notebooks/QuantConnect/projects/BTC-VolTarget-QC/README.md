@@ -21,7 +21,7 @@ Si `sigma_hat ≤ 0` (prix plats), la cible précédente est conservée.
 
 ## Instrumentation
 
-`main.py` expose par paramètres : `start`, `end`, `mode` (`base`, `hold-btc`, `spy`, `sixty40`), `fee_mult` (défaut 1), `sigma_etoile`, `vol_span`, `trade_band`. Le graphique `shadow` porte une valeur par barre journalière (`e0..e4` : portefeuille ; `b0..b4` : clôture BTCUSD) — contrat du rejeu en ombre #18923.
+`main.py` expose par paramètres : `start`, `end` (obligatoires, sans valeur par défaut : la fenêtre du verdict est 2016-01-01 → 2026-09-30), `mode` (`base`, `hold-btc`, `spy`, `sixty40`), `fee_mult` (défaut 1), `sigma_etoile`, `vol_span`, `trade_band`. Le graphique `shadow` porte une valeur par barre journalière (`e0..e4` : portefeuille), plus les coûts cumulés `fees` et `turnover` — contrat du rejeu en ombre #18923. BTCUSD est souscrit sans remplissage vers l'avant, et le préchauffage remplit l'EWMA avant le premier ordre (version 2, ci-dessous).
 
 Architecture : IBKR pour les jambes equity des références, BTC en données journalières Bitfinex — la même que BitcoinRegimeGate-QC (#19929). Frais : modèle de courtier par défaut de Lean, mis à l'échelle par `fee_mult` (le mécanisme de #19929, identique sur tous les modes).
 
@@ -52,6 +52,29 @@ Mesures complémentaires : exposition moyenne réalisée `w_bar` ≈ **0,46** (p
 Note d'instrument : le bootstrap de `significance.py` a été corrigé avant tout verdict (départs de blocs uniformes i.i.d. — la version systématique tessellait le cercle quand pgcd(21, n) = 1 et produisait des p dégénérés ∈ {0 ; 0,5 ; 1}). Calibration mesurée sur 15 paires indépendantes de même loi : moyenne 0,458, dispersion (0,04 ; 0,85). Aucune p-valeur du verdict n'a été calculée avec la version défectueuse.
 
 La série `base` est gelée à la date du verdict (2026-10-17) et inscrite au registre d'ombre (#18923) — le hors-échantillon s'accumule sans être choisi après coup.
+
+## Version 2 (2026-11-10)
+
+Le premier passage du rejeu en ombre (2026-11-10, #24153) a été refusé à l'ingestion et a fait apparaître trois défauts de la version gelée :
+
+- le graphique ne portait ni `fees` ni `turnover`, que le contrat exige ;
+- l'EWMA se remplissait sur les 31 premières barres de chaque départ, pendant lesquelles la poche restait en liquidités : un passage d'un mois ne traitait presque jamais ;
+- le flux BTCUSD remplissait vers l'avant : un passage lancé avant minuit UTC recevait, à la date du passage, une barre qui répétait la clôture de la veille.
+
+La version 2 corrige les trois : `fees` et `turnover` tracés, préchauffage de l'EWMA avant le départ, souscription sans remplissage vers l'avant. Elle retire aussi la clôture BTCUSD (`b0..b4`) du graphique : aucun lecteur ne l'utilise, et QC ne garde que dix séries tracées par backtest, tous graphiques confondus — les douze séries de la première version faisaient perdre `e0`.
+
+Même fenêtre (2016-01-01 → 2026-09-30), mêmes frais du courtier, statistiques rapportées par QC :
+
+| Version | Sharpe | CAGR | Pire baisse | Profit total | Ordres |
+|---|---|---|---|---|---|
+| 1 (gelée le 2026-10-17) | 1,259 | 37,4 % | 55,3 % | +2 951 % | 736 |
+| 2 | 1,225 | 36,4 % | 55,7 % | +2 726 % | 751 |
+
+Les frais cumulés de la version 2 représentent environ 5 % de la valeur finale du portefeuille.
+
+Les tableaux de la section précédente mesurent la version 1 : les tests appariés et le verdict NO BEATS n'ont pas été relancés sur la version 2. L'écart entre les deux lignes vient des corrections (la version 2 traite dès janvier 2016 et ne reçoit plus de barre recopiée) et peut-être d'une révision des données entre les deux runs ; un rejeu de la version 1 le même jour les départagerait, il n'a pas été lancé. La version 1 reste inscrite au registre d'ombre, mais ne peut produire aucun passage accepté.
+
+La version 2 lisait encore `start` et `end` avec des valeurs par défaut, ce que la règle 1 du contrat interdit : un backtest lancé sans elles tournait sur une période implicite. Elles sont retirées (2026-11-11) ; rien ne change quand les deux dates sont passées, ce que fait chaque passage. Un backtest de contrôle du 2026-10-17 au 2026-11-10 (projet QC 39243885) le vérifie. La version 2 est gelée au registre le 2026-11-12, sous l'identifiant `btc-voltarget-v2`, sur ce projet, au SHA de cette correction sur `main` (`fa1d63e`).
 
 ## Sources
 

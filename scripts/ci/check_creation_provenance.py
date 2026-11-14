@@ -48,6 +48,7 @@ Usage :
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import datetime as dt
 import json
 import os
@@ -204,8 +205,9 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
       * un **demenagement** : GitHub rapporte un deplacement comme
         `added` + `removed` quand la similarite est sous son seuil ; le
         carnet n'est pas neuf, il a change de place. On le reconnait a
-        l'egalite du NOM de fichier entre un `added` et un `removed` de la
-        meme PR ;
+        l'egalite du SHA de blob entre un `added` et un `removed`, chaque
+        suppression ne pouvant justifier qu'un ajout, ou au statut
+        `renamed` accompagne de `previous_filename` ;
       * un **suffixe de langue** : le carnet n'est ni exempté ni ignorant --
         il est RENDU dans `langues`, la classe du constat `LANG_SIBLING`.
         L'exemption `_en` a ete retiree (#23174) : elle rendait la garde
@@ -214,8 +216,12 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
 
     Le rendu est `(carnets_neufs, demenagements, carnets_langue)`.
     """
-    supprimes = {f.get("filename", "").rsplit("/", 1)[-1]
-                 for f in files if f.get("status") == "removed"}
+    blobs_supprimes = Counter(
+        f.get("sha") for f in files
+        if f.get("status") == "removed"
+        and (f.get("filename") or "").endswith(".ipynb")
+        and f.get("sha")
+    )
     neufs: list[str] = []
     demenages: list[str] = []
     langues: list[str] = []
@@ -223,13 +229,24 @@ def new_notebooks(files: list[dict]) -> tuple[list[str], list[str], list[str]]:
         path = f.get("filename") or ""
         if not path.endswith(".ipynb"):
             continue
-        if f.get("status") != "added":
+        statut = f.get("status")
+        if statut == "renamed":
+            ancien_path = f.get("previous_filename") or ""
+            if ancien_path.endswith(".ipynb"):
+                demenages.append(path)
+                continue
+            # Sans ancien chemin de carnet, le statut renommé ne prouve
+            # pas un déplacement de carnet : garder le fichier visible
+            # comme création (ou carnet de langue) plutôt que l'ignorer.
+        elif statut != "added":
             continue
         nom = path.rsplit("/", 1)[-1]
         if lang_suffix(nom):
             langues.append(path)
             continue
-        if nom in supprimes:
+        sha = f.get("sha")
+        if sha and blobs_supprimes[sha]:
+            blobs_supprimes[sha] -= 1
             demenages.append(path)
             continue
         neufs.append(path)

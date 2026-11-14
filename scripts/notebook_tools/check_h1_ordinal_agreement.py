@@ -254,7 +254,7 @@ def self_test() -> int:
     # lacune : aucun H1
     cases.append(("Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb", {"cells": [{"cell_type": "markdown", "source": ["## Sous-titre"]}]}, "missing_h1"))
     # negatif : un nom de fichier sans identite n'est pas un carnet de serie
-    cases.append(("Diagnostic-Medical.ipynb", nb_with_h1("# CC1 - IA Exploratoire"), None))
+    cases.append(("Diagnostic-Medical-Python.ipynb", nb_with_h1("# CC1 - IA Exploratoire"), None))
     # generique : bon ordinal, mot de serie interchangeable
     cases.append(("Sudoku-09-GraphColoring-CSharp.ipynb", nb_with_h1("# Notebook 9: Resolution de Sudoku"), "generic"))
     cases.append(("RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb", nb_with_h1("# Notebook 2 - Wrappers Gym"), "generic"))

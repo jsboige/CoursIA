@@ -102,7 +102,7 @@ La carte se rafraîchit en rejouant ces commandes ; toute divergence de plus de 
 
 | Source | Chemin | sha8 |
 |---|---|---|
-| Russell & Norvig, *Artificial Intelligence: A Modern Approach*, 4e éd. (2021) | racine du gisement | — |
-| Lotfi et al., *Position: There Are Futures That Benchmark-Driven AI Cannot See* (ICML 2026) | `MachineLearning\2026 - Lotfi et al - Position - There Are Futures That Benchmark-Driven AI Cannot See (ICML 2026).pdf` | `01B15D8B` (vérifié) |
+| Russell & Norvig, *Artificial Intelligence: A Modern Approach*, 4e éd. (2021) | `AI\2021 - Russell Norvig - Artificial Intelligence - A Modern Approach (4th Edition).pdf` | — |
+| Lotfi et al., *Position: There Are Futures That Benchmark-Driven AI Cannot See* (ICML 2026) | `MachineLearning\Transformers and Large Language Models\2026 - Lotfi et al - Position - There Are Futures That Benchmark-Driven AI Cannot See (ICML 2026).pdf` | `01B15D8B` (vérifié) |
 
 See #17528 · See #17525 · See #17541

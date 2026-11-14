@@ -55,6 +55,10 @@ jobs:
     name: "Split-reading ratchet (base vs PR)"
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
+    # #22954 : borne explicite. Mesure du 2026-11-11 (run 43090078605, dispatch sur
+    # main) : duree du job 14 s. Plancher de 10 min (le defaut d'Actions est
+    # 6 h, et un job fige tient son slot tout ce temps).
+    timeout-minutes: 10
 
     steps:
       - name: Checkout

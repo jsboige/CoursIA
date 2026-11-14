@@ -1,5 +1,7 @@
 # Scan de drift sur worktree frais (anti-phantom)
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Procédure transverse aux workers `po-*` : **toute détection de drift** (traduction `check_translation_sync.py`, nbformat ids, sorry-count, readémie §E) **doit s'exécuter sur un worktree frais syncé `origin/main`**, jamais sur l'arbre partagé `main` local.
 
 ## Le piège (symptôme)

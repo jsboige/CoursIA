@@ -33,6 +33,12 @@ on:
       - "styles.css"
       - ".github/workflows/quarto-pages-deploy.yml"
       - "scripts/quarto_yaml_safe.py"
+      # La passe post-rendu des liens (#10921) transforme _site/ a CHAQUE
+      # deploy : un fix du transform doit re-servir le site pour s'appliquer,
+      # exactement comme yaml_safe ci-dessus.
+      - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
       # La page catalogue est un document rendu (_quarto.yml render list), mais
       # son refresh arrive par la PR long-lived catalog-cron -- dont le merge
       # ne touche AUCUN autre path de cette liste : sans ce filtre, la page
@@ -61,6 +67,12 @@ on:
       # qui ne touche que ces deux fichiers sauterait le rendu et rendrait
       # l'auto-couverture de #14391 creuse.
       - "scripts/quarto_render_scope.py"
+      # Meme auto-couverture pour la passe post-rendu des liens (#10921) :
+      # une PR qui ne touche QUE le transform doit exercer le pipeline sur
+      # le smoke set, pas sauter le rendu.
+      - "scripts/ci/quarto_site_link_targets.py"
+      - "scripts/ci/quarto_readme_titles.py"
+      - "scripts/ci/tests/test_quarto_readme_titles.py"
   workflow_dispatch:
 
 # Concurrence par evenement : une PR repoussee n'a pas besoin de l'ancien
@@ -182,6 +194,11 @@ jobs:
         # exclues (cf. scripts/regen_quarto_render.py).
         run: python3 scripts/regen_quarto_render.py
 
+      - name: Préparer et vérifier les titres README
+        run: |
+          python3 scripts/ci/quarto_readme_titles.py apply --backup "$RUNNER_TEMP/readme-titles.json"
+          python3 scripts/ci/quarto_readme_titles.py check
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         # Quarto derive la classe pandoc du code-block depuis kernelspec.language.
         # Le kernel .NET Interactive ecrit "C#", que Quarto emet comme classe
@@ -233,6 +250,13 @@ jobs:
         # greppable "#14597-covariates:" pour la moisson multi-runs.
         run: python3 scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
+      - name: Restaurer les README
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python3 scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
+
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
@@ -252,6 +276,21 @@ jobs:
           test -d _site || (echo "::error::_site/ absent après quarto render" && exit 1)
           test -f _site/index.html || (echo "::error::_site/index.html absent" && exit 1)
           echo "_site/ présent avec $(find _site -type f | wc -l) fichiers"
+
+      - name: Rewrite unservable site links (#10921)
+        # Post-rendu, pre-upload : les liens que Pages ne peut pas servir
+        # (repertoires sans index -- le README rendu vit a X/README.html ;
+        # fichiers hors render-list comme .claude/ ou .env.example) sont
+        # reecrits dans _site/ vers une cible servable : le README.html
+        # rendu s'il existe, sinon une URL absolue github.com (tree/ pour
+        # un repertoire, blob/ pour un fichier). Les SOURCES restent
+        # byte-identiques : la navigation de reference est celle de
+        # github.com (arbitrage user 2026-10-08, c.6076029168 sur #18911)
+        # -- c'est au site d'adapter au rendu, pas aux READMEs de s'adapter
+        # au site. Mesure fondatrice 2026-11-10 : 54 liens casses sur 674
+        # dans les 16 README de series, tous corrects sur github.com.
+        # rc 2 = instrument casse -> pas de deploy sur un site non verifie.
+        run: python3 scripts/ci/quarto_site_link_targets.py --site-dir _site --repo-root .
 
       - name: Upload Quarto site artifact
         # L5 #11508 : le Pages artifact ne se compose plus ici. Le site final est
@@ -559,6 +598,9 @@ jobs:
       - name: Regenerate render list
         run: python scripts/regen_quarto_render.py
 
+      - name: Conserver la liste complète des README
+        run: cp _quarto.yml "$RUNNER_TEMP/readme-render-list.yml"
+
       - name: Scope render list to this PR's changed documents
         # #14429 : la jambe PR rendait le site ENTIER (1192 entrees, sans cache
         # -- `_freeze/` n'est pas tracke) alors que son objet declare est etroit
@@ -602,6 +644,12 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
 
+      - name: Préparer et vérifier les titres README
+        if: steps.scope.outputs.mode != 'empty'
+        run: |
+          python scripts/ci/quarto_readme_titles.py apply --config "$RUNNER_TEMP/readme-render-list.yml" --backup "$RUNNER_TEMP/readme-titles.json"
+          python scripts/ci/quarto_readme_titles.py check --config "$RUNNER_TEMP/readme-render-list.yml"
+
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         if: steps.scope.outputs.mode != 'empty'
         run: python scripts/quarto_csharp_kernel_fix.py apply
@@ -632,6 +680,13 @@ jobs:
         # phase post-rendu n'est pas representative et le rapport resterait muet.
         if: steps.scope.outputs.mode == 'full'
         run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+
+      - name: Restaurer les README
+        if: always() && steps.scope.outputs.mode != 'empty'
+        run: |
+          if [ -f "$RUNNER_TEMP/readme-titles.json" ]; then
+            python scripts/ci/quarto_readme_titles.py restore --backup "$RUNNER_TEMP/readme-titles.json"
+          fi
 
       - name: Restore kernel language (hygiene)
         if: steps.scope.outputs.mode != 'empty'
@@ -669,6 +724,18 @@ jobs:
             test "$RENDERED" -le "$CEIL" || (echo "::error::rendu scope=${{ steps.scope.outputs.count }} document(s) mais $RENDERED pages produites (plafond $CEIL) : la restriction n'a pas pris" && exit 1)
           fi
           echo "_site/ présent avec $(find _site -type f | wc -l) fichiers ($RENDERED .html, mode=$MODE)"
+
+      - name: Rewrite unservable site links (#10921)
+        # Meme passe que le job build, jambe PR : exercer le transform sur
+        # le rendu disponible (smoke ou complet). Sur un rendu SCOPE, l'arbre
+        # _site/ ne porte que les documents rendus : les cibles absentes de
+        # l'arbre partent en URL absolue github.com -- decisions differentes
+        # du rendu complet, mais le code chemin (extraction, resolution,
+        # ecriture) est l'objet de la verification ici ; la correction reelle
+        # vit sur la jambe deploy. Gated mode != 'empty' : sans rendu, il
+        # n'y a pas de _site/ a transformer.
+        if: steps.scope.outputs.mode != 'empty'
+        run: python3 scripts/ci/quarto_site_link_targets.py --site-dir _site --repo-root .
 
       - name: Comment PR with summary
         # Resumé court : nombre de fichiers + diff notebooks si pertinent.

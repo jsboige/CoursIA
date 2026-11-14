@@ -1748,9 +1748,10 @@ def reset_pr_resolution() -> None:
 def _rest_pr_rows_for_branch(branch: str) -> Optional[list]:
     """Lignes REST `pulls?state=all&head=<owner>:<branche>` (seau `core`).
 
-    Le filtre `head` porte sur le proprietaire du head : une branche dont
-    le head vit dans un fork (head repo != repo courant) n'est donc PAS
-    trouvee par cette voie -- c'est le role du repli GraphQL plus bas.
+    Le filtre `head` exige le proprietaire du head. Cette voie utilise le
+    proprietaire du depot courant : elle ne trouve donc pas une branche de
+    fork dont le proprietaire n'est pas connu -- c'est le role du repli
+    GraphQL plus bas.
 
     Le nom de branche est encode (le `/` des noms de branche devient
     `%2F`) : un `head=` mal encode rend un resultat VIDE, c'est-a-dire un

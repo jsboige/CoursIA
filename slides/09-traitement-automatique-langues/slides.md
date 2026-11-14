@@ -652,7 +652,7 @@ layout: section
 - Bitcoin, DN/Encog, machine learning
 
 > Ces projets sont **historiques** (2018). Pour les projets modernes équivalents,
-> voir le syllabus courant (`GradeBookApp/`, racine du dépôt — moteur de notation, pas le syllabus).
+> voir le syllabus courant (`dotnet/GradeBookApp/`, racine du dépôt — moteur de notation, pas le syllabus).
 
 ---
 

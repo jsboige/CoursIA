@@ -6511,12 +6511,17 @@ Pour evaluer objectivement la qualite du clonage vocal, on peut utiliser des met
 | Cosine similarity (embeddings) | Distance entre embeddings de speaker | 0-1 (1 = identique) |
 | MOS (Mean Opinion Score) | Evaluation perceptuelle humaine | 1-5 (5 = excellent) |
 | Speaker Error Rate (SER) | Taux d'erreur d'identification | 0-100% (0 = parfait) |",,,,,,,,9e5f584d14a881ad,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-similarity,code,fr,557f65a77b94814f,"# Analyse de similarite vocale
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-similarity,code,fr,8ee73381866ca6b1,"# Analyse de similarite vocale
 print(""ANALYSE DE SIMILARITE VOCALE"")
 print(""="" * 45)
 
 if xtts_loaded and generate_audio and analyze_similarity:
     similarity_available = False
+
+    # webrtcvad (dependance de resemblyzer) emet un DeprecationWarning a l'import,
+    # dont le texte embarque le chemin site-packages de la machine
+    import warnings
+    warnings.filterwarnings(""ignore"", message=""pkg_resources is deprecated as an API"")
 
     try:
         from resemblyzer import VoiceEncoder, preprocess_wav
@@ -6581,8 +6586,7 @@ if xtts_loaded and generate_audio and analyze_similarity:
     else:
         print(""Fichiers audio non disponibles pour l'analyse"")
 else:
-    print(""Analyse de similarite desactivee ou modele non charge"")
-",,,,,,,,557f65a77b94814f,,,,,,,,,,,,,,,
+    print(""Analyse de similarite desactivee ou modele non charge"")",,,,,,,,8ee73381866ca6b1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-2-XTTS-Voice-Cloning.ipynb,cell-section4-interpretation,markdown,fr,dd3c99a2b63bc109,"### Interpretation : Qualite du clonage
 
 | Metrique | Valeur typique XTTS | Signification |
@@ -13384,7 +13388,7 @@ Ce notebook presente l'evolution du TTS vers l'expressivite et le controle granu
 2. **Qualite percu** : non machine-verifiable -- ce notebook rapporte des mesures objectives (duree, RTF, generation multilingue, voice cloning)
 3. **Langues Tier 3** : qualite variable pour les langues peu representees (non mesure)
 ",,,,,,,,973a91020a9e8a87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,ad29238d,markdown,fr,8f53f628cdec49b1,"# Ace-Step v1.5 - Generation Musicale avec Paroles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,ad29238d,markdown,fr,152f0501dedc796f,"# Ace-Step v1.5 - Generation Musicale avec Paroles
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Intermediaire  
@@ -13405,7 +13409,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,ad
 - `pip install git+https://github.com/ace-step/ACE-Step.git`
 - Connaissances de base en generation audio (voir [02-3-MusicGen](02-3-MusicGen-Generation.ipynb))
 
-**Navigation :** [<< 02-8](02-8-Expressive-TTS.ipynb) | [Index](README.md) | [Suivant >>](../03-Orchestration/README.md)",,,,,,,,8f53f628cdec49b1,,,,,,,,,,,,,,,
+**Navigation :** [<< 02-8](02-8-Expressive-TTS.ipynb) | [Index](../README.md) | [Suivant >>](../03-Orchestration/README.md)",,,,,,,,152f0501dedc796f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,5dc5d9a2,code,fr,41bf6bb07659ed94,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
@@ -13488,7 +13492,7 @@ Tags de genre + Paroles structurees → LM Encoder → DiT Diffusion → VAE Dec
 | **Musique de fond** | Pistes instrumentales avec ou sans paroles | Jingle, podcast |
 | **Prototypage musical** | Idees melodieques avec structure | Demo rapide d'un concept |
 | **Education** | Demonstration de styles multilingues | Comparaison jazz/francais vs rock/anglais |",,,,,,,,fa8b17e135466023,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,296c7320,code,fr,b18c6530bcb18156,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,296c7320,code,fr,1563c14de5780966,"# Setup environnement et imports
 import warnings
 # Bruit de warnings tiers (prefixes = chemins site-packages) : filtrage cible
 warnings.filterwarnings(""ignore"", message=""Failed to find CUDA.*"")
@@ -13563,7 +13567,7 @@ except ImportError:
         import subprocess
         result = subprocess.run(
             [sys.executable, ""-m"", ""pip"", ""install"", ""git+https://github.com/ace-step/ACE-Step.git""],
-            capture_output=True, text=True, timeout=300
+            capture_output=True, text=True, encoding=""utf-8"", timeout=300
         )
         if result.returncode == 0:
             print(""ACE-Step installe avec succes"")
@@ -13582,7 +13586,7 @@ print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""Duree : {audio_duration}s, Infer steps : {infer_step}"")
 print(f""Guidance scale : {guidance_scale}, CFG type : {cfg_type}"")
 print(f""CPU offload : {cpu_offload}, Seed : {seed}"")
-print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT).as_posix()}"")",,,,,,,,b18c6530bcb18156,,,,,,,,,,,,,,,
+print(f""Sortie : {OUTPUT_DIR.relative_to(GENAI_ROOT).as_posix()}"")",,,,,,,,1563c14de5780966,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-9-AceStep-Music-Generation.ipynb,52e15f65,markdown,fr,891062b760665531,"### Interpretation : Configuration de l'environnement
 
 L'environnement est maintenant configure pour ACE-Step.
@@ -19643,11 +19647,11 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipy
 - [ ] Créer des sous-titres synchronises
 - [ ] Ajouter une musique de fond discrete
 - [ ] Generer un PDF du cours avec transcription",,,,,,,,131728730a4e1888,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,182567ea,markdown,fr,a3780beb2b757b43,"# P3 - Annotation Prosodique pour TTS Agentique
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,182567ea,markdown,fr,982074b8050112c9,"# P3 - Annotation Prosodique pour TTS Agentique
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Voix/04-9-Voice-Casting.ipynb) | [Suivant >>](04-11-Generation-TTS.ipynb)
 
-**Epic #1028** | Pipeline 5-pass : Lecture analytique > Voice casting > **Annotation prosodique** > Generation TTS > Compilation audio
+**Pipeline en cinq passes** : lecture analytique, voice casting, annotation prosodique, génération TTS et compilation audio. Ce carnet se concentre sur l’annotation des répliques avant leur synthèse vocale.
 
 Ce notebook enrichit les repliques identifiees en P1 avec des tags expressifs FishAudio S2-Pro. FishAudio supporte 15000+ tags expressifs (joie, colere, chuchotement, soupir, etc.) qui permettent un contrôle fin de la prosodie pour chaque personnage.
 
@@ -19661,7 +19665,7 @@ Ce notebook enrichit les repliques identifiees en P1 avec des tags expressifs Fi
 **Duree estimee** : 8-10 minutes
 
 ***
-",,,,,,,,a3780beb2b757b43,,,,,,,,,,,,,,,
+",,,,,,,,982074b8050112c9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,2be00eeb,markdown,fr,9a434f7c22517d88,"## 1. Configuration et imports
 
 Le notebook **P3 — Annotation prosodique** prend les **résultats combinés de P1 (analyse textuelle) et P2 (voice casting)** et produit un **livre enrichi SSML** prêt à être synthétisé par P4 (TTS). C'est la passe qui transforme un texte brut en **partition d'acteur audio** : pour chaque réplique, le moteur choisit les tags expressifs FishAudio S2-Pro qui correspondent au contexte émotionnel.
@@ -20940,11 +20944,11 @@ La synthèse a été exécutée avec le modèle **gratuit** `fish-audio/s2.1-pro
 - La section 10 mesure la mélodie sur des signaux synthétiques : elle ne mesure pas encore l'effet des annotations sur une voix TTS réelle.
 - La validation par synthèse porte sur 6 extraits (3 segments × 2 syntaxes) au modèle gratuit, sans référence de voix : elle prouve que les balises ne sont pas prononcées, pas que chaque personnage est distingué.
 - Les mesures de la section 10 dépendent de la version de librosa : la 0.11.0 reproduit exactement les valeurs commentées, la 1.0.0 donne 17,4 notes effectives au lieu de 17,8 pour la mélodie (verdicts inchangés).",,,,,,,,26b7f0285422eadd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,ab3609d0,markdown,fr,6f7c9c8bbdae19a1,"# P4 — Generation TTS pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,ab3609d0,markdown,fr,87b1b6de8c3bbd6e,"# P4 — Generation TTS pour Audiobook
 
 **Navigation** : [Index](../README.md) | [<< Précédent](04-10-Annotation-Prosodique.ipynb) | [Suivant >>](04-12-Compilation-Audio.ipynb)
 
-**Epic #1028** | Pass 4 : Generation audio via Kokoro TTS (demo) / FishAudio S2-Pro (production)
+Ce carnet transforme les annotations prosodiques P3 et la configuration vocale P2 en fichiers audio pour le texte, puis exporte les métadonnées de génération. Kokoro TTS sert à la démonstration et FishAudio S2-Pro à la production.
 
 ## Objectifs
 
@@ -20952,7 +20956,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.
 2. Mapper chaque segment au bon modèle/voix TTS
 3. Generer les fichiers audio pour les 342 segments du texte
 4. Exporter les metadonnees de generation (durees, tailles, paths)
-",,,,,,,,6f7c9c8bbdae19a1,,,,,,,,,,,,,,,
+",,,,,,,,87b1b6de8c3bbd6e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,c84ee935,code,fr,dcf1852d92adec3c,"# Import guards - availability flags for external dependencies
 
 try:
@@ -21746,7 +21750,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.
 Les segments longs (>55 mots) doivent etre decoupes pour FishAudio. Un decoupage naif par comptage de mots coupe au milieu d'une phrase ou d'une scene. Cette étape utilise un LLM pour decouper aux **frontieres naturelles** du texte : fins de phrase, changements de scene, transitions narratif/dialogue.
 
 La fonction `llm_split_segment()` envoie le texte a `gpt-5.6-luna` qui identifie les points de coupure optimaux, avec un fallback sur le decoupage par phrase si le LLM est indisponible.",,,,,,,,1e736a94abdf3f1b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,5bd5cead,code,fr,4e2cccffa63dcca7,"from openai import OpenAI
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,5bd5cead,code,fr,2b2a043d24da36a2,"from openai import OpenAI
 
 # Cle optionnelle : sans OPENAI_API_KEY le client reste absent et le decoupage
 # deterministe de repli s'applique (le carnet reste executable de bout en bout).
@@ -21784,8 +21788,16 @@ def llm_split_segment(text, max_words=55):
             # docs/genai/model-mapping-openai.md (tranche 1 de #14755).
             model=""gpt-5.6-luna"",
             messages=[{""role"": ""user"", ""content"": prompt}],
-            temperature=0.1,
-            max_tokens=1000,
+            # La famille gpt-5 refuse deux parametres que les familles 4.x acceptent
+            # (mesure live du 2026-11-07, table de reference
+            # docs/genai/parametres-par-modele.md) :
+            #   - `max_tokens` : 400 ""Unsupported parameter ... Use 'max_completion_tokens'""
+            #   - `temperature` : 400 ""Unsupported value ... Only the default (1) value is
+            #     supported"" -- le parametre est donc retire, la valeur par defaut s'applique
+            # Sans ce correctif, l'appel echoue, la cellule bascule sur le decoupage de
+            # repli, et la sortie affiche une erreur que l'etudiant ne peut pas resoudre
+            # en lisant le cours (#24114).
+            max_completion_tokens=1000,
         )
         parts = resp.choices[0].message.content.strip().split(""|||"")
         parts = [p.strip() for p in parts if p.strip()]
@@ -21802,7 +21814,7 @@ def llm_split_segment(text, max_words=55):
 test_long = ""La diligence partit dans la neige. Dans la voiture, neuf passagers se tenaient serres : le marchand de vins Loiseau et sa femme, le republican Cornudet, la comtesse de Breville, le manufacturier Carre-Lamadon et son epouse, le comte Hubert de Breville, les bonnes soeurs, et Elisabeth Rousset, dite Boule de Suif, une prostituee de grand renom.""
 parts = llm_split_segment(test_long)
 for i, p in enumerate(parts):
-    print(f""  Part {i+1} ({len(p.split())} mots): {p[:60]}..."")",,,,,,,,4e2cccffa63dcca7,,,,,,,,,,,,,,,
+    print(f""  Part {i+1} ({len(p.split())} mots): {p[:60]}..."")",,,,,,,,2b2a043d24da36a2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,63be896a,markdown,fr,f944c13149591892,"Le decoupage par LLM vise a respecter les frontieres narratives naturelles du texte (fins de phrase, changements de scene) plutot que de couper mecaniquement après N mots. Au moment de cette exécution, le LLM etait indisponible (erreur d'authentification du proxy, code 401) : la generation FishAudio qui suit a donc utilise le **decoupage déterministe de repli**, coupe sur la ponctuation et la longueur, sans interpretation narrative. Le mécanisme de cache evite de regenerer les segments déjà produits. Avec la cle proxy retablie, la même cellule bascule sur le decoupage LLM sans autre changement de code.
 ",,,,,,,,f944c13149591892,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,40b77d53,code,fr,54cf40af68816c03,"FISH_OUTPUT_DIR = BASE_DIR / ""tts_output_fishaudio""
@@ -22278,11 +22290,11 @@ def generate_comparison_report(kokoro_segs, fish_segs):
     return """"  # TODO etudiant
 
 print(""Exercice a completer"")",,,,,,,,84dbf3a5ad2da324,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,6534c65c,markdown,fr,60f0718b27d9ce99,"# P5 — Compilation Audio pour Audiobook
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,6534c65c,markdown,fr,547df5573cebc4f4,"# P5 — Compilation Audio pour Audiobook
 
 **Navigation** : [Index](../README.md) | [<< Précédent](04-11-Generation-TTS.ipynb) | [Suivant >>](../04-Voix/04-19-Evaluation-MOS.ipynb)
 
-**Epic #1028** | Pass 5 : Assemblage final des segments TTS en audiobook
+Ce carnet assemble les segments MP3 produits en P4, applique des transitions et normalise le volume, puis exporte l’audiobook et son manifest JSON. Les contrôles portent sur la durée, le clipping et les niveaux audio.
 
 ## Objectifs
 
@@ -22291,7 +22303,7 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Aud
 3. Normaliser le volume global
 4. Exporter l'audiobook final + manifest JSON
 5. Verifier la qualite audio (duree, clipping, niveaux)
-",,,,,,,,60f0718b27d9ce99,,,,,,,,,,,,,,,
+",,,,,,,,547df5573cebc4f4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,c3bee5ce,code,fr,7e1fc70bca3304c3,"import json
 import os
 import struct
@@ -23340,7 +23352,7 @@ simulated_wers = None  # TODO etudiant : liste de WER en decimal
 pass_rates = None  # TODO etudiant : liste de pass rates
 
 print(""Exercice a completer"")",,,,,,,,70859caa2190530c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,436d6b0b,markdown,fr,1407d2fb84623419,"### Interpretation : Validation WER
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,436d6b0b,markdown,fr,0896a3ecd6488b31,"### Interpretation : Validation WER
 
 | Aspect | Observation | Remarque |
 |--------|------------|----------|
@@ -23349,37 +23361,40 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishA
 | Whisper model | large-v3-turbo | Rapide et precis en francais |
 | Cause d'echec typique | Tags/directions vocalises | Le texte libre entre crochets est prononce, pas interprete |
 
-**Lecture du resultat live (cellule P7 ci-dessus)** : sur l'echantillon demo (3
-segments, execution fraiche), la validation donne un WER moyen de **38.07%** et un
-taux de conformite de **0%** (0/3 au seuil de 15%). Ce chiffre eleve n'est ni un
-symptome d'audio cassee ni une erreur de reconnaissance : Whisper transcrit
-correctement le francais -- la mesure etendue (cellule suivante) atteint 20.45% de
-WER moyen et les meilleurs segments sont a ~0%. Il s'explique directement par la
-**vocalisation des balises libres**.
+**Lecture du resultat live (cellule P7 ci-dessus)** : la sortie commitee mesure
+trois segments, avec un WER moyen de **36.90%** et **0%** de conformite (0/3 au
+seuil de 15%). Ces valeurs decrivent cet echantillon et cette execution ; elles ne
+suffisent pas a conclure sur l'ensemble du livre ni sur la qualite de Whisper.
 
-**Pourquoi le WER depasse parfois 100%** : le WER est le nombre d'insertions +
+La sortie P4 montre des directions de jeu libres, et l'apercu P5 les inclut dans le
+texte soumis a FishAudio. Leur vocalisation est un mecanisme plausible d'insertions
+dans la transcription. Toutefois, la sortie P7 ne contient pas les transcriptions
+ni les erreurs mot a mot : elle ne permet donc pas d'attribuer quantitativement le
+WER observe a ces directions.
+
+**Pourquoi le WER peut depasser 100%** : le WER est le nombre d'insertions +
 substitutions + deletions rapporte au nombre de mots de reference. L'annotation P4
-produit ici des directions de jeu en texte libre (visibles dans l'aperçu TTS ci-dessus :
+produit ici des directions de jeu en texte libre (visibles dans l'apercu TTS ci-dessus :
 « [composed and neutral, even pace] », « [ironic and dry, with a smirk] ») que
 FishAudio **vocalise litteralement** au lieu de les interpreter comme des commandes.
-La transcription Whisper contient alors tous ces mots en insertion, et le rapport
-explose -- c'est exactement le mecanisme qui poussait le WER au-dela de 100% dans
-l'etude offline citee precedemment. Seules les 29 balises officielles (`pause`,
-`sigh`, `whispering`, ...) sont traitees comme des commandes de prosodie ; tout
-texte libre est prononce mot a mot (incident #1277/#1485).
+La transcription Whisper peut alors contenir ces mots en insertion, et le rapport
+peut depasser 100%. Les sorties de ce carnet montrent le texte libre dans
+les apercus, mais pas la transcription correspondante permettant de mesurer cet effet.
+Seules les 29 balises officielles (`pause`, `sigh`, `whispering`, ...) sont traitees
+comme des commandes de prosodie ; tout texte libre est prononce mot a mot (incident #1277/#1485).
 
-> **Lecon critique (WER #1277/#1485)** : les balises libres (non officielles) sont
-> vocalisees litteralement et font grimper le WER par insertion, parfois au-dela de
-> 100%. Le pipeline v4 doit n'injecter que les 29 tags officiels pour ramener la
-> narration a un WER qualitatif (mesure etendue dans la cellule suivante).
+> **Lecon critique (WER #1277/#1485)** : les directions libres peuvent etre
+> vocalisees comme du texte et ajouter des insertions au WER. Comparer les sorties
+> P4/P5 avec les transcriptions et les erreurs detaillees permettrait de verifier
+> ce mecanisme ; les mesures presentees ici ne suffisent pas a en chiffrer l'effet.
 
 ***
 
 ## Section 6 : Resultats de la validation WER
 
-La validation etendue du pipeline a ete executee en dehors de ce notebook via les
-scripts dedies du pipeline v4. La cellule suivante presente les mesures reelles
-(artifact du pipeline + execution fraiche P7).",,,,,,,,1407d2fb84623419,,,,,,,,,,,,,,,
+La cellule suivante affiche l'etat de l'artifact et la mesure live commitee ; les
+resultats etendus ne sont pas disponibles dans ce carnet.
+",,,,,,,,0896a3ecd6488b31,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,61193934,code,fr,3f3cbacc822f391a,"# Resultats de la validation WER (mesures reelles : artifact + execution fraiche)
 print(""RESULTATS VALIDATION WER"")
 print(""="" * 50)
@@ -23419,21 +23434,20 @@ print(""non reproduit. Le mecanisme -- les tags/texte libres sont vocalises par 
 print(""et font exploser le WER via des insertions -- est visible dans les segments"")
 print(""WER>100% : la transcription contient la direction de jeu pronouncee mot a mot."")
 ",,,,,,,,3f3cbacc822f391a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,ab24087a,markdown,fr,26fc079918b24aa1,"### Interpretation : Resultats complets
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,ab24087a,markdown,fr,546d2509a985ca7f,"### Interpretation : Resultats complets
 
-La mesure etendue (22 segments en tags officiels, artifact `verification_transcript.json`)
-atteint un WER moyen de **20.45%** (pass-rate 54.5% au seuil de 15%) : un niveau modere
-qui confirme que FishAudio S2-Pro traite les 29 balises officielles comme des commandes
-de prosodie et retranscrit une narration francaise claire avec une bonne fidelite
-(meilleurs segments a ~0% de WER). La mesure live P7 (38.07% sur l'echantillon demo)
-est plus elevee parce que l'annotation P4 y a laisse passer des directions de jeu en
-texte libre, vocalisees mot a mot : c'est la signature du mecanisme #1277/#1485, et la
-raison pour laquelle le pipeline doit n'injecter que des balises officielles.
+La cellule de resultats indique que l'artifact `verification_transcript.json` est
+absent ; aucune mesure etendue n'est donc disponible dans ce carnet.
+La seule mesure chiffree ancree est la sortie live P7 : trois segments,
+WER moyen **36.90%** et pass-rate **0%** au seuil configure de 15%. Cet echantillon
+ne permet pas de conclure sur la performance globale de FishAudio S2-Pro ni sur
+l'effet des balises officielles. Les apercus P4/P5 montrent des directions libres
+dans le texte ; leur impact sur le WER reste a mesurer avec les transcriptions.
 
-**Limites identifiees** :
-1. **Segments longs (>400 chars)** : FishAudio peut omettre ou condenser des passages, causant un WER eleve
-2. **Dialogues multi-voix** : le WER est plus eleve que pour la narration seule (transitions speaker)
-3. **WER != qualite percue** : un WER de 10% peut correspondre a des erreurs mineures (article manquant) ou a des omissions significatives
+**Limites et pistes d'evaluation** :
+1. **Longueur des segments** : les omissions ou condensations peuvent faire varier le WER ; cette relation reste a mesurer sur des segments de longueurs comparees
+2. **Dialogues multi-voix** : les transitions entre locuteurs peuvent affecter le WER ; le carnet ne fournit pas ici de comparaison chiffree avec la narration seule
+3. **WER != qualite percue** : un WER peut correspondre a des erreurs mineures (article manquant) ou a des omissions significatives ; une evaluation humaine complete la mesure automatique
 
 ***
 
@@ -23448,7 +23462,7 @@ raison pour laquelle le pipeline doit n'injecter que des balises officielles.
 | Section 3 | P4 | Annotation prosodique par LLM sur extrait demo |
 | Section 4 | P5 | Generation TTS avec clonage vocal FishAudio |
 | Section 5 | P7 | Validation WER avec Whisper STT |
-| Section 6 | Resultats | Mesures reelles (artifact + execution fraiche) |
+| Section 6 | Resultats | Etat des resultats (artifact indisponible, mesure live commitee) |
 
 ### Lecons critiques
 
@@ -23462,7 +23476,7 @@ raison pour laquelle le pipeline doit n'injecter que des balises officielles.
 - Integrer le contrôle du debit (vitesse de parole) dans les tags
 - Paralleliser la generation TTS avec `asyncio` pour accelerer le pipeline
 - Ajouter une passe de normalisation audio (loudness, EQ) avant compilation
-- Explorer les modèles de musique Ace-Step pour generer des jingles entre les chapitres",,,,,,,,26fc079918b24aa1,,,,,,,,,,,,,,,
+- Explorer les modèles de musique Ace-Step pour generer des jingles entre les chapitres",,,,,,,,546d2509a985ca7f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb,2c637c37,markdown,fr,cf967e6ea540392a,"***
 
 ## Exercice : Explorer l'impact des balises de prosodie sur la qualite TTS
@@ -29517,11 +29531,11 @@ MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-6-Audiobook-Pipeli
 - [ ] Generer les sous-titres synchronises via Whisper
 - [ ] Comparer différentes voix pour un même personnage
 - [ ] Paralleliser la synthese TTS avec asyncio",,,,,,,,7b42a6ca78974cc0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,f888a10f,markdown,fr,e4566b22439a25f4,"# Benchmark TTS : Comparaison des Modèles Vocaux pour l'Audiobook Agentique
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,f888a10f,markdown,fr,6c5cb1af936c65a8,"# Benchmark TTS : Comparaison des Modèles Vocaux pour l'Audiobook Agentique
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Audiobook/04-6-Audiobook-Pipeline.ipynb) | [Suivant >>](../04-Audiobook/04-8-Lecture-Analytique.ipynb)
 
-**Epic #1028 — P0 : Benchmark systématique des modèles TTS disponibles**
+Ce benchmark compare des services Text-to-Speech pour éclairer le choix d’un modèle dans un pipeline d’audiobook agentique. Il mesure la latence, la qualité audio, l’expressivité, le français et les ressources utilisées.
 
 Ce notebook compare les modèles Text-to-Speech accessibles sur l'infrastructure po-2023 pour evaluer leur pertinence dans le pipeline audiobook agentique :
 
@@ -29550,7 +29564,7 @@ Extrait de *Boule de Suif* de Guy de Maupassant — dataset demo pour l'epic #10
 
 **Comment lire ce notebook** : chaque section suit le même triptyque *protocole -> mesure -> lecture*. Les mesures (latences, tailles de fichiers, status) sont celles du run committe ; les cellules `Lecture` les interpretent une par une. Un troisieme service, Qwen3 TTS, est present dans le protocole mais repond en erreur 401 (*bearer* exige) durant tout le run -- ce fait est lui-même un résultat (section 4), pas un echec du notebook : un benchmark honnete documente les chutes, il ne les efface pas.
 
-**Position dans la serie Audio** : après les notebooks de synthese vocale mono-modèle, ce notebook est le premier a croiser *plusieurs* services sur un même corpus. Le comparatif porte sur trois axes complémentaires : la **latence** (temps de reponse end-to-end), le **cout de sortie** (taille du fichier produit, proxy du bitrate), et la **qualite subjective** (grille MOS, section 10). Le fil conducteur reste l'application cible : un audiobook agentique ou le routeur devra choisir un modèle par segment de texte.",,,,,,,,e4566b22439a25f4,,,,,,,,,,,,,,,
+**Position dans la serie Audio** : après les notebooks de synthese vocale mono-modèle, ce notebook est le premier a croiser *plusieurs* services sur un même corpus. Le comparatif porte sur trois axes complémentaires : la **latence** (temps de reponse end-to-end), le **cout de sortie** (taille du fichier produit, proxy du bitrate), et la **qualite subjective** (grille MOS, section 10). Le fil conducteur reste l'application cible : un audiobook agentique ou le routeur devra choisir un modèle par segment de texte.",,,,,,,,6c5cb1af936c65a8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,317c8936,markdown,fr,a8e297fa86a474b7,"## 1. Configuration et imports
 
 **Pourquoi ce notebook compare trois services TTS hétérogènes plutôt qu'un seul** : l'audiobook agentique doit choisir, par segment de texte, la voix la plus adaptée (narration descriptive, dialogue, monologue intérieur). Chaque service a un profil distinct — **Kokoro** (modèle local 82M, auto-hébergé sur le stack GenAI), **Qwen3 TTS** (modèle local via gateway multi-TTS), **OpenAI tts-1** (API cloud payante). Les comparer sur les **mêmes extraits** (Boule de Suif, Maupassant 1880) révèle les compromis latence/qualité/coût qui détermineront le routage production. Les *import guards* rendent chaque dépendance optionnelle : le notebook s'exécute en mode dégradé si un service est indisponible (cas réel ci-dessous avec Qwen3), ce qui est la robustesse attendue d'un benchmark reproductible.
@@ -32962,7 +32976,7 @@ fixee a 42 pour que la comparaison same-prompt same-seed de la Section 8 soit
 reproductible), le mode chain-of-thought (`cot_mode`) et la force de guidance
 (`cfg_scale`). Le `output_dir` concentre les artefacts generes (audio FLAC, partition
 ABC, tokens, latents) — ils ne sont pas commits dans le depot.",,,,,,,,277cdf29096b775a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,e83297b9,code,fr,4c351a4fb71f23a4,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,e83297b9,code,fr,c47b4b1316e2efb4,"# Setup environnement et imports
 import os
 import sys
 import time
@@ -32970,11 +32984,18 @@ import gc
 import json
 import shutil
 import subprocess
+import warnings
 from pathlib import Path
 
 os.environ.setdefault(""HF_HUB_DISABLE_SYMLINKS_WARNING"", ""1"")
 
 import platform
+
+# Pattern 02-3 (MusicGen-Generation) : audiocraft appelle torch.nn.utils.weight_norm,
+# dont le FutureWarning embarque un chemin machine dans les sorties du carnet.
+# Sous torch 2.6 le message reel commence par un backtick (mesure) : le motif 02-3
+# sans backticks ne matche pas (filterwarnings fait un re.match ancre au debut).
+warnings.filterwarnings(""ignore"", message=r""`torch\.nn\.utils\.weight_norm` is deprecated"")
 
 print(""IMPORTS ET ENVIRONNEMENT"")
 print(""="" * 45)
@@ -32984,7 +33005,7 @@ print(f""Repertoire    {Path.cwd().name}"")
 
 # Repertoires de sortie (artefacts non commites)
 Path(output_dir).mkdir(parents=True, exist_ok=True)
-print(f""Sorties       {output_dir}/ pret"")",,,,,,,,4c351a4fb71f23a4,,,,,,,,,,,,,,,
+print(f""Sorties       {output_dir}/ pret"")",,,,,,,,c47b4b1316e2efb4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,81ece569,markdown,fr,2756d8f98ab8d874,"L'environnement Python est pret et le repertoire d'artefacts est cree. Les sorties
 (audio, ABC, tokens) vivent sous `output/yue2-songs/` et sont **exclues du depot**
 (regenerables par re-execution).",,,,,,,,2756d8f98ab8d874,,,,,,,,,,,,,,,
@@ -36051,11 +36072,11 @@ print(""Exercice a completer"")",,,,,,,,1f2006e070c12631,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,cfb4c4ed,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,0a9a55a6,markdown,fr,f1bd40f9971fe40e,"# Voice Casting : Attribution de voix TTS par personnage
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,0a9a55a6,markdown,fr,5e2472fc240faae8,"# Voice Casting : Attribution de voix TTS par personnage
 
 **Navigation** : [Index](../README.md) | [<< Précédent](../04-Audiobook/04-8-Lecture-Analytique.ipynb) | [Suivant >>](../04-Audiobook/04-10-Annotation-Prosodique.ipynb)
 
-**Epic #1028 — P2 : Generation d'echantillons audio pour chaque personnage detecte en P1.**
+Attribuer une voix TTS à chaque personnage aide à différencier les voix d’un audiobook. Ce carnet montre comment passer des résultats de l’analyse des personnages à des échantillons vocaux à écouter et à valider.
 
 Ce notebook prend les résultats de la lecture analytique (P1) et attribue une voix TTS concrete a chaque personnage en generant une tirade de casting par personnage (165-214 syllabes ecrites ; 8 personnages sur 9 ont une tirade dediee, le 9e retombe sur sa replique la plus longue).
 
@@ -36074,7 +36095,7 @@ Ce notebook prend les résultats de la lecture analytique (P1) et attribue une v
 - **FishAudio S2-Pro** (prevu production) : voice cloning, tags expressifs — non deploye en Docker
 
 **Note** : En production, FishAudio S2-Pro sera le modèle principal avec voice cloning zero-shot et tags expressifs natifs. Ce notebook utilise Kokoro + OpenAI comme substituts demo.
-",,,,,,,,f1bd40f9971fe40e,,,,,,,,,,,,,,,
+",,,,,,,,5e2472fc240faae8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,426f5cf1,markdown,fr,cb590f399cf432da,## 1. Configuration et imports,,,,,,,,cb590f399cf432da,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,63ce1acb,code,fr,2a39899b48c43e4c,"# Import guards - availability flags for external dependencies
 
@@ -37270,3 +37291,14 @@ Le bloc final recapitule la date d'exécution, le modèle LLM utilise, et le nom
 
 **Point cle** : la date d'exécution est generee par `datetime.now()` (horloge locale naive, sans marqueur de fuseau). Si la convention stricte du depot exige un timestamp UTC, c'est une migration a faire separement dans le code (cf. veine #1453/#11449 sur l'horodatage UTC explicite) - cette cellule ne pretend pas l'avoir faite.
 ",,,,,,,,756621f89202082e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-1-Educational-Audio-Content.ipynb,eaac6d4a,code,fr,f6f29e5533aed33f,"# Parameters
+BATCH_MODE = ""true""
+skip_widgets = ""true""
+",,,,,,,,f6f29e5533aed33f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb,production-note-20250-audio-4,markdown,fr,0986cd83ca1b3ba2,"> *Repère de production —* Epic #1028, troisième passe du pipeline audiobook : annotation prosodique.",,,,,,,,0986cd83ca1b3ba2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-11-Generation-TTS.ipynb,production-note-20250-audio-3,markdown,fr,a488e3568636e89b,"> *Repère de production —* Epic #1028, Pass 4 du pipeline audiobook.",,,,,,,,a488e3568636e89b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Audiobook/04-12-Compilation-Audio.ipynb,production-note-20250-audio-2,markdown,fr,a60891f5bdab8ede,"## Provenance de production
+
+> *Repère de production —* Epic #1028, Pass 5 du pipeline : assemblage final des segments TTS en audiobook.",,,,,,,,a60891f5bdab8ede,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-7-TTS-Voice-Benchmark.ipynb,production-note-20250-audio-5,markdown,fr,f0c925547e88f80f,"> *Repère de production —* Epic #1028, P0 : benchmark systématique des modèles TTS disponibles.",,,,,,,,f0c925547e88f80f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-Voix/04-9-Voice-Casting.ipynb,production-note-20250-audio-6,markdown,fr,e9de978c97b5f814,"> *Repère de production —* Epic #1028, P2 : génération d’échantillons audio pour les personnages détectés en P1.",,,,,,,,e9de978c97b5f814,,,,,,,,,,,,,,,

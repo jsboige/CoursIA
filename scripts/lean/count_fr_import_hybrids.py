@@ -95,19 +95,20 @@ import sys
 import tempfile
 from pathlib import Path
 
-import tomllib
+# Le census est aussi chargé par chemin par ses consommateurs et ses tests.
+# Dans ce mode, Python n'ajoute pas automatiquement le dossier du module.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from lake_selectors import (
+    LakefileError,
+    Selector,
+    _selector as _glob_to_selector,
+    lake_selectors,
+    selected as _selected,
+)
 
 RC_OK = 0
 RC_INCIDENT = 2
-
-#: Selecteur de modules d'un lac, tel que Lake le lit :
-#:   ("one", "A.B") = `A.B` (Glob.one) : le module exactement ; forme nue
-#:       `` `A.B `` dans une liste `globs`, ou `.one `A.B`, ou `"A.B"` en toml ;
-#:   ("all", "A")   = `` `A.* `` (DSL) ou `"A.*"` (toml), ou `.andSubmodules `A` :
-#:       A et ses sous-modules ;
-#:   ("sub", "A")   = `` `A.+ `` (DSL) ou `"A.+"` (toml), ou `.submodules `A` :
-#:       les sous-modules seuls, A exclu.
-Selector = tuple[str, str]
 
 #: Exclusions du perimetre i18n (cf `.claude/rules/code-style.md`, EPIC #4980).
 #: Les fragments portent leurs deux separateurs : sans le `/` de tete, un
@@ -155,135 +156,6 @@ def find_lakes(root: Path) -> list[Path]:
             if in_scope(lakefile):
                 found.add(lakefile.parent)
     return sorted(found)
-
-
-class LakefileError(ValueError):
-    """Lakefile illisible : les roots ne se lisent pas, la mesure ne se rend pas."""
-
-
-LIB_HEAD_RE = re.compile(r"\blean_lib\s+(?:«([^»]+)»|([A-Za-z_][\w']*))")
-ROOTS_DSL_RE = re.compile(r"\broots\s*:=\s*#\[([^\]]*)\]")
-GLOBS_DSL_RE = re.compile(r"\bglobs\s*:=\s*#\[([^\]]*)\]")
-#: Element d'un tableau Lean `#[...]` : `` `X `` ou `` `X.* `` ou `` `X.+ ``,
-#: precede eventuellement de `.one` / `.submodules` / `.andSubmodules`.
-GLOB_ITEM_DSL_RE = re.compile(
-    r"(?:\.(one|submodules|andSubmodules)\s+)?"
-    r"`([A-Za-z0-9_']+(?:\.[A-Za-z0-9_']+)*(?:\.[*+])?)"
-)
-NAME_ITEM_DSL_RE = re.compile(r"`([A-Za-z0-9_.']+)")
-MODULE_NAME_RE = re.compile(r"[A-Za-z0-9_.']+")
-DSL_KIND_PREFIX = {None: "one", "one": "one", "submodules": "sub", "andSubmodules": "all"}
-
-
-def _suffixed_selector(name: str) -> Selector:
-    """`A.*` -> ("all", A) ; `A.+` -> ("sub", A) ; sinon ("one", name)."""
-    if name.endswith(".*"):
-        return ("all", name[:-2])
-    if name.endswith(".+"):
-        return ("sub", name[:-2])
-    return ("one", name)
-
-
-TOML_GLOB_RE = re.compile(r"[A-Za-z0-9_']+(?:\.[A-Za-z0-9_']+)*(?:\.[*+])?")
-
-
-def _glob_to_selector(glob: str) -> Selector:
-    if not TOML_GLOB_RE.fullmatch(glob):
-        raise LakefileError(f"glob non reconnu : {glob!r}")
-    return _suffixed_selector(glob)
-
-
-def _globs_dsl(path: Path, name: str, raw: str, key: str) -> list[Selector]:
-    """Elements d'un tableau Lean. Un element non reconnu leve LakefileError (fail-closed)."""
-    leftover = GLOB_ITEM_DSL_RE.sub("", raw)
-    if leftover.strip(" \t\r\n,"):
-        raise LakefileError(
-            f"{path} : `{key}` non reconnu pour {name} : {leftover.strip()[:80]!r}"
-        )
-    selectors: list[Selector] = []
-    for prefix, item in GLOB_ITEM_DSL_RE.findall(raw):
-        if prefix:
-            # Forme `.one` / `.submodules` / `.andSubmodules` : le nom est pris tel quel.
-            selectors.append((DSL_KIND_PREFIX[prefix], item))
-        else:
-            selectors.append(_suffixed_selector(item))
-    return selectors
-
-
-def _selectors_toml(path: Path) -> list[Selector]:
-    try:
-        config = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError) as exc:
-        raise LakefileError(f"{path} : {exc}") from exc
-    selectors: list[Selector] = []
-    for lib in config.get("lean_lib", []):
-        name = lib.get("name")
-        if not isinstance(name, str):
-            raise LakefileError(f"{path} : [[lean_lib]] sans `name`")
-        # Defauts (hypothese, non verifiee sans Lake) : `roots` vaut `[name]` seulement
-        # si ni `roots` ni `globs` ne sont declares ; sinon `roots` et `globs` sont
-        # compiles ensemble, on prend leur union.
-        roots = lib.get("roots", [] if "globs" in lib else [name])
-        globs = lib.get("globs", [])
-        for key, value in (("roots", roots), ("globs", globs)):
-            if not isinstance(value, list) or not all(isinstance(v, str) for v in value):
-                raise LakefileError(f"{path} : `{key}` doit etre une liste de chaines")
-        selectors += [("one", root) for root in roots]
-        selectors += [_glob_to_selector(glob) for glob in globs]
-    return selectors
-
-
-def _selectors_dsl(path: Path) -> list[Selector]:
-    """`lean_lib X where roots := #[...] globs := #[...]` : formes simples seulement.
-
-    Une forme non reconnue (`roots := base ++ #[...]`, globs calcules) leve
-    LakefileError : un lac dont on ne lit pas les roots n'est pas mesurable.
-    """
-    text = strip_comments(read_source(path))
-    heads = list(LIB_HEAD_RE.finditer(text))
-    selectors: list[Selector] = []
-    for index, head in enumerate(heads):
-        name = head.group(1) or head.group(2)
-        end = heads[index + 1].start() if index + 1 < len(heads) else len(text)
-        block = text[head.end():end]
-        roots_match = ROOTS_DSL_RE.search(block)
-        globs_match = GLOBS_DSL_RE.search(block)
-        # Clause presente mais de forme non reconnue : jamais de retour silencieux
-        # au defaut, jamais de mesure sur une lecture partielle.
-        if not roots_match and re.search(r"\broots\b", block):
-            raise LakefileError(f"{path} : `roots` non reconnu pour {name}")
-        if not globs_match and re.search(r"\bglobs\b", block):
-            raise LakefileError(f"{path} : `globs` non reconnu pour {name}")
-        if roots_match:
-            selectors += _globs_dsl(path, name, roots_match.group(1), "roots")
-        if globs_match:
-            selectors += _globs_dsl(path, name, globs_match.group(1), "globs")
-        if not roots_match and not globs_match:
-            # Defaut Lake (hypothese, non verifiee sans Lake) : racine `[name]`.
-            selectors.append(("one", name))
-    return selectors
-
-
-def lake_selectors(lake: Path) -> list[Selector]:
-    """Modules que Lake compile pour ce lac, lus dans son lakefile.
-
-    Les deux lakefiles coexistants ne sont pas devines : c'est un incident.
-    """
-    toml, dsl = lake / "lakefile.toml", lake / "lakefile.lean"
-    if toml.exists() and dsl.exists():
-        raise LakefileError(f"{lake} : lakefile.toml et lakefile.lean coexistent")
-    if toml.exists():
-        return _selectors_toml(toml)
-    return _selectors_dsl(dsl)
-
-
-def _selected(module: str, selectors: list[Selector]) -> bool:
-    for kind, name in selectors:
-        if kind in ("one", "all") and module == name:
-            return True
-        if kind in ("all", "sub") and module.startswith(name + "."):
-            return True
-    return False
 
 
 def lake_reachable(lake: Path, lakes: list[Path]) -> tuple[dict[str, Path], set[Path], list[str]]:

@@ -1,5 +1,5 @@
 import Mathlib
-import Utility.Basic
+import Utility.Basic_en
 import Utility.Axioms_en
 
 /-!
@@ -31,11 +31,10 @@ Cross-references:
 
 namespace Utility_en
 
--- `Axioms_en` imports FR `Utility.Basic` + `open Utility` (convention c.212 finding 1 :
--- EN sibling referencing base types uses the FR base module). To keep the EN mirror
--- type-consistent with `Utility_en.StrictPref`/`IsComplete`/... (which are themselves
--- typed over FR `Utility.Lottery`), this file resolves base names to `Utility.*` too.
-open Utility
+-- Self-contained EN mirror (FR-import remediation, fournée 5 of #24019) :
+-- base names (`Lottery`, `expectation`, `mix`, `expectation_mix`,
+-- `expectation_affine`) resolve to `Utility_en.*` from `Utility.Basic_en`,
+-- so the EN axioms and theorems are typed over `Utility_en.Lottery` end to end.
 
 variable {α : Type*} [Fintype α]
 

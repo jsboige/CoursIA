@@ -207,18 +207,26 @@ SmartContracts/
 
 ### Partie 2 : Solidity Avancé
 
-| # | Notebook | Durée | Contenu |
-|---|----------|-------|---------|
-| 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 |
-| 7b | [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) | 25 min | Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve |
-| 7c | [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) | non déclarée | Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean` |
-| 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles |
-| 8b | [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) | 40 min | Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun |
-| 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain |
-| 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 |
-| 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts |
+| # | Notebook | Durée | Contenu | Approfondissements liés |
+|---|----------|-------|---------|-------------------------|
+| 7 | [SC-07-Token-Standards-Python](02-Solidity-Advanced/SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155 | [SC-7b et SC-7c](#autour-de-7) |
+| 8 | [SC-08-DeFi-Primitives-Python](02-Solidity-Advanced/SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, lending, oracles | [SC-8b](#autour-de-8) |
+| 9 | [SC-09-DAO-Governance-Python](02-Solidity-Advanced/SC-09-DAO-Governance-Python.ipynb) | 45 min | Votes, gouvernance on-chain | |
+| 10 | [SC-10-Account-Abstraction-Python](02-Solidity-Advanced/SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337 | |
+| 11 | [SC-11-LLM-Assisted-Python](02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLM pour smart contracts | |
 
 **Objectifs** : Protocoles DeFi, gouvernance, ERC-4337, LLM-assisted
+
+#### Approfondissements
+
+##### Autour de 7
+
+- [SC-7b-ERC20-Lean-Verification-Companion](02-Solidity-Advanced/SC-7b-ERC20-Lean-Verification-Companion.ipynb) — Compagnon Lean de SC-7 : invariant `Σ balances = totalSupply`, observé puis confronté à la preuve
+- [SC-07c-ERC20-Lean](02-Solidity-Advanced/SC-07c-ERC20-Lean.ipynb) — Compagnon natif Lean (kernel `lean4-wsl`) : signatures, axiomes et `#eval` du lac `erc20_lean`
+
+##### Autour de 8
+
+- [SC-08b-MEV-LP-Python](02-Solidity-Advanced/SC-08b-MEV-LP-Python.ipynb) — Compagnon hors chaîne : frais du déposant, perte non-permanente, sandwich, backrun
 
 ### Partie 3 : Testing
 

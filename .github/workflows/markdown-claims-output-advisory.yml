@@ -80,6 +80,10 @@ jobs:
     # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 15 derniers
+    # runs verts : max 7.5 min. Le defaut d'Actions est 6 h, et un job
+    # fige tient son slot tout ce temps.
+    timeout-minutes: 15
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
       - uses: actions/checkout@v4

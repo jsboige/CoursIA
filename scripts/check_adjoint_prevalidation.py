@@ -233,20 +233,43 @@ SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
 COORDINATOR_LOGIN = "myia-ai-01"
-# #17437: the coordinator's GitHub App identity, once its lane signs with an
-# installation token instead of a PAT (the six lane Apps are created and
-# installed; the switch is the remaining operational step). Written as a
-# literal rather than derived from `gh_identity.APP_LOGIN_PREFIX` so this module
-# keeps importing when that organ is unavailable; a test pins the two together.
+# #17437: the coordinator machine's GitHub App identity, kept as a named
+# literal so the tests pin the exact REST spelling (``[bot]`` suffix). It is
+# NOT a coordinator voice -- see the COORDINATOR_IDENTITIES arbitration below
+# (#26102, applied here by #26405).
 COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
-# The coordinator's ONE voice, in every spelling it can reach the API under.
+# La voix du coordinateur : les logins HUMAINS seuls. L'App
+# ``coursia-lane-ai-01`` n'en fait PAS partie (arbitrage ai-01 2026-11-13,
+# porte par #26102 dans ``merge_ready.py`` ; ce module etait le troisieme
+# residue, mesure par #26405).
+#
+# Sa cle privee vit sur la machine ai-01, dans le clone du depot
+# (``.secrets/github-apps/coursia-lane-ai-01.pem``, cf
+# ``scripts/secrets/github_app_manifest.KEY_DIR``). La machine porte DEUX
+# lanes : ``myia-ai-01:CoursIA`` (le coordinateur) et ``myia-ai-01:CoursIA-2``
+# (la lane worker soeur). La seconde lit le meme fichier et forge donc le meme
+# jeton d'installation : compter cette App comme voix du coordinateur
+# neutraliserait des actes post-dossier qu'une lane NON coordinatrice peut
+# ecrire -- un commentaire ou une APPROVE de CoursIA-2 sous l'App vaudrait
+# celle du coordinateur, et le dossier ne perimerait pas. Une App PROPRE a la
+# lane coordinateur est le prealable ; une App nommee par machine ne le
+# remplace pas.
+#
+# Consequence voulue : un acte de l'App (commentaire ou review) EXPIRE
+# desormais le dossier (``_is_own_later_act`` refuse sa neutralisation), et
+# son APPROVE ne qualifie plus a la porte review
+# (``COORDINATOR_REVIEW_LOGINS``) -- aligne sur
+# ``merge_ready.COORDINATOR_VOICES`` et
+# ``check_unaddressed_nits.LIFT_OVERRIDE_LOGINS``, qui refusent toute forme
+# App. Le jour ou une App de lane coordinateur existe, elle s'ajoute ici par
+# une edition consciente, accompagnee de sa cle dediee.
+#
 # Deliberately NOT `gh_identity.ACCEPTED_DOSSIER_AUTHORS`: that set holds every
 # lane's App, and neutralising a worker lane's row would delete the control
-# `_is_own_later_act` exists to enforce. A worker's App must still expire the
-# dossier -- a negative-control test holds that line.
-COORDINATOR_IDENTITIES = frozenset(
-    (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN, COORDINATOR_APP_LOGIN)
-)
+# `_is_own_later_act` exists to enforce. The App of the ai-01 machine stays an
+# accepted dossier AUTHOR (signing a dossier is not a post-dossier act) -- it
+# just no longer neutralises anything after it.
+COORDINATOR_IDENTITIES = frozenset((COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN))
 
 VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
@@ -904,6 +927,17 @@ def pre18637_surfaces_fingerprint(
     )
 
 
+def _is_skipped_run(run: dict[str, Any]) -> bool:
+    """Whether the check-run is a SKIPPED job.
+
+    A skipped job measured NOTHING about the code: it is the absence of a
+    verdict, not a verdict (#25510, tranche T-C).
+    """
+    if str(run.get("conclusion") or "").lower() == "skipped":
+        return True
+    return str(run.get("status") or "").lower() == "skipped"
+
+
 def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str, dict[str, Any]]:
     """Last COMPLETED verdict per check name: group by name, latest ``started_at``
     (``id`` as tiebreak), keep that run.
@@ -912,15 +946,34 @@ def latest_wins_check_runs(check_runs: list[dict[str, Any]] | None) -> dict[str,
     back to its latest completed run, which is the last word actually said.
     Grouping by name -- not reading the rollup twin -- is what avoids painting
     a head red with the cancelled run of a superseded pair (#16957).
+
+    THE SKIPPED FALLBACK (#25510, tranche T-C), shared with the two canonical
+    folds (``scripts/pr_gate.py::dedupe_latest`` and
+    ``scripts/check_run_state.py::fold_latest``): a ``skipped`` run measured
+    NOTHING about the code, so it never replaces an EARLIER non-skipped run of
+    the same name. ``skipped`` counts as a PASS here, so under a plain
+    latest-wins fold a job skipped by a guard (a title edit, a ``paths:``
+    filter) would WHITEN a red head -- and this dossier would certify
+    ``latest-wins-green`` on a head the gate itself reads as red. The three
+    organs must measure the same "latest".
     """
     verdicts: dict[str, tuple[tuple, dict[str, Any]]] = {}
-    for run in check_runs or []:
+    for index, run in enumerate(check_runs or []):
         if (run.get("status") or "").lower() != "completed":
             continue
         key = run.get("name") or ""
-        rank = (run.get("started_at") or "", run.get("id") or 0)
+        # La NATURE est en tete du rang (verdict reel > `skipped`) : le repli
+        # est ainsi independant de l'ordre d'arrivee, alors que l'API rend les
+        # check-runs du plus recent au plus ancien.
+        rank = (not _is_skipped_run(run),
+                run.get("started_at") or "",
+                run.get("id") or 0,
+                index)
         current = verdicts.get(key)
-        if current is None or rank > current[0]:
+        if current is None:
+            verdicts[key] = (rank, run)
+            continue
+        if rank >= current[0]:
             verdicts[key] = (rank, run)
     return {name: run for name, (rank, run) in verdicts.items()}
 
@@ -1109,6 +1162,11 @@ class StackEntry:
     # une mesure absente ne fabrique ni refus ni pass.
     head_name: str = ""
     base_name: str = ""
+    # #23100 (seconde moitie, 2026-11-11) -- etat de fusion de la PR, mesure
+    # par une passe GraphQL : "MERGEABLE", "CONFLICTING" ou "UNKNOWN".
+    # Vide = mesure absente : l'exemption qui s'appuie dessus reste INERTE
+    # (une mesure absente ne deroge a rien).
+    mergeable: str = ""
 
 
 def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -1265,6 +1323,77 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     ]
 
 
+#: Les identifiants de noeud GitHub sont alphanumeriques : le filtre
+#: ecarte tout ce qui ne l'est pas, avant d'atre inline dans la requete.
+_NODE_ID_OK = re.compile(r"^[A-Za-z0-9_-]+$")
+
+
+def _fetch_pr_merge_states(node_ids: list[str]) -> dict[int, str]:
+    """Etat de fusion des PRs ouvertes, par numero (une passe GraphQL).
+
+    L'enumeration REST ne le rend PAS : mesure du 2026-11-11 sur 100 PRs
+    ouvertes, `mergeable_state` y est `null` sur les 100 -- le champ n'est
+    pas peuple dans les reponses de liste. GraphQL rend `mergeable`
+    ("MERGEABLE" / "CONFLICTING" / "UNKNOWN") : mesure sur 60 PRs, 59
+    valeurs exploitables et une seule `UNKNOWN`.
+
+    Les PRs sont demandees par `node_id` (lu dans la meme enumeration REST,
+    sans cout supplementaire) : la requete porte donc sur EXACTEMENT les
+    PRs de la passe, sans dependre d'un tri qui pourrait bouger entre deux
+    pages.
+
+    Une **relance** est prevue : GitHub calcule `mergeable` en fond, et la
+    premiere requete sur une PR fraichement mise a jour rend `UNKNOWN`.
+    Mesure du 2026-11-11 : une premiere passe sur cinq PRs a rendu
+    `UNKNOWN` sur les cinq, la requete suivante -- immediate -- a rendu les
+    cinq etats reels. La relance ne porte que sur les PRs non resolues.
+
+    Une passe qui echoue rend les etats deja mesures et s'arrete : les PRs
+    non mesurees gardent l'exemption INERTE et la porte garde son
+    comportement d'avant -- une mesure absente ne fabrique ni derogation
+    ni refus.
+    """
+    states: dict[int, str] = {}
+    pending = [i for i in node_ids if i]
+    for _ in range(2):
+        if not pending:
+            break
+        resolved: set[str] = set()
+        for start in range(0, len(pending), 100):
+            chunk = pending[start:start + 100]
+            # Les identifiants de noeud sont inlines dans la requete : `gh
+            # api graphql -F ids=<json>` envoie la valeur comme une CHAINE
+            # (mesure : `Could not resolve to a node with the global id of
+            # '["PR_..."]'`), donc la variable `[ID!]!` ne recevait jamais
+            # une liste. Un JSON de liste est une liste GraphQL valide, et
+            # les identifiants sont filtres : seuls `[A-Za-z0-9_-]` passent.
+            safe = [i for i in chunk if _NODE_ID_OK.match(i)]
+            if not safe:
+                continue
+            query = (
+                "query{nodes(ids:" + json.dumps(safe) + "){"
+                "... on PullRequest{id number mergeable}}}"
+            )
+            try:
+                data = gh_json(["api", "graphql", "-f", f"query={query}"])
+            except Exception:  # noqa: BLE001 -- mesure indisponible, pas un crash
+                # Les etats deja mesures restent valides ; les PRs non mesurees
+                # gardent l'exemption INERTE (rien n'est derogue sans mesure).
+                return states
+            for node in (data.get("data") or {}).get("nodes") or []:
+                if not node:
+                    continue
+                number = node.get("number")
+                state = node.get("mergeable")
+                if number is None or not state or state == "UNKNOWN":
+                    continue
+                states[int(number)] = str(state)
+                if node.get("id"):
+                    resolved.add(str(node["id"]))
+        pending = [i for i in pending if i not in resolved]
+    return states
+
+
 def _prune_stack_refs(keep: list[int]) -> None:
     """Retire les refs de tetes qui ne correspondent plus a une PR ouverte.
 
@@ -1342,7 +1471,7 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     try:
         lines = list(gh_lines([
             "api", "--paginate", f"repos/{REPO}/pulls?state=open&per_page=100",
-            "--jq", ".[] | [.number, .head.ref, .base.ref]",
+            "--jq", ".[] | [.number, .head.ref, .base.ref, .node_id]",
         ]))
     except Exception as exc:  # noqa: BLE001 -- mesure impossible, pas un crash
         return None, [f"enumeration des PR ouvertes impossible : {exc}"]
@@ -1360,6 +1489,7 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     # se DIT sans fabriquer de refus (fail-open, convention du docstring).
     numbers: list[int] = []
     names: dict[int, tuple[str, str]] = {}
+    node_ids: dict[int, str] = {}
     malformed: list[str] = []
     for line in lines:
         try:
@@ -1370,9 +1500,18 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
             continue
         numbers.append(p)
         names[p] = (row[1] if len(row) > 1 else "", row[2] if len(row) > 2 else "")
+        # #23100 (seconde moitie) -- le node_id rend l'etat de fusion
+        # mesurable sans cout supplementaire (meme enumeration).
+        node_ids[p] = row[3] if len(row) > 3 else ""
     fetched, incidents = _fetch_pr_heads(numbers)
     if incidents:
         return None, malformed + incidents
+    # #23100 (seconde moitie) -- etat de fusion par numero. La passe est
+    # OPTIONNELLE : son echec rend un dictionnaire vide, l'exemption reste
+    # inerte et la porte garde son comportement d'avant.
+    merge_states = _fetch_pr_merge_states(
+        [node_ids[p] for p in fetched if node_ids.get(p)]
+    )
     index: dict[int, StackEntry] = {}
 
     def _entry(p: int) -> tuple[int, StackEntry]:
@@ -1385,7 +1524,8 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
         # base de la pile de l'ordre lineaire.
         head_name, base_name = names.get(p, ("", ""))
         return p, StackEntry(
-            p, ref, commits, subjects, _author_ref(ref), head_name, base_name
+            p, ref, commits, subjects, _author_ref(ref), head_name, base_name,
+            merge_states.get(p, ""),
         )
 
     # #22938 : les mesures par PR sont INDEPENDANTES (git en lecture seule)
@@ -1503,6 +1643,18 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
             continue
         other = index[number]
         if not other.commits:
+            continue
+        # #23100 (seconde moitie, 2026-11-11) -- un partenaire qui NE PEUT
+        # PAS ATTERRIR ne doit pas bloquer la cible. Une PR soeur en conflit
+        # avec `main` (`mergeable == "CONFLICTING"`) sera rebassee par son
+        # porteur avant d'atterrir : exiger de la cible qu'elle attende
+        # cette PR-la rend la cible inmergeable par une PR qui n'a pas
+        # d'aliance -- c'est le titre de l'issue ("un fork de base commune
+        # dont la PR soeur ne peut pas atterrir"). Mesure absente
+        # ("UNKNOWN", passe GraphQL indisponible) : l'exemption est INERTE,
+        # la porte garde son comportement d'avant. Le controle negatif
+        # (une soeur rebassee et MERGEABLE reste bloquante) est preserve.
+        if other.mergeable == "CONFLICTING":
             continue
         if not set(entry.commits) & set(other.commits):
             # #20263 -- un rebase reecrit les SHA : une intersection vide
@@ -2320,6 +2472,8 @@ _PR_GATE_CONTRADICTION_PREFIX = (
 #: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
 #: expose cette porte a titre d'information : l'autorite de merge reste le
 #: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
+#: Heritee de COORDINATOR_IDENTITIES : toute forme App y est refusee, comme
+#: dans ``merge_ready.COORDINATOR_VOICES`` (#26102, aligne par #26405).
 COORDINATOR_REVIEW_LOGINS = COORDINATOR_IDENTITIES
 
 
