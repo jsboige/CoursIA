@@ -10,6 +10,7 @@ par defaut.
 
 import csv
 import json
+from pathlib import Path
 
 from scan_cited_identifiers import (
     ARXIV_NU_RE,
@@ -17,7 +18,12 @@ from scan_cited_identifiers import (
     cle_arxiv,
     census,
     extraire,
+    inventaire_gisement,
     normaliser_arxiv,
+    normaliser_texte,
+    resoudre_arxiv,
+    resoudre_dois,
+    statuts_resolus,
     table_du_gisement,
     texte_notebook,
 )
@@ -201,3 +207,183 @@ class TestJointureCatalogue:
         assert par_id["2401.05375"]["chemin_gisement"] == "MachineLearning/x.pdf"
         assert par_id["1706.03762"]["statut"] == "ABSENT_CATALOGUE"
         assert par_id["1706.03762"]["chemin_gisement"] == ""
+
+
+# ---------------------------------------------------------------------------
+# Etape de resolution (A1) : (auteur, titre, annee) + verdict de detention
+# ---------------------------------------------------------------------------
+
+ATOM_EXEMPLE = """<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <entry>
+    <id>http://arxiv.org/abs/1706.03762v7</id>
+    <title>Attention Is All You Need</title>
+    <published>2017-06-12T00:00:00Z</published>
+    <author><name>Ashish Vaswani</name></author>
+    <author><name>Noam Shazeer</name></author>
+    <arxiv:doi>10.5555/3295222.3295349</arxiv:doi>
+    <arxiv:journal_ref>Advances in Neural Information Processing Systems 30</arxiv:journal_ref>
+  </entry>
+</feed>
+"""
+
+
+class TestResolutionArxiv:
+    def test_reponse_atom_rendue_en_fiche(self):
+        from scan_cited_identifiers import _parser_arxiv
+        entrees = _parser_arxiv(ATOM_EXEMPLE.encode("utf-8"))
+        assert len(entrees) == 1
+        identifiant, fiche = entrees[0]
+        assert identifiant == "1706.03762"
+        assert fiche["titre"] == "Attention Is All You Need"
+        assert fiche["auteur"] == "Ashish Vaswani"
+        assert fiche["auteurs"] == ["Ashish Vaswani", "Noam Shazeer"]
+        assert fiche["annee"] == "2017"
+        # Le crosswalk arXiv -> DOI de la version publiee : c'est lui qui
+        # manquait au catalogue A5 (#21631).
+        assert fiche["doi_publie"] == "10.5555/3295222.3295349"
+
+    def test_lot_resolu_sans_reseau_ne_leve_pas(self):
+        def fetcher(url):
+            raise OSError("reseau indisponible")
+
+        assert resoudre_arxiv(["1706.03762"], fetcher=fetcher, pause=0) == {}
+
+    def test_identifiant_absent_de_la_reponse_nest_pas_resolu(self):
+        def fetcher(url):
+            return b"""<?xml version="1.0" encoding="UTF-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"></feed>"""
+
+        assert resoudre_arxiv(["1706.03762"], fetcher=fetcher, pause=0) == {}
+
+
+class TestResolutionDoi:
+    def test_doi_resolu(self):
+        def fetcher(url):
+            return (b'{"message": {"title": ["Deep Residual Learning"],'
+                    b'"author": [{"given": "Kaiming", "family": "He"}],'
+                    b'"issued": {"date-parts": [[2015, 12, 10]]}}}')
+
+        resolus = resoudre_dois(["10.1109/cvpr.2016.90"], fetcher=fetcher)
+        fiche = resolus["10.1109/cvpr.2016.90"]
+        assert fiche["titre"] == "Deep Residual Learning"
+        assert fiche["auteur"] == "Kaiming He"
+        assert fiche["annee"] == "2015"
+
+    def test_doi_absent_de_crossref_nest_pas_resolu(self):
+        def fetcher(url):
+            raise OSError("404")
+
+        assert resoudre_dois(["10.9999/inexistant"], fetcher=fetcher) == {}
+
+
+class TestGisement:
+    def test_normalisation_insensible_aux_accents_et_a_la_ponctuation(self):
+        assert normaliser_texte("Attention Is All You Need!") == \
+            "attention is all you need"
+        assert normaliser_texte("Génération  dactylique") == \
+            "generation dactylique"
+
+    def test_nom_canonique_decoupe(self, tmp_path):
+        from scan_cited_identifiers import _titre_du_fichier
+        annee, auteurs, titre = _titre_du_fichier(
+            "2017 - Vaswani et al. - Attention is All you need.pdf")
+        assert annee == "2017"
+        assert auteurs == "Vaswani et al."
+        assert titre == "Attention is All you need"
+
+    def test_inventaire_du_gisement(self, tmp_path):
+        (tmp_path / "MachineLearning").mkdir()
+        (tmp_path / "MachineLearning" /
+         "2017 - Vaswani et al. - Attention is All you need.pdf").write_bytes(b"%PDF-")
+        inventaire = inventaire_gisement(tmp_path)
+        assert len(inventaire) == 1
+        assert inventaire[0]["cle"] == "attention is all you need"
+        assert inventaire[0]["annee"] == "2017"
+
+    def test_gisement_absent_ne_produit_pas_d_inventaire(self, tmp_path):
+        assert inventaire_gisement(tmp_path / "absent") == []
+
+
+class TestVerdicts:
+    def _ligne(self, identifiant, type_id="arxiv", statut="ABSENT_CATALOGUE"):
+        return {"type_id": type_id, "id": identifiant, "statut": statut,
+                "chemin_gisement": "", "source_extraction": "",
+                "confiance_catalogue": "", "nb_fichiers": 1, "nb_occurrences": 1,
+                "formes": "tampon", "exemple_fichier": "a.ipynb",
+                "exemple_contexte": ""}
+
+    def test_identifiant_au_catalogue_reste_detenu(self):
+        lignes = [self._ligne("1706.03762", statut="DETENU_CATALOGUE")]
+        enrichies = statuts_resolus(lignes, {}, {}, [])
+        assert enrichies[0]["statut"] == "DETENU"
+        assert enrichies[0]["preuve"] == "CATALOGUE_ID"
+
+    def test_titre_exact_au_gisement_donne_detenu(self):
+        lignes = [self._ligne("1706.03762")]
+        resolus = {"1706.03762": {"titre": "Attention Is All You Need",
+                                   "auteurs": ["A"], "auteur": "A", "annee": "2017"}}
+        inventaire = [{"chemin": "G:/x/2017 - A - Attention is All you need.pdf",
+                       "annee": "2017", "auteurs": "A",
+                       "titre": "Attention is All you need",
+                       "cle": "attention is all you need"}]
+        enrichies = statuts_resolus(lignes, resolus, {}, inventaire)
+        assert enrichies[0]["statut"] == "DETENU"
+        assert enrichies[0]["preuve"] == "TITRE_EXACT"
+        assert enrichies[0]["auteur"] == "A"
+        assert enrichies[0]["annee"] == "2017"
+
+    def test_identifiant_resolu_mais_non_detenu_donne_absent(self):
+        lignes = [self._ligne("2401.05375")]
+        resolus = {"2401.05375": {"titre": "Un Papier Inconnu", "auteurs": ["B"],
+                                   "auteur": "B", "annee": "2024"}}
+        enrichies = statuts_resolus(lignes, resolus, [], [])
+        assert enrichies[0]["statut"] == "ABSENT"
+        assert enrichies[0]["preuve"] == "RESOLU_NON_DETENU"
+
+    def test_identifiant_non_resolu_est_non_resolu(self):
+        lignes = [self._ligne("cs/0011047")]
+        enrichies = statuts_resolus(lignes, {}, {}, [])
+        assert enrichies[0]["statut"] == "NON_RESOLU"
+        assert enrichies[0]["preuve"] == "API_SANS_REPONSE"
+
+
+class TestSortiesRobustes:
+    def test_table_csv_reprend_le_format_du_gisement(self, tmp_path):
+        from scan_cited_identifiers import _ecrire_table_csv
+        sortie = tmp_path / "table.csv"
+        lignes = [{"type_id": "arxiv", "id": "1706.03762", "statut": "DETENU",
+                   "chemin_gisement": "MachineLearning/x.pdf",
+                   "source_extraction": "nom_fichier",
+                   "confiance_catalogue": "", "nb_fichiers": 2,
+                   "nb_occurrences": 5, "formes": "tampon",
+                   "exemple_fichier": "a.ipynb", "exemple_contexte": "x",
+                   "auteur": "Vaswani", "titre": "Attention", "annee": "2017",
+                   "revue": "", "doi_publie": "10.1/x", "preuve": "CATALOGUE_ID",
+                   "confiance": "HAUTE"}]
+        _ecrire_table_csv(sortie, lignes)
+        with sortie.open("r", encoding="utf-8", newline="") as f:
+            lecteur = csv.DictReader(f)
+            entete = lecteur.fieldnames
+            ligne = next(lecteur)
+        # Les noms de colonnes du gisement sont ceux de ses tables A1.
+        for nom in ("id", "verdict", "titre_api", "auteurs", "annee", "score",
+                    "chemin_gisement", "citations", "fichiers"):
+            assert nom in entete
+        assert ligne["verdict"] == "DETENU"
+        assert ligne["titre_api"] == "Attention"
+        assert ligne["auteurs"] == "Vaswani"
+        assert ligne["citations"] == "5"
+        assert ligne["fichiers"] == "a.ipynb"
+
+    def test_cache_non_ecrit_ne_leve_pas(self, tmp_path):
+        from scan_cited_identifiers import _ecrire_cache
+        # Un chemin non inscriptible ne doit pas interrompre la mesure.
+        _ecrire_cache(Path("Z:/inexistant/cache.json"), {"arxiv": {}})
+
+    def test_cache_ecrit_puis_relu(self, tmp_path):
+        from scan_cited_identifiers import _charger_cache, _ecrire_cache
+        chemin = tmp_path / "cache.json"
+        _ecrire_cache(chemin, {"arxiv": {"1.2": {"titre": "x"}}})
+        assert _charger_cache(chemin)["arxiv"]["1.2"]["titre"] == "x"

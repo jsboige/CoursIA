@@ -35,6 +35,15 @@ Ce que l'instrument rend
    le catalogue A5 (``IDENTIFIANTS-catalogue-*.csv``), qui relie chaque
    identifiant cité au chemin canonique du document détenu. C'est la
    question « l'avons-nous déjà ? », rendue lisible ligne par ligne.
+3. Sur demande (``--resoudre``), la **résolution** de chaque identifiant en
+   ``(auteur, titre, année)`` — l'API arXiv pour les identifiants arXiv,
+   l'API Crossref pour les DOI — puis le verdict de détention
+   ``DETENU`` / ``ABSENT`` / ``NON_RESOLU``. C'est le critère **A1** de
+   l'EPIC : « les 235 identifiants résolus en (auteur, titre, année), verdict
+   DETENU / ABSENT / NON_RESOLU par référence ».
+
+L'API arXiv rend en plus le **DOI de la version publiée** de chaque preprint :
+c'est le crosswalk arXiv <-> DOI qui manquait au catalogue A5 (#21631).
 
 Aucune publication n'est lue ni copiée ici : le catalogue est un CSV de
 chemins. Aucun fichier du dépôt n'est modifié.
@@ -43,6 +52,7 @@ Usage :
     python scripts/bibliography/scan_cited_identifiers.py --root . --json rapport.json
     python scripts/bibliography/scan_cited_identifiers.py --csv table.csv
     python scripts/bibliography/scan_cited_identifiers.py --catalogue "G:/.../IDENTIFIANTS-catalogue-2026-10-25.csv"
+    python scripts/bibliography/scan_cited_identifiers.py --resoudre --cache cache.json --csv table.csv
 
 Options :
     --root PATH            Racine du dépôt à balayer (defaut : la racine du dépôt)
@@ -55,6 +65,11 @@ Options :
     --surfaces LIST        Extensions balayees (defaut : .ipynb,.md,.py,.cs)
     --nu-arxiv             Capturer aussi la forme nue (hors registre, par defaut)
     --inclure-archives     Ne pas exclure les repertoires `_archives`
+    --resoudre             Resoudre chaque identifiant et statuer la detention
+    --gisement PATH        Racine du gisement canonique (defaut :
+                           G:/Mon Drive/MyIA/IA/Bibliographie IA)
+    --cache PATH           Cache JSON des metadonnees resolues
+    --sans-reseau          N'appeler aucune API (cache seul)
 """
 
 from __future__ import annotations
@@ -64,7 +79,14 @@ import csv
 import json
 import os
 import re
+import shutil
 import sys
+import tempfile
+import time
+import unicodedata
+import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -417,6 +439,339 @@ def table_du_gisement(entrees: dict[tuple[str, str], Entree],
     return lignes
 
 
+# ---------------------------------------------------------------------------
+# Etape de resolution : (auteur, titre, annee) par identifiant cite
+# ---------------------------------------------------------------------------
+
+GISTEMENT_PAR_DEFAUT = "G:/Mon Drive/MyIA/IA/Bibliographie IA"
+
+ARXIV_API = "https://export.arxiv.org/api/query?id_list={ids}&max_results={n}"
+CROSSREF_API = "https://api.crossref.org/works/{doi}"
+
+#:/arXiv demande au plus une requete toutes les trois secondes.
+PAUSE_ARXIV_S = 3.0
+
+#: Taille d'un lot d'identifiants arXiv dans une requete.
+LOT_ARXIV = 100
+
+
+def normaliser_texte(valeur: str) -> str:
+    """Cle de comparaison : minuscules, sans accent, seuls alphanumeriques.
+
+    Le titre d'une publication et le titre d'un nom de fichier canonique ne
+    s'ecrivent pas de la meme facon (``Attention is All you need`` contre
+    ``2017 - Attention is All you need.pdf``). La comparaison de detention
+    doit porter sur une forme insensible a la casse, aux accents et a la
+    ponctuation.
+    """
+    decompose = unicodedata.normalize("NFKD", valeur)
+    sans_accent = "".join(c for c in decompose if not unicodedata.combining(c))
+    return re.sub(r"[^a-z0-9]+", " ", sans_accent.lower()).strip()
+
+
+def _fetcher_par_defaut(url: str) -> bytes:
+    """Lecture HTTP minimale (le client est injectable pour les tests)."""
+    requete = urllib.request.Request(url, headers={"User-Agent": "CoursIA-biblio/1.0"})
+    with urllib.request.urlopen(requete, timeout=60) as reponse:
+        return reponse.read()
+
+
+def resoudre_arxiv(identifiants: list[str], fetcher=None,
+                   pause: float = PAUSE_ARXIV_S) -> dict[str, dict]:
+    """Resout des identifiants arXiv en `(auteur, titre, annee)`.
+
+    L'API arXiv accepte un lot d'identifiants par requete et rend, pour
+    chaque entree, le titre, les auteurs, l'annee de publication et -- ce que
+    le catalogue A5 ne portait pas -- le **DOI de la version publiee** : c'est
+    le crosswalk arXiv <-> DOI qui manquait au catalogue (#21631).
+
+    Un identifiant absent de la reponse n'est pas une erreur : il est
+    `NON_RESOLU` (l'API ne le connait pas).
+    """
+    fetcher = fetcher or _fetcher_par_defaut
+    resolus: dict[str, dict] = {}
+    restants = sorted({i for i in identifiants})
+    for debut in range(0, len(restants), LOT_ARXIV):
+        lot = restants[debut:debut + LOT_ARXIV]
+        if debut and pause:
+            time.sleep(pause)
+        url = ARXIV_API.format(ids=",".join(lot), n=len(lot))
+        try:
+            contenu = fetcher(url)
+        except Exception:  # reseau indisponible : l'identifiant reste non resolu
+            continue
+        for identifiant, fiche in _parser_arxiv(contenu):
+            resolus[identifiant] = fiche
+    return resolus
+
+
+def _parser_arxiv(contenu: bytes) -> list[tuple[str, dict]]:
+    """Extrait `(identifiant, fiche)` d'une reponse Atom de l'API arXiv."""
+    racine = ET.fromstring(contenu)
+    atom = "{http://www.w3.org/2005/Atom}"
+    arxiv = "{http://arxiv.org/schemas/atom}"
+    sortie: list[tuple[str, dict]] = []
+    for entree in racine.findall(f"{atom}entry"):
+        brut = (entree.findtext(f"{atom}id") or "").strip()
+        identifiant = brut.rsplit("/abs/", 1)[-1]
+        identifiant = re.sub(r"v\d+$", "", identifiant)
+        if not identifiant:
+            continue
+        auteurs = [n.text.strip() for n in entree.findall(f"{atom}author/{atom}name")
+                   if n.text and n.text.strip()]
+        publie = (entree.findtext(f"{atom}published") or "")[:4]
+        sortie.append((identifiant, {
+            "titre": " ".join((entree.findtext(f"{atom}title") or "").split()),
+            "auteurs": auteurs,
+            "auteur": auteurs[0] if auteurs else "",
+            "annee": publie,
+            "doi_publie": (entree.findtext(f"{arxiv}doi") or "").strip(),
+            "revue": (entree.findtext(f"{arxiv}journal_ref") or "").strip(),
+        }))
+    return sortie
+
+
+def resoudre_dois(identifiants: list[str], fetcher=None) -> dict[str, dict]:
+    """Resout des DOI en `(auteur, titre, annee)` via l'API Crossref.
+
+    Un DOI absent de Crossref est `NON_RESOLU` : c'est le signal que
+    l'EPIC route vers #11168 (une reference irresolvable est un candidat
+    citation fabriquee).
+    """
+    fetcher = fetcher or _fetcher_par_defaut
+    resolus: dict[str, dict] = {}
+    for identifiant in sorted({i for i in identifiants}):
+        url = CROSSREF_API.format(doi=urllib.parse.quote(identifiant, safe=""))
+        try:
+            contenu = fetcher(url)
+        except Exception:
+            continue
+        try:
+            message = json.loads(contenu.decode("utf-8"))["message"]
+        except (ValueError, KeyError, TypeError):
+            continue
+        titres = message.get("title") or []
+        auteurs = []
+        for auteur in message.get("author") or []:
+            nom = " ".join(part for part in (auteur.get("given"), auteur.get("family"))
+                            if part)
+            if nom:
+                auteurs.append(nom.strip())
+        annee = ""
+        for cle in ("published-print", "published-online", "issued", "created"):
+            parties = (message.get(cle) or {}).get("date-parts") or []
+            if parties and parties[0]:
+                annee = str(parties[0][0])
+                break
+        resolus[identifiant.lower()] = {
+            "titre": " ".join((titres[0] if titres else "").split()),
+            "auteurs": auteurs,
+            "auteur": auteurs[0] if auteurs else "",
+            "annee": annee,
+            "revue": (message.get("container-title") or [""])[0],
+        }
+    return resolus
+
+
+def _titre_du_fichier(nom: str) -> tuple[str, str, str]:
+    """Decoupe un nom canonique ``YYYY - Auteur(s) - Titre.pdf``."""
+    corps = Path(nom).stem
+    morceaux = [m.strip() for m in corps.split(" - ")]
+    if len(morceaux) >= 3:
+        annee, auteurs, titre = morceaux[0], morceaux[1], " - ".join(morceaux[2:])
+    elif len(morceaux) == 2:
+        annee, auteurs, titre = morceaux[0], "", morceaux[1]
+    else:
+        annee, auteurs, titre = "", "", corps
+    return annee, auteurs, titre
+
+
+def inventaire_gisement(racine: Path) -> list[dict]:
+    """Inventaire des documents detenus par le gisement canonique.
+
+    Le gisement n'est visible que depuis un siege avec lecteur GDrive ; son
+    absence ne doit pas faire echouer l'etape -- l'inventaire vide signifie
+    alors « detention non mesurable ici », pas « rien n'est detenu ».
+    """
+    inventaire: list[dict] = []
+    if not racine.is_dir():
+        return inventaire
+    for chemin in sorted(racine.rglob("*.pdf")):
+        annee, auteurs, titre = _titre_du_fichier(chemin.name)
+        inventaire.append({
+            "chemin": chemin.as_posix(),
+            "annee": annee,
+            "auteurs": auteurs,
+            "titre": titre,
+            "cle": normaliser_texte(titre),
+        })
+    return inventaire
+
+
+def _rapprocher_titre(titre: str, inventaire: list[dict]) -> dict | None:
+    """Cherche un document du gisement par titre normalise.
+
+    Deux niveaux : l'egalite exacte (le titre **est** celui du document) et
+    l'inclusion (le titre du document contient le titre resolu, ou l'inverse,
+    sur au moins 40 caracteres -- en dessous, la coincidence est trop faible
+    pour etre une preuve de detention).
+    """
+    cle = normaliser_texte(titre)
+    if not cle:
+        return None
+    for fiche in inventaire:
+        if fiche["cle"] == cle:
+            return {"fiche": fiche, "preuve": "TITRE_EXACT"}
+    for fiche in inventaire:
+        autre = fiche["cle"]
+        if len(cle) >= 40 and len(autre) >= 40 and (cle in autre or autre in cle):
+            return {"fiche": fiche, "preuve": "TITRE_PARTIEL"}
+    return None
+
+
+def statuts_resolus(lignes: list[dict], resolus_arxiv: dict[str, dict],
+                    resolus_dois: dict[str, dict],
+                    inventaire: list[dict]) -> list[dict]:
+    """Enrichit la table du gisement d'un verdict par identifiant cite.
+
+    Verdicts :
+
+    - ``DETENU``  -- le document est dans le gisement (identifiant au
+      catalogue A5, ou titre rapproche d'un nom de fichier canonique) ;
+    - ``ABSENT``  -- l'identifiant se resout (metadonnees obtenues) mais
+      aucun document correspondant n'est detecte dans le gisement ;
+    - ``NON_RESOLU`` -- l'identifiant ne se resout pas : c'est le signal que
+      l'EPIC #14407 route vers #11168.
+    """
+    enrichies: list[dict] = []
+    for ligne in lignes:
+        type_id = ligne["type_id"]
+        identifiant = ligne["id"]
+        if type_id == "arxiv":
+            fiche = resolus_arxiv.get(identifiant)
+            if fiche is None:
+                fiche = resolus_arxiv.get(cle_arxiv(identifiant))
+        else:
+            fiche = resolus_dois.get(identifiant.lower())
+        copie = dict(ligne)
+        copie["auteur"] = fiche["auteur"] if fiche else ""
+        copie["titre"] = fiche["titre"] if fiche else ""
+        copie["annee"] = fiche["annee"] if fiche else ""
+        copie["revue"] = fiche.get("revue", "") if fiche else ""
+        copie["doi_publie"] = fiche.get("doi_publie", "") if fiche else ""
+        if ligne["statut"] == "DETENU_CATALOGUE":
+            copie["statut"] = "DETENU"
+            copie["preuve"] = "CATALOGUE_ID"
+            copie["confiance"] = "HAUTE"
+        elif fiche is None:
+            copie["statut"] = "NON_RESOLU"
+            copie["preuve"] = "API_SANS_REPONSE"
+            copie["confiance"] = "FAIBLE"
+        else:
+            rapproche = _rapprocher_titre(fiche["titre"], inventaire)
+            if rapproche is not None:
+                copie["statut"] = "DETENU"
+                copie["preuve"] = rapproche["preuve"]
+                copie["confiance"] = ("HAUTE" if rapproche["preuve"] == "TITRE_EXACT"
+                                      else "MOYENNE")
+                if not copie["chemin_gisement"]:
+                    copie["chemin_gisement"] = rapproche["fiche"]["chemin"]
+            else:
+                copie["statut"] = "ABSENT"
+                copie["preuve"] = "RESOLU_NON_DETENU"
+                copie["confiance"] = "MOYENNE"
+        enrichies.append(copie)
+    return enrichies
+
+
+def _charger_cache(chemin: Path) -> dict:
+    """Relit le cache de metadonnees (vide s'il n'existe pas)."""
+    try:
+        return json.loads(chemin.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+
+
+def _ecrire_csv(chemin: Path, lignes: list[dict], colonnes: list[str]) -> Path:
+    """Ecrit la table en CSV : ecriture locale puis copie.
+
+    Le gisement est monte en DriveFS : une ecriture directe peut echouer
+    (`OSError: [Errno 22]`) alors que l'ecriture locale, puis la copie,
+    reussissent. La copie locale est conservee en cas d'echec, et son chemin
+    est renvoye : la mesure n'est jamais perdue.
+    """
+    with tempfile.NamedTemporaryFile("w", encoding="utf-8", newline="",
+                                     suffix=".csv", delete=False) as f:
+        temporaire = Path(f.name)
+        redacteur = csv.DictWriter(f, fieldnames=colonnes, extrasaction="ignore")
+        redacteur.writeheader()
+        for ligne in lignes:
+            redacteur.writerow(ligne)
+    try:
+        chemin.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(temporaire, chemin)
+        return chemin
+    except OSError as erreur:
+        print("copie impossible vers %s (%s) -- copie locale : %s"
+              % (chemin, erreur, temporaire))
+        return temporaire
+
+
+def _ecrire_table_csv(chemin: Path | None, lignes: list[dict]) -> None:
+    """Ecrit la table du gisement au format des tables A1 du gisement.
+
+    Le gisement a un format de table A1 deja etabli par les tranches par
+    famille (``id,verdict,titre_api,auteurs,annee,score,...``) : la table
+    resolue reprend ces noms de colonnes, pour que les deux productions
+    soient lisibles par le meme lecteur.
+    """
+    if chemin is None:
+        return
+    colonnes = ["type_id", "id", "statut", "chemin_gisement",
+                "source_extraction", "confiance_catalogue", "nb_fichiers",
+                "nb_occurrences", "formes", "exemple_fichier",
+                "exemple_contexte"]
+    if lignes and "auteur" in lignes[0]:
+        colonnes += ["auteur", "titre", "annee", "revue", "doi_publie",
+                     "preuve", "confiance"]
+    table = []
+    for ligne in lignes:
+        copie = dict(ligne)
+        copie["verdict"] = copie.get("statut", "")
+        copie["titre_api"] = copie.get("titre", "")
+        copie["auteurs"] = copie.get("auteur", "")
+        copie["citations"] = copie.get("nb_occurrences", "")
+        copie["fichiers"] = copie.get("exemple_fichier", "")
+        copie["score"] = copie.get("confiance", "")
+        table.append(copie)
+    exclues = ("id", "statut", "titre", "auteur", "annee", "nb_occurrences",
+               "exemple_fichier", "confiance_catalogue")
+    colonnes_compatibles = ["id", "verdict", "titre_api", "auteurs", "annee",
+                            "score", "source_verdict", "chemin_gisement",
+                            "candidat_flux1", "citations", "fichiers"]
+    colonnes_compatibles += [c for c in colonnes if c not in exclues]
+    _ecrire_csv(chemin, table, colonnes_compatibles)
+
+
+def _ecrire_cache(chemin: Path, donnees: dict) -> None:
+    """Ecrit le cache de metadonnees (hors dépôt : le cache n'est pas un livrable).
+
+    Le cache est ecrit par fichier temporaire puis renomme : une ecriture
+    directe sur un lecteur reseau (DriveFS) peut echouer en cours d'ecriture
+    (`OSError: [Errno 22]`), et un cache a moitie ecrit est pire qu'un cache
+    absent. Une ecriture en echec n'interrompt pas la mesure : elle est
+    signalee, et la resolution est refaite au tour suivant.
+    """
+    try:
+        chemin.parent.mkdir(parents=True, exist_ok=True)
+        temporaire = chemin.with_name(chemin.name + ".tmp")
+        temporaire.write_text(json.dumps(donnees, indent=1, ensure_ascii=False),
+                             encoding="utf-8")
+        temporaire.replace(chemin)
+    except OSError as erreur:
+        print("ecriture impossible vers %s (%s)" % (chemin, erreur))
+
+
 def _racine_depot() -> Path:
     """Racine du depot (deux niveaux au-dessus de `scripts/bibliography/`)."""
     return Path(__file__).resolve().parent.parent.parent
@@ -439,10 +794,28 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--surfaces", default=",".join(SURFACES_DEFAUT))
     parser.add_argument("--nu-arxiv", action="store_true")
     parser.add_argument("--inclure-archives", action="store_true")
+    parser.add_argument("--resoudre", action="store_true",
+                        help="Resoudre chaque identifiant en (auteur, titre, annee)")
+    parser.add_argument("--gisement", default=GISTEMENT_PAR_DEFAUT)
+    parser.add_argument("--cache", default="",
+                        help="Cache JSON des metadonnees resolues (relu puis ecrit)")
+    parser.add_argument("--sans-reseau", action="store_true",
+                        help="N'appeler aucune API : ne lire que le cache")
+    parser.add_argument("--depuis-json", default="",
+                        help="Reprendre la table d'un rapport JSON deja produit "
+                             "(pas de balayage, pas d'API)")
     args = parser.parse_args(argv)
 
     root = Path(args.root).resolve()
     surfaces = tuple(s.strip() for s in args.surfaces.split(",") if s.strip())
+
+    if args.depuis_json:
+        rapport_precedent = json.loads(
+            Path(args.depuis_json).read_text(encoding="utf-8"))
+        lignes = rapport_precedent.get("table", [])
+        _ecrire_table_csv(Path(args.sortie_csv) if args.sortie_csv else None, lignes)
+        print("table reprise : %d lignes" % len(lignes))
+        return 0
 
     entrees = census(root, surfaces, args.inclure_archives, args.nu_arxiv)
 
@@ -453,14 +826,34 @@ def main(argv: list[str] | None = None) -> int:
 
     lignes = table_du_gisement(entrees, index)
 
+    if args.resoudre:
+        cache = _charger_cache(Path(args.cache)) if args.cache else {}
+        ids_arxiv = sorted({i for (t, i) in entrees if t == "arxiv"})
+        ids_doi = sorted({i for (t, i) in entrees if t == "doi"})
+        resolus_arxiv = dict(cache.get("arxiv", {}))
+        resolus_dois = dict(cache.get("doi", {}))
+        if not args.sans_reseau:
+            manquants_arxiv = [i for i in ids_arxiv if i not in resolus_arxiv]
+            if manquants_arxiv:
+                resolus_arxiv.update(resoudre_arxiv(manquants_arxiv))
+            manquants_doi = [i for i in ids_doi if i.lower() not in resolus_dois]
+            if manquants_doi:
+                resolus_dois.update(resoudre_dois(manquants_doi))
+            if args.cache:
+                _ecrire_cache(Path(args.cache), {"arxiv": resolus_arxiv,
+                                                 "doi": resolus_dois})
+        inventaire = inventaire_gisement(Path(args.gisement))
+        lignes = statuts_resolus(lignes, resolus_arxiv, resolus_dois, inventaire)
+
     arxiv = [e for (t, _), e in entrees.items() if t == "arxiv"]
     doi = [e for (t, _), e in entrees.items() if t == "doi"]
     formes: dict[str, int] = {}
     for entree in entrees.values():
         for forme in entree.formes:
             formes[forme] = formes.get(forme, 0) + 1
-    tenus = [l for l in lignes if l["statut"] == "DETENU_CATALOGUE"]
-    absents = [l for l in lignes if l["statut"] == "ABSENT_CATALOGUE"]
+    tenus = [l for l in lignes if l["statut"].startswith("DETENU")]
+    absents = [l for l in lignes if l["statut"].startswith("ABSENT")]
+    non_resolus = [l for l in lignes if l["statut"] == "NON_RESOLU"]
 
     rapport = {
         "racine": str(root),
@@ -473,6 +866,7 @@ def main(argv: list[str] | None = None) -> int:
         "formes": formes,
         "detenu_catalogue": len(tenus),
         "absent_catalogue": len(absents),
+        "non_resolu": len(non_resolus),
         "catalogues": [c.name for c in catalogues],
         "lignes_catalogue_reparees": repares,
         "lignes_catalogue_malformees": malformees,
@@ -480,24 +874,19 @@ def main(argv: list[str] | None = None) -> int:
     }
 
     if args.sortie_json:
-        Path(args.sortie_json).write_text(
-            json.dumps(rapport, indent=2, ensure_ascii=False), encoding="utf-8")
+        _ecrire_cache(Path(args.sortie_json), rapport)
     if args.sortie_csv:
-        colonnes = ["type_id", "id", "statut", "chemin_gisement",
-                    "source_extraction", "confiance_catalogue", "nb_fichiers",
-                    "nb_occurrences", "formes", "exemple_fichier",
-                    "exemple_contexte"]
-        with Path(args.sortie_csv).open("w", encoding="utf-8", newline="") as f:
-            redacteur = csv.DictWriter(f, fieldnames=colonnes)
-            redacteur.writeheader()
-            for ligne in lignes:
-                redacteur.writerow(ligne)
+        _ecrire_table_csv(Path(args.sortie_csv), lignes)
+
 
     print("census : %d identifiants cites (%d arXiv, %d DOI)"
           % (len(entrees), len(arxiv), len(doi)))
     print("formes : %s" % ", ".join("%s=%d" % kv for kv in sorted(formes.items())))
     print("gisement : %d DETENU (chemin connu), %d ABSENT du catalogue"
           % (len(tenus), len(absents)))
+    if args.resoudre:
+        print("resolution : %d DETENU, %d ABSENT, %d NON_RESOLU"
+              % (len(tenus), len(absents), len(non_resolus)))
     if malformees:
         print("lignes de catalogue malformees : %d" % len(malformees))
     if repares:
