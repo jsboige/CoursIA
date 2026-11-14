@@ -1,0 +1,14 @@
+- name: "Complexity-02 P-NP Reduction"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-02-P-NP-Reduction-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: |
+    Le source enseigne les certificats de décision, la recherche exhaustive,
+    la programmation dynamique et une réduction en implémentant directement
+    ces algorithmes. Le jumeau C# emploie les primitives correspondantes de la
+    BCL .NET ; aucun moteur ni solveur de référence du source n’est omis.
+  known_differences:
+    - "NumPy et System.Random ont des suites différentes : le C# conserve graines, tailles, budgets complets et contrôles comparatifs ; les nombres aléatoires observés peuvent différer."
+    - "Les extrapolations utilisent le débit .NET réellement mesuré et des nombres d’opérations BigInteger ; ce sont des projections, pas des mesures aux grandes tailles."
