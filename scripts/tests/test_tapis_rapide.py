@@ -464,7 +464,8 @@ def _violations(source: str) -> list[str]:
 
 
 def test_tapis_rapide_ne_lance_aucun_processus():
-    for nom in ("tapis_rapide.py", "tapis_marqueurs.py"):
+    for nom in ("tapis_rapide.py", "tapis_marqueurs.py", "gh_cache.py",
+                "gh_cache_fichier.py"):
         assert _violations((COORD / nom).read_text(encoding="utf-8")) == [], nom
     temoin = "import subprocess\nfrom x import y as gh_bulk\ngh_bulk.run_defaut(['gh'], 9)\n"
     assert set(_violations(temoin)) == {"subprocess", "run_defaut()", "'gh'"}
@@ -472,9 +473,15 @@ def test_tapis_rapide_ne_lance_aucun_processus():
 
 # Plafonds releves une fois a la livraison (ecart MERGEE corrige, quota de conteneurs) ;
 # un depassement se paie en extrayant un module, pas en relevant le plafond.
-# tapis_marqueurs.py est la premiere extraction (lecture des marqueurs, 14/11).
+# tapis_marqueurs.py est la premiere extraction (lecture des marqueurs, 14/11) ;
+# gh_cache.py la seconde (cache et verrou de la lecture, #22630, 14/11) ;
+# gh_cache_fichier.py la troisieme (le fichier de cache : lire si frais, ecrire
+# atomiquement -- extraction demandee par les replis de la review Hermes,
+# #22630, 14/11 : le protocole a grandi de 41 lignes).
 @pytest.mark.parametrize(("nom", "plafond"), [("gh_bulk.py", 260), ("tapis_rapide.py", 520),
-                                              ("tapis_marqueurs.py", 130)])
+                                              ("tapis_marqueurs.py", 130),
+                                              ("gh_cache.py", 130),
+                                              ("gh_cache_fichier.py", 60)])
 def test_plafonds_de_lignes(nom, plafond):
     texte = (COORD / nom).read_text(encoding="utf-8")
     assert len(texte.splitlines()) <= plafond

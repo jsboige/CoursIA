@@ -51,6 +51,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [`2026-10-08-roster-machine-workspace.md`](transients/2026-10-08-roster-machine-workspace.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère, figé dans la lane transiente) |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
 | [reference/lib-versions.md](reference/lib-versions.md) | Organe des versions de bibliothèques des carnets (#23073) : manifeste canonique, recensement `--census`, garde advisory sur les carnets modifiés |
+| [reference/rust-ecosystem-map.md](reference/rust-ecosystem-map.md) | Carte de l'écosystème Rust (Pli 1 de l'Epic #26510) : correspondance bibliothèques Python/C# en usage → crate Rust, série par série ; socle mesuré par `rust_ecosystem_census.py` |
 | [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |

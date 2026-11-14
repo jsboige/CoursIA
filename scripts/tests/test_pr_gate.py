@@ -3183,3 +3183,164 @@ def test_wait_loop_still_fails_fast_on_a_cancel_with_no_successor():
     )
     assert code == 1 and "Scripts Tests (CPU)" in msg
     assert len(polls) == 1
+
+
+# --- quota d'installation : verdict INCONCLUSIVE, rejouable (2026-11-14) ----
+#
+# Un 403 de quota n'est pas un defaut de la PR : l'etat des checks est
+# INCONNU. La porte doit le dire -- code distinct, annotation warning, geste de
+# rejeu nomme -- au lieu de rendre un FAIL qui se lit comme un verdict de
+# contenu et fait chasser une defaut qui n'existe pas.
+#
+# Trois controles : le positif (la famille quota a sa borne donne
+# INCONCLUSIVE), et deux negatifs (une panne inconnue reste un FAIL, un vrai
+# check rouge reste un FAIL).
+
+
+def _quota_error(reset_epoch=None):
+    """The measured production signature of the installation-quota 403."""
+    exc = pr_gate.GateError(
+        "gh api repos/o/r/commits/sha/check-runs failed (exit 1, HTTP 403): "
+        "gh: API rate limit exceeded for installation."
+    )
+    if reset_epoch is not None:
+        exc.reset_epoch = reset_epoch
+    return exc
+
+
+def test_quota_family_at_its_bound_raises_the_replayable_verdict():
+    """CONTROLE POSITIF : la famille quota, a sa borne, donne INCONCLUSIVE."""
+    def fetch(_repo, _sha):
+        raise _quota_error()
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=0, poll_sec=0,
+            settle_polls=2, sleep=lambda _s: None, fetch=fetch, now=_clock(),
+        )
+
+
+def test_quota_verdict_is_a_distinct_code_not_a_fail(monkeypatch, capsys):
+    """Le code de sortie EST le contrat : 1 est un FAIL de contenu, 3 est
+    INCONCLUSIVE -- la chaine relit le code pour rejouer au lieu de chasser."""
+    def boom(*_args, **_kwargs):
+        raise pr_gate.QuotaInconclusive(
+            "rate limit exceeded for installation (3 read failures in a row)"
+        )
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    captured = capsys.readouterr()
+
+    assert code == pr_gate.QUOTA_INCONCLUSIVE_CODE
+    assert code != 1
+    assert "INCONCLUSIVE" in captured.out
+    assert "REJOUABLE" in captured.out
+    assert "FAIL -- cannot establish check state" not in captured.out
+    # L'annotation est un WARNING : l'UI ne doit pas lire une panne
+    # d'infrastructure comme un defaut de la PR.
+    assert "::warning::[pr-gate] INCONCLUSIVE" in captured.err
+    assert "::error::" not in captured.err
+
+
+def test_unreadable_state_other_than_quota_stays_a_fail(monkeypatch, capsys):
+    """CONTROLE NEGATIF : une panne inconnue reste un FAIL (regle 1)."""
+    def boom(*_args, **_kwargs):
+        raise pr_gate.GateError("gh api exploded")
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    code = pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"])
+    captured = capsys.readouterr()
+
+    assert code == 1
+    assert "FAIL -- cannot establish check state" in captured.out
+    assert "::error::[pr-gate] FAIL" in captured.err
+
+
+def test_a_real_failing_check_stays_a_fail(monkeypatch):
+    """CONTROLE NEGATIF : un vrai check rouge reste un FAIL, code 1."""
+    def boom(*_args, **_kwargs):
+        return 1, "FAIL -- Lean CI"
+
+    monkeypatch.setattr(pr_gate, "wait_and_decide", boom)
+    assert pr_gate.main(["--repo", "o/r", "--sha", "deadbeef"]) == 1
+
+
+def test_inconclusive_does_not_post_a_red_check_run(monkeypatch):
+    """Un INCONCLUSIVE n'est pas un rouge : le POST d'un check-run rouge
+    atterrirait sur la tete de la PR et y resterait (rouge inleverable,
+    #21543). Le message suffit : la jambe du job le publie deja."""
+    posted = []
+    monkeypatch.setattr(pr_gate, "post_check_run", lambda *a, **k: posted.append(a))
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="s", self_name="PR gate"
+    )
+    pr_gate._maybe_post_check_run(
+        args, pr_gate.QUOTA_INCONCLUSIVE_CODE, "INCONCLUSIVE -- quota epuise"
+    )
+    assert posted == []
+
+
+def test_the_published_body_names_the_replay_gesture():
+    """Le corps publie (resume d'etape + check-run) doit nommer le geste de
+    rejeu : c'est la que le lecteur de la PR le trouve."""
+    body = pr_gate.verdict_body("INCONCLUSIVE -- quota d'installation epuise")
+    assert "gh run rerun" in body
+    assert "pr-gate-stale-sweep" in body
+
+
+def test_ratelimit_reset_header_is_parsed():
+    block = (
+        "HTTP/2.0 403 Forbidden\n"
+        "x-ratelimit-limit: 15000\n"
+        "x-ratelimit-reset: 1763150000\n"
+        "x-ratelimit-remaining: 0\n"
+    )
+    assert pr_gate._gh_ratelimit_reset(block) == 1763150000.0
+
+
+def test_ratelimit_reset_header_absent_is_none():
+    assert pr_gate._gh_ratelimit_reset("HTTP/2.0 403 Forbidden\n") is None
+
+
+def test_ratelimit_reset_header_unparsable_is_none():
+    assert pr_gate._gh_ratelimit_reset("x-ratelimit-reset: demain\n") is None
+
+
+def test_the_wait_sleeps_until_the_reset_it_was_told_about():
+    """CONTROLE POSITIF du calage : un quota horaire ne se franchit pas en
+    30 s de tentatives -- quand l'API dit quand il se reinitialise, on
+    attend cet instant (borne par l'echeance absolue du job)."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        raise _quota_error(reset_epoch=1300.0)
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=60, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock),
+        )
+    # Le compteur d'horloge avance de 10 s par lecture : l'echeance
+    # consomme la premiere lecture (1000), l'erreur observe 1010 --
+    # d'ou 1300 - 1010 = 290 s d'attente, pas 300.
+    assert slept and slept[0] == pytest.approx(290.0, abs=1.0)
+
+
+def test_the_quota_wait_falls_back_on_the_backoff_without_a_reset():
+    """Sans instant de reset connu, l'ordonnance de repli (#17681) tient."""
+    slept = []
+    clock = itertools.count(1000.0, 10)
+
+    def fetch(_repo, _sha):
+        raise _quota_error()
+
+    with pytest.raises(pr_gate.QuotaInconclusive):
+        pr_gate.wait_and_decide(
+            "o/r", "sha", "PR gate", timeout_min=600, poll_sec=0,
+            settle_polls=2, sleep=slept.append, fetch=fetch,
+            now=lambda: next(clock),
+        )
+    assert slept and slept[0] == pytest.approx(30.0, abs=0.01)

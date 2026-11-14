@@ -59,7 +59,7 @@ La série GameTheory comporte **96 notebooks racine + 8 SocialChoice** répartis
 
 **Kernels** : python3 · .net-csharp (notebooks 2-12) · lean4 (side tracks `*-Lean-*` via WSL) · **GPU** : non · **Prérequis** : algèbre linéaire, probabilités de base. Aucun prérequis en théorie des jeux : les concepts sont introduits depuis les matrices de gains.
 
-**Parcours** : [Parcours 1 — local sobre](../../parcours.qmd) · niveau 2
+**Parcours** : [Parcours 1 — local sobre](../../docs/parcours.qmd) · niveau 2
 
 ## Phase 1 — Fondations statiques et équilibre de Nash (Notebooks 1-6)
 
