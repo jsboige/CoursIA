@@ -8,18 +8,27 @@ Ce que l'instrument corrige
 Le census de référence de l'EPIC (#14407, 2026-09-03) ne capturait qu'une
 **forme** d'identifiant : l'URL ``arxiv.org/abs/NNNN.NNNNN``. La forme
 **tampon** ``arXiv:NNNN.NNNNN`` — celle qu'emploie la majorité des carnets —
-passait au travers. Mesure sur ``origin/main`` (2026-11-14) :
+passait au travers. Mesure sur ``origin/main`` (2026-11-14, commit
+``649647421806a``), sur le **même périmètre** que l'organe — les quatre
+surfaces ``.ipynb .md .py .cs``, répertoires hors périmètre exclus :
 
 | forme capturée | identifiants arXiv distincts |
 |---|---:|
 | URL seule (méthode EPIC) | 175 |
-| tampon seule | 326 |
-| **union des deux** | **348** |
+| tampon seule | 321 |
+| legacy seule | 9 |
+| **union des trois** | **352** |
 
 Le census de référence sous-compte donc la moitié de la population citée : il
 ne voit aucun des identifiants que les carnets citent sous forme tampon.
 L'union des formes n'est pas un détail de forme : c'est la population réelle
 que A1 doit résoudre.
+
+Le compte de la forme URL dépend de trois conventions explicites, qu'il faut
+nommer pour que le chiffre soit comparable : l'alternance de chemin
+``abs|pdf`` (la commande de l'EPIC) rend **175**, ``abs`` seul rend **173**,
+``abs|pdf|html|format`` rend **176**. L'écart entre ces trois valeurs est une
+convention de motif, pas un désaccord sur la population.
 
 La forme **nue** (``NNNN.NNNNN`` sans marqueur) est, elle, exclue par
 défaut : elle sur-compte massivement (mesuré par une tranche de la famille
@@ -459,7 +468,7 @@ def table_du_gisement(entrees: dict[tuple[str, str], Entree],
 # Etape de resolution : (auteur, titre, annee) par identifiant cite
 # ---------------------------------------------------------------------------
 
-GISTEMENT_PAR_DEFAUT = "G:/Mon Drive/MyIA/IA/Bibliographie IA"
+GISEMENT = "G:/Mon Drive/MyIA/IA/Bibliographie IA"
 
 ARXIV_API = "https://export.arxiv.org/api/query?id_list={ids}&max_results={n}"
 CROSSREF_API = "https://api.crossref.org/works/{doi}"
@@ -925,7 +934,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--inclure-archives", action="store_true")
     parser.add_argument("--resoudre", action="store_true",
                         help="Resoudre chaque identifiant en (auteur, titre, annee)")
-    parser.add_argument("--gisement", default=GISTEMENT_PAR_DEFAUT)
+    parser.add_argument("--gisement", default=GISEMENT)
     parser.add_argument("--cache", default="",
                         help="Cache JSON des metadonnees resolues (relu puis ecrit)")
     parser.add_argument("--sans-reseau", action="store_true",
