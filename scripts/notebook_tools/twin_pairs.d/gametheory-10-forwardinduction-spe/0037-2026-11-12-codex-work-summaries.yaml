@@ -1,0 +1,10 @@
+# Alignement des résumés sur les comparaisons conditionnelles déjà calculées.
+# Cinq cellules Markdown corrigées ; code, sorties, compteurs et métadonnées
+# des deux carnets inchangés depuis 066cf91ec. Aucun nouveau rejeu de noyau.
+# Option extérieure 3,5 ; coût de brûlage 0,5 ; rationalité et croyances explicites.
+date: '2026-11-12'
+by: codex:work-summaries
+python_sha: 25acba84e3e5cd58777f78e8bf6fbd6b9722d603
+csharp_sha: 9418d99b1daf040e77be7a701145e53b42dc07d4
+content_python_sha: b1b1c3caaa694d9e3461720fcf5030e6ee1535b511861bf99fb563fcce659550
+content_csharp_sha: 1019c0b55f5f01fa9fa2cbcbb5296740a63df9f775402a401014b17ed8a61cf8

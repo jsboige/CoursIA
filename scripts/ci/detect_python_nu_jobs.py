@@ -37,11 +37,19 @@ en queue.
 
 Exemption
 ---------
-Le job `windows-dotnet-tests` du workflow `windows-self-hosted-tests.yml`
-est exempté **nommement** : sur Windows `python` est l'executable canonique
-(pas `python3`), une substitution casserait le job. L'exemption est
-nominale, pas par regle generale -- un futur refactor ne peut pas
-l'elargir silencieusement (le test canonique verifie le NOM EXACT).
+Deux jobs sont exemptes **nommement** :
+
+- `windows-dotnet-tests` du workflow `windows-self-hosted-tests.yml` :
+  sur Windows `python` est l'executable canonique (pas `python3`), une
+  substitution casserait le job.
+- `corroboration` du workflow `corroboration-python-nu.yml` : ce job EST
+  l'instrument qui mesure la visibilite du `python` nu sur les slots
+  (critere 3 de #17444). Ses appels `python` sont l'objet de la mesure,
+  pas une dependance -- ils sont gares par `command -v python` et
+  `|| true`, le job ne peut pas echouer sur un slot sans `python`.
+
+L'exemption est nominale, pas par regle generale -- un futur refactor ne
+peut pas l'elargir silencieusement (le test canonique verifie le NOM EXACT).
 
 Usage
 -----
@@ -79,6 +87,14 @@ EXEMPTED = frozenset(
         (
             "windows-self-hosted-tests.yml",
             "windows-dotnet-tests",
+        ),
+        (
+            # Instrument de mesure du critere 3 de #17444 : le job mesure
+            # la visibilite du python nu (appels gares par `command -v` +
+            # `|| true`, aucune dependance). Exemption posee avec la PR
+            # d'exemption detecteur, le workflow ne depend pas de python.
+            "corroboration-python-nu.yml",
+            "corroboration",
         ),
     }
 )

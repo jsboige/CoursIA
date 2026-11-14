@@ -118,11 +118,13 @@ PARKED_LABEL = "parked-veto"
 #: instance #24196. Les accents sont optionnels dans les deux sens : les
 #: commentaires reels ecrivent « fournee » comme « fournée ».
 _SUCCESSOR_RE = re.compile(
-    r"(?:superseded\s+by|replaced\s+by|successor\s*:?|closed\s+in\s+favou?r\s+of|"
+    r"(?:superseded\s+(?:by|par)|replaced\s+by|successor\s*:?|closed\s+in\s+favou?r\s+of|"
     r"remplac[ée]e?s?\s+par|reprise?s?\s+(?:dans|par)|reprend\s+(?:dans|par)|"
     r"duplicate\s+of|doublon\s+de|en\s+faveur\s+de|"
     r"fondu[es]?\s+en\s+fourn[ée]e\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
     r"repli[ée]e?s?\s+en\s+fourn[ée]e\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
+    r"repli[ée]e?s?\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
+    r"inclus(?:e|es)?\s+dans(?:\s+(?:la\s+pr|la\s+pull\s+request))?|"
     r"folded\s+into)"
     r"\s*:?\s*#(\d+)",
     re.IGNORECASE,
@@ -133,7 +135,8 @@ _SUCCESSOR_RE = re.compile(
 _ABANDON_RE = re.compile(
     r"\b(?:abandonn[ée]e?|obsolet[e]?s?|sans\s+objet|plus\s+d'actualit[ée]|"
     r"won'?t\s+fix|wontfix|not\s+needed|no\s+longer\s+needed|"
-    r"doublon|duplicate|revert[ée]e?|annul[ée]e?)\b",
+    r"doublon|duplicate|revert[ée]e?|annul[ée]e?|superseded|"
+    r"repli[ée]e?s?)\b",
     re.IGNORECASE,
 )
 
@@ -310,9 +313,11 @@ def force_push_to_close_seconds(events: list[dict], closed_at: datetime) -> floa
 def closing_evidence(body: str, comments_: list[dict], closed_at: datetime) -> tuple[int | None, bool]:
     """``(successeur, raison_d_abandon)`` depuis le body et les commentaires proches.
 
-    Seuls les commentaires dans :data:`CLOSING_COMMENT_WINDOW_S` autour de la
-    fermeture comptent : un ``superseded by #N`` poste trois semaines plus tot
-    parlait d'autre chose.
+    Les commentaires dans :data:`CLOSING_COMMENT_WINDOW_S` autour de la
+    fermeture comptent. Hors de cette fenetre, seuls les commentaires dont
+    le corps commence par ``[TRI]`` sont retenus : ils consignent une decision
+    explicite de triage, meme postee apres coup. Un commentaire ordinaire tel
+    que ``superseded by #N`` poste trois semaines plus tot ne compte pas.
     """
     successor: int | None = None
     reason = False
