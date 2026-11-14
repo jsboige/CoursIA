@@ -63,6 +63,8 @@ Note registre : `03b`/`03c`/`03d` sont enregistrées sous les numéros historiqu
 
 > Etat mesure au 2026-11-08 : les 14 compagnon-b ci-dessus (13 du relevé initial + App-34, ratée dudit relevé) sont devenues alignées par renommage **#25341** (le `b` d'accrétion est retiré du côté CSharp — trio App-17 et quatuor App-18 : retiré des **deux** membres, l'extension kernel-tierce `App-18c` restant inchangée). Historique complet : `docs/reference/rename-ledger.tsv`.
 
+> Etat mesure au 2026-11-14 : les deux paires décalées ci-dessus sont devenues **alignées** par renommage **#12933** (doctrine #5081, lane `myia-po-2027:CoursIA`) — `App-12c-ConnectFour` → `App-12b-ConnectFour-CSharp` (même numéro 12b que le Python, suffixe kernel explicite) et `App-14-ConnectFour-CSharp` → `App-14-ConnectFour-Adversarial-CSharp` (titre complet du Python repris). Les lignes du tableau ci-dessus sont conservées telles quelles (relevé initial) ; l'état courant fait foi au présent bloc. La quasi-paire GT-13b↔13c (§ ci-dessous) conserve la même forme que l'ancienne App-12b↔12c et reste du ressort de l'arbitrage EPIC.
+
 ### Sudoku — 16 paires, toutes alignées, toutes enregistrées
 
 `Sudoku-01-Backtracking` à `Sudoku-15-Infer` et `Sudoku-18-Comparison`, chaque `Sudoku-N-…-Python` ↔ `Sudoku-N-…-CSharp` (suffixe kernel explicite des deux côtés, convention la plus régulière du dépôt). Le n° 16 Python (`Sudoku-16-NeuralNetwork`) est célibataire (§4), le n° 17 aussi (LLM) ; `Sudoku-19` est Lean-only.
