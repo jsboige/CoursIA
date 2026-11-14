@@ -103,7 +103,7 @@ Le fil relaxation / arrondi / convexité, cinq accrétions de Search-9 :
 
 ### Autour de 12
 
-- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (19/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 24 vs 75 expansions). Suppose Search-3.
+- **[12a Composer-Regards](Search-12a-Composer-Regards.ipynb)** — **Composer des regards** (op 12 du chantier ICT, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) : play forward (`g`, Dijkstra depuis le départ) × coplay backward (`d`, Dijkstra depuis l'arrivée) sur un gridworld 10×14 — corridor optimal isolé par `f* = g + d` (23/140 nœuds), associativité de la composition à relais, **paire de lectures incompatibles exhibée** (divergence dès le pas 1, A* 23 vs 75 expansions). Suppose Search-3.
 
 ## Progression
 
@@ -159,6 +159,10 @@ La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algo
 ## Ponts vers les autres séries
 
 Cette partie irrigue le reste du dépôt : les Dancing Links de Search-8 sont à l'œuvre dans la série [Sudoku](../../Sudoku/README.md), Minimax et MCTS (Search-6/7) se prolongent dans [GameTheory](../../GameTheory/README.md) avec OpenSpiel puis dans [RL](../../RL/README.md) côté politiques apprises, et les prédicats Z3 de Search-10 ouvrent sur [SymbolicAI](../../SymbolicAI/README.md).
+
+### Composer les regards en Python et C#
+
+Le carnet [Python](Search-12a-Composer-Regards.ipynb) et son [jumeau C#](Search-12a-Composer-Regards-CSharp.ipynb) calculent les distances arrière sur les arcs inversés, comparent les guides et conservent le même terrain déterministe.
 
 ## Références
 
