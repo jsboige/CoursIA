@@ -46,8 +46,8 @@
             "exercices": 3,
             "cellules_code": 14,
             "cellules_md": 33,
-            "prose_chars": 20671,
-            "densite": 1476,
+            "prose_chars": 20735,
+            "densite": 1481,
             "densite_plancher": 1200,
             "kernel": "Python 3 (coursia-ml-training)",
             "exigences": {
@@ -124,8 +124,8 @@
             "exercices": 3,
             "cellules_code": 19,
             "cellules_md": 34,
-            "prose_chars": 41302,
-            "densite": 2173,
+            "prose_chars": 41356,
+            "densite": 2176,
             "densite_plancher": 1200,
             "kernel": "Python 3 (ipykernel)",
             "exigences": {
