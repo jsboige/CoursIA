@@ -2639,6 +2639,36 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     )
 
 
+def parse_inconclusive_message(message: str) -> dict | None:
+    """L'INVERSE de l'emetteur INCONCLUSIVE, expose pour ses consommateurs.
+
+    Meme discipline que `merge_dwell.parse_pending_message` : le FORMAT
+    appartient a l'emetteur (`QuotaInconclusive` -> le message construit
+    dans `main()`), jamais a celui qui le lit. Une copie locale deriverait
+    en silence des que l'emetteur change.
+
+    Rend None si le message n'est pas un verdict INCONCLUSIVE : un FAIL
+    nomme, un DWELL ou une annotation d'organe ne sont pas des etats
+    inconclusifs.
+
+    Contexte (#26551) : le verdict INCONCLUSIVE (quota d'installation
+    GitHub App epuisee) dit que l'etat des checks est **INCONNU, pas
+    faux**. Rendu comme un `::warning::`, il ne nomme aucun organe : un
+    consommateur qui ne sait pas le lire le confond avec un defaut de la
+    lane et envoie celle-ci chercher une cause qui n'existe pas.
+    """
+    if not isinstance(message, str):
+        return None
+    marker = "INCONCLUSIVE -- "
+    pos = message.find(marker)
+    if pos == -1:
+        return None
+    detail = message[pos + len(marker):].strip()
+    if not detail:
+        return None
+    return {"kind": "quota-installation", "detail": detail}
+
+
 def _crash_fallback_publish(exc: BaseException) -> None:
     """(#15825) A crashed gate still owes its check-run a non-empty title.
 
