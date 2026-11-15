@@ -1027,15 +1027,54 @@ def rewrite_file(p: Path, forms_list: list[RefForms]) -> int:
     return total
 
 
+LEDGER_HEADER = "ancien\tnouveau\tdate\tlane"
+
+
+def _is_ledger_header(parts: list[str]) -> bool:
+    """Vrai pour une ligne d'EN-TETE du registre, ou qu'elle se trouve.
+
+    Le registre est un historique partage, appendu par plusieurs branches en
+    parallele : deux branches qui le creent chacune ecrivent l'en-tete, et la
+    fusion peut en laisser DEUX dans le meme fichier (mesure : en-tete
+    repete a la ligne 230 de `docs/reference/rename-ledger.tsv`, la ligne 1
+    portant la meme).
+
+    Un lecteur qui saute seulement la premiere ligne (`splitlines()[1:]`)
+    prend alors l'en-tete repete pour une entree de renommage : le couple
+    `ancien` -> `nouveau` devient un couple de formes de reference, et le
+    motif construit la-dessus reconnait le mot « ancien » dans TOUTE ligne
+    de prose ajoutee. Le `--rebase-helper --apply` reecrirait alors « l'ancien
+    nom du carnet » en « le nouveau nom du carnet », sans le signaler
+    (#16231). L'en-tete se reconnait donc par sa FORME, partout ou il est --
+    et pas seulement a la premiere ligne.
+
+    On ne peut pas exiger que la premiere colonne soit un chemin `.ipynb` :
+    le registre contient aussi des renommages de `.png` et de `.py`, qui
+    sont precisement des references a reecrire.
+    """
+    return (len(parts) >= 2
+            and parts[0].strip() == "ancien"
+            and parts[1].strip() == "nouveau")
+
+
 def append_ledger(pairs: list[tuple[str, str]], lane: str, repo: Path | None = None) -> None:
     repo = repo or repo_root()
     ledger = repo / LEDGER_RELPATH
     ledger.parent.mkdir(parents=True, exist_ok=True)
     new_file = not ledger.exists()
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+    if not new_file:
+        # Un registre appendu par plusieurs branches peut finir sur une ligne
+        # sans saut de ligne : l'entree suivante serait concatenee a la
+        # derniere, qui deviendrait illisible pour tout lecteur. On remet un
+        # saut de ligne avant d'ecrire (#16231).
+        tail = ledger.read_bytes()[-1:]
+        if tail and not tail.endswith(b"\n"):
+            with ledger.open("a", encoding="utf-8", newline="") as fh:
+                fh.write("\n")
     with ledger.open("a", encoding="utf-8", newline="") as fh:
         if new_file:
-            fh.write("ancien\tnouveau\tdate\tlane\n")
+            fh.write(LEDGER_HEADER + "\n")
         for old, new in pairs:
             fh.write(f"{old}\t{new}\t{stamp}\t{lane}\n")
 
@@ -1113,10 +1152,13 @@ def rebase_helper(apply: bool, repo: Path | None = None) -> int:
         print("aucun registre de renommage : rien a faire")
         return 0
     renames: dict[str, str] = {}
-    for line in ledger.read_text(encoding="utf-8").splitlines()[1:]:
+    for line in ledger.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         parts = line.split("\t")
+        if _is_ledger_header(parts):
+            # En-tete, ou qu'il se trouve : jamais un renommage (#16231).
+            continue
         if len(parts) >= 2:
             renames[parts[0]] = parts[1]
     if not renames:

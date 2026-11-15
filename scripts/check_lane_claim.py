@@ -1174,7 +1174,252 @@ def _claim_live_paths(ev: ClaimEvent) -> list[str] | None:
         return None  # #10597 -- parse residue, not a live scope
     if _claim_scope_effectively_epic_wide(ev):
         return None  # #10958/#11098 -- every glob dead -> epic-wide
-    return scope
+    # #26657 -- le scope VIVANT est le scope resolu : quand un glob mort a
+    # ete resolu (PR ouverte, renommage, basename unique), ce sont les
+    # chemins resolus que la claim verrouille -- pas le glob mort.
+    live = ev.get("live_paths")
+    return list(live) if live else scope
+
+
+# =====================================================================
+# #26657 -- l'UNIVERS des fichiers d'un scope
+# =====================================================================
+#
+# `git ls-files` ne voit ni les fichiers d'une PR OUVERTE, ni un chemin
+# RENOMME. Dans les deux cas l'organe lisait le scope comme MORT, et le
+# garde-fou #10958/#11098 levait le claim en epic-wide : le claim ne
+# verrouillait plus rien de reel, mais bloquait l'issue entiere (verrou
+# DEAD-SCOPE).
+#
+# Mesure sur #20298 (15/11) : `empty_scope` non vide sur des claims
+# livres, `locked: false` sur une livraison, `free_paths_size: 0`, et deux
+# lanes en epic-wide sur une issue entiere alors que leurs scopes etaient
+# precis et disjoints.
+#
+# Le correctif n'ecrit PAS la semantique du claim : il elargit l'univers
+# des fichiers (arbre local + fichiers des PRs ouvertes citees) et RESOUT
+# les globs dont la position vivante est PROUVEE (registre des
+# renommages, basename unique). Un scope non resolvable reste mort : le
+# fail-CLOSED #10958/#11098 reste intact.
+#
+# Le reseau reste HORS de l'organe : les fichiers des PRs sont lus par
+# l'appelant et injectes (`pr_files`), comme `pr_states`. Sans injection,
+# l'univers est l'arbre local -- aucun verdict ne change.
+
+LEDGER_RELPATH = "docs/reference/rename-ledger.tsv"
+_RENAME_LEDGER_CACHE: dict[str, dict[str, str]] = {}
+
+
+def _rename_ledger_map(repo_root: str | None = None) -> dict[str, str]:
+    """Le registre des renommages : `ancien` -> `nouveau`.
+
+    #26657 -- quatre autres outils le lisent deja (`scripts/ci/
+    creation_budget.py`, `scripts/notebook_tools/check_external_consumer_
+    links.py`, `scripts/notebook_tools/check_subseries_descent.py`,
+    `scripts/notebook_tools/generate_catalog.py`) ; l'organe de claims, lui,
+    lisait un scope renomme comme MORT. Le registre est le seul temoin
+    cense du deplacement : sans lui, un glob mort n'a pas de resolution.
+
+    TSV `ancien<TAB>nouveau<TAB>date<TAB>lane`, avec une ligne d'en-tete.
+    Lecture best-effort : registre absent ou illisible -> dict VIDE (aucune
+    resolution, donc le fail-CLOSED reste).
+    """
+    root = os.path.abspath(repo_root or os.getcwd())
+    cached = _RENAME_LEDGER_CACHE.get(root)
+    if cached is not None:
+        return cached
+    mapping: dict[str, str] = {}
+    try:
+        with open(os.path.join(root, LEDGER_RELPATH), "r",
+                  encoding="utf-8", errors="replace") as fh:
+            for line in fh:
+                cols = line.rstrip("\n").split("\t")
+                if len(cols) < 2:
+                    continue
+                old, new = cols[0].strip(), cols[1].strip()
+                if not old or not new or old == new or old == "ancien":
+                    continue
+                mapping[old] = new
+    except OSError:
+        mapping = {}
+    _RENAME_LEDGER_CACHE[root] = mapping
+    return mapping
+
+
+def _full_path_matches(path: str, glob: str) -> bool:
+    """fnmatch sur le chemin COMPLET (jamais sur le nom de base).
+
+    Le matcher general de l'organe teste aussi le NOM DE BASE : `*.ipynb`
+    matche donc n'importe quel carnet. Pour resoudre un glob mort vers un
+    chemin precis, ce comportement rendrait la resolution non bornee (le
+    registre des renommages porte des centaines de `.ipynb`). Ici, seul le
+    chemin complet compte.
+    """
+    try:
+        rx = _compiled_path_pattern(glob)
+    except re.error:
+        return False
+    return rx.match(_normcase_path(path)) is not None
+
+
+def _unique_basename_path(glob: str, tracked: list[str]) -> str | None:
+    """Le chemin vivant d'un glob mort, si son BASENAME est UNIQUE.
+
+    #26657 -- version STRICTE du « did you mean » #13129 : celui-ci accepte
+    2 a 5 occurrences et tranche par prefixe, ce qui n'est pas une preuve.
+    Ici, une seule occurrence => le chemin est etabli ; deux ou plus =>
+    aucune resolution (le fail-CLOSED reste).
+    """
+    if not glob or "/" not in glob:
+        return None
+    basename = glob.rsplit("/", 1)[-1]
+    if not basename:
+        return None
+    matches = [t for t in tracked if t.rsplit("/", 1)[-1] == basename]
+    if len(matches) != 1:
+        return None
+    return matches[0]
+
+
+def _resolve_ledger_scope(glob: str, tracked: list[str],
+                          ledger: dict[str, str]) -> list[str]:
+    """Les positions vivantes des fichiers renomes que le glob designe.
+
+    Le registre est un historique : une chaine est possible (`A` -> `B` ->
+    `C`). On suit la chaine tant que le maillon suivant est connu ET suivi
+    (3 sauts maximum : au-dela, on ne resout pas -- une resolution non
+    prouvee vaut mieux qu'une resolution fausse).
+    """
+    if not ledger:
+        return []
+    out: list[str] = []
+    for old in ledger:
+        if not _full_path_matches(old, glob):
+            continue
+        current = old
+        for _ in range(3):
+            nxt = ledger.get(current)
+            if not nxt:
+                break
+            current = nxt
+        if current == old:
+            continue
+        if _glob_matches_tracked(current, tracked):
+            out.append(current)
+    return sorted(set(out))
+
+
+def _resolve_in_flight_scope(glob: str, own_files: list[str]) -> list[str]:
+    """Les fichiers que la PROPRE PR de la claim apporte sous ce glob.
+
+    #26657 -- un `[DELIVERED] ... PR #N` dont le scope est le dossier que
+    sa propre PR cree : ce scope est VIVANT (la tranche est livree, pas
+    encore mergee). L'arbre local ne le voit pas ; la PR, si.
+    """
+    if not own_files:
+        return []
+    return sorted(f for f in own_files if _full_path_matches(f, glob))
+
+
+def _resolve_dead_scope(paths: list[str], tracked: list[str],
+                         universe: list[str], own_files: list[str],
+                         ledger: dict[str, str]) -> tuple[list[str], list[dict]]:
+    """Resout les globs morts vers des chemins VIVANTS.
+
+    Rend `(live_paths, notes)`. `live_paths` est la liste des chemins
+    effectifs que le scope verrouille ; `notes` journalise chaque resolution
+    (`{glob, resolved_to, how}`), pour que la lane voie la correction a
+    faire.
+
+    `tracked` est l'arbre local, `universe` l'arbre local PLUS les fichiers
+    apportes par les PRs ouvertes citees. Un glob qui matche l'arbre local
+    est vivant tel quel ; un glob qui ne matche que l'univers est vivant
+    par une PR en cours.
+
+    Trois resolutions, toutes NON AMBIGUES :
+      - `pr-en-cours` : les fichiers que la PROPRE PR de la claim apporte
+        sous ce glob -- le scope d'un `[DELIVERED] ... PR #N` qui nomme le
+        dossier cree par sa propre PR ;
+      - `rename-ledger` : le glob designe un fichier renomme dont la
+        position vivante est prouvee par le registre (chaine suivie,
+        3 sauts maximum) ;
+      - `basename-unique` : le basename du glob existe EXACTEMENT UNE fois
+        dans l'arbre suivi (version stricte du « did you mean » #13129).
+
+    Un glob que rien ne resout reste MORT : il est conserve tel quel, et le
+    fail-CLOSED #10958/#11098 s'applique toujours.
+    """
+    live: list[str] = []
+    notes: list[dict] = []
+    dirs = _tracked_dirs(tracked) if tracked is not None else set()
+    for part in paths:
+        if _glob_matches_tracked(part, tracked):
+            live.append(part)
+            continue
+        hit = _resolve_in_flight_scope(part, own_files)
+        if hit:
+            live.extend(hit)
+            notes.append({"glob": part, "resolved_to": hit,
+                          "how": "pr-en-cours"})
+            continue
+        if _glob_matches_tracked(part, universe):
+            # Vivant par une PR ouverte (pas la sienne) : le glob reste le
+            # perimetre, seul le temoin de mort change.
+            live.append(part)
+            continue
+        # #26657 -- une resolution par le registre ou par le basename n'est
+        # credible que si le REPERTOIRE du glob existe : un glob dont le
+        # parent n'existe pas est un typo (#21431 (c)), pas un chemin
+        # renomme. Sans ce garde, un scope de creation (`x/**`, `y/01.ipynb`
+        # dans un dossier qui n'existe pas) serait resolu vers un fichier
+        # sans rapport, et le claim cesserait de bloquer (fail-OPEN).
+        parent = _glob_parent_dir(part)
+        if parent and parent not in dirs:
+            live.append(part)
+            continue
+        hit = _resolve_ledger_scope(part, tracked, ledger)
+        if hit:
+            live.extend(hit)
+            notes.append({"glob": part, "resolved_to": hit,
+                          "how": "rename-ledger"})
+            continue
+        cand = _unique_basename_path(part, tracked)
+        if cand:
+            live.append(cand)
+            notes.append({"glob": part, "resolved_to": [cand],
+                          "how": "basename-unique"})
+            continue
+        live.append(part)
+    return live, notes
+
+
+def _scope_in_flight(pr_files: dict[int, list[str]] | None) -> list[str]:
+    """L'union des fichiers apportes par les PRs ouvertes citees."""
+    if not pr_files:
+        return []
+    out: list[str] = []
+    seen: set[str] = set()
+    for files in pr_files.values():
+        for f in files or []:
+            if f not in seen:
+                seen.add(f)
+                out.append(f)
+    return out
+
+
+def _scope_universe(tracked: list[str] | None,
+                    in_flight: list[str]) -> list[str] | None:
+    """L'arbre suivi + les fichiers en cours (PRs ouvertes citees).
+
+    L'univers remplace l'arbre local partout ou une scope est mesuree :
+    c'est lui qui dit si un glob est mort. Hors PR ouverte citee,
+    l'univers EST l'arbre local : aucun verdict ne change.
+    """
+    if tracked is None:
+        return None
+    if not in_flight:
+        return tracked
+    return _TrackedFiles(list(tracked) + list(in_flight))
 
 
 def compute_active_claims(
@@ -1683,6 +1928,153 @@ def _prefetch_pr_states(pr_refs: list[int]) -> dict[int, str]:
             elif node.get("state") == "OPEN":
                 states[number] = "OPEN"
     return states
+
+
+# #26657 -- les FICHIERS des PRs ouvertes citees par les marqueurs.
+#
+# Une PR ouverte APPORTE des fichiers que l'arbre local ne contient pas :
+# le scope d'un `[DELIVERED] ... PR #N` qui nomme le dossier cree par sa
+# propre PR est vivant, meme si `git ls-files` ne le voit pas. Sans cette
+# lecture, l'organe lisait ce scope comme MORT et levait le claim en
+# epic-wide (verrou DEAD-SCOPE, mesure sur #20298).
+#
+# Le reseau reste HORS de l'organe : ces lectures sont faites par
+# l'appelant et injectees dans `_run_check(pr_files=...)`, comme
+# `pr_states`. Sans injection, aucun verdict ne change.
+_PR_FILES_CACHE: dict[int, list[str] | None] = {}
+
+
+def _fetch_pr_files(pr_ref: int) -> list[str] | None:
+    """Les fichiers modifies par la PR `pr_ref` (None si la lecture echoue).
+
+    Best-effort : None = « fichiers inconnus », donc le scope reste tel que
+    l'arbre local le voyait (fail-CLOSED). Le cache evite deux lectures de
+    la meme PR dans un meme processus.
+    """
+    if pr_ref in _PR_FILES_CACHE:
+        return _PR_FILES_CACHE[pr_ref]
+    files: list[str] | None = None
+    try:
+        proc = subprocess.run(
+            ["gh", "pr", "view", str(pr_ref), "--json", "files"],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",  # #12811
+        )
+        if proc.returncode == 0:
+            payload = json.loads(proc.stdout)
+            files = [f.get("path") for f in (payload.get("files") or [])
+                     if f.get("path")]
+    except Exception:  # noqa: BLE001 - l'echec degrade en « inconnu »
+        files = None
+    _PR_FILES_CACHE[pr_ref] = files
+    return files
+
+
+def _prefetch_pr_files(pr_refs: list[int]) -> dict[int, list[str]]:
+    """Fichiers de plusieurs PRs, en UN appel GraphQL.
+
+    #22983 a mesure le cout du lecteur d'etats (17 appels seriels, 9,6 s
+    pour 40 numeros) ; la meme economies vaut pour les fichiers : une
+    issue comme #20298 cite 18 livraisons, dont 8 PRs ouvertes. Un lot de
+    50 alias couvre la fenetre.
+
+    Une PR que GraphQL ne rend pas reste sur le chemin unitaire
+    (`_fetch_pr_files`) ; le cache reste la source de verite.
+    """
+    wanted = [n for n in dict.fromkeys(pr_refs) if n > 0]
+    if len(wanted) < 2:
+        return {}
+    try:
+        slug = _repo_slug()
+    except RuntimeError:
+        return {}
+    owner, name = slug.split("/", 1)
+    files_by_pr: dict[int, list[str]] = {}
+    for start in range(0, len(wanted), 50):
+        chunk = wanted[start:start + 50]
+        parts = []
+        for i, number in enumerate(chunk):
+            parts.append(
+                f"p{i}: pullRequest(number: {number}) "
+                f"{{ files(first: 100) {{ nodes {{ path }} }} }}"
+            )
+        query = ("query($owner:String!,$name:String!){"
+                 "repository(owner:$owner,name:$name){" + " ".join(parts) + "}}")
+        try:
+            payload = _gh_graphql(query, {"owner": owner, "name": name})
+        except Exception:  # noqa: BLE001 - le repli unitaire reste valable
+            continue
+        data = ((payload or {}).get("data") or {}).get("repository") or {}
+        for i, number in enumerate(chunk):
+            node = data.get(f"p{i}")
+            if not isinstance(node, dict):
+                continue
+            nodes = ((node.get("files") or {}).get("nodes") or [])
+            paths = [n.get("path") for n in nodes
+                     if isinstance(n, dict) and n.get("path")]
+            if paths:
+                files_by_pr[number] = paths
+    return files_by_pr
+
+
+def _scope_pr_files(pr_refs: list[int]) -> dict[int, list[str]]:
+    """Les fichiers des PRs OUVERTES citees (`pr_ref` -> chemins).
+
+    Seule une PR OUVERTE apporte des fichiers : une PR mergee a depose les
+    siens sur `main` (l'arbre local les voit), une PR fermee sans merge
+    n'apporte rien. Les etats sont lus par le cache des etats (deja
+    peuple par `_prefetch_pr_states`), sinon par `_fetch_pr_state`.
+    """
+    if not pr_refs:
+        return {}
+    # Les etats : un lot GraphQL quand plusieurs PRs sont citees (le
+    # chemin unitaire `gh pr view` par PR est le repli).
+    missing_states = [r for r in dict.fromkeys(pr_refs)
+                       if r > 0 and r not in _PR_STATE_CACHE]
+    if len(missing_states) >= 2:
+        for ref, state in _prefetch_pr_states(missing_states).items():
+            _PR_STATE_CACHE.setdefault(ref, (state, None))
+    open_refs: list[int] = []
+    for ref in dict.fromkeys(pr_refs):
+        if ref <= 0:
+            continue
+        state = _PR_STATE_CACHE.get(ref, (None, None))[0]
+        if state is None:
+            state, _err = _fetch_pr_state(ref)
+        if state == "OPEN":
+            open_refs.append(ref)
+    if not open_refs:
+        return {}
+    missing = [r for r in open_refs if r not in _PR_FILES_CACHE]
+    if len(missing) >= 2:
+        for ref, files in _prefetch_pr_files(missing).items():
+            _PR_FILES_CACHE.setdefault(ref, files)
+    out: dict[int, list[str]] = {}
+    for ref in open_refs:
+        files = _fetch_pr_files(ref)
+        if files:
+            out[ref] = files
+    return out
+
+
+def _delivered_pr_refs_in_payload(payload: dict) -> list[int]:
+    """Numeros de PR cites par les marqueurs `[DELIVERED]` d'un payload.
+
+    Meme lecture que `_collect_delivered_pr_refs` (fenetre), mais sur un
+    payload deja servi : aucune lecture reseau propre.
+    """
+    refs: list[int] = []
+    for comment in (payload or {}).get("comments") or []:
+        body = comment.get("body") or ""
+        if "[DELIVERED]" not in body:
+            continue
+        for line in body.splitlines():
+            if "[DELIVERED]" not in line:
+                continue
+            ref = _extract_delivered_pr_ref(line)
+            if ref and ref not in refs:
+                refs.append(ref)
+    return refs
 
 
 def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
@@ -4171,11 +4563,29 @@ def _lint_claim_events(
                 file=sys.stderr,
             )
             continue
+        # #26657 -- les resolutions de scope de l'evenement (calculees par
+        # l'appelant), indexees par glob mort.
+        resolved_map = {note["glob"]: note
+                        for note in (ev.get("scope_resolution") or [])}
         for g in ev.paths:
             if _glob_implausible(g):
                 print(
                     f'WARN: glob suspect (prose avalée ?) : "{g}" '
                     f"(lane {ev.lane or '?'})",
+                    file=sys.stderr,
+                )
+            # #26657 -- un glob RESOLU (PR ouverte, renommage, basename
+            # unique) n'est pas un glob sans correspondance : le scope est
+            # vivant, et le WARN desornerait une lane dont le perimetre est
+            # correct. On le dit, on nomme la resolution.
+            resolution = resolved_map.get(g)
+            if resolution is not None:
+                print(
+                    f'INFO: glob resolu : "{g}" -> '
+                    f'{", ".join(resolution["resolved_to"])} '
+                    f'(lane {ev.lane or "?"}, {resolution["how"]}) -- '
+                    f"l'organe resout ce perimetre ; le WARN porte sur le "
+                    f"glob DECLARE, qui ne matche toujours rien (#26657).",
                     file=sys.stderr,
                 )
             if tracked is not None and not _glob_matches_tracked(g, tracked):
@@ -4592,6 +5002,16 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #     semaine se bloquerait. Meme regle pour un claim pose directement sur
 #     l'EPIC. »
 #
+# #26414 (decision ai-01 du 2026-11-13, option 1 « filles existantes hors
+# plafond, pas du tout ») : la demande ci-dessus est CORRIGEE sur un point --
+# les parents de N ne sont plus des sujets. Une claim sur une fille DEJA
+# OUVERTE est le SERVICE d'un sous-grain existant, permis par #22500 point 2
+# et par `.claude/rules/proactive-coordination.md` (« piocher un sous-grain
+# ouvert, ou en creer un seul par visite ») ; le plafond gate la CREATION
+# (cote picker, `umbrella_visit_cause` au tirage), pas le service. Reste
+# sujet : N lui-meme quand c'est un umbrella (claim pose directement sur
+# l'EPIC, demande explicite conservee).
+#
 # ORGANE-FIRST : la semantique du plafond n'est PAS re-ecrite ici. Tout vient de
 # `scripts/pick_idle_grain.py`, importe a la demande (`_epic_cap_picker`) :
 #   - `parent_refs(it)` (l. 5904) : la definition d'un parent (prefixe de titre
@@ -4612,13 +5032,12 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #
 # COUT -- la contrainte du coordinateur est explicite (274 s pour la commande
 # des lanes, dont 45 s pour 8 sondes de claims) :
-#   - issue sans parent ET pas elle-meme un umbrella : **zero appel, zero
-#     seconde** (c'est le cas le plus frequent, et `parent_refs` se lit sur la
-#     charge deja telechargee) ;
-#   - issue avec parent(s) : 1 appel `gh issue view` par parent, et le pool
-#     (1 appel, 8,6 s mesure le 2026-10-26 sur 555 issues ouvertes) UNIQUEMENT
-#     si au moins un parent est un umbrella hors consolidation -- un parent
-#     ordinaire ne coute donc pas le pool ;
+#   - toute issue qui n'est pas elle-meme un umbrella (grain ordinaire, fille
+#     d'EPIC comprise depuis #26414) : **zero appel, zero seconde** -- c'est
+#     le cas le plus frequent ;
+#   - N umbrella hors consolidation : le pool seul (1 appel, 8,6 s mesure le
+#     2026-10-26 sur 555 issues ouvertes) ; depuis #26414 plus AUCUN
+#     `gh issue view` de parent ;
 #   - le pool est memoise par processus (`_EPIC_CAP_POOL_MEMO`) : le mode batch
 #     le paie une fois pour N issues ;
 #   - si une autre lane bloque deja (verdict exit 1 acquis), le plafond n'est
@@ -4637,7 +5056,8 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 # #22687 -- deux corrections depuis cette annonce : (a) le plafond SAUTE quand
 # la lane appelante tient deja un claim actif sur une FILLE N (arbitrage ai-01
 # du 2026-11-08, cas #23499 : la reprise d'un chantier ouvert n'est pas une
-# nouvelle visite -- le plafond gate l'ENTREE d'une fille, pas sa reprise ;
+# nouvelle visite ; depuis #26414 les filles ne sont de toute facon plus
+# sujet du plafond -- le saut reste, il evite la mesure) ;
 # JAMAIS sur l'EPIC lui-meme, la demande du 09/11 reste entiere) ;
 # (b) la voie unitaire EN PROCESSUS du picker cable desormais `epic_cap=True`
 # et son reducteur lit la cle : la sonde solitaire d'une fille plafonnee rend
@@ -4647,7 +5067,7 @@ def _parse_iso_utc(iso: str) -> datetime | None:
 #
 # ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
 # anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
-# Un parent ou un pool illisible ne bloque donc PAS : il est NOMME dans
+# Un pool illisible ne bloque donc PAS : il est NOMME dans
 # `epic_visit_cap_error` et sur stderr. Un plafond non mesurable ne doit jamais
 # se lire comme un plafond respecte, ni fermer la voie a une lane sur une panne
 # de transport.
@@ -4791,6 +5211,53 @@ def _claim_visit_excluding(comments: list[dict],
     return ev.created_at, ((ev.get("marker") or "").upper() or None)
 
 
+# --- #22500 point 3 -- exemption du grain DISPATCHE par le coordinateur ---
+#
+# Le plafond hebdomadaire des EPICs refuse une lane que le coordinateur a
+# dispatchee PAR SON NOM : le claim de dispatch est pose au moment du
+# dispatch (lane-claim-protocol, point 5), et la lane servie se trouve ensuite
+# refusee par le plafond qu'arme la visite d'une AUTRE lane. Le coordinateur a
+# tranche ; le plafond ne peut pas le contredire.
+#
+# Ce qui distingue le claim de dispatch du claim ordinaire : l'AUTEUR. Le
+# coordinateur poste sous SON login (`myia-ai-01`) ; une lane poste sous le
+# login partage (`jsboige`). Le marqueur (`[CLAIMED]`) et le champ `lane` sont
+# identiques dans les deux cas -- l'auteur est le seul discriminant.
+#
+# L'exemption est PERSONNELLE : elle vaut pour la lane NOMMEE par le claim de
+# dispatch, jamais pour les autres. Et elle ne se donne pas : une lane qui
+# pose elle-meme son `[CLAIMED]` ne s'exempte pas du plafond.
+
+DISPATCH_CLAIM_AUTHORS = frozenset({"myia-ai-01"})
+DISPATCH_CLAIM_MARKERS = frozenset({"CLAIMED", "CLAIMED-AMEND"})
+
+
+def _coordinator_dispatch_claim(comments: list[dict] | None,
+                                 my_lane: str | None,
+                                 tracked: list[str] | None = None) -> dict | None:
+    """Le claim de dispatch du coordinateur qui nomme `my_lane`, sinon None.
+
+    Un claim de dispatch = un marqueur `[CLAIMED]` / `[CLAIMED-AMEND]` dont la
+    ligne nomme la lane servie, pose par le coordinateur (login dans
+    `DISPATCH_CLAIM_AUTHORS`). La grammaire est celle de l'organe
+    (`_sort_events`), jamais une regex propre : un claim de lane pose par la
+    lane elle-meme sous le login partage n'est pas un claim de dispatch.
+    """
+    if not my_lane:
+        return None
+    payload = {"comments": [c for c in (comments or []) if isinstance(c, dict)]}
+    for ev in _sort_events(payload, tracked=tracked):
+        if (ev.get("marker") or "").upper() not in DISPATCH_CLAIM_MARKERS:
+            continue
+        if ev.get("lane") != my_lane:
+            continue
+        if (ev.get("author") or "") not in DISPATCH_CLAIM_AUTHORS:
+            continue
+        return {"author": ev.get("author"), "created_at": ev.get("created_at"),
+                "url": ev.get("url"), "marker": ev.get("marker")}
+    return None
+
+
 def epic_visit_cap(payload: dict, *, now: datetime | None = None,
                    parent_loader=None,
                    pool_loader=None,
@@ -4806,10 +5273,17 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
         CETTE mesure, pour que la borne se verifie au lieu de se croire ;
       - ``error`` : les lectures qui ont echoue (``None`` si tout a ete lu).
 
-    Sujets examines, dans l'ordre : l'issue N elle-meme si c'est un umbrella
-    (demande explicite : « Meme regle pour un claim pose directement sur
-    l'EPIC »), puis chaque parent de N au sens de `parent_refs`. Un sujet est
-    retenu s'il est un umbrella ET hors classe `consolidation`.
+    Sujets examines : l'issue N elle-meme, et elle seule, quand c'est un
+    umbrella (demande explicite : « Meme regle pour un claim pose directement
+    sur l'EPIC »), hors classe `consolidation`. Les parents de N ne sont plus
+    des sujets (#26414, decision ai-01 du 2026-11-13, option 1 « filles
+    existantes hors plafond, pas du tout ») : une claim sur une fille DEJA
+    OUVERTE est le SERVICE d'un sous-grain existant -- permis par #22500
+    point 2 et par `.claude/rules/proactive-coordination.md` (« piocher un
+    sous-grain ouvert, ou en creer un seul par visite ») -- pas une nouvelle
+    visite de l'EPIC. Le plafond porte la CREATION, qui reste cappee cote
+    picker (`umbrella_visit_cause` au tirage) ; les filles existantes se
+    servent librement ici.
 
     L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
     recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
@@ -4839,20 +5313,19 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
     number = payload.get("number")
     number = int(number) if isinstance(number, int) else None
 
-    # (1) les sujets candidats, sans reseau : N si c'est un umbrella, puis ses
-    # parents (`parent_refs` lit titre/corps de la charge DEJA telechargee).
+    # (1) le sujet candidat, sans reseau : N lui-meme si c'est un umbrella.
+    # #26414 : les parents ne sont plus sujets -- servir une fille DEJA
+    # OUVERTE n'est pas une nouvelle visite de l'EPIC (#22500 point 2) ; la
+    # creation reste cappee cote picker.
     subjects: list[tuple[int, dict | None]] = []
     if number is not None and _is_umbrella_issue(payload):
         subjects.append((number, payload))
-    for parent in sorted(picker.parent_refs(payload)):
-        if parent == number:
-            continue  # une issue ne se visite pas elle-meme
-        subjects.append((parent, None))
     if not subjects:
-        return verdict  # zero appel : le cas le plus frequent
+        return verdict  # zero appel : le cas le plus frequent (fille ou grain)
 
-    # (2) resoudre les charges parent (1 appel chacune) et ne garder que les
-    # EPICs hors consolidation. AUCUN pool tant qu'aucun sujet n'est retenu.
+    # (2) ne garder que les EPICs hors consolidation (le sujet N est deja
+    # charge ; `parent_loader` ne sert plus qu'aux sondes injectees).
+    # AUCUN pool tant qu'aucun sujet n'est retenu.
     capped: list[tuple[int, dict]] = []
     for epic, body in subjects:
         if body is None:
@@ -4871,6 +5344,27 @@ def epic_visit_cap(payload: dict, *, now: datetime | None = None,
             continue  # exemption : une consolidation REVIENT souvent, c'est son travail
         capped.append((epic, body))
     if not capped:
+        verdict["error"] = "; ".join(errors) or None
+        return verdict
+
+    # (2 bis) Le grain a ete DISPATCHE par le coordinateur a CETTE lane : le
+    # plafond hebdomadaire ne s'y applique pas. La dispense est PERSONNELLE
+    # (la lane nommee par le claim de dispatch) et elle se LIT dans le
+    # rapport -- le plafond n'est pas « respecte », il est ecarte par un
+    # arbitrage. Elle est posee AVANT le pool : une dispense connue ne se
+    # paie pas.
+    dispatch = None
+    for _epic, _body in capped:
+        dispatch = _coordinator_dispatch_claim(
+            _body.get("comments"), my_lane)
+        if dispatch:
+            break
+    if dispatch:
+        verdict["dispatch"] = dispatch
+        verdict["skipped"] = (
+            "the coordinator dispatched this grain to the calling lane "
+            "-- the weekly EPIC cap does not apply to it"
+        )
         verdict["error"] = "; ".join(errors) or None
         return verdict
 
@@ -4928,6 +5422,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
                pr_states: dict[int, str] | None = None,
+               pr_files: dict[int, list[str]] | None = None,
                check_open_pr_paths: bool = False,
                epic_cap: bool = False,
                epic_cap_probe=None,
@@ -4957,6 +5452,14 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             the caller's own claim), behaviour is unchanged: every other active
             claim blocks, regardless of its scope clause (we cannot prove
             disjointness, so we conservatively over-block).
+        pr_files: fichiers apportes par les PRs OUVERTES citees par les
+            marqueurs de l'issue (`pr_ref` -> chemins), injectes par
+            l'appelant comme `pr_states` (#26657). Ces fichiers n'existent
+            pas dans l'arbre local : sans eux, le scope d'un `[DELIVERED]`
+            qui nomme le dossier cree par sa propre PR est lu MORT, et le
+            claim est leve en epic-wide (verrou DEAD-SCOPE). Sans
+            injection, l'univers reste l'arbre local : aucun verdict ne
+            change.
         check_open_pr_paths: when True AND `my_paths` is set, ALSO run the
             #9959 open-PR leg on `my_paths` (#16570). The claim record only
             sees markers; the strongest signal of occupation -- code already
@@ -4984,6 +5487,23 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # behaviour AND the root-filename acceptance is fail-CLOSED).
     tracked = _git_tracked_files()
     events = _sort_events(payload, tracked=tracked)
+    # #26657 -- l'UNIVERS des fichiers d'un scope. L'arbre local ne voit ni
+    # les fichiers d'une PR ouverte, ni un chemin renomme : sans cet
+    # elargissement, un scope VIVANT est lu mort, et le garde-fou #10958
+    # leve le claim en epic-wide (verrou DEAD-SCOPE, mesure sur #20298 :
+    # `empty_scope` non vide, `locked: false`, `free_paths_size: 0`).
+    in_flight = _scope_in_flight(pr_files)
+    universe = _scope_universe(tracked, in_flight)
+    ledger = _rename_ledger_map() if tracked is not None else {}
+    for ev in events:
+        paths = ev.get("paths")
+        if not paths or universe is None:
+            continue
+        own = (pr_files or {}).get(ev.get("pr_ref") or -1, [])
+        live, notes = _resolve_dead_scope(paths, tracked, universe, own, ledger)
+        ev["live_paths"] = live
+        if notes:
+            ev["scope_resolution"] = notes
     # #11239 lint -- bare markers without brackets (invisible to the organ).
     # Same non-blocking spirit as the #10881 lint above: the writer learns at
     # the call site that their lock was never registered, instead of two lanes
@@ -5042,7 +5562,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     if tracked is not None:
         for ev in events:
             if ev.get("paths"):
-                ev["empty_scope"] = _empty_scope_in(ev["paths"], tracked)
+                # #26657 -- le temoin porte sur les chemins RESOLUS : un
+                # glob resolu (PR ouverte, renommage, basename unique) n'est
+                # pas mort, meme si le glob lui-meme ne matche rien.
+                ev["empty_scope"] = _empty_scope_in(
+                    ev.get("live_paths") or ev["paths"], universe)
     # #12740 -- dead-scope aggregate, lane-keyed, over ALL claim events.
     #
     # The #10881/#10958 witnesses surface a dead glob to a consumer that
@@ -5088,7 +5612,17 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # no own active claim with a `paths:` clause, `my_scope` is None -- the
     # caller declared no intent at all (legacy case, unchanged).
     mine_paths = mine.get("paths") if mine else None
-    my_scope = list(dict.fromkeys((my_paths or []) + (mine_paths or []))) or None
+    # #26657 -- le scope du CALLER est resolu comme celui des autres lanes :
+    # un chemin renomme, ou livre par une PR ouverte, ne doit pas etre lu
+    # mort. `mine_live` est le scope RESOLU du claim propre (la clause
+    # `paths:` du caller) ; `my_paths` (le `--paths` de la commande) est
+    # resolu de la meme facon.
+    mine_live = (mine.get("live_paths") if mine else None) or mine_paths
+    caller_scope = my_paths or []
+    if caller_scope and universe is not None:
+        caller_scope, _notes = _resolve_dead_scope(
+            caller_scope, tracked, universe, in_flight, ledger)
+    my_scope = list(dict.fromkeys(caller_scope + (mine_live or []))) or None
 
     # #16570 -- the OPEN-PR leg, run in the READ path only (never while
     # posting: a `[CLAIMED]` must not be refused by a leg the writer did not
@@ -5097,14 +5631,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # (`check_lane_claim.py N --lane L --paths p`) silently skipped the guard
     # and printed `free_paths` -- a list that describes the CLAIM scope, never
     # the open-PR space -- reading as an all-clear on an occupied file.
-    # #18341 -- the leg now uses `my_scope` (--paths U paths: du claim propre)
-    # so a lane that has already declared `paths:` on its active claim gets
-    # the OPEN-PR check without having to pass `--paths` on the call.
+    # #18341 -- the leg reads `--paths` U `paths:` du claim propre, so a lane
+    # that has already declared `paths:` on its active claim gets the OPEN-PR
+    # check without having to pass `--paths` on the call.
+    # #25082 -- SAUF quand ce « claim propre » est un perimetre deja LIVRE et
+    # MERGE : ce n'est plus une intention d'editer (`_open_pr_leg_scope`).
+    # `my_scope` garde le perimetre livre pour la confrontation aux claims des
+    # autres lanes : seule la jambe PR-ouverte change de perimetre.
+    open_pr_scope = _open_pr_leg_scope(my_paths, mine)
+    if (check_open_pr_paths and mine is not None and mine.get("locked")
+            and mine.get("paths")):
+        print(
+            f"INFO: le perimetre livre de {my_lane} (PR "
+            f"#{mine.get('pr_ref')} MERGEE) n'est pas confronte aux PRs "
+            f"ouvertes : une tranche mergee n'est pas une intention d'editer "
+            f"(#25082). Pour la tranche suivante, passer `--paths` ou poser "
+            f"un nouveau [CLAIMED] a perimetre etroit.",
+            file=sys.stderr,
+        )
     open_pr_collisions: list[PathCollision] = []
-    if check_open_pr_paths and my_scope:
+    if check_open_pr_paths and open_pr_scope:
         try:
             open_pr_collisions, _own = _compute_open_pr_collisions(
-                my_scope, my_lane)
+                open_pr_scope, my_lane)
         except OpenPrsIncompleteError as exc:
             # #21742 -- l'enumeration des PRs ouvertes n'a pas pu etre
             # completee : ce CLEAR ne dit rien des PRs OUVERTES, comme le
@@ -5137,7 +5686,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # The list is JSON-serialised in `caller_empty_scope` (#12345) so the
     # caller can see WHY a scope they thought is alive is being treated
     # as empty.
-    caller_empty_scope = _empty_scope_in(my_scope, tracked) if tracked is not None else []
+    caller_empty_scope = _empty_scope_in(my_scope, universe) if universe is not None else []
     # #12862 -- split the dead-scope verdict by CAUSE. A dead glob that is
     # SYNTACTICALLY VALID (survives `_unparseable_scope_in`: has a `/` or an
     # fnmatch metacharacter, braces closed) names files that do not exist
@@ -5158,7 +5707,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # claim_scope` already short-circuits when `my_scope` is entirely dead
     # (#10958 caller-side lift, line ~1614) so an entirely-dead MY scope
     # does not get to false-clear other lanes.
-    others = _filter_by_claim_scope(others, my_paths, mine, tracked=tracked)
+    others = _filter_by_claim_scope(others, caller_scope, mine, tracked=universe)
 
     # Stale-claim handling (#9812): a claim older than `stale_threshold` hours
     # (age from the server createdAt, NEVER the body) is treated as STALE -- it
@@ -5279,7 +5828,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     _lint_claim_events(
         events,
         payload.get("number"),
-        tracked=tracked,
+        tracked=universe,
         active_claims=active,
         others_verdict=others,
         my_lane=my_lane,
@@ -5379,7 +5928,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     scope_intersections: dict[str, tuple[list[str], bool]] = {}
     for ln, ev in others.items():
         paths, truncated = _compute_scope_intersection_paths(
-            my_scope, ev.get("paths"), tracked,
+            my_scope, ev.get("live_paths") or ev.get("paths"), universe,
         )
         scope_intersections[ln] = (paths, truncated)
     # #14187 -- free-paths (dual of the intersection): the files in the
@@ -5394,7 +5943,7 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     free_truncated = False
     if my_scope:
         free_paths, free_truncated = _compute_free_paths(
-            my_scope, others, tracked,
+            my_scope, others, universe,
         )
 
     # #22500 point 3 -- plafond hebdomadaire des EPICs. Mesure APRES les
@@ -5423,7 +5972,8 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             # cours compris) reste entiere -- les regles #25443 (marqueur
             # propre exclut) et 09/11 (visite close arme) gouvernent seules
             # les marqueurs propres sur l'EPIC ; ce saut ne les touche pas.
-            # les marqueurs propres sur l'EPIC, ce saut ne les touche pas.
+            # (#26414 : les filles ne sont de toute facon plus sujet du
+            # plafond -- le saut reste, il evite de payer la mesure.)
             epic_cap_verdict["skipped"] = (
                 "calling lane already holds an active claim on this issue "
                 "-- resuming an open claim is not a new umbrella visit"
@@ -5546,6 +6096,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 # when it covers the whole scope the claim is lifted to
                 # epic-wide (a broken claim is not a permissive claim).
                 "empty_scope": ev.get("empty_scope") or [],
+                # #26657 -- the RESOLUTION of the scope: the globs that were
+                # dead in the local tree and the living paths they were
+                # resolved to (`pr-en-cours`, `rename-ledger`,
+                # `basename-unique`). Empty when nothing had to be resolved.
+                # The lane sees WHERE its perimeter really is.
+                "scope_resolution": ev.get("scope_resolution") or [],
+                # #26657 -- the paths the claim really locks (the resolved
+                # scope). Empty when the claim carries no scope.
+                "live_paths": ev.get("live_paths") or [],
                 # #12072 -- the off-marker scope-declaration witness. Non-empty
                 # ONLY on an epic-wide claim (`paths` is null) whose comment
                 # still declares a `paths?` clause on a separate line (e.g. a
@@ -5625,6 +6184,10 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "epic_visit_cap_calls": epic_cap_verdict.get("calls"),
         "epic_visit_cap_error": epic_cap_verdict.get("error"),
         "epic_visit_cap_skipped": epic_cap_verdict.get("skipped"),
+        # La dispense de plafond eventuelle (grain dispatche par le
+        # coordinateur a la lane qui interroge) : elle se lit dans le
+        # rapport, comme le reste du verdict.
+        "epic_visit_cap_dispatch": epic_cap_verdict.get("dispatch"),
         # #14187 -- free-paths counter: files in the caller's `--paths`
         # that intersect NO blocker. A lane with `--paths 'knot_lean/**'`
         # blocked by 3 lanes whose scopes intersect 3 of 12 sub-files can
@@ -5692,6 +6255,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # `exit 2`, matching the contract `--paths` already carries (#9959).
         "open_pr_collisions": [
             _serialise_path_collision(c) for c in open_pr_collisions],
+        # #25082 -- le perimetre que la jambe PR-ouverte a reellement
+        # confronte (null = jambe sans objet). Il differe de `my_scope` quand
+        # le claim propre est une tranche livree et mergee : sans cette cle,
+        # un `open_pr_collisions: []` ne dit pas sur quels chemins il porte.
+        "open_pr_scope": open_pr_scope,
         # #14300 -- the IMPLICIT leg's finding, same single-report contract
         # as open_pr_collisions above. Non-empty routes the verdict below
         # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
@@ -5965,22 +6533,25 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # BLOCKED. Il passe AVANT la branche `NOT_SCOPED` ci-dessous : celle-ci
     # invite a re-executer avec `--paths`, et re-scoper ne leve PAS un plafond
     # de visite -- le conseil serait faux. La cause imprimee est le litteral de
-    # l'organe (`umbrella_visit_cause`), inchange.
+    # l'organe (`umbrella_visit_cause`), inchange. Depuis #26414, la cause ne
+    # peut plus venir que d'un claim sur l'EPIC N lui-meme : les filles
+    # existantes ne sont plus plafonnees.
     if epic_cap_verdict.get("cause"):
         epic_number = epic_cap_verdict.get("epic")
         where = (f"#{epic_number}" if epic_number is not None
                  else "un EPIC parent")
         print(
             f"\nBLOCKED: {epic_cap_verdict['cause']}\n"
-            f"  #{payload.get('number')} appartient a l'EPIC {where}, deja "
-            f"visite cette semaine : une sous-issue y a ete creee, ou un "
-            f"claim y a ete pose, il y a moins de 7 jours (#22500 point 3). "
+            f"  #{payload.get('number')} EST l'EPIC {where}, deja visite "
+            f"cette semaine : une sous-issue y a ete creee, ou un marqueur "
+            f"de lane y a ete pose, il y a moins de 7 jours (#22500 point 3). "
             f"Le plafond exempte les EPICs de classe `consolidation`, et "
             f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
-            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC "
-            f"{where}, ou prendre un autre grain du pool. Re-scoper avec "
-            f"`--paths` ne leve pas ce plafond ; `--force` reste reserve a "
-            f"l'arbitrage coordinateur.",
+            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC {where} "
+            f"(#26414 : une fille existante se sert librement, seul le claim "
+            f"pose sur l'EPIC est plafonne), ou prendre un autre grain du "
+            f"pool. Re-scoper avec `--paths` ne leve pas ce plafond ; "
+            f"`--force` reste reserve a l'arbitrage coordinateur.",
             file=sys.stderr,
         )
         return 1
@@ -6420,6 +6991,20 @@ def check_issues_batch(
                 else:
                     _phase("etats de PR: prefetch indisponible -- lecture "
                            "unitaire conservee")
+            # #26657 -- les FICHIERS des PRs ouvertes citees, dans le meme
+            # lot : une seule lecture GraphQL pour toute la fenetre. Ces
+            # fichiers n'existent pas dans l'arbre local ; sans eux, le
+            # scope d'un `[DELIVERED]` qui nomme le dossier cree par sa
+            # propre PR est lu MORT (verrou DEAD-SCOPE).
+            if _refs:
+                _open = [r for r in _refs
+                         if (_PR_STATE_CACHE.get(r, (None, None))[0] == "OPEN")]
+                _files = _prefetch_pr_files(_open)
+                for _ref, _f in _files.items():
+                    _PR_FILES_CACHE.setdefault(_ref, _f)
+                if _files:
+                    _phase(f"fichiers de PR: {len(_files)} lus en 1 appel "
+                           f"(prefetch groupe)")
         except Exception:  # noqa: BLE001 - le repli unitaire reste valable
             pass
 
@@ -6472,6 +7057,12 @@ def check_issues_batch(
                     payload, lane,
                     stale_threshold=stale_threshold,
                     my_paths=my_paths,
+                    # #26657 -- les fichiers des PRs ouvertes citees par les
+                    # marqueurs de CETTE issue : le scope d'un `[DELIVERED]`
+                    # qui nomme le dossier cree par sa propre PR est vivant,
+                    # meme si l'arbre local ne le voit pas.
+                    pr_files=_scope_pr_files(
+                        _delivered_pr_refs_in_payload(payload)),
                     # Batch = read path only (L898), pas de posting
                     # leg.
                     check_open_pr_paths=True,
@@ -6632,7 +7223,8 @@ def _filter_by_claim_scope(
     the `others` view. The active_claims summary keeps the full state, so the
     JSON output remains auditable.
     """
-    mine_paths = (mine.get("paths") if mine else None) or []
+    mine_paths = ((mine.get("live_paths") or mine.get("paths"))
+                  if mine else None) or []
     my_scope = list(dict.fromkeys((my_paths or []) + mine_paths)) or None
     if not my_scope:
         return others  # no declared scope -> cannot prove disjointness
@@ -6670,7 +7262,12 @@ def _filter_by_claim_scope(
         # witness is `ev.get("empty_scope")` (attached by `_run_check` when
         # the walk succeeded); a missing/empty witness never lifts.
         empty = ev.get("empty_scope") or []
-        if empty and len(empty) >= len(scope):
+        # #26657 -- le scope VIVANT de la lane est son scope RESOLU : c'est
+        # lui que la claim verrouille, et c'est lui que l'intersection
+        # mesure. Le temoin `empty_scope` a ete calcule sur cette meme
+        # liste, donc la comparaison se fait sur elle.
+        live = ev.get("live_paths") or scope
+        if empty and len(empty) >= len(live):
             # #10958 fail-safe -- an ENTIRELY dead scope (every glob matches
             # zero tracked files) is a broken claim, not a permissive one:
             # lifted to epic-wide before the disjointness test, mirroring
@@ -6681,10 +7278,10 @@ def _filter_by_claim_scope(
             # names will exist. It is compared BY PATTERN with the caller's
             # scope, like any other scoped claim. A scope whose directory
             # does not exist keeps the lift (a typo, not a creation).
-            if not _scope_is_creation(scope, tracked):
+            if not _scope_is_creation(live, tracked):
                 filtered[ln] = ev  # lifted to epic-wide -- always blocking
                 continue
-        if _scopes_intersect(my_scope, scope, tracked):
+        if _scopes_intersect(my_scope, live, tracked):
             filtered[ln] = ev  # scopes intersect -> real collision
         # else: both scoped, disjoint -> free, drop from others
     return filtered
@@ -6922,6 +7519,38 @@ def _serialise_path_collision(c: PathCollision) -> dict:
         "lane": c.lane,
         "files_intersecting": c.files,
     }
+
+
+def _open_pr_leg_scope(
+    my_paths: list[str] | None,
+    mine: ClaimEvent | None,
+) -> list[str] | None:
+    """Perimetre que la jambe PR-ouverte (#16570) confronte aux PRs ouvertes.
+
+    C'est le perimetre d'INTENTION de l'appelant : les `--paths` de l'appel,
+    plus la clause `paths:` de son propre claim actif (#18341).
+
+    #25082 -- une exception, mesuree le 2026-11-13 sur #20298. Sous la
+    semantique v2 (#12386, #22445), un `[DELIVERED] ... paths:` dont la PR est
+    MERGEE reste « actif » (`locked`) : il dit aux AUTRES lanes que ce
+    perimetre est livre. Lu comme l'intention de sa propre lane, il faisait
+    tourner la jambe sur des fichiers deja merges, et toute PR ouverte d'une
+    autre lane qui les touchait rendait `BLOCKED` a la lane porteuse -- sur sa
+    tranche SUIVANTE, pour laquelle elle n'avait encore rien declare. Sur un
+    chantier multi-tranches (classe `consolidation`), la lane porteuse ne
+    revenait donc jamais.
+
+    Un perimetre livre et merge n'est pas une intention d'editer : il sort du
+    perimetre de la jambe. Les `--paths` de l'appel, eux, restent toujours
+    confrontes. Un `[DELIVERED]` dont la PR est encore OUVERTE n'est pas
+    `locked` : le travail est en vol, son perimetre reste confronte.
+
+    Rend None quand il ne reste aucun chemin : la jambe est alors sans objet.
+    """
+    mine_paths = (mine.get("paths") if mine else None) or []
+    if mine is not None and mine.get("locked"):
+        mine_paths = []
+    return list(dict.fromkeys((my_paths or []) + list(mine_paths))) or None
 
 
 def _compute_open_pr_collisions(
@@ -7400,6 +8029,12 @@ def main(argv: list[str] | None = None) -> int:
             rc = _run_check(payload, args.lane,
                             stale_threshold=args.stale_threshold,
                             my_paths=args.paths,
+                            # #26657 -- les fichiers des PRs ouvertes citees.
+                            # `--from-json` est un contrat HORS RESEAU : rien
+                            # n'est lu sur GitHub dans ce mode.
+                            pr_files=(None if args.from_json else
+                                      _scope_pr_files(
+                                          _delivered_pr_refs_in_payload(payload))),
                             # #22500 point 3 -- le plafond des EPICs suit le
                             # chemin unitaire. `--from-json` est un contrat
                             # HORS RESEAU : on ne va pas chercher un parent ni
@@ -7518,6 +8153,10 @@ def main(argv: list[str] | None = None) -> int:
         args.lane,
         stale_threshold=args.stale_threshold,
         my_paths=args.paths,
+        # #26657 -- les fichiers des PRs ouvertes citees par les marqueurs de
+        # l'issue. `--from-json` reste un contrat hors reseau.
+        pr_files=(None if args.from_json else
+                  _scope_pr_files(_delivered_pr_refs_in_payload(payload))),
         # #16570 -- read path only: the caller is asking "may I start?", so the
         # open-PR leg is exactly what they need and could not reach.
         check_open_pr_paths=True,
