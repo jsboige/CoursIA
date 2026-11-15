@@ -60,6 +60,8 @@ __all__ = [
     "BenchVerdict",
     "classer_proxys",
     "temoin_decoratif",
+    "verifier_equivalence",
+    "jumeaux_comportementaux",
     "bancher_mecanisme",
 ]
 
@@ -603,6 +605,87 @@ def temoin_decoratif(
             f"Delta A_t (marginalisee) = {d_marg} > 0 : classes d'actions nouvelles"
         )
     return tuple(violations)
+
+
+def verifier_equivalence(
+    g0: EvolutiveGame,
+    g1: EvolutiveGame,
+    equivalence: dict[str, str] | None,
+) -> tuple[str, ...]:
+    """Coherence des paiements d'une carte d'equivalence (revue contradictoire, #23778).
+
+    Le quotient qui fait tenir les verdicts 'decoratif' et 'latent' est fourni
+    par l'APPELANT : l'organe ne peut pas, seul, reconnaitre un renommage. Une
+    carte qui fusionne deux actions aux **profils de paiements divergents** ne
+    quotiente pas un habillage — elle efface une difference comportementale
+    reelle, et le verdict 'decoratif' qu'elle produit est un faux. Cette garde
+    nomme chaque paire fusionnee dont les paiements divergent, lus avant/apres
+    (``g0`` porte l'original, ``g1`` porte la copie) : une carte coherente
+    rend ``()``.
+
+    La comparaison porte sur le vecteur des paiements sur l'union des agents
+    (paiement absent = 0.0, la convention de ``EvolutiveGame.payoff``) : deux
+    actions fusionnees doivent etre indiscernables pour CHAQUE agent pour que
+    la fusion soit admissible.
+    """
+    if not equivalence:
+        return ()
+    agents = tuple(sorted(set(g0.agents) | set(g1.agents)))
+
+    def _profil(game: EvolutiveGame, action: str) -> tuple[float, ...]:
+        return tuple(round(game.payoff(ag, action), 9) for ag in agents)
+
+    violations: list[str] = []
+    for copie, original in sorted(equivalence.items()):
+        if copie == original:
+            continue
+        p_copie, p_original = _profil(g1, copie), _profil(g0, original)
+        if p_copie != p_original:
+            divergents = [ag for ag, x, y in zip(agents, p_copie, p_original) if x != y]
+            violations.append(
+                f"classe {original!r} : {copie!r} paie {p_copie} "
+                f"tandis que {original!r} paie {p_original} — la fusion "
+                f"efface une difference comportementale pour {divergents}"
+            )
+    return tuple(violations)
+
+
+def jumeaux_comportementaux(
+    g0: EvolutiveGame,
+    g1: EvolutiveGame,
+) -> tuple[tuple[str, str], ...]:
+    """Paires d'actions indiscernables par leurs paiements, lue AVANT/APRES.
+
+    Une carte d'equivalence OUBLIEE fait compter un renommage pur comme des
+    classes nouvelles (faux 'nouveau'). Cette detection ne depend d'aucune
+    carte : elle lit les faits bruts — pour chaque action de ``g1``, son
+    vecteur de paiements sur l'union des agents, compare a ceux de ``g0``.
+    Deux actions de meme nom ne forment pas une paire (meme descripteur, la
+    comparaison n'apprend rien) ; une action de ``g1`` dont le profil ne se
+    retrouve chez AUCUNE action de ``g0`` est behavioralement nouvelle — c'est
+    elle que le verdict 'nouveau' doit designer.
+
+    Limite nominale : un renommage et une vraie action nouvelle de profil de
+    paiements identique sont indiscernables par la seule mesure comportementale
+    — la grille ne les separe pas, et c'est un fait du banc, pas un defaut de
+    cette fonction.
+    """
+    agents = tuple(sorted(set(g0.agents) | set(g1.agents)))
+
+    def _profil(game: EvolutiveGame, action: str) -> tuple[float, ...]:
+        return tuple(round(game.payoff(ag, action), 9) for ag in agents)
+
+    profils_g0: dict[tuple[float, ...], list[str]] = {}
+    for a in sorted(g0.actions):
+        profils_g0.setdefault(_profil(g0, a), []).append(a)
+    paires: list[tuple[str, str]] = []
+    for a1 in sorted(g1.actions):
+        if a1 in g0.actions:
+            continue
+        homonymes = profils_g0.get(_profil(g1, a1))
+        if homonymes:
+            paires.append((a1, homonymes[0]))
+    return tuple(paires)
 
 
 def bancher_mecanisme(
