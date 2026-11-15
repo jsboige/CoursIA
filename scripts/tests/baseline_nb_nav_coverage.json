@@ -84,6 +84,30 @@
     "Physique/Chaines": [
       "Physique/Chaines/Chaines-02-Born-Unitarite-Incertitude-Python.ipynb"
     ],
+    "Probas/Applications": [
+      "Probas/Applications/Quotients-Fibres-Recollement-Python.ipynb"
+    ],
+    "Probas/Applications/Percolation": [
+      "Probas/Applications/Percolation/Percolation-01-Supercritique-Python.ipynb",
+      "Probas/Applications/Percolation/Percolation-03b-Critique-L128-L256.ipynb",
+      "Probas/Applications/Percolation/Percolation-03c-Critique-L512.ipynb",
+      "Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb"
+    ],
+    "Probas/DecisionTheory/Actuariat": [
+      "Probas/DecisionTheory/Actuariat/Actuariat-02-Freq-Sev-Hierarchique.ipynb",
+      "Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb",
+      "Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb"
+    ],
+    "Probas/Causalite": [
+      "Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb",
+      "Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb",
+      "Probas/Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb",
+      "Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb",
+      "Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb"
+    ],
+    "Probas/DecisionTheory/DecInfer": [
+      "Probas/DecisionTheory/DecInfer/DecInfer-02b-Lean-Coherence.ipynb"
+    ],
     "Probas/DecisionTheory/DecPyMC": [
       "Probas/DecisionTheory/DecPyMC/DecPyMC-05-Value-Information.ipynb"
     ],

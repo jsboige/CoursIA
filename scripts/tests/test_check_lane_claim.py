@@ -7524,8 +7524,14 @@ def test_implicit_positive_control_14259(monkeypatch, capsys):
     assert data["implicit_occupation"][0]["number"] == 14293
 
 
-def _local_pr_history(tmp_path: Path, *, own_files: int = 0) -> tuple[str, list[str]]:
-    """Build real Git history: stale base, main update, then stacked PR head."""
+def _local_pr_history(tmp_path: Path, *, own_files: int = 0,
+                      merge_main: bool = True) -> tuple[str, list[str]]:
+    """Build real Git history: stale base, main update, then stacked PR head.
+
+    `merge_main=False` laisse la branche en retard sur `main` : ses fichiers
+    herites DIFFERENT alors de `main` sans que la PR les change -- c'est ce
+    que distingue une diff a deux points d'une diff a trois points (#26725).
+    """
     repo = tmp_path / "repo"
     repo.mkdir()
 
@@ -7553,7 +7559,8 @@ def _local_pr_history(tmp_path: Path, *, own_files: int = 0) -> tuple[str, list[
     git("update-ref", "refs/remotes/origin/main", "HEAD")
 
     git("checkout", "-b", "pr", "stale")
-    git("merge", "--no-edit", "main")
+    if merge_main:
+        git("merge", "--no-edit", "main")
     # A no-tree-change commit models an open stacked PR whose only changed
     # paths against its stale base are the files it inherited from main.
     git("commit", "--allow-empty", "-m", "stacked PR metadata commit")
@@ -7674,6 +7681,165 @@ def test_implicit_provenance_failure_keeps_legacy_occupation():
     findings = clc._find_open_prs_referencing_issue(14259, "myia-po-2024:CoursIA", [pr])
     assert len(findings) == 1
     assert findings[0]["files"] == ["inherited/main-only.md"]
+
+
+# --- #26725 -- une PR empilee n'occupe que ce qu'elle change -----------------
+#
+# `/pulls/{n}/files` decrit la diff de la PR contre SA BASE. Pour une PR
+# empilee -- base = branche de feature -- la liste contient tout l'avancement
+# de `main` que la base n'a pas encore integre. Instance mesuree le
+# 2026-11-15 : #25029 (base `feature/25013-chaines-07`) annoncait 4326
+# fichiers la ou elle n'en change que 7, et deux lanes ont ete bloquees le
+# meme matin sur un fichier (`ICT-25b`, `SW-04`) qu'elle ne touche pas.
+#
+# L'enumeration REDUIT la liste pour ces PRs (`_reduce_stacked_pr_files`) au
+# diff de contenu `origin/main...<tete>` (du point de divergence a la tete,
+# cf #26725). Une PR de base `main` n'est pas touchee -- exigence explicite
+# de l'issue. Trois mesures pour la meme PR #25029, le 15/11 : 4326 fichiers
+# par l'API (base-relative), 707 par une diff a deux points (l'avancement de
+# `main` y entre), 7 par cette diff-ci.
+
+
+def test_stacked_pr_occupies_only_its_own_files(tmp_path, monkeypatch):
+    """Controle de l'issue : 3 fichiers propres, 50 de rattrapage -> 3."""
+    head, own_paths = _local_pr_history(tmp_path, own_files=3)
+    monkeypatch.chdir(tmp_path / "repo")
+    inherited = [f"inherited/main-{index:03}.txt" for index in range(50)]
+    entry = dict(_PR_14293, number=25505, headRefOid=head,
+                 baseRefName="stale",
+                 files=[{"path": p} for p in inherited + own_paths])
+
+    clc._reduce_stacked_pr_files([entry], "main")
+
+    assert sorted(f["path"] for f in entry["files"]) == sorted(own_paths)
+    # Le chemin de rattrapage ne cite plus la PR ; le sien, si.
+    collisions, _ = clc._compute_open_pr_collisions(
+        ["inherited/main-000.txt"], "myia-po-2024:CoursIA", [entry])
+    assert collisions == []
+    collisions, _ = clc._compute_open_pr_collisions(
+        own_paths, "myia-po-2024:CoursIA", [entry])
+    assert [path for c in collisions for path in c.files] == own_paths
+
+
+def test_stacked_pr_does_not_occupy_main_only_advance(tmp_path, monkeypatch):
+    """Une branche en retard sur `main` n'occupe pas ce que `main` a change.
+
+    C'est la difference entre `origin/main...<tete>` (point de divergence) et
+    `origin/main <tete>` (deux points) : les fichiers herites different de
+    `main`, mais la PR ne les change pas.
+    """
+    head, own_paths = _local_pr_history(
+        tmp_path, own_files=3, merge_main=False)
+    monkeypatch.chdir(tmp_path / "repo")
+    inherited = [f"inherited/main-{index:03}.txt" for index in range(50)]
+    entry = dict(_PR_14293, number=25507, headRefOid=head,
+                 baseRefName="stale",
+                 files=[{"path": p} for p in inherited + own_paths])
+
+    clc._reduce_stacked_pr_files([entry], "main")
+
+    assert sorted(f["path"] for f in entry["files"]) == sorted(own_paths)
+    collisions, _ = clc._compute_open_pr_collisions(
+        ["inherited/main-000.txt"], "myia-po-2024:CoursIA", [entry])
+    assert collisions == []
+
+
+def test_main_based_pr_keeps_api_files_without_git_call(monkeypatch):
+    """Aucun changement pour une PR de base `main` -- ni de liste, ni d'appel."""
+    def boom(_entry):
+        raise AssertionError(
+            "une PR de base main ne doit pas passer par le calcul Git")
+
+    monkeypatch.setattr(clc, "_pr_files_changed_against_main", boom)
+    entry = dict(_PR_14293, baseRefName="main",
+                 files=[{"path": "inherited/main-000.txt"}])
+
+    clc._reduce_stacked_pr_files([entry], "main")
+
+    assert [f["path"] for f in entry["files"]] == ["inherited/main-000.txt"]
+
+
+@pytest.mark.parametrize("base,default", [
+    (None, "main"),          # base inconnue (cache ancien, API muette)
+    ("", "main"),            # base vide
+    ("feature/x", None),     # branche par defaut inconnue
+    ("feature/x", ""),       # branche par defaut vide
+])
+def test_unattributable_pr_keeps_api_files(monkeypatch, base, default):
+    """Sans les DEUX noms, la liste de l'API reste l'occupation."""
+    def boom(_entry):
+        raise AssertionError("provenance non attribuable : rien a reduire")
+
+    monkeypatch.setattr(clc, "_pr_files_changed_against_main", boom)
+    entry = dict(_PR_14293, baseRefName=base,
+                 files=[{"path": "inherited/main-000.txt"}])
+
+    clc._reduce_stacked_pr_files([entry], default)
+
+    assert [f["path"] for f in entry["files"]] == ["inherited/main-000.txt"]
+
+
+def test_stacked_pr_provenance_failure_keeps_api_files():
+    """Une panne Git ne libere jamais un chemin : la liste de l'API reste."""
+    entry = dict(_PR_14293, number=None, headRefOid="0" * 40,
+                 baseRefName="feature/x",
+                 files=[{"path": "inherited/main-only.md"}])
+
+    clc._reduce_stacked_pr_files([entry], "main")
+
+    assert [f["path"] for f in entry["files"]] == ["inherited/main-only.md"]
+
+
+def test_stacked_pr_keeps_rename_previous_paths(tmp_path, monkeypatch):
+    """`git diff --name-only` ne rend pas l'ancien nom : il reste occupe."""
+    head, own_paths = _local_pr_history(tmp_path, own_files=1)
+    monkeypatch.chdir(tmp_path / "repo")
+    entry = dict(_PR_14293, number=25506, headRefOid=head,
+                 baseRefName="stale",
+                 files=[{"path": own_paths[0]},
+                        {"path": "inherited/main-000.txt"}],
+                 renames=["old/name.ipynb"])
+
+    clc._reduce_stacked_pr_files([entry], "main")
+
+    assert sorted(f["path"] for f in entry["files"]) == sorted(
+        own_paths + ["old/name.ipynb"])
+
+
+def test_open_prs_complete_reduces_stacked_files(
+        monkeypatch, tmp_path, _isolated_open_prs):
+    """L'enumeration porte `baseRefName` et rend la liste deja reduite."""
+    head, own_paths = _local_pr_history(tmp_path, own_files=2)
+    monkeypatch.chdir(tmp_path / "repo")
+    monkeypatch.setattr(clc, "_gh_repo_name_with_owner",
+                        lambda: "jsboige/CoursIA")
+    # La liste de l'API est base-relative : elle contient les fichiers
+    # herites ET ceux de la PR. La reduction intersecte avec elle.
+    node = _graphql_node(
+        9, files=[f"inherited/main-{index:03}.txt" for index in range(5)]
+        + own_paths)
+    node["baseRefName"] = "stale"
+    node["headRefOid"] = head
+    page = _graphql_page([node])
+    page["data"]["repository"]["defaultBranchRef"] = {"name": "main"}
+    monkeypatch.setattr(clc, "_gh_graphql", lambda q, v=None: page)
+
+    prs = clc._gh_open_prs_complete()
+
+    assert prs[0]["baseRefName"] == "stale"
+    assert [f["path"] for f in prs[0]["files"]] == own_paths
+
+
+def test_cache_v2_is_not_read_as_v3(monkeypatch, tmp_path):
+    """Un cache v2 porte les listes base-relatives : il n'est pas relu."""
+    cache = tmp_path / "open-prs.json"
+    cache.write_text(json.dumps({
+        # Le LITERAL est le sujet du test : c'est le format d'avant #26725.
+        "format": "open-prs-v2", "complete": True, "count": 0, "prs": [],
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+
+    assert clc._read_open_prs_cache() is None
 
 
 def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
@@ -8235,7 +8401,7 @@ def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
     n'est pas appele).
 
     #21742 -- le cache porte desormais la COMPLETUDE : seul le format v2
-    (`{"format": "open-prs-v2", "complete": true, ...}`) est une preuve.
+    (`{"format": clc._OPEN_PRS_CACHE_FORMAT, "complete": true, ...}`) est une preuve.
     Un cache v2 complet est toujours lu sans `gh` ; c'est le point que ce
     test pin (l'heritage en liste nue, lui, est ignore -- cf.
     `test_open_prs_legacy_bare_list_cache_is_not_trusted`).
@@ -8244,7 +8410,7 @@ def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
                    "headRefName": "x", "files": [], "renames": []}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
-        "format": "open-prs-v2",
+        "format": clc._OPEN_PRS_CACHE_FORMAT,
         "complete": True,
         "count": len(cached_prs),
         "prs": cached_prs,
@@ -8354,9 +8520,9 @@ def test_gh_open_prs_cache_wrong_type_falls_back_to_gh(monkeypatch, tmp_path):
     (ex: dict), on retombe sur le subprocess `gh`. Pas de corruption.
 
     #21742 -- la regle est desormais plus stricte et ce test la pin : un
-    dict qui n'est pas un cache v2 (`format: "open-prs-v2"`) n'est PAS une
-    preuve de completude, donc il est traite comme absent et le fetch
-    complet reecrit le fichier.
+    dict qui ne porte pas le format courant (`_OPEN_PRS_CACHE_FORMAT`) n'est
+    PAS une preuve de completude, donc il est traite comme absent et le
+    fetch complet reecrit le fichier.
     """
     cache = tmp_path / "wrong_type.json"
     cache.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
@@ -8384,7 +8550,7 @@ def test_gh_open_prs_cache_wrong_type_falls_back_to_gh(monkeypatch, tmp_path):
         assert out == []
         # Et le fetch complet a reecrit le fichier au format v2.
         rewritten = json.loads(cache.read_text(encoding="utf-8"))
-        assert rewritten["format"] == "open-prs-v2"
+        assert rewritten["format"] == clc._OPEN_PRS_CACHE_FORMAT
         assert rewritten["complete"] is True
     finally:
         monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
@@ -8618,7 +8784,7 @@ def test_open_prs_cache_without_renames_index_is_not_trusted(monkeypatch,
     complet s'execute et REECRIT le cache au format courant."""
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
-        "format": "open-prs-v2", "complete": True, "count": 1,
+        "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True, "count": 1,
         "prs": [{"number": 1, "title": "ancien-cache", "headRefName": "b",
                  "body": "", "files": [{"path": "a/b.ipynb"}]}],
     }), encoding="utf-8")
@@ -8742,7 +8908,7 @@ def test_open_prs_legacy_bare_list_cache_is_not_trusted(monkeypatch, tmp_path,
     # La liste heritage est IGNOREE : c'est le fetch complet qui repond.
     assert prs == complete
     written = json.loads(cache.read_text(encoding="utf-8"))
-    assert written["format"] == "open-prs-v2"
+    assert written["format"] == clc._OPEN_PRS_CACHE_FORMAT
     assert written["complete"] is True
     assert written["count"] == len(complete)
     assert written["prs"] == complete
@@ -8757,7 +8923,7 @@ def test_open_prs_v2_complete_cache_is_trusted(monkeypatch, tmp_path,
                "body": "", "files": [], "renames": []}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
-        "format": "open-prs-v2", "complete": True,
+        "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True,
         "count": len(cached), "prs": cached,
     }), encoding="utf-8")
     monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
@@ -8778,7 +8944,7 @@ def test_open_prs_v2_incomplete_cache_raises(monkeypatch, tmp_path,
     "CLEAR" que l'issue corrige."""
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
-        "format": "open-prs-v2", "complete": False,
+        "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": False,
         "reason": "gh pr list --limit 200 tronque",
     }), encoding="utf-8")
     monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
