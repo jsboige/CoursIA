@@ -1523,7 +1523,9 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
                     jobs=jobs,
                     budget=budget,
                     targets=targets,
-                    build_cache_dir=build_cache_dir(cache_root_dir, pr, lake["lake"]),
+                    project_cache_dir=build_cache_dir(
+                        cache_root_dir, pr, lake["lake"]
+                    ),
                 )
             )
             builds[-1]["scope"] = scope
