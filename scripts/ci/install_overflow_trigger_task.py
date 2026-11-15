@@ -23,6 +23,21 @@ workflow du depot, et c'est le workflow qui mesure et decide (avec les
 secrets du depot). Le role du siege est donc celui d'un **minuterie**, pas
 celui d'un decisionnaire.
 
+Deux formes cohabitent (`--mode`), et la forme retenue le 2026-11-12
+(arbitrage de l'adjoint du coordinateur) est `local` :
+
+- `local` (forme (b)) : le controleur **tourne sur le siege**. Le parc
+  self-hosted fait la queue -- mesure du 2026-11-12 sur 12 declenchements
+  horaires consecutifs : mediane ~40 min entre la creation du run et le
+  demarrage de son job, pire cas ~2 h, 4 runs sur 30 annules avant
+  demarrage -- et le controleur y agit donc sur un etat vieux de deux
+  heures. La cadence est bornee par le **marqueur local**, qui est l'etat
+  VIVANT du declencheur : l'API des runs du controleur decrit un etat
+  MORT pour un passage local (aucun run n'est cree), et une garde qui lit
+  un etat mort ne garde rien.
+- `dispatch` (forme historique) : le siege declenche le workflow du depot,
+  qui mesure et decide avec les secrets du depot.
+
 Identite : le jeton n'est JAMAIS ecrit sur disque. La tache appelle
 `gh auth token --user <compte>` au moment de l'execution : le jeton vit
 dans le trousseau du siege, il n'apparait dans aucun fichier.
@@ -63,6 +78,7 @@ import argparse
 import base64
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -87,6 +103,40 @@ WSH_PATH = (
 
 DEFAULT_REPO = "jsboige/CoursIA"
 DEFAULT_WORKFLOW = "ci-overflow-controller.yml"
+# Variable de depot pilotee par le controleur.
+DEFAULT_VARIABLE = "CI_OVERFLOW_LOCAL"
+# Formes du declencheur. `local` execute le controleur SUR LE SIEGE ;
+# `dispatch` declenche le workflow du depot (forme historique). La forme
+# retenue le 2026-11-12 est `local` : le parc self-hosted fait la queue
+# (mesure dans l'en-tete du module), et l'API des runs du controleur
+# decrit un etat MORT pour un passage local.
+MODE_LOCAL = "local"
+MODE_DISPATCH = "dispatch"
+MODES = (MODE_LOCAL, MODE_DISPATCH)
+DEFAULT_MODE = MODE_LOCAL
+# Marqueur de cadence LOCAL : l'etat vivant du declencheur (forme (b)).
+# C'est lui que la garde d'intervalle minimal lit et ecrit.
+MARKER_PATH = BASE_DIR / "cadence.json"
+# Resume JSON du passage (verdict, ecarte ou mesure) : le lanceur le lit
+# pour distinguer un passage ECARTE par la garde d'un passage mesure.
+SUMMARY_PATH = LOG_DIR / "overflow_trigger.json"
+# Checkout local ou le controleur est execute (forme `local`). Par defaut,
+# la racine du depot d'ou vient ce script.
+DEFAULT_CHECKOUT = THIS_FILE.parents[2]
+# Interpreteur python du siege (forme `local`).
+DEFAULT_PYTHON = "python"
+# Motifs de LECTURE IMPOSSIBLE du workflow du depot : dans ces cas, l'ecart
+# entre le lanceur installe et le lanceur genere ne peut pas etre etabli,
+# et le dire « diverge » serait faux. Ces cas rendent « inconnu », sous
+# leur PROPRE code de sortie (distinct de celui du drift).
+UNKNOWN_INPUT_REASONS = frozenset(
+    {
+        "contenu du workflow illisible",
+        "PyYAML indisponible",
+        "YAML du workflow illisible",
+        "YAML du workflow inattendu",
+    }
+)
 # Compte sous lequel le declenchement est pose. Le jeton est lu dans le
 # trousseau du siege AU MOMENT de l'execution ; il n'est jamais ecrit.
 DEFAULT_ACCOUNT = "jsboige"
@@ -186,6 +236,124 @@ def workflow_inputs(repo: str, workflow: str) -> tuple[set[str], str]:
     return set(inputs), ""
 
 
+def local_cmd_content(
+    checkout: Path,
+    python_exe: str,
+    repo: str,
+    account: str,
+    min_interval: int,
+) -> str:
+    """Contenu du lanceur .cmd, forme (b) : le controleur TOURNE SUR LE SIEGE.
+
+    Le parc self-hosted fait la queue (mesure du 2026-11-12 : mediane
+    ~40 min entre la creation du run et le demarrage de son job, pire cas
+    ~2 h, 4 runs sur 30 annules avant demarrage) ; le controleur y agit
+    donc sur un etat vieux de deux heures. Ici il s'execute sur le siege,
+    au moment du tic.
+
+    L'EFFET est constate dans le MARQUEUR LOCAL : le passage ecrit le
+    marqueur, un passage ecarte par la garde de cadence ne l'ecrit pas.
+    L'instrument regarde donc l'etat, pas son propre code de sortie -- le
+    defaut qu'E2/1 corrigeait sur la forme `dispatch` (#25510).
+
+    Les trois canaux du controleur (mesure, ecriture de la variable,
+    inventaire des runners) sont servis par le jeton DU SIEGE : les
+    secrets du depot ne sont pas lisibles depuis le siege. Le jeton
+    d'ecriture est pose EXPLICITEMENT -- le controleur ne fait aucun
+    repli sur un autre jeton.
+    """
+    controller = (
+        Path(checkout) / "scripts" / "ci" / "ci_overflow_controller.py"
+    )
+    command = subprocess.list2cmdline(
+        [
+            python_exe,
+            str(controller),
+            "--repo", repo,
+            "--variable", DEFAULT_VARIABLE,
+            "--apply",
+            "--min-interval", str(min_interval),
+            "--local-marker", str(MARKER_PATH),
+            "--summary-out", str(SUMMARY_PATH),
+        ]
+    )
+    return (
+        "@echo off\r\n"
+        "REM Genere par install_overflow_trigger_task.py -- ecrase a chaque\r\n"
+        "REM --install, ne pas editer a la main. Aucun jeton n'est ecrit\r\n"
+        "REM ici : il est lu dans le trousseau du siege au moment du tir.\r\n"
+        "REM\r\n"
+        "REM FORME (b) : le controleur s'execute SUR LE SIEGE. Le parc\r\n"
+        "REM self-hosted fait la queue (mesure du 2026-11-12 : mediane\r\n"
+        "REM ~40 min, pire cas ~2 h), et le controleur y agirait sur un\r\n"
+        "REM etat vieux de deux heures. La cadence est bornee par le\r\n"
+        "REM MARQUEUR LOCAL : etat VIVANT du declencheur, la ou l'API\r\n"
+        "REM des runs du controleur decrit un etat MORT pour un passage\r\n"
+        "REM local (aucun run n'est cree).\r\n"
+        "setlocal\r\n"
+        f'set "GH_USER={account}"\r\n'
+        f'set "GH_REPO={repo}"\r\n'
+        f'set "GH_MIN_INTERVAL={min_interval}"\r\n'
+        f'set "MARKER={MARKER_PATH}"\r\n'
+        f'set "SUMMARY={SUMMARY_PATH}"\r\n'
+        f'set "LOG={LOG_DIR}\\overflow_trigger.log"\r\n'
+        'for /f "delims=" %%t in (\'gh auth token --user %GH_USER% 2^>nul\') '
+        'do set "GH_TOKEN=%%t"\r\n'
+        'if not defined GH_TOKEN (\r\n'
+        '  echo [%DATE% %TIME%] jeton absent pour %GH_USER% -- rien declenche\r\n'
+        f'  >> "%LOG%" echo [%DATE% %TIME%] jeton absent pour %GH_USER%\r\n'
+        "  exit /b 2\r\n"
+        ")\r\n"
+        "REM Les trois canaux du controleur sont servis par le jeton du\r\n"
+        "REM siege : les secrets du depot ne sont pas lisibles d'ici. Le\r\n"
+        "REM jeton d'ECRITURE est pose EXPLICITEMENT (aucun repli).\r\n"
+        'set "ACTIONS_VARIABLES_PAT=%GH_TOKEN%"\r\n'
+        'set "RUNNERS_READ_PAT=%GH_TOKEN%"\r\n'
+        "REM AVANT : l'etat du marqueur de cadence.\r\n"
+        'set "MARKER_BEFORE="\r\n'
+        'if exist "%MARKER%" for %%f in ("%MARKER%") do set "MARKER_BEFORE=%%~tf"\r\n'
+        f'echo [%DATE% %TIME%] passage local du controleur '
+        f'(intervalle minimal %GH_MIN_INTERVAL% min)>> "%LOG%"\r\n'
+        f"{command} >> \"%LOG%\" 2>&1\r\n"
+        'set "RC=%ERRORLEVEL%"\r\n'
+        'if not "%RC%"=="0" (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] passage REFUSE rc=%RC% '
+        '-- aucune decision rendue\r\n'
+        '  echo %RC% > "%LOG%.rc"\r\n'
+        "  exit /b %RC%\r\n"
+        ")\r\n"
+        "REM APRES : le marqueur a-t-il bouge ? Un passage MESURE l'ecrit ;\r\n"
+        "REM un passage ECARTE par la garde de cadence ne l'ecrit pas -- et\r\n"
+        "REM le resume le dit (\"skipped\"), ce qui n'est pas un echec.\r\n"
+        'set "MARKER_AFTER="\r\n'
+        'if exist "%MARKER%" for %%f in ("%MARKER%") do set "MARKER_AFTER=%%~tf"\r\n'
+        'findstr /c:"verdict : SKIPPED" "%SUMMARY%" >nul 2>&1\r\n'
+        'if not errorlevel 1 (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] ecarte par la garde de cadence, '
+        'intervalle minimal %GH_MIN_INTERVAL% min -- aucune mesure\r\n'
+        '  echo 0 > "%LOG%.rc"\r\n'
+        "  exit /b 0\r\n"
+        ")\r\n"
+        'if not defined MARKER_AFTER (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] EFFET NON CONSTATE : le marqueur '
+        'de cadence est absent apres un passage mesure\r\n'
+        '  echo 3 > "%LOG%.rc"\r\n'
+        "  exit /b 3\r\n"
+        ")\r\n"
+        'if "%MARKER_AFTER%"=="%MARKER_BEFORE%" (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] EFFET NON CONSTATE : le marqueur '
+        'de cadence n\'a pas bouge : avant=%MARKER_BEFORE% '
+        'apres=%MARKER_AFTER%\r\n'
+        '  echo 3 > "%LOG%.rc"\r\n'
+        "  exit /b 3\r\n"
+        ")\r\n"
+        '>> "%LOG%" echo [%DATE% %TIME%] effet constate : marqueur de '
+        'cadence %MARKER_AFTER%\r\n'
+        'echo 0 > "%LOG%.rc"\r\n'
+        "exit /b 0\r\n"
+    )
+
+
 def cmd_content(
     repo: str,
     workflow: str,
@@ -194,15 +362,42 @@ def cmd_content(
     pass_min_interval: bool = True,
 ) -> str:
     """Contenu du lanceur .cmd : capture du jeton AU MOMENT de l'execution,
-    puis declenchement du workflow du depot, puis journalisation.
+    declenchement du workflow du depot, VERIFICATION DE L'EFFET, puis
+    journalisation.
 
     Le jeton n'est jamais ecrit dans le fichier : il est lu dans le
     trousseau du siege par `gh auth token`, au moment ou la tache tourne.
+
+    La verification de l'effet (#25510, E2) lit l'id du plus recent run du
+    workflow AVANT et APRES le declenchement : si l'id n'a pas change, le
+    declenchement n'a produit AUCUN run, et le lanceur sort en 3 avec un
+    motif nomme. Mesure du 2026-11-12 (19:07Z, ai-01) : la tache a rendu
+    rc 0, son journal n'a trace que « declenchement », et AUCUN run n'a ete
+    cree -- l'instrument voyait son propre code de sortie, pas l'effet.
     """
     log = "%LOCALAPPDATA%\\CoursIA\\overflow_trigger\\logs\\overflow_trigger.log"
     dispatch = "gh workflow run %GH_WORKFLOW% --repo %GH_REPO%"
     if pass_min_interval:
         dispatch += " -f min_interval=%GH_MIN_INTERVAL%"
+
+    def read_run(var: str) -> str:
+        """Lecture de l'id du plus recent run DECLENCHE (pas de cron).
+
+        Le filtre `--event workflow_dispatch` est indispensable : le
+        workflow porte aussi un cron horaire (`:31`), et un run de cron ne
+        prouve pas qu'un declenchement manuel a abouti. Sans lui, l'effet
+        mesure pouvait etre celui du cron.
+        """
+        return (
+            'for /f "delims=" %%r in (\'gh run list --workflow %GH_WORKFLOW% '
+            '--repo %GH_REPO% --event workflow_dispatch --limit 1 '
+            '--json databaseId --jq ".[0].databaseId" 2^>nul\') '
+            f'do set "{var}=%%r"\r\n'
+        )
+
+    read_before = read_run("RUN_BEFORE")
+    read_after = read_run("RUN_AFTER")
+
     return (
         "@echo off\r\n"
         "REM Genere par install_overflow_trigger_task.py -- ecrase a chaque\r\n"
@@ -221,11 +416,67 @@ def cmd_content(
         f'  >> "%LOG%" echo [%DATE% %TIME%] jeton absent pour %GH_USER%\r\n'
         "  exit /b 2\r\n"
         ")\r\n"
-        f'echo [%DATE% %TIME%] declenchement de %GH_WORKFLOW% sur %GH_REPO% '
+        # AVANT : l'id du plus recent run du workflow, pour comparer l'effet.
+        + read_before
+        + f'echo [%DATE% %TIME%] declenchement de %GH_WORKFLOW% sur %GH_REPO% '
         f'(intervalle minimal %GH_MIN_INTERVAL% min)>> "%LOG%"\r\n'
         f'{dispatch} >> "%LOG%" 2>&1\r\n'
-        "echo %ERRORLEVEL% > \"%LOG%.rc\"\r\n"
-        "exit /b %ERRORLEVEL%\r\n"
+        # Le code de sortie est capture DANS une variable : dans un bloc
+        # `if (...)`, `%ERRORLEVEL%` est developpe a la PARSE du bloc, donc
+        # il vaudrait celui d'avant le declenchement.
+        'set "RC=%ERRORLEVEL%"\r\n'
+        'if not "%RC%"=="0" (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] declenchement REFUSE rc=%RC%'
+        " -- aucun run demande\r\n"
+        '  echo %RC% > "%LOG%.rc"\r\n'
+        "  exit /b %RC%\r\n"
+        ")\r\n"
+        # ATTENTE BORNEE : le run apparait 2 a 3 s apres la ligne
+        # "declenchement" (mesure du 2026-11-12, 19:07Z sur ai-01) ; lire
+        # trop tot conclurait a tort qu'aucun run n'a ete cree. `timeout`
+        # ne marche pas sans console : l'attente se fait par `ping -n 11`
+        # (10 s), six fois au plus.
+        'set /a WAITED=0\r\n'
+        'set "RUN_AFTER="\r\n'
+        ":WAIT_RUN\r\n"
+        "set /a WAITED+=10\r\n"
+        "ping -n 11 127.0.0.1 >nul\r\n"
+        + read_after
+        + 'if defined RUN_AFTER goto WAIT_RUN_END\r\n'
+        + "if %WAITED% GEQ 60 goto WAIT_RUN_END\r\n"
+        + "goto WAIT_RUN\r\n"
+        ":WAIT_RUN_END\r\n"
+        '>> "%LOG%" echo [%DATE% %TIME%] attente de l\'apparition du run : '
+        "%WAITED% s\r\n"
+        # APRES : l'id a-t-il change ? Un declenchement accepte peut ne
+        # produire AUCUN run (mesure du 2026-11-12, 19:07Z sur ai-01 : la
+        # tache a rendu rc 0, le journal n'a rien trace, et AUCUN run n'a
+        # ete cree). Un instrument qui ne voit que son propre code de sortie
+        # croit avoir declenche ; il faut voir l'EFFET.
+        # Un id ILLISIBLE (lecture des runs echouee) echoue FERME : sans
+        # "avant", la comparaison n'a pas de sens -- le cas "avant vide,
+        # apres lu" ne vaut PAS "effet constate".
+        'if not defined RUN_BEFORE (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] EFFET NON CONSTATE : l\'id du run '
+        'precedent est illisible : lecture des runs echouee\r\n'
+        '  echo 3 > "%LOG%.rc"\r\n'
+        "  exit /b 3\r\n"
+        ")\r\n"
+        'if not defined RUN_AFTER (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] EFFET NON CONSTATE : aucun run cree '
+        ': id absent apres l\'attente bornee\r\n'
+        '  echo 3 > "%LOG%.rc"\r\n'
+        "  exit /b 3\r\n"
+        ")\r\n"
+        'if "%RUN_AFTER%"=="%RUN_BEFORE%" (\r\n'
+        '  >> "%LOG%" echo [%DATE% %TIME%] EFFET NON CONSTATE : aucun run cree '
+        ': id avant=%RUN_BEFORE% id apres=%RUN_AFTER%\r\n'
+        '  echo 3 > "%LOG%.rc"\r\n'
+        "  exit /b 3\r\n"
+        ")\r\n"
+        '>> "%LOG%" echo [%DATE% %TIME%] effet constate : run %RUN_AFTER%\r\n'
+        "echo 0 > \"%LOG%.rc\"\r\n"
+        "exit /b 0\r\n"
     )
 
 
@@ -294,7 +545,63 @@ def workflow_exists(repo: str, workflow: str) -> tuple[bool, str]:
     return True, ""
 
 
+def checkout_usable(checkout: Path) -> tuple[bool, str]:
+    """Le checkout local peut-il executer le controleur ?
+
+    La forme `local` execute le controleur DEPUIS le checkout : sans le
+    script, le passage echoue ; sans le repertoire des workflows, la
+    cohorte n'est pas etablie, la mesure est illisible et le controleur
+    n'ecrit rien (fail-CLOSED).
+    """
+    controller = Path(checkout) / "scripts" / "ci" / "ci_overflow_controller.py"
+    if not controller.is_file():
+        return False, f"controleur absent du checkout ({controller})"
+    workflows = Path(checkout) / ".github" / "workflows"
+    if not workflows.is_dir():
+        return False, f"repertoire des workflows absent du checkout ({workflows})"
+    return True, ""
+
+
+def launcher_content(
+    mode: str,
+    checkout: Path,
+    python_exe: str,
+    repo: str,
+    workflow: str,
+    account: str,
+    min_interval: int,
+) -> tuple[str, str]:
+    """Contenu du lanceur .cmd pour la forme demandee.
+
+    Rend `(contenu, avertissement)`. L'avertissement est non vide quand
+    la forme ne peut pas etre cablee telle quelle (input absent du
+    workflow, dans la forme `dispatch`).
+    """
+    if mode == MODE_LOCAL:
+        return (
+            local_cmd_content(
+                checkout, python_exe, repo, account, min_interval
+            ),
+            "",
+        )
+    inputs, reason = workflow_inputs(repo, workflow)
+    pass_min_interval = "min_interval" in inputs
+    if not pass_min_interval:
+        reason = (
+            f"le workflow {workflow} sur {repo} ne declare PAS l'input "
+            f"`min_interval` ({reason}) : le declencheur ne le passera pas "
+            f"(un input inconnu fait echouer chaque tir)"
+        )
+    return (
+        cmd_content(repo, workflow, account, min_interval, pass_min_interval),
+        reason,
+    )
+
+
 def cmd_dry_run(
+    mode: str,
+    checkout: Path,
+    python_exe: str,
     repo: str,
     workflow: str,
     account: str,
@@ -305,20 +612,25 @@ def cmd_dry_run(
     """N'ecrit RIEN et n'execute RIEN : la commande `schtasks` exacte et le
     contenu exact des deux lanceurs."""
     command = build_schtasks_install(task_action(), interval, start)
-    inputs, inputs_reason = workflow_inputs(repo, workflow)
-    pass_min_interval = "min_interval" in inputs
-    if not pass_min_interval:
+    content, warning = launcher_content(
+        mode, checkout, python_exe, repo, workflow, account, min_interval
+    )
+    print(f"DRY-RUN -- forme du declencheur : {mode}")
+    if mode == MODE_LOCAL:
+        ok, reason = checkout_usable(checkout)
         print(
-            f"DRY-RUN -- le workflow {workflow} sur {repo} ne declare PAS "
-            f"l'input `min_interval` ({inputs_reason}) : le declencheur ne le "
-            f"passera pas (un input inconnu fait echouer chaque tir)."
+            f"DRY-RUN -- checkout : {checkout} "
+            f"({'exploitable' if ok else reason})"
         )
+        print(f"DRY-RUN -- marqueur de cadence : {MARKER_PATH}")
+    if warning:
+        print(f"DRY-RUN -- {warning}")
     print("DRY-RUN -- commande schtasks que --install enregistrerait :")
     print("  " + subprocess.list2cmdline(command))
     print()
     print(f"DRY-RUN -- contenu de {CMD_PATH} que --install ecrirait :")
     print("-" * 60)
-    print(cmd_content(repo, workflow, account, min_interval, pass_min_interval))
+    print(content)
     print("-" * 60)
     print()
     print(f"DRY-RUN -- contenu de {VBS_PATH} que --install ecrirait :")
@@ -331,6 +643,9 @@ def cmd_dry_run(
 
 
 def cmd_install(
+    mode: str,
+    checkout: Path,
+    python_exe: str,
     repo: str,
     workflow: str,
     account: str,
@@ -338,24 +653,31 @@ def cmd_install(
     start: str,
     min_interval: int,
 ) -> int:
-    ok, reason = workflow_exists(repo, workflow)
+    if mode == MODE_LOCAL:
+        ok, reason = checkout_usable(checkout)
+    else:
+        ok, reason = workflow_exists(repo, workflow)
     if not ok:
         print(f"REFUS -- {reason}", file=sys.stderr)
         print(
-            "Le declencheur ne serait cable que vers un workflow inexistant : "
+            "Le declencheur ne serait cable que vers une cible inexistante : "
             "chaque tour echouerait en silence.",
             file=sys.stderr,
         )
         return 2
-    inputs, _inputs_reason = workflow_inputs(repo, workflow)
-    pass_min_interval = "min_interval" in inputs
+    content, _warning = launcher_content(
+        mode, checkout, python_exe, repo, workflow, account, min_interval
+    )
     BASE_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    CMD_PATH.write_text(
-        cmd_content(repo, workflow, account, min_interval, pass_min_interval),
-        encoding="ascii",
-    )
-    VBS_PATH.write_text(vbs_content(CMD_PATH), encoding="ascii")
+    # `newline=""` : le contenu porte deja ses "\r\n" explicites. Sans ce
+    # parametre, `write_text` traduit chaque "\n" en os.linesep et ecrit
+    # "\r\r\n" -- mesure sur l'artefact installe le 2026-11-12 : 20 lignes
+    # sur 20 portaient le CR supplementaire. Le fichier etait tolere par
+    # cmd.exe, mais il n'etait plus byte-identique a ce que le generateur
+    # declare, et la detection de drift ne aurait pu rien dire.
+    CMD_PATH.write_text(content, encoding="ascii", newline="")
+    VBS_PATH.write_text(vbs_content(CMD_PATH), encoding="ascii", newline="")
     command = build_schtasks_install(task_action(), interval, start)
     proc = _run(command)
     if proc.returncode != 0:
@@ -366,6 +688,7 @@ def cmd_install(
         )
         return 1
     print(f"tache creee : {TASK_NAME} (toutes les {interval} min, depart {start})")
+    print(f"forme        : {mode}")
     print(f"lanceur cmd : {CMD_PATH}")
     print(f"lanceur vbs : {VBS_PATH}")
     print(f"journal     : {LOG_DIR}")
@@ -375,9 +698,125 @@ def cmd_install(
     return 0
 
 
-def cmd_status() -> int:
+def _norm_lines(text: str) -> list[str]:
+    """Lignes normalisees (fins de ligne unifiees a "\\n").
+
+    Le lanceur installe peut porter des fins de ligne doubles ("\\r\\r\\n",
+    mesure du 2026-11-12) : sans normalisation, `splitlines()` y voit des
+    lignes VIDES et le rapport de driftdesigne la ligne 2 comme vide --
+    un rapport qui ne dit pas ce qui differe.
+    """
+    return re.sub(r"\r+\n", "\n", text).replace("\r", "\n").split("\n")
+
+
+def _first_diff(got: str, want: str) -> str:
+    """Premiere difference entre le lanceur installe et le lanceur genere,
+    en une phrase courte (le journal doit rester lisible)."""
+    got_lines = _norm_lines(got)
+    want_lines = _norm_lines(want)
+    for index, (a, b) in enumerate(zip(got_lines, want_lines), start=1):
+        if a != b:
+            return (
+                f"ligne {index} : installe={a.strip()!r} "
+                f"attendu={b.strip()!r}"
+            )
+    if len(got_lines) != len(want_lines):
+        return (
+            f"{len(got_lines)} ligne(s) installee(s) contre "
+            f"{len(want_lines)} attendue(s)"
+        )
+    return "memes lignes, fins de ligne differentes"
+
+
+def launcher_drift(
+    mode: str,
+    checkout: Path,
+    python_exe: str,
+    repo: str,
+    workflow: str,
+    account: str,
+    min_interval: int,
+) -> tuple[list[str], list[str]]:
+    """Ecarts entre les lanceurs INSTALLES et ceux que le generateur ecrit.
+
+    Un artefact installe derriere son generateur s'ecarte sans bruit : le
+    declencheur peut alors faire autre chose que ce que le depot declare.
+    Mesure du 2026-11-12 (ai-01) : le lanceur installe ne passait pas
+    `min_interval` -- que le generateur ecrit depuis -- et chacune de ses
+    20 lignes portait un CR supplementaire ; rien ne le signalait.
+
+    Rend `(ecarts, inconnus)`. Un ecart est une DIFFERENCE mesuree ;
+    un inconnu est une LECTURE IMPOSSIBLE (le workflow du depot n'a pas pu
+    etre lu) : dans ce cas, l'ecart ne peut pas etre etabli, et le dire
+    « diverge » serait faux. Le cas inconnu porte son PROPRE code de
+    sortie, distinct de celui du drift.
+    """
+    unknowns: list[str] = []
+    if mode == MODE_DISPATCH:
+        _inputs, inputs_reason = workflow_inputs(repo, workflow)
+        if inputs_reason in UNKNOWN_INPUT_REASONS:
+            unknowns.append(
+                f"contenu du workflow {workflow} sur {repo} illisible "
+                f"({inputs_reason}) : l'ecart avec le lanceur installe ne "
+                f"peut pas etre etabli"
+            )
+            return [], unknowns
+    expected = {
+        CMD_PATH: launcher_content(
+            mode, checkout, python_exe, repo, workflow, account, min_interval
+        )[0],
+        VBS_PATH: vbs_content(CMD_PATH),
+    }
+    drifts: list[str] = []
+    for path, want in expected.items():
+        if not path.exists():
+            drifts.append(f"{path} absent (declencheur non installe)")
+            continue
+        # Lecture en BYTES : `read_text` traduit les fins de ligne, donc un
+        # lanceur parfaitement ecrit serait lu different de ce que le
+        # generateur declare -- et l'ecart de fins de ligne, qui est
+        # exactement ce qu'on cherche ici, serait invisible.
+        got = path.read_bytes().decode("ascii", errors="replace")
+        if got == want:
+            continue
+        drifts.append(
+            f"{path} DIVERGE du lanceur genere : {_first_diff(got, want)}"
+        )
+    return drifts, unknowns
+
+
+def cmd_status(
+    mode: str,
+    checkout: Path,
+    python_exe: str,
+    repo: str,
+    workflow: str,
+    account: str,
+    min_interval: int,
+) -> int:
     proc = _run(["schtasks", "/Query", "/TN", TASK_NAME, "/V", "/FO", "LIST"])
     print(proc.stdout or proc.stderr or f"rc={proc.returncode}")
+    drifts, unknowns = launcher_drift(
+        mode, checkout, python_exe, repo, workflow, account, min_interval
+    )
+    if drifts:
+        print(
+            "DRIFT -- les lanceurs INSTALLES different de ce que le "
+            "generateur ecrit :"
+        )
+        for line in drifts:
+            print(f"  - {line}")
+        print(
+            "  remedy : python scripts/ci/install_overflow_trigger_task.py "
+            "--install"
+        )
+        return 3
+    if unknowns:
+        print("INCONNU -- l'ecart avec le lanceur installe n'a pas pu etre etabli :")
+        for line in unknowns:
+            print(f"  - {line}")
+        return 4
+    print("lanceurs conformes au generateur")
     return 0 if proc.returncode == 0 else 1
 
 
@@ -395,11 +834,38 @@ def cmd_uninstall() -> int:
     return 0
 
 
-def cmd_run() -> int:
-    """Declenche UNE fois le workflow du depot : c'est le controle de bout
-    en bout de la chaine, non eleve (le lanceur inclus)."""
+def cmd_run(
+    mode: str,
+    checkout: Path,
+    python_exe: str,
+    repo: str,
+    account: str,
+    min_interval: int,
+    ignore_cadence: bool = False,
+) -> int:
+    """Declenche UNE fois le declencheur : c'est le controle de bout en
+    bout de la chaine, non eleve (le lanceur inclus).
+
+    `ignore_cadence` court-circuite la garde d'intervalle minimal (la
+    forme `local` rend `SKIPPED` quand le marqueur est trop recent) :
+    c'est un DIAGNOSTIC, pas le declencheur installe -- la garde du
+    declencheur installe, elle, reste a son intervalle.
+    """
     LOG_DIR.mkdir(parents=True, exist_ok=True)
-    proc = _run(["cmd.exe", "/c", str(CMD_PATH)])
+    if ignore_cadence and mode == MODE_LOCAL:
+        command = [
+            python_exe,
+            str(Path(checkout) / "scripts" / "ci" / "ci_overflow_controller.py"),
+            "--repo", repo,
+            "--variable", DEFAULT_VARIABLE,
+            "--apply",
+            "--min-interval", "0",
+            "--local-marker", str(MARKER_PATH),
+            "--summary-out", str(SUMMARY_PATH),
+        ]
+        proc = _run(command)
+    else:
+        proc = _run(["cmd.exe", "/c", str(CMD_PATH)])
     if proc.returncode != 0:
         print(
             f"declenchement echoue (rc={proc.returncode}) : "
@@ -428,6 +894,39 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--uninstall", action="store_true")
     parser.add_argument("--run", action="store_true")
+    parser.add_argument(
+        "--ignore-cadence",
+        action="store_true",
+        help=(
+            "avec --run : court-circuite la garde d'intervalle minimal "
+            "(diagnostic ; la garde du declencheur installe reste en place)"
+        ),
+    )
+    parser.add_argument(
+        "--mode",
+        choices=MODES,
+        default=DEFAULT_MODE,
+        help=(
+            "forme du declencheur : `local` execute le controleur sur le "
+            "siege (forme (b) de #25510, retenue le 2026-11-12), "
+            "`dispatch` declenche le workflow du depot (forme historique)"
+        ),
+    )
+    parser.add_argument(
+        "--checkout",
+        type=Path,
+        default=DEFAULT_CHECKOUT,
+        help=(
+            "checkout local ou le controleur est execute (forme `local`) ; "
+            "par defaut, la racine du depot d'ou vient ce script"
+        ),
+    )
+    parser.add_argument(
+        "--python",
+        dest="python_exe",
+        default=DEFAULT_PYTHON,
+        help="interpreteur python du siege (forme `local`)",
+    )
     parser.add_argument("--repo", default=DEFAULT_REPO)
     parser.add_argument("--workflow", default=DEFAULT_WORKFLOW)
     parser.add_argument("--account", default=DEFAULT_ACCOUNT)
@@ -438,20 +937,43 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
+    # `--dry-run` l'EMPORTE sur `--install`.
+    #
+    # Mesure du 2026-11-12 (lane myia-ai-01:CoursIA-2) : `--install
+    # --dry-run` INSTALLAIT la tache et ecrivait les deux lanceurs. La
+    # cause est l'ordre des tests : `args.install` etait teste avant que
+    # `args.dry_run` soit lu -- et il n'etait jamais lu du tout : le
+    # dry-run n'etait que la branche par defaut (aucun drapeau), donc
+    # `--dry-run` n'etait qu'un drapeau MORT. Un drapeau nomme "dry-run"
+    # qui installe quand meme casse la preparation du geste : la discipline
+    # UAC exige que la sortie du dry-run precede l'inscription.
+    if args.dry_run:
+        return cmd_dry_run(
+            args.mode, args.checkout, args.python_exe, args.repo,
+            args.workflow, args.account, args.interval, args.start,
+            args.min_interval,
+        )
     if args.install:
         return cmd_install(
-            args.repo, args.workflow, args.account, args.interval,
-            args.start, args.min_interval,
+            args.mode, args.checkout, args.python_exe, args.repo,
+            args.workflow, args.account, args.interval, args.start,
+            args.min_interval,
         )
     if args.status:
-        return cmd_status()
+        return cmd_status(
+            args.mode, args.checkout, args.python_exe, args.repo,
+            args.workflow, args.account, args.min_interval,
+        )
     if args.uninstall:
         return cmd_uninstall()
     if args.run:
-        return cmd_run()
+        return cmd_run(
+            args.mode, args.checkout, args.python_exe, args.repo,
+            args.account, args.min_interval, args.ignore_cadence,
+        )
     return cmd_dry_run(
-        args.repo, args.workflow, args.account, args.interval,
-        args.start, args.min_interval,
+        args.mode, args.checkout, args.python_exe, args.repo, args.workflow,
+        args.account, args.interval, args.start, args.min_interval,
     )
 
 

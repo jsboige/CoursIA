@@ -203,6 +203,83 @@ def test_la_sortie_json_expose_les_regles_et_les_suites(repo: Path) -> None:
     assert "excluded_suites" in payload
 
 
+# --- Enumeration : suivis git, pas les non suivis (#25510 annexe) ----------
+
+
+def _git_env(tmp_path: Path) -> dict[str, str]:
+    return {
+        "GIT_AUTHOR_NAME": "t",
+        "GIT_AUTHOR_EMAIL": "t@example.com",
+        "GIT_COMMITTER_NAME": "t",
+        "GIT_COMMITTER_EMAIL": "t@example.com",
+        "PATH": "/usr/bin:/bin:/usr/local/bin",
+        "HOME": str(tmp_path),
+    }
+
+
+def test_iter_all_files_enumere_les_suivis_git_pas_les_non_suivis(
+    tmp_path: Path,
+) -> None:
+    """#25510 annexe : le parcours doit suivre `git ls-files`.
+
+    Defaut mesure : dans un checkout de developpement contenant des
+    repertoires non suivis (worktrees, scratch), `os.walk` enumerait 250
+    fichiers de test la ou la CI en voyait 126 -- la mesure locale ne
+    correspondait plus a celle de la CI. Un fichier .py NON suivi ne doit
+    pas entrer dans l'enumeration ; un suivi, oui.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    env = _git_env(tmp_path)
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True, env=env)
+    _write(repo, "tests/test_module.py", "def test_f():\n    assert True\n")
+    # un fichier non suivi : jamais enumere
+    _write(
+        repo, ".claude/worktrees/autre/tests/test_fantome.py",
+        "def test_fantome():\n    assert True\n",
+    )
+    subprocess.run(["git", "add", "tests/test_module.py"], cwd=repo, check=True, env=env)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "init"], cwd=repo, check=True, env=env
+    )
+    found = select_tests.iter_all_files(repo)
+    names = [p.name for p in found]
+    assert "test_module.py" in names
+    assert "test_fantome.py" not in names
+
+
+def test_iter_all_files_repli_os_walk_sans_git(tmp_path: Path) -> None:
+    """Hors de tout depot git (fixtures), l'enumeration reste le parcours."""
+    repo = tmp_path / "plain"
+    repo.mkdir()
+    _write(repo, "tests/test_module.py", "def test_f():\n    assert True\n")
+    found = select_tests.iter_all_files(repo)
+    assert [p.name for p in found] == ["test_module.py"]
+
+
+def test_iter_all_files_refuse_un_sous_dossier_de_depot(tmp_path: Path) -> None:
+    """`git -C <sous-dossier> ls-files` rend des chemins relatifs a la
+    racine du depot : composer `sous_dossier / chemin` fabriquerait des
+    chemins faux. L'enumeration git ne doit s'appliquer que si la racine
+    demandee EST la racine git ; sinon, repli sur le parcours."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    env = _git_env(tmp_path)
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True, env=env)
+    _write(repo, "tests/test_module.py", "def test_f():\n    assert True\n")
+    subprocess.run(["git", "add", "tests/test_module.py"], cwd=repo, check=True, env=env)
+    subprocess.run(
+        ["git", "commit", "-q", "-m", "init"], cwd=repo, check=True, env=env
+    )
+    sub = repo / "inner"
+    sub.mkdir()
+    _write(sub, "test_inner.py", "def test_inner():\n    assert True\n")
+    # le sous-dossier n'est pas la racine git : le fichier du sous-dossier
+    # est enumere par le parcours, avec un chemin exact (pas compose).
+    found = select_tests.iter_all_files(sub)
+    assert [p.name for p in found] == ["test_inner.py"]
+
+
 # --- Lecture du diff -------------------------------------------------------
 
 

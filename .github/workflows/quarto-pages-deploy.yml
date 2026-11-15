@@ -45,14 +45,22 @@ on:
       # Quarto restait stale jusqu'au prochain commit non-catalogue (#15490).
       - "COURSE_CATALOG.generated.md"
   pull_request:
+    # P4 #25510 (fournée 1, sign-off mainteneur 2026-11-14) : la jambe PR ne
+    # valide plus le CONTENU du site. Mesure du 2026-11-14 sur 24 h :
+    # 237 runs `pull_request`, dont 3 des 4 échecs à l'étape « Set up Quarto »
+    # (infra) et un seul vrai rendu cassé — porté par une PR de harnais qui
+    # reste couverte ci-dessous. Chaque push de PR de carnet payait un run
+    # Quarto pour un rendu que le push de merge rejoue en COMPLET sur l'arbre
+    # réel (jambe `build` : même pipeline, rendu intégral, deploy sécurisé --
+    # un rendu cassé ne remplace jamais le site publié). Les paths retirés
+    # (`MyIA.AI.Notebooks/**/*.ipynb`, `**/_output.ipynb`, `**/README.md`,
+    # `docs/**`) sont la surface de CONTENU : elle est vérifiée par le rendu
+    # complet du push `main`, une fois par merge, au lieu d'une fois par push
+    # de PR. Ne restent que les surfaces qui PILOTENT le rendu :
     paths:
       - "_quarto.yml"
       - "**.qmd"
       - "MyIA.AI.Notebooks/**/index.qmd"
-      - "MyIA.AI.Notebooks/**/*.ipynb"
-      - "MyIA.AI.Notebooks/**/_output.ipynb"
-      - "MyIA.AI.Notebooks/**/README.md"
-      - "docs/**"
       # Auto-couverture : une PR qui ne touche QUE ce workflow doit quand meme
       # emettre l'evenement pull_request (asymetrie push/pull_request, #14391).
       - ".github/workflows/quarto-pages-deploy.yml"

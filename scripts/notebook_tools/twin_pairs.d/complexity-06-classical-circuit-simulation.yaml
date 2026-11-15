@@ -1,0 +1,12 @@
+- name: "Complexity-06 Classical circuit simulation"
+  family: Complexity
+  python: MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-Python.ipynb
+  csharp: MyIA.AI.Notebooks/Complexity/Complexity-06-Simuler-Circuit-Quantique-Classiquement-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Le source construit explicitement le vecteur uniforme avec NumPy puis compare un tirage direct de bits ; il n'appelle aucun simulateur quantique ni moteur stabilisateur. System.Numerics.Complex, les tableaux et un tirage CDF avec System.Random reproduisent ces opérations et leurs budgets. Le coût du vecteur explicite n'est pas présenté comme une borne inférieure générale. Aucun prétendu Gottesman-Knill ne remplace le tirage direct connu."
+  known_differences:
+    - "NumPy et System.Random ont des PRNG différents : même graine 20261007, mêmes budgets, sorties et temps propres à chaque environnement."
+    - "Le tirage pondéré C# construit une CDF et effectue une recherche binaire ; NumPy utilise son API choice."
+    - "Le port ajoute des contrôles conditionnels de matrice/plan de portes, de tirage réellement mesuré et de repères BQP ; les trois exercices restent non résolus et répartis."
+    - "Les paragraphes Python et C# distinguent jeu de portes universel, circuit particulier, représentation explicite et séparation de classes. Le code Python reste strictement inchangé."
