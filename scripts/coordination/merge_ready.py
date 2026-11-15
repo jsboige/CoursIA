@@ -506,6 +506,19 @@ MAIN_RED_HOLD_PREFIX = "main-red-sentinel "
 MAIN_RED_HOLD_NUMBER = 0  # identifiant global reserve, jamais un numero de PR
 SCRIPTS_TESTS_CHECK = "Scripts Tests (CPU)"
 
+#: L'issue canonique du rouge de `main` (#26706). La sentinelle ne se
+#: contente plus de retenir les merges : elle ouvre (ou REUTILISE) UNE issue
+#: vivante, que la lane de reparation reclame (`[CLAIMED]`) et qu'elle
+#: ferme (`Closes #`). Un episode = une issue, pas une issue par run : le
+#: titre est le prefixe ci-dessous, suivi du check et du test en echec.
+MAIN_RED_ISSUE_TITLE_PREFIX = "[main-red]"
+
+#: Marqueur HTML de l'issue du rouge. Le titre est l'index (GitHub indexe
+#: `main-red`, pas les crochets) ; le marqueur, lui, survit a une
+#: renumeration par un humain et se relit par `grep` dans le depot comme
+#: sur GitHub. Les deux sont poses sur l'issue.
+MAIN_RED_ISSUE_MARKER = "<!-- coursia:main-red-sentinel -->"
+
 #: Borne ECRITE de la remontee dans l'historique de `main` (#24828, revue
 #: ai-01 du 2026-11-10, point 1). On juge le dernier commit qui porte un
 #: VERDICT TERMINE de `Scripts Tests (CPU)` ; au-dela de cette borne, et
@@ -814,6 +827,11 @@ def refresh_main_red_hold(
     lines = hold_path.read_text(encoding="utf-8-sig").splitlines() if hold_path.exists() else []
     owned = [line for line in lines if line.strip().startswith(f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}")]
     retained = [line for line in lines if line not in owned]
+    # Le numero d'issue inscrit par un run precedent est la voie
+    # DETERMINISTE de reutilisation : l'index de recherche de GitHub peut
+    # avoir du retard, et deux runs rapproches ne doivent pas ouvrir deux
+    # issues pour le meme episode.
+    known_issue = _issue_number_from_line(owned[0] if owned else "")
     if conclusion == "success":
         updated = retained
     else:
@@ -822,12 +840,60 @@ def refresh_main_red_hold(
             f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}sha={sha} "
             f"check={SCRIPTS_TESTS_CHECK} conclusion={conclusion} test={test_name}"
         )
+        if known_issue is not None:
+            reason += f" issue={known_issue}"
         updated = [*retained, reason]
     if updated != lines:
         hold_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = hold_path.with_name(hold_path.name + ".tmp")
         tmp_path.write_text("\n".join(updated) + ("\n" if updated else ""), encoding="utf-8")
         tmp_path.replace(hold_path)
+
+    # L'issue canonique du rouge (#26706) : c'est elle que la lane de
+    # reparation reclame. Elle est traitee APRES la retenue, qui est deja
+    # ecrite : une panne de l'issue ne doit jamais faire perdre la
+    # retenue -- l'issue est un canal de coordination, pas la porte.
+    if conclusion == "success":
+        etat, numero = close_main_red_issue(
+            runner, gh_env, sha, SCRIPTS_TESTS_CHECK, known_issue
+        )
+        if etat == "ferme":
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] #{} "
+                "fermee (vert au commit {})".format(numero, sha[:9])
+            )
+        elif etat == "echec":
+            print(
+                "merge_ready : sentinelle main-red -- fermeture de l'issue "
+                "[main-red] impossible ; elle sera reprise au run suivant"
+            )
+    else:
+        etat, numero = ensure_main_red_issue(
+            runner, gh_env, sha, SCRIPTS_TESTS_CHECK, test_name, known_issue
+        )
+        if etat == "create":
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] #{} "
+                "ouverte ({} en echec au commit {})".format(
+                    numero, SCRIPTS_TESTS_CHECK, sha[:9]
+                )
+            )
+        elif etat == "reuse":
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] #{} "
+                "reutilisee ({} en echec au commit {})".format(
+                    numero, SCRIPTS_TESTS_CHECK, sha[:9]
+                )
+            )
+        else:
+            print(
+                "merge_ready : sentinelle main-red -- issue [main-red] non "
+                "ouverte ; la retenue reste posee"
+            )
+        if numero is not None and known_issue != numero:
+            # On inscrit le numero dans la retenue : le run suivant vise
+            # CETTE issue, sans repasser par la recherche.
+            _record_issue_in_hold(hold_path, numero)
 
 
 def clear_main_red_hold(hold_path: Path) -> bool:
@@ -853,6 +919,308 @@ def clear_main_red_hold(hold_path: Path) -> bool:
     tmp_path.write_text("\n".join(kept) + ("\n" if kept else ""), encoding="utf-8")
     tmp_path.replace(hold_path)
     return True
+
+
+# --- l'issue canonique du rouge de `main` (#26706) -----------------------------
+#
+# Le 15/11, le rouge de `main` a recu QUATRE reparations concurrentes
+# (#26696, #26697, #26698, plus une tentative locale) : quatre lanes ont
+# repare le meme defaut sans le savoir, parce que rien ne leur disait que
+# le rouge etait deja pris. La sentinelle retenait les merges, mais elle ne
+# PUBLIAIT rien : elle ne donnait a personne une adresse a reclamer.
+#
+# Le canal de coordination est donc une ISSUE, pas la retenue elle-meme :
+# une seule issue vivante par episode, que la lane qui repare reclame avec
+# `[CLAIMED]` et qu'elle ferme avec `Closes #`. La sentinelle l'ouvre au
+# rouge et la ferme au vert.
+
+
+def _issue_number_from_line(line: str) -> int | None:
+    """Numero d'issue inscrit dans une ligne de retenue, ou None."""
+    match = re.search(r"(?:^|\s)issue=(\d+)(?:\s|$)", line or "")
+    return int(match.group(1)) if match else None
+
+
+def _record_issue_in_hold(hold_path: Path, number: int) -> bool:
+    """Inscrit le numero de l'issue du rouge dans la ligne de la sentinelle.
+
+    La retenue est la VOIE DETERMINISTE : le run suivant sait quelle issue
+    viser, sans repasser par la recherche (dont l'index peut avoir du
+    retard). Renvoie True si la ligne a ete reecrite.
+    """
+    if not hold_path.exists():
+        return False
+    lines = hold_path.read_text(encoding="utf-8-sig").splitlines()
+    changed = False
+    updated = []
+    for line in lines:
+        if line.strip().startswith(
+            f"{MAIN_RED_HOLD_NUMBER} {MAIN_RED_HOLD_PREFIX}"
+        ) and _issue_number_from_line(line) is None:
+            line = f"{line} issue={number}"
+            changed = True
+        updated.append(line)
+    if not changed:
+        return False
+    tmp_path = hold_path.with_name(hold_path.name + ".tmp")
+    tmp_path.write_text("\n".join(updated) + "\n", encoding="utf-8")
+    tmp_path.replace(hold_path)
+    return True
+
+
+def main_red_issue_title(check: str, test: str) -> str:
+    """Titre canonique de l'issue du rouge : `[main-red] <check> — <test>`."""
+    return "{} {} — {}".format(
+        MAIN_RED_ISSUE_TITLE_PREFIX, check, test or "test-non-identifie"
+    )
+
+
+def main_red_issue_body(sha: str, check: str, test: str) -> str:
+    """Corps de l'issue : ce qui est rouge, ou, et ce qu'on attend."""
+    return (
+        "{marker}\n"
+        "\n"
+        "Rouge de `main` : le check `{check}` est en `failure` au commit `{sha}`.\n"
+        "\n"
+        "- **Test en echec** : `{test}`\n"
+        "- **Commit juge** : `{sha}`\n"
+        "- **Posee par** : `scripts/coordination/merge_ready.py` (sentinelle "
+        "`main-red`, #24828)\n"
+        "- **Effet** : la retenue globale `main-red-sentinel` est posee — "
+        "aucun merge n'est possible tant que ce verdict tient.\n"
+        "\n"
+        "## Ce qu'une lane de reparation fait\n"
+        "\n"
+        "1. Reclamer cette issue : `[CLAIMED] lane <machine:workspace> -- "
+        "<cause>`.\n"
+        "2. Reparer la cause, pousser le correctif, le faire merger.\n"
+        "3. Nommer la livraison : `Closes #N`, ou N est le numero de cette "
+        "issue.\n"
+        "\n"
+        "L'issue est **fermee automatiquement** par la sentinelle des que le "
+        "verdict redevient vert : aucune fermeture manuelle n'est necessaire.\n"
+        "\n"
+        "Refs #24828 · #26706\n"
+    ).format(
+        marker=MAIN_RED_ISSUE_MARKER,
+        check=check,
+        sha=sha,
+        test=test or "test-non-identifie",
+    )
+
+
+def _search_main_red_issue(
+    runner: Runner, gh_env: dict[str, str]
+) -> tuple[str, dict | None]:
+    """Cherche l'issue `[main-red]` VIVANTE du depot.
+
+    Renvoie `(etat, issue)` avec `etat` dans ``{"ok", "absent", "illisible"}``.
+
+    ``illisible`` n'est PAS un ``absent`` : une recherche qui echoue ne
+    prouve pas qu'aucune issue n'existe. Ouvrir dans ce cas creerait un
+    doublon — deux lanes y reclameraient le meme rouge. Le defaut est donc
+    fail-CLOSED : recherche illisible -> aucune creation.
+    """
+    result = runner.run(
+        [
+            "gh",
+            "api",
+            "-X",
+            "GET",
+            "search/issues",
+            "-f",
+            "q=repo:{} is:issue is:open in:title main-red".format(REPO),
+            "-f",
+            "per_page=20",
+        ],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ("illisible", None)
+    try:
+        payload = json.loads(result.stdout or "{}")
+    except ValueError:
+        return ("illisible", None)
+    items = payload.get("items") if isinstance(payload, dict) else None
+    if not isinstance(items, list):
+        return ("illisible", None)
+    trouvee = None
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        title = str(item.get("title") or "")
+        body = str(item.get("body") or "")
+        # Le titre est l'index, le marqueur HTML est la preuve : une issue
+        # renumerotee a la main reste reconnaissable par son marqueur.
+        if not title.startswith(MAIN_RED_ISSUE_TITLE_PREFIX) and (
+            MAIN_RED_ISSUE_MARKER not in body
+        ):
+            continue
+        try:
+            number = int(item.get("number"))
+        except (TypeError, ValueError):
+            continue
+        if trouvee is None:
+            trouvee = {
+                "number": number,
+                "title": title,
+                "body": body,
+            }
+        else:
+            # Episode incoherent : deux issues vivantes pour le meme rouge.
+            # On garde la plus ancienne et on le signale.
+            print(
+                "merge_ready : sentinelle main-red -- DEUX issues [main-red] "
+                "vivantes ({} et {}) ; la plus ancienne est retenue".format(
+                    trouvee["number"], number
+                )
+            )
+    if trouvee is None:
+        return ("absent", None)
+    return ("ok", trouvee)
+
+
+def _write_body_file(body: str) -> str:
+    """Ecrit un corps dans un fichier temporaire et rend son chemin.
+
+    Le corps passe par un fichier, jamais par `-f body=@...` : ce dernier
+    n'est expanse que par `-F`, et GitHub recevrait alors le litteral
+    `@chemin` (regle `gh-posting-hygiene`).
+    """
+    handle = tempfile.NamedTemporaryFile(
+        "w", suffix=".md", delete=False, encoding="utf-8"
+    )
+    try:
+        handle.write(body)
+    finally:
+        handle.close()
+    return handle.name
+
+
+def ensure_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], sha: str, check: str, test: str,
+    known_number: int | None = None,
+) -> tuple[str, int | None]:
+    """Ouvre ou REUTILISE l'issue canonique du rouge de `main` (#26706).
+
+    Renvoie `("create"|"reuse"|"echec", numero)` :
+
+    - ``reuse`` : une issue vivante existe, son titre et son corps ont ete
+      alignes sur le verdict courant (un meme episode qui change de test
+      en echec reste UNE issue) ;
+    - ``create`` : l'issue vient d'etre ouverte ;
+    - ``echec`` : rien n'a ete fait — recherche illisible, creation refusee
+      ou impossible a lire. La RETENUE reste posee dans tous les cas : elle
+      est ecrite AVANT, l'issue n'est qu'un canal de coordination.
+
+    ``known_number`` est le numero inscrit dans la retenue par un run
+    precedent : c'est la voie DETERMINISTE de reutilisation. Elle prime sur
+    la recherche, parce que l'index de recherche de GitHub peut avoir du
+    retard — deux runs rapproches ne doivent pas ouvrir deux issues.
+    """
+    title = main_red_issue_title(check, test)
+    body = main_red_issue_body(sha, check, test)
+    if known_number is not None:
+        _align_main_red_issue(runner, gh_env, known_number, title, body)
+        return ("reuse", known_number)
+    etat, item = _search_main_red_issue(runner, gh_env)
+    if etat == "illisible":
+        return ("echec", None)
+    if etat == "absent":
+        body_path = _write_body_file(body)
+        try:
+            result = runner.run(
+                [
+                    "gh",
+                    "issue",
+                    "create",
+                    "--repo",
+                    REPO,
+                    "--title",
+                    title,
+                    "--body-file",
+                    body_path,
+                ],
+                env=gh_env,
+            )
+        finally:
+            os.unlink(body_path)
+        if result.returncode != 0:
+            return ("echec", None)
+        match = re.search(r"/issues/(\d+)", result.stdout or "")
+        if not match:
+            return ("echec", None)
+        return ("create", int(match.group(1)))
+
+    number = int(item["number"])
+    _align_main_red_issue(runner, gh_env, number, title, body, item)
+    return ("reuse", number)
+
+
+def _align_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], number: int, title: str, body: str,
+    item: dict | None = None,
+) -> None:
+    """Aligne titre et corps de l'issue sur le verdict courant."""
+    if item is not None and item.get("title") == title and item.get("body") == body:
+        return
+    if item is None or item.get("title") != title:
+        runner.run(
+            ["gh", "issue", "edit", str(number), "--repo", REPO, "--title", title],
+            env=gh_env,
+        )
+    if item is None or item.get("body") != body:
+        body_path = _write_body_file(body)
+        try:
+            runner.run(
+                [
+                    "gh",
+                    "issue",
+                    "edit",
+                    str(number),
+                    "--repo",
+                    REPO,
+                    "--body-file",
+                    body_path,
+                ],
+                env=gh_env,
+            )
+        finally:
+            os.unlink(body_path)
+
+
+def close_main_red_issue(
+    runner: Runner, gh_env: dict[str, str], sha: str, check: str,
+    known_number: int | None = None,
+) -> tuple[str, int | None]:
+    """Ferme l'issue `[main-red]` vivante, si elle existe.
+
+    Renvoie `("ferme"|"rien"|"echec", numero)`. Une recherche illisible ne
+    ferme rien : l'issue sera reprise au run suivant. ``known_number``
+    (inscrit dans la retenue) prime sur la recherche : la fermeture vise
+    alors exactement l'issue de l'episode.
+    """
+    if known_number is not None:
+        number = known_number
+    else:
+        etat, item = _search_main_red_issue(runner, gh_env)
+        if etat == "illisible":
+            return ("echec", None)
+        if etat == "absent":
+            return ("rien", None)
+        number = int(item["number"])
+    commentaire = (
+        "Vert au commit `{sha}` : le check `{check}` est redevenu `success`. "
+        "La sentinelle `main-red` retire la retenue globale ; cette issue "
+        "est fermee automatiquement (#26706)."
+    ).format(sha=sha, check=check)
+    result = runner.run(
+        ["gh", "issue", "close", str(number), "--repo", REPO, "--comment", commentaire],
+        env=gh_env,
+    )
+    if result.returncode != 0:
+        return ("echec", number)
+    return ("ferme", number)
 
 
 def scope_exclusion(path: str) -> str | None:
