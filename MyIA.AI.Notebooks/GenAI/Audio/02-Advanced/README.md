@@ -24,6 +24,7 @@ Les numéros ci-dessous sont les étapes de cette sous-série. Elles présentent
 | 8 | [TTS expressif](02-8-Expressive-TTS.ipynb) | Expérimenter les tags de prosodie et comparer Fish S2 Pro et Dia TTS. | Avancé | [Voix](#voix) |
 | 9 | [ACE-Step](02-9-AceStep-Music-Generation.ipynb) | Générer une chanson à partir de paroles structurées et étudier les paramètres de génération. | Intermédiaire | [Musique](#musique) |
 | 10 | [Effets sonores AudioLDM2](02-10-Effets-Sonores-AudioLDM2.ipynb) | Générer des effets sonores à partir d'un texte, mesurer étapes, durée et guidance, puis discriminer un effet d'une musique. | Intermédiaire | [Effets sonores](#effets-sonores) |
+| 11 | [RVC v2 : conversion de voix chantée](02-11-SVS-Singing-Voice-RVC.ipynb) | Remplacer le timbre d'un chant en préservant la mélodie : charger un checkpoint, mesurer trajectoire f0, transposition et paramètre protect sur CPU, puis convertir une voix de parole (couple avant/après dans `assets/`). | Avancé | [Voix](#voix) |
 
 ## Approfondissements — Pratique
 
@@ -31,7 +32,7 @@ Les numéros ci-dessous sont les étapes de cette sous-série. Elles présentent
 
 Commencez par [Chatterbox](02-1-Chatterbox-TTS.ipynb) : fixez le texte et faites varier `exaggeration` ou `cfg_weight` pour distinguer expressivité et fidélité au conditionnement. [XTTS](02-2-XTTS-Voice-Cloning.ipynb) prolonge cette expérience par le clonage sans entraînement supplémentaire et la comparaison entre langues. La similarité calculée et l'écoute répondent à des questions différentes ; la qualité et la durée de l'extrait de référence influencent le résultat.
 
-Le [gateway](02-5-Multi-Model-TTS-Gateway.ipynb) déplace la question vers une application : vérifier la disponibilité d'un service, comparer les moteurs effectivement déployés et choisir un routage. Le carnet [TTS expressif](02-8-Expressive-TTS.ipynb) explore ensuite les tags de prosodie, Fish S2 Pro et Dia ; il suppose déjà les notions de synthèse des premiers carnets. Utilisez une voix de référence uniquement avec le consentement du locuteur et vérifiez les droits d'utilisation des modèles et des enregistrements.
+Le [gateway](02-5-Multi-Model-TTS-Gateway.ipynb) déplace la question vers une application : vérifier la disponibilité d'un service, comparer les moteurs effectivement déployés et choisir un routage. Le carnet [TTS expressif](02-8-Expressive-TTS.ipynb) explore ensuite les tags de prosodie, Fish S2 Pro et Dia ; il suppose déjà les notions de synthèse des premiers carnets. La [conversion RVC v2](02-11-SVS-Singing-Voice-RVC.ipynb) prend le chant enregistré pour point de départ : elle remplace le timbre en préservant la mélodie, mesurée note par note, sur CPU et avec un checkpoint de voix synthétique. Une seconde source — une voix de parole générée par le TTS [Kokoro](../01-Foundation/01-5-Kokoro-TTS-Local.ipynb) — montre que le même moteur convertit chant et parole ; le couple avant/après est committé dans `assets/`. Utilisez une voix de référence uniquement avec le consentement du locuteur et vérifiez les droits d'utilisation des modèles et des enregistrements.
 
 ### Musique
 
@@ -49,7 +50,7 @@ Pour ajouter des paroles, [ACE-Step](02-9-AceStep-Music-Generation.ipynb) introd
 
 ## Installation et limites — Pratique
 
-Chaque carnet indique ses dépendances propres et la configuration de ses modèles. Les générations locales demandent généralement un GPU NVIDIA et le téléchargement de poids ; la mémoire et le temps dépendent du modèle, de sa variante et de la machine. Demucs et le carnet MIDI décrivent aussi une exécution CPU, plus lente. Le carnet MIDI nécessite en outre FluidSynth ; YuE2 précise sa configuration Linux/GPU et ACE-Step décrit le déchargement vers la RAM pour réduire l'occupation GPU. AudioLDM2 documente ses deux correctifs de compatibilité pour transformers 5.x et tourne en float16 sous 2,5 Go de VRAM.
+Chaque carnet indique ses dépendances propres et la configuration de ses modèles. Les générations locales demandent généralement un GPU NVIDIA et le téléchargement de poids ; la mémoire et le temps dépendent du modèle, de sa variante et de la machine. Demucs et le carnet MIDI décrivent aussi une exécution CPU, plus lente. Le carnet MIDI nécessite en outre FluidSynth ; YuE2 précise sa configuration Linux/GPU et ACE-Step décrit le déchargement vers la RAM pour réduire l'occupation GPU. AudioLDM2 documente ses deux correctifs de compatibilité pour transformers 5.x et tourne en float16 sous 2,5 Go de VRAM. La conversion RVC v2 s'exécute entièrement sur CPU via le kernel WSL `rvc-wsl` (environnement conda `rvc`, Python 3.10), avec un temps de conversion de l'ordre de deux fois la durée du signal.
 
 Le gateway et certaines expériences TTS appellent des **services** : leur disponibilité, les modèles déployés et les éventuels identifiants doivent être vérifiés avant l'exécution. Un message de démonstration ou une section sautée faute de dépendance ne constitue pas une génération réelle. Les sorties enregistrées illustrent une configuration donnée ; elles ne garantissent ni la même performance ni la même qualité sur une autre machine.
 

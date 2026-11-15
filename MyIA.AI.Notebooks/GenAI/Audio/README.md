@@ -97,6 +97,7 @@ Un podcast de qualité demande une voix naturelle et une identité sonore distin
 | [02-8-Expressive-TTS](02-Advanced/02-8-Expressive-TTS.ipynb) | Fish S2 Pro, Dia TTS, tags expressifs | Local GPU | 6-18 GB |
 | [02-9-AceStep-Music-Generation](02-Advanced/02-9-AceStep-Music-Generation.ipynb) | ACE-Step v1.5, text-to-song multilingue | Local GPU | <4 GB |
 | [02-10-Effets-Sonores-AudioLDM2](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) | AudioLDM2, text-to-SFX, descripteurs mesurés | Local GPU | <3 GB |
+| [02-11-SVS-Singing-Voice-RVC](02-Advanced/02-11-SVS-Singing-Voice-RVC.ipynb) | RVC v2, conversion de voix chantée sur CPU | Kernel WSL (CPU) | — |
 
 La séparation de sources en est l'exemple le plus visuel : plutôt que de régénérer, Demucs ([02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb)) décompose un mix stéréo en quatre stems (batterie, basse, autre, voix) et en mesure l'énergie RMS :
 
@@ -167,6 +168,7 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
 | **YuE / SongGeneration 2** | 02-7 | GPU 10-24 GB VRAM |
 | **Fish S2 Pro / Dia TTS** | 02-8 | GPU 6-18 GB VRAM |
 | **AudioLDM2 (cvssp)** | 02-10 | GPU ~2,5 GB VRAM |
+| **RVC v2 (checkpoint DaFeiYu)** | 02-11 | Kernel WSL `rvc-wsl` (CPU) |
 | **OpenAI Realtime API** | 03-3 | `OPENAI_API_KEY` |
 | **FFmpeg** | 04-12 | Installé système |
 
@@ -175,6 +177,7 @@ Le notebook [03-1](03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb) com
 - **STT (Speech-to-Text)** — reconnaître la parole pour la transcrire en texte. Cœur des notebooks [01-2](01-Foundation/01-2-OpenAI-Whisper-STT.ipynb) (API cloud) et [01-4](01-Foundation/01-4-Whisper-Local.ipynb) (Whisper local).
 - **TTS (Text-to-Speech)** — synthétiser de la parole à partir de texte. Cœur des notebooks [01-1](01-Foundation/01-1-OpenAI-TTS-Intro.ipynb) (OpenAI) et [01-5](01-Foundation/01-5-Kokoro-TTS-Local.ipynb) (Kokoro local).
 - **Voice cloning** — reproduire l'identité vocale d'un locuteur à partir d'un court échantillon, pour un narrateur cohérent. Notebook [02-2](02-Advanced/02-2-XTTS-Voice-Cloning.ipynb) (XTTS v2).
+- **Singing voice conversion (SVC)** — remplacer le timbre d'un chant enregistré en préservant la mélodie, mesurée note par note. Notebook [02-11](02-Advanced/02-11-SVS-Singing-Voice-RVC.ipynb) (RVC v2, CPU).
 - **Prosodie** — l'intonation, le rythme et l'émotion qui rendent une voix naturelle ; pilotable par tags expressifs, et mesurable objectivement par partition syllabique (notes effectives, recouvrement top-3, motifs répétés — [04-10, section 10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb)). Notebooks [02-8](02-Advanced/02-8-Expressive-TTS.ipynb), [04-10](04-Applications/04-Audiobook/04-10-Annotation-Prosodique.ipynb) (tags + mesure) et [04-13](04-Applications/04-Audiobook/04-13-Audiobook-FishAudio-S2Pro.ipynb) (FishAudio S2-Pro, 29 tags).
 - **Source separation** — isoler les composantes d'un mix (voix, batterie, basse...). Notebook [02-4](02-Advanced/02-4-Demucs-Source-Separation.ipynb) (Demucs v4).
 - **Text-to-SFX (effets sonores)** — générer un effet sonore (impact, pluie, verre brisé) à partir d'une description, et le distinguer d'une musique par des descripteurs mesurés (flatness, centroïde, attaques). Notebook [02-10](02-Advanced/02-10-Effets-Sonores-AudioLDM2.ipynb) (AudioLDM2).
