@@ -131,10 +131,17 @@ _GH_OPEN_PRS_TIMEOUT_S = int(
 # #21742 -- ce cache ne vaut PLUS comme preuve de liberte : le producteur
 # (picker belt) y ecrivait une liste issue de `gh pr list --limit 200`, donc
 # TRONQUEE (mesure : 362 PRs ouvertes sur le depot, 200 seulement dans la
-# fenetre). Le format v2 (`open-prs-v2`) porte explicitement la completude ;
-# une liste nue (format heritage) n'en porte aucune et vaut absence de cache.
+# fenetre). Le format courant (`_OPEN_PRS_CACHE_FORMAT`) porte explicitement
+# la completude ; une liste nue (format heritage) n'en porte aucune et vaut
+# absence de cache.
 _OPEN_PRS_CACHE_PATH = os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_JSON")
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+# v3 (#26725) -- la liste `files` d'une PR n'est plus la liste BRUTE de
+# `/pulls/{n}/files` : pour une PR dont la base n'est pas la branche par
+# defaut, l'enumeration la reduit a ce que la PR change reellement (cf
+# `_reduce_stacked_pr_files`). Un cache v2 porte les listes base-relatives
+# d'avant -- dont les milliers de fichiers de rattrapage d'une PR empilee --
+# et n'a donc pas le droit d'etre relu.
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
 
 # --- #21742 : enumeration COMPLETE des PRs ouvertes ----------------------------
 #
@@ -2392,10 +2399,11 @@ class OpenPrsIncompleteError(RuntimeError):
 _OPEN_PRS_QUERY_FIRST = """
 query {
   repository(owner:"@OWNER@", name:"@NAME@") {
+    defaultBranchRef { name }
     pullRequests(states:OPEN, first:100, orderBy:{field:UPDATED_AT, direction:ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title headRefName body additions deletions
+        number title headRefName baseRefName body additions deletions
         headRefOid
         files(first:100) { totalCount nodes { path changeType } }
       }
@@ -2407,10 +2415,11 @@ query {
 _OPEN_PRS_QUERY_NEXT = """
 query($cursor: String) {
   repository(owner:"@OWNER@", name:"@NAME@") {
+    defaultBranchRef { name }
     pullRequests(states:OPEN, first:100, after:$cursor, orderBy:{field:UPDATED_AT, direction:ASC}) {
       pageInfo { hasNextPage endCursor }
       nodes {
-        number title headRefName body additions deletions
+        number title headRefName baseRefName body additions deletions
         headRefOid
         files(first:100) { totalCount nodes { path changeType } }
       }
@@ -2579,6 +2588,65 @@ def _gh_pr_files_rest(owner: str, name: str, number: int,
     return paths, previous
 
 
+def _reduce_stacked_pr_files(entries: list[dict],
+                             default_branch: str | None) -> None:
+    """#26725 -- une PR empilee n'occupe que ce qu'elle change.
+
+    `/pulls/{n}/files` (et le `files(first:100)` de GraphQL) decrit la
+    diff de la branche CONTRE SA BASE declaree. Pour une PR empilee -- base
+    = branche de feature, pas la branche par defaut -- la liste contient
+    donc tout l'avancement de `main` que la base n'a pas encore integre.
+
+    Instance fondatrice, mesuree le 2026-11-15 : #25029 (base
+    `feature/25013-chaines-07`, posee sur un `main` du 06/11) annoncait
+    4326 fichiers la ou elle n'en change que 7 ; deux lanes ont ete
+    bloquees le meme matin sur un fichier (`ICT-25b`, `SW-04`) qu'elle ne
+    touche pas.
+
+    Le remede est le **diff de contenu** de la PR : `origin/main...<tete>`,
+    soit la diff du point de divergence a la tete -- exactement les 7
+    chemins de #25029, contre 707 pour la diff a deux points (qui compte
+    aussi ce que `main` a change depuis) et 4171 pour l'union des commits
+    de la PR (`_pr_files_against_main`, #25243 : un de ses merges n'a aucun
+    parent sur `main` et se compare alors a une branche de feature). Le
+    resultat est intersecte avec la liste de l'API, comme le demande
+    l'issue. Trois gardes :
+
+      - base == branche par defaut, ou base inconnue : **aucun changement**
+        (exigence explicite de l'issue -- la liste de l'API reste la
+        reference pour une PR ordinaire) ;
+      - provenance non etablie (`None`) : la liste de l'API reste
+        l'occupation -- fail-CLOSED, une panne Git ne libere jamais un
+        chemin ;
+      - les ANCIENS chemins des renommages restent occupes : `git diff
+        --name-only` ne les rend pas, et un renommage est justement le
+        geste qui rend le chemin de base dangereux a editer ailleurs.
+
+    Mutation en place : l'appelant ecrit ensuite le cache, qui portera donc
+    la liste reduite (format v3).
+    """
+    if not default_branch:
+        return
+    for entry in entries:
+        base = entry.get("baseRefName")
+        if not isinstance(base, str) or not base or base == default_branch:
+            continue
+        changed = _pr_files_changed_against_main(entry)
+        if changed is None:
+            continue
+        api_paths = {
+            node.get("path") for node in entry.get("files") or []
+            if isinstance(node, dict) and node.get("path")
+        }
+        own = [path for path in changed if not api_paths or path in api_paths]
+        known = set(own)
+        for previous in entry.get("renames") or []:
+            if previous and previous not in known:
+                own.append(previous)
+                known.add(previous)
+        entry["files"] = [{"path": path} for path in own]
+
+
 def _gh_open_prs_complete() -> list[dict]:
     """Enumeration COMPLETE des PRs ouvertes.
 
@@ -2625,9 +2693,16 @@ def _gh_open_prs_complete() -> list[dict]:
             raise OpenPrsIncompleteError(
                 "depot introuvable dans la reponse GraphQL", repo)
         connection = repository.get("pullRequests") or {}
+        # #26725 -- la branche par defaut du depot, lue dans la MEME reponse
+        # que la liste : pas d'appel supplementaire, et la valeur decrit le
+        # depot au moment de l'enumeration.
+        default_branch = (repository.get("defaultBranchRef") or {}).get("name")
+        if not isinstance(default_branch, str) or not default_branch:
+            default_branch = None
         # PRs a relire en REST : plafonnees (liste de fichiers tronquee) ou
         # porteuses d'un renommage (ancien chemin invisible cote GraphQL).
         rest_needed: list[tuple[int, int]] = []
+        page_entries: list[dict] = []
         for node in connection.get("nodes") or []:
             files = node.get("files") or {}
             file_nodes = files.get("nodes") or []
@@ -2643,6 +2718,9 @@ def _gh_open_prs_complete() -> list[dict]:
                 "number": number,
                 "title": node.get("title"),
                 "headRefName": node.get("headRefName"),
+                # #26725 -- la base declaree decide si la liste `files`
+                # ci-dessous est la diff de la PR ou celle de sa pile.
+                "baseRefName": node.get("baseRefName"),
                 "headRefOid": node.get("headRefOid"),
                 "body": node.get("body"),
                 "additions": node.get("additions"),
@@ -2655,6 +2733,7 @@ def _gh_open_prs_complete() -> list[dict]:
                 "renames": [],
             }
             prs.append(entry)
+            page_entries.append(entry)
             by_number[number] = entry
         if len(prs) > _OPEN_PRS_HARD_CAP:
             raise OpenPrsIncompleteError(
@@ -2683,6 +2762,11 @@ def _gh_open_prs_complete() -> list[dict]:
                         if old not in known:
                             entry["files"].append({"path": old})
                             known.add(old)
+        # #26725 -- la liste ci-dessus est base-relative ; pour une PR
+        # empilee elle est reduite a ce que la PR change. Apres le refetch :
+        # c'est la liste COMPLETE que l'intersection doit reduire, pas la
+        # preview GraphQL de 100 chemins.
+        _reduce_stacked_pr_files(page_entries, default_branch)
         page_info = connection.get("pageInfo") or {}
         if not page_info.get("hasNextPage"):
             break
@@ -2696,15 +2780,16 @@ def _gh_open_prs_complete() -> list[dict]:
 def _read_open_prs_cache() -> list[dict] | None:
     """Cache de session (#19643) ; `None` = absent, corrompu ou heritage.
 
-    Le format v2 (`open-prs-v2`) porte la completude : un cache v2 marque
-    `complete: true` est une preuve ; un cache v2 marque incomplet leve
-    `OpenPrsIncompleteError` (on ne pretend pas avoir la liste).
+    Le format courant (`_OPEN_PRS_CACHE_FORMAT`, v3 depuis #26725) porte la
+    completude : un cache marque `complete: true` est une preuve ; un cache
+    marque incomplet leve `OpenPrsIncompleteError` (on ne pretend pas avoir
+    la liste).
 
     Une liste NUE (format heritage, produit par le picker belt) ne porte
     AUCUNE preuve de completude : elle vient de `gh pr list --limit 200`,
     donc elle est tronquee des que le depot compte plus de 200 PRs ouvertes
     (mesure : 362). Elle est donc traitee comme absente -- et le fetch
-    complet qui suit la REECRIT le fichier au format v2.
+    complet qui suit la REECRIT le fichier au format courant.
     """
     if not _OPEN_PRS_CACHE_PATH:
         return None
@@ -3007,6 +3092,73 @@ def _open_prs_by_referenced_issue(
     return index
 
 
+def _pr_head_commit(pr: dict) -> str | None:
+    """OID de tete de la PR, ou `None` si l'objet n'est pas etablissable.
+
+    L'objet est cherche dans le depot local, puis ramene par sa ref de pull
+    quand il manque (#25243). `None` est un echec de provenance, jamais une
+    preuve : les appelants conservent alors leur mesure de repli.
+    """
+    head = pr.get("headRefOid")
+    number = pr.get("number")
+    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+        return None
+
+    def git(*args: str) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["git", *args], capture_output=True, check=False,
+            encoding="utf-8", errors="strict",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+
+    try:
+        if git("cat-file", "-e", f"{head}^{{commit}}").returncode == 0:
+            return head
+        if not isinstance(number, int) or number <= 0:
+            return None
+        fetched = git("fetch", "--no-tags", "origin", f"refs/pull/{number}/head")
+        if fetched.returncode != 0:
+            return None
+        resolved = git("rev-parse", "--verify", "FETCH_HEAD")
+        if (resolved.returncode != 0
+                or resolved.stdout.strip().lower() != head.lower()):
+            return None
+        return resolved.stdout.strip()
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
+def _pr_files_changed_against_main(pr: dict) -> list[str] | None:
+    """#26725 -- chemins ou la PR change, du point de divergence a sa tete.
+
+    `git diff --name-only origin/main...<tete>`, l'equivalent local du
+    `compare/main...<tete>` de GitHub : la reference est le point de
+    divergence, pas la tete de `main`, donc ce que `main` a change depuis
+    ne compte pas. Mesure du 15/11 sur #25029 -- 4326 fichiers annonces par
+    `/pulls/25029/files`, 707 en diff a deux points (l'avancement de `main`
+    y entre), **7** ici : ses 7 carnets `Chaines-08` et rien d'autre.
+
+    `None` = provenance non etablie (objet de tete introuvable, `origin/main`
+    absent, panne Git) : l'appelant garde la liste de l'API, fail-CLOSED.
+    """
+    head = _pr_head_commit(pr)
+    if head is None:
+        return None
+
+    try:
+        diff = subprocess.run(
+            ["git", "diff", "--name-only", "-z",
+             f"origin/main...{head}", "--"],
+            capture_output=True, check=False,
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+        if diff.returncode != 0:
+            return None
+        return [path.decode("utf-8") for path in diff.stdout.split(b"\0") if path]
+    except (OSError, UnicodeDecodeError, subprocess.SubprocessError):
+        return None
+
+
 def _pr_files_against_main(pr: dict) -> list[str] | None:
     """Return paths touched by first-parent PR commits absent from main.
 
@@ -3023,9 +3175,8 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
     release an implicit occupation. An empty list means there is no path
     touched by an ordinary first-parent commit or contributed by a merge.
     """
-    head = pr.get("headRefOid")
-    number = pr.get("number")
-    if not isinstance(head, str) or not re.fullmatch(r"[0-9a-fA-F]{40,64}", head):
+    head = _pr_head_commit(pr)
+    if head is None:
         return None
 
     def git(*args: str) -> subprocess.CompletedProcess:
@@ -3036,18 +3187,6 @@ def _pr_files_against_main(pr: dict) -> list[str] | None:
         )
 
     try:
-        has_head = git("cat-file", "-e", f"{head}^{{commit}}")
-        if has_head.returncode != 0:
-            if not isinstance(number, int) or number <= 0:
-                return None
-            fetched = git("fetch", "--no-tags", "origin",
-                          f"refs/pull/{number}/head")
-            if fetched.returncode != 0:
-                return None
-            fetched_head = git("rev-parse", "--verify", "FETCH_HEAD")
-            if (fetched_head.returncode != 0
-                    or fetched_head.stdout.strip().lower() != head.lower()):
-                return None
         main = git("rev-parse", "--verify", "origin/main")
         if main.returncode != 0:
             return None
