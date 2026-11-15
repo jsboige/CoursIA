@@ -108,6 +108,15 @@ except ImportError:  # charge via importlib dans les tests (hors scripts/)
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
     import gh_identity
 
+# Lectures REST conditionnelles (ETag persiste, partage par machine) : meme
+# protocole que pr_gate #26260, etendu aux processus courts de B.0. Le module
+# porte les invariants ; `gh_json` ne fait que router les argv applicables.
+try:
+    import gh_etag
+except ImportError:  # meme shim que gh_identity (tests hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_etag
+
 REPO = "jsboige/CoursIA"
 
 # Les deux orthographes d'un meme bot : la lecture normalisee (voir
@@ -3736,7 +3745,11 @@ def _nits_budget_exhausted() -> bool:
 #    `pr list --json`, `issue view --json` = GraphQL ; `api repos/...` = REST.
 # 2. B.0 publie desormais son propre compte, sur stderr et dans la sortie
 #    JSON de l'audit retro.
-API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0}
+# 3. `rest_304` (#26260, extension cross-processus) : lectures REST servies
+#    par un 304 ETag serveur -- un 304 ne consomme AUCUN quota (mesure
+#    #26260), le compte `rest` compte les appels gh, `rest_304` la part
+#    servie gratuitement. L'economie devient mesurable par run, pas supposee.
+API_USAGE: dict[str, int] = {"rest": 0, "graphql": 0, "rest_304": 0}
 
 
 def _count_api_call(args: list[str]) -> None:
@@ -3765,6 +3778,20 @@ def gh_json(args: list[str]) -> object:
             f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
             "PR rendue absente (non evaluee, #18829), #21882 Option C")
     _count_api_call(args)
+    # Lectures REST conditionnelles (#26260, extension cross-processus) : les
+    # chemins `api repos/...` sans drapeau passent par l'ETag persiste partage
+    # par machine. Un 304 est une PREUVE SERVEUR que le chemin est inchange
+    # depuis le corps cache -- B.0 est un organe de merge, aucun corps n'est
+    # jamais servi sans reponse du serveur, donc aucun faux vert possible.
+    # Tout echec non-304 leve les memes exceptions que le chemin d'origine
+    # (CalledProcessError / JSONDecodeError / TimeoutExpired).
+    etag_path = gh_etag.etag_applicable(args)
+    if etag_path is not None:
+        body, served_by_304 = gh_etag.conditional_get(
+            etag_path, timeout=GH_CALL_TIMEOUT_S)
+        if served_by_304:
+            API_USAGE["rest_304"] += 1
+        return _project_gh_payload(args, body)
     out = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
@@ -6687,7 +6714,8 @@ def main() -> int:
         # #17315 : la consommation sort sur stderr, comme le fait le gate --
         # un compteur publie n'est lu par personne s'il reste dans le JSON.
         print(f"API-USAGE (#17315) : rest={API_USAGE['rest']} "
-              f"graphql={API_USAGE['graphql']}", file=sys.stderr)
+              f"graphql={API_USAGE['graphql']} "
+              f"rest_304={API_USAGE['rest_304']}", file=sys.stderr)
         return rc
     except subprocess.TimeoutExpired as exc:
         # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.
