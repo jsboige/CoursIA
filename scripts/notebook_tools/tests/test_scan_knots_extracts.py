@@ -583,7 +583,7 @@ class TestFilterKnots:
 
 class TestReadOnly:
     def test_scan_does_not_modify_notebook_bytes(self, tmp_path: Path):
-        nb = tmp_path / "Knots/demo.ipynb"
+        nb = tmp_path / "Noeuds/demo.ipynb"
         _write_nb(nb, [_md("FigureEight.lean modelise le noeud 8_1.")])
         before = nb.read_bytes()
         truth = _bare_truth({"FigureEight": {"4_1"}})

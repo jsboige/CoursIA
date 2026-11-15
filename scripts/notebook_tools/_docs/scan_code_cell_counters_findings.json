@@ -42,7 +42,7 @@
     "class": "KEEP"
   },
   {
-    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\GameOfLife\\GOL-02-Golly.ipynb",
+    "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\JeuDeLaVie\\GOL-02-Golly.ipynb",
     "cell_index": 25,
     "line_no": 37,
     "text": "# Temps par generation ~ O(W x H) : pour le gun (50x120=6000 cells), 1000 gens a pris gun_time",

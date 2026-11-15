@@ -31,7 +31,7 @@ Ce notebook configure l'environnement pour la serie de notebooks Lean qui explor
 11. **Lean-11-TorchLean** - PyTorch + Lean (reasoning vs learning)
 12. **Lean-12-Sensitivity-Theorem** - théorème de sensibilite
 13. **Lean-15-Grothendieck-Tribute** - Hommage a Alexandre Grothendieck
-14b. **GOL/GOL-01-Regles-Vie-Lean** - Hommage a John Conway (Game of Life)
+14b. **JeuDeLaVie/GOL-01-Regles-Vie-Lean** - Hommage a John Conway (Game of Life)
 15. **Lean-13-Kochen-Specker** - théorème de Kochen-Specker
 
 **Public vise:** étudiants, chercheurs interesses par la vérification formelle et les assistants de preuves.
@@ -8777,7 +8777,7 @@ def etiquette(chemin):
     return str(chemin)
 
 
-lake_du_carnet = find_lean_project('GOL/conway_lean')
+lake_du_carnet = find_lean_project('JeuDeLaVie/conway_lean')
 racines = [repo_root] if main_root == repo_root else [repo_root, main_root]
 
 commande = [sys.executable, str(organ), 'resolve', '--json', '--project', str(lake_du_carnet)]
@@ -9105,7 +9105,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb,7e3c6ace,markdown
 
 ### Prochaine étape
 
-Pour explorer d'autres résultats de John Conway formalises en Lean, voir [GOL/GOL-01-Regles-Vie-Lean](GOL/GOL-01-Regles-Vie-Lean.ipynb). Pour la robustesse des reseaux de neurones, voir [Lean-11-TorchLean](Lean-11-TorchLean.ipynb).",,,,,,,,a7d40b4b3a33801d,,,,,,,,,,,,,,,
+Pour explorer d'autres résultats de John Conway formalises en Lean, voir [JeuDeLaVie/GOL-01-Regles-Vie-Lean](JeuDeLaVie/GOL-01-Regles-Vie-Lean.ipynb). Pour la robustesse des reseaux de neurones, voir [Lean-11-TorchLean](Lean-11-TorchLean.ipynb).",,,,,,,,a7d40b4b3a33801d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-13-Kochen-Specker.ipynb,ab8d7f98,markdown,fr,85cea5fbdcde0203,"## 10. Pour aller plus loin
 
 ### References historiques

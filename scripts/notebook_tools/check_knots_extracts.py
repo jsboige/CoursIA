@@ -98,7 +98,7 @@ def lake_roots(notebook_dir: Path) -> list[Path]:
     ``Knots/FigureEight.lean`` du scaffold ``knot_lean/`` ». Resolu depuis le
     dossier du carnet, ce chemin n'existe pas -- et le carnet est signale
     STALE_PATH alors que sa reference est valide (mesure du 2026-11-13,
-    tranche #26056 : le renommage du repertoire `KNOTS` -> `Knots` a rendu
+    tranche #26056 : le renommage du repertoire `KNOTS` -> `Noeuds` a rendu
     cette forme capturable, et elle a fracasse sur une resolution qui ne
     connait pas la racine du lac).
     """
