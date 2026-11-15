@@ -101,11 +101,11 @@ def main():
     categories = {
         'Image': [
             'Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb',
-            'Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb',
+            'Image/01-Foundation/01-2-Generation-Image-API.ipynb',
             'Image/01-Foundation/01-3-Basic-Image-Operations.ipynb',
             'Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb',
-            'Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb',
-            'Image/01-Foundation/01-5b-Qwen-Image-Edit-2509.ipynb',
+            'Image/01-Foundation/01-5-Edition-Image-Prompt.ipynb',
+            'Image/01-Foundation/01-5b-Edition-Image-Prompt-Iterations.ipynb',
             'Image/02-Advanced/02-2-FLUX-1-Advanced-Generation.ipynb',
             'Image/02-Advanced/02-3-Stable-Diffusion-3-5.ipynb',
             'Image/02-Advanced/02-4-Z-Image-Lumina2.ipynb',

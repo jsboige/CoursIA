@@ -18,11 +18,7 @@
       "GameTheory/GameTheory-15-CooperativeGames-CSharp.ipynb",
       "GameTheory/GameTheory-17-MultiAgent-RL-CSharp.ipynb",
       "GameTheory/GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb",
-      "GameTheory/GameTheory-18b-Casser-la-Composition-Python.ipynb",
-      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb",
-      "GameTheory/GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb",
-      "GameTheory/GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb",
-      "GameTheory/GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb"
+      "GameTheory/GameTheory-18c-Humour-Banc-Python.ipynb"
     ],
     "GameTheory/SocialChoice": [
       "GameTheory/SocialChoice/03-Voting-Methods-Csharp.ipynb"
@@ -224,11 +220,11 @@
       "Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-17-VRP-Logistics-CSharp.ipynb",
       "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb",
-      "Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "Search/Part3-Cas-pratiques/App-2-GraphColoring-CSharp.ipynb",
-      "Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb"
+      "Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-Python.ipynb",
+      "Search/Part3-Cas-pratiques/App-01-NQueens-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
+      "Search/Part3-Cas-pratiques/App-02-GraphColoring-CSharp.ipynb",
+      "Search/Part3-Cas-pratiques/App-08-MiniZinc-CSharp.ipynb"
     ],
     "Search/Part4-Metaheuristics/MGS-vs-mealpy": [
       "Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-22-MGS-vs-Mealpy.ipynb"
