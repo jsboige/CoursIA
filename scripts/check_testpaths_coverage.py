@@ -545,7 +545,15 @@ def _maybe_target(token: str, targets: set[str]) -> None:
     GradeBookApp, famille 5 de #14615, devenu dotnet/GradeBookApp au move
     #13751). Les flags (préfixe `-`) et variables (`$`) ne
     sont jamais des cibles.
+
+    Les guillemets de tête et de queue sont retirés AVANT le test de forme :
+    le job `adk-contracts` de `scripts-tests.yml` cite ses cibles entre
+    guillemets (`"scripts/tests/test_adk_runtime_contracts.py"`), et une
+    cible entre guillemets est nonetheless exécutée par la CI — sans ce
+    retrait, la cible sortait « NON JOUÉE » alors que la CI la joue (mesure
+    du 2026-11-15, revue du coordinateur sur #26759).
     """
+    token = token.strip().strip("\"'")
     if token in ("\\",) or token.startswith("-") or "$" in token:
         return
     if "/" in token or token.endswith(".py") or re.fullmatch(r"[A-Za-z0-9_.-]+", token):

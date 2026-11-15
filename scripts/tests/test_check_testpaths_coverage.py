@@ -107,6 +107,40 @@ def test_extract_run_targets_root_dir_without_slash() -> None:
     assert "--tb=short" not in targets and "-q" not in targets
 
 
+def test_extract_run_targets_retire_les_guillemets() -> None:
+    """Une cible entre guillemets est une cible (#26759, revue du coordinateur).
+
+    Le job `adk-contracts` de `scripts-tests.yml` cite ses deux cibles entre
+    guillemets : sans retrait des guillemets, elles sortaient « NON JOUÉE »
+    alors que la CI les joue.
+    """
+    text = """        run: |
+          pytest \\
+            "scripts/tests/test_adk_runtime_contracts.py" \\
+            'config/test_providers.py' \\
+            --tb=short -q
+"""
+    targets = extract_run_targets(text)
+    assert "scripts/tests/test_adk_runtime_contracts.py" in targets
+    assert "config/test_providers.py" in targets
+    assert '"scripts/tests/test_adk_runtime_contracts.py"' not in targets
+    assert "'config/test_providers.py'" not in targets
+
+
+def test_les_cibles_du_job_adk_sont_reconnues_sur_le_workflow_reel() -> None:
+    """Contrôle positif sur le workflow réel : les deux cibles existent.
+
+    Sans ce test, le retrait des guillemets pourrait casser la détection
+    sans qu'aucune cible réelle ne soit vérifiée.
+    """
+    wf = (REPO_ROOT / ".github/workflows/scripts-tests.yml").read_text(encoding="utf-8")
+    targets = extract_run_targets(wf)
+    assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
+            "07-Agent-Orchestration/utils/test_adk_runtime_contracts.py") in targets
+    assert ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/"
+            "07-Agent-Orchestration/config/test_providers.py") in targets
+
+
 def test_is_covered_exact_and_ancestor() -> None:
     assert is_covered("scripts/tests", ["scripts/tests"])
     assert is_covered("scripts/lean/tests", ["scripts"])  # ancêtre
