@@ -7856,14 +7856,19 @@ def test_implicit_absent_when_no_pr_references(monkeypatch, capsys):
     assert "CLEAR" in captured.out
 
 
-def test_implicit_not_run_when_caller_owns_the_grain(monkeypatch, capsys):
-    # Non-regression review 5429946072 (lettre #14300 : « sans qu'aucun
-    # [CLAIMED] n'ait ete pose ») : la jambe ne tourne que si le registre
-    # ne porte AUCUN claim actif -- ni d'une autre lane, ni de l'APPELANT.
-    # Une lane qui a pose son marqueur et croise une PR tierce sur l'issue
-    # reste OWNED_BY_ME (exit 0), jamais IMPLICIT (exit 3) : sinon le
-    # message « poser le marqueur » ne leverait rien et le picker retirait
-    # a la lane son propre grain.
+def test_implicit_undatable_pr_does_not_flip_the_caller_verdict(monkeypatch, capsys):
+    # #26751 -- la jambe IMPLICIT tourne DESORMAIS pour la lane appelante
+    # (elle ne tournait que si `mine is None`). L'invariant de la review
+    # 5429946072 est preserve par le FILTRE CHRONOLOGIQUE : une PR
+    # ANTERIEURE au claim signale que le claim a recouvre une livraison
+    # (verdict IMPLICIT), une PR POSTERIEURE reste subsumee par le claim
+    # (verdict CLEAR) -- les deux cas sont pintest dans
+    # scripts/tests/test_check_lane_claim_implicit.py.
+    #
+    # Ici la PR n'a pas de date de creation : l'ORDRE ne peut pas etre
+    # etabli, donc la jambe ne fabrique pas de verdict (fail-open + WARN,
+    # meme posture que sur un `gh` mort). Le verdict de la lane reste
+    # CLEAR -- c'est le comportement d'avant #26751, preserve.
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
     p = payload(comment("[CLAIMED] lane myia-po-2024:CoursIA -- supervise",
                         "2026-09-02T10:00:00Z"),
@@ -7873,6 +7878,7 @@ def test_implicit_not_run_when_caller_owns_the_grain(monkeypatch, capsys):
     assert rc == 0
     captured = capsys.readouterr()
     assert "IMPLICIT" not in captured.out
+    assert "WARN" in captured.err
     brace = captured.out.find("{")
     data, _ = json.JSONDecoder().raw_decode(captured.out[brace:])
     assert data["my_active_claim"] is True
@@ -7890,10 +7896,12 @@ def test_implicit_skips_own_lane_pr(monkeypatch, capsys):
     assert "IMPLICIT" not in capsys.readouterr().out
 
 
-def test_implicit_not_run_on_posting_path(monkeypatch, capsys):
-    # `--claim` appelle _run_check SANS la jambe (check_open_pr_paths=False,
-    # #16570) : poster le marqueur EST le geste de deconfliction, il ne doit
-    # jamais etre refuse par la jambe qu'il vient lever.
+def test_implicit_leg_is_opt_in_at_the_run_check_level(monkeypatch, capsys):
+    # La jambe reste OPT-IN au niveau de `_run_check` : c'est l'appelant qui
+    # decide. #26751 a change le CHOIX de l'appelant sur le chemin
+    # d'ECRITURE (`--claim` passe maintenant `check_open_pr_paths=True`, et
+    # un rc=3 refuse de poster), pas le comportement de la fonction quand
+    # le drapeau est absent. Ce test garde le contrat de la fonction.
     monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [_PR_14293])
     p = payload(number=14259)
     rc = clc._run_check(p, "myia-po-2024:CoursIA",
@@ -8407,7 +8415,12 @@ def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
     `test_open_prs_legacy_bare_list_cache_is_not_trusted`).
     """
     cached_prs = [{"number": 1, "title": "cached", "body": "",
-                   "headRefName": "x", "files": [], "renames": []}]
+                   "headRefName": "x", "files": [], "renames": [],
+                   # #26751 -- la date de creation serveur de la PR : sans
+                   # elle, le cache est traite comme absent (le filtre
+                   # chronologique de la jambe IMPLICIT ne doit pas fonder un
+                   # verdict fabrique).
+                   "created_at": "2026-11-15T00:00:00Z"}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": clc._OPEN_PRS_CACHE_FORMAT,
@@ -8920,7 +8933,11 @@ def test_open_prs_v2_complete_cache_is_trusted(monkeypatch, tmp_path,
     servi sans aucun appel `gh` (c'est l'economie de session de #19643,
     conservee)."""
     cached = [{"number": 5, "title": "cached-v2", "headRefName": "b",
-               "body": "", "files": [], "renames": []}]
+               "body": "", "files": [], "renames": [],
+               # #26751 -- date de creation serveur : un cache qui ne la
+               # porte pas est traite comme absent (le fetch complet la
+               # reecrit).
+               "created_at": "2026-11-15T00:00:00Z"}]
     cache = tmp_path / "open_prs.json"
     cache.write_text(json.dumps({
         "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True,
