@@ -1,7 +1,7 @@
 """Tests de l'organe stale-claim (#18354 tranche 1).
 
 Cas canoniques mesures sur App-4b-JobShopScheduling-CSharp (≈ 12 vs
-optimum committé 11) et App-3-NurseScheduling (> 80% sans output local),
+optimum committé 11) et App-03-NurseScheduling-Python (> 80% sans output local),
 plus les gardes FP calibrees sur la mesure du 29/09 (31 -> 19 findings
 sur 30 carnets sains).
 """

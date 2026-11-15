@@ -307,3 +307,5 @@ L'agent doit maintenir:
 - `qc-research-log.md` - Historique des recherches
 - `qc-findings.md` - Findings positifs a retenir
 - `qc-failed-approaches.md` - Approches qui n'ont pas fonctionne
+
+Pièges mesurés (lecture d'un backtest, ordres, données, framework, outils) : [docs/qc/qc-pieges-mesures.md](../../docs/qc/qc-pieges-mesures.md).
