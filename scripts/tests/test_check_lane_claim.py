@@ -8812,6 +8812,48 @@ def test_open_prs_cache_without_renames_index_is_not_trusted(monkeypatch,
     assert written["prs"] == fresh
 
 
+def test_open_prs_cache_without_created_at_is_not_trusted(monkeypatch,
+                                                           tmp_path):
+    """#26751 -- un cache sans la date de creation n'est PAS une preuve.
+
+    Sans elle, la jambe IMPLICIT ne peut pas dire si une PR est ANTERIEURE
+    au claim de la lane appelante : le filtre par date deviendrait un
+    verdict fabrique. Le cache est donc traite comme absent (le lecteur
+    rend `None`), et le fetch complet qui suit le REECRIT au format
+    courant.
+    """
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps({
+        "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True, "count": 1,
+        "prs": [{"number": 1, "title": "ancien-cache", "headRefName": "b",
+                 "body": "", "files": [], "renames": []}],
+    }), encoding="utf-8")
+    monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+    assert clc._read_open_prs_cache() is None
+
+
+def test_open_prs_cache_accepte_les_deux_graphies_de_date(monkeypatch,
+                                                           tmp_path):
+    """Le jumeau du cas precedent : les DEUX graphies sont acceptees.
+
+    `created_at` vient du fetch GraphQL de l'organe, `createdAt` du
+    `gh pr list` du picker -- meme chose, deux ecrivains.
+    """
+    for key in ("created_at", "createdAt"):
+        cache = tmp_path / f"open_prs_{key}.json"
+        cache.write_text(json.dumps({
+            "format": clc._OPEN_PRS_CACHE_FORMAT, "complete": True,
+            "count": 1,
+            "prs": [{"number": 1, "title": "cache-courant", "headRefName": "b",
+                     "body": "", "files": [], "renames": [],
+                     key: "2026-11-14T10:00:00Z"}],
+        }), encoding="utf-8")
+        monkeypatch.setattr(clc, "_OPEN_PRS_CACHE_PATH", str(cache))
+        prs = clc._read_open_prs_cache()
+        assert prs is not None and prs[0]["number"] == 1
+
+
+
 def test_open_prs_complete_raises_on_refetch_count_mismatch(monkeypatch,
                                                             _isolated_open_prs):
     """#21742 -- si le refetch REST rend MOINS de chemins que le `totalCount`
