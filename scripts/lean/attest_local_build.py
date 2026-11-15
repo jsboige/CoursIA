@@ -42,10 +42,24 @@ Sur echec (build en echec, timeout, orphelins, cache incompatible), l'organe
 ne poste **rien** : une attestation absente vaut mieux qu'une attestation
 fausse. Le refus est explicite dans la sortie et dans le code de retour.
 
+Budget et parallélisme
+----------------------
+`lean_exec` distingue deux grandeurs qu'il ne faut pas confondre : le
+**budget** (les places reservees dans le cap machine-wide, qui compte des
+PROCESSUS) et la **parallelisme accordee** (les compilations concurrentes,
+qui borne `LEAN_NUM_THREADS` -- le seul levier mesure qui agit sur la
+concurrence reelle, cf. #26480). Ses defauts se contredisent : `budget = 2`
+places reservees, `jobs = cpu // 4` (8 sur un hote a 32 coeurs). L'organe
+passe donc les deux explicitement et les aligne : le budget couvre les
+compilations **et** le scheduler `lake`, sinon il sous-compte l'occupation
+reelle et la supervision tue un run qui utilise exactement le parallélisme
+qu'on lui a accorde.
+
 Usage
 -----
     python scripts/lean/attest_local_build.py <PR> [--repo jsboige/CoursIA]
                                               [--dry-run] [--json]
+                                              [--jobs N] [--budget N]
 
 Sortie : JSON sur stdout avec le verdict, les lakes, la duree, le SHA atteste
 et l'identifiant du commentaire poste (vide si rien n'a ete poste).
@@ -54,6 +68,8 @@ et l'identifiant du commentaire poste (vide si rien n'a ete poste).
 from __future__ import annotations
 
 import argparse
+import base64
+import fnmatch
 import json
 import os
 import shutil
@@ -76,16 +92,33 @@ DEFAULT_REPO = "jsboige/CoursIA"
 MANIFEST_PATH = LEAN_DIR / "ci_lakes.json"
 LEAN_EXEC = LEAN_DIR / "lean_exec.py"
 
-#: Cache chaud de reference : le lake-pivot qui porte le checkout Mathlib
-#: partage par junction (cf `docs/lean/coordinator-workflow.md`).
-CACHE_PIVOT = (
-    REPO_ROOT
-    / "MyIA.AI.Notebooks"
-    / "SymbolicAI"
-    / "Lean"
-    / "GOL"
-    / "conway_lean"
-)
+# --------------------------------------------------------------------------
+# #26630 -- le cache chaud se RESOUT par toolchain, il n'est plus fige.
+#
+# Un seul pivot (`GOL/conway_lean`, toolchain v4.33.0) rendait trois lakes
+# INMERGEABLES PAR CONSTRUCTION : `formal_logic` (v4.33.1),
+# `socialchoicepeters` (v4.32.1) et `conwaycgt` (v4.33.0-rc1) ne peuvent pas
+# emprunter le cache d'une autre toolchain -- le build est produit par la
+# toolchain du lake. Instance : #25236, dont `formal_logic` etait refuse
+# AVANT tout build, alors que les trois autres lakes de la meme PR etaient
+# verts en local.
+#
+# Le pivot n'est donc plus un CHEMIN FIGE : c'est le lac du clone courant dont
+# le `lean-toolchain` porte la toolchain du lake atteste ET dont le
+# `.lake/packages` est chaud. La table se resout a l'EXECUTION : un lake
+# prechauffe devient pivot de sa toolchain, sans table a maintenir.
+#
+# Un lake dont la toolchain n'a aucun cache chaud n'est pas un echec de build :
+# l'organe sort avec le motif distinct `no-warm-cache-for-toolchain` et la
+# commande de prechauffage.
+# --------------------------------------------------------------------------
+
+#: Motif distinct rendu quand la toolchain du lake n'a aucun cache chaud.
+NO_WARM_CACHE = "no-warm-cache-for-toolchain"
+LAKE_NOT_IN_CLONE = "lake-absent-du-clone"
+
+#: Sous-dossier qui porte le checkout Mathlib chaud (cible de la junction).
+WARM_PACKAGES = Path(".lake") / "packages"
 
 #: Timeout du build, en secondes. Deux modules a cache chaud prennent ~90 s
 #: (mesure du coordinateur) ; le budget laisse une marge large sans devenir
@@ -95,12 +128,25 @@ DEFAULT_TIMEOUT = 1800.0
 #: Timeout du `lake build` par lake.
 DEFAULT_LAKE_TIMEOUT = 900.0
 
+#: Parallélisme accordé a `lake build` : nombre de compilations concurrentes.
+#: La valeur implicite de `lean_exec` est `cpu // 4` (8 sur un hote a 32
+#: coeurs), ce qui contredit son budget implicite (2 places) : les deux
+#: grandeurs sont passees explicitement par l'organe (#26480).
+DEFAULT_BUILD_JOBS = 3
+
+#: Places reservees dans le cap machine-wide. Le cap compte des PROCESSUS :
+#: un run qui heberge `jobs` compilations concurrentes heberge en plus le
+#: scheduler `lake`. Le budget doit donc couvrir les deux, sans quoi il
+#: sous-compte l'occupation reelle (#26480).
+DEFAULT_BUILD_BUDGET = DEFAULT_BUILD_JOBS + 1
+
 
 class OrganError(RuntimeError):
     """L'organe n'a pas pu produire d'attestation."""
 
 
-def _run(cmd: list[str], *, cwd: Path | None = None, timeout: float | None = None) -> subprocess.CompletedProcess:
+def _run(cmd: list[str], *, cwd: Path | None = None, timeout: float | None = None,
+         env: dict[str, str] | None = None) -> subprocess.CompletedProcess:
     return subprocess.run(
         cmd,
         cwd=str(cwd) if cwd else None,
@@ -109,7 +155,42 @@ def _run(cmd: list[str], *, cwd: Path | None = None, timeout: float | None = Non
         encoding="utf-8",
         errors="replace",
         timeout=timeout,
+        env=env,
     )
+
+
+def raison_alignement_budget(jobs: int, budget: int) -> str:
+    """Raison pour laquelle le couple (jobs, budget) est incoherent.
+
+    Vide = couple aligne. Deux fautes distinctes sont nommees :
+
+    - **budget < jobs + 1** : le cap machine-wide compte des processus, et un
+      run qui heberge `jobs` compilations heberge en plus le scheduler
+      `lake`. Un budget inferieur sous-compte l'occupation reelle -- et la
+      supervision compare le seuil a la **parallelisme accordee**
+      (`effective_granted`), pas au budget : un budget trop petit tue le run
+      qui utilise exactement le parallélisme qu'on lui a accorde (#26480) ;
+    - **budget > jobs + 1** : le cap reserve des places que le run
+      n'occupera pas, ce qui refuse des runs a tort sous un cap serre.
+
+    Fonction **pure** : elle se teste sans Windows, sans Lake, sans
+    toolchain.
+    """
+    if jobs < 1:
+        return "parallélisme accordé {} : il doit valoir au moins 1".format(jobs)
+    if budget < jobs + 1:
+        return (
+            "budget {} : il doit couvrir les {} compilations ET le scheduler "
+            "`lake` (soit au moins {})".format(budget, jobs, jobs + 1)
+        )
+    if budget > jobs + 1:
+        return (
+            "budget {} : il reserve {} places pour un run qui n'occupe que "
+            "{} compilations et un scheduler (soit {})".format(
+                budget, budget, jobs, jobs + 1
+            )
+        )
+    return ""
 
 
 def gh_json(repo: str, path: str) -> object:
@@ -197,6 +278,331 @@ def _same_file(a: Path, b: Path) -> bool:
     if left is None or right is None:
         return False
     return left.strip() == right.strip()
+
+
+def _toolchain_of(lake_dir: Path) -> str | None:
+    """Toolchain d'un lake (contenu de `lean-toolchain`), ou `None`."""
+    raw = _read_if_present(lake_dir / "lean-toolchain")
+    return raw.strip() if raw is not None else None
+
+
+def cache_pivot_candidates(manifest: dict) -> list[Path]:
+    """Repertoires du clone courant susceptibles de porter un cache chaud.
+
+    Tous les lakes du manifeste sont candidats : la table de pivots se resout
+    a l'EXECUTION, un lake prechauffe devient pivot de sa toolchain sans
+    qu'une table soit a maintenir dans le code (#26630).
+    """
+    out: list[Path] = []
+    for entry in manifest.get("lakes") or []:
+        if not isinstance(entry, dict):
+            continue
+        project_path = entry.get("project-path")
+        if isinstance(project_path, str) and project_path:
+            out.append(REPO_ROOT / project_path)
+    return out
+
+
+def _toolchain_at_head(repo: str, head: str, project_path: str) -> str:
+    """Toolchain du lake TELLE QU'ELLE EST a la tete de la PR.
+
+    Un lake AJOUTE par la PR n'existe pas dans le clone courant : sa
+    toolchain se lit sur le contenu de la tete (le fichier
+    `lean-toolchain` est un chemin declare par le manifeste).
+    """
+    try:
+        payload = gh_json(
+            repo,
+            "repos/{}/contents/{}/lean-toolchain?ref={}".format(repo, project_path, head),
+        )
+    except OrganError:
+        # Contenu illisible : la toolchain reste INCONNUE, l'appelant decide.
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    content = payload.get("content")
+    if not isinstance(content, str):
+        return ""
+    try:
+        return base64.b64decode(content).decode("utf-8").strip()
+    except (ValueError, UnicodeDecodeError):
+        return ""
+
+
+def _pivot_candidates(base_manifest: dict, head_manifest: dict | None) -> list[Path]:
+    """Candidats-pivot : les lakes de `main` PLUS ceux declares par la tete.
+
+    Un lake AJOUTE par la PR peut avoir ete prechauffe dans le clone courant
+    ; il est alors un pivot legitime pour sa toolchain. Le candidat qui n'a
+    pas de repertoire dans le clone est ignore a la resolution (pas de
+    `lean-toolchain` lisible).
+    """
+    out = list(cache_pivot_candidates(base_manifest))
+    vus = {p.resolve() for p in out if p.exists()}
+    for extra in cache_pivot_candidates(head_manifest or {}):
+        if extra.exists() and extra.resolve() not in vus:
+            vus.add(extra.resolve())
+            out.append(extra)
+    return out
+
+
+def _declared_packages(lake_dir: Path) -> list[str]:
+    """Noms des paquets declares par le `lake-manifest.json` d'un lake.
+
+    Manifeste absent, illisible ou sans tableau `packages` : la liste est
+    VIDE. L'exigence porte alors sur le critere general (`.lake/packages`
+    non vide) -- on n'invente pas de paquet a exiger.
+    """
+    manifest = lake_dir / "lake-manifest.json"
+    try:
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(payload, dict):
+        return []
+    packages = payload.get("packages")
+    if not isinstance(packages, list):
+        return []
+    names: list[str] = []
+    for entry in packages:
+        if not isinstance(entry, dict):
+            continue
+        name = entry.get("name")
+        if isinstance(name, str) and name:
+            names.append(name)
+    return names
+
+
+def _package_is_resolved(package_dir: Path, name: str) -> bool:
+    """Le paquet `name` est-il reellement RESOLU sous `.lake/packages/` ?
+
+    Un repertoire vide traine (lac ouvert puis abandonne, `cache get`
+    interrompu, paquet supprime) : lake le voit comme un paquet et va le
+    re-resoudre -- donc le re-telecharger, donc lancer git DANS le depot
+    englobant. C'est l'incident mesure le 14/11 sur ai-01 (fetch et checkout
+    tentes dans `D:/CoursIA`).
+
+    La preuve de resolution :
+    - un paquet `git` a son `.git` (le checkout) ou son `lakefile.*` ;
+    - Mathlib se COMPILE : le build deja fait se lit a
+      `.lake/packages/mathlib/.lake/build`. Sans lui, le paquet est present
+      mais incomplet -- et c'est precisement lui qu'il faut recompiler.
+    """
+    if not package_dir.is_dir():
+        return False
+    if name == "mathlib":
+        return (package_dir / ".lake" / "build").is_dir()
+    if (package_dir / ".git").exists():
+        return True
+    return any(package_dir.glob("lakefile.*"))
+
+
+def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
+    """Paquets declares par `manifest_owner` et NON materialises dans
+    `packages_dir`.
+
+    Le manifeste peut venir d'un lake et le dossier de paquets d'un autre :
+    c'est la question qui compte -- « le pivot sait-il servir les paquets
+    que le lake demande ? ». Liste VIDE = rien ne manque.
+    """
+    missing: list[str] = []
+    for name in _declared_packages(manifest_owner):
+        package_dir = packages_dir / name
+        if not package_dir.is_dir():
+            missing.append("{} absent".format(name))
+        elif not _package_is_resolved(package_dir, name):
+            missing.append("{} incomplet".format(name))
+    return missing
+
+
+def _pivot_is_warm(candidate: Path, lake_dir: Path) -> tuple[bool, str]:
+    """Le cache du candidat est-il chaud ET complet ?
+
+    Renvoie (ok, motif). Le motif nomme le paquet qui manque : sans lui, un
+    verdict « aucun cache chaud » ne dit pas POURQUOI aucun pivot n'a ete
+    retenu.
+    """
+    packages_dir = candidate / WARM_PACKAGES
+    if not packages_dir.is_dir():
+        return False, ".lake/packages absent"
+    materialises = [
+        p for p in packages_dir.iterdir()
+        if p.is_dir() and not p.name.startswith(".")
+    ]
+    if not materialises:
+        return False, "packages vides"
+    # Ce que le CANDIDAT declare doit etre la, resolu.
+    missing = _packages_absent(candidate, packages_dir)
+    if missing:
+        return False, "packages incomplets : {}".format(", ".join(missing))
+    # Ce que le LAKE DEMANDE doit etre la aussi : sinon lake va chercher
+    # le paquet manquant -- et l'ecrire dans le repertoire vers lequel la
+    # junction pointe, c'est-a-dire DANS le clone principal.
+    missing = _packages_absent(lake_dir, packages_dir)
+    if missing:
+        return False, "packages du lake non servis : {}".format(", ".join(missing))
+    return True, ""
+
+
+def resolve_cache_pivot(lake_dir: Path, candidates: list[Path]) -> dict:
+    """Pivot de cache chaud applicable a `lake_dir`, resolu a l'execution.
+
+    Un pivot vaut si sa toolchain est la MEME que celle du lake ET si son
+    `.lake/packages` est chaud **et complet** dans le clone courant. La
+    comparaison de GRAPHE (#25370) reste faite ensuite, par
+    `check_cache_compatibility` : la toolchain est une condition
+    NECESSAIRE, pas suffisante.
+
+    « Chaud » se MESURE : un `.lake/packages` vide ou partiel passe pour
+    un cache chaud, et lake va alors re-resoudre les paquets manquants --
+    donc lancer git dans le depot englobant et ecrire dans le clone
+    principal a travers la junction (incident mesure le 14/11 sur ai-01).
+    Un candidat incomplet est donc ECARTE, avec son motif.
+
+    Un lake sans pivot applicable n'est pas un echec de build : le motif
+    distinct `no-warm-cache-for-toolchain` est rendu, avec la commande de
+    prechauffage (#26630).
+    """
+    toolchain = _toolchain_of(lake_dir)
+    if not toolchain:
+        return {"ok": False, "reason": "lean-toolchain absent du lake"}
+    warm = []
+    rejects: list[str] = []
+    for candidate in candidates:
+        if candidate == lake_dir:
+            continue
+        if _toolchain_of(candidate) != toolchain:
+            continue
+        ok, why = _pivot_is_warm(candidate, lake_dir)
+        if not ok:
+            rejects.append("{} ecarte : {}".format(candidate.name, why))
+            continue
+        warm.append(candidate)
+    if not warm:
+        return {
+            "ok": False,
+            "reason": NO_WARM_CACHE,
+            "toolchain": toolchain,
+            "detail": "aucun cache chaud pour la toolchain {} dans le clone courant{}".format(
+                toolchain,
+                " ; " + " | ".join(rejects) if rejects else "",
+            ),
+            "rejects": rejects,
+        }
+    return {
+        "ok": True,
+        "pivot": str(warm[0]),
+        "toolchain": toolchain,
+        "pivots": [str(p) for p in warm],
+        "rejects": rejects,
+    }
+
+
+def prewarm_plan(lake: dict, *, head: str, timeout: float) -> dict:
+    """Commande de prechauffage du cache chaud d'un lake (#26630).
+
+    Le prechauffage se fait dans un WORKTREE DETACHE a la tete de la PR : sur
+    un lac au paquet vide, `lake` re-resout et lance git dans le depot
+    ENCLOSANT -- dans le clone principal, le geste polluerait le clone de
+    travail de la lane et concurrence les autres gestes de la machine.
+
+    Les commandes passent par `lean_exec.py` (budget machine-wide, une lake a
+    la fois, plafond memoire) : ce fichier ne lance aucun processus lake lui
+    meme. Les marqueurs `<stdout>` / `<stderr>` sont a remplacer par des
+    chemins reels.
+    """
+    worktree = "<worktree-detache>"
+    lake_dir = "{}/{}".format(worktree, lake.get("project-path") or "")
+
+    def _cmd(payload: list[str]) -> list[str]:
+        return _lean_exec_argv(
+            payload,
+            lake_dir=Path(lake_dir),
+            timeout=timeout,
+            stdout_file=Path("<stdout>"),
+            stderr_file=Path("<stderr>"),
+        )
+
+    return {
+        "worktree": [
+            "git",
+            "-C",
+            str(REPO_ROOT),
+            "worktree",
+            "add",
+            "--detach",
+            worktree,
+            head,
+        ],
+        "cache_get": _cmd(["lake", "exe", "cache", "get"]),
+        "build": _cmd(["lake", "build"]),
+        "note": (
+            "prechauffage dans un worktree DETACHE, via lean_exec.py ; "
+            "sur un lac au paquet vide, lake re-resout et lance git dans le "
+            "depot englobant"
+        ),
+    }
+
+
+def manifest_at_head(repo: str, head: str) -> dict | None:
+    """Manifeste `ci_lakes.json` tel qu'il est a la TETE de la PR.
+
+    Le manifeste lu doit etre celui de la tete : une PR qui AJOUTE un lake
+    (#26399) ne l'atteste jamais si l'organe lit celui de `main` -- le lake
+    neuf est precisement le seul que la PR construit (#26630). `None` si le
+    manifeste est absent ou illisible a la tete : l'appelant refute.
+    """
+    payload = gh_json(
+        repo,
+        "repos/{}/contents/scripts/lean/ci_lakes.json?ref={}".format(repo, head),
+    )
+    if not isinstance(payload, dict):
+        return None
+    content = payload.get("content")
+    if not isinstance(content, str):
+        return None
+    try:
+        raw = base64.b64decode(content).decode("utf-8")
+    except (ValueError, UnicodeDecodeError):
+        return None
+    try:
+        manifest = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return manifest if isinstance(manifest, dict) else None
+
+
+def select_lakes(files: list[str], head_manifest: dict, base_manifest: dict | None) -> list[dict]:
+    """Lakes a attester : ceux que la PR touche, plus ceux qu'elle AJOUTE.
+
+    Deux corrections par rapport a `lake_matrix_dispatch.changed_lakes` :
+
+    1. le manifeste est celui de la TETE -- un lake ajoute par la PR y est
+       declare ;
+    2. l'expansion « un fichier du gate -> TOUS les lakes » du dispatcher CI
+       ne s'applique PAS a l'attestation : toucher `ci_lakes.json` ou le
+       workflow doit attester les lakes TOUCHES et les lakes AJOUTES, pas les
+       36 lakes du manifeste. Mesure : dry-run de #26399, qui echouait sur
+       onze lakes que la PR ne touche pas, faute de cache (#26630).
+    """
+    entries = [e for e in (head_manifest.get("lakes") or []) if isinstance(e, dict)]
+    base_names = set()
+    for entry in (base_manifest or {}).get("lakes") or []:
+        if isinstance(entry, dict) and entry.get("lake"):
+            base_names.add(str(entry["lake"]))
+    selected: dict[str, dict] = {}
+    for entry in entries:
+        name = str(entry.get("lake") or "")
+        for pattern in entry.get("paths") or []:
+            if any(fnmatch.fnmatch(f, pattern) for f in files):
+                if name:
+                    selected[name] = entry
+                break
+    for entry in entries:
+        name = str(entry.get("lake") or "")
+        if name and name not in base_names:
+            selected[name] = entry
+    return [e for e in entries if str(e.get("lake")) in selected]
 
 
 # --------------------------------------------------------------------------
@@ -419,7 +825,8 @@ def prepare_lake(lake_dir: Path, cache_root: Path) -> dict:
 
 
 def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
-                    stdout_file: Path, stderr_file: Path) -> list[str]:
+                    stdout_file: Path, stderr_file: Path,
+                    budget: int = DEFAULT_BUILD_BUDGET) -> list[str]:
     """Charge de l'organe canonique `lean_exec.py`, avec la commande en payload.
 
     Le `payload` est ce que l'ORGANE lancera sous le budget commun
@@ -428,6 +835,11 @@ def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
     le garde `check_lake_direct_invocation.py` -- un conducteur de l'organe
     peut nommer sa commande de charge dans un payload, jamais dans un argv
     qu'il execute.
+
+    Le `budget` (places reservees dans le cap machine-wide) est passe
+    EXPLICITEMENT : la valeur implicite de `lean_exec` (2) ne couvre pas le
+    parallélisme qu'il accorde par defaut (`cpu // 4`), et c'est cette
+    contradiction qui a fait tuer des lake builds multi-modules (#26480).
     """
     organ = "lean_exec.py"
     return [
@@ -438,6 +850,8 @@ def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
         "native",
         "--timeout",
         str(timeout),
+        "--budget",
+        str(budget),
         "--caller",
         "attest_local_build",
         "--cwd",
@@ -451,12 +865,59 @@ def _lean_exec_argv(payload: list[str], *, lake_dir: Path, timeout: float,
     ] + list(payload)
 
 
-def run_lake_build(lake_dir: Path, timeout: float) -> dict:
+#: Une ligne d'erreur Lean (`error: 'x' has type ...`).
+ERROR_MARKER = "error:"
+#: Nombre de lignes de contexte conservees apres chaque ligne d'erreur : le
+#: detail du diagnostic Lean est sur les lignes SUIVANTES, pas sur la ligne
+#: `error:` elle-meme.
+ERROR_CONTEXT_LINES = 3
+#: Plafond du nombre d'erreurs extraites (une sortie de build peut en contenir
+#: des centaines ; le champ doit rester lisible).
+ERROR_MAX = 50
+
+
+def extract_errors(text: str, *, context_lines: int = ERROR_CONTEXT_LINES,
+                   limit: int = ERROR_MAX) -> list[dict]:
+    """Les lignes d'erreur d'une sortie de build, avec leur contexte.
+
+    `lake build` ecrit ses diagnostics sur stderr, et l'organe ne capture
+    qu'une QUEUE de 4000 caracteres : une erreur nommee y etait noyee, et
+    l'organe ne pouvait dire QUE « le build a echoue ». Ici chaque ligne
+    `error:` est extraite avec les lignes qui la completent, et le champ
+    `errors[]` porte la liste.
+
+    L'extraction est une LECTURE : le texte n'est jamais reecrit.
+    """
+    lines = (text or "").splitlines()
+    found: list[dict] = []
+    for index, line in enumerate(lines):
+        if ERROR_MARKER not in line:
+            continue
+        found.append({
+            "text": line.strip(),
+            "line_number": index + 1,
+            "context": [item.rstrip() for item in
+                        lines[index + 1: index + 1 + context_lines]],
+        })
+        if len(found) >= limit:
+            break
+    return found
+
+
+def run_lake_build(lake_dir: Path, timeout: float,
+                   jobs: int = DEFAULT_BUILD_JOBS,
+                   budget: int = DEFAULT_BUILD_BUDGET) -> dict:
     """`lake build` borne via `lean_exec.py` (l'organe de build existant).
 
     Le payload `lake build` est un **PAYLOAD** : il est passe a l'organe
     canonique, qui le lance sous le budget commun. Ce fichier ne lance
     aucun processus lake lui-meme.
+
+    Le parallélisme demande (`LEAN_EXEC_JOBS`) est pose dans l'environnement
+    de l'enfant : `lean_exec` le lit de la, et sa valeur implicite
+    (`cpu // 4`) contredit son budget implicite (2). `lean_exec` reborne
+    encore ce parallelisme par les ressources mesurees (RAM, commit, CPU) :
+    la valeur demandee ici est un plafond, pas une consommation forcee.
     """
     with tempfile.TemporaryDirectory(prefix="attest-lean-") as tmp:
         stdout_file = Path(tmp) / "stdout.txt"
@@ -467,8 +928,10 @@ def run_lake_build(lake_dir: Path, timeout: float) -> dict:
             timeout=timeout,
             stdout_file=stdout_file,
             stderr_file=stderr_file,
+            budget=budget,
         )
-        proc = _run(cmd, timeout=timeout + 120.0)
+        env = {**os.environ, "LEAN_EXEC_JOBS": str(jobs)}
+        proc = _run(cmd, timeout=timeout + 120.0, env=env)
         # Review #25002 (Hermes, 2026-11-06, prouve par execution) : les deux
         # fichiers doivent etre lus DANS le bloc `with` -- _read_if_present en
         # dehors lisait un dossier temporaire deja detruit et rendait des
@@ -484,11 +947,18 @@ def run_lake_build(lake_dir: Path, timeout: float) -> dict:
         payload = {}
     payload["stdout_tail"] = stdout_text[-4000:]
     payload["stderr_tail"] = stderr_text[-4000:]
+    # Les erreurs nommees, hors de la queue : c'est ce que l'organe peut
+    # dire du build qui a echoue, au-dela de « le build a echoue ».
+    payload["errors"] = (
+        extract_errors(stdout_text) + extract_errors(stderr_text)
+    )[:ERROR_MAX]
     payload["organ_rc"] = proc.returncode
     return payload
 
 
-def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float) -> dict:
+def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
+               jobs: int = DEFAULT_BUILD_JOBS,
+               budget: int = DEFAULT_BUILD_BUDGET) -> dict:
     """Prepare + build d'un lake dans le worktree. Ne leve pas : le verdict
     est rendu dans le resultat."""
     lake_dir = worktree / lake["project-path"]
@@ -499,7 +969,7 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float) -> 
         return {"lake": lake["lake"], "ok": False, "reason": prepared["reason"]}
     result = {"lake": lake["lake"], "ok": False}
     try:
-        payload = run_lake_build(lake_dir, timeout)
+        payload = run_lake_build(lake_dir, timeout, jobs=jobs, budget=budget)
     finally:
         if prepared.get("junction"):
             try:
@@ -515,10 +985,23 @@ def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float) -> 
             "orphans": payload.get("orphans") or [],
             "stdout_tail": payload.get("stdout_tail", "")[-2000:],
             "stderr_tail": payload.get("stderr_tail", "")[-2000:],
+            # Les erreurs nommees du build (3a du dispatch) : elles voyagent
+            # avec le verdict du lake, pas seulement avec la queue.
+            "errors": payload.get("errors") or [],
+            # La violation de budget est la **cause** d'un echec que
+            # `lean_exec` presente comme un `timeout` : la propager, sinon le
+            # diagnostic se perd et l'echec se lit comme un probleme de
+            # temps (#26480, dispatch coordinateur du 14/11).
+            "budget_violation": payload.get("budget_violation"),
+            "granted_jobs": payload.get("granted_jobs"),
+            "budget": payload.get("budget"),
         }
     )
     result["ok"] = payload.get("exit_code") == 0
-    if not result["ok"]:
+    violation = payload.get("budget_violation")
+    if violation:
+        result["reason"] = "violation du budget de concurrence : {}".format(violation)
+    elif not result["ok"]:
         result["reason"] = "lake build a echoue (exit_code={})".format(
             payload.get("exit_code")
         )
@@ -580,7 +1063,9 @@ def cleanup_worktree(worktree: Path) -> None:
             )
 
 
-def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
+def attest(pr: int, repo: str, timeout: float, dry_run: bool,
+            jobs: int = DEFAULT_BUILD_JOBS,
+            budget: int = DEFAULT_BUILD_BUDGET) -> dict:
     """Certifie la PR : worktree, builds bornes, attestation postee sur
     SUCCESS."""
     started = time.time()
@@ -591,17 +1076,38 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
                 attestation.ATTESTATION_AUTHOR, login
             )
         )
+    # Couple (jobs, budget) aligne AVANT toute construction : le budget
+    # reserve doit couvrir le parallelisme accorde et le scheduler `lake`
+    # (#26480). Un couple incoherent est refuse, pas corrige en silence.
+    incoherence = raison_alignement_budget(jobs, budget)
+    if incoherence:
+        raise OrganError(
+            "couple (jobs={}, budget={}) incoherent : {}".format(
+                jobs, budget, incoherence
+            )
+        )
     head = pr_head(repo, pr)
     files = pr_files(repo, pr)
-    lakes = lakes_for(files)
+    # Le manifeste de BASE est celui du clone (main) ; le manifeste de la PR
+    # est celui de sa TETE : c'est lui qui declare les lakes ajoutes (#26630).
+    base_manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    head_manifest = manifest_at_head(repo, head)
+    manifest_source = "tete"
+    if head_manifest is None:
+        head_manifest = base_manifest
+        manifest_source = "clone"
+    lakes = select_lakes(files, head_manifest, base_manifest)
     result = {
         "pr": pr,
         "repo": repo,
         "head": head,
         "files": len(files),
+        "manifest_source": manifest_source,
         "lakes": [lake["lake"] for lake in lakes],
         "posted": False,
         "comment_id": "",
+        "jobs": jobs,
+        "budget": budget,
     }
     if not lakes:
         raise OrganError(
@@ -613,20 +1119,87 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
         # Le dry-run rend le verdict de cache SANS construire ni modifier
         # quoi que ce soit : c'est ce qui prouve, avant meme le build, que
         # le cache chaud s'applique a ce lake (ou nomme le paquet fautif).
-        # Il lit les lakes du CHECKPOINT COURANT, pas de la tete de la PR :
-        # un diff `.lean` ne change ni la toolchain ni le manifeste.
+        # Il lit les lakes du CHECKPOINT COURANT (le cache chaud est un
+        # etat de la machine, pas de la PR) ; le MANIFESTE, lui, est celui
+        # de la tete de la PR (#26630).
         result["cache_check"] = []
+        candidates = _pivot_candidates(base_manifest, head_manifest)
         for lake in lakes:
-            verdict = check_cache_compatibility(
-                REPO_ROOT / lake["project-path"], CACHE_PIVOT
-            )
+            lake_dir = REPO_ROOT / lake["project-path"]
+            pivot = resolve_cache_pivot(lake_dir, candidates)
+            if not pivot.get("ok"):
+                reason = pivot.get("reason", "")
+                entry = {
+                    "lake": lake["lake"],
+                    "ok": False,
+                    "reason": reason,
+                    "checks": [],
+                }
+                if reason == NO_WARM_CACHE:
+                    entry["toolchain"] = pivot.get("toolchain", "")
+                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                elif not lake_dir.is_dir() and "lean-toolchain absent" in reason:
+                    # Lake AJOUTE par la PR : il n'existe pas dans le clone
+                    # courant. Le verdict de cache ne peut pas etre rendu
+                    # ici -- il le sera sur le worktree de la tete, ou le
+                    # lake existe. On le dit distinctement, avec la commande
+                    # de prechauffage (#26630).
+                    entry["reason"] = LAKE_NOT_IN_CLONE
+                    entry["toolchain"] = _toolchain_at_head(
+                        repo, head, lake.get("project-path") or ""
+                    )
+                    entry["detail"] = (
+                        "le lake est declare par la PR et n'existe pas dans le "
+                        "clone courant : le verdict de cache se rendra sur le "
+                        "worktree de la tete"
+                    )
+                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                result["cache_check"].append(entry)
+                continue
+            verdict = check_cache_compatibility(lake_dir, Path(pivot["pivot"]))
             result["cache_check"].append(
                 {
                     "lake": lake["lake"],
                     "ok": bool(verdict.get("ok")),
                     "reason": verdict.get("reason", ""),
                     "checks": verdict.get("checks", []),
+                    "pivot": pivot["pivot"],
+                    "toolchain": pivot.get("toolchain", ""),
                 }
+            )
+        # Le verdict est explicite : `ok` et `reason` sont TOUJOURS poses.
+        # Sans eux, `main()` ne pouvait qu'afficher « raison inconnue » et
+        # rendre rc=1 -- un dry-run reussi se lisait comme un echec
+        # (dispatch coordinateur du 14/11).
+        mauvais = [c for c in result["cache_check"] if not c["ok"]]
+        if mauvais:
+            result["ok"] = False
+            sans_cache = [
+                c for c in mauvais
+                if c.get("reason") in (NO_WARM_CACHE, LAKE_NOT_IN_CLONE)
+            ]
+            if sans_cache:
+                # Motif DISTINCT : la toolchain du lake n'a aucun cache chaud.
+                # L'organe ne conclut pas, il donne la commande de
+                # prechauffage (#26630).
+                result["reason"] = "cache chaud indisponible pour la toolchain : {}".format(
+                    ", ".join(
+                        "{} ({})".format(c["lake"], c.get("toolchain") or "?")
+                        for c in sans_cache
+                    )
+                )
+                result["prewarm"] = [c["prewarm"] for c in sans_cache if c.get("prewarm")]
+            else:
+                result["reason"] = "cache chaud non applicable : {}".format(
+                    ", ".join(
+                        "{} ({})".format(c["lake"], c["reason"] or "raison non nommee")
+                        for c in mauvais
+                    )
+                )
+        else:
+            result["ok"] = True
+            result["reason"] = "cache chaud applicable : {}".format(
+                ", ".join(c["lake"] for c in result["cache_check"])
             )
         return result
 
@@ -657,15 +1230,70 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool) -> dict:
             )
         created = True
         builds = []
+        candidates = _pivot_candidates(base_manifest, head_manifest)
         for lake in lakes:
-            builds.append(build_lake(lake, worktree, CACHE_PIVOT, timeout))
+            lake_dir = worktree / lake["project-path"]
+            pivot = resolve_cache_pivot(lake_dir, candidates)
+            if not pivot.get("ok"):
+                entry = {
+                    "lake": lake["lake"],
+                    "ok": False,
+                    "reason": pivot.get("reason", ""),
+                    "errors": [],
+                }
+                if pivot.get("reason") == NO_WARM_CACHE:
+                    entry["toolchain"] = pivot.get("toolchain", "")
+                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                builds.append(entry)
+                continue
+            builds.append(
+                build_lake(
+                    lake, worktree, Path(pivot["pivot"]), timeout, jobs=jobs, budget=budget
+                )
+            )
         result["builds"] = builds
+        # Les erreurs nommees de tous les builds : le diagnostic du build
+        # qui a echoue, hors de la queue de 4000 caracteres.
+        result["errors"] = [e for b in builds for e in (b.get("errors") or [])]
         failed = [b for b in builds if not b.get("ok")]
         if failed:
             result["ok"] = False
-            result["reason"] = "build en echec : {}".format(
-                ", ".join(str(b.get("lake")) for b in failed)
-            )
+            sans_cache = [
+                b for b in failed
+                if b.get("reason") in (NO_WARM_CACHE, LAKE_NOT_IN_CLONE)
+            ]
+            if sans_cache:
+                # Ce n'est pas un echec de build : la toolchain du lake n'a
+                # aucun cache chaud. L'organe ne conclut pas, il nomme la
+                # commande de prechauffage (#26630).
+                result["reason"] = "cache chaud indisponible pour la toolchain : {}".format(
+                    ", ".join(
+                        "{} ({})".format(b.get("lake"), b.get("toolchain") or "?")
+                        for b in sans_cache
+                    )
+                )
+                result["prewarm"] = [b["prewarm"] for b in sans_cache if b.get("prewarm")]
+                return result
+            violations = [
+                "{} : {}".format(b.get("lake"), b.get("budget_violation"))
+                for b in failed
+                if b.get("budget_violation")
+            ]
+            if violations:
+                # La cause est un depassement de concurrence, pas un
+                # depassement de temps : le nommer evite qu'un diagnostic
+                # conclue « lent » (#26480).
+                result["reason"] = "violation du budget de concurrence : {}".format(
+                    " ; ".join(violations)
+                )
+            else:
+                # La raison nomme la PREMIERE erreur : « le build a echoue »
+                # sans elle ne dit pas quoi corriger.
+                first = (result["errors"] or [{}])[0].get("text", "")
+                result["reason"] = "build en echec : {}{}".format(
+                    ", ".join(str(b.get("lake")) for b in failed),
+                    " -- {}".format(first[:160]) if first else "",
+                )
             return result
         jobs = 0
         for build in builds:
@@ -718,11 +1346,30 @@ def main(argv: list[str] | None = None) -> int:
         help="timeout du lake build, en secondes",
     )
     ap.add_argument("--dry-run", action="store_true", help="ne construit rien")
+    ap.add_argument(
+        "--jobs",
+        type=int,
+        default=DEFAULT_BUILD_JOBS,
+        help="parallélisme accordé à lake build (compilations concurrentes)",
+    )
+    ap.add_argument(
+        "--budget",
+        type=int,
+        default=DEFAULT_BUILD_BUDGET,
+        help="places réservées dans le cap machine-wide (jobs + scheduler lake)",
+    )
     ap.add_argument("--json", action="store_true", help="sortie JSON")
     args = ap.parse_args(argv)
 
     try:
-        result = attest(args.pr, args.repo, args.timeout, args.dry_run)
+        result = attest(
+            args.pr,
+            args.repo,
+            args.timeout,
+            args.dry_run,
+            jobs=args.jobs,
+            budget=args.budget,
+        )
     except OrganError as exc:
         payload = {"pr": args.pr, "ok": False, "posted": False, "reason": str(exc)}
         if args.json:
@@ -735,7 +1382,13 @@ def main(argv: list[str] | None = None) -> int:
         json.dump(result, sys.stdout, ensure_ascii=False, indent=1)
         sys.stdout.write("\n")
     else:
-        if result.get("posted"):
+        if result.get("dry_run"):
+            print(
+                "[ATTEST] #{} dry-run (rien n'a ete construit) : {}".format(
+                    result["pr"], result.get("reason", "verdict non rendu")
+                )
+            )
+        elif result.get("posted"):
             print(
                 "[ATTEST] #{} atteste (tete {}) -- lakes {} -- jobs {}".format(
                     result["pr"],
@@ -750,6 +1403,15 @@ def main(argv: list[str] | None = None) -> int:
                     result["pr"], result.get("reason", "raison inconnue")
                 )
             )
+        # La commande de prechauffage est PARTIE du verdict : un motif
+        # « pas de cache chaud » sans la commande qui le remedie laisse
+        # l'interlocuteur sans geste (#26630).
+        for plan in result.get("prewarm") or []:
+            print("[ATTEST] prechauffage : {}".format(plan.get("note", "")))
+            for cle in ("worktree", "cache_get", "build"):
+                argv = plan.get(cle) or []
+                if argv:
+                    print("  {} : {}".format(cle, " ".join(str(a) for a in argv)))
     return 0 if result.get("ok") else 1
 
 

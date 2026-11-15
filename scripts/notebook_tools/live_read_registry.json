@@ -127,6 +127,12 @@
       "cell_id": "0147a26c",
       "source": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt",
       "note": "Section 1 -- taille et nombre de lignes du corpus, empreinte SHA-256 des 128 premiers Kio et entropie de la tranche de 16 Kio"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-23-Loopholes-Fiscaux-Python-Lean.ipynb",
+      "cell_id": "c15",
+      "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/LegalLoophole/Toy.lean",
+      "note": "Compte de lignes et inventaire des declarations de LegalLoophole/Toy.lean, module compagnon du carnet (#25686) ; trouvee par la garde live-read au push de la reponse Hermes (#26022)"
     }
   ]
 }
