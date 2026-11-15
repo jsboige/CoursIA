@@ -392,6 +392,64 @@ class TestClassifyDeleted:
         assert _is_under("A/LeanX/galois_lean", "A/Lean") is False
         assert _is_under("A/Lean", "A/Lean") is False
 
+    # -- le repertoire PARENT renomme (#26056) ---------------------------
+    # Le lake bouge parce que son repertoire PARENT a ete renomme
+    # (`Lean/GALOIS` -> `Lean/Galois`). Le successeur n'est alors plus sous
+    # l'ancien parent : la filiation ne se lit plus sur la chaine, et seule
+    # la detection de renommage de git peut la prouver.
+
+    def test_a_renamed_parent_directory_is_relocation_not_loss(self):
+        """Preuve de renommage presente : le deplacement est reconnu."""
+        d = self._d(["A/Lean/Galois/galois_lean"])
+        gated = {"A/Lean/Galois2/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated,
+                             rename_proof=lambda old, new: True)
+        assert r["lost"] == []
+        [entry] = r["relocated"]
+        assert entry["moved_to"] == "A/Lean/Galois2/galois_lean"
+
+    def test_an_unproven_renamed_parent_stays_lost(self):
+        """Controle negatif : sans preuve, la forme du chemin ne suffit pas."""
+        d = self._d(["A/Lean/Galois/galois_lean"])
+        gated = {"A/Lean/Galois2/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated,
+                             rename_proof=lambda old, new: False)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_a_renamed_parent_without_proof_stays_lost(self):
+        """Pas de sonde de renommage = pas de preuve : fail-closed."""
+        d = self._d(["A/Lean/Galois/galois_lean"])
+        gated = {"A/Lean/Galois2/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
+    def test_the_same_lake_listed_twice_is_one_lake(self):
+        """Deux jobs de gate qui passent le MEME lake : c'est un lake, pas deux.
+
+        Mesure 2026-11-15 : `lean-conway.yml` listait
+        `.../Lean/GOL/conway_lean` deux fois. Compter les LIGNES rendait le
+        deplacement inprouvable, et la couverture d'un lake couvert etait
+        declaree PERDUE. Le compte se fait sur les chemins DISTINCTS.
+        """
+        d = self._d(["A/Lean/Galois/galois_lean", "A/Lean/Galois/galois_lean"])
+        gated = {"A/Lean/Galois2/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated,
+                             rename_proof=lambda old, new: True)
+        assert r["lost"] == []
+        [entry] = r["relocated"]
+        assert entry["moved_to"] == "A/Lean/Galois2/galois_lean"
+
+    def test_two_proven_renamed_successors_stay_lost(self):
+        """Deux successeurs prouves : le deplacement reste inprouvable."""
+        d = self._d(["A/Lean/Galois/galois_lean"])
+        gated = {"A/Lean/Galois2/galois_lean", "B/Lean/Galois3/galois_lean"}
+        r = classify_deleted([d], gated, exists_at=lambda p: p in gated,
+                             rename_proof=lambda old, new: True)
+        assert r["relocated"] == []
+        assert [e["dispatcher"] for e in r["lost"]] == ["lean-x.yml"]
+
     def test_a_multi_lake_dispatcher_stays_lost(self):
         """Jaune 2 (#23908) : un `moved_to` unique ne peut pas temoigner de
         DEUX lakes. Meme si chaque basename a un successeur, le dispatcher
@@ -739,3 +797,74 @@ class TestStrictExitCode:
     def test_strict_is_green_when_nothing_is_ungated(self, monkeypatch, capsys):
         self._fake(monkeypatch, [])
         assert self._run(["--check", "--strict", "--json", "--ref", "HEAD"]) == 0
+
+
+class TestRenameProof:
+    """La filiation quand le repertoire PARENT du lake est renomme.
+
+    L'organe lit la filiation sur la chaine du chemin ; quand le repertoire
+    parent bouge, cette lecture devient impossible. Ce que git sait reste
+    vrai : les fichiers du lake ont bouge avec lui. Ces tests verifient la
+    lecture git sur un depot jetable, pas sur le depot mesure.
+    """
+
+    def _init(self, tmp_path):
+        env = {**os.environ, "MSYS_NO_PATHCONV": "1"}
+
+        def run(*args):
+            proc = subprocess.run(["git", "-C", str(tmp_path), *args],
+                                  capture_output=True, env=env)
+            assert proc.returncode == 0, proc.stderr.decode("utf-8", "replace")
+            return proc.stdout.decode("utf-8", "replace")
+
+        run("init", "-q")
+        run("config", "user.email", "test@example.invalid")
+        run("config", "user.name", "test")
+        return run
+
+    def _lake(self, tmp_path, where="Lean/GALOIS2/galois2_lean"):
+        lake = tmp_path / where
+        lake.mkdir(parents=True)
+        (lake / "lakefile.toml").write_text("name = \"galois\"\n", encoding="utf-8")
+        return lake
+
+    def test_a_renamed_parent_directory_is_proven(self, tmp_path, monkeypatch):
+        """Le renommage du repertoire PARENT est vu par git comme un R."""
+        from check_axiom_gate_coverage import rename_proven
+        run = self._init(tmp_path)
+        self._lake(tmp_path)
+        run("add", "-A")
+        run("commit", "-q", "-m", "init")
+        run("mv", "Lean/GALOIS2", "Lean/GaloisRenamed2")
+        run("commit", "-q", "-m", "rename parent")
+        monkeypatch.chdir(tmp_path)
+        assert rename_proven("HEAD", "Lean/GALOIS2/galois2_lean",
+                              "Lean/GaloisRenamed2/galois2_lean") is True
+
+    def test_a_copied_lake_is_not_a_rename(self, tmp_path, monkeypatch):
+        """Une copie n'est pas un deplacement : l'ancien chemin existe encore."""
+        import shutil
+        from check_axiom_gate_coverage import rename_proven
+        run = self._init(tmp_path)
+        self._lake(tmp_path, where="Lean/GALOIS3/galois3_lean")
+        run("add", "-A")
+        run("commit", "-q", "-m", "init")
+        (tmp_path / "Lean" / "GaloisRenamed3").mkdir(parents=True)
+        shutil.copytree(tmp_path / "Lean" / "GALOIS3" / "galois3_lean",
+                        tmp_path / "Lean" / "GaloisRenamed3" / "galois3_lean")
+        run("add", "-A")
+        run("commit", "-q", "-m", "copy")
+        monkeypatch.chdir(tmp_path)
+        assert rename_proven("HEAD", "Lean/GALOIS3/galois3_lean",
+                              "Lean/GaloisRenamed3/galois3_lean") is False
+
+    def test_an_unknown_old_path_is_not_proven(self, tmp_path, monkeypatch):
+        """Un ancien chemin qui n'a jamais existe n'a rien a prouver."""
+        from check_axiom_gate_coverage import rename_proven
+        run = self._init(tmp_path)
+        self._lake(tmp_path)
+        run("add", "-A")
+        run("commit", "-q", "-m", "init")
+        monkeypatch.chdir(tmp_path)
+        assert rename_proven("HEAD", "Lean/NOPE/galois4_lean",
+                              "Lean/GaloisRenamed4/galois4_lean") is False
