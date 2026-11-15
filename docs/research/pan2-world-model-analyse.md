@@ -36,7 +36,7 @@ une distribution conditionnelle (Éq. 1, p. 2) :
 $$s' \sim p(s' \mid s, a)$$
 
 Le point de vue porteur, qui traverse tout le papier (p. 2) : un modèle du monde est
-**fondateurement un simulateur, pas un générateur de contenu visuel** — c'est le substrat du
+**fondamentalement un simulateur, pas un générateur de contenu visuel** — c'est le substrat du
 **raisonnement simulatif**, la capacité d'incarner mentalement des scénarios hypothétiques
 (physiques, sociaux, stratégiques, abstraits) au service d'une décision finalisée.
 
@@ -171,10 +171,10 @@ Fait relevé **firsthand** (model card + recette vLLM, lues le 12/11) :
 - **Ne reproduit pas le modèle** : PAN 2 pèse 29 B et se sert sur 4×B300 / 8×H200. La
   distillation porte la **technique** (thèse, dimensions, architecture GLP, instanciation
   PAN), pas les poids. Le modèle reste un **paramètre d'exécution**.
-- **Le carnet « sur la technique » est défermé** : le grain #25846 demande « un carnet sur la
-  technique » ; il est **reporté** par le **veto user Q-015** (pas de carnet neuf jusqu'à
-  levée écrite). Une **issue fille** est ouverte pour le porter après levée. La technique est
-  portée ici par la cartographie + l'outil rejouable, qui en sont la substance.
+- **Le carnet « sur la technique » est planifié** : le grain #25846 demande « un carnet sur la
+  technique » ; il est **planifié** pour le porter en cellules exécutoires — tracé par l'issue
+  **#26151**, à produire par la lane **myia-po-2027:CoursIA-2**. La technique est portée ici par
+  la cartographie + l'outil rejouable, qui en sont la substance ; le carnet viendra la présenter.
 - **Aucun benchmark rejoué** ici : les « Headline Results » de la model card sont rapportés,
   pas reproduits (cela nécessiterait le modèle GPU).
 
