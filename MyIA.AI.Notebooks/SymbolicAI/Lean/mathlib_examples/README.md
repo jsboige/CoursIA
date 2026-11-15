@@ -9,7 +9,7 @@ l'installation Mathlib : il ferme quatre buts représentatifs avec les tactiques
 du quotidien (`ring`, `linarith`, `omega`, `rw`), confirmant que
 `lake build MathLibExamples` compile contre une Mathlib fonctionnelle. C'est
 aussi une première prise en main des automatiseurs de Lean avant d'aborder les
-projets plus ambitieux (`calibration_lean`, `GameOfLife/conway_lean`, `sensitivity_lean`).
+projets plus ambitieux (`calibration_lean`, `JeuDeLaVie/conway_lean`, `sensitivity_lean`).
 
 ## Statut
 
