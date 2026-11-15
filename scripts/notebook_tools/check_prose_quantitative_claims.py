@@ -725,7 +725,7 @@ SEED_RE = re.compile(
 # ne figure que sur demande explicite ``--class structural``, en banniere LEGITIME.
 #
 # Note fix (#9434 angle-mort t1) : la forme « 2.78e24x » (notation scientifique
-# SUIVIE du suffixe 'x', PR #9427 App-11-Picross) n'etait PAS attrapee par
+# SUIVIE du suffixe 'x', PR #9427 App-11-Picross-Python) n'etait PAS attrapee par
 # l'alternance originale ``(?:e\d+|x)`` : apres avoir consomme « e24 », le
 # ``\b`` echouait car le 'x' suivant est un caractere mot. La branche est
 # desormais ``(?:e\d+x?|x)`` : la notation scientifique peut etre suivie d'un
