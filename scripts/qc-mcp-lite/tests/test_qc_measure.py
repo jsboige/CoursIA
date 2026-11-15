@@ -315,6 +315,19 @@ def ecrire_plan_mesure(tmp_path: Path, passes=None) -> Path:
     )
 
 
+def ecrire_plan_mesure_force(tmp_path: Path, passes) -> Path:
+    """Re-ecrit le plan du meme label (``plan --force``), memes fichiers."""
+    sources = tmp_path / "src"
+    return write_plan(
+        tmp_path / "mesures",
+        label="vol",
+        project_name="Mesure-Vol",
+        files=[sources / "main.py", sources / "indicateurs.py"],
+        passes=passes,
+        force=True,
+    )
+
+
 # ─── plan : ecriture et validation ─────────────────────────────────────
 
 
@@ -593,6 +606,57 @@ class TestRun:
         assert cloud.appels["create_backtest"] == 2
         etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))
         assert all(p["statut"] == "terminee" for p in etat["passes"].values())
+
+    def test_passe_retiree_du_plan_avant_lancement(self, tmp_path):
+        """Scenario de la relecture (point 4) : une session coupee laisse
+        deux passes dans state.json, puis ``plan --force`` retire une passe
+        jamais lancee. run doit suivre le plan, sans PlanError."""
+        cloud = FakeCloud()
+        rundir = ecrire_plan_mesure(
+            tmp_path, passes=[("base", {}), ("abandonnee", {"lookback": 5})]
+        )
+        horloge, sommeil = duo_horloge()
+        scheduler = scheduler_fictif(horloge, sommeil)
+        with pytest.raises(SessionCoupee):
+            run_measure(
+                ThrottledGateway(CoupeApres(cloud.gateway(), 2), scheduler),
+                scheduler, rundir, poll_interval=20.0, max_wait=3600.0,
+            )
+        etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))
+        assert set(etat["passes"]) == {"base", "abandonnee"}
+        assert not etat["passes"]["abandonnee"]["backtest_id"]
+        ecrire_plan_mesure_force(tmp_path, passes=[("base", {})])
+        rc = run_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            poll_interval=20.0, max_wait=3600.0,
+        )
+        assert rc == 0
+        etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))
+        assert set(etat["passes"]) == {"base"}
+        assert cloud.appels["create_backtest"] == 1
+
+    def test_passe_lancee_puis_retiree_reste_notee_hors_du_run(self, tmp_path):
+        """Une passe deja lancee puis retiree du plan garde sa trace dans
+        state.json (backtest mesure), mais run ne l'attend plus."""
+        cloud = FakeCloud()
+        rundir = ecrire_plan_mesure(tmp_path)
+        horloge, sommeil = duo_horloge()
+        scheduler = scheduler_fictif(horloge, sommeil)
+        assert run_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            poll_interval=20.0, max_wait=3600.0,
+        ) == 0
+        bid_rapide = json.loads(
+            (rundir / "state.json").read_text(encoding="utf-8")
+        )["passes"]["rapide"]["backtest_id"]
+        ecrire_plan_mesure_force(tmp_path, passes=[("base", {})])
+        assert run_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            poll_interval=20.0, max_wait=3600.0,
+        ) == 0
+        etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))
+        assert etat["passes"]["rapide"]["backtest_id"] == bid_rapide
+        assert cloud.appels["create_backtest"] == 2
 
     def test_adoption_projet_et_backtest_par_nom(self, tmp_path, capsys):
         """Une session perdue a deja cree le projet et un backtest du bon

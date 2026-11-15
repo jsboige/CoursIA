@@ -422,8 +422,23 @@ def save_state(rundir: Path, etat: dict) -> None:
     os.replace(tmp, rundir / "state.json")
 
 
+def _noms_du_plan(plan: dict) -> list[str]:
+    """Noms des passes du plan, dans l'ordre du plan."""
+    return [passe["name"] for passe in plan["passes"]]
+
+
 def _sync_passes(plan: dict, etat: dict) -> None:
-    """Reporte les passes du plan dans l'etat (sans ecraser l'avancement)."""
+    """Reporte les passes du plan dans l'etat (sans ecraser l'avancement).
+
+    Une passe retiree du plan (``plan --force``) et jamais lancee n'a rien a
+    garder : elle sort de l'etat. Une passe retiree apres son lancement garde
+    sa trace (le backtest existe chez QC), mais ``run``, ``status --refresh``
+    et ``read`` ne parcourent que les passes du plan.
+    """
+    du_plan = set(_noms_du_plan(plan))
+    for nom in [n for n in etat["passes"] if n not in du_plan]:
+        if not etat["passes"][nom].get("backtest_id"):
+            del etat["passes"][nom]
     for passe in plan["passes"]:
         nom = passe["name"]
         if nom not in etat["passes"]:
@@ -691,9 +706,10 @@ def _lancer_et_attendre(
     """
     pid = etat["project_id"]
     compile_id = etat["compile_id"]
+    noms = _noms_du_plan(plan)
 
     a_adopter = [
-        nom for nom, p in etat["passes"].items() if not p.get("backtest_id")
+        nom for nom in noms if not etat["passes"][nom].get("backtest_id")
     ]
     if a_adopter:
         existants = {
@@ -709,12 +725,13 @@ def _lancer_et_attendre(
         save_state(rundir, etat)
 
     en_attente = [
-        nom for nom, p in etat["passes"].items() if not p.get("backtest_id")
+        nom for nom in noms if not etat["passes"][nom].get("backtest_id")
     ]
     en_vol: dict[str, float] = {
         nom: scheduler.now()
-        for nom, p in etat["passes"].items()
-        if p.get("backtest_id") and p.get("statut") == STATUT_LANCEE
+        for nom in noms
+        if etat["passes"][nom].get("backtest_id")
+        and etat["passes"][nom].get("statut") == STATUT_LANCEE
     }
     code_retour = 0
     while en_attente or en_vol:
@@ -770,7 +787,7 @@ def _lancer_et_attendre(
                 progres = True
         if en_vol and not progres:
             scheduler.wait(poll_interval)
-    if any(p.get("statut") != STATUT_TERMINEE for p in etat["passes"].values()):
+    if any(etat["passes"][nom].get("statut") != STATUT_TERMINEE for nom in noms):
         code_retour = 1
     return code_retour
 
@@ -823,7 +840,8 @@ def status_measure(
     _sync_passes(plan, etat)
     pid = etat.get("project_id")
     if refresh and gateway is not None and pid:
-        for nom, passe in etat["passes"].items():
+        for nom in _noms_du_plan(plan):
+            passe = etat["passes"][nom]
             if not passe.get("backtest_id"):
                 continue
             if passe.get("statut") == STATUT_TERMINEE:
