@@ -5863,7 +5863,9 @@ def test_cache_v2_complete_is_read_by_the_reader_without_network(
     path = pig._build_open_prs_cache_for_belt("myia-ai-01:CoursIA-2")
     assert path is not None
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
-    assert payload["format"] == "open-prs-v2"
+    # La constante du producteur, pas un litteral : un bump de format
+    # (#26725, v2 -> v3) ne doit pas casser un test qui ne parle pas de format.
+    assert payload["format"] == pig._OPEN_PRS_CACHE_FORMAT
     assert payload["complete"] is True
     assert payload["count"] == 1
 
@@ -5887,7 +5889,7 @@ def test_incomplete_enumeration_writes_an_incomplete_cache(
     assert path is not None
     payload = json.loads(Path(path).read_text(encoding="utf-8"))
     assert payload["complete"] is False
-    assert payload["format"] == "open-prs-v2"
+    assert payload["format"] == pig._OPEN_PRS_CACHE_FORMAT
     assert "tronquee" in payload["reason"]
 
     # Le lecteur refuse ce cache : UNKNOWN, jamais une liste exploitee.
