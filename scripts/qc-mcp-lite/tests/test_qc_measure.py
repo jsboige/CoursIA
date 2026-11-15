@@ -842,6 +842,44 @@ class TestRead:
         assert passe["statistics"]["sharpe"] == "0.35"
         assert passe["statistics"]["orders"] == "318"
 
+    def test_json_stdout_ne_porte_que_le_document(self, tmp_path, capsys):
+        """--json : stdout ne porte QUE le document JSON. Les lignes
+        d'echec vont sur stderr et la raison de chaque echec vit dans la
+        cle erreur de la passe concernee (rc 1 inchange)."""
+        cloud = FakeCloud()
+        rundir = ecrire_plan_mesure(
+            tmp_path, passes=[("ok", {}), ("casse", {})]
+        )
+        cloud.seed_project(888, "Mesure-Vol")
+        save_state(rundir, {
+            "version": 1,
+            "project_id": 888,
+            "files": {},
+            "compile_id": "c1",
+            "compile_state": "BuildSuccess",
+            "passes": {
+                "ok": {"backtest_name": "ok", "backtest_id": "bt-ok",
+                       "statut": "lancee", "erreur": None},
+                "casse": {"backtest_name": "casse", "backtest_id": None,
+                          "statut": "a_lancer", "erreur": None},
+            },
+        })
+        cloud.seed_backtest(888, "ok", "bt-ok", completed=True)
+        horloge, sommeil = duo_horloge()
+        scheduler = scheduler_fictif(horloge, sommeil)
+        rc = read_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            as_json=True, poll_interval=20.0, max_wait=100.0,
+        )
+        assert rc == 1
+        captee = capsys.readouterr()
+        charge = json.loads(captee.out)
+        assert charge["project_id"] == 888
+        par_nom = {p["passe"]: p for p in charge["passes"]}
+        assert par_nom["ok"]["statistics"]["sharpe"] == "0.35"
+        assert "pas de backtest note" in par_nom["casse"]["erreur"]
+        assert "pas de backtest note" in captee.err
+
     def test_passe_sans_backtest_note(self, tmp_path, capsys):
         cloud, rundir = self._mesure_prete(tmp_path)
         etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))

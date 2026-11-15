@@ -889,6 +889,10 @@ def read_measure(
 
     Renvoie 0 si chaque passe est terminee avec statistiques, 1 sinon
     (non lancee, non termine a temps, en erreur, statistiques vides).
+
+    Sous ``as_json``, stdout ne porte QUE le document JSON : les lignes
+    d'echec vont sur stderr et la raison de chaque echec vit aussi dans la
+    cle ``erreur`` de la passe concernee.
     """
     plan = load_plan(rundir)
     etat = load_state(rundir)
@@ -912,7 +916,9 @@ def read_measure(
             "statistics": None,
         }
         if not p.get("backtest_id"):
-            lignes.append(f"passe {nom} : pas de backtest note (lancez run)")
+            message = f"passe {nom} : pas de backtest note (lancez run)"
+            lignes.append(message)
+            resultat["erreur"] = message
             lignes_json.append(resultat)
             tout_ok = False
             continue
@@ -924,15 +930,19 @@ def read_measure(
             message = str(bt.get("error") or bt.get("status"))[:300]
             p["statut"] = STATUT_ERREUR
             p["erreur"] = message
-            lignes.append(f"passe {nom} : backtest en erreur — {message}")
+            ligne = f"passe {nom} : backtest en erreur — {message}"
+            lignes.append(ligne)
+            resultat["erreur"] = ligne
             lignes_json.append(resultat)
             tout_ok = False
             continue
         if not backtest_termine(bt):
-            lignes.append(
+            message = (
                 f"passe {nom} : backtest pas termine apres {max_wait:.0f} s "
                 f"(statut {bt.get('status')!r}) — statistiques refusees"
             )
+            lignes.append(message)
+            resultat["erreur"] = message
             lignes_json.append(resultat)
             tout_ok = False
             continue
@@ -950,10 +960,12 @@ def read_measure(
                 if not statistiques_vides(stats):
                     break
         if statistiques_vides(stats):
-            lignes.append(
+            message = (
                 f"passe {nom} : backtest termine mais statistiques vides "
                 f"apres {retries} relectures — aucune valeur rendue"
             )
+            lignes.append(message)
+            resultat["erreur"] = message
             lignes_json.append(resultat)
             tout_ok = False
             continue
@@ -961,7 +973,9 @@ def read_measure(
         lignes_json.append(resultat)
     save_state(rundir, etat)
     for ligne in lignes:
-        print(ligne)
+        # Sous --json, stdout ne porte QUE le document : les lignes d'echec
+        # vont sur stderr (la raison est aussi dans le document, cle erreur).
+        print(ligne, file=sys.stderr if as_json else sys.stdout)
     if any(r["statistics"] for r in lignes_json):
         lignes_tab = [r for r in lignes_json if r["statistics"]]
         if as_json:
