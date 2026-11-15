@@ -4,9 +4,17 @@ Série née de l'epic [#16058](https://github.com/jsboige/CoursIA/issues/16058) 
 
 Le Transformer canonique (attention multi-tête, PE additif) reste couvert par le notebook d'architecture de la série GenAI/Texte ; cette série ne le duplique pas, elle en part.
 
+## Comment lire ce README
+
+- Vous voulez voir chaque composant **from scratch** : suivez le bloc A dans l'ordre (`TV-00a` RoPE, `TV-00b` variantes d'attention, `TV-00d` encodeurs), entièrement CPU et sans `transformers`.
+- Vous voulez la **confrontation à l'industrie** : passez au bloc B (`TV-01` attention, `TV-02` MoE), qui charge les vrais modèles et rejoue les mêmes mesures — GPU CUDA requis.
+- Vous creusez la **recherche** : `TV-03` (internalisation du CoT) et `TV-04` (DiscoLoop) s'appuient sur les organes du dossier [`tv/`](tv/), que `TV-00d` importe également.
+
+Cette navigation par niveaux suit le principe des séries à plusieurs vitesses décrit dans [« Choisir sa vitesse de lecture »](https://github.com/jsboige/CoursIA#choisir-sa-vitesse-de-lecture).
+
 ## Parcours
 
-| Notebook | Statut | Contenu |
+| Notebook | Statut | Ce qu'on y apprend |
 |---|---|---|
 | `TV-00a-RoPE-from-scratch.ipynb` | livre | RoPE : rotation par paires de dimensions, invariance de position relative mesuree, contraste avec le PE additif (distance, logit, tache d'inversion entraînée) |
 | `TV-00b` — variantes d'attention | livre | MHA vs MQA vs GQA (reduction du KV-cache, facteur 4x confirme) et SWA (fenetre glissante) |
@@ -17,6 +25,31 @@ Le Transformer canonique (attention multi-tête, PE additif) reste couvert par l
 | Bloc B — SOTA | livre | TV-01 (attention) + TV-02 (MoE) livres — les memes mesures sur des modeles industriels charges via `transformers` |
 | `TV-03-Internalisation-CoT.ipynb` | livre | internalisation du raisonnement (Huang et al. 2026, arXiv 2605.28600) sur tache marqueurs multi-sauts : CoT supervise vs answer-only multi-seed, indirection a chaine informative (separation non reproduite — resultat negatif mesure), marche guidee K=2/K=3 (cloturee sans separation positive), organes `tv/model.py` + `tv/task.py` extraits du carnet |
 | `TV-04-DiscoLoop.ipynb` | livre | boucles et canaux mixtes (Fu et al. 2026, arXiv 2607.00341) sur l'indirection double (two-hop a entite-pont) : boucle a poids partages egale le profond a 2,9x moins de parametres, DiscoLoop deux-canaux juge NO BEATS a l'echelle jouet (edge -1,99 sigma, DM p < 0.0001), diagnostic decodabilite/alignement du pont dans la direction du papier, realignement sans re-entrainement neutre (deficit situe en amont, dans le stockage du pont, selon les lectures testees), organe `tv/loop.py` |
+
+## Approfondissements
+
+### Autour de TV-00c — le MoE livré ailleurs
+
+| Extension | Notebook | Ce qu'elle ajoute | Prérequis en plus | Outil |
+|-----------|----------|-------------------|-------------------|-------|
+| TV-00c | [3.4c-MoE-from-scratch](../../../ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb) | Routage top-k, facteur de capacité, perte d'équilibrage — accrétion du 3.4 dans la série 03-Deep-Learning ([#16151](https://github.com/jsboige/CoursIA/issues/16151) §5.2) | La même architecture Transformer posée en amont | `python3` |
+
+### Autour de TV-03 et TV-04 — les organes de recherche
+
+Les deux carnets de recherche extraient leur moteur dans le dossier partagé [`tv/`](tv/) :
+[`tv/model.py`](tv/model.py) (le Transformer jouet), [`tv/task.py`](tv/task.py) (tâches à indirection) et
+[`tv/loop.py`](tv/loop.py) (boucles à poids partagés). `TV-00d` importe lui aussi cet organe, et `TV-01`/`TV-02`
+empruntent `tv.loc` pour retrouver le dépôt. Le lecteur qui veut reproduire une mesure hors carnet
+importe l'organe plutôt que de recopier le modèle.
+
+### Les voisins hors série
+
+En amont, le [3.4-Attention-Transformer-From-Scratch](../../../ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb)
+pose l'architecture canonique dont cette série part. En aval, les carnets de production
+de la série parente — [10b_Inference_Mechanics](../10b_Inference_Mechanics.ipynb) pour le
+prefill/décodage et [11_Quantization](../11_Quantization.ipynb) pour NF4 — approfondissent les
+deux régimes que `TV-01` mesure. L'acceptation complète est dans l'epic
+[#16058](https://github.com/jsboige/CoursIA/issues/16058).
 
 ## Conventions
 
