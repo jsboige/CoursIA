@@ -68,7 +68,7 @@ Le notebook Python montre *pourquoi* l'équilibre de Nash est plausible ; le not
 ### Où la théorie des jeux sert
 
 - **Enchères** (notebooks 11 et 16) : les mécanismes VCG et leurs dérivés fondent les enchères publicitaires en ligne et les ventes de fréquences télécom orchestrées par les États.
-- **Marchés d'appariement** (notebooks 15 et 16) : l'algorithme de Gale-Shapley affecte des élèves aux écoles, des internes aux hôpitaux, et organise les dons d'organes par échanges croisés (prix Nobel d'économie 2012).
+- **Marchés d'appariement** (notebooks 15 et 16) : Gale-Shapley affecte des élèves aux écoles et des internes aux hôpitaux. Les échanges de reins mobilisent des cycles et dépassent ce modèle biparti simple ; ces travaux relèvent d'extensions des mécanismes d'appariement (prix Nobel d'économie 2012).
 - **Poker et bluff optimal** (notebook 13) : Counterfactual Regret Minimization a permis à des programmes de battre les meilleurs joueurs humains au Texas Hold'em, première résolution d'un jeu majeur à information imparfaite.
 - **Vote et gouvernance** (sous-série SocialChoice) : le théorème d'Arrow et les méthodes de Condorcet ou de Borda éclairent le choix d'un mode de scrutin, du vote citoyen à la gouvernance on-chain.
 - **Coopération et évolution** (notebook 06) : le tournoi d'Axelrod et les dynamiques de réplication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles pair-à-pair.
@@ -211,13 +211,15 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 03d | [Deux espèces de flèches](GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
 | 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
 
+Le carnet 03d existe aussi en [C#](GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb) : les deux versions énumèrent les jeux et comparent les swaps adjacents et la préservation des équilibres purs.
+
 ### Autour de 04 — existence et nature de l'équilibre
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 04b | [Existence de Nash en Lean](GameTheory-04b-Lean-NashExistence-Lean.ipynb) | Le cadre de la preuve d'existence formalisé en Lean 4 : simplexe, convexité, point fixe de Brouwer ; quelques étapes d'arithmétique flottante y restent admises | Lean | Licence |
 | 04c | Point fixe discriminant — [Python](GameTheory-04c-NashExistence-Python.ipynb) · [C#](GameTheory-04c-NashExistence-CSharp.ipynb) | Brouwer rendu testable : la carte `perturbed_br` déplace un profil non équilibré et laisse fixe l'équilibre (voir [Pour aller plus loin](#pour-aller-plus-loin)) | Python · C# | Licence |
-| 04d | [Marchandage asymétrique](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) | Point de désaccord, faisceau de dépendance, contre-exemple au principe du moindre intérêt | Python | Licence |
+| 04d | Marchandage asymétrique — [Python](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) · [C#](GameTheory-04d-Marchandage-Asymetrique-CSharp.ipynb) | Point de désaccord, faisceau de dépendance et contre-exemple stylisé à une lecture du moindre intérêt par le seul désir | Python · C# | Licence |
 | 04e | [Oracles réflexifs](GameTheory-04e-Reflective-Oracles-Python.ipynb) | Fallenstein, Taylor et Christiano (2015) : un agent qui raisonne sur un modèle de lui-même, l'écart CDT/EDT, un Nash réflexivement cohérent | Python | Recherche |
 | 04f → DecInfer | [Théories de la décision face à un prédicteur](../Probas/DecisionTheory/DecInfer/DecInfer-11-Theories-Decision-Predicteur-Python.ipynb) — *descendu vers l'arc décision de Probas ([DecInfer-11](../Probas/DecisionTheory/DecInfer/README.md)) : EDT, CDT et UDT sont des théories de la décision, non des équilibres* | EDT, CDT et UDT sur Newcomb, la lésion de Fisher et d'autres problèmes dans un seul cadre générique ; 2TDT-1CDT ; inattention rationnelle | Python | Recherche |
 | 04g | [Supermodularité et treillis des équilibres](GameTheory-04g-Supermodularite-Python.ipynb) | Complémentarité stratégique : tests de supermodularité et de différences croissantes sur un treillis produit, meilleure réponse monotone, ensemble des équilibres purs de Nash comme treillis complet (Topkis, Milgrom-Roberts, Zhou), comparaison monotone et bande d'hystérésis ; ce que ce treillis doit aux gains et non aux préférences | Python | Licence |
@@ -318,8 +320,10 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 | 16d | [Joueurs LLM](GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) | Pilote : des agents de langage hétérogènes joueurs d'un mécanisme d'Othman-Sandholm | Python | Recherche |
 | 16e | [Populations Othman-Sandholm](GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb) | Généralisation du pilote 16d : un échantillon de N paires (row, col) tirées d'une distribution sur les politiques, quatre populations scriptées, multi-seed, modèle nul | Python | Recherche |
 | 16h | [Coopération LLM](GameTheory-16h-Cooperation-LLM-Python.ipynb) | Populations hétérogènes d'agents de langage au dilemme du prisonnier itéré : protocole multi-seed pré-enregistré (5 graines), politiques TFT scriptées, modèle nul uniforme, contrôle négatif `always_defect`, verdict H0/H1 par hétérogénéité (Vallinder–Hughes 2024, Payne–Alloui–Cros 2025) | Python | Recherche |
-| 16i | [Appariage stable & stratégie](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | Qui peut tricher dans Gale–Shapley : le côté proposeur est protégé, le côté répondant peut mentir — recherche exhaustive de déclarations profitables | Python | Licence |
+| 16i | [Appariage stable & stratégie](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [C#](GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb) | Gale–Shapley, certificat de stabilité, deux instances et énumération bornée des déclarations ; les mesures ne généralisent pas les théorèmes | Python / C# | Licence |
 | 16k | [Théorie des enchères](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | Le prix mesuré de l'information : vrais-facité de Vickrey, réserve optimale de Myerson, saut de revenu et équivalence de revenu | Python | Recherche |
+
+**Parité de 16c — dimension paiement** : [Python](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [C#](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb). Énumération native des 4 096 mécanismes et comparaison des contraintes locales explicites, sans solveur externe.
 
 16d a rejoint la [sous-série Coalitions](Coalitions/README.md) (carnet 03) : l'échange de reins est un mécanisme d'appariement — de la famille de Kuhn-Munkres, carnets 04 et 05 — et non un mécanisme de révélation.
 
