@@ -60,7 +60,7 @@ DEFAULT_BASE_URL = "https://jsboige.github.io/CoursIA"
 DEFAULT_PAGES = (
     "/",
     "/MyIA.AI.Notebooks/index.html",
-    "/parcours.html",
+    "/docs/parcours.html",
     "/COURSE_CATALOG.generated.html",
     # Les 16 README de series (#10921, sous-grain garde/series, 2026-11-10) :
     # la mesure qui fonde cette extension y a trouve 54 liens casses sur 674

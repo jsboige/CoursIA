@@ -5,7 +5,7 @@ journalisée — l'outil constate la présence, rien de plus.
 Usage:
     python scripts/notebook_tools/learner_preflight.py --parcours <profil> [--json]
 
-Profils alignés sur parcours.qmd :
+Profils alignés sur docs/parcours.qmd :
     - local     : Python 3.10+, Jupyter, sans GPU, sans .NET, sans Docker
     - dotnet    : local + .NET 9 SDK + Lean 4 sous WSL (kernel ML.NET)
     - genai     : dotnet + Docker + GPU NVIDIA + clés d'API présentes
