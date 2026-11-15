@@ -1005,12 +1005,10 @@ class ScanMainCollisionTests(unittest.TestCase):
                         "le kernel en milieu de nom doit etre neutralise")
 
     def test_same_item_scan_does_not_match_different_topics(self):
-        # Cas historique (noms pre-renommage #12933, le jumeau C# porte
-        # desormais -Adversarial-CSharp) : App-14-ConnectFour-Adversarial
-        # et App-14-ConnectFour-CSharp -- `Adversarial` n'est PAS un token
-        # noyau, le strip ne le touche pas, et la collision reste un vrai
-        # conflit de sujet.
-        a = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb"
+        # App-14-ConnectFour-Adversarial-Python et App-14-ConnectFour-CSharp :
+        # `Adversarial` n'est PAS un token noyau, le strip ne le touche
+        # pas, et la collision reste un vrai conflit de sujet.
+        a = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial-Python.ipynb"
         b = "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb"
         self.assertFalse(csr._same_item_scan(a, b),
                          "deux sujets differents ne sont PAS un jumeau")
@@ -1019,7 +1017,7 @@ class ScanMainCollisionTests(unittest.TestCase):
         # #12933 : apres renommage du jumeau C# en -Adversarial-CSharp,
         # le stem (suffixe -CSharp strippe) devient identique au Python :
         # la paire est reconnue jumeau, pas collision de slot.
-        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb"
+        a = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-Python.ipynb"
         b = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial-CSharp.ipynb"
         self.assertTrue(csr._same_item_scan(a, b),
                         "la paire renommee doit etre reconnue comme jumeau")

@@ -1,6 +1,6 @@
 - name: App-12 ConnectFour
   family: Search/Part3-Cas-pratiques
-  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour.ipynb
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb
   parity_level: semantic
   bridge_verdict: SOTA-OK
