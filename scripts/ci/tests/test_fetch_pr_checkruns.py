@@ -10,9 +10,11 @@ verrouille ce qui doit rester vrai, quel que soit le transport :
   - la **carte des runs** porte le `workflow_id` : c'est elle qui permet le
     pliage (workflow_id, name) -- le pliage par nom seul fusionnerait les
     verdicts de workflows homonymes (#11808) ;
-  - les **pages** sont lues : l'endpoint rend les runs les plus ANCIENS, et
-    74 PR sur 174 (mesure 2026-11-15) portent plus de 100 check-runs -- pour
-    les 74, la deuxieme page change la lecture ;
+  - les **pages** sont lues : l'endpoint rend les runs les plus **RECENTS**
+    d'abord (identifiants decroissants), donc la page 1 seule donne une vue
+    **INCOMPLETE** (les runs les plus anciens manquent) et une jambe peut
+    disparaitre ; 51 PR sur 176 (mesure 2026-11-15, pool ouvert) portent
+    plus de 100 check-runs, et pour 8 d'entre elles le verdict change ;
   - la conclusion d'un **run** de workflow n'est lue en REST que pour les PRs
     qui portent une jambe `PR gate` ROUGE -- la seule population dont le
     selecteur la consomme (#21300) ;
@@ -141,8 +143,9 @@ def test_parse_prs_lit_le_listing_court_de_l_adjacency(tmp_path):
 # --- 2. La pagination : le defaut de correction -----------------------------
 
 def test_la_pagination_lit_la_page_suivante():
-    """L'endpoint rend les runs les plus ANCIENS : une tete qui porte plus
-    de 100 runs exige les pages suivantes (mesure : 74 PR sur 174)."""
+    """L'endpoint rend les runs les plus RECENTS d'abord : une tete qui porte
+    plus de 100 runs exige les pages suivantes, sinon la lecture est
+    INCOMPLETE (les runs les plus anciens manquent)."""
     pages = {
         1: _rest_page([_rest_run(name="PR gate", conclusion="failure")] * 100,
                       total_count=135),

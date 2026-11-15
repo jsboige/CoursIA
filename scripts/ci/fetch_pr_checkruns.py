@@ -8,21 +8,27 @@ et `workflows`.
 Ce que la MESURE a etabli (2026-11-15, pool ouvert de 174 PR) :
 
   - **les JAMBES se lisent en REST, une lecture par PR, pages comprises**.
-    L'endpoint `commits/<sha>/check-runs` rend 100 check-runs (les plus
-    ANCIENS) par page. Passer en GraphQL n'est PAS une economie : le schema
-    borne le fan-out (une tete de PR porte jusqu'a 46 suites et 135 runs), de
-    sorte que couvrir le meme contenu en GraphQL impose ~1 PR par requete --
-    autant d'appels, en plus lourd, avec le risque de la limite secondaire.
-    Mesure : 25 PR x 20 suites x 20 runs echoue ("Resource limits for this
-    query exceeded") ; 5 PR x 64 suites x 3 runs passe, et rend 29 jambes
-    contre 94 en REST pour la meme PR.
-  - **la lecture REST tronque, et c'est un defaut de CORRECTION**. L'endpoint
-    rend les runs les plus ANCIENS : 74 PR sur 174 (43 %) portent plus de 100
-    check-runs, et pour LES 74 la deuxieme page change la lecture. Mesure :
-    sur #26381 la page 1 ne montre AUCUNE jambe `PR gate` et 2 jambes
-    rouges ; la page 2 montre `PR gate = failure` et 7 jambes rouges. Le
-    balayeur lisait donc une vue PERIMEE sur 43 % du pool. La pagination
-    est donc ici, et elle est le vrai gain de ce changement.
+    L'endpoint `commits/<sha>/check-runs` rend 100 check-runs par page, les
+    plus **RECENTS** d'abord (identifiants decroissants). Mesure
+    reproductible (tete de #26598, 123 runs) : page 1 = ids 132 918 765 225
+    -> 132 885 793 360 ; page 2 = les 23 restants, tous plus petits
+    (132 885 793 284 -> 132 885 792 238). Passer en GraphQL n'est PAS une
+    economie : le schema borne le fan-out (une tete de PR porte jusqu'a
+    46 suites et 135 runs), de sorte que couvrir le meme contenu en GraphQL
+    impose ~1 PR par requete -- autant d'appels, en plus lourd, avec le
+    risque de la limite secondaire. Mesure : 25 PR x 20 suites x 20 runs
+    echoue ("Resource limits for this query exceeded") ; 5 PR x 64 suites x
+    3 runs passe, et rend 29 jambes contre 94 en REST pour la meme PR.
+  - **la lecture REST tronque, et c'est un defaut de CORRECTION**. Une tete
+    qui porte plus de `per_page` runs exige les pages suivantes. La page 1
+    seule donne une vue **INCOMPLETE**, pas une vue perimee : ce sont les
+    runs les plus ANCIENS qui manquent, et une jambe peut alors disparaitre
+    -- celle d'un nom de check dont TOUS ses runs sont plus anciens que la
+    page 1. Mesure du 15/11 (176 PRs ouvertes, pliage par nom, « le plus
+    recent gagne ») : 51 PRs portent plus de 100 runs ; pour 43 le verdict
+    reste le meme, pour **8 il change** (VERT -> ROUGE : #26729, #26712,
+    #26710, #26689, #26645, #26503, #26128, #25262). La pagination est donc
+    ici, et elle est le vrai gain de ce changement.
   - **la carte des runs se lit en GraphQL, en bloc**. La clef de pliage du
     selecteur est (workflow_id, name) (#11808) : elle exige le `workflow_id`
     de chaque run, que GraphQL rend par suite -- SANS le fan-out des
@@ -67,7 +73,7 @@ REST_PAGE_SIZE = 100
 
 # Plafond de pages lues pour UNE tete. Au-dela, la lecture est INCOMPLETE :
 # elle doit etre signalee, jamais absorbée en silence (une tete tronquee
-# donne au selecteur une vue perimee -- exactement le defaut corrige ici).
+# donne au selecteur une vue incomplete -- exactement le defaut corrige ici).
 REST_MAX_PAGES = 50
 
 # Le code HTTP est extrait du message de `gh` (`gh: <texte> (HTTP 403)`),
@@ -287,15 +293,16 @@ def read_legs(repo: str, sha: str, *, rest: Callable[[str], dict] = gh_api,
               max_pages: int = REST_MAX_PAGES) -> tuple[list[dict], int, int, bool]:
     """Les jambes d'une tete de commit, TOUTES les pages lues.
 
-    L'endpoint rend `per_page` runs par page, les plus ANCIENS : une tete
-    qui porte plus de `per_page` runs exige les pages suivantes, sinon le
-    balayeur lit une vue perimee (mesure : 74 PR sur 174, et pour les 74 la
-    deuxieme page change la lecture). Le nombre de pages lues est rendu : il
-    entre dans le quota.
+    L'endpoint rend `per_page` runs par page, les plus **RECENTS** d'abord
+    (identifiants decroissants) : une tete qui porte plus de `per_page` runs
+    exige les pages suivantes, sinon le balayeur lit une vue **INCOMPLETE**
+    (les runs les plus anciens manquent) et une jambe peut disparaitre --
+    celle d'un nom de check dont tous ses runs sont plus anciens que la
+    page 1. Le nombre de pages lues est rendu : il entre dans le quota.
 
     Le dernier booleen rend la TRONCATURE : au-dela de `max_pages` pages, la
     lecture est incomplete, et une lecture incomplete doit etre signalee
-    (une troncature muette rendrait au selecteur une vue perimee, sans
+    (une troncature muette rendrait au selecteur une vue incomplete, sans
     trace). Le plafond existait ; ce qui manquait, c'est sa declaration.
     """
     legs: list[dict] = []
