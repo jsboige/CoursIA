@@ -197,6 +197,14 @@ jobs:
             cat /tmp/adjacency_legs.err
             exit 0
           fi
+          # #26739 -- les muets du collecteur (PRs illisibles, lecture
+          # tronquee, erreurs GraphQL partielles) sont des `::warning::` sur
+          # SON stderr : ils sont re-emis ici, sinon ils seraient lus par
+          # personne -- le stderr du collecteur n'est affiche qu'en cas
+          # d'echec.
+          if [ -s /tmp/adjacency_legs.err ]; then
+            grep -E '^::(warning|error)::' /tmp/adjacency_legs.err || true
+          fi
           jq -r '[.checks[] | select(.name | startswith("Always-on guards"))] as $legs | select(($legs | length) > 0) | "\(.number) \([$legs[].conclusion] | join(" "))"' \
             /tmp/adjacency_legs.jsonl > /tmp/adjacency_legs.txt
           GUARD_LEG_COUNT=$(wc -l < /tmp/adjacency_legs.txt | tr -d ' ')

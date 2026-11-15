@@ -455,6 +455,7 @@ jobs:
           COLLECTOR=/tmp/fetch_pr_checkruns.py
           LEGS_SUMMARY=/tmp/legs_summary.json
           OMIT_ERR=$(mktemp)
+          OMIT_SHA='aucun'
           OMIT_CODE='aucun code HTTP'
           OMIT_DETAIL='aucun message de gh'
           LISTED=0
@@ -487,6 +488,36 @@ jobs:
           QUOTA=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["api_quota"])' "$LEGS_SUMMARY")
           WFMAP_FAIL=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["run_conclusion_failures"])' "$LEGS_SUMMARY")
           OMIT_PRS=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(",".join(str(n) for n in d.get("unreadable_prs") or []) or "aucune")' "$LEGS_SUMMARY")
+          # #26739 -- le no-op des check-runs est ALIMENTE par le resume du
+          # collecteur. Avant, il lisait $OMIT_SHA -- que plus rien
+          # n'assignait (la boucle shell qui le renseignait est partie au
+          # collecteur) : sous `set -u`, la lecture tuait le step AVANT
+          # l'annotation, et le no-op redevenait muet. Le resume porte le
+          # DERNIER echec : sa PR, sa SHA, l'endpoint reellement appele, le
+          # code HTTP extrait du message et le detail.
+          OMIT_SHA=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print((d.get("last_unreadable") or {}).get("sha") or "aucun")' "$LEGS_SUMMARY")
+          OMIT_CODE=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print((d.get("last_unreadable") or {}).get("code") or "aucun code HTTP")' "$LEGS_SUMMARY")
+          OMIT_DETAIL=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print((d.get("last_unreadable") or {}).get("detail") or "aucun message de gh")' "$LEGS_SUMMARY")
+          # Les trois autres muets du resume sont re-nommes ICI : le stderr du
+          # collecteur est capture dans $OMIT_ERR, donc une annotation
+          # qu'il emettrait serait invisible dans le log du run. Le resume
+          # est la source, ce bloc est l'emetteur.
+          TRUNCATED_PRS=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(",".join(str(n) for n in d.get("truncated_prs") or []) or "aucune")' "$LEGS_SUMMARY")
+          PAGE_CAP=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("rest_page_cap") or "inconnu")' "$LEGS_SUMMARY")
+          GQL_ERRORS=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); e=d.get("graphql_errors") or []; print(str(len(e)) + ((" -- " + e[0]) if e else ""))' "$LEGS_SUMMARY")
+          NULL_REPO=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d.get("null_repository_pages") or 0)' "$LEGS_SUMMARY")
+          if [ "$OMIT_PRS" != "aucune" ]; then
+            echo "::warning::[stale-sweep] PRs illisibles: $OMIT_PRS -- lectures en echec, ces PRs ne sont pas inspectees"
+          fi
+          if [ "$TRUNCATED_PRS" != "aucune" ]; then
+            echo "::warning::[stale-sweep] lecture tronquee: $TRUNCATED_PRS portent plus de $PAGE_CAP check-runs -- les pages au-dela du plafond n'ont pas ete lues"
+          fi
+          if [ "$GQL_ERRORS" != "0" ]; then
+            echo "::warning::[stale-sweep] erreurs GraphQL partielles: $GQL_ERRORS -- reponse portant data ET errors, la carte des runs est partielle"
+          fi
+          if [ "$NULL_REPO" != "0" ]; then
+            echo "::warning::[stale-sweep] repository nul sur $NULL_REPO page(s) GraphQL -- la carte des runs est incomplete pour ces pages"
+          fi
           echo "[stale-sweep] $QUOTA"
           echo "[stale-sweep] open PRs listed=$LISTED inspected=$INSPECTED omitted=$OMITTED"
           # #22215 -- resume WFMAP : la carte vide n'est pas une panne du sweep

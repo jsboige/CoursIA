@@ -86,7 +86,7 @@ def _prs(*numbers):
 # --- 1. La forme du fichier produit ----------------------------------------
 
 def test_la_forme_du_fichier_produit_est_celle_du_selecteur():
-    legs, _pages, _total = mod.read_legs("o/r", "sha1", rest=lambda _p: _rest_page(
+    legs, _pages, _total, _trunc = mod.read_legs("o/r", "sha1", rest=lambda _p: _rest_page(
         [_rest_run()]))
     assert legs
     for leg in legs:
@@ -98,7 +98,7 @@ def test_le_titre_vide_est_une_chaine_et_non_une_absence():
     """`title` porte le signal du genou muet (#15825) : une cle ABSENTE
     change le classement du selecteur (l'absence de cle n'est jamais un
     muet)."""
-    legs, _p, _t = mod.read_legs("o/r", "sha1", rest=lambda _p: _rest_page(
+    legs, _p, _t, _trunc = mod.read_legs("o/r", "sha1", rest=lambda _p: _rest_page(
         [_rest_run(title="")]))
     assert legs[0]["title"] == ""
 
@@ -110,7 +110,7 @@ def test_les_conclusions_restent_en_minuscules():
     run = _rest_run()
     run["conclusion"] = "FAILURE"
     run["status"] = "COMPLETED"
-    legs, _p, _t = mod.read_legs("o/r", "sha1", rest=lambda _p: _rest_page([run]))
+    legs, _p, _t, _trunc = mod.read_legs("o/r", "sha1", rest=lambda _p: _rest_page([run]))
     assert legs[0]["conclusion"] == "failure"
     assert legs[0]["status"] == "completed"
 
@@ -156,7 +156,7 @@ def test_la_pagination_lit_la_page_suivante():
         calls.append(page)
         return pages[page]
 
-    legs, pages_read, total = mod.read_legs("o/r", "sha1", rest=rest)
+    legs, pages_read, total, _trunc = mod.read_legs("o/r", "sha1", rest=rest)
     assert calls == [1, 2]
     assert pages_read == 2
     assert total == 135
@@ -166,7 +166,7 @@ def test_la_pagination_lit_la_page_suivante():
 
 def test_la_pagination_s_arrete_a_la_derniere_page():
     pages = {1: _rest_page([_rest_run()] * 100, total_count=100)}
-    legs, pages_read, _total = mod.read_legs(
+    legs, pages_read, _total, _trunc = mod.read_legs(
         "o/r", "sha1", rest=lambda p: pages[1])
     assert pages_read == 1
     assert len(legs) == 100
@@ -450,3 +450,138 @@ def test_main_propage_un_echec_de_collecte(tmp_path, monkeypatch):
     rc = mod.main(["--repo", "o/r", "--prs", str(_listing(tmp_path)),
                    "--out", str(tmp_path / "runs.jsonl")])
     assert rc == 1
+
+
+# --- 8. Les muets du resume sont nommes (#26739) -----------------------------
+#
+# Quatre cas rendaient une lecture PARTIELLE sans le dire : le plafond de
+# pages coupe en silence, les PRs illisibles ne sont jamais nommees, les
+# erreurs GraphQL accompagnees de `data` sont ignorees, et une page
+# `repository: null` rend une carte vide. Le repli du selecteur (run_id) est
+# plus etroit dans les quatre cas -- mais muet.
+
+
+def test_le_plafond_de_pages_tronque_en_signaleant():
+    """Le plafond existe (5000 runs par tete) ; ce qui manquait, c'est sa
+    DECLARATION : une lecture tronquee sans trace donne au selecteur une vue
+    perimee, en silence."""
+    def rest(_path):
+        # pas de `total_count` : l'endpoint en rend un, mais une page pleine
+        # SANS total laisse la pagination continuer (c'est le cas teste ici)
+        return {"check_runs": [_rest_run(run_id=i) for i in range(100)]}
+
+    _legs, pages, _total, truncated = mod.read_legs(
+        "o/r", "sha1", rest=rest, max_pages=2)
+    assert truncated is True, "la troncature doit etre rendue"
+    assert pages == 2, f"le plafond doit arreter la lecture (pages={pages})"
+
+
+def test_une_lecture_complete_n_est_pas_tronquee():
+    """Controle negatif : une tete qui tient en deux pages n'est PAS
+    declaree tronquee (un garde qui rouge toujours ne prouve rien)."""
+    def rest(_path):
+        return _rest_page([_rest_run()])
+
+    _legs, _pages, _total, truncated = mod.read_legs("o/r", "sha1", rest=rest)
+    assert truncated is False
+
+
+def test_la_troncature_nomme_la_pr_dans_le_resume():
+    def rest(_path):
+        # pas de `total_count` : l'endpoint en rend un, mais une page pleine
+        # SANS total laisse la pagination continuer (c'est le cas teste ici)
+        return {"check_runs": [_rest_run(run_id=i) for i in range(100)]}
+
+    _lines, summary = mod.collect(
+        repo="o/r", prs=_prs(7), rest=rest, use_run_map=False,
+        use_run_conclusions=False)
+    assert summary["truncated_prs"] == [7], summary["truncated_prs"]
+    assert summary["rest_page_cap"] == 5000
+
+
+def test_les_prs_illisibles_sont_nommees_dans_le_resume():
+    def rest(path):
+        if "sha1" in path:
+            raise mod.CollectionError(
+                "GET repos/o/r/commits/sha1/check-runs : gh: Not Found (HTTP 404)")
+        return _rest_page([_rest_run()])
+
+    _lines, summary = mod.collect(
+        repo="o/r", prs=_prs(1, 2), rest=rest, use_run_map=False,
+        use_run_conclusions=False)
+    assert summary["unreadable_prs"] == [1]
+    assert summary["unreadable_detail"]["1"]["code"] == "HTTP 404"
+    assert summary["unreadable_detail"]["1"]["endpoint"] == (
+        "GET repos/o/r/commits/sha1/check-runs")
+
+
+def test_les_erreurs_graphql_avec_data_sont_comptees():
+    """Une reponse qui porte `data` ET `errors` ne fait pas echouer la
+    lecture, mais elle rend une carte PARTIELLE : elle doit etre comptee."""
+    def graphql(_query, _variables):
+        payload = _gql_page([_gql_node(1)])
+        payload["errors"] = [{"message": "Some paths are not exposed"}]
+        return payload
+
+    _maps, stats = mod.read_run_maps("o/r", transport=graphql)
+    assert stats["graphql_errors"], "une erreur GraphQL avec data est muette"
+
+
+def test_une_page_repository_nulle_est_comptee():
+    """`repository: null` rend une carte VIDE : le repli (run_id) s'y applique
+    pour TOUTES les PRs du pool. C'est compte, pas absorbé."""
+    def graphql(_query, _variables):
+        return {"data": {"rateLimit": {"cost": 1, "remaining": 4999},
+                         "repository": None}}
+
+    _maps, stats = mod.read_run_maps("o/r", transport=graphql)
+    assert stats["null_repository_pages"] == 1
+
+
+def test_main_annonce_les_quatre_muets(tmp_path, monkeypatch, capsys):
+    """Le resume se traduit en annotations NOMMEES : chaque cas muet
+    devient une ligne qui cite la PR concernee."""
+    def fake_collect(**_kwargs):
+        return ([], {
+            "prs_listed": 2, "prs_inspected": 1, "prs_omitted": 1,
+            "rest_calls": 3, "rest_pages": 3, "graphql_calls": 1,
+            "graphql_points": 1, "map_truncated": [],
+            "run_conclusion_calls": 0, "run_conclusion_failures": 0,
+            "unreadable": {"1": "HTTP 404"},
+            "unreadable_prs": [1],
+            "unreadable_detail": {}, "last_unreadable": {},
+            "truncated_prs": [2], "rest_page_cap": 5000,
+            "graphql_errors": ["Some paths are not exposed"],
+            "null_repository_pages": 1,
+        })
+    monkeypatch.setattr(mod, "collect", fake_collect)
+    rc = mod.main(["--repo", "o/r", "--prs", str(_listing(tmp_path)),
+                   "--out", str(tmp_path / "runs.jsonl")])
+    assert rc == 0
+    err = capsys.readouterr().err
+    assert "PRs illisibles" in err and "#1" in err, err
+    assert "lecture tronquee" in err and "#2" in err, err
+    assert "erreurs GraphQL partielles" in err, err
+    assert "repository nul" in err, err
+
+
+def test_le_resume_nomme_le_dernier_echec_dans_l_ordre_du_listing():
+    """Le dernier echec est celui du LISTING, pas celui de l'arrivee des
+    threads : deux executions du meme pool peuvent differer, et le no-op
+    doit etre reproductible."""
+    def rest(path):
+        if "sha1" in path:
+            raise mod.CollectionError(
+                "GET repos/o/r/commits/sha1/check-runs : gh: Not Found (HTTP 404)")
+        if "sha3" in path:
+            raise mod.CollectionError(
+                "GET repos/o/r/commits/sha3/check-runs : gh: Not Found (HTTP 500)")
+        return _rest_page([_rest_run()])
+
+    _lines, summary = mod.collect(
+        repo="o/r", prs=_prs(1, 2, 3), rest=rest, use_run_map=False,
+        use_run_conclusions=False)
+    assert summary["unreadable_prs"] == [1, 3]
+    assert summary["last_unreadable"]["pr"] == 3
+    assert summary["last_unreadable"]["sha"] == "sha3"
+    assert summary["last_unreadable"]["code"] == "HTTP 500"

@@ -47,6 +47,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -63,6 +64,15 @@ DEFAULT_WORKERS = 8
 
 # `per_page` de l'endpoint `check-runs` : au-dela, l'endpoint tronque.
 REST_PAGE_SIZE = 100
+
+# Plafond de pages lues pour UNE tete. Au-dela, la lecture est INCOMPLETE :
+# elle doit etre signalee, jamais absorbée en silence (une tete tronquee
+# donne au selecteur une vue perimee -- exactement le defaut corrige ici).
+REST_MAX_PAGES = 50
+
+# Le code HTTP est extrait du message de `gh` (`gh: <texte> (HTTP 403)`),
+# jamais devine : une constante mentirait des le premier incident different.
+_HTTP_CODE_RE = re.compile(r"HTTP (\d{3})")
 
 # Bornes de la lecture GraphQL de la carte des runs : une page de PR et la
 # fenetre de suites. La fenetre couvre les suites de la tete (mesure : 64
@@ -225,6 +235,33 @@ def parse_prs(path: str | os.PathLike) -> list[dict]:
 
 # --- les jambes : REST, pagination comprise ---------------------------------
 
+def _http_code(message: str) -> str:
+    """Le code HTTP porte par le message de `gh`, ou son absence NOMMEE."""
+    match = _HTTP_CODE_RE.search(message or "")
+    return f"HTTP {match.group(1)}" if match else "aucun code HTTP"
+
+
+def _flat(message: str, limit: int = 300) -> str:
+    """Un message sur une seule ligne, borne (le `detail=` des annotations)."""
+    return " ".join((message or "").split())[:limit]
+
+
+def _unreadable_entry(repo: str, pr: dict, error: str) -> dict:
+    """Le detail d'une PR ILLISIBLE : sa SHA, l'endpoint reellement appele,
+    le code HTTP extrait du message, et le message lui-meme.
+
+    La SHA est celle de la PR dont la lecture a ECHOUE : le no-op du
+    balayeur nomme ainsi le DERNIER echec, pas une PR lue (le pin
+    positionnel du workflow, re-pointe sur cette fonction).
+    """
+    return {
+        "sha": pr["sha"],
+        "endpoint": f"GET repos/{repo}/commits/{pr['sha']}/check-runs",
+        "code": _http_code(error),
+        "detail": _flat(error),
+    }
+
+
 def legs_from_rest(check_runs: list[dict]) -> list[dict]:
     """Les jambes d'une PR, au contrat du selecteur.
 
@@ -246,7 +283,8 @@ def legs_from_rest(check_runs: list[dict]) -> list[dict]:
 
 
 def read_legs(repo: str, sha: str, *, rest: Callable[[str], dict] = gh_api,
-              page_size: int = REST_PAGE_SIZE) -> tuple[list[dict], int, int]:
+              page_size: int = REST_PAGE_SIZE,
+              max_pages: int = REST_MAX_PAGES) -> tuple[list[dict], int, int, bool]:
     """Les jambes d'une tete de commit, TOUTES les pages lues.
 
     L'endpoint rend `per_page` runs par page, les plus ANCIENS : une tete
@@ -254,11 +292,17 @@ def read_legs(repo: str, sha: str, *, rest: Callable[[str], dict] = gh_api,
     balayeur lit une vue perimee (mesure : 74 PR sur 174, et pour les 74 la
     deuxieme page change la lecture). Le nombre de pages lues est rendu : il
     entre dans le quota.
+
+    Le dernier booleen rend la TRONCATURE : au-dela de `max_pages` pages, la
+    lecture est incomplete, et une lecture incomplete doit etre signalee
+    (une troncature muette rendrait au selecteur une vue perimee, sans
+    trace). Le plafond existait ; ce qui manquait, c'est sa declaration.
     """
     legs: list[dict] = []
     pages = 0
     total = None
     page = 1
+    truncated = False
     while True:
         payload = rest(f"repos/{repo}/commits/{sha}/check-runs"
                        f"?per_page={page_size}&page={page}")
@@ -276,9 +320,10 @@ def read_legs(repo: str, sha: str, *, rest: Callable[[str], dict] = gh_api,
         if len(runs) < page_size:
             break
         page += 1
-        if page > 50:      # garde-fou : jamais plus de 5000 runs par tete
+        if page > max_pages:      # garde-fou : jamais plus de 5000 runs par tete
+            truncated = True
             break
-    return legs, pages, (total if total is not None else len(legs))
+    return legs, pages, (total if total is not None else len(legs)), truncated
 
 
 def red_gate_legs(checks: list[dict]) -> bool:
@@ -313,6 +358,8 @@ def read_run_maps(repo: str, *, transport: Callable[[str, dict], dict] = gh_grap
         raise CollectionError(f"repo illisible: {repo!r}")
     maps: dict[int, dict] = {}
     truncated: list[int] = []
+    graphql_errors: list[str] = []
+    null_repository_pages = 0
     calls = 0
     points = 0
     after: str | None = None
@@ -322,10 +369,23 @@ def read_run_maps(repo: str, *, transport: Callable[[str, dict], dict] = gh_grap
             "suites": suites})
         calls += 1
         data = payload.get("data") or {}
+        # #26739 -- une reponse qui porte `data` ET `errors` n'echoue pas :
+        # elle rend une carte PARTIELLE. La muette faisait croire a une
+        # carte complete -- le repli (run_id) ne s'appliquait qu'aux PRs
+        # concernees, sans que personne ne le sache.
+        for error in payload.get("errors") or []:
+            graphql_errors.append(_flat(str((error or {}).get("message")
+                                            or error)))
         cost = ((data.get("rateLimit") or {}).get("cost") or 0)
         if isinstance(cost, int):
             points += cost
-        connection = ((data.get("repository") or {}).get("pullRequests") or {})
+        repository = data.get("repository")
+        if repository is None:
+            # Une page `repository: null` rend une carte VIDE : le repli
+            # (run_id) s'y applique pour TOUTES les PRs du pool. C'est le
+            # meme defaut que la carte fenetree, sans meme la fenetre.
+            null_repository_pages += 1
+        connection = ((repository or {}).get("pullRequests") or {})
         for node in connection.get("nodes") or []:
             if not node or node.get("isDraft"):
                 continue
@@ -357,7 +417,9 @@ def read_run_maps(repo: str, *, transport: Callable[[str, dict], dict] = gh_grap
         if not after:
             break
     return maps, {"graphql_calls": calls, "graphql_points": points,
-                  "map_truncated": sorted(truncated)}
+                  "map_truncated": sorted(truncated),
+                  "graphql_errors": graphql_errors,
+                  "null_repository_pages": null_repository_pages}
 
 
 def read_run_conclusions(repo: str, sha: str, *,
@@ -390,32 +452,50 @@ def collect(*, repo: str, prs: list[dict],
     wanted = {pr["number"]: pr for pr in prs}
     legs: dict[int, list[dict]] = {}
     unreadable: dict[int, str] = {}
+    unreadable_detail: dict[int, dict] = {}
+    truncated_prs: list[int] = []
     pages_read = 0
     rest_calls = 0
     lock = threading.Lock()
 
-    def read_one(pr: dict) -> tuple[int, list[dict], int, str]:
+    def read_one(pr: dict) -> tuple[int, list[dict], int, str, bool]:
         try:
-            pr_legs, pages, _total = read_legs(repo, pr["sha"], rest=rest)
-            return pr["number"], pr_legs, pages, ""
+            pr_legs, pages, _total, truncated = read_legs(repo, pr["sha"],
+                                                          rest=rest)
+            return pr["number"], pr_legs, pages, "", truncated
         except CollectionError as exc:
-            return pr["number"], [], 0, str(exc)
+            return pr["number"], [], 0, str(exc), False
 
     if prs:
         with ThreadPoolExecutor(max_workers=max(1, workers)) as pool:
-            for number, pr_legs, pages, error in pool.map(read_one, prs):
+            for number, pr_legs, pages, error, truncated in pool.map(read_one, prs):
                 with lock:
                     rest_calls += pages
                     pages_read += pages
                 if error:
                     unreadable[number] = error[:200]
+                    unreadable_detail[number] = _unreadable_entry(
+                        repo, wanted[number], error)
                     continue
+                if truncated:
+                    truncated_prs.append(number)
                 legs[number] = pr_legs
+
+    # Le DERNIER echec, dans l'ORDRE DU LISTING : c'est lui que le no-op du
+    # balayeur nomme (endpoint + code + detail). Le parcours suit `prs`, pas
+    # l'ordre d'arrivee des threads -- deux executions du meme pool peuvent
+    # differer, et le no-op doit etre reproductible.
+    last_unreadable: dict = {}
+    for pr in prs:
+        entry = unreadable_detail.get(pr["number"])
+        if entry:
+            last_unreadable = {"pr": pr["number"], **entry}
 
     # La carte des runs (clef de pliage) : GraphQL, en bloc.
     run_maps: dict[int, dict] = {}
     graphql_stats = {"graphql_calls": 0, "graphql_points": 0,
-                     "map_truncated": []}
+                     "map_truncated": [], "graphql_errors": [],
+                     "null_repository_pages": 0}
     if use_run_map:
         run_maps, graphql_stats = read_run_maps(repo, transport=graphql)
 
@@ -470,6 +550,13 @@ def collect(*, repo: str, prs: list[dict],
         "run_conclusion_failures": conclusion_failures,
         "unreadable": {str(k): v for k, v in unreadable.items()},
         "unreadable_prs": sorted(unreadable),
+        # #26739 -- les trois muets du resume, nommes.
+        "unreadable_detail": {str(k): v for k, v in unreadable_detail.items()},
+        "last_unreadable": last_unreadable,
+        "truncated_prs": sorted(truncated_prs),
+        "rest_page_cap": REST_MAX_PAGES * REST_PAGE_SIZE,
+        "graphql_errors": graphql_stats["graphql_errors"],
+        "null_repository_pages": graphql_stats["null_repository_pages"],
     }
     return lines, summary
 
@@ -528,6 +615,30 @@ def main(argv: list[str] | None = None) -> int:
         print(f"::warning::{args.annotation_prefix} carte des runs fenetree: "
               f"{len(summary['map_truncated'])} PR(s) ont plus de "
               f"{GRAPHQL_SUITES} suites -- leur pliage retombe sur le run id",
+              file=sys.stderr)
+    # #26739 -- les muets du resume sont NOMMES. Chacun de ces cas rendait
+    # une lecture PARTIELLE silencieuse : le selecteur recevait une carte
+    # incomplete sans le savoir.
+    if summary.get("truncated_prs"):
+        print(f"::warning::{args.annotation_prefix} lecture tronquee: "
+              f"{','.join('#' + str(n) for n in summary.get('truncated_prs') or [])} "
+              f"portent plus de {summary.get('rest_page_cap')} check-runs -- les "
+              "pages au-dela du plafond n'ont pas ete lues",
+              file=sys.stderr)
+    if summary.get("unreadable_prs"):
+        print(f"::warning::{args.annotation_prefix} PRs illisibles: "
+              f"{','.join('#' + str(n) for n in summary.get('unreadable_prs') or [])} "
+              "-- lectures en echec, ces PRs ne sont pas inspectees",
+              file=sys.stderr)
+    if summary.get("graphql_errors"):
+        print(f"::warning::{args.annotation_prefix} erreurs GraphQL "
+              f"partielles: {len(summary.get('graphql_errors') or [])} -- reponse "
+              f"portant data ET errors: {(summary.get('graphql_errors') or ['aucun'])[0]}",
+              file=sys.stderr)
+    if summary.get("null_repository_pages"):
+        print(f"::warning::{args.annotation_prefix} repository nul sur "
+              f"{summary.get('null_repository_pages')} page(s) GraphQL -- la carte "
+              "des runs est incomplete pour ces pages",
               file=sys.stderr)
     if args.summary:
         Path(args.summary).write_text(
