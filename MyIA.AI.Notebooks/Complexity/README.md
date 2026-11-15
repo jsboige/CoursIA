@@ -182,6 +182,17 @@ est écrit court ; l'arbitrage formel de ces preuves est rendu dans l'EPIC
 [#19898](https://github.com/jsboige/CoursIA/issues/19898) (non-distillation écrite :
 aucun lac ne porte la théorie — la veille vit dans cette série).
 
+## Jumeau Python/C# — hiérarchie temporelle finie
+
+- [Complexity-03 — version Python](Complexity-03-HierarchieTemporelle-Python.ipynb)
+- [Complexity-03 — version C#](Complexity-03-HierarchieTemporelle-CSharp.ipynb)
+
+Les deux carnets gardent les mêmes tables de budgets, les quatre machines
+booléennes et les coûts déclarés. Le port C# calcule les budgets exponentiels
+avec `BigInteger` et représente l'observation bornée avec `bool?`; il reste un
+modèle fini pédagogique. Il ne construit pas de machine universelle et ne
+prétend pas prouver une séparation asymptotique.
+
 ## Prérequis
 
 Python 3.10+ (kernel `python3`) : `numpy`, `matplotlib` — le socle standard du dépôt.
@@ -197,6 +208,10 @@ qu'il construit — le banc affiche alors sa colonne vide et le dit.
 
 Le notebook 06d ajoute `scipy` (`scipy.optimize.linprog`, solveur HiGHS), qui calcule
 les rangées minimales par programmation linéaire.
+
+## Jumeau de la permanente
+
+[Complexity-05 — Python](Complexity-05-CountingHarder-Permanent-Python.ipynb) et [sa version C#](Complexity-05-CountingHarder-Permanent-CSharp.ipynb) confrontent la définition factorielle de la permanente au calcul LU du déterminant. NumPy et MathNet.Numerics utilisent des moteurs différents ; les temps sont propres à chaque environnement.
 
 ## Exercices
 

@@ -101,6 +101,17 @@ REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
 # (le parc du depot est de l'ordre de 250 PRs ouvertes).
 READ_MARGIN = 50
 
+# Plafond du champ `files` de `gh pr list` (GraphQL). Le champ n'est pas
+# paginable : une PR qui touche plus de fichiers que ce plafond n'en livre
+# qu'un PREFIXE, et « le registre n'apparait pas dans la liste » ne prouve
+# alors rien. Mesure fondatrice (#26701, 2026-11-15) : #25612 touchait 202
+# fichiers, `gh pr view 25612 --json files` en a rendu 100, et le fichier
+# `search-10-symbolicautomata/0023-2026-11-10` n'etait pas dans ces 100 -- la
+# couche OPEN-PR a classe la PR « hors registre », sa revendication de `0023`
+# n'a jamais ete collectee, et `main` a recu le doublon que cette couche
+# existe pour empecher.
+FILE_LIST_CAP = 100
+
 # `scripts/notebook_tools/twin_pairs.d/<paire>/<NNNN>-<date>-<lane>.yaml`
 _CLAIM_RE = re.compile(
     r"^scripts/notebook_tools/twin_pairs\.d/(?P<pair>[^/]+)/"
@@ -248,6 +259,13 @@ def open_prs_touching_registry(slug: str, *, limit: int | None = None,
     Le filtre se fait sur les CHEMINS (deja connus de `gh pr list`), donc une
     seule requete suffit pour ecarter la quasi-totalite du parc.
 
+    **Second plafond, sur les fichiers d'une PR** : le champ `files` de
+    `gh pr list` n'est pas paginable et s'arrete a `FILE_LIST_CAP`. Une PR qui
+    touche plus de fichiers n'en livre qu'un prefixe, donc une PR dont le lot
+    est PLEIN est **incluse** : elle sera relue en pagine par
+    `collect_open_claims`, et couter une requete est le prix d'un faux negatif
+    qui rend une PR entierement invisible (#26701, rouge du 2026-11-15).
+
     **Le plafond de lecture n'est jamais fige** : il vaut le compte EXACT des
     PRs ouvertes (`open_pr_total`) **plus `READ_MARGIN`**, de sorte qu'aucune
     revendication ne puisse disparaitre dans un lot tronque. La marge est ce
@@ -291,6 +309,14 @@ def open_prs_touching_registry(slug: str, *, limit: int | None = None,
                  for f in (row.get("files") or [])]
         if any(p.replace("\\", "/").startswith(REGISTRY_PREFIX)
                for p in paths):
+            out.append(int(row["number"]))
+        elif len(paths) >= FILE_LIST_CAP:
+            # Lot PLEIN : le champ `files` de `gh pr list` est plafonne, donc
+            # l'absence du registre dans ce prefixe ne prouve rien. On inclut
+            # la PR ; `collect_open_claims` la relira en pagine
+            # (`pr_new_claims`), ce qui coute une requete pour les rares PRs
+            # de plus de 100 fichiers et rien pour les autres. Exclure ici
+            # rendrait la PR invisible -- c'est exactement le defaut #26701.
             out.append(int(row["number"]))
     return sorted(out)
 

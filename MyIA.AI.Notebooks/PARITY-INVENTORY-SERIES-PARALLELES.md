@@ -39,26 +39,26 @@ Note registre : `03b`/`03c`/`03d` sont enregistrées sous les numéros historiqu
 
 | Paire | Verdict |
 |---|---|
-| `App-5-Timetabling` ↔ `App-5-Timetabling-CSharp` | alignée |
-| `App-6-Minesweeper` ↔ `App-6-…-CSharp` | alignée |
-| `App-8-MiniZinc` ↔ `App-8-…-CSharp` | alignée |
-| `App-16-Crossword-CSP` ↔ `App-16-…-CSharp` | alignée |
-| `App-19-ProceduralGeneration-WFC` ↔ `App-19-…-CSharp` | alignée |
-| `App-1-NQueens` ↔ `App-1-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-2-GraphColoring` ↔ `App-2-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-3-NurseScheduling` ↔ `App-3-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-4-JobShopScheduling` ↔ `App-4-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-7-Wordle` ↔ `App-7-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-9-EdgeDetection` ↔ `App-9-…-CSharp` | alignée (ex-compagnon-b ; cas de calibrage, entrée registre lue par la lane) |
-| `App-10-Portfolio` ↔ `App-10-…-CSharp` | alignée (ex-compagnon-b ; cas de calibrage) |
-| `App-11-Picross` ↔ `App-11-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-13-TSP-Metaheuristics` ↔ `App-13-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-15-SportsScheduling` ↔ `App-15-…-CSharp` | alignée (ex-compagnon-b) |
-| `App-17-VRP-Logistics` ↔ `App-17-…-CSharp` | alignée (ex-compagnon-b ; trio : `App-17-VRP-Logistics-Python` hors registre, §3) |
+| `App-05-Timetabling-Python` ↔ `App-05-Timetabling-CSharp` | alignée |
+| `App-06-Minesweeper-Python` ↔ `App-6-…-CSharp` | alignée |
+| `App-08-MiniZinc-Python` ↔ `App-8-…-CSharp` | alignée |
+| `App-16-Crossword-CSP-Python` ↔ `App-16-…-CSharp` | alignée |
+| `App-19-ProceduralGeneration-WFC-Python` ↔ `App-19-…-CSharp` | alignée |
+| `App-01-NQueens-Python` ↔ `App-1-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-02-GraphColoring-Python` ↔ `App-2-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-03-NurseScheduling-Python` ↔ `App-3-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-04-JobShopScheduling-Python` ↔ `App-4-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-07-Wordle-Python` ↔ `App-7-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-09-EdgeDetection-Python` ↔ `App-9-…-CSharp` | alignée (ex-compagnon-b ; cas de calibrage, entrée registre lue par la lane) |
+| `App-10-Portfolio-Python` ↔ `App-10-…-CSharp` | alignée (ex-compagnon-b ; cas de calibrage) |
+| `App-11-Picross-Python` ↔ `App-11-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-13-TSP-Metaheuristics-Python` ↔ `App-13-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-15-SportsScheduling-Python` ↔ `App-15-…-CSharp` | alignée (ex-compagnon-b) |
+| `App-17-VRP-Logistics-Python` ↔ `App-17-…-CSharp` | alignée (ex-compagnon-b ; trio : `App-17-VRP-Logistics-Metaheuristiques-Python` hors registre, §3) |
 | `App-20-SudokuBenchmark-Python` ↔ `App-20-…-CSharp` | alignée (ex-compagnon-b ; suffixes kernels explicites des deux côtés) |
-| `App-12b-ConnectFour` ↔ `App-12c-ConnectFour` | décalée-numéro (12b↔12c, aucun suffixe kernel, pas de base App-12) |
-| `App-14-ConnectFour-Adversarial` ↔ `App-14-ConnectFour-CSharp` | décalée-titre (« Adversarial » côté Python seulement) |
-| `App-18-HyperparameterTuning` ↔ `App-18-…-CSharp` | alignée (ex-compagnon-b ; quatuor : `App-18-HyperparameterTuning-Python` hors registre, §3) |
+| `App-12b-ConnectFour-Python` ↔ `App-12c-ConnectFour-CSharp` | décalée-numéro (12b↔12c, aucun suffixe kernel, pas de base App-12) |
+| `App-14-ConnectFour-Adversarial-Python` ↔ `App-14-ConnectFour-CSharp` | décalée-titre (« Adversarial » côté Python seulement) |
+| `App-18-HyperparameterTuning-Python` ↔ `App-18-…-CSharp` | alignée (ex-compagnon-b ; quatuor : `App-18-HyperparameterTuning-Implementation-Manuelle-Python` hors registre, §3) |
 | `App-34-15Puzzle-Admissible-Astar-Python` ↔ `App-34-…-CSharp` | alignée (ex-compagnon-b ; Python ajouté le 2026-10-30 #21756, entrée registre `app-34` — **ratée par le relevé du 31/10**, qui la comptait célibataire §4) |
 
 > Etat mesure au 2026-11-08 : les 14 compagnon-b ci-dessus (13 du relevé initial + App-34, ratée dudit relevé) sont devenues alignées par renommage **#25341** (le `b` d'accrétion est retiré du côté CSharp — trio App-17 et quatuor App-18 : retiré des **deux** membres, l'extension kernel-tierce `App-18c` restant inchangée). Historique complet : `docs/reference/rename-ledger.tsv`.
@@ -118,7 +118,7 @@ Convention locale : suffixe kernel en **position finale** pour les fondations (`
 1. `GameTheory-06f-Bounded-Agents` (Python ↔ Lean) — paire alignée, invisible à la garde NUMBERING-DRIFT.
 2. `GameTheory-13b-Safe-Subgame-Solving-Python` ↔ `GameTheory-13c-Safe-Subgame-Solving-CSharp` — quasi-paire décalée-numéro (même titre, lettres 13b/13c), invisible à la garde.
 3. `GameTheory-16f` (Lean-Assignment ↔ Munkres-Assignment) — quasi-paire même numéro, décalée-titre, invisible.
-4. `App-17-VRP-Logistics-Python.ipynb` (ex-`App-17b-…`) et `App-18-HyperparameterTuning-Python.ipynb` (ex-`App-18b-…`) — membres Python de trios Part3 présents dans l'arbre, absents de toute entrée (les entrées `app-17`/`app-18` n'enregistrent que la paire Python-base ↔ CSharp-compagnon).
+4. `App-17-VRP-Logistics-Metaheuristiques-Python.ipynb` (ex-`App-17b-…`) et `App-18-HyperparameterTuning-Implementation-Manuelle-Python.ipynb` (ex-`App-18b-…`) — membres Python de trios Part3 présents dans l'arbre, absents de toute entrée (les entrées `app-17`/`app-18` n'enregistrent que la paire Python-base ↔ CSharp-compagnon).
 
 Hors périmètre nominal, même constat : `Probas/Applications/Percolation/Percolation-04-Sharpness-Python.ipynb` + `Percolation-04-Sharpness-Lean.ipynb` — paire même-numéro-même-titre sans entrée (grep NONE).
 
@@ -133,7 +133,7 @@ Hors périmètre nominal, même constat : `Probas/Applications/Percolation/Perco
 ## 4. Extensions unilatérales (célibataires) — grep registre NONE sauf mention
 
 - **Search/Part1** : `Search-02c-QuikGraph`, `03e-AStar-Optimality`, `03f-Reparer-Localement-Sous-Garantie-Python`, `05b-NaturalEvolutionStrategies`, `09b-SpuriousMinima`, `09c-CombinatorialDiscrepancy`, `09d-BeckFiala-Lean-Python`, `09e-Komlos-Lean`, `09f-ConvexOptimisation-Python`, `11b-Metaheuristiques-Deep` (+Part2/3/4), `11c`, `11d`, `12a-Composer-Regards`, `13a-Traverser-Murs-Certifies`.
-- **Search/Part3** : `App-2-GraphColoring-Statistical-Validity-Python`, `App-17-VRP-Logistics-Python` (ex-17b), `App-18-HyperparameterTuning-Python` (ex-18b), `App-18c-HyperparameterTuning-Rustuna-vs-Optuna`, `App-21-VoiceLeading`, `App-22-AlgorithmSelection-Python`, `App-23-PRESENT-Differential-Cryptanalysis-SAT`, `App-27-Sparse-Index-Tracking-Walk-Forward`. *(Corrigé le 2026-11-08 : `App-34b-…-CSharp` n'est plus célibataire — le Python 34 ajouté le 2026-10-30 #21756 forme avec lui la paire enregistrée `app-34`, alignée par #25341.)*
+- **Search/Part3** : `App-02-GraphColoring-Statistical-Validity-Python`, `App-17-VRP-Logistics-Metaheuristiques-Python` (ex-17b), `App-18-HyperparameterTuning-Implementation-Manuelle-Python` (ex-18b), `App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python`, `App-21-VoiceLeading-Python`, `App-22-AlgorithmSelection-Python`, `App-23-PRESENT-Differential-Cryptanalysis-SAT-Python`, `App-27-Sparse-Index-Tracking-Walk-Forward-Python`. *(Corrigé le 2026-11-08 : `App-34b-…-CSharp` n'est plus célibataire — le Python 34 ajouté le 2026-10-30 #21756 forme avec lui la paire enregistrée `app-34`, alignée par #25341.)*
 - **Sudoku** : `Sudoku-00-Environment-CSharp` (setup, cité en prose dans `sudoku-02-dancinglinks.yaml`), `Sudoku-12b-Z3-Linq2Z3-CSharp`, `Sudoku-16-NeuralNetwork-Python`, `Sudoku-17-LLM-Python`, `Sudoku-18b-Statistical-Comparison-Python`, `Sudoku-19-Lean-Propagation-Lean`.
 - **GameTheory racine** : `01-Setup-Python` ; compagnons Lean `02b-Lean-Definitions`, `04b`, `05b`, `06b/06d–06k`, `08b`, `08d`, `11b`, `15b`, `16b–16k` (hors `16f` pairé §1), `17c`, `17d` ; Python `02e`, `03b–03f`, `04d–04j`, `05c`, `06e`, `09b–09d`, `11d`, `13d–13h`, `15d–15g`, `17e/17f`, `18/18b/18c`, `19/19b`, `20/20b/20c`, `21` ; `02d` (cité en prose dans `gametheory-2-normalform.yaml`) ; `gateway/openspiel-cfr-service.ipynb`.
 - **SocialChoice** : `01b-Lean-SocialChoice-Formal`, `05` à `10` (Python).
