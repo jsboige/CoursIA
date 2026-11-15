@@ -32,7 +32,9 @@ exemptions declarees :
   * cellule courte (< ``MIN_CODE_LINES``) ;
   * bloc d'``import`` / magics seul -- il ne s'explique pas ligne a ligne ;
   * stub d'exercice (``# TODO``, ``# Indice``, ``# Etape``) -- regle C.1 les
-    veut creux ;
+    veut creux ; le marqueur ne compte que sur une **ligne de commentaire** :
+    un marqueur dans une chaine (« voir # Etape 3 ») n'exempte rien (reserve
+    #26694 sur #26690) ;
   * cellule illisible au tokenizer : on retombe sur un comptage de lignes et
     le finding porte ``counter="fallback"`` -- jamais un zero silencieux.
 
@@ -226,7 +228,13 @@ def analyse_cell(cell: dict, language: str = "python") -> dict | None:
         return None
     if has_docstring and code_lines < LONG_CELL_LINES:
         return None
-    if any(marker in source for marker in STUB_MARKERS):
+    # Marqueurs de stub lus UNIQUEMENT sur les lignes classees commentaire :
+    # un marqueur dans une CHAINE (« voir # Etape 3 ») n'est pas un stub, et
+    # le substring sur la source entiere exemptait a tort la cellule
+    # (reserve #26694 sur #26690). Un stub en commentaire de fin de ligne
+    # reste couvert : le tokenizer le compte alors comme commentaire.
+    comment_only = (line for line in lines if _line_kind(line) == "comment")
+    if any(marker in line for line in comment_only for marker in STUB_MARKERS):
         return None
 
     body = [line for line in lines if line.strip()]
@@ -407,6 +415,15 @@ def self_test() -> int:
     checks.append((
         "negatif : stub d'exercice (C.1)",
         analyse_cell(_cell(*stub)) is None,
+    ))
+
+    # 6bis. POSITIF -- un marqueur de stub dans une CHAINE n'exempte pas :
+    #     « voir # Etape 3 » n'est pas un stub. Le substring sur la source
+    #     entiere exemptait a tort la cellule (reserve #26694).
+    fake_stub = ('print("voir # Etape 3 du carnet compagnon")',) + _BODY_12
+    checks.append((
+        "positif : marqueur de stub dans une chaine n'exempte pas",
+        analyse_cell(_cell(*fake_stub)) is not None,
     ))
 
     # 7. NEGATIF -- un '#' dans une CHAINE n'est pas un commentaire, donc le

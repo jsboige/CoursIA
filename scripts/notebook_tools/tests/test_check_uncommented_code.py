@@ -131,6 +131,14 @@ def test_stub_d_exercice_exempte():
     assert organ.analyse_cell(_cell(*stub)) is None
 
 
+def test_marqueur_de_stub_dans_une_chaine_n_exempte_pas():
+    # Reserve #26694 : « voir # Etape 3 » dans une chaine n'est pas un stub.
+    # Le substring sur la source entiere exemptait a tort la cellule ; le
+    # marqueur ne compte plus que sur une ligne classee commentaire.
+    cell = _cell('print("voir # Etape 3 du carnet compagnon")', *BODY_12)
+    assert organ.analyse_cell(cell) is not None
+
+
 def test_marqueur_indice_exempte():
     indice = ("# Indice : pensez a la formule de la somme",) + BODY_12
     assert organ.analyse_cell(_cell(*indice)) is None
