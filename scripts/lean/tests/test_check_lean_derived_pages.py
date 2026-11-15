@@ -301,6 +301,51 @@ def test_le_mode_humain_ecrit_le_verdict_sur_stdout():
     assert err == ""
 
 
+def test_un_generateur_qui_ne_pas_mesurer_est_classe_mesure_impossible(tmp_path):
+    """rc=2 : le generateur a dit « je n'ai pas pu mesurer » (organe amont
+    injoignable). Ce n'est PAS une divergence de l'arbre.
+
+    Le geste propose compte autant que la classification : la page sur disque
+    n'a pas ete modifiee, donc la regeneree y ecrirait une MESURE DEGRADEE
+    (colonne de couverture a `hors matrice` pour tous les lacs). Nommer
+    `--write` ici renverrait la lane droit dans le piege."""
+    repo = _fake_repo(tmp_path, rc=2)
+    got = mod._run_check(GEN, timeout=30, repo_root=repo)
+    assert got["status"] == "mesure_impossible"
+    assert got["drifted"] is True
+    assert got["rc"] == 2
+
+
+def test_le_verdict_n_accuse_pas_l_arbre_quand_la_mesure_est_impossible():
+    """Une mesure impossible ne se lit pas comme une divergence : le verdict
+    doit nommer la machine, pas la page."""
+    impossible = [{"generator": GEN, "page": PAGE,
+                   "status": "mesure_impossible", "drifted": True, "rc": 2,
+                   "duration_s": 0.1,
+                   "detail": "Cause : timeout de 1800 s"}]
+    rc, out, err = _run_main(["--json"], impossible)
+    assert rc == 1
+    data = json.loads(out)
+    assert data["mesure_impossible"] is True
+    assert "MESURE IMPOSSIBLE" in err
+    assert "DIVERGENCE" not in err
+    assert "NON MESURABLE" not in err, "le clone shallow n'est pas la cause"
+
+
+def test_le_mode_humain_propose_le_bon_geste_quand_la_mesure_est_impossible():
+    """Le geste doit etre « ne pas regenerer ici », jamais `--write`."""
+    impossible = [{"generator": GEN, "page": PAGE,
+                   "status": "mesure_impossible", "drifted": True, "rc": 2,
+                   "duration_s": 0.1,
+                   "detail": "Cause : timeout de 1800 s"}]
+    rc, out, err = _run_main([], impossible)
+    assert rc == 1
+    assert "MESURE IMPOSSIBLE" in out
+    assert err == "", "en mode humain, le verdict reste sur stdout"
+    assert "--write" not in out, "ne jamais envoyer la lane regenerer ici"
+    assert "NE PAS regenerer" in out
+
+
 def main() -> int:
     import inspect
     import tempfile

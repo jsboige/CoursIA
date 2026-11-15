@@ -1,0 +1,13 @@
+date: '2026-11-10'
+by: myia-ai-01:CoursIA
+python_sha: 0afc03cc62c300bd7a4d946a3eea7c39a5af62ee
+csharp_sha: ada26b66512a44618b878bdaa8f771fe628b54fb
+content_python_sha: e408a2541b525a18d07d6f9a7ab2663fd84a3a27acc0bca76e352817d624e013
+content_csharp_sha: be6b7fc6d25dbc4d7c14579d06b62f9ba9ebe0d381d828db65caffc1def3bb30
+reason: 'Integration TP2 PR #25531 (Caroline et Juliana) : cote C# uniquement, trois
+  cellules markdown de credit des exemples guides existants modifiees pour mentionner
+  la soumission identique #25531 du groupe de #22681/#22676. Aucune cellule code
+  C# touchee, aucune structure ajoutee ni retiree (51 cellules), re-execution .net-csharp
+  19 cellules 0 erreur aux sorties deterministes identiques. Le jumeau Python est
+  intact (python_sha inchange depuis 0028) : pas de modification du Python dans cette
+  PR.'

@@ -1,0 +1,120 @@
+# Corroboration du critere 3 de #17444 : `command -v python` sur les slots
+# `coursia-linux` (pool WSL po-2026, 8 slots `myia-po-2026-wsl-<n>`).
+#
+# Le critere 3 du body de #17444 exige que la mesure soit rapportee dans le
+# fil de l'issue : chaque slot auto-heberge expose-t-il un `python` nu ?
+# Le deploiement de reference (`scripts/ci/docker/linux-runner/persist/
+# po-2026/pool.sh`) pose `~/.local/bin/python -> python3` et exporte
+# `~/.local/bin` en TETE du PATH du pool (`ensure_host_contract`) — ce
+# workflow MESURE le resultat reellement visible d'un job, au lieu de le
+# deduire du script.
+#
+# ADVISORY PAR CONSTRUCTION : workflow_dispatch uniquement, jamais de
+# rouge sur une PR ni sur main. Le verdict est rendu dans le resume du job
+# ($GITHUB_STEP_SUMMARY), lisible et copiable tel quel dans un commentaire
+# de l'issue. Un slot qui repond « python ABSENT » ne fait pas echouer le
+# run : c'est une mesure, pas une garde (le detecteur `detect_python_nu_
+# jobs.py` couvre deja la classe de defauts cote workflows).
+#
+# Couverture « 8 slots » : les slots du pool sont EPHEMERES (`run.sh --once`,
+# un slot sert un job puis se desenregistre et est re-cree) — il n'existe
+# pas de handle stable par slot. La couverture mesuree est donc :
+#   - la periode du pool qui repond (coursia-ephemeral,coursia-linux) ;
+#   - le NOM du slot effectivement tire ($RUNNER_NAME), rapporte pour que
+#     la diversite des slots soit verifiable a la repetition du run.
+# 1 run = 1 slot mesure ; l'issue sera renseignee avec le nom du slot et
+# l'heure, et le run peut etre repete pour couvrir les autres slots.
+
+name: Corroboration python nu (#17444)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "observed = mesure reelle ; negative-control = temoin negatif (retire ~/.local/bin du PATH : le run DOIT rapporter python ABSENT)"
+        required: false
+        default: "observed"
+        type: choice
+        options:
+          - observed
+          - negative-control
+
+# Permissions minimales : le job ne lit pas le depot (pas de checkout, bash pur
+# + $GITHUB_STEP_SUMMARY) ; contents: read couvre tout usage futur du contenu
+# sans jamais ouvrir GITHUB_TOKEN au-dela. Reponse au thread CodeQL #24950
+# (« Workflow does not contain permissions »).
+permissions:
+  contents: read
+
+jobs:
+  corroboration:
+    # Les labels du pool po-2026 : un job a ces labels n'est tire QUE par un
+    # slot natif WSL du pool (ni ubuntu-latest, ni les conteneurs Docker).
+    # La mesure est donc par construction celle d'un slot `coursia-linux`.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 10
+
+    env:
+      MODE: ${{ inputs.mode || 'observed' }}
+
+    steps:
+      - name: Mesurer la visibilite de python nu
+        shell: bash
+        run: |
+          set -u
+          {
+            echo "## Corroboration #17444 critere 3 — python nu sur un slot coursia-linux"
+            echo
+            echo "- Date UTC : $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "- Slot tire : \`${RUNNER_NAME:-indetermine}\`"
+            echo "- Mode : ${MODE}"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Temoin negatif : en mode negative-control, on retire du PATH le
+          # repertoire ou le pool pose le lien python -> python3. La mesure
+          # DOIT alors rendre ABSENT ; si elle rend PRESENT malgre le retrait,
+          # le run est marque comme temoin invalide (l'instrument ne mesure
+          # pas ce qu'il pretend mesurer).
+          if [ "$MODE" = "negative-control" ]; then
+            export PATH="$(echo "$PATH" | tr ':' '\n' | grep -v -x "$HOME/.local/bin" | paste -sd:)"
+            echo "(temoin negatif : $HOME/.local/bin retire du PATH pour ce job)" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "$ command -v python"
+            if command -v python; then
+              echo "$ python --version"
+              python --version 2>&1 || true
+              VERDICT="python PRESENT"
+            else
+              echo "(python absent du PATH du job)"
+              VERDICT="python ABSENT"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY" 2>&1
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+          {
+            echo
+            echo "**Verdict : ${VERDICT}** sur le slot \`${RUNNER_NAME:-indetermine}\`."
+            echo
+            if [ "$MODE" = "negative-control" ]; then
+              if [ "$VERDICT" = "python ABSENT" ]; then
+                echo "Temoin negatif VALIDE : retirer ~/.local/bin du PATH supprime bien la visibilite de python — l'instrument mesure donc le lien pose par le pool."
+              else
+                echo "TEMOIN INVALIDE : python reste visible malgre le retrait de ~/.local/bin — un autre segment du PATH fournit python ; la mesure du mode observed n'attribue pas la presence au lien du pool sans ce controle."
+              fi
+            fi
+            echo
+            echo "Rappel : les slots du pool sont ephemeres ; repeter le run pour observer d'autres slots. 1 run = 1 slot."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Le verdict doit etre lisible SANS session GitHub connectee : le
+          # resume du job (step summary) ne se voit que dans l'UI, donc
+          # l'API -- le chemin des lanes et des organes -- n'y voit rien.
+          # On renvoie donc le resume sur stdout, ou le journal du run le
+          # rend lisible et copiable.
+          cat "$GITHUB_STEP_SUMMARY"
+          # Jamais d'echec : c'est une mesure. Le verdict vit dans le resume.
+          exit 0

@@ -149,13 +149,13 @@ OR-Tools. L'étape 22 (heuristiques) est celle que le bloc 4 certifiera.
 
 | # | Notebook | Durée | Apporte → Suppose |
 |---|---|---|---|
-| 19 | [Planners-0-Setup](../../MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-0-Setup.ipynb) | 30 min | environnements + fast-downward local → rien |
-| 20 | [Planners-2-PDDL-Basics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb) | 30 min | domaine/problème PDDL → étape 19 |
-| 21 | [Planners-3-State-Space](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb) | 45 min | espaces d'états, recherche → étape 20 |
-| 22 | [Planners-4-Fast-Downward](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb) | 45 min | le solveur SOTA de planification → étape 21 |
-| 23 | [Planners-5-Heuristics](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb) | 45 min | h-add, h-max, relaxation — **objet du companion 28** → étape 22 |
-| 24 | [Planners-6-Domains](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-6-Domains.ipynb) | 45 min | domaines classiques (blocksworld, logistics) → étape 23 |
-| 25 | [Planners-7-OR-Tools](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-7-OR-Tools.ipynb) | 45 min | CP-SAT, le pendant Google → étape 23 |
+| 19 | [Planners-00-Setup-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/00-Environment/Planners-00-Setup-Python.ipynb) | 30 min | environnements + fast-downward local → rien |
+| 20 | [Planners-02-PDDL-Basics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-02-PDDL-Basics-Python.ipynb) | 30 min | domaine/problème PDDL → étape 19 |
+| 21 | [Planners-03-State-Space-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-03-State-Space-Python.ipynb) | 45 min | espaces d'états, recherche → étape 20 |
+| 22 | [Planners-04-Fast-Downward-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-04-Fast-Downward-Python.ipynb) | 45 min | le solveur SOTA de planification → étape 21 |
+| 23 | [Planners-05-Heuristics-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05-Heuristics-Python.ipynb) | 45 min | h-add, h-max, relaxation — **objet du companion 28** → étape 22 |
+| 24 | [Planners-06-Domains-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-06-Domains-Python.ipynb) | 45 min | domaines classiques (blocksworld, logistics) → étape 23 |
+| 25 | [Planners-07-OR-Tools-Python](../../MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced/Planners-07-OR-Tools-Python.ipynb) | 45 min | CP-SAT, le pendant Google → étape 23 |
 
 ### Bloc 4 — Le verrou de rigueur : Lean (étapes 26-29, 1 h 45 + rampe)
 
@@ -169,7 +169,7 @@ d'entrée recommandée est le *Natural Number Game* (3-4 h,
 |---|---|---|---|
 | 26 | [Lean-01-Setup-Lean-Python](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb) | 30 min | WSL, elan, Mathlib — l'environnement du bloc → WSL2 + elan vérifiés |
 | 27 | [Tweety-05b-Argumentation-Lean](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05b-Argumentation-Lean.ipynb) | 30 min | **Dung prouvé** : le companion 0-sorry de l'étape 5 → rampe NNG + étape 5 |
-| 28 | [Planners-5b-Lean-Relaxation](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5b-Lean-Relaxation.ipynb) | 15 min | **h-add formalisé** dans `planning_lean` — companion de l'étape 23 → étape 27 |
+| 28 | [Planners-05b-Lean-Relaxation-Lean](../../MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-05b-Lean-Relaxation-Lean.ipynb) | 15 min | **h-add formalisé** dans `planning_lean` — companion de l'étape 23 → étape 27 |
 | 29 | [Tweety-5d-Stable-Synthesis](../../MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-05d-Stable-Synthesis-Lean-Python.ipynb) | 30 min | **Z3 → Lean** : synthèse certifiée d'extensions stables — la boucle bloc 2 ⇄ bloc 4 → étapes 15+27 |
 
 ## Portes de sortie (hors colonne vertébrale, citées)

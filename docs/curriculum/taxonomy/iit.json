@@ -1,0 +1,652 @@
+{
+  "schema_version": 1,
+  "series": "IIT",
+  "hierarchy": [
+    "series",
+    "subseries",
+    "notebook",
+    "example",
+    "exercise"
+  ],
+  "notebooks": [
+    "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-07-Integration-Par-Coupes-Lean.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-08b-Parite-et-Broadcast-Lean.ipynb",
+    "MyIA.AI.Notebooks/IIT/IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb"
+  ],
+  "notebook_tree": [
+    {
+      "level": "series",
+      "path": "IIT",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Integrated Information Theory (IIT)"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/01",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Introduction à PyPhi",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/02",
+      "decimal_path": "1.2",
+      "depth": 1,
+      "label_fr": "Sujets avancés : partitionnement, répertoires et concepts",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/03",
+      "decimal_path": "1.3",
+      "depth": 1,
+      "label_fr": "Coarse-graining et l'échelle du Φ",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/04",
+      "decimal_path": "1.4",
+      "depth": 1,
+      "label_fr": "Le problème de frontière",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/05",
+      "decimal_path": "1.5",
+      "depth": 1,
+      "label_fr": "Les lentilles de conscience",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/06",
+      "decimal_path": "1.6",
+      "depth": 1,
+      "label_fr": "L'objet qui a mordu IIT",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/07",
+      "decimal_path": "1.7",
+      "depth": 1,
+      "label_fr": "Intégration par coupes (Lean)",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-07-Integration-Par-Coupes-Lean.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/08",
+      "decimal_path": "1.8",
+      "depth": 1,
+      "label_fr": "La parité, de bout en bout (Lean)",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/08b",
+      "decimal_path": "1.9",
+      "depth": 1,
+      "label_fr": "Parité et broadcast : le couple (Lean)",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-08b-Parite-et-Broadcast-Lean.ipynb"
+    },
+    {
+      "level": "notebook",
+      "path": "IIT/09",
+      "decimal_path": "1.10",
+      "depth": 1,
+      "label_fr": "Le capstone : intégré et trivial (Lean)",
+      "repository_path": "MyIA.AI.Notebooks/IIT/IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "fb9dd2cd-3db4-4583-b08a-465d7d50f369",
+      "path": "iit/reseau-causal",
+      "decimal_path": "1",
+      "depth": 0,
+      "label_fr": "Réseau causal binaire",
+      "label_en": "Binary causal network",
+      "definition_fr": "Un réseau de nœuds binaires (0/1) reliés par des connexions causales, sur lequel PyPhi opère : c'est le substrat minimal d'une mesure d'intégration (IIT-01, §3).",
+      "definition_en": "A network of binary (0/1) nodes linked by causal connections, the minimal substrate on which PyPhi operates (IIT-01, §3).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "91886d72"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "ab6fd580-e4f6-4e0f-a9b3-cf35be72f01a",
+      "path": "iit/reseau-causal/tpm",
+      "decimal_path": "1.1",
+      "depth": 1,
+      "label_fr": "Matrice de transition (TPM)",
+      "label_en": "Transition Probability Matrix (TPM)",
+      "definition_fr": "La Transition Probability Matrix encode, pour chaque état courant, la distribution des états suivants : la règle d'évolution du système (IIT-01, §3.3).",
+      "definition_en": "The Transition Probability Matrix encodes, for each current state, the distribution of next states: the system's rule of evolution (IIT-01, §3.3).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "eb86b36c"
+        }
+      ],
+      "prerequisites": [
+        "fb9dd2cd-3db4-4583-b08a-465d7d50f369"
+      ]
+    },
+    {
+      "id": "0a133327-a1cc-4c53-98b9-ed99eefea2d9",
+      "path": "iit/phi",
+      "decimal_path": "2",
+      "depth": 0,
+      "label_fr": "Phi (big Φ)",
+      "label_en": "Phi (big Phi)",
+      "definition_fr": "La mesure d'intégration irréductible d'un sous-système : l'information qu'aucun découpage (partition) ne permet de recomposer, calculée par PyPhi (IIT-01, §4).",
+      "definition_en": "The measure of irreducible integration of a subsystem: the information no partition can reconstitute, computed by PyPhi (IIT-01, §4).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "7a35fb70"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "phi-def-intuitive"
+        }
+      ],
+      "prerequisites": [
+        "fb9dd2cd-3db4-4583-b08a-465d7d50f369"
+      ]
+    },
+    {
+      "id": "f93ab3cc-e513-4475-afac-4a0ca5468da8",
+      "path": "iit/phi/etats-inaccessibles",
+      "decimal_path": "2.1",
+      "depth": 1,
+      "label_fr": "États inaccessibles",
+      "label_en": "Unreachable states",
+      "definition_fr": "Les états qu'un système déterministe ne peut jamais atteindre ; PyPhi signale StateUnreachableError et l'option VALIDATE_SUBSYSTEM_STATES les gère (IIT-01, §4.2).",
+      "definition_en": "States a deterministic system can never reach; PyPhi raises StateUnreachableError and the VALIDATE_SUBSYSTEM_STATES option handles them (IIT-01, §4.2).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "388d4d94"
+        }
+      ],
+      "prerequisites": [
+        "0a133327-a1cc-4c53-98b9-ed99eefea2d9"
+      ]
+    },
+    {
+      "id": "e375be44-7c18-42dc-bbc4-f8419e70bc5b",
+      "path": "iit/ces",
+      "decimal_path": "3",
+      "depth": 0,
+      "label_fr": "Structure cause-effet (CES)",
+      "label_en": "Cause-Effect Structure (CES)",
+      "definition_fr": "La géométrie informationnelle qu'un sous-système « spécifie » : l'ensemble de ses concepts, obtenu par pyphi.compute.ces (IIT-01, §5).",
+      "definition_en": "The information geometry a subsystem 'specifies': the set of its concepts, obtained by pyphi.compute.ces (IIT-01, §5).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "63af95b4"
+        }
+      ],
+      "prerequisites": [
+        "fb9dd2cd-3db4-4583-b08a-465d7d50f369"
+      ]
+    },
+    {
+      "id": "70335d73-653c-4de1-b365-50fcd9e203f0",
+      "path": "iit/ces/concept",
+      "decimal_path": "3.1",
+      "depth": 1,
+      "label_fr": "Concept (mécanisme)",
+      "label_en": "Concept (mechanism)",
+      "definition_fr": "Un mécanisme du sous-système dont l'irréductibilité cause ou effet est positive ; chaque concept de la CES porte un purview et un small phi (IIT-01, §5.1).",
+      "definition_en": "A mechanism of the subsystem whose cause- or effect-irreducibility is positive; each concept in the CES carries a purview and a small phi (IIT-01, §5.1).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "560d96b0"
+        }
+      ],
+      "prerequisites": [
+        "e375be44-7c18-42dc-bbc4-f8419e70bc5b"
+      ]
+    },
+    {
+      "id": "56dbe265-6855-449b-9590-de232f2c4f2f",
+      "path": "iit/complexe-majeur",
+      "decimal_path": "4",
+      "depth": 0,
+      "label_fr": "Complexe majeur (postulat d'exclusion)",
+      "label_en": "Major complex (exclusion postulate)",
+      "definition_fr": "Le sous-système à Φ maximal que pyphi.compute.major_complex extrait du réseau : l'exclusion ne retient qu'un seul complexe à la fois, départageant les ex æquo (IIT-01, §6 ; IIT-04, §4bis).",
+      "definition_en": "The maximum-Phi subsystem that pyphi.compute.major_complex extracts from the network: exclusion keeps only one complex at a time, breaking ties (IIT-01, §6; IIT-04, §4bis).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+          "cell_id": "ff2b833b"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb",
+          "cell_id": "cc36ab02"
+        }
+      ],
+      "prerequisites": [
+        "0a133327-a1cc-4c53-98b9-ed99eefea2d9"
+      ]
+    },
+    {
+      "id": "104ce20e-d5f6-4f8c-ad42-3e78fa938cf4",
+      "path": "iit/coarse-graining",
+      "decimal_path": "5",
+      "depth": 0,
+      "label_fr": "Coarse-graining (échelle du Φ)",
+      "label_en": "Coarse-graining (Phi scale)",
+      "definition_fr": "Le regroupement des nœuds micro en nœuds macro pour mesurer Φ à une autre échelle, via le module pyphi.macro (IIT-03, §2).",
+      "definition_en": "Grouping micro nodes into macro nodes to measure Phi at another scale, via the pyphi.macro module (IIT-03, §2).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb",
+          "cell_id": "grain-md"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "7541c5b6-e537-4fb2-bb8c-b4f75815da42",
+      "path": "iit/coarse-graining/information-efficace",
+      "decimal_path": "5.1",
+      "depth": 1,
+      "label_fr": "Information efficace (EI)",
+      "label_en": "Effective information (EI)",
+      "definition_fr": "L'information efficace de Hoel : le travail causal d'une échelle sous une distribution d'intervention, mesure de référence à l'échelle micro (IIT-03, §1).",
+      "definition_en": "Hoel's effective information: the causal work of a scale under an intervention distribution, the reference measure at the micro scale (IIT-03, §1).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb",
+          "cell_id": "micro-md"
+        }
+      ],
+      "prerequisites": [
+        "104ce20e-d5f6-4f8c-ad42-3e78fa938cf4"
+      ]
+    },
+    {
+      "id": "3aee49c4-1307-4a49-b8ca-81cbdba0d85a",
+      "path": "iit/coarse-graining/emergence-causale",
+      "decimal_path": "5.2",
+      "depth": 1,
+      "label_fr": "Causal emergence",
+      "label_en": "Causal emergence",
+      "definition_fr": "Le fait que Φ macro dépasse Φ micro ; Hoel 2013, examiné ici honnêtement : ce n'est ni automatique ni garanti, seulement sur réseaux probabilistes (IIT-03, §3).",
+      "definition_en": "The fact that macro Phi exceeds micro Phi; Hoel 2013, examined honestly here: neither automatic nor guaranteed, only on probabilistic networks (IIT-03, §3).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb",
+          "cell_id": "compare-interp"
+        }
+      ],
+      "prerequisites": [
+        "7541c5b6-e537-4fb2-bb8c-b4f75815da42"
+      ]
+    },
+    {
+      "id": "d0bc636d-2234-435f-8ee6-5c5c75265087",
+      "path": "iit/frontiere",
+      "decimal_path": "6",
+      "depth": 0,
+      "label_fr": "Problème de frontière",
+      "label_en": "Boundary problem",
+      "definition_fr": "Qui décide où sont les bords du système ? Sur un substrat inchangé, la frontière est un choix : l'énumérer et la faire varier (IIT-04, §2).",
+      "definition_en": "Who decides where the system's borders are? On an unchanged substrate, the boundary is a choice: enumerate and vary it (IIT-04, §2).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb",
+          "cell_id": "dac7ac3c"
+        }
+      ],
+      "prerequisites": [
+        "0a133327-a1cc-4c53-98b9-ed99eefea2d9"
+      ]
+    },
+    {
+      "id": "0b95f7b0-caf4-476c-a453-92f10bfd8d52",
+      "path": "iit/frontiere/double-dissociation",
+      "decimal_path": "6.1",
+      "depth": 1,
+      "label_fr": "Double dissociation Φ / EI",
+      "label_en": "Phi / EI double dissociation",
+      "definition_fr": "Le verdict mesuré du substrat : Φ privilégie les frontières transversales, l'EI induit le tout, et les favorites de Φ coupent une dépendance, hors du domaine de l'EI (IIT-04, §5).",
+      "definition_en": "The measured verdict of the substrate: Phi favors transverse frontiers, induced EI favors the whole, and Phi's favorites cut a dependency, out of EI's domain (IIT-04, §5).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb",
+          "cell_id": "09631787"
+        }
+      ],
+      "prerequisites": [
+        "d0bc636d-2234-435f-8ee6-5c5c75265087"
+      ]
+    },
+    {
+      "id": "246dd66d-49bb-4253-b36b-785f073ada1f",
+      "path": "iit/lentilles",
+      "decimal_path": "7",
+      "depth": 0,
+      "label_fr": "Lentilles de conscience",
+      "label_en": "Consciousness lenses",
+      "definition_fr": "Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) reformulées en mesures exécutables sur un même substrat, sous la discipline des cinq champs (IIT-05, §cadre).",
+      "definition_en": "Six consciousness theories (GWT, GNW, FEP, AST, SMT, HOT) recast as executable measures on a shared substrate, under the five-field discipline (IIT-05, framing).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb",
+          "cell_id": "734f9cf0"
+        }
+      ],
+      "prerequisites": []
+    },
+    {
+      "id": "1349b652-90d4-4348-a3d6-c4b89cc83b2f",
+      "path": "iit/lentilles/dissociation-acces",
+      "decimal_path": "7.1",
+      "depth": 1,
+      "label_fr": "Dissociation accès / autoréférence",
+      "label_en": "Access / self-reference dissociation",
+      "definition_fr": "Le banc de dissociation exécuté : trois lentilles mesurent OUI et trois NON à l'accès sans autoréférence, sur le même substrat (IIT-05, exemple 1).",
+      "definition_en": "The executed dissociation bench: three lenses measure YES and three NO for access without self-reference, on the same substrate (IIT-05, example 1).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb",
+          "cell_id": "bf4d2944"
+        }
+      ],
+      "prerequisites": [
+        "246dd66d-49bb-4253-b36b-785f073ada1f"
+      ]
+    },
+    {
+      "id": "7f9d836a-b6ae-4aa2-aa77-19eb126405b5",
+      "path": "iit/objection-aaronson",
+      "decimal_path": "8",
+      "depth": 0,
+      "label_fr": "L'objection d'Aaronson",
+      "label_en": "Aaronson's objection",
+      "definition_fr": "L'échange Aaronson/Tononi (2014) : un expander au Φ énorme, mesuré des deux côtés de la frontière des formalisations (jambe Φ_DM et jambe PyPhi) (IIT-06, §1).",
+      "definition_en": "The Aaronson/Tononi exchange (2014): an expander with huge Phi, measured on both sides of the formalizations' boundary (Phi_DM leg and PyPhi leg) (IIT-06, §1).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
+          "cell_id": "b5326637"
+        }
+      ],
+      "prerequisites": [
+        "0a133327-a1cc-4c53-98b9-ed99eefea2d9"
+      ]
+    },
+    {
+      "id": "d12d805b-d46f-48cb-9380-3c557a95e428",
+      "path": "iit/objection-aaronson/vandermonde",
+      "decimal_path": "8.1",
+      "depth": 1,
+      "label_fr": "Vandermonde (Φ indéfini)",
+      "label_en": "Vandermonde (undefined Phi)",
+      "definition_fr": "La matrice de Vandermonde, rang plein partout, égalise toutes les bipartitions : Φ devient indéfini sur la jambe Φ_DM (IIT-06, §2.2).",
+      "definition_en": "The Vandermonde matrix, full rank everywhere, equalizes all bipartitions: Phi becomes undefined on the Phi_DM leg (IIT-06, §2.2).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
+          "cell_id": "1dd9959c"
+        }
+      ],
+      "prerequisites": [
+        "7f9d836a-b6ae-4aa2-aa77-19eb126405b5"
+      ]
+    },
+    {
+      "id": "62ea62fc-5f93-4f5e-90d3-c46801eb7ef8",
+      "path": "iit/objection-aaronson/hack-w",
+      "decimal_path": "8.2",
+      "depth": 1,
+      "label_fr": "Le hack W (Φ = moitié du contenu)",
+      "label_en": "The W hack (Phi = half the content)",
+      "definition_fr": "La matrice W duplique les lignes de Vandermonde : son minimum unique donne Φ = (n/2)·log₂ p, la moitié du contenu informationnel total (IIT-06, §2.3).",
+      "definition_en": "The W matrix duplicates Vandermonde's rows: its unique minimum gives Phi = (n/2)·log2 p, half the total information content (IIT-06, §2.3).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb",
+          "cell_id": "47ab169a"
+        }
+      ],
+      "prerequisites": [
+        "7f9d836a-b6ae-4aa2-aa77-19eb126405b5"
+      ]
+    },
+    {
+      "id": "8c516f2e-fea2-4d11-ac25-0f09e97e2217",
+      "path": "iit/lean",
+      "decimal_path": "9",
+      "depth": 0,
+      "label_fr": "Formalisation Lean (iit_lean)",
+      "label_en": "Lean formalization (iit_lean)",
+      "definition_fr": "La moitié formelle de l'objection, dans le lake iit_lean (Lean 4, sans Mathlib) : un escalier de trois marches qui énonce en théorèmes ce que PyPhi mesure (IIT-07, §1).",
+      "definition_en": "The formal half of the objection, in the iit_lean lake (Lean 4, no Mathlib): a three-step ladder that states as theorems what PyPhi measures (IIT-07, §1).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-07-Integration-Par-Coupes-Lean.ipynb",
+          "cell_id": "cell-00"
+        }
+      ],
+      "prerequisites": [
+        "7f9d836a-b6ae-4aa2-aa77-19eb126405b5"
+      ]
+    },
+    {
+      "id": "7b9093c5-cad5-4228-8b31-9f6af0962b07",
+      "path": "iit/lean/coupe-verdict",
+      "decimal_path": "9.1",
+      "depth": 1,
+      "label_fr": "Coupe et verdict (cutIndep)",
+      "label_en": "Cut and verdict (cutIndep)",
+      "definition_fr": "Le vocabulaire de la marche 1 : une coupe du système, et le verdict cutIndep/decomposable/integrated lu comme produit d'images (IIT-07, §4).",
+      "definition_en": "The step-1 vocabulary: a cut of the system, and the cutIndep/decomposable/integrated verdict read as a product of images (IIT-07, §4).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-07-Integration-Par-Coupes-Lean.ipynb",
+          "cell_id": "cell-10"
+        }
+      ],
+      "prerequisites": [
+        "8c516f2e-fea2-4d11-ac25-0f09e97e2217"
+      ]
+    },
+    {
+      "id": "ceaa2aac-c6a2-4fea-ab9d-445ff894a7be",
+      "path": "iit/lean/theoreme-a",
+      "decimal_path": "9.2",
+      "depth": 1,
+      "label_fr": "Théorème A (côtés indépendants)",
+      "label_en": "Theorem A (independent sides)",
+      "definition_fr": "cutIndep_of_sides_independent → product_decomposable : un système-produit dont les deux moitiés ne se lisent pas est décomposable, prouvé sans énumération (IIT-07, §5).",
+      "definition_en": "cutIndep_of_sides_independent → product_decomposable: a product system whose two halves do not read each other is decomposable, proved without enumeration (IIT-07, §5).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-07-Integration-Par-Coupes-Lean.ipynb",
+          "cell_id": "cell-13"
+        }
+      ],
+      "prerequisites": [
+        "7b9093c5-cad5-4228-8b31-9f6af0962b07"
+      ]
+    },
+    {
+      "id": "ed06f881-8a8c-4d63-a2c5-08fa17e45056",
+      "path": "iit/lean/parite-broadcast",
+      "decimal_path": "9.3",
+      "depth": 1,
+      "label_fr": "Parité et broadcast",
+      "label_en": "Parity and broadcast",
+      "definition_fr": "L'outil parité (récurrence tête+queue) et le système broadcast qui diffuse la parité : le socle des théorèmes B et C (IIT-08, §2 et §6).",
+      "definition_en": "The parity tool (head+tail recurrence) and the broadcast system that diffuses parity: the foundation of theorems B and C (IIT-08, §2 and §6).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb",
+          "cell_id": "3e50ae54"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb",
+          "cell_id": "e04dc2c3"
+        }
+      ],
+      "prerequisites": [
+        "8c516f2e-fea2-4d11-ac25-0f09e97e2217"
+      ]
+    },
+    {
+      "id": "3d5db4d3-7b6c-4e54-8513-e85945a8835b",
+      "path": "iit/lean/theoreme-b",
+      "decimal_path": "9.4",
+      "depth": 1,
+      "label_fr": "Théorème B (intégré pour toute coupe)",
+      "label_en": "Theorem B (integrated for every cut)",
+      "definition_fr": "broadcast_integrated : le broadcast est intégré au sens du proxy pour toute coupe non triviale — l'objet qui a mordu IIT, en théorème (IIT-08b, §5).",
+      "definition_en": "broadcast_integrated: broadcast is integrated in the proxy's sense for every non-trivial cut — the object that bit IIT, as a theorem (IIT-08b, §5).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-08b-Parite-et-Broadcast-Lean.ipynb",
+          "cell_id": "8a08347a"
+        }
+      ],
+      "prerequisites": [
+        "ed06f881-8a8c-4d63-a2c5-08fa17e45056"
+      ]
+    },
+    {
+      "id": "e468a7be-c93c-426c-a61c-b99148c6a164",
+      "path": "iit/lean/theoreme-c",
+      "decimal_path": "9.5",
+      "depth": 1,
+      "label_fr": "Théorème C (dynamique triviale)",
+      "label_en": "Theorem C (trivial dynamics)",
+      "definition_fr": "broadcast_two_cycle : la dynamique du broadcast est triviale, point fixe en au plus deux pas — rendue visible par l'oracle d'orbites (IIT-08b, §4).",
+      "definition_en": "broadcast_two_cycle: broadcast's dynamics is trivial, fixed point in at most two steps — made visible by the orbit oracle (IIT-08b, §4).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-08b-Parite-et-Broadcast-Lean.ipynb",
+          "cell_id": "a034a3d5"
+        }
+      ],
+      "prerequisites": [
+        "ed06f881-8a8c-4d63-a2c5-08fa17e45056"
+      ]
+    },
+    {
+      "id": "61b43630-a9c7-4d43-b089-25d0a4ecb619",
+      "path": "iit/lean/defaut-cardinal",
+      "decimal_path": "9.6",
+      "depth": 1,
+      "label_fr": "Défaut cardinal (capstone)",
+      "label_en": "Cardinal defect (capstone)",
+      "definition_fr": "Le capstone : le défaut (produit des tailles d'images partielles moins l'image du système) mesuré par énumération — 2 pour le broadcast, 0 pour l'identité — et la mise en regard bornée avec les Φ d'IIT-06 (IIT-09, §3).",
+      "definition_en": "The capstone: the defect (product of partial image sizes minus the system's image) measured by enumeration — 2 for broadcast, 0 for identity — and the bounded comparison with IIT-06's Phis (IIT-09, §3).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb",
+          "cell_id": "4add3279"
+        }
+      ],
+      "prerequisites": [
+        "3d5db4d3-7b6c-4e54-8513-e85945a8835b"
+      ]
+    },
+    {
+      "id": "411f30c4-c1a7-4dd4-8ab1-9fe2cfcc8e25",
+      "path": "iit/partition-mip",
+      "decimal_path": "10",
+      "depth": 0,
+      "label_fr": "Partition minimale d'information (MIP)",
+      "label_en": "Minimum Information Partition (MIP)",
+      "definition_fr": "La coupe du système qui détruit le moins d'information : le big Φ est précisément l'information détruite par cette partition minimale, calculée par pyphi.compute.sia (IIT-02, §2).",
+      "definition_en": "The cut of the system that destroys the least information: big Phi is exactly the information destroyed by this minimum partition, computed by pyphi.compute.sia (IIT-02, §2).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb",
+          "cell_id": "d0b16bff"
+        }
+      ],
+      "prerequisites": [
+        "0a133327-a1cc-4c53-98b9-ed99eefea2d9"
+      ]
+    },
+    {
+      "id": "3a41fc25-0aa0-4159-b4ce-b55119c18af6",
+      "path": "iit/partition-mip/repertoire-cause-effet",
+      "decimal_path": "10.1",
+      "depth": 1,
+      "label_fr": "Répertoires cause et effet",
+      "label_en": "Cause and effect repertoires",
+      "definition_fr": "Les distributions de probabilité qu'un mécanisme contraint sur les états passés (cause) et futurs (effet) d'un purview ; leur distance EMD face au répertoire non-perturbé mesure l'information spécifiée (IIT-02, §3).",
+      "definition_en": "The probability distributions a mechanism constrains on the past (cause) and future (effect) states of a purview; their EMD distance from the unconstrained repertoire measures the specified information (IIT-02, §3).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb",
+          "cell_id": "68b8975d"
+        }
+      ],
+      "prerequisites": [
+        "411f30c4-c1a7-4dd4-8ab1-9fe2cfcc8e25"
+      ]
+    },
+    {
+      "id": "80966c4e-cfe7-46fb-a96f-cefdcbc2b875",
+      "path": "iit/partition-mip/mice",
+      "decimal_path": "10.2",
+      "depth": 1,
+      "label_fr": "MICE (cause/effet maximalement irréductibles)",
+      "label_en": "MICE (maximally irreducible cause/effect)",
+      "definition_fr": "Le couple (mécanisme, purview) qui maximise l'irréductibilité cause ou effet, trouvé par pyphi find_mice ; un concept est le MICE cause et le MICE effet d'un même mécanisme (IIT-02, §4).",
+      "definition_en": "The (mechanism, purview) pair maximizing cause- or effect-irreducibility, found by pyphi find_mice; a concept is the cause MICE and the effect MICE of the same mechanism (IIT-02, §4).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb",
+          "cell_id": "794af9b1"
+        }
+      ],
+      "prerequisites": [
+        "3a41fc25-0aa0-4159-b4ce-b55119c18af6"
+      ]
+    },
+    {
+      "id": "9d6033af-42ad-408b-b87b-8f24bc6288aa",
+      "path": "iit/partition-mip/small-phi",
+      "decimal_path": "10.3",
+      "depth": 1,
+      "label_fr": "Small phi (small Φ)",
+      "label_en": "Small phi (small Phi)",
+      "definition_fr": "L'irréductibilité d'un concept (MICE), au niveau mécanisme — à ne pas confondre avec le big Φ du système : la somme des small phi ne donne pas le big Φ (IIT-02, §5).",
+      "definition_en": "A concept's (MICE's) irreducibility, at the mechanism level — not to be confused with the system's big Phi: the sum of the small phis does not give big Phi (IIT-02, §5).",
+      "citations": [
+        {
+          "notebook": "MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb",
+          "cell_id": "05b9d9f3"
+        }
+      ],
+      "prerequisites": [
+        "80966c4e-cfe7-46fb-a96f-cefdcbc2b875"
+      ]
+    }
+  ]
+}

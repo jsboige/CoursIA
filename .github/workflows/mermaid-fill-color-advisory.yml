@@ -65,6 +65,12 @@ jobs:
     # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
     # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # #23349 : borne explicite. Mesure du 2026-11-09 sur les 4 derniers
+    # runs verts consecutifs : max 110.4 min (les runs verts se tiennent
+    # entre 87 et 110 min : c'est la cadence du job, pas un fige). Le
+    # defaut d'Actions est 6 h, et un job fige tient son slot tout ce
+    # temps.
+    timeout-minutes: 225
     # Same-repo PRs only (agents/staff). Fork PRs are student submissions
     # under student-pr-reviews.md -- benevolent review, no content gate.
     if: github.event.pull_request.head.repo.full_name == github.repository

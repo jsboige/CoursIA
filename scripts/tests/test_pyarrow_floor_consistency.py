@@ -13,6 +13,15 @@ Ce test verrouille les TROIS formes que doit prendre le plancher :
    que les images d'agents peuvent reprendre -- pas seulement en ligne de
    commande de workflow.
 
+Une QUATRIEME forme est venue de #25521 : le job peut **deleguer** son
+installation a un script partage (`scripts/ci/install_scripts_tests_deps.sh`,
+appele par `scripts-tests.yml` et par le lot quotidien de `slow-lane.yml`).
+Le garde regarde alors les commandes **effectives** du job : le workflow PLUS
+les scripts qu'il appelle. On elargit la LECTURE, jamais le CONTRAT -- les
+trois formes ci-dessus restent exigees, et les controles negatifs du fichier
+prouvent que la resolution ne masque ni une suppression du plancher, ni une
+installation sans borne, ni une version non affichee.
+
 Il se valide par ses faux negatifs : une suppression du plancher, une
 regression vers `pyarrow` sans borne, ou la disparition de l'affichage de la
 version doivent le faire rougir.
@@ -65,17 +74,55 @@ def _code_lines(path: Path) -> str:
     return _without_comment_lines(path.read_text(encoding="utf-8"))
 
 
+# Un job peut deleguer son installation a un script partage de `scripts/`
+# (#25521). Le garde doit alors.watchdog les commandes EFFECTIVES du job.
+DELEGATED_SCRIPT_RE = re.compile(r"bash\s+(scripts/[\w./-]+\.sh)")
+
+
+def _delegated_scripts(text: str, root: Path) -> list[Path]:
+    """Les scripts de `scripts/` appeles par le texte executable."""
+    found: list[Path] = []
+    seen: set[str] = set()
+    for match in DELEGATED_SCRIPT_RE.finditer(text):
+        rel = match.group(1)
+        if rel in seen:
+            continue
+        seen.add(rel)
+        path = root / rel
+        if path.exists():
+            found.append(path)
+    return found
+
+
+def _effective_code_lines(path: Path, root: Path = REPO_ROOT, _depth: int = 0) -> str:
+    """Les lignes executables du job : le workflow ET ses scripts delegates.
+
+    La profondeur est bornee : une delegation circulaire ne doit pas faire
+    boucler la lecture.
+    """
+    text = _code_lines(path)
+    if _depth >= 3:
+        return text
+    for script in _delegated_scripts(text, root):
+        text = text + "\n" + _effective_code_lines(script, root, _depth + 1)
+    return text
+
+
+def _assert_bounded_floor(text: str, label: str) -> None:
+    """Le plancher est present ET borne dans le texte executable."""
+    assert FLOOR in text, f"{label}: plancher {FLOOR} absent"
+    unbounded = UNBOUNDED_RE.findall(text)
+    assert not unbounded, (
+        f"{label}: installation de pyarrow sans borne -- le plancher "
+        f"serait satisfait par la version deja presente dans l'image "
+        f"(25.0.1, non mesure) : {unbounded}"
+    )
+
+
 def test_workflows_install_a_bounded_pyarrow():
     """Les deux workflows imposent pyarrow>=26, pas `pyarrow` nu."""
     for wf in WORKFLOWS:
-        text = _code_lines(wf)
-        assert FLOOR in text, f"{wf.name}: plancher {FLOOR} absent"
-        unbounded = UNBOUNDED_RE.findall(text)
-        assert not unbounded, (
-            f"{wf.name}: installation de pyarrow sans borne -- le plancher "
-            f"serait satisfait par la version deja presente dans l'image "
-            f"(25.0.1, non mesure) : {unbounded}"
-        )
+        _assert_bounded_floor(_effective_code_lines(wf), wf.name)
 
 
 def _prints_resolved_version(text: str) -> bool:
@@ -88,14 +135,19 @@ def _prints_resolved_version(text: str) -> bool:
     return bool(PRINT_VERSION_RE.search(_without_comment_lines(text)))
 
 
+def _assert_prints_version(text: str, label: str) -> None:
+    """Le texte executable affiche la version resolue de pyarrow."""
+    assert _prints_resolved_version(text), (
+        f"{label}: la version resolue de pyarrow n'est pas affichee par "
+        f"une ligne EXECUTABLE -- le log doit la porter, pas seulement la "
+        f"contrainte"
+    )
+
+
 def test_workflows_print_the_resolved_version():
     """Chaque workflow affiche la version RESOLUE de pyarrow (acceptance #1)."""
     for wf in WORKFLOWS:
-        assert _prints_resolved_version(wf.read_text(encoding="utf-8")), (
-            f"{wf.name}: la version resolue de pyarrow n'est pas affichee par "
-            f"une ligne EXECUTABLE -- le log doit la porter, pas seulement la "
-            f"contrainte"
-        )
+        _assert_prints_version(_effective_code_lines(wf), wf.name)
 
 
 def test_a_commented_command_does_not_count_as_printing_the_version():
@@ -140,12 +192,73 @@ def test_floor_matches_the_requirement_file():
     version = int(floor_in_file.group(1))
     assert version >= 26, f"plancher pyarrow>={version} sous le seuil mesure (26)"
     for wf in WORKFLOWS:
-        floors = {int(v) for v in re.findall(r"pyarrow>=(\d+)", _code_lines(wf))}
+        floors = {int(v) for v in re.findall(r"pyarrow>=(\d+)", _effective_code_lines(wf))}
         assert floors, f"{wf.name}: plancher illisible dans les lignes executables"
         assert floors == {version}, (
             f"{wf.name}: plancher workflow {sorted(floors)} != plancher "
             f"requirements {version} -- les deux doivent coincider"
         )
+
+
+# --- Controles de la resolution de delegation -----------------------------
+# Sans eux, l'extension « le script delegue compte comme le workflow » serait
+# une affirmation : rien ne prouverait qu'elle atteint le script, ni qu'elle
+# ne masque une suppression.
+
+def _write_delegating_job(tmp_path: Path, script_body: str) -> Path:
+    """Un workflow factice qui delegue son installation a un script."""
+    (tmp_path / "scripts").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "scripts" / "install_deps.sh").write_text(script_body, encoding="utf-8")
+    workflow = tmp_path / "workflow.yml"
+    workflow.write_text(
+        "      - name: Install dependencies\n"
+        "        run: bash scripts/install_deps.sh\n",
+        encoding="utf-8",
+    )
+    return workflow
+
+
+def test_delegation_resolution_reaches_the_delegated_script(tmp_path):
+    """Controle POSITIF : la resolution atteint le script delegue."""
+    workflow = _write_delegating_job(tmp_path, 'pip install "pyarrow>=26"\n')
+    text = _effective_code_lines(workflow, root=tmp_path)
+    assert FLOOR in text, "la resolution doit atteindre le script delegue"
+    _assert_bounded_floor(text, "job factice")
+
+
+def test_a_delegated_script_without_the_floor_is_caught(tmp_path):
+    """Controle NEGATIF : un script delegue sans plancher doit rougir."""
+    workflow = _write_delegating_job(tmp_path, "pip install pytest\n")
+    text = _effective_code_lines(workflow, root=tmp_path)
+    try:
+        _assert_bounded_floor(text, "job factice")
+    except AssertionError:
+        return
+    raise AssertionError("un plancher absent du script delegue doit etre refuse")
+
+
+def test_an_unbounded_install_in_a_delegated_script_is_caught(tmp_path):
+    """Controle NEGATIF : `pip install pyarrow` nu dans le script doit rougir."""
+    workflow = _write_delegating_job(
+        tmp_path, 'pip install "pyarrow>=26"\npip install pyarrow\n'
+    )
+    text = _effective_code_lines(workflow, root=tmp_path)
+    try:
+        _assert_bounded_floor(text, "job factice")
+    except AssertionError:
+        return
+    raise AssertionError("une installation sans borne doit etre refusee")
+
+
+def test_a_delegated_script_that_prints_no_version_is_caught(tmp_path):
+    """Controle NEGATIF : un script delegue muet sur la version doit rougir."""
+    workflow = _write_delegating_job(tmp_path, 'pip install "pyarrow>=26"\n')
+    text = _effective_code_lines(workflow, root=tmp_path)
+    try:
+        _assert_prints_version(text, "job factice")
+    except AssertionError:
+        return
+    raise AssertionError("une version resolue non affichee doit etre refusee")
 
 
 if __name__ == "__main__":

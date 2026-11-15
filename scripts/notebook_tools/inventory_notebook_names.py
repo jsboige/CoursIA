@@ -81,11 +81,19 @@ _STUDENT_HINTS = ("jsboigeEPF/", "jsboigeECE/", "jsboigeEpita/")
 # `.net-csharp` », « 44 x -Python -> 41 x `python3`, 2 x
 # `coursia-ml-training` ») : la liste de cet inventaire etait en retard sur
 # la realite que le canon avait deja mesuree.
+#
+# Kernel d'env nomme de la famille coursia-py313, ajoute apres mesure du
+# 2026-11-13 (#5081, meme classe que le bloc precedent) : `coursia-py313-argu`
+# est publie dans la table des kernels du depot (kernels-runtime.md : 3.13.16 /
+# numpy 2.5.2, executable `coursia-canonical`), et le meme document mesure
+# « po-2023 python3 == coursia-py313-argu » — plusieurs noms, un seul
+# environnement. Prefixe (et non nom exact) pour couvrir aussi le
+# `coursia-py313` nu porte par Complexity-02c, meme famille de nommage.
 _KNOWN_KERNEL_PREFIXES = (
     "python", "ir", "julia-", "java", "javascript", "typescript",
     "dotnet-interactive", "csharp", "fsharp", "pwsh", "lean", "sas",
     "sql", "soql", "xcube", "xeus", "conda",
-    ".net-csharp", "coursia-ml-training", "pyphi",
+    ".net-csharp", "coursia-ml-training", "pyphi", "coursia-py313",
 )
 
 # Classification finale — chaque notebook est classifié dans exactement 1 case.
@@ -147,9 +155,12 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
     requêtes remplirait le tampon stdin pendant que git remplit stdout —
     interblocage.
 
-    Zéro blob lu pour une liste non vide = protocole rompu : on lève au lieu
-    d'écrire un inventaire vide (un résultat sans mesure n'est pas un
-    résultat).
+    Deux causes distinctes pour un kernelspec `None` partout (cf #23655) :
+    zéro blob lu = protocole rompu, on lève au lieu d'écrire un inventaire
+    vide (un résultat sans mesure n'est pas un résultat) ; blobs lus mais
+    aucun kernelspec trouvé = révision d'archives (JSON sans
+    `metadata.kernelspec`), inventaire légitime publié avec kernel `None`
+    partout, signalé sur stderr.
     """
     if not paths:
         return {}
@@ -176,6 +187,7 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
     writer = threading.Thread(target=_feed, daemon=True)
     writer.start()
     specs: dict[str, str | None] = {}
+    blobs_lus = 0
     try:
         for p in paths:
             header = proc.stdout.readline()
@@ -192,6 +204,7 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
             size = int(parts[2])
             data = proc.stdout.read(size)
             proc.stdout.read(1)  # séparateur
+            blobs_lus += 1
             specs[p] = _kernelspec_bytes(data)
     finally:
         try:
@@ -199,10 +212,15 @@ def _kernelspecs_at(ref: str, paths: list[str]) -> dict[str, str | None]:
         finally:
             proc.wait()
     lus = sum(1 for v in specs.values() if v is not None)
-    if paths and not lus:
+    if paths and blobs_lus == 0:
         raise RuntimeError(
             "git cat-file --batch : aucun blob lu pour %d chemin(s) dans %s "
             "-- protocole rompu, aucun inventaire produit" % (len(paths), ref))
+    if blobs_lus and not lus:
+        sys.stderr.write(
+            "note: %d blob(s) lu(s) mais aucun kernelspec dans %s "
+            "-- inventaire publie avec kernel None partout "
+            "(revision d'archives ? cf #23655)\n" % (blobs_lus, ref))
     return specs
 
 

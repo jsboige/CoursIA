@@ -50,6 +50,36 @@ Conséquences (critères tranche C, commentaire du 2026-10-09 sur #17578) :
   licence vérifiable) — lecture hors dépôt (GDrive privé) ou `fetch`
   déterministe épinglé par commit + sha1, jamais commis.
 
+Verdicts et règle des PARTIAL (écart mécanique n°3 de #10355 §4)
+---------------------------------------------------------------
+
+`align_label` rend trois verdicts : `DIRECT` (nom EN, cognate FR ou
+chevauchement lexical ≥ 0,30), `PARTIAL` (chevauchement lexical ≥ 0,08)
+et `NOT_FOUND`.
+
+Un `PARTIAL` ne dit **qu'une chose** : les deux libellés partagent du
+vocabulaire. Il ne prouve pas qu'ils désignent le même nœud, et **le
+score ne les sépare pas** — mesuré le 2026-11-08 : « Circular reasoning »
+→ « Argument circulaire » (0,08, correct) voisine « Appeal to authority »
+→ « Référencement pléthorique » (0,09, faux, autre famille). Un plancher
+de score aurait donc remplacé un aveugle par un autre.
+
+Deux conséquences, toutes deux outillées :
+
+1. **Le cognate FR compare des chaînes normalisées** (accents et
+   ponctuation repliés, `_norm` des deux côtés). La taxonomie écrit
+   « Argument d’autorité » (apostrophe typographique) et « Appel à
+   l’émotion » ; une sous-chaîne brute ne les rencontrait jamais, ce qui
+   dégradait un alignement exact en `PARTIAL` à 0,09-0,143 et laissait
+   gagner un leurre lexical.
+2. **Un `PARTIAL` n'est source d'étiquette que s'il est adjugé.**
+   `PARTIAL_ADJUDICATIONS` (`build_aligned_eval_corpus.py`) nomme, pour
+   chaque libellé concerné, le nœud attendu et la justification écrite de
+   l'identité ; toute autre ligne `PARTIAL` est **exclue** du corpus
+   aligné avec son motif dans `join_report.json`. Une adjudication dont
+   la cible a bougé est **périmée** (exclue, jamais appliquée) et rougit
+   dans `test_align_academic_payload_pins.py`.
+
 Reproduction
 ------------
 

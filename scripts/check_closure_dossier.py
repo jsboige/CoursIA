@@ -52,6 +52,15 @@ pour valider post-hoc un temoin historique deja FERME) :
                          existe et est OUVERTE.
   6. lecture complete -- ``comments-reviewed`` egale le nombre de
                          commentaires anterieurs au dossier.
+  7. crible amont     -- (#23815 point 2) un CLOSE sur une issue que le
+                         crible ``verifier_cleanup`` classe
+                         ``PARTIAL_TRANCHE`` (marqueur partiel seul :
+                         ``See``/``Part of`` = tranche livree, pas la
+                         livraison complete) est refuse -- lecture
+                         IN_FLIGHT-like, coherente avec git-workflow.md.
+                         ``residue: waiver: <motif>`` leve la garde :
+                         l'arbitrage passe alors dans le dossier, lu par
+                         ai-01.
 
 Usage::
 
@@ -79,6 +88,7 @@ from typing import Any
 try:
     import gh_identity
     from check_adjoint_prevalidation import QUALIFYING_LANES, GRAIN_LANE_RE, LANE_TOKEN
+    from verifier_cleanup import classify_one
 except ImportError:  # charge depuis scripts/ en invocation directe
     sys.path.insert(0, dirname(abspath(__file__)))
     import gh_identity  # type: ignore[no-redef]
@@ -87,6 +97,7 @@ except ImportError:  # charge depuis scripts/ en invocation directe
         GRAIN_LANE_RE,
         LANE_TOKEN,
     )
+    from verifier_cleanup import classify_one  # type: ignore[no-redef]
 
 REPO = "jsboige/CoursIA"
 LABEL = "candidate-delivered"
@@ -324,6 +335,19 @@ def load_snapshot(repo: str, number: int) -> dict[str, Any]:
     if not isinstance(issue, dict) or "number" not in issue:
         raise RuntimeError(f"issue #{number} introuvable")
     comments = _issue_comments(repo, number)
+    # #23815 point 2 : le gate consomme le verdict du crible amont. Calcule
+    # ICI, une fois, avec le reste de la lecture. strict_gh=True : une panne
+    # gh des lecteurs du crible leve GhUnavailableError (RuntimeError), que
+    # le sweep traduit en UNKNOWN rc 2 (fail-closed) -- une lecture cassee
+    # ne se lit JAMAIS comme « pas de dossier » ni comme un verdict degrades
+    # (falsification mesuree par la review Hermes du 11/11 : un body de PR
+    # illisible rendait un dossier CLOSE legitime REFUSED).
+    crible = classify_one(repo, {
+        "number": int(issue["number"]),
+        "title": issue.get("title") or "",
+        "labels": [{"name": lab.get("name") or ""}
+                   for lab in (issue.get("labels") or [])],
+    }, strict_gh=True)
     return {
         "repo": repo,
         "number": int(issue["number"]),
@@ -335,6 +359,8 @@ def load_snapshot(repo: str, number: int) -> dict[str, Any]:
         "comments": comments,
         "merged_prs": _merged_referring_prs(repo, number),
         "open_prs": _open_pr_refs(repo, number),
+        "crible_verdict": crible.get("verdict") or "",
+        "crible_reason": crible.get("reason") or "",
     }
 
 
@@ -456,6 +482,20 @@ def validate_dossier(dossier: Dossier, snapshot: dict[str, Any],
                 f"residue followup #{followup_m.group(1)} is "
                 f"{child['state']} -- a closed child does not keep the parent open"
             )
+
+    # #23815 point 2 : controle 7 -- un CLOSE sur une issue PARTIAL_TRANCHE
+    # est refuse (marqueur partiel = tranche livree, la suite est attendue).
+    # La cle vient du contrat load_snapshot ; un KEEP reste toujours recevable
+    # (attester qu'une issue partiellement livree reste ouverte est correct).
+    if (verdict == VERDICT_CLOSE
+            and snapshot.get("crible_verdict") == "PARTIAL_TRANCHE"
+            and not _RESIDUE_WAIVER_RE.match(residue)):
+        errors.append(
+            "partial delivery: upstream crible verdict PARTIAL_TRANCHE ("
+            + (snapshot.get("crible_reason") or "")[:90]
+            + ") -- the merged marker is a tranche (See/Part of), not a "
+            "closing one; CLOSE requires 'residue: waiver: <motif>'"
+        )
 
     # PRs citees dans les preuves : toutes MERGED. Le raccourci ne couvre que
     # les PRs du MEME depot : un #N nu dans le dossier designe une PR du depot

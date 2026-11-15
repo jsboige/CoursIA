@@ -206,7 +206,16 @@ def test_python_dotenv_is_checked_under_its_module_name(validator, tmp_path, mon
     (tmp_path / "dotenv.py").write_text("__version__ = '1.2.4'\n", encoding="utf-8")
     monkeypatch.syspath_prepend(str(tmp_path))
     monkeypatch.delitem(sys.modules, "dotenv", raising=False)
-    assert validator.check_python_package("python-dotenv") is True
+    try:
+        assert validator.check_python_package("python-dotenv") is True
+    finally:
+        # #26481 : delitem(raising=False) n'enregistre AUCUN undo quand
+        # "dotenv" etait absent de sys.modules au debut du test -- sans ce
+        # pop, le FAUX module reste cache et tout import ulterieur de
+        # dotenv sur le meme worker xdist importe le faux (mesure CI :
+        # prover/config.py:6 `from dotenv import load_dotenv` en
+        # ImportError nommant .../test_python_dotenv_is_checked_0/dotenv.py).
+        sys.modules.pop("dotenv", None)
 
 
 def test_no_distribution_maps_to_a_dashed_module_name(validator):

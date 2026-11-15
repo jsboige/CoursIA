@@ -15,6 +15,7 @@ colonnes), qui nomme le successeur de chaque script archivé.
 | Sous-archive | Archivage | Décision d'archivage | Registre |
 |---|---|---|---|
 | [`c8257-lean18-enrichment/`](c8257-lean18-enrichment/README.md) | 2026-09-02 | PR #14251 — helpers c.8257 devenus obsolètes après le déplacement du notebook par #13685 | [README](c8257-lean18-enrichment/README.md) |
+| [`root-campaigns-2026q3/`](root-campaigns-2026q3/README.md) | 2026-11-12 | T3-b de #25366 (census #26009) — 6 scripts de campagne à issue fermée sans appelant mesuré, + leurs 5 tests | [README](root-campaigns-2026q3/README.md) |
 | [`one_shot_fixes/`](one_shot_fixes/README.md) | 2026-08-06 | PR #9607 (item 4-ter de #9535) et PR #9731 (item 4-quater) | [README](one_shot_fixes/README.md) |
 | [`one_shots_post_463/`](one_shots_post_463/README.md) | 2026-08-06 | PR #9580 (item 4-bis de #9535) | [README](one_shots_post_463/README.md) |
 | [`recycle_csp/`](recycle_csp/README.md) | 2026-08-06 | PR #9575 — transformations CSP-3 à CSP-9 pour l'issue #463 | [README](recycle_csp/README.md) |

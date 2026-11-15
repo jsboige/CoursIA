@@ -635,6 +635,9 @@ def test_borne_b_bout_en_bout_paire_generique():
 from check_split_reading_cells import (  # noqa: E402
     detect_added_readings,
     is_exercise_cell,
+    is_exercise_statement,
+    is_reading_or_prose,
+    is_section_intro,
     cell_output_text,
 )
 
@@ -1067,6 +1070,41 @@ def test_conclusion_longue_apres_stub_est_structurelle():
     assert findings_neg[0]["type"] == "EXERCISE_READING"
 
 
+def test_titres_canoniques_de_fin_de_carnet_apres_stub_sont_structurels():
+    """Les deux titres canoniques de la spec « finition de serie » (#19297) --
+    ``## A retenir`` et ``## Verifiez votre comprehension`` -- sont des blocs de
+    CLOTURE de carnet (recapitulatif, questions de comprehension), pas des
+    lectures d'une sortie : les poser apres un stub d'exercice ne doit pas etre
+    signale en EXERCISE_READING.
+
+    Faux positif mesure : PR #25720 (Search-09d) -- le carnet se termine par un
+    stub d'exercice et la spec IMPOSE que le carnet se termine par les trois
+    blocs canoniques, dans cet ordre. Le carve-out #17777 pose deja le
+    principe (« le discriminant est le TITRE, pas la longueur du corps ») : un
+    titre de section reste structurel, quelle que soit la taille de son corps.
+
+    Controle negatif : un titre NON-liste, long, apres un stub, reste signale.
+    """
+    base = nb(_stub_exercise())
+    head = nb(
+        _stub_exercise(),
+        md("## À retenir\n\n- **Le `k` du theoreme est le degre des sommets.** "
+           "Sur la famille `F` des 20 triplets, la disc：`3`. "
+           "Le squelette de Beck-Fiala tient un `k` constant a 4."),
+        md("## Vérifiez votre compréhension\n\n1. Sur la famille des 20 triplets ?"),
+    )
+    assert detect_added_readings(head, base) == []
+
+    head_neg = nb(
+        _stub_exercise(),
+        md("## Analyse detaillee\n\nLa sortie confirme 0.94 sur l'echantillon, "
+           "tendance attendue, marge fine. " * 4),
+    )
+    findings_neg = detect_added_readings(head_neg, base)
+    assert len(findings_neg) == 1
+    assert findings_neg[0]["type"] == "EXERCISE_READING"
+
+
 def test_diff_mute_si_markdown_ajoute_apres_code_sans_markdown_en_base():
     """Une premiere lecture ajoutee juste apres une cellule de code qui
     n'avait PAS de markdown derriere en base n'est PAS une violation.
@@ -1340,7 +1378,7 @@ def test_cell_output_text_aggrege_les_sorties():
     assert "ligne1" in text and "ligne2" in text and "warn" in text
 
 
-# --- 5bis. Controle positif REEL : #17021 (App-1-NQueens + App-14b) -----------
+# --- 5bis. Controle positif REEL : #17021 (App-01-NQueens-Python + App-14b) -----------
 #
 # Le ticket #17464 exige le controle positif "les deux notebooks de #17021,
 # base 6d46b9c684~1 -> tete 6d46b9c684, doivent sortir en rouge".
@@ -2163,6 +2201,25 @@ def _student_solution_verbatim():
     }
 
 
+def _stub_exercise_lean():
+    """Stub d'exercice signale par son JETON de source (`-- Exercice N` /
+    `# TODO`), SANS aucune sortie « a completer ».
+
+    C'est ce qui le distingue de `_stub_exercise` : la classification ne
+    court-circuite PAS par la sortie litterale, elle depend du carve-out
+    d'exemple credite -- donc de `_section_header`. C'est le cas reel du
+    body (Lean-13 / Lean-16c) que le test negatif doit epingler.
+    """
+    return {
+        "cell_type": "code",
+        "source": ["-- Exercice 2 - un enonce a demontrer  # TODO\n"
+                   "def preuve : Prop := sorry"],
+        "outputs": [{"name": "stdout", "output_type": "stream",
+                     "text": ["ok"]}],
+        "execution_count": 1,
+    }
+
+
 def test_carveout_exemple_credite_nest_pas_signale_exercise_reading():
     """POSITIF : la lecture d'un exemple guide CREDITE n'est pas signalee.
 
@@ -2251,11 +2308,21 @@ def test_carveout_en_tete_credite_par_metadata():
     assert is_exercise_cell(cells[1], cells, 1) is False
 
 
-def test_carveout_code_avant_titre_ne_rattache_pas():
-    """NEGATIF : une cellule de CODE interrompt la remontee vers l'en-tete.
+from check_split_reading_cells import (  # noqa: E402
+    _governing_header,
+    _section_header,
+)
 
-    Le lien de section est rompu : on ne rattache pas une cellule a un titre
-    qui precede une autre section de code.
+
+def test_carveout_code_avant_titre_ne_rattache_pas():
+    """REQUALIFIE (#23397) : deux regles cohabitent, aux perimetres clairs.
+
+    - Regle de LIEN (`_governing_header`), intacte : une cellule de code
+      ROMP le lien -- une cellule placee apres la deuxieme cellule de code
+      d'une section n'est rattachee a AUCUN titre qui la precede.
+    - Regle de SECTION (`_section_header`), perimetre du carve-out : une
+      cellule de code n'interrompt PAS la remontee -- la deuxieme cellule
+      de code d'un exemple CREDITE est blanchie comme la premiere.
     """
     cells = [
         _credited_example_header(),
@@ -2263,6 +2330,92 @@ def test_carveout_code_avant_titre_ne_rattache_pas():
         code("print('autre section')"),
         _student_solution_verbatim(),
     ]
+    # Regle de lien : intacte -- le code rompt le lien, la cellule 3
+    # n'est rattachee a aucun titre.
+    assert _governing_header(cells, 3) is None
+    # Regle de section : la section reste ouverte jusqu'au prochain TITRE
+    # -- l'en-tete credite commande les deux cellules de code de l'exemple.
+    assert _section_header(cells, 3) is cells[0]
+    assert is_exercise_cell(cells[3], cells, 3) is False
+
+
+def test_carveout_section_multi_code_credite_nest_pas_signale():
+    """POSITIF (#23397) : un exemple CREDITE multi-code, bout en bout.
+
+    La lecture posee apres la DEUXIEME cellule de code de l'exemple n'est
+    pas signalee : les deux cellules de code sont sous l'en-tete credite
+    (une cellule de code intermediaire ne ferme pas la section). Echee sous
+    l'ancienne regle de lien : la deuxieme cellule etait hors carve-out et
+    la lecture etait signalee EXERCISE_READING (le faux positif mesure sur
+    le corpus : 15 cellules suivies d'une lecture).
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        code("print('deuxieme code de l'exemple')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == [], findings
+
+
+def test_carveout_section_sans_credit_reste_exercice():
+    """NEGATIF (#23397) : la regle de section SANS credit n'est pas un
+    carve-out.
+
+    La meme forme multi-code sous un `### Exemple` SANS attribution : la
+    remontee est elargie de la meme facon, mais l'en-tete ne dit rien du
+    role du code -- la deuxieme cellule de code reste classee « exercice »
+    et la lecture posee apres elle est signalee.
+    """
+    base = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+    )
+    head = nb(
+        md("### Exercice 1 - Un premier passage\n\nUn enonce."),
+        _stub_exercise(),
+        md("### Exemple guide 3 - Comparer deux modeles\n\nSans attribution."),
+        _student_solution_verbatim(),
+        code("print('deuxieme code')"),
+        _student_solution_verbatim(),
+        md("### Lecture du resultat : egalite sur les classements\n\n"
+           + "Les deux collections contiennent les memes points."),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["EXERCISE_READING"], findings
+
+
+def test_carveout_exercice_apres_separateur_reste_exercice():
+    """NEGATIF (#23397) : un TITRE d'exercice pose APRES un separateur `***`
+    ferme la section -- le stub qui le suit reste classe « exercice ».
+
+    C'est le cas reel du body (Lean-13-Kochen-Specker cell 37, Lean-16c-
+    Conway cell 44) : la cellule markdown qui ouvre la section d'exercice
+    porte `***` + ligne vide AVANT le `### Exercice ...`. L'ancienne regle
+    (premiere ligne seulement) ne le voyait pas comme un titre ; la remontee
+    de `_section_header` passait au-dessus et rattachait le stub a l'en-tete
+    credite deux cellules plus haut. Le stub etait blanchi, et la mesure du
+    body le comptait a tort dans les « gagnees ».
+    """
+    cells = [
+        _credited_example_header(),
+        _student_solution_verbatim(),
+        md("***\n\n### Exercice 2 - Un second passage\n\nUn enonce."),
+        _stub_exercise_lean(),
+    ]
+    # Le stub (cellule 3) est sous le TITRE d'exercice de la cellule 2, pas
+    # sous l'en-tete credite de la cellule 0 : la section est fermee par le
+    # titre pose apres le separateur.
+    assert _section_header(cells, 3) is cells[2]
     assert is_exercise_cell(cells[3], cells, 3) is True
 
 
@@ -2409,7 +2562,7 @@ def test_resume_apres_exercice_reste_signale():
 # Carve-out prose de transition (#24164)
 # =============================================================================
 #
-# Instance mesuree : PR #23840, `App-3-NurseScheduling.ipynb`, 10 SECOND_READING
+# Instance mesuree : PR #23840, `App-03-NurseScheduling-Python.ipynb`, 10 SECOND_READING
 # sur des cellules qui ANNONCENT le code suivant. 2 separateurs `***` devant un
 # titre de section, 8 libelles d'etape en gras. L'organe punissait le geste qu'il
 # prescrit (poser la lecture demandee par « une sortie = une lecture »).
@@ -2492,3 +2645,128 @@ def test_transition_n_inflate_pas_le_compte_de_la_sortie_precedente():
     )
     findings = detect_added_readings(head, base)
     assert findings == [], [f["type"] for f in findings]
+
+
+# =============================================================================
+# #26602 : une ANCRE HTML seule precede le titre de l'enonce
+# =============================================================================
+#
+# Une ancre (`<a id="exercice-2"></a>`) sert la navigation : elle ne porte
+# AUCUN contenu. Or le carve-out #17777 teste la premiere ligne non vide --
+# donc l'ancre, et non le titre. L'enonce legitime etait alors compte comme
+# une lecture de la sortie voisine, et le `Split-reading ratchet` rougissait
+# sur un enonce valide. Mesure du 14/11 : PR #26245 (`GameTheory-16i`,
+# jumeau Python) -- 3 findings, tous de cette forme ; PR #26238
+# (`GameTheory-09b`, jumeau Python) -- 1 finding de cette forme (la lecture
+# voisine, enchainee sur un enonce non reconnu comme tel).
+
+
+def test_enonce_avec_ancre_html_reconnu_comme_enonce():
+    """POSITIF : l'ancre ne mange pas le titre. L'enonce adjacent a son stub
+    reste un enonce, meme si une ancre precede son titre.
+    """
+    cells = [
+        md('<a id="exercice-1"></a>\n\n### Exercice 1 -- forcer le critere.'),
+        code("# Exercice 1 (stub) : TODO"),
+    ]
+    assert is_exercise_statement(cells[0], cells, 0) is True
+
+
+def test_diff_enonce_avec_ancre_html_ne_gonfle_pas_le_compte():
+    """BOUT EN BOUT (ratchet) : l'enonce precede de son ancre ne compte pas
+    comme une lecture de la sortie du dessus -- sinon la premiere lecture
+    ajoutee sous cette sortie est signalee SECOND_READING a tort.
+    """
+    base = nb(
+        _exec("print(1)"),
+        md("## 3. Exercices"),
+        md('<a id="exercice-1"></a>\n\n### Exercice 1 -- forcer le critere.'),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    head = nb(
+        _exec("print(1)"),
+        md("### Lecture du resultat\nLa reponse est stable."),
+        md("## 3. Exercices"),
+        md('<a id="exercice-1"></a>\n\n### Exercice 1 -- forcer le critere.'),
+        code("# Exercice 1 (stub) : TODO"),
+    )
+    findings = detect_added_readings(head, base)
+    assert findings == [], [f["type"] for f in findings]
+
+
+def test_diff_ancre_html_ne_blanchit_pas_une_vraie_lecture():
+    """NEGATIF : l'ancre ne blanchit QUE l'enonce d'exercice. Une VRAIE
+    lecture precedee de la meme ancre reste signalee -- sinon le carve-out
+    ouvrirait un trou : toute lecture ancree deviendrait invisible.
+    """
+    base = nb(
+        _exec("print(1)"),
+    )
+    head = nb(
+        md('<a id="lecture-1"></a>\n\n### Lecture du resultat\nLa reponse est stable.'),
+        _exec("print(1)"),
+    )
+    findings = detect_added_readings(head, base)
+    assert [f["type"] for f in findings] == ["READING_BEFORE_CODE"]
+
+
+def test_enonce_avec_ancre_et_interpretation_dissimulee_n_est_pas_un_enonce():
+    """NEGATIF (garde-fou #3 de #17777) : le saut des ancres n'ouvre pas le
+    carve-out quand le corps de l'enonce cache une interpretation.
+    """
+    cells = [
+        md('<a id="exercice-1"></a>\n\n### Exercice 1 -- forcer le critere.'
+           '\n\n### Lecture : la reponse est stable.'),
+        code("# Exercice 1 (stub) : TODO"),
+    ]
+    assert is_exercise_statement(cells[0], cells, 0) is False
+
+
+def test_enonce_avec_ancre_citant_une_sortie_n_est_pas_un_enonce():
+    """NEGATIF (garde-fou #4 de #17777) : citer une sortie disqualifie
+    l'enonce, ancre ou pas.
+    """
+    cells = [
+        md('<a id="exercice-1"></a>\n\n### Exercice 1 -- forcer le critere.'
+           '\n\nOn observe une convergence nette sur la sortie.'),
+        code("# Exercice 1 (stub) : TODO"),
+    ]
+    assert is_exercise_statement(cells[0], cells, 0) is False
+
+
+def test_en_tete_de_section_avec_ancre_html_reconnu():
+    """POSITIF : l'en-tete de section precede de son ancre reste un en-tete de
+    section (le carve-out #17777 etendu a READING_BEFORE_CODE).
+    """
+    cells = [
+        md('<a id="sec-2"></a>\n\n## 2. Tests statistiques\n\nUn paragraphe.'),
+        code("print(1)"),
+    ]
+    assert is_section_intro(cells[0]) is True
+
+
+def test_diff_en_tete_de_section_avec_ancre_html_non_flagge():
+    """BOUT EN BOUT : un en-tete de section ancre devant son code n'est pas
+    signale -- c'est la meme carve-out que sans ancre.
+    """
+    base = nb(
+        code("#check Foo.bar"),
+    )
+    head = nb(
+        md(
+            '<a id="sec-8-2"></a>\n\n'
+            "### 8.2 R02 — les parallélogrammes du grokking\n\n"
+            "*Liu, Michaud & Tegmark, Towards Understanding Grokking: "
+            "An Effective Theory of Emergence.* La conjecture porte sur les "
+            "residus de la factorisation, verifies ici par un `#check` court."
+        ),
+        code("#check Foo.bar"),
+    )
+    assert detect_added_readings(head, base) == []
+
+
+def test_cellule_d_ancre_seule_n_est_pas_une_lecture():
+    """Une cellule qui ne porte qu'une ancre ne commente rien : ce n'est ni
+    une lecture ni une prose.
+    """
+    assert is_reading_or_prose(md('<a id="exercice-1"></a>')) is False

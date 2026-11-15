@@ -2,9 +2,9 @@
 
 Sous-série de la série [Lean](../README.md) (décision de gradation #17545, 24/09) : la théorie des nœuds descend ici avec son lac [`knot_lean`](knot_lean/README.md). L'arc interne va du récit mathématique (Conway, la sliceness du nœud 11n34 et la preuve de Piccirillo) vers le lac réel : chaque carnet finit par interroger les déclarations `Knots.*` qui vivent dans ce dossier.
 
-La série principale garde son tutoriel (numéros 1 à 14) et ses hommages (16a pour Conway l'homme) ; le présent dossier porte l'arc nœuds. Les numéros de la table ci-dessous renvoient à l'ancien identifiant de série (`Lean-17a` → `KNOTS-01`, etc. — table de correspondance dans `docs/reference/rename-ledger.tsv`).
+La série principale garde son tutoriel (numéros 1 à 14) et ses hommages (Lean-16 pour Conway, l'homme et l'œuvre) ; le présent dossier porte l'arc nœuds. Les numéros de la table ci-dessous renvoient à l'ancien identifiant de série (`Lean-17a` → `KNOTS-01`, etc. — table de correspondance dans `docs/reference/rename-ledger.tsv`).
 
-**Escalier depuis la série principale** : [Lean-16a — Conway, l'homme et l'œuvre](../Lean-16a-Conway-Man-and-Work.ipynb) présente Conway ; KNOTS-01 en explore la face cachée (le nœud de Conway, la question de sa sliceness ouverte 50 ans, résolue par Lisa Piccirillo en moins d'une semaine).
+**Escalier depuis la série principale** : [Lean-16 — Conway, l'homme et l'œuvre](../Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) présente Conway ; KNOTS-01 en explore la face cachée (le nœud de Conway, la question de sa sliceness ouverte 50 ans, résolue par Lisa Piccirillo en moins d'une semaine).
 
 | Carnet | Contenu | Durée |
 |---|---|---|
@@ -14,6 +14,6 @@ La série principale garde son tutoriel (numéros 1 à 14) et ses hommages (16a 
 | [KNOTS-04-Geometrie-Hyperbolique-Python](KNOTS-04-Geometrie-Hyperbolique-Python.ipynb) | Descente géométrique : les tétraèdres idéaux d'un complémentaire hyperbolique, l'équation de raccordement `z·z'·z'' = -1`, le volume de Bloch-Wigner recalculé indépendamment par `mpmath` (cross-check contre SnapPy), la table des remplissages de Dehn avec son cas exceptionnel non hyperbolique, et la rigidité de Mostow vérifiée numériquement (témoin négatif : le nœud torique `3_1`) | ~45 min |
 | [KNOTS-05-Dynamique-Tresses-Python](KNOTS-05-Dynamique-Tresses-Python.ipynb) | Couche dynamique : l'action d'Artin de `B_n` sur le groupe libre, vérifiée par ses relations plutôt qu'affirmée, l'itération de `σ1 σ2⁻¹` dont la longueur réduite croît à `φ²`, et le spectre de Perron de la matrice de transition — borne atteinte par les tresses qui étirent dans `B_3`, non serrée en `B_4`, et aveugle au niveau abélianisé | ~30 min |
 
-**Prérequis d'entrée** : le tutoriel de la série principale (numéros 1 à 6, tactiques et Mathlib) ; la lecture de [Lean-16a](../Lean-16a-Conway-Man-and-Work.ipynb) donne le contexte humain, sans être bloquante.
+**Prérequis d'entrée** : le tutoriel de la série principale (numéros 1 à 6, tactiques et Mathlib) ; la lecture de [Lean-16](../Lean-16-Conway-Homme-et-Oeuvre-Lean-Python.ipynb) donne le contexte humain, sans être bloquante.
 
 **Statut du lac** : `knot_lean` est en research-HOLD théorie des nœuds (#2874) — baseline sorry réelle 8, synchronisée avec `lean-knot.yml` et `LEAN_INVENTORY.md` (cf. `knot_lean/README.md`, table des sorries).

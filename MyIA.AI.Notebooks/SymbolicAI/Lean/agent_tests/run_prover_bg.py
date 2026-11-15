@@ -109,6 +109,9 @@ from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
 from prover.tree_lock import (  # noqa: E402
     acquire_tree_lock,
     find_lean_project_root,
+    host_id,
+    pid_alive,
+    read_lock,
     release_tree_lock,
 )
 
@@ -186,6 +189,17 @@ def _validate_provider_credentials(eff: dict) -> list:
     return validate_provider_credentials(eff, PROVIDERS)
 
 
+def _parent_lock_is_valid(tree_root: Path, owner_pid: int) -> bool:
+    """Ne réutilise le lock que si son propriétaire vivant est le parent déclaré."""
+    holder = read_lock(tree_root / ".prover.lock")
+    return (
+        owner_pid == os.getppid()
+        and holder.get("pid") == owner_pid
+        and holder.get("host") == host_id()
+        and pid_alive(owner_pid)
+    )
+
+
 async def main(args: argparse.Namespace) -> int:
     demo = DEMOS.get(args.demo_id)
     if demo is None:
@@ -257,17 +271,29 @@ async def main(args: argparse.Namespace) -> int:
         tree_root = find_lean_project_root(demo["file"])
     if tree_root is None:
         tree_root = Path(os.environ["LEAN_PROJECT"])
-    lock_path, lock_msg = acquire_tree_lock(
-        tree_root, args.demo_id, force=args.force_lock
-    )
-    if lock_path is None:
-        _bg(f"LOCKED {lock_msg}")
-        return 3
-    _bg(f"TREE_LOCK {lock_path}")
+    if args.reuse_lock_pid is not None:
+        lock_path = tree_root / ".prover.lock"
+        if not _parent_lock_is_valid(tree_root, args.reuse_lock_pid):
+            _bg("LOCKED external prover lock owner validation failed")
+            return 3
+        # The parent benchmark owns this canonical lock across both arms.
+        # Its PID differs from this child, so release_tree_lock(None) below
+        # deliberately leaves the parent's lock in place.
+        _bg(f"TREE_LOCK_REUSED {lock_path} owner_pid={args.reuse_lock_pid}")
+        release_path = None
+    else:
+        lock_path, lock_msg = acquire_tree_lock(
+            tree_root, args.demo_id, force=args.force_lock
+        )
+        if lock_path is None:
+            _bg(f"LOCKED {lock_msg}")
+            return 3
+        _bg(f"TREE_LOCK {lock_path}")
+        release_path = lock_path
     try:
         return await _run_locked(args, demo, file_target)
     finally:
-        release_tree_lock(lock_path)
+        release_tree_lock(release_path)
 
 
 async def _run_locked(
@@ -465,6 +491,8 @@ def parse_args() -> argparse.Namespace:
                    help="Break an existing .prover.lock even if its holder "
                         "looks alive or is on a foreign host (WSL<->Windows). "
                         "Operator decision — see #6790.")
+    p.add_argument("--reuse-lock-pid", type=int, default=None,
+                   help=argparse.SUPPRESS)
     return p.parse_args()
 
 

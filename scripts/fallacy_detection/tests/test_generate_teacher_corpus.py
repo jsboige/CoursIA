@@ -319,6 +319,60 @@ def test_build_choice_question_porte_le_texte_les_candidats_et_la_consigne():
     assert "Definition du sophisme A." in question
 
 
+def test_build_choice_question_fr_reste_octet_pour_octet_celle_du_corpus_committe():
+    # Le corpus committe (data/teacher/val_fr.jsonl) a ete reclasse par cette
+    # question exacte : la changer rendrait les mesures FR incomparables.
+    question = G.build_choice_question("Le texte genere.", ["F1", "F2"], _texts(), "fr")
+    assert question == (
+        "Voici un texte :\n\nLe texte genere.\n\n"
+        "Quel sophisme/caractere argumentatif illustre-t-il le mieux ?\n"
+        "A. Sophisme A : Definition du sophisme A.\n"
+        "B. Sophisme B : Definition du sophisme B."
+        "\n\nReponds uniquement par la lettre."
+    )
+
+
+def test_build_choice_question_en_ne_melange_plus_les_langues():
+    # Avant le correctif, --lang en posait une question francaise sur des
+    # candidats anglais (ecart n.1 de la proposition EPITA, #10355).
+    question = G.build_choice_question("The generated text.", ["F1", "V1"], _texts(), "en")
+    assert question == (
+        "Here is a text:\n\nThe generated text.\n\n"
+        "Which fallacy or argumentative virtue does it illustrate best?\n"
+        "A. Fallacy A: Definition of fallacy A.\n"
+        "B. Virtue A: Definition of virtue A."
+        "\n\nAnswer with the letter only."
+    )
+    for french in ("Voici", "Quel sophisme", "Reponds"):
+        assert french not in question
+
+
+def test_build_choice_question_autre_langue_recoit_le_cadre_anglais():
+    # Les langues sans cadre propre suivent la convention de render_prompt :
+    # consigne en anglais, candidats dans la langue du corpus.
+    texts = _texts()
+    for key, title in (("F1", "Ошибка A"), ("F2", "Ошибка B")):
+        texts["nodes"][key]["ru"] = (title, "Определение.", [])
+    question = G.build_choice_question("Текст.", ["F1", "F2"], texts, "ru")
+    assert question.startswith("Here is a text:\n\nТекст.\n\n")
+    assert "A. Ошибка A: Определение." in question
+    assert question.endswith("Answer with the letter only.")
+
+
+def test_toute_langue_du_perimetre_a_un_cadre_coherent():
+    # Aucune langue autre que le francais ne doit recevoir le cadre francais.
+    for lang in B.LANGS:
+        intro = G._CHOICE_FRAMES.get(lang, G._CHOICE_FRAMES["en"])[0]
+        assert (intro == "Voici un texte :") == (lang == "fr"), lang
+
+
+def test_reponse_a_la_consigne_anglaise_est_lue():
+    # La consigne anglaise appelle « B » ou « Answer: B » : les deux passes de
+    # parse_choice les lisent deja.
+    assert G.parse_choice("B", ["F1", "F2"]) == "F2"
+    assert G.parse_choice("Answer: A", ["F1", "F2"]) == "F1"
+
+
 # --------------------------------------------------------------------------
 # Mesure anti-circularite (sur la SORTIE)
 # --------------------------------------------------------------------------

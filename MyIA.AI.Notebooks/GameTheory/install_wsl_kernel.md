@@ -226,8 +226,8 @@ print(f"Kuhn Poker: {game.num_players()} joueurs, {game.num_distinct_actions()} 
 |----------|-------------------|-------------|
 | 1-6 | Non | Nashpy (Windows natif) |
 | 7-ExtensiveForm | Optionnel | game_theory_utils.py |
-| 12-ImperfectInfo-CFR | Oui (CFR) | game_theory_utils.CFRSolver |
-| 15-MultiAgent-RL | Oui (NFSP) | game_theory_utils.FictitiousPlay |
+| 13-ImperfectInfo-CFR | Oui (CFR) | game_theory_utils.CFRSolver |
+| 17-MultiAgent-RL | Oui (NFSP) | game_theory_utils.FictitiousPlay |
 
 ## Dépannage
 
@@ -415,10 +415,10 @@ python3 -c "import lean4_jupyter; print('OK')"
 
 | Notebook | Kernel | Contenu |
 |----------|--------|---------|
-| 16-Lean-Definitions | Lean 4 (WSL) | Définitions formelles Game, Nash |
-| 17-Lean-NashExistence | Python 3 | Python + lean_runner.py |
-| 18-Lean-CombinatorialGames | Python 3 | Python + lean_runner.py |
-| 19-Lean-SocialChoice | Lean 4 (WSL) | Arrow, Sen en Lean natif |
+| [02b-Lean-Definitions](GameTheory-02b-Lean-Definitions-Lean.ipynb) | Lean 4 (WSL) | Définitions formelles Game, Nash |
+| [04b-Lean-NashExistence](GameTheory-04b-Lean-NashExistence-Lean.ipynb) | Lean 4 (WSL) | Existence de Nash en Lean |
+| [08b-Lean-CombinatorialGames](GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) | Lean 4 (WSL) | Jeux combinatoires en Lean |
+| [SocialChoice/01b-Lean-SocialChoice-Formal](SocialChoice/01b-Lean-SocialChoice-Formal.ipynb) | Lean 4 (WSL) | Arrow, Sen en Lean natif |
 
 ### Dépannage Lean
 

@@ -129,6 +129,47 @@ def test_le_marqueur_neutralise_ne_touche_pas_le_label():
     assert withheld and "candidate-delivered" in withheld[0][1]
 
 
+def test_consolidation_livree_sans_lane_depuis_plus_de_48h_est_servie():
+    """#25159 (reserve coordinateur du 11/11 12:25Z) : un en-tete
+    `[DELIVERED]` SANS lane est recent pour la grammaire rapide mais ne pose
+    pas l'etat. L'evenement rend (recent=True, state=False, stamp). Exiger
+    `state` pour expirer le marqueur le laissait vivre indefiniment :
+    `recent` l'ecartait de l'urne des grains, et sans etat l'issue
+    n'entrait pas dans l'urne des livrees -- elle sortait des DEUX urnes.
+
+    Le temoin demande : fil `[DELIVERED]` sans lane + commentaire neutre,
+    stamp de plus de 48 h -- l'issue redevient SERVABLE."""
+    item = _consol(5010, visit_h=72)
+    picks, withheld, _state = _run([item], event_probe=lambda n: (True, False, _iso(72)))
+    assert [p["number"] for p in picks] == [5010], (
+        f"une consolidation livree par un marqueur sans lane de plus de 48 h "
+        f"doit etre servie, withheld={[w[1] for w in withheld]}")
+    assert withheld == []
+
+
+def test_consolidation_livree_sans_lane_depuis_moins_de_48h_est_ecartee():
+    """Controle du temoin precedent : le marqueur sans lane de moins de
+    48 h ecarte normalement -- la correction ne doit pas vider la file des
+    livraisons recentes."""
+    item = _consol(5011, visit_h=2)
+    picks, withheld, _state = _run([item], event_probe=lambda n: (True, False, _iso(2)))
+    assert picks == []
+    assert withheld and withheld[0][1].startswith("LIVRAISON (recent)")
+
+
+def test_delivery_event_sans_lane_rend_recent_sans_etat():
+    """Le REDUCTEUR sur le fil exact de la repro : `[DELIVERED] PR #123
+    livre` (sans lane, sans paths:) suivi d'un commentaire neutre rend
+    (recent=True, state=False, stamp). C'est la forme d'evenement que la
+    grammaire rapide produit et que le temoin de servabilite consomme."""
+    cm = [{"body": b, "createdAt": _iso(72)}
+          for b in ["[DELIVERED] PR #123 livre", "merci, je relis"]]
+    recent, state, stamp = pig._delivery_event_from_comments(cm)
+    assert recent is True
+    assert state is False
+    assert stamp == _iso(72)
+
+
 def test_consolidation_pr_mergee_72h_est_servie():
     """Une consolidation dont la derniere livraison par PR a plus de 48 h
     n'est plus ecartee par la surface « PR MERGEE < 90 j » : une tranche
@@ -350,24 +391,41 @@ def test_le_mur_de_temps_ne_tombe_pas_sur_une_consolidation():
     Consequence mesuree : le tirage entier rendait ZERO grain, et la
     classe `consolidation` (le mandat user du 25/10) n'etait jamais servie.
 
-    Le comportement attendu quand le temps est epuise : fail-OPEN -- aucune
-    sonde lue, AUCUN marqueur neutralise, le candidat reste servable."""
+    #22983 -- le contrat du mur est INVERSE. Il ne rendait pas fail-OPEN
+    (le candidat restait servable malgre une lecture non faite) ; il rend
+    fail-CLOSED : le candidat dont une lecture n'a pas pu etre emise est
+    ECARTE, avec la raison nommee. Ce qui reste de #22500 -- et c'est le
+    point : le mur ne fait plus CRASHER la boucle, et le verdict reste
+    DECOMPOSABLE (un triplet, jamais un booleen nu).
+    """
     item = _consol(7001, visit_h=72)
     picks, withheld, _state = _run(
         [item], event_probe=lambda n: (True, True, _iso(72)),
         time_budget_s=0)
-    assert [p["number"] for p in picks] == [7001], (
-        "mur de temps atteint : rien n'est neutralise, le candidat reste "
-        f"servable (withheld={[w[1] for w in withheld]})")
+    assert [p["number"] for p in picks] == [], (
+        "mur de temps atteint : le candidat n'a pas ete lu, il ne doit pas "
+        f"etre servi (withheld={[w[1] for w in withheld]})")
+    assert [w[0]["number"] for w in withheld] == [7001]
+    assert "mur de temps atteint" in withheld[0][1], (
+        "la raison de l'ecarte doit etre NOMMEE : "
+        f"{withheld[0][1]!r}")
+    assert "sonde non emise" in withheld[0][1]
 
 
 def test_le_mur_de_temps_ne_tombe_pas_non_plus_sur_un_grain_ordinaire():
     """Le meme mur, hors classe consolidation : le filtre recent ne doit pas
     non plus lever une exception (il renvoie un booleen, il le decompose
-    normalement -- le test verrouille le voisinage)."""
+    normalement -- le test verrouille le voisinage).
+
+    #22983 -- meme contrat que la consolidation : fail-CLOSED. Le filtre
+    recent n'est pas appele (sa lecture est RESSEAU et le mur est
+    atteint), et le candidat est ecarte plutot que servi.
+    """
     item = _item(7002, visit_h=72)
     picks, withheld, _state = _run(
         [item], recent_marker_probe=lambda n: True, time_budget_s=0)
-    assert [p["number"] for p in picks] == [7002], (
-        f"mur de temps atteint sur un grain ordinaire (withheld="
-        f"{[w[1] for w in withheld]})")
+    assert [p["number"] for p in picks] == [], (
+        "mur de temps atteint sur un grain ordinaire : le candidat n'a pas "
+        f"ete lu (withheld={[w[1] for w in withheld]})")
+    assert [w[0]["number"] for w in withheld] == [7002]
+    assert "mur de temps atteint" in withheld[0][1]

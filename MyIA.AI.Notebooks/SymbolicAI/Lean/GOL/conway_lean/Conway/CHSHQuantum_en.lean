@@ -71,7 +71,7 @@ separate from the discovery path, and both are readable here.
 - `Lean-13-Kochen-Specker.ipynb`: another obstruction to classical agreement,
   but combinatorial in nature (vector colorability) rather than analytic like
   Tsirelson's bound.
-- `Lean-16c-Conway-Free-Will-Theorem.ipynb`: the Conway-Kochen free will
+- `Lean-13e-Conway-Theoreme-Libre-Arbitre-Lean-Python.ipynb`: the Conway-Kochen free will
   theorem, which exploits the same frontier between classical and quantum
   correlations.
 - `Lean-13b-CHSH-Tsirelson-Native.ipynb`: the native notebook for this slice

@@ -1,0 +1,11 @@
+- name: RAG 04 Tokenisation from scratch
+  family: GenAI/RAG-et-Memoire-Semantique
+  python: MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch.ipynb
+  csharp: MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/04-Tokenisation-From-Scratch-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: 'Les deux carnets entraînent leur BPE pédagogique et utilisent le tokenizer réel Qwen3.5 : Transformers AutoTokenizer en Python et Microsoft.ML.Tokenizers configuré depuis les mêmes fichiers en C#.'
+  known_differences:
+  - 'C# fixe la révision des fichiers Qwen et vérifie leurs hashes ; la source Python charge la révision par défaut.'
+  - 'C# compare IDs et décodages à une fixture de 50 cas produite par AutoTokenizer Qwen2Tokenizer ; cette grille ne prouve pas la parité universelle.'
+  - 'C# utilise des points de code Unicode et compte explicitement le marqueur de fin de mot dans le vocabulaire de base ; les comptes de tokens du jouet conservent la chaîne vide du marqueur isolé.'

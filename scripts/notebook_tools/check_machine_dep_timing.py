@@ -502,7 +502,7 @@ def _categorize(line: str, snippet: str) -> str:
         return CATEGORY_DOMAIN_QUANTITY
     # Frontiere FP (frontier issue) : cout d'action dans une table de plan.
     # La duree est le RESULTAT d'une arithmetique « N + M = K unit » (ex
-    # Planners-8-Temporal cell[37] « 5 + 4 = 9 min » = duree d'une livraison
+    # Planners-08-Temporal-Python cell[37] « 5 + 4 = 9 min » = duree d'une livraison
     # drone). C'est un parametre DETERMINISTE du domaine planifie, pas une
     # duree machine. Le motif est precis (un vrai wallclock ne se rend presque
     # jamais comme une somme explicite `a + b = c unit`) -- Sudoku-13 (controle

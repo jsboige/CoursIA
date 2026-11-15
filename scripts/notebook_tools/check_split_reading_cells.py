@@ -53,7 +53,7 @@ INSEREES dans une PR qui violent la regle user « une sortie = une lecture » :
 Le mode diff prend deux notebooks en argument (``--base``) et signale chaque
 cellule ajoutee (par multiset de sources) dont la **nouvelle** position viole
 la regle. La difference des en-tetes vides vient de la campagne #17021
-(26 lectures inserees sur App-1-NQueens, 16 sur App-14b-ConnectFour) qui
+(26 lectures inserees sur App-01-NQueens-Python, 16 sur App-14b-ConnectFour) qui
 passait sous l'organe consecutive d'origine -- le veto user dit pourtant la
 meme regle.
 
@@ -205,8 +205,41 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # SECOND_READING a tort.
 EXERCISE_STATEMENT_TITLE_RE = re.compile(
     r"^(?:#{1,6}\s*|\*+|_+)\s*exerci[cs]e\b", re.IGNORECASE)
+# #26602 : une ANCRE HTML seule (`<a id="exercice-2"></a>`) precede parfois le
+# titre de l'enonce ou de l'en-tete de section. Une ancre ne porte AUCUN
+# contenu : elle sert la navigation. Or le carve-out #17777 testait la
+# PREMIERE ligne non vide -- donc l'ancre, et non le titre -- et l'enonce
+# legitime etait alors compte comme une lecture de la sortie voisine, ce qui
+# faisait rougir le `Split-reading ratchet` sur un enonce valide.
+# Mesure (14/11) : PR #26245 (`GameTheory-16i`, jumeau Python) -- 3 findings,
+# tous de cette forme ; PR #26238 (`GameTheory-09b`, jumeau Python) -- 1
+# finding de cette forme (la lecture voisine, enchainee sur l'enonce non
+# reconnu comme tel).
+# Le principe du carve-out (« le discriminant est le TITRE ») vaut quelle que
+# soit la position de l'ancre : on saute donc les lignes d'ancre seules
+# avant de tester le titre.
+HTML_ANCHOR_ONLY_RE = re.compile(
+    r"^<a\s+(?:id|name)\s*=\s*[\"'][^\"']*[\"']\s*>\s*</a>\s*$",
+    re.IGNORECASE,
+)
+# Les DEUX titres canoniques de la spec « finition de serie » (#19297,
+# 2026-10-05) sont structurels au meme titre que « conclusion » ou « synthese »
+# : ce sont des blocs de CLOTURE de carnet (recapitulatif, questions de
+# comprehension), pas des lectures d'une sortie. La liste fermee ci-dessus
+# datait de la convention d'avant la spec (titres voisins « Points cles a
+# retenir », « Conclusion ») et ne portait pas les titres canoniques :
+# tout carnet dont le chemin se termine par un stub d'exercice ajoutait alors
+# « ## A retenir » juste apres ce stub, et le cliquet (mode DIFF, bucket
+# EXERCISE_READING) le classait « lecture deguisee en prose titre » — un
+# Faux positif mesure : PR #25720 (Search-09d, `## A retenir` ajoute apres le
+# stub de l'exercice 3) -> rouge du `PR gate` alors que la spec IMPOSE ce
+# placement (le carnet se termine par les trois blocs, dans cet ordre, et les
+# exercices sont du corps). Le carve-out #17777 pose deja le principe --
+# « le discriminant est le TITRE, pas la longueur du corps » -- : un titre de
+# section reste structurel, quelle que soit la taille de son corps.
 SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
-    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
+    r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin"
+    r"|a retenir|verifiez votre comprehension)\b",
     re.IGNORECASE,
 )
 # Titres de TRANSITION de fin de carnet -- deuxieme famille structurelle.
@@ -246,7 +279,7 @@ CLOSING_NAV_TITLE_RE = re.compile(
 )
 # Carve-out #24164 : une **prose de transition vers l'etape suivante** n'est pas
 # une lecture de la sortie qui la precede. Classes mesurees sur 10
-# signalements (PR #23840, `App-3-NurseScheduling.ipynb`) -- decomposition
+# signalements (PR #23840, `App-03-NurseScheduling-Python.ipynb`) -- decomposition
 # rejouee sur le head (revue Hermes #24309), l'issue melangeait gras et
 # non-gras dans son compte 8/2 :
 #   (a) une cellule de **separateur horizontal** (`***`) posee devant un titre
@@ -351,10 +384,38 @@ def cell_title(src: str) -> str:
         line = line.strip()
         if not line:
             continue
+        if HTML_ANCHOR_ONLY_RE.match(line):
+            # #26602 : une ancre HTML seule ne porte aucun titre ; le titre
+            # est la ligne suivante. Sans ce saut, une lecture precedee de son
+            # ancre n'etait plus reconnue comme lecture (et une enonce
+            # precedee de son ancre ne l'etait plus comme enonce).
+            continue
         title = TITLE_STRIP_RE.sub("", line).strip()
         if title:
             return title
     return ""
+
+
+def title_line_index(lines: list[str]) -> int | None:
+    """Index de la premiere ligne de **titre** d'une cellule markdown.
+
+    « Premiere ligne non vide » n'est pas toujours la ligne de titre : une
+    ANCRE HTML seule (`<a id="exercice-2"></a>`) precede parfois le titre
+    (#26602). Une ancre ne porte aucun contenu -- elle sert la navigation --
+    donc elle est sautee ; la ligne suivante est alors le titre, et c'est
+    elle que les carve-outs doivent tester.
+
+    Les lignes vides sont sautees comme partout ailleurs ; les separateurs
+    (`***`, `---`) restent du ressort de `cell_title`, qui les sait ignorer.
+    """
+    for i, line in enumerate(lines):
+        s = line.strip()
+        if not s:
+            continue
+        if HTML_ANCHOR_ONLY_RE.match(s):
+            continue
+        return i
+    return None
 
 
 def is_interpretation_title(title: str) -> bool:
@@ -420,7 +481,12 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
     src = cell_source(cell).strip()
     if not src:
         return False
-    first_line = src.split("\n", 1)[0].lstrip()
+    # #26602 : la ligne de titre peut etre precedee d'une ancre HTML seule.
+    lines = src.splitlines()
+    k = title_line_index(lines)
+    if k is None:
+        return False
+    first_line = lines[k].lstrip()
     if first_line.startswith("#"):
         # Titre de section (## Conclusion / ## Ressources / ## Plan ...) :
         # structurel par le titre, jamais une lecture -- la longueur du corps
@@ -429,12 +495,43 @@ def looks_like_reading_after_exercise(cell: dict) -> bool:
         if (SECTION_TITLE_AFTER_EXERCISE_RE.match(title)
                 or CLOSING_NAV_TITLE_RE.match(title)):
             return False
-        body = src.split("\n", 1)[1].strip() if "\n" in src else ""
+        body = "\n".join(lines[k + 1:]).strip()
         return len(body) > 80
     # Pas de titre markdown : c'est un paragraphe libre. S'il est > 80 chars,
     # c'est vraisemblablement une lecture descriptive (pas juste un
     # en-tete de section).
     return len(src) > 80
+
+
+# Separateur de section horizontal : `***`, `---`, `___` (forme espacee
+# comprise, `* * *`). Une cellule markdown peut OUVRIR sur un tel separateur
+# avant son titre -- c'est le cas des titres d'exercice poses juste apres la
+# section precedante. (#23397)
+_HORIZONTAL_RULE_RE = re.compile(r"^(?:\*\s*){3,}$|^(?:-\s*){3,}$|^(?:_\s*){3,}$")
+
+
+def _first_title_line(src: str) -> str:
+    """Premiere ligne qui porte un TITRE dans `src`, en ignorant les lignes
+    vides et les separateurs de section qui le precedent en tete de cellule.
+
+    Un en-tete `### Exercice ...` qui n'est PAS en premiere ligne (parce
+    qu'un separateur `***`/`---`/`___` ou une ligne vide ouvre la cellule)
+    doit tout de meme compter comme un titre : c'est lui qui ferme la section,
+    pas le separateur. Sans ce geste, la remontee de `_section_header` passait
+    au-dessus du titre d'exercice et rattachait son stub a l'en-tete credite
+    deux cellules plus haut, blanchissant un vrai exercice. (#23397)
+    """
+    for line in src.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        if _HORIZONTAL_RULE_RE.match(line):
+            continue
+        if HTML_ANCHOR_ONLY_RE.match(line):
+            # #26602 : une ancre HTML seule ne porte pas de titre.
+            continue
+        return line
+    return ""
 
 
 def _governing_header(cells: list[dict], idx: int) -> dict | None:
@@ -460,6 +557,34 @@ def _governing_header(cells: list[dict], idx: int) -> dict | None:
     return None
 
 
+def _section_header(cells: list[dict], idx: int) -> dict | None:
+    """En-tete markdown de la SECTION qui contient la cellule `idx`.
+
+    Regle de SECTION : une cellule de CODE n'interrompt PAS la remontee --
+    le premier TITRE markdown trouve commande toute la section, combien
+    que soient les cellules de code entre le titre et la cellule. Elle
+    cohabite avec `_governing_header` (regle de LIEN, une cellule de code
+    rompt le lien), qui reste la regle du lien generique -- y compris son
+    miroir dans `count_exercises.py`.
+
+    Un TITRE compte meme quand il n'est pas en premiere ligne de sa cellule
+    (`_first_title_line` ignore les lignes vides et les separateurs `***` /
+    `---` / `___` qui l'ouvrent) : un titre d'exercice pose apres un
+    separateur ferme la section, sinon son stub serait rattache a l'en-tete
+    credite de la section precedante et blanchi. (#23397)
+    """
+    for j in range(idx - 1, -1, -1):
+        cell = cells[j]
+        if cell.get("cell_type") != "markdown":
+            continue
+        src = cell_source(cell).strip()
+        if not src:
+            continue
+        if _first_title_line(src).startswith("#"):
+            return cell
+    return None
+
+
 def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     """Vrai si la cellule de code `idx` est le code d'un EXEMPLE GUIDE CREDITE.
 
@@ -477,24 +602,25 @@ def is_credited_example_code(cells: list[dict], idx: int) -> bool:
     sous `### Exercice N` il reste un stub. L'ATTRIBUTION est exigee : un
     simple `### Exemple` sans credit ne dit rien du role du code.
 
-    LIMITE ASSUMEE -- le lien de section s'arrete a la PREMIERE cellule de
-    code (`_governing_header`), donc un exemple credite qui porte plusieurs
-    cellules de code n'est blanchi que sur la premiere ; les suivantes
-    restent classees « exercice ». La limite est codifiee par
-    `test_carveout_code_avant_titre_ne_rattache_pas`, et l'elargir changerait
-    cette semantique (une cellule de code sans titre ouvre une nouvelle
-    section : sans cela, un exercice pose apres un code quelconque serait
-    blanchi).
+    Regle de SECTION (#23397) : la commande se lit par `_section_header` --
+    le premier TITRE markdown au-dessus de la cellule, les cellules de code
+    intermediaires n'interrompant PAS la remontee. Un exemple credite qui
+    porte plusieurs cellules de code est blanchi sur TOUTES, dans la limite
+    de sa section : un NOUVEAU titre markdown (exemple : l'exercice qui suit
+    l'exemple) ferme la section, et le code sous ce titre redevient
+    classifiable « exercice » -- l'elargissement ne blanchit donc jamais un
+    exercice pose apres un code quelconque, qui ne partage pas l'en-tete
+    credite.
 
-    Mesure du 2026-10-29 sur le depot (151 en-tetes credites) : 133 sections
-    portent une seule cellule de code, 15 en portent deux, 3 en portent trois
-    -- soit 18 sections hors du carve-out. Aucune ne produit le faux positif :
-    sur ces 18 sections, aucune cellule non blanchie n'est classee « exercice »
-    par `is_exercise_cell` en etant suivie d'une lecture. La limite est donc
-    REELLE EN FORME et SANS INSTANCE mesuree : la documenter suffit, l'elargir
-    serait un changement de semantique non motive par une mesure.
+    Mesure du 2026-11-06 au head (1 751 carnets, 22 575 cellules de
+    code, 168 en-tetes credites, 16 sections multi-code) : la regle de
+    section blanchit 187 cellules contre 168 sous la regle de lien --
+    strictement superset, 19 cellules gagnees, aucune perdue ; 14 de ces
+    19 sont suivies d'une lecture (le cas ou le faux positif EXERCISE_READING
+    se produisait). Le role du code se lit par SECTION, pas par lien : c'est
+    ce que la mesure porte.
     """
-    header = _governing_header(cells, idx)
+    header = _section_header(cells, idx)
     return header is not None and is_credited_example_header(header)
 
 
@@ -561,10 +687,13 @@ def is_reading_or_prose(cell: dict) -> bool:
         return False
     if is_reading_cell(cell):
         return True
-    src = cell_source(cell).strip()
-    if not src:
+    # #26602 : la ligne de TITRE peut etre precedee d'une ancre HTML seule ;
+    # c'est elle qu'on teste, pas la premiere ligne non vide.
+    lines = cell_source(cell).splitlines()
+    k = title_line_index(lines)
+    if k is None:
         return False
-    return not src.split("\n", 1)[0].lstrip().startswith("#")
+    return not lines[k].lstrip().startswith("#")
 
 
 def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
@@ -574,7 +703,8 @@ def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
     Quatre conditions, toutes necessaires (#17777, decision ai-01
     2026-09-25 « option a, le carve-out d'organe ») :
 
-      1. la premiere ligne non vide est un en-tete `Exercice ...` ;
+      1. la premiere ligne de TITRE est un en-tete `Exercice ...` -- les
+         ancres HTML seules qui la precedent sont sautees (#26602) ;
       2. la cellule precedente **ou** suivante est un stub d'exercice
          (``is_exercise_cell``) -- l'enonce vit a cote de son stub ;
       3. aucun en-tete d'interpretation n'est dissimule dans le corps
@@ -589,7 +719,9 @@ def is_exercise_statement(cell: dict, cells: list[dict], idx: int) -> bool:
     if cell.get("cell_type") != "markdown":
         return False
     lines = cell_source(cell).splitlines()
-    k = next((i for i, line in enumerate(lines) if line.strip()), None)
+    # #26602 : le TITRE peut etre precede d'une ancre HTML seule ; c'est lui
+    # qu'on teste, pas la premiere ligne non vide.
+    k = title_line_index(lines)
     if k is None:
         return False
     if not EXERCISE_STATEMENT_TITLE_RE.match(lines[k].strip()):
@@ -685,7 +817,9 @@ def is_section_intro(cell: dict) -> bool:
     if is_reading_or_prose(cell):
         return False
     lines = cell_source(cell).splitlines()
-    k = next((i for i, line in enumerate(lines) if line.strip()), None)
+    # #26602 : comme `is_exercise_statement`, la ligne de titre est la
+    # premiere ligne non vide NON ANCRE.
+    k = title_line_index(lines)
     if k is None:
         return False
     body = lines[k + 1:]

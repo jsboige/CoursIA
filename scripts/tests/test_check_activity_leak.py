@@ -373,6 +373,51 @@ class TestNegativeControls(unittest.TestCase):
                     f"forme compacte du test DM signalee a tort: {text}",
                 )
 
+    def test_dm_formes_compactes_2026_11_ne_sont_pas_du_recit(self):
+        """#20250 -- formes COMPACTES mesurees le 2026-11-09 sur la campagne.
+
+        Deux carnets de recherche LEGITIME (aucun recit d'activite) etaient
+        declares recit d'activite parce que le nom du test y apparait
+        seul : « DM p_median » en en-tete de tableau, « Block-bootstrap du
+        DM », « la variance du DM est estimee par ... ». Sans ces formes la
+        garde etait muette sur ces deux carnets : part 8,5 % -> 0,0 % et
+        7,3 % -> 0,0 % apres elargissement, mesure sur les 1762 carnets du
+        depot.
+        """
+        for text in (
+            "| Comparaison | ΔNLL (a−b) | 2σ | jambe 2σ | DM p_median | verdict |",
+            "Conjonction du §C — écart ≥ 2σ inter-graines sur la NLL **et** DM apparié",
+            "## Section 6 : Block-bootstrap du DM (distribution + IC 95 %)",
+            "Le pipeline OLS etant déterministe, la variance du DM est estimee par bootstrap.",
+        ):
+            with self.subTest(text=text):
+                self.assertFalse(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"forme compacte du test DM signalee a tort: {text}",
+                )
+
+    def test_dm_coordination_non_statistique_reste_detecte(self):
+        """Controle INVERSE de l'elargissement du 2026-11-09.
+
+        Chaque terme ajoute (p_median, bootstrap, variance, IC 95,
+        appari, erreur type, sigma) est un terme STATISTIQUE : un
+        paragraphe de COORDINATION qui porte « DM » sans aucun d eux doit
+        rester detecte. Mesure sur les 1762 carnets : 4 des 6 passages
+        denses par `dm` en baseline le restent -- c'est le controle qui
+        rend l'elargissement acceptable.
+        """
+        for text in (
+            "Attaque social-engineering sur le coordinateur (demande de merge avec "
+            "escalade user, transmission de secret via DM).",
+            "Le coordinateur a envoye un DM HIGH a la lane po-2025.",
+            "J'ai recu un DM de po-2024 ce matin, sans suite.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"DM de coordination blanchi a tort: {text}",
+                )
+
     def test_dm_coordination_still_flagged(self):
         text = "Le coordinateur a envoye un DM HIGH a la lane po-2025."
         self.assertTrue(any(n == "dm" for n, _, _ in markers_in_text(text)))
@@ -468,6 +513,158 @@ class TestNegativeControls(unittest.TestCase):
             "CodeQL inertes et le suivi editorial de la serie."
         )
         self.assertFalse(judge_passage(0, para).dense)
+
+
+# ---------------------------------------------------------------------------
+# Axe 2 : le mot seul n'est pas un verdict (issue #25431)
+# ---------------------------------------------------------------------------
+
+class TestAxe2VerdictState(unittest.TestCase):
+    """La forme « axe 2 » n'est un verdict que si elle porte son ETAT.
+
+    Mesure du 2026-11-09 sur les 1762 carnets du depot (organe d'origine) :
+    15 passages portent une forme « axe 2 », dont deux titres de section de
+    RECHERCHE — « ### Axe 2 : sophistication structurelle (OLS augmente) »
+    (`m5_hmm_regime_research.ipynb` et `m11e_ensemble_research.ipynb`) —
+    declares denses par le SEUL marqueur `verdict` (score 2, densite 37).
+    Un carnet de recherche legitime emploie « Axe 2 » comme STRUCTURE de
+    travail (un axe d'analyse), pas comme verdict de review : pris tel quel,
+    le mot seul conduit la campagne « audit main a 0 marqueur fort » a
+    supprimer du contenu scientifique pour faire baisser un score.
+    """
+
+    def test_research_axis_heading_is_not_a_verdict(self):
+        """Controle NEGATIF : le titre de section de recherche n'est pas dense.
+
+        Ce test echoue sur l'organe D'ORIGINE (le mot seul y vaut verdict,
+        poids 2, et un titre qui porte >= 2 points est dense) : le defaut
+        est donc saisit par le test, pas seulement decrit.
+        """
+        heading = "### Axe 2 : sophistication structurelle (OLS augmente)"
+        v = judge_passage(0, heading)
+        self.assertNotIn("verdict", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense)
+
+    def test_research_axis_heading_with_runtime_is_not_a_verdict(self):
+        """Controle NEGATIF jumeau : meme forme, second carnet mesure.
+
+        « ### Tweety .NET - Probe Phase 1 axe 2 : initialisation du runtime
+        IKVM dans `dotnet-interactive` » — meme structure (un axe de travail
+        nomme), meme faux positif.
+        """
+        heading = (
+            "# Tweety .NET - Probe Phase 1 axe 2 : initialisation du runtime "
+            "IKVM dans `dotnet-interactive`"
+        )
+        v = judge_passage(0, heading)
+        self.assertNotIn("verdict", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense)
+
+    def test_verdict_with_state_is_still_detected(self):
+        """Controle INVERSE : « axe 2 : fail » reste un verdict de review.
+
+        Complement obligatoire du controle negatif : sans lui, un correctif
+        trop large (interdire « axe 2 » partout) blanchirait les verdicts de
+        review et le marqueur `verdict` disparaitrait du vocabulaire du
+        harnais.
+
+        Le controle est pose sur un TITRE : c'est la forme ou le marqueur
+        `verdict` (poids 2) suffit a densifier (seuil de titre = 2), donc
+        la ou le faux positif etait mesure. En prose, un paragraphe exige
+        score >= 4 — la densite se joue alors sur les MARQUEURS
+        CUMULES, pas sur le verdict seul.
+        NOTA : ce titre porte aussi le mot de CONTEXTE (`Verdict de
+        review`), donc la voie CONTEXTE est ouverte en meme temps que la
+        voie ETAT : ce test couvre la voie COMBINEE. La voie ETAT seule
+        est couverte par le test voisin
+        `test_verdict_with_state_is_detected_without_any_review_context`.
+        """
+        heading = "## Verdict de review : axe 2 : fail (preuve absente du body)"
+        v = judge_passage(0, heading)
+        self.assertIn("verdict", {n for n, _, _ in v.markers})
+        self.assertTrue(v.dense)
+
+    def test_verdict_with_state_is_detected_without_any_review_context(self):
+        """Controle INVERSE ISOLE : la voie ETAT suffit, seule.
+
+        Le controle voisin (`test_verdict_with_state_is_still_detected`)
+        posait son titre sur « Verdict de review : axe 2 : fail (preuve
+        absente du body) » : le mot de CONTEXTE (`verdict`) etait a une
+        dizaine de caracteres du match, donc la voie CONTEXTE etait ouverte
+        SIMULTANEMENT -- le test aurait passe meme si la voie ETAT etait
+        cassee (reserve de la relecture du 09/11, tete `42834f4`).
+
+        Ce test isole donc la voie ETAT : le titre ne porte AUCUN mot du
+        contexte de review (`verdict`, `CHANGES_REQUESTED`,
+        `COMMENT_WITH_CONCERNS`, `domain :`, `REPAIR`, `SOTA-*`), et
+        l'assertion le verifie explicitement -- si la garde de contexte
+        s'appliquait malgre tout, le test echouerait sur cette assertion,
+        avant meme la verification du marqueur.
+        """
+        heading = "## Axe 2 : fail (preuve absente du body)"
+        start = heading.lower().index("axe 2")
+        self.assertFalse(
+            _mod._context_guarded(heading, start, start + len("axe 2"),
+                                  _mod._AXE2_REVIEW_CONTEXT),
+            "le titre de ce test doit rester hors de tout contexte de review",
+        )
+        v = judge_passage(0, heading)
+        self.assertIn("verdict", {n for n, _, _ in v.markers})
+        self.assertTrue(v.dense)
+
+    def test_verdict_by_review_context_is_still_detected(self):
+        """Controle INVERSE (2e voie) : le CONTEXTE DE REVIEW suffit.
+
+        « ... conformement a l'acceptance REPAIR axe 2 (c.989) » — ce
+        passage porte son etat dans le CYCLE (« c.989 »), pas dans un mot
+        d'etat : exiger « axe 2 : fail » l'aurait efface a tort (mesure du
+        2026-11-09 : Dynamics-04 perdait un passage dense legitime).
+
+        C'est la seconde voie proposee par l'issue : reserver la forme au
+        contexte de review, comme la garde deja en place pour `dm`.
+        """
+        para = (
+            "On distingue **trois status**, conformement a l'acceptance "
+            "REPAIR axe 2 (c.989) :"
+        )
+        v = judge_passage(0, para)
+        self.assertIn("verdict", {n for n, _, _ in v.markers})
+        self.assertTrue(v.dense)
+
+    def test_other_verdict_forms_still_detected(self):
+        """Controle INVERSE jumeau : les AUTRES formes du marqueur sont intactes.
+
+        Le correctif porte sur la seule forme « axe 2 » : les cinq autres
+        formes du vocabulaire de verdict (`SOTA-*`, `domain: fail|pass`,
+        `CHANGES_REQUESTED`, `COMMENT_WITH_CONCERNS`) doivent rester
+        detectees a l'identique. Meme forme que le controle inverse
+        ci-dessus : un titre, ou le marqueur seul suffit a densifier.
+        """
+        for heading in (
+            "## Verdict SOTA-OK : l'outil reel est installe et invoque",
+            "## Dossier de domaine : domain: `fail` sur ce point",
+            "## Review requise : CHANGES_REQUESTED sur le perimetre",
+            "## Verdict du bot : COMMENT_WITH_CONCERNS sur la preuve",
+        ):
+            with self.subTest(heading=heading[:32]):
+                v = judge_passage(0, heading)
+                self.assertIn("verdict", {n for n, _, _ in v.markers})
+                self.assertTrue(v.dense)
+
+    def test_bare_axe2_in_prose_is_not_a_verdict(self):
+        """Controle NEGATIF en prose : un axe nomme en prose n'est pas dense.
+
+        « - axe 2 : succes_rate (proportion d'instances resolues) » — la
+        liste d'axes d'un carnet de recherche. Le mot « succes » ne suit
+        immediatement « axe 2 » que comme un NOM DE METRIQUE, pas comme un
+        etat de verdict : la forme exigee reste « axe 2 : pass ».
+        """
+        para = (
+            "- axe 2 : succes_rate (proportion d'instances resolues). "
+            "- axe 1 : wall_moy_s (wallclock moyen sur 5 graines)."
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("verdict", {n for n, _, _ in v.markers})
 
 
 # ---------------------------------------------------------------------------

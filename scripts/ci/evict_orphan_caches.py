@@ -339,6 +339,20 @@ def _parse_args() -> argparse.Namespace:
         "possible restore.",
     )
     p.add_argument(
+        "--floating-idle-hours",
+        type=int,
+        default=168,
+        help="Evict a setup-python cache written under a FLOATING python spec "
+        "(`python-version: '3.11'`) when its generation has not been read for "
+        "this many hours (default: 168 = 7 days; 0 disables). #19658: a "
+        "floating spec makes every resolved patch of the runner fleet write "
+        "its own cache key for the SAME dependency hash (measured "
+        "2026-11-06: 3.11.16/.17/.18 = 1 208 Mo for hash 813bda...). A rank "
+        "cap was rejected by measurement: 3.11.16 was READ the same day, so "
+        "evicting by rank would only churn the cache back. Only a generation "
+        "provably idle is dead -- the fleet has moved past it.",
+    )
+    p.add_argument(
         "--no-dedupe",
         action="store_true",
         help="Disable the duplicate-key pass (#19658). By default, entries of a "
@@ -950,6 +964,58 @@ def _mark_unrequested_keys(
         r.update({"verdict": "EVICT", "reason": "unrequested_by_main_workflows"})
 
 
+def _mark_floating_generations(
+    records: list[dict[str, Any]], main_branch: str, idle_hours: int
+) -> None:
+    """Evince les generations MORTES d'une spec python FLOTTANTE (#19658).
+
+    Une cle `setup-python-...-python-3.11.17-pip-<hash>` n'est relisible que
+    par un run qui resout exactement `3.11.17`. Quand le workflow declare
+    `python-version: '3.11'` (spec flottante), chaque patch present sur un
+    runner du parc ecrit SA propre cle pour le meme hash de dependances :
+    mesure du 2026-11-06, trois generations du hash `813bda...` (3.11.16,
+    3.11.17, 3.11.18) coexistent sous `refs/heads/main`, 1 208 Mo pour un
+    seul jeu de dependances. `_mark_unrequested_keys` les protege toutes --
+    la spec flottante « couvre » chaque version resolue -- donc rien ne
+    bornait leur nombre.
+
+    Un cap par RANG (garder les N plus recentes) a ete rejete par la mesure :
+    la generation 3.11.16 etait encore LUE le jour meme (12:27Z), donc
+    l'evincer ne libere rien -- le runner qui la resout la reecrira au run
+    suivant. La seule generation evicible sans churn est celle **prouvee
+    morte** : pas lue depuis `idle_hours`. Quand le parc quitte un patch,
+    son entree devient idle et sort au balayage suivant.
+
+    Une spec EXACTE (`3.11.17 == declared_by`) nomme sa generation : elle
+    reste hors de cette passe. Les copies hors branche par defaut ne sont
+    pas touchees ici (la passe de deduplication reste leur organe).
+
+    Fail-CLOSED herite : cette passe ne voit que des records deja marques
+    `requested_by_main` -- si la demande etait illisible, le reason vaut
+    `unrequested_check_failed` et rien n'est evince.
+    """
+    if idle_hours <= 0:
+        return
+    default_ref = f"refs/heads/{main_branch}"
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=idle_hours)
+    for r in records:
+        if r.get("verdict") != "KEEP" or r.get("reason") != "requested_by_main":
+            continue
+        if str(r.get("ref", "")) != default_ref:
+            continue
+        declared = str(r.get("declared_by", ""))
+        version = str(r.get("setup_python_version", ""))
+        if not declared or declared == version:
+            continue
+        if _parse_iso(r["last_accessed_at"]) < cutoff:
+            r.update(
+                {
+                    "verdict": "EVICT",
+                    "reason": f"floating_generation_idle_{idle_hours}h",
+                }
+            )
+
+
 def _print_human(records: list[dict[str, Any]], applied: bool) -> None:
     for r in records:
         verdict = r["verdict"]
@@ -1056,6 +1122,9 @@ def main() -> int:
                 file=sys.stderr,
             )
         _mark_unrequested_keys(records, demand)
+        _mark_floating_generations(
+            records, args.main_branch, args.floating_idle_hours
+        )
 
     applied = args.apply
     if applied:

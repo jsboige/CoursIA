@@ -14,7 +14,7 @@
 | **2130 exact_binomial_checks** | ✓ exact match upstream | idem (p ≤ 199, 43 premiers concernés) |
 | **43 quarter_cross_checks** | ✓ subset of upstream 328 (upstream scanne range(13, 5000)) | idem (43 premiers ≡ 1 mod 4 dans `[7, 499]`) |
 | **0 désaccord inter-backends** | ✓ Cornacchia+quarter == prefix_values+original_values | idem |
-| **status: passed** | ✓ | `example_results/p1_plus_python_validation.json` |
+| **status: passed** | ✓ | `scripts/cartier_miller/example_results/p1_plus_python_validation.json` |
 
 **Verdict** : tranche Python-only **PASS** sur les 92 premiers — la coherence Cornacchia/quarter vs recurrences indépendantes (telescoping `(a, B, A, C, D)` + `(t, U)`) est **vérifiée littérallement** sur 100 % des 10809 stopping indices + 2130 exact_binomial_checks + 43 quarter_cross_checks.
 
@@ -79,7 +79,7 @@ Pour chaque premier `p` :
 # status: passed
 ```
 
-### 2.2 JSON (`example_results/p1_plus_python_validation.json`)
+### 2.2 JSON (`scripts/cartier_miller/example_results/p1_plus_python_validation.json`)
 
 ```json
 {
@@ -106,7 +106,7 @@ Pour chaque premier `p` :
 }
 ```
 
-### 2.3 CSV (`example_results/p1_plus_python_truth.csv`)
+### 2.3 CSV (`scripts/cartier_miller/example_results/p1_plus_python_truth.csv`)
 
 Header + 92 rows : `p, L_max, stopping_indices, exact_binomial, quarter_applicable`.
 
@@ -210,7 +210,7 @@ Le binaire n'est **pas** committé : il est construit localement, hors dépôt. 
 
 Une reconstruction avec un autre jeu de correctifs GCC/MSYS2 ne sera **pas** bit-identique — c'est la raison pour laquelle l'empreinte est présentée comme une ancre et non comme un critère de reproduction.
 
-### 7.2 Résultats (`example_results/p1_plus_harvey_validation.json`, driver `scripts/cartier_miller/run_harvey_p1_plus.py`)
+### 7.2 Résultats (`scripts/cartier_miller/example_results/p1_plus_harvey_validation.json`, driver `scripts/cartier_miller/run_harvey_p1_plus.py`)
 
 | Critère | Attendu (upstream) | Mesuré | Verdict |
 |---|---|---|---|

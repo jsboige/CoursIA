@@ -23,4 +23,4 @@ npx slidev slides/S8-semantic-web/slides.md
 
 ## Notebooks associes
 
-`MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/` — 13 notebooks SW-1 a SW-13
+`MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/` — les notebooks SW-1 a SW-13
