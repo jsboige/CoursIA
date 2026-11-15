@@ -4475,7 +4475,70 @@ TRANCHE46: list[Guard] = [
     ),
 ]
 
-# TRANCHE 47 (#26782) : densite de commentaires du code des carnets.
+# ---------------------------------------------------------------------------
+# TRANCHE 47 (#26690) -- code de notebook non commente
+#
+# Demande user, verbatim, en commentaire de PR le 2026-11-15 :
+#   #26607 « le code est non commente et tres difficile a lire. Le CI devrait
+#            le rejeter sur ces deux bases. »
+#   #26616 « code non commente et tres dur a lire. Il nous faut un organe
+#            contre ca. »
+#
+# BLOQUANT, et non advisory : le user demande le rejet, pas un signalement.
+# Un garde qui n'a jamais bloque est decoratif, et c'est exactement ce qu'il
+# denonce.
+#
+# Le stock de `main` ne rougit personne : le garde est borne au diff (l'argv
+# porte `--diff {base_ref}`, vu par l'heuristique du picker, donc pas de
+# `diff_bounded` a declarer en plus) et ne juge que les cellules AJOUTEES ou
+# MODIFIEES par la PR. Mesure du 2026-11-15 sur `main` a `ffdfd724e3f` :
+# 1988 cellules signalees dans 723 carnets sur 23531 cellules de code (8,4 %),
+# mediane 1 a 2 cellules par carnet -- jamais imputees a une PR qui ne les
+# touche pas.
+#
+# LA LANGUE DU NOYAU PORTE LA MESURE. Une premiere version comptait `#`
+# partout : 4490 cellules, dont 2703 C# sur 4092 -- or le C# ne commente pas
+# avec `#`. Ce n'etaient pas des defauts de lisibilite. Le compteur suit
+# desormais le kernelspec : `//` et `/* */` en C#, `--` et `/- -/` en Lean,
+# chaines masquees dans les deux cas. Resultat mesure : 1988 cellules, dont
+# 331 C# (8,1 % du C# au lieu de 66 %) et 3 Lean.
+#
+# Controles sur les deux PRs fondatrices, `--diff origin/main` a leur tete :
+#   #26607 -> 3 cellules, toutes dans le jumeau C# NEUF ; les 5 cellules
+#             Python deja fautives sur `main` ne sont pas imputees ;
+#   #26616 -> 3 cellules, dont la cellule Python de 75 lignes a 0 commentaire
+#             que le user citait nominativement.
+# ---------------------------------------------------------------------------
+TRANCHE47: list[Guard] = [
+    Guard(
+        name="Uncommented code (#26690)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_uncommented_code.py",
+            "scripts/notebook_tools/tests/test_check_uncommented_code.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        # Le detecteur prouve qu'il tire avant de rendre un vert (#11685).
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_check_uncommented_code.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_uncommented_code.py",
+            "--diff", "{base_ref}",
+        ],
+        blocking=True,
+        needs_base=True,
+        absorbed=True,
+        # rc=2 : erreur d'invocation (carnet illisible). Incident, jamais un
+        # vert silencieux.
+        warn_rc=(2,),
+    ),
+]
+
+# TRANCHE 48 (#26782) : densite de commentaires du code des carnets.
 # Concerns user #26607/#26616 (via #26613) : « le code est non commente et
 # tres difficile a lire. Le CI devrait le rejeter ». Deux axes :
 #  - axe 1 BLOQUANT : ratchet base-vs-PR. Un carnet AJOUTE >= 40 lignes de
@@ -4486,7 +4549,9 @@ TRANCHE46: list[Guard] = [
 #    lignes sans commentaire, identifiants d'une lettre hors indices de
 #    boucle). Rapporte, jamais bloquant.
 # Garde natif ne dans la voie rapide : aucun workflow unitaire a retirer.
-TRANCHE47: list[Guard] = [
+# Numerotation : TRANCHE47 etait le numero de branche ; main l'a pris pour
+# l'organe #26690 (PR #26694) -- renumerote 48 au conflit, organes distincts.
+TRANCHE48: list[Guard] = [
     Guard(
         name="Comment-density ratchet (base vs PR)",
         source=FAST_LANE_NATIVE,
