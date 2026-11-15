@@ -2,7 +2,7 @@
 
 Sub-genre `tooling-quant-classifier` distinct de c.1266 `tooling-v3-detector`
 (G-VAR-3 defensable). Golden set fondateur = les 5 PRs de la vague #8052
-(#9426 App-7-Wordle, #9427 App-11-Picross, #9428 Search-5-GeneticAlgorithms,
+(#9426 App-07-Wordle-Python, #9427 App-11-Picross-Python, #9428 Search-5-GeneticAlgorithms,
 #9429 GT-4c-NashExistence, + cas durée estimée structurel).
 """
 
@@ -119,7 +119,7 @@ class TestGoldenSet8052:
     """Golden set = les 5 PRs de la vague #8052 (#9426-#9429) + 1 cas structurel."""
 
     def test_9426_app7_wordle_tentatives(self):
-        """#9426 : App-7-Wordle `~3.3` -> `~3.1` tentatives.
+        """#9426 : App-07-Wordle-Python `~3.3` -> `~3.1` tentatives.
 
         Verdict attendu : STRUCTUREL (metrique d'algorithme, ordre de grandeur
         pedagogique, pas un timing runtime).
@@ -129,7 +129,7 @@ class TestGoldenSet8052:
         assert cls == "STRUCTUREL"
 
     def test_9427_app11_picross_speedup_structurel(self):
-        """#9427 : App-11-Picross speedup `2.78e24x` = STRUCTUREL (combinatorial).
+        """#9427 : App-11-Picross-Python speedup `2.78e24x` = STRUCTUREL (combinatorial).
 
         Verdict attendu : STRUCTUREL (formule `2^225 combinaisons` -> `2.78e24x`).
         """
@@ -138,7 +138,7 @@ class TestGoldenSet8052:
         assert cls == "STRUCTUREL"
 
     def test_9427_app11_picross_timing_machine_dep(self):
-        """#9427 : App-11-Picross `(28-364 ms mesure)` = MACHINE-DEP (timing runtime)."""
+        """#9427 : App-11-Picross-Python `(28-364 ms mesure)` = MACHINE-DEP (timing runtime)."""
         cls, _ = _classify_quant_value("28", 28.0,
                                        "durée d'exécution : (", "-364 ms mesure sur 100 tirages)")
         assert cls == "MACHINE-DEP"

@@ -797,17 +797,17 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-02-GraphColoring-Statistical-Validity-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
@@ -822,27 +822,27 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward-Python.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-05-Timetabling-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-6-Minesweeper-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-06-Minesweeper-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7-Wordle-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-07-Wordle-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-08-MiniZinc-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
     {

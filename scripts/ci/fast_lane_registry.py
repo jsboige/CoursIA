@@ -2764,7 +2764,7 @@ _STALE_TRAILER = (
     "`stale-claim-report` run artifact holds the structured JSON.\n"
     "Rationale: the sibling detector above only compares a claim to the "
     "outputs of the cells that PRECEDE it; a claim written in a cell that "
-    "precedes its code (App-5-Timetabling c.2/c.4) is invisible to it, and a "
+    "precedes its code (App-05-Timetabling-Python c.2/c.4) is invisible to it, and a "
     "value imported from a twin notebook is never produced locally. See "
     "`python scripts/check_stale_claims.py --help`."
 )
