@@ -1,0 +1,52 @@
+Scanning 1585 notebooks...
+
+Results: 20 HIGH (leaks), 3 MEDIUM (duplicates), 83 LOW (leaky-stub advisory), 0 errors
+Scanned: 1585 notebooks
+
+=== HIGH SEVERITY (Solution Leaks) ===
+  [HIGH] MyIA.AI.Notebooks\GameTheory\GameTheory-08d-Lean-CGT-Lean.ipynb:cell 15 — Solution leak: Exercice ? has 349 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\GenAI\FineTuning\FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb:cell 23 — Solution leak: Exercice 3 has 672 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\GenAI\Integrations-DotNet\Orleans\01-Orleans-Grains-Agents.ipynb:cell 10 — Solution leak: Exercice 1 has 491 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\GenAI\Integrations-DotNet\Orleans\01-Orleans-Grains-Agents.ipynb:cell 12 — Solution leak: Exercice 2 has 493 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\GenAI\Integrations-DotNet\Orleans\01-Orleans-Grains-Agents.ipynb:cell 14 — Solution leak: Exercice 3 has 740 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\GenAI\Integrations-DotNet\Orleans\04-Orleans-Aspire-Cluster-Redis.ipynb:cell 31 — Solution leak: Exercice ? has 4840 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\IIT\ICT-Series\ICT-42b-InoculationBifurcation-9B-Python.ipynb:cell 34 — Solution leak: Exercice 1 has 568 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\IIT\ICT-Series\ICT-42b-InoculationBifurcation-9B-Python.ipynb:cell 36 — Solution leak: Exercice 2 has 456 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\IIT\ICT-Series\ICT-42b-InoculationBifurcation-9B-Python.ipynb:cell 38 — Solution leak: Exercice 3 has 672 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\IIT\ICT-Series\ICT-48-WolframClasses-ThermoSignature-Python.ipynb:cell 19 — Solution leak: Exercice 2 has 1124 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\IIT\ICT-Series\ICT-48-WolframClasses-ThermoSignature-Python.ipynb:cell 22 — Solution leak: Exercice 3 has 642 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\IIT\ICT-Series\ICT-48-WolframClasses-ThermoSignature-Python.ipynb:cell 25 — Solution leak: Exercice 4 has 922 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\Probas\Applications\Percolation\Percolation-02-Lean.ipynb:cell 20 — Solution leak: Exercice ? has 397 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-21b-MIMO-Converse-Native.ipynb:cell 29 — Solution leak: Exercice ? has 1336 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-24-Calibration-Native-Companion.ipynb:cell 26 — Solution leak: Exercice ? has 285 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-25-Coherence-et-Temoin.ipynb:cell 4 — Solution leak: Exercice ? has 1131 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\SymbolicAI\Lean\Lean-25-Coherence-et-Temoin.ipynb:cell 7 — Solution leak: Exercice ? has 1288 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\SymbolicAI\Lean\Serre100\11-corps-quadratiques-reciprocite-quadratique.ipynb:cell 15 — Solution leak: Exercice ? has 1125 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\SymbolicAI\Lean\Serre100\13-jacobi-kronecker-reciprocite-II.ipynb:cell 15 — Solution leak: Exercice ? has 724 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+  [HIGH] MyIA.AI.Notebooks\SymbolicAI\Lean\Serre100\15-quatre-carres-lagrange.ipynb:cell 12 — Solution leak: Exercice ? has 523 chars of code (not stub)
+    Fix: Give the exercise its own stub code cell (canonical), or replace the resolved code with a stub. Relabel the header to 'Exemple guide' ONLY if the content is genuinely a worked example - classification is by CONTENT (.claude/rules/exercise-example-labeling.md).
+
+=== MEDIUM SEVERITY (Duplicate Numbers) ===
+  [MEDIUM] MyIA.AI.Notebooks\Search\Part1-Foundations\Search-07-MCTS-And-Beyond-CSharp.ipynb:cell 29 — Duplicate Exercice 2 (first at cell 24)
+  [MEDIUM] MyIA.AI.Notebooks\Search\Part1-Foundations\Search-07-MCTS-And-Beyond.ipynb:cell 30 — Duplicate Exercice 2 (first at cell 23)
+  [MEDIUM] MyIA.AI.Notebooks\SymbolicAI\SymbolicLearning\SL-7-NeuroSymbolic.ipynb:cell 36 — Duplicate Exercice 4 (first at cell 34)
+
