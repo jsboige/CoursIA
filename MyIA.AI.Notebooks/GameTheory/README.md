@@ -323,6 +323,8 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 | 16i | [Appariage stable & stratégie](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | Qui peut tricher dans Gale–Shapley : le côté proposeur est protégé, le côté répondant peut mentir — recherche exhaustive de déclarations profitables | Python | Licence |
 | 16k | [Théorie des enchères](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | Le prix mesuré de l'information : vrais-facité de Vickrey, réserve optimale de Myerson, saut de revenu et équivalence de revenu | Python | Recherche |
 
+**Parité de 16c — dimension paiement** : [Python](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [C#](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb). Énumération native des 4 096 mécanismes et comparaison des contraintes locales explicites, sans solveur externe.
+
 16d a rejoint la [sous-série Coalitions](Coalitions/README.md) (carnet 03) : l'échange de reins est un mécanisme d'appariement — de la famille de Kuhn-Munkres, carnets 04 et 05 — et non un mécanisme de révélation.
 
 L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la [sous-série SocialChoice](#sous-série-socialchoice).
