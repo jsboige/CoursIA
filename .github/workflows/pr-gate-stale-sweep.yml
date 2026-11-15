@@ -409,7 +409,7 @@ jobs:
           # leur allocation et la fin du step les laissait derriere lui --
           # exactement le defaut que la review reprochait a `LIST_ERR`.
           # Tous les chemins fixes du step sont deja nommes ci-dessous.
-          trap 'rm -f "${LIST_ERR:-}" "${OMIT_ERR:-}" "${WF_ERR:-}" "${WFNAME_ERR:-}" "${QUEUE_ERR:-}" "${CAND_ERR:-}" /tmp/openprs.txt /tmp/runs.jsonl /tmp/mute.txt /tmp/wfnames.json /tmp/candidates.txt' EXIT
+          trap 'rm -f "${LIST_ERR:-}" "${OMIT_ERR:-}" "${WF_ERR:-}" "${WFNAME_ERR:-}" "${QUEUE_ERR:-}" "${CAND_ERR:-}" /tmp/openprs.txt /tmp/runs.jsonl /tmp/mute.txt /tmp/wfnames.json /tmp/candidates.txt /tmp/legs_summary.json /tmp/legs_stdout.json /tmp/fetch_pr_checkruns.py' EXIT
           LIST_ERR=$(mktemp)
           LIST_CODE='aucun code HTTP'
           LIST_DETAIL='aucun message de gh'
@@ -419,122 +419,82 @@ jobs:
 
           : > /tmp/runs.jsonl
           : > /tmp/mute.txt
-          # #17566 -- compter LISTED/INSPECTED/OMITTED pour ne plus rendre un
-          # vert a vide quand l'appel REST de la boucle tombe sous rate-limit.
-          # Meme famille d'annotation que la garde du listing ci-dessus
-          # (#17243) : `::error::[stale-sweep] NO-OP -- ...` est triable par
-          # `scripts/ci/classify_job_deaths.py`. Avant ce garde, un balayage
-          # dont tous les appels par PR echouaient rendait `success` avec
-          # `runs.jsonl` vide (run 35866395602 du 2026-09-23T13:20:35Z, etc.).
+          # #26739 -- la lecture des jambes de check passe par un COLLECTEUR
+          # (`scripts/ci/fetch_pr_checkruns.py`), qui produit EXACTEMENT le
+          # fichier que le selecteur consomme (`checks` + `workflows`, memes
+          # noms de champs) : ni le selecteur ni ses tests ne sont touches.
+          #
+          # Ce que le collecteur change, et ce qu'il ne change pas :
+          #  - les JAMBES restent lues en REST, une lecture par PR : le
+          #    passage des jambes en GraphQL n'est PAS une economie (mesure
+          #    2026-11-15 : le schema borne le fan-out -- 25 PR x 20 suites x
+          #    20 runs echoue "Resource limits for this query exceeded" --
+          #    et la meme PR rend 29 jambes en GraphQL contre 94 en REST) ;
+          #  - les PAGES sont lues : l'endpoint rend 100 check-runs par page
+          #    et le balayeur ne lisait que la PREMIERE. 69 PR sur 171 (40 %)
+          #    portent plus de 100 check-runs, et pour 19 d'entre elles la
+          #    page 1 ne montre AUCUNE jambe `PR gate` -- dont 18 au verdict
+          #    ROUGE (9 `failure`, 9 `cancelled`). C'etait un defaut de
+          #    CORRECTION du balayeur, corrige ici ;
+          #  - la CARTE des runs (clef de pliage (workflow_id, name), #11808)
+          #    est lue en GraphQL, en bloc : 18 appels pour 171 PR, contre
+          #    150 appels REST (un par PR porteuse d'une jambe `PR gate`) ;
+          #  - la conclusion d'un RUN de workflow (`startup_failure`) n'est
+          #    exposee par aucun champ GraphQL : elle reste lue en REST, mais
+          #    pour les SEULES PRs qui portent une jambe `PR gate` ROUGE --
+          #    la seule population dont le selecteur la consomme (#21300) ;
+          #  - le cout du passage est nomme : la ligne `api-quota:`.
+          #
+          # Le collecteur est un SCRIPT du depot ; ce job est volontairement
+          # SANS checkout (le `pr_gate.py` avait ete retire pour economiser
+          # ~40 s de runner a chaque passage -- cf. l'en-tete de l'etape
+          # "Bootstrap gh"). Il est donc recupere par l'API `/contents` (UN
+          # appel, base64) plutot que par un checkout SPARSE : le cout du
+          # runner reste ce qu'il etait, et le script lu EST celui du ref du
+          # passage (jamais une copie perimee).
+          COLLECTOR=/tmp/fetch_pr_checkruns.py
+          LEGS_SUMMARY=/tmp/legs_summary.json
+          OMIT_ERR=$(mktemp)
+          OMIT_CODE='aucun code HTTP'
+          OMIT_DETAIL='aucun message de gh'
           LISTED=0
           INSPECTED=0
           OMITTED=0
-          # #22215 point 2 -- meme contrat que la garde du listing : une lecture
-          # ratee nomme son endpoint et son code. Les valeurs de repli sont
-          # posees avant la boucle (`set -u`), et la derniere defaillance est
-          # conservee pour que le NO-OP total dise WHICH call failed, pas
-          # seulement combien de PRs ont ete omises.
-          OMIT_ERR=$(mktemp)
-          OMIT_SHA='aucun'
-          OMIT_CODE='aucun code HTTP'
-          OMIT_DETAIL='aucun message de gh'
-          # #22215 -- WFMAP subissait le defaut que #22277 reparait sur le
-          # listing : un echec d'appel laissait `2>/dev/null` jeter le stderr,
-          # la carte retombait vide, et le pliage perdait sa clef workflow_id
-          # SANS AUCUN signal -- indistinguable d'un SHA sans runs. Meme
-          # contrat que OMIT : compter, garder la DERNIERE defaillance, et le
-          # resume apres la boucle nomme l'endpoint et le code.
-          WF_ERR=$(mktemp)
           WFMAP_FAIL=0
-          WFMAP_SHA='aucun'
-          WFMAP_CODE='aucun code HTTP'
-          WFMAP_DETAIL='aucun message de gh'
-          while read -r NUM SHA FORK MSTATE; do
-            [ -z "${NUM:-}" ] && continue
-            LISTED=$((LISTED+1))
-            # details_url (.../actions/runs/{run_id}/job/{job_id}) is collected
-            # on purpose: it is the only field carrying the run id, which the
-            # selector resolves through the map below to fold check-runs per
-            # (workflow_id, name) instead of per name -- three workflows emit a
-            # job named "Ratchet (base vs PR)" and a name-only fold merges their
-            # verdicts (#11808).
-            # `title` (#15825): the collected output.title, "" when the
-            # check-run concluded without one -- the mute-leg signal the
-            # selector routes to the repair stream instead of a re-run.
-            # #17566 -- ne PAS `continue` en silence sur echec de l'appel : la
-            # PR est omise, on incremente OMITTED, et la garde NO-OP plus bas
-            # transformera une omission totale en `failure`. Le balayage reste
-            # utile pour les PRs que l'appel a reussies a inspecter.
-            if ! BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>"$OMIT_ERR"); then
-              OMITTED=$((OMITTED+1))
-              OMIT_SHA=$SHA
-              OMIT_CODE=$(grep -oE 'HTTP [0-9]+' "$OMIT_ERR" | tail -1 || true); [ -n "$OMIT_CODE" ] || OMIT_CODE='aucun code HTTP'
-              OMIT_DETAIL=$(tr '\n' ' ' < "$OMIT_ERR" | cut -c1-300); [ -n "$OMIT_DETAIL" ] || OMIT_DETAIL='aucun message de gh'
-              continue
-            fi
-            INSPECTED=$((INSPECTED+1))
-            # Carte run_id -> workflow_id. UN seul appel de plus par PR (pas par
-            # run) : la liste des runs du SHA porte deja `workflow_id`. C'est ce
-            # qui permet de replier les runs JUMEAUX d'un MEME workflow sans
-            # jamais fusionner deux workflows homonymes (#11808). Si l'appel
-            # echoue, la carte est vide et la cle retombe sur run_id : le
-            # comportement anterieur, jamais plus permissif.
-            # `|| WFMAP=''`: an unguarded assignment failure would kill the
-            # step under `bash -e` BEFORE the empty-map fallback below runs
-            # (same silent death as run 35188299290, zero runtime output).
-            #
-            # #15770 -- cet appel n'est fait QUE si la PR porte une jambe
-            # `PR gate`. La carte n'est consommee que par `_fold_key` (repli de
-            # repliement des runs jumeaux, #11808), et le selecteur `continue`
-            # AVANT de l'utiliser des qu'il n'y a aucune jambe `PR gate` -- donc
-            # l'appel est du travail mort pour toute la population non
-            # candidate, qui est la majorite du pool ouvert. C'est le levier de
-            # cout de cette etape (mesure 2026-09-21 : etape 3 = 11 min pour
-            # ~100 PRs x 1-2 appels REST, sur un pool ouvert de 307).
-            # Un payload dont l'appel a echoue ne porte pas de nom de check :
-            # la carte reste vide, exactement le comportement d'avant.
-            # #21463 -- l'extension `|| BLOCKED` : la carte WFMAP est AUSSI
-            # demandee pour une PR BLOCKED SANS jambe `PR gate` (classe
-            # "gate absent", le run pr-gate.yml annule avant d'avoir poste son
-            # verdict). Le selecteur l'emette comme candidate re-run et le run
-            # `PR gate` de la tete y est retrouve par `actions/runs?head_sha=`
-            # (ici, WFMAP) -- donc la population BLOCKED sans jambe doit
-            # obtenir sa carte, sinon rien n'y a a relancer. Le pin de cout
-            # #15770 (garde precedant l'appel) est intact : le substring
-            # `grep -q '"name":"PR gate"'` survit, l'elargissement s'y ajoute.
-            if printf '%s' "$BODY" | grep -q '"name":"PR gate"' || [ "${MSTATE:-}" = "BLOCKED" ]; then
-              # #21300 -- WFMAP porte DEUX champs par run : le `workflow_id`
-              # (clef de pliage `_fold_key`, #11808) ET le `conclusion` du
-              # DERNIER run de chaque id (signal `startup_failure` a detecter
-              # ci-dessous). Une seule requete REST, cout inchange par rapport
-              # au WFMAP historique (les DEUX champs sont dans la meme
-              # reponse). L'extension a un double backward-compat :
-              # (1) `_fold_key` accepte encore la forme {run_id: int} des
-              # fixtures de test (cf. `isinstance(v, dict)` plus bas) ;
-              # (2) les tests utilisent un champ separe `run_conclusions`
-              # pour exprimer le verdict par run, ce qui laisse `workflows`
-              # -- la clef de pliage -- inchange.
-              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:{wf:.workflow_id, c:.conclusion}}] | from_entries' 2>"$WF_ERR") || {
-                WFMAP=''
-                WFMAP_FAIL=$((WFMAP_FAIL+1))
-                WFMAP_SHA=$SHA
-                WFMAP_CODE=$(grep -oE 'HTTP [0-9]+' "$WF_ERR" | tail -1 || true); [ -n "$WFMAP_CODE" ] || WFMAP_CODE='aucun code HTTP'
-                WFMAP_DETAIL=$(tr '\n' ' ' < "$WF_ERR" | cut -c1-300); [ -n "$WFMAP_DETAIL" ] || WFMAP_DETAIL='aucun message de gh'
-              }
-            else
-              WFMAP=''
-            fi
-            if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
-            printf '{"number":%s,"sha":"%s","fork":%s,"merge_state":"%s","checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "${MSTATE:-}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
-          done < /tmp/openprs.txt
+          : > "$COLLECTOR"
+          if ! gh api "repos/$REPO/contents/scripts/ci/fetch_pr_checkruns.py?ref=$GITHUB_SHA" --jq .content 2>"$OMIT_ERR" | base64 -d > "$COLLECTOR"; then
+            OMIT_CODE=$(grep -oE 'HTTP [0-9]+' "$OMIT_ERR" | tail -1 || true); [ -n "$OMIT_CODE" ] || OMIT_CODE='aucun code HTTP'
+            OMIT_DETAIL=$(tr '\n' ' ' < "$OMIT_ERR" | cut -c1-300); [ -n "$OMIT_DETAIL" ] || OMIT_DETAIL='aucun message de gh'
+            echo "::error::[stale-sweep] NO-OP -- collector unavailable: endpoint=GET repos/$REPO/contents/scripts/ci/fetch_pr_checkruns.py code=$OMIT_CODE detail=$OMIT_DETAIL; NOTHING was swept this run (no repair pass, no rescue)"
+            exit 1
+          fi
+          COLLECTOR_BYTES=$(wc -c < "$COLLECTOR" | tr -d ' ')
+          if [ "$COLLECTOR_BYTES" -lt 2000 ]; then
+            echo "::error::[stale-sweep] NO-OP -- collector truncated ($COLLECTOR_BYTES octets): endpoint=GET repos/$REPO/contents/scripts/ci/fetch_pr_checkruns.py; NOTHING was swept this run (no repair pass, no rescue)"
+            exit 1
+          fi
+          LEGS_RC=0
+          python3 "$COLLECTOR" --repo "$REPO" --prs /tmp/openprs.txt \
+            --out /tmp/runs.jsonl --summary "$LEGS_SUMMARY" \
+            > /tmp/legs_stdout.json 2>"$OMIT_ERR" || LEGS_RC=$?
+          if [ "$LEGS_RC" -ne 0 ]; then
+            OMIT_CODE=$(grep -oE 'HTTP [0-9]+' "$OMIT_ERR" | tail -1 || true); [ -n "$OMIT_CODE" ] || OMIT_CODE='aucun code HTTP'
+            OMIT_DETAIL=$(tr '\n' ' ' < "$OMIT_ERR" | cut -c1-300); [ -n "$OMIT_DETAIL" ] || OMIT_DETAIL='aucun message de gh'
+            echo "::error::[stale-sweep] NO-OP -- check-runs collection failed (rc=$LEGS_RC): endpoint=GET repos/$REPO/commits/<sha>/check-runs code=$OMIT_CODE detail=$OMIT_DETAIL; NOTHING was swept this run (no repair pass, no rescue)"
+            exit 1
+          fi
+          read -r LISTED INSPECTED OMITTED <<< "$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(d["prs_listed"], d["prs_inspected"], d["prs_omitted"])' "$LEGS_SUMMARY")"
+          QUOTA=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["api_quota"])' "$LEGS_SUMMARY")
+          WFMAP_FAIL=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["run_conclusion_failures"])' "$LEGS_SUMMARY")
+          OMIT_PRS=$(python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); print(",".join(str(n) for n in d.get("unreadable_prs") or []) or "aucune")' "$LEGS_SUMMARY")
+          echo "[stale-sweep] $QUOTA"
           echo "[stale-sweep] open PRs listed=$LISTED inspected=$INSPECTED omitted=$OMITTED"
           # #22215 -- resume WFMAP : la carte vide n'est pas une panne du sweep
           # (le pliage replie par run_id), mais c'est un signal de sante de
           # l'endpoint, et il etait jete. Le repli detail= et code= est nomme,
           # pas devine.
           if [ "$WFMAP_FAIL" -gt 0 ]; then
-            echo "::warning::[stale-sweep] WFMAP empty: $WFMAP_FAIL calls failed -- last endpoint=GET repos/$REPO/actions/runs?head_sha=$WFMAP_SHA&per_page=100 code=$WFMAP_CODE detail=$WFMAP_DETAIL (fold falls back to run_id, the narrower historical behavior)"
+            echo "::warning::[stale-sweep] run conclusions incomplete: $WFMAP_FAIL calls failed -- endpoint=GET repos/$REPO/actions/runs?head_sha=<sha>&per_page=100 (the startup_failure detection is verdictless on those PRs; the fold falls back to run_id, the narrower historical behavior)"
           fi
           # #17566 -- garde NO-OP : si on a LISTED > 0 PRs et que TOUTES les
           # inspections REST ont echoue, le run ne peut pas conclure success --
