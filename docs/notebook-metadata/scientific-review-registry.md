@@ -1,4 +1,4 @@
-> REFERENCE — vivante — dernière révision 2026-11-13
+> REFERENCE — vivante — dernière révision 2026-11-15
 
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
