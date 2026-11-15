@@ -996,6 +996,129 @@ def _restore_modules_from_quarantine(
     return True, ""
 
 
+class DecontaminationFailed(Exception):
+    """Le marqueur d'un sous-module n'a pas pu etre deplace en quarantaine.
+
+    Fail-closed : le retrait du worktree ne peut pas avoir lieu tant que le
+    marqueur y est encore present (git lit ce marqueur, et refuse de
+    supprimer un worktree dont il croit les sous-modules peuple). L'organe
+    signale un motif NOMME plutot que de laisser git echouer de facon
+    cryptique ("not a git repository", "working trees containing
+    submodules...").
+    """
+
+    def __init__(self, rel: Path, reason: str):
+        super().__init__(f"decontamination-failed:{rel}:{reason}")
+        self.rel = str(rel)
+        self.reason = reason
+
+
+def _decontaminate_marker(marker: Path, dest_root: Path, rel: Path) -> bool:
+    """Deplace le marqueur `.git` d'un sous-module hors du worktree.
+
+    Le marqueur est le FICHIER `.git` du sous-module (un *gitfile* : une
+    ligne `gitdir: <chemin>`) -- ou, si le sous-module a absorbe son
+    gitdir, le REPERTOIRE `.git` lui-meme. Il est DEPLACE en quarantaine,
+    jamais supprime : son contenu est conserve, et son chemin d'origine
+    se deduit du chemin relatif du sous-module (`gitfiles/<rel>/.git`).
+
+    La decontamination est la VOIE qui leve le garde de git : c'est la
+    presence de ce marqueur dans le worktree qui indique a git qu'un
+    sous-module y est POPULE, et c'est ce "popule" que git refuse de
+    supprimer ("working trees containing submodules cannot be moved or
+    removed"). Deplace, le retrait aboutit SANS `--force` (mesure : depot
+    scratch, etat de production replique -- marqueur repointe = refus,
+    marqueur pendant = "not a git repository", marqueur deplace = retrait
+    reussi).
+    """
+    if not marker.exists():
+        return False
+    dest = dest_root / "gitfiles" / rel / ".git"
+    try:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(marker), str(dest))
+    except (OSError, shutil.Error) as exc:
+        raise DecontaminationFailed(rel, str(exc))
+    return True
+
+
+def _decontaminate_submodule_gitfiles(wt_path: str, dest_root: Path) -> list[str]:
+    """Decontamine les sous-modules de ce worktree (marqueurs `.git`).
+
+    Apres le deplacement du `modules/` du gitdir en quarantaine, chaque
+    sous-module a un gitdir preserve (`<dest>/modules/<rel>`) et un
+    marqueur `.git` dans le worktree (`<wt>/<rel>/.git`). C'est ce
+    marqueur que git voit pour savoir que le sous-module est peuple, et
+    c'est lui qui fait refuser le retrait.
+
+    Mesure (depot scratch, etat de production replique) :
+      - marqueur REPOINTE vers un gitdir valide -> refus ;
+      - marqueur PENDANT (gitdir deja deplace)  -> "fatal: not a git
+        repository" ;
+      - marqueur DEPLACE hors du worktree      -> le retrait SANS `--force`
+        aboutit.
+    Le marqueur est donc deplace en quarantaine : rien n'est perdu.
+
+    Retourne la liste des chemins de sous-modules decontamines. Leve
+    `DecontaminationFailed` si un marqueur n'a pas pu etre deplace : le
+    retrait ne peut alors pas avoir lieu.
+    """
+    modules = dest_root / "modules"
+    decontaminated: list[str] = []
+    for sub in _submodule_gitdirs(modules):
+        try:
+            rel = sub.relative_to(modules)
+        except ValueError:
+            continue
+        marker = Path(wt_path) / rel / ".git"
+        if _decontaminate_marker(marker, dest_root, rel):
+            decontaminated.append(str(rel))
+    return decontaminated
+
+
+def _decontaminate_dangling_gitfiles(wt_path: str,
+                                     quarantine_root: Path) -> list[str]:
+    """Decontamine les marqueurs deja pendants (passe precedente).
+
+    Cas d'une passe precedente : les `modules/` ont deja ete deplaces en
+    quarantaine, le marqueur `.git` du sous-module pointe donc vers un
+    chemin disparu et `git worktree remove` echoue (`fatal: not a git
+    repository`). On retrouve le gitdir en quarantaine -- une entree par
+    worktree, nommee `<horodatage>-<pid>-<nom-du-worktree>` -- et on y
+    deplace le marqueur.
+
+    Meme geste que la voie directe : rien n'est supprime, le marqueur est
+    deplace, et le retrait peut alors avoir lieu SANS `--force`. Leve
+    `DecontaminationFailed` si un marqueur n'a pas pu etre deplace.
+    """
+    if not quarantine_root.is_dir():
+        return []
+    wt = Path(wt_path)
+    entries = sorted(
+        (d for d in quarantine_root.iterdir()
+         if d.is_dir() and d.name.endswith(f"-{wt.name}")),
+        key=lambda d: d.name, reverse=True,
+    )
+    if not entries:
+        return []
+    decontaminated: list[str] = []
+    for entry in entries:
+        modules = entry / "modules"
+        if not modules.is_dir():
+            continue
+        for sub in _submodule_gitdirs(modules):
+            try:
+                rel = sub.relative_to(modules)
+            except ValueError:
+                continue
+            marker = wt / rel / ".git"
+            if not marker.exists():
+                continue
+            if _decontaminate_marker(marker, entry, rel):
+                decontaminated.append(str(rel))
+    return decontaminated
+
+
 def quarantine_worktree_modules(
     wt_path: str,
     quarantine_root: Path,
@@ -1018,9 +1141,20 @@ def quarantine_worktree_modules(
         return False, "gitdir-unreadable", None
     modules_dir = gitdir / "modules"
     if not modules_dir.is_dir():
-        # Rien a decontaminer : le worktree n'a pas de sous-module
-        # enregistre. Rien de deplace.
-        return True, "", {"quarantine": None, "modules": [], "preserved": True}
+        # Les `modules/` ont deja ete deplaces par une passe precedente :
+        # les objets sont en quarantaine, il reste a decontaminer les
+        # marqueurs `.git` pendants qui resteraient dans le worktree --
+        # sans quoi `git worktree remove` echoue sur eux.
+        try:
+            decontaminated = _decontaminate_dangling_gitfiles(
+                wt_path, quarantine_root)
+        except DecontaminationFailed as exc:
+            # Le marqueur est reste dans le worktree : le retrait echouerait
+            # sur lui. On refuse avec un motif NOMME.
+            return False, str(exc), None
+        return True, "", {"quarantine": None, "modules": [],
+                          "decontaminated": decontaminated,
+                          "preserved": True}
 
     refusal = quarantine_root_refusal(quarantine_root, repo_root, wt_path)
     if refusal is not None:
@@ -1090,9 +1224,32 @@ def quarantine_worktree_modules(
                 "preserved": False,
                 "restored": True,
             }
+    # Les marqueurs `.git` des sous-modules pointaient vers le gitdir du
+    # worktree : deplace, il ne resolvent plus et `git worktree remove`
+    # echoue (`fatal: not a git repository`). ET, meme repointe, le marqueur
+    # fait dire a git que le sous-module est peuple -- et c'est ce que git
+    # refuse de supprimer ("working trees containing submodules cannot be
+    # moved or removed"). On decontamine donc : le marqueur est DEPLACE en
+    # quarantaine (rien n'est supprime) et le retrait peut alors avoir lieu
+    # SANS `--force`.
+    try:
+        decontaminated = _decontaminate_submodule_gitfiles(wt_path, dest_root)
+    except DecontaminationFailed as exc:
+        # Le marqueur est reste dans le worktree : `git worktree remove`
+        # echouerait sur lui. On refuse avec un motif NOMME -- et comme le
+        # `modules/` est deja en quarantaine, la passe suivante saura
+        # retrouver les objets (voie des marqueurs pendants).
+        return False, str(exc), {
+            "quarantine": str(dest_root),
+            "modules": proofs,
+            "decontaminated": [],
+            "preserved": True,
+        }
+
     return True, "", {
         "quarantine": str(dest_root),
         "modules": proofs,
+        "decontaminated": decontaminated,
         "preserved": True,
     }
 
@@ -3375,10 +3532,15 @@ def main() -> int:
                     })
                     # Un refus de quarantaine (modules/ rendu au worktree,
                     # retrait annule) est une DECISION de l'organe : exit 0,
-                    # avec son decompte -- pas une panne. Seul l'echec de la
-                    # restauration, qui laisse un etat incoherent (objets
-                    # en quarantaine, worktree non decontamine), sort en 2.
-                    if q_msg.startswith("quarantine-restore-failed"):
+                    # avec son decompte -- pas une panne. Deux cas sortent
+                    # en 2 : l'echec de la restauration, qui laisse un etat
+                    # incoherent (objets en quarantaine, worktree non
+                    # decontamine) ; et l'echec de la DECONTAMINATION, ou
+                    # le marqueur n'a pas pu quitter le worktree -- l'objet
+                    # de l'organe a echoue en cours de route, il ne doit pas
+                    # se deguiser en decision.
+                    if q_msg.startswith(("quarantine-restore-failed",
+                                         "decontamination-failed")):
                         error_count += 1
                     else:
                         quarantine_refused_count += 1
