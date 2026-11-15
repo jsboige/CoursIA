@@ -99,6 +99,13 @@ DEFAULT_CADENCE_WARN_MINUTES = 360.0
 DEFAULT_JOB_READ_BUDGET = 120
 DEFAULT_IN_PROGRESS_SAMPLE = 20
 RUNS_PAGE_SIZE = 100
+# Cutoff de la profondeur VIVANTE (#26719). Il DOIT rester egal au defaut du
+# CLI `--cutoff` de `scripts/ci/gh_queue_health.py` : la note de profondeur
+# annonce « la MEME mesure que --live-depth », et un cutoff different ferait
+# porter les deux chiffres sur deux populations differentes. Le test de
+# non-regression de `tests/test_runner_starvation_live_depth.py` compare les
+# deux valeurs a la source.
+LIVE_DEPTH_CUTOFF = "2026-08-20"
 # Inventaire DECLARE des hotes de pool (#20697 point 4). Vit a cote de l'organe
 # pour que le defaut soit resolu sans argument : une sonde dont le predicat
 # depend d'un fichier qu'aucun workflow ne passe resterait inerte.
@@ -591,6 +598,12 @@ class Starvation:
     # chemin ne peut pas etre ecartee sans risque de cacher une
     # affamescence), et comptes a part.
     unknown_path_reads: int = 0
+    # Nombre de runs `queued` VUS par cette sonde : la liste rendue par
+    # `_collect_window`, donc bornee a SA fenetre d'examen. C'est le chiffre
+    # que la note de profondeur confronte a la profondeur VIVANTE de
+    # `gh_queue_health` : quand les deux divergent, le rapport nomme les DEUX
+    # au lieu d'en choisir un (#26719).
+    queued_runs_seen: int = 0
 
     @property
     def complete(self) -> bool:
@@ -851,6 +864,10 @@ def fetch_starvation(
     # peuvent affamer (#22215).
     queued_runs = _collect_window(repo, "queued", window_max_minutes, now,
                                   workflow, result, seen_runs)
+    # Ce que CETTE sonde voit de la file : sa population dans sa fenetre
+    # d'examen. La note de profondeur vivante le confronte au chiffre de
+    # l'organe voisin (#26719), sans jamais fondre les deux.
+    result.queued_runs_seen = len(queued_runs)
     queued_runs.sort(key=lambda r: r.get("created_at") or "")
     for run in queued_runs:
         created = _parse_iso(run.get("created_at"))
@@ -1082,9 +1099,56 @@ class Verdict:
     notes: list[str] = field(default_factory=list)
 
 
+def _live_queue_depth(repo: str) -> tuple[int | None, str]:
+    """La profondeur VIVANTE de la file -- la MEME mesure que
+    `scripts/ci/gh_queue_health.py --live-depth`.
+
+    Renvoie (profondeur, "") ou (None, raison) si la mesure est impossible
+    (import absent, API muette, instrument en erreur). La fonction ne porte
+    aucun transport propre : elle appelle l'organe voisin, ce qui la rend
+    monkeypatchable -- les tests ne touchent jamais l'API.
+
+    L'organe voisin est importe depuis CE repertoire, et l'import est sous
+    try/except : `check_runner_starvation.py` s'execute seul (workflows,
+    copie hors depot) et ne doit JAMAIS planter parce qu'un organe voisin
+    manque ou a casse. Son absence devient une raison, pas une exception.
+    """
+    here = os.path.dirname(os.path.abspath(__file__))
+    try:
+        if here not in sys.path:
+            sys.path.insert(0, here)
+        import gh_queue_health
+    except Exception as exc:  # organe voisin absent ou casse : jamais un crash
+        return None, f"{type(exc).__name__}: {exc}"
+    try:
+        report = gh_queue_health.live_depth_report(
+            repo=repo,
+            cutoff=gh_queue_health.parse_date(LIVE_DEPTH_CUTOFF),
+            cutoff_date=LIVE_DEPTH_CUTOFF,
+            now=datetime.now(timezone.utc),
+            no_job_events=gh_queue_health.NO_JOB_EVENTS,
+            no_job_min_age_hours=gh_queue_health.DEFAULT_NO_JOB_MIN_AGE_HOURS,
+            max_workers=8,
+        )
+    except Exception as exc:  # API muette, instrument en erreur
+        return None, f"{type(exc).__name__}: {exc}"
+    if (not isinstance(report, dict)
+            or not isinstance(report.get("live_depth"), int)):
+        return None, f"reponse inattendue: {str(report)[:200]}"
+    parse_failures = report.get("parse_failures") or 0
+    if parse_failures:
+        # Fail-closed, comme l'organe voisin : une profondeur calculee sur
+        # une population partiellement illisible n'est pas publiee.
+        return None, (f"instrument incomplet: {parse_failures} run(s) de "
+                      f"date illisible")
+    return report["live_depth"], ""
+
+
 def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
              label: str = DEFAULT_LABEL,
-             declared: DeclaredHosts | None = None) -> Verdict:
+             declared: DeclaredHosts | None = None,
+             live_depth: int | None = None,
+             live_depth_error: str = "") -> Verdict:
     v = Verdict()
 
     if inv.available:
@@ -1166,6 +1230,51 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
             f"LISTING INCOMPLET: listing(s) {sorted(st.listing_failed)} "
             f"illisible(s) (reponse non-dict) -- le passage ne prouve ni "
             f"file saine ni famine."
+        )
+
+    # Profondeur VIVANTE de la file (#26719) : la MEME mesure que
+    # `scripts/ci/gh_queue_health.py --live-depth` (population queued MOINS
+    # les classes de fantomes mesurees). La sonde, elle, compte des RUNS dans
+    # sa fenetre d'examen : quand les deux chiffres divergent, on les NOMME
+    # tous les deux -- un seul ferait croire a une file saine ou a une famine
+    # selon qui le lit. Le predicat STARVATION reste au niveau des JOBS :
+    # cette note informe, elle ne juge pas.
+    if live_depth is not None:
+        v.notes.append(
+            f"profondeur VIVANTE de la file: {live_depth} run(s) (fantomes "
+            f"exclus -- meme mesure que scripts/ci/gh_queue_health.py "
+            f"--live-depth)"
+        )
+        if st.queued_runs_seen != live_depth:
+            gap = st.queued_runs_seen - live_depth
+            if gap > 0:
+                cause = (
+                    f"l'ecart est la classe de fantomes mesuree par "
+                    f"scripts/ci/gh_queue_health.py (pre-cutoff, pr-closed, "
+                    f"scheduled-orphan, no-job) et la part de file plus "
+                    f"vieille que la fenetre d'examen de cette sonde"
+                )
+            else:
+                cause = (
+                    f"ecart NEGATIF : cette sonde voit MOINS de runs que la "
+                    f"profondeur vivante -- restriction --workflow ou fenetre "
+                    f"d'examen plus etroite de son cote, jamais un fantome "
+                    f"supplementaire"
+                )
+            v.notes.append(
+                f"profondeur de file divergente: {st.queued_runs_seen} run(s) "
+                f"queued vu(s) par cette sonde vs {live_depth} run(s) de "
+                f"profondeur VIVANTE -- ecart {gap:+d}, {cause}"
+            )
+    elif live_depth_error:
+        # Mesure TENTEE et echouee : on le dit, et ca reste une WARNING --
+        # un instrument indisponible ne rend ni la file saine ni la famine
+        # prouvee. Sans raison fournie, l'appelant ne mesure pas la
+        # profondeur (appelant historique) : silence, pas une affirmation.
+        v.warnings.append(
+            f"PROFONDEUR VIVANTE non mesuree ({live_depth_error}) -- le "
+            f"verdict porte sur les jobs affames, pas sur la profondeur de "
+            f"la file"
         )
 
     if st.starved and not st.in_progress:
@@ -1421,6 +1530,10 @@ def main() -> int:
 
     inv: RunnerInventory | None = None
     st: Starvation | None = None
+    # Profondeur VIVANTE (#26719) : remplie par le passage complet, jamais
+    # par le passage econome (cf `if measure:` plus bas).
+    live_depth: int | None = None
+    live_depth_error = ""
     # Le MIROIR est lu HORS de la porte de mesure : l'alerte `[WARN][mirror]`
     # ne doit pas dependre du fait que le passage complet soit econome
     # (4 runs sur 1). Un miroir fige fait tomber les checkouts, donc la
@@ -1448,8 +1561,18 @@ def main() -> int:
             in_progress_sample=args.in_progress_sample,
         )
         declared = load_declared_hosts(args.declared_hosts, args.label)
+        # Profondeur VIVANTE (#26719) : une SECONDE lecture de la file (elle
+        # pagine toute la population queued et sonde les classes de
+        # fantomes). On ne la paie que sur un passage qui a REELLEMENT lu la
+        # file : une sonde sans aucun appel (lecture injectee) n'a rien
+        # mesure, et annoncer une profondeur venue d'ailleurs serait un
+        # chiffre sans provenance. Un echec est absorbe ici : il devient une
+        # WARNING du verdict, jamais une erreur.
+        if st.stats.calls:
+            live_depth, live_depth_error = _live_queue_depth(args.repo)
         full = evaluate(inv, st, args.warn_floor, label=args.label,
-                        declared=declared)
+                        declared=declared, live_depth=live_depth,
+                        live_depth_error=live_depth_error)
         v.notes = full.notes + v.notes
         v.warnings = full.warnings + v.warnings
         v.errors = full.errors + v.errors
@@ -1473,6 +1596,12 @@ def main() -> int:
                            and declared.available else None),
         "starved_jobs": [r.__dict__ for r in st.starved] if st is not None else [],
         "in_progress_jobs": len(st.in_progress) if st is not None else None,
+        # Profondeur VIVANTE (#26719) : la surface machine de la mesure que
+        # la note annonce -- un lecteur compare les deux chiffres sans
+        # concatener de la prose.
+        "live_depth": live_depth,
+        "live_depth_error": live_depth_error,
+        "queued_runs_seen": st.queued_runs_seen if st is not None else None,
         "unexamined_runs": st.unexamined if st is not None else None,
         "gh_calls": calls.calls + (st.stats.calls if st is not None else 0),
         "gh_failures": [
