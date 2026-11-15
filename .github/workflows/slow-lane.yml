@@ -96,23 +96,139 @@ name: Slow lane (voie asynchrone, tranches 1-2 #12856)
 #   portage iso-cout).
 #
 #   Le job `ict-tests-pilot` de la tranche 1 reste : il n'est pas concerne.
+#
+# TRANCHE 3 (cette PR) — LOT QUOTIDIEN EN OMBRE (P3 du plan « CI a deux
+# etages », #25510).
+#
+#   Ce workflow **reste le meme organe**. Le lot n'est pas un second
+#   workflow : c'est un **deuxieme job** de la voie lente, avec sa propre
+#   cadence. Un second fichier aurait duplique le declencheur, les
+#   permissions, la politique de runner et le budget de concurrence de la
+#   voie lente -- et aurait rendu « la voie lente » une notion diffuse.
+#   Regle organ-first appliquee : on nomme l'organe natif (`slow-lane.yml`),
+#   on l'etend, et on ne cree un second workflow que pour un motif ecrit.
+#
+#   CE QUE LE LOT NE FAIT PAS : il ne juge aucune PR. Aucun check-run n'est
+#   emis sur une PR, aucune conclusion n'est rouge, rien ne bloque un merge.
+#   Le PR gate reste le seul juge. Ce job **mesure**.
+#
+#   CE QU'IL MESURE :
+#     - la duree d'un lot vert et d'un lot rouge ;
+#     - la fin de lot AVANT l'echeance de son creneau (10:00Z / 13:00Z /
+#       21:30Z / 00:00Z). Un lot qui deborde retarde le suivant : la cadence
+#       tient ou elle ne tient pas, et c'est cette mesure qui le dira.
+#
+#   TRANCHE LIVREE (P3, tranche 1) : ce que le lot mesure est pose -- l'arbre
+#   d'integration (`main` + les PRs du lot) et la suite COMPLETE de la jambe
+#   `Scripts Tests`, jouee dans le MEME environnement qu'elle (script
+#   d'installation partage `scripts/ci/install_scripts_tests_deps.sh`,
+#   memes options pytest).
+#
+#   TRANCHE LIVREE (P3, tranche 2) : le lot emet un check-run par tete du
+#   lot. Il est **advisory** -- son nom porte le marqueur que le PR gate
+#   route hors porte (`scripts/pr_gate.py::is_advisory`) -- donc il ne
+#   bloque AUCUN merge : le PR gate reste le seul juge. Le check-run porte
+#   le verdict de l'ARBRE (main + les PRs du lot), pas un verdict
+#   d'isolement, et il nomme la troncature du pool quand la population
+#   inspectee a atteint le plafond (`pool_inspecte == limit`). La bascule du
+#   gate sur « etage 2 vert » reste P4, apres la semaine d'ombre.
+#
+#   LA CADENCE (quatre creneaux UTC, anti-stampede sur la minute) :
+#     04:17Z, 10:17Z, 16:17Z, 21:17Z, chacun double d'un cron de SECOURS
+#     trente minutes plus tard (04:47Z, 10:47Z, 16:47Z, 21:47Z). Les creneaux
+#     sont volontairement hors des heures de pointe de la file CI : le lot
+#     occupe le parc quand celui-ci respire.
+#
+#   POURQUOI LE SECOURS (mesure du 2026-11-12, #25510) : sous la charge de
+#     la flotte, GitHub retarde ou abandonne des evenements `schedule` (la
+#     documentation le dit, et la minute :30 est chargee). Sur les crons
+#     `30 4,10,16` et `30 21`, le lot a demarre a 10:16, 12:49, 21:51,
+#     01:19, 11:58, 22:51, 02:20 et 12:59 entre le 10/11 et le 12/11 : deux
+#     lots par jour au lieu de quatre, 1,5 a 5 h de retard, et aucun lot
+#     parti des creneaux 04:30 et 16:30. Le cron de secours rattrape un
+#     evenement perdu ; le job `lot-gate` l'empeche de rejouer un lot deja
+#     servi (un lot planifie dont le job `lot` a reussi ou tourne, demarre
+#     depuis moins de 150 min). Un `workflow_dispatch` n'est jamais dedoublonne :
+#     c'est l'avance du coordinateur.
+#
+#   UN SEUL LOT A LA FOIS : le groupe de concurrence `slow-lane-lot` est
+#   partage par les quatre creneaux, et `cancel-in-progress` est **faux**.
+#   Un creneau qui deborde ne fait donc PAS annuler le lot en cours -- il
+#   l'attend. L'annulation automatique produirait un rapport partiel presente
+#   comme un lot complet. Le groupe du pilote est distinct (`slow-lane-
+#   pilot`) : le pilote hebdomadaire ne retarde pas un lot, et un lot ne
+#   retarde pas le pilote.
+#
+#   PERMISSIONS MINIMALES, AUCUN SECRET : `contents: read` et
+#   `pull-requests: read`, et rien d'autre. Aucun `secrets.*` n'est lu. Le
+#   job execute du code de PR (les tests de la PR materialisee dans un
+#   worktree) : ce code s'execute donc sur un runner heberge par GitHub,
+#   hors du parc de la flotte, et sans rien pouvoir lire de sensible.
+#
+#   GARDE DE FORK : une PR issue d'un fork n'entre dans le lot qu'apres
+#   l'APPROVE du coordinateur (`myia-ai-01`). La regle est dans l'organe
+#   (`scripts/ci/heavy_batch.py`), pas dans une condition de job : la
+#   selection se fait sur le contenu du lot, et l'exclusion est **nommee**
+#   dans le rapport. La designation d'une PR par le coordinateur
+#   (`workflow_dispatch` avec `pr`) ne leve PAS cette garde.
+#
+#   LA PORTE DU LOT : une PR n'occupe un creneau que si elle porte l'APPROVE
+#   du coordinateur **a sa tete exacte** -- la porte que le merge franchit.
+#   Le lot mesure ainsi la duree du lot REEL (celui qui mergera). Un `LGTM`
+#   dans le corps d'une review Hermes n'est pas une approbation : c'est un
+#   avis, pas la porte. Le verdict de revue est lu et affiche dans le
+#   rapport, il ne selectionne plus.
+#
+#   L'ARBRE D'INTEGRATION : le lot ne teste pas chaque PR isolement. Il
+#   construit l'arbre **qui va reellement atterrir** -- `main` plus les PRs
+#   du lot, dans l'ordre du lot -- et joue la suite lourde dessus. C'est la
+#   seule forme qui supprime par construction la classe de #24821 (`main`
+#   rouge apres le merge de PRs vertes a leur propre tete). Si l'arbre est
+#   rouge, `git bisect run` isole la PR fautive et la nomme.
+#
+#   RUNNER : `ubuntu-latest`, et c'est un choix, pas une defaut. Une jambe
+#   self-hosted exige une entree dans `SELF_HOSTED_WORKFLOW_ALLOWLIST`
+#   (`scripts/ci/check_self_hosted_runner_policy.py`) -- c'est une politique
+#   d'owner, et l'ajouter releve du coordinateur. Le lot execute du code de
+#   PR : l'heberger hors du parc de la flotte est la position prudente.
+#
+#   ROLLBACK : retirer le job `lot` et les quatre crons. Aucun autre fichier
+#   du depot n'en depend.
 
 on:
-  # Schedule hebdo (mardi 02:30 UTC, apres le pic push europeen) — une seule
-  # execution par fournee, comme le demande la strategie.
+  # Schedule du PILOTE (mardi 02:30 UTC, apres le pic push europeen) -- une
+  # seule execution par fournee, comme le demande la strategie.
   schedule:
     - cron: '30 2 * * 2'
-  workflow_dispatch: {}
+    # Schedule du LOT (quatre creneaux par jour, hors des deux pics mesures),
+    # chacun double d'un cron de secours a +30 min (cf l'en-tete : le
+    # job `lot-gate` saute le secours quand le creneau a deja ete servi).
+    - cron: '17 4,10,16 * * *'
+    - cron: '17 21 * * *'
+    - cron: '47 4,10,16 * * *'
+    - cron: '47 21 * * *'
+  workflow_dispatch:
+    inputs:
+      max_prs:
+        description: "Taille maximale du lot (0 = pas de plafond : c'est la porte qui decide)"
+        required: false
+        default: '0'
+      pr:
+        description: "Numeros de PR a tester seule (avance du coordinateur, vide = lot)"
+        required: false
+        default: ''
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
-  # Groupe distinct du `ict-tests.yml` d'origine : les runs slow-lane ne
-  # partagent pas la cle avec les runs PR, donc pas de cancel-in-progress
-  # croise (cf. pieges `pages-deploy` #11616).
-  group: slow-lane-${{ github.ref }}
-  cancel-in-progress: true
+  # Deux groupes : le pilote hebdomadaire et le lot. `cancel-in-progress` est
+  # FAUX pour les deux -- un rapport partiel presente comme un rapport
+  # complet est pire qu'un retard. Un lot qui deborde retarde le lot suivant
+  # (meme groupe) ; il ne le concurrence pas.
+  group: slow-lane-${{ github.event_name == 'schedule' && github.event.schedule == '30 2 * * 2' && 'pilot' || 'lot' }}
+  cancel-in-progress: false
 
 jobs:
   # PILOTE — la suite ICT-Series (legerement lourde : ~3-5 min runner, 746
@@ -123,6 +239,11 @@ jobs:
   # deplacera reellement le trigger `pull_request` d'`ict-tests.yml` ici.
   ict-tests-pilot:
     name: Slow-lane ICT-Series pilot
+    # Le pilote ne tourne que sur SON cron (mardi 02:30) et sur un declencheur
+    # manuel. Les quatre crons du lot ne doivent pas le faire tourner : le
+    # lot et le pilote sont deux travaux distincts, sur deux groupes de
+    # concurrence distincts.
+    if: github.event_name != 'schedule' || github.event.schedule == '30 2 * * 2'
     # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
     # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
     # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
@@ -213,4 +334,233 @@ jobs:
           else
             echo "::notice title=Slow-lane ICT-Series pilot (PASS)::La suite ICT-Series a reussi en mode slow-lane (tests/ exit=${RC_TESTS}, ict/tests/ exit=${RC_ICT}) (tranche 1 #12856). Ce job sera re-run chaque mardi 02:30 UTC."
           fi
+
+  # LOT QUOTIDIEN EN OMBRE (P3 du plan « CI a deux etages », #25510).
+  #
+  # Ce job **mesure** : il ne juge aucune PR, n'emet aucun check-run, ne
+  # bloque aucun merge. Le PR gate reste le seul juge.
+  # GARDE DE CRENEAU (#25510, 2026-11-12) : un cron de secours ne rejoue pas
+  # un lot deja servi. Le job ne lit que l'API Actions (`actions: read`), sans
+  # checkout. Sur un `workflow_dispatch`, il laisse toujours passer. Sur une
+  # erreur d'API, il laisse passer aussi : un lot en double coute un runner
+  # heberge, un lot perdu coute une journee.
+  lot-gate:
+    name: "Lot : creneau deja servi ?"
+    # Le lot ne tourne que sur SES crons (ceux du lot et leurs secours) et sur
+    # un declencheur manuel. Le cron du mardi 02:30 appartient au pilote.
+    if: github.event_name != 'schedule' || github.event.schedule != '30 2 * * 2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      actions: read
+    outputs:
+      run_lot: ${{ steps.gate.outputs.run_lot }}
+    steps:
+      - name: "Un lot planifie a-t-il deja ete servi depuis moins de 150 min ?"
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          EVENT: ${{ github.event_name }}
+          WINDOW_MIN: '150'
+        run: |
+          python3 - <<'PY'
+          import json, os, urllib.request
+          from datetime import datetime, timedelta, timezone
+
+          def out(run_lot, why):
+              with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as fh:
+                  fh.write(f"run_lot={'true' if run_lot else 'false'}\n")
+              print(f"run_lot={run_lot} -- {why}")
+
+          if os.environ["EVENT"] != "schedule":
+              out(True, "declencheur %s : jamais dedoublonne" % os.environ["EVENT"])
+              raise SystemExit(0)
+
+          def get(url):
+              req = urllib.request.Request(url, headers={
+                  "Authorization": "Bearer " + os.environ["GH_TOKEN"],
+                  "Accept": "application/vnd.github+json",
+              })
+              with urllib.request.urlopen(req, timeout=30) as resp:
+                  return json.load(resp)
+
+          api = "https://api.github.com/repos/" + os.environ["REPO"]
+          me = int(os.environ["RUN_ID"])
+          cutoff = datetime.now(timezone.utc) - timedelta(minutes=int(os.environ["WINDOW_MIN"]))
+          try:
+              runs = get(api + "/actions/workflows/slow-lane.yml/runs?event=schedule&per_page=20")["workflow_runs"]
+              for run in runs:
+                  if run["id"] == me:
+                      continue
+                  started = datetime.fromisoformat((run.get("run_started_at") or run["created_at"]).replace("Z", "+00:00"))
+                  if started < cutoff:
+                      continue
+                  jobs = get(api + "/actions/runs/%d/jobs?per_page=50" % run["id"])["jobs"]
+                  for job in jobs:
+                      if not job["name"].startswith("Lot en ombre"):
+                          continue
+                      if job["status"] != "completed" or job["conclusion"] == "success":
+                          out(False, "creneau deja servi par le run %d (demarre %s, job lot %s/%s)"
+                              % (run["id"], started.isoformat(), job["status"], job["conclusion"]))
+                          raise SystemExit(0)
+          except SystemExit:
+              raise
+          except Exception as exc:  # fail-open : un lot perdu coute plus qu'un lot double
+              print("::warning title=Lot : garde de creneau muette::%s -- le lot tourne" % exc)
+              out(True, "garde muette")
+              raise SystemExit(0)
+          out(True, "aucun lot servi depuis %s" % cutoff.isoformat())
+          PY
+
+  lot:
+    name: "Lot en ombre (mesure, non bloquant)"
+    # Ne tourne que si la garde de creneau le laisse passer (et la garde a
+    # deja ecarte le cron du pilote).
+    needs: lot-gate
+    if: needs.lot-gate.outputs.run_lot == 'true'
+    runs-on: ubuntu-latest
+    # Fenetre du lot : le creneau le plus long est de 150 min (21:30 -> 00:00).
+    timeout-minutes: 160
+    # `checks: write` est ajoute **par ce job** : la tranche 2 de P3 publie un
+    # check-run advisory sur chaque tete du lot. Les permissions du job
+    # remplacent celles du workflow : les deux lectures sont donc declarees
+    # explicitement, sinon la lecture des PRs disparaitrait. Aucun
+    # `secrets.*` n'est lu : le check-run est porte par le `GITHUB_TOKEN` du
+    # run, et son contenu est le verdict du lot, rien de sensible.
+    permissions:
+      contents: read
+      pull-requests: read
+      checks: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # `fetch-depth: 0` est requis : le lot diffe chaque PR contre
+          # `origin/main`, materialise sa ref de fusion
+          # (`refs/pull/N/merge`), et construit l'arbre d'integration.
+          # `filter: blob:none` garde le clone leger -- les blobs sont
+          # materialises a la demande, comme partout ailleurs dans le depot.
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Dependances de la suite (script partage)"
+        # L'environnement du lot est celui de la jambe `Scripts Tests` --
+        # le MEME script d'installation (`scripts/ci/install_scripts_tests_deps.sh`),
+        # appele par les deux jambes. C'est ce qui rend les durees du lot
+        # comparables a celles de la suite qu'on veut deplacer : une liste
+        # de dependances minimale donne des durees qu'on ne peut comparer a
+        # rien (une dependance manquante rend la PR « non mesurable » au
+        # lieu de la faire echouer).
+        run: bash scripts/ci/install_scripts_tests_deps.sh
+
+      - name: "Planifier le lot"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Une PR designee par le coordinateur (avance d'un merge) prend la
+          # place du lot. La garde fork reste applicable : le refus est
+          # explicite et le plan est vide, donc le lot ne peut pas se
+          # presenter comme vert.
+          PR: "${{ inputs.pr }}"
+          MAX_PRS: "${{ inputs.max_prs || '0' }}"
+        run: |
+          mkdir -p .tmp
+          if [ -n "${PR}" ]; then
+            python scripts/ci/heavy_batch.py --pr "${PR}" --json > .tmp/batch_plan.json
+          else
+            python scripts/ci/heavy_batch.py --max-prs "${MAX_PRS}" --json > .tmp/batch_plan.json
+          fi
+
+      - name: "Executer le lot et mesurer"
+        id: run
+        # `continue-on-error` : le lot est une mesure, pas une porte. Un lot
+        # qui echoue est un resultat a publier, pas un travail a faire
+        # repeter -- le rapport le dira.
+        continue-on-error: true
+        run: |
+          python scripts/ci/heavy_batch.py --run \
+            --plan .tmp/batch_plan.json \
+            --integration \
+            --results-out .tmp/batch_results.json \
+            --json > .tmp/batch_summary.json
+
+      - name: "Publier les check-runs du lot (advisory)"
+        # Tranche 2 de P3 : le lot porte son verdict sur chaque tete du lot.
+        # Le check-run est **advisory** (son nom porte le marqueur que le
+        # PR gate route hors porte) : il ne bloque aucun merge. La bascule
+        # du gate sur « etage 2 vert » est P4, apres la semaine d'ombre.
+        # `continue-on-error` : une publication qui echoue est un incident
+        # de publication, pas une mesure du lot ratee.
+        if: always()
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DETAILS_URL: "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: |
+          if [ ! -f .tmp/batch_results.json ]; then
+            echo "::notice title=Lot en ombre::Aucun resultat de lot : aucun check-run publie."
+            exit 0
+          fi
+          python scripts/ci/heavy_batch.py --publish-check-runs \
+            --plan .tmp/batch_plan.json \
+            --results .tmp/batch_results.json \
+            --details-url "${DETAILS_URL}" \
+            --json
+
+      - name: "Publier la mesure (toujours vert)"
+        if: always()
+        run: |
+          {
+            echo "## Lot en ombre"
+            echo ""
+            if [ -f .tmp/batch_summary.json ]; then
+              cat .tmp/batch_summary.json
+            else
+              echo "Le lot n'a pas produit de mesure (voir le journal du job)."
+            fi
+            echo ""
+            echo "### Detail par PR"
+            echo ""
+            if [ -f .tmp/batch_results.json ]; then
+              python - <<'PY'
+          import json
+          data = json.load(open(".tmp/batch_results.json", encoding="utf-8"))
+          print("| PR | statut | duree (s) | tests selectionnes |")
+          print("|---|---|---|---|")
+          for pr in data.get("prs", []):
+              print(f"| #{pr.get('number')} | {pr.get('statut')} | {pr.get('duree_s')} | {pr.get('tests_selectionnes', '-')} |")
+          integration = data.get("integration") or {}
+          arbre = integration.get("arbre") or {}
+          print("")
+          print("### Arbre d'integration")
+          print("")
+          print(f"- statut : **{integration.get('statut')}**")
+          print(f"- PRs integrees : **{arbre.get('prs_integrees')}**")
+          if arbre.get("conflits"):
+              print("- conflits : " + ", ".join(f"#{c.get('pr')}" for c in arbre["conflits"]))
+          bis = integration.get("bissection") or {}
+          print(f"- bissection : **{bis.get('statut')}**")
+          if bis.get("pr_coupable"):
+              print(f"- **PR coupable : #{bis['pr_coupable']}**")
+          PY
+            else
+              echo "Aucun resultat."
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "Deposer les resultats (artefact)"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: heavy-batch-results
+          path: |
+            .tmp/batch_plan.json
+            .tmp/batch_results.json
+            .tmp/batch_summary.json
+          if-no-files-found: ignore
 

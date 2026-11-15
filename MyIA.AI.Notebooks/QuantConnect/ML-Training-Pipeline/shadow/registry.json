@@ -107,6 +107,46 @@
       "params": {},
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
       "fingerprint": "eb4d52901ef24b9d"
+    },
+    {
+      "id": "drk-kernel",
+      "kind": "qc",
+      "sha": "d212d6befd4c1cbf3271f599734f3191387523e2",
+      "frozen_on": "2026-11-08",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/DeterministicRiskKernel-QC:38955440",
+      "params": {},
+      "fee_model": "5 points de base par côté (ProportionalFeeModel)",
+      "fingerprint": "5f68bbeec3403e15"
+    },
+    {
+      "id": "halloween",
+      "kind": "qc",
+      "sha": "a03f54d1077214af6d212a55c687336866cbdb26",
+      "frozen_on": "2026-11-08",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/HalloweenIndicator-QC:38763075",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (IBKR Margin)",
+      "fingerprint": "fe065b8d6de5b9a8"
+    },
+    {
+      "id": "btc-voltarget-v2",
+      "kind": "qc",
+      "sha": "fa1d63e7071faed29bb2c048f04c9b0feaa1a8b7",
+      "frozen_on": "2026-11-12",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/BTC-VolTarget-QC:39243885",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (Bitfinex crypto, IBKR equity)",
+      "fingerprint": "4bc1ddf75eba4227"
+    },
+    {
+      "id": "short-intl-v2",
+      "kind": "qc",
+      "sha": "fa1d63e7071faed29bb2c048f04c9b0feaa1a8b7",
+      "frozen_on": "2026-11-12",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/ShortUnprofitableIntl-QC:39243884",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean, sans courtier déclaré (frais IBKR sur les actions)",
+      "fingerprint": "7d02080d7db3635f"
     }
   ]
 }

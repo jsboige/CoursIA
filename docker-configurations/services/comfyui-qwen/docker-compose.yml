@@ -8,11 +8,18 @@ services:
     # root-owned), installs gosu, then drops to uid 1000 (bonsai) before
     # launching the server. See entrypoint.sh privilege-drop block. (axe-2 #3164)
 
+    # Maintenance#303 bounds: the whole limits block moved from
+    # deploy.resources.limits to the service-level spellings (compose v5
+    # refuses to mix them, and deploy limits cannot express memory-swap).
+    # Result: --cpus=4 --memory=28g --memory-swap=28g --pids-limit=512. The 28g
+    # ceiling is unchanged. Only the GPU reservation stays under deploy.
+    cpus: '4'
+    mem_limit: 28g
+    memswap_limit: 28g
+    pids_limit: 512
+
     deploy:
       resources:
-        limits:
-          cpus: '4'
-          memory: 28G
         reservations:
           devices:
             - driver: nvidia
@@ -137,6 +144,11 @@ services:
     working_dir: /app
 
     command: ["python", "comfyui_idle_monitor.py"]
+
+    # Maintenance#303 bounds (sidecar).
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
 
     depends_on:
       comfyui-qwen:

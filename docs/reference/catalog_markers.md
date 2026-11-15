@@ -1,5 +1,7 @@
 # Catalog Markers - README Auto-Update System
 
+> REFERENCE — vivante — dernière révision 2026-11-11
+
 Source-of-truth counts driven by `COURSE_CATALOG.generated.json`. Markers in README files are expanded by `scripts/notebook_tools/expand_catalog_markers.py` and verified by CI on PRs that touch notebooks, series READMEs, or the catalog — the `catalog-drift.yml` workflow is filtered by `paths:`, so it does not run on every PR.
 
 ## Overview

@@ -619,6 +619,13 @@ def test_find_non_closing_refs_see_part_of_refs():
     assert {h["keyword"] for h in hits} == {"see", "part of", "refs"}
 
 
+def test_find_non_closing_refs_colon_and_references_forms():
+    hits = gt.find_non_closing_refs("See: #42\nReferences #43")
+    assert [(h["keyword"], h["number"]) for h in hits] == [
+        ("see", 42), ("references", 43),
+    ]
+
+
 def test_find_non_closing_refs_excludes_closing_keywords():
     # Closing keywords must NOT be matched by the non-closing scanner (the
     # blocking discriminant stays the closing scanner's job).

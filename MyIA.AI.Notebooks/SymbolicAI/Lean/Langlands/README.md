@@ -1,6 +1,6 @@
 # Langlands — formes modulaires et ponts
 
-Série née de l'EPIC [#17969](https://github.com/jsboige/CoursIA/issues/17969) : donner aux formes modulaires la place pédagogique réfléchie qu'elles méritent, et tisser les ponts — forme modulaire ↔ courbe elliptique, Moonshine ↔ groupe Monstre — que le programme de Langlands articule. C'est la direction que Serre décrivait comme **orthogonale** à la marée montante de Grothendieck : des voies surprenantes où il ne suffit pas de laisser monter la mer (entretien Serre–Connes, distillé dans `../Lean-15-Grothendieck-Tribute.ipynb`, section « Les limites de la marée »).
+Série née de l'EPIC [#17969](https://github.com/jsboige/CoursIA/issues/17969) : donner aux formes modulaires la place pédagogique réfléchie qu'elles méritent, et tisser les ponts — forme modulaire ↔ courbe elliptique, Moonshine ↔ groupe Monstre — que le programme de Langlands articule. C'est la direction que Serre décrivait comme **orthogonale** à la marée montante de Grothendieck : des voies surprenantes où il ne suffit pas de laisser monter la mer (entretien Serre–Connes, distillé dans `../GROTH/GROTH-02-Tribut-Python.ipynb`, section « Les limites de la marée »).
 
 Le geste de la série : rendre chaque identité **calculée dans une sortie** — q-expansions exactes à coefficients entiers, valeurs propres de Hecke, tables de coefficients vérifiées premier par premier — en miroir du socle formel [`hecke_lean/`](hecke_lean/README.md) qui démontre ce que les carnets calculent.
 
@@ -15,9 +15,15 @@ Le geste de la série : rendre chaque identité **calculée dans une sortie** �
 | 05 | [05-szpiro-pasten-2026.ipynb](05-szpiro-pasten-2026.ipynb) | Pasten, *Improved Bounds for Szpiro's Conjecture* (arXiv 2609.17390, #16549) ; factorisations admissibles `N=DM`, proxy `log\|Δ\|/log rad(\|Δ\|)` des courbes `y²=x³+ax+b` ; arrivé de la série Search (carte #19253, ligne 15) | Python + sympy |
 | 06 | [06-operateurs-de-hecke-natif.ipynb](06-operateurs-de-hecke-natif.ipynb) | Les opérateurs $T_p$/$U_p$ **exécutés au noyau** `lean4-wsl` — compagnon natif du lake, seule marche qui interroge in-kernel les trois PID (7, 11, 13) et la route de Fermat (`#check`/`#print axioms`, 0 erreur) ; ex-Lean-29, descendu de la racine (gradation #17545) | Lean 4 (WSL) |
 
+## Route d'entrée
+
+Pour suivre les liens mathématiques déjà calculés dans le dépôt, commencer par [01 — Formes modulaires et opérateurs de Hecke](01-formes-modulaires-sl2z-hecke.ipynb) : les q-expansions et le pont vers la courbe elliptique 11a1 donnent le vocabulaire nécessaire. Enchaîner avec [02 — Monstrous Moonshine](02-monstrous-moonshine-invariant-j.ipynb), qui met en regard les coefficients de l'invariant $j$ et les dimensions de représentations du groupe Monstre. Ce carnet évoque les algèbres vertex comme contexte de la preuve de Borcherds ; il ne constitue pas un cours sur les algèbres vertex.
+
+Depuis 02, deux prolongements répondent à des questions différentes : [04 — Umbral Moonshine](04-umbral-moonshine-reseaux-niemeier.ipynb) élargit la piste Moonshine aux réseaux de Niemeier ; [03 — la chaîne de modularité vers Fermat](03-chaine-de-modularite-vers-fermat.ipynb) revient aux formes modulaires pour suivre le pont entre courbes elliptiques et théorème de Fermat. Le [compagnon Lean 06](06-operateurs-de-hecke-natif.ipynb) reprend ensuite les opérateurs de Hecke dans le noyau Lean et le lake [`hecke_lean/`](hecke_lean/README.md). Le carnet [05 — Szpiro–Pasten](05-szpiro-pasten-2026.ipynb) est une lecture complémentaire sur une conjecture voisine, non un prérequis à cette route.
+
 ## Conventions
 
-- Français d'abord, arithmétique en stdlib pur (aucune dépendance au-delà de la bibliothèque standard) ; exception : `03` recourt à `sympy` (`factorint`, `totient`) pour les factorisations admissibles `N = DM`.
+- Français d'abord, arithmétique en stdlib pur (aucune dépendance au-delà de la bibliothèque standard) ; exception : `05` recourt à `sympy` (`factorint`, `totient`) pour les factorisations admissibles `N = DM`.
 - ≥ 3 exercices C.1 par notebook (convention #2161), exécution complète commitée (C.2).
 - Verdict SOTA écrit au body de chaque PR (#3801).
 - Le versant formel vit dans le lake compagnon [`hecke_lean/`](hecke_lean/README.md) (opérateurs de Hecke, courbe de Frey), descendu avec la sous-série (gradation #17545).

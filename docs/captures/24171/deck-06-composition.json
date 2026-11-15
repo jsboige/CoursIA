@@ -1,0 +1,1291 @@
+{
+ "canvas": [
+  980,
+  552
+ ],
+ "n_slides": 124,
+ "n_hors_canvas": 7,
+ "n_chevauchements": 0,
+ "n_chevauchements_eteints": 351,
+ "n_recouvrements": 0,
+ "n_occupation_flagged": 7,
+ "recouvrement_borne": "ADVISORY — signalé, non compté dans le code retour (taux de faux positifs à mesurer avant tout câblage bloquant)",
+ "borne": "ADVISORY only — ne remplace pas le QA visuel humain pour la composition",
+ "font_dependency": "Les compteurs de ce rapport dependent des polices SYSTEME de la machine qui a rendu le deck (aucune @font-face dans slides/) : la hauteur des blocs de texte, donc HORS_CANVAS, varie d'une machine a l'autre. La signature historique ne couvre que la premiere slide. Consulter rendering_conditions ; une empreinte egale ne prouve pas la comparabilite.",
+ "font_environment": {
+  "declared_stack": "\"Segoe UI\", Calibri, Arial, sans-serif",
+  "sampled_element": "H1",
+  "font_size": "32.4px",
+  "line_height": "48.6px",
+  "font_weight": "400",
+  "default_width_px": 357.91,
+  "probe_ok": true,
+  "generic_width_px": {
+   "monospace": 373.87,
+   "serif": 357.91,
+   "sans_serif": 376.27
+  },
+  "families": [
+   {
+    "name": "Segoe UI",
+    "width_px": 370.25,
+    "resolved": true,
+    "generic": false,
+    "probe_ok": true
+   },
+   {
+    "name": "Calibri",
+    "width_px": 340.72,
+    "resolved": true,
+    "generic": false,
+    "probe_ok": true
+   },
+   {
+    "name": "Arial",
+    "width_px": 376.27,
+    "resolved": true,
+    "generic": false,
+    "probe_ok": true
+   },
+   {
+    "name": "sans-serif",
+    "width_px": 357.91,
+    "resolved": null,
+    "generic": true,
+    "probe_ok": true
+   }
+  ],
+  "line_height_normal_stack_px": 21,
+  "line_height_normal_generic_px": 18,
+  "line_height_delta_px": 3,
+  "line_height_real_px": 48.59,
+  "monospace": null
+ },
+ "font_signature": "faea2d8efd2aeb08",
+ "rendering_conditions": {
+  "browser": "158.0.8127.18",
+  "canvas": [
+   980,
+   552
+  ],
+  "signature": "indisponible",
+  "borne": "Des signatures differentes interdisent la comparaison directe ; leur egalite ne prouve pas l'identite des fichiers de polices ni des autres conditions de rendu.",
+  "slides_fonts_compact": "1:;2:SegoeUI;3:SegoeUI;4:SegoeUI;5:SegoeUI+SegoeUI-Bold;6:SegoeUI;7:SegoeUI;8:SegoeUI;9:SegoeUI;10:SegoeUI;11:CambriaMath+SegoeUI;12:SegoeUI;13:SegoeUI;14:SegoeUI;15:SegoeUI;16:SegoeUI;17:SegoeUI+SegoeUI-Bold;18:SegoeUI;19:SegoeUI;20:SegoeUI;21:SegoeUI;22:SegoeUI;23:SegoeUI;24:SegoeUI;25:SegoeUI;26:SegoeUI+SegoeUI-Bold;27:SegoeUI;28:SegoeUI+SegoeUI-Bold;29:SegoeUI;30:SegoeUI;31:SegoeUI;32:SegoeUI;33:CascadiaCodeRoman-Light+SegoeUI+SegoeUI-Bold;34:SegoeUI;35:SegoeUI;36:SegoeUI;37:SegoeUI;38:SegoeUI;39:SegoeUI;40:SegoeUI+SegoeUI-Bold;41:SegoeUI+SegoeUI-Bold;42:SegoeUI;43:SegoeUI+SegoeUI-Bold;44:SegoeUI;45:SegoeUI;46:SegoeUI;47:SegoeUI;48:SegoeUI;49:SegoeUI;50:SegoeUI;51:SegoeUI;52:SegoeUI;53:SegoeUI;54:SegoeUI;55:SegoeUI;56:SegoeUI;57:SegoeUI;58:SegoeUI;59:SegoeUI;60:SegoeUI+SegoeUI-Bold;61:SegoeUI+SegoeUI-Bold;62:SegoeUI+SegoeUI-Bold;63:SegoeUI+SegoeUI-Bold;64:CambriaMath+KaTeX_Main-Regular+KaTeX_Math-Italic+SegoeUI+SegoeUI-Bold+TimesNewRomanPSMT;65:CambriaMath+KaTeX_Main-Regular+KaTeX_Math-Italic+SegoeUI+SegoeUI-Bold+TimesNewRomanPSMT;66:SegoeUI+SegoeUI-Bold;67:SegoeUI+SegoeUI-Bold;68:SegoeUI+SegoeUI-Bold;69:SegoeUI;70:CambriaMath+SegoeUI;71:CambriaMath+SegoeUI+SegoeUI-Bold;72:CambriaMath+SegoeUI;73:CambriaMath+SegoeUI;74:SegoeUI;75:CambriaMath+SegoeUI+SegoeUI-Bold;76:SegoeUI;77:SegoeUI;78:SegoeUI;79:SegoeUI;80:SegoeUI;81:CambriaMath+SegoeUI+SegoeUI-Bold;82:SegoeUI;83:SegoeUI+SegoeUI-Bold;84:SegoeUI;85:SegoeUI;86:SegoeUI+SegoeUI-Bold;87:SegoeUI;88:SegoeUI;89:SegoeUI;90:SegoeUI;91:SegoeUI;92:SegoeUI;93:SegoeUI+SegoeUI-Bold;94:SegoeUI;95:SegoeUI+SegoeUI-Bold;96:SegoeUI;97:SegoeUI;98:SegoeUI;99:SegoeUI;100:SegoeUI;101:SegoeUI;102:SegoeUI;103:SegoeUI+SegoeUI-Bold;104:SegoeUI;105:SegoeUI;106:SegoeUI+SegoeUI-Bold;107:SegoeUI;108:SegoeUI;109:SegoeUI;110:SegoeUI;111:;112:SegoeUI;113:SegoeUI;114:SegoeUI;115:SegoeUI+SegoeUI-Bold;116:SegoeUI+SegoeUI-Bold;117:CambriaMath+SegoeUI+SegoeUI-Bold;118:SegoeUI+SegoeUI-Bold;119:SegoeUI+SegoeUI-Bold;120:SegoeUI+SegoeUI-Bold;121:SegoeUI;122:SegoeUI;123:CascadiaCodeRoman-Light+SegoeUI+SegoeUI-Bold;124:SegoeUI",
+  "slides_fonts_compact_schema": "slide:polices utilisees (PostScript, '+' = plusieurs) ; l'original du scanner conserve le detail par diapositive"
+ },
+ "controle_positif_ok": null,
+ "controle_positif_msg": null,
+ "controle_positif_armed": false,
+ "stale_warnings": [],
+ "url": "<serveur-slidev-local>",
+ "kind": "scan_slidev_composition",
+ "version": 1,
+ "note": "releve ARCHIVE : chaque diapositive porte son verdict et, pour les seules diapositives signalees, le detail des boites hors canvas ; le detail complet de toutes les 124 diapositives reste produit par l'instrument a chaque run.",
+ "slides_compact_schema": "[slide, text_head (120 car. max), hors_canvas (bool), container_only (bool), occupation (bool)]",
+ "slides": [
+  [
+   1,
+   "Apprentissage Intelligence Artificielle – VI Apprentissage s",
+   false,
+   false,
+   false
+  ],
+  [
+   2,
+   "Plan du cours Introduction Résolution de problèmes Bases de ",
+   false,
+   false,
+   false
+  ],
+  [
+   3,
+   "Sommaire Agents apprenants Apprentissage inductif paramétriq",
+   false,
+   false,
+   false
+  ],
+  [
+   4,
+   "Apprentissage Essentiel dans les environnements inconnus Qua",
+   false,
+   false,
+   false
+  ],
+  [
+   5,
+   "Agent Apprenant Modules : performance, apprentissage, critiq",
+   false,
+   false,
+   false
+  ],
+  [
+   6,
+   "Composant d’apprentissage La conception d’un composant d’app",
+   false,
+   false,
+   false
+  ],
+  [
+   7,
+   "Apprentissage inductif Forme la plus simple: apprendre une f",
+   false,
+   false,
+   false
+  ],
+  [
+   8,
+   "Principes de l’apprentissage inductif h est choisie dans un ",
+   true,
+   true,
+   true
+  ],
+  [
+   9,
+   "Exemple: l’attente au restaurant Fonction d’une liste d’attr",
+   false,
+   false,
+   false
+  ],
+  [
+   10,
+   "Représentation par attributs Les exemples sont données par l",
+   false,
+   false,
+   true
+  ],
+  [
+   11,
+   "Arbres de décision Un type de représentation pour les hypoth",
+   true,
+   true,
+   true
+  ],
+  [
+   12,
+   "Expressivité des arbres de décisions Ils peuvent exprimer to",
+   false,
+   false,
+   true
+  ],
+  [
+   13,
+   "Espace d’hypothèses Combien d’arbres de décisions avec n att",
+   false,
+   false,
+   false
+  ],
+  [
+   14,
+   "Apprentissage d’arbres de décision But: trouver un petit arb",
+   false,
+   false,
+   true
+  ],
+  [
+   15,
+   "Choix d’un attribut Idée: un bon attribut divise les exemple",
+   false,
+   false,
+   true
+  ],
+  [
+   16,
+   "Utilité de la théorie de l’information Pour implémenter la f",
+   false,
+   false,
+   true
+  ],
+  [
+   17,
+   "Code de Huffman En 1952 au MIT, dans le cadre d’un travail s",
+   true,
+   true,
+   false
+  ],
+  [
+   18,
+   "Gain informationnel A divise E en sous-ensembles E1, … , Ev ",
+   false,
+   false,
+   false
+  ],
+  [
+   19,
+   "Exemple d’arbre appris Arbre de décision appris à partir des",
+   false,
+   false,
+   true
+  ],
+  [
+   20,
+   "Efficacité des arbres de décision Méthode d’apprentissage la",
+   false,
+   false,
+   false
+  ],
+  [
+   21,
+   "Extensions de l’algorithme d’apprentissage Utilisation de ra",
+   false,
+   false,
+   false
+  ],
+  [
+   22,
+   "Ratios de gain Le critère de gain d’information favorise les",
+   false,
+   false,
+   false
+  ],
+  [
+   23,
+   "Valeurs réelles On sélection un ensemble de seuils définissa",
+   false,
+   false,
+   false
+  ],
+  [
+   24,
+   "Conversion des arbres de décision en règles Dériver un ensem",
+   false,
+   false,
+   false
+  ],
+  [
+   25,
+   "Elagage des arbres de décision L’élagage d’un arbre de décis",
+   false,
+   false,
+   false
+  ],
+  [
+   26,
+   "Résumé arbres de décision L’induction d’arbres de decision e",
+   false,
+   false,
+   false
+  ],
+  [
+   27,
+   "Questions?",
+   false,
+   false,
+   false
+  ],
+  [
+   28,
+   "Mesure de performance Comment sait-on que h ≈ f ? Utilisatio",
+   false,
+   false,
+   true
+  ],
+  [
+   29,
+   "Généralisation et surapprentissage Toute sorte de « bruits »",
+   false,
+   false,
+   true
+  ],
+  [
+   30,
+   "Choix de la meilleure hypothèse Ensembles d’apprentissage et",
+   false,
+   false,
+   true
+  ],
+  [
+   31,
+   "Du taux d’erreur à la perte Perte Générale: Importance de la",
+   true,
+   true,
+   true
+  ],
+  [
+   32,
+   "Théorie de l’apprentissage Référence : 2.8-Theorie-PAC.ipynb",
+   false,
+   false,
+   true
+  ],
+  [
+   33,
+   "PAC learning en Lean : la théorie, prouvée formellement Les ",
+   false,
+   false,
+   false
+  ],
+  [
+   34,
+   "Méthodes d’ensemble Jusqu’à présent: 1 seule hypothèse Appre",
+   false,
+   false,
+   true
+  ],
+  [
+   35,
+   "Questions?",
+   false,
+   false,
+   false
+  ],
+  [
+   36,
+   "Classification lineaire Separer les classes par un hyperplan",
+   false,
+   false,
+   true
+  ],
+  [
+   37,
+   "Regression logistique Sortie = probabilité d’appartenance a ",
+   false,
+   false,
+   true
+  ],
+  [
+   38,
+   "Réseau de neurones artificiels Unité de McCulloch-Pitts Insp",
+   false,
+   false,
+   true
+  ],
+  [
+   39,
+   "Réseaux de neurones à une couche Toutes les unités opèrent s",
+   false,
+   false,
+   true
+  ],
+  [
+   40,
+   "Réseaux feed-forward multi-couches Structure couches général",
+   true,
+   false,
+   true
+  ],
+  [
+   41,
+   "Apprentissage par retropropagation Principe : propager l’err",
+   true,
+   true,
+   true
+  ],
+  [
+   42,
+   "Mise en œuvre de la rétropropagation A chaque époque on somm",
+   false,
+   false,
+   true
+  ],
+  [
+   43,
+   "Apprentissage profond Classificateurs multicouches tradition",
+   false,
+   false,
+   true
+  ],
+  [
+   44,
+   "Réseaux Convolués LeNet Fonction d’activation non linéaire: ",
+   false,
+   false,
+   true
+  ],
+  [
+   45,
+   "Auto-Encodeurs",
+   false,
+   false,
+   true
+  ],
+  [
+   46,
+   "Réseaux résiduels (ResNets) Problème: Augmentation de la pro",
+   true,
+   true,
+   true
+  ],
+  [
+   47,
+   "Réseaux antagonistes génératifs (GANs) Principe Apprentissag",
+   false,
+   false,
+   true
+  ],
+  [
+   48,
+   "Réseaux récurrents - RNNs Réseaux récurrents Pensées persist",
+   false,
+   false,
+   true
+  ],
+  [
+   49,
+   "Réseaux récurrents - portes et variantes Porte 1: On oublie ",
+   false,
+   false,
+   true
+  ],
+  [
+   50,
+   "Mécanisme d’attention Inspiration naturelle Focalisation  é",
+   false,
+   false,
+   true
+  ],
+  [
+   51,
+   "Modèles multimodaux Combinaison de plusieurs modalités E.g. ",
+   true,
+   true,
+   true
+  ],
+  [
+   52,
+   "Modèles de diffusion",
+   false,
+   false,
+   true
+  ],
+  [
+   53,
+   "Graphs Neural Networks (GNNs) Graphes G = (V,E) GNN opère su",
+   true,
+   true,
+   true
+  ],
+  [
+   54,
+   "Résumé réseaux de neurones Les Perceptrons (1 couche) sont i",
+   false,
+   false,
+   false
+  ],
+  [
+   55,
+   "Questions?",
+   false,
+   false,
+   false
+  ],
+  [
+   56,
+   "Modèles non paramétriques Decision trees and neural nets are",
+   false,
+   false,
+   false
+  ],
+  [
+   57,
+   "Plus proche voisin Plus proche voisin simple : Sauvegarder t",
+   false,
+   false,
+   false
+  ],
+  [
+   58,
+   "Nearest Neighbor Example: Run Outside (+) or Inside (-) Humi",
+   false,
+   false,
+   false
+  ],
+  [
+   59,
+   "K-Nearest Neighbor What if the data is noisy? Generalize to ",
+   true,
+   true,
+   true
+  ],
+  [
+   60,
+   "Classificateurs Linéaires Classer des données en 2 catégorie",
+   false,
+   false,
+   false
+  ],
+  [
+   61,
+   "La Marge du Classifieur La marge = distance entre l’hyperpla",
+   false,
+   false,
+   false
+  ],
+  [
+   62,
+   "Marge Maximale — Intuition L’hyperplan à marge maximale est ",
+   false,
+   false,
+   false
+  ],
+  [
+   63,
+   "Vecteurs de Support Les vecteurs de support sont les exemple",
+   false,
+   false,
+   false
+  ],
+  [
+   64,
+   "Calcul de la Marge Soit x⁻ sur le plan négatif, x⁺ le point ",
+   false,
+   false,
+   false
+  ],
+  [
+   65,
+   "Optimisation du SVM Linéaire Problème primal : minimiser ½ ‖",
+   false,
+   false,
+   false
+  ],
+  [
+   66,
+   "Apprentissage des SVM Astuce 1 : Identifier les points les p",
+   true,
+   true,
+   true
+  ],
+  [
+   67,
+   "Noyaux SVM — Fonctions de Base Pour les données non linéaire",
+   false,
+   false,
+   false
+  ],
+  [
+   68,
+   "Performance Empirique des SVMs Excellents résultats jusqu’au",
+   false,
+   false,
+   false
+  ],
+  [
+   69,
+   "Questions?",
+   false,
+   false,
+   false
+  ],
+  [
+   70,
+   "Apprentissage et logique Jusque là: fonction (input)  outpu",
+   false,
+   false,
+   true
+  ],
+  [
+   71,
+   "Exploration à moindre engagement Principe d’élimination  in",
+   true,
+   true,
+   true
+  ],
+  [
+   72,
+   "Apprentissage et connaissance Relation en hypothèses et exem",
+   false,
+   false,
+   false
+  ],
+  [
+   73,
+   "Apprentissage par explication (EBL) Principes Hypothèse ∧ De",
+   true,
+   true,
+   true
+  ],
+  [
+   74,
+   "Apprentissage fondé sur la pertinence (RBL)",
+   false,
+   false,
+   true
+  ],
+  [
+   75,
+   "Programmation logique inductive (ILP) Principe Contexte ∧ Hy",
+   false,
+   false,
+   true
+  ],
+  [
+   76,
+   "Apprentissage inductif par résolution inverse",
+   false,
+   false,
+   true
+  ],
+  [
+   77,
+   "Résumé apprentissage et connaissances Utilisation des connai",
+   false,
+   false,
+   false
+  ],
+  [
+   78,
+   "Questions?",
+   false,
+   false,
+   false
+  ],
+  [
+   79,
+   "Apprentissage probabiliste Naïve Bayes Use Bayesian modeling",
+   false,
+   false,
+   false
+  ],
+  [
+   80,
+   "Naive Bayes: Analysis Naive Bayes is amazingly easy to imple",
+   false,
+   false,
+   false
+  ],
+  [
+   81,
+   "Bayesian Formulation Assuming conditional independence p(C |",
+   false,
+   false,
+   false
+  ],
+  [
+   82,
+   "About Multiplying Probabilities If we have lots of features,",
+   false,
+   false,
+   false
+  ],
+  [
+   83,
+   "Bayesian learning: Bayes’ rule Given some model space (set o",
+   false,
+   false,
+   false
+  ],
+  [
+   84,
+   "Bayesian learning Sometimes, computing the sum over all hypo",
+   false,
+   false,
+   false
+  ],
+  [
+   85,
+   "Learning Bayesian networks Given training set Find B that be",
+   false,
+   false,
+   false
+  ],
+  [
+   86,
+   "Parameter estimation Assume known structure Goal: estimate B",
+   false,
+   false,
+   false
+  ],
+  [
+   87,
+   "Parameter estimation II The likelihood decomposes according ",
+   false,
+   false,
+   false
+  ],
+  [
+   88,
+   "Sufficient statistics: Example θ*A | E, B = N(A, E, B) / N(E",
+   false,
+   false,
+   false
+  ],
+  [
+   89,
+   "Model selection Goal: Select the best network structure, giv",
+   false,
+   false,
+   false
+  ],
+  [
+   90,
+   "Structure selection: Scoring Bayesian: prior over parameters",
+   false,
+   false,
+   false
+  ],
+  [
+   91,
+   "Heuristic search B E A C Add EC Δscore© B E A C Reverse EA",
+   false,
+   false,
+   false
+  ],
+  [
+   92,
+   "Exploiting decomposability Delete EA Δscore(A) B E A C To r",
+   false,
+   false,
+   false
+  ],
+  [
+   93,
+   "Handling missing data Suppose that in some cases, we observe",
+   false,
+   false,
+   false
+  ],
+  [
+   94,
+   "EM (expectation maximization) Guess values for observations ",
+   false,
+   false,
+   false
+  ],
+  [
+   95,
+   "Convergence Example: Estimating an Average Data: 4, 10, ?, ?",
+   false,
+   false,
+   false
+  ],
+  [
+   96,
+   "EM example Suppose we have observed Earthquake and Alarm but",
+   false,
+   false,
+   false
+  ],
+  [
+   97,
+   "Missing Data: Example θ*A | E, B = N(A, E, B) / N(E, B) D = ",
+   false,
+   false,
+   false
+  ],
+  [
+   98,
+   "Variations on a theme Known structure, fully observable: onl",
+   false,
+   false,
+   false
+  ],
+  [
+   99,
+   "Apprentissage non supervisé Clustering = trouver les labels ",
+   false,
+   false,
+   false
+  ],
+  [
+   100,
+   "Questions?",
+   false,
+   false,
+   false
+  ],
+  [
+   101,
+   "Apprentissage par renforcement Référence : RL-01-Premiers-Pa",
+   false,
+   false,
+   true
+  ],
+  [
+   102,
+   "Renforcement passif Principes Politique π(s) fixée, Cf. Itér",
+   true,
+   false,
+   true
+  ],
+  [
+   103,
+   "Apprentissage des différences temporelles TDL Observation de",
+   true,
+   false,
+   true
+  ],
+  [
+   104,
+   "Renforcement actif Agent actif: choix de la politique Cf mod",
+   true,
+   true,
+   true
+  ],
+  [
+   105,
+   "Q-learning = Apprentissage d’utilité action Possibilité : AD",
+   true,
+   false,
+   true
+  ],
+  [
+   106,
+   "Généralisation et approximations Jusqu’à présent: Q-fonction",
+   true,
+   false,
+   true
+  ],
+  [
+   107,
+   "Exploration de politique",
+   false,
+   false,
+   true
+  ],
+  [
+   108,
+   "Applications",
+   false,
+   false,
+   true
+  ],
+  [
+   109,
+   "Deep Q learning Réseaux de neurones = excellent espace d’hyp",
+   false,
+   false,
+   false
+  ],
+  [
+   110,
+   "Deep Q learning — exploration et avancées Récentes avancées ",
+   true,
+   false,
+   true
+  ],
+  [
+   111,
+   "",
+   true,
+   true,
+   true
+  ],
+  [
+   112,
+   "Minimisation de regret hypothétique Jeux à information impar",
+   true,
+   false,
+   true
+  ],
+  [
+   113,
+   "Résumé apprentissage par renforcement Données: percepts et r",
+   false,
+   false,
+   false
+  ],
+  [
+   114,
+   "Résumé RL (2/2) — exploration et applications Compromis expl",
+   false,
+   false,
+   false
+  ],
+  [
+   115,
+   "RLHF : Aligner les LLMs avec les Préférences Humaines Problè",
+   false,
+   false,
+   false
+  ],
+  [
+   116,
+   "Pipeline RLHF : 3 Étapes Étape 1 — Supervised Fine-Tuning (S",
+   false,
+   false,
+   false
+  ],
+  [
+   117,
+   "Reward Modeling : Apprendre les Préférences Humaines Modèle ",
+   false,
+   false,
+   false
+  ],
+  [
+   118,
+   "PPO et InstructGPT / ChatGPT Proximal Policy Optimization (P",
+   false,
+   false,
+   false
+  ],
+  [
+   119,
+   "Constitutional AI : RLAIF sans Labels Humains Anthropic Clau",
+   false,
+   false,
+   false
+  ],
+  [
+   120,
+   "Post-training : GRPO et récompenses vérifiables Les LLM de r",
+   false,
+   false,
+   false
+  ],
+  [
+   121,
+   "Questions?",
+   false,
+   false,
+   false
+  ],
+  [
+   122,
+   "Projets de groupe Moteur de recherche augmenté par le raison",
+   false,
+   false,
+   false
+  ],
+  [
+   123,
+   "Pour aller plus loin : Notebooks Cours ML appliqué : ML/Data",
+   false,
+   false,
+   false
+  ],
+  [
+   124,
+   "Merci Jean-Sylvain Boige jsboige@myia.org",
+   false,
+   false,
+   false
+  ]
+ ],
+ "hors_canvas_detail": {
+  "40": [
+   {
+    "tag": "DIV",
+    "cls": "slidev-layout default",
+    "bbox": [
+     0,
+     0,
+     980,
+     815
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "dense-list",
+    "bbox": [
+     48,
+     88,
+     932,
+     775
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "slidev-vclick-target slidev-vclick-hidden",
+    "bbox": [
+     48,
+     333,
+     932,
+     775
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "img-grid cols3",
+    "bbox": [
+     48,
+     367,
+     932,
+     667
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "img-fit",
+    "bbox": [
+     391,
+     675,
+     589,
+     775
+    ]
+   }
+  ],
+  "102": [
+   {
+    "tag": "DIV",
+    "cls": "slidev-layout dense",
+    "bbox": [
+     0,
+     0,
+     980,
+     969
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     185,
+     550,
+     795,
+     886
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     410,
+     896,
+     570,
+     945
+    ]
+   }
+  ],
+  "103": [
+   {
+    "tag": "DIV",
+    "cls": "slidev-layout default",
+    "bbox": [
+     0,
+     0,
+     980,
+     714
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "dense-list",
+    "bbox": [
+     48,
+     88,
+     932,
+     679
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "img-grid",
+    "bbox": [
+     48,
+     358,
+     932,
+     658
+    ]
+   },
+   {
+    "tag": "P",
+    "cls": "notebook-reference",
+    "bbox": [
+     48,
+     661,
+     932,
+     679
+    ]
+   },
+   {
+    "tag": "A",
+    "cls": "",
+    "bbox": [
+     126,
+     659,
+     576,
+     680
+    ]
+   }
+  ],
+  "105": [
+   {
+    "tag": "DIV",
+    "cls": "slidev-layout dense",
+    "bbox": [
+     0,
+     0,
+     980,
+     728
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "img-grid cols3",
+    "bbox": [
+     36,
+     414,
+     944,
+     714
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     206,
+     567,
+     487,
+     663
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     493,
+     567,
+     774,
+     663
+    ]
+   }
+  ],
+  "106": [
+   {
+    "tag": "DIV",
+    "cls": "slidev-layout dense",
+    "bbox": [
+     0,
+     0,
+     980,
+     622
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     277,
+     549,
+     703,
+     598
+    ]
+   }
+  ],
+  "110": [
+   {
+    "tag": "DIV",
+    "cls": "slidev-layout default",
+    "bbox": [
+     0,
+     0,
+     980,
+     803
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "img-grid cols3",
+    "bbox": [
+     48,
+     432,
+     932,
+     732
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     73,
+     534,
+     347,
+     630
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     353,
+     534,
+     627,
+     630
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     633,
+     534,
+     907,
+     630
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     213,
+     636,
+     487,
+     732
+    ]
+   },
+   {
+    "tag": "IMG",
+    "cls": "",
+    "bbox": [
+     493,
+     636,
+     767,
+     732
+    ]
+   },
+   {
+    "tag": "P",
+    "cls": "notebook-reference",
+    "bbox": [
+     48,
+     738,
+     932,
+     765
+    ]
+   },
+   {
+    "tag": "A",
+    "cls": "",
+    "bbox": [
+     140,
+     739,
+     419,
+     763
+    ]
+   }
+  ],
+  "112": [
+   {
+    "tag": "DIV",
+    "cls": "slidev-layout default",
+    "bbox": [
+     0,
+     0,
+     980,
+     814
+    ]
+   },
+   {
+    "tag": "DIV",
+    "cls": "img-grid onerow",
+    "bbox": [
+     48,
+     442,
+     932,
+     742
+    ]
+   },
+   {
+    "tag": "P",
+    "cls": "notebook-reference",
+    "bbox": [
+     48,
+     748,
+     932,
+     775
+    ]
+   },
+   {
+    "tag": "A",
+    "cls": "",
+    "bbox": [
+     140,
+     749,
+     448,
+     773
+    ]
+   }
+  ]
+ }
+}

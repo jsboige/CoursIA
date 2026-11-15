@@ -48,6 +48,11 @@ from typing import Any
 
 SNAPSHOT_VERSION = 1
 
+# GitHub REST plafonne `per_page` a 100. Sans parametre, l'API sert 30
+# elements par defaut : les lectures paginees du fil complet paient alors
+# inutilement plus d'operations REST, sans gagner en fraicheur.
+REST_PER_PAGE = 100
+
 #: Duree de validite des payloads PAR ISSUE (issue + commentaires), en
 #: secondes. Arbitrage coordinateur du 2026-10-26 (PR #22684) : cache de
 #: CYCLE CRON -- les charges couteuses par element vivent au-dela de la
@@ -148,8 +153,8 @@ def _pid_alive(pid: int) -> bool:
 
 
 @contextmanager
-def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
-    """Verrou de rafraichissement, partage entre lanes de la meme machine.
+def lock_directory(directory: Path, timeout: float = 120.0) -> Iterator[Path]:
+    """Verrou de rafraichissement sur un REPERTOIRE, partage entre lanes de la meme machine.
 
     `O_CREAT|O_EXCL` est atomique sur tous les OS vises : le createur gagne,
     les autres attendent. Un verrou abandonne est casse dans deux cas :
@@ -166,8 +171,11 @@ def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
 
     Sans le cas d'age, un processus mort bloquerait la machine jusqu'au
     redemarrage.
+
+    Le verrou est **par repertoire**, pas par depot : l'instantane du depot
+    (`snapshot_lock`) et le cache du tapis rapide (`gh_bulk`) sont deux
+    repertoires distincts, et chacun protege le sien (#22630).
     """
-    directory = snapshot_dir(repo)
     directory.mkdir(parents=True, exist_ok=True)
     lock_path = directory / "refresh.lock"
     deadline = time.monotonic() + timeout
@@ -223,6 +231,17 @@ def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
             lock_path.unlink()
         except OSError:
             pass
+
+
+@contextmanager
+def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
+    """Verrou de rafraichissement de l'instantane d'un depot.
+
+    Le verrou lui-meme est `lock_directory` : un seul organe, deux
+    repertoires proteges (l'instantane du depot et le cache du tapis rapide).
+    """
+    with lock_directory(snapshot_dir(repo), timeout) as lock_path:
+        yield lock_path
 
 
 # --- lecture / ecriture --------------------------------------------------------
@@ -424,8 +443,11 @@ def normalise_comment(raw: dict) -> dict:
 
 
 def fetch_issue_comments(repo: str, number: int) -> list[dict]:
-    """Commentaires d'une issue, en REST (rapide : ~0,3 s contre ~5 s en GraphQL)."""
-    raw = _gh_api(f"repos/{repo}/issues/{number}/comments", params="--paginate")
+    """Commentaires d'une issue, en REST, avec la taille de page maximale."""
+    raw = _gh_api(
+        f"repos/{repo}/issues/{number}/comments",
+        params=["--paginate", "-X", "GET", "-f", f"per_page={REST_PER_PAGE}"],
+    )
     if isinstance(raw, dict):
         raw = raw.get("comments") or []
     return [normalise_comment(c) for c in raw
@@ -511,7 +533,8 @@ def fetch_repo_comments_since(repo: str, since: str | None = None, *,
     # `-f` est present, et un POST sur un point d'entree de liste rend
     # `404 Not Found` (mesure du 27/10 : le balayage levait
     # `gh: Not Found (HTTP 404)` et tout le rafraichissement echouait).
-    params: list[str] = ["--paginate", "-X", "GET"]
+    params: list[str] = ["--paginate", "-X", "GET", "-f",
+                         f"per_page={REST_PER_PAGE}"]
     if since:
         # #22983 -- DEUX elements d'argv, jamais un seul. En un seul
         # element (`"-f since=..."`), `gh` lit le nom de champ ` since`
@@ -551,7 +574,8 @@ def fetch_open_issues(repo: str, *, timeout: float = 60.0) -> dict[int, dict]:
     (titre, labels).
     """
     raw = _gh_api(f"repos/{repo}/issues", params=["--paginate", "-X", "GET",
-                                                   "-f", "state=open"],
+                                                   "-f", "state=open", "-f",
+                                                   f"per_page={REST_PER_PAGE}"],
                    timeout=timeout)
     if isinstance(raw, dict):
         raw = raw.get("issues") or []
@@ -604,11 +628,13 @@ def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
 
     Rend `(snapshot, nb_appels_gh)`.
     """
+    # Borne conservative : un commentaire peut arriver pendant la lecture
+    # paginee, apres le passage de sa page. Le prochain balayage doit le revoir.
+    now = time.time()
     grouped = fetch_repo_comments_since(repo, since, timeout=timeout)
     comments = dict(snapshot.get("comments") or {})
     meta = dict(snapshot.get("meta") or {})
     stamps = dict(meta.get("comment_stamps") or {})
-    now = time.time()
     for number, items in grouped.items():
         key = str(number)
         existing = [c for c in (comments.get(key) or [])
@@ -936,6 +962,7 @@ __all__ = [
     "install",
     "is_fresh",
     "load_snapshot",
+    "lock_directory",
     "normalise_comment",
     "refresh",
     "reset_call_count",

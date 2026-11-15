@@ -370,7 +370,7 @@
       "paths_list": [
         "MyIA.AI.Notebooks/GenAI/Vibe-Coding/analyzers/**",
         ".github/workflows/dotnet-AgentSafetyAnalyzer.yml",
-        "MyIA.CoursIA.sln"
+        "dotnet/MyIA.CoursIA.sln"
       ],
       "pr_target_filter_excludes_main": false
     },
@@ -387,9 +387,9 @@
       "name": "dotnet-ArgumentAnalysis.yml",
       "paths_count": 3,
       "paths_list": [
-        "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/**",
+        "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/**",
         ".github/workflows/dotnet-ArgumentAnalysis.yml",
-        "MyIA.CoursIA.sln"
+        "dotnet/MyIA.CoursIA.sln"
       ],
       "pr_target_filter_excludes_main": false
     },
@@ -423,7 +423,7 @@
         "MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/**",
         "MyIA.AI.Notebooks/Probas/DecisionTheory/voi/**",
         ".github/workflows/dotnet-OrphanApps.yml",
-        "MyIA.CoursIA.sln"
+        "dotnet/MyIA.CoursIA.sln"
       ],
       "pr_target_filter_excludes_main": false
     },
@@ -440,8 +440,8 @@
       "name": "dotnet-Shared.Tests.yml",
       "paths_count": 3,
       "paths_list": [
-        "MyIA.AI.Shared/**",
-        "MyIA.AI.Shared.Tests/**",
+        "dotnet/MyIA.AI.Shared/**",
+        "dotnet/MyIA.AI.Shared.Tests/**",
         ".github/workflows/dotnet-Shared.Tests.yml"
       ],
       "pr_target_filter_excludes_main": false

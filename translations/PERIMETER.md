@@ -47,7 +47,7 @@ CSV « Autres » : `casestudies`, `gametheory`, `iit`, `ml-datascience`,
 `mlnet`, `planners`, `probas_decinfer`, `probas_infer`, `probas_pymc`,
 `quantconnect-py`, `rl`, `search-applications`, `search-part1`,
 `search-part2`, `search-part3`, `search-part4`, `semanticweb`,
-`smartcontracts`, `z3-api`, `z3-linq2z3`, `sudoku`, `argument_analysis`,
+`smartcontracts`, `z3-api`, `z3-linq2z3`, `sudoku`, `argumentanalysis`,
 `symbolicai-lean`, `symboliclearning`, `tweety`. T3 ne touche aucun de
 ces CSV tant que la décision d'élargir le périmètre n'est pas prise par
 PR dédiée.
@@ -65,7 +65,7 @@ produites par un POC antérieur au gate T3 (avant #6949 / Epic #4957).
 | `genai/casestudies.csv` | Fort-Boyard | 10 | oui (10/10) | kept (paired) |
 | `genai/casestudies.csv` | Medical-Chatbot | 2 | oui (23/2 partiel) | kept (paired, partial fill) |
 | `genai/image.csv` | 01-1-OpenAI-DALL-E-3 | 13 | non | kept (orphan justifié, image.csv `en` activé) |
-| `genai/image.csv` | 01-2-GPT-5-Image-Generation | 13 | non | kept (orphan justifié, image.csv `en` activé) |
+| `genai/image.csv` | 01-2-Generation-Image-API | 13 | non | kept (orphan justifié, image.csv `en` activé) |
 
 **Justification** : la décision D3 demande « `en` seul d'abord » mais
 ne demande PAS de détruire du contenu déjà traduit. Les `text_ru` POC

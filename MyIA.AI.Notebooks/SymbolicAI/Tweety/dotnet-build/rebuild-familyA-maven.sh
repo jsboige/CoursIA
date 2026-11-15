@@ -23,11 +23,15 @@
 # Prereqs: JDK 17 (JAVA_HOME), Maven 3.9+ on PATH, .NET SDK 8.0+, git.
 
 set -e
-export JAVA_HOME="${JAVA_HOME:-/c/Users/jsboi/AppData/Local/Programs/Microsoft/jdk-17.0.10.7-hotspot}"
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+# shellcheck source=resolve_java_home.sh
+source "$SCRIPT_DIR/resolve_java_home.sh"
+JAVA_HOME=$(coursia_resolve_java_home) || exit 1
+export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 command -v mvn >/dev/null 2>&1 || { echo "mvn (Maven 3.9+) introuvable sur PATH"; exit 1; }
 
-cd "$(dirname "$0")"
+cd "$SCRIPT_DIR"
 WORK=$(pwd)
 CLONE="$WORK/.familyA-clone/TweetyProject-1.30"
 REPO_URL="https://github.com/TweetyProjectTeam/TweetyProject.git"  # repo renomme (ancien TweetyProject/tweety : 404)

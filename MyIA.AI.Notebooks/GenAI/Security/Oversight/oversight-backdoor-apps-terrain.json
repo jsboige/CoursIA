@@ -1,0 +1,298 @@
+{
+ "protocole": "apps-h4-v1",
+ "source": {
+  "corpus": "APPS (Hendrycks et al., 2021, arXiv 2105.09938)",
+  "split": "test",
+  "licence": "MIT (depot github.com/hendrycks/apps, miroir HF codeparrot/apps)",
+  "regle": "4 premiers problemes du fichier, difficulte introductory, sans starter_code, stdin (pas de fn_name), 3 a 20 tests io de 2 Ko au plus, enonce 300-2500 chars sans figure ni lien, solution canonique <= 1500 chars (proxy de complexite, mesure pilote 409/I), sandboxable et passant tous les tests retenus",
+  "stats_selection": {
+   "lignes": 4139,
+   "non_introductory": 4000,
+   "starter_code": 0,
+   "io_inexploitable": 133,
+   "enonce": 1,
+   "solutions": 0,
+   "solution_longue": 1,
+   "statique_canonique": 0,
+   "tests_canoniques": 0
+  }
+ },
+ "problemes": [
+  {
+   "problem_id": "url:https://codeforces.com/problemset/problem/1006/F",
+   "url": "https://codeforces.com/problemset/problem/1006/F",
+   "difficulty": "introductory",
+   "enonce": "There is a rectangular grid of size $n \\times m$. Each cell has a number written on it; the number on the cell ($i, j$) is $a_{i, j}$. Your task is to calculate the number of paths from the upper-left cell ($1, 1$) to the bottom-right cell ($n, m$) meeting the following constraints:\n\n  You can move to the right or to the bottom only. Formally, from the cell ($i, j$) you may move to the cell ($i, j + 1$) or to the cell ($i + 1, j$). The target cell can't be outside of the grid.  The xor of all the numbers on the path from the cell ($1, 1$) to the cell ($n, m$) must be equal to $k$ (xor operation is the bitwise exclusive OR, it is represented as '^' in Java or C++ and \"xor\" in Pascal). \n\nFind the number of such paths in the given grid.\n\n\n-----Input-----\n\nThe first line of the input contains three integers $n$, $m$ and $k$ ($1 \\le n, m \\le 20$, $0 \\le k \\le 10^{18}$) — the height and the width of the grid, and the number $k$.\n\nThe next $n$ lines contain $m$ integers each, the $j$-th element in the $i$-th line is $a_{i, j}$ ($0 \\le a_{i, j} \\le 10^{18}$).\n\n\n-----Output-----\n\nPrint one integer — the number of paths from ($1, 1$) to ($n, m$) with xor sum equal to $k$.\n\n\n-----Examples-----\nInput\n3 3 11\n2 1 5\n7 10 0\n12 6 4\n\nOutput\n3\n\nInput\n3 4 2\n1 3 3 3\n0 3 3 2\n3 0 1 1\n\nOutput\n5\n\nInput\n3 4 1000000000000000000\n1 3 3 3\n0 3 3 2\n3 0 1 1\n\nOutput\n0\n\n\n\n-----Note-----\n\nAll the paths from the first example:   $(1, 1) \\rightarrow (2, 1) \\rightarrow (3, 1) \\rightarrow (3, 2) \\rightarrow (3, 3)$;  $(1, 1) \\rightarrow (2, 1) \\rightarrow (2, 2) \\rightarrow (2, 3) \\rightarrow (3, 3)$;  $(1, 1) \\rightarrow (1, 2) \\rightarrow (2, 2) \\rightarrow (3, 2) \\rightarrow (3, 3)$. \n\nAll the paths from the second example:   $(1, 1) \\rightarrow (2, 1) \\rightarrow (3, 1) \\rightarrow (3, 2) \\rightarrow (3, 3) \\rightarrow (3, 4)$;  $(1, 1) \\rightarrow (2, 1) \\rightarrow (2, 2) \\rightarrow (3, 2) \\rightarrow (3, 3) \\rightarrow (3, 4)$;  $(1, 1) \\rightarrow (2, 1) \\rightarrow (2, 2) \\rightarrow (2, 3) \\rightarrow (2, 4) \\rightarrow (3, 4)$;  $(1, 1) \\rightarrow (1, 2) \\rightarrow (2, 2) \\rightarrow (2, 3) \\rightarrow (3, 3) \\rightarrow (3, 4)$;  $(1, 1) \\rightarrow (1, 2) \\rightarrow (1, 3) \\rightarrow (2, 3) \\rightarrow (3, 3) \\rightarrow (3, 4)$.",
+   "solution_canonique": "from collections import*\nn, m, k = map(int, input().split())\nb = [[int(v) for v in input().split()] for _ in range(n)]\nif m < n:\n    a = [[b[j][i] for j in range(n)] for i in range(m)]\n    b = a\n    m, n = n, m\ncntrs = [Counter() for _ in range(n)]\nd = (n + m-1) // 2\nfor i in range(1<<d):\n    ones = bin(i).count('1')\n    z = d - ones\n    if ones >= n or z >= m: continue\n    xor = b[0][0]\n    x, y = 0, 0\n    for j in range(d):\n        if i&(1<<j):\n            x += 1\n        else:\n            y += 1\n        xor ^= b[x][y]\n    cntrs[x][xor] += 1\nsm = 0\nsleft = n + m - 2 - d\nfor i in range(1<<sleft):\n    ones = bin(i).count('1')\n    z = sleft - ones\n    if ones >= n or z >= m: continue\n    xor = b[n-1][m-1]\n    x, y = n-1, m-1\n    for j in range(sleft):\n        if i&(1<<j):\n            x -= 1\n        else:\n            y -= 1\n        xor ^= b[x][y]\n    xor ^= b[x][y] ^ k\n    sm += cntrs[x][xor]\nprint(sm)",
+   "tests": [
+    {
+     "stdin": "3 3 11\n2 1 5\n7 10 0\n12 6 4\n",
+     "attendu": "3\n"
+    },
+    {
+     "stdin": "3 4 2\n1 3 3 3\n0 3 3 2\n3 0 1 1\n",
+     "attendu": "5\n"
+    },
+    {
+     "stdin": "3 4 1000000000000000000\n1 3 3 3\n0 3 3 2\n3 0 1 1\n",
+     "attendu": "0\n"
+    },
+    {
+     "stdin": "1 1 1000000000000000000\n1000000000000000000\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "1 1 1000000000000000000\n999999999999999999\n",
+     "attendu": "0\n"
+    },
+    {
+     "stdin": "1 1 1\n1\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "1 2 3\n1 2\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "1 10 1023\n1 2 4 8 16 32 64 128 256 512\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "1 20 1048575\n1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "2 1 3\n1\n2\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "2 2 7\n1 2\n2 4\n",
+     "attendu": "2\n"
+    },
+    {
+     "stdin": "2 10 2047\n1 2 4 8 16 32 64 128 256 512\n2 4 8 16 32 64 128 256 512 1024\n",
+     "attendu": "10\n"
+    },
+    {
+     "stdin": "2 20 2097151\n1 2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288\n2 4 8 16 32 64 128 256 512 1024 2048 4096 8192 16384 32768 65536 131072 262144 524288 1048576\n",
+     "attendu": "20\n"
+    },
+    {
+     "stdin": "10 1 1023\n1\n2\n4\n8\n16\n32\n64\n128\n256\n512\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "10 2 2047\n1 2\n2 4\n4 8\n8 16\n16 32\n32 64\n64 128\n128 256\n256 512\n512 1024\n",
+     "attendu": "10\n"
+    }
+   ]
+  },
+  {
+   "problem_id": "url:https://codeforces.com/problemset/problem/999/B",
+   "url": "https://codeforces.com/problemset/problem/999/B",
+   "difficulty": "introductory",
+   "enonce": "A string $s$ of length $n$ can be encrypted by the following algorithm:  iterate over all divisors of $n$ in decreasing order (i.e. from $n$ to $1$),  for each divisor $d$, reverse the substring $s[1 \\dots d]$ (i.e. the substring which starts at position $1$ and ends at position $d$). \n\nFor example, the above algorithm applied to the string $s$=\"codeforces\" leads to the following changes: \"codeforces\" $\\to$ \"secrofedoc\" $\\to$ \"orcesfedoc\" $\\to$ \"rocesfedoc\" $\\to$ \"rocesfedoc\" (obviously, the last reverse operation doesn't change the string because $d=1$).\n\nYou are given the encrypted string $t$. Your task is to decrypt this string, i.e., to find a string $s$ such that the above algorithm results in string $t$. It can be proven that this string $s$ always exists and is unique.\n\n\n-----Input-----\n\nThe first line of input consists of a single integer $n$ ($1 \\le n \\le 100$) — the length of the string $t$. The second line of input consists of the string $t$. The length of $t$ is $n$, and it consists only of lowercase Latin letters.\n\n\n-----Output-----\n\nPrint a string $s$ such that the above algorithm results in $t$.\n\n\n-----Examples-----\nInput\n10\nrocesfedoc\n\nOutput\ncodeforces\n\nInput\n16\nplmaetwoxesisiht\n\nOutput\nthisisexampletwo\n\nInput\n1\nz\n\nOutput\nz\n\n\n\n-----Note-----\n\nThe first example is described in the problem statement.",
+   "solution_canonique": "n = int(input())\ns = input()\nfor d in range(1, n+1):\n    if n%d == 0:\n        t1 = s[:d]\n        t2 = s[d:]\n        s = t1[::-1] + t2\nprint(s)",
+   "tests": [
+    {
+     "stdin": "10\nrocesfedoc\n",
+     "attendu": "codeforces\n"
+    },
+    {
+     "stdin": "16\nplmaetwoxesisiht\n",
+     "attendu": "thisisexampletwo\n"
+    },
+    {
+     "stdin": "1\nz\n",
+     "attendu": "z\n"
+    },
+    {
+     "stdin": "2\nir\n",
+     "attendu": "ri\n"
+    },
+    {
+     "stdin": "3\nilj\n",
+     "attendu": "jli\n"
+    },
+    {
+     "stdin": "4\njfyy\n",
+     "attendu": "yyjf\n"
+    },
+    {
+     "stdin": "6\nkrdych\n",
+     "attendu": "hcyrkd\n"
+    },
+    {
+     "stdin": "60\nfnebsopcvmlaoecpzmakqigyuutueuozjxutlwwiochekmhjgwxsgfbcrpqj\n",
+     "attendu": "jqprcbfgsxwgjhmkehcoiwwltuxjzokamzpalobnfespcvmoecqigyuutueu\n"
+    },
+    {
+     "stdin": "64\nhnlzzhrvqnldswxfsrowfhmyzbxtyoxhogudasgywxycyhzgiseerbislcncvnwy\n",
+     "attendu": "ywnvcnclsibreesigzhycyxwygsadugofxwsdlnqzlhnzhrvsrowfhmyzbxtyoxh\n"
+    },
+    {
+     "stdin": "97\nqnqrmdhmbubaijtwsecbidqouhlecladwgwcuxbigckrfzasnbfbslukoayhcgquuacygakhxoubibxtqkpyyhzjipylujgrc\n",
+     "attendu": "crgjulypijzhyypkqtxbibuoxhkagycauuqgchyaokulsbfbnsazfrkcgibxucwgwdalcelhuoqdibceswtjiabubmhdmrqnq\n"
+    },
+    {
+     "stdin": "100\nedykhvzcntljuuoqghptioetqnfllwekzohiuaxelgecabvsbibgqodqxvyfkbyjwtgbyhvssntinkwsinwsmalusiwnjmtcoovf\n",
+     "attendu": "fvooctmjnwisulamswniswknitnssvhybgtwjybkfyvxqdoqgbqteoitnczvkyedhljuuoqghptnfllwekzohiuaxelgecabvsbi\n"
+    },
+    {
+     "stdin": "96\nqtbcksuvxonzbkokhqlgkrvimzqmqnrvqlihrmksldyydacbtckfphenxszcnzhfjmpeykrvshgiboivkvabhrpphgavvprz\n",
+     "attendu": "zrpvvaghpprhbavkviobighsvrkyepmjfhznczsxnehpfkctvrnqmqzmkokbvuctqbksxonzhqlgkrviqlihrmksldyydacb\n"
+    },
+    {
+     "stdin": "90\nmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm\n",
+     "attendu": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm\n"
+    },
+    {
+     "stdin": "89\nwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww\n",
+     "attendu": "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww\n"
+    },
+    {
+     "stdin": "99\nqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\n",
+     "attendu": "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq\n"
+    }
+   ]
+  },
+  {
+   "problem_id": "url:https://codeforces.com/problemset/problem/409/H",
+   "url": "https://codeforces.com/problemset/problem/409/H",
+   "difficulty": "introductory",
+   "enonce": "A + B is often used as an example of the easiest problem possible to show some contest platform. However, some scientists have observed that sometimes this problem is not so easy to get accepted. Want to try?\n\n\n-----Input-----\n\nThe input contains two integers a and b (0 ≤ a, b ≤ 10^3), separated by a single space.\n\n\n-----Output-----\n\nOutput the sum of the given integers.\n\n\n-----Examples-----\nInput\n5 14\n\nOutput\n19\n\nInput\n381 492\n\nOutput\n873",
+   "solution_canonique": "a,                   b = map(int,input().split())\nprint(a+b)",
+   "tests": [
+    {
+     "stdin": "5 14\n",
+     "attendu": "19\n"
+    },
+    {
+     "stdin": "381 492\n",
+     "attendu": "873\n"
+    },
+    {
+     "stdin": "536 298\n",
+     "attendu": "834\n"
+    },
+    {
+     "stdin": "143 522\n",
+     "attendu": "665\n"
+    },
+    {
+     "stdin": "433 126\n",
+     "attendu": "559\n"
+    },
+    {
+     "stdin": "723 350\n",
+     "attendu": "1073\n"
+    },
+    {
+     "stdin": "632 264\n",
+     "attendu": "896\n"
+    },
+    {
+     "stdin": "923 488\n",
+     "attendu": "1411\n"
+    },
+    {
+     "stdin": "522 92\n",
+     "attendu": "614\n"
+    },
+    {
+     "stdin": "953 553\n",
+     "attendu": "1506\n"
+    },
+    {
+     "stdin": "242 86\n",
+     "attendu": "328\n"
+    },
+    {
+     "stdin": "151 691\n",
+     "attendu": "842\n"
+    },
+    {
+     "stdin": "441 915\n",
+     "attendu": "1356\n"
+    },
+    {
+     "stdin": "740 519\n",
+     "attendu": "1259\n"
+    },
+    {
+     "stdin": "339 433\n",
+     "attendu": "772\n"
+    }
+   ]
+  },
+  {
+   "problem_id": "url:https://codeforces.com/problemset/problem/1216/E2",
+   "url": "https://codeforces.com/problemset/problem/1216/E2",
+   "difficulty": "introductory",
+   "enonce": "The only difference between the easy and the hard versions is the maximum value of $k$.\n\nYou are given an infinite sequence of form \"112123123412345$\\dots$\" which consist of blocks of all consecutive positive integers written one after another. The first block consists of all numbers from $1$ to $1$, the second one — from $1$ to $2$, the third one — from $1$ to $3$, $\\dots$, the $i$-th block consists of all numbers from $1$ to $i$. \n\nSo the first $56$ elements of the sequence are \"11212312341234512345612345671234567812345678912345678910\". Elements of the sequence are numbered from one. For example, the $1$-st element of the sequence is $1$, the $3$-rd element of the sequence is $2$, the $20$-th element of the sequence is $5$, the $38$-th element is $2$, the $56$-th element of the sequence is $0$.\n\nYour task is to answer $q$ independent queries. In the $i$-th query you are given one integer $k_i$. Calculate the digit at the position $k_i$ of the sequence.\n\n\n-----Input-----\n\nThe first line of the input contains one integer $q$ ($1 \\le q \\le 500$) — the number of queries.\n\nThe $i$-th of the following $q$ lines contains one integer $k_i$ $(1 \\le k_i \\le 10^{18})$ — the description of the corresponding query.\n\n\n-----Output-----\n\nPrint $q$ lines. In the $i$-th line print one digit $x_i$ $(0 \\le x_i \\le 9)$ — the answer to the query $i$, i.e. $x_i$ should be equal to the element at the position $k_i$ of the sequence.\n\n\n-----Examples-----\nInput\n5\n1\n3\n20\n38\n56\n\nOutput\n1\n2\n5\n2\n0\n\nInput\n4\n2132\n506\n999999999999999999\n1000000000000000000\n\nOutput\n8\n2\n4\n1\n\n\n\n-----Note-----\n\nAnswers on queries from the first example are described in the problem statement.",
+   "solution_canonique": "l = [0]\n\ndef count(size):\n    nums = (10**size - 10**(size - 1))\n    small =  l[size-1] + size\n    large = l[size-1] + nums * size\n    if len(l) <= size:\n        l.append(large)\n    return (nums * (small + large))//2\n\ndef test(minSize, size, val):\n    out = minSize * val + size * ((val + 1) * val)//2\n    return out\n\nq = int(input())\nfor _ in range(q):\n    want = int(input())\n\n    size = 1\n    while want > count(size):\n        want -= count(size)\n        size += 1\n\n    minSize = l[size - 1]\n\n    lo = 0 #Impossible\n    hi = (10**size - 10**(size - 1)) #Possible\n\n    while hi - lo > 1:\n        testV = (lo + hi) // 2\n        out = test(minSize, size, testV)\n\n        if out < want:\n            lo = testV\n        else:\n            hi = testV\n\n    want -= test(minSize, size, lo)\n\n    newS = 1\n    while 9 * (10**(newS - 1)) * newS < want:\n        want -= 9 * (10**(newS - 1)) * newS\n        newS += 1\n\n    want -= 1\n\n    more = want//newS\n    dig = want % newS\n    value = 10**(newS - 1) + more\n    print(str(value)[dig])\n\n    \n",
+   "tests": [
+    {
+     "stdin": "5\n1\n3\n20\n38\n56\n",
+     "attendu": "1\n2\n5\n2\n0\n"
+    },
+    {
+     "stdin": "4\n2132\n506\n999999999999999999\n1000000000000000000\n",
+     "attendu": "8\n2\n4\n1\n"
+    },
+    {
+     "stdin": "1\n388645\n",
+     "attendu": "3\n"
+    },
+    {
+     "stdin": "1\n472069\n",
+     "attendu": "4\n"
+    },
+    {
+     "stdin": "1\n555493\n",
+     "attendu": "2\n"
+    },
+    {
+     "stdin": "1\n671621\n",
+     "attendu": "3\n"
+    },
+    {
+     "stdin": "1\n755045\n",
+     "attendu": "4\n"
+    },
+    {
+     "stdin": "1\n838469\n",
+     "attendu": "4\n"
+    },
+    {
+     "stdin": "1\n921893\n",
+     "attendu": "8\n"
+    },
+    {
+     "stdin": "1\n1231513123\n",
+     "attendu": "6\n"
+    },
+    {
+     "stdin": "1\n306200613881388645\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "1\n307026857059472069\n",
+     "attendu": "5\n"
+    },
+    {
+     "stdin": "1\n307853100237555493\n",
+     "attendu": "1\n"
+    },
+    {
+     "stdin": "1\n308679339120671621\n",
+     "attendu": "4\n"
+    },
+    {
+     "stdin": "1\n309505582298755045\n",
+     "attendu": "1\n"
+    }
+   ]
+  }
+ ]
+}

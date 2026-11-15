@@ -312,7 +312,7 @@ wch_quarantine_age_hours() {  # <basename>
 # lexicographique EST un tri chronologique. `head -n -<keep>` rend tout SAUF
 # les <keep> derniers, c'est-a-dire les plus anciens -- ceux qu'on retire.
 #
-# DEUX BORNES, et il faut les deux (mesure ai-01 du 2026-10-31).
+# TROIS BORNES, et il faut les trois (mesures ai-01 du 2026-10-31).
 #
 # La borne de NOMBRE (`WCH_STALE_KEEP`, defaut 2) borne la RETENTION EN
 # NOMBRE : sans elle, chaque echec de repack ajoutait une quarantaine et la
@@ -326,22 +326,50 @@ wch_quarantine_age_hours() {  # <basename>
 # defaut 48 h) ferme cette duree : une quarantaine dont le dernier
 # renommage est plus vieux que la fenetre part, meme si le compte ne
 # l'emporterait pas.
+#
+# La borne de TAILLE (`WCH_STALE_MAX_SIZE_MB`, defaut 4096) ferme le VOLUME :
+# les deux bornes precedentes bornent le NOMBRE et la DUREE, pas l'OCCUPATION.
+# Un clone d'un slot mesure 2,4 a 2,7 Gio (mesure ai-01 du 2026-10-31) :
+# deux quarantaines fraiches de ce clone pèsent donc ~5 Gio sur le work-volume
+# du slot, et rien ne les arrete tant que le compte et l'age les gardent.
+# La borne de taille borne le CUMULE PAR SLOT : les survivants des deux
+# bornes precedentes sont mesures, et les plus ANCIENS d'abord partent tant
+# que le cumule du slot depasse la borne.
+#
+# Deux proprietes de ce choix :
+#   - la RECENCE est preservee autant que possible : c'est l'ancien qui part,
+#     pas le recent -- l'intention « inspectable » vise le dernier incident ;
+#   - si le survivant le plus RECENT depasse la borne A SEUL, il part aussi :
+#     une quarantaine plus grosse que la borne n'a plus d'interet
+#     d'inspection, et la borne doit borner (elle n'est pas un plancher).
+#     `WCH_STALE_MAX_SIZE_MB=0` desactive la borne entierement.
+#
+# Le defaut 4096 Mio n'est pas plus serre : une borne a 1 ou 2 Gio
+# supprimerait la quarantaine du dernier incident (elle pese le clone vivant
+# lui-meme, 2,4 a 2,7 Gio), c'est-a-dire exactement celle qu'on veut garder.
+# Le COUT de la mesure est borne par la borne de NOMBRE : seuls les
+# survivants (au plus `keep`) sont mesures, jamais toutes les quarantaines
+# du slot.
 wch_prune_quarantines() {  # <workdir>
   local workdir="$1" keep="${WCH_STALE_KEEP:-2}" slot path base sz parent prefix rest tail
   local max_age="${WCH_STALE_MAX_AGE_HOURS:-48}" age
-  local removed=0 reclaimed=0 idx
-  local -a list=() aged=()
+  local max_size="${WCH_STALE_MAX_SIZE_MB:-4096}" max_size_kb
+  local removed=0 reclaimed=0 idx first total_sz
+  local -a list=() aged=() sizes=()
   case "$keep" in ''|*[!0-9]*) keep=2 ;; esac
   # `max_age=0` DESACTIVE la borne d'age (echappatoire mesure : un parc qui
   # voudrait la seule borne de nombre la pose explicitement).
   case "$max_age" in ''|*[!0-9]*) max_age=48 ;; esac
+  # `max_size=0` DESACTIVE la borne de taille (meme echappatoire).
+  case "$max_size" in ''|*[!0-9]*) max_size=4096 ;; esac
+  max_size_kb=$(( max_size * 1024 ))
   # `keep=0` retirerait TOUT, y compris la quarantaine du dernier incident :
   # la borne la plus basse qui preserve l'intention est 1.
   [ "$keep" -ge 1 ] || keep=1
   [ -d "$workdir" ] || return 0
   for slot in "$workdir"/*; do
     [ -d "$slot" ] || continue
-    list=(); aged=()
+    list=(); aged=(); sizes=()
     # Le filtre de FORME passe AVANT le comptage. L'inverse a ete mesure : un
     # `notes.stale-manuel` present dans le slot decalait la borne et faisait
     # retirer une quarantaine de plus que le plafond demande (test dedie).
@@ -400,20 +428,53 @@ wch_prune_quarantines() {  # <workdir>
       fi
     done
     # 2. La borne de NOMBRE : les plus anciennes au-dela du plafond.
-    [ "${#list[@]}" -gt "$keep" ] || continue
-    for (( idx = 0; idx < ${#list[@]} - keep; idx++ )); do
-      path="${list[idx]}"
-      base="${path##*/}"
-      sz="$(du -sk -- "$path" 2>/dev/null | awk '{print $1}')"
-      case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
-      if rm -rf -- "$path" 2>/dev/null; then
-        removed=$((removed + 1))
-        reclaimed=$((reclaimed + sz))
-        echo "work_cache: quarantaine $base retiree (${sz} Kio)"
-      else
-        echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
-      fi
-    done
+    if [ "${#list[@]}" -gt "$keep" ]; then
+      for (( idx = 0; idx < ${#list[@]} - keep; idx++ )); do
+        path="${list[idx]}"
+        base="${path##*/}"
+        sz="$(du -sk -- "$path" 2>/dev/null | awk '{print $1}')"
+        case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
+        if rm -rf -- "$path" 2>/dev/null; then
+          removed=$((removed + 1))
+          reclaimed=$((reclaimed + sz))
+          echo "work_cache: quarantaine $base retiree (${sz} Kio)"
+        else
+          echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
+        fi
+      done
+    fi
+    # 3. La borne de TAILLE : le CUMULE des survivants des deux bornes
+    #    precedentes est borne par slot. Seuls les survivants sont mesures
+    #    (au plus `keep`) : le cout de la mesure ne depend pas du nombre de
+    #    quarantaines du slot. Le plus ANCIEN part d'abord (la recence est
+    #    preservee) ; si le plus recent depasse la borne a lui seul, il part
+    #    aussi -- la borne BORNE, elle n'est pas un plancher.
+    if [ "$max_size" -gt 0 ] && [ "${#list[@]}" -gt 0 ]; then
+      first=$(( ${#list[@]} - keep ))
+      if [ "$first" -lt 0 ]; then first=0; fi
+      total_sz=0
+      for (( idx = first; idx < ${#list[@]}; idx++ )); do
+        sz="$(du -sk -- "${list[idx]}" 2>/dev/null | awk '{print $1}')"
+        case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
+        sizes[idx]="$sz"
+        total_sz=$((total_sz + sz))
+      done
+      idx=$first
+      while [ "$idx" -lt "${#list[@]}" ] && [ "$total_sz" -gt "$max_size_kb" ]; do
+        path="${list[idx]}"
+        base="${path##*/}"
+        sz="${sizes[idx]}"
+        if rm -rf -- "$path" 2>/dev/null; then
+          removed=$((removed + 1))
+          reclaimed=$((reclaimed + sz))
+          echo "work_cache: quarantaine $base retiree (${sz} Kio, au-dessus de la borne de taille de ${max_size} Mio pour ce slot)"
+        else
+          echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
+        fi
+        total_sz=$((total_sz - sz))
+        idx=$((idx + 1))
+      done
+    fi
   done
   # Un passage qui ne retire rien ne dit rien : le journal d'un slot sain
   # reste lisible, et l'absence de ligne n'est pas un echec silencieux -- le

@@ -8,7 +8,7 @@ Descriptions par catégorie des projets de trading algorithmique. Pour le tablea
 
 | Stratégie | Sharpe catalogue | Sharpe aligné | Verdict |
 |-----------|------------------|---------------|---------|
-| HighBookToMarketFScore | 2.09 | **0.41** | effondrement -80% (MaxDD -60%) |
+| HighBookToMarketFScore | 2.09 | **0.41** | autre fenêtre : 2.09 = Sharpe OOS 1 an de la fiche (#25264) ; MaxDD -60% sur 2018-2025 |
 | PuppiesOfTheDow | 1.99 | **0.30** | effondrement -85% |
 | ML-Trend-Scanning | 0.66 | **0.33** | effondrement -50% |
 | AllWeather | 0.67 | **0.47** | dégradation -30% |
@@ -63,7 +63,7 @@ Leaders vérifiés alignés (backbone no-ML) : **EMATrend 0.611** / **composite-
 ## Mean Reversion & Pairs (Intermédiaire)
 
 - **MeanReversion** : Signaux RSI multi-asset, achat en survente, vente en surachat.
-- **TrendFilteredMeanReversion** : RSI(2) pullback sur SPY conditionné par régime bull (SMA200). Time stop 5 jours. Signal réel (73% win) mais trop rare (~9 trades/an).
+- **TrendFilteredMeanReversion** : RSI(2) pullback sur SPY conditionné par régime bull (SMA200). Time stop 5 jours. Signal valide (70 % de trades gagnants) mais trop rare (8,4 trades/an sur 2015-2024).
 - **PairsTrading** : Arbitrage statistique sur paires d'actions cointégrées. Paires non cointégrées 2010-2026.
 - **ETF-Pairs** : Cointegration-based pairs trading sur ETFs. Cointégration instable.
 

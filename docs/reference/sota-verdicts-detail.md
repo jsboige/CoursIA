@@ -1,5 +1,7 @@
 # SOTA — détail : mandat verbatim, incidents d'axes, mesures anti-fabrication
 
+> REFERENCE — vivante — dernière révision 2026-11-12
+
 Détail durable de [`.claude/rules/sota-not-workaround.md`](../../.claude/rules/sota-not-workaround.md) (harness-hygiene tier 2). La règle porte les tables opératoires (5 verdicts, interdit, enforcement) et l'exigence nominative des 6 axes ; ce fichier porte la **grille des 6 questions (§2)**, les verbatims, les incidents fondateurs et les mesures qui les justifient.
 
 Registre des audits par famille : [`docs/ledgers/3801-sota-axe2.md`](../ledgers/3801-sota-axe2.md).
@@ -71,7 +73,7 @@ Le pitch : « les heuristiques gloutonnes ratent le nombre chromatique sur les g
 
 La mesure : sur M_3 (C5), M_4 (Grötzsch), M_5, la coloration gloutonne **et** DSATUR **avec l'ordre networkx par défaut** trouvent **le** χ exact (3 / 4 / 5). Le folklore « greedy rattrape sur Mycielski » **ne reproduit pas** ici — il exige des ordres de sommets adversariaux qu'un notebook pédagogique ne construit pas. S'en servir comme cas Prong-B de coloration = fabriquer un enrichissement faux.
 
-Le vrai cas discriminant pour CP-SAT en coloration est le **graphe aléatoire dense Erdős-Rényi G(n, p ≥ 0.3)**, où greedy utilise strictement plus de couleurs que χ — et `App-2-GraphColoring` le démontre déjà (cellule benchmark : n = 200, greedy = 22 / DSATUR = 19 / CP-SAT = 18).
+Le vrai cas discriminant pour CP-SAT en coloration est le **graphe aléatoire dense Erdős-Rényi G(n, p ≥ 0.3)**, où greedy utilise strictement plus de couleurs que χ — et `App-02-GraphColoring-Python` le démontre déjà (cellule benchmark : n = 200, greedy = 22 / DSATUR = 19 / CP-SAT = 18).
 
 ### Faux signal technique — grep MiniZinc
 
@@ -108,6 +110,18 @@ entries` (l.485) s'arrête à l'entrée **8** (2026-07-10) et `### Cumul entries
 (l.854) à l'entrée **22** (2026-07-11), alors que le fichier porte **30** entrées. Le plus récent
 sous-compte d'un facteur ~1,4 ; le plus ancien, d'un facteur ~3,8. Rafraîchir et **fusionner les deux
 tableaux en un seul** est un grain à part (le fichier dépasse #14519).
+
+## 5. Évaluer un claim externe — la source réelle n'est pas le papier qu'une issue cite
+
+Un audit d'axe-2 part parfois d'une **issue qui cite un papier**. Le premier geste n'est pas de lire le papier : c'est de **vérifier que les chiffres invoqués y sont**. Sur l'évaluation BDH (Dragon Hatchling, #14489, 2026-09), les trois nombres mis en avant par l'issue étaient **tous absents** du papier de 62 pages cité — recherche du fulltext extrait (~250 K caractères) sur `ARC`, `Sudoku`, `BABILong`, `pass@2`, `29.5`, `97.4`, `150M`, `134M` → **0 occurrence**. Ils venaient de trois endroits différents : un **second papier** et son blog (ARC-AGI), le **README d'un dépôt** qui déclare lui-même ne pas reproduire le résultat (Sudoku), et la **page d'accueil commerciale** (BABILong, ni papier ni méthodologie).
+
+Trois conséquences durables, applicables à tout audit de claim externe :
+
+1. **Tracer chaque headline à sa source réelle, une par une.** Une issue qui cite un papier ne prouve pas que le papier porte ses chiffres ; les regrouper en un seul « le papier dit » fabrique un verdict faux, dans les deux sens — on crédite le papier d'un résultat qu'il n'a pas, et on instruit à charge un travail qui divulgue honnêtement ses limites.
+2. **Lire ce que la source avoue.** Les nombres étaient exacts et les préconditions écrites noir sur blanc ; c'est la reprise qui les efface : coût calculé comparé à des coûts d'API, « independent evaluation » conduite par des co-auteurs sans accès aux poids, page d'accueil portant elle-même « pending final contamination checks », mixture d'entraînement incluant le set d'évaluation. **Fidèle sur les nombres, perte par complaisance sur le contexte** est un verdict distinct de **fabriqué** — confondre les deux disqualifie l'audit au lieu du claim.
+3. **Séparer le claim du produit.** Un artefact reproductible (un dépôt public qui tourne) et des benchmarks produit non reproductibles (implémentation interne, recipe propriétaire) coexistent dans le même dossier : le verdict est `RECOVERABLE-LOCAL` sur l'un et `INTRINSIC` sur l'autre, établis par l'**échec des voies d'accès** — la voie manquante est l'**artefact** (poids, recipe), pas un binding (section 2).
+
+La forme du livrable qui rend ces verdicts relisibles est une **note datée**, avec son axe de révision échéancé : l'évaluation BDH se re-joue vers 2027-03 sous quatre conditions nommées, et elle le dit elle-même. Protocoles, mesures et conditions : [`2026-09-15-bdh-evaluation.md`](../transients/2026-09-15-bdh-evaluation.md).
 
 ## Voir aussi
 

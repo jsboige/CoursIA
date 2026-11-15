@@ -61,7 +61,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 _DEFAULT_TAXO = (
     _REPO_ROOT
-    / "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/data/argumentum_fallacies_taxonomy.csv"
+    / "MyIA.AI.Notebooks/SymbolicAI/ArgumentAnalysis/data/argumentum_fallacies_taxonomy.csv"
 )
 
 # Colonnes de la taxonomie Argumentum utilisees (sur 1553 lignes / 1408 sophismes).

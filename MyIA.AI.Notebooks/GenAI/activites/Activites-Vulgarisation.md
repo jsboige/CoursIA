@@ -64,7 +64,7 @@ Visualisez la taxonomie des arguments fallacieux disponible à ces adresses :
 
 - Identifiez les branches principales des familles de couleur.
 
-**Série du dépôt** : [`GenAI/FallacyDetection/`](../FallacyDetection/), jeu [Argumentum](../../SymbolicAI/Argument_Analysis/Argumentum/) (sous-module).
+**Série du dépôt** : [`GenAI/FallacyDetection/`](../FallacyDetection/), jeu [Argumentum](../../SymbolicAI/ArgumentAnalysis/Argumentum/) (sous-module).
 
 ## 4. Argumentum
 
@@ -72,7 +72,7 @@ On constitue des tables avec un membre de chaque équipe pour jouer à [Argument
 
 La partie se joue en 4 points gagnant. Chaque vainqueur remporte 5 points à son équipe.
 
-**Série du dépôt** : sous-module [`Argumentum`](../../SymbolicAI/Argument_Analysis/Argumentum/).
+**Série du dépôt** : sous-module [`Argumentum`](../../SymbolicAI/ArgumentAnalysis/Argumentum/).
 
 ## 5. Heuristiques de la planification
 

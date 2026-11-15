@@ -16,7 +16,7 @@ maturity: ALPHA=3, BETA=3
 > | Chemin | Périmètre | Owner | Lien |
 > |---|---|---|---|
 > | `MyIA.AI.Notebooks/GenAI/CaseStudies/` (le présent) | 4 cas GenAI **agentiques** : Barbie-Schreck, Fort-Boyard, Medical-Chatbot, Recipe-Maker | po-2023 | ce README |
-> | `MyIA.AI.Notebooks/CaseStudies/` (top-level) | 3 cas **interdisciplinaires** fin de cycle M1/M2 : Diagnostic-Medical (Z3), Oncology-Planning (recherche + génétique), SmartGrid-Energy (OR-Tools + KG) | po-2025 | [CaseStudies/README.md](../../CaseStudies/README.md) |
+> | `MyIA.AI.Notebooks/CaseStudies/` (top-level) | 3 cas **interdisciplinaires** fin de cycle M1/M2 : Diagnostic-Medical-Python (Z3), Planification-Oncologie-Python (recherche + génétique), Reseau-Electrique-Intelligent (OR-Tools + KG) | po-2025 | [CaseStudies/README.md](../../CaseStudies/README.md) |
 >
 > Les deux séries sont **complémentaires** : les cas GenAI montrent l'**orchestration d'un seul paradigme** (LLM + tools), les cas interdisciplinaires montrent la **composition de plusieurs paradigmes IA** (CSP + A* + génétique + OR-Tools + KG + bayésien). Voir [#13581](https://github.com/jsboige/CoursIA/issues/13581) pour le contexte de la clarification (issue #13581 AC7).
 
