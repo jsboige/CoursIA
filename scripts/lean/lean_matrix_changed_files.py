@@ -23,6 +23,11 @@ installation`` ; idem #26399 a la meme minute).
     branche) reste non differenciable -> self-cover ;
     ``workflow_dispatch`` reste le self-cover explicite.
 
+``--no-renames`` : un deplacement se lit comme suppression + ajout, donc
+les DEUX chemins remontent. Le lake qui perd un fichier est ainsi rebati
+lui aussi, et la detection de renommage ne va pas chercher de blobs sous
+un checkout partiel.
+
 La source qui a repondu s'imprime sur stderr (``source=git`` /
 ``source=api``).
 
@@ -118,7 +123,7 @@ def _git_pull_request_files(sha: str | None) -> list[str] | None:
             )
             return None
         _git(["rev-parse", "--verify", "--quiet", "HEAD^1"])
-        return _lines(_git(["diff", "--name-only", "HEAD^1", "HEAD"]))
+        return _lines(_git(["diff", "--no-renames", "--name-only", "HEAD^1", "HEAD"]))
     except GitError as exc:
         print(f"git ecarte : {exc} -- repli sur l'API", file=sys.stderr)
         return None
@@ -129,7 +134,7 @@ def _git_push_files(before: str, sha: str) -> list[str] | None:
     try:
         for rev in (before, sha):
             _git(["rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}"])
-        return _lines(_git(["diff", "--name-only", before, sha]))
+        return _lines(_git(["diff", "--no-renames", "--name-only", before, sha]))
     except GitError as exc:
         print(f"git ecarte : {exc} -- repli sur l'API", file=sys.stderr)
         return None

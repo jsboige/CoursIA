@@ -420,3 +420,46 @@ def test_17_le_workflow_checkout_emporte_les_deux_parents():
         "le checkout du job changes doit etre de profondeur 2 pour que "
         "git diff HEAD^1 HEAD soit possible"
     )
+
+
+def test_18_deplacement_hors_d_un_lake_remonte_les_deux_chemins(
+    tmp_path, monkeypatch
+):
+    """Un fichier deplace d'un lake vers un autre doit faire remonter
+    l'ancien ET le nouveau chemin (``--no-renames``) : sinon le lake qui
+    a perdu le fichier n'est pas rebati, et sa casse passe inapercue."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    monkeypatch.chdir(repo)
+    _run_git(repo, "init", "-q")
+    _run_git(repo, "config", "user.email", "ci@example.com")
+    _run_git(repo, "config", "user.name", "CI")
+    (repo / "lakeA").mkdir()
+    (repo / "lakeA" / "M.lean").write_text(
+        "theorem t : 1 = 1 := rfl\n" * 20, encoding="utf-8"
+    )
+    _run_git(repo, "add", ".")
+    _run_git(repo, "commit", "-q", "-m", "base")
+    _run_git(repo, "checkout", "-q", "-b", "feature")
+    (repo / "lakeB").mkdir()
+    _run_git(repo, "mv", "lakeA/M.lean", "lakeB/M.lean")
+    _run_git(repo, "commit", "-q", "-m", "deplacement")
+    _run_git(repo, "checkout", "-q", "-")
+    _run_git(repo, "merge", "-q", "--no-ff", "-m", "fusion", "feature")
+    merge_sha = _run_git(repo, "rev-parse", "HEAD").strip()
+
+    monkeypatch.setattr(
+        "lean_matrix_changed_files._gh_api",
+        lambda *a, **k: pytest.fail(
+            "git repond : l'API ne doit pas etre consultee"
+        ),
+    )
+    out = tmp_path / "changed.txt"
+    rc = main([
+        "--event", "pull_request", "--repo", "jsboige/CoursIA",
+        "--pr", "26004", "--sha", merge_sha, "--out", str(out),
+    ])
+    assert rc == 0
+    assert sorted(out.read_text(encoding="utf-8").splitlines()) == [
+        "lakeA/M.lean", "lakeB/M.lean",
+    ]
