@@ -106,6 +106,12 @@ RUNS_PAGE_SIZE = 100
 # non-regression de `tests/test_runner_starvation_live_depth.py` compare les
 # deux valeurs a la source.
 LIVE_DEPTH_CUTOFF = "2026-08-20"
+# #26739 -- le seuil de saturation PARTAGE avec le balayeur de portes stale
+# (meme valeur que `QUEUE_SATURATED_N` dans son workflow) : en dessous, la
+# mesure complete de la profondeur vivante ne peut pas changer le verdict de
+# saturation, donc elle n'est pas payee (114 appels par invocation, sur un
+# quota horaire partage par tous les workflows du depot).
+LIVE_DEPTH_SATURATION_THRESHOLD = 800
 # Inventaire DECLARE des hotes de pool (#20697 point 4). Vit a cote de l'organe
 # pour que le defaut soit resolu sans argument : une sonde dont le predicat
 # depend d'un fichier qu'aucun workflow ne passe resterait inerte.
@@ -1099,14 +1105,23 @@ class Verdict:
     notes: list[str] = field(default_factory=list)
 
 
-def _live_queue_depth(repo: str) -> tuple[int | None, str]:
+def _live_queue_depth(repo: str) -> tuple[int | None, int | None, str, int]:
     """La profondeur VIVANTE de la file -- la MEME mesure que
     `scripts/ci/gh_queue_health.py --live-depth`.
 
-    Renvoie (profondeur, "") ou (None, raison) si la mesure est impossible
-    (import absent, API muette, instrument en erreur). La fonction ne porte
-    aucun transport propre : elle appelle l'organe voisin, ce qui la rend
-    monkeypatchable -- les tests ne touchent jamais l'API.
+    Renvoie (profondeur, majorant, raison, appels API) :
+
+    - (N, None, "", k) : la profondeur est MESUREE (N runs vivants) ;
+    - (None, M, "", k) : la mesure n'a pas ete payee -- le brut de la file
+      est sous le seuil de saturation, ce qui PROUVE que la file n'est pas
+      saturee ; M est alors un MAJORANT de la profondeur vivante (le brut
+      majore la vivante), jamais une profondeur ;
+    - (None, None, raison, k) : la mesure est impossible (import absent,
+      API muette, instrument incomplet).
+
+    La fonction ne porte aucun transport propre : elle appelle l'organe
+    voisin, ce qui la rend monkeypatchable -- les tests ne touchent jamais
+    l'API.
 
     L'organe voisin est importe depuis CE repertoire, et l'import est sous
     try/except : `check_runner_starvation.py` s'execute seul (workflows,
@@ -1119,35 +1134,59 @@ def _live_queue_depth(repo: str) -> tuple[int | None, str]:
             sys.path.insert(0, here)
         import gh_queue_health
     except Exception as exc:  # organe voisin absent ou casse : jamais un crash
-        return None, f"{type(exc).__name__}: {exc}"
+        return None, None, f"{type(exc).__name__}: {exc}", 0
+    kwargs = dict(
+        repo=repo,
+        cutoff=gh_queue_health.parse_date(LIVE_DEPTH_CUTOFF),
+        cutoff_date=LIVE_DEPTH_CUTOFF,
+        now=datetime.now(timezone.utc),
+        no_job_events=gh_queue_health.NO_JOB_EVENTS,
+        no_job_min_age_hours=gh_queue_health.DEFAULT_NO_JOB_MIN_AGE_HOURS,
+        max_workers=8,
+    )
     try:
-        report = gh_queue_health.live_depth_report(
-            repo=repo,
-            cutoff=gh_queue_health.parse_date(LIVE_DEPTH_CUTOFF),
-            cutoff_date=LIVE_DEPTH_CUTOFF,
-            now=datetime.now(timezone.utc),
-            no_job_events=gh_queue_health.NO_JOB_EVENTS,
-            no_job_min_age_hours=gh_queue_health.DEFAULT_NO_JOB_MIN_AGE_HOURS,
-            max_workers=8,
-        )
+        if hasattr(gh_queue_health, "measure_queue_depth"):
+            # #26739 -- l'organe voisin lit le BRUT d'abord (UN appel) et ne
+            # mesure la vivante que si le brut ATTEINT le seuil de
+            # saturation : le brut MAJORE la vivante, donc un brut sous le
+            # seuil PROUVE que la file n'est pas saturee et la mesure ne
+            # peut rien changer au verdict. Elle n'est alors pas payee
+            # (114 appels economises).
+            report = gh_queue_health.measure_queue_depth(
+                saturation_threshold=LIVE_DEPTH_SATURATION_THRESHOLD, **kwargs)
+        else:
+            # Organe voisin d'une version anterieure : la mesure complete
+            # est la seule voie disponible.
+            report = gh_queue_health.live_depth_report(**kwargs)
     except Exception as exc:  # API muette, instrument en erreur
-        return None, f"{type(exc).__name__}: {exc}"
-    if (not isinstance(report, dict)
-            or not isinstance(report.get("live_depth"), int)):
-        return None, f"reponse inattendue: {str(report)[:200]}"
+        return None, None, f"{type(exc).__name__}: {exc}", 0
+    try:
+        calls = int(gh_queue_health.api_call_count())
+    except Exception:
+        calls = 0
+    if not isinstance(report, dict):
+        return None, None, f"reponse inattendue: {str(report)[:200]}", calls
+    if (report.get("depth_kind") or "live") == "raw-upper-bound":
+        bound = report.get("depth")
+        if not isinstance(bound, int):
+            return None, None, "reponse inattendue: majorant absent", calls
+        return None, bound, "", calls
+    if not isinstance(report.get("live_depth"), int):
+        return None, None, f"reponse inattendue: {str(report)[:200]}", calls
     parse_failures = report.get("parse_failures") or 0
     if parse_failures:
         # Fail-closed, comme l'organe voisin : une profondeur calculee sur
         # une population partiellement illisible n'est pas publiee.
-        return None, (f"instrument incomplet: {parse_failures} run(s) de "
-                      f"date illisible")
-    return report["live_depth"], ""
+        return None, None, (f"instrument incomplet: {parse_failures} run(s) de "
+                            f"date illisible"), calls
+    return report["live_depth"], None, "", calls
 
 
 def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
              label: str = DEFAULT_LABEL,
              declared: DeclaredHosts | None = None,
              live_depth: int | None = None,
+             live_depth_bound: int | None = None,
              live_depth_error: str = "") -> Verdict:
     v = Verdict()
 
@@ -1266,6 +1305,18 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
                 f"queued vu(s) par cette sonde vs {live_depth} run(s) de "
                 f"profondeur VIVANTE -- ecart {gap:+d}, {cause}"
             )
+    elif live_depth_bound is not None:
+        # La mesure n'a pas ete payee : le brut de la file est sous le
+        # seuil de saturation, ce qui PROUVE que la file n'est pas saturee.
+        # Ce qui est annonce est un MAJORANT de la profondeur vivante (le
+        # brut majore la vivante), jamais une profondeur -- et l'ecart avec
+        # ce que la sonde voit n'est donc PAS affine : on ne l'affirme pas.
+        v.notes.append(
+            f"profondeur VIVANTE NON MESUREE: au plus {live_depth_bound} "
+            f"run(s) vivants (majorant -- le brut de la file est sous le "
+            f"seuil de saturation {LIVE_DEPTH_SATURATION_THRESHOLD} ; "
+            f"mesure complete non payee)"
+        )
     elif live_depth_error:
         # Mesure TENTEE et echouee : on le dit, et ca reste une WARNING --
         # un instrument indisponible ne rend ni la file saine ni la famine
@@ -1533,7 +1584,11 @@ def main() -> int:
     # Profondeur VIVANTE (#26719) : remplie par le passage complet, jamais
     # par le passage econome (cf `if measure:` plus bas).
     live_depth: int | None = None
+    live_depth_bound: int | None = None
     live_depth_error = ""
+    # Le cout de la mesure de profondeur, en appels API (#26739 : le quota
+    # horaire est partage par tous les workflows du depot).
+    depth_calls = 0
     # Le MIROIR est lu HORS de la porte de mesure : l'alerte `[WARN][mirror]`
     # ne doit pas dependre du fait que le passage complet soit econome
     # (4 runs sur 1). Un miroir fige fait tomber les checkouts, donc la
@@ -1568,12 +1623,30 @@ def main() -> int:
         # mesure, et annoncer une profondeur venue d'ailleurs serait un
         # chiffre sans provenance. Un echec est absorbe ici : il devient une
         # WARNING du verdict, jamais une erreur.
-        if st.stats.calls:
-            live_depth, live_depth_error = _live_queue_depth(args.repo)
+        #
+        # #26739 -- la porte se FERME encore : la mesure n'a lieu que si un
+        # job AFFAME est detecte (le seul cas ou la note aide a lire le
+        # verdict). Sans affame, la note de profondeur n'apporte rien au
+        # verdict, et la mesurer coutait 114 appels API par passage sur un
+        # quota horaire partage par tous les workflows du depot.
+        if st.starved and st.stats.calls:
+            (live_depth, live_depth_bound, live_depth_error,
+             depth_calls) = _live_queue_depth(args.repo)
         full = evaluate(inv, st, args.warn_floor, label=args.label,
                         declared=declared, live_depth=live_depth,
+                        live_depth_bound=live_depth_bound,
                         live_depth_error=live_depth_error)
         v.notes = full.notes + v.notes
+        # #26739 -- le cout du passage, nomme : le quota horaire est partage
+        # par tous les workflows du depot, un organe qui consomme 114 appels
+        # par passage doit pouvoir le dire dans sa sortie.
+        total_calls = (calls.calls
+                       + (st.stats.calls if st is not None else 0)
+                       + depth_calls)
+        v.notes.append(
+            f"api-quota: {total_calls} appel(s) API sur ce passage "
+            f"(dont {depth_calls} pour la profondeur vivante)"
+        )
         v.warnings = full.warnings + v.warnings
         v.errors = full.errors + v.errors
     v.status = "ERROR" if v.errors else "OK"
@@ -1601,9 +1674,17 @@ def main() -> int:
         # concatener de la prose.
         "live_depth": live_depth,
         "live_depth_error": live_depth_error,
+        # #26739 -- quand la mesure n'a pas ete payee, ce qui est annonce
+        # est un MAJORANT de la profondeur vivante (le brut de la file est
+        # sous le seuil de saturation, ce qui PROUVE que la file n'est pas
+        # saturee). Un lecteur machine sait ainsi qu'il n'a pas un chiffre
+        # de profondeur mais une borne.
+        "live_depth_upper_bound": live_depth_bound,
+        "live_depth_api_calls": depth_calls,
         "queued_runs_seen": st.queued_runs_seen if st is not None else None,
         "unexamined_runs": st.unexamined if st is not None else None,
-        "gh_calls": calls.calls + (st.stats.calls if st is not None else 0),
+        "gh_calls": calls.calls + (st.stats.calls if st is not None else 0)
+        + depth_calls,
         "gh_failures": [
             {"endpoint": ep, "returncode": code, "message": msg}
             for ep, code, msg in calls.failures

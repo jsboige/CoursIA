@@ -164,8 +164,19 @@ def _fake_neighbour(monkeypatch, report=None, error=None) -> dict:
             raise error
         return report
 
+    def measure_queue_depth(**kwargs):
+        calls.update(kwargs)
+        if error is not None:
+            raise error
+        return report
+
+    def api_call_count() -> int:
+        return 7
+
     fake.parse_date = parse_date
     fake.live_depth_report = live_depth_report
+    fake.measure_queue_depth = measure_queue_depth
+    fake.api_call_count = api_call_count
     monkeypatch.setitem(sys.modules, "gh_queue_health", fake)
     return calls
 
@@ -173,33 +184,57 @@ def _fake_neighbour(monkeypatch, report=None, error=None) -> dict:
 def test_live_queue_depth_transmet_les_parametres_de_la_commande_unique(
         monkeypatch):
     calls = _fake_neighbour(monkeypatch,
-                            report={"live_depth": 7, "parse_failures": 0})
-    depth, reason = mod._live_queue_depth("jsboige/CoursIA")
-    assert (depth, reason) == (7, "")
+                            report={"live_depth": 7, "parse_failures": 0,
+                                    "depth_kind": "live", "depth": 7})
+    depth, bound, reason, api_calls = mod._live_queue_depth("jsboige/CoursIA")
+    assert (depth, bound, reason) == (7, None, "")
+    assert api_calls == 7
     assert calls["repo"] == "jsboige/CoursIA"
     assert calls["cutoff_date"] == mod.LIVE_DEPTH_CUTOFF
     assert calls["cutoff"] == f"parsed:{mod.LIVE_DEPTH_CUTOFF}"
     assert calls["no_job_events"] == frozenset({"issue_comment"})
     assert calls["no_job_min_age_hours"] == 24.0
     assert calls["max_workers"] == 8
+    # #26739 -- la mesure porte le seuil de saturation : c'est lui qui
+    # permet a l'organe voisin de NE PAS payer la mesure complete quand le
+    # brut est sous le seuil.
+    assert calls["saturation_threshold"] == mod.LIVE_DEPTH_SATURATION_THRESHOLD
     assert calls["now"].utcoffset().total_seconds() == 0, \
         "l'instant de mesure doit etre UTC"
+
+
+def test_live_queue_depth_rend_un_majorant_quand_la_mesure_n_est_pas_payee(
+        monkeypatch):
+    """#26739 -- quand l'organe voisin epargne la mesure, il rend un
+    MAJORANT de la profondeur vivante, pas une profondeur."""
+    calls = _fake_neighbour(
+        monkeypatch,
+        report={"live_depth": None, "depth": 470, "depth_kind": "raw-upper-bound",
+                "parse_failures": 0})
+    depth, bound, reason, api_calls = mod._live_queue_depth("jsboige/CoursIA")
+    assert depth is None
+    assert bound == 470
+    assert reason == ""
+    assert api_calls == 7
+    assert calls["saturation_threshold"] == mod.LIVE_DEPTH_SATURATION_THRESHOLD
 
 
 def test_live_queue_depth_est_fail_closed_sur_un_instrument_incomplet(
         monkeypatch):
     _fake_neighbour(monkeypatch,
                     report={"live_depth": 3, "parse_failures": 2})
-    depth, reason = mod._live_queue_depth("jsboige/CoursIA")
+    depth, bound, reason, _calls = mod._live_queue_depth("jsboige/CoursIA")
     assert depth is None, "une profondeur sur une population trouee ne se publie pas"
+    assert bound is None
     assert reason.startswith("instrument incomplet:")
     assert "2" in reason
 
 
 def test_live_queue_depth_absorbe_une_exception_de_l_api(monkeypatch):
     _fake_neighbour(monkeypatch, error=RuntimeError("API muette"))
-    depth, reason = mod._live_queue_depth("jsboige/CoursIA")
+    depth, bound, reason, _calls = mod._live_queue_depth("jsboige/CoursIA")
     assert depth is None
+    assert bound is None
     assert reason == "RuntimeError: API muette"
 
 
@@ -214,22 +249,37 @@ def test_live_queue_depth_survit_a_un_organe_voisin_absent(monkeypatch):
 
     monkeypatch.delitem(sys.modules, "gh_queue_health", raising=False)
     monkeypatch.setattr(builtins, "__import__", import_sans_voisin)
-    depth, reason = mod._live_queue_depth("jsboige/CoursIA")
+    depth, bound, reason, _calls = mod._live_queue_depth("jsboige/CoursIA")
     assert depth is None
+    assert bound is None
     assert reason == "ImportError: organe voisin absent (test)"
 
 
 # --- 6. Le cablage de `main()` ---------------------------------------------
 
+def _starved_and_running(seen: int = 9) -> mod.Starvation:
+    """Une file ou un job AFFAME est detecte ET un job tourne : le verdict
+    reste OK, mais la note de profondeur a lieu d'etre lue (#26739 : la
+    mesure n'est payee que dans ce cas)."""
+    return mod.Starvation(
+        queued_runs_seen=seen,
+        stats=mod.CallStats(calls=1),
+        starved=[_job(35.0)],
+        in_progress=[mod.JobRow(workflow="Guard A", run_number=2, run_id=1002,
+                                job_name="guard", status="in_progress",
+                                age_min=1.0)])
+
+
 def test_main_passe_la_profondeur_vivante_et_nomme_l_ecart(monkeypatch,
                                                            capsys):
     """Le câblage bout en bout : `main()` calcule, `evaluate()` annonce."""
-    st = mod.Starvation(queued_runs_seen=9, stats=mod.CallStats(calls=1))
+    st = _starved_and_running(9)
     monkeypatch.setattr(mod, "fetch_scheduled_runs", lambda *a, **k: [])
     monkeypatch.setattr(mod, "fetch_inventory",
                         lambda *a, **k: mod.RunnerInventory(online=["r1", "r2"]))
     monkeypatch.setattr(mod, "fetch_starvation", lambda *a, **k: st)
-    monkeypatch.setattr(mod, "_live_queue_depth", lambda repo: (4, ""))
+    monkeypatch.setattr(mod, "_live_queue_depth",
+                        lambda repo: (4, None, "", 3))
     monkeypatch.setattr(sys, "argv", [
         "check_runner_starvation.py", "--json", "--mirror-off",
         "--declared-hosts", "",
@@ -238,6 +288,8 @@ def test_main_passe_la_profondeur_vivante_et_nomme_l_ecart(monkeypatch,
     assert mod.main() == 0
     payload = json.loads(capsys.readouterr().out)
     assert payload["live_depth"] == 4
+    assert payload["live_depth_upper_bound"] is None
+    assert payload["live_depth_api_calls"] == 3
     assert payload["queued_runs_seen"] == 9
     notes = payload["notes"]
     assert any(n.startswith("profondeur VIVANTE de la file: 4 run(s)")
@@ -245,6 +297,61 @@ def test_main_passe_la_profondeur_vivante_et_nomme_l_ecart(monkeypatch,
     ecart = next(n for n in notes
                  if n.startswith("profondeur de file divergente"))
     assert "9 run(s)" in ecart and "4 run(s)" in ecart and "+5" in ecart
+    # #26739 -- le cout du passage est nomme (quota horaire partage).
+    assert any(n.startswith("api-quota:") for n in notes), notes
+
+
+def test_main_ne_paie_pas_la_mesure_sans_job_affame(monkeypatch, capsys):
+    """#26739 -- sans job affame, la note de profondeur n'apporte rien au
+    verdict : la mesure n'est PAS payee (114 appels par passage)."""
+    st = mod.Starvation(queued_runs_seen=9, stats=mod.CallStats(calls=1))
+    monkeypatch.setattr(mod, "fetch_scheduled_runs", lambda *a, **k: [])
+    monkeypatch.setattr(mod, "fetch_inventory",
+                        lambda *a, **k: mod.RunnerInventory(online=["r1", "r2"]))
+    monkeypatch.setattr(mod, "fetch_starvation", lambda *a, **k: st)
+
+    def interdit(repo):
+        raise AssertionError(
+            "aucune mesure de profondeur sans job affame detecte")
+
+    monkeypatch.setattr(mod, "_live_queue_depth", interdit)
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json", "--mirror-off",
+        "--declared-hosts", "",
+    ])
+
+    assert mod.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["live_depth"] is None
+    assert payload["live_depth_upper_bound"] is None
+    assert not any("PROFONDEUR VIVANTE" in w for w in payload["warnings"])
+
+
+def test_main_annonce_le_majorant_quand_la_mesure_n_est_pas_payee(
+        monkeypatch, capsys):
+    """#26739 -- quand l'organe voisin epargne la mesure, la note annonce un
+    MAJORANT et n'affirme AUCUN ecart (la profondeur n'est pas mesuree)."""
+    st = _starved_and_running(9)
+    monkeypatch.setattr(mod, "fetch_scheduled_runs", lambda *a, **k: [])
+    monkeypatch.setattr(mod, "fetch_inventory",
+                        lambda *a, **k: mod.RunnerInventory(online=["r1", "r2"]))
+    monkeypatch.setattr(mod, "fetch_starvation", lambda *a, **k: st)
+    monkeypatch.setattr(mod, "_live_queue_depth",
+                        lambda repo: (None, 470, "", 1))
+    monkeypatch.setattr(sys, "argv", [
+        "check_runner_starvation.py", "--json", "--mirror-off",
+        "--declared-hosts", "",
+    ])
+
+    assert mod.main() == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["live_depth"] is None
+    assert payload["live_depth_upper_bound"] == 470
+    notes = payload["notes"]
+    assert any("profondeur VIVANTE NON MESUREE: au plus 470" in n
+               for n in notes), notes
+    assert not any(n.startswith("profondeur de file divergente")
+                   for n in notes), notes
 
 
 def test_main_ne_paie_pas_la_mesure_quand_la_sonde_n_a_rien_lu(monkeypatch,
