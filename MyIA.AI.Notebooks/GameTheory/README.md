@@ -68,7 +68,7 @@ Le notebook Python montre *pourquoi* l'équilibre de Nash est plausible ; le not
 ### Où la théorie des jeux sert
 
 - **Enchères** (notebooks 11 et 16) : les mécanismes VCG et leurs dérivés fondent les enchères publicitaires en ligne et les ventes de fréquences télécom orchestrées par les États.
-- **Marchés d'appariement** (notebooks 15 et 16) : l'algorithme de Gale-Shapley affecte des élèves aux écoles, des internes aux hôpitaux, et organise les dons d'organes par échanges croisés (prix Nobel d'économie 2012).
+- **Marchés d'appariement** (notebooks 15 et 16) : Gale-Shapley affecte des élèves aux écoles et des internes aux hôpitaux. Les échanges de reins mobilisent des cycles et dépassent ce modèle biparti simple ; ces travaux relèvent d'extensions des mécanismes d'appariement (prix Nobel d'économie 2012).
 - **Poker et bluff optimal** (notebook 13) : Counterfactual Regret Minimization a permis à des programmes de battre les meilleurs joueurs humains au Texas Hold'em, première résolution d'un jeu majeur à information imparfaite.
 - **Vote et gouvernance** (sous-série SocialChoice) : le théorème d'Arrow et les méthodes de Condorcet ou de Borda éclairent le choix d'un mode de scrutin, du vote citoyen à la gouvernance on-chain.
 - **Coopération et évolution** (notebook 06) : le tournoi d'Axelrod et les dynamiques de réplication modélisent l'émergence de la coopération en biologie, en relations internationales et dans les protocoles pair-à-pair.
@@ -320,7 +320,7 @@ Le [carnet Python](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) et son [j
 | 16d | [Joueurs LLM](GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) | Pilote : des agents de langage hétérogènes joueurs d'un mécanisme d'Othman-Sandholm | Python | Recherche |
 | 16e | [Populations Othman-Sandholm](GameTheory-16e-Populations-Othman-Sandholm-Python.ipynb) | Généralisation du pilote 16d : un échantillon de N paires (row, col) tirées d'une distribution sur les politiques, quatre populations scriptées, multi-seed, modèle nul | Python | Recherche |
 | 16h | [Coopération LLM](GameTheory-16h-Cooperation-LLM-Python.ipynb) | Populations hétérogènes d'agents de langage au dilemme du prisonnier itéré : protocole multi-seed pré-enregistré (5 graines), politiques TFT scriptées, modèle nul uniforme, contrôle négatif `always_defect`, verdict H0/H1 par hétérogénéité (Vallinder–Hughes 2024, Payne–Alloui–Cros 2025) | Python | Recherche |
-| 16i | [Appariage stable & stratégie](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | Qui peut tricher dans Gale–Shapley : le côté proposeur est protégé, le côté répondant peut mentir — recherche exhaustive de déclarations profitables | Python | Licence |
+| 16i | [Appariage stable & stratégie](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [C#](GameTheory-16i-Appariage-Stable-Gale-Shapley-CSharp.ipynb) | Gale–Shapley, certificat de stabilité, deux instances et énumération bornée des déclarations ; les mesures ne généralisent pas les théorèmes | Python / C# | Licence |
 | 16k | [Théorie des enchères](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | Le prix mesuré de l'information : vrais-facité de Vickrey, réserve optimale de Myerson, saut de revenu et équivalence de revenu | Python | Recherche |
 
 **Parité de 16c — dimension paiement** : [Python](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [C#](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-CSharp.ipynb). Énumération native des 4 096 mécanismes et comparaison des contraintes locales explicites, sans solveur externe.
