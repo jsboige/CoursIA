@@ -58,9 +58,20 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
+
+# Lectures REST conditionnelles (ETag persiste, partage par machine) :
+# protocole pr_gate #26260 etendu aux processus courts. Le module porte les
+# invariants (un 304 est une preuve serveur d'unchangement ; tout echec
+# non-304 reste un echec) ; `_run_gh` ne fait que router les argv applicables.
+try:
+    import gh_etag
+except ImportError:  # meme shim que les organes voisins (tests hors scripts/)
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import gh_etag
 
 RED = {"failure", "timed_out"}
 GREEN = {"success", "neutral", "skipped"}
@@ -159,6 +170,22 @@ def residual_reds(legs: list[dict]) -> list[dict]:
 
 
 def _run_gh(args: list[str]) -> str:
+    """Un appel gh, en texte. Les lectures REST conditionnables (ETag
+    persiste #26260) passent par `gh_etag` : un 304 sert le corps certifie
+    inchange par le serveur et ne consomme aucun quota ; tout echec non-304
+    reste un `RuntimeError`, comme le chemin d'origine -- un cache absent ou
+    corrompu coute un 200, il ne change jamais le verdict."""
+    etag_path = gh_etag.etag_applicable(args)
+    if etag_path is not None:
+        try:
+            body, _ = gh_etag.conditional_get(etag_path)
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(f"gh api {etag_path[:40]}... -> timeout "
+                               f"{exc.timeout}s") from exc
+        except subprocess.CalledProcessError as exc:
+            raise RuntimeError(f"gh api {etag_path[:40]}... -> {exc.returncode}: "
+                               f"{(exc.stderr or '')[:200]}") from exc
+        return json.dumps(body)
     proc = subprocess.run(["gh", *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         raise RuntimeError(f"gh {' '.join(args[:4])}... -> {proc.returncode}: "
