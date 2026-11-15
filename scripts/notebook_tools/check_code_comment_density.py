@@ -939,8 +939,11 @@ def self_test() -> int:
           _one_letter_count("for i in range(3):\n    acc = i\n",
                             "python") == 0)
 
-    print(f"self-test: {'PASS' if not failures else str(len(failures))
-          + ' ECHEC(S)'}")
+    # Pas de f-string multi-lignes ici : PEP 701 (3.12+) seulement, le
+    # runner CI est en 3.11 et la collection pytest y echoue (SyntaxError).
+    # Le nom "verdict" designe deja une fonction de ce module : ne pas le masquer.
+    selftest_msg = "PASS" if not failures else "%d ECHEC(S)" % len(failures)
+    print("self-test: " + selftest_msg)
     return 1 if failures else 0
 
 
