@@ -1,0 +1,10 @@
+- name: "NLP-08 Word2Vec"
+  family: NLP
+  python: MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram.ipynb
+  csharp: MyIA.AI.Notebooks/NLP/08-Word2Vec-CBOW-SkipGram-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux versions implémentent les calculs pédagogiques from scratch ; aucune bibliothèque de modèle externe n'est invoquée par la source."
+  known_differences:
+    - "Python emploie NumPy et Matplotlib ; C# utilise MathNet pour le tirage normal et BCL pour les gradients, avec un graphique SVG statique."
+    - "Les générateurs aléatoires diffèrent, donc les pertes et voisinages observés ne sont pas identiques."
