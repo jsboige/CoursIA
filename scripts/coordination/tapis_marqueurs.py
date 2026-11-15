@@ -61,6 +61,12 @@ def _iso(d: datetime) -> str:
     return d.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+def _age(maintenant: datetime, quand: str | None, unite_s: int) -> float | None:
+    """L'age d'un instant ISO dans l'unite donnee (secondes), ou None."""
+    d = _dt(quand)
+    return round((maintenant - d).total_seconds() / unite_s, 1) if d else None
+
+
 def _lane(ligne: str, texte: str) -> str | None:
     """Sur la ligne du marqueur, le premier jeton `lane X` ou `myia-...:...` nu ;
     sinon le premier `lane X` du commentaire."""
