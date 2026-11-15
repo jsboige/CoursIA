@@ -42,14 +42,47 @@ V4331 = "leanprover/lean4:v4.33.1\n"
 V4321 = "leanprover/lean4:v4.32.1\n"
 
 
-def _lake(root: Path, name: str, toolchain: str, *, warm: bool = False) -> Path:
-    """Repertoire de lake minimal : `lean-toolchain` (+ `.lake/packages`)."""
+def _lake(root: Path, name: str, toolchain: str, *, warm: bool = False,
+          packages: list[str] | None = None) -> Path:
+    """Repertoire de lake minimal : `lean-toolchain` (+ `.lake/packages`).
+
+    `warm=True` materialise un paquet **resolu** (son `.git` present) :
+    depuis #26639, un `.lake/packages` VIDE ne vaut plus un cache chaud --
+    lake y re-resoudrait les dependances, donc lancerait git dans le depot
+    englobant (incident mesure le 14/11 sur ai-01).
+    """
     lake = root / name
     lake.mkdir(parents=True, exist_ok=True)
     (lake / "lean-toolchain").write_text(toolchain, encoding="utf-8")
     if warm:
-        (lake / ".lake" / "packages").mkdir(parents=True, exist_ok=True)
+        packages_dir = lake / ".lake" / "packages"
+        packages_dir.mkdir(parents=True, exist_ok=True)
+        for pkg in (packages if packages is not None else ["batteries"]):
+            materialized = packages_dir / pkg
+            materialized.mkdir(parents=True, exist_ok=True)
+            (materialized / ".git").mkdir(exist_ok=True)
     return lake
+
+
+def _manifest_de_paquets(lake: Path, packages: list[str]) -> Path:
+    """Ecrit le `lake-manifest.json` qui declare les paquets du lake."""
+    payload = {
+        "version": "1.1.0",
+        "packagesDir": ".lake/packages",
+        "packages": [
+            {
+                "name": name,
+                "type": "git",
+                "url": "https://example.invalid/{}".format(name),
+                "rev": "0" * 40,
+                "scope": "",
+            }
+            for name in packages
+        ],
+    }
+    manifest = lake / "lake-manifest.json"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    return manifest
 
 
 # --- 1. la resolution du pivot ---------------------------------------------
@@ -137,6 +170,111 @@ def test_lake_sans_toolchain_rend_un_refus_nomme(tmp_path):
 
     assert verdict["ok"] is False
     assert "lean-toolchain" in verdict["reason"]
+
+
+# --- 1 bis. « chaud » se MESURE : le cache doit etre COMPLET -----------------
+#
+# Un `.lake/packages` vide ou partiel passe pour un cache chaud, et lake va
+# alors re-resoudre les dependances manquantes : il lance git DANS le depot
+# englobant et ecrit, a travers la junction, dans le clone principal
+# (incident mesure le 14/11 sur ai-01 : fetch et checkout tentes dans
+# `D:/CoursIA`). Un candidat incomplet est donc ecarte, AVEC son motif.
+
+
+def test_un_cache_a_packages_vides_est_refuse(tmp_path):
+    """NEGATIF : `.lake/packages` existe mais est vide -- ce n'est pas un
+    cache chaud. Avant le correctif, ce dossier passait pour chaud."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    pivot = _lake(tmp_path / "pivots", "vide", V4331)
+    (pivot / ".lake" / "packages").mkdir(parents=True, exist_ok=True)
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert verdict["reason"] == alb.NO_WARM_CACHE
+    assert any("packages vides" in r for r in verdict["rejects"])
+
+
+def test_un_cache_qui_omet_un_paquet_declare_est_refuse(tmp_path):
+    """NEGATIF : le pivot declare `mathlib` et `batteries`, mais seul
+    `batteries` est materialise : le pivot est ecarte et le motif NOMME le
+    paquet manquant."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    pivot = _lake(tmp_path / "pivots", "partiel", V4331, warm=True,
+                  packages=["batteries"])
+    _manifest_de_paquets(pivot, ["batteries", "mathlib"])
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert verdict["reason"] == alb.NO_WARM_CACHE
+    assert any("mathlib absent" in r for r in verdict["rejects"])
+    assert "mathlib absent" in verdict["detail"]
+
+
+def test_mathlib_sans_build_est_refuse(tmp_path):
+    """NEGATIF : Mathlib est present (checkout fait) mais pas COMPILE. Sans
+    `.lake/packages/mathlib/.lake/build`, le cache ne vaut rien : lake
+    recompile, donc re-resout, donc va chercher."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    pivot = _lake(tmp_path / "pivots", "mathlib_sans_build", V4331, warm=True,
+                  packages=["batteries", "mathlib"])
+    _manifest_de_paquets(pivot, ["batteries", "mathlib"])
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert any("mathlib incomplet" in r for r in verdict["rejects"])
+
+
+def test_le_pivot_complet_et_resolu_est_retenu(tmp_path):
+    """POSITIF : le pivot declare `mathlib` et `batteries`, les deux sont
+    materialises, Mathlib est compile -> le pivot est retenu."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    pivot = _lake(tmp_path / "pivots", "complet", V4331, warm=True,
+                  packages=["batteries", "mathlib"])
+    _manifest_de_paquets(pivot, ["batteries", "mathlib"])
+    build = pivot / ".lake" / "packages" / "mathlib" / ".lake" / "build"
+    build.mkdir(parents=True)
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is True
+    assert Path(verdict["pivot"]) == pivot
+    assert verdict["rejects"] == []
+
+
+def test_un_paquet_demande_par_le_lake_et_non_servi_ecarte_le_pivot(tmp_path):
+    """NEGATIF : le pivot est complet POUR LUI-MEME, mais il ne sert pas le
+    paquet que le LAKE demande (`mathlib`). C'est le chemin de l'incident
+    du 14/11 : lake chercherait le paquet manquant et l'ecrirait dans le
+    repertoire vise par la junction -- c'est-a-dire dans le clone
+    principal."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    _manifest_de_paquets(lake, ["batteries", "mathlib"])
+    pivot = _lake(tmp_path / "pivots", "sans_mathlib", V4331, warm=True,
+                  packages=["batteries"])
+    _manifest_de_paquets(pivot, ["batteries"])
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["ok"] is False
+    assert any("mathlib absent" in r for r in verdict["rejects"])
+
+
+def test_le_verdict_dit_pourquoi_aucun_pivot_n_a_ete_retenu(tmp_path):
+    """Le verdict nomme le motif de l'ecart : sans lui, « aucun cache chaud »
+    ne dit pas pourquoi aucun pivot n'a ete retenu."""
+    lake = _lake(tmp_path / "lakes", "formal_logic", V4331)
+    pivot = _lake(tmp_path / "pivots", "partiel", V4331, warm=True,
+                  packages=["batteries"])
+    _manifest_de_paquets(pivot, ["batteries", "mathlib"])
+
+    verdict = alb.resolve_cache_pivot(lake, [pivot])
+
+    assert verdict["reason"] == alb.NO_WARM_CACHE
+    assert verdict["rejects"]
+    assert "partiel" in verdict["detail"]
 
 
 # --- 2. le plan de prechauffage --------------------------------------------

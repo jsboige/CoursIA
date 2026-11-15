@@ -346,13 +346,118 @@ def _pivot_candidates(base_manifest: dict, head_manifest: dict | None) -> list[P
     return out
 
 
+def _declared_packages(lake_dir: Path) -> list[str]:
+    """Noms des paquets declares par le `lake-manifest.json` d'un lake.
+
+    Manifeste absent, illisible ou sans tableau `packages` : la liste est
+    VIDE. L'exigence porte alors sur le critere general (`.lake/packages`
+    non vide) -- on n'invente pas de paquet a exiger.
+    """
+    manifest = lake_dir / "lake-manifest.json"
+    try:
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(payload, dict):
+        return []
+    packages = payload.get("packages")
+    if not isinstance(packages, list):
+        return []
+    names: list[str] = []
+    for entry in packages:
+        if not isinstance(entry, dict):
+            continue
+        name = entry.get("name")
+        if isinstance(name, str) and name:
+            names.append(name)
+    return names
+
+
+def _package_is_resolved(package_dir: Path, name: str) -> bool:
+    """Le paquet `name` est-il reellement RESOLU sous `.lake/packages/` ?
+
+    Un repertoire vide traine (lac ouvert puis abandonne, `cache get`
+    interrompu, paquet supprime) : lake le voit comme un paquet et va le
+    re-resoudre -- donc le re-telecharger, donc lancer git DANS le depot
+    englobant. C'est l'incident mesure le 14/11 sur ai-01 (fetch et checkout
+    tentes dans `D:/CoursIA`).
+
+    La preuve de resolution :
+    - un paquet `git` a son `.git` (le checkout) ou son `lakefile.*` ;
+    - Mathlib se COMPILE : le build deja fait se lit a
+      `.lake/packages/mathlib/.lake/build`. Sans lui, le paquet est present
+      mais incomplet -- et c'est precisement lui qu'il faut recompiler.
+    """
+    if not package_dir.is_dir():
+        return False
+    if name == "mathlib":
+        return (package_dir / ".lake" / "build").is_dir()
+    if (package_dir / ".git").exists():
+        return True
+    return any(package_dir.glob("lakefile.*"))
+
+
+def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
+    """Paquets declares par `manifest_owner` et NON materialises dans
+    `packages_dir`.
+
+    Le manifeste peut venir d'un lake et le dossier de paquets d'un autre :
+    c'est la question qui compte -- « le pivot sait-il servir les paquets
+    que le lake demande ? ». Liste VIDE = rien ne manque.
+    """
+    missing: list[str] = []
+    for name in _declared_packages(manifest_owner):
+        package_dir = packages_dir / name
+        if not package_dir.is_dir():
+            missing.append("{} absent".format(name))
+        elif not _package_is_resolved(package_dir, name):
+            missing.append("{} incomplet".format(name))
+    return missing
+
+
+def _pivot_is_warm(candidate: Path, lake_dir: Path) -> tuple[bool, str]:
+    """Le cache du candidat est-il chaud ET complet ?
+
+    Renvoie (ok, motif). Le motif nomme le paquet qui manque : sans lui, un
+    verdict « aucun cache chaud » ne dit pas POURQUOI aucun pivot n'a ete
+    retenu.
+    """
+    packages_dir = candidate / WARM_PACKAGES
+    if not packages_dir.is_dir():
+        return False, ".lake/packages absent"
+    materialises = [
+        p for p in packages_dir.iterdir()
+        if p.is_dir() and not p.name.startswith(".")
+    ]
+    if not materialises:
+        return False, "packages vides"
+    # Ce que le CANDIDAT declare doit etre la, resolu.
+    missing = _packages_absent(candidate, packages_dir)
+    if missing:
+        return False, "packages incomplets : {}".format(", ".join(missing))
+    # Ce que le LAKE DEMANDE doit etre la aussi : sinon lake va chercher
+    # le paquet manquant -- et l'ecrire dans le repertoire vers lequel la
+    # junction pointe, c'est-a-dire DANS le clone principal.
+    missing = _packages_absent(lake_dir, packages_dir)
+    if missing:
+        return False, "packages du lake non servis : {}".format(", ".join(missing))
+    return True, ""
+
+
 def resolve_cache_pivot(lake_dir: Path, candidates: list[Path]) -> dict:
     """Pivot de cache chaud applicable a `lake_dir`, resolu a l'execution.
 
     Un pivot vaut si sa toolchain est la MEME que celle du lake ET si son
-    `.lake/packages` est chaud dans le clone courant. La comparaison de
-    GRAPHE (#25370) reste faite ensuite, par `check_cache_compatibility` : la
-    toolchain est une condition NECESSAIRE, pas suffisante.
+    `.lake/packages` est chaud **et complet** dans le clone courant. La
+    comparaison de GRAPHE (#25370) reste faite ensuite, par
+    `check_cache_compatibility` : la toolchain est une condition
+    NECESSAIRE, pas suffisante.
+
+    « Chaud » se MESURE : un `.lake/packages` vide ou partiel passe pour
+    un cache chaud, et lake va alors re-resoudre les paquets manquants --
+    donc lancer git dans le depot englobant et ecrire dans le clone
+    principal a travers la junction (incident mesure le 14/11 sur ai-01).
+    Un candidat incomplet est donc ECARTE, avec son motif.
 
     Un lake sans pivot applicable n'est pas un echec de build : le motif
     distinct `no-warm-cache-for-toolchain` est rendu, avec la commande de
@@ -362,12 +467,15 @@ def resolve_cache_pivot(lake_dir: Path, candidates: list[Path]) -> dict:
     if not toolchain:
         return {"ok": False, "reason": "lean-toolchain absent du lake"}
     warm = []
+    rejects: list[str] = []
     for candidate in candidates:
         if candidate == lake_dir:
             continue
         if _toolchain_of(candidate) != toolchain:
             continue
-        if not (candidate / WARM_PACKAGES).is_dir():
+        ok, why = _pivot_is_warm(candidate, lake_dir)
+        if not ok:
+            rejects.append("{} ecarte : {}".format(candidate.name, why))
             continue
         warm.append(candidate)
     if not warm:
@@ -375,15 +483,18 @@ def resolve_cache_pivot(lake_dir: Path, candidates: list[Path]) -> dict:
             "ok": False,
             "reason": NO_WARM_CACHE,
             "toolchain": toolchain,
-            "detail": "aucun cache chaud pour la toolchain {} dans le clone courant".format(
-                toolchain
+            "detail": "aucun cache chaud pour la toolchain {} dans le clone courant{}".format(
+                toolchain,
+                " ; " + " | ".join(rejects) if rejects else "",
             ),
+            "rejects": rejects,
         }
     return {
         "ok": True,
         "pivot": str(warm[0]),
         "toolchain": toolchain,
         "pivots": [str(p) for p in warm],
+        "rejects": rejects,
     }
 
 
