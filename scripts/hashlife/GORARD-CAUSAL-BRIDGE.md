@@ -83,7 +83,8 @@ Sur le DAG natif (1500 sommets, 2602 arètes, mur 7,8 s) :
   exactement 2 jetons à créateur), degré sortant ≤ 4 (chaque événement crée
   4 jetons), degré sortant moyen 1,735 ;
 - **2 sources** (premiers événements sans ancêtre causal), **681 puits**
-  (jetons jamais consommés dans l'horizon du run) ;
+  (événements dont aucun des jetons créés n'est consommé dans l'horizon du
+  run — degré sortant 0, mesuré sur les événements, pas sur les jetons) ;
 - **profondeur maximale 11** (12 niveaux) ; largeurs par niveau :
   `2, 2, 4, 8, 14, 24, 48, 84, 162, 292, 532, 328` ;
 - la largeur **double à peu près à chaque niveau de profondeur** (4→8→14~16→24~32→48~64→84~128→162~256→292~512) jusqu'au niveau 10, puis 328 au
