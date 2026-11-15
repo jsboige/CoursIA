@@ -26,7 +26,7 @@ _spec.loader.exec_module(fc)
 # Titres reels (2026-09-23/24) : les deux premiers reparent les degats d'une
 # campagne gelee et citent le parapluie -- ils doivent rester mergeables.
 REVERT_TITLE = (
-    "revert(density,#17040): App-1-NQueens + App-14b-ConnectFour "
+    "revert(density,#17040): App-01-NQueens-Python + App-14b-ConnectFour "
     "restaures avant #17021 (remplissage sous veto)"
 )
 REDRESSEMENT_TITLE = (
