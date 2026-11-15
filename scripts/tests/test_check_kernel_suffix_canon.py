@@ -74,7 +74,7 @@ def _init_repo(repo: Path) -> str:
     _git(repo, "config", "user.email", "test@example.invalid")
     _git(repo, "config", "user.name", "test")
     _git(repo, "config", "diff.renames", "true")
-    _write(repo, ADOPTED + "/CSP/App-5-Timetabling-CSharp.ipynb",
+    _write(repo, ADOPTED + "/CSP/App-05-Timetabling-CSharp.ipynb",
            _notebook(".net-csharp"))
     _write(repo, "MyIA.AI.Notebooks/GameTheory/GameTheory-04-Nash.ipynb",
            _notebook(".net-csharp"))
@@ -431,7 +431,7 @@ class TestRenameAwareness(unittest.TestCase):
             base = _init_repo(repo)
             cfg = _write_config(repo, [ADOPTED + "/**"])
             _git(repo, "mv",
-                 ADOPTED + "/CSP/App-5-Timetabling-CSharp.ipynb",
+                 ADOPTED + "/CSP/App-05-Timetabling-CSharp.ipynb",
                  ADOPTED + "/CSP/App-5-Timetabling-Csharp.ipynb")
             _git(repo, "commit", "-qm", "rename vers une casse hors canon")
 
