@@ -38,23 +38,23 @@ Produites par ≥ 2 projets étudiants (candidats d'extraction en boîte à outi
 Un même fichier `.py` présent dans ≥ 3 dossiers (hors `__init__.py`).
 
 - `app.py` × 5 : `2.3.6_local_llm/`, `apps/gradio_demo/`, `argumentation_analysis/services/web_api/`, `argumentation_analysis/ui/`, `interface_web/`
-- `models.py` × 5 : `1_2_7_argumentation_dialogique/local_db_arg/src/core/`, `api/`, `argumentation_analysis/orchestration/`, `argumentation_analysis/reporting/`, `libs/mcp/client/`
 - `main.py` × 5 : `1.4.1-JTMS/`, `1_2_7_argumentation_dialogique/local_db_arg/`, `api/`, `argumentation_analysis/api/`, `argumentation_analysis/services/mcp_server/`
-- `strategies.py` × 5 : `2.3.3-generation-contre-argument/counter_agent/agent/`, `argumentation_analysis/agents/core/counter_argument/`, `argumentation_analysis/core/`, `argumentation_analysis/orchestration/`, `argumentation_analysis/pipelines/orchestration/execution/`
+- `models.py` × 5 : `1_2_7_argumentation_dialogique/local_db_arg/src/core/`, `api/`, `argumentation_analysis/orchestration/`, `argumentation_analysis/reporting/`, `libs/mcp/client/`
 - `prompts.py` × 5 : `2.3.3-generation-contre-argument/counter_agent/llm/`, `argumentation_analysis/agents/core/extract/`, `argumentation_analysis/agents/core/informal/`, `argumentation_analysis/agents/core/pl/`, `argumentation_analysis/agents/templates/student_template/`
+- `strategies.py` × 5 : `2.3.3-generation-contre-argument/counter_agent/agent/`, `argumentation_analysis/agents/core/counter_argument/`, `argumentation_analysis/core/`, `argumentation_analysis/orchestration/`, `argumentation_analysis/pipelines/orchestration/execution/`
 - `config.py` × 4 : `1_2_7_argumentation_dialogique/local_db_arg/src/interfaces/`, `abs_arg_dung/`, `argumentation_analysis/core/`, `argumentation_analysis/ui/`
-- `conflict_resolution.py` × 3 : `2.1.6_multiagent_governance_prototype/governance/`, `argumentation_analysis/agents/core/governance/`, `argumentation_analysis/services/jtms/`
 - `agent.py` × 3 : `2.3.5_argument_quality/src/`, `abs_arg_dung/`, `argumentation_analysis/agents/templates/student_template/`
 - `cli.py` × 3 : `1_2_7_argumentation_dialogique/local_db_arg/src/interfaces/`, `2.1.6_multiagent_governance_prototype/`, `abs_arg_dung/`
-- `utils.py` × 3 : `2.3.6_local_llm/local_llm/`, `argumentation_analysis/`, `argumentation_analysis/ui/`
-- `manager.py` × 3 : `argumentation_analysis/orchestration/hierarchical/operational/`, `argumentation_analysis/orchestration/hierarchical/strategic/`, `argumentation_analysis/orchestration/hierarchical/tactical/`
-- `unified_pipeline.py` × 3 : `argumentation_analysis/orchestration/`, `argumentation_analysis/pipelines/`, `argumentation_analysis/utils/`
-- `plugin.py` × 3 : `argumentation_analysis/plugin_framework/core/plugins/standard/external_verification/`, `argumentation_analysis/plugin_framework/core/plugins/standard/taxonomy_explorer/`, `argumentation_analysis/plugins/analysis_tools/`
-- `metrics.py` × 3 : `2.1.6_multiagent_governance_prototype/metrics/`, `2.3.3-generation-contre-argument/counter_agent/evaluation/`, `argumentation_analysis/agents/core/governance/`
-- `reporting_utils.py` × 3 : `argumentation_analysis/core/utils/`, `argumentation_analysis/utils/`, `argumentation_analysis/utils/dev_tools/`
+- `conflict_resolution.py` × 3 : `2.1.6_multiagent_governance_prototype/governance/`, `argumentation_analysis/agents/core/governance/`, `argumentation_analysis/services/jtms/`
 - `definitions.py` × 3 : `2.3.3-generation-contre-argument/counter_agent/agent/`, `argumentation_analysis/agents/core/counter_argument/`, `argumentation_analysis/agents/templates/student_template/`
-- `state.py` × 3 : `argumentation_analysis/orchestration/hierarchical/operational/`, `argumentation_analysis/orchestration/hierarchical/strategic/`, `argumentation_analysis/orchestration/hierarchical/tactical/`
+- `manager.py` × 3 : `argumentation_analysis/orchestration/hierarchical/operational/`, `argumentation_analysis/orchestration/hierarchical/strategic/`, `argumentation_analysis/orchestration/hierarchical/tactical/`
+- `metrics.py` × 3 : `2.1.6_multiagent_governance_prototype/metrics/`, `2.3.3-generation-contre-argument/counter_agent/evaluation/`, `argumentation_analysis/agents/core/governance/`
 - `orchestrator.py` × 3 : `argumentation_analysis/orchestration/hierarchical/`, `argumentation_analysis/reporting/`, `argumentation_analysis/webapp/`
+- `plugin.py` × 3 : `argumentation_analysis/plugin_framework/core/plugins/standard/external_verification/`, `argumentation_analysis/plugin_framework/core/plugins/standard/taxonomy_explorer/`, `argumentation_analysis/plugins/analysis_tools/`
+- `reporting_utils.py` × 3 : `argumentation_analysis/core/utils/`, `argumentation_analysis/utils/`, `argumentation_analysis/utils/dev_tools/`
+- `state.py` × 3 : `argumentation_analysis/orchestration/hierarchical/operational/`, `argumentation_analysis/orchestration/hierarchical/strategic/`, `argumentation_analysis/orchestration/hierarchical/tactical/`
+- `unified_pipeline.py` × 3 : `argumentation_analysis/orchestration/`, `argumentation_analysis/pipelines/`, `argumentation_analysis/utils/`
+- `utils.py` × 3 : `2.3.6_local_llm/local_llm/`, `argumentation_analysis/`, `argumentation_analysis/ui/`
 
 ## 5. Exposition licence des binaires vendorisés
 

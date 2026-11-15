@@ -175,29 +175,12 @@
     }
   ],
   "modules_dupliques": {
-    "conflict_resolution.py": [
-      "2.1.6_multiagent_governance_prototype/governance",
-      "argumentation_analysis/agents/core/governance",
-      "argumentation_analysis/services/jtms"
-    ],
     "app.py": [
       "2.3.6_local_llm",
       "apps/gradio_demo",
       "argumentation_analysis/services/web_api",
       "argumentation_analysis/ui",
       "interface_web"
-    ],
-    "models.py": [
-      "1_2_7_argumentation_dialogique/local_db_arg/src/core",
-      "api",
-      "argumentation_analysis/orchestration",
-      "argumentation_analysis/reporting",
-      "libs/mcp/client"
-    ],
-    "agent.py": [
-      "2.3.5_argument_quality/src",
-      "abs_arg_dung",
-      "argumentation_analysis/agents/templates/student_template"
     ],
     "main.py": [
       "1.4.1-JTMS",
@@ -206,17 +189,79 @@
       "argumentation_analysis/api",
       "argumentation_analysis/services/mcp_server"
     ],
+    "models.py": [
+      "1_2_7_argumentation_dialogique/local_db_arg/src/core",
+      "api",
+      "argumentation_analysis/orchestration",
+      "argumentation_analysis/reporting",
+      "libs/mcp/client"
+    ],
+    "prompts.py": [
+      "2.3.3-generation-contre-argument/counter_agent/llm",
+      "argumentation_analysis/agents/core/extract",
+      "argumentation_analysis/agents/core/informal",
+      "argumentation_analysis/agents/core/pl",
+      "argumentation_analysis/agents/templates/student_template"
+    ],
+    "strategies.py": [
+      "2.3.3-generation-contre-argument/counter_agent/agent",
+      "argumentation_analysis/agents/core/counter_argument",
+      "argumentation_analysis/core",
+      "argumentation_analysis/orchestration",
+      "argumentation_analysis/pipelines/orchestration/execution"
+    ],
+    "config.py": [
+      "1_2_7_argumentation_dialogique/local_db_arg/src/interfaces",
+      "abs_arg_dung",
+      "argumentation_analysis/core",
+      "argumentation_analysis/ui"
+    ],
+    "agent.py": [
+      "2.3.5_argument_quality/src",
+      "abs_arg_dung",
+      "argumentation_analysis/agents/templates/student_template"
+    ],
     "cli.py": [
       "1_2_7_argumentation_dialogique/local_db_arg/src/interfaces",
       "2.1.6_multiagent_governance_prototype",
       "abs_arg_dung"
     ],
-    "utils.py": [
-      "2.3.6_local_llm/local_llm",
-      "argumentation_analysis",
-      "argumentation_analysis/ui"
+    "conflict_resolution.py": [
+      "2.1.6_multiagent_governance_prototype/governance",
+      "argumentation_analysis/agents/core/governance",
+      "argumentation_analysis/services/jtms"
+    ],
+    "definitions.py": [
+      "2.3.3-generation-contre-argument/counter_agent/agent",
+      "argumentation_analysis/agents/core/counter_argument",
+      "argumentation_analysis/agents/templates/student_template"
     ],
     "manager.py": [
+      "argumentation_analysis/orchestration/hierarchical/operational",
+      "argumentation_analysis/orchestration/hierarchical/strategic",
+      "argumentation_analysis/orchestration/hierarchical/tactical"
+    ],
+    "metrics.py": [
+      "2.1.6_multiagent_governance_prototype/metrics",
+      "2.3.3-generation-contre-argument/counter_agent/evaluation",
+      "argumentation_analysis/agents/core/governance"
+    ],
+    "orchestrator.py": [
+      "argumentation_analysis/orchestration/hierarchical",
+      "argumentation_analysis/reporting",
+      "argumentation_analysis/webapp"
+    ],
+    "plugin.py": [
+      "argumentation_analysis/plugin_framework/core/plugins/standard/external_verification",
+      "argumentation_analysis/plugin_framework/core/plugins/standard/taxonomy_explorer",
+      "argumentation_analysis/plugins/analysis_tools"
+    ],
+    "reporting_utils.py": [
+      "argumentation_analysis/core/utils",
+      "argumentation_analysis/utils",
+      "argumentation_analysis/utils/dev_tools"
+    ],
+    "state.py": [
       "argumentation_analysis/orchestration/hierarchical/operational",
       "argumentation_analysis/orchestration/hierarchical/strategic",
       "argumentation_analysis/orchestration/hierarchical/tactical"
@@ -226,55 +271,10 @@
       "argumentation_analysis/pipelines",
       "argumentation_analysis/utils"
     ],
-    "plugin.py": [
-      "argumentation_analysis/plugin_framework/core/plugins/standard/external_verification",
-      "argumentation_analysis/plugin_framework/core/plugins/standard/taxonomy_explorer",
-      "argumentation_analysis/plugins/analysis_tools"
-    ],
-    "config.py": [
-      "1_2_7_argumentation_dialogique/local_db_arg/src/interfaces",
-      "abs_arg_dung",
-      "argumentation_analysis/core",
+    "utils.py": [
+      "2.3.6_local_llm/local_llm",
+      "argumentation_analysis",
       "argumentation_analysis/ui"
-    ],
-    "metrics.py": [
-      "2.1.6_multiagent_governance_prototype/metrics",
-      "2.3.3-generation-contre-argument/counter_agent/evaluation",
-      "argumentation_analysis/agents/core/governance"
-    ],
-    "strategies.py": [
-      "2.3.3-generation-contre-argument/counter_agent/agent",
-      "argumentation_analysis/agents/core/counter_argument",
-      "argumentation_analysis/core",
-      "argumentation_analysis/orchestration",
-      "argumentation_analysis/pipelines/orchestration/execution"
-    ],
-    "reporting_utils.py": [
-      "argumentation_analysis/core/utils",
-      "argumentation_analysis/utils",
-      "argumentation_analysis/utils/dev_tools"
-    ],
-    "prompts.py": [
-      "2.3.3-generation-contre-argument/counter_agent/llm",
-      "argumentation_analysis/agents/core/extract",
-      "argumentation_analysis/agents/core/informal",
-      "argumentation_analysis/agents/core/pl",
-      "argumentation_analysis/agents/templates/student_template"
-    ],
-    "definitions.py": [
-      "2.3.3-generation-contre-argument/counter_agent/agent",
-      "argumentation_analysis/agents/core/counter_argument",
-      "argumentation_analysis/agents/templates/student_template"
-    ],
-    "state.py": [
-      "argumentation_analysis/orchestration/hierarchical/operational",
-      "argumentation_analysis/orchestration/hierarchical/strategic",
-      "argumentation_analysis/orchestration/hierarchical/tactical"
-    ],
-    "orchestrator.py": [
-      "argumentation_analysis/orchestration/hierarchical",
-      "argumentation_analysis/reporting",
-      "argumentation_analysis/webapp"
     ]
   },
   "exposition_licence": {

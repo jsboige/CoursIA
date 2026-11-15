@@ -44,8 +44,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MANIFEST = REPO_ROOT / "docs" / "reference" / "argumentation-capacities.json"
 DEFAULT_TREE = REPO_ROOT / "scripts" / "tests" / "fixtures" / "argumentation_student_tree.json"
-LICENSE_BASENAMES = {"license", "license.md", "license.txt", "license.mit",
-                     "license.gpl", "license.gplv3", "license.lgpl", "licence", "licence.txt"}
 
 
 def load_tree(path: Path) -> set[str]:
@@ -100,12 +98,19 @@ def license_file_present(path: str, tree: set[str]) -> bool:
 
 
 def module_duplicates(tree: set[str], min_copies: int = 3) -> dict[str, list[str]]:
-    """Un basename .py present dans >= min_copies dossiers distincts."""
+    """Un basename .py present dans >= min_copies dossiers distincts.
+
+    Le mapping retourné est a l'ordre deterministe (n de dossiers decroissant,
+    puis basename croissant) : l'ordre d'iteration de `by_base` (un set) depend de
+    PYTHONHASHSEED, et le rapport JSON ecrit le dict tel quel -- sans cet ordre,
+    le rapport n'est pas reproductible octet-a-octet.
+    """
     by_base: dict[str, set[str]] = defaultdict(set)
     for p in tree:
         if p.endswith(".py") and p.rsplit("/", 1)[-1] not in ("__init__.py", "conftest.py"):
             by_base[p.rsplit("/", 1)[-1]].add(p.rsplit("/", 1)[0])
-    return {b: sorted(ds) for b, ds in by_base.items() if len(ds) >= min_copies}
+    dup = {b: sorted(ds) for b, ds in by_base.items() if len(ds) >= min_copies}
+    return {b: dup[b] for b in sorted(dup, key=lambda b: (-len(dup[b]), b))}
 
 
 def platform_subtrees(paths: list[str]) -> list[str]:
@@ -181,7 +186,7 @@ def cmd_dedup(manifest: dict, tree: set[str], out_md: Path) -> int:
         lines.append(f"- **{e['label']}** — {', '.join(e['project_origins'])}")
     lines += ["", f"## 4. Modules dupliqués ({len(report['modules_dupliques'])})", "",
               "Un même fichier `.py` présent dans ≥ 3 dossiers (hors `__init__.py`).", ""]
-    for b, dirs in sorted(report["modules_dupliques"].items(), key=lambda kv: -len(kv[1])):
+    for b, dirs in sorted(report["modules_dupliques"].items(), key=lambda kv: (-len(kv[1]), kv[0])):
         lines.append(f"- `{b}` × {len(dirs)} : " + ", ".join(f"`{d}/`" for d in dirs))
     lines += ["", "## 5. Exposition licence des binaires vendorisés", "",
               "Binaires PE/JAR vendorisés dans le repo public. `licence` = **attribuée** (pas mesurée) ; "
