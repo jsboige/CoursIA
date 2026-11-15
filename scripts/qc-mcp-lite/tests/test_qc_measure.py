@@ -899,6 +899,55 @@ class TestRead:
         assert charge["passes"][0]["statut"] == "terminee"
         assert charge["passes"][0]["statut"] == etat["passes"]["base"]["statut"]
 
+    def test_zero_ordre_drapeau_et_note(self, tmp_path, capsys):
+        """Un backtest termine sans aucun ordre est un resultat legitime
+        (rc 0) mais visible : drapeau aucun_ordre dans le JSON, note
+        explicite apres le tableau en mode texte, sur stderr sous --json."""
+        def stats_zero():
+            stats = {cle: "-" for cle in stats_defaut()}
+            stats["Total Orders"] = "0"
+            return stats
+
+        cloud, rundir = self._mesure_prete(tmp_path, stats_factory=stats_zero)
+        cloud.seed_backtest(888, "base", "bt-base", completed=True,
+                            stats=stats_zero())
+        horloge, sommeil = duo_horloge()
+        scheduler = scheduler_fictif(horloge, sommeil)
+        rc = read_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            as_json=True, poll_interval=20.0, max_wait=100.0,
+        )
+        assert rc == 0
+        captee = capsys.readouterr()
+        charge = json.loads(captee.out)
+        passe = charge["passes"][0]
+        assert passe["aucun_ordre"] is True
+        assert passe["statistics"]["orders"] == "0"
+        assert "passe base : 0 ordre, metriques non definies" in captee.err
+        # Mode texte : la note suit le tableau, sur stdout.
+        rc = read_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            poll_interval=20.0, max_wait=100.0,
+        )
+        assert rc == 0
+        sortie = capsys.readouterr().out
+        assert "passe base : 0 ordre, metriques non definies" in sortie
+
+    def test_cas_normal_sans_drapeau_ni_note(self, tmp_path, capsys):
+        cloud, rundir = self._mesure_prete(tmp_path)
+        cloud.seed_backtest(888, "base", "bt-base", completed=True)
+        horloge, sommeil = duo_horloge()
+        scheduler = scheduler_fictif(horloge, sommeil)
+        rc = read_measure(
+            ThrottledGateway(cloud.gateway(), scheduler), scheduler, rundir,
+            as_json=True, poll_interval=20.0, max_wait=100.0,
+        )
+        assert rc == 0
+        captee = capsys.readouterr()
+        charge = json.loads(captee.out)
+        assert "aucun_ordre" not in charge["passes"][0]
+        assert "0 ordre" not in captee.err
+
     def test_passe_sans_backtest_note(self, tmp_path, capsys):
         cloud, rundir = self._mesure_prete(tmp_path)
         etat = json.loads((rundir / "state.json").read_text(encoding="utf-8"))

@@ -491,8 +491,19 @@ def statistiques_vides(stats: dict) -> bool:
     Un backtest termine mais sans ordre garde des valeurs honnetes
     (orders="0") : il n'est pas « vide ». Ne sont vides que les reponses ou
     toute cle vaut None, "" ou le marqueur d'inapplicabilite "-" de QC.
+    Le cas 0 ordre est signale a part par ``aucun_ordre``.
     """
     return all(valeur in (None, "", "-") for valeur in stats.values())
+
+
+def aucun_ordre(stats: dict) -> bool:
+    """Vrai quand le backtest termine n'a passe aucun ordre.
+
+    Resultat legitime (une strategie peut ne jamais trader sur la fenetre),
+    mais ses metriques valent alors "-" chez QC : ``read`` le rend avec un
+    drapeau et une note, plutot qu'une ligne de tirets muette.
+    """
+    return stats.get("orders") == "0"
 
 
 def backtest_termine(bt: dict) -> bool:
@@ -903,6 +914,7 @@ def read_measure(
             "aucun projet note dans state.json — lancez la sous-commande run d'abord"
         )
     lignes: list[str] = []
+    notes: list[str] = []
     lignes_json: list[dict] = []
     tout_ok = True
     for passe in plan["passes"]:
@@ -974,6 +986,14 @@ def read_measure(
             tout_ok = False
             continue
         resultat["statistics"] = stats
+        if aucun_ordre(stats):
+            # Succes (rc 0) mais visible : les tirets du tableau viennent de
+            # l'absence d'ordre, pas d'une lecture ratee.
+            resultat["aucun_ordre"] = True
+            notes.append(
+                f"passe {nom} : 0 ordre, metriques non definies "
+                "(les tirets du tableau viennent de l'absence d'ordre)"
+            )
         # Le statut rendu est le statut final (celui ecrit dans state.json),
         # pas la valeur figee avant la boucle de lecture.
         resultat["statut"] = p.get("statut", STATUT_A_LANCER)
@@ -995,6 +1015,9 @@ def read_measure(
             )
         else:
             print(render_table(lignes_tab))
+        for note in notes:
+            # Meme regle que les lignes d'echec : hors du document sous --json.
+            print(note, file=sys.stderr if as_json else sys.stdout)
     elif as_json:
         print(
             json.dumps(
