@@ -1620,3 +1620,148 @@ def test_26718_cli_live_depth_exit_two_on_an_incomplete_population(monkeypatch, 
     captured = capsys.readouterr()
     assert rc == 2
     assert "BROKEN INSTRUMENT" in captured.err
+
+
+# ---------------------------------------------------------------- #26739 --
+# Le cout de la mesure vivante (114 appels API par invocation) et la porte
+# qui l'evite : le BRUT majore la profondeur VIVANTE, donc un brut sous le
+# seuil PROUVE que la file n'est pas saturee -- la mesure ne peut pas
+# changer le verdict et n'est pas payee.
+
+def _raw_api(total_count: int):
+    """A fake `_gh_api_json` serving ONE cheap raw-count answer."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _fake(endpoint: str, **kwargs):
+        assert "per_page=1" in endpoint, endpoint
+        mod.count_api_call()
+        return {"total_count": total_count, "workflow_runs": []}
+    return _fake
+
+
+def test_26739_raw_under_the_threshold_skips_the_live_measurement(monkeypatch) -> None:
+    """Brut < seuil : la mesure vivante n'est PAS payee, et le brut est
+    publie comme MAJORANT de la profondeur vivante."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _must_not_measure(**kwargs):
+        raise AssertionError("la mesure vivante ne doit pas etre payee")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(326))
+    monkeypatch.setattr(mod, "live_depth_report", _must_not_measure)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert report["depth_kind"] == "raw-upper-bound"
+    assert report["depth"] == 326
+    assert report["live_depth"] is None
+    assert report["saturated"] is False
+    # UNE seule appel : la lecture du brut. Les 114 appels de la mesure
+    # vivante sont epargnes.
+    assert report["api_calls"] == 1
+
+
+def test_26739_raw_at_the_threshold_measures_the_live_depth(monkeypatch) -> None:
+    """Brut >= seuil : la saturation peut encore etre exclue par la
+    vivante -- la mesure est donc payee."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    calls = []
+
+    def _fake_report(**kwargs):
+        calls.append(kwargs)
+        return {"live_depth": 42, "population": 900, "total_count": 900,
+                "pages": 9, "duplicate_ids": 0, "ghosts": 858,
+                "ghosts_by_class": {}, "parse_failures": 0,
+                "no_job_checked": 0, "no_job_unknown": 0,
+                "cutoff": "2026-08-20", "measured_at": "2026-11-15T13:40:00+00:00"}
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(900))
+    monkeypatch.setattr(mod, "live_depth_report", _fake_report)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert len(calls) == 1
+    assert report["depth_kind"] == "live"
+    assert report["depth"] == 42
+    assert report["saturated"] is False
+
+
+def test_26739_unreadable_raw_count_measures_anyway(monkeypatch) -> None:
+    """Un brut ILLISIBLE ne prouve rien : la mesure a lieu (fail-CLOSED
+    cote cout, fail-safe cote verdict)."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    calls = []
+
+    def _fake_report(**kwargs):
+        calls.append(kwargs)
+        return {"live_depth": 11, "population": 12, "total_count": 12,
+                "pages": 1, "duplicate_ids": 0, "ghosts": 1,
+                "ghosts_by_class": {}, "parse_failures": 0,
+                "no_job_checked": 0, "no_job_unknown": 0,
+                "cutoff": "2026-08-20", "measured_at": "2026-11-15T13:40:00+00:00"}
+
+    def _broken(endpoint: str, **kwargs):
+        raise mod.InstrumentError("gh API muette")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _broken)
+    monkeypatch.setattr(mod, "live_depth_report", _fake_report)
+    report = mod.measure_queue_depth(
+        repo="jsboige/CoursIA",
+        cutoff=dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc),
+        cutoff_date="2026-08-20",
+        now=dt.datetime(2026, 11, 15, 13, 40, tzinfo=dt.timezone.utc),
+        no_job_events=frozenset({"issue_comment"}),
+        no_job_min_age_hours=24.0,
+        saturation_threshold=800)
+    assert len(calls) == 1
+    assert report["depth_kind"] == "live"
+    assert report["raw_probe_error"]
+
+
+def test_26739_cli_live_depth_with_a_threshold_prints_the_bound(monkeypatch, capsys) -> None:
+    """En mode borne, la sortie porte le NOM de la borne : un entier lu
+    sans son stderr serait un majorant pris pour une profondeur."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    def _must_not_measure(**kwargs):
+        raise AssertionError("la mesure vivante ne doit pas etre payee")
+
+    monkeypatch.setattr(mod, "_gh_api_json", _raw_api(326))
+    monkeypatch.setattr(mod, "live_depth_report", _must_not_measure)
+    rc = mod.main(["--repo", "jsboige/CoursIA", "--live-depth",
+                   "--saturation-threshold", "800"])
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert captured.out.strip() == "326"
+    assert "NON MESUREE" in captured.err
+    assert "majoration" in captured.err
+    assert "api-quota: 1" in captured.err
+
+
+def test_26739_depth_measurement_plan_is_pure() -> None:
+    """La decision est une fonction pure : elle se teste sans reseau."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.depth_measurement_plan(326, 800) == "bound"
+    assert mod.depth_measurement_plan(799, 800) == "bound"
+    assert mod.depth_measurement_plan(800, 800) == "measure"
+    assert mod.depth_measurement_plan(900, 800) == "measure"
+    assert mod.depth_measurement_plan(None, 800) == "measure"
