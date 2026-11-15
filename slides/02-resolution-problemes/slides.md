@@ -1729,7 +1729,7 @@ layout: section
 - **Décomposition en sous-arbres** : pratique et courante, exploite les sous-ensembles connexes indépendants
 - **Symétrie des valeurs** : éliminer les solutions symmetriques réduit l'espace de recherche
 
-<small>**Corpus** — backtracking / forward-checking / propagation dans [`CSP-1-Fundamentals.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (coloriage Australie, cryptarithmes). Heuristiques MRV / LCV et AC-3 : [`CSP-2-Consistency.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb). Applications N-Queens / Send+More=Money / planification : [`App-1-NQueens`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) et 30 autres dans `Search/Applications/CSP/`. Contexte ludique : [`Sudoku-01-Backtracking-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb).</small>
+<small>**Corpus** — backtracking / forward-checking / propagation dans [`CSP-1-Fundamentals.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb) (coloriage Australie, cryptarithmes). Heuristiques MRV / LCV et AC-3 : [`CSP-2-Consistency.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb). Applications N-Queens / Send+More=Money / planification : [`App-01-NQueens-Python`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) et les autres cas pratiques dans `Search/Part3-Cas-pratiques/`. Contexte ludique : [`Sudoku-01-Backtracking-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb).</small>
 
 ---
 layout: section
@@ -1742,7 +1742,7 @@ layout: section
 
 ## PKP service web CSPs
 
-Le TP de fin de semestre propose de coder un service web de résolution de CSPs — l'étudiant choisit une variante (backtracking, propagation, exploration locale) et la branche sur un problème de son choix. Le corpus fournit **plusieurs points d'entrée documentés** (cf. ancres in-slide dans les sections ci-dessus) : exploration informée, exploration locale, CSPs et Sudoku. Pour un démarrage rapide, [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) implémente déjà trois solveurs (backtracking, min-conflicts, CP-SAT via OR-Tools) et compare leur passage à l'échelle N=8, 10, 12.
+Le TP de fin de semestre propose de coder un service web de résolution de CSPs — l'étudiant choisit une variante (backtracking, propagation, exploration locale) et la branche sur un problème de son choix. Le corpus fournit **plusieurs points d'entrée documentés** (cf. ancres in-slide dans les sections ci-dessus) : exploration informée, exploration locale, CSPs et Sudoku. Pour un démarrage rapide, [`App-01-NQueens-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) implémente déjà trois solveurs (backtracking, min-conflicts, CP-SAT via OR-Tools) et compare leur passage à l'échelle N=8, 10, 12.
 
 ---
 
@@ -1757,7 +1757,7 @@ p { margin: 0.3em 0; }
 
 ## Trois solveurs, trois profils de passage à l'échelle
 
-Mesures relevées dans [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) (sorties de cellules exécutées : nœuds c15, Min-Conflicts c22 avec `seed=42`, CP-SAT c33, benchmark consolidé c36) :
+Mesures relevées dans [`App-01-NQueens-Python.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-01-NQueens-Python.ipynb) (sorties de cellules exécutées : nœuds c15, Min-Conflicts c22 avec `seed=42`, CP-SAT c33, benchmark consolidé c36) :
 
 | N | Backtracking simple | Backtracking FC+MRV | Min-Conflicts | CP-SAT (OR-Tools) |
 |---:|---:|---:|---:|---:|

@@ -299,3 +299,76 @@ class TestJournal:
             (tmp_path / "logs").glob("prune_*.log")).read_text(encoding="utf-8")
         assert "run end rc=0" in content
         assert "[WARN][prune-task]" in content
+
+
+# ---------------------------------------------------------------------------
+# une tache, un lanceur et un journal PAR CLONE (mesure 2026-11-12)
+# ---------------------------------------------------------------------------
+
+class TestUneTacheParClone:
+    """Une machine peut porter plusieurs clones du depot.
+
+    `schtasks /Create /F` ecrase la tache de meme nom, et le lanceur VBS
+    comme le journal horodate vivaient dans UN repertoire partage : une
+    deuxieme installation repointait silencieusement la premiere tache vers
+    l'autre clone. Les options `--task-name` et `--launcher-dir` rendent la
+    portee explicite ; les defauts restent ceux d'hier.
+    """
+
+    def test_nom_de_tache_par_defaut_inchange(self, tmp_path):
+        line = ipt.build_schtasks_install(tmp_path / ipt.LAUNCHER_NAME, "03:17")
+        assert line[line.index("/TN") + 1] == ipt.TASK_NAME
+
+    def test_nom_de_tache_personnalise(self, tmp_path):
+        name = r"CoursIA-2\prune_merged_worktrees"
+        line = ipt.build_schtasks_install(tmp_path / ipt.LAUNCHER_NAME, "03:17",
+                                          name)
+        assert line[line.index("/TN") + 1] == name
+
+    def test_lanceur_propre_a_un_clone(self, tmp_path):
+        base = tmp_path / "prune_task_coursia2"
+        assert ipt.launcher_path(base) == base / ipt.LAUNCHER_NAME
+
+    def test_journal_suit_le_repertoire_du_clone(self, tmp_path):
+        base = tmp_path / "prune_task_coursia2"
+        assert ipt.log_dir_for(base) == base / "logs"
+        log = ipt.log_path_for(log_dir=ipt.log_dir_for(base))
+        assert log.parent == base / "logs"
+        assert log.name.startswith("prune_")
+
+    def test_commande_de_tache_transporte_le_repertoire(self, tmp_path):
+        base = tmp_path / "prune_task_coursia2"
+        cmd = ipt.task_command(tmp_path, base)
+        assert "--launcher-dir" in cmd
+        assert cmd[cmd.index("--launcher-dir") + 1] == str(base)
+
+    def test_commande_sans_repertoire_ne_le_declenche_pas(self, tmp_path):
+        assert "--launcher-dir" not in ipt.task_command(tmp_path)
+
+    def test_install_par_clone_ecrit_le_lanceur_et_nomme_la_tache(
+            self, tmp_path, monkeypatch, capsys):
+        repo = tmp_path / "CoursIA-2"
+        (repo / "scripts" / "ci").mkdir(parents=True)
+        (repo / "scripts" / "ci" / "prune_merged_worktrees.py").write_text(
+            "# Resolution directe par numero\ndef _normalize(s): return s\n",
+            encoding="utf-8")
+        base = tmp_path / "prune_task_coursia2"
+        name = r"CoursIA-2\prune_merged_worktrees"
+        calls = []
+
+        def fake_run(cmd, **kw):
+            calls.append(list(cmd))
+            return subprocess.CompletedProcess(cmd, 0, stdout="", stderr="")
+
+        monkeypatch.setattr(ipt, "_run", fake_run)
+        assert ipt.cmd_install(repo.resolve(), "03:17", task_name=name,
+                               launcher_dir=base) == 0
+        # le lanceur est ecrit dans le repertoire DU CLONE
+        launcher = base / ipt.LAUNCHER_NAME
+        assert launcher.is_file()
+        # ... et il pointe vers le repo du clone, pas vers un autre
+        assert str(repo.resolve()) in launcher.read_text(encoding="utf-8")
+        # la tache porte le nom demande
+        assert calls[-1][calls[-1].index("/TN") + 1] == name
+        # le journal du clone est distinct de celui par defaut
+        assert ipt.log_dir_for(base) != ipt.LOG_DIR

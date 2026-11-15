@@ -1,6 +1,6 @@
 - name: App-10 Portfolio
   family: Search/Part3-Cas-pratiques
-  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio.ipynb
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio-Python.ipynb
   csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
