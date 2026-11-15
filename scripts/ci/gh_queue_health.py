@@ -51,8 +51,27 @@ L'instrument le dit desormais :
 - `--apply` n'est PAS recommande pour eux : la classe ne propose plus de
   les annuler, elle mesure une file morte.
 
+## La profondeur VIVANTE de la file (le nombre que les lanes citent)
+
+`total_count` compte le **padding** avec le travail : au 2026-11-15 la file
+mesurait 358 runs `queued`, dont 234 fantomes mesures (142 `pr-closed`,
+88 `no-job`, 4 `scheduled-orphan`) -- la profondeur VIVANTE etait ~115. Le
+balayeur de portes stale comparait le nombre BRUT a son seuil de saturation :
+il comptait le padding comme de la file.
+
+`--live-depth` rend la profondeur VIVANTE, c'est-a-dire la population MOINS
+chaque classe de fantome mesuree. C'est la commande unique que les lanes
+citent et que le balayeur consomme :
+
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA --live-depth
+  # -> 115
+
+Le rapport complet (population, `total_count`, fantomes par classe, ecart de
+churn) est disponible avec `--json` ou `--output`.
+
 Examples:
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA
+  python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA --live-depth
   python scripts/ci/gh_queue_health.py --repo jsboige/CoursIA \
       --cutoff 2026-08-25 --output queue-health.json
   python scripts/ci/gh_queue_health.py --input queue-health.json
@@ -73,7 +92,15 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-import yaml
+try:
+    import yaml
+except ImportError:  # pragma: no cover -- PyYAML absent on a slim runner
+    # The organ must run on a bare CI runner (the sweep measures the live
+    # depth from a sparse checkout, where PyYAML is not guaranteed). Only
+    # the `stale-runs-on` fingerprint needs YAML; every other mode runs
+    # without it, and the fingerprint returns "unknown" when it is missing
+    # (fail-CLOSED: the caller skips the run, it never guesses).
+    yaml = None  # type: ignore[assignment]
 
 EXIT_OK = 0
 EXIT_GHOST = 1
@@ -211,16 +238,30 @@ def _gh_api_json(endpoint: str, *, attempts: int = 2, backoff: float = 5.0):
     raise InstrumentError(last_error)
 
 
-def fetch_queued_runs(repo: str) -> list[dict]:
+def fetch_queued_population(repo: str) -> dict:
     """Page through `GET /repos/{repo}/actions/runs?status=queued` until empty.
 
-    Returns the raw `workflow_runs` array. We cannot use the gh CLI `--created`
-    filter here because the gh run list interface does not expose it on
-    `status=queued` directly (and even if it did, server-side filtering would
-    be preferable but is not required for a small N like the 18 ghosts).
+    The stop condition is an EMPTY page, never a SHORT one. The queue is
+    mutated while it is read -- a run is admitted (or queued) between the
+    server's `total_count` and the page slice -- so a page can come back
+    with fewer items than `PER_PAGE` while hundreds of runs are still
+    queued. Measured 2026-11-15 on jsboige/CoursIA: pages of 99, 100, 100
+    and 59 items for a `total_count` of 358. The former stop condition (a
+    page shorter than `PER_PAGE`) truncated the collection at 99 of 358 --
+    three quarters of the population invisible to EVERY class, which is how
+    a "queue of 358" was classified as "a queue of 99".
+
+    Returns {"runs": [...], "total_count": int|None, "pages": int,
+             "duplicate_ids": int}. `total_count` is the server's own
+    count at the FIRST page: it is the authority on the population size,
+    and the gap between it and `len(runs)` is the churn of a live queue
+    (reported, never hidden).
     """
     runs: list[dict] = []
+    seen: set[int] = set()
+    duplicates = 0
     page = 1
+    total_count: int | None = None
     while True:
         endpoint = f"repos/{repo}/actions/runs?status=queued&per_page={PER_PAGE}&page={page}"
         payload = _gh_api_json(endpoint)
@@ -229,13 +270,37 @@ def fetch_queued_runs(repo: str) -> list[dict]:
         batch = payload["workflow_runs"]
         if not isinstance(batch, list):
             raise InstrumentError(f"workflow_runs is not a list: {type(batch).__name__}")
-        runs.extend(batch)
-        if len(batch) < PER_PAGE:
+        if total_count is None:
+            tc = payload.get("total_count")
+            total_count = tc if isinstance(tc, int) else None
+        if not batch:
+            # Empty page = end of the population. A SHORT page is not an
+            # end: the queue churns while it is read (see the docstring).
             break
+        for run in batch:
+            rid = run.get("id")
+            if isinstance(rid, int):
+                if rid in seen:
+                    duplicates += 1
+                    continue
+                seen.add(rid)
+            runs.append(run)
         page += 1
-        if page > 50:  # safety cap: 5000 ghost runs is implausible
+        if page > 50:  # safety cap: 5000 queued runs is implausible
             raise InstrumentError(f"pagination exceeded 50 pages for {repo}")
-    return runs
+    return {"runs": runs, "total_count": total_count, "pages": page - 1,
+            "duplicate_ids": duplicates}
+
+
+def fetch_queued_runs(repo: str) -> list[dict]:
+    """The queued population, raw. See `fetch_queued_population` for the paging.
+
+    Returns the raw `workflow_runs` array. We cannot use the gh CLI `--created`
+    filter here because the gh run list interface does not expose it on
+    `status=queued` directly (and even if it did, server-side filtering would
+    be preferable but is not required for a small N like the 18 ghosts).
+    """
+    return fetch_queued_population(repo)["runs"]
 
 
 def fetch_pr_states(repo: str, branches: list[str]) -> dict[str, str]:
@@ -597,6 +662,8 @@ def _workflow_runs_on_fingerprint(yaml_text: str) -> frozenset | None:
     Returns None on parse failure. Returns an empty frozenset for a
     workflow with no jobs (pathological but unobjectionable).
     """
+    if yaml is None:  # pragma: no cover -- PyYAML absent on a slim runner
+        return None
     try:
         data = yaml.safe_load(yaml_text)
     except yaml.YAMLError:
@@ -766,6 +833,65 @@ def detect_no_job_runs(repo: str, runs: list[dict], *, events: frozenset[str],
                     unknown += 1
     return {"ids": found, "checked": len(candidates), "probed": len(candidates),
             "unknown": unknown}
+
+
+def live_depth_report(*, repo: str, cutoff: datetime, cutoff_date: str,
+                      now: datetime, no_job_events: frozenset[str],
+                      no_job_min_age_hours: float,
+                      max_workers: int = 8) -> dict:
+    """Measure the LIVE depth of the queued population.
+
+    The live depth is the number of queued runs that represent REAL work in
+    progress: the whole population MINUS every measured ghost class
+    (pre-cutoff, pr-closed, scheduled-orphan, no-job). It is THE number the
+    lanes cite and the number the stale sweep compares to its saturation
+    threshold -- the raw `total_count` counts the ghost padding with it.
+
+    The raw population is reported beside it: the gap between the two IS
+    the padding, and a reader who wants the raw number still finds it (the
+    sweep keeps it as a diagnostic).
+
+    A run whose `created_at` cannot be parsed is a parse failure, not a
+    ghost and not a live run: it is counted apart, and the caller refuses
+    to publish a depth computed over an incomplete population (exit code 2).
+    """
+    population = fetch_queued_population(repo)
+    raw_runs = population["runs"]
+    # PR-state lookups are only needed for post-cutoff pull_request
+    # candidates: everything older is pre-cutoff ghost by definition.
+    # created_at is ISO-8601 and cutoff_date is YYYY-MM-DD, so the lexical
+    # comparison is a valid date-prefix filter.
+    candidates = sorted({
+        run.get("head_branch") for run in raw_runs
+        if run.get("event") == "pull_request"
+        and isinstance(run.get("created_at"), str)
+        and run["created_at"] >= cutoff_date
+    } - {None})
+    pr_states = fetch_pr_states(repo, candidates) if candidates else {}
+    detection = detect_no_job_runs(repo, raw_runs, events=no_job_events,
+                                   min_age_hours=no_job_min_age_hours,
+                                   now=now, max_workers=max_workers)
+    classification = classify_runs(raw_runs, cutoff, pr_states, now=now,
+                                   no_job=detection["ids"])
+    ghosts = classification["ghosts"]
+    by_class: dict[str, int] = {}
+    for ghost in ghosts:
+        reason = ghost.get("reason") or "unknown"
+        by_class[reason] = by_class.get(reason, 0) + 1
+    return {
+        "live_depth": len(classification["live"]),
+        "population": len(raw_runs),
+        "total_count": population["total_count"],
+        "pages": population["pages"],
+        "duplicate_ids": population["duplicate_ids"],
+        "ghosts": len(ghosts),
+        "ghosts_by_class": by_class,
+        "parse_failures": len(classification["parse_failures"]),
+        "no_job_checked": detection["checked"],
+        "no_job_unknown": detection["unknown"],
+        "cutoff": cutoff_date,
+        "measured_at": now.isoformat(),
+    }
 
 
 def verify_no_job_before_cancel(repo: str, run_ids: list[int],
@@ -957,10 +1083,57 @@ def main(argv: list[str] | None = None) -> int:
                              "eligible by default: a pull_request or push run "
                              "can gate a head SHA, and cancelling it could "
                              "suppress a check the branch protection expects.")
+    parser.add_argument("--live-depth", action="store_true",
+                        help="measure the LIVE depth of the queued population "
+                             "-- the total minus every measured ghost class "
+                             "(pre-cutoff, pr-closed, scheduled-orphan, "
+                             "no-job) -- and print it as a single integer. "
+                             "This is the number the lanes cite and the number "
+                             "the stale sweep compares to its saturation "
+                             "threshold: the raw `total_count` counts the "
+                             "ghost padding with it. Requires --repo (live "
+                             "API): a snapshot cannot prove the job state of "
+                             "a run. Exit code 2 if the population cannot be "
+                             "parsed in full (an incomplete measurement is "
+                             "never published as a depth).")
+    parser.add_argument("--json", action="store_true",
+                        help="with --live-depth: print the full report as JSON "
+                             "instead of the bare integer (the report always "
+                             "reaches --output when that flag is given).")
     args = parser.parse_args(argv)
 
     try:
         cutoff = parse_date(args.cutoff)
+        if args.live_depth:
+            if args.input:
+                raise InstrumentError(
+                    "--live-depth requires --repo (live API): a snapshot "
+                    "cannot prove the job state of a run")
+            if args.cancel:
+                raise InstrumentError(
+                    "--live-depth is exclusive of --cancel: one measurement, "
+                    "one report")
+            now = datetime.now(timezone.utc)
+            report = live_depth_report(
+                repo=args.repo, cutoff=cutoff, cutoff_date=args.cutoff,
+                now=now,
+                no_job_events=frozenset(
+                    e.strip() for e in args.no_job_events.split(",") if e.strip()),
+                no_job_min_age_hours=args.no_job_min_age_hours,
+                max_workers=max(1, args.cancel_workers))
+            rendered = json.dumps(report, indent=2, ensure_ascii=False) + "\n"
+            if args.output:
+                args.output.parent.mkdir(parents=True, exist_ok=True)
+                args.output.write_text(rendered, encoding="utf-8")
+            if args.json:
+                print(rendered, end="")
+            else:
+                print(report["live_depth"])
+            if report["parse_failures"]:
+                print(f"[queue-health] BROKEN INSTRUMENT: "
+                      f"{report['parse_failures']} parse failures", file=sys.stderr)
+                return EXIT_BROKEN
+            return EXIT_OK
         if args.input:
             raw_runs, preserved_pf = load_snapshot(args.input)
             pr_states: dict[str, str] = {}

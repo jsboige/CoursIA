@@ -288,6 +288,48 @@ jobs:
           echo "/opt/hostedtoolcache/bin" >> "$GITHUB_PATH"
           "$GH_BIN" --version
 
+      # #26718 -- la profondeur de file que ce sweep compare a son seuil de
+      # saturation etait le nombre BRUT (`total_count`), qui compte le padding
+      # des fantomes MESURES avec le travail reel : au 2026-11-15 la file
+      # mesurait 326 runs `queued`, dont 234 fantomes (142 `pr-closed`,
+      # 88 `no-job`, 4 `scheduled-orphan`) -- la profondeur VIVANTE etait 92.
+      #
+      # L'organe `scripts/ci/gh_queue_health.py --live-depth` rend la
+      # profondeur VIVANTE (population MOINS chaque classe de fantome mesuree).
+      # Il est recupere PAR L'API, au SHA DU RUN LUI-MEME : pas de checkout
+      # (ce sweep ne paie pas les ~40 s de runner par passage -- #12728,
+      # runner scarcity mesuree sur ce depot), et le code execute est celui du
+      # commit que le workflow execute.
+      - name: Measure the LIVE queue depth (ghost classes excluded)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -uo pipefail
+          DEPTH_ERR=$(mktemp)
+          trap 'rm -f "${DEPTH_ERR:-}"' EXIT
+          ORG=$(gh api "repos/$REPO/contents/scripts/ci/gh_queue_health.py?ref=$SHA" \
+            --jq '.content' 2>"$DEPTH_ERR") || ORG=""
+          if [ -z "$ORG" ]; then
+            echo "::warning::[stale-sweep] organe de profondeur introuvable (endpoint=GET repos/$REPO/contents/scripts/ci/gh_queue_health.py?ref=$SHA code=illisible) -- le verdict retombe sur l'age seul"
+            echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          if ! printf '%s' "$ORG" | base64 -d > "$RUNNER_TEMP/gh_queue_health.py"; then
+            echo "::warning::[stale-sweep] organe de profondeur illisible (dechodage base64) -- le verdict retombe sur l'age seul"
+            echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          DEPTH=$(python3 "$RUNNER_TEMP/gh_queue_health.py" --repo "$REPO" --live-depth 2>"$DEPTH_ERR") || DEPTH=""
+          if [ -z "$DEPTH" ]; then
+            echo "::warning::[stale-sweep] profondeur VIVANTE illisible ($(head -1 "$DEPTH_ERR")) -- le verdict retombe sur l'age seul"
+            echo "QUEUE_DEPTH=" >> "$GITHUB_ENV"
+            exit 0
+          fi
+          echo "QUEUE_DEPTH=$DEPTH" >> "$GITHUB_ENV"
+          echo "[stale-sweep] profondeur VIVANTE de la file : $DEPTH"
+
       # No checkout / setup-python / pip here on purpose. This sweep no longer
       # runs `pr_gate.py`: it re-runs the original workflow run (see the note in
       # the re-aggregation step). That removes ~40 s of runner time per sweep,
@@ -1177,11 +1219,24 @@ jobs:
           # #22278 -- le stderr etait jete : un appel casse rendait la
           # profondeur vide sans que rien ne le dise. Meme idiome que
           # CAND_ERR ci-dessous : capturer, puis nommer.
+          # #26718 -- la profondeur n'est plus lue ICI mais MESUREE par
+          # l'organe dans l'etape qui precede (une mesure, une source) ; le
+          # seuil de saturation se compare desormais a la profondeur VIVANTE.
+          # Le brut reste lu ici pour le diagnostic seulement.
           QUEUE_ERR=$(mktemp)
-          QUEUE_DEPTH=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
-            --jq '.total_count' 2>"$QUEUE_ERR") || QUEUE_DEPTH=""
-          if [ -s "$QUEUE_ERR" ]; then
-            echo "::warning::profondeur de file illisible ($(head -1 "$QUEUE_ERR")) -- le verdict retombe sur l'age seul"
+          # #26718 -- la profondeur VIVANTE est mesuree par l'organe dans
+          # l'etape qui precede ce sweep (population MOINS chaque classe de
+          # fantome mesuree) ; elle est lue dans l'environnement. Le nombre
+          # BRUT reste un DIAGNOSTIC -- l'ecart entre les deux EST le padding
+          # -- et ne decide plus de rien : comparer le brut au seuil de
+          # saturation comptait des fantomes comme de la file.
+          QUEUE_DEPTH="${QUEUE_DEPTH:-}"
+          QUEUE_DEPTH_RAW=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
+            --jq '.total_count' 2>"$QUEUE_ERR") || QUEUE_DEPTH_RAW=""
+          if [ -z "$QUEUE_DEPTH" ]; then
+            echo "::warning::profondeur VIVANTE indisponible -- le verdict retombe sur l'age seul (brut: ${QUEUE_DEPTH_RAW:-illisible})"
+          else
+            echo "[stale-sweep] profondeur de file : vivante=$QUEUE_DEPTH brute=${QUEUE_DEPTH_RAW:-illisible}"
           fi
 
           m=0
