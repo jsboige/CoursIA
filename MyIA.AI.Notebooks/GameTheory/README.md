@@ -137,9 +137,9 @@ Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles 
 
 *`GameTheory-10-ForwardInduction-SPE-Python` — l'induction avant sur la forme extensive. L'ensemble d'information de J2 (ellipse pointillée) l'empêche de distinguer les deux nœuds ; mais en jouant « In » plutôt que l'option extérieure « Out » (garantie de 2), J1 révèle son intention de jouer Stag. Ce raisonnement « brûle » l'équilibre (Hare, Hare) et sélectionne le sous-jeu parfait (In, Stag, Stag) de valeur (4, 4).*
 
-### Phase 3 : algorithmes, coopération, mécanismes, apprentissage (13 à 17, et capstone 21)
+### Phase 3 : algorithmes, coopération, mécanismes, apprentissage (13 à 17, et capstones 20-21)
 
-La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Les paliers 15 et 16 servent aussi d'escalier vers deux sous-séries — [Coalitions](#sous-série-coalitions), consacrée à la valeur d'un groupe, et [SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences ; le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) en est la porte d'entrée depuis la série mère.
+La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Les paliers 15 et 16 servent aussi d'escalier vers deux sous-séries — [Coalitions](#sous-série-coalitions), consacrée à la valeur d'un groupe, et [SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences ; les capstones [20 (Coalitions)](GameTheory-20-Capstone-Coalitions-Python.ipynb) et [21 (SocialChoice)](GameTheory-21-Capstone-Choix-Social-Python.ipynb) en sont les portes d'entrée depuis la série mère.
 
 | # | Notebook | Ce qu'on y apprend | Public | Pour approfondir |
 |---|----------|--------------------|--------|------------------|
@@ -147,7 +147,8 @@ La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à
 | 14 | Jeux différentiels — [Python](GameTheory-14-DifferentialGames-Python.ipynb) · [C#](GameTheory-14-DifferentialGames-CSharp.ipynb) | Jeux en temps continu, boucle ouverte et fermée, Stackelberg, poursuite-évasion | Licence | [14b](GameTheory-14b-Jeux-Repetes-Tournoi-Axelrod-Python.ipynb) · [14c](GameTheory-14c-Jeux-Spatiaux-Cooperation-Python.ipynb) |
 | 15 | Jeux coopératifs — [Python](GameTheory-15-CooperativeGames-Python.ipynb) · [C#](GameTheory-15-CooperativeGames-CSharp.ipynb) | Valeur de Shapley, Core, condition de Bondareva-Shapley | Licence | [15b](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) · [15c](GameTheory-15c-CooperativeGames-Python.ipynb) · [15d](GameTheory-15d-Shapley-Groupes-Python.ipynb) · [SC-06b](SocialChoice/06b-Mobius-Coalitions-Lean-Python.ipynb) · sous-série [Coalitions](Coalitions/README.md) |
 | 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign-Python.ipynb) · [C#](GameTheory-16-MechanismDesign-CSharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [16d](GameTheory-16d-LLM-Players-Othman-Sandholm-Python.ipynb) · [16h](GameTheory-16h-Cooperation-LLM-Python.ipynb) · [16i](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [16j](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) · sous-série [Coalitions](Coalitions/README.md) |
-| 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) · [17f](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) |
+| 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) · [17f](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) · [capstone 20](GameTheory-20-Capstone-Coalitions-Python.ipynb) |
+| 20 | Capstone coalitions — [Python](GameTheory-20-Capstone-Coalitions-Python.ipynb) | La sous-série Coalitions depuis la série mère : l'échelle des garanties du pouvoir calculé (Banzhaf) à la preuve formelle (lake `assignment_lean`, 0 sorry), en passant par l'institution réelle de l'échange de reins et l'optimum dual certifié de Munkres | Licence | sous-série [Coalitions](Coalitions/README.md) |
 | 21 | Capstone choix social — [Python](GameTheory-21-Capstone-Choix-Social-Python.ipynb) | La sous-série SocialChoice depuis la série mère : témoins d'Arrow et cycle de Condorcet par le code, Gale-Shapley vérifié, lecture mesurée du lake | Licence | sous-série [SocialChoice](SocialChoice/README.md) |
 
 Le palier 16 est l'un des cas réels mesurés par le [critère de frontière utilitaire-de-série / exposition MCP](../../docs/reference/ict-mcp-frontier-criterion.md) — verdict : rien dû, le palier reste notebook.
@@ -402,7 +403,9 @@ Le dossier [Coalitions/](Coalitions/README.md) traite la valeur d'un groupe : po
 coalition dans un vote, assistance entre un humain et un agent, appariement d'agents sur un
 marché sans prix. Son README porte son propre parcours et son ordre de lecture.
 
-On y entre par les deux paliers dont elle dépend : [GT-15](GameTheory-15-CooperativeGames-Python.ipynb)
+Depuis le parcours principal, on y entre par le [capstone 20](GameTheory-20-Capstone-Coalitions-Python.ipynb),
+qui présente la sous-série depuis la série mère — l'échelle des garanties du pouvoir calculé à la
+preuve formelle. Les deux paliers dont elle dépend restent [GT-15](GameTheory-15-CooperativeGames-Python.ipynb)
 pour la valeur de Shapley et le Core, [GT-16](GameTheory-16-MechanismDesign-Python.ipynb) pour
 le vocabulaire des mécanismes. L'organe Python de la famille reste
 [`cooperative_games/`](cooperative_games/) à la racine ; les carnets l'invoquent, et le carnet 05
@@ -424,7 +427,7 @@ Les extensions autonomes de la série vivent dans des **escaliers** : des sous-d
 |---|---|---|
 | [SocialChoice/](SocialChoice/README.md) | L'agrégation des préférences : Arrow, vote, appariement | [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), depuis la série mère |
 | [Dynamics/](Dynamics/README.md) | De la répétition aux institutions | [GT-06](GameTheory-06-EvolutionTrust-Python.ipynb) |
-| [Coalitions/](Coalitions/README.md) | La valeur d'un groupe | [GT-15](GameTheory-15-CooperativeGames-Python.ipynb) et [GT-16](GameTheory-16-MechanismDesign-Python.ipynb) |
+| [Coalitions/](Coalitions/README.md) | La valeur d'un groupe | [capstone 20](GameTheory-20-Capstone-Coalitions-Python.ipynb), depuis la série mère |
 | [Metajeux/](Metajeux/README.md) | Modifier l'espace des jeux plutôt qu'y jouer — composer, abstraire, témoigner | après le parcours principal, voisin d'amont [GT-17](GameTheory-17-MultiAgent-RL-Python.ipynb) |
 
 Le dossier [Metajeux/](Metajeux/README.md) descend des extensions 18-20c de la racine (tranche T6 de la restructuration #20316) : open games et lentilles (ex-18), casser la composition (ex-18b), abstraction à dette (ex-19), chemin minimal Robinson-Goforth (ex-20), témoins d'impossibilité (ex-20b) et chemin minimal 3×2 (ex-20c) y forment les marches `Metajeux-01` à `Metajeux-06` ; la marche 03 consomme le lake `Abstraction`.
