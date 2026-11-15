@@ -5,6 +5,9 @@ semantique est calquee sur l'API v2 telle qu'observee dans server.py et les
 scripts de mesure (rejet des doublons de nom, compilation asynchrone,
 backtest asynchrone, completed=true a la fin). L'horloge et le sleep du
 cadenceur sont fictifs : le temps avance par les attentes elles-memes.
+
+ServerGateway, le chemin du serveur, est teste contre le vrai server.py : seul
+requests.post y est simule (classe TestServerGateway).
 """
 
 import hashlib
@@ -21,6 +24,7 @@ from qc_measure import (
     MIN_POLL_INTERVAL,
     PlanError,
     Scheduler,
+    ServerGateway,
     ThrottledGateway,
     build_parser,
     load_plan,
@@ -1063,6 +1067,197 @@ class TestRenderTable:
         assert lignes[0].startswith("| Passe | Sharpe |")
         assert "| base | 1.2 | 10% | 5% | 0.9 | 0.5 | 30 | 52% | bt1 | 42 |" \
             in lignes[2]
+
+
+# ─── ServerGateway : le vrai chemin, contre server.py ───────────────────
+#
+# Ces tests importent le vrai server.py et ne simulent que requests.post :
+# ils verifient le cablage de chaque methode (chemin d'API, corps envoye),
+# que les champs relus par qc_measure existent dans ce que le serveur rend,
+# et que la lecture brute de /backtests/read garde Beta et Win Rate.
+
+JETON_DE_TEST = "jeton-de-test-jamais-affiche"
+
+
+class _ReponseHttp:
+    def __init__(self, corps: dict) -> None:
+        self._corps = corps
+
+    def raise_for_status(self) -> None:
+        return None
+
+    def json(self) -> dict:
+        return self._corps
+
+
+class FauxHttp:
+    """Remplace requests.post : note chaque appel, rend la reponse du chemin."""
+
+    def __init__(self, base: str, reponses: dict) -> None:
+        self.base = base
+        self.reponses = reponses
+        self.appels: list[tuple[str, dict, dict]] = []
+
+    def __call__(self, url, headers=None, json=None, timeout=None):
+        assert url.startswith(self.base), url
+        chemin = url[len(self.base):]
+        self.appels.append((chemin, json, headers or {}))
+        return _ReponseHttp(self.reponses[chemin])
+
+
+@pytest.fixture
+def passerelle_serveur(monkeypatch):
+    """Fabrique (ServerGateway, FauxHttp) sur le vrai module server."""
+    import server
+
+    monkeypatch.setenv("QC_API_USER_ID", "424242")
+    monkeypatch.setenv("QC_API_ACCESS_TOKEN", JETON_DE_TEST)
+    server._call_timestamps.clear()
+
+    def poser(reponses: dict):
+        http = FauxHttp(server.API_BASE, reponses)
+        monkeypatch.setattr(server.requests, "post", http)
+        return ServerGateway(), http
+
+    yield poser
+    server._call_timestamps.clear()
+
+
+STATS_TEMOIN_SPY = {
+    "Sharpe Ratio": "0.535",
+    "Compounding Annual Return": "12.991%",
+    "Drawdown": "33.500%",
+    "Probabilistic Sharpe Ratio": "3.081%",
+    "Beta": "0.994",
+    "Total Orders": "1",
+    "Win Rate": "0%",
+}
+
+
+class TestServerGateway:
+    @pytest.mark.parametrize(
+        "methode, args, reponses, chemin, corps, controle",
+        [
+            ("list_projects", ("Mesure-Vol",),
+             {"/projects/read": {"projects": [
+                 {"projectId": 42, "name": "Mesure-Vol"},
+                 {"projectId": 7, "name": "Autre"}]}},
+             "/projects/read", {},
+             lambda r: [p["projectId"] for p in r["projects"]
+                        if p["name"] == "Mesure-Vol"] == [42]),
+            ("create_project", ("Mesure-Vol", "Py", "org-1"),
+             {"/projects/create": {"projects": [
+                 {"projectId": 42, "name": "Mesure-Vol"}]}},
+             "/projects/create",
+             {"name": "Mesure-Vol", "language": "Py", "organizationId": "org-1"},
+             lambda r: r["projectId"] == 42),
+            ("read_project", (42,),
+             {"/projects/read": {"projects": [{"projectId": 42}]},
+              "/files/read": {"files": [{"name": "main.py", "content": "x"}]}},
+             "/projects/read", {"projectId": 42},
+             lambda r: [f["name"] for f in r["files"]] == ["main.py"]),
+            ("create_file", (42, "main.py", "x = 1"),
+             {"/files/create": {"success": True}},
+             "/files/create",
+             {"projectId": 42, "name": "main.py", "content": "x = 1"},
+             lambda r: r["success"] is True),
+            ("update_file_contents", (42, "main.py", "x = 2"),
+             {"/files/update": {"success": True}},
+             "/files/update",
+             {"projectId": 42, "name": "main.py", "content": "x = 2"},
+             lambda r: r["success"] is True),
+            ("read_file", (42, "main.py"),
+             {"/files/read": {"files": [{"name": "main.py", "content": "x = 1"}]}},
+             "/files/read", {"projectId": 42, "name": "main.py"},
+             lambda r: r["content"] == "x = 1"),
+            ("create_compile", (42,),
+             {"/compile/create": {"compileId": "c1", "state": "InQueue"}},
+             "/compile/create", {"projectId": 42},
+             lambda r: r["compileId"] == "c1"),
+            ("read_compile", (42, "c1"),
+             {"/compile/read": {"state": "BuildError", "errors": ["l.3"]}},
+             "/compile/read", {"projectId": 42, "compileId": "c1"},
+             lambda r: r["state"] == "BuildError" and r["errors"] == ["l.3"]),
+            ("create_backtest", (42, "c1", "rapide", {"lookback": 10}),
+             {"/backtests/create": {"backtest": {"backtestId": "bt2"}}},
+             "/backtests/create",
+             {"projectId": 42, "compileId": "c1", "backtestName": "rapide",
+              "parameters": {"lookback": 10}},
+             lambda r: r["backtestId"] == "bt2"),
+            ("list_backtests", (42,),
+             {"/backtests/list": {"backtests": [
+                 {"backtestId": "bt2", "name": "rapide"}]}},
+             "/backtests/list", {"projectId": 42, "includeStatistics": False},
+             lambda r: [(b["name"], b["backtestId"]) for b in r["backtests"]]
+             == [("rapide", "bt2")]),
+        ],
+    )
+    def test_cablage_de_chaque_methode(
+        self, passerelle_serveur, methode, args, reponses, chemin, corps, controle
+    ):
+        passerelle, http = passerelle_serveur(reponses)
+        resultat = getattr(passerelle, methode)(*args)
+        assert http.appels[0][0] == chemin
+        assert http.appels[0][1] == corps
+        assert controle(resultat), resultat
+
+    def test_read_backtest_lecture_brute_garde_beta_et_win_rate(
+        self, passerelle_serveur, capsys
+    ):
+        passerelle, http = passerelle_serveur({"/backtests/read": {
+            "success": True,
+            "backtest": {"backtestId": "bt1", "completed": True,
+                         "statistics": dict(STATS_TEMOIN_SPY)},
+        }})
+        bt = passerelle.read_backtest(7, "bt1")
+        assert [(c, b) for c, b, _ in http.appels] == [
+            ("/backtests/read", {"projectId": 7, "backtestId": "bt1"})
+        ]
+        entetes = http.appels[0][2]
+        assert entetes["Authorization"].startswith("Basic ")
+        assert JETON_DE_TEST not in json.dumps(entetes)
+        stats = normaliser_statistiques(bt)
+        assert stats["beta"] == "0.994"
+        assert stats["win_rate"] == "0%"
+        assert stats["orders"] == "1"
+        assert JETON_DE_TEST not in capsys.readouterr().out
+
+    def test_garde_success_false_du_serveur_remonte(self, passerelle_serveur):
+        passerelle, _ = passerelle_serveur({"/backtests/read": {
+            "success": False, "errors": ["Backtest not found"],
+        }})
+        with pytest.raises(RuntimeError, match="Backtest not found"):
+            passerelle.read_backtest(7, "inconnu")
+
+    def test_read_de_bout_en_bout_par_le_serveur(
+        self, passerelle_serveur, tmp_path, capsys
+    ):
+        """read_measure sur le vrai chemin : Beta et Win Rate au tableau."""
+        passerelle, http = passerelle_serveur({"/backtests/read": {
+            "success": True,
+            "backtest": {"backtestId": "bt-base", "completed": True,
+                         "statistics": dict(STATS_TEMOIN_SPY)},
+        }})
+        rundir = ecrire_plan_mesure(tmp_path, passes=[("base", {})])
+        save_state(rundir, {
+            "version": 1, "project_id": 888, "files": {},
+            "compile_id": "c1", "compile_state": "BuildSuccess",
+            "passes": {"base": {"backtest_name": "base",
+                                "backtest_id": "bt-base",
+                                "statut": "lancee", "erreur": None}},
+        })
+        horloge, sommeil = duo_horloge()
+        scheduler = scheduler_fictif(horloge, sommeil)
+        rc = read_measure(
+            ThrottledGateway(passerelle, scheduler), scheduler, rundir,
+            poll_interval=20.0, max_wait=100.0,
+        )
+        assert rc == 0
+        sortie = capsys.readouterr().out
+        assert ("| base | 0.535 | 12.991% | 33.500% | 3.081% | 0.994 | 1 | 0% "
+                "| bt-base | 888 |") in sortie
+        assert JETON_DE_TEST not in sortie
+        assert {c for c, _, _ in http.appels} == {"/backtests/read"}
 
 
 # ─── CLI ───────────────────────────────────────────────────────────────
