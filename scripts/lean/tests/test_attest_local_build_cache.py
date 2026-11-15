@@ -19,6 +19,7 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from attest_local_build import (  # noqa: E402
+    REPO_ROOT,
     build_cache_dir,
     build_cache_root,
     preserve_project_build,
@@ -49,7 +50,13 @@ def test_le_cache_vit_hors_du_depot(tmp_path):
     # dedans : un cache n'est jamais commite.
     default = build_cache_root()
     assert default.name == "attest-lean-cache"
-    assert "CoursIA" not in default.parts
+    # L'invariant est « HORS de l'arbre du depot », pas « aucun composant ne
+    # porte le nom du depot » : sur un runner CI, le checkout vit dans
+    # `/home/runner/work/CoursIA/CoursIA`, dont le parent se nomme deja
+    # `CoursIA` -- l'assertion par sous-chaine y echouait a tort.
+    assert default.parent == REPO_ROOT.parent
+    assert default != REPO_ROOT
+    assert REPO_ROOT not in default.parents
 
 
 def test_le_repertoire_du_cache_est_par_pr_et_par_lake(tmp_path):
