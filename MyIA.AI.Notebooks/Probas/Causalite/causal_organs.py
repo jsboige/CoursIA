@@ -1,7 +1,7 @@
 """Organes canoniques des estimateurs Quasi-Experimental — DiD + IV (cellules 5 et 40).
 
 Issue #14051 tranche 1/2 (planifie en deux PR atomic, Tell NEW c.287-L1) :
-extraire les estimateurs natifs du notebook CausalBridges-07-Quasi-Experimental.ipynb vers un
+extraire les estimateurs natifs du notebook Causalite-07-Quasi-Experimentales-Python.ipynb vers un
 module importable, a cote du notebook, pour que la substance pedagogique
 demeure accessible (le notebook importe le module au lieu de definir les
 fonctions ; tranche 2/2) et pour que les adaptateurs cross-engine
@@ -50,8 +50,8 @@ aggregee, pas la realisation particuliere.
 References
 ----------
 
-- Source canonique : ``MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/
-  CausalBridges-07-Quasi-Experimental.ipynb`` cellules 5 et 40, branche ``origin/main``.
+- Source canonique : ``MyIA.AI.Notebooks/Probas/Causalite/
+  Causalite-07-Quasi-Experimentales-Python.ipynb`` cellules 5 et 40, branche ``origin/main``.
 - Duplication declaree : meme algorithme que PR #13921 tranche 2/3
   (``MyIA.AI.Notebooks/IIT/ICT-Series/ict/bridges/quasi_experimental.py``)
   — la difference est la LOCALISATION (a cote du notebook source plutot
@@ -92,7 +92,7 @@ def make_panel_did(
 ) -> pd.DataFrame:
     """Panel groupe x periode pour difference-in-differences.
 
-    Pattern de la cellule 5 de CausalBridges-07-Quasi-Experimental.ipynb. Le dataframe
+    Pattern de la cellule 5 de Causalite-07-Quasi-Experimentales-Python.ipynb. Le dataframe
     retourne porte les colonnes ``group`` (0/1), ``unit`` (identifiant
     d'unite dans [0, n_units) ), ``period`` (0..n_pre+n_post-1), ``y``
     (outcome continu).
@@ -169,7 +169,7 @@ def iv_replay(
 ) -> np.ndarray:
     """Repete l'estimation 2SLS sur ``n_rep`` echantillons i.i.d.
 
-    Pattern de la cellule 40 de CausalBridges-07-Quasi-Experimental.ipynb. L'instrument
+    Pattern de la cellule 40 de Causalite-07-Quasi-Experimentales-Python.ipynb. L'instrument
     Z a une force proportionnelle a ``coef_z``. Le F median du premier etage, mesure
     par ``iv_first_stage_f`` sur les 60 tirages a ``n_samp=1000``, vaut ~ 1100 pour
     ``coef_z=1.0`` (instrument FORT) et ~ 2,4 pour ``coef_z=0.05`` (instrument FAIBLE,
@@ -269,7 +269,7 @@ def panel_did_two_by_two(
     """Difference-in-differences 2x2 sur un panel groupe x periode.
 
     Forme fonctionnelle de l'arithmetique de la **cellule 5** de
-    ``CausalBridges-07-Quasi-Experimental.ipynb``, qui calcule les quatre moyennes en ligne :
+    ``Causalite-07-Quasi-Experimentales-Python.ipynb``, qui calcule les quatre moyennes en ligne :
 
     .. code-block:: python
 

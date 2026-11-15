@@ -49,14 +49,14 @@ import pandas as pd
 import pytest
 
 # Import direct sans packaging : on ajoute le dossier parent
-# (Probas/DecisionTheory/Causal-Bridges/) au sys.path.
+# (Probas/Causalite/) au sys.path.
 _PARENT_DIR = Path(__file__).resolve().parent.parent
 if str(_PARENT_DIR) not in sys.path:
     sys.path.insert(0, str(_PARENT_DIR))
 
 import dowhy_sensitivity_organs as dso
 
-NB_PATH = _PARENT_DIR / "CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb"
+NB_PATH = _PARENT_DIR / "Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb"
 
 
 # ---------------------------------------------------------------------------
