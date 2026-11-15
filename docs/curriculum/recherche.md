@@ -326,18 +326,18 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 3 | [Actuariat-03 — Crédibilité actuarielle de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-03-Actuarial-Credibility.ipynb) | BETA | Oui |
 | 4 | [Actuariat-04 : Ruine et capital — le processus de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-04-Ruine-Lundberg.ipynb) | BETA | Oui |
 | 5 | [Actuariat-05 — Valeur de l'information en souscription](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Actuariat/Actuariat-05-Valeur-Info-Souscription.ipynb) | BETA | Oui |
-| 6 | [CausalBridges-00 — Du graphe causal à l'échelle de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-00-PearlLadder-Intro-Python.ipynb) | ALPHA | Oui |
-| 7 | [Du graphe causal au do-calculus — le pont entre les…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-01-Do-Calculus.ipynb) | BETA | Oui |
-| 8 | [CausalBridges-02 — Exiger un estimand :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-02-Dowhy-Estimand-Intervention.ipynb) | BETA | Oui |
-| 9 | [CausalBridges-03 — Le contrefactuel individuel : quand…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-03-Dowhy-Contrefactuel-Individuel.ipynb) | BETA | Oui |
-| 10 | [CausalBridges-04 — La découverte de structure : le…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-04-Dowhy-Decouverte-Structure.ipynb) | BETA | Oui |
-| 11 | [CausalBridges-05 — Le confondeur non observé :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-05-Dowhy-Sensibilite-Confounder.ipynb) | BETA | Oui |
-| 12 | [CausalBridges-06 — L'instrument faible : quand le…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | BETA | Oui |
-| 13 | [Méthodes quasi-expérimentales — identifier l'effet…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) | BETA | Oui |
-| 14 | [Causal-Fairness — Décomposer la discrimination :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.ipynb) | BETA | Oui |
-| 15 | [CausalBridges-09 — Émuler un essai ciblé : confounding…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | ALPHA | Oui |
-| 16 | [CausalBridges-10 — Automated Social Science : des…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10-Automated-Social-Science.ipynb) | BETA | Non |
-| 17 | [CausalBridges-10b — Effets de traitement individuels :…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/CausalBridges-10b-ML-CATE-CFRNet-TARNet-Python.ipynb) | ALPHA | Oui |
+| 6 | [Causalite-00 — Du graphe causal à l'échelle de…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-00-Echelle-de-Pearl-Intro-Python.ipynb) | ALPHA | Oui |
+| 7 | [Du graphe causal au do-calculus — le pont entre les…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-01-Calcul-Do-Python.ipynb) | BETA | Oui |
+| 8 | [Causalite-02 — Exiger un estimand :…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-02-DoWhy-Estimand-Intervention-Python.ipynb) | BETA | Oui |
+| 9 | [Causalite-03 — Le contrefactuel individuel : quand…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-03-DoWhy-Contrefactuel-Individuel-Python.ipynb) | BETA | Oui |
+| 10 | [Causalite-04 — La découverte de structure : le…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-04-DoWhy-Decouverte-Structure-Python.ipynb) | BETA | Oui |
+| 11 | [Causalite-05 — Le confondeur non observé :…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-05-DoWhy-Sensibilite-Confondeur-Python.ipynb) | BETA | Oui |
+| 12 | [Causalite-06 — L'instrument faible : quand le…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-06-DoWhy-Instrument-Faible-Python.ipynb) | BETA | Oui |
+| 13 | [Méthodes quasi-expérimentales — identifier l'effet…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-07-Quasi-Experimentales-Python.ipynb) | BETA | Oui |
+| 14 | [Équité causale — Décomposer la discrimination :…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-08-Equite-Causale-Python.ipynb) | BETA | Oui |
+| 15 | [Causalite-09 — Émuler un essai ciblé : confounding…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-09-Hernan-Emulation-Essai-Cible-Python.ipynb) | ALPHA | Oui |
+| 16 | [Causalite-10 — Automated Social Science : des…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-10-Science-Sociale-Automatisee-Python.ipynb) | BETA | Non |
+| 17 | [Causalite-10b — Effets de traitement individuels :…](../../MyIA.AI.Notebooks/Probas/Causalite/Causalite-10b-ML-CATE-CFRNet-TARNet-Python.ipynb) | ALPHA | Oui |
 | 18 | [DecInfer-01-Utility-Foundations : Axiomes et Fondements](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) | BETA | Oui |
 | 19 | [DecInfer-01b-Théorème de représentation de von…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01b-Lean-ExpectedUtility.ipynb) | BETA | Oui |
 | 20 | [DecInfer-01c-Lean-Coherence : Dutch Book et bornes de…](../../MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/DecInfer-01c-Lean-Coherence.ipynb) | BETA | Oui |
