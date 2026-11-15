@@ -32,6 +32,9 @@ Ce que fait l'organe, dans cet ordre
 5. lance `lake build` via `scripts/lean/lean_exec.py` -- l'organe de build
    borne (admission machine-wide, Job Object kill-on-close, budget, controle
    d'orphelins). L'organe **ne reimplementait** pas la discipline de build ;
+   depuis #26699, le build est **cible** (`--modules auto`) : les modules
+   touches, leurs jumeaux `_en` et leurs dependants, et le `.lake/build` du
+   projet est **conserve** entre deux essais ;
 6. nettoie : jonction **seule** (`cmd /c rmdir`, qui ne touche jamais la
    cible), puis `.lake`, puis `git worktree remove` **sans `--force`** ;
 7. **sur SUCCESS seulement**, poste sous `myia-ai-01` un commentaire dont la
@@ -60,9 +63,20 @@ Usage
     python scripts/lean/attest_local_build.py <PR> [--repo jsboige/CoursIA]
                                               [--dry-run] [--json]
                                               [--jobs N] [--budget N]
+                                              [--modules auto|all]
+                                              [--cache-root DIR]
 
-Sortie : JSON sur stdout avec le verdict, les lakes, la duree, le SHA atteste
-et l'identifiant du commentaire poste (vide si rien n'a ete poste).
+Portee du build (#26699)
+------------------------
+`--modules auto` (defaut) ne construit que les modules **touches** par le
+diff, leurs **jumeaux `_en`** et leurs **dependants** dans le lac ; le lac
+entier (`--modules all`) reste disponible. Le `.lake/build` du projet est
+**conserve** entre deux essais (`--cache-root`, par defaut a cote du
+depot) : un timeout ne jette plus une heure de compilation.
+
+Sortie : JSON sur stdout avec le verdict, les lakes, les cibles construites,
+la duree, le SHA atteste et l'identifiant du commentaire poste (vide si rien
+n'a ete poste).
 """
 
 from __future__ import annotations
@@ -70,6 +84,7 @@ from __future__ import annotations
 import argparse
 import base64
 import fnmatch
+import hashlib
 import json
 import os
 import shutil
@@ -87,6 +102,8 @@ if str(LEAN_DIR) not in sys.path:
 
 import lake_matrix_dispatch  # noqa: E402
 import lean_build_attestation as attestation  # noqa: E402
+
+import attest_build_targets  # noqa: E402
 
 DEFAULT_REPO = "jsboige/CoursIA"
 MANIFEST_PATH = LEAN_DIR / "ci_lakes.json"
@@ -139,6 +156,36 @@ DEFAULT_BUILD_JOBS = 3
 #: scheduler `lake`. Le budget doit donc couvrir les deux, sans quoi il
 #: sous-compte l'occupation reelle (#26480).
 DEFAULT_BUILD_BUDGET = DEFAULT_BUILD_JOBS + 1
+
+# --------------------------------------------------------------------------
+# #26699 -- le build CIBLE, et le cache de build du projet conserve.
+#
+# L'organe construisait le lac ENTIER : sur `conway`, 8 802 cibles et
+# plusieurs heures (trois essais du coordinateur le 15/11, tous expires),
+# pour une PR qui ne touchait que trois fichiers `.lean`. La cause est la
+# PORTEE du build, pas le parallélisme.
+#
+# Deux leviers, donc deux modes :
+#   `auto` -- le build se limite aux modules touches, a leurs jumeaux `_en`
+#             et a leurs dependants dans le lac (`attest_build_targets`) ;
+#   `all`  -- le lac entier, comme avant (le mode historique reste
+#             disponible, et le repli quand la resolution echoue).
+#
+# Le cache de build du PROJET (`.lake/build`, les oleans du lac lui-meme --
+# ceux de Mathlib vivent dans `.lake/packages`, hors de ce cache) est
+# conserve entre deux essais : un timeout ne jette plus une heure de
+# compilation. Le chemin du worktree est DETERMINISTE (par PR) pour que les
+# traces de lake restent valides d'un essai a l'autre.
+# --------------------------------------------------------------------------
+
+#: Mode de resolution des cibles : `auto` (cible) ou `all` (lac entier).
+MODULES_AUTO = "auto"
+MODULES_ALL = "all"
+
+#: Repertoire du cache de build du projet. Par defaut, a cote du depot ( meme
+#: volume que les worktrees : le deplacement du cache est un renommage, pas
+#: une copie) et HORS du depot -- un cache n'est jamais commite.
+DEFAULT_CACHE_DIRNAME = "attest-lean-cache"
 
 
 class OrganError(RuntimeError):
@@ -906,12 +953,16 @@ def extract_errors(text: str, *, context_lines: int = ERROR_CONTEXT_LINES,
 
 def run_lake_build(lake_dir: Path, timeout: float,
                    jobs: int = DEFAULT_BUILD_JOBS,
-                   budget: int = DEFAULT_BUILD_BUDGET) -> dict:
+                   budget: int = DEFAULT_BUILD_BUDGET,
+                   targets: list[str] | None = None) -> dict:
     """`lake build` borne via `lean_exec.py` (l'organe de build existant).
 
     Le payload `lake build` est un **PAYLOAD** : il est passe a l'organe
     canonique, qui le lance sous le budget commun. Ce fichier ne lance
     aucun processus lake lui-meme.
+
+    `targets` limite la construction aux modules nommes (#26699) ; une liste
+    vide ou `None` construit le lac entier (mode `all`).
 
     Le parallélisme demande (`LEAN_EXEC_JOBS`) est pose dans l'environnement
     de l'enfant : `lean_exec` le lit de la, et sa valeur implicite
@@ -923,7 +974,7 @@ def run_lake_build(lake_dir: Path, timeout: float,
         stdout_file = Path(tmp) / "stdout.txt"
         stderr_file = Path(tmp) / "stderr.txt"
         cmd = _lean_exec_argv(
-            ["lake", "build"],
+            attest_build_targets.build_argv(list(targets or [])),
             lake_dir=lake_dir,
             timeout=timeout,
             stdout_file=stdout_file,
@@ -956,26 +1007,126 @@ def run_lake_build(lake_dir: Path, timeout: float,
     return payload
 
 
+# --------------------------------------------------------------------------
+# #26699 -- le cache de build du PROJET, conserve entre deux essais.
+#
+# Ce qui est conserve est le `.lake/build` du lac -- les oleans des modules
+# DU LAC. Les oleans de Mathlib vivent dans `.lake/packages` (la jonction
+# vers le cache chaud), donc hors de ce cache : ce que l'on conserve, c'est
+# exactement le travail que le lac a produit et qu'un timeout aurait jete.
+#
+# Le cache est invalide si la toolchain ou le graphe de dependances change :
+# il est alors **ecrase**, jamais reutilise (fail-closed).
+# --------------------------------------------------------------------------
+
+
+def build_cache_root(explicit: Path | None = None) -> Path:
+    """Repertoire du cache de build. Hors du depot, par defaut.
+
+    Il est place a cote du depot (meme volume que les worktrees) : le
+    deplacement du cache est alors un renommage, pas une copie.
+    """
+    if explicit is not None:
+        return explicit
+    return REPO_ROOT.parent / DEFAULT_CACHE_DIRNAME
+
+
+def build_cache_dir(root: Path, pr: int, lake: str) -> Path:
+    """Repertoire du cache pour le couple (PR, lake)."""
+    return root / ("pr-%d" % pr) / lake
+
+
+def _cache_fingerprint(lake_dir: Path) -> dict:
+    """Empreinte du contexte de build : toolchain + manifeste du lake."""
+    toolchain = _toolchain_of(lake_dir) or ""
+    manifest = _read_if_present(lake_dir / "lake-manifest.json") or ""
+    return {
+        "toolchain": toolchain,
+        "manifest_sha256": hashlib.sha256(manifest.encode("utf-8")).hexdigest(),
+    }
+
+
+def restore_project_build(cache_dir: Path, lake_dir: Path) -> dict:
+    """Remet le `.lake/build` du cache dans le worktree -- si le cache vaut."""
+    build = cache_dir / "build"
+    if not build.is_dir():
+        return {"restored": False, "reason": "aucun cache de build conserve"}
+    try:
+        meta = json.loads((cache_dir / "meta.json").read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        meta = {}
+    if meta != _cache_fingerprint(lake_dir):
+        shutil.rmtree(cache_dir, ignore_errors=True)
+        return {
+            "restored": False,
+            "reason": "cache ecrase (toolchain ou manifeste different du build)",
+        }
+    target = lake_dir / ".lake" / "build"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists():
+        shutil.rmtree(target, ignore_errors=True)
+    shutil.move(str(build), str(target))
+    return {"restored": True, "reason": "cache de build du projet restaure"}
+
+
+def preserve_project_build(cache_dir: Path, lake_dir: Path) -> dict:
+    """Conserve le `.lake/build` du worktree dans le cache du projet.
+
+    Appele meme sur un build en echec : c'est precisement le cas qu'un
+    timeout rend cher (une heure de compilation jetee pour rien).
+    """
+    build = lake_dir / ".lake" / "build"
+    if not build.is_dir():
+        return {"preserved": False, "reason": "aucun build a conserver"}
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    meta = _cache_fingerprint(lake_dir)
+    (cache_dir / "meta.json").write_text(
+        json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
+    target = cache_dir / "build"
+    if target.exists():
+        shutil.rmtree(target, ignore_errors=True)
+    shutil.move(str(build), str(target))
+    return {"preserved": True, "reason": "cache de build du projet conserve"}
+
+
 def build_lake(lake: dict, worktree: Path, cache_root: Path, timeout: float,
                jobs: int = DEFAULT_BUILD_JOBS,
-               budget: int = DEFAULT_BUILD_BUDGET) -> dict:
+               budget: int = DEFAULT_BUILD_BUDGET,
+               targets: list[str] | None = None,
+               project_cache_dir: Path | None = None) -> dict:
     """Prepare + build d'un lake dans le worktree. Ne leve pas : le verdict
-    est rendu dans le resultat."""
+    est rendu dans le resultat.
+
+    `targets` limite la construction aux modules nommes (#26699) ; `None`
+    construit le lac entier.
+
+    `project_cache_dir` est le repertoire du cache de build du PROJET pour ce
+    lake : le `.lake/build` est **remis** dans le worktree avant le build et
+    **reconserve** apres -- un timeout ne jette plus la compilation deja
+    faite.
+    """
     lake_dir = worktree / lake["project-path"]
     if not lake_dir.is_dir():
         return {"lake": lake["lake"], "ok": False, "reason": "lake absent du worktree"}
     prepared = prepare_lake(lake_dir, cache_root)
     if not prepared["ok"]:
         return {"lake": lake["lake"], "ok": False, "reason": prepared["reason"]}
-    result = {"lake": lake["lake"], "ok": False}
+    result = {"lake": lake["lake"], "ok": False, "targets": list(targets or [])}
+    cache_state: dict = {"restored": False, "preserved": False}
+    if project_cache_dir is not None:
+        cache_state.update(restore_project_build(project_cache_dir, lake_dir))
     try:
-        payload = run_lake_build(lake_dir, timeout, jobs=jobs, budget=budget)
+        payload = run_lake_build(lake_dir, timeout, jobs=jobs, budget=budget, targets=targets)
     finally:
         if prepared.get("junction"):
             try:
                 _remove_junction(lake_dir / ".lake" / "packages")
             except OrganError:
                 pass
+        if project_cache_dir is not None:
+            cache_state.update(preserve_project_build(project_cache_dir, lake_dir))
+    result["cache"] = cache_state
     result.update(
         {
             "exit_code": payload.get("exit_code"),
@@ -1063,9 +1214,89 @@ def cleanup_worktree(worktree: Path) -> None:
             )
 
 
+def _attestation_extra(builds: list[dict], modules_mode: str) -> str:
+    """La partie libre du corps d'attestation : ce qui a ete CONSTRUIT.
+
+    Un build cible n'atteste que ce qu'il a construit : les cibles sont donc
+    nommees, et les agregateurs ecartes aussi (une borne invisible est une
+    attestation quiSUR-declare sa portee).
+    """
+    lines = [
+        "`lake build` local reussi sur le worktree detache a la tete citee "
+        "(cache Mathlib chaud par jonction). "
+        "Preuve : sortie de `scripts/lean/lean_exec.py`."
+    ]
+    for build in builds:
+        lake = build.get("lake")
+        targets = build.get("targets") or []
+        scope = build.get("scope") or {}
+        if not targets:
+            lines.append(
+                "Lake `{}` : **lac entier** (mode `{}`, aucune cible resolue).".format(
+                    lake, modules_mode
+                )
+            )
+            continue
+        lines.append(
+            "Lake `{}` : **build cible**, {} module(s) : {}.".format(
+                lake, len(targets), ", ".join("`{}`".format(t) for t in targets)
+            )
+        )
+        dependents = scope.get("dependents") or []
+        if dependents:
+            lines.append(
+                "Dependants inclus : {}.".format(
+                    ", ".join("`{}`".format(d) for d in dependents)
+                )
+            )
+        skipped = scope.get("skipped_aggregators") or []
+        if skipped:
+            lines.append(
+                "Agregateurs ecartes (imports seuls, sans declaration) : {}.".format(
+                    ", ".join("`{}`".format(s) for s in skipped)
+                )
+            )
+    return "\n".join(lines)
+
+
+def _worktree_path(pr: int) -> Path:
+    """Chemin DETERMINISTE du worktree d'attestation, par PR.
+
+    Le determinisme n'est pas un caprice : les traces de `lake` sont
+    attachees aux chemins absolus des sources. Reconstruire le worktree
+    ailleurs invaliderait le cache de build conserve, et l'on retomberait
+    dans le piege que #26699 veut lever (une compilation jetee a chaque
+    essai).
+    """
+    return REPO_ROOT.parent / ("attest-lean-wt-pr-%d" % pr)
+
+
+def _clear_stale_worktree(worktree: Path) -> None:
+    """Retire un worktree d'un essai precedent, s'il en reste un.
+
+    Le retrait se fait **sans** `--force` : un worktree sale est un signal.
+    Si le retrait refuse (worktree enregistre mais absent du disque,
+    parasite), `git worktree prune` nettoie l'enregistrement ; le reste du
+    chemin n'est touche que s'il porte la marque d'un worktree (`.git`).
+    """
+    if not worktree.exists():
+        return
+    proc = _run(["git", "-C", str(REPO_ROOT), "worktree", "remove", str(worktree)])
+    if proc.returncode != 0:
+        _run(["git", "-C", str(REPO_ROOT), "worktree", "prune"])
+    if worktree.exists():
+        if not (worktree / ".git").is_file():
+            raise OrganError(
+                "chemin de worktree occupe par autre chose : {}".format(worktree)
+            )
+        shutil.rmtree(worktree, ignore_errors=True)
+
+
 def attest(pr: int, repo: str, timeout: float, dry_run: bool,
             jobs: int = DEFAULT_BUILD_JOBS,
-            budget: int = DEFAULT_BUILD_BUDGET) -> dict:
+            budget: int = DEFAULT_BUILD_BUDGET,
+            modules_mode: str = MODULES_AUTO,
+            cache_root: Path | None = None) -> dict:
     """Certifie la PR : worktree, builds bornes, attestation postee sur
     SUCCESS."""
     started = time.time()
@@ -1108,6 +1339,7 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         "comment_id": "",
         "jobs": jobs,
         "budget": budget,
+        "modules_mode": modules_mode,
     }
     if not lakes:
         raise OrganError(
@@ -1116,6 +1348,20 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         )
     if dry_run:
         result["dry_run"] = True
+        # Les CIBLES du build (#26699) : le dry-run les rend SANS rien
+        # construire. C'est le moyen de verifier la portee avant de lancer
+        # une heure de compilation, et de nommer ce qui ne sera pas construit.
+        result["scope"] = []
+        for lake in lakes:
+            lake_dir = REPO_ROOT / lake["project-path"]
+            scope = attest_build_targets.resolve_targets(
+                lake_dir,
+                files,
+                lake_prefix=str(lake["project-path"]).replace("\\", "/").rstrip("/") + "/",
+            )
+            entry = {"lake": lake["lake"]}
+            entry.update(scope)
+            result["scope"].append(entry)
         # Le dry-run rend le verdict de cache SANS construire ni modifier
         # quoi que ce soit : c'est ce qui prouve, avant meme le build, que
         # le cache chaud s'applique a ce lake (ou nomme le paquet fautif).
@@ -1203,10 +1449,8 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
             )
         return result
 
-    worktree = Path(
-        tempfile.mkdtemp(prefix="attest-lean-wt-", dir=str(REPO_ROOT.parent))
-    )
-    worktree.rmdir()
+    worktree = _worktree_path(pr)
+    _clear_stale_worktree(worktree)
     created = False
     try:
         proc = _run(
@@ -1231,6 +1475,7 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         created = True
         builds = []
         candidates = _pivot_candidates(base_manifest, head_manifest)
+        cache_root_dir = build_cache_root(cache_root)
         for lake in lakes:
             lake_dir = worktree / lake["project-path"]
             pivot = resolve_cache_pivot(lake_dir, candidates)
@@ -1246,11 +1491,38 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
                     entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
                 builds.append(entry)
                 continue
+            # Les cibles du build (#26699) : les modules touches, leurs
+            # jumeaux `_en` et leurs dependants dans le lake. La resolution
+            # se fait sur le lake de la TETE (le worktree), pas sur celui du
+            # clone : c'est la tete qui est attestee.
+            targets: list[str] | None = None
+            scope = {}
+            if modules_mode == MODULES_AUTO:
+                scope = attest_build_targets.resolve_targets(
+                    lake_dir,
+                    files,
+                    lake_prefix=str(lake["project-path"]).replace("\\", "/").rstrip("/") + "/",
+                )
+                if scope.get("ok"):
+                    targets = list(scope.get("targets") or [])
+                else:
+                    # Repli explicite : le lac entier. La raison est rendue
+                    # dans le verdict -- jamais un build restreint en silence.
+                    targets = None
+                    scope = {"ok": False, "reason": scope.get("reason", "")}
             builds.append(
                 build_lake(
-                    lake, worktree, Path(pivot["pivot"]), timeout, jobs=jobs, budget=budget
+                    lake,
+                    worktree,
+                    Path(pivot["pivot"]),
+                    timeout,
+                    jobs=jobs,
+                    budget=budget,
+                    targets=targets,
+                    build_cache_dir=build_cache_dir(cache_root_dir, pr, lake["lake"]),
                 )
             )
+            builds[-1]["scope"] = scope
         result["builds"] = builds
         # Les erreurs nommees de tous les builds : le diagnostic du build
         # qui a echoue, hors de la queue de 4000 caracteres.
@@ -1307,11 +1579,7 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
             jobs=jobs or None,
             pr=pr,
             duration_s=time.time() - started,
-            extra=(
-                "`lake build` local reussi sur le worktree detache a la tete "
-                "citee (cache Mathlib chaud par jonction). "
-                "Preuve : sortie de `scripts/lean/lean_exec.py`."
-            ),
+            extra=_attestation_extra(builds, modules_mode),
         )
         comment_id = post_attestation(repo, pr, body)
         result["ok"] = True
@@ -1326,6 +1594,17 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
             for lake in lakes:
                 lake_dir = worktree / lake["project-path"]
                 if lake_dir.is_dir():
+                    # La jonction `.lake/packages` est retiree ICI aussi :
+                    # un `shutil.rmtree` sur un repertoire qui contient une
+                    # jonction peut detruire la CIBLE (le cache Mathlib
+                    # partage). Le retrait se fait par `rmdir`, qui ne
+                    # touche que le lien.
+                    packages = lake_dir / ".lake" / "packages"
+                    if _is_junction(packages):
+                        try:
+                            _remove_junction(packages)
+                        except OrganError:
+                            pass
                     shutil.rmtree(lake_dir / ".lake", ignore_errors=True)
             try:
                 cleanup_worktree(worktree)
@@ -1359,6 +1638,24 @@ def main(argv: list[str] | None = None) -> int:
         help="places réservées dans le cap machine-wide (jobs + scheduler lake)",
     )
     ap.add_argument("--json", action="store_true", help="sortie JSON")
+    ap.add_argument(
+        "--modules",
+        choices=[MODULES_AUTO, MODULES_ALL],
+        default=MODULES_AUTO,
+        help=(
+            "portee du build : `auto` construit les modules touches, leurs "
+            "jumeaux `_en` et leurs dependants dans le lac ; `all` construit "
+            "le lac entier"
+        ),
+    )
+    ap.add_argument(
+        "--cache-root",
+        default=None,
+        help=(
+            "repertoire du cache de build du projet (defaut : a cote du "
+            "depot). Le cache est conserve entre deux essais."
+        ),
+    )
     args = ap.parse_args(argv)
 
     try:
@@ -1369,6 +1666,8 @@ def main(argv: list[str] | None = None) -> int:
             args.dry_run,
             jobs=args.jobs,
             budget=args.budget,
+            modules_mode=args.modules,
+            cache_root=Path(args.cache_root) if args.cache_root else None,
         )
     except OrganError as exc:
         payload = {"pr": args.pr, "ok": False, "posted": False, "reason": str(exc)}
