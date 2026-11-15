@@ -105,6 +105,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-43-Diffusion-Series-Synthetiques | EXÉCUTÉ | cellules exécutées localement sur SPY (yfinance, 2 515 rendements log) — diffusion vs bootstrap i.i.d., augmentation `INCONCLUSIF` |
 | QC-Py-44-Agent-Trading-Multi-LLM | EXÉCUTÉ | 295 appels LLM réels (gpt-5.6-luna) : débat bull/bear via `AgentGroupChat`, mémoire soldée vs single-shot — verdict §C `INCONCLUSIVE` |
 | QC-Py-45-Noyau-Risque-Deterministe | EXÉCUTÉ | ablation du noyau de risque déterministe de Steward sur des ETF (yfinance, 2015-2026), sans LLM — verdict `BEATS` sur le drawdown |
+| QC-Py-46-External-Etalon-FinanceBench | EXÉCUTÉ | étalon externe FinanceBench (50 items numériques, strate intégrale sans échantillonnage) pour l'organ LLM de la série — 3 bras × 50 items (150 appels) : `luna-plein` 92,1 % / `luna-naif` 25,0 % / `sonnet-plein` 47,7 %, tolérance 1 % déclarée |
 
 **Récapitulatif** : la majorité des notebooks sont NON EXÉCUTÉS (code réel, exécution kernel ou QC Cloud à faire) ; une part croissante est EXÉCUTÉE et 10 sont des `doc cloud` (markdown-only). Le décompte précis relève du catalogue généré.
 
@@ -322,6 +323,26 @@ d'ETF en quatre groupes : actions US, actions hors US, obligations, matières et
 La conclusion transférable : une règle de risque se juge par une ablation sur des entrées
 **sans mérite**, à tirages identiques, et contre un témoin qui sépare son effet de la simple
 réduction d'exposition. Le carnet requiert un accès réseau (yfinance) à l'exécution.
+
+## Recherche — étalon externe de compétence numérique (QC-Py-46)
+
+L'organ LLM des carnets de la série (`gpt-5.6-luna`) est jugé ici contre un
+**étalon indépendant** : la strate numérique intégrale de **FinanceBench**
+(50 items, sans échantillonnation), chargée hors dépôt (licence CC BY-NC 4.0 —
+ni le dataset ni les réponses brutes n'entrent dans le dépôt). Trois bras,
+150 appels, même endpoint que QC-Py-26/44 : `luna-plein` (rôle + contexte 10-K
++ consigne), `luna-naif` (le même modèle, question nue — témoin négatif),
+`sonnet-plein` (comparaison cross-LLM).
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-46-External-Etalon-FinanceBench](QC-Py-46-External-Etalon-FinanceBench.ipynb) | Extraction du nombre avec tolérance relative de 1 % (déclarée, pas implicite), scoring sur la strate numérique intégrale. Trois bras : `luna-plein` / `luna-naif` / `sonnet-plein` | Le témoin négatif porte le sens de la mesure : le même modèle, question nue, s'effondre de 92,1 % à 25,0 % (67,1 pts, 46 réponses sur 50 sans nombre) — l'étalon mesure la compétence du pipeline (rôle, contexte, format), pas la question seule. Cross-LLM, à protocole identique, luna (92,1 %) est deux fois plus efficace que sonnet (47,7 %) sur l'extraction numérique de 10-K |
+
+La conclusion transférable : la compétence de raisonnement financier numérique
+d'un organ LLM se jauge par un étalon externe indépendant, avec un témoin
+négatif qui sépare l'effet du pipeline de l'effet de la question. Le carnet
+requiert `OPENAI_API_KEY` à l'exécution (lue depuis `.secrets/master.env`,
+hors dépôt).
 
 ## Utilitaires
 

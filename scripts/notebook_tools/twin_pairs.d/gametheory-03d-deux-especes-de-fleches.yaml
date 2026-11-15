@@ -1,0 +1,9 @@
+- name: "GameTheory-03d Deux Especes de Fleches"
+  family: GameTheory
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Deux-Especes-de-Fleches-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Les deux versions construisent les 576 jeux et comparent les signatures de Nash sous les six swaps par énumération explicite ; cet algorithme sans solveur est l'objet pédagogique. Python utilise NumPy pour représenter les matrices et C# la BCL."
+  known_differences:
+    - "Les ensembles de profils sont des listes ou ensembles Python et des masques de bits C# ; les comptes et expériences sont identiques."
