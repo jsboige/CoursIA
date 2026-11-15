@@ -134,13 +134,15 @@ def _excluded_py_line(stripped: str) -> bool:
     return False
 
 
-def classify_python(source: str) -> list[str]:
+def classify_python(source: str, degraded: list | None = None) -> list[str]:
     """Classe chaque ligne physique d'une cellule Python par tokenizer.
 
     En cas d'erreur de tokenisation (source non-Python dans une cellule
     python, syntaxe exotique), repli DEGRADE sur une classification par
-    ligne, signalee par l'appelant via ``py_degraded`` -- mieux vaut une
-    mesure approchee qu'un carnet invisible.
+    ligne ; le repli s'annonce en ajoutant ``"python_tokenize"`` a la liste
+    ``degraded`` fournie par l'appelant, que ``notebook_stats`` publie sous
+    ``py_degraded``. Mieux vaut une mesure approchee mais SIGNALEE qu'un
+    carnet invisible ou une mesure presentee comme exacte.
     """
     lines = source.splitlines()
     n = len(lines)
@@ -148,6 +150,8 @@ def classify_python(source: str) -> list[str]:
     try:
         tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
     except (tokenize.TokenError, IndentationError, SyntaxError, ValueError):
+        if degraded is not None:
+            degraded.append("python_tokenize")
         return _classify_python_naive(source)
     string_spans: list[tuple[int, int]] = []
     for tok in tokens:
@@ -188,30 +192,71 @@ def classify_python(source: str) -> list[str]:
     return classes
 
 
+def _split_py_code_comment(line: str) -> tuple[str, bool, str | None]:
+    """Coupe une ligne en (code, a_un_commentaire, triple_ouvert).
+
+    Un ``#`` n'ouvre un commentaire que s'il est HORS CHAINE : dans
+    ``s = "a # b"`` c'est du texte. ``triple_ouvert`` rend le delimiteur
+    ``\"\"\"``/``'''`` laisse ouvert en fin de ligne (docstring multi-lignes).
+    """
+    i, n = 0, len(line)
+    quote: str | None = None
+    while i < n:
+        if quote is not None:
+            if line[i] == "\\":
+                i += 2
+                continue
+            if line.startswith(quote, i):
+                i += len(quote)
+                quote = None
+                continue
+            i += 1
+            continue
+        for triple in ('"""', "'''"):
+            if line.startswith(triple, i):
+                quote = triple
+                i += 3
+                break
+        else:
+            ch = line[i]
+            if ch in ('"', "'"):
+                quote = ch
+            elif ch == "#":
+                return line[:i], True, None
+            i += 1
+    opened = quote if quote in ('"""', "'''") else None
+    return line, False, opened
+
+
 def _classify_python_naive(source: str) -> list[str]:
-    """Repli regex, ANNOUNCE degrade (tokenize a echoue)."""
-    out = []
-    in_triple = False
+    """Repli ligne a ligne quand ``tokenize`` echoue (mesure DEGRADEE).
+
+    Mime les classes du tokenizer : une ligne portant un commentaire est
+    COMMENT meme si du code la precede (regle de densite, cf
+    ``_has_code_before_comment``) ; un ``#`` dans une chaine n'est pas un
+    commentaire ; l'interieur d'une docstring est STRING_CONT, pas du code.
+    """
+    out: list[str] = []
+    triple: str | None = None
     for line in source.splitlines():
         stripped = line.strip()
-        if in_triple:
+        if triple is not None:
             out.append(STRING_CONT)
-            for q in ('"""', "'''"):
-                if q in stripped:
-                    in_triple = False
+            if triple in stripped:
+                triple = None
             continue
         if not stripped:
             out.append(BLANK)
-        elif _excluded_py_line(stripped):
+            continue
+        if _excluded_py_line(stripped):
             out.append(EXCLUDED)
-        elif stripped.startswith("#"):
-            out.append(COMMENT)
-        else:
-            code_part = stripped.split("#")[0]
-            out.append(COMMENT if "#" in stripped and not code_part.strip()
-                       else (COMMENT if "#" in stripped else CODE))
-            # fin de ligne : COMMENT (compte aussi comme code via la regle
-            # de densite ; ici la classe porte le commentaire).
+            continue
+        _code, has_comment, opened = _split_py_code_comment(line)
+        # La ligne d'ouverture d'une docstring porte le token chaine : le
+        # tokenizer la classe CODE (test_docstring_interior...).
+        out.append(COMMENT if has_comment else CODE)
+        if opened is not None:
+            triple = opened
     return out
 
 
@@ -477,6 +522,7 @@ def notebook_stats(nb: dict) -> dict:
     long_blocks = 0
     one_letter_hits = 0
     unknown_lang_cells = 0
+    degraded_cells = 0
     for cell in nb.get("cells", []) or []:
         if cell.get("cell_type") != "code":
             continue
@@ -488,11 +534,11 @@ def notebook_stats(nb: dict) -> dict:
             unknown_lang_cells += 1
             continue
         if lang == "python":
-            classes = classify_python(source)
-            degraded = False
+            fallbacks: list = []
+            classes = classify_python(source, degraded=fallbacks)
+            degraded_cells += 1 if fallbacks else 0
         else:
             classes = classify_csharp(source, fsharp=(lang == "fsharp"))
-            degraded = False
         bucket = per_lang.setdefault(
             lang, {"code": 0, "comment": 0, "cells": 0})
         bucket["cells"] += 1
@@ -526,6 +572,9 @@ def notebook_stats(nb: dict) -> dict:
         "density": density,
         "per_language": per_lang,
         "unknown_language_cells": unknown_lang_cells,
+        # Cellules Python mesurees par le repli (tokenize en echec) : la
+        # mesure de ce carnet est approchee, et elle le DIT.
+        "py_degraded": degraded_cells,
         "readability": {
             "long_lines": long_lines,
             "long_blocks": long_blocks,
@@ -603,17 +652,50 @@ def resolve_base(base, cwd=None):
     return out.strip() if out and out.strip() else base
 
 
-def changed_notebooks(base, head="HEAD", cwd=None):
-    out = git("diff", "--name-only", "--diff-filter=ACMR", base, head,
-              "--", "*.ipynb", cwd=cwd)
-    if out is None:
+def diff_notebooks(base, head="HEAD", cwd=None):
+    """Carnets changes : ``[(chemin_tete, chemin_origine)]``.
+
+    ``--name-status -M -C`` rend ``R<score>``/``C<score>`` suivis du chemin
+    d'ORIGINE puis du nouveau. ``--name-only`` ne rend que le nouveau : la
+    base se lisait alors au nouveau chemin (absent a la base), le carnet
+    passait pour un AJOUT et un ``git mv`` pur -- qui n'ajoute rien --
+    rougissait. La base se lit desormais au chemin d'origine.
+    """
+    raw = git("diff", "--name-status", "-z", "-M", "-C",
+              "--diff-filter=ACMR", base, head, "--", "*.ipynb", cwd=cwd)
+    if raw is None:
         return []
-    paths = []
-    for line in out.splitlines():
-        posix = line.strip().replace(BS, "/")
-        if posix and not any(m in "/" + posix for m in EXCLUDE_MARKERS):
-            paths.append(posix)
-    return sorted(paths)
+    fields = raw.split("\0")
+    pairs = []
+    i = 0
+    while i < len(fields):
+        status = fields[i].strip()
+        if not status:
+            i += 1
+            continue
+        if status[0] in ("R", "C"):
+            if i + 2 >= len(fields):
+                break
+            origin, target = fields[i + 1], fields[i + 2]
+            i += 3
+        else:
+            if i + 1 >= len(fields):
+                break
+            origin = target = fields[i + 1]
+            i += 2
+        target_posix = target.strip().replace(BS, "/")
+        origin_posix = origin.strip().replace(BS, "/")
+        if not target_posix:
+            continue
+        if any(m in "/" + target_posix for m in EXCLUDE_MARKERS):
+            continue
+        pairs.append((target_posix, origin_posix))
+    return sorted(pairs)
+
+
+def changed_notebooks(base, head="HEAD", cwd=None):
+    """Chemins de TETE des carnets changes (compatibilite)."""
+    return [target for target, _origin in diff_notebooks(base, head, cwd=cwd)]
 
 
 def all_notebooks(cwd=None):
@@ -631,7 +713,11 @@ def all_notebooks(cwd=None):
 def read_notebook_at(ref, path, cwd=None):
     if ref is None:
         try:
-            return json.loads(Path(path).read_text(encoding="utf-8"))
+            # ``cwd`` n'est pas decoratif : sans lui la tete se lit relative
+            # au cwd du PROCESSUS, pas a celui du depot mesure (un appel
+            # depuis un autre repertoire rend « carnet absent »).
+            file = Path(cwd) / path if cwd else Path(path)
+            return json.loads(file.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return None
     raw = git("show", ref + ":" + path, cwd=cwd)
@@ -665,7 +751,15 @@ def verdict(base_stats: dict | None, head_stats: dict) -> dict:
         return {"verdict": "RED", "reason": "carnet ajoute sous le seuil",
                 "density": head_dens, "code_lines": head_lines}
     base_dens = base_stats["density"]
-    if base_dens is not None and base_dens < MIN_DENSITY:
+    if base_dens is None:
+        # Base SANS ligne de code (carnet de prose, ou cellule code vide) :
+        # c'est la PR qui introduit le code mesure. Rouge, et surtout pas
+        # un formatage de None (TypeError -> exit 1 sans JSON).
+        return {"verdict": "RED",
+                "reason": "code introduit sous le seuil (base sans code)",
+                "density": head_dens, "base_density": None,
+                "code_lines": head_lines}
+    if base_dens < MIN_DENSITY:
         return {"verdict": "ALREADY_BELOW",
                 "reason": "stock deja sous le seuil a la base (dette §I)",
                 "density": head_dens, "base_density": base_dens,
@@ -679,8 +773,11 @@ def verdict(base_stats: dict | None, head_stats: dict) -> dict:
 
 def compare(base_ref, head_ref, paths, cwd=None):
     rows = []
-    for path in paths:
-        base_nb = read_notebook_at(base_ref, path, cwd=cwd)
+    for entry in paths:
+        # ``diff_notebooks`` rend (tete, origine) : la base se lit a
+        # l'origine, sinon un renommage se lit comme un ajout.
+        path, origin = entry if isinstance(entry, tuple) else (entry, entry)
+        base_nb = read_notebook_at(base_ref, origin, cwd=cwd)
         head_nb = read_notebook_at(head_ref, path, cwd=cwd)
         if head_nb is None:
             continue
@@ -911,7 +1008,7 @@ def main(argv=None) -> int:
         ap.error("base ref required (or --all / --self-test)")
 
     base = resolve_base(args.base)
-    paths = changed_notebooks(base)
+    paths = diff_notebooks(base)
     rows = compare(base, None, paths)
     if args.readability:
         findings = [(r["notebook"], r["readability"]) for r in rows

@@ -20,6 +20,7 @@ La logique sous test est la classification et les verdicts -- pas de git,
 pas de kernel.
 """
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -34,7 +35,10 @@ from check_code_comment_density import (
     STRING_CONT,
     classify_csharp,
     classify_python,
+    compare,
+    diff_notebooks,
     notebook_stats,
+    resolve_base,
     verdict,
 )
 
@@ -278,3 +282,82 @@ def test_kernel_language_python_vs_csharp():
 def test_polyglot_magic_first_line():
     nb = _nb(["#!csharp\nvar z = 1;\n"], kernel=".net-polyglot")
     assert notebook_stats(nb)["per_language"].get("csharp")
+
+
+# ---------------------------------------------------------------------------
+# Correctifs de review #26788 (tete 953d355). Chacun reproduit le defaut
+# mesure par le coordinateur avant de le couvrir.
+# ---------------------------------------------------------------------------
+
+_GIT_ID = ["-c", "user.email=test@example.invalid", "-c", "user.name=test",
+           "-c", "commit.gpgsign=false"]
+
+
+def _git(cwd, *args):
+    subprocess.run(["git", *_GIT_ID, *args], cwd=cwd, check=True,
+                   capture_output=True, encoding="utf-8", errors="replace")
+
+
+def _write_nb(path, src):
+    path.write_text(json.dumps(_nb([src])), encoding="utf-8")
+
+
+def test_rename_reads_base_at_origin_not_as_addition(tmp_path):
+    """Un `git mv` pur n'ajoute rien : la base se lit a l'ORIGINE.
+
+    Defaut mesure (review #26788) : `--name-only --diff-filter=ACMR` ne
+    rend que le nouveau chemin, la base s'y lit absente -> « carnet
+    ajoute » -> RED. Un renommage de carnet de dette (0 %, 45 lignes)
+    rougissait : chaque PR de renumerotation ICT aurait ete bloquee.
+    """
+    src = "\n".join(["import math"] +
+                    [f"v{i} = math.sqrt({i}) + {i} * 2"
+                     for i in range(44)]) + "\n"
+    _git(tmp_path, "init", "-q")
+    _write_nb(tmp_path / "vieux.ipynb", src)
+    _git(tmp_path, "add", "-A")
+    _git(tmp_path, "commit", "-qm", "base")
+    _git(tmp_path, "mv", "vieux.ipynb", "neuf.ipynb")
+    _git(tmp_path, "commit", "-qm", "renommage")
+
+    base = resolve_base("HEAD~1", cwd=tmp_path)
+    pairs = diff_notebooks(base, "HEAD", cwd=tmp_path)
+    assert pairs == [("neuf.ipynb", "vieux.ipynb")], pairs
+
+    rows = compare(base, None, pairs, cwd=tmp_path)
+    assert rows[0]["added"] is False, rows[0]
+    assert rows[0]["verdict"] == "ALREADY_BELOW", rows[0]
+
+
+def test_base_without_code_is_red_not_typeerror():
+    """Base sans ligne de code + tete sous le seuil : RED, pas TypeError.
+
+    Defaut mesure (review #26788) : `f"{base_dens:.1%}"` sur None levait
+    un TypeError, exit 1 SANS JSON -- le garde tombait au lieu de conclure.
+    """
+    v = verdict(_stats(0, 0), _stats(100, 2))
+    assert v["verdict"] == "RED"
+    assert v["base_density"] is None
+    assert "introduit" in v["reason"]
+
+
+def test_naive_fallback_ignores_hash_in_string():
+    """Repli (tokenize en echec) : un `#` dans une chaine reste du CODE."""
+    src = 'verbeux = 1 if (else 0\ns = "cle # valeur"\n'
+    classes = classify_python(src)
+    assert classes[1] == CODE, classes
+
+
+def test_naive_fallback_docstring_interior_is_string_cont():
+    """Repli : l'interieur d'une docstring n'est ni code ni commentaire."""
+    src = 'x = (1,\n"""\ndocstring\n"""\n'
+    classes = classify_python(src)
+    assert classes[1] == CODE, classes           # ouverture : token chaine
+    assert classes[2] == STRING_CONT, classes
+    assert classes[3] == STRING_CONT, classes     # fermeture nue
+
+
+def test_py_degraded_reported_when_fallback_used():
+    """Le repli S'ANNONCE : `py_degraded` est publie, plus seulement nomme."""
+    assert notebook_stats(_nb(["y = (2,\nz = 1\n"]))["py_degraded"] == 1
+    assert notebook_stats(_nb(["z = 1\n"]))["py_degraded"] == 0
