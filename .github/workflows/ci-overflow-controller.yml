@@ -125,15 +125,19 @@ jobs:
           # donc la mesure illisible, donc aucune liberation (fail-CLOSED).
           # Clone partiel, meme forme que le voisin (ce pool est sature par
           # ses checkouts).
+          # L'action composite de resolution du jeton est LOCALE
+          # (`uses: ./.github/actions/gh-app-token`) : sans ce repertoire
+          # dans le checkout, l'etape de resolution n'existe pas et le job
+          # echoue. Un appel distant ferait telecharger l'archive du depot
+          # ENTIERE a l'etape « Set up job » -- de quoi faire tomber ce
+          # workflow (mesure etablie sur `heal-worktree`).
+          # Ces lignes sont des commentaires YAML, PAS des entrees du bloc
+          # `sparse-checkout` : dans un bloc litteral (`|`), une ligne
+          # commencant par `#` fait partie de la valeur et actions/checkout
+          # la passe en mode cone comme un nom de repertoire (review 5912895910).
           sparse-checkout: |
             scripts/ci
             .github/workflows
-            # L'action composite de resolution du jeton est LOCALE
-            # (`uses: ./.github/actions/gh-app-token`) : sans ce repertoire
-            # dans le checkout, l'etape de resolution n'existe pas et le job
-            # echoue. Un appel distant ferait telecharger l'archive du depot
-            # ENTIERE a l'etape « Set up job » -- de quoi faire tomber ce
-            # workflow (mesure etablie sur `heal-worktree`).
             .github/actions
 
       - name: Set up Python

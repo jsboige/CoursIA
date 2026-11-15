@@ -201,3 +201,27 @@ def test_controleur_checkout_le_repertoire_de_l_action():
     """Un appel local exige `.github/actions` dans le sparse-checkout."""
     texte = CONTROLLER.read_text(encoding="utf-8")
     assert ".github/actions" in texte
+
+
+def test_le_sparse_checkout_ne_contient_aucun_commentaire():
+    """Une ligne `#` DANS le bloc `sparse-checkout` n'est pas un commentaire.
+
+    Le bloc est un scalaire litteral (`|`) : YAML y range la ligne telle
+    quelle, `#` compris. actions/checkout en mode cone passe alors chaque
+    ligne comme un nom de repertoire a `git sparse-checkout set`, et l'erreur
+    n'apparait qu'a l'execution planifiee -- pas dans la CI de la PR, qui
+    n'exerce pas le job (review 5912895910 sur #26792).
+
+    Le test lit la valeur **resolue** par `yaml.safe_load`, pas le texte :
+    c'est la valeur resolue que l'action recoit.
+    """
+    donnees = yaml.safe_load(CONTROLLER.read_text(encoding="utf-8"))
+    etapes = donnees["jobs"]["control"]["steps"]
+    checkout = next(e for e in etapes if e.get("name") == "Checkout")
+    valeur = checkout["with"]["sparse-checkout"]
+    lignes = [l.strip() for l in valeur.splitlines() if l.strip()]
+    assert not [l for l in lignes if l.startswith("#")], (
+        f"commentaire dans la valeur sparse-checkout : {lignes}"
+    )
+    assert ".github/actions" in lignes, lignes
+
