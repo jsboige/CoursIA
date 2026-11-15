@@ -44,6 +44,17 @@
 # (`get_informal_definitions_symbols`), and surfaces the current
 # ImportError transparently.
 #
+# RESOLU le 2026-11-14 (volet B etape 4, branchement formel) : les 13
+# imports de siblings sont re-routes au chargement du package par
+# `_logic_handlers_compat.install()` (aliases sys.modules vers les
+# modules underscores livres C186b/c, gardes import-safe pour les
+# handlers NON portes par decision EPIC, virtuals config/prover9/mace4).
+# Le pont est desormais importable ET instanciable de bout en bout --
+# verifie au runtime : JVM demarree, `TweetyBridge()` construit, decision
+# de coherence PL reelle rendue. Le corps verbatim ci-dessous reste
+# byte-for-byte identique a l'amont : AUCUNE modification CoursIA du
+# corps, le branchement vit entierement dans la couche de compat.
+#
 # FORCE_RELOAD
 # argumentation_analysis/agents/core/logic/tweety_bridge.py
 """
