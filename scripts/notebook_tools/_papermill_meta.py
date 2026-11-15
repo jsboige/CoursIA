@@ -17,9 +17,17 @@ revienne pas a l'execution suivante.
 from __future__ import annotations
 
 
-def strip_stale_papermill_metadata(nb):
+def strip_stale_papermill_metadata(nb, cells=None):
     """Remove a pre-existing Papermill block from a notebook the executor is
     about to rewrite.
+
+    ``cells`` restricts the per-cell cleanup to the cells whose outputs the
+    executor actually rewrote (default: every cell). A single-cell executor
+    passes only the cell it re-ran: the other cells keep the outputs of the
+    run that produced them, so their blocks still describe that run and
+    removing them would be churn, not honesty. The notebook-level block is
+    always removed — it describes the whole-notebook pass, which no targeted
+    re-execution reproduces.
 
     The outputs and ``execution_count`` just written describe THIS run; a
     ``metadata.papermill`` left over from an earlier Papermill pass would still
@@ -44,7 +52,7 @@ def strip_stale_papermill_metadata(nb):
     if metadata:
         metadata.pop("papermill", None)
         metadata.pop("execution", None)
-    for cell in nb.get("cells", []) or []:
+    for cell in (nb.get("cells", []) if cells is None else cells) or []:
         cell_meta = cell.get("metadata")
         if not cell_meta:
             continue
