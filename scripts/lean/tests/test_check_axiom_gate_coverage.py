@@ -841,6 +841,29 @@ class TestRenameProof:
         assert rename_proven("HEAD", "Lean/GALOIS2/galois2_lean",
                               "Lean/GaloisRenamed2/galois2_lean") is True
 
+    def test_a_chained_rename_is_proven(self, tmp_path, monkeypatch):
+        """Deux renommages successifs : la filiation reste prouvable.
+
+        Cas mesure le 2026-11-15 : le repertoire parent a ete renomme deux
+        fois (``Lean/GOL`` -> ``Lean/GameOfLife`` puis ``Lean/JeuDeLaVie``).
+        La preuve ne peut pas s'arreter au premier hop -- sinon la garde
+        declare PERDU un lake dont la couverture n'a pas bouge.
+        """
+        from check_axiom_gate_coverage import rename_proven
+        run = self._init(tmp_path)
+        self._lake(tmp_path, where="Lean/GALOIS4/galois4_lean")
+        run("add", "-A")
+        run("commit", "-q", "-m", "init")
+        # noms differents au-dela de la casse : sur Windows, un renommage
+        # qui ne change que la casse echoue ("Invalid argument")
+        run("mv", "Lean/GALOIS4", "Lean/Galois4Hop")
+        run("commit", "-q", "-m", "rename 1")
+        run("mv", "Lean/Galois4Hop", "Lean/Galois4Final")
+        run("commit", "-q", "-m", "rename 2")
+        monkeypatch.chdir(tmp_path)
+        assert rename_proven("HEAD", "Lean/GALOIS4/galois4_lean",
+                              "Lean/Galois4Final/galois4_lean") is True
+
     def test_a_copied_lake_is_not_a_rename(self, tmp_path, monkeypatch):
         """Une copie n'est pas un deplacement : l'ancien chemin existe encore."""
         import shutil

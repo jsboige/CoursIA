@@ -361,8 +361,14 @@ def rename_proven(ref: str, old_path: str, new_path: str) -> bool:
     * the commit at which the old path disappeared from the tree
       (``git log --diff-filter=D``) ;
     * the rename entries of THAT commit (``git diff --name-status -M``) :
-      a ``R`` whose source lies under the old path and whose target lies
-      under the new path.
+      a ``R`` whose source lies under the old path.
+
+    A **chain** of renamings is followed, not a single hop: when the parent
+    directory is renamed twice in a row (``Lean/GOL`` -> ``Lean/GameOfLife``
+    -> ``Lean/JeuDeLaVie``, measured 2026-11-15), the first hop lands on an
+    intermediate path that is not the successor, and the proof has to walk
+    to the last hop to say anything (without it, the guard declares PERDU a
+    lake whose coverage never moved -- the same false loss, one hop deeper).
 
     A lake that was copied (same content, new path, old path still there) or
     recreated differently is NOT a rename: the old path is still present at
@@ -383,17 +389,32 @@ def _rename_proven_at(cwd: str, ref: str, old_path: str, new_path: str) -> bool:
     new = new_path.replace("\\", "/").rstrip("/")
     if not old or not new or old == new:
         return False
-    commit = _git("log", "-n", "1", "--diff-filter=D", "--format=%H", ref,
-                  "--", old).strip()
-    if not commit:
-        return False
-    out = _git("diff", "--name-status", "-M", f"{commit}^", commit)
-    for line in out.splitlines():
-        cols = line.split("\t")
-        if len(cols) >= 3 and cols[0].startswith("R"):
-            src, dst = cols[1].replace("\\", "/"), cols[2].replace("\\", "/")
-            if src.startswith(old + "/") and dst.startswith(new + "/"):
-                return True
+    current = old
+    seen: set[str] = set()
+    for _ in range(8):
+        if current in seen:
+            return False
+        seen.add(current)
+        commit = _git("log", "-n", "1", "--diff-filter=D", "--format=%H", ref,
+                      "--", current).strip()
+        if not commit:
+            return False
+        out = _git("diff", "--name-status", "-M", f"{commit}^", commit)
+        moved_to = None
+        for line in out.splitlines():
+            cols = line.split("\t")
+            if len(cols) >= 3 and cols[0].startswith("R"):
+                src = cols[1].replace("\\", "/")
+                dst = cols[2].replace("\\", "/")
+                if src == current or src.startswith(current + "/"):
+                    suffix = src[len(current):]
+                    moved_to = dst[: len(dst) - len(suffix)] if dst.endswith(suffix) else dst
+                    break
+        if moved_to is None:
+            return False
+        if moved_to == new or new.startswith(moved_to + "/"):
+            return True
+        current = moved_to
     return False
 
 
