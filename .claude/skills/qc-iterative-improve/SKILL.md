@@ -263,3 +263,5 @@ Le workflow est concu pour survivre aux redemarrages:
 ## Prochaines etapes
 {next_steps pour la prochaine iteration}
 ```
+
+Pièges mesurés (lecture d'un backtest, ordres, données, framework, outils) : [docs/qc/qc-pieges-mesures.md](../../../docs/qc/qc-pieges-mesures.md).

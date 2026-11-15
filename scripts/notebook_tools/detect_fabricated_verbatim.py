@@ -555,7 +555,7 @@ def _scan_notebook(path: Path, threshold: int = 1) -> dict:
                 # normalisee, on declare la fabrication. Securite anti-FP :
                 # on EXCLUT les fragments de forme `name=value` (assignations,
                 # references de parametres) qui ne sont pas des claims de
-                # sortie -- cf App-1-NQueens.ipynb cite `time_limit_s=60`
+                # sortie -- cf App-01-NQueens-Python.ipynb cite `time_limit_s=60`
                 # comme parametre interne, pas comme sortie. Idem pour les
                 # fragments purement operateurs (`a == b`, `--flag=value`).
                 # Le gating `=` couvre ce cas : le format `name = value`
