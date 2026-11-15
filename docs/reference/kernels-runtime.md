@@ -259,7 +259,7 @@ La figure du pilote est rendue par **plotters** (feature `evcxr`) en **SVG inlin
 
 ### Timings & timeouts
 
-Mesuré sur ce siège (WSL, cache cargo **chaud**) : un run complet du pilote (7 cellules code, dlx + plotters) ≈ **15–20 s**. Le coût dominant est la **compilation par cellule** d'evcxr, pas la résolution (la crate `dlx` résout le puzzle en ~14 µs). Le premier run (cache **froid**, compilation des crates de zéro) est plus long. **Timeout recommandé papermill/nbclient : 300 s** (marge ×15 sur le chaud ; couvre le froid sans sccache). `:sccache 1` / `:cache <Mo>` réduiraient le froid si un run le justifie.
+Mesuré sur ce siège (WSL, cache cargo **chaud**) : un run complet du pilote (dlx + plotters) ≈ **15–20 s**. Le coût dominant est la **compilation par cellule** d'evcxr, pas la résolution (la crate `dlx` résout le puzzle en ~14 µs). Le premier run (cache **froid**, compilation des crates de zéro) est plus long. **Timeout recommandé papermill/nbclient : 300 s** (marge ×15 sur le chaud ; couvre le froid sans sccache). `:sccache 1` / `:cache <Mo>` réduiraient le froid si un run le justifie.
 
 ### Papermill — pas de traducteur Rust (décision écrite)
 
