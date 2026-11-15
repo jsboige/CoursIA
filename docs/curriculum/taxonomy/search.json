@@ -162,12 +162,16 @@
       "depth": 1,
       "label_fr": "Proprietes des problemes de recherche",
       "label_en": "Properties of search problems",
-      "definition_fr": "Classification d'un probleme de recherche selon ses proprietes : totalement observable, deterministe, statique, discret, connu ; ces proprietes conditionnent le choix de l'algorithme.",
-      "definition_en": "Classifying a search problem by its properties: fully observable, deterministic, static, discrete, known; these properties drive the choice of algorithm.",
+      "definition_fr": "Classification d'un probleme de recherche selon ses proprietes : totalement observable, deterministe, statique, discret, agent unique ; ces proprietes conditionnent le choix de l'algorithme.",
+      "definition_en": "Classifying a search problem by its properties: fully observable, deterministic, static, discrete, single agent; these properties drive the choice of algorithm.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb",
-          "cell_id": "properties-section"
+          "cell_id": "properties-interpretation"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb",
+          "cell_id": "properties-table"
         }
       ],
       "prerequisites": [
@@ -489,8 +493,8 @@
       "depth": 1,
       "label_fr": "Programme de refroidissement",
       "label_en": "Cooling schedule",
-      "definition_fr": "Loi de decroissance de la temperature du recuit simule ; elle regit le compromis exploration/exploitation : refroidir vite fige dans un optimum local, refroidir lentement (T ~ c/log t) garantit la convergence au prix du temps de calcul.",
-      "definition_en": "Temperature decay law of simulated annealing; it governs the exploration/exploitation trade-off: fast cooling freezes in a local optimum, slow cooling (T ~ c/log t) guarantees convergence at compute cost.",
+      "definition_fr": "Loi de decroissance de la temperature du recuit simule ; elle regit le compromis exploration/exploitation : refroidir vite fige dans un optimum local, refroidir lentement limite ce risque ; la convergence du refroidissement logarithmique (T ~ c/log t) n'est garantie que sous hypotheses (constante c suffisante), pas pour toute loi de cette forme.",
+      "definition_en": "Temperature decay law of simulated annealing; it governs the exploration/exploitation trade-off: fast cooling freezes in a local optimum, slow cooling limits that risk; convergence of logarithmic cooling (T ~ c/log t) is guaranteed only under assumptions (sufficiently large constant c), not for every law of this form.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-04-LocalSearch.ipynb",
@@ -609,8 +613,8 @@
       "depth": 1,
       "label_fr": "Recherche iterative (iterative deepening) en jeux",
       "label_en": "Iterative deepening in games",
-      "definition_fr": "Approfondissement iteratif de la profondeur de recherche avec evaluation heuristique des etats non terminaux : bonne allocation du budget de temps et meilleur premier coup garanti a chaque pallier.",
-      "definition_en": "Iteratively deepening the search depth with heuristic evaluation of non-terminal states: good time-budget allocation and best-first-move guarantee at each completed tier.",
+      "definition_fr": "Approfondissement iteratif de la profondeur de recherche avec evaluation heuristique des etats non terminaux : allocation du budget de temps entre les paliers et conservation du resultat de la derniere profondeur achevee, sans garantie sur le meilleur coup reel du jeu.",
+      "definition_en": "Iteratively deepening the search depth with heuristic evaluation of non-terminal states: time budget allocated across tiers, retaining the result of the last completed depth, with no guarantee on the game's true best move.",
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch.ipynb",
@@ -656,7 +660,11 @@
       "citations": [
         {
           "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb",
-          "cell_id": "79692fea"
+          "cell_id": "mcts-intro-section"
+        },
+        {
+          "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb",
+          "cell_id": "mcts-node-class"
         }
       ],
       "prerequisites": [
