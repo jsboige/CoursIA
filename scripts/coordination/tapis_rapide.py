@@ -3,10 +3,15 @@
 
 Le tapis PROPOSE, il ne fait pas autorite : avant d'editer, la lane relance
 `check_lane_claim.py N --lane L`. Tout est decide en fonctions pures sur la lecture
-groupee de `gh_bulk`, seul module qui parle au reseau. Doc : docs/reference/tapis-rapide.md.
+groupee de `gh_bulk`, seul module qui parle au reseau -- sauf le parcage
+Origami (#26523), qui lit l'etat des plis d'un EPIC via le cache machine de
+`origami_parking` (deux appels groupes, au plus une fois toutes les 30 min).
+Doc : docs/reference/tapis-rapide.md.
 
 Usage : tapis_rapide.py --lane <machine:workspace> [--grains 8] [--json] [--jours 45]
-    [--cache-s 300] [--graine S] [--lecture <dossier>]   (sortie 0, ou 3 : lecture incomplete)
+    [--cache-s 300] [--graine S] [--lecture <dossier>] [--allow-stale]
+    (sorties : 0 tirage ; 3 lecture incomplete ; 4 main perime ou organe
+     divergent. Une mesure Origami en echec ne bloque pas le tirage -- fail-OPEN)
 """
 from __future__ import annotations
 
@@ -21,9 +26,9 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from coordination import frozen_campaigns, gh_bulk
+from coordination import frozen_campaigns, gh_bulk, tapis_origami
 from coordination.tapis_marqueurs import (
-    _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _dt, _iso, _rouverte,
+    _FENCE_RE, _INFO_LIVRE_RE, _MARQUEUR_RE, VISITE, Evt, _age, _dt, _iso, _rouverte,
     claims_ouverts, evenements, lane_de_pr)
 
 # Poids des familles, une ligne a changer pour regler la priorite. Ils restent
@@ -46,7 +51,8 @@ LABEL_CONSOLIDATION = "consolidation"
 LABELS_CONTENEUR = frozenset({"epic", "umbrella"})
 # Login partage : la lane habilitee a degeler se lit dans le marqueur, pas dans l'auteur.
 LANES_DEGEL = frozenset({"myia-ai-01:CoursIA", "myia-po-2025:CoursIA-2"})
-CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "RELACHEE", "PLAFOND", "RECLAMEE")
+CODES = ("LABEL", "GEL", "LIVREE", "MERGEE", "COUVERTE", "RELACHEE", "PLAFOND",
+         "ORIGAMI", "RECLAMEE")
 REPLI = "python scripts/pick_idle_grain.py --belt --lane {lane}"
 VERIF = "python scripts/check_lane_claim.py {n} --lane {lane}"
 
@@ -268,6 +274,17 @@ def etats(lecture: gh_bulk.Lecture, lane: str, maintenant: datetime,
     return resultat
 
 
+def _parquer(tous: list[Etat], parcs: dict[int, str]) -> None:
+    """Les EPICs Origami dont le pli suivant n'est pas deplie sortent du tirage.
+
+    Le parcage est applique **apres** les autres ecarts : celui qui gagne
+    reste le plus informatif pour la lane (un EPIC deja livre le reste livre).
+    """
+    for e in tous:
+        if e.numero in parcs and e.ecart is None:
+            e.ecart, e.motif = "ORIGAMI", parcs[e.numero]
+
+
 def graine_defaut(lane: str, maintenant: datetime) -> str:
     """Meme lane, meme tranche de 4 h : meme liste ; deux lanes : deux listes."""
     m = maintenant.astimezone(UTC)
@@ -365,11 +382,6 @@ def ordonner(etats_: list[Etat], lane: str, maintenant: datetime, grains: int,
     return file[:max(grains, 0)]
 
 
-def _age(maintenant: datetime, quand: str | None, unite_s: int) -> float | None:
-    d = _dt(quand)
-    return round((maintenant - d).total_seconds() / unite_s, 1) if d else None
-
-
 def rapport(lecture: gh_bulk.Lecture, etats_: list[Etat], file: list[Etat], lane: str,
             maintenant: datetime, graine: str) -> dict:
     """Les donnees du tirage, une seule fois : la sortie texte en derive."""
@@ -432,6 +444,15 @@ def texte(r: dict, source: str) -> str:
     comptes = ", ".join(f"{code} {len(v)}" for code, v in r["ecartees"].items())
     total = sum(len(v) for v in r["ecartees"].values())
     lignes.append(f"\nEcartees sans sonde : {comptes} (total {total})")
+    orig = r.get("origami_parking") or {}
+    if orig.get("measured"):
+        parcs = orig.get("parked") or []
+        detail = ", ".join(f"#{n}" for n in parcs[:8]) if parcs else "aucun"
+        suites = f" (+{len(parcs) - 8})" if len(parcs) > 8 else ""
+        lignes.append(f"Parcage Origami : {len(parcs)} EPIC(s) en attente de depliage "
+                      f"-- {detail}{suites}")
+    else:
+        lignes.append(f"Parcage Origami : NON MESURE ({orig.get('reason') or 'inconnu'})")
     return "\n".join(lignes)
 
 
@@ -454,25 +475,15 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
          maintenant: datetime | None = None) -> int:
     args = _parser().parse_args(argv)
     depot = Path(__file__).resolve().parents[2]
-    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE sur un main
-    # local en retard ou un module du tirage divergent d'origin/main. Import
-    # local et bloc compact : le conflit eventuel avec une PR parallele sur
-    # ce fichier reste trivial. Un rejeu --lecture est un diagnostic hors
-    # ligne : il ne sert pas de grains, la garde ne s'y applique pas.
+    # Garde de fraicheur (mandat 14/11) : le tirage se REFUSE (sortie 4, sans
+    # repli picker) sur un main local en retard ou un organe du tirage divergent
+    # d'origin/main ; un rejeu --lecture est hors ligne, pas de garde.
     fraicheur = None
     if not args.lecture:
         from coordination import main_freshness
-        fraicheur = main_freshness.garder(depot, allow_stale=args.allow_stale)
+        fraicheur = main_freshness.garder_et_dire(depot, allow_stale=args.allow_stale)
         if fraicheur["refuse"]:
-            for r in fraicheur["raisons"]:
-                print(f"TIRAGE REFUSE [{r['code']}] : {r['motif']} -- remede : {r['remede']}",
-                      file=sys.stderr)
-            sys.stdout.buffer.write((json.dumps(fraicheur, ensure_ascii=False, indent=1)
-                                     + "\n").encode("utf-8"))
             return 4  # pas le repli picker : il fait rejouer le meme incident
-        if fraicheur.get("outre_passe"):
-            print("TIRAGE SUR UN ETAT PERIME (--allow-stale) : "
-                  + " ; ".join(r["motif"] for r in fraicheur["raisons"]), file=sys.stderr)
     try:
         if args.lecture:
             lecture = gh_bulk.charger_depuis(args.lecture, depot, args.jours, run)
@@ -484,10 +495,17 @@ def main(argv: list[str] | None = None, run: gh_bulk.Run = gh_bulk.run_defaut,
         return 3
     # Un rejeu se tire a l'instant de sa lecture : memes ages de claims, meme graine.
     maintenant = maintenant or (args.lecture and _dt(lecture.lu_a)) or datetime.now(UTC)
+    # Parcage Origami (#24373) : un EPIC au pli non deplie n'est pas servi ;
+    # une mesure en panne ne bloque pas le tirage, elle se dit (fail-OPEN, #26528).
+    parcs, origami = tapis_origami.mesurer(lecture, reseau=not args.lecture)
+    if not origami.get("measured") and origami.get("active") and not args.lecture:
+        tapis_origami.dire_panne(origami)
     tous = etats(lecture, args.lane, maintenant, args.jours)
+    _parquer(tous, parcs)
     graine = args.graine or graine_defaut(args.lane, maintenant)
     file = ordonner(tous, args.lane, maintenant, args.grains, graine)
     r = rapport(lecture, tous, file, args.lane, maintenant, graine)
+    r["origami_parking"] = origami
     if fraicheur is not None:
         r["fraicheur"] = fraicheur  # le depassement --allow-stale se LIT dans le JSON
     source = f"dossier {args.lecture}" if args.lecture else "GitHub + origin/main local"

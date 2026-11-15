@@ -177,6 +177,29 @@ def garder(depot: str | Path, allow_stale: bool = False,
             "raisons": raisons}
 
 
+def garder_et_dire(depot: str | Path, allow_stale: bool = False) -> dict:
+    """La garde et son rendu pour le tapis : le verdict tel quel, imprime.
+
+    Le refus va sur ses deux canaux -- chaque raison sur stderr avec son
+    remede, le verdict complet en JSON sur stdout -- et l'appelant (le point
+    d'entree du tapis) rend le code 4, distinct du 3 « lecture incomplete »
+    qui pointe le repli picker : ici le repli serait le contournement. Un
+    outrepasse `--allow-stale` se dit sur stderr : il ne se prend pas en
+    silence. Le tapis attache ensuite le verdict au rapport JSON (`fraicheur`).
+    """
+    v = garder(depot, allow_stale=allow_stale)
+    if v["refuse"]:
+        for r in v["raisons"]:
+            print(f"TIRAGE REFUSE [{r['code']}] : {r['motif']} -- remede : {r['remede']}",
+                  file=sys.stderr)
+        sys.stdout.buffer.write((json.dumps(v, ensure_ascii=False, indent=1)
+                                 + "\n").encode("utf-8"))
+    if v.get("outre_passe"):
+        print("TIRAGE SUR UN ETAT PERIME (--allow-stale) : "
+              + " ; ".join(r["motif"] for r in v["raisons"]), file=sys.stderr)
+    return v
+
+
 def _texte(v: dict) -> str:
     if v.get("passe") == "pytest":
         return "garde inactive sous pytest (MAIN_FRESHNESS_FORCE pour la forcer)"
