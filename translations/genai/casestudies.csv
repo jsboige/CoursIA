@@ -1689,9 +1689,9 @@ The `RecipeState` class stores the diet, excluded ingredients, and number of gue
 **Objective**: extend `RecipeState` with these new attributes and create the corresponding update methods.
 
 **Hints**:
-- # Step 1: Add the attributes `difficulty`, `max_prep_time`, and `cuisine_type` in `__init__`
-- # Step 2: Create the methods `set_difficulty`, `set_max_prep_time`, and `set_cuisine`
-- # Hint: follow the existing pattern of the other attributes (type hints + default value)",,,,,,,e3057c4d9e6e52a7,4dbc9c4426840334,,,,,,,,,,,,,,
+- `# Step 1`: Add the attributes `difficulty`, `max_prep_time`, and `cuisine_type` in `__init__`
+- `# Step 2`: Create the methods `set_difficulty`, `set_max_prep_time`, and `set_cuisine`
+- `# Hint`: follow the existing pattern of the other attributes (type hints + default value)",,,,,,,e3057c4d9e6e52a7,71d60bc8ef83842b,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,26b00761,code,fr,147a59853e1b4967,"class ExtendedRecipeState(RecipeState):
     # TODO etudiant : enrichir l'etat avec les nouvelles preferences
     
@@ -1824,9 +1824,9 @@ The current plugins handle information collection and recipe generation, but no 
 **Objective**: create a `NutritionPlugin` class with an `estimate_nutrition` method annotated with `@kernel_function` that returns an estimate of calories per serving.
 
 **Hints**:
-- # Step 1: Define an approximate dictionary of calories per basic ingredient
-- # Step 2: Calculate the sum of calories and divide by the number of diners
-- # Hint: the dictionary can contain average values (e.g., chicken = 165 kcal/100g, rice = 130 kcal/100g)",,,,,,,0e71fb41693ce1da,65fcf3c89b748e51,,,,,,,,,,,,,,
+- `# Step 1`: Define an approximate dictionary of calories per basic ingredient
+- `# Step 2`: Calculate the sum of calories and divide by the number of diners
+- `# Hint`: the dictionary can contain average values (e.g., chicken = 165 kcal/100g, rice = 130 kcal/100g)",,,,,,,0e71fb41693ce1da,a1c35ec70d6d7dca,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,2772b5c3,code,fr,5d667c20e03d1d49,"class NutritionPlugin:
     """"""Plugin d'estimation nutritionnelle pour les recettes.""""""
     
@@ -2021,9 +2021,9 @@ The current workflow launches generation without checking that the constraints a
 **Objective**: write a function that detects inconsistencies (for example: vegan diet + request for cheese, negative number of guests, excluded ingredients that are part of the diet).
 
 **Hints**:
-- # Step 1: Define the validation rules (list of conditions to check)
-- # Step 2: Return a tuple `(est_valide, liste_erreurs)` to guide the user
-- # Hint: use if/elif conditions for each rule and accumulate error messages",,,,,,,ae401f350b00deaa,2e273de502a194ee,,,,,,,,,,,,,,
+- `# Step 1`: Define the validation rules (list of conditions to check)
+- `# Step 2`: Return a tuple `(est_valide, liste_erreurs)` to guide the user
+- `# Hint`: use if/elif conditions for each rule and accumulate error messages",,,,,,,ae401f350b00deaa,3fcd040c889645d7,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,7d996ec0,code,fr,ebf2616347378ace,"def valider_contraintes(state: RecipeState) -> tuple[bool, list[str]]:
     # TODO etudiant : implementer la validation des contraintes
     erreurs = []
