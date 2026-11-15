@@ -19,7 +19,6 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from attest_build_targets import (  # noqa: E402
-    build_argv,
     dependents_of,
     enumerate_modules,
     import_graph,
@@ -227,14 +226,13 @@ def test_le_jumeau_en_est_resolu_dans_les_deux_sens(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# argv
+# payload
 # ---------------------------------------------------------------------------
-
-def test_argv_du_build_cible_et_du_build_entier():
-    assert build_argv(["Demo.Alpha", "Demo.Delta"]) == [
-        "lake", "build", "Demo.Alpha", "Demo.Delta"
-    ]
-    assert build_argv([]) == ["lake", "build"]
+# Le payload de build n'est PAS construit ici : ce module est pur, et une
+# liste de commande posee hors de la main de l'organe est une voie directe
+# (refusee par `scripts/lean/check_lake_direct_invocation.py`). Le contrat
+# du payload est verifie la ou il est remis a l'organe :
+# `tests/test_attest_local_build_payload.py`.
 
 
 if __name__ == "__main__":  # pragma: no cover

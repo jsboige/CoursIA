@@ -974,7 +974,11 @@ def run_lake_build(lake_dir: Path, timeout: float,
         stdout_file = Path(tmp) / "stdout.txt"
         stderr_file = Path(tmp) / "stderr.txt"
         cmd = _lean_exec_argv(
-            attest_build_targets.build_argv(list(targets or [])),
+            # PAYLOAD remis a l'organe : la commande est decrite ICI, au
+            # point de la remise, jamais dans une liste de commande posee
+            # ailleurs (le garde `check_lake_direct_invocation.py` refuse
+            # qu'un argv de lake existe hors de la main de l'organe).
+            ["lake", "build"] + list(targets or []),
             lake_dir=lake_dir,
             timeout=timeout,
             stdout_file=stdout_file,

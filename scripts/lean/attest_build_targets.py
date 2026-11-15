@@ -376,12 +376,11 @@ def _relative_prefix(lake_root: Path, repo_root: Path) -> str:
     return rel.rstrip("/") + "/"
 
 
-def build_argv(targets: list[str]) -> list[str]:
-    """L'argv de `lake build` pour un ensemble de cibles.
-
-    Cible vide : `lake build` sans cible (le lac entier) -- c'est le mode
-    `all`, et le mode `auto` ne l'atteint que si la resolution echoue.
-    """
-    if not targets:
-        return ["lake", "build"]
-    return ["lake", "build"] + list(targets)
+# NOTE -- ce module est PUR : il resout des cibles, il ne COMPOSE aucune
+# commande. Le payload de build (`lake build <cibles>`) est construit par
+# l'organe qui la confie a `scripts/lean/lean_exec.py`, au point de la
+# remise : c'est la seule forme que le garde
+# `scripts/lean/check_lake_direct_invocation.py` accepte (liste de
+# commande remise DIRECTEMENT a un conducteur de l'organe). Un litteral
+# `["lake", "build"]` ici serait un argv de commande hors de la main de
+# l'organe -- c'est-a-dire une voie directe, que le garde refuse.
