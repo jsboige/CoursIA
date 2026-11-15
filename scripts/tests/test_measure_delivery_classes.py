@@ -13,6 +13,8 @@ doit tomber dans la classe que sa piece soutient, et dans aucune autre.
 import os
 import sys
 
+import pytest
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from audit.measure_delivery_classes import (  # noqa: E402
@@ -111,3 +113,129 @@ def test_table_rend_les_effectifs_et_les_deux_listes():
 def test_les_classes_declarees_sont_celles_du_rendu():
     for name in CLASSES:
         assert name in table({"repo": "r", "issues": 0, "rows": []})
+
+
+def test_collecte_partielle_signale_echec_et_conserve_succes(monkeypatch, capsys, tmp_path):
+    """Un quota épuisé n'est ni une preuve absente ni un census complet."""
+    import json
+    from audit import measure_delivery_classes as measure
+
+    monkeypatch.setattr(measure.cd, "list_open_issues", lambda repo: [
+        {"number": 1, "title": "inaccessible", "labels": []},
+        {"number": 2, "title": "lisible", "labels": []},
+    ])
+
+    def timeline(repo, number, label):
+        if number == 1:
+            raise RuntimeError("quota GitHub épuisé")
+        return [], []
+
+    monkeypatch.setattr(measure.cd, "timeline_facts", timeline)
+    monkeypatch.setattr(measure.cd, "issue_detail", lambda repo, number: {
+        "created_at": "2026-01-01T00:00:00Z", "body": "", "comments": [],
+    })
+    destination = tmp_path / "census.json"
+    rc = measure.main(["--repo", "fixture/repo", "--sleep", "0",
+                       "--json", str(destination)])
+    out = json.loads(destination.read_text(encoding="utf-8"))
+    rendered = capsys.readouterr().out
+
+    assert rc == 1
+    assert out["complete"] is False
+    assert out["errors"] == 1
+    assert out["issues"] == 2
+    assert out["rows"][0]["classe"] == "erreur"
+    assert out["rows"][1]["classe"] == "sans_preuve"
+    assert "INCOMPLET" in rendered
+    assert "#1" in rendered and "quota GitHub épuisé" in rendered
+    assert "sans_preuve" in rendered
+
+
+def test_collecte_complete_garde_rc_zero_et_json_lisible(monkeypatch, capsys, tmp_path):
+    import json
+    from audit import measure_delivery_classes as measure
+
+    monkeypatch.setattr(measure.cd, "list_open_issues", lambda repo: [
+        {"number": 2, "title": "lisible", "labels": []},
+    ])
+    monkeypatch.setattr(measure.cd, "timeline_facts", lambda *args: ([], []))
+    monkeypatch.setattr(measure.cd, "issue_detail", lambda *args: {
+        "created_at": "2026-01-01T00:00:00Z", "body": "", "comments": [],
+    })
+    destination = tmp_path / "census.json"
+    assert measure.main(["--repo", "fixture/repo", "--sleep", "0",
+                         "--json", str(destination)]) == 0
+    out = json.loads(destination.read_text(encoding="utf-8"))
+    assert out["complete"] is True
+    assert out["errors"] == 0
+    assert out["issues"] == 1
+    assert out["rows"][0]["classe"] == "sans_preuve"
+    assert "INCOMPLET" not in capsys.readouterr().out
+
+
+@pytest.mark.parametrize("response", [
+    RuntimeError("quota épuisé"),
+    {"title": "corps absent"},
+    {"body": None, "title": "corps illisible"},
+])
+def test_echec_lecture_pr_ne_devient_pas_absence_de_preuve(
+        monkeypatch, capsys, tmp_path, response):
+    """Le corps historique du renvoi ne remplace pas une lecture live échouée."""
+    import json
+    from audit import measure_delivery_classes as measure
+
+    monkeypatch.setattr(measure.cd, "list_open_issues", lambda repo: [
+        {"number": n, "title": "un travail", "labels": []} for n in (7, 8)
+    ])
+    monkeypatch.setattr(measure.cd, "timeline_facts", lambda repo, n, label: ([{
+        "pr_number": 99 if n == 7 else 100, "is_pr": True,
+        "merged_at": "2026-01-02T00:00:00Z", "state": "closed",
+        "body": f"Closes #{n}",
+    }], []))
+    monkeypatch.setattr(measure.cd, "issue_detail", lambda *args: {
+        "created_at": "2026-01-01T00:00:00Z", "body": "", "comments": [],
+    })
+
+    def pr_view(argv):
+        if argv[2] == "99":
+            if isinstance(response, Exception):
+                raise response
+            return response
+        return {"body": "Closes #8", "title": "livraison de 8"}
+
+    monkeypatch.setattr(measure.cd, "_gh_json", pr_view)
+    destination = tmp_path / "census.json"
+    assert measure.main(["--repo", "fixture/repo", "--sleep", "0",
+                         "--json", str(destination)]) == 1
+    out = json.loads(destination.read_text(encoding="utf-8"))
+    assert out["complete"] is False and out["errors"] == 1
+    assert out["rows"][0]["classe"] == "erreur"
+    assert "PR #99" in out["rows"][0]["detail"]
+    assert out["rows"][1]["verdict"] == "candidate"
+    assert out["rows"][1]["classe"] == "fermant"
+    rendered = capsys.readouterr().out
+    assert "INCOMPLET" in rendered and "PR #99" in rendered
+
+
+@pytest.mark.parametrize("body, expected", [("Closes #7", "fermant"),
+                                            ("", "sans_preuve")])
+def test_corps_pr_reellement_lu_soutient_le_classement(
+        monkeypatch, body, expected):
+    from audit import measure_delivery_classes as measure
+
+    monkeypatch.setattr(measure.cd, "list_open_issues", lambda repo: [
+        {"number": 7, "title": "un travail", "labels": []},
+    ])
+    monkeypatch.setattr(measure.cd, "timeline_facts", lambda *args: ([{
+        "pr_number": 99, "is_pr": True, "state": "closed",
+        "merged_at": "2026-01-02T00:00:00Z",
+    }], []))
+    monkeypatch.setattr(measure.cd, "issue_detail", lambda *args: {
+        "created_at": "2026-01-01T00:00:00Z", "body": "", "comments": [],
+    })
+    monkeypatch.setattr(measure.cd, "_gh_json", lambda argv: {
+        "body": body, "title": "corps courant",
+    })
+    out = measure.census("fixture/repo", sleep=0)
+    assert out["complete"] is True and out["errors"] == 0
+    assert out["rows"][0]["classe"] == expected

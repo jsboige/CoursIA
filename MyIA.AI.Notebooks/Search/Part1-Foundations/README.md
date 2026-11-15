@@ -68,7 +68,7 @@ La boîte à outils de graphes et la recherche continue, trois accrétions de Se
 
 - **[2b NetworkX](Search-02b-NetworkX.ipynb)** (+ [jumeau C#](Search-02b-NetworkX-CSharp.ipynb)) — **Boîte à outils de graphes** : `Graph`/`DiGraph`, DFS/BFS, Dijkstra, Bellman-Ford, centralités de degré, composantes connexes, MST, Floyd-Warshall ; matière optionnelle, utile dès la fin de Search-2, en parité structurelle avec QuikGraph (2c). Le jumeau C# refait la théorie from-scratch (`Dictionary` / listes d'adjacence pondérées) et ajoute le flot maximum (Ford-Fulkerson) plus une tranche 2 QuikGraph (parité lib-vs-lib sur la même instance) — distinct de 2c, parité #4956.
 - **[2c QuikGraph](Search-02c-QuikGraph.ipynb)** — Bibliothèque de graphes .NET **QuikGraph 2.5.0** (NuGet) : AdjacencyGraph / BidirectionalGraph / UndirectedGraph, DFS/BFS, Dijkstra, Bellman-Ford, centralités, composantes connexes, Edmonds-Karp (flot max), en parité avec NetworkX. Suppose .NET Interactive.
-- **[2d RRT](Search-02d-RRT-Recherche-Continue.ipynb)** — **Recherche continue** (from scratch : stdlib, numpy, matplotlib) : RRT (LaValle 1998) et RRT\* (Karaman & Rus 2010) — croissance par échantillonnage aléatoire, biais vers le but, contrôle de collision, rewiring. **Optimalité asymptotique mesurée** : ratio longueur/borne inférieure contre budget N (médiane de 5 graines) — RRT plat à 1,27 contre RRT\* 1,08 → 1,02.
+- **[2d RRT en Python](Search-02d-RRT-Recherche-Continue.ipynb)** et **[C#](Search-02d-RRT-Recherche-Continue-CSharp.ipynb)** — recherche continue, collisions exactes, RRT et reparentage RRT* ; comparaison à budget fini sur cinq graines, sans preuve expérimentale d’optimalité asymptotique.
 
 ### Autour de 03
 
@@ -83,6 +83,7 @@ Cette section absorbe le contenu durable de l'ancienne Partie 3, centrée sur la
 ### Autour de 05
 
 - **[5b Natural Evolution Strategies](Search-05b-NaturalEvolutionStrategies.ipynb)** — Stratégies d'évolution naturelles (Wierstra *et al.*, JMLR 2014) : on fait évoluer une **distribution** et non une population. Gradient simple contre gradient naturel sur la figure 1 du papier (80/300 tirages en échec contre 0/300), invariance par transformation monotone à la précision machine, **xNES** et **SNES** réglés sur la table 1, banc décisif ellipsoïde séparable puis tourné, confrontation à CMA-ES (~2,3× plus rapide que xNES), équivalence au premier ordre avec le rang-μ de CMA-ES vérifiée en O(η²).
+  - [Version C#](Search-05b-NaturalEvolutionStrategies-CSharp.ipynb) : gradients, xNES/SNES et CMA-ES avec MetaGeneticSharp natif, banc par rotation et figures SVG.
 
 ### Autour de 09
 
@@ -154,6 +155,10 @@ Le notebook [Search-2c-QuikGraph](Search-02c-QuikGraph.ipynb) ferme la boucle c�
 [![Réseau routier 5×5 : arêtes pondérées colorées, plus court chemin Dijkstra en rouge](assets/readme/search02b-networkx.png)](Search-02b-NetworkX.ipynb)
 
 La règle pratique : **QuikGraph 2.5.0** (fork KeRNeLith, NuGet) couvre les algorithmes classiques (DFS, BFS, Dijkstra, Bellman-Ford, A\*, Edmonds-Karp, Tarjan, MST, Floyd-Warshall) et **suffit pour tous les notebooks Search 1-11** si l'on travaille en C# — son **verdict honnête** est qu'il ne fournit pas les centralités élaborées (betweenness, closeness, PageRank) ni la détection de communautés (Louvain), qu'il faut alors implémenter à la main ou brancher une autre bibliothèque.
+
+### Descente sous budget : deux langages
+
+[Python](Search-11d-Descente-Sous-Budget.ipynb) et [C#](Search-11d-Descente-Sous-Budget-CSharp.ipynb) confrontent descente à un flip, borne LP et optimum exact ; les générateurs aléatoires diffèrent, mais les budgets sont identiques. Un arrêt sur budget ne certifie pas un blocage.
 
 ## Ponts vers les autres séries
 
