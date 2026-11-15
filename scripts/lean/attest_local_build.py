@@ -68,6 +68,8 @@ et l'identifiant du commentaire poste (vide si rien n'a ete poste).
 from __future__ import annotations
 
 import argparse
+import base64
+import fnmatch
 import json
 import os
 import shutil
@@ -90,16 +92,33 @@ DEFAULT_REPO = "jsboige/CoursIA"
 MANIFEST_PATH = LEAN_DIR / "ci_lakes.json"
 LEAN_EXEC = LEAN_DIR / "lean_exec.py"
 
-#: Cache chaud de reference : le lake-pivot qui porte le checkout Mathlib
-#: partage par junction (cf `docs/lean/coordinator-workflow.md`).
-CACHE_PIVOT = (
-    REPO_ROOT
-    / "MyIA.AI.Notebooks"
-    / "SymbolicAI"
-    / "Lean"
-    / "GameOfLife"
-    / "conway_lean"
-)
+# --------------------------------------------------------------------------
+# #26630 -- le cache chaud se RESOUT par toolchain, il n'est plus fige.
+#
+# Un seul pivot (`GameOfLife/conway_lean`, toolchain v4.33.0) rendait trois lakes
+# INMERGEABLES PAR CONSTRUCTION : `formal_logic` (v4.33.1),
+# `socialchoicepeters` (v4.32.1) et `conwaycgt` (v4.33.0-rc1) ne peuvent pas
+# emprunter le cache d'une autre toolchain -- le build est produit par la
+# toolchain du lake. Instance : #25236, dont `formal_logic` etait refuse
+# AVANT tout build, alors que les trois autres lakes de la meme PR etaient
+# verts en local.
+#
+# Le pivot n'est donc plus un CHEMIN FIGE : c'est le lac du clone courant dont
+# le `lean-toolchain` porte la toolchain du lake atteste ET dont le
+# `.lake/packages` est chaud. La table se resout a l'EXECUTION : un lake
+# prechauffe devient pivot de sa toolchain, sans table a maintenir.
+#
+# Un lake dont la toolchain n'a aucun cache chaud n'est pas un echec de build :
+# l'organe sort avec le motif distinct `no-warm-cache-for-toolchain` et la
+# commande de prechauffage.
+# --------------------------------------------------------------------------
+
+#: Motif distinct rendu quand la toolchain du lake n'a aucun cache chaud.
+NO_WARM_CACHE = "no-warm-cache-for-toolchain"
+LAKE_NOT_IN_CLONE = "lake-absent-du-clone"
+
+#: Sous-dossier qui porte le checkout Mathlib chaud (cible de la junction).
+WARM_PACKAGES = Path(".lake") / "packages"
 
 #: Timeout du build, en secondes. Deux modules a cache chaud prennent ~90 s
 #: (mesure du coordinateur) ; le budget laisse une marge large sans devenir
@@ -259,6 +278,331 @@ def _same_file(a: Path, b: Path) -> bool:
     if left is None or right is None:
         return False
     return left.strip() == right.strip()
+
+
+def _toolchain_of(lake_dir: Path) -> str | None:
+    """Toolchain d'un lake (contenu de `lean-toolchain`), ou `None`."""
+    raw = _read_if_present(lake_dir / "lean-toolchain")
+    return raw.strip() if raw is not None else None
+
+
+def cache_pivot_candidates(manifest: dict) -> list[Path]:
+    """Repertoires du clone courant susceptibles de porter un cache chaud.
+
+    Tous les lakes du manifeste sont candidats : la table de pivots se resout
+    a l'EXECUTION, un lake prechauffe devient pivot de sa toolchain sans
+    qu'une table soit a maintenir dans le code (#26630).
+    """
+    out: list[Path] = []
+    for entry in manifest.get("lakes") or []:
+        if not isinstance(entry, dict):
+            continue
+        project_path = entry.get("project-path")
+        if isinstance(project_path, str) and project_path:
+            out.append(REPO_ROOT / project_path)
+    return out
+
+
+def _toolchain_at_head(repo: str, head: str, project_path: str) -> str:
+    """Toolchain du lake TELLE QU'ELLE EST a la tete de la PR.
+
+    Un lake AJOUTE par la PR n'existe pas dans le clone courant : sa
+    toolchain se lit sur le contenu de la tete (le fichier
+    `lean-toolchain` est un chemin declare par le manifeste).
+    """
+    try:
+        payload = gh_json(
+            repo,
+            "repos/{}/contents/{}/lean-toolchain?ref={}".format(repo, project_path, head),
+        )
+    except OrganError:
+        # Contenu illisible : la toolchain reste INCONNUE, l'appelant decide.
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    content = payload.get("content")
+    if not isinstance(content, str):
+        return ""
+    try:
+        return base64.b64decode(content).decode("utf-8").strip()
+    except (ValueError, UnicodeDecodeError):
+        return ""
+
+
+def _pivot_candidates(base_manifest: dict, head_manifest: dict | None) -> list[Path]:
+    """Candidats-pivot : les lakes de `main` PLUS ceux declares par la tete.
+
+    Un lake AJOUTE par la PR peut avoir ete prechauffe dans le clone courant
+    ; il est alors un pivot legitime pour sa toolchain. Le candidat qui n'a
+    pas de repertoire dans le clone est ignore a la resolution (pas de
+    `lean-toolchain` lisible).
+    """
+    out = list(cache_pivot_candidates(base_manifest))
+    vus = {p.resolve() for p in out if p.exists()}
+    for extra in cache_pivot_candidates(head_manifest or {}):
+        if extra.exists() and extra.resolve() not in vus:
+            vus.add(extra.resolve())
+            out.append(extra)
+    return out
+
+
+def _declared_packages(lake_dir: Path) -> list[str]:
+    """Noms des paquets declares par le `lake-manifest.json` d'un lake.
+
+    Manifeste absent, illisible ou sans tableau `packages` : la liste est
+    VIDE. L'exigence porte alors sur le critere general (`.lake/packages`
+    non vide) -- on n'invente pas de paquet a exiger.
+    """
+    manifest = lake_dir / "lake-manifest.json"
+    try:
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(payload, dict):
+        return []
+    packages = payload.get("packages")
+    if not isinstance(packages, list):
+        return []
+    names: list[str] = []
+    for entry in packages:
+        if not isinstance(entry, dict):
+            continue
+        name = entry.get("name")
+        if isinstance(name, str) and name:
+            names.append(name)
+    return names
+
+
+def _package_is_resolved(package_dir: Path, name: str) -> bool:
+    """Le paquet `name` est-il reellement RESOLU sous `.lake/packages/` ?
+
+    Un repertoire vide traine (lac ouvert puis abandonne, `cache get`
+    interrompu, paquet supprime) : lake le voit comme un paquet et va le
+    re-resoudre -- donc le re-telecharger, donc lancer git DANS le depot
+    englobant. C'est l'incident mesure le 14/11 sur ai-01 (fetch et checkout
+    tentes dans `D:/CoursIA`).
+
+    La preuve de resolution :
+    - un paquet `git` a son `.git` (le checkout) ou son `lakefile.*` ;
+    - Mathlib se COMPILE : le build deja fait se lit a
+      `.lake/packages/mathlib/.lake/build`. Sans lui, le paquet est present
+      mais incomplet -- et c'est precisement lui qu'il faut recompiler.
+    """
+    if not package_dir.is_dir():
+        return False
+    if name == "mathlib":
+        return (package_dir / ".lake" / "build").is_dir()
+    if (package_dir / ".git").exists():
+        return True
+    return any(package_dir.glob("lakefile.*"))
+
+
+def _packages_absent(manifest_owner: Path, packages_dir: Path) -> list[str]:
+    """Paquets declares par `manifest_owner` et NON materialises dans
+    `packages_dir`.
+
+    Le manifeste peut venir d'un lake et le dossier de paquets d'un autre :
+    c'est la question qui compte -- « le pivot sait-il servir les paquets
+    que le lake demande ? ». Liste VIDE = rien ne manque.
+    """
+    missing: list[str] = []
+    for name in _declared_packages(manifest_owner):
+        package_dir = packages_dir / name
+        if not package_dir.is_dir():
+            missing.append("{} absent".format(name))
+        elif not _package_is_resolved(package_dir, name):
+            missing.append("{} incomplet".format(name))
+    return missing
+
+
+def _pivot_is_warm(candidate: Path, lake_dir: Path) -> tuple[bool, str]:
+    """Le cache du candidat est-il chaud ET complet ?
+
+    Renvoie (ok, motif). Le motif nomme le paquet qui manque : sans lui, un
+    verdict « aucun cache chaud » ne dit pas POURQUOI aucun pivot n'a ete
+    retenu.
+    """
+    packages_dir = candidate / WARM_PACKAGES
+    if not packages_dir.is_dir():
+        return False, ".lake/packages absent"
+    materialises = [
+        p for p in packages_dir.iterdir()
+        if p.is_dir() and not p.name.startswith(".")
+    ]
+    if not materialises:
+        return False, "packages vides"
+    # Ce que le CANDIDAT declare doit etre la, resolu.
+    missing = _packages_absent(candidate, packages_dir)
+    if missing:
+        return False, "packages incomplets : {}".format(", ".join(missing))
+    # Ce que le LAKE DEMANDE doit etre la aussi : sinon lake va chercher
+    # le paquet manquant -- et l'ecrire dans le repertoire vers lequel la
+    # junction pointe, c'est-a-dire DANS le clone principal.
+    missing = _packages_absent(lake_dir, packages_dir)
+    if missing:
+        return False, "packages du lake non servis : {}".format(", ".join(missing))
+    return True, ""
+
+
+def resolve_cache_pivot(lake_dir: Path, candidates: list[Path]) -> dict:
+    """Pivot de cache chaud applicable a `lake_dir`, resolu a l'execution.
+
+    Un pivot vaut si sa toolchain est la MEME que celle du lake ET si son
+    `.lake/packages` est chaud **et complet** dans le clone courant. La
+    comparaison de GRAPHE (#25370) reste faite ensuite, par
+    `check_cache_compatibility` : la toolchain est une condition
+    NECESSAIRE, pas suffisante.
+
+    « Chaud » se MESURE : un `.lake/packages` vide ou partiel passe pour
+    un cache chaud, et lake va alors re-resoudre les paquets manquants --
+    donc lancer git dans le depot englobant et ecrire dans le clone
+    principal a travers la junction (incident mesure le 14/11 sur ai-01).
+    Un candidat incomplet est donc ECARTE, avec son motif.
+
+    Un lake sans pivot applicable n'est pas un echec de build : le motif
+    distinct `no-warm-cache-for-toolchain` est rendu, avec la commande de
+    prechauffage (#26630).
+    """
+    toolchain = _toolchain_of(lake_dir)
+    if not toolchain:
+        return {"ok": False, "reason": "lean-toolchain absent du lake"}
+    warm = []
+    rejects: list[str] = []
+    for candidate in candidates:
+        if candidate == lake_dir:
+            continue
+        if _toolchain_of(candidate) != toolchain:
+            continue
+        ok, why = _pivot_is_warm(candidate, lake_dir)
+        if not ok:
+            rejects.append("{} ecarte : {}".format(candidate.name, why))
+            continue
+        warm.append(candidate)
+    if not warm:
+        return {
+            "ok": False,
+            "reason": NO_WARM_CACHE,
+            "toolchain": toolchain,
+            "detail": "aucun cache chaud pour la toolchain {} dans le clone courant{}".format(
+                toolchain,
+                " ; " + " | ".join(rejects) if rejects else "",
+            ),
+            "rejects": rejects,
+        }
+    return {
+        "ok": True,
+        "pivot": str(warm[0]),
+        "toolchain": toolchain,
+        "pivots": [str(p) for p in warm],
+        "rejects": rejects,
+    }
+
+
+def prewarm_plan(lake: dict, *, head: str, timeout: float) -> dict:
+    """Commande de prechauffage du cache chaud d'un lake (#26630).
+
+    Le prechauffage se fait dans un WORKTREE DETACHE a la tete de la PR : sur
+    un lac au paquet vide, `lake` re-resout et lance git dans le depot
+    ENCLOSANT -- dans le clone principal, le geste polluerait le clone de
+    travail de la lane et concurrence les autres gestes de la machine.
+
+    Les commandes passent par `lean_exec.py` (budget machine-wide, une lake a
+    la fois, plafond memoire) : ce fichier ne lance aucun processus lake lui
+    meme. Les marqueurs `<stdout>` / `<stderr>` sont a remplacer par des
+    chemins reels.
+    """
+    worktree = "<worktree-detache>"
+    lake_dir = "{}/{}".format(worktree, lake.get("project-path") or "")
+
+    def _cmd(payload: list[str]) -> list[str]:
+        return _lean_exec_argv(
+            payload,
+            lake_dir=Path(lake_dir),
+            timeout=timeout,
+            stdout_file=Path("<stdout>"),
+            stderr_file=Path("<stderr>"),
+        )
+
+    return {
+        "worktree": [
+            "git",
+            "-C",
+            str(REPO_ROOT),
+            "worktree",
+            "add",
+            "--detach",
+            worktree,
+            head,
+        ],
+        "cache_get": _cmd(["lake", "exe", "cache", "get"]),
+        "build": _cmd(["lake", "build"]),
+        "note": (
+            "prechauffage dans un worktree DETACHE, via lean_exec.py ; "
+            "sur un lac au paquet vide, lake re-resout et lance git dans le "
+            "depot englobant"
+        ),
+    }
+
+
+def manifest_at_head(repo: str, head: str) -> dict | None:
+    """Manifeste `ci_lakes.json` tel qu'il est a la TETE de la PR.
+
+    Le manifeste lu doit etre celui de la tete : une PR qui AJOUTE un lake
+    (#26399) ne l'atteste jamais si l'organe lit celui de `main` -- le lake
+    neuf est precisement le seul que la PR construit (#26630). `None` si le
+    manifeste est absent ou illisible a la tete : l'appelant refute.
+    """
+    payload = gh_json(
+        repo,
+        "repos/{}/contents/scripts/lean/ci_lakes.json?ref={}".format(repo, head),
+    )
+    if not isinstance(payload, dict):
+        return None
+    content = payload.get("content")
+    if not isinstance(content, str):
+        return None
+    try:
+        raw = base64.b64decode(content).decode("utf-8")
+    except (ValueError, UnicodeDecodeError):
+        return None
+    try:
+        manifest = json.loads(raw)
+    except json.JSONDecodeError:
+        return None
+    return manifest if isinstance(manifest, dict) else None
+
+
+def select_lakes(files: list[str], head_manifest: dict, base_manifest: dict | None) -> list[dict]:
+    """Lakes a attester : ceux que la PR touche, plus ceux qu'elle AJOUTE.
+
+    Deux corrections par rapport a `lake_matrix_dispatch.changed_lakes` :
+
+    1. le manifeste est celui de la TETE -- un lake ajoute par la PR y est
+       declare ;
+    2. l'expansion « un fichier du gate -> TOUS les lakes » du dispatcher CI
+       ne s'applique PAS a l'attestation : toucher `ci_lakes.json` ou le
+       workflow doit attester les lakes TOUCHES et les lakes AJOUTES, pas les
+       36 lakes du manifeste. Mesure : dry-run de #26399, qui echouait sur
+       onze lakes que la PR ne touche pas, faute de cache (#26630).
+    """
+    entries = [e for e in (head_manifest.get("lakes") or []) if isinstance(e, dict)]
+    base_names = set()
+    for entry in (base_manifest or {}).get("lakes") or []:
+        if isinstance(entry, dict) and entry.get("lake"):
+            base_names.add(str(entry["lake"]))
+    selected: dict[str, dict] = {}
+    for entry in entries:
+        name = str(entry.get("lake") or "")
+        for pattern in entry.get("paths") or []:
+            if any(fnmatch.fnmatch(f, pattern) for f in files):
+                if name:
+                    selected[name] = entry
+                break
+    for entry in entries:
+        name = str(entry.get("lake") or "")
+        if name and name not in base_names:
+            selected[name] = entry
+    return [e for e in entries if str(e.get("lake")) in selected]
 
 
 # --------------------------------------------------------------------------
@@ -744,12 +1088,21 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         )
     head = pr_head(repo, pr)
     files = pr_files(repo, pr)
-    lakes = lakes_for(files)
+    # Le manifeste de BASE est celui du clone (main) ; le manifeste de la PR
+    # est celui de sa TETE : c'est lui qui declare les lakes ajoutes (#26630).
+    base_manifest = json.loads(MANIFEST_PATH.read_text(encoding="utf-8"))
+    head_manifest = manifest_at_head(repo, head)
+    manifest_source = "tete"
+    if head_manifest is None:
+        head_manifest = base_manifest
+        manifest_source = "clone"
+    lakes = select_lakes(files, head_manifest, base_manifest)
     result = {
         "pr": pr,
         "repo": repo,
         "head": head,
         "files": len(files),
+        "manifest_source": manifest_source,
         "lakes": [lake["lake"] for lake in lakes],
         "posted": False,
         "comment_id": "",
@@ -766,19 +1119,52 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         # Le dry-run rend le verdict de cache SANS construire ni modifier
         # quoi que ce soit : c'est ce qui prouve, avant meme le build, que
         # le cache chaud s'applique a ce lake (ou nomme le paquet fautif).
-        # Il lit les lakes du CHECKPOINT COURANT, pas de la tete de la PR :
-        # un diff `.lean` ne change ni la toolchain ni le manifeste.
+        # Il lit les lakes du CHECKPOINT COURANT (le cache chaud est un
+        # etat de la machine, pas de la PR) ; le MANIFESTE, lui, est celui
+        # de la tete de la PR (#26630).
         result["cache_check"] = []
+        candidates = _pivot_candidates(base_manifest, head_manifest)
         for lake in lakes:
-            verdict = check_cache_compatibility(
-                REPO_ROOT / lake["project-path"], CACHE_PIVOT
-            )
+            lake_dir = REPO_ROOT / lake["project-path"]
+            pivot = resolve_cache_pivot(lake_dir, candidates)
+            if not pivot.get("ok"):
+                reason = pivot.get("reason", "")
+                entry = {
+                    "lake": lake["lake"],
+                    "ok": False,
+                    "reason": reason,
+                    "checks": [],
+                }
+                if reason == NO_WARM_CACHE:
+                    entry["toolchain"] = pivot.get("toolchain", "")
+                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                elif not lake_dir.is_dir() and "lean-toolchain absent" in reason:
+                    # Lake AJOUTE par la PR : il n'existe pas dans le clone
+                    # courant. Le verdict de cache ne peut pas etre rendu
+                    # ici -- il le sera sur le worktree de la tete, ou le
+                    # lake existe. On le dit distinctement, avec la commande
+                    # de prechauffage (#26630).
+                    entry["reason"] = LAKE_NOT_IN_CLONE
+                    entry["toolchain"] = _toolchain_at_head(
+                        repo, head, lake.get("project-path") or ""
+                    )
+                    entry["detail"] = (
+                        "le lake est declare par la PR et n'existe pas dans le "
+                        "clone courant : le verdict de cache se rendra sur le "
+                        "worktree de la tete"
+                    )
+                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                result["cache_check"].append(entry)
+                continue
+            verdict = check_cache_compatibility(lake_dir, Path(pivot["pivot"]))
             result["cache_check"].append(
                 {
                     "lake": lake["lake"],
                     "ok": bool(verdict.get("ok")),
                     "reason": verdict.get("reason", ""),
                     "checks": verdict.get("checks", []),
+                    "pivot": pivot["pivot"],
+                    "toolchain": pivot.get("toolchain", ""),
                 }
             )
         # Le verdict est explicite : `ok` et `reason` sont TOUJOURS poses.
@@ -788,12 +1174,28 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         mauvais = [c for c in result["cache_check"] if not c["ok"]]
         if mauvais:
             result["ok"] = False
-            result["reason"] = "cache chaud non applicable : {}".format(
-                ", ".join(
-                    "{} ({})".format(c["lake"], c["reason"] or "raison non nommee")
-                    for c in mauvais
+            sans_cache = [
+                c for c in mauvais
+                if c.get("reason") in (NO_WARM_CACHE, LAKE_NOT_IN_CLONE)
+            ]
+            if sans_cache:
+                # Motif DISTINCT : la toolchain du lake n'a aucun cache chaud.
+                # L'organe ne conclut pas, il donne la commande de
+                # prechauffage (#26630).
+                result["reason"] = "cache chaud indisponible pour la toolchain : {}".format(
+                    ", ".join(
+                        "{} ({})".format(c["lake"], c.get("toolchain") or "?")
+                        for c in sans_cache
+                    )
                 )
-            )
+                result["prewarm"] = [c["prewarm"] for c in sans_cache if c.get("prewarm")]
+            else:
+                result["reason"] = "cache chaud non applicable : {}".format(
+                    ", ".join(
+                        "{} ({})".format(c["lake"], c["reason"] or "raison non nommee")
+                        for c in mauvais
+                    )
+                )
         else:
             result["ok"] = True
             result["reason"] = "cache chaud applicable : {}".format(
@@ -828,9 +1230,26 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
             )
         created = True
         builds = []
+        candidates = _pivot_candidates(base_manifest, head_manifest)
         for lake in lakes:
+            lake_dir = worktree / lake["project-path"]
+            pivot = resolve_cache_pivot(lake_dir, candidates)
+            if not pivot.get("ok"):
+                entry = {
+                    "lake": lake["lake"],
+                    "ok": False,
+                    "reason": pivot.get("reason", ""),
+                    "errors": [],
+                }
+                if pivot.get("reason") == NO_WARM_CACHE:
+                    entry["toolchain"] = pivot.get("toolchain", "")
+                    entry["prewarm"] = prewarm_plan(lake, head=head, timeout=timeout)
+                builds.append(entry)
+                continue
             builds.append(
-                build_lake(lake, worktree, CACHE_PIVOT, timeout, jobs=jobs, budget=budget)
+                build_lake(
+                    lake, worktree, Path(pivot["pivot"]), timeout, jobs=jobs, budget=budget
+                )
             )
         result["builds"] = builds
         # Les erreurs nommees de tous les builds : le diagnostic du build
@@ -839,6 +1258,22 @@ def attest(pr: int, repo: str, timeout: float, dry_run: bool,
         failed = [b for b in builds if not b.get("ok")]
         if failed:
             result["ok"] = False
+            sans_cache = [
+                b for b in failed
+                if b.get("reason") in (NO_WARM_CACHE, LAKE_NOT_IN_CLONE)
+            ]
+            if sans_cache:
+                # Ce n'est pas un echec de build : la toolchain du lake n'a
+                # aucun cache chaud. L'organe ne conclut pas, il nomme la
+                # commande de prechauffage (#26630).
+                result["reason"] = "cache chaud indisponible pour la toolchain : {}".format(
+                    ", ".join(
+                        "{} ({})".format(b.get("lake"), b.get("toolchain") or "?")
+                        for b in sans_cache
+                    )
+                )
+                result["prewarm"] = [b["prewarm"] for b in sans_cache if b.get("prewarm")]
+                return result
             violations = [
                 "{} : {}".format(b.get("lake"), b.get("budget_violation"))
                 for b in failed
@@ -968,6 +1403,15 @@ def main(argv: list[str] | None = None) -> int:
                     result["pr"], result.get("reason", "raison inconnue")
                 )
             )
+        # La commande de prechauffage est PARTIE du verdict : un motif
+        # « pas de cache chaud » sans la commande qui le remedie laisse
+        # l'interlocuteur sans geste (#26630).
+        for plan in result.get("prewarm") or []:
+            print("[ATTEST] prechauffage : {}".format(plan.get("note", "")))
+            for cle in ("worktree", "cache_get", "build"):
+                argv = plan.get(cle) or []
+                if argv:
+                    print("  {} : {}".format(cle, " ".join(str(a) for a in argv)))
     return 0 if result.get("ok") else 1
 
 

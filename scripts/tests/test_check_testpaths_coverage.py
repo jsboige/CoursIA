@@ -570,21 +570,40 @@ def test_scripts_workflow_triggers_native_decide_changes_without_scoping_main_pu
     # Le job reste sur le parc auto-heberge. Depuis #26386 le `runs-on` est une
     # forme hybride auditee : la jambe `push` vise le slot reserve de main
     # {self-hosted, coursia-main, coursia-linux}, le repli vise le pool des PR
-    # {self-hosted, coursia-ephemeral, coursia-linux}. On asserte les DEUX
-    # jambes -- pas la chaine -- pour que le repli ne puisse pas glisser vers
-    # `ubuntu-latest` sans que le test le voie.
+    # {self-hosted, coursia-ephemeral, coursia-linux}. Depuis #21978 une jambe
+    # LOURDE ({self-hosted, coursia-persistent, coursia-linux}) peut
+    # s'intercaler entre les deux : elle n'est atteinte que si un operateur
+    # pose la variable de depot `CI_HEAVY_PERSISTENT` (absente par defaut),
+    # et sa forme est auditee par
+    # `scripts/ci/check_self_hosted_runner_policy.py`.
+    # On asserte les JAMBES (leur role et leur ordre), pas la chaine entiere :
+    # le repli ne peut pas glisser vers `ubuntu-latest`, et une jambe
+    # intermediaire ne peut pas ouvrir un pool non declare.
+    MAIN_SLOT = ["self-hosted", "coursia-main", "coursia-linux"]
+    PR_POOL = ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+    HEAVY_FAMILY = ["self-hosted", "coursia-persistent", "coursia-linux"]
     runs_on = job["runs-on"]
     if isinstance(runs_on, list):
-        assert runs_on == ["self-hosted", "coursia-ephemeral", "coursia-linux"]
+        assert runs_on == PR_POOL
     else:
         assert "github.event_name == 'push'" in str(runs_on), (
             "la forme hybride doit rester gardee par l'evenement -- sans la "
             "garde, la jambe du slot reserve de main serait atteinte par toute PR"
         )
-        assert _jeux_de_labels_runs_on(runs_on) == [
-            ["self-hosted", "coursia-main", "coursia-linux"],
-            ["self-hosted", "coursia-ephemeral", "coursia-linux"],
-        ]
+        jeux = _jeux_de_labels_runs_on(runs_on)
+        assert jeux[0] == MAIN_SLOT, (
+            "la premiere jambe est le slot reserve de main -- la chaine "
+            f"commence par {jeux[0]}"
+        )
+        assert jeux[-1] == PR_POOL, (
+            "la derniere jambe est le repli sur le pool des PR -- le repli "
+            f"est {jeux[-1]}"
+        )
+        for jambe in jeux[1:-1]:
+            assert jambe == HEAVY_FAMILY, (
+                "une jambe intermediaire ne peut viser que la famille "
+                f"lourde auditee -- trouve {jambe}"
+            )
 
 
 def test_adk_job_targets_existing_refactor_files_for_run_and_collection() -> None:
