@@ -831,6 +831,10 @@ TRANCHE1: list[Guard] = [
         source="docs-link-check.yml",
         paths=[
             "CLAUDE.md", "index.md", "PARCOURS.md",
+            # Quarto root entry points (#26457): scanned as single files, so the
+            # gate must fire when they change. Mirror of SCAN_SCOPES; pinned by
+            # `test_every_declared_scope_is_reachable_from_the_gate`.
+            "index.qmd", "parcours.qmd",
             # `.claude/agents/**` and `.claude/skills/**` were scanned by the
             # organ since #7422 but watched by no gate path: editing a sub-agent
             # or skill definition never ran check-links (#15867, found by the
@@ -847,6 +851,16 @@ TRANCHE1: list[Guard] = [
             # Book inventory (#18899): scanned as a single file, so the gate
             # must fire when it changes. Mirror of SCAN_SCOPES.
             "MyIA.AI.Notebooks/QuantConnect/BOOK_MAPPING.md",
+            # Series landing pages (#26457): the notebook-tree index.qmd (portal)
+            # and the five series that ship one, scanned as single files outside
+            # docs/ -- the gate must fire when any of them changes. Mirror of
+            # SCAN_SCOPES; pinned by the parity test above.
+            "MyIA.AI.Notebooks/index.qmd",
+            "MyIA.AI.Notebooks/GameTheory/index.qmd",
+            "MyIA.AI.Notebooks/Physique/index.qmd",
+            "MyIA.AI.Notebooks/Probas/index.qmd",
+            "MyIA.AI.Notebooks/Search/index.qmd",
+            "MyIA.AI.Notebooks/Sudoku/index.qmd",
             "scripts/check_docs_links.py",
         ],
         argv=["python", "scripts/check_docs_links.py", "--check",

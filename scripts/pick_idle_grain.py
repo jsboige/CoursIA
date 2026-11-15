@@ -5671,7 +5671,12 @@ def check_claims(numbers: list[int], lane: str, *,
 #   - un echec de TRANSPORT n'ecrit aucun cache : le lecteur refait sa
 #     propre enumeration complete (le repli d'avant) ;
 #   - l'ecriture est ATOMIQUE (fichier temporaire + `os.replace`).
-_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+# v3 (#26725) -- l'enveloppe suit le LECTEUR : les entrees portent
+# `baseRefName` et, pour une PR empilee, une liste `files` reduite a ce
+# qu'elle change (au lieu de la diff base-relative de `/pulls/{n}/files`).
+# Un cache v2 relu par un lecteur v3 serait rejete -- deux constantes qui
+# divergent refont payer l'enumeration a chaque candidat (#19643).
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v3"
 
 # Enumeration complete, MEMOISEE : une passe de tirage n'enumerere qu'une
 # fois, et la sonde de couverture (#16589) consomme la meme enumeration.
