@@ -20,13 +20,13 @@ Controles declares AVANT la mesure :
   une arete depuis le createur de chacun de ses jetons d'entree) ;
 - CC3b : la relation reconstruite depuis le SEUL diff d'etats (par
   contenus) en diverge, et TOUTE divergence est portee par un evenement
-  AMBIGU : quand le membre droit re-cree le membre droit {x,z}, deux
+  AMBIGU : quand le membre gauche re-cree le membre droit {x,z}, deux
   applications distinctes de la regle peuvent produire le meme etat, et le
   diff ne determine alors pas laquelle a eu lieu.
 
 CC3b est la decouverte du grain : la forme pragmatique de la Definition 4
 (recouvrement entree/sortie) est vraie au niveau des objets (jetons), mais
-n'est pas reconstruisible depuis les seuls etats一一 le diff d'etat est une
+n'est pas reconstruisible depuis les seuls etats -- le diff d'etat est une
 projection perdante de l'evenement de reecriture.
 
 Les metriques de structure (profondeur, largeurs de niveaux, degres) sont
