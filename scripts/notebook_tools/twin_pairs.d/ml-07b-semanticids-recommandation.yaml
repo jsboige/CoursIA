@@ -1,0 +1,12 @@
+- name: "ML-07b SemanticIDs Recommandation"
+  family: ML
+  python: MyIA.AI.Notebooks/ML/ML.Net/ML-07b-SemanticIDs-Recommandation-Python.ipynb
+  csharp: MyIA.AI.Notebooks/ML/ML.Net/ML-07b-SemanticIDs-Recommandation-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Vrais TruncatedSVD/KMeans sklearn via Python.NET ; corpus, PMI, classement et bootstrap C# ; McNemar MathNet contrôlé contre SciPy réel."
+  known_differences:
+    - "Même corpus génératif et budgets, RNG .NET/MathNet distinct de NumPy : métriques et identifiants de clusters peuvent différer."
+    - "SVD collaborative float32 dans les deux versions, puis produit U/V accumulé en double C# contre matmul float32 Python."
+    - "Bootstrap apparié de 4000 réplications avec RNG propres ; aucun accord bit à bit des IC ni supériorité universelle revendiqué."
+    - "15 bits par item est un coût idéal des indices, hors livres et mémoire des structures. Les trois exercices sont non résolus et contrôlés."

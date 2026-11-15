@@ -21,17 +21,38 @@ Ce module configure l'environnement technique avant toute exploration GenAI. Les
 4. **Valider** que chaque composant fonctionne correctement via les scripts de diagnostic
 5. **Déployer** localement l'infrastructure GenAI complète sur un poste de travail
 
-## Notebooks
+## Comment lire ce README
 
-| # | Notebook | Contenu | Durée |
-|---|----------|---------|-------|
-| 1 | [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) | Configuration environnement complet | 15 min |
-| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Gestion services conteneurisés | 45 min |
-| 3 | [00-3-API-Endpoints-Configuration](00-3-API-Endpoints-Configuration.ipynb) | Configuration endpoints API | 20 min |
-| 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Tests et validation setup | 20 min |
-| 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Test local des services ComfyUI | ~2-3 min |
-| 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Déploiement Docker local complet | 45 min |
-| 7 | [00-7-Terminal-Long-Runs](00-7-Terminal-Long-Runs.ipynb) | tmux + tunnels SSH pour les jobs longs | 30 min |
+Ce module se lit à plusieurs vitesses, et le choix vous appartient.
+
+- **Vous voulez savoir si votre poste est prêt** : les carnets 00-1 puis 00-4 suffisent. Le premier pose l'environnement, le second passe chaque composant au diagnostic.
+- **Vous montez l'infrastructure complète** : suivez le parcours principal dans l'ordre, du premier carnet au dernier. Chacun suppose le précédent exécuté.
+- **Vous cherchez une réponse précise** : la FAQ en fin de page couvre les pannes les plus fréquentes — clé manquante, Docker muet, validation en échec, API cloud contre services locaux, exécution sans Docker.
+
+Le principe général — les vitesses de lecture et comment les reconnaître dans un README de série — est exposé dans [Choisir sa vitesse de lecture](../../../README.md#choisir-sa-vitesse-de-lecture).
+
+## Parcours principal
+
+| # | Notebook | Ce qu'on y apprend |
+|---|----------|--------------------|
+| 1 | [00-1-Environment-Setup](00-1-Environment-Setup.ipynb) | Poser l'environnement Python, le fichier `.env` et les variables que tous les autres carnets consomment |
+| 2 | [00-2-Docker-Services-Management](00-2-Docker-Services-Management.ipynb) | Démarrer, arrêter et surveiller les conteneurs — ComfyUI, Ollama, Jupyter, Redis, PostgreSQL — et lire leur état |
+| 3 | [00-3-API-Endpoints-Configuration](00-3-API-Endpoints-Configuration.ipynb) | Renseigner et tester les endpoints des fournisseurs : OpenAI, Anthropic, OpenRouter et les services locaux |
+| 4 | [00-4-Environment-Validation](00-4-Environment-Validation.ipynb) | Passer chaque composant au diagnostic et interpréter un échec : 401, 502, service absent |
+| 5 | [00-5-ComfyUI-Local-Test](00-5-ComfyUI-Local-Test.ipynb) | Vérifier que le service ComfyUI local répond, et ce qu'un silence côté serveur signifie |
+| 6 | [00-6-Local-Docker-Deployment](00-6-Local-Docker-Deployment.ipynb) | Déployer l'infrastructure GenAI complète sur un poste de travail, GPU compris |
+| 7 | [00-7-Terminal-Long-Runs](00-7-Terminal-Long-Runs.ipynb) | Tenir un job long dans tmux et joindre une machine distante par tunnel SSH sans le perdre au délog |
+
+## Approfondissements
+
+Aucun carnet de ce module ne porte de palier lettré : toutes les entrées du parcours principal sont des numéros nus, et cette table les couvre toutes. Ce qui vient en plus du parcours tient en deux fiches d'appui, à ouvrir au moment où elles servent plutôt qu'en lecture suivie :
+
+| Document | Ce qu'il ajoute |
+|----------|-----------------|
+| [QUICKSTART.md](QUICKSTART.md) | La configuration en mode distant, quand les services sont hébergés et qu'aucun GPU local n'est nécessaire |
+| [SWITCH_COMMANDS.md](SWITCH_COMMANDS.md) | Les commandes de bascule entre configurations de services, avec l'état attendu de chacun |
+
+Le module porte enfin deux outils d'exploitation, que les carnets de ce dossier n'invoquent pas : `validate_auth.py` contrôle le jeton d'accès ComfyUI auprès du service, et `param_guard.py` consulte la matrice mesurée `param_matrix.json` pour signaler les paramètres qu'un modèle refuse ou ignore, au lieu de laisser passer un 400 ou un silence.
 
 ## Prérequis & environnement
 
